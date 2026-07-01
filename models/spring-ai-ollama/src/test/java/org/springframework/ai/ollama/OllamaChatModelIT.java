@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,24 @@
 
 package org.springframework.ai.ollama;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.chat.client.AdvisorParams;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.ChatClientAttributes;
+import org.springframework.ai.chat.client.ChatClientRequest;
+import org.springframework.ai.chat.client.ChatClientResponse;
+import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
+import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -34,7 +43,6 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
-import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
@@ -42,7 +50,6 @@ import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.ai.model.tool.DefaultToolCallingManager;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.ollama.api.OllamaApi;
@@ -54,9 +61,12 @@ import org.springframework.ai.ollama.management.PullModelStrategy;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.support.ToolCallbacks;
 import org.springframework.ai.tool.annotation.Tool;
+import org.springframework.ai.util.JsonHelper;
+import org.springframework.ai.util.ResourceUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.json.JsonContent;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.convert.support.DefaultConversionService;
 
@@ -64,6 +74,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
 class OllamaChatModelIT extends BaseOllamaIT {
+
+	private static final JsonHelper jsonHelper = new JsonHelper();
 
 	private static final String MODEL = OllamaModel.QWEN_2_5_3B.getName();
 
@@ -82,7 +94,7 @@ class OllamaChatModelIT extends BaseOllamaIT {
 
 		String joke = ChatClient.create(this.chatModel)
 			.prompt("Tell me a joke")
-			.options(OllamaChatOptions.builder().model(ADDITIONAL_MODEL).build())
+			.options(OllamaChatOptions.builder().model(ADDITIONAL_MODEL))
 			.call()
 			.content();
 
@@ -103,18 +115,18 @@ class OllamaChatModelIT extends BaseOllamaIT {
 		UserMessage userMessage = new UserMessage("Tell me about 5 famous pirates from the Golden Age of Piracy.");
 
 		// portable/generic options
-		var portableOptions = ChatOptions.builder().temperature(0.7).build();
+		var portableOptions = OllamaChatOptions.builder().temperature(0.7).build();
 
 		Prompt prompt = new Prompt(List.of(systemMessage, userMessage), portableOptions);
 
 		ChatResponse response = this.chatModel.call(prompt);
-		assertThat(response.getResult().getOutput().getText()).contains("Blackbeard");
+		verifyMostFamousPiratePresence(response);
 
 		// ollama specific options
 		var ollamaOptions = OllamaChatOptions.builder().lowVRAM(true).build();
 
 		response = this.chatModel.call(new Prompt(List.of(systemMessage, userMessage), ollamaOptions));
-		assertThat(response.getResult().getOutput().getText()).contains("Blackbeard");
+		verifyMostFamousPiratePresence(response);
 	}
 
 	@Test
@@ -127,18 +139,17 @@ class OllamaChatModelIT extends BaseOllamaIT {
 				""").createMessage(Map.of("name", "Bob", "voice", "pirate"));
 
 		UserMessage userMessage = new UserMessage(
-				"Tell me about 3 famous pirates from the Golden Age of Piracy and why they did.");
+				"Tell me about 5 famous pirates from the Golden Age of Piracy and why they did.");
 
 		Prompt prompt = new Prompt(List.of(systemMessage, userMessage));
 
 		ChatResponse response = this.chatModel.call(prompt);
-		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Blackbeard");
+		verifyMostFamousPiratePresence(response);
 
 		var promptWithMessageHistory = new Prompt(List.of(new UserMessage("Hello"), response.getResult().getOutput(),
 				new UserMessage("Tell me just the names of those pirates.")));
 		response = this.chatModel.call(promptWithMessageHistory);
-
-		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Blackbeard");
+		verifyMostFamousPiratePresence(response);
 	}
 
 	@Test
@@ -169,8 +180,9 @@ class OllamaChatModelIT extends BaseOllamaIT {
 			.build();
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
-
-		List<String> list = outputConverter.convert(generation.getOutput().getText());
+		String outputText = generation.getOutput().getText();
+		assertThat(outputText).isNotNull();
+		List<String> list = outputConverter.convert(outputText);
 		assertThat(list).hasSize(5);
 	}
 
@@ -192,7 +204,9 @@ class OllamaChatModelIT extends BaseOllamaIT {
 
 		Generation generation = this.chatModel.call(prompt).getResult();
 
-		Map<String, Object> result = outputConverter.convert(generation.getOutput().getText());
+		String outputText = generation.getOutput().getText();
+		assertThat(outputText).isNotNull();
+		Map<String, Object> result = outputConverter.convert(outputText);
 		assertThat(result).isNotNull();
 		assertThat((String) result.get("R")).containsIgnoringCase("red");
 		assertThat((String) result.get("G")).containsIgnoringCase("green");
@@ -215,7 +229,9 @@ class OllamaChatModelIT extends BaseOllamaIT {
 		Prompt prompt = new Prompt(promptTemplate.createMessage());
 		Generation generation = this.chatModel.call(prompt).getResult();
 
-		ActorsFilmsRecord actorsFilms = outputConverter.convert(generation.getOutput().getText());
+		String outputText = generation.getOutput().getText();
+		assertThat(outputText).isNotNull();
+		ActorsFilmsRecord actorsFilms = outputConverter.convert(outputText);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
@@ -237,8 +253,9 @@ class OllamaChatModelIT extends BaseOllamaIT {
 
 		String generationTextFromStream = this.chatModel.stream(prompt)
 			.collectList()
-			.block()
+			.blockOptional()
 			.stream()
+			.flatMap(Collection::stream)
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
@@ -253,7 +270,7 @@ class OllamaChatModelIT extends BaseOllamaIT {
 
 	// Example inspired by https://ollama.com/blog/structured-outputs
 	@Test
-	void jsonSchemaFormatStructuredOutput() {
+	void jsonStructuredOutputWithFormatOption() {
 		var outputConverter = new BeanOutputConverter<>(CountryInfo.class);
 		var userPromptTemplate = new PromptTemplate("""
 				Tell me about {country}.
@@ -264,9 +281,96 @@ class OllamaChatModelIT extends BaseOllamaIT {
 
 		var chatResponse = this.chatModel.call(prompt);
 
-		var countryInfo = outputConverter.convert(chatResponse.getResult().getOutput().getText());
+		var outputText = chatResponse.getResult().getOutput().getText();
+		assertThat(outputText).isNotNull();
+		var countryInfo = outputConverter.convert(outputText);
 		assertThat(countryInfo).isNotNull();
 		assertThat(countryInfo.capital()).isEqualToIgnoringCase("Copenhagen");
+	}
+
+	// Example from https://ollama.com/blog/structured-outputs
+	@Test
+	void jsonStructuredOutputWithOutputSchemaOption() {
+		var jsonSchemaAsText = ResourceUtils.getText("classpath:country-json-schema.json");
+		var chatOptions = OllamaChatOptions.builder().outputSchema(jsonSchemaAsText).build();
+		var prompt = new Prompt("Tell me about Canada.", chatOptions);
+
+		var chatResponse = this.chatModel.call(prompt);
+
+		var result = chatResponse.getResult();
+		assertThat(result).isNotNull();
+		var outputText = result.getOutput().getText();
+		assertThat(outputText).isNotNull();
+
+		// @formatter:off
+		assertThat(new JsonContent<>(getClass(), null, outputText))
+				.extractingJsonPathMapValue("$")
+				.containsOnlyKeys("name", "capital", "languages")
+				.containsEntry("name", "Canada")
+				.containsEntry("capital", "Ottawa")
+				.extracting("languages")
+				.asInstanceOf(InstanceOfAssertFactories.LIST)
+				.contains("English", "French");
+		// @formatter:on
+	}
+
+	@Test
+	void chatClientEntityWithStructuredOutput() {
+		// Test using ChatClient high-level API with .entity(Class) method
+		// This verifies that StructuredOutputChatOptions implementation works correctly
+		// with ChatClient
+		var chatClient = ChatClient.builder(this.chatModel).build();
+
+		// Generate expected JSON schema as map for testing purpose
+		var expectedOutputSchemaMap = new BeanOutputConverter<>(ActorsFilmsRecord.class).getJsonSchemaMap();
+
+		// Advisor to verify that native structured output is being used.
+		// The schema is passed via context to ChatModelCallAdvisor which applies it
+		// to a new ChatClientRequest - so we verify the context attributes here,
+		// not the prompt options (which are only modified inside ChatModelCallAdvisor).
+		var nativeStructuredOutputUsed = new AtomicBoolean(false);
+		var verifyNativeStructuredOutputAdvisor = new CallAdvisor() {
+			@Override
+			public ChatClientResponse adviseCall(ChatClientRequest request, CallAdvisorChain chain) {
+				var nativeFlag = request.context().get(ChatClientAttributes.STRUCTURED_OUTPUT_NATIVE.getKey());
+				var schemaString = (String) request.context()
+					.get(ChatClientAttributes.STRUCTURED_OUTPUT_SCHEMA.getKey());
+
+				if (Boolean.TRUE.equals(nativeFlag) && schemaString != null) {
+					var actualSchemaMap = jsonHelper.fromJsonToMap(schemaString);
+					if (expectedOutputSchemaMap.equals(actualSchemaMap)) {
+						nativeStructuredOutputUsed.set(true);
+					}
+				}
+				return chain.nextCall(request);
+			}
+
+			@Override
+			public String getName() {
+				return "VerifyNativeStructuredOutputAdvisor";
+			}
+
+			@Override
+			public int getOrder() {
+				return 0;
+			}
+		};
+
+		var actorsFilms = chatClient.prompt("Generate the filmography of 5 movies for Tom Hanks.")
+			// forces native structured output handling via StructuredOutputChatOptions
+			.advisors(AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT)
+			.advisors(verifyNativeStructuredOutputAdvisor)
+			.call()
+			.entity(ActorsFilmsRecord.class);
+
+		// Verify that native structured output was used
+		assertThat(nativeStructuredOutputUsed.get())
+			.as("Native structured output should be used with OllamaChatOptions.setFormat.")
+			.isTrue();
+
+		assertThat(actorsFilms).isNotNull();
+		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
+		assertThat(actorsFilms.movies()).hasSize(5);
 	}
 
 	@Test
@@ -298,10 +402,7 @@ class OllamaChatModelIT extends BaseOllamaIT {
 		ChatMemory chatMemory = MessageWindowChatMemory.builder().build();
 		String conversationId = UUID.randomUUID().toString();
 
-		ChatOptions chatOptions = ToolCallingChatOptions.builder()
-			.toolCallbacks(ToolCallbacks.from(new MathTools()))
-			.internalToolExecutionEnabled(false)
-			.build();
+		var chatOptions = OllamaChatOptions.builder().toolCallbacks(ToolCallbacks.from(new MathTools())).build();
 		Prompt prompt = new Prompt(
 				List.of(new SystemMessage("You are a helpful assistant."), new UserMessage("What is 6 * 8?")),
 				chatOptions);
@@ -333,9 +434,17 @@ class OllamaChatModelIT extends BaseOllamaIT {
 		assertThat(newResponse.getResult().getOutput().getText()).contains("6").contains("8");
 	}
 
+	private static void verifyMostFamousPiratePresence(ChatResponse chatResponse) {
+		var outputText = chatResponse.getResult().getOutput().getText();
+		// From time to time, there is confusion between Blackbeard and Black Bart, and
+		// the test fails unless both nicknames are provided.
+		assertThat(outputText).containsAnyOf("Blackbeard", "Black Bart");
+	}
+
 	static class MathTools {
 
 		@Tool(description = "Multiply the two numbers")
+		@SuppressWarnings("unused")
 		double multiply(double a, double b) {
 			return a * b;
 		}
@@ -351,18 +460,18 @@ class OllamaChatModelIT extends BaseOllamaIT {
 	}
 
 	@SpringBootConfiguration
-	public static class TestConfiguration {
+	static class TestConfiguration {
 
 		@Bean
-		public OllamaApi ollamaApi() {
+		OllamaApi ollamaApi() {
 			return initializeOllama(MODEL);
 		}
 
 		@Bean
-		public OllamaChatModel ollamaChat(OllamaApi ollamaApi) {
+		OllamaChatModel ollamaChat(OllamaApi ollamaApi) {
 			return OllamaChatModel.builder()
 				.ollamaApi(ollamaApi)
-				.defaultOptions(OllamaChatOptions.builder().model(MODEL).temperature(0.9).build())
+				.options(OllamaChatOptions.builder().model(MODEL).temperature(0.0).build())
 				.modelManagementOptions(ModelManagementOptions.builder()
 					.pullModelStrategy(PullModelStrategy.WHEN_MISSING)
 					.additionalModels(List.of(ADDITIONAL_MODEL))

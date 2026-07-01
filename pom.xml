@@ -1,5 +1,5 @@
 <!--
-  ~ Copyright 2023-2025 the original author or authors.
+  ~ Copyright 2023-present the original author or authors.
   ~
   ~ Licensed under the Apache License, Version 2.0 (the "License");
   ~ you may not use this file except in compliance with the License.
@@ -21,7 +21,7 @@
 
 	<groupId>org.springframework.ai</groupId>
 	<artifactId>spring-ai-parent</artifactId>
-	<version>2.0.0-SNAPSHOT</version>
+	<version>2.0.1-SNAPSHOT</version>
 
 	<packaging>pom</packaging>
 	<url>https://github.com/spring-projects/spring-ai</url>
@@ -30,108 +30,61 @@
 	<description>Building AI applications with Spring Boot</description>
 
 	<modules>
-		<module>spring-ai-docs</module>
 		<module>spring-ai-bom</module>
-		<module>spring-ai-commons</module>
-		<module>spring-ai-template-st</module>
 		<module>spring-ai-client-chat</module>
+		<module>spring-ai-commons</module>
+		<module>spring-ai-docs</module>
+		<module>spring-ai-integration-tests</module>
 		<module>spring-ai-model</module>
-		<module>spring-ai-test</module>
-		<module>spring-ai-vector-store</module>
 		<module>spring-ai-rag</module>
-		<module>advisors/spring-ai-advisors-vector-store</module>
-
-		<module>memory/repository/spring-ai-model-chat-memory-repository-cassandra</module>
-		<module>memory/repository/spring-ai-model-chat-memory-repository-cosmos-db</module>
-		<module>memory/repository/spring-ai-model-chat-memory-repository-jdbc</module>
-		<module>memory/repository/spring-ai-model-chat-memory-repository-mongodb</module>
-		<module>memory/repository/spring-ai-model-chat-memory-repository-neo4j</module>
-		<module>memory/repository/spring-ai-model-chat-memory-repository-redis</module>
-
-
-
 		<module>spring-ai-retry</module>
 		<module>spring-ai-spring-boot-docker-compose</module>
 		<module>spring-ai-spring-boot-testcontainers</module>
-		<module>spring-ai-spring-cloud-bindings</module>
+		<module>spring-ai-template-st</module>
+		<module>spring-ai-test</module>
+		<module>spring-ai-tool-search-tool</module>
+		<module>spring-ai-vector-store</module>
 
-		<module>document-readers/jsoup-reader</module>
-		<module>document-readers/markdown-reader</module>
-		<module>document-readers/pdf-reader</module>
-		<module>document-readers/tika-reader</module>
+		<module>advisors/spring-ai-tool-search-advisor</module>
+		<module>advisors/spring-ai-vector-store-advisor</module>
 
-		<module>vector-stores/spring-ai-azure-cosmos-db-store</module>
-		<module>vector-stores/spring-ai-azure-store</module>
-		<module>vector-stores/spring-ai-cassandra-store</module>
-		<module>vector-stores/spring-ai-chroma-store</module>
-		<module>vector-stores/spring-ai-coherence-store</module>
-		<module>vector-stores/spring-ai-couchbase-store</module>
-		<module>vector-stores/spring-ai-elasticsearch-store</module>
-		<module>vector-stores/spring-ai-gemfire-store</module>
-		<module>vector-stores/spring-ai-hanadb-store</module>
-		<module>vector-stores/spring-ai-mariadb-store</module>
-		<module>vector-stores/spring-ai-milvus-store</module>
-		<module>vector-stores/spring-ai-mongodb-atlas-store</module>
-		<module>vector-stores/spring-ai-neo4j-store</module>
-		<module>vector-stores/spring-ai-opensearch-store</module>
-		<module>vector-stores/spring-ai-oracle-store</module>
-		<module>vector-stores/spring-ai-pgvector-store</module>
-		<module>vector-stores/spring-ai-pinecone-store</module>
-		<module>vector-stores/spring-ai-qdrant-store</module>
-		<module>vector-stores/spring-ai-redis-store</module>
-		<module>vector-stores/spring-ai-typesense-store</module>
-		<module>vector-stores/spring-ai-weaviate-store</module>
-
+		<module>auto-configurations/advisors/spring-ai-autoconfigure-tool-search-advisor</module>
 
 		<module>auto-configurations/common/spring-ai-autoconfigure-retry</module>
-
-		<module>auto-configurations/models/tool/spring-ai-autoconfigure-model-tool</module>
-
-		<module>auto-configurations/models/chat/client/spring-ai-autoconfigure-model-chat-client</module>
-
-		<module>auto-configurations/models/chat/memory/spring-ai-autoconfigure-model-chat-memory</module>
-		<module>auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-cassandra</module>
-		<module>auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-cosmos-db</module>
-		<module>auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-jdbc</module>
-		<module>auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-mongodb</module>
-		<module>auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-neo4j</module>
-		<module>auto-configurations/models/chat/memory/spring-ai-autoconfigure-model-chat-memory-redis</module>
-
-		<module>auto-configurations/models/chat/observation/spring-ai-autoconfigure-model-chat-observation</module>
-
-		<module>auto-configurations/models/embedding/observation/spring-ai-autoconfigure-model-embedding-observation</module>
-		<module>auto-configurations/models/image/observation/spring-ai-autoconfigure-model-image-observation</module>
-
-		<module>auto-configurations/models/spring-ai-autoconfigure-model-anthropic</module>
-		<module>auto-configurations/models/spring-ai-autoconfigure-model-azure-openai</module>
-		<module>auto-configurations/models/spring-ai-autoconfigure-model-bedrock-ai</module>
-		<module>auto-configurations/models/spring-ai-autoconfigure-model-elevenlabs</module>
-		<module>auto-configurations/models/spring-ai-autoconfigure-model-huggingface</module>
-		<module>auto-configurations/models/spring-ai-autoconfigure-model-openai</module>
-		<module>auto-configurations/models/spring-ai-autoconfigure-model-openai-sdk</module>
-		<module>auto-configurations/models/spring-ai-autoconfigure-model-minimax</module>
-		<module>auto-configurations/models/spring-ai-autoconfigure-model-mistral-ai</module>
-		<module>auto-configurations/models/spring-ai-autoconfigure-model-oci-genai</module>
-		<module>auto-configurations/models/spring-ai-autoconfigure-model-ollama</module>
-
-		<module>auto-configurations/models/spring-ai-autoconfigure-model-postgresml-embedding</module>
-		<module>auto-configurations/models/spring-ai-autoconfigure-model-stability-ai</module>
-		<module>auto-configurations/models/spring-ai-autoconfigure-model-transformers</module>
-		<module>auto-configurations/models/spring-ai-autoconfigure-model-vertex-ai</module>
-		<module>auto-configurations/models/spring-ai-autoconfigure-model-google-genai</module>
-		<module>auto-configurations/models/spring-ai-autoconfigure-model-zhipuai</module>
-		<module>auto-configurations/models/spring-ai-autoconfigure-model-deepseek</module>
 
 		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-common</module>
 		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-httpclient</module>
 		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-webflux</module>
-
 		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-common</module>
-		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webmvc</module>
 		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux</module>
+		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webmvc</module>
+
+		<module>auto-configurations/models/chat/client/spring-ai-autoconfigure-model-chat-client</module>
+		<module>auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-cassandra</module>
+		<module>auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-jdbc</module>
+		<module>auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-mongodb</module>
+		<module>auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-neo4j</module>
+		<module>auto-configurations/models/chat/memory/spring-ai-autoconfigure-model-chat-memory</module>
+		<module>auto-configurations/models/chat/memory/spring-ai-autoconfigure-model-chat-memory-redis</module>
+		<module>auto-configurations/models/chat/observation/spring-ai-autoconfigure-model-chat-observation</module>
+		<module>auto-configurations/models/embedding/observation/spring-ai-autoconfigure-model-embedding-observation</module>
+		<module>auto-configurations/models/image/observation/spring-ai-autoconfigure-model-image-observation</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-anthropic</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-bedrock-ai</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-deepseek</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-elevenlabs</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-google-genai</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-mistral-ai</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-ollama</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-openai</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-postgresml-embedding</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-stability-ai</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-transformers</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-vertex-ai</module>
+		<module>auto-configurations/models/tool/spring-ai-autoconfigure-model-tool</module>
 
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-azure</module>
-		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-azure-cosmos-db</module>
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-bedrock-knowledgebase</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-cassandra</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-chroma</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-couchbase</module>
@@ -141,109 +94,132 @@
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-milvus</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-mongodb-atlas</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-neo4j</module>
-		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-opensearch</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-observation</module>
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-opensearch</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-oracle</module>
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-pgvector</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-pinecone</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-qdrant</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-redis</module>
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-redis-semantic-cache</module>
+		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-s3</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-typesense</module>
 		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-weaviate</module>
-		<module>auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-pgvector</module>
 
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-aws-opensearch</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-azure</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-azure-cosmos-db</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-cassandra</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-chroma</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-couchbase</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-elasticsearch</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-gemfire</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-mariadb</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-milvus</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-mongodb-atlas</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-neo4j</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-opensearch</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-oracle</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-pgvector</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-pinecone</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-qdrant</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-redis</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-typesense</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-vector-store-weaviate</module>
+		<module>document-readers/spring-ai-jsoup-document-reader</module>
+		<module>document-readers/spring-ai-markdown-document-reader</module>
+		<module>document-readers/spring-ai-pdf-document-reader</module>
+		<module>document-readers/spring-ai-tika-document-reader</module>
+
+		<module>mcp/common</module>
+		<module>mcp/mcp-annotations</module>
+		<module>mcp/transport/mcp-spring-webflux</module>
+		<module>mcp/transport/mcp-spring-webmvc</module>
+
+		<module>memory-repositories/spring-ai-model-chat-memory-repository-cassandra</module>
+		<module>memory-repositories/spring-ai-model-chat-memory-repository-jdbc</module>
+		<module>memory-repositories/spring-ai-model-chat-memory-repository-mongodb</module>
+		<module>memory-repositories/spring-ai-model-chat-memory-repository-neo4j</module>
+		<module>memory-repositories/spring-ai-model-chat-memory-repository-redis</module>
 
 		<module>models/spring-ai-anthropic</module>
-		<module>models/spring-ai-azure-openai</module>
 		<module>models/spring-ai-bedrock</module>
 		<module>models/spring-ai-bedrock-converse</module>
+		<module>models/spring-ai-deepseek</module>
 		<module>models/spring-ai-elevenlabs</module>
-		<module>models/spring-ai-huggingface</module>
-		<module>models/spring-ai-minimax</module>
+		<module>models/spring-ai-google-genai</module>
+		<module>models/spring-ai-google-genai-embedding</module>
 		<module>models/spring-ai-mistral-ai</module>
-		<module>models/spring-ai-oci-genai</module>
 		<module>models/spring-ai-ollama</module>
 		<module>models/spring-ai-openai</module>
-		<module>models/spring-ai-openai-sdk</module>
 		<module>models/spring-ai-postgresml</module>
 		<module>models/spring-ai-stability-ai</module>
 		<module>models/spring-ai-transformers</module>
 		<module>models/spring-ai-vertex-ai-embedding</module>
-		<module>models/spring-ai-vertex-ai-gemini</module>
-		<module>models/spring-ai-google-genai</module>
-		<module>models/spring-ai-google-genai-embedding</module>
-		<module>models/spring-ai-zhipuai</module>
-		<module>models/spring-ai-deepseek</module>
 
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-anthropic</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-azure-openai</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-bedrock</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-bedrock-converse</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-google-genai</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-google-genai-embedding</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-elevenlabs</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-huggingface</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-minimax</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-mistral-ai</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-oci-genai</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-ollama</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-openai</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-openai-sdk</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-postgresml-embedding</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-stability-ai</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-transformers</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-vertex-ai-embedding</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-vertex-ai-gemini</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-zhipuai</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-deepseek</module>
+		<module>starters/spring-ai-starter-mcp-client</module>
+		<module>starters/spring-ai-starter-mcp-client-webflux</module>
+		<module>starters/spring-ai-starter-mcp-server</module>
+		<module>starters/spring-ai-starter-mcp-server-webflux</module>
+		<module>starters/spring-ai-starter-mcp-server-webmvc</module>
 
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory-repository-cassandra</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory-repository-cosmos-db</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory-repository-jdbc</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory-repository-mongodb</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory-repository-neo4j</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-model-chat-memory-repository-redis</module>
+		<module>starters/spring-ai-starter-model-anthropic</module>
+		<module>starters/spring-ai-starter-model-bedrock</module>
+		<module>starters/spring-ai-starter-model-bedrock-converse</module>
+		<module>starters/spring-ai-starter-model-chat-memory</module>
+		<module>starters/spring-ai-starter-model-chat-memory-repository-cassandra</module>
+		<module>starters/spring-ai-starter-model-chat-memory-repository-jdbc</module>
+		<module>starters/spring-ai-starter-model-chat-memory-repository-mongodb</module>
+		<module>starters/spring-ai-starter-model-chat-memory-repository-neo4j</module>
+		<module>starters/spring-ai-starter-model-chat-memory-repository-redis</module>
+		<module>starters/spring-ai-starter-model-deepseek</module>
+		<module>starters/spring-ai-starter-model-elevenlabs</module>
+		<module>starters/spring-ai-starter-model-google-genai</module>
+		<module>starters/spring-ai-starter-model-google-genai-embedding</module>
+		<module>starters/spring-ai-starter-model-mistral-ai</module>
+		<module>starters/spring-ai-starter-model-ollama</module>
+		<module>starters/spring-ai-starter-model-openai</module>
+		<module>starters/spring-ai-starter-model-postgresml-embedding</module>
+		<module>starters/spring-ai-starter-model-stability-ai</module>
+		<module>starters/spring-ai-starter-model-transformers</module>
+		<module>starters/spring-ai-starter-model-vertex-ai-embedding</module>
 
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-client</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-server</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-client-webflux</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-server-webflux</module>
-		<module>spring-ai-spring-boot-starters/spring-ai-starter-mcp-server-webmvc</module>
-		
-		<module>spring-ai-integration-tests</module>
+		<module>starters/spring-ai-starter-tool-search-advisor</module>
 
-		<module>mcp/common</module>
-		<module>mcp/mcp-annotations-spring</module>
+		<module>starters/spring-ai-starter-vector-store-aws-opensearch</module>
+		<module>starters/spring-ai-starter-vector-store-azure</module>
+		<module>starters/spring-ai-starter-vector-store-bedrock-knowledgebase</module>
+		<module>starters/spring-ai-starter-vector-store-cassandra</module>
+		<module>starters/spring-ai-starter-vector-store-chroma</module>
+		<module>starters/spring-ai-starter-vector-store-couchbase</module>
+		<module>starters/spring-ai-starter-vector-store-elasticsearch</module>
+		<module>starters/spring-ai-starter-vector-store-gemfire</module>
+		<module>starters/spring-ai-starter-vector-store-mariadb</module>
+		<module>starters/spring-ai-starter-vector-store-milvus</module>
+		<module>starters/spring-ai-starter-vector-store-mongodb-atlas</module>
+		<module>starters/spring-ai-starter-vector-store-neo4j</module>
+		<module>starters/spring-ai-starter-vector-store-opensearch</module>
+		<module>starters/spring-ai-starter-vector-store-oracle</module>
+		<module>starters/spring-ai-starter-vector-store-pgvector</module>
+		<module>starters/spring-ai-starter-vector-store-pinecone</module>
+		<module>starters/spring-ai-starter-vector-store-qdrant</module>
+		<module>starters/spring-ai-starter-vector-store-redis</module>
+		<module>starters/spring-ai-starter-vector-store-s3</module>
+		<module>starters/spring-ai-starter-vector-store-typesense</module>
+		<module>starters/spring-ai-starter-vector-store-weaviate</module>
+
+		<module>vector-stores/spring-ai-azure-store</module>
+		<module>vector-stores/spring-ai-bedrock-knowledgebase-store</module>
+		<module>vector-stores/spring-ai-cassandra-store</module>
+		<module>vector-stores/spring-ai-chroma-store</module>
+		<module>vector-stores/spring-ai-coherence-store</module>
+		<module>vector-stores/spring-ai-couchbase-store</module>
+		<module>vector-stores/spring-ai-elasticsearch-store</module>
+		<module>vector-stores/spring-ai-gemfire-store</module>
+		<module>vector-stores/spring-ai-mariadb-store</module>
+		<module>vector-stores/spring-ai-milvus-store</module>
+		<module>vector-stores/spring-ai-mongodb-atlas-store</module>
+		<module>vector-stores/spring-ai-neo4j-store</module>
+		<module>vector-stores/spring-ai-opensearch-store</module>
+		<module>vector-stores/spring-ai-oracle-store</module>
+		<module>vector-stores/spring-ai-pgvector-store</module>
+		<module>vector-stores/spring-ai-pinecone-store</module>
+		<module>vector-stores/spring-ai-qdrant-store</module>
+		<module>vector-stores/spring-ai-redis-semantic-cache</module>
+		<module>vector-stores/spring-ai-redis-store</module>
+		<module>vector-stores/spring-ai-s3-vector-store</module>
+		<module>vector-stores/spring-ai-typesense-store</module>
+		<module>vector-stores/spring-ai-weaviate-store</module>
 	</modules>
 
 	<organization>
-		<name>VMware Inc.</name>
+		<name>Broadcom Inc.</name>
 		<url>https://spring.io</url>
 	</organization>
 	<scm>
 		<url>https://github.com/spring-projects/spring-ai</url>
-		<connection>git://github.com/spring-projects/spring-ai.git</connection>
-		<developerConnection>git@github.com:spring-projects/spring-ai.git</developerConnection>
+		<connection>scm:git:git://github.com/spring-projects/spring-ai.git</connection>
+		<developerConnection>scm:git:ssh://git@github.com/spring-projects/spring-ai.git</developerConnection>
 	</scm>
 	<issueManagement>
 		<system>Github Issues</system>
@@ -277,98 +253,81 @@
 		<maven.compiler.source>${java.version}</maven.compiler.source>
 		<maven.compiler.target>${java.version}</maven.compiler.target>
 		<kotlin.compiler.jvmTarget>${java.version}</kotlin.compiler.jvmTarget>
+		<kotlin.compiler.daemon>false</kotlin.compiler.daemon>
 
 		<!-- production dependencies -->
-		<spring-boot.version>4.0.0</spring-boot.version>
-		<ST4.version>4.3.4</ST4.version>
-		<azure-open-ai-client.version>1.0.0-beta.16</azure-open-ai-client.version>
-		<openai-sdk.version>4.13.0</openai-sdk.version>
-		<azure-identity.version>1.18.1</azure-identity.version>
-		<jtokkit.version>1.1.0</jtokkit.version>
-		<kotlin.version>2.2.21</kotlin.version>
+		<spring-boot.version>4.1.1-SNAPSHOT</spring-boot.version>
 
-		<!-- NOTE: keep bedrockruntime and awssdk versions aligned -->
-		<bedrockruntime.version>2.36.3</bedrockruntime.version>
-		<awssdk.version>2.36.3</awssdk.version>
-
-		<djl.version>0.32.0</djl.version>
-		<onnxruntime.version>1.19.2</onnxruntime.version>
-		<oci-sdk-version>3.63.1</oci-sdk-version>
-		<com.google.cloud.version>26.72.0</com.google.cloud.version>
-		<com.google.genai.version>1.30.0</com.google.genai.version>
-		<ibm.sdk.version>9.20.0</ibm.sdk.version>
-		<jsonschema.version>4.38.0</jsonschema.version>
-		<swagger-annotations.version>2.2.38</swagger-annotations.version>
-		<mockk-jvm.version>1.13.13</mockk-jvm.version>
-		<spring-cloud-bindings.version>2.0.3</spring-cloud-bindings.version>
-
-		<jsoup.version>1.21.2</jsoup.version>
-
-		<!-- Protobuf -->
-		<protobuf-java.version>3.25.8</protobuf-java.version>
-
-		<!-- readers/writer/stores dependencies-->
-		<pdfbox.version>3.0.5</pdfbox.version>
-		<pgvector.version>0.1.6</pgvector.version>
-		<sap.hanadb.version>2.20.11</sap.hanadb.version>
-		<coherence.version>24.09</coherence.version>
-		<milvus.version>2.5.8</milvus.version>
-		<gemfire.testcontainers.version>2.3.3</gemfire.testcontainers.version>
-
-		<pinecone.version>4.0.1</pinecone.version>
-		<pinecone.protobuf-java-util.version>4.29.3</pinecone.protobuf-java-util.version>
-
-		<fastjson2.version>2.0.46</fastjson2.version>
-		<azure-core.version>1.55.3</azure-core.version>
-		<azure-json.version>1.5.0</azure-json.version>
+		<!-- Third-party dependencies -->
+		<anthropic-sdk.version>2.43.0</anthropic-sdk.version>
+		<azure-core.version>1.57.1</azure-core.version>
+		<azure-identity.version>1.18.2</azure-identity.version>
+		<azure-json.version>1.5.1</azure-json.version>
 		<azure-search.version>11.7.6</azure-search.version>
-		<azure-cosmos.version>5.22.0</azure-cosmos.version>
-		<elasticsearch-java.version>8.18.1</elasticsearch-java.version>
-		<weaviate-client.version>5.2.0</weaviate-client.version>
-		<qdrant.version>1.13.0</qdrant.version>
-		<typesense.version>1.3.0</typesense.version>
-		<opensearch-client.version>2.23.0</opensearch-client.version>
-		<opensearch-testcontainers.version>2.1.4</opensearch-testcontainers.version>
-		<postgresql.version>42.7.7</postgresql.version>
-		<mariadb.version>3.5.3</mariadb.version>
-		<mysql.version>9.2.0</mysql.version>
+		<!-- NOTE: keep awssdk and bedrockruntime versions aligned -->
+		<awssdk.version>2.41.22</awssdk.version>
+		<bedrockruntime.version>2.41.22</bedrockruntime.version>
+		<coherence.version>24.09</coherence.version>
+		<com.google.cloud.version>26.83.0</com.google.cloud.version>
+		<com.google.genai.version>1.58.0</com.google.genai.version>
 		<commonmark.version>0.22.0</commonmark.version>
-
 		<couchbase.version>3.9.1</couchbase.version>
+		<djl.version>0.36.0</djl.version>
+		<fastjson2.version>2.0.46</fastjson2.version>
+		<gemfire.testcontainers.version>2.3.3</gemfire.testcontainers.version>
+		<grpc-netty-shaded.version>1.82.1</grpc-netty-shaded.version>
+		<jsonschema.version>5.0.0</jsonschema.version>
+		<jsoup.version>1.22.2</jsoup.version>
+		<jtokkit.version>1.1.0</jtokkit.version>
+		<lucene.version>9.12.3</lucene.version>
+		<kotlin.version>2.3.20</kotlin.version>
+		<milvus.version>2.6.21</milvus.version>
+		<mockk-jvm.version>1.13.13</mockk-jvm.version>
 		<neo4j-cypher-dsl-bom.version>2024.5.1</neo4j-cypher-dsl-bom.version>
+		<openai-sdk.version>4.41.0</openai-sdk.version>
+		<opensearch-client.version>3.6.0</opensearch-client.version>
+		<opensearch-testcontainers.version>4.1.0</opensearch-testcontainers.version>
+		<pdfbox.version>3.0.7</pdfbox.version>
+		<pgvector.version>0.1.6</pgvector.version>
+		<pinecone.version>6.2.0</pinecone.version>
+		<pinecone.protobuf-java-util.version>4.29.3</pinecone.protobuf-java-util.version>
+		<protobuf-java.version>3.25.8</protobuf-java.version>
+		<qdrant.version>1.18.0</qdrant.version>
+		<swagger-annotations.version>2.2.38</swagger-annotations.version>
+		<ST4.version>4.3.4</ST4.version>
+		<typesense.version>1.3.0</typesense.version>
+		<weaviate-client.version>5.3.0</weaviate-client.version>
 
 		<!-- testing dependencies -->
+		<json-unit-assertj.version>5.1.0</json-unit-assertj.version>
+		<json-schema-validator.version>3.0.1</json-schema-validator.version>
 		<okhttp3.version>4.12.0</okhttp3.version>
 		<rest-assured-bom.version>5.5.6</rest-assured-bom.version>
-		<json-unit-assertj.version>4.1.0</json-unit-assertj.version>
 
 		<!-- MCP-->
-		<mcp.sdk.version>0.17.0</mcp.sdk.version>
-		<mcp-annotations.version>0.8.0</mcp-annotations.version>
+		<mcp.sdk.version>2.0.0</mcp.sdk.version>
 
 		<!-- plugin versions -->
 		<antlr.version>4.13.1</antlr.version>
+		<antora-maven-plugin.version>1.0.0-alpha.5</antora-maven-plugin.version>
+		<antora-component-version-maven-plugin.version>0.0.4</antora-component-version-maven-plugin.version>
+
+		<!-- The version (range) of the JDK we want to use to compile -->
+		<compiler.jdk.version>[17.0.19,)</compiler.jdk.version>
+
+		<flatten-maven-plugin.version>1.5.0</flatten-maven-plugin.version>
+		<jacoco-maven-plugin.version>0.8.10</jacoco-maven-plugin.version>
 		<maven-compiler-plugin.version>3.14.1</maven-compiler-plugin.version>
 		<maven-enforcer-plugin.version>3.6.2</maven-enforcer-plugin.version>
-		<!-- The version (range) of the JDK we want to use to compile.
-			This is different from ${java.version} which we use as -release target. -->
-		<compiler.jdk.version>[21.0.8,)</compiler.jdk.version>
 		<maven-surefire-plugin.version>3.1.2</maven-surefire-plugin.version>
 		<maven-failsafe-plugin.version>3.5.2</maven-failsafe-plugin.version>
 		<maven-javadoc-plugin.version>3.12.0</maven-javadoc-plugin.version>
 		<maven-source-plugin.version>3.3.0</maven-source-plugin.version>
-		<jacoco-maven-plugin.version>0.8.10</jacoco-maven-plugin.version>
-		<flatten-maven-plugin.version>1.5.0</flatten-maven-plugin.version>
 		<maven-deploy-plugin.version>3.1.1</maven-deploy-plugin.version>
-		<asciidoctor-maven-plugin.version>2.2.3</asciidoctor-maven-plugin.version>
 		<maven-assembly-plugin.version>3.7.0</maven-assembly-plugin.version>
-		<maven-dependency-plugin.version>3.5.0</maven-dependency-plugin.version>
 		<maven-site-plugin.version>4.0.0-M13</maven-site-plugin.version>
-		<maven-project-info-reports-plugin.version>3.4.5</maven-project-info-reports-plugin.version>
 		<maven-jar-plugin.version>3.3.0</maven-jar-plugin.version>
 		<spring-javaformat-maven-plugin.version>0.0.47</spring-javaformat-maven-plugin.version>
-		<antora-maven-plugin.version>1.0.0-alpha.5</antora-maven-plugin.version>
-		<antora-component-version-maven-plugin.version>0.0.4</antora-component-version-maven-plugin.version>
 		<maven-checkstyle-plugin.version>3.6.0</maven-checkstyle-plugin.version>
 		<maven-checkstyle-plugin.failsOnError>true</maven-checkstyle-plugin.failsOnError>
 		<maven-checkstyle-plugin.failOnViolation>true</maven-checkstyle-plugin.failOnViolation>
@@ -376,14 +335,55 @@
 		<spring-javaformat-checkstyle.version>0.0.47</spring-javaformat-checkstyle.version>
 		<maven-gpg-plugin.version>3.2.8</maven-gpg-plugin.version>
 
-		<error-prone.version>2.44.0</error-prone.version>
-		<nullaway.version>0.12.13</nullaway.version>
+		<error-prone.version>2.42.0</error-prone.version>
+		<nullaway.version>0.13.4</nullaway.version>
 
 		<disable.checks>false</disable.checks>
 
 	</properties>
 
 	<build>
+		<pluginManagement>
+			<plugins>
+				<plugin>
+					<groupId>org.jetbrains.kotlin</groupId>
+					<artifactId>kotlin-maven-plugin</artifactId>
+					<version>${kotlin.version}</version>
+					<configuration>
+						<jvmTarget>${java.version}</jvmTarget>
+						<javaParameters>true</javaParameters>
+						<apiVersion>2.2</apiVersion>
+						<languageVersion>2.2</languageVersion>
+					</configuration>
+					<executions>
+						<execution>
+							<id>compile</id>
+							<goals>
+								<goal>compile</goal>
+							</goals>
+							<configuration>
+								<sourceDirs>
+									<sourceDir>${project.basedir}/src/main/kotlin</sourceDir>
+									<sourceDir>${project.basedir}/src/main/java</sourceDir>
+								</sourceDirs>
+							</configuration>
+						</execution>
+						<execution>
+							<id>test-compile</id>
+							<goals>
+								<goal>test-compile</goal>
+							</goals>
+							<configuration>
+								<sourceDirs>
+									<sourceDir>${project.basedir}/src/test/kotlin</sourceDir>
+									<sourceDir>${project.basedir}/src/test/java</sourceDir>
+								</sourceDirs>
+							</configuration>
+						</execution>
+					</executions>
+				</plugin>
+			</plugins>
+		</pluginManagement>
 		<plugins>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -410,6 +410,29 @@
 								<requireMavenVersion>
 									<version>[3.9.1,)</version>
 								</requireMavenVersion>
+
+								<bannedDependencies>
+									<!-- Spring AI should NOT depend on boot. There are only 4
+									exceptions to this: -->
+									<!-- 1. test code can currently depend on boot (includes element
+									below)-->
+									<!-- 2. auto-configurations module CAN depend on boot, but
+									should use optional=true on all deps. This enforcer rule sadly
+									can't see those dependencies, so no particular config here -->
+									<!-- 3. starters obviously depend on boot. There is a special
+									profile below in this pom that relaxes the following rule, see
+									further below. -->
+									<!-- 4. docker-compose and testcontainers projects depend on
+									boot and have an override in their respective poms. -->
+									<excludes>
+										<exclude>org.springframework.boot</exclude>
+									</excludes>
+									<includes>
+										<include>org.springframework.boot:*:*:jar:test</include>
+									</includes>
+									<message>Spring AI code should NOT depend on Spring boot. The
+										only exception to this is autoconfigure and starter modules.</message>
+								</bannedDependencies>
 							</rules>
 						</configuration>
 					</execution>
@@ -419,43 +442,6 @@
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-site-plugin</artifactId>
 				<version>${maven-site-plugin.version}</version>
-			</plugin>
-			<plugin>
-				<groupId>org.jetbrains.kotlin</groupId>
-				<artifactId>kotlin-maven-plugin</artifactId>
-				<version>${kotlin.version}</version>
-				<configuration>
-					<jvmTarget>${java.version}</jvmTarget>
-					<javaParameters>true</javaParameters>
-					<apiVersion>2.2</apiVersion>
-					<languageVersion>2.2</languageVersion>
-				</configuration>
-				<executions>
-					<execution>
-						<id>compile</id>
-						<goals>
-							<goal>compile</goal>
-						</goals>
-						<configuration>
-							<sourceDirs>
-								<sourceDir>${project.basedir}/src/main/kotlin</sourceDir>
-								<sourceDir>${project.basedir}/src/main/java</sourceDir>
-							</sourceDirs>
-						</configuration>
-					</execution>
-					<execution>
-						<id>test-compile</id>
-						<goals>
-							<goal>test-compile</goal>
-						</goals>
-						<configuration>
-							<sourceDirs>
-								<sourceDir>${project.basedir}/src/test/kotlin</sourceDir>
-								<sourceDir>${project.basedir}/src/test/java</sourceDir>
-							</sourceDirs>
-						</configuration>
-					</execution>
-				</executions>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
@@ -480,6 +466,10 @@
 						<path>
 							<groupId>org.springframework.boot</groupId>
 							<artifactId>spring-boot-configuration-processor</artifactId>
+						</path>
+						<path>
+							<groupId>org.springframework.boot</groupId>
+							<artifactId>spring-boot-autoconfigure-processor</artifactId>
 						</path>
 					</annotationProcessorPaths>
 				</configuration>
@@ -506,7 +496,9 @@
 								<!-- The following arg won't be necessary with JDK25+ -->
 								<arg>-XDaddTypeAnnotationsToSymbol=true</arg>
 								<arg>--should-stop=ifError=FLOW</arg>
-								<arg>-Xplugin:ErrorProne -XepDisableAllChecks -Xep:NullAway:ERROR -XepOpt:NullAway:OnlyNullMarked -XepOpt:NullAway:JSpecifyMode=true</arg>
+								<arg>-Xplugin:ErrorProne -XepDisableAllChecks -Xep:NullAway:ERROR
+									-XepOpt:NullAway:OnlyNullMarked
+									-XepOpt:NullAway:JSpecifyMode=true</arg>
 							</compilerArgs>
 						</configuration>
 					</execution>
@@ -578,8 +570,8 @@
 								<distributionManagement>remove</distributionManagement>
 								<dependencyManagement>remove</dependencyManagement>
 								<repositories>remove</repositories>
-								<scm>keep</scm>
-								<url>keep</url>
+								<scm>resolve</scm>
+								<url>resolve</url>
 								<organization>resolve</organization>
 							</pomElements>
 						</configuration>
@@ -615,9 +607,6 @@
 						<goals>
 							<goal>jar</goal>
 						</goals>
-						<configuration>
-							<failOnError>false</failOnError>
-						</configuration>
 					</execution>
 				</executions>
 			</plugin>
@@ -717,9 +706,11 @@
 								<inherited>true</inherited>
 								<configuration>
 									<skip>${disable.checks}</skip>
-									<configLocation>${maven.multiModuleProjectDirectory}/src/checkstyle/checkstyle.xml
+									<configLocation>
+										${maven.multiModuleProjectDirectory}/src/checkstyle/checkstyle.xml
 									</configLocation>
-									<headerLocation>${maven.multiModuleProjectDirectory}/src/checkstyle/checkstyle-header.txt
+									<headerLocation>
+										${maven.multiModuleProjectDirectory}/src/checkstyle/checkstyle-header.txt
 									</headerLocation>
 									<includeTestSourceDirectory>true
 									</includeTestSourceDirectory>
@@ -741,78 +732,94 @@
 			</build>
 		</profile>
 		<profile>
-			<id>license</id>
+			<id>starter-banned-dependency-relaxation</id>
+			<!-- This profile relaxes the enforcer rule that prohibits code to depend on boot, for
+			starters/ only. -->
 			<activation>
-				<activeByDefault>false</activeByDefault>
+				<file>
+					<!-- Trick: since profiles can't be activated via properties in children
+					projects, -->
+					<!-- this profile leverages the fact that starters are the only project type
+					that -->
+					<!-- do not contain source files. -->
+					<missing>src/main</missing>
+				</file>
 			</activation>
 			<build>
 				<plugins>
 					<plugin>
-						<groupId>com.mycila</groupId>
-						<artifactId>license-maven-plugin</artifactId>
-						<version>4.1</version>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-enforcer-plugin</artifactId>
+						<version>${maven-enforcer-plugin.version}</version>
 						<executions>
 							<execution>
-								<phase>validate</phase>
-								<goals>
-									<goal>check</goal>
-								</goals>
+								<id>maven-enforcer</id>
+								<configuration>
+									<rules>
+										<bannedDependencies>
+											<includes combine.children="append">
+												<include>org.springframework.boot</include>
+											</includes>
+										</bannedDependencies>
+									</rules>
+								</configuration>
 							</execution>
 						</executions>
-						<configuration>
-							<properties>
-								<owner>the original author or authors.</owner>
-								<email />
-								<year>2024</year>
-							</properties>
-							<licenseSets>
-								<licenseSet>
-									<inlineHeader>
-										<!-- @formatter:off --> Copyright 2023 - ${year} the original author or
-										authors. Licensed under the Apache License, Version 2.0 (the
-										"License"); you may not use this file except in compliance
-										with the License. You may obtain a copy of the License at
-										https://www.apache.org/licenses/LICENSE-2.0 Unless required
-										by applicable law or agreed to in writing, software
-										distributed under the License is distributed on an "AS IS"
-										BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
-										express or implied. See the License for the specific
-										language governing permissions and limitations under the
-										License. <!-- @formatter:on -->
-									</inlineHeader>
-									<excludes>
-										<exclude>**/.antlr/**</exclude>
-										<exclude>**/aot.factories</exclude>
-										<exclude>**/.sdkmanrc</exclude>
-										<exclude>**/*.adoc</exclude>
-										<exclude>**/*.puml</exclude>
-										<exclude>**/pom.xml</exclude>
-										<exclude>**/*.properties</exclude>
-										<exclude>**/*.yaml</exclude>
-										<exclude>**/*.yml</exclude>
-										<exclude>**/*.map</exclude>
-										<exclude>**/*.html</exclude>
-										<exclude>**/*.xhtml</exclude>
-										<exclude>**/*.jsp</exclude>
-										<exclude>**/*.js</exclude>
-										<exclude>**/*.css</exclude>
-										<exclude>**/*.txt</exclude>
-										<exclude>**/*.xjb</exclude>
-										<exclude>**/*.ftl</exclude>
-										<exclude>**/*.xsd</exclude>
-										<exclude>**/*.xml</exclude>
-										<exclude>**/*.sh</exclude>
-										<exclude>**/generated/**</exclude>
-										<exclude>**/Dockerfile</exclude>
-									</excludes>
-								</licenseSet>
-							</licenseSets>
-						</configuration>
 					</plugin>
-
 				</plugins>
 			</build>
 		</profile>
+		<profile>
+			<id>auto-configuration-all-optional</id>
+			<!-- This profile tightens the enforcer rule bannedDependencies to make sure all
+			non-test -->
+			<!-- deps are optional for auto-configuration modules. -->
+			<activation>
+				<file>
+					<exists>src/main/resources/META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports</exists>
+				</file>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-enforcer-plugin</artifactId>
+						<version>${maven-enforcer-plugin.version}</version>
+						<executions>
+							<execution>
+								<id>maven-enforcer</id>
+								<configuration>
+									<rules>
+										<bannedDependencies>
+											<excludes>
+												<!-- Since this rule doesn't "see" optional deps, we
+												pretend that autoconfs should depend on NOTHING, -->
+												<!-- except tests (and the weird netty hiccup) -->
+												<exclude>*:*</exclude>
+											</excludes>
+											<includes>
+												<include>*:*:*:*:test:*</include>
+												<include>
+													org.springframework.ai:spring-ai-autoconfigure-*</include>
+												<!-- for some reason, which likely has to do with
+												classifiers, without this include, the rule fails -->
+												<!-- with a false positive on
+												spring-ai-autoconfigure-mcp-server-webflux. Did not
+												find a better way to fix. -->
+												<include>io.netty:netty-*</include>
+											</includes>
+											<message>auto-configuration modules should have all
+												their dependencies declared as optional</message>
+										</bannedDependencies>
+									</rules>
+								</configuration>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+
 		<profile>
 			<id>integration-tests</id>
 			<activation>
@@ -863,37 +870,33 @@
 								<exclude>org.springframework.ai.bedrock/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.bedrock.converse/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.elevenlabs/**/*IT.java</exclude>
-								<exclude>org.springframework.ai.huggingface/**/*IT.java</exclude>
-								<exclude>org.springframework.ai.minimax/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.mistralai/**/*IT.java</exclude>
-								<exclude>org.springframework.ai.oci/**/*IT.java</exclude>
-								<exclude>org.springframework.ai.ollama/**/*IT.java</exclude>								<!-- <exclude>org.springframework.ai.openai/**/*IT.java</exclude> -->
+								<exclude>org.springframework.ai.ollama/**/*IT.java</exclude>								<!--
+								<exclude>org.springframework.ai.openai/**/*IT.java</exclude> -->
 								<exclude>org.springframework.ai.openaisdk/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.postgresml/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.stabilityai/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.transformers/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.vertexai.embedding/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.vertexai.gemini/**/*IT.java</exclude>
-								<exclude>org.springframework.ai.zhipuai/**/*IT.java</exclude>
 
 								<!-- Vector Stores -->
-								<exclude>org.springframework.ai.vectorstore**/CosmosDB**IT.java</exclude>
 								<exclude>org.springframework.ai.vectorstore.azure/**IT.java</exclude>
 								<exclude>org.springframework.ai.vectorstore**/Cassandra**IT.java</exclude>
 								<exclude>org.springframework.ai.chroma/**IT.java</exclude>
-								<!-- <exclude>org.springframework.ai.vectorstore/**/**Chroma**IT.java</exclude> -->
+								<!--
+								<exclude>org.springframework.ai.vectorstore/**/**Chroma**IT.java</exclude> -->
 								<exclude>org.springframework.ai.vectorstore**/Coherence**IT.java</exclude>
 								<exclude>org.springframework.ai.vectorstore**/Elasticsearch**IT.java</exclude>
 								<exclude>org.springframework.ai.vectorstore**/GemFire**IT.java</exclude>
-								<exclude>org.springframework.ai.vectorstore**/Hana**IT.java</exclude>
-								<exclude>org.springframework.ai.vectorstore**/Hana**IT.java</exclude>
 								<exclude>org.springframework.ai.vectorstore**/Milvus**IT.java</exclude>
 								<exclude>org.springframework.ai.vectorstore**/MariaDB**IT.java</exclude>
 								<exclude>org.springframework.ai.vectorstore**/Mongo**IT.java</exclude>
 								<exclude>org.springframework.ai.vectorstore**/Neo4j**IT.java</exclude>
 								<exclude>org.springframework.ai.vectorstore**/OpenSearch**IT.java</exclude>
 								<exclude>org.springframework.ai.vectorstore**/Oracle**IT.java</exclude>
-								<!-- <exclude>org.springframework.ai.vectorstore**/PgVector**IT.java</exclude> -->
+								<!--
+								<exclude>org.springframework.ai.vectorstore**/PgVector**IT.java</exclude> -->
 								<exclude>org.springframework.ai.vectorstore**/Pinecone**IT.java</exclude>
 								<exclude>org.springframework.ai.vectorstore.qdrant/**/**IT.java</exclude>
 								<exclude>org.springframework.ai.vectorstore**/Qdrant**IT.java</exclude>
@@ -903,46 +906,49 @@
 
 								<!-- Auto-configurations-->
 
-								 <!-- <exclude>org.springframework.ai.autoconfigure/**/**IT.java</exclude> -->
+								<!--
+								<exclude>org.springframework.ai.autoconfigure/**/**IT.java</exclude> -->
 
-								 <exclude>org.springframework.ai.autoconfigure.anthropic/**/**IT.java</exclude>
-								 <exclude>org.springframework.ai.autoconfigure.azure/**/**IT.java</exclude>
-								 <exclude>org.springframework.ai.autoconfigure.bedrock/**/**IT.java</exclude>
-								 <exclude>org.springframework.ai.autoconfigure.huggingface/**/**IT.java</exclude>
+								<exclude>org.springframework.ai.autoconfigure.anthropic/**/**IT.java</exclude>
+								<exclude>org.springframework.ai.autoconfigure.azure/**/**IT.java</exclude>
+								<exclude>org.springframework.ai.autoconfigure.bedrock/**/**IT.java</exclude>
+								<exclude>
+									org.springframework.ai.autoconfigure.huggingface/**/**IT.java</exclude>
 
-								 <exclude>org.springframework.ai.autoconfigure.chat/**/**IT.java</exclude>
-								 <exclude>org.springframework.ai.autoconfigure.elevenlabs/**/**IT.java</exclude>
-								 <exclude>org.springframework.ai.autoconfigure.embedding/**/**IT.java</exclude>
-								 <exclude>org.springframework.ai.autoconfigure.image/**/**IT.java</exclude>
+								<exclude>org.springframework.ai.autoconfigure.chat/**/**IT.java</exclude>
+								<exclude>
+									org.springframework.ai.autoconfigure.elevenlabs/**/**IT.java</exclude>
+								<exclude>org.springframework.ai.autoconfigure.embedding/**/**IT.java</exclude>
+								<exclude>org.springframework.ai.autoconfigure.image/**/**IT.java</exclude>
 
 
-								 <exclude>org.springframework.ai.autoconfigure.minimax/**/**IT.java</exclude>
-								 <exclude>org.springframework.ai.autoconfigure.mistralai/**/**IT.java</exclude>
-								 <exclude>org.springframework.ai.autoconfigure.oci/**/**IT.java</exclude>
-								 <exclude>org.springframework.ai.autoconfigure.ollama/**/**IT.java</exclude>
-								 <!-- <exclude>org.springframework.ai.autoconfigure.openai/**/**IT.java</exclude> -->
-								 <exclude>org.springframework.ai.autoconfigure.postgresml/**/**IT.java</exclude>
+								<exclude>org.springframework.ai.autoconfigure.mistralai/**/**IT.java</exclude>
+								<exclude>org.springframework.ai.autoconfigure.ollama/**/**IT.java</exclude>
+								<!--
+								<exclude>org.springframework.ai.autoconfigure.openai/**/**IT.java</exclude> -->
+								<exclude>
+									org.springframework.ai.autoconfigure.postgresml/**/**IT.java</exclude>
 
-								 <exclude>org.springframework.ai.autoconfigure.retry/**/**IT.java</exclude>
+								<exclude>org.springframework.ai.autoconfigure.retry/**/**IT.java</exclude>
 
-								 <exclude>org.springframework.ai.autoconfigure.stabilityai/**/**IT.java</exclude>
-								 <exclude>org.springframework.ai.autoconfigure.transformers/**/**IT.java</exclude>
+								<exclude>
+									org.springframework.ai.autoconfigure.stabilityai/**/**IT.java</exclude>
+								<exclude>
+									org.springframework.ai.autoconfigure.transformers/**/**IT.java</exclude>
 
-								 <exclude>org.springframework.ai.autoconfigure.vectorstore/**/**IT.java</exclude>
+								<exclude>
+									org.springframework.ai.autoconfigure.vectorstore/**/**IT.java</exclude>
 
-								 <exclude>org.springframework.ai.autoconfigure.vertexai/**/**IT.java</exclude>
-								 <exclude>org.springframework.ai.autoconfigure.zhipuai/**/**IT.java</exclude>
+								<exclude>org.springframework.ai.autoconfigure.vertexai/**/**IT.java</exclude>
 
-								 <exclude>org.springframework.ai.autoconfigure.zhipuai/**/**IT.java</exclude>
+								<!-- Test Containers -->
+								<exclude>org.springframework.ai.testcontainers/**/**IT.java</exclude>
 
-								 <!-- Test Containers -->
-								 <exclude>org.springframework.ai.testcontainers/**/**IT.java</exclude>
+								<!-- Test Docker Compose -->
+								<exclude>org.springframework.ai.docker.compose/**/**IT.java</exclude>
 
-								 <!-- Test Docker Compose -->
-								 <exclude>org.springframework.ai.docker.compose/**/**IT.java</exclude>
-
-								 <!-- AI Evaluation -->
-								 <exclude>org.springframework.ai.integration.tests/**/**IT.java</exclude>
+								<!-- AI Evaluation -->
+								<exclude>org.springframework.ai.integration.tests/**/**IT.java</exclude>
 							</excludes>
 
 							<!-- <includes>
@@ -950,7 +956,7 @@
 							</includes>
 
 							<dependenciesToScan>
-								<dependency>org.springframework.ai:spring-ai-anthropic</dependency>
+								<dependency>org.springframework.ai:spring-ai-anthropic-legacy</dependency>
 							</dependenciesToScan> -->
 						</configuration>
 						<executions>
@@ -1016,42 +1022,42 @@
 			</distributionManagement>
 		</profile>
 		<profile>
-	    <id>sonatype</id>
-	    <properties>
-	        <maven.test.skip>true</maven.test.skip>
-	    </properties>
-	    <build>
-	        <plugins>
-				<plugin>
-					<groupId>org.apache.maven.plugins</groupId>
-					<artifactId>maven-gpg-plugin</artifactId>
-					<version>${maven-gpg-plugin.version}</version>
-					<executions>
-						<execution>
-							<id>sign-artifacts</id>
-							<phase>verify</phase>
-							<goals>
-								<goal>sign</goal>
-							</goals>
-						</execution>
-					</executions>
-					<configuration>
-						<!-- Passphrase consumed from MAVEN_GPG_PASSPHRASE environment variable. -->
-					</configuration>
-				</plugin>
-	            <plugin>
-	                <groupId>org.sonatype.central</groupId>
-	                <artifactId>central-publishing-maven-plugin</artifactId>
-	                <extensions>true</extensions>
-	                <configuration>
-	                    <publishingServerId>central</publishingServerId>
-	                    <autoPublish>true</autoPublish>
-	                    <excludeArtifacts>spring-ai-integration-tests</excludeArtifacts>
-	                </configuration>
-	            </plugin>
-	        </plugins>
-	    </build>
-	</profile>
+			<id>sonatype</id>
+			<properties>
+				<maven.test.skip>true</maven.test.skip>
+			</properties>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-gpg-plugin</artifactId>
+						<version>${maven-gpg-plugin.version}</version>
+						<executions>
+							<execution>
+								<id>sign-artifacts</id>
+								<phase>verify</phase>
+								<goals>
+									<goal>sign</goal>
+								</goals>
+							</execution>
+						</executions>
+						<configuration>
+							<!-- Passphrase consumed from MAVEN_GPG_PASSPHRASE environment variable. -->
+						</configuration>
+					</plugin>
+					<plugin>
+						<groupId>org.sonatype.central</groupId>
+						<artifactId>central-publishing-maven-plugin</artifactId>
+						<extensions>true</extensions>
+						<configuration>
+							<publishingServerId>central</publishingServerId>
+							<autoPublish>true</autoPublish>
+							<excludeArtifacts>spring-ai-integration-tests</excludeArtifacts>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
 
 
 	</profiles>
@@ -1078,6 +1084,11 @@
 				<version>${mcp.sdk.version}</version>
 				<type>pom</type>
 				<scope>import</scope>
+			</dependency>
+			<dependency>
+				<groupId>com.networknt</groupId>
+				<artifactId>json-schema-validator</artifactId>
+				<version>${json-schema-validator.version}</version>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
@@ -1129,11 +1140,8 @@
 		<developer>
 			<id>mpollack</id>
 			<name>Mark Pollack</name>
-			<email>mpollack at vmware.com</email>
-			<organization>VMware</organization>
-			<organizationUrl>http://www.spring.io</organizationUrl>
 			<roles>
-				<role>lead</role>
+				<role>founder</role>
 			</roles>
 		</developer>
 		<developer>
@@ -1145,6 +1153,30 @@
 			<roles>
 				<role>lead</role>
 			</roles>
+		</developer>
+		<developer>
+			<id>ilayaperumalg</id>
+			<name>Ilayaperumal Gopinathan</name>
+			<organization>Broadcom</organization>
+			<organizationUrl>http://www.spring.io</organizationUrl>
+		</developer>
+		<developer>
+			<id>sobychacko</id>
+			<name>Soby Chacko</name>
+			<organization>Broadcom</organization>
+			<organizationUrl>http://www.spring.io</organizationUrl>
+		</developer>
+		<developer>
+			<id>ericbottard</id>
+			<name>Eric Bottard</name>
+			<organization>Broadcom</organization>
+			<organizationUrl>http://www.spring.io</organizationUrl>
+		</developer>
+		<developer>
+			<id>sdeleuze</id>
+			<name>Sébastien Deleuze</name>
+			<organization>Broadcom</organization>
+			<organizationUrl>http://www.spring.io</organizationUrl>
 		</developer>
 	</developers>
 </project>

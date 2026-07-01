@@ -259,7 +259,7 @@ public McpSyncClient mcpClient() {
                 .build();
     }
 
-    return McpClient.sync(new StdioClientTransport(stdioParams, McpJsonMapper.createDefault()))
+    return McpClient.sync(new StdioClientTransport(stdioParams, McpJsonDefaults.getMapper()))
             .requestTimeout(Duration.ofSeconds(10))
             .build()
             .initialize();
@@ -499,7 +499,7 @@ Clients can control logging verbosity by setting minimum log levels
 
 ==== Client Customization Example
 
-You can implement either `McpSyncClientCustomizer` for synchronous clients or `McpAsyncClientCustomizer` for asynchronous clients, depending on your application's needs.
+You can implement `McpCustomizer<McpClient.SyncSpec>` for synchronous clients or `McpCustomizer<McpClient.AsyncSpec>` for asynchronous clients, depending on your application's needs.
 
 [tabs]
 ======
@@ -508,7 +508,7 @@ Sync::
 [source,java]
 ----
 @Component
-public class CustomMcpSyncClientCustomizer implements McpSyncClientCustomizer {
+public class CustomMcpSyncClientCustomizer implements McpClientCustomizer<McpClient.SyncSpec> {
     @Override
     public void customize(String serverConfigurationName, McpClient.SyncSpec spec) {
 
@@ -567,7 +567,7 @@ Async::
 [source,java]
 ----
 @Component
-public class CustomMcpAsyncClientCustomizer implements McpAsyncClientCustomizer {
+public class CustomMcpAsyncClientCustomizer implements McpClientCustomizer<McpClient.AsyncSpec> {
     @Override
     public void customize(String serverConfigurationName, McpClient.AsyncSpec spec) {
         // Customize the async client configuration
@@ -707,7 +707,7 @@ WARNING: When using `McpToolNamePrefixGenerator.noPrefix()` with multiple MCP se
 
 === Tool Context to MCP Meta Converter
 
-The MCP Client Boot Starter supports customizable conversion of Spring AI's xref:api/tools.adoc#_tool_context[ToolContext] to MCP tool-call metadata through the `ToolContextToMcpMetaConverter` interface.
+The MCP Client Boot Starter supports customizable conversion of Spring AI's xref:api/tools.adoc#tool-context[ToolContext] to MCP tool-call metadata through the `ToolContextToMcpMetaConverter` interface.
 This feature allows you to pass additional contextual information (e.g. user id, secrets token) as metadata along with the LLM's generated call arguments.
 
 For example you can pass the MCP `progressToken` to your link:https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/progress#progress-flow[MCP Progress Flow] in the tool context to track the progress of long-running operations:
@@ -824,10 +824,7 @@ public class McpClientHandlers {
         // Process the request and generate a response
         String response = generateLLMResponse(request);
 
-        return CreateMessageResult.builder()
-            .role(Role.ASSISTANT)
-            .content(new TextContent(response))
-            .model("gpt-4")
+        return CreateMessageResult.builder(Role.ASSISTANT, response, "gpt-4")
             .build();
     }
 
@@ -861,10 +858,7 @@ public void handleServer1Logs(LoggingMessageNotification notification) {
 public Mono<CreateMessageResult> handleAsyncSampling(CreateMessageRequest request) {
     return Mono.fromCallable(() -> {
         String response = generateLLMResponse(request);
-        return CreateMessageResult.builder()
-            .role(Role.ASSISTANT)
-            .content(new TextContent(response))
-            .model("gpt-4")
+        return CreateMessageResult.builder(Role.ASSISTANT, response, "gpt-4")
             .build();
     }).subscribeOn(Schedulers.boundedElastic());
 }

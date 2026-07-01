@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import com.google.genai.types.ContentEmbeddingStatistics;
 import com.google.genai.types.EmbedContentConfig;
 import com.google.genai.types.EmbedContentResponse;
 import io.micrometer.observation.ObservationRegistry;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.metadata.Usage;
@@ -42,7 +43,7 @@ import org.springframework.ai.embedding.observation.DefaultEmbeddingModelObserva
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationContext;
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationConvention;
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationDocumentation;
-import org.springframework.ai.google.genai.GoogleGenAiEmbeddingConnectionDetails;
+import org.springframework.ai.google.genai.embedding.GoogleGenAiEmbeddingConnectionDetails;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.retry.RetryUtils;
@@ -58,6 +59,7 @@ import org.springframework.util.StringUtils;
  * @author Rodrigo Malara
  * @author Soby Chacko
  * @author Dan Dobrin
+ * @author Sebastien Deleuze
  * @since 1.0.0
  */
 public class GoogleGenAiTextEmbeddingModel extends AbstractEmbeddingModel {
@@ -69,7 +71,7 @@ public class GoogleGenAiTextEmbeddingModel extends AbstractEmbeddingModel {
 		.collect(Collectors.toMap(GoogleGenAiTextEmbeddingModelName::getName,
 				GoogleGenAiTextEmbeddingModelName::getDimensions));
 
-	public final GoogleGenAiTextEmbeddingOptions defaultOptions;
+	public final GoogleGenAiTextEmbeddingOptions options;
 
 	private final GoogleGenAiEmbeddingConnectionDetails connectionDetails;
 
@@ -107,7 +109,7 @@ public class GoogleGenAiTextEmbeddingModel extends AbstractEmbeddingModel {
 		Assert.notNull(defaultEmbeddingOptions, "GoogleGenAiTextEmbeddingOptions must not be null");
 		Assert.notNull(retryTemplate, "retryTemplate must not be null");
 		Assert.notNull(observationRegistry, "observationRegistry must not be null");
-		this.defaultOptions = defaultEmbeddingOptions.initializeDefaults();
+		this.options = defaultEmbeddingOptions;
 		this.connectionDetails = connectionDetails;
 		this.genAiClient = connectionDetails.getGenAiClient();
 		this.retryTemplate = retryTemplate;
@@ -127,7 +129,7 @@ public class GoogleGenAiTextEmbeddingModel extends AbstractEmbeddingModel {
 
 		var observationContext = EmbeddingModelObservationContext.builder()
 			.embeddingRequest(embeddingRequest)
-			.provider(AiProvider.VERTEX_AI.value())
+			.provider(AiProvider.GOOGLE_GENAI_AI.value())
 			.build();
 
 		return EmbeddingModelObservationDocumentation.EMBEDDING_MODEL_OPERATION
@@ -136,7 +138,10 @@ public class GoogleGenAiTextEmbeddingModel extends AbstractEmbeddingModel {
 			.observe(() -> {
 				GoogleGenAiTextEmbeddingOptions options = (GoogleGenAiTextEmbeddingOptions) embeddingRequest
 					.getOptions();
-				String modelName = this.connectionDetails.getModelEndpointName(options.getModel());
+				Assert.notNull(options, "Options must not be null");
+				String model = options.getModel();
+				Assert.notNull(model, "Model must not be null");
+				String modelName = this.connectionDetails.getModelEndpointName(model);
 
 				// Build the EmbedContentConfig
 				EmbedContentConfig.Builder configBuilder = EmbedContentConfig.builder();
@@ -217,7 +222,7 @@ public class GoogleGenAiTextEmbeddingModel extends AbstractEmbeddingModel {
 				}
 
 				EmbeddingResponse response = new EmbeddingResponse(embeddingList,
-						generateResponseMetadata(options.getModel(), totalTokenCount));
+						generateResponseMetadata(model, totalTokenCount));
 
 				observationContext.setResponse(response);
 
@@ -226,23 +231,35 @@ public class GoogleGenAiTextEmbeddingModel extends AbstractEmbeddingModel {
 	}
 
 	EmbeddingRequest buildEmbeddingRequest(EmbeddingRequest embeddingRequest) {
-		// Process runtime options
-		GoogleGenAiTextEmbeddingOptions runtimeOptions = null;
-		if (embeddingRequest.getOptions() != null) {
-			runtimeOptions = ModelOptionsUtils.copyToTarget(embeddingRequest.getOptions(), EmbeddingOptions.class,
-					GoogleGenAiTextEmbeddingOptions.class);
+		@Nullable EmbeddingOptions requestOptions = embeddingRequest.getOptions();
+		GoogleGenAiTextEmbeddingOptions mergedOptions = this.options;
+
+		if (requestOptions != null) {
+			GoogleGenAiTextEmbeddingOptions.Builder builder = GoogleGenAiTextEmbeddingOptions.builder()
+				.model(ModelOptionsUtils.mergeOption(requestOptions.getModel(), this.options.getModel()))
+				.dimensions(
+						ModelOptionsUtils.mergeOption(requestOptions.getDimensions(), this.options.getDimensions()));
+
+			if (requestOptions instanceof GoogleGenAiTextEmbeddingOptions googleOptions) {
+				builder.taskType(ModelOptionsUtils.mergeOption(googleOptions.getTaskType(), this.options.getTaskType()))
+					.title(ModelOptionsUtils.mergeOption(googleOptions.getTitle(), this.options.getTitle()))
+					.autoTruncate(ModelOptionsUtils.mergeOption(googleOptions.getAutoTruncate(),
+							this.options.getAutoTruncate()));
+			}
+			else {
+				builder.taskType(this.options.getTaskType())
+					.title(this.options.getTitle())
+					.autoTruncate(this.options.getAutoTruncate());
+			}
+			mergedOptions = builder.build();
 		}
 
-		// Define request options by merging runtime options and default options
-		GoogleGenAiTextEmbeddingOptions requestOptions = ModelOptionsUtils.merge(runtimeOptions, this.defaultOptions,
-				GoogleGenAiTextEmbeddingOptions.class);
-
 		// Validate request options
-		if (!StringUtils.hasText(requestOptions.getModel())) {
+		if (!StringUtils.hasText(mergedOptions.getModel())) {
 			throw new IllegalArgumentException("model cannot be null or empty");
 		}
 
-		return new EmbeddingRequest(embeddingRequest.getInstructions(), requestOptions);
+		return new EmbeddingRequest(embeddingRequest.getInstructions(), mergedOptions);
 	}
 
 	private EmbeddingResponseMetadata generateResponseMetadata(String model, Integer totalTokens) {
@@ -259,14 +276,14 @@ public class GoogleGenAiTextEmbeddingModel extends AbstractEmbeddingModel {
 
 	@Override
 	public int dimensions() {
-		return KNOWN_EMBEDDING_DIMENSIONS.computeIfAbsent(this.defaultOptions.getModel(), model -> super.dimensions());
+		return KNOWN_EMBEDDING_DIMENSIONS.computeIfAbsent(this.options.getModel(), model -> super.dimensions());
 	}
 
 	/**
 	 * Use the provided convention for reporting observation data
 	 * @param observationConvention The provided convention
 	 */
-	public void setObservationConvention(EmbeddingModelObservationConvention observationConvention) {
+	public void setObservationConvention(@Nullable EmbeddingModelObservationConvention observationConvention) {
 		Assert.notNull(observationConvention, "observationConvention cannot be null");
 		this.observationConvention = observationConvention;
 	}

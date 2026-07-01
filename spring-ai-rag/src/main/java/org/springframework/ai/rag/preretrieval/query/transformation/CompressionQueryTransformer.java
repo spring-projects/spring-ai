@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,9 +19,9 @@ package org.springframework.ai.rag.preretrieval.query.transformation;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.Message;
@@ -44,7 +44,7 @@ import org.springframework.util.StringUtils;
  */
 public class CompressionQueryTransformer implements QueryTransformer {
 
-	private static final Logger logger = LoggerFactory.getLogger(CompressionQueryTransformer.class);
+	private static final Log logger = LogFactory.getLog(CompressionQueryTransformer.class);
 
 	private static final PromptTemplate DEFAULT_PROMPT_TEMPLATE = new PromptTemplate("""
 			Given the following conversation history and a follow-up query, your task is to synthesize

@@ -59,7 +59,7 @@ Use the `BedrockAwsConnectionProperties` to configure AWS credentials and region
 
 [source,shell]
 ----
-spring.ai.bedrock.aws.region=us-east-1
+spring.ai.bedrock.aws.region=eu-north-1
 
 spring.ai.bedrock.aws.access-key=YOUR_ACCESS_KEY
 spring.ai.bedrock.aws.secret-key=YOUR_SECRET_KEY
@@ -71,12 +71,10 @@ spring.ai.bedrock.aws.profile.configuration-path=YOUR_CONFIGURATION_PATH
 spring.ai.bedrock.aws.timeout=10m
 ----
 
-The `region` property is compulsory.
-
 AWS credentials are resolved in the following order:
 
-1. Spring-AI Bedrock `spring.ai.bedrock.aws.access-key` and `spring.ai.bedrock.aws.secret-key` properties.
-2. Spring-AI Bedrock `spring.ai.bedrock.aws.profile.name`, If `spring.ai.bedrock.aws.profile.credentials-path` and `spring.ai.bedrock.aws.profile.configuration-path` are not specified, Spring AI use the standard AWS shared files: `~/.aws/credentials` for credentials and `~/.aws/config` for configuration.
+1. Spring AI Bedrock `spring.ai.bedrock.aws.access-key` and `spring.ai.bedrock.aws.secret-key` properties.
+2. Spring AI Bedrock `spring.ai.bedrock.aws.profile.name`, If `spring.ai.bedrock.aws.profile.credentials-path` and `spring.ai.bedrock.aws.profile.configuration-path` are not specified, Spring AI use the standard AWS shared files: `~/.aws/credentials` for credentials and `~/.aws/config` for configuration.
 3. Java System Properties - `aws.accessKeyId` and `aws.secretAccessKey`.
 4. Environment Variables - `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`.
 5. Web Identity Token credentials from system properties or environment variables.
@@ -86,34 +84,35 @@ AWS credentials are resolved in the following order:
 
 AWS region is resolved in the following order:
 
-1. Spring-AI Bedrock `spring.ai.bedrock.aws.region` property.
+1. Spring AI Bedrock `spring.ai.bedrock.aws.region` property.
 2. Java System Properties - `aws.region`.
 3. Environment Variables - `AWS_REGION`.
 4. Credential profiles file at the default location (`~/.aws/credentials`) shared by all AWS SDKs and the AWS CLI.
 5. Instance profile region delivered through the Amazon EC2 metadata service.
+6. Defaults to `US_EAST_1` if no region defined
 
-In addition to the standard Spring-AI Bedrock credentials and region properties configuration, Spring-AI provides support for custom `AwsCredentialsProvider` and `AwsRegionProvider` beans.
+In addition to the standard Spring AI Bedrock credentials and region properties configuration, Spring AI provides support for custom `AwsCredentialsProvider` and `AwsRegionProvider` beans.
 
-NOTE: For example, using Spring-AI and https://spring.io/projects/spring-cloud-aws[Spring Cloud for Amazon Web Services] at the same time. Spring-AI is compatible with Spring Cloud for Amazon Web Services credential configuration.
+NOTE: For example, using Spring AI and https://spring.io/projects/spring-cloud-aws[Spring Cloud for Amazon Web Services] at the same time. Spring AI is compatible with Spring Cloud for Amazon Web Services credential configuration.
 
 === Enable selected Bedrock model
 
-NOTE: By default, all models are disabled. You have to enable the chosen Bedrock models explicitly using the `spring.ai.bedrock.<model>.embedding.enabled=true` property.
+NOTE: By default, all models are disabled. You have to enable the chosen Bedrock models explicitly using the `spring.ai.model.embedding=<model-name>` property.
 
-Here are the supported `<model>`s:
+Here are the supported `<model-name>`s:
 
 [cols="|,|,|,|"]
 |====
 | Model
-| cohere
-| titan (no batch support yet)
+| bedrock-cohere
+| bedrock-titan (no batch support yet)
 |====
 
-For example, to enable the Bedrock Cohere embedding model, you need to set `spring.ai.bedrock.cohere.embedding.enabled=true`.
+For example, to enable the Bedrock Cohere embedding model, you need to set `spring.ai.model.embedding=bedrock-cohere`.
 
 Next, you can use the `spring.ai.bedrock.<model>.embedding.*` properties to configure each model as provided.
 
 For more information, refer to the documentation below for each supported model.
 
-* xref:api/embeddings/bedrock-cohere-embedding.adoc[Spring AI Bedrock Cohere Embeddings]: `spring.ai.bedrock.cohere.embedding.enabled=true`
-* xref:api/embeddings/bedrock-titan-embedding.adoc[Spring AI Bedrock Titan Embeddings]: `spring.ai.bedrock.titan.embedding.enabled=true`
+* xref:api/embeddings/bedrock-cohere-embedding.adoc[Spring AI Bedrock Cohere Embeddings]: `spring.ai.model.embedding=bedrock-cohere`
+* xref:api/embeddings/bedrock-titan-embedding.adoc[Spring AI Bedrock Titan Embeddings]: `spring.ai.model.embedding=bedrock-titan`

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,9 +17,6 @@
 package org.springframework.ai.aot;
 
 import org.junit.jupiter.api.Test;
-import org.slf4j.LoggerFactory;
-import org.slf4j.helpers.NOP_FallbackServiceProvider;
-import org.slf4j.helpers.SubstituteServiceProvider;
 
 import org.springframework.ai.chat.messages.AbstractMessage;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -69,14 +66,6 @@ class SpringAiCoreRuntimeHintsTests {
 			.anySatisfy(typeHint -> assertThat(typeHint.getType()).isEqualTo(TypeReference.of(ToolCallback.class)));
 		assertThat(runtimeHints.reflection().typeHints())
 			.anySatisfy(typeHint -> assertThat(typeHint.getType()).isEqualTo(TypeReference.of(ToolDefinition.class)));
-
-		// Verify SLF4J types are registered for Java 22 compatibility
-		assertThat(runtimeHints.reflection().typeHints()).anySatisfy(typeHint -> assertThat(typeHint.getType())
-			.isEqualTo(TypeReference.of(NOP_FallbackServiceProvider.class)));
-		assertThat(runtimeHints.reflection().typeHints()).anySatisfy(typeHint -> assertThat(typeHint.getType())
-			.isEqualTo(TypeReference.of(SubstituteServiceProvider.class)));
-		assertThat(runtimeHints.reflection().typeHints())
-			.anySatisfy(typeHint -> assertThat(typeHint.getType()).isEqualTo(TypeReference.of(LoggerFactory.class)));
 
 		// Verify resources are registered
 		assertThat(runtimeHints.resources().resourcePatternHints()).anySatisfy(hint -> assertThat(hint.getIncludes())

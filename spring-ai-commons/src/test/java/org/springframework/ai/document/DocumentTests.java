@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,9 +21,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.content.Media;
 import org.springframework.ai.document.id.IdGenerator;
+import org.springframework.ai.util.JacksonUtils;
 import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -355,6 +357,300 @@ public class DocumentTests {
 		int hashCode2 = document.hashCode();
 
 		assertThat(hashCode1).isEqualTo(hashCode2);
+	}
+
+	/**
+	 * Serialised JSON must use the key "text", not "content". This documents the exact
+	 * shape of the wire format that all consumers can rely on.
+	 */
+	@Test
+	void serializationProducesTextKey() throws Exception {
+		JsonMapper mapper = JacksonUtils.getDefaultJsonMapper();
+		Document document = Document.builder().id("doc-1").text("hello world").build();
+
+		String json = mapper.writeValueAsString(document);
+
+		assertThat(json).contains("\"text\"").doesNotContain("\"content\"");
+	}
+
+	/**
+	 * A document serialised to JSON must deserialise back to an equal object — the core
+	 * round-trip contract that was broken before the fix.
+	 */
+	@Test
+	void roundTripTextDocument() throws Exception {
+		JsonMapper mapper = JacksonUtils.getDefaultJsonMapper();
+		Document original = Document.builder()
+			.id("doc-1")
+			.text("hello world")
+			.metadata("source", "unit-test")
+			.score(0.85)
+			.build();
+
+		String json = mapper.writeValueAsString(original);
+		Document deserialized = mapper.readValue(json, Document.class);
+
+		assertThat(deserialized).isEqualTo(original);
+	}
+
+	/**
+	 * Round-trip with all metadata value types that are valid for vector stores (string,
+	 * int, float, boolean).
+	 */
+	@Test
+	void roundTripDocumentWithVariousMetadataTypes() throws Exception {
+		JsonMapper mapper = JacksonUtils.getDefaultJsonMapper();
+		Document original = Document.builder()
+			.id("doc-2")
+			.text("metadata variety")
+			.metadata("strKey", "strVal")
+			.metadata("intKey", 42)
+			.metadata("floatKey", 3.14f)
+			.metadata("boolKey", true)
+			.build();
+
+		String json = mapper.writeValueAsString(original);
+		Document deserialized = mapper.readValue(json, Document.class);
+
+		assertThat(deserialized.getId()).isEqualTo("doc-2");
+		assertThat(deserialized.getText()).isEqualTo("metadata variety");
+		assertThat(deserialized.getMetadata()).containsEntry("strKey", "strVal").containsEntry("boolKey", true);
+		// numeric types may widen during JSON round-trip; verify values are present
+		assertThat(deserialized.getMetadata()).containsKey("intKey").containsKey("floatKey");
+	}
+
+	/**
+	 * Round-trip for a document that carries no explicit score (null score).
+	 */
+	@Test
+	void roundTripDocumentWithNullScore() throws Exception {
+		JsonMapper mapper = JacksonUtils.getDefaultJsonMapper();
+		Document original = Document.builder().id("doc-3").text("no score").score(null).build();
+
+		String json = mapper.writeValueAsString(original);
+		Document deserialized = mapper.readValue(json, Document.class);
+
+		assertThat(deserialized.getScore()).isNull();
+		assertThat(deserialized).isEqualTo(original);
+	}
+
+	/**
+	 * Round-trip for a document that carries a non-null score.
+	 */
+	@Test
+	void roundTripDocumentWithScore() throws Exception {
+		JsonMapper mapper = JacksonUtils.getDefaultJsonMapper();
+		Document original = Document.builder().id("doc-4").text("scored").score(0.99).build();
+
+		String json = mapper.writeValueAsString(original);
+		Document deserialized = mapper.readValue(json, Document.class);
+
+		assertThat(deserialized.getScore()).isEqualTo(0.99);
+		assertThat(deserialized).isEqualTo(original);
+	}
+
+	/**
+	 * Round-trip for a document with an empty metadata map.
+	 */
+	@Test
+	void roundTripDocumentWithEmptyMetadata() throws Exception {
+		JsonMapper mapper = JacksonUtils.getDefaultJsonMapper();
+		Document original = Document.builder().id("doc-5").text("no metadata").build();
+
+		String json = mapper.writeValueAsString(original);
+		Document deserialized = mapper.readValue(json, Document.class);
+
+		assertThat(deserialized.getMetadata()).isEmpty();
+		assertThat(deserialized).isEqualTo(original);
+	}
+
+	/**
+	 * Round-trip for a document whose text contains special characters (quotes, unicode,
+	 * newlines) to verify Jackson escaping is symmetric.
+	 */
+	@Test
+	void roundTripDocumentWithSpecialCharactersInText() throws Exception {
+		JsonMapper mapper = JacksonUtils.getDefaultJsonMapper();
+		String specialText = "Line1\nLine2\t\"quoted\" \u00e9l\u00e8ve";
+		Document original = Document.builder().id("doc-6").text(specialText).build();
+
+		String json = mapper.writeValueAsString(original);
+		Document deserialized = mapper.readValue(json, Document.class);
+
+		assertThat(deserialized.getText()).isEqualTo(specialText);
+		assertThat(deserialized).isEqualTo(original);
+	}
+
+	/**
+	 * Multiple independent documents serialised and deserialised individually must not
+	 * bleed state into one another.
+	 */
+	@Test
+	void roundTripMultipleDocumentsAreIndependent() throws Exception {
+		JsonMapper mapper = JacksonUtils.getDefaultJsonMapper();
+		Document doc1 = Document.builder().id("id-a").text("alpha").metadata("k", "v1").score(0.1).build();
+		Document doc2 = Document.builder().id("id-b").text("beta").metadata("k", "v2").score(0.2).build();
+
+		Document deser1 = mapper.readValue(mapper.writeValueAsString(doc1), Document.class);
+		Document deser2 = mapper.readValue(mapper.writeValueAsString(doc2), Document.class);
+
+		assertThat(deser1).isEqualTo(doc1);
+		assertThat(deser2).isEqualTo(doc2);
+		assertThat(deser1).isNotEqualTo(deser2);
+	}
+
+	/**
+	 * Deserialising JSON produced with the old "content" key (before the text/content
+	 * rename) must still work via @JsonAlias("content"), so that data persisted before
+	 * the fix can still be read back.
+	 */
+	@Test
+	void deserializationAcceptsLegacyContentKey() throws Exception {
+		JsonMapper mapper = JacksonUtils.getDefaultJsonMapper();
+		String legacyJson = """
+				{"id":"legacy-id","content":"legacy text","metadata":{},"score":null}
+				""";
+
+		Document document = mapper.readValue(legacyJson, Document.class);
+
+		assertThat(document.getId()).isEqualTo("legacy-id");
+		assertThat(document.getText()).isEqualTo("legacy text");
+		assertThat(document.getMetadata()).isEmpty();
+		assertThat(document.getScore()).isNull();
+	}
+
+	/**
+	 * A document deserialised from the legacy "content" key must re-serialise with the
+	 * current "text" key, confirming the alias normalises on ingestion.
+	 */
+	@Test
+	void legacyContentKeyNormalisesToTextOnRoundTrip() throws Exception {
+		JsonMapper mapper = JacksonUtils.getDefaultJsonMapper();
+		String legacyJson = """
+				{"id":"legacy-id","content":"legacy text","metadata":{},"score":null}
+				""";
+
+		Document document = mapper.readValue(legacyJson, Document.class);
+		String reserialised = mapper.writeValueAsString(document);
+
+		assertThat(reserialised).contains("\"text\"").doesNotContain("\"content\"");
+		assertThat(mapper.readValue(reserialised, Document.class).getText()).isEqualTo("legacy text");
+	}
+
+	/**
+	 * The public Document(String content) convenience constructor maps the "content"
+	 * parameter to the text field — getText() must return it.
+	 */
+	@Test
+	void publicContentConstructorPopulatesTextField() {
+		Document document = new Document("constructor content");
+
+		assertThat(document.getText()).isEqualTo("constructor content");
+		assertThat(document.isText()).isTrue();
+	}
+
+	/**
+	 * JSON with the current "text" key must deserialise correctly (primary path).
+	 */
+	@Test
+	void deserializationAcceptsCurrentTextKey() throws Exception {
+		JsonMapper mapper = JacksonUtils.getDefaultJsonMapper();
+		String json = """
+				{"id":"cur-id","text":"current text","metadata":{"k":"v"},"score":0.5}
+				""";
+
+		Document document = mapper.readValue(json, Document.class);
+
+		assertThat(document.getId()).isEqualTo("cur-id");
+		assertThat(document.getText()).isEqualTo("current text");
+		assertThat(document.getMetadata()).containsEntry("k", "v");
+		assertThat(document.getScore()).isEqualTo(0.5);
+	}
+
+	/**
+	 * JSON with the "metadata" field absent must deserialise to an empty metadata map
+	 * rather than throwing, matching the behaviour of the builder default.
+	 */
+	@Test
+	void deserializationWithMissingMetadataDefaultsToEmptyMap() throws Exception {
+		JsonMapper mapper = JacksonUtils.getDefaultJsonMapper();
+		String json = """
+				{"id":"no-meta-id","text":"no metadata in json","score":null}
+				""";
+
+		Document document = mapper.readValue(json, Document.class);
+
+		assertThat(document.getId()).isEqualTo("no-meta-id");
+		assertThat(document.getText()).isEqualTo("no metadata in json");
+		assertThat(document.getMetadata()).isEmpty();
+	}
+
+	/**
+	 * Unknown JSON fields (e.g. from a newer version of the format) must be silently
+	 * ignored rather than causing a mapping failure.
+	 */
+	@Test
+	void deserializationIgnoresUnknownFields() throws Exception {
+		JsonMapper mapper = JacksonUtils.getDefaultJsonMapper();
+		String json = """
+				{"id":"fwd-id","text":"forward compat","metadata":{},"score":null,"unknownFutureField":"ignored"}
+				""";
+
+		Document document = mapper.readValue(json, Document.class);
+
+		assertThat(document.getId()).isEqualTo("fwd-id");
+		assertThat(document.getText()).isEqualTo("forward compat");
+	}
+
+	/**
+	 * The "embedding" field that existed in older versions of Document must be silently
+	 * ignored (covered by @JsonIgnoreProperties on the class).
+	 */
+	@Test
+	void deserializationIgnoresLegacyEmbeddingField() throws Exception {
+		JsonMapper mapper = JacksonUtils.getDefaultJsonMapper();
+		String json = """
+				{"id":"emb-id","text":"with old embedding","metadata":{},"score":null,"embedding":[0.1,0.2,0.3]}
+				""";
+
+		Document document = mapper.readValue(json, Document.class);
+
+		assertThat(document.getId()).isEqualTo("emb-id");
+		assertThat(document.getText()).isEqualTo("with old embedding");
+	}
+
+	/**
+	 * Verifies that serialisation does not expose the contentFormatter field (it is
+	 * ephemeral and annotated @JsonIgnore).
+	 */
+	@Test
+	void serializationDoesNotExposeContentFormatter() throws Exception {
+		JsonMapper mapper = JacksonUtils.getDefaultJsonMapper();
+		Document document = Document.builder().id("fmt-id").text("formatter test").build();
+
+		String json = mapper.writeValueAsString(document);
+
+		assertThat(json).doesNotContain("contentFormatter").doesNotContain("formattedContent");
+	}
+
+	/**
+	 * Verifies the exact set of top-level keys in the serialised JSON so that the wire
+	 * format contract is explicit and regressions are caught early.
+	 */
+	@Test
+	void serializationProducesExpectedKeys() throws Exception {
+		JsonMapper mapper = JacksonUtils.getDefaultJsonMapper();
+		Document document = Document.builder().id("keys-id").text("key check").metadata("m", "v").score(0.7).build();
+
+		String json = mapper.writeValueAsString(document);
+
+		assertThat(json).contains("\"id\"")
+			.contains("\"text\"")
+			.contains("\"metadata\"")
+			.contains("\"score\"")
+			.doesNotContain("\"content\"")
+			.doesNotContain("\"contentFormatter\"")
+			.doesNotContain("\"embedding\"");
 	}
 
 }

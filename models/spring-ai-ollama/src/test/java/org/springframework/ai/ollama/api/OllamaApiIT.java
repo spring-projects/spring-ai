@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,11 @@
 
 package org.springframework.ai.ollama.api;
 
-import java.io.IOException;
 import java.util.List;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import net.javacrumbs.jsonunit.assertj.JsonAssertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
@@ -31,6 +32,8 @@ import org.springframework.ai.ollama.api.OllamaApi.EmbeddingsRequest;
 import org.springframework.ai.ollama.api.OllamaApi.EmbeddingsResponse;
 import org.springframework.ai.ollama.api.OllamaApi.Message;
 import org.springframework.ai.ollama.api.OllamaApi.Message.Role;
+import org.springframework.ai.util.JsonHelper;
+import org.springframework.ai.util.ResourceUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -39,8 +42,11 @@ import static org.junit.jupiter.api.Assertions.assertNull;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Sun Yuhan
+ * @author Nicolas Krier
  */
-public class OllamaApiIT extends BaseOllamaIT {
+class OllamaApiIT extends BaseOllamaIT {
+
+	private static final JsonHelper jsonHelper = new JsonHelper();
 
 	private static final String CHAT_MODEL = OllamaModel.QWEN_2_5_3B.getName();
 
@@ -49,12 +55,12 @@ public class OllamaApiIT extends BaseOllamaIT {
 	private static final String THINKING_MODEL = OllamaModel.QWEN3_4B_THINKING.getName();
 
 	@BeforeAll
-	public static void beforeAll() throws IOException, InterruptedException {
+	static void beforeAll() {
 		initializeOllama(CHAT_MODEL, EMBEDDING_MODEL, THINKING_MODEL);
 	}
 
 	@Test
-	public void chat() {
+	void chat() {
 		var request = ChatRequest.builder(CHAT_MODEL)
 			.stream(false)
 			.messages(List.of(
@@ -70,8 +76,6 @@ public class OllamaApiIT extends BaseOllamaIT {
 
 		ChatResponse response = getOllamaApi().chat(request);
 
-		System.out.println(response);
-
 		assertThat(response).isNotNull();
 		assertThat(response.model()).contains(CHAT_MODEL);
 		assertThat(response.done()).isTrue();
@@ -79,8 +83,32 @@ public class OllamaApiIT extends BaseOllamaIT {
 		assertThat(response.message().content()).contains("Sofia");
 	}
 
+	// Example from https://ollama.com/blog/structured-outputs
 	@Test
-	public void streamingChat() {
+	void jsonStructuredOutput() {
+		var jsonSchemaAsText = ResourceUtils.getText("classpath:country-json-schema.json");
+		var jsonSchema = jsonHelper.fromJsonToMap(jsonSchemaAsText);
+		var messages = List.of(Message.builder(Role.USER).content("Tell me about Canada.").build());
+		var request = ChatRequest.builder(CHAT_MODEL).format(jsonSchema).messages(messages).build();
+
+		var response = getOllamaApi().chat(request);
+
+		assertThat(response).isNotNull();
+		var message = response.message();
+		assertThat(message).isNotNull();
+		assertThat(message.role()).isEqualTo(Role.ASSISTANT);
+		var messageContent = message.content();
+		assertThat(messageContent).isNotNull();
+		JsonAssertions.assertThatJson(messageContent)
+			.isObject()
+			.containsOnlyKeys("name", "capital", "languages")
+			.containsEntry("name", "Canada")
+			.containsEntry("capital", "Ottawa")
+			.containsEntry("languages", List.of("English", "French"));
+	}
+
+	@Test
+	void streamingChat() {
 		var request = ChatRequest.builder(CHAT_MODEL)
 			.stream(true)
 			.messages(List.of(Message.builder(Role.USER)
@@ -92,13 +120,9 @@ public class OllamaApiIT extends BaseOllamaIT {
 		Flux<ChatResponse> response = getOllamaApi().streamingChat(request);
 
 		List<ChatResponse> responses = response.collectList().block();
-		System.out.println(responses);
 
 		assertThat(responses).isNotNull();
-		assertThat(responses.stream()
-			.filter(r -> r.message() != null)
-			.map(r -> r.message().content())
-			.collect(Collectors.joining(System.lineSeparator()))).contains("Sofia");
+		assertThat(extractChatResponsesContent(responses)).contains("Sofia");
 
 		ChatResponse lastResponse = responses.get(responses.size() - 1);
 		assertThat(lastResponse.message().content()).isEmpty();
@@ -106,7 +130,7 @@ public class OllamaApiIT extends BaseOllamaIT {
 	}
 
 	@Test
-	public void embedText() {
+	void embedText() {
 		EmbeddingsRequest request = new EmbeddingsRequest(EMBEDDING_MODEL, "I like to eat apples");
 
 		EmbeddingsResponse response = getOllamaApi().embed(request);
@@ -122,7 +146,7 @@ public class OllamaApiIT extends BaseOllamaIT {
 	}
 
 	@Test
-	public void think() {
+	void think() {
 		var request = ChatRequest.builder(THINKING_MODEL)
 			.stream(false)
 			.messages(List.of(
@@ -139,8 +163,6 @@ public class OllamaApiIT extends BaseOllamaIT {
 
 		ChatResponse response = getOllamaApi().chat(request);
 
-		System.out.println(response);
-
 		assertThat(response).isNotNull();
 		assertThat(response.model()).contains(THINKING_MODEL);
 		assertThat(response.done()).isTrue();
@@ -150,7 +172,7 @@ public class OllamaApiIT extends BaseOllamaIT {
 	}
 
 	@Test
-	public void chatWithThinking() {
+	void chatWithThinking() {
 		var request = ChatRequest.builder(THINKING_MODEL)
 			.stream(true)
 			.messages(List.of(Message.builder(Role.USER)
@@ -163,13 +185,9 @@ public class OllamaApiIT extends BaseOllamaIT {
 		Flux<ChatResponse> response = getOllamaApi().streamingChat(request);
 
 		List<ChatResponse> responses = response.collectList().block();
-		System.out.println(responses);
 
 		assertThat(responses).isNotNull();
-		assertThat(responses.stream()
-			.filter(r -> r.message() != null)
-			.map(r -> r.message().thinking())
-			.collect(Collectors.joining(System.lineSeparator()))).contains("Sofia");
+		assertThat(extractChatResponsesThinking(responses)).contains("Sofia");
 
 		ChatResponse lastResponse = responses.get(responses.size() - 1);
 		assertThat(lastResponse.message().content()).isEmpty();
@@ -178,7 +196,7 @@ public class OllamaApiIT extends BaseOllamaIT {
 	}
 
 	@Test
-	public void streamChatWithThinking() {
+	void streamChatWithThinking() {
 		var request = ChatRequest.builder(THINKING_MODEL)
 			.stream(true)
 			.messages(List.of(Message.builder(Role.USER).content("What are the planets in the solar system?").build()))
@@ -189,13 +207,9 @@ public class OllamaApiIT extends BaseOllamaIT {
 		Flux<ChatResponse> response = getOllamaApi().streamingChat(request);
 
 		List<ChatResponse> responses = response.collectList().block();
-		System.out.println(responses);
 
 		assertThat(responses).isNotNull();
-		assertThat(responses.stream()
-			.filter(r -> r.message() != null)
-			.map(r -> r.message().thinking())
-			.collect(Collectors.joining(System.lineSeparator()))).contains("solar");
+		assertThat(extractChatResponsesThinking(responses)).contains("solar");
 
 		ChatResponse lastResponse = responses.get(responses.size() - 1);
 		assertThat(lastResponse.message().content()).isEmpty();
@@ -204,7 +218,7 @@ public class OllamaApiIT extends BaseOllamaIT {
 	}
 
 	@Test
-	public void streamChatWithoutThinking() {
+	void streamChatWithoutThinking() {
 		var request = ChatRequest.builder(THINKING_MODEL)
 			.stream(true)
 			.messages(List.of(Message.builder(Role.USER).content("What are the planets in the solar system?").build()))
@@ -215,22 +229,32 @@ public class OllamaApiIT extends BaseOllamaIT {
 		Flux<ChatResponse> response = getOllamaApi().streamingChat(request);
 
 		List<ChatResponse> responses = response.collectList().block();
-		System.out.println(responses);
 
 		assertThat(responses).isNotNull();
+		assertThat(extractChatResponsesContent(responses)).contains("Earth");
 
-		assertThat(responses.stream()
-			.filter(r -> r.message() != null)
-			.map(r -> r.message().content())
-			.collect(Collectors.joining(System.lineSeparator()))).contains("Earth");
-
-		assertThat(responses.stream().filter(r -> r.message() != null).allMatch(r -> r.message().thinking() == null))
-			.isTrue();
+		assertThat(responses.stream().allMatch(r -> r.message().thinking() == null)).isTrue();
 
 		ChatResponse lastResponse = responses.get(responses.size() - 1);
 		assertThat(lastResponse.message().content()).isEmpty();
 		assertNull(lastResponse.message().thinking());
 		assertThat(lastResponse.done()).isTrue();
+	}
+
+	private static String extractChatResponsesContent(List<ChatResponse> chatResponses) {
+		return extractChatResponsesText(chatResponses, Message::content);
+	}
+
+	private static String extractChatResponsesThinking(List<ChatResponse> chatResponses) {
+		return extractChatResponsesText(chatResponses, Message::thinking);
+	}
+
+	private static String extractChatResponsesText(List<ChatResponse> chatResponses,
+			Function<Message, String> messageToStringFunction) {
+		return chatResponses.stream()
+			.map(ChatResponse::message)
+			.map(messageToStringFunction)
+			.collect(Collectors.joining(System.lineSeparator()));
 	}
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,8 +58,17 @@ public class PineconeFilterExpressionConverter extends AbstractFilterExpressionC
 
 	@Override
 	protected void doKey(Key key, StringBuilder context) {
-		var identifier = (hasOuterQuotes(key.key())) ? removeOuterQuotes(key.key()) : key.key();
-		context.append("\"").append(identifier).append("\": ");
+		var identifier = key.key();
+		// JSON-encode the key so characters such as " and \ cannot break out of the
+		// property
+		// name and inject operators (e.g. $or) into the serialized filter document.
+		emitJsonValue(identifier, context);
+		context.append(": ");
+	}
+
+	@Override
+	protected void doSingleValue(Object value, StringBuilder context) {
+		emitJsonValue(value, context);
 	}
 
 }

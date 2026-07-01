@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package org.springframework.ai.docker.compose.service.connection.typesense;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.vectorstore.typesense.autoconfigure.TypesenseConnectionDetails;
 import org.springframework.boot.docker.compose.core.RunningService;
@@ -76,7 +78,7 @@ public class TypesenseDockerComposeConnectionDetailsFactory
 		}
 
 		@Override
-		public String getApiKey() {
+		public @Nullable String getApiKey() {
 			return this.environment.getApiKey();
 		}
 

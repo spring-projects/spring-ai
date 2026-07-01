@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -89,7 +89,7 @@ class MediaTests {
 
 	@Test
 	void testMediaBuilderWithNullData() {
-		assertThatThrownBy(() -> Media.builder().mimeType(MimeType.valueOf("image/png")).data((Object) null).build())
+		assertThatThrownBy(() -> Media.builder().mimeType(MimeType.valueOf("image/png")).data((byte[]) null).build())
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("Data must not be null");
 	}

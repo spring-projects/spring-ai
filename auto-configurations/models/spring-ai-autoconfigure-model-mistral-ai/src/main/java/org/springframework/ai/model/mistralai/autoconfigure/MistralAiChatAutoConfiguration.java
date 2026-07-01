@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,25 +17,21 @@
 package org.springframework.ai.model.mistralai.autoconfigure;
 
 import io.micrometer.observation.ObservationRegistry;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.mistralai.MistralAiChatModel;
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.model.SpringAIModels;
-import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolCallingManager;
-import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
-import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
-import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
+import org.springframework.ai.retry.RetryUtils;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
-import org.springframework.boot.webclient.autoconfigure.WebClientAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.retry.RetryTemplate;
 import org.springframework.util.Assert;
@@ -51,10 +47,11 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
+ * @author Yanming Zhou
+ * @author Sebastien Deleuze
  * @since 0.8.1
  */
-@AutoConfiguration(after = { RestClientAutoConfiguration.class, WebClientAutoConfiguration.class,
-		SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class })
+@AutoConfiguration
 @EnableConfigurationProperties({ MistralAiCommonProperties.class, MistralAiChatProperties.class })
 @ConditionalOnProperty(name = SpringAIModelProperties.CHAT_MODEL, havingValue = SpringAIModels.MISTRAL,
 		matchIfMissing = true)
@@ -66,10 +63,9 @@ public class MistralAiChatAutoConfiguration {
 	public MistralAiChatModel mistralAiChatModel(MistralAiCommonProperties commonProperties,
 			MistralAiChatProperties chatProperties, ObjectProvider<RestClient.Builder> restClientBuilderProvider,
 			ObjectProvider<WebClient.Builder> webClientBuilderProvider, ToolCallingManager toolCallingManager,
-			RetryTemplate retryTemplate, ResponseErrorHandler responseErrorHandler,
+			ObjectProvider<RetryTemplate> retryTemplate, ObjectProvider<ResponseErrorHandler> responseErrorHandler,
 			ObjectProvider<ObservationRegistry> observationRegistry,
-			ObjectProvider<ChatModelObservationConvention> observationConvention,
-			ObjectProvider<ToolExecutionEligibilityPredicate> mistralAiToolExecutionEligibilityPredicate) {
+			ObjectProvider<ChatModelObservationConvention> observationConvention) {
 
 		var mistralAiApi = mistralAiApi(chatProperties.getApiKey(), commonProperties.getApiKey(),
 				chatProperties.getBaseUrl(), commonProperties.getBaseUrl(),
@@ -78,11 +74,9 @@ public class MistralAiChatAutoConfiguration {
 
 		var chatModel = MistralAiChatModel.builder()
 			.mistralAiApi(mistralAiApi)
-			.defaultOptions(chatProperties.getOptions())
+			.options(chatProperties.toOptions())
 			.toolCallingManager(toolCallingManager)
-			.toolExecutionEligibilityPredicate(mistralAiToolExecutionEligibilityPredicate
-				.getIfUnique(DefaultToolExecutionEligibilityPredicate::new))
-			.retryTemplate(retryTemplate)
+			.retryTemplate(retryTemplate.getIfUnique(() -> RetryUtils.DEFAULT_RETRY_TEMPLATE))
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.build();
 
@@ -91,9 +85,9 @@ public class MistralAiChatAutoConfiguration {
 		return chatModel;
 	}
 
-	private MistralAiApi mistralAiApi(String apiKey, String commonApiKey, String baseUrl, String commonBaseUrl,
-			RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
-			ResponseErrorHandler responseErrorHandler) {
+	private MistralAiApi mistralAiApi(@Nullable String apiKey, @Nullable String commonApiKey, @Nullable String baseUrl,
+			@Nullable String commonBaseUrl, RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
+			ObjectProvider<ResponseErrorHandler> responseErrorHandler) {
 
 		var resolvedApiKey = StringUtils.hasText(apiKey) ? apiKey : commonApiKey;
 		var resoledBaseUrl = StringUtils.hasText(baseUrl) ? baseUrl : commonBaseUrl;
@@ -106,7 +100,7 @@ public class MistralAiChatAutoConfiguration {
 			.apiKey(resolvedApiKey)
 			.restClientBuilder(restClientBuilder)
 			.webClientBuilder(webClientBuilder)
-			.responseErrorHandler(responseErrorHandler)
+			.responseErrorHandler(responseErrorHandler.getIfAvailable(() -> RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER))
 			.build();
 	}
 

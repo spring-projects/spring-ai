@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,8 @@ package org.springframework.ai.model.vertexai.autoconfigure.embedding;
 
 import java.io.IOException;
 
-import com.google.cloud.vertexai.VertexAI;
-
 import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.model.SpringAIModels;
-import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingConnectionDetails;
 import org.springframework.ai.vertexai.embedding.multimodal.VertexAiMultimodalEmbeddingModel;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -38,10 +35,11 @@ import org.springframework.context.annotation.Bean;
  * @author Christian Tzolov
  * @author Mark Pollack
  * @author Ilayaperumal Gopinathan
+ * @author Sebastien Deleuze
  * @since 1.0.0
  */
-@AutoConfiguration(after = { SpringAiRetryAutoConfiguration.class, VertexAiEmbeddingConnectionAutoConfiguration.class })
-@ConditionalOnClass({ VertexAI.class, VertexAiMultimodalEmbeddingModel.class })
+@AutoConfiguration
+@ConditionalOnClass(VertexAiMultimodalEmbeddingModel.class)
 @ConditionalOnProperty(name = SpringAIModelProperties.MULTI_MODAL_EMBEDDING_MODEL,
 		havingValue = SpringAIModels.VERTEX_AI, matchIfMissing = true)
 @EnableConfigurationProperties(VertexAiMultimodalEmbeddingProperties.class)
@@ -52,7 +50,7 @@ public class VertexAiMultiModalEmbeddingAutoConfiguration {
 	public VertexAiMultimodalEmbeddingModel multimodalEmbedding(VertexAiEmbeddingConnectionDetails connectionDetails,
 			VertexAiMultimodalEmbeddingProperties multimodalEmbeddingProperties) throws IOException {
 
-		return new VertexAiMultimodalEmbeddingModel(connectionDetails, multimodalEmbeddingProperties.getOptions());
+		return new VertexAiMultimodalEmbeddingModel(connectionDetails, multimodalEmbeddingProperties.toOptions());
 	}
 
 }

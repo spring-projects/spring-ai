@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,28 +42,23 @@ public class MarkdownCodeBlockCleaner implements ResponseTextCleaner {
 
 		// Check for and remove triple backticks
 		if (text.startsWith("```") && text.endsWith("```")) {
-			// Remove the first line if it contains "```json" or similar
 			String[] lines = text.split("\n", 2);
-			if (lines[0].trim().toLowerCase().startsWith("```")) {
-				// Extract language identifier if present
-				String firstLine = lines[0].trim();
-				if (firstLine.length() > 3) {
-					// Has language identifier like ```json
-					text = lines.length > 1 ? lines[1] : "";
-				}
-				else {
-					// Just ``` without language
-					text = text.substring(3);
-				}
+			String firstLine = lines[0].trim();
+			if (lines.length > 1) {
+				// Has the shape like ```[json] and content on following lines (captured
+				// in lines[1])
+				text = lines[1];
 			}
 			else {
-				text = text.substring(3);
+				// Single-line fenced block without line break, e.g.
+				// ```{"key": "value"}```
+				// Not a correct fenced block per-se, but can happen in practice
+				// Strip the opening fence only; the trailing fence is removed below
+				text = firstLine.substring(3);
 			}
 
 			// Remove trailing ```
-			if (text.endsWith("```")) {
-				text = text.substring(0, text.length() - 3);
-			}
+			text = text.substring(0, text.length() - 3);
 
 			// Trim again to remove any potential whitespace
 			text = text.trim();

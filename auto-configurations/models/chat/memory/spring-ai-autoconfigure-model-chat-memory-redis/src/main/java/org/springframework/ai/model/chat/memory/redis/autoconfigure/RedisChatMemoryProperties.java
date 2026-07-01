@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,8 +17,11 @@
 package org.springframework.ai.model.chat.memory.redis.autoconfigure;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.chat.memory.repository.redis.RedisChatMemoryConfig;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -54,7 +57,7 @@ public class RedisChatMemoryProperties {
 	/**
 	 * Time to live for chat memory entries. Default is no expiration.
 	 */
-	private Duration timeToLive;
+	private @Nullable Duration timeToLive;
 
 	/**
 	 * Whether to initialize the Redis schema. Default is true.
@@ -80,7 +83,7 @@ public class RedisChatMemoryProperties {
 	 * spring.ai.chat.memory.redis.metadata-fields[1].type=numeric
 	 * </pre>
 	 */
-	private List<Map<String, String>> metadataFields;
+	private List<Map<String, String>> metadataFields = new ArrayList<>();
 
 	public String getHost() {
 		return this.host;
@@ -114,11 +117,11 @@ public class RedisChatMemoryProperties {
 		this.keyPrefix = keyPrefix;
 	}
 
-	public Duration getTimeToLive() {
+	public @Nullable Duration getTimeToLive() {
 		return this.timeToLive;
 	}
 
-	public void setTimeToLive(Duration timeToLive) {
+	public void setTimeToLive(@Nullable Duration timeToLive) {
 		this.timeToLive = timeToLive;
 	}
 

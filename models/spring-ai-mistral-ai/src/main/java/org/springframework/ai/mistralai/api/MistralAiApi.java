@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,12 +16,15 @@
 
 package org.springframework.ai.mistralai.api;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -29,30 +32,42 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.JsonToken;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.annotation.JsonSerialize;
 
 import org.springframework.ai.model.ChatModelDescription;
-import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.ai.util.JsonHelper;
+import org.springframework.ai.util.json.schema.JsonSchemaGenerator;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.MimeType;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
 
 /**
  * Single-class, Java Client library for Mistral AI platform. Provides implementation for
- * the <a href=
- * "https://docs.mistral.ai/api/#tag/embeddings/operation/embeddings_v1_embeddings_post">Embeddings</a>
- * and the <a href=
- * "https://docs.mistral.ai/api/#tag/chat/operation/chat_completion_v1_chat_completions_post">Chat
- * Completion</a> APIs.
+ * the <a href="https://docs.mistral.ai/api/endpoint/embeddings">Embeddings</a> and the
+ * <a href="https://docs.mistral.ai/api/endpoint/chat">Chat Completion</a> APIs.
  * <p>
  * Implements <b>Synchronous</b> and <b>Streaming</b> chat completion and supports latest
  * <b>Function Calling</b> features.
@@ -63,9 +78,12 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @author Thomas Vitale
  * @author Jason Smith
  * @author Nicolas Krier
+ * @author Sebastien Deleuze
  * @since 1.0.0
  */
 public class MistralAiApi {
+
+	private static final JsonHelper jsonHelper = new JsonHelper();
 
 	public static Builder builder() {
 		return new Builder();
@@ -84,27 +102,32 @@ public class MistralAiApi {
 	private final MistralAiStreamFunctionCallingHelper chunkMerger = new MistralAiStreamFunctionCallingHelper();
 
 	/**
-	 * Create a new client api.
-	 * @param baseUrl api base URL.
+	 * Create a new client API.
+	 * @param baseUrl API base URL.
 	 * @param apiKey Mistral api Key.
 	 * @param restClientBuilder RestClient builder.
+	 * @param webClientBuilder WebClient builder.
 	 * @param responseErrorHandler Response error handler.
 	 */
 	public MistralAiApi(String baseUrl, String apiKey, RestClient.Builder restClientBuilder,
 			WebClient.Builder webClientBuilder, ResponseErrorHandler responseErrorHandler) {
-
-		Consumer<HttpHeaders> jsonContentHeaders = headers -> {
+		Consumer<HttpHeaders> defaultHeaders = headers -> {
 			headers.setBearerAuth(apiKey);
 			headers.setContentType(MediaType.APPLICATION_JSON);
 		};
 
 		this.restClient = restClientBuilder.clone()
 			.baseUrl(baseUrl)
-			.defaultHeaders(jsonContentHeaders)
+			.defaultHeaders(defaultHeaders)
 			.defaultStatusHandler(responseErrorHandler)
 			.build();
 
-		this.webClient = webClientBuilder.clone().baseUrl(baseUrl).defaultHeaders(jsonContentHeaders).build();
+		// @formatter:off
+		this.webClient = webClientBuilder.clone()
+			.baseUrl(baseUrl)
+			.defaultHeaders(defaultHeaders)
+			.build();
+		// @formatter:on
 	}
 
 	/**
@@ -131,7 +154,7 @@ public class MistralAiApi {
 
 		// The input must not an empty string, and any array must be 1024 dimensions or
 		// less.
-		if (embeddingRequest.input() instanceof List list) {
+		if (embeddingRequest.input() instanceof List<?> list) {
 			Assert.isTrue(!CollectionUtils.isEmpty(list), "The input list can not be empty.");
 			Assert.isTrue(list.size() <= 1024, "The list must be 1024 dimensions or less");
 			Assert.isTrue(
@@ -157,7 +180,7 @@ public class MistralAiApi {
 	public ResponseEntity<ChatCompletion> chatCompletionEntity(ChatCompletionRequest chatRequest) {
 
 		Assert.notNull(chatRequest, "The request body can not be null.");
-		Assert.isTrue(!chatRequest.stream(), "Request must set the stream property to false.");
+		Assert.isTrue(Boolean.FALSE.equals(chatRequest.stream()), "Request must set the stream property to false.");
 
 		return this.restClient.post()
 			.uri("/v1/chat/completions")
@@ -172,10 +195,11 @@ public class MistralAiApi {
 	 * to true.
 	 * @return Returns a {@link Flux} stream from chat completion chunks.
 	 */
+	@SuppressWarnings("NullAway")
 	public Flux<ChatCompletionChunk> chatCompletionStream(ChatCompletionRequest chatRequest) {
 
 		Assert.notNull(chatRequest, "The request body can not be null.");
-		Assert.isTrue(chatRequest.stream(), "Request must set the stream property to true.");
+		Assert.isTrue(Boolean.TRUE.equals(chatRequest.stream()), "Request must set the stream property to true.");
 
 		AtomicBoolean isInsideTool = new AtomicBoolean(false);
 
@@ -186,7 +210,7 @@ public class MistralAiApi {
 			.bodyToFlux(String.class)
 			.takeUntil(SSE_DONE_PREDICATE)
 			.filter(SSE_DONE_PREDICATE.negate())
-			.map(content -> ModelOptionsUtils.jsonToObject(content, ChatCompletionChunk.class))
+			.mapNotNull(content -> jsonHelper.fromJson(content, ChatCompletionChunk.class))
 			.map(chunk -> {
 				if (this.chunkMerger.isStreamingToolFunctionCall(chunk)) {
 					isInsideTool.set(true);
@@ -201,9 +225,7 @@ public class MistralAiApi {
 				return !isInsideTool.get();
 			})
 			.concatMapIterable(window -> {
-				Mono<ChatCompletionChunk> mono1 = window.reduce(
-						new ChatCompletionChunk(null, null, null, null, null, null),
-						(previous, current) -> this.chunkMerger.merge(previous, current));
+				Mono<ChatCompletionChunk> mono1 = window.reduce(this.chunkMerger::merge);
 				return List.of(mono1);
 			})
 			.flatMap(mono -> mono);
@@ -211,25 +233,31 @@ public class MistralAiApi {
 
 	/**
 	 * The reason the model stopped generating tokens.
+	 * <p>
+	 * This enumeration is shared between streaming and blocking responses. The dedication
+	 * of only one type of responses is documented in a note present in the Javadoc of the
+	 * corresponding value.
+	 * </p>
 	 */
-	public enum ChatCompletionFinishReason {
+	public enum FinishReason {
 
 		// @formatter:off
 		/**
-		* The model hit a natural stop point or a provided stop sequence.
-		*/
+		 * The model hit a natural stop point or a provided stop sequence.
+		 */
 		@JsonProperty("stop")
 		STOP,
 
 		/**
-		* The maximum number of tokens specified in the request was reached.
-		*/
+		 * The maximum number of tokens specified in the request was reached.
+		 */
 		@JsonProperty("length")
 		LENGTH,
 
 		/**
-		* The content was omitted due to a flag from our content filters.
-		*/
+		 * The content was omitted due to a flag from our content filters.
+		 * Note: Only applicable for blocking responses.
+		 */
 		@JsonProperty("model_length")
 		MODEL_LENGTH,
 
@@ -237,38 +265,39 @@ public class MistralAiApi {
 		ERROR,
 
 		/**
-		* The model requested a tool call.
-		*/
+		 * The model requested a tool call.
+		 */
 		@JsonProperty("tool_calls")
 		TOOL_CALLS
-		 // @formatter:on
+		// @formatter:on
 
 	}
 
 	/**
 	 * List of well-known Mistral chat models.
 	 *
-	 * @see <a href=
-	 * "https://docs.mistral.ai/getting-started/models/models_overview/">Mistral AI Models
-	 * Overview</a>
+	 * @see <a href="https://docs.mistral.ai/getting-started/models">Mistral AI Models</a>
 	 */
 	public enum ChatModel implements ChatModelDescription {
 
 		// @formatter:off
 		// Premier Models
+		@Deprecated(forRemoval = true) // Retirement planned the 31st of July 2026
 		MAGISTRAL_MEDIUM("magistral-medium-latest"),
-		MISTRAL_MEDIUM("mistral-medium-latest"),
 		CODESTRAL("codestral-latest"),
-		LARGE("mistral-large-latest"),
-		PIXTRAL_LARGE("pixtral-large-latest"),
-		MINISTRAL_3B_LATEST("ministral-3b-latest"),
-		MINISTRAL_8B_LATEST("ministral-8b-latest"),
 		// Free Models
+		MINISTRAL_3B("ministral-3b-latest"),
+		MINISTRAL_8B("ministral-8b-latest"),
+		MINISTRAL_14B("ministral-14b-latest"),
+		MISTRAL_SMALL("mistral-small-latest"),
+		MISTRAL_MEDIUM("mistral-medium-latest"),
+		MISTRAL_LARGE("mistral-large-latest"),
+		@Deprecated(forRemoval = true) // Retirement planned the 31st of July 2026
+		DEVSTRAL("devstral-latest"),
+		@Deprecated(forRemoval = true) // Retirement planned the 31st of July 2026
 		MAGISTRAL_SMALL("magistral-small-latest"),
-		DEVSTRAL_SMALL("devstral-small-latest"),
-		SMALL("mistral-small-latest"),
-		PIXTRAL("pixtral-12b-2409"),
 		// Free Models - Research
+		@Deprecated(forRemoval = true) // Retirement planned the 31st of July 2026
 		OPEN_MISTRAL_NEMO("open-mistral-nemo");
 		// @formatter:on
 
@@ -292,9 +321,7 @@ public class MistralAiApi {
 	/**
 	 * List of well-known Mistral embedding models.
 	 *
-	 * @see <a href=
-	 * "https://docs.mistral.ai/getting-started/models/models_overview/">Mistral AI Models
-	 * Overview</a>
+	 * @see <a href="https://docs.mistral.ai/getting-started/models">Mistral AI Models</a>
 	 */
 	public enum EmbeddingModel {
 
@@ -340,6 +367,7 @@ public class MistralAiApi {
 
 		// The function definition.
 		@JsonProperty("function")
+		@SuppressWarnings("NullAway.Init")
 		Function function;
 
 		public FunctionTool() {
@@ -394,16 +422,18 @@ public class MistralAiApi {
 		public static class Function {
 
 			@JsonProperty("description")
-			private String description;
+			private @Nullable String description;
 
 			@JsonProperty("name")
+			@SuppressWarnings("NullAway.Init")
 			private String name;
 
 			@JsonProperty("parameters")
+			@SuppressWarnings("NullAway.Init")
 			private Map<String, Object> parameters;
 
 			@JsonIgnore
-			private String jsonSchema;
+			private @Nullable String jsonSchema;
 
 			private Function() {
 
@@ -432,10 +462,10 @@ public class MistralAiApi {
 			 * @param jsonSchema tool function schema as json.
 			 */
 			public Function(String description, String name, String jsonSchema) {
-				this(description, name, ModelOptionsUtils.jsonToMap(jsonSchema));
+				this(description, name, jsonHelper.fromJsonToMap(jsonSchema));
 			}
 
-			public String getDescription() {
+			public @Nullable String getDescription() {
 				return this.description;
 			}
 
@@ -459,14 +489,14 @@ public class MistralAiApi {
 				this.parameters = parameters;
 			}
 
-			public String getJsonSchema() {
+			public @Nullable String getJsonSchema() {
 				return this.jsonSchema;
 			}
 
-			public void setJsonSchema(String jsonSchema) {
+			public void setJsonSchema(@Nullable String jsonSchema) {
 				this.jsonSchema = jsonSchema;
 				if (jsonSchema != null) {
-					this.parameters = ModelOptionsUtils.jsonToMap(jsonSchema);
+					this.parameters = jsonHelper.fromJsonToMap(jsonSchema);
 				}
 			}
 
@@ -522,7 +552,7 @@ public class MistralAiApi {
 		}
 
 		@Override
-		public boolean equals(Object o) {
+		public boolean equals(@Nullable Object o) {
 			if (this == o) {
 				return true;
 			}
@@ -630,13 +660,25 @@ public class MistralAiApi {
 	 * @param maxTokens The maximum number of tokens to generate in the completion. The
 	 * token count of your prompt plus max_tokens cannot exceed the model's context
 	 * length.
+	 * @param n Number of completions to return for each request, input tokens are only
+	 * billed once. Minimum is 1.
+	 * @param presencePenalty The presence_penalty determines how much the model penalizes
+	 * the repetition of words or phrases. A higher presence penalty encourages the model
+	 * to use a wider variety of words and phrases, making the output more diverse and
+	 * creative. Supported range is between -2.0 and 2.0.
+	 * @param frequencyPenalty The frequency_penalty penalizes the repetition of words
+	 * based on their frequency in the generated text. A higher frequency penalty
+	 * discourages the model from repeating words that have already appeared frequently in
+	 * the output, promoting diversity and reducing repetition. Supported range is between
+	 * -2.0 and 2.0.
 	 * @param stream Whether to stream back partial progress. If set, tokens will be sent
 	 * as data-only server-sent events as they become available, with the stream
 	 * terminated by a data: [DONE] message. Otherwise, the server will hold the request
 	 * open until the timeout or until completion, with the response containing the full
 	 * result as JSON.
 	 * @param safePrompt Whether to inject a safety prompt before all conversations.
-	 * @param stop A list of tokens that the model should stop generating after. If set,
+	 * @param stop A list of tokens that the model should stop generating after.
+	 * @param reasoningEffort Controls the reasoning effort level for reasoning models.
 	 * @param randomSeed The seed to use for random sampling. If set, different calls will
 	 * generate deterministic results.
 	 * @param responseFormat An object specifying the format or schema that the model must
@@ -648,18 +690,22 @@ public class MistralAiApi {
 	@JsonInclude(Include.NON_NULL)
 	public record ChatCompletionRequest(
 	// @formatter:off
-			@JsonProperty("model") String model,
+			@JsonProperty("model") @Nullable String model,
 			@JsonProperty("messages") List<ChatCompletionMessage> messages,
-			@JsonProperty("tools") List<FunctionTool> tools,
-			@JsonProperty("tool_choice") ToolChoice toolChoice,
-			@JsonProperty("temperature") Double temperature,
-			@JsonProperty("top_p") Double topP,
-			@JsonProperty("max_tokens") Integer maxTokens,
-			@JsonProperty("stream") Boolean stream,
-			@JsonProperty("safe_prompt") Boolean safePrompt,
-			@JsonProperty("stop") List<String> stop,
-			@JsonProperty("random_seed") Integer randomSeed,
-			@JsonProperty("response_format") ResponseFormat responseFormat) {
+			@JsonProperty("tools") @Nullable List<FunctionTool> tools,
+			@JsonProperty("tool_choice") @Nullable ToolChoice toolChoice,
+			@JsonProperty("temperature") @Nullable Double temperature,
+			@JsonProperty("top_p") @Nullable Double topP,
+			@JsonProperty("max_tokens") @Nullable Integer maxTokens,
+			@JsonProperty("n") @Nullable Integer n,
+			@JsonProperty("presence_penalty") @Nullable Double presencePenalty,
+			@JsonProperty("frequency_penalty") @Nullable Double frequencyPenalty,
+			@JsonProperty("stream") @Nullable Boolean stream,
+			@JsonProperty("safe_prompt") @Nullable Boolean safePrompt,
+			@JsonProperty("stop") @Nullable List<String> stop,
+			@JsonProperty("reasoning_effort") @Nullable ReasoningEffort reasoningEffort,
+			@JsonProperty("random_seed") @Nullable Integer randomSeed,
+			@JsonProperty("response_format") @Nullable ResponseFormat responseFormat) {
 		 // @formatter:on
 
 		/**
@@ -670,7 +716,7 @@ public class MistralAiApi {
 		 * @param model ID of the model to use.
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model) {
-			this(model, messages, null, null, 0.7, 1.0, null, false, false, null, null, null);
+			this(model, messages, null, null, 0.7, 1.0, null, null, null, null, false, false, null, null, null, null);
 		}
 
 		/**
@@ -685,7 +731,8 @@ public class MistralAiApi {
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature,
 				boolean stream) {
-			this(model, messages, null, null, temperature, 1.0, null, stream, false, null, null, null);
+			this(model, messages, null, null, temperature, 1.0, null, null, null, null, stream, false, null, null, null,
+					null);
 		}
 
 		/**
@@ -698,7 +745,8 @@ public class MistralAiApi {
 		 *
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature) {
-			this(model, messages, null, null, temperature, 1.0, null, false, false, null, null, null);
+			this(model, messages, null, null, temperature, 1.0, null, null, null, null, false, false, null, null, null,
+					null);
 		}
 
 		/**
@@ -713,7 +761,8 @@ public class MistralAiApi {
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, List<FunctionTool> tools,
 				ToolChoice toolChoice) {
-			this(model, messages, tools, toolChoice, null, 1.0, null, false, false, null, null, null);
+			this(model, messages, tools, toolChoice, null, 1.0, null, null, null, null, false, false, null, null, null,
+					null);
 		}
 
 		/**
@@ -721,13 +770,12 @@ public class MistralAiApi {
 		 * stream.
 		 */
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, Boolean stream) {
-			this(null, messages, null, null, 0.7, 1.0, null, stream, false, null, null, null);
+			this(null, messages, null, null, 0.7, 1.0, null, null, null, null, stream, false, null, null, null, null);
 		}
 
 		/**
 		 * Specifies a tool the model should use. Use to force the model to call a
 		 * specific function.
-		 *
 		 */
 		public enum ToolChoice {
 
@@ -743,18 +791,372 @@ public class MistralAiApi {
 		}
 
 		/**
+		 * <p>
+		 * Controls the reasoning effort level for adjustable reasoning models.
+		 * {@link ReasoningEffort#HIGH} enables comprehensive reasoning traces,
+		 * {@link ReasoningEffort#NONE} disables reasoning effort.
+		 * </p>
+		 */
+		public enum ReasoningEffort {
+
+			// @formatter:off
+			@JsonProperty("high")
+			HIGH,
+			@JsonProperty("none")
+			NONE
+			// @formatter:on
+
+		}
+
+		/**
 		 * An object specifying the format that the model must output.
 		 *
-		 * @param type Must be one of 'text', 'json_object' or 'json_schema'.
-		 * @param jsonSchema A specific JSON schema to match, if 'type' is 'json_schema'.
+		 * <p>
+		 * Setting the type to JSON_SCHEMA enables Structured Outputs which ensures the
+		 * model will match your supplied JSON schema.
+		 * </p>
+		 *
+		 * @see <a href= "https://docs.mistral.ai/capabilities/structured_output">Mistral
+		 * AI Structured Output</a>
 		 */
 		@JsonInclude(Include.NON_NULL)
-		public record ResponseFormat(@JsonProperty("type") String type,
-				@JsonProperty("json_schema") Map<String, Object> jsonSchema) {
+		public static class ResponseFormat {
 
-			public ResponseFormat(String type) {
-				this(type, null);
+			/**
+			 * Type Must be one of 'text', 'json_object' or 'json_schema'.
+			 */
+			@JsonProperty("type")
+			private Type type;
+
+			/**
+			 * JSON schema object that describes the format of the JSON object. Only
+			 * applicable when type is 'json_schema'.
+			 */
+			@JsonProperty("json_schema")
+			private @Nullable JsonSchema jsonSchema;
+
+			@JsonIgnore
+			private @Nullable String schema;
+
+			@SuppressWarnings("NullAway") // Constructor designed for Jackson databinding
+			public ResponseFormat() {
 			}
+
+			/**
+			 * @deprecated Use {@link #builder()} or factory methods instead.
+			 */
+			@Deprecated
+			public ResponseFormat(String type) {
+				this(Type.fromValue(type), (JsonSchema) null);
+			}
+
+			/**
+			 * @deprecated Use {@link #builder()} or factory methods instead.
+			 */
+			@Deprecated
+			public ResponseFormat(String type, @Nullable Map<String, Object> jsonSchema) {
+				this(Type.fromValue(type),
+						jsonSchema != null ? JsonSchema.builder().schema(jsonSchema).strict(true).build() : null);
+			}
+
+			private ResponseFormat(Type type, @Nullable JsonSchema jsonSchema) {
+				this.type = type;
+				this.jsonSchema = jsonSchema;
+			}
+
+			public ResponseFormat(Type type, @Nullable String schema) {
+				this(type, createJsonSchema(schema));
+			}
+
+			private static @Nullable JsonSchema createJsonSchema(@Nullable String schema) {
+				if (StringUtils.hasText(schema)) {
+					return JsonSchema.builder().schema(schema).strict(true).build();
+				}
+
+				return null;
+			}
+
+			public Type getType() {
+				return this.type;
+			}
+
+			public void setType(Type type) {
+				this.type = type;
+			}
+
+			public @Nullable JsonSchema getJsonSchema() {
+				return this.jsonSchema;
+			}
+
+			public void setJsonSchema(JsonSchema jsonSchema) {
+				this.jsonSchema = jsonSchema;
+			}
+
+			public @Nullable String getSchema() {
+				return this.schema;
+			}
+
+			public void setSchema(@Nullable String schema) {
+				this.schema = schema;
+				if (schema != null) {
+					this.jsonSchema = JsonSchema.builder().schema(schema).strict(true).build();
+				}
+			}
+
+			// Factory methods
+
+			/**
+			 * Creates a ResponseFormat for text output.
+			 * @return ResponseFormat configured for text output
+			 */
+			public static ResponseFormat text() {
+				return new ResponseFormat(Type.TEXT, (JsonSchema) null);
+			}
+
+			/**
+			 * Creates a ResponseFormat for JSON object output (JSON mode).
+			 * @return ResponseFormat configured for JSON object output
+			 */
+			public static ResponseFormat jsonObject() {
+				return new ResponseFormat(Type.JSON_OBJECT, (JsonSchema) null);
+			}
+
+			/**
+			 * Creates a ResponseFormat for JSON schema output with automatic schema
+			 * generation from a class.
+			 * @param clazz the class to generate the JSON schema from
+			 * @return ResponseFormat configured with the generated JSON schema
+			 */
+			public static ResponseFormat jsonSchema(Class<?> clazz) {
+				String schemaJson = JsonSchemaGenerator.generateForType(clazz);
+				return jsonSchema(schemaJson);
+			}
+
+			/**
+			 * Creates a ResponseFormat for JSON schema output with a JSON schema string.
+			 * @param schema the JSON schema as a string
+			 * @return ResponseFormat configured with the provided JSON schema
+			 */
+			public static ResponseFormat jsonSchema(String schema) {
+				return new ResponseFormat(Type.JSON_SCHEMA, JsonSchema.builder().schema(schema).strict(true).build());
+			}
+
+			/**
+			 * Creates a ResponseFormat for JSON schema output with a JSON schema map.
+			 * @param schema the JSON schema as a map
+			 * @return ResponseFormat configured with the provided JSON schema
+			 */
+			public static ResponseFormat jsonSchema(Map<String, Object> schema) {
+				return new ResponseFormat(Type.JSON_SCHEMA, JsonSchema.builder().schema(schema).strict(true).build());
+			}
+
+			public static Builder builder() {
+				return new Builder();
+			}
+
+			@Override
+			public boolean equals(@Nullable Object o) {
+				if (this == o) {
+					return true;
+				}
+				if (o == null || getClass() != o.getClass()) {
+					return false;
+				}
+				ResponseFormat that = (ResponseFormat) o;
+				return this.type == that.type && Objects.equals(this.jsonSchema, that.jsonSchema);
+			}
+
+			@Override
+			public int hashCode() {
+				return Objects.hash(this.type, this.jsonSchema);
+			}
+
+			@Override
+			public String toString() {
+				return "ResponseFormat{" + "type=" + this.type + ", jsonSchema=" + this.jsonSchema + '}';
+			}
+
+			public static final class Builder {
+
+				private @Nullable Type type;
+
+				private @Nullable JsonSchema jsonSchema;
+
+				private Builder() {
+				}
+
+				public Builder type(Type type) {
+					this.type = type;
+					return this;
+				}
+
+				public Builder jsonSchema(JsonSchema jsonSchema) {
+					this.jsonSchema = jsonSchema;
+					return this;
+				}
+
+				public Builder jsonSchema(String jsonSchema) {
+					this.jsonSchema = JsonSchema.builder().schema(jsonSchema).build();
+					return this;
+				}
+
+				public ResponseFormat build() {
+					Assert.state(this.type != null, "The ype ");
+					return new ResponseFormat(this.type, this.jsonSchema);
+				}
+
+			}
+
+			public enum Type {
+
+				/**
+				 * Generates a text response. (default)
+				 */
+				@JsonProperty("text")
+				TEXT("text"),
+
+				/**
+				 * Enables JSON mode, which guarantees the message the model generates is
+				 * valid JSON.
+				 */
+				@JsonProperty("json_object")
+				JSON_OBJECT("json_object"),
+
+				/**
+				 * Enables Structured Outputs which guarantees the model will match your
+				 * supplied JSON schema.
+				 */
+				@JsonProperty("json_schema")
+				JSON_SCHEMA("json_schema");
+
+				private final String value;
+
+				Type(String value) {
+					this.value = value;
+				}
+
+				public String getValue() {
+					return this.value;
+				}
+
+				public static Type fromValue(String value) {
+					for (Type type : Type.values()) {
+						if (type.value.equals(value)) {
+							return type;
+						}
+					}
+					throw new IllegalArgumentException("Unknown ResponseFormat type: " + value);
+				}
+
+			}
+
+			/**
+			 * JSON schema object that describes the format of the JSON object. Applicable
+			 * for the 'json_schema' type only.
+			 */
+			@JsonInclude(Include.NON_NULL)
+			public static class JsonSchema {
+
+				@JsonProperty("name")
+				private String name;
+
+				@JsonProperty("schema")
+				private Map<String, Object> schema;
+
+				@JsonProperty("strict")
+				private Boolean strict;
+
+				@SuppressWarnings("NullAway") // Constructor designed for Jackson
+												// databinding
+				public JsonSchema() {
+				}
+
+				public String getName() {
+					return this.name;
+				}
+
+				public Map<String, Object> getSchema() {
+					return this.schema;
+				}
+
+				public Boolean getStrict() {
+					return this.strict;
+				}
+
+				private JsonSchema(String name, Map<String, Object> schema, Boolean strict) {
+					this.name = name;
+					this.schema = schema;
+					this.strict = strict;
+				}
+
+				public static Builder builder() {
+					return new Builder();
+				}
+
+				@Override
+				public int hashCode() {
+					return Objects.hash(this.name, this.schema, this.strict);
+				}
+
+				@Override
+				public boolean equals(@Nullable Object o) {
+					if (this == o) {
+						return true;
+					}
+					if (o == null || getClass() != o.getClass()) {
+						return false;
+					}
+					JsonSchema that = (JsonSchema) o;
+					return Objects.equals(this.name, that.name) && Objects.equals(this.schema, that.schema)
+							&& Objects.equals(this.strict, that.strict);
+				}
+
+				@Override
+				public String toString() {
+					return "JsonSchema{" + "name='" + this.name + '\'' + ", schema=" + this.schema + ", strict="
+							+ this.strict + '}';
+				}
+
+				public static final class Builder {
+
+					private String name = "custom_schema";
+
+					private @Nullable Map<String, Object> schema;
+
+					private Boolean strict = true;
+
+					private Builder() {
+					}
+
+					public Builder name(String name) {
+						this.name = name;
+						return this;
+					}
+
+					public Builder schema(Map<String, Object> schema) {
+						this.schema = schema;
+						return this;
+					}
+
+					public Builder schema(String schema) {
+						this.schema = jsonHelper.fromJsonToMap(schema);
+						return this;
+					}
+
+					public Builder strict(Boolean strict) {
+						this.strict = strict;
+						return this;
+					}
+
+					public JsonSchema build() {
+						Assert.state(this.schema != null, "The schema must be defined");
+						return new JsonSchema(this.name, this.schema, this.strict);
+					}
+
+				}
+
+			}
+
 		}
 
 	}
@@ -762,8 +1164,8 @@ public class MistralAiApi {
 	/**
 	 * Message comprising the conversation.
 	 *
-	 * @param rawContent The contents of the message. Can be either a {@link MediaContent}
-	 * or a {@link String}. The response message content is always a {@link String}.
+	 * @param content The content of the message. Can be either a list of
+	 * {@link ContentChunk} or a {@link String}.
 	 * @param role The role of the messages author. Could be one of the {@link Role}
 	 * types.
 	 * @param name The name of the author of the message.
@@ -776,46 +1178,180 @@ public class MistralAiApi {
 	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record ChatCompletionMessage(
 	// @formatter:off
-		@JsonProperty("content") Object rawContent,
-		@JsonProperty("role") Role role,
-		@JsonProperty("name") String name,
-		@JsonProperty("tool_calls") List<ToolCall> toolCalls,
-		@JsonProperty("tool_call_id") String toolCallId) {
+		@JsonSerialize(using = ContentSerializer.class) @JsonDeserialize(using = ContentDeserializer.class)
+		@JsonProperty("content") @Nullable Object content,
+		@JsonProperty("role") @Nullable Role role,
+		@JsonProperty("name") @Nullable String name,
+		@JsonProperty("tool_calls") @Nullable List<ToolCall> toolCalls,
+		@JsonProperty("tool_call_id") @Nullable String toolCallId) {
 		// @formatter:on
 
 		/**
 		 * Message comprising the conversation.
-		 * @param content The contents of the message.
+		 * @param content The content of the message.
 		 * @param role The role of the messages author. Could be one of the {@link Role}
 		 * types.
+		 * @param name The name of the author of the message.
 		 * @param toolCalls The tool calls generated by the model, such as function calls.
 		 * Applicable only for {@link Role#ASSISTANT} role and null otherwise.
 		 */
-		public ChatCompletionMessage(Object content, Role role, String name, List<ToolCall> toolCalls) {
+		public ChatCompletionMessage(@Nullable Object content, Role role, @Nullable String name,
+				List<ToolCall> toolCalls) {
 			this(content, role, name, toolCalls, null);
 		}
 
 		/**
 		 * Create a chat completion message with the given content and role. All other
 		 * fields are null.
-		 * @param content The contents of the message.
+		 * @param content The content of the message.
 		 * @param role The role of the author of this message.
 		 */
-		public ChatCompletionMessage(Object content, Role role) {
+		public ChatCompletionMessage(@Nullable Object content, Role role) {
 			this(content, role, null, null, null);
 		}
 
 		/**
-		 * Get message content as String.
+		 * Extract thinking reference content as integers.
+		 * <p>
+		 * Note: This method handles only content as a list of {@link ThinkChunk}
+		 * containing {@link ReferenceChunk}.
+		 * </p>
 		 */
-		public String content() {
-			if (this.rawContent == null) {
-				return null;
+		public @Nullable List<Integer> extractThinkingReferenceContent() {
+			if (this.content instanceof List<?> list) {
+				return convertThinkingChunksToIntegers(list);
 			}
-			if (this.rawContent instanceof String text) {
+
+			return null;
+		}
+
+		private static @Nullable List<Integer> convertThinkingChunksToIntegers(List<?> list) {
+			var contents = extractThinkingContents(list, ChatCompletionMessage::extractReferenceIdsFromReferenceChunk);
+
+			return flatten(contents);
+		}
+
+		/**
+		 * Extract thinking text content as string.
+		 * <p>
+		 * Note: This method handles only content as a list of {@link ThinkChunk}
+		 * containing {@link TextChunk}.
+		 * </p>
+		 */
+		public @Nullable String extractThinkingTextContent() {
+			if (this.content instanceof List<?> list) {
+				return convertThinkingChunksToString(list);
+			}
+
+			return null;
+		}
+
+		private static @Nullable String convertThinkingChunksToString(List<?> list) {
+			var contents = extractThinkingContents(list, ChatCompletionMessage::extractTextFromTextChunk);
+
+			return joinContents(contents);
+		}
+
+		private static <T> List<T> extractThinkingContents(List<?> list,
+				Function<Object, @Nullable T> extractorFunction) {
+			return list.stream()
+				.map(ChatCompletionMessage::extractThinkChunk)
+				.filter(Objects::nonNull)
+				.map(ThinkChunk::thinking)
+				.flatMap(List::stream)
+				.map(extractorFunction)
+				.filter(Objects::nonNull)
+				.toList();
+		}
+
+		private static @Nullable ThinkChunk extractThinkChunk(Object object) {
+			if (object instanceof ThinkChunk thinkChunk) {
+				return thinkChunk;
+			}
+
+			return null;
+		}
+
+		/**
+		 * Extract text content as string.
+		 * <p>
+		 * Note: This method handles only content as a list of {@link TextChunk} or a
+		 * {@link String}.
+		 * </p>
+		 */
+		public @Nullable String extractTextContent() {
+			if (this.content instanceof String text) {
 				return text;
 			}
-			throw new IllegalStateException("The content is not a string!");
+
+			if (this.content instanceof List<?> list) {
+				return convertTextChunksToString(list);
+			}
+
+			return null;
+		}
+
+		private static @Nullable String convertTextChunksToString(List<?> list) {
+			var contents = extractContents(list, ChatCompletionMessage::extractTextFromTextChunk);
+
+			return joinContents(contents);
+		}
+
+		private static @Nullable String extractTextFromTextChunk(Object object) {
+			if (object instanceof TextChunk textChunk) {
+				return textChunk.text();
+			}
+
+			return null;
+		}
+
+		/**
+		 * Extract text content as integers.
+		 * <p>
+		 * Note: This method handles only content as a list of {@link ReferenceChunk}.
+		 * </p>
+		 */
+		public @Nullable List<Integer> extractReferenceContent() {
+			if (this.content instanceof List<?> list) {
+				return convertReferenceChunksToIntegersList(list);
+			}
+
+			return null;
+		}
+
+		private static @Nullable List<Integer> convertReferenceChunksToIntegersList(List<?> list) {
+			var contents = extractContents(list, ChatCompletionMessage::extractReferenceIdsFromReferenceChunk);
+
+			return flatten(contents);
+		}
+
+		private static <T> List<T> extractContents(List<?> list, Function<Object, @Nullable T> extractorFunction) {
+			// @formatter:off
+			return list.stream()
+				.map(extractorFunction)
+				.filter(Objects::nonNull)
+				.toList();
+			// @formatter:on
+		}
+
+		private static @Nullable List<Integer> extractReferenceIdsFromReferenceChunk(Object object) {
+			if (object instanceof ReferenceChunk referenceChunk) {
+				return referenceChunk.referenceIds();
+			}
+
+			return null;
+		}
+
+		private static @Nullable List<Integer> flatten(List<List<Integer>> contents) {
+			if (contents.isEmpty()) {
+				return null;
+			}
+
+			return contents.stream().flatMap(List::stream).toList();
+		}
+
+		private static @Nullable String joinContents(List<String> contents) {
+			return contents.isEmpty() ? null : String.join(System.lineSeparator(), contents);
 		}
 
 		/**
@@ -853,7 +1389,8 @@ public class MistralAiApi {
 		@JsonInclude(Include.NON_NULL)
 		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record ToolCall(@JsonProperty("id") String id, @JsonProperty("type") String type,
-				@JsonProperty("function") ChatCompletionFunction function, @JsonProperty("index") Integer index) {
+				@JsonProperty("function") ChatCompletionFunction function,
+				@JsonProperty("index") @Nullable Integer index) {
 
 		}
 
@@ -872,59 +1409,177 @@ public class MistralAiApi {
 		}
 
 		/**
-		 * An array of content parts with a defined type. Each MediaContent can be of
-		 * either "text" or "image_url" type. Only one option allowed.
-		 *
-		 * @param type Content type, each can be of type text or image_url.
-		 * @param text The text content of the message.
-		 * @param imageUrl The image content of the message.
+		 * Marker interface representing the different content chunks supported. It is
+		 * also used for JSON serialization and deserialization.
 		 */
-		@JsonInclude(Include.NON_NULL)
-		@JsonIgnoreProperties(ignoreUnknown = true)
-		public record MediaContent(
+		@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 		// @formatter:off
-		   		@JsonProperty("type") String type,
-		   		@JsonProperty("text") String text,
-		   		@JsonProperty("image_url") ImageUrl imageUrl
+		@JsonSubTypes({
+				@JsonSubTypes.Type(value = ImageUrlChunk.class, name = "image_url"),
+				@JsonSubTypes.Type(value = ReferenceChunk.class, name = "reference"),
+				@JsonSubTypes.Type(value = TextChunk.class, name = "text"),
+				@JsonSubTypes.Type(value = ThinkChunk.class, name = "thinking")
+		})
+		// @formatter:on
+		public sealed interface ContentChunk {
+
+		}
+
+		public record ImageUrlChunk(
+		// @formatter:off
+				@JsonProperty("image_url") ImageUrlChunk.ImageUrl imageUrl
 				// @formatter:on
-		) {
+		) implements ContentChunk {
 
-			/**
-			 * Shortcut constructor for a text content.
-			 * @param text The text content of the message.
-			 */
-			public MediaContent(String text) {
-				this("text", text, null);
-			}
-
-			/**
-			 * Shortcut constructor for an image content.
-			 * @param imageUrl The image content of the message.
-			 */
-			public MediaContent(ImageUrl imageUrl) {
-				this("image_url", null, imageUrl);
-			}
-
-			/**
-			 * Shortcut constructor for an image content.
-			 *
-			 * @param url Either a URL of the image or the base64 encoded image data. The
-			 * base64 encoded image data must have a special prefix in the following
-			 * format: "data:{mimetype};base64,{base64-encoded-image-data}".
-			 * @param detail Specifies the detail level of the image.
-			 */
 			@JsonInclude(Include.NON_NULL)
 			public record ImageUrl(
 			// @formatter:off
 					@JsonProperty("url") String url,
-					@JsonProperty("detail") String detail
+					@JsonProperty("detail") @Nullable ImageDetail detail
 					// @formatter:on
 			) {
 
-				public ImageUrl(String url) {
-					this(url, null);
+				public enum ImageDetail {
+
+					@JsonProperty("auto")
+					AUTO,
+
+					@JsonProperty("low")
+					LOW,
+
+					@JsonProperty("high")
+					HIGH
+
 				}
 
+				/**
+				 * Convert the bytes to a base64 encoded following the prefix pattern.
+				 * @param mimeType The mime type of the image.
+				 * @param data The image data.
+				 * @param detail The image detail.
+				 * @return The image URL having an encoded URL
+				 */
+				public static ImageUrl fromImageData(MimeType mimeType, byte[] data, @Nullable ImageDetail detail) {
+					var url = String.format("data:%s;base64,%s", mimeType, Base64.getEncoder().encodeToString(data));
+
+					return new ImageUrl(url, detail);
+				}
+
+				/**
+				 * Convert the bytes to a base64 encoded following the prefix pattern.
+				 * @param mimeType The mime type of the image.
+				 * @param data The image data.
+				 * @return The image URL having an encoded URL
+				 */
+				public static ImageUrl fromImageData(MimeType mimeType, byte[] data) {
+					return fromImageData(mimeType, data, null);
+				}
+
+			}
+
+		}
+
+		public record ReferenceChunk(
+		// @formatter:off
+				@JsonProperty("reference_ids") List<Integer> referenceIds
+				// @formatter:on
+		) implements ContentChunk, ThinkingContentChunk {
+
+		}
+
+		public record TextChunk(
+		// @formatter:off
+				@JsonProperty("text") String text
+				// @formatter:on
+		) implements ContentChunk, ThinkingContentChunk {
+
+		}
+
+		@JsonInclude(Include.NON_NULL)
+		public record ThinkChunk(
+		// @formatter:off
+				@JsonProperty("thinking") List<ThinkingContentChunk> thinking,
+				@JsonProperty("closed") @Nullable Boolean closed
+				// @formatter:on
+		) implements ContentChunk {
+
+		}
+
+		/**
+		 * Marker interface representing the different thinking content chunks supported.
+		 * It is also used for JSON serialization and deserialization.
+		 */
+		@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
+		// @formatter:off
+		@JsonSubTypes({
+				@JsonSubTypes.Type(value = ReferenceChunk.class, name = "reference"),
+				@JsonSubTypes.Type(value = TextChunk.class, name = "text")
+		})
+		// @formatter:on
+		public sealed interface ThinkingContentChunk {
+
+		}
+
+		public static class ContentSerializer extends ValueSerializer<Object> {
+
+			@Override
+			public void serialize(Object value, JsonGenerator jsonGenerator,
+					SerializationContext serializationContext) {
+				if (value instanceof String text) {
+					jsonGenerator.writeString(text);
+				}
+				else if (value instanceof List<?> list) {
+					jsonGenerator.writeStartArray();
+
+					for (var object : list) {
+						if (object instanceof ContentChunk contentChunk) {
+							jsonGenerator.writePOJO(contentChunk);
+						}
+						else {
+							throw new IllegalArgumentException(
+									"Unexpected value type %s in the list!".formatted(object.getClass()));
+						}
+					}
+
+					jsonGenerator.writeEndArray();
+				}
+				else {
+					throw new IllegalArgumentException("Unexpected value type %s!".formatted(value.getClass()));
+				}
+			}
+
+		}
+
+		public static class ContentDeserializer extends ValueDeserializer<Object> {
+
+			@Override
+			public Object deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) {
+				var jsonToken = jsonParser.currentToken();
+
+				if (jsonToken == JsonToken.VALUE_STRING) {
+					return jsonParser.getValueAsString();
+				}
+
+				if (jsonToken == JsonToken.START_ARRAY) {
+					List<ContentChunk> contentChunks = new ArrayList<>();
+
+					while (jsonParser.nextToken() != JsonToken.END_ARRAY) {
+						jsonToken = jsonParser.currentToken();
+
+						if (jsonToken == JsonToken.START_OBJECT) {
+							var contentChunk = jsonParser.readValueAs(ContentChunk.class);
+							contentChunks.add(contentChunk);
+						}
+						else {
+							throw new IllegalStateException(
+									"Unexpected JSON token %s within the array!".formatted(jsonToken));
+						}
+					}
+
+					return List.copyOf(contentChunks);
+				}
+
+				throw new IllegalStateException("Unexpected JSON token %s!".formatted(jsonToken));
 			}
 
 		}
@@ -952,7 +1607,7 @@ public class MistralAiApi {
 		@JsonProperty("created") Long created,
 		@JsonProperty("model") String model,
 		@JsonProperty("choices") List<Choice> choices,
-		@JsonProperty("usage") Usage usage) {
+		@JsonProperty("usage") @Nullable Usage usage) {
 		 // @formatter:on
 
 		/**
@@ -969,8 +1624,8 @@ public class MistralAiApi {
 		// @formatter:off
 			@JsonProperty("index") Integer index,
 			@JsonProperty("message") ChatCompletionMessage message,
-			@JsonProperty("finish_reason") ChatCompletionFinishReason finishReason,
-			@JsonProperty("logprobs") LogProbs logprobs) {
+			@JsonProperty("finish_reason") FinishReason finishReason,
+			@JsonProperty("logprobs") @Nullable LogProbs logprobs) {
 			 // @formatter:on
 		}
 
@@ -1046,11 +1701,11 @@ public class MistralAiApi {
 	public record ChatCompletionChunk(
 	// @formatter:off
 		@JsonProperty("id") String id,
-		@JsonProperty("object") String object,
-		@JsonProperty("created") Long created,
+		@JsonProperty("object") @Nullable String object,
+		@JsonProperty("created") @Nullable Long created,
 		@JsonProperty("model") String model,
 		@JsonProperty("choices") List<ChunkChoice> choices,
-		@JsonProperty("usage") Usage usage) {
+		@JsonProperty("usage") @Nullable Usage usage) {
 		 // @formatter:on
 
 		/**
@@ -1067,8 +1722,8 @@ public class MistralAiApi {
 		// @formatter:off
 			@JsonProperty("index") Integer index,
 			@JsonProperty("delta") ChatCompletionMessage delta,
-			@JsonProperty("finish_reason") ChatCompletionFinishReason finishReason,
-			@JsonProperty("logprobs") LogProbs logprobs) {
+			@JsonProperty("finish_reason") FinishReason finishReason,
+			@JsonProperty("logprobs") @Nullable LogProbs logprobs) {
 			 // @formatter:on
 		}
 
@@ -1078,7 +1733,7 @@ public class MistralAiApi {
 
 		private String baseUrl = DEFAULT_BASE_URL;
 
-		private String apiKey;
+		private @Nullable String apiKey;
 
 		private RestClient.Builder restClientBuilder = RestClient.builder();
 
@@ -1117,6 +1772,7 @@ public class MistralAiApi {
 		}
 
 		public MistralAiApi build() {
+			Assert.state(this.apiKey != null, "The API key must not be null");
 			return new MistralAiApi(this.baseUrl, this.apiKey, this.restClientBuilder, this.webClientBuilder,
 					this.responseErrorHandler);
 		}

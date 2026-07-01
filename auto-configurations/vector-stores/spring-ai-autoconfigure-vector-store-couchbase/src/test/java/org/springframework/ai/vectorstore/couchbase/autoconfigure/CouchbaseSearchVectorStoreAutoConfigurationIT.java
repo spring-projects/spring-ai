@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,6 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.model.openai.autoconfigure.OpenAiEmbeddingAutoConfiguration;
-import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.couchbase.CouchbaseIndexOptimization;
@@ -63,8 +62,7 @@ class CouchbaseSearchVectorStoreAutoConfigurationIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(CouchbaseAutoConfiguration.class,
-				CouchbaseSearchVectorStoreAutoConfiguration.class, SpringAiRetryAutoConfiguration.class,
-				OpenAiEmbeddingAutoConfiguration.class))
+				CouchbaseSearchVectorStoreAutoConfiguration.class, OpenAiEmbeddingAutoConfiguration.class))
 		.withPropertyValues("spring.couchbase.connection-string=" + couchbaseContainer.getConnectionString(),
 				"spring.couchbase.username=" + couchbaseContainer.getUsername(),
 				"spring.couchbase.password=" + couchbaseContainer.getPassword(),
@@ -112,8 +110,7 @@ class CouchbaseSearchVectorStoreAutoConfigurationIT {
 	public void propertiesTest() {
 		new ApplicationContextRunner()
 			.withConfiguration(AutoConfigurations.of(CouchbaseAutoConfiguration.class,
-					CouchbaseSearchVectorStoreAutoConfiguration.class, SpringAiRetryAutoConfiguration.class,
-					OpenAiEmbeddingAutoConfiguration.class))
+					CouchbaseSearchVectorStoreAutoConfiguration.class, OpenAiEmbeddingAutoConfiguration.class))
 			.withPropertyValues("spring.couchbase.connection-string=" + couchbaseContainer.getConnectionString(),
 					"spring.couchbase.username=" + couchbaseContainer.getUsername(),
 					"spring.couchbase.password=" + couchbaseContainer.getPassword(),

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,8 +22,6 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -42,14 +40,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 class OpenAiChatModelTypeReferenceBeanOutputConverterIT extends AbstractIT {
 
-	private static final Logger logger = LoggerFactory
-		.getLogger(OpenAiChatModelTypeReferenceBeanOutputConverterIT.class);
-
 	@Test
 	void typeRefOutputConverterRecords() {
 
 		BeanOutputConverter<List<ActorsFilmsRecord>> outputConverter = new BeanOutputConverter<>(
-				new ParameterizedTypeReference<>() {
+				new ParameterizedTypeReference<List<ActorsFilmsRecord>>() {
 
 				});
 
@@ -66,7 +61,6 @@ class OpenAiChatModelTypeReferenceBeanOutputConverterIT extends AbstractIT {
 		Generation generation = this.chatModel.call(prompt).getResult();
 
 		List<ActorsFilmsRecord> actorsFilms = outputConverter.convert(generation.getOutput().getText());
-		logger.info("" + actorsFilms);
 		assertThat(actorsFilms).hasSize(2);
 		assertThat(actorsFilms.get(0).actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.get(0).movies()).hasSize(5);
@@ -78,7 +72,7 @@ class OpenAiChatModelTypeReferenceBeanOutputConverterIT extends AbstractIT {
 	void typeRefStreamOutputConverterRecords() {
 
 		BeanOutputConverter<List<ActorsFilmsRecord>> outputConverter = new BeanOutputConverter<>(
-				new ParameterizedTypeReference<>() {
+				new ParameterizedTypeReference<List<ActorsFilmsRecord>>() {
 
 				});
 
@@ -104,7 +98,6 @@ class OpenAiChatModelTypeReferenceBeanOutputConverterIT extends AbstractIT {
 			.collect(Collectors.joining());
 
 		List<ActorsFilmsRecord> actorsFilms = outputConverter.convert(generationTextFromStream);
-		logger.info("" + actorsFilms);
 		assertThat(actorsFilms).hasSize(2);
 		assertThat(actorsFilms.get(0).actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.get(0).movies()).hasSize(5);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,8 @@
 
 package org.springframework.ai.model.transformers.autoconfigure;
 
-import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,9 +40,16 @@ public class TransformersEmbeddingModelProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.embedding.transformer";
 
-	public static final String DEFAULT_CACHE_DIRECTORY = new File(System.getProperty("java.io.tmpdir"),
-			"spring-ai-onnx-generative")
-		.getAbsolutePath();
+	public static final String DEFAULT_CACHE_DIRECTORY;
+
+	static {
+		try {
+			DEFAULT_CACHE_DIRECTORY = Files.createTempDirectory("spring-ai-model-cache").toAbsolutePath().toString();
+		}
+		catch (IOException e) {
+			throw new RuntimeException("Could not create default cache dir", e);
+		}
+	}
 
 	@NestedConfigurationProperty
 	private final Tokenizer tokenizer = new Tokenizer();
@@ -129,7 +137,7 @@ public class TransformersEmbeddingModelProperties {
 		/**
 		 * Resource cache directory. Used to cache remote resources, such as the ONNX
 		 * models, to the local file system. Applicable only for cache.enabled == true.
-		 * Defaults to {java.io.tmpdir}/spring-ai-onnx-generative.
+		 * Defaults to a newly created, user-owned directory, for security purposes.
 		 */
 		private String directory = DEFAULT_CACHE_DIRECTORY;
 

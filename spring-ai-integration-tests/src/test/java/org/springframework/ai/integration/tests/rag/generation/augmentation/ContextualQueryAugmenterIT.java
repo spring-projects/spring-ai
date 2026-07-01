@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Thomas Vitale
  */
 @SpringBootTest(classes = TestApplication.class)
-@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 class ContextualQueryAugmenterIT {
 
 	@Autowired
@@ -56,7 +56,6 @@ class ContextualQueryAugmenterIT {
 		String response = this.openAiChatModel.call(augmentedQuery.text());
 
 		assertThat(response).isNotEmpty();
-		System.out.println(response);
 		assertThat(response).containsIgnoringCase("North Pole");
 		assertThat(response).doesNotContainIgnoringCase("context");
 		assertThat(response).doesNotContainIgnoringCase("information");
@@ -71,7 +70,6 @@ class ContextualQueryAugmenterIT {
 		String response = this.openAiChatModel.call(augmentedQuery.text());
 
 		assertThat(response).isNotEmpty();
-		System.out.println(response);
 		assertThat(response).containsIgnoringCase("Iorek");
 	}
 
@@ -84,7 +82,6 @@ class ContextualQueryAugmenterIT {
 		String response = this.openAiChatModel.call(augmentedQuery.text());
 
 		assertThat(response).isNotEmpty();
-		System.out.println(response);
 		assertThat(response).doesNotContainIgnoringCase("Iorek");
 	}
 

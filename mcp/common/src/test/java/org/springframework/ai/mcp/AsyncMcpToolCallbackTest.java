@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -202,8 +202,7 @@ class AsyncMcpToolCallbackTest {
 	@Test
 	void getToolDefinitionShouldReturnCorrectDefinition() {
 		when(this.tool.description()).thenReturn("Test tool description");
-		var jsonSchema = mock(McpSchema.JsonSchema.class);
-		when(this.tool.inputSchema()).thenReturn(jsonSchema);
+		when(this.tool.inputSchema()).thenReturn(Map.of());
 
 		// Act
 		var callback = AsyncMcpToolCallback.builder()
@@ -294,7 +293,7 @@ class AsyncMcpToolCallbackTest {
 	void deprecatedConstructorShouldWork() {
 		when(this.tool.name()).thenReturn("testTool");
 		when(this.tool.description()).thenReturn("Test description");
-		when(this.tool.inputSchema()).thenReturn(mock(McpSchema.JsonSchema.class));
+		when(this.tool.inputSchema()).thenReturn(Map.of());
 		var clientInfo = new Implementation("testClient", "1.0.0");
 		when(this.mcpClient.getClientInfo()).thenReturn(clientInfo);
 

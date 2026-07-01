@@ -116,26 +116,26 @@ public class DocumentServer {
         Document doc = documents.get(id);
 
         if (doc == null) {
-            return new ReadResourceResult(List.of(
+            return ReadResourceResult.builder(List.of(
                 new TextResourceContents("document://" + id,
                     "text/plain", "Document not found")
-            ));
+            )).build();
         }
 
         // Check access permissions from metadata
         String accessLevel = (String) meta.get("accessLevel");
         if ("restricted".equals(doc.getClassification()) &&
             !"admin".equals(accessLevel)) {
-            return new ReadResourceResult(List.of(
+            return ReadResourceResult.builder(List.of(
                 new TextResourceContents("document://" + id,
                     "text/plain", "Access denied")
-            ));
+            )).build();
         }
 
-        return new ReadResourceResult(List.of(
+        return ReadResourceResult.builder(List.of(
             new TextResourceContents("document://" + id,
                 doc.getMimeType(), doc.getContent())
-        ));
+        )).build();
     }
 
     @McpTool(name = "analyze-document",
@@ -177,9 +177,10 @@ public class DocumentServer {
 
         Document doc = documents.get(docId);
         if (doc == null) {
-            return new GetPromptResult("Error",
-                List.of(new PromptMessage(Role.SYSTEM,
-                    new TextContent("Document not found"))));
+            return GetPromptResult.builder(List.of(new PromptMessage(Role.SYSTEM,
+                    TextContent.builder("Document not found").build())))
+                .description("Error")
+                .build();
         }
 
         String promptText = String.format(
@@ -188,8 +189,9 @@ public class DocumentServer {
             doc.getContent()
         );
 
-        return new GetPromptResult("Document Summary",
-            List.of(new PromptMessage(Role.USER, new TextContent(promptText))));
+        return GetPromptResult.builder(List.of(new PromptMessage(Role.USER, TextContent.builder(promptText).build())))
+            .description("Document Summary")
+            .build();
     }
 
     @McpComplete(prompt = "document-summary")
@@ -261,10 +263,9 @@ public class ClientHandlers {
 
         ChatResponse response = chatModel.call(new Prompt(messages));
 
-        return CreateMessageResult.builder()
-            .role(Role.ASSISTANT)
-            .content(new TextContent(response.getResult().getOutput().getContent()))
-            .model(request.modelPreferences().hints().get(0).name())
+        return CreateMessageResult.builder(Role.ASSISTANT,
+                response.getResult().getOutput().getText(),
+                request.modelPreferences().hints().get(0).name())
             .build();
     }
 
@@ -403,10 +404,10 @@ public class AsyncDataProcessor {
     public Mono<ReadResourceResult> getAsyncData(String id) {
         return Mono.fromCallable(() -> loadDataAsync(id))
             .subscribeOn(Schedulers.boundedElastic())
-            .map(data -> new ReadResourceResult(List.of(
+            .map(data -> ReadResourceResult.builder(List.of(
                 new TextResourceContents("async-data://" + id,
                     "application/json", data)
-            )));
+            )).build());
     }
 }
 ----
@@ -426,10 +427,7 @@ public class AsyncClientHandlers {
             return prompt;
         })
         .flatMap(prompt -> callLLMAsync(prompt))
-        .map(response -> CreateMessageResult.builder()
-            .role(Role.ASSISTANT)
-            .content(new TextContent(response))
-            .model("gpt-4")
+        .map(response -> CreateMessageResult.builder(Role.ASSISTANT, response, "gpt-4")
             .build())
         .timeout(Duration.ofSeconds(30));
     }
@@ -489,14 +487,14 @@ public class StatelessTools {
             @McpToolParam(description = "JSON string", required = true) String json) {
 
         try {
-            ObjectMapper mapper = new ObjectMapper();
+            JsonMapper mapper = new JsonMapper();
             mapper.readTree(json);
 
             return CallToolResult.builder()
                 .addTextContent("Valid JSON")
                 .structuredContent(Map.of("valid", true))
                 .build();
-        } catch (Exception e) {
+        } catch (JacksonException e) {
             return CallToolResult.builder()
                 .addTextContent("Invalid JSON: " + e.getMessage())
                 .structuredContent(Map.of("valid", false, "error", e.getMessage()))
@@ -520,8 +518,9 @@ public class StatelessTools {
             template = substituteVariables(template, variables);
         }
 
-        return new GetPromptResult("Template: " + templateName,
-            List.of(new PromptMessage(Role.USER, new TextContent(template))));
+        return GetPromptResult.builder(List.of(new PromptMessage(Role.USER, TextContent.builder(template).build())))
+            .description("Template: " + templateName)
+            .build();
     }
 }
 ----
@@ -532,7 +531,11 @@ This example demonstrates how to use MCP Sampling to generate creative content f
 
 === Sampling Server Implementation
 
-The server provides a weather tool that uses MCP Sampling to generate poems from different LLM providers:
+The server provides a weather tool that uses MCP Sampling to generate poems from different LLM providers.
+
+[NOTE]
+This example uses `McpSyncServerExchange` directly for fine-grained control over the low-level MCP API. For simpler cases, use `McpSyncRequestContext` which provides a higher-level, more convenient interface (e.g., `context.sampleEnabled()`, `context.sample(...)`, `context.info(...)`).
+
 
 [source,java]
 ----
@@ -563,19 +566,17 @@ public class WeatherService {
         StringBuilder anthropicWeatherPoem = new StringBuilder();
 
         // Send logging notification
-        exchange.loggingNotification(LoggingMessageNotification.builder()
-                .level(LoggingLevel.INFO)
-                .data("Start sampling")
+        exchange.loggingNotification(LoggingMessageNotification.builder(LoggingLevel.INFO, "Start sampling")
                 .build());
 
         // Check if client supports sampling
         if (exchange.getClientCapabilities().sampling() != null) {
-            var messageRequestBuilder = McpSchema.CreateMessageRequest.builder()
-                    .systemPrompt("You are a poet!")
-                    .messages(List.of(new McpSchema.SamplingMessage(McpSchema.Role.USER,
-                            new McpSchema.TextContent(
-                                    "Please write a poem about this weather forecast (temperature is in Celsius). Use markdown format :\n "
-                                            + ModelOptionsUtils.toJsonStringPrettyPrinter(weatherResponse)))));
+            var samplingMessages = List.of(new McpSchema.SamplingMessage(McpSchema.Role.USER,
+                    McpSchema.TextContent.builder(
+                            "Please write a poem about this weather forecast (temperature is in Celsius). Use markdown format :\n "
+                                    + new JsonHelper().toJson(weatherResponse)).build()));
+            var messageRequestBuilder = McpSchema.CreateMessageRequest.builder(samplingMessages, 500)
+                    .systemPrompt("You are a poet!");
 
             // Request poem from OpenAI
             var openAiLlmMessageRequest = messageRequestBuilder
@@ -592,15 +593,13 @@ public class WeatherService {
             anthropicWeatherPoem.append(((McpSchema.TextContent) anthropicAiLlmResponse.content()).text());
         }
 
-        exchange.loggingNotification(LoggingMessageNotification.builder()
-                .level(LoggingLevel.INFO)
-                .data("Finish Sampling")
+        exchange.loggingNotification(LoggingMessageNotification.builder(LoggingLevel.INFO, "Finish Sampling")
                 .build());
 
         // Combine results
         String responseWithPoems = "OpenAI poem about the weather: " + openAiWeatherPoem.toString() + "\n\n" +
                 "Anthropic poem about the weather: " + anthropicWeatherPoem.toString() + "\n"
-                + ModelOptionsUtils.toJsonStringPrettyPrinter(weatherResponse);
+                + new JsonHelper().toJson(weatherResponse);
 
         return responseWithPoems;
     }
@@ -655,8 +654,7 @@ public class McpClientHandlers {
                 .call()
                 .content();
 
-        return CreateMessageResult.builder()
-                .content(new McpSchema.TextContent(response))
+        return CreateMessageResult.builder(Role.ASSISTANT, response, modelHint)
                 .build();
     }
 }
@@ -682,7 +680,7 @@ public class McpClientApplication {
         return args -> {
 
             ChatClient chatClient = ChatClient.builder(openAiChatModel)
-                    .defaultToolCallbacks(mcpToolProvider)
+                    .defaultTools(mcpToolProvider)
                     .build();
 
             String userQuestion = """

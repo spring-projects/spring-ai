@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.datastax.oss.driver.api.core.CqlSession;
@@ -64,9 +63,9 @@ import com.datastax.oss.driver.api.querybuilder.select.Select;
 import com.datastax.oss.driver.api.querybuilder.select.Selector;
 import com.datastax.oss.driver.shaded.guava.common.annotations.VisibleForTesting;
 import com.datastax.oss.driver.shaded.guava.common.base.Preconditions;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
@@ -170,6 +169,7 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Soby Chacko
+ * @author chabinhwang
  * @see VectorStore
  * @see EmbeddingModel
  * @since 1.0.0
@@ -194,7 +194,7 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 
 	public static final String DRIVER_PROFILE_SEARCH = "spring-ai-search";
 
-	private static final Logger logger = LoggerFactory.getLogger(CassandraVectorStore.class);
+	private static final Log logger = LogFactory.getLog(CassandraVectorStore.class);
 
 	private static final Map<Similarity, VectorStoreSimilarityMetric> SIMILARITY_TYPE_MAPPING = Map.of(
 			Similarity.COSINE, VectorStoreSimilarityMetric.COSINE, Similarity.EUCLIDEAN,
@@ -271,9 +271,10 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
 				this.batchingStrategy);
 
-		int i = 0;
-		for (Document d : documents) {
-			futures[i++] = CompletableFuture.runAsync(() -> {
+		for (int i = 0; i < documents.size(); i++) {
+			Document d = documents.get(i);
+			int index = i;
+			futures[i] = CompletableFuture.runAsync(() -> {
 				List<Object> primaryKeyValues = this.documentIdTranslator.apply(d.getId());
 
 				BoundStatementBuilder builder = prepareAddStatement(d.getMetadata().keySet()).boundStatementBuilder();
@@ -284,8 +285,7 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 
 				builder = builder.setString(this.schema.content(), d.getText())
 					.setVector(this.schema.embedding(),
-							CqlVector.newInstance(EmbeddingUtils.toList(embeddings.get(documents.indexOf(d)))),
-							Float.class);
+							CqlVector.newInstance(EmbeddingUtils.toList(embeddings.get(index))), Float.class);
 
 				for (var metadataColumn : this.schema.metadataColumns()
 					.stream()
@@ -335,9 +335,11 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 
 			if (!matchingDocs.isEmpty()) {
 				// Then delete those documents by ID
-				List<String> idsToDelete = matchingDocs.stream().map(Document::getId).collect(Collectors.toList());
+				List<String> idsToDelete = matchingDocs.stream().map(Document::getId).toList();
 				delete(idsToDelete);
-				logger.debug("Deleted {} documents matching filter expression", idsToDelete.size());
+				if (logger.isDebugEnabled()) {
+					logger.debug("Deleted " + idsToDelete.size() + " documents matching filter expression");
+				}
 			}
 		}
 		catch (Exception e) {
@@ -588,7 +590,9 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 			.andColumn(this.schema.embedding)
 			.build();
 
-		logger.debug("Executing {}", indexStmt.getQuery());
+		if (logger.isDebugEnabled()) {
+			logger.debug("Executing " + indexStmt.getQuery());
+		}
 		this.session.execute(indexStmt);
 
 		Stream
@@ -604,7 +608,9 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 					.andColumn(metadata.name())
 					.build();
 
-				logger.debug("Executing {}", indexStatement.getQuery());
+				if (logger.isDebugEnabled()) {
+					logger.debug("Executing " + indexStatement.getQuery());
+				}
 				this.session.execute(indexStatement);
 			});
 	}
@@ -633,7 +639,9 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 				createTable = createTable.withColumn(metadata.name(), metadata.type());
 			}
 
-			logger.debug("Executing {}", createTable.asCql());
+			if (logger.isDebugEnabled()) {
+				logger.debug("Executing " + createTable.asCql());
+			}
 			this.session.execute(createTable.build());
 		}
 	}
@@ -676,7 +684,9 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 						DataTypes.vectorOf(DataTypes.FLOAT, vectorDimension));
 			}
 			SimpleStatement stmt = ((AlterTableAddColumnEnd) alterTable).build();
-			logger.debug("Executing {}", stmt.getQuery());
+			if (logger.isDebugEnabled()) {
+				logger.debug("Executing " + stmt.getQuery());
+			}
 			this.session.execute(stmt);
 		}
 	}
@@ -905,10 +915,10 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 
 		/**
 		 * Sets the index name.
-		 * @param indexName the index name
+		 * @param indexName the index name (will be auto-generated if null)
 		 * @return the builder instance
 		 */
-		public Builder indexName(String indexName) {
+		public Builder indexName(@Nullable String indexName) {
 			this.indexName = indexName;
 			return this;
 		}

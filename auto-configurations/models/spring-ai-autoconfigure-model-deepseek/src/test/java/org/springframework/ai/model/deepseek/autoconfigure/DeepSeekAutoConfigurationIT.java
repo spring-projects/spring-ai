@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,6 @@ package org.springframework.ai.model.deepseek.autoconfigure;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import reactor.core.publisher.Flux;
@@ -29,8 +27,12 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.deepseek.DeepSeekChatModel;
-import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
+import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
+import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
+import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.boot.webclient.autoconfigure.WebClientAutoConfiguration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -39,14 +41,14 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Hyunsang Han
  * @author Issam El-atif
  */
-@EnabledIfEnvironmentVariable(named = "DEEPSEEK_API_KEY", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "DEEPSEEK_API_KEY", matches = ".+")
 public class DeepSeekAutoConfigurationIT {
 
-	private static final Log logger = LogFactory.getLog(DeepSeekAutoConfigurationIT.class);
-
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.deepseek.apiKey=" + System.getenv("DEEPSEEK_API_KEY"))
-		.withConfiguration(SpringAiTestAutoConfigurations.of(DeepSeekChatAutoConfiguration.class));
+		.withPropertyValues("spring.ai.deepseek.api-key=" + System.getenv("DEEPSEEK_API_KEY"))
+		.withConfiguration(AutoConfigurations.of(DeepSeekChatAutoConfiguration.class, RestClientAutoConfiguration.class,
+				SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class,
+				WebClientAutoConfiguration.class));
 
 	@Test
 	void generate() {
@@ -54,7 +56,6 @@ public class DeepSeekAutoConfigurationIT {
 			DeepSeekChatModel client = context.getBean(DeepSeekChatModel.class);
 			String response = client.call("Hello");
 			assertThat(response).isNotEmpty();
-			logger.info("Response: " + response);
 		});
 	}
 
@@ -69,7 +70,6 @@ public class DeepSeekAutoConfigurationIT {
 				.collect(Collectors.joining());
 
 			assertThat(response).isNotEmpty();
-			logger.info("Response: " + response);
 		});
 	}
 

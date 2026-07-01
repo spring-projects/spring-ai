@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,14 +18,10 @@ package org.springframework.ai.postgresml;
 
 import java.util.Map;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.EmbeddingOptions;
-import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.postgresml.PostgresMlEmbeddingModel.VectorType;
 
 /**
@@ -34,116 +30,105 @@ import org.springframework.ai.postgresml.PostgresMlEmbeddingModel.VectorType;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
+ * @author Sébastien Deleuze
  */
-@JsonInclude(Include.NON_NULL)
 public class PostgresMlEmbeddingOptions implements EmbeddingOptions {
 
-	// @formatter:off
+	public static final String DEFAULT_TRANSFORMER_MODEL = "distilbert-base-uncased";
+
 	/**
 	 * The Huggingface transformer model to use for the embedding.
 	 */
-	private @JsonProperty("transformer") String transformer = PostgresMlEmbeddingModel.DEFAULT_TRANSFORMER_MODEL;
+	private final String transformer;
 
 	/**
-	 * PostgresML vector type to use for the embedding.
-	 * Two options are supported: PG_ARRAY and PG_VECTOR.
+	 * PostgresML vector type to use for the embedding. Two options are supported:
+	 * PG_ARRAY and PG_VECTOR.
 	 */
-	private @JsonProperty("vectorType") VectorType vectorType = VectorType.PG_ARRAY;
+	private final VectorType vectorType;
 
 	/**
 	 * Additional transformer specific options.
 	 */
-	private @JsonProperty("kwargs") Map<String, Object> kwargs = Map.of();
+	private final @Nullable Map<String, Object> kwargs;
 
 	/**
 	 * The Document metadata aggregation mode.
 	 */
-	private @JsonProperty("metadataMode") MetadataMode metadataMode = MetadataMode.EMBED;
-	// @formatter:on
+	private final MetadataMode metadataMode;
 
-	public static Builder builder() {
-		return new Builder();
+	protected PostgresMlEmbeddingOptions(@Nullable String transformer, @Nullable VectorType vectorType,
+			@Nullable Map<String, Object> kwargs, @Nullable MetadataMode metadataMode) {
+		this.transformer = transformer != null ? transformer : DEFAULT_TRANSFORMER_MODEL;
+		this.vectorType = vectorType != null ? vectorType : VectorType.PG_ARRAY;
+		this.kwargs = kwargs != null ? Map.copyOf(kwargs) : null;
+		this.metadataMode = metadataMode != null ? metadataMode : MetadataMode.EMBED;
 	}
 
 	public String getTransformer() {
 		return this.transformer;
 	}
 
-	public void setTransformer(String transformer) {
-		this.transformer = transformer;
-	}
-
 	public VectorType getVectorType() {
 		return this.vectorType;
 	}
 
-	public void setVectorType(VectorType vectorType) {
-		this.vectorType = vectorType;
-	}
-
-	public Map<String, Object> getKwargs() {
+	public @Nullable Map<String, Object> getKwargs() {
 		return this.kwargs;
-	}
-
-	public void setKwargs(Map<String, Object> kwargs) {
-		this.kwargs = kwargs;
 	}
 
 	public MetadataMode getMetadataMode() {
 		return this.metadataMode;
 	}
 
-	public void setMetadataMode(MetadataMode metadataMode) {
-		this.metadataMode = metadataMode;
-	}
-
 	@Override
-	@JsonIgnore
-	public String getModel() {
+	public @Nullable String getModel() {
 		return null;
 	}
 
 	@Override
-	@JsonIgnore
-	public Integer getDimensions() {
+	public @Nullable Integer getDimensions() {
 		return null;
+	}
+
+	public static Builder builder() {
+		return new Builder();
 	}
 
 	public static final class Builder {
 
-		protected PostgresMlEmbeddingOptions options;
+		private @Nullable String transformer;
 
-		public Builder() {
-			this.options = new PostgresMlEmbeddingOptions();
-		}
+		private @Nullable VectorType vectorType;
 
-		public Builder transformer(String transformer) {
-			this.options.setTransformer(transformer);
+		private @Nullable Map<String, Object> kwargs;
+
+		private @Nullable MetadataMode metadataMode;
+
+		public Builder transformer(@Nullable String transformer) {
+			this.transformer = transformer;
 			return this;
 		}
 
-		public Builder vectorType(VectorType vectorType) {
-			this.options.setVectorType(vectorType);
+		public Builder vectorType(@Nullable VectorType vectorType) {
+			this.vectorType = vectorType;
 			return this;
 		}
 
-		public Builder kwargs(String kwargs) {
-			this.options.setKwargs(ModelOptionsUtils.objectToMap(kwargs));
+		public Builder kwargs(@Nullable Map<String, Object> kwargs) {
+			if (kwargs != null) {
+				this.kwargs = kwargs;
+			}
 			return this;
 		}
 
-		public Builder kwargs(Map<String, Object> kwargs) {
-			this.options.setKwargs(kwargs);
-			return this;
-		}
-
-		public Builder metadataMode(MetadataMode metadataMode) {
-			this.options.setMetadataMode(metadataMode);
+		public Builder metadataMode(@Nullable MetadataMode metadataMode) {
+			this.metadataMode = metadataMode;
 			return this;
 		}
 
 		public PostgresMlEmbeddingOptions build() {
-			return this.options;
+			return new PostgresMlEmbeddingOptions(this.transformer, this.vectorType, this.kwargs, this.metadataMode);
 		}
 
 	}

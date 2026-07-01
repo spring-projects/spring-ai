@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,6 +42,7 @@ import static org.mockito.BDDMockito.given;
 /**
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Sebastien Deleuze
  * @since 1.0.0
  */
 @ExtendWith(MockitoExtension.class)
@@ -63,12 +64,9 @@ class OllamaEmbeddingModelTests {
 					List.of(new float[] { 7f, 8f, 9f }, new float[] { 10f, 11f, 12f }), 0L, 0L, 0));
 
 		// Tests default options
-		var defaultOptions = OllamaEmbeddingOptions.builder().model("DEFAULT_MODEL").build();
+		var options = OllamaEmbeddingOptions.builder().model("DEFAULT_MODEL").build();
 
-		var embeddingModel = OllamaEmbeddingModel.builder()
-			.ollamaApi(this.ollamaApi)
-			.defaultOptions(defaultOptions)
-			.build();
+		var embeddingModel = OllamaEmbeddingModel.builder().ollamaApi(this.ollamaApi).options(options).build();
 
 		EmbeddingResponse response = embeddingModel
 			.call(new EmbeddingRequest(List.of("Input1", "Input2", "Input3"), EmbeddingOptions.builder().build()));
@@ -114,7 +112,7 @@ class OllamaEmbeddingModelTests {
 
 		var embeddingModel = OllamaEmbeddingModel.builder()
 			.ollamaApi(this.ollamaApi)
-			.defaultOptions(OllamaEmbeddingOptions.builder().model("TEST_MODEL").build())
+			.options(OllamaEmbeddingOptions.builder().model("TEST_MODEL").build())
 			.build();
 
 		EmbeddingResponse response = embeddingModel
@@ -136,7 +134,7 @@ class OllamaEmbeddingModelTests {
 
 		var embeddingModel = OllamaEmbeddingModel.builder()
 			.ollamaApi(this.ollamaApi)
-			.defaultOptions(OllamaEmbeddingOptions.builder().model("NULL_OPTIONS_MODEL").build())
+			.options(OllamaEmbeddingOptions.builder().model("NULL_OPTIONS_MODEL").build())
 			.build();
 
 		EmbeddingResponse response = embeddingModel.call(new EmbeddingRequest(List.of("Null options test"), null));
@@ -163,7 +161,7 @@ class OllamaEmbeddingModelTests {
 
 		var embeddingModel = OllamaEmbeddingModel.builder()
 			.ollamaApi(this.ollamaApi)
-			.defaultOptions(OllamaEmbeddingOptions.builder().model("BATCH_MODEL").build())
+			.options(OllamaEmbeddingOptions.builder().model("BATCH_MODEL").build())
 			.build();
 
 		EmbeddingResponse response = embeddingModel
@@ -184,7 +182,7 @@ class OllamaEmbeddingModelTests {
 
 		var embeddingModel = OllamaEmbeddingModel.builder()
 			.ollamaApi(this.ollamaApi)
-			.defaultOptions(OllamaEmbeddingOptions.builder().model("KEEPALIVE_MODEL").build())
+			.options(OllamaEmbeddingOptions.builder().model("KEEPALIVE_MODEL").build())
 			.build();
 
 		// Test with seconds format
@@ -207,7 +205,7 @@ class OllamaEmbeddingModelTests {
 
 		var embeddingModel = OllamaEmbeddingModel.builder()
 			.ollamaApi(this.ollamaApi)
-			.defaultOptions(OllamaEmbeddingOptions.builder().model("METADATA_MODEL").build())
+			.options(OllamaEmbeddingOptions.builder().model("METADATA_MODEL").build())
 			.build();
 
 		EmbeddingResponse response = embeddingModel
@@ -225,7 +223,7 @@ class OllamaEmbeddingModelTests {
 
 		var embeddingModel = OllamaEmbeddingModel.builder()
 			.ollamaApi(this.ollamaApi)
-			.defaultOptions(OllamaEmbeddingOptions.builder().model("ZERO_MODEL").build())
+			.options(OllamaEmbeddingOptions.builder().model("ZERO_MODEL").build())
 			.build();
 
 		EmbeddingResponse response = embeddingModel
@@ -238,7 +236,7 @@ class OllamaEmbeddingModelTests {
 	@Test
 	void builderValidation() {
 		// Test that builder requires ollamaApi
-		assertThatThrownBy(() -> OllamaEmbeddingModel.builder().build()).isInstanceOf(IllegalArgumentException.class);
+		assertThatThrownBy(() -> OllamaEmbeddingModel.builder().build()).isInstanceOf(IllegalStateException.class);
 
 		// Test successful builder with minimal required parameters
 		var model = OllamaEmbeddingModel.builder().ollamaApi(this.ollamaApi).build();

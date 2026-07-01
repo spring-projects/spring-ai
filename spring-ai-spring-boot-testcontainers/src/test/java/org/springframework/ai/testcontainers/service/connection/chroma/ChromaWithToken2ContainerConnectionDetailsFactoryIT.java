@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,11 +19,11 @@ package org.springframework.ai.testcontainers.service.connection.chroma;
 import java.util.List;
 import java.util.Map;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.chromadb.ChromaDBContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -93,8 +93,8 @@ class ChromaWithToken2ContainerConnectionDetailsFactoryIT {
 	static class Config {
 
 		@Bean
-		public ObjectMapper objectMapper() {
-			return new ObjectMapper();
+		public JsonMapper jsonMapper() {
+			return new JsonMapper();
 		}
 
 		@Bean

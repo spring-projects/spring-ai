@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@ package org.springframework.ai.mcp.client.common.autoconfigure.properties;
 
 import java.util.HashMap;
 import java.util.Map;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
@@ -68,7 +70,7 @@ public class McpStreamableHttpClientProperties {
 	 * @param url the URL endpoint for Streamable Http communication with the MCP server
 	 * @param endpoint the endpoint for the MCP server
 	 */
-	public record ConnectionParameters(String url, String endpoint) {
+	public record ConnectionParameters(@Nullable String url, @Nullable String endpoint) {
 	}
 
 }

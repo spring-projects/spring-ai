@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,11 +25,10 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.json.JsonMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -47,7 +46,6 @@ import org.springframework.beans.factory.InitializingBean;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
-import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -135,6 +133,7 @@ import org.springframework.util.StringUtils;
  * @author Diego Dupin
  * @author Ilayaperumal Gopinathan
  * @author Soby Chacko
+ * @author chabinhwang
  * @since 1.0.0
  */
 public class MariaDBVectorStore extends AbstractObservationVectorStore implements InitializingBean {
@@ -147,7 +146,7 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 
 	public static final int MAX_DOCUMENT_BATCH_SIZE = 10_000;
 
-	private static final Logger logger = LoggerFactory.getLogger(MariaDBVectorStore.class);
+	private static final Log logger = LogFactory.getLog(MariaDBVectorStore.class);
 
 	public static final String DEFAULT_TABLE_NAME = "vector_store";
 
@@ -169,7 +168,7 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 
 	private final JdbcTemplate jdbcTemplate;
 
-	private final String schemaName;
+	private final @Nullable String schemaName;
 
 	private final boolean schemaValidation;
 
@@ -187,7 +186,7 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 
 	private final MariaDBDistanceType distanceType;
 
-	private final ObjectMapper objectMapper;
+	private final JsonMapper jsonMapper;
 
 	private final boolean removeExistingVectorStoreTable;
 
@@ -208,13 +207,15 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 
 		Assert.notNull(builder.jdbcTemplate, "JdbcTemplate must not be null");
 
-		this.objectMapper = JsonMapper.builder().addModules(JacksonUtils.instantiateAvailableModules()).build();
+		this.jsonMapper = JsonMapper.builder().addModules(JacksonUtils.instantiateAvailableModules()).build();
 
 		this.vectorTableName = builder.vectorTableName.isEmpty() ? DEFAULT_TABLE_NAME
 				: MariaDBSchemaValidator.validateAndEnquoteIdentifier(builder.vectorTableName.trim(), false);
 
-		logger.info("Using the vector table name: {}. Is empty: {}", this.vectorTableName,
-				builder.vectorTableName.isEmpty());
+		if (logger.isInfoEnabled()) {
+			logger.info("Using the vector table name: " + this.vectorTableName + ". Is empty: "
+					+ builder.vectorTableName.isEmpty());
+		}
 
 		this.schemaName = builder.schemaName == null ? null
 				: MariaDBSchemaValidator.validateAndEnquoteIdentifier(builder.schemaName, false);
@@ -262,9 +263,10 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 		List<List<MariaDBDocument>> batches = new ArrayList<>();
 		List<MariaDBDocument> mariaDBDocuments = new ArrayList<>(documents.size());
 		if (embeddings.size() == documents.size()) {
-			for (Document document : documents) {
+			for (int i = 0; i < documents.size(); i++) {
+				Document document = documents.get(i);
 				mariaDBDocuments.add(new MariaDBDocument(document.getId(), document.getText(), document.getMetadata(),
-						embeddings.get(documents.indexOf(document))));
+						embeddings.get(i)));
 			}
 		}
 		else {
@@ -307,12 +309,7 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 	}
 
 	private String toJson(Map<String, Object> map) {
-		try {
-			return this.objectMapper.writeValueAsString(map);
-		}
-		catch (JsonProcessingException e) {
-			throw new RuntimeException(e);
-		}
+		return this.jsonMapper.writeValueAsString(map);
 	}
 
 	@Override
@@ -334,12 +331,16 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 
 			String sql = String.format("DELETE FROM %s WHERE %s", getFullyQualifiedTableName(), nativeFilterExpression);
 
-			logger.debug("Executing delete with filter: {}", sql);
+			if (logger.isDebugEnabled()) {
+				logger.debug("Executing delete with filter: " + sql);
+			}
 
 			this.jdbcTemplate.update(sql);
 		}
 		catch (Exception e) {
-			logger.error("Failed to delete documents by filter: {}", e.getMessage(), e);
+			if (logger.isErrorEnabled()) {
+				logger.error("Failed to delete documents by filter: " + e.getMessage(), e);
+			}
 			throw new IllegalStateException("Failed to delete documents by filter", e);
 		}
 	}
@@ -364,9 +365,11 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 				this.idFieldName, this.contentFieldName, this.metadataFieldName, distanceType, this.embeddingFieldName,
 				getFullyQualifiedTableName(), jsonPathFilter);
 
-		logger.debug("SQL query: {}", sql);
+		if (logger.isDebugEnabled()) {
+			logger.debug("SQL query: " + sql);
+		}
 
-		return this.jdbcTemplate.query(sql, new DocumentRowMapper(this.objectMapper), embedding, distance,
+		return this.jdbcTemplate.query(sql, new DocumentRowMapper(this.jsonMapper), embedding, distance,
 				request.getTopK());
 	}
 
@@ -376,10 +379,14 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 	@Override
 	public void afterPropertiesSet() {
 
-		logger.info("Initializing MariaDBVectorStore schema for table: {} in schema: {}", this.vectorTableName,
-				this.schemaName);
+		if (logger.isInfoEnabled()) {
+			logger.info("Initializing MariaDBVectorStore schema for table: " + this.vectorTableName + " in schema: "
+					+ this.schemaName);
+		}
 
-		logger.info("vectorTableValidationsEnabled {}", this.schemaValidation);
+		if (logger.isInfoEnabled()) {
+			logger.info("vectorTableValidationsEnabled " + this.schemaValidation);
+		}
 
 		if (this.schemaValidation) {
 			this.schemaValidator.validateTableSchema(this.schemaName, this.vectorTableName, this.idFieldName,
@@ -387,7 +394,9 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 		}
 
 		if (!this.initializeSchema) {
-			logger.debug("Skipping the schema initialization for the table: {}", this.getFullyQualifiedTableName());
+			if (logger.isDebugEnabled()) {
+				logger.debug("Skipping the schema initialization for the table: " + this.getFullyQualifiedTableName());
+			}
 			return;
 		}
 
@@ -443,18 +452,25 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 	@Override
 	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
 
-		return VectorStoreObservationContext.builder(VectorStoreProvider.MARIADB.value(), operationName)
+		VectorStoreObservationContext.Builder builder = VectorStoreObservationContext
+			.builder(VectorStoreProvider.MARIADB.value(), operationName)
 			.collectionName(this.vectorTableName)
 			.dimensions(this.embeddingDimensions())
-			.namespace(this.schemaName)
 			.similarityMetric(getSimilarityMetric());
+		if (this.schemaName != null) {
+			builder.namespace(this.schemaName);
+		}
+		return builder;
 	}
 
 	private String getSimilarityMetric() {
-		if (!SIMILARITY_TYPE_MAPPING.containsKey(this.getDistanceType())) {
+		VectorStoreSimilarityMetric metric = SIMILARITY_TYPE_MAPPING.get(this.distanceType);
+		if (metric != null) {
+			return metric.value();
+		}
+		else {
 			return this.getDistanceType().name();
 		}
-		return SIMILARITY_TYPE_MAPPING.get(this.distanceType).value();
 	}
 
 	@Override
@@ -472,10 +488,10 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 
 	private static class DocumentRowMapper implements RowMapper<Document> {
 
-		private final ObjectMapper objectMapper;
+		private final JsonMapper jsonMapper;
 
-		DocumentRowMapper(ObjectMapper objectMapper) {
-			this.objectMapper = objectMapper;
+		DocumentRowMapper(JsonMapper jsonMapper) {
+			this.jsonMapper = jsonMapper;
 		}
 
 		@Override
@@ -497,12 +513,7 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 		}
 
 		private Map<String, Object> toMap(String source) {
-			try {
-				return (Map<String, Object>) this.objectMapper.readValue(source, Map.class);
-			}
-			catch (JsonProcessingException e) {
-				throw new RuntimeException(e);
-			}
+			return (Map<String, Object>) this.jsonMapper.readValue(source, Map.class);
 		}
 
 	}
@@ -525,8 +536,7 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 
 		private final JdbcTemplate jdbcTemplate;
 
-		@Nullable
-		private String schemaName;
+		private @Nullable String schemaName;
 
 		private String vectorTableName = DEFAULT_TABLE_NAME;
 
@@ -713,7 +723,7 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 	 * @param embedding The vectors representing the content of the document
 	 */
 	public record MariaDBDocument(String id, @Nullable String content, Map<String, Object> metadata,
-			@Nullable float[] embedding) {
+			float @Nullable [] embedding) {
 	}
 
 }

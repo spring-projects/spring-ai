@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,8 +47,6 @@ public class ElevenLabsVoicesApiIT {
 	@Test
 	void getVoices() {
 		ResponseEntity<ElevenLabsVoicesApi.Voices> response = this.voicesApi.getVoices();
-		System.out.println("Response: " + response);
-
 		assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
 		assertThat(response.getBody()).isNotNull();
 		ElevenLabsVoicesApi.Voices voicesResponse = response.getBody();

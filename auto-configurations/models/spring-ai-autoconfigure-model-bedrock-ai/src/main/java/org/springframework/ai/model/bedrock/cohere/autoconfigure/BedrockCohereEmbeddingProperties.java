@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,12 +21,13 @@ import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi.Coher
 import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi.CohereEmbeddingRequest;
 import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi.CohereEmbeddingRequest.InputType;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.boot.context.properties.NestedConfigurationProperty;
+import org.springframework.boot.context.properties.DeprecatedConfigurationProperty;
 
 /**
  * Bedrock Cohere Embedding autoconfiguration properties.
  *
  * @author Christian Tzolov
+ * @author Sebastien Deleuze
  * @since 0.8.0
  */
 @ConfigurationProperties(BedrockCohereEmbeddingProperties.CONFIG_PREFIX)
@@ -45,12 +46,6 @@ public class BedrockCohereEmbeddingProperties {
 	 */
 	private String model = CohereEmbeddingModel.COHERE_EMBED_MULTILINGUAL_V3.id();
 
-	@NestedConfigurationProperty
-	private final BedrockCohereEmbeddingOptions options = BedrockCohereEmbeddingOptions.builder()
-		.inputType(InputType.SEARCH_DOCUMENT)
-		.truncate(CohereEmbeddingRequest.Truncate.NONE)
-		.build();
-
 	public String getModel() {
 		return this.model;
 	}
@@ -59,16 +54,72 @@ public class BedrockCohereEmbeddingProperties {
 		this.model = model;
 	}
 
-	public BedrockCohereEmbeddingOptions getOptions() {
-		return this.options;
-	}
-
 	public boolean isEnabled() {
 		return this.enabled;
 	}
 
 	public void setEnabled(boolean enabled) {
 		this.enabled = enabled;
+	}
+
+	private InputType inputType = InputType.SEARCH_DOCUMENT;
+
+	private CohereEmbeddingRequest.Truncate truncate = CohereEmbeddingRequest.Truncate.NONE;
+
+	public InputType getInputType() {
+		return this.inputType;
+	}
+
+	public void setInputType(InputType inputType) {
+		this.inputType = inputType;
+	}
+
+	public CohereEmbeddingRequest.Truncate getTruncate() {
+		return this.truncate;
+	}
+
+	public void setTruncate(CohereEmbeddingRequest.Truncate truncate) {
+		this.truncate = truncate;
+	}
+
+	public BedrockCohereEmbeddingOptions toOptions() {
+		return BedrockCohereEmbeddingOptions.builder().inputType(this.inputType).truncate(this.truncate).build();
+	}
+
+	private Options options = new Options();
+
+	@DeprecatedConfigurationProperty(replacement = "spring.ai.bedrock.cohere.embedding")
+	@Deprecated(since = "2.0.0", forRemoval = true)
+	public Options getOptions() {
+		return this.options;
+	}
+
+	public void setOptions(Options options) {
+		this.options = options;
+	}
+
+	public class Options {
+
+		@DeprecatedConfigurationProperty(replacement = "spring.ai.bedrock.cohere.embedding.input-type")
+		@Deprecated(since = "2.0.0", forRemoval = true)
+		public InputType getInputType() {
+			return BedrockCohereEmbeddingProperties.this.getInputType();
+		}
+
+		public void setInputType(InputType inputType) {
+			BedrockCohereEmbeddingProperties.this.setInputType(inputType);
+		}
+
+		@DeprecatedConfigurationProperty(replacement = "spring.ai.bedrock.cohere.embedding.truncate")
+		@Deprecated(since = "2.0.0", forRemoval = true)
+		public CohereEmbeddingRequest.Truncate getTruncate() {
+			return BedrockCohereEmbeddingProperties.this.getTruncate();
+		}
+
+		public void setTruncate(CohereEmbeddingRequest.Truncate truncate) {
+			BedrockCohereEmbeddingProperties.this.setTruncate(truncate);
+		}
+
 	}
 
 }

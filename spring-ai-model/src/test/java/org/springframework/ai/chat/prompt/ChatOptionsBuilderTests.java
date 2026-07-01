@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package org.springframework.ai.chat.prompt;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -76,24 +75,6 @@ public class ChatOptionsBuilderTests {
 	}
 
 	@Test
-	void shouldCopyOptions() {
-		ChatOptions original = this.builder.model("gpt-4")
-			.maxTokens(100)
-			.temperature(0.7)
-			.topP(1.0)
-			.topK(40)
-			.stopSequences(List.of("stop1", "stop2"))
-			.build();
-
-		ChatOptions copy = original.copy();
-
-		// Then
-		assertThat(copy).usingRecursiveComparison().isEqualTo(original);
-		// Verify collections are actually copied
-		assertThat(copy.getStopSequences()).isNotSameAs(original.getStopSequences());
-	}
-
-	@Test
 	void shouldUpcastToChatOptions() {
 		// Given
 		FunctionToolCallback callback = FunctionToolCallback.builder("function1", x -> "result")
@@ -108,7 +89,6 @@ public class ChatOptionsBuilderTests {
 			.topP(1.0)
 			.topK(40)
 			.stopSequences(List.of("stop1", "stop2"))
-			.toolNames(Set.of("function1", "function2"))
 			.toolCallbacks(List.of(callback))
 			.build();
 
@@ -205,20 +185,6 @@ public class ChatOptionsBuilderTests {
 	}
 
 	@Test
-	void shouldCreateIndependentCopies() {
-		ChatOptions original = this.builder.model("test-model")
-			.stopSequences(new ArrayList<>(List.of("stop1")))
-			.build();
-
-		ChatOptions copy1 = original.copy();
-		ChatOptions copy2 = original.copy();
-
-		assertThat(copy1).isNotSameAs(copy2);
-		assertThat(copy1.getStopSequences()).isNotSameAs(copy2.getStopSequences());
-		assertThat(copy1).usingRecursiveComparison().isEqualTo(copy2);
-	}
-
-	@Test
 	void shouldHandleSpecialStringValues() {
 		ChatOptions options = this.builder.model("") // Empty string
 			.stopSequences(List.of("", "  ", "\n", "\t"))
@@ -226,20 +192,6 @@ public class ChatOptionsBuilderTests {
 
 		assertThat(options.getModel()).isEmpty();
 		assertThat(options.getStopSequences()).containsExactly("", "  ", "\n", "\t");
-	}
-
-	@Test
-	void shouldPreserveCopyIntegrity() {
-		List<String> mutableList = new ArrayList<>(List.of("original"));
-		ChatOptions original = this.builder.model("test-model").stopSequences(mutableList).build();
-
-		// Modify the original list after building
-		mutableList.add("modified");
-
-		ChatOptions copy = original.copy();
-
-		assertThat(original.getStopSequences()).containsExactly("original");
-		assertThat(copy.getStopSequences()).containsExactly("original");
 	}
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package org.springframework.ai.vectorstore.qdrant.autoconfigure;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.vectorstore.properties.CommonVectorStoreProperties;
 import org.springframework.ai.vectorstore.qdrant.QdrantVectorStore;
@@ -38,6 +40,11 @@ public class QdrantVectorStoreProperties extends CommonVectorStoreProperties {
 	private String collectionName = QdrantVectorStore.DEFAULT_COLLECTION_NAME;
 
 	/**
+	 * The name of the content field to use in Qdrant.
+	 */
+	private String contentFieldName = QdrantVectorStore.DEFAULT_CONTENT_FIELD_NAME;
+
+	/**
 	 * The host of the Qdrant server.
 	 */
 	private String host = "localhost";
@@ -55,7 +62,7 @@ public class QdrantVectorStoreProperties extends CommonVectorStoreProperties {
 	/**
 	 * The API key to use for authentication with the Qdrant server.
 	 */
-	private String apiKey = null;
+	private @Nullable String apiKey = null;
 
 	public String getCollectionName() {
 		return this.collectionName;
@@ -63,6 +70,14 @@ public class QdrantVectorStoreProperties extends CommonVectorStoreProperties {
 
 	public void setCollectionName(String collectionName) {
 		this.collectionName = collectionName;
+	}
+
+	public String getContentFieldName() {
+		return this.contentFieldName;
+	}
+
+	public void setContentFieldName(String contentFieldName) {
+		this.contentFieldName = contentFieldName;
 	}
 
 	public String getHost() {
@@ -89,11 +104,11 @@ public class QdrantVectorStoreProperties extends CommonVectorStoreProperties {
 		this.useTls = useTls;
 	}
 
-	public String getApiKey() {
+	public @Nullable String getApiKey() {
 		return this.apiKey;
 	}
 
-	public void setApiKey(String apiKey) {
+	public void setApiKey(@Nullable String apiKey) {
 		this.apiKey = apiKey;
 	}
 

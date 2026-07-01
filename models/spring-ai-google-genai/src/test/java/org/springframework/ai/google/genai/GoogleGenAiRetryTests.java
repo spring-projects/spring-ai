@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,7 +61,7 @@ public class GoogleGenAiRetryTests {
 				GoogleGenAiChatOptions.builder()
 					.temperature(0.7)
 					.topP(1.0)
-					.model(GoogleGenAiChatModel.ChatModel.GEMINI_3_PRO_PREVIEW.getValue())
+					.model(GoogleGenAiChatModel.ChatModel.GEMINI_3_1_PRO_PREVIEW.getValue())
 					.build(),
 				this.retryTemplate);
 

@@ -200,7 +200,7 @@ The advisor uses `callAdvisorChain.copy(this).nextCall(request)` to create a sub
 
 **Structured Evaluation Output**
 
-Using Spring AI's xref:api/structured-output-converter.adoc[structured output] capabilities, the evaluation results are parsed into an `EvaluationResponse` record with rating (1-4), evaluation rationale, and specific feedback for improvement.
+Using Spring AI's xref:api/structured-output.adoc[structured output] capabilities, the evaluation results are parsed into an `EvaluationResponse` record with rating (1-4), evaluation rationale, and specific feedback for improvement.
 
 **Separate Evaluation Model**
 
@@ -318,7 +318,7 @@ Always set termination conditions and retry limits to prevent infinite loops.
 * xref:api/advisors-recursive.adoc[Recursive Advisors]
 * xref:api/advisors.adoc[Advisors]
 * xref:api/chatclient.adoc[ChatClient]
-* xref:api/structured-output-converter.adoc[Structured Output]
+* xref:api/structured-output.adoc[Structured Output]
 * xref:api/testing.adoc[Model Evaluation]
 
 == References

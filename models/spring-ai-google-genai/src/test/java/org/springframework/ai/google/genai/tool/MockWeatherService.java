@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,16 +23,12 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author Christian Tzolov
  * @author Dan Dobrin
  */
 public class MockWeatherService implements Function<MockWeatherService.Request, MockWeatherService.Response> {
-
-	private final Logger logger = LoggerFactory.getLogger(getClass());
 
 	@Override
 	public Response apply(Request request) {
@@ -47,8 +43,6 @@ public class MockWeatherService implements Function<MockWeatherService.Request, 
 		else if (request.location().contains("San Francisco")) {
 			temperature = 30;
 		}
-
-		logger.info("Request is {}, response temperature is {}", request, temperature);
 		return new Response(temperature, Unit.C);
 	}
 

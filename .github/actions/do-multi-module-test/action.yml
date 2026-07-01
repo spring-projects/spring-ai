@@ -1,0 +1,34 @@
+name: "Run Spring AI Multi-Module Integration Tests"
+description: "Run integration tests for multiple Spring AI modules"
+
+inputs:
+  modules:
+    description: "Comma-separated list of modules to test"
+    required: true
+  maven-properties:
+    description: "Additional Maven properties to pass to the build"
+    required: false
+    default: ""
+
+runs:
+  using: "composite"
+  steps:
+    - name: Check environment
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const env = ${{ toJson(env) }}
+          const emptyEnvEntries = Object.entries(env).filter(e => e[1].length === 0)
+          emptyEnvEntries.length > 0 &&
+            core.setFailed('Missing value for environment variable(s): ' + emptyEnvEntries.map(e => e[0]).join(', '));
+
+    - name: Run integration tests
+      shell: bash
+      run: |
+        echo 'Running with maven properties:' ${{ inputs.maven-properties }}
+        ./mvnw --batch-mode -ntp --no-snapshot-updates \
+          -pl ${{ inputs.modules }} \
+          -Pintegration-tests \
+          ${{ inputs.maven-properties }} \
+          -Dfailsafe.rerunFailingTestsCount=2 \
+          verify

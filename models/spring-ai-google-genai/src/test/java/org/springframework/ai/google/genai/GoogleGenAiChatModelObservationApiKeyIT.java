@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,9 +44,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Soby Chacko
  * @author Dan Dobrin
+ * @author Sebastien Deleuze
  */
 @SpringBootTest
-@EnabledIfEnvironmentVariable(named = "GOOGLE_API_KEY", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "GOOGLE_API_KEY", matches = ".+")
 public class GoogleGenAiChatModelObservationApiKeyIT {
 
 	@Autowired
@@ -64,7 +65,7 @@ public class GoogleGenAiChatModelObservationApiKeyIT {
 	void observationForChatOperation() {
 
 		var options = GoogleGenAiChatOptions.builder()
-			.model(GoogleGenAiChatModel.ChatModel.GEMINI_3_PRO_PREVIEW.getValue())
+			.model(GoogleGenAiChatModel.ChatModel.GEMINI_3_1_PRO_PREVIEW.getValue())
 			.temperature(0.7)
 			.stopSequences(List.of("this-is-the-end"))
 			.maxOutputTokens(2048)
@@ -86,7 +87,7 @@ public class GoogleGenAiChatModelObservationApiKeyIT {
 	void observationForStreamingOperation() {
 
 		var options = GoogleGenAiChatOptions.builder()
-			.model(GoogleGenAiChatModel.ChatModel.GEMINI_3_PRO_PREVIEW.getValue())
+			.model(GoogleGenAiChatModel.ChatModel.GEMINI_3_1_PRO_PREVIEW.getValue())
 			.temperature(0.7)
 			.stopSequences(List.of("this-is-the-end"))
 			.maxOutputTokens(2048)
@@ -126,7 +127,7 @@ public class GoogleGenAiChatModelObservationApiKeyIT {
 					AiProvider.GOOGLE_GENAI_AI.value())
 			.hasLowCardinalityKeyValue(
 					ChatModelObservationDocumentation.LowCardinalityKeyNames.REQUEST_MODEL.asString(),
-					GoogleGenAiChatModel.ChatModel.GEMINI_3_PRO_PREVIEW.getValue())
+					GoogleGenAiChatModel.ChatModel.GEMINI_3_1_PRO_PREVIEW.getValue())
 			.hasHighCardinalityKeyValue(
 					ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_MAX_TOKENS.asString(), "2048")
 			.hasHighCardinalityKeyValue(
@@ -174,8 +175,8 @@ public class GoogleGenAiChatModelObservationApiKeyIT {
 			return GoogleGenAiChatModel.builder()
 				.genAiClient(genAiClient)
 				.observationRegistry(observationRegistry)
-				.defaultOptions(GoogleGenAiChatOptions.builder()
-					.model(GoogleGenAiChatModel.ChatModel.GEMINI_3_PRO_PREVIEW)
+				.options(GoogleGenAiChatOptions.builder()
+					.model(GoogleGenAiChatModel.ChatModel.GEMINI_3_1_PRO_PREVIEW)
 					.build())
 				.build();
 		}

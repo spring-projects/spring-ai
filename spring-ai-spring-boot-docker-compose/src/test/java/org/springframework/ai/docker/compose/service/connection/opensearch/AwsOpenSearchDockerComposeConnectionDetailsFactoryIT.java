@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class AwsOpenSearchDockerComposeConnectionDetailsFactoryIT extends AbstractDockerComposeIT {
 
 	AwsOpenSearchDockerComposeConnectionDetailsFactoryIT() {
-		super("localstack-compose.yaml", DockerImageName.parse("localstack/localstack:3.5.0"));
+		super("localstack-compose.yaml", DockerImageName.parse("localstack/localstack:3.8.1"));
 	}
 
 	@Test

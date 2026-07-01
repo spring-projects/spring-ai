@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,27 +21,37 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.ollama.OllamaContainer;
 
+import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
+import org.springframework.ai.ollama.OllamaChatModel;
 import org.springframework.ai.ollama.api.OllamaApi;
+import org.springframework.ai.ollama.api.OllamaChatOptions;
 import org.springframework.ai.ollama.management.ModelManagementOptions;
 import org.springframework.ai.ollama.management.OllamaModelManager;
 import org.springframework.ai.ollama.management.PullModelStrategy;
-import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
+import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
+import org.springframework.boot.webclient.autoconfigure.WebClientAutoConfiguration;
 import org.springframework.util.Assert;
 
 @Testcontainers
 @EnabledIfEnvironmentVariable(named = "OLLAMA_AUTOCONF_TESTS_ENABLED", matches = "true")
 public abstract class BaseOllamaIT {
 
+	private static final Log logger = LogFactory.getLog(BaseOllamaIT.class);
+
 	static {
-		System.out.println("OLLAMA_AUTOCONF_TESTS_ENABLED=" + System.getenv("OLLAMA_AUTOCONF_TESTS_ENABLED"));
-		System.out.println("System property=" + System.getProperty("OLLAMA_AUTOCONF_TESTS_ENABLED"));
+		logger.info("OLLAMA_AUTOCONF_TESTS_ENABLED=" + System.getenv("OLLAMA_AUTOCONF_TESTS_ENABLED"));
+		logger.info("System property=" + System.getProperty("OLLAMA_AUTOCONF_TESTS_ENABLED"));
 	}
+
 	private static final String OLLAMA_LOCAL_URL = "http://localhost:11434";
 
 	private static final Duration DEFAULT_TIMEOUT = Duration.ofMinutes(10);
@@ -103,6 +113,13 @@ public abstract class BaseOllamaIT {
 		return api;
 	}
 
+	/**
+	 * Merge options customizer {@code other} with the options coming from the model.
+	 */
+	protected static OllamaChatOptions mergeOptions(OllamaChatModel chatModel, OllamaChatOptions.Builder other) {
+		return (OllamaChatOptions) chatModel.getOptions().mutate().combineWith(other).build();
+	}
+
 	public String getBaseUrl() {
 		return SKIP_CONTAINER_CREATION ? OLLAMA_LOCAL_URL : ollamaContainer.getEndpoint();
 	}
@@ -119,7 +136,11 @@ public abstract class BaseOllamaIT {
 	public static AutoConfigurations ollamaAutoConfig(Class<?>... additionalAutoConfigurations) {
 		List<Class<?>> autoConfigurations = new ArrayList<>(Arrays.asList(additionalAutoConfigurations));
 		autoConfigurations.add(OllamaApiAutoConfiguration.class);
-		return SpringAiTestAutoConfigurations.of(autoConfigurations.toArray(new Class<?>[0]));
+		autoConfigurations.add(RestClientAutoConfiguration.class);
+		autoConfigurations.add(WebClientAutoConfiguration.class);
+		autoConfigurations.add(SpringAiRetryAutoConfiguration.class);
+		autoConfigurations.add(ToolCallingAutoConfiguration.class);
+		return AutoConfigurations.of(autoConfigurations.toArray(new Class<?>[0]));
 	}
 
 }

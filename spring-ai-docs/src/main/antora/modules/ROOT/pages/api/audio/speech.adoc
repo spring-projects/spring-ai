@@ -35,7 +35,7 @@ public interface TextToSpeechModel extends Model<TextToSpeechPrompt, TextToSpeec
     /**
      * Returns the default options for this model.
      */
-    default TextToSpeechOptions getDefaultOptions() {
+    default TextToSpeechOptions getOptions() {
         // Default implementation
     }
 }
@@ -277,8 +277,8 @@ public class PortableNarrationService {
 
     public byte[] createPortableNarration(String text) {
         // Use provider's default options for maximum portability
-        TextToSpeechOptions defaultOptions = textToSpeechModel.getDefaultOptions();
-        TextToSpeechPrompt prompt = new TextToSpeechPrompt(text, defaultOptions);
+        TextToSpeechOptions options = textToSpeechModel.getOptions();
+        TextToSpeechPrompt prompt = new TextToSpeechPrompt(text, options);
         TextToSpeechResponse response = textToSpeechModel.call(prompt);
         return response.getResult().getOutput();
     }

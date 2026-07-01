@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,7 +26,23 @@ import org.springframework.core.convert.converter.Converter;
  * @param <T> Specifies the desired response type.
  * @author Mark Pollack
  * @author Christian Tzolov
+ * @author Filip Hrisafov
  */
 public interface StructuredOutputConverter<T> extends Converter<String, T>, FormatProvider {
+
+	/**
+	 * Constant for when there is no JSON schema available.
+	 */
+	String NO_JSON_SCHEMA = "";
+
+	/**
+	 * Returns the JSON schema for the structured output of an LLM call.
+	 * @return the JSON schema or {@link StructuredOutputConverter#NO_JSON_SCHEMA} if not
+	 * available
+	 * @since 2.0.0
+	 */
+	default String getJsonSchema() {
+		return NO_JSON_SCHEMA;
+	}
 
 }

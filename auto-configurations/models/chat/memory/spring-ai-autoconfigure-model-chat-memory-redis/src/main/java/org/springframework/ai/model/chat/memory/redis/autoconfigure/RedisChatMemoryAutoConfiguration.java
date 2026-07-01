@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,16 +16,16 @@
 
 package org.springframework.ai.model.chat.memory.redis.autoconfigure;
 
-import redis.clients.jedis.JedisPooled;
+import redis.clients.jedis.RedisClient;
 
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.chat.memory.repository.redis.RedisChatMemoryRepository;
+import org.springframework.ai.model.chat.memory.autoconfigure.ChatMemoryAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.boot.data.redis.autoconfigure.DataRedisAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.util.StringUtils;
 
@@ -33,21 +33,22 @@ import org.springframework.util.StringUtils;
  * Auto-configuration for Redis-based chat memory implementation.
  *
  * @author Brian Sam-Bodden
+ * @author Yanming Zhou
  */
-@AutoConfiguration(after = DataRedisAutoConfiguration.class)
-@ConditionalOnClass({ RedisChatMemoryRepository.class, JedisPooled.class })
+@AutoConfiguration(before = ChatMemoryAutoConfiguration.class)
+@ConditionalOnClass({ RedisChatMemoryRepository.class, RedisClient.class })
 @EnableConfigurationProperties(RedisChatMemoryProperties.class)
 public class RedisChatMemoryAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public JedisPooled jedisClient(RedisChatMemoryProperties properties) {
-		return new JedisPooled(properties.getHost(), properties.getPort());
+	public RedisClient jedisClient(RedisChatMemoryProperties properties) {
+		return RedisClient.builder().hostAndPort(properties.getHost(), properties.getPort()).build();
 	}
 
 	@Bean
 	@ConditionalOnMissingBean({ RedisChatMemoryRepository.class, ChatMemory.class, ChatMemoryRepository.class })
-	public RedisChatMemoryRepository redisChatMemory(JedisPooled jedisClient, RedisChatMemoryProperties properties) {
+	public RedisChatMemoryRepository redisChatMemory(RedisClient jedisClient, RedisChatMemoryProperties properties) {
 		RedisChatMemoryRepository.Builder builder = RedisChatMemoryRepository.builder().jedisClient(jedisClient);
 
 		// Apply configuration if provided

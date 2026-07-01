@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,30 +20,16 @@ import java.lang.reflect.Type;
 import java.util.Map;
 import java.util.Objects;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.util.DefaultIndenter;
-import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
-import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.github.victools.jsonschema.generator.Option;
-import com.github.victools.jsonschema.generator.SchemaGenerator;
-import com.github.victools.jsonschema.generator.SchemaGeneratorConfig;
-import com.github.victools.jsonschema.generator.SchemaGeneratorConfigBuilder;
-import com.github.victools.jsonschema.module.jackson.JacksonModule;
-import com.github.victools.jsonschema.module.jackson.JacksonOption;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.json.JsonMapper;
 
-import org.springframework.ai.model.KotlinModule;
 import org.springframework.ai.util.JacksonUtils;
-import org.springframework.core.KotlinDetector;
+import org.springframework.ai.util.json.schema.JsonSchemaGenerator;
 import org.springframework.core.ParameterizedTypeReference;
-
-import static org.springframework.ai.util.LoggingMarkers.SENSITIVE_DATA_MARKER;
 
 /**
  * An implementation of {@link StructuredOutputConverter} that transforms the LLM output
@@ -64,18 +50,18 @@ import static org.springframework.ai.util.LoggingMarkers.SENSITIVE_DATA_MARKER;
  */
 public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 
-	private final Logger logger = LoggerFactory.getLogger(BeanOutputConverter.class);
+	private final Log logger = LogFactory.getLog(BeanOutputConverter.class);
 
 	/**
 	 * The target class type reference to which the output will be converted.
 	 */
 	private final Type type;
 
-	/** The object mapper used for deserialization and other JSON operations. */
-	private final ObjectMapper objectMapper;
+	/** The JSON mapper used for deserialization and other JSON operations. */
+	private final JsonMapper jsonMapper;
 
 	/** Holds the generated JSON schema for the target type. */
-	private String jsonSchema;
+	private final String jsonSchema;
 
 	/** The text cleaner used to preprocess LLM responses before parsing. */
 	private final ResponseTextCleaner textCleaner;
@@ -89,25 +75,25 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	}
 
 	/**
-	 * Constructor to initialize with the target type's class, a custom object mapper, and
-	 * a line endings normalizer to ensure consistent line endings on any platform.
+	 * Constructor to initialize with the target type's class, a custom JSON mapper, and a
+	 * line endings normalizer to ensure consistent line endings on any platform.
 	 * @param clazz The target type's class.
-	 * @param objectMapper Custom object mapper for JSON operations. endings.
+	 * @param jsonMapper Custom JSON mapper for JSON operations. endings.
 	 */
-	public BeanOutputConverter(Class<T> clazz, @Nullable ObjectMapper objectMapper) {
-		this(clazz, objectMapper, null);
+	public BeanOutputConverter(Class<T> clazz, @Nullable JsonMapper jsonMapper) {
+		this(clazz, jsonMapper, null);
 	}
 
 	/**
-	 * Constructor to initialize with the target type's class, a custom object mapper, and
-	 * a custom text cleaner.
+	 * Constructor to initialize with the target type's class, a custom JSON mapper, and a
+	 * custom text cleaner.
 	 * @param clazz The target type's class.
-	 * @param objectMapper Custom object mapper for JSON operations.
+	 * @param jsonMapper Custom JSON mapper for JSON operations.
 	 * @param textCleaner Custom text cleaner for preprocessing responses.
 	 */
-	public BeanOutputConverter(Class<T> clazz, @Nullable ObjectMapper objectMapper,
+	public BeanOutputConverter(Class<T> clazz, @Nullable JsonMapper jsonMapper,
 			@Nullable ResponseTextCleaner textCleaner) {
-		this(ParameterizedTypeReference.forType(clazz), objectMapper, textCleaner);
+		this(ParameterizedTypeReference.forType(clazz), jsonMapper, textCleaner);
 	}
 
 	/**
@@ -119,43 +105,42 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	}
 
 	/**
-	 * Constructor to initialize with the target class type reference, a custom object
+	 * Constructor to initialize with the target class type reference, a custom JSON
 	 * mapper, and a line endings normalizer to ensure consistent line endings on any
 	 * platform.
 	 * @param typeRef The target class type reference.
-	 * @param objectMapper Custom object mapper for JSON operations. endings.
+	 * @param jsonMapper Custom JSON mapper for JSON operations. endings.
 	 */
-	public BeanOutputConverter(ParameterizedTypeReference<T> typeRef, @Nullable ObjectMapper objectMapper) {
-		this(typeRef, objectMapper, null);
+	public BeanOutputConverter(ParameterizedTypeReference<T> typeRef, @Nullable JsonMapper jsonMapper) {
+		this(typeRef, jsonMapper, null);
 	}
 
 	/**
-	 * Constructor to initialize with the target class type reference, a custom object
+	 * Constructor to initialize with the target class type reference, a custom JSON
 	 * mapper, and a custom text cleaner.
 	 * @param typeRef The target class type reference.
-	 * @param objectMapper Custom object mapper for JSON operations.
+	 * @param jsonMapper Custom JSON mapper for JSON operations.
 	 * @param textCleaner Custom text cleaner for preprocessing responses.
 	 */
-	public BeanOutputConverter(ParameterizedTypeReference<T> typeRef, @Nullable ObjectMapper objectMapper,
+	public BeanOutputConverter(ParameterizedTypeReference<T> typeRef, @Nullable JsonMapper jsonMapper,
 			@Nullable ResponseTextCleaner textCleaner) {
-		this(typeRef.getType(), objectMapper, textCleaner);
+		this(typeRef.getType(), jsonMapper, textCleaner);
 	}
 
 	/**
-	 * Constructor to initialize with the target class type reference, a custom object
+	 * Constructor to initialize with the target class type reference, a custom JSON
 	 * mapper, and a line endings normalizer to ensure consistent line endings on any
 	 * platform.
 	 * @param type The target class type.
-	 * @param objectMapper Custom object mapper for JSON operations. endings.
+	 * @param jsonMapper Custom JSON mapper for JSON operations. endings.
 	 * @param textCleaner Custom text cleaner for preprocessing responses.
 	 */
-	private BeanOutputConverter(Type type, @Nullable ObjectMapper objectMapper,
-			@Nullable ResponseTextCleaner textCleaner) {
+	private BeanOutputConverter(Type type, @Nullable JsonMapper jsonMapper, @Nullable ResponseTextCleaner textCleaner) {
 		Objects.requireNonNull(type, "Type cannot be null;");
 		this.type = type;
-		this.objectMapper = objectMapper != null ? objectMapper : getObjectMapper();
+		this.jsonMapper = jsonMapper != null ? jsonMapper : getJsonMapper();
 		this.textCleaner = textCleaner != null ? textCleaner : createDefaultTextCleaner();
-		generateSchema();
+		this.jsonSchema = Objects.requireNonNull(generateSchema(), "JSON schema cannot be null");
 	}
 
 	/**
@@ -186,34 +171,13 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 
 	/**
 	 * Generates the JSON schema for the target type.
+	 * <p>
+	 * This method can be overridden in subclasses to customize the JSON schema generation
+	 * logic.
+	 * @return the generated JSON schema
 	 */
-	private void generateSchema() {
-		JacksonModule jacksonModule = new JacksonModule(JacksonOption.RESPECT_JSONPROPERTY_REQUIRED,
-				JacksonOption.RESPECT_JSONPROPERTY_ORDER);
-		SchemaGeneratorConfigBuilder configBuilder = new SchemaGeneratorConfigBuilder(
-				com.github.victools.jsonschema.generator.SchemaVersion.DRAFT_2020_12,
-				com.github.victools.jsonschema.generator.OptionPreset.PLAIN_JSON)
-			.with(jacksonModule)
-			.with(Option.FORBIDDEN_ADDITIONAL_PROPERTIES_BY_DEFAULT);
-
-		configBuilder.forFields().withRequiredCheck(f -> true);
-
-		if (KotlinDetector.isKotlinReflectPresent()) {
-			configBuilder.with(new KotlinModule());
-		}
-
-		SchemaGeneratorConfig config = configBuilder.build();
-		SchemaGenerator generator = new SchemaGenerator(config);
-		JsonNode jsonNode = generator.generateSchema(this.type);
-		ObjectWriter objectWriter = this.objectMapper.writer(new DefaultPrettyPrinter()
-			.withObjectIndenter(new DefaultIndenter().withLinefeed(System.lineSeparator())));
-		try {
-			this.jsonSchema = objectWriter.writeValueAsString(jsonNode);
-		}
-		catch (JsonProcessingException e) {
-			logger.error("Could not pretty print json schema for jsonNode: {}", jsonNode);
-			throw new RuntimeException("Could not pretty print json schema for " + this.type, e);
-		}
+	protected String generateSchema() {
+		return JsonSchemaGenerator.generateForType(this.type);
 	}
 
 	/**
@@ -224,27 +188,20 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	@SuppressWarnings("unchecked")
 	@Override
 	public T convert(String text) {
-		try {
-			// Clean the text using the configured text cleaner
-			text = this.textCleaner.clean(text);
+		// Clean the text using the configured text cleaner
+		text = this.textCleaner.clean(text);
 
-			return (T) this.objectMapper.readValue(text, this.objectMapper.constructType(this.type));
-		}
-		catch (JsonProcessingException e) {
-			logger.error(SENSITIVE_DATA_MARKER,
-					"Could not parse the given text to the desired target type: \"{}\" into {}", text, this.type);
-			throw new RuntimeException(e);
-		}
+		return (T) this.jsonMapper.readValue(text, this.jsonMapper.constructType(this.type));
 	}
 
 	/**
-	 * Configures and returns an object mapper for JSON operations.
-	 * @return Configured object mapper.
+	 * Configures and returns a JSON mapper for JSON operations.
+	 * @return Configured JSON mapper.
 	 */
-	protected ObjectMapper getObjectMapper() {
+	protected JsonMapper getJsonMapper() {
 		return JsonMapper.builder()
 			.addModules(JacksonUtils.instantiateAvailableModules())
-			.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
+			.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
 			.build();
 	}
 
@@ -270,15 +227,16 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	 * Provides the generated JSON schema for the target type.
 	 * @return The generated JSON schema.
 	 */
+	@Override
 	public String getJsonSchema() {
 		return this.jsonSchema;
 	}
 
 	public Map<String, Object> getJsonSchemaMap() {
 		try {
-			return this.objectMapper.readValue(this.jsonSchema, Map.class);
+			return this.jsonMapper.readValue(this.jsonSchema, Map.class);
 		}
-		catch (JsonProcessingException ex) {
+		catch (JacksonException ex) {
 			logger.error("Could not parse the JSON Schema to a Map object", ex);
 			throw new IllegalStateException(ex);
 		}

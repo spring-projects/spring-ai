@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,15 +18,17 @@ package org.springframework.ai.docker.compose.service.connection.qdrant;
 
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
+
 class QdrantEnvironment {
 
-	private final String apiKey;
+	private final @Nullable String apiKey;
 
-	QdrantEnvironment(Map<String, String> env) {
+	QdrantEnvironment(Map<String, @Nullable String> env) {
 		this.apiKey = env.get("QDRANT__SERVICE__API_KEY");
 	}
 
-	public String getApiKey() {
+	public @Nullable String getApiKey() {
 		return this.apiKey;
 	}
 

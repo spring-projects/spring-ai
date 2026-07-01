@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,15 +18,17 @@ package org.springframework.ai.docker.compose.service.connection.typesense;
 
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
+
 class TypesenseEnvironment {
 
-	private final String apiKey;
+	private final @Nullable String apiKey;
 
-	TypesenseEnvironment(Map<String, String> env) {
+	TypesenseEnvironment(Map<String, @Nullable String> env) {
 		this.apiKey = env.get("TYPESENSE_API_KEY");
 	}
 
-	public String getApiKey() {
+	public @Nullable String getApiKey() {
 		return this.apiKey;
 	}
 

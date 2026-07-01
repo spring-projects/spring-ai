@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,10 +49,10 @@ public class OllamaChatAutoConfigurationIT extends BaseOllamaIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner().withPropertyValues(
 	// @formatter:off
-				"spring.ai.ollama.baseUrl=" + getBaseUrl(),
-				"spring.ai.ollama.chat.options.model=" + MODEL_NAME,
-				"spring.ai.ollama.chat.options.temperature=0.5",
-				"spring.ai.ollama.chat.options.topK=10")
+				"spring.ai.ollama.base-url=" + getBaseUrl(),
+				"spring.ai.ollama.chat.model=" + MODEL_NAME,
+				"spring.ai.ollama.chat.temperature=0.5",
+				"spring.ai.ollama.chat.top-k=10")
 				// @formatter:on
 		.withConfiguration(ollamaAutoConfig(OllamaChatAutoConfiguration.class));
 
@@ -97,7 +97,7 @@ public class OllamaChatAutoConfigurationIT extends BaseOllamaIT {
 	@Test
 	public void chatCompletionWithPull() {
 		this.contextRunner.withPropertyValues("spring.ai.ollama.init.pull-model-strategy=when_missing")
-			.withPropertyValues("spring.ai.ollama.chat.options.model=tinyllama")
+			.withPropertyValues("spring.ai.ollama.chat.model=tinyllama")
 			.run(context -> {
 				var model = "tinyllama";
 				OllamaApi ollamaApi = context.getBean(OllamaApi.class);

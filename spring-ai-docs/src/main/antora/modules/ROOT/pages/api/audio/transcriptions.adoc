@@ -6,7 +6,6 @@ Spring AI provides a unified API for Speech-to-Text transcription through the `T
 == Supported Providers
 
 - xref:api/audio/transcriptions/openai-transcriptions.adoc[OpenAI's Whisper API]
-- xref:api/audio/transcriptions/azure-openai-transcriptions.adoc[Azure OpenAI Whisper API]
 
 == Common Interface
 
@@ -69,7 +68,7 @@ AudioTranscriptionResponseMetadata metadata = response.getMetadata();
 
 == Writing Provider-Agnostic Code
 
-One of the key benefits of the shared transcription interface is the ability to write code that works with any transcription provider without modification. The actual provider (OpenAI, Azure OpenAI, etc.) is determined by your Spring Boot configuration, allowing you to switch providers without changing application code.
+One of the key benefits of the shared transcription interface is the ability to write code that works with any transcription provider without modification. The actual provider (OpenAI for example) is determined by your Spring Boot configuration, allowing you to switch providers without changing application code.
 
 === Basic Service Example
 
@@ -98,10 +97,10 @@ public class TranscriptionService {
 }
 ----
 
-This service works seamlessly with OpenAI, Azure OpenAI, or any other transcription provider, with the actual implementation determined by your Spring Boot configuration.
+This service works seamlessly with OpenAI or any other transcription provider, with the actual implementation determined by your Spring Boot configuration.
 
 == Provider-Specific Features
 
-While the shared interface provides portability, each provider also offers specific features through provider-specific options classes (e.g., `OpenAiAudioTranscriptionOptions`, `AzureOpenAiAudioTranscriptionOptions`). These classes implement the `AudioTranscriptionOptions` interface while adding provider-specific capabilities.
+While the shared interface provides portability, each provider also offers specific features through provider-specific options classes (e.g., `OpenAiAudioTranscriptionOptions`). These classes implement the `AudioTranscriptionOptions` interface while adding provider-specific capabilities.
 
 For detailed information about provider-specific features, see the individual provider documentation pages.

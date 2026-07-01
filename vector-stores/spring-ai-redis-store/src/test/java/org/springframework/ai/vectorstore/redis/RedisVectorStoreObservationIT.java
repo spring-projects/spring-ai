@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import redis.clients.jedis.JedisPooled;
+import redis.clients.jedis.RedisClient;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -49,6 +49,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Yanming Zhou
  */
 @Testcontainers
 public class RedisVectorStoreObservationIT {
@@ -81,7 +82,7 @@ public class RedisVectorStoreObservationIT {
 
 	@BeforeEach
 	void cleanDatabase() {
-		this.contextRunner.run(context -> context.getBean(RedisVectorStore.class).getJedis().flushAll());
+		this.contextRunner.run(context -> context.getBean(RedisVectorStore.class).getJedisClient().flushAll());
 	}
 
 	@Test
@@ -122,10 +123,12 @@ public class RedisVectorStoreObservationIT {
 
 		@Bean
 		public RedisVectorStore vectorStore(EmbeddingModel embeddingModel, ObservationRegistry observationRegistry) {
-			// Create JedisPooled directly with container properties for more reliable
+			// Create RedisClient directly with container properties for more reliable
 			// connection
 			return RedisVectorStore
-				.builder(new JedisPooled(redisContainer.getHost(), redisContainer.getFirstMappedPort()), embeddingModel)
+				.builder(RedisClient.builder()
+					.hostAndPort(redisContainer.getHost(), redisContainer.getFirstMappedPort())
+					.build(), embeddingModel)
 				.observationRegistry(observationRegistry)
 				.customObservationConvention(null)
 				.initializeSchema(true)

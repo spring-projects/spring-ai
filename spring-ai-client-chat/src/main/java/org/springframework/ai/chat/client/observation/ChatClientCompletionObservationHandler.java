@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,8 @@ import java.util.List;
 
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.Generation;
@@ -36,11 +36,13 @@ import org.springframework.util.StringUtils;
  */
 public class ChatClientCompletionObservationHandler implements ObservationHandler<ChatClientObservationContext> {
 
-	private static final Logger logger = LoggerFactory.getLogger(ChatClientCompletionObservationHandler.class);
+	private static final Log logger = LogFactory.getLog(ChatClientCompletionObservationHandler.class);
 
 	@Override
 	public void onStop(ChatClientObservationContext context) {
-		logger.info("Chat Client Completion:\n{}", ObservabilityHelper.concatenateStrings(completion(context)));
+		if (logger.isInfoEnabled()) {
+			logger.info("Chat Client Completion:\n" + ObservabilityHelper.concatenateStrings(completion(context)));
+		}
 	}
 
 	private List<String> completion(ChatClientObservationContext context) {

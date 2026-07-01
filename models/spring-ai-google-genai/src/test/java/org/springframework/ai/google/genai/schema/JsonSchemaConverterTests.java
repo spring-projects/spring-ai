@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,9 @@
 
 package org.springframework.ai.google.genai.schema;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.node.ObjectNode;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -36,8 +36,8 @@ class JsonSchemaConverterTests {
 		String json = "{\"type\":\"object\",\"properties\":{\"name\":{\"type\":\"string\"}}}";
 		ObjectNode result = JsonSchemaConverter.fromJson(json);
 
-		assertThat(result.get("type").asText()).isEqualTo("object");
-		assertThat(result.get("properties").get("name").get("type").asText()).isEqualTo("string");
+		assertThat(result.get("type").asString()).isEqualTo("object");
+		assertThat(result.get("properties").get("name").get("type").asString()).isEqualTo("string");
 	}
 
 	@Test
@@ -52,6 +52,25 @@ class JsonSchemaConverterTests {
 		assertThatThrownBy(() -> JsonSchemaConverter.convertToOpenApiSchema(null))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("JSON Schema node must not be null");
+	}
+
+	@Test
+	void convertToOpenApiSchemaShouldRejectDefs() {
+		String json = """
+				{
+					"$defs": {
+						"myDef": {
+							"type": "string"
+						}
+					},
+					"type": "object"
+				}
+				""";
+		ObjectNode schema = JsonSchemaConverter.fromJson(json);
+
+		assertThatThrownBy(() -> JsonSchemaConverter.convertToOpenApiSchema(schema))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("Google's Structured Output schema doesn't support $defs property");
 	}
 
 	@Test
@@ -96,9 +115,9 @@ class JsonSchemaConverterTests {
 				""";
 		ObjectNode result = JsonSchemaConverter.convertToOpenApiSchema(JsonSchemaConverter.fromJson(json));
 		assertThat(result.get("enum")).isNotNull();
-		assertThat(result.get("enum").get(0).asText()).isEqualTo("a");
-		assertThat(result.get("enum").get(1).asText()).isEqualTo("b");
-		assertThat(result.get("enum").get(2).asText()).isEqualTo("c");
+		assertThat(result.get("enum").get(0).asString()).isEqualTo("a");
+		assertThat(result.get("enum").get(1).asString()).isEqualTo("b");
+		assertThat(result.get("enum").get(2).asString()).isEqualTo("c");
 	}
 
 	@Test
@@ -116,7 +135,7 @@ class JsonSchemaConverterTests {
 		assertThat(result.get("nullable").asBoolean()).isTrue();
 		assertThat(result.get("readOnly").asBoolean()).isTrue();
 		assertThat(result.get("writeOnly").asBoolean()).isFalse();
-		assertThat(result.get("description").get("propertyName").asText()).isEqualTo("type");
+		assertThat(result.get("description").get("propertyName").asString()).isEqualTo("type");
 	}
 
 	@Nested
@@ -139,11 +158,12 @@ class JsonSchemaConverterTests {
 
 			ObjectNode result = JsonSchemaConverter.convertToOpenApiSchema(JsonSchemaConverter.fromJson(json));
 
-			assertThat(result.get("openapi").asText()).isEqualTo("3.0.0");
-			assertThat(result.get("type").asText()).isEqualTo("object");
-			assertThat(result.get("properties").get("name").get("type").asText()).isEqualTo("string");
-			assertThat(result.get("properties").get("name").get("description").asText()).isEqualTo("The name property");
-			assertThat(result.get("required").get(0).asText()).isEqualTo("name");
+			assertThat(result.get("openapi").asString()).isEqualTo("3.0.0");
+			assertThat(result.get("type").asString()).isEqualTo("object");
+			assertThat(result.get("properties").get("name").get("type").asString()).isEqualTo("string");
+			assertThat(result.get("properties").get("name").get("description").asString())
+				.isEqualTo("The name property");
+			assertThat(result.get("required").get(0).asString()).isEqualTo("name");
 		}
 
 		@Test
@@ -164,8 +184,27 @@ class JsonSchemaConverterTests {
 
 			ObjectNode result = JsonSchemaConverter.convertToOpenApiSchema(JsonSchemaConverter.fromJson(json));
 
-			assertThat(result.get("properties").get("tags").get("type").asText()).isEqualTo("array");
-			assertThat(result.get("properties").get("tags").get("items").get("type").asText()).isEqualTo("string");
+			assertThat(result.get("properties").get("tags").get("type").asString()).isEqualTo("array");
+			assertThat(result.get("properties").get("tags").get("items").get("type").asString()).isEqualTo("string");
+		}
+
+		@Test
+		void shouldHandleNullableTypes() {
+			String json = """
+					{
+						"type": "object",
+						"properties": {
+							"nickname": {
+								"type": ["string", "null"]
+							}
+						}
+					}
+					""";
+
+			ObjectNode result = JsonSchemaConverter.convertToOpenApiSchema(JsonSchemaConverter.fromJson(json));
+
+			assertThat(result.get("properties").get("nickname").get("type").asString()).isEqualTo("string");
+			assertThat(result.get("properties").get("nickname").get("nullable").asBoolean()).isTrue();
 		}
 
 		@Test
@@ -181,7 +220,7 @@ class JsonSchemaConverterTests {
 
 			ObjectNode result = JsonSchemaConverter.convertToOpenApiSchema(JsonSchemaConverter.fromJson(json));
 
-			assertThat(result.get("additionalProperties").get("type").asText()).isEqualTo("string");
+			assertThat(result.get("additionalProperties").get("type").asString()).isEqualTo("string");
 		}
 
 		@Test
@@ -220,13 +259,13 @@ class JsonSchemaConverterTests {
 
 			ObjectNode result = JsonSchemaConverter.convertToOpenApiSchema(JsonSchemaConverter.fromJson(json));
 
-			assertThat(result.get("type").asText()).isEqualTo("string");
-			assertThat(result.get("format").asText()).isEqualTo("email");
-			assertThat(result.get("description").asText()).isEqualTo("Email address");
+			assertThat(result.get("type").asString()).isEqualTo("string");
+			assertThat(result.get("format").asString()).isEqualTo("email");
+			assertThat(result.get("description").asString()).isEqualTo("Email address");
 			assertThat(result.get("minLength").asInt()).isEqualTo(5);
 			assertThat(result.get("maxLength").asInt()).isEqualTo(100);
-			assertThat(result.get("pattern").asText()).isEqualTo("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
-			assertThat(result.get("example").asText()).isEqualTo("user@example.com");
+			assertThat(result.get("pattern").asString()).isEqualTo("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+			assertThat(result.get("example").asString()).isEqualTo("user@example.com");
 			assertThat(result.get("deprecated").asBoolean()).isFalse();
 		}
 
@@ -261,7 +300,7 @@ class JsonSchemaConverterTests {
 				.get("properties")
 				.get("street")
 				.get("type")
-				.asText()).isEqualTo("string");
+				.asString()).isEqualTo("string");
 			assertThat(result.get("properties")
 				.get("user")
 				.get("properties")
@@ -269,7 +308,7 @@ class JsonSchemaConverterTests {
 				.get("properties")
 				.get("city")
 				.get("type")
-				.asText()).isEqualTo("string");
+				.asString()).isEqualTo("string");
 		}
 
 	}

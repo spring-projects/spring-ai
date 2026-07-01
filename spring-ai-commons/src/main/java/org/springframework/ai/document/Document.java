@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,11 +20,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.annotation.JsonPOJOBuilder;
 
 import org.springframework.ai.content.Media;
 import org.springframework.ai.document.id.IdGenerator;
@@ -36,17 +37,55 @@ import org.springframework.util.StringUtils;
  * A document is a container for the content and metadata of a document. It also contains
  * the document's unique ID.
  *
- * A Document can hold either text content or media content, but not both.
+ * <p>
+ * A {@code Document} holds either text content or media content, but not both. Text
+ * content is accessed via {@link #getText()}, and media content via {@link #getMedia()}.
+ * Use {@link #isText()} to determine which type is present.
  *
- * It is intended to be used to take data from external sources as part of spring-ai's ETL
- * pipeline.
+ * <p>
+ * Documents are intended to carry data through Spring AI's ETL pipeline — from ingestion
+ * through transformation to storage in a vector store.
  *
+ * <h2>JSON serialization and deserialization</h2>
+ * <p>
+ * {@code Document} is fully Jackson-serializable. The serialized JSON uses the following
+ * field names:
+ * <ul>
+ * <li>{@code id} — the unique document identifier
+ * <li>{@code text} — the text content (null for media documents)
+ * <li>{@code media} — the media content (null for text documents)
+ * <li>{@code metadata} — the metadata map
+ * <li>{@code score} — the relevance score, may be null
+ * </ul>
+ *
+ * <p>
+ * Deserialization is handled via {@link Builder}. JSON round-trips are fully supported: a
+ * serialized {@code Document} can be deserialized back to an equal instance.
+ *
+ * <p>
+ * Example round-trip: <pre>{@code
+ * ObjectMapper mapper = JacksonUtils.getDefaultJsonMapper();
+ * Document original = Document.builder()
+ *     .id("doc-1")
+ *     .text("hello world")
+ *     .metadata("source", "example")
+ *     .score(0.95)
+ *     .build();
+ *
+ * String json = mapper.writeValueAsString(original);
+ * // {"id":"doc-1","text":"hello world","media":null,"metadata":{"source":"example"},"score":0.95}
+ *
+ * Document restored = mapper.readValue(json, Document.class);
+ * // restored.equals(original) == true
+ * }</pre>
+ *
+ * <h2>Creating documents</h2>
  * <p>
  * Example of creating a text document: <pre>{@code
  * // Using constructor
  * Document textDoc = new Document("Sample text content", Map.of("source", "user-input"));
  *
- * // Using builder
+ * // Using builder (preferred)
  * Document textDoc = Document.builder()
  *     .text("Sample text content")
  *     .metadata("source", "user-input")
@@ -59,7 +98,7 @@ import org.springframework.util.StringUtils;
  * Media imageContent = new Media(MediaType.IMAGE_PNG, new byte[] {...});
  * Document mediaDoc = new Document(imageContent, Map.of("filename", "sample.png"));
  *
- * // Using builder
+ * // Using builder (preferred)
  * Document mediaDoc = Document.builder()
  *     .media(new Media(MediaType.IMAGE_PNG, new byte[] {...}))
  *     .metadata("filename", "sample.png")
@@ -69,15 +108,15 @@ import org.springframework.util.StringUtils;
  * <p>
  * Example of checking content type and accessing content: <pre>{@code
  * if (document.isText()) {
- *     String textContent = document.getText();
+ *     String text = document.getText();
  *     // Process text content
  * } else {
- *     Media mediaContent = document.getMedia();
+ *     Media media = document.getMedia();
  *     // Process media content
  * }
  * }</pre>
  */
-@JsonIgnoreProperties({ "contentFormatter", "embedding" })
+@JsonDeserialize(builder = Document.Builder.class)
 public class Document {
 
 	public static final ContentFormatter DEFAULT_CONTENT_FORMATTER = DefaultContentFormatter.defaultConfig();
@@ -126,23 +165,52 @@ public class Document {
 	@JsonIgnore
 	private ContentFormatter contentFormatter = DEFAULT_CONTENT_FORMATTER;
 
-	@JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
-	public Document(@JsonProperty("content") @Nullable String content) {
-		this(content, new HashMap<>());
+	/**
+	 * Creates a text document with a generated ID and empty metadata.
+	 * @param text the text content of the document
+	 */
+	public Document(@Nullable String text) {
+		this(text, new HashMap<>());
 	}
 
+	/**
+	 * Creates a text document with a generated ID and the given metadata.
+	 * @param text the text content of the document
+	 * @param metadata the metadata map; must not be null and must not contain null keys
+	 * or values
+	 */
 	public Document(@Nullable String text, Map<String, Object> metadata) {
 		this(new RandomIdGenerator().generateId(), text, null, metadata, null);
 	}
 
+	/**
+	 * Creates a text document with an explicit ID and the given metadata.
+	 * @param id the unique document identifier; must not be null or empty
+	 * @param text the text content of the document
+	 * @param metadata the metadata map; must not be null and must not contain null keys
+	 * or values
+	 */
 	public Document(String id, @Nullable String text, Map<String, Object> metadata) {
 		this(id, text, null, metadata, null);
 	}
 
+	/**
+	 * Creates a media document with a generated ID and the given metadata.
+	 * @param media the media content of the document
+	 * @param metadata the metadata map; must not be null and must not contain null keys
+	 * or values
+	 */
 	public Document(@Nullable Media media, Map<String, Object> metadata) {
 		this(new RandomIdGenerator().generateId(), null, media, metadata, null);
 	}
 
+	/**
+	 * Creates a media document with an explicit ID and the given metadata.
+	 * @param id the unique document identifier; must not be null or empty
+	 * @param media the media content of the document
+	 * @param metadata the metadata map; must not be null and must not contain null keys
+	 * or values
+	 */
 	public Document(String id, @Nullable Media media, Map<String, Object> metadata) {
 		this(id, null, media, metadata, null);
 	}
@@ -208,11 +276,27 @@ public class Document {
 		return this.media;
 	}
 
+	/**
+	 * Returns the formatted content of this document using {@link MetadataMode#ALL},
+	 * including both text and all metadata entries.
+	 * <p>
+	 * This method is excluded from JSON serialization as it is a computed, ephemeral
+	 * representation.
+	 * @return the formatted content string
+	 * @see #getFormattedContent(MetadataMode)
+	 */
 	@JsonIgnore
 	public String getFormattedContent() {
 		return this.getFormattedContent(MetadataMode.ALL);
 	}
 
+	/**
+	 * Returns the formatted content of this document using the given
+	 * {@link MetadataMode}.
+	 * @param metadataMode controls which metadata entries are included in the output;
+	 * must not be null
+	 * @return the formatted content string
+	 */
 	public String getFormattedContent(MetadataMode metadataMode) {
 		Assert.notNull(metadataMode, "Metadata mode must not be null");
 		return this.contentFormatter.format(this, metadataMode);
@@ -238,6 +322,14 @@ public class Document {
 		return this.metadata;
 	}
 
+	/**
+	 * Returns the relevance score associated with this document, if any.
+	 * <p>
+	 * The score is typically assigned during retrieval and is not set at document
+	 * creation time. Use {@link Builder#score(Double)} or {@link #mutate()} to produce a
+	 * new document with a score.
+	 * @return the relevance score, or null if none has been assigned
+	 */
 	public @Nullable Double getScore() {
 		return this.score;
 	}
@@ -259,12 +351,17 @@ public class Document {
 		this.contentFormatter = contentFormatter;
 	}
 
+	/**
+	 * Returns a new {@link Builder} pre-populated with all fields of this document,
+	 * allowing selective modification without altering the original.
+	 * @return a builder initialised from this document's state
+	 */
 	public Builder mutate() {
 		return new Builder().id(this.id).text(this.text).media(this.media).metadata(this.metadata).score(this.score);
 	}
 
 	@Override
-	public boolean equals(Object o) {
+	public boolean equals(@Nullable Object o) {
 		if (o == null || this.getClass() != o.getClass()) {
 			return false;
 		}
@@ -285,6 +382,24 @@ public class Document {
 				+ ", metadata=" + this.metadata + ", score=" + this.score + '}';
 	}
 
+	/**
+	 * Builder for {@link Document}.
+	 *
+	 * <p>
+	 * Exactly one of {@link #text(String)} or {@link #media(Media)} must be set before
+	 * calling {@link #build()}. If no {@link #id(String)} is provided, one is generated
+	 * by the configured {@link IdGenerator}.
+	 *
+	 * <h3>JSON deserialization</h3>
+	 * <p>
+	 * This builder is used by Jackson to deserialize {@link Document} instances
+	 * (configured via {@code @JsonDeserialize(builder = Builder.class)}). Jackson maps
+	 * JSON field names to builder methods by name: {@code "id"} → {@link #id},
+	 * {@code "text"} → {@link #text}, {@code "metadata"} → {@link #metadata(Map)},
+	 * {@code "score"} → {@link #score}.
+	 */
+	@JsonPOJOBuilder(withPrefix = "")
+	@JsonIgnoreProperties(ignoreUnknown = true)
 	public static final class Builder {
 
 		private @Nullable String id;
@@ -299,12 +414,24 @@ public class Document {
 
 		private IdGenerator idGenerator = new RandomIdGenerator();
 
+		/**
+		 * Sets the {@link IdGenerator} used to generate the document ID when none is
+		 * provided explicitly. Defaults to {@link RandomIdGenerator}.
+		 * @param idGenerator the ID generator to use; must not be null
+		 * @return the builder instance
+		 */
 		public Builder idGenerator(IdGenerator idGenerator) {
 			Assert.notNull(idGenerator, "idGenerator cannot be null");
 			this.idGenerator = idGenerator;
 			return this;
 		}
 
+		/**
+		 * Sets an explicit ID for the document. If not called, an ID is generated
+		 * automatically by the configured {@link IdGenerator} at {@link #build()} time.
+		 * @param id the unique document identifier; must not be null or empty
+		 * @return the builder instance
+		 */
 		public Builder id(String id) {
 			Assert.hasText(id, "id cannot be null or empty");
 			this.id = id;
@@ -320,6 +447,7 @@ public class Document {
 		 * @return the builder instance
 		 * @see #media(Media)
 		 */
+		@JsonAlias("content")
 		public Builder text(@Nullable String text) {
 			this.text = text;
 			return this;
@@ -339,12 +467,24 @@ public class Document {
 			return this;
 		}
 
+		/**
+		 * Replaces the metadata map with the given map.
+		 * @param metadata the metadata map; must not be null and must not contain null
+		 * keys or values
+		 * @return the builder instance
+		 */
 		public Builder metadata(Map<String, Object> metadata) {
 			Assert.notNull(metadata, "metadata cannot be null");
 			this.metadata = metadata;
 			return this;
 		}
 
+		/**
+		 * Adds a single key-value pair to the metadata map.
+		 * @param key the metadata key; must not be null
+		 * @param value the metadata value; must not be null
+		 * @return the builder instance
+		 */
 		public Builder metadata(String key, Object value) {
 			Assert.notNull(key, "metadata key cannot be null");
 			Assert.notNull(value, "metadata value cannot be null");
@@ -373,6 +513,16 @@ public class Document {
 			return this;
 		}
 
+		/**
+		 * Builds the {@link Document}.
+		 * <p>
+		 * If no {@link #id(String)} was set, an ID is generated from the text content and
+		 * metadata using the configured {@link IdGenerator}. Exactly one of
+		 * {@link #text(String)} or {@link #media(Media)} must have been set.
+		 * @return a new {@link Document}
+		 * @throws IllegalArgumentException if both or neither of text and media are set,
+		 * or if the metadata contains null keys or values
+		 */
 		public Document build() {
 			if (!StringUtils.hasText(this.id)) {
 				var text = this.text != null ? this.text : "";

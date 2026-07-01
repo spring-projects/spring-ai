@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,11 @@
 
 package org.springframework.ai.mistralai.aot;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
-import org.springframework.lang.NonNull;
-import org.springframework.lang.Nullable;
 
 import static org.springframework.ai.aot.AiRuntimeHints.findJsonAnnotatedClassesInPackage;
 
@@ -34,7 +34,7 @@ import static org.springframework.ai.aot.AiRuntimeHints.findJsonAnnotatedClasses
 public class MistralAiRuntimeHints implements RuntimeHintsRegistrar {
 
 	@Override
-	public void registerHints(@NonNull RuntimeHints hints, @Nullable ClassLoader classLoader) {
+	public void registerHints(RuntimeHints hints, @Nullable ClassLoader classLoader) {
 		var mcs = MemberCategory.values();
 
 		for (var tr : findJsonAnnotatedClassesInPackage("org.springframework.ai.mistralai")) {

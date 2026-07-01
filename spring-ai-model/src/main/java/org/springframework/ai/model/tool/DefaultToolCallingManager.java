@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,9 +23,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
+import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -34,6 +36,7 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
@@ -53,11 +56,13 @@ import org.springframework.util.StringUtils;
  * Default implementation of {@link ToolCallingManager}.
  *
  * @author Thomas Vitale
+ * @author chabinhwang
+ * @author Christian Tzolov
  * @since 1.0.0
  */
 public final class DefaultToolCallingManager implements ToolCallingManager {
 
-	private static final Logger logger = LoggerFactory.getLogger(DefaultToolCallingManager.class);
+	private static final Log logger = LogFactory.getLog(DefaultToolCallingManager.class);
 
 	// @formatter:off
 
@@ -73,8 +78,9 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 	private static final ToolExecutionExceptionProcessor DEFAULT_TOOL_EXECUTION_EXCEPTION_PROCESSOR
 			= DefaultToolExecutionExceptionProcessor.builder().build();
 
-	private static final String POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING
-			= "LLM may have adapted the tool name '{}', especially if the name was truncated due to length limits. If this is the case, you can customize the prefixing and processing logic using McpToolNamePrefixGenerator";
+	private static final String POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING_START = "LLM may have adapted the tool name '";
+	private static final String POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING_END
+			= "', especially if the name was truncated due to length limits. If this is the case, you can customize the prefixing and processing logic using McpToolNamePrefixGenerator";
 
 
 	// @formatter:on
@@ -102,23 +108,8 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 	public List<ToolDefinition> resolveToolDefinitions(ToolCallingChatOptions chatOptions) {
 		Assert.notNull(chatOptions, "chatOptions cannot be null");
 
-		List<ToolCallback> toolCallbacks = new ArrayList<>(chatOptions.getToolCallbacks());
-		for (String toolName : chatOptions.getToolNames()) {
-			// Skip the tool if it is already present in the request toolCallbacks.
-			// That might happen if a tool is defined in the options
-			// both as a ToolCallback and as a tool name.
-			if (chatOptions.getToolCallbacks()
-				.stream()
-				.anyMatch(tool -> tool.getToolDefinition().name().equals(toolName))) {
-				continue;
-			}
-			ToolCallback toolCallback = this.toolCallbackResolver.resolve(toolName);
-			if (toolCallback == null) {
-				logger.warn(POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING, toolName);
-				throw new IllegalStateException("No ToolCallback found for tool name: " + toolName);
-			}
-			toolCallbacks.add(toolCallback);
-		}
+		List<ToolCallback> toolCallbacks = new ArrayList<>(
+				!CollectionUtils.isEmpty(chatOptions.getToolCallbacks()) ? chatOptions.getToolCallbacks() : List.of());
 
 		return toolCallbacks.stream().map(ToolCallback::getToolDefinition).toList();
 	}
@@ -159,23 +150,9 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 		if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions
 				&& !CollectionUtils.isEmpty(toolCallingChatOptions.getToolContext())) {
 			toolContextMap = new HashMap<>(toolCallingChatOptions.getToolContext());
-
-			toolContextMap.put(ToolContext.TOOL_CALL_HISTORY,
-					buildConversationHistoryBeforeToolExecution(prompt, assistantMessage));
 		}
 
 		return new ToolContext(toolContextMap);
-	}
-
-	private static List<Message> buildConversationHistoryBeforeToolExecution(Prompt prompt,
-			AssistantMessage assistantMessage) {
-		List<Message> messageHistory = new ArrayList<>(prompt.copy().getInstructions());
-		messageHistory.add(AssistantMessage.builder()
-			.content(Objects.requireNonNullElse(assistantMessage.getText(), ""))
-			.properties(assistantMessage.getMetadata())
-			.toolCalls(assistantMessage.getToolCalls())
-			.build());
-		return messageHistory;
 	}
 
 	/**
@@ -185,7 +162,9 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 			ToolContext toolContext) {
 		List<ToolCallback> toolCallbacks = List.of();
 		if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
-			toolCallbacks = toolCallingChatOptions.getToolCallbacks();
+			if (!CollectionUtils.isEmpty(toolCallingChatOptions.getToolCallbacks())) {
+				toolCallbacks = toolCallingChatOptions.getToolCallbacks();
+			}
 		}
 
 		List<ToolResponseMessage.ToolResponse> toolResponses = new ArrayList<>();
@@ -194,7 +173,9 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 
 		for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
 
-			logger.debug("Executing tool call: {}", toolCall.name());
+			if (logger.isDebugEnabled()) {
+				logger.debug("Executing tool call: " + toolCall.name());
+			}
 
 			String toolName = toolCall.name();
 			String toolInputArguments = toolCall.arguments();
@@ -202,8 +183,10 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 			// Handle the possible null parameter situation in streaming mode.
 			final String finalToolInputArguments;
 			if (!StringUtils.hasText(toolInputArguments)) {
-				logger.warn("Tool call arguments are null or empty for tool: {}. Using empty JSON object as default.",
-						toolName);
+				if (logger.isWarnEnabled()) {
+					logger.warn("Tool call arguments are null or empty for tool: " + toolName
+							+ ". Using empty JSON object as default.");
+				}
 				finalToolInputArguments = "{}";
 			}
 			else {
@@ -216,7 +199,10 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 				.orElseGet(() -> this.toolCallbackResolver.resolve(toolName));
 
 			if (toolCallback == null) {
-				logger.warn(POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING, toolName);
+				if (logger.isWarnEnabled()) {
+					logger.warn(POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING_START + toolName
+							+ POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING_END);
+				}
 				throw new IllegalStateException("No ToolCallback found for tool name: " + toolName);
 			}
 
@@ -227,15 +213,25 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 				returnDirect = returnDirect && toolCallback.getToolMetadata().returnDirect();
 			}
 
+			// In streaming/reactive mode the parent observation is propagated through the
+			// Reactor context captured in ToolCallReactiveContextHolder. In blocking mode
+			// that holder is never populated, so fall back to the observation currently
+			// in scope on the calling thread to keep the observation hierarchy intact.
+			Observation parent = ToolCallReactiveContextHolder.getContext()
+				.getOrDefault(ObservationThreadLocalAccessor.KEY, this.observationRegistry.getCurrentObservation());
+
 			ToolCallingObservationContext observationContext = ToolCallingObservationContext.builder()
 				.toolDefinition(toolCallback.getToolDefinition())
 				.toolMetadata(toolCallback.getToolMetadata())
+				.toolCallId(toolCall.id())
+				.toolType(toolCall.type())
 				.toolCallArguments(finalToolInputArguments)
 				.build();
 
 			String toolCallResult = ToolCallingObservationDocumentation.TOOL_CALL
 				.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 						this.observationRegistry)
+				.parentObservation(parent)
 				.observe(() -> {
 					String toolResult;
 					try {

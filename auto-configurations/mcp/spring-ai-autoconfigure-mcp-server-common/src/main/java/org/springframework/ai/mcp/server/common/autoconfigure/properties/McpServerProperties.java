@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@ package org.springframework.ai.mcp.server.common.autoconfigure.properties;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.util.Assert;
@@ -80,7 +82,7 @@ public class McpServerProperties {
 	 * These instructions are used to provide guidance to the client on how to interact
 	 * with this server.
 	 */
-	private String instructions = null;
+	private @Nullable String instructions = null;
 
 	/**
 	 * The type of server to use for MCP server communication.
@@ -93,9 +95,15 @@ public class McpServerProperties {
 	 */
 	private ApiType type = ApiType.SYNC;
 
-	private Capabilities capabilities = new Capabilities();
+	private final Capabilities capabilities = new Capabilities();
 
-	private ServerProtocol protocol = ServerProtocol.SSE;
+	private ServerProtocol protocol = ServerProtocol.STREAMABLE;
+
+	/**
+	 * Whether to re-expose downstream MCP tools (provided by MCP clients) as tools in
+	 * this MCP server. Defaults to false.
+	 */
+	private boolean exposeMcpClientTools = false;
 
 	/**
 	 * Sets the duration to wait for server responses before timing out requests. This
@@ -106,6 +114,14 @@ public class McpServerProperties {
 
 	public Duration getRequestTimeout() {
 		return this.requestTimeout;
+	}
+
+	public boolean isExposeMcpClientTools() {
+		return this.exposeMcpClientTools;
+	}
+
+	public void setExposeMcpClientTools(boolean exposeMcpClientTools) {
+		this.exposeMcpClientTools = exposeMcpClientTools;
 	}
 
 	public void setRequestTimeout(Duration requestTimeout) {
@@ -143,7 +159,7 @@ public class McpServerProperties {
 	/**
 	 * (Optional) response MIME type per tool name.
 	 */
-	private Map<String, String> toolResponseMimeType = new HashMap<>();
+	private final Map<String, String> toolResponseMimeType = new HashMap<>();
 
 	public boolean isStdio() {
 		return this.stdio;
@@ -179,11 +195,11 @@ public class McpServerProperties {
 		this.version = version;
 	}
 
-	public String getInstructions() {
+	public @Nullable String getInstructions() {
 		return this.instructions;
 	}
 
-	public void setInstructions(String instructions) {
+	public void setInstructions(@Nullable String instructions) {
 		this.instructions = instructions;
 	}
 

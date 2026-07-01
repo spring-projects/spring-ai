@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,17 @@
 package org.springframework.ai.vectorstore.milvus;
 
 import java.util.List;
+import java.util.Map;
 
+import com.google.gson.JsonObject;
 import io.milvus.client.MilvusServiceClient;
+import io.milvus.grpc.MutationResult;
 import io.milvus.grpc.SearchResultData;
 import io.milvus.grpc.SearchResults;
 import io.milvus.param.R;
+import io.milvus.param.dml.DeleteParam;
 import io.milvus.param.dml.SearchParam;
+import io.milvus.response.QueryResultsWrapper.RowRecord;
 import io.milvus.response.SearchResultsWrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,6 +39,7 @@ import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import org.springframework.ai.document.Document;
+import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.vectorstore.SearchRequest;
@@ -50,6 +56,7 @@ import static org.mockito.Mockito.when;
  * Unit test class for {@link MilvusVectorStore}.
  *
  * @author waileong
+ * @author Soby Chacko
  */
 @ExtendWith(MockitoExtension.class)
 class MilvusVectorStoreTest {
@@ -116,6 +123,31 @@ class MilvusVectorStoreTest {
 	}
 
 	@Test
+	void shouldPerformSimilaritySearchWithFilterExpressionUsingCustomMetadataFieldName() {
+		this.vectorStore = MilvusVectorStore.builder(this.milvusClient, this.embeddingModel)
+			.metadataFieldName("meta")
+			.build();
+
+		try (MockedStatic<EmbeddingUtils> mockedEmbeddingUtils = mockStatic(EmbeddingUtils.class);
+				MockedConstruction<SearchResultsWrapper> mockedSearchResultsWrapper = mockConstruction(
+						SearchResultsWrapper.class,
+						(mock, context) -> when(mock.getRowRecords(0)).thenReturn(List.of()))) {
+
+			String query = "sample query";
+			SearchRequest request = SearchRequest.builder()
+				.query(query)
+				.topK(5)
+				.similarityThreshold(0.7)
+				.filterExpression("age > 30")
+				.build();
+
+			SearchParam capturedParam = performSimilaritySearch(mockedEmbeddingUtils, request);
+
+			assertThat(capturedParam.getExpr()).isEqualTo("meta[\"age\"] > 30");
+		}
+	}
+
+	@Test
 	void shouldPerformSimilaritySearchWithOriginalSearchRequest() {
 		try (MockedStatic<EmbeddingUtils> mockedEmbeddingUtils = mockStatic(EmbeddingUtils.class);
 				MockedConstruction<SearchResultsWrapper> mockedSearchResultsWrapper = mockConstruction(
@@ -136,6 +168,65 @@ class MilvusVectorStoreTest {
 			assertThat(capturedParam.getExpr()).isEqualTo("metadata[\"age\"] > 30"); // filter
 			assertThat(capturedParam.getParams()).isEqualTo("{}");
 		}
+	}
+
+	@Test
+	void shouldPreserveMetadataIntegerNumberTypesInSearchResults() {
+		long externalId = 10_000_000_000_000_001L;
+		JsonObject metadata = new JsonObject();
+		metadata.addProperty("external_id", externalId);
+		metadata.addProperty("priority", 7);
+		metadata.addProperty("weight", 1.5);
+
+		RowRecord rowRecord = new RowRecord();
+		rowRecord.put(MilvusVectorStore.DOC_ID_FIELD_NAME, "doc-1");
+		rowRecord.put(MilvusVectorStore.CONTENT_FIELD_NAME, "content");
+		rowRecord.put(MilvusVectorStore.METADATA_FIELD_NAME, metadata);
+		rowRecord.put(MilvusVectorStore.SIMILARITY_FIELD_NAME, 0.75f);
+
+		try (MockedStatic<EmbeddingUtils> mockedEmbeddingUtils = mockStatic(EmbeddingUtils.class);
+				MockedConstruction<SearchResultsWrapper> mockedSearchResultsWrapper = mockConstruction(
+						SearchResultsWrapper.class,
+						(mock, context) -> when(mock.getRowRecords(0)).thenReturn(List.of(rowRecord)))) {
+
+			List<Float> mockVector = List.of(1.0f, 2.0f, 3.0f);
+			mockedEmbeddingUtils.when(() -> EmbeddingUtils.toList(any())).thenReturn(mockVector);
+
+			SearchResults mockResults = mock(SearchResults.class);
+			when(mockResults.getResults()).thenReturn(SearchResultData.getDefaultInstance());
+			when(this.milvusClient.search(any(SearchParam.class))).thenReturn(R.success(mockResults));
+
+			List<Document> results = this.vectorStore
+				.doSimilaritySearch(SearchRequest.builder().query("sample query").build());
+
+			assertThat(results).hasSize(1);
+			Map<String, Object> resultMetadata = results.get(0).getMetadata();
+			assertThat(resultMetadata.get("external_id")).isInstanceOf(Long.class).isEqualTo(externalId);
+			assertThat(resultMetadata.get("priority")).isInstanceOf(Long.class).isEqualTo(7L);
+			assertThat(resultMetadata.get("weight")).isInstanceOf(Double.class).isEqualTo(1.5);
+			assertThat(resultMetadata.get(DocumentMetadata.DISTANCE.value())).isEqualTo(0.25);
+		}
+	}
+
+	@Test
+	void shouldEscapeIdsWhenDeletingByIdList() {
+		MutationResult mutationResult = MutationResult.newBuilder().setDeleteCnt(3).build();
+		when(this.milvusClient.delete(any(DeleteParam.class))).thenReturn(R.success(mutationResult));
+
+		// Ids crafted to break out of a naive `'<id>'` quoting and inject filter syntax,
+		// plus values containing backslash, double quote and newline.
+		List<String> ids = List.of("plain-id", "x' || doc_id != 'x", "with\"dquote", "back\\slash\nnewline");
+
+		this.vectorStore.doDelete(ids);
+
+		ArgumentCaptor<DeleteParam> captor = ArgumentCaptor.forClass(DeleteParam.class);
+		verify(this.milvusClient).delete(captor.capture());
+
+		// Every id must be rendered as a JSON-escaped double-quoted literal, matching
+		// the escaping used by MilvusFilterExpressionConverter for Filter.Expression
+		// values.
+		assertThat(captor.getValue().getExpr()).isEqualTo(
+				"doc_id in [\"plain-id\",\"x' || doc_id != 'x\",\"with\\\"dquote\",\"back\\\\slash\\nnewline\"]");
 	}
 
 	private SearchParam performSimilaritySearch(MockedStatic<EmbeddingUtils> mockedEmbeddingUtils,

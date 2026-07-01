@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,26 +16,20 @@
 
 package org.springframework.ai.ollama.api;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
-import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import org.jspecify.annotations.Nullable;
 
-import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.model.tool.DefaultToolCallingChatOptions;
+import org.springframework.ai.model.tool.StructuredOutputChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
-import org.springframework.lang.Nullable;
-import org.springframework.util.Assert;
+import org.springframework.ai.util.JsonHelper;
 
 /**
  * Helper class for creating strongly-typed Ollama options.
@@ -43,16 +37,70 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
+ * @author Nicolas Krier
+ * @author Sebastien Deleuze
  * @since 0.8.0
  * @see <a href=
- * "https://github.com/ollama/ollama/blob/main/docs/modelfile.md#valid-parameters-and-values">Ollama
+ * "https://github.com/ollama/ollama/blob/main/docs/modelfile.mdx#valid-parameters-and-values">Ollama
  * Valid Parameters and Values</a>
  * @see <a href="https://github.com/ollama/ollama/blob/main/api/types.go">Ollama Types</a>
  */
-@JsonInclude(Include.NON_NULL)
-public class OllamaChatOptions implements ToolCallingChatOptions {
+public class OllamaChatOptions implements ToolCallingChatOptions, StructuredOutputChatOptions {
+
+	private static final JsonHelper jsonHelper = new JsonHelper();
 
 	private static final List<String> NON_SUPPORTED_FIELDS = List.of("model", "format", "keep_alive", "truncate");
+
+	protected OllamaChatOptions(@Nullable Boolean useNUMA, @Nullable Integer numCtx, @Nullable Integer numBatch,
+			@Nullable Integer numGPU, @Nullable Integer mainGPU, @Nullable Boolean lowVRAM, @Nullable Boolean f16KV,
+			@Nullable Boolean logitsAll, @Nullable Boolean vocabOnly, @Nullable Boolean useMMap,
+			@Nullable Boolean useMLock, @Nullable Integer numThread, @Nullable Integer numKeep, @Nullable Integer seed,
+			@Nullable Integer numPredict, @Nullable Integer topK, @Nullable Double topP, @Nullable Double minP,
+			@Nullable Float tfsZ, @Nullable Float typicalP, @Nullable Integer repeatLastN, @Nullable Double temperature,
+			@Nullable Double repeatPenalty, @Nullable Double presencePenalty, @Nullable Double frequencyPenalty,
+			@Nullable Integer mirostat, @Nullable Float mirostatTau, @Nullable Float mirostatEta,
+			@Nullable Boolean penalizeNewline, @Nullable List<String> stop, @Nullable String model,
+			@Nullable Object format, @Nullable String keepAlive, @Nullable Boolean truncate,
+			@Nullable ThinkOption thinkOption, @Nullable List<ToolCallback> toolCallbacks,
+			@Nullable Map<String, Object> toolContext) {
+		this.useNUMA = useNUMA;
+		this.numCtx = numCtx;
+		this.numBatch = numBatch;
+		this.numGPU = numGPU;
+		this.mainGPU = mainGPU;
+		this.lowVRAM = lowVRAM;
+		this.f16KV = f16KV;
+		this.logitsAll = logitsAll;
+		this.vocabOnly = vocabOnly;
+		this.useMMap = useMMap;
+		this.useMLock = useMLock;
+		this.numThread = numThread;
+		this.numKeep = numKeep;
+		this.seed = seed;
+		this.numPredict = numPredict;
+		this.topK = topK;
+		this.topP = topP;
+		this.minP = minP;
+		this.tfsZ = tfsZ;
+		this.typicalP = typicalP;
+		this.repeatLastN = repeatLastN;
+		this.temperature = temperature;
+		this.repeatPenalty = repeatPenalty;
+		this.presencePenalty = presencePenalty;
+		this.frequencyPenalty = frequencyPenalty;
+		this.mirostat = mirostat;
+		this.mirostatTau = mirostatTau;
+		this.mirostatEta = mirostatEta;
+		this.penalizeNewline = penalizeNewline;
+		this.stop = stop != null ? List.copyOf(stop) : null;
+		this.model = model != null ? model : OllamaModel.MISTRAL.id();
+		this.format = format;
+		this.keepAlive = keepAlive;
+		this.truncate = truncate;
+		this.thinkOption = thinkOption;
+		this.toolCallbacks = toolCallbacks != null ? List.copyOf(toolCallbacks) : null;
+		this.toolContext = toolContext != null ? Map.copyOf(toolContext) : null;
+	}
 
 	// Following fields are options which must be set when the model is loaded into
 	// memory.
@@ -63,28 +111,24 @@ public class OllamaChatOptions implements ToolCallingChatOptions {
 	/**
 	 * Whether to use NUMA. (Default: false)
 	 */
-	@JsonProperty("numa")
-	private Boolean useNUMA;
+	private final @Nullable Boolean useNUMA;
 
 	/**
 	 * Sets the size of the context window used to generate the next token. (Default: 2048)
 	 */
-	@JsonProperty("num_ctx")
-	private Integer numCtx;
+	private final @Nullable Integer numCtx;
 
 	/**
 	 * Prompt processing maximum batch size. (Default: 512)
 	 */
-	@JsonProperty("num_batch")
-	private Integer numBatch;
+	private final @Nullable Integer numBatch;
 
 	/**
 	 * The number of layers to send to the GPU(s). On macOS, it defaults to 1
 	 * to enable metal support, 0 to disable.
 	 * (Default: -1, which indicates that numGPU should be set dynamically)
 	 */
-	@JsonProperty("num_gpu")
-	private Integer numGPU;
+	private final @Nullable Integer numGPU;
 
 	/**
 	 * When using multiple GPUs this option controls which GPU is used
@@ -93,33 +137,28 @@ public class OllamaChatOptions implements ToolCallingChatOptions {
 	 * more VRAM to store a scratch buffer for temporary results.
 	 * By default, GPU 0 is used.
 	 */
-	@JsonProperty("main_gpu")
-	private Integer mainGPU;
+	private final @Nullable Integer mainGPU;
 
 	/**
 	 * (Default: false)
 	 */
-	@JsonProperty("low_vram")
-	private Boolean lowVRAM;
+	private final @Nullable Boolean lowVRAM;
 
 	/**
 	 * (Default: true)
 	 */
-	@JsonProperty("f16_kv")
-	private Boolean f16KV;
+	private final @Nullable Boolean f16KV;
 
 	/**
 	 * Return logits for all the tokens, not just the last one.
 	 * To enable completions to return logprobs, this must be true.
 	 */
-	@JsonProperty("logits_all")
-	private Boolean logitsAll;
+	private final @Nullable Boolean logitsAll;
 
 	/**
 	 * Load only the vocabulary, not the weights.
 	 */
-	@JsonProperty("vocab_only")
-	private Boolean vocabOnly;
+	private final @Nullable Boolean vocabOnly;
 
 	/**
 	 * By default, models are mapped into memory, which allows the system to load only the necessary parts
@@ -130,8 +169,7 @@ public class OllamaChatOptions implements ToolCallingChatOptions {
 	 * the model from loading at all.
 	 * (Default: null)
 	 */
-	@JsonProperty("use_mmap")
-	private Boolean useMMap;
+	private final @Nullable Boolean useMMap;
 
 	/**
 	 * Lock the model in memory, preventing it from being swapped out when memory-mapped.
@@ -139,8 +177,7 @@ public class OllamaChatOptions implements ToolCallingChatOptions {
 	 * by requiring more RAM to run and potentially slowing down load times as the model loads into RAM.
 	 * (Default: false)
 	 */
-	@JsonProperty("use_mlock")
-	private Boolean useMLock;
+	private final @Nullable Boolean useMLock;
 
 	/**
 	 * Set the number of threads to use during generation. For optimal performance, it is recommended to set this value
@@ -148,47 +185,41 @@ public class OllamaChatOptions implements ToolCallingChatOptions {
 	 * Using the correct number of threads can greatly improve performance.
 	 * By default, Ollama will detect this value for optimal performance.
 	 */
-	@JsonProperty("num_thread")
-	private Integer numThread;
+	private final @Nullable Integer numThread;
 
 	// Following fields are predict options used at runtime.
 
 	/**
 	 * (Default: 4)
 	 */
-	@JsonProperty("num_keep")
-	private Integer numKeep;
+	private final @Nullable Integer numKeep;
 
 	/**
 	 * Sets the random number seed to use for generation. Setting this to a
 	 * specific number will make the model generate the same text for the same prompt.
 	 * (Default: -1)
 	 */
-	@JsonProperty("seed")
-	private Integer seed;
+	private final @Nullable Integer seed;
 
 	/**
 	 * Maximum number of tokens to predict when generating text.
 	 * (Default: 128, -1 = infinite generation, -2 = fill context)
 	 */
-	@JsonProperty("num_predict")
-	private Integer numPredict;
+	private final @Nullable Integer numPredict;
 
 	/**
 	 * Reduces the probability of generating nonsense. A higher value (e.g.
 	 * 100) will give more diverse answers, while a lower value (e.g. 10) will be more
 	 * conservative. (Default: 40)
 	 */
-	@JsonProperty("top_k")
-	private Integer topK;
+	private final @Nullable Integer topK;
 
 	/**
 	 * Works together with top-k. A higher value (e.g., 0.95) will lead to
 	 * more diverse text, while a lower value (e.g., 0.5) will generate more focused and
 	 * conservative text. (Default: 0.9)
 	 */
-	@JsonProperty("top_p")
-	private Double topP;
+	private final @Nullable Double topP;
 
 	/**
 	 * Alternative to the top_p, and aims to ensure a balance of quality and variety.
@@ -197,92 +228,79 @@ public class OllamaChatOptions implements ToolCallingChatOptions {
 	 * the most likely token having a probability of 0.9, logits with a value
 	 * less than 0.045 are filtered out. (Default: 0.0)
 	 */
-	@JsonProperty("min_p")
-	private Double minP;
+	private final @Nullable Double minP;
 
 	/**
 	 * Tail free sampling is used to reduce the impact of less probable tokens
 	 * from the output. A higher value (e.g., 2.0) will reduce the impact more, while a
 	 * value of 1.0 disables this setting. (default: 1)
 	 */
-	@JsonProperty("tfs_z")
-	private Float tfsZ;
+	private final @Nullable Float tfsZ;
 
 	/**
 	 * (Default: 1.0)
 	 */
-	@JsonProperty("typical_p")
-	private Float typicalP;
+	private final @Nullable Float typicalP;
 
 	/**
 	 * Sets how far back for the model to look back to prevent
 	 * repetition. (Default: 64, 0 = disabled, -1 = num_ctx)
 	 */
-	@JsonProperty("repeat_last_n")
-	private Integer repeatLastN;
+	private final @Nullable Integer repeatLastN;
 
 	/**
 	 * The temperature of the model. Increasing the temperature will
 	 * make the model answer more creatively. (Default: 0.8)
 	 */
-	@JsonProperty("temperature")
-	private Double temperature;
+	private final @Nullable Double temperature;
 
 	/**
 	 * Sets how strongly to penalize repetitions. A higher value
 	 * (e.g., 1.5) will penalize repetitions more strongly, while a lower value (e.g.,
 	 * 0.9) will be more lenient. (Default: 1.1)
 	 */
-	@JsonProperty("repeat_penalty")
-	private Double repeatPenalty;
+	private final @Nullable Double repeatPenalty;
 
 	/**
 	 * (Default: 0.0)
 	 */
-	@JsonProperty("presence_penalty")
-	private Double presencePenalty;
+	private final @Nullable Double presencePenalty;
 
 	/**
 	 * (Default: 0.0)
 	 */
-	@JsonProperty("frequency_penalty")
-	private Double frequencyPenalty;
+	private final @Nullable Double frequencyPenalty;
 
 	/**
 	 * Enable Mirostat sampling for controlling perplexity. (default: 0, 0
 	 * = disabled, 1 = Mirostat, 2 = Mirostat 2.0)
 	 */
-	@JsonProperty("mirostat")
-	private Integer mirostat;
+	private final @Nullable Integer mirostat;
 
 	/**
 	 * Controls the balance between coherence and diversity of the output.
 	 * A lower value will result in more focused and coherent text. (Default: 5.0)
 	 */
-	@JsonProperty("mirostat_tau")
-	private Float mirostatTau;
+	private final @Nullable Float mirostatTau;
 
 	/**
 	 * Influences how quickly the algorithm responds to feedback from the generated text.
 	 * A lower learning rate will result in slower adjustments, while a higher learning rate
 	 * will make the algorithm more responsive. (Default: 0.1)
 	 */
-	@JsonProperty("mirostat_eta")
-	private Float mirostatEta;
+	private final @Nullable Float mirostatEta;
 
 	/**
 	 * (Default: true)
 	 */
-	@JsonProperty("penalize_newline")
-	private Boolean penalizeNewline;
+	private final @Nullable Boolean penalizeNewline;
 
 	/**
 	 * Sets the stop sequences to use. When this pattern is encountered the
 	 * LLM will stop generating text and return. Multiple stop patterns may be set by
 	 * specifying multiple separate stop parameters in a modelfile.
 	 */
-	@JsonProperty("stop")
-	private List<String> stop;
+	private final @Nullable List<String> stop;
 
 
 	// Following fields are not part of the Ollama Options API but part of the Request.
@@ -292,30 +310,26 @@ public class OllamaChatOptions implements ToolCallingChatOptions {
 	 * Used to allow overriding the model name with prompt options.
 	 * Part of Chat completion <a href="https://github.com/ollama/ollama/blob/main/docs/api.md#parameters-1">parameters</a>.
 	 */
-	@JsonProperty("model")
-	private String model;
+	private final String model;
 
 	/**
 	 * Sets the desired format of output from the LLM. The only valid values are null or "json".
 	 * Part of Chat completion <a href="https://github.com/ollama/ollama/blob/main/docs/api.md#parameters-1">advanced parameters</a>.
 	 */
-	@JsonProperty("format")
-	private Object format;
+	private final @Nullable Object format;
 
 	/**
 	 * Sets the length of time for Ollama to keep the model loaded. Valid values for this
 	 * setting are parsed by <a href="https://pkg.go.dev/time#ParseDuration">ParseDuration in Go</a>.
 	 * Part of Chat completion <a href="https://github.com/ollama/ollama/blob/main/docs/api.md#parameters-1">advanced parameters</a>.
 	 */
-	@JsonProperty("keep_alive")
-	private String keepAlive;
+	private final @Nullable String keepAlive;
 
 	/**
 	 * Truncates the end of each input to fit within context length. Returns error if false and context length is exceeded.
 	 * Defaults to true.
 	 */
-	@JsonProperty("truncate")
-	private Boolean truncate;
+	private final @Nullable Boolean truncate;
 
 	/**
 	 * The model should think before responding, if supported.
@@ -328,22 +342,18 @@ public class OllamaChatOptions implements ToolCallingChatOptions {
 	 * <li>Thinking-capable models (e.g., qwen3:*-thinking, deepseek-r1, deepseek-v3.1)
 	 * <strong>auto-enable thinking by default</strong> when this field is not set.</li>
 	 * <li>Standard models (e.g., qwen2.5:*, llama3.2) do not enable thinking by default.</li>
-	 * <li>To explicitly control behavior, use {@link Builder#enableThinking()} or
-	 * {@link Builder#disableThinking()}.</li>
+	 * <li>To explicitly control behavior, use {@link AbstractBuilder#enableThinking()} or
+	 * {@link AbstractBuilder#disableThinking()}.</li>
 	 * </ul>
 	 * <p>
-	 * Use {@link Builder#enableThinking()}, {@link Builder#disableThinking()}, or
-	 * {@link Builder#thinkHigh()} to configure this option.
+	 * Use {@link AbstractBuilder#enableThinking()}, {@link AbstractBuilder#disableThinking()}, or
+	 * {@link AbstractBuilder#thinkHigh()} to configure this option.
 	 *
 	 * @see ThinkOption
 	 * @see ThinkOption.ThinkBoolean
 	 * @see ThinkOption.ThinkLevel
 	 */
-	@JsonProperty("think")
-	private ThinkOption thinkOption;
-
-	@JsonIgnore
-	private Boolean internalToolExecutionEnabled;
+	private final @Nullable ThinkOption thinkOption;
 
 	/**
 	 * Tool Function Callbacks to register with the ChatModel.
@@ -351,22 +361,9 @@ public class OllamaChatOptions implements ToolCallingChatOptions {
 	 * For Default Options the toolCallbacks are registered but disabled by default. Use the enableFunctions to set the functions
 	 * from the registry to be used by the ChatModel chat completion requests.
 	 */
-	@JsonIgnore
-	private List<ToolCallback> toolCallbacks = new ArrayList<>();
+	private final @Nullable List<ToolCallback> toolCallbacks;
 
-	/**
-	 * List of functions, identified by their names, to configure for function calling in
-	 * the chat completion requests.
-	 * Functions with those names must exist in the toolCallbacks registry.
-	 * The {@link #toolCallbacks} from the PromptOptions are automatically enabled for the duration of the prompt execution.
-	 * Note that function enabled with the default options are enabled for all chat completion requests. This could impact the token count and the billing.
-	 * If the functions is set in a prompt options, then the enabled functions are only active for the duration of this prompt execution.
-	 */
-	@JsonIgnore
-	private Set<String> toolNames = new HashSet<>();
-
-	@JsonIgnore
-	private Map<String, Object> toolContext = new HashMap<>();
+	private final @Nullable Map<String, Object> toolContext;
 
 	public static Builder builder() {
 		return new Builder();
@@ -383,49 +380,6 @@ public class OllamaChatOptions implements ToolCallingChatOptions {
 				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 	}
 
-	public static OllamaChatOptions fromOptions(OllamaChatOptions fromOptions) {
-		return builder()
-				.model(fromOptions.getModel())
-				.format(fromOptions.getFormat())
-				.keepAlive(fromOptions.getKeepAlive())
-				.truncate(fromOptions.getTruncate())
-				.thinkOption(fromOptions.getThinkOption())
-				.useNUMA(fromOptions.getUseNUMA())
-				.numCtx(fromOptions.getNumCtx())
-				.numBatch(fromOptions.getNumBatch())
-				.numGPU(fromOptions.getNumGPU())
-				.mainGPU(fromOptions.getMainGPU())
-				.lowVRAM(fromOptions.getLowVRAM())
-				.f16KV(fromOptions.getF16KV())
-				.logitsAll(fromOptions.getLogitsAll())
-				.vocabOnly(fromOptions.getVocabOnly())
-				.useMMap(fromOptions.getUseMMap())
-				.useMLock(fromOptions.getUseMLock())
-				.numThread(fromOptions.getNumThread())
-				.numKeep(fromOptions.getNumKeep())
-				.seed(fromOptions.getSeed())
-				.numPredict(fromOptions.getNumPredict())
-				.topK(fromOptions.getTopK())
-				.topP(fromOptions.getTopP())
-				.minP(fromOptions.getMinP())
-				.tfsZ(fromOptions.getTfsZ())
-				.typicalP(fromOptions.getTypicalP())
-				.repeatLastN(fromOptions.getRepeatLastN())
-				.temperature(fromOptions.getTemperature())
-				.repeatPenalty(fromOptions.getRepeatPenalty())
-				.presencePenalty(fromOptions.getPresencePenalty())
-				.frequencyPenalty(fromOptions.getFrequencyPenalty())
-				.mirostat(fromOptions.getMirostat())
-				.mirostatTau(fromOptions.getMirostatTau())
-				.mirostatEta(fromOptions.getMirostatEta())
-				.penalizeNewline(fromOptions.getPenalizeNewline())
-				.stop(fromOptions.getStop())
-				.toolNames(fromOptions.getToolNames())
-				.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
-				.toolCallbacks(fromOptions.getToolCallbacks())
-				.toolContext(fromOptions.getToolContext()).build();
-	}
-
 	// -------------------
 	// Getters and Setters
 	// -------------------
@@ -434,361 +388,215 @@ public class OllamaChatOptions implements ToolCallingChatOptions {
 		return this.model;
 	}
 
-	public void setModel(String model) {
-		this.model = model;
-	}
 
-	public Object getFormat() {
+	public @Nullable Object getFormat() {
 		return this.format;
 	}
 
-	public void setFormat(Object format) {
-		this.format = format;
-	}
 
-	public String getKeepAlive() {
+	public @Nullable String getKeepAlive() {
 		return this.keepAlive;
 	}
 
-	public void setKeepAlive(String keepAlive) {
-		this.keepAlive = keepAlive;
-	}
 
-	public Boolean getUseNUMA() {
+	public @Nullable Boolean getUseNUMA() {
 		return this.useNUMA;
 	}
 
-	public void setUseNUMA(Boolean useNUMA) {
-		this.useNUMA = useNUMA;
-	}
 
-	public Integer getNumCtx() {
+	public @Nullable Integer getNumCtx() {
 		return this.numCtx;
 	}
 
-	public void setNumCtx(Integer numCtx) {
-		this.numCtx = numCtx;
-	}
 
-	public Integer getNumBatch() {
+	public @Nullable Integer getNumBatch() {
 		return this.numBatch;
 	}
 
-	public void setNumBatch(Integer numBatch) {
-		this.numBatch = numBatch;
-	}
 
-	public Integer getNumGPU() {
+	public @Nullable Integer getNumGPU() {
 		return this.numGPU;
 	}
 
-	public void setNumGPU(Integer numGPU) {
-		this.numGPU = numGPU;
-	}
 
-	public Integer getMainGPU() {
+	public @Nullable Integer getMainGPU() {
 		return this.mainGPU;
 	}
 
-	public void setMainGPU(Integer mainGPU) {
-		this.mainGPU = mainGPU;
-	}
 
-	public Boolean getLowVRAM() {
+	public @Nullable Boolean getLowVRAM() {
 		return this.lowVRAM;
 	}
 
-	public void setLowVRAM(Boolean lowVRAM) {
-		this.lowVRAM = lowVRAM;
-	}
 
-	public Boolean getF16KV() {
+	public @Nullable Boolean getF16KV() {
 		return this.f16KV;
 	}
 
-	public void setF16KV(Boolean f16kv) {
-		this.f16KV = f16kv;
-	}
 
-	public Boolean getLogitsAll() {
+	public @Nullable Boolean getLogitsAll() {
 		return this.logitsAll;
 	}
 
-	public void setLogitsAll(Boolean logitsAll) {
-		this.logitsAll = logitsAll;
-	}
 
-	public Boolean getVocabOnly() {
+	public @Nullable Boolean getVocabOnly() {
 		return this.vocabOnly;
 	}
 
-	public void setVocabOnly(Boolean vocabOnly) {
-		this.vocabOnly = vocabOnly;
-	}
 
-	public Boolean getUseMMap() {
+	public @Nullable Boolean getUseMMap() {
 		return this.useMMap;
 	}
 
-	public void setUseMMap(Boolean useMMap) {
-		this.useMMap = useMMap;
-	}
 
-	public Boolean getUseMLock() {
+	public @Nullable Boolean getUseMLock() {
 		return this.useMLock;
 	}
 
-	public void setUseMLock(Boolean useMLock) {
-		this.useMLock = useMLock;
-	}
 
-	public Integer getNumThread() {
+	public @Nullable Integer getNumThread() {
 		return this.numThread;
 	}
 
-	public void setNumThread(Integer numThread) {
-		this.numThread = numThread;
-	}
 
-	public Integer getNumKeep() {
+	public @Nullable Integer getNumKeep() {
 		return this.numKeep;
 	}
 
-	public void setNumKeep(Integer numKeep) {
-		this.numKeep = numKeep;
-	}
 
-	public Integer getSeed() {
+	public @Nullable Integer getSeed() {
 		return this.seed;
 	}
 
-	public void setSeed(Integer seed) {
-		this.seed = seed;
-	}
 
 	@Override
-	@JsonIgnore
-	public Integer getMaxTokens() {
+	public @Nullable Integer getMaxTokens() {
 		return getNumPredict();
 	}
 
-	@JsonIgnore
-	public void setMaxTokens(Integer maxTokens) {
-		setNumPredict(maxTokens);
-	}
 
-	public Integer getNumPredict() {
+	public @Nullable Integer getNumPredict() {
 		return this.numPredict;
 	}
 
-	public void setNumPredict(Integer numPredict) {
-		this.numPredict = numPredict;
-	}
 
 	@Override
-	public Integer getTopK() {
+	public @Nullable Integer getTopK() {
 		return this.topK;
 	}
 
-	public void setTopK(Integer topK) {
-		this.topK = topK;
-	}
 
 	@Override
-	public Double getTopP() {
+	public @Nullable Double getTopP() {
 		return this.topP;
 	}
 
-	public void setTopP(Double topP) {
-		this.topP = topP;
-	}
 
-	public Double getMinP() {
+	public @Nullable Double getMinP() {
 		return this.minP;
 	}
 
-	public void setMinP(Double minP) {
-		this.minP = minP;
-	}
 
-	public Float getTfsZ() {
+	public @Nullable Float getTfsZ() {
 		return this.tfsZ;
 	}
 
-	public void setTfsZ(Float tfsZ) {
-		this.tfsZ = tfsZ;
-	}
 
-	public Float getTypicalP() {
+	public @Nullable Float getTypicalP() {
 		return this.typicalP;
 	}
 
-	public void setTypicalP(Float typicalP) {
-		this.typicalP = typicalP;
-	}
 
-	public Integer getRepeatLastN() {
+	public @Nullable Integer getRepeatLastN() {
 		return this.repeatLastN;
 	}
 
-	public void setRepeatLastN(Integer repeatLastN) {
-		this.repeatLastN = repeatLastN;
-	}
 
 	@Override
-	public Double getTemperature() {
+	public @Nullable Double getTemperature() {
 		return this.temperature;
 	}
 
-	public void setTemperature(Double temperature) {
-		this.temperature = temperature;
-	}
 
-	public Double getRepeatPenalty() {
+	public @Nullable Double getRepeatPenalty() {
 		return this.repeatPenalty;
 	}
 
-	public void setRepeatPenalty(Double repeatPenalty) {
-		this.repeatPenalty = repeatPenalty;
-	}
 
 	@Override
-	public Double getPresencePenalty() {
+	public @Nullable Double getPresencePenalty() {
 		return this.presencePenalty;
 	}
 
-	public void setPresencePenalty(Double presencePenalty) {
-		this.presencePenalty = presencePenalty;
-	}
 
 	@Override
-	public Double getFrequencyPenalty() {
+	public @Nullable Double getFrequencyPenalty() {
 		return this.frequencyPenalty;
 	}
 
-	public void setFrequencyPenalty(Double frequencyPenalty) {
-		this.frequencyPenalty = frequencyPenalty;
-	}
 
-	public Integer getMirostat() {
+	public @Nullable Integer getMirostat() {
 		return this.mirostat;
 	}
 
-	public void setMirostat(Integer mirostat) {
-		this.mirostat = mirostat;
-	}
 
-	public Float getMirostatTau() {
+	public @Nullable Float getMirostatTau() {
 		return this.mirostatTau;
 	}
 
-	public void setMirostatTau(Float mirostatTau) {
-		this.mirostatTau = mirostatTau;
-	}
 
-	public Float getMirostatEta() {
+	public @Nullable Float getMirostatEta() {
 		return this.mirostatEta;
 	}
 
-	public void setMirostatEta(Float mirostatEta) {
-		this.mirostatEta = mirostatEta;
-	}
 
-	public Boolean getPenalizeNewline() {
+	public @Nullable Boolean getPenalizeNewline() {
 		return this.penalizeNewline;
 	}
 
-	public void setPenalizeNewline(Boolean penalizeNewline) {
-		this.penalizeNewline = penalizeNewline;
-	}
 
 	@Override
-	@JsonIgnore
-	public List<String> getStopSequences() {
+	public @Nullable List<String> getStopSequences() {
 		return getStop();
 	}
 
-	@JsonIgnore
-	public void setStopSequences(List<String> stopSequences) {
-		setStop(stopSequences);
-	}
 
-	public List<String> getStop() {
+	public @Nullable List<String> getStop() {
 		return this.stop;
 	}
 
-	public void setStop(List<String> stop) {
-		this.stop = stop;
-	}
 
-	public Boolean getTruncate() {
+	public @Nullable Boolean getTruncate() {
 		return this.truncate;
 	}
 
-	public void setTruncate(Boolean truncate) {
-		this.truncate = truncate;
-	}
 
-	public ThinkOption getThinkOption() {
+	public @Nullable ThinkOption getThinkOption() {
 		return this.thinkOption;
 	}
 
-	public void setThinkOption(ThinkOption thinkOption) {
-		this.thinkOption = thinkOption;
-	}
 
 	@Override
-	@JsonIgnore
-	public List<ToolCallback> getToolCallbacks() {
+	public @Nullable List<ToolCallback> getToolCallbacks() {
 		return this.toolCallbacks;
 	}
 
 	@Override
-	@JsonIgnore
-	public void setToolCallbacks(List<ToolCallback> toolCallbacks) {
-		Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
-		Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
-		this.toolCallbacks = toolCallbacks;
-	}
-
-	@Override
-	@JsonIgnore
-	public Set<String> getToolNames() {
-		return this.toolNames;
-	}
-
-	@Override
-	@JsonIgnore
-	public void setToolNames(Set<String> toolNames) {
-		Assert.notNull(toolNames, "toolNames cannot be null");
-		Assert.noNullElements(toolNames, "toolNames cannot contain null elements");
-		toolNames.forEach(tool -> Assert.hasText(tool, "toolNames cannot contain empty elements"));
-		this.toolNames = toolNames;
-	}
-
-	@Override
-	@Nullable
-	@JsonIgnore
-	public Boolean getInternalToolExecutionEnabled() {
-		return this.internalToolExecutionEnabled;
-	}
-
-	@Override
-	@JsonIgnore
-	public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
-		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
-	}
-
-	@Override
-	@JsonIgnore
-	public Map<String, Object> getToolContext() {
+	public @Nullable Map<String, Object> getToolContext() {
 		return this.toolContext;
 	}
 
 	@Override
-	@JsonIgnore
-	public void setToolContext(Map<String, Object> toolContext) {
-		this.toolContext = toolContext;
+	public @Nullable String getOutputSchema() {
+		if (this.format == null) {
+			return null;
+		}
+		// If format is a simple string (e.g., "json"), return it as-is
+		if (this.format instanceof String) {
+			return (String) this.format;
+		}
+		// Otherwise, serialize the Map/Object to JSON string (JSON Schema case)
+		return jsonHelper.toJson(this.format);
 	}
 
 	/**
@@ -796,17 +604,95 @@ public class OllamaChatOptions implements ToolCallingChatOptions {
 	 * @return The {@link Map} of key/value pairs.
 	 */
 	public Map<String, Object> toMap() {
-		return ModelOptionsUtils.objectToMap(this);
+		Map<String, @Nullable Object> map = new java.util.HashMap<>();
+		map.put("numa", this.useNUMA);
+		map.put("num_ctx", this.numCtx);
+		map.put("num_batch", this.numBatch);
+		map.put("num_gpu", this.numGPU);
+		map.put("main_gpu", this.mainGPU);
+		map.put("low_vram", this.lowVRAM);
+		map.put("f16_kv", this.f16KV);
+		map.put("logits_all",  this.logitsAll);
+		map.put("vocab_only",  this.vocabOnly);
+		map.put("use_mmap", this.useMMap);
+		map.put("use_mlock",  this.useMLock);
+		map.put("num_thread", this.numThread);
+		map.put("num_keep", this.numKeep);
+		map.put("seed", this.seed);
+		map.put("num_predict", this.numPredict);
+		map.put("top_k", this.topK);
+		map.put("top_p", this.topP);
+		map.put("min_p", this.minP);
+		map.put("tfs_z", this.tfsZ);
+		map.put("typical_p", this.typicalP);
+		map.put("repeat_last_n", this.repeatLastN);
+		map.put("temperature", this.temperature);
+		map.put("repeat_penalty", this.repeatPenalty);
+		map.put("presence_penalty", this.presencePenalty);
+		map.put("frequency_penalty", this.frequencyPenalty);
+		map.put("mirostat", this.mirostat);
+		map.put("mirostat_tau", this.mirostatTau);
+		map.put("mirostat_eta", this.mirostatEta);
+		map.put("penalize_newline", this.penalizeNewline);
+		map.put("stop", this.stop);
+
+		map.put("model", this.model);
+		map.put("format", this.format);
+		map.put("keep_alive", this.keepAlive);
+		map.put("truncate", this.truncate);
+		return map.entrySet().stream().filter(kv -> kv.getValue() != null).collect(Collectors.toMap(Entry::getKey, Entry::getValue));
+		//return ModelOptionsUtils.objectToMap(this);
 	}
 
 	@Override
-	public OllamaChatOptions copy() {
-		return fromOptions(this);
+	public Builder mutate() {
+		return OllamaChatOptions.builder()
+			// ChatOptions
+			.model(this.model)
+			.frequencyPenalty(this.frequencyPenalty)
+			.maxTokens(getNumPredict())
+			.presencePenalty(this.presencePenalty)
+			.stopSequences(this.stop)
+			.temperature(this.temperature)
+			.topK(this.topK)
+			.topP(this.topP)
+			// ToolCallingChatOptions
+			.toolCallbacks(this.getToolCallbacks())
+			.toolContext(this.getToolContext())
+			// StructuredOutputChatOptions
+			.format(this.format)
+			// Ollama Specific
+			.keepAlive(this.keepAlive)
+			.truncate(this.truncate)
+			.thinkOption(this.thinkOption)
+			.useNUMA(this.useNUMA)
+			.numCtx(this.numCtx)
+			.numBatch(this.numBatch)
+			.numGPU(this.numGPU)
+			.mainGPU(this.mainGPU)
+			.lowVRAM(this.lowVRAM)
+			.f16KV(this.f16KV)
+			.logitsAll(this.logitsAll)
+			.vocabOnly(this.vocabOnly)
+			.useMMap(this.useMMap)
+			.useMLock(this.useMLock)
+			.numThread(this.numThread)
+			.numKeep(this.numKeep)
+			.seed(this.seed)
+			.minP(this.minP)
+			.tfsZ(this.tfsZ)
+			.typicalP(this.typicalP)
+			.repeatLastN(this.repeatLastN)
+			.repeatPenalty(this.repeatPenalty)
+			.mirostat(this.mirostat)
+			.mirostatTau(this.mirostatTau)
+			.mirostatEta(this.mirostatEta)
+			.penalizeNewline(this.penalizeNewline);
 	}
 	// @formatter:on
 
 	@Override
-	public boolean equals(Object o) {
+	public boolean equals(@Nullable Object o) {
 		if (this == o) {
 			return true;
 		}
@@ -834,9 +720,8 @@ public class OllamaChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.mirostat, that.mirostat) && Objects.equals(this.mirostatTau, that.mirostatTau)
 				&& Objects.equals(this.mirostatEta, that.mirostatEta)
 				&& Objects.equals(this.penalizeNewline, that.penalizeNewline) && Objects.equals(this.stop, that.stop)
-				&& Objects.equals(this.toolCallbacks, that.toolCallbacks)
-				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled)
-				&& Objects.equals(this.toolNames, that.toolNames) && Objects.equals(this.toolContext, that.toolContext);
+				&& Objects.equals(this.toolContext, that.toolContext)
+				&& Objects.equals(this.toolCallbacks, that.toolCallbacks);
 	}
 
 	@Override
@@ -846,187 +731,311 @@ public class OllamaChatOptions implements ToolCallingChatOptions {
 				this.vocabOnly, this.useMMap, this.useMLock, this.numThread, this.numKeep, this.seed, this.numPredict,
 				this.topK, this.topP, this.minP, this.tfsZ, this.typicalP, this.repeatLastN, this.temperature,
 				this.repeatPenalty, this.presencePenalty, this.frequencyPenalty, this.mirostat, this.mirostatTau,
-				this.mirostatEta, this.penalizeNewline, this.stop, this.toolCallbacks, this.toolNames,
-				this.internalToolExecutionEnabled, this.toolContext);
+				this.mirostatEta, this.penalizeNewline, this.stop, this.toolCallbacks, this.toolContext);
 	}
 
-	public static final class Builder {
+	// public Builder class exposed to users. Avoids having to deal with noisy generic
+	// parameters.
+	public static class Builder extends AbstractBuilder<Builder> {
 
-		private final OllamaChatOptions options = new OllamaChatOptions();
+	}
 
-		public Builder model(String model) {
-			this.options.model = model;
-			return this;
+	protected abstract static class AbstractBuilder<B extends AbstractBuilder<B>>
+			extends DefaultToolCallingChatOptions.Builder<B> implements StructuredOutputChatOptions.Builder<B> {
+
+		protected @Nullable Boolean useNUMA;
+
+		protected @Nullable Integer numCtx;
+
+		protected @Nullable Integer numBatch;
+
+		protected @Nullable Integer numGPU;
+
+		protected @Nullable Integer mainGPU;
+
+		protected @Nullable Boolean lowVRAM;
+
+		protected @Nullable Boolean f16KV;
+
+		protected @Nullable Boolean logitsAll;
+
+		protected @Nullable Boolean vocabOnly;
+
+		protected @Nullable Boolean useMMap;
+
+		protected @Nullable Boolean useMLock;
+
+		protected @Nullable Integer numThread;
+
+		protected @Nullable Integer numKeep;
+
+		protected @Nullable Integer seed;
+
+		protected @Nullable Double minP;
+
+		protected @Nullable Float tfsZ;
+
+		protected @Nullable Float typicalP;
+
+		protected @Nullable Integer repeatLastN;
+
+		protected @Nullable Double repeatPenalty;
+
+		protected @Nullable Integer mirostat;
+
+		protected @Nullable Float mirostatTau;
+
+		protected @Nullable Float mirostatEta;
+
+		protected @Nullable Boolean penalizeNewline;
+
+		protected @Nullable Object format;
+
+		protected @Nullable String keepAlive;
+
+		protected @Nullable Boolean truncate;
+
+		protected @Nullable ThinkOption thinkOption;
+
+		@Override
+		public B combineWith(ChatOptions.Builder<?> other) {
+			super.combineWith(other);
+			if (other instanceof AbstractBuilder<?> options) {
+				if (options.format != null) {
+					this.format = options.format;
+				}
+				if (options.keepAlive != null) {
+					this.keepAlive = options.keepAlive;
+				}
+				if (options.truncate != null) {
+					this.truncate = options.truncate;
+				}
+				if (options.thinkOption != null) {
+					this.thinkOption = options.thinkOption;
+				}
+				if (options.useNUMA != null) {
+					this.useNUMA = options.useNUMA;
+				}
+				if (options.numCtx != null) {
+					this.numCtx = options.numCtx;
+				}
+				if (options.numBatch != null) {
+					this.numBatch = options.numBatch;
+				}
+				if (options.numGPU != null) {
+					this.numGPU = options.numGPU;
+				}
+				if (options.mainGPU != null) {
+					this.mainGPU = options.mainGPU;
+				}
+				if (options.lowVRAM != null) {
+					this.lowVRAM = options.lowVRAM;
+				}
+				if (options.f16KV != null) {
+					this.f16KV = options.f16KV;
+				}
+				if (options.logitsAll != null) {
+					this.logitsAll = options.logitsAll;
+				}
+				if (options.vocabOnly != null) {
+					this.vocabOnly = options.vocabOnly;
+				}
+				if (options.useMMap != null) {
+					this.useMMap = options.useMMap;
+				}
+				if (options.useMLock != null) {
+					this.useMLock = options.useMLock;
+				}
+				if (options.numThread != null) {
+					this.numThread = options.numThread;
+				}
+				if (options.numKeep != null) {
+					this.numKeep = options.numKeep;
+				}
+				if (options.seed != null) {
+					this.seed = options.seed;
+				}
+				if (options.minP != null) {
+					this.minP = options.minP;
+				}
+				if (options.tfsZ != null) {
+					this.tfsZ = options.tfsZ;
+				}
+				if (options.typicalP != null) {
+					this.typicalP = options.typicalP;
+				}
+				if (options.repeatLastN != null) {
+					this.repeatLastN = options.repeatLastN;
+				}
+				if (options.repeatPenalty != null) {
+					this.repeatPenalty = options.repeatPenalty;
+				}
+				if (options.mirostat != null) {
+					this.mirostat = options.mirostat;
+				}
+				if (options.mirostatTau != null) {
+					this.mirostatTau = options.mirostatTau;
+				}
+				if (options.mirostatEta != null) {
+					this.mirostatEta = options.mirostatEta;
+				}
+				if (options.penalizeNewline != null) {
+					this.penalizeNewline = options.penalizeNewline;
+				}
+			}
+			return self();
 		}
 
-		public Builder model(OllamaModel model) {
-			this.options.model = model.getName();
-			return this;
+		public B model(@Nullable OllamaModel model) {
+			if (model == null) {
+				this.model((String) null);
+			}
+			else {
+				this.model(model.id());
+			}
+			return self();
 		}
 
-		public Builder format(Object format) {
-			this.options.format = format;
-			return this;
+		// Ollama specific name for maxTokens.
+		public B numPredict(@Nullable Integer numPredict) {
+			this.maxTokens(numPredict);
+			return self();
 		}
 
-		public Builder keepAlive(String keepAlive) {
-			this.options.keepAlive = keepAlive;
-			return this;
+		// Ollama specific name for stopSequences
+		public B stop(@Nullable List<String> stop) {
+			this.stopSequences(stop);
+			return self();
 		}
 
-		public Builder truncate(Boolean truncate) {
-			this.options.truncate = truncate;
-			return this;
+		public B format(@Nullable Object format) {
+			this.format = format;
+			return self();
 		}
 
-		public Builder useNUMA(Boolean useNUMA) {
-			this.options.useNUMA = useNUMA;
-			return this;
+		public B keepAlive(@Nullable String keepAlive) {
+			this.keepAlive = keepAlive;
+			return self();
 		}
 
-		public Builder numCtx(Integer numCtx) {
-			this.options.numCtx = numCtx;
-			return this;
+		public B truncate(@Nullable Boolean truncate) {
+			this.truncate = truncate;
+			return self();
 		}
 
-		public Builder numBatch(Integer numBatch) {
-			this.options.numBatch = numBatch;
-			return this;
+		public B useNUMA(@Nullable Boolean useNUMA) {
+			this.useNUMA = useNUMA;
+			return self();
 		}
 
-		public Builder numGPU(Integer numGPU) {
-			this.options.numGPU = numGPU;
-			return this;
+		public B numCtx(@Nullable Integer numCtx) {
+			this.numCtx = numCtx;
+			return self();
 		}
 
-		public Builder mainGPU(Integer mainGPU) {
-			this.options.mainGPU = mainGPU;
-			return this;
+		public B numBatch(@Nullable Integer numBatch) {
+			this.numBatch = numBatch;
+			return self();
 		}
 
-		public Builder lowVRAM(Boolean lowVRAM) {
-			this.options.lowVRAM = lowVRAM;
-			return this;
+		public B numGPU(@Nullable Integer numGPU) {
+			this.numGPU = numGPU;
+			return self();
 		}
 
-		public Builder f16KV(Boolean f16KV) {
-			this.options.f16KV = f16KV;
-			return this;
+		public B mainGPU(@Nullable Integer mainGPU) {
+			this.mainGPU = mainGPU;
+			return self();
 		}
 
-		public Builder logitsAll(Boolean logitsAll) {
-			this.options.logitsAll = logitsAll;
-			return this;
+		public B lowVRAM(@Nullable Boolean lowVRAM) {
+			this.lowVRAM = lowVRAM;
+			return self();
 		}
 
-		public Builder vocabOnly(Boolean vocabOnly) {
-			this.options.vocabOnly = vocabOnly;
-			return this;
+		public B f16KV(@Nullable Boolean f16KV) {
+			this.f16KV = f16KV;
+			return self();
 		}
 
-		public Builder useMMap(Boolean useMMap) {
-			this.options.useMMap = useMMap;
-			return this;
+		public B logitsAll(@Nullable Boolean logitsAll) {
+			this.logitsAll = logitsAll;
+			return self();
 		}
 
-		public Builder useMLock(Boolean useMLock) {
-			this.options.useMLock = useMLock;
-			return this;
+		public B vocabOnly(@Nullable Boolean vocabOnly) {
+			this.vocabOnly = vocabOnly;
+			return self();
 		}
 
-		public Builder numThread(Integer numThread) {
-			this.options.numThread = numThread;
-			return this;
+		public B useMMap(@Nullable Boolean useMMap) {
+			this.useMMap = useMMap;
+			return self();
 		}
 
-		public Builder numKeep(Integer numKeep) {
-			this.options.numKeep = numKeep;
-			return this;
+		public B useMLock(@Nullable Boolean useMLock) {
+			this.useMLock = useMLock;
+			return self();
 		}
 
-		public Builder seed(Integer seed) {
-			this.options.seed = seed;
-			return this;
+		public B numThread(@Nullable Integer numThread) {
+			this.numThread = numThread;
+			return self();
 		}
 
-		public Builder numPredict(Integer numPredict) {
-			this.options.numPredict = numPredict;
-			return this;
+		public B numKeep(@Nullable Integer numKeep) {
+			this.numKeep = numKeep;
+			return self();
 		}
 
-		public Builder topK(Integer topK) {
-			this.options.topK = topK;
-			return this;
+		public B seed(@Nullable Integer seed) {
+			this.seed = seed;
+			return self();
 		}
 
-		public Builder topP(Double topP) {
-			this.options.topP = topP;
-			return this;
+		public B minP(@Nullable Double minP) {
+			this.minP = minP;
+			return self();
 		}
 
-		public Builder minP(Double minP) {
-			this.options.minP = minP;
-			return this;
+		public B tfsZ(@Nullable Float tfsZ) {
+			this.tfsZ = tfsZ;
+			return self();
 		}
 
-		public Builder tfsZ(Float tfsZ) {
-			this.options.tfsZ = tfsZ;
-			return this;
+		public B typicalP(@Nullable Float typicalP) {
+			this.typicalP = typicalP;
+			return self();
 		}
 
-		public Builder typicalP(Float typicalP) {
-			this.options.typicalP = typicalP;
-			return this;
+		public B repeatLastN(@Nullable Integer repeatLastN) {
+			this.repeatLastN = repeatLastN;
+			return self();
 		}
 
-		public Builder repeatLastN(Integer repeatLastN) {
-			this.options.repeatLastN = repeatLastN;
-			return this;
+		public B repeatPenalty(@Nullable Double repeatPenalty) {
+			this.repeatPenalty = repeatPenalty;
+			return self();
 		}
 
-		public Builder temperature(Double temperature) {
-			this.options.temperature = temperature;
-			return this;
+		public B mirostat(@Nullable Integer mirostat) {
+			this.mirostat = mirostat;
+			return self();
 		}
 
-		public Builder repeatPenalty(Double repeatPenalty) {
-			this.options.repeatPenalty = repeatPenalty;
-			return this;
+		public B mirostatTau(@Nullable Float mirostatTau) {
+			this.mirostatTau = mirostatTau;
+			return self();
 		}
 
-		public Builder presencePenalty(Double presencePenalty) {
-			this.options.presencePenalty = presencePenalty;
-			return this;
+		public B mirostatEta(@Nullable Float mirostatEta) {
+			this.mirostatEta = mirostatEta;
+			return self();
 		}
 
-		public Builder frequencyPenalty(Double frequencyPenalty) {
-			this.options.frequencyPenalty = frequencyPenalty;
-			return this;
-		}
-
-		public Builder mirostat(Integer mirostat) {
-			this.options.mirostat = mirostat;
-			return this;
-		}
-
-		public Builder mirostatTau(Float mirostatTau) {
-			this.options.mirostatTau = mirostatTau;
-			return this;
-		}
-
-		public Builder mirostatEta(Float mirostatEta) {
-			this.options.mirostatEta = mirostatEta;
-			return this;
-		}
-
-		public Builder penalizeNewline(Boolean penalizeNewline) {
-			this.options.penalizeNewline = penalizeNewline;
-			return this;
-		}
-
-		public Builder stop(List<String> stop) {
-			this.options.stop = stop;
-			return this;
+		public B penalizeNewline(@Nullable Boolean penalizeNewline) {
+			this.penalizeNewline = penalizeNewline;
+			return self();
 		}
 
 		/**
@@ -1038,9 +1047,9 @@ public class OllamaChatOptions implements ToolCallingChatOptions {
 		 * @see #disableThinking()
 		 * @see #thinkLow()
 		 */
-		public Builder enableThinking() {
-			this.options.thinkOption = ThinkOption.ThinkBoolean.ENABLED;
-			return this;
+		public B enableThinking() {
+			this.thinkOption = ThinkOption.ThinkBoolean.ENABLED;
+			return self();
 		}
 
 		/**
@@ -1048,9 +1057,9 @@ public class OllamaChatOptions implements ToolCallingChatOptions {
 		 * @return this builder
 		 * @see #enableThinking()
 		 */
-		public Builder disableThinking() {
-			this.options.thinkOption = ThinkOption.ThinkBoolean.DISABLED;
-			return this;
+		public B disableThinking() {
+			this.thinkOption = ThinkOption.ThinkBoolean.DISABLED;
+			return self();
 		}
 
 		/**
@@ -1062,9 +1071,9 @@ public class OllamaChatOptions implements ToolCallingChatOptions {
 		 * @see #thinkMedium()
 		 * @see #thinkHigh()
 		 */
-		public Builder thinkLow() {
-			this.options.thinkOption = ThinkOption.ThinkLevel.LOW;
-			return this;
+		public B thinkLow() {
+			this.thinkOption = ThinkOption.ThinkLevel.LOW;
+			return self();
 		}
 
 		/**
@@ -1073,9 +1082,9 @@ public class OllamaChatOptions implements ToolCallingChatOptions {
 		 * @see #thinkLow()
 		 * @see #thinkHigh()
 		 */
-		public Builder thinkMedium() {
-			this.options.thinkOption = ThinkOption.ThinkLevel.MEDIUM;
-			return this;
+		public B thinkMedium() {
+			this.thinkOption = ThinkOption.ThinkLevel.MEDIUM;
+			return self();
 		}
 
 		/**
@@ -1084,9 +1093,9 @@ public class OllamaChatOptions implements ToolCallingChatOptions {
 		 * @see #thinkLow()
 		 * @see #thinkMedium()
 		 */
-		public Builder thinkHigh() {
-			this.options.thinkOption = ThinkOption.ThinkLevel.HIGH;
-			return this;
+		public B thinkHigh() {
+			this.thinkOption = ThinkOption.ThinkLevel.HIGH;
+			return self();
 		}
 
 		/**
@@ -1096,50 +1105,29 @@ public class OllamaChatOptions implements ToolCallingChatOptions {
 		 * @param thinkOption the think option
 		 * @return this builder
 		 */
-		public Builder thinkOption(ThinkOption thinkOption) {
-			this.options.thinkOption = thinkOption;
-			return this;
+		public B thinkOption(@Nullable ThinkOption thinkOption) {
+			this.thinkOption = thinkOption;
+			return self();
 		}
 
-		public Builder toolCallbacks(List<ToolCallback> toolCallbacks) {
-			this.options.setToolCallbacks(toolCallbacks);
-			return this;
-		}
-
-		public Builder toolCallbacks(ToolCallback... toolCallbacks) {
-			Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
-			this.options.toolCallbacks.addAll(Arrays.asList(toolCallbacks));
-			return this;
-		}
-
-		public Builder toolNames(Set<String> toolNames) {
-			this.options.setToolNames(toolNames);
-			return this;
-		}
-
-		public Builder toolNames(String... toolNames) {
-			Assert.notNull(toolNames, "toolNames cannot be null");
-			this.options.toolNames.addAll(Set.of(toolNames));
-			return this;
-		}
-
-		public Builder internalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
-			this.options.setInternalToolExecutionEnabled(internalToolExecutionEnabled);
-			return this;
-		}
-
-		public Builder toolContext(Map<String, Object> toolContext) {
-			if (this.options.toolContext == null) {
-				this.options.toolContext = toolContext;
+		public B outputSchema(@Nullable String outputSchema) {
+			if (outputSchema == null) {
+				this.format = null;
 			}
 			else {
-				this.options.toolContext.putAll(toolContext);
+				this.format = jsonHelper.fromJsonToMap(outputSchema);
 			}
-			return this;
+			return self();
 		}
 
 		public OllamaChatOptions build() {
-			return this.options;
+			return new OllamaChatOptions(this.useNUMA, this.numCtx, this.numBatch, this.numGPU, this.mainGPU,
+					this.lowVRAM, this.f16KV, this.logitsAll, this.vocabOnly, this.useMMap, this.useMLock,
+					this.numThread, this.numKeep, this.seed, this.maxTokens, this.topK, this.topP, this.minP, this.tfsZ,
+					this.typicalP, this.repeatLastN, this.temperature, this.repeatPenalty, this.presencePenalty,
+					this.frequencyPenalty, this.mirostat, this.mirostatTau, this.mirostatEta, this.penalizeNewline,
+					this.stopSequences, this.model, this.format, this.keepAlive, this.truncate, this.thinkOption,
+					this.toolCallbacks, this.toolContext);
 		}
 
 	}

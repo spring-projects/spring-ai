@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,31 +28,30 @@ import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.observation.ChatModelObservationDocumentation.HighCardinalityKeyNames;
+import org.springframework.ai.chat.observation.ChatModelObservationDocumentation.LowCardinalityKeyNames;
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
-import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.ai.openai.OpenAiChatOptions.StreamOptions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Bean;
-import org.springframework.core.retry.RetryPolicy;
-import org.springframework.core.retry.RetryTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.ai.chat.observation.ChatModelObservationDocumentation.HighCardinalityKeyNames;
-import static org.springframework.ai.chat.observation.ChatModelObservationDocumentation.LowCardinalityKeyNames;
 
 /**
  * Integration tests for observation instrumentation in {@link OpenAiChatModel}.
  *
+ * @author Julien Dubois
+ * @author Soby Chacko
  * @author Thomas Vitale
  */
-@SpringBootTest(classes = OpenAiChatModelObservationIT.Config.class)
+@SpringBootTest
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class OpenAiChatModelObservationIT {
 
@@ -60,48 +59,35 @@ public class OpenAiChatModelObservationIT {
 	TestObservationRegistry observationRegistry;
 
 	@Autowired
-	OpenAiChatModel chatModel;
+	private OpenAiChatModel chatModel;
 
 	@BeforeEach
-	void beforeEach() {
+	void setUp() {
 		this.observationRegistry.clear();
 	}
 
 	@Test
-	void observationForChatOperation() {
+	void observationForChatOperation() throws InterruptedException {
 
-		var options = OpenAiChatOptions.builder()
-			.model(OpenAiApi.ChatModel.GPT_4_O_MINI.getValue())
-			.frequencyPenalty(0.0)
-			.maxTokens(2048)
-			.presencePenalty(0.0)
-			.stop(List.of("this-is-the-end"))
-			.temperature(0.7)
-			.topP(1.0)
-			.build();
+		var options = OpenAiChatOptions.builder().model(OpenAiChatOptions.DEFAULT_CHAT_MODEL).build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
 
 		ChatResponse chatResponse = this.chatModel.call(prompt);
+		assertThat(chatResponse.getResult()).isNotNull();
 		assertThat(chatResponse.getResult().getOutput().getText()).isNotEmpty();
 
 		ChatResponseMetadata responseMetadata = chatResponse.getMetadata();
 		assertThat(responseMetadata).isNotNull();
 
-		validate(responseMetadata);
+		validate(responseMetadata, false);
 	}
 
 	@Test
-	void observationForStreamingChatOperation() {
+	void observationForStreamingChatOperation() throws InterruptedException {
 		var options = OpenAiChatOptions.builder()
-			.model(OpenAiApi.ChatModel.GPT_4_O_MINI.getValue())
-			.frequencyPenalty(0.0)
-			.maxTokens(2048)
-			.presencePenalty(0.0)
-			.stop(List.of("this-is-the-end"))
-			.temperature(0.7)
-			.topP(1.0)
-			.streamUsage(true)
+			.model(OpenAiChatOptions.DEFAULT_CHAT_MODEL)
+			.streamOptions(StreamOptions.builder().includeUsage(true).build())
 			.build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
@@ -114,7 +100,7 @@ public class OpenAiChatModelObservationIT {
 
 		String aggregatedResponse = responses.subList(0, responses.size() - 1)
 			.stream()
-			.map(r -> r.getResult().getOutput().getText())
+			.map(r -> r.getResult() != null ? r.getResult().getOutput().getText() : "")
 			.collect(Collectors.joining());
 		assertThat(aggregatedResponse).isNotEmpty();
 
@@ -123,31 +109,22 @@ public class OpenAiChatModelObservationIT {
 		ChatResponseMetadata responseMetadata = lastChatResponse.getMetadata();
 		assertThat(responseMetadata).isNotNull();
 
-		validate(responseMetadata);
+		validate(responseMetadata, true);
 	}
 
-	private void validate(ChatResponseMetadata responseMetadata) {
-		TestObservationRegistryAssert.assertThat(this.observationRegistry)
+	private void validate(ChatResponseMetadata responseMetadata, boolean streaming) throws InterruptedException {
+		Thread.sleep(100); // Wait for observation to be recorded
+
+		var observationAssert = TestObservationRegistryAssert.assertThat(this.observationRegistry)
 			.doesNotHaveAnyRemainingCurrentObservation()
 			.hasObservationWithNameEqualTo(DefaultChatModelObservationConvention.DEFAULT_NAME)
 			.that()
-			// TODO - this condition occasionally fails.
-			// .hasContextualNameEqualTo("chat " +
-			// OpenAiApi.ChatModel.GPT_4_O_MINI.getValue())
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(),
 					AiOperationType.CHAT.value())
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_PROVIDER.asString(), AiProvider.OPENAI.value())
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.REQUEST_MODEL.asString(),
-					OpenAiApi.ChatModel.GPT_4_O_MINI.getValue())
+					OpenAiChatOptions.DEFAULT_CHAT_MODEL)
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.RESPONSE_MODEL.asString(), responseMetadata.getModel())
-			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_FREQUENCY_PENALTY.asString(), "0.0")
-			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_MAX_TOKENS.asString(), "2048")
-			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_PRESENCE_PENALTY.asString(), "0.0")
-			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_STOP_SEQUENCES.asString(),
-					"[\"this-is-the-end\"]")
-			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_TEMPERATURE.asString(), "0.7")
-			.doesNotHaveHighCardinalityKeyValueWithKey(HighCardinalityKeyNames.REQUEST_TOP_K.asString())
-			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_TOP_P.asString(), "1.0")
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.RESPONSE_ID.asString(), responseMetadata.getId())
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.RESPONSE_FINISH_REASONS.asString(), "[\"STOP\"]")
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.USAGE_INPUT_TOKENS.asString(),
@@ -158,6 +135,13 @@ public class OpenAiChatModelObservationIT {
 					String.valueOf(responseMetadata.getUsage().getTotalTokens()))
 			.hasBeenStarted()
 			.hasBeenStopped();
+		if (streaming) {
+			observationAssert.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_STREAM.asString(), "true");
+		}
+		else {
+			observationAssert
+				.doesNotHaveHighCardinalityKeyValueWithKey(HighCardinalityKeyNames.REQUEST_STREAM.asString());
+		}
 	}
 
 	@SpringBootConfiguration
@@ -169,15 +153,11 @@ public class OpenAiChatModelObservationIT {
 		}
 
 		@Bean
-		public OpenAiApi openAiApi() {
-			return OpenAiApi.builder().apiKey(System.getenv("OPENAI_API_KEY")).build();
-		}
-
-		@Bean
-		public OpenAiChatModel openAiChatModel(OpenAiApi openAiApi, TestObservationRegistry observationRegistry) {
-			return new OpenAiChatModel(openAiApi, OpenAiChatOptions.builder().build(),
-					ToolCallingManager.builder().build(), new RetryTemplate(RetryPolicy.withDefaults()),
-					observationRegistry);
+		public OpenAiChatModel openAiChatModel(TestObservationRegistry observationRegistry) {
+			return OpenAiChatModel.builder()
+				.options(OpenAiChatOptions.builder().model(OpenAiChatOptions.DEFAULT_CHAT_MODEL).build())
+				.observationRegistry(observationRegistry)
+				.build();
 		}
 
 	}

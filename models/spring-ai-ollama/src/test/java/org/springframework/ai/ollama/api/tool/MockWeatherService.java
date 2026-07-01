@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,12 +17,6 @@
 package org.springframework.ai.ollama.api.tool;
 
 import java.util.function.Function;
-
-import com.fasterxml.jackson.annotation.JsonClassDescription;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 
 /**
  * @author Christian Tzolov
@@ -74,11 +68,7 @@ public class MockWeatherService implements Function<MockWeatherService.Request, 
 	/**
 	 * Weather Function request.
 	 */
-	@JsonInclude(Include.NON_NULL)
-	@JsonClassDescription("Weather API request")
-	public record Request(@JsonProperty(required = true,
-			value = "location") @JsonPropertyDescription("The city and state e.g. San Francisco, CA") String location,
-			@JsonProperty(required = true, value = "unit") @JsonPropertyDescription("Temperature unit") Unit unit) {
+	public record Request(String location, Unit unit) {
 
 	}
 

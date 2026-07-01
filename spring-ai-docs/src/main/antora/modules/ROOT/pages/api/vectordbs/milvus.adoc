@@ -167,6 +167,12 @@ vectorStore.similaritySearch(SearchRequest.builder()
 
 NOTE: These filter expressions are converted into the equivalent Milvus filters.
 
+NOTE: When reading back metadata from search results, numeric values are
+deserialized using Gson.
+Integer values are returned as `Long` and decimal values as `Double`.
+Code that casts integer metadata fields directly to `Double` should be
+updated to use `Long` or the `Number` supertype instead.
+
 == Using MilvusSearchRequest
 
 MilvusSearchRequest extends SearchRequest, allowing you to use Milvus-specific search parameters such as native expressions and search parameter JSON.

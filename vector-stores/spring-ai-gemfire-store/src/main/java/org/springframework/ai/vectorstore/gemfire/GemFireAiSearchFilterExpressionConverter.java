@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,17 +16,16 @@
 
 package org.springframework.ai.vectorstore.gemfire;
 
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.TimeZone;
-import java.util.regex.Pattern;
 
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.Filter.Expression;
 import org.springframework.ai.vectorstore.filter.Filter.Key;
 import org.springframework.ai.vectorstore.filter.converter.AbstractFilterExpressionConverter;
+import org.springframework.util.Assert;
 
 /**
  * GemFireAiSearchFilterExpressionConverter is a class that converts Filter.Expression
@@ -37,8 +36,6 @@ import org.springframework.ai.vectorstore.filter.converter.AbstractFilterExpress
  */
 public class GemFireAiSearchFilterExpressionConverter extends AbstractFilterExpressionConverter {
 
-	private static final Pattern DATE_FORMAT_PATTERN = Pattern.compile("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z");
-
 	private final SimpleDateFormat dateFormat;
 
 	public GemFireAiSearchFilterExpressionConverter() {
@@ -48,6 +45,7 @@ public class GemFireAiSearchFilterExpressionConverter extends AbstractFilterExpr
 
 	@Override
 	protected void doExpression(Expression expression, StringBuilder context) {
+		Assert.state(expression.right() != null, "expression.right() must not be null");
 		if (expression.type() == Filter.ExpressionType.IN || expression.type() == Filter.ExpressionType.NIN) {
 			context.append(getOperationSymbol(expression));
 			this.convertOperand(expression.left(), context);
@@ -104,8 +102,9 @@ public class GemFireAiSearchFilterExpressionConverter extends AbstractFilterExpr
 
 	@Override
 	public void doKey(Key key, StringBuilder context) {
-		var identifier = hasOuterQuotes(key.key()) ? removeOuterQuotes(key.key()) : key.key();
-		context.append(identifier.trim()).append(":");
+		var identifier = key.key();
+		emitLuceneString(identifier.trim(), context);
+		context.append(":");
 	}
 
 	@Override
@@ -113,14 +112,14 @@ public class GemFireAiSearchFilterExpressionConverter extends AbstractFilterExpr
 		if (filterValue.value() instanceof List list) {
 			int c = 0;
 			for (Object v : list) {
-				context.append(v);
+				this.doSingleValue(normalizeDateString(v), context);
 				if (c++ < list.size() - 1) {
 					this.doAddValueRangeSpitter(filterValue, context);
 				}
 			}
 		}
 		else {
-			this.doSingleValue(filterValue.value(), context);
+			this.doSingleValue(normalizeDateString(filterValue.value()), context);
 		}
 	}
 
@@ -130,18 +129,7 @@ public class GemFireAiSearchFilterExpressionConverter extends AbstractFilterExpr
 			context.append(this.dateFormat.format(date));
 		}
 		else if (value instanceof String text) {
-			if (DATE_FORMAT_PATTERN.matcher(text).matches()) {
-				try {
-					Date date = this.dateFormat.parse(text);
-					context.append(this.dateFormat.format(date));
-				}
-				catch (ParseException e) {
-					throw new IllegalArgumentException("Invalid date type:" + text, e);
-				}
-			}
-			else {
-				context.append(text);
-			}
+			emitLuceneString(text, context);
 		}
 		else {
 			context.append(value);

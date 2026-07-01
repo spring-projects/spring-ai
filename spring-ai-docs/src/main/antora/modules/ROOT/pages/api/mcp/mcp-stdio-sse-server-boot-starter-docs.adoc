@@ -39,7 +39,7 @@ Full MCP Server feature support with `SSE` (Server-Sent Events) server transport
 * HTTP-based transport using Spring MVC (`WebMvcSseServerTransportProvider`)
 * Automatically configured SSE endpoints
 * Optional `STDIO` transport (enabled by setting `spring.ai.mcp.server.stdio=true`)
-* Includes `spring-boot-starter-web` and `mcp-spring-webmvc` dependencies
+* Includes `spring-boot-starter-web` and `org.springframework.ai:mcp-spring-webmvc` dependencies
 
 === SSE WebFlux Server
 
@@ -58,7 +58,7 @@ The starter activates the `McpWebFluxServerAutoConfiguration` and `McpServerAuto
 * Reactive transport using Spring WebFlux (`WebFluxSseServerTransportProvider`)
 * Automatically configured reactive SSE endpoints
 * Optional `STDIO` transport (enabled by setting `spring.ai.mcp.server.stdio=true`)
-* Includes `spring-boot-starter-webflux` and `mcp-spring-webflux` dependencies
+* Includes `spring-boot-starter-webflux` and `org.springframework.ai:mcp-spring-webflux` dependencies
 
 [NOTE]
 ====
@@ -88,6 +88,7 @@ All Common properties are prefixed with `spring.ai.mcp.server`:
 |`resource-change-notification` |Enable resource change notifications |`true`
 |`prompt-change-notification` |Enable prompt change notifications |`true`
 |`tool-change-notification` |Enable tool change notifications |`true`
+|`expose-mcp-client-tools` |Whether to re-expose downstream MCP tools (provided by MCP clients) as tools in this MCP server |`false`
 |`tool-response-mime-type` |Optional response MIME type per tool name. For example, `spring.ai.mcp.server.tool-response-mime-type.generateImage=image/png` will associate the `image/png` MIME type with the `generateImage()` tool name |`-`
 |`request-timeout` |Duration to wait for server responses before timing out requests. Applies to all requests made through the client, including tool calls, resource access, and prompt operations |`20 seconds`
 |===
@@ -168,7 +169,7 @@ TIP: You can disable the automatic detection and registration of all tool callba
 
 ==== Tool Context Support
 
-The xref:api/tools.adoc#_tool_context[ToolContext] is supported, allowing contextual information to be passed to tool calls. It contains an `McpSyncServerExchange` instance under the `exchange` key, accessible via `McpToolUtils.getMcpExchange(toolContext)`. See this https://github.com/spring-projects/spring-ai-examples/blob/3fab8483b8deddc241b1e16b8b049616604b7767/model-context-protocol/sampling/mcp-weather-webmvc-server/src/main/java/org/springframework/ai/mcp/sample/server/WeatherService.java#L59-L126[example] demonstrating `exchange.loggingNotification(...)` and `exchange.createMessage(...)`.
+The xref:api/tools.adoc#tool-context[ToolContext] is supported, allowing contextual information to be passed to tool calls. It contains an `McpSyncServerExchange` instance under the `exchange` key, accessible via `McpToolUtils.getMcpExchange(toolContext)`. See this https://github.com/spring-projects/spring-ai-examples/blob/3fab8483b8deddc241b1e16b8b049616604b7767/model-context-protocol/sampling/mcp-weather-webmvc-server/src/main/java/org/springframework/ai/mcp/sample/server/WeatherService.java#L59-L126[example] demonstrating `exchange.loggingNotification(...)` and `exchange.createMessage(...)`.
 
 === link:https://spec.modelcontextprotocol.io/specification/2024-11-05/server/resources/[Resources]
 
@@ -188,7 +189,7 @@ public List<McpServerFeatures.SyncResourceSpecification> myResources(...) {
     var resourceSpecification = new McpServerFeatures.SyncResourceSpecification(systemInfoResource, (exchange, request) -> {
         try {
             var systemInfo = Map.of(...);
-            String jsonContent = new ObjectMapper().writeValueAsString(systemInfo);
+            String jsonContent = new JsonMapper().writeValueAsString(systemInfo);
             return new McpSchema.ReadResourceResult(
                     List.of(new McpSchema.TextResourceContents(request.uri(), "application/json", jsonContent)));
         }
@@ -220,8 +221,8 @@ public List<McpServerFeatures.SyncPromptSpecification> myPrompts() {
     var promptSpecification = new McpServerFeatures.SyncPromptSpecification(prompt, (exchange, getPromptRequest) -> {
         String nameArgument = (String) getPromptRequest.arguments().get("name");
         if (nameArgument == null) { nameArgument = "friend"; }
-        var userMessage = new PromptMessage(Role.USER, new TextContent("Hello " + nameArgument + "! How can I assist you today?"));
-        return new GetPromptResult("A personalized greeting message", List.of(userMessage));
+        var userMessage = new PromptMessage(Role.USER, TextContent.builder("Hello " + nameArgument + "! How can I assist you today?").build());
+        return GetPromptResult.builder(List.of(userMessage)).description("A personalized greeting message").build();
     });
 
     return List.of(promptSpecification);
@@ -260,10 +261,8 @@ From within the tool, resource, prompt or completion call handler use the provid
 [source,java]
 ----
 (exchange, request) -> {
-        exchange.loggingNotification(LoggingMessageNotification.builder()
-            .level(LoggingLevel.INFO)
+        exchange.loggingNotification(LoggingMessageNotification.builder(LoggingLevel.INFO, "This is a test log message")
             .logger("test-logger")
-            .data("This is a test log message")
             .build());
 }
 ----
@@ -285,9 +284,7 @@ From within the tool, resource, prompt or completion call handler use the provid
 [source,java]
 ----
 (exchange, request) -> {
-        exchange.progressNotification(ProgressNotification.builder()
-            .progressToken("test-progress-token")
-            .progress(0.25)
+        exchange.progressNotification(ProgressNotification.builder("test-progress-token", 0.25)
             .total(1.0)
             .message("tool call in progress")
             .build());

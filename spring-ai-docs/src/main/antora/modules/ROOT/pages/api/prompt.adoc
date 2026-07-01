@@ -43,6 +43,23 @@ public class Prompt implements ModelRequest<List<Message>> {
 }
 ----
 
+==== Convenience Methods
+
+The `Prompt` class provides several convenience methods for accessing messages by their role:
+
+**Single Message Access:**
+
+* `getUserMessage()`: Returns the last user message in the prompt, or an empty `UserMessage` if none exists
+* `getSystemMessage()`: Returns the first system message in the prompt, or an empty `SystemMessage` if none exists
+* `getLastUserOrToolResponseMessage()`: Returns the last user or tool response message, useful for conversation continuity
+
+**Multiple Message Access:**
+
+* `getUserMessages()`: Returns a list of all user messages in the prompt, preserving their order
+* `getSystemMessages()`: Returns a list of all system messages in the prompt, preserving their order
+
+These methods are particularly useful when working with multi-turn conversations or when you need to process messages by role.
+
 === Message
 
 The `Message` interface encapsulates a `Prompt` textual content, a collection of metadata attributes, and a categorization known as `MessageType`.

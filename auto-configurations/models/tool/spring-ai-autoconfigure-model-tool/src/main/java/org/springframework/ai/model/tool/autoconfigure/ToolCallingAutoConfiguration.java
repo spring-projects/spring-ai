@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import io.micrometer.observation.ObservationRegistry;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.model.tool.ToolCallingManager;
@@ -32,7 +33,6 @@ import org.springframework.ai.tool.execution.ToolExecutionExceptionProcessor;
 import org.springframework.ai.tool.observation.ToolCallingContentObservationFilter;
 import org.springframework.ai.tool.observation.ToolCallingObservationConvention;
 import org.springframework.ai.tool.resolution.DelegatingToolCallbackResolver;
-import org.springframework.ai.tool.resolution.SpringBeanToolCallbackResolver;
 import org.springframework.ai.tool.resolution.StaticToolCallbackResolver;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 import org.springframework.beans.factory.ObjectProvider;
@@ -59,7 +59,7 @@ import org.springframework.util.ClassUtils;
 @EnableConfigurationProperties(ToolCallingProperties.class)
 public class ToolCallingAutoConfiguration {
 
-	private static final Logger logger = LoggerFactory.getLogger(ToolCallingAutoConfiguration.class);
+	private static final Log logger = LogFactory.getLog(ToolCallingAutoConfiguration.class);
 
 	/**
 	 * The default {@link ToolCallbackResolver} resolves tools by name for methods,
@@ -93,11 +93,7 @@ public class ToolCallingAutoConfiguration {
 
 		var staticToolCallbackResolver = new StaticToolCallbackResolver(allFunctionAndToolCallbacks);
 
-		var springBeanToolCallbackResolver = SpringBeanToolCallbackResolver.builder()
-			.applicationContext(applicationContext)
-			.build();
-
-		return new DelegatingToolCallbackResolver(List.of(staticToolCallbackResolver, springBeanToolCallbackResolver));
+		return new DelegatingToolCallbackResolver(List.of(staticToolCallbackResolver));
 	}
 
 	private static boolean isMcpToolCallbackProvider(ResolvableType type) {
@@ -156,21 +152,27 @@ public class ToolCallingAutoConfiguration {
 		return new ToolCallingContentObservationFilter();
 	}
 
-	private static Class<? extends RuntimeException> getClassOrNull(String className) {
+	private static @Nullable Class<? extends RuntimeException> getClassOrNull(String className) {
 		try {
 			Class<?> clazz = ClassUtils.forName(className, null);
 			if (RuntimeException.class.isAssignableFrom(clazz)) {
 				return (Class<? extends RuntimeException>) clazz;
 			}
 			else {
-				logger.debug("Class {} is not a subclass of RuntimeException", className);
+				if (logger.isDebugEnabled()) {
+					logger.debug("Class " + className + " is not a subclass of RuntimeException");
+				}
 			}
 		}
 		catch (ClassNotFoundException e) {
-			logger.debug("Cannot load class: {}", className);
+			if (logger.isDebugEnabled()) {
+				logger.debug("Cannot load class: " + className);
+			}
 		}
 		catch (Exception e) {
-			logger.debug("Error loading class: {}", className, e);
+			if (logger.isDebugEnabled()) {
+				logger.debug("Error loading class: " + className, e);
+			}
 		}
 		return null;
 	}

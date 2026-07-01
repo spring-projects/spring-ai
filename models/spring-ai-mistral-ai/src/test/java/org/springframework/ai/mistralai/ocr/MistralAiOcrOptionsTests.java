@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Tests for {@link MistralAiOcrOptions}.
  *
  * @author Alexandros Pappas
+ * @author Sebastien Deleuze
  * @since 1.1.0
  */
 class MistralAiOcrOptionsTests {
@@ -71,7 +72,7 @@ class MistralAiOcrOptionsTests {
 
 	@Test
 	void testDefaultValues() {
-		MistralAiOcrOptions options = new MistralAiOcrOptions();
+		MistralAiOcrOptions options = MistralAiOcrOptions.builder().build();
 		assertThat(options.getModel()).isEqualTo("mistral-ocr-latest");
 		assertThat(options.getId()).isNull();
 		assertThat(options.getPages()).isNull();

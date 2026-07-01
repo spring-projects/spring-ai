@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@ import kotlin.reflect.KProperty;
 import kotlin.reflect.KType;
 import kotlin.reflect.full.KClasses;
 import kotlin.reflect.jvm.ReflectJvmMapping;
+import org.jspecify.annotations.NullUnmarked;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.core.KotlinDetector;
@@ -94,7 +95,8 @@ public class KotlinModule implements Module {
 		return member.getRawMember().isSynthetic(); // Ignore generated properties/methods
 	}
 
-	private @Nullable KProperty<?> getKotlinProperty(MemberScope<?, ?> member) {
+	@NullUnmarked // https://github.com/openjdk/jdk/pull/28018
+	private KProperty<?> getKotlinProperty(MemberScope<?, ?> member) {
 		Class<?> declaringClass = member.getDeclaringType().getErasedType();
 		if (KotlinDetector.isKotlinType(declaringClass)) {
 			KClass<?> kotlinClass = JvmClassMappingKt.getKotlinClass(declaringClass);

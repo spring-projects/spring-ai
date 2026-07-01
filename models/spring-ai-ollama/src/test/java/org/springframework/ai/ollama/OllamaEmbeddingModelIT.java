@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,8 +51,8 @@ class OllamaEmbeddingModelIT extends BaseOllamaIT {
 	@Test
 	void embeddings() {
 		assertThat(this.embeddingModel).isNotNull();
-		EmbeddingResponse embeddingResponse = this.embeddingModel.call(new EmbeddingRequest(
-				List.of("Hello World", "Something else"), OllamaEmbeddingOptions.builder().build()));
+		EmbeddingResponse embeddingResponse = this.embeddingModel
+			.call(new EmbeddingRequest(List.of("Hello World", "Something else"), null));
 		assertThat(embeddingResponse.getResults()).hasSize(2);
 		assertThat(embeddingResponse.getResults().get(0).getIndex()).isEqualTo(0);
 		assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
@@ -108,7 +108,7 @@ class OllamaEmbeddingModelIT extends BaseOllamaIT {
 		public OllamaEmbeddingModel ollamaEmbedding(OllamaApi ollamaApi) {
 			return OllamaEmbeddingModel.builder()
 				.ollamaApi(ollamaApi)
-				.defaultOptions(OllamaEmbeddingOptions.builder().model(MODEL).build())
+				.options(OllamaEmbeddingOptions.builder().model(MODEL).build())
 				.modelManagementOptions(ModelManagementOptions.builder()
 					.pullModelStrategy(PullModelStrategy.WHEN_MISSING)
 					.additionalModels(List.of(ADDITIONAL_MODEL))

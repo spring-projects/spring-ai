@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@ package org.springframework.ai.stabilityai;
 
 import java.util.Objects;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.image.ImageGenerationMetadata;
 
 /**
@@ -26,9 +28,9 @@ import org.springframework.ai.image.ImageGenerationMetadata;
  */
 public class StabilityAiImageGenerationMetadata implements ImageGenerationMetadata {
 
-	private String finishReason;
+	private final String finishReason;
 
-	private Long seed;
+	private final Long seed;
 
 	public StabilityAiImageGenerationMetadata(String finishReason, Long seed) {
 		this.finishReason = finishReason;
@@ -50,7 +52,7 @@ public class StabilityAiImageGenerationMetadata implements ImageGenerationMetada
 	}
 
 	@Override
-	public boolean equals(Object o) {
+	public boolean equals(@Nullable Object o) {
 		if (this == o) {
 			return true;
 		}

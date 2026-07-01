@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,250 +16,165 @@
 
 package org.springframework.ai.bedrock.converse;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.bedrock.converse.api.BedrockCacheOptions;
+import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.model.tool.DefaultToolCallingChatOptions;
+import org.springframework.ai.model.tool.StructuredOutputChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
-import org.springframework.lang.Nullable;
-import org.springframework.util.Assert;
 
 /**
  * The options to be used when sending a chat request to the Bedrock API.
  *
  * @author Sun Yuhan
+ * @author Sebastien Deleuze
  */
-@JsonInclude(JsonInclude.Include.NON_NULL)
-public class BedrockChatOptions implements ToolCallingChatOptions {
+public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOutputChatOptions {
 
-	@JsonProperty("model")
-	private String model;
+	private final @Nullable String model;
 
-	@JsonProperty("frequencyPenalty")
-	private Double frequencyPenalty;
+	private final @Nullable Double frequencyPenalty;
 
-	@JsonProperty("maxTokens")
-	private Integer maxTokens;
+	private final @Nullable Integer maxTokens;
 
-	@JsonProperty("presencePenalty")
-	private Double presencePenalty;
+	private final @Nullable Double presencePenalty;
 
-	@JsonIgnore
-	private Map<String, String> requestParameters = new HashMap<>();
+	private final @Nullable Map<String, String> requestParameters;
 
-	@JsonProperty("stopSequences")
-	private List<String> stopSequences;
+	private final @Nullable List<String> stopSequences;
 
-	@JsonProperty("temperature")
-	private Double temperature;
+	private final @Nullable Double temperature;
 
-	@JsonProperty("topK")
-	private Integer topK;
+	private final @Nullable Integer topK;
 
-	@JsonProperty("topP")
-	private Double topP;
+	private final @Nullable Double topP;
 
-	@JsonIgnore
-	private List<ToolCallback> toolCallbacks = new ArrayList<>();
+	private final @Nullable List<ToolCallback> toolCallbacks;
 
-	@JsonIgnore
-	private Set<String> toolNames = new HashSet<>();
+	private final @Nullable Map<String, Object> toolContext;
 
-	@JsonIgnore
-	private Map<String, Object> toolContext = new HashMap<>();
+	private final @Nullable BedrockCacheOptions cacheOptions;
 
-	@JsonIgnore
-	private Boolean internalToolExecutionEnabled;
+	private final @Nullable String outputSchema;
 
-	@JsonIgnore
-	private BedrockCacheOptions cacheOptions;
+	protected BedrockChatOptions(@Nullable String model, @Nullable Double frequencyPenalty, @Nullable Integer maxTokens,
+			@Nullable Double presencePenalty, @Nullable Map<String, String> requestParameters,
+			@Nullable List<String> stopSequences, @Nullable Double temperature, @Nullable Integer topK,
+			@Nullable Double topP, @Nullable List<ToolCallback> toolCallbacks,
+			@Nullable Map<String, Object> toolContext, @Nullable BedrockCacheOptions cacheOptions,
+			@Nullable String outputSchema) {
+		this.model = model;
+		this.frequencyPenalty = frequencyPenalty;
+		this.maxTokens = maxTokens;
+		this.presencePenalty = presencePenalty;
+		this.requestParameters = requestParameters != null ? Map.copyOf(requestParameters) : null;
+		this.stopSequences = stopSequences != null ? List.copyOf(stopSequences) : null;
+		this.temperature = temperature;
+		this.topK = topK;
+		this.topP = topP;
+		this.toolCallbacks = toolCallbacks != null ? List.copyOf(toolCallbacks) : null;
+		this.toolContext = toolContext != null ? Map.copyOf(toolContext) : null;
+		this.cacheOptions = cacheOptions;
+		this.outputSchema = outputSchema;
+	}
 
 	public static Builder builder() {
 		return new Builder();
 	}
 
-	public static BedrockChatOptions fromOptions(BedrockChatOptions fromOptions) {
-		fromOptions.getToolNames();
-		return builder().model(fromOptions.getModel())
-			.frequencyPenalty(fromOptions.getFrequencyPenalty())
-			.maxTokens(fromOptions.getMaxTokens())
-			.presencePenalty(fromOptions.getPresencePenalty())
-			.requestParameters(new HashMap<>(fromOptions.getRequestParameters()))
-			.stopSequences(
-					fromOptions.getStopSequences() != null ? new ArrayList<>(fromOptions.getStopSequences()) : null)
-			.temperature(fromOptions.getTemperature())
-			.topK(fromOptions.getTopK())
-			.topP(fromOptions.getTopP())
-			.toolCallbacks(new ArrayList<>(fromOptions.getToolCallbacks()))
-			.toolNames(new HashSet<>(fromOptions.getToolNames()))
-			.toolContext(new HashMap<>(fromOptions.getToolContext()))
-			.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
-			.cacheOptions(fromOptions.getCacheOptions())
-			.build();
-	}
-
 	@Override
-	public String getModel() {
+	public @Nullable String getModel() {
 		return this.model;
 	}
 
-	public void setModel(String model) {
-		this.model = model;
-	}
-
 	@Override
-	public Double getFrequencyPenalty() {
+	public @Nullable Double getFrequencyPenalty() {
 		return this.frequencyPenalty;
 	}
 
-	public void setFrequencyPenalty(Double frequencyPenalty) {
-		this.frequencyPenalty = frequencyPenalty;
-	}
-
 	@Override
-	public Integer getMaxTokens() {
+	public @Nullable Integer getMaxTokens() {
 		return this.maxTokens;
 	}
 
-	public void setMaxTokens(Integer maxTokens) {
-		this.maxTokens = maxTokens;
-	}
-
-	public Map<String, String> getRequestParameters() {
+	public @Nullable Map<String, String> getRequestParameters() {
 		return this.requestParameters;
 	}
 
-	public void setRequestParameters(Map<String, String> requestParameters) {
-		this.requestParameters = requestParameters;
-	}
-
 	@Override
-	public Double getPresencePenalty() {
+	public @Nullable Double getPresencePenalty() {
 		return this.presencePenalty;
 	}
 
-	public void setPresencePenalty(Double presencePenalty) {
-		this.presencePenalty = presencePenalty;
-	}
-
 	@Override
-	public List<String> getStopSequences() {
+	public @Nullable List<String> getStopSequences() {
 		return this.stopSequences;
 	}
 
-	public void setStopSequences(List<String> stopSequences) {
-		this.stopSequences = stopSequences;
-	}
-
 	@Override
-	public Double getTemperature() {
+	public @Nullable Double getTemperature() {
 		return this.temperature;
 	}
 
-	public void setTemperature(Double temperature) {
-		this.temperature = temperature;
-	}
-
 	@Override
-	public Integer getTopK() {
+	public @Nullable Integer getTopK() {
 		return this.topK;
 	}
 
-	public void setTopK(Integer topK) {
-		this.topK = topK;
-	}
-
 	@Override
-	public Double getTopP() {
+	public @Nullable Double getTopP() {
 		return this.topP;
 	}
 
-	public void setTopP(Double topP) {
-		this.topP = topP;
-	}
-
 	@Override
-	@JsonIgnore
-	public List<ToolCallback> getToolCallbacks() {
+	public @Nullable List<ToolCallback> getToolCallbacks() {
 		return this.toolCallbacks;
 	}
 
 	@Override
-	@JsonIgnore
-	public void setToolCallbacks(List<ToolCallback> toolCallbacks) {
-		Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
-		Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
-		this.toolCallbacks = toolCallbacks;
-	}
-
-	@Override
-	@JsonIgnore
-	public Set<String> getToolNames() {
-		return Set.copyOf(this.toolNames);
-	}
-
-	@Override
-	@JsonIgnore
-	public void setToolNames(Set<String> toolNames) {
-		Assert.notNull(toolNames, "toolNames cannot be null");
-		Assert.noNullElements(toolNames, "toolNames cannot contain null elements");
-		toolNames.forEach(toolName -> Assert.hasText(toolName, "toolNames cannot contain empty elements"));
-		this.toolNames = toolNames;
-	}
-
-	@Override
-	@JsonIgnore
-	public Map<String, Object> getToolContext() {
+	public @Nullable Map<String, Object> getToolContext() {
 		return this.toolContext;
 	}
 
-	@Override
-	@JsonIgnore
-	public void setToolContext(Map<String, Object> toolContext) {
-		this.toolContext = toolContext;
-	}
-
-	@Override
-	@Nullable
-	public Boolean getInternalToolExecutionEnabled() {
-		return this.internalToolExecutionEnabled;
-	}
-
-	@Override
-	@JsonIgnore
-	public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
-		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
-	}
-
-	@JsonIgnore
-	public BedrockCacheOptions getCacheOptions() {
+	public @Nullable BedrockCacheOptions getCacheOptions() {
 		return this.cacheOptions;
 	}
 
-	@JsonIgnore
-	public void setCacheOptions(BedrockCacheOptions cacheOptions) {
-		this.cacheOptions = cacheOptions;
+	@Override
+	public @Nullable String getOutputSchema() {
+		return this.outputSchema;
 	}
 
 	@Override
-	@SuppressWarnings("unchecked")
-	public BedrockChatOptions copy() {
-		return fromOptions(this);
+	public Builder mutate() {
+		return BedrockChatOptions.builder()
+			// ChatOptions
+			.model(this.model)
+			.frequencyPenalty(this.frequencyPenalty)
+			.maxTokens(this.maxTokens)
+			.presencePenalty(this.presencePenalty)
+			.stopSequences(this.stopSequences)
+			.temperature(this.temperature)
+			.topK(this.topK)
+			.topP(this.topP)
+			// ToolCallingChatOptions
+			.toolCallbacks(this.getToolCallbacks())
+			.toolContext(this.getToolContext())
+			// Bedrock Specific
+			.requestParameters(this.requestParameters)
+			.cacheOptions(this.cacheOptions)
+			.outputSchema(this.outputSchema);
 	}
 
 	@Override
-	public boolean equals(Object o) {
+	public boolean equals(@Nullable Object o) {
 		if (this == o) {
 			return true;
 		}
@@ -273,112 +188,84 @@ public class BedrockChatOptions implements ToolCallingChatOptions {
 				&& Objects.equals(this.stopSequences, that.stopSequences)
 				&& Objects.equals(this.temperature, that.temperature) && Objects.equals(this.topK, that.topK)
 				&& Objects.equals(this.topP, that.topP) && Objects.equals(this.toolCallbacks, that.toolCallbacks)
-				&& Objects.equals(this.toolNames, that.toolNames) && Objects.equals(this.toolContext, that.toolContext)
-				&& Objects.equals(this.internalToolExecutionEnabled, that.internalToolExecutionEnabled)
-				&& Objects.equals(this.cacheOptions, that.cacheOptions);
+				&& Objects.equals(this.toolContext, that.toolContext)
+				&& Objects.equals(this.cacheOptions, that.cacheOptions)
+				&& Objects.equals(this.outputSchema, that.outputSchema);
 	}
 
 	@Override
 	public int hashCode() {
 		return Objects.hash(this.model, this.frequencyPenalty, this.maxTokens, this.presencePenalty,
 				this.requestParameters, this.stopSequences, this.temperature, this.topK, this.topP, this.toolCallbacks,
-				this.toolNames, this.toolContext, this.internalToolExecutionEnabled, this.cacheOptions);
+				this.toolContext, this.cacheOptions, this.outputSchema);
 	}
 
-	public static final class Builder {
+	// public Builder class exposed to users. Avoids having to deal with noisy generic
+	// parameters.
+	public static class Builder extends AbstractBuilder<Builder> {
 
-		private final BedrockChatOptions options = new BedrockChatOptions();
+	}
 
-		public Builder model(String model) {
-			this.options.model = model;
-			return this;
+	protected abstract static class AbstractBuilder<B extends AbstractBuilder<B>>
+			extends DefaultToolCallingChatOptions.Builder<B> implements StructuredOutputChatOptions.Builder<B> {
+
+		@Override
+		public B clone() {
+			B copy = super.clone();
+			copy.requestParameters = this.requestParameters;
+			return copy;
 		}
 
-		public Builder frequencyPenalty(Double frequencyPenalty) {
-			this.options.frequencyPenalty = frequencyPenalty;
-			return this;
+		protected @Nullable Map<String, String> requestParameters;
+
+		protected @Nullable BedrockCacheOptions cacheOptions;
+
+		private @Nullable String outputSchema;
+
+		public B requestParameters(@Nullable Map<String, String> requestParameters) {
+			this.requestParameters = requestParameters;
+			return self();
 		}
 
-		public Builder maxTokens(Integer maxTokens) {
-			this.options.maxTokens = maxTokens;
-			return this;
+		public B cacheOptions(@Nullable BedrockCacheOptions cacheOptions) {
+			this.cacheOptions = cacheOptions;
+			return self();
 		}
 
-		public Builder presencePenalty(Double presencePenalty) {
-			this.options.presencePenalty = presencePenalty;
-			return this;
-		}
-
-		public Builder requestParameters(Map<String, String> requestParameters) {
-			this.options.requestParameters = requestParameters;
-			return this;
-		}
-
-		public Builder stopSequences(List<String> stopSequences) {
-			this.options.stopSequences = stopSequences;
-			return this;
-		}
-
-		public Builder temperature(Double temperature) {
-			this.options.temperature = temperature;
-			return this;
-		}
-
-		public Builder topK(Integer topK) {
-			this.options.topK = topK;
-			return this;
-		}
-
-		public Builder topP(Double topP) {
-			this.options.topP = topP;
-			return this;
-		}
-
-		public Builder toolCallbacks(List<ToolCallback> toolCallbacks) {
-			this.options.setToolCallbacks(toolCallbacks);
-			return this;
-		}
-
-		public Builder toolCallbacks(ToolCallback... toolCallbacks) {
-			Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
-			this.options.toolCallbacks.addAll(Arrays.asList(toolCallbacks));
-			return this;
-		}
-
-		public Builder toolNames(Set<String> toolNames) {
-			Assert.notNull(toolNames, "toolNames cannot be null");
-			this.options.setToolNames(toolNames);
-			return this;
-		}
-
-		public Builder toolNames(String... toolNames) {
-			Assert.notNull(toolNames, "toolNames cannot be null");
-			this.options.toolNames.addAll(Set.of(toolNames));
-			return this;
-		}
-
-		public Builder toolContext(Map<String, Object> toolContext) {
-			if (this.options.toolContext == null) {
-				this.options.toolContext = toolContext;
+		public B combineWith(ChatOptions.Builder<?> other) {
+			super.combineWith(other);
+			if (other instanceof AbstractBuilder<?> that) {
+				if (that.requestParameters != null) {
+					if (this.requestParameters == null) {
+						this.requestParameters = new HashMap<>(that.requestParameters);
+					}
+					else {
+						Map<String, String> merged = new HashMap<>(this.requestParameters);
+						merged.putAll(that.requestParameters);
+						this.requestParameters = merged;
+					}
+				}
+				if (that.cacheOptions != null) {
+					this.cacheOptions = that.cacheOptions;
+				}
+				if (that.outputSchema != null) {
+					this.outputSchema = that.outputSchema;
+				}
 			}
-			else {
-				this.options.toolContext.putAll(toolContext);
-			}
-			return this;
+			return self();
 		}
 
-		public Builder internalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
-			this.options.setInternalToolExecutionEnabled(internalToolExecutionEnabled);
-			return this;
+		@Override
+		public B outputSchema(@Nullable String outputSchema) {
+			this.outputSchema = outputSchema;
+			return self();
 		}
 
-		public Builder cacheOptions(BedrockCacheOptions cacheOptions) {
-			this.options.setCacheOptions(cacheOptions);
-			return this;
-		}
-
+		@Override
 		public BedrockChatOptions build() {
-			return this.options;
+			return new BedrockChatOptions(this.model, this.frequencyPenalty, this.maxTokens, this.presencePenalty,
+					this.requestParameters, this.stopSequences, this.temperature, this.topK, this.topP,
+					this.toolCallbacks, this.toolContext, this.cacheOptions, this.outputSchema);
 		}
 
 	}

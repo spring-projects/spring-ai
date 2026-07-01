@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,7 +45,7 @@ public class BedrockCohereEmbeddingAutoConfigurationIT {
 	private final ApplicationContextRunner contextRunner = BedrockTestUtils.getContextRunner()
 		.withPropertyValues("spring.ai.model.embedding=bedrock-cohere",
 				"spring.ai.bedrock.cohere.embedding.model=" + CohereEmbeddingModel.COHERE_EMBED_MULTILINGUAL_V3.id(),
-				"spring.ai.bedrock.cohere.embedding.options.inputType=SEARCH_DOCUMENT",
+				"spring.ai.bedrock.cohere.embedding.options.input-type=SEARCH_DOCUMENT",
 				"spring.ai.bedrock.cohere.embedding.options.truncate=NONE")
 		.withConfiguration(AutoConfigurations.of(BedrockCohereEmbeddingAutoConfiguration.class));
 
@@ -89,7 +89,7 @@ public class BedrockCohereEmbeddingAutoConfigurationIT {
 					"spring.ai.bedrock.aws.access-key=ACCESS_KEY", "spring.ai.bedrock.aws.secret-key=SECRET_KEY",
 					"spring.ai.bedrock.aws.region=" + Region.US_EAST_1.id(),
 					"spring.ai.bedrock.cohere.embedding.model=MODEL_XYZ",
-					"spring.ai.bedrock.cohere.embedding.options.inputType=CLASSIFICATION",
+					"spring.ai.bedrock.cohere.embedding.options.input-type=CLASSIFICATION",
 					"spring.ai.bedrock.cohere.embedding.options.truncate=START")
 			.withConfiguration(AutoConfigurations.of(BedrockCohereEmbeddingAutoConfiguration.class))
 			.run(context -> {
@@ -99,8 +99,8 @@ public class BedrockCohereEmbeddingAutoConfigurationIT {
 				assertThat(awsProperties.getRegion()).isEqualTo(Region.US_EAST_1.id());
 				assertThat(properties.getModel()).isEqualTo("MODEL_XYZ");
 
-				assertThat(properties.getOptions().getInputType()).isEqualTo(InputType.CLASSIFICATION);
-				assertThat(properties.getOptions().getTruncate()).isEqualTo(CohereEmbeddingRequest.Truncate.START);
+				assertThat(properties.getInputType()).isEqualTo(InputType.CLASSIFICATION);
+				assertThat(properties.getTruncate()).isEqualTo(CohereEmbeddingRequest.Truncate.START);
 
 				assertThat(awsProperties.getAccessKey()).isEqualTo("ACCESS_KEY");
 				assertThat(awsProperties.getSecretKey()).isEqualTo("SECRET_KEY");

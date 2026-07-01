@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,20 +23,21 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import org.springframework.ai.model.ApiKey;
 import org.springframework.ai.model.ChatModelDescription;
-import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.ai.util.JsonHelper;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -46,14 +47,17 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
 
 /**
- * Single class implementation of the DeepSeek Chat Completion API:
- * https://platform.deepseek.com/api-docs/api/create-chat-completion
+ * Single class implementation of the <a href="https://api-docs.deepseek.com/">DeepSeek
+ * Chat Completion API</a>.
  *
  * @author Geng Rong
+ * @author Sebastien Deleuze
  */
 public class DeepSeekApi {
 
-	public static final DeepSeekApi.ChatModel DEFAULT_CHAT_MODEL = ChatModel.DEEPSEEK_CHAT;
+	private static final JsonHelper jsonHelper = new JsonHelper();
+
+	public static final DeepSeekApi.ChatModel DEFAULT_CHAT_MODEL = ChatModel.DEEPSEEK_V4_FLASH;
 
 	private static final Predicate<String> SSE_DONE_PREDICATE = "[DONE]"::equals;
 
@@ -94,12 +98,13 @@ public class DeepSeekApi {
 			h.setContentType(MediaType.APPLICATION_JSON);
 			h.addAll(HttpHeaders.readOnlyHttpHeaders(headers));
 		};
-		this.restClient = restClientBuilder.baseUrl(baseUrl)
+		this.restClient = restClientBuilder.clone()
+			.baseUrl(baseUrl)
 			.defaultHeaders(finalHeaders)
 			.defaultStatusHandler(responseErrorHandler)
 			.build();
 
-		this.webClient = webClientBuilder.baseUrl(baseUrl).defaultHeaders(finalHeaders).build();
+		this.webClient = webClientBuilder.clone().baseUrl(baseUrl).defaultHeaders(finalHeaders).build();
 
 	}
 
@@ -132,7 +137,7 @@ public class DeepSeekApi {
 	public ResponseEntity<ChatCompletion> chatCompletionEntity(ChatCompletionRequest chatRequest) {
 
 		Assert.notNull(chatRequest, "The request body can not be null.");
-		Assert.isTrue(!chatRequest.stream(), "Request must set the stream property to false.");
+		Assert.isTrue(Boolean.FALSE.equals(chatRequest.stream()), "Request must set the stream property to false.");
 
 		return this.restClient.post()
 			.uri(this.getEndpoint(chatRequest))
@@ -159,11 +164,12 @@ public class DeepSeekApi {
 	 * request.
 	 * @return Returns a {@link Flux} stream from chat completion chunks.
 	 */
+	@SuppressWarnings("NullAway")
 	public Flux<ChatCompletionChunk> chatCompletionStream(ChatCompletionRequest chatRequest,
 			HttpHeaders additionalHttpHeader) {
 
 		Assert.notNull(chatRequest, "The request body can not be null.");
-		Assert.isTrue(chatRequest.stream(), "Request must set the stream property to true.");
+		Assert.isTrue(Boolean.TRUE.equals(chatRequest.stream()), "Request must set the stream property to true.");
 
 		AtomicBoolean isInsideTool = new AtomicBoolean(false);
 
@@ -177,7 +183,7 @@ public class DeepSeekApi {
 			.takeUntil(SSE_DONE_PREDICATE)
 			// filters out the "[DONE]" message.
 			.filter(SSE_DONE_PREDICATE.negate())
-			.map(content -> ModelOptionsUtils.jsonToObject(content, ChatCompletionChunk.class))
+			.mapNotNull(content -> jsonHelper.fromJson(content, ChatCompletionChunk.class))
 			// Detect is the chunk is part of a streaming function call.
 			.map(chunk -> {
 				if (this.chunkMerger.isStreamingToolFunctionCall(chunk)) {
@@ -199,9 +205,7 @@ public class DeepSeekApi {
 			// Mono<ChatCompletionChunk>,
 			// Flux<Flux<ChatCompletionChunk>> -> Flux<Mono<ChatCompletionChunk>>
 			.concatMapIterable(window -> {
-				Mono<ChatCompletionChunk> monoChunk = window.reduce(
-						new ChatCompletionChunk(null, null, null, null, null, null, null, null),
-						(previous, current) -> this.chunkMerger.merge(previous, current));
+				Mono<ChatCompletionChunk> monoChunk = window.reduce(this.chunkMerger::merge);
 				return List.of(monoChunk);
 			})
 			// Flux<Mono<ChatCompletionChunk>> -> Flux<ChatCompletionChunk>
@@ -228,11 +232,24 @@ public class DeepSeekApi {
 	public enum ChatModel implements ChatModelDescription {
 
 		/**
+		 * DeepSeek-V4 Flash model.
+		 */
+		DEEPSEEK_V4_FLASH("deepseek-v4-flash"),
+
+		/**
+		 * DeepSeek-V4 Pro model.
+		 */
+		DEEPSEEK_V4_PRO("deepseek-v4-pro"),
+
+		/**
 		 * The backend model of deepseek-chat has been updated to DeepSeek-V3, you can
 		 * access DeepSeek-V3 without modification to the model name. The open-source
 		 * DeepSeek-V3 model supports 128K context window, and DeepSeek-V3 on API/Web
 		 * supports 64K context window. Context window: 64k tokens
+		 * @deprecated DeepSeek has announced this legacy model name will be deprecated.
+		 * Prefer {@link #DEEPSEEK_V4_FLASH} or {@link #DEEPSEEK_V4_PRO}.
 		 */
+		@Deprecated(since = "2.0.0")
 		DEEPSEEK_CHAT("deepseek-chat"),
 
 		/**
@@ -241,7 +258,11 @@ public class DeepSeekApi {
 		 * the accuracy of its responses. Our API provides users with access to the CoT
 		 * content generated by deepseek-reasoner, enabling them to view, display, and
 		 * distill it.
+		 * @deprecated DeepSeek has announced this legacy model name will be deprecated.
+		 * Prefer {@link #DEEPSEEK_V4_FLASH} / {@link #DEEPSEEK_V4_PRO} with
+		 * provider-specific reasoning configuration.
 		 */
+		@Deprecated(since = "2.0.0")
 		DEEPSEEK_REASONER("deepseek-reasoner");
 
 		public final String value;
@@ -304,25 +325,20 @@ public class DeepSeekApi {
 		/**
 		 * The type of the tool. Currently, only 'function' is supported.
 		 */
-		@JsonProperty("type")
-		private Type type = Type.FUNCTION;
+		private Type type;
 
 		/**
 		 * The function definition.
 		 */
-		@JsonProperty("function")
 		private Function function;
-
-		public FunctionTool() {
-
-		}
 
 		/**
 		 * Create a tool of type 'function' and the given function definition.
 		 * @param type the tool type
 		 * @param function function definition
 		 */
-		public FunctionTool(Type type, Function function) {
+		@JsonCreator
+		public FunctionTool(@JsonProperty("type") Type type, @JsonProperty("function") Function function) {
 			this.type = type;
 			this.function = function;
 		}
@@ -370,27 +386,13 @@ public class DeepSeekApi {
 		@JsonInclude(Include.NON_NULL)
 		public static class Function {
 
-			@JsonProperty("description")
-			private String description;
+			private final String description;
 
-			@JsonProperty("name")
-			private String name;
+			private final String name;
 
-			@JsonProperty("parameters")
-			private Map<String, Object> parameters;
+			private final Map<String, Object> parameters;
 
-			@JsonProperty("strict")
-			Boolean strict;
-
-			@JsonIgnore
-			private String jsonSchema;
-
-			/**
-			 * NOTE: Required by Jackson, JSON deserialization!
-			 */
-			@SuppressWarnings("unused")
-			private Function() {
-			}
+			private final @Nullable Boolean strict;
 
 			/**
 			 * Create tool function definition.
@@ -406,7 +408,11 @@ public class DeepSeekApi {
 			 * defined in the parameters field. Only a subset of JSON Schema is supported
 			 * when strict is true.
 			 */
-			public Function(String description, String name, Map<String, Object> parameters, Boolean strict) {
+			@JsonCreator
+			public Function(@JsonProperty("description") String description, @JsonProperty("name") String name,
+					@JsonProperty("parameters") Map<String, Object> parameters,
+					@JsonProperty("strict") @Nullable Boolean strict) {
+
 				this.description = description;
 				this.name = name;
 				this.parameters = parameters;
@@ -420,7 +426,7 @@ public class DeepSeekApi {
 			 * @param jsonSchema tool function schema as json.
 			 */
 			public Function(String description, String name, String jsonSchema) {
-				this(description, name, ModelOptionsUtils.jsonToMap(jsonSchema), null);
+				this(description, name, jsonHelper.fromJsonToMap(jsonSchema), null);
 			}
 
 			public String getDescription() {
@@ -435,35 +441,8 @@ public class DeepSeekApi {
 				return this.parameters;
 			}
 
-			public void setDescription(String description) {
-				this.description = description;
-			}
-
-			public void setName(String name) {
-				this.name = name;
-			}
-
-			public void setParameters(Map<String, Object> parameters) {
-				this.parameters = parameters;
-			}
-
-			public Boolean getStrict() {
+			public @Nullable Boolean getStrict() {
 				return this.strict;
-			}
-
-			public void setStrict(Boolean strict) {
-				this.strict = strict;
-			}
-
-			public String getJsonSchema() {
-				return this.jsonSchema;
-			}
-
-			public void setJsonSchema(String jsonSchema) {
-				this.jsonSchema = jsonSchema;
-				if (jsonSchema != null) {
-					this.parameters = ModelOptionsUtils.jsonToMap(jsonSchema);
-				}
 			}
 
 		}
@@ -521,19 +500,19 @@ public class DeepSeekApi {
 	@JsonInclude(Include.NON_NULL)
 	public record ChatCompletionRequest(// @formatter:off
 			@JsonProperty("messages") List<ChatCompletionMessage> messages,
-			@JsonProperty("model") String model,
-			@JsonProperty("frequency_penalty") Double frequencyPenalty,
-			@JsonProperty("max_tokens") Integer maxTokens, // Use maxCompletionTokens instead
-			@JsonProperty("presence_penalty") Double presencePenalty,
-			@JsonProperty("response_format") ResponseFormat responseFormat,
-			@JsonProperty("stop") List<String> stop,
-			@JsonProperty("stream") Boolean stream,
-			@JsonProperty("temperature") Double temperature,
-			@JsonProperty("top_p") Double topP,
-			@JsonProperty("logprobs") Boolean logprobs,
-			@JsonProperty("top_logprobs") Integer topLogprobs,
-			@JsonProperty("tools") List<FunctionTool> tools,
-			@JsonProperty("tool_choice") Object toolChoice) {
+			@JsonProperty("model") @Nullable String model,
+			@JsonProperty("frequency_penalty") @Nullable Double frequencyPenalty,
+			@JsonProperty("max_tokens") @Nullable Integer maxTokens, // Use maxCompletionTokens instead
+			@JsonProperty("presence_penalty") @Nullable Double presencePenalty,
+			@JsonProperty("response_format") @Nullable ResponseFormat responseFormat,
+			@JsonProperty("stop") @Nullable List<String> stop,
+			@JsonProperty("stream") @Nullable Boolean stream,
+			@JsonProperty("temperature") @Nullable Double temperature,
+			@JsonProperty("top_p") @Nullable Double topP,
+			@JsonProperty("logprobs") @Nullable Boolean logprobs,
+			@JsonProperty("top_logprobs") @Nullable Integer topLogprobs,
+			@JsonProperty("tools") @Nullable List<FunctionTool> tools,
+			@JsonProperty("tool_choice") @Nullable Object toolChoice) {
 
 
 		/**
@@ -543,6 +522,7 @@ public class DeepSeekApi {
 		 * @param stream If set, partial message deltas will be sent.Tokens will be sent as data-only server-sent events
 		 * as they become available, with the stream terminated by a data: [DONE] message.
 		 */
+		@SuppressWarnings("NullAway") // Model nullable here due to streaming
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, Boolean stream) {
 			this(messages, null, null, null, null, null,
 					null, stream, null, null, null, null, null, null);
@@ -602,7 +582,7 @@ public class DeepSeekApi {
 	/**
 	 * Message comprising the conversation.
 	 *
-	 * @param rawContent The contents of the message. The message content is always a
+	 * @param content The contents of the message. The message content is always a
 	 * {@link String}.
 	 * @param role The role of the messages author. Could be one of the {@link Role}
 	 * types.
@@ -617,14 +597,14 @@ public class DeepSeekApi {
 	@JsonInclude(Include.NON_NULL)
 	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record ChatCompletionMessage(// @formatter:off
-			@JsonProperty("content") Object rawContent,
+			@JsonProperty("content") @Nullable String content, // null when tool calling is used
 			@JsonProperty("role") Role role,
-			@JsonProperty("name") String name,
-			@JsonProperty("tool_call_id") String toolCallId,
+			@JsonProperty("name") @Nullable String name,
+			@JsonProperty("tool_call_id") @Nullable String toolCallId,
 			@JsonProperty("tool_calls")
-			@JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY) List<ToolCall> toolCalls,
-			@JsonProperty("prefix") Boolean prefix,
-			@JsonProperty("reasoning_content") String reasoningContent) { // @formatter:on
+			@JsonFormat(with = JsonFormat.Feature.ACCEPT_SINGLE_VALUE_AS_ARRAY) @Nullable List<ToolCall> toolCalls,
+			@JsonProperty("prefix") @Nullable Boolean prefix,
+			@JsonProperty("reasoning_content") @Nullable String reasoningContent) { // @formatter:on
 
 		/**
 		 * Create a chat completion message with the given content and role. All other
@@ -632,7 +612,7 @@ public class DeepSeekApi {
 		 * @param content The contents of the message.
 		 * @param role The role of the author of this message.
 		 */
-		public ChatCompletionMessage(Object content, Role role) {
+		public ChatCompletionMessage(@Nullable String content, Role role) {
 			this(content, role, null, null, null, null, null);
 		}
 
@@ -645,22 +625,9 @@ public class DeepSeekApi {
 		 * @param toolCallId The id of the tool call.
 		 * @param toolCalls The tool calls generated by the model, such as function calls.
 		 */
-		public ChatCompletionMessage(Object content, Role role, String name, String toolCallId,
-				List<ToolCall> toolCalls) {
+		public ChatCompletionMessage(@Nullable String content, Role role, @Nullable String name,
+				@Nullable String toolCallId, @Nullable List<ToolCall> toolCalls) {
 			this(content, role, name, toolCallId, toolCalls, null, null);
-		}
-
-		/**
-		 * Get message content as String.
-		 */
-		public String content() {
-			if (this.rawContent == null) {
-				return null;
-			}
-			if (this.rawContent instanceof String text) {
-				return text;
-			}
-			throw new IllegalStateException("The content is not a string!");
 		}
 
 		/**
@@ -705,12 +672,12 @@ public class DeepSeekApi {
 		@JsonInclude(Include.NON_NULL)
 		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record ToolCall(// @formatter:off
-				@JsonProperty("index") Integer index,
+				@JsonProperty("index") @Nullable Integer index,
 				@JsonProperty("id") String id,
-				@JsonProperty("type") String type,
+				@JsonProperty("type") @Nullable String type,
 				@JsonProperty("function") ChatCompletionFunction function) { // @formatter:on
 
-			public ToolCall(String id, String type, ChatCompletionFunction function) {
+			public ToolCall(String id, @Nullable String type, ChatCompletionFunction function) {
 				this(null, id, type, function);
 			}
 
@@ -770,10 +737,10 @@ public class DeepSeekApi {
 		@JsonInclude(Include.NON_NULL)
 		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record Choice(// @formatter:off
-				@JsonProperty("finish_reason") ChatCompletionFinishReason finishReason,
+				@JsonProperty("finish_reason") @Nullable ChatCompletionFinishReason finishReason,
 				@JsonProperty("index") Integer index,
 				@JsonProperty("message") ChatCompletionMessage message,
-				@JsonProperty("logprobs") LogProbs logprobs) { // @formatter:on
+				@JsonProperty("logprobs") @Nullable LogProbs logprobs) { // @formatter:on
 		}
 
 	}
@@ -852,7 +819,7 @@ public class DeepSeekApi {
 		@JsonProperty("completion_tokens") Integer completionTokens,
 		@JsonProperty("prompt_tokens") Integer promptTokens,
 		@JsonProperty("total_tokens") Integer totalTokens,
-		@JsonProperty("prompt_tokens_details") PromptTokensDetails promptTokensDetails) { // @formatter:on
+		@JsonProperty("prompt_tokens_details") @Nullable PromptTokensDetails promptTokensDetails) { // @formatter:on
 
 		public Usage(Integer completionTokens, Integer promptTokens, Integer totalTokens) {
 			this(completionTokens, promptTokens, totalTokens, null);
@@ -912,10 +879,10 @@ public class DeepSeekApi {
 		@JsonInclude(Include.NON_NULL)
 		@JsonIgnoreProperties(ignoreUnknown = true)
 		public record ChunkChoice(// @formatter:off
-				@JsonProperty("finish_reason") ChatCompletionFinishReason finishReason,
+				@JsonProperty("finish_reason") @Nullable ChatCompletionFinishReason finishReason,
 				@JsonProperty("index") Integer index,
 				@JsonProperty("delta") ChatCompletionMessage delta,
-				@JsonProperty("logprobs") LogProbs logprobs) { // @formatter:on
+				@JsonProperty("logprobs") @Nullable LogProbs logprobs) { // @formatter:on
 
 		}
 
@@ -925,7 +892,7 @@ public class DeepSeekApi {
 
 		private String baseUrl = org.springframework.ai.deepseek.api.common.DeepSeekConstants.DEFAULT_BASE_URL;
 
-		private ApiKey apiKey;
+		private @Nullable ApiKey apiKey;
 
 		private HttpHeaders headers = new HttpHeaders();
 

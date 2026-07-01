@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2026 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,8 +35,8 @@ import com.couchbase.client.java.manager.query.CreatePrimaryQueryIndexOptions;
 import com.couchbase.client.java.manager.search.SearchIndex;
 import com.couchbase.client.java.query.QueryOptions;
 import com.couchbase.client.java.query.QueryResult;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.RetrySpec;
 
@@ -53,12 +53,13 @@ import org.springframework.util.Assert;
 
 /**
  * @author Laurent Doguin
+ * @author chabinhwang
  * @since 1.0.0
  */
 public class CouchbaseSearchVectorStore extends AbstractObservationVectorStore
 		implements InitializingBean, AutoCloseable {
 
-	private static final Logger logger = LoggerFactory.getLogger(CouchbaseSearchVectorStore.class);
+	private static final Log logger = LogFactory.getLog(CouchbaseSearchVectorStore.class);
 
 	private static final String DEFAULT_INDEX_NAME = "spring-ai-document-index";
 
@@ -139,10 +140,10 @@ public class CouchbaseSearchVectorStore extends AbstractObservationVectorStore
 		logger.info(this.scopeName);
 		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
 				this.batchingStrategy);
-		for (Document document : documents) {
+		for (int i = 0; i < documents.size(); i++) {
+			Document document = documents.get(i);
 			CouchbaseDocument cbDoc = new CouchbaseDocument(document.getId(),
-					Objects.requireNonNullElse(document.getText(), ""), document.getMetadata(),
-					embeddings.get(documents.indexOf(document)));
+					Objects.requireNonNullElse(document.getText(), ""), document.getMetadata(), embeddings.get(i));
 			this.collection.upsert(document.getId(), cbDoc);
 		}
 	}
@@ -163,7 +164,9 @@ public class CouchbaseSearchVectorStore extends AbstractObservationVectorStore
 			this.scope.query(sql, QueryOptions.queryOptions().metrics(true));
 		}
 		catch (Exception e) {
-			logger.error("Failed to delete documents by filter: {}", e.getMessage(), e);
+			if (logger.isErrorEnabled()) {
+				logger.error("Failed to delete documents by filter: " + e.getMessage(), e);
+			}
 			throw new IllegalStateException("Failed to delete documents by filter", e);
 		}
 	}
@@ -189,7 +192,15 @@ public class CouchbaseSearchVectorStore extends AbstractObservationVectorStore
 
 		QueryResult result = this.scope.query(statement, QueryOptions.queryOptions());
 
-		return result.rowsAs(Document.class);
+		// Deserialize to CouchbaseDocument then map to Document: Couchbase SDK uses its
+		// own bundled Jackson 2 (com.couchbase.client.core.deps) for rowsAs(); Spring AI
+		// Document cannot be deserialized from our stored shape (id, content, metadata,
+		// embedding)
+		// by that ObjectMapper, so we use the store's native type and convert explicitly.
+		return result.rowsAs(CouchbaseDocument.class)
+			.stream()
+			.map(cbDoc -> new Document(cbDoc.id(), cbDoc.content(), cbDoc.metadata()))
+			.toList();
 	}
 
 	@Override
@@ -398,8 +409,7 @@ public class CouchbaseSearchVectorStore extends AbstractObservationVectorStore
 		 * @return this builder
 		 */
 		public CouchbaseSearchVectorStore.Builder collectionName(String collectionName) {
-			Assert.notNull(collectionName, "Collection Name must not be null");
-			Assert.notNull(collectionName, "Collection Name must not be empty");
+			Assert.hasText(collectionName, "Collection Name must not be empty");
 			this.collectionName = collectionName;
 			return this;
 		}
@@ -411,8 +421,7 @@ public class CouchbaseSearchVectorStore extends AbstractObservationVectorStore
 		 * @return this builder
 		 */
 		public CouchbaseSearchVectorStore.Builder scopeName(String scopeName) {
-			Assert.notNull(scopeName, "Scope Name must not be null");
-			Assert.notNull(scopeName, "Scope Name must not be empty");
+			Assert.hasText(scopeName, "Scope Name must not be empty");
 			this.scopeName = scopeName;
 			return this;
 		}
@@ -423,8 +432,7 @@ public class CouchbaseSearchVectorStore extends AbstractObservationVectorStore
 		 * @return this builder
 		 */
 		public CouchbaseSearchVectorStore.Builder bucketName(String bucketName) {
-			Assert.notNull(bucketName, "Bucket Name must not be null");
-			Assert.notNull(bucketName, "Bucket Name must not be empty");
+			Assert.hasText(bucketName, "Bucket Name must not be empty");
 			this.bucketName = bucketName;
 			return this;
 		}
@@ -436,8 +444,7 @@ public class CouchbaseSearchVectorStore extends AbstractObservationVectorStore
 		 * @return this builder
 		 */
 		public CouchbaseSearchVectorStore.Builder vectorIndexName(String vectorIndexName) {
-			Assert.notNull(vectorIndexName, "Vector Index Name must not be null");
-			Assert.notNull(vectorIndexName, "Vector Index Name must not be empty");
+			Assert.hasText(vectorIndexName, "Vector Index Name must not be empty");
 			this.vectorIndexName = vectorIndexName;
 			return this;
 		}
@@ -449,7 +456,7 @@ public class CouchbaseSearchVectorStore extends AbstractObservationVectorStore
 		 */
 		public CouchbaseSearchVectorStore.Builder dimensions(Integer dimensions) {
 			Assert.notNull(dimensions, "Dimensions must not be null");
-			Assert.notNull(dimensions, "Dimensions must not be empty");
+			Assert.isTrue(dimensions > 0, "Dimensions must be greater than 0");
 			this.dimensions = dimensions;
 			return this;
 		}
@@ -462,7 +469,6 @@ public class CouchbaseSearchVectorStore extends AbstractObservationVectorStore
 		 */
 		public CouchbaseSearchVectorStore.Builder similarityFunction(CouchbaseSimilarityFunction similarityFunction) {
 			Assert.notNull(similarityFunction, "Couchbase Similarity Function must not be null");
-			Assert.notNull(similarityFunction, "Couchbase Similarity Function must not be empty");
 			this.similarityFunction = similarityFunction;
 			return this;
 		}
@@ -474,7 +480,6 @@ public class CouchbaseSearchVectorStore extends AbstractObservationVectorStore
 		 */
 		public CouchbaseSearchVectorStore.Builder indexOptimization(CouchbaseIndexOptimization indexOptimization) {
 			Assert.notNull(indexOptimization, "Index Optimization must not be null");
-			Assert.notNull(indexOptimization, "Index Optimization must not be empty");
 			this.indexOptimization = indexOptimization;
 			return this;
 		}

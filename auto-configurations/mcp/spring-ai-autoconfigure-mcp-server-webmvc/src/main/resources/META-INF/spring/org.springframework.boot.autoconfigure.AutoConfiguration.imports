@@ -1,5 +1,5 @@
 #
-# Copyright 2025-2025 the original author or authors.
+# Copyright 2023-present the original author or authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,6 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-org.springframework.ai.mcp.server.autoconfigure.McpServerSseWebMvcAutoConfiguration
-org.springframework.ai.mcp.server.autoconfigure.McpServerStreamableHttpWebMvcAutoConfiguration
-org.springframework.ai.mcp.server.autoconfigure.McpServerStatelessWebMvcAutoConfiguration
+org.springframework.ai.mcp.server.webmvc.autoconfigure.McpServerSseWebMvcAutoConfiguration
+org.springframework.ai.mcp.server.webmvc.autoconfigure.McpServerStreamableHttpWebMvcAutoConfiguration
+org.springframework.ai.mcp.server.webmvc.autoconfigure.McpServerStatelessWebMvcAutoConfiguration

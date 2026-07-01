@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -44,10 +44,24 @@ public enum GoogleGenAiThinkingLevel {
 	THINKING_LEVEL_UNSPECIFIED,
 
 	/**
+	 * Matches the "no thinking" setting for most queries. The model may think very
+	 * minimally for complex coding tasks. Minimizes latency for chat or high throughput
+	 * applications.
+	 *
+	 * Note: minimal does not guarantee that thinking is off.
+	 */
+	MINIMAL,
+
+	/**
 	 * Low thinking level. Minimal reasoning tokens are generated. Use for simple queries
 	 * where speed is preferred over deep analysis.
 	 */
 	LOW,
+
+	/**
+	 * Balanced thinking for most tasks.
+	 */
+	MEDIUM,
 
 	/**
 	 * High thinking level. Extensive reasoning tokens are generated. Use for complex

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,8 @@ package org.springframework.ai.model.bedrock.converse.autoconfigure.tool;
 
 import java.util.List;
 
+import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.bedrock.converse.BedrockChatOptions;
 import org.springframework.ai.bedrock.converse.BedrockProxyChatModel;
@@ -30,8 +29,10 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.bedrock.autoconfigure.BedrockTestUtils;
 import org.springframework.ai.model.bedrock.autoconfigure.RequiresAwsCredentials;
 import org.springframework.ai.model.bedrock.converse.autoconfigure.BedrockConverseProxyChatAutoConfiguration;
+import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.tool.function.FunctionToolCallback;
-import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
+import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -39,19 +40,25 @@ import static org.assertj.core.api.Assertions.assertThat;
 @RequiresAwsCredentials
 public class FunctionCallWithPromptFunctionIT {
 
-	private final Logger logger = LoggerFactory.getLogger(FunctionCallWithPromptFunctionIT.class);
-
 	private final ApplicationContextRunner contextRunner = BedrockTestUtils.getContextRunner()
-		.withConfiguration(SpringAiTestAutoConfigurations.of(BedrockConverseProxyChatAutoConfiguration.class));
+		.withConfiguration(AutoConfigurations.of(BedrockConverseProxyChatAutoConfiguration.class,
+				ToolCallingAutoConfiguration.class));
 
 	@Test
 	void functionCallTest() {
 		this.contextRunner
 			.withPropertyValues(
-					"spring.ai.bedrock.converse.chat.options.model=" + "anthropic.claude-3-5-sonnet-20240620-v1:0")
+					"spring.ai.bedrock.converse.chat.model=" + "us.anthropic.claude-haiku-4-5-20251001-v1:0")
 			.run(context -> {
 
 				BedrockProxyChatModel chatModel = context.getBean(BedrockProxyChatModel.class);
+				ToolCallingManager toolCallingManager = context.getBean(ToolCallingManager.class);
+
+				var chatClient = org.springframework.ai.chat.client.ChatClient
+					.builder(chatModel, ObservationRegistry.NOOP, null, null,
+							org.springframework.ai.chat.client.advisor.ToolCallingAdvisor.builder()
+								.toolCallingManager(toolCallingManager))
+					.build();
 
 				UserMessage userMessage = new UserMessage(
 						"What's the weather like in San Francisco, in Paris and in Tokyo? Return the temperature in Celsius.");
@@ -64,9 +71,9 @@ public class FunctionCallWithPromptFunctionIT {
 								.build()))
 					.build();
 
-				ChatResponse response = chatModel.call(new Prompt(List.of(userMessage), promptOptions));
-
-				logger.info("Response: {}", response);
+				ChatResponse response = chatClient.prompt(new Prompt(List.of(userMessage), promptOptions))
+					.call()
+					.chatResponse();
 
 				assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
 			});

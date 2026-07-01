@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,9 @@
 
 package org.springframework.ai.tool;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.definition.ToolDefinition;
@@ -32,7 +32,7 @@ import org.springframework.ai.tool.metadata.ToolMetadata;
  */
 public interface ToolCallback {
 
-	Logger logger = LoggerFactory.getLogger(ToolCallback.class);
+	Log logger = LogFactory.getLog(ToolCallback.class);
 
 	/**
 	 * Definition used by the AI model to determine when and how to call the tool.
@@ -58,9 +58,11 @@ public interface ToolCallback {
 	 */
 	default String call(String toolInput, @Nullable ToolContext toolContext) {
 		if (toolContext != null && !toolContext.getContext().isEmpty()) {
-			logger.info("By default the tool context is not used,  "
-					+ "override the method 'call(String toolInput, ToolContext toolcontext)' to support the use of tool context."
-					+ "Review the ToolCallback implementation for {}", getToolDefinition().name());
+			if (logger.isInfoEnabled()) {
+				logger.info("By default the tool context is not used,  "
+						+ "override the method 'call(String toolInput, ToolContext toolcontext)' to support the use of tool context."
+						+ "Review the ToolCallback implementation for " + getToolDefinition().name());
+			}
 		}
 		return call(toolInput);
 	}

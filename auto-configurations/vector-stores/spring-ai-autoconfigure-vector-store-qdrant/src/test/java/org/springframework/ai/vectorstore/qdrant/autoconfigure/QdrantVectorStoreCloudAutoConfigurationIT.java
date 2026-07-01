@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -75,7 +75,7 @@ public class QdrantVectorStoreCloudAutoConfigurationIT {
 				"spring.ai.vectorstore.qdrant.host=" + CLOUD_HOST,
 				"spring.ai.vectorstore.qdrant.api-key=" + CLOUD_API_KEY,
 				"spring.ai.vectorstore.qdrant.collection-name=" + COLLECTION_NAME,
-				"spring.ai.vectorstore.qdrant.initializeSchema=true", "spring.ai.vectorstore.qdrant.use-tls=true");
+				"spring.ai.vectorstore.qdrant.initialize-schema=true", "spring.ai.vectorstore.qdrant.use-tls=true");
 
 	List<Document> documents = List.of(
 			new Document(getText("classpath:/test/data/spring.ai.txt"), Map.of("spring", "great")),

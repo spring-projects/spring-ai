@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,6 +33,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @author Jonghoon Park
+ * @author Sebastien Deleuze
  */
 class OllamaEmbeddingRequestTests {
 
@@ -42,13 +43,13 @@ class OllamaEmbeddingRequestTests {
 	void setUp() {
 		this.embeddingModel = OllamaEmbeddingModel.builder()
 			.ollamaApi(OllamaApi.builder().build())
-			.defaultOptions(
+			.options(
 					OllamaEmbeddingOptions.builder().model("DEFAULT_MODEL").mainGPU(11).useMMap(true).numGPU(1).build())
 			.build();
 	}
 
 	@Test
-	void ollamaEmbeddingRequestDefaultOptions() {
+	void ollamaEmbeddingRequestOptions() {
 		var embeddingRequest = this.embeddingModel.buildEmbeddingRequest(new EmbeddingRequest(List.of("Hello"), null));
 		var ollamaRequest = this.embeddingModel.ollamaEmbeddingRequest(embeddingRequest);
 
@@ -135,7 +136,7 @@ class OllamaEmbeddingRequestTests {
 		// Create model with minimal defaults
 		var minimalModel = OllamaEmbeddingModel.builder()
 			.ollamaApi(OllamaApi.builder().build())
-			.defaultOptions(OllamaEmbeddingOptions.builder().model("MINIMAL_MODEL").build())
+			.options(OllamaEmbeddingOptions.builder().model("MINIMAL_MODEL").build())
 			.build();
 
 		var embeddingRequest = minimalModel.buildEmbeddingRequest(new EmbeddingRequest(List.of("Minimal test"), null));

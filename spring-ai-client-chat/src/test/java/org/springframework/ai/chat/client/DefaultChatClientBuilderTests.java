@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,9 @@ import java.nio.charset.Charset;
 import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -59,15 +61,29 @@ class DefaultChatClientBuilderTests {
 
 	@Test
 	void whenObservationRegistryIsNullThenThrows() {
-		assertThatThrownBy(() -> new DefaultChatClientBuilder(mock(ChatModel.class), null, null, null))
+		assertThatThrownBy(() -> new DefaultChatClientBuilder(mock(ChatModel.class), null, null, null, null))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("the io.micrometer.observation.ObservationRegistry must be non-null");
 	}
 
 	@Test
 	void whenAdvisorObservationConventionIsNullThenReturn() {
-		var builder = new DefaultChatClientBuilder(mock(ChatModel.class), mock(ObservationRegistry.class), null, null);
+		var builder = new DefaultChatClientBuilder(mock(ChatModel.class), mock(ObservationRegistry.class), null, null,
+				null);
 		assertThat(builder).isNotNull();
+	}
+
+	@Test
+	void whenToolCallingManagerThenPropagatedToRequestSpec() {
+		var manager = mock(ToolCallingManager.class);
+		var builder = new DefaultChatClientBuilder(mock(ChatModel.class), mock(ObservationRegistry.class), null, null,
+				ToolCallingAdvisor.builder().toolCallingManager(manager));
+
+		var defaultRequest = (DefaultChatClient.DefaultChatClientRequestSpec) ReflectionTestUtils.getField(builder,
+				"defaultRequest");
+		var advisorBuilder = (ToolCallingAdvisor.Builder<?>) ReflectionTestUtils.getField(defaultRequest,
+				"toolCallingAdvisorBuilder");
+		assertThat(ReflectionTestUtils.getField(advisorBuilder, "toolCallingManager")).isSameAs(manager);
 	}
 
 	@Test

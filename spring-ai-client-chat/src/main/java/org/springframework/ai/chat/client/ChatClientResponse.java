@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -71,7 +71,7 @@ public record ChatClientResponse(@Nullable ChatResponse chatResponse, Map<String
 			return this;
 		}
 
-		public Builder context(String key, Object value) {
+		public Builder context(String key, @Nullable Object value) {
 			Assert.notNull(key, "key cannot be null");
 			this.context.put(key, value);
 			return this;

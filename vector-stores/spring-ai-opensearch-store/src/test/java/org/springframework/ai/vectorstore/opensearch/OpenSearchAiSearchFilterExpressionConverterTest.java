@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,7 +68,7 @@ class OpenSearchAiSearchFilterExpressionConverterTest {
 	public void tesIn() {
 		String vectorExpr = this.converter.convertExpression(new Filter.Expression(IN, new Filter.Key("genre"),
 				new Filter.Value(List.of("comedy", "documentary", "drama"))));
-		assertThat(vectorExpr).isEqualTo("(metadata.genre:comedy OR documentary OR drama)");
+		assertThat(vectorExpr).isEqualTo("metadata.genre:(comedy OR documentary OR drama)");
 	}
 
 	@Test
@@ -89,18 +89,18 @@ class OpenSearchAiSearchFilterExpressionConverterTest {
 						new Filter.Expression(EQ, new Filter.Key("country"), new Filter.Value("BG")))),
 				new Filter.Expression(NIN, new Filter.Key("city"), new Filter.Value(List.of("Sofia", "Plovdiv")))));
 		assertThat(vectorExpr)
-			.isEqualTo("(metadata.year:>=2020 OR metadata.country:BG) AND NOT (metadata.city:Sofia OR Plovdiv)");
+			.isEqualTo("(metadata.year:>=2020 OR metadata.country:BG) AND NOT metadata.city:(Sofia OR Plovdiv)");
 	}
 
 	@Test
-	public void tesBoolean() {
+	public void testBoolean() {
 		String vectorExpr = this.converter.convertExpression(new Filter.Expression(AND,
 				new Filter.Expression(AND, new Filter.Expression(EQ, new Filter.Key("isOpen"), new Filter.Value(true)),
 						new Filter.Expression(GTE, new Filter.Key("year"), new Filter.Value(2020))),
 				new Filter.Expression(IN, new Filter.Key("country"), new Filter.Value(List.of("BG", "NL", "US")))));
 
 		assertThat(vectorExpr)
-			.isEqualTo("metadata.isOpen:true AND metadata.year:>=2020 AND (metadata.country:BG OR NL OR US)");
+			.isEqualTo("metadata.isOpen:true AND metadata.year:>=2020 AND metadata.country:(BG OR NL OR US)");
 	}
 
 	@Test
@@ -115,12 +115,16 @@ class OpenSearchAiSearchFilterExpressionConverterTest {
 	@Test
 	public void testComplexIdentifiers() {
 		String vectorExpr = this.converter
-			.convertExpression(new Filter.Expression(EQ, new Filter.Key("\"country 1 2 3\""), new Filter.Value("BG")));
-		assertThat(vectorExpr).isEqualTo("metadata.country 1 2 3:BG");
+			.convertExpression(new Filter.Expression(EQ, new Filter.Key("country 1 2 3"), new Filter.Value("BG")));
+		assertThat(vectorExpr).isEqualTo("metadata.country\\ 1\\ 2\\ 3:BG");
 
 		vectorExpr = this.converter
 			.convertExpression(new Filter.Expression(EQ, new Filter.Key("'country 1 2 3'"), new Filter.Value("BG")));
-		assertThat(vectorExpr).isEqualTo("metadata.country 1 2 3:BG");
+		assertThat(vectorExpr).isEqualTo("metadata.'country\\ 1\\ 2\\ 3':BG");
+
+		vectorExpr = this.converter
+			.convertExpression(new Filter.Expression(EQ, new Filter.Key("\"country 1 2 3\""), new Filter.Value("BG")));
+		assertThat(vectorExpr).isEqualTo("metadata.\\\"country\\ 1\\ 2\\ 3\\\":BG");
 	}
 
 	@Test
@@ -128,7 +132,7 @@ class OpenSearchAiSearchFilterExpressionConverterTest {
 		// category IN []
 		String vectorExpr = this.converter
 			.convertExpression(new Filter.Expression(IN, new Filter.Key("category"), new Filter.Value(List.of())));
-		assertThat(vectorExpr).isEqualTo("(metadata.category:)");
+		assertThat(vectorExpr).isEqualTo("metadata.category:()");
 	}
 
 	@Test
@@ -136,7 +140,7 @@ class OpenSearchAiSearchFilterExpressionConverterTest {
 		// status IN ["active"]
 		String vectorExpr = this.converter.convertExpression(
 				new Filter.Expression(IN, new Filter.Key("status"), new Filter.Value(List.of("active"))));
-		assertThat(vectorExpr).isEqualTo("(metadata.status:active)");
+		assertThat(vectorExpr).isEqualTo("metadata.status:(active)");
 	}
 
 	@Test
@@ -200,7 +204,7 @@ class OpenSearchAiSearchFilterExpressionConverterTest {
 				new Filter.Expression(EQ, new Filter.Key("version"), new Filter.Value(1))));
 
 		assertThat(vectorExpr).isEqualTo(
-				"metadata.active:true AND metadata.score:>=1.5 AND (metadata.tags:featured OR premium) AND metadata.version:1");
+				"metadata.active:true AND metadata.score:>=1.5 AND metadata.tags:(featured OR premium) AND metadata.version:1");
 	}
 
 	@Test
@@ -208,7 +212,7 @@ class OpenSearchAiSearchFilterExpressionConverterTest {
 		// status NIN ["A", "B", "C"]
 		String vectorExpr = this.converter.convertExpression(
 				new Filter.Expression(NIN, new Filter.Key("status"), new Filter.Value(List.of("A", "B", "C"))));
-		assertThat(vectorExpr).isEqualTo("NOT (metadata.status:A OR B OR C)");
+		assertThat(vectorExpr).isEqualTo("NOT metadata.status:(A OR B OR C)");
 	}
 
 	@Test
@@ -224,7 +228,35 @@ class OpenSearchAiSearchFilterExpressionConverterTest {
 		// tags[0] == "important"
 		String vectorExpr = this.converter
 			.convertExpression(new Filter.Expression(EQ, new Filter.Key("tags[0]"), new Filter.Value("important")));
-		assertThat(vectorExpr).isEqualTo("metadata.tags[0]:important");
+		assertThat(vectorExpr).isEqualTo("metadata.tags\\[0\\]:important");
+	}
+
+	@Test
+	public void testKeyWithSingleQuote() {
+		String vectorExpr = this.converter
+			.convertExpression(new Filter.Expression(EQ, new Filter.Key("x' OR 1=1--"), new Filter.Value("dummy")));
+		assertThat(vectorExpr).isEqualTo("metadata.x'\\ OR\\ 1\\=1\\-\\-:dummy");
+	}
+
+	@Test
+	public void testKeyWithDoubleQuote() {
+		String vectorExpr = this.converter
+			.convertExpression(new Filter.Expression(EQ, new Filter.Key("key\"inject"), new Filter.Value("v")));
+		assertThat(vectorExpr).isEqualTo("metadata.key\\\"inject:v");
+	}
+
+	@Test
+	public void testKeyWithColon() {
+		String vectorExpr = this.converter
+			.convertExpression(new Filter.Expression(EQ, new Filter.Key("key:name"), new Filter.Value("v")));
+		assertThat(vectorExpr).isEqualTo("metadata.key\\:name:v");
+	}
+
+	@Test
+	public void metadataKeyContainingTabsNewlinesAndCarriageReturnsIsEscaped() {
+		String vectorExpr = this.converter.convertExpression(
+				new Filter.Expression(EQ, new Filter.Key("foo\tOR\nbar\rbaz\u3000qux"), new Filter.Value("x")));
+		assertThat(vectorExpr).isEqualTo("metadata.foo\\\tOR\\\nbar\\\rbaz\\\u3000qux:x");
 	}
 
 }

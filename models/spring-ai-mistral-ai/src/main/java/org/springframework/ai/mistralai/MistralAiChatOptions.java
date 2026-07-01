@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,26 +17,23 @@
 package org.springframework.ai.mistralai;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import org.jspecify.annotations.Nullable;
 
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.mistralai.api.MistralAiApi;
+import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ReasoningEffort;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ResponseFormat;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ToolChoice;
 import org.springframework.ai.mistralai.api.MistralAiApi.FunctionTool;
+import org.springframework.ai.model.tool.DefaultToolCallingChatOptions;
+import org.springframework.ai.model.tool.StructuredOutputChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
-import org.springframework.lang.Nullable;
-import org.springframework.util.Assert;
+import org.springframework.ai.util.JsonHelper;
 
 /**
  * Options for the Mistral AI Chat API.
@@ -46,22 +43,25 @@ import org.springframework.util.Assert;
  * @author Thomas Vitale
  * @author Alexandros Pappas
  * @author Jason Smith
+ * @author Sebastien Deleuze
+ * @author Nicolas Krier
  * @since 0.8.1
  */
-@JsonInclude(JsonInclude.Include.NON_NULL)
-public class MistralAiChatOptions implements ToolCallingChatOptions {
+public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredOutputChatOptions {
+
+	private static final JsonHelper jsonHelper = new JsonHelper();
 
 	/**
 	 * ID of the model to use
 	 */
-	private @JsonProperty("model") String model;
+	private final String model;
 
 	/**
 	 * What sampling temperature to use, between 0.0 and 1.0. Higher values like 0.8 will
 	 * make the output more random, while lower values like 0.2 will make it more focused
 	 * and deterministic. We generally recommend altering this or top_p but not both.
 	 */
-	private @JsonProperty("temperature") Double temperature;
+	private final Double temperature;
 
 	/**
 	 * Nucleus sampling, where the model considers the results of the tokens with top_p
@@ -69,37 +69,44 @@ public class MistralAiChatOptions implements ToolCallingChatOptions {
 	 * mass are considered. We generally recommend altering this or temperature but not
 	 * both.
 	 */
-	private @JsonProperty("top_p") Double topP;
+	private final Double topP;
 
 	/**
 	 * The maximum number of tokens to generate in the completion. The token count of your
 	 * prompt plus max_tokens cannot exceed the model's context length.
 	 */
-	private @JsonProperty("max_tokens") Integer maxTokens;
+	private final @Nullable Integer maxTokens;
 
 	/**
 	 * Whether to inject a safety prompt before all conversations.
 	 */
-	private @JsonProperty("safe_prompt") Boolean safePrompt;
+	private final Boolean safePrompt;
 
 	/**
 	 * The seed to use for random sampling. If set, different calls will generate
 	 * deterministic results.
 	 */
-	private @JsonProperty("random_seed") Integer randomSeed;
+	private final @Nullable Integer randomSeed;
 
 	/**
 	 * An object specifying the format that the model must output. Setting to { "type":
 	 * "json_object" } enables JSON mode, which guarantees the message the model generates
 	 * is valid JSON.
 	 */
-	private @JsonProperty("response_format") ResponseFormat responseFormat;
+	private final @Nullable ResponseFormat responseFormat;
 
 	/**
 	 * Stop generation if this token is detected. Or if one of these tokens is detected
 	 * when providing an array.
 	 */
-	private @JsonProperty("stop") List<String> stop;
+	private final @Nullable List<String> stop;
+
+	/**
+	 * Controls the reasoning effort level for adjustable reasoning models.
+	 * {@link ReasoningEffort#HIGH} enables comprehensive reasoning traces,
+	 * {@link ReasoningEffort#NONE} disables reasoning effort.
+	 */
+	private final @Nullable ReasoningEffort reasoningEffort;
 
 	/**
 	 * Number between -2.0 and 2.0. frequency_penalty penalizes the repetition of words
@@ -107,7 +114,7 @@ public class MistralAiChatOptions implements ToolCallingChatOptions {
 	 * discourages the model from repeating words that have already appeared frequently in
 	 * the output, promoting diversity and reducing repetition.
 	 */
-	private @JsonProperty("frequency_penalty") Double frequencyPenalty;
+	private final Double frequencyPenalty;
 
 	/**
 	 * Number between -2.0 and 2.0. presence_penalty determines how much the model
@@ -115,75 +122,64 @@ public class MistralAiChatOptions implements ToolCallingChatOptions {
 	 * the model to use a wider variety of words and phrases, making the output more
 	 * diverse and creative.
 	 */
-	private @JsonProperty("presence_penalty") Double presencePenalty;
+	private final Double presencePenalty;
 
 	/**
 	 * Number of completions to return for each request, input tokens are only billed
 	 * once.
 	 */
-	private @JsonProperty("n") Integer n;
+	private final @Nullable Integer n;
 
 	/**
 	 * A list of tools the model may call. Currently, only functions are supported as a
 	 * tool. Use this to provide a list of functions the model may generate JSON inputs
 	 * for.
 	 */
-	private @JsonProperty("tools") List<FunctionTool> tools;
+	private final @Nullable List<FunctionTool> tools;
 
 	/**
 	 * Controls which (if any) function is called by the model. none means the model will
 	 * not call a function and instead generates a message. auto means the model can pick
 	 * between generating a message or calling a function.
 	 */
-	private @JsonProperty("tool_choice") ToolChoice toolChoice;
+	private final @Nullable ToolChoice toolChoice;
 
 	/**
 	 * Collection of {@link ToolCallback}s to be used for tool calling in the chat
 	 * completion requests.
 	 */
-	@JsonIgnore
-	private List<ToolCallback> toolCallbacks = new ArrayList<>();
+	private final @Nullable List<ToolCallback> toolCallbacks;
 
-	/**
-	 * Collection of tool names to be resolved at runtime and used for tool calling in the
-	 * chat completion requests.
-	 */
-	@JsonIgnore
-	private Set<String> toolNames = new HashSet<>();
+	private final @Nullable Map<String, Object> toolContext;
 
-	/**
-	 * Whether to enable the tool execution lifecycle internally in ChatModel.
-	 */
-	@JsonIgnore
-	private Boolean internalToolExecutionEnabled;
+	protected MistralAiChatOptions(@Nullable String model, @Nullable Double temperature, @Nullable Double topP,
+			@Nullable Integer maxTokens, @Nullable Boolean safePrompt, @Nullable Integer randomSeed,
+			@Nullable ResponseFormat responseFormat, @Nullable List<String> stop,
+			@Nullable ReasoningEffort reasoningEffort, @Nullable Double frequencyPenalty,
+			@Nullable Double presencePenalty, @Nullable Integer n, @Nullable List<FunctionTool> tools,
+			@Nullable ToolChoice toolChoice, @Nullable List<ToolCallback> toolCallbacks,
+			@Nullable Map<String, Object> toolContext) {
 
-	@JsonIgnore
-	private Map<String, Object> toolContext = new HashMap<>();
+		this.model = model != null ? model : MistralAiApi.ChatModel.MISTRAL_SMALL.getValue();
+		this.temperature = temperature != null ? temperature : 0.7;
+		this.topP = topP != null ? topP : 1.0;
+		this.maxTokens = maxTokens;
+		this.safePrompt = safePrompt != null ? safePrompt : false;
+		this.randomSeed = randomSeed;
+		this.responseFormat = responseFormat;
+		this.stop = stop != null ? List.copyOf(stop) : null;
+		this.reasoningEffort = reasoningEffort;
+		this.frequencyPenalty = frequencyPenalty != null ? frequencyPenalty : 0.0;
+		this.presencePenalty = presencePenalty != null ? presencePenalty : 0.0;
+		this.n = n;
+		this.tools = tools != null ? List.copyOf(tools) : null;
+		this.toolChoice = toolChoice;
+		this.toolCallbacks = toolCallbacks != null ? List.copyOf(toolCallbacks) : null;
+		this.toolContext = toolContext != null ? Map.copyOf(toolContext) : null;
+	}
 
 	public static Builder builder() {
 		return new Builder();
-	}
-
-	public static MistralAiChatOptions fromOptions(MistralAiChatOptions fromOptions) {
-		return builder().model(fromOptions.getModel())
-			.maxTokens(fromOptions.getMaxTokens())
-			.safePrompt(fromOptions.getSafePrompt())
-			.randomSeed(fromOptions.getRandomSeed())
-			.temperature(fromOptions.getTemperature())
-			.topP(fromOptions.getTopP())
-			.responseFormat(fromOptions.getResponseFormat())
-			.stop(fromOptions.getStop() != null ? new ArrayList<>(fromOptions.getStop()) : null)
-			.frequencyPenalty(fromOptions.getFrequencyPenalty())
-			.presencePenalty(fromOptions.getPresencePenalty())
-			.n(fromOptions.getN())
-			.tools(fromOptions.getTools() != null ? new ArrayList<>(fromOptions.getTools()) : null)
-			.toolChoice(fromOptions.getToolChoice())
-			.toolCallbacks(
-					fromOptions.getToolCallbacks() != null ? new ArrayList<>(fromOptions.getToolCallbacks()) : null)
-			.toolNames(fromOptions.getToolNames() != null ? new HashSet<>(fromOptions.getToolNames()) : null)
-			.internalToolExecutionEnabled(fromOptions.getInternalToolExecutionEnabled())
-			.toolContext(fromOptions.getToolContext() != null ? new HashMap<>(fromOptions.getToolContext()) : null)
-			.build();
 	}
 
 	@Override
@@ -191,76 +187,42 @@ public class MistralAiChatOptions implements ToolCallingChatOptions {
 		return this.model;
 	}
 
-	public void setModel(String model) {
-		this.model = model;
-	}
-
 	@Override
-	public Integer getMaxTokens() {
+	public @Nullable Integer getMaxTokens() {
 		return this.maxTokens;
-	}
-
-	public void setMaxTokens(Integer maxTokens) {
-		this.maxTokens = maxTokens;
 	}
 
 	public Boolean getSafePrompt() {
 		return this.safePrompt;
 	}
 
-	public void setSafePrompt(Boolean safePrompt) {
-		this.safePrompt = safePrompt;
-	}
-
-	public Integer getRandomSeed() {
+	public @Nullable Integer getRandomSeed() {
 		return this.randomSeed;
 	}
 
-	public void setRandomSeed(Integer randomSeed) {
-		this.randomSeed = randomSeed;
-	}
-
-	public ResponseFormat getResponseFormat() {
+	public @Nullable ResponseFormat getResponseFormat() {
 		return this.responseFormat;
 	}
 
-	public void setResponseFormat(ResponseFormat responseFormat) {
-		this.responseFormat = responseFormat;
-	}
-
 	@Override
-	@JsonIgnore
-	public List<String> getStopSequences() {
+	public @Nullable List<String> getStopSequences() {
 		return getStop();
 	}
 
-	@JsonIgnore
-	public void setStopSequences(List<String> stopSequences) {
-		setStop(stopSequences);
-	}
-
-	public List<String> getStop() {
+	public @Nullable List<String> getStop() {
 		return this.stop;
 	}
 
-	public void setStop(List<String> stop) {
-		this.stop = stop;
+	public @Nullable ReasoningEffort getReasoningEffort() {
+		return this.reasoningEffort;
 	}
 
-	public List<FunctionTool> getTools() {
+	public @Nullable List<FunctionTool> getTools() {
 		return this.tools;
 	}
 
-	public void setTools(List<FunctionTool> tools) {
-		this.tools = tools;
-	}
-
-	public ToolChoice getToolChoice() {
+	public @Nullable ToolChoice getToolChoice() {
 		return this.toolChoice;
-	}
-
-	public void setToolChoice(ToolChoice toolChoice) {
-		this.toolChoice = toolChoice;
 	}
 
 	@Override
@@ -268,17 +230,9 @@ public class MistralAiChatOptions implements ToolCallingChatOptions {
 		return this.temperature;
 	}
 
-	public void setTemperature(Double temperature) {
-		this.temperature = temperature;
-	}
-
 	@Override
 	public Double getTopP() {
 		return this.topP;
-	}
-
-	public void setTopP(Double topP) {
-		this.topP = topP;
 	}
 
 	@Override
@@ -286,102 +240,73 @@ public class MistralAiChatOptions implements ToolCallingChatOptions {
 		return this.frequencyPenalty;
 	}
 
-	public void setFrequencyPenalty(Double frequencyPenalty) {
-		this.frequencyPenalty = frequencyPenalty;
-	}
-
 	@Override
 	public Double getPresencePenalty() {
 		return this.presencePenalty;
 	}
 
-	public void setPresencePenalty(Double presencePenalty) {
-		this.presencePenalty = presencePenalty;
-	}
-
-	public Integer getN() {
+	public @Nullable Integer getN() {
 		return this.n;
 	}
 
-	public void setN(Integer n) {
-		this.n = n;
-	}
-
 	@Override
-	@JsonIgnore
-	public List<ToolCallback> getToolCallbacks() {
+	public @Nullable List<ToolCallback> getToolCallbacks() {
 		return this.toolCallbacks;
 	}
 
 	@Override
-	@JsonIgnore
-	public void setToolCallbacks(List<ToolCallback> toolCallbacks) {
-		Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
-		Assert.noNullElements(toolCallbacks, "toolCallbacks cannot contain null elements");
-		this.toolCallbacks = toolCallbacks;
-	}
-
-	@Override
-	@JsonIgnore
-	public Set<String> getToolNames() {
-		return this.toolNames;
-	}
-
-	@Override
-	@JsonIgnore
-	public void setToolNames(Set<String> toolNames) {
-		Assert.notNull(toolNames, "toolNames cannot be null");
-		Assert.noNullElements(toolNames, "toolNames cannot contain null elements");
-		toolNames.forEach(tool -> Assert.hasText(tool, "toolNames cannot contain empty elements"));
-		this.toolNames = toolNames;
-	}
-
-	@Override
-	@Nullable
-	@JsonIgnore
-	public Boolean getInternalToolExecutionEnabled() {
-		return this.internalToolExecutionEnabled;
-	}
-
-	@Override
-	@JsonIgnore
-	public void setInternalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
-		this.internalToolExecutionEnabled = internalToolExecutionEnabled;
-	}
-
-	@Override
-	@JsonIgnore
-	public Integer getTopK() {
+	public @Nullable Integer getTopK() {
 		return null;
 	}
 
 	@Override
-	@JsonIgnore
-	public Map<String, Object> getToolContext() {
+	public @Nullable Map<String, Object> getToolContext() {
 		return this.toolContext;
 	}
 
 	@Override
-	@JsonIgnore
-	public void setToolContext(Map<String, Object> toolContext) {
-		this.toolContext = toolContext;
+	public @Nullable String getOutputSchema() {
+		if (this.responseFormat == null || this.responseFormat.getJsonSchema() == null) {
+			return null;
+		}
+		return jsonHelper.toJson(this.responseFormat.getJsonSchema().getSchema());
 	}
 
-	@Override
-	@SuppressWarnings("unchecked")
-	public MistralAiChatOptions copy() {
-		return fromOptions(this);
+	public Builder mutate() {
+		return builder()
+			// ChatOptions
+			.model(this.model)
+			.frequencyPenalty(this.frequencyPenalty)
+			.maxTokens(this.maxTokens)
+			.presencePenalty(this.presencePenalty)
+			// @formatter:off
+			.stop(this.stop != null ? List.copyOf(this.stop) : null) // stopSequences alias for Mistral AI
+			// @formatter:on
+			.temperature(this.temperature)
+			.topP(this.topP)
+			.topK(this.getTopK()) // always null but here for consistency
+			// ToolCallingChatOptions
+			.toolCallbacks(this.getToolCallbacks())
+			.toolContext(this.getToolContext())
+			// Mistral AI specific
+			.safePrompt(this.safePrompt)
+			.randomSeed(this.randomSeed)
+			.reasoningEffort(this.reasoningEffort)
+			.responseFormat(this.responseFormat)
+			.n(this.n)
+			.tools(this.tools)
+			.toolChoice(this.toolChoice);
 	}
 
 	@Override
 	public int hashCode() {
 		return Objects.hash(this.model, this.temperature, this.topP, this.maxTokens, this.safePrompt, this.randomSeed,
-				this.responseFormat, this.stop, this.frequencyPenalty, this.presencePenalty, this.n, this.tools,
-				this.toolChoice, this.toolCallbacks, this.tools, this.internalToolExecutionEnabled, this.toolContext);
+				this.responseFormat, this.stop, this.reasoningEffort, this.frequencyPenalty, this.presencePenalty,
+				this.n, this.tools, this.toolChoice, this.toolCallbacks, this.tools, this.toolContext);
 	}
 
 	@Override
-	public boolean equals(Object obj) {
+	public boolean equals(@Nullable Object obj) {
 		if (this == obj) {
 			return true;
 		}
@@ -392,134 +317,162 @@ public class MistralAiChatOptions implements ToolCallingChatOptions {
 
 		MistralAiChatOptions other = (MistralAiChatOptions) obj;
 
-		return Objects.equals(this.model, other.model) && Objects.equals(this.temperature, other.temperature)
-				&& Objects.equals(this.topP, other.topP) && Objects.equals(this.maxTokens, other.maxTokens)
+		// @formatter:off
+		return Objects.equals(this.model, other.model)
+				&& Objects.equals(this.temperature, other.temperature)
+				&& Objects.equals(this.topP, other.topP)
+				&& Objects.equals(this.maxTokens, other.maxTokens)
 				&& Objects.equals(this.safePrompt, other.safePrompt)
 				&& Objects.equals(this.randomSeed, other.randomSeed)
-				&& Objects.equals(this.responseFormat, other.responseFormat) && Objects.equals(this.stop, other.stop)
+				&& Objects.equals(this.responseFormat, other.responseFormat)
+				&& Objects.equals(this.stop, other.stop)
+				&& Objects.equals(this.reasoningEffort, other.reasoningEffort)
 				&& Objects.equals(this.frequencyPenalty, other.frequencyPenalty)
-				&& Objects.equals(this.presencePenalty, other.presencePenalty) && Objects.equals(this.n, other.n)
-				&& Objects.equals(this.tools, other.tools) && Objects.equals(this.toolChoice, other.toolChoice)
+				&& Objects.equals(this.presencePenalty, other.presencePenalty)
+				&& Objects.equals(this.n, other.n)
+				&& Objects.equals(this.tools, other.tools)
+				&& Objects.equals(this.toolChoice, other.toolChoice)
 				&& Objects.equals(this.toolCallbacks, other.toolCallbacks)
-				&& Objects.equals(this.toolNames, other.toolNames)
-				&& Objects.equals(this.internalToolExecutionEnabled, other.internalToolExecutionEnabled)
 				&& Objects.equals(this.toolContext, other.toolContext);
+		// @formatter:on
 	}
 
-	public static final class Builder {
+	// public Builder class exposed to users. Avoids having to deal with noisy generic
+	// parameters.
+	public static class Builder extends AbstractBuilder<Builder> {
 
-		private final MistralAiChatOptions options = new MistralAiChatOptions();
+	}
 
-		public Builder model(String model) {
-			this.options.setModel(model);
-			return this;
+	protected abstract static class AbstractBuilder<B extends AbstractBuilder<B>>
+			extends DefaultToolCallingChatOptions.Builder<B> implements StructuredOutputChatOptions.Builder<B> {
+
+		@Override
+		public B clone() {
+			AbstractBuilder<B> copy = super.clone();
+			copy.tools = this.tools;
+			return (B) copy;
 		}
 
-		public Builder model(MistralAiApi.ChatModel chatModel) {
-			this.options.setModel(chatModel.getName());
-			return this;
-		}
+		private @Nullable Boolean safePrompt;
 
-		public Builder maxTokens(Integer maxTokens) {
-			this.options.setMaxTokens(maxTokens);
-			return this;
-		}
+		private @Nullable Integer randomSeed;
 
-		public Builder safePrompt(Boolean safePrompt) {
-			this.options.setSafePrompt(safePrompt);
-			return this;
-		}
+		private @Nullable ResponseFormat responseFormat;
 
-		public Builder randomSeed(Integer randomSeed) {
-			this.options.setRandomSeed(randomSeed);
-			return this;
-		}
+		private @Nullable Integer n;
 
-		public Builder stop(List<String> stop) {
-			this.options.setStop(stop);
-			return this;
-		}
+		private @Nullable List<FunctionTool> tools;
 
-		public Builder frequencyPenalty(Double frequencyPenalty) {
-			this.options.frequencyPenalty = frequencyPenalty;
-			return this;
-		}
+		private @Nullable ToolChoice toolChoice;
 
-		public Builder presencePenalty(Double presencePenalty) {
-			this.options.presencePenalty = presencePenalty;
-			return this;
-		}
+		private @Nullable ReasoningEffort reasoningEffort;
 
-		public Builder n(Integer n) {
-			this.options.n = n;
-			return this;
-		}
-
-		public Builder temperature(Double temperature) {
-			this.options.setTemperature(temperature);
-			return this;
-		}
-
-		public Builder topP(Double topP) {
-			this.options.setTopP(topP);
-			return this;
-		}
-
-		public Builder responseFormat(ResponseFormat responseFormat) {
-			this.options.responseFormat = responseFormat;
-			return this;
-		}
-
-		public Builder tools(List<FunctionTool> tools) {
-			this.options.tools = tools;
-			return this;
-		}
-
-		public Builder toolChoice(ToolChoice toolChoice) {
-			this.options.toolChoice = toolChoice;
-			return this;
-		}
-
-		public Builder toolCallbacks(List<ToolCallback> toolCallbacks) {
-			this.options.setToolCallbacks(toolCallbacks);
-			return this;
-		}
-
-		public Builder toolCallbacks(ToolCallback... toolCallbacks) {
-			Assert.notNull(toolCallbacks, "toolCallbacks cannot be null");
-			this.options.toolCallbacks.addAll(Arrays.asList(toolCallbacks));
-			return this;
-		}
-
-		public Builder toolNames(Set<String> toolNames) {
-			Assert.notNull(toolNames, "toolNames cannot be null");
-			this.options.setToolNames(toolNames);
-			return this;
-		}
-
-		public Builder toolNames(String... toolNames) {
-			Assert.notNull(toolNames, "toolNames cannot be null");
-			this.options.toolNames.addAll(Set.of(toolNames));
-			return this;
-		}
-
-		public Builder internalToolExecutionEnabled(@Nullable Boolean internalToolExecutionEnabled) {
-			this.options.setInternalToolExecutionEnabled(internalToolExecutionEnabled);
-			return this;
-		}
-
-		public Builder toolContext(Map<String, Object> toolContext) {
-			if (this.options.toolContext == null) {
-				this.options.toolContext = toolContext;
+		public B model(MistralAiApi.@Nullable ChatModel chatModel) {
+			if (chatModel != null) {
+				this.model(chatModel.getName());
 			}
 			else {
-				this.options.toolContext.putAll(toolContext);
+				this.model((String) null);
 			}
-			return this;
+			return self();
 		}
 
+		public B safePrompt(@Nullable Boolean safePrompt) {
+			this.safePrompt = safePrompt;
+			return self();
+		}
+
+		public B randomSeed(@Nullable Integer randomSeed) {
+			this.randomSeed = randomSeed;
+			return self();
+		}
+
+		public B stop(@Nullable List<String> stop) {
+			super.stopSequences(stop);
+			return self();
+		}
+
+		public B reasoningEffort(@Nullable ReasoningEffort reasoningEffort) {
+			this.reasoningEffort = reasoningEffort;
+			return self();
+		}
+
+		public B responseFormat(@Nullable ResponseFormat responseFormat) {
+			this.responseFormat = responseFormat;
+			return self();
+		}
+
+		public B n(@Nullable Integer n) {
+			this.n = n;
+			return self();
+		}
+
+		public B tools(@Nullable List<FunctionTool> tools) {
+			this.tools = tools;
+			return self();
+		}
+
+		public B toolChoice(@Nullable ToolChoice toolChoice) {
+			this.toolChoice = toolChoice;
+			return self();
+		}
+
+		@Override
+		public B outputSchema(@Nullable String outputSchema) {
+			if (outputSchema != null) {
+				this.responseFormat = ResponseFormat.builder()
+					.type(ResponseFormat.Type.JSON_SCHEMA)
+					.jsonSchema(outputSchema)
+					.build();
+			}
+			else {
+				this.responseFormat = null;
+			}
+			return self();
+		}
+
+		@Override
+		public B combineWith(ChatOptions.Builder<?> other) {
+			super.combineWith(other);
+			if (other instanceof AbstractBuilder<?> that) {
+				if (that.safePrompt != null) {
+					this.safePrompt = that.safePrompt;
+				}
+				if (that.randomSeed != null) {
+					this.randomSeed = that.randomSeed;
+				}
+				if (that.responseFormat != null) {
+					this.responseFormat = that.responseFormat;
+				}
+				if (that.n != null) {
+					this.n = that.n;
+				}
+				if (that.tools != null) {
+					if (this.tools == null) {
+						this.tools = new ArrayList<>(that.tools);
+					}
+					else {
+						List<MistralAiApi.FunctionTool> merged = new ArrayList<>(this.tools);
+						merged.addAll(that.tools);
+						this.tools = merged;
+					}
+				}
+				if (that.toolChoice != null) {
+					this.toolChoice = that.toolChoice;
+				}
+				if (that.reasoningEffort != null) {
+					this.reasoningEffort = that.reasoningEffort;
+				}
+			}
+			return self();
+		}
+
+		@Override
 		public MistralAiChatOptions build() {
-			return this.options;
+			return new MistralAiChatOptions(this.model, this.temperature, this.topP, this.maxTokens, this.safePrompt,
+					this.randomSeed, this.responseFormat, this.stopSequences, this.reasoningEffort,
+					this.frequencyPenalty, this.presencePenalty, this.n, this.tools, this.toolChoice,
+					this.toolCallbacks, this.toolContext);
 		}
 
 	}

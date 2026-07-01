@@ -38,7 +38,7 @@ or to your Gradle `build.gradle` build file.
 [source,groovy]
 ----
 dependencies {
-    implementation 'org.springframework.ai:spring-ai-couchbase-store-spring-boot-starter'
+    implementation 'org.springframework.ai:spring-ai-starter-vector-store-couchbase'
 }
 ----
 NOTE: Couchbase Vector search is only available in starting version 7.6 and Java SDK version 3.6.0"
@@ -74,7 +74,7 @@ List <Document> documents = List.of(
 vectorStore.add(documents);
 
 // Retrieve documents similar to a query
-List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").withTopK(5));
+List<Document> results = vectorStore.similaritySearch(SearchRequest.builder().query("Spring").topK(5).build());
 ----
 
 [[couchbasevector-properties]]
@@ -271,7 +271,7 @@ public VectorStore couchbaseSearchVectorStore(Cluster cluster,
 // This can be any EmbeddingModel implementation.
 @Bean
 public EmbeddingModel embeddingModel() {
-    return new OpenAiEmbeddingModel(OpenAiApi.builder().apiKey(this.openaiKey).build());
+    return new OpenAiEmbeddingModel(OpenAiEmbeddingOptions.builder().apiKey(this.openaiKey).build());
 }
 ----
 

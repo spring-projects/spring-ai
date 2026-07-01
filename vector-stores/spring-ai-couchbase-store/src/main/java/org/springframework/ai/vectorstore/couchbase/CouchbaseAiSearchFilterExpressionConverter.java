@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2026 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,7 +61,21 @@ public class CouchbaseAiSearchFilterExpressionConverter extends AbstractFilterEx
 	@Override
 	protected void doKey(Key key, StringBuilder context) {
 		context.append("metadata.");
-		context.append(key.key());
+		var identifier = key.key();
+		// Couchbase N1QL/SQL++ uses backtick-quoted identifiers.
+		// Within backticks, the only character needing escaping is the backtick
+		// itself (doubled as ``).
+		context.append('`');
+		for (int i = 0; i < identifier.length(); i++) {
+			char c = identifier.charAt(i);
+			if (c == '`') {
+				context.append("``");
+			}
+			else {
+				context.append(c);
+			}
+		}
+		context.append('`');
 	}
 
 	@Override
@@ -72,6 +86,11 @@ public class CouchbaseAiSearchFilterExpressionConverter extends AbstractFilterEx
 	@Override
 	protected void doEndGroup(Group group, StringBuilder context) {
 		context.append(")");
+	}
+
+	@Override
+	protected void doSingleValue(Object value, StringBuilder context) {
+		emitJsonValue(value, context);
 	}
 
 }

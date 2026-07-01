@@ -160,8 +160,8 @@ The prefix `spring.ai.mistralai.embedding` is property prefix that configures th
 | spring.ai.mistralai.embedding.base-url   | Optional overrides the spring.ai.mistralai.base-url to provide embedding specific url | -
 | spring.ai.mistralai.embedding.api-key    | Optional overrides the spring.ai.mistralai.api-key to provide embedding specific api-key  | -
 | spring.ai.mistralai.embedding.metadata-mode      | Document content extraction mode.      | EMBED
-| spring.ai.mistralai.embedding.options.model      | The model to use      | mistral-embed
-| spring.ai.mistralai.embedding.options.encodingFormat   | The format to return the embeddings in. Can be either float or base64.  | -
+| spring.ai.mistralai.embedding.model      | The model to use      | mistral-embed
+| spring.ai.mistralai.embedding.encoding-format   | The format to return the embeddings in. Can be either float or base64.  | -
 |====
 
 NOTE: You can override the common `spring.ai.mistralai.base-url` and `spring.ai.mistralai.api-key` for the `ChatModel` and `EmbeddingModel` implementations.
@@ -169,13 +169,13 @@ The `spring.ai.mistralai.embedding.base-url` and `spring.ai.mistralai.embedding.
 Similarly, the `spring.ai.mistralai.chat.base-url` and `spring.ai.mistralai.chat.api-key` properties if set take precedence over the common properties.
 This is useful if you want to use different MistralAI accounts for different models and different model endpoints.
 
-TIP: All properties prefixed with `spring.ai.mistralai.embedding.options` can be overridden at runtime by adding a request specific <<embedding-options>> to the `EmbeddingRequest` call.
+TIP: All properties prefixed with `spring.ai.mistralai.embedding` can be overridden at runtime by adding a request specific <<embedding-options>> to the `EmbeddingRequest` call.
 
 == Runtime Options [[embedding-options]]
 
 The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-mistral-ai/src/main/java/org/springframework/ai/mistralai/MistralAiEmbeddingOptions.java[MistralAiEmbeddingOptions.java] provides the MistralAI configurations, such as the model to use and etc.
 
-The default options can be configured using the `spring.ai.mistralai.embedding.options` properties as well.
+The default options can be configured using the `spring.ai.mistralai.embedding` properties as well.
 
 At start-time use the `MistralAiEmbeddingModel` constructor to set the  default options used for all embedding requests.
 At run-time you can override the default options, using a `MistralAiEmbeddingOptions` instance as part of your `EmbeddingRequest`.
@@ -207,7 +207,7 @@ Here is an example of a simple `@Controller` class that uses the `EmbeddingModel
 [source,application.properties]
 ----
 spring.ai.mistralai.api-key=YOUR_API_KEY
-spring.ai.mistralai.embedding.options.model=mistral-embed
+spring.ai.mistralai.embedding.model=mistral-embed
 ----
 
 [source,java]

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,9 @@ package org.springframework.ai.chat.client.advisor;
 
 import java.util.function.Function;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClientMessageAggregator;
@@ -31,7 +31,7 @@ import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
 import org.springframework.ai.chat.model.ChatResponse;
-import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.util.JacksonUtils;
 
 /**
  * A simple logger advisor that logs the request and response messages.
@@ -44,9 +44,9 @@ public class SimpleLoggerAdvisor implements CallAdvisor, StreamAdvisor {
 			? chatClientRequest.toString() : "null";
 
 	public static final Function<@Nullable ChatResponse, String> DEFAULT_RESPONSE_TO_STRING = object -> object != null
-			? ModelOptionsUtils.toJsonStringPrettyPrinter(object) : "null";
+			? JacksonUtils.getDefaultJsonMapper().writerWithDefaultPrettyPrinter().writeValueAsString(object) : "null";
 
-	private static final Logger logger = LoggerFactory.getLogger(SimpleLoggerAdvisor.class);
+	private static final Log logger = LogFactory.getLog(SimpleLoggerAdvisor.class);
 
 	private final Function<@Nullable ChatClientRequest, String> requestToString;
 
@@ -91,11 +91,15 @@ public class SimpleLoggerAdvisor implements CallAdvisor, StreamAdvisor {
 	}
 
 	protected void logRequest(ChatClientRequest request) {
-		logger.debug("request: {}", this.requestToString.apply(request));
+		if (logger.isDebugEnabled()) {
+			logger.debug("request: " + this.requestToString.apply(request));
+		}
 	}
 
 	protected void logResponse(ChatClientResponse chatClientResponse) {
-		logger.debug("response: {}", this.responseToString.apply(chatClientResponse.chatResponse()));
+		if (logger.isDebugEnabled()) {
+			logger.debug("response: " + this.responseToString.apply(chatClientResponse.chatResponse()));
+		}
 	}
 
 	@Override
