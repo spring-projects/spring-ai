@@ -17,7 +17,6 @@
 package org.springframework.ai.model.chat.memory.redis.autoconfigure;
 
 import com.redis.testcontainers.RedisStackContainer;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -37,10 +36,6 @@ class RedisChatMemoryAutoConfigurationIT {
 	static RedisStackContainer redisContainer = new RedisStackContainer(
 			RedisStackContainer.DEFAULT_IMAGE_NAME.withTag(RedisStackContainer.DEFAULT_TAG))
 		.withExposedPorts(6379);
-
-	@BeforeAll
-	static void setup() {
-	}
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(
