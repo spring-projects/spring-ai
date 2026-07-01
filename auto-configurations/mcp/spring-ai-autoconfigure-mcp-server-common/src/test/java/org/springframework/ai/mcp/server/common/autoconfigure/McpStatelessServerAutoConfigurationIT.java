@@ -400,6 +400,26 @@ public class McpStatelessServerAutoConfigurationIT {
 
 	}
 
+	@Test
+	void customServerInfoBeanOverridesDefault() {
+		this.contextRunner.withUserConfiguration(CustomServerInfoConfiguration.class).run(context -> {
+			assertThat(context).hasSingleBean(McpStatelessSyncServer.class);
+			McpSchema.Implementation serverInfo = context.getBean(McpSchema.Implementation.class);
+			assertThat(serverInfo.name()).isEqualTo("custom");
+			assertThat(serverInfo.title()).isEqualTo("Custom Title");
+		});
+	}
+
+	@Configuration
+	static class CustomServerInfoConfiguration {
+
+		@Bean
+		McpSchema.Implementation serverInfo() {
+			return McpSchema.Implementation.builder("custom", "9.9.9").title("Custom Title").build();
+		}
+
+	}
+
 	@Configuration
 	static class TestRootsHandlerConfiguration {
 

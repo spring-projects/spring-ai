@@ -99,20 +99,23 @@ public class McpServerAutoConfiguration {
 	}
 
 	@Bean
+	@ConditionalOnMissingBean
+	public McpSchema.Implementation serverInfo(McpServerProperties serverProperties) {
+		return new Implementation(serverProperties.getName(), serverProperties.getVersion());
+	}
+
+	@Bean
 	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
 			matchIfMissing = true)
 	public McpSyncServer mcpSyncServer(McpServerTransportProviderBase transportProvider,
 			McpSchema.ServerCapabilities.Builder capabilitiesBuilder, McpServerProperties serverProperties,
-			McpServerChangeNotificationProperties changeNotificationProperties,
+			McpSchema.Implementation serverInfo, McpServerChangeNotificationProperties changeNotificationProperties,
 			ObjectProvider<List<SyncToolSpecification>> tools,
 			ObjectProvider<List<SyncResourceSpecification>> resources,
 			ObjectProvider<List<SyncPromptSpecification>> prompts,
 			ObjectProvider<List<SyncCompletionSpecification>> completions,
 			ObjectProvider<BiConsumer<McpSyncServerExchange, List<McpSchema.Root>>> rootsChangeConsumers,
 			Environment environment) {
-
-		McpSchema.Implementation serverInfo = new Implementation(serverProperties.getName(),
-				serverProperties.getVersion());
 
 		// Create the server with both tool and resource capabilities
 		SyncSpecification<?> serverBuilder;
@@ -202,15 +205,12 @@ public class McpServerAutoConfiguration {
 	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
 	public McpAsyncServer mcpAsyncServer(McpServerTransportProviderBase transportProvider,
 			McpSchema.ServerCapabilities.Builder capabilitiesBuilder, McpServerProperties serverProperties,
-			McpServerChangeNotificationProperties changeNotificationProperties,
+			McpSchema.Implementation serverInfo, McpServerChangeNotificationProperties changeNotificationProperties,
 			ObjectProvider<List<AsyncToolSpecification>> tools,
 			ObjectProvider<List<AsyncResourceSpecification>> resources,
 			ObjectProvider<List<AsyncPromptSpecification>> prompts,
 			ObjectProvider<List<AsyncCompletionSpecification>> completions,
 			ObjectProvider<BiConsumer<McpAsyncServerExchange, List<McpSchema.Root>>> rootsChangeConsumer) {
-
-		McpSchema.Implementation serverInfo = new Implementation(serverProperties.getName(),
-				serverProperties.getVersion());
 
 		// Create the server with both tool and resource capabilities
 		AsyncSpecification<?> serverBuilder;

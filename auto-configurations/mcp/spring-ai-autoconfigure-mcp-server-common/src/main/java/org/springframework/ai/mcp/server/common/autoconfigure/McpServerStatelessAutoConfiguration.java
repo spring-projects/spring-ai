@@ -73,17 +73,20 @@ public class McpServerStatelessAutoConfiguration {
 	}
 
 	@Bean
+	@ConditionalOnMissingBean
+	public McpSchema.Implementation serverInfo(McpServerProperties serverProperties) {
+		return new Implementation(serverProperties.getName(), serverProperties.getVersion());
+	}
+
+	@Bean
 	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
 			matchIfMissing = true)
 	public McpStatelessSyncServer mcpStatelessSyncServer(McpStatelessServerTransport statelessTransport,
 			McpSchema.ServerCapabilities.Builder capabilitiesBuilder, McpServerProperties serverProperties,
-			ObjectProvider<List<SyncToolSpecification>> tools,
+			McpSchema.Implementation serverInfo, ObjectProvider<List<SyncToolSpecification>> tools,
 			ObjectProvider<List<SyncResourceSpecification>> resources,
 			ObjectProvider<List<SyncPromptSpecification>> prompts,
 			ObjectProvider<List<SyncCompletionSpecification>> completions, Environment environment) {
-
-		McpSchema.Implementation serverInfo = new Implementation(serverProperties.getName(),
-				serverProperties.getVersion());
 
 		// Create the server with both tool and resource capabilities
 		StatelessSyncSpecification serverBuilder = McpServer.sync(statelessTransport).serverInfo(serverInfo);
@@ -153,13 +156,10 @@ public class McpServerStatelessAutoConfiguration {
 	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
 	public McpStatelessAsyncServer mcpStatelessAsyncServer(McpStatelessServerTransport statelessTransport,
 			McpSchema.ServerCapabilities.Builder capabilitiesBuilder, McpServerProperties serverProperties,
-			ObjectProvider<List<AsyncToolSpecification>> tools,
+			McpSchema.Implementation serverInfo, ObjectProvider<List<AsyncToolSpecification>> tools,
 			ObjectProvider<List<AsyncResourceSpecification>> resources,
 			ObjectProvider<List<AsyncPromptSpecification>> prompts,
 			ObjectProvider<List<AsyncCompletionSpecification>> completions) {
-
-		McpSchema.Implementation serverInfo = new Implementation(serverProperties.getName(),
-				serverProperties.getVersion());
 
 		// Create the server with both tool and resource capabilities
 		StatelessAsyncSpecification serverBuilder = McpServer.async(statelessTransport).serverInfo(serverInfo);
