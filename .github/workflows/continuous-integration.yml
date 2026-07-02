@@ -103,7 +103,6 @@ jobs:
       - name: Test Ollama modules
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          SPRING_AI_OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           ./mvnw --batch-mode -ntp --no-snapshot-updates \
             -pl models/spring-ai-ollama,auto-configurations/models/spring-ai-autoconfigure-model-ollama \
@@ -149,7 +148,6 @@ jobs:
       - name: Test OpenAI modules
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          SPRING_AI_OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           ./mvnw --batch-mode -ntp --no-snapshot-updates \
             -pl models/spring-ai-openai,auto-configurations/models/spring-ai-autoconfigure-model-openai \
@@ -195,7 +193,6 @@ jobs:
       - name: Test remaining modules
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          SPRING_AI_OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
           ./mvnw --batch-mode -ntp --no-snapshot-updates \
             -pl models/spring-ai-google-genai,auto-configurations/models/spring-ai-autoconfigure-model-google-genai,mcp/common,mcp/mcp-annotations,auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-common,auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-httpclient,auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-webflux,auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-common,auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webmvc,auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux,vector-stores/spring-ai-chroma-store,vector-stores/spring-ai-pgvector-store,spring-ai-integration-tests \
