@@ -235,6 +235,8 @@ image::tools/spring-ai-tool-calling-advisor-flow.png[Tool Calling Advisor Flow, 
 
 Both blocking (`.call()`) and streaming (`.stream()`) modes are fully supported.
 
+Before each iteration's tool calls are executed, a pluggable `AdvisorLoopGuard` checks for infinite-loop conditions (e.g. the same tool repeatedly called with identical arguments) and can abort the request or stop the loop gracefully. See xref:api/tools/tool-calling-advisor.adoc#loop-guard[Breaking Infinite Tool-Call Loops].
+
 `ToolCallingAdvisor` is a **recursive advisor** — it re-enters the downstream advisor chain on each iteration of the loop. The same mechanism drives structured-output validation retries and any other looped advisor pattern. See xref:api/advisors-recursive.adoc[Recursive Advisors] for the underlying pattern.
 
 `DefaultChatClient` enforces that **exactly one `ToolAdvisor` is present** in the chain. Attempting to register a second one fails with an explicit error.

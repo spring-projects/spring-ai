@@ -22,28 +22,21 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.util.Assert;
 
 /**
- * Strategy for detecting and breaking out of infinite loops in a recursive advisor —
- * any advisor that repeatedly calls the model and inspects each round's response to
- * decide whether to loop again (e.g. a tool-calling loop or a structured-output
- * validation retry loop). The guard governs a single advisor execution (one non-streaming
- * call or one stream subscription).
+ * Strategy for detecting and breaking out of infinite loops in a recursive advisor, such
+ * as a tool-calling loop or a structured-output validation retry loop. A guard governs a
+ * single advisor execution: one non-streaming call or one stream subscription.
  * <p>
- * A fresh {@link LoopState} is created for every loop via {@link #begin()} so that any
- * state an implementation accumulates (e.g. per-round counts) is isolated to a single
- * conversation turn and is never shared across requests or subscriptions.
+ * {@link #begin()} creates a fresh {@link LoopState} for every loop, so any state an
+ * implementation accumulates (e.g. per-round counts) is isolated to a single conversation
+ * turn. Before acting on each round (e.g. before executing tool calls), the advisor calls
+ * {@link LoopState#check(ChatResponse)}, which returns a {@link Decision} to
+ * {@link Decision.Action#CONTINUE continue}, {@link Decision.Action#STOP stop gracefully}
+ * (returning the latest response without acting on the round), or
+ * {@link Decision.Action#ERROR abort with an error}.
  * <p>
- * For each round, {@link LoopState#check(ChatResponse)} is invoked just before the
- * recursive advisor acts on the round (e.g. before executing tool calls) and returns a
- * {@link Decision} that tells the advisor whether to {@link Decision.Action#CONTINUE
- * continue}, {@link Decision.Action#STOP stop gracefully} (returning the latest response
- * to the caller without acting on the round), or {@link Decision.Action#ERROR abort with
- * an error}. This lets budget-style guards (e.g. time or token budgets) terminate
- * gracefully instead of failing the request.
- * <p>
- * A tool-call-oriented implementation is {@link MaxIdenticalToolCallLoopGuard}, which
- * breaks the loop when the same tool is repeatedly invoked with identical arguments.
- * Provide a custom implementation to plug in alternative loop-detection policies (e.g. a
- * maximum total number of rounds, time-based budgets, etc.).
+ * {@link MaxIdenticalToolCallLoopGuard} is the default, tool-call-oriented
+ * implementation. Provide a custom implementation for other policies, e.g. a maximum
+ * round count or a time budget.
  *
  * @author Christian Tzolov
  * @since 2.0.0

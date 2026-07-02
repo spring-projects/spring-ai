@@ -36,12 +36,11 @@ import org.springframework.util.Assert;
  * model keeps calling the same tool with the same arguments after receiving an error or
  * otherwise unhelpful response.
  * <p>
- * Because the count accumulates across the entire loop within a single conversation turn,
- * a model that legitimately re-invokes an idempotent tool with identical arguments (e.g.
- * polling a {@code get_status} or {@code list_files} tool) more than
- * {@link #getMaxIdenticalToolCallCount()} times could trip the guard. Such tools can be
- * exempted from the check via {@link Builder#excludedToolNames(java.util.Collection)};
- * alternatively, increase the limit via {@link Builder#maxIdenticalToolCallCount(int)}.
+ * Because the count accumulates across the entire loop, a model that legitimately polls
+ * an idempotent tool (e.g. {@code get_status} or {@code list_files}) with identical
+ * arguments more than {@link #getMaxIdenticalToolCallCount()} times could trip the guard.
+ * Exempt such tools via {@link Builder#excludedToolNames(java.util.Collection)}, or raise
+ * the limit via {@link Builder#maxIdenticalToolCallCount(int)}.
  *
  * @author Christian Tzolov
  * @since 2.0.0
@@ -50,12 +49,9 @@ public class MaxIdenticalToolCallLoopGuard implements AdvisorLoopGuard {
 
 	/**
 	 * Default maximum number of times a tool may be called with identical arguments
-	 * within a single advisor loop. A value of 15 is tolerant of legitimate repeats (e.g.
-	 * a model polling an idempotent tool or retrying after transient errors) while still
-	 * breaking infinite loops where the model never changes the tool arguments. Since the
-	 * guard keys on the tool name <em>and</em> identical arguments, seeing the same call
-	 * 15 times is already a strong infinite-loop signal; the limit mainly governs how
-	 * many identical retries are tolerated before aborting.
+	 * within a single advisor loop. A value of 15 tolerates legitimate repeats (e.g. a
+	 * model polling an idempotent tool) while still breaking infinite loops where the
+	 * model never changes the tool arguments.
 	 */
 	public static final int DEFAULT_MAX_IDENTICAL_TOOL_CALL_COUNT = 15;
 

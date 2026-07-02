@@ -35,6 +35,7 @@ Spring AI ships two built-in recursive advisors that demonstrate this pattern.
 Highlights:
 
 * Loops through the advisor chain until the `ToolExecutionEligibilityChecker` reports no more tool calls.
+* Guards against infinite loops via a pluggable `AdvisorLoopGuard`, checked before each round's tool calls execute — by default `MaxIdenticalToolCallLoopGuard`, which aborts once a tool is called with identical arguments too many times. See xref:api/tools/tool-calling-advisor.adoc#loop-guard[Breaking Infinite Tool-Call Loops].
 * Uses `callAdvisorChain.copy(this)` to create a sub-chain for recursive calls — other advisors can observe and intercept every iteration.
 * Supports return-direct: when a tool's result has `returnDirect = true`, the advisor breaks the loop and returns the tool result to the caller without sending it back to the LLM.
 * Implements the `ToolAdvisor` marker interface, which `DefaultChatClient` uses to enforce the single-tool-advisor invariant — custom subclasses register transparently as replacements.
