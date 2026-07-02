@@ -108,9 +108,14 @@ public class OpenAiEmbeddingModelObservationIT {
 
 		@Bean
 		public OpenAiEmbeddingModel openAiEmbeddingModel(TestObservationRegistry observationRegistry) {
-			return new OpenAiEmbeddingModel(MetadataMode.EMBED,
-					OpenAiEmbeddingOptions.builder().model(OpenAiEmbeddingOptions.DEFAULT_EMBEDDING_MODEL).build(),
-					observationRegistry);
+			OpenAiEmbeddingOptions options = OpenAiEmbeddingOptions.builder()
+				.model(OpenAiEmbeddingOptions.DEFAULT_EMBEDDING_MODEL)
+				.build();
+			return OpenAiEmbeddingModel.builder()
+				.metadataMode(MetadataMode.EMBED)
+				.options(options)
+				.observationRegistry(observationRegistry)
+				.build();
 		}
 
 	}

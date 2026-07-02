@@ -46,6 +46,7 @@ import org.springframework.context.annotation.Bean;
  * @author Issam El-atif
  * @author Ilayaperumal Gopinathan
  * @author Sebastien Deleuze
+ * @author guan xu
  */
 @AutoConfiguration
 @ConditionalOnProperty(name = SpringAIModelProperties.IMAGE_MODEL, havingValue = SpringAIModels.OPENAI,
@@ -65,9 +66,13 @@ public class OpenAiImageAutoConfiguration {
 
 		List<OpenAiHttpClientBuilderCustomizer> customizers = httpClientBuilderCustomizers.orderedStream().toList();
 
-		var imageModel = new OpenAiImageModel(
-				openAiClient(resolvedProperties, observationRegistry, meterRegistry, customizers),
-				imageProperties.toOptions(), observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
+		var openAiClient = this.openAiClient(resolvedProperties, observationRegistry, meterRegistry, customizers);
+
+		var imageModel = OpenAiImageModel.builder()
+			.openAiClient(openAiClient)
+			.options(imageProperties.toOptions())
+			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
+			.build();
 
 		observationConvention.ifAvailable(imageModel::setObservationConvention);
 

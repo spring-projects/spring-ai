@@ -45,6 +45,7 @@ import org.springframework.context.annotation.Bean;
  * @author Issam El-atif
  * @author Ilayaperumal Gopinathan
  * @author Sebastien Deleuze
+ * @author guan xu
  */
 @AutoConfiguration
 @ConditionalOnProperty(name = SpringAIModelProperties.EMBEDDING_MODEL, havingValue = SpringAIModels.OPENAI,
@@ -65,10 +66,14 @@ public class OpenAiEmbeddingAutoConfiguration {
 
 		List<OpenAiHttpClientBuilderCustomizer> customizers = httpClientBuilderCustomizers.orderedStream().toList();
 
-		var embeddingModel = new OpenAiEmbeddingModel(
-				this.openAiClient(resolvedProperties, observationRegistry, meterRegistry, customizers),
-				embeddingProperties.getMetadataMode(), embeddingProperties.toOptions(),
-				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
+		var openAiClient = this.openAiClient(resolvedProperties, observationRegistry, meterRegistry, customizers);
+
+		var embeddingModel = OpenAiEmbeddingModel.builder()
+			.openAiClient(openAiClient)
+			.metadataMode(embeddingProperties.getMetadataMode())
+			.options(embeddingProperties.toOptions())
+			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
+			.build();
 
 		observationConvention.ifAvailable(embeddingModel::setObservationConvention);
 
