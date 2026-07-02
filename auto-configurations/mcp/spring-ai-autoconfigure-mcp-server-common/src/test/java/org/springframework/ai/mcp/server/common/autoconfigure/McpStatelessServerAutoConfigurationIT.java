@@ -64,6 +64,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -233,6 +234,16 @@ public class McpStatelessServerAutoConfigurationIT {
 				RecordingAsyncServerCustomizer customizer = context.getBean(RecordingAsyncServerCustomizer.class);
 				assertThat(customizer.invoked).isTrue();
 			});
+	}
+
+	@Test
+	void multipleSyncServerCustomizersInvokedInOrder() {
+		this.contextRunner.withUserConfiguration(OrderedSyncServerCustomizersConfiguration.class).run(context -> {
+			assertThat(context).hasSingleBean(McpStatelessSyncServer.class);
+			@SuppressWarnings("unchecked")
+			List<String> invocations = context.getBean("customizerInvocations", List.class);
+			assertThat(invocations).containsExactly("first", "second");
+		});
 	}
 
 	@Test
@@ -469,6 +480,28 @@ public class McpStatelessServerAutoConfigurationIT {
 		@Override
 		public void customize(McpServer.StatelessSyncSpecification serverBuilder) {
 			this.invoked = true;
+		}
+
+	}
+
+	@Configuration
+	static class OrderedSyncServerCustomizersConfiguration {
+
+		@Bean
+		List<String> customizerInvocations() {
+			return new CopyOnWriteArrayList<>();
+		}
+
+		@Bean
+		@Order(1)
+		McpStatelessSyncServerCustomizer firstCustomizer(List<String> customizerInvocations) {
+			return serverBuilder -> customizerInvocations.add("first");
+		}
+
+		@Bean
+		@Order(2)
+		McpStatelessSyncServerCustomizer secondCustomizer(List<String> customizerInvocations) {
+			return serverBuilder -> customizerInvocations.add("second");
 		}
 
 	}
