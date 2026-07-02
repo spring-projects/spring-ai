@@ -27,6 +27,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.micrometer.common.util.StringUtils;
 import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.client.McpSyncClient;
+import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.server.McpServerFeatures;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
@@ -41,6 +42,7 @@ import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.ai.util.JacksonUtils;
 import org.springframework.ai.util.JsonHelper;
 import org.springframework.ai.util.json.schema.JsonSchemaUtils;
 import org.springframework.util.CollectionUtils;
@@ -248,11 +250,11 @@ public final class McpToolUtils {
 	private static SharedSyncToolSpecification toSharedSyncToolSpecification(ToolCallback toolCallback,
 			@Nullable MimeType mimeType) {
 
-		var tool = McpSchema.Tool.builder()
-			.name(toolCallback.getToolDefinition().name())
+		var tool = McpSchema.Tool
+			.builder(toolCallback.getToolDefinition().name(),
+					new JacksonMcpJsonMapper(JacksonUtils.getDefaultJsonMapper()),
+					toolCallback.getToolDefinition().inputSchema())
 			.description(toolCallback.getToolDefinition().description())
-			.inputSchema(
-					jsonHelper.fromJson(toolCallback.getToolDefinition().inputSchema(), McpSchema.JsonSchema.class))
 			.build();
 
 		return new SharedSyncToolSpecification(tool, (exchangeOrContext, request) -> {
@@ -260,20 +262,24 @@ public final class McpToolUtils {
 				String callResult = toolCallback.call(jsonHelper.toJson(request.arguments()),
 						new ToolContext(Map.of(TOOL_CONTEXT_MCP_EXCHANGE_KEY, exchangeOrContext)));
 				if (mimeType != null && mimeType.toString().startsWith("image")) {
-					McpSchema.Annotations annotations = new McpSchema.Annotations(List.of(Role.ASSISTANT), null);
+					McpSchema.Annotations annotations = McpSchema.Annotations.builder()
+						.audience(List.of(Role.ASSISTANT))
+						.build();
 					return McpSchema.CallToolResult.builder()
-						.content(List.of(new McpSchema.ImageContent(annotations, callResult, mimeType.toString())))
+						.content(List.of(McpSchema.ImageContent.builder(callResult, mimeType.toString())
+							.annotations(annotations)
+							.build()))
 						.isError(false)
 						.build();
 				}
 				return McpSchema.CallToolResult.builder()
-					.content(List.of(new McpSchema.TextContent(callResult)))
+					.content(List.of(McpSchema.TextContent.builder(callResult).build()))
 					.isError(false)
 					.build();
 			}
 			catch (Exception e) {
 				return McpSchema.CallToolResult.builder()
-					.content(List.of(new McpSchema.TextContent(e.getMessage())))
+					.content(List.of(McpSchema.TextContent.builder(e.getMessage()).build()))
 					.isError(true)
 					.build();
 			}

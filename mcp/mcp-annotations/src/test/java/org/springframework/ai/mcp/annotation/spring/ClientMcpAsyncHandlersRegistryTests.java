@@ -140,9 +140,7 @@ class ClientMcpAsyncHandlersRegistryTests {
 		registry.postProcessBeanFactory(beanFactory);
 		registry.afterSingletonsInstantiated();
 
-		var request = McpSchema.ElicitRequest.builder()
-			.message("Elicit request")
-			.requestedSchema(Map.of("type", "string"))
+		var request = McpSchema.ElicitFormRequest.builder("Elicit request", Map.of("type", "string"))
 			.progressToken("token-12345")
 			.build();
 		var response = registry.handleElicitation("client-1", request).block();
@@ -163,9 +161,7 @@ class ClientMcpAsyncHandlersRegistryTests {
 		registry.postProcessBeanFactory(beanFactory);
 		registry.afterSingletonsInstantiated();
 
-		var request = McpSchema.ElicitRequest.builder()
-			.message("Elicit request")
-			.requestedSchema(Map.of("type", "string"))
+		var request = McpSchema.ElicitFormRequest.builder("Elicit request", Map.of("type", "string"))
 			.progressToken("token-12345")
 			.build();
 		assertThatThrownBy(() -> registry.handleElicitation("client-unknown", request).block())
@@ -186,11 +182,9 @@ class ClientMcpAsyncHandlersRegistryTests {
 		registry.postProcessBeanFactory(beanFactory);
 		registry.afterSingletonsInstantiated();
 
-		var request = McpSchema.CreateMessageRequest.builder()
-			.messages(List
-				.of(new McpSchema.SamplingMessage(McpSchema.Role.USER, new McpSchema.TextContent("Tell a joke"))))
-			.maxTokens(100)
-			.build();
+		var request = McpSchema.CreateMessageRequest.builder(List.of(McpSchema.SamplingMessage
+			.builder(McpSchema.Role.USER, McpSchema.TextContent.builder("Tell a joke").build())
+			.build()), 100).build();
 		var response = registry.handleSampling("client-1", request).block();
 
 		assertThat(response.content()).isInstanceOf(McpSchema.TextContent.class);
@@ -210,11 +204,9 @@ class ClientMcpAsyncHandlersRegistryTests {
 		registry.postProcessBeanFactory(beanFactory);
 		registry.afterSingletonsInstantiated();
 
-		var request = McpSchema.CreateMessageRequest.builder()
-			.messages(List
-				.of(new McpSchema.SamplingMessage(McpSchema.Role.USER, new McpSchema.TextContent("Tell a joke"))))
-			.maxTokens(100)
-			.build();
+		var request = McpSchema.CreateMessageRequest.builder(List.of(McpSchema.SamplingMessage
+			.builder(McpSchema.Role.USER, McpSchema.TextContent.builder("Tell a joke").build())
+			.build()), 100).build();
 		assertThatThrownBy(() -> registry.handleSampling("client-unknown", request).block())
 			.hasMessage("Sampling not supported")
 			.asInstanceOf(type(McpError.class))
@@ -234,10 +226,8 @@ class ClientMcpAsyncHandlersRegistryTests {
 		registry.afterSingletonsInstantiated();
 		var handlers = beanFactory.getBean(HandlersConfiguration.class);
 
-		var logRequest = McpSchema.LoggingMessageNotification.builder()
-			.data("Hello world")
+		var logRequest = McpSchema.LoggingMessageNotification.builder(McpSchema.LoggingLevel.INFO, "Hello world")
 			.logger("log-me")
-			.level(McpSchema.LoggingLevel.INFO)
 			.build();
 
 		registry.handleLogging("client-1", logRequest).block();
@@ -256,7 +246,10 @@ class ClientMcpAsyncHandlersRegistryTests {
 		registry.afterSingletonsInstantiated();
 		var handlers = beanFactory.getBean(HandlersConfiguration.class);
 
-		var progressRequest = new McpSchema.ProgressNotification("progress-12345", 13.37, 100., "progressing ...");
+		var progressRequest = McpSchema.ProgressNotification.builder("progress-12345", 13.37)
+			.total(100.)
+			.message("progressing ...")
+			.build();
 
 		registry.handleProgress("client-1", progressRequest).block();
 		assertThat(handlers.getCalls()).hasSize(2)
@@ -274,8 +267,8 @@ class ClientMcpAsyncHandlersRegistryTests {
 		registry.afterSingletonsInstantiated();
 		var handlers = beanFactory.getBean(HandlersConfiguration.class);
 
-		List<McpSchema.Tool> updatedTools = List.of(McpSchema.Tool.builder().name("tool-1").build(),
-				McpSchema.Tool.builder().name("tool-2").build());
+		List<McpSchema.Tool> updatedTools = List.of(McpSchema.Tool.builder("tool-1", Map.of()).build(),
+				McpSchema.Tool.builder("tool-2", Map.of()).build());
 
 		registry.handleToolListChanged("client-1", updatedTools).block();
 		assertThat(handlers.getCalls()).hasSize(2)
@@ -294,8 +287,8 @@ class ClientMcpAsyncHandlersRegistryTests {
 		var handlers = beanFactory.getBean(HandlersConfiguration.class);
 
 		List<McpSchema.Prompt> updatedTools = List.of(
-				new McpSchema.Prompt("prompt-1", "a test prompt", Collections.emptyList()),
-				new McpSchema.Prompt("prompt-2", "another test prompt", Collections.emptyList()));
+				McpSchema.Prompt.builder("prompt-1").description("a test prompt").build(),
+				McpSchema.Prompt.builder("prompt-2").description("another test prompt").build());
 
 		registry.handlePromptListChanged("client-1", updatedTools).block();
 		assertThat(handlers.getCalls()).hasSize(2)
@@ -465,18 +458,18 @@ class ClientMcpAsyncHandlersRegistryTests {
 
 		@McpElicitation(clients = { "client-1" })
 		Mono<McpSchema.ElicitResult> elicitationHandler(McpSchema.ElicitRequest request) {
-			return Mono.just(McpSchema.ElicitResult.builder()
-				.message(McpSchema.ElicitResult.Action.ACCEPT)
+			return Mono.just(McpSchema.ElicitResult.builder(McpSchema.ElicitResult.Action.ACCEPT)
 				.content(Map.of("message", request.message()))
 				.build());
 		}
 
 		@McpSampling(clients = { "client-1" })
 		Mono<McpSchema.CreateMessageResult> samplingHandler(McpSchema.CreateMessageRequest request) {
-			return Mono.just(McpSchema.CreateMessageResult.builder()
-				.message(((McpSchema.TextContent) request.messages().get(0).content()).text())
-				.model("testgpt-42.5")
-				.build());
+			return Mono
+				.just(McpSchema.CreateMessageResult
+					.builder(McpSchema.Role.ASSISTANT,
+							((McpSchema.TextContent) request.messages().get(0).content()).text(), "testgpt-42.5")
+					.build());
 		}
 
 		@McpLogging(clients = { "client-1" })

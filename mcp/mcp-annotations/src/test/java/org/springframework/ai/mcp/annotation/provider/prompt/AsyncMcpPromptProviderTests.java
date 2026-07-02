@@ -58,8 +58,11 @@ public class AsyncMcpPromptProviderTests {
 
 			@McpPrompt(name = "test-prompt", description = "A test prompt")
 			public Mono<GetPromptResult> testPrompt(GetPromptRequest request) {
-				return Mono.just(new GetPromptResult("Test prompt result",
-						List.of(new PromptMessage(Role.ASSISTANT, new TextContent("Hello from " + request.name())))));
+				return Mono.just(GetPromptResult
+					.builder(List.of(new PromptMessage(Role.ASSISTANT,
+							TextContent.builder("Hello from " + request.name()).build())))
+					.description("Test prompt result")
+					.build());
 			}
 
 		}
@@ -81,7 +84,7 @@ public class AsyncMcpPromptProviderTests {
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
 		Map<String, Object> args = new HashMap<>();
 		args.put("name", "John");
-		GetPromptRequest request = new GetPromptRequest("test-prompt", args);
+		GetPromptRequest request = GetPromptRequest.builder("test-prompt").arguments(args).build();
 		Mono<GetPromptResult> result = promptSpec.promptHandler().apply(exchange, request);
 
 		StepVerifier.create(result).assertNext(promptResult -> {
@@ -99,8 +102,11 @@ public class AsyncMcpPromptProviderTests {
 
 			@McpPrompt(name = "custom-name", description = "Custom named prompt")
 			public Mono<GetPromptResult> methodWithDifferentName() {
-				return Mono.just(new GetPromptResult("Custom prompt result",
-						List.of(new PromptMessage(Role.ASSISTANT, new TextContent("Custom prompt content")))));
+				return Mono.just(GetPromptResult
+					.builder(List
+						.of(new PromptMessage(Role.ASSISTANT, TextContent.builder("Custom prompt content").build())))
+					.description("Custom prompt result")
+					.build());
 			}
 
 		}
@@ -121,8 +127,11 @@ public class AsyncMcpPromptProviderTests {
 
 			@McpPrompt(description = "Prompt with default name")
 			public Mono<GetPromptResult> defaultNameMethod() {
-				return Mono.just(new GetPromptResult("Default prompt result",
-						List.of(new PromptMessage(Role.ASSISTANT, new TextContent("Default prompt content")))));
+				return Mono.just(GetPromptResult
+					.builder(List
+						.of(new PromptMessage(Role.ASSISTANT, TextContent.builder("Default prompt content").build())))
+					.description("Default prompt result")
+					.build());
 			}
 
 		}
@@ -143,8 +152,11 @@ public class AsyncMcpPromptProviderTests {
 
 			@McpPrompt(name = "", description = "Prompt with empty name")
 			public Mono<GetPromptResult> emptyNameMethod() {
-				return Mono.just(new GetPromptResult("Empty name prompt result",
-						List.of(new PromptMessage(Role.ASSISTANT, new TextContent("Empty name prompt content")))));
+				return Mono.just(GetPromptResult
+					.builder(List.of(new PromptMessage(Role.ASSISTANT,
+							TextContent.builder("Empty name prompt content").build())))
+					.description("Empty name prompt result")
+					.build());
 			}
 
 		}
@@ -165,14 +177,20 @@ public class AsyncMcpPromptProviderTests {
 
 			@McpPrompt(name = "sync-prompt", description = "Synchronous prompt")
 			public GetPromptResult syncPrompt() {
-				return new GetPromptResult("Sync prompt result",
-						List.of(new PromptMessage(Role.ASSISTANT, new TextContent("Sync prompt content"))));
+				return GetPromptResult
+					.builder(List
+						.of(new PromptMessage(Role.ASSISTANT, TextContent.builder("Sync prompt content").build())))
+					.description("Sync prompt result")
+					.build();
 			}
 
 			@McpPrompt(name = "async-prompt", description = "Asynchronous prompt")
 			public Mono<GetPromptResult> asyncPrompt() {
-				return Mono.just(new GetPromptResult("Async prompt result",
-						List.of(new PromptMessage(Role.ASSISTANT, new TextContent("Async prompt content")))));
+				return Mono.just(GetPromptResult
+					.builder(List
+						.of(new PromptMessage(Role.ASSISTANT, TextContent.builder("Async prompt content").build())))
+					.description("Async prompt result")
+					.build());
 			}
 
 		}
@@ -193,14 +211,20 @@ public class AsyncMcpPromptProviderTests {
 
 			@McpPrompt(name = "prompt1", description = "First prompt")
 			public Mono<GetPromptResult> firstPrompt() {
-				return Mono.just(new GetPromptResult("First prompt result",
-						List.of(new PromptMessage(Role.ASSISTANT, new TextContent("First prompt content")))));
+				return Mono.just(GetPromptResult
+					.builder(List
+						.of(new PromptMessage(Role.ASSISTANT, TextContent.builder("First prompt content").build())))
+					.description("First prompt result")
+					.build());
 			}
 
 			@McpPrompt(name = "prompt2", description = "Second prompt")
 			public Mono<GetPromptResult> secondPrompt() {
-				return Mono.just(new GetPromptResult("Second prompt result",
-						List.of(new PromptMessage(Role.ASSISTANT, new TextContent("Second prompt content")))));
+				return Mono.just(GetPromptResult
+					.builder(List
+						.of(new PromptMessage(Role.ASSISTANT, TextContent.builder("Second prompt content").build())))
+					.description("Second prompt result")
+					.build());
 			}
 
 		}
@@ -222,8 +246,11 @@ public class AsyncMcpPromptProviderTests {
 
 			@McpPrompt(name = "first-prompt", description = "First prompt")
 			public Mono<GetPromptResult> firstPrompt() {
-				return Mono.just(new GetPromptResult("First prompt result",
-						List.of(new PromptMessage(Role.ASSISTANT, new TextContent("First prompt content")))));
+				return Mono.just(GetPromptResult
+					.builder(List
+						.of(new PromptMessage(Role.ASSISTANT, TextContent.builder("First prompt content").build())))
+					.description("First prompt result")
+					.build());
 			}
 
 		}
@@ -232,8 +259,11 @@ public class AsyncMcpPromptProviderTests {
 
 			@McpPrompt(name = "second-prompt", description = "Second prompt")
 			public Mono<GetPromptResult> secondPrompt() {
-				return Mono.just(new GetPromptResult("Second prompt result",
-						List.of(new PromptMessage(Role.ASSISTANT, new TextContent("Second prompt content")))));
+				return Mono.just(GetPromptResult
+					.builder(List
+						.of(new PromptMessage(Role.ASSISTANT, TextContent.builder("Second prompt content").build())))
+					.description("Second prompt result")
+					.build());
 			}
 
 		}
@@ -256,19 +286,28 @@ public class AsyncMcpPromptProviderTests {
 
 			@McpPrompt(name = "valid-prompt", description = "Valid prompt")
 			public Mono<GetPromptResult> validPrompt() {
-				return Mono.just(new GetPromptResult("Valid prompt result",
-						List.of(new PromptMessage(Role.ASSISTANT, new TextContent("Valid prompt content")))));
+				return Mono.just(GetPromptResult
+					.builder(List
+						.of(new PromptMessage(Role.ASSISTANT, TextContent.builder("Valid prompt content").build())))
+					.description("Valid prompt result")
+					.build());
 			}
 
 			public GetPromptResult nonAnnotatedMethod() {
-				return new GetPromptResult("Non-annotated result",
-						List.of(new PromptMessage(Role.ASSISTANT, new TextContent("Non-annotated content"))));
+				return GetPromptResult
+					.builder(List
+						.of(new PromptMessage(Role.ASSISTANT, TextContent.builder("Non-annotated content").build())))
+					.description("Non-annotated result")
+					.build();
 			}
 
 			@McpPrompt(name = "sync-prompt", description = "Sync prompt")
 			public GetPromptResult syncPrompt() {
-				return new GetPromptResult("Sync prompt result",
-						List.of(new PromptMessage(Role.ASSISTANT, new TextContent("Sync prompt content"))));
+				return GetPromptResult
+					.builder(List
+						.of(new PromptMessage(Role.ASSISTANT, TextContent.builder("Sync prompt content").build())))
+					.description("Sync prompt result")
+					.build();
 			}
 
 		}
@@ -291,9 +330,12 @@ public class AsyncMcpPromptProviderTests {
 			public Mono<GetPromptResult> argumentPrompt(
 					@McpArg(name = "name", description = "User's name", required = true) String name,
 					@McpArg(name = "age", description = "User's age", required = false) Integer age) {
-				return Mono.just(new GetPromptResult("Argument prompt result",
-						List.of(new PromptMessage(Role.ASSISTANT, new TextContent(
-								"Hello " + name + ", you are " + (age != null ? age : "unknown") + " years old")))));
+				return Mono.just(GetPromptResult.builder(List.of(new PromptMessage(Role.ASSISTANT,
+						TextContent
+							.builder("Hello " + name + ", you are " + (age != null ? age : "unknown") + " years old")
+							.build())))
+					.description("Argument prompt result")
+					.build());
 			}
 
 		}
@@ -312,7 +354,7 @@ public class AsyncMcpPromptProviderTests {
 		Map<String, Object> args = new HashMap<>();
 		args.put("name", "John");
 		args.put("age", 30);
-		GetPromptRequest request = new GetPromptRequest("argument-prompt", args);
+		GetPromptRequest request = GetPromptRequest.builder("argument-prompt").arguments(args).build();
 		Mono<GetPromptResult> result = promptSpecs.get(0).promptHandler().apply(exchange, request);
 
 		StepVerifier.create(result).assertNext(promptResult -> {
@@ -330,8 +372,11 @@ public class AsyncMcpPromptProviderTests {
 
 			@McpPrompt(name = "private-prompt", description = "Private prompt method")
 			private Mono<GetPromptResult> privatePrompt() {
-				return Mono.just(new GetPromptResult("Private prompt result",
-						List.of(new PromptMessage(Role.ASSISTANT, new TextContent("Private prompt content")))));
+				return Mono.just(GetPromptResult
+					.builder(List
+						.of(new PromptMessage(Role.ASSISTANT, TextContent.builder("Private prompt content").build())))
+					.description("Private prompt result")
+					.build());
 			}
 
 		}
@@ -348,7 +393,7 @@ public class AsyncMcpPromptProviderTests {
 		// Test that the handler works with private methods
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
 		Map<String, Object> args = new HashMap<>();
-		GetPromptRequest request = new GetPromptRequest("private-prompt", args);
+		GetPromptRequest request = GetPromptRequest.builder("private-prompt").arguments(args).build();
 		Mono<GetPromptResult> result = promptSpecs.get(0).promptHandler().apply(exchange, request);
 
 		StepVerifier.create(result).assertNext(promptResult -> {
@@ -382,7 +427,7 @@ public class AsyncMcpPromptProviderTests {
 		// Test that the handler works with Mono<String> return type
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
 		Map<String, Object> args = new HashMap<>();
-		GetPromptRequest request = new GetPromptRequest("mono-string-prompt", args);
+		GetPromptRequest request = GetPromptRequest.builder("mono-string-prompt").arguments(args).build();
 		Mono<GetPromptResult> result = promptSpecs.get(0).promptHandler().apply(exchange, request);
 
 		StepVerifier.create(result).assertNext(promptResult -> {
@@ -399,9 +444,13 @@ public class AsyncMcpPromptProviderTests {
 
 			@McpPrompt(name = "exchange-prompt", description = "Prompt with exchange parameter")
 			public Mono<GetPromptResult> exchangePrompt(McpAsyncServerExchange exchange, GetPromptRequest request) {
-				return Mono.just(new GetPromptResult("Exchange prompt result",
-						List.of(new PromptMessage(Role.ASSISTANT, new TextContent("Prompt with exchange: "
-								+ (exchange != null ? "present" : "null") + ", name: " + request.name())))));
+				return Mono.just(GetPromptResult
+					.builder(List.of(new PromptMessage(Role.ASSISTANT,
+							TextContent.builder("Prompt with exchange: " + (exchange != null ? "present" : "null")
+									+ ", name: " + request.name())
+								.build())))
+					.description("Exchange prompt result")
+					.build());
 			}
 
 		}
@@ -417,7 +466,7 @@ public class AsyncMcpPromptProviderTests {
 		// Test that the handler works with exchange parameter
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
 		Map<String, Object> args = new HashMap<>();
-		GetPromptRequest request = new GetPromptRequest("exchange-prompt", args);
+		GetPromptRequest request = GetPromptRequest.builder("exchange-prompt").arguments(args).build();
 		Mono<GetPromptResult> result = promptSpecs.get(0).promptHandler().apply(exchange, request);
 
 		StepVerifier.create(result).assertNext(promptResult -> {
@@ -436,8 +485,11 @@ public class AsyncMcpPromptProviderTests {
 
 			@McpPrompt(name = "request-prompt", description = "Prompt with request parameter")
 			public Mono<GetPromptResult> requestPrompt(GetPromptRequest request) {
-				return Mono.just(new GetPromptResult("Request prompt result", List
-					.of(new PromptMessage(Role.ASSISTANT, new TextContent("Prompt for name: " + request.name())))));
+				return Mono.just(GetPromptResult
+					.builder(List.of(new PromptMessage(Role.ASSISTANT,
+							TextContent.builder("Prompt for name: " + request.name()).build())))
+					.description("Request prompt result")
+					.build());
 			}
 
 		}
@@ -453,7 +505,7 @@ public class AsyncMcpPromptProviderTests {
 		// Test that the handler works with request parameter
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
 		Map<String, Object> args = new HashMap<>();
-		GetPromptRequest request = new GetPromptRequest("request-prompt", args);
+		GetPromptRequest request = GetPromptRequest.builder("request-prompt").arguments(args).build();
 		Mono<GetPromptResult> result = promptSpecs.get(0).promptHandler().apply(exchange, request);
 
 		StepVerifier.create(result).assertNext(promptResult -> {
@@ -471,8 +523,9 @@ public class AsyncMcpPromptProviderTests {
 
 			@McpPrompt(name = "mono-messages-list-prompt", description = "Prompt returning Mono<List<PromptMessage>>")
 			public Mono<List<PromptMessage>> monoMessagesListPrompt() {
-				return Mono.just(List.of(new PromptMessage(Role.ASSISTANT, new TextContent("First message")),
-						new PromptMessage(Role.ASSISTANT, new TextContent("Second message"))));
+				return Mono
+					.just(List.of(new PromptMessage(Role.ASSISTANT, TextContent.builder("First message").build()),
+							new PromptMessage(Role.ASSISTANT, TextContent.builder("Second message").build())));
 			}
 
 		}
@@ -488,7 +541,7 @@ public class AsyncMcpPromptProviderTests {
 		// Test that the handler works with Mono<List<PromptMessage>> return type
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
 		Map<String, Object> args = new HashMap<>();
-		GetPromptRequest request = new GetPromptRequest("mono-messages-list-prompt", args);
+		GetPromptRequest request = GetPromptRequest.builder("mono-messages-list-prompt").arguments(args).build();
 		Mono<GetPromptResult> result = promptSpecs.get(0).promptHandler().apply(exchange, request);
 
 		StepVerifier.create(result).assertNext(promptResult -> {
@@ -504,7 +557,7 @@ public class AsyncMcpPromptProviderTests {
 
 			@McpPrompt(name = "mono-single-message-prompt", description = "Prompt returning Mono<PromptMessage>")
 			public Mono<PromptMessage> monoSingleMessagePrompt() {
-				return Mono.just(new PromptMessage(Role.ASSISTANT, new TextContent("Single message")));
+				return Mono.just(new PromptMessage(Role.ASSISTANT, TextContent.builder("Single message").build()));
 			}
 
 		}
@@ -520,7 +573,7 @@ public class AsyncMcpPromptProviderTests {
 		// Test that the handler works with Mono<PromptMessage> return type
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
 		Map<String, Object> args = new HashMap<>();
-		GetPromptRequest request = new GetPromptRequest("mono-single-message-prompt", args);
+		GetPromptRequest request = GetPromptRequest.builder("mono-single-message-prompt").arguments(args).build();
 		Mono<GetPromptResult> result = promptSpecs.get(0).promptHandler().apply(exchange, request);
 
 		StepVerifier.create(result).assertNext(promptResult -> {
@@ -551,7 +604,7 @@ public class AsyncMcpPromptProviderTests {
 		// Test that the handler works with Mono<List<String>> return type
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
 		Map<String, Object> args = new HashMap<>();
-		GetPromptRequest request = new GetPromptRequest("mono-string-list-prompt", args);
+		GetPromptRequest request = GetPromptRequest.builder("mono-string-list-prompt").arguments(args).build();
 		Mono<GetPromptResult> result = promptSpecs.get(0).promptHandler().apply(exchange, request);
 
 		StepVerifier.create(result).assertNext(promptResult -> {
@@ -578,8 +631,10 @@ public class AsyncMcpPromptProviderTests {
 						asyncContext != null ? "bound" : "null", request != null ? "bound" : "null",
 						progressToken != null ? "bound" : "null", meta != null ? "bound" : "null");
 
-				return Mono.just(new GetPromptResult("Special params prompt result",
-						List.of(new PromptMessage(Role.ASSISTANT, new TextContent(content)))));
+				return Mono.just(GetPromptResult
+					.builder(List.of(new PromptMessage(Role.ASSISTANT, TextContent.builder(content).build())))
+					.description("Special params prompt result")
+					.build());
 			}
 
 		}
@@ -600,7 +655,7 @@ public class AsyncMcpPromptProviderTests {
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
 		Map<String, Object> args = new HashMap<>();
 		args.put("name", "John");
-		GetPromptRequest request = new GetPromptRequest("special-params-prompt", args);
+		GetPromptRequest request = GetPromptRequest.builder("special-params-prompt").arguments(args).build();
 		Mono<GetPromptResult> result = promptSpecs.get(0).promptHandler().apply(exchange, request);
 
 		StepVerifier.create(result).assertNext(promptResult -> {

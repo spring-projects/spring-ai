@@ -135,8 +135,9 @@ public final class SyncMcpCompleteMethodCallbackExample {
 				String promptName = handlerKey.split("#")[0];
 
 				// Create a complete request
-				CompleteRequest request = new CompleteRequest(new PromptReference(promptName),
-						new CompleteRequest.CompleteArgument("value", input));
+				CompleteRequest request = CompleteRequest
+					.builder(new PromptReference(promptName), new CompleteRequest.CompleteArgument("value", input))
+					.build();
 
 				// Execute the handler
 				CompleteResult result = handler.apply(exchange, request);
@@ -165,8 +166,9 @@ public final class SyncMcpCompleteMethodCallbackExample {
 				String uriPattern = handlerKey.split("#")[0];
 
 				// Create a complete request
-				CompleteRequest request = new CompleteRequest(new ResourceReference(uriPattern),
-						new CompleteRequest.CompleteArgument("city", input));
+				CompleteRequest request = CompleteRequest
+					.builder(new ResourceReference(uriPattern), new CompleteRequest.CompleteArgument("city", input))
+					.build();
 
 				// Execute the handler
 				CompleteResult result = handler.apply(exchange, request);

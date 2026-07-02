@@ -1060,7 +1060,7 @@ The MCP SDK enforces previously optional fields as mandatory at construction tim
 ----
 // Before
 CreateMessageResult.builder()
-    .content(new TextContent(response))
+    .content(TextContent.builder(response).build())
     .build();
 
 // After

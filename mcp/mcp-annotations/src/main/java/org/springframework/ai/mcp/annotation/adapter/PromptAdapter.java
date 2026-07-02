@@ -55,7 +55,11 @@ public final class PromptAdapter {
 	 */
 	public static McpSchema.Prompt asPrompt(McpPrompt mcpPrompt) {
 		Map<String, Object> meta = MetaUtils.getMeta(mcpPrompt.metaProvider());
-		return new McpSchema.Prompt(mcpPrompt.name(), mcpPrompt.title(), mcpPrompt.description(), List.of(), meta);
+		return McpSchema.Prompt.builder(mcpPrompt.name())
+			.title(mcpPrompt.title())
+			.description(mcpPrompt.description())
+			.meta(meta)
+			.build();
 	}
 
 	/**
@@ -68,8 +72,12 @@ public final class PromptAdapter {
 	public static McpSchema.Prompt asPrompt(McpPrompt mcpPrompt, Method method) {
 		List<McpSchema.PromptArgument> arguments = extractPromptArguments(method);
 		Map<String, Object> meta = MetaUtils.getMeta(mcpPrompt.metaProvider());
-		return new McpSchema.Prompt(getName(mcpPrompt, method), mcpPrompt.title(), mcpPrompt.description(), arguments,
-				meta);
+		return McpSchema.Prompt.builder(getName(mcpPrompt, method))
+			.title(mcpPrompt.title())
+			.description(mcpPrompt.description())
+			.arguments(arguments)
+			.meta(meta)
+			.build();
 	}
 
 	private static String getName(McpPrompt promptAnnotation, Method method) {
@@ -107,12 +115,17 @@ public final class PromptAdapter {
 			McpArg mcpArg = parameter.getAnnotation(McpArg.class);
 			if (mcpArg != null) {
 				String name = !mcpArg.name().isEmpty() ? mcpArg.name() : parameter.getName();
-				arguments.add(new McpSchema.PromptArgument(name, mcpArg.description(), mcpArg.required()));
+				arguments.add(McpSchema.PromptArgument.builder(name)
+					.description(mcpArg.description())
+					.required(mcpArg.required())
+					.build());
 			}
 			else {
 				// Use parameter name and default values if no annotation
-				arguments.add(new McpSchema.PromptArgument(parameter.getName(),
-						"Parameter of type " + parameter.getType().getSimpleName(), false));
+				arguments.add(McpSchema.PromptArgument.builder(parameter.getName())
+					.description("Parameter of type " + parameter.getType().getSimpleName())
+					.required(false)
+					.build());
 			}
 		}
 

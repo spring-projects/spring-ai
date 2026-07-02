@@ -36,8 +36,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 public class SyncMcpPromptListChangedMethodCallbackTests {
 
 	private static final List<McpSchema.Prompt> TEST_PROMPTS = List.of(
-			new McpSchema.Prompt("test-prompt-1", "Test Prompt 1", List.of()),
-			new McpSchema.Prompt("test-prompt-2", "Test Prompt 2", List.of()));
+			McpSchema.Prompt.builder("test-prompt-1").title("Test Prompt 1").build(),
+			McpSchema.Prompt.builder("test-prompt-2").title("Test Prompt 2").build());
 
 	@Test
 	void testValidMethodWithPromptList() throws Exception {

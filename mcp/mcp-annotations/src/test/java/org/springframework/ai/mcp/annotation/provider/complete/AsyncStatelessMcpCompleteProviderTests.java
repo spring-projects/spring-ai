@@ -78,8 +78,9 @@ public class AsyncStatelessMcpCompleteProviderTests {
 
 		// Test that the handler works
 		McpTransportContext context = mock(McpTransportContext.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("test-prompt"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("test-prompt"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 		Mono<CompleteResult> result = completeSpec.completionHandler().apply(context, request);
 
 		StepVerifier.create(result).assertNext(completeResult -> {
@@ -114,8 +115,9 @@ public class AsyncStatelessMcpCompleteProviderTests {
 
 		// Test that the handler works
 		McpTransportContext context = mock(McpTransportContext.class);
-		CompleteRequest request = new CompleteRequest(new ResourceReference("test://value"),
-				new CompleteRequest.CompleteArgument("variable", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new ResourceReference("test://value"), new CompleteRequest.CompleteArgument("variable", "value"))
+			.build();
 		Mono<CompleteResult> result = completeSpecs.get(0).completionHandler().apply(context, request);
 
 		StepVerifier.create(result).assertNext(completeResult -> {
@@ -278,8 +280,9 @@ public class AsyncStatelessMcpCompleteProviderTests {
 
 		// Test that the handler works with private methods
 		McpTransportContext context = mock(McpTransportContext.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("private-complete"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("private-complete"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 		Mono<CompleteResult> result = completeSpecs.get(0).completionHandler().apply(context, request);
 
 		StepVerifier.create(result).assertNext(completeResult -> {
@@ -312,8 +315,9 @@ public class AsyncStatelessMcpCompleteProviderTests {
 
 		// Test that the handler works with Mono<String> return type
 		McpTransportContext context = mock(McpTransportContext.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("mono-string-complete"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("mono-string-complete"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 		Mono<CompleteResult> result = completeSpecs.get(0).completionHandler().apply(context, request);
 
 		StepVerifier.create(result).assertNext(completeResult -> {
@@ -348,8 +352,9 @@ public class AsyncStatelessMcpCompleteProviderTests {
 
 		// Test that the handler works with context parameter
 		McpTransportContext context = mock(McpTransportContext.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("context-complete"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("context-complete"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 		Mono<CompleteResult> result = completeSpecs.get(0).completionHandler().apply(context, request);
 
 		StepVerifier.create(result).assertNext(completeResult -> {
@@ -384,8 +389,9 @@ public class AsyncStatelessMcpCompleteProviderTests {
 
 		// Test that the handler works with Mono<List<String>> return type
 		McpTransportContext context = mock(McpTransportContext.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("mono-list-complete"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("mono-list-complete"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 		Mono<CompleteResult> result = completeSpecs.get(0).completionHandler().apply(context, request);
 
 		StepVerifier.create(result).assertNext(completeResult -> {
@@ -420,8 +426,10 @@ public class AsyncStatelessMcpCompleteProviderTests {
 
 		// Test that the handler works with Mono<CompleteCompletion> return type
 		McpTransportContext context = mock(McpTransportContext.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("mono-completion-complete"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("mono-completion-complete"),
+					new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 		Mono<CompleteResult> result = completeSpecs.get(0).completionHandler().apply(context, request);
 
 		StepVerifier.create(result).assertNext(completeResult -> {

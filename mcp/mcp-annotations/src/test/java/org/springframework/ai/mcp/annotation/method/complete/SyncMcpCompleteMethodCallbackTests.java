@@ -61,8 +61,9 @@ public class SyncMcpCompleteMethodCallbackTests {
 			.build();
 
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("test-prompt"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("test-prompt"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 
 		CompleteResult result = callback.apply(exchange, request);
 
@@ -86,8 +87,9 @@ public class SyncMcpCompleteMethodCallbackTests {
 			.build();
 
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("test-prompt"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("test-prompt"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 
 		CompleteResult result = callback.apply(exchange, request);
 
@@ -111,8 +113,9 @@ public class SyncMcpCompleteMethodCallbackTests {
 			.build();
 
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("test-prompt"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("test-prompt"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 
 		CompleteResult result = callback.apply(exchange, request);
 
@@ -135,8 +138,9 @@ public class SyncMcpCompleteMethodCallbackTests {
 			.build();
 
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("test-prompt"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("test-prompt"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 
 		CompleteResult result = callback.apply(exchange, request);
 
@@ -160,8 +164,9 @@ public class SyncMcpCompleteMethodCallbackTests {
 			.build();
 
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("test-prompt"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("test-prompt"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 
 		CompleteResult result = callback.apply(exchange, request);
 
@@ -185,8 +190,9 @@ public class SyncMcpCompleteMethodCallbackTests {
 			.build();
 
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		CompleteRequest request = new CompleteRequest(new ResourceReference("test://value"),
-				new CompleteRequest.CompleteArgument("variable", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new ResourceReference("test://value"), new CompleteRequest.CompleteArgument("variable", "value"))
+			.build();
 
 		CompleteResult result = callback.apply(exchange, request);
 
@@ -209,8 +215,9 @@ public class SyncMcpCompleteMethodCallbackTests {
 			.build();
 
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("test-prompt"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("test-prompt"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 
 		CompleteResult result = callback.apply(exchange, request);
 
@@ -233,8 +240,9 @@ public class SyncMcpCompleteMethodCallbackTests {
 			.build();
 
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("test-prompt"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("test-prompt"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 
 		CompleteResult result = callback.apply(exchange, request);
 
@@ -258,8 +266,9 @@ public class SyncMcpCompleteMethodCallbackTests {
 			.build();
 
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("test-prompt"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("test-prompt"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 
 		CompleteResult result = callback.apply(exchange, request);
 
@@ -421,8 +430,9 @@ public class SyncMcpCompleteMethodCallbackTests {
 			.build();
 
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("test-prompt"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("test-prompt"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 
 		CompleteResult result = callback.apply(exchange, request);
 
@@ -447,8 +457,9 @@ public class SyncMcpCompleteMethodCallbackTests {
 			.build();
 
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("test-prompt"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("test-prompt"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 
 		CompleteResult result = callback.apply(exchange, request);
 
@@ -488,8 +499,10 @@ public class SyncMcpCompleteMethodCallbackTests {
 			.build();
 
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("test-prompt"),
-				new CompleteRequest.CompleteArgument("test", "value"), java.util.Map.of("key", "test-value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("test-prompt"), new CompleteRequest.CompleteArgument("test", "value"))
+			.meta(java.util.Map.of("key", "test-value"))
+			.build();
 
 		CompleteResult result = callback.apply(exchange, request);
 
@@ -513,8 +526,9 @@ public class SyncMcpCompleteMethodCallbackTests {
 			.build();
 
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("test-prompt"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("test-prompt"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 
 		CompleteResult result = callback.apply(exchange, request);
 
@@ -538,8 +552,10 @@ public class SyncMcpCompleteMethodCallbackTests {
 			.build();
 
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("test-prompt"),
-				new CompleteRequest.CompleteArgument("test", "value"), java.util.Map.of("key", "test-value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("test-prompt"), new CompleteRequest.CompleteArgument("test", "value"))
+			.meta(java.util.Map.of("key", "test-value"))
+			.build();
 
 		CompleteResult result = callback.apply(exchange, request);
 
@@ -577,8 +593,9 @@ public class SyncMcpCompleteMethodCallbackTests {
 			.build();
 
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("test-prompt"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("test-prompt"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 
 		CompleteResult result = callback.apply(exchange, request);
 
@@ -602,8 +619,9 @@ public class SyncMcpCompleteMethodCallbackTests {
 			.build();
 
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("test-prompt"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("test-prompt"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 
 		CompleteResult result = callback.apply(exchange, request);
 
@@ -691,8 +709,9 @@ public class SyncMcpCompleteMethodCallbackTests {
 		McpTransportContext transportContext = mock(McpTransportContext.class);
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
 		when(exchange.transportContext()).thenReturn(transportContext);
-		CompleteRequest request = new CompleteRequest(new PromptReference("test-prompt"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("test-prompt"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 
 		CompleteResult result = callback.apply(exchange, request);
 

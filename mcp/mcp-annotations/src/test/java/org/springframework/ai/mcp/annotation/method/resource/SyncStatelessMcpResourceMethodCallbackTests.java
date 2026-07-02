@@ -132,7 +132,7 @@ public class SyncStatelessMcpResourceMethodCallbackTests {
 			.build();
 
 		McpTransportContext context = mock(McpTransportContext.class);
-		ReadResourceRequest request = new ReadResourceRequest("test/resource");
+		ReadResourceRequest request = ReadResourceRequest.builder("test/resource").build();
 
 		ReadResourceResult result = callback.apply(context, request);
 
@@ -156,7 +156,7 @@ public class SyncStatelessMcpResourceMethodCallbackTests {
 			.build();
 
 		McpTransportContext context = mock(McpTransportContext.class);
-		ReadResourceRequest request = new ReadResourceRequest("test/resource");
+		ReadResourceRequest request = ReadResourceRequest.builder("test/resource").build();
 
 		ReadResourceResult result = callback.apply(context, request);
 
@@ -180,7 +180,7 @@ public class SyncStatelessMcpResourceMethodCallbackTests {
 			.build();
 
 		McpTransportContext context = mock(McpTransportContext.class);
-		ReadResourceRequest request = new ReadResourceRequest("test/resource");
+		ReadResourceRequest request = ReadResourceRequest.builder("test/resource").build();
 
 		ReadResourceResult result = callback.apply(context, request);
 
@@ -205,7 +205,7 @@ public class SyncStatelessMcpResourceMethodCallbackTests {
 			.build();
 
 		McpTransportContext context = mock(McpTransportContext.class);
-		ReadResourceRequest request = new ReadResourceRequest("users/123/posts/456");
+		ReadResourceRequest request = ReadResourceRequest.builder("users/123/posts/456").build();
 
 		ReadResourceResult result = callback.apply(context, request);
 
@@ -231,7 +231,7 @@ public class SyncStatelessMcpResourceMethodCallbackTests {
 			.build();
 
 		McpTransportContext context = mock(McpTransportContext.class);
-		ReadResourceRequest request = new ReadResourceRequest("users/789/profile");
+		ReadResourceRequest request = ReadResourceRequest.builder("users/789/profile").build();
 
 		ReadResourceResult result = callback.apply(context, request);
 
@@ -255,7 +255,7 @@ public class SyncStatelessMcpResourceMethodCallbackTests {
 			.build();
 
 		McpTransportContext context = mock(McpTransportContext.class);
-		ReadResourceRequest request = new ReadResourceRequest("test/resource");
+		ReadResourceRequest request = ReadResourceRequest.builder("test/resource").build();
 
 		ReadResourceResult result = callback.apply(context, request);
 
@@ -279,7 +279,7 @@ public class SyncStatelessMcpResourceMethodCallbackTests {
 			.build();
 
 		McpTransportContext context = mock(McpTransportContext.class);
-		ReadResourceRequest request = new ReadResourceRequest("test/resource");
+		ReadResourceRequest request = ReadResourceRequest.builder("test/resource").build();
 
 		ReadResourceResult result = callback.apply(context, request);
 
@@ -305,7 +305,7 @@ public class SyncStatelessMcpResourceMethodCallbackTests {
 			.build();
 
 		McpTransportContext context = mock(McpTransportContext.class);
-		ReadResourceRequest request = new ReadResourceRequest("test/resource");
+		ReadResourceRequest request = ReadResourceRequest.builder("test/resource").build();
 
 		ReadResourceResult result = callback.apply(context, request);
 
@@ -329,7 +329,7 @@ public class SyncStatelessMcpResourceMethodCallbackTests {
 			.build();
 
 		McpTransportContext context = mock(McpTransportContext.class);
-		ReadResourceRequest request = new ReadResourceRequest("test/resource");
+		ReadResourceRequest request = ReadResourceRequest.builder("test/resource").build();
 
 		ReadResourceResult result = callback.apply(context, request);
 
@@ -354,7 +354,7 @@ public class SyncStatelessMcpResourceMethodCallbackTests {
 			.build();
 
 		McpTransportContext context = mock(McpTransportContext.class);
-		ReadResourceRequest request = new ReadResourceRequest("test/resource");
+		ReadResourceRequest request = ReadResourceRequest.builder("test/resource").build();
 
 		ReadResourceResult result = callback.apply(context, request);
 
@@ -380,7 +380,7 @@ public class SyncStatelessMcpResourceMethodCallbackTests {
 			.build();
 
 		McpTransportContext context = mock(McpTransportContext.class);
-		ReadResourceRequest request = new ReadResourceRequest("test/resource");
+		ReadResourceRequest request = ReadResourceRequest.builder("test/resource").build();
 
 		ReadResourceResult result = callback.apply(context, request);
 
@@ -407,7 +407,7 @@ public class SyncStatelessMcpResourceMethodCallbackTests {
 			.build();
 
 		McpTransportContext context = mock(McpTransportContext.class);
-		ReadResourceRequest request = new ReadResourceRequest("test/resource");
+		ReadResourceRequest request = ReadResourceRequest.builder("test/resource").build();
 
 		ReadResourceResult result = callback.apply(context, request);
 
@@ -437,7 +437,7 @@ public class SyncStatelessMcpResourceMethodCallbackTests {
 			.build();
 
 		McpTransportContext context = mock(McpTransportContext.class);
-		ReadResourceRequest request = new ReadResourceRequest("test/resource");
+		ReadResourceRequest request = ReadResourceRequest.builder("test/resource").build();
 
 		ReadResourceResult result = callback.apply(context, request);
 
@@ -626,7 +626,7 @@ public class SyncStatelessMcpResourceMethodCallbackTests {
 		McpTransportContext context = mock(McpTransportContext.class);
 
 		// Test with mismatched URI that doesn't contain expected variables
-		ReadResourceRequest invalidRequest = new ReadResourceRequest("invalid/uri/format");
+		ReadResourceRequest invalidRequest = ReadResourceRequest.builder("invalid/uri/format").build();
 
 		assertThatThrownBy(() -> callback.apply(context, invalidRequest)).isInstanceOf(McpError.class)
 			.hasMessageContaining("Failed to extract all URI variables from request URI: invalid/uri/format.");
@@ -827,7 +827,7 @@ public class SyncStatelessMcpResourceMethodCallbackTests {
 			.build();
 
 		McpTransportContext context = mock(McpTransportContext.class);
-		ReadResourceRequest request = new ReadResourceRequest("failing-resource://resource");
+		ReadResourceRequest request = ReadResourceRequest.builder("failing-resource://resource").build();
 
 		// The new error handling should throw McpError instead of custom exceptions
 		assertThatThrownBy(() -> callback.apply(context, request)).isInstanceOf(McpError.class)
@@ -873,34 +873,50 @@ public class SyncStatelessMcpResourceMethodCallbackTests {
 	private static class TestResourceProvider {
 
 		public ReadResourceResult getResourceWithRequest(ReadResourceRequest request) {
-			return new ReadResourceResult(
-					List.of(new TextResourceContents(request.uri(), "text/plain", "Content for " + request.uri())));
+			return ReadResourceResult
+				.builder(List.of(TextResourceContents.builder(request.uri(), "Content for " + request.uri())
+					.mimeType("text/plain")
+					.build()))
+				.build();
 		}
 
 		public ReadResourceResult getResourceWithContext(McpTransportContext context, ReadResourceRequest request) {
-			return new ReadResourceResult(List.of(new TextResourceContents(request.uri(), "text/plain",
-					"Content with context for " + request.uri())));
+			return ReadResourceResult
+				.builder(
+						List.of(TextResourceContents.builder(request.uri(), "Content with context for " + request.uri())
+							.mimeType("text/plain")
+							.build()))
+				.build();
 		}
 
 		public ReadResourceResult getResourceWithUri(String uri) {
-			return new ReadResourceResult(
-					List.of(new TextResourceContents(uri, "text/plain", "Content from URI: " + uri)));
+			return ReadResourceResult
+				.builder(List
+					.of(TextResourceContents.builder(uri, "Content from URI: " + uri).mimeType("text/plain").build()))
+				.build();
 		}
 
 		@McpResource(uri = "users/{userId}/posts/{postId}")
 		public ReadResourceResult getResourceWithUriVariables(String userId, String postId) {
-			return new ReadResourceResult(List.of(new TextResourceContents("users/" + userId + "/posts/" + postId,
-					"text/plain", "User: " + userId + ", Post: " + postId)));
+			return ReadResourceResult.builder(List.of(TextResourceContents
+				.builder("users/" + userId + "/posts/" + postId, "User: " + userId + ", Post: " + postId)
+				.mimeType("text/plain")
+				.build())).build();
 		}
 
 		@McpResource(uri = "users/{userId}/profile")
 		public ReadResourceResult getResourceWithContextAndUriVariable(McpTransportContext context, String userId) {
-			return new ReadResourceResult(List.of(new TextResourceContents("users/" + userId + "/profile", "text/plain",
-					"Profile for user: " + userId)));
+			return ReadResourceResult.builder(
+					List.of(TextResourceContents.builder("users/" + userId + "/profile", "Profile for user: " + userId)
+						.mimeType("text/plain")
+						.build()))
+				.build();
 		}
 
 		public List<ResourceContents> getResourceContentsList(ReadResourceRequest request) {
-			return List.of(new TextResourceContents(request.uri(), "text/plain", "Content list for " + request.uri()));
+			return List.of(TextResourceContents.builder(request.uri(), "Content list for " + request.uri())
+				.mimeType("text/plain")
+				.build());
 		}
 
 		public List<String> getStringList(ReadResourceRequest request) {
@@ -908,8 +924,9 @@ public class SyncStatelessMcpResourceMethodCallbackTests {
 		}
 
 		public ResourceContents getSingleResourceContents(ReadResourceRequest request) {
-			return new TextResourceContents(request.uri(), "text/plain",
-					"Single resource content for " + request.uri());
+			return TextResourceContents.builder(request.uri(), "Single resource content for " + request.uri())
+				.mimeType("text/plain")
+				.build();
 		}
 
 		public String getSingleString(ReadResourceRequest request) {
@@ -941,54 +958,64 @@ public class SyncStatelessMcpResourceMethodCallbackTests {
 		}
 
 		public ReadResourceResult invalidParameters(int value) {
-			return new ReadResourceResult(List.of());
+			return ReadResourceResult.builder(List.of()).build();
 		}
 
 		public ReadResourceResult tooManyParameters(McpTransportContext context, ReadResourceRequest request,
 				String extraParam) {
-			return new ReadResourceResult(List.of());
+			return ReadResourceResult.builder(List.of()).build();
 		}
 
 		public ReadResourceResult invalidParameterType(Object invalidParam) {
-			return new ReadResourceResult(List.of());
+			return ReadResourceResult.builder(List.of()).build();
 		}
 
 		public ReadResourceResult duplicateContextParameters(McpTransportContext context1,
 				McpTransportContext context2) {
-			return new ReadResourceResult(List.of());
+			return ReadResourceResult.builder(List.of()).build();
 		}
 
 		public ReadResourceResult duplicateRequestParameters(ReadResourceRequest request1,
 				ReadResourceRequest request2) {
-			return new ReadResourceResult(List.of());
+			return ReadResourceResult.builder(List.of()).build();
 		}
 
 		// Methods for testing @McpMeta
 		public ReadResourceResult getResourceWithMeta(McpMeta meta, ReadResourceRequest request) {
 			String metaValue = (String) meta.get("testKey");
 			String content = "Content with meta: " + metaValue + " for " + request.uri();
-			return new ReadResourceResult(List.of(new TextResourceContents(request.uri(), "text/plain", content)));
+			return ReadResourceResult
+				.builder(List.of(TextResourceContents.builder(request.uri(), content).mimeType("text/plain").build()))
+				.build();
 		}
 
 		public ReadResourceResult getResourceWithMetaOnly(McpMeta meta) {
 			String metaValue = (String) meta.get("testKey");
 			String content = "Content with only meta: " + metaValue;
-			return new ReadResourceResult(List.of(new TextResourceContents("test://resource", "text/plain", content)));
+			return ReadResourceResult
+				.builder(List
+					.of(TextResourceContents.builder("test://resource", content).mimeType("text/plain").build()))
+				.build();
 		}
 
 		@McpResource(uri = "users/{userId}/posts/{postId}")
 		public ReadResourceResult getResourceWithMetaAndUriVariables(McpMeta meta, String userId, String postId) {
 			String metaValue = (String) meta.get("testKey");
 			String content = "User: " + userId + ", Post: " + postId + ", Meta: " + metaValue;
-			return new ReadResourceResult(
-					List.of(new TextResourceContents("users/" + userId + "/posts/" + postId, "text/plain", content)));
+			return ReadResourceResult
+				.builder(List.of(TextResourceContents.builder("users/" + userId + "/posts/" + postId, content)
+					.mimeType("text/plain")
+					.build()))
+				.build();
 		}
 
 		public ReadResourceResult getResourceWithContextAndMeta(McpTransportContext context, McpMeta meta,
 				ReadResourceRequest request) {
 			String metaValue = (String) meta.get("testKey");
 			String content = "Content with context and meta: " + metaValue + " for " + request.uri();
-			return new ReadResourceResult(List.of(new TextResourceContents(request.uri(), "text/plain", content)));
+			return ReadResourceResult
+				.builder(List.of(TextResourceContents.builder(request.uri(), content).mimeType("text/plain").build()))
+				.build();
 		}
 
 		public ReadResourceResult getResourceWithMetaAndMixedParams(McpMeta meta,
@@ -996,14 +1023,18 @@ public class SyncStatelessMcpResourceMethodCallbackTests {
 			String metaValue = (String) meta.get("testKey");
 			String content = "Content with meta: " + metaValue + " and progress: " + progressToken + " for "
 					+ request.uri();
-			return new ReadResourceResult(List.of(new TextResourceContents(request.uri(), "text/plain", content)));
+			return ReadResourceResult
+				.builder(List.of(TextResourceContents.builder(request.uri(), content).mimeType("text/plain").build()))
+				.build();
 		}
 
 		public ReadResourceResult getResourceWithMultipleMetas(McpMeta meta1, McpMeta meta2,
 				ReadResourceRequest request) {
 			// This should cause a validation error during callback creation
 			String content = "Content with multiple metas for " + request.uri();
-			return new ReadResourceResult(List.of(new TextResourceContents(request.uri(), "text/plain", content)));
+			return ReadResourceResult
+				.builder(List.of(TextResourceContents.builder(request.uri(), content).mimeType("text/plain").build()))
+				.build();
 		}
 
 		@McpResource(uri = "failing-resource://resource", description = "A resource that throws an exception")
@@ -1014,12 +1045,12 @@ public class SyncStatelessMcpResourceMethodCallbackTests {
 		// Invalid parameter types for stateless methods
 		public ReadResourceResult invalidSyncExchangeParameter(McpSyncServerExchange exchange,
 				ReadResourceRequest request) {
-			return new ReadResourceResult(List.of());
+			return ReadResourceResult.builder(List.of()).build();
 		}
 
 		public ReadResourceResult invalidAsyncExchangeParameter(McpAsyncServerExchange exchange,
 				ReadResourceRequest request) {
-			return new ReadResourceResult(List.of());
+			return ReadResourceResult.builder(List.of()).build();
 		}
 
 	}

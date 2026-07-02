@@ -93,7 +93,9 @@ class WebMvcSseCustomContextPathIT {
 	@Test
 	void testCustomContextPath() {
 		McpServer.async(this.mcpServerTransportProvider).serverInfo("test-server", "1.0.0").build();
-		var client = this.clientBuilder.clientInfo(new McpSchema.Implementation("Sample " + "client", "0.0.0")).build();
+		var client = this.clientBuilder
+			.clientInfo(McpSchema.Implementation.builder("Sample " + "client", "0.0.0").build())
+			.build();
 		assertThat(client.initialize()).isNotNull();
 	}
 

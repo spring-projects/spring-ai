@@ -57,7 +57,7 @@ public final class CompleteAdapter {
 
 		// Create the appropriate reference type based on what's provided
 		if (prompt != null && !prompt.isEmpty()) {
-			return new McpSchema.PromptReference(prompt);
+			return McpSchema.PromptReference.builder(prompt).build();
 		}
 		else {
 			return new McpSchema.ResourceReference(uri);

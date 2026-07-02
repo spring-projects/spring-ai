@@ -81,7 +81,7 @@ public class SyncMcpResourceProviderTests {
 
 		// Test that the handler works
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		ReadResourceRequest request = new ReadResourceRequest("test://resource/123");
+		ReadResourceRequest request = ReadResourceRequest.builder("test://resource/123").build();
 		ReadResourceResult result = resourceTemplateSpec.readHandler().apply(exchange, request);
 
 		assertThat(result.contents()).hasSize(1);
@@ -297,7 +297,7 @@ public class SyncMcpResourceProviderTests {
 
 		// Test that the handler works with URI variables
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		ReadResourceRequest request = new ReadResourceRequest("variable://resource/123/document");
+		ReadResourceRequest request = ReadResourceRequest.builder("variable://resource/123/document").build();
 		ReadResourceResult result = resourceTemplateSpecs.get(0).readHandler().apply(exchange, request);
 
 		assertThat(result.contents()).hasSize(1);
@@ -397,7 +397,7 @@ public class SyncMcpResourceProviderTests {
 
 		// Test that the handler works with private methods
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		ReadResourceRequest request = new ReadResourceRequest("private://resource");
+		ReadResourceRequest request = ReadResourceRequest.builder("private://resource").build();
 		ReadResourceResult result = resourceSpecs.get(0).readHandler().apply(exchange, request);
 
 		assertThat(result.contents()).hasSize(1);
@@ -427,7 +427,7 @@ public class SyncMcpResourceProviderTests {
 
 		// Test that the handler works with list return type
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		ReadResourceRequest request = new ReadResourceRequest("list://resource");
+		ReadResourceRequest request = ReadResourceRequest.builder("list://resource").build();
 		ReadResourceResult result = resourceSpecs.get(0).readHandler().apply(exchange, request);
 
 		assertThat(result.contents()).hasSize(2);
@@ -459,7 +459,7 @@ public class SyncMcpResourceProviderTests {
 
 		// Test that the handler works with exchange parameter
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		ReadResourceRequest request = new ReadResourceRequest("exchange://resource");
+		ReadResourceRequest request = ReadResourceRequest.builder("exchange://resource").build();
 		ReadResourceResult result = resourceSpecs.get(0).readHandler().apply(exchange, request);
 
 		assertThat(result.contents()).hasSize(1);
@@ -491,7 +491,7 @@ public class SyncMcpResourceProviderTests {
 
 		// Test that the handler works with request parameter
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		ReadResourceRequest request = new ReadResourceRequest("request://resource");
+		ReadResourceRequest request = ReadResourceRequest.builder("request://resource").build();
 		ReadResourceResult result = resourceSpecs.get(0).readHandler().apply(exchange, request);
 
 		assertThat(result.contents()).hasSize(1);
@@ -522,7 +522,7 @@ public class SyncMcpResourceProviderTests {
 
 		// Test that the handler works with no parameters
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		ReadResourceRequest request = new ReadResourceRequest("no-param://resource");
+		ReadResourceRequest request = ReadResourceRequest.builder("no-param://resource").build();
 		ReadResourceResult result = resourceSpecs.get(0).readHandler().apply(exchange, request);
 
 		assertThat(result.contents()).hasSize(1);

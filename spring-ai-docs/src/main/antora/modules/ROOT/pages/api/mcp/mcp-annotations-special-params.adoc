@@ -88,15 +88,15 @@ public ReadResourceResult getSecureData(String id, McpMeta meta) {
     // Check access permissions using metadata
     if (!"admin".equals(accessLevel)) {
         return ReadResourceResult.builder(List.of(
-            new TextResourceContents("secure-data://" + id,
-                "text/plain", "Access denied")
+            TextResourceContents.builder("secure-data://" + id,
+                "Access denied").mimeType("text/plain").build()
         )).build();
     }
 
     String data = loadSecureData(id);
     return ReadResourceResult.builder(List.of(
-        new TextResourceContents("secure-data://" + id,
-            "text/plain", data)
+        TextResourceContents.builder("secure-data://" + id,
+            data).mimeType("text/plain").build()
     )).build();
 }
 ----
@@ -191,7 +191,7 @@ public ReadResourceResult getLargeFile(
     }
 
     return ReadResourceResult.builder(List.of(
-        new TextResourceContents("large-file://" + path, "text/plain", content)
+        TextResourceContents.builder("large-file://" + path, content).mimeType("text/plain").build()
     )).build();
 }
 ----
@@ -360,7 +360,7 @@ public ReadResourceResult statelessResource(
     String data = loadData(id);
     
     return ReadResourceResult.builder(List.of(
-        new TextResourceContents("stateless://" + id, "text/plain", data)
+        TextResourceContents.builder("stateless://" + id, data).mimeType("text/plain").build()
     )).build();
 }
 ----

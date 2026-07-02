@@ -115,8 +115,9 @@ public class McpServerAutoConfiguration {
 			ObjectProvider<BiConsumer<McpSyncServerExchange, List<McpSchema.Root>>> rootsChangeConsumers,
 			Optional<McpSyncServerCustomizer> mcpSyncServerCustomizer) {
 
-		McpSchema.Implementation serverInfo = new Implementation(serverProperties.getName(),
-				serverProperties.getVersion());
+		McpSchema.Implementation serverInfo = Implementation
+			.builder(serverProperties.getName(), serverProperties.getVersion())
+			.build();
 
 		// Create the server with both tool and resource capabilities
 		SyncSpecification<?> serverBuilder;
@@ -236,8 +237,9 @@ public class McpServerAutoConfiguration {
 			ObjectProvider<BiConsumer<McpAsyncServerExchange, List<McpSchema.Root>>> rootsChangeConsumer,
 			Optional<McpAsyncServerCustomizer> asyncServerCustomizer) {
 
-		McpSchema.Implementation serverInfo = new Implementation(serverProperties.getName(),
-				serverProperties.getVersion());
+		McpSchema.Implementation serverInfo = Implementation
+			.builder(serverProperties.getName(), serverProperties.getVersion())
+			.build();
 
 		// Create the server with both tool and resource capabilities
 		AsyncSpecification<?> serverBuilder;

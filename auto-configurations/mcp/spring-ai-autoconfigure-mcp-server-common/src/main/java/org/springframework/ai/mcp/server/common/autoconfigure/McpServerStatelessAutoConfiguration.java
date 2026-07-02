@@ -82,8 +82,9 @@ public class McpServerStatelessAutoConfiguration {
 			ObjectProvider<List<SyncPromptSpecification>> prompts,
 			ObjectProvider<List<SyncCompletionSpecification>> completions, Environment environment) {
 
-		McpSchema.Implementation serverInfo = new Implementation(serverProperties.getName(),
-				serverProperties.getVersion());
+		McpSchema.Implementation serverInfo = Implementation
+			.builder(serverProperties.getName(), serverProperties.getVersion())
+			.build();
 
 		// Create the server with both tool and resource capabilities
 		StatelessSyncSpecification serverBuilder = McpServer.sync(statelessTransport).serverInfo(serverInfo);
@@ -172,8 +173,9 @@ public class McpServerStatelessAutoConfiguration {
 			ObjectProvider<List<AsyncPromptSpecification>> prompts,
 			ObjectProvider<List<AsyncCompletionSpecification>> completions) {
 
-		McpSchema.Implementation serverInfo = new Implementation(serverProperties.getName(),
-				serverProperties.getVersion());
+		McpSchema.Implementation serverInfo = Implementation
+			.builder(serverProperties.getName(), serverProperties.getVersion())
+			.build();
 
 		// Create the server with both tool and resource capabilities
 		StatelessAsyncSpecification serverBuilder = McpServer.async(statelessTransport).serverInfo(serverInfo);
