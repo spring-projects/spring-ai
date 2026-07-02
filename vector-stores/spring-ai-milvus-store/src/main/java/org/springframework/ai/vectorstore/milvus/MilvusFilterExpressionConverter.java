@@ -17,7 +17,6 @@
 package org.springframework.ai.vectorstore.milvus;
 
 import org.springframework.ai.vectorstore.filter.Filter.Expression;
-import org.springframework.ai.vectorstore.filter.Filter.ExpressionType;
 import org.springframework.ai.vectorstore.filter.Filter.Group;
 import org.springframework.ai.vectorstore.filter.Filter.Key;
 import org.springframework.ai.vectorstore.filter.converter.AbstractFilterExpressionConverter;
@@ -70,8 +69,13 @@ public class MilvusFilterExpressionConverter extends AbstractFilterExpressionCon
 	}
 
 	@Override
-	protected void doGroup(Group group, StringBuilder context) {
-		this.convertOperand(new Expression(ExpressionType.AND, group.content(), group.content()), context); // trick
+	protected void doStartGroup(Group group, StringBuilder context) {
+		context.append("(");
+	}
+
+	@Override
+	protected void doEndGroup(Group group, StringBuilder context) {
+		context.append(")");
 	}
 
 	@Override
