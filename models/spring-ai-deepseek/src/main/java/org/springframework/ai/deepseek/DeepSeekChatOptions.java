@@ -289,7 +289,7 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 		@Override
 		public B clone() {
 			B copy = super.clone();
-			copy.tools = this.tools;
+			copy.tools = this.tools == null ? null : new ArrayList<>(this.tools);
 			return copy;
 		}
 

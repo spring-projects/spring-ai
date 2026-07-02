@@ -16,6 +16,7 @@
 
 package org.springframework.ai.openai.chat;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -608,6 +609,50 @@ public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatO
 		assertThat(options.getResponseFormat().getType()).isEqualTo(ResponseFormat.Type.JSON_SCHEMA);
 		assertThat(options.getResponseFormat().getJsonSchema()).isEqualTo(schema);
 		assertThat(options.getOutputSchema()).isEqualTo(schema);
+	}
+
+	@Test
+	void cloneCreatesIndependentCollections() {
+		Map<String, String> customHeaders = new HashMap<>();
+		customHeaders.put("key", "value");
+		Map<String, Integer> logitBias = new HashMap<>();
+		logitBias.put("key", 1);
+		List<String> outputModalities = new ArrayList<>();
+		outputModalities.add("text");
+		Map<String, String> metadata = new HashMap<>();
+		metadata.put("key", "value");
+		Map<String, Object> extraBody = new HashMap<>();
+		extraBody.put("key", "value");
+
+		Builder source = OpenAiChatOptions.builder()
+			.customHeaders(customHeaders)
+			.logitBias(logitBias)
+			.outputModalities(outputModalities)
+			.metadata(metadata)
+			.extraBody(extraBody);
+		Builder clone = source.clone();
+		customHeaders.put("anotherKey", "anotherValue");
+		logitBias.put("anotherKey", 2);
+		outputModalities.add("audio");
+		metadata.put("anotherKey", "anotherValue");
+		extraBody.put("anotherKey", "anotherValue");
+
+		OpenAiChatOptions cloned = clone.build();
+		assertThat(cloned.getCustomHeaders()).containsOnlyKeys("key");
+		assertThat(cloned.getLogitBias()).containsOnlyKeys("key");
+		assertThat(cloned.getOutputModalities()).containsExactly("text");
+		assertThat(cloned.getMetadata()).containsOnlyKeys("key");
+		assertThat(cloned.getExtraBody()).containsOnlyKeys("key");
+	}
+
+	@Test
+	void cloneHandlesNullCollections() {
+		OpenAiChatOptions cloned = OpenAiChatOptions.builder().clone().build();
+		assertThat(cloned.getCustomHeaders()).isNull();
+		assertThat(cloned.getLogitBias()).isNull();
+		assertThat(cloned.getOutputModalities()).isNull();
+		assertThat(cloned.getMetadata()).isNull();
+		assertThat(cloned.getExtraBody()).isNull();
 	}
 
 }
