@@ -76,8 +76,9 @@ public class SyncMcpCompletionProviderTests {
 
 		// Test that the handler works
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("test-prompt"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("test-prompt"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 		CompleteResult result = completeSpec.completionHandler().apply(exchange, request);
 
 		assertThat(result).isNotNull();
@@ -110,8 +111,9 @@ public class SyncMcpCompletionProviderTests {
 
 		// Test that the handler works
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		CompleteRequest request = new CompleteRequest(new ResourceReference("test://value"),
-				new CompleteRequest.CompleteArgument("variable", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new ResourceReference("test://value"), new CompleteRequest.CompleteArgument("variable", "value"))
+			.build();
 		CompleteResult result = completeSpecs.get(0).completionHandler().apply(exchange, request);
 
 		assertThat(result).isNotNull();
@@ -271,8 +273,9 @@ public class SyncMcpCompletionProviderTests {
 
 		// Test that the handler works with private methods
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("private-complete"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("private-complete"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 		CompleteResult result = completeSpecs.get(0).completionHandler().apply(exchange, request);
 
 		assertThat(result).isNotNull();
@@ -303,8 +306,9 @@ public class SyncMcpCompletionProviderTests {
 
 		// Test that the handler works with String return type
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("string-complete"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("string-complete"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 		CompleteResult result = completeSpecs.get(0).completionHandler().apply(exchange, request);
 
 		assertThat(result).isNotNull();
@@ -337,8 +341,9 @@ public class SyncMcpCompletionProviderTests {
 
 		// Test that the handler works with exchange parameter
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("exchange-complete"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("exchange-complete"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 		CompleteResult result = completeSpecs.get(0).completionHandler().apply(exchange, request);
 
 		assertThat(result).isNotNull();
@@ -370,8 +375,9 @@ public class SyncMcpCompletionProviderTests {
 
 		// Test that the handler works with List<String> return type
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("list-complete"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("list-complete"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 		CompleteResult result = completeSpecs.get(0).completionHandler().apply(exchange, request);
 
 		assertThat(result).isNotNull();
@@ -403,8 +409,9 @@ public class SyncMcpCompletionProviderTests {
 
 		// Test that the handler works with CompleteCompletion return type
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("completion-complete"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("completion-complete"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 		CompleteResult result = completeSpecs.get(0).completionHandler().apply(exchange, request);
 
 		assertThat(result).isNotNull();

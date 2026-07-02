@@ -312,7 +312,7 @@ class AsyncMcpToolCallbackTest {
 		when(this.tool.name()).thenReturn("testTool");
 		when(this.tool.description()).thenReturn("Test description");
 		when(this.tool.inputSchema()).thenReturn(Map.of());
-		var clientInfo = new Implementation("testClient", "1.0.0");
+		var clientInfo = Implementation.builder("testClient", "1.0.0").build();
 		when(this.mcpClient.getClientInfo()).thenReturn(clientInfo);
 
 		// Act

@@ -137,7 +137,7 @@ public class AsyncStatelessMcpResourceMethodCallbackTests {
 			.build();
 
 		McpTransportContext context = mock(McpTransportContext.class);
-		ReadResourceRequest request = new ReadResourceRequest("test/resource");
+		ReadResourceRequest request = ReadResourceRequest.builder("test/resource").build();
 
 		Mono<ReadResourceResult> resultMono = callback.apply(context, request);
 
@@ -165,7 +165,7 @@ public class AsyncStatelessMcpResourceMethodCallbackTests {
 			.build();
 
 		McpTransportContext context = mock(McpTransportContext.class);
-		ReadResourceRequest request = new ReadResourceRequest("test/resource");
+		ReadResourceRequest request = ReadResourceRequest.builder("test/resource").build();
 
 		Mono<ReadResourceResult> resultMono = callback.apply(context, request);
 
@@ -193,7 +193,7 @@ public class AsyncStatelessMcpResourceMethodCallbackTests {
 			.build();
 
 		McpTransportContext context = mock(McpTransportContext.class);
-		ReadResourceRequest request = new ReadResourceRequest("users/123/posts/456");
+		ReadResourceRequest request = ReadResourceRequest.builder("users/123/posts/456").build();
 
 		Mono<ReadResourceResult> resultMono = callback.apply(context, request);
 
@@ -221,7 +221,7 @@ public class AsyncStatelessMcpResourceMethodCallbackTests {
 			.build();
 
 		McpTransportContext context = mock(McpTransportContext.class);
-		ReadResourceRequest request = new ReadResourceRequest("test/resource");
+		ReadResourceRequest request = ReadResourceRequest.builder("test/resource").build();
 
 		Mono<ReadResourceResult> resultMono = callback.apply(context, request);
 
@@ -249,7 +249,7 @@ public class AsyncStatelessMcpResourceMethodCallbackTests {
 			.build();
 
 		McpTransportContext context = mock(McpTransportContext.class);
-		ReadResourceRequest request = new ReadResourceRequest("test/resource");
+		ReadResourceRequest request = ReadResourceRequest.builder("test/resource").build();
 
 		Mono<ReadResourceResult> resultMono = callback.apply(context, request);
 
@@ -277,7 +277,7 @@ public class AsyncStatelessMcpResourceMethodCallbackTests {
 			.build();
 
 		McpTransportContext context = mock(McpTransportContext.class);
-		ReadResourceRequest request = new ReadResourceRequest("async/users/123/posts/456");
+		ReadResourceRequest request = ReadResourceRequest.builder("async/users/123/posts/456").build();
 
 		Mono<ReadResourceResult> resultMono = callback.apply(context, request);
 
@@ -304,7 +304,7 @@ public class AsyncStatelessMcpResourceMethodCallbackTests {
 			.build();
 
 		McpTransportContext context = mock(McpTransportContext.class);
-		ReadResourceRequest request = new ReadResourceRequest("test/resource");
+		ReadResourceRequest request = ReadResourceRequest.builder("test/resource").build();
 
 		Mono<ReadResourceResult> resultMono = callback.apply(context, request);
 
@@ -332,7 +332,7 @@ public class AsyncStatelessMcpResourceMethodCallbackTests {
 			.build();
 
 		McpTransportContext context = mock(McpTransportContext.class);
-		ReadResourceRequest request = new ReadResourceRequest("test/resource");
+		ReadResourceRequest request = ReadResourceRequest.builder("test/resource").build();
 
 		Mono<ReadResourceResult> resultMono = callback.apply(context, request);
 
@@ -361,7 +361,7 @@ public class AsyncStatelessMcpResourceMethodCallbackTests {
 			.build();
 
 		McpTransportContext context = mock(McpTransportContext.class);
-		ReadResourceRequest request = new ReadResourceRequest("test/resource");
+		ReadResourceRequest request = ReadResourceRequest.builder("test/resource").build();
 
 		Mono<ReadResourceResult> resultMono = callback.apply(context, request);
 
@@ -518,7 +518,7 @@ public class AsyncStatelessMcpResourceMethodCallbackTests {
 		McpTransportContext context = mock(McpTransportContext.class);
 		// Create a request with a URI that will cause the URI template extraction to
 		// fail
-		ReadResourceRequest request = new ReadResourceRequest("invalid:uri");
+		ReadResourceRequest request = ReadResourceRequest.builder("invalid:uri").build();
 
 		// Mock the URI template manager to throw an exception when extracting variables
 		McpUriTemplateManager mockUriTemplateManager = new McpUriTemplateManager() {
@@ -551,7 +551,7 @@ public class AsyncStatelessMcpResourceMethodCallbackTests {
 			.uriTemplateManagerFactory(new McpUriTemplateManagerFactory() {
 				public McpUriTemplateManager create(String uriTemplate) {
 					return mockUriTemplateManager;
-				};
+				}
 			})
 			.build();
 
@@ -621,7 +621,7 @@ public class AsyncStatelessMcpResourceMethodCallbackTests {
 		McpTransportContext context = mock(McpTransportContext.class);
 
 		// Test with mismatched URI that doesn't contain expected variables
-		ReadResourceRequest invalidRequest = new ReadResourceRequest("invalid/uri/format");
+		ReadResourceRequest invalidRequest = ReadResourceRequest.builder("invalid/uri/format").build();
 
 		Mono<ReadResourceResult> resultMono = callback.apply(context, invalidRequest);
 
@@ -645,7 +645,9 @@ public class AsyncStatelessMcpResourceMethodCallbackTests {
 			.build();
 
 		McpTransportContext context = mock(McpTransportContext.class);
-		ReadResourceRequest request = new ReadResourceRequest("test/resource", Map.of("testKey", "testValue"));
+		ReadResourceRequest request = ReadResourceRequest.builder("test/resource")
+			.meta(Map.of("testKey", "testValue"))
+			.build();
 
 		Mono<ReadResourceResult> resultMono = callback.apply(context, request);
 
@@ -672,7 +674,9 @@ public class AsyncStatelessMcpResourceMethodCallbackTests {
 			.build();
 
 		McpTransportContext context = mock(McpTransportContext.class);
-		ReadResourceRequest request = new ReadResourceRequest("test/resource", Map.of("testKey", "asyncValue"));
+		ReadResourceRequest request = ReadResourceRequest.builder("test/resource")
+			.meta(Map.of("testKey", "asyncValue"))
+			.build();
 
 		Mono<ReadResourceResult> resultMono = callback.apply(context, request);
 
@@ -699,7 +703,7 @@ public class AsyncStatelessMcpResourceMethodCallbackTests {
 			.build();
 
 		McpTransportContext context = mock(McpTransportContext.class);
-		ReadResourceRequest request = new ReadResourceRequest("test/resource", null);
+		ReadResourceRequest request = ReadResourceRequest.builder("test/resource").build();
 
 		Mono<ReadResourceResult> resultMono = callback.apply(context, request);
 
@@ -725,7 +729,9 @@ public class AsyncStatelessMcpResourceMethodCallbackTests {
 			.build();
 
 		McpTransportContext context = mock(McpTransportContext.class);
-		ReadResourceRequest request = new ReadResourceRequest("test/resource", Map.of("testKey", "onlyMetaValue"));
+		ReadResourceRequest request = ReadResourceRequest.builder("test/resource")
+			.meta(Map.of("testKey", "onlyMetaValue"))
+			.build();
 
 		Mono<ReadResourceResult> resultMono = callback.apply(context, request);
 
@@ -753,7 +759,9 @@ public class AsyncStatelessMcpResourceMethodCallbackTests {
 			.build();
 
 		McpTransportContext context = mock(McpTransportContext.class);
-		ReadResourceRequest request = new ReadResourceRequest("users/123/posts/456", Map.of("testKey", "uriMetaValue"));
+		ReadResourceRequest request = ReadResourceRequest.builder("users/123/posts/456")
+			.meta(Map.of("testKey", "uriMetaValue"))
+			.build();
 
 		Mono<ReadResourceResult> resultMono = callback.apply(context, request);
 
@@ -780,7 +788,9 @@ public class AsyncStatelessMcpResourceMethodCallbackTests {
 			.build();
 
 		McpTransportContext context = mock(McpTransportContext.class);
-		ReadResourceRequest request = new ReadResourceRequest("test/resource", Map.of("testKey", "contextMetaValue"));
+		ReadResourceRequest request = ReadResourceRequest.builder("test/resource")
+			.meta(Map.of("testKey", "contextMetaValue"))
+			.build();
 
 		Mono<ReadResourceResult> resultMono = callback.apply(context, request);
 
@@ -856,7 +866,7 @@ public class AsyncStatelessMcpResourceMethodCallbackTests {
 			.build();
 
 		McpTransportContext context = mock(McpTransportContext.class);
-		ReadResourceRequest request = new ReadResourceRequest("failing-resource://resource");
+		ReadResourceRequest request = ReadResourceRequest.builder("failing-resource://resource").build();
 
 		Mono<ReadResourceResult> resultMono = callback.apply(context, request);
 
@@ -907,54 +917,82 @@ public class AsyncStatelessMcpResourceMethodCallbackTests {
 
 		// Regular return types (will be wrapped in Mono by the callback)
 		public ReadResourceResult getResourceWithRequest(ReadResourceRequest request) {
-			return new ReadResourceResult(
-					List.of(new TextResourceContents(request.uri(), "text/plain", "Content for " + request.uri())));
+			return ReadResourceResult
+				.builder(List.of(TextResourceContents.builder(request.uri(), "Content for " + request.uri())
+					.mimeType("text/plain")
+					.build()))
+				.build();
 		}
 
 		public ReadResourceResult getResourceWithContext(McpTransportContext context, ReadResourceRequest request) {
-			return new ReadResourceResult(List.of(new TextResourceContents(request.uri(), "text/plain",
-					"Content with context for " + request.uri())));
+			return ReadResourceResult
+				.builder(
+						List.of(TextResourceContents.builder(request.uri(), "Content with context for " + request.uri())
+							.mimeType("text/plain")
+							.build()))
+				.build();
 		}
 
 		public ReadResourceResult getResourceWithUri(String uri) {
-			return new ReadResourceResult(
-					List.of(new TextResourceContents(uri, "text/plain", "Content from URI: " + uri)));
+			return ReadResourceResult
+				.builder(List
+					.of(TextResourceContents.builder(uri, "Content from URI: " + uri).mimeType("text/plain").build()))
+				.build();
 		}
 
 		@McpResource(uri = "users/{userId}/posts/{postId}")
 		public ReadResourceResult getResourceWithUriVariables(String userId, String postId) {
-			return new ReadResourceResult(List.of(new TextResourceContents("users/" + userId + "/posts/" + postId,
-					"text/plain", "User: " + userId + ", Post: " + postId)));
+			return ReadResourceResult.builder(List.of(TextResourceContents
+				.builder("users/" + userId + "/posts/" + postId, "User: " + userId + ", Post: " + postId)
+				.mimeType("text/plain")
+				.build())).build();
 		}
 
 		@McpResource(uri = "users/{userId}/profile")
 		public ReadResourceResult getResourceWithContextAndUriVariable(McpTransportContext context, String userId) {
-			return new ReadResourceResult(List.of(new TextResourceContents("users/" + userId + "/profile", "text/plain",
-					"Profile for user: " + userId)));
+			return ReadResourceResult.builder(
+					List.of(TextResourceContents.builder("users/" + userId + "/profile", "Profile for user: " + userId)
+						.mimeType("text/plain")
+						.build()))
+				.build();
 		}
 
 		// Mono return types
 		public Mono<ReadResourceResult> getResourceWithRequestAsync(ReadResourceRequest request) {
-			return Mono.just(new ReadResourceResult(List
-				.of(new TextResourceContents(request.uri(), "text/plain", "Async content for " + request.uri()))));
+			return Mono.just(ReadResourceResult
+				.builder(List.of(TextResourceContents.builder(request.uri(), "Async content for " + request.uri())
+					.mimeType("text/plain")
+					.build()))
+				.build());
 		}
 
 		public Mono<ReadResourceResult> getResourceWithContextAsync(McpTransportContext context,
 				ReadResourceRequest request) {
-			return Mono.just(new ReadResourceResult(List.of(new TextResourceContents(request.uri(), "text/plain",
-					"Async content with context for " + request.uri()))));
+			return Mono.just(ReadResourceResult.builder(List
+				.of(TextResourceContents.builder(request.uri(), "Async content with context for " + request.uri())
+					.mimeType("text/plain")
+					.build()))
+				.build());
 		}
 
 		@McpResource(uri = "async/users/{userId}/posts/{postId}")
 		public Mono<ReadResourceResult> getResourceWithUriVariablesAsync(String userId, String postId) {
-			return Mono.just(new ReadResourceResult(
-					List.of(new TextResourceContents("async/users/" + userId + "/posts/" + postId, "text/plain",
-							"Async User: " + userId + ", Post: " + postId))));
+			return Mono.just(
+					ReadResourceResult
+						.builder(
+								List.of(TextResourceContents
+									.builder("async/users/" + userId + "/posts/" + postId,
+											"Async User: " + userId + ", Post: " + postId)
+									.mimeType("text/plain")
+									.build()))
+						.build());
 		}
 
 		public Mono<List<ResourceContents>> getResourceContentsListAsync(ReadResourceRequest request) {
-			return Mono.just(List
-				.of(new TextResourceContents(request.uri(), "text/plain", "Async content list for " + request.uri())));
+			return Mono
+				.just(List.of(TextResourceContents.builder(request.uri(), "Async content list for " + request.uri())
+					.mimeType("text/plain")
+					.build()));
 		}
 
 		public Mono<String> getSingleStringAsync(ReadResourceRequest request) {
@@ -980,62 +1018,72 @@ public class AsyncStatelessMcpResourceMethodCallbackTests {
 		}
 
 		public Mono<ReadResourceResult> invalidParameters(int value) {
-			return Mono.just(new ReadResourceResult(List.of()));
+			return Mono.just(ReadResourceResult.builder(List.of()).build());
 		}
 
 		public Mono<ReadResourceResult> tooManyParameters(McpTransportContext context, ReadResourceRequest request,
 				String extraParam) {
-			return Mono.just(new ReadResourceResult(List.of()));
+			return Mono.just(ReadResourceResult.builder(List.of()).build());
 		}
 
 		public Mono<ReadResourceResult> invalidParameterType(Object invalidParam) {
-			return Mono.just(new ReadResourceResult(List.of()));
+			return Mono.just(ReadResourceResult.builder(List.of()).build());
 		}
 
 		public Mono<ReadResourceResult> duplicateContextParameters(McpTransportContext context1,
 				McpTransportContext context2) {
-			return Mono.just(new ReadResourceResult(List.of()));
+			return Mono.just(ReadResourceResult.builder(List.of()).build());
 		}
 
 		public Mono<ReadResourceResult> duplicateRequestParameters(ReadResourceRequest request1,
 				ReadResourceRequest request2) {
-			return Mono.just(new ReadResourceResult(List.of()));
+			return Mono.just(ReadResourceResult.builder(List.of()).build());
 		}
 
 		// Methods for testing @McpMeta
 		public ReadResourceResult getResourceWithMeta(McpMeta meta, ReadResourceRequest request) {
 			String metaValue = (String) meta.get("testKey");
 			String content = "Content with meta: " + metaValue + " for " + request.uri();
-			return new ReadResourceResult(List.of(new TextResourceContents(request.uri(), "text/plain", content)));
+			return ReadResourceResult
+				.builder(List.of(TextResourceContents.builder(request.uri(), content).mimeType("text/plain").build()))
+				.build();
 		}
 
 		public Mono<ReadResourceResult> getResourceWithMetaAsync(McpMeta meta, ReadResourceRequest request) {
 			String metaValue = (String) meta.get("testKey");
 			String content = "Async content with meta: " + metaValue + " for " + request.uri();
-			return Mono
-				.just(new ReadResourceResult(List.of(new TextResourceContents(request.uri(), "text/plain", content))));
+			return Mono.just(ReadResourceResult
+				.builder(List.of(TextResourceContents.builder(request.uri(), content).mimeType("text/plain").build()))
+				.build());
 		}
 
 		public ReadResourceResult getResourceWithMetaOnly(McpMeta meta) {
 			String metaValue = (String) meta.get("testKey");
 			String content = "Content with only meta: " + metaValue;
-			return new ReadResourceResult(List.of(new TextResourceContents("test://resource", "text/plain", content)));
+			return ReadResourceResult
+				.builder(List
+					.of(TextResourceContents.builder("test://resource", content).mimeType("text/plain").build()))
+				.build();
 		}
 
 		@McpResource(uri = "users/{userId}/posts/{postId}")
 		public ReadResourceResult getResourceWithMetaAndUriVariables(McpMeta meta, String userId, String postId) {
 			String metaValue = (String) meta.get("testKey");
 			String content = "User: " + userId + ", Post: " + postId + ", Meta: " + metaValue;
-			return new ReadResourceResult(
-					List.of(new TextResourceContents("users/" + userId + "/posts/" + postId, "text/plain", content)));
+			return ReadResourceResult
+				.builder(List.of(TextResourceContents.builder("users/" + userId + "/posts/" + postId, content)
+					.mimeType("text/plain")
+					.build()))
+				.build();
 		}
 
 		public Mono<ReadResourceResult> getResourceWithContextAndMeta(McpTransportContext context, McpMeta meta,
 				ReadResourceRequest request) {
 			String metaValue = (String) meta.get("testKey");
 			String content = "Async content with context and meta: " + metaValue + " for " + request.uri();
-			return Mono
-				.just(new ReadResourceResult(List.of(new TextResourceContents(request.uri(), "text/plain", content))));
+			return Mono.just(ReadResourceResult
+				.builder(List.of(TextResourceContents.builder(request.uri(), content).mimeType("text/plain").build()))
+				.build());
 		}
 
 		public ReadResourceResult getResourceWithMetaAndMixedParams(McpMeta meta,
@@ -1043,14 +1091,18 @@ public class AsyncStatelessMcpResourceMethodCallbackTests {
 			String metaValue = (String) meta.get("testKey");
 			String content = "Content with meta: " + metaValue + " and progress: " + progressToken + " for "
 					+ request.uri();
-			return new ReadResourceResult(List.of(new TextResourceContents(request.uri(), "text/plain", content)));
+			return ReadResourceResult
+				.builder(List.of(TextResourceContents.builder(request.uri(), content).mimeType("text/plain").build()))
+				.build();
 		}
 
 		public ReadResourceResult getResourceWithMultipleMetas(McpMeta meta1, McpMeta meta2,
 				ReadResourceRequest request) {
 			// This should cause a validation error during callback creation
 			String content = "Content with multiple metas for " + request.uri();
-			return new ReadResourceResult(List.of(new TextResourceContents(request.uri(), "text/plain", content)));
+			return ReadResourceResult
+				.builder(List.of(TextResourceContents.builder(request.uri(), content).mimeType("text/plain").build()))
+				.build();
 		}
 
 		@McpResource(uri = "failing-resource://resource", description = "A resource that throws an exception")
@@ -1061,12 +1113,12 @@ public class AsyncStatelessMcpResourceMethodCallbackTests {
 		// Invalid parameter types for stateless methods
 		public Mono<ReadResourceResult> invalidSyncExchangeParameter(McpSyncServerExchange exchange,
 				ReadResourceRequest request) {
-			return Mono.just(new ReadResourceResult(List.of()));
+			return Mono.just(ReadResourceResult.builder(List.of()).build());
 		}
 
 		public Mono<ReadResourceResult> invalidAsyncExchangeParameter(McpAsyncServerExchange exchange,
 				ReadResourceRequest request) {
-			return Mono.just(new ReadResourceResult(List.of()));
+			return Mono.just(ReadResourceResult.builder(List.of()).build());
 		}
 
 	}

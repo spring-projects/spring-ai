@@ -53,7 +53,9 @@ public class SyncMcpToolMethodCallbackTests {
 		SyncMcpToolMethodCallback callback = new SyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
 
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("simple-tool", Map.of("input", "test message"));
+		CallToolRequest request = CallToolRequest.builder("simple-tool")
+			.arguments(Map.of("input", "test message"))
+			.build();
 
 		CallToolResult result = callback.apply(exchange, request);
 
@@ -71,7 +73,7 @@ public class SyncMcpToolMethodCallbackTests {
 		SyncMcpToolMethodCallback callback = new SyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
 
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("math-tool", Map.of("a", 5, "b", 3));
+		CallToolRequest request = CallToolRequest.builder("math-tool").arguments(Map.of("a", 5, "b", 3)).build();
 
 		CallToolResult result = callback.apply(exchange, request);
 
@@ -89,8 +91,9 @@ public class SyncMcpToolMethodCallbackTests {
 		SyncMcpToolMethodCallback callback = new SyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
 
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("complex-tool",
-				Map.of("name", "John", "age", 30, "active", true));
+		CallToolRequest request = CallToolRequest.builder("complex-tool")
+			.arguments(Map.of("name", "John", "age", 30, "active", true))
+			.build();
 
 		CallToolResult result = callback.apply(exchange, request);
 
@@ -108,7 +111,9 @@ public class SyncMcpToolMethodCallbackTests {
 		SyncMcpToolMethodCallback callback = new SyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
 
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("exchange-tool", Map.of("message", "hello"));
+		CallToolRequest request = CallToolRequest.builder("exchange-tool")
+			.arguments(Map.of("message", "hello"))
+			.build();
 
 		CallToolResult result = callback.apply(exchange, request);
 
@@ -126,7 +131,9 @@ public class SyncMcpToolMethodCallbackTests {
 		SyncMcpToolMethodCallback callback = new SyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
 
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("list-tool", Map.of("items", List.of("item1", "item2", "item3")));
+		CallToolRequest request = CallToolRequest.builder("list-tool")
+			.arguments(Map.of("items", List.of("item1", "item2", "item3")))
+			.build();
 
 		CallToolResult result = callback.apply(exchange, request);
 
@@ -144,8 +151,9 @@ public class SyncMcpToolMethodCallbackTests {
 		SyncMcpToolMethodCallback callback = new SyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
 
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("object-tool",
-				Map.of("obj", Map.of("name", "test", "value", 42)));
+		CallToolRequest request = CallToolRequest.builder("object-tool")
+			.arguments(Map.of("obj", Map.of("name", "test", "value", 42)))
+			.build();
 
 		CallToolResult result = callback.apply(exchange, request);
 
@@ -163,7 +171,7 @@ public class SyncMcpToolMethodCallbackTests {
 		SyncMcpToolMethodCallback callback = new SyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
 
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("no-params-tool", Map.of());
+		CallToolRequest request = CallToolRequest.builder("no-params-tool").arguments(Map.of()).build();
 
 		CallToolResult result = callback.apply(exchange, request);
 
@@ -181,7 +189,9 @@ public class SyncMcpToolMethodCallbackTests {
 		SyncMcpToolMethodCallback callback = new SyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
 
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("enum-tool", Map.of("enumValue", "OPTION_B"));
+		CallToolRequest request = CallToolRequest.builder("enum-tool")
+			.arguments(Map.of("enumValue", "OPTION_B"))
+			.build();
 
 		CallToolResult result = callback.apply(exchange, request);
 
@@ -200,8 +210,9 @@ public class SyncMcpToolMethodCallbackTests {
 		SyncMcpToolMethodCallback callback = new SyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
 
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("primitive-types-tool",
-				Map.of("flag", true, "b", 1, "s", 2, "i", 3, "l", 4L, "f", 5.5f, "d", 6.6));
+		CallToolRequest request = CallToolRequest.builder("primitive-types-tool")
+			.arguments(Map.of("flag", true, "b", 1, "s", 2, "i", 3, "l", 4L, "f", 5.5f, "d", 6.6))
+			.build();
 
 		CallToolResult result = callback.apply(exchange, request);
 
@@ -221,7 +232,7 @@ public class SyncMcpToolMethodCallbackTests {
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
 		Map<String, Object> args = new java.util.HashMap<>();
 		args.put("input", null);
-		CallToolRequest request = new CallToolRequest("simple-tool", args);
+		CallToolRequest request = CallToolRequest.builder("simple-tool").arguments(args).build();
 
 		CallToolResult result = callback.apply(exchange, request);
 
@@ -239,7 +250,7 @@ public class SyncMcpToolMethodCallbackTests {
 		SyncMcpToolMethodCallback callback = new SyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
 
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("simple-tool", Map.of());
+		CallToolRequest request = CallToolRequest.builder("simple-tool").arguments(Map.of()).build();
 
 		CallToolResult result = callback.apply(exchange, request);
 
@@ -257,7 +268,7 @@ public class SyncMcpToolMethodCallbackTests {
 		SyncMcpToolMethodCallback callback = new SyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
 
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("exception-tool", Map.of("input", "test"));
+		CallToolRequest request = CallToolRequest.builder("exception-tool").arguments(Map.of("input", "test")).build();
 
 		CallToolResult result = callback.apply(exchange, request);
 
@@ -275,7 +286,7 @@ public class SyncMcpToolMethodCallbackTests {
 		SyncMcpToolMethodCallback callback = new SyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
 
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("null-return-tool", Map.of());
+		CallToolRequest request = CallToolRequest.builder("null-return-tool").arguments(Map.of()).build();
 
 		CallToolResult result = callback.apply(exchange, request);
 
@@ -293,7 +304,7 @@ public class SyncMcpToolMethodCallbackTests {
 		SyncMcpToolMethodCallback callback = new SyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
 
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("private-tool", Map.of("input", "test"));
+		CallToolRequest request = CallToolRequest.builder("private-tool").arguments(Map.of("input", "test")).build();
 
 		CallToolResult result = callback.apply(exchange, request);
 
@@ -323,8 +334,9 @@ public class SyncMcpToolMethodCallbackTests {
 		SyncMcpToolMethodCallback callback = new SyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
 
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("complex-tool",
-				Map.of("name", "Alice", "age", 25, "active", false));
+		CallToolRequest request = CallToolRequest.builder("complex-tool")
+			.arguments(Map.of("name", "Alice", "age", 25, "active", false))
+			.build();
 
 		CallToolResult result = callback.apply(exchange, request);
 
@@ -363,7 +375,7 @@ public class SyncMcpToolMethodCallbackTests {
 		SyncMcpToolMethodCallback callback = new SyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
 
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("context-tool", Map.of("message", "hello"));
+		CallToolRequest request = CallToolRequest.builder("context-tool").arguments(Map.of("message", "hello")).build();
 
 		CallToolResult result = callback.apply(exchange, request);
 
@@ -384,7 +396,9 @@ public class SyncMcpToolMethodCallbackTests {
 		McpTransportContext transportContext = mock(McpTransportContext.class);
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
 		org.mockito.Mockito.when(exchange.transportContext()).thenReturn(transportContext);
-		CallToolRequest request = new CallToolRequest("transport-context-tool", Map.of("message", "hello"));
+		CallToolRequest request = CallToolRequest.builder("transport-context-tool")
+			.arguments(Map.of("message", "hello"))
+			.build();
 
 		CallToolResult result = callback.apply(exchange, request);
 
@@ -403,7 +417,9 @@ public class SyncMcpToolMethodCallbackTests {
 
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
 		// Pass invalid object structure that can't be converted to TestObject
-		CallToolRequest request = new CallToolRequest("object-tool", Map.of("obj", "invalid-object-string"));
+		CallToolRequest request = CallToolRequest.builder("object-tool")
+			.arguments(Map.of("obj", "invalid-object-string"))
+			.build();
 
 		CallToolResult result = callback.apply(exchange, request);
 
@@ -433,8 +449,9 @@ public class SyncMcpToolMethodCallbackTests {
 		SyncMcpToolMethodCallback callback = new SyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
 
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("object-tool",
-				Map.of("obj", Map.of("name", "test", "value", 42)));
+		CallToolRequest request = CallToolRequest.builder("object-tool")
+			.arguments(Map.of("obj", Map.of("name", "test", "value", 42)))
+			.build();
 
 		CallToolResult result = callback.apply(exchange, request);
 
@@ -452,7 +469,9 @@ public class SyncMcpToolMethodCallbackTests {
 		SyncMcpToolMethodCallback callback = new SyncMcpToolMethodCallback(ReturnMode.STRUCTURED, method, provider);
 
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("return-object-tool", Map.of("name", "test", "value", 42));
+		CallToolRequest request = CallToolRequest.builder("return-object-tool")
+			.arguments(Map.of("name", "test", "value", 42))
+			.build();
 
 		CallToolResult result = callback.apply(exchange, request);
 
@@ -473,7 +492,9 @@ public class SyncMcpToolMethodCallbackTests {
 		SyncMcpToolMethodCallback callback = new SyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
 
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("return-list-object-tool", Map.of("name", "test", "value", 42));
+		CallToolRequest request = CallToolRequest.builder("return-list-object-tool")
+			.arguments(Map.of("name", "test", "value", 42))
+			.build();
 
 		CallToolResult result = callback.apply(exchange, request);
 
@@ -497,7 +518,9 @@ public class SyncMcpToolMethodCallbackTests {
 		SyncMcpToolMethodCallback callback = new SyncMcpToolMethodCallback(ReturnMode.STRUCTURED, method, provider);
 
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("return-list-object-tool", Map.of("name", "test", "value", 42));
+		CallToolRequest request = CallToolRequest.builder("return-list-object-tool")
+			.arguments(Map.of("name", "test", "value", 42))
+			.build();
 
 		CallToolResult result = callback.apply(exchange, request);
 
@@ -519,7 +542,9 @@ public class SyncMcpToolMethodCallbackTests {
 		SyncMcpToolMethodCallback callback = new SyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
 
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("return-list-string-tool", Map.of("name", "test", "value", 42));
+		CallToolRequest request = CallToolRequest.builder("return-list-string-tool")
+			.arguments(Map.of("name", "test", "value", 42))
+			.build();
 
 		CallToolResult result = callback.apply(exchange, request);
 
@@ -543,7 +568,7 @@ public class SyncMcpToolMethodCallbackTests {
 		SyncMcpToolMethodCallback callback = new SyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
 
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("date-tool", Map.of("date", "2026-04-22"));
+		CallToolRequest request = CallToolRequest.builder("date-tool").arguments(Map.of("date", "2026-04-22")).build();
 
 		CallToolResult result = callback.apply(exchange, request);
 

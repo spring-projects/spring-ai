@@ -413,9 +413,10 @@ public class WebClientStreamableHttpTransportErrorHandlingIT {
 	}
 
 	private McpSchema.JSONRPCRequest createTestMessage() {
-		var initializeRequest = new McpSchema.InitializeRequest(ProtocolVersions.MCP_2025_03_26,
-				McpSchema.ClientCapabilities.builder().roots(true).build(),
-				new McpSchema.Implementation("Test Client", "1.0.0"));
+		var initializeRequest = McpSchema.InitializeRequest
+			.builder(ProtocolVersions.MCP_2025_03_26, McpSchema.ClientCapabilities.builder().roots(true).build(),
+					McpSchema.Implementation.builder("Test Client", "1.0.0").build())
+			.build();
 		return new McpSchema.JSONRPCRequest(McpSchema.JSONRPC_VERSION, McpSchema.METHOD_INITIALIZE, "test-id",
 				initializeRequest);
 	}

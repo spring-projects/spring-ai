@@ -54,8 +54,10 @@ public class AsyncMcpProgressProviderTests {
 		assertThat(handlers).hasSize(2);
 
 		// Test the first handler (Mono<Void> method)
-		ProgressNotification notification = new ProgressNotification("test-token-123", 0.5, 100.0,
-				"Test progress message");
+		ProgressNotification notification = ProgressNotification.builder("test-token-123", 0.5)
+			.total(100.0)
+			.message("Test progress message")
+			.build();
 
 		StepVerifier.create(handlers.get(0).apply(notification)).verifyComplete();
 
@@ -155,7 +157,10 @@ public class AsyncMcpProgressProviderTests {
 
 		assertThat(handlers).hasSize(1);
 
-		ProgressNotification notification = new ProgressNotification("error-token", 0.5, 100.0, "Error test");
+		ProgressNotification notification = ProgressNotification.builder("error-token", 0.5)
+			.total(100.0)
+			.message("Error test")
+			.build();
 
 		// Verify that the error is propagated correctly
 		StepVerifier.create(handlers.get(0).apply(notification)).expectError(RuntimeException.class).verify();

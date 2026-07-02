@@ -245,12 +245,11 @@ public final class DefaultMcpSyncRequestContext implements McpSyncRequestContext
 
 		var progressToken = this.request.progressToken();
 
-		return this.sample(McpSchema.CreateMessageRequest.builder()
-			.messages(spec.messages)
+		return this.sample(McpSchema.CreateMessageRequest
+			.builder(spec.messages, spec.maxTokens != null && spec.maxTokens > 0 ? spec.maxTokens : 500)
 			.modelPreferences(spec.modelPreferences)
 			.systemPrompt(spec.systemPrompt)
 			.temperature(spec.temperature)
-			.maxTokens(spec.maxTokens != null && spec.maxTokens > 0 ? spec.maxTokens : 500)
 			.stopSequences(spec.stopSequences.isEmpty() ? null : spec.stopSequences)
 			.includeContext(spec.includeContextStrategy)
 			.meta(spec.metadata.isEmpty() ? null : spec.metadata)
@@ -315,9 +314,7 @@ public final class DefaultMcpSyncRequestContext implements McpSyncRequestContext
 		DefaultLoggingSpec spec = new DefaultLoggingSpec();
 		logSpec.accept(spec);
 
-		this.exchange.loggingNotification(LoggingMessageNotification.builder()
-			.data(spec.message)
-			.level(spec.level)
+		this.exchange.loggingNotification(LoggingMessageNotification.builder(spec.level, spec.message)
 			.logger(spec.logger)
 			.meta(spec.meta)
 			.build());
@@ -345,7 +342,7 @@ public final class DefaultMcpSyncRequestContext implements McpSyncRequestContext
 
 	private void logInternal(String message, LoggingLevel level) {
 		Assert.hasText(message, "Log message must not be empty");
-		this.exchange.loggingNotification(LoggingMessageNotification.builder().data(message).level(level).build());
+		this.exchange.loggingNotification(LoggingMessageNotification.builder(level, message).build());
 	}
 
 	// Getters

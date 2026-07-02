@@ -132,17 +132,13 @@ public class StatelessWebClientWebFluxServerIT {
 
 						// tool list
 						assertThat(mcpClient.listTools().tools()).hasSize(3);
-						assertThat(mcpClient.listTools().tools()).contains(Tool.builder()
-							.name("tool1")
-							.description("tool1 description")
-							.inputSchema(jsonMapper, """
-									{
-										"": "http://json-schema.org/draft-07/schema#",
-										"type": "object",
-										"properties": {}
-									}
-									""")
-							.build());
+						assertThat(mcpClient.listTools().tools()).contains(Tool.builder("tool1", jsonMapper, """
+								{
+									"": "http://json-schema.org/draft-07/schema#",
+									"type": "object",
+									"properties": {}
+								}
+								""").description("tool1 description").build());
 
 						// Call a tool that sends progress notifications
 						CallToolRequest toolRequest = CallToolRequest.builder("tool1").arguments(Map.of()).build();
@@ -157,7 +153,9 @@ public class StatelessWebClientWebFluxServerIT {
 						// TOOL STRUCTURED OUTPUT
 						// Call tool with valid structured output
 						CallToolResult calculatorToolResponse = mcpClient
-							.callTool(new McpSchema.CallToolRequest("calculator", Map.of("expression", "2 + 3")));
+							.callTool(McpSchema.CallToolRequest.builder("calculator")
+								.arguments(Map.of("expression", "2 + 3"))
+								.build());
 
 						assertThat(calculatorToolResponse).isNotNull();
 						assertThat(calculatorToolResponse.isError()).isFalse();
@@ -181,7 +179,9 @@ public class StatelessWebClientWebFluxServerIT {
 						// TOOL FROM MCP TOOL UTILS
 						// Call the tool to ensure arguments are passed correctly
 						CallToolResult toUpperCaseResponse = mcpClient
-							.callTool(new McpSchema.CallToolRequest("toUpperCase", Map.of("input", "hello world")));
+							.callTool(McpSchema.CallToolRequest.builder("toUpperCase")
+								.arguments(Map.of("input", "hello world"))
+								.build());
 						assertThat(toUpperCaseResponse).isNotNull();
 						assertThat(toUpperCaseResponse.isError()).isFalse();
 						assertThat(toUpperCaseResponse.content()).hasSize(1)
@@ -197,14 +197,16 @@ public class StatelessWebClientWebFluxServerIT {
 						assertThat(mcpClient.listPrompts().prompts()).hasSize(1);
 
 						// get prompt
-						GetPromptResult promptResult = mcpClient
-							.getPrompt(new GetPromptRequest("code-completion", Map.of("language", "java")));
+						GetPromptResult promptResult = mcpClient.getPrompt(GetPromptRequest.builder("code-completion")
+							.arguments(Map.of("language", "java"))
+							.build());
 						assertThat(promptResult).isNotNull();
 
 						// completion
-						CompleteRequest completeRequest = new CompleteRequest(
-								new PromptReference("ref/prompt", "code-completion", "Code completion"),
-								new CompleteRequest.CompleteArgument("language", "py"));
+						CompleteRequest completeRequest = CompleteRequest
+							.builder(new PromptReference("ref/prompt", "code-completion", "Code completion"),
+									new CompleteRequest.CompleteArgument("language", "py"))
+							.build();
 
 						CompleteResult completeResult = mcpClient.completeCompletion(completeRequest);
 
@@ -259,13 +261,13 @@ public class StatelessWebClientWebFluxServerIT {
 			// Tool 1
 			McpStatelessServerFeatures.SyncToolSpecification tool1 = McpStatelessServerFeatures.SyncToolSpecification
 				.builder()
-				.tool(Tool.builder().name("tool1").description("tool1 description").inputSchema(jsonMapper, """
+				.tool(Tool.builder("tool1", jsonMapper, """
 						{
 							"": "http://json-schema.org/draft-07/schema#",
 							"type": "object",
 							"properties": {}
 						}
-						""").build())
+						""").description("tool1 description").build())
 				.callHandler((exchange, request) -> CallToolResult.builder()
 					.content(List.of(TextContent.builder("CALL RESPONSE").build()))
 					.build())
@@ -279,8 +281,7 @@ public class StatelessWebClientWebFluxServerIT {
 							Map.of("type", "string"), "timestamp", Map.of("type", "string")),
 					"required", List.of("result", "operation"));
 
-			Tool calculatorTool = Tool.builder()
-				.name("calculator")
+			Tool calculatorTool = Tool.builder("calculator", Map.of())
 				.description("Performs mathematical calculations")
 				.outputSchema(outputSchema)
 				.build();
@@ -314,8 +315,11 @@ public class StatelessWebClientWebFluxServerIT {
 		@Bean
 		public List<McpStatelessServerFeatures.SyncPromptSpecification> myPrompts() {
 
-			var prompt = new McpSchema.Prompt("code-completion", "Code completion", "this is code review prompt",
-					List.of(new PromptArgument("language", "Language", "string", false)));
+			var prompt = McpSchema.Prompt.builder("code-completion")
+				.title("Code completion")
+				.description("this is code review prompt")
+				.arguments(List.of(new PromptArgument("language", "Language", "string", false)))
+				.build();
 
 			var promptSpecification = new McpStatelessServerFeatures.SyncPromptSpecification(prompt,
 					(exchange, getPromptRequest) -> {
@@ -338,7 +342,7 @@ public class StatelessWebClientWebFluxServerIT {
 		@Bean
 		public List<McpStatelessServerFeatures.SyncCompletionSpecification> myCompletions() {
 			var completion = new McpStatelessServerFeatures.SyncCompletionSpecification(
-					new McpSchema.PromptReference("ref/prompt", "code-completion", "Code completion"),
+					McpSchema.PromptReference.builder("code-completion").title("Code completion").build(),
 					(exchange, request) -> {
 						var expectedValues = List.of("python", "pytorch", "pyside");
 						return new McpSchema.CompleteResult(new CompleteResult.CompleteCompletion(expectedValues, 10, // total
@@ -365,8 +369,9 @@ public class StatelessWebClientWebFluxServerIT {
 									System.getProperty("java.version"));
 							String jsonContent = new JsonMapper().writeValueAsString(systemInfo);
 							return McpSchema.ReadResourceResult
-								.builder(List.of(new McpSchema.TextResourceContents(request.uri(), "application/json",
-										jsonContent)))
+								.builder(List.of(McpSchema.TextResourceContents.builder(request.uri(), jsonContent)
+									.mimeType("application/json")
+									.build()))
 								.build();
 						}
 						catch (Exception e) {

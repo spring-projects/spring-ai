@@ -229,7 +229,8 @@ class ToolUtilsTests {
 		assertThat(toolSpecification.tool().name()).isEqualTo("test");
 
 		CallToolResult result = toolSpecification.callHandler()
-			.apply(mock(McpSyncServerExchange.class), new McpSchema.CallToolRequest("test", Map.of()));
+			.apply(mock(McpSyncServerExchange.class),
+					McpSchema.CallToolRequest.builder("test").arguments(Map.of()).build());
 		TextContent content = (TextContent) result.content().get(0);
 		assertThat(content.text()).isEqualTo("success");
 		assertThat(result.isError()).isFalse();
@@ -243,7 +244,8 @@ class ToolUtilsTests {
 
 		assertThat(toolSpecification).isNotNull();
 		CallToolResult result = toolSpecification.callHandler()
-			.apply(mock(McpSyncServerExchange.class), new McpSchema.CallToolRequest("test", Map.of()));
+			.apply(mock(McpSyncServerExchange.class),
+					McpSchema.CallToolRequest.builder("test").arguments(Map.of()).build());
 		TextContent content = (TextContent) result.content().get(0);
 		assertThat(content.text()).isEqualTo("error");
 		assertThat(result.isError()).isTrue();
@@ -348,7 +350,7 @@ class ToolUtilsTests {
 	@Test
 	void getToolCallbacksFromSyncClientsWithSingleClientShouldReturnToolCallbacks() {
 		McpSyncClient mockClient = mock(McpSyncClient.class);
-		Implementation clientInfo = new Implementation("test-client", "1.0.0");
+		Implementation clientInfo = Implementation.builder("test-client", "1.0.0").build();
 		ClientCapabilities clientCapabilities = new ClientCapabilities(null, null, null, null);
 
 		Tool tool1 = mock(Tool.class);
@@ -383,7 +385,7 @@ class ToolUtilsTests {
 	void getToolCallbacksFromSyncClientsWithMultipleClientsShouldReturnCombinedToolCallbacks() {
 
 		McpSyncClient mockClient1 = mock(McpSyncClient.class);
-		Implementation clientInfo1 = new Implementation("client1", "1.0.0");
+		Implementation clientInfo1 = Implementation.builder("client1", "1.0.0").build();
 		ClientCapabilities clientCapabilities1 = new ClientCapabilities(null, null, null, null);
 
 		Tool tool1 = mock(Tool.class);
@@ -391,7 +393,7 @@ class ToolUtilsTests {
 		when(tool1.description()).thenReturn("Test Tool 1");
 
 		McpSyncClient mockClient2 = mock(McpSyncClient.class);
-		Implementation clientInfo2 = new Implementation("client2", "1.0.0");
+		Implementation clientInfo2 = Implementation.builder("client2", "1.0.0").build();
 		ClientCapabilities clientCapabilities2 = new ClientCapabilities(null, null, null, null);
 
 		Tool tool2 = mock(Tool.class);
@@ -429,7 +431,7 @@ class ToolUtilsTests {
 	void getToolCallbacksFromSyncClientsShouldHandleDuplicateToolNames() {
 
 		McpSyncClient mockClient1 = mock(McpSyncClient.class);
-		Implementation clientInfo1 = new Implementation("client", "1.0.0");
+		Implementation clientInfo1 = Implementation.builder("client", "1.0.0").build();
 		ClientCapabilities clientCapabilities1 = new ClientCapabilities(null, null, null, null);
 
 		Tool tool1 = mock(Tool.class);
@@ -437,7 +439,7 @@ class ToolUtilsTests {
 		when(tool1.description()).thenReturn("Test Tool 1");
 
 		McpSyncClient mockClient2 = mock(McpSyncClient.class);
-		Implementation clientInfo2 = new Implementation("client", "1.0.0");
+		Implementation clientInfo2 = Implementation.builder("client", "1.0.0").build();
 		ClientCapabilities clientCapabilities2 = new ClientCapabilities(null, null, null, null);
 
 		Tool tool2 = mock(Tool.class);

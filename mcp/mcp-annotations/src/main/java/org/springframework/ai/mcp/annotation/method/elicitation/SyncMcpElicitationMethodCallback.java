@@ -74,8 +74,7 @@ public final class SyncMcpElicitationMethodCallback extends AbstractMcpElicitati
 				var content = structuredElicitResult.structuredContent() != null
 						? jsonHelper.convertToMap(structuredElicitResult.structuredContent()) : null;
 
-				return ElicitResult.builder()
-					.message(structuredElicitResult.action())
+				return ElicitResult.builder(structuredElicitResult.action())
 					.content(content)
 					.meta(structuredElicitResult.meta())
 					.build();

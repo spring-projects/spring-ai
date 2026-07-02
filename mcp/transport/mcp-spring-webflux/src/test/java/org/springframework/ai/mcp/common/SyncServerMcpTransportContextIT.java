@@ -133,8 +133,7 @@ public class SyncServerMcpTransportContextIT {
 
 	private McpSyncClient sseClient;
 
-	private final McpSchema.Tool tool = McpSchema.Tool.builder()
-		.name("test-tool")
+	private final McpSchema.Tool tool = McpSchema.Tool.builder("test-tool", Map.of())
 		.description("return the value of the x-test header from call tool request")
 		.build();
 
@@ -176,7 +175,7 @@ public class SyncServerMcpTransportContextIT {
 
 		CLIENT_SIDE_HEADER_VALUE_HOLDER.set("some important value");
 		McpSchema.CallToolResult response = this.streamableClient
-			.callTool(new McpSchema.CallToolRequest("test-tool", Map.of()));
+			.callTool(McpSchema.CallToolRequest.builder("test-tool").build());
 
 		assertThat(response).isNotNull();
 		assertThat(response.content()).hasSize(1)
@@ -203,7 +202,7 @@ public class SyncServerMcpTransportContextIT {
 
 		CLIENT_SIDE_HEADER_VALUE_HOLDER.set("some important value");
 		McpSchema.CallToolResult response = this.streamableClient
-			.callTool(new McpSchema.CallToolRequest("test-tool", Map.of()));
+			.callTool(McpSchema.CallToolRequest.builder("test-tool").build());
 
 		assertThat(response).isNotNull();
 		assertThat(response.content()).hasSize(1)
@@ -229,7 +228,7 @@ public class SyncServerMcpTransportContextIT {
 
 		CLIENT_SIDE_HEADER_VALUE_HOLDER.set("some important value");
 		McpSchema.CallToolResult response = this.sseClient
-			.callTool(new McpSchema.CallToolRequest("test-tool", Map.of()));
+			.callTool(McpSchema.CallToolRequest.builder("test-tool").build());
 
 		assertThat(response).isNotNull();
 		assertThat(response.content()).hasSize(1)

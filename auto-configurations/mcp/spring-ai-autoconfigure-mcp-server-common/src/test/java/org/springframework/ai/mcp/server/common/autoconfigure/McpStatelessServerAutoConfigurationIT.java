@@ -441,7 +441,8 @@ public class McpStatelessServerAutoConfigurationIT {
 			Mockito.when(mockTool.name()).thenReturn("test-tool");
 			Mockito.when(mockTool.description()).thenReturn("Test Tool");
 			Mockito.when(mockClient.callTool(Mockito.any(McpSchema.CallToolRequest.class))).thenReturn(mockResult);
-			when(mockClient.getClientInfo()).thenReturn(new McpSchema.Implementation("testClient", "1.0.0"));
+			when(mockClient.getClientInfo())
+				.thenReturn(McpSchema.Implementation.builder("testClient", "1.0.0").build());
 
 			return List.of(SyncMcpToolCallback.builder().mcpClient(mockClient).tool(mockTool).build());
 		}
@@ -459,7 +460,8 @@ public class McpStatelessServerAutoConfigurationIT {
 
 				Mockito.when(mockTool.name()).thenReturn("provider-tool");
 				Mockito.when(mockTool.description()).thenReturn("Provider Tool");
-				when(mockClient.getClientInfo()).thenReturn(new McpSchema.Implementation("testClient", "1.0.0"));
+				when(mockClient.getClientInfo())
+					.thenReturn(McpSchema.Implementation.builder("testClient", "1.0.0").build());
 
 				return new ToolCallback[] {
 						SyncMcpToolCallback.builder().mcpClient(mockClient).tool(mockTool).build() };
@@ -479,7 +481,7 @@ public class McpStatelessServerAutoConfigurationIT {
 							new McpSchema.CompleteResult.CompleteCompletion(List.of(), 0, false));
 
 			return List.of(new McpStatelessServerFeatures.SyncCompletionSpecification(
-					new McpSchema.PromptReference("ref/prompt", "code_review", "Code review"), completionHandler));
+					McpSchema.PromptReference.builder("code_review").title("Code review").build(), completionHandler));
 		}
 
 	}
@@ -494,7 +496,7 @@ public class McpStatelessServerAutoConfigurationIT {
 							new McpSchema.CompleteResult.CompleteCompletion(List.of(), 0, false)));
 
 			return List.of(new McpStatelessServerFeatures.AsyncCompletionSpecification(
-					new McpSchema.PromptReference("ref/prompt", "code_review", "Code review"), completionHandler));
+					McpSchema.PromptReference.builder("code_review").title("Code review").build(), completionHandler));
 		}
 
 	}
@@ -562,8 +564,9 @@ public class McpStatelessServerAutoConfigurationIT {
 
 			String message = "Hello, " + name + "! How can I help you today?";
 
-			return new McpSchema.GetPromptResult("Greeting",
-					List.of(new McpSchema.PromptMessage(McpSchema.Role.ASSISTANT, new McpSchema.TextContent(message))));
+			return McpSchema.GetPromptResult.builder(List.of(McpSchema.PromptMessage
+				.builder(McpSchema.Role.ASSISTANT, McpSchema.TextContent.builder(message).build())
+				.build())).description("Greeting").build();
 		}
 
 		@McpComplete(prompt = "city-search")
@@ -603,8 +606,9 @@ public class McpStatelessServerAutoConfigurationIT {
 
 			String message = "Hello, " + name + "! How can I help you today?";
 
-			return Mono.just(new McpSchema.GetPromptResult("Greeting", List
-				.of(new McpSchema.PromptMessage(McpSchema.Role.ASSISTANT, new McpSchema.TextContent(message)))));
+			return Mono.just(McpSchema.GetPromptResult.builder(List.of(McpSchema.PromptMessage
+				.builder(McpSchema.Role.ASSISTANT, McpSchema.TextContent.builder(message).build())
+				.build())).description("Greeting").build());
 		}
 
 		@McpComplete(prompt = "city-search")
