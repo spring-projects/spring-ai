@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.model.chat.memory.redis.autoconfigure;
+package org.springframework.ai.model.chat.memory.repository.redis.autoconfigure;
 
 import com.redis.testcontainers.RedisStackContainer;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -30,22 +31,24 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Testcontainers
-@SuppressWarnings("removal")
-class RedisChatMemoryAutoConfigurationIT {
+class RedisChatMemoryRepositoryAutoConfigurationIT {
 
 	@Container
 	static RedisStackContainer redisContainer = new RedisStackContainer(
 			RedisStackContainer.DEFAULT_IMAGE_NAME.withTag(RedisStackContainer.DEFAULT_TAG))
 		.withExposedPorts(6379);
 
+	@BeforeAll
+	static void setup() {
+	}
+
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withConfiguration(
-				AutoConfigurations.of(RedisChatMemoryAutoConfiguration.class, DataRedisAutoConfiguration.class))
+		.withConfiguration(AutoConfigurations.of(RedisChatMemoryRepositoryAutoConfiguration.class,
+				DataRedisAutoConfiguration.class))
 		.withPropertyValues("spring.data.redis.host=" + redisContainer.getHost(),
 				"spring.data.redis.port=" + redisContainer.getFirstMappedPort(),
-				// Pass the same Redis connection properties to our chat memory properties
-				"spring.ai.chat.memory.redis.host=" + redisContainer.getHost(),
-				"spring.ai.chat.memory.redis.port=" + redisContainer.getFirstMappedPort());
+				"spring.ai.chat.memory.repository.redis.host=" + redisContainer.getHost(),
+				"spring.ai.chat.memory.repository.redis.port=" + redisContainer.getFirstMappedPort());
 
 	@Test
 	void autoConfigurationRegistersExpectedBeans() {
@@ -58,9 +61,9 @@ class RedisChatMemoryAutoConfigurationIT {
 	@Test
 	void customPropertiesAreApplied() {
 		this.contextRunner
-			.withPropertyValues("spring.ai.chat.memory.redis.index-name=custom-index",
-					"spring.ai.chat.memory.redis.key-prefix=custom-prefix:",
-					"spring.ai.chat.memory.redis.time-to-live=300s")
+			.withPropertyValues("spring.ai.chat.memory.repository.redis.index-name=custom-index",
+					"spring.ai.chat.memory.repository.redis.key-prefix=custom-prefix:",
+					"spring.ai.chat.memory.repository.redis.time-to-live=300s")
 			.run(context -> {
 				RedisChatMemoryRepository chatMemory = context.getBean(RedisChatMemoryRepository.class);
 				assertThat(chatMemory).isNotNull();

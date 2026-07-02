@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.model.chat.memory.redis.autoconfigure;
+package org.springframework.ai.model.chat.memory.repository.redis.autoconfigure;
 
 import java.time.Duration;
 import java.util.ArrayList;
@@ -24,17 +24,16 @@ import java.util.Map;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.chat.memory.repository.redis.RedisChatMemoryConfig;
-import org.springframework.ai.model.chat.memory.repository.redis.autoconfigure.RedisChatMemoryRepositoryProperties;
-import org.springframework.boot.context.properties.DeprecatedConfigurationProperty;
 
 /**
  * Configuration properties for Redis-based chat memory.
  *
  * @author Brian Sam-Bodden
- * @deprecated Use {@link RedisChatMemoryRepositoryProperties} instead.
+ * @author guan xu
  */
-@Deprecated(since = "2.0.1", forRemoval = true)
-public class RedisChatMemoryProperties {
+public class RedisChatMemoryRepositoryProperties {
+
+	public static final String CONFIG_PREFIX = "spring.ai.chat.memory.repository.redis";
 
 	/**
 	 * Redis server host.
@@ -79,16 +78,14 @@ public class RedisChatMemoryProperties {
 	/**
 	 * Metadata field definitions for proper indexing. Compatible with RedisVL schema
 	 * format. Example: <pre>
-	 * spring.ai.chat.memory.redis.metadata-fields[0].name=priority
-	 * spring.ai.chat.memory.redis.metadata-fields[0].type=tag
-	 * spring.ai.chat.memory.redis.metadata-fields[1].name=score
-	 * spring.ai.chat.memory.redis.metadata-fields[1].type=numeric
+	 * spring.ai.chat.memory.repository.redis.metadata-fields[0].name=priority
+	 * spring.ai.chat.memory.repository.redis.metadata-fields[0].type=tag
+	 * spring.ai.chat.memory.repository.redis.metadata-fields[1].name=score
+	 * spring.ai.chat.memory.repository.redis.metadata-fields[1].type=numeric
 	 * </pre>
 	 */
 	private List<Map<String, String>> metadataFields = new ArrayList<>();
 
-	@DeprecatedConfigurationProperty(replacement = "spring.ai.chat.memory.repository.redis.host")
-	@Deprecated(since = "2.0.1", forRemoval = true)
 	public String getHost() {
 		return this.host;
 	}
@@ -97,8 +94,6 @@ public class RedisChatMemoryProperties {
 		this.host = host;
 	}
 
-	@DeprecatedConfigurationProperty(replacement = "spring.ai.chat.memory.repository.redis.port")
-	@Deprecated(since = "2.0.1", forRemoval = true)
 	public int getPort() {
 		return this.port;
 	}
@@ -107,8 +102,6 @@ public class RedisChatMemoryProperties {
 		this.port = port;
 	}
 
-	@DeprecatedConfigurationProperty(replacement = "spring.ai.chat.memory.repository.redis.index-name")
-	@Deprecated(since = "2.0.1", forRemoval = true)
 	public String getIndexName() {
 		return this.indexName;
 	}
@@ -117,8 +110,6 @@ public class RedisChatMemoryProperties {
 		this.indexName = indexName;
 	}
 
-	@DeprecatedConfigurationProperty(replacement = "spring.ai.chat.memory.repository.redis.key-prefix")
-	@Deprecated(since = "2.0.1", forRemoval = true)
 	public String getKeyPrefix() {
 		return this.keyPrefix;
 	}
@@ -127,8 +118,6 @@ public class RedisChatMemoryProperties {
 		this.keyPrefix = keyPrefix;
 	}
 
-	@DeprecatedConfigurationProperty(replacement = "spring.ai.chat.memory.repository.redis.time-to-live")
-	@Deprecated(since = "2.0.1", forRemoval = true)
 	public @Nullable Duration getTimeToLive() {
 		return this.timeToLive;
 	}
@@ -137,8 +126,6 @@ public class RedisChatMemoryProperties {
 		this.timeToLive = timeToLive;
 	}
 
-	@DeprecatedConfigurationProperty(replacement = "spring.ai.chat.memory.repository.redis.initialize-schema")
-	@Deprecated(since = "2.0.1", forRemoval = true)
 	public Boolean getInitializeSchema() {
 		return this.initializeSchema;
 	}
@@ -147,8 +134,6 @@ public class RedisChatMemoryProperties {
 		this.initializeSchema = initializeSchema;
 	}
 
-	@DeprecatedConfigurationProperty(replacement = "spring.ai.chat.memory.repository.redis.max-conversation-ids")
-	@Deprecated(since = "2.0.1", forRemoval = true)
 	public Integer getMaxConversationIds() {
 		return this.maxConversationIds;
 	}
@@ -157,9 +142,6 @@ public class RedisChatMemoryProperties {
 		this.maxConversationIds = maxConversationIds;
 	}
 
-	@DeprecatedConfigurationProperty(
-			replacement = "spring.ai.chat.memory.repository.redis.max-messages-per-conversation")
-	@Deprecated(since = "2.0.1", forRemoval = true)
 	public Integer getMaxMessagesPerConversation() {
 		return this.maxMessagesPerConversation;
 	}
@@ -168,8 +150,6 @@ public class RedisChatMemoryProperties {
 		this.maxMessagesPerConversation = maxMessagesPerConversation;
 	}
 
-	@DeprecatedConfigurationProperty(replacement = "spring.ai.chat.memory.repository.redis.metadata-fields")
-	@Deprecated(since = "2.0.1", forRemoval = true)
 	public List<Map<String, String>> getMetadataFields() {
 		return this.metadataFields;
 	}
