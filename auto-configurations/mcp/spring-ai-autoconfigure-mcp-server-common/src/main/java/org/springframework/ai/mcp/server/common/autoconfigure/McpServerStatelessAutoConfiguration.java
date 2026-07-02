@@ -18,7 +18,6 @@ package org.springframework.ai.mcp.server.common.autoconfigure;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 import io.modelcontextprotocol.server.McpServer;
 import io.modelcontextprotocol.server.McpServer.StatelessAsyncSpecification;
@@ -84,7 +83,7 @@ public class McpServerStatelessAutoConfiguration {
 			ObjectProvider<List<SyncResourceTemplateSpecification>> resourceTemplates,
 			ObjectProvider<List<SyncPromptSpecification>> prompts,
 			ObjectProvider<List<SyncCompletionSpecification>> completions, Environment environment,
-			Optional<McpStatelessSyncServerCustomizer> mcpStatelessServerCustomizer) {
+			ObjectProvider<McpStatelessSyncServerCustomizer> customizers) {
 
 		McpSchema.Implementation serverInfo = Implementation
 			.builder(serverProperties.getName(), serverProperties.getVersion())
@@ -164,7 +163,7 @@ public class McpServerStatelessAutoConfiguration {
 			serverBuilder.immediateExecution(true);
 		}
 
-		mcpStatelessServerCustomizer.ifPresent(customizer -> customizer.customize(serverBuilder));
+		customizers.orderedStream().forEach(customizer -> customizer.customize(serverBuilder));
 
 		return serverBuilder.build();
 	}
@@ -178,7 +177,7 @@ public class McpServerStatelessAutoConfiguration {
 			ObjectProvider<List<AsyncResourceTemplateSpecification>> resourceTemplates,
 			ObjectProvider<List<AsyncPromptSpecification>> prompts,
 			ObjectProvider<List<AsyncCompletionSpecification>> completions,
-			Optional<McpStatelessAsyncServerCustomizer> mcpStatelessServerCustomizer) {
+			ObjectProvider<McpStatelessAsyncServerCustomizer> customizers) {
 
 		McpSchema.Implementation serverInfo = Implementation
 			.builder(serverProperties.getName(), serverProperties.getVersion())
@@ -255,7 +254,7 @@ public class McpServerStatelessAutoConfiguration {
 
 		serverBuilder.requestTimeout(serverProperties.getRequestTimeout());
 
-		mcpStatelessServerCustomizer.ifPresent(customizer -> customizer.customize(serverBuilder));
+		customizers.orderedStream().forEach(customizer -> customizer.customize(serverBuilder));
 
 		return serverBuilder.build();
 	}
