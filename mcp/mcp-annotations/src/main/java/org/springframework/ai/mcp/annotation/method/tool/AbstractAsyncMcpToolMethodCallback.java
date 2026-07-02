@@ -85,13 +85,14 @@ public abstract class AbstractAsyncMcpToolMethodCallback<T, RC extends McpReques
 
 			// Check if the Mono contains CallToolResult
 			if (ReactiveUtils.isReactiveReturnTypeOfCallToolResult(this.toolMethod)) {
-				return (Mono<CallToolResult>) monoResult;
+				return ((Mono<CallToolResult>) monoResult).onErrorResume(this::toErrorResultOrPropagate);
 			}
 
 			// Handle Mono<Void> for VOID return type
 			if (ReactiveUtils.isReactiveReturnTypeOfVoid(this.toolMethod)) {
 				return monoResult
-					.then(Mono.just(CallToolResult.builder().addTextContent(jsonHelper.toJson("Done")).build()));
+					.then(Mono.just(CallToolResult.builder().addTextContent(jsonHelper.toJson("Done")).build()))
+					.onErrorResume(this::toErrorResultOrPropagate);
 			}
 
 			// Handle other Mono types - map the emitted value to CallToolResult
@@ -104,13 +105,14 @@ public abstract class AbstractAsyncMcpToolMethodCallback<T, RC extends McpReques
 
 			// Check if the Flux contains CallToolResult
 			if (ReactiveUtils.isReactiveReturnTypeOfCallToolResult(this.toolMethod)) {
-				return ((Flux<CallToolResult>) fluxResult).next();
+				return ((Flux<CallToolResult>) fluxResult).next().onErrorResume(this::toErrorResultOrPropagate);
 			}
 
 			// Handle Mono<Void> for VOID return type
 			if (ReactiveUtils.isReactiveReturnTypeOfVoid(this.toolMethod)) {
 				return fluxResult
-					.then(Mono.just(CallToolResult.builder().addTextContent(jsonHelper.toJson("Done")).build()));
+					.then(Mono.just(CallToolResult.builder().addTextContent(jsonHelper.toJson("Done")).build()))
+					.onErrorResume(this::toErrorResultOrPropagate);
 			}
 
 			// Handle other Flux types by taking the first element and mapping
@@ -124,13 +126,14 @@ public abstract class AbstractAsyncMcpToolMethodCallback<T, RC extends McpReques
 
 			// Check if the Publisher contains CallToolResult
 			if (ReactiveUtils.isReactiveReturnTypeOfCallToolResult(this.toolMethod)) {
-				return (Mono<CallToolResult>) monoFromPublisher;
+				return ((Mono<CallToolResult>) monoFromPublisher).onErrorResume(this::toErrorResultOrPropagate);
 			}
 
 			// Handle Mono<Void> for VOID return type
 			if (ReactiveUtils.isReactiveReturnTypeOfVoid(this.toolMethod)) {
 				return monoFromPublisher
-					.then(Mono.just(CallToolResult.builder().addTextContent(jsonHelper.toJson("Done")).build()));
+					.then(Mono.just(CallToolResult.builder().addTextContent(jsonHelper.toJson("Done")).build()))
+					.onErrorResume(this::toErrorResultOrPropagate);
 			}
 
 			// Handle other Publisher types by mapping the emitted value

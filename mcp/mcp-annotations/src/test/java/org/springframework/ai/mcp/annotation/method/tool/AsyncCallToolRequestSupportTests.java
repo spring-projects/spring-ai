@@ -94,11 +94,12 @@ public class AsyncCallToolRequestSupportTests {
 
 		Mono<CallToolResult> resultMono = callback.apply(exchange, request);
 
-		// When a method returns Mono.error(), it propagates as an error
-		StepVerifier.create(resultMono)
-			.expectErrorMatches(throwable -> throwable instanceof RuntimeException
-					&& throwable.getMessage().contains("Async tool execution failed"))
-			.verify();
+		// A plain RuntimeException emitted by the Mono is conveyed to the model as an
+		// error result, mirroring the @Tool contract.
+		StepVerifier.create(resultMono).assertNext(result -> {
+			assertThat(result.isError()).isTrue();
+			assertThat(((TextContent) result.content().get(0)).text()).contains("Async tool execution failed");
+		}).verifyComplete();
 	}
 
 	@Test

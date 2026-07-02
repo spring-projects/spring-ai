@@ -168,6 +168,57 @@ public class AsyncMcpToolMethodCallbackExceptionHandlingTests {
 	}
 
 	@Test
+	public void runtimeExceptionFromMonoVoidIsConvertedToErrorResult() throws Exception {
+		AsyncMcpToolMethodCallback callback = callbackFor("monoVoidRuntimeExceptionTool");
+		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
+		CallToolRequest request = new CallToolRequest("mono-void-runtime-exception-tool", Map.of("input", "test"));
+
+		Mono<CallToolResult> result = callback.apply(exchange, request);
+
+		StepVerifier.create(result).assertNext(r -> {
+			assertThat(r.isError()).isTrue();
+			assertThat(((TextContent) r.content().get(0)).text()).contains("Void error: test");
+		}).verifyComplete();
+	}
+
+	@Test
+	public void mcpErrorFromMonoVoidBubblesUp() throws Exception {
+		AsyncMcpToolMethodCallback callback = callbackFor("monoVoidMcpErrorTool");
+		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
+		CallToolRequest request = new CallToolRequest("mono-void-mcp-error-tool", Map.of("input", "test"));
+
+		Mono<CallToolResult> result = callback.apply(exchange, request);
+
+		StepVerifier.create(result).expectError(McpError.class).verify();
+	}
+
+	@Test
+	public void runtimeExceptionFromMonoCallToolResultIsConvertedToErrorResult() throws Exception {
+		AsyncMcpToolMethodCallback callback = callbackFor("monoCallToolResultRuntimeExceptionTool");
+		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
+		CallToolRequest request = new CallToolRequest("mono-call-tool-result-runtime-exception-tool",
+				Map.of("input", "test"));
+
+		Mono<CallToolResult> result = callback.apply(exchange, request);
+
+		StepVerifier.create(result).assertNext(r -> {
+			assertThat(r.isError()).isTrue();
+			assertThat(((TextContent) r.content().get(0)).text()).contains("CallToolResult error: test");
+		}).verifyComplete();
+	}
+
+	@Test
+	public void mcpErrorFromMonoCallToolResultBubblesUp() throws Exception {
+		AsyncMcpToolMethodCallback callback = callbackFor("monoCallToolResultMcpErrorTool");
+		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
+		CallToolRequest request = new CallToolRequest("mono-call-tool-result-mcp-error-tool", Map.of("input", "test"));
+
+		Mono<CallToolResult> result = callback.apply(exchange, request);
+
+		StepVerifier.create(result).expectError(McpError.class).verify();
+	}
+
+	@Test
 	public void successfulExecutionReturnsResult() throws Exception {
 		AsyncMcpToolMethodCallback callback = callbackFor("successTool");
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
@@ -259,6 +310,27 @@ public class AsyncMcpToolMethodCallbackExceptionHandlingTests {
 		@McpTool(name = "success-tool", description = "Returns a result")
 		public Mono<String> successTool(String input) {
 			return Mono.just("Success: " + input);
+		}
+
+		@McpTool(name = "mono-void-runtime-exception-tool", description = "Emits RuntimeException via Mono<Void>")
+		public Mono<Void> monoVoidRuntimeExceptionTool(String input) {
+			return Mono.error(new RuntimeException("Void error: " + input));
+		}
+
+		@McpTool(name = "mono-void-mcp-error-tool", description = "Emits McpError via Mono<Void>")
+		public Mono<Void> monoVoidMcpErrorTool(String input) {
+			return Mono.error(McpError.builder(-32000).message("Protocol error: " + input).build());
+		}
+
+		@McpTool(name = "mono-call-tool-result-runtime-exception-tool",
+				description = "Emits RuntimeException via Mono<CallToolResult>")
+		public Mono<CallToolResult> monoCallToolResultRuntimeExceptionTool(String input) {
+			return Mono.error(new RuntimeException("CallToolResult error: " + input));
+		}
+
+		@McpTool(name = "mono-call-tool-result-mcp-error-tool", description = "Emits McpError via Mono<CallToolResult>")
+		public Mono<CallToolResult> monoCallToolResultMcpErrorTool(String input) {
+			return Mono.error(McpError.builder(-32000).message("Protocol error: " + input).build());
 		}
 
 	}

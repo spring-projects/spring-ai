@@ -95,7 +95,7 @@ public String lookupOrder(String orderId) {
 }
 ----
 
-If you want a checked exception to be a hard failure (the previous default behaviour when the exception type was `Exception.class`), no change is needed — it already bubbles up.
+If you want a checked exception to be a hard failure, no change is needed — it already bubbles up as an `UndeclaredThrowableException` by default.
 
 ==== Deprecated: `toolCallExceptionClass` Constructor Parameter
 
