@@ -50,6 +50,12 @@ public abstract class AbstractMcpToolProvider {
 		return method.getAnnotation(McpTool.class);
 	}
 
+	/**
+	 * @deprecated no longer consulted. Exception handling now follows the {@code @Tool}
+	 * contract based on the exception type, so the returned value has no effect. Retained
+	 * for backward compatibility. Will be removed in 2.1.0.
+	 */
+	@Deprecated
 	protected Class<? extends Throwable> doGetToolCallException() {
 		return Exception.class;
 	}
