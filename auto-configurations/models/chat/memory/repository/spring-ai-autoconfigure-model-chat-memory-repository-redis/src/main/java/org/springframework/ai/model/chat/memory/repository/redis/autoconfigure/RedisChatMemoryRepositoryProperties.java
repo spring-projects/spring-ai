@@ -30,6 +30,7 @@ import org.springframework.ai.chat.memory.repository.redis.RedisChatMemoryConfig
  *
  * @author Brian Sam-Bodden
  * @author guan xu
+ * @since 2.0.1
  */
 public class RedisChatMemoryRepositoryProperties {
 

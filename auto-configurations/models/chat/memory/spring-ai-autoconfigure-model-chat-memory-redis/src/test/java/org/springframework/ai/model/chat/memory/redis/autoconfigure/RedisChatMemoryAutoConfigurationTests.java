@@ -18,6 +18,7 @@ package org.springframework.ai.model.chat.memory.redis.autoconfigure;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.model.chat.memory.repository.redis.autoconfigure.RedisChatMemoryRepositoryAutoConfiguration;
 import org.springframework.ai.model.chat.memory.repository.redis.autoconfigure.RedisChatMemoryRepositoryProperties;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -28,7 +29,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 class RedisChatMemoryAutoConfigurationTests {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withConfiguration(AutoConfigurations.of(RedisChatMemoryAutoConfiguration.class));
+		.withConfiguration(AutoConfigurations.of(RedisChatMemoryAutoConfiguration.class,
+				RedisChatMemoryRepositoryAutoConfiguration.class));
 
 	@Test
 	void propertiesWithOldPrefix() {

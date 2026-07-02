@@ -38,6 +38,7 @@ import org.springframework.util.StringUtils;
  * @author Brian Sam-Bodden
  * @author Yanming Zhou
  * @author guan xu
+ * @since 2.0.1
  */
 @AutoConfiguration(before = ChatMemoryAutoConfiguration.class)
 @ConditionalOnClass({ RedisChatMemoryRepository.class, RedisClient.class })

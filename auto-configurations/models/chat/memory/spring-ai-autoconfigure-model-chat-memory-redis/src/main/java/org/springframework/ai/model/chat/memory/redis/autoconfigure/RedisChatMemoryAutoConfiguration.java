@@ -16,18 +16,47 @@
 
 package org.springframework.ai.model.chat.memory.redis.autoconfigure;
 
+import redis.clients.jedis.RedisClient;
+
+import org.springframework.ai.chat.memory.repository.redis.RedisChatMemoryRepository;
+import org.springframework.ai.model.chat.memory.autoconfigure.ChatMemoryAutoConfiguration;
 import org.springframework.ai.model.chat.memory.repository.redis.autoconfigure.RedisChatMemoryRepositoryAutoConfiguration;
-import org.springframework.context.annotation.Import;
+import org.springframework.ai.model.chat.memory.repository.redis.autoconfigure.RedisChatMemoryRepositoryProperties;
+import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Bean;
 
 /**
  * Auto-configuration for Redis-based chat memory implementation.
  *
  * @author Brian Sam-Bodden
  * @author Yanming Zhou
+ * @author Sebastien Deleuze
  * @deprecated Use {@link RedisChatMemoryRepositoryAutoConfiguration} instead.
  */
 @Deprecated(since = "2.0.1", forRemoval = true)
-@Import(RedisChatMemoryRepositoryAutoConfiguration.class)
+@SuppressWarnings("removal")
+@AutoConfiguration(before = ChatMemoryAutoConfiguration.class)
+@ConditionalOnClass({ RedisChatMemoryRepository.class, RedisClient.class })
 public class RedisChatMemoryAutoConfiguration {
+
+	/**
+	 * Binds the legacy {@code spring.ai.chat.memory.redis} properties onto the same
+	 * {@link RedisChatMemoryRepositoryProperties} instance used by
+	 * {@link RedisChatMemoryRepositoryAutoConfiguration}, so that existing configuration
+	 * keeps working during the migration to the current
+	 * {@code spring.ai.chat.memory.repository.redis} prefix.
+	 * @param delegate the current Redis chat memory repository properties
+	 * @return the deprecated Redis chat memory properties
+	 * @deprecated for removal in favor of {@link RedisChatMemoryRepositoryProperties}
+	 * @since 2.0.1
+	 */
+	@Deprecated(since = "2.0.1", forRemoval = true)
+	@Bean
+	@ConfigurationProperties(prefix = RedisChatMemoryProperties.CONFIG_PREFIX)
+	RedisChatMemoryProperties redisChatMemoryProperties(RedisChatMemoryRepositoryProperties delegate) {
+		return new RedisChatMemoryProperties(delegate);
+	}
 
 }

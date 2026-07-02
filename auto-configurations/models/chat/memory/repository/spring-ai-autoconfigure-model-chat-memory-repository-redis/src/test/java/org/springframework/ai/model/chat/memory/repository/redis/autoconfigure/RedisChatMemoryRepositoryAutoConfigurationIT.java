@@ -16,8 +16,9 @@
 
 package org.springframework.ai.model.chat.memory.repository.redis.autoconfigure;
 
+import java.time.Duration;
+
 import com.redis.testcontainers.RedisStackContainer;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -37,10 +38,6 @@ class RedisChatMemoryRepositoryAutoConfigurationIT {
 	static RedisStackContainer redisContainer = new RedisStackContainer(
 			RedisStackContainer.DEFAULT_IMAGE_NAME.withTag(RedisStackContainer.DEFAULT_TAG))
 		.withExposedPorts(6379);
-
-	@BeforeAll
-	static void setup() {
-	}
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(RedisChatMemoryRepositoryAutoConfiguration.class,
@@ -63,10 +60,22 @@ class RedisChatMemoryRepositoryAutoConfigurationIT {
 		this.contextRunner
 			.withPropertyValues("spring.ai.chat.memory.repository.redis.index-name=custom-index",
 					"spring.ai.chat.memory.repository.redis.key-prefix=custom-prefix:",
-					"spring.ai.chat.memory.repository.redis.time-to-live=300s")
+					"spring.ai.chat.memory.repository.redis.time-to-live=300s",
+					"spring.ai.chat.memory.repository.redis.initialize-schema=false",
+					"spring.ai.chat.memory.repository.redis.max-conversation-ids=42",
+					"spring.ai.chat.memory.repository.redis.max-messages-per-conversation=24")
 			.run(context -> {
+				RedisChatMemoryRepositoryProperties properties = context
+					.getBean(RedisChatMemoryRepositoryProperties.class);
+				assertThat(properties.getIndexName()).isEqualTo("custom-index");
+				assertThat(properties.getKeyPrefix()).isEqualTo("custom-prefix:");
+				assertThat(properties.getTimeToLive()).isEqualTo(Duration.ofSeconds(300));
+				assertThat(properties.getInitializeSchema()).isFalse();
+				assertThat(properties.getMaxConversationIds()).isEqualTo(42);
+				assertThat(properties.getMaxMessagesPerConversation()).isEqualTo(24);
+
 				RedisChatMemoryRepository chatMemory = context.getBean(RedisChatMemoryRepository.class);
-				assertThat(chatMemory).isNotNull();
+				assertThat(chatMemory.getIndexName()).isEqualTo("custom-index");
 			});
 	}
 
