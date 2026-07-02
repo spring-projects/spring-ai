@@ -69,15 +69,9 @@ public class RedisChatMemoryRepositoryAutoConfiguration {
 	}
 
 	@Bean
-	@ConditionalOnMissingBean
-	public RedisClient jedisClient(RedisChatMemoryRepositoryProperties properties) {
-		return RedisClient.builder().hostAndPort(properties.getHost(), properties.getPort()).build();
-	}
-
-	@Bean
 	@ConditionalOnMissingBean({ RedisChatMemoryRepository.class, ChatMemory.class, ChatMemoryRepository.class })
-	public RedisChatMemoryRepository redisChatMemoryRepository(RedisClient jedisClient,
-			RedisChatMemoryRepositoryProperties properties) {
+	public RedisChatMemoryRepository redisChatMemoryRepository(RedisChatMemoryRepositoryProperties properties) {
+		RedisClient jedisClient = jedisClient(properties);
 		RedisChatMemoryRepository.Builder builder = RedisChatMemoryRepository.builder().jedisClient(jedisClient);
 
 		// Apply configuration if provided
@@ -110,6 +104,10 @@ public class RedisChatMemoryRepositoryAutoConfiguration {
 		}
 
 		return builder.build();
+	}
+
+	private RedisClient jedisClient(RedisChatMemoryRepositoryProperties properties) {
+		return RedisClient.builder().hostAndPort(properties.getHost(), properties.getPort()).build();
 	}
 
 }
