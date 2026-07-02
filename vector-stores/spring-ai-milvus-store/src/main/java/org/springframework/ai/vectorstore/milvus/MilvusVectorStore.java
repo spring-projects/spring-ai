@@ -58,6 +58,7 @@ import io.milvus.response.QueryResultsWrapper.RowRecord;
 import io.milvus.response.SearchResultsWrapper;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
@@ -189,6 +190,8 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 
 	private final String collectionName;
 
+	private final @Nullable String partitionName;
+
 	private final int embeddingDimension;
 
 	private final IndexType indexType;
@@ -219,6 +222,7 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 		this.initializeSchema = builder.initializeSchema;
 		this.databaseName = builder.databaseName;
 		this.collectionName = builder.collectionName;
+		this.partitionName = builder.partitionName;
 		this.embeddingDimension = builder.embeddingDimension;
 		this.indexType = builder.indexType;
 		this.metricType = builder.metricType;
@@ -275,11 +279,14 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 		fields.add(new InsertParam.Field(this.metadataFieldName, metadataArray));
 		fields.add(new InsertParam.Field(this.embeddingFieldName, embeddingArray));
 
-		InsertParam insertParam = InsertParam.newBuilder()
+		InsertParam.Builder insertParamBuilder = InsertParam.newBuilder()
 			.withDatabaseName(this.databaseName)
 			.withCollectionName(this.collectionName)
-			.withFields(fields)
-			.build();
+			.withFields(fields);
+		if (StringUtils.hasText(this.partitionName)) {
+			insertParamBuilder.withPartitionName(this.partitionName);
+		}
+		InsertParam insertParam = insertParamBuilder.build();
 
 		R<MutationResult> status = this.milvusClient.insert(insertParam);
 		if (status.getException() != null) {
@@ -300,11 +307,14 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 					.map(MilvusFilterExpressionConverter::toFilterExpressionLiteral)
 					.collect(Collectors.joining(",")));
 
-		R<MutationResult> status = this.milvusClient.delete(DeleteParam.newBuilder()
+		DeleteParam.Builder deleteParamBuilder = DeleteParam.newBuilder()
 			.withDatabaseName(this.databaseName)
 			.withCollectionName(this.collectionName)
-			.withExpr(deleteExpression)
-			.build());
+			.withExpr(deleteExpression);
+		if (StringUtils.hasText(this.partitionName)) {
+			deleteParamBuilder.withPartitionName(this.partitionName);
+		}
+		R<MutationResult> status = this.milvusClient.delete(deleteParamBuilder.build());
 
 		long deleteCount = status.getData().getDeleteCnt();
 		if (logger.isWarnEnabled() && deleteCount != idList.size()) {
@@ -319,11 +329,14 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 		try {
 			String nativeFilterExpression = this.filterExpressionConverter.convertExpression(filterExpression);
 
-			R<MutationResult> status = this.milvusClient.delete(DeleteParam.newBuilder()
+			DeleteParam.Builder deleteParamBuilder = DeleteParam.newBuilder()
 				.withDatabaseName(this.databaseName)
 				.withCollectionName(this.collectionName)
-				.withExpr(nativeFilterExpression)
-				.build());
+				.withExpr(nativeFilterExpression);
+			if (StringUtils.hasText(this.partitionName)) {
+				deleteParamBuilder.withPartitionName(this.partitionName);
+			}
+			R<MutationResult> status = this.milvusClient.delete(deleteParamBuilder.build());
 
 			if (status.getStatus() != Status.Success.getCode()) {
 				throw new IllegalStateException("Failed to delete documents by filter: " + status.getMessage());
@@ -376,6 +389,10 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 
 		if (StringUtils.hasText(nativeFilterExpressions)) {
 			searchParamBuilder.withExpr(nativeFilterExpressions);
+		}
+
+		if (StringUtils.hasText(this.partitionName)) {
+			searchParamBuilder.addPartitionName(this.partitionName);
 		}
 
 		if (StringUtils.hasText(searchParamsJson)) {
@@ -633,6 +650,8 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 
 		private String collectionName = DEFAULT_COLLECTION_NAME;
 
+		private @Nullable String partitionName;
+
 		private int embeddingDimension = INVALID_EMBEDDING_DIMENSION;
 
 		private IndexType indexType = IndexType.IVF_FLAT;
@@ -719,6 +738,18 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 		 */
 		public Builder collectionName(String collectionName) {
 			this.collectionName = collectionName;
+			return this;
+		}
+
+		/**
+		 * Configures the Milvus partition name for insert, delete, and search operations.
+		 * @param partitionName the existing partition name to use ({@code null} or blank
+		 * keeps the default Milvus behavior)
+		 * @return this builder instance
+		 * @since 2.0.1
+		 */
+		public Builder partitionName(@Nullable String partitionName) {
+			this.partitionName = partitionName;
 			return this;
 		}
 

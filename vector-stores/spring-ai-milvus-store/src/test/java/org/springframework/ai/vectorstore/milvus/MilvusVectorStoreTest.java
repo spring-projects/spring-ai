@@ -26,6 +26,7 @@ import io.milvus.grpc.SearchResultData;
 import io.milvus.grpc.SearchResults;
 import io.milvus.param.R;
 import io.milvus.param.dml.DeleteParam;
+import io.milvus.param.dml.InsertParam;
 import io.milvus.param.dml.SearchParam;
 import io.milvus.response.QueryResultsWrapper.RowRecord;
 import io.milvus.response.SearchResultsWrapper;
@@ -57,9 +58,12 @@ import static org.mockito.Mockito.when;
  *
  * @author waileong
  * @author Soby Chacko
+ * @author Taewoong Kim
  */
 @ExtendWith(MockitoExtension.class)
 class MilvusVectorStoreTest {
+
+	private static final String PARTITION_NAME = "tenant_partition";
 
 	@Mock
 	private MilvusServiceClient milvusClient;
@@ -167,6 +171,88 @@ class MilvusVectorStoreTest {
 			assertThat(capturedParam.getTopK()).isEqualTo(request.getTopK());
 			assertThat(capturedParam.getExpr()).isEqualTo("metadata[\"age\"] > 30"); // filter
 			assertThat(capturedParam.getParams()).isEqualTo("{}");
+			assertThat(capturedParam.getPartitionNames()).isEmpty();
+		}
+	}
+
+	@Test
+	void shouldApplyPartitionNameWhenAddingDocuments() {
+		this.vectorStore = MilvusVectorStore.builder(this.milvusClient, this.embeddingModel)
+			.partitionName(PARTITION_NAME)
+			.build();
+
+		when(this.embeddingModel.embed(any(), any(), any())).thenReturn(List.of(new float[] { 1.0f, 2.0f, 3.0f }));
+		when(this.milvusClient.insert(any(InsertParam.class)))
+			.thenReturn(R.success(MutationResult.getDefaultInstance()));
+
+		this.vectorStore.doAdd(List.of(new Document("Spring AI partition test")));
+
+		ArgumentCaptor<InsertParam> captor = ArgumentCaptor.forClass(InsertParam.class);
+		verify(this.milvusClient).insert(captor.capture());
+		assertThat(captor.getValue().getPartitionName()).isEqualTo(PARTITION_NAME);
+	}
+
+	@Test
+	void shouldIgnoreBlankPartitionNameWhenAddingDocuments() {
+		this.vectorStore = MilvusVectorStore.builder(this.milvusClient, this.embeddingModel).partitionName(" ").build();
+
+		when(this.embeddingModel.embed(any(), any(), any())).thenReturn(List.of(new float[] { 1.0f, 2.0f, 3.0f }));
+		when(this.milvusClient.insert(any(InsertParam.class)))
+			.thenReturn(R.success(MutationResult.getDefaultInstance()));
+
+		this.vectorStore.doAdd(List.of(new Document("Spring AI partition test")));
+
+		ArgumentCaptor<InsertParam> captor = ArgumentCaptor.forClass(InsertParam.class);
+		verify(this.milvusClient).insert(captor.capture());
+		assertThat(captor.getValue().getPartitionName()).isEmpty();
+	}
+
+	@Test
+	void shouldApplyPartitionNameWhenDeletingByIdList() {
+		this.vectorStore = MilvusVectorStore.builder(this.milvusClient, this.embeddingModel)
+			.partitionName(PARTITION_NAME)
+			.build();
+		MutationResult mutationResult = MutationResult.newBuilder().setDeleteCnt(1).build();
+		when(this.milvusClient.delete(any(DeleteParam.class))).thenReturn(R.success(mutationResult));
+
+		this.vectorStore.doDelete(List.of("doc-1"));
+
+		ArgumentCaptor<DeleteParam> captor = ArgumentCaptor.forClass(DeleteParam.class);
+		verify(this.milvusClient).delete(captor.capture());
+		assertThat(captor.getValue().getPartitionName()).isEqualTo(PARTITION_NAME);
+	}
+
+	@Test
+	void shouldApplyPartitionNameWhenDeletingByFilterExpression() {
+		this.vectorStore = MilvusVectorStore.builder(this.milvusClient, this.embeddingModel)
+			.partitionName(PARTITION_NAME)
+			.build();
+		MutationResult mutationResult = MutationResult.newBuilder().setDeleteCnt(1).build();
+		when(this.milvusClient.delete(any(DeleteParam.class))).thenReturn(R.success(mutationResult));
+
+		this.vectorStore.delete("tenant == 'a'");
+
+		ArgumentCaptor<DeleteParam> captor = ArgumentCaptor.forClass(DeleteParam.class);
+		verify(this.milvusClient).delete(captor.capture());
+		assertThat(captor.getValue().getPartitionName()).isEqualTo(PARTITION_NAME);
+	}
+
+	@Test
+	void shouldApplyPartitionNameWhenPerformingSimilaritySearch() {
+		this.vectorStore = MilvusVectorStore.builder(this.milvusClient, this.embeddingModel)
+			.partitionName(PARTITION_NAME)
+			.build();
+
+		try (MockedStatic<EmbeddingUtils> mockedEmbeddingUtils = mockStatic(EmbeddingUtils.class);
+				MockedConstruction<SearchResultsWrapper> mockedSearchResultsWrapper = mockConstruction(
+						SearchResultsWrapper.class,
+						(mock, context) -> when(mock.getRowRecords(0)).thenReturn(List.of()))) {
+
+			SearchRequest request = SearchRequest.builder().query("sample query").topK(5).build();
+
+			SearchParam capturedParam = performSimilaritySearch(mockedEmbeddingUtils, request);
+
+			assertThat(capturedParam.getPartitionNames()).containsExactly(PARTITION_NAME);
 		}
 	}
 
@@ -227,6 +313,7 @@ class MilvusVectorStoreTest {
 		// values.
 		assertThat(captor.getValue().getExpr()).isEqualTo(
 				"doc_id in [\"plain-id\",\"x' || doc_id != 'x\",\"with\\\"dquote\",\"back\\\\slash\\nnewline\"]");
+		assertThat(captor.getValue().getPartitionName()).isEmpty();
 	}
 
 	private SearchParam performSimilaritySearch(MockedStatic<EmbeddingUtils> mockedEmbeddingUtils,
