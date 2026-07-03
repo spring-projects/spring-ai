@@ -721,6 +721,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 
 		public ToolChoice {
 			Assert.notNull(mode, "mode must not be null");
+			allowedFunctionNames = (allowedFunctionNames != null) ? List.copyOf(allowedFunctionNames) : null;
 		}
 
 		/**
@@ -771,8 +772,17 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 				return this;
 			}
 
-			public Builder allowedFunctionNames(List<String> allowedFunctionNames) {
+			public Builder allowedFunctionNames(@Nullable List<String> allowedFunctionNames) {
 				this.allowedFunctionNames = allowedFunctionNames;
+				return this;
+			}
+
+			public Builder allowedFunctionName(String allowedFunctionName) {
+				Assert.notNull(allowedFunctionName, "allowedFunctionName must not be null");
+				if (this.allowedFunctionNames == null) {
+					this.allowedFunctionNames = new ArrayList<>();
+				}
+				this.allowedFunctionNames.add(allowedFunctionName);
 				return this;
 			}
 

@@ -183,6 +183,19 @@ public class GoogleGenAiPropertiesTests {
 		});
 	}
 
+	@Test
+	void toolChoiceAllowedFunctionNamesOnlyBindingDefaultsModeToAuto() {
+		this.contextRunner
+			.withPropertyValues("spring.ai.google.genai.chat.tool-choice.allowed-function-names=funcA,funcB")
+			.run(context -> {
+				GoogleGenAiChatProperties chatProperties = context.getBean(GoogleGenAiChatProperties.class);
+				ToolChoice toolChoice = chatProperties.toOptions().getToolChoice();
+				assertThat(toolChoice).isNotNull();
+				assertThat(toolChoice.mode()).isEqualTo(ToolChoice.Mode.AUTO);
+				assertThat(toolChoice.allowedFunctionNames()).containsExactly("funcA", "funcB");
+			});
+	}
+
 	@Configuration
 	@EnableConfigurationProperties({ GoogleGenAiConnectionProperties.class, GoogleGenAiChatProperties.class,
 			GoogleGenAiEmbeddingConnectionProperties.class })

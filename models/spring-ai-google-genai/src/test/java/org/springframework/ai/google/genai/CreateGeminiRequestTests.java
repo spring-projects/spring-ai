@@ -652,6 +652,28 @@ public class CreateGeminiRequestTests {
 	}
 
 	@Test
+	public void createRequestWithToolChoiceValidatedAndAllowedFunctionNames() {
+		var client = GoogleGenAiChatModel.builder()
+			.genAiClient(this.genAiClient)
+			.options(GoogleGenAiChatOptions.builder().model("DEFAULT_MODEL").build())
+			.build();
+
+		GeminiRequest request = client.createGeminiRequest(new Prompt("Test message content",
+				GoogleGenAiChatOptions.builder()
+					.toolChoice(GoogleGenAiChatOptions.ToolChoice.builder()
+						.mode(GoogleGenAiChatOptions.ToolChoice.Mode.VALIDATED)
+						.allowedFunctionNames(List.of("funcA", "funcB"))
+						.build())
+					.build()));
+
+		assertThat(request.config().toolConfig()).isPresent();
+		var fcc = request.config().toolConfig().get().functionCallingConfig().get();
+		assertThat(fcc.mode().get().knownEnum()).isEqualTo(FunctionCallingConfigMode.Known.VALIDATED);
+		assertThat(fcc.allowedFunctionNames()).isPresent();
+		assertThat(fcc.allowedFunctionNames().get()).containsExactly("funcA", "funcB");
+	}
+
+	@Test
 	public void createRequestWithToolChoiceAnyIgnoresAllowedFunctionNamesForNonAnyMode() {
 		var client = GoogleGenAiChatModel.builder()
 			.genAiClient(this.genAiClient)

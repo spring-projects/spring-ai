@@ -303,4 +303,38 @@ public class GoogleGenAiChatOptionsTest extends AbstractChatOptionsTests<GoogleG
 		assertThat(cloned.getLabels()).isNull();
 	}
 
+	@Test
+	public void toolChoiceAllowedFunctionNameCreatesListWhenNull() {
+		GoogleGenAiChatOptions.ToolChoice toolChoice = GoogleGenAiChatOptions.ToolChoice.builder()
+			.mode(GoogleGenAiChatOptions.ToolChoice.Mode.ANY)
+			.allowedFunctionName("functionA")
+			.build();
+
+		assertThat(toolChoice.allowedFunctionNames()).containsExactly("functionA");
+	}
+
+	@Test
+	public void toolChoiceAllowedFunctionNameAccumulatesAcrossCalls() {
+		GoogleGenAiChatOptions.ToolChoice toolChoice = GoogleGenAiChatOptions.ToolChoice.builder()
+			.mode(GoogleGenAiChatOptions.ToolChoice.Mode.ANY)
+			.allowedFunctionName("functionA")
+			.allowedFunctionName("functionB")
+			.build();
+
+		assertThat(toolChoice.allowedFunctionNames()).containsExactly("functionA", "functionB");
+	}
+
+	@Test
+	public void toolChoiceAllowedFunctionNameAppendsToExistingMutableList() {
+		List<String> existing = new ArrayList<>(List.of("functionA"));
+
+		GoogleGenAiChatOptions.ToolChoice toolChoice = GoogleGenAiChatOptions.ToolChoice.builder()
+			.mode(GoogleGenAiChatOptions.ToolChoice.Mode.ANY)
+			.allowedFunctionNames(existing)
+			.allowedFunctionName("functionB")
+			.build();
+
+		assertThat(toolChoice.allowedFunctionNames()).containsExactly("functionA", "functionB");
+	}
+
 }

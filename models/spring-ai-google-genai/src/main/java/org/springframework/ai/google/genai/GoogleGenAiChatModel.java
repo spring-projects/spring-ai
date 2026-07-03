@@ -765,12 +765,14 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			}
 
 			if (requestOptions.getToolChoice() != null) {
+				GoogleGenAiChatOptions.ToolChoice toolChoice = requestOptions.getToolChoice();
 				var fccBuilder = FunctionCallingConfig.builder()
-					.mode(mapToFunctionCallingConfigMode(requestOptions.getToolChoice().mode()));
+					.mode(mapToFunctionCallingConfigMode(toolChoice.mode()));
 
-				if (requestOptions.getToolChoice().mode() == GoogleGenAiChatOptions.ToolChoice.Mode.ANY
-						&& !CollectionUtils.isEmpty(requestOptions.getToolChoice().allowedFunctionNames())) {
-					fccBuilder.allowedFunctionNames(requestOptions.getToolChoice().allowedFunctionNames());
+				if ((toolChoice.mode() == GoogleGenAiChatOptions.ToolChoice.Mode.ANY
+						|| toolChoice.mode() == GoogleGenAiChatOptions.ToolChoice.Mode.VALIDATED)
+						&& !CollectionUtils.isEmpty(toolChoice.allowedFunctionNames())) {
+					fccBuilder.allowedFunctionNames(toolChoice.allowedFunctionNames());
 				}
 
 				toolConfigBuilder.functionCallingConfig(fccBuilder.build());

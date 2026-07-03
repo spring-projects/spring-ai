@@ -128,7 +128,7 @@ The prefix `spring.ai.google.genai.chat` is the property prefix that lets you co
 | spring.ai.google.genai.chat.enable-cached-content | Enable the `GoogleGenAiCachedContentService` bean for managing cached content. | true
 | spring.ai.google.genai.chat.service-tier | The service tier to use for the request. Valid values: `STANDARD`, `PRIORITY`, `FLEX`. | -
 | spring.ai.google.genai.chat.tool-choice.mode | Controls how the model selects functions when tools are provided. Valid values: `AUTO` (model decides), `ANY` (always calls a function), `VALIDATED` (function call or natural language), `NONE` (no function calls). See <<tool-choice>>. | -
-| spring.ai.google.genai.chat.tool-choice.allowed-function-names | Comma-separated list of function names the model may call. Only applied when `tool-choice.mode=ANY`; ignored for other modes. | -
+| spring.ai.google.genai.chat.tool-choice.allowed-function-names | Comma-separated list of function names the model may call. Only applied when `tool-choice.mode` is `ANY` or `VALIDATED`; ignored for other modes. | -
 
 |====
 
@@ -181,7 +181,7 @@ When `allowedFunctionNames` is set, calls are limited to those functions.
 | `NONE` | The model does not call any functions and returns a natural language response.
 |====
 
-NOTE: `allowedFunctionNames` is only applied when mode is `ANY` and is silently ignored for all other modes.
+NOTE: `allowedFunctionNames` is only applied when mode is `ANY` or `VALIDATED`, and is silently ignored for `AUTO` and `NONE`.
 
 ==== Programmatic Configuration
 
@@ -215,7 +215,7 @@ GoogleGenAiChatOptions.builder()
 # Force the model to always call a function
 spring.ai.google.genai.chat.tool-choice.mode=ANY
 
-# Optionally restrict to specific functions (only applies when mode=ANY)
+# Optionally restrict to specific functions (only applies when mode is ANY or VALIDATED)
 spring.ai.google.genai.chat.tool-choice.allowed-function-names=get_weather,get_forecast
 ----
 
