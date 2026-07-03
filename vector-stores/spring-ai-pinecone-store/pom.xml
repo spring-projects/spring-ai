@@ -29,7 +29,6 @@
 		<dependency>
 			<groupId>com.google.protobuf</groupId>
 			<artifactId>protobuf-java-util</artifactId>
-			<version>${pinecone.protobuf-java-util.version}</version>
 		</dependency>
 
 		<!-- TESTING -->
