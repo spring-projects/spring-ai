@@ -18,6 +18,7 @@ package org.springframework.ai.vectorstore.opensearch;
 
 import java.io.IOException;
 import java.io.StringReader;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -376,7 +377,7 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 
 	private List<Document> similaritySearch(org.opensearch.client.opensearch.core.SearchRequest searchRequest) {
 		try {
-			return this.openSearchClient.search(searchRequest, Document.class)
+			return this.openSearchClient.search(searchRequest, OpenSearchDocument.class)
 				.hits()
 				.hits()
 				.stream()
@@ -388,10 +389,15 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 		}
 	}
 
-	private Document toDocument(Hit<Document> hit) {
-		Document document = hit.source();
-		Assert.notNull(document, "Document must not be null");
-		Document.Builder documentBuilder = document.mutate();
+	private Document toDocument(Hit<OpenSearchDocument> hit) {
+		OpenSearchDocument openSearchDocument = hit.source();
+		Assert.notNull(openSearchDocument, "OpenSearchDocument must not be null");
+		Map<String, Object> metadata = openSearchDocument.metadata() != null
+				? new HashMap<>(openSearchDocument.metadata()) : new HashMap<>();
+		Document.Builder documentBuilder = Document.builder()
+			.id(openSearchDocument.id())
+			.text(openSearchDocument.content())
+			.metadata(metadata);
 		if (hit.score() != null) {
 			documentBuilder.metadata(DocumentMetadata.DISTANCE.value(), 1 - hit.score().floatValue());
 			documentBuilder.score(hit.score());
