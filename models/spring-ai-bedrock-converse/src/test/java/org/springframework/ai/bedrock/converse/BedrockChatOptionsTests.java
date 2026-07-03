@@ -16,6 +16,7 @@
 
 package org.springframework.ai.bedrock.converse;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -103,6 +104,23 @@ class BedrockChatOptionsTests extends AbstractChatOptionsTests<BedrockChatOption
 
 		assertThat(merged.getRequestParameters()).containsEntry("base-key", "base-value");
 		assertThat(merged.getRequestParameters()).containsEntry("override-key", "override-value");
+	}
+
+	@Test
+	void cloneCreatesIndependentRequestParameters() {
+		Map<String, String> requestParameters = new HashMap<>();
+		requestParameters.put("key", "value");
+
+		Builder source = BedrockChatOptions.builder().requestParameters(requestParameters);
+		Builder clone = source.clone();
+		requestParameters.put("anotherKey", "anotherValue");
+
+		assertThat(clone.build().getRequestParameters()).containsOnlyKeys("key");
+	}
+
+	@Test
+	void cloneHandlesNullRequestParameters() {
+		assertThat(BedrockChatOptions.builder().clone().build().getRequestParameters()).isNull();
 	}
 
 }

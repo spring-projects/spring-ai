@@ -178,6 +178,42 @@ public String performLongTask(
 }
 ----
 
+==== Exception Handling
+
+Exceptions thrown by an `@McpTool` method follow the same contract as regular xref:api/tools.adoc#exception-handling[Spring AI `@Tool` methods].
+
+* A `RuntimeException` is converted to an error `CallToolResult` and conveyed to the model, which can reason about it or retry.
+* A declared checked exception or an `Error` bubbles up and fails the tool call, so it is not conveyed to the model.
+
+In other words, if you do not want a failure to reach the model, declare a checked exception in the tool method signature and throw it.
+
+[source,java]
+----
+@McpTool(name = "read-file", description = "Read a file from disk")
+public String readFile(@McpToolParam(description = "Path", required = true) String path) throws IOException {
+    // An IOException bubbles up and fails the tool call instead of being
+    // sent back to the model as an error result.
+    return Files.readString(Path.of(path));
+}
+----
+
+A `RuntimeException`, by contrast, is reported to the model as an error result so it can recover.
+
+[source,java]
+----
+@McpTool(name = "divide", description = "Divide two numbers")
+public double divide(int a, int b) {
+    if (b == 0) {
+        // Conveyed to the model as an error result.
+        throw new IllegalArgumentException("Cannot divide by zero");
+    }
+    return (double) a / b;
+}
+----
+
+NOTE: Protocol-level `McpError` exceptions (for example, those used for URL elicitation and other MCP protocol flows) always propagate to the MCP protocol layer rather than being converted to an error `CallToolResult`.
+This applies whether the `McpError` is thrown directly or emitted through a reactive return type (`Mono` or `Flux`).
+
 === @McpResource
 
 The `@McpResource` annotation provides access to resources via URI templates.

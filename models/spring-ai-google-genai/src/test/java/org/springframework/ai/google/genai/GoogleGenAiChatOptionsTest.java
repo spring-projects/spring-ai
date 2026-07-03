@@ -16,6 +16,8 @@
 
 package org.springframework.ai.google.genai;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -268,6 +270,71 @@ public class GoogleGenAiChatOptionsTest extends AbstractChatOptionsTests<GoogleG
 		assertThat(merged.getLabels()).containsEntry("base-key", "base-value");
 		assertThat(merged.getLabels()).containsEntry("override-key", "override-value");
 		assertThat(merged.getSafetySettings()).containsExactlyInAnyOrder(baseSafetySetting, overrideSafetySetting);
+	}
+
+	@Test
+	public void cloneCreatesIndependentCollections() {
+		GoogleGenAiSafetySetting safetySetting = new GoogleGenAiSafetySetting.Builder()
+			.withCategory(GoogleGenAiSafetySetting.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT)
+			.withThreshold(GoogleGenAiSafetySetting.HarmBlockThreshold.BLOCK_LOW_AND_ABOVE)
+			.build();
+		List<GoogleGenAiSafetySetting> safetySettings = new ArrayList<>();
+		safetySettings.add(safetySetting);
+		Map<String, String> labels = new HashMap<>();
+		labels.put("key", "value");
+
+		Builder source = GoogleGenAiChatOptions.builder().safetySettings(safetySettings).labels(labels);
+		Builder clone = source.clone();
+		safetySettings.add(new GoogleGenAiSafetySetting.Builder()
+			.withCategory(GoogleGenAiSafetySetting.HarmCategory.HARM_CATEGORY_HARASSMENT)
+			.withThreshold(GoogleGenAiSafetySetting.HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE)
+			.build());
+		labels.put("anotherKey", "anotherValue");
+
+		GoogleGenAiChatOptions cloned = clone.build();
+		assertThat(cloned.getSafetySettings()).containsExactly(safetySetting);
+		assertThat(cloned.getLabels()).containsOnlyKeys("key");
+	}
+
+	@Test
+	public void cloneHandlesNullCollections() {
+		GoogleGenAiChatOptions cloned = GoogleGenAiChatOptions.builder().clone().build();
+		assertThat(cloned.getSafetySettings()).isNull();
+		assertThat(cloned.getLabels()).isNull();
+	}
+
+	@Test
+	public void toolChoiceAllowedFunctionNameCreatesListWhenNull() {
+		GoogleGenAiChatOptions.ToolChoice toolChoice = GoogleGenAiChatOptions.ToolChoice.builder()
+			.mode(GoogleGenAiChatOptions.ToolChoice.Mode.ANY)
+			.allowedFunctionName("functionA")
+			.build();
+
+		assertThat(toolChoice.allowedFunctionNames()).containsExactly("functionA");
+	}
+
+	@Test
+	public void toolChoiceAllowedFunctionNameAccumulatesAcrossCalls() {
+		GoogleGenAiChatOptions.ToolChoice toolChoice = GoogleGenAiChatOptions.ToolChoice.builder()
+			.mode(GoogleGenAiChatOptions.ToolChoice.Mode.ANY)
+			.allowedFunctionName("functionA")
+			.allowedFunctionName("functionB")
+			.build();
+
+		assertThat(toolChoice.allowedFunctionNames()).containsExactly("functionA", "functionB");
+	}
+
+	@Test
+	public void toolChoiceAllowedFunctionNameAppendsToExistingMutableList() {
+		List<String> existing = new ArrayList<>(List.of("functionA"));
+
+		GoogleGenAiChatOptions.ToolChoice toolChoice = GoogleGenAiChatOptions.ToolChoice.builder()
+			.mode(GoogleGenAiChatOptions.ToolChoice.Mode.ANY)
+			.allowedFunctionNames(existing)
+			.allowedFunctionName("functionB")
+			.build();
+
+		assertThat(toolChoice.allowedFunctionNames()).containsExactly("functionA", "functionB");
 	}
 
 }

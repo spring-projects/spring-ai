@@ -16,6 +16,8 @@
 
 package org.springframework.ai.model.openai.autoconfigure;
 
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
@@ -122,6 +124,21 @@ public class OpenAiChatPropertiesTests {
 
 				assertThat(options.getPromptCacheKey()).isEqualTo("test-cache-key");
 			});
+	}
+
+	@Test
+	public void chatToolChoiceStringValuesTest() {
+
+		for (String toolChoice : List.of("none", "auto", "required")) {
+			this.contextRunner.withPropertyValues("spring.ai.openai.api-key=API_KEY",
+					"spring.ai.openai.base-url=http://TEST.BASE.URL", "spring.ai.openai.chat.tool-choice=" + toolChoice)
+				.withConfiguration(
+						AutoConfigurations.of(OpenAiChatAutoConfiguration.class, ToolCallingAutoConfiguration.class))
+				.run(context -> {
+					var chatProperties = context.getBean(OpenAiChatProperties.class);
+					assertThat(chatProperties.toOptions().getToolChoice()).isEqualTo(toolChoice);
+				});
+		}
 	}
 
 }

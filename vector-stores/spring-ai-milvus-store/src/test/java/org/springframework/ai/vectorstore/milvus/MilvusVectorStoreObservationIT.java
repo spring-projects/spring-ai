@@ -66,7 +66,8 @@ public class MilvusVectorStoreObservationIT {
 	private static final String TEST_COLLECTION_NAME = "test_vector_store";
 
 	@Container
-	private static MilvusContainer milvusContainer = new MilvusContainer(MilvusImage.DEFAULT_IMAGE);
+	private static MilvusContainer milvusContainer = new MilvusContainer(MilvusImage.DEFAULT_IMAGE)
+		.withEnv("DEPLOY_MODE", "STANDALONE");
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(Config.class);
@@ -190,10 +191,11 @@ public class MilvusVectorStoreObservationIT {
 
 		@Bean
 		public EmbeddingModel embeddingModel() {
-			return new OpenAiEmbeddingModel(OpenAiEmbeddingOptions.builder()
+			OpenAiEmbeddingOptions options = OpenAiEmbeddingOptions.builder()
 				.apiKey(System.getenv("OPENAI_API_KEY"))
 				.model(OpenAiEmbeddingOptions.DEFAULT_EMBEDDING_MODEL)
-				.build());
+				.build();
+			return OpenAiEmbeddingModel.builder().options(options).build();
 		}
 
 	}

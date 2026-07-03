@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 import io.modelcontextprotocol.client.McpSyncClient;
+import io.modelcontextprotocol.spec.McpError;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
@@ -180,6 +181,25 @@ class SyncMcpToolCallbackTests {
 		assertThatThrownBy(() -> callback.call("{\"param\":\"value\"}")).isInstanceOf(ToolExecutionException.class)
 			.rootCause()
 			.hasMessage("Testing tool error");
+	}
+
+	@Test
+	void callShouldPropagateMcpErrorAsHardFailure() {
+		when(this.tool.name()).thenReturn("testTool");
+		var clientInfo = Implementation.builder("testClient", "1.0.0").title("server1").build();
+		McpError mcpError = McpError.builder(-32603).message("Protocol failure").build();
+		when(this.mcpClient.callTool(any(CallToolRequest.class))).thenThrow(mcpError);
+
+		SyncMcpToolCallback callback = SyncMcpToolCallback.builder()
+			.mcpClient(this.mcpClient)
+			.tool(this.tool)
+			.prefixedToolName(McpToolUtils.prefixedToolName(clientInfo.name(), clientInfo.title(), this.tool.name()))
+			.toolContextToMcpMetaConverter(ToolContextToMcpMetaConverter.defaultConverter())
+			.build();
+
+		// A protocol-level McpError must bubble up as-is rather than being wrapped in a
+		// ToolExecutionException and conveyed to the model.
+		assertThatThrownBy(() -> callback.call("{\"param\":\"value\"}")).isSameAs(mcpError);
 	}
 
 	@Test

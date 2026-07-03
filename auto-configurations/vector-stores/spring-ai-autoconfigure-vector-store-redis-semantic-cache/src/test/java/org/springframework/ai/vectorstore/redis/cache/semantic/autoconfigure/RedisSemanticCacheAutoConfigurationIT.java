@@ -18,7 +18,6 @@ package org.springframework.ai.vectorstore.redis.cache.semantic.autoconfigure;
 
 import com.redis.testcontainers.RedisStackContainer;
 import io.micrometer.observation.tck.TestObservationRegistry;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.testcontainers.junit.jupiter.Container;
@@ -52,10 +51,6 @@ class RedisSemanticCacheAutoConfigurationIT {
 	static RedisStackContainer redisContainer = new RedisStackContainer(
 			RedisStackContainer.DEFAULT_IMAGE_NAME.withTag(RedisStackContainer.DEFAULT_TAG))
 		.withExposedPorts(6379);
-
-	@BeforeAll
-	static void setup() {
-	}
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(
@@ -120,10 +115,12 @@ class RedisSemanticCacheAutoConfigurationIT {
 		public EmbeddingModel embeddingModel() {
 			// Get API key from environment variable
 			String apiKey = System.getenv("OPENAI_API_KEY");
-			return new OpenAiEmbeddingModel(OpenAiEmbeddingOptions.builder()
+			OpenAiEmbeddingOptions options = OpenAiEmbeddingOptions.builder()
 				.apiKey(apiKey)
 				.model(OpenAiEmbeddingOptions.DEFAULT_EMBEDDING_MODEL)
-				.build());
+				.build();
+			return OpenAiEmbeddingModel.builder().options(options).build();
+
 		}
 
 	}

@@ -18,69 +18,45 @@ package org.springframework.ai.model.chat.memory.redis.autoconfigure;
 
 import redis.clients.jedis.RedisClient;
 
-import org.springframework.ai.chat.memory.ChatMemory;
-import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.chat.memory.repository.redis.RedisChatMemoryRepository;
 import org.springframework.ai.model.chat.memory.autoconfigure.ChatMemoryAutoConfiguration;
+import org.springframework.ai.model.chat.memory.repository.redis.autoconfigure.RedisChatMemoryRepositoryAutoConfiguration;
+import org.springframework.ai.model.chat.memory.repository.redis.autoconfigure.RedisChatMemoryRepositoryProperties;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.util.StringUtils;
 
 /**
  * Auto-configuration for Redis-based chat memory implementation.
  *
  * @author Brian Sam-Bodden
  * @author Yanming Zhou
+ * @author Sebastien Deleuze
+ * @deprecated Use {@link RedisChatMemoryRepositoryAutoConfiguration} instead.
  */
+@Deprecated(since = "2.0.1", forRemoval = true)
+@SuppressWarnings("removal")
 @AutoConfiguration(before = ChatMemoryAutoConfiguration.class)
 @ConditionalOnClass({ RedisChatMemoryRepository.class, RedisClient.class })
-@EnableConfigurationProperties(RedisChatMemoryProperties.class)
 public class RedisChatMemoryAutoConfiguration {
 
+	/**
+	 * Binds the legacy {@code spring.ai.chat.memory.redis} properties onto the same
+	 * {@link RedisChatMemoryRepositoryProperties} instance used by
+	 * {@link RedisChatMemoryRepositoryAutoConfiguration}, so that existing configuration
+	 * keeps working during the migration to the current
+	 * {@code spring.ai.chat.memory.repository.redis} prefix.
+	 * @param delegate the current Redis chat memory repository properties
+	 * @return the deprecated Redis chat memory properties
+	 * @deprecated for removal in favor of {@link RedisChatMemoryRepositoryProperties}
+	 * @since 2.0.1
+	 */
+	@Deprecated(since = "2.0.1", forRemoval = true)
 	@Bean
-	@ConditionalOnMissingBean
-	public RedisClient jedisClient(RedisChatMemoryProperties properties) {
-		return RedisClient.builder().hostAndPort(properties.getHost(), properties.getPort()).build();
-	}
-
-	@Bean
-	@ConditionalOnMissingBean({ RedisChatMemoryRepository.class, ChatMemory.class, ChatMemoryRepository.class })
-	public RedisChatMemoryRepository redisChatMemory(RedisClient jedisClient, RedisChatMemoryProperties properties) {
-		RedisChatMemoryRepository.Builder builder = RedisChatMemoryRepository.builder().jedisClient(jedisClient);
-
-		// Apply configuration if provided
-		if (StringUtils.hasText(properties.getIndexName())) {
-			builder.indexName(properties.getIndexName());
-		}
-
-		if (StringUtils.hasText(properties.getKeyPrefix())) {
-			builder.keyPrefix(properties.getKeyPrefix());
-		}
-
-		if (properties.getTimeToLive() != null && properties.getTimeToLive().toSeconds() > 0) {
-			builder.timeToLive(properties.getTimeToLive());
-		}
-
-		if (properties.getInitializeSchema() != null) {
-			builder.initializeSchema(properties.getInitializeSchema());
-		}
-
-		if (properties.getMaxConversationIds() != null) {
-			builder.maxConversationIds(properties.getMaxConversationIds());
-		}
-
-		if (properties.getMaxMessagesPerConversation() != null) {
-			builder.maxMessagesPerConversation(properties.getMaxMessagesPerConversation());
-		}
-
-		if (properties.getMetadataFields() != null && !properties.getMetadataFields().isEmpty()) {
-			builder.metadataFields(properties.getMetadataFields());
-		}
-
-		return builder.build();
+	@ConfigurationProperties(prefix = RedisChatMemoryProperties.CONFIG_PREFIX)
+	RedisChatMemoryProperties redisChatMemoryProperties(RedisChatMemoryRepositoryProperties delegate) {
+		return new RedisChatMemoryProperties(delegate);
 	}
 
 }

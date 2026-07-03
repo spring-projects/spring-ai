@@ -16,9 +16,11 @@
 
 package org.springframework.ai.mcp.annotation.method.tool;
 
+import java.lang.reflect.UndeclaredThrowableException;
 import java.util.function.BiFunction;
 
 import io.modelcontextprotocol.common.McpTransportContext;
+import io.modelcontextprotocol.spec.McpError;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import reactor.core.publisher.Mono;
@@ -41,9 +43,17 @@ public final class AsyncStatelessMcpToolMethodCallback
 
 	public AsyncStatelessMcpToolMethodCallback(ReturnMode returnMode, java.lang.reflect.Method toolMethod,
 			Object toolObject) {
-		super(returnMode, toolMethod, toolObject, Exception.class);
+		super(returnMode, toolMethod, toolObject);
 	}
 
+	/**
+	 * @deprecated use
+	 * {@link #AsyncStatelessMcpToolMethodCallback(ReturnMode, java.lang.reflect.Method, Object)}.
+	 * The {@code toolCallExceptionClass} argument is ignored: exception handling now
+	 * follows the {@code @Tool} contract based on the exception type. Will be removed in
+	 * 2.1.0.
+	 */
+	@Deprecated
 	public AsyncStatelessMcpToolMethodCallback(ReturnMode returnMode, java.lang.reflect.Method toolMethod,
 			Object toolObject, Class<? extends Throwable> toolCallExceptionClass) {
 		super(returnMode, toolMethod, toolObject, toolCallExceptionClass);
@@ -90,11 +100,20 @@ public final class AsyncStatelessMcpToolMethodCallback
 				return this.convertToCallToolResult(result);
 
 			}
-			catch (Exception e) {
-				if (this.toolCallExceptionClass.isInstance(e)) {
-					return this.createAsyncErrorResult(e);
-				}
+			catch (UndeclaredThrowableException e) {
 				return Mono.error(e);
+			}
+			// McpError extends RuntimeException — this catch must precede the plain
+			// RuntimeException catch below, or McpError would be silently swallowed into
+			// an error CallToolResult instead of propagating as a hard failure.
+			catch (McpError e) {
+				// A protocol-level error (e.g. URL elicitation) carries MCP semantics
+				// that must reach the protocol layer, so it bubbles up rather than being
+				// conveyed to the model as an error result.
+				return Mono.error(e);
+			}
+			catch (RuntimeException e) {
+				return this.createAsyncErrorResult(e);
 			}
 		}));
 	}

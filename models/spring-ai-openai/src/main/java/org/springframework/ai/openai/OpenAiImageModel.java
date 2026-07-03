@@ -69,7 +69,9 @@ public class OpenAiImageModel implements ImageModel {
 
 	/**
 	 * Creates a new OpenAiImageModel with default options.
+	 * @deprecated use {@link OpenAiImageModel#builder()} instead.
 	 */
+	@Deprecated
 	public OpenAiImageModel() {
 		this(null, null, null);
 	}
@@ -77,7 +79,9 @@ public class OpenAiImageModel implements ImageModel {
 	/**
 	 * Creates a new OpenAiImageModel with the given options.
 	 * @param options the image options
+	 * @deprecated use {@link OpenAiImageModel#builder()} instead.
 	 */
+	@Deprecated
 	public OpenAiImageModel(@Nullable OpenAiImageOptions options) {
 		this(null, options, null);
 	}
@@ -85,7 +89,9 @@ public class OpenAiImageModel implements ImageModel {
 	/**
 	 * Creates a new OpenAiImageModel with the given observation registry.
 	 * @param observationRegistry the observation registry
+	 * @deprecated use {@link OpenAiImageModel#builder()} instead.
 	 */
+	@Deprecated
 	public OpenAiImageModel(@Nullable ObservationRegistry observationRegistry) {
 		this(null, null, observationRegistry);
 	}
@@ -94,7 +100,9 @@ public class OpenAiImageModel implements ImageModel {
 	 * Creates a new OpenAiImageModel with the given options and observation registry.
 	 * @param options the image options
 	 * @param observationRegistry the observation registry
+	 * @deprecated use {@link OpenAiImageModel#builder()} instead.
 	 */
+	@Deprecated
 	public OpenAiImageModel(@Nullable OpenAiImageOptions options, @Nullable ObservationRegistry observationRegistry) {
 		this(null, options, observationRegistry);
 	}
@@ -102,7 +110,9 @@ public class OpenAiImageModel implements ImageModel {
 	/**
 	 * Creates a new OpenAiImageModel with the given OpenAI client.
 	 * @param openAIClient the OpenAI client
+	 * @deprecated use {@link OpenAiImageModel#builder()} instead.
 	 */
+	@Deprecated
 	public OpenAiImageModel(@Nullable OpenAIClient openAIClient) {
 		this(openAIClient, null, null);
 	}
@@ -111,7 +121,9 @@ public class OpenAiImageModel implements ImageModel {
 	 * Creates a new OpenAiImageModel with the given OpenAI client and options.
 	 * @param openAIClient the OpenAI client
 	 * @param options the image options
+	 * @deprecated use {@link OpenAiImageModel#builder()} instead.
 	 */
+	@Deprecated
 	public OpenAiImageModel(@Nullable OpenAIClient openAIClient, @Nullable OpenAiImageOptions options) {
 		this(openAIClient, options, null);
 	}
@@ -121,7 +133,9 @@ public class OpenAiImageModel implements ImageModel {
 	 * registry.
 	 * @param openAIClient the OpenAI client
 	 * @param observationRegistry the observation registry
+	 * @deprecated use {@link OpenAiImageModel#builder()} instead.
 	 */
+	@Deprecated
 	public OpenAiImageModel(@Nullable OpenAIClient openAIClient, @Nullable ObservationRegistry observationRegistry) {
 		this(openAIClient, null, observationRegistry);
 	}
@@ -131,7 +145,9 @@ public class OpenAiImageModel implements ImageModel {
 	 * @param openAiClient the OpenAI client
 	 * @param options the image options
 	 * @param observationRegistry the observation registry
+	 * @deprecated use {@link OpenAiImageModel#builder()} instead.
 	 */
+	@Deprecated
 	public OpenAiImageModel(@Nullable OpenAIClient openAiClient, @Nullable OpenAiImageOptions options,
 			@Nullable ObservationRegistry observationRegistry) {
 		this(builder().openAiClient(openAiClient).options(options).observationRegistry(observationRegistry));
