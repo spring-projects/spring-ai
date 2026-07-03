@@ -26,11 +26,11 @@ import org.springframework.ai.model.ModelDescription;
  */
 public enum GoogleGenAiImageModelName implements ModelDescription {
 
-	GEMINI_2_5_FLASH_IMAGE("gemini-2.5-flash-image", "Nano Banana"),
+	GEMINI_2_5_FLASH_IMAGE("gemini-2.5-flash-image", "Gemini 2.5 Flash Image Model"),
 
-	GEMINI_3_PRO_IMAGE("gemini-3-pro-image", "Nano Banana Pro"),
+	GEMINI_3_PRO_IMAGE("gemini-3-pro-image", "Gemini 3 Pro Image Model"),
 
-	GEMINI_3_1_FLASH_IMAGE("gemini-3.1-flash-image", "Nano Banana 2");
+	GEMINI_3_1_FLASH_IMAGE("gemini-3.1-flash-image", "Gemini 3.1 Flash Image Model");
 
 	private final String modelName;
 

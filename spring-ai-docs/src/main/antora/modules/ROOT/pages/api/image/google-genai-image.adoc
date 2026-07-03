@@ -1,10 +1,10 @@
 = Google GenAI Image
 
-The https://ai.google.dev/gemini-api/docs/models/gemini-2.5-flash-image[Nano Banana] and https://ai.google.dev/gemini-api/docs/models/gemini-3.1-flash-image[Nano Banana 2] provides image generation using Google's image models through either the Gemini Developer API or Vertex AI.
+The https://ai.google.dev/gemini-api/docs/models/gemini-2.5-flash-image[Gemini 2.5 Flash Image Model] and https://ai.google.dev/gemini-api/docs/models/gemini-3.1-flash-image[Gemini 3.1 Flash Image Model] provides image generation using Google's image models through either the Gemini Developer API or Vertex AI.
 
 They provide high-quality image generation and conversational editing at a mainstream price point and low latency.
 
-It serves as the high-efficiency counterpart to https://ai.google.dev/gemini-api/docs/models/gemini-3-pro-image[Gemini 3 Pro Image], optimized for speed and high-volume developer use cases.
+It serves as the high-efficiency counterpart to https://ai.google.dev/gemini-api/docs/models/gemini-3-pro-image[Gemini 3 Pro Image Model], optimized for speed and high-volume developer use cases.
 
 
 This implementation provides two authentication modes:
