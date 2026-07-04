@@ -218,6 +218,12 @@ public class StreamHelper {
 				contentBlockReference.get().withUsage(totalUsage);
 			}
 		}
+		else if (event.type().equals(EventType.CONTENT_BLOCK_STOP)) {
+			// Emitted at the end of every content block outside of tool use. It carries
+			// no content but must reset the aggregated content so that the following
+			// message_delta event does not re-emit the last delta.
+			contentBlockReference.get().withType(event.type().name()).withContent(List.of());
+		}
 		else if (event.type().equals(EventType.MESSAGE_STOP)) {
 			// Don't return the latest Content block as it was before. Instead, return it
 			// with an updated event type and general information like: model, message

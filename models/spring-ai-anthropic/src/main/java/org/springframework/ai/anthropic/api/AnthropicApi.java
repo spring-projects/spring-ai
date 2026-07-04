@@ -265,7 +265,11 @@ public final class AnthropicApi {
 			})
 			.flatMap(mono -> mono)
 			.map(event -> this.streamHelper.eventToChatCompletionResponse(event, chatCompletionReference))
-			.filter(chatCompletionResponse -> chatCompletionResponse.type() != null);
+			// content_block_stop carries no content and has no response chunk
+			// equivalent, but it must still reach the stream helper to reset the
+			// aggregated content before the message_delta event.
+			.filter(chatCompletionResponse -> chatCompletionResponse.type() != null
+					&& !EventType.CONTENT_BLOCK_STOP.name().equals(chatCompletionResponse.type()));
 	}
 
 	// Files API Methods
