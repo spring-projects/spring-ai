@@ -72,6 +72,18 @@ class JsonSchemaUtilsTests {
 		assertThat(properties).isEmpty();
 	}
 
+	@Test
+	void testEnsureValidInputSchemaAddsRequiredFieldForObjectSchema() {
+		String inputSchema = "{\"type\":\"object\"}";
+
+		String normalizedSchema = JsonSchemaUtils.ensureValidInputSchema(inputSchema);
+
+		Map<String, Object> schemaMap = jsonHelper.fromJsonToMap(normalizedSchema);
+		assertThat(schemaMap).isNotNull();
+		assertThat(schemaMap).containsKey("required");
+		assertThat((List<?>) schemaMap.get("required")).isEmpty();
+	}
+
 	/**
 	 * Test that a schema without a "type" field is normalized to include both "type" and
 	 * "properties" fields.
@@ -129,6 +141,108 @@ class JsonSchemaUtilsTests {
 		Map<String, Object> properties = (Map<String, Object>) schemaMap.get("properties");
 		assertThat(properties).isNotEmpty();
 		assertThat(properties).containsKey("cityName");
+	}
+
+	@Test
+	void testEnsureValidInputSchemaPreservesExistingRequiredFields() {
+		String inputSchema = """
+				{"type":"object","properties":{"cityName":{"type":"string"}},"required":["cityName"]}
+				""";
+
+		String normalizedSchema = JsonSchemaUtils.ensureValidInputSchema(inputSchema);
+
+		Map<String, Object> schemaMap = jsonHelper.fromJsonToMap(normalizedSchema);
+		assertThat(schemaMap).isNotNull();
+		assertThat(schemaMap.get("required")).isEqualTo(List.of("cityName"));
+	}
+
+	@Test
+	void ensureValidInputSchemaNormalizesNestedObjectSchemas() {
+		String inputSchema = """
+				{
+					"type": "object",
+					"properties": {
+						"filters": {
+							"type": "object",
+							"properties": {
+								"owner": {
+									"type": "object"
+								}
+							}
+						},
+						"matches": {
+							"type": "array",
+							"items": {
+								"type": "object"
+							}
+						},
+						"metadata": {
+							"type": "object",
+							"additionalProperties": {
+								"type": "object"
+							}
+						}
+					},
+					"oneOf": [
+						{
+							"type": "object"
+						}
+					]
+				}
+				""";
+
+		String normalizedSchema = JsonSchemaUtils.ensureValidInputSchema(inputSchema);
+
+		Map<String, Object> schemaMap = jsonHelper.fromJsonToMap(normalizedSchema);
+		Map<String, Object> properties = (Map<String, Object>) schemaMap.get("properties");
+		Map<String, Object> filters = (Map<String, Object>) properties.get("filters");
+		Map<String, Object> filterProperties = (Map<String, Object>) filters.get("properties");
+		Map<String, Object> owner = (Map<String, Object>) filterProperties.get("owner");
+		Map<String, Object> matches = (Map<String, Object>) properties.get("matches");
+		Map<String, Object> items = (Map<String, Object>) matches.get("items");
+		Map<String, Object> metadata = (Map<String, Object>) properties.get("metadata");
+		Map<String, Object> metadataValues = (Map<String, Object>) metadata.get("additionalProperties");
+		List<Map<String, Object>> oneOf = (List<Map<String, Object>>) schemaMap.get("oneOf");
+
+		assertThat((List<?>) filters.get("required")).isEmpty();
+		assertThat((Map<?, ?>) owner.get("properties")).isEmpty();
+		assertThat((List<?>) owner.get("required")).isEmpty();
+		assertThat((Map<?, ?>) items.get("properties")).isEmpty();
+		assertThat((List<?>) items.get("required")).isEmpty();
+		assertThat((Map<?, ?>) metadataValues.get("properties")).isEmpty();
+		assertThat((List<?>) metadataValues.get("required")).isEmpty();
+		assertThat((Map<?, ?>) oneOf.get(0).get("properties")).isEmpty();
+		assertThat((List<?>) oneOf.get(0).get("required")).isEmpty();
+	}
+
+	@Test
+	void ensureValidInputSchemaDoesNotTreatPropertyNamesAsSchemaKeywords() {
+		String inputSchema = """
+				{
+					"type": "object",
+					"properties": {
+						"type": {
+							"type": "string"
+						},
+						"properties": {
+							"type": "string"
+						}
+					}
+				}
+				""";
+
+		String normalizedSchema = JsonSchemaUtils.ensureValidInputSchema(inputSchema);
+
+		Map<String, Object> schemaMap = jsonHelper.fromJsonToMap(normalizedSchema);
+		Map<String, Object> properties = (Map<String, Object>) schemaMap.get("properties");
+		Map<String, Object> typeProperty = (Map<String, Object>) properties.get("type");
+		Map<String, Object> propertiesProperty = (Map<String, Object>) properties.get("properties");
+
+		assertThat(properties).containsOnlyKeys("type", "properties");
+		assertThat(typeProperty).containsEntry("type", "string");
+		assertThat(typeProperty).doesNotContainKeys("properties", "required");
+		assertThat(propertiesProperty).containsEntry("type", "string");
+		assertThat(propertiesProperty).doesNotContainKeys("properties", "required");
 	}
 
 	/**

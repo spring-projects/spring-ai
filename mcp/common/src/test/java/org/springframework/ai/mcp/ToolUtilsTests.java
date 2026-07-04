@@ -39,6 +39,7 @@ import reactor.test.StepVerifier;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.ai.util.JsonHelper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -48,6 +49,8 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class ToolUtilsTests {
+
+	private static final JsonHelper jsonHelper = new JsonHelper();
 
 	@Test
 	void prefixedToolNameShouldConcatenateWithUnderscore() {
@@ -208,6 +211,59 @@ class ToolUtilsTests {
 		// Compatibility
 		String result = McpToolUtils.prefixedToolName("前缀\u3400", "缀\\u3400", "工具\u9fff名称\uf900");
 		assertThat(result).isEqualTo("前_缀u3400_工具鿿名称豈");
+	}
+
+	@Test
+	void createToolDefinitionShouldNormalizeParameterlessToolSchema() {
+		Tool tool = Tool.builder()
+			.name("currentTime")
+			.description("Get the current time")
+			.inputSchema(jsonHelper.fromJson("{\"type\":\"object\"}", McpSchema.JsonSchema.class))
+			.build();
+
+		ToolDefinition toolDefinition = McpToolUtils.createToolDefinition("server_currentTime", tool);
+
+		Map<String, Object> schemaMap = jsonHelper.fromJsonToMap(toolDefinition.inputSchema());
+		assertThat(schemaMap).containsEntry("type", "object");
+		assertThat((Map<?, ?>) schemaMap.get("properties")).isEmpty();
+		assertThat((List<?>) schemaMap.get("required")).isEmpty();
+	}
+
+	@Test
+	void createToolDefinitionShouldNormalizeNestedParameterlessToolSchemas() {
+		Tool tool = Tool.builder()
+			.name("projectContext")
+			.description("Get project context")
+			.inputSchema(jsonHelper.fromJsonToMap("""
+					{
+						"type": "object",
+						"properties": {
+							"selection": {
+								"type": "object"
+							},
+							"files": {
+								"type": "array",
+								"items": {
+									"type": "object"
+								}
+							}
+						}
+					}
+					"""))
+			.build();
+
+		ToolDefinition toolDefinition = McpToolUtils.createToolDefinition("server_projectContext", tool);
+
+		Map<String, Object> schemaMap = jsonHelper.fromJsonToMap(toolDefinition.inputSchema());
+		Map<String, Object> properties = (Map<String, Object>) schemaMap.get("properties");
+		Map<String, Object> selection = (Map<String, Object>) properties.get("selection");
+		Map<String, Object> files = (Map<String, Object>) properties.get("files");
+		Map<String, Object> fileItems = (Map<String, Object>) files.get("items");
+
+		assertThat((Map<?, ?>) selection.get("properties")).isEmpty();
+		assertThat((List<?>) selection.get("required")).isEmpty();
+		assertThat((Map<?, ?>) fileItems.get("properties")).isEmpty();
+		assertThat((List<?>) fileItems.get("required")).isEmpty();
 	}
 
 	@Test
