@@ -20,6 +20,8 @@ import java.lang.reflect.Method;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
+
+import org.springframework.ai.mcp.annotation.McpToolParam;
 import tools.jackson.databind.JsonNode;
 
 import org.springframework.ai.util.JsonHelper;
@@ -149,6 +151,26 @@ class McpJsonSchemaGeneratorTests {
 
 		assertThat(schemaNode.get("type").asString()).isEqualTo("object");
 		assertThat(schemaNode.has("properties")).isTrue();
+	}
+
+	
+	@Test
+	void generateSchemaUsesCustomMcpToolParamName() throws Exception {
+		Method method = CustomNameMethods.class.getDeclaredMethod("getWeather", String.class);
+
+		String schema = McpJsonSchemaGenerator.generateForMethodInput(method);
+		JsonNode schemaNode = jsonHelper.fromJson(schema, JsonNode.class);
+
+		assertThat(schemaNode.at("/properties/city_name").has("type")).isTrue();
+		assertThat(schemaNode.at("/properties/cityName").isMissingNode()).isTrue();
+		assertThat(schemaNode.get("required").get(0).asString()).isEqualTo("city_name");
+	}
+
+	static class CustomNameMethods {
+
+		public void getWeather(@McpToolParam(name = "city_name") String cityName) {
+		}
+
 	}
 
 	static class TestMethods {

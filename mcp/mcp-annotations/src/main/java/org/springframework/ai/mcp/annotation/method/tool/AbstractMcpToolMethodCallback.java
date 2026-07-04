@@ -31,6 +31,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.ai.mcp.annotation.McpMeta;
 import org.springframework.ai.mcp.annotation.McpProgressToken;
 import org.springframework.ai.mcp.annotation.McpTool;
+import org.springframework.ai.mcp.annotation.McpToolParamUtils;
 import org.springframework.ai.mcp.annotation.context.McpAsyncRequestContext;
 import org.springframework.ai.mcp.annotation.context.McpRequestContextTypes;
 import org.springframework.ai.mcp.annotation.context.McpSyncRequestContext;
@@ -131,7 +132,7 @@ public abstract class AbstractMcpToolMethodCallback<T, RC extends McpRequestCont
 				return exchangeOrContext;
 			}
 
-			Object rawArgument = toolInputArguments.get(parameter.getName());
+			Object rawArgument = toolInputArguments.get(McpToolParamUtils.resolveExternalName(parameter));
 			return buildTypedArgument(rawArgument, parameter.getParameterizedType());
 		}).toArray();
 	}
