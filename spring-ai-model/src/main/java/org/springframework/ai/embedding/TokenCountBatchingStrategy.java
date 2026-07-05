@@ -17,9 +17,7 @@
 package org.springframework.ai.embedding;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 import com.knuddels.jtokkit.api.EncodingType;
 
@@ -140,10 +138,9 @@ public class TokenCountBatchingStrategy implements BatchingStrategy {
 		List<List<Document>> batches = new ArrayList<>();
 		int currentSize = 0;
 		List<Document> currentBatch = new ArrayList<>();
-		// Make sure the documentTokens' entry order is preserved by making it a
-		// LinkedHashMap.
-		Map<Document, Integer> documentTokens = new LinkedHashMap<>();
 
+		// Do not collect the documents into a Map keyed by Document: equal documents
+		// would collapse to a single entry and be silently dropped from the batches.
 		for (Document document : documents) {
 			int tokenCount = this.tokenCountEstimator
 				.estimate(document.getFormattedContent(this.contentFormatter, this.metadataMode));
@@ -151,16 +148,11 @@ public class TokenCountBatchingStrategy implements BatchingStrategy {
 				throw new IllegalArgumentException(
 						"Tokens in a single document exceeds the maximum number of allowed input tokens");
 			}
-			documentTokens.put(document, tokenCount);
-		}
-
-		for (Map.Entry<Document, Integer> entry : documentTokens.entrySet()) {
-			Document document = entry.getKey();
-			currentSize += entry.getValue();
+			currentSize += tokenCount;
 			if (currentSize > this.maxInputTokenCount) {
 				batches.add(currentBatch);
 				currentBatch = new ArrayList<>();
-				currentSize = entry.getValue();
+				currentSize = tokenCount;
 			}
 			currentBatch.add(document);
 		}
