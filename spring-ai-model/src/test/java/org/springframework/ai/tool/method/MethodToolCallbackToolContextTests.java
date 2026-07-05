@@ -135,22 +135,6 @@ class MethodToolCallbackToolContextTests {
 	}
 
 	// -------------------------------------------------------------------------
-	// null values inside the context map
-	// -------------------------------------------------------------------------
-
-	@Test
-	void contextWithNullValueIsPassedToTool() {
-		Map<String, Object> map = new HashMap<>();
-		map.put("orderNumber", null);
-		map.put("userId", "u-99");
-		ToolContext ctx = new ToolContext(map);
-
-		String result = this.contextCallback.call("{\"input\": \"order\"}", ctx);
-		// Tool receives both keys; orderNumber value is null
-		assertThat(result).contains("size=2").contains("hasOrder=false").contains("userId=u-99");
-	}
-
-	// -------------------------------------------------------------------------
 	// case sensitivity of context keys
 	// -------------------------------------------------------------------------
 

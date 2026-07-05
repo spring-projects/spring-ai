@@ -1990,14 +1990,34 @@ class DefaultChatClientTests {
 	}
 
 	@Test
-	void whenToolContextValueIsNullThenSucceed() {
+	void whenToolContextValueIsNullThenThrow() {
 		ChatClient chatClient = new DefaultChatClientBuilder(mockChatModel()).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
 		Map<String, Object> toolContext = new HashMap<>();
 		toolContext.put("key", null);
-		spec = spec.toolContext(toolContext);
+		assertThatThrownBy(() -> spec.toolContext(toolContext)).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("context values cannot contain null elements")
+			.hasMessageContaining("omit the key rather than setting it to null");
+	}
+
+	@Test
+	void whenToolContextMultipleValuesWithOneNullThenThrow() {
+		ChatClient chatClient = new DefaultChatClientBuilder(mockChatModel()).build();
+		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
+		Map<String, Object> toolContext = new HashMap<>();
+		toolContext.put("tenantId", "ACME");
+		toolContext.put("orderNumber", null);
+		assertThatThrownBy(() -> spec.toolContext(toolContext)).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("context values cannot contain null elements");
+	}
+
+	@Test
+	void whenToolContextEmptyMapThenSucceed() {
+		ChatClient chatClient = new DefaultChatClientBuilder(mockChatModel()).build();
+		ChatClient.ChatClientRequestSpec spec = chatClient.prompt();
+		spec = spec.toolContext(new HashMap<>());
 		DefaultChatClient.DefaultChatClientRequestSpec defaultSpec = (DefaultChatClient.DefaultChatClientRequestSpec) spec;
-		assertThat(defaultSpec.getToolContext()).containsEntry("key", null);
+		assertThat(defaultSpec.getToolContext()).isEmpty();
 	}
 
 	@Test
@@ -2058,13 +2078,13 @@ class DefaultChatClientTests {
 	}
 
 	@Test
-	void whenToolSpecContextValueIsNullThenSucceed() {
+	void whenToolSpecContextValueIsNullThenThrow() {
 		ChatClient chatClient = new DefaultChatClientBuilder(mockChatModel()).build();
 		Map<String, Object> ctx = new HashMap<>();
 		ctx.put("key", null);
-		ChatClient.ChatClientRequestSpec spec = chatClient.prompt().toolContext(ctx);
-		DefaultChatClient.DefaultChatClientRequestSpec defaultSpec = (DefaultChatClient.DefaultChatClientRequestSpec) spec;
-		assertThat(defaultSpec.getToolContext()).containsEntry("key", null);
+		assertThatThrownBy(() -> chatClient.prompt().toolContext(ctx)).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("context values cannot contain null elements")
+			.hasMessageContaining("omit the key rather than setting it to null");
 	}
 
 	@Test

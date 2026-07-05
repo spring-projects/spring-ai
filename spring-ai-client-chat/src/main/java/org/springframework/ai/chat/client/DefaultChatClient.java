@@ -1080,6 +1080,8 @@ public class DefaultChatClient implements ChatClient {
 		public ChatClientRequestSpec toolContext(Map<String, Object> toolContext) {
 			Assert.notNull(toolContext, "context cannot be null");
 			Assert.noNullElements(toolContext.keySet(), "context keys cannot contain null elements");
+			Assert.noNullElements(toolContext.values(), "context values cannot contain null elements; "
+					+ "to represent an optional entry, omit the key rather than setting it to null");
 			toolContext.keySet().forEach(key -> Assert.hasText(key, "context key cannot be null or empty"));
 			this.toolContext.putAll(toolContext);
 			return this;
