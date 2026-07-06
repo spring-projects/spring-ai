@@ -504,7 +504,7 @@ public class OllamaChatModel implements ChatModel {
 
 		private @Nullable OllamaApi ollamaApi;
 
-		private OllamaChatOptions options = OllamaChatOptions.builder().build();
+		private @Nullable OllamaChatOptions options;
 
 		private @Nullable ToolCallingManager toolCallingManager;
 
@@ -558,7 +558,9 @@ public class OllamaChatModel implements ChatModel {
 
 		public OllamaChatModel build() {
 			Assert.state(this.ollamaApi != null, "OllamaApi must not be null");
-			return new OllamaChatModel(this.ollamaApi, this.options,
+			OllamaChatOptions resolvedOptions = this.options != null ? this.options
+					: OllamaChatOptions.builder().build();
+			return new OllamaChatModel(this.ollamaApi, resolvedOptions,
 					Objects.requireNonNullElse(this.toolCallingManager, DEFAULT_TOOL_CALLING_MANAGER),
 					this.observationRegistry, this.modelManagementOptions, this.retryTemplate);
 		}
