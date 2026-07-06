@@ -38,9 +38,8 @@ class GoogleGenAiImagePropertiesTests {
 	@Test
 	void connectionPropertiesBinding() {
 		this.contextRunner
-			.withPropertyValues("spring.ai.google.genai.image.api-key=test-key",
-					"spring.ai.google.genai.image.project-id=test-project",
-					"spring.ai.google.genai.image.location=us-central1")
+			.withPropertyValues("spring.ai.google.genai.api-key=test-key",
+					"spring.ai.google.genai.project-id=test-project", "spring.ai.google.genai.location=us-central1")
 			.run(context -> {
 				GoogleGenAiImageConnectionProperties props = context
 					.getBean(GoogleGenAiImageConnectionProperties.class);
@@ -90,8 +89,70 @@ class GoogleGenAiImagePropertiesTests {
 		this.contextRunner.run(context -> {
 			GoogleGenAiImageProperties props = context.getBean(GoogleGenAiImageProperties.class);
 			assertThat(props.toOptions().getModel()).isEqualTo(GoogleGenAiImageOptions.DEFAULT_MODEL_NAME);
-			assertThat(props.toOptions().getAspectRatio()).isEqualTo(GoogleGenAiImageOptions.DEFAULT_ASPECT_RATIO);
 		});
+	}
+
+	@Test
+	void connectionPropertiesGettersAndSetters() {
+		GoogleGenAiImageConnectionProperties props = new GoogleGenAiImageConnectionProperties();
+		props.setApiKey("api-key");
+		props.setProjectId("project-id");
+		props.setLocation("location");
+		props.setVertexAi(true);
+		org.springframework.core.io.Resource credentialsUri = new org.springframework.core.io.ClassPathResource(
+				"fake-credentials.json");
+		props.setCredentialsUri(credentialsUri);
+
+		assertThat(props.getApiKey()).isEqualTo("api-key");
+		assertThat(props.getProjectId()).isEqualTo("project-id");
+		assertThat(props.getLocation()).isEqualTo("location");
+		assertThat(props.isVertexAi()).isTrue();
+		assertThat(props.getCredentialsUri()).isEqualTo(credentialsUri);
+	}
+
+	@Test
+	void connectionPropertiesVertexAiAndCredentialsUriBinding() {
+		this.contextRunner
+			.withPropertyValues("spring.ai.google.genai.vertex-ai=true",
+					"spring.ai.google.genai.credentials-uri=classpath:fake-credentials.json")
+			.run(context -> {
+				GoogleGenAiImageConnectionProperties props = context
+					.getBean(GoogleGenAiImageConnectionProperties.class);
+				assertThat(props.isVertexAi()).isTrue();
+				assertThat(props.getCredentialsUri()).isNotNull();
+			});
+	}
+
+	@Test
+	void imagePropertiesGettersAndSetters() {
+		GoogleGenAiImageProperties props = new GoogleGenAiImageProperties();
+		props.setModel("model");
+		props.setN(2);
+		props.setAspectRatio("16:9");
+		props.setSeed(42);
+		props.setSafetyFilterLevel(GoogleGenAiImageOptions.SafetyFilterLevel.BLOCK_ONLY_HIGH);
+		props.setPersonGeneration(GoogleGenAiImageOptions.PersonGeneration.ALLOW_ADULT);
+		props.setOutputMimeType("image/png");
+		props.setOutputCompressionQuality(80);
+		props.setImageSize("2K");
+		props.setTemperature(0.7f);
+		props.setTopP(0.9f);
+		props.setTopK(40f);
+		props.setMaxOutputTokens(1024);
+
+		assertThat(props.getModel()).isEqualTo("model");
+		assertThat(props.getN()).isEqualTo(2);
+		assertThat(props.getAspectRatio()).isEqualTo("16:9");
+		assertThat(props.getSeed()).isEqualTo(42);
+		assertThat(props.getSafetyFilterLevel()).isEqualTo(GoogleGenAiImageOptions.SafetyFilterLevel.BLOCK_ONLY_HIGH);
+		assertThat(props.getPersonGeneration()).isEqualTo(GoogleGenAiImageOptions.PersonGeneration.ALLOW_ADULT);
+		assertThat(props.getOutputMimeType()).isEqualTo("image/png");
+		assertThat(props.getOutputCompressionQuality()).isEqualTo(80);
+		assertThat(props.getImageSize()).isEqualTo("2K");
+		assertThat(props.getTemperature()).isEqualTo(0.7f);
+		assertThat(props.getTopP()).isEqualTo(0.9f);
+		assertThat(props.getTopK()).isEqualTo(40f);
+		assertThat(props.getMaxOutputTokens()).isEqualTo(1024);
 	}
 
 	@Configuration

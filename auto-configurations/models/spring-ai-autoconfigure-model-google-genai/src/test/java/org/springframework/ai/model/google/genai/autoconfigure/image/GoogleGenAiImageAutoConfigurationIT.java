@@ -44,10 +44,10 @@ class GoogleGenAiImageAutoConfigurationIT {
 	@EnabledIfEnvironmentVariable(named = "GOOGLE_API_KEY", matches = ".+")
 	void imageWithApiKey() {
 		ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-			.withPropertyValues("spring.ai.google.genai.image.api-key=" + System.getenv("GOOGLE_API_KEY"),
+			.withPropertyValues("spring.ai.google.genai.api-key=" + System.getenv("GOOGLE_API_KEY"),
 					"spring.ai.google.genai.image.model=gemini-2.5-flash-image", "spring.ai.google.genai.image.n=1")
 			.withConfiguration(AutoConfigurations.of(GoogleGenAiImageAutoConfiguration.class,
-					SpringAiRetryAutoConfiguration.class));
+					GoogleGenAiImageConnectionAutoConfiguration.class, SpringAiRetryAutoConfiguration.class));
 
 		contextRunner.run(context -> {
 			GoogleGenAiImageModel imageModel = context.getBean(GoogleGenAiImageModel.class);
@@ -62,11 +62,11 @@ class GoogleGenAiImageAutoConfigurationIT {
 	@EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_LOCATION", matches = ".+")
 	void imageWithVertexAi() {
 		ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-			.withPropertyValues("spring.ai.google.genai.image.project-id=" + System.getenv("GOOGLE_CLOUD_PROJECT"),
-					"spring.ai.google.genai.image.location=" + System.getenv("GOOGLE_CLOUD_LOCATION"),
+			.withPropertyValues("spring.ai.google.genai.project-id=" + System.getenv("GOOGLE_CLOUD_PROJECT"),
+					"spring.ai.google.genai.location=" + System.getenv("GOOGLE_CLOUD_LOCATION"),
 					"spring.ai.google.genai.image.model=gemini-2.5-flash-image", "spring.ai.google.genai.image.n=1")
 			.withConfiguration(AutoConfigurations.of(GoogleGenAiImageAutoConfiguration.class,
-					SpringAiRetryAutoConfiguration.class));
+					GoogleGenAiImageConnectionAutoConfiguration.class, SpringAiRetryAutoConfiguration.class));
 
 		contextRunner.run(context -> {
 			GoogleGenAiImageModel imageModel = context.getBean(GoogleGenAiImageModel.class);
@@ -77,10 +77,9 @@ class GoogleGenAiImageAutoConfigurationIT {
 	}
 
 	@Test
-	@EnabledIfEnvironmentVariable(named = "GOOGLE_API_KEY", matches = ".+")
 	void imageModelActivation() {
 		ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-			.withPropertyValues("spring.ai.google.genai.image.api-key=test-key");
+			.withPropertyValues("spring.ai.google.genai.api-key=test-key");
 
 		// Test that image model is not activated when disabled
 		contextRunner

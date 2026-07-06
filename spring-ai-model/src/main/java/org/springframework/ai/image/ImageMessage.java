@@ -34,7 +34,7 @@ public class ImageMessage implements MediaContent {
 
 	private @Nullable Float weight;
 
-	private List<Media> media;
+	private final List<Media> media;
 
 	private final Map<String, Object> metadata;
 
@@ -74,7 +74,8 @@ public class ImageMessage implements MediaContent {
 
 	@Override
 	public String toString() {
-		return "ImageMessage{" + "text='" + this.text + '\'' + ", weight=" + this.weight + '}';
+		return "ImageMessage{" + "text='" + this.text + '\'' + ", weight=" + this.weight + ", media=" + this.media
+				+ ", metadata=" + this.metadata + '}';
 	}
 
 	@Override
@@ -85,12 +86,13 @@ public class ImageMessage implements MediaContent {
 		if (!(o instanceof ImageMessage that)) {
 			return false;
 		}
-		return Objects.equals(this.text, that.text) && Objects.equals(this.weight, that.weight);
+		return Objects.equals(this.text, that.text) && Objects.equals(this.weight, that.weight)
+				&& Objects.equals(this.media, that.media) && Objects.equals(this.metadata, that.metadata);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.text, this.weight);
+		return Objects.hash(this.text, this.weight, this.media, this.metadata);
 	}
 
 }

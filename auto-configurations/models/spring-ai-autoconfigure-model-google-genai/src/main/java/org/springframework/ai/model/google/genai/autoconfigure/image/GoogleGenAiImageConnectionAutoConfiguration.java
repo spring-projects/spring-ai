@@ -20,6 +20,8 @@ import java.io.IOException;
 
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.genai.Client;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.springframework.ai.google.genai.image.GoogleGenAiImageConnectionDetails;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -41,6 +43,8 @@ import org.springframework.util.StringUtils;
 @EnableConfigurationProperties(GoogleGenAiImageConnectionProperties.class)
 public class GoogleGenAiImageConnectionAutoConfiguration {
 
+	private static final Log logger = LogFactory.getLog(GoogleGenAiImageConnectionAutoConfiguration.class);
+
 	@Bean
 	@ConditionalOnMissingBean
 	public GoogleGenAiImageConnectionDetails googleGenAiImageConnectionDetails(
@@ -48,27 +52,58 @@ public class GoogleGenAiImageConnectionAutoConfiguration {
 
 		var connectionBuilder = GoogleGenAiImageConnectionDetails.builder();
 
-		if (StringUtils.hasText(connectionProperties.getApiKey())) {
-			// Gemini Developer API mode
-			connectionBuilder.apiKey(connectionProperties.getApiKey());
-		}
-		else {
-			// Vertex AI mode
-			Assert.hasText(connectionProperties.getProjectId(), "Google GenAI project-id must be set!");
-			Assert.hasText(connectionProperties.getLocation(), "Google GenAI location must be set!");
+		boolean hasApiKey = StringUtils.hasText(connectionProperties.getApiKey());
+		boolean hasProject = StringUtils.hasText(connectionProperties.getProjectId());
+		boolean hasLocation = StringUtils.hasText(connectionProperties.getLocation());
+		boolean hasVertexConfig = hasProject && hasLocation;
 
-			connectionBuilder.projectId(connectionProperties.getProjectId())
-				.location(connectionProperties.getLocation());
-
-			if (connectionProperties.getCredentialsUri() != null) {
-				GoogleCredentials credentials = GoogleCredentials
-					.fromStream(connectionProperties.getCredentialsUri().getInputStream());
-				// Note: Credentials are handled automatically by the SDK when using
-				// Vertex AI mode
+		// Ambiguity Guard: Professional logging
+		if (hasApiKey && hasVertexConfig) {
+			if (connectionProperties.isVertexAi()) {
+				logger.info(
+						"Both API Key and Vertex AI config detected. Vertex AI mode is explicitly enabled; the API key will be ignored.");
+			}
+			else {
+				logger.warn("Both API Key and Vertex AI config detected. Defaulting to Gemini Developer API (API Key). "
+						+ "To use Vertex AI instead, set 'spring.ai.google.genai.vertex-ai=true'.");
 			}
 		}
 
+		// Mode Selection with Fail-Fast Validation
+		if (connectionProperties.isVertexAi()) {
+			if (!hasVertexConfig) {
+				throw new IllegalStateException(
+						"Vertex AI mode requires both 'project-id' and 'location' to be configured.");
+			}
+			configureVertexAi(connectionBuilder, connectionProperties);
+		}
+		else if (hasApiKey) {
+			connectionBuilder.apiKey(connectionProperties.getApiKey());
+		}
+		else if (hasVertexConfig) {
+			logger.debug("Project ID and Location detected. Defaulting to Vertex AI mode.");
+			configureVertexAi(connectionBuilder, connectionProperties);
+		}
+		else {
+			throw new IllegalStateException("Incomplete Google GenAI configuration: Provide 'api-key' for Gemini API "
+					+ "or 'project-id' and 'location' for Vertex AI.");
+		}
+
 		return connectionBuilder.build();
+	}
+
+	private void configureVertexAi(GoogleGenAiImageConnectionDetails.Builder connectionBuilder,
+			GoogleGenAiImageConnectionProperties connectionProperties) throws IOException {
+		Assert.hasText(connectionProperties.getProjectId(), "Google GenAI project-id must be set for Vertex AI mode!");
+		Assert.hasText(connectionProperties.getLocation(), "Google GenAI location must be set for Vertex AI mode!");
+
+		connectionBuilder.projectId(connectionProperties.getProjectId()).location(connectionProperties.getLocation());
+
+		if (connectionProperties.getCredentialsUri() != null) {
+			try (var is = connectionProperties.getCredentialsUri().getInputStream()) {
+				connectionBuilder.credentials(GoogleCredentials.fromStream(is));
+			}
+		}
 	}
 
 }

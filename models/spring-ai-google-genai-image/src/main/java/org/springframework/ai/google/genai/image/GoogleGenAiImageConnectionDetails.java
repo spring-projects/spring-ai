@@ -16,6 +16,7 @@
 
 package org.springframework.ai.google.genai.image;
 
+import com.google.auth.oauth2.GoogleCredentials;
 import com.google.genai.Client;
 import org.jspecify.annotations.Nullable;
 
@@ -33,8 +34,6 @@ import org.springframework.util.StringUtils;
 public final class GoogleGenAiImageConnectionDetails {
 
 	public static final String DEFAULT_LOCATION = "us-central1";
-
-	public static final String DEFAULT_PUBLISHER = "google";
 
 	/**
 	 * Your project ID.
@@ -127,6 +126,12 @@ public final class GoogleGenAiImageConnectionDetails {
 		 */
 		private @Nullable Client genAiClient;
 
+		/**
+		 * Google credentials to use for Vertex AI mode authentication. If provided, it is
+		 * passed to the underlying {@link Client.Builder}.
+		 */
+		private @Nullable GoogleCredentials credentials;
+
 		public Builder projectId(@Nullable String projectId) {
 			this.projectId = projectId;
 			return this;
@@ -144,6 +149,16 @@ public final class GoogleGenAiImageConnectionDetails {
 
 		public Builder genAiClient(@Nullable Client genAiClient) {
 			this.genAiClient = genAiClient;
+			return this;
+		}
+
+		/**
+		 * Sets the {@link GoogleCredentials} to use for Vertex AI mode authentication.
+		 * @param credentials the Google credentials
+		 * @return this builder
+		 */
+		public Builder credentials(@Nullable GoogleCredentials credentials) {
+			this.credentials = credentials;
 			return this;
 		}
 
@@ -170,10 +185,14 @@ public final class GoogleGenAiImageConnectionDetails {
 				}
 
 				clientBuilder.project(this.projectId).location(this.location).vertexAI(true);
+
+				if (this.credentials != null) {
+					clientBuilder.credentials(this.credentials);
+				}
 			}
 
-			Client builtClient = clientBuilder.build();
-			return new GoogleGenAiImageConnectionDetails(this.projectId, this.location, this.apiKey, builtClient);
+			return new GoogleGenAiImageConnectionDetails(this.projectId, this.location, this.apiKey,
+					clientBuilder.build());
 		}
 
 	}

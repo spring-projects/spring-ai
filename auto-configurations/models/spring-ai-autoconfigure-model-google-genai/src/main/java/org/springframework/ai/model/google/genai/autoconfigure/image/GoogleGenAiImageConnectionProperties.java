@@ -30,7 +30,7 @@ import org.springframework.core.io.Resource;
 @ConfigurationProperties(GoogleGenAiImageConnectionProperties.CONFIG_PREFIX)
 public class GoogleGenAiImageConnectionProperties {
 
-	public static final String CONFIG_PREFIX = "spring.ai.google.genai.image";
+	public static final String CONFIG_PREFIX = "spring.ai.google.genai";
 
 	/**
 	 * Google GenAI API Key (for Gemini Developer API mode).

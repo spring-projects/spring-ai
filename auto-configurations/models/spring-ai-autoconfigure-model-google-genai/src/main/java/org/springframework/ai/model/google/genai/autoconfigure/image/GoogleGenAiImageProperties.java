@@ -34,11 +34,11 @@ public class GoogleGenAiImageProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.google.genai.image";
 
-	private @Nullable String model;
+	private @Nullable String model = GoogleGenAiImageOptions.DEFAULT_MODEL_NAME;
 
 	private @Nullable Integer n;
 
-	private @Nullable String aspectRatio = GoogleGenAiImageOptions.DEFAULT_ASPECT_RATIO;
+	private @Nullable String aspectRatio;
 
 	private @Nullable Integer seed;
 

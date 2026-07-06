@@ -180,7 +180,7 @@ public class ImageController {
 
 == Manual Configuration
 
-The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-google-genai-image/src/main/java/org/springframework/ai/google/genai/GoogleGenAiImageModel.java[GoogleGenAiImageModel] implements the `ImageModel`.
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-google-genai-image/src/main/java/org/springframework/ai/google/genai/image/GoogleGenAiImageModel.java[GoogleGenAiImageModel] implements the `ImageModel`.
 
 Add the `spring-ai-google-genai-image` dependency to your project's Maven `pom.xml` file:
 
@@ -221,7 +221,7 @@ GoogleGenAiImageOptions options = GoogleGenAiImageOptions.builder()
 var imageModel = new GoogleGenAiImageModel(connectionDetails, options);
 
 ImageResponse imageResponse = imageModel
-	.call("A painting of a sunset over a mountain");
+	.call(new ImagePrompt("A painting of a sunset over a mountain"));
 ----
 
 === Using Vertex AI
@@ -241,7 +241,7 @@ GoogleGenAiImageOptions options = GoogleGenAiImageOptions.builder()
 var imageModel = new GoogleGenAiImageModel(connectionDetails, options);
 
 ImageResponse imageResponse = imageModel
-	.call("A painting of a sunset over a mountain");
+	.call(new ImagePrompt("A painting of a sunset over a mountain"));
 ----
 
 == Safety Filter Levels

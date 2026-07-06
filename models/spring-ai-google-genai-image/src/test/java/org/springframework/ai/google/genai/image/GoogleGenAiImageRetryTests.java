@@ -28,14 +28,17 @@ import com.google.genai.Models;
 import com.google.genai.types.Blob;
 import com.google.genai.types.Candidate;
 import com.google.genai.types.Content;
+import com.google.genai.types.FinishReason;
 import com.google.genai.types.GenerateContentConfig;
 import com.google.genai.types.GenerateContentResponse;
+import com.google.genai.types.GenerateContentResponseUsageMetadata;
 import com.google.genai.types.Part;
 import io.micrometer.observation.ObservationRegistry;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -44,6 +47,7 @@ import org.springframework.ai.image.ImageMessage;
 import org.springframework.ai.image.ImageOptions;
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
+import org.springframework.ai.image.ImageResponseMetadata;
 import org.springframework.ai.image.observation.ImageModelObservationConvention;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.retry.TransientAiException;
@@ -214,20 +218,57 @@ public class GoogleGenAiImageRetryTests {
 	}
 
 	@Test
-	public void googleGenAiImageEmptyModelThrowsException() {
-		// GoogleGenAiImageOptions stores "" as-is (not replaced by DEFAULT_MODEL_NAME)
+	public void googleGenAiImagePerRequestOptionsDoNotOverrideModelLevelDefaultModel() {
+		// Locks in the merge fix: a per-request options object that does not set a
+		// model must NOT silently downgrade a model-level configured non-default
+		// model.
 		GoogleGenAiImageConnectionDetails connectionDetails = GoogleGenAiImageConnectionDetails.builder()
 			.genAiClient(this.mockGenAiClient)
 			.build();
 
-		GoogleGenAiImageModel modelWithEmptyModel = new GoogleGenAiImageModel(connectionDetails,
-				GoogleGenAiImageOptions.builder().model("").build(), this.retryTemplate);
+		GoogleGenAiImageModel modelWithNonDefaultModel = new GoogleGenAiImageModel(connectionDetails,
+				GoogleGenAiImageOptions.builder().model(GoogleGenAiImageModelName.GEMINI_3_PRO_IMAGE).build(),
+				this.retryTemplate);
 
-		// No options on the prompt → requestOptions == null → mergedOptions uses
-		// this.options whose model is ""
-		assertThatThrownBy(() -> modelWithEmptyModel.call(new ImagePrompt(List.of(new ImageMessage("text")))))
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("model cannot be null or empty");
+		GenerateContentResponse mockResponse = buildMockResponse();
+		given(this.mockModels.generateContent(anyString(), anyList(), any(GenerateContentConfig.class)))
+			.willReturn(mockResponse);
+
+		// Per-request options that only sets `n`, without calling `.model(...)`.
+		var perRequestOptions = GoogleGenAiImageOptions.builder().n(2).build();
+
+		modelWithNonDefaultModel.call(new ImagePrompt("A golden doodle", perRequestOptions));
+
+		ArgumentCaptor<String> modelNameCaptor = ArgumentCaptor.forClass(String.class);
+		verify(this.mockModels).generateContent(modelNameCaptor.capture(), anyList(), any(GenerateContentConfig.class));
+		assertThat(modelNameCaptor.getValue()).isEqualTo(GoogleGenAiImageModelName.GEMINI_3_PRO_IMAGE.getName());
+	}
+
+	@Test
+	public void googleGenAiImagePerRequestOptionsCanExplicitlyOverrideModel() {
+		// A per-request options object that DOES set a model must still be able to
+		// override the model-level default.
+		GoogleGenAiImageConnectionDetails connectionDetails = GoogleGenAiImageConnectionDetails.builder()
+			.genAiClient(this.mockGenAiClient)
+			.build();
+
+		GoogleGenAiImageModel modelWithDefault = new GoogleGenAiImageModel(connectionDetails,
+				GoogleGenAiImageOptions.builder().model(GoogleGenAiImageModelName.GEMINI_2_5_FLASH_IMAGE).build(),
+				this.retryTemplate);
+
+		GenerateContentResponse mockResponse = buildMockResponse();
+		given(this.mockModels.generateContent(anyString(), anyList(), any(GenerateContentConfig.class)))
+			.willReturn(mockResponse);
+
+		var perRequestOptions = GoogleGenAiImageOptions.builder()
+			.model(GoogleGenAiImageModelName.GEMINI_3_PRO_IMAGE)
+			.build();
+
+		modelWithDefault.call(new ImagePrompt("A golden doodle", perRequestOptions));
+
+		ArgumentCaptor<String> modelNameCaptor = ArgumentCaptor.forClass(String.class);
+		verify(this.mockModels).generateContent(modelNameCaptor.capture(), anyList(), any(GenerateContentConfig.class));
+		assertThat(modelNameCaptor.getValue()).isEqualTo(GoogleGenAiImageModelName.GEMINI_3_PRO_IMAGE.getName());
 	}
 
 	// ======= call() method tests =======
@@ -256,6 +297,151 @@ public class GoogleGenAiImageRetryTests {
 
 		assertThat(result).isNotNull();
 		assertThat(result.getResults()).isEmpty();
+	}
+
+	@Test
+	public void googleGenAiImageWithTextOnlyResponseSurfacesTextInMetadata() {
+		// Covers the refusal/safety-explanation path: a candidate with only a text part
+		// (no inline image data) must not be silently dropped - it should be surfaced in
+		// the response metadata so callers know why no image was returned.
+		Part textPart = mock(Part.class);
+		given(textPart.inlineData()).willReturn(Optional.empty());
+		given(textPart.text()).willReturn(Optional.of("I cannot generate this image."));
+
+		Content content = mock(Content.class);
+		given(content.parts()).willReturn(Optional.of(List.of(textPart)));
+
+		Candidate candidate = mock(Candidate.class);
+		given(candidate.content()).willReturn(Optional.of(content));
+
+		GenerateContentResponse mockResponse = mock(GenerateContentResponse.class);
+		given(mockResponse.candidates()).willReturn(Optional.of(List.of(candidate)));
+
+		given(this.mockModels.generateContent(anyString(), anyList(), any(GenerateContentConfig.class)))
+			.willReturn(mockResponse);
+
+		var options = GoogleGenAiImageOptions.builder().model("model").build();
+		ImageResponse result = this.imageModel.call(new ImagePrompt("A golden doodle", options));
+
+		assertThat(result.getResults()).isEmpty();
+		assertThat((String) result.getMetadata().get("text")).isEqualTo("I cannot generate this image.");
+	}
+
+	@Test
+	public void googleGenAiImageWithMultipleTextPartsJoinsThemInMetadata() {
+		Part textPart1 = mock(Part.class);
+		given(textPart1.inlineData()).willReturn(Optional.empty());
+		given(textPart1.text()).willReturn(Optional.of("First reason."));
+
+		Part textPart2 = mock(Part.class);
+		given(textPart2.inlineData()).willReturn(Optional.empty());
+		given(textPart2.text()).willReturn(Optional.of("Second reason."));
+
+		Content content1 = mock(Content.class);
+		given(content1.parts()).willReturn(Optional.of(List.of(textPart1)));
+		Candidate candidate1 = mock(Candidate.class);
+		given(candidate1.content()).willReturn(Optional.of(content1));
+
+		Content content2 = mock(Content.class);
+		given(content2.parts()).willReturn(Optional.of(List.of(textPart2)));
+		Candidate candidate2 = mock(Candidate.class);
+		given(candidate2.content()).willReturn(Optional.of(content2));
+
+		GenerateContentResponse mockResponse = mock(GenerateContentResponse.class);
+		given(mockResponse.candidates()).willReturn(Optional.of(List.of(candidate1, candidate2)));
+
+		given(this.mockModels.generateContent(anyString(), anyList(), any(GenerateContentConfig.class)))
+			.willReturn(mockResponse);
+
+		var options = GoogleGenAiImageOptions.builder().model("model").build();
+		ImageResponse result = this.imageModel.call(new ImagePrompt("A golden doodle", options));
+
+		assertThat((String) result.getMetadata().get("text"))
+			.isEqualTo("First reason." + System.lineSeparator() + "Second reason.");
+	}
+
+	@Test
+	public void googleGenAiImageWithoutTextPartsDoesNotAddTextMetadata() {
+		GenerateContentResponse mockResponse = buildMockResponse();
+		given(this.mockModels.generateContent(anyString(), anyList(), any(GenerateContentConfig.class)))
+			.willReturn(mockResponse);
+
+		var options = GoogleGenAiImageOptions.builder().model("model").build();
+		ImageResponse result = this.imageModel.call(new ImagePrompt("A golden doodle", options));
+
+		boolean hasTextMetadata = result.getMetadata().containsKey("text");
+		assertThat(hasTextMetadata).isFalse();
+	}
+
+	@Test
+	public void googleGenAiImageWithFinishReasonSetsRaiFilteredReasonInImageMetadata() {
+		// Covers candidate.finishReason() fallback used when finishMessage() is empty.
+		Blob mockBlob = mock(Blob.class);
+		given(mockBlob.data()).willReturn(Optional.of(new byte[] { 1, 2, 3 }));
+		given(mockBlob.mimeType()).willReturn(Optional.of("image/png"));
+
+		Part imagePart = mock(Part.class);
+		given(imagePart.inlineData()).willReturn(Optional.of(mockBlob));
+
+		Content content = mock(Content.class);
+		given(content.parts()).willReturn(Optional.of(List.of(imagePart)));
+
+		Candidate candidate = mock(Candidate.class);
+		given(candidate.content()).willReturn(Optional.of(content));
+		given(candidate.finishMessage()).willReturn(Optional.empty());
+		given(candidate.finishReason()).willReturn(Optional.of(new FinishReason(FinishReason.Known.SAFETY)));
+
+		GenerateContentResponse mockResponse = mock(GenerateContentResponse.class);
+		given(mockResponse.candidates()).willReturn(Optional.of(List.of(candidate)));
+
+		given(this.mockModels.generateContent(anyString(), anyList(), any(GenerateContentConfig.class)))
+			.willReturn(mockResponse);
+
+		var options = GoogleGenAiImageOptions.builder().model("model").build();
+		ImageResponse result = this.imageModel.call(new ImagePrompt("A golden doodle", options));
+
+		assertThat(result.getResults()).hasSize(1);
+		GoogleGenAiImageGenerationMetadata imageMetadata = (GoogleGenAiImageGenerationMetadata) result.getResults()
+			.get(0)
+			.getMetadata();
+		assertThat(imageMetadata.getRaiFilteredReason()).contains("SAFETY");
+	}
+
+	@Test
+	public void googleGenAiImageModelVersionIsSurfacedInResponseMetadata() {
+		GenerateContentResponse mockResponse = buildMockResponse();
+		given(mockResponse.modelVersion()).willReturn(Optional.of("gemini-2.5-flash-image-001"));
+
+		given(this.mockModels.generateContent(anyString(), anyList(), any(GenerateContentConfig.class)))
+			.willReturn(mockResponse);
+
+		var options = GoogleGenAiImageOptions.builder().model("model").build();
+		ImageResponse result = this.imageModel.call(new ImagePrompt("A golden doodle", options));
+
+		assertThat((String) result.getMetadata().get("model")).isEqualTo("gemini-2.5-flash-image-001");
+	}
+
+	@Test
+	public void googleGenAiImageUsageMetadataIsSurfacedInResponseMetadata() {
+		// Covers the toUsage() branch where usageMetadata() is present on the response.
+		GenerateContentResponse mockResponse = buildMockResponse();
+		GenerateContentResponseUsageMetadata usageMetadata = mock(GenerateContentResponseUsageMetadata.class);
+		given(usageMetadata.promptTokenCount()).willReturn(Optional.of(10));
+		given(usageMetadata.candidatesTokenCount()).willReturn(Optional.of(20));
+		given(usageMetadata.totalTokenCount()).willReturn(Optional.of(30));
+		given(mockResponse.usageMetadata()).willReturn(Optional.of(usageMetadata));
+
+		given(this.mockModels.generateContent(anyString(), anyList(), any(GenerateContentConfig.class)))
+			.willReturn(mockResponse);
+
+		var options = GoogleGenAiImageOptions.builder().model("model").build();
+		ImageResponse result = this.imageModel.call(new ImagePrompt("A golden doodle", options));
+
+		ImageResponseMetadata metadata = (ImageResponseMetadata) result.getMetadata();
+		org.springframework.ai.chat.metadata.Usage usage = metadata.getUsage();
+		assertThat(usage.getPromptTokens()).isEqualTo(10);
+		assertThat(usage.getCompletionTokens()).isEqualTo(20);
+		assertThat(usage.getTotalTokens()).isEqualTo(30);
 	}
 
 	// ======= getGenerateContentConfig tests =======

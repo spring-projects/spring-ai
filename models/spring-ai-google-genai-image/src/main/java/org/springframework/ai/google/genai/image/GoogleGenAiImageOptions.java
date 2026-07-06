@@ -19,6 +19,7 @@ package org.springframework.ai.google.genai.image;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 
 import org.jspecify.annotations.Nullable;
 
@@ -33,11 +34,19 @@ import org.springframework.util.StringUtils;
  */
 public class GoogleGenAiImageOptions implements ImageOptions {
 
+	public enum SafetyFilterLevel {
+
+		BLOCK_LOW_AND_ABOVE, BLOCK_MEDIUM_AND_ABOVE, BLOCK_ONLY_HIGH, BLOCK_NONE, SAFETY_FILTER_LEVEL_UNSPECIFIED
+
+	}
+
+	public enum PersonGeneration {
+
+		DONT_ALLOW, ALLOW_ADULT, ALLOW_ALL, PERSON_GENERATION_UNSPECIFIED
+
+	}
+
 	public static final String DEFAULT_MODEL_NAME = GoogleGenAiImageModelName.GEMINI_2_5_FLASH_IMAGE.getName();
-
-	public static final String DEFAULT_ASPECT_RATIO = "1:1";
-
-	// @formatter:off
 
 	/**
 	 * The model to use.
@@ -114,22 +123,13 @@ public class GoogleGenAiImageOptions implements ImageOptions {
 	 */
 	private final @Nullable Integer maxOutputTokens;
 
-	protected GoogleGenAiImageOptions(
-			@Nullable String model,
-			@Nullable Integer n,
-			@Nullable String aspectRatio,
-			@Nullable Integer seed,
-			@Nullable SafetyFilterLevel safetyFilterLevel,
-			@Nullable PersonGeneration personGeneration,
-			@Nullable String outputMimeType,
-			@Nullable Integer outputCompressionQuality,
-			@Nullable Map<String, String> labels,
-			@Nullable String imageSize,
-			@Nullable Float temperature,
-			@Nullable Float topP,
-			@Nullable Float topK,
+	protected GoogleGenAiImageOptions(@Nullable String model, @Nullable Integer n, @Nullable String aspectRatio,
+			@Nullable Integer seed, @Nullable SafetyFilterLevel safetyFilterLevel,
+			@Nullable PersonGeneration personGeneration, @Nullable String outputMimeType,
+			@Nullable Integer outputCompressionQuality, @Nullable Map<String, String> labels,
+			@Nullable String imageSize, @Nullable Float temperature, @Nullable Float topP, @Nullable Float topK,
 			@Nullable Integer maxOutputTokens) {
-		this.model = (model != null ? model : DEFAULT_MODEL_NAME);
+		this.model = model;
 		this.n = n;
 		this.aspectRatio = aspectRatio;
 		this.seed = seed;
@@ -137,7 +137,7 @@ public class GoogleGenAiImageOptions implements ImageOptions {
 		this.personGeneration = personGeneration;
 		this.outputMimeType = outputMimeType;
 		this.outputCompressionQuality = outputCompressionQuality;
-		this.labels = (labels == null) ? null : new LinkedHashMap<>(labels);
+		this.labels = Optional.ofNullable(labels).map(LinkedHashMap::new).orElse(null);
 		this.imageSize = imageSize;
 		this.temperature = temperature;
 		this.topP = topP;
@@ -148,9 +148,6 @@ public class GoogleGenAiImageOptions implements ImageOptions {
 	public static GoogleGenAiImageOptions.Builder builder() {
 		return new Builder();
 	}
-
-
-	// @formatter:on
 
 	@Override
 	public @Nullable String getModel() {
@@ -240,22 +237,29 @@ public class GoogleGenAiImageOptions implements ImageOptions {
 		return this.maxOutputTokens;
 	}
 
-	/**
-	 * Safety filter level for image generation.
-	 */
-	public enum SafetyFilterLevel {
+	@Override
+	public boolean equals(@Nullable Object o) {
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
 
-		BLOCK_LOW_AND_ABOVE, BLOCK_MEDIUM_AND_ABOVE, BLOCK_ONLY_HIGH, BLOCK_NONE, SAFETY_FILTER_LEVEL_UNSPECIFIED
-
+		final GoogleGenAiImageOptions that = (GoogleGenAiImageOptions) o;
+		return Objects.equals(this.model, that.model) && Objects.equals(this.n, that.n)
+				&& Objects.equals(this.aspectRatio, that.aspectRatio) && Objects.equals(this.seed, that.seed)
+				&& Objects.equals(this.safetyFilterLevel, that.safetyFilterLevel)
+				&& Objects.equals(this.personGeneration, that.personGeneration)
+				&& Objects.equals(this.outputMimeType, that.outputMimeType)
+				&& Objects.equals(this.outputCompressionQuality, that.outputCompressionQuality)
+				&& Objects.equals(this.labels, that.labels) && Objects.equals(this.imageSize, that.imageSize)
+				&& Objects.equals(this.temperature, that.temperature) && Objects.equals(this.topP, that.topP)
+				&& Objects.equals(this.topK, that.topK) && Objects.equals(this.maxOutputTokens, that.maxOutputTokens);
 	}
 
-	/**
-	 * Person generation policy.
-	 */
-	public enum PersonGeneration {
-
-		DONT_ALLOW, ALLOW_ADULT, ALLOW_ALL, PERSON_GENERATION_UNSPECIFIED
-
+	@Override
+	public int hashCode() {
+		return Objects.hash(this.model, this.n, this.aspectRatio, this.seed, this.safetyFilterLevel,
+				this.personGeneration, this.outputMimeType, this.outputCompressionQuality, this.labels, this.imageSize,
+				this.temperature, this.topP, this.topK, this.maxOutputTokens);
 	}
 
 	public static final class Builder {
@@ -322,7 +326,6 @@ public class GoogleGenAiImageOptions implements ImageOptions {
 			if (StringUtils.hasText(fromOptions.getImageSize())) {
 				this.imageSize = fromOptions.getImageSize();
 			}
-
 			if (Objects.nonNull(fromOptions.getTemperature())) {
 				this.temperature = fromOptions.getTemperature();
 			}
@@ -334,6 +337,59 @@ public class GoogleGenAiImageOptions implements ImageOptions {
 			}
 			if (Objects.nonNull(fromOptions.getMaxOutputTokens())) {
 				this.maxOutputTokens = fromOptions.getMaxOutputTokens();
+			}
+
+			return this;
+		}
+
+		public Builder merge(@Nullable ImageOptions from) {
+			if (Objects.isNull(from)) {
+				return this;
+			}
+			if (StringUtils.hasText(from.getModel())) {
+				this.model = from.getModel();
+			}
+			if (Objects.nonNull(from.getN())) {
+				this.n = from.getN();
+			}
+			if (from instanceof GoogleGenAiImageOptions castFrom) {
+				if (StringUtils.hasText(castFrom.getAspectRatio())) {
+					this.aspectRatio = castFrom.getAspectRatio();
+				}
+				if (Objects.nonNull(castFrom.getSeed())) {
+					this.seed = castFrom.getSeed();
+				}
+				if (Objects.nonNull(castFrom.getSafetyFilterLevel())) {
+					this.safetyFilterLevel = castFrom.getSafetyFilterLevel();
+				}
+				if (Objects.nonNull(castFrom.getPersonGeneration())) {
+					this.personGeneration = castFrom.getPersonGeneration();
+				}
+				if (StringUtils.hasText(castFrom.getOutputMimeType())) {
+					this.outputMimeType = castFrom.getOutputMimeType();
+				}
+				if (Objects.nonNull(castFrom.getOutputCompressionQuality())) {
+					this.outputCompressionQuality = castFrom.getOutputCompressionQuality();
+				}
+				if (Objects.nonNull(castFrom.getLabels())) {
+					this.labels = castFrom.getLabels();
+				}
+				if (StringUtils.hasText(castFrom.getImageSize())) {
+					this.imageSize = castFrom.getImageSize();
+				}
+				if (Objects.nonNull(castFrom.getTemperature())) {
+					this.temperature = castFrom.getTemperature();
+				}
+				if (Objects.nonNull(castFrom.getTopP())) {
+					this.topP = castFrom.getTopP();
+				}
+				if (Objects.nonNull(castFrom.getTopK())) {
+					this.topK = castFrom.getTopK();
+				}
+				if (Objects.nonNull(castFrom.getMaxOutputTokens())) {
+					this.maxOutputTokens = castFrom.getMaxOutputTokens();
+				}
+
 			}
 
 			return this;

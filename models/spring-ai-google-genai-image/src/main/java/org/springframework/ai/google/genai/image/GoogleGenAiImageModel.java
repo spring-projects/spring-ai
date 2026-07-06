@@ -25,12 +25,14 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 import com.google.genai.Client;
 import com.google.genai.types.Candidate;
 import com.google.genai.types.Content;
 import com.google.genai.types.GenerateContentConfig;
 import com.google.genai.types.GenerateContentResponse;
+import com.google.genai.types.GenerateContentResponseUsageMetadata;
 import com.google.genai.types.HarmCategory;
 import com.google.genai.types.ImageConfig;
 import com.google.genai.types.Part;
@@ -39,6 +41,8 @@ import io.micrometer.observation.ObservationRegistry;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.chat.messages.MessageType;
+import org.springframework.ai.chat.metadata.DefaultUsage;
+import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.image.Image;
 import org.springframework.ai.image.ImageGeneration;
@@ -129,7 +133,7 @@ public class GoogleGenAiImageModel implements ImageModel {
 
 				final GenerateContentConfig config = getGenerateContentConfig(options);
 
-				final List<Content> contents = prompt.getInstructions()
+				final List<Content> contents = imagePrompt.getInstructions()
 					.stream()
 					.map(GoogleGenAiImageModel::messageToParts)
 					.filter(Predicate.not(List::isEmpty))
@@ -143,33 +147,38 @@ public class GoogleGenAiImageModel implements ImageModel {
 				final GenerateContentResponse imagesResponse = RetryUtils.execute(this.retryTemplate,
 						() -> this.genAiClient.models.generateContent(modelName, contents, config));
 
-				final List<ImageGeneration> generationList = Optional.ofNullable(imagesResponse)
+				final List<Candidate> candidates = Optional.ofNullable(imagesResponse)
 					.map(GenerateContentResponse::candidates)
 					.flatMap(Function.identity())
-					.orElse(List.of())
-					.stream()
-					.map(Candidate::content)
-					.flatMap(Optional::stream)
-					.map(Content::parts)
-					.flatMap(Optional::stream)
-					.flatMap(List::stream)
-					.map(Part::inlineData)
-					.flatMap(Optional::stream)
-					.map(blob -> {
-						String b64Json = blob.data()
-							.map(imageBytes -> Base64.getEncoder().encodeToString(imageBytes))
-							.orElse(null);
+					.orElse(List.of());
 
-						final Image image = new Image(null, b64Json);
-
-						GoogleGenAiImageGenerationMetadata metadata = new GoogleGenAiImageGenerationMetadata(null, null,
-								blob.mimeType().orElse(null), image.getUrl());
-
-						return new ImageGeneration(image, metadata);
-					})
+				final List<ImageGeneration> generationList = candidates.stream()
+					.flatMap(GoogleGenAiImageModel::candidateToImageGenerations)
 					.toList();
 
-				ImageResponse response = new ImageResponse(generationList, new ImageResponseMetadata());
+				final List<String> candidateTexts = candidates.stream()
+					.flatMap(candidate -> candidate.content().flatMap(Content::parts).orElse(List.of()).stream())
+					.filter(part -> part.inlineData().isEmpty())
+					.map(Part::text)
+					.flatMap(Optional::stream)
+					.toList();
+
+				final ImageResponseMetadata responseMetadata = new ImageResponseMetadata();
+				if (Objects.nonNull(imagesResponse)) {
+					imagesResponse.modelVersion().ifPresent(version -> responseMetadata.put("model", version));
+				}
+
+				// Surface any text returned alongside (or instead of) the image(s),
+				// e.g. a refusal or safety explanation, so callers aren't left with
+				// an empty result and no signal as to why.
+
+				if (!candidateTexts.isEmpty()) {
+					responseMetadata.put("text", String.join(System.lineSeparator(), candidateTexts));
+				}
+
+				responseMetadata.setUsage(getUsage(imagesResponse));
+
+				final ImageResponse response = new ImageResponse(generationList, responseMetadata);
 
 				observationContext.setResponse(response);
 
@@ -184,27 +193,78 @@ public class GoogleGenAiImageModel implements ImageModel {
 
 	// Private methods
 
+	private static Stream<ImageGeneration> candidateToImageGenerations(Candidate candidate) {
+		final List<Part> parts = candidate.content().flatMap(Content::parts).orElse(List.of());
+
+		final String raiFilteredReason = candidate.finishMessage()
+			.orElseGet(() -> candidate.finishReason().map(Object::toString).orElse(null));
+
+		return parts.stream().map(Part::inlineData).flatMap(Optional::stream).map(blob -> {
+			final String b64Json = blob.data()
+				.map(imageBytes -> Base64.getEncoder().encodeToString(imageBytes))
+				.orElse(null);
+
+			final Image image = new Image(null, b64Json);
+
+			final GoogleGenAiImageGenerationMetadata metadata = new GoogleGenAiImageGenerationMetadata(null,
+					raiFilteredReason, blob.mimeType().orElse(null), null);
+
+			return new ImageGeneration(image, metadata);
+		});
+	}
+
+	private static Usage getUsage(@Nullable GenerateContentResponse imagesResponse) {
+		return Optional.ofNullable(imagesResponse)
+			.flatMap(GenerateContentResponse::usageMetadata)
+			.map(GoogleGenAiImageModel::toUsage)
+			.orElseGet(() -> new DefaultUsage(0, 0, 0));
+	}
+
+	private static Usage toUsage(GenerateContentResponseUsageMetadata usageMetadata) {
+		return new DefaultUsage(usageMetadata.promptTokenCount().orElse(0),
+				usageMetadata.candidatesTokenCount().orElse(0), usageMetadata.totalTokenCount().orElse(0));
+	}
+
 	private ImagePrompt buildImagePrompt(ImagePrompt imagePrompt) {
 		GoogleGenAiImageOptions mergedOptions = this.options;
 
 		final ImageOptions requestOptions = imagePrompt.getOptions();
 		if (Objects.nonNull(requestOptions)) {
-			GoogleGenAiImageOptions.Builder builder = GoogleGenAiImageOptions.builder()
-				.from(this.options)
+			final GoogleGenAiImageOptions.Builder builder = GoogleGenAiImageOptions.builder()
 				.model(ModelOptionsUtils.mergeOption(requestOptions.getModel(), this.options.getModel()))
-				.n(ModelOptionsUtils.mergeOption(requestOptions.getN(), this.options.getN()))
-				.outputMimeType(ModelOptionsUtils.mergeOption(requestOptions.getResponseFormat(),
-						this.options.getResponseFormat()));
+				.n(ModelOptionsUtils.mergeOption(requestOptions.getN(), this.options.getN()));
 
 			if (requestOptions instanceof GoogleGenAiImageOptions googleOptions) {
-				builder.from(googleOptions);
+				builder
+					.aspectRatio(ModelOptionsUtils.mergeOption(googleOptions.getAspectRatio(),
+							this.options.getAspectRatio()))
+					.seed(ModelOptionsUtils.mergeOption(googleOptions.getSeed(), this.options.getSeed()))
+					.safetyFilterLevel(ModelOptionsUtils.mergeOption(googleOptions.getSafetyFilterLevel(),
+							this.options.getSafetyFilterLevel()))
+					.personGeneration(ModelOptionsUtils.mergeOption(googleOptions.getPersonGeneration(),
+							this.options.getPersonGeneration()))
+					.outputMimeType(ModelOptionsUtils.mergeOption(googleOptions.getOutputMimeType(),
+							this.options.getOutputMimeType()))
+					.outputCompressionQuality(ModelOptionsUtils.mergeOption(googleOptions.getOutputCompressionQuality(),
+							this.options.getOutputCompressionQuality()))
+					.labels(ModelOptionsUtils.mergeOption(googleOptions.getLabels(), this.options.getLabels()))
+					.imageSize(ModelOptionsUtils.mergeOption(googleOptions.getImageSize(), this.options.getImageSize()))
+					.temperature(ModelOptionsUtils.mergeOption(googleOptions.getTemperature(),
+							this.options.getTemperature()))
+					.topP(ModelOptionsUtils.mergeOption(googleOptions.getTopP(), this.options.getTopP()))
+					.topK(ModelOptionsUtils.mergeOption(googleOptions.getTopK(), this.options.getTopK()))
+					.maxOutputTokens(ModelOptionsUtils.mergeOption(googleOptions.getMaxOutputTokens(),
+							this.options.getMaxOutputTokens()));
 			}
 
 			mergedOptions = builder.build();
 		}
 
 		if (!StringUtils.hasText(mergedOptions.getModel())) {
-			throw new IllegalArgumentException("model cannot be null or empty");
+			mergedOptions = GoogleGenAiImageOptions.builder()
+				.from(mergedOptions)
+				.model(GoogleGenAiImageOptions.DEFAULT_MODEL_NAME)
+				.build();
 		}
 
 		return new ImagePrompt(imagePrompt.getInstructions(), mergedOptions);

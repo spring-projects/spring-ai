@@ -53,8 +53,8 @@ public class GoogleGenAiImageAutoConfiguration {
 			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<ImageModelObservationConvention> observationConvention) {
 
-		var imageModel = new GoogleGenAiImageModel(connectionDetails, imageProperties.toOptions(),
-				retryTemplate.getIfUnique(() -> RetryUtils.DEFAULT_RETRY_TEMPLATE),
+		final GoogleGenAiImageModel imageModel = new GoogleGenAiImageModel(connectionDetails,
+				imageProperties.toOptions(), retryTemplate.getIfUnique(() -> RetryUtils.DEFAULT_RETRY_TEMPLATE),
 				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
 
 		observationConvention.ifAvailable(imageModel::setObservationConvention);
