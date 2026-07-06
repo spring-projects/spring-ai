@@ -68,9 +68,10 @@ class WebClientStreamableHttpTransportIT {
 
 		StepVerifier.create(transport.closeGracefully()).verifyComplete();
 
-		var initializeRequest = new McpSchema.InitializeRequest(ProtocolVersions.MCP_2025_06_18,
-				McpSchema.ClientCapabilities.builder().roots(true).build(),
-				new McpSchema.Implementation("MCP Client", "0.3.1"));
+		var initializeRequest = McpSchema.InitializeRequest
+			.builder(ProtocolVersions.MCP_2025_06_18, McpSchema.ClientCapabilities.builder().roots(true).build(),
+					McpSchema.Implementation.builder("MCP Client", "0.3.1").build())
+			.build();
 		var testMessage = new McpSchema.JSONRPCRequest(McpSchema.JSONRPC_VERSION, McpSchema.METHOD_INITIALIZE,
 				"test-id", initializeRequest);
 
@@ -84,9 +85,10 @@ class WebClientStreamableHttpTransportIT {
 		var transport = WebClientStreamableHttpTransport.builder(builder).build();
 		transport.connect(Function.identity()).block();
 
-		var initializeRequest = new McpSchema.InitializeRequest(ProtocolVersions.MCP_2025_06_18,
-				McpSchema.ClientCapabilities.builder().roots(true).build(),
-				new McpSchema.Implementation("MCP Client", "0.3.1"));
+		var initializeRequest = McpSchema.InitializeRequest
+			.builder(ProtocolVersions.MCP_2025_06_18, McpSchema.ClientCapabilities.builder().roots(true).build(),
+					McpSchema.Implementation.builder("MCP Client", "0.3.1").build())
+			.build();
 		var testMessage = new McpSchema.JSONRPCRequest(McpSchema.JSONRPC_VERSION, McpSchema.METHOD_INITIALIZE,
 				"test-id", initializeRequest);
 

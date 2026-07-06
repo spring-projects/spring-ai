@@ -144,8 +144,9 @@ public final class AsyncMcpCompleteMethodCallbackExample {
 				String promptName = handlerKey.split("#")[0];
 
 				// Create a complete request
-				CompleteRequest request = new CompleteRequest(new PromptReference(promptName),
-						new CompleteRequest.CompleteArgument("value", input));
+				CompleteRequest request = CompleteRequest
+					.builder(new PromptReference(promptName), new CompleteRequest.CompleteArgument("value", input))
+					.build();
 
 				// Execute the handler
 				Mono<CompleteResult> resultMono = handler.apply(exchange, request);
@@ -176,8 +177,9 @@ public final class AsyncMcpCompleteMethodCallbackExample {
 				String uriPattern = handlerKey.split("#")[0];
 
 				// Create a complete request
-				CompleteRequest request = new CompleteRequest(new ResourceReference(uriPattern),
-						new CompleteRequest.CompleteArgument("city", input));
+				CompleteRequest request = CompleteRequest
+					.builder(new ResourceReference(uriPattern), new CompleteRequest.CompleteArgument("city", input))
+					.build();
 
 				// Execute the handler
 				Mono<CompleteResult> resultMono = handler.apply(exchange, request);

@@ -19,6 +19,7 @@ package org.springframework.ai.mcp.annotation.provider.sampling;
 import java.util.List;
 import java.util.function.Function;
 
+import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.CreateMessageRequest;
 import io.modelcontextprotocol.spec.McpSchema.CreateMessageResult;
 import io.modelcontextprotocol.spec.McpSchema.TextContent;
@@ -45,10 +46,9 @@ public class SyncMcpSamplingProviderTests {
 
 			@McpSampling(clients = "test-client")
 			public CreateMessageResult handleSamplingRequest(CreateMessageRequest request) {
-				return CreateMessageResult.builder()
-					.role(io.modelcontextprotocol.spec.McpSchema.Role.ASSISTANT)
-					.content(new TextContent("This is a response to the sampling request"))
-					.model("test-model")
+				return CreateMessageResult
+					.builder(McpSchema.Role.ASSISTANT,
+							TextContent.builder("This is a response to the sampling request").build(), "test-model")
 					.build();
 			}
 

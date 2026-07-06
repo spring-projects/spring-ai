@@ -81,7 +81,7 @@ public class AsyncMcpToolProviderTests {
 
 		// Test that the handler works
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("test-tool", Map.of("input", "hello"));
+		CallToolRequest request = CallToolRequest.builder("test-tool").arguments(Map.of("input", "hello")).build();
 		Mono<CallToolResult> result = toolSpec.callHandler().apply(exchange, request);
 
 		StepVerifier.create(result).assertNext(callToolResult -> {
@@ -322,8 +322,9 @@ public class AsyncMcpToolProviderTests {
 
 		// Test that the handler works with complex parameters
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("complex-tool",
-				Map.of("name", "John", "age", 30, "active", true, "tags", List.of("tag1", "tag2")));
+		CallToolRequest request = CallToolRequest.builder("complex-tool")
+			.arguments(Map.of("name", "John", "age", 30, "active", true, "tags", List.of("tag1", "tag2")))
+			.build();
 		Mono<CallToolResult> result = toolSpecs.get(0).callHandler().apply(exchange, request);
 
 		StepVerifier.create(result).assertNext(callToolResult -> {
@@ -358,7 +359,7 @@ public class AsyncMcpToolProviderTests {
 
 		// Test that the handler works with no parameters
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("no-param-tool", Map.of());
+		CallToolRequest request = CallToolRequest.builder("no-param-tool").arguments(Map.of()).build();
 		Mono<CallToolResult> result = toolSpecs.get(0).callHandler().apply(exchange, request);
 
 		StepVerifier.create(result).assertNext(callToolResult -> {
@@ -392,7 +393,7 @@ public class AsyncMcpToolProviderTests {
 
 		// Test that the handler works with Mono<CallToolResult> return type
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("result-tool", Map.of("message", "test"));
+		CallToolRequest request = CallToolRequest.builder("result-tool").arguments(Map.of("message", "test")).build();
 		Mono<CallToolResult> result = toolSpecs.get(0).callHandler().apply(exchange, request);
 
 		StepVerifier.create(result).assertNext(callToolResult -> {
@@ -426,7 +427,7 @@ public class AsyncMcpToolProviderTests {
 
 		// Test that the handler works with Mono<Void> return type
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("void-tool", Map.of("input", "test"));
+		CallToolRequest request = CallToolRequest.builder("void-tool").arguments(Map.of("input", "test")).build();
 		Mono<CallToolResult> result = toolSpecs.get(0).callHandler().apply(exchange, request);
 
 		StepVerifier.create(result).assertNext(callToolResult -> {
@@ -461,7 +462,7 @@ public class AsyncMcpToolProviderTests {
 
 		// Test that the handler works with private methods
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("private-tool", Map.of("input", "test"));
+		CallToolRequest request = CallToolRequest.builder("private-tool").arguments(Map.of("input", "test")).build();
 		Mono<CallToolResult> result = toolSpecs.get(0).callHandler().apply(exchange, request);
 
 		StepVerifier.create(result).assertNext(callToolResult -> {
@@ -525,7 +526,9 @@ public class AsyncMcpToolProviderTests {
 
 		// Test that the handler works with Flux return type
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("flux-handling-tool", Map.of("input", "test"));
+		CallToolRequest request = CallToolRequest.builder("flux-handling-tool")
+			.arguments(Map.of("input", "test"))
+			.build();
 		Mono<CallToolResult> result = toolSpecs.get(0).callHandler().apply(exchange, request);
 
 		StepVerifier.create(result).assertNext(callToolResult -> {
@@ -771,7 +774,7 @@ public class AsyncMcpToolProviderTests {
 
 		// Test that the handler works with Mono<Void> return type
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("void-tool", Map.of("input", "test"));
+		CallToolRequest request = CallToolRequest.builder("void-tool").arguments(Map.of("input", "test")).build();
 		Mono<CallToolResult> result = toolSpec.callHandler().apply(exchange, request);
 
 		StepVerifier.create(result).assertNext(callToolResult -> {
@@ -899,7 +902,7 @@ public class AsyncMcpToolProviderTests {
 			.callHandler();
 
 		Mono<McpSchema.CallToolResult> result1 = callHandler.apply(mock(McpAsyncServerExchange.class),
-				new CallToolRequest("list-response", Map.of("input", "test")));
+				CallToolRequest.builder("list-response").arguments(Map.of("input", "test")).build());
 
 		CallToolResult result = result1.block();
 
@@ -946,7 +949,7 @@ public class AsyncMcpToolProviderTests {
 			.callHandler();
 
 		Mono<McpSchema.CallToolResult> result1 = callHandler.apply(mock(McpAsyncServerExchange.class),
-				new CallToolRequest("flux-list-response", Map.of("input", "test")));
+				CallToolRequest.builder("flux-list-response").arguments(Map.of("input", "test")).build());
 
 		CallToolResult result = result1.block();
 

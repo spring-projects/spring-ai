@@ -79,7 +79,8 @@ class WebMvcSseServerTransportProviderIT {
 	@Test
 	void validBaseUrl() {
 		McpServer.async(this.mcpServerTransportProvider).serverInfo("test-server", "1.0.0").build();
-		try (var client = this.clientBuilder.clientInfo(new McpSchema.Implementation("Sample " + "client", "0.0.0"))
+		try (var client = this.clientBuilder
+			.clientInfo(McpSchema.Implementation.builder("Sample " + "client", "0.0.0").build())
 			.build()) {
 			assertThat(client.initialize()).isNotNull();
 		}

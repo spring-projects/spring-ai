@@ -78,7 +78,7 @@ public class DefaultMcpReadResourceResultConverter implements McpReadResourceRes
 	public ReadResourceResult convertToReadResourceResult(Object result, String requestUri, String mimeType,
 			ContentType contentType, Map<String, Object> meta) {
 		if (result == null) {
-			return new ReadResourceResult(List.of());
+			return ReadResourceResult.builder(List.of()).build();
 		}
 
 		if (result instanceof ReadResourceResult) {
@@ -110,7 +110,7 @@ public class DefaultMcpReadResourceResultConverter implements McpReadResourceRes
 			throw new IllegalArgumentException("Unsupported return type: " + result.getClass().getName());
 		}
 
-		return new ReadResourceResult(contents);
+		return ReadResourceResult.builder(contents).build();
 	}
 
 	private boolean isTextMimeType(String mimeType) {
@@ -161,12 +161,12 @@ public class DefaultMcpReadResourceResultConverter implements McpReadResourceRes
 
 			if (contentType == ContentType.TEXT) {
 				for (String text : stringList) {
-					result.add(new TextResourceContents(requestUri, mimeType, text, meta));
+					result.add(TextResourceContents.builder(requestUri, text).mimeType(mimeType).meta(meta).build());
 				}
 			}
 			else { // BLOB
 				for (String blob : stringList) {
-					result.add(new BlobResourceContents(requestUri, mimeType, blob, meta));
+					result.add(BlobResourceContents.builder(requestUri, blob).mimeType(mimeType).meta(meta).build());
 				}
 			}
 
@@ -190,10 +190,12 @@ public class DefaultMcpReadResourceResultConverter implements McpReadResourceRes
 	private List<ResourceContents> convertStringResult(String stringResult, String requestUri, ContentType contentType,
 			String mimeType, Map<String, Object> meta) {
 		if (contentType == ContentType.TEXT) {
-			return List.of(new TextResourceContents(requestUri, mimeType, stringResult, meta));
+			return List
+				.of(TextResourceContents.builder(requestUri, stringResult).mimeType(mimeType).meta(meta).build());
 		}
 		else { // BLOB
-			return List.of(new BlobResourceContents(requestUri, mimeType, stringResult, meta));
+			return List
+				.of(BlobResourceContents.builder(requestUri, stringResult).mimeType(mimeType).meta(meta).build());
 		}
 	}
 

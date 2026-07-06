@@ -128,7 +128,7 @@ public final class SyncMcpResourceMethodCallbackExample {
 			try {
 				// Create a mock exchange and request
 				McpSyncServerExchange exchange = createMockExchange();
-				ReadResourceRequest request = new ReadResourceRequest(uri);
+				ReadResourceRequest request = ReadResourceRequest.builder(uri).build();
 
 				// Execute the handler
 				ReadResourceResult result = handler.apply(exchange, request);
@@ -229,7 +229,10 @@ public final class SyncMcpResourceMethodCallbackExample {
 			String profileInfo = formatProfileInfo(
 					this.userProfiles.getOrDefault(username.toLowerCase(), new HashMap<>()));
 
-			return new ReadResourceResult(List.of(new TextResourceContents(request.uri(), "text/plain", profileInfo)));
+			return ReadResourceResult
+				.builder(List
+					.of(TextResourceContents.builder(request.uri(), profileInfo).mimeType("text/plain").build()))
+				.build();
 		}
 
 		/**
@@ -242,8 +245,11 @@ public final class SyncMcpResourceMethodCallbackExample {
 			String profileInfo = formatProfileInfo(
 					this.userProfiles.getOrDefault(username.toLowerCase(), new HashMap<>()));
 
-			return new ReadResourceResult(
-					List.of(new TextResourceContents("user-profile://" + username, "text/plain", profileInfo)));
+			return ReadResourceResult
+				.builder(List.of(TextResourceContents.builder("user-profile://" + username, profileInfo)
+					.mimeType("text/plain")
+					.build()))
+				.build();
 		}
 
 		/**
@@ -255,9 +261,14 @@ public final class SyncMcpResourceMethodCallbackExample {
 			Map<String, String> profile = this.userProfiles.getOrDefault(username.toLowerCase(), new HashMap<>());
 			String attributeValue = profile.getOrDefault(attribute, "Attribute not found");
 
-			return new ReadResourceResult(
-					List.of(new TextResourceContents("user-attribute://" + username + "/" + attribute, "text/plain",
-							username + "'s " + attribute + ": " + attributeValue)));
+			return ReadResourceResult
+				.builder(
+						List.of(TextResourceContents
+							.builder("user-attribute://" + username + "/" + attribute,
+									username + "'s " + attribute + ": " + attributeValue)
+							.mimeType("text/plain")
+							.build()))
+				.build();
 		}
 
 		/**
@@ -269,8 +280,13 @@ public final class SyncMcpResourceMethodCallbackExample {
 			String profileInfo = formatProfileInfo(
 					this.userProfiles.getOrDefault(username.toLowerCase(), new HashMap<>()));
 
-			return new ReadResourceResult(List.of(new TextResourceContents("user-profile-exchange://" + username,
-					"text/plain", "Profile with exchange for " + username + ": " + profileInfo)));
+			return ReadResourceResult
+				.builder(List.of(TextResourceContents
+					.builder("user-profile-exchange://" + username,
+							"Profile with exchange for " + username + ": " + profileInfo)
+					.mimeType("text/plain")
+					.build()))
+				.build();
 		}
 
 		/**
@@ -295,7 +311,7 @@ public final class SyncMcpResourceMethodCallbackExample {
 			// Generate notifications based on username
 			String notifications = generateNotifications(username);
 
-			return List.of(new TextResourceContents(request.uri(), "text/plain", notifications));
+			return List.of(TextResourceContents.builder(request.uri(), notifications).mimeType("text/plain").build());
 		}
 
 		/**
@@ -307,7 +323,7 @@ public final class SyncMcpResourceMethodCallbackExample {
 			// Generate a simple status based on username
 			String status = generateUserStatus(username);
 
-			return new TextResourceContents(request.uri(), "text/plain", status);
+			return TextResourceContents.builder(request.uri(), status).mimeType("text/plain").build();
 		}
 
 		/**

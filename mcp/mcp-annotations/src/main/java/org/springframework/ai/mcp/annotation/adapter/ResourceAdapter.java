@@ -59,8 +59,10 @@ public final class ResourceAdapter {
 		// The user must explicitly set the annotations to get them included.
 		var annotations = mcpResourceAnnotation.annotations();
 		if (annotations != null && annotations.lastModified() != null && !annotations.lastModified().isEmpty()) {
-			resourceBuilder
-				.annotations(new McpSchema.Annotations(List.of(annotations.audience()), annotations.priority()));
+			resourceBuilder.annotations(McpSchema.Annotations.builder()
+				.audience(List.of(annotations.audience()))
+				.priority(annotations.priority())
+				.build());
 		}
 
 		return resourceBuilder.build();

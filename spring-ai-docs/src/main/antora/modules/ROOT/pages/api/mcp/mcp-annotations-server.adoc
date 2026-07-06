@@ -304,10 +304,9 @@ public ReadResourceResult getUserProfile(String username) {
     String profileData = loadUserProfile(username);
     
     return ReadResourceResult.builder(List.of(
-        new TextResourceContents(
+        TextResourceContents.builder(
             "user-profile://" + username,
-            "application/json",
-            profileData)
+            profileData).mimeType("application/json").build()
     )).build();
 }
 ----
@@ -333,7 +332,7 @@ public ReadResourceResult getData(
     String data = fetchData(id);
     
     return ReadResourceResult.builder(List.of(
-        new TextResourceContents("data://" + id, "text/plain", data)
+        TextResourceContents.builder("data://" + id, data).mimeType("text/plain").build()
     )).build();
 }
 ----
@@ -808,7 +807,7 @@ public class AsyncTools {
         return Mono.fromCallable(() -> {
             String data = loadData(id);
             return ReadResourceResult.builder(List.of(
-                new TextResourceContents("async-data://" + id, "text/plain", data)
+                TextResourceContents.builder("async-data://" + id, data).mimeType("text/plain").build()
             )).build();
         }).delayElements(Duration.ofMillis(100));
     }
