@@ -17,6 +17,7 @@
 package org.springframework.ai.chat.client.advisor.vectorstore;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
@@ -25,8 +26,11 @@ import org.mockito.Mockito;
 import reactor.core.scheduler.Scheduler;
 
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
@@ -239,6 +243,33 @@ class VectorStoreChatMemoryAdvisorTests {
 			.contains("&apos;");
 		assertThat(systemText).doesNotContain("AT&T").doesNotContain("<fine>");
 		assertThat(systemText).containsOnlyOnce("<memory-entry type=\"assistant\">");
+	}
+
+	@Test
+	void memoryEntryTypeUsesRootLocaleUnderTurkishLocale() {
+		Locale defaultLocale = Locale.getDefault();
+		try {
+			// "ASSISTANT".toLowerCase() under tr-TR yields "assıstant" (dotless ı);
+			// Correct handling must produce ASCII "assistant".
+			Locale.setDefault(Locale.forLanguageTag("tr-TR"));
+
+			Document doc = Document.builder().text("hi").metadata(Map.of("messageType", "ASSISTANT")).build();
+
+			VectorStore vectorStore = Mockito.mock(VectorStore.class);
+			given(vectorStore.similaritySearch(any(SearchRequest.class))).willReturn(List.of(doc));
+
+			ChatClientRequest request = ChatClientRequest.builder()
+				.context(ChatMemory.CONVERSATION_ID, "test-session")
+				.prompt(new Prompt(List.of(new SystemMessage("instructions"), new UserMessage("query"))))
+				.build();
+
+			ChatClientRequest result = VectorStoreChatMemoryAdvisor.builder(vectorStore).build().before(request, null);
+
+			assertThat(result.prompt().getSystemMessage().getText()).contains("<memory-entry type=\"assistant\">");
+		}
+		finally {
+			Locale.setDefault(defaultLocale);
+		}
 	}
 
 }

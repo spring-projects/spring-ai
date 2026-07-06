@@ -480,7 +480,7 @@
 								<!-- The following arg won't be necessary with JDK25+ -->
 								<arg>-XDaddTypeAnnotationsToSymbol=true</arg>
 								<arg>--should-stop=ifError=FLOW</arg>
-								<arg>-Xplugin:ErrorProne -XepDisableAllChecks -Xep:NullAway:ERROR
+								<arg>-Xplugin:ErrorProne -XepDisableAllChecks -Xep:StringCaseLocaleUsage:ERROR -Xep:NullAway:ERROR
 									-XepOpt:NullAway:OnlyNullMarked
 									-XepOpt:NullAway:JSpecifyMode=true</arg>
 							</compilerArgs>

@@ -20,6 +20,7 @@ import java.net.Proxy;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import com.openai.azure.AzureOpenAIServiceVersion;
@@ -233,7 +234,7 @@ public class OpenAiEmbeddingOptions extends AbstractOpenAiOptions implements Emb
 			}
 			if (openAiCreateParams.encodingFormat().isPresent()) {
 				this.encodingFormat = EncodingFormat
-					.valueOf(openAiCreateParams.encodingFormat().get().asString().toUpperCase());
+					.valueOf(openAiCreateParams.encodingFormat().get().asString().toUpperCase(Locale.ROOT));
 			}
 			if (openAiCreateParams.dimensions().isPresent()) {
 				this.dimensions = Math.toIntExact(openAiCreateParams.dimensions().get());

@@ -18,6 +18,7 @@ package org.springframework.ai.bedrock.titan;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import io.micrometer.observation.Observation;
@@ -103,7 +104,7 @@ public class BedrockTitanEmbeddingModel extends AbstractEmbeddingModel {
 				TitanEmbeddingResponse response = Observation
 					.createNotStarted("bedrock.embedding", this.observationRegistry)
 					.lowCardinalityKeyValue("model", "titan")
-					.lowCardinalityKeyValue("input_type", this.inputType.name().toLowerCase())
+					.lowCardinalityKeyValue("input_type", this.inputType.name().toLowerCase(Locale.ROOT))
 					.highCardinalityKeyValue("input_length", String.valueOf(inputContent.length()))
 					.observe(() -> {
 						TitanEmbeddingResponse r = this.embeddingApi.embedding(apiRequest);

@@ -18,6 +18,7 @@ package org.springframework.ai.mcp.client.common.autoconfigure.annotations;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import io.modelcontextprotocol.spec.McpSchema;
@@ -118,7 +119,7 @@ public class McpClientListChangedAnnotationsScanningIT {
 	@ParameterizedTest
 	@ValueSource(strings = { "SYNC", "ASYNC" })
 	void shouldNotScanAnnotationsWhenScannerDisabled(String clientType) {
-		String prefix = clientType.toLowerCase();
+		String prefix = clientType.toLowerCase(Locale.ROOT);
 
 		this.contextRunner.withUserConfiguration(AllListChangedConfiguration.class)
 			.withPropertyValues("spring.ai.mcp.client.type=" + clientType,

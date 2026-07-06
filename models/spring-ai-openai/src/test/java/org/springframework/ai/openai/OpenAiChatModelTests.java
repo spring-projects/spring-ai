@@ -20,6 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -31,6 +32,7 @@ import com.openai.client.OpenAIClient;
 import com.openai.client.OpenAIClientAsync;
 import com.openai.core.JsonValue;
 import com.openai.core.http.AsyncStreamResponse;
+import com.openai.models.ReasoningEffort;
 import com.openai.models.chat.completions.ChatCompletion;
 import com.openai.models.chat.completions.ChatCompletionAssistantMessageParam;
 import com.openai.models.chat.completions.ChatCompletionChunk;
@@ -75,6 +77,7 @@ import static org.mockito.Mockito.when;
  * Unit tests for {@link OpenAiChatModel}.
  *
  * @author Jewoo Shin
+ * @author Dimitar Proynov
  */
 @ExtendWith(MockitoExtension.class)
 class OpenAiChatModelTests {
@@ -1008,6 +1011,112 @@ class OpenAiChatModelTests {
 
 		// Verify no Optional values leak into assistant message metadata
 		generation.getOutput().getMetadata().forEach((key, value) -> assertThat(value).isNotInstanceOf(Optional.class));
+	}
+
+	@Test
+	void outputModalitiesUseRootLocaleRegardlessOfDefaultLocale() {
+		Locale original = Locale.getDefault();
+		Locale.setDefault(new Locale("tr", "TR"));
+		try {
+			// "AUDIO" contains an uppercase I; under tr_TR, toLowerCase() without
+			// Locale.ROOT turns it into "audıo" (dotless ı), which Modality.of(...)
+			// won't recognize as the AUDIO modality.
+			OpenAiChatOptions options = OpenAiChatOptions.builder()
+				.model("test-model")
+				.outputModalities(List.of("TEXT", "AUDIO"))
+				.build();
+			OpenAiChatModel chatModel = OpenAiChatModel.builder()
+				.openAiClient(this.openAiClient)
+				.openAiClientAsync(this.openAiClientAsync)
+				.options(options)
+				.build();
+
+			ChatCompletionCreateParams request = chatModel.createRequest(new Prompt("test", options), false);
+
+			assertThat(request.modalities())
+				.contains(List.of(ChatCompletionCreateParams.Modality.TEXT, ChatCompletionCreateParams.Modality.AUDIO));
+		}
+		finally {
+			Locale.setDefault(original);
+		}
+	}
+
+	@Test
+	void reasoningEffortUsesRootLocaleRegardlessOfDefaultLocale() {
+		Locale original = Locale.getDefault();
+		try {
+			Locale.setDefault(new Locale("tr", "TR"));
+			// "MINIMAL" contains an uppercase I; under tr_TR it lowers to "mınımal",
+			// which ReasoningEffort.of(...) won't match to the MINIMAL constant.
+			OpenAiChatOptions options = OpenAiChatOptions.builder()
+				.model("test-model")
+				.reasoningEffort("MINIMAL")
+				.build();
+			OpenAiChatModel chatModel = OpenAiChatModel.builder()
+				.openAiClient(this.openAiClient)
+				.openAiClientAsync(this.openAiClientAsync)
+				.options(options)
+				.build();
+
+			ChatCompletionCreateParams request = chatModel.createRequest(new Prompt("test", options), false);
+
+			assertThat(request.reasoningEffort()).contains(ReasoningEffort.MINIMAL);
+		}
+		finally {
+			Locale.setDefault(original);
+		}
+	}
+
+	@Test
+	void audioVoiceUsesRootLocaleRegardlessOfDefaultLocale() {
+		Locale original = Locale.getDefault();
+		try {
+			Locale.setDefault(new Locale("tr", "TR"));
+			// SHIMMER contains an uppercase I; under tr_TR it lowers to "shımmer"
+			// instead of the wire-correct "shimmer". The fix lives in
+			// OpenAiChatOptions.AudioParameters#toChatCompletionAudioParam(),
+			// but it's only reachable through OpenAiChatModel#createRequest.
+			OpenAiChatOptions options = OpenAiChatOptions.builder()
+				.model("test-model")
+				.outputAudio(new OpenAiChatOptions.AudioParameters(OpenAiChatOptions.AudioParameters.Voice.SHIMMER,
+						OpenAiChatOptions.AudioParameters.AudioResponseFormat.WAV))
+				.build();
+			OpenAiChatModel chatModel = OpenAiChatModel.builder()
+				.openAiClient(this.openAiClient)
+				.openAiClientAsync(this.openAiClientAsync)
+				.options(options)
+				.build();
+
+			ChatCompletionCreateParams request = chatModel.createRequest(new Prompt("test", options), false);
+
+			assertThat(request.audio()).isPresent();
+			assertThat(request.audio().get().voice().string().get().equals("shimmer"));
+		}
+		finally {
+			Locale.setDefault(original);
+		}
+	}
+
+	@Test
+	void streamingFinishReasonSurvivesRoundTripUnderTurkishLocale() {
+		Locale original = Locale.getDefault();
+		Locale.setDefault(new Locale("tr", "TR"));
+		try {
+			// CONTENT_FILTER contains an uppercase I; under tr_TR the chunk-merging
+			// round trip lowers it to "content_fılter", which
+			// ChatCompletion.Choice.FinishReason.of(...) treats as unknown.
+			List<ChatCompletionChunk> chunks = List.of(streamingChunk(
+					delta -> delta.role(ChatCompletionChunk.Choice.Delta.Role.ASSISTANT).content("Blocked"),
+					ChatCompletionChunk.Choice.FinishReason.CONTENT_FILTER));
+
+			ChatResponse response = streamResponses(chunks).blockLast();
+
+			assertThat(response).isNotNull();
+			assertThat(response.getResult().getMetadata().getFinishReason()).isEqualTo("CONTENT_FILTER");
+		}
+		finally {
+			Locale.setDefault(original);
+		}
 	}
 
 }

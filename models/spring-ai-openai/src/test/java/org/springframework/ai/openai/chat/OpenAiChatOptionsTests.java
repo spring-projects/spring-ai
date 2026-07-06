@@ -19,8 +19,10 @@ package org.springframework.ai.openai.chat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
+import com.openai.models.chat.completions.ChatCompletionAudioParam;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.prompt.ChatOptions;
@@ -40,6 +42,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Julien Dubois
  * @author Sebastien Deleuze
  * @author guan xu
+ * @author Deepak Kumar S S
  */
 public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatOptions, Builder> {
 
@@ -653,6 +656,26 @@ public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatO
 		assertThat(cloned.getOutputModalities()).isNull();
 		assertThat(cloned.getMetadata()).isNull();
 		assertThat(cloned.getExtraBody()).isNull();
+	}
+
+	@Test
+	void audioParametersAreSerializedLocaleIndependently() {
+		Locale defaultLocale = Locale.getDefault();
+		try {
+			// Under the Turkish locale, "SHIMMER".toLowerCase() yields "shımmer" (dotless
+			// 'ı'), which is not a valid OpenAI audio voice. Protocol enum values must be
+			// converted using a fixed locale so the wire value stays "shimmer".
+			Locale.setDefault(Locale.forLanguageTag("tr-TR"));
+			OpenAiChatOptions.AudioParameters audioParameters = new OpenAiChatOptions.AudioParameters(
+					OpenAiChatOptions.AudioParameters.Voice.SHIMMER,
+					OpenAiChatOptions.AudioParameters.AudioResponseFormat.MP3);
+			ChatCompletionAudioParam audioParam = audioParameters.toChatCompletionAudioParam();
+			assertThat(audioParam.voice().asString()).isEqualTo("shimmer");
+			assertThat(audioParam.format().asString()).isEqualTo("mp3");
+		}
+		finally {
+			Locale.setDefault(defaultLocale);
+		}
 	}
 
 }

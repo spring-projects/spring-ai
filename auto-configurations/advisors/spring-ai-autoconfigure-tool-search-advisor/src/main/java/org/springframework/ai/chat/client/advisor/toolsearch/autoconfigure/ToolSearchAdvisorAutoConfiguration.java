@@ -16,6 +16,7 @@
 
 package org.springframework.ai.chat.client.advisor.toolsearch.autoconfigure;
 
+import java.util.Locale;
 import java.util.Set;
 
 import org.apache.commons.logging.Log;
@@ -108,7 +109,7 @@ public class ToolSearchAdvisorAutoConfiguration implements InitializingBean {
 	@Override
 	public void afterPropertiesSet() {
 		String type = this.properties.getToolIndexType();
-		if (type != null && !KNOWN_TOOL_INDEX_TYPES.contains(type.toLowerCase())) {
+		if (type != null && !KNOWN_TOOL_INDEX_TYPES.contains(type.toLowerCase(Locale.ROOT))) {
 			logger.warn("Unknown 'spring.ai.chat.client.tool-search-advisor.tool-index-type' value: '" + type
 					+ "'. Known built-in values are: " + KNOWN_TOOL_INDEX_TYPES
 					+ ". If this is intentional, ensure a matching ToolIndex bean is declared in the application context.");

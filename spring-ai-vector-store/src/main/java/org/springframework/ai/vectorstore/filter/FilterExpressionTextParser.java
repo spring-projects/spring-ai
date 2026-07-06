@@ -18,6 +18,7 @@ package org.springframework.ai.vectorstore.filter;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -128,7 +129,7 @@ public class FilterExpressionTextParser {
 		Assert.hasText(textFilterExpression, "Expression should not be empty!");
 
 		// Prefix the expression with the compulsory WHERE keyword.
-		if (!textFilterExpression.toUpperCase().startsWith(WHERE_PREFIX)) {
+		if (!textFilterExpression.toUpperCase(Locale.ROOT).startsWith(WHERE_PREFIX)) {
 			textFilterExpression = String.format("%s %s", WHERE_PREFIX, textFilterExpression);
 		}
 

@@ -17,6 +17,7 @@
 package org.springframework.ai.mcp.utils;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
@@ -45,7 +46,7 @@ public class McpTestRequestRecordingExchangeFilterFunction implements HandlerFil
 			.asHttpHeaders()
 			.headerSet()
 			.stream()
-			.collect(Collectors.toMap(e -> e.getKey().toLowerCase(), e -> String.join(",", e.getValue())));
+			.collect(Collectors.toMap(e -> e.getKey().toLowerCase(Locale.ROOT), e -> String.join(",", e.getValue())));
 
 		var cr = request.bodyToMono(String.class).defaultIfEmpty("").map(body -> {
 			this.calls.add(new Call(request.method(), headers, body));
