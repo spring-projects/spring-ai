@@ -17,6 +17,7 @@
 package org.springframework.ai.mcp;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiFunction;
@@ -133,7 +134,7 @@ public final class McpToolUtils {
 			return "";
 		}
 
-		return Stream.of(input.toLowerCase().split("_"))
+		return Stream.of(input.toLowerCase(Locale.ROOT).split("_"))
 			.filter(word -> !word.isEmpty())
 			.map(word -> String.valueOf(word.charAt(0)))
 			.collect(java.util.stream.Collectors.joining("_"));

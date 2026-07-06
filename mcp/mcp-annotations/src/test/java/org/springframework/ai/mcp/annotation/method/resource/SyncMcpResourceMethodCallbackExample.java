@@ -20,6 +20,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.regex.Matcher;
@@ -227,7 +228,7 @@ public final class SyncMcpResourceMethodCallbackExample {
 				description = "Provides user profile information for a specific user")
 		public ReadResourceResult getUserProfile(ReadResourceRequest request, String username) {
 			String profileInfo = formatProfileInfo(
-					this.userProfiles.getOrDefault(username.toLowerCase(), new HashMap<>()));
+					this.userProfiles.getOrDefault(username.toLowerCase(Locale.ROOT), new HashMap<>()));
 
 			return ReadResourceResult
 				.builder(List
@@ -243,7 +244,7 @@ public final class SyncMcpResourceMethodCallbackExample {
 				description = "Provides user details for a specific user using URI variables")
 		public ReadResourceResult getUserDetails(String username) {
 			String profileInfo = formatProfileInfo(
-					this.userProfiles.getOrDefault(username.toLowerCase(), new HashMap<>()));
+					this.userProfiles.getOrDefault(username.toLowerCase(Locale.ROOT), new HashMap<>()));
 
 			return ReadResourceResult
 				.builder(List.of(TextResourceContents.builder("user-profile://" + username, profileInfo)
@@ -258,7 +259,8 @@ public final class SyncMcpResourceMethodCallbackExample {
 		@McpResource(uri = "user-attribute://{username}/{attribute}", name = "User Attribute",
 				description = "Provides a specific attribute from a user's profile")
 		public ReadResourceResult getUserAttribute(String username, String attribute) {
-			Map<String, String> profile = this.userProfiles.getOrDefault(username.toLowerCase(), new HashMap<>());
+			Map<String, String> profile = this.userProfiles.getOrDefault(username.toLowerCase(Locale.ROOT),
+					new HashMap<>());
 			String attributeValue = profile.getOrDefault(attribute, "Attribute not found");
 
 			return ReadResourceResult
@@ -278,7 +280,7 @@ public final class SyncMcpResourceMethodCallbackExample {
 				description = "Provides user profile information with server exchange context")
 		public ReadResourceResult getProfileWithExchange(McpSyncServerExchange exchange, String username) {
 			String profileInfo = formatProfileInfo(
-					this.userProfiles.getOrDefault(username.toLowerCase(), new HashMap<>()));
+					this.userProfiles.getOrDefault(username.toLowerCase(Locale.ROOT), new HashMap<>()));
 
 			return ReadResourceResult
 				.builder(List.of(TextResourceContents
@@ -332,7 +334,8 @@ public final class SyncMcpResourceMethodCallbackExample {
 		@McpResource(uri = "user-location://{username}", name = "User Location",
 				description = "Provides the current location for a specific user")
 		public String getUserLocation(String username) {
-			Map<String, String> profile = this.userProfiles.getOrDefault(username.toLowerCase(), new HashMap<>());
+			Map<String, String> profile = this.userProfiles.getOrDefault(username.toLowerCase(Locale.ROOT),
+					new HashMap<>());
 
 			// Extract location from profile data
 			return profile.getOrDefault("location", "Location not available");
@@ -357,12 +360,12 @@ public final class SyncMcpResourceMethodCallbackExample {
 				if (schemaParts.length > 1) {
 					// Handle potential additional path segments after the username
 					String[] pathParts = schemaParts[1].split("/");
-					return pathParts[0].toLowerCase();
+					return pathParts[0].toLowerCase(Locale.ROOT);
 				}
 			}
 			// Fallback for old URI format or unexpected formats
 			String[] parts = uri.split("/");
-			return parts.length > 2 ? parts[2].toLowerCase() : "unknown";
+			return parts.length > 2 ? parts[2].toLowerCase(Locale.ROOT) : "unknown";
 		}
 
 		private String formatProfileInfo(Map<String, String> profile) {

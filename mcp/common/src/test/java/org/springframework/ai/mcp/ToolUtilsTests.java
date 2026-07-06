@@ -19,6 +19,7 @@ package org.springframework.ai.mcp;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import io.modelcontextprotocol.client.McpSyncClient;
@@ -208,6 +209,21 @@ class ToolUtilsTests {
 		// Compatibility
 		String result = McpToolUtils.prefixedToolName("前缀\u3400", "缀\\u3400", "工具\u9fff名称\uf900");
 		assertThat(result).isEqualTo("前_缀u3400_工具鿿名称豈");
+	}
+
+	@Test
+	void prefixedToolNameShouldHandleTrLocale() {
+		Locale defaultLocale = Locale.getDefault();
+		try {
+			Locale.setDefault(Locale.forLanguageTag("tr-TR"));
+			// Prefix "Inventory" would be lowercased to "ı" (dotless i) in turkish locale
+			// if not properly handled.
+			String result = McpToolUtils.prefixedToolName("Inventory", "server1", "toolName");
+			assertThat(result).isEqualTo("i_server1_toolName");
+		}
+		finally {
+			Locale.setDefault(defaultLocale);
+		}
 	}
 
 	@Test

@@ -17,6 +17,7 @@
 package org.springframework.ai.tool.toolsearch.index.regex;
 
 import java.util.List;
+import java.util.Locale;
 
 import org.junit.jupiter.api.Test;
 
@@ -182,6 +183,26 @@ class RegexToolIndexTests {
 		}
 		catch (Exception e) {
 			throw new RuntimeException(e);
+		}
+	}
+
+	@Test
+	void convertQueryToRegexPatternInTrLocale() {
+		Locale defaultLocale = Locale.getDefault();
+		try {
+			Locale.setDefault(Locale.forLanguageTag("tr-TR"));
+			try (RegexToolIndex searcher = new RegexToolIndex()) {
+				// In turkish locale incorrect handling would result in
+				// "(?i)(get|ınventory)" (dotless i)
+				assertThat(searcher.convertQueryToRegexPattern("GET INVENTORY")).isEqualTo("(?i)(get|inventory)");
+				assertThat(searcher.convertQueryToRegexPattern("")).isEqualTo(".*");
+			}
+			catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+		}
+		finally {
+			Locale.setDefault(defaultLocale);
 		}
 	}
 

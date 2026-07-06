@@ -17,6 +17,7 @@
 package org.springframework.ai.chat.memory.repository.redis;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
@@ -237,7 +238,7 @@ class RedisChatMemoryAdvancedQueryIT {
 			assertThat(programmingMessages).hasSize(4);
 			// Verify all messages contain "programming"
 			programmingMessages
-				.forEach(msg -> assertThat(msg.message().getText().toLowerCase()).contains("programming"));
+				.forEach(msg -> assertThat(msg.message().getText().toLowerCase(Locale.ROOT)).contains("programming"));
 
 			// Search for messages containing "Java"
 			List<AdvancedRedisChatMemoryRepository.MessageWithConversation> javaMessages = ((AdvancedRedisChatMemoryRepository) chatMemory)

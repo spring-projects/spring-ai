@@ -18,6 +18,7 @@ package org.springframework.ai.chat.client.advisor.toolsearch;
 
 import java.lang.reflect.Method;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -305,7 +306,7 @@ public abstract class AbstractToolSearchToolCallingAdvisorIT {
 
 		@Tool(description = "Get the current temperature in Celsius for a location or comma-separated list of locations")
 		public String currentWeather(String location) {
-			String loc = location.toLowerCase();
+			String loc = location.toLowerCase(Locale.ROOT);
 			StringBuilder result = new StringBuilder();
 			if (loc.contains("san francisco") || loc.contains("francisco")) {
 				result.append("San Francisco: 30°C");

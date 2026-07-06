@@ -19,6 +19,7 @@ package org.springframework.ai.openai;
 import java.net.Proxy;
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 
@@ -155,7 +156,7 @@ public class OpenAiAudioSpeechOptions extends AbstractOpenAiOptions implements T
 
 	@Override
 	public @Nullable String getFormat() {
-		return this.responseFormat.toLowerCase();
+		return this.responseFormat.toLowerCase(Locale.ROOT);
 	}
 
 	@Override

@@ -17,6 +17,7 @@
 package org.springframework.ai.mcp.server.webmvc.transport;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -38,7 +39,7 @@ final class HeaderUtils {
 			.asHttpHeaders()
 			.headerSet()
 			.stream()
-			.collect(Collectors.toUnmodifiableMap(e -> e.getKey().toLowerCase(), Map.Entry::getValue));
+			.collect(Collectors.toUnmodifiableMap(e -> e.getKey().toLowerCase(Locale.ROOT), Map.Entry::getValue));
 	}
 
 }

@@ -24,6 +24,7 @@ import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -391,7 +392,7 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 						String jsonPath = "$.metadata." + fieldName;
 						String indexedName = "metadata_" + fieldName;
 
-						switch (fieldType.toLowerCase()) {
+						switch (fieldType.toLowerCase(Locale.ROOT)) {
 							case "numeric":
 								schemaFields.add(new NumericField(jsonPath).as(indexedName));
 								break;
@@ -694,7 +695,7 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 		QueryNode queryNode;
 		if (isFieldIndexed) {
 			// Field is explicitly indexed - use proper query based on type
-			switch (fieldType.toLowerCase()) {
+			switch (fieldType.toLowerCase(Locale.ROOT)) {
 				case "numeric":
 					if (metadataValue instanceof Number) {
 						queryNode = QueryBuilders.intersect(indexedFieldName,

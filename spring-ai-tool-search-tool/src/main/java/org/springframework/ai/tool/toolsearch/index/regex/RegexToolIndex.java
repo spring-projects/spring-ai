@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -165,7 +166,7 @@ public class RegexToolIndex implements Closeable, ToolIndex {
 				"just", "also", "very", "too", "so");
 
 		// Tokenize: split by whitespace and common delimiters
-		String[] tokens = query.toLowerCase().split("[\\s,;:.!?()\\[\\]{}\"']+");
+		String[] tokens = query.toLowerCase(Locale.ROOT).split("[\\s,;:.!?()\\[\\]{}\"']+");
 
 		// Filter and process tokens
 		List<String> processedTokens = Arrays.stream(tokens)
