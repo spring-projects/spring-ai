@@ -104,7 +104,6 @@ import org.springframework.ai.openai.setup.OpenAiSetup;
 import org.springframework.ai.support.UsageCalculator;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.util.JacksonUtils;
-import org.springframework.ai.util.MapUtils;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.util.Assert;
@@ -410,7 +409,10 @@ public final class OpenAiChatModel implements ChatModel {
 			generationMetadataBuilder.metadata("audioExpiresAt", audioOutput.expiresAt());
 		}
 
-		assistantMessageMetadata = MapUtils.unwrapOptionals(assistantMessageMetadata);
+		// Unwrap Optional values so downstream repositories (Neo4j, MongoDB, JDBC,
+		// etc.) can serialize the metadata map without failing on java.util.Optional.
+		assistantMessageMetadata
+			.replaceAll((key, value) -> value instanceof Optional<?> optional ? optional.orElse(null) : value);
 
 		var assistantMessage = AssistantMessage.builder()
 			.content(textContent)

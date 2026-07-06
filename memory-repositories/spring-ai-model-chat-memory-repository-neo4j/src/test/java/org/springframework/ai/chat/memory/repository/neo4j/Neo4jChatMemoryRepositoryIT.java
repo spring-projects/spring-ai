@@ -420,10 +420,8 @@ class Neo4jChatMemoryRepositoryIT {
 		// which causes a ClientException during serialization.
 		AssistantMessage assistantMessage = AssistantMessage.builder()
 			.content("Message with Optional metadata")
-			.properties(Map.of(
-				"refusal", Optional.of("I cannot answer that"),
-				"toolCalls", Optional.empty(),
-				"normalKey", "normalValue"))
+			.properties(Map.of("refusal", Optional.of("I cannot answer that"), "toolCalls", Optional.empty(),
+					"normalKey", "normalValue"))
 			.build();
 
 		assertThatThrownBy(() -> this.chatMemoryRepository.saveAll(conversationId, List.of(assistantMessage)))

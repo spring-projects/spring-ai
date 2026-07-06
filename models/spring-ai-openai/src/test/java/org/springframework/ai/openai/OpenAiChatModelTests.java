@@ -60,6 +60,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.util.JsonHelper;
@@ -1001,15 +1002,12 @@ class OpenAiChatModelTests {
 		assertThat(generation).isNotNull();
 
 		// Verify no Optional values leak into generation metadata
-		generation.getMetadata().forEach((key, value) -> {
-			assertThat(value).isNotInstanceOf(Optional.class);
-		});
+		generation.getMetadata()
+			.entrySet()
+			.forEach(entry -> assertThat(entry.getValue()).isNotInstanceOf(Optional.class));
 
 		// Verify no Optional values leak into assistant message metadata
-		generation.getOutput().getMetadata().forEach((key, value) -> {
-			assertThat(value).isNotInstanceOf(Optional.class);
-		});
+		generation.getOutput().getMetadata().forEach((key, value) -> assertThat(value).isNotInstanceOf(Optional.class));
 	}
-
 
 }
