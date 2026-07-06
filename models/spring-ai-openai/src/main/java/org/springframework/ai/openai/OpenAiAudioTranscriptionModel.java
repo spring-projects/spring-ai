@@ -119,9 +119,7 @@ public final class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 
 		TranscriptionCreateParams params = buildParams(options, audioBytes, filename);
 		if (logger.isTraceEnabled()) {
-			if (logger.isTraceEnabled()) {
-				logger.trace("OpenAiAudioTranscriptionModel call with model: " + options.getModel());
-			}
+			logger.trace("OpenAiAudioTranscriptionModel call with model: " + options.getModel());
 		}
 
 		TranscriptionCreateResponse response = this.openAiClient.audio().transcriptions().create(params);
