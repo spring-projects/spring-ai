@@ -16,11 +16,11 @@
 
 package org.springframework.ai.vectorstore.mongodb.autoconfigure;
 
-import com.mongodb.MongoDriverInformation;
-import com.mongodb.client.MongoClient;
 import java.util.Arrays;
 import java.util.List;
 
+import com.mongodb.MongoDriverInformation;
+import com.mongodb.client.MongoClient;
 import io.micrometer.observation.ObservationRegistry;
 
 import org.springframework.ai.embedding.BatchingStrategy;
@@ -30,7 +30,7 @@ import org.springframework.ai.vectorstore.SpringAIVectorStoreTypes;
 import org.springframework.ai.vectorstore.mongodb.atlas.MongoDBAtlasVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.SmartInitializingSingleton;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -66,16 +66,28 @@ public class MongoDBAtlasVectorStoreAutoConfiguration {
 		return new TokenCountBatchingStrategy();
 	}
 
+	/**
+	 * Appends the {@code spring-ai} framework name to the {@link MongoClient} driver
+	 * metadata so that Spring AI traffic can be identified in MongoDB Atlas. This is done
+	 * in a {@link SmartInitializingSingleton} rather than in the {@code vectorStore} bean
+	 * method so that the metadata is still appended when the user provides a custom
+	 * {@link MongoDBAtlasVectorStore} bean (which would suppress the auto-configured
+	 * one).
+	 * @param mongoClientProvider provider for the optional {@link MongoClient} bean
+	 * @return the initializer that appends the driver metadata
+	 */
+	@Bean
+	SmartInitializingSingleton mongoDriverMetadataInitializer(ObjectProvider<MongoClient> mongoClientProvider) {
+		return () -> mongoClientProvider.ifAvailable(mongoClient -> mongoClient
+			.appendMetadata(MongoDriverInformation.builder().driverName("spring-ai").build()));
+	}
+
 	@Bean
 	@ConditionalOnMissingBean
-	MongoDBAtlasVectorStore vectorStore(@Autowired(required = false) MongoClient mongoClient, MongoTemplate mongoTemplate, EmbeddingModel embeddingModel,
+	MongoDBAtlasVectorStore vectorStore(MongoTemplate mongoTemplate, EmbeddingModel embeddingModel,
 			MongoDBAtlasVectorStoreProperties properties, ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
 			BatchingStrategy batchingStrategy) {
-		if(mongoClient != null) {
-			// append framework name to the driver info
-			mongoClient.appendMetadata(MongoDriverInformation.builder().driverName("spring-ai").build());
-		}
 		MongoDBAtlasVectorStore.Builder builder = MongoDBAtlasVectorStore.builder(mongoTemplate, embeddingModel)
 			.initializeSchema(properties.isInitializeSchema())
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
