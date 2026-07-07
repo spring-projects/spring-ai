@@ -190,6 +190,36 @@ public class MyAiTool implements ToolCallback {
 
 2. The auto-configuration will automatically discover and register your tools with the MCP server, converting them to either sync or async implementations based on your server type configuration.
 
+## Observability
+
+MCP server `tools/call` execution emits a dedicated Micrometer observation named `spring.ai.mcp.server.tool`.
+This metric is intentionally separate from Spring AI client-side tool execution, which uses `spring.ai.tool`, so applications that both call tools internally and expose MCP tools can distinguish the two roles.
+
+MCP server tool observations include the following low-cardinality tags:
+
+| Tag | Description |
+|-----|-------------|
+| `gen_ai.operation.name` | Always `execute_tool` |
+| `gen_ai.system` | Always `spring_ai` |
+| `spring.ai.kind` | Always `mcp_server_tool_call` |
+| `spring.ai.tool.definition.name` | Name of the invoked tool |
+| `spring.ai.tool.type` | Type of the invoked tool, typically `function` |
+| `spring.ai.mcp.server.protocol` | `stateful` or `stateless` |
+| `spring.ai.mcp.server.type` | `sync` or `async` |
+
+MCP server tool observations include the following high-cardinality tags:
+
+| Tag | Description |
+|-----|-------------|
+| `spring.ai.tool.definition.description` | Description of the invoked tool |
+| `spring.ai.tool.definition.schema` | Input schema of the invoked tool |
+| `spring.ai.mcp.server.tool.call.arguments` | Arguments passed to the MCP server tool call, when enabled |
+| `spring.ai.mcp.server.tool.call.result` | Result returned from the MCP server tool call, when enabled |
+
+Tool call arguments and results are not exported by default.
+You can opt into those high-cardinality values with `spring.ai.mcp.server.observations.include-content=true`.
+Only enable this property when you are prepared to handle sensitive or private data in observations.
+
 ## Monitoring
 
 The MCP server provides notifications for changes in:

@@ -97,6 +97,8 @@ public class McpServerProperties {
 
 	private final Capabilities capabilities = new Capabilities();
 
+	private final Observations observations = new Observations();
+
 	private ServerProtocol protocol = ServerProtocol.STREAMABLE;
 
 	/**
@@ -131,6 +133,10 @@ public class McpServerProperties {
 
 	public Capabilities getCapabilities() {
 		return this.capabilities;
+	}
+
+	public Observations getObservations() {
+		return this.observations;
 	}
 
 	public enum ServerProtocol {
@@ -265,6 +271,23 @@ public class McpServerProperties {
 
 		public void setCompletion(boolean completion) {
 			this.completion = completion;
+		}
+
+	}
+
+	public static class Observations {
+
+		/**
+		 * Whether to include MCP server tool call content in the observations.
+		 */
+		private boolean includeContent = false;
+
+		public boolean isIncludeContent() {
+			return this.includeContent;
+		}
+
+		public void setIncludeContent(boolean includeContent) {
+			this.includeContent = includeContent;
 		}
 
 	}

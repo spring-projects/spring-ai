@@ -67,6 +67,7 @@ All Common properties are prefixed with `spring.ai.mcp.server`:
 |`name` |Server name for identification |`mcp-server`
 |`version` |Server version |`1.0.0`
 |`instructions` |Optional instructions for client interaction |`null`
+|`observations.include-content` |Whether to include MCP server tool call content in observations |`false`
 |`type` |Server type (SYNC/ASYNC) |`SYNC`
 |`capabilities.resource` |Enable/disable resource capabilities |`true`
 |`capabilities.tool` |Enable/disable tool capabilities |`true`
