@@ -245,7 +245,7 @@
 		<spring-boot.version>4.1.1-SNAPSHOT</spring-boot.version>
 
 		<!-- Third-party dependencies -->
-		<anthropic-sdk.version>2.43.0</anthropic-sdk.version>
+		<anthropic-sdk.version>2.48.0</anthropic-sdk.version>
 		<azure-core.version>1.57.1</azure-core.version>
 		<azure-identity.version>1.18.2</azure-identity.version>
 		<azure-json.version>1.5.1</azure-json.version>
