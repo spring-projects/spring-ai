@@ -39,15 +39,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 public class AsyncMcpToolListChangedMethodCallbackTests {
 
 	private static final List<McpSchema.Tool> TEST_TOOLS = List.of(
-			McpSchema.Tool.builder()
-				.name("test-tool-1")
-				.description("Test Tool 1")
-				.inputSchema(McpJsonDefaults.getMapper(), "{}")
-				.build(),
-			McpSchema.Tool.builder()
-				.name("test-tool-2")
+			McpSchema.Tool.builder("test-tool-1", McpJsonDefaults.getMapper(), "{}").description("Test Tool 1").build(),
+			McpSchema.Tool.builder("test-tool-2", McpJsonDefaults.getMapper(), "{}")
 				.description("Test Tool 2")
-				.inputSchema(McpJsonDefaults.getMapper(), "{}")
 				.build());
 
 	@Test

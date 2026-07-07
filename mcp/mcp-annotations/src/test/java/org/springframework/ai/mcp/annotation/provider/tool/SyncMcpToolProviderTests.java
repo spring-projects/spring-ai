@@ -84,7 +84,7 @@ public class SyncMcpToolProviderTests {
 
 		// Test that the handler works
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("test-tool", Map.of("input", "hello"));
+		CallToolRequest request = CallToolRequest.builder("test-tool").arguments(Map.of("input", "hello")).build();
 		CallToolResult result = toolSpec.callHandler().apply(exchange, request);
 
 		assertThat(result).isNotNull();
@@ -296,8 +296,9 @@ public class SyncMcpToolProviderTests {
 
 		// Test that the handler works with complex parameters
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("complex-tool",
-				Map.of("name", "John", "age", 30, "active", true, "tags", List.of("tag1", "tag2")));
+		CallToolRequest request = CallToolRequest.builder("complex-tool")
+			.arguments(Map.of("name", "John", "age", 30, "active", true, "tags", List.of("tag1", "tag2")))
+			.build();
 		CallToolResult result = toolSpecs.get(0).callHandler().apply(exchange, request);
 
 		assertThat(result).isNotNull();
@@ -330,7 +331,7 @@ public class SyncMcpToolProviderTests {
 
 		// Test that the handler works with no parameters
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("no-param-tool", Map.of());
+		CallToolRequest request = CallToolRequest.builder("no-param-tool").arguments(Map.of()).build();
 		CallToolResult result = toolSpecs.get(0).callHandler().apply(exchange, request);
 
 		assertThat(result).isNotNull();
@@ -362,7 +363,7 @@ public class SyncMcpToolProviderTests {
 
 		// Test that the handler works with CallToolResult return type
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("result-tool", Map.of("message", "test"));
+		CallToolRequest request = CallToolRequest.builder("result-tool").arguments(Map.of("message", "test")).build();
 		CallToolResult result = toolSpecs.get(0).callHandler().apply(exchange, request);
 
 		assertThat(result).isNotNull();
@@ -394,7 +395,7 @@ public class SyncMcpToolProviderTests {
 
 		// Test that the handler works with private methods
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("private-tool", Map.of("input", "test"));
+		CallToolRequest request = CallToolRequest.builder("private-tool").arguments(Map.of("input", "test")).build();
 		CallToolResult result = toolSpecs.get(0).callHandler().apply(exchange, request);
 
 		assertThat(result).isNotNull();
@@ -686,7 +687,7 @@ public class SyncMcpToolProviderTests {
 			.callHandler();
 
 		McpSchema.CallToolResult result = callHandler.apply(mock(McpSyncServerExchange.class),
-				new CallToolRequest("list-response", Map.of("input", "test")));
+				CallToolRequest.builder("list-response").arguments(Map.of("input", "test")).build());
 		assertThat(result).isNotNull();
 		assertThat(result.isError()).isFalse();
 		assertThat(result.content()).hasSize(1);
@@ -728,7 +729,7 @@ public class SyncMcpToolProviderTests {
 			.callHandler();
 
 		McpSchema.CallToolResult result = callHandler.apply(mock(McpSyncServerExchange.class),
-				new CallToolRequest("list-response", Map.of("input", "test")));
+				CallToolRequest.builder("list-response").arguments(Map.of("input", "test")).build());
 
 		assertThat(result).isNotNull();
 		assertThat(result.isError()).isFalse();

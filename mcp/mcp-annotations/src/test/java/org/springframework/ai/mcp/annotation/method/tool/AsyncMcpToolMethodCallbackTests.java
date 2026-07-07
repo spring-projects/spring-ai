@@ -54,7 +54,9 @@ public class AsyncMcpToolMethodCallbackTests {
 		AsyncMcpToolMethodCallback callback = new AsyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
 
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("simple-mono-tool", Map.of("input", "test message"));
+		CallToolRequest request = CallToolRequest.builder("simple-mono-tool")
+			.arguments(Map.of("input", "test message"))
+			.build();
 
 		StepVerifier.create(callback.apply(exchange, request)).assertNext(result -> {
 			assertThat(result).isNotNull();
@@ -72,7 +74,9 @@ public class AsyncMcpToolMethodCallbackTests {
 		AsyncMcpToolMethodCallback callback = new AsyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
 
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("simple-flux-tool", Map.of("input", "test message"));
+		CallToolRequest request = CallToolRequest.builder("simple-flux-tool")
+			.arguments(Map.of("input", "test message"))
+			.build();
 
 		StepVerifier.create(callback.apply(exchange, request)).assertNext(result -> {
 			assertThat(result).isNotNull();
@@ -90,7 +94,9 @@ public class AsyncMcpToolMethodCallbackTests {
 		AsyncMcpToolMethodCallback callback = new AsyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
 
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("simple-publisher-tool", Map.of("input", "test message"));
+		CallToolRequest request = CallToolRequest.builder("simple-publisher-tool")
+			.arguments(Map.of("input", "test message"))
+			.build();
 
 		StepVerifier.create(callback.apply(exchange, request)).assertNext(result -> {
 			assertThat(result).isNotNull();
@@ -108,7 +114,7 @@ public class AsyncMcpToolMethodCallbackTests {
 		AsyncMcpToolMethodCallback callback = new AsyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
 
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("math-mono-tool", Map.of("a", 5, "b", 3));
+		CallToolRequest request = CallToolRequest.builder("math-mono-tool").arguments(Map.of("a", 5, "b", 3)).build();
 
 		StepVerifier.create(callback.apply(exchange, request)).assertNext(result -> {
 			assertThat(result).isNotNull();
@@ -126,7 +132,9 @@ public class AsyncMcpToolMethodCallbackTests {
 		AsyncMcpToolMethodCallback callback = new AsyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
 
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("exception-mono-tool", Map.of("input", "test"));
+		CallToolRequest request = CallToolRequest.builder("exception-mono-tool")
+			.arguments(Map.of("input", "test"))
+			.build();
 
 		StepVerifier.create(callback.apply(exchange, request)).assertNext(result -> {
 			assertThat(result).isNotNull();
@@ -145,8 +153,9 @@ public class AsyncMcpToolMethodCallbackTests {
 		AsyncMcpToolMethodCallback callback = new AsyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
 
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("complex-flux-tool",
-				Map.of("name", "Alice", "age", 25, "active", false));
+		CallToolRequest request = CallToolRequest.builder("complex-flux-tool")
+			.arguments(Map.of("name", "Alice", "age", 25, "active", false))
+			.build();
 
 		StepVerifier.create(callback.apply(exchange, request)).assertNext(result -> {
 			assertThat(result).isNotNull();
@@ -165,7 +174,9 @@ public class AsyncMcpToolMethodCallbackTests {
 		AsyncMcpToolMethodCallback callback = new AsyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
 
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("exchange-mono-tool", Map.of("message", "hello"));
+		CallToolRequest request = CallToolRequest.builder("exchange-mono-tool")
+			.arguments(Map.of("message", "hello"))
+			.build();
 
 		StepVerifier.create(callback.apply(exchange, request)).assertNext(result -> {
 			assertThat(result).isNotNull();
@@ -183,8 +194,9 @@ public class AsyncMcpToolMethodCallbackTests {
 		AsyncMcpToolMethodCallback callback = new AsyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
 
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("list-mono-tool",
-				Map.of("items", List.of("item1", "item2", "item3")));
+		CallToolRequest request = CallToolRequest.builder("list-mono-tool")
+			.arguments(Map.of("items", List.of("item1", "item2", "item3")))
+			.build();
 
 		StepVerifier.create(callback.apply(exchange, request)).assertNext(result -> {
 			assertThat(result).isNotNull();
@@ -202,8 +214,9 @@ public class AsyncMcpToolMethodCallbackTests {
 		AsyncMcpToolMethodCallback callback = new AsyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
 
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("object-mono-tool",
-				Map.of("obj", Map.of("name", "test", "value", 42)));
+		CallToolRequest request = CallToolRequest.builder("object-mono-tool")
+			.arguments(Map.of("obj", Map.of("name", "test", "value", 42)))
+			.build();
 
 		StepVerifier.create(callback.apply(exchange, request)).assertNext(result -> {
 			assertThat(result).isNotNull();
@@ -221,7 +234,7 @@ public class AsyncMcpToolMethodCallbackTests {
 		AsyncMcpToolMethodCallback callback = new AsyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
 
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("no-params-mono-tool", Map.of());
+		CallToolRequest request = CallToolRequest.builder("no-params-mono-tool").arguments(Map.of()).build();
 
 		StepVerifier.create(callback.apply(exchange, request)).assertNext(result -> {
 			assertThat(result).isNotNull();
@@ -239,7 +252,9 @@ public class AsyncMcpToolMethodCallbackTests {
 		AsyncMcpToolMethodCallback callback = new AsyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
 
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("enum-mono-tool", Map.of("enumValue", "OPTION_B"));
+		CallToolRequest request = CallToolRequest.builder("enum-mono-tool")
+			.arguments(Map.of("enumValue", "OPTION_B"))
+			.build();
 
 		StepVerifier.create(callback.apply(exchange, request)).assertNext(result -> {
 			assertThat(result).isNotNull();
@@ -258,8 +273,9 @@ public class AsyncMcpToolMethodCallbackTests {
 		AsyncMcpToolMethodCallback callback = new AsyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
 
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("complex-mono-tool",
-				Map.of("name", "John", "age", 30, "active", true));
+		CallToolRequest request = CallToolRequest.builder("complex-mono-tool")
+			.arguments(Map.of("name", "John", "age", 30, "active", true))
+			.build();
 
 		StepVerifier.create(callback.apply(exchange, request)).assertNext(result -> {
 			assertThat(result).isNotNull();
@@ -277,7 +293,7 @@ public class AsyncMcpToolMethodCallbackTests {
 		AsyncMcpToolMethodCallback callback = new AsyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
 
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("simple-mono-tool", Map.of());
+		CallToolRequest request = CallToolRequest.builder("simple-mono-tool").arguments(Map.of()).build();
 
 		StepVerifier.create(callback.apply(exchange, request)).assertNext(result -> {
 			assertThat(result).isNotNull();
@@ -296,8 +312,9 @@ public class AsyncMcpToolMethodCallbackTests {
 		AsyncMcpToolMethodCallback callback = new AsyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
 
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("primitive-types-mono-tool",
-				Map.of("flag", true, "b", 1, "s", 2, "i", 3, "l", 4L, "f", 5.5f, "d", 6.6));
+		CallToolRequest request = CallToolRequest.builder("primitive-types-mono-tool")
+			.arguments(Map.of("flag", true, "b", 1, "s", 2, "i", 3, "l", 4L, "f", 5.5f, "d", 6.6))
+			.build();
 
 		StepVerifier.create(callback.apply(exchange, request)).assertNext(result -> {
 			assertThat(result).isNotNull();
@@ -318,7 +335,7 @@ public class AsyncMcpToolMethodCallbackTests {
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
 		Map<String, Object> args = new java.util.HashMap<>();
 		args.put("input", null);
-		CallToolRequest request = new CallToolRequest("simple-mono-tool", args);
+		CallToolRequest request = CallToolRequest.builder("simple-mono-tool").arguments(args).build();
 
 		StepVerifier.create(callback.apply(exchange, request)).assertNext(result -> {
 			assertThat(result).isNotNull();
@@ -336,7 +353,7 @@ public class AsyncMcpToolMethodCallbackTests {
 		AsyncMcpToolMethodCallback callback = new AsyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
 
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("null-return-mono-tool", Map.of());
+		CallToolRequest request = CallToolRequest.builder("null-return-mono-tool").arguments(Map.of()).build();
 
 		StepVerifier.create(callback.apply(exchange, request)).assertNext(result -> {
 			assertThat(result).isNotNull();
@@ -354,7 +371,7 @@ public class AsyncMcpToolMethodCallbackTests {
 		AsyncMcpToolMethodCallback callback = new AsyncMcpToolMethodCallback(ReturnMode.VOID, method, provider);
 
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("void-mono-tool", Map.of("input", "test"));
+		CallToolRequest request = CallToolRequest.builder("void-mono-tool").arguments(Map.of("input", "test")).build();
 
 		StepVerifier.create(callback.apply(exchange, request)).assertNext(result -> {
 			assertThat(result).isNotNull();
@@ -372,7 +389,7 @@ public class AsyncMcpToolMethodCallbackTests {
 		AsyncMcpToolMethodCallback callback = new AsyncMcpToolMethodCallback(ReturnMode.VOID, method, provider);
 
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("void-flux-tool", Map.of("input", "test"));
+		CallToolRequest request = CallToolRequest.builder("void-flux-tool").arguments(Map.of("input", "test")).build();
 
 		StepVerifier.create(callback.apply(exchange, request)).assertNext(result -> {
 			assertThat(result).isNotNull();
@@ -390,7 +407,9 @@ public class AsyncMcpToolMethodCallbackTests {
 		AsyncMcpToolMethodCallback callback = new AsyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
 
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("private-mono-tool", Map.of("input", "test"));
+		CallToolRequest request = CallToolRequest.builder("private-mono-tool")
+			.arguments(Map.of("input", "test"))
+			.build();
 
 		StepVerifier.create(callback.apply(exchange, request)).assertNext(result -> {
 			assertThat(result).isNotNull();
@@ -419,7 +438,9 @@ public class AsyncMcpToolMethodCallbackTests {
 		AsyncMcpToolMethodCallback callback = new AsyncMcpToolMethodCallback(ReturnMode.STRUCTURED, method, provider);
 
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("return-object-mono-tool", Map.of("name", "test", "value", 42));
+		CallToolRequest request = CallToolRequest.builder("return-object-mono-tool")
+			.arguments(Map.of("name", "test", "value", 42))
+			.build();
 
 		StepVerifier.create(callback.apply(exchange, request)).assertNext(result -> {
 			assertThat(result).isNotNull();
@@ -438,7 +459,7 @@ public class AsyncMcpToolMethodCallbackTests {
 		AsyncMcpToolMethodCallback callback = new AsyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
 
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("empty-mono-tool", Map.of());
+		CallToolRequest request = CallToolRequest.builder("empty-mono-tool").arguments(Map.of()).build();
 
 		StepVerifier.create(callback.apply(exchange, request)).verifyComplete();
 	}
@@ -450,7 +471,9 @@ public class AsyncMcpToolMethodCallbackTests {
 		AsyncMcpToolMethodCallback callback = new AsyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
 
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("multiple-flux-tool", Map.of("prefix", "item"));
+		CallToolRequest request = CallToolRequest.builder("multiple-flux-tool")
+			.arguments(Map.of("prefix", "item"))
+			.build();
 
 		// Flux tools should take the first element
 		StepVerifier.create(callback.apply(exchange, request)).assertNext(result -> {
@@ -469,7 +492,9 @@ public class AsyncMcpToolMethodCallbackTests {
 		AsyncMcpToolMethodCallback callback = new AsyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
 
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("non-reactive-tool", Map.of("input", "test"));
+		CallToolRequest request = CallToolRequest.builder("non-reactive-tool")
+			.arguments(Map.of("input", "test"))
+			.build();
 
 		StepVerifier.create(callback.apply(exchange, request)).assertNext(result -> {
 			assertThat(result).isNotNull();
@@ -489,7 +514,9 @@ public class AsyncMcpToolMethodCallbackTests {
 
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
 		// Pass invalid object structure that can't be converted to TestObject
-		CallToolRequest request = new CallToolRequest("object-mono-tool", Map.of("obj", "invalid-object-string"));
+		CallToolRequest request = CallToolRequest.builder("object-mono-tool")
+			.arguments(Map.of("obj", "invalid-object-string"))
+			.build();
 
 		StepVerifier.create(callback.apply(exchange, request)).assertNext(result -> {
 			assertThat(result).isNotNull();
@@ -541,7 +568,9 @@ public class AsyncMcpToolMethodCallbackTests {
 		AsyncMcpToolMethodCallback callback = new AsyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
 
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("context-mono-tool", Map.of("message", "hello"));
+		CallToolRequest request = CallToolRequest.builder("context-mono-tool")
+			.arguments(Map.of("message", "hello"))
+			.build();
 
 		StepVerifier.create(callback.apply(exchange, request)).assertNext(result -> {
 			assertThat(result).isNotNull();
@@ -562,7 +591,9 @@ public class AsyncMcpToolMethodCallbackTests {
 		McpTransportContext transportContext = mock(McpTransportContext.class);
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
 		org.mockito.Mockito.when(exchange.transportContext()).thenReturn(transportContext);
-		CallToolRequest request = new CallToolRequest("transport-context-mono-tool", Map.of("message", "hello"));
+		CallToolRequest request = CallToolRequest.builder("transport-context-mono-tool")
+			.arguments(Map.of("message", "hello"))
+			.build();
 
 		StepVerifier.create(callback.apply(exchange, request)).assertNext(result -> {
 			assertThat(result).isNotNull();
@@ -580,8 +611,9 @@ public class AsyncMcpToolMethodCallbackTests {
 		AsyncMcpToolMethodCallback callback = new AsyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
 
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("optional-params-mono-tool",
-				Map.of("required", "test", "optional", "optional-value"));
+		CallToolRequest request = CallToolRequest.builder("optional-params-mono-tool")
+			.arguments(Map.of("required", "test", "optional", "optional-value"))
+			.build();
 
 		StepVerifier.create(callback.apply(exchange, request)).assertNext(result -> {
 			assertThat(result).isNotNull();
@@ -600,7 +632,9 @@ public class AsyncMcpToolMethodCallbackTests {
 		AsyncMcpToolMethodCallback callback = new AsyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
 
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("optional-params-mono-tool", Map.of("required", "test"));
+		CallToolRequest request = CallToolRequest.builder("optional-params-mono-tool")
+			.arguments(Map.of("required", "test"))
+			.build();
 
 		StepVerifier.create(callback.apply(exchange, request)).assertNext(result -> {
 			assertThat(result).isNotNull();
@@ -618,8 +652,9 @@ public class AsyncMcpToolMethodCallbackTests {
 		AsyncMcpToolMethodCallback callback = new AsyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
 
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("object-mono-tool",
-				Map.of("obj", Map.of("name", "test", "value", 42)));
+		CallToolRequest request = CallToolRequest.builder("object-mono-tool")
+			.arguments(Map.of("obj", Map.of("name", "test", "value", 42)))
+			.build();
 
 		StepVerifier.create(callback.apply(exchange, request)).assertNext(result -> {
 			assertThat(result).isNotNull();
@@ -638,8 +673,9 @@ public class AsyncMcpToolMethodCallbackTests {
 		AsyncMcpToolMethodCallback callback = new AsyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
 
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("complex-mono-tool",
-				Map.of("name", "Alice", "age", 25, "active", false));
+		CallToolRequest request = CallToolRequest.builder("complex-mono-tool")
+			.arguments(Map.of("name", "Alice", "age", 25, "active", false))
+			.build();
 
 		StepVerifier.create(callback.apply(exchange, request)).assertNext(result -> {
 			assertThat(result).isNotNull();
@@ -660,8 +696,7 @@ public class AsyncMcpToolMethodCallbackTests {
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
 
 		// Create request with meta data
-		CallToolRequest request = CallToolRequest.builder()
-			.name("meta-mono-tool")
+		CallToolRequest request = CallToolRequest.builder("meta-mono-tool")
 			.arguments(Map.of("input", "test-input"))
 			.meta(Map.of("userId", "user123", "sessionId", "session456"))
 			.build();
@@ -686,7 +721,9 @@ public class AsyncMcpToolMethodCallbackTests {
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
 
 		// Create request without meta
-		CallToolRequest request = new CallToolRequest("meta-mono-tool", Map.of("input", "test-input"));
+		CallToolRequest request = CallToolRequest.builder("meta-mono-tool")
+			.arguments(Map.of("input", "test-input"))
+			.build();
 
 		StepVerifier.create(callback.apply(exchange, request)).assertNext(result -> {
 			assertThat(result).isNotNull();

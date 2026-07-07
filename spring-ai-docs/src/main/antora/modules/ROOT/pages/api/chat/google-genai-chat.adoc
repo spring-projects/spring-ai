@@ -127,6 +127,8 @@ The prefix `spring.ai.google.genai.chat` is the property prefix that lets you co
 | spring.ai.google.genai.chat.auto-cache-ttl | Time-to-live (Duration) for auto-cached content in ISO-8601 format (e.g., `PT1H` for 1 hour). Used when auto-caching is enabled. | PT1H
 | spring.ai.google.genai.chat.enable-cached-content | Enable the `GoogleGenAiCachedContentService` bean for managing cached content. | true
 | spring.ai.google.genai.chat.service-tier | The service tier to use for the request. Valid values: `STANDARD`, `PRIORITY`, `FLEX`. | -
+| spring.ai.google.genai.chat.tool-choice.mode | Controls how the model selects functions when tools are provided. Valid values: `AUTO` (model decides), `ANY` (always calls a function), `VALIDATED` (function call or natural language), `NONE` (no function calls). See <<tool-choice>>. | -
+| spring.ai.google.genai.chat.tool-choice.allowed-function-names | Comma-separated list of function names the model may call. Only applied when `tool-choice.mode` is `ANY` or `VALIDATED`; ignored for other modes. | -
 
 |====
 
@@ -161,6 +163,77 @@ TIP: In addition to the model specific `GoogleGenAiChatOptions` you can use a po
 For most applications, use `ChatClient` with the auto-registered `ToolCallingAdvisor` — see xref:api/tools.adoc[Tool Calling]. For low-level control where you drive the loop yourself, see xref:api/tools/chatmodel-tool-calling.adoc[ChatModel Tool Calling].
 
 See xref:#server-side-tool-invocations[Server-Side Tool Invocations] below for Google's built-in tools (Search, Maps, URL Context) and how to combine them with client-side function calling.
+
+=== Tool Choice [[tool-choice]]
+
+`GoogleGenAiChatOptions.ToolChoice` configures how the model selects functions when tools are provided.
+It maps to Google GenAI's https://ai.google.dev/api/generate-content#v1beta.FunctionCallingConfig[FunctionCallingConfig].
+
+[cols="1,3", stripes=even]
+|====
+| Mode | Behavior
+
+| `AUTO` | The model decides whether to call a function or return a natural language response (default behavior).
+| `ANY` | The model always predicts a function call.
+When `allowedFunctionNames` is set, calls are limited to those functions.
+| `VALIDATED` | The model may call a function or return a natural language response.
+When `allowedFunctionNames` is set, calls are limited to those functions.
+| `NONE` | The model does not call any functions and returns a natural language response.
+|====
+
+NOTE: `allowedFunctionNames` is only applied when mode is `ANY` or `VALIDATED`, and is silently ignored for `AUTO` and `NONE`.
+
+==== Programmatic Configuration
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "What is the weather in Paris?",
+        GoogleGenAiChatOptions.builder()
+            .toolChoice(new GoogleGenAiChatOptions.ToolChoice(
+                GoogleGenAiChatOptions.ToolChoice.Mode.ANY,
+                List.of("get_weather")))
+            .build()
+    ));
+----
+
+To apply a mode without restricting to specific functions:
+
+[source,java]
+----
+GoogleGenAiChatOptions.builder()
+    .toolChoice(new GoogleGenAiChatOptions.ToolChoice(
+        GoogleGenAiChatOptions.ToolChoice.Mode.NONE, null))
+    .build();
+----
+
+==== Property-Based Configuration
+
+[source,application.properties]
+----
+# Force the model to always call a function
+spring.ai.google.genai.chat.tool-choice.mode=ANY
+
+# Optionally restrict to specific functions (only applies when mode is ANY or VALIDATED)
+spring.ai.google.genai.chat.tool-choice.allowed-function-names=get_weather,get_forecast
+----
+
+Or in YAML:
+
+[source,yaml]
+----
+spring:
+  ai:
+    google:
+      genai:
+        chat:
+          tool-choice:
+            mode: ANY
+            allowed-function-names:
+              - get_weather
+              - get_forecast
+----
 
 == Server-Side Tool Invocations [[server-side-tool-invocations]]
 

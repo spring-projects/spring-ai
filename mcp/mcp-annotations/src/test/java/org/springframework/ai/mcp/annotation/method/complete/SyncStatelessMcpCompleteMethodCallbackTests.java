@@ -56,8 +56,9 @@ public class SyncStatelessMcpCompleteMethodCallbackTests {
 			.build();
 
 		McpTransportContext context = mock(McpTransportContext.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("test-prompt"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("test-prompt"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 
 		CompleteResult result = callback.apply(context, request);
 
@@ -81,8 +82,9 @@ public class SyncStatelessMcpCompleteMethodCallbackTests {
 			.build();
 
 		McpTransportContext context = mock(McpTransportContext.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("test-prompt"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("test-prompt"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 
 		CompleteResult result = callback.apply(context, request);
 
@@ -106,8 +108,9 @@ public class SyncStatelessMcpCompleteMethodCallbackTests {
 			.build();
 
 		McpTransportContext context = mock(McpTransportContext.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("test-prompt"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("test-prompt"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 
 		CompleteResult result = callback.apply(context, request);
 
@@ -130,8 +133,9 @@ public class SyncStatelessMcpCompleteMethodCallbackTests {
 			.build();
 
 		McpTransportContext context = mock(McpTransportContext.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("test-prompt"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("test-prompt"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 
 		CompleteResult result = callback.apply(context, request);
 
@@ -155,8 +159,9 @@ public class SyncStatelessMcpCompleteMethodCallbackTests {
 			.build();
 
 		McpTransportContext context = mock(McpTransportContext.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("test-prompt"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("test-prompt"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 
 		CompleteResult result = callback.apply(context, request);
 
@@ -180,8 +185,9 @@ public class SyncStatelessMcpCompleteMethodCallbackTests {
 			.build();
 
 		McpTransportContext context = mock(McpTransportContext.class);
-		CompleteRequest request = new CompleteRequest(new ResourceReference("test://value"),
-				new CompleteRequest.CompleteArgument("variable", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new ResourceReference("test://value"), new CompleteRequest.CompleteArgument("variable", "value"))
+			.build();
 
 		CompleteResult result = callback.apply(context, request);
 
@@ -204,8 +210,9 @@ public class SyncStatelessMcpCompleteMethodCallbackTests {
 			.build();
 
 		McpTransportContext context = mock(McpTransportContext.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("test-prompt"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("test-prompt"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 
 		CompleteResult result = callback.apply(context, request);
 
@@ -228,8 +235,9 @@ public class SyncStatelessMcpCompleteMethodCallbackTests {
 			.build();
 
 		McpTransportContext context = mock(McpTransportContext.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("test-prompt"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("test-prompt"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 
 		CompleteResult result = callback.apply(context, request);
 
@@ -253,8 +261,9 @@ public class SyncStatelessMcpCompleteMethodCallbackTests {
 			.build();
 
 		McpTransportContext context = mock(McpTransportContext.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("test-prompt"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("test-prompt"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 
 		CompleteResult result = callback.apply(context, request);
 
@@ -416,8 +425,9 @@ public class SyncStatelessMcpCompleteMethodCallbackTests {
 			.build();
 
 		McpTransportContext context = mock(McpTransportContext.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("test-prompt"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("test-prompt"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 
 		CompleteResult result = callback.apply(context, request);
 
@@ -442,8 +452,9 @@ public class SyncStatelessMcpCompleteMethodCallbackTests {
 			.build();
 
 		McpTransportContext context = mock(McpTransportContext.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("test-prompt"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("test-prompt"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 
 		CompleteResult result = callback.apply(context, request);
 
@@ -483,8 +494,10 @@ public class SyncStatelessMcpCompleteMethodCallbackTests {
 			.build();
 
 		McpTransportContext context = mock(McpTransportContext.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("test-prompt"),
-				new CompleteRequest.CompleteArgument("test", "value"), java.util.Map.of("key", "test-value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("test-prompt"), new CompleteRequest.CompleteArgument("test", "value"))
+			.meta(java.util.Map.of("key", "test-value"))
+			.build();
 
 		CompleteResult result = callback.apply(context, request);
 
@@ -508,8 +521,9 @@ public class SyncStatelessMcpCompleteMethodCallbackTests {
 			.build();
 
 		McpTransportContext context = mock(McpTransportContext.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("test-prompt"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("test-prompt"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 
 		CompleteResult result = callback.apply(context, request);
 
@@ -533,8 +547,10 @@ public class SyncStatelessMcpCompleteMethodCallbackTests {
 			.build();
 
 		McpTransportContext context = mock(McpTransportContext.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("test-prompt"),
-				new CompleteRequest.CompleteArgument("test", "value"), java.util.Map.of("key", "test-value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("test-prompt"), new CompleteRequest.CompleteArgument("test", "value"))
+			.meta(java.util.Map.of("key", "test-value"))
+			.build();
 
 		CompleteResult result = callback.apply(context, request);
 

@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -32,6 +33,8 @@ import com.google.genai.types.Candidate;
 import com.google.genai.types.Content;
 import com.google.genai.types.FinishReason;
 import com.google.genai.types.FunctionCall;
+import com.google.genai.types.FunctionCallingConfig;
+import com.google.genai.types.FunctionCallingConfigMode;
 import com.google.genai.types.FunctionDeclaration;
 import com.google.genai.types.FunctionResponse;
 import com.google.genai.types.GenerateContentConfig;
@@ -44,6 +47,7 @@ import com.google.genai.types.Schema;
 import com.google.genai.types.ThinkingConfig;
 import com.google.genai.types.ThinkingLevel;
 import com.google.genai.types.Tool;
+import com.google.genai.types.ToolConfig;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
@@ -751,10 +755,31 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			configBuilder.tools(tools);
 		}
 
-		// Build ToolConfig if includeServerSideToolInvocations is enabled
-		if (Boolean.TRUE.equals(requestOptions.getIncludeServerSideToolInvocations())) {
-			configBuilder
-				.toolConfig(com.google.genai.types.ToolConfig.builder().includeServerSideToolInvocations(true));
+		if (requestOptions.getToolChoice() != null
+				|| Boolean.TRUE.equals(requestOptions.getIncludeServerSideToolInvocations())) {
+
+			ToolConfig.Builder toolConfigBuilder = ToolConfig.builder();
+
+			// Build ToolConfig if includeServerSideToolInvocations is enabled
+			if (Boolean.TRUE.equals(requestOptions.getIncludeServerSideToolInvocations())) {
+				toolConfigBuilder.includeServerSideToolInvocations(true);
+			}
+
+			if (requestOptions.getToolChoice() != null) {
+				GoogleGenAiChatOptions.ToolChoice toolChoice = requestOptions.getToolChoice();
+				var fccBuilder = FunctionCallingConfig.builder()
+					.mode(mapToFunctionCallingConfigMode(toolChoice.mode()));
+
+				if ((toolChoice.mode() == GoogleGenAiChatOptions.ToolChoice.Mode.ANY
+						|| toolChoice.mode() == GoogleGenAiChatOptions.ToolChoice.Mode.VALIDATED)
+						&& !CollectionUtils.isEmpty(toolChoice.allowedFunctionNames())) {
+					fccBuilder.allowedFunctionNames(toolChoice.allowedFunctionNames());
+				}
+
+				toolConfigBuilder.functionCallingConfig(fccBuilder.build());
+			}
+
+			configBuilder.toolConfig(toolConfigBuilder.build());
 		}
 
 		// Handle cached content
@@ -831,6 +856,16 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		};
 	}
 
+	private static FunctionCallingConfigMode mapToFunctionCallingConfigMode(
+			GoogleGenAiChatOptions.ToolChoice.Mode mode) {
+		return switch (mode) {
+			case AUTO -> new FunctionCallingConfigMode(FunctionCallingConfigMode.Known.AUTO);
+			case ANY -> new FunctionCallingConfigMode(FunctionCallingConfigMode.Known.ANY);
+			case VALIDATED -> new FunctionCallingConfigMode(FunctionCallingConfigMode.Known.VALIDATED);
+			case NONE -> new FunctionCallingConfigMode(FunctionCallingConfigMode.Known.NONE);
+		};
+	}
+
 	/**
 	 * Checks if the model name indicates a Gemini 3 Pro model.
 	 * @param modelName the model name to check
@@ -840,7 +875,7 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		if (modelName == null) {
 			return false;
 		}
-		String lower = modelName.toLowerCase();
+		String lower = modelName.toLowerCase(Locale.ROOT);
 		return lower.contains("gemini-3") && lower.contains("pro") && !lower.contains("flash");
 	}
 
@@ -853,7 +888,7 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		if (modelName == null) {
 			return false;
 		}
-		String lower = modelName.toLowerCase();
+		String lower = modelName.toLowerCase(Locale.ROOT);
 		return lower.contains("gemini-3") && lower.contains("flash");
 	}
 

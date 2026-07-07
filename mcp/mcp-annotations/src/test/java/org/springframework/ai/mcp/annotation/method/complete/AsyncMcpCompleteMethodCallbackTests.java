@@ -82,8 +82,9 @@ public class AsyncMcpCompleteMethodCallbackTests {
 			.build();
 
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("test-prompt"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("test-prompt"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 
 		Mono<CompleteResult> resultMono = callback.apply(exchange, request);
 
@@ -109,8 +110,9 @@ public class AsyncMcpCompleteMethodCallbackTests {
 			.build();
 
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("test-prompt"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("test-prompt"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 
 		Mono<CompleteResult> resultMono = callback.apply(exchange, request);
 
@@ -136,8 +138,9 @@ public class AsyncMcpCompleteMethodCallbackTests {
 			.build();
 
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("test-prompt"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("test-prompt"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 
 		Mono<CompleteResult> resultMono = callback.apply(exchange, request);
 
@@ -162,8 +165,9 @@ public class AsyncMcpCompleteMethodCallbackTests {
 			.build();
 
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("test-prompt"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("test-prompt"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 
 		Mono<CompleteResult> resultMono = callback.apply(exchange, request);
 
@@ -189,8 +193,9 @@ public class AsyncMcpCompleteMethodCallbackTests {
 			.build();
 
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("test-prompt"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("test-prompt"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 
 		Mono<CompleteResult> resultMono = callback.apply(exchange, request);
 
@@ -216,8 +221,9 @@ public class AsyncMcpCompleteMethodCallbackTests {
 			.build();
 
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CompleteRequest request = new CompleteRequest(new ResourceReference("test://value"),
-				new CompleteRequest.CompleteArgument("variable", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new ResourceReference("test://value"), new CompleteRequest.CompleteArgument("variable", "value"))
+			.build();
 
 		Mono<CompleteResult> resultMono = callback.apply(exchange, request);
 
@@ -242,8 +248,9 @@ public class AsyncMcpCompleteMethodCallbackTests {
 			.build();
 
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("test-prompt"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("test-prompt"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 
 		Mono<CompleteResult> resultMono = callback.apply(exchange, request);
 
@@ -268,8 +275,9 @@ public class AsyncMcpCompleteMethodCallbackTests {
 			.build();
 
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("test-prompt"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("test-prompt"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 
 		Mono<CompleteResult> resultMono = callback.apply(exchange, request);
 
@@ -295,8 +303,9 @@ public class AsyncMcpCompleteMethodCallbackTests {
 			.build();
 
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("test-prompt"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("test-prompt"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 
 		Mono<CompleteResult> resultMono = callback.apply(exchange, request);
 
@@ -321,8 +330,9 @@ public class AsyncMcpCompleteMethodCallbackTests {
 			.build();
 
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("test-prompt"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("test-prompt"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 
 		Mono<CompleteResult> resultMono = callback.apply(exchange, request);
 
@@ -347,8 +357,9 @@ public class AsyncMcpCompleteMethodCallbackTests {
 			.build();
 
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("test-prompt"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("test-prompt"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 
 		Mono<CompleteResult> resultMono = callback.apply(exchange, request);
 
@@ -373,8 +384,9 @@ public class AsyncMcpCompleteMethodCallbackTests {
 			.build();
 
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("test-prompt"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("test-prompt"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 
 		Mono<CompleteResult> resultMono = callback.apply(exchange, request);
 
@@ -400,8 +412,9 @@ public class AsyncMcpCompleteMethodCallbackTests {
 			.build();
 
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("test-prompt"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("test-prompt"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 
 		Mono<CompleteResult> resultMono = callback.apply(exchange, request);
 
@@ -567,8 +580,9 @@ public class AsyncMcpCompleteMethodCallbackTests {
 			.build();
 
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("test-prompt"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("test-prompt"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 
 		Mono<CompleteResult> resultMono = callback.apply(exchange, request);
 
@@ -596,8 +610,9 @@ public class AsyncMcpCompleteMethodCallbackTests {
 			.build();
 
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("test-prompt"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("test-prompt"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 
 		Mono<CompleteResult> resultMono = callback.apply(exchange, request);
 
@@ -639,8 +654,10 @@ public class AsyncMcpCompleteMethodCallbackTests {
 			.build();
 
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("test-prompt"),
-				new CompleteRequest.CompleteArgument("test", "value"), java.util.Map.of("key", "test-value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("test-prompt"), new CompleteRequest.CompleteArgument("test", "value"))
+			.meta(java.util.Map.of("key", "test-value"))
+			.build();
 
 		Mono<CompleteResult> resultMono = callback.apply(exchange, request);
 
@@ -667,8 +684,9 @@ public class AsyncMcpCompleteMethodCallbackTests {
 			.build();
 
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("test-prompt"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("test-prompt"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 
 		Mono<CompleteResult> resultMono = callback.apply(exchange, request);
 
@@ -695,8 +713,10 @@ public class AsyncMcpCompleteMethodCallbackTests {
 			.build();
 
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("test-prompt"),
-				new CompleteRequest.CompleteArgument("test", "value"), java.util.Map.of("key", "test-value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("test-prompt"), new CompleteRequest.CompleteArgument("test", "value"))
+			.meta(java.util.Map.of("key", "test-value"))
+			.build();
 
 		Mono<CompleteResult> resultMono = callback.apply(exchange, request);
 
@@ -737,8 +757,9 @@ public class AsyncMcpCompleteMethodCallbackTests {
 			.build();
 
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("test-prompt"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("test-prompt"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 
 		Mono<CompleteResult> resultMono = callback.apply(exchange, request);
 
@@ -764,8 +785,9 @@ public class AsyncMcpCompleteMethodCallbackTests {
 			.build();
 
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("test-prompt"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("test-prompt"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 
 		Mono<CompleteResult> resultMono = callback.apply(exchange, request);
 
@@ -854,8 +876,9 @@ public class AsyncMcpCompleteMethodCallbackTests {
 		McpTransportContext transportContext = mock(McpTransportContext.class);
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
 		when(exchange.transportContext()).thenReturn(transportContext);
-		CompleteRequest request = new CompleteRequest(new PromptReference("test-prompt"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("test-prompt"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 
 		Mono<CompleteResult> resultMono = callback.apply(exchange, request);
 

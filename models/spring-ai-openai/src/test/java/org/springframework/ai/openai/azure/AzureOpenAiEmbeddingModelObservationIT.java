@@ -106,13 +106,16 @@ public class AzureOpenAiEmbeddingModelObservationIT {
 
 		@Bean
 		public OpenAiEmbeddingModel azureEmbeddingModel(TestObservationRegistry observationRegistry) {
-			return new OpenAiEmbeddingModel(MetadataMode.EMBED,
-					OpenAiEmbeddingOptions.builder()
-						.baseUrl(System.getenv("AZURE_OPENAI_ENDPOINT"))
-						.apiKey(System.getenv("AZURE_OPENAI_API_KEY"))
-						.deploymentName("text-embedding-ada-002")
-						.build(),
-					observationRegistry);
+			OpenAiEmbeddingOptions options = OpenAiEmbeddingOptions.builder()
+				.baseUrl(System.getenv("AZURE_OPENAI_ENDPOINT"))
+				.apiKey(System.getenv("AZURE_OPENAI_API_KEY"))
+				.deploymentName("text-embedding-ada-002")
+				.build();
+			return OpenAiEmbeddingModel.builder()
+				.metadataMode(MetadataMode.EMBED)
+				.options(options)
+				.observationRegistry(observationRegistry)
+				.build();
 		}
 
 	}

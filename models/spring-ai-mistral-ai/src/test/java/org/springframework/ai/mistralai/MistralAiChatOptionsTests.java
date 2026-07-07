@@ -16,6 +16,7 @@
 
 package org.springframework.ai.mistralai;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -545,6 +546,26 @@ class MistralAiChatOptionsTests extends AbstractChatOptionsTests<MistralAiChatOp
 		MistralAiChatOptions merged = base.mutate().combineWith(override.mutate()).build();
 
 		assertThat(merged.getTools()).containsExactlyInAnyOrder(baseTool, overrideTool);
+	}
+
+	@Test
+	void cloneCreatesIndependentToolsList() {
+		MistralAiApi.FunctionTool tool = new MistralAiApi.FunctionTool(MistralAiApi.FunctionTool.Type.FUNCTION,
+				new MistralAiApi.FunctionTool.Function("function", "", "{}"));
+		List<MistralAiApi.FunctionTool> tools = new ArrayList<>();
+		tools.add(tool);
+
+		Builder source = MistralAiChatOptions.builder().tools(tools);
+		Builder clone = source.clone();
+		tools.add(new MistralAiApi.FunctionTool(MistralAiApi.FunctionTool.Type.FUNCTION,
+				new MistralAiApi.FunctionTool.Function("other", "", "{}")));
+
+		assertThat(clone.build().getTools()).containsExactly(tool);
+	}
+
+	@Test
+	void cloneHandlesNullToolsList() {
+		assertThat(MistralAiChatOptions.builder().clone().build().getTools()).isNull();
 	}
 
 	// Test record for schema generation tests

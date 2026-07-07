@@ -98,7 +98,18 @@ public class MilvusFilterExpressionConverterTests {
 						new Expression(EQ, new Key("country"), new Value("BG")))),
 				new Expression(NIN, new Key("city"), new Value(List.of("Sofia", "Plovdiv")))));
 		assertThat(vectorExpr).isEqualTo(
-				"metadata[\"year\"] >= 2020 || metadata[\"country\"] == \"BG\" && metadata[\"year\"] >= 2020 || metadata[\"country\"] == \"BG\" && metadata[\"city\"] not in [\"Sofia\",\"Plovdiv\"]");
+				"(metadata[\"year\"] >= 2020 || metadata[\"country\"] == \"BG\") && metadata[\"city\"] not in [\"Sofia\",\"Plovdiv\"]");
+	}
+
+	@Test
+	public void testGroupAsRightOperand() {
+		// city == "Sofia" AND (year >= 2020 OR country == "BG")
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(AND, new Expression(EQ, new Key("city"), new Value("Sofia")),
+					new Group(new Expression(OR, new Expression(GTE, new Key("year"), new Value(2020)),
+							new Expression(EQ, new Key("country"), new Value("BG"))))));
+		assertThat(vectorExpr).isEqualTo(
+				"metadata[\"city\"] == \"Sofia\" && (metadata[\"year\"] >= 2020 || metadata[\"country\"] == \"BG\")");
 	}
 
 	@Test

@@ -21,6 +21,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 
@@ -664,10 +665,10 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 		public ChatCompletionAudioParam toChatCompletionAudioParam() {
 			ChatCompletionAudioParam.Builder builder = ChatCompletionAudioParam.builder();
 			if (this.voice() != null) {
-				builder.voice(voice().name().toLowerCase());
+				builder.voice(voice().name().toLowerCase(Locale.ROOT));
 			}
 			if (this.format() != null) {
-				builder.format(ChatCompletionAudioParam.Format.of(this.format().name().toLowerCase()));
+				builder.format(ChatCompletionAudioParam.Format.of(this.format().name().toLowerCase(Locale.ROOT)));
 			}
 			return builder.build();
 		}
@@ -741,12 +742,11 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 		@Override
 		public B clone() {
 			B copy = super.clone();
-			if (this.customHeaders != null && !this.customHeaders.isEmpty()) {
-				copy.customHeaders = this.customHeaders;
-			}
-			copy.logitBias = this.logitBias;
-			copy.outputModalities = this.outputModalities;
-			copy.metadata = this.metadata;
+			copy.customHeaders = this.customHeaders == null ? null : new HashMap<>(this.customHeaders);
+			copy.logitBias = this.logitBias == null ? null : new HashMap<>(this.logitBias);
+			copy.outputModalities = this.outputModalities == null ? null : new ArrayList<>(this.outputModalities);
+			copy.metadata = this.metadata == null ? null : new HashMap<>(this.metadata);
+			copy.extraBody = this.extraBody == null ? null : new HashMap<>(this.extraBody);
 			return copy;
 		}
 

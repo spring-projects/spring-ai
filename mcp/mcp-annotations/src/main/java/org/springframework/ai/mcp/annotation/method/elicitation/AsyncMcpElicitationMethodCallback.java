@@ -80,8 +80,7 @@ public final class AsyncMcpElicitationMethodCallback extends AbstractMcpElicitat
 						var content = structuredElicitResult.structuredContent() != null
 								? jsonHelper.convertToMap(structuredElicitResult.structuredContent()) : null;
 
-						return Mono.just(ElicitResult.builder()
-							.message(structuredElicitResult.action())
+						return Mono.just(ElicitResult.builder(structuredElicitResult.action())
 							.content(content)
 							.meta(structuredElicitResult.meta())
 							.build());

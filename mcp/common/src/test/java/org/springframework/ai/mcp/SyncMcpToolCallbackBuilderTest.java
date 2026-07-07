@@ -37,7 +37,7 @@ class SyncMcpToolCallbackBuilderTest {
 	@Test
 	void builderShouldCreateInstanceWithRequiredFields() {
 		McpSyncClient mcpClient = Mockito.mock(McpSyncClient.class);
-		McpSchema.Implementation clientInfo = new McpSchema.Implementation("test-client", "1.0.0");
+		McpSchema.Implementation clientInfo = McpSchema.Implementation.builder("test-client", "1.0.0").build();
 		when(mcpClient.getClientInfo()).thenReturn(clientInfo);
 
 		Tool tool = Mockito.mock(Tool.class);
@@ -105,7 +105,7 @@ class SyncMcpToolCallbackBuilderTest {
 	@Test
 	void builderShouldSupportMethodChaining() {
 		McpSyncClient mcpClient = Mockito.mock(McpSyncClient.class);
-		McpSchema.Implementation clientInfo = new McpSchema.Implementation("test-client", "1.0.0");
+		McpSchema.Implementation clientInfo = McpSchema.Implementation.builder("test-client", "1.0.0").build();
 		when(mcpClient.getClientInfo()).thenReturn(clientInfo);
 
 		Tool tool = Mockito.mock(Tool.class);
@@ -126,7 +126,7 @@ class SyncMcpToolCallbackBuilderTest {
 	@Test
 	void builderShouldNormalizeToolNameWithSpecialCharacters() {
 		McpSyncClient mcpClient = Mockito.mock(McpSyncClient.class);
-		McpSchema.Implementation clientInfo = new McpSchema.Implementation("test-client", "1.0.0");
+		McpSchema.Implementation clientInfo = McpSchema.Implementation.builder("test-client", "1.0.0").build();
 		when(mcpClient.getClientInfo()).thenReturn(clientInfo);
 
 		Tool tool = Mockito.mock(Tool.class);
@@ -162,7 +162,7 @@ class SyncMcpToolCallbackBuilderTest {
 	@Test
 	void builderShouldHandlePrefixedToolNameAsNull() {
 		McpSyncClient mcpClient = Mockito.mock(McpSyncClient.class);
-		McpSchema.Implementation clientInfo = new McpSchema.Implementation("test-client", "1.0.0");
+		McpSchema.Implementation clientInfo = McpSchema.Implementation.builder("test-client", "1.0.0").build();
 		when(mcpClient.getClientInfo()).thenReturn(clientInfo);
 
 		Tool tool = Mockito.mock(Tool.class);
@@ -183,7 +183,7 @@ class SyncMcpToolCallbackBuilderTest {
 	@Test
 	void builderShouldCreateNewInstancesForEachBuild() {
 		McpSyncClient mcpClient = Mockito.mock(McpSyncClient.class);
-		McpSchema.Implementation clientInfo = new McpSchema.Implementation("test-client", "1.0.0");
+		McpSchema.Implementation clientInfo = McpSchema.Implementation.builder("test-client", "1.0.0").build();
 		when(mcpClient.getClientInfo()).thenReturn(clientInfo);
 
 		Tool tool = Mockito.mock(Tool.class);

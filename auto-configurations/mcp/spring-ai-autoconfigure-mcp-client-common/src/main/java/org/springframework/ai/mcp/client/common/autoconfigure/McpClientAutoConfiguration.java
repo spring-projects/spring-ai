@@ -157,9 +157,11 @@ public class McpClientAutoConfiguration {
 		if (!CollectionUtils.isEmpty(namedTransports)) {
 			for (NamedClientMcpTransport namedTransport : namedTransports) {
 
-				McpSchema.Implementation clientInfo = new McpSchema.Implementation(
-						this.connectedClientName(commonProperties.getName(), namedTransport.name()),
-						namedTransport.name(), commonProperties.getVersion());
+				McpSchema.Implementation clientInfo = McpSchema.Implementation
+					.builder(this.connectedClientName(commonProperties.getName(), namedTransport.name()),
+							commonProperties.getVersion())
+					.title(namedTransport.name())
+					.build();
 
 				McpClient.SyncSpec spec = McpClient.sync(namedTransport.transport())
 					.clientInfo(clientInfo)
@@ -249,9 +251,10 @@ public class McpClientAutoConfiguration {
 		if (!CollectionUtils.isEmpty(namedTransports)) {
 			for (NamedClientMcpTransport namedTransport : namedTransports) {
 
-				McpSchema.Implementation clientInfo = new McpSchema.Implementation(
-						this.connectedClientName(commonProperties.getName(), namedTransport.name()),
-						commonProperties.getVersion());
+				McpSchema.Implementation clientInfo = McpSchema.Implementation
+					.builder(this.connectedClientName(commonProperties.getName(), namedTransport.name()),
+							commonProperties.getVersion())
+					.build();
 				McpClient.AsyncSpec spec = McpClient.async(namedTransport.transport())
 					.clientInfo(clientInfo)
 					.requestTimeout(commonProperties.getRequestTimeout());

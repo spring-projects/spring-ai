@@ -23,6 +23,7 @@ import java.util.Map;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.google.genai.GoogleGenAiChatOptions;
+import org.springframework.ai.google.genai.GoogleGenAiChatOptions.ToolChoice.Mode;
 import org.springframework.ai.google.genai.common.GoogleGenAiSafetySetting;
 import org.springframework.ai.google.genai.common.GoogleGenAiServiceTier;
 import org.springframework.ai.google.genai.common.GoogleGenAiThinkingLevel;
@@ -49,6 +50,8 @@ public class GoogleGenAiChatProperties {
 	private @Nullable Double topP;
 
 	private @Nullable Integer topK;
+
+	private @Nullable ToolChoiceProperties toolChoice;
 
 	private @Nullable Integer candidateCount;
 
@@ -116,6 +119,14 @@ public class GoogleGenAiChatProperties {
 
 	public @Nullable Integer getTopK() {
 		return this.topK;
+	}
+
+	public @Nullable ToolChoiceProperties getToolChoice() {
+		return this.toolChoice;
+	}
+
+	public void setToolChoice(@Nullable ToolChoiceProperties toolChoice) {
+		this.toolChoice = toolChoice;
 	}
 
 	public void setTopK(@Nullable Integer topK) {
@@ -295,6 +306,10 @@ public class GoogleGenAiChatProperties {
 			.temperature(this.temperature)
 			.topP(this.topP)
 			.topK(this.topK)
+			.toolChoice(this.toolChoice != null ? GoogleGenAiChatOptions.ToolChoice.builder()
+				.mode(this.toolChoice.getMode())
+				.allowedFunctionNames(this.toolChoice.getAllowedFunctionNames())
+				.build() : null)
 			.candidateCount(this.candidateCount)
 			.maxOutputTokens(this.maxOutputTokens)
 			.responseMimeType(this.responseMimeType)
@@ -560,6 +575,35 @@ public class GoogleGenAiChatProperties {
 
 		public void setLabels(@Nullable Map<String, String> labels) {
 			GoogleGenAiChatProperties.this.setLabels(labels);
+		}
+
+	}
+
+	/**
+	 * Configuration properties for {@link GoogleGenAiChatOptions.ToolChoice}.
+	 *
+	 * @since 2.0.1
+	 */
+	public static class ToolChoiceProperties {
+
+		private Mode mode = Mode.AUTO;
+
+		private @Nullable List<String> allowedFunctionNames;
+
+		public Mode getMode() {
+			return this.mode;
+		}
+
+		public void setMode(Mode mode) {
+			this.mode = mode;
+		}
+
+		public @Nullable List<String> getAllowedFunctionNames() {
+			return this.allowedFunctionNames;
+		}
+
+		public void setAllowedFunctionNames(@Nullable List<String> allowedFunctionNames) {
+			this.allowedFunctionNames = allowedFunctionNames;
 		}
 
 	}

@@ -82,7 +82,7 @@ public class SyncStatelessMcpToolProviderTests {
 
 		// Test that the handler works with McpTransportContext
 		McpTransportContext context = mock(McpTransportContext.class);
-		CallToolRequest request = new CallToolRequest("test-tool", Map.of("input", "hello"));
+		CallToolRequest request = CallToolRequest.builder("test-tool").arguments(Map.of("input", "hello")).build();
 		CallToolResult result = toolSpec.callHandler().apply(context, request);
 
 		assertThat(result).isNotNull();
@@ -294,8 +294,9 @@ public class SyncStatelessMcpToolProviderTests {
 
 		// Test that the handler works with complex parameters
 		McpTransportContext context = mock(McpTransportContext.class);
-		CallToolRequest request = new CallToolRequest("complex-tool",
-				Map.of("name", "John", "age", 30, "active", true, "tags", List.of("tag1", "tag2")));
+		CallToolRequest request = CallToolRequest.builder("complex-tool")
+			.arguments(Map.of("name", "John", "age", 30, "active", true, "tags", List.of("tag1", "tag2")))
+			.build();
 		CallToolResult result = toolSpecs.get(0).callHandler().apply(context, request);
 
 		assertThat(result).isNotNull();
@@ -328,7 +329,7 @@ public class SyncStatelessMcpToolProviderTests {
 
 		// Test that the handler works with no parameters
 		McpTransportContext context = mock(McpTransportContext.class);
-		CallToolRequest request = new CallToolRequest("no-param-tool", Map.of());
+		CallToolRequest request = CallToolRequest.builder("no-param-tool").arguments(Map.of()).build();
 		CallToolResult result = toolSpecs.get(0).callHandler().apply(context, request);
 
 		assertThat(result).isNotNull();
@@ -360,7 +361,7 @@ public class SyncStatelessMcpToolProviderTests {
 
 		// Test that the handler works with CallToolResult return type
 		McpTransportContext context = mock(McpTransportContext.class);
-		CallToolRequest request = new CallToolRequest("result-tool", Map.of("message", "test"));
+		CallToolRequest request = CallToolRequest.builder("result-tool").arguments(Map.of("message", "test")).build();
 		CallToolResult result = toolSpecs.get(0).callHandler().apply(context, request);
 
 		assertThat(result).isNotNull();
@@ -392,7 +393,7 @@ public class SyncStatelessMcpToolProviderTests {
 
 		// Test that the handler works with private methods
 		McpTransportContext context = mock(McpTransportContext.class);
-		CallToolRequest request = new CallToolRequest("private-tool", Map.of("input", "test"));
+		CallToolRequest request = CallToolRequest.builder("private-tool").arguments(Map.of("input", "test")).build();
 		CallToolResult result = toolSpecs.get(0).callHandler().apply(context, request);
 
 		assertThat(result).isNotNull();
@@ -702,7 +703,7 @@ public class SyncStatelessMcpToolProviderTests {
 		BiFunction<McpTransportContext, CallToolRequest, McpSchema.CallToolResult> callHandler = toolSpec.callHandler();
 
 		McpSchema.CallToolResult result = callHandler.apply(mock(McpTransportContext.class),
-				new CallToolRequest("list-response", Map.of("input", "test")));
+				CallToolRequest.builder("list-response").arguments(Map.of("input", "test")).build());
 		assertThat(result).isNotNull();
 		assertThat(result.isError()).isFalse();
 		assertThat(result.content()).hasSize(1);
@@ -743,7 +744,7 @@ public class SyncStatelessMcpToolProviderTests {
 		BiFunction<McpTransportContext, CallToolRequest, McpSchema.CallToolResult> callHandler = toolSpec.callHandler();
 
 		McpSchema.CallToolResult result = callHandler.apply(mock(McpTransportContext.class),
-				new CallToolRequest("list-response", Map.of("input", "test")));
+				CallToolRequest.builder("list-response").arguments(Map.of("input", "test")).build());
 
 		assertThat(result).isNotNull();
 		assertThat(result.isError()).isFalse();
@@ -913,7 +914,9 @@ public class SyncStatelessMcpToolProviderTests {
 
 		// Test that the handler works with McpTransportContext parameter
 		McpTransportContext context = mock(McpTransportContext.class);
-		CallToolRequest request = new CallToolRequest("context-param-tool", Map.of("additionalParam", "test"));
+		CallToolRequest request = CallToolRequest.builder("context-param-tool")
+			.arguments(Map.of("additionalParam", "test"))
+			.build();
 		CallToolResult result = toolSpec.callHandler().apply(context, request);
 
 		assertThat(result).isNotNull();
@@ -950,7 +953,7 @@ public class SyncStatelessMcpToolProviderTests {
 
 		// Test that the handler works
 		McpTransportContext context = mock(McpTransportContext.class);
-		CallToolRequest request = new CallToolRequest("only-context-tool", Map.of());
+		CallToolRequest request = CallToolRequest.builder("only-context-tool").arguments(Map.of()).build();
 		CallToolResult result = toolSpec.callHandler().apply(context, request);
 
 		assertThat(result).isNotNull();

@@ -52,7 +52,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 class MilvusVectorStoreCustomMetadataFieldFilterIT {
 
 	@Container
-	private static final MilvusContainer milvusContainer = new MilvusContainer(MilvusImage.DEFAULT_IMAGE);
+	private static final MilvusContainer milvusContainer = new MilvusContainer(MilvusImage.DEFAULT_IMAGE)
+		.withEnv("DEPLOY_MODE", "STANDALONE");
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(TestApplication.class);

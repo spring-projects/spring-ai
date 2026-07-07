@@ -1,6 +1,127 @@
 [[upgrade-notes]]
 = Upgrade Notes
 
+[[upgrading-to-2-0-1]]
+== Upgrading to 2.0.1
+
+=== Redis Chat Memory Repository Auto-Configuration Module Renaming
+
+The Redis chat memory auto-configurations module renamed to `spring-ai-autoconfigure-model-chat-memory-repository-redis`.
+
+==== Impact
+
+The artifact ID and configuration properties of the Redis chat memory auto-configurations module has changed:
+
+* *Artifact:* `spring-ai-autoconfigure-model-chat-memory-redis` → `spring-ai-autoconfigure-model-chat-memory-repository-redis`
+* *Configuration properties:* `spring.ai.chat.memory.redis.*` → `spring.ai.chat.memory.repository.redis.*`
+
+==== Migration
+
+- Update your Maven/Gradle dependencies to use the new artifact ID:
+
+[source,xml]
+----
+<!-- Before -->
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-autoconfigure-model-chat-memory-redis</artifactId>
+</dependency>
+
+<!-- After -->
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-autoconfigure-model-chat-memory-repository-redis</artifactId>
+</dependency>
+----
+
+- Update your configuration properties to use the new prefix:
+
+[source,properties]
+----
+# Before
+spring.ai.chat.memory.redis.*=xxx
+
+# After
+spring.ai.chat.memory.repository.redis.*=xxx
+----
+
+==== Smooth Transition
+
+The new module provides a smooth transition from the deprecated module:
+
+- The deprecated `spring-ai-autoconfigure-model-chat-memory-redis` module still exists and depends on the new module via a transitive dependency, so existing dependencies continue to work without changes.
+- The deprecated `RedisChatMemoryProperties` (`spring.ai.chat.memory.redis`) delegates every property to the current `RedisChatMemoryRepositoryProperties` (`spring.ai.chat.memory.repository.redis`), the same delegation mechanism used for the `.options` deprecation further down in this page, so existing property configurations continue to work.
+
+NOTE: Both the deprecated module and the legacy configuration prefix will be removed in a future release.
+
+=== MCP Tool Exception Handling
+
+==== Changed: `@McpTool` Exception Handling Now Mirrors `@Tool`
+
+The exception-handling contract for `@McpTool`-annotated server methods has been aligned with `@Tool`.
+Previously, all exceptions thrown by an `@McpTool` method — including declared checked exceptions, `Error` subtypes, and protocol-level `McpError`s — were caught and silently converted into an error `CallToolResult` that was passed to the model.
+Starting with 2.0.1, exception dispatch follows the same type-based rule used by `@Tool`:
+
+[cols="1,2", options="header"]
+|===
+| Exception type | Behaviour
+| `RuntimeException` (not `McpError`) | Converted to an error `CallToolResult` and passed to the model
+| Declared checked exception | Bubbles up as `UndeclaredThrowableException` — hard failure, never reaches the model
+| `Error` subtype | Bubbles up unchanged — hard failure
+| `McpError` | Bubbles up unchanged — hard failure (protocol-level signal, e.g. URL elicitation)
+|===
+
+===== Impact
+
+`@McpTool` methods that intentionally threw a checked exception or `Error` to signal a problem, expecting the exception to be conveyed to the model as an error message, will now propagate the exception instead.
+
+===== Migration
+
+If your `@McpTool` method throws a checked exception or `Error` and you want the model to see an error message, convert it to a `RuntimeException` (or a subclass) in the method body before throwing:
+
+[source,java]
+----
+// Before — checked exception was silently converted to an error result
+@McpTool(description = "Look up an order")
+public String lookupOrder(String orderId) throws NotFoundException {
+    throw new NotFoundException("Order not found: " + orderId);
+}
+
+// After — wrap in RuntimeException to convey error to model,
+//         or remove the checked-exception declaration and let it propagate
+@McpTool(description = "Look up an order")
+public String lookupOrder(String orderId) {
+    throw new RuntimeException("Order not found: " + orderId); // reaches model as error result
+}
+----
+
+If you want a checked exception to be a hard failure, no change is needed — it already bubbles up as an `UndeclaredThrowableException` by default.
+
+==== Deprecated: `toolCallExceptionClass` Constructor Parameter
+
+The `toolCallExceptionClass` parameter on the following classes is deprecated and will be removed in 2.1.0.
+It is ignored at runtime — exception dispatch is now type-based, not class-based.
+
+* `SyncMcpToolMethodCallback(ReturnMode, Method, Object, Class<? extends Throwable>)`
+* `AsyncMcpToolMethodCallback(ReturnMode, Method, Object, Class<? extends Throwable>)`
+* `SyncStatelessMcpToolMethodCallback(ReturnMode, Method, Object, Class<? extends Throwable>)`
+* `AsyncStatelessMcpToolMethodCallback(ReturnMode, Method, Object, Class<? extends Throwable>)`
+* `AbstractMcpToolProvider.doGetToolCallException()`
+
+===== Migration
+
+Use the three-argument constructors.
+The `toolCallExceptionClass` argument is accepted but no longer has any effect:
+
+[source,java]
+----
+// Before
+new SyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider, Exception.class);
+
+// After
+new SyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
+----
+
 [[upgrading-to-2-0-0]]
 == Upgrading to 2.0.0
 
@@ -372,15 +493,6 @@ chatClient.prompt()
 ----
 
 For new code, prefer the declarative `@Tool` annotation — see xref:api/tools.adoc#defining-tools[Defining Tools].
-
-
-
-
-
-
-
-
-
 
 === JDBC Chat Memory `sequence_id` Column
 
@@ -948,7 +1060,7 @@ The MCP SDK enforces previously optional fields as mandatory at construction tim
 ----
 // Before
 CreateMessageResult.builder()
-    .content(new TextContent(response))
+    .content(TextContent.builder(response).build())
     .build();
 
 // After

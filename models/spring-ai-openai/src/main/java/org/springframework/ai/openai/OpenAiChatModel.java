@@ -21,6 +21,7 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -121,6 +122,7 @@ import org.springframework.util.StringUtils;
  * @author Thomas Vitale
  * @author Eric Bottard
  * @author Taewoong Kim
+ * @author Jewoo Shin
  */
 public final class OpenAiChatModel implements ChatModel {
 
@@ -268,6 +270,7 @@ public final class OpenAiChatModel implements ChatModel {
 		return Flux.deferContextual(contextView -> {
 			ChatCompletionCreateParams request = createRequest(prompt, true);
 			ConcurrentHashMap<String, String> roleMap = new ConcurrentHashMap<>();
+			ConcurrentHashMap<String, String> reasoningMap = new ConcurrentHashMap<>();
 			final ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 				.prompt(prompt)
 				.provider(AiProvider.OPENAI.value())
@@ -324,13 +327,19 @@ public final class OpenAiChatModel implements ChatModel {
 					roleMap.putIfAbsent(id, choice.message()._role().asString().isPresent()
 							? choice.message()._role().asStringOrThrow() : "");
 
+					// Accumulate reasoning fragments across the streamed chunks so the
+					// final response of this stream carries the full reasoning content,
+					// surviving last-wins metadata aggregation (e.g. MessageAggregator).
+					String accumulatedReasoning = reasoningMap.merge(id + ":" + choice.index(),
+							getReasoningContent(choice), String::concat);
+
 					Map<String, Object> metadata = Map.of("id", id, //
 							"role", roleMap.getOrDefault(id, ""), //
 							"index", choice.index(), //
 							"finishReason", choice.finishReason().value(), //
 							"refusal", choice.message().refusal().orElse(""), //
 							"annotations", choice.message().annotations().orElseGet(List::of), //
-							REASONING_CONTENT, getReasoningContent(choice) //
+							REASONING_CONTENT, accumulatedReasoning //
 					);
 
 					return buildGeneration(choice, metadata, request);
@@ -385,7 +394,8 @@ public final class OpenAiChatModel implements ChatModel {
 		if (message.audio().isPresent() && StringUtils.hasText(message.audio().get().data())
 				&& request.audio().isPresent()) {
 			var audioOutput = message.audio().get();
-			String mimeType = String.format("audio/%s", request.audio().get().format().value().name().toLowerCase());
+			String mimeType = String.format("audio/%s",
+					request.audio().get().format().value().name().toLowerCase(Locale.ROOT));
 			byte[] audioData = Base64.getDecoder().decode(audioOutput.data());
 			Resource resource = new ByteArrayResource(audioData);
 			Media.builder().mimeType(MimeTypeUtils.parseMimeType(mimeType)).data(resource).id(audioOutput.id()).build();
@@ -400,6 +410,11 @@ public final class OpenAiChatModel implements ChatModel {
 			generationMetadataBuilder.metadata("audioId", audioOutput.id());
 			generationMetadataBuilder.metadata("audioExpiresAt", audioOutput.expiresAt());
 		}
+
+		// Unwrap Optional values so downstream repositories (Neo4j, MongoDB, JDBC,
+		// etc.) can serialize the metadata map without failing on java.util.Optional.
+		assistantMessageMetadata
+			.replaceAll((key, value) -> value instanceof Optional<?> optional ? optional.orElse(null) : value);
 
 		var assistantMessage = AssistantMessage.builder()
 			.content(textContent)
@@ -729,7 +744,7 @@ public final class OpenAiChatModel implements ChatModel {
 		if (requestOptions.getOutputModalities() != null) {
 			builder.modalities(requestOptions.getOutputModalities()
 				.stream()
-				.map(modality -> ChatCompletionCreateParams.Modality.of(modality.toLowerCase()))
+				.map(modality -> ChatCompletionCreateParams.Modality.of(modality.toLowerCase(Locale.ROOT)))
 				.toList());
 		}
 		if (requestOptions.getOutputAudio() != null) {
@@ -795,7 +810,7 @@ public final class OpenAiChatModel implements ChatModel {
 			builder.parallelToolCalls(requestOptions.getParallelToolCalls());
 		}
 		if (requestOptions.getReasoningEffort() != null) {
-			builder.reasoningEffort(ReasoningEffort.of(requestOptions.getReasoningEffort().toLowerCase()));
+			builder.reasoningEffort(ReasoningEffort.of(requestOptions.getReasoningEffort().toLowerCase(Locale.ROOT)));
 		}
 		if (requestOptions.getVerbosity() != null) {
 			builder.verbosity(ChatCompletionCreateParams.Verbosity.of(requestOptions.getVerbosity()));
@@ -1097,7 +1112,20 @@ public final class OpenAiChatModel implements ChatModel {
 				}
 			}).orElse(List.of());
 
-			return left.toBuilder().toolCalls(tcs).build();
+			Delta.Builder deltaBuilder = left.toBuilder().toolCalls(tcs);
+			// Concatenate reasoning fragments (e.g. DeepSeek "reasoning_content") so
+			// they survive the tool-call chunk merge instead of keeping only the first
+			// chunk's value.
+			for (String reasoningKey : List.of("reasoning_content", "reasoning")) {
+				stringProperty(right, reasoningKey).filter(StringUtils::hasLength)
+					.ifPresent(rightFragment -> deltaBuilder.putAdditionalProperty(reasoningKey,
+							JsonValue.from(stringProperty(left, reasoningKey).orElse("") + rightFragment)));
+			}
+			return deltaBuilder.build();
+		}
+
+		private static Optional<String> stringProperty(Delta delta, String key) {
+			return Optional.ofNullable(delta._additionalProperties().get(key)).flatMap(JsonValue::asString);
 		}
 
 		/**
@@ -1111,8 +1139,8 @@ public final class OpenAiChatModel implements ChatModel {
 
 				choiceBuilder.finishReason(ChatCompletion.Choice.FinishReason.of(""));
 				cccc.finishReason()
-					.ifPresent(finishReason -> choiceBuilder.finishReason(
-							ChatCompletion.Choice.FinishReason.of(finishReason.value().name().toLowerCase())));
+					.ifPresent(finishReason -> choiceBuilder.finishReason(ChatCompletion.Choice.FinishReason
+						.of(finishReason.value().name().toLowerCase(Locale.ROOT))));
 
 				if (cccc.logprobs().isPresent()) {
 					var logprobs = cccc.logprobs().get();
@@ -1128,7 +1156,10 @@ public final class OpenAiChatModel implements ChatModel {
 
 				ChatCompletionMessage.Builder msgBuilder = ChatCompletionMessage.builder()
 					.content(cccc.delta().content())
-					.refusal(cccc.delta().refusal());
+					.refusal(cccc.delta().refusal())
+					// Carry over provider-specific delta fields (e.g. reasoning_content)
+					// so they are readable on the message, as in the non-streaming path.
+					.putAllAdditionalProperties(cccc.delta()._additionalProperties());
 				cccc.delta().toolCalls().ifPresent(ccctcs -> {
 					msgBuilder.toolCalls(ccctcs.stream().map(tc -> {
 						ChatCompletionMessageFunctionToolCall.Builder toolCallBuilder = ChatCompletionMessageFunctionToolCall

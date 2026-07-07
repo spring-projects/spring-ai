@@ -21,6 +21,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -960,7 +961,7 @@ class BedrockProxyChatModelIT {
 		assertThat(fullResponse).as("gpt-oss streaming response should not be null or empty").isNotNull().isNotEmpty();
 
 		// Verify the response contains expected gpt-oss identification
-		assertThat(fullResponse.toLowerCase()).as("gpt-oss model should identify itself")
+		assertThat(fullResponse.toLowerCase(Locale.ROOT)).as("gpt-oss model should identify itself")
 			.containsAnyOf("chatgpt", "gpt", "openai", "language model", "ai");
 	}
 

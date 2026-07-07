@@ -126,7 +126,7 @@ public class ChatResponse implements ModelResponse<Generation> {
 		return this.generations.stream().anyMatch(generation -> {
 			var finishReason = (generation.getMetadata().getFinishReason() != null)
 					? generation.getMetadata().getFinishReason() : "";
-			return finishReasons.stream().map(String::toLowerCase).toList().contains(finishReason.toLowerCase());
+			return finishReasons.stream().anyMatch(fr -> fr.equalsIgnoreCase(finishReason));
 		});
 	}
 

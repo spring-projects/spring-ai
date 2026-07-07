@@ -23,6 +23,7 @@ import java.time.LocalDateTime;
 import java.time.Month;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
@@ -289,6 +290,44 @@ class JsonSchemaGeneratorTests {
 				""";
 
 		assertThat(schema).isEqualToIgnoringWhitespace(expectedJsonSchema);
+	}
+
+	@Test
+	void generateSchemaForMethodWithUpperCaseTypesInTrLocale() throws Exception {
+		Locale defaultLocale = Locale.getDefault();
+		try {
+			Locale.setDefault(Locale.forLanguageTag("tr-TR"));
+			Method method = TestMethods.class.getDeclaredMethod("simpleMethod", String.class, int.class);
+
+			// The method "convertTypeValuesToUpperCase" will fail to correctly uppercase
+			// STRING and INTEGER in turkish locale, resulting in STRİNG and İNTEGER
+			String schema = JsonSchemaGenerator.generateForMethodInput(method,
+					JsonSchemaGenerator.SchemaOption.UPPER_CASE_TYPE_VALUES);
+			String expectedJsonSchema = """
+					{
+					    "$schema": "https://json-schema.org/draft/2020-12/schema",
+					    "type": "OBJECT",
+					    "properties": {
+					        "name": {
+					            "type": "STRING"
+					        },
+					        "age": {
+					            "type": "INTEGER"
+					        }
+					    },
+					    "required": [
+					        "name",
+					        "age"
+					    ],
+					    "additionalProperties": false
+					}
+					""";
+
+			assertThat(schema).isEqualToIgnoringWhitespace(expectedJsonSchema);
+		}
+		finally {
+			Locale.setDefault(defaultLocale);
+		}
 	}
 
 	@Test

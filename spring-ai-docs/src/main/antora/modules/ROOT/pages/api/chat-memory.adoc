@@ -520,14 +520,14 @@ ChatMemory chatMemory = MessageWindowChatMemory.builder()
 [cols="2,5,1",stripes=even]
 |===
 |Property | Description | Default Value
-| `spring.ai.chat.memory.redis.host` | Redis server host | `localhost`
-| `spring.ai.chat.memory.redis.port` | Redis server port | `6379`
-| `spring.ai.chat.memory.redis.index-name` | Name of the Redis search index | `chat-memory-idx`
-| `spring.ai.chat.memory.redis.key-prefix` | Key prefix for chat memory entries | `chat-memory:`
-| `spring.ai.chat.memory.redis.time-to-live` | Time to live for chat memory entries (e.g., `24h`, `30d`) | _no expiration_
-| `spring.ai.chat.memory.redis.initialize-schema` | Whether to initialize the Redis schema on startup | `true`
-| `spring.ai.chat.memory.redis.max-conversation-ids` | Maximum number of conversation IDs to return | `1000`
-| `spring.ai.chat.memory.redis.max-messages-per-conversation` | Maximum number of messages to return per conversation | `1000`
+| `spring.ai.chat.memory.repository.redis.host` | Redis server host | `localhost`
+| `spring.ai.chat.memory.repository.redis.port` | Redis server port | `6379`
+| `spring.ai.chat.memory.repository.redis.index-name` | Name of the Redis search index | `chat-memory-idx`
+| `spring.ai.chat.memory.repository.redis.key-prefix` | Key prefix for chat memory entries | `chat-memory:`
+| `spring.ai.chat.memory.repository.redis.time-to-live` | Time to live for chat memory entries (e.g., `24h`, `30d`) | _no expiration_
+| `spring.ai.chat.memory.repository.redis.initialize-schema` | Whether to initialize the Redis schema on startup | `true`
+| `spring.ai.chat.memory.repository.redis.max-conversation-ids` | Maximum number of conversation IDs to return | `1000`
+| `spring.ai.chat.memory.repository.redis.max-messages-per-conversation` | Maximum number of messages to return per conversation | `1000`
 |===
 
 ==== Advanced Querying
@@ -566,12 +566,12 @@ To enable efficient querying on custom metadata fields, you can configure metada
 
 [source,properties]
 ----
-spring.ai.chat.memory.redis.metadata-fields[0].name=priority
-spring.ai.chat.memory.redis.metadata-fields[0].type=tag
-spring.ai.chat.memory.redis.metadata-fields[1].name=score
-spring.ai.chat.memory.redis.metadata-fields[1].type=numeric
-spring.ai.chat.memory.redis.metadata-fields[2].name=category
-spring.ai.chat.memory.redis.metadata-fields[2].type=tag
+spring.ai.chat.memory.repository.redis.metadata-fields[0].name=priority
+spring.ai.chat.memory.repository.redis.metadata-fields[0].type=tag
+spring.ai.chat.memory.repository.redis.metadata-fields[1].name=score
+spring.ai.chat.memory.repository.redis.metadata-fields[1].type=numeric
+spring.ai.chat.memory.repository.redis.metadata-fields[2].name=category
+spring.ai.chat.memory.repository.redis.metadata-fields[2].type=tag
 ----
 
 Supported field types are: `tag` (for exact match filtering), `text` (for full-text search), and `numeric` (for range queries).
@@ -579,7 +579,7 @@ Supported field types are: `tag` (for exact match filtering), `text` (for full-t
 ==== Schema Initialization
 
 The auto-configuration will automatically create the Redis search index on startup if it does not already exist.
-You can disable this behavior by setting `spring.ai.chat.memory.redis.initialize-schema=false`.
+You can disable this behavior by setting `spring.ai.chat.memory.repository.redis.initialize-schema=false`.
 
 ==== Requirements
 

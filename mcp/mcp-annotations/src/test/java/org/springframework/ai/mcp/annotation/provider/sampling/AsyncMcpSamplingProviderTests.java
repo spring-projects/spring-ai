@@ -19,6 +19,7 @@ package org.springframework.ai.mcp.annotation.provider.sampling;
 import java.util.List;
 import java.util.function.Function;
 
+import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.CreateMessageRequest;
 import io.modelcontextprotocol.spec.McpSchema.CreateMessageResult;
 import io.modelcontextprotocol.spec.McpSchema.TextContent;
@@ -47,10 +48,8 @@ public class AsyncMcpSamplingProviderTests {
 
 			@McpSampling(clients = "test-client")
 			public Mono<CreateMessageResult> handleAsyncSamplingRequest(CreateMessageRequest request) {
-				return Mono.just(CreateMessageResult.builder()
-					.role(io.modelcontextprotocol.spec.McpSchema.Role.ASSISTANT)
-					.content(new TextContent("This is an async response to the sampling request"))
-					.model("test-model")
+				return Mono.just(CreateMessageResult.builder(McpSchema.Role.ASSISTANT,
+						TextContent.builder("This is an async response to the sampling request").build(), "test-model")
 					.build());
 			}
 
@@ -89,10 +88,8 @@ public class AsyncMcpSamplingProviderTests {
 
 			@McpSampling(clients = "test-client")
 			public Mono<CreateMessageResult> handleDirectSamplingRequest(CreateMessageRequest request) {
-				return Mono.just(CreateMessageResult.builder()
-					.role(io.modelcontextprotocol.spec.McpSchema.Role.ASSISTANT)
-					.content(new TextContent("This is a direct response to the sampling request"))
-					.model("test-model")
+				return Mono.just(CreateMessageResult.builder(McpSchema.Role.ASSISTANT,
+						TextContent.builder("This is a direct response to the sampling request").build(), "test-model")
 					.build());
 			}
 

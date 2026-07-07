@@ -117,8 +117,8 @@ public class DocumentServer {
 
         if (doc == null) {
             return ReadResourceResult.builder(List.of(
-                new TextResourceContents("document://" + id,
-                    "text/plain", "Document not found")
+                TextResourceContents.builder("document://" + id,
+                    "Document not found").mimeType("text/plain").build()
             )).build();
         }
 
@@ -127,14 +127,14 @@ public class DocumentServer {
         if ("restricted".equals(doc.getClassification()) &&
             !"admin".equals(accessLevel)) {
             return ReadResourceResult.builder(List.of(
-                new TextResourceContents("document://" + id,
-                    "text/plain", "Access denied")
+                TextResourceContents.builder("document://" + id,
+                    "Access denied").mimeType("text/plain").build()
             )).build();
         }
 
         return ReadResourceResult.builder(List.of(
-            new TextResourceContents("document://" + id,
-                doc.getMimeType(), doc.getContent())
+            TextResourceContents.builder("document://" + id,
+                doc.getContent()).mimeType(doc.getMimeType()).build()
         )).build();
     }
 
@@ -405,8 +405,8 @@ public class AsyncDataProcessor {
         return Mono.fromCallable(() -> loadDataAsync(id))
             .subscribeOn(Schedulers.boundedElastic())
             .map(data -> ReadResourceResult.builder(List.of(
-                new TextResourceContents("async-data://" + id,
-                    "application/json", data)
+                TextResourceContents.builder("async-data://" + id,
+                    data).mimeType("application/json").build()
             )).build());
     }
 }
@@ -571,10 +571,10 @@ public class WeatherService {
 
         // Check if client supports sampling
         if (exchange.getClientCapabilities().sampling() != null) {
-            var samplingMessages = List.of(new McpSchema.SamplingMessage(McpSchema.Role.USER,
+            var samplingMessages = List.of(McpSchema.SamplingMessage.builder(McpSchema.Role.USER,
                     McpSchema.TextContent.builder(
                             "Please write a poem about this weather forecast (temperature is in Celsius). Use markdown format :\n "
-                                    + new JsonHelper().toJson(weatherResponse)).build()));
+                                    + new JsonHelper().toJson(weatherResponse)).build()).build());
             var messageRequestBuilder = McpSchema.CreateMessageRequest.builder(samplingMessages, 500)
                     .systemPrompt("You are a poet!");
 

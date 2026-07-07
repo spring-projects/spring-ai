@@ -97,7 +97,7 @@ public abstract class AbstractMcpCompleteMethodCallback {
 
 		// Create the CompleteReference based on prompt or uri
 		if (prompt != null && !prompt.isEmpty()) {
-			this.completeReference = new McpSchema.PromptReference(prompt);
+			this.completeReference = McpSchema.PromptReference.builder(prompt).build();
 		}
 		else {
 			this.completeReference = new McpSchema.ResourceReference(uri);

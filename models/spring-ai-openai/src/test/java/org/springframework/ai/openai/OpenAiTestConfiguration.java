@@ -30,12 +30,12 @@ public class OpenAiTestConfiguration {
 
 	@Bean
 	public OpenAiEmbeddingModel openAiEmbeddingModel() {
-		return new OpenAiEmbeddingModel();
+		return OpenAiEmbeddingModel.builder().build();
 	}
 
 	@Bean
 	public OpenAiImageModel openAiImageModel() {
-		return new OpenAiImageModel();
+		return OpenAiImageModel.builder().build();
 	}
 
 	@Bean

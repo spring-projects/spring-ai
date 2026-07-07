@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Locale;
 
 import com.anthropic.client.AnthropicClient;
 import com.anthropic.models.messages.Model;
@@ -76,7 +77,7 @@ class AnthropicSkillsIT {
 		assertThat(response.getResults()).isNotEmpty();
 		String responseText = response.getResult().getOutput().getText();
 		assertThat(responseText).as("Response text should not be blank").isNotBlank();
-		assertThat(responseText.toLowerCase()).as("Response should mention spreadsheet or Excel")
+		assertThat(responseText.toLowerCase(Locale.ROOT)).as("Response should mention spreadsheet or Excel")
 			.containsAnyOf("spreadsheet", "excel", "xlsx", "created", "file");
 
 		List<String> fileIds = AnthropicSkillsResponseHelper.extractFileIds(response);
@@ -91,7 +92,7 @@ class AnthropicSkillsIT {
 		}
 
 		boolean hasXlsxFile = downloadedFiles.stream()
-			.anyMatch(path -> path.toString().toLowerCase().endsWith(".xlsx"));
+			.anyMatch(path -> path.toString().toLowerCase(Locale.ROOT).endsWith(".xlsx"));
 		assertThat(hasXlsxFile).as("At least one .xlsx file should be downloaded").isTrue();
 	}
 
