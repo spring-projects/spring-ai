@@ -1009,10 +1009,20 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 				ThinkingBlock thinkingBlock = block.asThinking();
 				thinkingContents
 					.add(AnthropicThinkingContent.thinking(thinkingBlock.thinking(), thinkingBlock.signature()));
+				Map<String, Object> thinkingProperties = new HashMap<>();
+				thinkingProperties.put("signature", thinkingBlock.signature());
+				generations.add(new Generation(AssistantMessage.builder()
+					.content(thinkingBlock.thinking())
+					.properties(thinkingProperties)
+					.build(), generationMetadata));
 			}
 			else if (block.isRedactedThinking()) {
 				RedactedThinkingBlock redactedBlock = block.asRedactedThinking();
 				thinkingContents.add(AnthropicThinkingContent.redacted(redactedBlock.data()));
+				Map<String, Object> redactedProperties = new HashMap<>();
+				redactedProperties.put("data", redactedBlock.data());
+				generations.add(new Generation(AssistantMessage.builder().properties(redactedProperties).build(),
+						generationMetadata));
 			}
 			else if (block.isWebSearchToolResult()) {
 				WebSearchToolResultBlock wsBlock = block.asWebSearchToolResult();
