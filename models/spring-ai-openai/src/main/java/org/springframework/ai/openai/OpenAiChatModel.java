@@ -985,11 +985,6 @@ public final class OpenAiChatModel implements ChatModel {
 					schemaMap
 						.forEach((key, value) -> parametersBuilder.putAdditionalProperty(key, JsonValue.from(value)));
 
-					// Add strict mode
-					parametersBuilder.putAdditionalProperty("strict", JsonValue.from(true)); // TODO
-																								// allow
-																								// non-strict
-																								// mode
 				}
 				catch (Exception e) {
 					logger.error("Failed to parse tool schema", e);
@@ -1000,6 +995,7 @@ public final class OpenAiChatModel implements ChatModel {
 				.name(toolDefinition.name())
 				.description(toolDefinition.description())
 				.parameters(parametersBuilder.build())
+				.strict(true) // TODO allow non-strict mode
 				.build();
 
 			return ChatCompletionTool
