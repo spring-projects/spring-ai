@@ -382,11 +382,13 @@ class AnthropicChatModelTests {
 		verify(this.messageService).create(captor.capture());
 
 		List<ContentBlockParam> replayedAssistantBlocks = assistantBlockParams(captor.getValue());
-		assertThat(replayedAssistantBlocks).hasSize(2);
-		assertThat(replayedAssistantBlocks.get(0).isThinking()).isTrue();
-		assertThat(replayedAssistantBlocks.get(0).asThinking().thinking()).isEqualTo("thinking text");
-		assertThat(replayedAssistantBlocks.get(0).asThinking().signature()).isEqualTo("thinking-signature");
-		assertThat(replayedAssistantBlocks.get(1).isToolUse()).isTrue();
+		assertThat(replayedAssistantBlocks).hasSize(3);
+		assertThat(replayedAssistantBlocks.get(0).isText()).isTrue();
+		assertThat(replayedAssistantBlocks.get(0).asText().text()).isEqualTo("thinking text");
+		assertThat(replayedAssistantBlocks.get(1).isThinking()).isTrue();
+		assertThat(replayedAssistantBlocks.get(1).asThinking().thinking()).isEqualTo("thinking text");
+		assertThat(replayedAssistantBlocks.get(1).asThinking().signature()).isEqualTo("thinking-signature");
+		assertThat(replayedAssistantBlocks.get(2).isToolUse()).isTrue();
 	}
 
 	@Test
