@@ -21,6 +21,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -54,7 +55,6 @@ import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.ai.model.tool.DefaultToolCallingManager;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.tool.function.FunctionToolCallback;
@@ -135,8 +135,10 @@ class BedrockProxyChatModelIT {
 	@Test
 	void streamingWithTokenUsage() {
 		var promptOptions = BedrockChatOptions.builder().temperature(0.0).build();
+		BedrockChatOptions options = (BedrockChatOptions) this.chatModel.getOptions();
+		var mergedOptions = promptOptions.mutate().combineWith(options.mutate()).build();
 
-		var prompt = new Prompt("List two colors of the Polish flag. Be brief.", promptOptions);
+		var prompt = new Prompt("List two colors of the Polish flag. Be brief.", mergedOptions);
 		var streamingTokenUsage = this.chatModel.stream(prompt).blockLast().getMetadata().getUsage();
 
 		assertThat(streamingTokenUsage.getPromptTokens()).isGreaterThan(0);
@@ -275,13 +277,15 @@ class BedrockProxyChatModelIT {
 				.build()))
 			.build();
 
-		var prompt = new Prompt(messages, options);
+		var mergedOptions = options.mutate().combineWith(this.chatModel.getOptions().mutate()).build();
+
+		var prompt = new Prompt(messages, mergedOptions);
 
 		ChatResponse response = this.chatModel.call(prompt);
 
 		while (response.hasToolCalls()) {
 			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, response);
-			prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
+			prompt = new Prompt(toolExecutionResult.conversationHistory(), mergedOptions);
 			response = this.chatModel.call(prompt);
 		}
 		Generation generation = response.getResult();
@@ -298,20 +302,22 @@ class BedrockProxyChatModelIT {
 
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
-		var promptOptions = ToolCallingChatOptions.builder()
+		var promptOptions = BedrockChatOptions.builder()
 			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description("Get the weather in location. Return in 36°C format")
 				.inputType(MockWeatherService.Request.class)
 				.build()))
 			.build();
 
-		var prompt = new Prompt(messages, promptOptions);
+		var mergedOptions = promptOptions.mutate().combineWith(this.chatModel.getOptions().mutate()).build();
+
+		var prompt = new Prompt(messages, mergedOptions);
 
 		ChatResponse response = this.chatModel.call(prompt);
 
 		while (response.hasToolCalls()) {
 			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, response);
-			prompt = new Prompt(toolExecutionResult.conversationHistory(), promptOptions);
+			prompt = new Prompt(toolExecutionResult.conversationHistory(), mergedOptions);
 			response = this.chatModel.call(prompt);
 		}
 		Generation generation = response.getResult();
@@ -955,7 +961,7 @@ class BedrockProxyChatModelIT {
 		assertThat(fullResponse).as("gpt-oss streaming response should not be null or empty").isNotNull().isNotEmpty();
 
 		// Verify the response contains expected gpt-oss identification
-		assertThat(fullResponse.toLowerCase()).as("gpt-oss model should identify itself")
+		assertThat(fullResponse.toLowerCase(Locale.ROOT)).as("gpt-oss model should identify itself")
 			.containsAnyOf("chatgpt", "gpt", "openai", "language model", "ai");
 	}
 

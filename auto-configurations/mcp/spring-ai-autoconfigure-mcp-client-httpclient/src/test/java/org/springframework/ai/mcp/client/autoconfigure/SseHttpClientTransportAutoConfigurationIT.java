@@ -56,11 +56,9 @@ public class SseHttpClientTransportAutoConfigurationIT {
 
 	static String host = "http://localhost:3001";
 
-	// Uses the https://github.com/tzolov/mcp-everything-server-docker-image
 	@SuppressWarnings("resource")
-	static GenericContainer<?> container = new GenericContainer<>("docker.io/tzolov/mcp-everything-server:v2")
-		.withCommand("node dist/index.js sse")
-		.withLogConsumer(outputFrame -> System.out.println(outputFrame.getUtf8String()))
+	static GenericContainer<?> container = new GenericContainer<>("docker.io/node:lts-alpine3.23")
+		.withCommand("npx -y @modelcontextprotocol/server-everything@2025.12.18 sse")
 		.withExposedPorts(3001)
 		.waitingFor(Wait.forHttp("/").forStatusCode(404));
 
@@ -92,7 +90,7 @@ public class SseHttpClientTransportAutoConfigurationIT {
 
 			assertThat(toolsResult).isNotNull();
 			assertThat(toolsResult.tools()).isNotEmpty();
-			assertThat(toolsResult.tools()).hasSize(8);
+			assertThat(toolsResult.tools()).hasSize(11);
 		});
 	}
 

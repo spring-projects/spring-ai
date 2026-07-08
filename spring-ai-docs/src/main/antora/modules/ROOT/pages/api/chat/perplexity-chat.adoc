@@ -198,9 +198,9 @@ ChatResponse response = chatModel.call(
 TIP: In addition to the model specific https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/openai/OpenAiChatOptions.java[OpenAiChatOptions] you can use a portable link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance, created with the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/DefaultChatOptionsBuilder.java[ChatOptions#builder()].
 
 
-== Function Calling
+== Tool Calling
 
-NOTE: Perplexity does not support explicit function calling. Instead, it integrates search results directly into responses.
+NOTE: Perplexity does not support explicit tool calling. Instead, it integrates search results directly into responses. See xref:api/tools.adoc[Tool Calling] for Spring AI's general tool-calling architecture.
 
 == Multimodal
 
@@ -220,7 +220,7 @@ spring.ai.openai.chat.model=llama-3.1-sonar-small-128k-online
 spring.ai.openai.chat.temperature=0.7
 
 # The Perplexity API doesn't support embeddings, so we need to disable it.
-spring.ai.openai.embedding.enabled=false
+spring.ai.model.embedding=none
 ----
 
 TIP: replace the `api-key` with your Perplexity Api key.

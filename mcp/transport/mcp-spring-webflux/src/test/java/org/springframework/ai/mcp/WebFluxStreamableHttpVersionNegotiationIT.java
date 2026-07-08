@@ -57,15 +57,15 @@ class WebFluxStreamableHttpVersionNegotiationIT {
 
 	private final McpTestRequestRecordingExchangeFilterFunction recordingFilterFunction = new McpTestRequestRecordingExchangeFilterFunction();
 
-	private final McpSchema.Tool toolSpec = McpSchema.Tool.builder()
-		.name("test-tool")
+	private final McpSchema.Tool toolSpec = McpSchema.Tool.builder("test-tool", Map.of())
 		.description("return the protocol version used")
 		.build();
 
 	private final BiFunction<McpSyncServerExchange, McpSchema.CallToolRequest, McpSchema.CallToolResult> toolHandler = (
 			exchange, request) -> McpSchema.CallToolResult.builder()
 				.content(List
-					.of(new McpSchema.TextContent(exchange.transportContext().get("protocol-version").toString())))
+					.of(McpSchema.TextContent.builder(exchange.transportContext().get("protocol-version").toString())
+						.build()))
 				.build();
 
 	private final WebFluxStreamableServerTransportProvider mcpStreamableServerTransportProvider = WebFluxStreamableServerTransportProvider
@@ -98,7 +98,7 @@ class WebFluxStreamableHttpVersionNegotiationIT {
 			this.httpServer.disposeNow();
 		}
 		if (this.mcpServer != null) {
-			this.mcpServer.close();
+			this.mcpServer.closeGracefully();
 		}
 	}
 
@@ -107,13 +107,13 @@ class WebFluxStreamableHttpVersionNegotiationIT {
 		var client = McpClient
 			.sync(WebClientStreamableHttpTransport.builder(WebClient.builder().baseUrl("http://127.0.0.1:" + this.port))
 				.build())
-			.requestTimeout(Duration.ofHours(10))
+			.initializationTimeout(Duration.ofSeconds(10))
 			.build();
 
 		try {
 			client.initialize();
 
-			McpSchema.CallToolResult response = client.callTool(new McpSchema.CallToolRequest("test-tool", Map.of()));
+			McpSchema.CallToolResult response = client.callTool(McpSchema.CallToolRequest.builder("test-tool").build());
 
 			// The background GET /mcp reconnect is fired asynchronously after initialize;
 			// wait for it to be recorded before asserting on the full call count.
@@ -140,7 +140,7 @@ class WebFluxStreamableHttpVersionNegotiationIT {
 				.isEqualTo(ProtocolVersions.MCP_2025_11_25);
 		}
 		finally {
-			client.close();
+			client.closeGracefully();
 		}
 	}
 
@@ -150,12 +150,12 @@ class WebFluxStreamableHttpVersionNegotiationIT {
 			.builder(WebClient.builder().baseUrl("http://127.0.0.1:" + this.port))
 			.supportedProtocolVersions(List.of(ProtocolVersions.MCP_2025_11_25, "2263-03-18"))
 			.build();
-		var client = McpClient.sync(transport).requestTimeout(Duration.ofHours(10)).build();
+		var client = McpClient.sync(transport).initializationTimeout(Duration.ofSeconds(10)).build();
 
 		try {
 			client.initialize();
 
-			McpSchema.CallToolResult response = client.callTool(new McpSchema.CallToolRequest("test-tool", Map.of()));
+			McpSchema.CallToolResult response = client.callTool(McpSchema.CallToolRequest.builder("test-tool").build());
 
 			var calls = this.recordingFilterFunction.getCalls();
 			// Initialize tells the server the Client's latest supported version
@@ -176,7 +176,7 @@ class WebFluxStreamableHttpVersionNegotiationIT {
 				.isEqualTo(ProtocolVersions.MCP_2025_11_25);
 		}
 		finally {
-			client.close();
+			client.closeGracefully();
 		}
 	}
 

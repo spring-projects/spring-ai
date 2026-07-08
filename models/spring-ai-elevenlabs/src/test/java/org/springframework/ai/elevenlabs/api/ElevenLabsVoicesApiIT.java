@@ -47,8 +47,6 @@ public class ElevenLabsVoicesApiIT {
 	@Test
 	void getVoices() {
 		ResponseEntity<ElevenLabsVoicesApi.Voices> response = this.voicesApi.getVoices();
-		System.out.println("Response: " + response);
-
 		assertThat(response.getStatusCode().is2xxSuccessful()).isTrue();
 		assertThat(response.getBody()).isNotNull();
 		ElevenLabsVoicesApi.Voices voicesResponse = response.getBody();

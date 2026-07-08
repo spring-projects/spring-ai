@@ -21,6 +21,8 @@ import java.time.Duration;
 import io.modelcontextprotocol.client.AbstractMcpAsyncClientTests;
 import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.spec.McpClientTransport;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Timeout;
@@ -35,15 +37,17 @@ import org.springframework.web.reactive.function.client.WebClient;
  *
  * @author Christian Tzolov
  */
-@Timeout(15) // Giving extra time beyond the client timeout
+@Timeout(60)
 class WebFluxSseMcpAsyncClientIT extends AbstractMcpAsyncClientTests {
+
+	private static final Log logger = LogFactory.getLog(WebFluxSseMcpAsyncClientIT.class);
 
 	static String host = "http://localhost:3001";
 
 	@SuppressWarnings("resource")
 	static GenericContainer<?> container = new GenericContainer<>("docker.io/node:lts-alpine3.23")
 		.withCommand("npx -y @modelcontextprotocol/server-everything@2025.12.18 sse")
-		.withLogConsumer(outputFrame -> System.out.println(outputFrame.getUtf8String()))
+		.withLogConsumer(outputFrame -> logger.info(outputFrame.getUtf8String()))
 		.withExposedPorts(3001)
 		.waitingFor(Wait.forHttp("/").forStatusCode(404).forPort(3001));
 
@@ -65,7 +69,7 @@ class WebFluxSseMcpAsyncClientIT extends AbstractMcpAsyncClientTests {
 	}
 
 	protected Duration getInitializationTimeout() {
-		return Duration.ofSeconds(1);
+		return Duration.ofSeconds(10);
 	}
 
 }

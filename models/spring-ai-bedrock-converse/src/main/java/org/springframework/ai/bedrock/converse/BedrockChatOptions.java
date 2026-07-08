@@ -212,7 +212,7 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 		@Override
 		public B clone() {
 			B copy = super.clone();
-			copy.requestParameters = this.requestParameters;
+			copy.requestParameters = this.requestParameters == null ? null : new HashMap<>(this.requestParameters);
 			return copy;
 		}
 

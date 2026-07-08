@@ -18,6 +18,7 @@ package org.springframework.ai.content;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URL;
 
 import org.jspecify.annotations.Nullable;
 
@@ -66,6 +67,7 @@ import org.springframework.util.MimeType;
  * @author Christian Tzolov
  * @author Mark Pollack
  * @author Thomas Vitale
+ * @author Ilayaperumal Gopinathan
  * @since 1.0.0
  */
 public class Media {
@@ -171,8 +173,9 @@ public class Media {
 	}
 
 	/**
-	 * Get the media data object
-	 * @return a java.net.URI.toString() or a byte[]
+	 * Get the media data object.
+	 * @return a {@link String} (URI/URL/base64), a {@code byte[]}, or a
+	 * {@link java.net.URL}
 	 */
 	public Object getData() {
 		return this.data;
@@ -199,6 +202,10 @@ public class Media {
 		return this.id;
 	}
 
+	/**
+	 * Get the media name.
+	 * @return the media name
+	 */
 	public String getName() {
 		return this.name;
 	}
@@ -250,12 +257,25 @@ public class Media {
 		}
 
 		/**
-		 * Sets the media data from any Object.
-		 * @param data the media data object, must not be null
+		 * Sets the media data from a byte array.
+		 * @param data the raw media bytes, must not be null
 		 * @return the builder instance
 		 * @throws IllegalArgumentException if data is null
 		 */
-		public Builder data(Object data) {
+		public Builder data(byte[] data) {
+			Assert.notNull(data, "Data must not be null");
+			this.data = data;
+			return this;
+		}
+
+		/**
+		 * Sets the media data from a String. The value may be a URL string
+		 * (http/https/s3), or a base64-encoded representation of the media content.
+		 * @param data the media data string, must not be null
+		 * @return the builder instance
+		 * @throws IllegalArgumentException if data is null
+		 */
+		public Builder data(String data) {
 			Assert.notNull(data, "Data must not be null");
 			this.data = data;
 			return this;
@@ -270,6 +290,20 @@ public class Media {
 		public Builder data(URI uri) {
 			Assert.notNull(uri, "URI must not be null");
 			this.data = uri.toString();
+			return this;
+		}
+
+		/**
+		 * Sets the media data from a URL. The {@link URL} object is stored as-is,
+		 * preserving its protocol for downstream security validation (e.g. blocking
+		 * non-http/https schemes or internal addresses).
+		 * @param url the media URL, must not be null
+		 * @return the builder instance
+		 * @throws IllegalArgumentException if URL is null
+		 */
+		public Builder data(URL url) {
+			Assert.notNull(url, "URL must not be null");
+			this.data = url;
 			return this;
 		}
 

@@ -110,7 +110,7 @@ class AnthropicChatModelIT {
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
-	@ValueSource(strings = { "claude-sonnet-4-20250514" })
+	@ValueSource(strings = { "claude-sonnet-4-5" })
 	void roleTest(String modelName) {
 		UserMessage userMessage = new UserMessage(
 				"Tell me about 3 famous pirates from the Golden Age of Piracy and why they did.");
@@ -138,7 +138,7 @@ class AnthropicChatModelIT {
 		SystemPromptTemplate systemPromptTemplate = new SystemPromptTemplate(this.systemResource);
 		Message systemMessage = systemPromptTemplate.createMessage(Map.of("name", "Bob", "voice", "pirate"));
 		Prompt prompt = new Prompt(List.of(systemMessage, firstUserMessage),
-				AnthropicChatOptions.builder().model(Model.CLAUDE_SONNET_4_20250514).build());
+				AnthropicChatOptions.builder().model(Model.CLAUDE_SONNET_4_5).build());
 
 		ChatResponse response = this.chatModel.call(prompt);
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Blackbeard", "Bartholomew");
@@ -216,7 +216,7 @@ class AnthropicChatModelIT {
 
 	@Test
 	void validateCallResponseMetadata() {
-		String model = Model.CLAUDE_SONNET_4_20250514.asString();
+		String model = Model.CLAUDE_SONNET_4_5.asString();
 		// @formatter:off
 		ChatResponse response = ChatClient.create(this.chatModel).prompt()
 				.options(AnthropicChatOptions.builder().model(model))
@@ -319,7 +319,10 @@ class AnthropicChatModelIT {
 			response = this.chatModel.call(prompt);
 		}
 		assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
-		assertThat(response.getMetadata().getUsage().getTotalTokens()).isGreaterThan(100);
+		Usage usage = response.getMetadata().getUsage();
+		assertThat(usage.getPromptTokens()).isPositive();
+		assertThat(usage.getCompletionTokens()).isPositive();
+		assertThat(usage.getTotalTokens()).isEqualTo(usage.getPromptTokens() + usage.getCompletionTokens());
 	}
 
 	@Test
@@ -380,8 +383,9 @@ class AnthropicChatModelIT {
 		assertThat(lastResponse).isNotNull();
 		Usage usage = lastResponse.getMetadata().getUsage();
 		assertThat(usage).isNotNull();
-		// Tool calling uses more tokens due to multi-turn conversation
-		assertThat(usage.getTotalTokens()).isGreaterThan(100);
+		assertThat(usage.getPromptTokens()).isPositive();
+		assertThat(usage.getCompletionTokens()).isPositive();
+		assertThat(usage.getTotalTokens()).isEqualTo(usage.getPromptTokens() + usage.getCompletionTokens());
 	}
 
 	@Test
@@ -417,7 +421,7 @@ class AnthropicChatModelIT {
 
 	@Test
 	void validateStreamCallResponseMetadata() {
-		String model = Model.CLAUDE_SONNET_4_20250514.asString();
+		String model = Model.CLAUDE_SONNET_4_5.asString();
 		// @formatter:off
 		ChatResponse response = ChatClient.create(this.chatModel).prompt()
 				.options(AnthropicChatOptions.builder().model(model))
@@ -466,7 +470,7 @@ class AnthropicChatModelIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = AnthropicChatOptions.builder()
-			.model(Model.CLAUDE_SONNET_4_20250514.asString())
+			.model(Model.CLAUDE_SONNET_4_5.asString())
 			.toolChoice(ToolChoice.ofAny(ToolChoiceAny.builder().build()))
 			.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description(
@@ -492,7 +496,7 @@ class AnthropicChatModelIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = AnthropicChatOptions.builder()
-			.model(Model.CLAUDE_SONNET_4_20250514.asString())
+			.model(Model.CLAUDE_SONNET_4_5.asString())
 			.toolChoice(ToolChoice.ofTool(ToolChoiceTool.builder().name("getFunResponse").build()))
 			.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description(
@@ -527,7 +531,7 @@ class AnthropicChatModelIT {
 		List<Message> messages = new ArrayList<>(List.of(userMessage));
 
 		var promptOptions = AnthropicChatOptions.builder()
-			.model(Model.CLAUDE_SONNET_4_20250514.asString())
+			.model(Model.CLAUDE_SONNET_4_5.asString())
 			.toolChoice(ToolChoice.ofNone(ToolChoiceNone.builder().build()))
 			.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description(
@@ -579,7 +583,7 @@ class AnthropicChatModelIT {
 				"Are there an infinite number of prime numbers such that n mod 4 == 3?");
 
 		var promptOptions = AnthropicChatOptions.builder()
-			.model(Model.CLAUDE_SONNET_4_20250514.asString())
+			.model(Model.CLAUDE_SONNET_4_5.asString())
 			.temperature(1.0) // temperature must be 1 when thinking is enabled
 			.maxTokens(16000)
 			.thinkingEnabled(10000L)
@@ -613,7 +617,7 @@ class AnthropicChatModelIT {
 				"Are there an infinite number of prime numbers such that n mod 4 == 3?");
 
 		var promptOptions = AnthropicChatOptions.builder()
-			.model(Model.CLAUDE_SONNET_4_20250514.asString())
+			.model(Model.CLAUDE_SONNET_4_5.asString())
 			.temperature(1.0) // temperature must be 1 when thinking is enabled
 			.maxTokens(16000)
 			.thinkingEnabled(10000L)
@@ -656,7 +660,7 @@ class AnthropicChatModelIT {
 				"Based solely on the provided document, where is the Eiffel Tower located and when was it completed?");
 
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
-			.model(Model.CLAUDE_SONNET_4_20250514.asString())
+			.model(Model.CLAUDE_SONNET_4_5.asString())
 			.maxTokens(2048)
 			.temperature(0.0)
 			.citationDocuments(document)
@@ -703,7 +707,7 @@ class AnthropicChatModelIT {
 				"Based solely on the provided documents, what is the capital of France and who designed the Eiffel Tower?");
 
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
-			.model(Model.CLAUDE_SONNET_4_20250514.asString())
+			.model(Model.CLAUDE_SONNET_4_5.asString())
 			.maxTokens(1024)
 			.temperature(0.0)
 			.citationDocuments(parisDoc, eiffelDoc)
@@ -750,7 +754,7 @@ class AnthropicChatModelIT {
 				"Based solely on the provided document, how long is the Great Wall of China and when was it started?");
 
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
-			.model(Model.CLAUDE_SONNET_4_20250514.asString())
+			.model(Model.CLAUDE_SONNET_4_5.asString())
 			.maxTokens(1024)
 			.temperature(0.0)
 			.citationDocuments(document)
@@ -790,7 +794,7 @@ class AnthropicChatModelIT {
 		UserMessage userMessage = new UserMessage("Based solely on the provided document, what is Spring AI?");
 
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
-			.model(Model.CLAUDE_SONNET_4_20250514.asString())
+			.model(Model.CLAUDE_SONNET_4_5.asString())
 			.maxTokens(1024)
 			.temperature(0.0)
 			.citationDocuments(document)

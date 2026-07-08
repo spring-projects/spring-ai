@@ -77,8 +77,9 @@ public class SyncStatelessMcpCompleteProviderTests {
 
 		// Test that the handler works
 		McpTransportContext context = mock(McpTransportContext.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("test-prompt"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("test-prompt"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 		CompleteResult result = completeSpec.completionHandler().apply(context, request);
 
 		assertThat(result).isNotNull();
@@ -111,8 +112,9 @@ public class SyncStatelessMcpCompleteProviderTests {
 
 		// Test that the handler works
 		McpTransportContext context = mock(McpTransportContext.class);
-		CompleteRequest request = new CompleteRequest(new ResourceReference("test://value"),
-				new CompleteRequest.CompleteArgument("variable", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new ResourceReference("test://value"), new CompleteRequest.CompleteArgument("variable", "value"))
+			.build();
 		CompleteResult result = completeSpecs.get(0).completionHandler().apply(context, request);
 
 		assertThat(result).isNotNull();
@@ -273,8 +275,9 @@ public class SyncStatelessMcpCompleteProviderTests {
 
 		// Test that the handler works with private methods
 		McpTransportContext context = mock(McpTransportContext.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("private-complete"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("private-complete"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 		CompleteResult result = completeSpecs.get(0).completionHandler().apply(context, request);
 
 		assertThat(result).isNotNull();
@@ -305,8 +308,9 @@ public class SyncStatelessMcpCompleteProviderTests {
 
 		// Test that the handler works with String return type
 		McpTransportContext context = mock(McpTransportContext.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("string-complete"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("string-complete"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 		CompleteResult result = completeSpecs.get(0).completionHandler().apply(context, request);
 
 		assertThat(result).isNotNull();
@@ -339,8 +343,9 @@ public class SyncStatelessMcpCompleteProviderTests {
 
 		// Test that the handler works with context parameter
 		McpTransportContext context = mock(McpTransportContext.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("context-complete"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("context-complete"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 		CompleteResult result = completeSpecs.get(0).completionHandler().apply(context, request);
 
 		assertThat(result).isNotNull();
@@ -372,8 +377,9 @@ public class SyncStatelessMcpCompleteProviderTests {
 
 		// Test that the handler works with List<String> return type
 		McpTransportContext context = mock(McpTransportContext.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("list-complete"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("list-complete"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 		CompleteResult result = completeSpecs.get(0).completionHandler().apply(context, request);
 
 		assertThat(result).isNotNull();
@@ -405,8 +411,9 @@ public class SyncStatelessMcpCompleteProviderTests {
 
 		// Test that the handler works with CompleteCompletion return type
 		McpTransportContext context = mock(McpTransportContext.class);
-		CompleteRequest request = new CompleteRequest(new PromptReference("completion-complete"),
-				new CompleteRequest.CompleteArgument("test", "value"));
+		CompleteRequest request = CompleteRequest
+			.builder(new PromptReference("completion-complete"), new CompleteRequest.CompleteArgument("test", "value"))
+			.build();
 		CompleteResult result = completeSpecs.get(0).completionHandler().apply(context, request);
 
 		assertThat(result).isNotNull();

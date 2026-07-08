@@ -409,8 +409,7 @@ public class CouchbaseSearchVectorStore extends AbstractObservationVectorStore
 		 * @return this builder
 		 */
 		public CouchbaseSearchVectorStore.Builder collectionName(String collectionName) {
-			Assert.notNull(collectionName, "Collection Name must not be null");
-			Assert.notNull(collectionName, "Collection Name must not be empty");
+			Assert.hasText(collectionName, "Collection Name must not be empty");
 			this.collectionName = collectionName;
 			return this;
 		}
@@ -422,8 +421,7 @@ public class CouchbaseSearchVectorStore extends AbstractObservationVectorStore
 		 * @return this builder
 		 */
 		public CouchbaseSearchVectorStore.Builder scopeName(String scopeName) {
-			Assert.notNull(scopeName, "Scope Name must not be null");
-			Assert.notNull(scopeName, "Scope Name must not be empty");
+			Assert.hasText(scopeName, "Scope Name must not be empty");
 			this.scopeName = scopeName;
 			return this;
 		}
@@ -434,8 +432,7 @@ public class CouchbaseSearchVectorStore extends AbstractObservationVectorStore
 		 * @return this builder
 		 */
 		public CouchbaseSearchVectorStore.Builder bucketName(String bucketName) {
-			Assert.notNull(bucketName, "Bucket Name must not be null");
-			Assert.notNull(bucketName, "Bucket Name must not be empty");
+			Assert.hasText(bucketName, "Bucket Name must not be empty");
 			this.bucketName = bucketName;
 			return this;
 		}
@@ -447,8 +444,7 @@ public class CouchbaseSearchVectorStore extends AbstractObservationVectorStore
 		 * @return this builder
 		 */
 		public CouchbaseSearchVectorStore.Builder vectorIndexName(String vectorIndexName) {
-			Assert.notNull(vectorIndexName, "Vector Index Name must not be null");
-			Assert.notNull(vectorIndexName, "Vector Index Name must not be empty");
+			Assert.hasText(vectorIndexName, "Vector Index Name must not be empty");
 			this.vectorIndexName = vectorIndexName;
 			return this;
 		}
@@ -460,7 +456,7 @@ public class CouchbaseSearchVectorStore extends AbstractObservationVectorStore
 		 */
 		public CouchbaseSearchVectorStore.Builder dimensions(Integer dimensions) {
 			Assert.notNull(dimensions, "Dimensions must not be null");
-			Assert.notNull(dimensions, "Dimensions must not be empty");
+			Assert.isTrue(dimensions > 0, "Dimensions must be greater than 0");
 			this.dimensions = dimensions;
 			return this;
 		}
@@ -473,7 +469,6 @@ public class CouchbaseSearchVectorStore extends AbstractObservationVectorStore
 		 */
 		public CouchbaseSearchVectorStore.Builder similarityFunction(CouchbaseSimilarityFunction similarityFunction) {
 			Assert.notNull(similarityFunction, "Couchbase Similarity Function must not be null");
-			Assert.notNull(similarityFunction, "Couchbase Similarity Function must not be empty");
 			this.similarityFunction = similarityFunction;
 			return this;
 		}
@@ -485,7 +480,6 @@ public class CouchbaseSearchVectorStore extends AbstractObservationVectorStore
 		 */
 		public CouchbaseSearchVectorStore.Builder indexOptimization(CouchbaseIndexOptimization indexOptimization) {
 			Assert.notNull(indexOptimization, "Index Optimization must not be null");
-			Assert.notNull(indexOptimization, "Index Optimization must not be empty");
 			this.indexOptimization = indexOptimization;
 			return this;
 		}

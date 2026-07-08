@@ -20,6 +20,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.regex.Matcher;
@@ -81,23 +82,11 @@ public final class AsyncMcpCompleteMethodCallbackExample {
 					if (!completeAnnotation.prompt().isEmpty()) {
 						String promptName = completeAnnotation.prompt();
 						promptCompletionHandlers.put(promptName + "#" + method.getName(), callback);
-						System.out.println("Registered prompt completion handler: " + promptName);
-						System.out.println("  Method: " + method.getName());
-						System.out.println();
 					}
 					else if (!completeAnnotation.uri().isEmpty()) {
 						String uriPattern = completeAnnotation.uri();
 						uriCompletionHandlers.put(uriPattern + "#" + method.getName(), callback);
 
-						// Print information about URI variables if present
-						if (uriPattern.contains("{") && uriPattern.contains("}")) {
-							System.out.println("  URI Template: " + uriPattern);
-							System.out.println("  URI Variables: " + extractUriVariables(uriPattern));
-						}
-
-						System.out.println("Registered URI completion handler: " + uriPattern);
-						System.out.println("  Method: " + method.getName());
-						System.out.println();
 					}
 				}
 				catch (IllegalArgumentException e) {
@@ -109,8 +98,6 @@ public final class AsyncMcpCompleteMethodCallbackExample {
 
 		// Example of using registered prompt handlers
 		if (!promptCompletionHandlers.isEmpty()) {
-			System.out.println("\nTesting prompt completion handlers:");
-
 			// Test completeCityNameAsync handler
 			testPromptHandler(promptCompletionHandlers, "travel-planner#completeCityNameAsync", "l",
 					"City name completion");
@@ -134,8 +121,6 @@ public final class AsyncMcpCompleteMethodCallbackExample {
 
 		// Example of using registered URI handlers
 		if (!uriCompletionHandlers.isEmpty()) {
-			System.out.println("\nTesting URI completion handlers:");
-
 			// Test completeCityAsync handler
 			testUriHandler(uriCompletionHandlers, "weather-api://{city}#completeCityAsync", "s",
 					"City completion for URI");
@@ -153,8 +138,6 @@ public final class AsyncMcpCompleteMethodCallbackExample {
 
 		if (handler != null) {
 			try {
-				System.out.println("\nTesting " + description + " with input: " + input);
-
 				// Create a mock exchange
 				McpAsyncServerExchange exchange = createMockExchange();
 
@@ -162,36 +145,18 @@ public final class AsyncMcpCompleteMethodCallbackExample {
 				String promptName = handlerKey.split("#")[0];
 
 				// Create a complete request
-				CompleteRequest request = new CompleteRequest(new PromptReference(promptName),
-						new CompleteRequest.CompleteArgument("value", input));
+				CompleteRequest request = CompleteRequest
+					.builder(new PromptReference(promptName), new CompleteRequest.CompleteArgument("value", input))
+					.build();
 
 				// Execute the handler
 				Mono<CompleteResult> resultMono = handler.apply(exchange, request);
 				CompleteResult result = resultMono.block(); // Block to get the result for
 															// this example
-
-				// Print the result
-				System.out.println("Completion results:");
-				if (result.completion().values().isEmpty()) {
-					System.out.println("  No completions found");
-				}
-				else {
-					for (String value : result.completion().values()) {
-						System.out.println("  " + value);
-					}
-					System.out.println("Total: " + result.completion().values().size() + " results");
-					if (result.completion().hasMore() != null && result.completion().hasMore()) {
-						System.out.println("More results available");
-					}
-				}
 			}
 			catch (Exception e) {
-				System.out.println("Error executing handler: " + e.getMessage());
 				e.printStackTrace();
 			}
-		}
-		else {
-			System.out.println("\nNo handler found for key: " + handlerKey);
 		}
 	}
 
@@ -206,8 +171,6 @@ public final class AsyncMcpCompleteMethodCallbackExample {
 
 		if (handler != null) {
 			try {
-				System.out.println("\nTesting " + description + " with input: " + input);
-
 				// Create a mock exchange
 				McpAsyncServerExchange exchange = createMockExchange();
 
@@ -215,36 +178,18 @@ public final class AsyncMcpCompleteMethodCallbackExample {
 				String uriPattern = handlerKey.split("#")[0];
 
 				// Create a complete request
-				CompleteRequest request = new CompleteRequest(new ResourceReference(uriPattern),
-						new CompleteRequest.CompleteArgument("city", input));
+				CompleteRequest request = CompleteRequest
+					.builder(new ResourceReference(uriPattern), new CompleteRequest.CompleteArgument("city", input))
+					.build();
 
 				// Execute the handler
 				Mono<CompleteResult> resultMono = handler.apply(exchange, request);
 				CompleteResult result = resultMono.block(); // Block to get the result for
 															// this example
-
-				// Print the result
-				System.out.println("Completion results:");
-				if (result.completion().values().isEmpty()) {
-					System.out.println("  No completions found");
-				}
-				else {
-					for (String value : result.completion().values()) {
-						System.out.println("  " + value);
-					}
-					System.out.println("Total: " + result.completion().values().size() + " results");
-					if (result.completion().hasMore() != null && result.completion().hasMore()) {
-						System.out.println("More results available");
-					}
-				}
 			}
 			catch (Exception e) {
-				System.out.println("Error executing handler: " + e.getMessage());
 				e.printStackTrace();
 			}
-		}
-		else {
-			System.out.println("\nNo handler found for key: " + handlerKey);
 		}
 	}
 
@@ -320,7 +265,7 @@ public final class AsyncMcpCompleteMethodCallbackExample {
 		@McpComplete(prompt = "travel-planner")
 		public Mono<List<String>> completeCityNameAsync(CompleteRequest.CompleteArgument argument) {
 			return Mono.fromCallable(() -> {
-				String prefix = argument.value().toLowerCase();
+				String prefix = argument.value().toLowerCase(Locale.ROOT);
 				if (prefix.isEmpty()) {
 					return List.of("Enter a city name");
 				}
@@ -328,7 +273,7 @@ public final class AsyncMcpCompleteMethodCallbackExample {
 				String firstLetter = prefix.substring(0, 1);
 				List<String> cities = this.cityDatabase.getOrDefault(firstLetter, List.of());
 
-				return cities.stream().filter(city -> city.toLowerCase().startsWith(prefix)).toList();
+				return cities.stream().filter(city -> city.toLowerCase(Locale.ROOT).startsWith(prefix)).toList();
 			});
 		}
 
@@ -338,7 +283,7 @@ public final class AsyncMcpCompleteMethodCallbackExample {
 		@McpComplete(prompt = "travel-planner")
 		public Mono<CompleteResult> completeCountryNameAsync(CompleteRequest request) {
 			return Mono.fromCallable(() -> {
-				String prefix = request.argument().value().toLowerCase();
+				String prefix = request.argument().value().toLowerCase(Locale.ROOT);
 				if (prefix.isEmpty()) {
 					return new CompleteResult(new CompleteCompletion(List.of("Enter a country name"), 1, false));
 				}
@@ -347,7 +292,7 @@ public final class AsyncMcpCompleteMethodCallbackExample {
 				List<String> countries = this.countryDatabase.getOrDefault(firstLetter, List.of());
 
 				List<String> matches = countries.stream()
-					.filter(country -> country.toLowerCase().startsWith(prefix))
+					.filter(country -> country.toLowerCase(Locale.ROOT).startsWith(prefix))
 					.toList();
 
 				return new CompleteResult(new CompleteCompletion(matches, matches.size(), false));
@@ -362,7 +307,7 @@ public final class AsyncMcpCompleteMethodCallbackExample {
 		public Mono<CompleteCompletion> completeLanguageNameAsync(McpAsyncServerExchange exchange,
 				CompleteRequest request) {
 			return Mono.fromCallable(() -> {
-				String prefix = request.argument().value().toLowerCase();
+				String prefix = request.argument().value().toLowerCase(Locale.ROOT);
 				if (prefix.isEmpty()) {
 					return new CompleteCompletion(List.of("Enter a language"), 1, false);
 				}
@@ -371,7 +316,7 @@ public final class AsyncMcpCompleteMethodCallbackExample {
 				List<String> languages = this.languageDatabase.getOrDefault(firstLetter, List.of());
 
 				List<String> matches = languages.stream()
-					.filter(language -> language.toLowerCase().startsWith(prefix))
+					.filter(language -> language.toLowerCase(Locale.ROOT).startsWith(prefix))
 					.toList();
 
 				return new CompleteCompletion(matches, matches.size(), false);
@@ -392,7 +337,7 @@ public final class AsyncMcpCompleteMethodCallbackExample {
 		@McpComplete(uri = "weather-api://{city}")
 		public Mono<List<String>> completeCityAsync(CompleteRequest.CompleteArgument argument) {
 			return Mono.fromCallable(() -> {
-				String prefix = argument.value().toLowerCase();
+				String prefix = argument.value().toLowerCase(Locale.ROOT);
 				if (prefix.isEmpty()) {
 					return List.of("Enter a city name");
 				}
@@ -400,7 +345,7 @@ public final class AsyncMcpCompleteMethodCallbackExample {
 				String firstLetter = prefix.substring(0, 1);
 				List<String> cities = this.cityDatabase.getOrDefault(firstLetter, List.of());
 
-				return cities.stream().filter(city -> city.toLowerCase().startsWith(prefix)).toList();
+				return cities.stream().filter(city -> city.toLowerCase(Locale.ROOT).startsWith(prefix)).toList();
 			});
 		}
 
@@ -409,7 +354,7 @@ public final class AsyncMcpCompleteMethodCallbackExample {
 		 */
 		@McpComplete(prompt = "direct-result")
 		public List<String> getDirectResult(CompleteRequest.CompleteArgument argument) {
-			String prefix = argument.value().toLowerCase();
+			String prefix = argument.value().toLowerCase(Locale.ROOT);
 			if (prefix.isEmpty()) {
 				return List.of("Enter a value");
 			}

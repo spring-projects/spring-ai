@@ -55,7 +55,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 class MilvusVectorStoreCustomFieldNamesIT {
 
 	@Container
-	private static MilvusContainer milvusContainer = new MilvusContainer(MilvusImage.DEFAULT_IMAGE);
+	private static MilvusContainer milvusContainer = new MilvusContainer(MilvusImage.DEFAULT_IMAGE)
+		.withEnv("DEPLOY_MODE", "STANDALONE");
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(TestApplication.class);
@@ -249,10 +250,11 @@ class MilvusVectorStoreCustomFieldNamesIT {
 
 		@Bean
 		EmbeddingModel embeddingModel() {
-			return new OpenAiEmbeddingModel(OpenAiEmbeddingOptions.builder()
+			OpenAiEmbeddingOptions options = OpenAiEmbeddingOptions.builder()
 				.apiKey(System.getenv("OPENAI_API_KEY"))
 				.model(OpenAiEmbeddingOptions.DEFAULT_EMBEDDING_MODEL)
-				.build());
+				.build();
+			return OpenAiEmbeddingModel.builder().options(options).build();
 		}
 
 	}

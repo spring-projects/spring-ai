@@ -48,10 +48,12 @@ import com.anthropic.models.messages.Message;
 import com.anthropic.models.messages.MessageCreateParams;
 import com.anthropic.models.messages.RawMessageStreamEvent;
 import com.anthropic.models.messages.RedactedThinkingBlock;
+import com.anthropic.models.messages.RedactedThinkingBlockParam;
 import com.anthropic.models.messages.TextBlock;
 import com.anthropic.models.messages.TextBlockParam;
 import com.anthropic.models.messages.TextCitation;
 import com.anthropic.models.messages.ThinkingBlock;
+import com.anthropic.models.messages.ThinkingBlockParam;
 import com.anthropic.models.messages.Tool;
 import com.anthropic.models.messages.ToolChoice;
 import com.anthropic.models.messages.ToolChoiceAuto;
@@ -76,6 +78,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
+import org.springframework.ai.anthropic.http.okhttp.AnthropicHttpClientBuilderCustomizer;
 import org.springframework.ai.anthropic.metadata.AnthropicRateLimit;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
@@ -139,6 +142,8 @@ import org.springframework.util.MimeType;
  * @author Soby Chacko
  * @author Austin Dase
  * @author Sebastien Deleuze
+ * @author Ilayaperumal Gopinathan
+ * @author Jewoo Shin
  * @since 1.0.0
  * @see AnthropicChatOptions
  * @see <a href="https://docs.anthropic.com/en/api/messages">Anthropic Messages API</a>
@@ -154,6 +159,8 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	private static final String BETA_CODE_EXECUTION = "code-execution-2025-08-25";
 
 	private static final String BETA_FILES_API = "files-api-2025-04-14";
+
+	static final String ANTHROPIC_THINKING_CONTENTS_PROPERTY = "anthropicThinkingContents";
 
 	private static final ToolCallingManager DEFAULT_TOOL_CALLING_MANAGER = ToolCallingManager.builder().build();
 
@@ -187,7 +194,8 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	private AnthropicChatModel(@Nullable AnthropicClient anthropicClient,
 			@Nullable AnthropicClientAsync anthropicClientAsync, @Nullable AnthropicChatOptions options,
 			@Nullable ToolCallingManager toolCallingManager, @Nullable ObservationRegistry observationRegistry,
-			@Nullable MeterRegistry meterRegistry, @Nullable ExecutorService dispatcherExecutor) {
+			@Nullable MeterRegistry meterRegistry, @Nullable ExecutorService dispatcherExecutor,
+			List<AnthropicHttpClientBuilderCustomizer> httpClientCustomizers) {
 
 		if (options == null) {
 			this.options = AnthropicChatOptions.builder().build();
@@ -206,13 +214,13 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 				() -> AnthropicSetup.setupSyncClient(this.options.getBaseUrl(), this.options.getApiKey(),
 						this.options.getTimeout(), this.options.getMaxRetries(), this.options.getProxy(),
 						this.options.getCustomHeaders(), this.observationRegistry, this.meterRegistry,
-						this.dispatcherExecutor));
+						this.dispatcherExecutor, httpClientCustomizers));
 
 		this.anthropicClientAsync = Objects.requireNonNullElseGet(anthropicClientAsync,
 				() -> AnthropicSetup.setupAsyncClient(this.options.getBaseUrl(), this.options.getApiKey(),
 						this.options.getTimeout(), this.options.getMaxRetries(), this.options.getProxy(),
 						this.options.getCustomHeaders(), this.observationRegistry, this.meterRegistry,
-						this.dispatcherExecutor));
+						this.dispatcherExecutor, httpClientCustomizers));
 
 		this.toolCallingManager = Objects.requireNonNullElse(toolCallingManager, DEFAULT_TOOL_CALLING_MANAGER);
 	}
@@ -380,9 +388,13 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 				var toolUseBlock = contentBlock.asToolUse();
 				streamingState.startToolUse(toolUseBlock.id(), toolUseBlock.name());
 			}
+			else if (contentBlock.isThinking()) {
+				streamingState.startThinking();
+			}
 			else if (contentBlock.isRedactedThinking()) {
 				// Emit redacted thinking block immediately
 				RedactedThinkingBlock redactedBlock = contentBlock.asRedactedThinking();
+				streamingState.addThinkingContent(AnthropicThinkingContent.redacted(redactedBlock.data()));
 				Map<String, Object> redactedProperties = new HashMap<>();
 				redactedProperties.put("data", redactedBlock.data());
 				AssistantMessage assistantMessage = AssistantMessage.builder().properties(redactedProperties).build();
@@ -425,6 +437,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			// Thinking chunk — emit with thinking metadata
 			if (delta.isThinking()) {
 				String thinkingText = delta.asThinking().thinking();
+				streamingState.appendThinking(thinkingText);
 				Map<String, Object> thinkingProperties = new HashMap<>();
 				thinkingProperties.put("thinking", Boolean.TRUE);
 				AssistantMessage assistantMessage = AssistantMessage.builder()
@@ -437,6 +450,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			// Thinking signature — emit with signature metadata
 			if (delta.isSignature()) {
 				String signature = delta.asSignature().signature();
+				streamingState.setThinkingSignature(signature);
 				Map<String, Object> signatureProperties = new HashMap<>();
 				signatureProperties.put("signature", signature);
 				AssistantMessage assistantMessage = AssistantMessage.builder().properties(signatureProperties).build();
@@ -460,6 +474,9 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			if (streamingState.isTrackingToolUse()) {
 				streamingState.finishToolUse();
 			}
+			else if (streamingState.isTrackingThinking()) {
+				streamingState.finishThinking();
+			}
 			return null;
 		}
 
@@ -470,13 +487,10 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			ChatGenerationMetadata metadata = ChatGenerationMetadata.builder().finishReason(stopReason).build();
 
 			// Build assistant message with any accumulated tool calls
-			AssistantMessage.Builder assistantMessageBuilder = AssistantMessage.builder().content("");
 			List<ToolCall> toolCalls = streamingState.getCompletedToolCalls();
-			if (!toolCalls.isEmpty()) {
-				assistantMessageBuilder.toolCalls(toolCalls);
-			}
-
-			Generation generation = new Generation(assistantMessageBuilder.build(), metadata);
+			AssistantMessage assistantMessage = buildAssistantMessage("", toolCalls,
+					streamingState.getThinkingContents());
+			Generation generation = new Generation(assistantMessage, metadata);
 
 			// Combine input tokens from message_start with output tokens from
 			// message_delta
@@ -735,16 +749,25 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			}
 			else if (message.getMessageType() == MessageType.ASSISTANT) {
 				AssistantMessage assistantMessage = (AssistantMessage) message;
-				if (!CollectionUtils.isEmpty(assistantMessage.getToolCalls())) {
-					List<ContentBlockParam> toolUseBlocks = assistantMessage.getToolCalls()
+				List<AnthropicThinkingContent> thinkingContents = getAnthropicThinkingContents(assistantMessage);
+				if (!CollectionUtils.isEmpty(assistantMessage.getToolCalls()) || !thinkingContents.isEmpty()) {
+					List<ContentBlockParam> contentBlocks = new ArrayList<>();
+					String text = assistantMessage.getText();
+					if (text != null && !text.isEmpty()) {
+						contentBlocks.add(ContentBlockParam.ofText(TextBlockParam.builder().text(text).build()));
+					}
+					thinkingContents.stream()
+						.map(AnthropicThinkingContent::toContentBlockParam)
+						.forEach(contentBlocks::add);
+					assistantMessage.getToolCalls()
 						.stream()
 						.map(toolCall -> ContentBlockParam.ofToolUse(ToolUseBlockParam.builder()
 							.id(toolCall.id())
 							.name(toolCall.name())
 							.input(buildToolInput(toolCall.arguments()))
 							.build()))
-						.toList();
-					builder.addAssistantMessageOfBlockParams(toolUseBlocks);
+						.forEach(contentBlocks::add);
+					builder.addAssistantMessageOfBlockParams(contentBlocks);
 				}
 				else {
 					String text = message.getText();
@@ -957,6 +980,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		// Collect text and tool calls from content blocks
 		StringBuilder textContent = new StringBuilder();
 		List<ToolCall> toolCalls = new ArrayList<>();
+		List<AnthropicThinkingContent> thinkingContents = new ArrayList<>();
 
 		for (ContentBlock block : message.content()) {
 			if (block.isText()) {
@@ -982,9 +1006,9 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 				toolCalls.add(new ToolCall(toolUseBlock.id(), "function", toolUseBlock.name(), arguments));
 			}
 			else if (block.isThinking()) {
-				// ThinkingBlock: stored as a separate Generation with the thinking
-				// text as content and signature in metadata properties.
 				ThinkingBlock thinkingBlock = block.asThinking();
+				thinkingContents
+					.add(AnthropicThinkingContent.thinking(thinkingBlock.thinking(), thinkingBlock.signature()));
 				Map<String, Object> thinkingProperties = new HashMap<>();
 				thinkingProperties.put("signature", thinkingBlock.signature());
 				generations.add(new Generation(AssistantMessage.builder()
@@ -993,8 +1017,8 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 					.build(), generationMetadata));
 			}
 			else if (block.isRedactedThinking()) {
-				// RedactedThinkingBlock: safety-redacted reasoning with a data marker.
 				RedactedThinkingBlock redactedBlock = block.asRedactedThinking();
+				thinkingContents.add(AnthropicThinkingContent.redacted(redactedBlock.data()));
 				Map<String, Object> redactedProperties = new HashMap<>();
 				redactedProperties.put("data", redactedBlock.data());
 				generations.add(new Generation(AssistantMessage.builder().properties(redactedProperties).build(),
@@ -1017,13 +1041,8 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			}
 		}
 
-		AssistantMessage.Builder assistantMessageBuilder = AssistantMessage.builder().content(textContent.toString());
-
-		if (!toolCalls.isEmpty()) {
-			assistantMessageBuilder.toolCalls(toolCalls);
-		}
-
-		generations.add(new Generation(assistantMessageBuilder.build(), generationMetadata));
+		generations.add(new Generation(buildAssistantMessage(textContent.toString(), toolCalls, thinkingContents),
+				generationMetadata));
 
 		return generations;
 	}
@@ -1464,6 +1483,103 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		}
 	}
 
+	private static AssistantMessage buildAssistantMessage(String content, List<ToolCall> toolCalls,
+			List<AnthropicThinkingContent> thinkingContents) {
+		if (thinkingContents.isEmpty()) {
+			AssistantMessage.Builder<?> assistantMessageBuilder = AssistantMessage.builder().content(content);
+			if (!toolCalls.isEmpty()) {
+				assistantMessageBuilder.toolCalls(toolCalls);
+			}
+			return assistantMessageBuilder.build();
+		}
+		return new AnthropicAssistantMessage(content, toolCalls, thinkingContents);
+	}
+
+	private static List<AnthropicThinkingContent> getAnthropicThinkingContents(AssistantMessage assistantMessage) {
+		if (assistantMessage instanceof AnthropicAssistantMessage anthropicAssistantMessage) {
+			return anthropicAssistantMessage.getThinkingContents();
+		}
+		Object contents = assistantMessage.getMetadata().get(ANTHROPIC_THINKING_CONTENTS_PROPERTY);
+		if (contents instanceof List<?> list) {
+			List<AnthropicThinkingContent> thinkingContents = new ArrayList<>();
+			for (Object item : list) {
+				if (item instanceof AnthropicThinkingContent thinkingContent) {
+					thinkingContents.add(thinkingContent);
+				}
+				else {
+					return List.of();
+				}
+			}
+			return thinkingContents;
+		}
+		return List.of();
+	}
+
+	private static Map<String, Object> anthropicThinkingProperties(List<AnthropicThinkingContent> thinkingContents) {
+		if (thinkingContents.isEmpty()) {
+			return Map.of();
+		}
+		return Map.of(ANTHROPIC_THINKING_CONTENTS_PROPERTY, List.copyOf(thinkingContents));
+	}
+
+	static final class AnthropicAssistantMessage extends AssistantMessage {
+
+		private final List<AnthropicThinkingContent> thinkingContents;
+
+		private AnthropicAssistantMessage(String content, List<ToolCall> toolCalls,
+				List<AnthropicThinkingContent> thinkingContents) {
+			super(content, anthropicThinkingProperties(thinkingContents), List.copyOf(toolCalls), List.of());
+			this.thinkingContents = List.copyOf(thinkingContents);
+		}
+
+		List<AnthropicThinkingContent> getThinkingContents() {
+			return this.thinkingContents;
+		}
+
+		boolean hasThinkingContents() {
+			return !this.thinkingContents.isEmpty();
+		}
+
+		@Override
+		public String toString() {
+			return "AnthropicAssistantMessage [messageType=" + getMessageType() + ", toolCalls=" + getToolCalls()
+					+ ", textContent=" + getText() + ", thinkingContents=" + this.thinkingContents.size() + "]";
+		}
+
+	}
+
+	record AnthropicThinkingContent(@Nullable String thinking, @Nullable String signature,
+			@Nullable String redactedData) {
+
+		static AnthropicThinkingContent thinking(String thinking, String signature) {
+			return new AnthropicThinkingContent(thinking, signature, null);
+		}
+
+		static AnthropicThinkingContent redacted(String data) {
+			return new AnthropicThinkingContent(null, null, data);
+		}
+
+		ContentBlockParam toContentBlockParam() {
+			if (this.redactedData != null) {
+				return ContentBlockParam
+					.ofRedactedThinking(RedactedThinkingBlockParam.builder().data(this.redactedData).build());
+			}
+			String thinking = this.thinking;
+			String signature = this.signature;
+			Assert.notNull(thinking, "thinking must not be null");
+			Assert.notNull(signature, "signature must not be null");
+			return ContentBlockParam
+				.ofThinking(ThinkingBlockParam.builder().thinking(thinking).signature(signature).build());
+		}
+
+		@Override
+		public String toString() {
+			String type = this.redactedData != null ? "redacted_thinking" : "thinking";
+			return "AnthropicThinkingContent[type=" + type + "]";
+		}
+
+	}
+
 	/**
 	 * Holds state accumulated during streaming for building complete responses. This
 	 * includes message metadata (ID, model, input tokens) and tool call accumulation
@@ -1485,6 +1601,14 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		private final StringBuilder currentToolJsonAccumulator = new StringBuilder();
 
 		private final List<ToolCall> completedToolCalls = new ArrayList<>();
+
+		private final AtomicReference<Boolean> currentThinking = new AtomicReference<>(false);
+
+		private final StringBuilder currentThinkingAccumulator = new StringBuilder();
+
+		private final AtomicReference<@Nullable String> currentThinkingSignature = new AtomicReference<>();
+
+		private final List<AnthropicThinkingContent> thinkingContents = new ArrayList<>();
 
 		private final List<Citation> accumulatedCitations = new ArrayList<>();
 
@@ -1529,6 +1653,42 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			this.currentToolJsonAccumulator.setLength(0);
 		}
 
+		void startThinking() {
+			this.currentThinking.set(true);
+			this.currentThinkingAccumulator.setLength(0);
+			this.currentThinkingSignature.set(null);
+		}
+
+		void appendThinking(String thinking) {
+			this.currentThinkingAccumulator.append(thinking);
+		}
+
+		void setThinkingSignature(String signature) {
+			this.currentThinkingSignature.set(signature);
+		}
+
+		void finishThinking() {
+			if (this.currentThinking.get()) {
+				String signature = this.currentThinkingSignature.get();
+				if (signature == null) {
+					if (logger.isWarnEnabled()) {
+						logger.warn("Thinking block completed without a signature — skipping replay capture");
+					}
+				}
+				else {
+					this.thinkingContents
+						.add(AnthropicThinkingContent.thinking(this.currentThinkingAccumulator.toString(), signature));
+				}
+			}
+			this.currentThinking.set(false);
+			this.currentThinkingAccumulator.setLength(0);
+			this.currentThinkingSignature.set(null);
+		}
+
+		void addThinkingContent(AnthropicThinkingContent thinkingContent) {
+			this.thinkingContents.add(thinkingContent);
+		}
+
 		/**
 		 * Appends partial JSON to the current tool's input accumulator.
 		 * @param partialJson the partial JSON string
@@ -1560,11 +1720,19 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			return !this.currentToolId.get().isEmpty();
 		}
 
+		boolean isTrackingThinking() {
+			return Boolean.TRUE.equals(this.currentThinking.get());
+		}
+
 		/**
 		 * Returns the list of completed tool calls accumulated during streaming.
 		 */
 		List<ToolCall> getCompletedToolCalls() {
 			return new ArrayList<>(this.completedToolCalls);
+		}
+
+		List<AnthropicThinkingContent> getThinkingContents() {
+			return new ArrayList<>(this.thinkingContents);
 		}
 
 		void addCitation(Citation citation) {
@@ -1603,6 +1771,8 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		private @Nullable MeterRegistry meterRegistry;
 
 		private @Nullable ExecutorService dispatcherExecutor;
+
+		private List<AnthropicHttpClientBuilderCustomizer> httpClientCustomizers = new ArrayList<>();
 
 		private Builder() {
 		}
@@ -1692,12 +1862,54 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		}
 
 		/**
+		 * Registers an {@link AnthropicHttpClientBuilderCustomizer} that mutates the
+		 * underlying OkHttp client builder before the Anthropic clients are constructed.
+		 * Use this to attach OkHttp interceptors (e.g. OAuth2 bearer-token injection),
+		 * swap the dispatcher executor, or tweak any other OkHttp setting. Customizers
+		 * are applied in the order they are registered, after Spring AI's own defaults,
+		 * so user code wins.
+		 * @param customizer the customizer to add
+		 * @return this builder
+		 * @since 2.0.0
+		 */
+		public Builder httpClientBuilderCustomizer(AnthropicHttpClientBuilderCustomizer customizer) {
+			Assert.notNull(customizer, "customizer cannot be null");
+			this.httpClientCustomizers.add(customizer);
+			return this;
+		}
+
+		/**
+		 * Sets the full list of {@link AnthropicHttpClientBuilderCustomizer customizers}
+		 * to apply, replacing any customizers registered earlier on this builder. The
+		 * order of the list is preserved when invoking the customizers.
+		 * @param customizers the list of customizers
+		 * @return this builder
+		 * @since 2.0.0
+		 */
+		public Builder httpClientBuilderCustomizers(List<AnthropicHttpClientBuilderCustomizer> customizers) {
+			Assert.notNull(customizers, "customizers cannot be null");
+			this.httpClientCustomizers = new ArrayList<>(customizers);
+			return this;
+		}
+
+		/**
 		 * Builds a new {@link AnthropicChatModel} instance.
 		 * @return the configured chat model
 		 */
 		public AnthropicChatModel build() {
+			if (!this.httpClientCustomizers.isEmpty() && this.anthropicClient != null) {
+				throw new IllegalArgumentException(
+						"httpClientBuilderCustomizers cannot be combined with a pre-built anthropicClient "
+								+ "because the HTTP layer is already constructed");
+			}
+			if (!this.httpClientCustomizers.isEmpty() && this.anthropicClientAsync != null) {
+				throw new IllegalArgumentException(
+						"httpClientBuilderCustomizers cannot be combined with a pre-built anthropicClientAsync "
+								+ "because the HTTP layer is already constructed");
+			}
 			return new AnthropicChatModel(this.anthropicClient, this.anthropicClientAsync, this.options,
-					this.toolCallingManager, this.observationRegistry, this.meterRegistry, this.dispatcherExecutor);
+					this.toolCallingManager, this.observationRegistry, this.meterRegistry, this.dispatcherExecutor,
+					this.httpClientCustomizers);
 		}
 
 	}

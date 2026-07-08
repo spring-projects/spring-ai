@@ -20,7 +20,7 @@ To set up `PineconeVectorStore`, gather the following details from your Pinecone
 [NOTE]
 ====
 This information is available to you in the Pinecone UI portal.
-The namespace support is not available in the Pinecone free tier.
+Namespaces are supported on all current Pinecone plans, including the free Starter plan; the maximum number of namespaces per serverless index depends on your plan.
 ====
 
 == Auto-configuration
@@ -192,7 +192,7 @@ public VectorStore pineconeVectorStore(EmbeddingModel embeddingModel) {
     return PineconeVectorStore.builder(embeddingModel)
             .apiKey(PINECONE_API_KEY)
             .indexName(PINECONE_INDEX_NAME)
-            .namespace(PINECONE_NAMESPACE) // the free tier doesn't support namespaces.
+            .namespace(PINECONE_NAMESPACE)
             .contentFieldName(CUSTOM_CONTENT_FIELD_NAME) // optional field to store the original content. Defaults to `document_content`
             .build();
 }
@@ -219,22 +219,22 @@ And finally, retrieve documents similar to a query:
 
 [source,java]
 ----
-List<Document> results = vectorStore.similaritySearch(SearchRequest.query("Spring").topK(5).build());
+List<Document> results = vectorStore.similaritySearch(SearchRequest.builder().query("Spring").topK(5).build());
 ----
 
 If all goes well, you should retrieve the document containing the text "Spring AI rocks!!".
 
 == Accessing the Native Client
 
-The Pinecone Vector Store implementation provides access to the underlying native Pinecone client (`PineconeConnection`) through the `getNativeClient()` method:
+The Pinecone Vector Store implementation provides access to the underlying native Pinecone client (`Pinecone`) through the `getNativeClient()` method:
 
 [source,java]
 ----
 PineconeVectorStore vectorStore = context.getBean(PineconeVectorStore.class);
-Optional<PineconeConnection> nativeClient = vectorStore.getNativeClient();
+Optional<Pinecone> nativeClient = vectorStore.getNativeClient();
 
 if (nativeClient.isPresent()) {
-    PineconeConnection client = nativeClient.get();
+    Pinecone client = nativeClient.get();
     // Use the native client for Pinecone-specific operations
 }
 ----

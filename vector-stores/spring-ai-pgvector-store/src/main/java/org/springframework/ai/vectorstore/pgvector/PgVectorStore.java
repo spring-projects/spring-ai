@@ -153,6 +153,7 @@ import org.springframework.util.StringUtils;
  * @author YeongMin Song
  * @author Jonghoon Park
  * @author Yanming Zhou
+ * @author Siarhei Dudzin
  * @since 1.0.0
  */
 public class PgVectorStore extends AbstractObservationVectorStore implements InitializingBean {
@@ -411,14 +412,16 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 			logger.info("vectorTableValidationsEnabled " + this.schemaValidation);
 		}
 
+		// Validate names before any SQL runs, the table structure after initialization
 		if (this.schemaValidation) {
-			this.schemaValidator.validateTableSchema(this.getSchemaName(), this.getVectorTableName(), this.dimensions);
+			this.schemaValidator.validateNames(this.getSchemaName(), this.getVectorTableName());
 		}
 
 		if (!this.initializeSchema) {
 			if (logger.isDebugEnabled()) {
 				logger.debug("Skipping the schema initialization for the table: " + this.getFullyQualifiedTableName());
 			}
+			validateTableSchemaIfEnabled();
 			return;
 		}
 
@@ -451,6 +454,14 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 					CREATE INDEX IF NOT EXISTS %s ON %s USING %s (embedding %s)
 					""", this.getVectorIndexName(), this.getFullyQualifiedTableName(), this.createIndexMethod,
 					this.getDistanceType().index));
+		}
+
+		validateTableSchemaIfEnabled();
+	}
+
+	private void validateTableSchemaIfEnabled() {
+		if (this.schemaValidation) {
+			this.schemaValidator.validateTableSchema(this.getSchemaName(), this.getVectorTableName(), this.dimensions);
 		}
 	}
 

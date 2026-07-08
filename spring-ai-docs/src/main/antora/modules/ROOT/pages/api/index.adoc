@@ -20,7 +20,7 @@ image::spring-ai-chat-completions-clients.jpg[align="center", width="800px"]
 
 === Vector Store API
 
-Portable `Vector Store API` across multiple providers, including a novel `SQL-like metadata filter API` that is also portable. Support for 14 vector databases are available.
+Portable `Vector Store API` across multiple providers, including a novel `SQL-like metadata filter API` that is also portable. Support for many vector databases is available.
 
 === Tool Calling API
 
@@ -29,6 +29,18 @@ Spring AI makes it easy to have the AI model invoke your services as `@Tool`-ann
 image::tools/tool-calling-01.jpg[The main sequence of actions for tool calling, width=500, align="center"]
 
 Check the Spring AI xref::api/tools.adoc[Tool Calling] documentation.
+
+=== ChatClient API
+
+The xref:api/chatclient.adoc[ChatClient API] offers a fluent API for communicating with an AI Model, idiomatic to Spring developers and similar to `WebClient` or `RestClient`.
+
+=== Advisors API
+
+The xref:api/advisors.adoc[Advisors API] encapsulates recurring Generative AI patterns, transforms data sent to and from Language Models (LLMs), and provides portability across various models and use cases (e.g., memory, tool-calling, RAG).
+
+=== MCP (Model Context Protocol)
+
+xref:api/mcp/mcp-overview.adoc[MCP (Model Context Protocol)] - Seamless integration for building AI applications that consume MCP servers or expose Spring-based services to the AI ecosystem.
 
 === Auto Configuration
 

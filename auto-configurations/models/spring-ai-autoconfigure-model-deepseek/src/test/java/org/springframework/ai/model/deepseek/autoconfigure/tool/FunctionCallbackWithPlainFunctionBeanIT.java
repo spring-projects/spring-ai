@@ -29,7 +29,6 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.deepseek.DeepSeekChatModel;
 import org.springframework.ai.deepseek.DeepSeekChatOptions;
 import org.springframework.ai.model.deepseek.autoconfigure.DeepSeekChatAutoConfiguration;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
@@ -117,9 +116,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 
 			ToolCallback weatherFunction = context.getBean("weatherFunction", ToolCallback.class);
 
-			ToolCallingChatOptions functionOptions = ToolCallingChatOptions.builder()
-				.toolCallbacks(weatherFunction)
-				.build();
+			DeepSeekChatOptions functionOptions = DeepSeekChatOptions.builder().toolCallbacks(weatherFunction).build();
 			Prompt prompt = new Prompt(List.of(userMessage), functionOptions);
 
 			ChatResponse response = chatModel.call(prompt);

@@ -32,7 +32,7 @@ String response = this.chatClient.prompt()
 	.content();
 ----
 
-It is recommend to register the advisors at build time using builder's `defaultAdvisors()` method.
+It is recommended to register the advisors at build time using builder's `defaultAdvisors()` method.
 
 Advisors also participate in the Observability stack, so you can view metrics and traces related to their execution.
 

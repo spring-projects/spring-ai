@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -397,8 +398,10 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 					String.format("Index %s does not exist in table %s", this.schema.index(), this.schema.table));
 		}
 
-		return Similarity
-			.valueOf(indexMetadata.get().getOptions().getOrDefault("similarity_function", "COSINE").toUpperCase());
+		return Similarity.valueOf(indexMetadata.get()
+			.getOptions()
+			.getOrDefault("similarity_function", "COSINE")
+			.toUpperCase(Locale.ROOT));
 
 	}
 
@@ -450,9 +453,8 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 	}
 
 	private String createSimilaritySearchCql(SearchRequest request, CqlVector<Float> cqlVector, int topK) {
-
 		Select stmt = QueryBuilder.selectFrom(this.schema.keyspace(), this.schema.table())
-			.function("similarity_" + this.similarity.toString().toLowerCase(),
+			.function("similarity_" + this.similarity.toString().toLowerCase(Locale.ROOT),
 					Selector.column(this.schema.embedding()), QueryBuilder.literal(cqlVector));
 
 		for (var c : this.schema.partitionKeys()) {

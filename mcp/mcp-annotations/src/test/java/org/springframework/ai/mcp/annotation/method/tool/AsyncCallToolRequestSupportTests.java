@@ -47,8 +47,9 @@ public class AsyncCallToolRequestSupportTests {
 		AsyncMcpToolMethodCallback callback = new AsyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
 
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("async-dynamic-tool",
-				Map.of("action", "analyze", "data", "test-data"));
+		CallToolRequest request = CallToolRequest.builder("async-dynamic-tool")
+			.arguments(Map.of("action", "analyze", "data", "test-data"))
+			.build();
 
 		Mono<CallToolResult> resultMono = callback.apply(exchange, request);
 
@@ -69,9 +70,11 @@ public class AsyncCallToolRequestSupportTests {
 		AsyncMcpToolMethodCallback callback = new AsyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
 
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("async-dynamic-tool", Map.of("data", "test-data")); // Missing
-																											// 'action'
-																											// parameter
+		CallToolRequest request = CallToolRequest.builder("async-dynamic-tool")
+			.arguments(Map.of("data", "test-data"))
+			.build(); // Missing
+		// 'action'
+		// parameter
 
 		Mono<CallToolResult> resultMono = callback.apply(exchange, request);
 
@@ -90,15 +93,16 @@ public class AsyncCallToolRequestSupportTests {
 		AsyncMcpToolMethodCallback callback = new AsyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
 
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("async-error-tool", Map.of("data", "test"));
+		CallToolRequest request = CallToolRequest.builder("async-error-tool").arguments(Map.of("data", "test")).build();
 
 		Mono<CallToolResult> resultMono = callback.apply(exchange, request);
 
-		// When a method returns Mono.error(), it propagates as an error
-		StepVerifier.create(resultMono)
-			.expectErrorMatches(throwable -> throwable instanceof RuntimeException
-					&& throwable.getMessage().contains("Async tool execution failed"))
-			.verify();
+		// A plain RuntimeException emitted by the Mono is conveyed to the model as an
+		// error result, mirroring the @Tool contract.
+		StepVerifier.create(resultMono).assertNext(result -> {
+			assertThat(result.isError()).isTrue();
+			assertThat(((TextContent) result.content().get(0)).text()).contains("Async tool execution failed");
+		}).verifyComplete();
 	}
 
 	@Test
@@ -109,8 +113,9 @@ public class AsyncCallToolRequestSupportTests {
 		AsyncMcpToolMethodCallback callback = new AsyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
 
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("async-mixed-params-tool",
-				Map.of("requiredParam", "test-value", "optionalParam", 42, "extraParam", "extra"));
+		CallToolRequest request = CallToolRequest.builder("async-mixed-params-tool")
+			.arguments(Map.of("requiredParam", "test-value", "optionalParam", 42, "extraParam", "extra"))
+			.build();
 
 		Mono<CallToolResult> resultMono = callback.apply(exchange, request);
 
@@ -131,7 +136,9 @@ public class AsyncCallToolRequestSupportTests {
 		AsyncMcpToolMethodCallback callback = new AsyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
 
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("async-mixed-params-tool", Map.of("requiredParam", "test-value"));
+		CallToolRequest request = CallToolRequest.builder("async-mixed-params-tool")
+			.arguments(Map.of("requiredParam", "test-value"))
+			.build();
 
 		Mono<CallToolResult> resultMono = callback.apply(exchange, request);
 
@@ -153,8 +160,9 @@ public class AsyncCallToolRequestSupportTests {
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
 
 		// Test with valid schema
-		CallToolRequest validRequest = new CallToolRequest("async-schema-validator",
-				Map.of("data", "test-data", "format", "json"));
+		CallToolRequest validRequest = CallToolRequest.builder("async-schema-validator")
+			.arguments(Map.of("data", "test-data", "format", "json"))
+			.build();
 
 		Mono<CallToolResult> validResultMono = callback.apply(exchange, validRequest);
 
@@ -165,8 +173,10 @@ public class AsyncCallToolRequestSupportTests {
 		}).verifyComplete();
 
 		// Test with invalid schema
-		CallToolRequest invalidRequest = new CallToolRequest("async-schema-validator", Map.of("data", "test-data")); // Missing
-																														// 'format'
+		CallToolRequest invalidRequest = CallToolRequest.builder("async-schema-validator")
+			.arguments(Map.of("data", "test-data"))
+			.build(); // Missing
+		// 'format'
 
 		Mono<CallToolResult> invalidResultMono = callback.apply(exchange, invalidRequest);
 
@@ -184,7 +194,9 @@ public class AsyncCallToolRequestSupportTests {
 		AsyncMcpToolMethodCallback callback = new AsyncMcpToolMethodCallback(ReturnMode.STRUCTURED, method, provider);
 
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("async-structured-output-tool", Map.of("input", "test-message"));
+		CallToolRequest request = CallToolRequest.builder("async-structured-output-tool")
+			.arguments(Map.of("input", "test-message"))
+			.build();
 
 		Mono<CallToolResult> resultMono = callback.apply(exchange, request);
 
@@ -204,7 +216,9 @@ public class AsyncCallToolRequestSupportTests {
 		AsyncMcpToolMethodCallback callback = new AsyncMcpToolMethodCallback(ReturnMode.VOID, method, provider);
 
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("async-void-tool", Map.of("action", "process"));
+		CallToolRequest request = CallToolRequest.builder("async-void-tool")
+			.arguments(Map.of("action", "process"))
+			.build();
 
 		Mono<CallToolResult> resultMono = callback.apply(exchange, request);
 
@@ -225,7 +239,9 @@ public class AsyncCallToolRequestSupportTests {
 		AsyncMcpToolMethodCallback callback = new AsyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
 
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("async-dynamic-tool", Map.of("action", "test", "data", "sample"));
+		CallToolRequest request = CallToolRequest.builder("async-dynamic-tool")
+			.arguments(Map.of("action", "test", "data", "sample"))
+			.build();
 
 		Mono<CallToolResult> resultMono = callback.apply(exchange, request);
 
@@ -365,9 +381,6 @@ public class AsyncCallToolRequestSupportTests {
 		 */
 		@McpTool(name = "async-void-tool", description = "Async tool that returns void")
 		public Mono<Void> asyncVoidTool(CallToolRequest request) {
-			// Perform some side effect
-			Map<String, Object> arguments = request.arguments();
-			System.out.println("Processing: " + arguments);
 			return Mono.empty();
 		}
 

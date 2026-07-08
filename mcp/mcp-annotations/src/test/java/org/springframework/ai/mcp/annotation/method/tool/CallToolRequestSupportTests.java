@@ -55,7 +55,9 @@ public class CallToolRequestSupportTests {
 		SyncMcpToolMethodCallback callback = new SyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
 
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("dynamic-tool", Map.of("action", "analyze", "data", "test-data"));
+		CallToolRequest request = CallToolRequest.builder("dynamic-tool")
+			.arguments(Map.of("action", "analyze", "data", "test-data"))
+			.build();
 
 		CallToolResult result = callback.apply(exchange, request);
 
@@ -74,9 +76,11 @@ public class CallToolRequestSupportTests {
 		SyncMcpToolMethodCallback callback = new SyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
 
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("dynamic-tool", Map.of("data", "test-data")); // Missing
-																									// 'action'
-																									// parameter
+		CallToolRequest request = CallToolRequest.builder("dynamic-tool")
+			.arguments(Map.of("data", "test-data"))
+			.build(); // Missing
+		// 'action'
+		// parameter
 
 		CallToolResult result = callback.apply(exchange, request);
 
@@ -95,7 +99,9 @@ public class CallToolRequestSupportTests {
 
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
 
-		CallToolRequest request = new CallToolRequest("context-aware-tool", Map.of("key1", "value1", "key2", "value2"));
+		CallToolRequest request = CallToolRequest.builder("context-aware-tool")
+			.arguments(Map.of("key1", "value1", "key2", "value2"))
+			.build();
 
 		CallToolResult result = callback.apply(exchange, request);
 
@@ -113,8 +119,9 @@ public class CallToolRequestSupportTests {
 		SyncMcpToolMethodCallback callback = new SyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
 
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("mixed-params-tool",
-				Map.of("requiredParam", "test-value", "optionalParam", 42, "extraParam", "extra"));
+		CallToolRequest request = CallToolRequest.builder("mixed-params-tool")
+			.arguments(Map.of("requiredParam", "test-value", "optionalParam", 42, "extraParam", "extra"))
+			.build();
 
 		CallToolResult result = callback.apply(exchange, request);
 
@@ -133,7 +140,9 @@ public class CallToolRequestSupportTests {
 		SyncMcpToolMethodCallback callback = new SyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
 
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("mixed-params-tool", Map.of("requiredParam", "test-value"));
+		CallToolRequest request = CallToolRequest.builder("mixed-params-tool")
+			.arguments(Map.of("requiredParam", "test-value"))
+			.build();
 
 		CallToolResult result = callback.apply(exchange, request);
 
@@ -153,8 +162,9 @@ public class CallToolRequestSupportTests {
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
 
 		// Test with valid schema
-		CallToolRequest validRequest = new CallToolRequest("schema-validator",
-				Map.of("data", "test-data", "format", "json"));
+		CallToolRequest validRequest = CallToolRequest.builder("schema-validator")
+			.arguments(Map.of("data", "test-data", "format", "json"))
+			.build();
 
 		CallToolResult validResult = callback.apply(exchange, validRequest);
 		assertThat(validResult.isError()).isFalse();
@@ -162,8 +172,10 @@ public class CallToolRequestSupportTests {
 			.isEqualTo("Schema validation successful for: schema-validator");
 
 		// Test with invalid schema
-		CallToolRequest invalidRequest = new CallToolRequest("schema-validator", Map.of("data", "test-data")); // Missing
-																												// 'format'
+		CallToolRequest invalidRequest = CallToolRequest.builder("schema-validator")
+			.arguments(Map.of("data", "test-data"))
+			.build(); // Missing
+		// 'format'
 
 		CallToolResult invalidResult = callback.apply(exchange, invalidRequest);
 		assertThat(invalidResult.isError()).isTrue();
@@ -181,7 +193,7 @@ public class CallToolRequestSupportTests {
 
 		// Should have minimal schema with empty properties
 		assertThat(schemaNode.has("type")).isTrue();
-		assertThat(schemaNode.get("type").asText()).isEqualTo("object");
+		assertThat(schemaNode.get("type").asString()).isEqualTo("object");
 		assertThat(schemaNode.has("properties")).isTrue();
 		assertThat(schemaNode.get("properties").size()).isEqualTo(0);
 		assertThat(schemaNode.has("required")).isTrue();
@@ -209,7 +221,7 @@ public class CallToolRequestSupportTests {
 		assertThat(schemaNode.has("required")).isTrue();
 		JsonNode required = schemaNode.get("required");
 		assertThat(required.size()).isEqualTo(1);
-		assertThat(required.get(0).asText()).isEqualTo("requiredParam");
+		assertThat(required.get(0).asString()).isEqualTo("requiredParam");
 	}
 
 	@Test
@@ -293,7 +305,9 @@ public class CallToolRequestSupportTests {
 		SyncMcpToolMethodCallback callback = new SyncMcpToolMethodCallback(ReturnMode.STRUCTURED, method, provider);
 
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("structured-output-tool", Map.of("input", "test-message"));
+		CallToolRequest request = CallToolRequest.builder("structured-output-tool")
+			.arguments(Map.of("input", "test-message"))
+			.build();
 
 		CallToolResult result = callback.apply(exchange, request);
 
@@ -312,7 +326,9 @@ public class CallToolRequestSupportTests {
 		SyncMcpToolMethodCallback callback = new SyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
 
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
-		CallToolRequest request = new CallToolRequest("dynamic-tool", Map.of("action", "test", "data", "sample"));
+		CallToolRequest request = CallToolRequest.builder("dynamic-tool")
+			.arguments(Map.of("action", "test", "data", "sample"))
+			.build();
 
 		// The callback should properly inject the CallToolRequest
 		CallToolResult result = callback.apply(exchange, request);
@@ -333,8 +349,7 @@ public class CallToolRequestSupportTests {
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
 
 		// Create request with progress token
-		CallToolRequest request = CallToolRequest.builder()
-			.name("progress-token-tool")
+		CallToolRequest request = CallToolRequest.builder("progress-token-tool")
 			.arguments(Map.of("input", "test-input"))
 			.progressToken("test-progress-token-123")
 			.build();
@@ -357,7 +372,9 @@ public class CallToolRequestSupportTests {
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
 
 		// Create request without progress token
-		CallToolRequest request = new CallToolRequest("progress-token-tool", Map.of("input", "test-input"));
+		CallToolRequest request = CallToolRequest.builder("progress-token-tool")
+			.arguments(Map.of("input", "test-input"))
+			.build();
 
 		CallToolResult result = callback.apply(exchange, request);
 
@@ -376,8 +393,7 @@ public class CallToolRequestSupportTests {
 
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
 
-		CallToolRequest request = CallToolRequest.builder()
-			.name("mixed-special-params-tool")
+		CallToolRequest request = CallToolRequest.builder("mixed-special-params-tool")
 			.arguments(Map.of("regularParam", "test-value"))
 			.progressToken("progress-123")
 			.build();
@@ -411,7 +427,7 @@ public class CallToolRequestSupportTests {
 		assertThat(schemaNode.has("required")).isTrue();
 		JsonNode required = schemaNode.get("required");
 		assertThat(required.size()).isEqualTo(1);
-		assertThat(required.get(0).asText()).isEqualTo("input");
+		assertThat(required.get(0).asString()).isEqualTo("input");
 	}
 
 	@Test
@@ -435,7 +451,7 @@ public class CallToolRequestSupportTests {
 		assertThat(schemaNode.has("required")).isTrue();
 		JsonNode required = schemaNode.get("required");
 		assertThat(required.size()).isEqualTo(1);
-		assertThat(required.get(0).asText()).isEqualTo("regularParam");
+		assertThat(required.get(0).asString()).isEqualTo("regularParam");
 	}
 
 	@Test
@@ -473,8 +489,7 @@ public class CallToolRequestSupportTests {
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
 
 		// Create request with meta data
-		CallToolRequest request = CallToolRequest.builder()
-			.name("meta-tool")
+		CallToolRequest request = CallToolRequest.builder("meta-tool")
 			.arguments(Map.of("input", "test-input"))
 			.meta(Map.of("userId", "user123", "sessionId", "session456"))
 			.build();
@@ -497,7 +512,7 @@ public class CallToolRequestSupportTests {
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
 
 		// Create request without meta
-		CallToolRequest request = new CallToolRequest("meta-tool", Map.of("input", "test-input"));
+		CallToolRequest request = CallToolRequest.builder("meta-tool").arguments(Map.of("input", "test-input")).build();
 
 		CallToolResult result = callback.apply(exchange, request);
 
@@ -526,7 +541,7 @@ public class CallToolRequestSupportTests {
 		assertThat(schemaNode.has("required")).isTrue();
 		JsonNode required = schemaNode.get("required");
 		assertThat(required.size()).isEqualTo(1);
-		assertThat(required.get(0).asText()).isEqualTo("input");
+		assertThat(required.get(0).asString()).isEqualTo("input");
 	}
 
 	private static class CallToolRequestTestProvider {

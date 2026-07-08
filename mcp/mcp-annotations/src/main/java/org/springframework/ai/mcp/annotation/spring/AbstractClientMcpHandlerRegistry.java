@@ -62,8 +62,7 @@ abstract class AbstractClientMcpHandlerRegistry implements BeanFactoryPostProces
 			McpElicitation.class, McpLogging.class, McpProgress.class, McpToolListChanged.class,
 			McpPromptListChanged.class, McpResourceListChanged.class };
 
-	static final McpSchema.ClientCapabilities EMPTY_CAPABILITIES = new McpSchema.ClientCapabilities(null, null, null,
-			null);
+	static final McpSchema.ClientCapabilities EMPTY_CAPABILITIES = McpSchema.ClientCapabilities.builder().build();
 
 	@Override
 	public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException {

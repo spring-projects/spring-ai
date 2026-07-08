@@ -51,15 +51,12 @@ public final class SyncMcpPromptMethodCallbackExample {
 		PromptProvider provider = new PromptProvider();
 
 		// Example 1: Using a method that returns GetPromptResult
-		System.out.println("Example 1: Method returning GetPromptResult");
 		demonstrateGreetingPrompt(provider);
 
 		// Example 2: Using a method that returns a single PromptMessage
-		System.out.println("\nExample 2: Method returning a single PromptMessage");
 		demonstrateSingleMessagePrompt(provider);
 
 		// Example 3: Using a method that returns a List<String>
-		System.out.println("\nExample 3: Method returning a List<String>");
 		demonstrateStringListPrompt(provider);
 	}
 
@@ -86,20 +83,11 @@ public final class SyncMcpPromptMethodCallbackExample {
 
 		// Create a request with arguments
 		Map<String, Object> requestArgs = Map.of("name", "John");
-		GetPromptRequest request = new GetPromptRequest("greeting", requestArgs);
+		GetPromptRequest request = GetPromptRequest.builder("greeting").arguments(requestArgs).build();
 
 		// Apply the callback (in a real application, you would have a real exchange)
 		GetPromptResult result = callback.apply(null, request);
 
-		// Print the result
-		System.out.println("Description: " + result.description());
-		System.out.println("Messages:");
-		for (PromptMessage message : result.messages()) {
-			System.out.println("  Role: " + message.role());
-			if (message.content() instanceof TextContent) {
-				System.out.println("  Content: " + ((TextContent) message.content()).text());
-			}
-		}
 	}
 
 	/**
@@ -125,19 +113,10 @@ public final class SyncMcpPromptMethodCallbackExample {
 
 		// Create a request with arguments
 		Map<String, Object> requestArgs = Map.of("name", "Alice");
-		GetPromptRequest request = new GetPromptRequest("single-message", requestArgs);
+		GetPromptRequest request = GetPromptRequest.builder("single-message").arguments(requestArgs).build();
 
 		// Apply the callback
-		GetPromptResult result = callback.apply(null, request);
-
-		// Print the result
-		System.out.println("Messages:");
-		for (PromptMessage message : result.messages()) {
-			System.out.println("  Role: " + message.role());
-			if (message.content() instanceof TextContent) {
-				System.out.println("  Content: " + ((TextContent) message.content()).text());
-			}
-		}
+		callback.apply(null, request);
 	}
 
 	/**
@@ -163,19 +142,10 @@ public final class SyncMcpPromptMethodCallbackExample {
 
 		// Create a request with arguments
 		Map<String, Object> requestArgs = Map.of("topic", "MCP");
-		GetPromptRequest request = new GetPromptRequest("string-list", requestArgs);
+		GetPromptRequest request = GetPromptRequest.builder("string-list").arguments(requestArgs).build();
 
 		// Apply the callback
 		GetPromptResult result = callback.apply(null, request);
-
-		// Print the result
-		System.out.println("Messages:");
-		for (PromptMessage message : result.messages()) {
-			System.out.println("  Role: " + message.role());
-			if (message.content() instanceof TextContent) {
-				System.out.println("  Content: " + ((TextContent) message.content()).text());
-			}
-		}
 	}
 
 	/**
@@ -191,8 +161,11 @@ public final class SyncMcpPromptMethodCallbackExample {
 		@McpPrompt(name = "greeting", description = "A simple greeting prompt")
 		public GetPromptResult greetingPrompt(
 				@McpArg(name = "name", description = "The name to greet", required = true) String name) {
-			return new GetPromptResult("Greeting", List.of(new PromptMessage(Role.ASSISTANT,
-					new TextContent("Hello, " + name + "! Welcome to the MCP system."))));
+			return GetPromptResult
+				.builder(List.of(new PromptMessage(Role.ASSISTANT,
+						TextContent.builder("Hello, " + name + "! Welcome to the MCP system.").build())))
+				.description("Greeting")
+				.build();
 		}
 
 		/**
@@ -235,8 +208,10 @@ public final class SyncMcpPromptMethodCallbackExample {
 			message
 				.append("I'm here to assist you with any questions you might have about the Model Context Protocol.");
 
-			return new GetPromptResult("Personalized Message",
-					List.of(new PromptMessage(Role.ASSISTANT, new TextContent(message.toString()))));
+			return GetPromptResult
+				.builder(List.of(new PromptMessage(Role.ASSISTANT, TextContent.builder(message.toString()).build())))
+				.description("Personalized Message")
+				.build();
 		}
 
 		/**
@@ -248,14 +223,15 @@ public final class SyncMcpPromptMethodCallbackExample {
 		public List<PromptMessage> conversationStarter(GetPromptRequest request) {
 			return List.of(
 					new PromptMessage(Role.ASSISTANT,
-							new TextContent("Hello! I'm the MCP assistant. How can I help you today?")),
+							TextContent.builder("Hello! I'm the MCP assistant. How can I help you today?").build()),
 					new PromptMessage(Role.USER,
-							new TextContent("I'd like to learn more about the Model Context Protocol.")),
-					new PromptMessage(Role.ASSISTANT, new TextContent(
-							"Great choice! The Model Context Protocol (MCP) is a standardized way for servers "
+							TextContent.builder("I'd like to learn more about the Model Context Protocol.").build()),
+					new PromptMessage(Role.ASSISTANT, TextContent.builder(
+							"Great choice! The Model Context Protocol (MCP).build() is a standardized way for servers "
 									+ "to communicate with language models. It provides a structured approach for "
 									+ "exchanging information, making requests, and handling responses. "
-									+ "What specific aspect would you like to explore first?")));
+									+ "What specific aspect would you like to explore first?")
+						.build()));
 		}
 
 		/**
@@ -276,8 +252,10 @@ public final class SyncMcpPromptMethodCallbackExample {
 				message.append("No arguments were provided.");
 			}
 
-			return new GetPromptResult("Map Arguments Demo",
-					List.of(new PromptMessage(Role.ASSISTANT, new TextContent(message.toString()))));
+			return GetPromptResult
+				.builder(List.of(new PromptMessage(Role.ASSISTANT, TextContent.builder(message.toString()).build())))
+				.description("Map Arguments Demo")
+				.build();
 		}
 
 		/**
@@ -289,7 +267,7 @@ public final class SyncMcpPromptMethodCallbackExample {
 		public PromptMessage singleMessagePrompt(
 				@McpArg(name = "name", description = "The user's name", required = true) String name) {
 			return new PromptMessage(Role.ASSISTANT,
-					new TextContent("Hello, " + name + "! This is a single message response."));
+					TextContent.builder("Hello, " + name + "! This is a single message response.").build());
 		}
 
 		/**

@@ -54,7 +54,6 @@ class MultiQueryExpanderIT {
 		List<Query> queries = queryExpander.apply(query);
 
 		assertThat(queries).isNotNull();
-		queries.forEach(System.out::println);
 		assertThat(queries).hasSize(4);
 	}
 
@@ -69,7 +68,6 @@ class MultiQueryExpanderIT {
 		List<Query> queries = queryExpander.apply(query);
 
 		assertThat(queries).isNotNull();
-		queries.forEach(System.out::println);
 		assertThat(queries).hasSize(5);
 	}
 
@@ -85,7 +83,6 @@ class MultiQueryExpanderIT {
 		List<Query> queries = queryExpander.apply(query);
 
 		assertThat(queries).isNotNull();
-		queries.forEach(System.out::println);
 		assertThat(queries).hasSize(3);
 	}
 

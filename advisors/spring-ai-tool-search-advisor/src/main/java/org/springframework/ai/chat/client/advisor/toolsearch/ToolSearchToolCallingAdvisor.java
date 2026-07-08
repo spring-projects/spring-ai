@@ -105,8 +105,6 @@ public class ToolSearchToolCallingAdvisor extends ToolCallingAdvisor {
 	 */
 	private final boolean referenceToolNameAccumulation;
 
-	@Nullable private final Integer maxResults;
-
 	private final String sessionIdKeyName;
 
 	/**
@@ -119,17 +117,14 @@ public class ToolSearchToolCallingAdvisor extends ToolCallingAdvisor {
 	private final ToolIndexEvictionStrategy evictionStrategy;
 
 	protected ToolSearchToolCallingAdvisor(ToolCallingManager toolCallingManager, int advisorOrder,
-			boolean streamToolCallResponses, ToolExecutionEligibilityChecker toolExecutionEligibilityChecker,
-			ToolIndex toolIndex, String systemMessageSuffix, boolean referenceToolNameAccumulation,
-			@Nullable Integer maxResults, boolean conversationHistoryEnabled, String sessionIdKeyName,
-			ToolIndexEvictionStrategy evictionStrategy) {
+			ToolExecutionEligibilityChecker toolExecutionEligibilityChecker, ToolIndex toolIndex,
+			String systemMessageSuffix, boolean referenceToolNameAccumulation, @Nullable Integer maxResults,
+			boolean conversationHistoryEnabled, String sessionIdKeyName, ToolIndexEvictionStrategy evictionStrategy) {
 
-		super(toolCallingManager, toolExecutionEligibilityChecker, advisorOrder, conversationHistoryEnabled,
-				streamToolCallResponses);
+		super(toolCallingManager, toolExecutionEligibilityChecker, advisorOrder, conversationHistoryEnabled);
 		this.toolIndex = toolIndex;
 		this.systemMessageSuffix = systemMessageSuffix;
 		this.referenceToolNameAccumulation = referenceToolNameAccumulation;
-		this.maxResults = maxResults;
 		this.sessionIdKeyName = sessionIdKeyName;
 		this.evictionStrategy = evictionStrategy;
 		this.toolSearchToolCallback = MethodToolCallbackProvider.builder()
@@ -295,21 +290,30 @@ public class ToolSearchToolCallingAdvisor extends ToolCallingAdvisor {
 
 	private List<String> extractToolNameReferences(List<Message> messages) {
 
-		List<ToolResponse> toolSearchToolResponses = messages.stream()
+		// Group toolSearchTool responses per tool-response message, i.e. per assistant
+		// turn. A single turn may contain several parallel toolSearchTool calls, all of
+		// which arrive within one ToolResponseMessage.
+		List<List<ToolResponse>> toolSearchResponsesPerTurn = messages.stream()
 			.filter(m -> m.getMessageType() == MessageType.TOOL)
-			.map(r -> ((ToolResponseMessage) r).getResponses())
-			.flatMap(List::stream)
-			.filter(r -> r.name().equalsIgnoreCase(this.toolSearchToolCallback.getToolDefinition().name()))
+			.map(m -> ((ToolResponseMessage) m).getResponses()
+				.stream()
+				.filter(r -> r.name().equalsIgnoreCase(this.toolSearchToolCallback.getToolDefinition().name()))
+				.toList())
+			.filter(responses -> !responses.isEmpty())
 			.toList();
 
-		if (CollectionUtils.isEmpty(toolSearchToolResponses)) {
+		if (toolSearchResponsesPerTurn.isEmpty()) {
 			return List.of();
 		}
 
-		toolSearchToolResponses = (this.referenceToolNameAccumulation) ? toolSearchToolResponses
-				: List.of(toolSearchToolResponses.get(toolSearchToolResponses.size() - 1));
+		// When accumulation is disabled only the most recent search turn is honored, but
+		// that turn may contain multiple parallel toolSearchTool calls that must all be
+		// kept.
+		List<List<ToolResponse>> selectedTurns = this.referenceToolNameAccumulation ? toolSearchResponsesPerTurn
+				: List.of(toolSearchResponsesPerTurn.get(toolSearchResponsesPerTurn.size() - 1));
 
-		return toolSearchToolResponses.stream()
+		return selectedTurns.stream()
+			.flatMap(List::stream)
 			.map(r -> jsonHelper.fromJson(r.responseData(), new ParameterizedTypeReference<List<String>>() {
 			}))
 			.flatMap(List::stream)
@@ -481,7 +485,7 @@ public class ToolSearchToolCallingAdvisor extends ToolCallingAdvisor {
 
 			Assert.notNull(this.toolIndex, "toolIndex is required");
 			return new ToolSearchToolCallingAdvisor(getToolCallingManager(), getAdvisorOrder(),
-					isStreamToolCallResponses(), getToolExecutionEligibilityChecker(), this.toolIndex,
+					getToolExecutionEligibilityChecker(), this.toolIndex,
 					Objects.requireNonNull(this.systemMessageSuffix), this.referenceToolNameAccumulation,
 					this.maxResults, this.isConversationHistoryEnabled(), this.sessionIdKeyName, this.evictionStrategy);
 		}

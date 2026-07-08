@@ -19,6 +19,7 @@ package org.springframework.ai.openai;
 import java.net.Proxy;
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 
@@ -195,16 +196,17 @@ public class OpenAiImageOptions extends AbstractOpenAiOptions implements ImageOp
 			builder.n(this.getN().longValue());
 		}
 		if (this.getQuality() != null) {
-			builder.quality(ImageGenerateParams.Quality.of(this.getQuality().toLowerCase()));
+			builder.quality(ImageGenerateParams.Quality.of(this.getQuality().toLowerCase(Locale.ROOT)));
 		}
 		if (this.getResponseFormat() != null) {
-			builder.responseFormat(ImageGenerateParams.ResponseFormat.of(this.getResponseFormat().toLowerCase()));
+			builder.responseFormat(
+					ImageGenerateParams.ResponseFormat.of(this.getResponseFormat().toLowerCase(Locale.ROOT)));
 		}
 		if (this.getSize() != null) {
 			builder.size(ImageGenerateParams.Size.of(this.getSize()));
 		}
 		if (this.getStyle() != null) {
-			builder.style(ImageGenerateParams.Style.of(this.getStyle().toLowerCase()));
+			builder.style(ImageGenerateParams.Style.of(this.getStyle().toLowerCase(Locale.ROOT)));
 		}
 		if (this.getUser() != null) {
 			builder.user(this.getUser());

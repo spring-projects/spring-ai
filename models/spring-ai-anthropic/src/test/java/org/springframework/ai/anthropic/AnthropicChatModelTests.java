@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
 import com.anthropic.client.AnthropicClient;
@@ -38,10 +39,16 @@ import com.anthropic.models.messages.MessageDeltaUsage;
 import com.anthropic.models.messages.MessageParam;
 import com.anthropic.models.messages.Model;
 import com.anthropic.models.messages.OutputConfig;
+import com.anthropic.models.messages.RawContentBlockDeltaEvent;
+import com.anthropic.models.messages.RawContentBlockStartEvent;
+import com.anthropic.models.messages.RawContentBlockStopEvent;
 import com.anthropic.models.messages.RawMessageDeltaEvent;
+import com.anthropic.models.messages.RawMessageStartEvent;
 import com.anthropic.models.messages.RawMessageStreamEvent;
+import com.anthropic.models.messages.RedactedThinkingBlock;
 import com.anthropic.models.messages.StopReason;
 import com.anthropic.models.messages.TextBlock;
+import com.anthropic.models.messages.ThinkingBlock;
 import com.anthropic.models.messages.ToolResultBlockParam;
 import com.anthropic.models.messages.ToolUseBlock;
 import com.anthropic.models.messages.Usage;
@@ -64,13 +71,21 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.ToolExecutionResult;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.definition.DefaultToolDefinition;
+import org.springframework.ai.tool.definition.ToolDefinition;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 /**
@@ -79,6 +94,7 @@ import static org.mockito.Mockito.verify;
  *
  * @author Soby Chacko
  * @author Sebastien Deleuze
+ * @author Jewoo Shin
  */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -122,7 +138,7 @@ class AnthropicChatModelTests {
 			.anthropicClient(this.anthropicClient)
 			.anthropicClientAsync(this.anthropicClientAsync)
 			.options(AnthropicChatOptions.builder()
-				.model(Model.CLAUDE_SONNET_4_20250514)
+				.model(Model.CLAUDE_SONNET_4_5)
 				.maxTokens(1024)
 				.temperature(0.7)
 				.build())
@@ -144,7 +160,7 @@ class AnthropicChatModelTests {
 		verify(this.messageService).create(captor.capture());
 
 		MessageCreateParams request = captor.getValue();
-		assertThat(request.model().asString()).isEqualTo("claude-sonnet-4-20250514");
+		assertThat(request.model().asString()).isEqualTo("claude-sonnet-4-5");
 		assertThat(request.maxTokens()).isEqualTo(1024);
 	}
 
@@ -232,6 +248,145 @@ class AnthropicChatModelTests {
 		assertThat(toolCall.id()).isEqualTo("toolu_123");
 		assertThat(toolCall.name()).isEqualTo("getCurrentWeather");
 		assertThat(toolCall.arguments()).contains("San Francisco");
+	}
+
+	@Test
+	void thinkingBlockIsReplayedBeforeToolUseBlock() {
+		Message toolUseResponse = createMockMessageWithThinkingAndToolUse("thinking text", "thinking-signature",
+				"toolu_123", "getCurrentWeather", JsonValue.from(java.util.Map.of("location", "Paris")));
+		Message finalResponse = createMockMessage("Done.", StopReason.END_TURN);
+		given(this.messageService.create(any(MessageCreateParams.class))).willReturn(toolUseResponse, finalResponse);
+
+		AnthropicChatOptions options = AnthropicChatOptions.builder()
+			.toolCallbacks(List.of(new TestToolCallback("getCurrentWeather")))
+			.build();
+		Prompt prompt = new Prompt("What's the weather?", options);
+
+		ChatResponse response = this.chatModel.call(prompt);
+		assertThat(response.getResults()).hasSize(2);
+		Generation thinkingGeneration = response.getResults().get(0);
+		assertThat(thinkingGeneration.getOutput().getText()).isEqualTo("thinking text");
+		assertThat(thinkingGeneration.getOutput().getMetadata()).containsEntry("signature", "thinking-signature");
+		Generation toolCallGeneration = response.getResults().get(1);
+		assertThat(toolCallGeneration.getOutput()).isInstanceOf(AnthropicChatModel.AnthropicAssistantMessage.class);
+		assertThat(toolCallGeneration.getOutput().getToolCalls()).hasSize(1);
+
+		ToolExecutionResult toolExecutionResult = ToolCallingManager.builder()
+			.build()
+			.executeToolCalls(prompt, response);
+		this.chatModel.call(new Prompt(toolExecutionResult.conversationHistory(), options));
+
+		ArgumentCaptor<MessageCreateParams> captor = ArgumentCaptor.forClass(MessageCreateParams.class);
+		verify(this.messageService, times(2)).create(captor.capture());
+
+		List<ContentBlockParam> replayedAssistantBlocks = assistantBlockParams(captor.getAllValues().get(1));
+		assertThat(replayedAssistantBlocks).hasSize(2);
+		assertThat(replayedAssistantBlocks.get(0).isThinking()).isTrue();
+		assertThat(replayedAssistantBlocks.get(0).asThinking().thinking()).isEqualTo("thinking text");
+		assertThat(replayedAssistantBlocks.get(0).asThinking().signature()).isEqualTo("thinking-signature");
+		assertThat(replayedAssistantBlocks.get(1).isToolUse()).isTrue();
+		assertThat(toolResultBlocks(captor.getAllValues().get(1))).hasSize(1);
+	}
+
+	@Test
+	void redactedThinkingBlockIsReplayedBeforeToolUseBlock() {
+		Message toolUseResponse = createMockMessageWithRedactedThinkingAndToolUse("redacted-data", "toolu_123",
+				"getCurrentWeather", JsonValue.from(java.util.Map.of("location", "Paris")));
+		Message finalResponse = createMockMessage("Done.", StopReason.END_TURN);
+		given(this.messageService.create(any(MessageCreateParams.class))).willReturn(toolUseResponse, finalResponse);
+
+		AnthropicChatOptions options = AnthropicChatOptions.builder()
+			.toolCallbacks(List.of(new TestToolCallback("getCurrentWeather")))
+			.build();
+		Prompt prompt = new Prompt("What's the weather?", options);
+
+		ChatResponse response = this.chatModel.call(prompt);
+		assertThat(response.getResults()).hasSize(2);
+		Generation redactedGeneration = response.getResults().get(0);
+		assertThat(redactedGeneration.getOutput().getMetadata()).containsEntry("data", "redacted-data");
+		Generation toolCallGeneration = response.getResults().get(1);
+		assertThat(toolCallGeneration.getOutput()).isInstanceOf(AnthropicChatModel.AnthropicAssistantMessage.class);
+		assertThat(toolCallGeneration.getOutput().getToolCalls()).hasSize(1);
+
+		ToolExecutionResult toolExecutionResult = ToolCallingManager.builder()
+			.build()
+			.executeToolCalls(prompt, response);
+		this.chatModel.call(new Prompt(toolExecutionResult.conversationHistory(), options));
+
+		ArgumentCaptor<MessageCreateParams> captor = ArgumentCaptor.forClass(MessageCreateParams.class);
+		verify(this.messageService, times(2)).create(captor.capture());
+
+		List<ContentBlockParam> replayedAssistantBlocks = assistantBlockParams(captor.getAllValues().get(1));
+		assertThat(replayedAssistantBlocks).hasSize(2);
+		assertThat(replayedAssistantBlocks.get(0).isRedactedThinking()).isTrue();
+		assertThat(replayedAssistantBlocks.get(0).asRedactedThinking().data()).isEqualTo("redacted-data");
+		assertThat(replayedAssistantBlocks.get(1).isToolUse()).isTrue();
+	}
+
+	@Test
+	void thinkingOnlyResponseExposesThinkingGenerationAndKeepsReplayState() {
+		Message mockResponse = createMockMessageWithThinkingAndText("thinking text", "thinking-signature",
+				"Final answer.");
+		given(this.messageService.create(any(MessageCreateParams.class))).willReturn(mockResponse);
+
+		ChatResponse response = this.chatModel.call(new Prompt("Explain it"));
+
+		assertThat(response.getResults()).hasSize(2);
+		Generation thinkingGeneration = response.getResults().get(0);
+		assertThat(thinkingGeneration.getOutput().getText()).isEqualTo("thinking text");
+		assertThat(thinkingGeneration.getOutput().getMetadata()).containsEntry("signature", "thinking-signature");
+
+		Generation finalGeneration = response.getResults().get(1);
+		assertThat(finalGeneration.getOutput().getText()).isEqualTo("Final answer.");
+		assertThat(finalGeneration.getOutput()).isInstanceOf(AnthropicChatModel.AnthropicAssistantMessage.class);
+		AnthropicChatModel.AnthropicAssistantMessage output = (AnthropicChatModel.AnthropicAssistantMessage) finalGeneration
+			.getOutput();
+		assertThat(output.hasThinkingContents()).isTrue();
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void streamingThinkingBlockIsReplayedBeforeToolUseBlock() {
+		List<RawMessageStreamEvent> events = List.of(messageStartEvent(), thinkingStartEvent(),
+				thinkingDeltaEvent("thinking "), thinkingDeltaEvent("text"), signatureDeltaEvent("thinking-signature"),
+				contentBlockStopEvent(0), toolUseStartEvent("toolu_123", "getCurrentWeather"),
+				inputJsonDeltaEvent("{\"location\":\"Paris\"}"), contentBlockStopEvent(1),
+				messageDeltaEvent(StopReason.TOOL_USE));
+		StreamResponse<RawMessageStreamEvent> streamResponse = mock(StreamResponse.class);
+		given(streamResponse.stream()).willReturn(events.stream());
+
+		HttpResponseFor<StreamResponse<RawMessageStreamEvent>> rawResponse = mock(HttpResponseFor.class);
+		given(rawResponse.parse()).willReturn(streamResponse);
+		given(rawResponse.headers()).willReturn(Headers.builder().build());
+
+		given(this.anthropicClientAsync.messages()).willReturn(this.messageServiceAsync);
+		given(this.messageServiceAsync.withRawResponse()).willReturn(this.messageServiceAsyncWithRawResponse);
+		given(this.messageServiceAsyncWithRawResponse.createStreaming(any(MessageCreateParams.class)))
+			.willReturn(CompletableFuture.completedFuture(rawResponse));
+		Message finalResponse = createMockMessage("Done.", StopReason.END_TURN);
+		given(this.messageService.create(any(MessageCreateParams.class))).willReturn(finalResponse);
+
+		AnthropicChatOptions options = AnthropicChatOptions.builder()
+			.toolCallbacks(List.of(new TestToolCallback("getCurrentWeather")))
+			.build();
+		Prompt prompt = new Prompt("What's the weather?", options);
+		AtomicReference<ChatResponse> aggregatedResponse = new AtomicReference<>();
+
+		new MessageAggregator().aggregate(this.chatModel.stream(prompt), aggregatedResponse::set).collectList().block();
+		ToolExecutionResult toolExecutionResult = ToolCallingManager.builder()
+			.build()
+			.executeToolCalls(prompt, aggregatedResponse.get());
+		this.chatModel.call(new Prompt(toolExecutionResult.conversationHistory(), options));
+
+		ArgumentCaptor<MessageCreateParams> captor = ArgumentCaptor.forClass(MessageCreateParams.class);
+		verify(this.messageService).create(captor.capture());
+
+		List<ContentBlockParam> replayedAssistantBlocks = assistantBlockParams(captor.getValue());
+		assertThat(replayedAssistantBlocks).hasSize(2);
+		assertThat(replayedAssistantBlocks.get(0).isThinking()).isTrue();
+		assertThat(replayedAssistantBlocks.get(0).asThinking().thinking()).isEqualTo("thinking text");
+		assertThat(replayedAssistantBlocks.get(0).asThinking().signature()).isEqualTo("thinking-signature");
+		assertThat(replayedAssistantBlocks.get(1).isToolUse()).isTrue();
 	}
 
 	@Test
@@ -450,6 +605,15 @@ class AnthropicChatModelTests {
 			.build();
 	}
 
+	private static List<ContentBlockParam> assistantBlockParams(MessageCreateParams request) {
+		for (MessageParam message : request.messages()) {
+			if (message.role() == MessageParam.Role.ASSISTANT && message.content().isBlockParams()) {
+				return message.content().asBlockParams();
+			}
+		}
+		return List.of();
+	}
+
 	private static List<ToolResultBlockParam> toolResultBlocks(MessageCreateParams request) {
 		List<ToolResultBlockParam> blocks = new java.util.ArrayList<>();
 		for (MessageParam message : request.messages()) {
@@ -470,6 +634,91 @@ class AnthropicChatModelTests {
 		return blocks.get(blocks.size() - 1);
 	}
 
+	private Message createMockMessageWithThinkingAndText(String thinking, String signature, String text) {
+		ThinkingBlock thinkingBlock = mock(ThinkingBlock.class);
+		given(thinkingBlock.thinking()).willReturn(thinking);
+		given(thinkingBlock.signature()).willReturn(signature);
+
+		ContentBlock thinkingContentBlock = mock(ContentBlock.class);
+		given(thinkingContentBlock.isText()).willReturn(false);
+		given(thinkingContentBlock.isToolUse()).willReturn(false);
+		given(thinkingContentBlock.isThinking()).willReturn(true);
+		given(thinkingContentBlock.asThinking()).willReturn(thinkingBlock);
+
+		TextBlock textBlock = mock(TextBlock.class);
+		given(textBlock.text()).willReturn(text);
+
+		ContentBlock textContentBlock = mock(ContentBlock.class);
+		given(textContentBlock.isText()).willReturn(true);
+		given(textContentBlock.asText()).willReturn(textBlock);
+
+		return createMockMessage(List.of(thinkingContentBlock, textContentBlock), StopReason.END_TURN, 10L, 20L);
+	}
+
+	private Message createMockMessageWithThinkingAndToolUse(String thinking, String signature, String toolId,
+			String toolName, JsonValue input) {
+		ThinkingBlock thinkingBlock = mock(ThinkingBlock.class);
+		given(thinkingBlock.thinking()).willReturn(thinking);
+		given(thinkingBlock.signature()).willReturn(signature);
+
+		ContentBlock thinkingContentBlock = mock(ContentBlock.class);
+		given(thinkingContentBlock.isText()).willReturn(false);
+		given(thinkingContentBlock.isToolUse()).willReturn(false);
+		given(thinkingContentBlock.isThinking()).willReturn(true);
+		given(thinkingContentBlock.asThinking()).willReturn(thinkingBlock);
+
+		ContentBlock toolUseContentBlock = toolUseContentBlock(toolId, toolName, input);
+
+		return createMockMessage(List.of(thinkingContentBlock, toolUseContentBlock), StopReason.TOOL_USE, 15L, 25L);
+	}
+
+	private Message createMockMessageWithRedactedThinkingAndToolUse(String data, String toolId, String toolName,
+			JsonValue input) {
+		RedactedThinkingBlock redactedThinkingBlock = mock(RedactedThinkingBlock.class);
+		given(redactedThinkingBlock.data()).willReturn(data);
+
+		ContentBlock redactedThinkingContentBlock = mock(ContentBlock.class);
+		given(redactedThinkingContentBlock.isText()).willReturn(false);
+		given(redactedThinkingContentBlock.isToolUse()).willReturn(false);
+		given(redactedThinkingContentBlock.isThinking()).willReturn(false);
+		given(redactedThinkingContentBlock.isRedactedThinking()).willReturn(true);
+		given(redactedThinkingContentBlock.asRedactedThinking()).willReturn(redactedThinkingBlock);
+
+		ContentBlock toolUseContentBlock = toolUseContentBlock(toolId, toolName, input);
+
+		return createMockMessage(List.of(redactedThinkingContentBlock, toolUseContentBlock), StopReason.TOOL_USE, 15L,
+				25L);
+	}
+
+	private ContentBlock toolUseContentBlock(String toolId, String toolName, JsonValue input) {
+		ToolUseBlock toolUseBlock = mock(ToolUseBlock.class);
+		given(toolUseBlock.id()).willReturn(toolId);
+		given(toolUseBlock.name()).willReturn(toolName);
+		given(toolUseBlock._input()).willReturn(input);
+
+		ContentBlock contentBlock = mock(ContentBlock.class);
+		given(contentBlock.isText()).willReturn(false);
+		given(contentBlock.isToolUse()).willReturn(true);
+		given(contentBlock.asToolUse()).willReturn(toolUseBlock);
+		return contentBlock;
+	}
+
+	private Message createMockMessage(List<ContentBlock> contentBlocks, StopReason stopReason, long inputTokens,
+			long outputTokens) {
+		Usage usage = mock(Usage.class);
+		given(usage.inputTokens()).willReturn(inputTokens);
+		given(usage.outputTokens()).willReturn(outputTokens);
+
+		Message message = mock(Message.class);
+		given(message.id()).willReturn("msg_123");
+		given(message.model()).willReturn(Model.CLAUDE_SONNET_4_5);
+		given(message.content()).willReturn(contentBlocks);
+		given(message.stopReason()).willReturn(Optional.of(stopReason));
+		given(message.usage()).willReturn(usage);
+
+		return message;
+	}
+
 	private Message createMockMessage(String text, StopReason stopReason) {
 		TextBlock textBlock = mock(TextBlock.class);
 		given(textBlock.text()).willReturn(text);
@@ -485,7 +734,7 @@ class AnthropicChatModelTests {
 
 		Message message = mock(Message.class);
 		given(message.id()).willReturn("msg_123");
-		given(message.model()).willReturn(Model.CLAUDE_SONNET_4_20250514);
+		given(message.model()).willReturn(Model.CLAUDE_SONNET_4_5);
 		given(message.content()).willReturn(List.of(contentBlock));
 		given(message.stopReason()).willReturn(Optional.of(stopReason));
 		given(message.usage()).willReturn(usage);
@@ -511,12 +760,77 @@ class AnthropicChatModelTests {
 
 		Message message = mock(Message.class);
 		given(message.id()).willReturn("msg_456");
-		given(message.model()).willReturn(Model.CLAUDE_SONNET_4_20250514);
+		given(message.model()).willReturn(Model.CLAUDE_SONNET_4_5);
 		given(message.content()).willReturn(List.of(contentBlock));
 		given(message.stopReason()).willReturn(Optional.of(stopReason));
 		given(message.usage()).willReturn(usage);
 
 		return message;
+	}
+
+	private RawMessageStreamEvent messageStartEvent() {
+		Usage usage = mock(Usage.class);
+		given(usage.inputTokens()).willReturn(10L);
+
+		Message message = mock(Message.class);
+		given(message.id()).willReturn("msg_stream");
+		given(message.model()).willReturn(Model.CLAUDE_SONNET_4_5);
+		given(message.usage()).willReturn(usage);
+
+		return RawMessageStreamEvent.ofMessageStart(RawMessageStartEvent.builder().message(message).build());
+	}
+
+	private RawMessageStreamEvent thinkingStartEvent() {
+		ThinkingBlock thinkingBlock = mock(ThinkingBlock.class);
+		return RawMessageStreamEvent
+			.ofContentBlockStart(RawContentBlockStartEvent.builder().contentBlock(thinkingBlock).index(0L).build());
+	}
+
+	private RawMessageStreamEvent toolUseStartEvent(String id, String name) {
+		ToolUseBlock toolUseBlock = mock(ToolUseBlock.class);
+		given(toolUseBlock.id()).willReturn(id);
+		given(toolUseBlock.name()).willReturn(name);
+
+		return RawMessageStreamEvent
+			.ofContentBlockStart(RawContentBlockStartEvent.builder().contentBlock(toolUseBlock).index(1L).build());
+	}
+
+	private RawMessageStreamEvent thinkingDeltaEvent(String thinking) {
+		return RawMessageStreamEvent
+			.ofContentBlockDelta(RawContentBlockDeltaEvent.builder().thinkingDelta(thinking).index(0L).build());
+	}
+
+	private RawMessageStreamEvent signatureDeltaEvent(String signature) {
+		return RawMessageStreamEvent
+			.ofContentBlockDelta(RawContentBlockDeltaEvent.builder().signatureDelta(signature).index(0L).build());
+	}
+
+	private RawMessageStreamEvent inputJsonDeltaEvent(String partialJson) {
+		return RawMessageStreamEvent
+			.ofContentBlockDelta(RawContentBlockDeltaEvent.builder().inputJsonDelta(partialJson).index(1L).build());
+	}
+
+	private RawMessageStreamEvent contentBlockStopEvent(long index) {
+		return RawMessageStreamEvent.ofContentBlockStop(RawContentBlockStopEvent.builder().index(index).build());
+	}
+
+	private RawMessageStreamEvent messageDeltaEvent(StopReason stopReason) {
+		return RawMessageStreamEvent.ofMessageDelta(RawMessageDeltaEvent.builder()
+			.delta(RawMessageDeltaEvent.Delta.builder()
+				.container(Optional.empty())
+				.stopDetails(Optional.empty())
+				.stopReason(stopReason)
+				.stopSequence(Optional.empty())
+				.build())
+			.usage(MessageDeltaUsage.builder()
+				.cacheCreationInputTokens(Optional.empty())
+				.cacheReadInputTokens(Optional.empty())
+				.inputTokens(Optional.empty())
+				.outputTokens(5L)
+				.outputTokensDetails(Optional.empty())
+				.serverToolUse(Optional.empty())
+				.build())
+			.build());
 	}
 
 	@Test
@@ -639,6 +953,26 @@ class AnthropicChatModelTests {
 		assertThat(rateLimit.getRequestsRemaining()).isEqualTo(99L);
 		assertThat(rateLimit.getTokensLimit()).isEqualTo(50000L);
 		assertThat(rateLimit.getTokensRemaining()).isEqualTo(49000L);
+	}
+
+	static class TestToolCallback implements ToolCallback {
+
+		private final ToolDefinition toolDefinition;
+
+		TestToolCallback(String name) {
+			this.toolDefinition = DefaultToolDefinition.builder().name(name).inputSchema("{}").build();
+		}
+
+		@Override
+		public ToolDefinition getToolDefinition() {
+			return this.toolDefinition;
+		}
+
+		@Override
+		public String call(String toolInput) {
+			return "Mission accomplished!";
+		}
+
 	}
 
 }

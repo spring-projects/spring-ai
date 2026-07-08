@@ -249,7 +249,8 @@ public class StatelessToolCallbackConverterAutoConfigurationIT {
 			Mockito.when(mockTool.name()).thenReturn("test-tool");
 			Mockito.when(mockTool.description()).thenReturn("Test Tool");
 			Mockito.when(mockClient.callTool(Mockito.any(McpSchema.CallToolRequest.class))).thenReturn(mockResult);
-			when(mockClient.getClientInfo()).thenReturn(new McpSchema.Implementation("testClient", "1.0.0"));
+			when(mockClient.getClientInfo())
+				.thenReturn(McpSchema.Implementation.builder("testClient", "1.0.0").build());
 
 			return List.of(SyncMcpToolCallback.builder().mcpClient(mockClient).tool(mockTool).build());
 		}
@@ -282,7 +283,8 @@ public class StatelessToolCallbackConverterAutoConfigurationIT {
 			Mockito.when(mockTool1.name()).thenReturn("test-tool-1");
 			Mockito.when(mockTool1.description()).thenReturn("Test Tool 1");
 			Mockito.when(mockClient1.callTool(Mockito.any(McpSchema.CallToolRequest.class))).thenReturn(mockResult1);
-			when(mockClient1.getClientInfo()).thenReturn(new McpSchema.Implementation("testClient1", "1.0.0"));
+			when(mockClient1.getClientInfo())
+				.thenReturn(McpSchema.Implementation.builder("testClient1", "1.0.0").build());
 
 			McpSyncClient mockClient2 = Mockito.mock(McpSyncClient.class);
 			McpSchema.Tool mockTool2 = Mockito.mock(McpSchema.Tool.class);
@@ -291,7 +293,8 @@ public class StatelessToolCallbackConverterAutoConfigurationIT {
 			Mockito.when(mockTool2.name()).thenReturn("test-tool-2");
 			Mockito.when(mockTool2.description()).thenReturn("Test Tool 2");
 			Mockito.when(mockClient2.callTool(Mockito.any(McpSchema.CallToolRequest.class))).thenReturn(mockResult2);
-			when(mockClient2.getClientInfo()).thenReturn(new McpSchema.Implementation("testClient2", "1.0.0"));
+			when(mockClient2.getClientInfo())
+				.thenReturn(McpSchema.Implementation.builder("testClient2", "1.0.0").build());
 
 			return List.of(SyncMcpToolCallback.builder().mcpClient(mockClient1).tool(mockTool1).build(),
 					SyncMcpToolCallback.builder().mcpClient(mockClient2).tool(mockTool2).build());
@@ -311,7 +314,8 @@ public class StatelessToolCallbackConverterAutoConfigurationIT {
 			Mockito.when(mockTool1.name()).thenReturn("duplicate-tool");
 			Mockito.when(mockTool1.description()).thenReturn("First Tool");
 			Mockito.when(mockClient1.callTool(Mockito.any(McpSchema.CallToolRequest.class))).thenReturn(mockResult1);
-			when(mockClient1.getClientInfo()).thenReturn(new McpSchema.Implementation("frist_client", "1.0.0"));
+			when(mockClient1.getClientInfo())
+				.thenReturn(McpSchema.Implementation.builder("frist_client", "1.0.0").build());
 
 			McpSyncClient mockClient2 = Mockito.mock(McpSyncClient.class);
 			McpSchema.Tool mockTool2 = Mockito.mock(McpSchema.Tool.class);
@@ -320,7 +324,8 @@ public class StatelessToolCallbackConverterAutoConfigurationIT {
 			Mockito.when(mockTool2.name()).thenReturn("duplicate-tool");
 			Mockito.when(mockTool2.description()).thenReturn("Second Tool");
 			Mockito.when(mockClient2.callTool(Mockito.any(McpSchema.CallToolRequest.class))).thenReturn(mockResult2);
-			when(mockClient2.getClientInfo()).thenReturn(new McpSchema.Implementation("second_client", "1.0.0"));
+			when(mockClient2.getClientInfo())
+				.thenReturn(McpSchema.Implementation.builder("second_client", "1.0.0").build());
 
 			return List.of(SyncMcpToolCallback.builder().mcpClient(mockClient1).tool(mockTool1).build(),
 					SyncMcpToolCallback.builder().mcpClient(mockClient2).tool(mockTool2).build());
@@ -341,7 +346,8 @@ public class StatelessToolCallbackConverterAutoConfigurationIT {
 				Mockito.when(mockTool.name()).thenReturn("provider-tool");
 				Mockito.when(mockTool.description()).thenReturn("Provider Tool");
 				Mockito.when(mockClient.callTool(Mockito.any(McpSchema.CallToolRequest.class))).thenReturn(mockResult);
-				when(mockClient.getClientInfo()).thenReturn(new McpSchema.Implementation("testClient", "1.0.0"));
+				when(mockClient.getClientInfo())
+					.thenReturn(McpSchema.Implementation.builder("testClient", "1.0.0").build());
 
 				return new ToolCallback[] {
 						SyncMcpToolCallback.builder().mcpClient(mockClient).tool(mockTool).build() };
@@ -362,10 +368,11 @@ public class StatelessToolCallbackConverterAutoConfigurationIT {
 			Mockito.when(mockTool.name()).thenReturn("mcp-provider-tool");
 			Mockito.when(mockTool.description()).thenReturn("MCP Provider Tool");
 			Mockito.when(mockClient.callTool(Mockito.any(McpSchema.CallToolRequest.class))).thenReturn(mockResult);
-			when(mockClient.getClientInfo()).thenReturn(new McpSchema.Implementation("testClient", "1.0.0"));
+			when(mockClient.getClientInfo())
+				.thenReturn(McpSchema.Implementation.builder("testClient", "1.0.0").build());
 			when(mockClient.getClientCapabilities()).thenReturn(McpSchema.ClientCapabilities.builder().build());
 
-			McpSchema.ListToolsResult listToolsResult = new McpSchema.ListToolsResult(List.of(mockTool), null);
+			McpSchema.ListToolsResult listToolsResult = McpSchema.ListToolsResult.builder(List.of(mockTool)).build();
 			Mockito.when(mockClient.listTools()).thenReturn(listToolsResult);
 
 			return org.springframework.ai.mcp.SyncMcpToolCallbackProvider.builder()

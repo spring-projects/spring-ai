@@ -216,6 +216,51 @@ public class TokenTextSplitterTest {
 	}
 
 	@Test
+	public void testTokenTextSplitterWithZeroChunkSizeThrows() {
+		// A chunkSize of 0 previously caused doSplit to loop forever; it must now fail
+		// fast.
+		assertThatIllegalArgumentException().isThrownBy(() -> TokenTextSplitter.builder().withChunkSize(0).build())
+			.withMessage("chunkSize must be greater than zero");
+	}
+
+	@Test
+	public void testTokenTextSplitterWithNegativeChunkSizeThrows() {
+		assertThatIllegalArgumentException().isThrownBy(() -> TokenTextSplitter.builder().withChunkSize(-1).build())
+			.withMessage("chunkSize must be greater than zero");
+	}
+
+	@Test
+	public void testTokenTextSplitterWithNonPositiveMaxNumChunksThrows() {
+		assertThatIllegalArgumentException().isThrownBy(() -> TokenTextSplitter.builder().withMaxNumChunks(0).build())
+			.withMessage("maxNumChunks must be greater than zero");
+	}
+
+	@Test
+	public void testTokenTextSplitterWithNegativeMinChunkSizeCharsThrows() {
+		assertThatIllegalArgumentException()
+			.isThrownBy(() -> TokenTextSplitter.builder().withMinChunkSizeChars(-1).build())
+			.withMessage("minChunkSizeChars must not be negative");
+	}
+
+	@Test
+	public void testTokenTextSplitterWithNegativeMinChunkLengthToEmbedThrows() {
+		assertThatIllegalArgumentException()
+			.isThrownBy(() -> TokenTextSplitter.builder().withMinChunkLengthToEmbed(-1).build())
+			.withMessage("minChunkLengthToEmbed must not be negative");
+	}
+
+	@Test
+	public void testTokenTextSplitterWithChunkSizeOneTerminates() {
+		// chunkSize == 1 is the smallest valid value: it must terminate and produce
+		// chunks.
+		var splitter = TokenTextSplitter.builder().withChunkSize(1).withMinChunkLengthToEmbed(0).build();
+
+		var chunks = splitter.apply(List.of(new Document("Hello world from Spring AI")));
+
+		assertThat(chunks).isNotEmpty();
+	}
+
+	@Test
 	public void testTokenTextSplitterWithDifferentEncodingTypes() {
 		var contentFormatter1 = DefaultContentFormatter.defaultConfig();
 		var contentFormatter2 = DefaultContentFormatter.defaultConfig();

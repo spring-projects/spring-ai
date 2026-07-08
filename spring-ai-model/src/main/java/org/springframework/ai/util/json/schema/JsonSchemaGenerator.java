@@ -21,6 +21,7 @@ import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Stream;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -150,6 +151,12 @@ public final class JsonSchemaGenerator {
 				// generation.
 				// It's a special type used by Spring AI to pass contextual data to tools
 				// outside the model interaction flow.
+				continue;
+			}
+			// A Kotlin suspend function carries a synthetic trailing Continuation
+			// parameter that is not part of the tool contract and must not appear in
+			// the generated schema.
+			if (KotlinDetector.isSuspendingFunction(method) && i == method.getParameterCount() - 1) {
 				continue;
 			}
 			if (isMethodParameterRequired(method, i)) {
@@ -320,9 +327,9 @@ public final class JsonSchemaGenerator {
 						}
 					});
 				}
-				else if (value.isTextual() && entry.getKey().equals("type")) {
-					String oldValue = node.get("type").asText();
-					node.put("type", oldValue.toUpperCase());
+				else if (value.isString() && entry.getKey().equals("type")) {
+					String oldValue = node.get("type").asString();
+					node.put("type", oldValue.toUpperCase(Locale.ROOT));
 				}
 			});
 		}

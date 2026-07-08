@@ -26,6 +26,7 @@ import java.util.stream.Stream;
 
 import com.google.genai.Client;
 import io.micrometer.observation.ObservationRegistry;
+import org.jspecify.annotations.NonNull;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -60,7 +61,6 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
-import org.springframework.lang.NonNull;
 import org.springframework.util.MimeType;
 import org.springframework.util.MimeTypeUtils;
 
@@ -131,8 +131,7 @@ class GoogleGenAiChatModelIT {
 		assertThat(response.getResult().getMetadata().getFinishReason()).isEqualTo("SAFETY");
 	}
 
-	@NonNull
-	private Prompt createPrompt(GoogleGenAiChatOptions chatOptions) {
+	private @NonNull Prompt createPrompt(GoogleGenAiChatOptions chatOptions) {
 		String request = "Name 3 famous pirates from the Golden Age of Piracy and tell me what they did.";
 		String name = "Bob";
 		String voice = "pirate";
@@ -346,7 +345,6 @@ class GoogleGenAiChatModelIT {
 			.collect(Collectors.joining());
 
 		ActorsFilmsRecord actorsFilms = outputConverter.convert(generationTextFromStream);
-		// System.out.println("{}", actorsFilms);
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
 	}
@@ -618,7 +616,7 @@ class GoogleGenAiChatModelIT {
 		GoogleGenAiChatModel chatModelWithThinkingLevel = GoogleGenAiChatModel.builder()
 			.genAiClient(genAiClientGlobal())
 			.options(GoogleGenAiChatOptions.builder()
-				.model(ChatModel.GEMINI_3_PRO_PREVIEW)
+				.model(ChatModel.GEMINI_3_1_PRO_PREVIEW)
 				.thinkingLevel(GoogleGenAiThinkingLevel.LOW)
 				.build())
 			.build();
@@ -636,7 +634,7 @@ class GoogleGenAiChatModelIT {
 		GoogleGenAiChatModel chatModelWithThinkingLevel = GoogleGenAiChatModel.builder()
 			.genAiClient(genAiClientGlobal())
 			.options(GoogleGenAiChatOptions.builder()
-				.model(ChatModel.GEMINI_3_PRO_PREVIEW)
+				.model(ChatModel.GEMINI_3_1_PRO_PREVIEW)
 				.temperature(0.1)
 				.thinkingLevel(GoogleGenAiThinkingLevel.HIGH)
 				.build())
@@ -670,7 +668,7 @@ class GoogleGenAiChatModelIT {
 		GoogleGenAiChatModel chatModelWithThinkingLevel = GoogleGenAiChatModel.builder()
 			.genAiClient(genAiClientGlobal())
 			.options(GoogleGenAiChatOptions.builder()
-				.model(ChatModel.GEMINI_3_PRO_PREVIEW)
+				.model(ChatModel.GEMINI_3_1_PRO_PREVIEW)
 				.temperature(0.1)
 				.thinkingBudget(4096)
 				.thinkingLevel(GoogleGenAiThinkingLevel.HIGH)

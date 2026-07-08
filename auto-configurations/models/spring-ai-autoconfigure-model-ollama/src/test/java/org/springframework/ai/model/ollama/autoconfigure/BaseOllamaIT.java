@@ -21,6 +21,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -43,10 +45,13 @@ import org.springframework.util.Assert;
 @EnabledIfEnvironmentVariable(named = "OLLAMA_AUTOCONF_TESTS_ENABLED", matches = "true")
 public abstract class BaseOllamaIT {
 
+	private static final Log logger = LogFactory.getLog(BaseOllamaIT.class);
+
 	static {
-		System.out.println("OLLAMA_AUTOCONF_TESTS_ENABLED=" + System.getenv("OLLAMA_AUTOCONF_TESTS_ENABLED"));
-		System.out.println("System property=" + System.getProperty("OLLAMA_AUTOCONF_TESTS_ENABLED"));
+		logger.info("OLLAMA_AUTOCONF_TESTS_ENABLED=" + System.getenv("OLLAMA_AUTOCONF_TESTS_ENABLED"));
+		logger.info("System property=" + System.getProperty("OLLAMA_AUTOCONF_TESTS_ENABLED"));
 	}
+
 	private static final String OLLAMA_LOCAL_URL = "http://localhost:11434";
 
 	private static final Duration DEFAULT_TIMEOUT = Duration.ofMinutes(10);

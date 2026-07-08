@@ -17,6 +17,7 @@
 package org.springframework.ai.integration.tests.client.advisor;
 
 import java.util.List;
+import java.util.Locale;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -102,7 +103,6 @@ class RetrievalAugmentationAdvisorIT {
 		assertThat(chatResponse).isNotNull();
 
 		String response = chatResponse.getResult().getOutput().getText();
-		System.out.println(response);
 		assertThat(response).containsIgnoringCase("Highlands");
 
 		evaluateRelevancy(question, chatResponse);
@@ -158,7 +158,6 @@ class RetrievalAugmentationAdvisorIT {
 
 		assertThat(chatResponse1).isNotNull();
 		String response1 = chatResponse1.getResult().getOutput().getText();
-		System.out.println(response1);
 
 		ChatResponse chatResponse2 = chatClient.prompt()
 			.user("Did they meet any cow?")
@@ -168,8 +167,7 @@ class RetrievalAugmentationAdvisorIT {
 
 		assertThat(chatResponse2).isNotNull();
 		String response2 = chatResponse2.getResult().getOutput().getText();
-		System.out.println(response2);
-		assertThat(response2.toLowerCase()).containsIgnoringCase("Fergus");
+		assertThat(response2.toLowerCase(Locale.ROOT)).containsIgnoringCase("Fergus");
 	}
 
 	@Test
@@ -195,7 +193,6 @@ class RetrievalAugmentationAdvisorIT {
 		assertThat(chatResponse).isNotNull();
 
 		String response = chatResponse.getResult().getOutput().getText();
-		System.out.println(response);
 		assertThat(response).containsIgnoringCase("Loch of the Stars");
 
 		evaluateRelevancy(question, chatResponse);
@@ -225,8 +222,7 @@ class RetrievalAugmentationAdvisorIT {
 		assertThat(chatResponse).isNotNull();
 
 		String response = chatResponse.getResult().getOutput().getText();
-		System.out.println(response);
-		assertThat(response.toLowerCase()).containsAnyOf("highlands", "højland");
+		assertThat(response.toLowerCase(Locale.ROOT)).containsAnyOf("highlands", "højland");
 
 		evaluateRelevancy(question, chatResponse);
 	}
@@ -253,7 +249,6 @@ class RetrievalAugmentationAdvisorIT {
 		assertThat(chatResponse).isNotNull();
 
 		String response = chatResponse.getResult().getOutput().getText();
-		System.out.println(response);
 		assertThat(response).containsIgnoringCase("Highlands");
 
 		evaluateRelevancy(question, chatResponse);
@@ -279,7 +274,6 @@ class RetrievalAugmentationAdvisorIT {
 		assertThat(chatResponse).isNotNull();
 
 		String response = chatResponse.getResult().getOutput().getText();
-		System.out.println(response);
 		assertThat(response).containsIgnoringCase("Molise");
 
 		evaluateRelevancy(question, chatResponse);

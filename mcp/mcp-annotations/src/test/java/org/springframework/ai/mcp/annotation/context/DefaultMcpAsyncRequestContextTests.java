@@ -65,7 +65,7 @@ public class DefaultMcpAsyncRequestContextTests {
 
 	@BeforeEach
 	public void setUp() {
-		this.request = new CallToolRequest("test-tool", Map.of());
+		this.request = CallToolRequest.builder("test-tool").build();
 		this.exchange = mock(McpAsyncServerExchange.class);
 		this.context = DefaultMcpAsyncRequestContext.builder().request(this.request).exchange(this.exchange).build();
 	}
@@ -74,7 +74,7 @@ public class DefaultMcpAsyncRequestContextTests {
 
 	@Test
 	public void testBuilderWithValidParameters() {
-		CallToolRequest testRequest = new CallToolRequest("test-tool", Map.of());
+		CallToolRequest testRequest = CallToolRequest.builder("test-tool").build();
 		McpAsyncRequestContext ctx = DefaultMcpAsyncRequestContext.builder()
 			.request(testRequest)
 			.exchange(this.exchange)
@@ -97,7 +97,7 @@ public class DefaultMcpAsyncRequestContextTests {
 
 	@Test
 	public void testBuilderWithNullExchange() {
-		CallToolRequest testRequest = new CallToolRequest("test-tool", Map.of());
+		CallToolRequest testRequest = CallToolRequest.builder("test-tool").build();
 		StepVerifier
 			.create(Mono.fromCallable(
 					() -> DefaultMcpAsyncRequestContext.builder().request(testRequest).exchange(null).build()))
@@ -370,10 +370,7 @@ public class DefaultMcpAsyncRequestContextTests {
 		when(this.exchange.getClientCapabilities()).thenReturn(capabilities);
 
 		ElicitResult expectedResult = mock(ElicitResult.class);
-		ElicitRequest elicitRequest = ElicitRequest.builder()
-			.message("Test message")
-			.requestedSchema(Map.of("type", "string"))
-			.build();
+		ElicitRequest elicitRequest = ElicitFormRequest.builder("Test message", Map.of("type", "string")).build();
 
 		when(this.exchange.createElicitation(elicitRequest)).thenReturn(Mono.just(expectedResult));
 
@@ -386,10 +383,7 @@ public class DefaultMcpAsyncRequestContextTests {
 	public void testElicitationWhenNotSupported() {
 		when(this.exchange.getClientCapabilities()).thenReturn(null);
 
-		ElicitRequest elicitRequest = ElicitRequest.builder()
-			.message("Test message")
-			.requestedSchema(Map.of("type", "string"))
-			.build();
+		ElicitRequest elicitRequest = ElicitFormRequest.builder("Test message", Map.of("type", "string")).build();
 
 		StepVerifier.create(this.context.elicit(elicitRequest))
 			.verifyErrorSatisfies(e -> assertThat(e).isInstanceOf(IllegalStateException.class)
@@ -424,7 +418,7 @@ public class DefaultMcpAsyncRequestContextTests {
 		when(this.exchange.createMessage(any(CreateMessageRequest.class))).thenReturn(Mono.just(expectedResult));
 
 		Mono<CreateMessageResult> result = this.context.sample(spec -> {
-			spec.message(new TextContent("Test message"));
+			spec.message(TextContent.builder("Test message").build());
 			spec.systemPrompt("System prompt");
 			spec.temperature(0.7);
 			spec.maxTokens(100);
@@ -449,9 +443,9 @@ public class DefaultMcpAsyncRequestContextTests {
 		when(this.exchange.getClientCapabilities()).thenReturn(capabilities);
 
 		CreateMessageResult expectedResult = mock(CreateMessageResult.class);
-		CreateMessageRequest createRequest = CreateMessageRequest.builder()
-			.messages(java.util.List.of(new SamplingMessage(Role.USER, new TextContent("Test"))))
-			.maxTokens(500)
+		CreateMessageRequest createRequest = CreateMessageRequest
+			.builder(java.util.List.of(SamplingMessage.builder(Role.USER, TextContent.builder("Test").build()).build()),
+					500)
 			.build();
 
 		when(this.exchange.createMessage(createRequest)).thenReturn(Mono.just(expectedResult));
@@ -465,9 +459,9 @@ public class DefaultMcpAsyncRequestContextTests {
 	public void testSamplingWhenNotSupported() {
 		when(this.exchange.getClientCapabilities()).thenReturn(null);
 
-		CreateMessageRequest createRequest = CreateMessageRequest.builder()
-			.messages(java.util.List.of(new SamplingMessage(Role.USER, new TextContent("Test"))))
-			.maxTokens(500)
+		CreateMessageRequest createRequest = CreateMessageRequest
+			.builder(java.util.List.of(SamplingMessage.builder(Role.USER, TextContent.builder("Test").build()).build()),
+					500)
 			.build();
 
 		StepVerifier.create(this.context.sample(createRequest))
@@ -479,8 +473,7 @@ public class DefaultMcpAsyncRequestContextTests {
 
 	@Test
 	public void testProgressWithPercentage() {
-		CallToolRequest requestWithToken = CallToolRequest.builder()
-			.name("test-tool")
+		CallToolRequest requestWithToken = CallToolRequest.builder("test-tool")
 			.arguments(Map.of())
 			.progressToken("token-123")
 			.build();
@@ -515,8 +508,7 @@ public class DefaultMcpAsyncRequestContextTests {
 
 	@Test
 	public void testProgressWithConsumer() {
-		CallToolRequest requestWithToken = CallToolRequest.builder()
-			.name("test-tool")
+		CallToolRequest requestWithToken = CallToolRequest.builder("test-tool")
 			.arguments(Map.of())
 			.progressToken("token-123")
 			.build();
@@ -693,11 +685,7 @@ public class DefaultMcpAsyncRequestContextTests {
 	@Test
 	public void testGetRequestMeta() {
 		Map<String, Object> meta = Map.of("key", "value");
-		CallToolRequest requestWithMeta = CallToolRequest.builder()
-			.name("test-tool")
-			.arguments(Map.of())
-			.meta(meta)
-			.build();
+		CallToolRequest requestWithMeta = CallToolRequest.builder("test-tool").arguments(Map.of()).meta(meta).build();
 		McpAsyncRequestContext contextWithMeta = DefaultMcpAsyncRequestContext.builder()
 			.request(requestWithMeta)
 			.exchange(this.exchange)

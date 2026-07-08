@@ -25,13 +25,14 @@ Spring AI provides the following features:
 ** xref:api/audio/transcriptions.adoc[Audio Transcription]
 ** xref:api/audio/speech.adoc[Text to Speech]
 ** xref:api/moderation.adoc[Moderation]
-* xref:api/structured-output-converter.adoc[Structured Outputs] - Mapping of AI Model output to POJOs.
+* xref:api/structured-output.adoc[Structured Outputs] - Mapping of AI Model output to POJOs.
 * Support for all major xref:api/vectordbs.adoc[Vector Database providers] such as Apache Cassandra, Azure Vector Search, Chroma, Elasticsearch, GemFire, MariaDB, Milvus, MongoDB Atlas, Neo4j, OpenSearch, Oracle, PostgreSQL/PGVector, Pinecone, Qdrant, Redis, Typesense and Weaviate.
 * Portable API across Vector Store providers, including a novel SQL-like metadata filter API.
 * xref:api/tools.adoc[Tools/Function Calling] - Permits the model to request the execution of client-side tools and functions, thereby accessing necessary real-time information as required and taking action.
 * xref:observability/index.adoc[Observability] - Provides insights into AI-related operations.
 * Document ingestion xref:api/etl-pipeline.adoc[ETL framework] for Data Engineering.
 * xref:api/testing.adoc[AI Model Evaluation] - Utilities to help evaluate generated content and protect against hallucinated response.
+* xref:api/mcp/mcp-overview.adoc[MCP (Model Context Protocol)] - Seamless integration for building AI applications that consume MCP servers or expose Spring-based services to the AI ecosystem.
 * Spring Boot Auto Configuration and Starters for AI Models and Vector Stores.
 * xref:api/chatclient.adoc[ChatClient API] - Fluent API for communicating with AI Chat Models, idiomatically similar to the WebClient and RestClient APIs.
 * xref:api/advisors.adoc[Advisors API] - Encapsulates recurring Generative AI patterns, transforms data sent to and from Language Models (LLMs), and provides portability across various models and use cases.

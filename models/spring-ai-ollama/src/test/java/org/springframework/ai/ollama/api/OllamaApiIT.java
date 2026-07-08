@@ -76,8 +76,6 @@ class OllamaApiIT extends BaseOllamaIT {
 
 		ChatResponse response = getOllamaApi().chat(request);
 
-		System.out.println(response);
-
 		assertThat(response).isNotNull();
 		assertThat(response.model()).contains(CHAT_MODEL);
 		assertThat(response.done()).isTrue();
@@ -122,7 +120,6 @@ class OllamaApiIT extends BaseOllamaIT {
 		Flux<ChatResponse> response = getOllamaApi().streamingChat(request);
 
 		List<ChatResponse> responses = response.collectList().block();
-		System.out.println(responses);
 
 		assertThat(responses).isNotNull();
 		assertThat(extractChatResponsesContent(responses)).contains("Sofia");
@@ -166,8 +163,6 @@ class OllamaApiIT extends BaseOllamaIT {
 
 		ChatResponse response = getOllamaApi().chat(request);
 
-		System.out.println(response);
-
 		assertThat(response).isNotNull();
 		assertThat(response.model()).contains(THINKING_MODEL);
 		assertThat(response.done()).isTrue();
@@ -190,7 +185,6 @@ class OllamaApiIT extends BaseOllamaIT {
 		Flux<ChatResponse> response = getOllamaApi().streamingChat(request);
 
 		List<ChatResponse> responses = response.collectList().block();
-		System.out.println(responses);
 
 		assertThat(responses).isNotNull();
 		assertThat(extractChatResponsesThinking(responses)).contains("Sofia");
@@ -213,7 +207,6 @@ class OllamaApiIT extends BaseOllamaIT {
 		Flux<ChatResponse> response = getOllamaApi().streamingChat(request);
 
 		List<ChatResponse> responses = response.collectList().block();
-		System.out.println(responses);
 
 		assertThat(responses).isNotNull();
 		assertThat(extractChatResponsesThinking(responses)).contains("solar");
@@ -236,7 +229,6 @@ class OllamaApiIT extends BaseOllamaIT {
 		Flux<ChatResponse> response = getOllamaApi().streamingChat(request);
 
 		List<ChatResponse> responses = response.collectList().block();
-		System.out.println(responses);
 
 		assertThat(responses).isNotNull();
 		assertThat(extractChatResponsesContent(responses)).contains("Earth");

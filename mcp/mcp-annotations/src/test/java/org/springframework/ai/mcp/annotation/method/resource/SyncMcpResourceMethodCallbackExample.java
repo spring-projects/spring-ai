@@ -20,6 +20,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.regex.Matcher;
@@ -75,17 +76,6 @@ public final class SyncMcpResourceMethodCallbackExample {
 
 					resourceHandlers.put(uriPattern, callback);
 
-					// Print information about URI variables if present
-					if (uriPattern.contains("{") && uriPattern.contains("}")) {
-						System.out.println("  URI Template: " + uriPattern);
-						System.out.println("  URI Variables: " + extractUriVariables(uriPattern));
-					}
-
-					System.out.println("Registered resource handler for URI pattern: " + uriPattern);
-					System.out.println("  Name: " + resourceAnnotation.name());
-					System.out.println("  Description: " + resourceAnnotation.description());
-					System.out.println("  MIME Type: " + resourceAnnotation.mimeType());
-					System.out.println();
 				}
 				catch (IllegalArgumentException e) {
 					System.err
@@ -96,8 +86,6 @@ public final class SyncMcpResourceMethodCallbackExample {
 
 		// Example of using registered handlers
 		if (!resourceHandlers.isEmpty()) {
-			System.out.println("\nTesting resource handlers:");
-
 			// Test a handler with a ReadResourceRequest
 			testHandler(resourceHandlers, "user-profile://john", "Standard handler");
 
@@ -133,7 +121,6 @@ public final class SyncMcpResourceMethodCallbackExample {
 			String pattern = entry.getKey();
 			if (uriMatchesPattern(uri, pattern)) {
 				handler = entry.getValue();
-				System.out.println("\nTesting " + description + " with URI pattern: " + pattern);
 				break;
 			}
 		}
@@ -142,29 +129,14 @@ public final class SyncMcpResourceMethodCallbackExample {
 			try {
 				// Create a mock exchange and request
 				McpSyncServerExchange exchange = createMockExchange();
-				ReadResourceRequest request = new ReadResourceRequest(uri);
+				ReadResourceRequest request = ReadResourceRequest.builder(uri).build();
 
 				// Execute the handler
 				ReadResourceResult result = handler.apply(exchange, request);
-
-				// Print the result
-				System.out.println("Resource request result for " + request.uri() + ":");
-				for (ResourceContents content : result.contents()) {
-					if (content instanceof TextResourceContents) {
-						System.out.println("  " + ((TextResourceContents) content).text());
-					}
-					else {
-						System.out.println("  " + content);
-					}
-				}
 			}
 			catch (Exception e) {
-				System.out.println("Error executing handler: " + e.getMessage());
 				e.printStackTrace();
 			}
-		}
-		else {
-			System.out.println("\nNo handler found for URI: " + uri);
 		}
 	}
 
@@ -256,9 +228,12 @@ public final class SyncMcpResourceMethodCallbackExample {
 				description = "Provides user profile information for a specific user")
 		public ReadResourceResult getUserProfile(ReadResourceRequest request, String username) {
 			String profileInfo = formatProfileInfo(
-					this.userProfiles.getOrDefault(username.toLowerCase(), new HashMap<>()));
+					this.userProfiles.getOrDefault(username.toLowerCase(Locale.ROOT), new HashMap<>()));
 
-			return new ReadResourceResult(List.of(new TextResourceContents(request.uri(), "text/plain", profileInfo)));
+			return ReadResourceResult
+				.builder(List
+					.of(TextResourceContents.builder(request.uri(), profileInfo).mimeType("text/plain").build()))
+				.build();
 		}
 
 		/**
@@ -269,10 +244,13 @@ public final class SyncMcpResourceMethodCallbackExample {
 				description = "Provides user details for a specific user using URI variables")
 		public ReadResourceResult getUserDetails(String username) {
 			String profileInfo = formatProfileInfo(
-					this.userProfiles.getOrDefault(username.toLowerCase(), new HashMap<>()));
+					this.userProfiles.getOrDefault(username.toLowerCase(Locale.ROOT), new HashMap<>()));
 
-			return new ReadResourceResult(
-					List.of(new TextResourceContents("user-profile://" + username, "text/plain", profileInfo)));
+			return ReadResourceResult
+				.builder(List.of(TextResourceContents.builder("user-profile://" + username, profileInfo)
+					.mimeType("text/plain")
+					.build()))
+				.build();
 		}
 
 		/**
@@ -281,12 +259,18 @@ public final class SyncMcpResourceMethodCallbackExample {
 		@McpResource(uri = "user-attribute://{username}/{attribute}", name = "User Attribute",
 				description = "Provides a specific attribute from a user's profile")
 		public ReadResourceResult getUserAttribute(String username, String attribute) {
-			Map<String, String> profile = this.userProfiles.getOrDefault(username.toLowerCase(), new HashMap<>());
+			Map<String, String> profile = this.userProfiles.getOrDefault(username.toLowerCase(Locale.ROOT),
+					new HashMap<>());
 			String attributeValue = profile.getOrDefault(attribute, "Attribute not found");
 
-			return new ReadResourceResult(
-					List.of(new TextResourceContents("user-attribute://" + username + "/" + attribute, "text/plain",
-							username + "'s " + attribute + ": " + attributeValue)));
+			return ReadResourceResult
+				.builder(
+						List.of(TextResourceContents
+							.builder("user-attribute://" + username + "/" + attribute,
+									username + "'s " + attribute + ": " + attributeValue)
+							.mimeType("text/plain")
+							.build()))
+				.build();
 		}
 
 		/**
@@ -296,10 +280,15 @@ public final class SyncMcpResourceMethodCallbackExample {
 				description = "Provides user profile information with server exchange context")
 		public ReadResourceResult getProfileWithExchange(McpSyncServerExchange exchange, String username) {
 			String profileInfo = formatProfileInfo(
-					this.userProfiles.getOrDefault(username.toLowerCase(), new HashMap<>()));
+					this.userProfiles.getOrDefault(username.toLowerCase(Locale.ROOT), new HashMap<>()));
 
-			return new ReadResourceResult(List.of(new TextResourceContents("user-profile-exchange://" + username,
-					"text/plain", "Profile with exchange for " + username + ": " + profileInfo)));
+			return ReadResourceResult
+				.builder(List.of(TextResourceContents
+					.builder("user-profile-exchange://" + username,
+							"Profile with exchange for " + username + ": " + profileInfo)
+					.mimeType("text/plain")
+					.build()))
+				.build();
 		}
 
 		/**
@@ -324,7 +313,7 @@ public final class SyncMcpResourceMethodCallbackExample {
 			// Generate notifications based on username
 			String notifications = generateNotifications(username);
 
-			return List.of(new TextResourceContents(request.uri(), "text/plain", notifications));
+			return List.of(TextResourceContents.builder(request.uri(), notifications).mimeType("text/plain").build());
 		}
 
 		/**
@@ -336,7 +325,7 @@ public final class SyncMcpResourceMethodCallbackExample {
 			// Generate a simple status based on username
 			String status = generateUserStatus(username);
 
-			return new TextResourceContents(request.uri(), "text/plain", status);
+			return TextResourceContents.builder(request.uri(), status).mimeType("text/plain").build();
 		}
 
 		/**
@@ -345,7 +334,8 @@ public final class SyncMcpResourceMethodCallbackExample {
 		@McpResource(uri = "user-location://{username}", name = "User Location",
 				description = "Provides the current location for a specific user")
 		public String getUserLocation(String username) {
-			Map<String, String> profile = this.userProfiles.getOrDefault(username.toLowerCase(), new HashMap<>());
+			Map<String, String> profile = this.userProfiles.getOrDefault(username.toLowerCase(Locale.ROOT),
+					new HashMap<>());
 
 			// Extract location from profile data
 			return profile.getOrDefault("location", "Location not available");
@@ -370,12 +360,12 @@ public final class SyncMcpResourceMethodCallbackExample {
 				if (schemaParts.length > 1) {
 					// Handle potential additional path segments after the username
 					String[] pathParts = schemaParts[1].split("/");
-					return pathParts[0].toLowerCase();
+					return pathParts[0].toLowerCase(Locale.ROOT);
 				}
 			}
 			// Fallback for old URI format or unexpected formats
 			String[] parts = uri.split("/");
-			return parts.length > 2 ? parts[2].toLowerCase() : "unknown";
+			return parts.length > 2 ? parts[2].toLowerCase(Locale.ROOT) : "unknown";
 		}
 
 		private String formatProfileInfo(Map<String, String> profile) {

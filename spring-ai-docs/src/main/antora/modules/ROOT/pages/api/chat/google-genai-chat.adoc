@@ -105,7 +105,7 @@ The prefix `spring.ai.google.genai.chat` is the property prefix that lets you co
 |====
 | Property | Description | Default
 
-| spring.ai.google.genai.chat.model | Supported https://ai.google.dev/gemini-api/docs/models[Google GenAI Chat models] to use include `gemini-2.0-flash`, `gemini-2.0-flash-lite`, `gemini-pro`, and `gemini-1.5-flash`. | gemini-2.0-flash
+| spring.ai.google.genai.chat.model | Supported https://ai.google.dev/gemini-api/docs/models[Google GenAI Chat models] to use, includes `gemini-2.5-flash`, `gemini-2.5-flash-lite`, `gemini-2.5-pro`, `gemini-3.1-pro-preview`, `gemini-3.1-flash-lite` and `gemini-3.5-flash`. | gemini-2.5-flash
 | spring.ai.google.genai.chat.response-mime-type | Output response mimetype of the generated candidate text. |  `text/plain`: (default) Text output or `application/json`: JSON response.
 | spring.ai.google.genai.chat.google-search-retrieval | Use Google search Grounding feature | `true` or `false`, default `false`.
 | spring.ai.google.genai.chat.include-server-side-tool-invocations | When true, the API response includes server-side tool calls and responses (e.g., Google Search invocations) in the response metadata, allowing observation of the server's tool usage. Only supported with Gemini Developer API (MLDev), not Vertex AI. See <<server-side-tool-invocations>>. | `false`
@@ -127,6 +127,8 @@ The prefix `spring.ai.google.genai.chat` is the property prefix that lets you co
 | spring.ai.google.genai.chat.auto-cache-ttl | Time-to-live (Duration) for auto-cached content in ISO-8601 format (e.g., `PT1H` for 1 hour). Used when auto-caching is enabled. | PT1H
 | spring.ai.google.genai.chat.enable-cached-content | Enable the `GoogleGenAiCachedContentService` bean for managing cached content. | true
 | spring.ai.google.genai.chat.service-tier | The service tier to use for the request. Valid values: `STANDARD`, `PRIORITY`, `FLEX`. | -
+| spring.ai.google.genai.chat.tool-choice.mode | Controls how the model selects functions when tools are provided. Valid values: `AUTO` (model decides), `ANY` (always calls a function), `VALIDATED` (function call or natural language), `NONE` (no function calls). See <<tool-choice>>. | -
+| spring.ai.google.genai.chat.tool-choice.allowed-function-names | Comma-separated list of function names the model may call. Only applied when `tool-choice.mode` is `ANY` or `VALIDATED`; ignored for other modes. | -
 
 |====
 
@@ -156,73 +158,82 @@ TIP: In addition to the model specific `GoogleGenAiChatOptions` you can use a po
 
 == Tool Calling
 
-`GoogleGenAiChatModel` does not execute tool calls internally.
-Tool execution must be handled externally using one of the two supported approaches below.
+`GoogleGenAiChatModel` supports tool calling. The model can request tool execution but does not run tools itself — Spring AI handles execution.
 
-=== Tool Calling via ChatClient (Recommended)
+For most applications, use `ChatClient` with the auto-registered `ToolCallingAdvisor` — see xref:api/tools.adoc[Tool Calling]. For low-level control where you drive the loop yourself, see xref:api/tools/chatmodel-tool-calling.adoc[ChatModel Tool Calling].
 
-The recommended approach is to use `ChatClient` with the `ToolCallingAdvisor`, which is automatically registered and manages the tool-call loop transparently for both synchronous and streaming scenarios.
+See xref:#server-side-tool-invocations[Server-Side Tool Invocations] below for Google's built-in tools (Search, Maps, URL Context) and how to combine them with client-side function calling.
 
-[source,java]
-----
-public class WeatherService {
+=== Tool Choice [[tool-choice]]
 
-    @Tool(description = "Get the weather in location")
-    public String weatherByLocation(@ToolParam(description= "City or state name") String location) {
-        ...
-    }
-}
+`GoogleGenAiChatOptions.ToolChoice` configures how the model selects functions when tools are provided.
+It maps to Google GenAI's https://ai.google.dev/api/generate-content#v1beta.FunctionCallingConfig[FunctionCallingConfig].
 
-String response = ChatClient.create(this.chatModel)
-        .prompt("What's the weather like in Boston?")
-        .tools(new WeatherService())
-        .call()
-        .content();
-----
+[cols="1,3", stripes=even]
+|====
+| Mode | Behavior
 
-You can also register a `ToolCallback` bean and pass it directly:
+| `AUTO` | The model decides whether to call a function or return a natural language response (default behavior).
+| `ANY` | The model always predicts a function call.
+When `allowedFunctionNames` is set, calls are limited to those functions.
+| `VALIDATED` | The model may call a function or return a natural language response.
+When `allowedFunctionNames` is set, calls are limited to those functions.
+| `NONE` | The model does not call any functions and returns a natural language response.
+|====
 
-[source,java]
-----
-@Bean
-ToolCallback weatherFunction() {
-    return FunctionToolCallback.builder("weatherFunction", new MockWeatherService())
-        .description("Get the weather in location. Return temperature in 36°F or 36°C format.")
-        .inputType(Request.class)
-        .build();
-}
+NOTE: `allowedFunctionNames` is only applied when mode is `ANY` or `VALIDATED`, and is silently ignored for `AUTO` and `NONE`.
 
-String response = ChatClient.create(this.chatModel)
-        .prompt("What's the weather like in Boston?")
-        .tools(weatherFunction)
-        .call()
-        .content();
-----
-
-=== User-Controlled Tool Execution
-
-Use this pattern when you need direct access to the `ChatModel` API and want full control over the tool-call loop.
-Invoke `ChatModel` directly without `ToolCallingAdvisor`; check for tool calls yourself and drive the loop using `ToolCallingManager`.
+==== Programmatic Configuration
 
 [source,java]
 ----
-ToolCallingManager toolCallingManager = ToolCallingManager.builder().build();
-
-ChatOptions options = ToolCallingChatOptions.builder()
-        .toolCallbacks(ToolCallbacks.from(new WeatherService()))
-        .build();
-
-Prompt prompt = new Prompt("What's the weather like in Boston?", options);
-ChatResponse response = chatModel.call(prompt);
-
-while (response.hasToolCalls()) {
-    ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, response);
-    prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
-    response = chatModel.call(prompt);
-}
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "What is the weather in Paris?",
+        GoogleGenAiChatOptions.builder()
+            .toolChoice(new GoogleGenAiChatOptions.ToolChoice(
+                GoogleGenAiChatOptions.ToolChoice.Mode.ANY,
+                List.of("get_weather")))
+            .build()
+    ));
 ----
 
-Find more in xref:api/tools.adoc[Tools] documentation.
+To apply a mode without restricting to specific functions:
+
+[source,java]
+----
+GoogleGenAiChatOptions.builder()
+    .toolChoice(new GoogleGenAiChatOptions.ToolChoice(
+        GoogleGenAiChatOptions.ToolChoice.Mode.NONE, null))
+    .build();
+----
+
+==== Property-Based Configuration
+
+[source,application.properties]
+----
+# Force the model to always call a function
+spring.ai.google.genai.chat.tool-choice.mode=ANY
+
+# Optionally restrict to specific functions (only applies when mode is ANY or VALIDATED)
+spring.ai.google.genai.chat.tool-choice.allowed-function-names=get_weather,get_forecast
+----
+
+Or in YAML:
+
+[source,yaml]
+----
+spring:
+  ai:
+    google:
+      genai:
+        chat:
+          tool-choice:
+            mode: ANY
+            allowed-function-names:
+              - get_weather
+              - get_forecast
+----
 
 == Server-Side Tool Invocations [[server-side-tool-invocations]]
 
@@ -230,7 +241,7 @@ When Google Search or other server-side tools are enabled via `googleSearchRetri
 
 [IMPORTANT]
 ====
-This feature is only supported with the **Gemini Developer API** (MLDev / API key authentication), and models from Gemini 3.x and up. It is **not supported** on Vertex AI.
+This feature is only supported with the **Gemini Developer API** (MLDev / API key authentication). It is **not supported** on Vertex AI.
 ====
 
 === Configuration
@@ -302,9 +313,9 @@ Each entry in the list contains:
 | `response` | (toolResponse only) The results returned by the tool
 |====
 
-=== Combined with Function Calling
+=== Combined with Client-Side Tool Calling
 
-Server-side tool invocations work alongside client-side function calling. You can enable both Google Search (server-side) and custom functions (client-side) in the same request:
+Server-side tool invocations work alongside client-side tool calling. You can enable both Google Search (server-side) and custom tools (client-side) in the same request:
 
 [source,java]
 ----
@@ -342,16 +353,18 @@ The `thinkingLevel` option controls the depth of reasoning tokens the model gene
 |====
 | Value | Description
 
-| `LOW` | Minimal thinking. Use for simple queries where speed is preferred over deep analysis.
-| `HIGH` | Extensive thinking. Use for complex problems requiring deep analysis and step-by-step reasoning.
 | `THINKING_LEVEL_UNSPECIFIED` | The model uses its default behavior.
+| `MINIMAL` | Matches the "no thinking" setting for most queries. Minimizes latency.
+| `LOW` | Low thinking. Minimal reasoning tokens.
+| `MEDIUM` | Balanced thinking for most tasks.
+| `HIGH` | Extensive thinking. Use for complex problems requiring deep analysis and step-by-step reasoning.
 |====
 
 ==== Configuration via Properties
 
 [source,application.properties]
 ----
-spring.ai.google.genai.chat.model=gemini-3-pro-preview
+spring.ai.google.genai.chat.model=gemini-3.1-pro-preview
 spring.ai.google.genai.chat.thinking-level=HIGH
 ----
 
@@ -365,7 +378,7 @@ ChatResponse response = chatModel.call(
     new Prompt(
         "Explain the theory of relativity in simple terms.",
         GoogleGenAiChatOptions.builder()
-            .model("gemini-3-pro-preview")
+            .model("gemini-3.1-pro-preview")
             .thinkingLevel(GoogleGenAiThinkingLevel.HIGH)
             .build()
     ));
@@ -397,20 +410,20 @@ ChatResponse response = chatModel.call(
 ====
 **`thinkingLevel` and `thinkingBudget` are mutually exclusive.** You cannot use both in the same request - doing so will result in an API error.
 
-* Use `thinkingLevel` (`LOW`, `HIGH`) for **Gemini 3 Pro** models
-* Use `thinkingBudget` (token count) for **Gemini 2.5** series models
+* Use `thinkingLevel` for **Gemini 3.x** models. Gemini 3 Pro only supports `LOW` and `HIGH`; Gemini 3 Flash models support all levels (`MINIMAL`, `LOW`, `MEDIUM`, `HIGH`).
+* Use `thinkingBudget` (token count) for **Gemini 2.5** series models.
 ====
 
 You can combine `includeThoughts` with either `thinkingLevel` or `thinkingBudget` (but not both):
 
 [source,java]
 ----
-// For Gemini 3 Pro: use thinkingLevel + includeThoughts
+// For Gemini 3.x (e.g. Pro): use thinkingLevel + includeThoughts
 ChatResponse response = chatModel.call(
     new Prompt(
         "Analyze this complex scenario.",
         GoogleGenAiChatOptions.builder()
-            .model("gemini-3-pro-preview")
+            .model("gemini-3.1-pro-preview")
             .thinkingLevel(GoogleGenAiThinkingLevel.HIGH)
             .includeThoughts(true)
             .build()
@@ -432,31 +445,48 @@ ChatResponse response = chatModel.call(
 
 The thinking configuration options are model-specific:
 
-[cols="2,1,1,2", stripes=even]
+[cols="2,2,1,1,2", stripes=even]
 |====
-| Model | thinkingLevel | thinkingBudget | Notes
+| Model | Model ID | thinkingLevel | thinkingBudget | Notes
 
-| Gemini 3 Pro (Preview)
-| ✅ Supported
+| Gemini 3 Pro Preview
+| `gemini-3.1-pro-preview`
+| ✅ Only `LOW` and `HIGH`
 | ⚠️ Backwards compatible only
 | Use `thinkingLevel`. Cannot disable thinking. Requires **global** endpoint.
 
+| Gemini 3.5 Flash
+| `gemini-3.5-flash`
+| ✅ All levels
+| ❌ Not supported
+| Use `thinkingLevel` with any level including `MINIMAL` and `MEDIUM`.
+
+| Gemini 3.1 Flash-Lite
+| `gemini-3.1-flash-lite`
+| ✅ All levels
+| ❌ Not supported
+| Use `thinkingLevel` with any level including `MINIMAL` and `MEDIUM`.
+
 | Gemini 2.5 Pro
+| `gemini-2.5-pro`
 | ❌ Not supported
 | ✅ Supported
 | Use `thinkingBudget`. Set to 0 to disable, -1 for dynamic.
 
 | Gemini 2.5 Flash
+| `gemini-2.5-flash`
 | ❌ Not supported
 | ✅ Supported
 | Use `thinkingBudget`. Set to 0 to disable, -1 for dynamic.
 
 | Gemini 2.5 Flash-Lite
+| `gemini-2.5-flash-lite`
 | ❌ Not supported
 | ✅ Supported
 | Thinking disabled by default. Set `thinkingBudget` to enable.
 
 | Gemini 2.0 Flash
+| `gemini-2.0-flash-001`
 | ❌ Not supported
 | ❌ Not supported
 | Thinking not available.
@@ -465,6 +495,7 @@ The thinking configuration options are model-specific:
 [IMPORTANT]
 ====
 * Using `thinkingLevel` with unsupported models (e.g., Gemini 2.5 or earlier) will result in an API error.
+* Using `MINIMAL` or `MEDIUM` with Gemini 3 Pro models will result in an `IllegalArgumentException`.
 * Gemini 3 Pro Preview is only available on **global** endpoints. Set `spring.ai.google.genai.location=global` or `GOOGLE_CLOUD_LOCATION=global`.
 * Check the https://ai.google.dev/gemini-api/docs/thinking[Google GenAI Thinking documentation] for the latest model capabilities.
 ====
@@ -494,7 +525,7 @@ Enable thought signatures using configuration properties:
 
 [source,application.properties]
 ----
-spring.ai.google.genai.chat.model=gemini-3-pro-preview
+spring.ai.google.genai.chat.model=gemini-3.1-pro-preview
 spring.ai.google.genai.chat.include-thoughts=true
 ----
 
@@ -506,7 +537,7 @@ ChatResponse response = chatModel.call(
     new Prompt(
         "Your question here",
         GoogleGenAiChatOptions.builder()
-            .model("gemini-3-pro-preview")
+            .model("gemini-3.1-pro-preview")
             .includeThoughts(true)
             .toolCallbacks(callbacks)
             .build()
@@ -535,7 +566,7 @@ ToolCallback weatherFunction() {
 String response = ChatClient.create(this.chatModel)
         .prompt("What's the weather like in Boston?")
         .options(GoogleGenAiChatOptions.builder()
-            .model("gemini-3-pro-preview")
+            .model("gemini-3.1-pro-preview")
             .includeThoughts(true)
             .build())
         .tools(weatherFunction)
@@ -640,7 +671,7 @@ private GoogleGenAiCachedContentService cachedContentService;
 String largeDocument = "... your large context here (>32k tokens) ...";
 
 CachedContentRequest request = CachedContentRequest.builder()
-    .model("gemini-2.0-flash")
+    .model("gemini-2.5-flash")
     .contents(List.of(
         Content.builder()
             .role("user")
@@ -809,7 +840,7 @@ Add a `application.properties` file, under the `src/main/resources` directory, t
 [source,application.properties]
 ----
 spring.ai.google.genai.api-key=YOUR_API_KEY
-spring.ai.google.genai.chat.model=gemini-2.0-flash
+spring.ai.google.genai.chat.model=gemini-2.5-flash
 spring.ai.google.genai.chat.temperature=0.5
 ----
 
@@ -819,7 +850,7 @@ spring.ai.google.genai.chat.temperature=0.5
 ----
 spring.ai.google.genai.project-id=PROJECT_ID
 spring.ai.google.genai.location=LOCATION
-spring.ai.google.genai.chat.model=gemini-2.0-flash
+spring.ai.google.genai.chat.model=gemini-2.5-flash
 spring.ai.google.genai.chat.temperature=0.5
 ----
 

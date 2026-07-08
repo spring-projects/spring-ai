@@ -239,7 +239,7 @@ class SyncMcpToolCallbackProviderBuilderTest {
 		McpSyncClient mcpClient = Mockito.mock(McpSyncClient.class);
 
 		// Mock client info
-		McpSchema.Implementation clientInfo = new McpSchema.Implementation(clientName, "1.0.0");
+		McpSchema.Implementation clientInfo = McpSchema.Implementation.builder(clientName, "1.0.0").build();
 		when(mcpClient.getClientInfo()).thenReturn(clientInfo);
 
 		// Mock client capabilities

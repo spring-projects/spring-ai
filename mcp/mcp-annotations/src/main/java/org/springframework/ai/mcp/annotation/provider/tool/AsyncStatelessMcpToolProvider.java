@@ -90,10 +90,8 @@ public class AsyncStatelessMcpToolProvider extends AbstractMcpToolProvider {
 
 					var meta = MetaUtils.getMeta(toolJavaAnnotation.metaProvider());
 
-					var toolBuilder = McpSchema.Tool.builder()
-						.name(toolName)
+					var toolBuilder = McpSchema.Tool.builder(toolName, this.getJsonMapper(), inputSchema)
 						.description(toolDescription)
-						.inputSchema(this.getJsonMapper(), inputSchema)
 						.meta(meta);
 
 					var title = toolJavaAnnotation.title();
@@ -101,9 +99,13 @@ public class AsyncStatelessMcpToolProvider extends AbstractMcpToolProvider {
 					// Tool annotations
 					if (toolJavaAnnotation.annotations() != null) {
 						var toolAnnotations = toolJavaAnnotation.annotations();
-						toolBuilder.annotations(new McpSchema.ToolAnnotations(toolAnnotations.title(),
-								toolAnnotations.readOnlyHint(), toolAnnotations.destructiveHint(),
-								toolAnnotations.idempotentHint(), toolAnnotations.openWorldHint(), null));
+						toolBuilder.annotations(McpSchema.ToolAnnotations.builder()
+							.title(toolAnnotations.title())
+							.readOnlyHint(toolAnnotations.readOnlyHint())
+							.destructiveHint(toolAnnotations.destructiveHint())
+							.idempotentHint(toolAnnotations.idempotentHint())
+							.openWorldHint(toolAnnotations.openWorldHint())
+							.build());
 
 						// If not provided, the name should be used for display (except
 						// for Tool, where annotations.title should be given precedence
@@ -146,7 +148,7 @@ public class AsyncStatelessMcpToolProvider extends AbstractMcpToolProvider {
 									: ReturnMode.TEXT;
 
 					BiFunction<McpTransportContext, CallToolRequest, Mono<CallToolResult>> methodCallback = new AsyncStatelessMcpToolMethodCallback(
-							returnMode, mcpToolMethod, toolObject, this.doGetToolCallException());
+							returnMode, mcpToolMethod, toolObject);
 
 					AsyncToolSpecification toolSpec = AsyncToolSpecification.builder()
 						.tool(tool)

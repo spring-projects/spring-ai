@@ -47,7 +47,6 @@ class AzureOpenAiEmbeddingModelIT {
 		EmbeddingResponse embeddingResponse = this.embeddingModel.embedForResponse(List.of("Hello World"));
 		assertThat(embeddingResponse.getResults()).hasSize(1);
 		assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
-		System.out.println(this.embeddingModel.dimensions());
 		assertThat(this.embeddingModel.dimensions()).isEqualTo(1536);
 	}
 
@@ -70,12 +69,12 @@ class AzureOpenAiEmbeddingModelIT {
 
 		@Bean
 		public OpenAiEmbeddingModel azureEmbeddingModel() {
-			return new OpenAiEmbeddingModel(MetadataMode.EMBED,
-					OpenAiEmbeddingOptions.builder()
-						.baseUrl(System.getenv("AZURE_OPENAI_ENDPOINT"))
-						.apiKey(System.getenv("AZURE_OPENAI_API_KEY"))
-						.deploymentName("text-embedding-ada-002")
-						.build());
+			OpenAiEmbeddingOptions options = OpenAiEmbeddingOptions.builder()
+				.baseUrl(System.getenv("AZURE_OPENAI_ENDPOINT"))
+				.apiKey(System.getenv("AZURE_OPENAI_API_KEY"))
+				.deploymentName("text-embedding-ada-002")
+				.build();
+			return OpenAiEmbeddingModel.builder().metadataMode(MetadataMode.EMBED).options(options).build();
 		}
 
 	}

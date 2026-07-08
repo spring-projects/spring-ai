@@ -270,13 +270,12 @@ Cache growing conversation history for multi-turn chatbots and assistants:
 // Cache conversation history with ChatClient and memory
 ChatClient chatClient = ChatClient.builder(chatModel)
     .defaultSystem("You are a personalized career counselor...")
-    .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory)
-        .conversationId(conversationId)
-        .build())
+    .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
     .build();
 
 String response = chatClient.prompt()
     .user("What career advice would you give me?")
+    .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, conversationId))
     .options(BedrockChatOptions.builder()
         .model("us.anthropic.claude-haiku-4-5-20251001-v1:0")
         .cacheOptions(BedrockCacheOptions.builder()
@@ -302,6 +301,7 @@ The `multiBlockSystemCaching` option solves this by placing the cache point *aft
 BedrockCacheOptions cacheOptions = BedrockCacheOptions.builder()
     .strategy(BedrockCacheStrategy.SYSTEM_ONLY)
     .multiBlockSystemCaching(true)
+    .ttl(BedrockCacheTtl.ONE_HOUR)
     .build();
 
 BedrockChatOptions chatOptions = BedrockChatOptions.builder()
@@ -673,8 +673,9 @@ Even small changes will require a new cache entry.
 
 5. **Strategic Cache Placement**: The implementation automatically places cache breakpoints at optimal locations based on your chosen strategy, ensuring compliance with AWS Bedrock's 4-breakpoint limit.
 
-6. **Cache Lifetime**: AWS Bedrock caches have a fixed 5-minute TTL (Time To Live).
+6. **Cache Lifetime**: AWS Bedrock caches have a default 5-minute TTL (Time To Live), but they also support a 1-hour TTL duration.
 Each cache access resets the timer.
+This can be configured using `BedrockCacheTtl` on `BedrockCacheOptions` or via the `spring.ai.bedrock.converse.chat.cache-options.ttl` property.
 
 7. **Model Compatibility**: Be aware of model-specific limitations:
    - **Claude models**: Support all caching strategies
@@ -790,117 +791,9 @@ AWS Bedrock pricing for prompt caching (approximate, varies by model):
 
 == Tool Calling
 
-`BedrockProxyChatModel` does not execute tool calls internally.
-Tool execution must be handled externally using one of two supported approaches:
+`BedrockProxyChatModel` supports tool calling. The model can request tool execution but does not run tools itself — Spring AI handles execution.
 
-* **ChatClient with ToolCallingAdvisor** — the recommended approach for most use cases.
-  `ToolCallingAdvisor` is automatically registered and manages the tool-call loop transparently.
-* **User-controlled tool execution** — use `DefaultToolCallingManager` directly when you need full control over the loop (for example, when combining tool calling with prompt caching).
-
-=== Tool Calling via ChatClient (Recommended)
-
-The simplest way to use tools is with the `ChatClient` high-level API.
-`ToolCallingAdvisor` handles the tool-call loop automatically for both synchronous and streaming calls.
-
-Here's an example using `@Tool`-annotated methods:
-
-[source,java]
-----
-public class WeatherService {
-
-    @Tool(description = "Get the weather in location")
-    public String weatherByLocation(@ToolParam(description = "City or state name") String location) {
-        // ...
-    }
-}
-
-String response = ChatClient.create(this.chatModel)
-        .prompt("What's the weather like in Boston?")
-        .tools(new WeatherService())
-        .call()
-        .content();
-----
-
-You can also register a `ToolCallback` bean and pass it directly:
-
-[source,java]
-----
-@Bean
-ToolCallback weatherFunction() {
-    return FunctionToolCallback.builder("weatherFunction", new MockWeatherService())
-        .description("Get the weather in location. Return temperature in 36°F or 36°C format.")
-        .inputType(Request.class)
-        .build();
-}
-
-String response = ChatClient.create(this.chatModel)
-        .prompt("What's the weather like in Boston?")
-        .tools(weatherFunction)
-        .call()
-        .content();
-----
-
-=== User-Controlled Tool Execution
-
-For scenarios where you need explicit control over the tool-call loop — for example, when combining tool calling with prompt caching — you can drive the loop manually using `DefaultToolCallingManager`.
-
-==== Synchronous
-
-[source,java]
-----
-ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
-
-var options = BedrockChatOptions.builder()
-        .toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new WeatherService())
-            .description("Get the weather in location. Return temperature in 36°F or 36°C format.")
-            .inputType(WeatherService.Request.class)
-            .build()))
-        .build();
-
-var prompt = new Prompt("What's the weather like in San Francisco, Tokyo and Paris?", options);
-
-ChatResponse response = chatModel.call(prompt);
-
-while (response.hasToolCalls()) {
-    ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, response);
-    prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
-    response = chatModel.call(prompt);
-}
-
-System.out.println(response.getResult().getOutput().getText());
-----
-
-==== Streaming
-
-Because tool calls span multiple stream chunks, each streaming call must be aggregated first using `MessageAggregator` before checking for tool calls.
-
-[source,java]
-----
-ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
-
-var options = BedrockChatOptions.builder()
-        .toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new WeatherService())
-            .description("Get the weather in location. Return temperature in 36°F or 36°C format.")
-            .inputType(WeatherService.Request.class)
-            .build()))
-        .build();
-
-var prompt = new Prompt("What's the weather like in San Francisco, Tokyo and Paris?", options);
-
-AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
-new MessageAggregator().aggregate(chatModel.stream(prompt), aggregatedRef::set).collectList().block();
-
-while (aggregatedRef.get().hasToolCalls()) {
-    ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, aggregatedRef.get());
-    prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
-    aggregatedRef.set(null);
-    new MessageAggregator().aggregate(chatModel.stream(prompt), aggregatedRef::set).collectList().block();
-}
-
-System.out.println(aggregatedRef.get().getResult().getOutput().getText());
-----
-
-Find more in xref:api/tools.adoc[Tools] documentation.
+For most applications, use `ChatClient` with the auto-registered `ToolCallingAdvisor` — see xref:api/tools.adoc[Tool Calling]. For low-level control where you drive the loop yourself (for example, when combining tool calling with prompt caching), see xref:api/tools/chatmodel-tool-calling.adoc[ChatModel Tool Calling].
 
 == Structured Output [[structured-output]]
 
@@ -965,7 +858,7 @@ String content = response.getResult().getOutput().getText();
 NOTE: AWS Bedrock structured output uses a fixed schema name `response_schema` internally when constructing the `OutputConfig`.
 The schema JSON is passed directly to the AWS SDK's `JsonSchemaDefinition`.
 
-For more information, see the xref:api/structured-output-converter.adoc[Structured Output Converter] documentation.
+For more information, see the xref:api/structured-output.adoc[Structured Output] documentation.
 
 == Multimodal
 

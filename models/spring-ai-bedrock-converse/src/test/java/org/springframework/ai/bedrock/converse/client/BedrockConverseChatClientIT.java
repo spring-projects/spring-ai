@@ -305,7 +305,6 @@ class BedrockConverseChatClientIT {
 
 		List<ChatResponse> chatResponses = response.collectList().block();
 
-		// chatResponses.forEach(cr -> System.out.println("Response: {}", cr));
 		var lastChatResponse = chatResponses.get(chatResponses.size() - 1);
 		var metadata = lastChatResponse.getMetadata();
 		assertThat(metadata.getUsage()).isNotNull();

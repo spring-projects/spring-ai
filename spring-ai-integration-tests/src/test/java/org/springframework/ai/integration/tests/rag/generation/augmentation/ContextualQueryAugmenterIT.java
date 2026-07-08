@@ -56,7 +56,6 @@ class ContextualQueryAugmenterIT {
 		String response = this.openAiChatModel.call(augmentedQuery.text());
 
 		assertThat(response).isNotEmpty();
-		System.out.println(response);
 		assertThat(response).containsIgnoringCase("North Pole");
 		assertThat(response).doesNotContainIgnoringCase("context");
 		assertThat(response).doesNotContainIgnoringCase("information");
@@ -71,7 +70,6 @@ class ContextualQueryAugmenterIT {
 		String response = this.openAiChatModel.call(augmentedQuery.text());
 
 		assertThat(response).isNotEmpty();
-		System.out.println(response);
 		assertThat(response).containsIgnoringCase("Iorek");
 	}
 
@@ -84,7 +82,6 @@ class ContextualQueryAugmenterIT {
 		String response = this.openAiChatModel.call(augmentedQuery.text());
 
 		assertThat(response).isNotEmpty();
-		System.out.println(response);
 		assertThat(response).doesNotContainIgnoringCase("Iorek");
 	}
 

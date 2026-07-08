@@ -32,6 +32,27 @@ public final class AdvisorParams {
 	private AdvisorParams() {
 	}
 
+	/**
+	 * Advisor parameter that enables provider-native structured output for all
+	 * {@code entity()} calls on a prompt. When set, the JSON schema is delivered to the
+	 * AI provider as an API-level constraint rather than appended as prompt text.
+	 *
+	 * <p>
+	 * <b>Not enabled by default</b> because native structured output support varies
+	 * across models and providers. Known limitations:
+	 * <ul>
+	 * <li><b>Ollama</b>: models with a built-in reasoning/thinking mode (e.g.
+	 * {@code qwen3:8b}, {@code qwen3.5:9b}) may return plain text instead of JSON,
+	 * causing deserialization failures.</li>
+	 * <li><b>OpenAI</b>: the Structured Outputs API does not accept a top-level JSON
+	 * array schema. Requesting a {@code List<T>} will fail; wrap the list in a container
+	 * record or use the default prompt-based approach instead.</li>
+	 * </ul>
+	 *
+	 * <p>
+	 * For per-call control prefer
+	 * {@link ChatClient.EntityParamSpec#useProviderStructuredOutput()}.
+	 */
 	public static final Consumer<ChatClient.AdvisorSpec> ENABLE_NATIVE_STRUCTURED_OUTPUT = a -> a
 		.param(ChatClientAttributes.STRUCTURED_OUTPUT_NATIVE.getKey(), true);
 

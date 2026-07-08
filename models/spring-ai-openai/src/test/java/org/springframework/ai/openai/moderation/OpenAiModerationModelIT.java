@@ -59,8 +59,6 @@ public class OpenAiModerationModelIT extends AbstractIT {
 		assertThat(moderation.getId()).isNotEmpty();
 		assertThat(moderation.getResults()).isNotNull();
 		assertThat(moderation.getResults().size()).isNotZero();
-		System.out.println(moderation.getResults().toString());
-
 		assertThat(moderation.getId()).isNotNull();
 		assertThat(moderation.getModel()).isNotNull();
 
@@ -113,8 +111,6 @@ public class OpenAiModerationModelIT extends AbstractIT {
 		assertThat(moderation.getId()).isNotEmpty();
 		assertThat(moderation.getResults()).isNotNull();
 		assertThat(moderation.getResults().size()).isNotZero();
-		System.out.println(moderation.getResults().toString());
-
 		assertThat(moderation.getId()).isNotNull();
 		assertThat(moderation.getModel()).isNotNull();
 

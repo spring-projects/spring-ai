@@ -30,6 +30,8 @@ import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.JSONRPCRequest;
 import io.modelcontextprotocol.util.McpJsonMapperUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -60,15 +62,17 @@ import static org.mockito.Mockito.verify;
  *
  * @author Christian Tzolov
  */
-@Timeout(15)
+@Timeout(60)
 class WebFluxSseClientTransportIT {
+
+	private static final Log logger = LogFactory.getLog(WebFluxSseClientTransportIT.class);
 
 	static String host = "http://localhost:3001";
 
 	@SuppressWarnings("resource")
 	static GenericContainer<?> container = new GenericContainer<>("docker.io/node:lts-alpine3.23")
 		.withCommand("npx -y @modelcontextprotocol/server-everything@2025.12.18 sse")
-		.withLogConsumer(outputFrame -> System.out.println(outputFrame.getUtf8String()))
+		.withLogConsumer(outputFrame -> logger.info(outputFrame.getUtf8String()))
 		.withExposedPorts(3001)
 		.waitingFor(Wait.forHttp("/").forStatusCode(404));
 

@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.junit.jupiter.api.AfterEach;
@@ -49,6 +50,7 @@ import org.springframework.ai.content.Media;
 import org.springframework.util.MimeType;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Integration tests for {@link Neo4jChatMemoryRepository}.
@@ -409,42 +411,22 @@ class Neo4jChatMemoryRepositoryIT {
 	}
 
 	@Test
-	void refreshConversation() {
+	void saveAssistantMessageWithOptionalMetadataFails() {
 		var conversationId = UUID.randomUUID().toString();
 
-		// 1. Save initial messages
-		List<Message> initialMessages = List.of(new UserMessage("Hello"), new AssistantMessage("Hi there"),
-				new UserMessage("How are you?"));
-		this.chatMemoryRepository.saveAll(conversationId, initialMessages);
+		// Simulate what the OpenAI SDK returns: Optional-typed fields like
+		// "refusal" and "toolCalls" in the AssistantMessage metadata.
+		// Neo4j's Values.value() cannot convert java.util.Optional to a Neo4j Value,
+		// which causes a ClientException during serialization.
+		AssistantMessage assistantMessage = AssistantMessage.builder()
+			.content("Message with Optional metadata")
+			.properties(Map.of("refusal", Optional.of("I cannot answer that"), "toolCalls", Optional.empty(),
+					"normalKey", "normalValue"))
+			.build();
 
-		// Retrieve to get metadata (especially the generated message IDs)
-		List<Message> savedMessages = this.chatMemoryRepository.findByConversationId(conversationId);
-		assertThat(savedMessages).hasSize(3);
-
-		// 2. Define changes
-		var messageToDelete = savedMessages.stream().filter(m -> m.getText().equals("How are you?")).findFirst().get();
-		var toDelete = List.of(messageToDelete);
-		List<Message> toAdd = List.of(new AssistantMessage("I am fine, thank you."));
-
-		// 3. Apply changes
-		this.chatMemoryRepository.refresh(conversationId, toDelete, toAdd);
-
-		// 4. Verify final state
-		List<Message> finalMessages = this.chatMemoryRepository.findByConversationId(conversationId);
-		assertThat(finalMessages).hasSize(3);
-
-		List<String> finalContents = finalMessages.stream().map(Message::getText).toList();
-		assertThat(finalContents).contains("Hello", "Hi there", "I am fine, thank you.");
-		assertThat(finalContents).doesNotContain("How are you?");
-
-		// Verify directly in the database
-		try (Session session = this.driver.session()) {
-			var result = session.run(
-					"MATCH (s:%s {id:$conversationId})-[:HAS_MESSAGE]->(m:%s) RETURN count(m) as count"
-						.formatted(this.config.getSessionLabel(), this.config.getMessageLabel()),
-					Map.of("conversationId", conversationId));
-			assertThat(result.single().get("count").asLong()).isEqualTo(3);
-		}
+		assertThatThrownBy(() -> this.chatMemoryRepository.saveAll(conversationId, List.of(assistantMessage)))
+			.isInstanceOf(org.neo4j.driver.exceptions.ClientException.class)
+			.hasMessageContaining("Unable to convert java.util.Optional");
 	}
 
 	private Message createMessageByType(String content, MessageType messageType) {

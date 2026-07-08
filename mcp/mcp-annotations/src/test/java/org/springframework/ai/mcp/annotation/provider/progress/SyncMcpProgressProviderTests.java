@@ -49,8 +49,10 @@ public class SyncMcpProgressProviderTests {
 		assertThat(consumers).hasSize(3);
 
 		// Test all consumers and verify at least one sets each expected field
-		ProgressNotification notification = new ProgressNotification("test-token-123", 0.5, 100.0,
-				"Test progress message");
+		ProgressNotification notification = ProgressNotification.builder("test-token-123", 0.5)
+			.total(100.0)
+			.message("Test progress message")
+			.build();
 
 		// Call all consumers
 		for (Consumer<ProgressNotification> consumer : consumers) {

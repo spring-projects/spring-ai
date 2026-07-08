@@ -213,8 +213,12 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 				returnDirect = returnDirect && toolCallback.getToolMetadata().returnDirect();
 			}
 
+			// In streaming/reactive mode the parent observation is propagated through the
+			// Reactor context captured in ToolCallReactiveContextHolder. In blocking mode
+			// that holder is never populated, so fall back to the observation currently
+			// in scope on the calling thread to keep the observation hierarchy intact.
 			Observation parent = ToolCallReactiveContextHolder.getContext()
-				.getOrDefault(ObservationThreadLocalAccessor.KEY, null);
+				.getOrDefault(ObservationThreadLocalAccessor.KEY, this.observationRegistry.getCurrentObservation());
 
 			ToolCallingObservationContext observationContext = ToolCallingObservationContext.builder()
 				.toolDefinition(toolCallback.getToolDefinition())

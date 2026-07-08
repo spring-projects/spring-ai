@@ -139,7 +139,6 @@ The prefix `spring.ai.openai.chat` is the property prefix that lets you configur
 | spring.ai.openai.chat.user | A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse. | -
 | spring.ai.openai.chat.stream-usage | (For streaming only) Set to add an additional chunk with token usage statistics for the entire request. The `choices` field for this chunk is an empty array and all other chunks will also include a usage field, but with a null value. | false
 | spring.ai.openai.chat.tool-callbacks | Tool Callbacks to register with the ChatModel. | -
-| spring.ai.openai.chat.internal-tool-execution-enabled | If false, the Spring AI will not handle the tool calls internally, but will proxy them to the client. Then it is the client's responsibility to handle the tool calls, dispatch them to the appropriate function, and return the results. If true (the default), the Spring AI will handle the function calls internally. Applicable only for chat models with function calling support | true
 |====
 
 TIP: All properties prefixed with `spring.ai.openai.chat` can be overridden at runtime by adding a request specific <<chat-options>> to the `Prompt` call.
@@ -166,72 +165,11 @@ ChatResponse response = chatModel.call(
 
 TIP: In addition to the model specific https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/openai/OpenAiChatOptions.java[OpenAiChatOptions] you can use a portable link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance, created with the link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/DefaultChatOptionsBuilder.java[ChatOptions#builder()].
 
-== Function Calling
+== Tool Calling
 
-Docker Model Runner supports Tool/Function calling when selecting a model that supports it.
+Docker Model Runner supports tool calling when the selected model supports it. Spring AI handles the tool execution loop.
 
-You can register custom Java functions with your ChatModel and have the provided model intelligently choose to output a JSON object containing arguments to call one or many of the registered functions.
-This is a powerful technique for connecting the LLM capabilities with external tools and APIs.
-
-=== Tool Example
-
-Here's a simple example of how to use Docker Model Runner function calling with Spring AI:
-
-[source,application.properties]
-----
-spring.ai.openai.api-key=test
-spring.ai.openai.base-url=http://localhost:12434/engines/v1
-spring.ai.openai.chat.model=ai/gemma3:4B-F16
-----
-
-[source,java]
-----
-@SpringBootApplication
-public class DockerModelRunnerLlmApplication {
-
-    public static void main(String[] args) {
-        SpringApplication.run(DockerModelRunnerLlmApplication.class, args);
-    }
-
-    @Bean
-    CommandLineRunner runner(ChatClient.Builder chatClientBuilder) {
-        return args -> {
-            var chatClient = chatClientBuilder.build();
-
-            var response = chatClient.prompt()
-                .user("What is the weather in Amsterdam and Paris?")
-                .functions("weatherFunction") // reference by bean name.
-                .call()
-                .content();
-
-            System.out.println(response);
-        };
-    }
-
-    @Bean
-    @Description("Get the weather in location")
-    public Function<WeatherRequest, WeatherResponse> weatherFunction() {
-        return new MockWeatherService();
-    }
-
-    public static class MockWeatherService implements Function<WeatherRequest, WeatherResponse> {
-
-        public record WeatherRequest(String location, String unit) {}
-        public record WeatherResponse(double temp, String unit) {}
-
-        @Override
-        public WeatherResponse apply(WeatherRequest request) {
-            double temperature = request.location().contains("Amsterdam") ? 20 : 25;
-            return new WeatherResponse(temperature, request.unit);
-        }
-    }
-}
-----
-
-In this example, when the model needs weather information, it will automatically call the `weatherFunction` bean, which can then fetch real-time weather data.
-The expected response is: "The weather in Amsterdam is currently 20 degrees Celsius, and the weather in Paris is currently 25 degrees Celsius."
-
-Read more about OpenAI link:https://docs.spring.io/spring-ai/reference/api/chat/functions/openai-chat-functions.html[Function Calling].
+For most applications, use `ChatClient` with the auto-registered `ToolCallingAdvisor` — see xref:api/tools.adoc[Tool Calling]. For low-level control where you drive the loop yourself, see xref:api/tools/chatmodel-tool-calling.adoc[ChatModel Tool Calling].
 
 
 == Sample Controller
@@ -247,7 +185,7 @@ spring.ai.openai.base-url=http://localhost:12434/engines/v1
 spring.ai.openai.chat.model=ai/gemma3:4B-F16
 
 # Docker Model Runner doesn't support embeddings, so we need to disable them.
-spring.ai.openai.embedding.enabled=false
+spring.ai.model.embedding=none
 ----
 
 

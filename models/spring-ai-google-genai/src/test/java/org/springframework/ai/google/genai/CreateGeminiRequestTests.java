@@ -19,10 +19,12 @@ package org.springframework.ai.google.genai;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import com.google.genai.Client;
 import com.google.genai.types.Content;
+import com.google.genai.types.FunctionCallingConfigMode;
 import com.google.genai.types.Part;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -51,6 +53,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * @author Dan Dobrin
  * @author Soby Chacko
  * @author Sebastien Deleuze
+ * @author Dimitar Proynov
  */
 @ExtendWith(MockitoExtension.class)
 public class CreateGeminiRequestTests {
@@ -108,10 +111,10 @@ public class CreateGeminiRequestTests {
 		Part textPart = parts.get(0);
 		assertThat(textPart.text().orElse("")).isEqualTo("User Message Text");
 
-		Part mediaPart = parts.get(1);
 		// Media parts are now created as inline data with Part.fromBytes()
 		// The test needs to be updated based on how media is handled in the new SDK
-		System.out.println(mediaPart);
+		Part mediaPart = parts.get(1);
+		assertThat(mediaPart.fileData().isPresent()).isTrue();
 	}
 
 	@Test
@@ -506,6 +509,31 @@ public class CreateGeminiRequestTests {
 	}
 
 	@Test
+	public void createRequestWithTrLocaleWithPreviewModel() {
+		Locale defaultLocale = Locale.getDefault();
+		try {
+			Locale.setDefault(Locale.forLanguageTag("tr-TR"));
+			// Default options are valid for Pro
+			var client = GoogleGenAiChatModel.builder().genAiClient(this.genAiClient).build();
+
+			// With turkish locale the check if this is a gemini3-pro model
+			// (isGemini3ProModel) will fail as
+			// lowercasing "gemini3-pro" will result in "gemını3-pro"
+			assertThatThrownBy(() -> client.createGeminiRequest(new Prompt("Test message content",
+					GoogleGenAiChatOptions.builder()
+						.model("GEMINI-3-PRO-PREVIEW")
+						.thinkingLevel(GoogleGenAiThinkingLevel.MINIMAL)
+						.build())))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessageContaining("MINIMAL")
+				.hasMessageContaining("not supported");
+		}
+		finally {
+			Locale.setDefault(defaultLocale);
+		}
+	}
+
+	@Test
 	public void createRequestWithThinkingLevelUnspecifiedOnProModel() {
 		// THINKING_LEVEL_UNSPECIFIED should be allowed on Pro models
 		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
@@ -582,6 +610,138 @@ public class CreateGeminiRequestTests {
 
 		// Default is false, so no ToolConfig should be set
 		assertThat(request.config().toolConfig()).isNotPresent();
+	}
+
+	@Test
+	public void createRequestWithToolChoiceAuto() {
+		var client = GoogleGenAiChatModel.builder()
+			.genAiClient(this.genAiClient)
+			.options(GoogleGenAiChatOptions.builder().model("DEFAULT_MODEL").build())
+			.build();
+
+		GeminiRequest request = client.createGeminiRequest(new Prompt("Test message content",
+				GoogleGenAiChatOptions.builder()
+					.toolChoice(GoogleGenAiChatOptions.ToolChoice.builder()
+						.mode(GoogleGenAiChatOptions.ToolChoice.Mode.AUTO)
+						.build())
+					.build()));
+
+		assertThat(request.config().toolConfig()).isPresent();
+		assertThat(request.config().toolConfig().get().functionCallingConfig()).isPresent();
+		var fcc = request.config().toolConfig().get().functionCallingConfig().get();
+		assertThat(fcc.mode()).isPresent();
+		assertThat(fcc.mode().get().knownEnum()).isEqualTo(FunctionCallingConfigMode.Known.AUTO);
+		assertThat(fcc.allowedFunctionNames()).isNotPresent();
+	}
+
+	@Test
+	public void createRequestWithToolChoiceNone() {
+		var client = GoogleGenAiChatModel.builder()
+			.genAiClient(this.genAiClient)
+			.options(GoogleGenAiChatOptions.builder().model("DEFAULT_MODEL").build())
+			.build();
+
+		GeminiRequest request = client.createGeminiRequest(new Prompt("Test message content",
+				GoogleGenAiChatOptions.builder()
+					.toolChoice(GoogleGenAiChatOptions.ToolChoice.builder()
+						.mode(GoogleGenAiChatOptions.ToolChoice.Mode.NONE)
+						.build())
+					.build()));
+
+		assertThat(request.config().toolConfig()).isPresent();
+		assertThat(request.config().toolConfig().get().functionCallingConfig()).isPresent();
+		var fcc = request.config().toolConfig().get().functionCallingConfig().get();
+		assertThat(fcc.mode()).isPresent();
+		assertThat(fcc.mode().get().knownEnum()).isEqualTo(FunctionCallingConfigMode.Known.NONE);
+		assertThat(fcc.allowedFunctionNames()).isNotPresent();
+	}
+
+	@Test
+	public void createRequestWithToolChoiceAnyAndAllowedFunctionNames() {
+		var client = GoogleGenAiChatModel.builder()
+			.genAiClient(this.genAiClient)
+			.options(GoogleGenAiChatOptions.builder().model("DEFAULT_MODEL").build())
+			.build();
+
+		GeminiRequest request = client.createGeminiRequest(new Prompt("Test message content",
+				GoogleGenAiChatOptions.builder()
+					.toolChoice(GoogleGenAiChatOptions.ToolChoice.builder()
+						.mode(GoogleGenAiChatOptions.ToolChoice.Mode.ANY)
+						.allowedFunctionNames(List.of("funcA", "funcB"))
+						.build())
+					.build()));
+
+		assertThat(request.config().toolConfig()).isPresent();
+		var fcc = request.config().toolConfig().get().functionCallingConfig().get();
+		assertThat(fcc.mode().get().knownEnum()).isEqualTo(FunctionCallingConfigMode.Known.ANY);
+		assertThat(fcc.allowedFunctionNames()).isPresent();
+		assertThat(fcc.allowedFunctionNames().get()).containsExactly("funcA", "funcB");
+	}
+
+	@Test
+	public void createRequestWithToolChoiceValidatedAndAllowedFunctionNames() {
+		var client = GoogleGenAiChatModel.builder()
+			.genAiClient(this.genAiClient)
+			.options(GoogleGenAiChatOptions.builder().model("DEFAULT_MODEL").build())
+			.build();
+
+		GeminiRequest request = client.createGeminiRequest(new Prompt("Test message content",
+				GoogleGenAiChatOptions.builder()
+					.toolChoice(GoogleGenAiChatOptions.ToolChoice.builder()
+						.mode(GoogleGenAiChatOptions.ToolChoice.Mode.VALIDATED)
+						.allowedFunctionNames(List.of("funcA", "funcB"))
+						.build())
+					.build()));
+
+		assertThat(request.config().toolConfig()).isPresent();
+		var fcc = request.config().toolConfig().get().functionCallingConfig().get();
+		assertThat(fcc.mode().get().knownEnum()).isEqualTo(FunctionCallingConfigMode.Known.VALIDATED);
+		assertThat(fcc.allowedFunctionNames()).isPresent();
+		assertThat(fcc.allowedFunctionNames().get()).containsExactly("funcA", "funcB");
+	}
+
+	@Test
+	public void createRequestWithToolChoiceAnyIgnoresAllowedFunctionNamesForNonAnyMode() {
+		var client = GoogleGenAiChatModel.builder()
+			.genAiClient(this.genAiClient)
+			.options(GoogleGenAiChatOptions.builder().model("DEFAULT_MODEL").build())
+			.build();
+
+		GeminiRequest request = client.createGeminiRequest(new Prompt("Test message content",
+				GoogleGenAiChatOptions.builder()
+					.toolChoice(GoogleGenAiChatOptions.ToolChoice.builder()
+						.mode(GoogleGenAiChatOptions.ToolChoice.Mode.AUTO)
+						.allowedFunctionNames(List.of("funcA"))
+						.build())
+					.build()));
+
+		var fcc = request.config().toolConfig().get().functionCallingConfig().get();
+		assertThat(fcc.mode().get().knownEnum()).isEqualTo(FunctionCallingConfigMode.Known.AUTO);
+		assertThat(fcc.allowedFunctionNames()).isNotPresent();
+	}
+
+	@Test
+	public void createRequestWithToolChoiceCombinedWithServerSideToolInvocations() {
+		var client = GoogleGenAiChatModel.builder()
+			.genAiClient(this.genAiClient)
+			.options(GoogleGenAiChatOptions.builder().model("DEFAULT_MODEL").build())
+			.build();
+
+		GeminiRequest request = client.createGeminiRequest(new Prompt("Test message content",
+				GoogleGenAiChatOptions.builder()
+					.includeServerSideToolInvocations(true)
+					.toolChoice(GoogleGenAiChatOptions.ToolChoice.builder()
+						.mode(GoogleGenAiChatOptions.ToolChoice.Mode.ANY)
+						.build())
+					.build()));
+
+		assertThat(request.config().toolConfig()).isPresent();
+		var toolConfig = request.config().toolConfig().get();
+		assertThat(toolConfig.includeServerSideToolInvocations()).isPresent();
+		assertThat(toolConfig.includeServerSideToolInvocations().get()).isTrue();
+		assertThat(toolConfig.functionCallingConfig()).isPresent();
+		assertThat(toolConfig.functionCallingConfig().get().mode().get().knownEnum())
+			.isEqualTo(FunctionCallingConfigMode.Known.ANY);
 	}
 
 	@Test

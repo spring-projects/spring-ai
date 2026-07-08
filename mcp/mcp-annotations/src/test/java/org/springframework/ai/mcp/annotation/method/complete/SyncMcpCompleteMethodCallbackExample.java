@@ -20,6 +20,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.regex.Matcher;
@@ -78,23 +79,11 @@ public final class SyncMcpCompleteMethodCallbackExample {
 					if (!completeAnnotation.prompt().isEmpty()) {
 						String promptName = completeAnnotation.prompt();
 						promptCompletionHandlers.put(promptName + "#" + method.getName(), callback);
-						System.out.println("Registered prompt completion handler: " + promptName);
-						System.out.println("  Method: " + method.getName());
-						System.out.println();
 					}
 					else if (!completeAnnotation.uri().isEmpty()) {
 						String uriPattern = completeAnnotation.uri();
 						uriCompletionHandlers.put(uriPattern + "#" + method.getName(), callback);
 
-						// Print information about URI variables if present
-						if (uriPattern.contains("{") && uriPattern.contains("}")) {
-							System.out.println("  URI Template: " + uriPattern);
-							System.out.println("  URI Variables: " + extractUriVariables(uriPattern));
-						}
-
-						System.out.println("Registered URI completion handler: " + uriPattern);
-						System.out.println("  Method: " + method.getName());
-						System.out.println();
 					}
 				}
 				catch (IllegalArgumentException e) {
@@ -106,8 +95,6 @@ public final class SyncMcpCompleteMethodCallbackExample {
 
 		// Example of using registered prompt handlers
 		if (!promptCompletionHandlers.isEmpty()) {
-			System.out.println("\nTesting prompt completion handlers:");
-
 			// Test completeCityName handler
 			testPromptHandler(promptCompletionHandlers, "travel-planner#completeCityName", "l", "City name completion");
 
@@ -126,8 +113,6 @@ public final class SyncMcpCompleteMethodCallbackExample {
 
 		// Example of using registered URI handlers
 		if (!uriCompletionHandlers.isEmpty()) {
-			System.out.println("\nTesting URI completion handlers:");
-
 			// Test completeCity handler
 			testUriHandler(uriCompletionHandlers, "weather-api://{city}#completeCity", "s", "City completion for URI");
 		}
@@ -144,8 +129,6 @@ public final class SyncMcpCompleteMethodCallbackExample {
 
 		if (handler != null) {
 			try {
-				System.out.println("\nTesting " + description + " with input: " + input);
-
 				// Create a mock exchange
 				McpSyncServerExchange exchange = createMockExchange();
 
@@ -153,34 +136,16 @@ public final class SyncMcpCompleteMethodCallbackExample {
 				String promptName = handlerKey.split("#")[0];
 
 				// Create a complete request
-				CompleteRequest request = new CompleteRequest(new PromptReference(promptName),
-						new CompleteRequest.CompleteArgument("value", input));
+				CompleteRequest request = CompleteRequest
+					.builder(new PromptReference(promptName), new CompleteRequest.CompleteArgument("value", input))
+					.build();
 
 				// Execute the handler
 				CompleteResult result = handler.apply(exchange, request);
-
-				// Print the result
-				System.out.println("Completion results:");
-				if (result.completion().values().isEmpty()) {
-					System.out.println("  No completions found");
-				}
-				else {
-					for (String value : result.completion().values()) {
-						System.out.println("  " + value);
-					}
-					System.out.println("Total: " + result.completion().values().size() + " results");
-					if (result.completion().hasMore() != null && result.completion().hasMore()) {
-						System.out.println("More results available");
-					}
-				}
 			}
 			catch (Exception e) {
-				System.out.println("Error executing handler: " + e.getMessage());
 				e.printStackTrace();
 			}
-		}
-		else {
-			System.out.println("\nNo handler found for key: " + handlerKey);
 		}
 	}
 
@@ -195,8 +160,6 @@ public final class SyncMcpCompleteMethodCallbackExample {
 
 		if (handler != null) {
 			try {
-				System.out.println("\nTesting " + description + " with input: " + input);
-
 				// Create a mock exchange
 				McpSyncServerExchange exchange = createMockExchange();
 
@@ -204,34 +167,16 @@ public final class SyncMcpCompleteMethodCallbackExample {
 				String uriPattern = handlerKey.split("#")[0];
 
 				// Create a complete request
-				CompleteRequest request = new CompleteRequest(new ResourceReference(uriPattern),
-						new CompleteRequest.CompleteArgument("city", input));
+				CompleteRequest request = CompleteRequest
+					.builder(new ResourceReference(uriPattern), new CompleteRequest.CompleteArgument("city", input))
+					.build();
 
 				// Execute the handler
 				CompleteResult result = handler.apply(exchange, request);
-
-				// Print the result
-				System.out.println("Completion results:");
-				if (result.completion().values().isEmpty()) {
-					System.out.println("  No completions found");
-				}
-				else {
-					for (String value : result.completion().values()) {
-						System.out.println("  " + value);
-					}
-					System.out.println("Total: " + result.completion().values().size() + " results");
-					if (result.completion().hasMore() != null && result.completion().hasMore()) {
-						System.out.println("More results available");
-					}
-				}
 			}
 			catch (Exception e) {
-				System.out.println("Error executing handler: " + e.getMessage());
 				e.printStackTrace();
 			}
-		}
-		else {
-			System.out.println("\nNo handler found for key: " + handlerKey);
 		}
 	}
 
@@ -306,7 +251,7 @@ public final class SyncMcpCompleteMethodCallbackExample {
 		 */
 		@McpComplete(prompt = "travel-planner")
 		public List<String> completeCityName(CompleteRequest.CompleteArgument argument) {
-			String prefix = argument.value().toLowerCase();
+			String prefix = argument.value().toLowerCase(Locale.ROOT);
 			if (prefix.isEmpty()) {
 				return List.of("Enter a city name");
 			}
@@ -314,7 +259,7 @@ public final class SyncMcpCompleteMethodCallbackExample {
 			String firstLetter = prefix.substring(0, 1);
 			List<String> cities = this.cityDatabase.getOrDefault(firstLetter, List.of());
 
-			return cities.stream().filter(city -> city.toLowerCase().startsWith(prefix)).toList();
+			return cities.stream().filter(city -> city.toLowerCase(Locale.ROOT).startsWith(prefix)).toList();
 		}
 
 		/**
@@ -322,7 +267,7 @@ public final class SyncMcpCompleteMethodCallbackExample {
 		 */
 		@McpComplete(prompt = "travel-planner")
 		public CompleteResult completeCountryName(CompleteRequest request) {
-			String prefix = request.argument().value().toLowerCase();
+			String prefix = request.argument().value().toLowerCase(Locale.ROOT);
 			if (prefix.isEmpty()) {
 				return new CompleteResult(new CompleteCompletion(List.of("Enter a country name"), 1, false));
 			}
@@ -331,7 +276,7 @@ public final class SyncMcpCompleteMethodCallbackExample {
 			List<String> countries = this.countryDatabase.getOrDefault(firstLetter, List.of());
 
 			List<String> matches = countries.stream()
-				.filter(country -> country.toLowerCase().startsWith(prefix))
+				.filter(country -> country.toLowerCase(Locale.ROOT).startsWith(prefix))
 				.toList();
 
 			return new CompleteResult(new CompleteCompletion(matches, matches.size(), false));
@@ -342,7 +287,7 @@ public final class SyncMcpCompleteMethodCallbackExample {
 		 */
 		@McpComplete(prompt = "translator")
 		public CompleteCompletion completeLanguageName(McpSyncServerExchange exchange, CompleteRequest request) {
-			String prefix = request.argument().value().toLowerCase();
+			String prefix = request.argument().value().toLowerCase(Locale.ROOT);
 			if (prefix.isEmpty()) {
 				return new CompleteCompletion(List.of("Enter a language"), 1, false);
 			}
@@ -351,7 +296,7 @@ public final class SyncMcpCompleteMethodCallbackExample {
 			List<String> languages = this.languageDatabase.getOrDefault(firstLetter, List.of());
 
 			List<String> matches = languages.stream()
-				.filter(language -> language.toLowerCase().startsWith(prefix))
+				.filter(language -> language.toLowerCase(Locale.ROOT).startsWith(prefix))
 				.toList();
 
 			return new CompleteCompletion(matches, matches.size(), false);
@@ -370,7 +315,7 @@ public final class SyncMcpCompleteMethodCallbackExample {
 		 */
 		@McpComplete(uri = "weather-api://{city}")
 		public List<String> completeCity(CompleteRequest.CompleteArgument argument) {
-			String prefix = argument.value().toLowerCase();
+			String prefix = argument.value().toLowerCase(Locale.ROOT);
 			if (prefix.isEmpty()) {
 				return List.of("Enter a city name");
 			}
@@ -378,7 +323,7 @@ public final class SyncMcpCompleteMethodCallbackExample {
 			String firstLetter = prefix.substring(0, 1);
 			List<String> cities = this.cityDatabase.getOrDefault(firstLetter, List.of());
 
-			return cities.stream().filter(city -> city.toLowerCase().startsWith(prefix)).toList();
+			return cities.stream().filter(city -> city.toLowerCase(Locale.ROOT).startsWith(prefix)).toList();
 		}
 
 	}

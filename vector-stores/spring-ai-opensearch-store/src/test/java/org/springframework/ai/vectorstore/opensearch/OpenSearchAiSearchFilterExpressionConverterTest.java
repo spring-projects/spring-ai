@@ -252,4 +252,11 @@ class OpenSearchAiSearchFilterExpressionConverterTest {
 		assertThat(vectorExpr).isEqualTo("metadata.key\\:name:v");
 	}
 
+	@Test
+	public void metadataKeyContainingTabsNewlinesAndCarriageReturnsIsEscaped() {
+		String vectorExpr = this.converter.convertExpression(
+				new Filter.Expression(EQ, new Filter.Key("foo\tOR\nbar\rbaz\u3000qux"), new Filter.Value("x")));
+		assertThat(vectorExpr).isEqualTo("metadata.foo\\\tOR\\\nbar\\\rbaz\\\u3000qux:x");
+	}
+
 }

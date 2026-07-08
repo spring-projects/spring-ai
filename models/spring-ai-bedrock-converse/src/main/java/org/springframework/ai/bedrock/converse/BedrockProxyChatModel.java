@@ -300,8 +300,7 @@ public class BedrockProxyChatModel implements ChatModel {
 
 				// Apply cache point if this is the last user message
 				if (shouldApplyCachePoint) {
-					CachePointBlock cachePoint = CachePointBlock.builder().type("default").build();
-					contents.add(ContentBlock.fromCachePoint(cachePoint));
+					contents.add(ContentBlock.fromCachePoint(buildCachePoint(cacheOptions)));
 					logger.debug("Applied cache point on last user message (conversation history caching)");
 				}
 
@@ -378,8 +377,9 @@ public class BedrockProxyChatModel implements ChatModel {
 
 			// SystemContentBlock is a union: text and cachePoint must be separate blocks.
 			if (i == cacheBoundaryIndex && shouldCacheSystem) {
-				CachePointBlock cachePoint = CachePointBlock.builder().type("default").build();
-				SystemContentBlock cachePointBlock = SystemContentBlock.builder().cachePoint(cachePoint).build();
+				SystemContentBlock cachePointBlock = SystemContentBlock.builder()
+					.cachePoint(buildCachePoint(cacheOptions))
+					.build();
 				systemMessages.add(cachePointBlock);
 			}
 		}
@@ -418,8 +418,7 @@ public class BedrockProxyChatModel implements ChatModel {
 				// Tool is a UNION type - toolSpec and cachePoint must be separate objects
 				boolean isLastTool = (i == toolDefinitions.size() - 1);
 				if (isLastTool && shouldCacheTools) {
-					CachePointBlock cachePoint = CachePointBlock.builder().type("default").build();
-					Tool cachePointTool = Tool.builder().cachePoint(cachePoint).build();
+					Tool cachePointTool = Tool.builder().cachePoint(buildCachePoint(cacheOptions)).build();
 					bedrockTools.add(cachePointTool);
 					logger.debug("Applied cache point after tool definitions");
 				}
@@ -456,6 +455,14 @@ public class BedrockProxyChatModel implements ChatModel {
 			.requestMetadata(requestMetadata)
 			.outputConfig(buildOutputConfig(options))
 			.build();
+	}
+
+	private static CachePointBlock buildCachePoint(@Nullable BedrockCacheOptions cacheOptions) {
+		CachePointBlock.Builder builder = CachePointBlock.builder().type("default");
+		if (cacheOptions != null && cacheOptions.getTtl() != null) {
+			builder.ttl(cacheOptions.getTtl().getValue());
+		}
+		return builder.build();
 	}
 
 	private @Nullable OutputConfig buildOutputConfig(BedrockChatOptions options) {
@@ -811,7 +818,7 @@ public class BedrockProxyChatModel implements ChatModel {
 
 		private @Nullable AwsCredentialsProvider credentialsProvider;
 
-		private Region region = Region.US_EAST_1;
+		private @Nullable Region region;
 
 		private Duration timeout = Duration.ofMinutes(5L);
 
@@ -836,12 +843,6 @@ public class BedrockProxyChatModel implements ChatModel {
 		private @Nullable BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient;
 
 		private Builder() {
-			try {
-				this.region = DefaultAwsRegionProviderChain.builder().build().getRegion();
-			}
-			catch (SdkClientException e) {
-				logger.warn("Failed to load region from DefaultAwsRegionProviderChain, using US_EAST_1", e);
-			}
 		}
 
 		/**
@@ -864,8 +865,7 @@ public class BedrockProxyChatModel implements ChatModel {
 			return this;
 		}
 
-		public Builder region(Region region) {
-			Assert.notNull(region, "'region' must not be null.");
+		public Builder region(@Nullable Region region) {
 			this.region = region;
 			return this;
 		}
@@ -938,7 +938,7 @@ public class BedrockProxyChatModel implements ChatModel {
 					.socketTimeout(this.socketTimeout);
 
 				this.bedrockRuntimeClient = BedrockRuntimeClient.builder()
-					.region(this.region)
+					.region(getRegion())
 					.httpClientBuilder(httpClientBuilder)
 					.credentialsProvider(this.credentialsProvider)
 					.overrideConfiguration(c -> c.apiCallTimeout(this.timeout))
@@ -954,12 +954,12 @@ public class BedrockProxyChatModel implements ChatModel {
 					.connectionAcquisitionTimeout(this.connectionAcquisitionTimeout)
 					.maxConcurrency(200);
 
-				var builder = BedrockRuntimeAsyncClient.builder()
-					.region(this.region)
+				this.bedrockRuntimeAsyncClient = BedrockRuntimeAsyncClient.builder()
+					.region(getRegion())
 					.httpClientBuilder(httpClientBuilder)
 					.credentialsProvider(this.credentialsProvider)
-					.overrideConfiguration(c -> c.apiCallTimeout(this.timeout));
-				this.bedrockRuntimeAsyncClient = builder.build();
+					.overrideConfiguration(c -> c.apiCallTimeout(this.timeout))
+					.build();
 			}
 
 			this.toolCallingManager = this.toolCallingManager != null ? this.toolCallingManager
@@ -973,6 +973,19 @@ public class BedrockProxyChatModel implements ChatModel {
 			}
 
 			return bedrockProxyChatModel;
+		}
+
+		private Region getRegion() {
+			if (this.region != null) {
+				return this.region;
+			}
+			try {
+				return DefaultAwsRegionProviderChain.builder().build().getRegion();
+			}
+			catch (SdkClientException e) {
+				logger.debug("Failed to load region from DefaultAwsRegionProviderChain, using US_EAST_1");
+				return Region.US_EAST_1;
+			}
 		}
 
 	}

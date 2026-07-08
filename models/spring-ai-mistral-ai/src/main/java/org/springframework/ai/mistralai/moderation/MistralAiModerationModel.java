@@ -107,29 +107,32 @@ public class MistralAiModerationModel implements ModerationModel {
 				Categories categories = null;
 				CategoryScores categoryScores = null;
 				if (result.categories() != null) {
+					var cats = result.categories();
 					categories = Categories.builder()
-						.sexual(result.categories().sexual())
-						.pii(result.categories().pii())
-						.law(result.categories().law())
-						.financial(result.categories().financial())
-						.health(result.categories().health())
-						.dangerousAndCriminalContent(result.categories().dangerousAndCriminalContent())
-						.violence(result.categories().violenceAndThreats())
-						.hate(result.categories().hateAndDiscrimination())
-						.selfHarm(result.categories().selfHarm())
+						.sexual(Boolean.TRUE.equals(cats.sexual()))
+						.pii(Boolean.TRUE.equals(cats.pii()))
+						.law(Boolean.TRUE.equals(cats.law()))
+						.financial(Boolean.TRUE.equals(cats.financial()))
+						.health(Boolean.TRUE.equals(cats.health()))
+						.dangerousAndCriminalContent(Boolean.TRUE.equals(cats.dangerousAndCriminalContent()))
+						.violence(Boolean.TRUE.equals(cats.violenceAndThreats()))
+						.hate(Boolean.TRUE.equals(cats.hateAndDiscrimination()))
+						.selfHarm(Boolean.TRUE.equals(cats.selfHarm()))
 						.build();
 				}
 				if (result.categoryScores() != null) {
+					var scores = result.categoryScores();
 					categoryScores = CategoryScores.builder()
-						.sexual(result.categoryScores().sexual())
-						.pii(result.categoryScores().pii())
-						.law(result.categoryScores().law())
-						.financial(result.categoryScores().financial())
-						.health(result.categoryScores().health())
-						.dangerousAndCriminalContent(result.categoryScores().dangerousAndCriminalContent())
-						.violence(result.categoryScores().violenceAndThreats())
-						.hate(result.categoryScores().hateAndDiscrimination())
-						.selfHarm(result.categoryScores().selfHarm())
+						.sexual(Objects.requireNonNullElse(scores.sexual(), 0.0))
+						.pii(Objects.requireNonNullElse(scores.pii(), 0.0))
+						.law(Objects.requireNonNullElse(scores.law(), 0.0))
+						.financial(Objects.requireNonNullElse(scores.financial(), 0.0))
+						.health(Objects.requireNonNullElse(scores.health(), 0.0))
+						.dangerousAndCriminalContent(
+								Objects.requireNonNullElse(scores.dangerousAndCriminalContent(), 0.0))
+						.violence(Objects.requireNonNullElse(scores.violenceAndThreats(), 0.0))
+						.hate(Objects.requireNonNullElse(scores.hateAndDiscrimination(), 0.0))
+						.selfHarm(Objects.requireNonNullElse(scores.selfHarm(), 0.0))
 						.build();
 				}
 				var moderationResult = ModerationResult.builder()

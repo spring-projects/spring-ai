@@ -192,12 +192,11 @@ public final class DefaultMcpAsyncRequestContext implements McpAsyncRequestConte
 		if (progressToken == null || (progressToken instanceof String pt && !Utils.hasText(pt))) {
 			logger.warn("Progress notification not supported by the client!");
 		}
-		return this.sample(McpSchema.CreateMessageRequest.builder()
-			.messages(spec.messages)
+		return this.sample(McpSchema.CreateMessageRequest
+			.builder(spec.messages, spec.maxTokens != null && spec.maxTokens > 0 ? spec.maxTokens : 500)
 			.modelPreferences(spec.modelPreferences)
 			.systemPrompt(spec.systemPrompt)
 			.temperature(spec.temperature)
-			.maxTokens(spec.maxTokens != null && spec.maxTokens > 0 ? spec.maxTokens : 500)
 			.stopSequences(spec.stopSequences.isEmpty() ? null : spec.stopSequences)
 			.includeContext(spec.includeContextStrategy)
 			.meta(spec.metadata.isEmpty() ? null : spec.metadata)
@@ -266,9 +265,7 @@ public final class DefaultMcpAsyncRequestContext implements McpAsyncRequestConte
 		logSpec.accept(spec);
 
 		return this.exchange
-			.loggingNotification(LoggingMessageNotification.builder()
-				.data(spec.message)
-				.level(spec.level)
+			.loggingNotification(LoggingMessageNotification.builder(spec.level, spec.message)
 				.logger(spec.logger)
 				.meta(spec.meta)
 				.build())
@@ -297,9 +294,7 @@ public final class DefaultMcpAsyncRequestContext implements McpAsyncRequestConte
 
 	private Mono<Void> logInternal(String message, LoggingLevel level) {
 		Assert.hasText(message, "Log message must not be empty");
-		return this.exchange
-			.loggingNotification(LoggingMessageNotification.builder().data(message).level(level).build())
-			.then();
+		return this.exchange.loggingNotification(LoggingMessageNotification.builder(level, message).build()).then();
 	}
 
 	// Getters

@@ -107,13 +107,11 @@ public class SyncMcpLoggingProviderTests {
 
 		@McpLogging(clients = "test-client")
 		public void handleLoggingMessage(LoggingMessageNotification notification) {
-			System.out.println("1");
 			this.lastNotification = notification;
 		}
 
 		@McpLogging(clients = "test-client")
 		public void handleLoggingMessageWithParams(LoggingLevel level, String logger, String data) {
-			System.out.println("2");
 			this.lastLevel = level;
 			this.lastLogger = logger;
 			this.lastData = data;

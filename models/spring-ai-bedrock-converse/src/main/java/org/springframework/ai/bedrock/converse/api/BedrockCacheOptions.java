@@ -23,8 +23,8 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>
  * Prompt caching allows you to reduce latency and costs by reusing previously processed
- * prompt content. Cached content has a fixed 5-minute Time To Live (TTL) that resets with
- * each cache hit.
+ * prompt content. Cached content has a default 5-minute Time To Live (TTL) that resets
+ * with each cache hit; a 1-hour TTL is also available via {@link BedrockCacheTtl}.
  *
  * <p>
  * Example usage:
@@ -46,6 +46,7 @@ import org.jspecify.annotations.Nullable;
  * @author Sebastien Deleuze
  * @since 1.1.0
  * @see BedrockCacheStrategy
+ * @see BedrockCacheTtl
  * @see <a href=
  * "https://docs.aws.amazon.com/bedrock/latest/userguide/prompt-caching.html">AWS Bedrock
  * Prompt Caching</a>
@@ -56,9 +57,17 @@ public class BedrockCacheOptions {
 
 	private final boolean multiBlockSystemCaching;
 
+	private final @Nullable BedrockCacheTtl ttl;
+
 	protected BedrockCacheOptions(@Nullable BedrockCacheStrategy strategy, boolean multiBlockSystemCaching) {
+		this(strategy, multiBlockSystemCaching, null);
+	}
+
+	protected BedrockCacheOptions(@Nullable BedrockCacheStrategy strategy, boolean multiBlockSystemCaching,
+			@Nullable BedrockCacheTtl ttl) {
 		this.strategy = (strategy != null ? strategy : BedrockCacheStrategy.NONE);
 		this.multiBlockSystemCaching = multiBlockSystemCaching;
+		this.ttl = ttl;
 	}
 
 	/**
@@ -94,6 +103,16 @@ public class BedrockCacheOptions {
 	}
 
 	/**
+	 * Gets the cache TTL.
+	 * @return the configured {@link BedrockCacheTtl}, or {@code null} to apply Bedrock's
+	 * default 5-minute TTL
+	 * @since 2.0.1
+	 */
+	public @Nullable BedrockCacheTtl getTtl() {
+		return this.ttl;
+	}
+
+	/**
 	 * Builder for constructing BedrockCacheOptions instances.
 	 */
 	public static class Builder {
@@ -101,6 +120,8 @@ public class BedrockCacheOptions {
 		private @Nullable BedrockCacheStrategy strategy;
 
 		private boolean multiBlockSystemCaching = false;
+
+		private @Nullable BedrockCacheTtl ttl;
 
 		/**
 		 * Sets the caching strategy.
@@ -128,11 +149,23 @@ public class BedrockCacheOptions {
 		}
 
 		/**
+		 * Sets the cache TTL (Time To Live). When {@code null}, Bedrock applies its
+		 * default 5-minute TTL.
+		 * @param ttl the {@link BedrockCacheTtl} to use
+		 * @return this Builder instance
+		 * @since 2.0.1
+		 */
+		public Builder ttl(@Nullable BedrockCacheTtl ttl) {
+			this.ttl = ttl;
+			return this;
+		}
+
+		/**
 		 * Builds the BedrockCacheOptions instance.
 		 * @return the configured BedrockCacheOptions
 		 */
 		public BedrockCacheOptions build() {
-			return new BedrockCacheOptions(this.strategy, this.multiBlockSystemCaching);
+			return new BedrockCacheOptions(this.strategy, this.multiBlockSystemCaching, this.ttl);
 		}
 
 	}

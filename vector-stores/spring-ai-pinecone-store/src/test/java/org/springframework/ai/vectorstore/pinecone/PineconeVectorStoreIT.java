@@ -29,8 +29,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.pinecone.clients.Pinecone;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -65,8 +68,8 @@ public class PineconeVectorStoreIT extends BaseVectorStoreTests {
 
 	private static final String PINECONE_INDEX_NAME = "spring-ai-test-index";
 
-	// Use unique namespace per test run for isolation when env is not set; set
-	// PINECONE_NAMESPACE="" for free tier (no namespaces).
+	// Use a unique namespace per test run for isolation when PINECONE_NAMESPACE is not
+	// set.
 	private static String PINECONE_NAMESPACE;
 
 	private static final String CUSTOM_CONTENT_FIELD_NAME = "article";
@@ -102,6 +105,23 @@ public class PineconeVectorStoreIT extends BaseVectorStoreTests {
 	public void setUpNamespace() {
 		String env = System.getenv("PINECONE_NAMESPACE");
 		PINECONE_NAMESPACE = (env != null) ? env : ("spring-ai-it-" + UUID.randomUUID());
+	}
+
+	@AfterEach
+	public void tearDownNamespace() {
+		this.contextRunner.run(context -> {
+			PineconeVectorStore vectorStore = context.getBean(PineconeVectorStore.class);
+			vectorStore.<Pinecone>getNativeClient().ifPresent(pinecone -> {
+				try {
+					pinecone.getIndexConnection(PINECONE_INDEX_NAME).deleteNamespace(PINECONE_NAMESPACE);
+				}
+				catch (StatusRuntimeException e) {
+					if (e.getStatus().getCode() != Status.Code.NOT_FOUND) {
+						throw e;
+					}
+				}
+			});
+		});
 	}
 
 	@Override

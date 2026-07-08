@@ -16,10 +16,13 @@
 
 package org.springframework.ai.openai.chat;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
+import com.openai.models.chat.completions.ChatCompletionAudioParam;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.prompt.ChatOptions;
@@ -38,6 +41,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author Julien Dubois
  * @author Sebastien Deleuze
+ * @author guan xu
+ * @author Deepak Kumar S S
  */
 public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatOptions, Builder> {
 
@@ -86,6 +91,7 @@ public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatO
 			.reasoningEffort("medium")
 			.verbosity("low")
 			.serviceTier("auto")
+			.promptCacheKey("test-cache-key")
 			.customHeaders(customHeaders)
 			.toolContext(toolContext)
 			.extraBody(extraBody)
@@ -114,6 +120,7 @@ public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatO
 		assertThat(options.getReasoningEffort()).isEqualTo("medium");
 		assertThat(options.getVerbosity()).isEqualTo("low");
 		assertThat(options.getServiceTier()).isEqualTo("auto");
+		assertThat(options.getPromptCacheKey()).isEqualTo("test-cache-key");
 		assertThat(options.getCustomHeaders()).isEqualTo(customHeaders);
 		assertThat(options.getToolContext()).isEqualTo(toolContext);
 		assertThat(options.getExtraBody()).isEqualTo(extraBody);
@@ -605,6 +612,70 @@ public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatO
 		assertThat(options.getResponseFormat().getType()).isEqualTo(ResponseFormat.Type.JSON_SCHEMA);
 		assertThat(options.getResponseFormat().getJsonSchema()).isEqualTo(schema);
 		assertThat(options.getOutputSchema()).isEqualTo(schema);
+	}
+
+	@Test
+	void cloneCreatesIndependentCollections() {
+		Map<String, String> customHeaders = new HashMap<>();
+		customHeaders.put("key", "value");
+		Map<String, Integer> logitBias = new HashMap<>();
+		logitBias.put("key", 1);
+		List<String> outputModalities = new ArrayList<>();
+		outputModalities.add("text");
+		Map<String, String> metadata = new HashMap<>();
+		metadata.put("key", "value");
+		Map<String, Object> extraBody = new HashMap<>();
+		extraBody.put("key", "value");
+
+		Builder source = OpenAiChatOptions.builder()
+			.customHeaders(customHeaders)
+			.logitBias(logitBias)
+			.outputModalities(outputModalities)
+			.metadata(metadata)
+			.extraBody(extraBody);
+		Builder clone = source.clone();
+		customHeaders.put("anotherKey", "anotherValue");
+		logitBias.put("anotherKey", 2);
+		outputModalities.add("audio");
+		metadata.put("anotherKey", "anotherValue");
+		extraBody.put("anotherKey", "anotherValue");
+
+		OpenAiChatOptions cloned = clone.build();
+		assertThat(cloned.getCustomHeaders()).containsOnlyKeys("key");
+		assertThat(cloned.getLogitBias()).containsOnlyKeys("key");
+		assertThat(cloned.getOutputModalities()).containsExactly("text");
+		assertThat(cloned.getMetadata()).containsOnlyKeys("key");
+		assertThat(cloned.getExtraBody()).containsOnlyKeys("key");
+	}
+
+	@Test
+	void cloneHandlesNullCollections() {
+		OpenAiChatOptions cloned = OpenAiChatOptions.builder().clone().build();
+		assertThat(cloned.getCustomHeaders()).isNull();
+		assertThat(cloned.getLogitBias()).isNull();
+		assertThat(cloned.getOutputModalities()).isNull();
+		assertThat(cloned.getMetadata()).isNull();
+		assertThat(cloned.getExtraBody()).isNull();
+	}
+
+	@Test
+	void audioParametersAreSerializedLocaleIndependently() {
+		Locale defaultLocale = Locale.getDefault();
+		try {
+			// Under the Turkish locale, "SHIMMER".toLowerCase() yields "shımmer" (dotless
+			// 'ı'), which is not a valid OpenAI audio voice. Protocol enum values must be
+			// converted using a fixed locale so the wire value stays "shimmer".
+			Locale.setDefault(Locale.forLanguageTag("tr-TR"));
+			OpenAiChatOptions.AudioParameters audioParameters = new OpenAiChatOptions.AudioParameters(
+					OpenAiChatOptions.AudioParameters.Voice.SHIMMER,
+					OpenAiChatOptions.AudioParameters.AudioResponseFormat.MP3);
+			ChatCompletionAudioParam audioParam = audioParameters.toChatCompletionAudioParam();
+			assertThat(audioParam.voice().asString()).isEqualTo("shimmer");
+			assertThat(audioParam.format().asString()).isEqualTo("mp3");
+		}
+		finally {
+			Locale.setDefault(defaultLocale);
+		}
 	}
 
 }

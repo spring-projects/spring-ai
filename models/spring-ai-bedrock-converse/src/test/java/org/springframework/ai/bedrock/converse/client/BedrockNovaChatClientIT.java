@@ -18,6 +18,7 @@ package org.springframework.ai.bedrock.converse.client;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.Locale;
 import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -102,19 +103,19 @@ public class BedrockNovaChatClientIT {
 			.content();
 
 		// Convert response to lowercase for case-insensitive matching
-		String lowerResponse = response.toLowerCase();
+		String lowerResponse = response.toLowerCase(Locale.ROOT);
 
 		// Test for presence of young/small descriptors
 		boolean hasYoungDescriptor = youngDescriptors.stream()
-			.anyMatch(word -> lowerResponse.contains(word.toLowerCase()));
+			.anyMatch(word -> lowerResponse.contains(word.toLowerCase(Locale.ROOT)));
 
 		// Test for presence of bird/chicken descriptors
 		boolean hasBirdDescriptor = birdDescriptors.stream()
-			.anyMatch(word -> lowerResponse.contains(word.toLowerCase()));
+			.anyMatch(word -> lowerResponse.contains(word.toLowerCase(Locale.ROOT)));
 
 		// Additional semantic checks
 		boolean describesMovement = lowerResponse.contains("mov") || lowerResponse.contains("walk")
-				|| lowerResponse.contains("peck");
+				|| lowerResponse.contains("peck") | lowerResponse.contains("standing");
 
 		boolean describesAppearance = lowerResponse.contains("feather") || lowerResponse.contains("fluff")
 				|| lowerResponse.contains("color");

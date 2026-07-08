@@ -129,10 +129,11 @@ vectorStore.add(List.of(
 
 // Search with filters
 List<Document> results = vectorStore.similaritySearch(
-    SearchRequest.query("search text")
-        .withTopK(5)
-        .withSimilarityThreshold(0.7f)
-        .withFilterExpression("metadata.key1 == 'value1'")
+    SearchRequest.builder().query("search text")
+        .topK(5)
+        .similarityThreshold(0.7)
+        .filterExpression("metadata.key1 == 'value1'")
+        .build()
 );
 ----
 

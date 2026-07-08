@@ -55,7 +55,7 @@ import static org.springframework.ai.test.vectorstore.ObservationTestUtil.assert
 public class WeaviateVectorStoreAutoConfigurationIT {
 
 	@Container
-	static WeaviateContainer weaviate = new WeaviateContainer("semitechnologies/weaviate:1.25.4")
+	static WeaviateContainer weaviate = new WeaviateContainer("semitechnologies/weaviate:1.31.22")
 		.waitingFor(Wait.forHttp("/v1/.well-known/ready").forPort(8080));
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()

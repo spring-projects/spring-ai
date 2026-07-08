@@ -16,6 +16,8 @@
 
 package org.springframework.ai.openai.azure;
 
+import java.util.Locale;
+
 import com.openai.models.audio.AudioResponseFormat;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -60,7 +62,7 @@ class AzureOpenAiAudioTranscriptionModelIT {
 				transcriptionOptions);
 		AudioTranscriptionResponse response = this.transcriptionModel.call(transcriptionRequest);
 		assertThat(response.getResults()).hasSize(1);
-		assertThat(response.getResults().get(0).getOutput().toLowerCase().contains("fellow")).isTrue();
+		assertThat(response.getResults().get(0).getOutput().toLowerCase(Locale.ROOT).contains("fellow")).isTrue();
 	}
 
 	@Test
@@ -77,7 +79,7 @@ class AzureOpenAiAudioTranscriptionModelIT {
 				transcriptionOptions);
 		AudioTranscriptionResponse response = this.transcriptionModel.call(transcriptionRequest);
 		assertThat(response.getResults()).hasSize(1);
-		assertThat(response.getResults().get(0).getOutput().toLowerCase().contains("fellow")).isTrue();
+		assertThat(response.getResults().get(0).getOutput().toLowerCase(Locale.ROOT).contains("fellow")).isTrue();
 	}
 
 	@SpringBootConfiguration

@@ -40,7 +40,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class BedrockConverseProxyChatAutoConfigurationIT {
 
 	private final ApplicationContextRunner contextRunner = BedrockTestUtils.getContextRunner()
-		.withPropertyValues("spring.ai.bedrock.converse.chat.model=" + "us.anthropic.claude-sonnet-4-5-20250929-v1:0",
+		.withPropertyValues("spring.ai.bedrock.converse.chat.model=" + "us.anthropic.claude-sonnet-4-6",
 				"spring.ai.bedrock.converse.chat.temperature=0.5")
 		.withConfiguration(AutoConfigurations.of(BedrockConverseProxyChatAutoConfiguration.class,
 				ToolCallingAutoConfiguration.class));

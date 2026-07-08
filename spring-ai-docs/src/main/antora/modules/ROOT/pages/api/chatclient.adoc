@@ -315,53 +315,12 @@ List<ActorFilms> actorFilms = chatClient.prompt()
     .entity(new ParameterizedTypeReference<List<ActorFilms>>() {});
 ----
 
-==== EntityParamSpec
+==== Reliability Switches: EntityParamSpec
 
-All three `entity()` overloads accept an optional `Consumer<EntityParamSpec>` that enables two independent behaviours:
+All `entity()` overloads accept an optional `Consumer<EntityParamSpec>` that enables two independent, composable behaviors:
 
-===== Provider-Native Structured Output
-
-By default, the JSON schema is appended to the user message as text instructions.
-When `useProviderStructuredOutput()` is set, the schema is instead passed directly to the AI provider API as a structured constraint (equivalent to setting `AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT`).
-This requires the underlying model to support `StructuredOutputChatOptions`.
-
-[source,java]
-----
-ActorFilms actorFilms = chatClient.prompt()
-    .user("Generate the filmography for a random actor.")
-    .call()
-    .entity(ActorFilms.class, spec -> spec.useProviderStructuredOutput());
-----
-
-NOTE: Some AI models such as OpenAI don't support arrays of objects natively.
-In such cases, you can use the Spring AI default structured output conversion.
-
-You can still set this globally for all calls via the advisor parameter:
-
-[source,java]
-----
-ActorFilms actorFilms = chatClient.prompt()
-    .advisors(AdvisorParams.ENABLE_NATIVE_STRUCTURED_OUTPUT)
-    .user("Generate the filmography for a random actor.")
-    .call()
-    .entity(ActorFilms.class);
-----
-
-===== Schema Validation with Retry
-
-`schemaValidation()` validates the model's JSON response against the entity schema before returning it.
-If validation fails, the error message is appended to the user prompt and the model is retried, up to `maxRepeatAttempts` times (default: 3).
-This uses xref:api/advisors-recursive.adoc#structured-output-validation-advisor[StructuredOutputValidationAdvisor] internally.
-
-[source,java]
-----
-ActorFilms actorFilms = chatClient.prompt()
-    .user("Generate the filmography for a random actor.")
-    .call()
-    .entity(ActorFilms.class, spec -> spec.schemaValidation());
-----
-
-Both options can be combined:
+* `validateSchema()` -- validate the JSON response against the entity schema and automatically retry with error feedback on failure.
+* `useProviderStructuredOutput()` -- send the schema to the provider as an API-level constraint instead of prompt text.
 
 [source,java]
 ----
@@ -373,7 +332,7 @@ ActorFilms actorFilms = chatClient.prompt()
         .validateSchema());
 ----
 
-NOTE: Streaming is not supported when `validateSchema()` is active.
+For full details on these switches, supported providers, limitations, and the lower-level converter API, see the xref:api/structured-output.adoc[Structured Output] reference.
 
 === Streaming Responses
 
@@ -391,7 +350,7 @@ Flux<String> output = chatClient.prompt()
 You can also stream the `ChatResponse` using the method `Flux<ChatResponse> chatResponse()`.
 
 In the future, we will offer a convenience method that will let you return a Java entity with the reactive `stream()` method.
-In the meantime, you should use the xref:api/structured-output-converter.adoc#StructuredOutputConverter[Structured Output Converter] to convert the aggregated response explicitly as shown below.
+In the meantime, you should use the xref:api/structured-output/converters.adoc[Structured Output Converter] to convert the aggregated response explicitly as shown below.
 This also demonstrates the use of parameters in the fluent API that will be discussed in more detail in a later section of the documentation.
 
 [source,java]
@@ -466,8 +425,11 @@ After specifying the `call()` method on `ChatClient`, there are a few different 
 ** `entity(StructuredOutputConverter<T> converter, Consumer<EntityParamSpec> spec)`: like above, with optional xref:api/chatclient.adoc#_entityparamspec[EntityParamSpec] configuration.
 * `responseEntity()` to return both the `ChatResponse` and a Java type. This is useful when you need access to both the complete AI model response (with metadata and generations) and the structured output entity in a single call.
 ** `responseEntity(Class<T> type)`: used to return a `ResponseEntity` containing both the complete `ChatResponse` object and a specific entity type.
+** `responseEntity(Class<T> type, Consumer<EntityParamSpec> spec)`: like above, with optional xref:api/chatclient.adoc#_entityparamspec[EntityParamSpec] configuration.
 ** `responseEntity(ParameterizedTypeReference<T> type)`: used to return a `ResponseEntity` containing both the complete `ChatResponse` object and a `Collection` of entity types.
+** `responseEntity(ParameterizedTypeReference<T> type, Consumer<EntityParamSpec> spec)`: like above, with optional xref:api/chatclient.adoc#_entityparamspec[EntityParamSpec] configuration.
 ** `responseEntity(StructuredOutputConverter<T> structuredOutputConverter)`: used to return a `ResponseEntity` containing both the complete `ChatResponse` object and an entity converted using a specified `StructuredOutputConverter`.
+** `responseEntity(StructuredOutputConverter<T> converter, Consumer<EntityParamSpec> spec)`: like above, with optional xref:api/chatclient.adoc#_entityparamspec[EntityParamSpec] configuration.
 
 You can also invoke the `stream()` method instead of `call()`.
 
@@ -693,16 +655,18 @@ At the `ChatClient.Builder` level, you can specify the default prompt configurat
 * `defaultOptions(ChatOptions chatOptions)`: Pass in either portable options defined in the `ChatOptions` class or model-specific options such as those in `OpenAiChatOptions`.
 For more information on model-specific `ChatOptions` implementations, refer to the JavaDocs.
 
-* `defaultFunction(String name, String description, java.util.function.Function<I, O> function)`: The `name` is used to refer to the function in user text.
-The `description` explains the function's purpose and helps the AI model choose the correct function for an accurate response.
-The `function` argument is a Java function instance that the model will execute when necessary.
+* `defaultTools(Object... tools)`: Register one or more default tools that will be available to every request. Accepts a heterogeneous mix of `ToolCallback`, `ToolCallbackProvider`, or POJOs with `@Tool` annotated methods.
 
-* `defaultFunctions(String... functionNames)`: The bean names of `java.util.Function`s defined in the application context.
+* `defaultToolContext(Map<String, Object> toolContext)`: Set a default context for tool executions.
+
+* `defaultSystem(String text)`, `defaultSystem(Resource text)`, `defaultSystem(Consumer<PromptSystemSpec> systemSpecConsumer)`: These methods let you define the default system text.
 
 * `defaultUser(String text)`, `defaultUser(Resource text)`, `defaultUser(Consumer<UserSpec> userSpecConsumer)`: These methods let you define the user text.
 The `Consumer<UserSpec>` allows you to use a lambda to specify the user text and any default parameters.
 
-* `defaultAdvisors(Advisor... advisor)`: Advisors allow modification of the data used to create the `Prompt`.
+* `defaultTemplateRenderer(TemplateRenderer templateRenderer)`: Set a default `TemplateRenderer` for prompt templates.
+
+* `defaultAdvisors(Advisor... advisor)`, `defaultAdvisors(List<Advisor> advisors)`: Advisors allow modification of the data used to create the `Prompt`.
 The `QuestionAnswerAdvisor` implementation enables the pattern of `Retrieval Augmented Generation` by appending the prompt with context information related to the user text.
 
 * `defaultAdvisors(Consumer<AdvisorSpec> advisorSpecConsumer)`: This method allows you to define a `Consumer` to configure multiple advisors using the `AdvisorSpec`. Advisors can modify the data used to create the final `Prompt`.
@@ -712,18 +676,32 @@ You can override these defaults at runtime using the corresponding methods witho
 
 * `options(ChatOptions.Builder optionsCustomizer)`
 
-* `function(String name, String description,
-java.util.function.Function<I, O> function)`
+* `tools(Object... tools)`
 
-* `functions(String... functionNames)`
+* `toolContext(Map<String, Object> toolContext)`
+
+* `messages(Message... messages)`, `messages(List<Message> messages)`
+
+* `system(String text)`, `system(Resource text)`, `system(Consumer<PromptSystemSpec> systemSpecConsumer)`
 
 * `user(String text)`, `user(Resource text)`, `user(Consumer<UserSpec> userSpecConsumer)`
 
-* `advisors(Advisor... advisor)`
+* `templateRenderer(TemplateRenderer templateRenderer)`
+
+* `advisors(Advisor... advisor)`, `advisors(List<Advisor> advisors)`
 
 * `advisors(Consumer<AdvisorSpec> advisorSpecConsumer)`
 
 image::chat-client-options-merging.png[align="center"]
+
+== Mutating the ChatClient
+
+You can create a new `ChatClient` (or `ChatClientRequestSpec`) with settings replicated from an existing one using the `mutate()` method:
+
+* On `ChatClient`: `Builder mutate()` returns a `ChatClient.Builder` initialized with the client's default settings.
+* On `ChatClientRequestSpec`: `Builder mutate()` returns a `ChatClient.Builder` initialized with the request's current settings.
+
+This is useful for creating derivative clients or requests without redefining all options.
 
 == Advisors
 
@@ -869,7 +847,7 @@ spring.ai.chat.client.tool-calling.enabled=false
 ----
 
 When this property is set, tools are still sent to the AI model as definitions, but tool calls in the response are not executed automatically.
-Use xref:api/tools.adoc#_user_controlled_tool_execution[user-controlled tool execution] to drive the loop yourself.
+Use xref:api/tools.adoc#user-controlled-tool-execution[user-controlled tool execution] to drive the loop yourself.
 
 ===== Per call
 
@@ -906,7 +884,6 @@ The `spring.ai.chat.client.tool-calling.*` properties control the auto-configure
 | Property | Default | Description
 | `spring.ai.chat.client.tool-calling.enabled` | `true` | Set to `false` to disable `ToolCallingAdvisor` auto-registration for all calls. Tools are still sent to the model, but tool calls are not executed automatically.
 | `spring.ai.chat.client.tool-calling.advisor-order` | `Ordered.HIGHEST_PRECEDENCE + 300` | Position of the auto-registered `ToolCallingAdvisor` in the advisor chain.
-| `spring.ai.chat.client.tool-calling.stream-tool-call-responses` | `false` | When `true`, intermediate tool-call chunks are streamed in real time during `.stream()` calls.
 |===
 
 ===== Spring Boot: advisor order property
@@ -922,15 +899,10 @@ spring.ai.chat.client.tool-calling.advisor-order=0
 The value must be lower than the order of any advisor that should run _inside_ the tool-call loop (i.e., repeated on every iteration), and higher than any advisor that should run _outside_ it (i.e., executed only once per user request).
 The default is `ToolCallingAdvisor.DEFAULT_ORDER`.
 
-===== Spring Boot: streaming intermediate tool-call responses
+===== Spring Boot: user-controlled tool execution
 
-By default, only the final answer is emitted during a `.stream()` call — intermediate tool-call chunks are suppressed until the last LLM iteration completes.
-Set `spring.ai.chat.client.tool-calling.stream-tool-call-responses=true` to stream each iteration's chunks in real time as they arrive:
-
-[source,properties]
-----
-spring.ai.chat.client.tool-calling.stream-tool-call-responses=true
-----
+To observe each iteration of the tool-calling loop — for example to forward intermediate chunks to a UI — disable the auto-registered advisor per-call and drive the loop yourself using `AdvisorParams.toolCallingAdvisorAutoRegister(false)`.
+See xref:api/tools.adoc#user-controlled-tool-execution[User-Controlled Tool Execution — With ChatClient] for a complete example.
 
 ===== Spring Boot: custom `ToolCallingAdvisor.Builder` bean
 
@@ -975,7 +947,7 @@ chatClient.prompt("What day is tomorrow?")
 
 `ToolAdvisor` is a marker interface that signals to the `ChatClient` that the advisor chain already handles tool execution. Implementing this interface on a custom advisor prevents the auto-registration of a second `ToolCallingAdvisor`.
 
-For more details see xref:api/tools.adoc#_advisor_controlled_tool_execution_with_toolcallingadvisor[Advisor-Controlled Tool Execution].
+For more details see xref:api/tools.adoc#extending-the-loop[Extending the Loop: Custom ToolAdvisor].
 
 == Chat Memory
 
@@ -1011,12 +983,6 @@ Often an application will be either reactive or imperative, but not both.
 
 
 * When customizing the HTTP client interactions of a Model implementation, both the RestClient and the WebClient must be configured. 
-
-[IMPORTANT]
-====
-Due to a bug in Spring Boot 3.4, the "spring.http.client.factory=jdk" property must be set.
-Otherwise, it's set to "reactor" by default, which breaks certain AI workflows like the ImageModel.
-====
 
 * Streaming is only supported via the Reactive stack.
 Imperative applications must include the Reactive stack for this reason (e.g. spring-boot-starter-webflux).

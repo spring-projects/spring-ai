@@ -121,6 +121,10 @@ public class TokenTextSplitter extends TextSplitter {
 	private TokenTextSplitter(EncodingType encodingType, int chunkSize, int minChunkSizeChars,
 			int minChunkLengthToEmbed, int maxNumChunks, boolean keepSeparator, List<Character> punctuationMarks) {
 		Assert.notNull(encodingType, "encodingType must not be null");
+		Assert.isTrue(chunkSize > 0, "chunkSize must be greater than zero");
+		Assert.isTrue(maxNumChunks > 0, "maxNumChunks must be greater than zero");
+		Assert.isTrue(minChunkSizeChars >= 0, "minChunkSizeChars must not be negative");
+		Assert.isTrue(minChunkLengthToEmbed >= 0, "minChunkLengthToEmbed must not be negative");
 		this.encoding = this.registry.getEncoding(encodingType);
 		this.chunkSize = chunkSize;
 		this.minChunkSizeChars = minChunkSizeChars;

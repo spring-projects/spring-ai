@@ -73,7 +73,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class MilvusVectorStoreIT extends BaseVectorStoreTests {
 
 	@Container
-	private static MilvusContainer milvusContainer = new MilvusContainer(MilvusImage.DEFAULT_IMAGE);
+	private static MilvusContainer milvusContainer = new MilvusContainer(MilvusImage.DEFAULT_IMAGE)
+		.withEnv("DEPLOY_MODE", "STANDALONE");
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(TestApplication.class);
@@ -323,7 +324,7 @@ public class MilvusVectorStoreIT extends BaseVectorStoreTests {
 			assertThat(results.stream().map(doc -> doc.getMetadata().get("type")).collect(Collectors.toList()))
 				.containsExactlyInAnyOrder("A", "B");
 			assertThat(results.stream().map(doc -> doc.getMetadata().get("priority")).collect(Collectors.toList()))
-				.containsExactlyInAnyOrder(1.0, 1.0);
+				.containsExactlyInAnyOrder(1L, 1L);
 		});
 	}
 
@@ -380,12 +381,11 @@ public class MilvusVectorStoreIT extends BaseVectorStoreTests {
 
 		@Bean
 		public EmbeddingModel embeddingModel() {
-			return new OpenAiEmbeddingModel(OpenAiEmbeddingOptions.builder()
+			OpenAiEmbeddingOptions options = OpenAiEmbeddingOptions.builder()
 				.apiKey(System.getenv("OPENAI_API_KEY"))
 				.model(OpenAiEmbeddingOptions.DEFAULT_EMBEDDING_MODEL)
-				.build());
-			// return new OpenAiEmbeddingModel(new
-			// OpenAiEmbeddingOptions.builder().apiKey(System.getenv("OPENAI_API_KEY")).model("text-embedding-ada-002").build());
+				.build();
+			return OpenAiEmbeddingModel.builder().options(options).build();
 		}
 
 	}

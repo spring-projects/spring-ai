@@ -89,7 +89,7 @@ class MediaTests {
 
 	@Test
 	void testMediaBuilderWithNullData() {
-		assertThatThrownBy(() -> Media.builder().mimeType(MimeType.valueOf("image/png")).data((Object) null).build())
+		assertThatThrownBy(() -> Media.builder().mimeType(MimeType.valueOf("image/png")).data((byte[]) null).build())
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("Data must not be null");
 	}

@@ -17,7 +17,6 @@
 package org.springframework.ai.vectorstore.milvus;
 
 import org.springframework.ai.vectorstore.filter.Filter.Expression;
-import org.springframework.ai.vectorstore.filter.Filter.ExpressionType;
 import org.springframework.ai.vectorstore.filter.Filter.Group;
 import org.springframework.ai.vectorstore.filter.Filter.Key;
 import org.springframework.ai.vectorstore.filter.converter.AbstractFilterExpressionConverter;
@@ -25,13 +24,25 @@ import org.springframework.util.Assert;
 
 /**
  * Converts {@link Expression} into Milvus metadata filter expression format. See Milvus
- * JSON‑field & filtering docs:
+ * JSON‑field &amp; filtering docs:
  * <a href="https://milvus.io/docs/json-field-overview.md">json-field-overview</a>
  *
  * @author Christian Tzolov
  * @author Soby Chacko
+ * @author Taewoong Kim
  */
 public class MilvusFilterExpressionConverter extends AbstractFilterExpressionConverter {
+
+	private final String metadataFieldName;
+
+	public MilvusFilterExpressionConverter() {
+		this(MilvusVectorStore.METADATA_FIELD_NAME);
+	}
+
+	public MilvusFilterExpressionConverter(String metadataFieldName) {
+		Assert.hasText(metadataFieldName, "Metadata field name must not be empty");
+		this.metadataFieldName = metadataFieldName;
+	}
 
 	@Override
 	protected void doExpression(Expression exp, StringBuilder context) {
@@ -58,14 +69,19 @@ public class MilvusFilterExpressionConverter extends AbstractFilterExpressionCon
 	}
 
 	@Override
-	protected void doGroup(Group group, StringBuilder context) {
-		this.convertOperand(new Expression(ExpressionType.AND, group.content(), group.content()), context); // trick
+	protected void doStartGroup(Group group, StringBuilder context) {
+		context.append("(");
+	}
+
+	@Override
+	protected void doEndGroup(Group group, StringBuilder context) {
+		context.append(")");
 	}
 
 	@Override
 	protected void doKey(Key key, StringBuilder context) {
 		var identifier = key.key();
-		context.append("metadata[");
+		context.append(this.metadataFieldName).append("[");
 		emitJsonValue(identifier, context);
 		context.append("]");
 	}

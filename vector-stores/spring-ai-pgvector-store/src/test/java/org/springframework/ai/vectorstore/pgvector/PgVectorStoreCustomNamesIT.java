@@ -115,7 +115,7 @@ public class PgVectorStoreCustomNamesIT {
 	}
 
 	@Test
-	public void shouldFailWhenCustomTableIsAbsentAndValidationEnabled() {
+	public void shouldCreateCustomTableWhenAbsentAndValidationEnabled() {
 
 		String tableName = "customvectortable";
 
@@ -125,9 +125,9 @@ public class PgVectorStoreCustomNamesIT {
 
 			.run(context -> {
 
-				assertThat(context).hasFailed();
-				assertThat(context.getStartupFailure()).hasCauseInstanceOf(IllegalStateException.class)
-					.hasMessageContaining(tableName + " does not exist");
+				assertThat(context).hasNotFailed();
+				assertThat(isTableExists(context, tableName)).isTrue();
+				dropTableByName(context, tableName);
 
 			});
 	}
@@ -241,10 +241,11 @@ public class PgVectorStoreCustomNamesIT {
 
 		@Bean
 		public EmbeddingModel embeddingModel() {
-			return new OpenAiEmbeddingModel(OpenAiEmbeddingOptions.builder()
+			OpenAiEmbeddingOptions options = OpenAiEmbeddingOptions.builder()
 				.apiKey(System.getenv("OPENAI_API_KEY"))
 				.model(OpenAiEmbeddingOptions.DEFAULT_EMBEDDING_MODEL)
-				.build());
+				.build();
+			return OpenAiEmbeddingModel.builder().options(options).build();
 		}
 
 	}

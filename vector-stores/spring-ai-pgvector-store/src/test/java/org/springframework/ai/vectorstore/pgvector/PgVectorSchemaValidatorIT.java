@@ -21,6 +21,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.jdbc.test.autoconfigure.JdbcTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
@@ -28,8 +29,10 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.JdbcTemplate;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 import static org.assertj.core.api.Assertions.assertThatNoException;
+import static org.mockito.Mockito.mock;
 
 /**
  * @author Yanming Zhou
@@ -67,6 +70,19 @@ public class PgVectorSchemaValidatorIT {
 			.isThrownBy(() -> this.schemaValidator.validateTableSchema("public", "vector_store", 2048))
 			.withMessageContaining("1024");
 
+	}
+
+	@Test
+	void schemaValidationWithInitializeSchemaSucceedsOnFreshDatabase() {
+		PgVectorStore vectorStore = PgVectorStore.builder(this.jdbcTemplate, mock(EmbeddingModel.class))
+			.vectorTableName("fresh_vector_store")
+			.dimensions(1024)
+			.initializeSchema(true)
+			.vectorTableValidationsEnabled(true)
+			.build();
+
+		assertThatNoException().isThrownBy(vectorStore::afterPropertiesSet);
+		assertThat(this.schemaValidator.isTableExists("public", "fresh_vector_store")).isTrue();
 	}
 
 	@Configuration(proxyBeanMethods = false)

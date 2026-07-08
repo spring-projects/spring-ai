@@ -38,7 +38,9 @@ import org.springframework.ai.model.openai.autoconfigure.OpenAiChatAutoConfigura
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionResult;
+import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.openai.OpenAiChatModel;
+import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -55,8 +57,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.openai.api-key=" + System.getenv("OPENAI_API_KEY"),
 				"spring.ai.openai.chat.model=" + "gpt-4o-mini")
-		.withConfiguration(AutoConfigurations.of(OpenAiChatAutoConfiguration.class,
-				org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration.class))
+		.withConfiguration(AutoConfigurations.of(OpenAiChatAutoConfiguration.class, ToolCallingAutoConfiguration.class))
 		.withUserConfiguration(Config.class);
 
 	private static Map<String, Object> feedback = new ConcurrentHashMap<>();
@@ -221,9 +222,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			UserMessage userMessage = new UserMessage(
 					"What's the weather like in San Francisco, Tokyo, and Paris? Please use the provided tools to get the weather for all 3 cities. You can call the following functions 'weatherFunction'");
 
-			ToolCallingChatOptions options = ToolCallingChatOptions.builder()
-				.toolCallbacks(weatherFunctionWithContext)
-				.build();
+			OpenAiChatOptions options = OpenAiChatOptions.builder().toolCallbacks(weatherFunctionWithContext).build();
 
 			Prompt prompt = new Prompt(List.of(userMessage), options);
 
@@ -263,7 +262,7 @@ class FunctionCallbackWithPlainFunctionBeanIT {
 			UserMessage userMessage = new UserMessage(
 					"What's the weather like in San Francisco, Tokyo, and Paris? Please use the provided tools to get the weather for all 3 cities. You can call the following functions 'weatherFunction'");
 
-			ToolCallingChatOptions options = ToolCallingChatOptions.builder()
+			OpenAiChatOptions options = OpenAiChatOptions.builder()
 				.toolCallbacks(weatherFunctionWithClassBiFunction)
 				.build();
 

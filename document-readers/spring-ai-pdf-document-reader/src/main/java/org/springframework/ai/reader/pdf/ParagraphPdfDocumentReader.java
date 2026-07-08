@@ -34,6 +34,7 @@ import org.springframework.ai.reader.pdf.config.PdfDocumentReaderConfig;
 import org.springframework.ai.reader.pdf.layout.PDFLayoutTextStripperByArea;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.core.io.Resource;
+import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
@@ -102,6 +103,9 @@ public class ParagraphPdfDocumentReader implements DocumentReader {
 	 * @param config The configuration for PDF document processing.
 	 */
 	public ParagraphPdfDocumentReader(Resource pdfResource, PdfDocumentReaderConfig config) {
+
+		Assert.isTrue(!config.hasPageRanges(),
+				"Page ranges are not supported by ParagraphPdfDocumentReader; use PagePdfDocumentReader instead.");
 
 		try {
 			PDFParser pdfParser = new PDFParser(

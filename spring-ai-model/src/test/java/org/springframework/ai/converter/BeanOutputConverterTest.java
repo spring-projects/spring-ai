@@ -177,7 +177,7 @@ class BeanOutputConverterTest {
 		}
 
 		@Test
-		void verifySchemaPropertyOrder() throws Exception {
+		void verifySchemaPropertyOrder() {
 			var converter = new BeanOutputConverter<>(TestClassWithJsonPropertyOrder.class);
 			String jsonSchema = converter.getJsonSchema();
 
@@ -462,7 +462,7 @@ class BeanOutputConverterTest {
 		// @checkstyle:on RegexpSinglelineJavaCheck
 
 		@Test
-		void formatClassTypeWithToolParamAnnotations() throws Exception {
+		void formatClassTypeWithToolParamAnnotations() {
 			var converter = new BeanOutputConverter<>(TestClassWithToolParam.class);
 			String schema = converter.getJsonSchema();
 			JsonNode schemaNode = JsonMapper.shared().readTree(schema);
@@ -470,14 +470,14 @@ class BeanOutputConverterTest {
 			assertThat(schemaNode.get("required").toString()).contains("requiredField");
 			assertThat(schemaNode.get("required").toString()).doesNotContain("optionalField");
 
-			assertThat(schemaNode.get("properties").get("requiredField").get("description").asText())
+			assertThat(schemaNode.get("properties").get("requiredField").get("description").asString())
 				.isEqualTo("A required field");
-			assertThat(schemaNode.get("properties").get("optionalField").get("description").asText())
+			assertThat(schemaNode.get("properties").get("optionalField").get("description").asString())
 				.isEqualTo("An optional field");
 		}
 
 		@Test
-		void formatClassTypeWithNullableAnnotation() throws Exception {
+		void formatClassTypeWithNullableAnnotation() {
 			var converter = new BeanOutputConverter<>(TestClassWithNullable.class);
 			String schema = converter.getJsonSchema();
 			JsonNode schemaNode = JsonMapper.shared().readTree(schema);

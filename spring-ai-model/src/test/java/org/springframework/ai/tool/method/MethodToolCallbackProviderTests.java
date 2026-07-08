@@ -176,7 +176,8 @@ class MethodToolCallbackProviderTests {
 
 		@Tool
 		public Consumer<String> consumerTool() {
-			return input -> System.out.println("Consumer received: " + input);
+			return input -> {
+			};
 		}
 
 	}

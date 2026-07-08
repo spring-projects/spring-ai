@@ -18,6 +18,7 @@ package org.springframework.ai.mistralai;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -99,7 +100,7 @@ class MistralAiChatClientIT {
 		assertThat(response).isNotNull();
 		assertThat(response.getResult()).isNotNull();
 		assertThat(response.getResult().getOutput().getText()).isNotNull();
-		assertThat(response.getResult().getOutput().getText().toLowerCase()).containsAnyOf("blackbeard",
+		assertThat(response.getResult().getOutput().getText().toLowerCase(Locale.ROOT)).containsAnyOf("blackbeard",
 				"bartholomew roberts");
 	}
 

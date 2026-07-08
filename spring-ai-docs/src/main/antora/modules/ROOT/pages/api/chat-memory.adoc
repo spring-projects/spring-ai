@@ -53,9 +53,6 @@ NOTE: If `maxMessages` is smaller than a single complete turn (for example, a mu
 
 Spring AI offers the `ChatMemoryRepository` abstraction for storing chat memory. This section describes the built-in repositories provided by Spring AI and how to use them, but you can also implement your own repository if needed.
 
-NOTE: Azure Cosmos DB chat memory repository support is available as an external module maintained by the Azure Cosmos DB team.
-See https://azurecosmosdb.github.io/spring-ai/docs/index.html for more information.
-
 === In-Memory Repository
 
 `InMemoryChatMemoryRepository` stores messages in memory using a `ConcurrentHashMap`.
@@ -80,6 +77,13 @@ ChatMemoryRepository repository = new InMemoryChatMemoryRepository();
 `JdbcChatMemoryRepository` is a built-in implementation that uses JDBC to store messages in a relational database. It supports multiple databases out-of-the-box and is suitable for applications that require persistent storage of chat memory.
 
 Messages are retrieved in ascending order (oldest-to-newest), which is the expected format for LLM conversation history. Ordering is maintained by a `sequence_id` column that records each message's position within its conversation. Each message also stores a creation `timestamp`, exposed in the message metadata under the `JdbcChatMemoryRepository.CONVERSATION_TS` key as a `java.time.Instant`, so applications can display when a message was created.
+
+[WARNING]
+====
+*`JdbcChatMemoryRepository` does not support tool call messages.*
+`AssistantMessage` instances containing tool calls and `ToolResponseMessage` instances are silently filtered out on save and will not appear in the retrieved conversation history.
+If your application uses tool calling, consider the https://spring-ai-community.github.io/spring-ai-session/latest/[Spring AI Session] project and the https://spring-ai-community.github.io/spring-ai-session/latest/session-jdbc/[JDBC session store], which properly persist all message types.
+====
 
 First, add the following dependency to your project:
 
@@ -283,6 +287,13 @@ The auto-configuration will automatically create the `ai_chat_memory` table.
 
 You can disable the schema initialization by setting the property `spring.ai.chat.memory.repository.cassandra.initialize-schema` to `false`.
 
+[WARNING]
+====
+*`CassandraChatMemoryRepository` does not support tool call messages.*
+`AssistantMessage` instances containing tool calls and `ToolResponseMessage` instances are silently filtered out on save and will not appear in the retrieved conversation history.
+If your application uses tool calling, consider the https://spring-ai-community.github.io/spring-ai-session/latest/[Spring AI Session] project and the https://spring-ai-community.github.io/spring-ai-session/latest/session-jdbc/[JDBC session store], which properly persist all message types.
+====
+
 === Neo4j ChatMemoryRepository
 
 `Neo4jChatMemoryRepository` is a built-in implementation that uses Neo4j to store chat messages as nodes and relationships in a property graph database. It is suitable for applications that want to leverage Neo4j's graph capabilities for chat memory persistence.
@@ -357,11 +368,22 @@ ChatMemory chatMemory = MessageWindowChatMemory.builder()
 
 The Neo4j repository will automatically ensure that indexes are created for conversation IDs and message indices to optimize performance. If you use custom labels, indexes will be created for those labels as well. No schema initialization is required, but you should ensure your Neo4j instance is accessible to your application.
 
+=== CosmosDBChatMemoryRepository
+
+`CosmosDBChatMemoryRepository` chat memory repository support is available as an external module maintained by the Azure Cosmos DB team. See the https://azurecosmosdb.github.io/spring-ai/docs/chat-memory.html[related documentation] for more information.
+
 === MongoChatMemoryRepository
 
 `MongoChatMemoryRepository` is a built-in implementation that uses MongoDB to store messages. It is suitable for applications that require a flexible, document-oriented database for chat memory persistence.
 
 Messages are retrieved in ascending timestamp order (oldest-to-newest), which is the expected format for LLM conversation history. This ordering is consistent across all chat memory repository implementations.
+
+[WARNING]
+====
+*`MongoChatMemoryRepository` does not support tool call messages.*
+`AssistantMessage` instances containing tool calls and `ToolResponseMessage` instances are silently filtered out on save and will not appear in the retrieved conversation history.
+If your application uses tool calling, consider the https://spring-ai-community.github.io/spring-ai-session/latest/[Spring AI Session] project and the https://spring-ai-community.github.io/spring-ai-session/latest/session-jdbc/[JDBC session store], which properly persist all message types.
+====
 
 First, add the following dependency to your project:
 
@@ -498,14 +520,14 @@ ChatMemory chatMemory = MessageWindowChatMemory.builder()
 [cols="2,5,1",stripes=even]
 |===
 |Property | Description | Default Value
-| `spring.ai.chat.memory.redis.host` | Redis server host | `localhost`
-| `spring.ai.chat.memory.redis.port` | Redis server port | `6379`
-| `spring.ai.chat.memory.redis.index-name` | Name of the Redis search index | `chat-memory-idx`
-| `spring.ai.chat.memory.redis.key-prefix` | Key prefix for chat memory entries | `chat-memory:`
-| `spring.ai.chat.memory.redis.time-to-live` | Time to live for chat memory entries (e.g., `24h`, `30d`) | _no expiration_
-| `spring.ai.chat.memory.redis.initialize-schema` | Whether to initialize the Redis schema on startup | `true`
-| `spring.ai.chat.memory.redis.max-conversation-ids` | Maximum number of conversation IDs to return | `1000`
-| `spring.ai.chat.memory.redis.max-messages-per-conversation` | Maximum number of messages to return per conversation | `1000`
+| `spring.ai.chat.memory.repository.redis.host` | Redis server host | `localhost`
+| `spring.ai.chat.memory.repository.redis.port` | Redis server port | `6379`
+| `spring.ai.chat.memory.repository.redis.index-name` | Name of the Redis search index | `chat-memory-idx`
+| `spring.ai.chat.memory.repository.redis.key-prefix` | Key prefix for chat memory entries | `chat-memory:`
+| `spring.ai.chat.memory.repository.redis.time-to-live` | Time to live for chat memory entries (e.g., `24h`, `30d`) | _no expiration_
+| `spring.ai.chat.memory.repository.redis.initialize-schema` | Whether to initialize the Redis schema on startup | `true`
+| `spring.ai.chat.memory.repository.redis.max-conversation-ids` | Maximum number of conversation IDs to return | `1000`
+| `spring.ai.chat.memory.repository.redis.max-messages-per-conversation` | Maximum number of messages to return per conversation | `1000`
 |===
 
 ==== Advanced Querying
@@ -544,12 +566,12 @@ To enable efficient querying on custom metadata fields, you can configure metada
 
 [source,properties]
 ----
-spring.ai.chat.memory.redis.metadata-fields[0].name=priority
-spring.ai.chat.memory.redis.metadata-fields[0].type=tag
-spring.ai.chat.memory.redis.metadata-fields[1].name=score
-spring.ai.chat.memory.redis.metadata-fields[1].type=numeric
-spring.ai.chat.memory.redis.metadata-fields[2].name=category
-spring.ai.chat.memory.redis.metadata-fields[2].type=tag
+spring.ai.chat.memory.repository.redis.metadata-fields[0].name=priority
+spring.ai.chat.memory.repository.redis.metadata-fields[0].type=tag
+spring.ai.chat.memory.repository.redis.metadata-fields[1].name=score
+spring.ai.chat.memory.repository.redis.metadata-fields[1].type=numeric
+spring.ai.chat.memory.repository.redis.metadata-fields[2].name=category
+spring.ai.chat.memory.repository.redis.metadata-fields[2].type=tag
 ----
 
 Supported field types are: `tag` (for exact match filtering), `text` (for full-text search), and `numeric` (for range queries).
@@ -557,7 +579,7 @@ Supported field types are: `tag` (for exact match filtering), `text` (for full-t
 ==== Schema Initialization
 
 The auto-configuration will automatically create the Redis search index on startup if it does not already exist.
-You can disable this behavior by setting `spring.ai.chat.memory.redis.initialize-schema=false`.
+You can disable this behavior by setting `spring.ai.chat.memory.repository.redis.initialize-schema=false`.
 
 ==== Requirements
 
@@ -570,7 +592,7 @@ When using the ChatClient API, you can provide a `ChatMemory` implementation to 
 
 Spring AI provides a few built-in Advisors that you can use to configure the memory behavior of the `ChatClient`, based on your needs.
 
-WARNING: Currently, the intermediate messages exchanged with a large-language model when performing tool calls are not stored in the memory. This is a limitation of the current implementation and will be addressed in future releases. If you need to store these messages, refer to the instructions for the xref:api/tools.adoc#_user_controlled_tool_execution[User Controlled Tool Execution].
+WARNING: Currently, the intermediate messages exchanged with a large-language model when performing tool calls are not stored in the memory. This is a limitation of the current implementation and will be addressed in future releases. If you need to store these messages, refer to the instructions for the xref:api/tools.adoc#user-controlled-tool-execution[User Controlled Tool Execution].
 
 * `MessageChatMemoryAdvisor`. This advisor manages the conversation memory using the provided `ChatMemory` implementation. On each interaction, it retrieves the conversation history from the memory and includes it in the prompt as a collection of messages.
 * `VectorStoreChatMemoryAdvisor`. This advisor manages the conversation memory using the provided `VectorStore` implementation. On each interaction, it retrieves the conversation history from the vector store and appends it to the system message as plain text.

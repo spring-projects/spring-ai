@@ -508,7 +508,7 @@ Sync::
 [source,java]
 ----
 @Component
-public class CustomMcpSyncClientCustomizer implements McpCustomizer<McpClient.SyncSpec> {
+public class CustomMcpSyncClientCustomizer implements McpClientCustomizer<McpClient.SyncSpec> {
     @Override
     public void customize(String serverConfigurationName, McpClient.SyncSpec spec) {
 
@@ -567,7 +567,7 @@ Async::
 [source,java]
 ----
 @Component
-public class CustomMcpAsyncClientCustomizer implements McpCustomizer<McpClient.AsyncSpec> {
+public class CustomMcpAsyncClientCustomizer implements McpClientCustomizer<McpClient.AsyncSpec> {
     @Override
     public void customize(String serverConfigurationName, McpClient.AsyncSpec spec) {
         // Customize the async client configuration
@@ -707,7 +707,7 @@ WARNING: When using `McpToolNamePrefixGenerator.noPrefix()` with multiple MCP se
 
 === Tool Context to MCP Meta Converter
 
-The MCP Client Boot Starter supports customizable conversion of Spring AI's xref:api/tools.adoc#_tool_context[ToolContext] to MCP tool-call metadata through the `ToolContextToMcpMetaConverter` interface.
+The MCP Client Boot Starter supports customizable conversion of Spring AI's xref:api/tools.adoc#tool-context[ToolContext] to MCP tool-call metadata through the `ToolContextToMcpMetaConverter` interface.
 This feature allows you to pass additional contextual information (e.g. user id, secrets token) as metadata along with the LLM's generated call arguments.
 
 For example you can pass the MCP `progressToken` to your link:https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/progress#progress-flow[MCP Progress Flow] in the tool context to track the progress of long-running operations:

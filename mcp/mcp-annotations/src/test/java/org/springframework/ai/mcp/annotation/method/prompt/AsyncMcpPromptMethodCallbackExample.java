@@ -53,15 +53,12 @@ public final class AsyncMcpPromptMethodCallbackExample {
 		AsyncPromptProvider provider = new AsyncPromptProvider();
 
 		// Example 1: Using a method that returns Mono<GetPromptResult>
-		System.out.println("Example 1: Method returning Mono<GetPromptResult>");
 		demonstrateAsyncGreetingPrompt(provider);
 
 		// Example 2: Using a method that returns Mono<String>
-		System.out.println("\nExample 2: Method returning Mono<String>");
 		demonstrateAsyncStringPrompt(provider);
 
 		// Example 3: Using a method that returns Mono<List<String>>
-		System.out.println("\nExample 3: Method returning Mono<List<String>>");
 		demonstrateAsyncStringListPrompt(provider);
 	}
 
@@ -88,21 +85,13 @@ public final class AsyncMcpPromptMethodCallbackExample {
 
 		// Create a request with arguments
 		Map<String, Object> requestArgs = Map.of("name", "John");
-		GetPromptRequest request = new GetPromptRequest("async-greeting", requestArgs);
+		GetPromptRequest request = GetPromptRequest.builder("async-greeting").arguments(requestArgs).build();
 
 		// Apply the callback (in a real application, you would have a real exchange)
 		Mono<GetPromptResult> resultMono = callback.apply(null, request);
 
 		// Subscribe to the result
 		resultMono.subscribe(result -> {
-			System.out.println("Description: " + result.description());
-			System.out.println("Messages:");
-			for (PromptMessage message : result.messages()) {
-				System.out.println("  Role: " + message.role());
-				if (message.content() instanceof TextContent) {
-					System.out.println("  Content: " + ((TextContent) message.content()).text());
-				}
-			}
 		});
 
 		// Wait a bit for the subscription to complete
@@ -132,20 +121,13 @@ public final class AsyncMcpPromptMethodCallbackExample {
 
 		// Create a request with arguments
 		Map<String, Object> requestArgs = Map.of("name", "Alice");
-		GetPromptRequest request = new GetPromptRequest("async-string", requestArgs);
+		GetPromptRequest request = GetPromptRequest.builder("async-string").arguments(requestArgs).build();
 
 		// Apply the callback
 		Mono<GetPromptResult> resultMono = callback.apply(null, request);
 
 		// Subscribe to the result
 		resultMono.subscribe(result -> {
-			System.out.println("Messages:");
-			for (PromptMessage message : result.messages()) {
-				System.out.println("  Role: " + message.role());
-				if (message.content() instanceof TextContent) {
-					System.out.println("  Content: " + ((TextContent) message.content()).text());
-				}
-			}
 		});
 
 		// Wait a bit for the subscription to complete
@@ -175,20 +157,13 @@ public final class AsyncMcpPromptMethodCallbackExample {
 
 		// Create a request with arguments
 		Map<String, Object> requestArgs = Map.of("topic", "MCP");
-		GetPromptRequest request = new GetPromptRequest("async-string-list", requestArgs);
+		GetPromptRequest request = GetPromptRequest.builder("async-string-list").arguments(requestArgs).build();
 
 		// Apply the callback
 		Mono<GetPromptResult> resultMono = callback.apply(null, request);
 
 		// Subscribe to the result
 		resultMono.subscribe(result -> {
-			System.out.println("Messages:");
-			for (PromptMessage message : result.messages()) {
-				System.out.println("  Role: " + message.role());
-				if (message.content() instanceof TextContent) {
-					System.out.println("  Content: " + ((TextContent) message.content()).text());
-				}
-			}
 		});
 
 		// Wait a bit for the subscription to complete
@@ -210,8 +185,15 @@ public final class AsyncMcpPromptMethodCallbackExample {
 				@McpArg(name = "name", description = "The name to greet", required = true) String name) {
 			// Simulate some asynchronous processing
 			return Mono.delay(Duration.ofMillis(100))
-				.map(ignored -> new GetPromptResult("Async Greeting", List.of(new PromptMessage(Role.ASSISTANT,
-						new TextContent("Hello, " + name + "! Welcome to the MCP system. (async)")))));
+				.map(ignored -> GetPromptResult
+					.builder(
+							List.of(PromptMessage
+								.builder(Role.ASSISTANT,
+										TextContent.builder("Hello, " + name + "! Welcome to the MCP system. (async)")
+											.build())
+								.build()))
+					.description("Async Greeting")
+					.build());
 		}
 
 		/**
@@ -234,8 +216,9 @@ public final class AsyncMcpPromptMethodCallbackExample {
 		public Mono<PromptMessage> asyncMessagePrompt(GetPromptRequest request) {
 			// Simulate some asynchronous processing
 			return Mono.delay(Duration.ofMillis(100))
-				.map(ignored -> new PromptMessage(Role.ASSISTANT,
-						new TextContent("Async single message for " + request.name())));
+				.map(ignored -> PromptMessage
+					.builder(Role.ASSISTANT, TextContent.builder("Async single message for " + request.name()).build())
+					.build());
 		}
 
 		/**
@@ -248,8 +231,14 @@ public final class AsyncMcpPromptMethodCallbackExample {
 			// Simulate some asynchronous processing
 			return Mono.delay(Duration.ofMillis(100))
 				.map(ignored -> List.of(
-						new PromptMessage(Role.ASSISTANT, new TextContent("Async message 1 for " + request.name())),
-						new PromptMessage(Role.ASSISTANT, new TextContent("Async message 2 for " + request.name()))));
+						PromptMessage
+							.builder(Role.ASSISTANT,
+									TextContent.builder("Async message 1 for " + request.name()).build())
+							.build(),
+						PromptMessage
+							.builder(Role.ASSISTANT,
+									TextContent.builder("Async message 2 for " + request.name()).build())
+							.build()));
 		}
 
 		/**
@@ -317,8 +306,11 @@ public final class AsyncMcpPromptMethodCallbackExample {
 				message.append(
 						"I'm here to assist you with any questions you might have about the Model Context Protocol. (async)");
 
-				return new GetPromptResult("Async Personalized Message",
-						List.of(new PromptMessage(Role.ASSISTANT, new TextContent(message.toString()))));
+				return GetPromptResult
+					.builder(
+							List.of(new PromptMessage(Role.ASSISTANT, TextContent.builder(message.toString()).build())))
+					.description("Async Personalized Message")
+					.build();
 			});
 		}
 
