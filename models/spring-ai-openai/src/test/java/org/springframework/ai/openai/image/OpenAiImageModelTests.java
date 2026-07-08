@@ -25,14 +25,19 @@ import com.openai.core.RequestOptions;
 import com.openai.models.images.Image;
 import com.openai.models.images.ImageGenerateParams;
 import com.openai.models.images.ImagesResponse;
+import com.openai.services.blocking.ImageService;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.openai.OpenAiImageModel;
 import org.springframework.ai.openai.OpenAiImageOptions;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
@@ -44,7 +49,14 @@ import static org.mockito.Mockito.when;
  *
  * @author guan xu
  */
+@ExtendWith(MockitoExtension.class)
 class OpenAiImageModelTests {
+
+	@Mock
+	private OpenAIClient openAiClient;
+
+	@Mock
+	private ImageService imageService;
 
 	@Test
 	void testPropagatesTimeoutFromRequestOptions() {
@@ -68,6 +80,38 @@ class OpenAiImageModelTests {
 		RequestOptions value = argumentCaptor.getValue();
 		assertThat(value.getTimeout()).isNotNull();
 		assertThat(value.getTimeout().request()).isEqualTo(expectedTimeout);
+	}
+
+	@Test
+	void callRejectsImageResponseWithoutData() {
+		when(this.openAiClient.images()).thenReturn(this.imageService);
+		when(this.imageService.generate(any(ImageGenerateParams.class)))
+			.thenReturn(ImagesResponse.builder().created(1).build());
+
+		OpenAiImageModel imageModel = OpenAiImageModel.builder()
+			.openAiClient(this.openAiClient)
+			.options(OpenAiImageOptions.builder().model("gpt-image-1").build())
+			.build();
+
+		assertThatIllegalArgumentException()
+			.isThrownBy(() -> imageModel.call(new ImagePrompt("a duck riding a bicycle")))
+			.withMessage("Image generation failed: no image returned");
+	}
+
+	@Test
+	void callRejectsImageResponseWithEmptyData() {
+		when(this.openAiClient.images()).thenReturn(this.imageService);
+		when(this.imageService.generate(any(ImageGenerateParams.class)))
+			.thenReturn(ImagesResponse.builder().created(1).data(List.of()).build());
+
+		OpenAiImageModel imageModel = OpenAiImageModel.builder()
+			.openAiClient(this.openAiClient)
+			.options(OpenAiImageOptions.builder().model("gpt-image-1").build())
+			.build();
+
+		assertThatIllegalArgumentException()
+			.isThrownBy(() -> imageModel.call(new ImagePrompt("a duck riding a bicycle")))
+			.withMessage("Image generation failed: no image returned");
 	}
 
 }
