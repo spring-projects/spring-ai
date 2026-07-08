@@ -4,6 +4,11 @@ run-name: Spring AI Integration Tests
 on:
   workflow_dispatch:
     inputs:
+      springBootVersion:
+        description: 'Spring Boot version to test against (leave empty to use the project default)'
+        required: false
+        default: ''
+        type: string
       test_suites:
         description: 'Test suites to run (comma-separated: ollama, anthropic, azure-openai, mistral-ai, elevenlabs, vectorstores, autoconfigure, spring-ai-integration, docker-compose, testcontainers). Leave empty to run all.'
         required: false
@@ -35,7 +40,7 @@ jobs:
           cache: 'maven'
 
       - name: Build all modules
-        run: ./mvnw --batch-mode -ntp --update-snapshots clean install -DskipTests
+        run: ./mvnw --batch-mode -ntp --update-snapshots clean install -DskipTests ${{ inputs.springBootVersion != '' && format('-Dspring-boot.version={0}', inputs.springBootVersion) || '' }}
 
       - name: Upload Spring AI built artifacts
         uses: actions/upload-artifact@v6
@@ -85,6 +90,7 @@ jobs:
         with:
           model-name: ollama
           maven-properties: "-Dskip.model.ollama=false"
+          spring-boot-version: ${{ inputs.springBootVersion }}
 
   test-anthropic:
     needs: build-all
@@ -122,6 +128,7 @@ jobs:
         uses: ./.github/actions/do-integration-test
         with:
           model-name: anthropic
+          spring-boot-version: ${{ inputs.springBootVersion }}
 
   test-azure-openai:
     needs: build-all
@@ -164,6 +171,7 @@ jobs:
         uses: ./.github/actions/do-integration-test
         with:
           model-name: azure-openai
+          spring-boot-version: ${{ inputs.springBootVersion }}
 
   test-mistral-ai:
     needs: build-all
@@ -197,6 +205,7 @@ jobs:
         uses: ./.github/actions/do-integration-test
         with:
           model-name: mistral-ai
+          spring-boot-version: ${{ inputs.springBootVersion }}
 
   test-elevenlabs:
     needs: build-all
@@ -230,6 +239,7 @@ jobs:
         uses: ./.github/actions/do-integration-test
         with:
           model-name: elevenlabs
+          spring-boot-version: ${{ inputs.springBootVersion }}
 
   test-bedrock:
     needs: build-all
@@ -268,6 +278,7 @@ jobs:
         uses: ./.github/actions/do-multi-module-test
         with:
           modules: models/spring-ai-bedrock,models/spring-ai-bedrock-converse
+          spring-boot-version: ${{ inputs.springBootVersion }}
 
   test-deepseek:
     needs: build-all
@@ -305,6 +316,7 @@ jobs:
         uses: ./.github/actions/do-integration-test
         with:
           model-name: deepseek
+          spring-boot-version: ${{ inputs.springBootVersion }}
 
   test-google-genai:
     needs: build-all
@@ -342,6 +354,7 @@ jobs:
         uses: ./.github/actions/do-integration-test
         with:
           model-name: google-genai
+          spring-boot-version: ${{ inputs.springBootVersion }}
 
   test-vectorstores:
     needs: build-all
@@ -394,6 +407,7 @@ jobs:
         uses: ./.github/actions/do-multi-module-test
         with:
           modules: vector-stores/spring-ai-azure-store,vector-stores/spring-ai-bedrock-knowledgebase-store,vector-stores/spring-ai-cassandra-store,vector-stores/spring-ai-chroma-store,vector-stores/spring-ai-coherence-store,vector-stores/spring-ai-couchbase-store,vector-stores/spring-ai-elasticsearch-store,vector-stores/spring-ai-gemfire-store,vector-stores/spring-ai-mariadb-store,vector-stores/spring-ai-milvus-store,vector-stores/spring-ai-mongodb-atlas-store,vector-stores/spring-ai-neo4j-store,vector-stores/spring-ai-opensearch-store,vector-stores/spring-ai-oracle-store,vector-stores/spring-ai-pgvector-store,vector-stores/spring-ai-pinecone-store,vector-stores/spring-ai-qdrant-store,vector-stores/spring-ai-redis-semantic-cache,vector-stores/spring-ai-redis-store,vector-stores/spring-ai-typesense-store,vector-stores/spring-ai-weaviate-store
+          spring-boot-version: ${{ inputs.springBootVersion }}
 
   test-autoconfigure:
     needs: build-all
@@ -440,6 +454,7 @@ jobs:
         uses: ./.github/actions/do-autoconfigure-test
         with:
           spring-ai-branch: main
+          spring-boot-version: ${{ inputs.springBootVersion }}
 
   test-spring-ai-integration:
     needs: build-all
@@ -480,6 +495,7 @@ jobs:
         uses: ./.github/actions/do-multi-module-test
         with:
           modules: spring-ai-integration-tests
+          spring-boot-version: ${{ inputs.springBootVersion }}
 
   test-docker-compose:
     needs: build-all
@@ -519,6 +535,7 @@ jobs:
         uses: ./.github/actions/do-multi-module-test
         with:
           modules: spring-ai-spring-boot-docker-compose
+          spring-boot-version: ${{ inputs.springBootVersion }}
 
   test-testcontainers:
     needs: build-all
@@ -559,3 +576,4 @@ jobs:
         uses: ./.github/actions/do-multi-module-test
         with:
           modules: spring-ai-spring-boot-testcontainers
+          spring-boot-version: ${{ inputs.springBootVersion }}
