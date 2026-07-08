@@ -440,10 +440,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 				streamingState.appendThinking(thinkingText);
 				Map<String, Object> thinkingProperties = new HashMap<>();
 				thinkingProperties.put("thinking", Boolean.TRUE);
-				AssistantMessage assistantMessage = AssistantMessage.builder()
-					.content(thinkingText)
-					.properties(thinkingProperties)
-					.build();
+				AssistantMessage assistantMessage = AssistantMessage.builder().properties(thinkingProperties).build();
 				return new ChatResponse(List.of(new Generation(assistantMessage)));
 			}
 
