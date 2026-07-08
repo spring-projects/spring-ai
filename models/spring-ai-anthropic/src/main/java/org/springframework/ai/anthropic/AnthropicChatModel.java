@@ -752,7 +752,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 				List<AnthropicThinkingContent> thinkingContents = getAnthropicThinkingContents(assistantMessage);
 				if (!CollectionUtils.isEmpty(assistantMessage.getToolCalls()) || !thinkingContents.isEmpty()) {
 					List<ContentBlockParam> contentBlocks = new ArrayList<>();
-					String text = getAssistantTextForRequest(assistantMessage, thinkingContents);
+					String text = assistantMessage.getText();
 					if (text != null && !text.isEmpty()) {
 						contentBlocks.add(ContentBlockParam.ofText(TextBlockParam.builder().text(text).build()));
 					}
@@ -1515,24 +1515,6 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		return List.of();
 	}
 
-	private static @Nullable String getAssistantTextForRequest(AssistantMessage assistantMessage,
-			List<AnthropicThinkingContent> thinkingContents) {
-		String text = assistantMessage.getText();
-		if (text == null || text.isEmpty() || thinkingContents.isEmpty() || !assistantMessage.hasToolCalls()) {
-			return text;
-		}
-		StringBuilder replayedThinkingText = new StringBuilder();
-		for (AnthropicThinkingContent thinkingContent : thinkingContents) {
-			if (thinkingContent.thinking() != null) {
-				replayedThinkingText.append(thinkingContent.thinking());
-			}
-		}
-		if (!replayedThinkingText.isEmpty() && text.startsWith(replayedThinkingText.toString())) {
-			return text.substring(replayedThinkingText.length());
-		}
-		return text;
-	}
-
 	private static Map<String, Object> anthropicThinkingProperties(List<AnthropicThinkingContent> thinkingContents) {
 		if (thinkingContents.isEmpty()) {
 			return Map.of();
@@ -1688,8 +1670,15 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		void finishThinking() {
 			if (this.currentThinking.get()) {
 				String signature = this.currentThinkingSignature.get();
-				this.thinkingContents.add(AnthropicThinkingContent.thinking(this.currentThinkingAccumulator.toString(),
-						signature != null ? signature : ""));
+				if (signature == null) {
+					if (logger.isWarnEnabled()) {
+						logger.warn("Thinking block completed without a signature — skipping replay capture");
+					}
+				}
+				else {
+					this.thinkingContents
+						.add(AnthropicThinkingContent.thinking(this.currentThinkingAccumulator.toString(), signature));
+				}
 			}
 			this.currentThinking.set(false);
 			this.currentThinkingAccumulator.setLength(0);
