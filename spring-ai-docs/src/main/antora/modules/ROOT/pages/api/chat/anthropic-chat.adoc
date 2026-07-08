@@ -512,6 +512,17 @@ When thinking is enabled, the response contains different types of content:
 | **Text Block** | _(none)_ | The final answer text in `getText()`.
 |====
 
+=== Thinking with Tool Calls
+
+When thinking is enabled and Claude decides to call a tool, the thinking blocks from
+that response are automatically preserved and replayed in the follow-up request
+alongside the tool results.
+This is required by the Anthropic API — omitting the thinking blocks from the replay causes an API error.
+
+No special configuration is needed.
+Spring AI handles the replay transparently whether you use the auto-managed tool loop
+(`ChatClient` with `ToolCallingAdvisor`) or drive the loop manually via `ToolCallingManager`.
+
 == Multi-Modal Support
 
 The Anthropic SDK module supports multi-modal inputs, allowing you to send images and PDF documents alongside text in your prompts.
