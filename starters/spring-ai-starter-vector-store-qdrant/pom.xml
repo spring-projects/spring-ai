@@ -37,7 +37,6 @@
 		<dependency>
 			<groupId>io.grpc</groupId>
 			<artifactId>grpc-api</artifactId>
-			<version>${grpc-netty-shaded.version}</version>
 		</dependency>
 	</dependencies>
 

@@ -13,52 +13,6 @@
 	<name>Spring AI Vector Store - Weaviate </name>
 	<url>https://github.com/spring-projects/spring-ai</url>
 
-	<dependencyManagement>
-		<dependencies>
-			<!-- Override transitive grpc-netty-shaded to fix CVE-2025-55163 -->
-			<dependency>
-				<groupId>io.grpc</groupId>
-				<artifactId>grpc-netty-shaded</artifactId>
-				<version>${grpc-netty-shaded.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>io.grpc</groupId>
-				<artifactId>grpc-protobuf</artifactId>
-				<version>${grpc-netty-shaded.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>io.grpc</groupId>
-				<artifactId>grpc-protobuf-lite</artifactId>
-				<version>${grpc-netty-shaded.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>io.grpc</groupId>
-				<artifactId>grpc-api</artifactId>
-				<version>${grpc-netty-shaded.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>io.grpc</groupId>
-				<artifactId>grpc-stub</artifactId>
-				<version>${grpc-netty-shaded.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>io.grpc</groupId>
-				<artifactId>grpc-core</artifactId>
-				<version>${grpc-netty-shaded.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>io.grpc</groupId>
-				<artifactId>grpc-context</artifactId>
-				<version>${grpc-netty-shaded.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>io.grpc</groupId>
-				<artifactId>grpc-util</artifactId>
-				<version>${grpc-netty-shaded.version}</version>
-			</dependency>
-		</dependencies>
-	</dependencyManagement>
-
 	<dependencies>
 		<dependency>
 			<groupId>org.springframework.ai</groupId>

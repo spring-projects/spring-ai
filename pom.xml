@@ -259,7 +259,6 @@
 		<commonmark.version>0.22.0</commonmark.version>
 		<djl.version>0.36.0</djl.version>
 		<gemfire.testcontainers.version>2.3.3</gemfire.testcontainers.version>
-		<grpc-netty-shaded.version>1.82.1</grpc-netty-shaded.version>
 		<jsonschema.version>5.0.0</jsonschema.version>
 		<jsoup.version>1.22.2</jsoup.version>
 		<jtokkit.version>1.1.0</jtokkit.version>
