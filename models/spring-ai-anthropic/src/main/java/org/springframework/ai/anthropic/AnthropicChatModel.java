@@ -48,12 +48,10 @@ import com.anthropic.models.messages.Message;
 import com.anthropic.models.messages.MessageCreateParams;
 import com.anthropic.models.messages.RawMessageStreamEvent;
 import com.anthropic.models.messages.RedactedThinkingBlock;
-import com.anthropic.models.messages.RedactedThinkingBlockParam;
 import com.anthropic.models.messages.TextBlock;
 import com.anthropic.models.messages.TextBlockParam;
 import com.anthropic.models.messages.TextCitation;
 import com.anthropic.models.messages.ThinkingBlock;
-import com.anthropic.models.messages.ThinkingBlockParam;
 import com.anthropic.models.messages.Tool;
 import com.anthropic.models.messages.ToolChoice;
 import com.anthropic.models.messages.ToolChoiceAuto;
@@ -159,8 +157,6 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	private static final String BETA_CODE_EXECUTION = "code-execution-2025-08-25";
 
 	private static final String BETA_FILES_API = "files-api-2025-04-14";
-
-	static final String ANTHROPIC_THINKING_CONTENTS_PROPERTY = "anthropicThinkingContents";
 
 	private static final ToolCallingManager DEFAULT_TOOL_CALLING_MANAGER = ToolCallingManager.builder().build();
 
@@ -1489,14 +1485,19 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			}
 			return assistantMessageBuilder.build();
 		}
-		return new AnthropicAssistantMessage(content, toolCalls, thinkingContents);
+		return AnthropicAssistantMessage.builder()
+			.content(content)
+			.toolCalls(toolCalls)
+			.thinkingContents(thinkingContents)
+			.build();
 	}
 
 	private static List<AnthropicThinkingContent> getAnthropicThinkingContents(AssistantMessage assistantMessage) {
 		if (assistantMessage instanceof AnthropicAssistantMessage anthropicAssistantMessage) {
 			return anthropicAssistantMessage.getThinkingContents();
 		}
-		Object contents = assistantMessage.getMetadata().get(ANTHROPIC_THINKING_CONTENTS_PROPERTY);
+		Object contents = assistantMessage.getMetadata()
+			.get(AnthropicAssistantMessage.ANTHROPIC_THINKING_CONTENTS_PROPERTY);
 		if (contents instanceof List<?> list) {
 			List<AnthropicThinkingContent> thinkingContents = new ArrayList<>();
 			for (Object item : list) {
@@ -1510,71 +1511,6 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			return thinkingContents;
 		}
 		return List.of();
-	}
-
-	private static Map<String, Object> anthropicThinkingProperties(List<AnthropicThinkingContent> thinkingContents) {
-		if (thinkingContents.isEmpty()) {
-			return Map.of();
-		}
-		return Map.of(ANTHROPIC_THINKING_CONTENTS_PROPERTY, List.copyOf(thinkingContents));
-	}
-
-	static final class AnthropicAssistantMessage extends AssistantMessage {
-
-		private final List<AnthropicThinkingContent> thinkingContents;
-
-		private AnthropicAssistantMessage(String content, List<ToolCall> toolCalls,
-				List<AnthropicThinkingContent> thinkingContents) {
-			super(content, anthropicThinkingProperties(thinkingContents), List.copyOf(toolCalls), List.of());
-			this.thinkingContents = List.copyOf(thinkingContents);
-		}
-
-		List<AnthropicThinkingContent> getThinkingContents() {
-			return this.thinkingContents;
-		}
-
-		boolean hasThinkingContents() {
-			return !this.thinkingContents.isEmpty();
-		}
-
-		@Override
-		public String toString() {
-			return "AnthropicAssistantMessage [messageType=" + getMessageType() + ", toolCalls=" + getToolCalls()
-					+ ", textContent=" + getText() + ", thinkingContents=" + this.thinkingContents.size() + "]";
-		}
-
-	}
-
-	record AnthropicThinkingContent(@Nullable String thinking, @Nullable String signature,
-			@Nullable String redactedData) {
-
-		static AnthropicThinkingContent thinking(String thinking, String signature) {
-			return new AnthropicThinkingContent(thinking, signature, null);
-		}
-
-		static AnthropicThinkingContent redacted(String data) {
-			return new AnthropicThinkingContent(null, null, data);
-		}
-
-		ContentBlockParam toContentBlockParam() {
-			if (this.redactedData != null) {
-				return ContentBlockParam
-					.ofRedactedThinking(RedactedThinkingBlockParam.builder().data(this.redactedData).build());
-			}
-			String thinking = this.thinking;
-			String signature = this.signature;
-			Assert.notNull(thinking, "thinking must not be null");
-			Assert.notNull(signature, "signature must not be null");
-			return ContentBlockParam
-				.ofThinking(ThinkingBlockParam.builder().thinking(thinking).signature(signature).build());
-		}
-
-		@Override
-		public String toString() {
-			String type = this.redactedData != null ? "redacted_thinking" : "thinking";
-			return "AnthropicThinkingContent[type=" + type + "]";
-		}
-
 	}
 
 	/**

@@ -268,8 +268,13 @@ class AnthropicChatModelTests {
 		assertThat(thinkingGeneration.getOutput().getText()).isEqualTo("thinking text");
 		assertThat(thinkingGeneration.getOutput().getMetadata()).containsEntry("signature", "thinking-signature");
 		Generation toolCallGeneration = response.getResults().get(1);
-		assertThat(toolCallGeneration.getOutput()).isInstanceOf(AnthropicChatModel.AnthropicAssistantMessage.class);
-		assertThat(toolCallGeneration.getOutput().getToolCalls()).hasSize(1);
+		assertThat(toolCallGeneration.getOutput()).isInstanceOf(AnthropicAssistantMessage.class);
+		AnthropicAssistantMessage output = (AnthropicAssistantMessage) toolCallGeneration.getOutput();
+		assertThat(output.getToolCalls()).hasSize(1);
+		assertThat(output.getThinkingContents()).hasSize(1);
+		AnthropicThinkingContent thinkingContent = output.getThinkingContents().get(0);
+		assertThat(thinkingContent.getThinking()).isEqualTo("thinking text");
+		assertThat(thinkingContent.getSignature()).isEqualTo("thinking-signature");
 
 		ToolExecutionResult toolExecutionResult = ToolCallingManager.builder()
 			.build()
@@ -305,8 +310,12 @@ class AnthropicChatModelTests {
 		Generation redactedGeneration = response.getResults().get(0);
 		assertThat(redactedGeneration.getOutput().getMetadata()).containsEntry("data", "redacted-data");
 		Generation toolCallGeneration = response.getResults().get(1);
-		assertThat(toolCallGeneration.getOutput()).isInstanceOf(AnthropicChatModel.AnthropicAssistantMessage.class);
-		assertThat(toolCallGeneration.getOutput().getToolCalls()).hasSize(1);
+		assertThat(toolCallGeneration.getOutput()).isInstanceOf(AnthropicAssistantMessage.class);
+		AnthropicAssistantMessage output = (AnthropicAssistantMessage) toolCallGeneration.getOutput();
+		assertThat(output.getToolCalls()).hasSize(1);
+		assertThat(output.getThinkingContents()).hasSize(1);
+		AnthropicThinkingContent thinkingContent = output.getThinkingContents().get(0);
+		assertThat(thinkingContent.getRedactedData()).isEqualTo("redacted-data");
 
 		ToolExecutionResult toolExecutionResult = ToolCallingManager.builder()
 			.build()
@@ -338,10 +347,25 @@ class AnthropicChatModelTests {
 
 		Generation finalGeneration = response.getResults().get(1);
 		assertThat(finalGeneration.getOutput().getText()).isEqualTo("Final answer.");
-		assertThat(finalGeneration.getOutput()).isInstanceOf(AnthropicChatModel.AnthropicAssistantMessage.class);
-		AnthropicChatModel.AnthropicAssistantMessage output = (AnthropicChatModel.AnthropicAssistantMessage) finalGeneration
-			.getOutput();
+		assertThat(finalGeneration.getOutput()).isInstanceOf(AnthropicAssistantMessage.class);
+		AnthropicAssistantMessage output = (AnthropicAssistantMessage) finalGeneration.getOutput();
 		assertThat(output.hasThinkingContents()).isTrue();
+	}
+
+	@Test
+	void anthropicAssistantMessageToStringRedactsThinkingContents() {
+		AnthropicAssistantMessage message = AnthropicAssistantMessage.builder()
+			.content("visible content")
+			.thinkingContents(List.of(AnthropicThinkingContent.thinking("secret-thinking", "secret-signature"),
+					AnthropicThinkingContent.redacted("secret-redacted")))
+			.build();
+
+		assertThat(message.toString()).contains("thinkingContents=2")
+			.doesNotContain("secret-thinking", "secret-signature", "secret-redacted");
+		assertThat(message.getThinkingContents().get(0).toString())
+			.isEqualTo("AnthropicThinkingContent[type=thinking]");
+		assertThat(message.getThinkingContents().get(1).toString())
+			.isEqualTo("AnthropicThinkingContent[type=redacted_thinking]");
 	}
 
 	@Test
