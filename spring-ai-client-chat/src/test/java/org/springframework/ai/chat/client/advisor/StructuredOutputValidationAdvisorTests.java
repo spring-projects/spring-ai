@@ -256,6 +256,63 @@ public class StructuredOutputValidationAdvisorTests {
 	}
 
 	@Test
+	void whenToolCallResponseOnFirstAttemptThenReturnedWithoutValidation() {
+		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
+			.outputType(new TypeReference<Person>() {
+			})
+			.maxRepeatAttempts(2)
+			.build();
+
+		ChatClientRequest request = createMockRequest();
+		ChatClientResponse toolCallResponse = createToolCallResponse();
+
+		int[] callCount = { 0 };
+		CallAdvisor terminalAdvisor = terminalAdvisor((req, chain) -> {
+			callCount[0]++;
+			return toolCallResponse;
+		});
+
+		CallAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.of(advisor, terminalAdvisor))
+			.build();
+
+		ChatClientResponse result = realChain.nextCall(request);
+
+		assertThat(result).isEqualTo(toolCallResponse);
+		assertThat(callCount[0]).isEqualTo(1);
+	}
+
+	@Test
+	void whenToolCallResponseFollowsValidationFailureThenReturnedForToolExecution() {
+		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
+			.outputType(new TypeReference<Person>() {
+			})
+			.maxRepeatAttempts(2)
+			.build();
+
+		ChatClientRequest request = createMockRequest();
+		String invalidJson = "{\"name\":\"John Doe\"}"; // Missing required 'age' field
+		ChatClientResponse invalidResponse = createMockResponse(invalidJson);
+		ChatClientResponse toolCallResponse = createToolCallResponse();
+
+		int[] callCount = { 0 };
+		CallAdvisor terminalAdvisor = terminalAdvisor((req, chain) -> {
+			callCount[0]++;
+			return callCount[0] == 1 ? invalidResponse : toolCallResponse;
+		});
+
+		CallAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.of(advisor, terminalAdvisor))
+			.build();
+
+		ChatClientResponse result = realChain.nextCall(request);
+
+		assertThat(callCount[0]).isEqualTo(2);
+		assertThat(result.chatResponse()).isNotNull();
+		assertThat(result.chatResponse().hasToolCalls()).isTrue();
+	}
+
+	@Test
 	void adviseCallAccumulatesUsageAcrossValidationRetries() {
 		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
 			.outputType(new TypeReference<Person>() {
@@ -897,6 +954,16 @@ public class StructuredOutputValidationAdvisorTests {
 		Generation generation = new Generation(assistantMessage);
 		ChatResponseMetadata metadata = ChatResponseMetadata.builder().usage(usage).build();
 		ChatResponse chatResponse = ChatResponse.builder().generations(List.of(generation)).metadata(metadata).build();
+		return ChatClientResponse.builder().chatResponse(chatResponse).build();
+	}
+
+	private ChatClientResponse createToolCallResponse() {
+		AssistantMessage assistantMessage = AssistantMessage.builder()
+			.content("")
+			.toolCalls(List.of(new AssistantMessage.ToolCall("id1", "function", "getCurrentAge", "{}")))
+			.build();
+		Generation generation = new Generation(assistantMessage);
+		ChatResponse chatResponse = new ChatResponse(List.of(generation));
 		return ChatClientResponse.builder().chatResponse(chatResponse).build();
 	}
 

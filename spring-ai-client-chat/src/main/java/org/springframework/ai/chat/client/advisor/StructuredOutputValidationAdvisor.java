@@ -172,6 +172,11 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 					processedChatClientRequest = chatClientRequest.mutate().prompt(augmentedPrompt).build();
 				}
 			}
+			else {
+				// Hand the tool call request back to the outer tool-calling advisor for
+				// execution; re-invoking the model instead would discard the request.
+				break;
+			}
 		}
 		while (!isValidationSuccess && repeatCounter <= this.maxRepeatAttempts);
 
