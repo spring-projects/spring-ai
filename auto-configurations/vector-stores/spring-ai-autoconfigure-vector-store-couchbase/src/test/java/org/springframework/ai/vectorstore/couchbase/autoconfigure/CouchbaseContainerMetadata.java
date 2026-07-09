@@ -35,7 +35,7 @@ public final class CouchbaseContainerMetadata {
 
 	public static final DockerImageName COUCHBASE_IMAGE_ENTERPRISE = DockerImageName.parse("couchbase:enterprise")
 		.asCompatibleSubstituteFor("couchbase/server")
-		.withTag("enterprise-7.6.1");
+		.withTag("enterprise-7.6.5");
 
 	private CouchbaseContainerMetadata() {
 		// Avoids instantiation
