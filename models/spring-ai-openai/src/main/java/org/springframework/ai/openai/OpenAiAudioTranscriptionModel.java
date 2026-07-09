@@ -26,7 +26,6 @@ import java.util.Objects;
 import com.openai.client.OpenAIClient;
 import com.openai.client.OpenAIClientAsync;
 import com.openai.core.MultipartField;
-import com.openai.core.http.AsyncStreamResponse;
 import com.openai.models.audio.transcriptions.TranscriptionCreateParams;
 import com.openai.models.audio.transcriptions.TranscriptionCreateResponse;
 import com.openai.models.audio.transcriptions.TranscriptionStreamEvent;
@@ -153,19 +152,19 @@ public final class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 		}
 
 		Flux<TranscriptionStreamEvent> chunk = Flux.create(sink -> {
-			AsyncStreamResponse<TranscriptionStreamEvent> response = this.openAiClientAsync.audio()
+			this.openAiClientAsync.audio()
 				.transcriptions()
-				.createStreaming(params);
-			response.subscribe(sink::next);
-			sink.onDispose(response::close);
-			response.onCompleteFuture().whenComplete((unused, throwable) -> {
-				if (throwable != null) {
-					sink.error(throwable);
-				}
-				else {
-					sink.complete();
-				}
-			});
+				.createStreaming(params)
+				.subscribe(sink::next)
+				.onCompleteFuture()
+				.whenComplete((unused, throwable) -> {
+					if (throwable != null) {
+						sink.error(throwable);
+					}
+					else {
+						sink.complete();
+					}
+				});
 		});
 
 		return chunk.map(event -> {
