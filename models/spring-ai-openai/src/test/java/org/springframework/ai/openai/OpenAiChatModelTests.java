@@ -20,6 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -31,6 +32,7 @@ import com.openai.client.OpenAIClient;
 import com.openai.client.OpenAIClientAsync;
 import com.openai.core.JsonValue;
 import com.openai.core.http.AsyncStreamResponse;
+import com.openai.models.ReasoningEffort;
 import com.openai.models.chat.completions.ChatCompletion;
 import com.openai.models.chat.completions.ChatCompletionAssistantMessageParam;
 import com.openai.models.chat.completions.ChatCompletionChunk;
@@ -59,6 +61,7 @@ import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
@@ -74,6 +77,7 @@ import static org.mockito.Mockito.when;
  * Unit tests for {@link OpenAiChatModel}.
  *
  * @author Jewoo Shin
+ * @author Dimitar Proynov
  */
 @ExtendWith(MockitoExtension.class)
 class OpenAiChatModelTests {
@@ -268,6 +272,88 @@ class OpenAiChatModelTests {
 		});
 		assertThat(toolCallProperties(assistantMessage, "call_1")).containsEntry("extra_content",
 				Map.of("google", Map.of("thought_signature", "signature-123")));
+	}
+
+	@Test
+	void mergeStreamToolCallWhenIdNameAndArgumentsArriveInSeparateChunks() {
+		ChatServiceAsync chatServiceAsync = mock(ChatServiceAsync.class);
+		ChatCompletionServiceAsync chatCompletionServiceAsync = mock(ChatCompletionServiceAsync.class);
+		when(this.openAiClientAsync.chat()).thenReturn(chatServiceAsync);
+		when(chatServiceAsync.completions()).thenReturn(chatCompletionServiceAsync);
+		when(chatCompletionServiceAsync.createStreaming(any(ChatCompletionCreateParams.class)))
+			.thenReturn(asyncStreamResponse(ChatCompletionChunk.builder()
+				.id("chatcmpl-stream-test")
+				.created(1777799928)
+				.model("test-model")
+				.addChoice(ChatCompletionChunk.Choice.builder()
+					.index(0)
+					.finishReason(Optional.empty())
+					.delta(ChatCompletionChunk.Choice.Delta.builder()
+						.addToolCall(ChatCompletionChunk.Choice.Delta.ToolCall.builder().index(0).id("call_1").build())
+						.build())
+					.build())
+				.build(),
+					ChatCompletionChunk.builder()
+						.id("chatcmpl-stream-test")
+						.created(1777799928)
+						.model("test-model")
+						.addChoice(ChatCompletionChunk.Choice.builder()
+							.index(0)
+							.finishReason(Optional.empty())
+							.delta(ChatCompletionChunk.Choice.Delta.builder()
+								.addToolCall(ChatCompletionChunk.Choice.Delta.ToolCall.builder()
+									.index(0)
+									.function(ChatCompletionChunk.Choice.Delta.ToolCall.Function.builder()
+										.name("get_current_weather")
+										.build())
+									.build())
+								.build())
+							.build())
+						.build(),
+					ChatCompletionChunk.builder()
+						.id("chatcmpl-stream-test")
+						.created(1777799928)
+						.model("test-model")
+						.addChoice(ChatCompletionChunk.Choice.builder()
+							.index(0)
+							.finishReason(Optional.empty())
+							.delta(ChatCompletionChunk.Choice.Delta.builder()
+								.addToolCall(ChatCompletionChunk.Choice.Delta.ToolCall.builder()
+									.index(0)
+									.function(ChatCompletionChunk.Choice.Delta.ToolCall.Function.builder()
+										.arguments("{\"location\":\"Seoul\"}")
+										.build())
+									.build())
+								.build())
+							.build())
+						.build(),
+					ChatCompletionChunk.builder()
+						.id("chatcmpl-stream-test")
+						.created(1777799928)
+						.model("test-model")
+						.addChoice(ChatCompletionChunk.Choice.builder()
+							.index(0)
+							.finishReason(ChatCompletionChunk.Choice.FinishReason.TOOL_CALLS)
+							.delta(ChatCompletionChunk.Choice.Delta.builder().build())
+							.build())
+						.build()));
+
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		ChatResponse response = chatModel.stream(new Prompt("hi", options)).blockLast();
+
+		assertThat(response).isNotNull();
+		AssistantMessage assistantMessage = response.getResult().getOutput();
+		assertThat(assistantMessage.getToolCalls()).singleElement().satisfies(toolCall -> {
+			assertThat(toolCall.id()).isEqualTo("call_1");
+			assertThat(toolCall.name()).isEqualTo("get_current_weather");
+			assertThat(toolCall.arguments()).isEqualTo("{\"location\":\"Seoul\"}");
+		});
 	}
 
 	@Test
@@ -962,6 +1048,157 @@ class OpenAiChatModelTests {
 			.orElseThrow()
 			.file();
 		assertThat(file.fileData()).contains("data:application/pdf;base64,JVBERi0xLjc=");
+	}
+
+	@Test
+	void metadataDoesNotContainOptionalValues() {
+		ChatService chatService = mock(ChatService.class);
+		ChatCompletionService chatCompletionService = mock(ChatCompletionService.class);
+		when(this.openAiClient.chat()).thenReturn(chatService);
+		when(chatService.completions()).thenReturn(chatCompletionService);
+		when(chatCompletionService.create(any(ChatCompletionCreateParams.class))).thenReturn(ChatCompletion.builder()
+			.id("test-id")
+			.created(1777799928)
+			.model("test-model")
+			.usage(CompletionUsage.builder().promptTokens(1).completionTokens(1).totalTokens(2).build())
+			.addChoice(ChatCompletion.Choice.builder()
+				.finishReason(ChatCompletion.Choice.FinishReason.STOP)
+				.index(0)
+				.logprobs(Optional.empty())
+				.message(ChatCompletionMessage.builder()
+					.content("hello")
+					.refusal(Optional.empty())
+					.role(JsonValue.from("assistant"))
+					.annotations(List.of())
+					.toolCalls(List.of())
+					.build())
+				.build())
+			.build());
+
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		ChatResponse response = chatModel.call(new Prompt("hi", options));
+		Generation generation = response.getResult();
+		assertThat(generation).isNotNull();
+
+		// Verify no Optional values leak into generation metadata
+		generation.getMetadata()
+			.entrySet()
+			.forEach(entry -> assertThat(entry.getValue()).isNotInstanceOf(Optional.class));
+
+		// Verify no Optional values leak into assistant message metadata
+		generation.getOutput().getMetadata().forEach((key, value) -> assertThat(value).isNotInstanceOf(Optional.class));
+	}
+
+	@Test
+	void outputModalitiesUseRootLocaleRegardlessOfDefaultLocale() {
+		Locale original = Locale.getDefault();
+		Locale.setDefault(new Locale("tr", "TR"));
+		try {
+			// "AUDIO" contains an uppercase I; under tr_TR, toLowerCase() without
+			// Locale.ROOT turns it into "audıo" (dotless ı), which Modality.of(...)
+			// won't recognize as the AUDIO modality.
+			OpenAiChatOptions options = OpenAiChatOptions.builder()
+				.model("test-model")
+				.outputModalities(List.of("TEXT", "AUDIO"))
+				.build();
+			OpenAiChatModel chatModel = OpenAiChatModel.builder()
+				.openAiClient(this.openAiClient)
+				.openAiClientAsync(this.openAiClientAsync)
+				.options(options)
+				.build();
+
+			ChatCompletionCreateParams request = chatModel.createRequest(new Prompt("test", options), false);
+
+			assertThat(request.modalities())
+				.contains(List.of(ChatCompletionCreateParams.Modality.TEXT, ChatCompletionCreateParams.Modality.AUDIO));
+		}
+		finally {
+			Locale.setDefault(original);
+		}
+	}
+
+	@Test
+	void reasoningEffortUsesRootLocaleRegardlessOfDefaultLocale() {
+		Locale original = Locale.getDefault();
+		try {
+			Locale.setDefault(new Locale("tr", "TR"));
+			// "MINIMAL" contains an uppercase I; under tr_TR it lowers to "mınımal",
+			// which ReasoningEffort.of(...) won't match to the MINIMAL constant.
+			OpenAiChatOptions options = OpenAiChatOptions.builder()
+				.model("test-model")
+				.reasoningEffort("MINIMAL")
+				.build();
+			OpenAiChatModel chatModel = OpenAiChatModel.builder()
+				.openAiClient(this.openAiClient)
+				.openAiClientAsync(this.openAiClientAsync)
+				.options(options)
+				.build();
+
+			ChatCompletionCreateParams request = chatModel.createRequest(new Prompt("test", options), false);
+
+			assertThat(request.reasoningEffort()).contains(ReasoningEffort.MINIMAL);
+		}
+		finally {
+			Locale.setDefault(original);
+		}
+	}
+
+	@Test
+	void audioVoiceUsesRootLocaleRegardlessOfDefaultLocale() {
+		Locale original = Locale.getDefault();
+		try {
+			Locale.setDefault(new Locale("tr", "TR"));
+			// SHIMMER contains an uppercase I; under tr_TR it lowers to "shımmer"
+			// instead of the wire-correct "shimmer". The fix lives in
+			// OpenAiChatOptions.AudioParameters#toChatCompletionAudioParam(),
+			// but it's only reachable through OpenAiChatModel#createRequest.
+			OpenAiChatOptions options = OpenAiChatOptions.builder()
+				.model("test-model")
+				.outputAudio(new OpenAiChatOptions.AudioParameters(OpenAiChatOptions.AudioParameters.Voice.SHIMMER,
+						OpenAiChatOptions.AudioParameters.AudioResponseFormat.WAV))
+				.build();
+			OpenAiChatModel chatModel = OpenAiChatModel.builder()
+				.openAiClient(this.openAiClient)
+				.openAiClientAsync(this.openAiClientAsync)
+				.options(options)
+				.build();
+
+			ChatCompletionCreateParams request = chatModel.createRequest(new Prompt("test", options), false);
+
+			assertThat(request.audio()).isPresent();
+			assertThat(request.audio().get().voice().string().get().equals("shimmer"));
+		}
+		finally {
+			Locale.setDefault(original);
+		}
+	}
+
+	@Test
+	void streamingFinishReasonSurvivesRoundTripUnderTurkishLocale() {
+		Locale original = Locale.getDefault();
+		Locale.setDefault(new Locale("tr", "TR"));
+		try {
+			// CONTENT_FILTER contains an uppercase I; under tr_TR the chunk-merging
+			// round trip lowers it to "content_fılter", which
+			// ChatCompletion.Choice.FinishReason.of(...) treats as unknown.
+			List<ChatCompletionChunk> chunks = List.of(streamingChunk(
+					delta -> delta.role(ChatCompletionChunk.Choice.Delta.Role.ASSISTANT).content("Blocked"),
+					ChatCompletionChunk.Choice.FinishReason.CONTENT_FILTER));
+
+			ChatResponse response = streamResponses(chunks).blockLast();
+
+			assertThat(response).isNotNull();
+			assertThat(response.getResult().getMetadata().getFinishReason()).isEqualTo("CONTENT_FILTER");
+		}
+		finally {
+			Locale.setDefault(original);
+		}
 	}
 
 }

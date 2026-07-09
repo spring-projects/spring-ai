@@ -58,7 +58,6 @@
 
 	<properties>
 		<flatten-maven-plugin.version>1.5.0</flatten-maven-plugin.version>
-		<maven-deploy-plugin.version>3.1.1</maven-deploy-plugin.version>
 	</properties>
 
 	<dependencyManagement>
@@ -1268,7 +1267,6 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-deploy-plugin</artifactId>
-				<version>${maven-deploy-plugin.version}</version>
 			</plugin>
 		</plugins>
 	</build>

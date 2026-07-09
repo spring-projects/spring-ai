@@ -18,6 +18,7 @@ package org.springframework.ai.mcp.server.webflux.autoconfigure;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import io.modelcontextprotocol.client.McpClient;
@@ -303,11 +304,15 @@ public class StatelessWebClientWebFluxServerIT {
 
 			// Using a tool with McpToolUtils
 			McpStatelessServerFeatures.SyncToolSpecification tool3 = McpToolUtils
-				.toStatelessSyncToolSpecification(FunctionToolCallback
-					.builder("toUpperCase", (ToUpperCaseRequest req, ToolContext context) -> req.input().toUpperCase())
-					.description("Sets the input string to upper case")
-					.inputType(ToUpperCaseRequest.class)
-					.build(), null);
+				.toStatelessSyncToolSpecification(
+						FunctionToolCallback
+							.builder("toUpperCase",
+									(ToUpperCaseRequest req, ToolContext context) -> req.input()
+										.toUpperCase(Locale.ROOT))
+							.description("Sets the input string to upper case")
+							.inputType(ToUpperCaseRequest.class)
+							.build(),
+						null);
 
 			return List.of(tool1, tool2, tool3);
 		}

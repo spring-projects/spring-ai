@@ -10,6 +10,10 @@ inputs:
     description: "Additional Maven properties to pass to the build"
     required: false
     default: ""
+  spring-boot-version:
+    description: "Spring Boot version to test against (leave empty to use the project default)"
+    required: false
+    default: ""
 
 runs:
   using: "composite"
@@ -29,7 +33,7 @@ runs:
         echo 'Running with maven properties:' ${{ inputs.maven-properties }}
         ./mvnw --batch-mode -ntp --no-snapshot-updates \
           -pl auto-configurations/common/spring-ai-autoconfigure-retry \
-          -Pintegration-tests ${{ inputs.maven-properties }} -Dfailsafe.rerunFailingTestsCount=2 verify
+          -Pintegration-tests ${{ inputs.maven-properties }} ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} -Dfailsafe.rerunFailingTestsCount=2 verify
 
     - name: Run Spring AI Autoconfigure Chat Observation test
       shell: bash
@@ -37,7 +41,7 @@ runs:
         echo 'Running with maven properties:' ${{ inputs.maven-properties }}
         ./mvnw --batch-mode -ntp --no-snapshot-updates \
           -pl auto-configurations/models/chat/observation/spring-ai-autoconfigure-model-chat-observation \
-          -Pintegration-tests ${{ inputs.maven-properties }} -Dfailsafe.rerunFailingTestsCount=2 verify
+          -Pintegration-tests ${{ inputs.maven-properties }} ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} -Dfailsafe.rerunFailingTestsCount=2 verify
 
     - name: Run Spring AI Autoconfigure Embedding Observation test
       shell: bash
@@ -45,7 +49,7 @@ runs:
         echo 'Running with maven properties:' ${{ inputs.maven-properties }}
         ./mvnw --batch-mode -ntp --no-snapshot-updates \
           -pl auto-configurations/models/embedding/observation/spring-ai-autoconfigure-model-embedding-observation \
-          -Pintegration-tests ${{ inputs.maven-properties }} -Dfailsafe.rerunFailingTestsCount=2 verify
+          -Pintegration-tests ${{ inputs.maven-properties }} ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} -Dfailsafe.rerunFailingTestsCount=2 verify
 
     - name: Run Spring AI Autoconfigure Image Observation test
       shell: bash
@@ -53,7 +57,7 @@ runs:
         echo 'Running with maven properties:' ${{ inputs.maven-properties }}
         ./mvnw --batch-mode -ntp --no-snapshot-updates \
           -pl auto-configurations/models/image/observation/spring-ai-autoconfigure-model-image-observation \
-          -Pintegration-tests ${{ inputs.maven-properties }} -Dfailsafe.rerunFailingTestsCount=2 verify
+          -Pintegration-tests ${{ inputs.maven-properties }} ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} -Dfailsafe.rerunFailingTestsCount=2 verify
 
     - name: Run Spring AI Autoconfigure Chat Client test
       shell: bash
@@ -61,7 +65,7 @@ runs:
         echo 'Running with maven properties:' ${{ inputs.maven-properties }}
         ./mvnw --batch-mode -ntp --no-snapshot-updates \
           -pl auto-configurations/models/chat/client/spring-ai-autoconfigure-model-chat-client \
-          -Pintegration-tests ${{ inputs.maven-properties }} -Dfailsafe.rerunFailingTestsCount=2 verify
+          -Pintegration-tests ${{ inputs.maven-properties }} ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} -Dfailsafe.rerunFailingTestsCount=2 verify
 
     - name: Run Spring AI Autoconfigure Neo4j Chat memory repository test
       shell: bash
@@ -69,7 +73,7 @@ runs:
         echo 'Running with maven properties:' ${{ inputs.maven-properties }}
         ./mvnw --batch-mode -ntp --no-snapshot-updates \
           -pl auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-neo4j \
-          -Pintegration-tests ${{ inputs.maven-properties }} -Dfailsafe.rerunFailingTestsCount=2 verify
+          -Pintegration-tests ${{ inputs.maven-properties }} ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} -Dfailsafe.rerunFailingTestsCount=2 verify
 
     - name: Run Spring AI Autoconfigure Cassandra Chat memory repository test
       shell: bash
@@ -77,7 +81,7 @@ runs:
         echo 'Running with maven properties:' ${{ inputs.maven-properties }}
         ./mvnw --batch-mode -ntp --no-snapshot-updates \
           -pl auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-cassandra \
-          -Pintegration-tests ${{ inputs.maven-properties }} -Dfailsafe.rerunFailingTestsCount=2 verify
+          -Pintegration-tests ${{ inputs.maven-properties }} ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} -Dfailsafe.rerunFailingTestsCount=2 verify
 
     - name: Run Spring AI Autoconfigure JDBC Chat memory repository test
       shell: bash
@@ -85,7 +89,7 @@ runs:
         echo 'Running with maven properties:' ${{ inputs.maven-properties }}
         ./mvnw --batch-mode -ntp --no-snapshot-updates \
           -pl auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-jdbc \
-          -Pintegration-tests ${{ inputs.maven-properties }} -Dfailsafe.rerunFailingTestsCount=2 verify
+          -Pintegration-tests ${{ inputs.maven-properties }} ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} -Dfailsafe.rerunFailingTestsCount=2 verify
 
     - name: Run Spring AI Autoconfigure MongoDB Chat memory repository test
       shell: bash
@@ -93,7 +97,7 @@ runs:
         echo 'Running with maven properties:' ${{ inputs.maven-properties }}
         ./mvnw --batch-mode -ntp --no-snapshot-updates \
           -pl auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-mongodb \
-          -Pintegration-tests ${{ inputs.maven-properties }} -Dfailsafe.rerunFailingTestsCount=2 verify
+          -Pintegration-tests ${{ inputs.maven-properties }} ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} -Dfailsafe.rerunFailingTestsCount=2 verify
 
     - name: Run Spring AI Autoconfigure Redis Chat memory test
       shell: bash
@@ -101,7 +105,7 @@ runs:
         echo 'Running with maven properties:' ${{ inputs.maven-properties }}
         ./mvnw --batch-mode -ntp --no-snapshot-updates \
           -pl auto-configurations/models/chat/memory/spring-ai-autoconfigure-model-chat-memory-redis \
-          -Pintegration-tests ${{ inputs.maven-properties }} -Dfailsafe.rerunFailingTestsCount=2 verify
+          -Pintegration-tests ${{ inputs.maven-properties }} ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} -Dfailsafe.rerunFailingTestsCount=2 verify
 
     - name: Run Spring AI Autoconfigure Tooling test
       shell: bash
@@ -109,7 +113,7 @@ runs:
         echo 'Running with maven properties:' ${{ inputs.maven-properties }}
         ./mvnw --batch-mode -ntp --no-snapshot-updates \
           -pl auto-configurations/models/tool/spring-ai-autoconfigure-model-tool \
-          -Pintegration-tests ${{ inputs.maven-properties }} -Dfailsafe.rerunFailingTestsCount=2 verify
+          -Pintegration-tests ${{ inputs.maven-properties }} ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} -Dfailsafe.rerunFailingTestsCount=2 verify
 
     - name: Run Spring AI Autoconfigure Anthropic Model test
       shell: bash
@@ -117,7 +121,7 @@ runs:
         echo 'Running with maven properties:' ${{ inputs.maven-properties }}
         ./mvnw --batch-mode -ntp --no-snapshot-updates \
           -pl auto-configurations/models/spring-ai-autoconfigure-model-anthropic \
-          -Pintegration-tests ${{ inputs.maven-properties }} -Dfailsafe.rerunFailingTestsCount=2 verify
+          -Pintegration-tests ${{ inputs.maven-properties }} ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} -Dfailsafe.rerunFailingTestsCount=2 verify
 
     - name: Run Spring AI Autoconfigure DeepSeek test
       if: ${{ inputs.spring-ai-branch == 'main' }}
@@ -126,7 +130,7 @@ runs:
         echo 'Running with maven properties:' ${{ inputs.maven-properties }}
         ./mvnw --batch-mode -ntp --no-snapshot-updates \
           -pl auto-configurations/models/spring-ai-autoconfigure-model-deepseek \
-          -Pintegration-tests ${{ inputs.maven-properties }} -Dfailsafe.rerunFailingTestsCount=2 verify
+          -Pintegration-tests ${{ inputs.maven-properties }} ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} -Dfailsafe.rerunFailingTestsCount=2 verify
 
     - name: Run Spring AI Autoconfigure ElevenLabs test
       if: ${{ inputs.spring-ai-branch == 'main' }}
@@ -135,7 +139,7 @@ runs:
         echo 'Running with maven properties:' ${{ inputs.maven-properties }}
         ./mvnw --batch-mode -ntp --no-snapshot-updates \
           -pl auto-configurations/models/spring-ai-autoconfigure-model-elevenlabs \
-          -Pintegration-tests ${{ inputs.maven-properties }} -Dfailsafe.rerunFailingTestsCount=2 verify
+          -Pintegration-tests ${{ inputs.maven-properties }} ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} -Dfailsafe.rerunFailingTestsCount=2 verify
 
     - name: Run Spring AI Autoconfigure Google GenAI test
       if: ${{ inputs.spring-ai-branch == 'main' }}
@@ -144,7 +148,7 @@ runs:
         echo 'Running with maven properties:' ${{ inputs.maven-properties }}
         ./mvnw --batch-mode -ntp --no-snapshot-updates \
           -pl auto-configurations/models/spring-ai-autoconfigure-model-google-genai \
-          -Pintegration-tests ${{ inputs.maven-properties }} -Dfailsafe.rerunFailingTestsCount=2 verify
+          -Pintegration-tests ${{ inputs.maven-properties }} ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} -Dfailsafe.rerunFailingTestsCount=2 verify
 
     - name: Run Spring AI Autoconfigure Azure OpenAI test
       if: ${{ inputs.spring-ai-branch != 'main' }}
@@ -153,7 +157,7 @@ runs:
         echo 'Running with maven properties:' ${{ inputs.maven-properties }}
         ./mvnw --batch-mode -ntp --no-snapshot-updates \
           -pl auto-configurations/models/spring-ai-autoconfigure-model-azure-openai \
-          -Pintegration-tests ${{ inputs.maven-properties }} -Dfailsafe.rerunFailingTestsCount=2 verify
+          -Pintegration-tests ${{ inputs.maven-properties }} ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} -Dfailsafe.rerunFailingTestsCount=2 verify
 
     - name: Run Spring AI Autoconfigure Bedrock AI test
       shell: bash
@@ -161,7 +165,7 @@ runs:
         echo 'Running with maven properties:' ${{ inputs.maven-properties }}
         ./mvnw --batch-mode -ntp --no-snapshot-updates \
           -pl auto-configurations/models/spring-ai-autoconfigure-model-bedrock-ai \
-          -Pintegration-tests ${{ inputs.maven-properties }} -Dfailsafe.rerunFailingTestsCount=2 verify
+          -Pintegration-tests ${{ inputs.maven-properties }} ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} -Dfailsafe.rerunFailingTestsCount=2 verify
 
     - name: Run Spring AI Autoconfigure Huggingface test
       if: ${{ inputs.spring-ai-branch == '1.1.x' || inputs.spring-ai-branch == '1.0.x' }}
@@ -170,7 +174,7 @@ runs:
         echo 'Running with maven properties:' ${{ inputs.maven-properties }}
         ./mvnw --batch-mode -ntp --no-snapshot-updates \
           -pl auto-configurations/models/spring-ai-autoconfigure-model-huggingface \
-          -Pintegration-tests ${{ inputs.maven-properties }} -Dfailsafe.rerunFailingTestsCount=2 verify
+          -Pintegration-tests ${{ inputs.maven-properties }} ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} -Dfailsafe.rerunFailingTestsCount=2 verify
 
     - name: Run Spring AI Autoconfigure Minimax test
       if: ${{ inputs.spring-ai-branch != 'main' }}
@@ -179,7 +183,7 @@ runs:
         echo 'Running with maven properties:' ${{ inputs.maven-properties }}
         ./mvnw --batch-mode -ntp --no-snapshot-updates \
           -pl auto-configurations/models/spring-ai-autoconfigure-model-minimax \
-          -Pintegration-tests ${{ inputs.maven-properties }} -Dfailsafe.rerunFailingTestsCount=2 verify
+          -Pintegration-tests ${{ inputs.maven-properties }} ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} -Dfailsafe.rerunFailingTestsCount=2 verify
 
     - name: Run Spring AI Autoconfigure Mistral AI test
       shell: bash
@@ -187,7 +191,7 @@ runs:
         echo 'Running with maven properties:' ${{ inputs.maven-properties }}
         ./mvnw --batch-mode -ntp --no-snapshot-updates \
           -pl auto-configurations/models/spring-ai-autoconfigure-model-mistral-ai \
-          -Pintegration-tests ${{ inputs.maven-properties }} -Dfailsafe.rerunFailingTestsCount=2 verify
+          -Pintegration-tests ${{ inputs.maven-properties }} ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} -Dfailsafe.rerunFailingTestsCount=2 verify
 
     - name: Run Spring AI Autoconfigure OCI GenAI test
       if: ${{ inputs.spring-ai-branch == '1.1.x' || inputs.spring-ai-branch == '1.0.x' }}
@@ -196,7 +200,7 @@ runs:
         echo 'Running with maven properties:' ${{ inputs.maven-properties }}
         ./mvnw --batch-mode -ntp --no-snapshot-updates \
           -pl auto-configurations/models/spring-ai-autoconfigure-model-oci-genai \
-          -Pintegration-tests ${{ inputs.maven-properties }} -Dfailsafe.rerunFailingTestsCount=2 verify
+          -Pintegration-tests ${{ inputs.maven-properties }} ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} -Dfailsafe.rerunFailingTestsCount=2 verify
 
     - name: Run Spring AI Autoconfigure Ollama test
       shell: bash
@@ -204,7 +208,7 @@ runs:
         echo 'Running with maven properties:' ${{ inputs.maven-properties }}
         ./mvnw --batch-mode -ntp --no-snapshot-updates \
           -pl auto-configurations/models/spring-ai-autoconfigure-model-ollama \
-          -Pintegration-tests ${{ inputs.maven-properties }} -Dfailsafe.rerunFailingTestsCount=2 verify
+          -Pintegration-tests ${{ inputs.maven-properties }} ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} -Dfailsafe.rerunFailingTestsCount=2 verify
 
     - name: Run Spring AI Autoconfigure OpenAI test
       shell: bash
@@ -212,7 +216,7 @@ runs:
         echo 'Running with maven properties:' ${{ inputs.maven-properties }}
         ./mvnw --batch-mode -ntp --no-snapshot-updates \
           -pl auto-configurations/models/spring-ai-autoconfigure-model-openai \
-          -Pintegration-tests ${{ inputs.maven-properties }} -Dfailsafe.rerunFailingTestsCount=2 verify
+          -Pintegration-tests ${{ inputs.maven-properties }} ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} -Dfailsafe.rerunFailingTestsCount=2 verify
 
     - name: Run Spring AI Autoconfigure PostgresML Embedding test
       shell: bash
@@ -220,7 +224,7 @@ runs:
         echo 'Running with maven properties:' ${{ inputs.maven-properties }}
         ./mvnw --batch-mode -ntp --no-snapshot-updates \
           -pl auto-configurations/models/spring-ai-autoconfigure-model-postgresml-embedding \
-          -Pintegration-tests ${{ inputs.maven-properties }} -Dfailsafe.rerunFailingTestsCount=2 verify
+          -Pintegration-tests ${{ inputs.maven-properties }} ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} -Dfailsafe.rerunFailingTestsCount=2 verify
 
     - name: Run Spring AI Autoconfigure Stability AI test
       shell: bash
@@ -228,7 +232,7 @@ runs:
         echo 'Running with maven properties:' ${{ inputs.maven-properties }}
         ./mvnw --batch-mode -ntp --no-snapshot-updates \
           -pl auto-configurations/models/spring-ai-autoconfigure-model-stability-ai \
-          -Pintegration-tests ${{ inputs.maven-properties }} -Dfailsafe.rerunFailingTestsCount=2 verify
+          -Pintegration-tests ${{ inputs.maven-properties }} ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} -Dfailsafe.rerunFailingTestsCount=2 verify
 
     - name: Run Spring AI Autoconfigure Transformers test
       shell: bash
@@ -236,7 +240,7 @@ runs:
         echo 'Running with maven properties:' ${{ inputs.maven-properties }}
         ./mvnw --batch-mode -ntp --no-snapshot-updates \
           -pl auto-configurations/models/spring-ai-autoconfigure-model-transformers \
-          -Pintegration-tests ${{ inputs.maven-properties }} -Dfailsafe.rerunFailingTestsCount=2 verify
+          -Pintegration-tests ${{ inputs.maven-properties }} ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} -Dfailsafe.rerunFailingTestsCount=2 verify
 
     - name: Run Spring AI Autoconfigure Vertex AI test
       shell: bash
@@ -244,7 +248,7 @@ runs:
         echo 'Running with maven properties:' ${{ inputs.maven-properties }}
         ./mvnw --batch-mode -ntp --no-snapshot-updates \
           -pl auto-configurations/models/spring-ai-autoconfigure-model-vertex-ai \
-          -Pintegration-tests ${{ inputs.maven-properties }} -Dfailsafe.rerunFailingTestsCount=2 verify
+          -Pintegration-tests ${{ inputs.maven-properties }} ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} -Dfailsafe.rerunFailingTestsCount=2 verify
 
     - name: Run Spring AI Autoconfigure ZhipuAI test
       if: ${{ inputs.spring-ai-branch == '1.1.x' || inputs.spring-ai-branch == '1.0.x' }}
@@ -253,7 +257,7 @@ runs:
         echo 'Running with maven properties:' ${{ inputs.maven-properties }}
         ./mvnw --batch-mode -ntp --no-snapshot-updates \
           -pl auto-configurations/models/spring-ai-autoconfigure-model-zhipuai \
-          -Pintegration-tests ${{ inputs.maven-properties }} -Dfailsafe.rerunFailingTestsCount=2 verify
+          -Pintegration-tests ${{ inputs.maven-properties }} ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} -Dfailsafe.rerunFailingTestsCount=2 verify
 
     - name: Run Spring AI Autoconfigure Azure vector store test
       shell: bash
@@ -261,7 +265,7 @@ runs:
         echo 'Running with maven properties:' ${{ inputs.maven-properties }}
         ./mvnw --batch-mode -ntp --no-snapshot-updates \
           -pl auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-azure \
-          -Pintegration-tests ${{ inputs.maven-properties }} -Dfailsafe.rerunFailingTestsCount=2 verify
+          -Pintegration-tests ${{ inputs.maven-properties }} ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} -Dfailsafe.rerunFailingTestsCount=2 verify
 
     - name: Run Spring AI Autoconfigure Azure Cosmos DB test
       if: ${{ inputs.spring-ai-branch == '1.1.x' || inputs.spring-ai-branch == '1.0.x' }}
@@ -270,7 +274,7 @@ runs:
         echo 'Running with maven properties:' ${{ inputs.maven-properties }}
         ./mvnw --batch-mode -ntp --no-snapshot-updates \
           -pl auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-azure-cosmos-db \
-          -Pintegration-tests ${{ inputs.maven-properties }} -Dfailsafe.rerunFailingTestsCount=2 verify
+          -Pintegration-tests ${{ inputs.maven-properties }} ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} -Dfailsafe.rerunFailingTestsCount=2 verify
 
     - name: Run Spring AI Autoconfigure Cassandra Vector Store test
       shell: bash
@@ -278,7 +282,7 @@ runs:
         echo 'Running with maven properties:' ${{ inputs.maven-properties }}
         ./mvnw --batch-mode -ntp --no-snapshot-updates \
           -pl auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-cassandra \
-          -Pintegration-tests ${{ inputs.maven-properties }} -Dfailsafe.rerunFailingTestsCount=2 verify
+          -Pintegration-tests ${{ inputs.maven-properties }} ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} -Dfailsafe.rerunFailingTestsCount=2 verify
 
     - name: Run Spring AI Autoconfigure Chroma Vector Store test
       shell: bash
@@ -286,7 +290,7 @@ runs:
         echo 'Running with maven properties:' ${{ inputs.maven-properties }}
         ./mvnw --batch-mode -ntp --no-snapshot-updates \
           -pl auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-chroma \
-          -Pintegration-tests ${{ inputs.maven-properties }} -Dfailsafe.rerunFailingTestsCount=2 verify
+          -Pintegration-tests ${{ inputs.maven-properties }} ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} -Dfailsafe.rerunFailingTestsCount=2 verify
 
     - name: Run Spring AI Autoconfigure Couchbase Vector Store test
       shell: bash
@@ -294,7 +298,7 @@ runs:
         echo 'Running with maven properties:' ${{ inputs.maven-properties }}
         ./mvnw --batch-mode -ntp --no-snapshot-updates \
           -pl auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-couchbase \
-          -Pintegration-tests ${{ inputs.maven-properties }} -Dfailsafe.rerunFailingTestsCount=2 verify
+          -Pintegration-tests ${{ inputs.maven-properties }} ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} -Dfailsafe.rerunFailingTestsCount=2 verify
 
     - name: Run Spring AI Autoconfigure ElasticSearch Vector Store test
       shell: bash
@@ -302,7 +306,7 @@ runs:
         echo 'Running with maven properties:' ${{ inputs.maven-properties }}
         ./mvnw --batch-mode -ntp --no-snapshot-updates \
           -pl auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-elasticsearch \
-          -Pintegration-tests ${{ inputs.maven-properties }} -Dfailsafe.rerunFailingTestsCount=2 verify
+          -Pintegration-tests ${{ inputs.maven-properties }} ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} -Dfailsafe.rerunFailingTestsCount=2 verify
 
     - name: Run Spring AI Autoconfigure GemFire Vector Store test
       shell: bash
@@ -310,7 +314,7 @@ runs:
         echo 'Running with maven properties:' ${{ inputs.maven-properties }}
         ./mvnw --batch-mode -ntp --no-snapshot-updates \
           -pl auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-gemfire \
-          -Pintegration-tests ${{ inputs.maven-properties }} -Dfailsafe.rerunFailingTestsCount=2 verify
+          -Pintegration-tests ${{ inputs.maven-properties }} ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} -Dfailsafe.rerunFailingTestsCount=2 verify
 
     - name: Run Spring AI Autoconfigure Mariadb Vector Store test
       shell: bash
@@ -318,7 +322,7 @@ runs:
         echo 'Running with maven properties:' ${{ inputs.maven-properties }}
         ./mvnw --batch-mode -ntp --no-snapshot-updates \
           -pl auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-mariadb \
-          -Pintegration-tests ${{ inputs.maven-properties }} -Dfailsafe.rerunFailingTestsCount=2 verify
+          -Pintegration-tests ${{ inputs.maven-properties }} ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} -Dfailsafe.rerunFailingTestsCount=2 verify
 
     - name: Run Spring AI Autoconfigure Milvus Vector Store test
       shell: bash
@@ -326,7 +330,7 @@ runs:
         echo 'Running with maven properties:' ${{ inputs.maven-properties }}
         ./mvnw --batch-mode -ntp --no-snapshot-updates \
           -pl auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-milvus \
-          -Pintegration-tests ${{ inputs.maven-properties }} -Dfailsafe.rerunFailingTestsCount=2 verify
+          -Pintegration-tests ${{ inputs.maven-properties }} ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} -Dfailsafe.rerunFailingTestsCount=2 verify
 
     - name: Run Spring AI Autoconfigure MongoDB Atlas Vector Store test
       shell: bash
@@ -334,7 +338,7 @@ runs:
         echo 'Running with maven properties:' ${{ inputs.maven-properties }}
         ./mvnw --batch-mode -ntp --no-snapshot-updates \
           -pl auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-mongodb-atlas \
-          -Pintegration-tests ${{ inputs.maven-properties }} -Dfailsafe.rerunFailingTestsCount=2 verify
+          -Pintegration-tests ${{ inputs.maven-properties }} ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} -Dfailsafe.rerunFailingTestsCount=2 verify
 
     - name: Run Spring AI Autoconfigure Neo4j Vector Store test
       shell: bash
@@ -342,7 +346,7 @@ runs:
         echo 'Running with maven properties:' ${{ inputs.maven-properties }}
         ./mvnw --batch-mode -ntp --no-snapshot-updates \
           -pl auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-neo4j \
-          -Pintegration-tests ${{ inputs.maven-properties }} -Dfailsafe.rerunFailingTestsCount=2 verify
+          -Pintegration-tests ${{ inputs.maven-properties }} ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} -Dfailsafe.rerunFailingTestsCount=2 verify
 
     - name: Run Spring AI Autoconfigure Vector Store Observation test
       shell: bash
@@ -350,7 +354,7 @@ runs:
         echo 'Running with maven properties:' ${{ inputs.maven-properties }}
         ./mvnw --batch-mode -ntp --no-snapshot-updates \
           -pl auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-observation \
-          -Pintegration-tests ${{ inputs.maven-properties }} -Dfailsafe.rerunFailingTestsCount=2 verify
+          -Pintegration-tests ${{ inputs.maven-properties }} ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} -Dfailsafe.rerunFailingTestsCount=2 verify
 
     - name: Run Spring AI Autoconfigure Opensearch Vector Store test
       shell: bash
@@ -358,7 +362,7 @@ runs:
         echo 'Running with maven properties:' ${{ inputs.maven-properties }}
         ./mvnw --batch-mode -ntp --no-snapshot-updates \
           -pl auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-opensearch \
-          -Pintegration-tests ${{ inputs.maven-properties }} -Dfailsafe.rerunFailingTestsCount=2 verify
+          -Pintegration-tests ${{ inputs.maven-properties }} ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} -Dfailsafe.rerunFailingTestsCount=2 verify
 
     - name: Run Spring AI Autoconfigure Oracle Vector Store test
       shell: bash
@@ -366,7 +370,7 @@ runs:
         echo 'Running with maven properties:' ${{ inputs.maven-properties }}
         ./mvnw --batch-mode -ntp --no-snapshot-updates \
           -pl auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-oracle \
-          -Pintegration-tests ${{ inputs.maven-properties }} -Dfailsafe.rerunFailingTestsCount=2 verify
+          -Pintegration-tests ${{ inputs.maven-properties }} ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} -Dfailsafe.rerunFailingTestsCount=2 verify
 
     - name: Run Spring AI Autoconfigure Pgvector test
       shell: bash
@@ -374,7 +378,7 @@ runs:
         echo 'Running with maven properties:' ${{ inputs.maven-properties }}
         ./mvnw --batch-mode -ntp --no-snapshot-updates \
           -pl auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-pgvector \
-          -Pintegration-tests ${{ inputs.maven-properties }} -Dfailsafe.rerunFailingTestsCount=2 verify
+          -Pintegration-tests ${{ inputs.maven-properties }} ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} -Dfailsafe.rerunFailingTestsCount=2 verify
 
     - name: Run Spring AI Autoconfigure Pinecone Vector Store test
       shell: bash
@@ -382,7 +386,7 @@ runs:
         echo 'Running with maven properties:' ${{ inputs.maven-properties }}
         ./mvnw --batch-mode -ntp --no-snapshot-updates \
           -pl auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-pinecone \
-          -Pintegration-tests ${{ inputs.maven-properties }} -Dfailsafe.rerunFailingTestsCount=2 verify
+          -Pintegration-tests ${{ inputs.maven-properties }} ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} -Dfailsafe.rerunFailingTestsCount=2 verify
 
     - name: Run Spring AI Autoconfigure Qdrant Vector Store test
       shell: bash
@@ -390,7 +394,7 @@ runs:
         echo 'Running with maven properties:' ${{ inputs.maven-properties }}
         ./mvnw --batch-mode -ntp --no-snapshot-updates \
           -pl auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-qdrant \
-          -Pintegration-tests ${{ inputs.maven-properties }} -Dfailsafe.rerunFailingTestsCount=2 verify
+          -Pintegration-tests ${{ inputs.maven-properties }} ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} -Dfailsafe.rerunFailingTestsCount=2 verify
 
     - name: Run Spring AI Autoconfigure Redis Vector Store test
       shell: bash
@@ -398,7 +402,7 @@ runs:
         echo 'Running with maven properties:' ${{ inputs.maven-properties }}
         ./mvnw --batch-mode -ntp --no-snapshot-updates \
           -pl auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-redis \
-          -Pintegration-tests ${{ inputs.maven-properties }} -Dfailsafe.rerunFailingTestsCount=2 verify
+          -Pintegration-tests ${{ inputs.maven-properties }} ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} -Dfailsafe.rerunFailingTestsCount=2 verify
 
     - name: Run Spring AI Autoconfigure Redis Semantic Cache Vector Store test
       shell: bash
@@ -406,7 +410,7 @@ runs:
         echo 'Running with maven properties:' ${{ inputs.maven-properties }}
         ./mvnw --batch-mode -ntp --no-snapshot-updates \
           -pl auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-redis-semantic-cache \
-          -Pintegration-tests ${{ inputs.maven-properties }} -Dfailsafe.rerunFailingTestsCount=2 verify
+          -Pintegration-tests ${{ inputs.maven-properties }} ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} -Dfailsafe.rerunFailingTestsCount=2 verify
 
     - name: Run Spring AI Autoconfigure Typesense Vector Store test
       shell: bash
@@ -414,7 +418,7 @@ runs:
         echo 'Running with maven properties:' ${{ inputs.maven-properties }}
         ./mvnw --batch-mode -ntp --no-snapshot-updates \
           -pl auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-typesense \
-          -Pintegration-tests ${{ inputs.maven-properties }} -Dfailsafe.rerunFailingTestsCount=2 verify
+          -Pintegration-tests ${{ inputs.maven-properties }} ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} -Dfailsafe.rerunFailingTestsCount=2 verify
 
     - name: Run Spring AI Autoconfigure Weaviate Vector Store test
       shell: bash
@@ -422,7 +426,7 @@ runs:
         echo 'Running with maven properties:' ${{ inputs.maven-properties }}
         ./mvnw --batch-mode -ntp --no-snapshot-updates \
           -pl auto-configurations/vector-stores/spring-ai-autoconfigure-vector-store-weaviate \
-          -Pintegration-tests ${{ inputs.maven-properties }} -Dfailsafe.rerunFailingTestsCount=2 verify
+          -Pintegration-tests ${{ inputs.maven-properties }} ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} -Dfailsafe.rerunFailingTestsCount=2 verify
 
     - name: Run Spring AI Autoconfigure MCP Client test
       if: ${{ inputs.spring-ai-branch == '1.0.x' }}
@@ -431,7 +435,7 @@ runs:
         echo 'Running with maven properties:' ${{ inputs.maven-properties }}
         ./mvnw --batch-mode -ntp --no-snapshot-updates \
           -pl auto-configurations/mcp/spring-ai-autoconfigure-mcp-client \
-          -Pintegration-tests ${{ inputs.maven-properties }} -Dfailsafe.rerunFailingTestsCount=2 verify
+          -Pintegration-tests ${{ inputs.maven-properties }} ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} -Dfailsafe.rerunFailingTestsCount=2 verify
 
     - name: Run Spring AI Autoconfigure MCP common Client test
       if: ${{ inputs.spring-ai-branch == 'main' }}
@@ -440,7 +444,7 @@ runs:
         echo 'Running with maven properties:' ${{ inputs.maven-properties }}
         ./mvnw --batch-mode -ntp --no-snapshot-updates \
           -pl auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-common \
-          -Pintegration-tests ${{ inputs.maven-properties }} -Dfailsafe.rerunFailingTestsCount=2 verify
+          -Pintegration-tests ${{ inputs.maven-properties }} ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} -Dfailsafe.rerunFailingTestsCount=2 verify
 
     - name: Run Spring AI Autoconfigure MCP HTTP Client test
       if: ${{ inputs.spring-ai-branch == 'main' }}
@@ -449,7 +453,7 @@ runs:
         echo 'Running with maven properties:' ${{ inputs.maven-properties }}
         ./mvnw --batch-mode -ntp --no-snapshot-updates \
           -pl auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-httpclient \
-          -Pintegration-tests ${{ inputs.maven-properties }} -Dfailsafe.rerunFailingTestsCount=2 verify
+          -Pintegration-tests ${{ inputs.maven-properties }} ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} -Dfailsafe.rerunFailingTestsCount=2 verify
 
     - name: Run Spring AI Autoconfigure MCP Webflux Client test
       if: ${{ inputs.spring-ai-branch == 'main' }}
@@ -458,7 +462,7 @@ runs:
         echo 'Running with maven properties:' ${{ inputs.maven-properties }}
         ./mvnw --batch-mode -ntp --no-snapshot-updates \
           -pl auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-webflux \
-          -Pintegration-tests ${{ inputs.maven-properties }} -Dfailsafe.rerunFailingTestsCount=2 verify
+          -Pintegration-tests ${{ inputs.maven-properties }} ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} -Dfailsafe.rerunFailingTestsCount=2 verify
 
     - name: Run Spring AI Autoconfigure MCP Server test
       if: ${{ inputs.spring-ai-branch == '1.0.x' }}
@@ -467,7 +471,7 @@ runs:
         echo 'Running with maven properties:' ${{ inputs.maven-properties }}
         ./mvnw --batch-mode -ntp --no-snapshot-updates \
           -pl auto-configurations/mcp/spring-ai-autoconfigure-mcp-server \
-          -Pintegration-tests ${{ inputs.maven-properties }} -Dfailsafe.rerunFailingTestsCount=2 verify
+          -Pintegration-tests ${{ inputs.maven-properties }} ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} -Dfailsafe.rerunFailingTestsCount=2 verify
 
     - name: Run Spring AI Autoconfigure MCP common Server test
       if: ${{ inputs.spring-ai-branch == 'main' }}
@@ -476,7 +480,7 @@ runs:
         echo 'Running with maven properties:' ${{ inputs.maven-properties }}
         ./mvnw --batch-mode -ntp --no-snapshot-updates \
           -pl auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-common \
-          -Pintegration-tests ${{ inputs.maven-properties }} -Dfailsafe.rerunFailingTestsCount=2 verify
+          -Pintegration-tests ${{ inputs.maven-properties }} ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} -Dfailsafe.rerunFailingTestsCount=2 verify
 
     - name: Run Spring AI Autoconfigure MCP Webflux Server test
       if: ${{ inputs.spring-ai-branch == 'main' }}
@@ -485,7 +489,7 @@ runs:
         echo 'Running with maven properties:' ${{ inputs.maven-properties }}
         ./mvnw --batch-mode -ntp --no-snapshot-updates \
           -pl auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux \
-          -Pintegration-tests ${{ inputs.maven-properties }} -Dfailsafe.rerunFailingTestsCount=2 verify
+          -Pintegration-tests ${{ inputs.maven-properties }} ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} -Dfailsafe.rerunFailingTestsCount=2 verify
 
     - name: Run Spring AI Autoconfigure MCP WebMVC Server test
       if: ${{ inputs.spring-ai-branch == 'main' }}
@@ -494,4 +498,4 @@ runs:
         echo 'Running with maven properties:' ${{ inputs.maven-properties }}
         ./mvnw --batch-mode -ntp --no-snapshot-updates \
           -pl auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webmvc \
-          -Pintegration-tests ${{ inputs.maven-properties }} -Dfailsafe.rerunFailingTestsCount=2 verify
+          -Pintegration-tests ${{ inputs.maven-properties }} ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} -Dfailsafe.rerunFailingTestsCount=2 verify

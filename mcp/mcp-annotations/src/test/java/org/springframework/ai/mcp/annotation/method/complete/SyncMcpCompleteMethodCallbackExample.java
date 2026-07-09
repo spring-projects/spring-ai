@@ -20,6 +20,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.regex.Matcher;
@@ -250,7 +251,7 @@ public final class SyncMcpCompleteMethodCallbackExample {
 		 */
 		@McpComplete(prompt = "travel-planner")
 		public List<String> completeCityName(CompleteRequest.CompleteArgument argument) {
-			String prefix = argument.value().toLowerCase();
+			String prefix = argument.value().toLowerCase(Locale.ROOT);
 			if (prefix.isEmpty()) {
 				return List.of("Enter a city name");
 			}
@@ -258,7 +259,7 @@ public final class SyncMcpCompleteMethodCallbackExample {
 			String firstLetter = prefix.substring(0, 1);
 			List<String> cities = this.cityDatabase.getOrDefault(firstLetter, List.of());
 
-			return cities.stream().filter(city -> city.toLowerCase().startsWith(prefix)).toList();
+			return cities.stream().filter(city -> city.toLowerCase(Locale.ROOT).startsWith(prefix)).toList();
 		}
 
 		/**
@@ -266,7 +267,7 @@ public final class SyncMcpCompleteMethodCallbackExample {
 		 */
 		@McpComplete(prompt = "travel-planner")
 		public CompleteResult completeCountryName(CompleteRequest request) {
-			String prefix = request.argument().value().toLowerCase();
+			String prefix = request.argument().value().toLowerCase(Locale.ROOT);
 			if (prefix.isEmpty()) {
 				return new CompleteResult(new CompleteCompletion(List.of("Enter a country name"), 1, false));
 			}
@@ -275,7 +276,7 @@ public final class SyncMcpCompleteMethodCallbackExample {
 			List<String> countries = this.countryDatabase.getOrDefault(firstLetter, List.of());
 
 			List<String> matches = countries.stream()
-				.filter(country -> country.toLowerCase().startsWith(prefix))
+				.filter(country -> country.toLowerCase(Locale.ROOT).startsWith(prefix))
 				.toList();
 
 			return new CompleteResult(new CompleteCompletion(matches, matches.size(), false));
@@ -286,7 +287,7 @@ public final class SyncMcpCompleteMethodCallbackExample {
 		 */
 		@McpComplete(prompt = "translator")
 		public CompleteCompletion completeLanguageName(McpSyncServerExchange exchange, CompleteRequest request) {
-			String prefix = request.argument().value().toLowerCase();
+			String prefix = request.argument().value().toLowerCase(Locale.ROOT);
 			if (prefix.isEmpty()) {
 				return new CompleteCompletion(List.of("Enter a language"), 1, false);
 			}
@@ -295,7 +296,7 @@ public final class SyncMcpCompleteMethodCallbackExample {
 			List<String> languages = this.languageDatabase.getOrDefault(firstLetter, List.of());
 
 			List<String> matches = languages.stream()
-				.filter(language -> language.toLowerCase().startsWith(prefix))
+				.filter(language -> language.toLowerCase(Locale.ROOT).startsWith(prefix))
 				.toList();
 
 			return new CompleteCompletion(matches, matches.size(), false);
@@ -314,7 +315,7 @@ public final class SyncMcpCompleteMethodCallbackExample {
 		 */
 		@McpComplete(uri = "weather-api://{city}")
 		public List<String> completeCity(CompleteRequest.CompleteArgument argument) {
-			String prefix = argument.value().toLowerCase();
+			String prefix = argument.value().toLowerCase(Locale.ROOT);
 			if (prefix.isEmpty()) {
 				return List.of("Enter a city name");
 			}
@@ -322,7 +323,7 @@ public final class SyncMcpCompleteMethodCallbackExample {
 			String firstLetter = prefix.substring(0, 1);
 			List<String> cities = this.cityDatabase.getOrDefault(firstLetter, List.of());
 
-			return cities.stream().filter(city -> city.toLowerCase().startsWith(prefix)).toList();
+			return cities.stream().filter(city -> city.toLowerCase(Locale.ROOT).startsWith(prefix)).toList();
 		}
 
 	}

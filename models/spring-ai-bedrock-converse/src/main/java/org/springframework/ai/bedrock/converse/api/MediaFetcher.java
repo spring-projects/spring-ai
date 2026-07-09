@@ -24,6 +24,7 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.URI;
 import java.net.UnknownHostException;
+import java.util.Locale;
 import java.util.Set;
 
 import org.apache.hc.client5.http.DnsResolver;
@@ -169,9 +170,9 @@ public final class MediaFetcher {
 		if (host == null) {
 			return false;
 		}
-		String normalizedHost = host.toLowerCase();
+		String normalizedHost = host.toLowerCase(Locale.ROOT);
 		for (String allowed : this.allowedHosts) {
-			String normalizedAllowed = allowed.toLowerCase();
+			String normalizedAllowed = allowed.toLowerCase(Locale.ROOT);
 			if (normalizedAllowed.startsWith("*.")) {
 				// wildcard: *.example.com → matches img.example.com
 				String suffix = normalizedAllowed.substring(1); // ".example.com"

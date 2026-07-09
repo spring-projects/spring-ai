@@ -21,6 +21,7 @@ import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.util.Locale;
 import java.util.regex.Pattern;
 
 import org.jspecify.annotations.Nullable;
@@ -81,7 +82,7 @@ public final class URLValidator {
 			url.toURI();
 
 			// Ensure protocol is http or https
-			String protocol = url.getProtocol().toLowerCase();
+			String protocol = url.getProtocol().toLowerCase(Locale.ROOT);
 			if (!protocol.equals("http") && !protocol.equals("https")) {
 				return false;
 			}
@@ -165,7 +166,8 @@ public final class URLValidator {
 		String normalized = urlString.trim();
 
 		// Add protocol if missing
-		if (!normalized.toLowerCase().startsWith("http://") && !normalized.toLowerCase().startsWith("https://")) {
+		if (!normalized.toLowerCase(Locale.ROOT).startsWith("http://")
+				&& !normalized.toLowerCase(Locale.ROOT).startsWith("https://")) {
 			normalized = "https://" + normalized;
 		}
 

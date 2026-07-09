@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -874,7 +875,7 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		if (modelName == null) {
 			return false;
 		}
-		String lower = modelName.toLowerCase();
+		String lower = modelName.toLowerCase(Locale.ROOT);
 		return lower.contains("gemini-3") && lower.contains("pro") && !lower.contains("flash");
 	}
 
@@ -887,7 +888,7 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		if (modelName == null) {
 			return false;
 		}
-		String lower = modelName.toLowerCase();
+		String lower = modelName.toLowerCase(Locale.ROOT);
 		return lower.contains("gemini-3") && lower.contains("flash");
 	}
 

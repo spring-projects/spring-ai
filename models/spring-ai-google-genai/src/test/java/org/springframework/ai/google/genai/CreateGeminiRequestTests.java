@@ -19,6 +19,7 @@ package org.springframework.ai.google.genai;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import com.google.genai.Client;
@@ -52,6 +53,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * @author Dan Dobrin
  * @author Soby Chacko
  * @author Sebastien Deleuze
+ * @author Dimitar Proynov
  */
 @ExtendWith(MockitoExtension.class)
 public class CreateGeminiRequestTests {
@@ -504,6 +506,31 @@ public class CreateGeminiRequestTests {
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("MINIMAL")
 			.hasMessageContaining("not supported");
+	}
+
+	@Test
+	public void createRequestWithTrLocaleWithPreviewModel() {
+		Locale defaultLocale = Locale.getDefault();
+		try {
+			Locale.setDefault(Locale.forLanguageTag("tr-TR"));
+			// Default options are valid for Pro
+			var client = GoogleGenAiChatModel.builder().genAiClient(this.genAiClient).build();
+
+			// With turkish locale the check if this is a gemini3-pro model
+			// (isGemini3ProModel) will fail as
+			// lowercasing "gemini3-pro" will result in "gemını3-pro"
+			assertThatThrownBy(() -> client.createGeminiRequest(new Prompt("Test message content",
+					GoogleGenAiChatOptions.builder()
+						.model("GEMINI-3-PRO-PREVIEW")
+						.thinkingLevel(GoogleGenAiThinkingLevel.MINIMAL)
+						.build())))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessageContaining("MINIMAL")
+				.hasMessageContaining("not supported");
+		}
+		finally {
+			Locale.setDefault(defaultLocale);
+		}
 	}
 
 	@Test

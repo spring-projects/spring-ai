@@ -168,38 +168,38 @@ public class MistralAiModerationApi {
 			@JsonProperty("category_scores") CategoryScores categoryScores) {
 
 		public boolean flagged() {
-			return this.categories != null && (this.categories.sexual() || this.categories.hateAndDiscrimination() || this.categories.violenceAndThreats()
-					|| this.categories.selfHarm() || this.categories.dangerousAndCriminalContent() || this.categories.health()
-					|| this.categories.financial() || this.categories.law() || this.categories.pii());
+			return this.categories != null && (Boolean.TRUE.equals(this.categories.sexual()) || Boolean.TRUE.equals(this.categories.hateAndDiscrimination()) || Boolean.TRUE.equals(this.categories.violenceAndThreats())
+					|| Boolean.TRUE.equals(this.categories.selfHarm()) || Boolean.TRUE.equals(this.categories.dangerousAndCriminalContent()) || Boolean.TRUE.equals(this.categories.health())
+					|| Boolean.TRUE.equals(this.categories.financial()) || Boolean.TRUE.equals(this.categories.law()) || Boolean.TRUE.equals(this.categories.pii()));
 		}
 
 	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record Categories(
-			@JsonProperty("sexual") boolean sexual,
-			@JsonProperty("hate_and_discrimination") boolean hateAndDiscrimination,
-			@JsonProperty("violence_and_threats") boolean violenceAndThreats,
-			@JsonProperty("selfharm") boolean selfHarm,
-			@JsonProperty("dangerous_and_criminal_content") boolean dangerousAndCriminalContent,
-			@JsonProperty("health") boolean health,
-			@JsonProperty("financial") boolean financial,
-			@JsonProperty("law") boolean law,
-			@JsonProperty("pii") boolean pii)  {
+			@JsonProperty("sexual") Boolean sexual,
+			@JsonProperty("hate_and_discrimination") Boolean hateAndDiscrimination,
+			@JsonProperty("violence_and_threats") Boolean violenceAndThreats,
+			@JsonProperty("selfharm") Boolean selfHarm,
+			@JsonProperty("dangerous_and_criminal_content") Boolean dangerousAndCriminalContent,
+			@JsonProperty("health") Boolean health,
+			@JsonProperty("financial") Boolean financial,
+			@JsonProperty("law") Boolean law,
+			@JsonProperty("pii") Boolean pii)  {
 
 	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	public record CategoryScores(
-			@JsonProperty("sexual") double sexual,
-			@JsonProperty("hate_and_discrimination") double hateAndDiscrimination,
-			@JsonProperty("violence_and_threats") double violenceAndThreats,
-			@JsonProperty("selfharm") double selfHarm,
-			@JsonProperty("dangerous_and_criminal_content") double dangerousAndCriminalContent,
-			@JsonProperty("health") double health,
-			@JsonProperty("financial") double financial,
-			@JsonProperty("law") double law,
-			@JsonProperty("pii") double pii)  {
+			@JsonProperty("sexual") Double sexual,
+			@JsonProperty("hate_and_discrimination") Double hateAndDiscrimination,
+			@JsonProperty("violence_and_threats") Double violenceAndThreats,
+			@JsonProperty("selfharm") Double selfHarm,
+			@JsonProperty("dangerous_and_criminal_content") Double dangerousAndCriminalContent,
+			@JsonProperty("health") Double health,
+			@JsonProperty("financial") Double financial,
+			@JsonProperty("law") Double law,
+			@JsonProperty("pii") Double pii)  {
 
 	}
 	// @formatter:on

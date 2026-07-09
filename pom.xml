@@ -247,7 +247,7 @@
 		<spring-boot.version>4.1.1-SNAPSHOT</spring-boot.version>
 
 		<!-- Third-party dependencies -->
-		<anthropic-sdk.version>2.43.0</anthropic-sdk.version>
+		<anthropic-sdk.version>2.48.0</anthropic-sdk.version>
 		<azure-core.version>1.57.1</azure-core.version>
 		<azure-identity.version>1.18.2</azure-identity.version>
 		<azure-json.version>1.5.1</azure-json.version>
@@ -259,10 +259,8 @@
 		<com.google.cloud.version>26.83.0</com.google.cloud.version>
 		<com.google.genai.version>1.58.0</com.google.genai.version>
 		<commonmark.version>0.22.0</commonmark.version>
-		<couchbase.version>3.9.1</couchbase.version>
 		<djl.version>0.36.0</djl.version>
 		<gemfire.testcontainers.version>2.3.3</gemfire.testcontainers.version>
-		<grpc-netty-shaded.version>1.82.1</grpc-netty-shaded.version>
 		<jsonschema.version>5.0.0</jsonschema.version>
 		<jsoup.version>1.22.2</jsoup.version>
 		<jtokkit.version>1.1.0</jtokkit.version>
@@ -303,16 +301,7 @@
 
 		<flatten-maven-plugin.version>1.5.0</flatten-maven-plugin.version>
 		<jacoco-maven-plugin.version>0.8.10</jacoco-maven-plugin.version>
-		<maven-compiler-plugin.version>3.14.1</maven-compiler-plugin.version>
-		<maven-enforcer-plugin.version>3.6.2</maven-enforcer-plugin.version>
-		<maven-surefire-plugin.version>3.1.2</maven-surefire-plugin.version>
-		<maven-failsafe-plugin.version>3.5.2</maven-failsafe-plugin.version>
-		<maven-javadoc-plugin.version>3.12.0</maven-javadoc-plugin.version>
-		<maven-source-plugin.version>3.3.0</maven-source-plugin.version>
-		<maven-deploy-plugin.version>3.1.1</maven-deploy-plugin.version>
-		<maven-assembly-plugin.version>3.7.0</maven-assembly-plugin.version>
 		<maven-site-plugin.version>4.0.0-M13</maven-site-plugin.version>
-		<maven-jar-plugin.version>3.3.0</maven-jar-plugin.version>
 		<spring-javaformat-maven-plugin.version>0.0.47</spring-javaformat-maven-plugin.version>
 		<maven-checkstyle-plugin.version>3.6.0</maven-checkstyle-plugin.version>
 		<maven-checkstyle-plugin.failsOnError>true</maven-checkstyle-plugin.failsOnError>
@@ -374,7 +363,6 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-enforcer-plugin</artifactId>
-				<version>${maven-enforcer-plugin.version}</version>
 				<executions>
 					<execution>
 						<id>maven-enforcer</id>
@@ -432,7 +420,6 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>${maven-compiler-plugin.version}</version>
 				<configuration>
 					<release>${java.version}</release>
 					<compilerArgs>
@@ -482,7 +469,7 @@
 								<!-- The following arg won't be necessary with JDK25+ -->
 								<arg>-XDaddTypeAnnotationsToSymbol=true</arg>
 								<arg>--should-stop=ifError=FLOW</arg>
-								<arg>-Xplugin:ErrorProne -XepDisableAllChecks -Xep:NullAway:ERROR
+								<arg>-Xplugin:ErrorProne -XepDisableAllChecks -Xep:StringCaseLocaleUsage:ERROR -Xep:NullAway:ERROR
 									-XepOpt:NullAway:OnlyNullMarked
 									-XepOpt:NullAway:JSpecifyMode=true</arg>
 							</compilerArgs>
@@ -500,7 +487,6 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-surefire-plugin</artifactId>
-				<version>${maven-surefire-plugin.version}</version>
 				<configuration>
 					<argLine>${surefireArgLine}</argLine>
 					<useFile>false</useFile>
@@ -514,7 +500,6 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-jar-plugin</artifactId>
-				<version>${maven-jar-plugin.version}</version>
 				<configuration>
 					<archive>
 						<manifestEntries>
@@ -527,7 +512,6 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-source-plugin</artifactId>
-				<version>${maven-source-plugin.version}</version>
 				<executions>
 					<execution>
 						<id>package-sources</id>
@@ -574,12 +558,10 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-deploy-plugin</artifactId>
-				<version>${maven-deploy-plugin.version}</version>
 			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-javadoc-plugin</artifactId>
-				<version>${maven-javadoc-plugin.version}</version>
 				<configuration>
 					<overview>
 						${maven.multiModuleProjectDirectory}/spring-ai-docs/src/main/javadoc/overview.html</overview>
@@ -736,7 +718,6 @@
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-enforcer-plugin</artifactId>
-						<version>${maven-enforcer-plugin.version}</version>
 						<executions>
 							<execution>
 								<id>maven-enforcer</id>
@@ -770,7 +751,6 @@
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-enforcer-plugin</artifactId>
-						<version>${maven-enforcer-plugin.version}</version>
 						<executions>
 							<execution>
 								<id>maven-enforcer</id>
@@ -816,7 +796,6 @@
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-failsafe-plugin</artifactId>
-						<version>${maven-failsafe-plugin.version}</version>
 						<executions>
 							<execution>
 								<goals>
@@ -840,7 +819,6 @@
 					<plugin>
 						<groupId>org.apache.maven.plugins</groupId>
 						<artifactId>maven-failsafe-plugin</artifactId>
-						<version>${maven-failsafe-plugin.version}</version>
 						<configuration>
 							<!-- <includes>
 								<include>org.springframework.ai.anthropic**/*IT.java</include>

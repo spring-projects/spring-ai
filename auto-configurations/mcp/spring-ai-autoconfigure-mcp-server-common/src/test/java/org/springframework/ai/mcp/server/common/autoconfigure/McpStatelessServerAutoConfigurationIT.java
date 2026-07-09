@@ -17,6 +17,7 @@
 package org.springframework.ai.mcp.server.common.autoconfigure;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BiConsumer;
@@ -572,7 +573,7 @@ public class McpStatelessServerAutoConfigurationIT {
 		@McpComplete(prompt = "city-search")
 		public List<String> completeCityName(String prefix) {
 			return Stream.of("New York", "Los Angeles", "Chicago", "Houston", "Phoenix")
-				.filter(city -> city.toLowerCase().startsWith(prefix.toLowerCase()))
+				.filter(city -> city.toLowerCase(Locale.ROOT).startsWith(prefix.toLowerCase(Locale.ROOT)))
 				.limit(10)
 				.toList();
 		}
@@ -614,7 +615,7 @@ public class McpStatelessServerAutoConfigurationIT {
 		@McpComplete(prompt = "city-search")
 		public Mono<List<String>> completeCityName(String prefix) {
 			return Mono.just(Stream.of("New York", "Los Angeles", "Chicago", "Houston", "Phoenix")
-				.filter(city -> city.toLowerCase().startsWith(prefix.toLowerCase()))
+				.filter(city -> city.toLowerCase(Locale.ROOT).startsWith(prefix.toLowerCase(Locale.ROOT)))
 				.limit(10)
 				.toList());
 		}
