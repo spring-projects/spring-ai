@@ -80,7 +80,7 @@ import org.springframework.util.StringUtils;
  * @author Soby Chacko
  * @since 1.0.0
  */
-public class TransformersEmbeddingModel extends AbstractEmbeddingModel implements InitializingBean {
+public class TransformersEmbeddingModel extends AbstractEmbeddingModel implements InitializingBean, AutoCloseable {
 
 	// ONNX tokenizer for the all-MiniLM-L6-v2 generative
 	public static final String DEFAULT_ONNX_TOKENIZER_URI = "https://raw.githubusercontent.com/spring-projects/spring-ai/main/models/spring-ai-transformers/src/main/resources/onnx/all-MiniLM-L6-v2/tokenizer.json";
@@ -251,6 +251,26 @@ public class TransformersEmbeddingModel extends AbstractEmbeddingModel implement
 				"The generative output names don't contain expected: " + this.modelOutputName
 						+ ". Consider one of the available model outputs: "
 						+ onnxModelOutputs.stream().collect(Collectors.joining(", ")));
+	}
+
+	/**
+	 * Release the native ONNX runtime session and tokenizer acquired in
+	 * {@link #afterPropertiesSet()}. Spring registers this as the bean destroy method
+	 * automatically (inferred {@code close()} method), and the model can also be used
+	 * with try-with-resources.
+	 */
+	@Override
+	public void close() throws OrtException {
+		try {
+			if (this.tokenizer != null) {
+				this.tokenizer.close();
+			}
+		}
+		finally {
+			if (this.session != null) {
+				this.session.close();
+			}
+		}
 	}
 
 	private Resource getCachedResource(Resource resource) {
