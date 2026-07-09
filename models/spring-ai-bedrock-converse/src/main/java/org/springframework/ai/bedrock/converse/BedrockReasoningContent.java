@@ -28,7 +28,7 @@ import software.amazon.awssdk.services.bedrockruntime.model.ReasoningTextBlock;
 import org.springframework.util.Assert;
 
 /**
- * Spring AI Bedrock value object that preserves a single Bedrock Converse
+ * Internal Spring AI Bedrock value object that preserves a single Bedrock Converse
  * {@code reasoningContent} block so it can be replayed, unmodified, on a later request.
  * <p>
  * Amazon Bedrock requires that the assistant turn containing a {@code toolUse} block also
@@ -42,10 +42,9 @@ import org.springframework.util.Assert;
  * leak into logs or assertion output.
  *
  * @author Jewoo Shin
- * @since 2.0.1
  * @see BedrockAssistantMessage
  */
-public final class BedrockReasoningContent {
+final class BedrockReasoningContent {
 
 	private final @Nullable String text;
 

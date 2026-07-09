@@ -27,7 +27,7 @@ import org.springframework.ai.content.Media;
 import org.springframework.util.CollectionUtils;
 
 /**
- * Bedrock-specific {@link AssistantMessage} that carries the signed
+ * Internal Bedrock-specific {@link AssistantMessage} that carries the signed
  * {@code reasoningContent} blocks returned alongside an assistant turn so the
  * tool-calling loop can replay them, unmodified, on the next Bedrock request.
  * <p>
@@ -38,10 +38,9 @@ import org.springframework.util.CollectionUtils;
  * with the same turn that is selected and re-emitted during tool calling.
  *
  * @author Jewoo Shin
- * @since 2.0.1
  * @see BedrockReasoningContent
  */
-public class BedrockAssistantMessage extends AssistantMessage {
+class BedrockAssistantMessage extends AssistantMessage {
 
 	private final List<BedrockReasoningContent> reasoningContents;
 
@@ -89,8 +88,6 @@ public class BedrockAssistantMessage extends AssistantMessage {
 		return new Builder();
 	}
 
-	// Public Builder class exposed to users. Avoids having to deal with noisy generic
-	// parameters.
 	public static class Builder extends AbstractBuilder<Builder> {
 
 	}
