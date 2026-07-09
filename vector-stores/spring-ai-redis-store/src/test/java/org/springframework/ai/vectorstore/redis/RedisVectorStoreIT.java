@@ -31,7 +31,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import redis.clients.jedis.RedisClient;
+import redis.clients.jedis.JedisPooled;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
@@ -334,7 +334,7 @@ class RedisVectorStoreIT extends BaseVectorStoreTests {
 	void getNativeClientTest() {
 		this.contextRunner.run(context -> {
 			RedisVectorStore vectorStore = context.getBean(RedisVectorStore.class);
-			Optional<RedisClient> nativeClient = vectorStore.getNativeClient();
+			Optional<JedisPooled> nativeClient = vectorStore.getNativeClient();
 			assertThat(nativeClient).isPresent();
 		});
 	}
@@ -344,10 +344,10 @@ class RedisVectorStoreIT extends BaseVectorStoreTests {
 
 		@Bean
 		public RedisVectorStore vectorStore(EmbeddingModel embeddingModel) {
-			// Create RedisClient directly with container properties for more reliable
+			// Create JedisPooled directly with container properties for more reliable
 			// connection
 			return RedisVectorStore
-				.builder(RedisClient.builder()
+				.builder(JedisPooled.builder()
 					.hostAndPort(redisContainer.getHost(), redisContainer.getFirstMappedPort())
 					.build(), embeddingModel)
 				.metadataFields(MetadataField.tag("meta1"), MetadataField.tag("meta2"), MetadataField.tag("country"),

@@ -18,8 +18,10 @@ package org.springframework.ai.vectorstore.redis.autoconfigure;
 
 import io.micrometer.observation.ObservationRegistry;
 import redis.clients.jedis.DefaultJedisClientConfig;
+import redis.clients.jedis.HostAndPort;
 import redis.clients.jedis.JedisClientConfig;
-import redis.clients.jedis.RedisClient;
+import redis.clients.jedis.JedisPooled;
+import redis.clients.jedis.UnifiedJedis;
 
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -45,9 +47,10 @@ import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
  * @author Jihoon Kim
  * @author Brian Sam-Bodden
  * @author Yanming Zhou
+ * @author Jewoo Shin
  */
 @AutoConfiguration
-@ConditionalOnClass({ RedisClient.class, JedisConnectionFactory.class, RedisVectorStore.class, EmbeddingModel.class })
+@ConditionalOnClass({ JedisPooled.class, JedisConnectionFactory.class, RedisVectorStore.class, EmbeddingModel.class })
 @EnableConfigurationProperties(RedisVectorStoreProperties.class)
 @ConditionalOnProperty(name = SpringAIVectorStoreTypes.TYPE, havingValue = SpringAIVectorStoreTypes.REDIS,
 		matchIfMissing = true)
@@ -81,7 +84,7 @@ public class RedisVectorStoreAutoConfiguration {
 			final ObjectProvider<VectorStoreObservationConvention> convention,
 			final BatchingStrategy batchingStrategy) {
 
-		RedisClient jedisClient = jedisClient(jedisConnectionFactory);
+		UnifiedJedis jedisClient = jedisClient(jedisConnectionFactory);
 		RedisVectorStore.Builder builder = RedisVectorStore.builder(jedisClient, embeddingModel)
 			.initializeSchema(properties.isInitializeSchema())
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
@@ -108,7 +111,7 @@ public class RedisVectorStoreAutoConfiguration {
 			.hnswEfRuntime(properties.getHnsw().getEfRuntime());
 	}
 
-	private RedisClient jedisClient(final JedisConnectionFactory jedisConnectionFactory) {
+	private UnifiedJedis jedisClient(final JedisConnectionFactory jedisConnectionFactory) {
 
 		String host = jedisConnectionFactory.getHostName();
 		int port = jedisConnectionFactory.getPort();
@@ -120,7 +123,7 @@ public class RedisVectorStoreAutoConfiguration {
 			.password(jedisConnectionFactory.getPassword())
 			.build();
 
-		return RedisClient.builder().hostAndPort(host, port).clientConfig(clientConfig).build();
+		return new JedisPooled(new HostAndPort(host, port), clientConfig);
 	}
 
 }

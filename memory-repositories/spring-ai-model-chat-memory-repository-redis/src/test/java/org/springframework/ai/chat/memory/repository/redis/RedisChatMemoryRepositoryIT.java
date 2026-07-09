@@ -24,7 +24,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import redis.clients.jedis.RedisClient;
+import redis.clients.jedis.JedisPooled;
 
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -54,13 +54,13 @@ class RedisChatMemoryRepositoryIT {
 
 	private ChatMemoryRepository chatMemoryRepository;
 
-	private RedisClient jedisClient;
+	private JedisPooled jedisClient;
 
 	@BeforeEach
 	void setUp() {
-		// Create RedisClient directly with container properties for more reliable
+		// Create JedisPooled directly with container properties for more reliable
 		// connection
-		this.jedisClient = RedisClient.builder()
+		this.jedisClient = JedisPooled.builder()
 			.hostAndPort(redisContainer.getHost(), redisContainer.getFirstMappedPort())
 			.build();
 
@@ -184,7 +184,7 @@ class RedisChatMemoryRepositoryIT {
 		@Bean
 		ChatMemoryRepository chatMemoryRepository() {
 			return RedisChatMemoryRepository.builder()
-				.jedisClient(RedisClient.builder()
+				.jedisClient(JedisPooled.builder()
 					.hostAndPort(redisContainer.getHost(), redisContainer.getFirstMappedPort())
 					.build())
 				.indexName("test-" + RedisChatMemoryConfig.DEFAULT_INDEX_NAME)

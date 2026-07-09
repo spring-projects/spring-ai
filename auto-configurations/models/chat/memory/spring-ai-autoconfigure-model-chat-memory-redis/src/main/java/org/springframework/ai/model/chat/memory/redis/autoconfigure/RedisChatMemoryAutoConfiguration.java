@@ -16,7 +16,7 @@
 
 package org.springframework.ai.model.chat.memory.redis.autoconfigure;
 
-import redis.clients.jedis.RedisClient;
+import redis.clients.jedis.JedisPooled;
 
 import org.springframework.ai.chat.memory.repository.redis.RedisChatMemoryRepository;
 import org.springframework.ai.model.chat.memory.autoconfigure.ChatMemoryAutoConfiguration;
@@ -33,12 +33,13 @@ import org.springframework.context.annotation.Bean;
  * @author Brian Sam-Bodden
  * @author Yanming Zhou
  * @author Sebastien Deleuze
+ * @author Jewoo Shin
  * @deprecated Use {@link RedisChatMemoryRepositoryAutoConfiguration} instead.
  */
 @Deprecated(since = "2.0.1", forRemoval = true)
 @SuppressWarnings("removal")
 @AutoConfiguration(before = ChatMemoryAutoConfiguration.class)
-@ConditionalOnClass({ RedisChatMemoryRepository.class, RedisClient.class })
+@ConditionalOnClass({ RedisChatMemoryRepository.class, JedisPooled.class })
 public class RedisChatMemoryAutoConfiguration {
 
 	/**

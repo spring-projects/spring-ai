@@ -25,7 +25,7 @@ import com.redis.testcontainers.RedisContainer;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import redis.clients.jedis.RedisClient;
+import redis.clients.jedis.JedisPooled;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.MessageType;
@@ -535,7 +535,7 @@ class RedisChatMemoryAdvancedQueryIT {
 			String uniqueIndexName = "test-adv-app-" + System.currentTimeMillis();
 
 			return RedisChatMemoryRepository.builder()
-				.jedisClient(RedisClient.builder()
+				.jedisClient(JedisPooled.builder()
 					.hostAndPort(redisContainer.getHost(), redisContainer.getFirstMappedPort())
 					.build())
 				.indexName(uniqueIndexName)

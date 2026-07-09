@@ -17,8 +17,10 @@
 package org.springframework.ai.vectorstore.redis.cache.semantic.autoconfigure;
 
 import redis.clients.jedis.DefaultJedisClientConfig;
+import redis.clients.jedis.HostAndPort;
 import redis.clients.jedis.JedisClientConfig;
-import redis.clients.jedis.RedisClient;
+import redis.clients.jedis.JedisPooled;
+import redis.clients.jedis.UnifiedJedis;
 
 import org.springframework.ai.chat.cache.semantic.SemanticCache;
 import org.springframework.ai.chat.cache.semantic.SemanticCacheAdvisor;
@@ -43,9 +45,10 @@ import org.springframework.util.StringUtils;
  * @author Brian Sam-Bodden
  * @author Eddú Meléndez
  * @author Yanming Zhou
+ * @author Jewoo Shin
  */
 @AutoConfiguration
-@ConditionalOnClass({ DefaultSemanticCache.class, RedisClient.class, CallAdvisor.class, StreamAdvisor.class,
+@ConditionalOnClass({ DefaultSemanticCache.class, JedisPooled.class, CallAdvisor.class, StreamAdvisor.class,
 		TransformersEmbeddingModel.class })
 @EnableConfigurationProperties(RedisSemanticCacheProperties.class)
 @ConditionalOnProperty(name = "spring.ai.vectorstore.redis.semantic-cache.enabled", havingValue = "true",
@@ -75,15 +78,15 @@ public class RedisSemanticCacheAutoConfiguration {
 	}
 
 	/**
-	 * Creates a RedisClient client for Redis connections, honoring the SSL, password,
-	 * client name, and timeout settings from the {@link JedisConnectionFactory}.
+	 * Creates a Redis client for Redis connections, honoring the SSL, password, client
+	 * name, and timeout settings from the {@link JedisConnectionFactory}.
 	 * @param jedisConnectionFactory the Jedis connection factory
-	 * @return the RedisClient client
+	 * @return the Redis client
 	 */
 	@Bean
 	@ConditionalOnMissingBean
 	@ConditionalOnBean(EmbeddingModel.class)
-	public RedisClient jedisClient(final JedisConnectionFactory jedisConnectionFactory) {
+	public UnifiedJedis jedisClient(final JedisConnectionFactory jedisConnectionFactory) {
 		String host = jedisConnectionFactory.getHostName();
 		int port = jedisConnectionFactory.getPort();
 
@@ -94,7 +97,7 @@ public class RedisSemanticCacheAutoConfiguration {
 			.password(jedisConnectionFactory.getPassword())
 			.build();
 
-		return RedisClient.builder().hostAndPort(host, port).clientConfig(clientConfig).build();
+		return new JedisPooled(new HostAndPort(host, port), clientConfig);
 	}
 
 	/**
@@ -107,7 +110,7 @@ public class RedisSemanticCacheAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	@ConditionalOnBean(EmbeddingModel.class)
-	public SemanticCache semanticCache(final RedisClient jedisClient, final EmbeddingModel embeddingModel,
+	public SemanticCache semanticCache(final UnifiedJedis jedisClient, final EmbeddingModel embeddingModel,
 			final RedisSemanticCacheProperties properties) {
 		DefaultSemanticCache.Builder builder = DefaultSemanticCache.builder()
 			.jedisClient(jedisClient)

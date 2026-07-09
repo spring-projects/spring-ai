@@ -30,7 +30,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import redis.clients.jedis.RedisClient;
+import redis.clients.jedis.JedisPooled;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -61,11 +61,11 @@ class RedisChatMemoryMessageTypesIT {
 
 	private RedisChatMemoryRepository chatMemory;
 
-	private RedisClient jedisClient;
+	private JedisPooled jedisClient;
 
 	@BeforeEach
 	void setUp() {
-		this.jedisClient = RedisClient.builder()
+		this.jedisClient = JedisPooled.builder()
 			.hostAndPort(redisContainer.getHost(), redisContainer.getFirstMappedPort())
 			.build();
 		this.chatMemory = RedisChatMemoryRepository.builder()
@@ -666,7 +666,7 @@ class RedisChatMemoryMessageTypesIT {
 		@Bean
 		RedisChatMemoryRepository chatMemory() {
 			return RedisChatMemoryRepository.builder()
-				.jedisClient(RedisClient.builder()
+				.jedisClient(JedisPooled.builder()
 					.hostAndPort(redisContainer.getHost(), redisContainer.getFirstMappedPort())
 					.build())
 				.indexName("test-" + RedisChatMemoryConfig.DEFAULT_INDEX_NAME)

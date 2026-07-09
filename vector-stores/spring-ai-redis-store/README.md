@@ -27,7 +27,7 @@ The standard similarity search returns the k-nearest neighbors:
 
 ```java
 // Create Redis client
-RedisClient jedisClient = RedisClient.builder().hostAndPort("localhost", 6379).build();
+UnifiedJedis jedisClient = JedisPooled.builder().hostAndPort("localhost", 6379).build();
 
 // Create the vector store
 RedisVectorStore vectorStore = RedisVectorStore.builder(jedisClient, embeddingModel)
@@ -78,7 +78,7 @@ Text search supports:
 Configure text search behavior at construction time:
 
 ```java
-RedisClient jedisClient = RedisClient.builder().hostAndPort("localhost", 6379).build();
+UnifiedJedis jedisClient = JedisPooled.builder().hostAndPort("localhost", 6379).build();
 RedisVectorStore vectorStore = RedisVectorStore.builder(jedisClient, embeddingModel)
     .textScorer(TextScorer.TFIDF)                    // Text scoring algorithm
     .inOrder(true)                                   // Match terms in order
@@ -103,7 +103,7 @@ List<Document> rangeResults = vectorStore.searchByRange(
 You can also set a default range threshold at construction time:
 
 ```java
-RedisClient jedisClient = RedisClient.builder().hostAndPort("localhost", 6379).build();
+UnifiedJedis jedisClient = JedisPooled.builder().hostAndPort("localhost", 6379).build();
 RedisVectorStore vectorStore = RedisVectorStore.builder(jedisClient, embeddingModel)
     .defaultRangeThreshold(0.8)  // Set default threshold
     .build();
@@ -117,7 +117,7 @@ List<Document> results = vectorStore.searchByRange("query");
 The Redis Vector Store supports multiple configuration options:
 
 ```java
-RedisClient jedisClient = RedisClient.builder().hostAndPort("localhost", 6379).build();
+UnifiedJedis jedisClient = JedisPooled.builder().hostAndPort("localhost", 6379).build();
 RedisVectorStore vectorStore = RedisVectorStore.builder(jedisClient, embeddingModel)
     .indexName("custom-index")        // Redis index name
     .prefix("custom-prefix")          // Redis key prefix

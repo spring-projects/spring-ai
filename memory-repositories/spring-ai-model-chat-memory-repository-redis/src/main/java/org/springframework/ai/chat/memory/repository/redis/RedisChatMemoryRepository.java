@@ -35,8 +35,8 @@ import com.google.gson.JsonObject;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import redis.clients.jedis.Pipeline;
-import redis.clients.jedis.RedisClient;
+import redis.clients.jedis.AbstractPipeline;
+import redis.clients.jedis.UnifiedJedis;
 import redis.clients.jedis.json.Path2;
 import redis.clients.jedis.search.Document;
 import redis.clients.jedis.search.FTCreateParams;
@@ -73,6 +73,7 @@ import org.springframework.util.MimeType;
  *
  * @author Brian Sam-Bodden
  * @author Yanming Zhou
+ * @author Jewoo Shin
  */
 public final class RedisChatMemoryRepository implements ChatMemoryRepository, AdvancedRedisChatMemoryRepository {
 
@@ -84,7 +85,7 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 
 	private final RedisChatMemoryConfig config;
 
-	private final RedisClient jedisClient;
+	private final UnifiedJedis jedisClient;
 
 	public RedisChatMemoryRepository(RedisChatMemoryConfig config) {
 		Assert.notNull(config, "Config must not be null");
@@ -118,7 +119,7 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 		long nextTimestamp = getNextTimestampForConversation(conversationId);
 		final AtomicLong timestampSequence = new AtomicLong(nextTimestamp);
 
-		try (Pipeline pipeline = this.jedisClient.pipelined()) {
+		try (AbstractPipeline pipeline = this.jedisClient.pipelined()) {
 			for (Message message : messages) {
 				long timestamp = timestampSequence.getAndIncrement();
 				String key = createKey(conversationId, timestamp);
@@ -366,7 +367,7 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 		Query query = new Query(queryNode.toString());
 		SearchResult result = this.jedisClient.ftSearch(this.config.getIndexName(), query);
 
-		try (Pipeline pipeline = this.jedisClient.pipelined()) {
+		try (AbstractPipeline pipeline = this.jedisClient.pipelined()) {
 			result.getDocuments().forEach(doc -> pipeline.del(doc.getId()));
 			pipeline.sync();
 		}
@@ -974,7 +975,7 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 	 */
 	public static class Builder {
 
-		private @Nullable RedisClient jedisClient;
+		private @Nullable UnifiedJedis jedisClient;
 
 		private String indexName = RedisChatMemoryConfig.DEFAULT_INDEX_NAME;
 
@@ -991,11 +992,11 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 		private List<Map<String, String>> metadataFields = Collections.emptyList();
 
 		/**
-		 * Sets the RedisClient client.
-		 * @param jedisClient the RedisClient client to use
+		 * Sets the Redis client.
+		 * @param jedisClient the Redis client to use
 		 * @return this builder
 		 */
-		public Builder jedisClient(final RedisClient jedisClient) {
+		public Builder jedisClient(final UnifiedJedis jedisClient) {
 			this.jedisClient = jedisClient;
 			return this;
 		}
