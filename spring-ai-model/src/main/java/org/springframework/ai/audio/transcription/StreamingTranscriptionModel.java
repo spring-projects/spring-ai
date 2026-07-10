@@ -16,6 +16,8 @@
 
 package org.springframework.ai.audio.transcription;
 
+import java.util.Optional;
+
 import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
 
@@ -30,7 +32,6 @@ import org.springframework.core.io.Resource;
  * @author guan xu
  * @since 2.0.1
  */
-@FunctionalInterface
 public interface StreamingTranscriptionModel
 		extends StreamingModel<AudioTranscriptionPrompt, AudioTranscriptionResponse> {
 
@@ -42,17 +43,17 @@ public interface StreamingTranscriptionModel
 	 * @return a {@link Flux} of {@link AudioTranscriptionResponse} chunks representing
 	 * incremental transcription results
 	 */
-	Flux<AudioTranscriptionResponse> stream(AudioTranscriptionPrompt transcriptionPrompt);
+	default Flux<AudioTranscriptionResponse> stream(AudioTranscriptionPrompt transcriptionPrompt) {
+		return Flux.error(new UnsupportedOperationException("Streaming transcription is not supported"));
+	}
 
 	/**
 	 * A convenience method for streaming the transcription of an audio resource.
 	 * @param resource the audio resource to transcribe
 	 * @return a {@link Flux} of transcribed text segments
 	 */
-	default Flux<String> stream(Resource resource) {
-		AudioTranscriptionPrompt prompt = new AudioTranscriptionPrompt(resource);
-		return stream(prompt).map(response -> (response.getResult() == null || response.getResult().getOutput() == null)
-				? "" : response.getResult().getOutput());
+	default Flux<String> streamTranscribe(Resource resource) {
+		return this.streamTranscribe(resource, null);
 	}
 
 	/**
@@ -62,10 +63,10 @@ public interface StreamingTranscriptionModel
 	 * @param options the transcription options
 	 * @return a {@link Flux} of transcribed text segments
 	 */
-	default Flux<String> stream(Resource resource, @Nullable AudioTranscriptionOptions options) {
+	default Flux<String> streamTranscribe(Resource resource, @Nullable AudioTranscriptionOptions options) {
 		AudioTranscriptionPrompt prompt = new AudioTranscriptionPrompt(resource, options);
-		return stream(prompt).map(response -> (response.getResult() == null || response.getResult().getOutput() == null)
-				? "" : response.getResult().getOutput());
+		return stream(prompt)
+			.map(response -> Optional.ofNullable(response.getResult()).map(AudioTranscription::getOutput).orElse(""));
 	}
 
 }

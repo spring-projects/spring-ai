@@ -151,23 +151,21 @@ public final class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 			logger.trace("OpenAiAudioTranscriptionModel stream with model: " + mergedOptions.getModel());
 		}
 
-		Flux<TranscriptionStreamEvent> chunk = Flux.create(sink -> {
-			this.openAiClientAsync.audio()
-				.transcriptions()
-				.createStreaming(params)
-				.subscribe(sink::next)
-				.onCompleteFuture()
-				.whenComplete((unused, throwable) -> {
-					if (throwable != null) {
-						sink.error(throwable);
-					}
-					else {
-						sink.complete();
-					}
-				});
-		});
+		Flux<TranscriptionStreamEvent> chunks = Flux.create(sink -> this.openAiClientAsync.audio()
+			.transcriptions()
+			.createStreaming(params)
+			.subscribe(sink::next)
+			.onCompleteFuture()
+			.whenComplete((unused, throwable) -> {
+				if (throwable != null) {
+					sink.error(throwable);
+				}
+				else {
+					sink.complete();
+				}
+			}));
 
-		return chunk.map(event -> {
+		return chunks.map(event -> {
 			String text = extractStreamEventText(event);
 			AudioTranscription transcript = new AudioTranscription(text);
 			return new AudioTranscriptionResponse(transcript, new AudioTranscriptionResponseMetadata());

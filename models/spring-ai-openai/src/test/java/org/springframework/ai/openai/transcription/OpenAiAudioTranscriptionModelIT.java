@@ -130,10 +130,10 @@ public class OpenAiAudioTranscriptionModelIT {
 		AudioTranscriptionPrompt prompt = new AudioTranscriptionPrompt(new ClassPathResource("/speech.flac"));
 		Flux<AudioTranscriptionResponse> flux = this.transcriptionModel.stream(prompt);
 
-		List<AudioTranscriptionResponse> responses = flux.collectList().block();
+		List<AudioTranscriptionResponse> chunks = flux.collectList().block();
 
-		assertThat(responses).isNotEmpty();
-		String text = responses.stream()
+		assertThat(chunks).isNotNull();
+		String text = chunks.stream()
 			.map(AudioTranscriptionResponse::getResult)
 			.filter(Objects::nonNull)
 			.map(AudioTranscription::getOutput)
@@ -142,28 +142,28 @@ public class OpenAiAudioTranscriptionModelIT {
 	}
 
 	@Test
-	void streamWithResourceTest() {
-		Flux<String> flux = this.transcriptionModel.stream(new ClassPathResource("/speech.flac"));
+	void streamTranscribeWithResourceTest() {
+		Flux<String> flux = this.transcriptionModel.streamTranscribe(new ClassPathResource("/speech.flac"));
 
 		List<String> chunks = flux.collectList().block();
 
-		assertThat(chunks).isNotEmpty();
+		assertThat(chunks).isNotNull();
 		String text = String.join("", chunks);
 		assertThat(text).isNotBlank();
 	}
 
 	@Test
-	void streamWithResourceAndOptionsTest() {
+	void streamTranscribeWithResourceAndOptionsTest() {
 		OpenAiAudioTranscriptionOptions options = OpenAiAudioTranscriptionOptions.builder()
 			.language("en")
 			.temperature(0f)
 			.build();
 
-		Flux<String> flux = this.transcriptionModel.stream(new ClassPathResource("/speech.flac"), options);
+		Flux<String> flux = this.transcriptionModel.streamTranscribe(new ClassPathResource("/speech.flac"), options);
 
 		List<String> chunks = flux.collectList().block();
 
-		assertThat(chunks).isNotEmpty();
+		assertThat(chunks).isNotNull();
 		String text = String.join("", chunks);
 		assertThat(text).isNotBlank();
 	}
