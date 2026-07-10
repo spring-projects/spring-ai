@@ -795,6 +795,14 @@ AWS Bedrock pricing for prompt caching (approximate, varies by model):
 
 For most applications, use `ChatClient` with the auto-registered `ToolCallingAdvisor` — see xref:api/tools.adoc[Tool Calling]. For low-level control where you drive the loop yourself (for example, when combining tool calling with prompt caching), see xref:api/tools/chatmodel-tool-calling.adoc[ChatModel Tool Calling].
 
+=== Reasoning with Tool Calls
+
+When extended thinking is enabled and the model decides to call a tool, the signed reasoning blocks from that response are automatically preserved and replayed in the follow-up request alongside the tool results.
+Amazon Bedrock requires those reasoning blocks to be present in the replay — omitting them causes an API error.
+
+No special configuration is needed.
+Spring AI handles the replay transparently whether you use the auto-managed tool loop (`ChatClient` with `ToolCallingAdvisor`) or drive the loop manually via `ToolCallingManager`.
+
 == Structured Output [[structured-output]]
 
 AWS Bedrock supports native structured outputs through JSON Schema, ensuring the model generates responses that strictly conform to your specified structure.
