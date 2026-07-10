@@ -996,7 +996,6 @@ public final class OpenAiChatModel implements ChatModel {
 					logger.error("Failed to parse tool schema", e);
 				}
 			}
-			
 			FunctionDefinition functionDefinition = FunctionDefinition.builder()
 				.name(toolDefinition.name())
 				.description(toolDefinition.description())
