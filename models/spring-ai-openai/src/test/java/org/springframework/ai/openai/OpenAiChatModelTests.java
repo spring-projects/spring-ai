@@ -1205,7 +1205,7 @@ class OpenAiChatModelTests {
 			Locale.setDefault(original);
 		}
 	}
-	
+
 	@Test
 	void toolStrictIsEmittedAtFunctionLevel() {
 		ToolCallingManager mockToolCallingManager = mock(ToolCallingManager.class);
@@ -1218,7 +1218,8 @@ class OpenAiChatModelTests {
 
 		when(mockToolCallingManager.resolveToolDefinitions(any())).thenReturn(List.of(toolDefinition));
 
-		// Model options with model set, relying on the fallback default logic of strict(true)
+		// Model options with model set, relying on the fallback default logic of
+		// strict(true)
 		OpenAiChatOptions options = OpenAiChatOptions.builder().model("gpt-4.1").build();
 		OpenAiChatModel chatModel = OpenAiChatModel.builder()
 			.openAiClient(this.openAiClient)
@@ -1227,15 +1228,14 @@ class OpenAiChatModelTests {
 			.toolCallingManager(mockToolCallingManager)
 			.build();
 
-		// Current behavior: createRequest processes Prompt's options down to getChatCompletionTools
+		// Current behavior: createRequest processes Prompt's options down to
+		// getChatCompletionTools
 		ChatCompletionCreateParams request = chatModel.createRequest(new Prompt("test", options), false);
 
 		var tools = request.tools().orElseThrow();
 		assertThat(tools).hasSize(1);
 
-		ChatCompletionFunctionTool functionTool = tools.get(0)
-			.function()
-			.orElseThrow();
+		ChatCompletionFunctionTool functionTool = tools.get(0).function().orElseThrow();
 		FunctionDefinition functionDef = functionTool.function();
 
 		assertThat(functionDef.strict()).contains(true);
@@ -1272,9 +1272,7 @@ class OpenAiChatModelTests {
 		var tools = request.tools().orElseThrow();
 		assertThat(tools).hasSize(1);
 
-		ChatCompletionFunctionTool functionTool = tools.get(0)
-			.function()
-			.orElseThrow();
+		ChatCompletionFunctionTool functionTool = tools.get(0).function().orElseThrow();
 		FunctionDefinition functionDef = functionTool.function();
 
 		// Verify that prompt-level option overrides model default to false
@@ -1310,15 +1308,24 @@ class OpenAiChatModelTests {
 		ChatCompletionCreateParams requestB = chatModel.createRequest(new Prompt("test B", requestOptionsB), false);
 
 		// Extract tool evaluations for Request A
-		com.openai.models.FunctionDefinition functionDefA = requestA.tools().orElseThrow().get(0)
-			.function().orElseThrow().function();
-		
+		com.openai.models.FunctionDefinition functionDefA = requestA.tools()
+			.orElseThrow()
+			.get(0)
+			.function()
+			.orElseThrow()
+			.function();
+
 		// Extract tool evaluations for Request B
-		com.openai.models.FunctionDefinition functionDefB = requestB.tools().orElseThrow().get(0)
-			.function().orElseThrow().function();
+		com.openai.models.FunctionDefinition functionDefB = requestB.tools()
+			.orElseThrow()
+			.get(0)
+			.function()
+			.orElseThrow()
+			.function();
 
 		// Verify isolation across execution payloads
 		assertThat(functionDefA.strict()).contains(false);
 		assertThat(functionDefB.strict()).contains(true);
 	}
+
 }

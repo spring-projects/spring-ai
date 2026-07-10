@@ -973,13 +973,15 @@ public final class OpenAiChatModel implements ChatModel {
 		}
 	}
 
-	private List<ChatCompletionTool> getChatCompletionTools(List<ToolDefinition> toolDefinitions, @Nullable OpenAiChatOptions requestOptions) {
+	private List<ChatCompletionTool> getChatCompletionTools(List<ToolDefinition> toolDefinitions,
+			@Nullable OpenAiChatOptions requestOptions) {
 		return toolDefinitions.stream().map(toolDefinition -> {
 			FunctionParameters.Builder parametersBuilder = FunctionParameters.builder();
 			Boolean strictMode = true;
 			if (requestOptions != null && requestOptions.getStrict() != null) {
 				strictMode = requestOptions.getStrict();
-			} else if (this.options != null && this.options.getStrict() != null) {
+			}
+			else if (this.options != null && this.options.getStrict() != null) {
 				strictMode = this.options.getStrict();
 			}
 			if (!toolDefinition.inputSchema().isEmpty()) {
