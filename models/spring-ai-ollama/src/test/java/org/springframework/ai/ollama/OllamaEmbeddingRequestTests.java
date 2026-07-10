@@ -16,16 +16,15 @@
 
 package org.springframework.ai.ollama;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaEmbeddingOptions;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -42,10 +41,10 @@ class OllamaEmbeddingRequestTests {
 	@BeforeEach
 	void setUp() {
 		this.embeddingModel = OllamaEmbeddingModel.builder()
-			.ollamaApi(OllamaApi.builder().build())
-			.options(
-					OllamaEmbeddingOptions.builder().model("DEFAULT_MODEL").mainGPU(11).useMMap(true).numGPU(1).build())
-			.build();
+				.ollamaApi(OllamaApi.builder().build())
+				.options(
+						OllamaEmbeddingOptions.builder().model("DEFAULT_MODEL").build())
+				.build();
 	}
 
 	@Test
@@ -60,11 +59,11 @@ class OllamaEmbeddingRequestTests {
 	@Test
 	void ollamaEmbeddingRequestRequestOptions() {
 		var promptOptions = OllamaEmbeddingOptions.builder()//
-			.model("PROMPT_MODEL")//
-			.build();
+				.model("PROMPT_MODEL")//
+				.build();
 
 		var embeddingRequest = this.embeddingModel
-			.buildEmbeddingRequest(new EmbeddingRequest(List.of("Hello"), promptOptions));
+				.buildEmbeddingRequest(new EmbeddingRequest(List.of("Hello"), promptOptions));
 		var ollamaRequest = this.embeddingModel.ollamaEmbeddingRequest(embeddingRequest);
 
 		assertThat(ollamaRequest.model()).isEqualTo("PROMPT_MODEL");
@@ -76,7 +75,7 @@ class OllamaEmbeddingRequestTests {
 		var promptOptions = OllamaEmbeddingOptions.builder().model("PROMPT_MODEL").keepAlive("-1m").build();
 
 		var embeddingRequest = this.embeddingModel
-			.buildEmbeddingRequest(new EmbeddingRequest(List.of("Hello"), promptOptions));
+				.buildEmbeddingRequest(new EmbeddingRequest(List.of("Hello"), promptOptions));
 		var ollamaRequest = this.embeddingModel.ollamaEmbeddingRequest(embeddingRequest);
 
 		assertThat(ollamaRequest.keepAlive()).isEqualTo("-1m");
@@ -85,7 +84,7 @@ class OllamaEmbeddingRequestTests {
 	@Test
 	void ollamaEmbeddingRequestWithEmptyInput() {
 		var embeddingRequest = this.embeddingModel
-			.buildEmbeddingRequest(new EmbeddingRequest(Collections.emptyList(), null));
+				.buildEmbeddingRequest(new EmbeddingRequest(Collections.emptyList(), null));
 		var ollamaRequest = this.embeddingModel.ollamaEmbeddingRequest(embeddingRequest);
 
 		assertThat(ollamaRequest.input()).isEmpty();
@@ -107,7 +106,7 @@ class OllamaEmbeddingRequestTests {
 		var requestOptions = OllamaEmbeddingOptions.builder().model("OVERRIDE_MODEL").build();
 
 		var embeddingRequest = this.embeddingModel
-			.buildEmbeddingRequest(new EmbeddingRequest(List.of("Override test"), requestOptions));
+				.buildEmbeddingRequest(new EmbeddingRequest(List.of("Override test"), requestOptions));
 		var ollamaRequest = this.embeddingModel.ollamaEmbeddingRequest(embeddingRequest);
 
 		// Request options should override defaults
@@ -119,14 +118,14 @@ class OllamaEmbeddingRequestTests {
 		// Test seconds format
 		var optionsSeconds = OllamaEmbeddingOptions.builder().keepAlive("30s").build();
 		var requestSeconds = this.embeddingModel
-			.buildEmbeddingRequest(new EmbeddingRequest(List.of("Test"), optionsSeconds));
+				.buildEmbeddingRequest(new EmbeddingRequest(List.of("Test"), optionsSeconds));
 		var ollamaRequestSeconds = this.embeddingModel.ollamaEmbeddingRequest(requestSeconds);
 		assertThat(ollamaRequestSeconds.keepAlive()).isEqualTo("30s");
 
 		// Test hours format
 		var optionsHours = OllamaEmbeddingOptions.builder().keepAlive("2h").build();
 		var requestHours = this.embeddingModel
-			.buildEmbeddingRequest(new EmbeddingRequest(List.of("Test"), optionsHours));
+				.buildEmbeddingRequest(new EmbeddingRequest(List.of("Test"), optionsHours));
 		var ollamaRequestHours = this.embeddingModel.ollamaEmbeddingRequest(requestHours);
 		assertThat(ollamaRequestHours.keepAlive()).isEqualTo("2h");
 	}
@@ -135,9 +134,9 @@ class OllamaEmbeddingRequestTests {
 	void ollamaEmbeddingRequestWithMinimalDefaults() {
 		// Create model with minimal defaults
 		var minimalModel = OllamaEmbeddingModel.builder()
-			.ollamaApi(OllamaApi.builder().build())
-			.options(OllamaEmbeddingOptions.builder().model("MINIMAL_MODEL").build())
-			.build();
+				.ollamaApi(OllamaApi.builder().build())
+				.options(OllamaEmbeddingOptions.builder().model("MINIMAL_MODEL").build())
+				.build();
 
 		var embeddingRequest = minimalModel.buildEmbeddingRequest(new EmbeddingRequest(List.of("Minimal test"), null));
 		var ollamaRequest = minimalModel.ollamaEmbeddingRequest(embeddingRequest);
@@ -184,12 +183,11 @@ class OllamaEmbeddingRequestTests {
 	void ollamaEmbeddingRequestPartialOptionsOverride() {
 		// Test that only specified options are overridden, others remain default
 		var requestOptions = OllamaEmbeddingOptions.builder()
-			.model("PARTIAL_OVERRIDE_MODEL")
-			.numGPU(5) // Override only numGPU, leave others as default
-			.build();
+				.model("PARTIAL_OVERRIDE_MODEL") // Override only numGPU, leave others as default
+				.build();
 
 		var embeddingRequest = this.embeddingModel
-			.buildEmbeddingRequest(new EmbeddingRequest(List.of("Partial override"), requestOptions));
+				.buildEmbeddingRequest(new EmbeddingRequest(List.of("Partial override"), requestOptions));
 		var ollamaRequest = this.embeddingModel.ollamaEmbeddingRequest(embeddingRequest);
 
 		assertThat(ollamaRequest.model()).isEqualTo("PARTIAL_OVERRIDE_MODEL");
