@@ -20,7 +20,7 @@ Select the following options.
 
 * *Project*: Maven
 * *Language*: Java
-* *Spring Boot*: the latest stable 3.x release
+* *Spring Boot*: the latest stable release
 * *Packaging*: Jar
 
 Under *Dependencies*, add the chat model starter for your provider.
