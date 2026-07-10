@@ -483,8 +483,10 @@ stream.subscribe(response -> {
     AssistantMessage message = generation.getOutput();
 
     if (message.getMetadata().containsKey("thinking")) {
-        // Incremental thinking content
-        System.out.print(message.getText());
+        // Thinking delta — getText() returns null; the full accumulated thinking text
+        // is available via AnthropicAssistantMessage.getThinkingContents() on the
+        // aggregated response after streaming completes.
+        System.out.println("[thinking...]");
     }
     else if (message.getMetadata().containsKey("signature")) {
         // Thinking block signature (emitted at end of thinking)
@@ -508,9 +510,20 @@ When thinking is enabled, the response contains different types of content:
 | **Thinking Block** | `signature` | Claude's reasoning text with a cryptographic signature. In sync mode, the thinking text is in `getText()` and the signature is in `getMetadata().get("signature")`.
 | **Redacted Thinking** | `data` | Safety-redacted reasoning. Contains only a `data` marker, no visible text.
 | **Signature (streaming)** | `signature` | In streaming mode, the signature arrives as a separate delta at the end of a thinking block.
-| **Thinking Delta (streaming)** | `thinking` | Incremental thinking text chunks during streaming. The `thinking` metadata key is set to `true`.
+| **Thinking Delta (streaming)** | `thinking` | Incremental thinking chunks during streaming. The `thinking` metadata key is set to `true`. `getText()` returns null on these chunks; the full thinking text is available via `AnthropicAssistantMessage.getThinkingContents()` on the aggregated response.
 | **Text Block** | _(none)_ | The final answer text in `getText()`.
 |====
+
+=== Thinking with Tool Calls
+
+When thinking is enabled and Claude decides to call a tool, the thinking blocks from
+that response are automatically preserved and replayed in the follow-up request
+alongside the tool results.
+This is required by the Anthropic API — omitting the thinking blocks from the replay causes an API error.
+
+No special configuration is needed.
+Spring AI handles the replay transparently whether you use the auto-managed tool loop
+(`ChatClient` with `ToolCallingAdvisor`) or drive the loop manually via `ToolCallingManager`.
 
 == Multi-Modal Support
 

@@ -9,6 +9,10 @@ inputs:
     description: "Additional Maven properties to pass to the build"
     required: false
     default: ""
+  spring-boot-version:
+    description: "Spring Boot version to test against (leave empty to use the project default)"
+    required: false
+    default: ""
 
 runs:
   using: "composite"
@@ -30,5 +34,6 @@ runs:
           -pl models/spring-ai-${{ inputs.model-name }} \
           -Pintegration-tests \
           ${{ inputs.maven-properties }} \
+          ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} \
           -Dfailsafe.rerunFailingTestsCount=2 \
           verify

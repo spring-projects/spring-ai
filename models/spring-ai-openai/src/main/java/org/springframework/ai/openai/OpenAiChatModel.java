@@ -1045,7 +1045,7 @@ public final class OpenAiChatModel implements ChatModel {
 		}
 	}
 
-	private static final class ChunkMerger {
+	static final class ChunkMerger {
 
 		static boolean hasToolCall(ChatCompletionChunk chunk) {
 			return !chunk.choices().isEmpty()
@@ -1083,35 +1083,18 @@ public final class OpenAiChatModel implements ChatModel {
 		}
 
 		private static Delta mergeDeltas(Delta left, Delta right) {
+			// Deltas of the same logical tool call share the required 'index' field.
+			// Some OpenAI-compatible providers (e.g. DeepSeek) send an empty-string id
+			// on continuation deltas instead of omitting it, so id presence cannot be
+			// used to detect the start of a new tool call.
 			var tcs = Stream.of(left.toolCalls(), right.toolCalls()).flatMap(Optional::stream).reduce((tcs1, tcs2) -> {
 				if (tcs2.isEmpty()) {
 					return tcs1;
 				}
-				Assert.isTrue(tcs2.size() == 1, "no more than one tool call per message currently supported");
-				ToolCall toolCall = tcs2.get(0);
-				if (toolCall.id().isPresent()) {
-					List<ToolCall> result = new ArrayList<>(tcs1);
-					result.add(toolCall);
-					return result;
-				}
-				else {
-					ToolCall lastFromTc1 = tcs1.get(tcs1.size() - 1);
-					Function lastFromTc1F = lastFromTc1.function().get();
-
-					var concatenatedArgs = Stream
-						.of(lastFromTc1F.arguments(), toolCall.function().flatMap(Function::arguments))
-						.flatMap(Optional::stream)
-						.reduce((args1, args2) -> args1 + args2)
-						.orElse("");
-
-					List<ToolCall> result = new ArrayList<>(tcs1);
-					result.set(tcs1.size() - 1,
-							lastFromTc1.toBuilder()
-								.putAllAdditionalProperties(toolCall._additionalProperties())
-								.function(lastFromTc1F.toBuilder().arguments(concatenatedArgs).build())
-								.build());
-					return result;
-				}
+				Map<Long, ToolCall> mergedByIndex = new LinkedHashMap<>();
+				tcs1.forEach(tc -> mergedByIndex.merge(tc.index(), tc, ChunkMerger::mergeToolCalls));
+				tcs2.forEach(tc -> mergedByIndex.merge(tc.index(), tc, ChunkMerger::mergeToolCalls));
+				return List.copyOf(mergedByIndex.values());
 			}).orElse(List.of());
 
 			Delta.Builder deltaBuilder = left.toBuilder().toolCalls(tcs);
@@ -1128,6 +1111,28 @@ public final class OpenAiChatModel implements ChatModel {
 
 		private static Optional<String> stringProperty(Delta delta, String key) {
 			return Optional.ofNullable(delta._additionalProperties().get(key)).flatMap(JsonValue::asString);
+		}
+
+		private static ToolCall mergeToolCalls(ToolCall previous, ToolCall current) {
+			String arguments = Stream
+				.of(previous.function().flatMap(Function::arguments), current.function().flatMap(Function::arguments))
+				.flatMap(Optional::stream)
+				.collect(Collectors.joining());
+			return previous.toBuilder()
+				.id(firstWithText(previous.id(), current.id()))
+				.putAllAdditionalProperties(current._additionalProperties())
+				.function(previous.function()
+					.map(Function::toBuilder)
+					.orElseGet(Function::builder)
+					.name(firstWithText(previous.function().flatMap(Function::name),
+							current.function().flatMap(Function::name)))
+					.arguments(arguments)
+					.build())
+				.build();
+		}
+
+		private static String firstWithText(Optional<String> first, Optional<String> second) {
+			return first.filter(StringUtils::hasText).or(() -> second.filter(StringUtils::hasText)).orElse("");
 		}
 
 		/**
@@ -1166,11 +1171,19 @@ public final class OpenAiChatModel implements ChatModel {
 					msgBuilder.toolCalls(ccctcs.stream().map(tc -> {
 						ChatCompletionMessageFunctionToolCall.Builder toolCallBuilder = ChatCompletionMessageFunctionToolCall
 							.builder();
+						Function function = tc.function()
+							.orElseThrow(() -> new IllegalStateException("Tool call function is missing"));
+						String id = tc.id()
+							.filter(StringUtils::hasText)
+							.orElseThrow(() -> new IllegalStateException("Tool call id is missing"));
+						String name = function.name()
+							.filter(StringUtils::hasText)
+							.orElseThrow(() -> new IllegalStateException("Tool call function name is missing"));
 						toolCallBuilder.putAllAdditionalProperties(tc._additionalProperties());
-						toolCallBuilder.id(tc.id().get());
+						toolCallBuilder.id(id);
 						toolCallBuilder.function(ChatCompletionMessageFunctionToolCall.Function.builder()
-							.name(tc.function().get().name().get())
-							.arguments(tc.function().get().arguments().get())
+							.name(name)
+							.arguments(function.arguments().orElse(""))
 							.build());
 						return ChatCompletionMessageToolCall.ofFunction(toolCallBuilder.build());
 					}).toList());
