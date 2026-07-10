@@ -17,6 +17,8 @@
 package org.springframework.ai.model.google.genai.autoconfigure.chat;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.util.List;
 
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.genai.Client;
@@ -41,6 +43,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
+import org.springframework.core.io.Resource;
 import org.springframework.core.retry.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
@@ -64,6 +67,8 @@ import org.springframework.util.StringUtils;
 public class GoogleGenAiChatAutoConfiguration {
 
 	private static final Log logger = LogFactory.getLog(GoogleGenAiChatAutoConfiguration.class);
+
+	private static final String CLOUD_PLATFORM_SCOPE = "https://www.googleapis.com/auth/cloud-platform";
 
 	@Bean
 	@ConditionalOnMissingBean
@@ -116,10 +121,17 @@ public class GoogleGenAiChatAutoConfiguration {
 
 		builder.project(props.getProjectId()).location(props.getLocation()).vertexAI(true);
 
-		if (props.getCredentialsUri() != null) {
-			try (var is = props.getCredentialsUri().getInputStream()) {
-				builder.credentials(GoogleCredentials.fromStream(is));
-			}
+		Resource credentialsUri = props.getCredentialsUri();
+		if (credentialsUri != null) {
+			builder.credentials(loadScopedCredentials(credentialsUri));
+		}
+	}
+
+	// Credentials from GoogleCredentials.fromStream are scopeless; Vertex AI rejects the
+	// token refresh with invalid_scope unless they are scoped to cloud-platform.
+	static GoogleCredentials loadScopedCredentials(Resource credentialsUri) throws IOException {
+		try (InputStream inputStream = credentialsUri.getInputStream()) {
+			return GoogleCredentials.fromStream(inputStream).createScoped(List.of(CLOUD_PLATFORM_SCOPE));
 		}
 	}
 
