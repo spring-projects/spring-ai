@@ -24,7 +24,9 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
+import org.springframework.ai.chat.memory.InMemoryChatMemoryRepository;
 import org.springframework.ai.chat.memory.repository.redis.RedisChatMemoryRepository;
+import org.springframework.ai.model.chat.memory.autoconfigure.ChatMemoryAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.data.redis.autoconfigure.DataRedisAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -86,6 +88,17 @@ class RedisChatMemoryRepositoryAutoConfigurationIT {
 			ChatMemoryRepository repository = context.getBean(ChatMemoryRepository.class);
 
 			assertThat(repository).isSameAs(redisChatMemory);
+		});
+	}
+
+	@Test
+	void redisRepositoryBacksOffDefaultInMemoryRepository() {
+		this.contextRunner.withConfiguration(AutoConfigurations.of(ChatMemoryAutoConfiguration.class)).run(context -> {
+			RedisChatMemoryRepository redisChatMemory = context.getBean(RedisChatMemoryRepository.class);
+			ChatMemoryRepository repository = context.getBean(ChatMemoryRepository.class);
+
+			assertThat(repository).isSameAs(redisChatMemory);
+			assertThat(context).doesNotHaveBean(InMemoryChatMemoryRepository.class);
 		});
 	}
 
