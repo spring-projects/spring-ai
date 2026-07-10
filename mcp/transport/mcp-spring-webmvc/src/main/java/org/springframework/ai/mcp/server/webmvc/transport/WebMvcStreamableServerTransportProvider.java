@@ -18,6 +18,7 @@ package org.springframework.ai.mcp.server.webmvc.transport;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
@@ -41,6 +42,7 @@ import io.modelcontextprotocol.util.KeepAliveScheduler;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
+import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -64,6 +66,7 @@ import org.springframework.web.servlet.function.ServerResponse.SseBuilder;
  *
  * @author Christian Tzolov
  * @author Dariusz Jędrzejczyk
+ * @author Dimitar Proynov
  * @see McpStreamableServerTransportProvider
  * @see RouterFunction
  */
@@ -123,6 +126,25 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 	private final ServerTransportSecurityValidator securityValidator;
 
 	/**
+	 * Max number of session this provider supports before discarding new initialization
+	 * requests.
+	 */
+	private final long maxSessions;
+
+	/**
+	 * Duration of inactivity after which an idle session is evicted. If {@code null},
+	 * idle sessions are never evicted.
+	 */
+	private final @Nullable Duration sessionIdleTimeout;
+
+	/**
+	 * Tracks the last access time per session id, used to evict idle sessions.
+	 */
+	private final ConcurrentHashMap<String, Instant> sessionLastAccessTimes = new ConcurrentHashMap<>();
+
+	private @Nullable Disposable idleSessionScheduler;
+
+	/**
 	 * Constructs a new WebMvcStreamableServerTransportProvider instance.
 	 * @param jsonMapper The McpJsonMapper to use for JSON serialization/deserialization
 	 * of messages.
@@ -134,11 +156,15 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 	 * @param keepAliveInterval The interval for keep-alive pings. If null, no keep-alive
 	 * will be scheduled.
 	 * @param securityValidator The security validator for validating HTTP requests.
+	 * @param maxSessions The maximum number of concurrent sessions supported.
+	 * @param sessionIdleTimeout The idle timeout after which sessions with no client
+	 * activity are evicted. If null, idle sessions are never evicted.
 	 * @throws IllegalArgumentException if any parameter is null
 	 */
 	private WebMvcStreamableServerTransportProvider(McpJsonMapper jsonMapper, String mcpEndpoint,
 			boolean disallowDelete, McpTransportContextExtractor<ServerRequest> contextExtractor,
-			@Nullable Duration keepAliveInterval, ServerTransportSecurityValidator securityValidator) {
+			@Nullable Duration keepAliveInterval, @Nullable Duration sessionIdleTimeout,
+			ServerTransportSecurityValidator securityValidator, long maxSessions) {
 		Assert.notNull(jsonMapper, "McpJsonMapper must not be null");
 		Assert.notNull(mcpEndpoint, "MCP endpoint must not be null");
 		Assert.notNull(contextExtractor, "McpTransportContextExtractor must not be null");
@@ -149,6 +175,8 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 		this.disallowDelete = disallowDelete;
 		this.contextExtractor = contextExtractor;
 		this.securityValidator = securityValidator;
+		this.maxSessions = maxSessions;
+		this.sessionIdleTimeout = sessionIdleTimeout;
 		this.routerFunction = RouterFunctions.route()
 			.GET(this.mcpEndpoint, this::handleGet)
 			.POST(this.mcpEndpoint, this::handlePost)
@@ -163,6 +191,11 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 				.build();
 
 			this.keepAliveScheduler.start();
+		}
+
+		if (sessionIdleTimeout != null) {
+			this.idleSessionScheduler = Flux.interval(sessionIdleTimeout, sessionIdleTimeout)
+				.subscribe(tick -> this.evictIdleSessions());
 		}
 	}
 
@@ -248,10 +281,14 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 			});
 
 			this.sessions.clear();
+			this.sessionLastAccessTimes.clear();
 			logger.debug("Graceful shutdown completed");
 		}).then().doOnSuccess(v -> {
 			if (this.keepAliveScheduler != null) {
 				this.keepAliveScheduler.shutdown();
+			}
+			if (this.idleSessionScheduler != null) {
+				this.idleSessionScheduler.dispose();
 			}
 		});
 	}
@@ -296,16 +333,18 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 
 		McpTransportContext transportContext = this.contextExtractor.extract(request);
 
-		if (request.headers().header(HttpHeaders.MCP_SESSION_ID).isEmpty()) {
+		if (!hasMcpSessionIdHeader(request)) {
 			return ServerResponse.badRequest().body("Session ID required in mcp-session-id header");
 		}
 
 		String sessionId = request.headers().header(HttpHeaders.MCP_SESSION_ID).get(0);
 		McpStreamableServerSession session = this.sessions.get(sessionId);
 
-		if (session == null) {
+		if (session == null || sessionId == null) {
 			return ServerResponse.notFound().build();
 		}
+
+		touchSession(sessionId);
 
 		if (logger.isDebugEnabled()) {
 			logger.debug("Handling GET request for session: " + sessionId);
@@ -410,41 +449,11 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 			// Handle initialization request
 			if (message instanceof McpSchema.JSONRPCRequest jsonrpcRequest
 					&& jsonrpcRequest.method().equals(McpSchema.METHOD_INITIALIZE)) {
-				McpSchema.InitializeRequest initializeRequest = this.jsonMapper.convertValue(jsonrpcRequest.params(),
-						new TypeRef<McpSchema.InitializeRequest>() {
-						});
-				var sf = this.sessionFactory;
-				if (sf == null) {
-					return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
-						.body(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
-							.message("SessionFactory not configured")
-							.build());
-				}
-				McpStreamableServerSession.McpStreamableServerSessionInit init = sf.startSession(initializeRequest);
-				this.sessions.put(init.session().getId(), init.session());
-
-				try {
-					McpSchema.InitializeResult initResult = init.initResult().block();
-
-					return ServerResponse.ok()
-						.contentType(MediaType.APPLICATION_JSON)
-						.header(HttpHeaders.MCP_SESSION_ID, init.session().getId())
-						.body(new McpSchema.JSONRPCResponse(McpSchema.JSONRPC_VERSION, jsonrpcRequest.id(), initResult,
-								null));
-				}
-				catch (Exception e) {
-					if (logger.isErrorEnabled()) {
-						logger.error("Failed to initialize session: " + e.getMessage());
-					}
-					return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
-						.body(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
-							.message("Internal server error. Check server logs for details.")
-							.build());
-				}
+				return handleInitRequest(jsonrpcRequest, hasMcpSessionIdHeader(request));
 			}
 
 			// Handle other messages that require a session
-			if (request.headers().header(HttpHeaders.MCP_SESSION_ID).isEmpty()) {
+			if (!hasMcpSessionIdHeader(request)) {
 				return ServerResponse.badRequest()
 					.body(McpError.builder(McpSchema.ErrorCodes.METHOD_NOT_FOUND)
 						.message("Session ID missing")
@@ -454,12 +463,14 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 			String sessionId = request.headers().header(HttpHeaders.MCP_SESSION_ID).get(0);
 			McpStreamableServerSession session = this.sessions.get(sessionId);
 
-			if (session == null) {
+			if (session == null || sessionId == null) {
 				return ServerResponse.status(HttpStatus.NOT_FOUND)
 					.body(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
 						.message("Session not found: " + sessionId)
 						.build());
 			}
+
+			touchSession(sessionId);
 
 			if (message instanceof McpSchema.JSONRPCResponse jsonrpcResponse) {
 				session.accept(jsonrpcResponse)
@@ -553,7 +564,7 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 
 		McpTransportContext transportContext = this.contextExtractor.extract(request);
 
-		if (request.headers().header(HttpHeaders.MCP_SESSION_ID).isEmpty()) {
+		if (!hasMcpSessionIdHeader(request)) {
 			return ServerResponse.badRequest().body("Session ID required in mcp-session-id header");
 		}
 
@@ -566,7 +577,9 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 
 		try {
 			session.delete().contextWrite(ctx -> ctx.put(McpTransportContext.KEY, transportContext)).block();
-			this.sessions.remove(sessionId);
+			if (sessionId != null) {
+				removeSession(sessionId);
+			}
 			return ServerResponse.ok().build();
 		}
 		catch (Exception e) {
@@ -578,6 +591,103 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 					.message("Internal server error. Check server logs for details.")
 					.build());
 		}
+	}
+
+	private ServerResponse handleInitRequest(McpSchema.JSONRPCRequest jsonrpcRequest, boolean hasMcpSessionIdHeader) {
+		McpSchema.InitializeRequest initializeRequest = this.jsonMapper.convertValue(jsonrpcRequest.params(),
+				new TypeRef<McpSchema.InitializeRequest>() {
+				});
+		var sf = this.sessionFactory;
+		if (sf == null) {
+			return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
+				.body(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
+					.message("SessionFactory not configured")
+					.build());
+		}
+		if (hasMcpSessionIdHeader) {
+			return ServerResponse.status(HttpStatus.BAD_REQUEST)
+				.body(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
+					.message("Session already initialized")
+					.build());
+		}
+		if (this.sessions.size() >= this.maxSessions) {
+			return ServerResponse.status(HttpStatus.SERVICE_UNAVAILABLE)
+				.body(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
+					.message("Max number of sessions reached")
+					.build());
+		}
+		McpStreamableServerSession.McpStreamableServerSessionInit init = sf.startSession(initializeRequest);
+		this.sessions.put(init.session().getId(), init.session());
+		if (this.sessionIdleTimeout != null) {
+			this.sessionLastAccessTimes.put(init.session().getId(), Instant.now());
+		}
+
+		try {
+			McpSchema.InitializeResult initResult = init.initResult().block();
+
+			return ServerResponse.ok()
+				.contentType(MediaType.APPLICATION_JSON)
+				.header(HttpHeaders.MCP_SESSION_ID, init.session().getId())
+				.body(new McpSchema.JSONRPCResponse(McpSchema.JSONRPC_VERSION, jsonrpcRequest.id(), initResult, null));
+		}
+		catch (Exception e) {
+			if (logger.isErrorEnabled()) {
+				logger.error("Failed to initialize session: " + e.getMessage());
+			}
+			return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
+				.body(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
+					.message("Internal server error. Check server logs for details.")
+					.build());
+		}
+	}
+
+	/**
+	 * Records the current time as the last access time for the given session, so that an
+	 * active session is not evicted as idle. No-op when idle eviction is disabled or the
+	 * session is no longer tracked.
+	 * @param sessionId the id of the session that was just accessed
+	 */
+	private void touchSession(String sessionId) {
+		if (this.sessionIdleTimeout != null) {
+			this.sessionLastAccessTimes.computeIfPresent(sessionId, (id, lastAccess) -> Instant.now());
+		}
+	}
+
+	/**
+	 * Evicts and closes sessions that have been idle for longer than the configured
+	 * {@code sessionIdleTimeout}. This reclaims session slots held by clients that
+	 * initialized a session but never interacted with it again, mitigating resource
+	 * exhaustion from abandoned sessions.
+	 */
+	private void evictIdleSessions() {
+		if (this.sessionIdleTimeout == null || this.isClosing) {
+			return;
+		}
+		Instant now = Instant.now();
+		for (var entry : this.sessionLastAccessTimes.entrySet()) {
+			if (Duration.between(entry.getValue(), now).compareTo(this.sessionIdleTimeout) > 0) {
+				String sessionId = entry.getKey();
+				McpStreamableServerSession session = removeSession(sessionId);
+				if (logger.isDebugEnabled()) {
+					logger.debug("Evicting idle session: " + sessionId);
+				}
+				session.closeGracefully().onErrorComplete().subscribe();
+			}
+		}
+	}
+
+	/**
+	 * Checks whether the given request carries an {@code Mcp-Session-Id} header.
+	 * @param request the incoming server request
+	 * @return {@code true} if the header is present, regardless of its value
+	 */
+	private static boolean hasMcpSessionIdHeader(ServerRequest request) {
+		return !request.headers().header(HttpHeaders.MCP_SESSION_ID).isEmpty();
+	}
+
+	private McpStreamableServerSession removeSession(String sessionId) {
+		this.sessionLastAccessTimes.remove(sessionId);
+		return this.sessions.remove(sessionId);
 	}
 
 	public static Builder builder() {
@@ -751,6 +861,10 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 
 		private ServerTransportSecurityValidator securityValidator = ServerTransportSecurityValidator.NOOP;
 
+		private long maxSessions = 100_000L;
+
+		private @Nullable Duration sessionIdleTimeout;
+
 		/**
 		 * Sets the McpJsonMapper to use for JSON serialization/deserialization of MCP
 		 * messages.
@@ -827,6 +941,41 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 		}
 
 		/**
+		 * Sets the maximum supported sessions for this provider. If not set defaults to
+		 * 100_000.
+		 * @param maxSessions - maximum allowed sessions for this provider
+		 * @return this builder instance
+		 * @throws IllegalArgumentException if maximum sessions is not positive number
+		 */
+		public Builder maxSessions(long maxSessions) {
+			Assert.isTrue(maxSessions >= 0, "Max sessions must be greater than 0");
+			this.maxSessions = maxSessions;
+			return this;
+		}
+
+		/**
+		 * Sets the idle timeout after which sessions with no client activity are evicted
+		 * and closed. Activity is any inbound request (GET, POST or DELETE) resolving to
+		 * the session. This reclaims session slots held by clients that initialized a
+		 * session but never interacted with it again, mitigating resource exhaustion from
+		 * abandoned sessions.
+		 * <p>
+		 * Keep-alive and idle eviction are complementary and may be enabled together:
+		 * keep-alive pings preserve connected clients (a ping response counts as
+		 * activity), while idle eviction reclaims abandoned sessions. When both are set,
+		 * {@code sessionIdleTimeout} must be greater than the keep-alive interval so that
+		 * a connected client answering pings is not evicted before it can respond;
+		 * otherwise {@link #build()} throws.
+		 * @param sessionIdleTimeout the maximum idle duration before eviction, or null to
+		 * disable idle eviction (the default)
+		 * @return this builder instance
+		 */
+		public Builder sessionIdleTimeout(@Nullable Duration sessionIdleTimeout) {
+			this.sessionIdleTimeout = sessionIdleTimeout;
+			return this;
+		}
+
+		/**
 		 * Builds a new instance of {@link WebMvcStreamableServerTransportProvider} with
 		 * the configured settings.
 		 * @return A new WebMvcStreamableServerTransportProvider instance
@@ -834,9 +983,15 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 		 */
 		public WebMvcStreamableServerTransportProvider build() {
 			Assert.notNull(this.mcpEndpoint, "MCP endpoint must be set");
+			if (this.sessionIdleTimeout != null && this.keepAliveInterval != null) {
+				Assert.isTrue(this.sessionIdleTimeout.compareTo(this.keepAliveInterval) > 0,
+						"sessionIdleTimeout must be greater than keepAliveInterval, otherwise a connected client "
+								+ "may be evicted before it can answer a keep-alive ping");
+			}
 			return new WebMvcStreamableServerTransportProvider(
 					this.jsonMapper == null ? McpJsonDefaults.getMapper() : this.jsonMapper, this.mcpEndpoint,
-					this.disallowDelete, this.contextExtractor, this.keepAliveInterval, this.securityValidator);
+					this.disallowDelete, this.contextExtractor, this.keepAliveInterval, this.sessionIdleTimeout,
+					this.securityValidator, this.maxSessions);
 		}
 
 	}
