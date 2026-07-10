@@ -1,6 +1,6 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 
 	<groupId>org.springframework.ai</groupId>
@@ -44,16 +44,27 @@
 		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webmvc</module>
 
 		<module>auto-configurations/models/chat/client/spring-ai-autoconfigure-model-chat-client</module>
-		<module>auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-cassandra</module>
-		<module>auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-jdbc</module>
-		<module>auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-mongodb</module>
-		<module>auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-neo4j</module>
-		<module>auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-redis</module>
+		<module>
+			auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-cassandra
+		</module>
+		<module>
+			auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-jdbc
+		</module>
+		<module>
+			auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-mongodb
+		</module>
+		<module>
+			auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-neo4j
+		</module>
+		<module>
+			auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-redis
+		</module>
 		<module>auto-configurations/models/chat/memory/spring-ai-autoconfigure-model-chat-memory</module>
 		<!-- Note: deprecated, use spring-ai-autoconfigure-model-chat-memory-repository-redis instead -->
 		<module>auto-configurations/models/chat/memory/spring-ai-autoconfigure-model-chat-memory-redis</module>
 		<module>auto-configurations/models/chat/observation/spring-ai-autoconfigure-model-chat-observation</module>
-		<module>auto-configurations/models/embedding/observation/spring-ai-autoconfigure-model-embedding-observation</module>
+		<module>auto-configurations/models/embedding/observation/spring-ai-autoconfigure-model-embedding-observation
+		</module>
 		<module>auto-configurations/models/image/observation/spring-ai-autoconfigure-model-image-observation</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-anthropic</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-bedrock-ai</module>
@@ -242,8 +253,7 @@
 		<kotlin.compiler.daemon>false</kotlin.compiler.daemon>
 
 		<!-- production dependencies -->
-		<!-- <spring-boot.version>4.1.1-SNAPSHOT</spring-boot.version> -->
-		<spring-boot.version>4.1.0</spring-boot.version>
+		<spring-boot.version>4.1.1-SNAPSHOT</spring-boot.version>
 
 		<!-- Third-party dependencies -->
 		<anthropic-sdk.version>2.48.0</anthropic-sdk.version>
@@ -378,7 +388,7 @@
 								<requireJavaVersion>
 									<version>${compiler.jdk.version}</version>
 								</requireJavaVersion>
-								<banDuplicatePomDependencyVersions />
+								<banDuplicatePomDependencyVersions/>
 								<!-- TODO <dependencyConvergence /> -->
 								<requireMavenVersion>
 									<version>[3.9.1,)</version>
@@ -404,7 +414,8 @@
 										<include>org.springframework.boot:*:*:jar:test</include>
 									</includes>
 									<message>Spring AI code should NOT depend on Spring boot. The
-										only exception to this is autoconfigure and starter modules.</message>
+										only exception to this is autoconfigure and starter modules.
+									</message>
 								</bannedDependencies>
 							</rules>
 						</configuration>
@@ -468,9 +479,11 @@
 								<!-- The following arg won't be necessary with JDK25+ -->
 								<arg>-XDaddTypeAnnotationsToSymbol=true</arg>
 								<arg>--should-stop=ifError=FLOW</arg>
-								<arg>-Xplugin:ErrorProne -XepDisableAllChecks -Xep:StringCaseLocaleUsage:ERROR -Xep:NullAway:ERROR
+								<arg>-Xplugin:ErrorProne -XepDisableAllChecks -Xep:StringCaseLocaleUsage:ERROR
+									-Xep:NullAway:ERROR
 									-XepOpt:NullAway:OnlyNullMarked
-									-XepOpt:NullAway:JSpecifyMode=true</arg>
+									-XepOpt:NullAway:JSpecifyMode=true
+								</arg>
 							</compilerArgs>
 						</configuration>
 					</execution>
@@ -563,7 +576,8 @@
 				<artifactId>maven-javadoc-plugin</artifactId>
 				<configuration>
 					<overview>
-						${maven.multiModuleProjectDirectory}/spring-ai-docs/src/main/javadoc/overview.html</overview>
+						${maven.multiModuleProjectDirectory}/spring-ai-docs/src/main/javadoc/overview.html
+					</overview>
 					<detectJavaApiLink>false</detectJavaApiLink>
 					<doclint>none</doclint>
 				</configuration>
@@ -742,7 +756,9 @@
 			<!-- deps are optional for auto-configuration modules. -->
 			<activation>
 				<file>
-					<exists>src/main/resources/META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports</exists>
+					<exists>
+						src/main/resources/META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports
+					</exists>
 				</file>
 			</activation>
 			<build>
@@ -765,7 +781,8 @@
 											<includes>
 												<include>*:*:*:*:test:*</include>
 												<include>
-													org.springframework.ai:spring-ai-autoconfigure-*</include>
+													org.springframework.ai:spring-ai-autoconfigure-*
+												</include>
 												<!-- for some reason, which likely has to do with
 												classifiers, without this include, the rule fails -->
 												<!-- with a false positive on
@@ -774,7 +791,8 @@
 												<include>io.netty:netty-*</include>
 											</includes>
 											<message>auto-configuration modules should have all
-												their dependencies declared as optional</message>
+												their dependencies declared as optional
+											</message>
 										</bannedDependencies>
 									</rules>
 								</configuration>
@@ -834,7 +852,7 @@
 								<exclude>org.springframework.ai.bedrock.converse/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.elevenlabs/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.mistralai/**/*IT.java</exclude>
-								<exclude>org.springframework.ai.ollama/**/*IT.java</exclude>								<!--
+								<exclude>org.springframework.ai.ollama/**/*IT.java</exclude>                                <!--
 								<exclude>org.springframework.ai.openai/**/*IT.java</exclude> -->
 								<exclude>org.springframework.ai.openaisdk/**/*IT.java</exclude>
 								<exclude>org.springframework.ai.postgresml/**/*IT.java</exclude>
@@ -876,11 +894,13 @@
 								<exclude>org.springframework.ai.autoconfigure.azure/**/**IT.java</exclude>
 								<exclude>org.springframework.ai.autoconfigure.bedrock/**/**IT.java</exclude>
 								<exclude>
-									org.springframework.ai.autoconfigure.huggingface/**/**IT.java</exclude>
+									org.springframework.ai.autoconfigure.huggingface/**/**IT.java
+								</exclude>
 
 								<exclude>org.springframework.ai.autoconfigure.chat/**/**IT.java</exclude>
 								<exclude>
-									org.springframework.ai.autoconfigure.elevenlabs/**/**IT.java</exclude>
+									org.springframework.ai.autoconfigure.elevenlabs/**/**IT.java
+								</exclude>
 								<exclude>org.springframework.ai.autoconfigure.embedding/**/**IT.java</exclude>
 								<exclude>org.springframework.ai.autoconfigure.image/**/**IT.java</exclude>
 
@@ -890,17 +910,21 @@
 								<!--
 								<exclude>org.springframework.ai.autoconfigure.openai/**/**IT.java</exclude> -->
 								<exclude>
-									org.springframework.ai.autoconfigure.postgresml/**/**IT.java</exclude>
+									org.springframework.ai.autoconfigure.postgresml/**/**IT.java
+								</exclude>
 
 								<exclude>org.springframework.ai.autoconfigure.retry/**/**IT.java</exclude>
 
 								<exclude>
-									org.springframework.ai.autoconfigure.stabilityai/**/**IT.java</exclude>
+									org.springframework.ai.autoconfigure.stabilityai/**/**IT.java
+								</exclude>
 								<exclude>
-									org.springframework.ai.autoconfigure.transformers/**/**IT.java</exclude>
+									org.springframework.ai.autoconfigure.transformers/**/**IT.java
+								</exclude>
 
 								<exclude>
-									org.springframework.ai.autoconfigure.vectorstore/**/**IT.java</exclude>
+									org.springframework.ai.autoconfigure.vectorstore/**/**IT.java
+								</exclude>
 
 								<exclude>org.springframework.ai.autoconfigure.vertexai/**/**IT.java</exclude>
 
