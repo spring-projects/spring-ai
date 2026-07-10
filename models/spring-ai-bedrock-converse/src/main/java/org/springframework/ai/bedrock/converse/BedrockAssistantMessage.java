@@ -38,23 +38,24 @@ import org.springframework.util.CollectionUtils;
  * with the same turn that is selected and re-emitted during tool calling.
  *
  * @author Jewoo Shin
+ * @author Soby Chacko
  * @see BedrockReasoningContent
  */
-class BedrockAssistantMessage extends AssistantMessage {
+final class BedrockAssistantMessage extends AssistantMessage {
 
 	private final List<BedrockReasoningContent> reasoningContents;
 
-	protected BedrockAssistantMessage(@Nullable String content, List<BedrockReasoningContent> reasoningContents,
+	private BedrockAssistantMessage(@Nullable String content, List<BedrockReasoningContent> reasoningContents,
 			Map<String, Object> properties, List<ToolCall> toolCalls, List<Media> media) {
 		super(content, properties, toolCalls, media);
 		this.reasoningContents = reasoningContents;
 	}
 
-	public List<BedrockReasoningContent> getReasoningContents() {
+	List<BedrockReasoningContent> getReasoningContents() {
 		return this.reasoningContents;
 	}
 
-	public boolean hasReasoningContents() {
+	boolean hasReasoningContents() {
 		return !CollectionUtils.isEmpty(this.reasoningContents);
 	}
 
@@ -88,15 +89,14 @@ class BedrockAssistantMessage extends AssistantMessage {
 		return new Builder();
 	}
 
-	public static class Builder extends AbstractBuilder<Builder> {
+	static final class Builder extends AssistantMessage.Builder<Builder> {
 
-	}
+		private List<BedrockReasoningContent> reasoningContents = List.of();
 
-	public static class AbstractBuilder<B extends AbstractBuilder<B>> extends AssistantMessage.Builder<B> {
+		private Builder() {
+		}
 
-		protected List<BedrockReasoningContent> reasoningContents = List.of();
-
-		public B reasoningContents(List<BedrockReasoningContent> reasoningContents) {
+		Builder reasoningContents(List<BedrockReasoningContent> reasoningContents) {
 			this.reasoningContents = reasoningContents;
 			return self();
 		}

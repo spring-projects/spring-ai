@@ -42,6 +42,7 @@ import org.springframework.util.Assert;
  * leak into logs or assertion output.
  *
  * @author Jewoo Shin
+ * @author Soby Chacko
  * @see BedrockAssistantMessage
  */
 final class BedrockReasoningContent {
@@ -76,7 +77,8 @@ final class BedrockReasoningContent {
 		if (reasoningText != null) {
 			return new BedrockReasoningContent(reasoningText.text(), reasoningText.signature(), null);
 		}
-		return new BedrockReasoningContent(null, null, null);
+		throw new IllegalStateException(
+				"Unexpected reasoningContent block: neither reasoningText nor redactedContent is set");
 	}
 
 	/**
@@ -163,6 +165,9 @@ final class BedrockReasoningContent {
 		}
 
 		public BedrockReasoningContent build() {
+			if (this.text != null && this.signature == null) {
+				throw new IllegalStateException("signature must be set when text is set");
+			}
 			return new BedrockReasoningContent(this.text, this.signature, this.redactedContent);
 		}
 
