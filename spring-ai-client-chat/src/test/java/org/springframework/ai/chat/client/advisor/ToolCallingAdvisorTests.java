@@ -1076,6 +1076,287 @@ public class ToolCallingAdvisorTests {
 		assertThat(advisor.getOrder()).isEqualTo(customOrder);
 	}
 
+	// -------------------------------------------------------------------------
+	// Repeated tool call guard tests
+	// -------------------------------------------------------------------------
+
+	@Test
+	void identicalToolCallInCallPathThrowsByDefault() {
+		// maxIdenticalToolCallCount = 3; a 4th identical call must throw.
+		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder()
+			.toolCallingManager(this.toolCallingManager)
+			.advisorLoopGuard(MaxIdenticalToolCallLoopGuard.builder().maxIdenticalToolCallCount(3).build())
+			.build();
+
+		ChatClientRequest request = createMockRequest();
+		// Always return a tool-call response with identical args to simulate an infinite
+		// loop
+		ChatClientResponse responseWithToolCall = createMockResponse(true);
+
+		int[] callCount = { 0 };
+		CallAdvisor terminalAdvisor = new TerminalCallAdvisor((req, chain) -> {
+			callCount[0]++;
+			return responseWithToolCall;
+		});
+		CallAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.of(advisor, terminalAdvisor))
+			.build();
+
+		List<Message> conversationHistory = List.of(new UserMessage("test"),
+				AssistantMessage.builder().content("").build(), ToolResponseMessage.builder().build());
+		ToolExecutionResult toolExecutionResult = ToolExecutionResult.builder()
+			.conversationHistory(conversationHistory)
+			.build();
+		when(this.toolCallingManager.executeToolCalls(any(Prompt.class), any(ChatResponse.class)))
+			.thenReturn(toolExecutionResult);
+
+		assertThatThrownBy(() -> advisor.adviseCall(request, realChain)).isInstanceOf(IllegalStateException.class)
+			.hasMessageContaining("Identical tool call detected")
+			.hasMessageContaining("testTool");
+
+		// 3 executions pass (count 1-3 ≤ default 3), the 4th is blocked before execution
+		verify(this.toolCallingManager, times(3)).executeToolCalls(any(Prompt.class), any(ChatResponse.class));
+	}
+
+	@Test
+	void maxIdenticalToolCallCountIsConfigurable() {
+		int[] callCount = { 0 };
+		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder()
+			.toolCallingManager(this.toolCallingManager)
+			.advisorLoopGuard(MaxIdenticalToolCallLoopGuard.builder().maxIdenticalToolCallCount(1).build())
+			.build();
+
+		ChatClientRequest request = createMockRequest();
+		ChatClientResponse responseWithToolCall = createMockResponse(true);
+		ChatClientResponse finalResponse = createMockResponse(false);
+
+		CallAdvisor terminalAdvisor = new TerminalCallAdvisor((req, chain) -> {
+			callCount[0]++;
+			return callCount[0] <= 1 ? responseWithToolCall : finalResponse;
+		});
+		CallAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.of(advisor, terminalAdvisor))
+			.build();
+
+		List<Message> conversationHistory = List.of(new UserMessage("test"),
+				AssistantMessage.builder().content("").build(), ToolResponseMessage.builder().build());
+		ToolExecutionResult toolExecutionResult = ToolExecutionResult.builder()
+			.conversationHistory(conversationHistory)
+			.build();
+		when(this.toolCallingManager.executeToolCalls(any(Prompt.class), any(ChatResponse.class)))
+			.thenReturn(toolExecutionResult);
+
+		ChatClientResponse result = advisor.adviseCall(request, realChain);
+
+		assertThat(result).isEqualTo(finalResponse);
+		verify(this.toolCallingManager, times(1)).executeToolCalls(any(Prompt.class), any(ChatResponse.class));
+	}
+
+	@Test
+	void differentToolCallArgumentsAreNotDetectedAsRepeated() {
+		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder().toolCallingManager(this.toolCallingManager).build();
+
+		ChatClientRequest request = createMockRequest();
+
+		// First call uses args "{}", second call uses different args
+		ChatClientResponse firstResponse = createResponseWithToolCall("testTool", "{}");
+		ChatClientResponse secondResponse = createResponseWithToolCall("testTool", "{\"param\":\"different\"}");
+		ChatClientResponse finalResponse = createMockResponse(false);
+
+		int[] callCount = { 0 };
+		CallAdvisor terminalAdvisor = new TerminalCallAdvisor((req, chain) -> {
+			callCount[0]++;
+			if (callCount[0] == 1) {
+				return firstResponse;
+			}
+			if (callCount[0] == 2) {
+				return secondResponse;
+			}
+			return finalResponse;
+		});
+		CallAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.of(advisor, terminalAdvisor))
+			.build();
+
+		List<Message> conversationHistory = List.of(new UserMessage("test"),
+				AssistantMessage.builder().content("").build(), ToolResponseMessage.builder().build());
+		ToolExecutionResult toolExecutionResult = ToolExecutionResult.builder()
+			.conversationHistory(conversationHistory)
+			.build();
+		when(this.toolCallingManager.executeToolCalls(any(Prompt.class), any(ChatResponse.class)))
+			.thenReturn(toolExecutionResult);
+
+		ChatClientResponse result = advisor.adviseCall(request, realChain);
+
+		assertThat(result).isEqualTo(finalResponse);
+		verify(this.toolCallingManager, times(2)).executeToolCalls(any(Prompt.class), any(ChatResponse.class));
+	}
+
+	@Test
+	void identicalToolCallInStreamPathThrows() {
+		// maxIdenticalToolCallCount = 3; a 4th identical call must throw.
+		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder()
+			.toolCallingManager(this.toolCallingManager)
+			.advisorLoopGuard(MaxIdenticalToolCallLoopGuard.builder().maxIdenticalToolCallCount(3).build())
+			.build();
+
+		ChatClientRequest request = createMockRequest();
+		ChatClientResponse responseWithToolCall = createMockResponse(true);
+
+		int[] callCount = { 0 };
+		TerminalStreamAdvisor terminalAdvisor = new TerminalStreamAdvisor((req, chain) -> {
+			callCount[0]++;
+			return Flux.just(responseWithToolCall);
+		});
+		StreamAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.<org.springframework.ai.chat.client.advisor.api.Advisor>of(advisor, terminalAdvisor))
+			.build();
+
+		List<Message> conversationHistory = List.of(new UserMessage("test"),
+				AssistantMessage.builder().content("").build(), ToolResponseMessage.builder().build());
+		ToolExecutionResult toolExecutionResult = ToolExecutionResult.builder()
+			.conversationHistory(conversationHistory)
+			.build();
+		when(this.toolCallingManager.executeToolCalls(any(Prompt.class), any(ChatResponse.class)))
+			.thenReturn(toolExecutionResult);
+
+		assertThatThrownBy(() -> advisor.adviseStream(request, realChain).collectList().block())
+			.isInstanceOf(IllegalStateException.class)
+			.hasMessageContaining("Identical tool call detected");
+
+		// 3 executions pass (count 1-3 ≤ default 3), the 4th is blocked before execution
+		verify(this.toolCallingManager, times(3)).executeToolCalls(any(Prompt.class), any(ChatResponse.class));
+	}
+
+	@Test
+	void customAdvisorLoopGuardTakesPrecedenceOverMaxIdenticalToolCallCount() {
+		// A custom guard that aborts the loop after the very first tool-call round,
+		// regardless of arguments. It must take precedence over
+		// maxIdenticalToolCallCount.
+		AdvisorLoopGuard customGuard = () -> new AdvisorLoopGuard.LoopState() {
+			private int rounds = 0;
+
+			@Override
+			public AdvisorLoopGuard.Decision check(ChatResponse chatResponse) {
+				return ++this.rounds > 1 ? AdvisorLoopGuard.Decision.error("custom guard tripped")
+						: AdvisorLoopGuard.Decision.continueLoop();
+			}
+		};
+
+		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder()
+			.toolCallingManager(this.toolCallingManager)
+			.advisorLoopGuard(MaxIdenticalToolCallLoopGuard.builder().maxIdenticalToolCallCount(100).build())
+			.advisorLoopGuard(customGuard)
+			.build();
+
+		ChatClientRequest request = createMockRequest();
+		ChatClientResponse responseWithToolCall = createMockResponse(true);
+
+		CallAdvisor terminalAdvisor = new TerminalCallAdvisor((req, chain) -> responseWithToolCall);
+		CallAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.of(advisor, terminalAdvisor))
+			.build();
+
+		List<Message> conversationHistory = List.of(new UserMessage("test"),
+				AssistantMessage.builder().content("").build(), ToolResponseMessage.builder().build());
+		ToolExecutionResult toolExecutionResult = ToolExecutionResult.builder()
+			.conversationHistory(conversationHistory)
+			.build();
+		when(this.toolCallingManager.executeToolCalls(any(Prompt.class), any(ChatResponse.class)))
+			.thenReturn(toolExecutionResult);
+
+		assertThatThrownBy(() -> advisor.adviseCall(request, realChain)).isInstanceOf(IllegalStateException.class)
+			.hasMessageContaining("custom guard tripped");
+
+		// First round passes the guard and executes; the second round is blocked.
+		verify(this.toolCallingManager, times(1)).executeToolCalls(any(Prompt.class), any(ChatResponse.class));
+	}
+
+	@Test
+	void stopDecisionEndsCallLoopGracefullyWithoutExecutingRound() {
+		// A guard that stops gracefully on the 2nd round: the 1st round executes, the
+		// 2nd round returns the latest response to the caller without executing tools.
+		AdvisorLoopGuard stopGuard = () -> new AdvisorLoopGuard.LoopState() {
+			private int rounds = 0;
+
+			@Override
+			public AdvisorLoopGuard.Decision check(ChatResponse chatResponse) {
+				return ++this.rounds > 1 ? AdvisorLoopGuard.Decision.stop("budget exhausted")
+						: AdvisorLoopGuard.Decision.continueLoop();
+			}
+		};
+
+		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder()
+			.toolCallingManager(this.toolCallingManager)
+			.advisorLoopGuard(stopGuard)
+			.build();
+
+		ChatClientRequest request = createMockRequest();
+		ChatClientResponse responseWithToolCall = createMockResponse(true);
+
+		CallAdvisor terminalAdvisor = new TerminalCallAdvisor((req, chain) -> responseWithToolCall);
+		CallAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.of(advisor, terminalAdvisor))
+			.build();
+
+		List<Message> conversationHistory = List.of(new UserMessage("test"),
+				AssistantMessage.builder().content("").build(), ToolResponseMessage.builder().build());
+		ToolExecutionResult toolExecutionResult = ToolExecutionResult.builder()
+			.conversationHistory(conversationHistory)
+			.build();
+		when(this.toolCallingManager.executeToolCalls(any(Prompt.class), any(ChatResponse.class)))
+			.thenReturn(toolExecutionResult);
+
+		ChatClientResponse result = advisor.adviseCall(request, realChain);
+
+		// The loop stops gracefully and returns the latest (tool-call) response.
+		assertThat(result).isEqualTo(responseWithToolCall);
+		// Only the first round executed tools; the second round was stopped before
+		// execution.
+		verify(this.toolCallingManager, times(1)).executeToolCalls(any(Prompt.class), any(ChatResponse.class));
+	}
+
+	@Test
+	void stopDecisionEndsStreamLoopGracefullyWithoutExecutingRound() {
+		AdvisorLoopGuard stopGuard = () -> new AdvisorLoopGuard.LoopState() {
+			private int rounds = 0;
+
+			@Override
+			public AdvisorLoopGuard.Decision check(ChatResponse chatResponse) {
+				return ++this.rounds > 1 ? AdvisorLoopGuard.Decision.stop() : AdvisorLoopGuard.Decision.continueLoop();
+			}
+		};
+
+		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder()
+			.toolCallingManager(this.toolCallingManager)
+			.advisorLoopGuard(stopGuard)
+			.build();
+
+		ChatClientRequest request = createMockRequest();
+		ChatClientResponse responseWithToolCall = createMockResponse(true);
+
+		TerminalStreamAdvisor terminalAdvisor = new TerminalStreamAdvisor(
+				(req, chain) -> Flux.just(responseWithToolCall));
+		StreamAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.<Advisor>of(advisor, terminalAdvisor))
+			.build();
+
+		List<Message> conversationHistory = List.of(new UserMessage("test"),
+				AssistantMessage.builder().content("").build(), ToolResponseMessage.builder().build());
+		ToolExecutionResult toolExecutionResult = ToolExecutionResult.builder()
+			.conversationHistory(conversationHistory)
+			.build();
+		when(this.toolCallingManager.executeToolCalls(any(Prompt.class), any(ChatResponse.class)))
+			.thenReturn(toolExecutionResult);
+
+		List<ChatClientResponse> results = advisor.adviseStream(request, realChain).collectList().block();
+
+		// The stream completes gracefully (no error). Only the first round executed
+		// tools; the second round was stopped before execution.
+		assertThat(results).isNotNull();
+		verify(this.toolCallingManager, times(1)).executeToolCalls(any(Prompt.class), any(ChatResponse.class));
+	}
+
 	// Helper methods
 
 	private ChatClientRequest createMockRequestWithSystemMessage() {
@@ -1118,6 +1399,19 @@ public class ToolCallingAdvisorTests {
 		});
 
 		return mockRequest;
+	}
+
+	private ChatClientResponse createResponseWithToolCall(String toolName, String arguments) {
+		AssistantMessage.ToolCall toolCall = new AssistantMessage.ToolCall("tool-call-1", "function", toolName,
+				arguments);
+		AssistantMessage assistantMessage = AssistantMessage.builder()
+			.content("response")
+			.toolCalls(List.of(toolCall))
+			.build();
+		ChatResponse chatResponse = ChatResponse.builder()
+			.generations(List.of(new Generation(assistantMessage)))
+			.build();
+		return ChatClientResponse.builder().chatResponse(chatResponse).build();
 	}
 
 	private ChatClientResponse createResponse(boolean hasToolCalls, Usage usage) {
@@ -1264,7 +1558,8 @@ public class ToolCallingAdvisorTests {
 		private final int[] hookCallCounts;
 
 		TestableToolCallingAdvisor(ToolCallingManager toolCallingManager, int advisorOrder, int[] hookCallCounts) {
-			super(toolCallingManager, DEFAULT_TOOL_EXECUTION_ELIGIBILITY_CHECKER, advisorOrder, true);
+			super(toolCallingManager, DEFAULT_TOOL_EXECUTION_ELIGIBILITY_CHECKER, advisorOrder, true,
+					MaxIdenticalToolCallLoopGuard.builder().build());
 			this.hookCallCounts = hookCallCounts;
 		}
 

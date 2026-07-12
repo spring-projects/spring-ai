@@ -122,6 +122,23 @@ new SyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider, Exception.class
 new SyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
 ----
 
+==== New: Infinite Tool-Call Loop Protection (`AdvisorLoopGuard`)
+
+`ToolCallingAdvisor` now guards against infinite tool-calling loops. By default it uses `MaxIdenticalToolCallLoopGuard`, which aborts the request with an `IllegalStateException` once the same tool is called with identical arguments more than 15 times within a single loop. This did not exist in 1.x, where a model stuck in such a loop would keep calling the model and the tool indefinitely.
+
+If your application legitimately calls a tool with identical arguments many times in a row (e.g. polling a `get_status` tool), exclude it from the check or raise the limit on the advisor builder:
+
+[source,java]
+----
+ToolCallingAdvisor advisor = ToolCallingAdvisor.builder()
+    .advisorLoopGuard(MaxIdenticalToolCallLoopGuard.builder()
+        .excludeToolNames("get_status")
+        .build())
+    .build();
+----
+
+See xref:api/tools/tool-calling-advisor.adoc#loop-guard[Breaking Infinite Tool-Call Loops] for the full configuration options and how to plug in a custom `AdvisorLoopGuard`.
+
 [[upgrading-to-2-0-0]]
 == Upgrading to 2.0.0
 

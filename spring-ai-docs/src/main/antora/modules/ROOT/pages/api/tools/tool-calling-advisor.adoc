@@ -57,6 +57,10 @@ NOTE: Most applications don't construct `ToolCallingAdvisor` directly — `Defau
 | `disableInternalConversationHistory()`
 | Shortcut for `conversationHistoryEnabled(false)`.
 | —
+
+| `advisorLoopGuard(AdvisorLoopGuard)`
+| Strategy that detects and breaks out of infinite tool-calling loops. See xref:#loop-guard[Breaking Infinite Tool-Call Loops].
+| `MaxIdenticalToolCallLoopGuard` with default settings
 |====
 
 [[checker]]
@@ -115,6 +119,53 @@ var chatClient = ChatClient.builder(chatModel)
 ----
 
 TIP: With the auto-registered `ToolCallingAdvisor`, `DefaultChatClient` detects any `MemoryAdvisor` placed inside the loop and disables internal history automatically — you don't need to call `disableInternalConversationHistory()` yourself. The manual call is only needed when constructing `ToolCallingAdvisor` directly. See xref:api/tools.adoc#inside-the-loop[Memory: Inside the Loop].
+
+[[loop-guard]]
+== Breaking Infinite Tool-Call Loops
+
+A model can get stuck calling the same tool with the same arguments over and over, for example after receiving an error it doesn't know how to act on. `ToolCallingAdvisor` guards against this with a pluggable `AdvisorLoopGuard`, checked before each round's tool calls are executed.
+
+[[default-loop-guard]]
+=== Default Guard: `MaxIdenticalToolCallLoopGuard`
+
+By default, `ToolCallingAdvisor` uses `MaxIdenticalToolCallLoopGuard`, which tracks each distinct `(tool name, arguments)` combination seen within the current loop. Once a combination is seen more than `maxIdenticalToolCallCount` times (default `15`), the guard aborts the request with an `IllegalStateException`.
+
+Tune or exempt tools on the advisor builder:
+
+[source,java]
+----
+var toolCallingAdvisor = ToolCallingAdvisor.builder()
+    .advisorLoopGuard(MaxIdenticalToolCallLoopGuard.builder()
+        .maxIdenticalToolCallCount(5)
+        .excludeToolNames("get_status", "list_files")  // idempotent tools a model may legitimately poll
+        .build())
+    .build();
+----
+
+`excludeToolNames(String...)` (or `excludedToolNames(Collection<String>)` to replace the whole set) exempts tools that a model may legitimately call repeatedly with identical arguments, such as a polling `get_status` tool.
+
+[[custom-loop-guard]]
+=== Custom Guards
+
+`AdvisorLoopGuard` is a functional interface. `begin()` returns a fresh, loop-local `LoopState` for each request or stream subscription, whose `check(ChatResponse)` is called with the aggregated response for the round about to be acted upon. It returns a `Decision`:
+
+* `Decision.continueLoop()` — proceed to execute the round's tool calls.
+* `Decision.stop()` / `Decision.stop(message)` — stop gracefully and return the latest response to the caller without executing the round's tool calls.
+* `Decision.error(message)` — abort the request by throwing an `IllegalStateException` with the given message.
+
+[source,java]
+----
+AdvisorLoopGuard maxRoundsGuard = () -> {
+    AtomicInteger rounds = new AtomicInteger();
+    return chatResponse -> rounds.incrementAndGet() > 20
+            ? AdvisorLoopGuard.Decision.error("Exceeded 20 tool-call rounds")
+            : AdvisorLoopGuard.Decision.continueLoop();
+};
+
+var toolCallingAdvisor = ToolCallingAdvisor.builder()
+    .advisorLoopGuard(maxRoundsGuard)
+    .build();
+----
 
 [[hooks]]
 == Hook Methods
@@ -400,6 +451,7 @@ With auto-registration off, tools passed via `.tools(...)` are sent to the model
 == See Also
 
 * xref:api/tools.adoc#the-tool-calling-loop[Tool Calling: The Tool Calling Loop] — conceptual overview
+* xref:#loop-guard[Breaking Infinite Tool-Call Loops] — `AdvisorLoopGuard` and `MaxIdenticalToolCallLoopGuard`
 * xref:api/tools.adoc#memory-and-the-tool-loop[Tool Calling: Memory and the Tool Loop] — inside/outside ordering
 * xref:api/tools.adoc#extending-the-loop[Tool Calling: Extending the Loop] — auto-configuration extension point for custom subclasses
 * xref:api/tools/tool-search-tool.adoc[Tool Search Tool] — `ToolSearchToolCallingAdvisor`, a concrete subclass implementing progressive tool disclosure
