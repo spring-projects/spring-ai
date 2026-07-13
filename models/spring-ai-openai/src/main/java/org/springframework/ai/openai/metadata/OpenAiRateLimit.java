@@ -17,6 +17,8 @@
 package org.springframework.ai.openai.metadata;
 
 import java.time.Duration;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.openai.core.http.Headers;
 import org.jspecify.annotations.Nullable;
@@ -48,6 +50,8 @@ public class OpenAiRateLimit implements RateLimit {
 	private static final String TOKENS_REMAINING_HEADER = "x-ratelimit-remaining-tokens";
 
 	private static final String TOKENS_RESET_HEADER = "x-ratelimit-reset-tokens";
+
+	private static final Pattern DURATION_COMPONENT_PATTERN = Pattern.compile("(\\d+)(ms|d|h|m|s)");
 
 	private final @Nullable Long requestsLimit;
 
@@ -139,14 +143,44 @@ public class OpenAiRateLimit implements RateLimit {
 	private static @Nullable Duration getHeaderAsDuration(Headers headers, String headerName) {
 		var values = headers.values(headerName);
 		if (!values.isEmpty()) {
+			return parseDuration(values.get(0).trim());
+		}
+		return null;
+	}
+
+	private static @Nullable Duration parseDuration(String value) {
+		if (value.isEmpty()) {
+			return null;
+		}
+		try {
+			return Duration.ofSeconds(Long.parseLong(value));
+		}
+		catch (NumberFormatException ex) {
+			Matcher matcher = DURATION_COMPONENT_PATTERN.matcher(value);
+			Duration duration = Duration.ZERO;
+			int end = 0;
 			try {
-				return Duration.ofSeconds(Long.parseLong(values.get(0).trim()));
+				while (matcher.find()) {
+					if (matcher.start() != end) {
+						return null;
+					}
+					long amount = Long.parseLong(matcher.group(1));
+					duration = switch (matcher.group(2)) {
+						case "ms" -> duration.plusMillis(amount);
+						case "d" -> duration.plusDays(amount);
+						case "h" -> duration.plusHours(amount);
+						case "m" -> duration.plusMinutes(amount);
+						case "s" -> duration.plusSeconds(amount);
+						default -> throw new IllegalArgumentException("Unsupported duration unit");
+					};
+					end = matcher.end();
+				}
+				return end == value.length() ? duration : null;
 			}
-			catch (Exception e) {
+			catch (ArithmeticException | NumberFormatException ignored) {
 				return null;
 			}
 		}
-		return null;
 	}
 
 	@Override

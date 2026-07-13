@@ -183,10 +183,10 @@ class OpenAiChatModelTests {
 				Headers.builder()
 					.put("x-ratelimit-limit-requests", "10000")
 					.put("x-ratelimit-remaining-requests", "9999")
-					.put("x-ratelimit-reset-requests", "60")
+					.put("x-ratelimit-reset-requests", "1s")
 					.put("x-ratelimit-limit-tokens", "1000000")
 					.put("x-ratelimit-remaining-tokens", "999000")
-					.put("x-ratelimit-reset-tokens", "120")
+					.put("x-ratelimit-reset-tokens", "6m0s")
 					.build());
 
 		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").build();
@@ -201,10 +201,10 @@ class OpenAiChatModelTests {
 		assertThat(response.getMetadata().getRateLimit()).isInstanceOf(OpenAiRateLimit.class);
 		assertThat(response.getMetadata().getRateLimit().getRequestsLimit()).isEqualTo(10000L);
 		assertThat(response.getMetadata().getRateLimit().getRequestsRemaining()).isEqualTo(9999L);
-		assertThat(response.getMetadata().getRateLimit().getRequestsReset()).isEqualTo(Duration.ofSeconds(60));
+		assertThat(response.getMetadata().getRateLimit().getRequestsReset()).isEqualTo(Duration.ofSeconds(1));
 		assertThat(response.getMetadata().getRateLimit().getTokensLimit()).isEqualTo(1000000L);
 		assertThat(response.getMetadata().getRateLimit().getTokensRemaining()).isEqualTo(999000L);
-		assertThat(response.getMetadata().getRateLimit().getTokensReset()).isEqualTo(Duration.ofSeconds(120));
+		assertThat(response.getMetadata().getRateLimit().getTokensReset()).isEqualTo(Duration.ofMinutes(6));
 	}
 
 	@Test
