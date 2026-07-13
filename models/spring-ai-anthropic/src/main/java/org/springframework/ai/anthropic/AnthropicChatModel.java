@@ -16,6 +16,7 @@
 
 package org.springframework.ai.anthropic;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
@@ -29,6 +30,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import com.anthropic.client.AnthropicClient;
 import com.anthropic.client.AnthropicClientAsync;
 import com.anthropic.core.JsonValue;
+import com.anthropic.core.RequestOptions;
 import com.anthropic.core.http.HttpResponseFor;
 import com.anthropic.core.http.StreamResponse;
 import com.anthropic.models.messages.Base64ImageSource;
@@ -330,7 +332,9 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			// stream start) can be captured. The SDK exposes this as a blocking
 			// StreamResponse, so events are pulled on a boundedElastic worker.
 			Flux<ChatResponse> chatResponseFlux = Mono
-				.fromFuture(() -> this.anthropicClientAsync.messages().withRawResponse().createStreaming(request))
+				.fromFuture(() -> this.anthropicClientAsync.messages()
+					.withRawResponse()
+					.createStreaming(request, requestOptionsFor(prompt)))
 				.flatMapMany(rawResponse -> {
 					streamingState.setRateLimit(AnthropicRateLimit.from(rawResponse.headers()));
 					StreamResponse<RawMessageStreamEvent> streamResponse = rawResponse.parse();
@@ -552,7 +556,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 				HttpResponseFor<Message> rawResponse = this.anthropicClient.messages()
 					.withRawResponse()
-					.create(request);
+					.create(request, requestOptionsFor(prompt));
 				Message message = rawResponse.parse();
 				RateLimit rateLimit = AnthropicRateLimit.from(rawResponse.headers());
 
@@ -587,6 +591,40 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	}
 
 	/**
+	 * Resolves the effective {@link AnthropicChatOptions} for a prompt — the merged
+	 * default/per-request options set on {@link Prompt#getOptions()}, or an empty
+	 * {@link AnthropicChatOptions} if the prompt carries a different {@link ChatOptions}
+	 * implementation.
+	 * @param prompt the prompt with message history and options
+	 * @return the effective Anthropic chat options
+	 */
+	private static AnthropicChatOptions resolveAnthropicOptions(Prompt prompt) {
+		ChatOptions options = prompt.getOptions();
+		return options instanceof AnthropicChatOptions anthropicOptions ? anthropicOptions
+				: AnthropicChatOptions.builder().build();
+	}
+
+	/**
+	 * Resolves the per-call {@link RequestOptions} (currently just {@code timeout} — the
+	 * SDK's {@code RequestOptions} doesn't expose {@code maxRetries}/{@code proxy}/custom
+	 * headers, so those remain construction-time-only settings) from the effective
+	 * {@link AnthropicChatOptions} on the given prompt. Without this, a {@code timeout}
+	 * set via {@link AnthropicChatOptions#getTimeout()} — whether on {@code ChatClient}
+	 * default options or a per-request override — would silently have no effect: the
+	 * Anthropic Java SDK only honors the {@code timeout} supplied on this
+	 * {@link RequestOptions} argument; a call made without one falls back to whatever
+	 * {@link com.anthropic.core.Timeout} the client was built with once, at construction
+	 * time (see {@link AnthropicSetup}).
+	 * @param prompt the prompt with message history and options
+	 * @return request options carrying the resolved timeout, or
+	 * {@link RequestOptions#none()} if none is set
+	 */
+	private static RequestOptions requestOptionsFor(Prompt prompt) {
+		Duration timeout = resolveAnthropicOptions(prompt).getTimeout();
+		return timeout != null ? RequestOptions.builder().timeout(timeout).build() : RequestOptions.none();
+	}
+
+	/**
 	 * Creates a {@link MessageCreateParams} request from a Spring AI {@link Prompt}. Maps
 	 * message types to Anthropic format: TOOL messages become user messages with
 	 * {@link ToolResultBlockParam}, and ASSISTANT messages with tool calls become
@@ -599,9 +637,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 		MessageCreateParams.Builder builder = MessageCreateParams.builder();
 
-		ChatOptions options = prompt.getOptions();
-		AnthropicChatOptions requestOptions = options instanceof AnthropicChatOptions anthropicOptions
-				? anthropicOptions : AnthropicChatOptions.builder().build();
+		AnthropicChatOptions requestOptions = resolveAnthropicOptions(prompt);
 
 		// Set required fields
 		builder.model(requestOptions.getModel()).maxTokens(requestOptions.getMaxTokens());

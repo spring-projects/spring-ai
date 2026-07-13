@@ -99,7 +99,11 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 	private final String model;
 
 	/**
-	 * Request timeout for the Anthropic client. Defaults to 60 seconds if not specified.
+	 * Request timeout for the Anthropic client, applied per call — set as a
+	 * {@code ChatClient} default option or a per-request override, this bounds only that
+	 * call, not every call made by the underlying {@link AnthropicChatModel}. Defaults to
+	 * 60 seconds if not specified anywhere (including at {@link AnthropicChatModel}
+	 * construction time).
 	 */
 	private final @Nullable Duration timeout;
 

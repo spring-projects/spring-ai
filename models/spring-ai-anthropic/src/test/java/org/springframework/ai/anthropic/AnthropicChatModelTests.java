@@ -28,6 +28,7 @@ import java.util.stream.Stream;
 import com.anthropic.client.AnthropicClient;
 import com.anthropic.client.AnthropicClientAsync;
 import com.anthropic.core.JsonValue;
+import com.anthropic.core.RequestOptions;
 import com.anthropic.core.http.Headers;
 import com.anthropic.core.http.HttpResponseFor;
 import com.anthropic.core.http.StreamResponse;
@@ -125,14 +126,15 @@ class AnthropicChatModelTests {
 	void setUp() {
 		given(this.anthropicClient.messages()).willReturn(this.messageService);
 		given(this.messageService.withRawResponse()).willReturn(this.messageServiceWithRawResponse);
-		given(this.messageServiceWithRawResponse.create(any(MessageCreateParams.class))).willAnswer(invocation -> {
-			MessageCreateParams params = invocation.getArgument(0);
-			Message message = this.messageService.create(params);
-			HttpResponseFor<Message> rawResponse = mock(HttpResponseFor.class);
-			given(rawResponse.parse()).willReturn(message);
-			given(rawResponse.headers()).willReturn(Headers.builder().build());
-			return rawResponse;
-		});
+		given(this.messageServiceWithRawResponse.create(any(MessageCreateParams.class), any(RequestOptions.class)))
+			.willAnswer(invocation -> {
+				MessageCreateParams params = invocation.getArgument(0);
+				Message message = this.messageService.create(params);
+				HttpResponseFor<Message> rawResponse = mock(HttpResponseFor.class);
+				given(rawResponse.parse()).willReturn(message);
+				given(rawResponse.headers()).willReturn(Headers.builder().build());
+				return rawResponse;
+			});
 
 		this.chatModel = AnthropicChatModel.builder()
 			.anthropicClient(this.anthropicClient)
@@ -361,7 +363,8 @@ class AnthropicChatModelTests {
 
 		given(this.anthropicClientAsync.messages()).willReturn(this.messageServiceAsync);
 		given(this.messageServiceAsync.withRawResponse()).willReturn(this.messageServiceAsyncWithRawResponse);
-		given(this.messageServiceAsyncWithRawResponse.createStreaming(any(MessageCreateParams.class)))
+		given(this.messageServiceAsyncWithRawResponse.createStreaming(any(MessageCreateParams.class),
+				any(RequestOptions.class)))
 			.willReturn(CompletableFuture.completedFuture(rawResponse));
 		Message finalResponse = createMockMessage("Done.", StopReason.END_TURN);
 		given(this.messageService.create(any(MessageCreateParams.class))).willReturn(finalResponse);
@@ -849,14 +852,15 @@ class AnthropicChatModelTests {
 			.put("anthropic-ratelimit-tokens-reset", resetAt.toString())
 			.build();
 
-		given(this.messageServiceWithRawResponse.create(any(MessageCreateParams.class))).willAnswer(invocation -> {
-			MessageCreateParams params = invocation.getArgument(0);
-			Message message = this.messageService.create(params);
-			HttpResponseFor<Message> rawResponse = mock(HttpResponseFor.class);
-			given(rawResponse.parse()).willReturn(message);
-			given(rawResponse.headers()).willReturn(rateLimitHeaders);
-			return rawResponse;
-		});
+		given(this.messageServiceWithRawResponse.create(any(MessageCreateParams.class), any(RequestOptions.class)))
+			.willAnswer(invocation -> {
+				MessageCreateParams params = invocation.getArgument(0);
+				Message message = this.messageService.create(params);
+				HttpResponseFor<Message> rawResponse = mock(HttpResponseFor.class);
+				given(rawResponse.parse()).willReturn(message);
+				given(rawResponse.headers()).willReturn(rateLimitHeaders);
+				return rawResponse;
+			});
 
 		ChatResponse response = this.chatModel.call(new Prompt("test"));
 
@@ -883,7 +887,8 @@ class AnthropicChatModelTests {
 
 		given(this.anthropicClientAsync.messages()).willReturn(this.messageServiceAsync);
 		given(this.messageServiceAsync.withRawResponse()).willReturn(this.messageServiceAsyncWithRawResponse);
-		given(this.messageServiceAsyncWithRawResponse.createStreaming(any(MessageCreateParams.class)))
+		given(this.messageServiceAsyncWithRawResponse.createStreaming(any(MessageCreateParams.class),
+				any(RequestOptions.class)))
 			.willReturn(CompletableFuture.completedFuture(rawResponse));
 
 		this.chatModel.stream(new Prompt("test")).collectList().block();
@@ -936,7 +941,8 @@ class AnthropicChatModelTests {
 
 		given(this.anthropicClientAsync.messages()).willReturn(this.messageServiceAsync);
 		given(this.messageServiceAsync.withRawResponse()).willReturn(this.messageServiceAsyncWithRawResponse);
-		given(this.messageServiceAsyncWithRawResponse.createStreaming(any(MessageCreateParams.class)))
+		given(this.messageServiceAsyncWithRawResponse.createStreaming(any(MessageCreateParams.class),
+				any(RequestOptions.class)))
 			.willReturn(CompletableFuture.completedFuture(rawResponse));
 
 		List<ChatResponse> responses = this.chatModel.stream(new Prompt("test")).collectList().block();
