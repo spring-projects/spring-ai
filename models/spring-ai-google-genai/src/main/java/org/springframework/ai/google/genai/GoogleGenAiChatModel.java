@@ -141,6 +141,7 @@ import org.springframework.util.StringUtils;
  * @author Dan Dobrin
  * @author Thomas Vitale
  * @author Sebastien Deleuze
+ * @author Taewoong Kim
  * @since 0.8.1
  * @see GoogleGenAiChatOptions
  * @see ToolCallingManager
@@ -149,6 +150,8 @@ import org.springframework.util.StringUtils;
 public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 
 	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
+
+	private static final String THOUGHT_SIGNATURES_METADATA_KEY = "thoughtSignatures";
 
 	private final Log logger = LogFactory.getLog(getClass());
 
@@ -262,15 +265,9 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			// Check if there are thought signatures to restore.
 			// Per Google's documentation, thought signatures must be attached to the
 			// first functionCall part in each step of the current turn.
-			// See: https://ai.google.dev/gemini-api/docs/thought-signatures
-			List<byte[]> thoughtSignatures = null;
-			if (assistantMessage.getMetadata() != null
-					&& assistantMessage.getMetadata().containsKey("thoughtSignatures")) {
-				Object signaturesObj = assistantMessage.getMetadata().get("thoughtSignatures");
-				if (signaturesObj instanceof List) {
-					thoughtSignatures = new ArrayList<>((List<byte[]>) signaturesObj);
-				}
-			}
+			// See Google's thought signature documentation:
+			// https://ai.google.dev/gemini-api/docs/generate-content/thought-signatures
+			List<byte[]> thoughtSignatures = getThoughtSignatures(assistantMessage);
 
 			// Add text part (without thought signature - signatures go on functionCall
 			// parts)
@@ -292,7 +289,7 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 							.build());
 
 					// Attach thought signature to function call part if available
-					if (thoughtSignatures != null && !thoughtSignatures.isEmpty()) {
+					if (!thoughtSignatures.isEmpty()) {
 						partBuilder.thoughtSignature(thoughtSignatures.remove(0));
 					}
 
@@ -317,6 +314,46 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		else {
 			throw new IllegalArgumentException("Gemini doesn't support message type: " + message.getClass());
 		}
+	}
+
+	private static List<byte[]> getThoughtSignatures(AssistantMessage assistantMessage) {
+		Object signatures = assistantMessage.getMetadata().get(THOUGHT_SIGNATURES_METADATA_KEY);
+		if (!(signatures instanceof List<?> signatureList)) {
+			return List.of();
+		}
+
+		List<byte[]> thoughtSignatures = new ArrayList<>();
+		for (Object signature : signatureList) {
+			if (signature instanceof byte[] bytes) {
+				thoughtSignatures.add(bytes);
+			}
+			else if (signature instanceof List<?> values) {
+				byte[] bytes = toThoughtSignatureBytes(values);
+				if (bytes == null) {
+					return List.of();
+				}
+				thoughtSignatures.add(bytes);
+			}
+			else {
+				return List.of();
+			}
+		}
+		return thoughtSignatures;
+	}
+
+	private static byte @Nullable [] toThoughtSignatureBytes(List<?> values) {
+		byte[] bytes = new byte[values.size()];
+		for (int i = 0; i < values.size(); i++) {
+			if (!(values.get(i) instanceof Number number)) {
+				return null;
+			}
+			double value = number.doubleValue();
+			if (value < Byte.MIN_VALUE || value > Byte.MAX_VALUE || value != Math.rint(value)) {
+				return null;
+			}
+			bytes[i] = (byte) value;
+		}
+		return bytes;
 	}
 
 	private static List<Part> mediaToParts(Collection<Media> media) {
@@ -533,7 +570,7 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 				.toList();
 
 			if (!thoughtSignatures.isEmpty()) {
-				messageMetadata.put("thoughtSignatures", thoughtSignatures);
+				messageMetadata.put(THOUGHT_SIGNATURES_METADATA_KEY, thoughtSignatures);
 			}
 
 			// Extract server-side tool invocations if present

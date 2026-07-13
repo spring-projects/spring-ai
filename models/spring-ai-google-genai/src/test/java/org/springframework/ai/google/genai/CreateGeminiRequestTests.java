@@ -31,6 +31,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -54,6 +55,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * @author Soby Chacko
  * @author Sebastien Deleuze
  * @author Dimitar Proynov
+ * @author Taewoong Kim
  */
 @ExtendWith(MockitoExtension.class)
 public class CreateGeminiRequestTests {
@@ -115,6 +117,45 @@ public class CreateGeminiRequestTests {
 		// The test needs to be updated based on how media is handled in the new SDK
 		Part mediaPart = parts.get(1);
 		assertThat(mediaPart.fileData().isPresent()).isTrue();
+	}
+
+	@Test
+	public void createRequestWithJsonDeserializedThoughtSignatures() {
+		// Gson deserializes JSON arrays read as Object as lists of Double values.
+		var assistantMessage = AssistantMessage.builder()
+			.content("")
+			.properties(Map.of("thoughtSignatures", List.of(List.of(-128.0, -1.0, 0.0, 127.0))))
+			.toolCalls(List.of(new AssistantMessage.ToolCall("call-1", "function", "CurrentWeather", "{}")))
+			.build();
+		var client = GoogleGenAiChatModel.builder().genAiClient(this.genAiClient).build();
+
+		GeminiRequest request = client.createGeminiRequest(
+				new Prompt(List.of(assistantMessage), GoogleGenAiChatOptions.builder().model("DEFAULT_MODEL").build()));
+
+		assertThat(request.contents()).hasSize(1);
+		List<Part> parts = request.contents().get(0).parts().orElse(List.of());
+		assertThat(parts).hasSize(1);
+		assertThat(parts.get(0).thoughtSignature()).isPresent();
+		assertThat(parts.get(0).thoughtSignature().get()).containsExactly(-128, -1, 0, 127);
+	}
+
+	@Test
+	public void createRequestWithNativeThoughtSignatures() {
+		var assistantMessage = AssistantMessage.builder()
+			.content("")
+			.properties(Map.of("thoughtSignatures", List.of(new byte[] { -128, -1, 0, 127 })))
+			.toolCalls(List.of(new AssistantMessage.ToolCall("call-1", "function", "CurrentWeather", "{}")))
+			.build();
+		var client = GoogleGenAiChatModel.builder().genAiClient(this.genAiClient).build();
+
+		GeminiRequest request = client.createGeminiRequest(
+				new Prompt(List.of(assistantMessage), GoogleGenAiChatOptions.builder().model("DEFAULT_MODEL").build()));
+
+		assertThat(request.contents()).hasSize(1);
+		List<Part> parts = request.contents().get(0).parts().orElse(List.of());
+		assertThat(parts).hasSize(1);
+		assertThat(parts.get(0).thoughtSignature()).isPresent();
+		assertThat(parts.get(0).thoughtSignature().get()).containsExactly(-128, -1, 0, 127);
 	}
 
 	@Test
