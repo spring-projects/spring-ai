@@ -869,7 +869,7 @@ public final class OpenAiChatModel implements ChatModel {
 		// Add the tool definitions to the request's tools parameter.
 		List<ToolDefinition> toolDefinitions = this.toolCallingManager.resolveToolDefinitions(requestOptions);
 		if (!CollectionUtils.isEmpty(toolDefinitions)) {
-			builder.tools(getChatCompletionTools(toolDefinitions));
+			builder.tools(getChatCompletionTools(toolDefinitions, requestOptions));
 		}
 
 		if (requestOptions.getToolChoice() != null) {
@@ -973,10 +973,17 @@ public final class OpenAiChatModel implements ChatModel {
 		}
 	}
 
-	private List<ChatCompletionTool> getChatCompletionTools(List<ToolDefinition> toolDefinitions) {
+	private List<ChatCompletionTool> getChatCompletionTools(List<ToolDefinition> toolDefinitions,
+			@Nullable OpenAiChatOptions requestOptions) {
 		return toolDefinitions.stream().map(toolDefinition -> {
 			FunctionParameters.Builder parametersBuilder = FunctionParameters.builder();
-
+			Boolean strictMode = true;
+			if (requestOptions != null && requestOptions.getStrict() != null) {
+				strictMode = requestOptions.getStrict();
+			}
+			else if (this.options != null && this.options.getStrict() != null) {
+				strictMode = this.options.getStrict();
+			}
 			if (!toolDefinition.inputSchema().isEmpty()) {
 				// Parse the schema and add its properties directly
 				try {
@@ -986,22 +993,16 @@ public final class OpenAiChatModel implements ChatModel {
 					// Add each property from the schema to the parameters
 					schemaMap
 						.forEach((key, value) -> parametersBuilder.putAdditionalProperty(key, JsonValue.from(value)));
-
-					// Add strict mode
-					parametersBuilder.putAdditionalProperty("strict", JsonValue.from(true)); // TODO
-																								// allow
-																								// non-strict
-																								// mode
 				}
 				catch (Exception e) {
 					logger.error("Failed to parse tool schema", e);
 				}
 			}
-
 			FunctionDefinition functionDefinition = FunctionDefinition.builder()
 				.name(toolDefinition.name())
 				.description(toolDefinition.description())
 				.parameters(parametersBuilder.build())
+				.strict(strictMode)
 				.build();
 
 			return ChatCompletionTool
