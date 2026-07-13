@@ -32,6 +32,8 @@ import com.openai.client.OpenAIClient;
 import com.openai.client.OpenAIClientAsync;
 import com.openai.core.JsonValue;
 import com.openai.core.http.AsyncStreamResponse;
+import com.openai.models.FunctionDefinition;
+import com.openai.models.FunctionParameters;
 import com.openai.models.ReasoningEffort;
 import com.openai.models.chat.completions.ChatCompletion;
 import com.openai.models.chat.completions.ChatCompletionAssistantMessageParam;
@@ -44,8 +46,6 @@ import com.openai.models.chat.completions.ChatCompletionMessageFunctionToolCall;
 import com.openai.models.chat.completions.ChatCompletionMessageParam;
 import com.openai.models.chat.completions.ChatCompletionMessageToolCall;
 import com.openai.models.completions.CompletionUsage;
-import com.openai.models.FunctionDefinition;
-import com.openai.models.FunctionParameters;
 import com.openai.services.async.ChatServiceAsync;
 import com.openai.services.async.chat.ChatCompletionServiceAsync;
 import com.openai.services.blocking.ChatService;
@@ -1240,7 +1240,7 @@ class OpenAiChatModelTests {
 
 		assertThat(functionDef.strict()).contains(true);
 
-		com.openai.models.FunctionParameters parameters = functionDef.parameters().orElseThrow();
+		FunctionParameters parameters = functionDef.parameters().orElseThrow();
 		assertThat(parameters._additionalProperties()).doesNotContainKey("strict");
 	}
 
