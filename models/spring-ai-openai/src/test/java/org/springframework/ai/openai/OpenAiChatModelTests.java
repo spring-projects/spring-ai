@@ -32,12 +32,15 @@ import com.openai.client.OpenAIClient;
 import com.openai.client.OpenAIClientAsync;
 import com.openai.core.JsonValue;
 import com.openai.core.http.AsyncStreamResponse;
+import com.openai.models.FunctionDefinition;
+import com.openai.models.FunctionParameters;
 import com.openai.models.ReasoningEffort;
 import com.openai.models.chat.completions.ChatCompletion;
 import com.openai.models.chat.completions.ChatCompletionAssistantMessageParam;
 import com.openai.models.chat.completions.ChatCompletionChunk;
 import com.openai.models.chat.completions.ChatCompletionContentPart;
 import com.openai.models.chat.completions.ChatCompletionCreateParams;
+import com.openai.models.chat.completions.ChatCompletionFunctionTool;
 import com.openai.models.chat.completions.ChatCompletionMessage;
 import com.openai.models.chat.completions.ChatCompletionMessageFunctionToolCall;
 import com.openai.models.chat.completions.ChatCompletionMessageParam;
@@ -65,6 +68,8 @@ import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
+import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.util.JsonHelper;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -1199,6 +1204,128 @@ class OpenAiChatModelTests {
 		finally {
 			Locale.setDefault(original);
 		}
+	}
+
+	@Test
+	void toolStrictIsEmittedAtFunctionLevel() {
+		ToolCallingManager mockToolCallingManager = mock(ToolCallingManager.class);
+
+		ToolDefinition toolDefinition = ToolDefinition.builder()
+			.name("get_weather")
+			.description("Get weather")
+			.inputSchema("{\"type\":\"object\",\"properties\":{\"location\":{\"type\":\"string\"}}}")
+			.build();
+
+		when(mockToolCallingManager.resolveToolDefinitions(any())).thenReturn(List.of(toolDefinition));
+
+		// Model options with model set, relying on the fallback default logic of
+		// strict(true)
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("gpt-4.1").build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.toolCallingManager(mockToolCallingManager)
+			.build();
+
+		// Current behavior: createRequest processes Prompt's options down to
+		// getChatCompletionTools
+		ChatCompletionCreateParams request = chatModel.createRequest(new Prompt("test", options), false);
+
+		var tools = request.tools().orElseThrow();
+		assertThat(tools).hasSize(1);
+
+		ChatCompletionFunctionTool functionTool = tools.get(0).function().orElseThrow();
+		FunctionDefinition functionDef = functionTool.function();
+
+		assertThat(functionDef.strict()).contains(true);
+
+		FunctionParameters parameters = functionDef.parameters().orElseThrow();
+		assertThat(parameters._additionalProperties()).doesNotContainKey("strict");
+	}
+
+	@Test
+	void toolStrictFalseOverrideAtRequestLevel() {
+		ToolCallingManager mockToolCallingManager = mock(ToolCallingManager.class);
+
+		ToolDefinition toolDefinition = ToolDefinition.builder()
+			.name("get_weather")
+			.description("Get weather")
+			.inputSchema("{\"type\":\"object\",\"properties\":{\"location\":{\"type\":\"string\"}}}")
+			.build();
+
+		when(mockToolCallingManager.resolveToolDefinitions(any())).thenReturn(List.of(toolDefinition));
+
+		// Model configured with strict(true) by default
+		OpenAiChatOptions modelOptions = OpenAiChatOptions.builder().model("gpt-4.1").strict(true).build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(modelOptions)
+			.toolCallingManager(mockToolCallingManager)
+			.build();
+
+		// Prompt requests strict(false) override
+		OpenAiChatOptions requestOptions = OpenAiChatOptions.builder().strict(false).build();
+		ChatCompletionCreateParams request = chatModel.createRequest(new Prompt("test", requestOptions), false);
+
+		var tools = request.tools().orElseThrow();
+		assertThat(tools).hasSize(1);
+
+		ChatCompletionFunctionTool functionTool = tools.get(0).function().orElseThrow();
+		FunctionDefinition functionDef = functionTool.function();
+
+		// Verify that prompt-level option overrides model default to false
+		assertThat(functionDef.strict()).contains(false);
+	}
+
+	@Test
+	void toolStrictMaintainsIsolationPerRequest() {
+		ToolCallingManager mockToolCallingManager = mock(ToolCallingManager.class);
+
+		ToolDefinition toolDefinition = ToolDefinition.builder()
+			.name("get_weather")
+			.description("Get weather")
+			.inputSchema("{\"type\":\"object\",\"properties\":{\"location\":{\"type\":\"string\"}}}")
+			.build();
+
+		when(mockToolCallingManager.resolveToolDefinitions(any())).thenReturn(List.of(toolDefinition));
+
+		OpenAiChatOptions modelOptions = OpenAiChatOptions.builder().model("gpt-4.1").strict(true).build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(modelOptions)
+			.toolCallingManager(mockToolCallingManager)
+			.build();
+
+		// Request A explicitly disables strict mode
+		OpenAiChatOptions requestOptionsA = OpenAiChatOptions.builder().strict(false).build();
+		ChatCompletionCreateParams requestA = chatModel.createRequest(new Prompt("test A", requestOptionsA), false);
+
+		// Request B explicitly enables strict mode
+		OpenAiChatOptions requestOptionsB = OpenAiChatOptions.builder().strict(true).build();
+		ChatCompletionCreateParams requestB = chatModel.createRequest(new Prompt("test B", requestOptionsB), false);
+
+		// Extract tool evaluations for Request A
+		com.openai.models.FunctionDefinition functionDefA = requestA.tools()
+			.orElseThrow()
+			.get(0)
+			.function()
+			.orElseThrow()
+			.function();
+
+		// Extract tool evaluations for Request B
+		com.openai.models.FunctionDefinition functionDefB = requestB.tools()
+			.orElseThrow()
+			.get(0)
+			.function()
+			.orElseThrow()
+			.function();
+
+		// Verify isolation across execution payloads
+		assertThat(functionDefA.strict()).contains(false);
+		assertThat(functionDefB.strict()).contains(true);
 	}
 
 }
