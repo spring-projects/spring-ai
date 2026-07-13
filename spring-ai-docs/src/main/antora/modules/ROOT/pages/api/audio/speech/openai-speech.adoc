@@ -575,4 +575,4 @@ NoSuchBeanDefinitionException: No qualifying bean of type 'SpeechModel'
 
 == Example Code
 
-* The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/audio/speech/OpenAiSpeechModelIT.java[OpenAiSpeechModelIT.java] test provides some general examples of how to use the library.
+* The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/audio/OpenAiAudioSpeechModelIT.java[OpenAiAudioSpeechModelIT.java] test provides some general examples of how to use the library.
