@@ -57,6 +57,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Thomas Vitale
  * @author Soby Chacko
  * @author Yanming Zhou
+ * @author Taewoong Kim
  */
 @Testcontainers
 class RedisVectorStoreIT extends BaseVectorStoreTests {
@@ -112,6 +113,7 @@ class RedisVectorStoreIT extends BaseVectorStoreTests {
 		this.contextRunner.run(context -> {
 
 			VectorStore vectorStore = context.getBean(VectorStore.class);
+			RedisVectorStore redisVectorStore = context.getBean(RedisVectorStore.class);
 
 			vectorStore.add(this.documents);
 
@@ -126,6 +128,10 @@ class RedisVectorStoreIT extends BaseVectorStoreTests {
 			assertThat(resultDoc.getMetadata()).hasSize(3);
 			assertThat(resultDoc.getMetadata()).containsKeys("meta1", RedisVectorStore.DISTANCE_FIELD_NAME,
 					DocumentMetadata.DISTANCE.value());
+			assertThat(redisVectorStore.searchByText("Spring", RedisVectorStore.DEFAULT_CONTENT_FIELD_NAME, 5))
+				.extracting(Document::getId)
+				.contains("1");
+			assertThat(redisVectorStore.searchByRange("Spring", 0.0)).extracting(Document::getId).contains("1");
 
 			// Remove all documents from the store
 			vectorStore.delete(this.documents.stream().map(doc -> doc.getId()).toList());
