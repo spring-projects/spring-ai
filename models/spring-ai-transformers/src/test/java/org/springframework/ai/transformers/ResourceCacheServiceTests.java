@@ -18,6 +18,7 @@ package org.springframework.ai.transformers;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -27,12 +28,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import org.springframework.core.io.DefaultResourceLoader;
+import org.springframework.core.io.UrlResource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * @author Christian Tzolov
+ * @author Soby Chacko
  */
 public class ResourceCacheServiceTests {
 
@@ -119,6 +122,18 @@ public class ResourceCacheServiceTests {
 
 		assertThatThrownBy(() -> cache.getCachedResource((String) null)).isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("Location must not be null");
+	}
+
+	@Test
+	public void pathTraversalViaFragmentIsRejected() throws Exception {
+		var cache = new ResourceCacheService(this.tempDir);
+		// 20 levels of ".." safely escapes any OS temp directory depth (Linux ~4,
+		// macOS ~8); extra traversals at root are harmless.
+		var resource = new UrlResource(new URI("https", "example.com", "/model.onnx", "../".repeat(20) + "etc/passwd"));
+		assertThatThrownBy(() -> cache.getCachedResource(resource)).isInstanceOf(IllegalStateException.class)
+			.cause()
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("resolves outside the cache directory");
 	}
 
 }

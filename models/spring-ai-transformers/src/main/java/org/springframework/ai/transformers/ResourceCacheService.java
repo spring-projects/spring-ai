@@ -39,6 +39,7 @@ import org.springframework.util.StringUtils;
  * Service that helps caching remote {@link Resource}s on the local file system.
  *
  * @author Christian Tzolov
+ * @author Soby Chacko
  */
 public class ResourceCacheService {
 
@@ -133,7 +134,13 @@ public class ResourceCacheService {
 				UUID.nameUUIDFromBytes(pathWithoutLastSegment(originalResource.getURI())).toString());
 		resourceParentFolder.mkdirs();
 		String newFileName = getCacheName(originalResource);
-		return new File(resourceParentFolder, newFileName);
+		File cachedFile = new File(resourceParentFolder, newFileName);
+		String canonicalCache = this.cacheDirectory.getCanonicalPath() + File.separator;
+		if (!cachedFile.getCanonicalPath().startsWith(canonicalCache)) {
+			throw new IllegalArgumentException(
+					"Resource URI resolves outside the cache directory: " + originalResource.getDescription());
+		}
+		return cachedFile;
 	}
 
 	private byte[] pathWithoutLastSegment(URI uri) {
