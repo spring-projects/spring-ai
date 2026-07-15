@@ -69,6 +69,7 @@ import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.openai.OpenAiChatModel.ResponseFormat;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.util.JsonHelper;
 
@@ -1326,6 +1327,60 @@ class OpenAiChatModelTests {
 		// Verify isolation across execution payloads
 		assertThat(functionDefA.strict()).contains(false);
 		assertThat(functionDefB.strict()).contains(true);
+	}
+
+	@Test
+	void jsonSchemaResponseFormatStrictDefaultsToTrue() {
+		String jsonSchema = """
+				{
+					"type": "object",
+					"properties": {
+						"name": { "type": "string" }
+					}
+				}
+				""";
+		OpenAiChatOptions options = OpenAiChatOptions.builder()
+			.model("test-model")
+			.responseFormat(ResponseFormat.builder().jsonSchema(jsonSchema).build())
+			.build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		ChatCompletionCreateParams request = chatModel.createRequest(new Prompt("test", options), false);
+
+		assertThat(request.responseFormat()).isPresent();
+		assertThat(request.responseFormat().get().isJsonSchema()).isTrue();
+		assertThat(request.responseFormat().get().jsonSchema().get().jsonSchema().strict()).contains(true);
+	}
+
+	@Test
+	void jsonSchemaResponseFormatStrictCanBeDisabled() {
+		String jsonSchema = """
+				{
+					"type": "object",
+					"properties": {
+						"name": { "type": "string" }
+					}
+				}
+				""";
+		OpenAiChatOptions options = OpenAiChatOptions.builder()
+			.model("test-model")
+			.responseFormat(ResponseFormat.builder().jsonSchema(jsonSchema).strict(false).build())
+			.build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		ChatCompletionCreateParams request = chatModel.createRequest(new Prompt("test", options), false);
+
+		assertThat(request.responseFormat()).isPresent();
+		assertThat(request.responseFormat().get().isJsonSchema()).isTrue();
+		assertThat(request.responseFormat().get().jsonSchema().get().jsonSchema().strict()).contains(false);
 	}
 
 }

@@ -611,7 +611,30 @@ public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatO
 		assertThat(options.getResponseFormat()).isNotNull();
 		assertThat(options.getResponseFormat().getType()).isEqualTo(ResponseFormat.Type.JSON_SCHEMA);
 		assertThat(options.getResponseFormat().getJsonSchema()).isEqualTo(schema);
+		assertThat(options.getResponseFormat().getStrict()).isNull();
 		assertThat(options.getOutputSchema()).isEqualTo(schema);
+	}
+
+	@Test
+	void testSetOutputSchemaWithStrictDisabled() {
+		OpenAiChatOptions options = OpenAiChatOptions.builder().build();
+		String schema = """
+				{
+					"type": "object",
+					"properties": {
+						"name": {
+							"type": "string"
+						}
+					}
+				}
+				""";
+
+		options = options.mutate()
+			.responseFormat(ResponseFormat.builder().jsonSchema(schema).strict(false).build())
+			.build();
+
+		assertThat(options.getResponseFormat()).isNotNull();
+		assertThat(options.getResponseFormat().getStrict()).isFalse();
 	}
 
 	@Test
