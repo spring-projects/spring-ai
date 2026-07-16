@@ -17,10 +17,11 @@
 package org.springframework.ai.reader.pdf.config;
 
 import java.io.IOException;
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageTree;
@@ -40,6 +41,8 @@ import org.springframework.util.CollectionUtils;
  * @author Christian Tzolov
  */
 public class ParagraphManager {
+
+	private static final Log logger = LogFactory.getLog(ParagraphManager.class);
 
 	/**
 	 * Root of the paragraphs tree.
@@ -64,7 +67,9 @@ public class ParagraphManager {
 					new Paragraph(null, "root", -1, 1, this.document.getNumberOfPages(), 0),
 					this.document.getDocumentCatalog().getDocumentOutline(), 0);
 
-			printParagraph(this.rootParagraph, System.out);
+			if (logger.isDebugEnabled()) {
+				logParagraph(this.rootParagraph);
+			}
 		}
 		catch (Exception e) {
 			throw new RuntimeException(e);
@@ -87,10 +92,10 @@ public class ParagraphManager {
 		}
 	}
 
-	private void printParagraph(Paragraph paragraph, PrintStream printStream) {
-		printStream.println(paragraph);
+	private void logParagraph(Paragraph paragraph) {
+		logger.debug(paragraph);
 		for (Paragraph childParagraph : paragraph.children()) {
-			printParagraph(childParagraph, printStream);
+			logParagraph(childParagraph);
 		}
 	}
 
