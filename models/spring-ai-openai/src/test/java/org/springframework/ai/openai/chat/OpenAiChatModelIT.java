@@ -212,6 +212,25 @@ public class OpenAiChatModelIT {
 	}
 
 	@Test
+	void intermediateStreamingChunksHaveNullFinishReason() {
+		Flux<ChatResponse> flux = this.chatModel.stream(new Prompt("List the days of the week, one per line."));
+		List<ChatResponse> withResult = flux.collectList()
+			.block()
+			.stream()
+			// Only consider chunks that carry a generation — some trailing chunks are
+			// empty usage-only chunks with no result
+			.filter(r -> r.getResult() != null)
+			.collect(Collectors.toList());
+
+		assertThat(withResult).hasSizeGreaterThan(1);
+		// All intermediate chunks must have a null finish reason
+		withResult.subList(0, withResult.size() - 1)
+			.forEach(r -> assertThat(r.getResult().getMetadata().getFinishReason()).isNull());
+		// The final chunk must carry a non-null finish reason (e.g. "STOP")
+		assertThat(withResult.get(withResult.size() - 1).getResult().getMetadata().getFinishReason()).isNotNull();
+	}
+
+	@Test
 	void streamRoleTest() {
 		UserMessage userMessage = new UserMessage(
 				"Tell me about 3 famous pirates from the Golden Age of Piracy and what they did.");

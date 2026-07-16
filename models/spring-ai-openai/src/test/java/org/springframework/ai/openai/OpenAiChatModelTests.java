@@ -1383,4 +1383,20 @@ class OpenAiChatModelTests {
 		assertThat(request.responseFormat().get().jsonSchema().get().jsonSchema().strict()).contains(false);
 	}
 
+	@Test
+	void intermediateStreamingChunksHaveNullFinishReason() {
+		List<ChatCompletionChunk> chunks = List.of(
+				streamingChunk(delta -> delta.role(ChatCompletionChunk.Choice.Delta.Role.ASSISTANT).content("Hello"),
+						null),
+				streamingChunk(delta -> delta.content(", "), null),
+				streamingChunk(delta -> delta.content("world!"), ChatCompletionChunk.Choice.FinishReason.STOP));
+
+		List<ChatResponse> responses = streamResponses(chunks).collectList().block();
+
+		assertThat(responses).hasSize(3);
+		assertThat(responses.get(0).getResult().getMetadata().getFinishReason()).isNull();
+		assertThat(responses.get(1).getResult().getMetadata().getFinishReason()).isNull();
+		assertThat(responses.get(2).getResult().getMetadata().getFinishReason()).isEqualTo("STOP");
+	}
+
 }
