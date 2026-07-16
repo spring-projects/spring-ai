@@ -53,6 +53,7 @@ import org.springframework.util.Assert;
  * stream.
  *
  * @author Jared Rufer
+ * @author Jewoo Shin
  * @since 1.1.0
  */
 public class ConverseChatResponseStream implements ConverseStreamResponseHandler.Visitor {
@@ -76,7 +77,7 @@ public class ConverseChatResponseStream implements ConverseStreamResponseHandler
 
 	private final Map<Integer, StreamingToolCallBuilder> toolUseMap = new ConcurrentHashMap<>();
 
-	private final Sinks.Many<ChatResponse> eventSink = Sinks.many().multicast().onBackpressureBuffer();
+	private final Sinks.Many<ChatResponse> eventSink = Sinks.many().unicast().onBackpressureBuffer();
 
 	private final BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient;
 
