@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import com.openai.models.audio.AudioModel;
 import com.openai.models.audio.AudioResponseFormat;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -127,7 +128,10 @@ public class OpenAiAudioTranscriptionModelIT {
 
 	@Test
 	void streamTest() {
-		AudioTranscriptionPrompt prompt = new AudioTranscriptionPrompt(new ClassPathResource("/speech.flac"));
+		OpenAiAudioTranscriptionOptions options = OpenAiAudioTranscriptionOptions.builder()
+			.model(AudioModel.GPT_4O_MINI_TRANSCRIBE.asString())
+			.build();
+		AudioTranscriptionPrompt prompt = new AudioTranscriptionPrompt(new ClassPathResource("/speech.flac"), options);
 		Flux<AudioTranscriptionResponse> flux = this.transcriptionModel.stream(prompt);
 
 		List<AudioTranscriptionResponse> chunks = flux.collectList().block();
@@ -143,7 +147,10 @@ public class OpenAiAudioTranscriptionModelIT {
 
 	@Test
 	void streamTranscribeWithResourceTest() {
-		Flux<String> flux = this.transcriptionModel.streamTranscribe(new ClassPathResource("/speech.flac"));
+		OpenAiAudioTranscriptionOptions options = OpenAiAudioTranscriptionOptions.builder()
+			.model(AudioModel.GPT_4O_MINI_TRANSCRIBE.asString())
+			.build();
+		Flux<String> flux = this.transcriptionModel.streamTranscribe(new ClassPathResource("/speech.flac"), options);
 
 		List<String> chunks = flux.collectList().block();
 
@@ -155,6 +162,7 @@ public class OpenAiAudioTranscriptionModelIT {
 	@Test
 	void streamTranscribeWithResourceAndOptionsTest() {
 		OpenAiAudioTranscriptionOptions options = OpenAiAudioTranscriptionOptions.builder()
+			.model(AudioModel.GPT_4O_MINI_TRANSCRIBE.asString())
 			.language("en")
 			.temperature(0f)
 			.build();
