@@ -768,7 +768,7 @@ public interface ToolCallResultConverter {
 
 The default `DefaultToolCallResultConverter` uses Jackson to serialize the result. Configure a custom converter on the `@Tool` annotation (`resultConverter`) or via `ToolMetadata`.
 
-When exposing multiple `@Tool` methods through a `MethodToolCallbackProvider`, you can apply a single default `ToolCallResultConverter` to every tool by setting it on the provider's builder via `MethodToolCallbackProvider.builder().toolCallResultConverter(...)`. An explicit `resultConverter` on the `@Tool` annotation overrides this default for that tool.
+When exposing multiple `@Tool` methods through a `MethodToolCallbackProvider`, you can apply a single default `ToolCallResultConverter` to every tool by setting it on the provider's builder via `MethodToolCallbackProvider.builder().toolCallResultConverter(...)`. A `resultConverter` other than `DefaultToolCallResultConverter` on the `@Tool` annotation overrides this default for that tool.
 
 [[method-tool-limitations]]
 === Method Tool Limitations
