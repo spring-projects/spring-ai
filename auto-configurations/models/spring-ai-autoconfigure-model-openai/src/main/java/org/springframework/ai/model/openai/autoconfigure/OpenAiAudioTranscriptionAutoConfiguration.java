@@ -19,6 +19,7 @@ package org.springframework.ai.model.openai.autoconfigure;
 import java.util.List;
 
 import com.openai.client.OpenAIClient;
+import com.openai.client.OpenAIClientAsync;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.observation.ObservationRegistry;
 
@@ -45,6 +46,7 @@ import org.springframework.context.annotation.Bean;
  * @author Issam El-atif
  * @author Ilayaperumal Gopinathan
  * @author Sebastien Deleuze
+ * @author guan xu
  */
 @AutoConfiguration
 @ConditionalOnProperty(name = SpringAIModelProperties.AUDIO_TRANSCRIPTION_MODEL, havingValue = SpringAIModels.OPENAI,
@@ -62,8 +64,11 @@ public class OpenAiAudioTranscriptionAutoConfiguration {
 				transcriptionProperties);
 		List<OpenAiHttpClientBuilderCustomizer> customizers = httpClientBuilderCustomizers.orderedStream().toList();
 		OpenAIClient client = openAiClient(resolvedProperties, observationRegistry, meterRegistry, customizers);
+		OpenAIClientAsync clientAsync = openAiClientAsync(resolvedProperties, observationRegistry, meterRegistry,
+				customizers);
 		return OpenAiAudioTranscriptionModel.builder()
 			.openAiClient(client)
+			.openAiClientAsync(clientAsync)
 			.options(transcriptionProperties.toOptions())
 			.build();
 	}
@@ -76,6 +81,22 @@ public class OpenAiAudioTranscriptionAutoConfiguration {
 				? meterRegistry.getIfAvailable() : null;
 
 		return OpenAiSetup.setupSyncClient(commonProperties.getBaseUrl(), commonProperties.getApiKey(),
+				commonProperties.getCredential(), commonProperties.getMicrosoftDeploymentName(),
+				commonProperties.getMicrosoftFoundryServiceVersion(), commonProperties.getOrganizationId(),
+				commonProperties.isMicrosoftFoundry(), commonProperties.isGitHubModels(), commonProperties.getModel(),
+				commonProperties.getTimeout(), commonProperties.getMaxRetries(), commonProperties.getProxy(),
+				commonProperties.getCustomHeaders(), observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
+				meterRegistryToUse, httpClientCustomizers);
+	}
+
+	private OpenAIClientAsync openAiClientAsync(OpenAiCommonProperties commonProperties,
+			ObjectProvider<ObservationRegistry> observationRegistry, ObjectProvider<MeterRegistry> meterRegistry,
+			List<OpenAiHttpClientBuilderCustomizer> httpClientCustomizers) {
+
+		MeterRegistry meterRegistryToUse = commonProperties.isConnectionPoolMetricsEnabled()
+				? meterRegistry.getIfAvailable() : null;
+
+		return OpenAiSetup.setupAsyncClient(commonProperties.getBaseUrl(), commonProperties.getApiKey(),
 				commonProperties.getCredential(), commonProperties.getMicrosoftDeploymentName(),
 				commonProperties.getMicrosoftFoundryServiceVersion(), commonProperties.getOrganizationId(),
 				commonProperties.isMicrosoftFoundry(), commonProperties.isGitHubModels(), commonProperties.getModel(),

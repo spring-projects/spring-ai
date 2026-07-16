@@ -768,7 +768,8 @@ public final class OpenAiChatModel implements ChatModel {
 					ResponseFormatJsonSchema.JsonSchema.Builder jsonSchemaBuilder = ResponseFormatJsonSchema.JsonSchema
 						.builder();
 					jsonSchemaBuilder.name("json_schema");
-					jsonSchemaBuilder.strict(true);
+					Boolean strict = responseFormat.getStrict();
+					jsonSchemaBuilder.strict(strict != null ? strict : true);
 
 					ResponseFormatJsonSchema.JsonSchema.Schema schema = objectMapper.readValue(jsonSchemaString,
 							ResponseFormatJsonSchema.JsonSchema.Schema.class);
@@ -1237,12 +1238,15 @@ public final class OpenAiChatModel implements ChatModel {
 	 * @author Hyunjoon Choi
 	 * @author Jonghoon Park
 	 * @author Sebastien Deleuze
+	 * @author Bishen Yu
 	 */
 	public static class ResponseFormat {
 
 		private Type type = Type.TEXT;
 
 		private @Nullable String jsonSchema;
+
+		private @Nullable Boolean strict;
 
 		public Type getType() {
 			return this.type;
@@ -1258,6 +1262,41 @@ public final class OpenAiChatModel implements ChatModel {
 
 		public void setJsonSchema(@Nullable String jsonSchema) {
 			this.jsonSchema = jsonSchema;
+		}
+
+		/**
+		 * Whether to enable strict schema adherence for JSON schema response format.
+		 * Defaults to {@code true} when unset.
+		 * <p>
+		 * This applies only to the JSON schema response format and is distinct from
+		 * {@link OpenAiChatOptions.Builder#strict(Boolean)}, which controls strict mode
+		 * for tool/function calling.
+		 * @return the strict flag, or {@code null} if not configured
+		 */
+		public @Nullable Boolean getStrict() {
+			return this.strict;
+		}
+
+		public void setStrict(@Nullable Boolean strict) {
+			this.strict = strict;
+		}
+
+		@Override
+		public boolean equals(@Nullable Object o) {
+			if (this == o) {
+				return true;
+			}
+			if (o == null || getClass() != o.getClass()) {
+				return false;
+			}
+			ResponseFormat that = (ResponseFormat) o;
+			return this.type == that.type && Objects.equals(this.jsonSchema, that.jsonSchema)
+					&& Objects.equals(this.strict, that.strict);
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(this.type, this.jsonSchema, this.strict);
 		}
 
 		public static Builder builder() {
@@ -1279,6 +1318,19 @@ public final class OpenAiChatModel implements ChatModel {
 			public Builder jsonSchema(String jsonSchema) {
 				this.responseFormat.setType(Type.JSON_SCHEMA);
 				this.responseFormat.setJsonSchema(jsonSchema);
+				return this;
+			}
+
+			/**
+			 * Whether to enable strict schema adherence for JSON schema response format.
+			 * <p>
+			 * Not to be confused with {@link OpenAiChatOptions.Builder#strict(Boolean)},
+			 * which applies to tool/function calling rather than response format.
+			 * @param strict the strict flag
+			 * @return this builder
+			 */
+			public Builder strict(@Nullable Boolean strict) {
+				this.responseFormat.setStrict(strict);
 				return this;
 			}
 

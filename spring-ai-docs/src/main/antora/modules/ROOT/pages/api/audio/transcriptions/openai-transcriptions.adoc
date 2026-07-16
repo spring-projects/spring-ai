@@ -1,4 +1,4 @@
-== OpenAI Transcriptions
+= OpenAI Transcriptions
 
 Spring AI supports https://platform.openai.com/docs/api-reference/audio/createTranscription[OpenAI's Transcription model].
 
@@ -168,4 +168,4 @@ AudioTranscriptionResponse response = openAiTranscriptionModel.call(this.transcr
 include::partial$openai/openai-http-client-customization.adoc[]
 
 == Example Code
-* The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/audio/transcription/OpenAiTranscriptionModelIT.java[OpenAiTranscriptionModelIT.java] test provides some general examples how to use the library.
+* The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/transcription/OpenAiAudioTranscriptionModelIT.java[OpenAiAudioTranscriptionModelIT.java] test provides some general examples how to use the library.

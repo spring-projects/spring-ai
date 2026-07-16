@@ -17,6 +17,7 @@
 package org.springframework.ai.chat.client.advisor;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import org.jspecify.annotations.Nullable;
@@ -36,16 +37,17 @@ import org.springframework.util.CollectionUtils;
 
 /**
  * An advisor that blocks the call to the model provider if the user input contains any of
- * the sensitive words.
+ * the sensitive words. The advisor does a simple case-insensitive check and can be used
+ * as a starting point to implement a more advanced security barrier. It does <b>not</b>
+ * handle advanced cases like homoglyphs, fullwidth chars or zero-width chars.
  *
  * @author Christian Tzolov
  * @author Ilayaperumal Gopinathan
  * @author Thomas Vitale
+ * @author Dimitar Proynov
  * @since 1.0.0
  */
 public class SafeGuardAdvisor implements CallAdvisor, StreamAdvisor {
-
-	private static final String DEFAULT_FAILURE_RESPONSE = "I'm unable to respond to that due to sensitive content. Could we rephrase or discuss something else?";
 
 	private static final int DEFAULT_ORDER = 0;
 
@@ -54,6 +56,8 @@ public class SafeGuardAdvisor implements CallAdvisor, StreamAdvisor {
 	private final List<String> sensitiveWords;
 
 	private final int order;
+
+	static final String DEFAULT_FAILURE_RESPONSE = "I'm unable to respond to that due to sensitive content. Could we rephrase or discuss something else?";
 
 	public SafeGuardAdvisor(List<String> sensitiveWords) {
 		this(sensitiveWords, DEFAULT_FAILURE_RESPONSE, DEFAULT_ORDER);
@@ -77,8 +81,7 @@ public class SafeGuardAdvisor implements CallAdvisor, StreamAdvisor {
 
 	@Override
 	public ChatClientResponse adviseCall(ChatClientRequest chatClientRequest, CallAdvisorChain callAdvisorChain) {
-		if (!CollectionUtils.isEmpty(this.sensitiveWords)
-				&& this.sensitiveWords.stream().anyMatch(w -> chatClientRequest.prompt().getContents().contains(w))) {
+		if (containsSensitiveWord(chatClientRequest)) {
 			return createFailureResponse(chatClientRequest);
 		}
 
@@ -88,8 +91,7 @@ public class SafeGuardAdvisor implements CallAdvisor, StreamAdvisor {
 	@Override
 	public Flux<ChatClientResponse> adviseStream(ChatClientRequest chatClientRequest,
 			StreamAdvisorChain streamAdvisorChain) {
-		if (!CollectionUtils.isEmpty(this.sensitiveWords)
-				&& this.sensitiveWords.stream().anyMatch(w -> chatClientRequest.prompt().getContents().contains(w))) {
+		if (containsSensitiveWord(chatClientRequest)) {
 			return Flux.just(createFailureResponse(chatClientRequest));
 		}
 
@@ -103,6 +105,14 @@ public class SafeGuardAdvisor implements CallAdvisor, StreamAdvisor {
 				.build())
 			.context(Map.copyOf(chatClientRequest.context()))
 			.build();
+	}
+
+	private boolean containsSensitiveWord(ChatClientRequest chatClientRequest) {
+		return !CollectionUtils.isEmpty(this.sensitiveWords) && this.sensitiveWords.stream()
+			.anyMatch(w -> chatClientRequest.prompt()
+				.getContents()
+				.toLowerCase(Locale.ROOT)
+				.contains(w.toLowerCase(Locale.ROOT)));
 	}
 
 	@Override

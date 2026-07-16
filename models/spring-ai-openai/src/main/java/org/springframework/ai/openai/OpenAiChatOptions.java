@@ -471,6 +471,10 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 
 	/**
 	 * Gets whether OpenAI Tool/Function calling strict mode is enabled.
+	 * <p>
+	 * This is distinct from
+	 * {@link OpenAiChatModel.ResponseFormat.Builder#strict(Boolean)}, which controls
+	 * strict schema adherence for JSON schema response format.
 	 * @return true if strict mode is explicitly enabled
 	 */
 	public @Nullable Boolean getStrict() {
@@ -1002,6 +1006,15 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 			return self();
 		}
 
+		/**
+		 * Whether to enable OpenAI Tool/Function calling strict mode.
+		 * <p>
+		 * Not to be confused with
+		 * {@link OpenAiChatModel.ResponseFormat.Builder#strict(Boolean)}, which applies
+		 * to JSON schema response format rather than tool/function calling.
+		 * @param strict the strict flag
+		 * @return this builder
+		 */
 		public B strict(@Nullable Boolean strict) {
 			this.strict = strict;
 			return self();
