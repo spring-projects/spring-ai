@@ -364,6 +364,9 @@ ChatMemory chatMemory = MessageWindowChatMemory.builder()
 | `spring.ai.chat.memory.repository.neo4j.media-label` | The label for the nodes that store media associated with a message | `Media`
 |===
 
+NOTE: Label values must be valid Neo4j identifiers: they must start with a letter or underscore and contain only letters, digits, or underscores.
+Supplying a value that does not meet these requirements will cause an `IllegalArgumentException` to be thrown at application startup.
+
 ==== Index Initialization
 
 The Neo4j repository will automatically ensure that indexes are created for conversation IDs and message indices to optimize performance. If you use custom labels, indexes will be created for those labels as well. No schema initialization is required, but you should ensure your Neo4j instance is accessible to your application.
