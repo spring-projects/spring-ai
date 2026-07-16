@@ -905,11 +905,10 @@ public final class OpenAiChatModel implements ChatModel {
 		// Add extraBody parameters as additional body properties for OpenAI-compatible
 		// providers
 		if (requestOptions.getExtraBody() != null && !requestOptions.getExtraBody().isEmpty()) {
-			Map<String, com.openai.core.JsonValue> extraParams = requestOptions.getExtraBody()
+			Map<String, JsonValue> extraParams = requestOptions.getExtraBody()
 				.entrySet()
 				.stream()
-				.collect(java.util.stream.Collectors.toMap(Map.Entry::getKey,
-						entry -> com.openai.core.JsonValue.from(entry.getValue())));
+				.collect(Collectors.toMap(Map.Entry::getKey, entry -> JsonValue.from(entry.getValue())));
 			builder.additionalBodyProperties(extraParams);
 		}
 

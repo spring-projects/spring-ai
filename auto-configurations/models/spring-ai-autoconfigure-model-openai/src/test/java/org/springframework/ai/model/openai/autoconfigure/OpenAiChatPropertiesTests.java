@@ -141,4 +141,35 @@ public class OpenAiChatPropertiesTests {
 		}
 	}
 
+	@Test
+	public void chatExtraBodyTest() {
+
+		this.contextRunner
+			.withPropertyValues(// @formatter:off
+				"spring.ai.openai.api-key=API_KEY",
+				"spring.ai.openai.base-url=http://TEST.BASE.URL",
+
+				"spring.ai.openai.chat.extra-body.key1=value1",
+				"spring.ai.openai.chat.extra-body.key2=123",
+				"spring.ai.openai.chat.extra-body.nested.key3=true"
+			)
+			// @formatter:on
+			.withConfiguration(
+					AutoConfigurations.of(OpenAiChatAutoConfiguration.class, ToolCallingAutoConfiguration.class))
+			.run(context -> {
+				var chatProperties = context.getBean(OpenAiChatProperties.class);
+
+				assertThat(chatProperties.getExtraBody()).isNotNull();
+				assertThat(chatProperties.getExtraBody()).containsEntry("key1", "value1");
+				assertThat(chatProperties.getExtraBody()).containsEntry("key2", "123");
+				assertThat(chatProperties.getExtraBody()).containsKey("nested");
+
+				var options = chatProperties.toOptions();
+				assertThat(options.getExtraBody()).isNotNull();
+				assertThat(options.getExtraBody()).containsEntry("key1", "value1");
+				assertThat(options.getExtraBody()).containsEntry("key2", "123");
+				assertThat(options.getExtraBody()).containsKey("nested");
+			});
+	}
+
 }
