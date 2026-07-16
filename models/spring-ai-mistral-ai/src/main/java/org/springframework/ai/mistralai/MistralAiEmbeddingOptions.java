@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,10 @@
 
 package org.springframework.ai.mistralai;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.embedding.EmbeddingOptions;
+import org.springframework.ai.mistralai.api.MistralAiApi;
 
 /**
  * Options for the Mistral AI Embedding API.
@@ -30,25 +27,28 @@ import org.springframework.ai.embedding.EmbeddingOptions;
  * @author Ricken Bazolo
  * @author Thomas Vitale
  * @author Jason Smith
+ * @author Sebastien Deleuze
  * @since 0.8.1
  */
-@JsonInclude(Include.NON_NULL)
 public class MistralAiEmbeddingOptions implements EmbeddingOptions {
+
+	public static final String DEFAULT_EMBEDDING_MODEL = MistralAiApi.EmbeddingModel.EMBED.getValue();
+
+	public static final String DEFAULT_ENCODING_FORMAT = "float";
 
 	/**
 	 * ID of the model to use.
 	 */
-	@SuppressWarnings("NullAway.Init")
-	private @JsonProperty("model") String model;
+	private final String model;
 
 	/**
 	 * The format to return the embeddings in. Can be either float or base64.
 	 */
-	@SuppressWarnings("NullAway.Init")
-	private @JsonProperty("encoding_format") String encodingFormat;
+	private final String encodingFormat;
 
-	public static Builder builder() {
-		return new Builder();
+	protected MistralAiEmbeddingOptions(@Nullable String model, @Nullable String encodingFormat) {
+		this.model = (model != null ? model : DEFAULT_EMBEDDING_MODEL);
+		this.encodingFormat = (encodingFormat != null ? encodingFormat : DEFAULT_ENCODING_FORMAT);
 	}
 
 	@Override
@@ -56,44 +56,40 @@ public class MistralAiEmbeddingOptions implements EmbeddingOptions {
 		return this.model;
 	}
 
-	public void setModel(String model) {
-		this.model = model;
-	}
-
 	public String getEncodingFormat() {
 		return this.encodingFormat;
 	}
 
-	public void setEncodingFormat(String encodingFormat) {
-		this.encodingFormat = encodingFormat;
+	public static MistralAiEmbeddingOptions.Builder builder() {
+		return new Builder();
 	}
 
 	@Override
-	@JsonIgnore
 	public @Nullable Integer getDimensions() {
 		return null;
 	}
 
 	public static final class Builder {
 
-		protected MistralAiEmbeddingOptions options;
+		private @Nullable String model;
+
+		private @Nullable String encodingFormat;
 
 		public Builder() {
-			this.options = new MistralAiEmbeddingOptions();
 		}
 
-		public Builder withModel(String model) {
-			this.options.setModel(model);
+		public Builder model(@Nullable String model) {
+			this.model = model;
 			return this;
 		}
 
-		public Builder withEncodingFormat(String encodingFormat) {
-			this.options.setEncodingFormat(encodingFormat);
+		public Builder encodingFormat(@Nullable String encodingFormat) {
+			this.encodingFormat = encodingFormat;
 			return this;
 		}
 
 		public MistralAiEmbeddingOptions build() {
-			return this.options;
+			return new MistralAiEmbeddingOptions(this.model, this.encodingFormat);
 		}
 
 	}

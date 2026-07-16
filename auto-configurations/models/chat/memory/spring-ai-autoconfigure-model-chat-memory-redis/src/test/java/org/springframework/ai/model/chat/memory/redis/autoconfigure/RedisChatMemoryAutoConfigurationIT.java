@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,15 +17,13 @@
 package org.springframework.ai.model.chat.memory.redis.autoconfigure;
 
 import com.redis.testcontainers.RedisStackContainer;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.chat.memory.repository.redis.RedisChatMemoryRepository;
+import org.springframework.ai.model.chat.memory.repository.redis.autoconfigure.RedisChatMemoryRepositoryAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.data.redis.autoconfigure.DataRedisAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -33,24 +31,17 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @Testcontainers
+@SuppressWarnings("removal")
 class RedisChatMemoryAutoConfigurationIT {
-
-	private static final Logger logger = LoggerFactory.getLogger(RedisChatMemoryAutoConfigurationIT.class);
 
 	@Container
 	static RedisStackContainer redisContainer = new RedisStackContainer(
 			RedisStackContainer.DEFAULT_IMAGE_NAME.withTag(RedisStackContainer.DEFAULT_TAG))
 		.withExposedPorts(6379);
 
-	@BeforeAll
-	static void setup() {
-		logger.info("Redis container running on host: {} and port: {}", redisContainer.getHost(),
-				redisContainer.getFirstMappedPort());
-	}
-
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-		.withConfiguration(
-				AutoConfigurations.of(RedisChatMemoryAutoConfiguration.class, DataRedisAutoConfiguration.class))
+		.withConfiguration(AutoConfigurations.of(RedisChatMemoryAutoConfiguration.class,
+				RedisChatMemoryRepositoryAutoConfiguration.class, DataRedisAutoConfiguration.class))
 		.withPropertyValues("spring.data.redis.host=" + redisContainer.getHost(),
 				"spring.data.redis.port=" + redisContainer.getFirstMappedPort(),
 				// Pass the same Redis connection properties to our chat memory properties

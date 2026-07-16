@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -78,13 +78,7 @@ import org.springframework.util.CollectionUtils;
  * @since 1.0.0
  * @see McpServerProperties
  */
-@AutoConfiguration(afterName = {
-		"org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerSpecificationFactoryAutoConfiguration",
-		"org.springframework.ai.mcp.server.common.autoconfigure.ToolCallbackConverterAutoConfiguration",
-		"org.springframework.ai.mcp.server.autoconfigure.McpServerSseWebFluxAutoConfiguration",
-		"org.springframework.ai.mcp.server.autoconfigure.McpServerSseWebMvcAutoConfiguration",
-		"org.springframework.ai.mcp.server.autoconfigure.McpServerStreamableHttpWebMvcAutoConfiguration",
-		"org.springframework.ai.mcp.server.autoconfigure.McpServerStreamableHttpWebFluxAutoConfiguration" })
+@AutoConfiguration
 @ConditionalOnClass(McpSchema.class)
 @EnableConfigurationProperties({ McpServerProperties.class, McpServerChangeNotificationProperties.class })
 @ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
@@ -121,8 +115,9 @@ public class McpServerAutoConfiguration {
 			ObjectProvider<BiConsumer<McpSyncServerExchange, List<McpSchema.Root>>> rootsChangeConsumers,
 			Optional<McpSyncServerCustomizer> mcpSyncServerCustomizer) {
 
-		McpSchema.Implementation serverInfo = new Implementation(serverProperties.getName(),
-				serverProperties.getVersion());
+		McpSchema.Implementation serverInfo = Implementation
+			.builder(serverProperties.getName(), serverProperties.getVersion())
+			.build();
 
 		// Create the server with both tool and resource capabilities
 		SyncSpecification<?> serverBuilder;
@@ -242,8 +237,9 @@ public class McpServerAutoConfiguration {
 			ObjectProvider<BiConsumer<McpAsyncServerExchange, List<McpSchema.Root>>> rootsChangeConsumer,
 			Optional<McpAsyncServerCustomizer> asyncServerCustomizer) {
 
-		McpSchema.Implementation serverInfo = new Implementation(serverProperties.getName(),
-				serverProperties.getVersion());
+		McpSchema.Implementation serverInfo = Implementation
+			.builder(serverProperties.getName(), serverProperties.getVersion())
+			.build();
 
 		// Create the server with both tool and resource capabilities
 		AsyncSpecification<?> serverBuilder;

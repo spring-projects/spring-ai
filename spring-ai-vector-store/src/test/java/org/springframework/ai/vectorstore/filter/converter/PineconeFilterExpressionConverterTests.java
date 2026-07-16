@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,14 +17,19 @@
 package org.springframework.ai.vectorstore.filter.converter;
 
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 import org.junit.jupiter.api.Test;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.vectorstore.filter.Filter.Expression;
 import org.springframework.ai.vectorstore.filter.Filter.Group;
 import org.springframework.ai.vectorstore.filter.Filter.Key;
 import org.springframework.ai.vectorstore.filter.Filter.Value;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
+import org.springframework.ai.vectorstore.filter.FilterExpressionTextParser;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.AND;
@@ -40,8 +45,11 @@ import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.OR
 
 /**
  * @author Christian Tzolov
+ * @author Deepak Kumar S S
  */
 public class PineconeFilterExpressionConverterTests {
+
+	private static final JsonMapper JSON_MAPPER = JsonMapper.builder().build();
 
 	FilterExpressionConverter converter = new PineconeFilterExpressionConverter();
 
@@ -118,11 +126,18 @@ public class PineconeFilterExpressionConverterTests {
 	@Test
 	public void testComplexIdentifiers() {
 		String vectorExpr = this.converter
+			.convertExpression(new Expression(EQ, new Key("country 1 2 3"), new Value("BG")));
+		assertThat(vectorExpr).isEqualTo("""
+				{"country 1 2 3": {"$eq": "BG"}}""");
+
+		vectorExpr = this.converter
 			.convertExpression(new Expression(EQ, new Key("\"country 1 2 3\""), new Value("BG")));
-		assertThat(vectorExpr).isEqualTo("{\"country 1 2 3\": {\"$eq\": \"BG\"}}");
+		assertThat(vectorExpr).isEqualTo("""
+				{"\\"country 1 2 3\\"": {"$eq": "BG"}}""");
 
 		vectorExpr = this.converter.convertExpression(new Expression(EQ, new Key("'country 1 2 3'"), new Value("BG")));
-		assertThat(vectorExpr).isEqualTo("{\"country 1 2 3\": {\"$eq\": \"BG\"}}");
+		assertThat(vectorExpr).isEqualTo("""
+				{"'country 1 2 3'": {"$eq": "BG"}}""");
 	}
 
 	@Test
@@ -259,6 +274,51 @@ public class PineconeFilterExpressionConverterTests {
 
 		assertThat(vectorExpr).isEqualTo(
 				"{\"$or\": [{\"$and\": [{\"priority\": {\"$gte\": 1}},{\"priority\": {\"$lte\": 5}}]},{\"$and\": [{\"urgent\": {\"$eq\": true}},{\"category\": {\"$nin\": [\"low\",\"medium\"]}}]}]}");
+	}
+
+	@Test
+	void metadataKeyContainingDoubleQuotesAndJsonSyntaxStaysSingleProperty() throws Exception {
+		Expression expr = new Expression(EQ, new Key("x\" : { \"$or\": [ {} ] }, \"y"), new Value("ignored"));
+		String whereJson = this.converter.convertExpression(expr);
+		Map<String, Object> map = JSON_MAPPER.readValue(whereJson, new TypeReference<>() {
+		});
+		assertThat(map).hasSize(1);
+		assertThat(map).containsKey("x\" : { \"$or\": [ {} ] }, \"y");
+		@SuppressWarnings("unchecked")
+		Map<String, Object> inner = (Map<String, Object>) map.get("x\" : { \"$or\": [ {} ] }, \"y");
+		assertThat(inner).containsEntry("$eq", "ignored");
+	}
+
+	@Test
+	void parsedFilterWithQuotedKeyContainingJsonSyntaxProducesSingleTopLevelProperty() throws Exception {
+		Expression expr = new FilterExpressionTextParser().parse("'x\" : { \"$or\": [ {} ] }, \"y' == 'ignored'");
+		String whereJson = this.converter.convertExpression(expr);
+		Map<String, Object> map = JSON_MAPPER.readValue(whereJson, new TypeReference<>() {
+		});
+		assertThat(map).hasSize(1);
+		assertThat(map).containsKey("x\" : { \"$or\": [ {} ] }, \"y");
+	}
+
+	@Test
+	void operatorSymbolsAreSerializedLocaleIndependently() {
+		Locale defaultLocale = Locale.getDefault();
+		try {
+			// Under the Turkish locale, "IN".toLowerCase() yields "ın" (dotless 'ı'),
+			// which is not a valid Pinecone operator. Operator symbols must be converted
+			// with a fixed locale so they stay "$in" / "$nin".
+			Locale.setDefault(Locale.forLanguageTag("tr-TR"));
+
+			String in = this.converter
+				.convertExpression(new Expression(IN, new Key("genre"), new Value(List.of("comedy", "drama"))));
+			assertThat(in).isEqualTo("{\"genre\": {\"$in\": [\"comedy\",\"drama\"]}}");
+
+			String nin = this.converter
+				.convertExpression(new Expression(NIN, new Key("city"), new Value(List.of("Sofia", "Plovdiv"))));
+			assertThat(nin).isEqualTo("{\"city\": {\"$nin\": [\"Sofia\",\"Plovdiv\"]}}");
+		}
+		finally {
+			Locale.setDefault(defaultLocale);
+		}
 	}
 
 }

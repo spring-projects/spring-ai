@@ -1,5 +1,5 @@
 /*
- * Copyright 2026-2026 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ package org.springframework.ai.mcp.server.webmvc.transport;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -38,9 +37,9 @@ import io.modelcontextprotocol.spec.McpServerTransportProvider;
 import io.modelcontextprotocol.spec.ProtocolVersions;
 import io.modelcontextprotocol.util.Assert;
 import io.modelcontextprotocol.util.KeepAliveScheduler;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -87,10 +86,16 @@ import org.springframework.web.util.UriComponentsBuilder;
  * @author Alexandros Pappas
  * @see McpServerTransportProvider
  * @see RouterFunction
+ * @deprecated The SSE transport has been deprecated in the 2025-03-26 version of the
+ * spec, and should not be used anymore. We keep it for backwards compatibility.
+ * @see <a href=
+ * "https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#backwards-compatibility">Transports
+ * backwards compatibility</a>
  */
+@Deprecated(since = "2.0.0", forRemoval = true)
 public final class WebMvcSseServerTransportProvider implements McpServerTransportProvider {
 
-	private static final Logger logger = LoggerFactory.getLogger(WebMvcSseServerTransportProvider.class);
+	private static final Log logger = LogFactory.getLog(WebMvcSseServerTransportProvider.class);
 
 	/**
 	 * Event type for JSON-RPC messages sent through the SSE connection.
@@ -218,14 +223,31 @@ public final class WebMvcSseServerTransportProvider implements McpServerTranspor
 			return Mono.empty();
 		}
 
-		logger.debug("Attempting to broadcast message to {} active sessions", this.sessions.size());
+		if (logger.isDebugEnabled()) {
+			logger.debug("Attempting to broadcast message to " + this.sessions.size() + " active sessions");
+		}
 
 		return Flux.fromIterable(this.sessions.values())
-			.flatMap(session -> session.sendNotification(method, params)
-				.doOnError(
-						e -> logger.error("Failed to send message to session {}: {}", session.getId(), e.getMessage()))
-				.onErrorComplete())
+			.flatMap(session -> session.sendNotification(method, params).doOnError(e -> {
+				if (logger.isErrorEnabled()) {
+					logger.error("Failed to send message to session " + session.getId() + ": " + e.getMessage());
+				}
+			}).onErrorComplete())
 			.then();
+	}
+
+	@Override
+	public Mono<Void> notifyClient(String sessionId, String method, Object params) {
+		return Mono.defer(() -> {
+			McpServerSession session = this.sessions.get(sessionId);
+			if (session == null) {
+				if (logger.isDebugEnabled()) {
+					logger.debug("Session " + sessionId + " not found");
+				}
+				return Mono.empty();
+			}
+			return session.sendNotification(method, params);
+		});
 	}
 
 	/**
@@ -241,7 +263,9 @@ public final class WebMvcSseServerTransportProvider implements McpServerTranspor
 	public Mono<Void> closeGracefully() {
 		return Flux.fromIterable(this.sessions.values()).doFirst(() -> {
 			this.isClosing = true;
-			logger.debug("Initiating graceful shutdown with {} active sessions", this.sessions.size());
+			if (logger.isDebugEnabled()) {
+				logger.debug("Initiating graceful shutdown with " + this.sessions.size() + " active sessions");
+			}
 		}).flatMap(McpServerSession::closeGracefully).then().doOnSuccess(v -> {
 			logger.debug("Graceful shutdown completed");
 			this.sessions.clear();
@@ -284,7 +308,7 @@ public final class WebMvcSseServerTransportProvider implements McpServerTranspor
 		}
 
 		try {
-			Map<String, List<String>> headers = request.headers().asHttpHeaders().asMultiValueMap();
+			var headers = HeaderUtils.collectHeaders(request);
 			this.securityValidator.validateHeaders(headers);
 		}
 		catch (ServerTransportSecurityException e) {
@@ -302,13 +326,19 @@ public final class WebMvcSseServerTransportProvider implements McpServerTranspor
 			}
 			McpServerSession session = sf.create(sessionTransport);
 			String sessionId = session.getId();
-			logger.debug("Creating new SSE connection for session: {}", sessionId);
+			if (logger.isDebugEnabled()) {
+				logger.debug("Creating new SSE connection for session: " + sessionId);
+			}
 			sseBuilder.onComplete(() -> {
-				logger.debug("SSE connection completed for session: {}", sessionId);
+				if (logger.isDebugEnabled()) {
+					logger.debug("SSE connection completed for session: " + sessionId);
+				}
 				this.sessions.remove(sessionId);
 			});
 			sseBuilder.onTimeout(() -> {
-				logger.debug("SSE connection timed out for session: {}", sessionId);
+				if (logger.isDebugEnabled()) {
+					logger.debug("SSE connection timed out for session: " + sessionId);
+				}
 				this.sessions.remove(sessionId);
 			});
 			this.sessions.put(sessionId, session);
@@ -317,7 +347,9 @@ public final class WebMvcSseServerTransportProvider implements McpServerTranspor
 				sseBuilder.event(ENDPOINT_EVENT_TYPE).data(buildEndpointUrl(sessionId));
 			}
 			catch (Exception e) {
-				logger.error("Failed to send initial endpoint event: {}", e.getMessage());
+				if (logger.isErrorEnabled()) {
+					logger.error("Failed to send initial endpoint event: " + e.getMessage());
+				}
 				this.sessions.remove(sessionId);
 				sseBuilder.error(e);
 			}
@@ -356,7 +388,7 @@ public final class WebMvcSseServerTransportProvider implements McpServerTranspor
 		}
 
 		try {
-			Map<String, List<String>> headers = request.headers().asHttpHeaders().asMultiValueMap();
+			var headers = HeaderUtils.collectHeaders(request);
 			this.securityValidator.validateHeaders(headers);
 		}
 		catch (ServerTransportSecurityException e) {
@@ -396,12 +428,16 @@ public final class WebMvcSseServerTransportProvider implements McpServerTranspor
 			return ServerResponse.ok().build();
 		}
 		catch (IllegalArgumentException | IOException e) {
-			logger.error("Failed to deserialize message: {}", e.getMessage());
+			if (logger.isErrorEnabled()) {
+				logger.error("Failed to deserialize message: " + e.getMessage());
+			}
 			return ServerResponse.badRequest()
 				.body(McpError.builder(McpSchema.ErrorCodes.INVALID_REQUEST).message("Invalid message format").build());
 		}
 		catch (Exception e) {
-			logger.error("Error handling message: {}", e.getMessage());
+			if (logger.isErrorEnabled()) {
+				logger.error("Error handling message: " + e.getMessage());
+			}
 			return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
 				.body(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR).message(e.getMessage()).build());
 		}
@@ -452,7 +488,9 @@ public final class WebMvcSseServerTransportProvider implements McpServerTranspor
 					this.sseBuilder.event(MESSAGE_EVENT_TYPE).data(jsonText);
 				}
 				catch (Exception e) {
-					logger.error("Failed to send message: {}", e.getMessage());
+					if (logger.isErrorEnabled()) {
+						logger.error("Failed to send message: " + e.getMessage());
+					}
 					this.sseBuilder.error(e);
 				}
 				finally {
@@ -485,7 +523,9 @@ public final class WebMvcSseServerTransportProvider implements McpServerTranspor
 					this.sseBuilder.complete();
 				}
 				catch (Exception e) {
-					logger.warn("Failed to complete SSE builder: {}", e.getMessage());
+					if (logger.isWarnEnabled()) {
+						logger.warn("Failed to complete SSE builder: " + e.getMessage());
+					}
 				}
 				finally {
 					this.sseBuilderLock.unlock();
@@ -503,7 +543,9 @@ public final class WebMvcSseServerTransportProvider implements McpServerTranspor
 				this.sseBuilder.complete();
 			}
 			catch (Exception e) {
-				logger.warn("Failed to complete SSE builder: {}", e.getMessage());
+				if (logger.isWarnEnabled()) {
+					logger.warn("Failed to complete SSE builder: " + e.getMessage());
+				}
 			}
 			finally {
 				this.sseBuilderLock.unlock();
@@ -596,7 +638,7 @@ public final class WebMvcSseServerTransportProvider implements McpServerTranspor
 		/**
 		 * Sets the context extractor that allows providing the MCP feature
 		 * implementations to inspect HTTP transport level metadata that was present at
-		 * HTTP request processing time. This allows to extract custom headers and other
+		 * HTTP request processing time. This allows extracting custom headers and other
 		 * useful data for use during execution later on in the process.
 		 * @param contextExtractor The contextExtractor to fill in a
 		 * {@link McpTransportContext}.

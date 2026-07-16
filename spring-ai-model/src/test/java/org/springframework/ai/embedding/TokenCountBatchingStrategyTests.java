@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,9 @@ package org.springframework.ai.embedding;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Map;
 
+import com.knuddels.jtokkit.api.EncodingType;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.document.Document;
@@ -46,12 +48,60 @@ public class TokenCountBatchingStrategyTests {
 	}
 
 	@Test
+	void batchShouldTrackTokenCountAcrossBatchBoundaries() {
+		// Use a small maxInputTokenCount (10 tokens, 0% reserve) so that batch
+		// boundaries are hit quickly and the per-batch token accounting is exercised.
+		TokenCountBatchingStrategy strategy = new TokenCountBatchingStrategy(EncodingType.CL100K_BASE, 10, 0.0);
+
+		// "Hello world" ≈ 2 tokens, create 6 documents (12 tokens total, should split
+		// into at least 2 batches). The bug was that the first document in each new
+		// batch had its token count silently dropped from currentSize, allowing a batch
+		// to exceed maxInputTokenCount.
+		List<Document> documents = List.of(new Document("Hello world"), new Document("Hello world"),
+				new Document("Hello world"), new Document("Hello world"), new Document("Hello world"),
+				new Document("Hello world"));
+
+		List<List<Document>> batches = strategy.batch(documents);
+
+		// With the fix every batch should respect the token limit.
+		assertThat(batches.size()).isGreaterThan(1);
+
+		// Total documents across all batches must equal input size.
+		int totalDocs = batches.stream().mapToInt(List::size).sum();
+		assertThat(totalDocs).isEqualTo(documents.size());
+	}
+
+	@Test
 	void batchEmbeddingWithLargeDocumentExceedsMaxTokenSize() throws IOException {
 		Resource resource = new DefaultResourceLoader().getResource("classpath:text_source.txt");
 		String contentAsString = resource.getContentAsString(StandardCharsets.UTF_8);
 		TokenCountBatchingStrategy tokenCountBatchingStrategy = new TokenCountBatchingStrategy();
 		assertThatThrownBy(() -> tokenCountBatchingStrategy.batch(List.of(new Document(contentAsString))))
 			.isInstanceOf(IllegalArgumentException.class);
+	}
+
+	@Test
+	void batchKeepsEqualDocuments() {
+		TokenCountBatchingStrategy strategy = new TokenCountBatchingStrategy();
+		Document first = new Document("shared-id", "same text content", Map.of());
+		Document second = new Document("shared-id", "same text content", Map.of());
+
+		List<List<Document>> batches = strategy.batch(List.of(first, second));
+
+		int totalDocs = batches.stream().mapToInt(List::size).sum();
+		assertThat(totalDocs).isEqualTo(2);
+		assertThat(batches.get(0)).containsExactly(first, second);
+	}
+
+	@Test
+	void batchKeepsRepeatedDocumentInstance() {
+		TokenCountBatchingStrategy strategy = new TokenCountBatchingStrategy();
+		Document document = new Document("doc-id", "Hello world", Map.of());
+
+		List<List<Document>> batches = strategy.batch(List.of(document, document));
+
+		int totalDocs = batches.stream().mapToInt(List::size).sum();
+		assertThat(totalDocs).isEqualTo(2);
 	}
 
 }

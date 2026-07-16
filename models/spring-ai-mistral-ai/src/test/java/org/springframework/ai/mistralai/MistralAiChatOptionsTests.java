@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2026 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package org.springframework.ai.mistralai;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -24,9 +25,12 @@ import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.json.JsonMapper;
 
+import org.springframework.ai.mistralai.MistralAiChatOptions.Builder;
 import org.springframework.ai.mistralai.api.MistralAiApi;
+import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ReasoningEffort;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ResponseFormat;
 import org.springframework.ai.model.tool.StructuredOutputChatOptions;
+import org.springframework.ai.test.options.AbstractChatOptionsTests;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -35,8 +39,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * Tests for {@link MistralAiChatOptions}.
  *
  * @author Alexandros Pappas
+ * @author Nicolas Krier
+ * @author Sebastien Deleuze
  */
-class MistralAiChatOptionsTests {
+class MistralAiChatOptionsTests extends AbstractChatOptionsTests<MistralAiChatOptions, Builder> {
 
 	@Test
 	void testBuilderWithAllFields() {
@@ -50,15 +56,14 @@ class MistralAiChatOptionsTests {
 			.stop(List.of("stop1", "stop2"))
 			.responseFormat(new ResponseFormat("json_object"))
 			.toolChoice(MistralAiApi.ChatCompletionRequest.ToolChoice.AUTO)
-			.internalToolExecutionEnabled(true)
 			.toolContext(Map.of("key1", "value1"))
 			.build();
 
 		assertThat(options)
 			.extracting("model", "temperature", "topP", "maxTokens", "safePrompt", "randomSeed", "stop",
-					"responseFormat", "toolChoice", "internalToolExecutionEnabled", "toolContext")
+					"responseFormat", "toolChoice", "toolContext")
 			.containsExactly("test-model", 0.7, 0.9, 100, true, 123, List.of("stop1", "stop2"),
-					new ResponseFormat("json_object"), MistralAiApi.ChatCompletionRequest.ToolChoice.AUTO, true,
+					new ResponseFormat("json_object"), MistralAiApi.ChatCompletionRequest.ToolChoice.AUTO,
 					Map.of("key1", "value1"));
 	}
 
@@ -71,7 +76,8 @@ class MistralAiChatOptionsTests {
 	}
 
 	@Test
-	void testCopy() {
+	void testSetters() {
+		ResponseFormat responseFormat = new ResponseFormat("json_object");
 		MistralAiChatOptions options = MistralAiChatOptions.builder()
 			.model("test-model")
 			.temperature(0.7)
@@ -79,32 +85,10 @@ class MistralAiChatOptionsTests {
 			.maxTokens(100)
 			.safePrompt(true)
 			.randomSeed(123)
+			.responseFormat(responseFormat)
 			.stop(List.of("stop1", "stop2"))
-			.responseFormat(new ResponseFormat("json_object"))
-			.toolChoice(MistralAiApi.ChatCompletionRequest.ToolChoice.AUTO)
-			.internalToolExecutionEnabled(true)
-			.toolContext(Map.of("key1", "value1"))
+			.reasoningEffort(ReasoningEffort.HIGH)
 			.build();
-
-		MistralAiChatOptions copiedOptions = options.copy();
-		assertThat(copiedOptions).isNotSameAs(options).isEqualTo(options);
-		// Ensure deep copy
-		assertThat(copiedOptions.getStop()).isNotSameAs(options.getStop());
-		assertThat(copiedOptions.getToolContext()).isNotSameAs(options.getToolContext());
-	}
-
-	@Test
-	void testSetters() {
-		ResponseFormat responseFormat = new ResponseFormat("json_object");
-		MistralAiChatOptions options = new MistralAiChatOptions();
-		options.setModel("test-model");
-		options.setTemperature(0.7);
-		options.setTopP(0.9);
-		options.setMaxTokens(100);
-		options.setSafePrompt(true);
-		options.setRandomSeed(123);
-		options.setResponseFormat(responseFormat);
-		options.setStopSequences(List.of("stop1", "stop2"));
 
 		assertThat(options.getModel()).isEqualTo("test-model");
 		assertThat(options.getTemperature()).isEqualTo(0.7);
@@ -114,13 +98,14 @@ class MistralAiChatOptionsTests {
 		assertThat(options.getRandomSeed()).isEqualTo(123);
 		assertThat(options.getStopSequences()).isEqualTo(List.of("stop1", "stop2"));
 		assertThat(options.getResponseFormat()).isEqualTo(responseFormat);
+		assertThat(options.getReasoningEffort()).isEqualTo(ReasoningEffort.HIGH);
 	}
 
 	@Test
 	void testDefaultValues() {
-		MistralAiChatOptions options = new MistralAiChatOptions();
-		assertThat(options.getModel()).isNull();
-		assertThat(options.getTemperature()).isNull();
+		MistralAiChatOptions options = MistralAiChatOptions.builder().build();
+		assertThat(options.getModel()).isEqualTo(MistralAiApi.ChatModel.MISTRAL_SMALL.getValue());
+		assertThat(options.getTemperature()).isEqualTo(0.7);
 		assertThat(options.getTopP()).isEqualTo(1.0);
 		assertThat(options.getMaxTokens()).isNull();
 		assertThat(options.getSafePrompt()).isFalse();
@@ -128,6 +113,7 @@ class MistralAiChatOptionsTests {
 		assertThat(options.getStopSequences()).isNull();
 		assertThat(options.getResponseFormat()).isNull();
 		assertThat(options.getOutputSchema()).isNull();
+		assertThat(options.getReasoningEffort()).isNull();
 	}
 
 	@Test
@@ -168,16 +154,6 @@ class MistralAiChatOptionsTests {
 	}
 
 	@Test
-	void testCopyWithEmptyOptions() {
-		MistralAiChatOptions emptyOptions = new MistralAiChatOptions();
-		MistralAiChatOptions copiedOptions = emptyOptions.copy();
-
-		assertThat(copiedOptions).isNotSameAs(emptyOptions).isEqualTo(emptyOptions);
-		assertThat(copiedOptions.getModel()).isNull();
-		assertThat(copiedOptions.getTemperature()).isNull();
-	}
-
-	@Test
 	void testCopyMutationDoesNotAffectOriginal() {
 		MistralAiChatOptions original = MistralAiChatOptions.builder()
 			.model("original-model")
@@ -186,9 +162,12 @@ class MistralAiChatOptionsTests {
 			.toolContext(Map.of("original", "value"))
 			.build();
 
-		MistralAiChatOptions copy = original.copy();
-		copy.setModel("modified-model");
-		copy.setTemperature(0.8);
+		MistralAiChatOptions copy = MistralAiChatOptions.builder()
+			.model("modified-model")
+			.temperature(0.8)
+			.stop(original.getStop())
+			.toolContext(original.getToolContext())
+			.build();
 
 		// Original should remain unchanged
 		assertThat(original.getModel()).isEqualTo("original-model");
@@ -251,7 +230,6 @@ class MistralAiChatOptionsTests {
 			.maxTokens(100)
 			.safePrompt(true)
 			.randomSeed(123)
-			.internalToolExecutionEnabled(false)
 			.build();
 
 		// Verify all chained methods worked
@@ -261,7 +239,6 @@ class MistralAiChatOptionsTests {
 		assertThat(options.getMaxTokens()).isEqualTo(100);
 		assertThat(options.getSafePrompt()).isTrue();
 		assertThat(options.getRandomSeed()).isEqualTo(123);
-		assertThat(options.getInternalToolExecutionEnabled()).isFalse();
 	}
 
 	@Test
@@ -274,12 +251,13 @@ class MistralAiChatOptionsTests {
 			.maxTokens(100)
 			.build();
 
-		// Create equivalent object using setters
-		MistralAiChatOptions setterOptions = new MistralAiChatOptions();
-		setterOptions.setModel("test-model");
-		setterOptions.setTemperature(0.7);
-		setterOptions.setTopP(0.9);
-		setterOptions.setMaxTokens(100);
+		// Create equivalent object using builder (formerly setters)
+		MistralAiChatOptions setterOptions = MistralAiChatOptions.builder()
+			.model("test-model")
+			.temperature(0.7)
+			.topP(0.9)
+			.maxTokens(100)
+			.build();
 
 		assertThat(builderOptions).isEqualTo(setterOptions);
 	}
@@ -401,13 +379,13 @@ class MistralAiChatOptionsTests {
 	@Test
 	void testStructuredOutputChatOptionsInterface() {
 		// Verify that MistralAiChatOptions implements StructuredOutputChatOptions
-		MistralAiChatOptions options = new MistralAiChatOptions();
+		MistralAiChatOptions options = MistralAiChatOptions.builder().build();
 		assertThat(options).isInstanceOf(StructuredOutputChatOptions.class);
 	}
 
 	@Test
 	void testGetOutputSchemaReturnsNullWhenNoResponseFormat() {
-		MistralAiChatOptions options = new MistralAiChatOptions();
+		MistralAiChatOptions options = MistralAiChatOptions.builder().build();
 		assertThat(options.getOutputSchema()).isNull();
 	}
 
@@ -432,10 +410,8 @@ class MistralAiChatOptionsTests {
 
 	@Test
 	void testSetOutputSchema() {
-		MistralAiChatOptions options = new MistralAiChatOptions();
 		String schema = "{\"type\":\"object\",\"properties\":{\"name\":{\"type\":\"string\"}}}";
-
-		options.setOutputSchema(schema);
+		MistralAiChatOptions options = MistralAiChatOptions.builder().outputSchema(schema).build();
 
 		assertThat(options.getResponseFormat()).isNotNull();
 		assertThat(options.getResponseFormat().getType()).isEqualTo(ResponseFormat.Type.JSON_SCHEMA);
@@ -547,9 +523,53 @@ class MistralAiChatOptionsTests {
 		assertThat(options.getResponseFormat().getType()).isEqualTo(ResponseFormat.Type.JSON_SCHEMA);
 	}
 
+	@Override
+	protected Class<MistralAiChatOptions> getConcreteOptionsClass() {
+		return MistralAiChatOptions.class;
+	}
+
+	@Override
+	protected Builder readyToBuildBuilder() {
+		return MistralAiChatOptions.builder().model(MistralAiApi.ChatModel.MISTRAL_SMALL).maxTokens(500);
+	}
+
+	@Test
+	void testCombineWithCollections() {
+		MistralAiApi.FunctionTool baseTool = new MistralAiApi.FunctionTool(MistralAiApi.FunctionTool.Type.FUNCTION,
+				new MistralAiApi.FunctionTool.Function("base-function", "", "{}"));
+		MistralAiChatOptions base = MistralAiChatOptions.builder().tools(List.of(baseTool)).build();
+
+		MistralAiApi.FunctionTool overrideTool = new MistralAiApi.FunctionTool(MistralAiApi.FunctionTool.Type.FUNCTION,
+				new MistralAiApi.FunctionTool.Function("override-function", "", "{}"));
+		MistralAiChatOptions override = MistralAiChatOptions.builder().tools(List.of(overrideTool)).build();
+
+		MistralAiChatOptions merged = base.mutate().combineWith(override.mutate()).build();
+
+		assertThat(merged.getTools()).containsExactlyInAnyOrder(baseTool, overrideTool);
+	}
+
+	@Test
+	void cloneCreatesIndependentToolsList() {
+		MistralAiApi.FunctionTool tool = new MistralAiApi.FunctionTool(MistralAiApi.FunctionTool.Type.FUNCTION,
+				new MistralAiApi.FunctionTool.Function("function", "", "{}"));
+		List<MistralAiApi.FunctionTool> tools = new ArrayList<>();
+		tools.add(tool);
+
+		Builder source = MistralAiChatOptions.builder().tools(tools);
+		Builder clone = source.clone();
+		tools.add(new MistralAiApi.FunctionTool(MistralAiApi.FunctionTool.Type.FUNCTION,
+				new MistralAiApi.FunctionTool.Function("other", "", "{}")));
+
+		assertThat(clone.build().getTools()).containsExactly(tool);
+	}
+
+	@Test
+	void cloneHandlesNullToolsList() {
+		assertThat(MistralAiChatOptions.builder().clone().build().getTools()).isNull();
+	}
+
 	// Test record for schema generation tests
 	record TestRecord(String name, int age, List<String> tags) {
-
 	}
 
 }

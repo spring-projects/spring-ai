@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,7 @@ package org.springframework.ai.ollama.api;
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.util.JsonHelper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -28,10 +28,12 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 public class OllamaDurationFieldsTests {
 
+	private static final JsonHelper jsonHelper = new JsonHelper();
+
 	@Test
 	public void testDurationFields() {
 
-		var value = ModelOptionsUtils.jsonToObject("""
+		var value = jsonHelper.fromJson("""
 				{
 					"model": "llama3.2",
 					"created_at": "2023-08-04T19:22:45.499127Z",

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,7 +63,7 @@ class SyncMcpToolCallbackProviderTests {
 
 	@Test
 	void getToolCallbacksShouldReturnCallbacksForEachTool() {
-		var clientInfo = new Implementation("testClient", "1.0.0");
+		var clientInfo = Implementation.builder("testClient", "1.0.0").build();
 		when(this.mcpClient.getClientInfo()).thenReturn(clientInfo);
 		var clientCapabilities = new ClientCapabilities(null, null, null, null);
 		when(this.mcpClient.getClientCapabilities()).thenReturn(clientCapabilities);
@@ -87,7 +87,7 @@ class SyncMcpToolCallbackProviderTests {
 
 	@Test
 	void getToolCallbacksShouldThrowExceptionForDuplicateToolNames() {
-		var clientInfo = new Implementation("testClient", "1.0.0");
+		var clientInfo = Implementation.builder("testClient", "1.0.0").build();
 		when(this.mcpClient.getClientInfo()).thenReturn(clientInfo);
 		var clientCapabilities = new ClientCapabilities(null, null, null, null);
 		when(this.mcpClient.getClientCapabilities()).thenReturn(clientCapabilities);
@@ -131,7 +131,7 @@ class SyncMcpToolCallbackProviderTests {
 		when(listToolsResult1.tools()).thenReturn(List.of(tool1));
 		when(mcpClient1.listTools()).thenReturn(listToolsResult1);
 
-		var clientInfo1 = new Implementation("FirstClient", "1.0.0");
+		var clientInfo1 = Implementation.builder("FirstClient", "1.0.0").build();
 		when(mcpClient1.getClientInfo()).thenReturn(clientInfo1);
 		var clientCapabilities1 = new ClientCapabilities(null, null, null, null);
 		when(mcpClient1.getClientCapabilities()).thenReturn(clientCapabilities1);
@@ -141,7 +141,7 @@ class SyncMcpToolCallbackProviderTests {
 		when(listToolsResult2.tools()).thenReturn(List.of(tool2));
 		when(mcpClient2.listTools()).thenReturn(listToolsResult2);
 
-		var clientInfo2 = new Implementation("SecondClient", "1.0.0");
+		var clientInfo2 = Implementation.builder("SecondClient", "1.0.0").build();
 		when(mcpClient2.getClientInfo()).thenReturn(clientInfo2);
 		var clientCapabilities2 = new ClientCapabilities(null, null, null, null);
 		when(mcpClient2.getClientCapabilities()).thenReturn(clientCapabilities2);
@@ -157,7 +157,7 @@ class SyncMcpToolCallbackProviderTests {
 
 	@Test
 	void toolFilterShouldAcceptAllToolsByDefault() {
-		var clientInfo = new Implementation("testClient", "1.0.0");
+		var clientInfo = Implementation.builder("testClient", "1.0.0").build();
 		when(this.mcpClient.getClientInfo()).thenReturn(clientInfo);
 		var clientCapabilities = new ClientCapabilities(null, null, null, null);
 		when(this.mcpClient.getClientCapabilities()).thenReturn(clientCapabilities);
@@ -190,7 +190,7 @@ class SyncMcpToolCallbackProviderTests {
 		when(listToolsResult.tools()).thenReturn(List.of(tool1, tool2));
 		when(this.mcpClient.listTools()).thenReturn(listToolsResult);
 
-		var clientInfo = new Implementation("testClient", "1.0.0");
+		var clientInfo = Implementation.builder("testClient", "1.0.0").build();
 		when(this.mcpClient.getClientInfo()).thenReturn(clientInfo);
 		var clientCapabilities = new ClientCapabilities(null, null, null, null);
 		when(this.mcpClient.getClientCapabilities()).thenReturn(clientCapabilities);
@@ -211,7 +211,7 @@ class SyncMcpToolCallbackProviderTests {
 
 	@Test
 	void toolFilterShouldFilterToolsByNameWhenConfigured() {
-		var clientInfo = new Implementation("testClient", "1.0.0");
+		var clientInfo = Implementation.builder("testClient", "1.0.0").build();
 		when(this.mcpClient.getClientInfo()).thenReturn(clientInfo);
 		var clientCapabilities = new ClientCapabilities(null, null, null, null);
 		when(this.mcpClient.getClientCapabilities()).thenReturn(clientCapabilities);
@@ -257,7 +257,7 @@ class SyncMcpToolCallbackProviderTests {
 		when(listToolsResult1.tools()).thenReturn(List.of(tool1));
 		when(mcpClient1.listTools()).thenReturn(listToolsResult1);
 
-		var clientInfo1 = new Implementation("testClient1", "1.0.0");
+		var clientInfo1 = Implementation.builder("testClient1", "1.0.0").build();
 		when(mcpClient1.getClientInfo()).thenReturn(clientInfo1);
 		var clientCapabilities1 = new ClientCapabilities(null, null, null, null);
 		when(mcpClient1.getClientCapabilities()).thenReturn(clientCapabilities1);
@@ -267,7 +267,7 @@ class SyncMcpToolCallbackProviderTests {
 		when(listToolsResult2.tools()).thenReturn(List.of(tool2));
 		when(mcpClient2.listTools()).thenReturn(listToolsResult2);
 
-		var clientInfo2 = new Implementation("testClient2", "1.0.0");
+		var clientInfo2 = Implementation.builder("testClient2", "1.0.0").build();
 		when(mcpClient2.getClientInfo()).thenReturn(clientInfo2);
 		var clientCapabilities2 = new ClientCapabilities(null, null, null, null);
 		when(mcpClient2.getClientCapabilities()).thenReturn(clientCapabilities2);
@@ -301,7 +301,7 @@ class SyncMcpToolCallbackProviderTests {
 		when(weatherResult.tools()).thenReturn(List.of(tool1, tool2));
 		when(weatherClient.listTools()).thenReturn(weatherResult);
 
-		var weatherClientInfo = new Implementation("weather-service", "1.0.0");
+		var weatherClientInfo = Implementation.builder("weather-service", "1.0.0").build();
 		when(weatherClient.getClientInfo()).thenReturn(weatherClientInfo);
 		var weatherCapabilities = new ClientCapabilities(null, null, null, null);
 		when(weatherClient.getClientCapabilities()).thenReturn(weatherCapabilities);
@@ -325,9 +325,9 @@ class SyncMcpToolCallbackProviderTests {
 
 	@Test
 	void builderShouldSupportAddMcpClient() {
-		var clientInfo1 = new Implementation("testClient1", "1.0.0");
+		var clientInfo1 = Implementation.builder("testClient1", "1.0.0").build();
 		var clientCapabilities1 = new ClientCapabilities(null, null, null, null);
-		var clientInfo2 = new Implementation("testClient2", "1.0.0");
+		var clientInfo2 = Implementation.builder("testClient2", "1.0.0").build();
 		var clientCapabilities2 = new ClientCapabilities(null, null, null, null);
 
 		Tool tool1 = mock(Tool.class);
@@ -376,7 +376,7 @@ class SyncMcpToolCallbackProviderTests {
 
 	@Test
 	void syncToolCallbacksStaticMethodShouldReturnCallbacks() {
-		var clientInfo = new Implementation("testClient", "1.0.0");
+		var clientInfo = Implementation.builder("testClient", "1.0.0").build();
 		when(this.mcpClient.getClientInfo()).thenReturn(clientInfo);
 		var clientCapabilities = new ClientCapabilities(null, null, null, null);
 		when(this.mcpClient.getClientCapabilities()).thenReturn(clientCapabilities);
@@ -395,7 +395,7 @@ class SyncMcpToolCallbackProviderTests {
 
 	@Test
 	void builderShouldSupportToolContextToMcpMetaConverter() {
-		var clientInfo = new Implementation("testClient", "1.0.0");
+		var clientInfo = Implementation.builder("testClient", "1.0.0").build();
 		when(this.mcpClient.getClientInfo()).thenReturn(clientInfo);
 		var clientCapabilities = new ClientCapabilities(null, null, null, null);
 		when(this.mcpClient.getClientCapabilities()).thenReturn(clientCapabilities);
@@ -421,7 +421,7 @@ class SyncMcpToolCallbackProviderTests {
 
 	@Test
 	void builderShouldSupportMcpClientsAsList() {
-		var clientInfo = new Implementation("testClient", "1.0.0");
+		var clientInfo = Implementation.builder("testClient", "1.0.0").build();
 		when(this.mcpClient.getClientInfo()).thenReturn(clientInfo);
 		var clientCapabilities = new ClientCapabilities(null, null, null, null);
 		when(this.mcpClient.getClientCapabilities()).thenReturn(clientCapabilities);

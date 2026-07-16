@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2026 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,26 +16,23 @@
 
 package org.springframework.ai.bedrock.converse;
 
-import java.io.IOException;
-import java.io.InputStream;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.net.URLConnection;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
-import reactor.core.scheduler.Schedulers;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.core.SdkBytes;
 import software.amazon.awssdk.core.document.Document;
@@ -58,9 +55,12 @@ import software.amazon.awssdk.services.bedrockruntime.model.DocumentSource;
 import software.amazon.awssdk.services.bedrockruntime.model.ImageBlock;
 import software.amazon.awssdk.services.bedrockruntime.model.ImageSource;
 import software.amazon.awssdk.services.bedrockruntime.model.InferenceConfiguration;
+import software.amazon.awssdk.services.bedrockruntime.model.JsonSchemaDefinition;
 import software.amazon.awssdk.services.bedrockruntime.model.Message;
+import software.amazon.awssdk.services.bedrockruntime.model.OutputConfig;
+import software.amazon.awssdk.services.bedrockruntime.model.OutputFormat;
+import software.amazon.awssdk.services.bedrockruntime.model.OutputFormatStructure;
 import software.amazon.awssdk.services.bedrockruntime.model.S3Location;
-import software.amazon.awssdk.services.bedrockruntime.model.StopReason;
 import software.amazon.awssdk.services.bedrockruntime.model.SystemContentBlock;
 import software.amazon.awssdk.services.bedrockruntime.model.TokenUsage;
 import software.amazon.awssdk.services.bedrockruntime.model.Tool;
@@ -79,6 +79,7 @@ import org.springframework.ai.bedrock.converse.api.BedrockCacheStrategy;
 import org.springframework.ai.bedrock.converse.api.BedrockMediaFormat;
 import org.springframework.ai.bedrock.converse.api.ConverseApiUtils;
 import org.springframework.ai.bedrock.converse.api.ConverseChatResponseStream;
+import org.springframework.ai.bedrock.converse.api.MediaFetcher;
 import org.springframework.ai.bedrock.converse.api.URLValidator;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.MessageType;
@@ -99,19 +100,14 @@ import org.springframework.ai.chat.observation.DefaultChatModelObservationConven
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
-import org.springframework.ai.model.ModelOptionsUtils;
-import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
-import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
-import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
-import org.springframework.ai.model.tool.ToolExecutionResult;
-import org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.ai.util.JsonHelper;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
-import org.springframework.util.StreamUtils;
 import org.springframework.util.StringUtils;
+import org.springframework.web.client.RestClientException;
 
 /**
  * A {@link ChatModel} implementation that uses the Amazon Bedrock Converse API to
@@ -139,21 +135,24 @@ import org.springframework.util.StringUtils;
  * @author Jihoon Kim
  * @author Soby Chacko
  * @author Sun Yuhan
+ * @author Thomas Vitale
+ * @author Sebastien Deleuze
+ * @author Jewoo Shin
  * @since 1.0.0
  */
 public class BedrockProxyChatModel implements ChatModel {
 
-	private static final Logger logger = LoggerFactory.getLogger(BedrockProxyChatModel.class);
+	private static final JsonHelper jsonHelper = new JsonHelper();
+
+	private static final Log logger = LogFactory.getLog(BedrockProxyChatModel.class);
 
 	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
-
-	private static final ToolCallingManager DEFAULT_TOOL_CALLING_MANAGER = ToolCallingManager.builder().build();
 
 	private final BedrockRuntimeClient bedrockRuntimeClient;
 
 	private final BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient;
 
-	private final BedrockChatOptions defaultOptions;
+	private final BedrockChatOptions options;
 
 	/**
 	 * Observation registry used for instrumentation.
@@ -163,49 +162,34 @@ public class BedrockProxyChatModel implements ChatModel {
 	private final ToolCallingManager toolCallingManager;
 
 	/**
-	 * The tool execution eligibility predicate used to determine if a tool can be
-	 * executed.
-	 */
-	private final ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate;
-
-	/**
 	 * Conventions to use for generating observations.
 	 */
-	private ChatModelObservationConvention observationConvention;
+	private @Nullable ChatModelObservationConvention observationConvention;
+
+	private final MediaFetcher mediaFetcher;
 
 	public BedrockProxyChatModel(BedrockRuntimeClient bedrockRuntimeClient,
-			BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient, BedrockChatOptions defaultOptions,
+			BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient, BedrockChatOptions options,
 			ObservationRegistry observationRegistry, ToolCallingManager toolCallingManager) {
-		this(bedrockRuntimeClient, bedrockRuntimeAsyncClient, defaultOptions, observationRegistry, toolCallingManager,
-				new DefaultToolExecutionEligibilityPredicate());
+		this(bedrockRuntimeClient, bedrockRuntimeAsyncClient, options, observationRegistry, toolCallingManager,
+				new MediaFetcher());
 	}
 
 	public BedrockProxyChatModel(BedrockRuntimeClient bedrockRuntimeClient,
-			BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient, BedrockChatOptions defaultOptions,
-			ObservationRegistry observationRegistry, ToolCallingManager toolCallingManager,
-			ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate) {
+			BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient, BedrockChatOptions options,
+			ObservationRegistry observationRegistry, ToolCallingManager toolCallingManager, MediaFetcher mediaFetcher) {
 
 		Assert.notNull(bedrockRuntimeClient, "bedrockRuntimeClient must not be null");
 		Assert.notNull(bedrockRuntimeAsyncClient, "bedrockRuntimeAsyncClient must not be null");
 		Assert.notNull(toolCallingManager, "toolCallingManager must not be null");
-		Assert.notNull(toolExecutionEligibilityPredicate, "toolExecutionEligibilityPredicate must not be null");
+		Assert.notNull(mediaFetcher, "mediaFetcher must not be null");
 
 		this.bedrockRuntimeClient = bedrockRuntimeClient;
 		this.bedrockRuntimeAsyncClient = bedrockRuntimeAsyncClient;
-		this.defaultOptions = defaultOptions;
+		this.options = options;
 		this.observationRegistry = observationRegistry;
 		this.toolCallingManager = toolCallingManager;
-		this.toolExecutionEligibilityPredicate = toolExecutionEligibilityPredicate;
-	}
-
-	private static BedrockChatOptions from(ChatOptions options) {
-		return BedrockChatOptions.builder()
-			.model(options.getModel())
-			.maxTokens(options.getMaxTokens())
-			.stopSequences(options.getStopSequences())
-			.temperature(options.getTemperature())
-			.topP(options.getTopP())
-			.build();
+		this.mediaFetcher = mediaFetcher;
 	}
 
 	/**
@@ -222,7 +206,7 @@ public class BedrockProxyChatModel implements ChatModel {
 		return this.internalCall(requestPrompt, null);
 	}
 
-	private ChatResponse internalCall(Prompt prompt, ChatResponse perviousChatResponse) {
+	private ChatResponse internalCall(Prompt prompt, @Nullable ChatResponse perviousChatResponse) {
 
 		ConverseRequest converseRequest = this.createRequest(prompt);
 
@@ -238,7 +222,9 @@ public class BedrockProxyChatModel implements ChatModel {
 
 				ConverseResponse converseResponse = this.bedrockRuntimeClient.converse(converseRequest);
 
-				logger.debug("ConverseResponse: {}", converseResponse);
+				if (logger.isDebugEnabled()) {
+					logger.debug("ConverseResponse: " + converseResponse);
+				}
 
 				var response = this.toChatResponse(converseResponse, perviousChatResponse);
 
@@ -247,95 +233,24 @@ public class BedrockProxyChatModel implements ChatModel {
 				return response;
 			});
 
-		if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), chatResponse)
-				&& chatResponse.hasFinishReasons(Set.of(StopReason.TOOL_USE.toString()))) {
-			var toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, chatResponse);
-			if (toolExecutionResult.returnDirect()) {
-				// Return tool execution result directly to the client.
-				return ChatResponse.builder()
-					.from(chatResponse)
-					.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
-					.build();
-			}
-			else {
-				// Send the tool execution result back to the model.
-				return this.internalCall(new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
-						chatResponse);
-			}
-		}
 		return chatResponse;
 	}
 
+	/**
+	 * @since 2.0.0
+	 */
 	@Override
-	public ChatOptions getDefaultOptions() {
-		return this.defaultOptions;
-	}
-
-	Prompt buildRequestPrompt(Prompt prompt) {
-		BedrockChatOptions runtimeOptions = null;
-		if (prompt.getOptions() != null) {
-			if (prompt.getOptions() instanceof BedrockChatOptions bedrockChatOptions) {
-				runtimeOptions = bedrockChatOptions.copy();
-			}
-			else if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
-				runtimeOptions = ModelOptionsUtils.copyToTarget(toolCallingChatOptions, ToolCallingChatOptions.class,
-						BedrockChatOptions.class);
-			}
-			else {
-				runtimeOptions = from(prompt.getOptions());
-			}
-		}
-
-		// Merge runtime options with the default options
-		BedrockChatOptions updatedRuntimeOptions = null;
-		if (runtimeOptions == null) {
-			updatedRuntimeOptions = this.defaultOptions.copy();
-		}
-		else {
-			if (runtimeOptions.getFrequencyPenalty() != null) {
-				logger.warn("The frequencyPenalty option is not supported by BedrockProxyChatModel. Ignoring.");
-			}
-			if (runtimeOptions.getPresencePenalty() != null) {
-				logger.warn("The presencePenalty option is not supported by BedrockProxyChatModel. Ignoring.");
-			}
-			if (runtimeOptions.getTopK() != null) {
-				logger.warn("The topK option is not supported by BedrockProxyChatModel. Ignoring.");
-			}
-			updatedRuntimeOptions = BedrockChatOptions.builder()
-				.model(runtimeOptions.getModel() != null ? runtimeOptions.getModel() : this.defaultOptions.getModel())
-				.maxTokens(runtimeOptions.getMaxTokens() != null ? runtimeOptions.getMaxTokens()
-						: this.defaultOptions.getMaxTokens())
-				.stopSequences(runtimeOptions.getStopSequences() != null ? runtimeOptions.getStopSequences()
-						: this.defaultOptions.getStopSequences())
-				.temperature(runtimeOptions.getTemperature() != null ? runtimeOptions.getTemperature()
-						: this.defaultOptions.getTemperature())
-				.topP(runtimeOptions.getTopP() != null ? runtimeOptions.getTopP() : this.defaultOptions.getTopP())
-
-				.toolCallbacks(runtimeOptions.getToolCallbacks() != null ? runtimeOptions.getToolCallbacks()
-						: this.defaultOptions.getToolCallbacks())
-				.toolNames(runtimeOptions.getToolNames() != null ? runtimeOptions.getToolNames()
-						: this.defaultOptions.getToolNames())
-				.toolContext(runtimeOptions.getToolContext() != null ? runtimeOptions.getToolContext()
-						: this.defaultOptions.getToolContext())
-				.internalToolExecutionEnabled(runtimeOptions.getInternalToolExecutionEnabled() != null
-						? runtimeOptions.getInternalToolExecutionEnabled()
-						: this.defaultOptions.getInternalToolExecutionEnabled())
-				.cacheOptions(runtimeOptions.getCacheOptions() != null ? runtimeOptions.getCacheOptions()
-						: this.defaultOptions.getCacheOptions())
-				.build();
-		}
-
-		ToolCallingChatOptions.validateToolCallbacks(updatedRuntimeOptions.getToolCallbacks());
-
-		return new Prompt(prompt.getInstructions(), updatedRuntimeOptions);
+	public BedrockChatOptions getOptions() {
+		return this.options;
 	}
 
 	ConverseRequest createRequest(Prompt prompt) {
 
-		BedrockChatOptions updatedRuntimeOptions = prompt.getOptions().copy();
+		BedrockChatOptions options = (BedrockChatOptions) prompt.getOptions();
+		Assert.state(options != null, "Prompt options must not be null");
 
 		// Get cache options to determine strategy
-		BedrockCacheOptions cacheOptions = updatedRuntimeOptions.getCacheOptions();
+		BedrockCacheOptions cacheOptions = options.getCacheOptions();
 		boolean shouldCacheConversationHistory = cacheOptions != null
 				&& cacheOptions.getStrategy() == BedrockCacheStrategy.CONVERSATION_HISTORY;
 
@@ -355,8 +270,8 @@ public class BedrockProxyChatModel implements ChatModel {
 				}
 			}
 			if (logger.isDebugEnabled()) {
-				logger.debug("CONVERSATION_HISTORY caching: lastUserMessageIndex={}, totalMessages={}",
-						lastUserMessageIndex, allNonSystemMessages.size());
+				logger.debug("CONVERSATION_HISTORY caching: lastUserMessageIndex=" + lastUserMessageIndex
+						+ ", totalMessages=" + allNonSystemMessages.size());
 			}
 		}
 
@@ -386,8 +301,7 @@ public class BedrockProxyChatModel implements ChatModel {
 
 				// Apply cache point if this is the last user message
 				if (shouldApplyCachePoint) {
-					CachePointBlock cachePoint = CachePointBlock.builder().type("default").build();
-					contents.add(ContentBlock.fromCachePoint(cachePoint));
+					contents.add(ContentBlock.fromCachePoint(buildCachePoint(cacheOptions)));
 					logger.debug("Applied cache point on last user message (conversation history caching)");
 				}
 
@@ -399,11 +313,20 @@ public class BedrockProxyChatModel implements ChatModel {
 				if (StringUtils.hasText(message.getText())) {
 					contentBlocks.add(ContentBlock.fromText(message.getText()));
 				}
+				// Replay the signed Bedrock reasoning blocks, unmodified, before the
+				// tool-use blocks. Bedrock validates that reasoning comes before its
+				// tool use when the matching tool result is sent back (gh-6413).
+				if (assistantMessage instanceof BedrockAssistantMessage bedrockAssistantMessage
+						&& bedrockAssistantMessage.hasReasoningContents()) {
+					for (BedrockReasoningContent reasoningContent : bedrockAssistantMessage.getReasoningContents()) {
+						contentBlocks.add(reasoningContent.toContentBlock());
+					}
+				}
 				if (!CollectionUtils.isEmpty(assistantMessage.getToolCalls())) {
 					for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
 
 						var argumentsDocument = ConverseApiUtils
-							.convertObjectToDocument(ModelOptionsUtils.jsonToMap(toolCall.arguments()));
+							.convertObjectToDocument(jsonHelper.fromJsonToMap(toolCall.arguments()));
 
 						contentBlocks.add(ContentBlock.fromToolUse(ToolUseBlock.builder()
 							.toolUseId(toolCall.id())
@@ -440,39 +363,41 @@ public class BedrockProxyChatModel implements ChatModel {
 						|| cacheOptions.getStrategy() == BedrockCacheStrategy.SYSTEM_AND_TOOLS);
 
 		if (logger.isDebugEnabled() && cacheOptions != null) {
-			logger.debug("Cache strategy: {}, shouldCacheSystem: {}", cacheOptions.getStrategy(), shouldCacheSystem);
+			logger.debug("Cache strategy: " + cacheOptions.getStrategy() + ", shouldCacheSystem: " + shouldCacheSystem);
 		}
 
-		// Build system messages with optional caching on last message
 		List<org.springframework.ai.chat.messages.Message> systemMessageList = prompt.getInstructions()
 			.stream()
 			.filter(m -> m.getMessageType() == MessageType.SYSTEM)
 			.toList();
 
+		// With multi-block system caching, place the cache point after the
+		// second-to-last block so a trailing dynamic block can vary without
+		// invalidating the cached prefix.
+		boolean multiBlockSystemCaching = cacheOptions != null && cacheOptions.isMultiBlockSystemCaching()
+				&& systemMessageList.size() > 1;
+		int cacheBoundaryIndex = multiBlockSystemCaching ? systemMessageList.size() - 2 : systemMessageList.size() - 1;
+
 		List<SystemContentBlock> systemMessages = new ArrayList<>();
 		for (int i = 0; i < systemMessageList.size(); i++) {
 			org.springframework.ai.chat.messages.Message sysMessage = systemMessageList.get(i);
 
-			// Add the text content block
 			SystemContentBlock textBlock = SystemContentBlock.builder().text(sysMessage.getText()).build();
 			systemMessages.add(textBlock);
 
-			// Apply cache point marker after last system message if caching is enabled
-			// SystemContentBlock is a UNION type - text and cachePoint must be separate
-			// blocks
-			boolean isLastSystem = (i == systemMessageList.size() - 1);
-			if (isLastSystem && shouldCacheSystem) {
-				CachePointBlock cachePoint = CachePointBlock.builder().type("default").build();
-				SystemContentBlock cachePointBlock = SystemContentBlock.builder().cachePoint(cachePoint).build();
+			// SystemContentBlock is a union: text and cachePoint must be separate blocks.
+			if (i == cacheBoundaryIndex && shouldCacheSystem) {
+				SystemContentBlock cachePointBlock = SystemContentBlock.builder()
+					.cachePoint(buildCachePoint(cacheOptions))
+					.build();
 				systemMessages.add(cachePointBlock);
-				logger.debug("Applied cache point after system message");
 			}
 		}
 
 		ToolConfiguration toolConfiguration = null;
 
 		// Add the tool definitions to the request's tools parameter.
-		List<ToolDefinition> toolDefinitions = this.toolCallingManager.resolveToolDefinitions(updatedRuntimeOptions);
+		List<ToolDefinition> toolDefinitions = this.toolCallingManager.resolveToolDefinitions(options);
 
 		// Determine if tool caching should be applied
 		boolean shouldCacheTools = cacheOptions != null
@@ -493,8 +418,8 @@ public class BedrockProxyChatModel implements ChatModel {
 					.toolSpec(ToolSpecification.builder()
 						.name(name)
 						.description(description)
-						.inputSchema(ToolInputSchema.fromJson(
-								ConverseApiUtils.convertObjectToDocument(ModelOptionsUtils.jsonToMap(inputSchema))))
+						.inputSchema(ToolInputSchema
+							.fromJson(ConverseApiUtils.convertObjectToDocument(jsonHelper.fromJsonToMap(inputSchema))))
 						.build())
 					.build();
 				bedrockTools.add(tool);
@@ -503,8 +428,7 @@ public class BedrockProxyChatModel implements ChatModel {
 				// Tool is a UNION type - toolSpec and cachePoint must be separate objects
 				boolean isLastTool = (i == toolDefinitions.size() - 1);
 				if (isLastTool && shouldCacheTools) {
-					CachePointBlock cachePoint = CachePointBlock.builder().type("default").build();
-					Tool cachePointTool = Tool.builder().cachePoint(cachePoint).build();
+					Tool cachePointTool = Tool.builder().cachePoint(buildCachePoint(cacheOptions)).build();
 					bedrockTools.add(cachePointTool);
 					logger.debug("Applied cache point after tool definitions");
 				}
@@ -514,31 +438,60 @@ public class BedrockProxyChatModel implements ChatModel {
 		}
 
 		InferenceConfiguration inferenceConfiguration = InferenceConfiguration.builder()
-			.maxTokens(updatedRuntimeOptions.getMaxTokens())
-			.stopSequences(updatedRuntimeOptions.getStopSequences())
-			.temperature(updatedRuntimeOptions.getTemperature() != null
-					? updatedRuntimeOptions.getTemperature().floatValue() : null)
-			.topP(updatedRuntimeOptions.getTopP() != null ? updatedRuntimeOptions.getTopP().floatValue() : null)
+			.maxTokens(options.getMaxTokens())
+			.stopSequences(options.getStopSequences())
+			.temperature(options.getTemperature() != null ? options.getTemperature().floatValue() : null)
+			.topP(options.getTopP() != null ? options.getTopP().floatValue() : null)
 			.build();
 
-		Document additionalModelRequestFields = ConverseApiUtils
-			.getChatOptionsAdditionalModelRequestFields(this.defaultOptions, prompt.getOptions());
+		BedrockChatOptions bedrockOptions = (BedrockChatOptions) prompt.getOptions();
+		Assert.notNull(bedrockOptions, "options can't be null here");
+		Document additionalModelRequestFields = null;
+		if (!CollectionUtils.isEmpty(bedrockOptions.getRequestParameters())) {
+			additionalModelRequestFields = ConverseApiUtils
+				.convertObjectToDocument(bedrockOptions.getRequestParameters());
+		}
 
 		Map<String, String> requestMetadata = ConverseApiUtils
 			.getRequestMetadata(prompt.getUserMessage().getMetadata());
 
 		return ConverseRequest.builder()
-			.modelId(updatedRuntimeOptions.getModel())
+			.modelId(options.getModel())
 			.inferenceConfig(inferenceConfiguration)
 			.messages(instructionMessages)
 			.system(systemMessages)
 			.additionalModelRequestFields(additionalModelRequestFields)
 			.toolConfig(toolConfiguration)
 			.requestMetadata(requestMetadata)
+			.outputConfig(buildOutputConfig(options))
 			.build();
 	}
 
-	private ContentBlock mapMediaToContentBlock(Media media) {
+	private static CachePointBlock buildCachePoint(@Nullable BedrockCacheOptions cacheOptions) {
+		CachePointBlock.Builder builder = CachePointBlock.builder().type("default");
+		if (cacheOptions != null && cacheOptions.getTtl() != null) {
+			builder.ttl(cacheOptions.getTtl().getValue());
+		}
+		return builder.build();
+	}
+
+	private @Nullable OutputConfig buildOutputConfig(BedrockChatOptions options) {
+		String schema = options.getOutputSchema();
+		if (schema == null) {
+			return null;
+		}
+
+		return OutputConfig.builder()
+			.textFormat(OutputFormat.builder()
+				.type("json_schema")
+				.structure(OutputFormatStructure.builder()
+					.jsonSchema(JsonSchemaDefinition.builder().schema(schema).name("response_schema").build())
+					.build())
+				.build())
+			.build();
+	}
+
+	ContentBlock mapMediaToContentBlock(Media media) {
 
 		var mimeType = media.getMimeType();
 
@@ -549,9 +502,7 @@ public class BedrockProxyChatModel implements ChatModel {
 				videoSource = VideoSource.builder().bytes(SdkBytes.fromByteArrayUnsafe(bytes)).build();
 			}
 			else if (media.getData() instanceof String uriText) {
-				// if (URLValidator.isValidURLBasic(uriText)) {
 				videoSource = VideoSource.builder().s3Location(S3Location.builder().uri(uriText).build()).build();
-				// }
 			}
 			else if (media.getData() instanceof URL url) {
 				try {
@@ -576,29 +527,40 @@ public class BedrockProxyChatModel implements ChatModel {
 			}
 			else if (media.getData() instanceof String text) {
 
-				if (URLValidator.isValidURLBasic(text)) {
-					try {
-						URL url = new URL(text);
-						URLConnection connection = url.openConnection();
-						try (InputStream is = connection.getInputStream()) {
-							sourceBuilder.bytes(SdkBytes.fromByteArrayUnsafe(StreamUtils.copyToByteArray(is))).build();
+				if (text.startsWith("s3://")) {
+					sourceBuilder.s3Location(S3Location.builder().uri(text).build()).build();
+				}
+				else if (text.startsWith("http://") || text.startsWith("https://")) {
+					// Not base64
+					if (URLValidator.isValidURLStrict(text)) {
+						try {
+							byte[] bytes = this.mediaFetcher.fetch(URI.create(text));
+							sourceBuilder.bytes(SdkBytes.fromByteArrayUnsafe(bytes)).build();
+						}
+						catch (SecurityException | RestClientException e) {
+							throw new RuntimeException("Failed to read media data from URL: " + text, e);
 						}
 					}
-					catch (IOException e) {
-						throw new RuntimeException("Failed to read media data from URL: " + text, e);
+					else {
+						throw new SecurityException("URL is not valid under strict validation rules: " + text);
 					}
 				}
 				else {
+					// Assume it's base64-encoded image data
 					sourceBuilder.bytes(SdkBytes.fromByteArray(Base64.getDecoder().decode(text)));
 				}
 			}
 			else if (media.getData() instanceof URL url) {
 
-				try (InputStream is = url.openConnection().getInputStream()) {
-					byte[] imageBytes = StreamUtils.copyToByteArray(is);
-					sourceBuilder.bytes(SdkBytes.fromByteArrayUnsafe(imageBytes)).build();
+				try {
+					String protocol = url.getProtocol();
+					if (!"http".equalsIgnoreCase(protocol) && !"https".equalsIgnoreCase(protocol)) {
+						throw new SecurityException("Unsupported URL protocol: " + protocol);
+					}
+					byte[] bytes = this.mediaFetcher.fetch(url.toURI());
+					sourceBuilder.bytes(SdkBytes.fromByteArrayUnsafe(bytes)).build();
 				}
-				catch (IOException e) {
+				catch (SecurityException | RestClientException | URISyntaxException e) {
 					throw new IllegalArgumentException("Failed to read media data from URL: " + url, e);
 				}
 			}
@@ -637,38 +599,6 @@ public class BedrockProxyChatModel implements ChatModel {
 		return name.replaceAll("[^a-zA-Z0-9\\s\\-()\\[\\]]", "-");
 	}
 
-	private static byte[] getContentMediaData(Object mediaData) {
-		if (mediaData instanceof byte[] bytes) {
-			return bytes;
-		}
-		else if (mediaData instanceof String text) {
-			if (URLValidator.isValidURLBasic(text)) {
-				try {
-					URL url = new URL(text);
-					URLConnection connection = url.openConnection();
-					try (InputStream is = connection.getInputStream()) {
-						return StreamUtils.copyToByteArray(is);
-					}
-				}
-				catch (IOException e) {
-					throw new RuntimeException("Failed to read media data from URL: " + text, e);
-				}
-			}
-			return text.getBytes();
-		}
-		else if (mediaData instanceof URL url) {
-			try (InputStream is = url.openConnection().getInputStream()) {
-				return StreamUtils.copyToByteArray(is);
-			}
-			catch (IOException e) {
-				throw new RuntimeException("Failed to read media data from URL: " + url, e);
-			}
-		}
-		else {
-			throw new IllegalArgumentException("Unsupported media data type: " + mediaData.getClass().getSimpleName());
-		}
-	}
-
 	/**
 	 * Convert {@link ConverseResponse} to {@link ChatResponse} includes model output,
 	 * stopReason, usage, metrics etc.
@@ -676,35 +606,61 @@ public class BedrockProxyChatModel implements ChatModel {
 	 * @param response The Bedrock Converse response.
 	 * @return The ChatResponse entity.
 	 */
-	private ChatResponse toChatResponse(ConverseResponse response, ChatResponse perviousChatResponse) {
+	private ChatResponse toChatResponse(ConverseResponse response, @Nullable ChatResponse perviousChatResponse) {
 
 		Assert.notNull(response, "'response' must not be null.");
 
 		Message message = response.output().message();
 
-		List<Generation> generations = message.content()
+		// Preserve Bedrock reasoning blocks (signed reasoning text or redacted content)
+		// so the tool-calling loop can replay them, unmodified, on the next request. See
+		// gh-6413.
+		List<BedrockReasoningContent> reasoningContents = message.content()
 			.stream()
-			.filter(content -> content.type() != ContentBlock.Type.TOOL_USE)
-			.filter(content -> content.text() != null)
-			.map(content -> new Generation(
-					AssistantMessage.builder().content(content.text()).properties(Map.of()).build(),
-					ChatGenerationMetadata.builder().finishReason(response.stopReasonAsString()).build()))
+			.filter(content -> content.type() == ContentBlock.Type.REASONING_CONTENT)
+			.map(content -> BedrockReasoningContent.from(content.reasoningContent()))
 			.toList();
-
-		List<Generation> allGenerations = new ArrayList<>(generations);
-
-		if (response.stopReasonAsString() != null && generations.isEmpty()) {
-			Generation generation = new Generation(AssistantMessage.builder().properties(Map.of()).build(),
-					ChatGenerationMetadata.builder().finishReason(response.stopReasonAsString()).build());
-			allGenerations.add(generation);
-		}
 
 		List<ContentBlock> toolUseContentBlocks = message.content()
 			.stream()
 			.filter(c -> c.type() == ContentBlock.Type.TOOL_USE)
 			.toList();
+		boolean hasToolUse = !CollectionUtils.isEmpty(toolUseContentBlocks);
 
-		if (!CollectionUtils.isEmpty(toolUseContentBlocks)) {
+		// When the response carries reasoning but no tool use, surface the reasoning on
+		// the final-text assistant message without displacing the text returned by
+		// ChatResponse.getResult().
+		boolean attachReasoningToText = !hasToolUse && !CollectionUtils.isEmpty(reasoningContents);
+
+		List<Generation> generations = new ArrayList<>();
+		for (ContentBlock content : message.content()) {
+			if (content.type() == ContentBlock.Type.TOOL_USE || content.text() == null) {
+				continue;
+			}
+			AssistantMessage assistantMessage = (attachReasoningToText && generations.isEmpty())
+					? BedrockAssistantMessage.builder()
+						.content(content.text())
+						.properties(Map.of())
+						.reasoningContents(reasoningContents)
+						.build()
+					: AssistantMessage.builder().content(content.text()).properties(Map.of()).build();
+			generations.add(new Generation(assistantMessage,
+					ChatGenerationMetadata.builder().finishReason(response.stopReasonAsString()).build()));
+		}
+
+		List<Generation> allGenerations = new ArrayList<>(generations);
+
+		if (response.stopReasonAsString() != null && generations.isEmpty()) {
+			AssistantMessage assistantMessage = attachReasoningToText ? BedrockAssistantMessage.builder()
+				.properties(Map.of())
+				.reasoningContents(reasoningContents)
+				.build() : AssistantMessage.builder().properties(Map.of()).build();
+			Generation generation = new Generation(assistantMessage,
+					ChatGenerationMetadata.builder().finishReason(response.stopReasonAsString()).build());
+			allGenerations.add(generation);
+		}
+
+		if (hasToolUse) {
 
 			List<AssistantMessage.ToolCall> toolCalls = new ArrayList<>();
 
@@ -718,11 +674,17 @@ public class BedrockProxyChatModel implements ChatModel {
 					.add(new AssistantMessage.ToolCall(functionCallId, "function", functionName, functionArguments));
 			}
 
-			AssistantMessage assistantMessage = AssistantMessage.builder()
-				.content("")
-				.properties(Map.of())
-				.toolCalls(toolCalls)
-				.build();
+			// Attach the signed reasoning to the same assistant turn as the tool calls so
+			// DefaultToolCallingManager carries it into the next request history
+			// (gh-6413).
+			AssistantMessage assistantMessage = CollectionUtils.isEmpty(reasoningContents)
+					? AssistantMessage.builder().content("").properties(Map.of()).toolCalls(toolCalls).build()
+					: BedrockAssistantMessage.builder()
+						.content("")
+						.properties(Map.of())
+						.toolCalls(toolCalls)
+						.reasoningContents(reasoningContents)
+						.build();
 			Generation toolCallGeneration = new Generation(assistantMessage,
 					ChatGenerationMetadata.builder().finishReason(response.stopReasonAsString()).build());
 			allGenerations.add(toolCallGeneration);
@@ -770,7 +732,9 @@ public class BedrockProxyChatModel implements ChatModel {
 			.cacheWriteInputTokens(cacheWriteInputTokens)
 			.build();
 
-		DefaultUsage usage = new DefaultUsage(promptTokens, generationTokens, totalTokens, nativeTokenUsage);
+		DefaultUsage usage = new DefaultUsage(promptTokens, generationTokens, totalTokens, nativeTokenUsage,
+				cacheReadInputTokens != null ? cacheReadInputTokens.longValue() : null,
+				cacheWriteInputTokens != null ? cacheWriteInputTokens.longValue() : null);
 
 		Document modelResponseFields = response.additionalModelResponseFields();
 
@@ -809,7 +773,7 @@ public class BedrockProxyChatModel implements ChatModel {
 		return this.internalStream(requestPrompt, null);
 	}
 
-	private Flux<ChatResponse> internalStream(Prompt prompt, ChatResponse perviousChatResponse) {
+	private Flux<ChatResponse> internalStream(Prompt prompt, @Nullable ChatResponse perviousChatResponse) {
 		Assert.notNull(prompt, "'prompt' must not be null");
 
 		return Flux.deferContextual(contextView -> {
@@ -819,13 +783,19 @@ public class BedrockProxyChatModel implements ChatModel {
 			ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 				.prompt(prompt)
 				.provider(AiProvider.BEDROCK_CONVERSE.value())
+				.streaming(true)
 				.build();
 
 			Observation observation = ChatModelObservationDocumentation.CHAT_MODEL_OPERATION.observation(
 					this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 					this.observationRegistry);
 
-			observation.parentObservation(contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null)).start();
+			Observation parentObservation = contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null);
+			observation.parentObservation(parentObservation);
+			try (Observation.Scope ignored = parentObservation != null ? parentObservation.openScope()
+					: Observation.Scope.NOOP) {
+				observation.start();
+			}
 
 			ConverseStreamRequest converseStreamRequest = ConverseStreamRequest.builder()
 				.modelId(converseRequest.modelId())
@@ -835,6 +805,7 @@ public class BedrockProxyChatModel implements ChatModel {
 				.additionalModelRequestFields(converseRequest.additionalModelRequestFields())
 				.toolConfig(converseRequest.toolConfig())
 				.requestMetadata(converseRequest.requestMetadata())
+				.outputConfig(converseRequest.outputConfig())
 				.build();
 
 			Usage accumulatedUsage = null;
@@ -846,46 +817,13 @@ public class BedrockProxyChatModel implements ChatModel {
 					converseStreamRequest, accumulatedUsage)
 				.stream();
 
-			Flux<ChatResponse> chatResponseFlux = chatResponses.switchMap(chatResponse -> {
+			ChatOptions options = prompt.getOptions();
+			Assert.state(options != null, "Prompt options must not be null");
 
-				if (this.toolExecutionEligibilityPredicate.isToolExecutionRequired(prompt.getOptions(), chatResponse)
-						&& chatResponse.hasFinishReasons(Set.of(StopReason.TOOL_USE.toString()))) {
-
-					// FIXME: bounded elastic needs to be used since tool calling
-					// is currently only synchronous
-					return Flux.deferContextual(ctx -> {
-						ToolExecutionResult toolExecutionResult;
-						try {
-							ToolCallReactiveContextHolder.setContext(ctx);
-							toolExecutionResult = this.toolCallingManager.executeToolCalls(prompt, chatResponse);
-						}
-						finally {
-							ToolCallReactiveContextHolder.clearContext();
-						}
-
-						if (toolExecutionResult.returnDirect()) {
-							// Return tool execution result directly to the client.
-							return Flux.just(ChatResponse.builder()
-								.from(chatResponse)
-								.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
-								.build());
-						}
-						else {
-							// Send the tool execution result back to the model.
-							return this.internalStream(
-									new Prompt(toolExecutionResult.conversationHistory(), prompt.getOptions()),
-									chatResponse);
-						}
-					}).subscribeOn(Schedulers.boundedElastic());
-				}
-				else {
-					return Flux.just(chatResponse);
-				}
-			})// @formatter:off
-			.doOnError(observation::error)
-			.doFinally(s -> observation.stop())
-			.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
-			// @formatter:on
+			Flux<ChatResponse> chatResponseFlux = chatResponses.concatMap(chatResponse -> Flux.just(chatResponse))
+				.doOnError(observation::error)
+				.doFinally(s -> observation.stop())
+				.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
 
 			return new MessageAggregator().aggregate(chatResponseFlux, observationContext::setResponse);
 		});
@@ -904,11 +842,25 @@ public class BedrockProxyChatModel implements ChatModel {
 		return new Builder();
 	}
 
+	/**
+	 * Look at the options of the provided prompt. If none are provided, return a new
+	 * prompt using this model {@link ChatModel#getOptions() options}. Otherwise, use the
+	 * prompt as is.
+	 */
+	private Prompt buildRequestPrompt(Prompt prompt) {
+		if (prompt.getOptions() == null) {
+			return prompt.mutate().chatOptions(this.getOptions()).build();
+		}
+		else {
+			return prompt;
+		}
+	}
+
 	public static final class Builder {
 
-		private AwsCredentialsProvider credentialsProvider;
+		private @Nullable AwsCredentialsProvider credentialsProvider;
 
-		private Region region = Region.US_EAST_1;
+		private @Nullable Region region;
 
 		private Duration timeout = Duration.ofMinutes(5L);
 
@@ -920,37 +872,32 @@ public class BedrockProxyChatModel implements ChatModel {
 
 		private Duration socketTimeout = Duration.ofSeconds(30L);
 
-		private ToolCallingManager toolCallingManager;
+		private @Nullable ToolCallingManager toolCallingManager;
 
-		private ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate = new DefaultToolExecutionEligibilityPredicate();
-
-		private BedrockChatOptions defaultOptions = BedrockChatOptions.builder().build();
+		private BedrockChatOptions options = BedrockChatOptions.builder().build();
 
 		private ObservationRegistry observationRegistry = ObservationRegistry.NOOP;
 
-		private ChatModelObservationConvention customObservationConvention;
+		private @Nullable ChatModelObservationConvention customObservationConvention;
 
-		private BedrockRuntimeClient bedrockRuntimeClient;
+		private @Nullable BedrockRuntimeClient bedrockRuntimeClient;
 
-		private BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient;
+		private @Nullable BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient;
 
 		private Builder() {
-			try {
-				this.region = DefaultAwsRegionProviderChain.builder().build().getRegion();
-			}
-			catch (SdkClientException e) {
-				logger.warn("Failed to load region from DefaultAwsRegionProviderChain, using US_EAST_1", e);
-			}
 		}
 
+		/**
+		 * Sets the tool calling manager used for internal tool execution.
+		 * @param toolCallingManager the tool calling manager
+		 * @return this builder
+		 * @deprecated since 2.0.0 for removal in 3.0.0 — internal tool execution in
+		 * {@link BedrockProxyChatModel} is superseded by {@code ToolCallingAdvisor} used
+		 * via {@code ChatClient}.
+		 */
+		@Deprecated(since = "2.0.0", forRemoval = true)
 		public Builder toolCallingManager(ToolCallingManager toolCallingManager) {
 			this.toolCallingManager = toolCallingManager;
-			return this;
-		}
-
-		public Builder toolExecutionEligibilityPredicate(
-				ToolExecutionEligibilityPredicate toolExecutionEligibilityPredicate) {
-			this.toolExecutionEligibilityPredicate = toolExecutionEligibilityPredicate;
 			return this;
 		}
 
@@ -960,8 +907,7 @@ public class BedrockProxyChatModel implements ChatModel {
 			return this;
 		}
 
-		public Builder region(Region region) {
-			Assert.notNull(region, "'region' must not be null.");
+		public Builder region(@Nullable Region region) {
 			this.region = region;
 			return this;
 		}
@@ -996,9 +942,9 @@ public class BedrockProxyChatModel implements ChatModel {
 			return this;
 		}
 
-		public Builder defaultOptions(BedrockChatOptions defaultOptions) {
-			Assert.notNull(defaultOptions, "'defaultOptions' must not be null.");
-			this.defaultOptions = defaultOptions;
+		public Builder options(BedrockChatOptions options) {
+			Assert.notNull(options, "'options' must not be null.");
+			this.options = options;
 			return this;
 		}
 
@@ -1014,12 +960,12 @@ public class BedrockProxyChatModel implements ChatModel {
 			return this;
 		}
 
-		public Builder bedrockRuntimeClient(BedrockRuntimeClient bedrockRuntimeClient) {
+		public Builder bedrockRuntimeClient(@Nullable BedrockRuntimeClient bedrockRuntimeClient) {
 			this.bedrockRuntimeClient = bedrockRuntimeClient;
 			return this;
 		}
 
-		public Builder bedrockRuntimeAsyncClient(BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient) {
+		public Builder bedrockRuntimeAsyncClient(@Nullable BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient) {
 			this.bedrockRuntimeAsyncClient = bedrockRuntimeAsyncClient;
 			return this;
 		}
@@ -1034,7 +980,7 @@ public class BedrockProxyChatModel implements ChatModel {
 					.socketTimeout(this.socketTimeout);
 
 				this.bedrockRuntimeClient = BedrockRuntimeClient.builder()
-					.region(this.region)
+					.region(getRegion())
 					.httpClientBuilder(httpClientBuilder)
 					.credentialsProvider(this.credentialsProvider)
 					.overrideConfiguration(c -> c.apiCallTimeout(this.timeout))
@@ -1050,33 +996,38 @@ public class BedrockProxyChatModel implements ChatModel {
 					.connectionAcquisitionTimeout(this.connectionAcquisitionTimeout)
 					.maxConcurrency(200);
 
-				var builder = BedrockRuntimeAsyncClient.builder()
-					.region(this.region)
+				this.bedrockRuntimeAsyncClient = BedrockRuntimeAsyncClient.builder()
+					.region(getRegion())
 					.httpClientBuilder(httpClientBuilder)
 					.credentialsProvider(this.credentialsProvider)
-					.overrideConfiguration(c -> c.apiCallTimeout(this.timeout));
-				this.bedrockRuntimeAsyncClient = builder.build();
+					.overrideConfiguration(c -> c.apiCallTimeout(this.timeout))
+					.build();
 			}
 
-			BedrockProxyChatModel bedrockProxyChatModel = null;
+			this.toolCallingManager = this.toolCallingManager != null ? this.toolCallingManager
+					: ToolCallingManager.builder().observationRegistry(this.observationRegistry).build();
 
-			if (this.toolCallingManager != null) {
-				bedrockProxyChatModel = new BedrockProxyChatModel(this.bedrockRuntimeClient,
-						this.bedrockRuntimeAsyncClient, this.defaultOptions, this.observationRegistry,
-						this.toolCallingManager, this.toolExecutionEligibilityPredicate);
-
-			}
-			else {
-				bedrockProxyChatModel = new BedrockProxyChatModel(this.bedrockRuntimeClient,
-						this.bedrockRuntimeAsyncClient, this.defaultOptions, this.observationRegistry,
-						DEFAULT_TOOL_CALLING_MANAGER, this.toolExecutionEligibilityPredicate);
-			}
+			BedrockProxyChatModel bedrockProxyChatModel = new BedrockProxyChatModel(this.bedrockRuntimeClient,
+					this.bedrockRuntimeAsyncClient, this.options, this.observationRegistry, this.toolCallingManager);
 
 			if (this.customObservationConvention != null) {
 				bedrockProxyChatModel.setObservationConvention(this.customObservationConvention);
 			}
 
 			return bedrockProxyChatModel;
+		}
+
+		private Region getRegion() {
+			if (this.region != null) {
+				return this.region;
+			}
+			try {
+				return DefaultAwsRegionProviderChain.builder().build().getRegion();
+			}
+			catch (SdkClientException e) {
+				logger.debug("Failed to load region from DefaultAwsRegionProviderChain, using US_EAST_1");
+				return Region.US_EAST_1;
+			}
 		}
 
 	}

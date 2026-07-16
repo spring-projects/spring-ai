@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -67,58 +67,17 @@ public class JdbcChatMemoryRepositoryHsqldbAutoConfigurationIT {
 	 */
 	@BeforeEach
 	public void setUp() {
-		// Explicitly initialize the schema
-		try {
-			System.out.println("Explicitly initializing schema...");
+		// Drop the table first if it exists to avoid any conflicts
+		this.jdbcTemplate.execute("DROP TABLE SPRING_AI_CHAT_MEMORY IF EXISTS");
 
-			// Debug: Print current schemas and tables
-			try {
-				List<String> schemas = this.jdbcTemplate
-					.queryForList("SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA", String.class);
-				System.out.println("Available schemas: " + schemas);
+		// Create the table with a simplified schema
+		this.jdbcTemplate.execute("CREATE TABLE SPRING_AI_CHAT_MEMORY (" + "conversation_id VARCHAR(36) NOT NULL, "
+				+ "content LONGVARCHAR NOT NULL, " + "type VARCHAR(10) NOT NULL, "
+				+ "timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL, sequence_id BIGINT NOT NULL)");
 
-				List<String> tables = this.jdbcTemplate
-					.queryForList("SELECT TABLE_SCHEMA, TABLE_NAME FROM INFORMATION_SCHEMA.TABLES", String.class);
-				System.out.println("Available tables: " + tables);
-			}
-			catch (Exception e) {
-				System.out.println("Error listing schemas/tables: " + e.getMessage());
-			}
-
-			// Try a more direct approach with explicit SQL statements
-			try {
-				// Drop the table first if it exists to avoid any conflicts
-				this.jdbcTemplate.execute("DROP TABLE SPRING_AI_CHAT_MEMORY IF EXISTS");
-				System.out.println("Dropped existing table if it existed");
-
-				// Create the table with a simplified schema
-				this.jdbcTemplate.execute("CREATE TABLE SPRING_AI_CHAT_MEMORY ("
-						+ "conversation_id VARCHAR(36) NOT NULL, " + "content LONGVARCHAR NOT NULL, "
-						+ "type VARCHAR(10) NOT NULL, " + "timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL)");
-				System.out.println("Created table with simplified schema");
-
-				// Create index
-				this.jdbcTemplate.execute(
-						"CREATE INDEX SPRING_AI_CHAT_MEMORY_IDX ON SPRING_AI_CHAT_MEMORY(conversation_id, timestamp DESC)");
-				System.out.println("Created index");
-
-				// Verify table was created
-				boolean tableExists = this.jdbcTemplate.queryForObject(
-						"SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'SPRING_AI_CHAT_MEMORY'",
-						Integer.class) > 0;
-				System.out.println("Table SPRING_AI_CHAT_MEMORY exists after creation: " + tableExists);
-			}
-			catch (Exception e) {
-				System.out.println("Error during direct table creation: " + e.getMessage());
-				e.printStackTrace();
-			}
-
-			System.out.println("Schema initialization completed");
-		}
-		catch (Exception e) {
-			System.out.println("Error during explicit schema initialization: " + e.getMessage());
-			e.printStackTrace();
-		}
+		// Create index
+		this.jdbcTemplate
+			.execute("CREATE INDEX SPRING_AI_CHAT_MEMORY_IDX ON SPRING_AI_CHAT_MEMORY(conversation_id, sequence_id)");
 	}
 
 	@Test
@@ -126,31 +85,14 @@ public class JdbcChatMemoryRepositoryHsqldbAutoConfigurationIT {
 		// Check that the custom schema initializer is present
 		assertThat(this.context.containsBean("jdbcChatMemoryScriptDatabaseInitializer")).isTrue();
 
-		// Debug: List all schema-hsqldb.sql resources on the classpath
-		try {
-			java.util.Enumeration<java.net.URL> resources = Thread.currentThread()
-				.getContextClassLoader()
-				.getResources("org/springframework/ai/chat/memory/repository/jdbc/schema-hsqldb.sql");
-			System.out.println("--- schema-hsqldb.sql resources found on classpath ---");
-			while (resources.hasMoreElements()) {
-				System.out.println(resources.nextElement());
-			}
-			System.out.println("------------------------------------------------------");
-		}
-		catch (Exception e) {
-			e.printStackTrace();
-		}
-
 		// Verify the table exists by executing a direct query
 		try {
 			boolean tableExists = this.jdbcTemplate.queryForObject(
 					"SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'SPRING_AI_CHAT_MEMORY'",
 					Integer.class) > 0;
-			System.out.println("Table SPRING_AI_CHAT_MEMORY exists: " + tableExists);
 			assertThat(tableExists).isTrue();
 		}
 		catch (Exception e) {
-			System.out.println("Error checking table: " + e.getMessage());
 			e.printStackTrace();
 			fail("Failed to check if table exists: " + e.getMessage());
 		}
@@ -165,12 +107,15 @@ public class JdbcChatMemoryRepositoryHsqldbAutoConfigurationIT {
 
 		chatMemory.add(conversationId, userMessage);
 		assertThat(chatMemory.get(conversationId)).hasSize(1);
-		assertThat(chatMemory.get(conversationId)).isEqualTo(List.of(userMessage));
+		// Read-back messages carry timestamp metadata, so compare content rather than
+		// full object equality.
+		assertThat(chatMemory.get(conversationId)).extracting(Message::getText).containsExactly(userMessage.getText());
 
 		var assistantMessage = new AssistantMessage("Message from the assistant");
 		chatMemory.add(conversationId, List.of(assistantMessage));
 		assertThat(chatMemory.get(conversationId)).hasSize(2);
-		assertThat(chatMemory.get(conversationId)).isEqualTo(List.of(userMessage, assistantMessage));
+		assertThat(chatMemory.get(conversationId)).extracting(Message::getText)
+			.containsExactly(userMessage.getText(), assistantMessage.getText());
 
 		chatMemory.clear(conversationId);
 		assertThat(chatMemory.get(conversationId)).isEmpty();
@@ -179,7 +124,8 @@ public class JdbcChatMemoryRepositoryHsqldbAutoConfigurationIT {
 				new AssistantMessage("Message from the assistant 1"));
 		chatMemory.add(conversationId, multipleMessages);
 		assertThat(chatMemory.get(conversationId)).hasSize(multipleMessages.size());
-		assertThat(chatMemory.get(conversationId)).isEqualTo(multipleMessages);
+		assertThat(chatMemory.get(conversationId)).extracting(Message::getText)
+			.containsExactlyElementsOf(multipleMessages.stream().map(Message::getText).toList());
 	}
 
 	@SpringBootConfiguration

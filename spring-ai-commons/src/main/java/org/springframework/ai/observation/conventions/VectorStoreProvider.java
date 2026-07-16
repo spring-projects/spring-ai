@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,10 +48,6 @@ public enum VectorStoreProvider {
 	CHROMA("chroma"),
 
 	/**
-	 * Vector store provided by CosmosDB.
-	 */
-	COSMOSDB("cosmosdb"),
-	/**
 	 * Vector store provided by Couchbase.
 	 */
 	COUCHBASE("couchbase"),
@@ -64,16 +60,6 @@ public enum VectorStoreProvider {
 	 * Vector store provided by GemFire.
 	 */
 	GEMFIRE("gemfire"),
-
-	/**
-	 * Vector store provided by HANA.
-	 */
-	HANA("hana"),
-
-	/**
-	 * Vector store provided by Infinispan.
-	 */
-	INFINISPAN("infinispan"),
 
 	/**
 	 * Vector store provided by MariaDB.
@@ -116,7 +102,7 @@ public enum VectorStoreProvider {
 	PINECONE("pinecone"),
 
 	/**
-	 * Vector store provided by Qdrand.
+	 * Vector store provided by Qdrant.
 	 */
 	QDRANT("qdrant"),
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,8 +23,8 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 /**
  * Mock weather service for testing tool call functionality.
@@ -33,12 +33,14 @@ import org.slf4j.LoggerFactory;
  */
 public class MockWeatherService implements Function<MockWeatherService.Request, MockWeatherService.Response> {
 
-	private final Logger logger = LoggerFactory.getLogger(MockWeatherService.class);
+	private final Log logger = LogFactory.getLog(MockWeatherService.class);
 
 	@Override
 	public Response apply(Request request) {
-		logger.info("Received weather request for location: " + request.location() + ", lat: " + request.lat()
-				+ ", lon: " + request.lon() + ", unit: " + request.unit());
+		if (logger.isInfoEnabled()) {
+			logger.info("Received weather request for location: " + request.location() + ", lat: " + request.lat()
+					+ ", lon: " + request.lon() + ", unit: " + request.unit());
+		}
 		double temperature = 0;
 		if (request.location().contains("Paris")) {
 			temperature = 15;

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,7 +61,29 @@ public class TypesenseFilterExpressionConverter extends AbstractFilterExpression
 
 	@Override
 	protected void doKey(Filter.Key key, StringBuilder context) {
-		context.append("metadata." + key.key() + ":");
+		var identifier = (hasOuterQuotes(key.key())) ? removeOuterQuotes(key.key()) : key.key();
+		// Typesense field names are bare identifiers in filter_by syntax
+		// (field_name:value) with no escaping mechanism. Validate that the
+		// identifier contains only safe characters to prevent filter injection.
+		for (int i = 0; i < identifier.length(); i++) {
+			char c = identifier.charAt(i);
+			if (!Character.isLetterOrDigit(c) && c != '_' && c != '.' && c != '-') {
+				throw new IllegalArgumentException("Not allowed filter identifier name: " + identifier);
+			}
+		}
+		context.append("metadata.").append(identifier).append(":");
+	}
+
+	/**
+	 * Serialize values using JSON serialization for Typesense filter expressions.
+	 * Delegates to {@link #emitJsonValue(Object, StringBuilder)} for Jackson-based JSON
+	 * serialization.
+	 * @param value the value to serialize
+	 * @param context the context to append the JSON representation to
+	 */
+	@Override
+	protected void doSingleValue(Object value, StringBuilder context) {
+		emitJsonValue(value, context);
 	}
 
 }

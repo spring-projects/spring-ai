@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2026 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,11 +66,14 @@ import org.springframework.web.servlet.function.ServerResponse;
  * @see McpServerSseProperties
  * @see WebMvcSseServerTransportProvider
  */
+// before: McpServerAutoConfiguration defines a low priority
+// McpServerTransportProviderBase bean and this conf should have priority
 @AutoConfiguration(before = McpServerAutoConfiguration.class)
 @EnableConfigurationProperties(McpServerSseProperties.class)
 @ConditionalOnClass(WebMvcSseServerTransportProvider.class)
 @ConditionalOnMissingBean(McpServerTransportProvider.class)
 @Conditional({ McpServerStdioDisabledCondition.class, McpServerAutoConfiguration.EnabledSseServerCondition.class })
+@Deprecated(since = "2.0.0", forRemoval = true)
 public class McpServerSseWebMvcAutoConfiguration {
 
 	@Bean

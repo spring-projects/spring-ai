@@ -1,5 +1,5 @@
 /*
- * Copyright 2026-2026 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -95,17 +95,17 @@ public class AsyncServerMcpTransportContextIT {
 	});
 
 	// Tools
-	private final McpSchema.Tool tool = McpSchema.Tool.builder()
-		.name("test-tool")
+	private final McpSchema.Tool tool = McpSchema.Tool.builder("test-tool", Map.of())
 		.description("return the value of the x-test header from call tool request")
 		.build();
 
 	private final BiFunction<McpTransportContext, McpSchema.CallToolRequest, Mono<McpSchema.CallToolResult>> asyncStatelessHandler = (
-			transportContext,
-			request) -> Mono.just(McpSchema.CallToolResult.builder()
-				.content(
-						List.of(new McpSchema.TextContent(transportContext.get("server-side-header-value").toString())))
-				.build());
+			transportContext, request) -> Mono.just(
+					McpSchema.CallToolResult.builder()
+						.content(List.of(McpSchema.TextContent
+							.builder(transportContext.get("server-side-header-value").toString())
+							.build()))
+						.build());
 
 	private final BiFunction<McpAsyncServerExchange, McpSchema.CallToolRequest, Mono<McpSchema.CallToolResult>> asyncStatefulHandler = (
 			exchange, request) -> this.asyncStatelessHandler.apply(exchange.transportContext(), request);
@@ -175,7 +175,7 @@ public class AsyncServerMcpTransportContextIT {
 
 		// Test tool call with context
 		StepVerifier
-			.create(this.asyncStreamableClient.callTool(new McpSchema.CallToolRequest("test-tool", Map.of()))
+			.create(this.asyncStreamableClient.callTool(McpSchema.CallToolRequest.builder("test-tool").build())
 				.contextWrite(ctx -> ctx.put(McpTransportContext.KEY,
 						McpTransportContext.create(Map.of("client-side-header-value", "some important value")))))
 			.assertNext(response -> {
@@ -188,7 +188,7 @@ public class AsyncServerMcpTransportContextIT {
 			})
 			.verifyComplete();
 
-		mcpServer.close();
+		mcpServer.closeGracefully().block();
 	}
 
 	@Test
@@ -207,7 +207,7 @@ public class AsyncServerMcpTransportContextIT {
 
 		// Test tool call with context
 		StepVerifier
-			.create(this.asyncStreamableClient.callTool(new McpSchema.CallToolRequest("test-tool", Map.of()))
+			.create(this.asyncStreamableClient.callTool(McpSchema.CallToolRequest.builder("test-tool").build())
 				.contextWrite(ctx -> ctx.put(McpTransportContext.KEY,
 						McpTransportContext.create(Map.of("client-side-header-value", "some important value")))))
 			.assertNext(response -> {
@@ -220,7 +220,7 @@ public class AsyncServerMcpTransportContextIT {
 			})
 			.verifyComplete();
 
-		mcpServer.close();
+		mcpServer.closeGracefully().block();
 	}
 
 	@Test
@@ -239,7 +239,7 @@ public class AsyncServerMcpTransportContextIT {
 
 		// Test tool call with context
 		StepVerifier
-			.create(this.asyncSseClient.callTool(new McpSchema.CallToolRequest("test-tool", Map.of()))
+			.create(this.asyncSseClient.callTool(McpSchema.CallToolRequest.builder("test-tool").build())
 				.contextWrite(ctx -> ctx.put(McpTransportContext.KEY,
 						McpTransportContext.create(Map.of("client-side-header-value", "some important value")))))
 			.assertNext(response -> {
@@ -252,7 +252,7 @@ public class AsyncServerMcpTransportContextIT {
 			})
 			.verifyComplete();
 
-		mcpServer.close();
+		mcpServer.closeGracefully().block();
 	}
 
 	private void startHttpServer(RouterFunction<?> routerFunction) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,9 +33,16 @@ import org.springframework.util.Assert;
  */
 public class ChatModelObservationContext extends ModelObservationContext<Prompt, ChatResponse> {
 
-	ChatModelObservationContext(Prompt prompt, String provider) {
+	private final boolean streaming;
+
+	ChatModelObservationContext(Prompt prompt, String provider, boolean streaming) {
 		super(prompt,
 				AiOperationMetadata.builder().operationType(AiOperationType.CHAT.value()).provider(provider).build());
+		this.streaming = streaming;
+	}
+
+	public boolean isStreaming() {
+		return this.streaming;
 	}
 
 	public static Builder builder() {
@@ -47,6 +54,8 @@ public class ChatModelObservationContext extends ModelObservationContext<Prompt,
 		private @Nullable Prompt prompt;
 
 		private @Nullable String provider;
+
+		private boolean streaming;
 
 		private Builder() {
 		}
@@ -61,10 +70,15 @@ public class ChatModelObservationContext extends ModelObservationContext<Prompt,
 			return this;
 		}
 
+		public Builder streaming(boolean streaming) {
+			this.streaming = streaming;
+			return this;
+		}
+
 		public ChatModelObservationContext build() {
 			Assert.state(this.prompt != null, "Prompt must not be null");
 			Assert.state(this.provider != null, "Provider must not be null");
-			return new ChatModelObservationContext(this.prompt, this.provider);
+			return new ChatModelObservationContext(this.prompt, this.provider, this.streaming);
 		}
 
 	}

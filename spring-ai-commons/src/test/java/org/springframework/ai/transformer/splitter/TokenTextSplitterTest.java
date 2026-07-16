@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -428,6 +428,51 @@ public class TokenTextSplitterTest {
 		assertThatIllegalArgumentException()
 			.isThrownBy(() -> TokenTextSplitter.builder().withEncodingType(null).build())
 			.withMessage("encodingType must not be null");
+	}
+
+	@Test
+	public void testTokenTextSplitterWithZeroChunkSizeThrows() {
+		// A chunkSize of 0 previously caused doSplit to loop forever; it must now fail
+		// fast.
+		assertThatIllegalArgumentException().isThrownBy(() -> TokenTextSplitter.builder().withChunkSize(0).build())
+			.withMessage("chunkSize must be greater than zero");
+	}
+
+	@Test
+	public void testTokenTextSplitterWithNegativeChunkSizeThrows() {
+		assertThatIllegalArgumentException().isThrownBy(() -> TokenTextSplitter.builder().withChunkSize(-1).build())
+			.withMessage("chunkSize must be greater than zero");
+	}
+
+	@Test
+	public void testTokenTextSplitterWithNonPositiveMaxNumChunksThrows() {
+		assertThatIllegalArgumentException().isThrownBy(() -> TokenTextSplitter.builder().withMaxNumChunks(0).build())
+			.withMessage("maxNumChunks must be greater than zero");
+	}
+
+	@Test
+	public void testTokenTextSplitterWithNegativeMinChunkSizeCharsThrows() {
+		assertThatIllegalArgumentException()
+			.isThrownBy(() -> TokenTextSplitter.builder().withMinChunkSizeChars(-1).build())
+			.withMessage("minChunkSizeChars must not be negative");
+	}
+
+	@Test
+	public void testTokenTextSplitterWithNegativeMinChunkLengthToEmbedThrows() {
+		assertThatIllegalArgumentException()
+			.isThrownBy(() -> TokenTextSplitter.builder().withMinChunkLengthToEmbed(-1).build())
+			.withMessage("minChunkLengthToEmbed must not be negative");
+	}
+
+	@Test
+	public void testTokenTextSplitterWithChunkSizeOneTerminates() {
+		// chunkSize == 1 is the smallest valid value: it must terminate and produce
+		// chunks.
+		var splitter = TokenTextSplitter.builder().withChunkSize(1).withMinChunkLengthToEmbed(0).build();
+
+		var chunks = splitter.apply(List.of(new Document("Hello world from Spring AI")));
+
+		assertThat(chunks).isNotEmpty();
 	}
 
 	@Test

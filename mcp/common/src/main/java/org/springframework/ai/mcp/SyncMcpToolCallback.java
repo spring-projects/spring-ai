@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,18 +19,19 @@ package org.springframework.ai.mcp;
 import java.util.Map;
 
 import io.modelcontextprotocol.client.McpSyncClient;
+import io.modelcontextprotocol.spec.McpError;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.model.ToolContext;
-import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.execution.ToolExecutionException;
+import org.springframework.ai.util.JsonHelper;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -45,7 +46,9 @@ import org.springframework.util.StringUtils;
  */
 public class SyncMcpToolCallback implements ToolCallback {
 
-	private static final Logger logger = LoggerFactory.getLogger(SyncMcpToolCallback.class);
+	private static final JsonHelper jsonHelper = new JsonHelper();
+
+	private static final Log logger = LogFactory.getLog(SyncMcpToolCallback.class);
 
 	private final McpSyncClient mcpClient;
 
@@ -110,27 +113,34 @@ public class SyncMcpToolCallback implements ToolCallback {
 
 		// Handle the possible null parameter situation in streaming mode.
 		if (!StringUtils.hasText(toolCallInput)) {
-			logger.warn("Tool call arguments are null or empty for MCP tool: {}. Using empty JSON object as default.",
-					this.tool.name());
+			if (logger.isWarnEnabled()) {
+				logger.warn("Tool call arguments are null or empty for MCP tool: " + this.tool.name()
+						+ ". Using empty JSON object as default.");
+			}
 			toolCallInput = "{}";
 		}
 
-		Map<String, Object> arguments = ModelOptionsUtils.jsonToMap(toolCallInput);
+		Map<String, Object> arguments = jsonHelper.fromJsonToMap(toolCallInput);
 
 		CallToolResult response;
 		try {
 			var mcpMeta = toolContext != null ? this.toolContextToMcpMetaConverter.convert(toolContext) : null;
 
-			var request = CallToolRequest.builder()
-				// Use the original tool name, not the prefixed one from getToolDefinition
-				.name(this.tool.name())
-				.arguments(arguments)
-				.meta(mcpMeta)
-				.build();
+			// Use the original tool name, not the prefixed one from getToolDefinition
+			var request = CallToolRequest.builder(this.tool.name()).arguments(arguments).meta(mcpMeta).build();
 
 			// Note that we use the original tool name here, not the adapted one from
 			// getToolDefinition
 			response = this.mcpClient.callTool(request);
+		}
+		catch (McpError ex) {
+			// A protocol-level error indicates the tool invocation itself failed and
+			// must not be conveyed to the model. Rethrow it as a hard failure, mirroring
+			// how @Tool treats checked exceptions and Errors. Since the tool calling
+			// manager only handles ToolExecutionException, this bubbles up and fails the
+			// model interaction.
+			logger.error("Protocol error while calling tool: ", ex);
+			throw ex;
 		}
 		catch (Exception ex) {
 			logger.error("Exception while tool calling: ", ex);
@@ -138,11 +148,13 @@ public class SyncMcpToolCallback implements ToolCallback {
 		}
 
 		if (response.isError() != null && response.isError()) {
-			logger.error("Error calling tool: {}", response.content());
+			if (logger.isErrorEnabled()) {
+				logger.error("Error calling tool: " + response.content());
+			}
 			throw new ToolExecutionException(this.getToolDefinition(),
 					new IllegalStateException("Error calling tool: " + response.content()));
 		}
-		return ModelOptionsUtils.toJsonString(response.content());
+		return jsonHelper.toJson(response.content());
 	}
 
 	/**

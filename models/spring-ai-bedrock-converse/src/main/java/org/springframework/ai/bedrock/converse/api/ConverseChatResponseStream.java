@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,8 +23,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeAsyncClient;
@@ -56,7 +57,7 @@ import org.springframework.util.Assert;
  */
 public class ConverseChatResponseStream implements ConverseStreamResponseHandler.Visitor {
 
-	private static final Logger logger = LoggerFactory.getLogger(ConverseChatResponseStream.class);
+	private static final Log logger = LogFactory.getLog(ConverseChatResponseStream.class);
 
 	public static final Sinks.EmitFailureHandler DEFAULT_EMIT_FAILURE_HANDLER = Sinks.EmitFailureHandler
 		.busyLooping(Duration.ofSeconds(10));
@@ -82,7 +83,7 @@ public class ConverseChatResponseStream implements ConverseStreamResponseHandler
 	private final ConverseStreamRequest converseStreamRequest;
 
 	public ConverseChatResponseStream(BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient,
-			ConverseStreamRequest converseStreamRequest, Usage accumulatedUsage) {
+			ConverseStreamRequest converseStreamRequest, @Nullable Usage accumulatedUsage) {
 
 		Assert.notNull(bedrockRuntimeAsyncClient, "'bedrockRuntimeAsyncClient' must not be null");
 		Assert.notNull(converseStreamRequest, "'converseStreamRequest' must not be null");
@@ -191,8 +192,12 @@ public class ConverseChatResponseStream implements ConverseStreamResponseHandler
 	}
 
 	private Usage getCurrentUsage() {
+		TokenUsage nativeUsage = this.tokenUsageRef.get();
+		Integer cacheReadInt = nativeUsage != null ? nativeUsage.cacheReadInputTokens() : null;
+		Integer cacheWriteInt = nativeUsage != null ? nativeUsage.cacheWriteInputTokens() : null;
 		return new DefaultUsage(this.promptTokens.get(), this.generationTokens.get(), this.totalTokens.get(),
-				this.tokenUsageRef.get());
+				nativeUsage, cacheReadInt != null ? cacheReadInt.longValue() : null,
+				cacheWriteInt != null ? cacheWriteInt.longValue() : null);
 	}
 
 	/**

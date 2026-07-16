@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,17 +17,15 @@
 package org.springframework.ai.tool.augment;
 
 import java.util.List;
-import java.util.Map;
 import java.util.function.Consumer;
 
 import org.jspecify.annotations.Nullable;
-import tools.jackson.core.type.TypeReference;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.augment.ToolInputSchemaAugmenter.AugmentedArgumentType;
 import org.springframework.ai.tool.definition.ToolDefinition;
-import org.springframework.ai.util.json.JsonParser;
+import org.springframework.ai.util.JsonHelper;
 import org.springframework.util.Assert;
 
 /**
@@ -39,6 +37,8 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  */
 public class AugmentedToolCallback<T extends Record> implements ToolCallback {
+
+	private static final JsonHelper jsonHelper = new JsonHelper();
 
 	/**
 	 * The delegate ToolCallback that this class extends.
@@ -124,20 +124,19 @@ public class AugmentedToolCallback<T extends Record> implements ToolCallback {
 		// Extract the augmented arguments from the toolInput and send them to the
 		// consumer if provided.
 		if (this.augmentedArgumentsConsumer != null) {
-			T augmentedArguments = JsonParser.fromJson(toolInput, this.augmentedArgumentsClass);
+			T augmentedArguments = jsonHelper.fromJson(toolInput, this.augmentedArgumentsClass);
 			this.augmentedArgumentsConsumer
 				.accept(new AugmentedArgumentEvent<>(this.augmentedToolDefinition, toolInput, augmentedArguments));
 		}
 
 		// Optionally remove the extra arguments from the toolInput
 		if (this.removeAugmentedArgumentsAfterProcessing) {
-			var args = JsonParser.fromJson(toolInput, new TypeReference<Map<String, Object>>() {
-			});
+			var args = jsonHelper.fromJsonToMap(toolInput);
 
 			for (AugmentedArgumentType newFieldType : this.augmentedArgumentTypes) {
 				args.remove(newFieldType.name());
 			}
-			toolInput = JsonParser.toJson(args);
+			toolInput = jsonHelper.toJson(args);
 		}
 
 		return toolInput;

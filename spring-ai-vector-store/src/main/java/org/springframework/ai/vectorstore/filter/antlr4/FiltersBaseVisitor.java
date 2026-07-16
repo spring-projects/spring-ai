@@ -2,7 +2,7 @@
 package org.springframework.ai.vectorstore.filter.antlr4;
 
 /*
- * Copyright 2023-2023 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -199,7 +199,33 @@ public class FiltersBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
 	 * </p>
 	 */
 	@Override
-	public T visitIdentifier(FiltersParser.IdentifierContext ctx) {
+	public T visitCompoundIdentifier(FiltersParser.CompoundIdentifierContext ctx) {
+		return visitChildren(ctx);
+	}
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>
+	 * The default implementation returns the result of calling {@link #visitChildren} on
+	 * {@code ctx}.
+	 * </p>
+	 */
+	@Override
+	public T visitSimpleIdentifier(FiltersParser.SimpleIdentifierContext ctx) {
+		return visitChildren(ctx);
+	}
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>
+	 * The default implementation returns the result of calling {@link #visitChildren} on
+	 * {@code ctx}.
+	 * </p>
+	 */
+	@Override
+	public T visitQuotedIdentifier(FiltersParser.QuotedIdentifierContext ctx) {
 		return visitChildren(ctx);
 	}
 

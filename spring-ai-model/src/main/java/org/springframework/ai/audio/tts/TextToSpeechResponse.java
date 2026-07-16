@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@ package org.springframework.ai.audio.tts;
 
 import java.util.List;
 import java.util.Objects;
+
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.model.ModelResponse;
 
@@ -56,7 +58,7 @@ public class TextToSpeechResponse implements ModelResponse<Speech> {
 	}
 
 	@Override
-	public boolean equals(Object o) {
+	public boolean equals(@Nullable Object o) {
 		if (this == o) {
 			return true;
 		}

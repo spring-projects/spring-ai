@@ -11,6 +11,11 @@
 	<executionControl>
 		<runAlways>
 			<goalsLists>
+				<goalsList artifactId="swagger-codegen-maven-plugin">
+					<goals>
+						<goal>generate</goal>
+					</goals>
+				</goalsList>
 				<goalsList artifactId="maven-install-plugin">
 					<goals>
 						<goal>install</goal>

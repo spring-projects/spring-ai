@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,13 +21,19 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistryAssert;
+import io.pinecone.clients.Pinecone;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
@@ -54,14 +60,16 @@ import static org.hamcrest.Matchers.hasSize;
 /**
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Ilayaperumal Gopinathan
  */
 @EnabledIfEnvironmentVariable(named = "PINECONE_API_KEY", matches = ".+")
 public class PineconeVectorStoreObservationIT {
 
 	private static final String PINECONE_INDEX_NAME = "spring-ai-test-index";
 
-	// NOTE: Leave it empty as for free tier as later doesn't support namespaces.
-	private static final String PINECONE_NAMESPACE = "";
+	// Use a unique namespace per test run for isolation when PINECONE_NAMESPACE is not
+	// set.
+	private static String PINECONE_NAMESPACE;
 
 	private static final String CUSTOM_CONTENT_FIELD_NAME = "article";
 
@@ -90,6 +98,29 @@ public class PineconeVectorStoreObservationIT {
 		Awaitility.setDefaultTimeout(Duration.ofMinutes(1));
 	}
 
+	@BeforeEach
+	public void setUpNamespace() {
+		String env = System.getenv("PINECONE_NAMESPACE");
+		PINECONE_NAMESPACE = (env != null) ? env : ("spring-ai-it-" + UUID.randomUUID());
+	}
+
+	@AfterEach
+	public void tearDownNamespace() {
+		this.contextRunner.run(context -> {
+			PineconeVectorStore vectorStore = context.getBean(PineconeVectorStore.class);
+			vectorStore.<Pinecone>getNativeClient().ifPresent(pinecone -> {
+				try {
+					pinecone.getIndexConnection(PINECONE_INDEX_NAME).deleteNamespace(PINECONE_NAMESPACE);
+				}
+				catch (StatusRuntimeException e) {
+					if (e.getStatus().getCode() != Status.Code.NOT_FOUND) {
+						throw e;
+					}
+				}
+			});
+		});
+	}
+
 	@Test
 	void observationVectorStoreAddAndQueryOperations() {
 
@@ -114,7 +145,7 @@ public class PineconeVectorStoreObservationIT {
 				.doesNotHaveHighCardinalityKeyValueWithKey(HighCardinalityKeyNames.DB_VECTOR_QUERY_CONTENT.asString())
 				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_VECTOR_DIMENSION_COUNT.asString(), "384")
 				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_COLLECTION_NAME.asString(), PINECONE_INDEX_NAME)
-				.doesNotHaveHighCardinalityKeyValueWithKey(HighCardinalityKeyNames.DB_NAMESPACE.asString())
+				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_NAMESPACE.asString(), PINECONE_NAMESPACE)
 				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_VECTOR_FIELD_NAME.asString(), "article")
 				.doesNotHaveHighCardinalityKeyValueWithKey(
 						HighCardinalityKeyNames.DB_SEARCH_SIMILARITY_METRIC.asString())
@@ -152,7 +183,7 @@ public class PineconeVectorStoreObservationIT {
 						"What is Great Depression")
 				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_VECTOR_DIMENSION_COUNT.asString(), "384")
 				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_COLLECTION_NAME.asString(), PINECONE_INDEX_NAME)
-				.doesNotHaveHighCardinalityKeyValueWithKey(HighCardinalityKeyNames.DB_NAMESPACE.asString())
+				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_NAMESPACE.asString(), PINECONE_NAMESPACE)
 				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_VECTOR_FIELD_NAME.asString(), "article")
 				.doesNotHaveHighCardinalityKeyValueWithKey(
 						HighCardinalityKeyNames.DB_SEARCH_SIMILARITY_METRIC.asString())

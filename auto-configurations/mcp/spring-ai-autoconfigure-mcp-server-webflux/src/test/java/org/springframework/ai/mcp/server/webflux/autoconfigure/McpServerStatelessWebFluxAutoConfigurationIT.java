@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2026 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,7 +65,7 @@ class McpServerStatelessWebFluxAutoConfigurationIT {
 
 	@Test
 	void serverBaseUrlConfiguration() {
-		this.contextRunner.withPropertyValues("spring.ai.mcp.server.streamable-http.mcpEndpoint=/test")
+		this.contextRunner.withPropertyValues("spring.ai.mcp.server.streamable-http.mcp-endpoint=/test")
 			.run(context -> assertThat(context.getBean(WebFluxStatelessServerTransport.class)).extracting("mcpEndpoint")
 				.isEqualTo("/test"));
 	}
@@ -162,7 +162,7 @@ class McpServerStatelessWebFluxAutoConfigurationIT {
 	@Test
 	void allPropertiesConfiguration() {
 		this.contextRunner
-			.withPropertyValues("spring.ai.mcp.server.streamable-http.mcpEndpoint=/custom-endpoint",
+			.withPropertyValues("spring.ai.mcp.server.streamable-http.mcp-endpoint=/custom-endpoint",
 					"spring.ai.mcp.server.streamable-http.disallow-delete=true")
 			.run(context -> {
 				WebFluxStatelessServerTransport provider = context.getBean(WebFluxStatelessServerTransport.class);

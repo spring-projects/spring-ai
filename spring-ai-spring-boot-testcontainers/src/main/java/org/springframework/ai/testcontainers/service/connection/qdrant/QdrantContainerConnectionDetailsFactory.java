@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package org.springframework.ai.testcontainers.service.connection.qdrant;
 
+import org.jspecify.annotations.Nullable;
 import org.testcontainers.qdrant.QdrantContainer;
 
 import org.springframework.ai.vectorstore.qdrant.autoconfigure.QdrantConnectionDetails;
@@ -54,7 +55,7 @@ class QdrantContainerConnectionDetailsFactory
 		}
 
 		@Override
-		public String getApiKey() {
+		public @Nullable String getApiKey() {
 			return getContainer().getEnvMap().get("QDRANT__SERVICE__API_KEY");
 		}
 

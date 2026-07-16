@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -126,7 +126,7 @@ public class ChatResponse implements ModelResponse<Generation> {
 		return this.generations.stream().anyMatch(generation -> {
 			var finishReason = (generation.getMetadata().getFinishReason() != null)
 					? generation.getMetadata().getFinishReason() : "";
-			return finishReasons.stream().map(String::toLowerCase).toList().contains(finishReason.toLowerCase());
+			return finishReasons.stream().anyMatch(fr -> fr.equalsIgnoreCase(finishReason));
 		});
 	}
 
@@ -136,7 +136,7 @@ public class ChatResponse implements ModelResponse<Generation> {
 	}
 
 	@Override
-	public boolean equals(Object o) {
+	public boolean equals(@Nullable Object o) {
 		if (this == o) {
 			return true;
 		}

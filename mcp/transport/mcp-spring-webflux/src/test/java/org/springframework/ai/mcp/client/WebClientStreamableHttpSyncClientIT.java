@@ -1,5 +1,5 @@
 /*
- * Copyright 2026-2026 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,8 @@ package org.springframework.ai.mcp.client;
 
 import io.modelcontextprotocol.client.AbstractMcpSyncClientTests;
 import io.modelcontextprotocol.spec.McpClientTransport;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Timeout;
@@ -27,15 +29,17 @@ import org.testcontainers.containers.wait.strategy.Wait;
 import org.springframework.ai.mcp.client.webflux.transport.WebClientStreamableHttpTransport;
 import org.springframework.web.reactive.function.client.WebClient;
 
-@Timeout(15)
+@Timeout(60)
 public class WebClientStreamableHttpSyncClientIT extends AbstractMcpSyncClientTests {
+
+	private static final Log logger = LogFactory.getLog(WebClientStreamableHttpSyncClientIT.class);
 
 	static String host = "http://localhost:3001";
 
 	@SuppressWarnings("resource")
 	static GenericContainer<?> container = new GenericContainer<>("docker.io/node:lts-alpine3.23")
 		.withCommand("npx -y @modelcontextprotocol/server-everything@2025.12.18 streamableHttp")
-		.withLogConsumer(outputFrame -> System.out.println(outputFrame.getUtf8String()))
+		.withLogConsumer(outputFrame -> logger.info(outputFrame.getUtf8String()))
 		.withExposedPorts(3001)
 		.waitingFor(Wait.forHttp("/").forStatusCode(404));
 

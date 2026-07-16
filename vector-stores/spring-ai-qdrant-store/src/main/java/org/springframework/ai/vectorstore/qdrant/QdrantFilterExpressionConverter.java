@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,9 +19,9 @@ package org.springframework.ai.vectorstore.qdrant;
 import java.util.ArrayList;
 import java.util.List;
 
-import io.qdrant.client.grpc.Points.Condition;
-import io.qdrant.client.grpc.Points.Filter;
-import io.qdrant.client.grpc.Points.Range;
+import io.qdrant.client.grpc.Common.Condition;
+import io.qdrant.client.grpc.Common.Filter;
+import io.qdrant.client.grpc.Common.Range;
 
 import org.springframework.ai.vectorstore.filter.Filter.Expression;
 import org.springframework.ai.vectorstore.filter.Filter.ExpressionType;

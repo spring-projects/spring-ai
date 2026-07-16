@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  */
 
 package org.springframework.ai.vectorstore.neo4j.filter;
+
+import org.neo4j.cypherdsl.support.schema_name.SchemaNames;
 
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.Filter.Expression;
@@ -78,7 +80,11 @@ public class Neo4jVectorFilterExpressionConverter extends AbstractFilterExpressi
 
 	@Override
 	protected void doKey(Key key, StringBuilder context) {
-		context.append("node.").append("`metadata.").append(key.key().replace("\"", "")).append("`");
+		String sanitized = SchemaNames.sanitize("metadata." + key.key(), true)
+			.orElseThrow(() -> new IllegalArgumentException(
+					"Invalid or empty metadata key cannot be used in a Neo4j filter expression: '%s'"
+						.formatted(key.key())));
+		context.append("node.").append(sanitized);
 	}
 
 	@Override
@@ -89,6 +95,18 @@ public class Neo4jVectorFilterExpressionConverter extends AbstractFilterExpressi
 	@Override
 	protected void doEndGroup(Group group, StringBuilder context) {
 		context.append(")");
+	}
+
+	/**
+	 * Serialize values using JSON serialization for Neo4j Cypher filter expressions.
+	 * Delegates to {@link #emitJsonValue(Object, StringBuilder)} for Jackson-based JSON
+	 * serialization.
+	 * @param value the value to serialize
+	 * @param context the context to append the JSON representation to
+	 */
+	@Override
+	protected void doSingleValue(Object value, StringBuilder context) {
+		emitJsonValue(value, context);
 	}
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,9 +22,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.document.ContentFormatter;
 import org.springframework.ai.document.Document;
@@ -32,7 +32,7 @@ import org.springframework.ai.document.DocumentTransformer;
 
 public abstract class TextSplitter implements DocumentTransformer {
 
-	private static final Logger logger = LoggerFactory.getLogger(TextSplitter.class);
+	private static final Log logger = LogFactory.getLog(TextSplitter.class);
 
 	/**
 	 * If true the children documents inherit the content formatter of the parent they
@@ -93,7 +93,9 @@ public abstract class TextSplitter implements DocumentTransformer {
 
 			List<String> chunks = splitText(text);
 			if (chunks.size() > 1) {
-				logger.info("Splitting up document into {} chunks.", chunks.size());
+				if (logger.isInfoEnabled()) {
+					logger.info("Splitting up document into " + chunks.size() + " chunks.");
+				}
 			}
 
 			for (int chunkIndex = 0; chunkIndex < chunks.size(); chunkIndex++) {

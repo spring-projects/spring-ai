@@ -1,5 +1,5 @@
 /*
- * Copyright 2026-2026 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.springframework.ai.mcp.utils;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
@@ -33,6 +34,7 @@ import org.springframework.web.reactive.function.server.ServerResponse;
  * Simple {@link HandlerFilterFunction} which records calls made to an MCP server.
  *
  * @author Daniel Garnier-Moiroux
+ * @author Yanming Zhou
  */
 public class McpTestRequestRecordingExchangeFilterFunction implements HandlerFilterFunction {
 
@@ -42,10 +44,9 @@ public class McpTestRequestRecordingExchangeFilterFunction implements HandlerFil
 	public Mono<ServerResponse> filter(ServerRequest request, HandlerFunction next) {
 		Map<String, String> headers = request.headers()
 			.asHttpHeaders()
-			.asMultiValueMap()
-			.keySet()
+			.headerSet()
 			.stream()
-			.collect(Collectors.toMap(String::toLowerCase, k -> String.join(",", request.headers().header(k))));
+			.collect(Collectors.toMap(e -> e.getKey().toLowerCase(Locale.ROOT), e -> String.join(",", e.getValue())));
 
 		var cr = request.bodyToMono(String.class).defaultIfEmpty("").map(body -> {
 			this.calls.add(new Call(request.method(), headers, body));

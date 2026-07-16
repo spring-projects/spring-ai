@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2026 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,15 +21,12 @@ import org.springframework.ai.elevenlabs.api.ElevenLabsApi;
 import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.model.SpringAIModels;
 import org.springframework.ai.retry.RetryUtils;
-import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
-import org.springframework.boot.webclient.autoconfigure.WebClientAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.retry.RetryTemplate;
 import org.springframework.web.client.ResponseErrorHandler;
@@ -41,9 +38,9 @@ import org.springframework.web.reactive.function.client.WebClient;
  *
  * @author Alexandros Pappas
  * @author Yanming Zhou
+ * @author Sebastien Deleuze
  */
-@AutoConfiguration(after = { RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class,
-		WebClientAutoConfiguration.class })
+@AutoConfiguration
 @ConditionalOnClass(ElevenLabsApi.class)
 @EnableConfigurationProperties({ ElevenLabsSpeechProperties.class, ElevenLabsConnectionProperties.class })
 @ConditionalOnProperty(name = SpringAIModelProperties.AUDIO_SPEECH_MODEL, havingValue = SpringAIModels.ELEVEN_LABS,
@@ -73,7 +70,7 @@ public class ElevenLabsAutoConfiguration {
 
 		return ElevenLabsTextToSpeechModel.builder()
 			.elevenLabsApi(elevenLabsApi)
-			.defaultOptions(speechProperties.getOptions())
+			.options(speechProperties.toOptions())
 			.retryTemplate(retryTemplate.getIfUnique(() -> RetryUtils.DEFAULT_RETRY_TEMPLATE))
 			.build();
 	}

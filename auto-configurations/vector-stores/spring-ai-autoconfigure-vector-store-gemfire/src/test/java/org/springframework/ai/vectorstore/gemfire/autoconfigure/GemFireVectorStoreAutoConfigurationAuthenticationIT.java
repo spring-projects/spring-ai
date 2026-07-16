@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -94,7 +94,7 @@ class GemFireVectorStoreAutoConfigurationAuthenticationIT {
 		Ports.Binding hostPort = Ports.Binding.bindPort(HTTP_SERVICE_PORT);
 		ExposedPort exposedPort = new ExposedPort(HTTP_SERVICE_PORT);
 		PortBinding mappedPort = new PortBinding(hostPort, exposedPort);
-		gemFireCluster = new GemFireCluster("gemfire/gemfire-all:10.1-jdk17", LOCATOR_COUNT, SERVER_COUNT);
+		gemFireCluster = new GemFireCluster("gemfire/gemfire-all:10.2-jdk17", LOCATOR_COUNT, SERVER_COUNT);
 		gemFireCluster.withConfiguration(GemFireCluster.SERVER_GLOB,
 				container -> container.withExposedPorts(HTTP_SERVICE_PORT)
 					.withCreateContainerCmdModifier(cmd -> cmd.getHostConfig().withPortBindings(mappedPort)));
@@ -139,7 +139,7 @@ class GemFireVectorStoreAutoConfigurationAuthenticationIT {
 			Map<String, Object> indexDetails = new HashMap<>();
 			if (rootNode.isObject()) {
 				if (rootNode.has("name")) {
-					indexDetails.put("name", rootNode.get("name").asText());
+					indexDetails.put("name", rootNode.get("name").asString());
 				}
 				if (rootNode.has("beam-width")) {
 					indexDetails.put("beam-width", rootNode.get("beam-width").asInt());
@@ -148,7 +148,8 @@ class GemFireVectorStoreAutoConfigurationAuthenticationIT {
 					indexDetails.put("max-connections", rootNode.get("max-connections").asInt());
 				}
 				if (rootNode.has("vector-similarity-function")) {
-					indexDetails.put("vector-similarity-function", rootNode.get("vector-similarity-function").asText());
+					indexDetails.put("vector-similarity-function",
+							rootNode.get("vector-similarity-function").asString());
 				}
 				if (rootNode.has("buckets")) {
 					indexDetails.put("buckets", rootNode.get("buckets").asInt());

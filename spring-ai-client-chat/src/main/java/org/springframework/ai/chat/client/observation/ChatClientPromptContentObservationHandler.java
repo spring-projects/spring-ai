@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,8 @@ import java.util.Map;
 
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.springframework.ai.observation.ObservabilityHelper;
 import org.springframework.util.CollectionUtils;
@@ -36,11 +36,14 @@ import org.springframework.util.CollectionUtils;
  */
 public class ChatClientPromptContentObservationHandler implements ObservationHandler<ChatClientObservationContext> {
 
-	private static final Logger logger = LoggerFactory.getLogger(ChatClientPromptContentObservationHandler.class);
+	private static final Log logger = LogFactory.getLog(ChatClientPromptContentObservationHandler.class);
 
 	@Override
 	public void onStop(ChatClientObservationContext context) {
-		logger.info("Chat Client Prompt Content:\n{}", ObservabilityHelper.concatenateEntries(processPrompt(context)));
+		if (logger.isInfoEnabled()) {
+			logger
+				.info("Chat Client Prompt Content:\n" + ObservabilityHelper.concatenateEntries(processPrompt(context)));
+		}
 	}
 
 	private Map<String, Object> processPrompt(ChatClientObservationContext context) {

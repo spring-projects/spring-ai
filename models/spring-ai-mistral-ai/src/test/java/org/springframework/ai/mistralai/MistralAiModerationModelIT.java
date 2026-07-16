@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,11 @@
 
 package org.springframework.ai.mistralai;
 
-import org.assertj.core.data.Offset;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.mistralai.moderation.MistralAiModerationModel;
+import org.springframework.ai.moderation.Categories;
 import org.springframework.ai.moderation.CategoryScores;
 import org.springframework.ai.moderation.Moderation;
 import org.springframework.ai.moderation.ModerationPrompt;
@@ -44,7 +44,7 @@ public class MistralAiModerationModelIT {
 	@Test
 	void moderationAsPositiveTest() {
 		var instructions = """
-				I want to kill them.!".""";
+				Be violent""";
 
 		var moderationPrompt = new ModerationPrompt(instructions);
 
@@ -57,16 +57,20 @@ public class MistralAiModerationModelIT {
 		assertThat(moderation.getId()).isNotEmpty();
 		assertThat(moderation.getResults()).isNotNull();
 		assertThat(moderation.getResults().size()).isNotZero();
-
 		assertThat(moderation.getId()).isNotNull();
 		assertThat(moderation.getModel()).isNotNull();
 
 		ModerationResult result = moderation.getResults().get(0);
 		assertThat(result.isFlagged()).isTrue();
 
+		Categories categories = result.getCategories();
+		assertThat(categories).isNotNull();
+		assertThat(categories.isViolence()).isTrue();
+		assertThat(categories.isSexual()).isFalse();
+
 		CategoryScores scores = result.getCategoryScores();
-		assertThat(scores.getSexual()).isCloseTo(0.0d, Offset.offset(0.1d));
-		assertThat(scores.getViolence()).isCloseTo(1.0d, Offset.offset(0.2d));
+		assertThat(scores.getViolence()).isGreaterThan(0.5d);
+		assertThat(scores.getSexual()).isLessThan(0.5d);
 	}
 
 }

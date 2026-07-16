@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,9 +22,9 @@ import java.util.Set;
 
 import org.antlr.runtime.Token;
 import org.antlr.runtime.TokenStream;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.stringtemplate.v4.ST;
 import org.stringtemplate.v4.STGroup;
 import org.stringtemplate.v4.compiler.Compiler;
@@ -56,7 +56,7 @@ import org.springframework.util.Assert;
  */
 public class StTemplateRenderer implements TemplateRenderer {
 
-	private static final Logger logger = LoggerFactory.getLogger(StTemplateRenderer.class);
+	private static final Log logger = LogFactory.getLog(StTemplateRenderer.class);
 
 	private static final String VALIDATION_MESSAGE = "Not all variables were replaced in the template. Missing variable names are: %s.";
 
@@ -116,7 +116,7 @@ public class StTemplateRenderer implements TemplateRenderer {
 	private ST createST(String template) {
 		try {
 			STGroup group = new STGroup(this.startDelimiterToken, this.endDelimiterToken);
-			group.setListener(new Slf4jStErrorListener(logger));
+			group.setListener(new CommonsLoggingStErrorListener(logger));
 			return new ST(group, template);
 		}
 		catch (Exception ex) {

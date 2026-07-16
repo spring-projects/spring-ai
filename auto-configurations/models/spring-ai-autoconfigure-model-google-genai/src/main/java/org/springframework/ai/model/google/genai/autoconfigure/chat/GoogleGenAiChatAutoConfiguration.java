@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2026 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,18 +23,15 @@ import com.google.genai.Client;
 import io.micrometer.observation.ObservationRegistry;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.google.genai.GoogleGenAiChatModel;
 import org.springframework.ai.google.genai.cache.GoogleGenAiCachedContentService;
 import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.model.SpringAIModels;
-import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolCallingManager;
-import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
-import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.retry.RetryUtils;
-import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
@@ -42,7 +39,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.core.retry.RetryTemplate;
@@ -57,9 +53,10 @@ import org.springframework.util.StringUtils;
  * @author Mark Pollack
  * @author Ilayaperumal Gopinathan
  * @author Yanming Zhou
+ * @author Sebastien Deleuze
  * @since 1.1.0
  */
-@AutoConfiguration(after = { SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class })
+@AutoConfiguration
 @ConditionalOnClass({ Client.class, GoogleGenAiChatModel.class })
 @ConditionalOnProperty(name = SpringAIModelProperties.CHAT_MODEL, havingValue = SpringAIModels.GOOGLE_GEN_AI,
 		matchIfMissing = true)
@@ -113,11 +110,6 @@ public class GoogleGenAiChatAutoConfiguration {
 		return builder.build();
 	}
 
-	private boolean isVertexAiConfiguration(GoogleGenAiConnectionProperties props) {
-		return props.isVertexAi()
-				|| (StringUtils.hasText(props.getProjectId()) && StringUtils.hasText(props.getLocation()));
-	}
-
 	private void configureVertexAi(Client.Builder builder, GoogleGenAiConnectionProperties props) throws IOException {
 		Assert.hasText(props.getProjectId(), "Google GenAI project-id must be set for Vertex AI mode!");
 		Assert.hasText(props.getLocation(), "Google GenAI location must be set for Vertex AI mode!");
@@ -134,17 +126,14 @@ public class GoogleGenAiChatAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public GoogleGenAiChatModel googleGenAiChatModel(Client googleGenAiClient, GoogleGenAiChatProperties chatProperties,
-			ToolCallingManager toolCallingManager, ApplicationContext context,
-			ObjectProvider<RetryTemplate> retryTemplate, ObjectProvider<ObservationRegistry> observationRegistry,
-			ObjectProvider<ChatModelObservationConvention> observationConvention,
-			ObjectProvider<ToolExecutionEligibilityPredicate> toolExecutionEligibilityPredicate) {
+			ToolCallingManager toolCallingManager, ObjectProvider<RetryTemplate> retryTemplate,
+			ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<ChatModelObservationConvention> observationConvention) {
 
 		GoogleGenAiChatModel chatModel = GoogleGenAiChatModel.builder()
 			.genAiClient(googleGenAiClient)
-			.defaultOptions(chatProperties.getOptions())
+			.options(chatProperties.toOptions())
 			.toolCallingManager(toolCallingManager)
-			.toolExecutionEligibilityPredicate(
-					toolExecutionEligibilityPredicate.getIfUnique(() -> new DefaultToolExecutionEligibilityPredicate()))
 			.retryTemplate(retryTemplate.getIfUnique(() -> RetryUtils.DEFAULT_RETRY_TEMPLATE))
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.build();
@@ -160,7 +149,7 @@ public class GoogleGenAiChatAutoConfiguration {
 	@Conditional(CachedContentServiceCondition.class)
 	@ConditionalOnProperty(prefix = "spring.ai.google.genai.chat", name = "enable-cached-content", havingValue = "true",
 			matchIfMissing = true)
-	public GoogleGenAiCachedContentService googleGenAiCachedContentService(GoogleGenAiChatModel chatModel) {
+	public @Nullable GoogleGenAiCachedContentService googleGenAiCachedContentService(GoogleGenAiChatModel chatModel) {
 		// Extract the cached content service from the chat model
 		// The CachedContentServiceCondition ensures this is not null
 		return chatModel.getCachedContentService();

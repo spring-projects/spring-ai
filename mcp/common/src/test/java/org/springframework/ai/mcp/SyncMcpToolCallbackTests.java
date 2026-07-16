@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 import io.modelcontextprotocol.client.McpSyncClient;
+import io.modelcontextprotocol.spec.McpError;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
@@ -50,7 +51,7 @@ class SyncMcpToolCallbackTests {
 
 	@Test
 	void getToolDefinitionShouldReturnCorrectDefinition() {
-		var clientInfo = new Implementation("testClient", "1.0.0");
+		var clientInfo = Implementation.builder("testClient", "1.0.0").build();
 		when(this.tool.name()).thenReturn("testTool");
 		when(this.tool.description()).thenReturn("Test tool description");
 
@@ -145,10 +146,10 @@ class SyncMcpToolCallbackTests {
 	@Test
 	void callShouldThrowOnError() {
 		when(this.tool.name()).thenReturn("testTool");
-		var clientInfo = new Implementation("testClient", "server1", "1.0.0");
+		var clientInfo = Implementation.builder("testClient", "1.0.0").title("server1").build();
 		CallToolResult callResult = mock(CallToolResult.class);
 		when(callResult.isError()).thenReturn(true);
-		when(callResult.content()).thenReturn(List.of(new McpSchema.TextContent("Some error data")));
+		when(callResult.content()).thenReturn(List.of(McpSchema.TextContent.builder("Some error data").build()));
 		when(this.mcpClient.callTool(any(CallToolRequest.class))).thenReturn(callResult);
 
 		SyncMcpToolCallback callback = SyncMcpToolCallback.builder()
@@ -167,7 +168,7 @@ class SyncMcpToolCallbackTests {
 	@Test
 	void callShouldWrapExceptions() {
 		when(this.tool.name()).thenReturn("testTool");
-		var clientInfo = new Implementation("testClient", "server1", "1.0.0");
+		var clientInfo = Implementation.builder("testClient", "1.0.0").title("server1").build();
 		when(this.mcpClient.callTool(any(CallToolRequest.class))).thenThrow(new RuntimeException("Testing tool error"));
 
 		SyncMcpToolCallback callback = SyncMcpToolCallback.builder()
@@ -180,6 +181,25 @@ class SyncMcpToolCallbackTests {
 		assertThatThrownBy(() -> callback.call("{\"param\":\"value\"}")).isInstanceOf(ToolExecutionException.class)
 			.rootCause()
 			.hasMessage("Testing tool error");
+	}
+
+	@Test
+	void callShouldPropagateMcpErrorAsHardFailure() {
+		when(this.tool.name()).thenReturn("testTool");
+		var clientInfo = Implementation.builder("testClient", "1.0.0").title("server1").build();
+		McpError mcpError = McpError.builder(-32603).message("Protocol failure").build();
+		when(this.mcpClient.callTool(any(CallToolRequest.class))).thenThrow(mcpError);
+
+		SyncMcpToolCallback callback = SyncMcpToolCallback.builder()
+			.mcpClient(this.mcpClient)
+			.tool(this.tool)
+			.prefixedToolName(McpToolUtils.prefixedToolName(clientInfo.name(), clientInfo.title(), this.tool.name()))
+			.toolContextToMcpMetaConverter(ToolContextToMcpMetaConverter.defaultConverter())
+			.build();
+
+		// A protocol-level McpError must bubble up as-is rather than being wrapped in a
+		// ToolExecutionException and conveyed to the model.
+		assertThatThrownBy(() -> callback.call("{\"param\":\"value\"}")).isSameAs(mcpError);
 	}
 
 	@Test
@@ -207,8 +227,8 @@ class SyncMcpToolCallbackTests {
 		when(this.tool.name()).thenReturn("testTool");
 		CallToolResult callResult = mock(CallToolResult.class);
 		when(callResult.isError()).thenReturn(false);
-		when(callResult.content()).thenReturn(
-				List.of(new McpSchema.TextContent("First content"), new McpSchema.TextContent("Second content")));
+		when(callResult.content()).thenReturn(List.of(McpSchema.TextContent.builder("First content").build(),
+				McpSchema.TextContent.builder("Second content").build()));
 		when(this.mcpClient.callTool(any(CallToolRequest.class))).thenReturn(callResult);
 
 		SyncMcpToolCallback callback = SyncMcpToolCallback.builder()
@@ -229,7 +249,8 @@ class SyncMcpToolCallbackTests {
 		when(this.tool.name()).thenReturn("testTool");
 		CallToolResult callResult = mock(CallToolResult.class);
 		when(callResult.isError()).thenReturn(false);
-		when(callResult.content()).thenReturn(List.of(new McpSchema.ImageContent(null, "base64data", "image/png")));
+		when(callResult.content())
+			.thenReturn(List.of(McpSchema.ImageContent.builder("base64data", "image/png").build()));
 		when(this.mcpClient.callTool(any(CallToolRequest.class))).thenReturn(callResult);
 
 		SyncMcpToolCallback callback = SyncMcpToolCallback.builder()

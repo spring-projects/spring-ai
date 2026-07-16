@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package org.springframework.ai.mcp;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import io.modelcontextprotocol.client.McpSyncClient;
@@ -211,6 +212,21 @@ class ToolUtilsTests {
 	}
 
 	@Test
+	void prefixedToolNameShouldHandleTrLocale() {
+		Locale defaultLocale = Locale.getDefault();
+		try {
+			Locale.setDefault(Locale.forLanguageTag("tr-TR"));
+			// Prefix "Inventory" would be lowercased to "ı" (dotless i) in turkish locale
+			// if not properly handled.
+			String result = McpToolUtils.prefixedToolName("Inventory", "server1", "toolName");
+			assertThat(result).isEqualTo("i_server1_toolName");
+		}
+		finally {
+			Locale.setDefault(defaultLocale);
+		}
+	}
+
+	@Test
 	void constructorShouldBePrivate() throws Exception {
 		Constructor<McpToolUtils> constructor = McpToolUtils.class.getDeclaredConstructor();
 		assertThat(Modifier.isPrivate(constructor.getModifiers())).isTrue();
@@ -229,7 +245,8 @@ class ToolUtilsTests {
 		assertThat(toolSpecification.tool().name()).isEqualTo("test");
 
 		CallToolResult result = toolSpecification.callHandler()
-			.apply(mock(McpSyncServerExchange.class), new McpSchema.CallToolRequest("test", Map.of()));
+			.apply(mock(McpSyncServerExchange.class),
+					McpSchema.CallToolRequest.builder("test").arguments(Map.of()).build());
 		TextContent content = (TextContent) result.content().get(0);
 		assertThat(content.text()).isEqualTo("success");
 		assertThat(result.isError()).isFalse();
@@ -243,7 +260,8 @@ class ToolUtilsTests {
 
 		assertThat(toolSpecification).isNotNull();
 		CallToolResult result = toolSpecification.callHandler()
-			.apply(mock(McpSyncServerExchange.class), new McpSchema.CallToolRequest("test", Map.of()));
+			.apply(mock(McpSyncServerExchange.class),
+					McpSchema.CallToolRequest.builder("test").arguments(Map.of()).build());
 		TextContent content = (TextContent) result.content().get(0);
 		assertThat(content.text()).isEqualTo("error");
 		assertThat(result.isError()).isTrue();
@@ -348,7 +366,7 @@ class ToolUtilsTests {
 	@Test
 	void getToolCallbacksFromSyncClientsWithSingleClientShouldReturnToolCallbacks() {
 		McpSyncClient mockClient = mock(McpSyncClient.class);
-		Implementation clientInfo = new Implementation("test-client", "1.0.0");
+		Implementation clientInfo = Implementation.builder("test-client", "1.0.0").build();
 		ClientCapabilities clientCapabilities = new ClientCapabilities(null, null, null, null);
 
 		Tool tool1 = mock(Tool.class);
@@ -383,7 +401,7 @@ class ToolUtilsTests {
 	void getToolCallbacksFromSyncClientsWithMultipleClientsShouldReturnCombinedToolCallbacks() {
 
 		McpSyncClient mockClient1 = mock(McpSyncClient.class);
-		Implementation clientInfo1 = new Implementation("client1", "1.0.0");
+		Implementation clientInfo1 = Implementation.builder("client1", "1.0.0").build();
 		ClientCapabilities clientCapabilities1 = new ClientCapabilities(null, null, null, null);
 
 		Tool tool1 = mock(Tool.class);
@@ -391,7 +409,7 @@ class ToolUtilsTests {
 		when(tool1.description()).thenReturn("Test Tool 1");
 
 		McpSyncClient mockClient2 = mock(McpSyncClient.class);
-		Implementation clientInfo2 = new Implementation("client2", "1.0.0");
+		Implementation clientInfo2 = Implementation.builder("client2", "1.0.0").build();
 		ClientCapabilities clientCapabilities2 = new ClientCapabilities(null, null, null, null);
 
 		Tool tool2 = mock(Tool.class);
@@ -429,7 +447,7 @@ class ToolUtilsTests {
 	void getToolCallbacksFromSyncClientsShouldHandleDuplicateToolNames() {
 
 		McpSyncClient mockClient1 = mock(McpSyncClient.class);
-		Implementation clientInfo1 = new Implementation("client", "1.0.0");
+		Implementation clientInfo1 = Implementation.builder("client", "1.0.0").build();
 		ClientCapabilities clientCapabilities1 = new ClientCapabilities(null, null, null, null);
 
 		Tool tool1 = mock(Tool.class);
@@ -437,7 +455,7 @@ class ToolUtilsTests {
 		when(tool1.description()).thenReturn("Test Tool 1");
 
 		McpSyncClient mockClient2 = mock(McpSyncClient.class);
-		Implementation clientInfo2 = new Implementation("client", "1.0.0");
+		Implementation clientInfo2 = Implementation.builder("client", "1.0.0").build();
 		ClientCapabilities clientCapabilities2 = new ClientCapabilities(null, null, null, null);
 
 		Tool tool2 = mock(Tool.class);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,8 +19,6 @@ package org.springframework.ai.model.bedrock.converse.autoconfigure;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
 
@@ -32,7 +30,8 @@ import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.bedrock.autoconfigure.BedrockTestUtils;
 import org.springframework.ai.model.bedrock.autoconfigure.RequiresAwsCredentials;
-import org.springframework.ai.utils.SpringAiTestAutoConfigurations;
+import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
+import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -40,13 +39,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 @RequiresAwsCredentials
 public class BedrockConverseProxyChatAutoConfigurationIT {
 
-	private static final Log logger = LogFactory.getLog(BedrockConverseProxyChatAutoConfigurationIT.class);
-
 	private final ApplicationContextRunner contextRunner = BedrockTestUtils.getContextRunner()
-		.withPropertyValues(
-				"spring.ai.bedrock.converse.chat.options.model=" + "anthropic.claude-haiku-4-5-20251001-v1:0",
-				"spring.ai.bedrock.converse.chat.options.temperature=0.5")
-		.withConfiguration(SpringAiTestAutoConfigurations.of(BedrockConverseProxyChatAutoConfiguration.class));
+		.withPropertyValues("spring.ai.bedrock.converse.chat.model=" + "us.anthropic.claude-sonnet-4-6",
+				"spring.ai.bedrock.converse.chat.temperature=0.5")
+		.withConfiguration(AutoConfigurations.of(BedrockConverseProxyChatAutoConfiguration.class,
+				ToolCallingAutoConfiguration.class));
 
 	@Test
 	void call() {
@@ -54,7 +51,6 @@ public class BedrockConverseProxyChatAutoConfigurationIT {
 			BedrockProxyChatModel chatModel = context.getBean(BedrockProxyChatModel.class);
 			String response = chatModel.call("Hello");
 			assertThat(response).isNotEmpty();
-			logger.info("Response: " + response);
 		});
 	}
 
@@ -74,7 +70,6 @@ public class BedrockConverseProxyChatAutoConfigurationIT {
 				.collect(Collectors.joining());
 
 			assertThat(response).isNotEmpty();
-			logger.info("Response: " + response);
 		});
 	}
 

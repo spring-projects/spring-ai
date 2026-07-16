@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,18 +17,21 @@
 package org.springframework.ai.chat.client.advisor;
 
 import java.lang.reflect.Type;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
-import io.modelcontextprotocol.json.TypeRef;
-import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
-import io.modelcontextprotocol.json.schema.JsonSchemaValidator.ValidationResponse;
-import io.modelcontextprotocol.json.schema.jackson3.DefaultJsonSchemaValidator;
+import com.networknt.schema.Error;
+import com.networknt.schema.Schema;
+import com.networknt.schema.SchemaRegistry;
+import com.networknt.schema.SpecificationVersion;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
+import tools.jackson.core.JacksonException;
 import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.chat.client.ChatClientRequest;
@@ -38,78 +41,64 @@ import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.util.json.JsonParser;
+import org.springframework.ai.util.JacksonUtils;
 import org.springframework.ai.util.json.schema.JsonSchemaGenerator;
-import org.springframework.core.Ordered;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 /**
- * Recursive Advisor that validates the structured JSON output of a chat client entity
- * response against a generated JSON schema for the expected output type.
+ * Advisor that validates the structured JSON output of a chat client response against a
+ * JSON schema derived from the configured output type or a pre-supplied schema string.
  * <p>
- * If the validation fails, the advisor will repeat the call up to a specified number of
- * attempts.
+ * When validation fails, the advisor appends the validation error to the user message and
+ * re-invokes the model, repeating up to {@code maxRepeatAttempts} times.
  * <p>
- * Note: This advisor does not support streaming responses and will throw an
- * UnsupportedOperationException if used in a streaming context.
+ * Streaming responses are not supported.
  *
  * @author Christian Tzolov
+ * @author Jewoo Shin
  */
 public final class StructuredOutputValidationAdvisor implements CallAdvisor, StreamAdvisor {
 
-	private static final Logger logger = LoggerFactory.getLogger(StructuredOutputValidationAdvisor.class);
+	private static final Log logger = LogFactory.getLog(StructuredOutputValidationAdvisor.class);
 
-	private static final TypeRef<HashMap<String, Object>> MAP_TYPE_REF = new TypeRef<>() {
-	};
-
-	/**
-	 * Set the order close to {@link Ordered#LOWEST_PRECEDENCE} to ensure an advisor is
-	 * executed toward the last (but before the model call) in the chain (last for request
-	 * processing, first for response processing).
-	 * <p>
-	 * https://docs.spring.io/spring-ai/reference/api/advisors.html#_advisor_order
-	 */
 	private final int advisorOrder;
 
-	/**
-	 * The JSON schema used for validation.
-	 */
-	private final Map<String, Object> jsonSchema;
+	private final Schema jsonSchema;
 
-	/**
-	 * The JSON schema validator.
-	 */
-	private final DefaultJsonSchemaValidator jsonvalidator;
+	private final JsonMapper jsonMapper;
 
 	private final int maxRepeatAttempts;
 
-	private StructuredOutputValidationAdvisor(int advisorOrder, Type outputType, int maxRepeatAttempts,
+	private StructuredOutputValidationAdvisor(int advisorOrder, String outputJsonSchema, int maxRepeatAttempts,
 			JsonMapper jsonMapper) {
 		Assert.notNull(advisorOrder, "advisorOrder must not be null");
-		Assert.notNull(outputType, "outputType must not be null");
+		Assert.notNull(outputJsonSchema, "outputJsonSchema must not be null");
 		Assert.isTrue(advisorOrder > BaseAdvisor.HIGHEST_PRECEDENCE && advisorOrder < BaseAdvisor.LOWEST_PRECEDENCE,
 				"advisorOrder must be between HIGHEST_PRECEDENCE and LOWEST_PRECEDENCE");
 		Assert.isTrue(maxRepeatAttempts >= 0, "repeatAttempts must be greater than or equal to 0");
 		Assert.notNull(jsonMapper, "jsonMapper must not be null");
 
 		this.advisorOrder = advisorOrder;
+		this.jsonMapper = jsonMapper;
 
-		this.jsonvalidator = new DefaultJsonSchemaValidator(jsonMapper);
+		if (logger.isDebugEnabled()) {
+			logger.debug("Generated JSON Schema:\n" + outputJsonSchema);
+		}
 
-		String jsonSchemaText = JsonSchemaGenerator.generateForType(outputType);
-
-		logger.info("Generated JSON Schema:\n" + jsonSchemaText);
-
-		var mcpJsonMapper = new JacksonMcpJsonMapper(jsonMapper);
-
+		JsonNode schemaNode;
 		try {
-			this.jsonSchema = mcpJsonMapper.readValue(jsonSchemaText, MAP_TYPE_REF);
+			schemaNode = jsonMapper.readTree(outputJsonSchema);
 		}
 		catch (Exception e) {
 			throw new IllegalArgumentException("Failed to parse JSON schema", e);
 		}
+
+		SchemaRegistry schemaRegistry = SchemaRegistry.withDefaultDialect(SpecificationVersion.DRAFT_2020_12);
+		this.jsonSchema = schemaRegistry.getSchema(schemaNode);
 
 		this.maxRepeatAttempts = maxRepeatAttempts;
 	}
@@ -139,6 +128,8 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 
 		var processedChatClientRequest = chatClientRequest;
 
+		UsageAccumulator usageAccumulator = new UsageAccumulator();
+
 		do {
 			// Before Call
 			repeatCounter++;
@@ -147,14 +138,16 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 			chatClientResponse = callAdvisorChain.copy(this).nextCall(processedChatClientRequest);
 
 			// After Call
+			ChatResponse chatResponse = chatClientResponse.chatResponse();
+			usageAccumulator.addRoundResponse(chatResponse);
 
 			// We should not validate tool call requests, only the content of the final
 			// response.
-			if (chatClientResponse.chatResponse() == null || !chatClientResponse.chatResponse().hasToolCalls()) {
+			if (chatResponse == null || !chatResponse.hasToolCalls()) {
 
-				ValidationResponse validationResponse = this.validateOutputSchema(chatClientResponse);
+				SchemaValidation validationResponse = validateOutputSchema(chatClientResponse);
 
-				isValidationSuccess = validationResponse.valid();
+				isValidationSuccess = validationResponse.success();
 
 				if (!isValidationSuccess) {
 
@@ -164,7 +157,9 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 					// However, this might lead to confusion and more complex prompts.
 					// Instead, we rely on the LLM to generate a new output based on the
 					// validation error.
-					logger.warn("JSON validation failed: " + validationResponse);
+					if (logger.isWarnEnabled()) {
+						logger.warn("JSON validation failed: " + validationResponse);
+					}
 
 					String validationErrorMessage = "Output JSON validation failed because of: "
 							+ validationResponse.errorMessage();
@@ -180,26 +175,46 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 		}
 		while (!isValidationSuccess && repeatCounter <= this.maxRepeatAttempts);
 
-		return chatClientResponse;
+		return usageAccumulator.applyAccumulatedUsage(chatClientResponse);
 	}
 
 	@SuppressWarnings("null")
-	private ValidationResponse validateOutputSchema(ChatClientResponse chatClientResponse) {
+	private SchemaValidation validateOutputSchema(ChatClientResponse chatClientResponse) {
 
 		if (chatClientResponse.chatResponse() == null || chatClientResponse.chatResponse().getResult() == null
 				|| chatClientResponse.chatResponse().getResult().getOutput() == null
 				|| chatClientResponse.chatResponse().getResult().getOutput().getText() == null) {
 
 			logger.warn("ChatClientResponse is missing required json output for validation.");
-			return ValidationResponse.asInvalid("Missing required json output for validation.");
+			return SchemaValidation.failed("Missing required json output for validation.");
 		}
 
 		// TODO: should we consider validation for multiple results?
 		String json = chatClientResponse.chatResponse().getResult().getOutput().getText();
 
-		logger.debug("Validating JSON output against schema. Attempts left: " + this.maxRepeatAttempts);
+		if (logger.isDebugEnabled()) {
+			logger.debug("Validating JSON output against schema. Attempts left: " + this.maxRepeatAttempts);
+		}
 
-		return this.jsonvalidator.validate(this.jsonSchema, json);
+		return validateJsonText(json);
+	}
+
+	private SchemaValidation validateJsonText(String json) {
+		if (json.isBlank()) {
+			return SchemaValidation.failed("Empty JSON output for validation.");
+		}
+		try {
+			JsonNode instance = this.jsonMapper.readTree(json);
+			List<Error> errors = this.jsonSchema.validate(instance);
+			if (errors.isEmpty()) {
+				return SchemaValidation.passed();
+			}
+			String message = errors.stream().map(Error::getMessage).collect(Collectors.joining("; "));
+			return SchemaValidation.failed(message);
+		}
+		catch (JacksonException e) {
+			return SchemaValidation.failed("Invalid JSON: " + e.getOriginalMessage());
+		}
 	}
 
 	@SuppressWarnings("null")
@@ -212,38 +227,36 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 	}
 
 	/**
-	 * Creates a new Builder for StructuredOutputValidationAdvisor.
-	 * @return a new Builder instance
+	 * Returns a new {@link Builder}.
+	 * @return a new builder instance
 	 */
 	public static Builder builder() {
 		return new Builder();
 	}
 
 	/**
-	 * Builder class for StructuredOutputValidationAdvisor.
+	 * Builder for {@link StructuredOutputValidationAdvisor}.
 	 */
 	public final static class Builder {
 
-		/**
-		 * Set the order close to {@link Ordered#LOWEST_PRECEDENCE} to ensure an advisor
-		 * is executed toward the last (but before the model call) in the chain (last for
-		 * request processing, first for response processing).
-		 * <p>
-		 * https://docs.spring.io/spring-ai/reference/api/advisors.html#_advisor_order
-		 */
 		private int advisorOrder = BaseAdvisor.LOWEST_PRECEDENCE - 2000;
 
 		private @Nullable Type outputType;
 
 		private int maxRepeatAttempts = 3;
 
-		private JsonMapper jsonMapper = JsonParser.getJsonMapper();
+		private JsonMapper jsonMapper = JacksonUtils.getDefaultJsonMapper();
+
+		private @Nullable String outputJsonSchema;
 
 		private Builder() {
 		}
 
 		/**
-		 * Sets the advisor order.
+		 * Sets the advisor order. Must be strictly between
+		 * {@link BaseAdvisor#HIGHEST_PRECEDENCE} and
+		 * {@link BaseAdvisor#LOWEST_PRECEDENCE}. Defaults to
+		 * {@code LOWEST_PRECEDENCE - 2000}.
 		 * @param advisorOrder the advisor order
 		 * @return this builder
 		 */
@@ -253,8 +266,9 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 		}
 
 		/**
-		 * Sets the output type using a Type.
-		 * @param outputType the output type
+		 * Sets the expected output type; the JSON schema is derived automatically.
+		 * Mutually exclusive with {@link #outputJsonSchema(String)}.
+		 * @param outputType the expected output type
 		 * @return this builder
 		 */
 		public Builder outputType(Type outputType) {
@@ -263,20 +277,10 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 		}
 
 		/**
-		 * Sets the output type using a TypeRef.
+		 * Sets the expected output type; the JSON schema is derived automatically.
+		 * Mutually exclusive with {@link #outputJsonSchema(String)}.
 		 * @param <T> the type parameter
-		 * @param outputType the output type
-		 * @return this builder
-		 */
-		public <T> Builder outputType(TypeRef<T> outputType) {
-			this.outputType = outputType.getType();
-			return this;
-		}
-
-		/**
-		 * Sets the output type using a TypeReference.
-		 * @param <T> the type parameter
-		 * @param outputType the output type
+		 * @param outputType the expected output type
 		 * @return this builder
 		 */
 		public <T> Builder outputType(TypeReference<T> outputType) {
@@ -285,9 +289,10 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 		}
 
 		/**
-		 * Sets the output type using a ParameterizedTypeReference.
+		 * Sets the expected output type; the JSON schema is derived automatically.
+		 * Mutually exclusive with {@link #outputJsonSchema(String)}.
 		 * @param <T> the type parameter
-		 * @param outputType the output type
+		 * @param outputType the expected output type
 		 * @return this builder
 		 */
 		public <T> Builder outputType(ParameterizedTypeReference<T> outputType) {
@@ -296,8 +301,20 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 		}
 
 		/**
-		 * Sets the number of repeat attempts.
-		 * @param repeatAttempts the number of repeat attempts
+		 * Sets a pre-generated JSON schema string to validate against. Mutually exclusive
+		 * with the {@code outputType} methods.
+		 * @param outputJsonSchema the JSON schema as a string
+		 * @return this builder
+		 */
+		public Builder outputJsonSchema(String outputJsonSchema) {
+			this.outputJsonSchema = outputJsonSchema;
+			return this;
+		}
+
+		/**
+		 * Sets the maximum number of retry attempts after a validation failure. Zero
+		 * means no retries; the model is called exactly once. Defaults to 3.
+		 * @param repeatAttempts the number of retry attempts, must be &gt;= 0
 		 * @return this builder
 		 */
 		public Builder maxRepeatAttempts(int repeatAttempts) {
@@ -306,8 +323,9 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 		}
 
 		/**
-		 * Sets the JsonMapper to be used for JSON processing.
-		 * @param jsonMapper the JsonMapper
+		 * Sets the {@link JsonMapper} used for JSON parsing and validation. Defaults to
+		 * {@link JacksonUtils#getDefaultJsonMapper()}.
+		 * @param jsonMapper the JSON mapper
 		 * @return this builder
 		 */
 		public Builder jsonMapper(JsonMapper jsonMapper) {
@@ -318,14 +336,37 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 		/**
 		 * Builds the StructuredOutputValidationAdvisor.
 		 * @return a new StructuredOutputValidationAdvisor instance
-		 * @throws IllegalArgumentException if outputType is not set
+		 * @throws IllegalArgumentException if neither outputType nor outputJsonSchema is
+		 * set, or if both are set
 		 */
 		public StructuredOutputValidationAdvisor build() {
-			if (this.outputType == null) {
-				throw new IllegalArgumentException("outputType must be set");
+
+			if (StringUtils.hasText(this.outputJsonSchema) && this.outputType != null) {
+				throw new IllegalArgumentException("Only outputType or outputJsonSchema can be set, not both.");
 			}
-			return new StructuredOutputValidationAdvisor(this.advisorOrder, this.outputType, this.maxRepeatAttempts,
-					this.jsonMapper);
+
+			if (!StringUtils.hasText(this.outputJsonSchema) && this.outputType == null) {
+				throw new IllegalArgumentException("Either outputType or outputJsonSchema must be set.");
+			}
+
+			if (this.outputType != null) {
+				this.outputJsonSchema = JsonSchemaGenerator.generateForType(this.outputType);
+			}
+
+			return new StructuredOutputValidationAdvisor(this.advisorOrder,
+					Objects.requireNonNull(this.outputJsonSchema), this.maxRepeatAttempts, this.jsonMapper);
+		}
+
+	}
+
+	private record SchemaValidation(boolean success, String errorMessage) {
+
+		private static SchemaValidation passed() {
+			return new SchemaValidation(true, "");
+		}
+
+		private static SchemaValidation failed(String errorMessage) {
+			return new SchemaValidation(false, errorMessage);
 		}
 
 	}

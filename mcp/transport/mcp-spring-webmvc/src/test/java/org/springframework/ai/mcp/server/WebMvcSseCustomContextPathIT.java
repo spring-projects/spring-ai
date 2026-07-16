@@ -1,5 +1,5 @@
 /*
- * Copyright 2026-2026 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -93,7 +93,9 @@ class WebMvcSseCustomContextPathIT {
 	@Test
 	void testCustomContextPath() {
 		McpServer.async(this.mcpServerTransportProvider).serverInfo("test-server", "1.0.0").build();
-		var client = this.clientBuilder.clientInfo(new McpSchema.Implementation("Sample " + "client", "0.0.0")).build();
+		var client = this.clientBuilder
+			.clientInfo(McpSchema.Implementation.builder("Sample " + "client", "0.0.0").build())
+			.build();
 		assertThat(client.initialize()).isNotNull();
 	}
 

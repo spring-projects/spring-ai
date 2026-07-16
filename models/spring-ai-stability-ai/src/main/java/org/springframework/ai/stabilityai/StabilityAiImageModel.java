@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,6 @@
 package org.springframework.ai.stabilityai;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.jspecify.annotations.Nullable;
 
@@ -39,7 +38,7 @@ import org.springframework.util.Assert;
  */
 public class StabilityAiImageModel implements ImageModel {
 
-	private final StabilityAiImageOptions defaultOptions;
+	private final StabilityAiImageOptions options;
 
 	private final StabilityAiApi stabilityAiApi;
 
@@ -47,11 +46,11 @@ public class StabilityAiImageModel implements ImageModel {
 		this(stabilityAiApi, StabilityAiImageOptions.builder().build());
 	}
 
-	public StabilityAiImageModel(StabilityAiApi stabilityAiApi, StabilityAiImageOptions defaultOptions) {
+	public StabilityAiImageModel(StabilityAiApi stabilityAiApi, StabilityAiImageOptions options) {
 		Assert.notNull(stabilityAiApi, "StabilityAiApi must not be null");
-		Assert.notNull(defaultOptions, "StabilityAiImageOptions must not be null");
+		Assert.notNull(options, "StabilityAiImageOptions must not be null");
 		this.stabilityAiApi = stabilityAiApi;
-		this.defaultOptions = defaultOptions;
+		this.options = options;
 	}
 
 	private static StabilityAiApi.GenerateImageRequest getGenerateImageRequest(ImagePrompt stabilityAiImagePrompt,
@@ -61,7 +60,7 @@ public class StabilityAiImageModel implements ImageModel {
 				.stream()
 				.map(message -> new StabilityAiApi.GenerateImageRequest.TextPrompts(message.getText(),
 						message.getWeight()))
-				.collect(Collectors.toList()))
+				.toList())
 			.height(optionsToUse.getHeight())
 			.width(optionsToUse.getWidth())
 			.cfgScale(optionsToUse.getCfgScale())
@@ -75,7 +74,7 @@ public class StabilityAiImageModel implements ImageModel {
 	}
 
 	public StabilityAiImageOptions getOptions() {
-		return this.defaultOptions;
+		return this.options;
 	}
 
 	/**
@@ -90,7 +89,7 @@ public class StabilityAiImageModel implements ImageModel {
 		// Merge the runtime options passed via the prompt with the default options
 		// configured via the constructor.
 		// Runtime options overwrite StabilityAiImageModel options
-		StabilityAiImageOptions requestImageOptions = mergeOptions(imagePrompt.getOptions(), this.defaultOptions);
+		StabilityAiImageOptions requestImageOptions = mergeOptions(imagePrompt.getOptions(), this.options);
 
 		// Copy the org.springframework.ai.model derived ImagePrompt and ImageOptions data
 		// types to the data types used in StabilityAiApi
@@ -120,37 +119,35 @@ public class StabilityAiImageModel implements ImageModel {
 	 * in the request. Protected access for testing purposes, though maybe useful for
 	 * future subclassing as options change.
 	 */
-	StabilityAiImageOptions mergeOptions(@Nullable ImageOptions runtimeOptions,
-			StabilityAiImageOptions defaultOptions) {
+	StabilityAiImageOptions mergeOptions(@Nullable ImageOptions runtimeOptions, StabilityAiImageOptions options) {
 		if (runtimeOptions == null) {
-			return defaultOptions;
+			return options;
 		}
 		StabilityAiImageOptions.Builder builder = StabilityAiImageOptions.builder()
 			// Handle portable image options
-			.model(ModelOptionsUtils.mergeOption(runtimeOptions.getModel(), defaultOptions.getModel()))
-			.N(ModelOptionsUtils.mergeOption(runtimeOptions.getN(), defaultOptions.getN()))
-			.responseFormat(ModelOptionsUtils.mergeOption(runtimeOptions.getResponseFormat(),
-					defaultOptions.getResponseFormat()))
-			.width(ModelOptionsUtils.mergeOption(runtimeOptions.getWidth(), defaultOptions.getWidth()))
-			.height(ModelOptionsUtils.mergeOption(runtimeOptions.getHeight(), defaultOptions.getHeight()))
+			.model(ModelOptionsUtils.mergeOption(runtimeOptions.getModel(), options.getModel()))
+			.n(ModelOptionsUtils.mergeOption(runtimeOptions.getN(), options.getN()))
+			.responseFormat(
+					ModelOptionsUtils.mergeOption(runtimeOptions.getResponseFormat(), options.getResponseFormat()))
+			.width(ModelOptionsUtils.mergeOption(runtimeOptions.getWidth(), options.getWidth()))
+			.height(ModelOptionsUtils.mergeOption(runtimeOptions.getHeight(), options.getHeight()))
 			// Always set the stability-specific defaults
-			.cfgScale(defaultOptions.getCfgScale())
-			.clipGuidancePreset(defaultOptions.getClipGuidancePreset())
-			.sampler(defaultOptions.getSampler())
-			.seed(defaultOptions.getSeed())
-			.steps(defaultOptions.getSteps())
-			.stylePreset(ModelOptionsUtils.mergeOption(runtimeOptions.getStyle(), defaultOptions.getStylePreset()));
+			.cfgScale(options.getCfgScale())
+			.clipGuidancePreset(options.getClipGuidancePreset())
+			.sampler(options.getSampler())
+			.seed(options.getSeed())
+			.steps(options.getSteps())
+			.stylePreset(ModelOptionsUtils.mergeOption(runtimeOptions.getStyle(), options.getStylePreset()));
 		if (runtimeOptions instanceof StabilityAiImageOptions stabilityOptions) {
 			// Handle Stability AI specific image options
-			builder
-				.cfgScale(ModelOptionsUtils.mergeOption(stabilityOptions.getCfgScale(), defaultOptions.getCfgScale()))
+			builder.cfgScale(ModelOptionsUtils.mergeOption(stabilityOptions.getCfgScale(), options.getCfgScale()))
 				.clipGuidancePreset(ModelOptionsUtils.mergeOption(stabilityOptions.getClipGuidancePreset(),
-						defaultOptions.getClipGuidancePreset()))
-				.sampler(ModelOptionsUtils.mergeOption(stabilityOptions.getSampler(), defaultOptions.getSampler()))
-				.seed(ModelOptionsUtils.mergeOption(stabilityOptions.getSeed(), defaultOptions.getSeed()))
-				.steps(ModelOptionsUtils.mergeOption(stabilityOptions.getSteps(), defaultOptions.getSteps()))
-				.stylePreset(ModelOptionsUtils.mergeOption(stabilityOptions.getStylePreset(),
-						defaultOptions.getStylePreset()));
+						options.getClipGuidancePreset()))
+				.sampler(ModelOptionsUtils.mergeOption(stabilityOptions.getSampler(), options.getSampler()))
+				.seed(ModelOptionsUtils.mergeOption(stabilityOptions.getSeed(), options.getSeed()))
+				.steps(ModelOptionsUtils.mergeOption(stabilityOptions.getSteps(), options.getSteps()))
+				.stylePreset(
+						ModelOptionsUtils.mergeOption(stabilityOptions.getStylePreset(), options.getStylePreset()));
 		}
 
 		return builder.build();

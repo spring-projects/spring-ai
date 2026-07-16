@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.springframework.ai.mcp.server.common.autoconfigure;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BiConsumer;
@@ -42,15 +43,15 @@ import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpStatelessServerTransport;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import org.springaicommunity.mcp.annotation.McpArg;
-import org.springaicommunity.mcp.annotation.McpComplete;
-import org.springaicommunity.mcp.annotation.McpPrompt;
-import org.springaicommunity.mcp.annotation.McpResource;
-import org.springaicommunity.mcp.annotation.McpTool;
-import org.springaicommunity.mcp.annotation.McpToolParam;
 import reactor.core.publisher.Mono;
 
 import org.springframework.ai.mcp.SyncMcpToolCallback;
+import org.springframework.ai.mcp.annotation.McpArg;
+import org.springframework.ai.mcp.annotation.McpComplete;
+import org.springframework.ai.mcp.annotation.McpPrompt;
+import org.springframework.ai.mcp.annotation.McpResource;
+import org.springframework.ai.mcp.annotation.McpTool;
+import org.springframework.ai.mcp.annotation.McpToolParam;
 import org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerAnnotationScannerAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.annotations.StatelessServerSpecificationFactoryAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
@@ -168,10 +169,12 @@ public class McpStatelessServerAutoConfigurationIT {
 
 	@Test
 	void toolSpecificationConfiguration() {
-		this.contextRunner.withUserConfiguration(TestToolConfiguration.class).run(context -> {
-			List<SyncToolSpecification> tools = context.getBean("syncTools", List.class);
-			assertThat(tools).hasSize(1);
-		});
+		this.contextRunner.withPropertyValues("spring.ai.mcp.server.expose-mcp-client-tools=true")
+			.withUserConfiguration(TestToolConfiguration.class)
+			.run(context -> {
+				List<SyncToolSpecification> tools = context.getBean("syncTools", List.class);
+				assertThat(tools).hasSize(1);
+			});
 	}
 
 	@Test
@@ -192,7 +195,8 @@ public class McpStatelessServerAutoConfigurationIT {
 
 	@Test
 	void asyncToolSpecificationConfiguration() {
-		this.contextRunner.withPropertyValues("spring.ai.mcp.server.type=ASYNC")
+		this.contextRunner
+			.withPropertyValues("spring.ai.mcp.server.type=ASYNC", "spring.ai.mcp.server.expose-mcp-client-tools=true")
 			.withUserConfiguration(TestToolConfiguration.class)
 			.run(context -> {
 				List<AsyncToolSpecification> tools = context.getBean("asyncTools", List.class);
@@ -247,7 +251,9 @@ public class McpStatelessServerAutoConfigurationIT {
 
 	@Test
 	void toolResponseMimeTypeConfiguration() {
-		this.contextRunner.withPropertyValues("spring.ai.mcp.server.tool-response-mime-type.test-tool=application/json")
+		this.contextRunner
+			.withPropertyValues("spring.ai.mcp.server.tool-response-mime-type.test-tool=application/json",
+					"spring.ai.mcp.server.expose-mcp-client-tools=true")
 			.withUserConfiguration(TestToolConfiguration.class)
 			.run(context -> {
 				McpServerProperties properties = context.getBean(McpServerProperties.class);
@@ -436,7 +442,8 @@ public class McpStatelessServerAutoConfigurationIT {
 			Mockito.when(mockTool.name()).thenReturn("test-tool");
 			Mockito.when(mockTool.description()).thenReturn("Test Tool");
 			Mockito.when(mockClient.callTool(Mockito.any(McpSchema.CallToolRequest.class))).thenReturn(mockResult);
-			when(mockClient.getClientInfo()).thenReturn(new McpSchema.Implementation("testClient", "1.0.0"));
+			when(mockClient.getClientInfo())
+				.thenReturn(McpSchema.Implementation.builder("testClient", "1.0.0").build());
 
 			return List.of(SyncMcpToolCallback.builder().mcpClient(mockClient).tool(mockTool).build());
 		}
@@ -454,7 +461,8 @@ public class McpStatelessServerAutoConfigurationIT {
 
 				Mockito.when(mockTool.name()).thenReturn("provider-tool");
 				Mockito.when(mockTool.description()).thenReturn("Provider Tool");
-				when(mockClient.getClientInfo()).thenReturn(new McpSchema.Implementation("testClient", "1.0.0"));
+				when(mockClient.getClientInfo())
+					.thenReturn(McpSchema.Implementation.builder("testClient", "1.0.0").build());
 
 				return new ToolCallback[] {
 						SyncMcpToolCallback.builder().mcpClient(mockClient).tool(mockTool).build() };
@@ -474,7 +482,7 @@ public class McpStatelessServerAutoConfigurationIT {
 							new McpSchema.CompleteResult.CompleteCompletion(List.of(), 0, false));
 
 			return List.of(new McpStatelessServerFeatures.SyncCompletionSpecification(
-					new McpSchema.PromptReference("ref/prompt", "code_review", "Code review"), completionHandler));
+					McpSchema.PromptReference.builder("code_review").title("Code review").build(), completionHandler));
 		}
 
 	}
@@ -489,7 +497,7 @@ public class McpStatelessServerAutoConfigurationIT {
 							new McpSchema.CompleteResult.CompleteCompletion(List.of(), 0, false)));
 
 			return List.of(new McpStatelessServerFeatures.AsyncCompletionSpecification(
-					new McpSchema.PromptReference("ref/prompt", "code_review", "Code review"), completionHandler));
+					McpSchema.PromptReference.builder("code_review").title("Code review").build(), completionHandler));
 		}
 
 	}
@@ -557,14 +565,15 @@ public class McpStatelessServerAutoConfigurationIT {
 
 			String message = "Hello, " + name + "! How can I help you today?";
 
-			return new McpSchema.GetPromptResult("Greeting",
-					List.of(new McpSchema.PromptMessage(McpSchema.Role.ASSISTANT, new McpSchema.TextContent(message))));
+			return McpSchema.GetPromptResult.builder(List.of(McpSchema.PromptMessage
+				.builder(McpSchema.Role.ASSISTANT, McpSchema.TextContent.builder(message).build())
+				.build())).description("Greeting").build();
 		}
 
 		@McpComplete(prompt = "city-search")
 		public List<String> completeCityName(String prefix) {
 			return Stream.of("New York", "Los Angeles", "Chicago", "Houston", "Phoenix")
-				.filter(city -> city.toLowerCase().startsWith(prefix.toLowerCase()))
+				.filter(city -> city.toLowerCase(Locale.ROOT).startsWith(prefix.toLowerCase(Locale.ROOT)))
 				.limit(10)
 				.toList();
 		}
@@ -598,14 +607,15 @@ public class McpStatelessServerAutoConfigurationIT {
 
 			String message = "Hello, " + name + "! How can I help you today?";
 
-			return Mono.just(new McpSchema.GetPromptResult("Greeting", List
-				.of(new McpSchema.PromptMessage(McpSchema.Role.ASSISTANT, new McpSchema.TextContent(message)))));
+			return Mono.just(McpSchema.GetPromptResult.builder(List.of(McpSchema.PromptMessage
+				.builder(McpSchema.Role.ASSISTANT, McpSchema.TextContent.builder(message).build())
+				.build())).description("Greeting").build());
 		}
 
 		@McpComplete(prompt = "city-search")
 		public Mono<List<String>> completeCityName(String prefix) {
 			return Mono.just(Stream.of("New York", "Los Angeles", "Chicago", "Houston", "Phoenix")
-				.filter(city -> city.toLowerCase().startsWith(prefix.toLowerCase()))
+				.filter(city -> city.toLowerCase(Locale.ROOT).startsWith(prefix.toLowerCase(Locale.ROOT)))
 				.limit(10)
 				.toList());
 		}

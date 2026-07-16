@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package org.springframework.ai.bedrock.converse;
 
+import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,7 +36,12 @@ import software.amazon.awssdk.services.bedrockruntime.model.StopReason;
 import software.amazon.awssdk.services.bedrockruntime.model.TokenUsage;
 import software.amazon.awssdk.services.bedrockruntime.model.ToolUseBlock;
 
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 
@@ -141,16 +147,26 @@ public class BedrockConverseUsageAggregationTests {
 			.inputType(Request.class)
 			.build();
 
-		var result = this.chatModel.call(new Prompt("What is the weather in Paris?",
+		ToolCallingManager toolCallingManager = ToolCallingManager.builder().build();
+
+		ChatResponse result = this.chatModel.call(new Prompt("What is the weather in Paris?",
 				BedrockChatOptions.builder().toolCallbacks(toolCallback).build()));
+
+		while (result.hasToolCalls()) {
+			ToolExecutionResult toolExecutionResult = toolCallingManager
+				.executeToolCalls(new Prompt("What is the weather in Paris?",
+						BedrockChatOptions.builder().toolCallbacks(toolCallback).build()), result);
+			result = this.chatModel.call(new Prompt(toolExecutionResult.conversationHistory(),
+					BedrockChatOptions.builder().toolCallbacks(toolCallback).build()));
+		}
 
 		assertThat(result).isNotNull();
 		assertThat(result.getResult().getOutput().getText())
 			.isSameAs(converseResponseFinal.output().message().content().get(0).text());
 
-		assertThat(result.getMetadata().getUsage().getPromptTokens()).isEqualTo(445 + 540);
-		assertThat(result.getMetadata().getUsage().getCompletionTokens()).isEqualTo(119 + 106);
-		assertThat(result.getMetadata().getUsage().getTotalTokens()).isEqualTo(564 + 646);
+		assertThat(result.getMetadata().getUsage().getPromptTokens()).isEqualTo(540);
+		assertThat(result.getMetadata().getUsage().getCompletionTokens()).isEqualTo(106);
+		assertThat(result.getMetadata().getUsage().getTotalTokens()).isEqualTo(646);
 	}
 
 	@Test
@@ -257,23 +273,30 @@ public class BedrockConverseUsageAggregationTests {
 			.inputType(Request.class)
 			.build();
 
-		var result = this.chatModel.call(new Prompt("What is the weather in Paris?",
-				BedrockChatOptions.builder().toolCallbacks(toolCallback).build()));
+		ToolCallingManager toolCallingManager = ToolCallingManager.builder().build();
+
+		var chatClient = ChatClient
+			.builder(this.chatModel, ObservationRegistry.NOOP, null, null,
+					ToolCallingAdvisor.builder().toolCallingManager(toolCallingManager))
+			.build();
+
+		ChatResponse result = chatClient
+			.prompt(new Prompt("What is the weather in Paris?",
+					BedrockChatOptions.builder().toolCallbacks(toolCallback).build()))
+			.call()
+			.chatResponse();
 
 		assertThat(result).isNotNull();
 
-		// Verify aggregated standard usage metrics
-		assertThat(result.getMetadata().getUsage().getPromptTokens()).isEqualTo(200 + 300);
-		assertThat(result.getMetadata().getUsage().getCompletionTokens()).isEqualTo(50 + 30);
-		assertThat(result.getMetadata().getUsage().getTotalTokens()).isEqualTo(250 + 330);
+		// ToolCallingAdvisor accumulates usage across framework-controlled tool
+		// calling rounds.
+		assertThat(result.getMetadata().getUsage().getPromptTokens()).isEqualTo(500);
+		assertThat(result.getMetadata().getUsage().getCompletionTokens()).isEqualTo(80);
+		assertThat(result.getMetadata().getUsage().getTotalTokens()).isEqualTo(580);
 
-		// Verify aggregated cache metrics in native usage object
-		Object nativeUsage = result.getMetadata().getUsage().getNativeUsage();
-		assertThat(nativeUsage).isInstanceOf(TokenUsage.class);
-
-		TokenUsage tokenUsage = (TokenUsage) nativeUsage;
-		assertThat(tokenUsage.cacheReadInputTokens()).isEqualTo(150 + 150); // Aggregated
-		assertThat(tokenUsage.cacheWriteInputTokens()).isEqualTo(0);
+		// Verify cache metrics in the accumulated Usage abstraction.
+		assertThat(result.getMetadata().getUsage().getCacheReadInputTokens()).isEqualTo(300L);
+		assertThat(result.getMetadata().getUsage().getCacheWriteInputTokens()).isEqualTo(0L);
 	}
 
 	public record Request(String location, String unit) {

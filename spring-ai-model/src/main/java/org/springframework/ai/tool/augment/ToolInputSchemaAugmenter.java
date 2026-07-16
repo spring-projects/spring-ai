@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,9 +23,9 @@ import java.util.List;
 import tools.jackson.databind.node.ArrayNode;
 import tools.jackson.databind.node.ObjectNode;
 
-import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.tool.annotation.ToolParam;
-import org.springframework.ai.util.json.JsonParser;
+import org.springframework.ai.util.JacksonUtils;
+import org.springframework.ai.util.json.schema.JsonSchemaUtils;
 
 /**
  * This utility provides functionality to augment a JSON Schema with additional fields
@@ -85,7 +85,7 @@ public final class ToolInputSchemaAugmenter {
 
 		try {
 
-			ObjectNode schemaObjectNode = (ObjectNode) ModelOptionsUtils.JSON_MAPPER.readTree(jsonSchemaString);
+			ObjectNode schemaObjectNode = (ObjectNode) JacksonUtils.getDefaultJsonMapper().readTree(jsonSchemaString);
 
 			// Handle properties
 			ObjectNode propertiesNode;
@@ -93,13 +93,13 @@ public final class ToolInputSchemaAugmenter {
 				propertiesNode = (ObjectNode) schemaObjectNode.get("properties");
 			}
 			else {
-				propertiesNode = ModelOptionsUtils.JSON_MAPPER.createObjectNode();
+				propertiesNode = JacksonUtils.getDefaultJsonMapper().createObjectNode();
 				schemaObjectNode.set("properties", propertiesNode);
 			}
 
 			for (AugmentedArgumentType argument : argumentType) {
 
-				ObjectNode parameterNode = ModelOptionsUtils.getJsonSchema(argument.type());
+				ObjectNode parameterNode = JsonSchemaUtils.getJsonSchema(argument.type());
 
 				if (argument.description() != null && !argument.description().isEmpty()) {
 					parameterNode.put("description", argument.description());
@@ -113,7 +113,7 @@ public final class ToolInputSchemaAugmenter {
 						requiredArray = (ArrayNode) schemaObjectNode.get("required");
 					}
 					else {
-						requiredArray = JsonParser.getJsonMapper().createArrayNode();
+						requiredArray = JacksonUtils.getDefaultJsonMapper().createArrayNode();
 						schemaObjectNode.set("required", requiredArray);
 					}
 					requiredArray.add(argument.name());
@@ -121,7 +121,9 @@ public final class ToolInputSchemaAugmenter {
 				}
 			}
 
-			return JsonParser.getJsonMapper().writerWithDefaultPrettyPrinter().writeValueAsString(schemaObjectNode);
+			return JacksonUtils.getDefaultJsonMapper()
+				.writerWithDefaultPrettyPrinter()
+				.writeValueAsString(schemaObjectNode);
 
 		}
 		catch (Exception e) {

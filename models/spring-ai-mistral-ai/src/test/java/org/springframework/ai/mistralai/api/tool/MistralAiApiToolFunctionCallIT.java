@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2026 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,6 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.mistralai.api.MistralAiApi;
@@ -33,7 +31,7 @@ import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.T
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ToolChoice;
 import org.springframework.ai.mistralai.api.MistralAiApi.FunctionTool.Type;
-import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.util.JsonHelper;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.ObjectUtils;
 
@@ -45,15 +43,17 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Jason Smith
  */
 @EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".+")
-public class MistralAiApiToolFunctionCallIT {
+class MistralAiApiToolFunctionCallIT {
 
-	static final String MISTRAL_AI_CHAT_MODEL = MistralAiApi.ChatModel.MISTRAL_LARGE.getValue();
+	private static final JsonHelper jsonHelper = new JsonHelper();
 
-	private final Logger logger = LoggerFactory.getLogger(MistralAiApiToolFunctionCallIT.class);
+	private static final String MISTRAL_AI_CHAT_MODEL = MistralAiApi.ChatModel.MISTRAL_LARGE.getValue();
 
-	MockWeatherService weatherService = new MockWeatherService();
+	private final MockWeatherService weatherService = new MockWeatherService();
 
-	MistralAiApi completionApi = MistralAiApi.builder().apiKey(System.getenv("MISTRAL_AI_API_KEY")).build();
+	private final MistralAiApi completionApi = MistralAiApi.builder()
+		.apiKey(System.getenv("MISTRAL_AI_API_KEY"))
+		.build();
 
 	private static <T> T fromJson(String json, Class<T> targetClass) {
 		return JsonMapper.shared().readValue(json, targetClass);
@@ -61,7 +61,7 @@ public class MistralAiApiToolFunctionCallIT {
 
 	@Test
 	@SuppressWarnings("null")
-	public void toolFunctionCall() {
+	void toolFunctionCall() {
 
 		// Step 1: send the conversation and available functions to the model
 		var message = new ChatCompletionMessage(
@@ -71,7 +71,7 @@ public class MistralAiApiToolFunctionCallIT {
 		var functionTool = new MistralAiApi.FunctionTool(Type.FUNCTION,
 				new MistralAiApi.FunctionTool.Function(
 						"Get the weather in location. Return temperature in 30°F or 30°C format.", "getCurrentWeather",
-						ModelOptionsUtils.jsonToMap("""
+						jsonHelper.fromJsonToMap("""
 								{
 									"type": "object",
 									"properties": {
@@ -138,16 +138,15 @@ public class MistralAiApiToolFunctionCallIT {
 			ResponseEntity<ChatCompletion> chatCompletion2 = this.completionApi
 				.chatCompletionEntity(functionResponseRequest);
 
-			logger.info("Final response: " + chatCompletion2.getBody());
-
 			assertThat(chatCompletion2.getBody().choices()).isNotEmpty();
 
 			assertThat(chatCompletion2.getBody().choices().get(0).message().role()).isEqualTo(Role.ASSISTANT);
-			assertThat(chatCompletion2.getBody().choices().get(0).message().content()).contains("San Francisco")
+			assertThat(chatCompletion2.getBody().choices().get(0).message().extractTextContent())
+				.contains("San Francisco")
 				.containsAnyOf("30.0", "30");
-			assertThat(chatCompletion2.getBody().choices().get(0).message().content()).contains("Tokyo")
+			assertThat(chatCompletion2.getBody().choices().get(0).message().extractTextContent()).contains("Tokyo")
 				.containsAnyOf("10.0", "10");
-			assertThat(chatCompletion2.getBody().choices().get(0).message().content()).contains("Paris")
+			assertThat(chatCompletion2.getBody().choices().get(0).message().extractTextContent()).contains("Paris")
 				.containsAnyOf("15.0", "15");
 		}
 

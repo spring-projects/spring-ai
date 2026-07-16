@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,6 +46,7 @@ import org.springframework.context.annotation.Bean;
  * @author Eddú Meléndez
  * @author Soby Chacko
  * @author Ilayaperumal Gopinathan
+ * @author Taewoong Kim
  */
 @AutoConfiguration
 @ConditionalOnClass({ MilvusVectorStore.class, EmbeddingModel.class })
@@ -78,6 +79,7 @@ public class MilvusVectorStoreAutoConfiguration {
 			.initializeSchema(properties.isInitializeSchema())
 			.databaseName(properties.getDatabaseName())
 			.collectionName(properties.getCollectionName())
+			.partitionName(properties.getPartitionName())
 			.embeddingDimension(properties.getEmbeddingDimension())
 			.indexType(IndexType.valueOf(properties.getIndexType().name()))
 			.metricType(MetricType.valueOf(properties.getMetricType().name()))

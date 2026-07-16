@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.springframework.ai.model.google.genai.autoconfigure.chat;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.google.genai.GoogleGenAiChatOptions.ToolChoice;
 import org.springframework.ai.model.google.genai.autoconfigure.embedding.GoogleGenAiEmbeddingConnectionProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -27,6 +28,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Unit tests for Google GenAI properties binding.
+ *
+ * @author Sebastien Deleuze
  */
 public class GoogleGenAiPropertiesTests {
 
@@ -50,18 +53,17 @@ public class GoogleGenAiPropertiesTests {
 	@Test
 	void chatPropertiesBinding() {
 		this.contextRunner
-			.withPropertyValues("spring.ai.google.genai.chat.options.model=gemini-2.0-flash",
-					"spring.ai.google.genai.chat.options.temperature=0.5",
-					"spring.ai.google.genai.chat.options.max-output-tokens=2048",
-					"spring.ai.google.genai.chat.options.top-p=0.9",
-					"spring.ai.google.genai.chat.options.response-mime-type=application/json")
+			.withPropertyValues("spring.ai.google.genai.chat.model=gemini-2.0-flash",
+					"spring.ai.google.genai.chat.temperature=0.5", "spring.ai.google.genai.chat.max-output-tokens=2048",
+					"spring.ai.google.genai.chat.top-p=0.9",
+					"spring.ai.google.genai.chat.response-mime-type=application/json")
 			.run(context -> {
 				GoogleGenAiChatProperties chatProperties = context.getBean(GoogleGenAiChatProperties.class);
-				assertThat(chatProperties.getOptions().getModel()).isEqualTo("gemini-2.0-flash");
-				assertThat(chatProperties.getOptions().getTemperature()).isEqualTo(0.5);
-				assertThat(chatProperties.getOptions().getMaxOutputTokens()).isEqualTo(2048);
-				assertThat(chatProperties.getOptions().getTopP()).isEqualTo(0.9);
-				assertThat(chatProperties.getOptions().getResponseMimeType()).isEqualTo("application/json");
+				assertThat(chatProperties.toOptions().getModel()).isEqualTo("gemini-2.0-flash");
+				assertThat(chatProperties.toOptions().getTemperature()).isEqualTo(0.5);
+				assertThat(chatProperties.toOptions().getMaxOutputTokens()).isEqualTo(2048);
+				assertThat(chatProperties.toOptions().getTopP()).isEqualTo(0.9);
+				assertThat(chatProperties.toOptions().getResponseMimeType()).isEqualTo("application/json");
 			});
 	}
 
@@ -83,28 +85,27 @@ public class GoogleGenAiPropertiesTests {
 	@Test
 	void cachedContentPropertiesBinding() {
 		this.contextRunner
-			.withPropertyValues("spring.ai.google.genai.chat.options.use-cached-content=true",
-					"spring.ai.google.genai.chat.options.cached-content-name=cachedContent/test123",
-					"spring.ai.google.genai.chat.options.auto-cache-threshold=100000",
-					"spring.ai.google.genai.chat.options.auto-cache-ttl=PT1H")
+			.withPropertyValues("spring.ai.google.genai.chat.use-cached-content=true",
+					"spring.ai.google.genai.chat.cached-content-name=cachedContent/test123",
+					"spring.ai.google.genai.chat.auto-cache-threshold=100000",
+					"spring.ai.google.genai.chat.auto-cache-ttl=PT1H")
 			.run(context -> {
 				GoogleGenAiChatProperties chatProperties = context.getBean(GoogleGenAiChatProperties.class);
-				assertThat(chatProperties.getOptions().getUseCachedContent()).isTrue();
-				assertThat(chatProperties.getOptions().getCachedContentName()).isEqualTo("cachedContent/test123");
-				assertThat(chatProperties.getOptions().getAutoCacheThreshold()).isEqualTo(100000);
+				assertThat(chatProperties.toOptions().getUseCachedContent()).isTrue();
+				assertThat(chatProperties.toOptions().getCachedContentName()).isEqualTo("cachedContent/test123");
+				assertThat(chatProperties.toOptions().getAutoCacheThreshold()).isEqualTo(100000);
 				// The Duration keeps its original ISO-8601 format
-				assertThat(chatProperties.getOptions().getAutoCacheTtl()).isNotNull();
-				assertThat(chatProperties.getOptions().getAutoCacheTtl().toString()).isEqualTo("PT1H");
+				assertThat(chatProperties.toOptions().getAutoCacheTtl()).isNotNull();
+				assertThat(chatProperties.toOptions().getAutoCacheTtl().toString()).isEqualTo("PT1H");
 			});
 	}
 
 	@Test
 	void extendedUsageMetadataPropertiesBinding() {
-		this.contextRunner
-			.withPropertyValues("spring.ai.google.genai.chat.options.include-extended-usage-metadata=true")
+		this.contextRunner.withPropertyValues("spring.ai.google.genai.chat.include-extended-usage-metadata=true")
 			.run(context -> {
 				GoogleGenAiChatProperties chatProperties = context.getBean(GoogleGenAiChatProperties.class);
-				assertThat(chatProperties.getOptions().getIncludeExtendedUsageMetadata()).isTrue();
+				assertThat(chatProperties.toOptions().getIncludeExtendedUsageMetadata()).isTrue();
 			});
 	}
 
@@ -114,10 +115,10 @@ public class GoogleGenAiPropertiesTests {
 		this.contextRunner.run(context -> {
 			GoogleGenAiChatProperties chatProperties = context.getBean(GoogleGenAiChatProperties.class);
 			// These should be null when not set
-			assertThat(chatProperties.getOptions().getUseCachedContent()).isNull();
-			assertThat(chatProperties.getOptions().getCachedContentName()).isNull();
-			assertThat(chatProperties.getOptions().getAutoCacheThreshold()).isNull();
-			assertThat(chatProperties.getOptions().getAutoCacheTtl()).isNull();
+			assertThat(chatProperties.toOptions().getUseCachedContent()).isNull();
+			assertThat(chatProperties.toOptions().getCachedContentName()).isNull();
+			assertThat(chatProperties.toOptions().getAutoCacheThreshold()).isNull();
+			assertThat(chatProperties.toOptions().getAutoCacheTtl()).isNull();
 		});
 	}
 
@@ -127,17 +128,16 @@ public class GoogleGenAiPropertiesTests {
 		this.contextRunner.run(context -> {
 			GoogleGenAiChatProperties chatProperties = context.getBean(GoogleGenAiChatProperties.class);
 			// Should be null when not set (defaults to true in the model implementation)
-			assertThat(chatProperties.getOptions().getIncludeExtendedUsageMetadata()).isNull();
+			assertThat(chatProperties.toOptions().getIncludeExtendedUsageMetadata()).isNull();
 		});
 	}
 
 	@Test
 	void includeThoughtsPropertiesBinding() {
-		this.contextRunner.withPropertyValues("spring.ai.google.genai.chat.options.include-thoughts=true")
-			.run(context -> {
-				GoogleGenAiChatProperties chatProperties = context.getBean(GoogleGenAiChatProperties.class);
-				assertThat(chatProperties.getOptions().getIncludeThoughts()).isTrue();
-			});
+		this.contextRunner.withPropertyValues("spring.ai.google.genai.chat.include-thoughts=true").run(context -> {
+			GoogleGenAiChatProperties chatProperties = context.getBean(GoogleGenAiChatProperties.class);
+			assertThat(chatProperties.toOptions().getIncludeThoughts()).isTrue();
+		});
 	}
 
 	@Test
@@ -146,8 +146,54 @@ public class GoogleGenAiPropertiesTests {
 		this.contextRunner.run(context -> {
 			GoogleGenAiChatProperties chatProperties = context.getBean(GoogleGenAiChatProperties.class);
 			// Should be null when not set
-			assertThat(chatProperties.getOptions().getIncludeThoughts()).isNull();
+			assertThat(chatProperties.toOptions().getIncludeThoughts()).isNull();
 		});
+	}
+
+	@Test
+	void toolChoiceModeOnlyBinding() {
+		this.contextRunner.withPropertyValues("spring.ai.google.genai.chat.tool-choice.mode=ANY").run(context -> {
+			GoogleGenAiChatProperties chatProperties = context.getBean(GoogleGenAiChatProperties.class);
+			ToolChoice toolChoice = chatProperties.toOptions().getToolChoice();
+			assertThat(toolChoice).isNotNull();
+			assertThat(toolChoice.mode()).isEqualTo(ToolChoice.Mode.ANY);
+			assertThat(toolChoice.allowedFunctionNames()).isNull();
+		});
+	}
+
+	@Test
+	void toolChoiceWithAllowedFunctionNamesBinding() {
+		this.contextRunner
+			.withPropertyValues("spring.ai.google.genai.chat.tool-choice.mode=ANY",
+					"spring.ai.google.genai.chat.tool-choice.allowed-function-names=funcA,funcB")
+			.run(context -> {
+				GoogleGenAiChatProperties chatProperties = context.getBean(GoogleGenAiChatProperties.class);
+				ToolChoice toolChoice = chatProperties.toOptions().getToolChoice();
+				assertThat(toolChoice).isNotNull();
+				assertThat(toolChoice.mode()).isEqualTo(ToolChoice.Mode.ANY);
+				assertThat(toolChoice.allowedFunctionNames()).containsExactly("funcA", "funcB");
+			});
+	}
+
+	@Test
+	void toolChoiceNotSetByDefault() {
+		this.contextRunner.run(context -> {
+			GoogleGenAiChatProperties chatProperties = context.getBean(GoogleGenAiChatProperties.class);
+			assertThat(chatProperties.toOptions().getToolChoice()).isNull();
+		});
+	}
+
+	@Test
+	void toolChoiceAllowedFunctionNamesOnlyBindingDefaultsModeToAuto() {
+		this.contextRunner
+			.withPropertyValues("spring.ai.google.genai.chat.tool-choice.allowed-function-names=funcA,funcB")
+			.run(context -> {
+				GoogleGenAiChatProperties chatProperties = context.getBean(GoogleGenAiChatProperties.class);
+				ToolChoice toolChoice = chatProperties.toOptions().getToolChoice();
+				assertThat(toolChoice).isNotNull();
+				assertThat(toolChoice.mode()).isEqualTo(ToolChoice.Mode.AUTO);
+				assertThat(toolChoice.allowedFunctionNames()).containsExactly("funcA", "funcB");
+			});
 	}
 
 	@Configuration

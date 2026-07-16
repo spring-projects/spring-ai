@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,11 +27,16 @@ import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.advisor.api.AdvisorChain;
+import org.springframework.ai.chat.client.advisor.api.BaseAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
+import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationContext;
+import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationConvention;
+import org.springframework.ai.chat.client.advisor.observation.DefaultAdvisorObservationConvention;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -243,6 +248,79 @@ class DefaultAroundAdvisorChainTests {
 		CallAdvisorChain newChain = chain.copy(advisor1);
 
 		assertThat(newChain.getObservationRegistry()).isSameAs(customRegistry);
+	}
+
+	@Test
+	void whenCopyingChainThenCustomObservationConventionIsPreserved() {
+		CallAdvisor advisor1 = createMockAdvisor("advisor1", 1);
+		CallAdvisor advisor2 = createMockAdvisor("advisor2", 2);
+
+		AdvisorObservationConvention customConvention = new AdvisorObservationConvention() {
+			@Override
+			public String getName() {
+				return "custom.advisor";
+			}
+
+			@Override
+			public boolean supportsContext(io.micrometer.observation.Observation.Context context) {
+				return context instanceof AdvisorObservationContext;
+			}
+		};
+
+		CallAdvisorChain chain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.observationConvention(customConvention)
+			.pushAll(List.of(advisor1, advisor2))
+			.build();
+
+		CallAdvisorChain newChain = chain.copy(advisor1);
+
+		assertThat(ReflectionTestUtils.getField(newChain, "observationConvention")).isSameAs(customConvention);
+	}
+
+	@Test
+	void whenCopyingChainWithoutCustomObservationConventionThenDefaultIsPreserved() {
+		CallAdvisor advisor1 = createMockAdvisor("advisor1", 1);
+		CallAdvisor advisor2 = createMockAdvisor("advisor2", 2);
+
+		CallAdvisorChain chain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.of(advisor1, advisor2))
+			.build();
+
+		CallAdvisorChain newChain = chain.copy(advisor1);
+
+		assertThat(ReflectionTestUtils.getField(newChain, "observationConvention"))
+			.isInstanceOf(DefaultAdvisorObservationConvention.class);
+	}
+
+	@Test
+	void mutateCopiesAllAdvisorsToNewChain() {
+		CallAdvisor advisor1 = createMockAdvisor("advisor1", 1);
+		CallAdvisor advisor2 = createMockAdvisor("advisor2", 2);
+
+		DefaultAroundAdvisorChain chain = (DefaultAroundAdvisorChain) DefaultAroundAdvisorChain
+			.builder(ObservationRegistry.NOOP)
+			.pushAll(List.of(advisor1, advisor2))
+			.build();
+
+		BaseAdvisorChain mutated = chain.mutate().build();
+
+		assertThat(mutated.getCallAdvisors()).containsExactlyInAnyOrderElementsOf(chain.getCallAdvisors());
+	}
+
+	@Test
+	void mutateDoesNotAffectOriginalChain() {
+		CallAdvisor advisor1 = createMockAdvisor("advisor1", 1);
+		CallAdvisor advisor2 = createMockAdvisor("advisor2", 2);
+
+		DefaultAroundAdvisorChain chain = (DefaultAroundAdvisorChain) DefaultAroundAdvisorChain
+			.builder(ObservationRegistry.NOOP)
+			.push(advisor1)
+			.build();
+
+		chain.mutate().push(advisor2).build();
+
+		assertThat(chain.getCallAdvisors()).hasSize(1);
+		assertThat(chain.getCallAdvisors().get(0).getName()).isEqualTo("advisor1");
 	}
 
 	private CallAdvisor createMockAdvisor(String name, int order) {

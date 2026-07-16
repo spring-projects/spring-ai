@@ -8,6 +8,11 @@ The Audio API provides a speech endpoint based on OpenAI's TTS (text-to-speech) 
 - Produce spoken audio in multiple languages.
 - Give real-time audio output using streaming.
 
+[NOTE]
+====
+Starting from version `2.0.0-M5`, Spring AI uses the official `openai-java` SDK under the hood for all OpenAI models. The transition is expected to be seamless and there are no breaking changes for existing users of the OpenAI API properties and builders. If you find any issues, please report them to us at https://github.com/spring-projects/spring-ai/issues[Spring AI GitHub Issues].
+====
+
 == Prerequisites
 
 . Create an OpenAI account and obtain an API key. You can sign up at the https://platform.openai.com/signup[OpenAI signup page] and generate an API key on the https://platform.openai.com/account/api-keys[API Keys page].
@@ -85,34 +90,17 @@ The prefix `spring.ai.openai.audio.speech` is used as the property prefix that l
 | spring.ai.openai.audio.speech.api-key    | The API Key           |  -
 | spring.ai.openai.audio.speech.organization-id | Optionally you can specify which organization  used for an API request. |  -
 | spring.ai.openai.audio.speech.project-id      | Optionally, you can specify which project is used for an API request. |  -
-| spring.ai.openai.audio.speech.speech-path | The API endpoint path for audio speech generation. Useful for OpenAI-compatible APIs with different endpoint structures. | /v1/audio/speech
-| spring.ai.openai.audio.speech.options.model  | ID of the model to use for generating the audio. Available models: `gpt-4o-mini-tts` (default, optimized for speed and cost), `gpt-4o-tts` (higher quality), `tts-1` (legacy, optimized for speed), or `tts-1-hd` (legacy, optimized for quality). |  gpt-4o-mini-tts
-| spring.ai.openai.audio.speech.options.voice | The voice to use for synthesis. For OpenAI's TTS API, One of the available voices for the chosen model: alloy, echo, fable, onyx, nova, and shimmer. | alloy
-| spring.ai.openai.audio.speech.options.response-format | The format of the audio output. Supported formats are mp3, opus, aac, flac, wav, and pcm. | mp3
-| spring.ai.openai.audio.speech.options.speed | The speed of the voice synthesis. The acceptable range is from 0.25 (slowest) to 4.0 (fastest). | 1.0
+| spring.ai.openai.audio.speech.model  | ID of the model to use for generating the audio. Available models: `gpt-4o-mini-tts` (default, optimized for speed and cost), `gpt-4o-tts` (higher quality), `tts-1` (legacy, optimized for speed), or `tts-1-hd` (legacy, optimized for quality). |  gpt-4o-mini-tts
+| spring.ai.openai.audio.speech.voice | The voice to use for synthesis. For OpenAI's TTS API, One of the available voices for the chosen model: alloy, echo, fable, onyx, nova, and shimmer. | alloy
+| spring.ai.openai.audio.speech.response-format | The format of the audio output. Supported formats are mp3, opus, aac, flac, wav, and pcm. | mp3
+| spring.ai.openai.audio.speech.speed | The speed of the voice synthesis. The acceptable range is from 0.25 (slowest) to 4.0 (fastest). | 1.0
 |====
 
 NOTE: You can override the common `spring.ai.openai.base-url`, `spring.ai.openai.api-key`, `spring.ai.openai.organization-id` and `spring.ai.openai.project-id` properties.
 The `spring.ai.openai.audio.speech.base-url`, `spring.ai.openai.audio.speech.api-key`, `spring.ai.openai.audio.speech.organization-id` and `spring.ai.openai.audio.speech.project-id` properties if set take precedence over the common properties.
 This is useful if you want to use different OpenAI accounts for different models and different model endpoints.
 
-TIP: All properties prefixed with `spring.ai.openai.audio.speech.options` can be overridden at runtime.
-
-=== Custom API Paths
-
-For OpenAI-compatible APIs (such as LocalAI, Ollama with OpenAI compatibility, or custom proxies) that use different endpoint paths, you can configure the speech path:
-
-[source,properties]
-----
-spring.ai.openai.audio.speech.speech-path=/custom/path/to/speech
-----
-
-This is particularly useful when:
-
-* Using API gateways or proxies that modify standard OpenAI paths
-* Working with OpenAI-compatible services that implement different URL structures
-* Testing against mock endpoints with custom paths
-* Deploying in environments with path-based routing requirements
+TIP: All properties prefixed with `spring.ai.openai.audio.speech` can be overridden at runtime.
 
 == Runtime Options [[speech-options]]
 
@@ -212,6 +200,8 @@ Flux<TextToSpeechResponse> responseStream = openAiAudioSpeechModel.stream(speech
 // You can also stream raw audio bytes directly
 Flux<byte[]> audioByteStream = openAiAudioSpeechModel.stream("Hello, world!");
 ----
+
+include::partial$openai/openai-http-client-customization.adoc[]
 
 == Migration Guide
 
@@ -585,4 +575,4 @@ NoSuchBeanDefinitionException: No qualifying bean of type 'SpeechModel'
 
 == Example Code
 
-* The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/audio/speech/OpenAiSpeechModelIT.java[OpenAiSpeechModelIT.java] test provides some general examples of how to use the library.
+* The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/audio/OpenAiAudioSpeechModelIT.java[OpenAiAudioSpeechModelIT.java] test provides some general examples of how to use the library.

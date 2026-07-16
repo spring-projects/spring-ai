@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,9 @@
 
 package org.springframework.ai.vectorstore.redis.cache.semantic.autoconfigure;
 
-import redis.clients.jedis.JedisPooled;
+import redis.clients.jedis.DefaultJedisClientConfig;
+import redis.clients.jedis.JedisClientConfig;
+import redis.clients.jedis.RedisClient;
 
 import org.springframework.ai.chat.cache.semantic.SemanticCache;
 import org.springframework.ai.chat.cache.semantic.SemanticCacheAdvisor;
@@ -31,7 +33,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.boot.data.redis.autoconfigure.DataRedisAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
 import org.springframework.util.StringUtils;
@@ -41,11 +42,11 @@ import org.springframework.util.StringUtils;
  *
  * @author Brian Sam-Bodden
  * @author Eddú Meléndez
+ * @author Yanming Zhou
  */
-@AutoConfiguration(after = DataRedisAutoConfiguration.class)
-@ConditionalOnClass({ DefaultSemanticCache.class, JedisPooled.class, CallAdvisor.class, StreamAdvisor.class,
+@AutoConfiguration
+@ConditionalOnClass({ DefaultSemanticCache.class, RedisClient.class, CallAdvisor.class, StreamAdvisor.class,
 		TransformersEmbeddingModel.class })
-@ConditionalOnBean(JedisConnectionFactory.class)
 @EnableConfigurationProperties(RedisSemanticCacheProperties.class)
 @ConditionalOnProperty(name = "spring.ai.vectorstore.redis.semantic-cache.enabled", havingValue = "true",
 		matchIfMissing = true)
@@ -74,15 +75,26 @@ public class RedisSemanticCacheAutoConfiguration {
 	}
 
 	/**
-	 * Creates a JedisPooled client for Redis connections.
+	 * Creates a RedisClient client for Redis connections, honoring the SSL, password,
+	 * client name, and timeout settings from the {@link JedisConnectionFactory}.
 	 * @param jedisConnectionFactory the Jedis connection factory
-	 * @return the JedisPooled client
+	 * @return the RedisClient client
 	 */
 	@Bean
 	@ConditionalOnMissingBean
 	@ConditionalOnBean(EmbeddingModel.class)
-	public JedisPooled jedisClient(final JedisConnectionFactory jedisConnectionFactory) {
-		return new JedisPooled(jedisConnectionFactory.getHostName(), jedisConnectionFactory.getPort());
+	public RedisClient jedisClient(final JedisConnectionFactory jedisConnectionFactory) {
+		String host = jedisConnectionFactory.getHostName();
+		int port = jedisConnectionFactory.getPort();
+
+		JedisClientConfig clientConfig = DefaultJedisClientConfig.builder()
+			.ssl(jedisConnectionFactory.isUseSsl())
+			.clientName(jedisConnectionFactory.getClientName())
+			.timeoutMillis(jedisConnectionFactory.getTimeout())
+			.password(jedisConnectionFactory.getPassword())
+			.build();
+
+		return RedisClient.builder().hostAndPort(host, port).clientConfig(clientConfig).build();
 	}
 
 	/**
@@ -95,7 +107,7 @@ public class RedisSemanticCacheAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	@ConditionalOnBean(EmbeddingModel.class)
-	public SemanticCache semanticCache(final JedisPooled jedisClient, final EmbeddingModel embeddingModel,
+	public SemanticCache semanticCache(final RedisClient jedisClient, final EmbeddingModel embeddingModel,
 			final RedisSemanticCacheProperties properties) {
 		DefaultSemanticCache.Builder builder = DefaultSemanticCache.builder()
 			.jedisClient(jedisClient)

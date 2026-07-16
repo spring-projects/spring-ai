@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -220,15 +220,15 @@ class AugmentedToolCallbackTest {
 			assertTrue(schemaNode.get("properties").has("age"));
 
 			// Check descriptions
-			assertEquals("Test name field", schemaNode.get("properties").get("name").get("description").asText());
-			assertEquals("Test age field", schemaNode.get("properties").get("age").get("description").asText());
+			assertEquals("Test name field", schemaNode.get("properties").get("name").get("description").asString());
+			assertEquals("Test age field", schemaNode.get("properties").get("age").get("description").asString());
 
 			// Check required fields
 			JsonNode requiredArray = schemaNode.get("required");
 			boolean foundOriginal = false;
 			boolean foundName = false;
 			for (JsonNode requiredField : requiredArray) {
-				String fieldName = requiredField.asText();
+				String fieldName = requiredField.asString();
 				if ("originalField".equals(fieldName)) {
 					foundOriginal = true;
 				}

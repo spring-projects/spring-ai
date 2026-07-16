@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,7 +57,9 @@ class OpenAiChatClientMemoryAdvisorReproIT {
 			.build();
 		MessageChatMemoryAdvisor advisor = MessageChatMemoryAdvisor.builder(chatMemory).build();
 
-		ChatClient chatClient = ChatClient.builder(this.chatModel).defaultAdvisors(advisor).build();
+		ChatClient chatClient = ChatClient.builder(this.chatModel)
+			.defaultAdvisors(a -> a.advisors(advisor).param(ChatMemory.CONVERSATION_ID, "666"))
+			.build();
 
 		// Act: call should succeed without exception (issue #2339 is fixed)
 		chatClient.prompt(prompt).call().chatResponse(); // Should not throw

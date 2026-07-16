@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,12 +18,14 @@ package org.springframework.ai.bedrock.titan;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.bedrock.titan.api.TitanEmbeddingBedrockApi;
 import org.springframework.ai.bedrock.titan.api.TitanEmbeddingBedrockApi.TitanEmbeddingRequest;
@@ -51,7 +53,7 @@ import org.springframework.util.Assert;
  */
 public class BedrockTitanEmbeddingModel extends AbstractEmbeddingModel {
 
-	private final Logger logger = LoggerFactory.getLogger(getClass());
+	private final Log logger = LogFactory.getLog(getClass());
 
 	private final TitanEmbeddingBedrockApi embeddingApi;
 
@@ -79,7 +81,9 @@ public class BedrockTitanEmbeddingModel extends AbstractEmbeddingModel {
 
 	@Override
 	public float[] embed(Document document) {
-		return embed(document.getText());
+		String text = document.getText();
+		Assert.state(text != null, "Document text must not be null");
+		return embed(text);
 	}
 
 	@Override
@@ -100,7 +104,7 @@ public class BedrockTitanEmbeddingModel extends AbstractEmbeddingModel {
 				TitanEmbeddingResponse response = Observation
 					.createNotStarted("bedrock.embedding", this.observationRegistry)
 					.lowCardinalityKeyValue("model", "titan")
-					.lowCardinalityKeyValue("input_type", this.inputType.name().toLowerCase())
+					.lowCardinalityKeyValue("input_type", this.inputType.name().toLowerCase(Locale.ROOT))
 					.highCardinalityKeyValue("input_length", String.valueOf(inputContent.length()))
 					.observe(() -> {
 						TitanEmbeddingResponse r = this.embeddingApi.embedding(apiRequest);
@@ -109,7 +113,10 @@ public class BedrockTitanEmbeddingModel extends AbstractEmbeddingModel {
 					});
 
 				if (response.embedding() == null || response.embedding().length == 0) {
-					logger.warn("Empty embedding vector returned for input at index {}. Skipping.", indexCounter.get());
+					if (logger.isWarnEnabled()) {
+						logger.warn("Empty embedding vector returned for input at index " + indexCounter.get()
+								+ ". Skipping.");
+					}
 					continue;
 				}
 
@@ -120,8 +127,10 @@ public class BedrockTitanEmbeddingModel extends AbstractEmbeddingModel {
 				}
 			}
 			catch (Exception ex) {
-				logger.error("Titan API embedding failed for input at index {}: {}", indexCounter.get(),
-						summarizeInput(inputContent), ex);
+				if (logger.isErrorEnabled()) {
+					logger.error("Titan API embedding failed for input at index " + indexCounter.get() + ": "
+							+ summarizeInput(inputContent), ex);
+				}
 				throw ex; // Optional: Continue instead of throwing if you want partial
 							// success
 			}
@@ -133,11 +142,11 @@ public class BedrockTitanEmbeddingModel extends AbstractEmbeddingModel {
 		return new EmbeddingResponse(embeddings, embeddingResponseMetadata);
 	}
 
-	private TitanEmbeddingRequest createTitanEmbeddingRequest(String inputContent, EmbeddingOptions requestOptions) {
+	private TitanEmbeddingRequest createTitanEmbeddingRequest(String inputContent,
+			@Nullable EmbeddingOptions requestOptions) {
 		InputType inputType = this.inputType;
 
-		if (requestOptions != null
-				&& requestOptions instanceof BedrockTitanEmbeddingOptions bedrockTitanEmbeddingOptions) {
+		if (requestOptions instanceof BedrockTitanEmbeddingOptions bedrockTitanEmbeddingOptions) {
 			inputType = bedrockTitanEmbeddingOptions.getInputType();
 		}
 

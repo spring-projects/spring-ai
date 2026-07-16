@@ -4,8 +4,9 @@ NOTE: This is still work in progress. The documentation and APIs may change in f
 
 The Spring AI MCP Security module provides comprehensive OAuth 2.0 and API key-based security support for Model Context Protocol implementations in Spring AI. This community-driven project enables developers to secure both MCP servers and clients with industry-standard authentication and authorization mechanisms.
 
-NOTE: This module is part of the link:https://github.com/spring-ai-community/mcp-security[spring-ai-community/mcp-security] project and currently works with Spring AI's 1.1.x branch only.
+NOTE: This module is part of the link:https://github.com/spring-ai-community/mcp-security[spring-ai-community/mcp-security] project.
 This is a community-driven project and is not officially endorsed yet by Spring AI or the MCP project.
+Check the project repository for the latest supported Spring AI version.
 
 == Overview
 
@@ -363,7 +364,7 @@ When using `spring-ai-starter-mcp-client`, configure a `McpSyncHttpClientRequest
 class McpConfiguration {
 
     @Bean
-    McpSyncClientCustomizer syncClientCustomizer() {
+    McpCustomizer<McpClient.SyncSpec> syncClientCustomizer() {
         return (name, syncSpec) ->
                 syncSpec.transportContextProvider(
                         new AuthenticationMcpTransportContextProvider()
@@ -400,7 +401,7 @@ When using `spring-ai-starter-mcp-client-webflux`, configure a `WebClient.Builde
 class McpConfiguration {
 
     @Bean
-    McpSyncClientCustomizer syncClientCustomizer() {
+    McpCustomizer<McpClient.SyncSpec> syncClientCustomizer() {
         return (name, syncSpec) ->
                 syncSpec.transportContextProvider(
                         new AuthenticationMcpTransportContextProvider()
@@ -464,7 +465,7 @@ McpSyncClient client(
             .httpRequestCustomizer(requestCustomizer)
             .build();
 
-    var clientInfo = new McpSchema.Implementation("client-name", commonProps.getVersion());
+    var clientInfo = McpSchema.Implementation.builder("client-name", commonProps.getVersion()).build();
 
     return McpClient.sync(transport)
             .clientInfo(clientInfo)
@@ -489,7 +490,7 @@ McpSyncClient client(
             .jsonMapper(new JacksonMcpJsonMapper(jsonMapper))
             .build();
 
-    var clientInfo = new McpSchema.Implementation("clientName", commonProperties.getVersion());
+    var clientInfo = McpSchema.Implementation.builder("clientName", commonProperties.getVersion()).build();
 
     return McpClient.sync(transport)
             .clientInfo(clientInfo)
@@ -504,7 +505,8 @@ Then add the client to your chat client:
 [source,java]
 ----
 var chatResponse = chatClient.prompt("Prompt the LLM to do the thing")
-        .toolCallbacks(new SyncMcpToolCallbackProvider(mcpClient1, mcpClient2, mcpClient3))
+        .tools(new SyncMcpToolCallbackProvider(
+                mcpClient1, mcpClient2, mcpClient3))
         .call()
         .content();
 ----

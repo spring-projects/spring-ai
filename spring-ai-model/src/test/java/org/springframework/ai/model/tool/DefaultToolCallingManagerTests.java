@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,10 +17,14 @@
 package org.springframework.ai.model.tool;
 
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationHandler;
 import io.micrometer.observation.ObservationRegistry;
+import io.micrometer.observation.ObservationView;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -38,6 +42,7 @@ import org.springframework.ai.tool.execution.ToolExecutionException;
 import org.springframework.ai.tool.execution.ToolExecutionExceptionProcessor;
 import org.springframework.ai.tool.metadata.ToolMetadata;
 import org.springframework.ai.tool.method.MethodToolCallback;
+import org.springframework.ai.tool.observation.ToolCallingObservationContext;
 import org.springframework.ai.tool.resolution.StaticToolCallbackResolver;
 import org.springframework.ai.tool.resolution.ToolCallbackResolver;
 
@@ -102,28 +107,12 @@ class DefaultToolCallingManagerTests {
 	@Test
 	void whenToolCallbackExistsThenResolve() {
 		ToolCallback toolCallback = new TestToolCallback("toolA");
-		ToolCallbackResolver toolCallbackResolver = new StaticToolCallbackResolver(List.of(toolCallback));
-		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder()
-			.toolCallbackResolver(toolCallbackResolver)
-			.build();
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
 
 		List<ToolDefinition> toolDefinitions = toolCallingManager
-			.resolveToolDefinitions(ToolCallingChatOptions.builder().toolNames("toolA").build());
+			.resolveToolDefinitions(ToolCallingChatOptions.builder().toolCallbacks(toolCallback).build());
 
 		assertThat(toolDefinitions).containsExactly(toolCallback.getToolDefinition());
-	}
-
-	@Test
-	void whenToolCallbackDoesNotExistThenThrow() {
-		ToolCallbackResolver toolCallbackResolver = new StaticToolCallbackResolver(List.of());
-		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder()
-			.toolCallbackResolver(toolCallbackResolver)
-			.build();
-
-		assertThatThrownBy(() -> toolCallingManager
-			.resolveToolDefinitions(ToolCallingChatOptions.builder().toolNames("toolB").build()))
-			.isInstanceOf(IllegalStateException.class)
-			.hasMessage("No ToolCallback found for tool name: toolB");
 	}
 
 	// EXECUTE TOOL CALLS
@@ -241,10 +230,7 @@ class DefaultToolCallingManagerTests {
 		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
 
 		Prompt prompt = new Prompt(new UserMessage("Hello"),
-				ToolCallingChatOptions.builder()
-					.toolCallbacks(new TestToolCallback("toolA"))
-					.toolNames("toolA")
-					.build());
+				ToolCallingChatOptions.builder().toolCallbacks(new TestToolCallback("toolA")).build());
 		ChatResponse chatResponse = ChatResponse.builder()
 			.generations(List.of(new Generation(AssistantMessage.builder()
 				.content("")
@@ -351,6 +337,53 @@ class DefaultToolCallingManagerTests {
 	}
 
 	@Test
+	void whenBlockingExecutionThenToolCallObservationHasCurrentObservationAsParent() {
+		ToolCallback toolCallback = new TestToolCallback("toolA");
+		ToolCallbackResolver toolCallbackResolver = new StaticToolCallbackResolver(List.of(toolCallback));
+
+		ObservationRegistry observationRegistry = ObservationRegistry.create();
+		List<ObservationView> capturedParents = new ArrayList<>();
+		observationRegistry.observationConfig()
+			.observationHandler(new ObservationHandler<ToolCallingObservationContext>() {
+				@Override
+				public void onStart(ToolCallingObservationContext context) {
+					capturedParents.add(context.getParentObservation());
+				}
+
+				@Override
+				public boolean supportsContext(Observation.Context context) {
+					return context instanceof ToolCallingObservationContext;
+				}
+			});
+
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder()
+			.observationRegistry(observationRegistry)
+			.toolCallbackResolver(toolCallbackResolver)
+			.build();
+
+		Prompt prompt = new Prompt(new UserMessage("Hello"), ToolCallingChatOptions.builder().build());
+		ChatResponse chatResponse = ChatResponse.builder()
+			.generations(List.of(new Generation(AssistantMessage.builder()
+				.content("")
+				.properties(Map.of())
+				.toolCalls(List.of(new AssistantMessage.ToolCall("toolA", "function", "toolA", "{}")))
+				.build())))
+			.build();
+
+		// Simulate the blocking ChatClient flow where an outer observation holds an open
+		// scope on the calling thread (ToolCallReactiveContextHolder is never populated).
+		Observation parentObservation = Observation.start("parent", observationRegistry);
+		try (Observation.Scope ignored = parentObservation.openScope()) {
+			toolCallingManager.executeToolCalls(prompt, chatResponse);
+		}
+		finally {
+			parentObservation.stop();
+		}
+
+		assertThat(capturedParents).containsExactly(parentObservation);
+	}
+
+	@Test
 	void whenMixedMethodToolCallsInChatResponseThenExecute() throws NoSuchMethodException {
 		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
 
@@ -373,7 +406,6 @@ class DefaultToolCallingManagerTests {
 		Prompt prompt = new Prompt(new UserMessage("Hello"),
 				ToolCallingChatOptions.builder()
 					.toolCallbacks(methodToolCallback, methodToolCallbackNeedToolContext)
-					.toolNames("toolA", "toolB")
 					.toolContext("key", "value")
 					.build());
 

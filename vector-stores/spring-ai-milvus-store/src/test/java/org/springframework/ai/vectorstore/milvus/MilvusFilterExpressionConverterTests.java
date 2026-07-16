@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -40,6 +40,7 @@ import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.OR
 
 /**
  * @author Christian Tzolov
+ * @author Soby Chacko
  */
 public class MilvusFilterExpressionConverterTests {
 
@@ -50,6 +51,15 @@ public class MilvusFilterExpressionConverterTests {
 		// country == "BG"
 		String vectorExpr = this.converter.convertExpression(new Expression(EQ, new Key("country"), new Value("BG")));
 		assertThat(vectorExpr).isEqualTo("metadata[\"country\"] == \"BG\"");
+	}
+
+	@Test
+	public void testEQWithCustomMetadataFieldName() {
+		FilterExpressionConverter customConverter = new MilvusFilterExpressionConverter("meta");
+
+		String vectorExpr = customConverter.convertExpression(new Expression(EQ, new Key("country"), new Value("BG")));
+
+		assertThat(vectorExpr).isEqualTo("meta[\"country\"] == \"BG\"");
 	}
 
 	@Test
@@ -88,7 +98,18 @@ public class MilvusFilterExpressionConverterTests {
 						new Expression(EQ, new Key("country"), new Value("BG")))),
 				new Expression(NIN, new Key("city"), new Value(List.of("Sofia", "Plovdiv")))));
 		assertThat(vectorExpr).isEqualTo(
-				"metadata[\"year\"] >= 2020 || metadata[\"country\"] == \"BG\" && metadata[\"year\"] >= 2020 || metadata[\"country\"] == \"BG\" && metadata[\"city\"] not in [\"Sofia\",\"Plovdiv\"]");
+				"(metadata[\"year\"] >= 2020 || metadata[\"country\"] == \"BG\") && metadata[\"city\"] not in [\"Sofia\",\"Plovdiv\"]");
+	}
+
+	@Test
+	public void testGroupAsRightOperand() {
+		// city == "Sofia" AND (year >= 2020 OR country == "BG")
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(AND, new Expression(EQ, new Key("city"), new Value("Sofia")),
+					new Group(new Expression(OR, new Expression(GTE, new Key("year"), new Value(2020)),
+							new Expression(EQ, new Key("country"), new Value("BG"))))));
+		assertThat(vectorExpr).isEqualTo(
+				"metadata[\"city\"] == \"Sofia\" && (metadata[\"year\"] >= 2020 || metadata[\"country\"] == \"BG\")");
 	}
 
 	@Test
@@ -116,11 +137,15 @@ public class MilvusFilterExpressionConverterTests {
 	@Test
 	public void testComplexIdentifiers() {
 		String vectorExpr = this.converter
-			.convertExpression(new Expression(EQ, new Key("\"country 1 2 3\""), new Value("BG")));
+			.convertExpression(new Expression(EQ, new Key("country 1 2 3"), new Value("BG")));
 		assertThat(vectorExpr).isEqualTo("metadata[\"country 1 2 3\"] == \"BG\"");
 
+		vectorExpr = this.converter
+			.convertExpression(new Expression(EQ, new Key("\"country 1 2 3\""), new Value("BG")));
+		assertThat(vectorExpr).isEqualTo("metadata[\"\\\"country 1 2 3\\\"\"] == \"BG\"");
+
 		vectorExpr = this.converter.convertExpression(new Expression(EQ, new Key("'country 1 2 3'"), new Value("BG")));
-		assertThat(vectorExpr).isEqualTo("metadata[\"country 1 2 3\"] == \"BG\"");
+		assertThat(vectorExpr).isEqualTo("metadata[\"'country 1 2 3'\"] == \"BG\"");
 	}
 
 	@Test
@@ -319,19 +344,39 @@ public class MilvusFilterExpressionConverterTests {
 	}
 
 	@Test
-	public void testDoubleQuotedKey() {
-		// "field with spaces" == "value"
+	public void testKeyWithSingleQuote() {
 		String vectorExpr = this.converter
-			.convertExpression(new Expression(EQ, new Key("\"field with spaces\""), new Value("value")));
-		assertThat(vectorExpr).isEqualTo("metadata[\"field with spaces\"] == \"value\"");
+			.convertExpression(new Expression(EQ, new Key("x' OR 1=1--"), new Value("dummy")));
+		assertThat(vectorExpr).isEqualTo("metadata[\"x' OR 1=1--\"] == \"dummy\"");
 	}
 
 	@Test
-	public void testSingleQuotedKey() {
-		// 'field with spaces' == "value"
+	public void testKeyWithDoubleQuote() {
 		String vectorExpr = this.converter
-			.convertExpression(new Expression(EQ, new Key("'field with spaces'"), new Value("value")));
-		assertThat(vectorExpr).isEqualTo("metadata[\"field with spaces\"] == \"value\"");
+			.convertExpression(new Expression(EQ, new Key("key\"inject"), new Value("v")));
+		assertThat(vectorExpr).isEqualTo("metadata[\"key\\\"inject\"] == \"v\"");
+	}
+
+	@Test
+	public void testKeyWithBackslash() {
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(EQ, new Key("key\\inject"), new Value("v")));
+		assertThat(vectorExpr).isEqualTo("metadata[\"key\\\\inject\"] == \"v\"");
+	}
+
+	@Test
+	public void testToFilterExpressionLiteralEscapesInjection() {
+		// Plain value
+		assertThat(MilvusFilterExpressionConverter.toFilterExpressionLiteral("plain-id")).isEqualTo("\"plain-id\"");
+		// Single quote passes through unchanged (JSON does not require escaping), but the
+		// outer double quotes prevent it from breaking out of the string literal.
+		assertThat(MilvusFilterExpressionConverter.toFilterExpressionLiteral("x' || doc_id != 'x"))
+			.isEqualTo("\"x' || doc_id != 'x\"");
+		// Double quotes, backslashes and control chars are JSON-escaped.
+		assertThat(MilvusFilterExpressionConverter.toFilterExpressionLiteral("with\"dquote"))
+			.isEqualTo("\"with\\\"dquote\"");
+		assertThat(MilvusFilterExpressionConverter.toFilterExpressionLiteral("back\\slash\nnewline"))
+			.isEqualTo("\"back\\\\slash\\nnewline\"");
 	}
 
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,7 +28,7 @@ import javax.imageio.ImageIO;
 
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.util.json.JsonParser;
+import org.springframework.ai.util.JsonHelper;
 import org.springframework.util.MimeType;
 import org.springframework.util.MimeTypeUtils;
 
@@ -40,6 +40,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Thomas Vitale
  */
 class DefaultToolCallResultConverterTests {
+
+	private static final JsonHelper jsonHelper = new JsonHelper();
 
 	private final DefaultToolCallResultConverter converter = new DefaultToolCallResultConverter();
 
@@ -110,7 +112,7 @@ class DefaultToolCallResultConverterTests {
 		g.dispose();
 		String result = this.converter.convert(img, BufferedImage.class);
 
-		var b64Struct = JsonParser.fromJson(result, Base64Wrapper.class);
+		var b64Struct = jsonHelper.fromJson(result, Base64Wrapper.class);
 		assertThat(b64Struct.mimeType).isEqualTo(MimeTypeUtils.IMAGE_PNG);
 		assertThat(b64Struct.data).isNotNull();
 

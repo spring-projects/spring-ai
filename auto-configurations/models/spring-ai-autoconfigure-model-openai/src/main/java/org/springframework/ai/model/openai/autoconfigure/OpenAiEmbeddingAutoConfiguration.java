@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2026 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,90 +16,84 @@
 
 package org.springframework.ai.model.openai.autoconfigure;
 
+import java.util.List;
+
+import com.openai.client.OpenAIClient;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.observation.ObservationRegistry;
 
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationConvention;
-import org.springframework.ai.model.SimpleApiKey;
 import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.model.SpringAIModels;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
-import org.springframework.ai.openai.api.OpenAiApi;
-import org.springframework.ai.retry.RetryUtils;
-import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
+import org.springframework.ai.openai.http.okhttp.OpenAiHttpClientBuilderCustomizer;
+import org.springframework.ai.openai.setup.OpenAiSetup;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
-import org.springframework.boot.webclient.autoconfigure.WebClientAutoConfiguration;
 import org.springframework.context.annotation.Bean;
-import org.springframework.core.retry.RetryTemplate;
-import org.springframework.web.client.ResponseErrorHandler;
-import org.springframework.web.client.RestClient;
-import org.springframework.web.reactive.function.client.WebClient;
-
-import static org.springframework.ai.model.openai.autoconfigure.OpenAIAutoConfigurationUtil.resolveConnectionProperties;
 
 /**
- * Embedding {@link AutoConfiguration Auto-configuration} for OpenAI.
+ * Embedding {@link AutoConfiguration Auto-configuration} for OpenAI SDK.
  *
  * @author Christian Tzolov
- * @author Stefan Vassilev
  * @author Thomas Vitale
- * @author Ilayaperumal Gopinathan
- * @author Issam El-atif
+ * @author Stefan Vassilev
  * @author Yanming Zhou
+ * @author Issam El-atif
+ * @author Ilayaperumal Gopinathan
+ * @author Sebastien Deleuze
+ * @author guan xu
  */
-@AutoConfiguration(after = { RestClientAutoConfiguration.class, WebClientAutoConfiguration.class,
-		SpringAiRetryAutoConfiguration.class })
-@ConditionalOnClass(OpenAiApi.class)
+@AutoConfiguration
 @ConditionalOnProperty(name = SpringAIModelProperties.EMBEDDING_MODEL, havingValue = SpringAIModels.OPENAI,
 		matchIfMissing = true)
-@EnableConfigurationProperties({ OpenAiConnectionProperties.class, OpenAiEmbeddingProperties.class })
+@EnableConfigurationProperties({ OpenAiCommonProperties.class, OpenAiEmbeddingProperties.class })
 public class OpenAiEmbeddingAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public OpenAiEmbeddingModel openAiEmbeddingModel(OpenAiConnectionProperties commonProperties,
-			OpenAiEmbeddingProperties embeddingProperties, ObjectProvider<RestClient.Builder> restClientBuilderProvider,
-			ObjectProvider<WebClient.Builder> webClientBuilderProvider, ObjectProvider<RetryTemplate> retryTemplate,
-			ObjectProvider<ResponseErrorHandler> responseErrorHandler,
-			ObjectProvider<ObservationRegistry> observationRegistry,
-			ObjectProvider<EmbeddingModelObservationConvention> observationConvention) {
+	public OpenAiEmbeddingModel openAiEmbeddingModel(OpenAiCommonProperties commonProperties,
+			OpenAiEmbeddingProperties embeddingProperties, ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<MeterRegistry> meterRegistry,
+			ObjectProvider<EmbeddingModelObservationConvention> observationConvention,
+			ObjectProvider<OpenAiHttpClientBuilderCustomizer> httpClientBuilderCustomizers) {
 
-		var openAiApi = openAiApi(embeddingProperties, commonProperties,
-				restClientBuilderProvider.getIfAvailable(RestClient::builder),
-				webClientBuilderProvider.getIfAvailable(WebClient::builder), responseErrorHandler, "embedding");
+		var resolvedProperties = OpenAiAutoConfigurationUtil.resolveCommonProperties(commonProperties,
+				embeddingProperties);
 
-		var embeddingModel = new OpenAiEmbeddingModel(openAiApi, embeddingProperties.getMetadataMode(),
-				embeddingProperties.getOptions(), retryTemplate.getIfUnique(() -> RetryUtils.DEFAULT_RETRY_TEMPLATE),
-				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
+		List<OpenAiHttpClientBuilderCustomizer> customizers = httpClientBuilderCustomizers.orderedStream().toList();
+
+		var openAiClient = this.openAiClient(resolvedProperties, observationRegistry, meterRegistry, customizers);
+
+		var embeddingModel = OpenAiEmbeddingModel.builder()
+			.openAiClient(openAiClient)
+			.metadataMode(embeddingProperties.getMetadataMode())
+			.options(embeddingProperties.toOptions())
+			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
+			.build();
 
 		observationConvention.ifAvailable(embeddingModel::setObservationConvention);
 
 		return embeddingModel;
 	}
 
-	private OpenAiApi openAiApi(OpenAiEmbeddingProperties embeddingProperties,
-			OpenAiConnectionProperties commonProperties, RestClient.Builder restClientBuilder,
-			WebClient.Builder webClientBuilder, ObjectProvider<ResponseErrorHandler> responseErrorHandler,
-			String modelType) {
+	private OpenAIClient openAiClient(OpenAiCommonProperties commonProperties,
+			ObjectProvider<ObservationRegistry> observationRegistry, ObjectProvider<MeterRegistry> meterRegistry,
+			List<OpenAiHttpClientBuilderCustomizer> httpClientCustomizers) {
 
-		OpenAIAutoConfigurationUtil.ResolvedConnectionProperties resolved = resolveConnectionProperties(
-				commonProperties, embeddingProperties, modelType);
+		MeterRegistry meterRegistryToUse = commonProperties.isConnectionPoolMetricsEnabled()
+				? meterRegistry.getIfAvailable() : null;
 
-		return OpenAiApi.builder()
-			.baseUrl(resolved.baseUrl())
-			.apiKey(new SimpleApiKey(resolved.apiKey()))
-			.headers(resolved.headers())
-			.completionsPath(OpenAiChatProperties.DEFAULT_COMPLETIONS_PATH)
-			.embeddingsPath(embeddingProperties.getEmbeddingsPath())
-			.restClientBuilder(restClientBuilder)
-			.webClientBuilder(webClientBuilder)
-			.responseErrorHandler(responseErrorHandler.getIfAvailable(() -> RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER))
-			.build();
+		return OpenAiSetup.setupSyncClient(commonProperties.getBaseUrl(), commonProperties.getApiKey(),
+				commonProperties.getCredential(), commonProperties.getMicrosoftDeploymentName(),
+				commonProperties.getMicrosoftFoundryServiceVersion(), commonProperties.getOrganizationId(),
+				commonProperties.isMicrosoftFoundry(), commonProperties.isGitHubModels(), commonProperties.getModel(),
+				commonProperties.getTimeout(), commonProperties.getMaxRetries(), commonProperties.getProxy(),
+				commonProperties.getCustomHeaders(), observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
+				meterRegistryToUse, httpClientCustomizers);
 	}
 
 }

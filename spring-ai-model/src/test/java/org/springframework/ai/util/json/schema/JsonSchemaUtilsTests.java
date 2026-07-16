@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,22 @@
 
 package org.springframework.ai.util.json.schema;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.node.ObjectNode;
 
-import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.util.JsonHelper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -30,6 +41,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Ilayaperumal Gopinathan
  */
 class JsonSchemaUtilsTests {
+
+	private static final JsonHelper jsonHelper = new JsonHelper();
 
 	/**
 	 * Test that a schema with only "type": "object" and no "properties" field is
@@ -45,7 +58,7 @@ class JsonSchemaUtilsTests {
 
 		String normalizedSchema = JsonSchemaUtils.ensureValidInputSchema(inputSchema);
 
-		Map<String, Object> schemaMap = ModelOptionsUtils.jsonToMap(normalizedSchema);
+		Map<String, Object> schemaMap = jsonHelper.fromJsonToMap(normalizedSchema);
 		assertThat(schemaMap).isNotNull();
 		assertThat(schemaMap).containsKey("type");
 		assertThat(schemaMap.get("type")).isEqualTo("object");
@@ -70,7 +83,7 @@ class JsonSchemaUtilsTests {
 
 		String normalizedSchema = JsonSchemaUtils.ensureValidInputSchema(inputSchema);
 
-		Map<String, Object> schemaMap = ModelOptionsUtils.jsonToMap(normalizedSchema);
+		Map<String, Object> schemaMap = jsonHelper.fromJsonToMap(normalizedSchema);
 		assertThat(schemaMap).isNotNull();
 
 		// Verify both "type" and "properties" were added
@@ -89,7 +102,7 @@ class JsonSchemaUtilsTests {
 
 		String normalizedSchema = JsonSchemaUtils.ensureValidInputSchema(inputSchema);
 
-		Map<String, Object> schemaMap = ModelOptionsUtils.jsonToMap(normalizedSchema);
+		Map<String, Object> schemaMap = jsonHelper.fromJsonToMap(normalizedSchema);
 		assertThat(schemaMap).isNotNull();
 		assertThat(schemaMap).containsKey("type");
 		assertThat(schemaMap.get("type")).isEqualTo("object");
@@ -107,7 +120,7 @@ class JsonSchemaUtilsTests {
 
 		String normalizedSchema = JsonSchemaUtils.ensureValidInputSchema(inputSchema);
 
-		Map<String, Object> schemaMap = ModelOptionsUtils.jsonToMap(normalizedSchema);
+		Map<String, Object> schemaMap = jsonHelper.fromJsonToMap(normalizedSchema);
 		assertThat(schemaMap).isNotNull();
 		assertThat(schemaMap).containsKey("type");
 		assertThat(schemaMap).containsKey("properties");
@@ -127,7 +140,7 @@ class JsonSchemaUtilsTests {
 
 		String normalizedSchema = JsonSchemaUtils.ensureValidInputSchema(inputSchema);
 
-		Map<String, Object> schemaMap = ModelOptionsUtils.jsonToMap(normalizedSchema);
+		Map<String, Object> schemaMap = jsonHelper.fromJsonToMap(normalizedSchema);
 		assertThat(schemaMap).isNotNull();
 		assertThat(schemaMap).containsKey("type");
 		assertThat(schemaMap.get("type")).isEqualTo("string");
@@ -155,6 +168,46 @@ class JsonSchemaUtilsTests {
 		String normalizedSchema = JsonSchemaUtils.ensureValidInputSchema("");
 
 		assertThat(normalizedSchema).isEmpty();
+	}
+
+	@Test
+	void getJsonSchemaCanRunConcurrently() throws Exception {
+		List<ObjectNode> schemas = generateConcurrently(() -> JsonSchemaUtils.getJsonSchema(OrderedStatement.class));
+
+		assertThat(schemas).hasSize(240);
+		assertThat(schemas).allSatisfy(schema -> assertThat(schema.toString()).contains("\"properties\""));
+
+	}
+
+	private static <T> List<T> generateConcurrently(Callable<T> generator) throws Exception {
+		int threadCount = 12;
+		int callCount = 240;
+		ExecutorService executor = Executors.newFixedThreadPool(threadCount);
+		CountDownLatch start = new CountDownLatch(1);
+		try {
+			List<Future<T>> futures = new ArrayList<>();
+			for (int i = 0; i < callCount; i++) {
+				futures.add(executor.submit(() -> {
+					start.await();
+					return generator.call();
+				}));
+			}
+			start.countDown();
+			List<T> schemas = new ArrayList<>();
+			for (Future<T> future : futures) {
+				schemas.add(future.get(30, TimeUnit.SECONDS));
+			}
+			return schemas;
+		}
+		finally {
+			executor.shutdownNow();
+		}
+	}
+
+	@JsonPropertyOrder({ "accountId", "accountName", "currency", "totals" })
+	record OrderedStatement(@JsonProperty(required = true) String accountId,
+			@JsonProperty(required = true) String accountName, String currency, Map<String, Double> totals) {
+
 	}
 
 }

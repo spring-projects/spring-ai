@@ -1,5 +1,5 @@
 /*
- * Copyright 2024-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,6 +43,18 @@ public class DefaultChatOptionsBuilder<B extends DefaultChatOptionsBuilder<B>> i
 	protected @Nullable Double topP;
 
 	public DefaultChatOptionsBuilder() {
+	}
+
+	@Override
+	public B clone() {
+		try {
+			B copy = (B) super.clone();
+			copy.stopSequences = this.stopSequences == null ? null : new ArrayList<>(this.stopSequences);
+			return copy;
+		}
+		catch (CloneNotSupportedException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	@SuppressWarnings("unchecked")
@@ -119,7 +131,14 @@ public class DefaultChatOptionsBuilder<B extends DefaultChatOptionsBuilder<B>> i
 				this.presencePenalty = that.presencePenalty;
 			}
 			if (that.stopSequences != null) {
-				this.stopSequences = that.stopSequences;
+				if (this.stopSequences == null) {
+					this.stopSequences = new ArrayList<>(that.stopSequences);
+				}
+				else {
+					List<String> merged = new ArrayList<>(this.stopSequences);
+					merged.addAll(that.stopSequences);
+					this.stopSequences = merged;
+				}
 			}
 			if (that.temperature != null) {
 				this.temperature = that.temperature;
@@ -135,7 +154,6 @@ public class DefaultChatOptionsBuilder<B extends DefaultChatOptionsBuilder<B>> i
 	}
 
 	public ChatOptions build() {
-		// TODO: Assert.notNull() as required
 		return new DefaultChatOptions(this.model, this.frequencyPenalty, this.maxTokens, this.presencePenalty,
 				this.stopSequences, this.temperature, this.topK, this.topP);
 	}

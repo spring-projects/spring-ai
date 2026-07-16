@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,11 +18,8 @@ package org.springframework.ai.vectorstore.redis.cache.semantic.autoconfigure;
 
 import com.redis.testcontainers.RedisStackContainer;
 import io.micrometer.observation.tck.TestObservationRegistry;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -33,7 +30,7 @@ import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisor;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
-import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.ai.openai.OpenAiEmbeddingOptions;
 import org.springframework.ai.vectorstore.redis.cache.semantic.DefaultSemanticCache;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.data.redis.autoconfigure.DataRedisAutoConfiguration;
@@ -47,21 +44,13 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Integration tests for {@link RedisSemanticCacheAutoConfiguration}.
  */
 @Testcontainers
-@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 class RedisSemanticCacheAutoConfigurationIT {
-
-	private static final Logger logger = LoggerFactory.getLogger(RedisSemanticCacheAutoConfigurationIT.class);
 
 	@Container
 	static RedisStackContainer redisContainer = new RedisStackContainer(
 			RedisStackContainer.DEFAULT_IMAGE_NAME.withTag(RedisStackContainer.DEFAULT_TAG))
 		.withExposedPorts(6379);
-
-	@BeforeAll
-	static void setup() {
-		logger.debug("Redis container running on host: {} and port: {}", redisContainer.getHost(),
-				redisContainer.getFirstMappedPort());
-	}
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(
@@ -126,7 +115,12 @@ class RedisSemanticCacheAutoConfigurationIT {
 		public EmbeddingModel embeddingModel() {
 			// Get API key from environment variable
 			String apiKey = System.getenv("OPENAI_API_KEY");
-			return new OpenAiEmbeddingModel(OpenAiApi.builder().apiKey(apiKey).build());
+			OpenAiEmbeddingOptions options = OpenAiEmbeddingOptions.builder()
+				.apiKey(apiKey)
+				.model(OpenAiEmbeddingOptions.DEFAULT_EMBEDDING_MODEL)
+				.build();
+			return OpenAiEmbeddingModel.builder().options(options).build();
+
 		}
 
 	}

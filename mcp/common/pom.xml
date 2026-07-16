@@ -6,7 +6,7 @@
 	<parent>
 		<groupId>org.springframework.ai</groupId>
 		<artifactId>spring-ai-parent</artifactId>
-		<version>2.0.0-SNAPSHOT</version>
+		<version>2.0.1-SNAPSHOT</version>
 		<relativePath>../../pom.xml</relativePath>
 	</parent>
 	<artifactId>spring-ai-mcp</artifactId>
@@ -14,12 +14,6 @@
 	<description>Spring Framework integration for Model Context Protocol (MCP), providing Spring AI function calling capabilities and Spring-friendly abstractions for MCP clients and MCP servers</description>
 
 	<url>https://github.com/spring-projects/spring-ai</url>
-
-	<scm>
-		<url>https://github.com/spring-projects/spring-ai</url>
-		<connection>git://github.com/spring-projects/spring-ai.git</connection>
-		<developerConnection>git@github.com:spring-projects/spring-ai.git</developerConnection>
-	</scm>
 
 	<dependencies>
 		<dependency>

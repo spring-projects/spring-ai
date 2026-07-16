@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2026 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -80,7 +80,7 @@ import org.springframework.util.StringUtils;
  * @author Soby Chacko
  * @since 1.0.0
  */
-public class TransformersEmbeddingModel extends AbstractEmbeddingModel implements InitializingBean {
+public class TransformersEmbeddingModel extends AbstractEmbeddingModel implements InitializingBean, AutoCloseable {
 
 	// ONNX tokenizer for the all-MiniLM-L6-v2 generative
 	public static final String DEFAULT_ONNX_TOKENIZER_URI = "https://raw.githubusercontent.com/spring-projects/spring-ai/main/models/spring-ai-transformers/src/main/resources/onnx/all-MiniLM-L6-v2/tokenizer.json";
@@ -193,7 +193,7 @@ public class TransformersEmbeddingModel extends AbstractEmbeddingModel implement
 		this.disableCaching = disableCaching;
 	}
 
-	public void setResourceCacheDirectory(String resourceCacheDir) {
+	public void setResourceCacheDirectory(@Nullable String resourceCacheDir) {
 		this.resourceCacheDirectory = resourceCacheDir;
 	}
 
@@ -253,6 +253,26 @@ public class TransformersEmbeddingModel extends AbstractEmbeddingModel implement
 						+ onnxModelOutputs.stream().collect(Collectors.joining(", ")));
 	}
 
+	/**
+	 * Release the native ONNX runtime session and tokenizer acquired in
+	 * {@link #afterPropertiesSet()}. Spring registers this as the bean destroy method
+	 * automatically (inferred {@code close()} method), and the model can also be used
+	 * with try-with-resources.
+	 */
+	@Override
+	public void close() throws OrtException {
+		try {
+			if (this.tokenizer != null) {
+				this.tokenizer.close();
+			}
+		}
+		finally {
+			if (this.session != null) {
+				this.session.close();
+			}
+		}
+	}
+
 	private Resource getCachedResource(Resource resource) {
 		return this.disableCaching ? resource : this.cacheService.getCachedResource(resource);
 	}
@@ -263,7 +283,7 @@ public class TransformersEmbeddingModel extends AbstractEmbeddingModel implement
 	}
 
 	@Override
-	public String getEmbeddingContent(Document document) {
+	public @Nullable String getEmbeddingContent(Document document) {
 		Assert.notNull(document, "Document must not be null");
 		return document.getFormattedContent(this.metadataMode);
 	}

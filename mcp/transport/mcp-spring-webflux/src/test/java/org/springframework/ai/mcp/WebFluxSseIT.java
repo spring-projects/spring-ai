@@ -1,5 +1,5 @@
 /*
- * Copyright 2026-2026 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,6 @@ import io.modelcontextprotocol.server.McpServer.SingleSessionSyncSpecification;
 import io.modelcontextprotocol.server.McpTransportContextExtractor;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.provider.Arguments;
 import reactor.netty.DisposableServer;
@@ -44,8 +43,7 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.server.RouterFunctions;
 import org.springframework.web.reactive.function.server.ServerRequest;
 
-@Disabled("Flaky test - needs investigation")
-@Timeout(45)
+@Timeout(60)
 class WebFluxSseIT extends AbstractMcpClientServerIntegrationTests {
 
 	private static final String CUSTOM_SSE_ENDPOINT = "/somePath/sse";
@@ -70,14 +68,14 @@ class WebFluxSseIT extends AbstractMcpClientServerIntegrationTests {
 			.put("httpclient",
 					McpClient.sync(HttpClientSseClientTransport.builder("http://127.0.0.1:" + port)
 						.sseEndpoint(CUSTOM_SSE_ENDPOINT)
-						.build()).requestTimeout(Duration.ofHours(10)));
+						.build()).initializationTimeout(Duration.ofSeconds(10)));
 
 		clientBuilders.put("webflux",
 				McpClient
 					.sync(WebFluxSseClientTransport.builder(WebClient.builder().baseUrl("http://127.0.0.1:" + port))
 						.sseEndpoint(CUSTOM_SSE_ENDPOINT)
 						.build())
-					.requestTimeout(Duration.ofHours(10)));
+					.initializationTimeout(Duration.ofSeconds(10)));
 
 	}
 

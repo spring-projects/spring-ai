@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,7 +51,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Thomas Vitale
  */
 @SpringBootTest(classes = TestApplication.class)
-@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
 public class QuestionAnswerAdvisorIT {
 
 	private List<Document> knowledgeBaseDocuments;
@@ -94,7 +94,6 @@ public class QuestionAnswerAdvisorIT {
 		assertThat(chatResponse).isNotNull();
 
 		String response = chatResponse.getResult().getOutput().getText();
-		System.out.println(response);
 		assertThat(response).containsIgnoringCase("Highlands");
 
 		evaluateRelevancy(question, chatResponse);
@@ -118,7 +117,6 @@ public class QuestionAnswerAdvisorIT {
 		assertThat(chatResponse).isNotNull();
 
 		String response = chatResponse.getResult().getOutput().getText();
-		System.out.println(response);
 		assertThat(response).containsIgnoringCase("Highlands");
 
 		evaluateRelevancy("Where does the adventure of Anacletus and Birba take place?", chatResponse);
@@ -159,7 +157,6 @@ public class QuestionAnswerAdvisorIT {
 		assertThat(chatResponse).isNotNull();
 
 		String response = chatResponse.getResult().getOutput().getText();
-		System.out.println(response);
 		assertThat(response).containsIgnoringCase("Highlands");
 
 		evaluateRelevancy(question, chatResponse);
@@ -180,7 +177,6 @@ public class QuestionAnswerAdvisorIT {
 
 		assertThat(answer).isNotNull();
 
-		System.out.println(answer);
 		assertThat(answer.content()).containsIgnoringCase("Highlands");
 	}
 

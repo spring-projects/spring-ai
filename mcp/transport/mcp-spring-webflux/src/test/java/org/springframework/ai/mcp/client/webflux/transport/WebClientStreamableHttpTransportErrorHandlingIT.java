@@ -1,5 +1,5 @@
 /*
- * Copyright 2026-2026 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
-import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import org.springframework.web.reactive.function.client.WebClient;
@@ -93,6 +92,11 @@ public class WebClientStreamableHttpTransportErrorHandlingIT {
 				this.getRequestLatch.countDown();
 				// Return 405 Method Not Allowed to indicate SSE not supported
 				exchange.sendResponseHeaders(405, 0);
+				exchange.close();
+				return;
+			}
+			if ("DELETE".equals(method)) {
+				exchange.sendResponseHeaders(200, 0);
 				exchange.close();
 				return;
 			}
@@ -199,7 +203,7 @@ public class WebClientStreamableHttpTransportErrorHandlingIT {
 
 		// Use delaySubscription to ensure session is fully processed before next
 		// request
-		StepVerifier.create(Mono.delay(Duration.ofMillis(200)).then(this.transport.sendMessage(testMessage)))
+		StepVerifier.create(this.transport.sendMessage(testMessage))
 			.expectError(McpTransportSessionNotFoundException.class)
 			.verify(Duration.ofSeconds(5));
 
@@ -270,7 +274,7 @@ public class WebClientStreamableHttpTransportErrorHandlingIT {
 
 		// Use delaySubscription to ensure session is fully processed before next
 		// request
-		StepVerifier.create(Mono.delay(Duration.ofMillis(200)).then(this.transport.sendMessage(testMessage)))
+		StepVerifier.create(this.transport.sendMessage(testMessage))
 			.expectError(McpTransportSessionNotFoundException.class)
 			.verify(Duration.ofSeconds(5));
 
@@ -290,37 +294,49 @@ public class WebClientStreamableHttpTransportErrorHandlingIT {
 	 * patterns and proper synchronization
 	 */
 	@Test
-	void testSessionRecoveryAfter404() {
-		// First establish a session
+	void testSessionRecoveryAfter404() throws InterruptedException {
 		this.serverResponseStatus.set(200);
 		this.currentServerSessionId.set("session-1");
 
-		// Send initial message to establish session
+		StepVerifier.create(this.transport.connect(msg -> msg)).verifyComplete();
+
 		var testMessage = createTestMessage();
 
-		// Use Mono.defer to ensure proper sequencing
-		Mono<Void> establishSession = this.transport.sendMessage(testMessage).then(Mono.defer(() -> {
-			// Simulate session loss - return 404
-			this.serverResponseStatus.set(404);
-			return this.transport.sendMessage(testMessage)
-				.onErrorResume(McpTransportSessionNotFoundException.class, e -> Mono.empty());
-		})).then(Mono.defer(() -> {
-			// Now server is back with new session
-			this.serverResponseStatus.set(200);
-			this.currentServerSessionId.set("session-2");
-			this.lastReceivedSessionId.set(null); // Reset to verify new session
+		// POST 1: establish session-1
+		StepVerifier.create(this.transport.sendMessage(testMessage)).verifyComplete();
+		assertThat(this.firstRequestLatch.await(5, TimeUnit.SECONDS)).isTrue();
+		assertThat(this.getRequestLatch.await(5, TimeUnit.SECONDS)).isTrue();
 
-			// Should be able to establish new session
-			return this.transport.sendMessage(testMessage);
-		})).then(Mono.defer(() -> {
-			// Verify no session ID was sent (since old session was invalidated)
-			assertThat(this.lastReceivedSessionId.get()).isNull();
+		// Simulate session loss
+		this.serverResponseStatus.set(404);
 
-			// Next request should use the new session ID
-			return this.transport.sendMessage(testMessage);
-		})).doOnSuccess(v -> assertThat(this.lastReceivedSessionId.get()).isEqualTo("session-2"));
+		// POST 2: sent with session-1, fails with SessionNotFoundException
+		StepVerifier.create(this.transport.sendMessage(testMessage))
+			.expectError(McpTransportSessionNotFoundException.class)
+			.verify(Duration.ofSeconds(5));
+		assertThat(this.secondRequestLatch.await(5, TimeUnit.SECONDS)).isTrue();
+		assertThat(this.lastReceivedSessionId.get()).isEqualTo("session-1");
 
-		StepVerifier.create(establishSession).verifyComplete();
+		// Reset latches for the next two requests
+		this.firstRequestLatch = new CountDownLatch(1);
+		this.secondRequestLatch = new CountDownLatch(1);
+		this.getRequestLatch = new CountDownLatch(1);
+
+		// Server recovers with a new session
+		this.serverResponseStatus.set(200);
+		this.currentServerSessionId.set("session-2");
+		this.lastReceivedSessionId.set(null);
+
+		// POST 3: old session was invalidated, should send NO session ID
+		StepVerifier.create(this.transport.sendMessage(testMessage)).verifyComplete();
+		assertThat(this.firstRequestLatch.await(5, TimeUnit.SECONDS)).isTrue();
+		assertThat(this.getRequestLatch.await(5, TimeUnit.SECONDS)).isTrue();
+		assertThat(this.lastReceivedSessionId.get()).isNull();
+
+		// POST 4: session-2 is now established, should be sent with session-2
+		StepVerifier.create(this.transport.sendMessage(testMessage)).verifyComplete();
+		assertThat(this.secondRequestLatch.await(5, TimeUnit.SECONDS)).isTrue();
+		assertThat(this.lastReceivedSessionId.get()).isEqualTo("session-2");
 	}
 
 	/**
@@ -397,9 +413,10 @@ public class WebClientStreamableHttpTransportErrorHandlingIT {
 	}
 
 	private McpSchema.JSONRPCRequest createTestMessage() {
-		var initializeRequest = new McpSchema.InitializeRequest(ProtocolVersions.MCP_2025_03_26,
-				McpSchema.ClientCapabilities.builder().roots(true).build(),
-				new McpSchema.Implementation("Test Client", "1.0.0"));
+		var initializeRequest = McpSchema.InitializeRequest
+			.builder(ProtocolVersions.MCP_2025_03_26, McpSchema.ClientCapabilities.builder().roots(true).build(),
+					McpSchema.Implementation.builder("Test Client", "1.0.0").build())
+			.build();
 		return new McpSchema.JSONRPCRequest(McpSchema.JSONRPC_VERSION, McpSchema.METHOD_INITIALIZE, "test-id",
 				initializeRequest);
 	}

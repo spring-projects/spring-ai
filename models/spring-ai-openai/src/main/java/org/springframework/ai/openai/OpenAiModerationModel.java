@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,10 +19,14 @@ package org.springframework.ai.openai;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.openai.client.OpenAIClient;
+import com.openai.models.moderations.ModerationCreateParams;
+import com.openai.models.moderations.ModerationCreateResponse;
+import io.micrometer.observation.ObservationRegistry;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
-import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.moderation.Categories;
 import org.springframework.ai.moderation.CategoryScores;
 import org.springframework.ai.moderation.Generation;
@@ -32,150 +36,200 @@ import org.springframework.ai.moderation.ModerationOptions;
 import org.springframework.ai.moderation.ModerationPrompt;
 import org.springframework.ai.moderation.ModerationResponse;
 import org.springframework.ai.moderation.ModerationResult;
-import org.springframework.ai.openai.api.OpenAiModerationApi;
-import org.springframework.ai.retry.RetryUtils;
-import org.springframework.core.retry.RetryTemplate;
-import org.springframework.http.ResponseEntity;
+import org.springframework.ai.openai.http.okhttp.OpenAiHttpClientBuilderCustomizer;
 import org.springframework.util.Assert;
 
 /**
- * OpenAiModerationModel is a class that implements the ModerationModel interface. It
- * provides a client for calling the OpenAI moderation generation API.
+ * OpenAI SDK Moderation Model implementation.
+ * <p>
+ * This model provides content moderation capabilities using the OpenAI Moderation API
+ * through the official OpenAI Java SDK.
  *
  * @author Ahmed Yousri
- * @since 1.0.0
+ * @author Ilayaperumal Gopinathan
+ * @author Sebastien Deleuze
+ * @author Thomas Vitale
  */
-public class OpenAiModerationModel implements ModerationModel {
+public final class OpenAiModerationModel implements ModerationModel {
 
-	private final Logger logger = LoggerFactory.getLogger(getClass());
+	private static final Log logger = LogFactory.getLog(OpenAiModerationModel.class);
 
-	private final OpenAiModerationApi openAiModerationApi;
+	private final OpenAIClient openAiClient;
 
-	private final RetryTemplate retryTemplate;
+	private final OpenAiModerationOptions options;
 
-	private OpenAiModerationOptions defaultOptions;
+	private OpenAiModerationModel(Builder builder) {
+		if (builder.options == null) {
+			this.options = OpenAiModerationOptions.builder()
+				.model(OpenAiModerationOptions.DEFAULT_MODERATION_MODEL)
+				.build();
+		}
+		else {
+			this.options = builder.options;
+		}
 
-	public OpenAiModerationModel(OpenAiModerationApi openAiModerationApi) {
-		this(openAiModerationApi, RetryUtils.DEFAULT_RETRY_TEMPLATE);
+		this.openAiClient = java.util.Objects.requireNonNullElseGet(builder.openAiClient,
+				() -> org.springframework.ai.openai.setup.OpenAiSetup.setupSyncClient(this.options.getBaseUrl(),
+						this.options.getApiKey(), this.options.getCredential(),
+						this.options.getMicrosoftDeploymentName(), this.options.getMicrosoftFoundryServiceVersion(),
+						this.options.getOrganizationId(), this.options.isMicrosoftFoundry(),
+						this.options.isGitHubModels(), this.options.getModel(), this.options.getTimeout(),
+						this.options.getMaxRetries(), this.options.getProxy(), this.options.getCustomHeaders(),
+						ObservationRegistry.NOOP, null, builder.httpClientCustomizers));
 	}
 
-	public OpenAiModerationModel(OpenAiModerationApi openAiModerationApi, RetryTemplate retryTemplate) {
-		Assert.notNull(openAiModerationApi, "OpenAiModerationApi must not be null");
-		Assert.notNull(retryTemplate, "retryTemplate must not be null");
-		this.openAiModerationApi = openAiModerationApi;
-		this.retryTemplate = retryTemplate;
+	public static Builder builder() {
+		return new Builder();
 	}
 
-	public OpenAiModerationOptions getDefaultOptions() {
-		return this.defaultOptions;
-	}
-
-	public OpenAiModerationModel withDefaultOptions(OpenAiModerationOptions defaultOptions) {
-		this.defaultOptions = defaultOptions;
-		return this;
+	public Builder mutate() {
+		return new Builder(this);
 	}
 
 	@Override
 	public ModerationResponse call(ModerationPrompt moderationPrompt) {
-		return RetryUtils.execute(this.retryTemplate, () -> {
+		String text = moderationPrompt.getInstructions().getText();
 
-			String instructions = moderationPrompt.getInstructions().getText();
+		OpenAiModerationOptions options = merge(moderationPrompt.getOptions(), this.options);
 
-			OpenAiModerationApi.OpenAiModerationRequest moderationRequest = new OpenAiModerationApi.OpenAiModerationRequest(
-					instructions);
+		ModerationCreateParams.Builder builder = ModerationCreateParams.builder()
+			.input(ModerationCreateParams.Input.ofString(text));
 
-			if (this.defaultOptions != null) {
-				moderationRequest = ModelOptionsUtils.merge(this.defaultOptions, moderationRequest,
-						OpenAiModerationApi.OpenAiModerationRequest.class);
-			}
+		String model;
+		if (options.getDeploymentName() != null) {
+			model = options.getDeploymentName();
+		}
+		else {
+			model = options.getModel();
+		}
+		Assert.notNull(model, "Model must not be null");
+		builder.model(com.openai.models.moderations.ModerationModel.of(model));
 
-			if (moderationPrompt.getOptions() != null) {
-				moderationRequest = ModelOptionsUtils.merge(toOpenAiModerationOptions(moderationPrompt.getOptions()),
-						moderationRequest, OpenAiModerationApi.OpenAiModerationRequest.class);
-			}
+		ModerationCreateParams params = builder.build();
 
-			ResponseEntity<OpenAiModerationApi.OpenAiModerationResponse> moderationResponseEntity = this.openAiModerationApi
-				.createModeration(moderationRequest);
+		ModerationCreateResponse response = this.openAiClient.moderations().create(params);
 
-			return convertResponse(moderationResponseEntity, moderationRequest);
-		});
+		return convertResponse(response);
 	}
 
-	private ModerationResponse convertResponse(
-			ResponseEntity<OpenAiModerationApi.OpenAiModerationResponse> moderationResponseEntity,
-			OpenAiModerationApi.OpenAiModerationRequest openAiModerationRequest) {
-		OpenAiModerationApi.OpenAiModerationResponse moderationApiResponse = moderationResponseEntity.getBody();
-		if (moderationApiResponse == null) {
-			logger.warn("No moderation response returned for request: {}", openAiModerationRequest);
+	private ModerationResponse convertResponse(ModerationCreateResponse response) {
+		if (response == null) {
+			logger.warn("No moderation response returned");
 			return new ModerationResponse(null);
 		}
 
 		List<ModerationResult> moderationResults = new ArrayList<>();
-		if (moderationApiResponse.results() != null) {
 
-			for (OpenAiModerationApi.OpenAiModerationResult result : moderationApiResponse.results()) {
-				Categories categories = null;
-				CategoryScores categoryScores = null;
-				if (result.categories() != null) {
-					categories = Categories.builder()
-						.sexual(result.categories().sexual())
-						.hate(result.categories().hate())
-						.harassment(result.categories().harassment())
-						.selfHarm(result.categories().selfHarm())
-						.sexualMinors(result.categories().sexualMinors())
-						.hateThreatening(result.categories().hateThreatening())
-						.violenceGraphic(result.categories().violenceGraphic())
-						.selfHarmIntent(result.categories().selfHarmIntent())
-						.selfHarmInstructions(result.categories().selfHarmInstructions())
-						.harassmentThreatening(result.categories().harassmentThreatening())
-						.violence(result.categories().violence())
-						.build();
-				}
-				if (result.categoryScores() != null) {
-					categoryScores = CategoryScores.builder()
-						.hate(result.categoryScores().hate())
-						.hateThreatening(result.categoryScores().hateThreatening())
-						.harassment(result.categoryScores().harassment())
-						.harassmentThreatening(result.categoryScores().harassmentThreatening())
-						.selfHarm(result.categoryScores().selfHarm())
-						.selfHarmIntent(result.categoryScores().selfHarmIntent())
-						.selfHarmInstructions(result.categoryScores().selfHarmInstructions())
-						.sexual(result.categoryScores().sexual())
-						.sexualMinors(result.categoryScores().sexualMinors())
-						.violence(result.categoryScores().violence())
-						.violenceGraphic(result.categoryScores().violenceGraphic())
-						.build();
-				}
-				ModerationResult moderationResult = ModerationResult.builder()
-					.categories(categories)
-					.categoryScores(categoryScores)
-					.flagged(result.flagged())
-					.build();
-				moderationResults.add(moderationResult);
-			}
+		for (com.openai.models.moderations.Moderation result : response.results()) {
+			Categories categories = Categories.builder()
+				.sexual(result.categories().sexual())
+				.hate(result.categories().hate())
+				.harassment(result.categories().harassment())
+				.selfHarm(result.categories().selfHarm())
+				.sexualMinors(result.categories().sexualMinors())
+				.hateThreatening(result.categories().hateThreatening())
+				.violenceGraphic(result.categories().violenceGraphic())
+				.selfHarmIntent(result.categories().selfHarmIntent())
+				.selfHarmInstructions(result.categories().selfHarmInstructions())
+				.harassmentThreatening(result.categories().harassmentThreatening())
+				.violence(result.categories().violence())
+				.build();
 
+			CategoryScores categoryScores = CategoryScores.builder()
+				.hate(result.categoryScores().hate())
+				.hateThreatening(result.categoryScores().hateThreatening())
+				.harassment(result.categoryScores().harassment())
+				.harassmentThreatening(result.categoryScores().harassmentThreatening())
+				.selfHarm(result.categoryScores().selfHarm())
+				.selfHarmIntent(result.categoryScores().selfHarmIntent())
+				.selfHarmInstructions(result.categoryScores().selfHarmInstructions())
+				.sexual(result.categoryScores().sexual())
+				.sexualMinors(result.categoryScores().sexualMinors())
+				.violence(result.categoryScores().violence())
+				.violenceGraphic(result.categoryScores().violenceGraphic())
+				.build();
+
+			ModerationResult moderationResult = ModerationResult.builder()
+				.categories(categories)
+				.categoryScores(categoryScores)
+				.flagged(result.flagged())
+				.build();
+
+			moderationResults.add(moderationResult);
 		}
 
 		Moderation moderation = Moderation.builder()
-			.id(moderationApiResponse.id())
-			.model(moderationApiResponse.model())
+			.id(response.id())
+			.model(response.model())
 			.results(moderationResults)
 			.build();
 
 		return new ModerationResponse(new Generation(moderation));
 	}
 
-	/**
-	 * Convert the {@link ModerationOptions} into {@link OpenAiModerationOptions}.
-	 * @return the converted {@link OpenAiModerationOptions}.
-	 */
-	private OpenAiModerationOptions toOpenAiModerationOptions(ModerationOptions runtimeModerationOptions) {
-		OpenAiModerationOptions.Builder openAiModerationOptionsBuilder = OpenAiModerationOptions.builder();
-		// Handle portable moderation options
-		if (runtimeModerationOptions != null && runtimeModerationOptions.getModel() != null) {
-			openAiModerationOptionsBuilder.model(runtimeModerationOptions.getModel());
+	private static OpenAiModerationOptions merge(@Nullable ModerationOptions source, OpenAiModerationOptions target) {
+		return OpenAiModerationOptions.builder().from(target).merge(source).build();
+	}
+
+	public OpenAiModerationOptions getOptions() {
+		return this.options;
+	}
+
+	public static final class Builder {
+
+		private @Nullable OpenAIClient openAiClient;
+
+		private @Nullable OpenAiModerationOptions options;
+
+		private List<OpenAiHttpClientBuilderCustomizer> httpClientCustomizers = new ArrayList<>();
+
+		private Builder() {
 		}
-		return openAiModerationOptionsBuilder.build();
+
+		private Builder(OpenAiModerationModel model) {
+			this.openAiClient = model.openAiClient;
+			this.options = model.options;
+		}
+
+		public Builder openAiClient(OpenAIClient openAiClient) {
+			this.openAiClient = openAiClient;
+			return this;
+		}
+
+		public Builder options(OpenAiModerationOptions options) {
+			this.options = options;
+			return this;
+		}
+
+		/**
+		 * Registers an {@link OpenAiHttpClientBuilderCustomizer} that mutates the
+		 * underlying OkHttp client builder before the OpenAI clients are constructed. Use
+		 * this to attach OkHttp interceptors (e.g. OAuth2 bearer-token injection), swap
+		 * the dispatcher executor, or tweak any other OkHttp setting. Customizers are
+		 * applied in the order they are registered, after Spring AI's own defaults, so
+		 * user code wins.
+		 */
+		public Builder httpClientBuilderCustomizer(OpenAiHttpClientBuilderCustomizer customizer) {
+			Assert.notNull(customizer, "customizer cannot be null");
+			this.httpClientCustomizers.add(customizer);
+			return this;
+		}
+
+		/**
+		 * Sets the full list of {@link OpenAiHttpClientBuilderCustomizer customizers} to
+		 * apply, replacing any customizers registered earlier on this builder. The order
+		 * of the list is preserved when invoking the customizers.
+		 */
+		public Builder httpClientBuilderCustomizers(List<OpenAiHttpClientBuilderCustomizer> customizers) {
+			Assert.notNull(customizers, "customizers cannot be null");
+			this.httpClientCustomizers = new ArrayList<>(customizers);
+			return this;
+		}
+
+		public OpenAiModerationModel build() {
+			return new OpenAiModerationModel(this);
+		}
+
 	}
 
 }

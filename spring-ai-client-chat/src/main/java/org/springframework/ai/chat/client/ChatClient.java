@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package org.springframework.ai.chat.client;
 
 import java.net.URL;
 import java.nio.charset.Charset;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -26,6 +27,7 @@ import io.micrometer.observation.ObservationRegistry;
 import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
 
+import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationConvention;
 import org.springframework.ai.chat.client.observation.ChatClientObservationConvention;
@@ -82,10 +84,45 @@ public interface ChatClient {
 	static Builder builder(ChatModel chatModel, ObservationRegistry observationRegistry,
 			@Nullable ChatClientObservationConvention chatClientObservationConvention,
 			@Nullable AdvisorObservationConvention advisorObservationConvention) {
+		return builder(chatModel, observationRegistry, chatClientObservationConvention, advisorObservationConvention,
+				null);
+	}
+
+	/**
+	 * Creates a {@link Builder} for constructing a {@link ChatClient}.
+	 * <p>
+	 * When {@code toolCallingAdvisorBuilder} is {@code null}, a default
+	 * {@link org.springframework.ai.chat.client.advisor.ToolCallingAdvisor} is created
+	 * with a {@link org.springframework.ai.model.tool.ToolCallingManager} backed by the
+	 * supplied {@code observationRegistry}.
+	 * <p>
+	 * When {@code toolCallingAdvisorBuilder} is non-null it is used as-is. The caller is
+	 * then responsible for configuring the builder's
+	 * {@link org.springframework.ai.model.tool.ToolCallingManager}, including any
+	 * {@link io.micrometer.observation.ObservationRegistry}, since the supplied
+	 * {@code observationRegistry} will not be automatically applied to it.
+	 * @param chatModel the chat model to use
+	 * @param observationRegistry the observation registry for client-level observations;
+	 * also used to configure the default {@code ToolCallingManager} when
+	 * {@code toolCallingAdvisorBuilder} is {@code null}
+	 * @param chatClientObservationConvention optional custom observation convention for
+	 * the chat client
+	 * @param advisorObservationConvention optional custom observation convention for
+	 * advisors
+	 * @param toolCallingAdvisorBuilder optional builder for the
+	 * {@link org.springframework.ai.chat.client.advisor.ToolCallingAdvisor}; when
+	 * {@code null} a default is created
+	 * @return a new {@link Builder}
+	 */
+	static Builder builder(ChatModel chatModel, ObservationRegistry observationRegistry,
+			@Nullable ChatClientObservationConvention chatClientObservationConvention,
+			@Nullable AdvisorObservationConvention advisorObservationConvention,
+			ToolCallingAdvisor.@Nullable Builder<?> toolCallingAdvisorBuilder) {
 		Assert.notNull(chatModel, "chatModel cannot be null");
 		Assert.notNull(observationRegistry, "observationRegistry cannot be null");
+
 		return new DefaultChatClientBuilder(chatModel, observationRegistry, chatClientObservationConvention,
-				advisorObservationConvention);
+				advisorObservationConvention, toolCallingAdvisorBuilder);
 	}
 
 	ChatClientRequestSpec prompt();
@@ -158,12 +195,101 @@ public interface ChatClient {
 
 	}
 
+	/**
+	 * Configures optional behaviour for {@code entity(...)} calls. Options may be
+	 * combined.
+	 */
+	interface EntityParamSpec {
+
+		/**
+		 * Delivers the JSON schema to the AI provider as an API-level constraint rather
+		 * than appending it as prompt text. Has no effect if the underlying
+		 * {@link org.springframework.ai.chat.model.ChatModel} does not support
+		 * {@link org.springframework.ai.model.tool.StructuredOutputChatOptions}.
+		 *
+		 * <p>
+		 * <b>Not enabled by default</b> because native structured output support varies
+		 * across models and providers. Known limitations:
+		 * <ul>
+		 * <li><b>Ollama</b>: models with a built-in reasoning/thinking mode (e.g.
+		 * {@code qwen3:8b}, {@code qwen3.5:9b}) may return plain text instead of JSON,
+		 * causing deserialization failures. Use {@link #validateSchema()} alongside this
+		 * option for automatic retry, or switch to a non-reasoning model such as
+		 * {@code llama3.1:latest}.</li>
+		 * <li><b>OpenAI</b>: the Structured Outputs API does not accept a top-level JSON
+		 * array schema. Requesting a {@code List<T>} with this option enabled will fail.
+		 * Wrap the list in a container record or use the default prompt-based approach
+		 * instead.</li>
+		 * </ul>
+		 */
+		EntityParamSpec useProviderStructuredOutput();
+
+		/**
+		 * Validates the model's JSON response against the entity schema and retries with
+		 * the error feedback on failure, up to {@code maxRepeatAttempts} times (default:
+		 * 3). Streaming is not supported.
+		 */
+		EntityParamSpec validateSchema();
+
+	}
+
 	interface CallResponseSpec {
 
+		/**
+		 * Deserializes the response into a {@code T} instance, with behaviour configured
+		 * via the {@code entityParamSpecConsumer}.
+		 * @param type the target parameterized type
+		 * @param entityParamSpecConsumer configures options such as
+		 * {@link EntityParamSpec#useProviderStructuredOutput()} and
+		 * {@link EntityParamSpec#validateSchema()}
+		 * @return the deserialized entity, or {@code null} if the response is empty
+		 */
+		<T> @Nullable T entity(ParameterizedTypeReference<T> type, Consumer<EntityParamSpec> entityParamSpecConsumer);
+
+		/**
+		 * Deserializes the response into a {@code T} instance.
+		 * @param type the target parameterized type
+		 * @return the deserialized entity, or {@code null} if the response is empty
+		 */
 		<T> @Nullable T entity(ParameterizedTypeReference<T> type);
 
+		/**
+		 * Deserializes the response using the given converter, with behaviour configured
+		 * via the {@code entityParamSpecConsumer}.
+		 * @param structuredOutputConverter the converter for parsing and schema
+		 * resolution
+		 * @param entityParamSpecConsumer configures options such as
+		 * {@link EntityParamSpec#useProviderStructuredOutput()} and
+		 * {@link EntityParamSpec#validateSchema()}
+		 * @return the deserialized entity, or {@code null} if the response is empty
+		 */
+		<T> @Nullable T entity(StructuredOutputConverter<T> structuredOutputConverter,
+				Consumer<EntityParamSpec> entityParamSpecConsumer);
+
+		/**
+		 * Deserializes the response using the given converter.
+		 * @param structuredOutputConverter the converter for parsing and schema
+		 * resolution
+		 * @return the deserialized entity, or {@code null} if the response is empty
+		 */
 		<T> @Nullable T entity(StructuredOutputConverter<T> structuredOutputConverter);
 
+		/**
+		 * Deserializes the response into a {@code T} instance, with behaviour configured
+		 * via the {@code entityParamSpecConsumer}.
+		 * @param type the target class
+		 * @param entityParamSpecConsumer configures options such as
+		 * {@link EntityParamSpec#useProviderStructuredOutput()} and
+		 * {@link EntityParamSpec#validateSchema()}
+		 * @return the deserialized entity, or {@code null} if the response is empty
+		 */
+		<T> @Nullable T entity(Class<T> type, Consumer<EntityParamSpec> entityParamSpecConsumer);
+
+		/**
+		 * Deserializes the response into a {@code T} instance.
+		 * @param type the target class
+		 * @return the deserialized entity, or {@code null} if the response is empty
+		 */
 		<T> @Nullable T entity(Class<T> type);
 
 		ChatClientResponse chatClientResponse();
@@ -172,10 +298,77 @@ public interface ChatClient {
 
 		@Nullable String content();
 
+		/**
+		 * Returns a {@link ResponseEntity} containing both the complete
+		 * {@link ChatResponse} object and a specific entity type, with behaviour
+		 * configured via the {@code entityParamSpecConsumer}.
+		 * @param type the target class
+		 * @param entityParamSpecConsumer configures options such as
+		 * {@link EntityParamSpec#useProviderStructuredOutput()} and
+		 * {@link EntityParamSpec#validateSchema()}
+		 * @return the {@link ResponseEntity} containing both the complete
+		 * {@link ChatResponse} object and the deserialized entity
+		 */
+		<T> ResponseEntity<ChatResponse, T> responseEntity(Class<T> type,
+				Consumer<EntityParamSpec> entityParamSpecConsumer);
+
+		/**
+		 * Returns a {@link ResponseEntity} containing both the complete
+		 * {@link ChatResponse} object and a specific entity type.
+		 * @param type the target class
+		 * @return the {@link ResponseEntity} containing both the complete
+		 * {@link ChatResponse} object and the deserialized entity
+		 */
 		<T> ResponseEntity<ChatResponse, T> responseEntity(Class<T> type);
 
+		/**
+		 * Returns a {@link ResponseEntity} containing both the complete
+		 * {@link ChatResponse} object and a specific entity type, with behaviour
+		 * configured via the {@code entityParamSpecConsumer}.
+		 * @param type the target parameterized type
+		 * @param entityParamSpecConsumer configures options such as
+		 * {@link EntityParamSpec#useProviderStructuredOutput()} and
+		 * {@link EntityParamSpec#validateSchema()}
+		 * @return the {@link ResponseEntity} containing both the complete
+		 * {@link ChatResponse} object and the deserialized entity
+		 */
+		<T> ResponseEntity<ChatResponse, T> responseEntity(ParameterizedTypeReference<T> type,
+				Consumer<EntityParamSpec> entityParamSpecConsumer);
+
+		/**
+		 * Returns a {@link ResponseEntity} containing both the complete
+		 * {@link ChatResponse} object and a {@link Collection} of entity types.
+		 * @param type the target parameterized type
+		 * @return the {@link ResponseEntity} containing both the complete
+		 * {@link ChatResponse} object and the deserialized entities
+		 */
 		<T> ResponseEntity<ChatResponse, T> responseEntity(ParameterizedTypeReference<T> type);
 
+		/**
+		 * Returns a {@link ResponseEntity} containing both the complete
+		 * {@link ChatResponse} object and an entity converted using a specified
+		 * {@link StructuredOutputConverter}, with behaviour configured via the
+		 * {@code entityParamSpecConsumer}.
+		 * @param structuredOutputConverter the converter for parsing and schema
+		 * resolution
+		 * @param entityParamSpecConsumer configures options such as
+		 * {@link EntityParamSpec#useProviderStructuredOutput()} and
+		 * {@link EntityParamSpec#validateSchema()}
+		 * @return the {@link ResponseEntity} containing both the complete
+		 * {@link ChatResponse} object and the deserialized entity
+		 */
+		<T> ResponseEntity<ChatResponse, T> responseEntity(StructuredOutputConverter<T> structuredOutputConverter,
+				Consumer<EntityParamSpec> entityParamSpecConsumer);
+
+		/**
+		 * Returns a {@link ResponseEntity} containing both the complete
+		 * {@link ChatResponse} object and an entity converted using a specified
+		 * {@link StructuredOutputConverter}.
+		 * @param structuredOutputConverter the converter for parsing and schema
+		 * resolution
+		 * @return the {@link ResponseEntity} containing both the complete
+		 * {@link ChatResponse} object and the deserialized entity
+		 */
 		<T> ResponseEntity<ChatResponse, T> responseEntity(StructuredOutputConverter<T> structuredOutputConverter);
 
 	}
@@ -208,16 +401,70 @@ public interface ChatClient {
 
 		ChatClientRequestSpec messages(List<Message> messages);
 
-		<T extends ChatOptions> ChatClientRequestSpec options(T options);
+		<B extends ChatOptions.Builder<?>> ChatClientRequestSpec options(B customizer);
 
-		ChatClientRequestSpec toolNames(String... toolNames);
+		/**
+		 * Register one or more tools for this chat request. The method accepts a
+		 * heterogeneous mix of tool representations and routes each element to the
+		 * appropriate internal list automatically:
+		 *
+		 * <ul>
+		 * <li>{@link org.springframework.ai.tool.ToolCallback} — registered directly as a
+		 * callback.</li>
+		 * <li>{@link org.springframework.ai.tool.ToolCallbackProvider} — registered
+		 * directly as a provider; its callbacks are resolved lazily at request time.</li>
+		 * <li>{@code ToolCallback[]} or {@code ToolCallbackProvider[]} — every element of
+		 * the array is registered as above.</li>
+		 * <li>{@link java.util.Collection} — iterated and each element is dispatched by
+		 * the same rules.</li>
+		 * <li>Any other object — treated as a {@code @Tool}-annotated POJO; a
+		 * {@link org.springframework.ai.tool.ToolCallback} is generated for each
+		 * {@link org.springframework.ai.tool.annotation.Tool}-annotated method it
+		 * contains.</li>
+		 * </ul>
+		 *
+		 * <p>
+		 * Mixed calls are fully supported:
+		 *
+		 * <pre>{@code
+		 * chatClient.prompt()
+		 *     .tools(new DateTimeTools(), existingCallback, myProvider)
+		 *     .toolContext(Map.of("tenantId", "acme"))
+		 *     .call().content();
+		 * }</pre>
+		 *
+		 * <p>
+		 * Tools registered here are available only for this specific request. Use
+		 * {@link Builder#defaultTools(Object...)} to register tools that apply to every
+		 * request built from the same {@link Builder}.
+		 * @param tools tool objects to register; must not be {@code null} and must not
+		 * contain {@code null} elements
+		 * @return this spec for chaining
+		 * @throws IllegalArgumentException if {@code tools} is {@code null}, contains
+		 * {@code null} elements, or if a POJO argument has no
+		 * {@link org.springframework.ai.tool.annotation.Tool}-annotated methods
+		 */
+		ChatClientRequestSpec tools(Object... tools);
 
-		ChatClientRequestSpec tools(Object... toolObjects);
-
+		/**
+		 * @deprecated as of 2.0.0, in favor of {@link #tools(Object...)}. To be removed
+		 * in 3.0.0.
+		 */
+		@Deprecated(since = "2.0.0", forRemoval = true)
 		ChatClientRequestSpec toolCallbacks(ToolCallback... toolCallbacks);
 
+		/**
+		 * @deprecated as of 2.0.0, in favor of {@link #tools(Object...)}. To be removed
+		 * in 3.0.0.
+		 */
+		@Deprecated(since = "2.0.0", forRemoval = true)
 		ChatClientRequestSpec toolCallbacks(List<ToolCallback> toolCallbacks);
 
+		/**
+		 * @deprecated as of 2.0.0, in favor of {@link #tools(Object...)}. To be removed
+		 * in 3.0.0.
+		 */
+		@Deprecated(since = "2.0.0", forRemoval = true)
 		ChatClientRequestSpec toolCallbacks(ToolCallbackProvider... toolCallbackProviders);
 
 		ChatClientRequestSpec toolContext(Map<String, Object> toolContext);
@@ -257,7 +504,7 @@ public interface ChatClient {
 
 		Builder defaultAdvisors(List<Advisor> advisors);
 
-		Builder defaultOptions(ChatOptions chatOptions);
+		Builder defaultOptions(ChatOptions.Builder chatOptions);
 
 		Builder defaultUser(String text);
 
@@ -277,14 +524,64 @@ public interface ChatClient {
 
 		Builder defaultTemplateRenderer(TemplateRenderer templateRenderer);
 
-		Builder defaultToolNames(String... toolNames);
+		/**
+		 * Register one or more default tools that will be available to every request
+		 * built from this {@link Builder}. The method accepts the same heterogeneous mix
+		 * of tool representations as {@link ChatClientRequestSpec#tools(Object...)} and
+		 * applies the same automatic dispatch rules:
+		 *
+		 * <ul>
+		 * <li>{@link org.springframework.ai.tool.ToolCallback} — registered directly as a
+		 * callback.</li>
+		 * <li>{@link org.springframework.ai.tool.ToolCallbackProvider} — registered
+		 * directly as a provider; its callbacks are resolved lazily at request time.</li>
+		 * <li>{@code ToolCallback[]} or {@code ToolCallbackProvider[]} — every element of
+		 * the array is registered as above.</li>
+		 * <li>{@link java.util.Collection} — iterated and each element is dispatched by
+		 * the same rules.</li>
+		 * <li>Any other object — treated as a {@code @Tool}-annotated POJO; a
+		 * {@link org.springframework.ai.tool.ToolCallback} is generated for each
+		 * {@link org.springframework.ai.tool.annotation.Tool}-annotated method it
+		 * contains.</li>
+		 * </ul>
+		 *
+		 * <p>
+		 * Default tools are shared across all requests produced by {@link ChatClient}
+		 * instances built from this builder. If a request also provides its own tools via
+		 * {@link ChatClientRequestSpec#tools(Object...)}, those runtime tools completely
+		 * override the defaults for that request.
+		 *
+		 * <p>
+		 * WARNING: Because default tools are shared, be careful not to register tools
+		 * that should only be available in specific contexts.
+		 * @param tools tool objects to register; must not be {@code null} and must not
+		 * contain {@code null} elements
+		 * @return this builder for chaining
+		 * @throws IllegalArgumentException if {@code tools} is {@code null}, contains
+		 * {@code null} elements, or if a POJO argument has no
+		 * {@link org.springframework.ai.tool.annotation.Tool}-annotated methods
+		 */
+		Builder defaultTools(Object... tools);
 
-		Builder defaultTools(Object... toolObjects);
-
+		/**
+		 * @deprecated as of 2.0.0, in favor of {@link #defaultTools(Object...)}. To be
+		 * removed in 3.0.0.
+		 */
+		@Deprecated(since = "2.0.0", forRemoval = true)
 		Builder defaultToolCallbacks(ToolCallback... toolCallbacks);
 
+		/**
+		 * @deprecated as of 2.0.0, in favor of {@link #defaultTools(Object...)}. To be
+		 * removed in 3.0.0.
+		 */
+		@Deprecated(since = "2.0.0", forRemoval = true)
 		Builder defaultToolCallbacks(List<ToolCallback> toolCallbacks);
 
+		/**
+		 * @deprecated as of 2.0.0, in favor of {@link #defaultTools(Object...)}. To be
+		 * removed in 3.0.0.
+		 */
+		@Deprecated(since = "2.0.0", forRemoval = true)
 		Builder defaultToolCallbacks(ToolCallbackProvider... toolCallbackProviders);
 
 		Builder defaultToolContext(Map<String, Object> toolContext);

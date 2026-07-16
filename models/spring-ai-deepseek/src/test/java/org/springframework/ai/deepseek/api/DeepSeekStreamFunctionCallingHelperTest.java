@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -184,6 +184,27 @@ class DeepSeekStreamFunctionCallingHelperTest {
 
 		// When & Then
 		assertThat(this.helper.isStreamingToolFunctionCallFinish(chunk)).isTrue();
+	}
+
+	@Test
+	void mergeShouldHandleNullCurrentContent() {
+		// Given
+		ChatCompletionMessage previousMsg = new ChatCompletionMessage("Hello", Role.ASSISTANT, null, null, null);
+		ChatCompletionMessage currentMsg = new ChatCompletionMessage(null, Role.ASSISTANT, null, null, null);
+
+		ChatCompletionChunk previous = new ChatCompletionChunk("id",
+				List.of(new ChatCompletionChunk.ChunkChoice(null, 0, previousMsg, null)), 123L, "model", null, null,
+				null, null);
+
+		ChatCompletionChunk current = new ChatCompletionChunk("id",
+				List.of(new ChatCompletionChunk.ChunkChoice(null, 0, currentMsg, null)), 123L, "model", null, null,
+				null, null);
+
+		// When
+		ChatCompletionChunk result = this.helper.merge(previous, current);
+
+		// Then
+		assertThat(result.choices().get(0).delta().content()).isEqualTo("Hello");
 	}
 
 	@Test

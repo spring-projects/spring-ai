@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,343 +16,382 @@
 
 package org.springframework.ai.openai;
 
+import java.net.Proxy;
+import java.time.Duration;
+import java.util.HashMap;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.openai.azure.AzureOpenAIServiceVersion;
+import com.openai.credential.Credential;
+import com.openai.models.images.ImageGenerateParams;
+import com.openai.models.images.ImageModel;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.image.ImageOptions;
+import org.springframework.ai.image.ImagePrompt;
+import org.springframework.util.CollectionUtils;
 
 /**
- * OpenAI Image API options. OpenAiImageOptions.java
+ * Configuration information for the Image Model implementation using the OpenAI Java SDK.
  *
- * @author Mark Pollack
+ * @author Julien Dubois
  * @author Christian Tzolov
- * @since 0.8.0
+ * @author Mark Pollack
  */
-@JsonInclude(JsonInclude.Include.NON_NULL)
-public class OpenAiImageOptions implements ImageOptions {
+public class OpenAiImageOptions extends AbstractOpenAiOptions implements ImageOptions {
+
+	public static final String DEFAULT_IMAGE_MODEL = ImageModel.GPT_IMAGE_1_MINI.toString();
 
 	/**
 	 * The number of images to generate. Must be between 1 and 10. For dall-e-3, only n=1
 	 * is supported.
 	 */
-	@JsonProperty("n")
-	private Integer n;
-
-	/**
-	 * The model to use for image generation.
-	 */
-	@JsonProperty("model")
-	private String model;
+	private final @Nullable Integer n;
 
 	/**
 	 * The width of the generated images. Must be one of 256, 512, or 1024 for dall-e-2.
-	 * This property is interconnected with the 'size' property - setting both width and
-	 * height will automatically compute and set the size in "widthxheight" format.
-	 * Conversely, setting a valid size string will parse and set the individual width and
-	 * height values.
 	 */
-	@JsonProperty("size_width")
-	private Integer width;
+	private final @Nullable Integer width;
 
 	/**
 	 * The height of the generated images. Must be one of 256, 512, or 1024 for dall-e-2.
-	 * This property is interconnected with the 'size' property - setting both width and
-	 * height will automatically compute and set the size in "widthxheight" format.
-	 * Conversely, setting a valid size string will parse and set the individual width and
-	 * height values.
 	 */
-	@JsonProperty("size_height")
-	private Integer height;
+	private final @Nullable Integer height;
 
 	/**
 	 * The quality of the image that will be generated. hd creates images with finer
 	 * details and greater consistency across the image. This param is only supported for
-	 * dall-e-3.
+	 * dall-e-3. standard or hd
 	 */
-	@JsonProperty("quality")
-	private String quality;
+	private final @Nullable String quality;
 
 	/**
 	 * The format in which the generated images are returned. Must be one of url or
 	 * b64_json.
 	 */
-	@JsonProperty("response_format")
-	private String responseFormat;
+	private final @Nullable String responseFormat;
 
 	/**
 	 * The size of the generated images. Must be one of 256x256, 512x512, or 1024x1024 for
 	 * dall-e-2. Must be one of 1024x1024, 1792x1024, or 1024x1792 for dall-e-3 models.
-	 * This property is automatically computed when both width and height are set,
-	 * following the format "widthxheight". When setting this property directly, it must
-	 * follow the format "WxH" where W and H are valid integers. Invalid formats will
-	 * result in null width and height values.
 	 */
-	@JsonProperty("size")
-	private String size;
+	private final @Nullable String size;
 
 	/**
 	 * The style of the generated images. Must be one of vivid or natural. Vivid causes
 	 * the model to lean towards generating hyper-real and dramatic images. Natural causes
 	 * the model to produce more natural, less hyper-real looking images. This param is
-	 * only supported for dall-e-3.
+	 * only supported for dall-e-3. natural or vivid
 	 */
-	@JsonProperty("style")
-	private String style;
+	private final @Nullable String style;
 
 	/**
 	 * A unique identifier representing your end-user, which can help OpenAI to monitor
 	 * and detect abuse.
 	 */
-	@JsonProperty("user")
-	private String user;
+	private final @Nullable String user;
+
+	protected OpenAiImageOptions(@Nullable String baseUrl, @Nullable String apiKey, @Nullable Credential credential,
+			@Nullable String model, @Nullable String microsoftDeploymentName,
+			@Nullable AzureOpenAIServiceVersion microsoftFoundryServiceVersion, @Nullable String organizationId,
+			@Nullable Boolean isMicrosoftFoundry, @Nullable Boolean isGitHubModels, @Nullable Duration timeout,
+			@Nullable Integer maxRetries, @Nullable Proxy proxy, @Nullable Map<String, String> customHeaders,
+			@Nullable Integer n, @Nullable Integer width, @Nullable Integer height, @Nullable String quality,
+			@Nullable String responseFormat, @Nullable String size, @Nullable String style, @Nullable String user) {
+		super(baseUrl, apiKey, credential, model != null ? model : DEFAULT_IMAGE_MODEL, microsoftDeploymentName,
+				microsoftFoundryServiceVersion, organizationId, isMicrosoftFoundry, isGitHubModels, timeout, maxRetries,
+				proxy, customHeaders);
+		this.n = n;
+		this.width = width;
+		this.height = height;
+		this.quality = quality;
+		this.responseFormat = responseFormat;
+		this.size = size;
+		this.style = style;
+		this.user = user;
+	}
 
 	public static Builder builder() {
 		return new Builder();
 	}
 
-	/**
-	 * Create a new OpenAiImageOptions instance from an existing one.
-	 * @param fromOptions The options to copy from
-	 * @return A new OpenAiImageOptions instance
-	 */
-	public static OpenAiImageOptions fromOptions(OpenAiImageOptions fromOptions) {
-		OpenAiImageOptions options = new OpenAiImageOptions();
-		options.n = fromOptions.n;
-		options.model = fromOptions.model;
-		options.width = fromOptions.width;
-		options.height = fromOptions.height;
-		options.quality = fromOptions.quality;
-		options.responseFormat = fromOptions.responseFormat;
-		options.size = fromOptions.size;
-		options.style = fromOptions.style;
-		options.user = fromOptions.user;
-		return options;
-	}
-
 	@Override
-	public Integer getN() {
+	public @Nullable Integer getN() {
 		return this.n;
 	}
 
-	public void setN(Integer n) {
-		this.n = n;
+	@Override
+	public @Nullable Integer getWidth() {
+		return this.width;
 	}
 
 	@Override
-	public String getModel() {
-		return this.model;
-	}
-
-	public void setModel(String model) {
-		this.model = model;
-	}
-
-	public String getQuality() {
-		return this.quality;
-	}
-
-	public void setQuality(String quality) {
-		this.quality = quality;
+	public @Nullable Integer getHeight() {
+		return this.height;
 	}
 
 	@Override
-	public String getResponseFormat() {
+	public @Nullable String getResponseFormat() {
 		return this.responseFormat;
 	}
 
-	public void setResponseFormat(String responseFormat) {
-		this.responseFormat = responseFormat;
-	}
-
-	@Override
-	public Integer getWidth() {
-		if (this.width != null) {
-			return this.width;
-		}
-		else if (this.size != null) {
-			try {
-				String[] dimensions = this.size.split("x");
-				if (dimensions.length != 2) {
-					return null;
-				}
-				return Integer.parseInt(dimensions[0]);
-			}
-			catch (Exception ex) {
-				return null;
-			}
-		}
-		return null;
-	}
-
-	public void setWidth(Integer width) {
-		this.width = width;
-		if (this.width != null && this.height != null) {
-			this.size = this.width + "x" + this.height;
-		}
-	}
-
-	@Override
-	public Integer getHeight() {
-		if (this.height != null) {
-			return this.height;
-		}
-		else if (this.size != null) {
-			try {
-				String[] dimensions = this.size.split("x");
-				if (dimensions.length != 2) {
-					return null;
-				}
-				return Integer.parseInt(dimensions[1]);
-			}
-			catch (Exception ex) {
-				return null;
-			}
-		}
-		return null;
-	}
-
-	public void setHeight(Integer height) {
-		this.height = height;
-		if (this.width != null && this.height != null) {
-			this.size = this.width + "x" + this.height;
-		}
-	}
-
-	@Override
-	public String getStyle() {
-		return this.style;
-	}
-
-	public void setStyle(String style) {
-		this.style = style;
-	}
-
-	public String getUser() {
-		return this.user;
-	}
-
-	public void setUser(String user) {
-		this.user = user;
-	}
-
-	public String getSize() {
+	public @Nullable String getSize() {
 		if (this.size != null) {
 			return this.size;
 		}
 		return (this.width != null && this.height != null) ? this.width + "x" + this.height : null;
 	}
 
-	public void setSize(String size) {
-		this.size = size;
+	public @Nullable String getUser() {
+		return this.user;
+	}
 
-		// Parse the size string to update width and height
-		if (size != null) {
-			try {
-				String[] dimensions = size.split("x");
-				if (dimensions.length == 2) {
-					this.width = Integer.parseInt(dimensions[0]);
-					this.height = Integer.parseInt(dimensions[1]);
-				}
-			}
-			catch (Exception ex) {
-				// If parsing fails, leave width and height unchanged
-			}
-		}
+	public @Nullable String getQuality() {
+		return this.quality;
 	}
 
 	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (!(o instanceof OpenAiImageOptions that)) {
+	public @Nullable String getStyle() {
+		return this.style;
+	}
+
+	@Override
+	public boolean equals(@Nullable Object o) {
+		if (o == null || getClass() != o.getClass()) {
 			return false;
 		}
-		return Objects.equals(this.n, that.n) && Objects.equals(this.model, that.model)
-				&& Objects.equals(this.width, that.width) && Objects.equals(this.height, that.height)
-				&& Objects.equals(this.quality, that.quality)
+		OpenAiImageOptions that = (OpenAiImageOptions) o;
+		return Objects.equals(this.n, that.n) && Objects.equals(this.width, that.width)
+				&& Objects.equals(this.height, that.height) && Objects.equals(this.quality, that.quality)
 				&& Objects.equals(this.responseFormat, that.responseFormat) && Objects.equals(this.size, that.size)
 				&& Objects.equals(this.style, that.style) && Objects.equals(this.user, that.user);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.n, this.model, this.width, this.height, this.quality, this.responseFormat, this.size,
-				this.style, this.user);
+		return Objects.hash(this.n, this.width, this.height, this.quality, this.responseFormat, this.size, this.style,
+				this.user);
 	}
 
-	@Override
-	public String toString() {
-		return "OpenAiImageOptions{" + "n=" + this.n + ", model='" + this.model + '\'' + ", width=" + this.width
-				+ ", height=" + this.height + ", quality='" + this.quality + '\'' + ", responseFormat='"
-				+ this.responseFormat + '\'' + ", size='" + this.size + '\'' + ", style='" + this.style + '\''
-				+ ", user='" + this.user + '\'' + '}';
+	public ImageGenerateParams toOpenAiImageGenerateParams(ImagePrompt imagePrompt) {
+		if (imagePrompt.getInstructions().isEmpty()) {
+			throw new IllegalArgumentException("Image prompt instructions cannot be empty");
+		}
+
+		String prompt = imagePrompt.getInstructions().get(0).getText();
+		ImageGenerateParams.Builder builder = ImageGenerateParams.builder().prompt(prompt);
+
+		// Use deployment name if available (for Microsoft Foundry), otherwise use model
+		// name
+		if (this.getDeploymentName() != null) {
+			builder.model(this.getDeploymentName());
+		}
+		else if (this.getModel() != null) {
+			builder.model(this.getModel());
+		}
+
+		if (this.getN() != null) {
+			builder.n(this.getN().longValue());
+		}
+		if (this.getQuality() != null) {
+			builder.quality(ImageGenerateParams.Quality.of(this.getQuality().toLowerCase(Locale.ROOT)));
+		}
+		if (this.getResponseFormat() != null) {
+			builder.responseFormat(
+					ImageGenerateParams.ResponseFormat.of(this.getResponseFormat().toLowerCase(Locale.ROOT)));
+		}
+		if (this.getSize() != null) {
+			builder.size(ImageGenerateParams.Size.of(this.getSize()));
+		}
+		if (this.getStyle() != null) {
+			builder.style(ImageGenerateParams.Style.of(this.getStyle().toLowerCase(Locale.ROOT)));
+		}
+		if (this.getUser() != null) {
+			builder.user(this.getUser());
+		}
+		if (!CollectionUtils.isEmpty(this.getCustomHeaders())) {
+			this.getCustomHeaders().forEach(builder::putAdditionalHeader);
+		}
+
+		return builder.build();
 	}
 
-	/**
-	 * Create a copy of this options instance.
-	 * @return A new instance with the same options
-	 */
-	public OpenAiImageOptions copy() {
-		return fromOptions(this);
-	}
+	public static final class Builder extends AbstractBuilder<OpenAiImageOptions, Builder> {
 
-	public static final class Builder {
+		private @Nullable Integer n;
 
-		protected OpenAiImageOptions options;
+		private @Nullable Integer width;
 
-		public Builder() {
-			this.options = new OpenAiImageOptions();
+		private @Nullable Integer height;
+
+		private @Nullable String quality;
+
+		private @Nullable String responseFormat;
+
+		private @Nullable String size;
+
+		private @Nullable String style;
+
+		private @Nullable String user;
+
+		private Builder() {
 		}
 
-		public Builder(OpenAiImageOptions options) {
-			this.options = options;
-		}
-
-		public Builder N(Integer n) {
-			this.options.setN(n);
+		public Builder from(OpenAiImageOptions fromOptions) {
+			// Parent class fields
+			this.baseUrl = fromOptions.getBaseUrl();
+			this.apiKey = fromOptions.getApiKey();
+			this.credential = fromOptions.getCredential();
+			this.model = fromOptions.getModel();
+			this.microsoftDeploymentName = fromOptions.getDeploymentName();
+			this.microsoftFoundryServiceVersion = fromOptions.getMicrosoftFoundryServiceVersion();
+			this.organizationId = fromOptions.getOrganizationId();
+			this.isMicrosoftFoundry = fromOptions.isMicrosoftFoundry();
+			this.isGitHubModels = fromOptions.isGitHubModels();
+			this.timeout = fromOptions.getTimeout();
+			this.maxRetries = fromOptions.getMaxRetries();
+			this.proxy = fromOptions.getProxy();
+			this.customHeaders = fromOptions.getCustomHeaders();
+			// Child class fields
+			this.n = fromOptions.getN();
+			this.width = fromOptions.getWidth();
+			this.height = fromOptions.getHeight();
+			this.quality = fromOptions.getQuality();
+			this.responseFormat = fromOptions.getResponseFormat();
+			this.size = fromOptions.getSize();
+			this.style = fromOptions.getStyle();
+			this.user = fromOptions.getUser();
 			return this;
 		}
 
-		public Builder model(String model) {
-			this.options.setModel(model);
+		public Builder merge(@Nullable ImageOptions from) {
+			if (from == null) {
+				return this;
+			}
+			if (from.getModel() != null) {
+				this.model = from.getModel();
+			}
+			if (from.getN() != null) {
+				this.n = from.getN();
+			}
+			if (from.getWidth() != null) {
+				this.width = from.getWidth();
+			}
+			if (from.getHeight() != null) {
+				this.height = from.getHeight();
+			}
+			if (from.getResponseFormat() != null) {
+				this.responseFormat = from.getResponseFormat();
+			}
+			if (from.getStyle() != null) {
+				this.style = from.getStyle();
+			}
+			if (from instanceof AbstractOpenAiOptions castFrom) {
+				if (castFrom.getBaseUrl() != null) {
+					this.baseUrl = castFrom.getBaseUrl();
+				}
+				if (castFrom.getApiKey() != null) {
+					this.apiKey = castFrom.getApiKey();
+				}
+				if (castFrom.getCredential() != null) {
+					this.credential = castFrom.getCredential();
+				}
+				if (castFrom.getDeploymentName() != null) {
+					this.microsoftDeploymentName = castFrom.getDeploymentName();
+				}
+				if (castFrom.getMicrosoftFoundryServiceVersion() != null) {
+					this.microsoftFoundryServiceVersion = castFrom.getMicrosoftFoundryServiceVersion();
+				}
+				if (castFrom.getOrganizationId() != null) {
+					this.organizationId = castFrom.getOrganizationId();
+				}
+				this.isMicrosoftFoundry = castFrom.isMicrosoftFoundry();
+				this.isGitHubModels = castFrom.isGitHubModels();
+				this.timeout = castFrom.getTimeout();
+				this.maxRetries = castFrom.getMaxRetries();
+				if (castFrom.getProxy() != null) {
+					this.proxy = castFrom.getProxy();
+				}
+				if (castFrom.getCustomHeaders() != null) {
+					if (this.customHeaders == null) {
+						this.customHeaders = new HashMap<>(castFrom.getCustomHeaders());
+					}
+					else {
+						Map<String, String> merged = new HashMap<>(this.customHeaders);
+						merged.putAll(castFrom.getCustomHeaders());
+						this.customHeaders = merged;
+					}
+				}
+			}
+			if (from instanceof OpenAiImageOptions castFrom) {
+				if (castFrom.getQuality() != null) {
+					this.quality = castFrom.getQuality();
+				}
+				if (castFrom.getSize() != null) {
+					this.size = castFrom.getSize();
+				}
+				if (castFrom.getUser() != null) {
+					this.user = castFrom.getUser();
+				}
+			}
 			return this;
 		}
 
-		public Builder quality(String quality) {
-			this.options.setQuality(quality);
+		public Builder n(@Nullable Integer n) {
+			this.n = n;
 			return this;
 		}
 
-		public Builder responseFormat(String responseFormat) {
-			this.options.setResponseFormat(responseFormat);
+		public Builder responseFormat(@Nullable String responseFormat) {
+			this.responseFormat = responseFormat;
 			return this;
 		}
 
-		public Builder width(Integer width) {
-			this.options.setWidth(width);
+		public Builder width(@Nullable Integer width) {
+			this.width = width;
+			if (this.width != null && this.height != null) {
+				this.size = this.width + "x" + this.height;
+			}
 			return this;
 		}
 
-		public Builder height(Integer height) {
-			this.options.setHeight(height);
+		public Builder height(@Nullable Integer height) {
+			this.height = height;
+			if (this.width != null && this.height != null) {
+				this.size = this.width + "x" + this.height;
+			}
 			return this;
 		}
 
-		public Builder style(String style) {
-			this.options.setStyle(style);
+		public Builder user(@Nullable String user) {
+			this.user = user;
 			return this;
 		}
 
-		public Builder user(String user) {
-			this.options.setUser(user);
+		public Builder style(@Nullable String style) {
+			this.style = style;
 			return this;
 		}
 
+		public Builder quality(@Nullable String quality) {
+			this.quality = quality;
+			return this;
+		}
+
+		public Builder size(@Nullable String size) {
+			this.size = size;
+			return this;
+		}
+
+		@Override
 		public OpenAiImageOptions build() {
-			return this.options;
+			return new OpenAiImageOptions(this.baseUrl, this.apiKey, this.credential, this.model,
+					this.microsoftDeploymentName, this.microsoftFoundryServiceVersion, this.organizationId,
+					this.isMicrosoftFoundry, this.isGitHubModels, this.timeout, this.maxRetries, this.proxy,
+					this.customHeaders, this.n, this.width, this.height, this.quality, this.responseFormat, this.size,
+					this.style, this.user);
 		}
 
 	}

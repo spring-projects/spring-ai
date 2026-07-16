@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  */
 @ConfigurationProperties(McpServerSseProperties.CONFIG_PREFIX)
+@Deprecated(since = "2.0.0", forRemoval = true)
 public class McpServerSseProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.mcp.server";

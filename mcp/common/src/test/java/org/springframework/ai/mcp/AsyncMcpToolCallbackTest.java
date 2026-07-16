@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package org.springframework.ai.mcp;
 import java.util.Map;
 
 import io.modelcontextprotocol.client.McpAsyncClient;
+import io.modelcontextprotocol.spec.McpError;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.Implementation;
 import org.junit.jupiter.api.Test;
@@ -79,6 +80,23 @@ class AsyncMcpToolCallbackTest {
 		assertThatThrownBy(() -> callback.call("{\"param\":\"value\"}")).isInstanceOf(ToolExecutionException.class)
 			.rootCause()
 			.hasMessage("Testing tool error");
+	}
+
+	@Test
+	void callShouldPropagateMcpErrorAsHardFailure() {
+		when(this.tool.name()).thenReturn("testTool");
+		McpError mcpError = McpError.builder(-32603).message("Protocol failure").build();
+		when(this.mcpClient.callTool(any(McpSchema.CallToolRequest.class))).thenReturn(Mono.error(mcpError));
+
+		var callback = AsyncMcpToolCallback.builder()
+			.mcpClient(this.mcpClient)
+			.tool(this.tool)
+			.prefixedToolName(this.tool.name())
+			.build();
+
+		// A protocol-level McpError must bubble up as-is rather than being wrapped in a
+		// ToolExecutionException and conveyed to the model.
+		assertThatThrownBy(() -> callback.call("{\"param\":\"value\"}")).isSameAs(mcpError);
 	}
 
 	@Test
@@ -202,8 +220,7 @@ class AsyncMcpToolCallbackTest {
 	@Test
 	void getToolDefinitionShouldReturnCorrectDefinition() {
 		when(this.tool.description()).thenReturn("Test tool description");
-		var jsonSchema = mock(McpSchema.JsonSchema.class);
-		when(this.tool.inputSchema()).thenReturn(jsonSchema);
+		when(this.tool.inputSchema()).thenReturn(Map.of());
 
 		// Act
 		var callback = AsyncMcpToolCallback.builder()
@@ -294,8 +311,8 @@ class AsyncMcpToolCallbackTest {
 	void deprecatedConstructorShouldWork() {
 		when(this.tool.name()).thenReturn("testTool");
 		when(this.tool.description()).thenReturn("Test description");
-		when(this.tool.inputSchema()).thenReturn(mock(McpSchema.JsonSchema.class));
-		var clientInfo = new Implementation("testClient", "1.0.0");
+		when(this.tool.inputSchema()).thenReturn(Map.of());
+		var clientInfo = Implementation.builder("testClient", "1.0.0").build();
 		when(this.mcpClient.getClientInfo()).thenReturn(clientInfo);
 
 		// Act

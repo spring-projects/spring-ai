@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,11 @@ import org.springframework.util.Assert;
 
 /**
  * Converts a {@link Filter} into a JSON Path expression.
+ * <p>
+ * The output is a complete SQL predicate ready for use in a WHERE clause (e.g.
+ * {@code JSON_EXISTS(metadata, '...')}). Single quotes are properly escaped, and JSONPath
+ * member names are always wrapped in double quotes with {@code \} and {@code "}
+ * JS-escaped.
  *
  * @author Loïc Lefèvre
  * @see <a href=
@@ -30,6 +35,37 @@ import org.springframework.util.Assert;
  */
 public class SqlJsonPathFilterExpressionConverter extends AbstractFilterExpressionConverter {
 
+	private static final String DEFAULT_METADATA_COLUMN = "metadata";
+
+	private final String metadataColumn;
+
+	public SqlJsonPathFilterExpressionConverter() {
+		this(DEFAULT_METADATA_COLUMN);
+	}
+
+	public SqlJsonPathFilterExpressionConverter(String metadataColumn) {
+		Assert.hasText(metadataColumn, "Metadata column name must not be empty");
+		this.metadataColumn = metadataColumn;
+	}
+
+	/**
+	 * This is the entry point to this converter and returns a valid SQL fragment string.
+	 * Other atomic methods, including overrides, return json-path expressions. This
+	 * method gets such a json path expression and ultimately emits it as a SQL string.
+	 */
+	@Override
+	public String convertExpression(Filter.Expression expression) {
+		String jsonPath = super.convertExpression(expression);
+		return "JSON_EXISTS(" + quoteIdentifier(this.metadataColumn) + ", " + emitAsSQLString(jsonPath) + ")";
+	}
+
+	private static String emitAsSQLString(String raw) {
+		return "'" + raw.replace("'", "''") + "'";
+	}
+
+	/**
+	 * Convert the filter operand to a json path expression.
+	 */
 	@Override
 	protected String convertOperand(final Filter.Operand operand) {
 		final StringBuilder context = new StringBuilder();
@@ -80,9 +116,23 @@ public class SqlJsonPathFilterExpressionConverter extends AbstractFilterExpressi
 		context.append(" )");
 	}
 
+	/**
+	 * Quote a SQL identifier using double quotes (Oracle/SQL standard) only if needed.
+	 * Simple identifiers (alphanumeric starting with letter/underscore) are returned
+	 * unquoted to preserve Oracle's case-insensitive behavior. Identifiers containing
+	 * special characters are quoted with internal double quotes escaped by doubling.
+	 */
+	private static String quoteIdentifier(String identifier) {
+		if (identifier.matches("^[A-Za-z_][A-Za-z0-9_]*$")) {
+			return identifier;
+		}
+		return "\"" + identifier.replace("\"", "\"\"") + "\"";
+	}
+
 	@Override
 	protected void doKey(final Filter.Key key, final StringBuilder context) {
-		context.append("@.").append(key.key());
+		context.append("@.");
+		emitJsonValue(key.key(), context);
 	}
 
 	@Override
@@ -93,6 +143,18 @@ public class SqlJsonPathFilterExpressionConverter extends AbstractFilterExpressi
 	@Override
 	protected void doEndGroup(final Filter.Group group, final StringBuilder context) {
 		context.append(")");
+	}
+
+	/**
+	 * Serialize values for Oracle JSONPath expressions with proper escaping.
+	 * <p>
+	 * Values are JSON-serialized.
+	 * @param value the value to serialize
+	 * @param context the context to append the representation to
+	 */
+	@Override
+	protected void doSingleValue(Object value, StringBuilder context) {
+		emitJsonValue(value, context);
 	}
 
 }

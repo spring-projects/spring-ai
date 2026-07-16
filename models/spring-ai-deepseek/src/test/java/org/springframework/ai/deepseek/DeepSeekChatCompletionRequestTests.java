@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,14 @@
 
 package org.springframework.ai.deepseek;
 
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.deepseek.api.DeepSeekApi;
+import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionMessage;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -31,12 +35,10 @@ public class DeepSeekChatCompletionRequestTests {
 	@Test
 	public void createRequestWithChatOptions() {
 
-		var client = DeepSeekChatModel.builder()
-			.deepSeekApi(DeepSeekApi.builder().apiKey("TEST").build())
-			.defaultOptions(DeepSeekChatOptions.builder().model("DEFAULT_MODEL").temperature(66.6).build())
-			.build();
+		var client = DeepSeekChatModel.builder().deepSeekApi(DeepSeekApi.builder().apiKey("TEST").build()).build();
 
-		var prompt = client.buildRequestPrompt(new Prompt("Test message content"));
+		var prompt = new Prompt("Test message content",
+				DeepSeekChatOptions.builder().model("DEFAULT_MODEL").temperature(66.6).build());
 
 		var request = client.createRequest(prompt, false);
 
@@ -54,6 +56,87 @@ public class DeepSeekChatCompletionRequestTests {
 
 		assertThat(request.model()).isEqualTo("PROMPT_MODEL");
 		assertThat(request.temperature()).isEqualTo(99.9D);
+	}
+
+	@Test
+	public void createRequestWithReasoningContent() {
+		var client = DeepSeekChatModel.builder().deepSeekApi(DeepSeekApi.builder().apiKey("TEST").build()).build();
+
+		DeepSeekAssistantMessage assistantMessage = DeepSeekAssistantMessage.builder()
+			.content("The answer is 42")
+			.reasoningContent("Let me think about this step by step...")
+			.build();
+
+		var prompt = new Prompt(List.of(assistantMessage),
+				DeepSeekChatOptions.builder().model("deepseek-reasoner").build());
+
+		var request = client.createRequest(prompt, false);
+
+		assertThat(request.messages()).hasSize(1);
+		ChatCompletionMessage message = request.messages().get(0);
+		assertThat(message.role()).isEqualTo(ChatCompletionMessage.Role.ASSISTANT);
+		assertThat(message.content()).isEqualTo("The answer is 42");
+		assertThat(message.reasoningContent()).isEqualTo("Let me think about this step by step...");
+	}
+
+	@Test
+	public void createRequestWithNullReasoningContent() {
+		var client = DeepSeekChatModel.builder().deepSeekApi(DeepSeekApi.builder().apiKey("TEST").build()).build();
+
+		DeepSeekAssistantMessage assistantMessage = DeepSeekAssistantMessage.builder()
+			.content("The answer is 42")
+			.build();
+
+		var prompt = new Prompt(List.of(assistantMessage),
+				DeepSeekChatOptions.builder().model("deepseek-reasoner").build());
+
+		var request = client.createRequest(prompt, false);
+
+		assertThat(request.messages()).hasSize(1);
+		ChatCompletionMessage message = request.messages().get(0);
+		assertThat(message.role()).isEqualTo(ChatCompletionMessage.Role.ASSISTANT);
+		assertThat(message.content()).isEqualTo("The answer is 42");
+		assertThat(message.reasoningContent()).isNull();
+	}
+
+	@Test
+	public void createRequestWithRegularAssistantMessage() {
+		var client = DeepSeekChatModel.builder().deepSeekApi(DeepSeekApi.builder().apiKey("TEST").build()).build();
+
+		AssistantMessage assistantMessage = new AssistantMessage("The answer is 42");
+
+		var prompt = new Prompt(List.of(assistantMessage),
+				DeepSeekChatOptions.builder().model("deepseek-reasoner").build());
+
+		var request = client.createRequest(prompt, false);
+
+		assertThat(request.messages()).hasSize(1);
+		ChatCompletionMessage message = request.messages().get(0);
+		assertThat(message.role()).isEqualTo(ChatCompletionMessage.Role.ASSISTANT);
+		assertThat(message.content()).isEqualTo("The answer is 42");
+		assertThat(message.reasoningContent()).isNull();
+	}
+
+	@Test
+	public void createRequestWithReasoningContentAndPrefix() {
+		var client = DeepSeekChatModel.builder().deepSeekApi(DeepSeekApi.builder().apiKey("TEST").build()).build();
+
+		DeepSeekAssistantMessage assistantMessage = DeepSeekAssistantMessage.builder()
+			.content("")
+			.reasoningContent("Thinking in progress...")
+			.prefix(true)
+			.build();
+
+		var prompt = new Prompt(List.of(assistantMessage),
+				DeepSeekChatOptions.builder().model("deepseek-reasoner").build());
+
+		var request = client.createRequest(prompt, false);
+
+		assertThat(request.messages()).hasSize(1);
+		ChatCompletionMessage message = request.messages().get(0);
+		assertThat(message.role()).isEqualTo(ChatCompletionMessage.Role.ASSISTANT);
+		assertThat(message.prefix()).isTrue();
+		assertThat(message.reasoningContent()).isEqualTo("Thinking in progress...");
 	}
 
 }

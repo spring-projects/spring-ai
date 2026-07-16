@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,8 @@ package org.springframework.ai.chat.messages;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+
+import org.jspecify.annotations.Nullable;
 
 /**
  * The ToolResponseMessage class represents a message with a function content in a chat
@@ -46,7 +48,7 @@ public class ToolResponseMessage extends AbstractMessage {
 	}
 
 	@Override
-	public boolean equals(Object o) {
+	public boolean equals(@Nullable Object o) {
 		if (this == o) {
 			return true;
 		}

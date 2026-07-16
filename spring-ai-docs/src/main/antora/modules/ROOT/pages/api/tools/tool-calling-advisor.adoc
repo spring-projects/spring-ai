@@ -1,0 +1,407 @@
+[[ToolCallingAdvisor]]
+= ToolCallingAdvisor
+
+`ToolCallingAdvisor` is the recursive advisor that owns the tool execution lifecycle in Spring AI 2.0. It is auto-registered by `DefaultChatClient` and drives the request/response loop until the model produces a response without tool calls.
+
+This page is the reference for the builder API, configuration options, hook methods, and extension patterns. For the conceptual overview of the loop, see xref:api/tools.adoc#the-tool-calling-loop[The Tool Calling Loop]. For the broader recursive-advisor pattern, see xref:api/advisors-recursive.adoc[Recursive Advisors].
+
+[[overview]]
+== Overview
+
+`ToolCallingAdvisor` implements both `CallAdvisor` and `StreamAdvisor`, plus the `ToolAdvisor` marker interface. The marker interface is what `DefaultChatClient` uses to enforce that exactly one tool advisor is present in the chain — see xref:#single-tooladvisor-invariant[Single-ToolAdvisor Invariant].
+
+The default `ToolCallingAdvisor.DEFAULT_ORDER` is `Ordered.HIGHEST_PRECEDENCE + 300`. This is higher than the default `MessageChatMemoryAdvisor` order (`HIGHEST_PRECEDENCE + 200`), which places memory advisors **outside** the tool loop by default. See xref:api/tools.adoc#memory-and-the-tool-loop[Memory and the Tool Loop].
+
+[[builder]]
+== Builder
+
+Construct a `ToolCallingAdvisor` via `ToolCallingAdvisor.builder()`:
+
+[source,java]
+----
+var toolCallingAdvisor = ToolCallingAdvisor.builder()
+    .toolCallingManager(toolCallingManager)
+    .advisorOrder(BaseAdvisor.HIGHEST_PRECEDENCE + 300)
+    .build();
+
+var chatClient = ChatClient.builder(chatModel)
+    .defaultAdvisors(toolCallingAdvisor)
+    .build();
+----
+
+NOTE: Most applications don't construct `ToolCallingAdvisor` directly — `DefaultChatClient` auto-registers one with sensible defaults. Construct it manually only when you need non-default settings or you're replacing it with a custom subclass.
+
+[[builder-options]]
+=== Builder Options
+
+[cols="1,4,1", options="header"]
+|====
+| Option | Description | Default
+
+| `toolCallingManager(ToolCallingManager)`
+| The `ToolCallingManager` instance used to execute tool calls.
+| Auto-built instance
+
+| `toolExecutionEligibilityChecker(ToolExecutionEligibilityChecker)`
+| Predicate that decides whether a model response should trigger another tool-call iteration. The default checks `chatResponse.hasToolCalls()`. Override to apply provider-specific stop-reason logic (e.g. checking a finish-reason field in addition to tool-call presence).
+| `chatResponse -> chatResponse != null && chatResponse.hasToolCalls()`
+
+| `advisorOrder(int)`
+| Order in which the advisor is applied in the chain. Must be between `BaseAdvisor.HIGHEST_PRECEDENCE` and `BaseAdvisor.LOWEST_PRECEDENCE`. Determines which other advisors run inside vs. outside the loop.
+| `HIGHEST_PRECEDENCE + 300`
+
+| `conversationHistoryEnabled(boolean)`
+| Whether the advisor maintains conversation history internally across iterations. When `true` (the default), each LLM call inside the loop receives the full history of previous tool calls and responses, managed by the advisor itself. When `false`, the advisor only forwards the latest message — useful when a `MemoryAdvisor` inside the loop is taking over history management.
+| `true`
+
+| `disableInternalConversationHistory()`
+| Shortcut for `conversationHistoryEnabled(false)`.
+| —
+|====
+
+[[checker]]
+=== `ToolExecutionEligibilityChecker`
+
+`ToolExecutionEligibilityChecker` is a functional interface:
+
+[source,java]
+----
+@FunctionalInterface
+public interface ToolExecutionEligibilityChecker {
+    boolean isToolCallResponse(@Nullable ChatResponse chatResponse);
+}
+----
+
+The default checker fires the next iteration whenever the response carries tool calls. Override it for provider-specific behavior:
+
+[source,java]
+----
+ToolExecutionEligibilityChecker strictChecker = response ->
+    response != null
+        && response.hasToolCalls()
+        && "tool_calls".equals(response.getMetadata().getFinishReason());
+
+var advisor = ToolCallingAdvisor.builder()
+    .toolExecutionEligibilityChecker(strictChecker)
+    .build();
+----
+
+[[conversation-history]]
+=== Conversation History Behavior
+
+By default, `ToolCallingAdvisor` keeps the full conversation history (user message, model responses, tool call requests, tool responses) inside its loop. Each subsequent iteration sends the model the complete history.
+
+This is the right behavior when memory sits **outside** the loop, because the outer memory advisor only ever sees the final user/assistant exchange — the per-iteration history is `ToolCallingAdvisor`'s private concern.
+
+Set `disableInternalConversationHistory()` when:
+
+* You're placing a `MemoryAdvisor` **inside** the loop (it will manage per-iteration history itself).
+* You're driving the loop yourself and want only the latest message forwarded.
+
+[source,java]
+----
+var toolCallingAdvisor = ToolCallingAdvisor.builder()
+    .disableInternalConversationHistory()  // memory advisor inside the loop handles history
+    .advisorOrder(BaseAdvisor.HIGHEST_PRECEDENCE + 300)
+    .build();
+
+var chatMemoryAdvisor = MessageChatMemoryAdvisor.builder(chatMemory)
+    .order(BaseAdvisor.HIGHEST_PRECEDENCE + 400)  // inside the loop
+    .build();
+
+var chatClient = ChatClient.builder(chatModel)
+    .defaultAdvisors(chatMemoryAdvisor, toolCallingAdvisor)
+    .build();
+----
+
+TIP: With the auto-registered `ToolCallingAdvisor`, `DefaultChatClient` detects any `MemoryAdvisor` placed inside the loop and disables internal history automatically — you don't need to call `disableInternalConversationHistory()` yourself. The manual call is only needed when constructing `ToolCallingAdvisor` directly. See xref:api/tools.adoc#inside-the-loop[Memory: Inside the Loop].
+
+[[hooks]]
+== Hook Methods
+
+`ToolCallingAdvisor` exposes protected hook methods at well-defined points in the loop. Subclasses override these hooks to customize behavior without re-implementing the loop itself.
+
+There are two parallel families — one for the call (blocking) path and one for the stream (reactive) path. A custom subclass should override the relevant pair to handle both modes.
+
+[[call-hooks]]
+=== Call-Path Hooks
+
+[source,java]
+----
+protected ChatClientRequest doInitializeLoop(
+        ChatClientRequest chatClientRequest, CallAdvisorChain callAdvisorChain);
+
+protected ChatClientRequest doBeforeCall(
+        ChatClientRequest chatClientRequest, CallAdvisorChain callAdvisorChain);
+
+protected ChatClientResponse doAfterCall(
+        ChatClientResponse chatClientResponse, CallAdvisorChain callAdvisorChain);
+
+protected ChatClientResponse doFinalizeLoop(
+        ChatClientResponse chatClientResponse, CallAdvisorChain callAdvisorChain);
+
+protected List<Message> doGetNextInstructionsForToolCall(
+        ChatClientRequest chatClientRequest,
+        ChatClientResponse chatClientResponse,
+        ToolExecutionResult toolExecutionResult);
+----
+
+[cols="1,3", options="header"]
+|====
+| Hook | When and what for
+
+| `doInitializeLoop`
+| Once, before the first iteration. Use to set up session-scoped state (indexes, caches, augmented prompts).
+
+| `doBeforeCall`
+| Before each iteration. Use to inject or remove tools, mutate options, or add per-iteration context. The returned request is what gets sent to the model.
+
+| `doAfterCall`
+| After each iteration's model response. Use to record per-iteration observations or transform the response before the loop decides whether to continue.
+
+| `doFinalizeLoop`
+| Once, after the loop ends. Use to emit aggregate metrics, clean up session state, or attach a final transformation.
+
+| `doGetNextInstructionsForToolCall`
+| Decides what messages the next iteration sends to the model. The default behavior depends on `conversationHistoryEnabled`: when `true`, returns the full conversation history; when `false`, returns only the system message and the latest tool response.
+|====
+
+[[stream-hooks]]
+=== Stream-Path Hooks
+
+[source,java]
+----
+protected ChatClientRequest doInitializeLoopStream(
+        ChatClientRequest chatClientRequest, StreamAdvisorChain streamAdvisorChain);
+
+protected ChatClientRequest doBeforeStream(
+        ChatClientRequest chatClientRequest, StreamAdvisorChain streamAdvisorChain);
+
+protected ChatClientResponse doAfterStream(
+        ChatClientResponse chatClientResponse, StreamAdvisorChain streamAdvisorChain);
+
+protected Flux<ChatClientResponse> doFinalizeLoopStream(
+        Flux<ChatClientResponse> chatClientResponseFlux, StreamAdvisorChain streamAdvisorChain);
+
+protected List<Message> doGetNextInstructionsForToolCallStream(
+        ChatClientRequest chatClientRequest,
+        ChatClientResponse chatClientResponse,
+        ToolExecutionResult toolExecutionResult);
+----
+
+The stream variants follow the same semantics as the call variants. `doAfterStream` operates on the response aggregated across the iteration's chunks; `doFinalizeLoopStream` can transform the entire output `Flux`.
+
+[[subclass-example]]
+=== Subclass Example
+
+`ToolSearchToolCallingAdvisor` is a concrete example of a `ToolCallingAdvisor` subclass. It overrides `doInitializeLoop` and `doInitializeLoopStream` to index the tool set at session start and augment the system message, and `doBeforeCall` and `doBeforeStream` to inject only the tools discovered so far on each iteration. The rest of the loop is inherited from the base class.
+
+[source,java]
+----
+public class MyAuditingToolCallingAdvisor extends ToolCallingAdvisor {
+
+    private final AuditService audit;
+
+    @Override
+    protected ChatClientResponse doAfterCall(
+            ChatClientResponse response, CallAdvisorChain chain) {
+        var toolCalls = response.chatResponse().getResult().getOutput().getToolCalls();
+        for (var call : toolCalls) {
+            audit.recordIntent(call.name(), call.arguments());
+        }
+        return response;
+    }
+
+    public static Builder<?> builder() {
+        return new Builder<>();
+    }
+
+    public static class Builder<T extends Builder<T>> extends ToolCallingAdvisor.Builder<T> {
+
+        private AuditService audit;
+
+        public T audit(AuditService audit) {
+            this.audit = audit;
+            return self();
+        }
+
+        @Override
+        public MyAuditingToolCallingAdvisor build() {
+            // Use the inherited fields from ToolCallingAdvisor.Builder via the protected getters.
+            return new MyAuditingToolCallingAdvisor(
+                getToolCallingManager(),
+                getToolExecutionEligibilityChecker(),
+                getAdvisorOrder(),
+                isConversationHistoryEnabled(),
+                audit);
+        }
+    }
+}
+----
+
+The self-referential generic pattern (`Builder<T extends Builder<T>>`) lets subclass builders chain inherited setters without losing the subclass type. Override `newCopy()` and `copy()` if you need to support the copy semantics used by `DefaultChatClient` for per-call adjustments.
+
+[[single-tooladvisor-invariant]]
+== Single-`ToolAdvisor` Invariant
+
+`ToolAdvisor` is a marker interface. `DefaultChatClient` uses it to enforce that exactly one tool advisor is present in any given advisor chain. The invariant prevents subtle double-execution bugs from stacking two tool-calling advisors.
+
+Practically:
+
+* The auto-registered `ToolCallingAdvisor` counts as the one.
+* If you register a second `ToolAdvisor`-implementing advisor (for example, a custom subclass), `DefaultChatClient` skips the default registration and uses yours — the invariant is preserved.
+* If you register two custom `ToolAdvisor`-implementing advisors at the same time, the chain construction fails fast with a clear error.
+
+To replace the default in a Spring Boot application, register your subclass via auto-configuration — see xref:api/tools.adoc#custom-tool-advisor-autoconfig[Custom ToolAdvisor: Auto-Configuration Integration].
+
+[[user-controlled-streaming]]
+== User-Controlled Streaming
+
+xref:api/tools.adoc#user-controlled-tool-execution[User-controlled tool execution] covers the blocking variant; this section covers streaming.
+
+When driving the loop manually with `.stream()`, each iteration produces a chunk `Flux`. You aggregate the chunks for tool-call detection using `ChatClientMessageAggregator`, while still forwarding the raw stream to your downstream subscriber (e.g. an SSE endpoint):
+
+[source,java]
+----
+ChatClient chatClient = ...
+ToolCallingManager toolCallingManager = ToolCallingManager.builder().build();
+
+ToolCallback[] tools = ToolCallbacks.from(new WeatherTools());
+ChatOptions chatOptions = ToolCallingChatOptions.builder().toolCallbacks(tools).build();
+
+String question = "What is the weather in Amsterdam and Paris?";
+Prompt prompt = new Prompt(List.of(new UserMessage(question)), chatOptions);
+
+AtomicReference<ChatClientResponse> ref = new AtomicReference<>();
+
+new ChatClientMessageAggregator().aggregateChatClientResponse(
+    chatClient.prompt()
+        .messages(prompt.getInstructions())
+        .options(chatOptions)
+        .advisors(AdvisorParams.toolCallingAdvisorAutoRegister(false))
+        .stream()
+        .chatClientResponse()
+        .doOnNext(chunk -> forwardToSse(chunk)),  // side-channel emission
+    ref::set
+).blockLast();
+
+ChatClientResponse response = ref.get();
+
+while (response.chatResponse() != null && response.chatResponse().hasToolCalls()) {
+    ToolExecutionResult result = toolCallingManager.executeToolCalls(prompt, response.chatResponse());
+    prompt = new Prompt(result.conversationHistory(), chatOptions);
+
+    AtomicReference<ChatClientResponse> nextRef = new AtomicReference<>();
+    new ChatClientMessageAggregator().aggregateChatClientResponse(
+        chatClient.prompt()
+            .messages(result.conversationHistory())
+            .options(chatOptions)
+            .advisors(AdvisorParams.toolCallingAdvisorAutoRegister(false))
+            .stream()
+            .chatClientResponse()
+            .doOnNext(chunk -> forwardToSse(chunk)),
+        nextRef::set
+    ).blockLast();
+
+    response = nextRef.get();
+}
+----
+
+This pattern is verbose. In most cases you should prefer xref:#observing-the-tool-calling-loop[placing a custom advisor inside the loop] — you keep the framework's loop and only intercept the chunk stream.
+
+[[observing-the-tool-calling-loop]]
+== Observing the Tool-Calling Loop
+
+For most observation use cases — streaming intermediate progress to a UI, forwarding tool-call events to an audit log, recording per-iteration metrics — there's no need to disable auto-registration or drive the loop yourself. Place your custom advisor **inside** the loop by giving it an order greater than `ToolCallingAdvisor.DEFAULT_ORDER`:
+
+[source,java]
+----
+public class ToolCallObservingAdvisor implements CallAdvisor, StreamAdvisor {
+
+    private final Consumer<ChatClientResponse> observer;
+
+    @Override
+    public int getOrder() {
+        return Ordered.HIGHEST_PRECEDENCE + 400;  // inside ToolCallingAdvisor (order 300)
+    }
+
+    @Override
+    public ChatClientResponse adviseCall(ChatClientRequest request, CallAdvisorChain chain) {
+        // Each iteration's request includes ToolResponseMessages from prior iterations
+        request.prompt().getInstructions().forEach(msg -> log.debug("Message: {}", msg));
+        ChatClientResponse response = chain.nextCall(request);
+        observer.accept(response);
+        return response;
+    }
+
+    @Override
+    public Flux<ChatClientResponse> adviseStream(ChatClientRequest request, StreamAdvisorChain chain) {
+        // Observe every chunk including tool-call request chunks
+        return chain.nextStream(request).doOnNext(observer);
+    }
+}
+----
+
+Register the observing advisor alongside the auto-registered `ToolCallingAdvisor`:
+
+[source,java]
+----
+var chatClient = ChatClient.builder(chatModel)
+    .defaultAdvisors(new ToolCallObservingAdvisor(chunk -> forwardToSse(chunk)))
+    .build();
+
+String response = chatClient.prompt()
+    .user("What is the weather in Amsterdam and Paris?")
+    .tools(new WeatherTools())
+    .call()
+    .content();
+----
+
+`ToolCallObservingAdvisor` runs on every iteration; the main caller still receives only the final answer because `ToolCallingAdvisor` filters tool-call chunks out of its returned stream.
+
+[[return-direct]]
+== Return Direct
+
+When a tool's `ToolMetadata` has `returnDirect = true`, `ToolCallingAdvisor`:
+
+1. Executes the tool call as normal.
+2. Detects the `returnDirect` flag in the `ToolExecutionResult`.
+3. Breaks out of the loop.
+4. Returns the tool execution result directly to the caller as a `ChatResponse` whose generation content is the tool's output.
+
+The model never sees the tool result — the round-trip is skipped. This is useful when the tool's output is the final answer (e.g. a RAG retrieval) or when the tool should terminate the agent's reasoning loop.
+
+NOTE: If the model requests multiple tool calls in a single iteration, `returnDirect` is only honored if **all** the called tools have `returnDirect = true`. Otherwise the results are sent back to the model and the loop continues. See xref:api/tools.adoc#return-direct[Return Direct] for declaring the flag on tool definitions.
+
+[[opting-out]]
+== Opting Out of Auto-Registration
+
+To disable `ToolCallingAdvisor` auto-registration globally (for every call from an auto-configured `ChatClient`):
+
+[source,properties]
+----
+spring.ai.chat.client.tool-calling.enabled=false
+----
+
+To disable it for a single call only:
+
+[source,java]
+----
+chatClient.prompt("What day is tomorrow?")
+    .tools(new DateTimeTools())
+    .advisors(AdvisorParams.toolCallingAdvisorAutoRegister(false))
+    .call()
+    .content();
+----
+
+With auto-registration off, tools passed via `.tools(...)` are sent to the model but tool calls in the response are **not** executed automatically. You're then in xref:api/tools.adoc#user-controlled-tool-execution[user-controlled mode].
+
+[[see-also]]
+== See Also
+
+* xref:api/tools.adoc#the-tool-calling-loop[Tool Calling: The Tool Calling Loop] — conceptual overview
+* xref:api/tools.adoc#memory-and-the-tool-loop[Tool Calling: Memory and the Tool Loop] — inside/outside ordering
+* xref:api/tools.adoc#extending-the-loop[Tool Calling: Extending the Loop] — auto-configuration extension point for custom subclasses
+* xref:api/tools/tool-search-tool.adoc[Tool Search Tool] — `ToolSearchToolCallingAdvisor`, a concrete subclass implementing progressive tool disclosure
+* xref:api/advisors-recursive.adoc[Recursive Advisors] — the underlying recursive advisor pattern
+* xref:api/advisors.adoc[Advisors] — the broader advisor system

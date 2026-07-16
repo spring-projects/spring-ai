@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package org.springframework.ai.vectorstore.qdrant;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import io.qdrant.client.grpc.JsonWithInt.ListValue;
 import io.qdrant.client.grpc.JsonWithInt.Value;
@@ -52,7 +51,7 @@ final class QdrantObjectFactory {
 	}
 
 	private static Object object(ListValue listValue) {
-		return listValue.getValuesList().stream().map(QdrantObjectFactory::object).collect(Collectors.toList());
+		return listValue.getValuesList().stream().map(QdrantObjectFactory::object).toList();
 	}
 
 	private static @Nullable Object object(Value value) {

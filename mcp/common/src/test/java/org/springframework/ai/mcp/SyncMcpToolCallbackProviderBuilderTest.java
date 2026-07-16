@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.springframework.ai.mcp;
 
 import java.util.List;
+import java.util.Map;
 
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.spec.McpSchema;
@@ -238,7 +239,7 @@ class SyncMcpToolCallbackProviderBuilderTest {
 		McpSyncClient mcpClient = Mockito.mock(McpSyncClient.class);
 
 		// Mock client info
-		McpSchema.Implementation clientInfo = new McpSchema.Implementation(clientName, "1.0.0");
+		McpSchema.Implementation clientInfo = McpSchema.Implementation.builder(clientName, "1.0.0").build();
 		when(mcpClient.getClientInfo()).thenReturn(clientInfo);
 
 		// Mock client capabilities
@@ -253,7 +254,7 @@ class SyncMcpToolCallbackProviderBuilderTest {
 		Tool tool = Mockito.mock(Tool.class);
 		when(tool.name()).thenReturn(toolName);
 		when(tool.description()).thenReturn("Test tool description");
-		when(tool.inputSchema()).thenReturn(Mockito.mock(McpSchema.JsonSchema.class));
+		when(tool.inputSchema()).thenReturn(Map.of());
 
 		// Mock list tools response
 		McpSchema.ListToolsResult listToolsResult = Mockito.mock(McpSchema.ListToolsResult.class);

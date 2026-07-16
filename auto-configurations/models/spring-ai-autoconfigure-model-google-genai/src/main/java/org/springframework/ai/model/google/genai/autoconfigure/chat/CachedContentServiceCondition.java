@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,11 @@ public class CachedContentServiceCondition extends SpringBootCondition {
 	@Override
 	public ConditionOutcome getMatchOutcome(ConditionContext context, AnnotatedTypeMetadata metadata) {
 		try {
+			if (context.getBeanFactory() == null) {
+				return ConditionOutcome.noMatch(
+						ConditionMessage.forCondition("CachedContentService").because("BeanFactory is not available"));
+			}
+
 			// Check if GoogleGenAiChatModel bean exists
 			if (!context.getBeanFactory().containsBean("googleGenAiChatModel")) {
 				return ConditionOutcome.noMatch(ConditionMessage.forCondition("CachedContentService")

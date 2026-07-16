@@ -1,5 +1,5 @@
 /*
- * Copyright 2026-2026 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,7 +18,6 @@ package org.springframework.ai.mcp.server.webflux.transport;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 import io.modelcontextprotocol.common.McpTransportContext;
@@ -32,9 +31,9 @@ import io.modelcontextprotocol.spec.McpError;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpStatelessServerTransport;
 import io.modelcontextprotocol.util.Assert;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Mono;
 
 import org.springframework.http.HttpStatus;
@@ -51,7 +50,7 @@ import org.springframework.web.reactive.function.server.ServerResponse;
  */
 public final class WebFluxStatelessServerTransport implements McpStatelessServerTransport {
 
-	private static final Logger logger = LoggerFactory.getLogger(WebFluxStatelessServerTransport.class);
+	private static final Log logger = LogFactory.getLog(WebFluxStatelessServerTransport.class);
 
 	private final McpJsonMapper jsonMapper;
 
@@ -124,7 +123,7 @@ public final class WebFluxStatelessServerTransport implements McpStatelessServer
 		}
 
 		try {
-			Map<String, List<String>> headers = request.headers().asHttpHeaders().asMultiValueMap();
+			var headers = HeaderUtils.collectHeaders(request);
 			this.securityValidator.validateHeaders(headers);
 		}
 		catch (ServerTransportSecurityException e) {
@@ -153,7 +152,9 @@ public final class WebFluxStatelessServerTransport implements McpStatelessServer
 								return ServerResponse.ok().contentType(MediaType.APPLICATION_JSON).bodyValue(json);
 							}
 							catch (IOException e) {
-								logger.error("Failed to serialize response: {}", e.getMessage());
+								if (logger.isErrorEnabled()) {
+									logger.error("Failed to serialize response: " + e.getMessage());
+								}
 								return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
 									.bodyValue(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
 										.message("Failed to serialize response")
@@ -174,7 +175,9 @@ public final class WebFluxStatelessServerTransport implements McpStatelessServer
 				}
 			}
 			catch (IllegalArgumentException | IOException e) {
-				logger.error("Failed to deserialize message: {}", e.getMessage());
+				if (logger.isErrorEnabled()) {
+					logger.error("Failed to deserialize message: " + e.getMessage());
+				}
 				return ServerResponse.badRequest()
 					.bodyValue(McpError.builder(McpSchema.ErrorCodes.INVALID_REQUEST)
 						.message("Invalid message format")
@@ -239,7 +242,7 @@ public final class WebFluxStatelessServerTransport implements McpStatelessServer
 		/**
 		 * Sets the context extractor that allows providing the MCP feature
 		 * implementations to inspect HTTP transport level metadata that was present at
-		 * HTTP request processing time. This allows to extract custom headers and other
+		 * HTTP request processing time. This allows extracting custom headers and other
 		 * useful data for use during execution later on in the process.
 		 * @param contextExtractor The contextExtractor to fill in a
 		 * {@link McpTransportContext}.

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.nio.file.Path;
+import java.util.Locale;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.params.ParameterizedTest;
@@ -104,7 +105,7 @@ class MimeTypeDetectorTests {
 	@ValueSource(strings = { "JPG", "PNG", "GIF" })
 	void getMimeTypeByStringWithUppercaseExtensionsShouldWork(String uppercaseExt) {
 		String upperFileName = "test." + uppercaseExt;
-		String lowerFileName = "test." + uppercaseExt.toLowerCase();
+		String lowerFileName = "test." + uppercaseExt.toLowerCase(Locale.ROOT);
 
 		// Should throw for uppercase (not in map) but work for lowercase
 		assertThatThrownBy(() -> MimeTypeDetector.getMimeType(upperFileName))
@@ -112,7 +113,7 @@ class MimeTypeDetectorTests {
 
 		// Lowercase should work if it's a supported extension
 		if (org.springframework.ai.google.genai.MimeTypeDetector.GEMINI_MIME_TYPES
-			.containsKey(uppercaseExt.toLowerCase())) {
+			.containsKey(uppercaseExt.toLowerCase(Locale.ROOT))) {
 			assertThatCode(() -> MimeTypeDetector.getMimeType(lowerFileName)).doesNotThrowAnyException();
 		}
 	}

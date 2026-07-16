@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2026 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,25 +49,23 @@ import io.modelcontextprotocol.spec.McpSchema.TextContent;
 import net.javacrumbs.jsonunit.assertj.JsonAssertions;
 import net.javacrumbs.jsonunit.core.Option;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springaicommunity.mcp.annotation.McpArg;
-import org.springaicommunity.mcp.annotation.McpComplete;
-import org.springaicommunity.mcp.annotation.McpElicitation;
-import org.springaicommunity.mcp.annotation.McpLogging;
-import org.springaicommunity.mcp.annotation.McpMeta;
-import org.springaicommunity.mcp.annotation.McpProgress;
-import org.springaicommunity.mcp.annotation.McpPrompt;
-import org.springaicommunity.mcp.annotation.McpResource;
-import org.springaicommunity.mcp.annotation.McpSampling;
-import org.springaicommunity.mcp.annotation.McpTool;
-import org.springaicommunity.mcp.annotation.McpToolParam;
-import org.springaicommunity.mcp.context.McpSyncRequestContext;
-import org.springaicommunity.mcp.context.StructuredElicitResult;
 import reactor.netty.DisposableServer;
 import reactor.netty.http.server.HttpServer;
 import tools.jackson.databind.json.JsonMapper;
 
+import org.springframework.ai.mcp.annotation.McpArg;
+import org.springframework.ai.mcp.annotation.McpComplete;
+import org.springframework.ai.mcp.annotation.McpElicitation;
+import org.springframework.ai.mcp.annotation.McpLogging;
+import org.springframework.ai.mcp.annotation.McpMeta;
+import org.springframework.ai.mcp.annotation.McpProgress;
+import org.springframework.ai.mcp.annotation.McpPrompt;
+import org.springframework.ai.mcp.annotation.McpResource;
+import org.springframework.ai.mcp.annotation.McpSampling;
+import org.springframework.ai.mcp.annotation.McpTool;
+import org.springframework.ai.mcp.annotation.McpToolParam;
+import org.springframework.ai.mcp.annotation.context.McpSyncRequestContext;
+import org.springframework.ai.mcp.annotation.context.StructuredElicitResult;
 import org.springframework.ai.mcp.client.common.autoconfigure.McpClientAutoConfiguration;
 import org.springframework.ai.mcp.client.common.autoconfigure.McpToolCallbackAutoConfiguration;
 import org.springframework.ai.mcp.client.common.autoconfigure.annotations.McpClientAnnotationScannerAutoConfiguration;
@@ -122,7 +120,7 @@ public class StreamableMcpAnnotations2IT {
 				// "spring.ai.mcp.server.protocol=SSE",
 				"spring.ai.mcp.server.version=1.0.0",
 				"spring.ai.mcp.server.streamable-http.keep-alive-interval=1s",
-				// "spring.ai.mcp.server.requestTimeout=1m",
+				// "spring.ai.mcp.server.request-timeout=1m",
 				"spring.ai.mcp.server.streamable-http.mcp-endpoint=/mcp") // @formatter:on
 			.run(serverContext -> {
 				// Verify all required beans are present
@@ -160,9 +158,8 @@ public class StreamableMcpAnnotations2IT {
 						assertThat(mcpClient.listTools().tools()).hasSize(2);
 
 						// Call a tool that sends progress notifications
-						CallToolRequest toolRequest = CallToolRequest.builder()
-							.name("tool1")
-							.arguments(Map.of())
+						CallToolRequest toolRequest = CallToolRequest.builder("tool1")
+							.arguments(Map.of("input", "Test Input"))
 							.progressToken("test-progress-token")
 							.build();
 
@@ -211,8 +208,11 @@ public class StreamableMcpAnnotations2IT {
 
 						// TOOL STRUCTURED OUTPUT
 						// Call tool with valid structured output
-						CallToolResult calculatorToolResponse = mcpClient.callTool(new McpSchema.CallToolRequest(
-								"calculator", Map.of("expression", "2 + 3"), Map.of("meta1", "value1")));
+						CallToolResult calculatorToolResponse = mcpClient
+							.callTool(McpSchema.CallToolRequest.builder("calculator")
+								.arguments(Map.of("expression", "2 + 3"))
+								.meta(Map.of("meta1", "value1"))
+								.build());
 
 						assertThat(calculatorToolResponse).isNotNull();
 						assertThat(calculatorToolResponse.isError()).isFalse();
@@ -238,12 +238,11 @@ public class StreamableMcpAnnotations2IT {
 						assertThat(mcpClient.listResources()).isNotNull();
 						assertThat(mcpClient.listResources().resources()).hasSize(1);
 						assertThat(mcpClient.listResources().resources().get(0))
-							.isEqualToComparingFieldByFieldRecursively(Resource.builder()
-								.uri("file://resource")
-								.name("Test Resource")
-								.mimeType("text/plain")
-								.description("Test resource description")
-								.build());
+							.isEqualToComparingFieldByFieldRecursively(
+									Resource.builder("file://resource", "Test Resource")
+										.mimeType("text/plain")
+										.description("Test resource description")
+										.build());
 
 						// PROMPT / COMPLETION
 
@@ -252,8 +251,9 @@ public class StreamableMcpAnnotations2IT {
 						assertThat(mcpClient.listPrompts().prompts()).hasSize(1);
 
 						// get prompt
-						GetPromptResult promptResult = mcpClient
-							.getPrompt(new GetPromptRequest("code-completion", Map.of("language", "java")));
+						GetPromptResult promptResult = mcpClient.getPrompt(GetPromptRequest.builder("code-completion")
+							.arguments(Map.of("language", "java"))
+							.build());
 						assertThat(promptResult).isNotNull();
 						var logMessage = testContext.loggingNotificationRef.get();
 						assertThat(logMessage).isNotNull();
@@ -262,9 +262,10 @@ public class StreamableMcpAnnotations2IT {
 						assertThat(logMessage.data()).contains("Hello java! How can I assist you today?");
 
 						// completion
-						CompleteRequest completeRequest = new CompleteRequest(
-								new PromptReference("ref/prompt", "code-completion", "Code completion"),
-								new CompleteRequest.CompleteArgument("language", "py"));
+						CompleteRequest completeRequest = CompleteRequest
+							.builder(new PromptReference("ref/prompt", "code-completion", "Code completion"),
+									new CompleteRequest.CompleteArgument("language", "py"))
+							.build();
 
 						CompleteResult completeResult = mcpClient.completeCompletion(completeRequest);
 
@@ -379,8 +380,11 @@ public class StreamableMcpAnnotations2IT {
 					var systemInfo = Map.of("os", System.getProperty("os.name"), "os_version",
 							System.getProperty("os.version"), "java_version", System.getProperty("java.version"));
 					String jsonContent = JsonMapper.shared().writeValueAsString(systemInfo);
-					return new ReadResourceResult(List
-						.of(new McpSchema.TextResourceContents(request.uri(), "application/json", jsonContent)));
+					return ReadResourceResult
+						.builder(List.of(McpSchema.TextResourceContents.builder(request.uri(), jsonContent)
+							.mimeType("application/json")
+							.build()))
+						.build();
 				}
 				catch (Exception e) {
 					throw new RuntimeException("Failed to generate system info", e);
@@ -396,9 +400,11 @@ public class StreamableMcpAnnotations2IT {
 
 				ctx.log(l -> l.logger("test-logger").message(message));
 
-				var userMessage = new PromptMessage(Role.USER, new TextContent(message));
+				var userMessage = new PromptMessage(Role.USER, TextContent.builder(message).build());
 
-				return new GetPromptResult("A personalized greeting message", List.of(userMessage));
+				return GetPromptResult.builder(List.of(userMessage))
+					.description("A personalized greeting message")
+					.build();
 			}
 
 			// the code-completion is a reference to the prompt code completion
@@ -439,8 +445,6 @@ public class StreamableMcpAnnotations2IT {
 
 		public static class TestMcpClientHandlers {
 
-			private static final Logger logger = LoggerFactory.getLogger(TestMcpClientHandlers.class);
-
 			private TestContext testContext;
 
 			public TestMcpClientHandlers(TestContext testContext) {
@@ -449,9 +453,6 @@ public class StreamableMcpAnnotations2IT {
 
 			@McpProgress(clients = "server1")
 			public void progressHandler(ProgressNotification progressNotification) {
-				logger.info("MCP PROGRESS: [{}] progress: {} total: {} message: {}",
-						progressNotification.progressToken(), progressNotification.progress(),
-						progressNotification.total(), progressNotification.message());
 				this.testContext.progressNotifications.add(progressNotification);
 				this.testContext.progressLatch.countDown();
 			}
@@ -459,24 +460,21 @@ public class StreamableMcpAnnotations2IT {
 			@McpLogging(clients = "server1")
 			public void loggingHandler(LoggingMessageNotification loggingMessage) {
 				this.testContext.loggingNotificationRef.set(loggingMessage);
-				logger.info("MCP LOGGING: [{}] {}", loggingMessage.level(), loggingMessage.data());
 			}
 
 			@McpSampling(clients = "server1")
 			public CreateMessageResult samplingHandler(CreateMessageRequest llmRequest) {
-				logger.info("MCP SAMPLING: {}", llmRequest);
 
 				String userPrompt = ((McpSchema.TextContent) llmRequest.messages().get(0).content()).text();
 				String modelHint = llmRequest.modelPreferences().hints().get(0).name();
 
-				return CreateMessageResult.builder()
-					.content(new McpSchema.TextContent("Response " + userPrompt + " with model hint " + modelHint))
+				return CreateMessageResult
+					.builder(Role.ASSISTANT, "Response " + userPrompt + " with model hint " + modelHint, modelHint)
 					.build();
 			}
 
 			@McpElicitation(clients = "server1")
 			public StructuredElicitResult<ElicitInput> elicitationHandler(McpSchema.ElicitRequest request) {
-				logger.info("MCP ELICITATION: {}", request);
 				ElicitInput elicitData = new ElicitInput(request.message());
 				return StructuredElicitResult.builder().structuredContent(elicitData).build();
 			}

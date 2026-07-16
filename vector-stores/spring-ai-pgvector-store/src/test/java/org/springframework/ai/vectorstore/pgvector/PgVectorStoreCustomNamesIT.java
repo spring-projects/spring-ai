@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,7 +29,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
-import org.springframework.ai.openai.api.OpenAiApi;
+import org.springframework.ai.openai.OpenAiEmbeddingOptions;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.pgvector.PgVectorStore.PgIndexType;
 import org.springframework.beans.factory.annotation.Value;
@@ -115,7 +115,7 @@ public class PgVectorStoreCustomNamesIT {
 	}
 
 	@Test
-	public void shouldFailWhenCustomTableIsAbsentAndValidationEnabled() {
+	public void shouldCreateCustomTableWhenAbsentAndValidationEnabled() {
 
 		String tableName = "customvectortable";
 
@@ -125,9 +125,9 @@ public class PgVectorStoreCustomNamesIT {
 
 			.run(context -> {
 
-				assertThat(context).hasFailed();
-				assertThat(context.getStartupFailure()).hasCauseInstanceOf(IllegalStateException.class)
-					.hasMessageContaining(tableName + " does not exist");
+				assertThat(context).hasNotFailed();
+				assertThat(isTableExists(context, tableName)).isTrue();
+				dropTableByName(context, tableName);
 
 			});
 	}
@@ -241,7 +241,11 @@ public class PgVectorStoreCustomNamesIT {
 
 		@Bean
 		public EmbeddingModel embeddingModel() {
-			return new OpenAiEmbeddingModel(OpenAiApi.builder().apiKey(System.getenv("OPENAI_API_KEY")).build());
+			OpenAiEmbeddingOptions options = OpenAiEmbeddingOptions.builder()
+				.apiKey(System.getenv("OPENAI_API_KEY"))
+				.model(OpenAiEmbeddingOptions.DEFAULT_EMBEDDING_MODEL)
+				.build();
+			return OpenAiEmbeddingModel.builder().options(options).build();
 		}
 
 	}

@@ -5,6 +5,42 @@ These parameters are automatically injected by the framework and are excluded fr
 
 == Special Parameter Types
 
+=== MetaProvider
+
+The `MetaProvider` interface supplies data for the `_meta` field in tool, prompt, and resource declarations.
+
+==== Overview
+
+* Implemented as a class referenced in `@McpTool(metaProvider = ...)`, `@McpPrompt(metaProvider = ...)`, or `@McpResource(metaProvider = ...)`
+* Allows attaching static or computed metadata to a tool/prompt/resource specification at startup
+* The default `DefaultMetaProvider` returns an empty map (no `_meta` appended)
+
+==== Custom MetaProvider
+
+[source,java]
+----
+public class MyToolMetaProvider implements MetaProvider {
+
+    @Override
+    public Map<String, Object> getMeta() {
+        return Map.of(
+            "version", "1.0",
+            "team", "platform",
+            "experimental", false
+        );
+    }
+}
+
+@McpTool(name = "my-tool",
+         description = "Tool with metadata",
+         metaProvider = MyToolMetaProvider.class)
+public String myTool(@McpToolParam(description = "Input") String input) {
+    return "Processed: " + input;
+}
+----
+
+The same pattern applies to `@McpPrompt` and `@McpResource`.
+
 === McpMeta
 
 The `McpMeta` class provides access to metadata from MCP requests, notifications, and results.
@@ -51,17 +87,17 @@ public ReadResourceResult getSecureData(String id, McpMeta meta) {
     
     // Check access permissions using metadata
     if (!"admin".equals(accessLevel)) {
-        return new ReadResourceResult(List.of(
-            new TextResourceContents("secure-data://" + id, 
-                "text/plain", "Access denied")
-        ));
+        return ReadResourceResult.builder(List.of(
+            TextResourceContents.builder("secure-data://" + id,
+                "Access denied").mimeType("text/plain").build()
+        )).build();
     }
-    
+
     String data = loadSecureData(id);
-    return new ReadResourceResult(List.of(
-        new TextResourceContents("secure-data://" + id, 
-            "text/plain", data)
-    ));
+    return ReadResourceResult.builder(List.of(
+        TextResourceContents.builder("secure-data://" + id,
+            data).mimeType("text/plain").build()
+    )).build();
 }
 ----
 
@@ -80,9 +116,9 @@ public GetPromptResult localizedPrompt(
     // Generate localized content based on metadata
     String message = generateLocalizedMessage(topic, language, region);
     
-    return new GetPromptResult("Localized Prompt",
-        List.of(new PromptMessage(Role.ASSISTANT, new TextContent(message)))
-    );
+    return GetPromptResult.builder(List.of(new PromptMessage(Role.ASSISTANT, TextContent.builder(message).build())))
+        .description("Localized Prompt")
+        .build();
 }
 ----
 
@@ -111,17 +147,16 @@ public String performLongOperation(
     
     if (progressToken != null) {
         // Send initial progress
-        exchange.progressNotification(new ProgressNotification(
-            progressToken, 0.0, 1.0, "Starting " + operation));
-        
+        exchange.progressNotification(ProgressNotification.builder(progressToken, 0.0)
+            .total(1.0).message("Starting " + operation).build());
+
         // Simulate work with progress updates
         for (int i = 1; i <= duration; i++) {
             Thread.sleep(1000);
             double progress = (double) i / duration;
-            
-            exchange.progressNotification(new ProgressNotification(
-                progressToken, progress, 1.0, 
-                String.format("Processing... %d%%", (int)(progress * 100))));
+
+            exchange.progressNotification(ProgressNotification.builder(progressToken, progress)
+                .total(1.0).message(String.format("Processing... %d%%", (int)(progress * 100))).build());
         }
     }
     
@@ -144,20 +179,20 @@ public ReadResourceResult getLargeFile(
     
     if (progressToken != null) {
         // Track file reading progress
-        exchange.progressNotification(new ProgressNotification(
-            progressToken, 0.0, fileSize, "Reading file"));
+        exchange.progressNotification(ProgressNotification.builder(progressToken, 0.0)
+            .total(fileSize).message("Reading file").build());
     }
-    
+
     String content = readFileWithProgress(file, progressToken, exchange);
-    
+
     if (progressToken != null) {
-        exchange.progressNotification(new ProgressNotification(
-            progressToken, fileSize, fileSize, "File read complete"));
+        exchange.progressNotification(ProgressNotification.builder(progressToken, fileSize)
+            .total(fileSize).message("File read complete").build());
     }
-    
-    return new ReadResourceResult(List.of(
-        new TextResourceContents("large-file://" + path, "text/plain", content)
-    ));
+
+    return ReadResourceResult.builder(List.of(
+        TextResourceContents.builder("large-file://" + path, content).mimeType("text/plain").build()
+    )).build();
 }
 ----
 
@@ -170,8 +205,39 @@ Request context objects provide unified access to MCP request information and se
 * Provides unified interface for both stateful and stateless operations
 * Automatically injected when used as a parameter
 * Excluded from JSON schema generation
-* Enables advanced features like logging, progress notifications, sampling, and elicitation
+* Enables advanced features like logging, progress notifications, sampling, elicitation, and roots access
 * Works with both stateful (server exchange) and stateless (transport context) modes
+
+==== Context Getters
+
+Both `McpSyncRequestContext` and `McpAsyncRequestContext` expose the following read-only context:
+
+[cols="1,3"]
+|===
+|Method |Description
+
+|`request()`
+|The original MCP request (e.g., `CallToolRequest`, `ReadResourceRequest`). Use `request().progressToken()` to access the progress token.
+
+|`exchange()`
+|The underlying server exchange (`McpSyncServerExchange` / `McpAsyncServerExchange`). Available in stateful mode only; `null` in stateless mode.
+
+|`sessionId()`
+|The current session identifier.
+
+|`clientInfo()`
+|The client implementation info (`Implementation`).
+
+|`clientCapabilities()`
+|The capabilities declared by the client.
+
+|`requestMeta()`
+|Metadata map from the `_meta` field of the request. Prefer this over injecting `McpMeta` when already using a context object.
+
+|`transportContext()`
+|The transport-level context (`McpTransportContext`).
+
+|===
 
 ==== McpSyncRequestContext Features
 
@@ -215,7 +281,13 @@ public String advancedTool(
                 .modelPreferences(pref -> pref.modelHints("gpt-4"))
         );
     }
-    
+
+    // Access client root directories (only available in stateful mode)
+    if (context.rootsEnabled()) {
+        ListRootsResult roots = context.roots();
+        roots.roots().forEach(root -> context.info("Client root: " + root.uri()));
+    }
+
     return "Processed with advanced features";
 }
 ----
@@ -287,9 +359,9 @@ public ReadResourceResult statelessResource(
     // Access transport context if needed
     String data = loadData(id);
     
-    return new ReadResourceResult(List.of(
-        new TextResourceContents("stateless://" + id, "text/plain", data)
-    ));
+    return ReadResourceResult.builder(List.of(
+        TextResourceContents.builder("stateless://" + id, data).mimeType("text/plain").build()
+    )).build();
 }
 ----
 
@@ -371,18 +443,18 @@ public CallToolResult flexibleWithProgress(
     Map<String, Object> args = request.arguments();
     
     if (progressToken != null) {
-        exchange.progressNotification(new ProgressNotification(
-            progressToken, 0.0, 1.0, "Processing dynamic request"));
+        exchange.progressNotification(ProgressNotification.builder(progressToken, 0.0)
+            .total(1.0).message("Processing dynamic request").build());
     }
-    
+
     // Process dynamic arguments
     String result = processDynamicArgs(args);
-    
+
     if (progressToken != null) {
-        exchange.progressNotification(new ProgressNotification(
-            progressToken, 1.0, 1.0, "Complete"));
+        exchange.progressNotification(ProgressNotification.builder(progressToken, 1.0)
+            .total(1.0).message("Complete").build());
     }
-    
+
     return CallToolResult.builder()
         .addTextContent(result)
         .build();
@@ -395,11 +467,12 @@ public CallToolResult flexibleWithProgress(
 
 The following parameters are automatically injected by the framework:
 
-1. `McpMeta` - Metadata from the request
+1. `McpMeta` - Metadata from the `_meta` field of the request
 2. `@McpProgressToken String` - Progress token if available
-3. `McpSyncServerExchange` / `McpAsyncServerExchange` - Server exchange context
-4. `McpTransportContext` - Transport context for stateless operations
-5. `CallToolRequest` - Full tool request for dynamic schema
+3. `McpSyncRequestContext` / `McpAsyncRequestContext` - Unified request context (recommended)
+4. `McpSyncServerExchange` / `McpAsyncServerExchange` - Low-level server exchange context (stateful only)
+5. `McpTransportContext` - Transport context for stateless operations
+6. `CallToolRequest` - Full tool request for dynamic schema (tools only)
 
 === Schema Generation
 
@@ -449,15 +522,15 @@ public String safeProgress(
     
     // Always check if progress token is available
     if (progressToken != null) {
-        exchange.progressNotification(new ProgressNotification(
-            progressToken, 0.0, 1.0, "Starting"));
+        exchange.progressNotification(ProgressNotification.builder(progressToken, 0.0)
+            .total(1.0).message("Starting").build());
     }
-    
+
     // Perform work...
-    
+
     if (progressToken != null) {
-        exchange.progressNotification(new ProgressNotification(
-            progressToken, 1.0, 1.0, "Complete"));
+        exchange.progressNotification(ProgressNotification.builder(progressToken, 1.0)
+            .total(1.0).message("Complete").build());
     }
     
     return "Task completed";

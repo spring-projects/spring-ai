@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,10 +20,12 @@ import java.lang.reflect.Field;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.mcp.client.common.autoconfigure.NamedClientMcpTransport;
 import org.springframework.ai.mcp.client.webflux.transport.WebFluxSseClientTransport;
+import org.springframework.ai.mcp.customizer.McpClientCustomizer;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.FilteredClassLoader;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -33,6 +35,9 @@ import org.springframework.util.ReflectionUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.verify;
 
 /**
  * Tests for {@link SseWebFluxTransportAutoConfiguration}.
@@ -177,6 +182,18 @@ public class SseWebFluxTransportAutoConfigurationTests {
 			});
 	}
 
+	@Test
+	void customizerIsApplied() {
+		this.applicationContext.withUserConfiguration(CustomizerConfiguration.class)
+			.withPropertyValues("spring.ai.mcp.client.sse.connections.server1.url=http://localhost:8080")
+			.run(context -> {
+				assertThat(context.getBean("sseWebFluxClientTransports", List.class)).hasSize(1);
+				McpClientCustomizer<WebFluxSseClientTransport.Builder> customizer = context
+					.getBean(McpClientCustomizer.class);
+				verify(customizer).customize(eq("server1"), any(WebFluxSseClientTransport.Builder.class));
+			});
+	}
+
 	private String getSseEndpoint(WebFluxSseClientTransport transport) {
 		Field privateField = ReflectionUtils.findField(WebFluxSseClientTransport.class, "sseEndpoint");
 		ReflectionUtils.makeAccessible(privateField);
@@ -199,6 +216,17 @@ public class SseWebFluxTransportAutoConfigurationTests {
 		@Bean
 		JsonMapper jsonMapper() {
 			return new JsonMapper();
+		}
+
+	}
+
+	@Configuration
+	static class CustomizerConfiguration {
+
+		@Bean
+		@SuppressWarnings("unchecked")
+		McpClientCustomizer<WebFluxSseClientTransport.Builder> customizer() {
+			return Mockito.mock(McpClientCustomizer.class);
 		}
 
 	}

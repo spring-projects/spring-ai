@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,8 +25,6 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.google.genai.common.GoogleGenAiThinkingLevel;
@@ -43,11 +41,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * levels (MINIMAL, LOW, MEDIUM, HIGH).
  *
  * @author Dan Dobrin
+ * @author Sebastien Deleuze
  */
-@EnabledIfEnvironmentVariable(named = "GOOGLE_API_KEY", matches = ".*")
+@EnabledIfEnvironmentVariable(named = "GOOGLE_API_KEY", matches = ".+")
 class GoogleGenAiThinkingLevelIT {
-
-	private static final Logger logger = LoggerFactory.getLogger(GoogleGenAiThinkingLevelIT.class);
 
 	private Client genAiClient;
 
@@ -59,29 +56,28 @@ class GoogleGenAiThinkingLevelIT {
 
 	static Stream<Arguments> proModelUnsupportedLevels() {
 		return Stream.of(
-				Arguments.of(GoogleGenAiChatModel.ChatModel.GEMINI_3_PRO_PREVIEW.getValue(),
+				Arguments.of(GoogleGenAiChatModel.ChatModel.GEMINI_3_1_PRO_PREVIEW.getValue(),
 						GoogleGenAiThinkingLevel.MINIMAL),
-				Arguments.of(GoogleGenAiChatModel.ChatModel.GEMINI_3_PRO_PREVIEW.getValue(),
+				Arguments.of(GoogleGenAiChatModel.ChatModel.GEMINI_3_1_PRO_PREVIEW.getValue(),
 						GoogleGenAiThinkingLevel.MEDIUM));
 	}
 
 	static Stream<Arguments> proModelSupportedLevels() {
 		return Stream.of(
-				Arguments.of(GoogleGenAiChatModel.ChatModel.GEMINI_3_PRO_PREVIEW.getValue(),
+				Arguments.of(GoogleGenAiChatModel.ChatModel.GEMINI_3_1_PRO_PREVIEW.getValue(),
 						GoogleGenAiThinkingLevel.LOW),
-				Arguments.of(GoogleGenAiChatModel.ChatModel.GEMINI_3_PRO_PREVIEW.getValue(),
+				Arguments.of(GoogleGenAiChatModel.ChatModel.GEMINI_3_1_PRO_PREVIEW.getValue(),
 						GoogleGenAiThinkingLevel.HIGH));
 	}
 
 	static Stream<Arguments> flashModelAllLevels() {
 		return Stream.of(
-				Arguments.of(GoogleGenAiChatModel.ChatModel.GEMINI_3_FLASH_PREVIEW.getValue(),
+				Arguments.of(GoogleGenAiChatModel.ChatModel.GEMINI_3_5_FLASH.getValue(),
 						GoogleGenAiThinkingLevel.MINIMAL),
-				Arguments.of(GoogleGenAiChatModel.ChatModel.GEMINI_3_FLASH_PREVIEW.getValue(),
-						GoogleGenAiThinkingLevel.LOW),
-				Arguments.of(GoogleGenAiChatModel.ChatModel.GEMINI_3_FLASH_PREVIEW.getValue(),
+				Arguments.of(GoogleGenAiChatModel.ChatModel.GEMINI_3_5_FLASH.getValue(), GoogleGenAiThinkingLevel.LOW),
+				Arguments.of(GoogleGenAiChatModel.ChatModel.GEMINI_3_5_FLASH.getValue(),
 						GoogleGenAiThinkingLevel.MEDIUM),
-				Arguments.of(GoogleGenAiChatModel.ChatModel.GEMINI_3_FLASH_PREVIEW.getValue(),
+				Arguments.of(GoogleGenAiChatModel.ChatModel.GEMINI_3_5_FLASH.getValue(),
 						GoogleGenAiThinkingLevel.HIGH));
 	}
 
@@ -90,7 +86,7 @@ class GoogleGenAiThinkingLevelIT {
 	void testGemini3ProRejectsUnsupportedLevels(String modelName, GoogleGenAiThinkingLevel level) {
 		var chatModel = GoogleGenAiChatModel.builder()
 			.genAiClient(this.genAiClient)
-			.defaultOptions(GoogleGenAiChatOptions.builder().model(modelName).thinkingLevel(level).build())
+			.options(GoogleGenAiChatOptions.builder().model(modelName).thinkingLevel(level).build())
 			.toolCallingManager(ToolCallingManager.builder().build())
 			.observationRegistry(ObservationRegistry.NOOP)
 			.build();
@@ -100,8 +96,6 @@ class GoogleGenAiThinkingLevelIT {
 			.hasMessageContaining(level.name())
 			.hasMessageContaining("not supported")
 			.hasMessageContaining("Gemini 3 Pro");
-
-		logger.info("Correctly rejected ThinkingLevel.{} for model {}", level, modelName);
 	}
 
 	@ParameterizedTest
@@ -109,7 +103,7 @@ class GoogleGenAiThinkingLevelIT {
 	void testGemini3ProAcceptsSupportedLevels(String modelName, GoogleGenAiThinkingLevel level) {
 		var chatModel = GoogleGenAiChatModel.builder()
 			.genAiClient(this.genAiClient)
-			.defaultOptions(GoogleGenAiChatOptions.builder().model(modelName).thinkingLevel(level).build())
+			.options(GoogleGenAiChatOptions.builder().model(modelName).thinkingLevel(level).build())
 			.toolCallingManager(ToolCallingManager.builder().build())
 			.observationRegistry(ObservationRegistry.NOOP)
 			.build();
@@ -119,8 +113,6 @@ class GoogleGenAiThinkingLevelIT {
 		assertThat(response).isNotNull();
 		assertThat(response.getResult()).isNotNull();
 		assertThat(response.getResult().getOutput().getText()).isNotBlank();
-		logger.info("Successfully used ThinkingLevel.{} with model {}. Response: {}", level, modelName,
-				response.getResult().getOutput().getText());
 	}
 
 	@ParameterizedTest
@@ -128,7 +120,7 @@ class GoogleGenAiThinkingLevelIT {
 	void testGemini3FlashAcceptsAllLevels(String modelName, GoogleGenAiThinkingLevel level) {
 		var chatModel = GoogleGenAiChatModel.builder()
 			.genAiClient(this.genAiClient)
-			.defaultOptions(GoogleGenAiChatOptions.builder().model(modelName).thinkingLevel(level).build())
+			.options(GoogleGenAiChatOptions.builder().model(modelName).thinkingLevel(level).build())
 			.toolCallingManager(ToolCallingManager.builder().build())
 			.observationRegistry(ObservationRegistry.NOOP)
 			.build();
@@ -138,8 +130,6 @@ class GoogleGenAiThinkingLevelIT {
 		assertThat(response).isNotNull();
 		assertThat(response.getResult()).isNotNull();
 		assertThat(response.getResult().getOutput().getText()).isNotBlank();
-		logger.info("Successfully used ThinkingLevel.{} with model {}. Response: {}", level, modelName,
-				response.getResult().getOutput().getText());
 	}
 
 }

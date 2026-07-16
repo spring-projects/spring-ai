@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,13 +19,19 @@ package org.springframework.ai.transformers;
 import java.text.DecimalFormat;
 import java.util.List;
 
+import ai.djl.huggingface.tokenizers.HuggingFaceTokenizer;
+import ai.onnxruntime.OrtSession;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingResponse;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 /**
  * @author Christian Tzolov
@@ -97,6 +103,25 @@ public class TransformersEmbeddingModelTests {
 		assertThat(embeddingModel.dimensions()).isEqualTo(384);
 		// cached
 		assertThat(embeddingModel.dimensions()).isEqualTo(384);
+	}
+
+	@Test
+	void closeReleasesNativeResources() throws Exception {
+		TransformersEmbeddingModel embeddingModel = new TransformersEmbeddingModel();
+		HuggingFaceTokenizer tokenizer = mock(HuggingFaceTokenizer.class);
+		OrtSession session = mock(OrtSession.class);
+		ReflectionTestUtils.setField(embeddingModel, "tokenizer", tokenizer);
+		ReflectionTestUtils.setField(embeddingModel, "session", session);
+
+		embeddingModel.close();
+
+		verify(tokenizer).close();
+		verify(session).close();
+	}
+
+	@Test
+	void closeBeforeInitializationIsSafe() {
+		assertThatNoException().isThrownBy(() -> new TransformersEmbeddingModel().close());
 	}
 
 }

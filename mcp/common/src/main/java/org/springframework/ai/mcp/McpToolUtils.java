@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.springframework.ai.mcp;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiFunction;
@@ -27,6 +28,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.micrometer.common.util.StringUtils;
 import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.client.McpSyncClient;
+import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.server.McpServerFeatures;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
@@ -38,10 +40,11 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 import org.springframework.ai.chat.model.ToolContext;
-import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.ai.util.JacksonUtils;
+import org.springframework.ai.util.JsonHelper;
 import org.springframework.ai.util.json.schema.JsonSchemaUtils;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
@@ -68,6 +71,8 @@ import org.springframework.util.MimeType;
  * @author Ilayaperumal Gopinathan
  */
 public final class McpToolUtils {
+
+	private static final JsonHelper jsonHelper = new JsonHelper();
 
 	/**
 	 * The name of tool context key used to store the MCP exchange object.
@@ -129,7 +134,7 @@ public final class McpToolUtils {
 			return "";
 		}
 
-		return Stream.of(input.toLowerCase().split("_"))
+		return Stream.of(input.toLowerCase(Locale.ROOT).split("_"))
 			.filter(word -> !word.isEmpty())
 			.map(word -> String.valueOf(word.charAt(0)))
 			.collect(java.util.stream.Collectors.joining("_"));
@@ -239,39 +244,43 @@ public final class McpToolUtils {
 		return DefaultToolDefinition.builder()
 			.name(prefixedToolName)
 			.description(tool.description())
-			.inputSchema(JsonSchemaUtils.ensureValidInputSchema(ModelOptionsUtils.toJsonString(tool.inputSchema())))
+			.inputSchema(JsonSchemaUtils.ensureValidInputSchema(jsonHelper.toJson(tool.inputSchema())))
 			.build();
 	}
 
 	private static SharedSyncToolSpecification toSharedSyncToolSpecification(ToolCallback toolCallback,
 			@Nullable MimeType mimeType) {
 
-		var tool = McpSchema.Tool.builder()
-			.name(toolCallback.getToolDefinition().name())
+		var tool = McpSchema.Tool
+			.builder(toolCallback.getToolDefinition().name(),
+					new JacksonMcpJsonMapper(JacksonUtils.getDefaultJsonMapper()),
+					toolCallback.getToolDefinition().inputSchema())
 			.description(toolCallback.getToolDefinition().description())
-			.inputSchema(ModelOptionsUtils.jsonToObject(toolCallback.getToolDefinition().inputSchema(),
-					McpSchema.JsonSchema.class))
 			.build();
 
 		return new SharedSyncToolSpecification(tool, (exchangeOrContext, request) -> {
 			try {
-				String callResult = toolCallback.call(ModelOptionsUtils.toJsonString(request.arguments()),
+				String callResult = toolCallback.call(jsonHelper.toJson(request.arguments()),
 						new ToolContext(Map.of(TOOL_CONTEXT_MCP_EXCHANGE_KEY, exchangeOrContext)));
 				if (mimeType != null && mimeType.toString().startsWith("image")) {
-					McpSchema.Annotations annotations = new McpSchema.Annotations(List.of(Role.ASSISTANT), null);
+					McpSchema.Annotations annotations = McpSchema.Annotations.builder()
+						.audience(List.of(Role.ASSISTANT))
+						.build();
 					return McpSchema.CallToolResult.builder()
-						.content(List.of(new McpSchema.ImageContent(annotations, callResult, mimeType.toString())))
+						.content(List.of(McpSchema.ImageContent.builder(callResult, mimeType.toString())
+							.annotations(annotations)
+							.build()))
 						.isError(false)
 						.build();
 				}
 				return McpSchema.CallToolResult.builder()
-					.content(List.of(new McpSchema.TextContent(callResult)))
+					.content(List.of(McpSchema.TextContent.builder(callResult).build()))
 					.isError(false)
 					.build();
 			}
 			catch (Exception e) {
 				return McpSchema.CallToolResult.builder()
-					.content(List.of(new McpSchema.TextContent(e.getMessage())))
+					.content(List.of(McpSchema.TextContent.builder(e.getMessage()).build()))
 					.isError(true)
 					.build();
 			}

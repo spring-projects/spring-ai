@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,29 +20,23 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-import ch.qos.logback.classic.Logger;
-import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.read.ListAppender;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import org.junit.jupiter.api.BeforeEach;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.slf4j.LoggerFactory;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
+import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.ai.util.TextBlockAssertion;
 import org.springframework.core.ParameterizedTypeReference;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.springframework.ai.util.LoggingMarkers.SENSITIVE_DATA_MARKER;
 
 /**
  * @author Sebastian Ullrich
@@ -53,21 +47,6 @@ import static org.springframework.ai.util.LoggingMarkers.SENSITIVE_DATA_MARKER;
  */
 @ExtendWith(MockitoExtension.class)
 class BeanOutputConverterTest {
-
-	private ListAppender<ILoggingEvent> logAppender;
-
-	@Mock
-	private JsonMapper jsonMapperMock;
-
-	@BeforeEach
-	void beforeEach() {
-
-		var logger = (Logger) LoggerFactory.getLogger(BeanOutputConverter.class);
-
-		this.logAppender = new ListAppender<>();
-		this.logAppender.start();
-		logger.addAppender(this.logAppender);
-	}
 
 	@Test
 	void shouldHavePreConfiguredDefaultObjectMapper() {
@@ -146,6 +125,14 @@ class BeanOutputConverterTest {
 			@JsonProperty(required = true, value = "foo_property") String foo) {
 	}
 
+	record TestClassWithToolParam(@ToolParam(required = true, description = "A required field") String requiredField,
+
+			@ToolParam(required = false, description = "An optional field") String optionalField) {
+	}
+
+	record TestClassWithNullable(String requiredField, @Nullable String optionalField) {
+	}
+
 	@Nested
 	class ConverterTest {
 
@@ -154,19 +141,6 @@ class BeanOutputConverterTest {
 			var converter = new BeanOutputConverter<>(TestClass.class);
 			var testClass = converter.convert("{ \"someString\": \"some value\" }");
 			assertThat(testClass.getSomeString()).isEqualTo("some value");
-		}
-
-		@Test
-		void failToConvertInvalidJson() {
-			var converter = new BeanOutputConverter<>(TestClass.class);
-			assertThatThrownBy(() -> converter.convert("{invalid json")).hasMessageStartingWith("Unexpected character");
-			assertThat(BeanOutputConverterTest.this.logAppender.list).hasSize(1);
-			final var loggingEvent = BeanOutputConverterTest.this.logAppender.list.get(0);
-			assertThat(loggingEvent.getFormattedMessage())
-				.isEqualTo("Could not parse the given text to the desired target type: \"{invalid json\" into "
-						+ TestClass.class);
-
-			assertThat(loggingEvent.getMarkerList()).contains(SENSITIVE_DATA_MARKER);
 		}
 
 		@Test
@@ -203,7 +177,7 @@ class BeanOutputConverterTest {
 		}
 
 		@Test
-		void verifySchemaPropertyOrder() throws Exception {
+		void verifySchemaPropertyOrder() {
 			var converter = new BeanOutputConverter<>(TestClassWithJsonPropertyOrder.class);
 			String jsonSchema = converter.getJsonSchema();
 
@@ -461,7 +435,6 @@ class BeanOutputConverterTest {
 					      "description" : "string_property_description"
 					    }
 					  },
-					  "required" : [ "string_property" ],
 					  "additionalProperties" : false
 					}```
 					""");
@@ -482,7 +455,6 @@ class BeanOutputConverterTest {
 					      "description" : "string_property_description"
 					    }
 					  },
-					  "required" : [ "string_property" ],
 					  "additionalProperties" : false
 					}```
 					""");
@@ -490,25 +462,52 @@ class BeanOutputConverterTest {
 		// @checkstyle:on RegexpSinglelineJavaCheck
 
 		@Test
-		void normalizesLineEndingsClassType() {
-			var converter = new BeanOutputConverter<>(TestClass.class);
+		void formatClassTypeWithToolParamAnnotations() {
+			var converter = new BeanOutputConverter<>(TestClassWithToolParam.class);
+			String schema = converter.getJsonSchema();
+			JsonNode schemaNode = JsonMapper.shared().readTree(schema);
 
-			String formatOutput = converter.getFormat();
+			assertThat(schemaNode.get("required").toString()).contains("requiredField");
+			assertThat(schemaNode.get("required").toString()).doesNotContain("optionalField");
 
-			// validate that output contains \n line endings
-			assertThat(formatOutput).contains(System.lineSeparator()).doesNotContain("\r\n").doesNotContain("\r");
+			assertThat(schemaNode.get("properties").get("requiredField").get("description").asString())
+				.isEqualTo("A required field");
+			assertThat(schemaNode.get("properties").get("optionalField").get("description").asString())
+				.isEqualTo("An optional field");
 		}
 
 		@Test
-		void normalizesLineEndingsTypeReference() {
-			var converter = new BeanOutputConverter<>(new ParameterizedTypeReference<TestClass>() {
+		void formatClassTypeWithNullableAnnotation() {
+			var converter = new BeanOutputConverter<>(TestClassWithNullable.class);
+			String schema = converter.getJsonSchema();
+			JsonNode schemaNode = JsonMapper.shared().readTree(schema);
 
-			});
+			assertThat(schemaNode.get("required").toString()).contains("requiredField");
+			assertThat(schemaNode.get("required").toString()).doesNotContain("optionalField");
+		}
 
-			String formatOutput = converter.getFormat();
+		@Test
+		void formatUsesCustomGeneratedSchema() {
+			var converter = new BeanOutputConverter<>(TestClass.class) {
 
-			// validate that output contains \n line endings
-			assertThat(formatOutput).contains(System.lineSeparator()).doesNotContain("\r\n").doesNotContain("\r");
+				@Override
+				protected String generateSchema() {
+					return """
+							{
+							  "type" : "object",
+							  "properties" : {
+							    "customProperty" : {
+							      "type" : "string"
+							    }
+							  }
+							}
+							""";
+				}
+			};
+
+			assertThat(converter.getJsonSchema()).contains("\"customProperty\"");
+			assertThat(converter.getJsonSchema()).doesNotContain("\"someString\"");
+			assertThat(converter.getFormat()).contains("\"customProperty\"");
 		}
 
 	}

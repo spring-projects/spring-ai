@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -57,7 +57,6 @@ class PromptTests {
 		Prompt prompt = pt.create(model);
 		assertThat(prompt.getContents()).isNotNull();
 		assertThat(prompt.getInstructions()).isNotEmpty().hasSize(1);
-		System.out.println(prompt.getContents());
 
 		String systemTemplate = "You are a helpful assistant that translates {input_language} to {output_language}.";
 		// system_message_prompt = SystemMessagePromptTemplate.from_template(template)
@@ -105,7 +104,7 @@ class PromptTests {
 
 		Prompt copiedPrompt = prompt.copy();
 		assertThat(prompt).isNotSameAs(copiedPrompt);
-		assertThat(prompt.getOptions()).isNotSameAs(copiedPrompt.getOptions());
+		assertThat(prompt.getOptions()).isSameAs(copiedPrompt.getOptions());
 		assertThat(prompt.getInstructions()).isNotSameAs(copiedPrompt.getInstructions());
 	}
 
@@ -122,7 +121,7 @@ class PromptTests {
 
 		Prompt copiedPrompt = prompt.mutate().build();
 		assertThat(prompt).isNotSameAs(copiedPrompt);
-		assertThat(prompt.getOptions()).isNotSameAs(copiedPrompt.getOptions());
+		assertThat(prompt.getOptions()).isSameAs(copiedPrompt.getOptions());
 		assertThat(prompt.getInstructions()).isNotSameAs(copiedPrompt.getInstructions());
 	}
 

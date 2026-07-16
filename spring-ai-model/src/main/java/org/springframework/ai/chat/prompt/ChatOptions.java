@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -77,30 +77,13 @@ public interface ChatOptions extends ModelOptions {
 	@Nullable Double getTopP();
 
 	/**
-	 * Returns a copy of this {@link ChatOptions}.
-	 * @return a copy of this {@link ChatOptions}
-	 */
-	// TODO: can become default mutate().build()
-	<T extends ChatOptions> T copy();
-
-	/**
 	 * Returns a new {@link Builder} initialized with the values of this
 	 * {@link ChatOptions}.
 	 *
-	 * Concrete ChatOptions classes must override this to return the most concrete builder
-	 * implementation.
+	 * Concrete ChatOptions classes must implement this and return the most concrete
+	 * builder implementation.
 	 */
-	// TODO: change from default() to abstract once all models use customizers
-	default ChatOptions.Builder<?> mutate() {
-		throw new UnsupportedOperationException("mutate() must be overridden to return most concrete Builder");
-	}
-	/*
-	 * default ChatOptions.Builder<?> mutate() { return ChatOptions.builder()
-	 * .model(this.getModel()) .frequencyPenalty(this.getFrequencyPenalty())
-	 * .maxTokens(this.getMaxTokens()) .presencePenalty(this.getPresencePenalty())
-	 * .stopSequences(this.getStopSequences()) .temperature(this.getTemperature())
-	 * .topK(this.getTopK()) .topP(this.getTopP()); }
-	 */
+	ChatOptions.Builder<?> mutate();
 
 	/**
 	 * Creates a new {@link Builder} to create the default {@link ChatOptions}.
@@ -113,7 +96,9 @@ public interface ChatOptions extends ModelOptions {
 	/**
 	 * Builder for creating {@link ChatOptions} instance.
 	 */
-	interface Builder<B extends Builder<B>> {
+	interface Builder<B extends Builder<B>> extends Cloneable {
+
+		B clone();
 
 		/**
 		 * Builds with the model to use for the chat.

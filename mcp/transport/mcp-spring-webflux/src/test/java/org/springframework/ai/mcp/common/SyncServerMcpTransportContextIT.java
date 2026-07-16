@@ -1,5 +1,5 @@
 /*
- * Copyright 2026-2026 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -133,8 +133,7 @@ public class SyncServerMcpTransportContextIT {
 
 	private McpSyncClient sseClient;
 
-	private final McpSchema.Tool tool = McpSchema.Tool.builder()
-		.name("test-tool")
+	private final McpSchema.Tool tool = McpSchema.Tool.builder("test-tool", Map.of())
 		.description("return the value of the x-test header from call tool request")
 		.build();
 
@@ -176,7 +175,7 @@ public class SyncServerMcpTransportContextIT {
 
 		CLIENT_SIDE_HEADER_VALUE_HOLDER.set("some important value");
 		McpSchema.CallToolResult response = this.streamableClient
-			.callTool(new McpSchema.CallToolRequest("test-tool", Map.of()));
+			.callTool(McpSchema.CallToolRequest.builder("test-tool").build());
 
 		assertThat(response).isNotNull();
 		assertThat(response.content()).hasSize(1)
@@ -185,7 +184,7 @@ public class SyncServerMcpTransportContextIT {
 			.extracting(McpSchema.TextContent::text)
 			.isEqualTo("some important value");
 
-		mcpServer.close();
+		mcpServer.closeGracefully();
 	}
 
 	@Test
@@ -203,7 +202,7 @@ public class SyncServerMcpTransportContextIT {
 
 		CLIENT_SIDE_HEADER_VALUE_HOLDER.set("some important value");
 		McpSchema.CallToolResult response = this.streamableClient
-			.callTool(new McpSchema.CallToolRequest("test-tool", Map.of()));
+			.callTool(McpSchema.CallToolRequest.builder("test-tool").build());
 
 		assertThat(response).isNotNull();
 		assertThat(response.content()).hasSize(1)
@@ -212,7 +211,7 @@ public class SyncServerMcpTransportContextIT {
 			.extracting(McpSchema.TextContent::text)
 			.isEqualTo("some important value");
 
-		mcpServer.close();
+		mcpServer.closeGracefully();
 	}
 
 	@Test
@@ -229,7 +228,7 @@ public class SyncServerMcpTransportContextIT {
 
 		CLIENT_SIDE_HEADER_VALUE_HOLDER.set("some important value");
 		McpSchema.CallToolResult response = this.sseClient
-			.callTool(new McpSchema.CallToolRequest("test-tool", Map.of()));
+			.callTool(McpSchema.CallToolRequest.builder("test-tool").build());
 
 		assertThat(response).isNotNull();
 		assertThat(response.content()).hasSize(1)
@@ -238,7 +237,7 @@ public class SyncServerMcpTransportContextIT {
 			.extracting(McpSchema.TextContent::text)
 			.isEqualTo("some important value");
 
-		mcpServer.close();
+		mcpServer.closeGracefully();
 	}
 
 	private void startHttpServer(RouterFunction<?> routerFunction) {

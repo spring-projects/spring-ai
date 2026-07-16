@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2026 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import org.jspecify.annotations.Nullable;
 import software.amazon.awssdk.services.s3vectors.S3VectorsClient;
@@ -123,7 +122,7 @@ public class S3VectorStore extends AbstractObservationVectorStore implements Ini
 			.vectors()
 			.stream()
 			.map(QueryOutputVector::key)
-			.collect(Collectors.toList());
+			.toList();
 
 		this.s3VectorsClient.deleteVectors(DeleteVectorsRequest.builder()
 			.vectorBucketName(this.vectorBucketName)
@@ -155,7 +154,7 @@ public class S3VectorStore extends AbstractObservationVectorStore implements Ini
 		requestBuilder.queryVector(vectorData);
 
 		QueryVectorsResponse response = this.s3VectorsClient.queryVectors(requestBuilder.build());
-		return response.vectors().stream().map(this::toDocument).collect(Collectors.toList());
+		return response.vectors().stream().map(this::toDocument).toList();
 	}
 
 	private Document toDocument(QueryOutputVector vector) {

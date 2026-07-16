@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,8 @@
 
 package org.springframework.ai.vectorstore.milvus.autoconfigure;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.vectorstore.milvus.MilvusVectorStore;
 import org.springframework.ai.vectorstore.properties.CommonVectorStoreProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -26,6 +28,7 @@ import org.springframework.util.Assert;
  *
  * @author Christian Tzolov
  * @author Ilayaperumal Gopinathan
+ * @author Taewoong Kim
  */
 @ConfigurationProperties(MilvusVectorStoreProperties.CONFIG_PREFIX)
 public class MilvusVectorStoreProperties extends CommonVectorStoreProperties {
@@ -41,6 +44,12 @@ public class MilvusVectorStoreProperties extends CommonVectorStoreProperties {
 	 * Milvus collection name to store the vectors.
 	 */
 	private String collectionName = MilvusVectorStore.DEFAULT_COLLECTION_NAME;
+
+	/**
+	 * The Milvus partition name to scope insert, delete, and search operations to. When
+	 * unset or blank, Milvus default behavior is used.
+	 */
+	private @Nullable String partitionName;
 
 	/**
 	 * The dimension of the vectors to be stored in the Milvus collection.
@@ -103,6 +112,17 @@ public class MilvusVectorStoreProperties extends CommonVectorStoreProperties {
 	public void setCollectionName(String collectionName) {
 		Assert.hasText(collectionName, "Collection name should not be empty.");
 		this.collectionName = collectionName;
+	}
+
+	/**
+	 * @since 2.0.1
+	 */
+	public @Nullable String getPartitionName() {
+		return this.partitionName;
+	}
+
+	public void setPartitionName(@Nullable String partitionName) {
+		this.partitionName = partitionName;
 	}
 
 	public int getEmbeddingDimension() {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,18 +17,19 @@
 package org.springframework.ai.mcp.client.common.autoconfigure.annotations;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 import io.modelcontextprotocol.spec.McpSchema;
 import org.junit.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.springaicommunity.mcp.annotation.McpPromptListChanged;
-import org.springaicommunity.mcp.annotation.McpResourceListChanged;
-import org.springaicommunity.mcp.annotation.McpToolListChanged;
 import reactor.core.publisher.Mono;
 
+import org.springframework.ai.mcp.annotation.McpPromptListChanged;
+import org.springframework.ai.mcp.annotation.McpResourceListChanged;
+import org.springframework.ai.mcp.annotation.McpToolListChanged;
 import org.springframework.ai.mcp.annotation.spring.ClientMcpAsyncHandlersRegistry;
 import org.springframework.ai.mcp.annotation.spring.ClientMcpSyncHandlersRegistry;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -63,14 +64,14 @@ public class McpClientListChangedAnnotationsScanningIT {
 				var handlers = context.getBean(TestListChangedHandlers.class);
 				assertThat(registry).isNotNull();
 
-				List<McpSchema.Tool> updatedTools = List.of(McpSchema.Tool.builder().name("tool-1").build(),
-						McpSchema.Tool.builder().name("tool-2").build());
+				List<McpSchema.Tool> updatedTools = List.of(McpSchema.Tool.builder("tool-1", Map.of()).build(),
+						McpSchema.Tool.builder("tool-2", Map.of()).build());
 				List<McpSchema.Prompt> updatedPrompts = List.of(
-						new McpSchema.Prompt("prompt-1", "a test prompt", Collections.emptyList()),
-						new McpSchema.Prompt("prompt-2", "another test prompt", Collections.emptyList()));
+						McpSchema.Prompt.builder("prompt-1").description("a test prompt").build(),
+						McpSchema.Prompt.builder("prompt-2").description("another test prompt").build());
 				List<McpSchema.Resource> updatedResources = List.of(
-						McpSchema.Resource.builder().name("resource-1").uri("file:///resource/1").build(),
-						McpSchema.Resource.builder().name("resource-2").uri("file:///resource/2").build());
+						McpSchema.Resource.builder("resource-1", "file:///resource/1").build(),
+						McpSchema.Resource.builder("resource-2", "file:///resource/2").build());
 
 				registry.handleToolListChanged("test-client", updatedTools);
 				registry.handleResourceListChanged("test-client", updatedResources);
@@ -94,14 +95,14 @@ public class McpClientListChangedAnnotationsScanningIT {
 				var handlers = context.getBean(TestListChangedHandlers.class);
 				assertThat(registry).isNotNull();
 
-				List<McpSchema.Tool> updatedTools = List.of(McpSchema.Tool.builder().name("tool-1").build(),
-						McpSchema.Tool.builder().name("tool-2").build());
+				List<McpSchema.Tool> updatedTools = List.of(McpSchema.Tool.builder("tool-1", Map.of()).build(),
+						McpSchema.Tool.builder("tool-2", Map.of()).build());
 				List<McpSchema.Prompt> updatedPrompts = List.of(
-						new McpSchema.Prompt("prompt-1", "a test prompt", Collections.emptyList()),
-						new McpSchema.Prompt("prompt-2", "another test prompt", Collections.emptyList()));
+						McpSchema.Prompt.builder("prompt-1").description("a test prompt").build(),
+						McpSchema.Prompt.builder("prompt-2").description("another test prompt").build());
 				List<McpSchema.Resource> updatedResources = List.of(
-						McpSchema.Resource.builder().name("resource-1").uri("file:///resource/1").build(),
-						McpSchema.Resource.builder().name("resource-2").uri("file:///resource/2").build());
+						McpSchema.Resource.builder("resource-1", "file:///resource/1").build(),
+						McpSchema.Resource.builder("resource-2", "file:///resource/2").build());
 
 				registry.handleToolListChanged("test-client", updatedTools).block();
 				registry.handleResourceListChanged("test-client", updatedResources).block();
@@ -118,7 +119,7 @@ public class McpClientListChangedAnnotationsScanningIT {
 	@ParameterizedTest
 	@ValueSource(strings = { "SYNC", "ASYNC" })
 	void shouldNotScanAnnotationsWhenScannerDisabled(String clientType) {
-		String prefix = clientType.toLowerCase();
+		String prefix = clientType.toLowerCase(Locale.ROOT);
 
 		this.contextRunner.withUserConfiguration(AllListChangedConfiguration.class)
 			.withPropertyValues("spring.ai.mcp.client.type=" + clientType,

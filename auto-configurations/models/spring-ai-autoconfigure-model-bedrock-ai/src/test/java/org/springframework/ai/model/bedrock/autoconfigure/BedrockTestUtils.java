@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,12 +29,16 @@ public final class BedrockTestUtils {
 	} // Prevent instantiation
 
 	public static ApplicationContextRunner getContextRunner() {
-		return new ApplicationContextRunner()
+		ApplicationContextRunner runner = new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.bedrock.aws.access-key=" + System.getenv("AWS_ACCESS_KEY_ID"),
 					"spring.ai.bedrock.aws.secret-key=" + System.getenv("AWS_SECRET_ACCESS_KEY"),
-					"spring.ai.bedrock.aws.session-token=" + System.getenv("AWS_SESSION_TOKEN"),
 					"spring.ai.bedrock.aws.region=" + Region.US_EAST_1.id())
 			.withUserConfiguration(Config.class);
+		String sessionToken = System.getenv("AWS_SESSION_TOKEN");
+		if (sessionToken != null) {
+			runner = runner.withPropertyValues("spring.ai.bedrock.aws.session-token=" + sessionToken);
+		}
+		return runner;
 	}
 
 	public static ApplicationContextRunner getContextRunnerWithUserConfiguration() {

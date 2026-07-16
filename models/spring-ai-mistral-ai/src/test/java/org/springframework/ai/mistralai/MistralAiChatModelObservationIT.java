@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2026 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,6 +51,7 @@ import static org.springframework.ai.chat.observation.ChatModelObservationDocume
  * @author Thomas Vitale
  * @author Alexandros Pappas
  * @author Jason Smith
+ * @author Sebastien Deleuze
  */
 @SpringBootTest(classes = MistralAiChatModelObservationIT.Config.class)
 @EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".+")
@@ -77,18 +78,18 @@ public class MistralAiChatModelObservationIT {
 			.topP(1.0)
 			.presencePenalty(0.0)
 			.frequencyPenalty(0.0)
-			.n(2)
 			.build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
 
 		ChatResponse chatResponse = this.chatModel.call(prompt);
+		assertThat(chatResponse.getResult()).isNotNull();
 		assertThat(chatResponse.getResult().getOutput().getText()).isNotEmpty();
 
 		ChatResponseMetadata responseMetadata = chatResponse.getMetadata();
 		assertThat(responseMetadata).isNotNull();
 
-		validate(responseMetadata);
+		validate(responseMetadata, false);
 	}
 
 	@Test
@@ -101,7 +102,6 @@ public class MistralAiChatModelObservationIT {
 			.topP(1.0)
 			.presencePenalty(0.0)
 			.frequencyPenalty(0.0)
-			.n(2)
 			.build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
@@ -123,11 +123,11 @@ public class MistralAiChatModelObservationIT {
 		ChatResponseMetadata responseMetadata = lastChatResponse.getMetadata();
 		assertThat(responseMetadata).isNotNull();
 
-		validate(responseMetadata);
+		validate(responseMetadata, true);
 	}
 
-	private void validate(ChatResponseMetadata responseMetadata) {
-		TestObservationRegistryAssert.assertThat(this.observationRegistry)
+	private void validate(ChatResponseMetadata responseMetadata, boolean streaming) {
+		var observationAssert = TestObservationRegistryAssert.assertThat(this.observationRegistry)
 			.doesNotHaveAnyRemainingCurrentObservation()
 			.hasObservationWithNameEqualTo(DefaultChatModelObservationConvention.DEFAULT_NAME)
 			.that()
@@ -169,6 +169,13 @@ public class MistralAiChatModelObservationIT {
 					String.valueOf(responseMetadata.getUsage().getTotalTokens()))
 			.hasBeenStarted()
 			.hasBeenStopped();
+		if (streaming) {
+			observationAssert.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_STREAM.asString(), "true");
+		}
+		else {
+			observationAssert
+				.doesNotHaveHighCardinalityKeyValueWithKey(HighCardinalityKeyNames.REQUEST_STREAM.asString());
+		}
 	}
 
 	@SpringBootConfiguration
@@ -189,7 +196,7 @@ public class MistralAiChatModelObservationIT {
 				TestObservationRegistry observationRegistry) {
 			return MistralAiChatModel.builder()
 				.mistralAiApi(mistralAiApi)
-				.defaultOptions(MistralAiChatOptions.builder().build())
+				.options(MistralAiChatOptions.builder().build())
 				.retryTemplate(new RetryTemplate())
 				.observationRegistry(observationRegistry)
 				.build();

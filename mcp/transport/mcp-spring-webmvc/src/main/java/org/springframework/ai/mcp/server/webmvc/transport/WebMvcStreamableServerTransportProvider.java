@@ -1,5 +1,5 @@
 /*
- * Copyright 2026-2026 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ package org.springframework.ai.mcp.server.webmvc.transport;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -39,9 +38,9 @@ import io.modelcontextprotocol.spec.McpStreamableServerTransportProvider;
 import io.modelcontextprotocol.spec.ProtocolVersions;
 import io.modelcontextprotocol.util.Assert;
 import io.modelcontextprotocol.util.KeepAliveScheduler;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -70,7 +69,7 @@ import org.springframework.web.servlet.function.ServerResponse.SseBuilder;
  */
 public final class WebMvcStreamableServerTransportProvider implements McpStreamableServerTransportProvider {
 
-	private static final Logger logger = LoggerFactory.getLogger(WebMvcStreamableServerTransportProvider.class);
+	private static final Log logger = LogFactory.getLog(WebMvcStreamableServerTransportProvider.class);
 
 	/**
 	 * Event type for JSON-RPC messages sent through the SSE connection.
@@ -193,7 +192,9 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 			return Mono.empty();
 		}
 
-		logger.debug("Attempting to broadcast message to {} active sessions", this.sessions.size());
+		if (logger.isDebugEnabled()) {
+			logger.debug("Attempting to broadcast message to " + this.sessions.size() + " active sessions");
+		}
 
 		return Mono.fromRunnable(() -> {
 			this.sessions.values().parallelStream().forEach(session -> {
@@ -201,9 +202,25 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 					session.sendNotification(method, params).block();
 				}
 				catch (Exception e) {
-					logger.error("Failed to send message to session {}: {}", session.getId(), e.getMessage());
+					if (logger.isErrorEnabled()) {
+						logger.error("Failed to send message to session " + session.getId() + ": " + e.getMessage());
+					}
 				}
 			});
+		});
+	}
+
+	@Override
+	public Mono<Void> notifyClient(String sessionId, String method, Object params) {
+		return Mono.defer(() -> {
+			McpStreamableServerSession session = this.sessions.get(sessionId);
+			if (session == null) {
+				if (logger.isDebugEnabled()) {
+					logger.debug("Session " + sessionId + " not found");
+				}
+				return Mono.empty();
+			}
+			return session.sendNotification(method, params);
 		});
 	}
 
@@ -215,14 +232,18 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 	public Mono<Void> closeGracefully() {
 		return Mono.fromRunnable(() -> {
 			this.isClosing = true;
-			logger.debug("Initiating graceful shutdown with {} active sessions", this.sessions.size());
+			if (logger.isDebugEnabled()) {
+				logger.debug("Initiating graceful shutdown with " + this.sessions.size() + " active sessions");
+			}
 
 			this.sessions.values().parallelStream().forEach(session -> {
 				try {
 					session.closeGracefully().block();
 				}
 				catch (Exception e) {
-					logger.error("Failed to close session {}: {}", session.getId(), e.getMessage());
+					if (logger.isErrorEnabled()) {
+						logger.error("Failed to close session " + session.getId() + ": " + e.getMessage());
+					}
 				}
 			});
 
@@ -260,7 +281,7 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 		}
 
 		try {
-			Map<String, List<String>> headers = request.headers().asHttpHeaders().asMultiValueMap();
+			var headers = HeaderUtils.collectHeaders(request);
 			this.securityValidator.validateHeaders(headers);
 		}
 		catch (ServerTransportSecurityException e) {
@@ -286,11 +307,17 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 			return ServerResponse.notFound().build();
 		}
 
-		logger.debug("Handling GET request for session: {}", sessionId);
+		if (logger.isDebugEnabled()) {
+			logger.debug("Handling GET request for session: " + sessionId);
+		}
 
 		try {
 			return ServerResponse.sse(sseBuilder -> {
-				sseBuilder.onTimeout(() -> logger.debug("SSE connection timed out for session: {}", sessionId));
+				sseBuilder.onTimeout(() -> {
+					if (logger.isDebugEnabled()) {
+						logger.debug("SSE connection timed out for session: " + sessionId);
+					}
+				});
 
 				WebMvcStreamableMcpSessionTransport sessionTransport = new WebMvcStreamableMcpSessionTransport(
 						sessionId, sseBuilder);
@@ -310,13 +337,17 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 										.block();
 								}
 								catch (Exception e) {
-									logger.error("Failed to replay message: {}", e.getMessage());
+									if (logger.isErrorEnabled()) {
+										logger.error("Failed to replay message: " + e.getMessage());
+									}
 									sseBuilder.error(e);
 								}
 							});
 					}
 					catch (Exception e) {
-						logger.error("Failed to replay messages: {}", e.getMessage());
+						if (logger.isErrorEnabled()) {
+							logger.error("Failed to replay messages: " + e.getMessage());
+						}
 						sseBuilder.error(e);
 					}
 				}
@@ -326,14 +357,18 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 						.listeningStream(sessionTransport);
 
 					sseBuilder.onComplete(() -> {
-						logger.debug("SSE connection completed for session: {}", sessionId);
+						if (logger.isDebugEnabled()) {
+							logger.debug("SSE connection completed for session: " + sessionId);
+						}
 						listeningStream.close();
 					});
 				}
 			}, Duration.ZERO);
 		}
 		catch (Exception e) {
-			logger.error("Failed to handle GET request for session {}: {}", sessionId, e.getMessage());
+			if (logger.isErrorEnabled()) {
+				logger.error("Failed to handle GET request for session " + sessionId + ": " + e.getMessage());
+			}
 			return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
 		}
 	}
@@ -349,7 +384,7 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 		}
 
 		try {
-			Map<String, List<String>> headers = request.headers().asHttpHeaders().asMultiValueMap();
+			var headers = HeaderUtils.collectHeaders(request);
 			this.securityValidator.validateHeaders(headers);
 		}
 		catch (ServerTransportSecurityException e) {
@@ -398,7 +433,9 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 								null));
 				}
 				catch (Exception e) {
-					logger.error("Failed to initialize session: {}", e.getMessage());
+					if (logger.isErrorEnabled()) {
+						logger.error("Failed to initialize session: " + e.getMessage());
+					}
 					return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
 						.body(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR).message(e.getMessage()).build());
 				}
@@ -437,10 +474,16 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 			else if (message instanceof McpSchema.JSONRPCRequest jsonrpcRequest) {
 				// For streaming responses, we need to return SSE
 				return ServerResponse.sse(sseBuilder -> {
-					sseBuilder
-						.onComplete(() -> logger.debug("Request response stream completed for session: {}", sessionId));
-					sseBuilder
-						.onTimeout(() -> logger.debug("Request response stream timed out for session: {}", sessionId));
+					sseBuilder.onComplete(() -> {
+						if (logger.isDebugEnabled()) {
+							logger.debug("Request response stream completed for session: " + sessionId);
+						}
+					});
+					sseBuilder.onTimeout(() -> {
+						if (logger.isDebugEnabled()) {
+							logger.debug("Request response stream timed out for session: " + sessionId);
+						}
+					});
 
 					WebMvcStreamableMcpSessionTransport sessionTransport = new WebMvcStreamableMcpSessionTransport(
 							sessionId, sseBuilder);
@@ -451,7 +494,9 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 							.block();
 					}
 					catch (Exception e) {
-						logger.error("Failed to handle request stream: {}", e.getMessage());
+						if (logger.isErrorEnabled()) {
+							logger.error("Failed to handle request stream: " + e.getMessage());
+						}
 						sseBuilder.error(e);
 					}
 				}, Duration.ZERO);
@@ -464,12 +509,16 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 			}
 		}
 		catch (IllegalArgumentException | IOException e) {
-			logger.error("Failed to deserialize message: {}", e.getMessage());
+			if (logger.isErrorEnabled()) {
+				logger.error("Failed to deserialize message: " + e.getMessage());
+			}
 			return ServerResponse.badRequest()
 				.body(McpError.builder(McpSchema.ErrorCodes.INVALID_REQUEST).message("Invalid message format").build());
 		}
 		catch (Exception e) {
-			logger.error("Error handling message: {}", e.getMessage());
+			if (logger.isErrorEnabled()) {
+				logger.error("Error handling message: " + e.getMessage());
+			}
 			return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
 				.body(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR).message(e.getMessage()).build());
 		}
@@ -486,7 +535,7 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 		}
 
 		try {
-			Map<String, List<String>> headers = request.headers().asHttpHeaders().asMultiValueMap();
+			var headers = HeaderUtils.collectHeaders(request);
 			this.securityValidator.validateHeaders(headers);
 		}
 		catch (ServerTransportSecurityException e) {
@@ -517,7 +566,9 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 			return ServerResponse.ok().build();
 		}
 		catch (Exception e) {
-			logger.error("Failed to delete session {}: {}", sessionId, e.getMessage());
+			if (logger.isErrorEnabled()) {
+				logger.error("Failed to delete session " + sessionId + ": " + e.getMessage());
+			}
 			return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
 				.body(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR).message(e.getMessage()).build());
 		}
@@ -554,7 +605,9 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 		WebMvcStreamableMcpSessionTransport(String sessionId, SseBuilder sseBuilder) {
 			this.sessionId = sessionId;
 			this.sseBuilder = sseBuilder;
-			logger.debug("Streamable session transport {} initialized with SSE builder", sessionId);
+			if (logger.isDebugEnabled()) {
+				logger.debug("Streamable session transport " + sessionId + " initialized with SSE builder");
+			}
 		}
 
 		/**
@@ -578,14 +631,18 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 		public Mono<Void> sendMessage(McpSchema.JSONRPCMessage message, @Nullable String messageId) {
 			return Mono.fromRunnable(() -> {
 				if (this.closed) {
-					logger.debug("Attempted to send message to closed session: {}", this.sessionId);
+					if (logger.isDebugEnabled()) {
+						logger.debug("Attempted to send message to closed session: " + this.sessionId);
+					}
 					return;
 				}
 
 				this.lock.lock();
 				try {
 					if (this.closed) {
-						logger.debug("Session {} was closed during message send attempt", this.sessionId);
+						if (logger.isDebugEnabled()) {
+							logger.debug("Session " + this.sessionId + " was closed during message send attempt");
+						}
 						return;
 					}
 
@@ -593,16 +650,22 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 					this.sseBuilder.id(messageId != null ? messageId : this.sessionId)
 						.event(MESSAGE_EVENT_TYPE)
 						.data(jsonText);
-					logger.debug("Message sent to session {} with ID {}", this.sessionId, messageId);
+					if (logger.isDebugEnabled()) {
+						logger.debug("Message sent to session " + this.sessionId + " with ID " + messageId);
+					}
 				}
 				catch (Exception e) {
-					logger.error("Failed to send message to session {}: {}", this.sessionId, e.getMessage());
+					if (logger.isErrorEnabled()) {
+						logger.error("Failed to send message to session " + this.sessionId + ": " + e.getMessage());
+					}
 					try {
 						this.sseBuilder.error(e);
 					}
 					catch (Exception errorException) {
-						logger.error("Failed to send error to SSE builder for session {}: {}", this.sessionId,
-								errorException.getMessage());
+						if (logger.isErrorEnabled()) {
+							logger.error("Failed to send error to SSE builder for session " + this.sessionId + ": "
+									+ errorException.getMessage());
+						}
 					}
 				}
 				finally {
@@ -640,17 +703,23 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 			this.lock.lock();
 			try {
 				if (this.closed) {
-					logger.debug("Session transport {} already closed", this.sessionId);
+					if (logger.isDebugEnabled()) {
+						logger.debug("Session transport " + this.sessionId + " already closed");
+					}
 					return;
 				}
 
 				this.closed = true;
 
 				this.sseBuilder.complete();
-				logger.debug("Successfully completed SSE builder for session {}", this.sessionId);
+				if (logger.isDebugEnabled()) {
+					logger.debug("Successfully completed SSE builder for session " + this.sessionId);
+				}
 			}
 			catch (Exception e) {
-				logger.warn("Failed to complete SSE builder for session {}: {}", this.sessionId, e.getMessage());
+				if (logger.isWarnEnabled()) {
+					logger.warn("Failed to complete SSE builder for session " + this.sessionId + ": " + e.getMessage());
+				}
 			}
 			finally {
 				this.lock.unlock();
@@ -714,7 +783,7 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 		/**
 		 * Sets the context extractor that allows providing the MCP feature
 		 * implementations to inspect HTTP transport level metadata that was present at
-		 * HTTP request processing time. This allows to extract custom headers and other
+		 * HTTP request processing time. This allows extracting custom headers and other
 		 * useful data for use during execution later on in the process.
 		 * @param contextExtractor The contextExtractor to fill in a
 		 * {@link McpTransportContext}.

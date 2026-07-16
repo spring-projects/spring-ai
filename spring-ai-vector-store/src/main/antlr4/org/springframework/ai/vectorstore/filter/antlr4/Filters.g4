@@ -2,7 +2,7 @@ grammar Filters;
 
 @header {
 /*
- * Copyright 2023-2023 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,9 +46,9 @@ compare:
     EQUALS | GT | GE | LT | LE | NE;
 
 identifier
-    : IDENTIFIER DOT IDENTIFIER
-    | IDENTIFIER
-    | QUOTED_STRING
+    : IDENTIFIER DOT IDENTIFIER		# CompoundIdentifier
+    | IDENTIFIER					# SimpleIdentifier
+    | QUOTED_STRING					# QuotedIdentifier
     ;
 
 constant

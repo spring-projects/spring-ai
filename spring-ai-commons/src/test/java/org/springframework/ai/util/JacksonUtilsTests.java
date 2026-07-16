@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package org.springframework.ai.util;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
 
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -49,7 +50,29 @@ class JacksonUtilsTests {
 
 	}
 
+	@Test
+	void shouldGetJsonMapper() {
+		var jsonMapper = JacksonUtils.getDefaultJsonMapper();
+		Assertions.assertThat(jsonMapper).isNotNull();
+	}
+
+	@Test
+	void shouldDeserializeEmptyStringToNullEnum() throws Exception {
+		var jsonMapper = JacksonUtils.getDefaultJsonMapper();
+		var output = jsonMapper.readValue("{\"myEnum\":\"\"}", MyRecord.class);
+		assertThat(output.myEnum()).isNull();
+	}
+
 	record Cell(String name, Duration lifespan) {
+	}
+
+	record MyRecord(MyEnum myEnum) {
+	}
+
+	enum MyEnum {
+
+		A, B
+
 	}
 
 }

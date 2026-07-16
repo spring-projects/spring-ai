@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -129,6 +129,10 @@ public class TokenTextSplitter extends TextSplitter {
 		Assert.notNull(encodingType, "encodingType must not be null");
 		Assert.isTrue(chunkOverlap < chunkSize, "chunk overlap must be less than chunk size");
 		Assert.notEmpty(punctuationMarks, "punctuationMarks must not be empty");
+		Assert.isTrue(chunkSize > 0, "chunkSize must be greater than zero");
+		Assert.isTrue(maxNumChunks > 0, "maxNumChunks must be greater than zero");
+		Assert.isTrue(minChunkSizeChars >= 0, "minChunkSizeChars must not be negative");
+		Assert.isTrue(minChunkLengthToEmbed >= 0, "minChunkLengthToEmbed must not be negative");
 		this.encoding = this.registry.getEncoding(encodingType);
 		this.chunkSize = chunkSize;
 		this.chunkOverlap = chunkOverlap;

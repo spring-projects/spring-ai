@@ -1,5 +1,5 @@
 /*
- * Copyright 2026-2026 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ package org.springframework.ai.mcp.server.webflux.transport;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -38,9 +37,9 @@ import io.modelcontextprotocol.spec.McpServerTransportProvider;
 import io.modelcontextprotocol.spec.ProtocolVersions;
 import io.modelcontextprotocol.util.Assert;
 import io.modelcontextprotocol.util.KeepAliveScheduler;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import reactor.core.Exceptions;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.FluxSink;
@@ -90,11 +89,16 @@ import org.springframework.web.util.UriComponentsBuilder;
  * @author Dariusz Jędrzejczyk
  * @see McpServerTransport
  * @see ServerSentEvent
+ * @deprecated The SSE transport has been deprecated in the 2025-03-26 version of the
+ * spec, and should not be used anymore. We keep it for backwards compatibility.
+ * @see <a href=
+ * "https://modelcontextprotocol.io/specification/2025-11-25/basic/transports#backwards-compatibility">Transports
+ * backwards compatibility</a>
  */
-
+@Deprecated(since = "2.0.0", forRemoval = true)
 public final class WebFluxSseServerTransportProvider implements McpServerTransportProvider {
 
-	private static final Logger logger = LoggerFactory.getLogger(WebFluxSseServerTransportProvider.class);
+	private static final Log logger = LogFactory.getLog(WebFluxSseServerTransportProvider.class);
 
 	/**
 	 * Event type for JSON-RPC messages sent through the SSE connection.
@@ -240,19 +244,50 @@ public final class WebFluxSseServerTransportProvider implements McpServerTranspo
 			return Mono.empty();
 		}
 
-		logger.debug("Attempting to broadcast message to {} active sessions", this.sessions.size());
+		if (logger.isDebugEnabled()) {
+			logger.debug("Attempting to broadcast message to " + this.sessions.size() + " active sessions");
+		}
 
 		return Flux.fromIterable(this.sessions.values())
-			.flatMap(session -> session.sendNotification(method, params)
-				.doOnError(
-						e -> logger.error("Failed to send message to session {}: {}", session.getId(), e.getMessage()))
-				.onErrorComplete())
+			.flatMap(session -> session.sendNotification(method, params).doOnError(e -> {
+				if (logger.isErrorEnabled()) {
+					logger.error("Failed to send message to session " + session.getId() + ": " + e.getMessage());
+				}
+			}).onErrorComplete())
 			.then();
 	}
 
-	// FIXME: This javadoc makes claims about using isClosing flag but it's not
-	// actually
-	// doing that.
+	/**
+	 * Sends a JSON-RPC notification to a specific client session through its SSE
+	 * connection.
+	 *
+	 * <p>
+	 * The method:
+	 * <ul>
+	 * <li>Looks up the session by the given session ID</li>
+	 * <li>Returns an empty Mono if the session is not found</li>
+	 * <li>Sends the notification to the specific session if found</li>
+	 * </ul>
+	 * @param sessionId The ID of the target client session
+	 * @param method The JSON-RPC method to send to the client
+	 * @param params The method parameters to send to the client
+	 * @return A Mono that completes when the notification has been sent, or empty if the
+	 * session is not found
+	 */
+
+	@Override
+	public Mono<Void> notifyClient(String sessionId, String method, Object params) {
+		return Mono.defer(() -> {
+			McpServerSession session = this.sessions.get(sessionId);
+			if (session == null) {
+				if (logger.isDebugEnabled()) {
+					logger.debug("Session " + sessionId + " not found");
+				}
+				return Mono.empty();
+			}
+			return session.sendNotification(method, params);
+		});
+	}
 
 	/**
 	 * Initiates a graceful shutdown of all the sessions. This method ensures all active
@@ -261,17 +296,17 @@ public final class WebFluxSseServerTransportProvider implements McpServerTranspo
 	 */
 	@Override
 	public Mono<Void> closeGracefully() {
-		return Flux.fromIterable(this.sessions.values())
-			.doFirst(() -> logger.debug("Initiating graceful shutdown with {} active sessions", this.sessions.size()))
-			.flatMap(McpServerSession::closeGracefully)
-			.then()
-			.doOnSuccess(v -> {
-				logger.debug("Graceful shutdown completed");
-				this.sessions.clear();
-				if (this.keepAliveScheduler != null) {
-					this.keepAliveScheduler.shutdown();
-				}
-			});
+		return Flux.fromIterable(this.sessions.values()).doFirst(() -> {
+			if (logger.isDebugEnabled()) {
+				logger.debug("Initiating graceful shutdown with " + this.sessions.size() + " active sessions");
+			}
+		}).flatMap(McpServerSession::closeGracefully).then().doOnSuccess(v -> {
+			logger.debug("Graceful shutdown completed");
+			this.sessions.clear();
+			if (this.keepAliveScheduler != null) {
+				this.keepAliveScheduler.shutdown();
+			}
+		});
 	}
 
 	/**
@@ -302,7 +337,7 @@ public final class WebFluxSseServerTransportProvider implements McpServerTranspo
 		}
 
 		try {
-			Map<String, List<String>> headers = request.headers().asHttpHeaders().asMultiValueMap();
+			var headers = HeaderUtils.collectHeaders(request);
 			this.securityValidator.validateHeaders(headers);
 		}
 		catch (ServerTransportSecurityException e) {
@@ -322,15 +357,23 @@ public final class WebFluxSseServerTransportProvider implements McpServerTranspo
 					.create(sessionTransport);
 				String sessionId = session.getId();
 
-				logger.debug("Created new SSE connection for session: {}", sessionId);
+				sessionTransport.setSessionId(sessionId);
+
+				if (logger.isDebugEnabled()) {
+					logger.debug("Created new SSE connection for session: " + sessionId);
+				}
 				this.sessions.put(sessionId, session);
 
 				// Send initial endpoint event
-				logger.debug("Sending initial endpoint event to session: {}", sessionId);
+				if (logger.isDebugEnabled()) {
+					logger.debug("Sending initial endpoint event to session: " + sessionId);
+				}
 				sink.next(
 						ServerSentEvent.builder().event(ENDPOINT_EVENT_TYPE).data(buildEndpointUrl(sessionId)).build());
 				sink.onCancel(() -> {
-					logger.debug("Session {} cancelled", sessionId);
+					if (logger.isDebugEnabled()) {
+						logger.debug("Session " + sessionId + " cancelled");
+					}
 					this.sessions.remove(sessionId);
 				});
 			}).contextWrite(ctx -> ctx.put(McpTransportContext.KEY, transportContext)), ServerSentEvent.class);
@@ -372,7 +415,7 @@ public final class WebFluxSseServerTransportProvider implements McpServerTranspo
 		}
 
 		try {
-			Map<String, List<String>> headers = request.headers().asHttpHeaders().asMultiValueMap();
+			var headers = HeaderUtils.collectHeaders(request);
 			this.securityValidator.validateHeaders(headers);
 		}
 		catch (ServerTransportSecurityException e) {
@@ -402,7 +445,9 @@ public final class WebFluxSseServerTransportProvider implements McpServerTranspo
 			try {
 				McpSchema.JSONRPCMessage message = McpSchema.deserializeJsonRpcMessage(this.jsonMapper, body);
 				return session.handle(message).flatMap(response -> ServerResponse.ok().build()).onErrorResume(error -> {
-					logger.error("Error processing  message: {}", error.getMessage());
+					if (logger.isErrorEnabled()) {
+						logger.error("Error processing  message: " + error.getMessage());
+					}
 					// TODO: instead of signalling the error, just respond with 200 OK
 					// - the error is signalled on the SSE connection
 					// return ServerResponse.ok().build();
@@ -413,7 +458,9 @@ public final class WebFluxSseServerTransportProvider implements McpServerTranspo
 				});
 			}
 			catch (IllegalArgumentException | IOException e) {
-				logger.error("Failed to deserialize message: {}", e.getMessage());
+				if (logger.isErrorEnabled()) {
+					logger.error("Failed to deserialize message: " + e.getMessage());
+				}
 				return ServerResponse.badRequest()
 					.bodyValue(McpError.builder(McpSchema.ErrorCodes.INVALID_REQUEST)
 						.message("Invalid message format")
@@ -430,8 +477,14 @@ public final class WebFluxSseServerTransportProvider implements McpServerTranspo
 
 		private final FluxSink<ServerSentEvent<?>> sink;
 
+		@Nullable private volatile String sessionId;
+
 		WebFluxMcpSessionTransport(FluxSink<ServerSentEvent<?>> sink) {
 			this.sink = sink;
+		}
+
+		void setSessionId(@Nullable String sessionId) {
+			this.sessionId = sessionId;
 		}
 
 		@Override
@@ -450,7 +503,9 @@ public final class WebFluxSseServerTransportProvider implements McpServerTranspo
 					.build();
 				this.sink.next(event);
 			}).doOnError(e -> {
-				// TODO log with sessionid
+				if (logger.isErrorEnabled()) {
+					logger.error("Error sending message for session " + this.sessionId + ": " + e.getMessage());
+				}
 				Throwable exception = Exceptions.unwrap(e);
 				this.sink.error(exception);
 			}).then();
@@ -559,7 +614,7 @@ public final class WebFluxSseServerTransportProvider implements McpServerTranspo
 		/**
 		 * Sets the context extractor that allows providing the MCP feature
 		 * implementations to inspect HTTP transport level metadata that was present at
-		 * HTTP request processing time. This allows to extract custom headers and other
+		 * HTTP request processing time. This allows extracting custom headers and other
 		 * useful data for use during execution later on in the process.
 		 * @param contextExtractor The contextExtractor to fill in a
 		 * {@link McpTransportContext}.

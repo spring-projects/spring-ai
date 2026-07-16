@@ -1,5 +1,5 @@
 /*
- * Copyright 2025-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -224,7 +224,7 @@ class ToolInputSchemaAugmenterTest {
 
 		@Test
 		@DisplayName("Should augment schema with single property")
-		void shouldAugmentSchemaWithSingleProperty() throws Exception {
+		void shouldAugmentSchemaWithSingleProperty() {
 			String augmentedSchema = ToolInputSchemaAugmenter.augmentToolInputSchema(this.baseSchema, "newField",
 					String.class, "A new field", true);
 
@@ -233,14 +233,14 @@ class ToolInputSchemaAugmenterTest {
 			// Check that new property was added
 			assertTrue(schemaNode.get("properties").has("newField"));
 			JsonNode newFieldNode = schemaNode.get("properties").get("newField");
-			assertEquals("A new field", newFieldNode.get("description").asText());
+			assertEquals("A new field", newFieldNode.get("description").asString());
 
 			// Check that required array was updated
 			JsonNode requiredArray = schemaNode.get("required");
 			assertTrue(requiredArray.isArray());
 			boolean foundNewField = false;
 			for (JsonNode requiredField : requiredArray) {
-				if ("newField".equals(requiredField.asText())) {
+				if ("newField".equals(requiredField.asString())) {
 					foundNewField = true;
 					break;
 				}
@@ -253,7 +253,7 @@ class ToolInputSchemaAugmenterTest {
 
 		@Test
 		@DisplayName("Should augment schema with multiple properties")
-		void shouldAugmentSchemaWithMultipleProperties() throws Exception {
+		void shouldAugmentSchemaWithMultipleProperties() {
 			List<AugmentedArgumentType> argumentTypes = List.of(
 					new AugmentedArgumentType("field1", String.class, "First field", true),
 					new AugmentedArgumentType("field2", Integer.class, "Second field", false));
@@ -267,18 +267,18 @@ class ToolInputSchemaAugmenterTest {
 			assertTrue(schemaNode.get("properties").has("field2"));
 
 			// Check descriptions
-			assertEquals("First field", schemaNode.get("properties").get("field1").get("description").asText());
-			assertEquals("Second field", schemaNode.get("properties").get("field2").get("description").asText());
+			assertEquals("First field", schemaNode.get("properties").get("field1").get("description").asString());
+			assertEquals("Second field", schemaNode.get("properties").get("field2").get("description").asString());
 
 			// Check required array - should contain field1 but not field2
 			JsonNode requiredArray = schemaNode.get("required");
 			boolean foundField1 = false;
 			boolean foundField2 = false;
 			for (JsonNode requiredField : requiredArray) {
-				if ("field1".equals(requiredField.asText())) {
+				if ("field1".equals(requiredField.asString())) {
 					foundField1 = true;
 				}
-				else if ("field2".equals(requiredField.asText())) {
+				else if ("field2".equals(requiredField.asString())) {
 					foundField2 = true;
 				}
 			}
@@ -288,7 +288,7 @@ class ToolInputSchemaAugmenterTest {
 
 		@Test
 		@DisplayName("Should handle schema without existing properties")
-		void shouldHandleSchemaWithoutExistingProperties() throws Exception {
+		void shouldHandleSchemaWithoutExistingProperties() {
 			String minimalSchema = """
 					{
 						"$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -310,12 +310,12 @@ class ToolInputSchemaAugmenterTest {
 			assertTrue(schemaNode.has("required"));
 			JsonNode requiredArray = schemaNode.get("required");
 			assertEquals(1, requiredArray.size());
-			assertEquals("newField", requiredArray.get(0).asText());
+			assertEquals("newField", requiredArray.get(0).asString());
 		}
 
 		@Test
 		@DisplayName("Should handle schema without existing required array")
-		void shouldHandleSchemaWithoutExistingRequiredArray() throws Exception {
+		void shouldHandleSchemaWithoutExistingRequiredArray() {
 			String schemaWithoutRequired = """
 					{
 						"$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -338,12 +338,12 @@ class ToolInputSchemaAugmenterTest {
 			assertTrue(schemaNode.has("required"));
 			JsonNode requiredArray = schemaNode.get("required");
 			assertEquals(1, requiredArray.size());
-			assertEquals("newField", requiredArray.get(0).asText());
+			assertEquals("newField", requiredArray.get(0).asString());
 		}
 
 		@Test
 		@DisplayName("Should handle empty description")
-		void shouldHandleEmptyDescription() throws Exception {
+		void shouldHandleEmptyDescription() {
 			String augmentedSchema = ToolInputSchemaAugmenter.augmentToolInputSchema(this.baseSchema, "newField",
 					String.class, "", false);
 
@@ -356,7 +356,7 @@ class ToolInputSchemaAugmenterTest {
 
 		@Test
 		@DisplayName("Should handle null description")
-		void shouldHandleNullDescription() throws Exception {
+		void shouldHandleNullDescription() {
 			String augmentedSchema = ToolInputSchemaAugmenter.augmentToolInputSchema(this.baseSchema, "newField",
 					String.class, null, false);
 
@@ -378,7 +378,7 @@ class ToolInputSchemaAugmenterTest {
 
 		@Test
 		@DisplayName("Should augment schema using record class")
-		void shouldAugmentSchemaUsingRecordClass() throws Exception {
+		void shouldAugmentSchemaUsingRecordClass() {
 			List<AugmentedArgumentType> argumentTypes = ToolInputSchemaAugmenter
 				.toAugmentedArgumentTypes(SimpleRecord.class);
 			String augmentedSchema = ToolInputSchemaAugmenter.augmentToolInputSchema(this.baseSchema, argumentTypes);
@@ -390,18 +390,20 @@ class ToolInputSchemaAugmenterTest {
 			assertTrue(schemaNode.get("properties").has("age"));
 
 			// Check descriptions from annotations
-			assertEquals("A simple string field", schemaNode.get("properties").get("name").get("description").asText());
-			assertEquals("A simple integer field", schemaNode.get("properties").get("age").get("description").asText());
+			assertEquals("A simple string field",
+					schemaNode.get("properties").get("name").get("description").asString());
+			assertEquals("A simple integer field",
+					schemaNode.get("properties").get("age").get("description").asString());
 
 			// Check required array - should contain name but not age
 			JsonNode requiredArray = schemaNode.get("required");
 			boolean foundName = false;
 			boolean foundAge = false;
 			for (JsonNode requiredField : requiredArray) {
-				if ("name".equals(requiredField.asText())) {
+				if ("name".equals(requiredField.asString())) {
 					foundName = true;
 				}
-				else if ("age".equals(requiredField.asText())) {
+				else if ("age".equals(requiredField.asString())) {
 					foundAge = true;
 				}
 			}
@@ -417,7 +419,7 @@ class ToolInputSchemaAugmenterTest {
 
 		@Test
 		@DisplayName("Should handle complete workflow from record to augmented schema")
-		void shouldHandleCompleteWorkflow() throws Exception {
+		void shouldHandleCompleteWorkflow() {
 			// Start with a basic schema
 			String originalSchema = """
 					{
@@ -454,7 +456,7 @@ class ToolInputSchemaAugmenterTest {
 			boolean foundProductId = false;
 			boolean foundName = false;
 			for (JsonNode requiredField : requiredArray) {
-				String fieldName = requiredField.asText();
+				String fieldName = requiredField.asString();
 				if ("productId".equals(fieldName)) {
 					foundProductId = true;
 				}
@@ -468,7 +470,7 @@ class ToolInputSchemaAugmenterTest {
 
 		@Test
 		@DisplayName("Should preserve schema structure and metadata")
-		void shouldPreserveSchemaStructureAndMetadata() throws Exception {
+		void shouldPreserveSchemaStructureAndMetadata() {
 			String complexSchema = """
 					{
 						"$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -494,11 +496,11 @@ class ToolInputSchemaAugmenterTest {
 			JsonNode schemaNode = JsonMapper.shared().readTree(augmentedSchema);
 
 			// Check that metadata is preserved
-			assertEquals("https://json-schema.org/draft/2020-12/schema", schemaNode.get("$schema").asText());
-			assertEquals("https://example.com/product.schema.json", schemaNode.get("$id").asText());
-			assertEquals("Product Schema", schemaNode.get("title").asText());
-			assertEquals("A product from catalog", schemaNode.get("description").asText());
-			assertEquals("object", schemaNode.get("type").asText());
+			assertEquals("https://json-schema.org/draft/2020-12/schema", schemaNode.get("$schema").asString());
+			assertEquals("https://example.com/product.schema.json", schemaNode.get("$id").asString());
+			assertEquals("Product Schema", schemaNode.get("title").asString());
+			assertEquals("A product from catalog", schemaNode.get("description").asString());
+			assertEquals("object", schemaNode.get("type").asString());
 			assertFalse(schemaNode.get("additionalProperties").asBoolean());
 
 			// Check that original property constraints are preserved

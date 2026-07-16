@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2026 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,88 +16,79 @@
 
 package org.springframework.ai.model.anthropic.autoconfigure;
 
+import java.util.List;
+
+import com.anthropic.client.AnthropicClient;
+import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.observation.ObservationRegistry;
 
 import org.springframework.ai.anthropic.AnthropicChatModel;
-import org.springframework.ai.anthropic.api.AnthropicApi;
+import org.springframework.ai.anthropic.AnthropicChatOptions;
+import org.springframework.ai.anthropic.http.okhttp.AnthropicHttpClientBuilderCustomizer;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.model.SpringAIModels;
-import org.springframework.ai.model.tool.DefaultToolExecutionEligibilityPredicate;
 import org.springframework.ai.model.tool.ToolCallingManager;
-import org.springframework.ai.model.tool.ToolExecutionEligibilityPredicate;
-import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
-import org.springframework.ai.retry.RetryUtils;
-import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
-import org.springframework.boot.webclient.autoconfigure.WebClientAutoConfiguration;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Import;
-import org.springframework.core.retry.RetryTemplate;
-import org.springframework.web.client.ResponseErrorHandler;
-import org.springframework.web.client.RestClient;
-import org.springframework.web.reactive.function.client.WebClient;
 
 /**
  * {@link AutoConfiguration Auto-configuration} for Anthropic Chat Model.
  *
- * @author Christian Tzolov
- * @author Thomas Vitale
+ * @author Soby Chacko
+ * @author Sebastien Deleuze
  * @author Ilayaperumal Gopinathan
- * @author Hyoseop Song
- * @author Yanming Zhou
- * @since 1.0.0
+ * @since 2.0.0
  */
-@AutoConfiguration(after = { RestClientAutoConfiguration.class, WebClientAutoConfiguration.class,
-		ToolCallingAutoConfiguration.class, SpringAiRetryAutoConfiguration.class })
-@EnableConfigurationProperties({ AnthropicChatProperties.class, AnthropicConnectionProperties.class })
-@ConditionalOnClass(AnthropicApi.class)
+@AutoConfiguration
+@EnableConfigurationProperties({ AnthropicConnectionProperties.class, AnthropicChatProperties.class })
+@ConditionalOnClass(AnthropicClient.class)
 @ConditionalOnProperty(name = SpringAIModelProperties.CHAT_MODEL, havingValue = SpringAIModels.ANTHROPIC,
 		matchIfMissing = true)
-@Import(StringToToolChoiceConverter.class)
 public class AnthropicChatAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public AnthropicApi anthropicApi(AnthropicConnectionProperties connectionProperties,
-			ObjectProvider<RestClient.Builder> restClientBuilderProvider,
-			ObjectProvider<WebClient.Builder> webClientBuilderProvider,
-			ObjectProvider<ResponseErrorHandler> responseErrorHandler) {
-
-		return AnthropicApi.builder()
-			.baseUrl(connectionProperties.getBaseUrl())
-			.completionsPath(connectionProperties.getCompletionsPath())
-			.apiKey(connectionProperties.getApiKey())
-			.anthropicVersion(connectionProperties.getVersion())
-			.restClientBuilder(restClientBuilderProvider.getIfAvailable(RestClient::builder))
-			.webClientBuilder(webClientBuilderProvider.getIfAvailable(WebClient::builder))
-			.responseErrorHandler(responseErrorHandler.getIfAvailable(() -> RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER))
-			.anthropicBetaFeatures(connectionProperties.getBetaVersion())
-			.build();
-	}
-
-	@Bean
-	@ConditionalOnMissingBean
-	public AnthropicChatModel anthropicChatModel(AnthropicApi anthropicApi, AnthropicChatProperties chatProperties,
-			ObjectProvider<RetryTemplate> retryTemplate, ToolCallingManager toolCallingManager,
-			ObjectProvider<ObservationRegistry> observationRegistry,
+	public AnthropicChatModel anthropicChatModel(AnthropicConnectionProperties connectionProperties,
+			AnthropicChatProperties chatProperties, ToolCallingManager toolCallingManager,
+			ObjectProvider<ObservationRegistry> observationRegistry, ObjectProvider<MeterRegistry> meterRegistry,
 			ObjectProvider<ChatModelObservationConvention> observationConvention,
-			ObjectProvider<ToolExecutionEligibilityPredicate> anthropicToolExecutionEligibilityPredicate) {
+			ObjectProvider<AnthropicHttpClientBuilderCustomizer> httpClientBuilderCustomizers) {
+
+		AnthropicChatOptions.Builder builder = chatProperties.toOptions().mutate();
+		if (connectionProperties.getApiKey() != null) {
+			builder.apiKey(connectionProperties.getApiKey());
+		}
+		if (connectionProperties.getBaseUrl() != null) {
+			builder.baseUrl(connectionProperties.getBaseUrl());
+		}
+		if (connectionProperties.getTimeout() != null) {
+			builder.timeout(connectionProperties.getTimeout());
+		}
+		if (connectionProperties.getMaxRetries() != null) {
+			builder.maxRetries(connectionProperties.getMaxRetries());
+		}
+		if (connectionProperties.getProxy() != null) {
+			builder.proxy(connectionProperties.getProxy());
+		}
+		if (!connectionProperties.getCustomHeaders().isEmpty()) {
+			builder.customHeaders(connectionProperties.getCustomHeaders());
+		}
+		AnthropicChatOptions options = builder.build();
+
+		List<AnthropicHttpClientBuilderCustomizer> customizers = httpClientBuilderCustomizers.orderedStream().toList();
 
 		var chatModel = AnthropicChatModel.builder()
-			.anthropicApi(anthropicApi)
-			.defaultOptions(chatProperties.getOptions())
+			.options(options)
 			.toolCallingManager(toolCallingManager)
-			.toolExecutionEligibilityPredicate(anthropicToolExecutionEligibilityPredicate
-				.getIfUnique(DefaultToolExecutionEligibilityPredicate::new))
-			.retryTemplate(retryTemplate.getIfUnique(() -> RetryUtils.DEFAULT_RETRY_TEMPLATE))
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
+			.meterRegistry(chatProperties.isConnectionPoolMetricsEnabled() ? meterRegistry.getIfAvailable() : null)
+			.httpClientBuilderCustomizers(customizers)
 			.build();
 
 		observationConvention.ifAvailable(chatModel::setObservationConvention);

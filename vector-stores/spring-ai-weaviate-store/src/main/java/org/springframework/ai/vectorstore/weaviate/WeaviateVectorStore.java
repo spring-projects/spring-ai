@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -42,8 +42,8 @@ import io.weaviate.client.v1.graphql.query.builder.GetBuilder;
 import io.weaviate.client.v1.graphql.query.builder.GetBuilder.GetBuilderBuilder;
 import io.weaviate.client.v1.graphql.query.fields.Field;
 import io.weaviate.client.v1.graphql.query.fields.Fields;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -95,7 +95,7 @@ import org.springframework.util.StringUtils;
  */
 public class WeaviateVectorStore extends AbstractObservationVectorStore {
 
-	private static final Logger logger = LoggerFactory.getLogger(WeaviateVectorStore.class);
+	private static final Log logger = LogFactory.getLog(WeaviateVectorStore.class);
 
 	private static final String METADATA_FIELD_NAME = "metadata";
 
@@ -307,11 +307,13 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 			List<Document> matchingDocs = similaritySearch(searchRequest);
 
 			if (!matchingDocs.isEmpty()) {
-				List<String> idsToDelete = matchingDocs.stream().map(Document::getId).collect(Collectors.toList());
+				List<String> idsToDelete = matchingDocs.stream().map(Document::getId).toList();
 
 				delete(idsToDelete);
 
-				logger.debug("Deleted {} documents matching filter expression", idsToDelete.size());
+				if (logger.isDebugEnabled()) {
+					logger.debug("Deleted " + idsToDelete.size() + " documents matching filter expression");
+				}
 			}
 			else {
 				logger.debug("No documents found matching filter expression");

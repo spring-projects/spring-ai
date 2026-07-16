@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -83,7 +83,6 @@ public class TitanEmbeddingBedrockApiIT {
 			.getContentAsByteArray();
 
 		String imageBase64 = Base64.getEncoder().encodeToString(image);
-		System.out.println(imageBase64.length());
 
 		TitanEmbeddingRequest request = TitanEmbeddingRequest.builder().inputImage(imageBase64).build();
 

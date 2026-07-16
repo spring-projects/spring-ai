@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package org.springframework.ai.vectorstore.redis;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -25,7 +26,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import redis.clients.jedis.JedisPooled;
+import redis.clients.jedis.RedisClient;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -35,9 +36,7 @@ import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.redis.RedisVectorStore.MetadataField;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.data.redis.autoconfigure.DataRedisAutoConfiguration;
-import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 
@@ -62,8 +61,11 @@ class RedisVectorStoreDistanceMetricIT {
 	@BeforeEach
 	void cleanDatabase() {
 		// Clean Redis completely before each test
-		JedisPooled jedis = new JedisPooled(redisContainer.getHost(), redisContainer.getFirstMappedPort());
-		jedis.flushAll();
+		try (RedisClient jedisClient = RedisClient.builder()
+			.hostAndPort(redisContainer.getHost(), redisContainer.getFirstMappedPort())
+			.build()) {
+			jedisClient.flushAll();
+		}
 	}
 
 	@Test
@@ -71,11 +73,13 @@ class RedisVectorStoreDistanceMetricIT {
 		// Create a vector store with COSINE distance metric
 		this.contextRunner.run(context -> {
 			// Get the base Jedis client for creating a custom store
-			JedisPooled jedis = new JedisPooled(redisContainer.getHost(), redisContainer.getFirstMappedPort());
+			RedisClient jedisClient = RedisClient.builder()
+				.hostAndPort(redisContainer.getHost(), redisContainer.getFirstMappedPort())
+				.build();
 			EmbeddingModel embeddingModel = context.getBean(EmbeddingModel.class);
 
 			// Create the vector store with explicit COSINE distance metric
-			RedisVectorStore vectorStore = RedisVectorStore.builder(jedis, embeddingModel)
+			RedisVectorStore vectorStore = RedisVectorStore.builder(jedisClient, embeddingModel)
 				.indexName("cosine-test-index")
 				.distanceMetric(RedisVectorStore.DistanceMetric.COSINE) // New feature
 				.metadataFields(MetadataField.tag("category"))
@@ -92,11 +96,13 @@ class RedisVectorStoreDistanceMetricIT {
 		// Create a vector store with L2 distance metric
 		this.contextRunner.run(context -> {
 			// Get the base Jedis client for creating a custom store
-			JedisPooled jedis = new JedisPooled(redisContainer.getHost(), redisContainer.getFirstMappedPort());
+			RedisClient jedisClient = RedisClient.builder()
+				.hostAndPort(redisContainer.getHost(), redisContainer.getFirstMappedPort())
+				.build();
 			EmbeddingModel embeddingModel = context.getBean(EmbeddingModel.class);
 
 			// Create the vector store with explicit L2 distance metric
-			RedisVectorStore vectorStore = RedisVectorStore.builder(jedis, embeddingModel)
+			RedisVectorStore vectorStore = RedisVectorStore.builder(jedisClient, embeddingModel)
 				.indexName("l2-test-index")
 				.distanceMetric(RedisVectorStore.DistanceMetric.L2)
 				.metadataFields(MetadataField.tag("category"))
@@ -140,7 +146,7 @@ class RedisVectorStoreDistanceMetricIT {
 			// distance)
 			boolean foundDbDoc = false;
 			for (Document doc : dbResults) {
-				if (doc.getText().toLowerCase().contains("databases")
+				if (doc.getText().toLowerCase(Locale.ROOT).contains("databases")
 						&& "DB".equals(doc.getMetadata().get("category"))) {
 					foundDbDoc = true;
 					break;
@@ -155,11 +161,13 @@ class RedisVectorStoreDistanceMetricIT {
 		// Create a vector store with IP distance metric
 		this.contextRunner.run(context -> {
 			// Get the base Jedis client for creating a custom store
-			JedisPooled jedis = new JedisPooled(redisContainer.getHost(), redisContainer.getFirstMappedPort());
+			RedisClient jedisClient = RedisClient.builder()
+				.hostAndPort(redisContainer.getHost(), redisContainer.getFirstMappedPort())
+				.build();
 			EmbeddingModel embeddingModel = context.getBean(EmbeddingModel.class);
 
 			// Create the vector store with explicit IP distance metric
-			RedisVectorStore vectorStore = RedisVectorStore.builder(jedis, embeddingModel)
+			RedisVectorStore vectorStore = RedisVectorStore.builder(jedisClient, embeddingModel)
 				.indexName("ip-test-index")
 				.distanceMetric(RedisVectorStore.DistanceMetric.IP) // New feature
 				.metadataFields(MetadataField.tag("category"))
@@ -177,8 +185,8 @@ class RedisVectorStoreDistanceMetricIT {
 			redisVectorStore.afterPropertiesSet();
 
 			// Verify index exists
-			JedisPooled jedis = redisVectorStore.getJedis();
-			Set<String> indexes = jedis.ftList();
+			RedisClient jedisClient = redisVectorStore.getJedisClient();
+			Set<String> indexes = jedisClient.ftList();
 
 			// The index name is set in the builder, so we should verify it exists
 			assertThat(indexes).isNotEmpty();
@@ -236,13 +244,14 @@ class RedisVectorStoreDistanceMetricIT {
 	}
 
 	@SpringBootConfiguration
-	@EnableAutoConfiguration(exclude = { DataSourceAutoConfiguration.class })
 	public static class TestApplication {
 
 		@Bean
 		public RedisVectorStore vectorStore(EmbeddingModel embeddingModel) {
 			return RedisVectorStore
-				.builder(new JedisPooled(redisContainer.getHost(), redisContainer.getFirstMappedPort()), embeddingModel)
+				.builder(RedisClient.builder()
+					.hostAndPort(redisContainer.getHost(), redisContainer.getFirstMappedPort())
+					.build(), embeddingModel)
 				.indexName("default-test-index")
 				.metadataFields(MetadataField.tag("category"))
 				.initializeSchema(true)

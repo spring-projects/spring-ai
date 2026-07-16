@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,9 @@
 
 package org.springframework.ai.openai.transformer;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
@@ -29,7 +29,6 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.model.transformer.KeywordMetadataEnricher;
 import org.springframework.ai.model.transformer.SummaryMetadataEnricher;
 import org.springframework.ai.openai.OpenAiChatModel;
-import org.springframework.ai.openai.api.OpenAiApi;
 import org.springframework.ai.transformer.ContentFormatTransformer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
@@ -86,7 +85,7 @@ public class MetadataTransformerIT {
 		assertThat(keywords2).containsKeys("excerpt_keywords");
 
 		assertThat((String) keywords1.get("excerpt_keywords")).contains("Andes", "Aymara");
-		assertThat(((String) keywords2.get("excerpt_keywords")).toLowerCase()).containsAnyOf("spring mvc",
+		assertThat(((String) keywords2.get("excerpt_keywords")).toLowerCase(Locale.ROOT)).containsAnyOf("spring mvc",
 				"dependency injection");
 	}
 
@@ -156,18 +155,18 @@ public class MetadataTransformerIT {
 	public static class OpenAiTestConfiguration {
 
 		@Bean
-		public OpenAiApi openAiApi() throws IOException {
+		public OpenAiChatModel openAiChatModel() {
 			String apiKey = System.getenv("OPENAI_API_KEY");
 			if (!StringUtils.hasText(apiKey)) {
 				throw new IllegalArgumentException(
 						"You must provide an API key.  Put it in an environment variable under the name OPENAI_API_KEY");
 			}
-			return OpenAiApi.builder().apiKey(apiKey).build();
-		}
-
-		@Bean
-		public OpenAiChatModel openAiChatModel(OpenAiApi openAiApi) {
-			return OpenAiChatModel.builder().openAiApi(openAiApi).build();
+			return OpenAiChatModel.builder()
+				.options(org.springframework.ai.openai.OpenAiChatOptions.builder()
+					.apiKey(apiKey)
+					.model(org.springframework.ai.openai.OpenAiChatOptions.DEFAULT_CHAT_MODEL)
+					.build())
+				.build();
 		}
 
 		@Bean

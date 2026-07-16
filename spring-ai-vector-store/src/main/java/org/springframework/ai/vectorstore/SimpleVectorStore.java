@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,9 +33,9 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import tools.jackson.core.JacksonException;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectWriter;
@@ -47,24 +47,34 @@ import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.util.JacksonUtils;
 import org.springframework.ai.vectorstore.filter.Filter;
-import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
-import org.springframework.ai.vectorstore.filter.converter.SimpleVectorStoreFilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.core.io.Resource;
-import org.springframework.expression.ExpressionParser;
-import org.springframework.expression.spel.standard.SpelExpressionParser;
-import org.springframework.expression.spel.support.StandardEvaluationContext;
 
 /**
- * SimpleVectorStore is a simple implementation of the VectorStore interface.
+ * A simple, in-memory implementation of the <a href=
+ * "https://docs.spring.io/spring-ai/reference/api/vectordbs.html#_understanding_vectors">VectorStore</a>
+ * interface.
  *
- * It also provides methods to save the current state of the vectors to a file, and to
- * load vectors from a file.
+ * <p>
+ * Uses a {@link java.util.concurrent.ConcurrentHashMap} to store vectors and their
+ * associated metadata. Map keys are document IDs; values are
+ * {@link SimpleVectorStoreContent} instances that encapsulate each document's text,
+ * metadata, and embedding vector.
  *
- * For a deeper understanding of the mathematical concepts and computations involved in
- * calculating similarity scores among vectors, refer to this
- * [resource](https://docs.spring.io/spring-ai/reference/api/vectordbs.html#_understanding_vectors).
+ * <p>
+ * Similarity search is performed using cosine similarity over all stored vectors. Filter
+ * expressions on document metadata are evaluated via
+ * {@link SimpleVectorStoreFilterExpressionEvaluator}.
+ *
+ * <p>
+ * The store can be persisted to and restored from a JSON file via the
+ * {@link #save(java.io.File)} and {@link #load(java.io.File)} /
+ * {@link #load(org.springframework.core.io.Resource)} methods.
+ *
+ * <p>
+ * <b>NOTE</b>: This implementation is not designed for production use and should only be
+ * used for testing or demonstration purposes.
  *
  * @author Raphael Yu
  * @author Dingmeng Xue
@@ -75,24 +85,22 @@ import org.springframework.expression.spel.support.StandardEvaluationContext;
  * @author Thomas Vitale
  * @author Jemin Huh
  * @author David Yu
+ * @since 1.0.0
  */
 public class SimpleVectorStore extends AbstractObservationVectorStore {
 
-	private static final Logger logger = LoggerFactory.getLogger(SimpleVectorStore.class);
+	private static final Log logger = LogFactory.getLog(SimpleVectorStore.class);
 
 	private final JsonMapper jsonMapper;
 
-	private final ExpressionParser expressionParser;
-
-	private final FilterExpressionConverter filterExpressionConverter;
+	private final SimpleVectorStoreFilterExpressionEvaluator filterExpressionEvaluator;
 
 	protected Map<String, SimpleVectorStoreContent> store = new ConcurrentHashMap<>();
 
 	protected SimpleVectorStore(SimpleVectorStoreBuilder builder) {
 		super(builder);
 		this.jsonMapper = JsonMapper.builder().addModules(JacksonUtils.instantiateAvailableModules()).build();
-		this.expressionParser = new SpelExpressionParser();
-		this.filterExpressionConverter = new SimpleVectorStoreFilterExpressionConverter();
+		this.filterExpressionEvaluator = new SimpleVectorStoreFilterExpressionEvaluator();
 	}
 
 	/**
@@ -111,7 +119,9 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 		}
 
 		for (Document document : documents) {
-			logger.info("Calling EmbeddingModel for document id = {}", document.getId());
+			if (logger.isInfoEnabled()) {
+				logger.info("Calling EmbeddingModel for document id = " + document.getId());
+			}
 			float[] embedding = this.embeddingModel.embed(document);
 			SimpleVectorStoreContent storeContent = new SimpleVectorStoreContent(document.getId(),
 					Objects.requireNonNullElse(document.getText(), ""), document.getMetadata(), embedding);
@@ -154,14 +164,7 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 		if (filterExpression == null) {
 			return document -> true;
 		}
-
-		return document -> {
-			StandardEvaluationContext context = new StandardEvaluationContext();
-			context.setVariable("metadata", document.getMetadata());
-			return Boolean.TRUE.equals(this.expressionParser
-				.parseExpression(this.filterExpressionConverter.convertExpression(filterExpression))
-				.getValue(context, Boolean.class));
-		};
+		return document -> this.filterExpressionEvaluator.evaluate(filterExpression, document.getMetadata());
 	}
 
 	/**
@@ -172,7 +175,9 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 		String json = getVectorDbAsJson();
 		try {
 			if (!file.exists()) {
-				logger.info("Creating new vector store file: {}", file);
+				if (logger.isInfoEnabled()) {
+					logger.info("Creating new vector store file: " + file);
+				}
 				try {
 					Files.createFile(file.toPath());
 				}
@@ -183,8 +188,8 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 					throw new RuntimeException("Failed to create new file: " + file + ". Reason: " + e.getMessage(), e);
 				}
 			}
-			else {
-				logger.info("Overwriting existing vector store file: {}", file);
+			else if (logger.isInfoEnabled()) {
+				logger.info("Overwriting existing vector store file: " + file);
 			}
 			try (OutputStream stream = new FileOutputStream(file);
 					Writer writer = new OutputStreamWriter(stream, StandardCharsets.UTF_8)) {

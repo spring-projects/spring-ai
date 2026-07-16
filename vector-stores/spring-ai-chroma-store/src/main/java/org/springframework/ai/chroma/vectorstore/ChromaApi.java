@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,7 +31,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.chroma.vectorstore.ChromaApi.QueryRequest.Include;
 import org.springframework.ai.chroma.vectorstore.common.ChromaApiConstants;
-import org.springframework.ai.util.json.JsonParser;
+import org.springframework.ai.util.JsonHelper;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.support.BasicAuthenticationInterceptor;
@@ -51,6 +51,8 @@ import org.springframework.web.client.RestClient;
  * @author Jonghoon Park
  */
 public class ChromaApi {
+
+	private static final JsonHelper jsonHelper = new JsonHelper();
 
 	public static Builder builder() {
 		return new Builder();
@@ -72,7 +74,8 @@ public class ChromaApi {
 
 	public ChromaApi(String baseUrl, RestClient.Builder restClientBuilder, JsonMapper jsonMapper) {
 
-		this.restClient = restClientBuilder.baseUrl(baseUrl)
+		this.restClient = restClientBuilder.clone()
+			.baseUrl(baseUrl)
 			.defaultHeaders(h -> h.setContentType(MediaType.APPLICATION_JSON))
 			.build();
 		this.jsonMapper = jsonMapper;
@@ -440,7 +443,7 @@ public class ChromaApi {
 						processed.put(entry.getKey(), value);
 					}
 					else {
-						processed.put(entry.getKey(), JsonParser.toJson(value));
+						processed.put(entry.getKey(), jsonHelper.toJson(value));
 					}
 				}
 				processedMetadatas.add(processed);

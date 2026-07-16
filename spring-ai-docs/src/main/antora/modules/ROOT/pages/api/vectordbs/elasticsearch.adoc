@@ -235,14 +235,14 @@ dependencies {
 }
 ----
 
-Create an Elasticsearch `RestClient` bean.
-Read the link:https://www.elastic.co/guide/en/elasticsearch/client/java-api-client/current/java-rest-low-usage-initialization.html[Elasticsearch Documentation] for more in-depth information about the configuration of a custom RestClient.
+Create an Elasticsearch `Rest5Client` bean.
+Read the link:https://www.elastic.co/guide/en/elasticsearch/client/java-api-client/current/java-rest-low-usage-initialization.html[Elasticsearch Documentation] for more in-depth information about the configuration of a custom Rest5Client.
 
 [source,java]
 ----
 @Bean
-public RestClient restClient() {
-    return RestClient.builder(new HttpHost("<host>", 9200, "http"))
+public Rest5Client restClient() {
+    return Rest5Client.builder(new HttpHost("<host>", 9200, "http"))
         .setDefaultHeaders(new Header[]{
             new BasicHeader("Authorization", "Basic <encoded username and password>")
         })
@@ -255,7 +255,7 @@ Then create the `ElasticsearchVectorStore` bean using the builder pattern:
 [source,java]
 ----
 @Bean
-public VectorStore vectorStore(RestClient restClient, EmbeddingModel embeddingModel) {
+public VectorStore vectorStore(Rest5Client restClient, EmbeddingModel embeddingModel) {
     ElasticsearchVectorStoreOptions options = new ElasticsearchVectorStoreOptions();
     options.setIndexName("custom-index");    // Optional: defaults to "spring-ai-document-index"
     options.setSimilarity(COSINE);           // Optional: defaults to COSINE
@@ -271,7 +271,7 @@ public VectorStore vectorStore(RestClient restClient, EmbeddingModel embeddingMo
 // This can be any EmbeddingModel implementation
 @Bean
 public EmbeddingModel embeddingModel() {
-    return new OpenAiEmbeddingModel(new OpenAiApi(System.getenv("OPENAI_API_KEY")));
+    return new OpenAiEmbeddingModel(OpenAiEmbeddingOptions.builder().apiKey(System.getenv("OPENAI_API_KEY")).build());
 }
 ----
 

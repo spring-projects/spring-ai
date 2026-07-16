@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2024 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -51,7 +51,8 @@ class MilvusContainerConnectionDetailsFactoryIT {
 
 	@Container
 	@ServiceConnection
-	static MilvusContainer milvusContainer = new MilvusContainer(MilvusImage.DEFAULT_IMAGE);
+	static MilvusContainer milvusContainer = new MilvusContainer(MilvusImage.DEFAULT_IMAGE).withEnv("DEPLOY_MODE",
+			"STANDALONE");
 
 	List<Document> documents = List.of(
 			new Document(ResourceUtils.getText("classpath:/test/data/spring.ai.txt"), Map.of("spring", "great")),

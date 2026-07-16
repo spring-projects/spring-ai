@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,19 +21,31 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.Month;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import io.swagger.v3.oas.annotations.media.Schema;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.JsonNode;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.annotation.ToolParam;
+import org.springframework.ai.util.JacksonUtils;
+import org.springframework.ai.util.JsonHelper;
 import org.springframework.ai.util.json.schema.JsonSchemaGenerator;
-import org.springframework.lang.Nullable;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -45,6 +57,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * @author Christian Tzolov
  */
 class JsonSchemaGeneratorTests {
+
+	private static final JsonHelper jsonHelper = new JsonHelper();
 
 	// METHODS
 
@@ -245,7 +259,7 @@ class JsonSchemaGeneratorTests {
 		String schema = JsonSchemaGenerator.generateForMethodInput(method,
 				JsonSchemaGenerator.SchemaOption.ALLOW_ADDITIONAL_PROPERTIES_BY_DEFAULT);
 
-		JsonNode jsonNode = JsonParser.getJsonMapper().readTree(schema);
+		JsonNode jsonNode = JacksonUtils.getDefaultJsonMapper().readTree(schema);
 		assertThat(jsonNode.has("additionalProperties")).isFalse();
 	}
 
@@ -279,6 +293,44 @@ class JsonSchemaGeneratorTests {
 	}
 
 	@Test
+	void generateSchemaForMethodWithUpperCaseTypesInTrLocale() throws Exception {
+		Locale defaultLocale = Locale.getDefault();
+		try {
+			Locale.setDefault(Locale.forLanguageTag("tr-TR"));
+			Method method = TestMethods.class.getDeclaredMethod("simpleMethod", String.class, int.class);
+
+			// The method "convertTypeValuesToUpperCase" will fail to correctly uppercase
+			// STRING and INTEGER in turkish locale, resulting in STRİNG and İNTEGER
+			String schema = JsonSchemaGenerator.generateForMethodInput(method,
+					JsonSchemaGenerator.SchemaOption.UPPER_CASE_TYPE_VALUES);
+			String expectedJsonSchema = """
+					{
+					    "$schema": "https://json-schema.org/draft/2020-12/schema",
+					    "type": "OBJECT",
+					    "properties": {
+					        "name": {
+					            "type": "STRING"
+					        },
+					        "age": {
+					            "type": "INTEGER"
+					        }
+					    },
+					    "required": [
+					        "name",
+					        "age"
+					    ],
+					    "additionalProperties": false
+					}
+					""";
+
+			assertThat(schema).isEqualToIgnoringWhitespace(expectedJsonSchema);
+		}
+		finally {
+			Locale.setDefault(defaultLocale);
+		}
+	}
+
+	@Test
 	void generateSchemaForMethodWithComplexParameters() throws Exception {
 		Method method = TestMethods.class.getDeclaredMethod("complexMethod", List.class, TestData.class,
 				MoreTestData.class);
@@ -308,7 +360,8 @@ class JsonSchemaGeneratorTests {
 				                    "description": "The special name"
 				                }
 				            },
-				            "required": [ "id", "name" ]
+				            "required": [ "id", "name" ],
+				            "additionalProperties": false
 				        },
 				        "moreData": {
 				            "type": "object",
@@ -323,7 +376,8 @@ class JsonSchemaGeneratorTests {
 							  	}
 				            },
 				            "required": [ "id", "name" ],
-				            "description" : "Much more data"
+				            "description" : "Much more data",
+				            "additionalProperties": false
 				        }
 				    },
 				    "required": [ "items", "data", "moreData" ],
@@ -332,6 +386,20 @@ class JsonSchemaGeneratorTests {
 				""";
 
 		assertThat(schema).isEqualToIgnoringWhitespace(expectedJsonSchema);
+	}
+
+	@Test
+	void generateSchemaForMethodWithComplexParametersAndAdditionalPropertiesAllowed() throws Exception {
+		Method method = TestMethods.class.getDeclaredMethod("complexMethod", List.class, TestData.class,
+				MoreTestData.class);
+
+		String schema = JsonSchemaGenerator.generateForMethodInput(method,
+				JsonSchemaGenerator.SchemaOption.ALLOW_ADDITIONAL_PROPERTIES_BY_DEFAULT);
+
+		JsonNode jsonNode = JacksonUtils.getDefaultJsonMapper().readTree(schema);
+		assertThat(jsonNode.has("additionalProperties")).isFalse();
+		assertThat(jsonNode.get("properties").get("data").has("additionalProperties")).isFalse();
+		assertThat(jsonNode.get("properties").get("moreData").has("additionalProperties")).isFalse();
 	}
 
 	@Test
@@ -430,7 +498,7 @@ class JsonSchemaGeneratorTests {
 		String schema = JsonSchemaGenerator.generateForType(Person.class,
 				JsonSchemaGenerator.SchemaOption.ALLOW_ADDITIONAL_PROPERTIES_BY_DEFAULT);
 
-		JsonNode jsonNode = JsonParser.getJsonMapper().readTree(schema);
+		JsonNode jsonNode = JacksonUtils.getDefaultJsonMapper().readTree(schema);
 		assertThat(jsonNode.has("additionalProperties")).isFalse();
 	}
 
@@ -641,6 +709,19 @@ class JsonSchemaGeneratorTests {
 	}
 
 	@Test
+	void generateSchemaForTypeWithMapFieldDoesNotForbidAdditionalProperties() {
+		String schema = JsonSchemaGenerator.generateForType(WithMapField.class);
+		JsonNode jsonNode = JacksonUtils.getDefaultJsonMapper().readTree(schema);
+		assertThat(jsonNode.get("additionalProperties").asBoolean())
+			.as("root object schema should have additionalProperties: false")
+			.isFalse();
+		JsonNode scoresNode = jsonNode.get("properties").get("scores");
+		assertThat(scoresNode.path("additionalProperties").asBoolean(true))
+			.as("Map field must not have additionalProperties set to false")
+			.isTrue();
+	}
+
+	@Test
 	void generateSchemaForEnum() {
 		String schema = JsonSchemaGenerator.generateForType(Month.class);
 		String expectedJsonSchema = """
@@ -660,8 +741,7 @@ class JsonSchemaGeneratorTests {
 				        "OCTOBER",
 				        "NOVEMBER",
 				        "DECEMBER"
-				    ],
-				    "additionalProperties": false
+				    ]
 				}
 				""";
 
@@ -695,9 +775,210 @@ class JsonSchemaGeneratorTests {
 	}
 
 	@Test
+	void generateSchemaForMethodWithRecursiveParameter_defsAppearsBeforeProperties() throws Exception {
+		Method method = TestMethods.class.getDeclaredMethod("searchBooksMethod", SearchRequest.class);
+
+		String schemaJson = JsonSchemaGenerator.generateForMethodInput(method);
+
+		assertThat(schemaJson.indexOf("\"$defs\"")).as("$defs must appear before properties in the serialized output")
+			.isLessThan(schemaJson.indexOf("\"properties\""));
+	}
+
+	@Test
+	void generateSchemaForMethodWithSimpleParameters_noDefsInOutput() throws Exception {
+		Method method = TestMethods.class.getDeclaredMethod("simpleMethod", String.class, int.class);
+
+		String schemaJson = JsonSchemaGenerator.generateForMethodInput(method);
+
+		assertThat(schemaJson).as("no $defs placeholder must appear for non-recursive types").doesNotContain("$defs");
+	}
+
+	// gh-5888: when a method parameter type transitively contains a recursive type,
+	// victools emits $defs nested inside the parameter sub-schema while $ref values
+	// remain root-relative ("#/$defs/<Name>"). Inlining the sub-schema under
+	// properties.<paramName> would otherwise leave those $refs unresolvable.
+	// The generator must hoist $defs to the outer schema root.
+	@Test
+	void generateSchemaForMethodWithTransitivelyRecursiveParameterTypeHoistsDefs() throws Exception {
+		Method method = TestMethods.class.getDeclaredMethod("searchBooksMethod", SearchRequest.class);
+
+		String schema = JsonSchemaGenerator.generateForMethodInput(method);
+		JsonNode schemaNode = jsonHelper.fromJson(schema, JsonNode.class);
+
+		assertThat(schemaNode.has("$defs")).as("$defs must be hoisted to the outer schema root").isTrue();
+		assertThat(schemaNode.get("$defs").has("RecursiveFilter")).isTrue();
+		assertThat(schemaNode.at("/properties/request").has("$defs"))
+			.as("$defs must not remain nested inside the parameter sub-schema")
+			.isFalse();
+		assertThat(schemaNode.at("/properties/request/properties/filters/items/$ref").asString())
+			.isEqualTo("#/$defs/RecursiveFilter");
+		assertThat(schemaNode.at("/$defs/RecursiveFilter/properties/filters/items/$ref").asString())
+			.isEqualTo("#/$defs/RecursiveFilter");
+	}
+
+	// gh-5888: when two parameters share the same recursive type, the two
+	// generated $defs entries collide on an identical key and value. The hoist
+	// must reuse the single root entry; both parameters' $refs continue to
+	// resolve to it.
+	@Test
+	void generateSchemaForMethodReusesRootDefsWhenCollidingDefsValuesAreEqual() throws Exception {
+		Method method = TestMethods.class.getDeclaredMethod("sameOuterTwoParamsMethod", SearchRequest.class,
+				SearchRequest.class);
+
+		String schema = JsonSchemaGenerator.generateForMethodInput(method);
+		JsonNode schemaNode = jsonHelper.fromJson(schema, JsonNode.class);
+
+		assertThat(schemaNode.at("/$defs").size()).isEqualTo(1);
+		assertThat(schemaNode.at("/$defs").has("RecursiveFilter")).isTrue();
+		assertThat(schemaNode.at("/properties/a/properties/filters/items/$ref").asString())
+			.isEqualTo("#/$defs/RecursiveFilter");
+		assertThat(schemaNode.at("/properties/b/properties/filters/items/$ref").asString())
+			.isEqualTo("#/$defs/RecursiveFilter");
+	}
+
+	// gh-5888: when two parameters carry different recursive types that share
+	// the same simple class name, victools (with Option.PLAIN_DEFINITION_KEYS)
+	// emits the same $defs key for both. First-wins would silently drop the
+	// second definition and leave its $ref pointing at the first definition.
+	// The hoist must rename the colliding entry and rewrite the inlined
+	// sub-schema's $refs to point at the new key.
+	@Test
+	void generateSchemaForMethodRenamesDefsAndRewritesRefsOnSimpleNameCollision() throws Exception {
+		Method method = TestMethods.class.getDeclaredMethod("collidingSimpleNameMethod", OuterA.SearchRequest.class,
+				OuterB.SearchRequest.class);
+
+		String schema = JsonSchemaGenerator.generateForMethodInput(method);
+		JsonNode schemaNode = jsonHelper.fromJson(schema, JsonNode.class);
+
+		assertThat(schemaNode.at("/$defs/Filter").has("properties")).isTrue();
+		assertThat(schemaNode.at("/$defs/Filter_2").has("properties")).isTrue();
+		assertThat(schemaNode.at("/$defs/Filter/properties").has("label"))
+			.as("first colliding entry retains OuterA.Filter shape (label field)")
+			.isTrue();
+		assertThat(schemaNode.at("/$defs/Filter_2/properties").has("code"))
+			.as("second colliding entry retains OuterB.Filter shape (code field)")
+			.isTrue();
+		assertThat(schemaNode.at("/properties/a/properties/filters/items/$ref").asString()).isEqualTo("#/$defs/Filter");
+		assertThat(schemaNode.at("/properties/b/properties/filters/items/$ref").asString())
+			.as("second parameter's $ref must be rewritten to the renamed entry")
+			.isEqualTo("#/$defs/Filter_2");
+		assertThat(schemaNode.at("/$defs/Filter/properties/children/items/$ref").asString())
+			.isEqualTo("#/$defs/Filter");
+		assertThat(schemaNode.at("/$defs/Filter_2/properties/children/items/$ref").asString())
+			.as("self-reference inside the renamed entry must follow the rename")
+			.isEqualTo("#/$defs/Filter_2");
+	}
+
+	// gh-5888: when a sub-schema brings in several $defs entries and one of them
+	// collides while a peer entry references the colliding key, the peer's $ref
+	// must be rewritten too — otherwise the peer would point at the existing
+	// root entry instead of the renamed one.
+	@Test
+	void generateSchemaForMethodRewritesPeerDefinitionRefsAfterRename() throws Exception {
+		Method method = TestMethods.class.getDeclaredMethod("peerReferenceMethod", PeerA.SearchRequest.class,
+				PeerB.SearchRequest.class);
+
+		String schema = JsonSchemaGenerator.generateForMethodInput(method);
+		JsonNode schemaNode = jsonHelper.fromJson(schema, JsonNode.class);
+
+		assertThat(schemaNode.at("/$defs/Filter/properties").has("label")).as("first definition keeps PeerA shape")
+			.isTrue();
+		assertThat(schemaNode.at("/$defs/Filter_2/properties").has("code"))
+			.as("colliding definition is renamed with PeerB shape")
+			.isTrue();
+		assertThat(schemaNode.at("/$defs/Wrapper").has("properties")).isTrue();
+		assertThat(schemaNode.at("/$defs/Wrapper/properties/filters/items/$ref").asString())
+			.as("peer Wrapper's $ref to the colliding name must be rewritten to the renamed entry")
+			.isEqualTo("#/$defs/Filter_2");
+		assertThat(schemaNode.at("/$defs/Wrapper/properties/nested/items/$ref").asString())
+			.as("peer Wrapper's self-reference must be left alone")
+			.isEqualTo("#/$defs/Wrapper");
+		assertThat(schemaNode.at("/$defs/Filter_2/properties/children/items/$ref").asString())
+			.as("renamed entry's self-reference must follow the rename")
+			.isEqualTo("#/$defs/Filter_2");
+	}
+
+	// gh-5888: forbidAdditionalProperties walks the whole schema tree including the
+	// hoisted $defs block, so each definition that has a "properties" key must also
+	// receive "additionalProperties": false.
+	@Test
+	void generateSchemaForMethodWithRecursiveTypeAppliesAdditionalPropertiesFalseToDefsEntries() throws Exception {
+		Method method = TestMethods.class.getDeclaredMethod("searchBooksMethod", SearchRequest.class);
+
+		String schema = JsonSchemaGenerator.generateForMethodInput(method);
+		JsonNode schemaNode = jsonHelper.fromJson(schema, JsonNode.class);
+
+		assertThat(schemaNode.at("/$defs/RecursiveFilter/additionalProperties").asBoolean(true))
+			.as("additionalProperties: false must be propagated into hoisted $defs entries")
+			.isFalse();
+	}
+
+	// gh-5888: ALLOW_ADDITIONAL_PROPERTIES_BY_DEFAULT must suppress additionalProperties
+	// enforcement everywhere, including inside hoisted $defs entries.
+	@Test
+	void generateSchemaForMethodWithRecursiveTypeAndAllowAdditionalPropertiesOption() throws Exception {
+		Method method = TestMethods.class.getDeclaredMethod("searchBooksMethod", SearchRequest.class);
+
+		String schema = JsonSchemaGenerator.generateForMethodInput(method,
+				JsonSchemaGenerator.SchemaOption.ALLOW_ADDITIONAL_PROPERTIES_BY_DEFAULT);
+		JsonNode schemaNode = jsonHelper.fromJson(schema, JsonNode.class);
+
+		assertThat(schemaNode.has("$defs")).isTrue();
+		assertThat(schemaNode.at("/$defs/RecursiveFilter").has("additionalProperties"))
+			.as("ALLOW_ADDITIONAL_PROPERTIES_BY_DEFAULT must not add additionalProperties to hoisted $defs entries")
+			.isFalse();
+		assertThat(schemaNode.has("additionalProperties"))
+			.as("ALLOW_ADDITIONAL_PROPERTIES_BY_DEFAULT must not add additionalProperties to root schema")
+			.isFalse();
+	}
+
+	@Test
+	void generateSchemaForTypeCanRunConcurrently() throws Exception {
+		List<String> schemas = generateConcurrently(() -> JsonSchemaGenerator.generateForType(OrderedStatement.class));
+
+		assertThat(schemas).hasSize(240);
+		assertThat(schemas).allSatisfy(schema -> assertThat(schema).contains("\"properties\""));
+	}
+
+	@Test
+	void generateSchemaForMethodInputCanRunConcurrently() throws Exception {
+		Method method = TestMethods.class.getDeclaredMethod("searchBooksMethod", SearchRequest.class);
+
+		List<String> schemas = generateConcurrently(() -> JsonSchemaGenerator.generateForMethodInput(method));
+
+		assertThat(schemas).hasSize(240);
+		assertThat(schemas).allSatisfy(schema -> assertThat(schema).contains("\"$defs\""));
+	}
+
+	@Test
 	void throwExceptionWhenTypeIsNull() {
 		assertThatThrownBy(() -> JsonSchemaGenerator.generateForType(null)).isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("type cannot be null");
+	}
+
+	private static List<String> generateConcurrently(Callable<String> generator) throws Exception {
+		int threadCount = 12;
+		int callCount = 240;
+		ExecutorService executor = Executors.newFixedThreadPool(threadCount);
+		CountDownLatch start = new CountDownLatch(1);
+		try {
+			List<Future<String>> futures = new ArrayList<>();
+			for (int i = 0; i < callCount; i++) {
+				futures.add(executor.submit(() -> {
+					start.await();
+					return generator.call();
+				}));
+			}
+			start.countDown();
+			List<String> schemas = new ArrayList<>();
+			for (Future<String> future : futures) {
+				schemas.add(future.get(30, TimeUnit.SECONDS));
+			}
+			return schemas;
+		}
+		finally {
+			executor.shutdownNow();
+		}
 	}
 
 	static class TestMethods {
@@ -739,6 +1020,67 @@ class JsonSchemaGeneratorTests {
 		public void contextMethod(String deliveryStatus, LocalDateTime expectedDelivery, ToolContext toolContext) {
 		}
 
+		public void searchBooksMethod(SearchRequest request) {
+		}
+
+		public void sameOuterTwoParamsMethod(SearchRequest a, SearchRequest b) {
+		}
+
+		public void collidingSimpleNameMethod(OuterA.SearchRequest a, OuterB.SearchRequest b) {
+		}
+
+		public void peerReferenceMethod(PeerA.SearchRequest a, PeerB.SearchRequest b) {
+		}
+
+	}
+
+	record RecursiveFilter(String field, String operator, List<RecursiveFilter> filters) {
+	}
+
+	record SearchRequest(List<RecursiveFilter> filters, int limit) {
+	}
+
+	static class OuterA {
+
+		record Filter(String label, List<Filter> children) {
+		}
+
+		record SearchRequest(List<Filter> filters, int limit) {
+		}
+
+	}
+
+	static class OuterB {
+
+		record Filter(String code, List<Filter> children) {
+		}
+
+		record SearchRequest(List<Filter> filters, int limit) {
+		}
+
+	}
+
+	static class PeerA {
+
+		record Filter(String label, List<Filter> children) {
+		}
+
+		record SearchRequest(List<Filter> filters) {
+		}
+
+	}
+
+	static class PeerB {
+
+		record Filter(String code, List<Filter> children) {
+		}
+
+		record Wrapper(List<Filter> filters, List<Wrapper> nested) {
+		}
+
+		record SearchRequest(Wrapper wrapper) {
+		}
+
 	}
 
 	record TestData(int id, @ToolParam(description = "The special name") String name) {
@@ -771,8 +1113,17 @@ class JsonSchemaGeneratorTests {
 
 	}
 
-	record JSpecifyNullablePerson(int id, String name, @org.jspecify.annotations.Nullable String email) {
+	record JSpecifyNullablePerson(int id, String name, @Nullable String email) {
 
+	}
+
+	record WithMapField(String name, Map<String, Integer> scores) {
+
+	}
+
+	@JsonPropertyOrder({ "accountId", "accountName", "currency", "totals" })
+	record OrderedStatement(@JsonProperty(required = true) String accountId,
+			@JsonProperty(required = true) String accountName, String currency, Map<String, Double> totals) {
 	}
 
 	static class Person {

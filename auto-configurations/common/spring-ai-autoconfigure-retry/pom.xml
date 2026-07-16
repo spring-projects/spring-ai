@@ -6,7 +6,7 @@
 	<parent>
 		<groupId>org.springframework.ai</groupId>
 		<artifactId>spring-ai-parent</artifactId>
-		<version>2.0.0-SNAPSHOT</version>
+		<version>2.0.1-SNAPSHOT</version>
 		<relativePath>../../../pom.xml</relativePath>
 	</parent>
 	<artifactId>spring-ai-autoconfigure-retry</artifactId>
@@ -15,25 +15,20 @@
 	<description>Spring AI Retry Auto Configuration</description>
 	<url>https://github.com/spring-projects/spring-ai</url>
 
-	<scm>
-		<url>https://github.com/spring-projects/spring-ai</url>
-		<connection>git://github.com/spring-projects/spring-ai.git</connection>
-		<developerConnection>git@github.com:spring-projects/spring-ai.git</developerConnection>
-	</scm>
-
-
 	<dependencies>
 
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-retry</artifactId>
 			<version>${project.parent.version}</version>
+			<optional>true</optional>
 		</dependency>
 
 		<!-- Boot dependencies -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter</artifactId>
+			<artifactId>spring-boot-autoconfigure</artifactId>
+			<optional>true</optional>
 		</dependency>
 
 		<dependency>
@@ -56,11 +51,6 @@
 			<scope>test</scope>
 		</dependency>
 
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-test</artifactId>
-			<scope>test</scope>
-		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-restclient-test</artifactId>

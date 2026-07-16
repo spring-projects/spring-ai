@@ -1,0 +1,608 @@
+/*
+ * Copyright 2023-present the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.springframework.ai.mcp.annotation.provider.prompt;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import io.modelcontextprotocol.common.McpTransportContext;
+import io.modelcontextprotocol.server.McpStatelessServerFeatures.SyncPromptSpecification;
+import io.modelcontextprotocol.spec.McpSchema.GetPromptRequest;
+import io.modelcontextprotocol.spec.McpSchema.GetPromptResult;
+import io.modelcontextprotocol.spec.McpSchema.PromptMessage;
+import io.modelcontextprotocol.spec.McpSchema.Role;
+import io.modelcontextprotocol.spec.McpSchema.TextContent;
+import org.junit.jupiter.api.Test;
+import reactor.core.publisher.Mono;
+
+import org.springframework.ai.mcp.annotation.McpArg;
+import org.springframework.ai.mcp.annotation.McpPrompt;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
+
+/**
+ * Tests for {@link SyncStatelessMcpPromptProvider}.
+ *
+ * @author Christian Tzolov
+ */
+public class SyncStatelessMcpPromptProviderTests {
+
+	@Test
+	void testConstructorWithNullPromptObjects() {
+		assertThatThrownBy(() -> new SyncStatelessMcpPromptProvider(null)).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("promptObjects cannot be null");
+	}
+
+	@Test
+	void testGetPromptSpecificationsWithSingleValidPrompt() {
+		// Create a class with only one valid prompt method
+		class SingleValidPrompt {
+
+			@McpPrompt(name = "test-prompt", description = "A test prompt")
+			public GetPromptResult testPrompt(GetPromptRequest request) {
+				return GetPromptResult
+					.builder(List.of(new PromptMessage(Role.ASSISTANT,
+							TextContent.builder("Hello from " + request.name()).build())))
+					.description("Test prompt result")
+					.build();
+			}
+
+		}
+
+		SingleValidPrompt promptObject = new SingleValidPrompt();
+		SyncStatelessMcpPromptProvider provider = new SyncStatelessMcpPromptProvider(List.of(promptObject));
+
+		List<SyncPromptSpecification> promptSpecs = provider.getPromptSpecifications();
+
+		assertThat(promptSpecs).isNotNull();
+		assertThat(promptSpecs).hasSize(1);
+
+		SyncPromptSpecification promptSpec = promptSpecs.get(0);
+		assertThat(promptSpec.prompt().name()).isEqualTo("test-prompt");
+		assertThat(promptSpec.prompt().description()).isEqualTo("A test prompt");
+		assertThat(promptSpec.promptHandler()).isNotNull();
+
+		// Test that the handler works
+		McpTransportContext context = mock(McpTransportContext.class);
+		Map<String, Object> args = new HashMap<>();
+		args.put("name", "John");
+		GetPromptRequest request = GetPromptRequest.builder("test-prompt").arguments(args).build();
+		GetPromptResult result = promptSpec.promptHandler().apply(context, request);
+
+		assertThat(result).isNotNull();
+		assertThat(result.description()).isEqualTo("Test prompt result");
+		assertThat(result.messages()).hasSize(1);
+		PromptMessage message = result.messages().get(0);
+		assertThat(message.role()).isEqualTo(Role.ASSISTANT);
+		assertThat(((TextContent) message.content()).text()).isEqualTo("Hello from test-prompt");
+	}
+
+	@Test
+	void testGetPromptSpecificationsWithCustomPromptName() {
+		class CustomNamePrompt {
+
+			@McpPrompt(name = "custom-name", description = "Custom named prompt")
+			public GetPromptResult methodWithDifferentName() {
+				return GetPromptResult
+					.builder(List
+						.of(new PromptMessage(Role.ASSISTANT, TextContent.builder("Custom prompt content").build())))
+					.description("Custom prompt result")
+					.build();
+			}
+
+		}
+
+		CustomNamePrompt promptObject = new CustomNamePrompt();
+		SyncStatelessMcpPromptProvider provider = new SyncStatelessMcpPromptProvider(List.of(promptObject));
+
+		List<SyncPromptSpecification> promptSpecs = provider.getPromptSpecifications();
+
+		assertThat(promptSpecs).hasSize(1);
+		assertThat(promptSpecs.get(0).prompt().name()).isEqualTo("custom-name");
+		assertThat(promptSpecs.get(0).prompt().description()).isEqualTo("Custom named prompt");
+	}
+
+	@Test
+	void testGetPromptSpecificationsWithDefaultPromptName() {
+		class DefaultNamePrompt {
+
+			@McpPrompt(description = "Prompt with default name")
+			public GetPromptResult defaultNameMethod() {
+				return GetPromptResult
+					.builder(List
+						.of(new PromptMessage(Role.ASSISTANT, TextContent.builder("Default prompt content").build())))
+					.description("Default prompt result")
+					.build();
+			}
+
+		}
+
+		DefaultNamePrompt promptObject = new DefaultNamePrompt();
+		SyncStatelessMcpPromptProvider provider = new SyncStatelessMcpPromptProvider(List.of(promptObject));
+
+		List<SyncPromptSpecification> promptSpecs = provider.getPromptSpecifications();
+
+		assertThat(promptSpecs).hasSize(1);
+		assertThat(promptSpecs.get(0).prompt().name()).isEqualTo("defaultNameMethod");
+		assertThat(promptSpecs.get(0).prompt().description()).isEqualTo("Prompt with default name");
+	}
+
+	@Test
+	void testGetPromptSpecificationsWithEmptyPromptName() {
+		class EmptyNamePrompt {
+
+			@McpPrompt(name = "", description = "Prompt with empty name")
+			public GetPromptResult emptyNameMethod() {
+				return GetPromptResult
+					.builder(List.of(new PromptMessage(Role.ASSISTANT,
+							TextContent.builder("Empty name prompt content").build())))
+					.description("Empty name prompt result")
+					.build();
+			}
+
+		}
+
+		EmptyNamePrompt promptObject = new EmptyNamePrompt();
+		SyncStatelessMcpPromptProvider provider = new SyncStatelessMcpPromptProvider(List.of(promptObject));
+
+		List<SyncPromptSpecification> promptSpecs = provider.getPromptSpecifications();
+
+		assertThat(promptSpecs).hasSize(1);
+		assertThat(promptSpecs.get(0).prompt().name()).isEqualTo("emptyNameMethod");
+		assertThat(promptSpecs.get(0).prompt().description()).isEqualTo("Prompt with empty name");
+	}
+
+	@Test
+	void testGetPromptSpecificationsFiltersOutMonoReturnTypes() {
+		class MonoReturnPrompt {
+
+			@McpPrompt(name = "mono-prompt", description = "Prompt returning Mono")
+			public Mono<GetPromptResult> monoPrompt() {
+				return Mono.just(GetPromptResult
+					.builder(List
+						.of(new PromptMessage(Role.ASSISTANT, TextContent.builder("Mono prompt content").build())))
+					.description("Mono prompt result")
+					.build());
+			}
+
+			@McpPrompt(name = "sync-prompt", description = "Synchronous prompt")
+			public GetPromptResult syncPrompt() {
+				return GetPromptResult
+					.builder(List
+						.of(new PromptMessage(Role.ASSISTANT, TextContent.builder("Sync prompt content").build())))
+					.description("Sync prompt result")
+					.build();
+			}
+
+		}
+
+		MonoReturnPrompt promptObject = new MonoReturnPrompt();
+		SyncStatelessMcpPromptProvider provider = new SyncStatelessMcpPromptProvider(List.of(promptObject));
+
+		List<SyncPromptSpecification> promptSpecs = provider.getPromptSpecifications();
+
+		assertThat(promptSpecs).hasSize(1);
+		assertThat(promptSpecs.get(0).prompt().name()).isEqualTo("sync-prompt");
+		assertThat(promptSpecs.get(0).prompt().description()).isEqualTo("Synchronous prompt");
+	}
+
+	@Test
+	void testGetPromptSpecificationsWithMultiplePromptMethods() {
+		class MultiplePromptMethods {
+
+			@McpPrompt(name = "prompt1", description = "First prompt")
+			public GetPromptResult firstPrompt() {
+				return GetPromptResult
+					.builder(List
+						.of(new PromptMessage(Role.ASSISTANT, TextContent.builder("First prompt content").build())))
+					.description("First prompt result")
+					.build();
+			}
+
+			@McpPrompt(name = "prompt2", description = "Second prompt")
+			public GetPromptResult secondPrompt() {
+				return GetPromptResult
+					.builder(List
+						.of(new PromptMessage(Role.ASSISTANT, TextContent.builder("Second prompt content").build())))
+					.description("Second prompt result")
+					.build();
+			}
+
+		}
+
+		MultiplePromptMethods promptObject = new MultiplePromptMethods();
+		SyncStatelessMcpPromptProvider provider = new SyncStatelessMcpPromptProvider(List.of(promptObject));
+
+		List<SyncPromptSpecification> promptSpecs = provider.getPromptSpecifications();
+
+		assertThat(promptSpecs).hasSize(2);
+		assertThat(promptSpecs.get(0).prompt().name()).isIn("prompt1", "prompt2");
+		assertThat(promptSpecs.get(1).prompt().name()).isIn("prompt1", "prompt2");
+		assertThat(promptSpecs.get(0).prompt().name()).isNotEqualTo(promptSpecs.get(1).prompt().name());
+	}
+
+	@Test
+	void testGetPromptSpecificationsWithMultiplePromptObjects() {
+		class FirstPromptObject {
+
+			@McpPrompt(name = "first-prompt", description = "First prompt")
+			public GetPromptResult firstPrompt() {
+				return GetPromptResult
+					.builder(List
+						.of(new PromptMessage(Role.ASSISTANT, TextContent.builder("First prompt content").build())))
+					.description("First prompt result")
+					.build();
+			}
+
+		}
+
+		class SecondPromptObject {
+
+			@McpPrompt(name = "second-prompt", description = "Second prompt")
+			public GetPromptResult secondPrompt() {
+				return GetPromptResult
+					.builder(List
+						.of(new PromptMessage(Role.ASSISTANT, TextContent.builder("Second prompt content").build())))
+					.description("Second prompt result")
+					.build();
+			}
+
+		}
+
+		FirstPromptObject firstObject = new FirstPromptObject();
+		SecondPromptObject secondObject = new SecondPromptObject();
+		SyncStatelessMcpPromptProvider provider = new SyncStatelessMcpPromptProvider(
+				List.of(firstObject, secondObject));
+
+		List<SyncPromptSpecification> promptSpecs = provider.getPromptSpecifications();
+
+		assertThat(promptSpecs).hasSize(2);
+		assertThat(promptSpecs.get(0).prompt().name()).isIn("first-prompt", "second-prompt");
+		assertThat(promptSpecs.get(1).prompt().name()).isIn("first-prompt", "second-prompt");
+		assertThat(promptSpecs.get(0).prompt().name()).isNotEqualTo(promptSpecs.get(1).prompt().name());
+	}
+
+	@Test
+	void testGetPromptSpecificationsWithMixedMethods() {
+		class MixedMethods {
+
+			@McpPrompt(name = "valid-prompt", description = "Valid prompt")
+			public GetPromptResult validPrompt() {
+				return GetPromptResult
+					.builder(List
+						.of(new PromptMessage(Role.ASSISTANT, TextContent.builder("Valid prompt content").build())))
+					.description("Valid prompt result")
+					.build();
+			}
+
+			public GetPromptResult nonAnnotatedMethod() {
+				return GetPromptResult
+					.builder(List
+						.of(new PromptMessage(Role.ASSISTANT, TextContent.builder("Non-annotated content").build())))
+					.description("Non-annotated result")
+					.build();
+			}
+
+			@McpPrompt(name = "mono-prompt", description = "Mono prompt")
+			public Mono<GetPromptResult> monoPrompt() {
+				return Mono.just(GetPromptResult
+					.builder(List
+						.of(new PromptMessage(Role.ASSISTANT, TextContent.builder("Mono prompt content").build())))
+					.description("Mono prompt result")
+					.build());
+			}
+
+		}
+
+		MixedMethods promptObject = new MixedMethods();
+		SyncStatelessMcpPromptProvider provider = new SyncStatelessMcpPromptProvider(List.of(promptObject));
+
+		List<SyncPromptSpecification> promptSpecs = provider.getPromptSpecifications();
+
+		assertThat(promptSpecs).hasSize(1);
+		assertThat(promptSpecs.get(0).prompt().name()).isEqualTo("valid-prompt");
+		assertThat(promptSpecs.get(0).prompt().description()).isEqualTo("Valid prompt");
+	}
+
+	@Test
+	void testGetPromptSpecificationsWithArguments() {
+		class ArgumentPrompt {
+
+			@McpPrompt(name = "argument-prompt", description = "Prompt with arguments")
+			public GetPromptResult argumentPrompt(
+					@McpArg(name = "name", description = "User's name", required = true) String name,
+					@McpArg(name = "age", description = "User's age", required = false) Integer age) {
+				return GetPromptResult.builder(List.of(new PromptMessage(Role.ASSISTANT,
+						TextContent
+							.builder("Hello " + name + ", you are " + (age != null ? age : "unknown") + " years old")
+							.build())))
+					.description("Argument prompt result")
+					.build();
+			}
+
+		}
+
+		ArgumentPrompt promptObject = new ArgumentPrompt();
+		SyncStatelessMcpPromptProvider provider = new SyncStatelessMcpPromptProvider(List.of(promptObject));
+
+		List<SyncPromptSpecification> promptSpecs = provider.getPromptSpecifications();
+
+		assertThat(promptSpecs).hasSize(1);
+		assertThat(promptSpecs.get(0).prompt().name()).isEqualTo("argument-prompt");
+		assertThat(promptSpecs.get(0).prompt().arguments()).hasSize(2);
+
+		// Test that the handler works with arguments
+		McpTransportContext context = mock(McpTransportContext.class);
+		Map<String, Object> args = new HashMap<>();
+		args.put("name", "John");
+		args.put("age", 30);
+		GetPromptRequest request = GetPromptRequest.builder("argument-prompt").arguments(args).build();
+		GetPromptResult result = promptSpecs.get(0).promptHandler().apply(context, request);
+
+		assertThat(result).isNotNull();
+		assertThat(result.description()).isEqualTo("Argument prompt result");
+		assertThat(result.messages()).hasSize(1);
+		PromptMessage message = result.messages().get(0);
+		assertThat(message.role()).isEqualTo(Role.ASSISTANT);
+		assertThat(((TextContent) message.content()).text()).isEqualTo("Hello John, you are 30 years old");
+	}
+
+	@Test
+	void testGetPromptSpecificationsWithPrivateMethod() {
+		class PrivateMethodPrompt {
+
+			@McpPrompt(name = "private-prompt", description = "Private prompt method")
+			private GetPromptResult privatePrompt() {
+				return GetPromptResult
+					.builder(List
+						.of(new PromptMessage(Role.ASSISTANT, TextContent.builder("Private prompt content").build())))
+					.description("Private prompt result")
+					.build();
+			}
+
+		}
+
+		PrivateMethodPrompt promptObject = new PrivateMethodPrompt();
+		SyncStatelessMcpPromptProvider provider = new SyncStatelessMcpPromptProvider(List.of(promptObject));
+
+		List<SyncPromptSpecification> promptSpecs = provider.getPromptSpecifications();
+
+		assertThat(promptSpecs).hasSize(1);
+		assertThat(promptSpecs.get(0).prompt().name()).isEqualTo("private-prompt");
+		assertThat(promptSpecs.get(0).prompt().description()).isEqualTo("Private prompt method");
+
+		// Test that the handler works with private methods
+		McpTransportContext context = mock(McpTransportContext.class);
+		Map<String, Object> args = new HashMap<>();
+		GetPromptRequest request = GetPromptRequest.builder("private-prompt").arguments(args).build();
+		GetPromptResult result = promptSpecs.get(0).promptHandler().apply(context, request);
+
+		assertThat(result).isNotNull();
+		assertThat(result.description()).isEqualTo("Private prompt result");
+		assertThat(result.messages()).hasSize(1);
+		PromptMessage message = result.messages().get(0);
+		assertThat(message.role()).isEqualTo(Role.ASSISTANT);
+		assertThat(((TextContent) message.content()).text()).isEqualTo("Private prompt content");
+	}
+
+	@Test
+	void testGetPromptSpecificationsWithStringReturn() {
+		class StringReturnPrompt {
+
+			@McpPrompt(name = "string-prompt", description = "Prompt returning string")
+			public String stringPrompt() {
+				return "Simple string response";
+			}
+
+		}
+
+		StringReturnPrompt promptObject = new StringReturnPrompt();
+		SyncStatelessMcpPromptProvider provider = new SyncStatelessMcpPromptProvider(List.of(promptObject));
+
+		List<SyncPromptSpecification> promptSpecs = provider.getPromptSpecifications();
+
+		assertThat(promptSpecs).hasSize(1);
+		assertThat(promptSpecs.get(0).prompt().name()).isEqualTo("string-prompt");
+
+		// Test that the handler works with string return type
+		McpTransportContext context = mock(McpTransportContext.class);
+		Map<String, Object> args = new HashMap<>();
+		GetPromptRequest request = GetPromptRequest.builder("string-prompt").arguments(args).build();
+		GetPromptResult result = promptSpecs.get(0).promptHandler().apply(context, request);
+
+		assertThat(result).isNotNull();
+		assertThat(result.messages()).hasSize(1);
+		PromptMessage message = result.messages().get(0);
+		assertThat(message.role()).isEqualTo(Role.ASSISTANT);
+		assertThat(((TextContent) message.content()).text()).isEqualTo("Simple string response");
+	}
+
+	@Test
+	void testGetPromptSpecificationsWithContextParameter() {
+		class ContextParameterPrompt {
+
+			@McpPrompt(name = "context-prompt", description = "Prompt with context parameter")
+			public GetPromptResult contextPrompt(McpTransportContext context, GetPromptRequest request) {
+				return GetPromptResult
+					.builder(List.of(new PromptMessage(Role.ASSISTANT,
+							TextContent.builder("Prompt with context: " + (context != null ? "present" : "null")
+									+ ", name: " + request.name())
+								.build())))
+					.description("Context prompt result")
+					.build();
+			}
+
+		}
+
+		ContextParameterPrompt promptObject = new ContextParameterPrompt();
+		SyncStatelessMcpPromptProvider provider = new SyncStatelessMcpPromptProvider(List.of(promptObject));
+
+		List<SyncPromptSpecification> promptSpecs = provider.getPromptSpecifications();
+
+		assertThat(promptSpecs).hasSize(1);
+		assertThat(promptSpecs.get(0).prompt().name()).isEqualTo("context-prompt");
+
+		// Test that the handler works with context parameter
+		McpTransportContext context = mock(McpTransportContext.class);
+		Map<String, Object> args = new HashMap<>();
+		GetPromptRequest request = GetPromptRequest.builder("context-prompt").arguments(args).build();
+		GetPromptResult result = promptSpecs.get(0).promptHandler().apply(context, request);
+
+		assertThat(result).isNotNull();
+		assertThat(result.description()).isEqualTo("Context prompt result");
+		assertThat(result.messages()).hasSize(1);
+		PromptMessage message = result.messages().get(0);
+		assertThat(message.role()).isEqualTo(Role.ASSISTANT);
+		assertThat(((TextContent) message.content()).text())
+			.isEqualTo("Prompt with context: present, name: context-prompt");
+	}
+
+	@Test
+	void testGetPromptSpecificationsWithRequestParameter() {
+		class RequestParameterPrompt {
+
+			@McpPrompt(name = "request-prompt", description = "Prompt with request parameter")
+			public GetPromptResult requestPrompt(GetPromptRequest request) {
+				return GetPromptResult
+					.builder(List.of(new PromptMessage(Role.ASSISTANT,
+							TextContent.builder("Prompt for name: " + request.name()).build())))
+					.description("Request prompt result")
+					.build();
+			}
+
+		}
+
+		RequestParameterPrompt promptObject = new RequestParameterPrompt();
+		SyncStatelessMcpPromptProvider provider = new SyncStatelessMcpPromptProvider(List.of(promptObject));
+
+		List<SyncPromptSpecification> promptSpecs = provider.getPromptSpecifications();
+
+		assertThat(promptSpecs).hasSize(1);
+		assertThat(promptSpecs.get(0).prompt().name()).isEqualTo("request-prompt");
+
+		// Test that the handler works with request parameter
+		McpTransportContext context = mock(McpTransportContext.class);
+		Map<String, Object> args = new HashMap<>();
+		GetPromptRequest request = GetPromptRequest.builder("request-prompt").arguments(args).build();
+		GetPromptResult result = promptSpecs.get(0).promptHandler().apply(context, request);
+
+		assertThat(result).isNotNull();
+		assertThat(result.description()).isEqualTo("Request prompt result");
+		assertThat(result.messages()).hasSize(1);
+		PromptMessage message = result.messages().get(0);
+		assertThat(message.role()).isEqualTo(Role.ASSISTANT);
+		assertThat(((TextContent) message.content()).text()).isEqualTo("Prompt for name: request-prompt");
+	}
+
+	@Test
+	void testGetPromptSpecificationsWithMessagesList() {
+		class MessagesListPrompt {
+
+			@McpPrompt(name = "messages-list-prompt", description = "Prompt returning messages list")
+			public List<PromptMessage> messagesListPrompt() {
+				return List.of(new PromptMessage(Role.ASSISTANT, TextContent.builder("First message").build()),
+						new PromptMessage(Role.ASSISTANT, TextContent.builder("Second message").build()));
+			}
+
+		}
+
+		MessagesListPrompt promptObject = new MessagesListPrompt();
+		SyncStatelessMcpPromptProvider provider = new SyncStatelessMcpPromptProvider(List.of(promptObject));
+
+		List<SyncPromptSpecification> promptSpecs = provider.getPromptSpecifications();
+
+		assertThat(promptSpecs).hasSize(1);
+		assertThat(promptSpecs.get(0).prompt().name()).isEqualTo("messages-list-prompt");
+
+		// Test that the handler works with messages list return type
+		McpTransportContext context = mock(McpTransportContext.class);
+		Map<String, Object> args = new HashMap<>();
+		GetPromptRequest request = GetPromptRequest.builder("messages-list-prompt").arguments(args).build();
+		GetPromptResult result = promptSpecs.get(0).promptHandler().apply(context, request);
+
+		assertThat(result).isNotNull();
+		assertThat(result.messages()).hasSize(2);
+		assertThat(((TextContent) result.messages().get(0).content()).text()).isEqualTo("First message");
+		assertThat(((TextContent) result.messages().get(1).content()).text()).isEqualTo("Second message");
+	}
+
+	@Test
+	void testGetPromptSpecificationsWithSingleMessage() {
+		class SingleMessagePrompt {
+
+			@McpPrompt(name = "single-message-prompt", description = "Prompt returning single message")
+			public PromptMessage singleMessagePrompt() {
+				return new PromptMessage(Role.ASSISTANT, TextContent.builder("Single message").build());
+			}
+
+		}
+
+		SingleMessagePrompt promptObject = new SingleMessagePrompt();
+		SyncStatelessMcpPromptProvider provider = new SyncStatelessMcpPromptProvider(List.of(promptObject));
+
+		List<SyncPromptSpecification> promptSpecs = provider.getPromptSpecifications();
+
+		assertThat(promptSpecs).hasSize(1);
+		assertThat(promptSpecs.get(0).prompt().name()).isEqualTo("single-message-prompt");
+
+		// Test that the handler works with single message return type
+		McpTransportContext context = mock(McpTransportContext.class);
+		Map<String, Object> args = new HashMap<>();
+		GetPromptRequest request = GetPromptRequest.builder("single-message-prompt").arguments(args).build();
+		GetPromptResult result = promptSpecs.get(0).promptHandler().apply(context, request);
+
+		assertThat(result).isNotNull();
+		assertThat(result.messages()).hasSize(1);
+		assertThat(((TextContent) result.messages().get(0).content()).text()).isEqualTo("Single message");
+	}
+
+	@Test
+	void testGetPromptSpecificationsWithStringList() {
+		class StringListPrompt {
+
+			@McpPrompt(name = "string-list-prompt", description = "Prompt returning string list")
+			public List<String> stringListPrompt() {
+				return List.of("First string", "Second string", "Third string");
+			}
+
+		}
+
+		StringListPrompt promptObject = new StringListPrompt();
+		SyncStatelessMcpPromptProvider provider = new SyncStatelessMcpPromptProvider(List.of(promptObject));
+
+		List<SyncPromptSpecification> promptSpecs = provider.getPromptSpecifications();
+
+		assertThat(promptSpecs).hasSize(1);
+		assertThat(promptSpecs.get(0).prompt().name()).isEqualTo("string-list-prompt");
+
+		// Test that the handler works with string list return type
+		McpTransportContext context = mock(McpTransportContext.class);
+		Map<String, Object> args = new HashMap<>();
+		GetPromptRequest request = GetPromptRequest.builder("string-list-prompt").arguments(args).build();
+		GetPromptResult result = promptSpecs.get(0).promptHandler().apply(context, request);
+
+		assertThat(result).isNotNull();
+		assertThat(result.messages()).hasSize(3);
+		assertThat(((TextContent) result.messages().get(0).content()).text()).isEqualTo("First string");
+		assertThat(((TextContent) result.messages().get(1).content()).text()).isEqualTo("Second string");
+		assertThat(((TextContent) result.messages().get(2).content()).text()).isEqualTo("Third string");
+	}
+
+}

@@ -73,14 +73,14 @@ The prefix spring.ai.mistralai.moderation is used as the property prefix for con
 | spring.ai.model.moderation   | Enable Moderation model |  mistral
 | spring.ai.mistralai.moderation.base-url   | The URL to connect to |  https://api.mistral.ai
 | spring.ai.mistralai.moderation.api-key    | The API Key           |  -
-| spring.ai.mistralai.moderation.options.model  | ID of the model to use for moderation. | mistral-moderation-latest
+| spring.ai.mistralai.moderation.model  | ID of the model to use for moderation. | mistral-moderation-latest
 |====
 
 NOTE: You can override the common `spring.ai.mistralai.base-url`, `spring.ai.mistralai.api-key`, properties.
 The `spring.ai.mistralai.moderation.base-url`, `spring.ai.mistralai.moderation.api-key`, properties, if set, take precedence over the common properties.
 This is useful if you want to use different Mistral AI accounts for different models and different model endpoints.
 
-TIP: All properties prefixed with `spring.ai.mistralai.moderation.options` can be overridden at runtime.
+TIP: All properties prefixed with `spring.ai.mistralai.moderation` can be overridden at runtime.
 
 == Runtime Options
 The MistralAiModerationOptions class provides the options to use when making a moderation request.

@@ -1,5 +1,5 @@
 /*
- * Copyright 2023-2025 the original author or authors.
+ * Copyright 2023-present the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,6 +38,38 @@ class ChatModelObservationContextTests {
 			.build();
 
 		assertThat(observationContext).isNotNull();
+	}
+
+	@Test
+	void whenStreamingNotSetThenDefaultToFalse() {
+		var observationContext = ChatModelObservationContext.builder()
+			.prompt(generatePrompt(ChatOptions.builder().model("supermodel").build()))
+			.provider("superprovider")
+			.build();
+
+		assertThat(observationContext.isStreaming()).isFalse();
+	}
+
+	@Test
+	void whenStreamingTrueThenReturn() {
+		var observationContext = ChatModelObservationContext.builder()
+			.prompt(generatePrompt(ChatOptions.builder().model("supermodel").build()))
+			.provider("superprovider")
+			.streaming(true)
+			.build();
+
+		assertThat(observationContext.isStreaming()).isTrue();
+	}
+
+	@Test
+	void whenStreamingFalseThenReturn() {
+		var observationContext = ChatModelObservationContext.builder()
+			.prompt(generatePrompt(ChatOptions.builder().model("supermodel").build()))
+			.provider("superprovider")
+			.streaming(false)
+			.build();
+
+		assertThat(observationContext.isStreaming()).isFalse();
 	}
 
 	private Prompt generatePrompt(ChatOptions chatOptions) {
