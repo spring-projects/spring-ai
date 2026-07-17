@@ -153,6 +153,62 @@ class S3VectorStoreTests {
 		verify(s3VectorsClient, never()).queryVectors(any(QueryVectorsRequest.class));
 	}
 
+	@Test
+	void filterDeleteHandlesNotExpression() {
+		S3VectorsClient s3VectorsClient = mock(S3VectorsClient.class);
+		FilterExpressionBuilder b = new FilterExpressionBuilder();
+		when(s3VectorsClient.listVectors(any(ListVectorsRequest.class))).thenReturn(ListVectorsResponse.builder()
+			.vectors(vector("chunk-1", Map.of("fileId", "file-1")), vector("chunk-2", Map.of("fileId", "file-2")),
+					vector("chunk-3", Map.of("fileId", "file-1")))
+			.build());
+
+		S3VectorStore vectorStore = vectorStore(s3VectorsClient);
+
+		vectorStore.delete(b.not(b.eq("fileId", "file-2")).build());
+
+		ArgumentCaptor<DeleteVectorsRequest> deleteRequestCaptor = ArgumentCaptor.forClass(DeleteVectorsRequest.class);
+		verify(s3VectorsClient).deleteVectors(deleteRequestCaptor.capture());
+		assertThat(deleteRequestCaptor.getValue().keys()).containsExactly("chunk-1", "chunk-3");
+	}
+
+	@Test
+	void filterDeleteHandlesIsNullExpression() {
+		S3VectorsClient s3VectorsClient = mock(S3VectorsClient.class);
+		FilterExpressionBuilder b = new FilterExpressionBuilder();
+		when(s3VectorsClient.listVectors(any(ListVectorsRequest.class))).thenReturn(ListVectorsResponse.builder()
+			.vectors(vector("chunk-1", Map.of("fileId", "file-1")), vectorWithNullMetadata("chunk-2"),
+					vector("chunk-3", Map.of("tag", "x")))
+			.build());
+
+		S3VectorStore vectorStore = vectorStore(s3VectorsClient);
+
+		// Expect: chunk-2 (null metadata map) and chunk-3 (fileId key absent) both match
+		vectorStore.delete(b.isNull("fileId").build());
+
+		ArgumentCaptor<DeleteVectorsRequest> deleteRequestCaptor = ArgumentCaptor.forClass(DeleteVectorsRequest.class);
+		verify(s3VectorsClient).deleteVectors(deleteRequestCaptor.capture());
+		assertThat(deleteRequestCaptor.getValue().keys()).containsExactly("chunk-2", "chunk-3");
+	}
+
+	@Test
+	void filterDeleteHandlesIsNotNullExpression() {
+		S3VectorsClient s3VectorsClient = mock(S3VectorsClient.class);
+		FilterExpressionBuilder b = new FilterExpressionBuilder();
+		when(s3VectorsClient.listVectors(any(ListVectorsRequest.class))).thenReturn(ListVectorsResponse.builder()
+			.vectors(vector("chunk-1", Map.of("fileId", "file-1")), vectorWithNullMetadata("chunk-2"),
+					vector("chunk-3", Map.of("tag", "x")))
+			.build());
+
+		S3VectorStore vectorStore = vectorStore(s3VectorsClient);
+
+		// Expect: only chunk-1 has a non-null fileId value
+		vectorStore.delete(b.isNotNull("fileId").build());
+
+		ArgumentCaptor<DeleteVectorsRequest> deleteRequestCaptor = ArgumentCaptor.forClass(DeleteVectorsRequest.class);
+		verify(s3VectorsClient).deleteVectors(deleteRequestCaptor.capture());
+		assertThat(deleteRequestCaptor.getValue().keys()).containsExactly("chunk-1");
+	}
+
 	private static S3VectorStore vectorStore(S3VectorsClient s3VectorsClient) {
 		return new S3VectorStore.Builder(s3VectorsClient, mock(EmbeddingModel.class))
 			.vectorBucketName("test-vector-bucket")
@@ -162,6 +218,10 @@ class S3VectorStoreTests {
 
 	private static ListOutputVector vector(String key, Map<String, Object> metadata) {
 		return ListOutputVector.builder().key(key).metadata(metadata(metadata)).build();
+	}
+
+	private static ListOutputVector vectorWithNullMetadata(String key) {
+		return ListOutputVector.builder().key(key).build();
 	}
 
 	private static Document metadata(Map<String, Object> metadata) {

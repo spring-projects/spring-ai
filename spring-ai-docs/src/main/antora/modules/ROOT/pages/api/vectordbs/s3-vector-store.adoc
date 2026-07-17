@@ -122,12 +122,36 @@ For example, this portable filter expression:
 country in ['UK', 'NL'] && year >= 2020
 ----
 
-is converted into the proprietary S3 Vector Store filter format:
+is converted into the S3 Vector Store filter format:
 
-[source,text]
+[source,json]
 ----
-@country:{UK | NL} @year:[2020 inf]
+{"$and": [{"country": {"$in": ["UK", "NL"]}}, {"year": {"$gte": 2020}}]}
 ----
+
+=== Filter-based Deletion
+
+You can also delete documents by filter expression:
+
+[source,java]
+----
+vectorStore.delete("country in ['UK', 'NL'] && year >= 2020");
+----
+
+or programmatically:
+
+[source,java]
+----
+FilterExpressionBuilder b = new FilterExpressionBuilder();
+
+vectorStore.delete(b.and(
+        b.in("country", "UK", "NL"),
+        b.gte("year", 2020)).build());
+----
+
+NOTE: S3 Vectors does not provide a server-side filter-delete API.
+Filter-based deletion lists all vectors in the index (paginated, 500 per page) and evaluates the filter expression locally.
+For large indexes this operation is proportional to the total number of stored vectors.
 
 == Manual Configuration
 

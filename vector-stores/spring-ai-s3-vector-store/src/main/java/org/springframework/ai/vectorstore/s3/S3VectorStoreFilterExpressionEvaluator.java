@@ -116,7 +116,6 @@ final class S3VectorStoreFilterExpressionEvaluator {
 		throw new IllegalArgumentException("Expected a Value operand but got: " + operand.getClass().getName());
 	}
 
-	@SuppressWarnings("unchecked")
 	private int compare(@Nullable Object metaVal, @Nullable Object filterVal) {
 		if (metaVal == null && filterVal == null) {
 			return 0;
@@ -135,7 +134,9 @@ final class S3VectorStoreFilterExpressionEvaluator {
 		}
 		if (metaVal instanceof Comparable comparable && filterVal instanceof Comparable) {
 			try {
-				return comparable.compareTo(filterVal);
+				@SuppressWarnings("unchecked")
+				int result = comparable.compareTo(filterVal);
+				return result;
 			}
 			catch (ClassCastException ex) {
 				throw new IllegalArgumentException("Cannot compare values of incompatible types %s and %s"
