@@ -17,6 +17,7 @@
 package org.springframework.ai.vectorstore.azure.autoconfigure;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import com.azure.core.credential.AzureKeyCredential;
 import com.azure.core.util.ClientOptions;
@@ -89,7 +90,7 @@ public class AzureVectorStoreAutoConfiguration {
 
 		var builder = AzureVectorStore.builder(searchIndexClient, embeddingModel)
 			.initializeSchema(properties.isInitializeSchema())
-			.filterMetadataFields(List.of())
+			.filterMetadataFields(toMetadataFields(properties.getMetadataFields()))
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.customObservationConvention(customObservationConvention.getIfAvailable(() -> null))
 			.batchingStrategy(batchingStrategy)
@@ -116,6 +117,32 @@ public class AzureVectorStoreAutoConfiguration {
 		}
 
 		return builder.build();
+	}
+
+	private static List<AzureVectorStore.MetadataField> toMetadataFields(
+			List<AzureVectorStoreProperties.MetadataFieldEntry> entries) {
+		if (entries == null || entries.isEmpty()) {
+			return List.of();
+		}
+		return entries.stream()
+			.filter(e -> e.getName() != null && !e.getName().isBlank() && e.getFieldType() != null
+					&& !e.getFieldType().isBlank())
+			.map(e -> toMetadataField(e.getName().trim(), e.getFieldType().trim()))
+			.collect(Collectors.toList());
+	}
+
+	private static AzureVectorStore.MetadataField toMetadataField(String name, String fieldType) {
+		return switch (fieldType.toLowerCase()) {
+			case "string", "text" -> AzureVectorStore.MetadataField.text(name);
+			case "int32" -> AzureVectorStore.MetadataField.int32(name);
+			case "int64", "long" -> AzureVectorStore.MetadataField.int64(name);
+			case "decimal", "double" -> AzureVectorStore.MetadataField.decimal(name);
+			case "bool", "boolean" -> AzureVectorStore.MetadataField.bool(name);
+			case "date", "datetime", "datetimeoffset" -> AzureVectorStore.MetadataField.date(name);
+			default -> throw new IllegalArgumentException(
+					"Unsupported metadata field type: '%s'. Supported types: string, int32, int64, decimal, bool, date"
+						.formatted(fieldType));
+		};
 	}
 
 }

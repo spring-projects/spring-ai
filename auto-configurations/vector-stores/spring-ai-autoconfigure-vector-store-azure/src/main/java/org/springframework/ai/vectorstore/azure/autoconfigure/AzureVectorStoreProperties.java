@@ -16,6 +16,9 @@
 
 package org.springframework.ai.vectorstore.azure.autoconfigure;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.vectorstore.azure.AzureVectorStore;
@@ -50,6 +53,43 @@ public class AzureVectorStoreProperties extends CommonVectorStoreProperties {
 	private @Nullable String embeddingFieldName;
 
 	private @Nullable String metadataFieldName;
+
+	/**
+	 * List of metadata fields that can be used in similarity search filter expressions.
+	 * Each entry defines a field name and type (string, int32, int64, decimal, bool,
+	 * date).
+	 */
+	private List<MetadataFieldEntry> metadataFields = new ArrayList<>();
+
+	/**
+	 * Configuration entry for a filterable metadata field.
+	 */
+	public static class MetadataFieldEntry {
+
+		private String name;
+
+		private String fieldType;
+
+		public String getName() {
+			return this.name;
+		}
+
+		public void setName(String name) {
+			this.name = name;
+		}
+
+		/**
+		 * Field type: string, int32, int64, decimal, bool, date.
+		 */
+		public String getFieldType() {
+			return this.fieldType;
+		}
+
+		public void setFieldType(String fieldType) {
+			this.fieldType = fieldType;
+		}
+
+	}
 
 	public @Nullable String getUrl() {
 		return this.url;
@@ -121,6 +161,23 @@ public class AzureVectorStoreProperties extends CommonVectorStoreProperties {
 
 	public void setMetadataFieldName(@Nullable String metadataFieldName) {
 		this.metadataFieldName = metadataFieldName;
+	}
+
+	public List<MetadataFieldEntry> getMetadataFields() {
+		return this.metadataFields;
+	}
+
+	public void setMetadataFields(List<MetadataFieldEntry> metadataFields) {
+		this.metadataFields = metadataFields != null ? metadataFields : new ArrayList<>();
+	}
+
+	/**
+	 * Alias for {@link #setMetadataFields(List)} to support the common typo
+	 * "metadata-fileds" in configuration. Both "metadata-fields" and
+	 * "metadata-fileds" are accepted.
+	 */
+	public void setMetadataFileds(List<MetadataFieldEntry> metadataFileds) {
+		setMetadataFields(metadataFileds);
 	}
 
 }
