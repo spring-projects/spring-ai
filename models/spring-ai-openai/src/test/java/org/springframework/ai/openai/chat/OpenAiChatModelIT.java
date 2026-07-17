@@ -116,6 +116,19 @@ public class OpenAiChatModelIT {
 		assertThat((Object) response.getResult().getOutput().getMetadata().get("reasoningContent")).isNotNull();
 	}
 
+	@Test
+	void nonStreamingCallIncludesRateLimitMetadata() {
+		ChatResponse response = this.chatModel.call(new Prompt("Reply with OK."));
+
+		var rateLimit = response.getMetadata().getRateLimit();
+		assertThat(rateLimit.getRequestsLimit()).isPositive();
+		assertThat(rateLimit.getRequestsRemaining()).isNotNull();
+		assertThat(rateLimit.getRequestsReset()).isNotNull();
+		assertThat(rateLimit.getTokensLimit()).isPositive();
+		assertThat(rateLimit.getTokensRemaining()).isNotNull();
+		assertThat(rateLimit.getTokensReset()).isNotNull();
+	}
+
 	void roleTest() {
 		UserMessage userMessage = new UserMessage(
 				"Tell me about 3 famous pirates from the Golden Age of Piracy and what they did.");
