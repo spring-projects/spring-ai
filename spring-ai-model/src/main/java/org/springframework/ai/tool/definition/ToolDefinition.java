@@ -16,6 +16,9 @@
 
 package org.springframework.ai.tool.definition;
 
+import java.util.Collections;
+import java.util.Map;
+
 /**
  * Definition used by the AI model to determine when and how to call the tool.
  *
@@ -38,6 +41,16 @@ public interface ToolDefinition {
 	 * The schema of the parameters used to call the tool.
 	 */
 	String inputSchema();
+
+	/**
+	 * The metadata associated with the tool. This can be used for filtering,
+	 * categorization, and other purposes. Default implementation returns an empty map.
+	 * @return an unmodifiable map of metadata key-value pairs
+	 * @since 1.0.0
+	 */
+	default Map<String, Object> metadata() {
+		return Collections.emptyMap();
+	}
 
 	/**
 	 * Create a default {@link ToolDefinition} builder.
