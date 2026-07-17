@@ -384,8 +384,10 @@ public final class OpenAiChatModel implements ChatModel {
 			}).filter(Objects::nonNull).toList())
 			.orElse(List.of());
 
+		ChatCompletion.Choice.FinishReason.Value finishReasonValue = choice.finishReason().value();
 		var generationMetadataBuilder = ChatGenerationMetadata.builder()
-			.finishReason(choice.finishReason().value().name());
+			.finishReason(finishReasonValue != ChatCompletion.Choice.FinishReason.Value._UNKNOWN
+					? finishReasonValue.name() : null);
 
 		String textContent = message.content().orElse("");
 
