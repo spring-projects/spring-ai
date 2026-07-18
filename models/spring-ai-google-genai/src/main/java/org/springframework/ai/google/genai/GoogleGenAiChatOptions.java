@@ -46,6 +46,7 @@ import org.springframework.util.Assert;
  * @author Soby Chacko
  * @author Dan Dobrin
  * @author Sebastien Deleuze
+ * @author Subhash Polisetti
  * @since 1.0.0
  */
 public class GoogleGenAiChatOptions implements ToolCallingChatOptions, StructuredOutputChatOptions {
@@ -189,6 +190,12 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 	private final Boolean googleSearchRetrieval;
 
 	/**
+	 * Enable the Gemini code execution tool. The generated code and execution result are
+	 * surfaced on the response message metadata.
+	 */
+	private final Boolean codeExecution;
+
+	/**
 	 * Optional. When true, the API response will include server-side tool calls and
 	 * responses (e.g., Google Search invocations) within Content message parts.
 	 * This allows clients to observe the server's tool invocations without executing them.
@@ -215,9 +222,9 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 			@Nullable Boolean includeThoughts, @Nullable GoogleGenAiThinkingLevel thinkingLevel,
 			@Nullable Boolean includeExtendedUsageMetadata, @Nullable String cachedContentName,
 			@Nullable Boolean useCachedContent, @Nullable Integer autoCacheThreshold, @Nullable Duration autoCacheTtl,
-			@Nullable Boolean googleSearchRetrieval, @Nullable Boolean includeServerSideToolInvocations,
-			@Nullable List<GoogleGenAiSafetySetting> safetySettings, @Nullable Map<String, String> labels,
-			@Nullable GoogleGenAiServiceTier serviceTier) {
+			@Nullable Boolean googleSearchRetrieval, @Nullable Boolean codeExecution,
+			@Nullable Boolean includeServerSideToolInvocations, @Nullable List<GoogleGenAiSafetySetting> safetySettings,
+			@Nullable Map<String, String> labels, @Nullable GoogleGenAiServiceTier serviceTier) {
 		this.model = model != null ? model : ChatModel.GEMINI_2_5_FLASH.getValue();
 		this.frequencyPenalty = frequencyPenalty;
 		this.maxOutputTokens = maxOutputTokens;
@@ -241,6 +248,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 		this.autoCacheThreshold = autoCacheThreshold;
 		this.autoCacheTtl = autoCacheTtl;
 		this.googleSearchRetrieval = Boolean.TRUE.equals(googleSearchRetrieval);
+		this.codeExecution = Boolean.TRUE.equals(codeExecution);
 		this.includeServerSideToolInvocations = Boolean.TRUE.equals(includeServerSideToolInvocations);
 		this.safetySettings = (safetySettings != null ? List.copyOf(safetySettings) : null);
 		this.labels = (labels != null ? Map.copyOf(labels) : null);
@@ -357,6 +365,10 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 		return this.googleSearchRetrieval;
 	}
 
+	public @Nullable Boolean getCodeExecution() {
+		return this.codeExecution;
+	}
+
 	public @Nullable Boolean getIncludeServerSideToolInvocations() {
 		return this.includeServerSideToolInvocations;
 	}
@@ -395,6 +407,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 			return false;
 		}
 		return Objects.equals(this.googleSearchRetrieval, that.googleSearchRetrieval)
+				&& Objects.equals(this.codeExecution, that.codeExecution)
 				&& Objects.equals(this.includeServerSideToolInvocations, that.includeServerSideToolInvocations)
 				&& Objects.equals(this.stopSequences, that.stopSequences)
 				&& Objects.equals(this.temperature, that.temperature) && Objects.equals(this.topP, that.topP)
@@ -419,7 +432,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 		return Objects.hash(this.stopSequences, this.temperature, this.topP, this.topK, this.toolChoice,
 				this.candidateCount, this.frequencyPenalty, this.presencePenalty, this.thinkingBudget,
 				this.includeThoughts, this.thinkingLevel, this.maxOutputTokens, this.model, this.responseMimeType,
-				this.responseSchema, this.toolCallbacks, this.googleSearchRetrieval,
+				this.responseSchema, this.toolCallbacks, this.googleSearchRetrieval, this.codeExecution,
 				this.includeServerSideToolInvocations, this.safetySettings, this.toolContext, this.labels,
 				this.serviceTier);
 	}
@@ -454,6 +467,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 			.autoCacheThreshold(this.autoCacheThreshold)
 			.autoCacheTtl(this.autoCacheTtl)
 			.googleSearchRetrieval(this.googleSearchRetrieval)
+			.codeExecution(this.codeExecution)
 			.includeServerSideToolInvocations(this.includeServerSideToolInvocations)
 			.safetySettings(this.safetySettings)
 			.labels(this.labels)
@@ -503,6 +517,8 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 		protected @Nullable Duration autoCacheTtl;
 
 		protected @Nullable Boolean googleSearchRetrieval;
+
+		protected @Nullable Boolean codeExecution;
 
 		protected @Nullable Boolean includeServerSideToolInvocations;
 
@@ -561,6 +577,11 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 
 		public B googleSearchRetrieval(@Nullable Boolean googleSearch) {
 			this.googleSearchRetrieval = googleSearch;
+			return self();
+		}
+
+		public B codeExecution(@Nullable Boolean codeExecution) {
+			this.codeExecution = codeExecution;
 			return self();
 		}
 
@@ -666,6 +687,9 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 				if (that.googleSearchRetrieval != null) {
 					this.googleSearchRetrieval = that.googleSearchRetrieval;
 				}
+				if (that.codeExecution != null) {
+					this.codeExecution = that.codeExecution;
+				}
 				if (that.includeServerSideToolInvocations != null) {
 					this.includeServerSideToolInvocations = that.includeServerSideToolInvocations;
 				}
@@ -706,8 +730,8 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 					this.toolContext, this.candidateCount, this.responseMimeType, this.responseSchema,
 					this.thinkingBudget, this.includeThoughts, this.thinkingLevel, this.includeExtendedUsageMetadata,
 					this.cachedContentName, this.useCachedContent, this.autoCacheThreshold, this.autoCacheTtl,
-					this.googleSearchRetrieval, this.includeServerSideToolInvocations, this.safetySettings, this.labels,
-					this.serviceTier);
+					this.googleSearchRetrieval, this.codeExecution, this.includeServerSideToolInvocations,
+					this.safetySettings, this.labels, this.serviceTier);
 		}
 
 	}
