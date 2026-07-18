@@ -161,3 +161,4 @@ public class ImageGeneration implements ModelResult<Image> {
 
 * xref:api/image/openai-image.adoc[OpenAI Image Generation]
 * xref:api/image/stabilityai-image.adoc[StabilityAI Image Generation]
+* xref:api/image/togetherai-image.adoc[Together AI Image Generation]
