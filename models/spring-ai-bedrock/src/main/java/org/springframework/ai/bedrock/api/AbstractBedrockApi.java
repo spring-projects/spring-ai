@@ -94,6 +94,7 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 	public AbstractBedrockApi(String modelId, String region) {
 		this(modelId, ProfileCredentialsProvider.builder().build(), region, JacksonUtils.getDefaultJsonMapper(), Duration.ofMinutes(5));
 	}
+
 	/**
 	 * Create a new AbstractBedrockApi instance using default credentials provider and object mapper.
 	 *
@@ -103,6 +104,34 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 	 */
 	public AbstractBedrockApi(String modelId, String region, Duration timeout) {
 		this(modelId, ProfileCredentialsProvider.builder().build(), region, JacksonUtils.getDefaultJsonMapper(), timeout);
+	}
+
+	/**
+	 * Create a new AbstractBedrockApi instance using the provided Bedrock runtime clients
+	 * and default object mapper.
+	 *
+	 * @param modelId The model id to use.
+	 * @param client The Bedrock runtime client to use for non-streaming invocations.
+	 * @param clientStreaming The Bedrock runtime async client to use for streaming invocations.
+	 * @param region The AWS region to use.
+	 */
+	public AbstractBedrockApi(String modelId, BedrockRuntimeClient client, BedrockRuntimeAsyncClient clientStreaming,
+			String region) {
+		this(modelId, client, clientStreaming, Region.of(region), JacksonUtils.getDefaultJsonMapper());
+	}
+
+	/**
+	 * Create a new AbstractBedrockApi instance using the provided Bedrock runtime clients.
+	 *
+	 * @param modelId The model id to use.
+	 * @param client The Bedrock runtime client to use for non-streaming invocations.
+	 * @param clientStreaming The Bedrock runtime async client to use for streaming invocations.
+	 * @param region The AWS region to use.
+	 * @param jsonMapper The JSON mapper to use for JSON serialization and deserialization.
+	 */
+	public AbstractBedrockApi(String modelId, BedrockRuntimeClient client, BedrockRuntimeAsyncClient clientStreaming,
+			String region, JsonMapper jsonMapper) {
+		this(modelId, client, clientStreaming, Region.of(region), jsonMapper);
 	}
 
 	/**
@@ -147,27 +176,31 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 	 */
 	public AbstractBedrockApi(String modelId, AwsCredentialsProvider credentialsProvider, Region region,
 			JsonMapper jsonMapper, Duration timeout) {
+		this(modelId, createClient(credentialsProvider, region, timeout),
+				createAsyncClient(credentialsProvider, region, timeout), region, jsonMapper);
+	}
 
+	/**
+	 * Create a new AbstractBedrockApi instance using the provided Bedrock runtime clients.
+	 *
+	 * @param modelId The model id to use.
+	 * @param client The Bedrock runtime client to use for non-streaming invocations.
+	 * @param clientStreaming The Bedrock runtime async client to use for streaming invocations.
+	 * @param region The AWS region to use.
+	 * @param jsonMapper The JSON mapper to use for JSON serialization and deserialization.
+	 */
+	public AbstractBedrockApi(String modelId, BedrockRuntimeClient client, BedrockRuntimeAsyncClient clientStreaming,
+			Region region, JsonMapper jsonMapper) {
 		Assert.hasText(modelId, "Model id must not be empty");
-		Assert.notNull(credentialsProvider, "Credentials provider must not be null");
+		Assert.notNull(client, "Bedrock runtime client must not be null");
+		Assert.notNull(clientStreaming, "Bedrock runtime async client must not be null");
 		Assert.notNull(jsonMapper, "JSON mapper must not be null");
-		Assert.notNull(timeout, "Timeout must not be null");
 
 		this.modelId = modelId;
 		this.jsonMapper = jsonMapper;
 		this.region = getRegion(region);
-
-		this.client = BedrockRuntimeClient.builder()
-				.region(this.region)
-				.credentialsProvider(credentialsProvider)
-				.overrideConfiguration(c -> c.apiCallTimeout(timeout))
-				.build();
-
-		this.clientStreaming = BedrockRuntimeAsyncClient.builder()
-				.region(this.region)
-				.credentialsProvider(credentialsProvider)
-				.overrideConfiguration(c -> c.apiCallTimeout(timeout))
-				.build();
+		this.client = client;
+		this.clientStreaming = clientStreaming;
 	}
 
 	/**
@@ -338,6 +371,45 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 		else {
 			return region;
 		}
+	}
+
+	private static BedrockRuntimeClient createClient(AwsCredentialsProvider credentialsProvider, Region region,
+			Duration timeout) {
+		Assert.notNull(credentialsProvider, "Credentials provider must not be null");
+		Assert.notNull(timeout, "Timeout must not be null");
+
+		Region resolvedRegion = getRegionStatic(region);
+		return BedrockRuntimeClient.builder()
+			.region(resolvedRegion)
+			.credentialsProvider(credentialsProvider)
+			.overrideConfiguration(c -> c.apiCallTimeout(timeout))
+			.build();
+	}
+
+	private static BedrockRuntimeAsyncClient createAsyncClient(AwsCredentialsProvider credentialsProvider,
+			Region region, Duration timeout) {
+		Assert.notNull(credentialsProvider, "Credentials provider must not be null");
+		Assert.notNull(timeout, "Timeout must not be null");
+
+		Region resolvedRegion = getRegionStatic(region);
+		return BedrockRuntimeAsyncClient.builder()
+			.region(resolvedRegion)
+			.credentialsProvider(credentialsProvider)
+			.overrideConfiguration(c -> c.apiCallTimeout(timeout))
+			.build();
+	}
+
+	private static Region getRegionStatic(Region region) {
+		if (ObjectUtils.isEmpty(region)) {
+			try {
+				return DefaultAwsRegionProviderChain.builder().build().getRegion();
+			}
+			catch (SdkClientException e) {
+				throw new IllegalArgumentException(
+						"Region is empty and cannot be loaded from DefaultAwsRegionProviderChain: " + e.getMessage(), e);
+			}
+		}
+		return region;
 	}
 
 	/**
