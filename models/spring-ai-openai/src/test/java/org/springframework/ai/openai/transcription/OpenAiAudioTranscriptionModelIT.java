@@ -29,6 +29,7 @@ import reactor.core.publisher.Flux;
 import org.springframework.ai.audio.transcription.AudioTranscription;
 import org.springframework.ai.audio.transcription.AudioTranscriptionPrompt;
 import org.springframework.ai.audio.transcription.AudioTranscriptionResponse;
+import org.springframework.ai.audio.transcription.AudioTranscriptionResult;
 import org.springframework.ai.openai.OpenAiAudioTranscriptionModel;
 import org.springframework.ai.openai.OpenAiAudioTranscriptionOptions;
 import org.springframework.ai.openai.OpenAiTestConfiguration;
@@ -60,7 +61,7 @@ public class OpenAiAudioTranscriptionModelIT {
 		AudioTranscriptionResponse response = this.transcriptionModel.call(prompt);
 
 		assertThat(response.getResults()).hasSize(1);
-		assertThat(response.getResult().getOutput()).isNotBlank();
+		assertThat(response.getResult().getOutput().text()).isNotBlank();
 	}
 
 	@Test
@@ -82,7 +83,7 @@ public class OpenAiAudioTranscriptionModelIT {
 		AudioTranscriptionResponse response = this.transcriptionModel.call(prompt);
 
 		assertThat(response.getResults()).hasSize(1);
-		assertThat(response.getResult().getOutput()).isNotBlank();
+		assertThat(response.getResult().getOutput().text()).isNotBlank();
 	}
 
 	@Test
@@ -123,7 +124,7 @@ public class OpenAiAudioTranscriptionModelIT {
 		AudioTranscriptionResponse response = this.transcriptionModel.call(prompt);
 
 		assertThat(response.getResults()).hasSize(1);
-		assertThat(response.getResult().getOutput()).isNotBlank();
+		assertThat(response.getResult().getOutput().text()).isNotBlank();
 	}
 
 	@Test
@@ -141,6 +142,7 @@ public class OpenAiAudioTranscriptionModelIT {
 			.map(AudioTranscriptionResponse::getResult)
 			.filter(Objects::nonNull)
 			.map(AudioTranscription::getOutput)
+			.map(AudioTranscriptionResult::text)
 			.collect(Collectors.joining());
 		assertThat(text).isNotBlank();
 	}

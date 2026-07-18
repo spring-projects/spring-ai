@@ -29,19 +29,19 @@ import org.springframework.ai.model.ModelResult;
  * @author Piotr Olaszewski
  * @since 0.8.1
  */
-public class AudioTranscription implements ModelResult<String> {
+public class AudioTranscription implements ModelResult<AudioTranscriptionResult> {
 
-	private final String text;
+	private final AudioTranscriptionResult output;
 
 	private AudioTranscriptionMetadata transcriptionMetadata = AudioTranscriptionMetadata.NULL;
 
-	public AudioTranscription(String text) {
-		this.text = text;
+	public AudioTranscription(AudioTranscriptionResult output) {
+		this.output = output;
 	}
 
 	@Override
-	public String getOutput() {
-		return this.text;
+	public AudioTranscriptionResult getOutput() {
+		return this.output;
 	}
 
 	@Override
@@ -62,18 +62,18 @@ public class AudioTranscription implements ModelResult<String> {
 		if (!(o instanceof AudioTranscription that)) {
 			return false;
 		}
-		return Objects.equals(this.text, that.text)
+		return Objects.equals(this.output, that.output)
 				&& Objects.equals(this.transcriptionMetadata, that.transcriptionMetadata);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.text, this.transcriptionMetadata);
+		return Objects.hash(this.output, this.transcriptionMetadata);
 	}
 
 	@Override
 	public String toString() {
-		return "Transcript{" + "text=" + this.text + ", transcriptionMetadata=" + this.transcriptionMetadata + '}';
+		return "Transcript{" + "output=" + this.output + ", transcriptionMetadata=" + this.transcriptionMetadata + '}';
 	}
 
 }

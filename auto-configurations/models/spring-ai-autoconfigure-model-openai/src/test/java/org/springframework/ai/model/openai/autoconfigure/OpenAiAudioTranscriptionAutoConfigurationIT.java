@@ -51,7 +51,7 @@ public class OpenAiAudioTranscriptionAutoConfigurationIT {
 				AudioTranscriptionResponse response = transcriptionModel
 					.call(new AudioTranscriptionPrompt(new ClassPathResource("/speech.flac")));
 				assertThat(response.getResults()).hasSize(1);
-				assertThat(response.getResult().getOutput()).isNotBlank();
+				assertThat(response.getResult().getOutput().text()).isNotBlank();
 			});
 	}
 

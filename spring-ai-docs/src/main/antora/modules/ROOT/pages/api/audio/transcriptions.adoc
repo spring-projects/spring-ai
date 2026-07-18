@@ -29,7 +29,7 @@ public interface TranscriptionModel extends Model<AudioTranscriptionPrompt, Audi
      */
     default String transcribe(Resource resource) {
         AudioTranscriptionPrompt prompt = new AudioTranscriptionPrompt(resource);
-        return this.call(prompt).getResult().getOutput();
+        return this.call(prompt).getResult().getOutput().text();
     }
 
     /**
@@ -37,7 +37,7 @@ public interface TranscriptionModel extends Model<AudioTranscriptionPrompt, Audi
      */
     default String transcribe(Resource resource, AudioTranscriptionOptions options) {
         AudioTranscriptionPrompt prompt = new AudioTranscriptionPrompt(resource, options);
-        return this.call(prompt).getResult().getOutput();
+        return this.call(prompt).getResult().getOutput().text();
     }
 }
 ----
@@ -57,13 +57,27 @@ AudioTranscriptionPrompt prompt = new AudioTranscriptionPrompt(
 
 === AudioTranscriptionResponse
 
-The `AudioTranscriptionResponse` class contains the transcribed text and metadata:
+The `AudioTranscriptionResponse` class contains an `AudioTranscriptionResult` and response metadata:
 
 [source,java]
 ----
 AudioTranscriptionResponse response = model.call(prompt);
-String transcribedText = response.getResult().getOutput();
+AudioTranscriptionResult transcription = response.getResult().getOutput();
+String transcribedText = transcription.text();
 AudioTranscriptionResponseMetadata metadata = response.getMetadata();
+----
+
+`AudioTranscriptionResult` always provides the transcribed `text`.
+When supplied by the provider, it also provides the detected `language`, the audio `duration`, timestamped `segments`, and timestamped `words`.
+The optional scalar values are `null` when unavailable; the lists are empty when the provider does not supply the corresponding data.
+
+[source,java]
+----
+AudioTranscriptionResult transcription = response.getResult().getOutput();
+
+for (AudioTranscriptionSegment segment : transcription.segments()) {
+    System.out.printf("%s - %s: %s%n", segment.start(), segment.end(), segment.text());
+}
 ----
 
 == Writing Provider-Agnostic Code
@@ -92,7 +106,7 @@ public class TranscriptionService {
     public String transcribeWithOptions(Resource audioFile, AudioTranscriptionOptions options) {
         AudioTranscriptionPrompt prompt = new AudioTranscriptionPrompt(audioFile, options);
         AudioTranscriptionResponse response = transcriptionModel.call(prompt);
-        return response.getResult().getOutput();
+        return response.getResult().getOutput().text();
     }
 }
 ----
