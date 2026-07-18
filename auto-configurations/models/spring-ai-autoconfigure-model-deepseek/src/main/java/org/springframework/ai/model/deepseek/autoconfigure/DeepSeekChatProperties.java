@@ -21,6 +21,8 @@ import java.util.List;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.deepseek.DeepSeekChatOptions;
+import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionRequest.ReasoningEffort;
+import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionRequest.Thinking;
 import org.springframework.ai.deepseek.api.ResponseFormat;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.DeprecatedConfigurationProperty;
@@ -30,6 +32,7 @@ import org.springframework.boot.context.properties.DeprecatedConfigurationProper
  *
  * @author Geng Rong
  * @author Sebastien Deleuze
+ * @author guan xu
  */
 @ConfigurationProperties(DeepSeekChatProperties.CONFIG_PREFIX)
 public class DeepSeekChatProperties extends DeepSeekParentProperties {
@@ -68,6 +71,10 @@ public class DeepSeekChatProperties extends DeepSeekParentProperties {
 	private @Nullable Boolean logprobs;
 
 	private @Nullable Integer topLogprobs;
+
+	private @Nullable Thinking thinking;
+
+	private @Nullable ReasoningEffort reasoningEffort;
 
 	public boolean isEnabled() {
 		return this.enabled;
@@ -173,6 +180,22 @@ public class DeepSeekChatProperties extends DeepSeekParentProperties {
 		this.topLogprobs = topLogprobs;
 	}
 
+	public @Nullable Thinking getThinking() {
+		return this.thinking;
+	}
+
+	public void setThinking(@Nullable Thinking thinking) {
+		this.thinking = thinking;
+	}
+
+	public @Nullable ReasoningEffort getReasoningEffort() {
+		return this.reasoningEffort;
+	}
+
+	public void setReasoningEffort(@Nullable ReasoningEffort reasoningEffort) {
+		this.reasoningEffort = reasoningEffort;
+	}
+
 	public DeepSeekChatOptions toOptions() {
 		return DeepSeekChatOptions.builder()
 			.model(this.model)
@@ -185,6 +208,8 @@ public class DeepSeekChatProperties extends DeepSeekParentProperties {
 			.topP(this.topP)
 			.logprobs(this.logprobs)
 			.topLogprobs(this.topLogprobs)
+			.thinking(this.thinking)
+			.reasoningEffort(this.reasoningEffort)
 			.build();
 	}
 
@@ -300,6 +325,26 @@ public class DeepSeekChatProperties extends DeepSeekParentProperties {
 
 		public void setTopLogprobs(@Nullable Integer topLogprobs) {
 			DeepSeekChatProperties.this.setTopLogprobs(topLogprobs);
+		}
+
+		@DeprecatedConfigurationProperty(replacement = "spring.ai.deepseek.chat.thinking")
+		@Deprecated(since = "2.0.0", forRemoval = true)
+		public @Nullable Thinking getThinking() {
+			return DeepSeekChatProperties.this.getThinking();
+		}
+
+		public void setThinking(@Nullable Thinking thinking) {
+			DeepSeekChatProperties.this.setThinking(thinking);
+		}
+
+		@DeprecatedConfigurationProperty(replacement = "spring.ai.deepseek.chat.reasoning-effort")
+		@Deprecated(since = "2.0.0", forRemoval = true)
+		public @Nullable ReasoningEffort getReasoningEffort() {
+			return DeepSeekChatProperties.this.getReasoningEffort();
+		}
+
+		public void setReasoningEffort(@Nullable ReasoningEffort reasoningEffort) {
+			DeepSeekChatProperties.this.setReasoningEffort(reasoningEffort);
 		}
 
 	}

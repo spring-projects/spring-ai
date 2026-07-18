@@ -261,6 +261,50 @@ class DeepSeekChatModelIT {
 		assertThat(deepSeekAssistantMessage2.getText()).isNotEmpty();
 	}
 
+	@Test
+	void thinkingEnabledTest() {
+		var promptOptions = DeepSeekChatOptions.builder().enableThinking().build();
+		Prompt prompt = new Prompt("9.11 and 9.8, which is greater?", promptOptions);
+		ChatResponse response = this.chatModel.call(prompt);
+
+		DeepSeekAssistantMessage deepSeekAssistantMessage = (DeepSeekAssistantMessage) response.getResult().getOutput();
+		assertThat(deepSeekAssistantMessage.getReasoningContent()).isNotEmpty();
+		assertThat(deepSeekAssistantMessage.getText()).isNotEmpty();
+	}
+
+	@Test
+	void thinkingDisabledTest() {
+		var promptOptions = DeepSeekChatOptions.builder().disableThinking().build();
+		Prompt prompt = new Prompt("9.11 and 9.8, which is greater?", promptOptions);
+		ChatResponse response = this.chatModel.call(prompt);
+
+		DeepSeekAssistantMessage deepSeekAssistantMessage = (DeepSeekAssistantMessage) response.getResult().getOutput();
+		assertThat(deepSeekAssistantMessage.getReasoningContent()).isNullOrEmpty();
+		assertThat(deepSeekAssistantMessage.getText()).isNotEmpty();
+	}
+
+	@Test
+	void reasoningEffortMaxTest() {
+		var promptOptions = DeepSeekChatOptions.builder().reasoningEffortMax().build();
+		Prompt prompt = new Prompt("9.11 and 9.8, which is greater?", promptOptions);
+		ChatResponse response = this.chatModel.call(prompt);
+
+		DeepSeekAssistantMessage deepSeekAssistantMessage = (DeepSeekAssistantMessage) response.getResult().getOutput();
+		assertThat(deepSeekAssistantMessage.getReasoningContent()).isNotEmpty();
+		assertThat(deepSeekAssistantMessage.getText()).isNotEmpty();
+	}
+
+	@Test
+	void reasoningEffortHighTest() {
+		var promptOptions = DeepSeekChatOptions.builder().reasoningEffortHigh().build();
+		Prompt prompt = new Prompt("9.11 and 9.8, which is greater?", promptOptions);
+		ChatResponse response = this.chatModel.call(prompt);
+
+		DeepSeekAssistantMessage deepSeekAssistantMessage = (DeepSeekAssistantMessage) response.getResult().getOutput();
+		assertThat(deepSeekAssistantMessage.getReasoningContent()).isNotEmpty();
+		assertThat(deepSeekAssistantMessage.getText()).isNotEmpty();
+	}
+
 	record ActorsFilmsRecord(String actor, List<String> movies) {
 	}
 

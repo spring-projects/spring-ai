@@ -16,6 +16,7 @@
 
 package org.springframework.ai.deepseek.api;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -52,6 +53,7 @@ import org.springframework.web.reactive.function.client.WebClient;
  *
  * @author Geng Rong
  * @author Sebastien Deleuze
+ * @author guan xu
  */
 public class DeepSeekApi {
 
@@ -496,6 +498,8 @@ public class DeepSeekApi {
 	 * "my_function"}} forces the model to call that function. none is the default when no
 	 * functions are present. auto is the default if functions are present. Use the
 	 * {@link ToolChoiceBuilder} to create the tool choice value.
+	 * @param thinking Controls the switch between thinking mode and non-thinking mode.
+	 * @param reasoningEffort Controls the reasoning effort level for the DeepSeek model.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record ChatCompletionRequest(// @formatter:off
@@ -512,8 +516,17 @@ public class DeepSeekApi {
 			@JsonProperty("logprobs") @Nullable Boolean logprobs,
 			@JsonProperty("top_logprobs") @Nullable Integer topLogprobs,
 			@JsonProperty("tools") @Nullable List<FunctionTool> tools,
-			@JsonProperty("tool_choice") @Nullable Object toolChoice) {
+			@JsonProperty("tool_choice") @Nullable Object toolChoice,
+			@JsonProperty("thinking") @Nullable Thinking thinking,
+			@JsonProperty("reasoning_effort") @Nullable ReasoningEffort reasoningEffort) {
 
+		/**
+		 * Create a new {@link ChatCompletionRequest} builder.
+		 * @return a new {@link Builder} instance.
+		 */
+		public static Builder builder() {
+			return new Builder();
+		}
 
 		/**
 		 * Shortcut constructor for a chat completion request with the given messages for streaming.
@@ -522,10 +535,10 @@ public class DeepSeekApi {
 		 * @param stream If set, partial message deltas will be sent.Tokens will be sent as data-only server-sent events
 		 * as they become available, with the stream terminated by a data: [DONE] message.
 		 */
-		@SuppressWarnings("NullAway") // Model nullable here due to streaming
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, Boolean stream) {
 			this(messages, null, null, null, null, null,
-					null, stream, null, null, null, null, null, null);
+					null, stream, null, null, null, null, null,
+					null, null, null);
 		}
 
 		/**
@@ -538,7 +551,7 @@ public class DeepSeekApi {
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature) {
 			this(messages, model, null,
 		null, null, null, null,  false,  temperature, null,
-			null, null, null, null);
+			null, null, null, null, null, null);
 		}
 
 		/**
@@ -553,7 +566,7 @@ public class DeepSeekApi {
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature, boolean stream) {
 			this(messages, model, null,
 					null, null, null, null,  stream,  temperature, null,
-				null, null, null, null);
+				null, null, null, null, null, null);
 		}
 
 		/**
@@ -575,6 +588,277 @@ public class DeepSeekApi {
 			public static Object FUNCTION(String functionName) {
 				return Map.of("type", "function", "function", Map.of("name", functionName));
 			}
+		}
+
+		/**
+		 * <p>
+		 * Controls the reasoning effort level for the DeepSeek model. For normal requests,
+		 * {@link ReasoningEffort#HIGH} is the default; for complex Agent-style requests
+		 * (such as Claude Code, OpenCode), {@link ReasoningEffort#MAX} is used automatically.
+		 * </p>
+		 * <p>
+		 * For compatibility, low and medium are mapped to high, and xhigh is mapped to max.
+		 * </p>
+		 */
+		public enum ReasoningEffort {
+
+			@JsonProperty("high")
+			HIGH,
+
+			@JsonProperty("max")
+			MAX
+
+		}
+
+		/**
+		 * Controls the switch between thinking mode and non-thinking mode.
+		 *
+		 * @param type The thinking mode type. When set to {@link Type#ENABLED}, the thinking
+		 * mode is used; when set to {@link Type#DISABLED}, the non-thinking mode is used.
+		 * Defaults to {@link Type#ENABLED} when not specified.
+		 */
+		@JsonInclude(Include.NON_NULL)
+		public record Thinking(@JsonProperty("type") @Nullable Type type) {
+
+			/**
+			 * Use the thinking mode.
+			 */
+			public static final Thinking ENABLED = new Thinking(Type.ENABLED);
+
+			/**
+			 * Use the non-thinking mode.
+			 */
+			public static final Thinking DISABLED = new Thinking(Type.DISABLED);
+
+			/**
+			 * The thinking mode type.
+			 */
+			public enum Type {
+
+				/**
+				 * Use the thinking mode.
+				 */
+				@JsonProperty("enabled")
+				ENABLED,
+
+				/**
+				 * Use the non-thinking mode.
+				 */
+				@JsonProperty("disabled")
+				DISABLED
+
+			}
+		}
+
+		/**
+		 * Builder for creating {@link ChatCompletionRequest} instances.
+		 */
+		public static class Builder {
+
+			private List<ChatCompletionMessage> messages = new ArrayList<>();
+
+			private @Nullable String model;
+
+			private @Nullable Double frequencyPenalty;
+
+			private @Nullable Integer maxTokens;
+
+			private @Nullable Double presencePenalty;
+
+			private @Nullable ResponseFormat responseFormat;
+
+			private @Nullable List<String> stop;
+
+			private @Nullable Boolean stream;
+
+			private @Nullable Double temperature;
+
+			private @Nullable Double topP;
+
+			private @Nullable Boolean logprobs;
+
+			private @Nullable Integer topLogprobs;
+
+			private @Nullable List<FunctionTool> tools;
+
+			private @Nullable Object toolChoice;
+
+			private @Nullable ReasoningEffort reasoningEffort;
+
+			private @Nullable Thinking thinking;
+
+			/**
+			 * Set the messages comprising the conversation so far.
+			 * @param messages the messages.
+			 * @return this builder.
+			 */
+			public Builder messages(List<ChatCompletionMessage> messages) {
+				this.messages = messages;
+				return this;
+			}
+
+			/**
+			 * Set the ID of the model to use.
+			 * @param model the model id.
+			 * @return this builder.
+			 */
+			public Builder model(@Nullable String model) {
+				this.model = model;
+				return this;
+			}
+
+			/**
+			 * Set the frequency penalty.
+			 * @param frequencyPenalty the frequency penalty.
+			 * @return this builder.
+			 */
+			public Builder frequencyPenalty(@Nullable Double frequencyPenalty) {
+				this.frequencyPenalty = frequencyPenalty;
+				return this;
+			}
+
+			/**
+			 * Set the maximum number of tokens that can be generated.
+			 * @param maxTokens the max tokens.
+			 * @return this builder.
+			 */
+			public Builder maxTokens(@Nullable Integer maxTokens) {
+				this.maxTokens = maxTokens;
+				return this;
+			}
+
+			/**
+			 * Set the presence penalty.
+			 * @param presencePenalty the presence penalty.
+			 * @return this builder.
+			 */
+			public Builder presencePenalty(@Nullable Double presencePenalty) {
+				this.presencePenalty = presencePenalty;
+				return this;
+			}
+
+			/**
+			 * Set the response format.
+			 * @param responseFormat the response format.
+			 * @return this builder.
+			 */
+			public Builder responseFormat(@Nullable ResponseFormat responseFormat) {
+				this.responseFormat = responseFormat;
+				return this;
+			}
+
+			/**
+			 * Set the stop sequences.
+			 * @param stop the stop sequences.
+			 * @return this builder.
+			 */
+			public Builder stop(@Nullable List<String> stop) {
+				this.stop = stop;
+				return this;
+			}
+
+			/**
+			 * Set whether to stream the response.
+			 * @param stream whether to stream.
+			 * @return this builder.
+			 */
+			public Builder stream(@Nullable Boolean stream) {
+				this.stream = stream;
+				return this;
+			}
+
+			/**
+			 * Set the sampling temperature.
+			 * @param temperature the temperature.
+			 * @return this builder.
+			 */
+			public Builder temperature(@Nullable Double temperature) {
+				this.temperature = temperature;
+				return this;
+			}
+
+			/**
+			 * Set the top_p value.
+			 * @param topP the top_p value.
+			 * @return this builder.
+			 */
+			public Builder topP(@Nullable Double topP) {
+				this.topP = topP;
+				return this;
+			}
+
+			/**
+			 * Set whether to return log probabilities.
+			 * @param logprobs whether to return log probabilities.
+			 * @return this builder.
+			 */
+			public Builder logprobs(@Nullable Boolean logprobs) {
+				this.logprobs = logprobs;
+				return this;
+			}
+
+			/**
+			 * Set the number of most likely tokens to return log probabilities for.
+			 * @param topLogprobs the top logprobs.
+			 * @return this builder.
+			 */
+			public Builder topLogprobs(@Nullable Integer topLogprobs) {
+				this.topLogprobs = topLogprobs;
+				return this;
+			}
+
+			/**
+			 * Set the tools the model may call.
+			 * @param tools the tools.
+			 * @return this builder.
+			 */
+			public Builder tools(@Nullable List<FunctionTool> tools) {
+				this.tools = tools;
+				return this;
+			}
+
+			/**
+			 * Set the tool choice.
+			 * @param toolChoice the tool choice.
+			 * @return this builder.
+			 */
+			public Builder toolChoice(@Nullable Object toolChoice) {
+				this.toolChoice = toolChoice;
+				return this;
+			}
+
+			/**
+			 * Set the reasoning effort level.
+			 * @param reasoningEffort the reasoning effort.
+			 * @return this builder.
+			 */
+			public Builder reasoningEffort(@Nullable ReasoningEffort reasoningEffort) {
+				this.reasoningEffort = reasoningEffort;
+				return this;
+			}
+
+			/**
+			 * Set the thinking mode configuration.
+			 * @param thinking the thinking configuration.
+			 * @return this builder.
+			 */
+			public Builder thinking(@Nullable Thinking thinking) {
+				this.thinking = thinking;
+				return this;
+			}
+
+			/**
+			 * Build the {@link ChatCompletionRequest}.
+			 * @return a new {@link ChatCompletionRequest}.
+			 */
+			public ChatCompletionRequest build() {
+				Assert.notNull(this.messages, "Messages must not be null");
+				return new ChatCompletionRequest(this.messages, this.model, this.frequencyPenalty, this.maxTokens,
+						this.presencePenalty, this.responseFormat, this.stop, this.stream, this.temperature, this.topP,
+						this.logprobs, this.topLogprobs, this.tools, this.toolChoice, this.thinking,
+						this.reasoningEffort);
+			}
+
 		}
 
 	} // @formatter:on
