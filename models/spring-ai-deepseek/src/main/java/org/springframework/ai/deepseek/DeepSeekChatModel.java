@@ -18,6 +18,7 @@ package org.springframework.ai.deepseek;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 import io.micrometer.observation.Observation;
@@ -54,7 +55,6 @@ import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionMessage.Cha
 import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionMessage.ToolCall;
 import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionRequest;
 import org.springframework.ai.deepseek.api.common.DeepSeekConstants;
-import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.support.UsageCalculator;
@@ -71,6 +71,7 @@ import org.springframework.util.CollectionUtils;
  * @author Geng Rong
  * @author Thomas Vitale
  * @author Sebastien Deleuze
+ * @author guan xu
  */
 public class DeepSeekChatModel implements ChatModel {
 
@@ -227,38 +228,36 @@ public class DeepSeekChatModel implements ChatModel {
 				observation.start();
 			}
 
-			// @formatter:off
-			Flux<ChatResponse> chatResponse = completionChunks.map(this::chunkToChatCompletion)
-				.map(chatCompletion2 -> {
-					try {
-						String id = chatCompletion2.id();
+			Flux<ChatResponse> chatResponse = completionChunks.map(this::chunkToChatCompletion).map(chatCompletion2 -> {
+				try {
+					String id = chatCompletion2.id();
 
-						List<Generation> generations = chatCompletion2.choices().stream().map(choice -> {
-							if (choice.message().role() != null) {
-								roleMap.putIfAbsent(id, choice.message().role().name());
-							}
+					List<Generation> generations = chatCompletion2.choices().stream().map(choice -> {
+						if (choice.message().role() != null) {
+							roleMap.putIfAbsent(id, choice.message().role().name());
+						}
 
-				// @formatter:off
+						// @formatter:off
 								Map<String, Object> metadata = Map.of(
 										"id", chatCompletion2.id(),
 										"role", roleMap.getOrDefault(id, ""),
 										"finishReason", choice.finishReason() != null ? choice.finishReason().name() : ""
 								);
-  				// @formatter:on
-							return buildGeneration(choice, metadata);
-						}).toList();
-						DeepSeekApi.Usage usage = chatCompletion2.usage();
-						Usage currentUsage = (usage != null) ? getDefaultUsage(usage) : new EmptyUsage();
-						Usage cumulativeUsage = UsageCalculator.getCumulativeUsage(currentUsage, previousChatResponse);
+  								// @formatter:on
+						return buildGeneration(choice, metadata);
+					}).toList();
+					DeepSeekApi.Usage usage = chatCompletion2.usage();
+					Usage currentUsage = (usage != null) ? getDefaultUsage(usage) : new EmptyUsage();
+					Usage cumulativeUsage = UsageCalculator.getCumulativeUsage(currentUsage, previousChatResponse);
 
-						return new ChatResponse(generations, from(chatCompletion2, cumulativeUsage));
-					}
-					catch (Exception e) {
-						logger.error("Error processing chat completion", e);
-						return new ChatResponse(List.of());
-					}
+					return new ChatResponse(generations, from(chatCompletion2, cumulativeUsage));
+				}
+				catch (Exception e) {
+					logger.error("Error processing chat completion", e);
+					return new ChatResponse(List.of());
+				}
 
-				});
+			});
 
 			// @formatter:off
 			Flux<ChatResponse> flux = chatResponse
@@ -386,34 +385,62 @@ public class DeepSeekChatModel implements ChatModel {
 			}
 		}).flatMap(List::stream).toList();
 
-		ChatCompletionRequest request = new ChatCompletionRequest(chatCompletionMessages, stream);
+		ChatCompletionRequest.Builder requestBuilder = ChatCompletionRequest.builder()
+			.messages(chatCompletionMessages)
+			.stream(stream);
 
 		DeepSeekChatOptions options = (DeepSeekChatOptions) prompt.getOptions();
 		Assert.state(options != null, "requestOptions must not be null");
-		request = new ChatCompletionRequest(request.messages(),
-				ModelOptionsUtils.mergeOption(options.getModel(), request.model()),
-				ModelOptionsUtils.mergeOption(options.getFrequencyPenalty(), request.frequencyPenalty()),
-				ModelOptionsUtils.mergeOption(options.getMaxTokens(), request.maxTokens()),
-				ModelOptionsUtils.mergeOption(options.getPresencePenalty(), request.presencePenalty()),
-				ModelOptionsUtils.mergeOption(options.getResponseFormat(), request.responseFormat()),
-				ModelOptionsUtils.mergeOption(options.getStop(), request.stop()), request.stream(),
-				ModelOptionsUtils.mergeOption(options.getTemperature(), request.temperature()),
-				ModelOptionsUtils.mergeOption(options.getTopP(), request.topP()),
-				ModelOptionsUtils.mergeOption(options.getLogprobs(), request.logprobs()),
-				ModelOptionsUtils.mergeOption(options.getTopLogprobs(), request.topLogprobs()),
-				ModelOptionsUtils.mergeOption(options.getTools(), request.tools()),
-				ModelOptionsUtils.mergeOption(options.getToolChoice(), request.toolChoice()));
+		if (options.getModel() != null) {
+			requestBuilder.model(options.getModel());
+		}
+		if (options.getFrequencyPenalty() != null) {
+			requestBuilder.frequencyPenalty(options.getFrequencyPenalty());
+		}
+		if (options.getMaxTokens() != null) {
+			requestBuilder.maxTokens(options.getMaxTokens());
+		}
+		if (options.getPresencePenalty() != null) {
+			requestBuilder.presencePenalty(options.getPresencePenalty());
+		}
+		if (options.getResponseFormat() != null) {
+			requestBuilder.responseFormat(options.getResponseFormat());
+		}
+		if (options.getStop() != null) {
+			requestBuilder.stop(options.getStop());
+		}
+		if (options.getTemperature() != null) {
+			requestBuilder.temperature(options.getTemperature());
+		}
+		if (options.getTopP() != null) {
+			requestBuilder.topP(options.getTopP());
+		}
+		if (options.getLogprobs() != null) {
+			requestBuilder.logprobs(options.getLogprobs());
+		}
+		if (options.getTopLogprobs() != null) {
+			requestBuilder.topLogprobs(options.getTopLogprobs());
+		}
+		if (options.getTools() != null) {
+			requestBuilder.tools(options.getTools());
+		}
+		if (options.getToolChoice() != null) {
+			requestBuilder.toolChoice(options.getToolChoice());
+		}
+		if (options.getThinking() != null) {
+			requestBuilder.thinking(options.getThinking());
+		}
+		if (options.getReasoningEffort() != null) {
+			requestBuilder.reasoningEffort(options.getReasoningEffort());
+		}
 
 		// Add the tool definitions to the request's tools parameter.
 		List<ToolDefinition> toolDefinitions = this.toolCallingManager.resolveToolDefinitions(options);
 		if (!CollectionUtils.isEmpty(toolDefinitions)) {
-			request = new ChatCompletionRequest(request.messages(), request.model(), request.frequencyPenalty(),
-					request.maxTokens(), request.presencePenalty(), request.responseFormat(), request.stop(),
-					request.stream(), request.temperature(), request.topP(), request.logprobs(), request.topLogprobs(),
-					this.getFunctionTools(toolDefinitions), request.toolChoice());
+			requestBuilder.tools(this.getFunctionTools(toolDefinitions));
 		}
 
-		return request;
+		return requestBuilder.build();
 	}
 
 	private List<DeepSeekApi.FunctionTool> getFunctionTools(List<ToolDefinition> toolDefinitions) {
@@ -512,11 +539,8 @@ public class DeepSeekChatModel implements ChatModel {
 
 		public DeepSeekChatModel build() {
 			Assert.state(this.deepSeekApi != null, "DeepSeekApi must not be null");
-			if (this.toolCallingManager != null) {
-				return new DeepSeekChatModel(this.deepSeekApi, this.options, this.toolCallingManager,
-						this.retryTemplate, this.observationRegistry);
-			}
-			return new DeepSeekChatModel(this.deepSeekApi, this.options, DEFAULT_TOOL_CALLING_MANAGER,
+			return new DeepSeekChatModel(this.deepSeekApi, this.options,
+					Objects.requireNonNullElse(this.toolCallingManager, DEFAULT_TOOL_CALLING_MANAGER),
 					this.retryTemplate, this.observationRegistry);
 		}
 
