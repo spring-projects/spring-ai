@@ -204,7 +204,7 @@ public class OpenAiImageModel implements ImageModel {
 					.observe(() -> {
 						var images = this.openAiClient.images().generate(imageGenerateParams);
 
-						if (images.data().isEmpty() && images.data().get().isEmpty()) {
+						if (images.data().isEmpty() || images.data().get().isEmpty()) {
 							throw new IllegalArgumentException("Image generation failed: no image returned");
 						}
 
