@@ -29,6 +29,7 @@ import org.jspecify.annotations.Nullable;
  * @author Ilayaperumal Gopinathan
  * @author Ricken Bazolo
  * @author Jonghoon Park
+ * @author Nicolas Krier
  * @since 1.0.0
  */
 public final class CategoryScores {
@@ -55,7 +56,11 @@ public final class CategoryScores {
 
 	private final double violence;
 
-	private final double dangerousAndCriminalContent;
+	private final double criminal;
+
+	private final double dangerous;
+
+	private final double jailbreaking;
 
 	private final double health;
 
@@ -77,7 +82,9 @@ public final class CategoryScores {
 		this.selfHarmInstructions = builder.selfHarmInstructions;
 		this.harassmentThreatening = builder.harassmentThreatening;
 		this.violence = builder.violence;
-		this.dangerousAndCriminalContent = builder.dangerousAndCriminalContent;
+		this.criminal = builder.criminal;
+		this.dangerous = builder.dangerous;
+		this.jailbreaking = builder.jailbreaking;
 		this.health = builder.health;
 		this.financial = builder.financial;
 		this.law = builder.law;
@@ -132,8 +139,16 @@ public final class CategoryScores {
 		return this.violence;
 	}
 
-	public double getDangerousAndCriminalContent() {
-		return this.dangerousAndCriminalContent;
+	public double getCriminal() {
+		return this.criminal;
+	}
+
+	public double getDangerous() {
+		return this.dangerous;
+	}
+
+	public double getJailbreaking() {
+		return this.jailbreaking;
 	}
 
 	public double getHealth() {
@@ -170,7 +185,9 @@ public final class CategoryScores {
 				&& Double.compare(that.selfHarmInstructions, this.selfHarmInstructions) == 0
 				&& Double.compare(that.harassmentThreatening, this.harassmentThreatening) == 0
 				&& Double.compare(that.violence, this.violence) == 0
-				&& Double.compare(that.dangerousAndCriminalContent, this.dangerousAndCriminalContent) == 0
+				&& Double.compare(that.criminal, this.criminal) == 0
+				&& Double.compare(that.dangerous, this.dangerous) == 0
+				&& Double.compare(that.jailbreaking, this.jailbreaking) == 0
 				&& Double.compare(that.health, this.health) == 0 && Double.compare(that.financial, this.financial) == 0
 				&& Double.compare(that.law, this.law) == 0 && Double.compare(that.pii, this.pii) == 0;
 	}
@@ -179,8 +196,8 @@ public final class CategoryScores {
 	public int hashCode() {
 		return Objects.hash(this.sexual, this.hate, this.harassment, this.selfHarm, this.sexualMinors,
 				this.hateThreatening, this.violenceGraphic, this.selfHarmIntent, this.selfHarmInstructions,
-				this.harassmentThreatening, this.violence, this.dangerousAndCriminalContent, this.health,
-				this.financial, this.law, this.pii);
+				this.harassmentThreatening, this.violence, this.criminal, this.dangerous, this.jailbreaking,
+				this.health, this.financial, this.law, this.pii);
 	}
 
 	@Override
@@ -190,8 +207,9 @@ public final class CategoryScores {
 				+ this.hateThreatening + ", violenceGraphic=" + this.violenceGraphic + ", selfHarmIntent="
 				+ this.selfHarmIntent + ", selfHarmInstructions=" + this.selfHarmInstructions
 				+ ", harassmentThreatening=" + this.harassmentThreatening + ", violence=" + this.violence
-				+ ", dangerousAndCriminalContent=" + this.dangerousAndCriminalContent + ", health=" + this.health
-				+ ", financial=" + this.financial + ", law=" + this.law + ", pii=" + this.pii + '}';
+				+ ", criminal=" + this.criminal + ", dangerous=" + this.dangerous + ", jailbreaking="
+				+ this.jailbreaking + ", health=" + this.health + ", financial=" + this.financial + ", law=" + this.law
+				+ ", pii=" + this.pii + '}';
 	}
 
 	public static final class Builder {
@@ -218,7 +236,11 @@ public final class CategoryScores {
 
 		private double violence;
 
-		private double dangerousAndCriminalContent;
+		private double criminal;
+
+		private double dangerous;
+
+		private double jailbreaking;
 
 		private double health;
 
@@ -283,8 +305,18 @@ public final class CategoryScores {
 			return this;
 		}
 
-		public Builder dangerousAndCriminalContent(double dangerousAndCriminalContent) {
-			this.dangerousAndCriminalContent = dangerousAndCriminalContent;
+		public Builder criminal(double criminal) {
+			this.criminal = criminal;
+			return this;
+		}
+
+		public Builder dangerous(double dangerous) {
+			this.dangerous = dangerous;
+			return this;
+		}
+
+		public Builder jailbreaking(double jailbreaking) {
+			this.jailbreaking = jailbreaking;
 			return this;
 		}
 
