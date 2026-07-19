@@ -70,4 +70,56 @@ class MarkdownCodeBlockCleanerTest {
 		assertThat(cleaner.clean(input)).isEqualTo(input);
 	}
 
+	@Test
+	void shouldRemoveMultilineCodeBlockWithLanguageIdentifierWithoutClosingFence() {
+		MarkdownCodeBlockCleaner cleaner = new MarkdownCodeBlockCleaner();
+		String input = "```json\n{\"key\": \"value\"}";
+		String result = cleaner.clean(input);
+		assertThat(result).isEqualTo("{\"key\": \"value\"}");
+	}
+
+	@Test
+	void shouldRemoveMultilineCodeBlockWithoutLanguageIdentifierWithoutClosingFence() {
+		MarkdownCodeBlockCleaner cleaner = new MarkdownCodeBlockCleaner();
+		String input = "```\n{\"key\": \"value\"}";
+		String result = cleaner.clean(input);
+		assertThat(result).isEqualTo("{\"key\": \"value\"}");
+	}
+
+	@Test
+	void shouldRemoveSingleLineCodeBlockWithoutClosingFence() {
+		MarkdownCodeBlockCleaner cleaner = new MarkdownCodeBlockCleaner();
+		String input = "```{\"key\": \"value\"}";
+		String result = cleaner.clean(input);
+		assertThat(result).isEqualTo("{\"key\": \"value\"}");
+	}
+
+	@Test
+	void shouldRemoveMultilineJsonObjectWithoutClosingFence() {
+		MarkdownCodeBlockCleaner cleaner = new MarkdownCodeBlockCleaner();
+		String input = "```json\n{\n  \"name\": \"Alice\",\n  \"age\": 30\n}";
+		String result = cleaner.clean(input);
+		assertThat(result).isEqualTo("{\n  \"name\": \"Alice\",\n  \"age\": 30\n}");
+	}
+
+	@Test
+	void shouldRemoveCodeBlockWithoutClosingFenceAndTrailingWhitespace() {
+		MarkdownCodeBlockCleaner cleaner = new MarkdownCodeBlockCleaner();
+		String input = "```json\n{\"key\": \"value\"}   ";
+		String result = cleaner.clean(input);
+		assertThat(result).isEqualTo("{\"key\": \"value\"}");
+	}
+
+	@Test
+	void shouldHandleMalformedInput() {
+		MarkdownCodeBlockCleaner cleaner = new MarkdownCodeBlockCleaner();
+		assertThat(cleaner.clean("`")).isEqualTo("`");
+		assertThat(cleaner.clean("``")).isEqualTo("``");
+		assertThat(cleaner.clean("```")).isEmpty();
+		assertThat(cleaner.clean("````")).isEqualTo("`");
+		assertThat(cleaner.clean("`````")).isEqualTo("``");
+		assertThat(cleaner.clean("``````")).isEmpty();
+		assertThat(cleaner.clean("```````")).isEqualTo("`");
+	}
+
 }
