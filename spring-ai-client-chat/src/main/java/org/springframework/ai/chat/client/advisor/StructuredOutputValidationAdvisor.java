@@ -122,18 +122,14 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 
 		ChatClientResponse chatClientResponse = null;
 
-		var repeatCounter = 0;
-
-		boolean isValidationSuccess = true;
+		boolean isValidationSuccess = false;
 
 		var processedChatClientRequest = chatClientRequest;
 
 		UsageAccumulator usageAccumulator = new UsageAccumulator();
 
-		do {
-			// Before Call
-			repeatCounter++;
-
+		for (var currentAttemptNumber = 1 + this.maxRepeatAttempts; currentAttemptNumber > 0
+				&& !isValidationSuccess; currentAttemptNumber--) {
 			// Next Call
 			chatClientResponse = callAdvisorChain.copy(this).nextCall(processedChatClientRequest);
 
@@ -144,8 +140,8 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 			// We should not validate tool call requests, only the content of the final
 			// response.
 			if (chatResponse == null || !chatResponse.hasToolCalls()) {
-
-				SchemaValidation validationResponse = validateOutputSchema(chatClientResponse);
+				SchemaValidation validationResponse = validateOutputSchema(chatClientResponse,
+						currentAttemptNumber - 1);
 
 				isValidationSuccess = validationResponse.success();
 
@@ -171,18 +167,18 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 
 					processedChatClientRequest = chatClientRequest.mutate().prompt(augmentedPrompt).build();
 				}
+				else if (logger.isDebugEnabled()) {
+					logger.debug("JSON validation succeeded");
+				}
 			}
 		}
-		while (!isValidationSuccess && repeatCounter <= this.maxRepeatAttempts);
 
-		return usageAccumulator.applyAccumulatedUsage(chatClientResponse);
+		return usageAccumulator.applyAccumulatedUsage(Objects.requireNonNull(chatClientResponse));
 	}
 
-	@SuppressWarnings("null")
-	private SchemaValidation validateOutputSchema(ChatClientResponse chatClientResponse) {
+	private SchemaValidation validateOutputSchema(ChatClientResponse chatClientResponse, int leftAttemptsCounter) {
 
 		if (chatClientResponse.chatResponse() == null || chatClientResponse.chatResponse().getResult() == null
-				|| chatClientResponse.chatResponse().getResult().getOutput() == null
 				|| chatClientResponse.chatResponse().getResult().getOutput().getText() == null) {
 
 			logger.warn("ChatClientResponse is missing required json output for validation.");
@@ -193,7 +189,7 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 		String json = chatClientResponse.chatResponse().getResult().getOutput().getText();
 
 		if (logger.isDebugEnabled()) {
-			logger.debug("Validating JSON output against schema. Attempts left: " + this.maxRepeatAttempts);
+			logger.debug("Validating JSON output against schema. Attempts left: " + leftAttemptsCounter);
 		}
 
 		return validateJsonText(json);
