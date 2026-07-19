@@ -174,7 +174,7 @@ public final class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 				}
 			}));
 
-		return chunks.map(event -> {
+		return chunks.filter(event -> !event.isTranscriptTextDone()).map(event -> {
 			AudioTranscription transcript = new AudioTranscription(toTranscriptionResult(event));
 			return new AudioTranscriptionResponse(transcript, new AudioTranscriptionResponseMetadata());
 		});

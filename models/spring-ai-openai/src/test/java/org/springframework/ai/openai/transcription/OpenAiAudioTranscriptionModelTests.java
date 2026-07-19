@@ -34,6 +34,7 @@ import com.openai.models.audio.transcriptions.TranscriptionDiarizedSegment;
 import com.openai.models.audio.transcriptions.TranscriptionSegment;
 import com.openai.models.audio.transcriptions.TranscriptionStreamEvent;
 import com.openai.models.audio.transcriptions.TranscriptionTextDeltaEvent;
+import com.openai.models.audio.transcriptions.TranscriptionTextDoneEvent;
 import com.openai.models.audio.transcriptions.TranscriptionTextSegmentEvent;
 import com.openai.models.audio.transcriptions.TranscriptionVerbose;
 import com.openai.models.audio.transcriptions.TranscriptionWord;
@@ -435,6 +436,29 @@ class OpenAiAudioTranscriptionModelTests {
 		assertThat(chunks).isNotNull();
 		String text = String.join("", chunks);
 		assertThat(text).isEqualTo("Hello, streamed transcription result");
+	}
+
+	@Test
+	void streamDoesNotEmitTranscriptTextDoneEvent() {
+		AsyncStreamResponse<TranscriptionStreamEvent> mockAsyncResponse = asyncStreamResponse(
+				TranscriptionStreamEvent
+					.ofTranscriptTextDelta(TranscriptionTextDeltaEvent.builder().delta("Hello, ").build()),
+				TranscriptionStreamEvent.ofTranscriptTextDelta(
+						TranscriptionTextDeltaEvent.builder().delta("streamed transcription result").build()),
+				TranscriptionStreamEvent.ofTranscriptTextDone(
+						TranscriptionTextDoneEvent.builder().text("Hello, streamed transcription result").build()));
+
+		OpenAiAudioTranscriptionModel model = OpenAiAudioTranscriptionModel.builder()
+			.openAiClient(mock(OpenAIClient.class))
+			.openAiClientAsync(createMockAsyncClient(mockAsyncResponse))
+			.build();
+
+		List<String> chunks = model.stream(audioPrompt())
+			.map(response -> response.getResult().getOutput().text())
+			.collectList()
+			.block();
+
+		assertThat(chunks).containsExactly("Hello, ", "streamed transcription result");
 	}
 
 	@Test
