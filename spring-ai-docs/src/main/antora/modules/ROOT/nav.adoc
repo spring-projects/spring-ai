@@ -127,6 +127,7 @@
 ** xref:guides/getting-started-mcp.adoc[Getting Started with MCP]
 ** xref:guides/dynamic-tool-search.adoc[Dynamic Tool Discovery]
 ** xref:guides/llm-as-judge.adoc[LLM-as-a-Judge Evaluation]
+** xref:guides/building-a-console-application.adoc[Building a Console Application]
 ** xref:api/chat/prompt-engineering-patterns.adoc[]
 ** xref:api/effective-agents.adoc[Building Effective Agents]
 ** https://catalog.workshops.aws/java-spring-ai-agents[Building agents with Spring AI by AWS]
