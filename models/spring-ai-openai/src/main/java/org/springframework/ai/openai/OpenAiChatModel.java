@@ -36,6 +36,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openai.client.OpenAIClient;
 import com.openai.client.OpenAIClientAsync;
 import com.openai.core.JsonValue;
+import com.openai.core.RequestOptions;
 import com.openai.core.http.AsyncStreamResponse;
 import com.openai.errors.OpenAIInvalidDataException;
 import com.openai.models.FunctionDefinition;
@@ -124,6 +125,7 @@ import org.springframework.util.StringUtils;
  * @author Eric Bottard
  * @author Taewoong Kim
  * @author Jewoo Shin
+ * @author guan xu
  */
 public final class OpenAiChatModel implements ChatModel {
 
@@ -205,7 +207,8 @@ public final class OpenAiChatModel implements ChatModel {
 	 */
 	private ChatResponse internalCall(Prompt prompt, @Nullable ChatResponse previousChatResponse) {
 
-		ChatCompletionCreateParams request = createRequest(prompt, false);
+		ChatCompletionCreateParams request = this.createRequest(prompt, false);
+		RequestOptions requestOptions = this.buildRequestOptions(prompt);
 
 		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 			.prompt(prompt)
@@ -217,7 +220,7 @@ public final class OpenAiChatModel implements ChatModel {
 					this.observationRegistry)
 			.observe(() -> {
 
-				ChatCompletion chatCompletion = this.openAiClient.chat().completions().create(request);
+				ChatCompletion chatCompletion = this.openAiClient.chat().completions().create(request, requestOptions);
 
 				List<ChatCompletion.Choice> choices = chatCompletion.choices();
 				if (choices.isEmpty()) {
@@ -269,7 +272,8 @@ public final class OpenAiChatModel implements ChatModel {
 	 */
 	private Flux<ChatResponse> internalStream(Prompt prompt) {
 		return Flux.deferContextual(contextView -> {
-			ChatCompletionCreateParams request = createRequest(prompt, true);
+			ChatCompletionCreateParams request = this.createRequest(prompt, true);
+			RequestOptions requestOptions = this.buildRequestOptions(prompt);
 			ConcurrentHashMap<String, String> roleMap = new ConcurrentHashMap<>();
 			ConcurrentHashMap<String, String> reasoningMap = new ConcurrentHashMap<>();
 			final ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
@@ -297,7 +301,7 @@ public final class OpenAiChatModel implements ChatModel {
 			Flux<ChatCompletionChunk> chunks = Flux.<ChatCompletionChunk>create(sink -> {
 				AsyncStreamResponse<ChatCompletionChunk> response = this.openAiClientAsync.chat()
 					.completions()
-					.createStreaming(request);
+					.createStreaming(request, requestOptions);
 				sink.onDispose(response::close);
 				response.subscribe(sink::next).onCompleteFuture().whenComplete((unused, throwable) -> {
 					if (throwable != null) {
@@ -915,6 +919,23 @@ public final class OpenAiChatModel implements ChatModel {
 		}
 
 		return builder.build();
+	}
+
+	/**
+	 * Creates a RequestOptions instance from the given prompt.
+	 * @param prompt the prompt containing messages and options
+	 * @return a RequestOptions instance
+	 */
+	private RequestOptions buildRequestOptions(Prompt prompt) {
+		Assert.notNull(prompt, "Prompt cannot be null");
+		Assert.isInstanceOf(OpenAiChatOptions.class, prompt.getOptions(),
+				"Prompt options must be OpenAiChatOptions type");
+		OpenAiChatOptions chatOptions = (OpenAiChatOptions) prompt.getOptions();
+		RequestOptions.Builder requestOptionsBuilder = RequestOptions.builder();
+		if (chatOptions.getTimeout() != null) {
+			requestOptionsBuilder.timeout(chatOptions.getTimeout());
+		}
+		return requestOptionsBuilder.build();
 	}
 
 	private Map<String, String> toolCallAdditionalPropertiesFromMetadata(AssistantMessage assistantMessage) {
@@ -1581,8 +1602,8 @@ public final class OpenAiChatModel implements ChatModel {
 		 * @return the configured chat model
 		 */
 		public OpenAiChatModel build() {
-			OpenAiChatOptions resolvedOptions = this.options != null ? this.options
-					: OpenAiChatOptions.builder().build();
+			OpenAiChatOptions resolvedOptions = Objects.requireNonNullElseGet(this.options,
+					() -> OpenAiChatOptions.builder().build());
 			ObservationRegistry resolvedObservationRegistry = Objects.requireNonNullElse(this.observationRegistry,
 					ObservationRegistry.NOOP);
 

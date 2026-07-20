@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Objects;
 
 import com.openai.client.OpenAIClient;
+import com.openai.core.RequestOptions;
 import com.openai.models.embeddings.CreateEmbeddingResponse;
 import com.openai.models.embeddings.EmbeddingCreateParams;
 import io.micrometer.observation.ObservationRegistry;
@@ -55,6 +56,7 @@ import org.springframework.util.CollectionUtils;
  * @author Thomas Vitale
  * @author Christian Tzolov
  * @author Josh Long
+ * @author guan xu
  */
 public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 
@@ -185,7 +187,7 @@ public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 	}
 
 	private OpenAiEmbeddingModel(Builder builder) {
-		this.options = builder.options != null ? builder.options : OpenAiEmbeddingOptions.builder().build();
+		this.options = Objects.requireNonNullElseGet(builder.options, () -> OpenAiEmbeddingOptions.builder().build());
 		this.metadataMode = Objects.requireNonNullElse(builder.metadataMode, MetadataMode.EMBED);
 		this.observationRegistry = Objects.requireNonNullElse(builder.observationRegistry, ObservationRegistry.NOOP);
 		this.openAiClient = Objects.requireNonNullElseGet(builder.openAiClient,
@@ -233,6 +235,8 @@ public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 					+ embeddingCreateParams);
 		}
 
+		RequestOptions requestOptions = this.buildRequestOptions(options);
+
 		var observationContext = EmbeddingModelObservationContext.builder()
 			.embeddingRequest(embeddingRequestWithMergedOptions)
 			.provider(AiProvider.OPENAI.value())
@@ -243,12 +247,27 @@ public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 					.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 							this.observationRegistry)
 					.observe(() -> {
-						CreateEmbeddingResponse response = this.openAiClient.embeddings().create(embeddingCreateParams);
+						CreateEmbeddingResponse response = this.openAiClient.embeddings()
+							.create(embeddingCreateParams, requestOptions);
 
 						var embeddingResponse = generateEmbeddingResponse(response);
 						observationContext.setResponse(embeddingResponse);
 						return embeddingResponse;
 					}));
+	}
+
+	/**
+	 * Creates a RequestOptions instance from the given embedding options.
+	 * @param options the embedding options
+	 * @return a RequestOptions instance
+	 */
+	private RequestOptions buildRequestOptions(OpenAiEmbeddingOptions options) {
+		Assert.notNull(options, "Options cannot be null");
+		RequestOptions.Builder requestOptionsBuilder = RequestOptions.builder();
+		if (options.getTimeout() != null) {
+			requestOptionsBuilder.timeout(options.getTimeout());
+		}
+		return requestOptionsBuilder.build();
 	}
 
 	private EmbeddingResponse generateEmbeddingResponse(CreateEmbeddingResponse response) {

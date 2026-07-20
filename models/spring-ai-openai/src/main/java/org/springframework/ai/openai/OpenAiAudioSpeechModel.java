@@ -25,6 +25,7 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.openai.client.OpenAIClient;
+import com.openai.core.RequestOptions;
 import com.openai.core.http.Headers;
 import com.openai.core.http.HttpResponse;
 import com.openai.errors.OpenAIIoException;
@@ -59,6 +60,7 @@ import org.springframework.util.StringUtils;
  * @author Jonghoon Park
  * @author Ilayaperumal Gopinathan
  * @author Sebastien Deleuze
+ * @author guan xu
  */
 public final class OpenAiAudioSpeechModel implements TextToSpeechModel {
 
@@ -128,7 +130,9 @@ public final class OpenAiAudioSpeechModel implements TextToSpeechModel {
 
 		SpeechCreateParams params = buildSpeechCreateParams(mergedOptions, inputText, false);
 
-		HttpResponse httpResponse = this.openAiClient.audio().speech().create(params);
+		RequestOptions requestOptions = this.buildRequestOptions(mergedOptions);
+
+		HttpResponse httpResponse = this.openAiClient.audio().speech().create(params, requestOptions);
 		Headers headers = httpResponse.headers();
 
 		byte[] audioBytes;
@@ -180,9 +184,11 @@ public final class OpenAiAudioSpeechModel implements TextToSpeechModel {
 
 		SpeechCreateParams params = buildSpeechCreateParams(mergedOptions, inputText, true);
 
+		RequestOptions requestOptions = this.buildRequestOptions(mergedOptions);
+
 		HttpResponse httpResponse;
 		try {
-			httpResponse = this.openAiClient.audio().speech().create(params);
+			httpResponse = this.openAiClient.audio().speech().create(params, requestOptions);
 		}
 		catch (OpenAIIoException e) {
 			// The SDK wraps IOException - including one from this thread being
@@ -291,6 +297,20 @@ public final class OpenAiAudioSpeechModel implements TextToSpeechModel {
 		}
 
 		return paramsBuilder.build();
+	}
+
+	/**
+	 * Creates a RequestOptions instance from the given audio speech options.
+	 * @param options the audio speech options
+	 * @return a RequestOptions instance
+	 */
+	private RequestOptions buildRequestOptions(OpenAiAudioSpeechOptions options) {
+		Assert.notNull(options, "Options cannot be null");
+		RequestOptions.Builder requestOptionsBuilder = RequestOptions.builder();
+		if (options.getTimeout() != null) {
+			requestOptionsBuilder.timeout(options.getTimeout());
+		}
+		return requestOptionsBuilder.build();
 	}
 
 	/**
