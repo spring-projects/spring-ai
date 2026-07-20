@@ -164,8 +164,8 @@ ActorsFilms actorsFilms = this.beanOutputConverter.convert(this.generation.getOu
 
 You can provide a description for the properties of the target type using one of the following annotations:
 
-* `@JsonClassDescription(description = "...")` — Jackson
-* `@JsonPropertyDescription(description = "...")` — Jackson
+* `@JsonClassDescription("...")` — Jackson
+* `@JsonPropertyDescription("...")` — Jackson
 * `@Schema(description = "...")` — Swagger
 
 This also works recursively for nested types.
@@ -181,11 +181,11 @@ record ActorsFilms(
 
 **Required vs optional**
 
-By default, each property is considered required. You can make a property optional using one of the following annotations, in this order of precedence:
+By default, each property is considered required. You can make a property optional using any of the following annotations:
 
 * `@JsonProperty(required = false)` — Jackson
-* `@Schema(required = false)` — Swagger
-* `@Nullable` — Spring Framework / JSpecify
+* `@Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED)` — Swagger
+* `@Nullable` — JSpecify / Jakarta Annotations
 
 This also works recursively for nested types.
 
