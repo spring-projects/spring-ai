@@ -73,6 +73,7 @@ import org.springframework.util.MimeType;
  *
  * @author Brian Sam-Bodden
  * @author Yanming Zhou
+ * @author Soby Chacko
  * @author Dimitar Proynov
  */
 public final class RedisChatMemoryRepository implements ChatMemoryRepository, AdvancedRedisChatMemoryRepository {
@@ -727,14 +728,15 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 
 						catch (NumberFormatException e) {
 							// Fall back to text search in general metadata
-							String searchPattern = metadataKey + " " + metadataValue;
+							String searchPattern = RediSearchUtil.escape(metadataKey) + " "
+									+ RediSearchUtil.escape(metadataValue.toString());
 							queryNode = QueryBuilders.intersect("metadata", Values.value(searchPattern));
 						}
 					}
 					break;
 				case "tag":
-					// For tag fields, we don't need to escape the value
-					queryNode = QueryBuilders.intersect(indexedFieldName, Values.tags(metadataValue.toString()));
+					queryNode = QueryBuilders.intersect(indexedFieldName,
+							Values.tags(RediSearchUtil.escape(metadataValue.toString())));
 					break;
 				case "text":
 				default:
@@ -746,7 +748,8 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 
 		else {
 			// Field not explicitly indexed - search in general metadata field
-			String searchPattern = metadataKey + " " + metadataValue;
+			String searchPattern = RediSearchUtil.escape(metadataKey) + " "
+					+ RediSearchUtil.escape(metadataValue.toString());
 			queryNode = QueryBuilders.intersect("metadata", Values.value(searchPattern));
 		}
 
