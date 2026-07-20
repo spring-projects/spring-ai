@@ -17,19 +17,30 @@
 package org.springframework.ai.openai.moderation;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.Map;
 
 import com.openai.client.OpenAIClient;
+import com.openai.core.RequestOptions;
+import com.openai.models.moderations.ModerationCreateParams;
+import com.openai.models.moderations.ModerationCreateResponse;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import org.springframework.ai.moderation.ModerationOptions;
+import org.springframework.ai.moderation.ModerationPrompt;
 import org.springframework.ai.openai.OpenAiModerationModel;
 import org.springframework.ai.openai.OpenAiModerationOptions;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for OpenAiModerationModel.
@@ -234,6 +245,27 @@ class OpenAiModerationModelTests {
 		assertThat(mergedOptions.getCustomHeaders()).containsEntry("default-header", "default-value")
 			.containsEntry("merged-header1", "merged-value1")
 			.containsEntry("merged-header2", "merged-value2");
+	}
+
+	@Test
+	void testPropagatesTimeoutFromRequestOptions() {
+		Duration expectedTimeout = Duration.ofSeconds(30);
+
+		OpenAIClient mockClient = mock(OpenAIClient.class, RETURNS_DEEP_STUBS);
+		when(mockClient.moderations().create(any(ModerationCreateParams.class), any(RequestOptions.class))).thenReturn(
+				ModerationCreateResponse.builder().id("TEST_ID").model("TEST_MODEL").results(List.of()).build());
+
+		OpenAiModerationModel model = OpenAiModerationModel.builder().openAiClient(mockClient).build();
+
+		OpenAiModerationOptions options = OpenAiModerationOptions.builder().timeout(expectedTimeout).build();
+
+		model.call(new ModerationPrompt("hi", options));
+
+		ArgumentCaptor<RequestOptions> argumentCaptor = ArgumentCaptor.forClass(RequestOptions.class);
+		verify(mockClient.moderations()).create(any(ModerationCreateParams.class), argumentCaptor.capture());
+		RequestOptions value = argumentCaptor.getValue();
+		assertThat(value.getTimeout()).isNotNull();
+		assertThat(value.getTimeout().request()).isEqualTo(expectedTimeout);
 	}
 
 }
