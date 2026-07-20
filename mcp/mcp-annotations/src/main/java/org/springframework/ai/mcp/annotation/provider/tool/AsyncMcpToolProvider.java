@@ -32,6 +32,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import reactor.core.publisher.Mono;
 
+import org.springframework.ai.mcp.annotation.McpAppResult;
 import org.springframework.ai.mcp.annotation.McpTool;
 import org.springframework.ai.mcp.annotation.common.McpPredicates;
 import org.springframework.ai.mcp.annotation.common.MetaUtils;
@@ -83,7 +84,10 @@ public class AsyncMcpToolProvider extends AbstractMcpToolProvider {
 
 					String inputSchema = McpJsonSchemaGenerator.generateForMethodInput(mcpToolMethod);
 
-					var meta = MetaUtils.getMeta(toolJavaAnnotation.metaProvider());
+					var providerMeta = MetaUtils.getMeta(toolJavaAnnotation.metaProvider());
+					var annotationMeta = MetaUtils.buildUiMeta(toolJavaAnnotation.resourceUri(),
+							toolJavaAnnotation.visibility(), toolJavaAnnotation.csp());
+					var meta = MetaUtils.mergeMeta(providerMeta, annotationMeta);
 
 					var toolBuilder = McpSchema.Tool.builder(toolName, this.getJsonMapper(), inputSchema)
 						.description(toolDescription)
@@ -120,7 +124,7 @@ public class AsyncMcpToolProvider extends AbstractMcpToolProvider {
 
 					// Generate Output Schema from the method return type.
 					// Output schema is not generated for primitive types, void,
-					// CallToolResult, simple value types (String, etc.)
+					// CallToolResult, McpAppResult, simple value types (String, etc.)
 					// or if generateOutputSchema attribute is set to false.
 					if (toolJavaAnnotation.generateOutputSchema()
 							&& !ReactiveUtils.isReactiveReturnTypeOfVoid(mcpToolMethod)
@@ -129,7 +133,8 @@ public class AsyncMcpToolProvider extends AbstractMcpToolProvider {
 						ReactiveUtils.getReactiveReturnTypeArgument(mcpToolMethod).ifPresent(typeArgument -> {
 							Class<?> methodReturnType = typeArgument instanceof Class<?> ? (Class<?>) typeArgument
 									: null;
-							if (!ClassUtils.isPrimitiveOrWrapper(methodReturnType)
+							if (methodReturnType != McpAppResult.class
+									&& !ClassUtils.isPrimitiveOrWrapper(methodReturnType)
 									&& !ClassUtils.isSimpleValueType(methodReturnType)) {
 								toolBuilder.outputSchema(this.getJsonMapper(),
 										McpJsonSchemaGenerator.generateFromClass((Class<?>) typeArgument));
