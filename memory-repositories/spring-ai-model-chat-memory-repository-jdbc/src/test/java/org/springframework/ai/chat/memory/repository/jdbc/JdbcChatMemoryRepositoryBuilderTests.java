@@ -19,6 +19,7 @@ package org.springframework.ai.chat.memory.repository.jdbc;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.SQLException;
+import java.util.List;
 
 import javax.sql.DataSource;
 
@@ -26,10 +27,14 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.TransactionStatus;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
@@ -252,6 +257,30 @@ public class JdbcChatMemoryRepositoryBuilderTests {
 		JdbcChatMemoryRepository repository = JdbcChatMemoryRepository.builder().jdbcTemplate(jdbcTemplate).build();
 
 		assertThat(repository).extracting("jdbcTemplate").isSameAs(jdbcTemplate);
+	}
+
+	@Test
+	void explicitTransactionManagerKeepsDefaultIsolation() {
+		DataSource dataSource = mock(DataSource.class);
+		JdbcTemplate jdbcTemplate = mock(JdbcTemplate.class);
+		PlatformTransactionManager transactionManager = mock(PlatformTransactionManager.class);
+		TransactionStatus transactionStatus = mock(TransactionStatus.class);
+		when(jdbcTemplate.getDataSource()).thenReturn(dataSource);
+		when(transactionManager.getTransaction(any())).thenAnswer(invocation -> {
+			TransactionDefinition definition = invocation.getArgument(0);
+			assertThat(definition.getIsolationLevel()).isEqualTo(TransactionDefinition.ISOLATION_DEFAULT);
+			return transactionStatus;
+		});
+
+		JdbcChatMemoryRepository repository = JdbcChatMemoryRepository.builder()
+			.jdbcTemplate(jdbcTemplate)
+			.dialect(new MysqlChatMemoryRepositoryDialect())
+			.transactionManager(transactionManager)
+			.build();
+
+		repository.saveAll("conversation-id", List.of());
+
+		verify(transactionManager).commit(transactionStatus);
 	}
 
 }
