@@ -23,7 +23,9 @@ import java.util.List;
 import java.util.Objects;
 
 import com.openai.client.OpenAIClient;
+import com.openai.core.RequestOptions;
 import com.openai.core.http.Headers;
+import com.openai.core.http.HttpResponse;
 import com.openai.models.audio.speech.SpeechCreateParams;
 import com.openai.models.audio.speech.SpeechModel;
 import io.micrometer.observation.ObservationRegistry;
@@ -52,6 +54,7 @@ import org.springframework.util.StringUtils;
  * @author Jonghoon Park
  * @author Ilayaperumal Gopinathan
  * @author Sebastien Deleuze
+ * @author guan xu
  */
 public final class OpenAiAudioSpeechModel implements TextToSpeechModel {
 
@@ -139,7 +142,9 @@ public final class OpenAiAudioSpeechModel implements TextToSpeechModel {
 
 		SpeechCreateParams params = paramsBuilder.build();
 
-		com.openai.core.http.HttpResponse httpResponse = this.openAiClient.audio().speech().create(params);
+		RequestOptions requestOptions = this.buildRequestOptions(mergedOptions);
+
+		HttpResponse httpResponse = this.openAiClient.audio().speech().create(params, requestOptions);
 		Headers headers = httpResponse.headers();
 
 		byte[] audioBytes;
@@ -168,6 +173,20 @@ public final class OpenAiAudioSpeechModel implements TextToSpeechModel {
 		// TODO: The OpenAI SDK audio().speech() API does not support streaming yet.
 		// Return the full response as a single element Flux.
 		return Flux.just(call(prompt));
+	}
+
+	/**
+	 * Creates a RequestOptions instance from the given audio speech options.
+	 * @param options the audio speech options
+	 * @return a RequestOptions instance
+	 */
+	private RequestOptions buildRequestOptions(OpenAiAudioSpeechOptions options) {
+		Assert.notNull(options, "Options cannot be null");
+		RequestOptions.Builder requestOptionsBuilder = RequestOptions.builder();
+		if (options.getTimeout() != null) {
+			requestOptionsBuilder.timeout(options.getTimeout());
+		}
+		return requestOptionsBuilder.build();
 	}
 
 	/**

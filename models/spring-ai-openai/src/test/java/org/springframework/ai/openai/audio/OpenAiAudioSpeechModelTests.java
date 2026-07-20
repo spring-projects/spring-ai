@@ -16,24 +16,38 @@
 
 package org.springframework.ai.openai.audio;
 
+import java.io.ByteArrayInputStream;
+import java.time.Duration;
+
 import com.openai.client.OpenAIClient;
+import com.openai.core.RequestOptions;
+import com.openai.core.http.HttpResponse;
+import com.openai.models.audio.speech.SpeechCreateParams;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import org.springframework.ai.audio.tts.TextToSpeechOptions;
+import org.springframework.ai.audio.tts.TextToSpeechPrompt;
 import org.springframework.ai.openai.OpenAiAudioSpeechModel;
 import org.springframework.ai.openai.OpenAiAudioSpeechOptions;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for OpenAiAudioSpeechModel.
  *
  * @author Ilayaperumal Gopinathan
  * @author Sebastien Deleuze
+ * @author guan xu
  */
 @ExtendWith(MockitoExtension.class)
 class OpenAiAudioSpeechModelTests {
@@ -101,7 +115,7 @@ class OpenAiAudioSpeechModelTests {
 	@Test
 	void testOptions() {
 		OpenAiAudioSpeechModel model = OpenAiAudioSpeechModel.builder().openAiClient(this.mockClient).build();
-		OpenAiAudioSpeechOptions options = (OpenAiAudioSpeechOptions) model.getOptions();
+		OpenAiAudioSpeechOptions options = model.getOptions();
 
 		assertThat(options.getModel()).isEqualTo("gpt-4o-mini-tts");
 		assertThat(options.getVoice()).isEqualTo("alloy");
@@ -210,7 +224,7 @@ class OpenAiAudioSpeechModelTests {
 			.build();
 
 		// Verify that default options are set
-		OpenAiAudioSpeechOptions defaults = (OpenAiAudioSpeechOptions) model.getOptions();
+		OpenAiAudioSpeechOptions defaults = model.getOptions();
 		assertThat(defaults.getModel()).isEqualTo("tts-1");
 		assertThat(defaults.getVoice()).isEqualTo("alloy");
 		assertThat(defaults.getSpeed()).isEqualTo(1.0);
@@ -242,7 +256,7 @@ class OpenAiAudioSpeechModelTests {
 		assertThat(model.getOptions()).isNotNull();
 		assertThat(model.getOptions()).isInstanceOf(OpenAiAudioSpeechOptions.class);
 
-		OpenAiAudioSpeechOptions defaults = (OpenAiAudioSpeechOptions) model.getOptions();
+		OpenAiAudioSpeechOptions defaults = model.getOptions();
 		assertThat(defaults.getModel()).isEqualTo("gpt-4o-mini-tts");
 		assertThat(defaults.getVoice()).isEqualTo("alloy");
 		assertThat(defaults.getResponseFormat()).isEqualTo("mp3");
@@ -285,8 +299,31 @@ class OpenAiAudioSpeechModelTests {
 		OpenAiAudioSpeechModel model = OpenAiAudioSpeechModel.builder().openAiClient(this.mockClient).build();
 
 		assertThat(model).isNotNull();
-		OpenAiAudioSpeechOptions defaults = (OpenAiAudioSpeechOptions) model.getOptions();
+		OpenAiAudioSpeechOptions defaults = model.getOptions();
 		assertThat(defaults.getModel()).isEqualTo("gpt-4o-mini-tts");
+	}
+
+	@Test
+	void testPropagatesTimeoutFromRequestOptions() {
+		Duration expectedTimeout = Duration.ofSeconds(30);
+
+		OpenAIClient mockClient = mock(OpenAIClient.class, RETURNS_DEEP_STUBS);
+		HttpResponse mockResponse = mock(HttpResponse.class);
+		when(mockResponse.body()).thenReturn(new ByteArrayInputStream(new byte[0]));
+		when(mockClient.audio().speech().create(any(SpeechCreateParams.class), any(RequestOptions.class)))
+			.thenReturn(mockResponse);
+
+		OpenAiAudioSpeechModel model = OpenAiAudioSpeechModel.builder().openAiClient(mockClient).build();
+
+		OpenAiAudioSpeechOptions options = OpenAiAudioSpeechOptions.builder().timeout(expectedTimeout).build();
+
+		model.call(new TextToSpeechPrompt("hi", options));
+
+		ArgumentCaptor<RequestOptions> argumentCaptor = ArgumentCaptor.forClass(RequestOptions.class);
+		verify(mockClient.audio().speech()).create(any(SpeechCreateParams.class), argumentCaptor.capture());
+		RequestOptions value = argumentCaptor.getValue();
+		assertThat(value.getTimeout()).isNotNull();
+		assertThat(value.getTimeout().request()).isEqualTo(expectedTimeout);
 	}
 
 }

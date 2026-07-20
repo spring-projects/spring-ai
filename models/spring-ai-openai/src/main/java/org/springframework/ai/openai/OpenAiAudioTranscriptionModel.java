@@ -25,6 +25,7 @@ import java.util.Objects;
 import com.openai.client.OpenAIClient;
 import com.openai.client.OpenAIClientAsync;
 import com.openai.core.MultipartField;
+import com.openai.core.RequestOptions;
 import com.openai.models.audio.AudioResponseFormat;
 import com.openai.models.audio.transcriptions.Transcription;
 import com.openai.models.audio.transcriptions.TranscriptionCreateParams;
@@ -117,7 +118,11 @@ public final class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 			logger.trace("OpenAiAudioTranscriptionModel call with model: " + mergedOptions.getModel());
 		}
 
-		TranscriptionCreateResponse response = this.openAiClient.audio().transcriptions().create(params);
+		RequestOptions requestOptions = this.buildRequestOptions(mergedOptions);
+
+		TranscriptionCreateResponse response = this.openAiClient.audio()
+			.transcriptions()
+			.create(params, requestOptions);
 		DiarizedJsonMisclassificationRecovery.Recovered recovered = toRecoverDiarizedJson(mergedOptions, response);
 		if (recovered != null) {
 			AudioTranscription transcript = new AudioTranscription(recovered.text());
@@ -154,9 +159,11 @@ public final class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 			logger.trace("OpenAiAudioTranscriptionModel stream with model: " + mergedOptions.getModel());
 		}
 
+		RequestOptions requestOptions = this.buildRequestOptions(mergedOptions);
+
 		Flux<TranscriptionStreamEvent> chunks = Flux.create(sink -> this.openAiClientAsync.audio()
 			.transcriptions()
-			.createStreaming(params)
+			.createStreaming(params, requestOptions)
 			.subscribe(sink::next)
 			.onCompleteFuture()
 			.whenComplete((unused, throwable) -> {
@@ -215,6 +222,20 @@ public final class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 			builder.knownSpeakerReferences(options.getKnownSpeakerReferences());
 		}
 		return builder.build();
+	}
+
+	/**
+	 * Creates a RequestOptions instance from the given transcription options.
+	 * @param options the transcription options
+	 * @return a RequestOptions instance
+	 */
+	private RequestOptions buildRequestOptions(OpenAiAudioTranscriptionOptions options) {
+		Assert.notNull(options, "Options cannot be null");
+		RequestOptions.Builder requestOptionsBuilder = RequestOptions.builder();
+		if (options.getTimeout() != null) {
+			requestOptionsBuilder.timeout(options.getTimeout());
+		}
+		return requestOptionsBuilder.build();
 	}
 
 	private static String extractText(TranscriptionCreateResponse response) {
@@ -359,8 +380,8 @@ public final class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 		 * @return the configured transcription model
 		 */
 		public OpenAiAudioTranscriptionModel build() {
-
-			var options = this.options != null ? this.options : OpenAiAudioTranscriptionOptions.builder().build();
+			var options = Objects.requireNonNullElseGet(this.options,
+					() -> OpenAiAudioTranscriptionOptions.builder().build());
 
 			var openAiClient = Objects.requireNonNullElseGet(this.openAiClient,
 					() -> OpenAiSetup.setupSyncClient(options.getBaseUrl(), options.getApiKey(),
