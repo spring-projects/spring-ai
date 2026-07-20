@@ -6,7 +6,7 @@ The link:https://modelcontextprotocol.org/docs/concepts/architecture[Model Conte
 Think of it as a bridge between your AI models and the real world - allowing them to access databases, APIs, file systems, and other external services through a consistent interface.
 It supports multiple transport mechanisms to provide flexibility across different environments.
 
-The link:https://modelcontextprotocol.io/sdk/java/mcp-overview[MCP Java SDK] provides a Java implementation of the Model Context Protocol, enabling standardized interaction with AI models and tools through both synchronous and asynchronous communication patterns.
+The link:https://modelcontextprotocol.io/docs/sdk[MCP SDKs] provides a https://java.sdk.modelcontextprotocol.io/latest/[Java] implementation (link:https://github.com/modelcontextprotocol/java-sdk[source]) of the Model Context Protocol, enabling standardized interaction with AI models and tools through both synchronous and asynchronous communication patterns.
 
 Spring AI embraces MCP with comprehensive support through dedicated Boot Starters and MCP Java Annotations, making it easier than ever to build sophisticated AI-powered applications that can seamlessly connect to external systems.
 This means Spring developers can participate in both sides of the MCP ecosystem - building AI applications that consume MCP servers and creating MCP servers that expose Spring-based services to the wider AI community.
@@ -14,8 +14,7 @@ Bootstrap your AI applications with MCP support using link:https://start.spring.
 
 == MCP Java SDK Architecture
 
-TIP: This section provides an overview for the link:https://modelcontextprotocol.io/sdk/java/mcp-overview[MCP Java SDK architecture]. 
-For the Spring AI MCP integration, refer to the xref:#_spring_ai_mcp_integration[Spring AI MCP Boot Starters] documentation.
+TIP: This section provides an overview for the link:https://java.sdk.modelcontextprotocol.io/latest/overview/[MCP Java SDK architecture]. For the Spring AI MCP integration, refer to the xref:#_spring_ai_mcp_integration[Spring AI MCP Boot Starters] documentation.
 
 The Java MCP implementation follows a three-layer architecture that separates concerns for maintainability and flexibility:
 
@@ -47,7 +46,7 @@ The bottom layer handles the actual message transport and serialization:
 * Provides the foundation for all higher-level communication
 
 |===
-| link:https://modelcontextprotocol.io/sdk/java/mcp-client[MCP Client] |
+| link:https://java.sdk.modelcontextprotocol.io/latest/client/[MCP Client] |
 
 a| The MCP Client is a key component in the Model Context Protocol (MCP) architecture, responsible for establishing and managing connections with MCP servers. It implements the client-side of the protocol, handling:
 
@@ -70,7 +69,7 @@ a| The MCP Client is a key component in the Model Context Protocol (MCP) archite
 |===
 
 |===
-| link:https://modelcontextprotocol.io/sdk/java/mcp-server[MCP Server] |
+| link:https://java.sdk.modelcontextprotocol.io/latest/server/[MCP Server] |
 
 a| The MCP Server is a foundational component in the Model Context Protocol (MCP) architecture that provides tools, resources, and capabilities to clients. It implements the server-side of the protocol, responsible for:
 
@@ -129,7 +128,7 @@ Spring AI provides MCP integration through the following Spring Boot starters:
 
 == xref:api/mcp/mcp-annotations-overview.adoc[Spring AI MCP Annotations]
 
-In addition to the programmatic MCP client & server configuration, Spring AI provides annotation-based method handling for MCP servers and clients through the xref:api/mcp/mcp-annotations-overview.adoc[MCP Annotations] module. 
+In addition to the programmatic MCP client & server configuration, Spring AI provides annotation-based method handling for MCP servers and clients through the xref:api/mcp/mcp-annotations-overview.adoc[MCP Annotations] module.
 This approach simplifies the creation and registration of MCP operations using a clean, declarative programming model with Java annotations.
 
 The MCP Annotations module enables developers to:
@@ -140,7 +139,7 @@ The MCP Annotations module enables developers to:
 * Automatically generate JSON schemas for tool parameters
 * Access special parameters and context information
 
-Key features include:   
+Key features include:
 
 * xref:api/mcp/mcp-annotations-server.adoc[Server Annotations]: `@McpTool`, `@McpResource`, `@McpPrompt`, `@McpComplete`
 * xref:api/mcp/mcp-annotations-client.adoc[Client Annotations]: `@McpLogging`, `@McpSampling`, `@McpElicitation`, `@McpProgress`
@@ -262,4 +261,4 @@ If you rely **exclusively on Spring Boot auto-configuration** via the Spring AI 
 * link:mcp-client-boot-starter-docs.html[MCP Client Boot Starters Documentation]
 * link:mcp-server-boot-starter-docs.html[MCP Server Boot Starters Documentation]
 * link:mcp-helpers.html[MCP Utilities Documentation]
-* link:https://modelcontextprotocol.github.io/specification/[Model Context Protocol Specification]
+* link:https://modelcontextprotocol.org/specification/2025-11-25[Model Context Protocol Specification]
