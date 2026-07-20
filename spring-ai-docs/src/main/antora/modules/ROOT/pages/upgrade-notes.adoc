@@ -302,6 +302,31 @@ else if (data instanceof String s) {
 }
 ----
 
+=== Tool Resolution Fallback Disabled by Default
+
+The fallback that resolves and executes tools registered as beans, but not attached to a request has been disabled by default.
+Previously, when the model returned a tool call for a tool that was not attached to the request, `DefaultToolCallingManager` fell back to the application-wide `ToolCallbackResolver` (backed by every `ToolCallback` bean in the application context) and executed the resolved tool.
+Starting with 2.0.1, the tools attached to a request — via `.tools(...)`, `.defaultTools(...)`, or `ToolCallingChatOptions.toolCallbacks(...)` — are the only tools that can be executed for that request.
+
+To restore the previous behavior, re-enable the resolution fallback:
+
+[source,properties]
+----
+spring.ai.tools.resolution.fallback.enabled=true
+----
+
+When constructing a `ToolCallingManager` directly, use the builder switch instead:
+
+[source,java]
+----
+ToolCallingManager toolCallingManager = ToolCallingManager.builder()
+    .toolCallbackResolver(toolCallbackResolver)
+    .resolutionFallbackEnabled(true) // default is false
+    .build();
+----
+
+See xref:api/tools.adoc#tool-resolution[Tool Resolution] for details.
+
 [[upgrading-to-2-0-0]]
 == Upgrading to 2.0.0
 

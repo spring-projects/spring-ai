@@ -16,6 +16,7 @@
 
 package org.springframework.ai.model.tool.autoconfigure;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -205,6 +206,31 @@ class ToolCallingAutoConfigurationTests {
 	}
 
 	@Test
+	void toolCallingManagerHasResolutionFallbackDisabledByDefault() {
+		new ApplicationContextRunner().withConfiguration(AutoConfigurations.of(ToolCallingAutoConfiguration.class))
+			.run(context -> {
+				var toolCallingManager = context.getBean(DefaultToolCallingManager.class);
+				assertThat(resolutionFallbackEnabled(toolCallingManager)).isFalse();
+			});
+	}
+
+	@Test
+	void toolCallingManagerHasResolutionFallbackEnabledWhenPropertySet() {
+		new ApplicationContextRunner().withConfiguration(AutoConfigurations.of(ToolCallingAutoConfiguration.class))
+			.withPropertyValues("spring.ai.tools.resolution.fallback.enabled=true")
+			.run(context -> {
+				var toolCallingManager = context.getBean(DefaultToolCallingManager.class);
+				assertThat(resolutionFallbackEnabled(toolCallingManager)).isTrue();
+			});
+	}
+
+	private static boolean resolutionFallbackEnabled(DefaultToolCallingManager toolCallingManager) {
+		Field field = ReflectionUtils.findField(DefaultToolCallingManager.class, "resolutionFallbackEnabled");
+		ReflectionUtils.makeAccessible(field);
+		return (boolean) ReflectionUtils.getField(field, toolCallingManager);
+	}
+
+	@Test
 	void toolCallbackResolverDoesNotUseMcpToolCallbackProviders() {
 		new ApplicationContextRunner().withConfiguration(AutoConfigurations.of(ToolCallingAutoConfiguration.class))
 			.withUserConfiguration(Config.class)
@@ -359,7 +385,8 @@ class ToolCallingAutoConfigurationTests {
 	@Test
 	void maxCallsPerToolPropertySetToUnlimitedSentinelDisablesDefaultLimit() {
 		new ApplicationContextRunner().withConfiguration(AutoConfigurations.of(ToolCallingAutoConfiguration.class))
-			.withPropertyValues("spring.ai.tools.limits.max-calls-per-tool-default=-1")
+			.withPropertyValues("spring.ai.tools.limits.max-calls-per-tool-default=-1",
+					"spring.ai.tools.resolution.fallback.enabled=true")
 			.withUserConfiguration(Config.class)
 			.run(context -> {
 				var toolCallingManager = context.getBean(ToolCallingManager.class);
@@ -379,7 +406,8 @@ class ToolCallingAutoConfigurationTests {
 	void maxTotalToolCallsPropertySetToUnlimitedSentinelDisablesDefaultLimit() {
 		new ApplicationContextRunner().withConfiguration(AutoConfigurations.of(ToolCallingAutoConfiguration.class))
 			.withPropertyValues("spring.ai.tools.limits.max-calls-per-tool-default=-1",
-					"spring.ai.tools.limits.max-total-tool-calls=-1")
+					"spring.ai.tools.limits.max-total-tool-calls=-1",
+					"spring.ai.tools.resolution.fallback.enabled=true")
 			.withUserConfiguration(Config.class)
 			.run(context -> {
 				var toolCallingManager = context.getBean(ToolCallingManager.class);
@@ -398,7 +426,8 @@ class ToolCallingAutoConfigurationTests {
 	@Test
 	void maxCallsPerToolOverrideSetToUnlimitedSentinelExemptsToolFromDefaultLimit() {
 		new ApplicationContextRunner().withConfiguration(AutoConfigurations.of(ToolCallingAutoConfiguration.class))
-			.withPropertyValues("spring.ai.tools.limits.max-calls-per-tool.getForecast=-1")
+			.withPropertyValues("spring.ai.tools.limits.max-calls-per-tool.getForecast=-1",
+					"spring.ai.tools.resolution.fallback.enabled=true")
 			.withUserConfiguration(Config.class)
 			.run(context -> {
 				var toolCallingManager = context.getBean(ToolCallingManager.class);
@@ -451,7 +480,8 @@ class ToolCallingAutoConfigurationTests {
 	void excludedToolsPropertyBypassesPerToolLimit() {
 		new ApplicationContextRunner().withConfiguration(AutoConfigurations.of(ToolCallingAutoConfiguration.class))
 			.withPropertyValues("spring.ai.tools.limits.max-calls-per-tool-default=1",
-					"spring.ai.tools.limits.excluded-tools=getForecast")
+					"spring.ai.tools.limits.excluded-tools=getForecast",
+					"spring.ai.tools.resolution.fallback.enabled=true")
 			.withUserConfiguration(Config.class)
 			.run(context -> {
 				var toolCallingManager = context.getBean(ToolCallingManager.class);

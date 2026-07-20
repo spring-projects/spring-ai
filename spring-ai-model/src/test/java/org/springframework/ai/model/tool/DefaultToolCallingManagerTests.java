@@ -144,11 +144,63 @@ class DefaultToolCallingManagerTests {
 	}
 
 	@Test
+	void whenToolCallbackFallbackIsDefaultThenUnlistedToolIsRejected() {
+		ToolCallback resolverOnlyTool = new TestToolCallback("resolverOnlyTool");
+		ToolCallbackResolver toolCallbackResolver = new StaticToolCallbackResolver(List.of(resolverOnlyTool));
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder()
+			.toolCallbackResolver(toolCallbackResolver)
+			.build();
+
+		Prompt prompt = new Prompt(new UserMessage("Hello"), ToolCallingChatOptions.builder().build());
+		ChatResponse chatResponse = ChatResponse.builder()
+			.generations(List.of(new Generation(AssistantMessage.builder()
+				.content("")
+				.properties(Map.of())
+				.toolCalls(List
+					.of(new AssistantMessage.ToolCall("resolverOnlyTool", "function", "resolverOnlyTool", "{}")))
+				.build())))
+			.build();
+
+		assertThatThrownBy(() -> toolCallingManager.executeToolCalls(prompt, chatResponse))
+			.isInstanceOf(IllegalStateException.class)
+			.hasMessage("No ToolCallback found for tool name: resolverOnlyTool");
+	}
+
+	@Test
+	void whenToolCallbackResolverEnabledThenUnlistedToolIsResolved() {
+		ToolCallback resolverOnlyTool = new TestToolCallback("resolverOnlyTool");
+		ToolCallbackResolver toolCallbackResolver = new StaticToolCallbackResolver(List.of(resolverOnlyTool));
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder()
+			.toolCallbackResolver(toolCallbackResolver)
+			.resolutionFallbackEnabled(true)
+			.build();
+
+		Prompt prompt = new Prompt(new UserMessage("Hello"), ToolCallingChatOptions.builder().build());
+		ChatResponse chatResponse = ChatResponse.builder()
+			.generations(List.of(new Generation(AssistantMessage.builder()
+				.content("")
+				.properties(Map.of())
+				.toolCalls(List
+					.of(new AssistantMessage.ToolCall("resolverOnlyTool", "function", "resolverOnlyTool", "{}")))
+				.build())))
+			.build();
+
+		ToolResponseMessage expectedToolResponse = ToolResponseMessage.builder()
+			.responses(List.of(new ToolResponse("resolverOnlyTool", "resolverOnlyTool", "Mission accomplished!")))
+			.build();
+
+		ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, chatResponse);
+
+		assertThat(toolExecutionResult.conversationHistory()).contains(expectedToolResponse);
+	}
+
+	@Test
 	void whenSingleToolCallInChatResponseThenExecute() {
 		ToolCallback toolCallback = new TestToolCallback("toolA");
 		ToolCallbackResolver toolCallbackResolver = new StaticToolCallbackResolver(List.of(toolCallback));
 		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder()
 			.toolCallbackResolver(toolCallbackResolver)
+			.resolutionFallbackEnabled(true)
 			.build();
 
 		Prompt prompt = new Prompt(new UserMessage("Hello"), ToolCallingChatOptions.builder().build());
@@ -175,6 +227,7 @@ class DefaultToolCallingManagerTests {
 		ToolCallbackResolver toolCallbackResolver = new StaticToolCallbackResolver(List.of(toolCallback));
 		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder()
 			.toolCallbackResolver(toolCallbackResolver)
+			.resolutionFallbackEnabled(true)
 			.build();
 
 		Prompt prompt = new Prompt(new UserMessage("Hello"), ToolCallingChatOptions.builder().build());
@@ -204,6 +257,7 @@ class DefaultToolCallingManagerTests {
 				List.of(toolCallbackA, toolCallbackB));
 		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder()
 			.toolCallbackResolver(toolCallbackResolver)
+			.resolutionFallbackEnabled(true)
 			.build();
 
 		Prompt prompt = new Prompt(new UserMessage("Hello"), ToolCallingChatOptions.builder().build());
@@ -257,6 +311,7 @@ class DefaultToolCallingManagerTests {
 				List.of(toolCallbackA, toolCallbackB));
 		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder()
 			.toolCallbackResolver(toolCallbackResolver)
+			.resolutionFallbackEnabled(true)
 			.build();
 
 		Prompt prompt = new Prompt(new UserMessage("Hello"), ToolCallingChatOptions.builder().build());
@@ -288,6 +343,7 @@ class DefaultToolCallingManagerTests {
 				List.of(toolCallbackA, toolCallbackB));
 		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder()
 			.toolCallbackResolver(toolCallbackResolver)
+			.resolutionFallbackEnabled(true)
 			.build();
 
 		Prompt prompt = new Prompt(new UserMessage("Hello"), ToolCallingChatOptions.builder().build());
@@ -317,6 +373,7 @@ class DefaultToolCallingManagerTests {
 		ToolCallbackResolver toolCallbackResolver = new StaticToolCallbackResolver(List.of(toolCallback));
 		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder()
 			.toolCallbackResolver(toolCallbackResolver)
+			.resolutionFallbackEnabled(true)
 			.build();
 
 		Prompt prompt = new Prompt(new UserMessage("Hello"), ToolCallingChatOptions.builder().build());
@@ -360,6 +417,7 @@ class DefaultToolCallingManagerTests {
 		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder()
 			.observationRegistry(observationRegistry)
 			.toolCallbackResolver(toolCallbackResolver)
+			.resolutionFallbackEnabled(true)
 			.build();
 
 		Prompt prompt = new Prompt(new UserMessage("Hello"), ToolCallingChatOptions.builder().build());
@@ -506,6 +564,7 @@ class DefaultToolCallingManagerTests {
 			.toolCallbackResolver(toolCallbackResolver)
 			.maxCallsPerTool(1)
 			.excludeToolFromLimit("toolA")
+			.resolutionFallbackEnabled(true)
 			.build();
 
 		// Several prior calls to toolA already recorded; would normally exceed the
@@ -643,6 +702,7 @@ class DefaultToolCallingManagerTests {
 		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder()
 			.toolCallbackResolver(toolCallbackResolver)
 			.unlimitedCallsPerTool()
+			.resolutionFallbackEnabled(true)
 			.build();
 
 		// Well beyond DefaultToolCallingManager.DEFAULT_MAX_CALLS_PER_TOOL; should
@@ -675,6 +735,7 @@ class DefaultToolCallingManagerTests {
 			.toolCallbackResolver(toolCallbackResolver)
 			.unlimitedCallsPerTool()
 			.unlimitedTotalToolCalls()
+			.resolutionFallbackEnabled(true)
 			.build();
 
 		// Well beyond DefaultToolCallingManager.DEFAULT_MAX_TOTAL_TOOL_CALLS; should
@@ -706,6 +767,7 @@ class DefaultToolCallingManagerTests {
 		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder()
 			.toolCallbackResolver(toolCallbackResolver)
 			.maxCallsPerTool("toolA", 1)
+			.resolutionFallbackEnabled(true)
 			.build();
 
 		// An earlier turn already made a call to toolA (already at the limit for that
@@ -737,6 +799,7 @@ class DefaultToolCallingManagerTests {
 		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder()
 			.toolCallbackResolver(toolCallbackResolver)
 			.maxTotalToolCalls(1)
+			.resolutionFallbackEnabled(true)
 			.build();
 
 		// An earlier turn already made many tool calls, well past the total limit,

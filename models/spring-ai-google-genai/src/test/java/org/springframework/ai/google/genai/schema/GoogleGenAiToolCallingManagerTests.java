@@ -56,6 +56,7 @@ class GoogleGenAiToolCallingManagerTests {
 		ToolCallbackResolver toolCallbackResolver = new StaticToolCallbackResolver(List.of(toolCallback));
 		ToolCallingManager delegate = DefaultToolCallingManager.builder()
 			.toolCallbackResolver(toolCallbackResolver)
+			.resolutionFallbackEnabled(true)
 			.build();
 		GoogleGenAiToolCallingManager manager = new GoogleGenAiToolCallingManager(delegate);
 
@@ -81,6 +82,7 @@ class GoogleGenAiToolCallingManagerTests {
 		ToolCallbackResolver toolCallbackResolver = new StaticToolCallbackResolver(List.of(toolCallback));
 		ToolCallingManager delegate = DefaultToolCallingManager.builder()
 			.toolCallbackResolver(toolCallbackResolver)
+			.resolutionFallbackEnabled(true)
 			.maxCallsPerTool("toolA", 1)
 			.build();
 		GoogleGenAiToolCallingManager manager = new GoogleGenAiToolCallingManager(delegate);

@@ -890,6 +890,23 @@ ToolCallbackResolver toolCallbackResolver(List<ToolCallback> toolCallbacks) {
 
 The resolver is used internally by `ToolCallingManager` to support both xref:#the-tool-calling-loop[advisor-controlled execution] and xref:#user-controlled-tool-execution[user-controlled execution].
 
+To enable the behavior — where a tool known to the resolver, but not attached to the request may be resolved by name and executed — enable the resolution fallback:
+
+[source,properties]
+----
+spring.ai.tools.resolution.fallback.enabled=true
+----
+
+[cols="6,3,1", stripes=even]
+|====
+| Property | Description | Default
+| `spring.ai.tools.resolution.fallback.enabled` | If `true`, a requested tool that is absent from the request's tool callbacks may be resolved by name through the `ToolCallbackResolver` and executed. If `false`, only the tools attached to the request can be executed. | `false`
+|====
+
+When constructing a `ToolCallingManager` directly, the same switch is available on the builder via `.resolutionFallbackEnabled(true)` (default `false`).
+
+WARNING: Enabling the resolution fallback makes every tool reachable through the resolver executable whenever the model names it, regardless of what a request attached — including risk-tier and destructive tools. Enable it only when you fully control which tools the resolver exposes.
+
 [[observability]]
 == Observability
 
