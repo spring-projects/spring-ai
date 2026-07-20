@@ -33,6 +33,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.openai.client.OpenAIClient;
+import com.openai.core.RequestOptions;
 import com.openai.core.http.Headers;
 import com.openai.core.http.HttpResponse;
 import com.openai.errors.OpenAIIoException;
@@ -60,6 +61,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -70,6 +72,7 @@ import static org.mockito.Mockito.when;
  *
  * @author Ilayaperumal Gopinathan
  * @author Sebastien Deleuze
+ * @author guan xu
  */
 @ExtendWith(MockitoExtension.class)
 class OpenAiAudioSpeechModelTests {
@@ -137,7 +140,7 @@ class OpenAiAudioSpeechModelTests {
 	@Test
 	void testOptions() {
 		OpenAiAudioSpeechModel model = OpenAiAudioSpeechModel.builder().openAiClient(this.mockClient).build();
-		OpenAiAudioSpeechOptions options = (OpenAiAudioSpeechOptions) model.getOptions();
+		OpenAiAudioSpeechOptions options = model.getOptions();
 
 		assertThat(options.getModel()).isEqualTo("gpt-4o-mini-tts");
 		assertThat(options.getVoice()).isEqualTo("alloy");
@@ -211,7 +214,7 @@ class OpenAiAudioSpeechModelTests {
 
 		when(this.mockClient.audio()).thenReturn(audioService);
 		when(audioService.speech()).thenReturn(speechService);
-		when(speechService.create(any(SpeechCreateParams.class))).thenReturn(httpResponse);
+		when(speechService.create(any(SpeechCreateParams.class), any(RequestOptions.class))).thenReturn(httpResponse);
 		when(httpResponse.body()).thenReturn(new ByteArrayInputStream(audioBytes));
 		when(httpResponse.headers()).thenReturn(headers);
 		when(headers.values(anyString())).thenReturn(List.of());
@@ -232,7 +235,7 @@ class OpenAiAudioSpeechModelTests {
 		assertThat(reassembled.toByteArray()).isEqualTo(audioBytes);
 
 		ArgumentCaptor<SpeechCreateParams> paramsCaptor = ArgumentCaptor.forClass(SpeechCreateParams.class);
-		verify(speechService).create(paramsCaptor.capture());
+		verify(speechService).create(paramsCaptor.capture(), any(RequestOptions.class));
 		assertThat(paramsCaptor.getValue().streamFormat()).contains(SpeechCreateParams.StreamFormat.AUDIO);
 
 		verify(httpResponse).close();
@@ -250,7 +253,7 @@ class OpenAiAudioSpeechModelTests {
 
 		when(this.mockClient.audio()).thenReturn(audioService);
 		when(audioService.speech()).thenReturn(speechService);
-		when(speechService.create(any(SpeechCreateParams.class))).thenReturn(httpResponse);
+		when(speechService.create(any(SpeechCreateParams.class), any(RequestOptions.class))).thenReturn(httpResponse);
 		when(httpResponse.body()).thenReturn(new ByteArrayInputStream(audioBytes));
 		when(httpResponse.headers()).thenReturn(headers);
 		when(headers.values(anyString())).thenReturn(List.of());
@@ -288,7 +291,7 @@ class OpenAiAudioSpeechModelTests {
 
 		when(this.mockClient.audio()).thenReturn(audioService);
 		when(audioService.speech()).thenReturn(speechService);
-		when(speechService.create(any(SpeechCreateParams.class))).thenReturn(httpResponse);
+		when(speechService.create(any(SpeechCreateParams.class), any(RequestOptions.class))).thenReturn(httpResponse);
 		when(httpResponse.body()).thenReturn(inputStream);
 		when(httpResponse.headers()).thenReturn(headers);
 		when(headers.values(anyString())).thenReturn(List.of());
@@ -325,7 +328,7 @@ class OpenAiAudioSpeechModelTests {
 
 		when(this.mockClient.audio()).thenReturn(audioService);
 		when(audioService.speech()).thenReturn(speechService);
-		when(speechService.create(any(SpeechCreateParams.class))).thenReturn(httpResponse);
+		when(speechService.create(any(SpeechCreateParams.class), any(RequestOptions.class))).thenReturn(httpResponse);
 		when(httpResponse.body()).thenReturn(inputStream);
 		when(httpResponse.headers()).thenReturn(headers);
 		when(headers.values(anyString())).thenReturn(List.of());
@@ -390,7 +393,7 @@ class OpenAiAudioSpeechModelTests {
 
 		when(this.mockClient.audio()).thenReturn(audioService);
 		when(audioService.speech()).thenReturn(speechService);
-		when(speechService.create(any(SpeechCreateParams.class)))
+		when(speechService.create(any(SpeechCreateParams.class), any(RequestOptions.class)))
 			.thenThrow(new OpenAIIoException("Connection reset", new IOException("Connection reset")));
 
 		OpenAiAudioSpeechModel model = OpenAiAudioSpeechModel.builder().openAiClient(this.mockClient).build();
@@ -412,7 +415,7 @@ class OpenAiAudioSpeechModelTests {
 
 		when(this.mockClient.audio()).thenReturn(audioService);
 		when(audioService.speech()).thenReturn(speechService);
-		when(speechService.create(any(SpeechCreateParams.class))).thenAnswer(invocation -> {
+		when(speechService.create(any(SpeechCreateParams.class), any(RequestOptions.class))).thenAnswer(invocation -> {
 			// Simulate cancellation racing with the initial HTTP call, before any
 			// response exists.
 			createStarted.countDown();
@@ -518,7 +521,7 @@ class OpenAiAudioSpeechModelTests {
 			.build();
 
 		// Verify that default options are set
-		OpenAiAudioSpeechOptions defaults = (OpenAiAudioSpeechOptions) model.getOptions();
+		OpenAiAudioSpeechOptions defaults = model.getOptions();
 		assertThat(defaults.getModel()).isEqualTo("tts-1");
 		assertThat(defaults.getVoice()).isEqualTo("alloy");
 		assertThat(defaults.getSpeed()).isEqualTo(1.0);
@@ -550,7 +553,7 @@ class OpenAiAudioSpeechModelTests {
 		assertThat(model.getOptions()).isNotNull();
 		assertThat(model.getOptions()).isInstanceOf(OpenAiAudioSpeechOptions.class);
 
-		OpenAiAudioSpeechOptions defaults = (OpenAiAudioSpeechOptions) model.getOptions();
+		OpenAiAudioSpeechOptions defaults = model.getOptions();
 		assertThat(defaults.getModel()).isEqualTo("gpt-4o-mini-tts");
 		assertThat(defaults.getVoice()).isEqualTo("alloy");
 		assertThat(defaults.getResponseFormat()).isEqualTo("mp3");
@@ -593,8 +596,31 @@ class OpenAiAudioSpeechModelTests {
 		OpenAiAudioSpeechModel model = OpenAiAudioSpeechModel.builder().openAiClient(this.mockClient).build();
 
 		assertThat(model).isNotNull();
-		OpenAiAudioSpeechOptions defaults = (OpenAiAudioSpeechOptions) model.getOptions();
+		OpenAiAudioSpeechOptions defaults = model.getOptions();
 		assertThat(defaults.getModel()).isEqualTo("gpt-4o-mini-tts");
+	}
+
+	@Test
+	void testPropagatesTimeoutFromRequestOptions() {
+		Duration expectedTimeout = Duration.ofSeconds(30);
+
+		OpenAIClient mockClient = mock(OpenAIClient.class, RETURNS_DEEP_STUBS);
+		HttpResponse mockResponse = mock(HttpResponse.class);
+		when(mockResponse.body()).thenReturn(new ByteArrayInputStream(new byte[0]));
+		when(mockClient.audio().speech().create(any(SpeechCreateParams.class), any(RequestOptions.class)))
+			.thenReturn(mockResponse);
+
+		OpenAiAudioSpeechModel model = OpenAiAudioSpeechModel.builder().openAiClient(mockClient).build();
+
+		OpenAiAudioSpeechOptions options = OpenAiAudioSpeechOptions.builder().timeout(expectedTimeout).build();
+
+		model.call(new TextToSpeechPrompt("hi", options));
+
+		ArgumentCaptor<RequestOptions> argumentCaptor = ArgumentCaptor.forClass(RequestOptions.class);
+		verify(mockClient.audio().speech()).create(any(SpeechCreateParams.class), argumentCaptor.capture());
+		RequestOptions value = argumentCaptor.getValue();
+		assertThat(value.getTimeout()).isNotNull();
+		assertThat(value.getTimeout().request()).isEqualTo(expectedTimeout);
 	}
 
 }
