@@ -30,6 +30,7 @@ import org.springframework.ai.chat.observation.ChatModelCompletionObservationHan
 import org.springframework.ai.chat.observation.ChatModelMeterObservationHandler;
 import org.springframework.ai.chat.observation.ChatModelObservationContext;
 import org.springframework.ai.chat.observation.ChatModelPromptContentObservationHandler;
+import org.springframework.ai.chat.observation.ChatModelPromptSpanContentObservationHandler;
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationContext;
 import org.springframework.ai.image.observation.ImageModelObservationContext;
 import org.springframework.ai.model.observation.ErrorLoggingObservationHandler;
@@ -104,6 +105,15 @@ public class ChatObservationAutoConfiguration {
 				Tracer tracer) {
 			logCompletionWarning();
 			return new TracingAwareLoggingObservationHandler<>(new ChatModelCompletionObservationHandler(), tracer);
+		}
+
+		@Bean
+		@ConditionalOnMissingBean(value = ChatModelPromptSpanContentObservationHandler.class,
+				name = "chatModelPromptSpanContentObservationHandler")
+		@ConditionalOnProperty(prefix = ChatObservationProperties.CONFIG_PREFIX, name = "log-prompt",
+				havingValue = "true")
+		ChatModelPromptSpanContentObservationHandler chatModelPromptSpanContentObservationHandler() {
+			return new ChatModelPromptSpanContentObservationHandler();
 		}
 
 		@Bean
