@@ -24,6 +24,36 @@ ChatMemory chatMemory;
 
 The following sections will describe further the different memory types and repositories available in Spring AI.
 
+== Working with Conversation IDs
+
+Every chat memory operation is keyed on a conversation ID.
+The `ChatMemory` and `ChatMemoryRepository` abstractions use this identifier to decide which conversation to read, append to, or delete, and it must always be provided explicitly.
+
+The conversation ID is the only thing that scopes a conversation.
+Messages are stored and retrieved for exactly the conversation ID that is supplied, so choosing how those IDs are assigned is what determines whether interactions are grouped together or kept apart.
+
+In a multi-user application, make the conversation ID unique per user (and per conversation, if a user can have more than one) so that each user's messages stay in their own conversation.
+A common approach is to derive the ID on the server from the current user or session rather than using a fixed or shared value:
+
+[source,java]
+----
+// Build the conversation ID from the current user/session so each
+// user's messages are kept in their own conversation.
+String conversationId = currentUser.getId() + ":" + httpSession.getId();
+
+chatClient.prompt()
+    .user(userInput)
+    .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, conversationId))
+    .call()
+    .content();
+----
+
+A few practices help keep conversations organized as an application grows:
+
+* Assign a distinct conversation ID per user, and per conversation when a single user can hold several.
+* Derive the conversation ID on the server from the user or session rather than reusing a fixed value across users.
+* When listing or deleting conversations, operate on the conversation IDs that belong to the current user rather than across all conversation IDs.
+
 == Memory Types
 
 The `ChatMemory` abstraction allows you to implement various types of memory to suit different use cases. The choice of memory type can significantly impact the performance and behavior of your application. This section describes the built-in memory types provided by Spring AI and their characteristics.
@@ -363,6 +393,9 @@ ChatMemory chatMemory = MessageWindowChatMemory.builder()
 | `spring.ai.chat.memory.repository.neo4j.tool-response-label` | The label for the nodes that store tool responses | `ToolResponse`
 | `spring.ai.chat.memory.repository.neo4j.media-label` | The label for the nodes that store media associated with a message | `Media`
 |===
+
+NOTE: Label values must be valid Neo4j identifiers: they must start with a letter or underscore and contain only letters, digits, or underscores.
+Supplying a value that does not meet these requirements will cause an `IllegalArgumentException` to be thrown at application startup.
 
 ==== Index Initialization
 
