@@ -64,6 +64,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
 import org.springframework.test.util.ReflectionTestUtils;
+import tools.jackson.databind.json.JsonMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
@@ -72,8 +73,8 @@ public class McpStatelessServerAutoConfigurationIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.mcp.server.protocol=STATELESS")
-		.withConfiguration(AutoConfigurations.of(McpServerStatelessAutoConfiguration.class,
-				StatelessToolCallbackConverterAutoConfiguration.class))
+		.withConfiguration(AutoConfigurations.of(McpServerJsonMapperAutoConfiguration.class,
+				McpServerStatelessAutoConfiguration.class, StatelessToolCallbackConverterAutoConfiguration.class))
 		.withUserConfiguration(TestStatelessTransportConfiguration.class);
 
 	@Test
@@ -94,6 +95,14 @@ public class McpStatelessServerAutoConfigurationIT {
 			assertThat(properties.getCapabilities().isResource()).isTrue();
 			assertThat(properties.getCapabilities().isPrompt()).isTrue();
 			assertThat(properties.getCapabilities().isCompletion()).isTrue();
+		});
+	}
+
+	@Test
+	void mcpServerJsonMapperIsRegistered() {
+		this.contextRunner.run(context -> {
+			assertThat(context).hasBean("mcpServerJsonMapper");
+			assertThat(context.getBean("mcpServerJsonMapper")).isInstanceOf(JsonMapper.class);
 		});
 	}
 
