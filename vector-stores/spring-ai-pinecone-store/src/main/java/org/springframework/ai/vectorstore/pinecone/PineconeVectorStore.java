@@ -67,6 +67,8 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 
 	public static final String CONTENT_FIELD_NAME = "document_content";
 
+	private static final Log logger = LogFactory.getLog(PineconeVectorStore.class);
+
 	public final FilterExpressionConverter filterExpressionConverter = new PineconeFilterExpressionConverter();
 
 	private final String pineconeNamespace;
@@ -78,8 +80,6 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 	private final String pineconeDistanceMetadataFieldName;
 
 	private final Pinecone pinecone;
-
-	private static final Log logger = LogFactory.getLog(PineconeVectorStore.class);
 
 	/**
 	 * Creates a new PineconeVectorStore using the builder pattern.
@@ -135,8 +135,11 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 	 * @param namespace The namespace to add the documents to
 	 */
 	public void add(List<Document> documents, String namespace) {
-		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
-				this.batchingStrategy);
+		this.add(documents, namespace, EmbeddingOptions.builder().build());
+	}
+
+	public void add(List<Document> documents, String namespace, EmbeddingOptions options) {
+		List<float[]> embeddings = this.embeddingModel.embed(documents, options, this.batchingStrategy);
 		List<VectorWithUnsignedIndices> upsertVectors = new ArrayList<>();
 		for (int i = 0; i < documents.size(); i++) {
 			Document document = documents.get(i);
@@ -152,7 +155,12 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 	 */
 	@Override
 	public void doAdd(List<Document> documents) {
-		add(documents, this.pineconeNamespace);
+		this.add(documents, this.pineconeNamespace);
+	}
+
+	@Override
+	public void doAdd(List<Document> documents, EmbeddingOptions options) {
+		this.add(documents, this.pineconeNamespace, options);
 	}
 
 	/**

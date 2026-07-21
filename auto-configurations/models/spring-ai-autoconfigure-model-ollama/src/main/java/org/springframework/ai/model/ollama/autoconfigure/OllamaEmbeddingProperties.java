@@ -41,6 +41,7 @@ public class OllamaEmbeddingProperties {
 	private @Nullable Boolean truncate;
 
 	private @Nullable String keepAlive;
+
 	private Options options = new Options();
 
 	public @Nullable String getModel() {
@@ -52,7 +53,7 @@ public class OllamaEmbeddingProperties {
 	}
 
 	public @Nullable Integer getDimensions() {
-		return dimensions;
+		return this.dimensions;
 	}
 
 	public void setDimensions(@Nullable Integer dimensions) {
@@ -77,11 +78,11 @@ public class OllamaEmbeddingProperties {
 
 	public OllamaEmbeddingOptions toOptions() {
 		return OllamaEmbeddingOptions.builder()
-				.model(this.model)
-				.truncate(this.truncate)
-				.keepAlive(this.keepAlive)
-				.dimensions(this.dimensions)
-				.build();
+			.model(this.model)
+			.truncate(this.truncate)
+			.keepAlive(this.keepAlive)
+			.dimensions(this.dimensions)
+			.build();
 	}
 
 	@DeprecatedConfigurationProperty(replacement = "spring.ai.ollama.embedding")

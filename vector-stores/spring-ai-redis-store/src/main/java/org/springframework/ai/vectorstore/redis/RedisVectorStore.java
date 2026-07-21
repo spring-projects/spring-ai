@@ -344,6 +344,10 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 		this.filterExpressionConverter = new RedisFilterExpressionConverter(this.metadataFields);
 	}
 
+	public static Builder builder(RedisClient jedis, EmbeddingModel embeddingModel) {
+		return new Builder(jedis, embeddingModel);
+	}
+
 	public RedisClient getJedisClient() {
 		return this.jedisClient;
 	}
@@ -354,10 +358,14 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 
 	@Override
 	public void doAdd(List<Document> documents) {
+		this.doAdd(documents, EmbeddingOptions.builder().build());
+	}
+
+	@Override
+	public void doAdd(List<Document> documents, EmbeddingOptions options) {
 		try (Pipeline pipeline = this.jedisClient.pipelined()) {
 
-			List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
-					this.batchingStrategy);
+			List<float[]> embeddings = this.embeddingModel.embed(documents, options, this.batchingStrategy);
 
 			for (int i = 0; i < documents.size(); i++) {
 				Document document = documents.get(i);
@@ -1244,10 +1252,6 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 			normalized[i] = vector[i] / magnitude;
 		}
 		return normalized;
-	}
-
-	public static Builder builder(RedisClient jedis, EmbeddingModel embeddingModel) {
-		return new Builder(jedis, embeddingModel);
 	}
 
 	public enum Algorithm {

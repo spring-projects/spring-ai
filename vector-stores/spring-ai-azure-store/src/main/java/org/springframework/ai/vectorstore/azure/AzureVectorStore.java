@@ -164,10 +164,26 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 		return new Builder(searchIndexClient, embeddingModel);
 	}
 
-	@Override
-	public void doAdd(List<Document> documents) {
+	static Map<String, Object> parseMetadataToMutable(@Nullable String metadataJson) {
+		if (!StringUtils.hasText(metadataJson)) {
+			return new HashMap<>();
+		}
+		try {
+			return new HashMap<>(jsonHelper.fromJsonToMap(metadataJson));
+		}
+		catch (IllegalStateException ex) {
+			if (logger.isWarnEnabled()) {
+				logger.warn("Failed to parse metadata JSON. Using empty metadata. json=" + metadataJson, ex);
+			}
+			return new HashMap<>();
+		}
+	}
 
+	@Override
+	public void doAdd(List<Document> documents, EmbeddingOptions options) {
 		Assert.notNull(documents, "The document list should not be null.");
+		Assert.notNull(options, "embedding Options should not be null.");
+
 		if (CollectionUtils.isEmpty(documents)) {
 			return; // nothing to do;
 		}
@@ -338,21 +354,6 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 		@SuppressWarnings("unchecked")
 		T client = (T) this.searchClient;
 		return Optional.of(client);
-	}
-
-	static Map<String, Object> parseMetadataToMutable(@Nullable String metadataJson) {
-		if (!StringUtils.hasText(metadataJson)) {
-			return new HashMap<>();
-		}
-		try {
-			return new HashMap<>(jsonHelper.fromJsonToMap(metadataJson));
-		}
-		catch (IllegalStateException ex) {
-			if (logger.isWarnEnabled()) {
-				logger.warn("Failed to parse metadata JSON. Using empty metadata. json=" + metadataJson, ex);
-			}
-			return new HashMap<>();
-		}
 	}
 
 	public record MetadataField(String name, SearchFieldDataType fieldType) {

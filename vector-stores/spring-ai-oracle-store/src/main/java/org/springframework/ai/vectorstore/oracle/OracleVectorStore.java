@@ -168,9 +168,13 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 	}
 
 	@Override
-	public void doAdd(final List<Document> documents) {
-		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
-				this.batchingStrategy);
+	public void doAdd(List<Document> documents) {
+		this.doAdd(documents, EmbeddingOptions.builder().build());
+	}
+
+	@Override
+	public void doAdd(List<Document> documents, EmbeddingOptions options) {
+		List<float[]> embeddings = this.embeddingModel.embed(documents, options, this.batchingStrategy);
 		this.jdbcTemplate.batchUpdate(getIngestStatement(), new BatchPreparedStatementSetter() {
 
 			@Override

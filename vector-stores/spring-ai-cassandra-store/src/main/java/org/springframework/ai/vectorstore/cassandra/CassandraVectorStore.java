@@ -265,12 +265,23 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 		return embeddingFloat;
 	}
 
+	@VisibleForTesting
+	static void dropKeyspace(Builder builder) {
+		Preconditions.checkState(builder.keyspace.startsWith("test_"), "Only test keyspaces can be dropped");
+		Assert.state(builder.session != null, "builder.session should not be null");
+		builder.session.execute(SchemaBuilder.dropKeyspace(builder.keyspace).ifExists().build());
+	}
+
 	@Override
 	public void doAdd(List<Document> documents) {
+		this.doAdd(documents, EmbeddingOptions.builder().build());
+	}
+
+	@Override
+	public void doAdd(List<Document> documents, EmbeddingOptions options) {
 		var futures = new CompletableFuture[documents.size()];
 
-		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
-				this.batchingStrategy);
+		List<float[]> embeddings = this.embeddingModel.embed(documents, options, this.batchingStrategy);
 
 		for (int i = 0; i < documents.size(); i++) {
 			Document d = documents.get(i);
@@ -521,13 +532,6 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 				: this.schema.clusteringKeys().get(index - this.schema.partitionKeys().size());
 	}
 
-	@VisibleForTesting
-	static void dropKeyspace(Builder builder) {
-		Preconditions.checkState(builder.keyspace.startsWith("test_"), "Only test keyspaces can be dropped");
-		Assert.state(builder.session != null, "builder.session should not be null");
-		builder.session.execute(SchemaBuilder.dropKeyspace(builder.keyspace).ifExists().build());
-	}
-
 	void ensureSchemaExists(int vectorDimension) {
 		if (this.initializeSchema) {
 			SchemaUtil.ensureKeyspaceExists(this.session, this.schema.keyspace);
@@ -773,6 +777,8 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 	 */
 	public static class Builder extends AbstractVectorStoreBuilder<Builder> {
 
+		private final Set<SchemaColumn> metadataColumns = new HashSet<>();
+
 		private @Nullable CqlSession session;
 
 		private @Nullable CqlSessionBuilder sessionBuilder;
@@ -792,8 +798,6 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 		private String contentColumnName = DEFAULT_CONTENT_COLUMN_NAME;
 
 		private String embeddingColumnName = DEFAULT_EMBEDDING_COLUMN_NAME;
-
-		private final Set<SchemaColumn> metadataColumns = new HashSet<>();
 
 		private boolean initializeSchema = true;
 

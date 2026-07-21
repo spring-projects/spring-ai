@@ -154,8 +154,6 @@ import org.springframework.util.Assert;
  */
 public class OpenSearchVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
-	private static final Log logger = LogFactory.getLog(OpenSearchVectorStore.class);
-
 	public static final String COSINE_SIMILARITY_FUNCTION = "cosinesimil";
 
 	public static final String DEFAULT_INDEX_NAME = "spring-ai-document-index";
@@ -171,6 +169,8 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 			}
 			""";
 
+	private static final Log logger = LogFactory.getLog(OpenSearchVectorStore.class);
+
 	private final OpenSearchClient openSearchClient;
 
 	private final String index;
@@ -181,13 +181,13 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 
 	private final boolean initializeSchema;
 
-	private String similarityFunction;
-
 	private final boolean useApproximateKnn;
 
 	private final int dimensions;
 
 	private final boolean manageDocumentIds;
+
+	private String similarityFunction;
 
 	/**
 	 * Creates a new OpenSearchVectorStore using the builder pattern.
@@ -226,8 +226,12 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 
 	@Override
 	public void doAdd(List<Document> documents) {
-		List<float[]> embedding = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
-				this.batchingStrategy);
+		this.doAdd(documents, EmbeddingOptions.builder().build());
+	}
+
+	@Override
+	public void doAdd(List<Document> documents, EmbeddingOptions options) {
+		List<float[]> embedding = this.embeddingModel.embed(documents, options, this.batchingStrategy);
 		BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
 		for (int i = 0; i < documents.size(); i++) {
 			Document document = documents.get(i);

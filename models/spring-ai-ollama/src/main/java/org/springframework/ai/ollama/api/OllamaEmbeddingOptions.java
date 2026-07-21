@@ -16,14 +16,15 @@
 
 package org.springframework.ai.ollama.api;
 
-import org.jspecify.annotations.Nullable;
-import org.springframework.ai.embedding.EmbeddingOptions;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
+
+import org.jspecify.annotations.Nullable;
+
+import org.springframework.ai.embedding.EmbeddingOptions;
 
 /**
  * Helper class for creating strongly-typed Ollama options.
@@ -164,43 +165,43 @@ public class OllamaEmbeddingOptions implements EmbeddingOptions {
 	}
 
 	public @Nullable String getKeepAlive() {
-		return keepAlive;
+		return this.keepAlive;
 	}
 
 	public @Nullable Boolean getTruncate() {
-		return truncate;
+		return this.truncate;
 	}
 
 	public @Nullable Integer getSeed() {
-		return seed;
+		return this.seed;
 	}
 
 	public @Nullable Float getTemperature() {
-		return temperature;
+		return this.temperature;
 	}
 
 	public @Nullable Integer getTopK() {
-		return topK;
+		return this.topK;
 	}
 
 	public @Nullable Float getTopP() {
-		return topP;
+		return this.topP;
 	}
 
 	public @Nullable Float getMinP() {
-		return minP;
+		return this.minP;
 	}
 
 	public@Nullable String[] getStop() {
-		return stop;
+		return this.stop;
 	}
 
 	public @Nullable Integer getNumCtx() {
-		return numCtx;
+		return this.numCtx;
 	}
 
 	public @Nullable Integer getNumPredict() {
-		return numPredict;
+		return this.numPredict;
 	}
 
 	/**
@@ -412,7 +413,7 @@ public class OllamaEmbeddingOptions implements EmbeddingOptions {
 		}
 
 		public OllamaEmbeddingOptions build() {
-			return new OllamaEmbeddingOptions(this.model,this.keepAlive,this.dimensions,this.truncate,this.seed,this.temperature,this.topK,this.topP,this.minP,this.stop,this.numCtx,this.numPredict);
+			return new OllamaEmbeddingOptions(this.model, this.keepAlive, this.dimensions, this.truncate, this.seed, this.temperature, this.topK, this.topP, this.minP, this.stop, this.numCtx, this.numPredict);
 		}
 
 	}

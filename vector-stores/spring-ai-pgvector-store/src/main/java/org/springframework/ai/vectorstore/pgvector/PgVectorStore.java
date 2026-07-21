@@ -248,18 +248,22 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		this.maxDocumentBatchSize = builder.maxDocumentBatchSize;
 	}
 
-	public PgDistanceType getDistanceType() {
-		return this.distanceType;
-	}
-
 	public static PgVectorStoreBuilder builder(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
 		return new PgVectorStoreBuilder(jdbcTemplate, embeddingModel);
 	}
 
+	public PgDistanceType getDistanceType() {
+		return this.distanceType;
+	}
+
 	@Override
 	public void doAdd(List<Document> documents) {
-		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
-				this.batchingStrategy);
+		this.doAdd(documents, EmbeddingOptions.builder().build());
+	}
+
+	@Override
+	public void doAdd(List<Document> documents, EmbeddingOptions options) {
+		List<float[]> embeddings = this.embeddingModel.embed(documents, options, this.batchingStrategy);
 
 		List<List<Document>> batchedDocuments = batchDocuments(documents);
 		batchedDocuments.forEach(batchDocument -> insertOrUpdateBatch(batchDocument, documents, embeddings));
