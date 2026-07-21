@@ -18,6 +18,7 @@ package org.springframework.ai.bedrock.converse;
 
 import java.net.URL;
 import java.util.List;
+import java.util.Map;
 
 import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Test;
@@ -26,6 +27,7 @@ import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+import software.amazon.awssdk.core.document.Document;
 import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeAsyncClient;
@@ -211,6 +213,30 @@ class BedrockProxyChatModelTest {
 			.cause()
 			.isInstanceOf(SecurityException.class)
 			.hasMessageContaining("evil.com");
+	}
+
+	@Test
+	void requestParametersWithMixedFlatAndNestedValuesBuildAdditionalModelRequestFields() {
+		BedrockProxyChatModel model = newModel();
+
+		BedrockChatOptions options = BedrockChatOptions.builder()
+			.requestParameters(
+					Map.of("anthropic_version", "bedrock-2023-05-31", "output_config", Map.of("effort", "low")))
+			.build();
+
+		Prompt prompt = new Prompt(List.of(new UserMessage("Question?")), options);
+
+		ConverseRequest request = model.createRequest(prompt);
+
+		Document additionalModelRequestFields = request.additionalModelRequestFields();
+		assertThat(additionalModelRequestFields.isMap()).isTrue();
+
+		Document anthropicVersion = additionalModelRequestFields.asMap().get("anthropic_version");
+		assertThat(anthropicVersion.asString()).isEqualTo("bedrock-2023-05-31");
+
+		Document outputConfig = additionalModelRequestFields.asMap().get("output_config");
+		assertThat(outputConfig.isMap()).isTrue();
+		assertThat(outputConfig.asMap().get("effort").asString()).isEqualTo("low");
 	}
 
 	@Test

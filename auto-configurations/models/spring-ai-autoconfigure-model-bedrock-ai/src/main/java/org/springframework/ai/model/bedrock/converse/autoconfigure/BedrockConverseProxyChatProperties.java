@@ -52,7 +52,7 @@ public class BedrockConverseProxyChatProperties {
 
 	private @Nullable Double presencePenalty;
 
-	private Map<String, String> requestParameters = new HashMap<>();
+	private Map<String, Object> requestParameters = new HashMap<>();
 
 	private @Nullable List<String> stopSequences;
 
@@ -106,11 +106,18 @@ public class BedrockConverseProxyChatProperties {
 		this.presencePenalty = presencePenalty;
 	}
 
-	public Map<String, String> getRequestParameters() {
+	/**
+	 * Additional Bedrock Converse {@code additionalModelRequestFields}. Values may be
+	 * nested maps or lists (in addition to plain scalars) to express structured fields
+	 * such as Anthropic's {@code output_config}, e.g.: <pre>{@code
+	 * spring.ai.bedrock.converse.chat.request-parameters.output_config.effort=low
+	 * }</pre>
+	 */
+	public Map<String, Object> getRequestParameters() {
 		return this.requestParameters;
 	}
 
-	public void setRequestParameters(Map<String, String> requestParameters) {
+	public void setRequestParameters(Map<String, Object> requestParameters) {
 		this.requestParameters = requestParameters;
 	}
 
@@ -223,11 +230,11 @@ public class BedrockConverseProxyChatProperties {
 
 		@DeprecatedConfigurationProperty(replacement = "spring.ai.bedrock.converse.chat.request-parameters")
 		@Deprecated(since = "2.0.0", forRemoval = true)
-		public Map<String, String> getRequestParameters() {
+		public Map<String, Object> getRequestParameters() {
 			return BedrockConverseProxyChatProperties.this.getRequestParameters();
 		}
 
-		public void setRequestParameters(Map<String, String> requestParameters) {
+		public void setRequestParameters(Map<String, Object> requestParameters) {
 			BedrockConverseProxyChatProperties.this.setRequestParameters(requestParameters);
 		}
 
