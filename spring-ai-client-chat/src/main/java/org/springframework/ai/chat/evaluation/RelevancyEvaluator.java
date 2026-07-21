@@ -16,7 +16,6 @@
 
 package org.springframework.ai.chat.evaluation;
 
-import java.util.Collections;
 import java.util.Map;
 
 import org.jspecify.annotations.Nullable;
@@ -30,8 +29,13 @@ import org.springframework.util.Assert;
 
 /**
  * Evaluates the relevancy of a response to a query based on the context provided.
+ *
+ * @author Thomas Vitale
+ * @author Kuntal Maity
  */
 public class RelevancyEvaluator implements Evaluator {
+
+	public static final String LLM_RAW_RESPONSE_METADATA_KEY = "llm_raw_response";
 
 	private static final PromptTemplate DEFAULT_PROMPT_TEMPLATE = new PromptTemplate("""
 				Your task is to evaluate if the response for the query
@@ -68,6 +72,14 @@ public class RelevancyEvaluator implements Evaluator {
 		this.promptTemplate = promptTemplate != null ? promptTemplate : DEFAULT_PROMPT_TEMPLATE;
 	}
 
+	/**
+	 * Evaluates whether the response is relevant to the query given the context.
+	 * @param evaluationRequest the request containing the query, context, and response
+	 * @return an EvaluationResponse with {@code pass=true} and {@code score=1.0} when
+	 * relevant. The {@code feedback} field contains the raw LLM response text. The
+	 * {@code metadata} map contains the same value under the key
+	 * {@link #LLM_RAW_RESPONSE_METADATA_KEY}.
+	 */
 	@Override
 	public EvaluationResponse evaluate(EvaluationRequest evaluationRequest) {
 		var response = evaluationRequest.getResponseContent();
@@ -78,15 +90,11 @@ public class RelevancyEvaluator implements Evaluator {
 
 		String evaluationResponse = this.chatClientBuilder.build().prompt().user(userMessage).call().content();
 
-		boolean passing = false;
-		float score = 0;
-		String normalizedResponse = (evaluationResponse != null) ? evaluationResponse.strip() : "";
-		if ("yes".equalsIgnoreCase(normalizedResponse)) {
-			passing = true;
-			score = 1;
-		}
-
-		return new EvaluationResponse(passing, score, "", Collections.emptyMap());
+		String llmResponse = (evaluationResponse != null) ? evaluationResponse : "";
+		boolean passing = "yes".equalsIgnoreCase(llmResponse.strip());
+		float score = passing ? 1 : 0;
+		return new EvaluationResponse(passing, score, llmResponse,
+				Map.of(LLM_RAW_RESPONSE_METADATA_KEY, (Object) llmResponse));
 	}
 
 	public static Builder builder() {
