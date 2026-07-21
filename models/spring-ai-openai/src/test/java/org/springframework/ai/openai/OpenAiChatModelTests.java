@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.openai.client.OpenAIClient;
 import com.openai.client.OpenAIClientAsync;
@@ -264,6 +265,40 @@ class OpenAiChatModelTests {
 	}
 
 	@Test
+	void closesAsyncStreamResponseOnCancellation() {
+		ChatServiceAsync chatServiceAsync = mock(ChatServiceAsync.class);
+		ChatCompletionServiceAsync chatCompletionServiceAsync = mock(ChatCompletionServiceAsync.class);
+		when(this.openAiClientAsync.chat()).thenReturn(chatServiceAsync);
+		when(chatServiceAsync.completions()).thenReturn(chatCompletionServiceAsync);
+		AtomicBoolean closed = new AtomicBoolean();
+		AsyncStreamResponse<ChatCompletionChunk> streamResponse = asyncStreamResponse(closed, false,
+				ChatCompletionChunk.builder()
+					.id("chatcmpl-stream-test")
+					.created(1777799928)
+					.model("test-model")
+					.addChoice(ChatCompletionChunk.Choice.builder()
+						.index(0)
+						.finishReason(ChatCompletionChunk.Choice.FinishReason.STOP)
+						.delta(ChatCompletionChunk.Choice.Delta.builder().content("hello").build())
+						.build())
+					.build());
+		when(chatCompletionServiceAsync.createStreaming(any(ChatCompletionCreateParams.class)))
+			.thenReturn(streamResponse);
+
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		ChatResponse response = chatModel.stream(new Prompt("hi", options)).take(1).blockLast();
+
+		assertThat(response).isNotNull();
+		assertThat(closed).isTrue();
+	}
+
+	@Test
 	void restoreUnmappedToolCallAdditionalProperties() {
 		OpenAiChatOptions options = OpenAiChatOptions.builder().model("gemini-3.5-flash").build();
 		OpenAiChatModel chatModel = OpenAiChatModel.builder()
@@ -348,6 +383,11 @@ class OpenAiChatModelTests {
 	}
 
 	private AsyncStreamResponse<ChatCompletionChunk> asyncStreamResponse(ChatCompletionChunk... chunks) {
+		return asyncStreamResponse(new AtomicBoolean(), true, chunks);
+	}
+
+	private AsyncStreamResponse<ChatCompletionChunk> asyncStreamResponse(AtomicBoolean closed, boolean complete,
+			ChatCompletionChunk... chunks) {
 		return new AsyncStreamResponse<>() {
 			private final CompletableFuture<Void> completion = new CompletableFuture<>();
 
@@ -358,8 +398,10 @@ class OpenAiChatModelTests {
 					for (ChatCompletionChunk chunk : chunks) {
 						handler.onNext(chunk);
 					}
-					handler.onComplete(Optional.empty());
-					this.completion.complete(null);
+					if (complete) {
+						handler.onComplete(Optional.empty());
+						this.completion.complete(null);
+					}
 				}
 				catch (Throwable throwable) {
 					handler.onComplete(Optional.of(throwable));
@@ -382,6 +424,7 @@ class OpenAiChatModelTests {
 
 			@Override
 			public void close() {
+				closed.set(true);
 			}
 		};
 	}

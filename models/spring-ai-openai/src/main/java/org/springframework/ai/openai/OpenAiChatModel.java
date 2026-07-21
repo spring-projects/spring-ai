@@ -35,6 +35,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openai.client.OpenAIClient;
 import com.openai.client.OpenAIClientAsync;
 import com.openai.core.JsonValue;
+import com.openai.core.http.AsyncStreamResponse;
 import com.openai.errors.OpenAIInvalidDataException;
 import com.openai.models.FunctionDefinition;
 import com.openai.models.FunctionParameters;
@@ -290,19 +291,20 @@ public final class OpenAiChatModel implements ChatModel {
 			}
 
 			// Convert from AsyncStreamResponse<ChatCompletionChunk> to Flux<CCC>
-			Flux<ChatCompletionChunk> chunks = Flux.<ChatCompletionChunk>create(sink -> this.openAiClientAsync.chat()
-				.completions()
-				.createStreaming(request)
-				.subscribe(sink::next)
-				.onCompleteFuture()
-				.whenComplete((unused, throwable) -> {
+			Flux<ChatCompletionChunk> chunks = Flux.<ChatCompletionChunk>create(sink -> {
+				AsyncStreamResponse<ChatCompletionChunk> response = this.openAiClientAsync.chat()
+					.completions()
+					.createStreaming(request);
+				sink.onDispose(response::close);
+				response.subscribe(sink::next).onCompleteFuture().whenComplete((unused, throwable) -> {
 					if (throwable != null) {
 						sink.error(throwable);
 					}
 					else {
 						sink.complete();
 					}
-				}));
+				});
+			});
 
 			// Next, aggregate CCCs that deal with tool calls together
 			AtomicBoolean isInsideTool = new AtomicBoolean(false);
