@@ -16,13 +16,17 @@
 
 package org.springframework.ai.ollama;
 
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import io.micrometer.observation.ObservationRegistry;
 import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.AbstractEmbeddingModel;
 import org.springframework.ai.embedding.Embedding;
-import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
@@ -41,10 +45,6 @@ import org.springframework.ai.ollama.management.OllamaModelManager;
 import org.springframework.ai.ollama.management.PullModelStrategy;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
-
-import java.util.List;
-import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * {@link EmbeddingModel} implementation for {@literal Ollama}. Ollama allows developers
@@ -75,7 +75,7 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 	private EmbeddingModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
 	public OllamaEmbeddingModel(OllamaApi ollamaApi, OllamaEmbeddingOptions options,
-	                            ObservationRegistry observationRegistry, ModelManagementOptions modelManagementOptions) {
+			ObservationRegistry observationRegistry, ModelManagementOptions modelManagementOptions) {
 		Assert.notNull(ollamaApi, "ollamaApi must not be null");
 		Assert.notNull(options, "options must not be null");
 		Assert.notNull(observationRegistry, "observationRegistry must not be null");
@@ -113,32 +113,32 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 		OllamaApi.EmbeddingsRequest ollamaEmbeddingRequest = ollamaEmbeddingRequest(embeddingRequest);
 
 		var observationContext = EmbeddingModelObservationContext.builder()
-				.embeddingRequest(request)
-				.provider(OllamaApiConstants.PROVIDER_NAME)
-				.build();
+			.embeddingRequest(request)
+			.provider(OllamaApiConstants.PROVIDER_NAME)
+			.build();
 
 		return EmbeddingModelObservationDocumentation.EMBEDDING_MODEL_OPERATION
-				.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
-						this.observationRegistry)
-				.observe(() -> {
-					EmbeddingsResponse response = this.ollamaApi.embed(ollamaEmbeddingRequest);
+			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
+					this.observationRegistry)
+			.observe(() -> {
+				EmbeddingsResponse response = this.ollamaApi.embed(ollamaEmbeddingRequest);
 
-					AtomicInteger indexCounter = new AtomicInteger(0);
+				AtomicInteger indexCounter = new AtomicInteger(0);
 
-					List<Embedding> embeddings = response.embeddings()
-							.stream()
-							.map(e -> new Embedding(e, indexCounter.getAndIncrement()))
-							.toList();
+				List<Embedding> embeddings = response.embeddings()
+					.stream()
+					.map(e -> new Embedding(e, indexCounter.getAndIncrement()))
+					.toList();
 
-					EmbeddingResponseMetadata embeddingResponseMetadata = new EmbeddingResponseMetadata(response.model(),
-							getDefaultUsage(response));
+				EmbeddingResponseMetadata embeddingResponseMetadata = new EmbeddingResponseMetadata(response.model(),
+						getDefaultUsage(response));
 
-					EmbeddingResponse embeddingResponse = new EmbeddingResponse(embeddings, embeddingResponseMetadata);
+				EmbeddingResponse embeddingResponse = new EmbeddingResponse(embeddings, embeddingResponseMetadata);
 
-					observationContext.setResponse(embeddingResponse);
+				observationContext.setResponse(embeddingResponse);
 
-					return embeddingResponse;
-				});
+				return embeddingResponse;
+			});
 	}
 
 	private DefaultUsage getDefaultUsage(OllamaApi.EmbeddingsResponse response) {
@@ -164,20 +164,24 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 		}
 
 		OllamaEmbeddingOptions.Builder builder = OllamaEmbeddingOptions.builder()
-				.model(ModelOptionsUtils.mergeOption(requestOptions.getModel(), options.getModel()))
-				.dimensions(ModelOptionsUtils.mergeOption(requestOptions.getDimensions(), options.getDimensions()));
+			.model(ModelOptionsUtils.mergeOption(requestOptions.getModel(), options.getModel()))
+			.dimensions(ModelOptionsUtils.mergeOption(requestOptions.getDimensions(), options.getDimensions()));
 
 		if (requestOptions instanceof OllamaEmbeddingOptions ro) {
 			builder.keepAlive(ModelOptionsUtils.mergeOption(ro.getKeepAlive(), options.getKeepAlive()))
-					.truncate(ModelOptionsUtils.mergeOption(ro.getTruncate(), options.getTruncate()))
-					.seed(ModelOptionsUtils.mergeOption(ro.getSeed(), options.getSeed()))
-					.temperature(ModelOptionsUtils.mergeOption(ro.getTemperature(), options.getTemperature()))
-					.topK(ModelOptionsUtils.mergeOption(ro.getTopK(), options.getTopK()))
-					.topP(ModelOptionsUtils.mergeOption(ro.getTopP(), options.getTopP()))
-					.minP(ModelOptionsUtils.mergeOption(ro.getMinP(), options.getMinP()))
-					.stop(ModelOptionsUtils.mergeOption(ro.getStop(), options.getStop()))
-					.numCtx(ModelOptionsUtils.mergeOption(ro.getNumCtx(), options.getNumCtx()))
-					.numPredict(ModelOptionsUtils.mergeOption(ro.getNumPredict(), options.getNumPredict()));
+				.truncate(ModelOptionsUtils.mergeOption(ro.getTruncate(), options.getTruncate()))
+				.useNUMA(ModelOptionsUtils.mergeOption(ro.getUseNUMA(), options.getUseNUMA()))
+				.numCtx(ModelOptionsUtils.mergeOption(ro.getNumCtx(), options.getNumCtx()))
+				.numBatch(ModelOptionsUtils.mergeOption(ro.getNumBatch(), options.getNumBatch()))
+				.numGPU(ModelOptionsUtils.mergeOption(ro.getNumGPU(), options.getNumGPU()))
+				.mainGPU(ModelOptionsUtils.mergeOption(ro.getMainGPU(), options.getMainGPU()))
+				.lowVRAM(ModelOptionsUtils.mergeOption(ro.getLowVRAM(), options.getLowVRAM()))
+				.f16KV(ModelOptionsUtils.mergeOption(ro.getF16KV(), options.getF16KV()))
+				.logitsAll(ModelOptionsUtils.mergeOption(ro.getLogitsAll(), options.getLogitsAll()))
+				.vocabOnly(ModelOptionsUtils.mergeOption(ro.getVocabOnly(), options.getVocabOnly()))
+				.useMMap(ModelOptionsUtils.mergeOption(ro.getUseMMap(), options.getUseMMap()))
+				.useMLock(ModelOptionsUtils.mergeOption(ro.getUseMLock(), options.getUseMLock()))
+				.numThread(ModelOptionsUtils.mergeOption(ro.getNumThread(), options.getNumThread()));
 		}
 
 		return builder.build();
@@ -208,7 +212,6 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 
 	/**
 	 * Use the provided convention for reporting observation data
-	 *
 	 * @param observationConvention The provided convention
 	 */
 	public void setObservationConvention(EmbeddingModelObservationConvention observationConvention) {

@@ -16,14 +16,14 @@
 
 package org.springframework.ai.ollama.api;
 
-import org.jspecify.annotations.Nullable;
-import org.springframework.ai.embedding.EmbeddingOptions;
-
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
+
+import org.jspecify.annotations.Nullable;
+
+import org.springframework.ai.embedding.EmbeddingOptions;
 
 /**
  * Helper class for creating strongly-typed Ollama options.
@@ -32,11 +32,11 @@ import java.util.stream.Collectors;
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
  * @author Sebastien Deleuze
+ * @since 0.8.0
  * @see <a href=
  * "https://github.com/ollama/ollama/blob/main/docs/modelfile.mdx#valid-parameters-and-values">Ollama
  * Valid Parameters and Values</a>
  * @see <a href="https://github.com/ollama/ollama/blob/main/api/types.go">Ollama Types</a>
- * @since 0.8.0
  */
 public class OllamaEmbeddingOptions implements EmbeddingOptions {
 
@@ -79,60 +79,110 @@ public class OllamaEmbeddingOptions implements EmbeddingOptions {
 	 */
 	private final @Nullable Boolean truncate;
 
-
+	// @formatter:off
 
 	/**
-	 * Random seed used for reproducible outputs
+	 * Whether to use NUMA. (Default: false)
 	 */
-	private final @Nullable Integer seed;
+	private final @Nullable Boolean useNUMA;
 
 	/**
-	 * Controls randomness in generation (higher = more random)
-	 */
-	private final @Nullable Float temperature;
-
-	/**
-	 * Limits next token selection to the K most likely
-	 */
-	private final @Nullable Integer topK;
-
-	/**
-	 * Cumulative probability threshold for nucleus sampling
-	 */
-	private final @Nullable Float topP;
-	/**
-	 * Minimum probability threshold for token selection
-	 */
-	private final @Nullable Float minP;
-
-	/**
-	 * Stop sequences that will halt generation
-	 */
-	private final @Nullable String[] stop;
-
-	/**
-	 * Context length size (number of tokens)
+	 * Sets the size of the context window used to generate the next token. (Default: 2048)
 	 */
 	private final @Nullable Integer numCtx;
 
 	/**
-	 * Maximum number of tokens to generate
+	 * Prompt processing maximum batch size. (Default: 512)
 	 */
-	private final @Nullable Integer numPredict;
+	private final @Nullable Integer numBatch;
 
-	public OllamaEmbeddingOptions(String model, @Nullable String keepAlive, @Nullable Integer dimensions, @Nullable Boolean truncate, @Nullable Integer seed, @Nullable Float temperature, @Nullable Integer topK, @Nullable Float topP, @Nullable Float minP, @Nullable String[] stop, @Nullable Integer numCtx, @Nullable Integer numPredict) {
-		this.model = model;
+	/**
+	 * The number of layers to send to the GPU(s). On macOS, it defaults to 1
+	 * to enable metal support, 0 to disable.
+	 * (Default: -1, which indicates that numGPU should be set dynamically)
+	 */
+	private final @Nullable Integer numGPU;
+
+	/**
+	 * When using multiple GPUs this option controls which GPU is used
+	 * for small tensors for which the overhead of splitting the computation
+	 * across all GPUs is not worthwhile. The GPU in question will use slightly
+	 * more VRAM to store a scratch buffer for temporary results.
+	 * By default, GPU 0 is used.
+	 */
+	private final @Nullable Integer mainGPU;
+
+	/**
+	 * (Default: false)
+	 */
+	private final @Nullable Boolean lowVRAM;
+
+	/**
+	 * (Default: true)
+	 */
+	private final @Nullable Boolean f16KV;
+
+	/**
+	 * Return logits for all the tokens, not just the last one.
+	 * To enable completions to return logprobs, this must be true.
+	 */
+	private final @Nullable Boolean logitsAll;
+
+	/**
+	 * Load only the vocabulary, not the weights.
+	 */
+	private final @Nullable Boolean vocabOnly;
+
+	/**
+	 * By default, models are mapped into memory, which allows the system to load only the necessary parts
+	 * of the model as needed. However, if the model is larger than your total amount of RAM or if your system is low
+	 * on available memory, using mmap might increase the risk of pageouts, negatively impacting performance.
+	 * Disabling mmap results in slower load times but may reduce pageouts if you're not using mlock.
+	 * Note that if the model is larger than the total amount of RAM, turning off mmap would prevent
+	 * the model from loading at all.
+	 * (Default: null)
+	 */
+	private final @Nullable Boolean useMMap;
+
+	/**
+	 * Lock the model in memory, preventing it from being swapped out when memory-mapped.
+	 * This can improve performance but trades away some of the advantages of memory-mapping
+	 * by requiring more RAM to run and potentially slowing down load times as the model loads into RAM.
+	 * (Default: false)
+	 */
+	private final @Nullable Boolean useMLock;
+
+	/**
+	 * Set the number of threads to use during generation. For optimal performance, it is recommended to set this value
+	 * to the number of physical CPU cores your system has (as opposed to the logical number of cores).
+	 * Using the correct number of threads can greatly improve performance.
+	 * By default, Ollama will detect this value for optimal performance.
+	 */
+	private final @Nullable Integer numThread;
+
+	protected OllamaEmbeddingOptions(
+			@Nullable String model, @Nullable String keepAlive, @Nullable Integer dimensions,
+			@Nullable Boolean truncate, @Nullable Boolean useNUMA, @Nullable Integer numCtx,
+			@Nullable Integer numBatch, @Nullable Integer numGPU, @Nullable Integer mainGPU,
+			@Nullable Boolean lowVRAM, @Nullable Boolean f16KV, @Nullable Boolean logitsAll,
+			@Nullable Boolean vocabOnly, @Nullable Boolean useMMap, @Nullable Boolean useMLock,
+			@Nullable Integer numThread) {
+		this.model = model != null ? model : OllamaModel.MXBAI_EMBED_LARGE.id();
 		this.keepAlive = keepAlive;
 		this.dimensions = dimensions;
 		this.truncate = truncate;
-		this.seed = seed;
-		this.temperature = temperature;
-		this.topK = topK;
-		this.topP = topP;
-		this.minP = minP;
-		this.stop = stop;
+		this.useNUMA = useNUMA;
 		this.numCtx = numCtx;
-		this.numPredict = numPredict;
+		this.numBatch = numBatch;
+		this.numGPU = numGPU;
+		this.mainGPU = mainGPU;
+		this.lowVRAM = lowVRAM;
+		this.f16KV = f16KV;
+		this.logitsAll = logitsAll;
+		this.vocabOnly = vocabOnly;
+		this.useMMap = useMMap;
+		this.useMLock = useMLock;
+		this.numThread = numThread;
 	}
 
 	public static OllamaEmbeddingOptions.Builder builder() {
@@ -158,49 +208,65 @@ public class OllamaEmbeddingOptions implements EmbeddingOptions {
 		return this.model;
 	}
 
-	@Override
-	public @Nullable Integer getDimensions() {
-		return this.dimensions;
-	}
-
 	public @Nullable String getKeepAlive() {
-		return keepAlive;
+		return this.keepAlive;
 	}
 
 	public @Nullable Boolean getTruncate() {
-		return truncate;
+		return this.truncate;
 	}
 
-	public @Nullable Integer getSeed() {
-		return seed;
-	}
-
-	public @Nullable Float getTemperature() {
-		return temperature;
-	}
-
-	public @Nullable Integer getTopK() {
-		return topK;
-	}
-
-	public @Nullable Float getTopP() {
-		return topP;
-	}
-
-	public @Nullable Float getMinP() {
-		return minP;
-	}
-
-	public@Nullable String[] getStop() {
-		return stop;
+	public @Nullable Boolean getUseNUMA() {
+		return this.useNUMA;
 	}
 
 	public @Nullable Integer getNumCtx() {
-		return numCtx;
+		return this.numCtx;
 	}
 
-	public @Nullable Integer getNumPredict() {
-		return numPredict;
+	public @Nullable Integer getNumBatch() {
+		return this.numBatch;
+	}
+
+	public @Nullable Integer getNumGPU() {
+		return this.numGPU;
+	}
+
+	public @Nullable Integer getMainGPU() {
+		return this.mainGPU;
+	}
+
+	public @Nullable Boolean getLowVRAM() {
+		return this.lowVRAM;
+	}
+
+	public @Nullable Boolean getF16KV() {
+		return this.f16KV;
+	}
+
+	public @Nullable Boolean getLogitsAll() {
+		return this.logitsAll;
+	}
+
+	public @Nullable Boolean getVocabOnly() {
+		return this.vocabOnly;
+	}
+
+	public @Nullable Boolean getUseMMap() {
+		return this.useMMap;
+	}
+
+	public @Nullable Boolean getUseMLock() {
+		return this.useMLock;
+	}
+
+	public @Nullable Integer getNumThread() {
+		return this.numThread;
+	}
+
+	@Override
+	public @Nullable Integer getDimensions() {
+		return this.dimensions;
 	}
 
 	/**
@@ -208,57 +274,58 @@ public class OllamaEmbeddingOptions implements EmbeddingOptions {
 	 * @return The {@link Map} of key/value pairs.
 	 */
 	public Map<String, Object> toMap() {
-		Map<String, Object> map = new HashMap<>();
+		Map<String, Object> map = new java.util.HashMap<>();
 		if (this.model != null) {
 			map.put("model", this.model);
 		}
-
 		if (this.keepAlive != null) {
 			map.put("keep_alive", this.keepAlive);
 		}
-
 		if (this.dimensions != null) {
 			map.put("dimensions", this.dimensions);
 		}
-
 		if (this.truncate != null) {
 			map.put("truncate", this.truncate);
 		}
-
-		if (this.seed != null) {
-			map.put("seed", this.seed);
+		if (this.useNUMA != null) {
+			map.put("numa", this.useNUMA);
 		}
-
-		if (this.temperature != null) {
-			map.put("temperature", this.temperature);
-		}
-
-		if (this.topK != null) {
-			map.put("top_k", this.topK);
-		}
-
-		if (this.topP != null) {
-			map.put("top_p", this.topP);
-		}
-
-		if (this.minP != null) {
-			map.put("min_p", this.minP);
-		}
-
-		if (this.stop != null && this.stop.length > 0) {
-			map.put("stop", this.stop);
-		}
-
 		if (this.numCtx != null) {
 			map.put("num_ctx", this.numCtx);
 		}
-
-		if (this.numPredict != null) {
-			map.put("num_predict", this.numPredict);
+		if (this.numBatch != null) {
+			map.put("num_batch", this.numBatch);
 		}
-
+		if (this.numGPU != null) {
+			map.put("num_gpu", this.numGPU);
+		}
+		if (this.mainGPU != null) {
+			map.put("main_gpu", this.mainGPU);
+		}
+		if (this.lowVRAM != null) {
+			map.put("low_vram", this.lowVRAM);
+		}
+		if (this.f16KV != null) {
+			map.put("f16_kv", this.f16KV);
+		}
+		if (this.logitsAll != null) {
+			map.put("logits_all", this.logitsAll);
+		}
+		if (this.vocabOnly != null) {
+			map.put("vocab_only", this.vocabOnly);
+		}
+		if (this.useMMap != null) {
+			map.put("use_mmap", this.useMMap);
+		}
+		if (this.useMLock != null) {
+			map.put("use_mlock", this.useMLock);
+		}
+		if (this.numThread != null) {
+			map.put("num_thread", this.numThread);
+		}
 		return map;
 	}
+	// @formatter:on
 
 	@Override
 	public boolean equals(@Nullable Object o) {
@@ -280,71 +347,37 @@ public class OllamaEmbeddingOptions implements EmbeddingOptions {
 
 	public static final class Builder {
 
-		/**
-		 * Sets the length of time for Ollama to keep the model loaded. Valid values for this
-		 * setting are parsed by <a href="https://pkg.go.dev/time#ParseDuration">ParseDuration in Go</a>.
-		 * Part of Chat completion <a href="https://github.com/ollama/ollama/blob/main/docs/api.md#parameters-1">advanced parameters</a>.
-		 */
-		private @Nullable String keepAlive;
-		/**
-		 * NOTE: Synthetic field not part of the official Ollama API.
-		 * Used to allow overriding the model name with prompt options.
-		 * Part of Chat completion <a href="https://github.com/ollama/ollama/blob/main/docs/api.md#parameters-1">parameters</a>.
-		 */
 		private @Nullable String model;
-		/**
-		 * The dimensions of the embedding output. This allows you to specify the size of the embedding vector
-		 * that should be returned by the model. Not all models support this parameter.
-		 */
+
+		private @Nullable String keepAlive;
+
 		private @Nullable Integer dimensions;
 
-
-		/**
-		 * Truncates the end of each input to fit within context length. Returns error if false and context length is exceeded.
-		 * Defaults to true.
-		 */
 		private @Nullable Boolean truncate;
 
-		// @formatter:off
+		private @Nullable Boolean useNUMA;
 
-		/**
-		 * Random seed used for reproducible outputs
-		 */
-		private  @Nullable Integer seed;
+		private @Nullable Integer numCtx;
 
-		/**
-		 * Controls randomness in generation (higher = more random)
-		 */
-		private  @Nullable Float temperature;
+		private @Nullable Integer numBatch;
 
-		/**
-		 * Limits next token selection to the K most likely
-		 */
-		private  @Nullable Integer topK;
+		private @Nullable Integer numGPU;
 
-		/**
-		 * Cumulative probability threshold for nucleus sampling
-		 */
-		private  @Nullable Float topP;
-		/**
-		 * Minimum probability threshold for token selection
-		 */
-		private  @Nullable Float minP;
+		private @Nullable Integer mainGPU;
 
-		/**
-		 * Stop sequences that will halt generation
-		 */
-		private  @Nullable String[] stop;
+		private @Nullable Boolean lowVRAM;
 
-		/**
-		 * Context length size (number of tokens)
-		 */
-		private  @Nullable Integer numCtx;
+		private @Nullable Boolean f16KV;
 
-		/**
-		 * Maximum number of tokens to generate
-		 */
-		private  @Nullable Integer numPredict;
+		private @Nullable Boolean logitsAll;
+
+		private @Nullable Boolean vocabOnly;
+
+		private @Nullable Boolean useMMap;
+
+		private @Nullable Boolean useMLock;
+
+		private @Nullable Integer numThread;
 
 		public Builder model(@Nullable String model) {
 			this.model = model;
@@ -366,38 +399,8 @@ public class OllamaEmbeddingOptions implements EmbeddingOptions {
 			return this;
 		}
 
-		public Builder dimensions(@Nullable Integer dimensions) {
-			this.dimensions = dimensions;
-			return this;
-		}
-
-		public Builder seed(@Nullable Integer seed) {
-			this.seed = seed;
-			return this;
-		}
-
-		public Builder temperature(@Nullable Float temperature) {
-			this.temperature = temperature;
-			return this;
-		}
-
-		public Builder topK(@Nullable Integer topK) {
-			this.topK = topK;
-			return this;
-		}
-
-		public Builder topP(@Nullable Float topP) {
-			this.topP = topP;
-			return this;
-		}
-
-		public Builder minP(@Nullable Float minP) {
-			this.minP = minP;
-			return this;
-		}
-
-		public Builder stop(@Nullable String[] stop) {
-			this.stop = stop;
+		public Builder useNUMA(@Nullable Boolean useNUMA) {
+			this.useNUMA = useNUMA;
 			return this;
 		}
 
@@ -406,13 +409,65 @@ public class OllamaEmbeddingOptions implements EmbeddingOptions {
 			return this;
 		}
 
-		public Builder numPredict(@Nullable Integer numPredict) {
-			this.numPredict = numPredict;
+		public Builder numBatch(@Nullable Integer numBatch) {
+			this.numBatch = numBatch;
+			return this;
+		}
+
+		public Builder numGPU(@Nullable Integer numGPU) {
+			this.numGPU = numGPU;
+			return this;
+		}
+
+		public Builder mainGPU(@Nullable Integer mainGPU) {
+			this.mainGPU = mainGPU;
+			return this;
+		}
+
+		public Builder lowVRAM(@Nullable Boolean lowVRAM) {
+			this.lowVRAM = lowVRAM;
+			return this;
+		}
+
+		public Builder f16KV(@Nullable Boolean f16KV) {
+			this.f16KV = f16KV;
+			return this;
+		}
+
+		public Builder logitsAll(@Nullable Boolean logitsAll) {
+			this.logitsAll = logitsAll;
+			return this;
+		}
+
+		public Builder vocabOnly(@Nullable Boolean vocabOnly) {
+			this.vocabOnly = vocabOnly;
+			return this;
+		}
+
+		public Builder useMMap(@Nullable Boolean useMMap) {
+			this.useMMap = useMMap;
+			return this;
+		}
+
+		public Builder useMLock(@Nullable Boolean useMLock) {
+			this.useMLock = useMLock;
+			return this;
+		}
+
+		public Builder numThread(@Nullable Integer numThread) {
+			this.numThread = numThread;
+			return this;
+		}
+
+		public Builder dimensions(@Nullable Integer dimensions) {
+			this.dimensions = dimensions;
 			return this;
 		}
 
 		public OllamaEmbeddingOptions build() {
-			return new OllamaEmbeddingOptions(this.model,this.keepAlive,this.dimensions,this.truncate,this.seed,this.temperature,this.topK,this.topP,this.minP,this.stop,this.numCtx,this.numPredict);
+			return new OllamaEmbeddingOptions(this.model, this.keepAlive, this.dimensions, this.truncate, this.useNUMA,
+					this.numCtx, this.numBatch, this.numGPU, this.mainGPU, this.lowVRAM, this.f16KV, this.logitsAll,
+					this.vocabOnly, this.useMMap, this.useMLock, this.numThread);
 		}
 
 	}
