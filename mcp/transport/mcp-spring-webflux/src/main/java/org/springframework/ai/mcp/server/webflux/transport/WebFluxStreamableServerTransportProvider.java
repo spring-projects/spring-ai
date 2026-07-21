@@ -64,6 +64,8 @@ public final class WebFluxStreamableServerTransportProvider implements McpStream
 
 	private static final Log logger = LogFactory.getLog(WebFluxStreamableServerTransportProvider.class);
 
+	public static final String DEFAULT_MCP_ENDPOINT = "/mcp";
+
 	public static final String MESSAGE_EVENT_TYPE = "message";
 
 	private final McpJsonMapper jsonMapper;
@@ -78,7 +80,7 @@ public final class WebFluxStreamableServerTransportProvider implements McpStream
 
 	private final ConcurrentHashMap<String, McpStreamableServerSession> sessions = new ConcurrentHashMap<>();
 
-	private McpTransportContextExtractor<ServerRequest> contextExtractor;
+	private final McpTransportContextExtractor<ServerRequest> contextExtractor;
 
 	private volatile boolean isClosing = false;
 
@@ -489,7 +491,7 @@ public final class WebFluxStreamableServerTransportProvider implements McpStream
 
 		private McpJsonMapper jsonMapper = McpJsonDefaults.getMapper();
 
-		private String mcpEndpoint = "/mcp";
+		private String mcpEndpoint = DEFAULT_MCP_ENDPOINT;
 
 		private McpTransportContextExtractor<ServerRequest> contextExtractor = serverRequest -> McpTransportContext.EMPTY;
 

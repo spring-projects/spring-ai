@@ -60,7 +60,7 @@ import org.springframework.web.servlet.function.ServerResponse.SseBuilder;
  *
  * <p>
  * This is the non-reactive version of
- * {@link io.modelcontextprotocol.server.transport.WebFluxStreamableServerTransportProvider}
+ * {@link org.springframework.ai.mcp.server.webflux.transport.WebFluxStreamableServerTransportProvider}
  *
  * @author Christian Tzolov
  * @author Dariusz Jędrzejczyk
@@ -71,20 +71,12 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 
 	private static final Log logger = LogFactory.getLog(WebMvcStreamableServerTransportProvider.class);
 
+	public static final String DEFAULT_MCP_ENDPOINT = "/mcp";
+
 	/**
 	 * Event type for JSON-RPC messages sent through the SSE connection.
 	 */
 	public static final String MESSAGE_EVENT_TYPE = "message";
-
-	/**
-	 * Event type for sending the message endpoint URI to clients.
-	 */
-	public static final String ENDPOINT_EVENT_TYPE = "endpoint";
-
-	/**
-	 * Default base URL for the message endpoint.
-	 */
-	public static final String DEFAULT_BASE_URL = "";
 
 	/**
 	 * The endpoint URI where clients should send their JSON-RPC messages. Defaults to
@@ -108,7 +100,7 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 	 */
 	private final ConcurrentHashMap<String, McpStreamableServerSession> sessions = new ConcurrentHashMap<>();
 
-	private McpTransportContextExtractor<ServerRequest> contextExtractor;
+	private final McpTransportContextExtractor<ServerRequest> contextExtractor;
 
 	/**
 	 * Flag indicating if the transport is shutting down.
@@ -735,7 +727,7 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 
 		private @Nullable McpJsonMapper jsonMapper;
 
-		private String mcpEndpoint = "/mcp";
+		private String mcpEndpoint = DEFAULT_MCP_ENDPOINT;
 
 		private boolean disallowDelete = false;
 
