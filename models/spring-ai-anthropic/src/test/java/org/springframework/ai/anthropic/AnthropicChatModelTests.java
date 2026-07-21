@@ -96,6 +96,7 @@ import static org.mockito.Mockito.verify;
  * @author Soby Chacko
  * @author Sebastien Deleuze
  * @author Jewoo Shin
+ * @author Seeun Kim
  */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)

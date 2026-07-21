@@ -146,6 +146,7 @@ import org.springframework.util.MimeType;
  * @author Sebastien Deleuze
  * @author Ilayaperumal Gopinathan
  * @author Jewoo Shin
+ * @author Seeun Kim
  * @since 1.0.0
  * @see AnthropicChatOptions
  * @see <a href="https://docs.anthropic.com/en/api/messages">Anthropic Messages API</a>
@@ -590,36 +591,17 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		return response;
 	}
 
-	/**
-	 * Resolves the effective {@link AnthropicChatOptions} for a prompt — the merged
-	 * default/per-request options set on {@link Prompt#getOptions()}, or an empty
-	 * {@link AnthropicChatOptions} if the prompt carries a different {@link ChatOptions}
-	 * implementation.
-	 * @param prompt the prompt with message history and options
-	 * @return the effective Anthropic chat options
-	 */
 	private static AnthropicChatOptions resolveAnthropicOptions(Prompt prompt) {
+		// Use the prompt's merged AnthropicChatOptions, or empty options if it carries a
+		// different ChatOptions implementation.
 		ChatOptions options = prompt.getOptions();
 		return options instanceof AnthropicChatOptions anthropicOptions ? anthropicOptions
 				: AnthropicChatOptions.builder().build();
 	}
 
-	/**
-	 * Resolves the per-call {@link RequestOptions} (currently just {@code timeout} — the
-	 * SDK's {@code RequestOptions} doesn't expose {@code maxRetries}/{@code proxy}/custom
-	 * headers, so those remain construction-time-only settings) from the effective
-	 * {@link AnthropicChatOptions} on the given prompt. Without this, a {@code timeout}
-	 * set via {@link AnthropicChatOptions#getTimeout()} — whether on {@code ChatClient}
-	 * default options or a per-request override — would silently have no effect: the
-	 * Anthropic Java SDK only honors the {@code timeout} supplied on this
-	 * {@link RequestOptions} argument; a call made without one falls back to whatever
-	 * {@link com.anthropic.core.Timeout} the client was built with once, at construction
-	 * time (see {@link AnthropicSetup}).
-	 * @param prompt the prompt with message history and options
-	 * @return request options carrying the resolved timeout, or
-	 * {@link RequestOptions#none()} if none is set
-	 */
 	private static RequestOptions requestOptionsFor(Prompt prompt) {
+		// Carry the resolved timeout as per-call RequestOptions; the SDK only honors a
+		// timeout supplied here, so otherwise AnthropicChatOptions#getTimeout() is ignored.
 		Duration timeout = resolveAnthropicOptions(prompt).getTimeout();
 		return timeout != null ? RequestOptions.builder().timeout(timeout).build() : RequestOptions.none();
 	}

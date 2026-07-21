@@ -55,7 +55,7 @@ import static org.mockito.Mockito.verify;
  * {@link ChatClient} default option, or as a per-request {@code ChatClient} override —
  * not just at construction time.
  *
- * @author seeun0210
+ * @author Seeun Kim
  */
 class AnthropicChatModelTimeoutTests {
 

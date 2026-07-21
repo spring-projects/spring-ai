@@ -63,6 +63,7 @@ import org.springframework.util.CollectionUtils;
  * @author Soby Chacko
  * @author Austin Dase
  * @author Sebastien Deleuze
+ * @author Seeun Kim
  * @since 1.0.0
  * @see AnthropicChatModel
  * @see <a href="https://docs.anthropic.com/en/api/messages">Anthropic Messages API</a>
