@@ -663,10 +663,9 @@ NOTE: The same `JsonSchemaGenerator` is also used by xref:api/structured-output/
 
 **Parameter descriptions**
 
-Use any of these (Spring AI's annotation has highest precedence):
+Use any of these (for a tool method's own parameters, Spring AI's annotation has highest precedence):
 
 * `@ToolParam(description = "...")` — Spring AI
-* `@JsonClassDescription("...")` — Jackson
 * `@JsonPropertyDescription("...")` — Jackson
 * `@Schema(description = "...")` — Swagger
 
@@ -686,7 +685,7 @@ class CustomerTools {
 
 **Required vs optional**
 
-By default every parameter is required. Make a parameter optional via (in order of precedence):
+By default every parameter is required. Make a parameter optional via one of the following (for a tool method's own parameters, in this order of precedence):
 
 * `@ToolParam(required = false)` — Spring AI
 * `@JsonProperty(required = false)` — Jackson
