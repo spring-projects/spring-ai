@@ -16,6 +16,7 @@
 
 package org.springframework.ai.anthropic;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
@@ -29,6 +30,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import com.anthropic.client.AnthropicClient;
 import com.anthropic.client.AnthropicClientAsync;
 import com.anthropic.core.JsonValue;
+import com.anthropic.core.RequestOptions;
 import com.anthropic.core.http.HttpResponseFor;
 import com.anthropic.core.http.StreamResponse;
 import com.anthropic.models.messages.Base64ImageSource;
@@ -144,6 +146,7 @@ import org.springframework.util.MimeType;
  * @author Sebastien Deleuze
  * @author Ilayaperumal Gopinathan
  * @author Jewoo Shin
+ * @author Seeun Kim
  * @since 1.0.0
  * @see AnthropicChatOptions
  * @see <a href="https://docs.anthropic.com/en/api/messages">Anthropic Messages API</a>
@@ -330,7 +333,9 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			// stream start) can be captured. The SDK exposes this as a blocking
 			// StreamResponse, so events are pulled on a boundedElastic worker.
 			Flux<ChatResponse> chatResponseFlux = Mono
-				.fromFuture(() -> this.anthropicClientAsync.messages().withRawResponse().createStreaming(request))
+				.fromFuture(() -> this.anthropicClientAsync.messages()
+					.withRawResponse()
+					.createStreaming(request, requestOptionsFor(prompt)))
 				.flatMapMany(rawResponse -> {
 					streamingState.setRateLimit(AnthropicRateLimit.from(rawResponse.headers()));
 					StreamResponse<RawMessageStreamEvent> streamResponse = rawResponse.parse();
@@ -552,7 +557,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 				HttpResponseFor<Message> rawResponse = this.anthropicClient.messages()
 					.withRawResponse()
-					.create(request);
+					.create(request, requestOptionsFor(prompt));
 				Message message = rawResponse.parse();
 				RateLimit rateLimit = AnthropicRateLimit.from(rawResponse.headers());
 
@@ -586,6 +591,21 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		return response;
 	}
 
+	private static AnthropicChatOptions resolveAnthropicOptions(Prompt prompt) {
+		// Use the prompt's merged AnthropicChatOptions, or empty options if it carries a
+		// different ChatOptions implementation.
+		ChatOptions options = prompt.getOptions();
+		return options instanceof AnthropicChatOptions anthropicOptions ? anthropicOptions
+				: AnthropicChatOptions.builder().build();
+	}
+
+	private static RequestOptions requestOptionsFor(Prompt prompt) {
+		// Carry the resolved timeout as per-call RequestOptions; the SDK only honors a
+		// timeout supplied here, so otherwise AnthropicChatOptions#getTimeout() is ignored.
+		Duration timeout = resolveAnthropicOptions(prompt).getTimeout();
+		return timeout != null ? RequestOptions.builder().timeout(timeout).build() : RequestOptions.none();
+	}
+
 	/**
 	 * Creates a {@link MessageCreateParams} request from a Spring AI {@link Prompt}. Maps
 	 * message types to Anthropic format: TOOL messages become user messages with
@@ -599,9 +619,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 		MessageCreateParams.Builder builder = MessageCreateParams.builder();
 
-		ChatOptions options = prompt.getOptions();
-		AnthropicChatOptions requestOptions = options instanceof AnthropicChatOptions anthropicOptions
-				? anthropicOptions : AnthropicChatOptions.builder().build();
+		AnthropicChatOptions requestOptions = resolveAnthropicOptions(prompt);
 
 		// Set required fields
 		builder.model(requestOptions.getModel()).maxTokens(requestOptions.getMaxTokens());
