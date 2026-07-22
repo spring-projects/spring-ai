@@ -437,7 +437,9 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 						logger.error("Failed to initialize session: " + e.getMessage());
 					}
 					return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
-						.body(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR).message(e.getMessage()).build());
+						.body(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
+							.message("Internal server error. Check server logs for details.")
+							.build());
 				}
 			}
 
@@ -520,7 +522,9 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 				logger.error("Error handling message: " + e.getMessage());
 			}
 			return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
-				.body(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR).message(e.getMessage()).build());
+				.body(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
+					.message("Internal server error. Check server logs for details.")
+					.build());
 		}
 	}
 
@@ -570,7 +574,9 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 				logger.error("Failed to delete session " + sessionId + ": " + e.getMessage());
 			}
 			return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
-				.body(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR).message(e.getMessage()).build());
+				.body(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
+					.message("Internal server error. Check server logs for details.")
+					.build());
 		}
 	}
 
