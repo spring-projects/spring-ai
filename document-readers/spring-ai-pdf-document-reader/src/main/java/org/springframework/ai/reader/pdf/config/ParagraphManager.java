@@ -21,6 +21,7 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 
+
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
 import org.apache.pdfbox.pdmodel.PDPageTree;
@@ -31,6 +32,8 @@ import org.jspecify.annotations.Nullable;
 
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 /**
  * The ParagraphManager class is responsible for managing the paragraphs and hierarchy of
@@ -44,6 +47,9 @@ public class ParagraphManager {
 	/**
 	 * Root of the paragraphs tree.
 	 */
+	private static final Log logger = LogFactory.getLog(ParagraphManager.class);
+
+
 	private final Paragraph rootParagraph;
 
 	private final PDDocument document;
@@ -64,7 +70,9 @@ public class ParagraphManager {
 					new Paragraph(null, "root", -1, 1, this.document.getNumberOfPages(), 0),
 					this.document.getDocumentCatalog().getDocumentOutline(), 0);
 
-			printParagraph(this.rootParagraph, System.out);
+			if (logger.isDebugEnabled()) {
+				printParagraph(this.rootParagraph, System.out);
+			}
 		}
 		catch (Exception e) {
 			throw new RuntimeException(e);
