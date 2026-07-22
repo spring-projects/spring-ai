@@ -17,6 +17,7 @@
 package org.springframework.ai.mcp.annotation.context;
 
 import java.lang.reflect.Type;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;
 
@@ -205,10 +206,23 @@ public final class DefaultMcpSyncRequestContext implements McpSyncRequestContext
 		ElicitRequest elicitRequest = ElicitRequest.builder()
 			.message(message)
 			.requestedSchema(schema)
-			.meta(meta)
+			.meta(metaWithProgressToken(meta))
 			.build();
 
 		return this.exchange.createElicitation(elicitRequest);
+	}
+
+	private Map<String, Object> metaWithProgressToken(Map<String, Object> meta) {
+		Object progressToken = this.request.progressToken();
+		if (progressToken == null) {
+			return meta;
+		}
+		Map<String, Object> requestMeta = new HashMap<>();
+		if (meta != null) {
+			requestMeta.putAll(meta);
+		}
+		requestMeta.put("progressToken", progressToken);
+		return requestMeta;
 	}
 
 	private Map<String, Object> generateElicitSchema(Type type) {
