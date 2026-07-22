@@ -64,7 +64,7 @@ import org.springframework.util.StringUtils;
 
 /**
  * A vector store implementation that stores and retrieves vectors in a Weaviate database.
- *
+ * <p>
  * Note: You can assign arbitrary metadata fields with your Documents. Later will be
  * persisted and managed as Document fields. But only the metadata keys listed in
  * {@link WeaviateVectorStore#filterMetadataFields} can be used for similarity search
@@ -118,7 +118,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 	 * search query filter expressions. The {@link Document#getMetadata()} can contain
 	 * arbitrary number of metadata entries, but only the fields listed here can be used
 	 * in the search filter expressions.
-	 *
+	 * <p>
 	 * If new entries are added ot the filterMetadataFields the affected documents must be
 	 * (re)updated.
 	 */
@@ -191,13 +191,20 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 
 	@Override
 	public void doAdd(List<Document> documents) {
+		Assert.notNull(documents, "The document list should not be null.");
+		this.doAdd(documents, EmbeddingOptions.builder().build());
+	}
+
+	@Override
+	public void doAdd(List<Document> documents, EmbeddingOptions options) {
+		Assert.notNull(documents, "Documents must not be null");
+		Assert.notNull(options, "The embedding Options should not be null.");
 
 		if (CollectionUtils.isEmpty(documents)) {
 			return;
 		}
 
-		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
-				this.batchingStrategy);
+		List<float[]> embeddings = this.embeddingModel.embed(documents, options, this.batchingStrategy);
 
 		List<WeaviateObject> weaviateObjects = documents.stream()
 			.map(document -> toWeaviateObject(document, documents, embeddings))
@@ -521,13 +528,13 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 
 	public static class Builder extends AbstractVectorStoreBuilder<Builder> {
 
+		private final WeaviateClient weaviateClient;
+
 		private WeaviateVectorStoreOptions options = new WeaviateVectorStoreOptions();
 
 		private ConsistentLevel consistencyLevel = ConsistentLevel.ONE;
 
 		private List<MetadataField> filterMetadataFields = List.of();
-
-		private final WeaviateClient weaviateClient;
 
 		/**
 		 * Constructs a new WeaviateBuilder instance.

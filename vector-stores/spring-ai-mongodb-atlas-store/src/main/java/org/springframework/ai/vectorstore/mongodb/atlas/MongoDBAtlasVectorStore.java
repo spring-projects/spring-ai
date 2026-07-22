@@ -130,8 +130,6 @@ import org.springframework.util.Assert;
  */
 public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
-	private static final Log logger = LogFactory.getLog(MongoDBAtlasVectorStore.class);
-
 	public static final String ID_FIELD_NAME = "_id";
 
 	public static final String METADATA_FIELD_NAME = "metadata";
@@ -141,6 +139,8 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 	public static final String SCORE_FIELD_NAME = "score";
 
 	public static final String DEFAULT_VECTOR_COLLECTION_NAME = "vector_store";
+
+	private static final Log logger = LogFactory.getLog(MongoDBAtlasVectorStore.class);
 
 	private static final String DEFAULT_VECTOR_INDEX_NAME = "vector_index";
 
@@ -181,6 +181,14 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 		this.metadataFieldsToFilter = builder.metadataFieldsToFilter;
 		this.filterExpressionConverter = builder.filterExpressionConverter;
 		this.initializeSchema = builder.initializeSchema;
+	}
+
+	/**
+	 * Creates a new builder instance for MongoDBAtlasVectorStore.
+	 * @return a new MongoDBBuilder instance
+	 */
+	public static Builder builder(MongoTemplate mongoTemplate, EmbeddingModel embeddingModel) {
+		return new Builder(mongoTemplate, embeddingModel);
 	}
 
 	@Override
@@ -260,8 +268,15 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 
 	@Override
 	public void doAdd(List<Document> documents) {
-		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
-				this.batchingStrategy);
+		Assert.notNull(documents, "The document list should not be null.");
+		this.doAdd(documents, EmbeddingOptions.builder().build());
+	}
+
+	@Override
+	public void doAdd(List<Document> documents, EmbeddingOptions options) {
+		Assert.notNull(documents, "The document list should not be null.");
+		Assert.notNull(options, "The embedding Options should not be null.");
+		List<float[]> embeddings = this.embeddingModel.embed(documents, options, this.batchingStrategy);
 		for (int i = 0; i < documents.size(); i++) {
 			Document document = documents.get(i);
 			MongoDBDocument mdbDocument = new MongoDBDocument(document.getId(),
@@ -337,14 +352,6 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 		@SuppressWarnings("unchecked")
 		T client = (T) this.mongoTemplate;
 		return Optional.of(client);
-	}
-
-	/**
-	 * Creates a new builder instance for MongoDBAtlasVectorStore.
-	 * @return a new MongoDBBuilder instance
-	 */
-	public static Builder builder(MongoTemplate mongoTemplate, EmbeddingModel embeddingModel) {
-		return new Builder(mongoTemplate, embeddingModel);
 	}
 
 	public static class Builder extends AbstractVectorStoreBuilder<Builder> {

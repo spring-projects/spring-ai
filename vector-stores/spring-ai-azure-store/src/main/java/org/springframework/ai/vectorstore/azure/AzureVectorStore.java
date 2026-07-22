@@ -164,16 +164,36 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 		return new Builder(searchIndexClient, embeddingModel);
 	}
 
+	static Map<String, Object> parseMetadataToMutable(@Nullable String metadataJson) {
+		if (!StringUtils.hasText(metadataJson)) {
+			return new HashMap<>();
+		}
+		try {
+			return new HashMap<>(jsonHelper.fromJsonToMap(metadataJson));
+		}
+		catch (IllegalStateException ex) {
+			if (logger.isWarnEnabled()) {
+				logger.warn("Failed to parse metadata JSON. Using empty metadata. json=" + metadataJson, ex);
+			}
+			return new HashMap<>();
+		}
+	}
+
 	@Override
 	public void doAdd(List<Document> documents) {
-
 		Assert.notNull(documents, "The document list should not be null.");
+		this.doAdd(documents, EmbeddingOptions.builder().build());
+	}
+
+	@Override
+	public void doAdd(List<Document> documents, EmbeddingOptions options) {
+		Assert.notNull(documents, "The document list should not be null.");
+		Assert.notNull(options, "The embedding Options should not be null.");
 		if (CollectionUtils.isEmpty(documents)) {
 			return; // nothing to do;
 		}
 
-		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
-				this.batchingStrategy);
+		List<float[]> embeddings = this.embeddingModel.embed(documents, options, this.batchingStrategy);
 
 		final var searchDocuments = IntStream.range(0, documents.size()).mapToObj(i -> {
 			Document document = documents.get(i);
@@ -338,21 +358,6 @@ public class AzureVectorStore extends AbstractObservationVectorStore implements 
 		@SuppressWarnings("unchecked")
 		T client = (T) this.searchClient;
 		return Optional.of(client);
-	}
-
-	static Map<String, Object> parseMetadataToMutable(@Nullable String metadataJson) {
-		if (!StringUtils.hasText(metadataJson)) {
-			return new HashMap<>();
-		}
-		try {
-			return new HashMap<>(jsonHelper.fromJsonToMap(metadataJson));
-		}
-		catch (IllegalStateException ex) {
-			if (logger.isWarnEnabled()) {
-				logger.warn("Failed to parse metadata JSON. Using empty metadata. json=" + metadataJson, ex);
-			}
-			return new HashMap<>();
-		}
 	}
 
 	public record MetadataField(String name, SearchFieldDataType fieldType) {

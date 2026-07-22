@@ -43,6 +43,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.util.JacksonUtils;
@@ -50,6 +51,7 @@ import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.core.io.Resource;
+import org.springframework.util.Assert;
 
 /**
  * A simple, in-memory implementation of the <a href=
@@ -113,7 +115,15 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 
 	@Override
 	public void doAdd(List<Document> documents) {
+		Assert.notNull(documents, "The document list should not be null.");
+		this.doAdd(documents, EmbeddingOptions.builder().build());
+	}
+
+	@Override
+	public void doAdd(List<Document> documents, EmbeddingOptions options) {
 		Objects.requireNonNull(documents, "Documents list cannot be null");
+		Assert.notNull(options, "The embedding Options should not be null.");
+
 		if (documents.isEmpty()) {
 			throw new IllegalArgumentException("Documents list cannot be empty");
 		}
@@ -122,7 +132,7 @@ public class SimpleVectorStore extends AbstractObservationVectorStore {
 			if (logger.isInfoEnabled()) {
 				logger.info("Calling EmbeddingModel for document id = " + document.getId());
 			}
-			float[] embedding = this.embeddingModel.embed(document);
+			float[] embedding = this.embeddingModel.embed(document, options);
 			SimpleVectorStoreContent storeContent = new SimpleVectorStoreContent(document.getId(),
 					Objects.requireNonNullElse(document.getText(), ""), document.getMetadata(), embedding);
 			this.store.put(document.getId(), storeContent);
