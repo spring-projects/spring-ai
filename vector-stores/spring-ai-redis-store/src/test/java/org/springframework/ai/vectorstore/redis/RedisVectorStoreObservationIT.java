@@ -28,7 +28,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import redis.clients.jedis.RedisClient;
+import redis.clients.jedis.JedisPooled;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -123,10 +123,10 @@ public class RedisVectorStoreObservationIT {
 
 		@Bean
 		public RedisVectorStore vectorStore(EmbeddingModel embeddingModel, ObservationRegistry observationRegistry) {
-			// Create RedisClient directly with container properties for more reliable
+			// Create JedisPooled directly with container properties for more reliable
 			// connection
 			return RedisVectorStore
-				.builder(RedisClient.builder()
+				.builder(JedisPooled.builder()
 					.hostAndPort(redisContainer.getHost(), redisContainer.getFirstMappedPort())
 					.build(), embeddingModel)
 				.observationRegistry(observationRegistry)

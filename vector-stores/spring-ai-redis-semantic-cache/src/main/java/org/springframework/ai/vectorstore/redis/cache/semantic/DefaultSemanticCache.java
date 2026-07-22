@@ -40,8 +40,8 @@ import com.google.gson.JsonSerializer;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import redis.clients.jedis.Pipeline;
-import redis.clients.jedis.RedisClient;
+import redis.clients.jedis.AbstractPipeline;
+import redis.clients.jedis.UnifiedJedis;
 import redis.clients.jedis.search.Query;
 import redis.clients.jedis.search.SearchResult;
 
@@ -68,6 +68,7 @@ import org.springframework.util.Assert;
  * @author Brian Sam-Bodden
  * @author Soby Chacko
  * @author Yanming Zhou
+ * @author Jewoo Shin
  */
 public final class DefaultSemanticCache implements SemanticCache {
 
@@ -439,9 +440,9 @@ public final class DefaultSemanticCache implements SemanticCache {
 
 	@Override
 	public void clear() {
-		Optional<RedisClient> nativeClient = this.vectorStore.getNativeClient();
+		Optional<UnifiedJedis> nativeClient = this.vectorStore.getNativeClient();
 		if (nativeClient.isPresent()) {
-			RedisClient redisClient = nativeClient.get();
+			UnifiedJedis redisClient = nativeClient.get();
 
 			// Delete documents in batches to avoid memory issues
 			boolean moreRecords = true;
@@ -453,11 +454,11 @@ public final class DefaultSemanticCache implements SemanticCache {
 				SearchResult searchResult = redisClient.ftSearch(this.indexName, query);
 
 				if (searchResult.getTotalResults() > 0) {
-					try (Pipeline pipeline = redisClient.pipelined()) {
+					try (AbstractPipeline pipeline = redisClient.pipelined()) {
 						for (redis.clients.jedis.search.Document doc : searchResult.getDocuments()) {
 							pipeline.jsonDel(doc.getId());
 						}
-						pipeline.syncAndReturnAll();
+						pipeline.sync();
 					}
 				}
 				else {
@@ -488,7 +489,7 @@ public final class DefaultSemanticCache implements SemanticCache {
 
 		private String prefix = DEFAULT_PREFIX;
 
-		private @Nullable RedisClient jedisClient;
+		private @Nullable UnifiedJedis jedisClient;
 
 		// Builder methods with validation
 		public Builder vectorStore(VectorStore vectorStore) {
@@ -522,7 +523,7 @@ public final class DefaultSemanticCache implements SemanticCache {
 			return this;
 		}
 
-		public Builder jedisClient(RedisClient jedisClient) {
+		public Builder jedisClient(UnifiedJedis jedisClient) {
 			this.jedisClient = jedisClient;
 			return this;
 		}

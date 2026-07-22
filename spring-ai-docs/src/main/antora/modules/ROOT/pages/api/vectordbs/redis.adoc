@@ -198,13 +198,13 @@ dependencies {
 }
 ----
 
-Create a `RedisClient` bean:
+Create a `UnifiedJedis` bean:
 
 [source,java]
 ----
 @Bean
-public RedisClient jedisClient() {
-    return RedisClient.builder().hostAndPort("<host>", 6379).build();
+public UnifiedJedis jedisClient() {
+    return JedisPooled.builder().hostAndPort("<host>", 6379).build();
 }
 ----
 
@@ -213,7 +213,7 @@ Then create the `RedisVectorStore` bean using the builder pattern:
 [source,java]
 ----
 @Bean
-public VectorStore vectorStore(RedisClient jedisClient, EmbeddingModel embeddingModel) {
+public VectorStore vectorStore(UnifiedJedis jedisClient, EmbeddingModel embeddingModel) {
     return RedisVectorStore.builder(jedisClient, embeddingModel)
         .indexName("custom-index")                // Optional: defaults to "spring-ai-index"
         .prefix("custom-prefix")                  // Optional: defaults to "embedding:"
@@ -250,15 +250,15 @@ The `metadataFields` above registers filterable metadata fields: `country` of ty
 
 == Accessing the Native Client
 
-The Redis Vector Store implementation provides access to the underlying native Redis client (`RedisClient`) through the `getNativeClient()` method:
+The Redis Vector Store implementation provides access to the underlying native Redis client (`UnifiedJedis`) through the `getNativeClient()` method:
 
 [source,java]
 ----
 RedisVectorStore vectorStore = context.getBean(RedisVectorStore.class);
-Optional<RedisClient> nativeClient = vectorStore.getNativeClient();
+Optional<UnifiedJedis> nativeClient = vectorStore.getNativeClient();
 
 if (nativeClient.isPresent()) {
-    RedisClient jedisClient = nativeClient.get();
+    UnifiedJedis jedisClient = nativeClient.get();
     // Use the native client for Redis-specific operations
 }
 ----
@@ -551,12 +551,12 @@ For more control, you can manually configure the semantic cache components:
 public class SemanticCacheConfig {
 
     @Bean
-    public RedisClient jedisClient() {
-        return RedisClient.builder().hostAndPort("localhost", 6379).build();
+    public UnifiedJedis jedisClient() {
+        return JedisPooled.builder().hostAndPort("localhost", 6379).build();
     }
 
     @Bean
-    public SemanticCache semanticCache(RedisClient jedisClient, EmbeddingModel embeddingModel) {
+    public SemanticCache semanticCache(UnifiedJedis jedisClient, EmbeddingModel embeddingModel) {
         return DefaultSemanticCache.builder()
             .jedisClient(jedisClient)
             .embeddingModel(embeddingModel)

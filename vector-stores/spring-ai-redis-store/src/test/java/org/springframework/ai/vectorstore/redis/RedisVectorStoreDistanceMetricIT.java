@@ -26,7 +26,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import redis.clients.jedis.RedisClient;
+import redis.clients.jedis.JedisPooled;
+import redis.clients.jedis.UnifiedJedis;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -61,7 +62,7 @@ class RedisVectorStoreDistanceMetricIT {
 	@BeforeEach
 	void cleanDatabase() {
 		// Clean Redis completely before each test
-		try (RedisClient jedisClient = RedisClient.builder()
+		try (JedisPooled jedisClient = JedisPooled.builder()
 			.hostAndPort(redisContainer.getHost(), redisContainer.getFirstMappedPort())
 			.build()) {
 			jedisClient.flushAll();
@@ -73,7 +74,7 @@ class RedisVectorStoreDistanceMetricIT {
 		// Create a vector store with COSINE distance metric
 		this.contextRunner.run(context -> {
 			// Get the base Jedis client for creating a custom store
-			RedisClient jedisClient = RedisClient.builder()
+			JedisPooled jedisClient = JedisPooled.builder()
 				.hostAndPort(redisContainer.getHost(), redisContainer.getFirstMappedPort())
 				.build();
 			EmbeddingModel embeddingModel = context.getBean(EmbeddingModel.class);
@@ -96,7 +97,7 @@ class RedisVectorStoreDistanceMetricIT {
 		// Create a vector store with L2 distance metric
 		this.contextRunner.run(context -> {
 			// Get the base Jedis client for creating a custom store
-			RedisClient jedisClient = RedisClient.builder()
+			JedisPooled jedisClient = JedisPooled.builder()
 				.hostAndPort(redisContainer.getHost(), redisContainer.getFirstMappedPort())
 				.build();
 			EmbeddingModel embeddingModel = context.getBean(EmbeddingModel.class);
@@ -161,7 +162,7 @@ class RedisVectorStoreDistanceMetricIT {
 		// Create a vector store with IP distance metric
 		this.contextRunner.run(context -> {
 			// Get the base Jedis client for creating a custom store
-			RedisClient jedisClient = RedisClient.builder()
+			JedisPooled jedisClient = JedisPooled.builder()
 				.hostAndPort(redisContainer.getHost(), redisContainer.getFirstMappedPort())
 				.build();
 			EmbeddingModel embeddingModel = context.getBean(EmbeddingModel.class);
@@ -185,7 +186,7 @@ class RedisVectorStoreDistanceMetricIT {
 			redisVectorStore.afterPropertiesSet();
 
 			// Verify index exists
-			RedisClient jedisClient = redisVectorStore.getJedisClient();
+			UnifiedJedis jedisClient = redisVectorStore.getJedisClient();
 			Set<String> indexes = jedisClient.ftList();
 
 			// The index name is set in the builder, so we should verify it exists
@@ -249,7 +250,7 @@ class RedisVectorStoreDistanceMetricIT {
 		@Bean
 		public RedisVectorStore vectorStore(EmbeddingModel embeddingModel) {
 			return RedisVectorStore
-				.builder(RedisClient.builder()
+				.builder(JedisPooled.builder()
 					.hostAndPort(redisContainer.getHost(), redisContainer.getFirstMappedPort())
 					.build(), embeddingModel)
 				.indexName("default-test-index")

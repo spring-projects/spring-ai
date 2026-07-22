@@ -16,7 +16,7 @@
 
 package org.springframework.ai.vectorstore.redis.cache.semantic;
 
-import redis.clients.jedis.RedisClient;
+import redis.clients.jedis.UnifiedJedis;
 
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.redis.RedisVectorStore;
@@ -28,6 +28,7 @@ import org.springframework.ai.vectorstore.redis.RedisVectorStore.MetadataField;
  *
  * @author Brian Sam-Bodden
  * @author Yanming Zhou
+ * @author Jewoo Shin
  */
 public final class RedisVectorStoreHelper {
 
@@ -45,7 +46,7 @@ public final class RedisVectorStoreHelper {
 	 * @param embeddingModel The embedding model to use for vectorization
 	 * @return A configured RedisVectorStore instance
 	 */
-	public static RedisVectorStore createVectorStore(RedisClient jedisClient, EmbeddingModel embeddingModel) {
+	public static RedisVectorStore createVectorStore(UnifiedJedis jedisClient, EmbeddingModel embeddingModel) {
 		return createVectorStore(jedisClient, embeddingModel, DEFAULT_INDEX_NAME, DEFAULT_PREFIX);
 	}
 
@@ -57,7 +58,7 @@ public final class RedisVectorStoreHelper {
 	 * @param prefix The key prefix to use for Redis documents
 	 * @return A configured RedisVectorStore instance
 	 */
-	public static RedisVectorStore createVectorStore(RedisClient jedisClient, EmbeddingModel embeddingModel,
+	public static RedisVectorStore createVectorStore(UnifiedJedis jedisClient, EmbeddingModel embeddingModel,
 			String indexName, String prefix) {
 		RedisVectorStore vectorStore = RedisVectorStore.builder(jedisClient, embeddingModel)
 			.indexName(indexName)

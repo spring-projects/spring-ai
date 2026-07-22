@@ -34,7 +34,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
 import redis.clients.jedis.Pipeline;
-import redis.clients.jedis.RedisClient;
+import redis.clients.jedis.UnifiedJedis;
 import redis.clients.jedis.json.Path2;
 import redis.clients.jedis.search.FTCreateParams;
 import redis.clients.jedis.search.IndexDataType;
@@ -239,6 +239,7 @@ import org.springframework.util.StringUtils;
  * @author Jihoon Kim
  * @author chabinhwang
  * @author Yanming Zhou
+ * @author Jewoo Shin
  * @see EmbeddingModel
  * @since 1.0.0
  */
@@ -278,7 +279,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 
 	private static final TextScorer DEFAULT_TEXT_SCORER = TextScorer.BM25;
 
-	private final RedisClient jedisClient;
+	private final UnifiedJedis jedisClient;
 
 	private final boolean initializeSchema;
 
@@ -318,7 +319,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 	protected RedisVectorStore(Builder builder) {
 		super(builder);
 
-		Assert.notNull(builder.jedisClient, "RedisClient must not be null");
+		Assert.notNull(builder.jedisClient, "Redis client must not be null");
 
 		this.jedisClient = builder.jedisClient;
 		this.indexName = builder.indexName;
@@ -344,7 +345,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 		this.filterExpressionConverter = new RedisFilterExpressionConverter(this.metadataFields);
 	}
 
-	public RedisClient getJedisClient() {
+	public UnifiedJedis getJedisClient() {
 		return this.jedisClient;
 	}
 
@@ -354,7 +355,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 
 	@Override
 	public void doAdd(List<Document> documents) {
-		try (Pipeline pipeline = this.jedisClient.pipelined()) {
+		try (Pipeline pipeline = (Pipeline) this.jedisClient.pipelined()) {
 
 			List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
 					this.batchingStrategy);
@@ -390,7 +391,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 
 	@Override
 	public void doDelete(List<String> idList) {
-		try (Pipeline pipeline = this.jedisClient.pipelined()) {
+		try (Pipeline pipeline = (Pipeline) this.jedisClient.pipelined()) {
 			for (String id : idList) {
 				pipeline.jsonDel(key(id));
 			}
@@ -422,7 +423,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 					break;
 				}
 
-				try (Pipeline pipeline = this.jedisClient.pipelined()) {
+				try (Pipeline pipeline = (Pipeline) this.jedisClient.pipelined()) {
 					for (redis.clients.jedis.search.Document doc : docs) {
 						String redisKey = doc.getId();
 						String id = redisKey.startsWith(this.prefix) ? redisKey.substring(this.prefix.length())
@@ -1246,7 +1247,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 		return normalized;
 	}
 
-	public static Builder builder(RedisClient jedis, EmbeddingModel embeddingModel) {
+	public static Builder builder(UnifiedJedis jedis, EmbeddingModel embeddingModel) {
 		return new Builder(jedis, embeddingModel);
 	}
 
@@ -1312,7 +1313,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 
 	public static class Builder extends AbstractVectorStoreBuilder<Builder> {
 
-		private final RedisClient jedisClient;
+		private final UnifiedJedis jedisClient;
 
 		private String indexName = DEFAULT_INDEX_NAME;
 
@@ -1346,9 +1347,9 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 
 		private Set<String> stopwords = new HashSet<>();
 
-		private Builder(RedisClient jedisClient, EmbeddingModel embeddingModel) {
+		private Builder(UnifiedJedis jedisClient, EmbeddingModel embeddingModel) {
 			super(embeddingModel);
-			Assert.notNull(jedisClient, "RedisClient must not be null");
+			Assert.notNull(jedisClient, "Redis client must not be null");
 			this.jedisClient = jedisClient;
 		}
 
