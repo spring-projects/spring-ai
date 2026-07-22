@@ -19,6 +19,7 @@ package org.springframework.ai.openai;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -28,7 +29,13 @@ import com.openai.client.OpenAIClientAsync;
 import com.openai.core.MultipartField;
 import com.openai.models.audio.transcriptions.TranscriptionCreateParams;
 import com.openai.models.audio.transcriptions.TranscriptionCreateResponse;
+import com.openai.models.audio.transcriptions.TranscriptionDiarized;
+import com.openai.models.audio.transcriptions.TranscriptionDiarizedSegment;
+import com.openai.models.audio.transcriptions.TranscriptionSegment;
 import com.openai.models.audio.transcriptions.TranscriptionStreamEvent;
+import com.openai.models.audio.transcriptions.TranscriptionTextSegmentEvent;
+import com.openai.models.audio.transcriptions.TranscriptionVerbose;
+import com.openai.models.audio.transcriptions.TranscriptionWord;
 import io.micrometer.observation.ObservationRegistry;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -39,6 +46,9 @@ import org.springframework.ai.audio.transcription.AudioTranscription;
 import org.springframework.ai.audio.transcription.AudioTranscriptionPrompt;
 import org.springframework.ai.audio.transcription.AudioTranscriptionResponse;
 import org.springframework.ai.audio.transcription.AudioTranscriptionResponseMetadata;
+import org.springframework.ai.audio.transcription.AudioTranscriptionResult;
+import org.springframework.ai.audio.transcription.AudioTranscriptionSegment;
+import org.springframework.ai.audio.transcription.AudioTranscriptionWord;
 import org.springframework.ai.audio.transcription.TranscriptionModel;
 import org.springframework.ai.openai.http.okhttp.OpenAiHttpClientBuilderCustomizer;
 import org.springframework.ai.openai.setup.OpenAiSetup;
@@ -129,8 +139,7 @@ public final class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 		}
 
 		TranscriptionCreateResponse response = this.openAiClient.audio().transcriptions().create(params);
-		String text = extractText(response);
-		AudioTranscription transcript = new AudioTranscription(text);
+		AudioTranscription transcript = new AudioTranscription(toTranscriptionResult(response));
 		return new AudioTranscriptionResponse(transcript, new AudioTranscriptionResponseMetadata());
 	}
 
@@ -165,9 +174,8 @@ public final class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 				}
 			}));
 
-		return chunks.map(event -> {
-			String text = extractStreamEventText(event);
-			AudioTranscription transcript = new AudioTranscription(text);
+		return chunks.filter(event -> !event.isTranscriptTextDone()).map(event -> {
+			AudioTranscription transcript = new AudioTranscription(toTranscriptionResult(event));
 			return new AudioTranscriptionResponse(transcript, new AudioTranscriptionResponseMetadata());
 		});
 	}
@@ -178,19 +186,10 @@ public final class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 			.value(new ByteArrayInputStream(audioBytes))
 			.filename(filename)
 			.build();
-		String model;
-		if (options.getDeploymentName() != null) {
-			model = options.getDeploymentName();
-		}
-		else {
-			model = options.getModel();
-		}
-		Assert.notNull(model, "Model must not be null");
+		String model = options.getDeploymentName() != null ? options.getDeploymentName() : options.getModel();
 		TranscriptionCreateParams.Builder builder = TranscriptionCreateParams.builder().file(fileField).model(model);
 
-		if (options.getResponseFormat() != null) {
-			builder.responseFormat(options.getResponseFormat());
-		}
+		builder.responseFormat(options.getResponseFormat());
 		if (options.getLanguage() != null) {
 			builder.language(options.getLanguage());
 		}
@@ -206,33 +205,82 @@ public final class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 		return builder.build();
 	}
 
-	private static String extractText(TranscriptionCreateResponse response) {
+	private static AudioTranscriptionResult toTranscriptionResult(TranscriptionCreateResponse response) {
 		if (response.isTranscription()) {
-			return response.asTranscription().text();
+			return new AudioTranscriptionResult(response.asTranscription().text());
 		}
 		if (response.isVerbose()) {
-			return response.asVerbose().text();
+			return toTranscriptionResult(response.asVerbose());
 		}
 		if (response.isDiarized()) {
-			return response.asDiarized().text();
+			return toTranscriptionResult(response.asDiarized());
 		}
-		return "";
+		return new AudioTranscriptionResult("");
 	}
 
-	private static String extractStreamEventText(TranscriptionStreamEvent event) {
+	private static AudioTranscriptionResult toTranscriptionResult(TranscriptionVerbose transcription) {
+		List<AudioTranscriptionSegment> segments = transcription.segments()
+			.orElseGet(List::of)
+			.stream()
+			.map(OpenAiAudioTranscriptionModel::toTranscriptionSegment)
+			.toList();
+		List<AudioTranscriptionWord> words = transcription.words()
+			.orElseGet(List::of)
+			.stream()
+			.map(OpenAiAudioTranscriptionModel::toTranscriptionWord)
+			.toList();
+		return new AudioTranscriptionResult(transcription.text(), transcription.language(),
+				toDuration(transcription.duration()), segments, words);
+	}
+
+	private static AudioTranscriptionResult toTranscriptionResult(TranscriptionDiarized transcription) {
+		List<AudioTranscriptionSegment> segments = transcription.segments()
+			.stream()
+			.map(OpenAiAudioTranscriptionModel::toTranscriptionSegment)
+			.toList();
+		return new AudioTranscriptionResult(transcription.text(), null, toDuration(transcription.duration()), segments,
+				List.of());
+	}
+
+	private static AudioTranscriptionSegment toTranscriptionSegment(TranscriptionSegment segment) {
+		return new AudioTranscriptionSegment(Long.toString(segment.id()), null, toDuration(segment.start()),
+				toDuration(segment.end()), segment.text());
+	}
+
+	private static AudioTranscriptionSegment toTranscriptionSegment(TranscriptionDiarizedSegment segment) {
+		return new AudioTranscriptionSegment(segment.id(), segment.speaker(), toDuration(segment.start()),
+				toDuration(segment.end()), segment.text());
+	}
+
+	private static AudioTranscriptionWord toTranscriptionWord(TranscriptionWord word) {
+		return new AudioTranscriptionWord(word.word(), toDuration(word.start()), toDuration(word.end()));
+	}
+
+	private static Duration toDuration(double seconds) {
+		return Duration.ofNanos(Math.round(seconds * 1_000_000_000));
+	}
+
+	private static AudioTranscriptionResult toTranscriptionResult(TranscriptionStreamEvent event) {
 		if (event.isTranscriptTextDelta()) {
-			return event.asTranscriptTextDelta().delta();
+			return new AudioTranscriptionResult(event.asTranscriptTextDelta().delta());
 		}
 		if (event.isTranscriptTextSegment()) {
-			return event.asTranscriptTextSegment().text();
+			TranscriptionTextSegmentEvent segment = event.asTranscriptTextSegment();
+			return new AudioTranscriptionResult(segment.text(), null, null, List.of(toTranscriptionSegment(segment)),
+					List.of());
 		}
-		return "";
+		return new AudioTranscriptionResult("");
+	}
+
+	private static AudioTranscriptionSegment toTranscriptionSegment(TranscriptionTextSegmentEvent segment) {
+		return new AudioTranscriptionSegment(segment.id(), segment.speaker(), toDuration(segment.start()),
+				toDuration(segment.end()), segment.text());
 	}
 
 	private static byte[] toBytes(Resource resource) {
 		Assert.notNull(resource, "Resource must not be null");
-		try {
-			return resource.getInputStream().readAllBytes();
+		try (InputStream inputStream = resource.getInputStream()) {
+			return inputStream.readAllBytes();
 		}
 		catch (IOException e) {
 			throw new IllegalArgumentException("Failed to read resource: " + resource, e);

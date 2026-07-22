@@ -56,8 +56,7 @@ public interface TranscriptionModel
 	 */
 	default String transcribe(Resource resource, @Nullable AudioTranscriptionOptions options) {
 		AudioTranscriptionPrompt prompt = new AudioTranscriptionPrompt(resource, options);
-		AudioTranscription result = this.call(prompt).getResult();
-		return result != null ? result.getOutput() : "";
+		return this.call(prompt).getResult().getOutput().text();
 	}
 
 }

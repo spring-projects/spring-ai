@@ -16,6 +16,8 @@
 
 package org.springframework.ai.openai.transcription;
 
+import java.io.InputStream;
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -27,8 +29,15 @@ import com.openai.core.http.AsyncStreamResponse;
 import com.openai.models.audio.AudioResponseFormat;
 import com.openai.models.audio.transcriptions.Transcription;
 import com.openai.models.audio.transcriptions.TranscriptionCreateResponse;
+import com.openai.models.audio.transcriptions.TranscriptionDiarized;
+import com.openai.models.audio.transcriptions.TranscriptionDiarizedSegment;
+import com.openai.models.audio.transcriptions.TranscriptionSegment;
 import com.openai.models.audio.transcriptions.TranscriptionStreamEvent;
 import com.openai.models.audio.transcriptions.TranscriptionTextDeltaEvent;
+import com.openai.models.audio.transcriptions.TranscriptionTextDoneEvent;
+import com.openai.models.audio.transcriptions.TranscriptionTextSegmentEvent;
+import com.openai.models.audio.transcriptions.TranscriptionVerbose;
+import com.openai.models.audio.transcriptions.TranscriptionWord;
 import com.openai.services.async.AudioServiceAsync;
 import com.openai.services.async.audio.TranscriptionServiceAsync;
 import com.openai.services.blocking.AudioService;
@@ -40,10 +49,12 @@ import org.springframework.ai.audio.transcription.AudioTranscriptionResponse;
 import org.springframework.ai.openai.OpenAiAudioTranscriptionModel;
 import org.springframework.ai.openai.OpenAiAudioTranscriptionOptions;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
@@ -73,7 +84,22 @@ class OpenAiAudioTranscriptionModelTests {
 		AudioTranscriptionPrompt prompt = new AudioTranscriptionPrompt(new ClassPathResource("/speech.flac"));
 		AudioTranscriptionResponse response = model.call(prompt);
 
-		assertThat(response.getResult().getOutput()).isEqualTo("Hello, transcribed text");
+		assertThat(response.getResult().getOutput().text()).isEqualTo("Hello, transcribed text");
+		assertThat(response.getResult().getOutput().segments()).isEmpty();
+		assertThat(response.getResult().getOutput().words()).isEmpty();
+	}
+
+	@Test
+	void callClosesAudioResourceInputStream() throws Exception {
+		Resource audioResource = mock(Resource.class);
+		InputStream inputStream = mock(InputStream.class);
+		when(audioResource.getInputStream()).thenReturn(inputStream);
+		when(inputStream.readAllBytes()).thenReturn(new byte[0]);
+
+		createModel(TranscriptionCreateResponse.ofTranscription(Transcription.builder().text("Hello").build()))
+			.call(new AudioTranscriptionPrompt(audioResource));
+
+		verify(inputStream).close();
 	}
 
 	@Test
@@ -91,7 +117,7 @@ class OpenAiAudioTranscriptionModelTests {
 		AudioTranscriptionPrompt prompt = new AudioTranscriptionPrompt(new ClassPathResource("/speech.flac"));
 		AudioTranscriptionResponse response = model.call(prompt);
 
-		assertThat(response.getResult().getOutput()).isEqualTo("Hello, this is a test transcription.");
+		assertThat(response.getResult().getOutput().text()).isEqualTo("Hello, this is a test transcription.");
 		assertThat(response.getResults()).hasSize(1);
 	}
 
@@ -115,7 +141,94 @@ class OpenAiAudioTranscriptionModelTests {
 		AudioTranscriptionPrompt prompt = new AudioTranscriptionPrompt(new ClassPathResource("/speech.flac"), options);
 		AudioTranscriptionResponse response = model.call(prompt);
 
-		assertThat(response.getResult().getOutput()).isEqualTo("Hello, this is a test transcription with options.");
+		assertThat(response.getResult().getOutput().text())
+			.isEqualTo("Hello, this is a test transcription with options.");
+	}
+
+	@Test
+	void callWithVerboseResponsePreservesStructuredTranscription() {
+		TranscriptionVerbose verbose = TranscriptionVerbose.builder()
+			.text("Hello, structured transcription")
+			.language("en")
+			.duration(2.5)
+			.addSegment(TranscriptionSegment.builder()
+				.id(1)
+				.avgLogprob(0.0f)
+				.compressionRatio(0.0f)
+				.start(0.0)
+				.end(2.5)
+				.noSpeechProb(0.0f)
+				.seek(0)
+				.temperature(0.0f)
+				.text("Hello, structured transcription")
+				.tokens(List.of())
+				.build())
+			.addWord(TranscriptionWord.builder().word("Hello").start(0.0).end(0.5).build())
+			.build();
+
+		AudioTranscriptionResponse response = createModel(TranscriptionCreateResponse.ofVerbose(verbose))
+			.call(audioPrompt());
+
+		assertThat(response.getResult().getOutput().text()).isEqualTo("Hello, structured transcription");
+		assertThat(response.getResult().getOutput().language()).isEqualTo("en");
+		assertThat(response.getResult().getOutput().duration()).isEqualTo(Duration.ofMillis(2500));
+		assertThat(response.getResult().getOutput().segments()).singleElement().satisfies(segment -> {
+			assertThat(segment.id()).isEqualTo("1");
+			assertThat(segment.speaker()).isNull();
+			assertThat(segment.start()).isZero();
+			assertThat(segment.end()).isEqualTo(Duration.ofMillis(2500));
+			assertThat(segment.text()).isEqualTo("Hello, structured transcription");
+		});
+		assertThat(response.getResult().getOutput().words()).singleElement().satisfies(word -> {
+			assertThat(word.text()).isEqualTo("Hello");
+			assertThat(word.start()).isZero();
+			assertThat(word.end()).isEqualTo(Duration.ofMillis(500));
+		});
+	}
+
+	@Test
+	void callWithDiarizedResponsePreservesStructuredTranscription() {
+		TranscriptionDiarized diarized = TranscriptionDiarized.builder()
+			.text("Hello, diarized transcription")
+			.duration(2.5)
+			.segments(List.of(TranscriptionDiarizedSegment.builder()
+				.id("segment_0")
+				.speaker("speaker_0")
+				.start(0.0)
+				.end(2.5)
+				.text("Hello, diarized transcription")
+				.build()))
+			.build();
+
+		AudioTranscriptionResponse response = createModel(TranscriptionCreateResponse.ofDiarized(diarized))
+			.call(audioPrompt());
+
+		assertThat(response.getResult().getOutput().text()).isEqualTo("Hello, diarized transcription");
+		assertThat(response.getResult().getOutput().language()).isNull();
+		assertThat(response.getResult().getOutput().duration()).isEqualTo(Duration.ofMillis(2500));
+		assertThat(response.getResult().getOutput().segments()).singleElement().satisfies(segment -> {
+			assertThat(segment.id()).isEqualTo("segment_0");
+			assertThat(segment.speaker()).isEqualTo("speaker_0");
+			assertThat(segment.start()).isZero();
+			assertThat(segment.end()).isEqualTo(Duration.ofMillis(2500));
+			assertThat(segment.text()).isEqualTo("Hello, diarized transcription");
+		});
+		assertThat(response.getResult().getOutput().words()).isEmpty();
+	}
+
+	@Test
+	void callWithVerboseResponseWithoutTimestampDataReturnsEmptyCollections() {
+		TranscriptionVerbose verbose = TranscriptionVerbose.builder()
+			.text("Hello, transcription without timestamp data")
+			.language("en")
+			.duration(2.5)
+			.build();
+
+		AudioTranscriptionResponse response = createModel(TranscriptionCreateResponse.ofVerbose(verbose))
+			.call(audioPrompt());
+
+		assertThat(response.getResult().getOutput().segments()).isEmpty();
+		assertThat(response.getResult().getOutput().words()).isEmpty();
 	}
 
 	@Test
@@ -316,13 +429,65 @@ class OpenAiAudioTranscriptionModelTests {
 			.build();
 
 		List<String> chunks = model.stream(prompt)
-			.map(response -> response.getResult().getOutput())
+			.map(response -> response.getResult().getOutput().text())
 			.collectList()
 			.block();
 
 		assertThat(chunks).isNotNull();
 		String text = String.join("", chunks);
 		assertThat(text).isEqualTo("Hello, streamed transcription result");
+	}
+
+	@Test
+	void streamDoesNotEmitTranscriptTextDoneEvent() {
+		AsyncStreamResponse<TranscriptionStreamEvent> mockAsyncResponse = asyncStreamResponse(
+				TranscriptionStreamEvent
+					.ofTranscriptTextDelta(TranscriptionTextDeltaEvent.builder().delta("Hello, ").build()),
+				TranscriptionStreamEvent.ofTranscriptTextDelta(
+						TranscriptionTextDeltaEvent.builder().delta("streamed transcription result").build()),
+				TranscriptionStreamEvent.ofTranscriptTextDone(
+						TranscriptionTextDoneEvent.builder().text("Hello, streamed transcription result").build()));
+
+		OpenAiAudioTranscriptionModel model = OpenAiAudioTranscriptionModel.builder()
+			.openAiClient(mock(OpenAIClient.class))
+			.openAiClientAsync(createMockAsyncClient(mockAsyncResponse))
+			.build();
+
+		List<String> chunks = model.stream(audioPrompt())
+			.map(response -> response.getResult().getOutput().text())
+			.collectList()
+			.block();
+
+		assertThat(chunks).containsExactly("Hello, ", "streamed transcription result");
+	}
+
+	@Test
+	void streamWithSegmentEventPreservesStructuredTranscription() {
+		AsyncStreamResponse<TranscriptionStreamEvent> mockAsyncResponse = asyncStreamResponse(
+				TranscriptionStreamEvent.ofTranscriptTextSegment(TranscriptionTextSegmentEvent.builder()
+					.id("segment_0")
+					.speaker("speaker_0")
+					.start(0.0)
+					.end(2.5)
+					.text("Hello, streamed transcription result")
+					.build()));
+
+		OpenAiAudioTranscriptionModel model = OpenAiAudioTranscriptionModel.builder()
+			.openAiClient(mock(OpenAIClient.class))
+			.openAiClientAsync(createMockAsyncClient(mockAsyncResponse))
+			.build();
+
+		AudioTranscriptionResponse response = model.stream(audioPrompt()).blockFirst();
+
+		assertThat(response).isNotNull();
+		assertThat(response.getResult().getOutput().text()).isEqualTo("Hello, streamed transcription result");
+		assertThat(response.getResult().getOutput().segments()).singleElement().satisfies(segment -> {
+			assertThat(segment.id()).isEqualTo("segment_0");
+			assertThat(segment.speaker()).isEqualTo("speaker_0");
+			assertThat(segment.start()).isZero();
+			assertThat(segment.end()).isEqualTo(Duration.ofMillis(2500));
+			assertThat(segment.text()).isEqualTo("Hello, streamed transcription result");
+		});
 	}
 
 	@Test
@@ -346,7 +511,7 @@ class OpenAiAudioTranscriptionModelTests {
 			.build();
 
 		List<String> chunks = model.stream(prompt)
-			.map(response -> response.getResult().getOutput())
+			.map(response -> response.getResult().getOutput().text())
 			.collectList()
 			.block();
 
@@ -410,6 +575,17 @@ class OpenAiAudioTranscriptionModelTests {
 		when(audioService.transcriptions()).thenReturn(transcriptionService);
 		when(transcriptionService.create(any())).thenReturn(mockResponse);
 		return client;
+	}
+
+	private OpenAiAudioTranscriptionModel createModel(TranscriptionCreateResponse response) {
+		return OpenAiAudioTranscriptionModel.builder()
+			.openAiClient(createMockClient(response))
+			.openAiClientAsync(mock(OpenAIClientAsync.class))
+			.build();
+	}
+
+	private AudioTranscriptionPrompt audioPrompt() {
+		return new AudioTranscriptionPrompt(new ClassPathResource("/speech.flac"));
 	}
 
 	private OpenAIClientAsync createMockAsyncClient(AsyncStreamResponse<TranscriptionStreamEvent> mockAsyncResponse) {

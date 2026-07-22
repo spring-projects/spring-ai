@@ -22,6 +22,7 @@ import org.mockito.Mockito;
 import org.springframework.ai.audio.transcription.AudioTranscription;
 import org.springframework.ai.audio.transcription.AudioTranscriptionPrompt;
 import org.springframework.ai.audio.transcription.AudioTranscriptionResponse;
+import org.springframework.ai.audio.transcription.AudioTranscriptionResult;
 import org.springframework.ai.openai.OpenAiAudioTranscriptionModel;
 import org.springframework.core.io.Resource;
 
@@ -53,7 +54,7 @@ class TranscriptionModelTests {
 
 		// Create a mock Transcript
 		AudioTranscription transcript = Mockito.mock(AudioTranscription.class);
-		given(transcript.getOutput()).willReturn(mockTranscription);
+		given(transcript.getOutput()).willReturn(new AudioTranscriptionResult(mockTranscription));
 
 		// Create a mock TranscriptionResponse with the mock Transcript
 		AudioTranscriptionResponse response = Mockito.mock(AudioTranscriptionResponse.class);

@@ -88,8 +88,8 @@ The prefix `spring.ai.openai.audio.transcription` is used as the property prefix
 | spring.ai.openai.audio.transcription.api-key    | The API Key           |  -
 | spring.ai.openai.audio.transcription.organization-id | Optionally you can specify which organization  used for an API request. |  -
 | spring.ai.openai.audio.transcription.project-id      | Optionally, you can specify which project is used for an API request. |  -
-| spring.ai.openai.audio.transcription.model  | ID of the model to use for transcription. Available models: `gpt-4o-transcribe` (speech-to-text powered by GPT-4o), `gpt-4o-mini-transcribe` (speech-to-text powered by GPT-4o mini), or `whisper-1` (general-purpose speech recognition model, default). |  whisper-1
-| spring.ai.openai.audio.transcription.response-format | The format of the transcript output, in one of these options: json, text, srt, verbose_json, or vtt. |  json
+| spring.ai.openai.audio.transcription.model  | ID of the model to use for transcription. Available models: `gpt-4o-transcribe` (speech-to-text powered by GPT-4o), `gpt-4o-mini-transcribe` (speech-to-text powered by GPT-4o mini), `gpt-4o-transcribe-diarize` (speaker diarization), or `whisper-1` (general-purpose speech recognition model, default). |  whisper-1
+| spring.ai.openai.audio.transcription.response-format | The format of the transcript output, in one of these options: json, text, srt, verbose_json, vtt, or diarized_json. | text
 | spring.ai.openai.audio.transcription.prompt | An optional text to guide the model's style or continue a previous audio segment. The prompt should match the audio language. |
 | spring.ai.openai.audio.transcription.language | The language of the input audio. Supplying the input language in ISO-639-1 format will improve accuracy and latency. |
 | spring.ai.openai.audio.transcription.temperature | The sampling temperature, between 0 and 1. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic. If set to 0, the model will use log probability to automatically increase the temperature until certain thresholds are hit. | 0
@@ -122,6 +122,31 @@ OpenAiAudioTranscriptionOptions transcriptionOptions = OpenAiAudioTranscriptionO
 AudioTranscriptionPrompt transcriptionRequest = new AudioTranscriptionPrompt(audioFile, this.transcriptionOptions);
 AudioTranscriptionResponse response = openAiTranscriptionModel.call(this.transcriptionRequest);
 ----
+
+== Structured Transcription Results
+
+`AudioTranscriptionResponse.getResult().getOutput()` returns an `AudioTranscriptionResult`.
+For `verbose_json`, Spring AI exposes the detected language, duration, timestamped segments, and timestamped words when OpenAI returns them.
+For `diarized_json`, segments also include the speaker identifier.
+
+[source,java]
+----
+OpenAiAudioTranscriptionOptions options = OpenAiAudioTranscriptionOptions.builder()
+    .responseFormat(AudioResponseFormat.DIARIZED_JSON)
+    .build();
+
+AudioTranscriptionResponse response = openAiTranscriptionModel
+    .call(new AudioTranscriptionPrompt(audioFile, options));
+
+AudioTranscriptionResult transcription = response.getResult().getOutput();
+for (AudioTranscriptionSegment segment : transcription.segments()) {
+    System.out.printf("%s [%s - %s]: %s%n",
+        segment.speaker(), segment.start(), segment.end(), segment.text());
+}
+----
+
+The availability of structured fields depends on the selected response format and the OpenAI model.
+`text` is always available; optional scalar values are `null` and unavailable collections are empty.
 
 == Manual Configuration
 

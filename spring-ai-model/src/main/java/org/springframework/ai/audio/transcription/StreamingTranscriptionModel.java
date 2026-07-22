@@ -16,8 +16,6 @@
 
 package org.springframework.ai.audio.transcription;
 
-import java.util.Optional;
-
 import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
 
@@ -65,8 +63,7 @@ public interface StreamingTranscriptionModel
 	 */
 	default Flux<String> streamTranscribe(Resource resource, @Nullable AudioTranscriptionOptions options) {
 		AudioTranscriptionPrompt prompt = new AudioTranscriptionPrompt(resource, options);
-		return stream(prompt)
-			.map(response -> Optional.ofNullable(response.getResult()).map(AudioTranscription::getOutput).orElse(""));
+		return stream(prompt).map(response -> response.getResult().getOutput().text());
 	}
 
 }

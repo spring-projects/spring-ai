@@ -62,7 +62,8 @@ class AzureOpenAiAudioTranscriptionModelIT {
 				transcriptionOptions);
 		AudioTranscriptionResponse response = this.transcriptionModel.call(transcriptionRequest);
 		assertThat(response.getResults()).hasSize(1);
-		assertThat(response.getResults().get(0).getOutput().toLowerCase(Locale.ROOT).contains("fellow")).isTrue();
+		assertThat(response.getResults().get(0).getOutput().text().toLowerCase(Locale.ROOT).contains("fellow"))
+			.isTrue();
 	}
 
 	@Test
@@ -79,7 +80,8 @@ class AzureOpenAiAudioTranscriptionModelIT {
 				transcriptionOptions);
 		AudioTranscriptionResponse response = this.transcriptionModel.call(transcriptionRequest);
 		assertThat(response.getResults()).hasSize(1);
-		assertThat(response.getResults().get(0).getOutput().toLowerCase(Locale.ROOT).contains("fellow")).isTrue();
+		assertThat(response.getResults().get(0).getOutput().text().toLowerCase(Locale.ROOT).contains("fellow"))
+			.isTrue();
 	}
 
 	@SpringBootConfiguration
