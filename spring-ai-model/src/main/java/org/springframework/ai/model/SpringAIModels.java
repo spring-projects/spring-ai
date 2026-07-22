@@ -54,6 +54,8 @@ public final class SpringAIModels {
 
 	public static final String DEEPSEEK = "deepseek";
 
+	public static final String DELIVERANCE = "deliverance";
+
 	public static final String ELEVEN_LABS = "elevenlabs";
 
 }

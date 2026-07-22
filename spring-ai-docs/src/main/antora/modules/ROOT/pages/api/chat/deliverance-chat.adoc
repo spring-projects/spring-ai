@@ -1,0 +1,143 @@
+= Deliverance Chat
+
+https://github.com/edwardcapriolo/deliverance[Deliverance] is a Java inference engine that can run quantized local language models and expose them through a chat completion HTTP API.
+Spring AI supports Deliverance chat completion through the `DeliveranceChatModel` API.
+
+== Prerequisites
+
+You need access to a running Deliverance HTTP server.
+You can run Deliverance from a published Docker image or from a local checkout of the Deliverance project.
+
+Configure Deliverance with the model you want to use before connecting your Spring AI application.
+
+== Auto-configuration
+
+Spring AI provides Spring Boot auto-configuration for the Deliverance chat integration.
+To enable it, add the following dependency to your project's Maven `pom.xml` or Gradle `build.gradle` build files:
+
+[tabs]
+======
+Maven::
++
+[source,xml]
+----
+<dependency>
+   <groupId>org.springframework.ai</groupId>
+   <artifactId>spring-ai-starter-model-deliverance</artifactId>
+</dependency>
+----
+
+Gradle::
++
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-starter-model-deliverance'
+}
+----
+======
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+=== Chat Properties
+
+Enabling and disabling of chat auto-configurations is configured via the top-level property `spring.ai.model.chat`.
+
+To enable Deliverance chat, set `spring.ai.model.chat=deliverance`.
+
+The prefix `spring.ai.deliverance` configures the connection to the Deliverance server.
+The prefix `spring.ai.deliverance.chat` configures request options for the chat model.
+
+[cols="3,6,1", stripes=even]
+|====
+| Property | Description | Default
+| spring.ai.model.chat | Enable Deliverance chat model. | -
+| spring.ai.deliverance.base-url | Base URL where the Deliverance API server is running. | `+http://localhost:8080+`
+| spring.ai.deliverance.api-key | Optional bearer token to send to the Deliverance server. | -
+| spring.ai.deliverance.chat.model | Model identifier sent with each chat completion request. | -
+| spring.ai.deliverance.chat.temperature | Sampling temperature. | -
+| spring.ai.deliverance.chat.max-tokens | Maximum number of tokens to generate. | -
+| spring.ai.deliverance.chat.top-p | Nucleus sampling parameter. | -
+| spring.ai.deliverance.chat.top-k | Top-k sampling parameter. | -
+| spring.ai.deliverance.chat.stop-sequences | Stop sequences. | -
+| spring.ai.deliverance.chat.seed | Random seed. | -
+| spring.ai.deliverance.chat.logprobs | Whether to return token log probabilities. | -
+| spring.ai.deliverance.chat.top-logprobs | Number of top token log probabilities to return. | -
+| spring.ai.deliverance.chat.xtc-threshold | XTC sampling threshold. | -
+| spring.ai.deliverance.chat.xtc-probability | XTC sampling probability. | -
+| spring.ai.deliverance.chat.guided-regex | Constrain generated output to match a regular expression. | -
+| spring.ai.deliverance.chat.guided-json | Constrain generated output to match a JSON Schema. | -
+|====
+
+== Runtime Options [[chat-options]]
+
+The `DeliveranceChatOptions` class provides model-specific options.
+You can configure default options through properties or override them at runtime with a `Prompt`.
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt(
+        "Create a ticket id.",
+        DeliveranceChatOptions.builder()
+            .model("edwardcapriolo/Qwen3-4B-JQ4")
+            .temperature(0.0)
+            .maxTokens(32)
+            .guidedRegex("TICKET-[0-9]{4}")
+            .build()
+    ));
+----
+
+== Tool Calling
+
+`DeliveranceChatModel` maps Spring AI `ToolCallback` definitions into Deliverance chat completion tools.
+Use Spring AI's normal tool calling support through `ChatClient` and `ToolCallingAdvisor`, or pass tool callbacks through `DeliveranceChatOptions` for direct `ChatModel` usage.
+
+== Streaming
+
+`DeliveranceChatModel` supports streaming through Spring AI's `StreamingChatModel` contract.
+Deliverance server-sent events are mapped into streaming `ChatResponse` instances.
+
+== Structured Outputs
+
+Deliverance supports guided JSON generation by accepting a JSON Schema string through `DeliveranceChatOptions#guidedJson`.
+This is useful when the application needs a typed response shape from a local model.
+
+[source,java]
+----
+String reviewSchema = """
+    {
+      "type": "object",
+      "required": ["summary", "riskLevel", "findings"]
+    }
+    """;
+
+ChatResponse response = chatModel.call(
+    new Prompt(
+        renderReviewPrompt(request),
+        DeliveranceChatOptions.builder()
+            .temperature(0.0)
+            .maxTokens(512)
+            .guidedJson(reviewSchema)
+            .build()
+    ));
+----
+
+== Manual Configuration
+
+If you do not want to use Spring Boot auto-configuration, you can manually configure a `DeliveranceChatModel`.
+
+[source,java]
+----
+var deliveranceApi = DeliveranceApi.create("http://localhost:8080", null);
+
+var chatModel = new DeliveranceChatModel(
+        deliveranceApi,
+        new ObjectMapper(),
+        DeliveranceChatOptions.builder()
+            .model("edwardcapriolo/Qwen3-4B-JQ4")
+            .temperature(0.0)
+            .build());
+----
+
+The `DeliveranceChatModel` implements Spring AI's `ChatModel` interface.
