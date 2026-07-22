@@ -17,7 +17,6 @@
 package org.springframework.ai.mcp.server.webmvc.transport;
 
 import java.io.IOException;
-import java.util.List;
 
 import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.json.McpJsonDefaults;
@@ -37,6 +36,7 @@ import reactor.core.publisher.Mono;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.web.servlet.function.RequestPredicates;
 import org.springframework.web.servlet.function.RouterFunction;
 import org.springframework.web.servlet.function.RouterFunctions;
 import org.springframework.web.servlet.function.ServerRequest;
@@ -85,8 +85,8 @@ public final class WebMvcStatelessServerTransport implements McpStatelessServerT
 		this.contextExtractor = contextExtractor;
 		this.securityValidator = securityValidator;
 		this.routerFunction = RouterFunctions.route()
-			.GET(this.mcpEndpoint, this::handleGet)
-			.POST(this.mcpEndpoint, this::handlePost)
+			.POST(this.mcpEndpoint, RequestPredicates.accept(MediaType.TEXT_EVENT_STREAM, MediaType.APPLICATION_JSON),
+					this::handlePost)
 			.build();
 	}
 
@@ -116,10 +116,6 @@ public final class WebMvcStatelessServerTransport implements McpStatelessServerT
 		return this.routerFunction;
 	}
 
-	private ServerResponse handleGet(ServerRequest request) {
-		return ServerResponse.status(HttpStatus.METHOD_NOT_ALLOWED).build();
-	}
-
 	private ServerResponse handlePost(ServerRequest request) {
 		if (this.isClosing) {
 			return ServerResponse.status(HttpStatus.SERVICE_UNAVAILABLE).body("Server is shutting down");
@@ -135,12 +131,6 @@ public final class WebMvcStatelessServerTransport implements McpStatelessServerT
 		}
 
 		McpTransportContext transportContext = this.contextExtractor.extract(request);
-
-		List<MediaType> acceptHeaders = request.headers().asHttpHeaders().getAccept();
-		if (!(acceptHeaders.contains(MediaType.APPLICATION_JSON)
-				&& acceptHeaders.contains(MediaType.TEXT_EVENT_STREAM))) {
-			return ServerResponse.badRequest().build();
-		}
 
 		var handler = this.mcpHandler;
 		if (handler == null) {
