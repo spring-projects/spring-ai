@@ -78,7 +78,8 @@ public class VertexAiMultimodalEmbeddingModel implements DocumentEmbeddingModel 
 	private static final MimeType VIDEO_MIME_TYPE = MimeTypeUtils.parseMimeType("video/*");
 
 	private static final List<MimeType> SUPPORTED_IMAGE_MIME_SUB_TYPES = List.of(MimeTypeUtils.IMAGE_JPEG,
-			MimeTypeUtils.IMAGE_GIF, MimeTypeUtils.IMAGE_PNG, MimeTypeUtils.parseMimeType("image/bmp"));
+			MimeTypeUtils.IMAGE_GIF, MimeTypeUtils.IMAGE_PNG, MimeTypeUtils.parseMimeType("image/bmp"),
+			MimeTypeUtils.parseMimeType("image/webp"));
 
 	private static final Map<String, Integer> KNOWN_EMBEDDING_DIMENSIONS = Stream
 		.of(VertexAiMultimodalEmbeddingModelName.values())

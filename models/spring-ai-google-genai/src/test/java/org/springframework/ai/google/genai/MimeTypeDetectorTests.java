@@ -102,7 +102,7 @@ class MimeTypeDetectorTests {
 	}
 
 	@ParameterizedTest
-	@ValueSource(strings = { "JPG", "PNG", "GIF" })
+	@ValueSource(strings = { "JPG", "PNG", "GIF", "WEBP" })
 	void getMimeTypeByStringWithUppercaseExtensionsShouldWork(String uppercaseExt) {
 		String upperFileName = "test." + uppercaseExt;
 		String lowerFileName = "test." + uppercaseExt.toLowerCase(Locale.ROOT);
@@ -119,7 +119,7 @@ class MimeTypeDetectorTests {
 	}
 
 	@ParameterizedTest
-	@ValueSource(strings = { "test.jpg", "test.png", "test.gif" })
+	@ValueSource(strings = { "test.jpg", "test.png", "test.gif", "test.webp" })
 	void getMimeTypeSupportedFileAcrossDifferentMethodsShouldBeConsistent(String fileName) {
 		MimeType stringResult = MimeTypeDetector.getMimeType(fileName);
 		MimeType fileResult = MimeTypeDetector.getMimeType(new File(fileName));
