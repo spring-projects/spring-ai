@@ -47,13 +47,13 @@ import org.springframework.util.Assert;
 /**
  * Provides the Mistral AI Embedding Model.
  *
- * @see AbstractEmbeddingModel
  * @author Ricken Bazolo
  * @author Thomas Vitale
  * @author Jason Smith
  * @author Nicolas Krier
  * @author Soby Chacko
  * @author Sebastien Deleuze
+ * @see AbstractEmbeddingModel
  * @since 1.0.0
  */
 public class MistralAiEmbeddingModel extends AbstractEmbeddingModel {
@@ -102,6 +102,10 @@ public class MistralAiEmbeddingModel extends AbstractEmbeddingModel {
 		this.options = options;
 		this.retryTemplate = retryTemplate;
 		this.observationRegistry = observationRegistry;
+	}
+
+	public static Builder builder() {
+		return new Builder();
 	}
 
 	@Override
@@ -194,6 +198,13 @@ public class MistralAiEmbeddingModel extends AbstractEmbeddingModel {
 	}
 
 	@Override
+	public float[] embed(Document document, EmbeddingOptions options) {
+		Assert.notNull(document, "Document must not be null");
+		Assert.notNull(options, "options must not be null");
+		return this.embed(document.getFormattedContent(), options);
+	}
+
+	@Override
 	public int dimensions() {
 		return KNOWN_EMBEDDING_DIMENSIONS.getOrDefault(this.options.getModel(), super.dimensions());
 	}
@@ -205,10 +216,6 @@ public class MistralAiEmbeddingModel extends AbstractEmbeddingModel {
 	public void setObservationConvention(EmbeddingModelObservationConvention observationConvention) {
 		Assert.notNull(observationConvention, "observationConvention cannot be null");
 		this.observationConvention = observationConvention;
-	}
-
-	public static Builder builder() {
-		return new Builder();
 	}
 
 	public static final class Builder {

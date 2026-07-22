@@ -114,7 +114,14 @@ public class VertexAiTextEmbeddingModel extends AbstractEmbeddingModel {
 	@Override
 	public float[] embed(Document document) {
 		Assert.notNull(document, "Document must not be null");
-		return this.embed(document.getFormattedContent());
+		return this.embed(document.getFormattedContent(), this.options);
+	}
+
+	@Override
+	public float[] embed(Document document, EmbeddingOptions options) {
+		Assert.notNull(document, "Document must not be null");
+		Assert.notNull(options, "EmbeddingOptions must not be null");
+		return this.embed(document.getFormattedContent(), options);
 	}
 
 	@Override

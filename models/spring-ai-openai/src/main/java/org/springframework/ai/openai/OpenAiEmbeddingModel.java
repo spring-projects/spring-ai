@@ -33,6 +33,7 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
 import org.springframework.ai.embedding.AbstractEmbeddingModel;
 import org.springframework.ai.embedding.Embedding;
+import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.embedding.EmbeddingResponseMetadata;
@@ -180,10 +181,6 @@ public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 			.observationRegistry(observationRegistry));
 	}
 
-	public static Builder builder() {
-		return new Builder();
-	}
-
 	private OpenAiEmbeddingModel(Builder builder) {
 		this.options = builder.options != null ? builder.options : OpenAiEmbeddingOptions.builder().build();
 		this.metadataMode = Objects.requireNonNullElse(builder.metadataMode, MetadataMode.EMBED);
@@ -198,6 +195,10 @@ public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 						builder.httpClientCustomizers));
 	}
 
+	public static Builder builder() {
+		return new Builder();
+	}
+
 	@Override
 	public String getEmbeddingContent(Document document) {
 		Assert.notNull(document, "Document must not be null");
@@ -206,8 +207,17 @@ public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 
 	@Override
 	public float[] embed(Document document) {
+		Assert.notNull(document, "Document must not be null");
+		return this.embed(document, this.options);
+	}
+
+	@Override
+	public float[] embed(Document document, EmbeddingOptions options) {
+		Assert.notNull(document, "Document must not be null");
+		Assert.notNull(options, "OpenAiEmbeddingOptions must not be null");
+
 		EmbeddingResponse response = this
-			.call(new EmbeddingRequest(List.of(document.getFormattedContent(this.metadataMode)), this.options));
+			.call(new EmbeddingRequest(List.of(document.getFormattedContent(this.metadataMode)), options));
 
 		if (CollectionUtils.isEmpty(response.getResults())) {
 			return new float[0];
