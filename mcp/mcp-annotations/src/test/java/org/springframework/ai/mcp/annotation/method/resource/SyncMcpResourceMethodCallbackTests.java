@@ -221,6 +221,50 @@ public class SyncMcpResourceMethodCallbackTests {
 	}
 
 	@Test
+	public void testCallbackWithIntegerUriVariable() throws Exception {
+		TestResourceProvider provider = new TestResourceProvider();
+		Method method = TestResourceProvider.class.getMethod("getUserByIntId", int.class);
+		McpResource resourceAnnotation = method.getAnnotation(McpResource.class);
+
+		BiFunction<McpSyncServerExchange, ReadResourceRequest, ReadResourceResult> callback = SyncMcpResourceMethodCallback
+			.builder()
+			.method(method)
+			.bean(provider)
+			.resource(ResourceAdapter.asResource(resourceAnnotation))
+			.build();
+
+		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
+		ReadResourceRequest request = ReadResourceRequest.builder("example.com/users/42").build();
+
+		ReadResourceResult result = callback.apply(exchange, request);
+
+		assertThat(result).isNotNull();
+		assertThat(result.contents()).hasSize(1);
+		assertThat(result.contents().get(0)).isInstanceOf(TextResourceContents.class);
+		TextResourceContents textContent = (TextResourceContents) result.contents().get(0);
+		assertThat(textContent.text()).isEqualTo("User id: 42");
+	}
+
+	@Test
+	public void testCallbackWithInvalidIntegerUriVariable() throws Exception {
+		TestResourceProvider provider = new TestResourceProvider();
+		Method method = TestResourceProvider.class.getMethod("getUserByIntId", int.class);
+		McpResource resourceAnnotation = method.getAnnotation(McpResource.class);
+
+		BiFunction<McpSyncServerExchange, ReadResourceRequest, ReadResourceResult> callback = SyncMcpResourceMethodCallback
+			.builder()
+			.method(method)
+			.bean(provider)
+			.resource(ResourceAdapter.asResource(resourceAnnotation))
+			.build();
+
+		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
+		ReadResourceRequest request = ReadResourceRequest.builder("example.com/users/not-a-number").build();
+
+		assertThatThrownBy(() -> callback.apply(exchange, request)).isInstanceOf(McpError.class);
+	}
+
+	@Test
 	public void testCallbackWithExchangeAndUriVariable() throws Exception {
 		TestResourceProvider provider = new TestResourceProvider();
 		Method method = TestResourceProvider.class.getMethod("getResourceWithExchangeAndUriVariable",
@@ -1270,6 +1314,15 @@ public class SyncMcpResourceMethodCallbackTests {
 				.builder("users/" + userId + "/posts/" + postId, "User: " + userId + ", Post: " + postId)
 				.mimeType("text/plain")
 				.build())).build();
+		}
+
+		@McpResource(uri = "example.com/users/{id}")
+		public ReadResourceResult getUserByIntId(int id) {
+			return ReadResourceResult
+				.builder(List.of(TextResourceContents.builder("example.com/users/" + id, "User id: " + id)
+					.mimeType("text/plain")
+					.build()))
+				.build();
 		}
 
 		@McpResource(uri = "users/{userId}/profile")

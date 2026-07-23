@@ -368,23 +368,6 @@ public abstract class AbstractMcpResourceMethodCallback {
 							+ " in " + method.getDeclaringClass().getName() + ". URI variables: " + this.uriVariables);
 		}
 
-		// Check that all non-special parameters are String type (for URI variables)
-		for (Parameter param : parameters) {
-			// Skip @McpProgressToken annotated parameters
-			if (param.isAnnotationPresent(McpProgressToken.class)) {
-				continue;
-			}
-
-			Class<?> paramType = param.getType();
-			if (!McpSyncRequestContext.class.isAssignableFrom(paramType)
-					&& !McpAsyncRequestContext.class.isAssignableFrom(paramType) && !isExchangeOrContextType(paramType)
-					&& !ReadResourceRequest.class.isAssignableFrom(paramType)
-					&& !McpMeta.class.isAssignableFrom(paramType) && !String.class.isAssignableFrom(paramType)) {
-				throw new IllegalArgumentException("URI variable parameters must be of type String: " + method.getName()
-						+ " in " + method.getDeclaringClass().getName() + ", parameter of type " + paramType.getName()
-						+ " is not valid");
-			}
-		}
 	}
 
 	protected abstract Object assignExchangeType(Class<?> paramType, Object exchange);
@@ -492,7 +475,8 @@ public abstract class AbstractMcpResourceMethodCallback {
 			// Assign the next URI variable
 			if (variableIndex < this.uriVariables.size()) {
 				String variableName = this.uriVariables.get(variableIndex);
-				args[i] = uriVariableValues.get(variableName);
+				args[i] = McpUriVariableValueConverter.convert(uriVariableValues.get(variableName),
+						parameters[i].getType());
 				assignedVariables.add(variableName);
 				variableIndex++;
 			}
