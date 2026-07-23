@@ -49,6 +49,7 @@ import tools.jackson.databind.node.ObjectNode;
 import org.springframework.ai.mcp.annotation.McpMeta;
 import org.springframework.ai.mcp.annotation.McpProgressToken;
 import org.springframework.ai.mcp.annotation.McpToolParam;
+import org.springframework.ai.mcp.annotation.McpToolParamUtils;
 import org.springframework.ai.mcp.annotation.context.McpAsyncRequestContext;
 import org.springframework.ai.mcp.annotation.context.McpSyncRequestContext;
 import org.springframework.ai.model.KotlinModule;
@@ -153,7 +154,7 @@ public final class McpJsonSchemaGenerator {
 
 		for (int i = 0; i < method.getParameterCount(); i++) {
 			Parameter parameter = method.getParameters()[i];
-			String parameterName = parameter.getName();
+			String parameterName = McpToolParamUtils.resolveExternalName(parameter);
 			Type parameterType = method.getGenericParameterTypes()[i];
 
 			// Skip parameters annotated with @McpProgressToken

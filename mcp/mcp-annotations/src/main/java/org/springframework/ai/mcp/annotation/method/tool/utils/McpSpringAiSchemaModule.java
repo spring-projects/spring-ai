@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      https://www.apache.org/licenses/LICENSE-2.0
+ * https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,15 +17,17 @@
 package org.springframework.ai.mcp.annotation.method.tool.utils;
 
 import com.github.victools.jsonschema.generator.MemberScope;
+import com.github.victools.jsonschema.generator.SchemaGeneratorConfigBuilder;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.mcp.annotation.McpToolParam;
+import org.springframework.ai.mcp.annotation.McpToolParamUtils;
 import org.springframework.ai.util.json.schema.AbstractSpringAiSchemaModule;
 import org.springframework.util.StringUtils;
 
 /**
  * JSON Schema Generator Module for Spring AI MCP.
- * <p>
+ *
  * This module provides a set of customizations to the JSON Schema generator to support
  * the Spring AI MCP framework. It allows extracting descriptions from
  * {@code @McpToolParam(description = ...)} annotations and to determine whether a
@@ -42,7 +44,13 @@ public final class McpSpringAiSchemaModule extends AbstractSpringAiSchemaModule 
 	}
 
 	@Override
-	protected @Nullable String resolveToolParamDescription(MemberScope<?, ?> member) {
+	public void applyToConfigBuilder(SchemaGeneratorConfigBuilder builder) {
+		super.applyToConfigBuilder(builder);
+		builder.forFields().withPropertyNameOverrideResolver(McpToolParamUtils::resolveExternalPropertyName);
+	}
+
+	@Override
+	protected @Nullable String resolveToolParamDescription(MemberScope member) {
 		var annotation = member.getAnnotationConsideringFieldAndGetter(McpToolParam.class);
 		if (annotation != null && StringUtils.hasText(annotation.description())) {
 			return annotation.description();
@@ -51,7 +59,7 @@ public final class McpSpringAiSchemaModule extends AbstractSpringAiSchemaModule 
 	}
 
 	@Override
-	protected @Nullable Boolean resolveToolParamRequired(MemberScope<?, ?> member) {
+	protected @Nullable Boolean resolveToolParamRequired(MemberScope member) {
 		var annotation = member.getAnnotationConsideringFieldAndGetter(McpToolParam.class);
 		return annotation != null ? annotation.required() : null;
 	}
