@@ -437,7 +437,7 @@ public class SyncMcpPromptMethodCallbackTests {
 	}
 
 	@Test
-	public void testCallbackWithProgressToken() throws Exception {
+	public void testCallbackWithProgressTokenNull() throws Exception {
 		TestPromptProvider provider = new TestPromptProvider();
 		Method method = TestPromptProvider.class.getMethod("getPromptWithProgressToken", String.class, String.class);
 
@@ -453,8 +453,7 @@ public class SyncMcpPromptMethodCallbackTests {
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
 		Map<String, Object> args = new HashMap<>();
 		args.put("name", "John");
-		// Note: GetPromptRequest doesn't have progressToken in current spec, so it will
-		// be null
+		// This request carries no progress token, so the parameter resolves to null
 		GetPromptRequest request = GetPromptRequest.builder("progress-token").arguments(args).build();
 
 		GetPromptResult result = callback.apply(exchange, request);
@@ -464,8 +463,38 @@ public class SyncMcpPromptMethodCallbackTests {
 		assertThat(result.messages()).hasSize(1);
 		PromptMessage message = result.messages().get(0);
 		assertThat(message.role()).isEqualTo(Role.ASSISTANT);
-		// Since GetPromptRequest doesn't have progressToken, it should be null
+		// No progress token in the request, so the parameter is null
 		assertThat(((TextContent) message.content()).text()).isEqualTo("Hello John (no token)");
+	}
+
+	@Test
+	public void testCallbackInjectsProgressTokenFromRequest() throws Exception {
+		TestPromptProvider provider = new TestPromptProvider();
+		Method method = TestPromptProvider.class.getMethod("getPromptWithProgressToken", String.class, String.class);
+
+		Prompt prompt = createTestPrompt("progress-token", "A prompt with progress token");
+
+		BiFunction<McpSyncServerExchange, GetPromptRequest, GetPromptResult> callback = SyncMcpPromptMethodCallback
+			.builder()
+			.method(method)
+			.bean(provider)
+			.prompt(prompt)
+			.build();
+
+		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
+		Map<String, Object> args = new HashMap<>();
+		args.put("name", "John");
+		GetPromptRequest request = new GetPromptRequest("progress-token", args,
+				Map.of("progressToken", "progress-123"));
+
+		GetPromptResult result = callback.apply(exchange, request);
+
+		assertThat(result).isNotNull();
+		assertThat(result.description()).isEqualTo("Progress token prompt");
+		assertThat(result.messages()).hasSize(1);
+		PromptMessage message = result.messages().get(0);
+		assertThat(message.role()).isEqualTo(Role.ASSISTANT);
+		assertThat(((TextContent) message.content()).text()).isEqualTo("Hello John (token: progress-123)");
 	}
 
 	@Test
@@ -495,7 +524,7 @@ public class SyncMcpPromptMethodCallbackTests {
 		assertThat(result.messages()).hasSize(1);
 		PromptMessage message = result.messages().get(0);
 		assertThat(message.role()).isEqualTo(Role.ASSISTANT);
-		// Since GetPromptRequest doesn't have progressToken, it should be null
+		// No progress token in the request, so the parameter is null
 		assertThat(((TextContent) message.content()).text())
 			.isEqualTo("Hello John from mixed-with-progress (no token)");
 	}

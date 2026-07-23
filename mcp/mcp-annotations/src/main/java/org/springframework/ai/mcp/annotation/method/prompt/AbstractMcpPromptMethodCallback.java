@@ -210,11 +210,7 @@ public abstract class AbstractMcpPromptMethodCallback {
 		// First, handle @McpProgressToken annotated parameters
 		for (int i = 0; i < parameters.length; i++) {
 			if (parameters[i].isAnnotationPresent(McpProgressToken.class)) {
-				// GetPromptRequest doesn't have a progressToken method in the current
-				// spec
-				// Set to null for now - this would need to be updated when the spec
-				// supports it
-				args[i] = null;
+				args[i] = request != null ? request.progressToken() : null;
 			}
 		}
 
