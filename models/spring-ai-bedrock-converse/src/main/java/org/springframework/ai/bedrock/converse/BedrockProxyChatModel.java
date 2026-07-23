@@ -821,6 +821,7 @@ public class BedrockProxyChatModel implements ChatModel {
 			Assert.state(options != null, "Prompt options must not be null");
 
 			Flux<ChatResponse> chatResponseFlux = chatResponses.concatMap(chatResponse -> Flux.just(chatResponse))
+				.doOnNext(ignored -> observationContext.recordTimeToFirstChunk())
 				.doOnError(observation::error)
 				.doFinally(s -> observation.stop())
 				.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));

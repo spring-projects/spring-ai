@@ -262,6 +262,7 @@ public class DeepSeekChatModel implements ChatModel {
 
 			// @formatter:off
 			Flux<ChatResponse> flux = chatResponse
+				.doOnNext(ignored -> observationContext.recordTimeToFirstChunk())
 				.doOnError(observation::error)
 				.doFinally(s -> observation.stop())
 				.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));

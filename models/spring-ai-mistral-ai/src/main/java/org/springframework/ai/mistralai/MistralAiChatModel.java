@@ -296,7 +296,8 @@ public class MistralAiChatModel implements ChatModel {
 			// @formatter:off
 			Flux<ChatResponse> chatResponseFlux = chatResponse.flatMap(response ->
 					Flux.just(response))
-			.doOnError(observation::error)
+				.doOnNext(ignored -> observationContext.recordTimeToFirstChunk())
+				.doOnError(observation::error)
 			.doFinally(s -> observation.stop())
 			.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
 			// @formatter:on
