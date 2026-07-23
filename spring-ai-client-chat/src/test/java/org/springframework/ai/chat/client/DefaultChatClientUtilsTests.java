@@ -130,6 +130,25 @@ class DefaultChatClientUtilsTests {
 	}
 
 	@Test
+	void whenUserMediaIsProvidedWithoutUserTextThenUserMessageIsAddedToPrompt() {
+		Media media = mock(Media.class);
+		ChatModel chatModel = mock(ChatModel.class);
+		when(chatModel.getOptions()).thenReturn(ChatOptions.builder().build());
+		DefaultChatClient.DefaultChatClientRequestSpec inputRequest = (DefaultChatClient.DefaultChatClientRequestSpec) ChatClient
+			.create(chatModel)
+			.prompt()
+			.user(user -> user.media(media));
+
+		ChatClientRequest result = DefaultChatClientUtils.toChatClientRequest(inputRequest);
+
+		assertThat(result.prompt().getInstructions()).hasSize(1);
+		assertThat(result.prompt().getInstructions().get(0)).isInstanceOf(UserMessage.class);
+		UserMessage userMessage = (UserMessage) result.prompt().getInstructions().get(0);
+		assertThat(userMessage.getText()).isNull();
+		assertThat(userMessage.getMedia()).containsExactly(media);
+	}
+
+	@Test
 	void whenUserTextWithParamsIsProvidedThenUserMessageIsRenderedAndAddedToPrompt() {
 		String userText = "Question about {topic}";
 		Map<String, Object> userParams = Map.of("topic", "Spring AI");
