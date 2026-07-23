@@ -196,6 +196,9 @@
 		<module>vector-stores/spring-ai-s3-vector-store</module>
 		<module>vector-stores/spring-ai-typesense-store</module>
 		<module>vector-stores/spring-ai-weaviate-store</module>
+        <module>models/spring-ai-together-ai</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-together-ai</module>
+		<module>starters/spring-ai-starter-model-together-ai</module>
 	</modules>
 
 	<organization>

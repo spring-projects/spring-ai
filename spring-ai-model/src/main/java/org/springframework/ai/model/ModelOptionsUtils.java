@@ -19,6 +19,9 @@ package org.springframework.ai.model;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.lang.Contract;
+import org.springframework.util.Assert;
+
+import java.util.function.Function;
 
 /**
  * Utility class for manipulating {@link ModelOptions} objects.
@@ -30,6 +33,19 @@ import org.springframework.lang.Contract;
  * @since 0.8.0
  */
 public abstract class ModelOptionsUtils {
+
+	/**
+	 * Return the runtime option extracted from the provided options if present,
+	 * otherwise return the default option.
+	 */
+	public static <O extends ModelOptions, T> @Nullable T mergeOption(
+			O runtimeOptions,
+			O defaultOptions,
+			Function<O, @Nullable T> function
+	) {
+		Assert.notNull(function, "Function must not be null");
+		return mergeOption(function.apply(runtimeOptions), function.apply(defaultOptions));
+	}
 
 	/**
 	 * Return the runtime value if not null, or else the default value.
