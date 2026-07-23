@@ -24,6 +24,8 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.deepseek.api.DeepSeekApi;
 import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionMessage;
+import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionRequest.ReasoningEffort;
+import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionRequest.Thinking;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -137,6 +139,80 @@ public class DeepSeekChatCompletionRequestTests {
 		assertThat(message.role()).isEqualTo(ChatCompletionMessage.Role.ASSISTANT);
 		assertThat(message.prefix()).isTrue();
 		assertThat(message.reasoningContent()).isEqualTo("Thinking in progress...");
+	}
+
+	@Test
+	public void createRequestWithThinking() {
+		var client = DeepSeekChatModel.builder().deepSeekApi(DeepSeekApi.builder().apiKey("TEST").build()).build();
+
+		var setThinkingEnabledPrompt = new Prompt("Test message content",
+				DeepSeekChatOptions.builder().model("DEFAULT_MODEL").thinking(Thinking.ENABLED).build());
+		var setThinkingEnabledRequest = client.createRequest(setThinkingEnabledPrompt, false);
+
+		var setThinkingDisabledPrompt = new Prompt("Test message content",
+				DeepSeekChatOptions.builder().model("DEFAULT_MODEL").thinking(Thinking.DISABLED).build());
+		var setThinkingDisabledRequest = client.createRequest(setThinkingDisabledPrompt, false);
+
+		var enableThinkingPrompt = new Prompt("Test message content",
+				DeepSeekChatOptions.builder().model("DEFAULT_MODEL").enableThinking().build());
+		var enableThinkingRequest = client.createRequest(enableThinkingPrompt, false);
+
+		var disableThinkingPrompt = new Prompt("Test message content",
+				DeepSeekChatOptions.builder().model("DEFAULT_MODEL").disableThinking().build());
+		var disableThinkingRequest = client.createRequest(disableThinkingPrompt, false);
+
+		assertThat(setThinkingEnabledRequest.thinking()).isEqualTo(Thinking.ENABLED);
+		assertThat(setThinkingDisabledRequest.thinking()).isEqualTo(Thinking.DISABLED);
+		assertThat(enableThinkingRequest.thinking()).isEqualTo(Thinking.ENABLED);
+		assertThat(disableThinkingRequest.thinking()).isEqualTo(Thinking.DISABLED);
+	}
+
+	@Test
+	public void createRequestWithoutThinking() {
+		var client = DeepSeekChatModel.builder().deepSeekApi(DeepSeekApi.builder().apiKey("TEST").build()).build();
+
+		var prompt = new Prompt("Test message content", DeepSeekChatOptions.builder().model("DEFAULT_MODEL").build());
+
+		var request = client.createRequest(prompt, false);
+
+		assertThat(request.thinking()).isNull();
+	}
+
+	@Test
+	public void createRequestWithReasoningEffort() {
+		var client = DeepSeekChatModel.builder().deepSeekApi(DeepSeekApi.builder().apiKey("TEST").build()).build();
+
+		var setReasoningEffortMaxPrompt = new Prompt("Test message content",
+				DeepSeekChatOptions.builder().model("DEFAULT_MODEL").reasoningEffort(ReasoningEffort.MAX).build());
+		var setReasoningEffortMaxRequest = client.createRequest(setReasoningEffortMaxPrompt, false);
+
+		var setReasoningEffortHighPrompt = new Prompt("Test message content",
+				DeepSeekChatOptions.builder().model("DEFAULT_MODEL").reasoningEffort(ReasoningEffort.HIGH).build());
+		var setReasoningEffortHighRequest = client.createRequest(setReasoningEffortHighPrompt, false);
+
+		var reasoningEffortMaxPrompt = new Prompt("Test message content",
+				DeepSeekChatOptions.builder().model("DEFAULT_MODEL").reasoningEffortMax().build());
+		var reasoningEffortMaxRequest = client.createRequest(reasoningEffortMaxPrompt, false);
+
+		var reasoningEffortHighPrompt = new Prompt("Test message content",
+				DeepSeekChatOptions.builder().model("DEFAULT_MODEL").reasoningEffortHigh().build());
+		var reasoningEffortHighRequest = client.createRequest(reasoningEffortHighPrompt, false);
+
+		assertThat(setReasoningEffortMaxRequest.reasoningEffort()).isEqualTo(ReasoningEffort.MAX);
+		assertThat(setReasoningEffortHighRequest.reasoningEffort()).isEqualTo(ReasoningEffort.HIGH);
+		assertThat(reasoningEffortMaxRequest.reasoningEffort()).isEqualTo(ReasoningEffort.MAX);
+		assertThat(reasoningEffortHighRequest.reasoningEffort()).isEqualTo(ReasoningEffort.HIGH);
+	}
+
+	@Test
+	public void createRequestWithoutReasoningEffort() {
+		var client = DeepSeekChatModel.builder().deepSeekApi(DeepSeekApi.builder().apiKey("TEST").build()).build();
+
+		var prompt = new Prompt("Test message content", DeepSeekChatOptions.builder().model("DEFAULT_MODEL").build());
+
+		var request = client.createRequest(prompt, false);
+
+		assertThat(request.reasoningEffort()).isNull();
 	}
 
 }

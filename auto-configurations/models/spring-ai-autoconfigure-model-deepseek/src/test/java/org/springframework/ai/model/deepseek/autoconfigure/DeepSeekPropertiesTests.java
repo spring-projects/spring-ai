@@ -19,6 +19,8 @@ package org.springframework.ai.model.deepseek.autoconfigure;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.deepseek.DeepSeekChatModel;
+import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionRequest.ReasoningEffort;
+import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionRequest.Thinking;
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -112,7 +114,9 @@ public class DeepSeekPropertiesTests {
 				"spring.ai.deepseek.chat.stop=boza,koza",
 				"spring.ai.deepseek.chat.temperature=0.55",
 				"spring.ai.deepseek.chat.top-p=0.56",
-				"spring.ai.deepseek.chat.user=userXYZ"
+				"spring.ai.deepseek.chat.user=userXYZ",
+				"spring.ai.deepseek.chat.thinking.type=disabled",
+				"spring.ai.deepseek.chat.reasoning-effort=max"
 				)
 			// @formatter:on
 			.withConfiguration(AutoConfigurations.of(DeepSeekChatAutoConfiguration.class,
@@ -132,6 +136,8 @@ public class DeepSeekPropertiesTests {
 				assertThat(chatProperties.getStop()).contains("boza", "koza");
 				assertThat(chatProperties.getTemperature()).isEqualTo(0.55);
 				assertThat(chatProperties.getTopP()).isEqualTo(0.56);
+				assertThat(chatProperties.getThinking()).isEqualTo(Thinking.DISABLED);
+				assertThat(chatProperties.getReasoningEffort()).isEqualTo(ReasoningEffort.MAX);
 			});
 	}
 

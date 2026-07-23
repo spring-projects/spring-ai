@@ -140,6 +140,8 @@ The prefix `spring.ai.deepseek.chat` is the property prefix that lets you config
 | spring.ai.deepseek.chat.top-p | An alternative to sampling with temperature, called nucleus sampling, where the model considers the results of the tokens with top_p probability mass. So 0.1 means only the tokens comprising the top 10% probability mass are considered. We generally recommend altering this or temperature, but not both. | 1.0F
 | spring.ai.deepseek.chat.logprobs | Whether to return log probabilities of the output tokens or not. If true, returns the log probabilities of each output token returned in the content of the message. | -
 | spring.ai.deepseek.chat.top-logprobs | An integer between 0 and 20 specifying the number of most likely tokens to return at each token position, each with an associated log probability. logprobs must be set to true if this parameter is used. | -
+| spring.ai.deepseek.chat.thinking.type | Controls the switch between thinking mode and non-thinking mode. When set to `enabled`, the thinking mode is used; when set to `disabled`, the non-thinking mode is used. | -
+| spring.ai.deepseek.chat.reasoning-effort | Controls the reasoning effort level for the DeepSeek model. For normal requests, `high` is the default; for complex Agent-style requests (such as Claude Code, OpenCode), `max` is used automatically. | -
 | spring.ai.deepseek.chat.tool-callbacks | Tool Callbacks to register with the ChatModel. | -
 |====
 
@@ -268,6 +270,53 @@ public void deepSeekReasoningExample() {
     String text = deepSeekAssistantMessage.getText();
 }
 ----
+
+=== Thinking Mode
+
+DeepSeek models support a switch between thinking mode and non-thinking mode.
+The thinking mode can be controlled through the `Thinking` option, which accepts `Thinking.ENABLED` (thinking mode) or `Thinking.DISABLED` (non-thinking mode).
+When thinking is disabled, the model does not produce any reasoning content.
+
+[source,java]
+----
+public void deepSeekThinkingExample() {
+    DeepSeekChatOptions promptOptions = DeepSeekChatOptions.builder()
+            .thinking(Thinking.DISABLED)
+            .build();
+    Prompt prompt = new Prompt("9.11 and 9.8, which is greater?", promptOptions);
+    ChatResponse response = chatModel.call(prompt);
+
+    DeepSeekAssistantMessage deepSeekAssistantMessage = (DeepSeekAssistantMessage) response.getResult().getOutput();
+    // No reasoning content is produced when thinking is disabled
+    String reasoningContent = deepSeekAssistantMessage.getReasoningContent();
+    String text = deepSeekAssistantMessage.getText();
+}
+----
+
+The thinking mode can also be toggled with the `enableThinking()` and `disableThinking()` builder convenience methods, or configured globally through the `spring.ai.deepseek.chat.thinking.type` property.
+
+=== Reasoning Effort
+
+DeepSeek models let you control the reasoning effort level through the `ReasoningEffort` option.
+`ReasoningEffort.HIGH` is the default for normal requests, while `ReasoningEffort.MAX` is used automatically for complex Agent-style requests (such as Claude Code, OpenCode).
+
+[source,java]
+----
+public void deepSeekReasoningEffortExample() {
+    DeepSeekChatOptions promptOptions = DeepSeekChatOptions.builder()
+            .reasoningEffort(ReasoningEffort.MAX)
+            .build();
+    Prompt prompt = new Prompt("9.11 and 9.8, which is greater?", promptOptions);
+    ChatResponse response = chatModel.call(prompt);
+
+    DeepSeekAssistantMessage deepSeekAssistantMessage = (DeepSeekAssistantMessage) response.getResult().getOutput();
+    String reasoningContent = deepSeekAssistantMessage.getReasoningContent();
+    String text = deepSeekAssistantMessage.getText();
+}
+----
+
+The reasoning effort can also be set with the `reasoningEffortHigh()` and `reasoningEffortMax()` builder convenience methods, or configured globally through the `spring.ai.deepseek.chat.reasoning-effort` property.
+
 == Reasoning Model Multi-round Conversation
 In each round of the conversation, the model outputs the CoT (`reasoning_content`) and the final answer (`content`). In the next round of the conversation, the CoT from previous rounds is not concatenated into the context, as illustrated in the following diagram:
 
