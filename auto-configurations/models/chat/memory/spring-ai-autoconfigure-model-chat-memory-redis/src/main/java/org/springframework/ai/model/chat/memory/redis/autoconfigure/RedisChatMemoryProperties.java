@@ -66,6 +66,16 @@ public class RedisChatMemoryProperties {
 		this.delegate.setPort(port);
 	}
 
+	@DeprecatedConfigurationProperty(replacement = "spring.ai.chat.memory.repository.redis.password")
+	@Deprecated(since = "2.0.1", forRemoval = true)
+	public @Nullable String getPassword() {
+		return this.delegate.getPassword();
+	}
+
+	public void setPassword(@Nullable String password) {
+		this.delegate.setPassword(password);
+	}
+
 	@DeprecatedConfigurationProperty(replacement = "spring.ai.chat.memory.repository.redis.index-name")
 	@Deprecated(since = "2.0.1", forRemoval = true)
 	public String getIndexName() {

@@ -555,6 +555,7 @@ ChatMemory chatMemory = MessageWindowChatMemory.builder()
 |Property | Description | Default Value
 | `spring.ai.chat.memory.repository.redis.host` | Redis server host | `localhost`
 | `spring.ai.chat.memory.repository.redis.port` | Redis server port | `6379`
+| `spring.ai.chat.memory.repository.redis.password` | Redis server password | _none_
 | `spring.ai.chat.memory.repository.redis.index-name` | Name of the Redis search index | `chat-memory-idx`
 | `spring.ai.chat.memory.repository.redis.key-prefix` | Key prefix for chat memory entries | `chat-memory:`
 | `spring.ai.chat.memory.repository.redis.time-to-live` | Time to live for chat memory entries (e.g., `24h`, `30d`) | _no expiration_

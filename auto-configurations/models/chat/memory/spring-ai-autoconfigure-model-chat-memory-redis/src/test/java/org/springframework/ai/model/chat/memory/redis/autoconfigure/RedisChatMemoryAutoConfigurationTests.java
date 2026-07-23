@@ -68,4 +68,29 @@ class RedisChatMemoryAutoConfigurationTests {
 			});
 	}
 
+	@Test
+	void passwordWithOldPrefix() {
+		this.contextRunner
+			.withPropertyValues("spring.ai.chat.memory.redis.host=10.0.0.1", "spring.ai.chat.memory.redis.port=6380",
+					"spring.ai.chat.memory.redis.password=secret",
+					"spring.ai.chat.memory.redis.initialize-schema=false")
+			.run(context -> {
+				var chatProperties = context.getBean(RedisChatMemoryRepositoryProperties.class);
+				assertThat(chatProperties.getPassword()).isEqualTo("secret");
+			});
+	}
+
+	@Test
+	void passwordWithNewPrefix() {
+		this.contextRunner
+			.withPropertyValues("spring.ai.chat.memory.repository.redis.host=10.0.0.1",
+					"spring.ai.chat.memory.repository.redis.port=6380",
+					"spring.ai.chat.memory.repository.redis.password=secret",
+					"spring.ai.chat.memory.repository.redis.initialize-schema=false")
+			.run(context -> {
+				var chatProperties = context.getBean(RedisChatMemoryRepositoryProperties.class);
+				assertThat(chatProperties.getPassword()).isEqualTo("secret");
+			});
+	}
+
 }
