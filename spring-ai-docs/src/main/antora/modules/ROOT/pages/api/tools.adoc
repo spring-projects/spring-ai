@@ -659,13 +659,14 @@ For method-based tools, `ToolDefinitions.from(method)` generates a definition au
 
 The input schema tells the model how to call the tool. Spring AI's `JsonSchemaGenerator` produces the schema from a method or function's parameter list and supports several customization annotations.
 
+NOTE: The same `JsonSchemaGenerator` is also used by xref:api/structured-output/converters.adoc#json-schema-customization[`BeanOutputConverter`] for structured output conversion. The Jackson, Swagger, and nullability annotations described below apply to both tool calling and structured output schemas (`@ToolParam` is intended for tool calling).
+
 **Parameter descriptions**
 
-Use any of these (Spring AI's annotation has highest precedence):
+Use any of these (for a tool method's own parameters, Spring AI's annotation has highest precedence):
 
 * `@ToolParam(description = "...")` — Spring AI
-* `@JsonClassDescription(description = "...")` — Jackson
-* `@JsonPropertyDescription(description = "...")` — Jackson
+* `@JsonPropertyDescription("...")` — Jackson
 * `@Schema(description = "...")` — Swagger
 
 [source,java]
@@ -684,12 +685,12 @@ class CustomerTools {
 
 **Required vs optional**
 
-By default every parameter is required. Make a parameter optional via (in order of precedence):
+By default every parameter is required. Make a parameter optional via one of the following (for a tool method's own parameters, in this order of precedence):
 
 * `@ToolParam(required = false)` — Spring AI
 * `@JsonProperty(required = false)` — Jackson
-* `@Schema(required = false)` — Swagger
-* `@Nullable` — Spring Framework / JSpecify
+* `@Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED)` — Swagger
+* `@Nullable` — JSpecify / Jakarta Annotations
 
 WARNING: Defining the correct required status is critical for reducing hallucinations. A parameter marked required forces the model to provide a value; an optional one lets it omit. If you mark a parameter required but the model has no way to determine its value, it will make one up.
 
