@@ -19,6 +19,7 @@ package org.springframework.ai.reader.pdf;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintStream;
 import java.util.List;
 
 import org.apache.pdfbox.Loader;
@@ -112,6 +113,20 @@ public class ParagraphPdfDocumentReaderTests {
 		assertThat(documents).hasSize(2);
 		assertThat(documents.get(0).getMetadata().get("title")).isEqualTo("Chapter 1");
 		assertThat(documents.get(1).getMetadata().get("title")).isEqualTo("Chapter 3");
+	}
+
+	@Test
+	void shouldNotWriteToStdoutDuringInitialization() {
+		PrintStream originalOut = System.out;
+		ByteArrayOutputStream capturedOutput = new ByteArrayOutputStream();
+		System.setOut(new PrintStream(capturedOutput));
+		try {
+			new ParagraphPdfDocumentReader("classpath:/sample3.pdf", PdfDocumentReaderConfig.defaultConfig());
+		}
+		finally {
+			System.setOut(originalOut);
+		}
+		assertThat(capturedOutput.toString()).isEmpty();
 	}
 
 }
