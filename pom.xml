@@ -35,6 +35,7 @@
 		<module>auto-configurations/advisors/spring-ai-autoconfigure-tool-search-advisor</module>
 
 		<module>auto-configurations/common/spring-ai-autoconfigure-retry</module>
+		<module>auto-configurations/common/spring-ai-autoconfigure-tool</module>
 
 		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-common</module>
 		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-httpclient</module>
