@@ -165,6 +165,7 @@ class DefaultChatClientObservationConventionTests {
 				KeyValue.of(HighCardinalityKeyNames.CHAT_CLIENT_CONVERSATION_ID.asString(), "007"),
 				KeyValue.of(HighCardinalityKeyNames.CHAT_CLIENT_TOOL_NAMES.asString(), """
 						["toolCallback1", "toolCallback2"]"""));
+		assertThat(HighCardinalityKeyNames.CHAT_CLIENT_CONVERSATION_ID.asString()).isEqualTo("gen_ai.conversation.id");
 	}
 
 }
