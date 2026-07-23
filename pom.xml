@@ -283,6 +283,7 @@
 		<pdfbox.version>3.0.7</pdfbox.version>
 
 		<!-- Utilities -->
+		<jackson-databind-nullable.version>0.2.6</jackson-databind-nullable.version>
 		<jsonschema.version>5.0.0</jsonschema.version>
 		<jtokkit.version>1.1.0</jtokkit.version>
 		<lucene.version>9.12.3</lucene.version>
