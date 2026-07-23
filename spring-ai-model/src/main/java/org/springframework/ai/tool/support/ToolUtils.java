@@ -25,6 +25,7 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.annotation.Tool;
@@ -39,6 +40,7 @@ import org.springframework.util.StringUtils;
  * Miscellaneous tool utility methods. Mainly for internal use within the framework.
  *
  * @author Thomas Vitale
+ * @author Jewoo Shin
  */
 public final class ToolUtils {
 
@@ -89,12 +91,41 @@ public final class ToolUtils {
 	}
 
 	public static ToolCallResultConverter getToolCallResultConverter(Method method) {
+		return getToolCallResultConverter(method, null);
+	}
+
+	/**
+	 * Resolve the {@link ToolCallResultConverter} for the given method, falling back to
+	 * the supplied {@code defaultConverter} when the method does not explicitly opt into
+	 * a converter through {@link Tool#resultConverter()}.
+	 * <p>
+	 * Resolution order:
+	 * <ol>
+	 * <li>If the method has no {@link Tool} annotation, return {@code defaultConverter}
+	 * when non-null, otherwise a new {@link DefaultToolCallResultConverter}.</li>
+	 * <li>If the {@link Tool} annotation leaves {@code resultConverter} at its default
+	 * value ({@link DefaultToolCallResultConverter}), return {@code defaultConverter}
+	 * when non-null (so callers can inject a customized default); otherwise fall through
+	 * to the no-arg instantiation.</li>
+	 * <li>Otherwise instantiate the explicitly declared {@code resultConverter}
+	 * class.</li>
+	 * </ol>
+	 * @param method the tool method
+	 * @param defaultConverter the converter to use when the method does not declare an
+	 * explicit one, or {@code null} to preserve the legacy behaviour
+	 * @since 2.0.0
+	 */
+	public static ToolCallResultConverter getToolCallResultConverter(Method method,
+			@Nullable ToolCallResultConverter defaultConverter) {
 		Assert.notNull(method, "method cannot be null");
 		var tool = AnnotatedElementUtils.findMergedAnnotation(method, Tool.class);
 		if (tool == null) {
-			return new DefaultToolCallResultConverter();
+			return defaultConverter != null ? defaultConverter : new DefaultToolCallResultConverter();
 		}
 		var type = tool.resultConverter();
+		if (type == DefaultToolCallResultConverter.class && defaultConverter != null) {
+			return defaultConverter;
+		}
 		try {
 			return type.getDeclaredConstructor().newInstance();
 		}
