@@ -26,6 +26,7 @@ import java.util.Objects;
 import com.openai.client.OpenAIClient;
 import com.openai.client.OpenAIClientAsync;
 import com.openai.core.MultipartField;
+import com.openai.core.RequestOptions;
 import com.openai.models.audio.transcriptions.TranscriptionCreateParams;
 import com.openai.models.audio.transcriptions.TranscriptionCreateResponse;
 import com.openai.models.audio.transcriptions.TranscriptionStreamEvent;
@@ -84,7 +85,8 @@ public final class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 	}
 
 	private OpenAiAudioTranscriptionModel(Builder builder) {
-		this.options = builder.options != null ? builder.options : OpenAiAudioTranscriptionOptions.builder().build();
+		this.options = Objects.requireNonNullElseGet(builder.options,
+				() -> OpenAiAudioTranscriptionOptions.builder().build());
 		this.openAiClient = Objects.requireNonNullElseGet(builder.openAiClient,
 				() -> OpenAiSetup.setupSyncClient(this.options.getBaseUrl(), this.options.getApiKey(),
 						this.options.getCredential(), this.options.getMicrosoftDeploymentName(),
@@ -123,12 +125,16 @@ public final class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 		byte[] audioBytes = toBytes(audioResource);
 		String filename = getFilename(audioResource);
 
-		TranscriptionCreateParams params = buildParams(mergedOptions, audioBytes, filename);
+		TranscriptionCreateParams params = this.buildParams(mergedOptions, audioBytes, filename);
 		if (logger.isTraceEnabled()) {
 			logger.trace("OpenAiAudioTranscriptionModel call with model: " + mergedOptions.getModel());
 		}
 
-		TranscriptionCreateResponse response = this.openAiClient.audio().transcriptions().create(params);
+		RequestOptions requestOptions = this.buildRequestOptions(mergedOptions);
+
+		TranscriptionCreateResponse response = this.openAiClient.audio()
+			.transcriptions()
+			.create(params, requestOptions);
 		String text = extractText(response);
 		AudioTranscription transcript = new AudioTranscription(text);
 		return new AudioTranscriptionResponse(transcript, new AudioTranscriptionResponseMetadata());
@@ -146,14 +152,16 @@ public final class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 		byte[] audioBytes = toBytes(audioResource);
 		String filename = getFilename(audioResource);
 
-		TranscriptionCreateParams params = buildParams(mergedOptions, audioBytes, filename);
+		TranscriptionCreateParams params = this.buildParams(mergedOptions, audioBytes, filename);
 		if (logger.isTraceEnabled()) {
 			logger.trace("OpenAiAudioTranscriptionModel stream with model: " + mergedOptions.getModel());
 		}
 
+		RequestOptions requestOptions = this.buildRequestOptions(mergedOptions);
+
 		Flux<TranscriptionStreamEvent> chunks = Flux.create(sink -> this.openAiClientAsync.audio()
 			.transcriptions()
-			.createStreaming(params)
+			.createStreaming(params, requestOptions)
 			.subscribe(sink::next)
 			.onCompleteFuture()
 			.whenComplete((unused, throwable) -> {
@@ -204,6 +212,20 @@ public final class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 			builder.timestampGranularities(options.getTimestampGranularities());
 		}
 		return builder.build();
+	}
+
+	/**
+	 * Creates a RequestOptions instance from the given transcription options.
+	 * @param options the transcription options
+	 * @return a RequestOptions instance
+	 */
+	private RequestOptions buildRequestOptions(OpenAiAudioTranscriptionOptions options) {
+		Assert.notNull(options, "Options cannot be null");
+		RequestOptions.Builder requestOptionsBuilder = RequestOptions.builder();
+		if (options.getTimeout() != null) {
+			requestOptionsBuilder.timeout(options.getTimeout());
+		}
+		return requestOptionsBuilder.build();
 	}
 
 	private static String extractText(TranscriptionCreateResponse response) {
