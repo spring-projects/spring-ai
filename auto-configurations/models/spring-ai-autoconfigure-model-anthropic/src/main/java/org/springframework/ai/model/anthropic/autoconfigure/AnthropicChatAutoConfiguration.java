@@ -50,6 +50,8 @@ import org.springframework.context.annotation.Bean;
 @ConditionalOnClass(AnthropicClient.class)
 @ConditionalOnProperty(name = SpringAIModelProperties.CHAT_MODEL, havingValue = SpringAIModels.ANTHROPIC,
 		matchIfMissing = true)
+@ConditionalOnProperty(prefix = AnthropicConnectionProperties.CONFIG_PREFIX, name = "backend",
+		havingValue = "anthropic", matchIfMissing = true)
 public class AnthropicChatAutoConfiguration {
 
 	@Bean

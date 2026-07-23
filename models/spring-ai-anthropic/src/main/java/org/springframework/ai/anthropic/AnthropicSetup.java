@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 
 import com.anthropic.backends.AnthropicBackend;
+import com.anthropic.backends.Backend;
 import com.anthropic.client.AnthropicClient;
 import com.anthropic.client.AnthropicClientAsync;
 import com.anthropic.client.AnthropicClientAsyncImpl;
@@ -194,8 +195,45 @@ public final class AnthropicSetup {
 			List<AnthropicHttpClientBuilderCustomizer> httpClientCustomizers) {
 
 		Assert.notNull(httpClientCustomizers, "httpClientCustomizers must not be null");
-		ClientOptions opts = buildClientOptions(baseUrl, apiKey, timeout, maxRetries, proxy, customHeaders,
-				observationRegistry, meterRegistry, SYNC_CLIENT_TAGS, dispatcherExecutor, httpClientCustomizers);
+		String resolvedBaseUrl = detectBaseUrlFromEnv(baseUrl);
+		String resolvedApiKey = apiKey != null ? apiKey : detectApiKey();
+		AnthropicBackend backend = buildAnthropicBackend(resolvedBaseUrl, resolvedApiKey);
+		ClientOptions opts = buildClientOptions(backend, timeout, maxRetries, proxy, customHeaders, observationRegistry,
+				meterRegistry, SYNC_CLIENT_TAGS, dispatcherExecutor, httpClientCustomizers);
+		return new AnthropicClientImpl(opts);
+	}
+
+	/**
+	 * Creates a synchronous Anthropic client with the specified SDK {@link Backend}. This
+	 * overload supports alternative backends (e.g. Google Vertex AI) while preserving
+	 * Spring AI's OkHttp observability and customizer pipeline.
+	 * @param backend the SDK backend (e.g. {@link AnthropicBackend} or
+	 * {@code VertexBackend})
+	 * @param timeout the request timeout (null to use default of 60 seconds)
+	 * @param maxRetries the maximum number of retries (null to use default of 2)
+	 * @param proxy the proxy to use (null for no proxy)
+	 * @param customHeaders additional HTTP headers to include in requests
+	 * @param observationRegistry the registry the OkHttp observation interceptor reports
+	 * to; pass {@link ObservationRegistry#NOOP} to disable
+	 * @param meterRegistry optional; when supplied, OkHttp connection-pool gauges are
+	 * registered
+	 * @param dispatcherExecutor the OkHttp dispatcher executor; null to use the
+	 * library-managed default
+	 * @param httpClientCustomizers customizers applied to the underlying OkHttp client
+	 * builder after Spring AI's own defaults
+	 * @return a configured Anthropic client
+	 * @since 2.0.0
+	 */
+	public static AnthropicClient setupSyncClient(Backend backend, @Nullable Duration timeout,
+			@Nullable Integer maxRetries, @Nullable Proxy proxy, @Nullable Map<String, String> customHeaders,
+			ObservationRegistry observationRegistry, @Nullable MeterRegistry meterRegistry,
+			@Nullable ExecutorService dispatcherExecutor,
+			List<AnthropicHttpClientBuilderCustomizer> httpClientCustomizers) {
+
+		Assert.notNull(backend, "backend must not be null");
+		Assert.notNull(httpClientCustomizers, "httpClientCustomizers must not be null");
+		ClientOptions opts = buildClientOptions(backend, timeout, maxRetries, proxy, customHeaders, observationRegistry,
+				meterRegistry, SYNC_CLIENT_TAGS, dispatcherExecutor, httpClientCustomizers);
 		return new AnthropicClientImpl(opts);
 	}
 
@@ -285,24 +323,56 @@ public final class AnthropicSetup {
 			List<AnthropicHttpClientBuilderCustomizer> httpClientCustomizers) {
 
 		Assert.notNull(httpClientCustomizers, "httpClientCustomizers must not be null");
-		ClientOptions opts = buildClientOptions(baseUrl, apiKey, timeout, maxRetries, proxy, customHeaders,
-				observationRegistry, meterRegistry, ASYNC_CLIENT_TAGS, dispatcherExecutor, httpClientCustomizers);
+		String resolvedBaseUrl = detectBaseUrlFromEnv(baseUrl);
+		String resolvedApiKey = apiKey != null ? apiKey : detectApiKey();
+		AnthropicBackend backend = buildAnthropicBackend(resolvedBaseUrl, resolvedApiKey);
+		ClientOptions opts = buildClientOptions(backend, timeout, maxRetries, proxy, customHeaders, observationRegistry,
+				meterRegistry, ASYNC_CLIENT_TAGS, dispatcherExecutor, httpClientCustomizers);
 		return new AnthropicClientAsyncImpl(opts);
 	}
 
-	private static ClientOptions buildClientOptions(@Nullable String baseUrl, @Nullable String apiKey,
-			@Nullable Duration timeout, @Nullable Integer maxRetries, @Nullable Proxy proxy,
-			@Nullable Map<String, String> customHeaders, ObservationRegistry observationRegistry,
-			@Nullable MeterRegistry meterRegistry, Iterable<Tag> connectionPoolTags,
+	/**
+	 * Creates an asynchronous Anthropic client with the specified SDK {@link Backend}.
+	 * This overload supports alternative backends (e.g. Google Vertex AI) while
+	 * preserving Spring AI's OkHttp observability and customizer pipeline.
+	 * @param backend the SDK backend (e.g. {@link AnthropicBackend} or
+	 * {@code VertexBackend})
+	 * @param timeout the request timeout (null to use default of 60 seconds)
+	 * @param maxRetries the maximum number of retries (null to use default of 2)
+	 * @param proxy the proxy to use (null for no proxy)
+	 * @param customHeaders additional HTTP headers to include in requests
+	 * @param observationRegistry the registry the OkHttp observation interceptor reports
+	 * to; pass {@link ObservationRegistry#NOOP} to disable
+	 * @param meterRegistry optional; when supplied, OkHttp connection-pool gauges are
+	 * registered
+	 * @param dispatcherExecutor the OkHttp dispatcher executor; null to use the
+	 * library-managed default
+	 * @param httpClientCustomizers customizers applied to the underlying OkHttp client
+	 * builder after Spring AI's own defaults
+	 * @return a configured async Anthropic client
+	 * @since 2.0.0
+	 */
+	public static AnthropicClientAsync setupAsyncClient(Backend backend, @Nullable Duration timeout,
+			@Nullable Integer maxRetries, @Nullable Proxy proxy, @Nullable Map<String, String> customHeaders,
+			ObservationRegistry observationRegistry, @Nullable MeterRegistry meterRegistry,
 			@Nullable ExecutorService dispatcherExecutor,
 			List<AnthropicHttpClientBuilderCustomizer> httpClientCustomizers) {
 
-		String resolvedBaseUrl = detectBaseUrlFromEnv(baseUrl);
-		String resolvedApiKey = apiKey != null ? apiKey : detectApiKey();
+		Assert.notNull(backend, "backend must not be null");
+		Assert.notNull(httpClientCustomizers, "httpClientCustomizers must not be null");
+		ClientOptions opts = buildClientOptions(backend, timeout, maxRetries, proxy, customHeaders, observationRegistry,
+				meterRegistry, ASYNC_CLIENT_TAGS, dispatcherExecutor, httpClientCustomizers);
+		return new AnthropicClientAsyncImpl(opts);
+	}
+
+	private static ClientOptions buildClientOptions(Backend backend, @Nullable Duration timeout,
+			@Nullable Integer maxRetries, @Nullable Proxy proxy, @Nullable Map<String, String> customHeaders,
+			ObservationRegistry observationRegistry, @Nullable MeterRegistry meterRegistry,
+			Iterable<Tag> connectionPoolTags, @Nullable ExecutorService dispatcherExecutor,
+			List<AnthropicHttpClientBuilderCustomizer> httpClientCustomizers) {
+
 		Duration resolvedTimeout = timeout != null ? timeout : DEFAULT_TIMEOUT;
 		int resolvedMaxRetries = maxRetries != null ? maxRetries : DEFAULT_MAX_RETRIES;
-
-		AnthropicBackend backend = buildBackend(resolvedBaseUrl, resolvedApiKey);
 
 		ClientOptions.Builder optsBuilder = ClientOptions.builder()
 			.timeout(resolvedTimeout)
@@ -325,8 +395,7 @@ public final class AnthropicSetup {
 		}
 
 		// Re-apply Spring AI's resolved backend and meterTags after the customizer loop
-		// so
-		// that neither can be inadvertently overridden:
+		// so that neither can be inadvertently overridden:
 		// - backend: applyCredentials() below relies on the same backend instance; a
 		// replacement would misalign WIF credential injection.
 		// - meterTags: SYNC_CLIENT_TAGS / ASYNC_CLIENT_TAGS discriminate the two OkHttp
@@ -338,12 +407,16 @@ public final class AnthropicSetup {
 		SpringAiAnthropicHttpClient rawHttp = rawHttpBuilder.build();
 
 		// No-op when a static apiKey/authToken is set; otherwise fetches WIF credentials.
-		backend.applyCredentials(rawHttp, optsBuilder);
+		// Only applicable to AnthropicBackend (direct API); VertexBackend and other
+		// backends manage credentials independently.
+		if (backend instanceof AnthropicBackend anthropicBackend) {
+			anthropicBackend.applyCredentials(rawHttp, optsBuilder);
+		}
 
 		return optsBuilder.httpClient(rawHttp).build();
 	}
 
-	private static AnthropicBackend buildBackend(@Nullable String baseUrl, @Nullable String apiKey) {
+	private static AnthropicBackend buildAnthropicBackend(@Nullable String baseUrl, @Nullable String apiKey) {
 		AnthropicBackend.Builder b = AnthropicBackend.builder();
 		if (baseUrl != null) {
 			b.baseUrl(baseUrl);
