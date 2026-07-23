@@ -59,6 +59,7 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.test.context.FilteredClassLoader;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -156,6 +157,16 @@ public class McpStatelessServerAutoConfigurationIT {
 			assertThat(context).doesNotHaveBean(McpStatelessAsyncServer.class);
 			assertThat(context).doesNotHaveBean(McpStatelessServerTransport.class);
 		});
+	}
+
+	@Test
+	void annotationSpecificationConfigurationBacksOffWhenMcpAnnotationsMissing() {
+		this.contextRunner.withClassLoader(new FilteredClassLoader(McpTool.class))
+			.withConfiguration(AutoConfigurations.of(McpServerAnnotationScannerAutoConfiguration.class,
+					StatelessServerSpecificationFactoryAutoConfiguration.class))
+			.withPropertyValues("spring.ai.mcp.server.tool-callback-converter=false")
+			.run(context -> assertThat(context)
+				.doesNotHaveBean(StatelessServerSpecificationFactoryAutoConfiguration.class));
 	}
 
 	@Test
@@ -319,12 +330,16 @@ public class McpStatelessServerAutoConfigurationIT {
 
 	@SuppressWarnings("unchecked")
 	@Test
-	void syncStatelessServerSpecificationConfiguration() {
-		this.contextRunner
+	void syncAnnotatedSpecificationsWhenToolCallbackConverterDisabled() {
+		this.contextRunner.withPropertyValues("spring.ai.mcp.server.tool-callback-converter=false")
 			.withUserConfiguration(McpServerAnnotationScannerAutoConfiguration.class,
 					StatelessServerSpecificationFactoryAutoConfiguration.class)
 			.withBean(SyncTestMcpSpecsComponent.class)
 			.run(context -> {
+				assertThat(context).doesNotHaveBean(StatelessToolCallbackConverterAutoConfiguration.class);
+				assertThat(context).doesNotHaveBean("syncTools");
+				assertThat(context).doesNotHaveBean("asyncTools");
+
 				McpStatelessSyncServer syncServer = context.getBean(McpStatelessSyncServer.class);
 				McpStatelessAsyncServer asyncServer = (McpStatelessAsyncServer) ReflectionTestUtils.getField(syncServer,
 						"asyncServer");
@@ -358,13 +373,17 @@ public class McpStatelessServerAutoConfigurationIT {
 
 	@SuppressWarnings("unchecked")
 	@Test
-	void asyncStatelessServerSpecificationConfiguration() {
+	void asyncAnnotatedSpecificationsWhenToolCallbackConverterDisabled() {
 		this.contextRunner
 			.withUserConfiguration(McpServerAnnotationScannerAutoConfiguration.class,
 					StatelessServerSpecificationFactoryAutoConfiguration.class)
 			.withBean(AsyncTestMcpSpecsComponent.class)
-			.withPropertyValues("spring.ai.mcp.server.type=async")
+			.withPropertyValues("spring.ai.mcp.server.type=async", "spring.ai.mcp.server.tool-callback-converter=false")
 			.run(context -> {
+				assertThat(context).doesNotHaveBean(StatelessToolCallbackConverterAutoConfiguration.class);
+				assertThat(context).doesNotHaveBean("syncTools");
+				assertThat(context).doesNotHaveBean("asyncTools");
+
 				McpStatelessAsyncServer asyncServer = context.getBean(McpStatelessAsyncServer.class);
 
 				CopyOnWriteArrayList<AsyncToolSpecification> tools = (CopyOnWriteArrayList<AsyncToolSpecification>) ReflectionTestUtils
