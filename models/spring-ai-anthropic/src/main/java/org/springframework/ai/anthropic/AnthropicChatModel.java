@@ -349,6 +349,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 			// @formatter:off
 			Flux<ChatResponse> flux = chatResponseFlux
+				.doOnNext(ignored -> observationContext.recordTimeToFirstChunk())
 				.doOnError(observation::error)
 				.doFinally(s -> observation.stop())
 				.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
