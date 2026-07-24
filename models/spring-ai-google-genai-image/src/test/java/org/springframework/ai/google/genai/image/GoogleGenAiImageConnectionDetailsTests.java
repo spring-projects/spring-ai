@@ -48,6 +48,7 @@ class GoogleGenAiImageConnectionDetailsTests {
 		GoogleGenAiImageConnectionDetails details = GoogleGenAiImageConnectionDetails.builder()
 			.projectId("my-project")
 			.location("europe-west1")
+			.credentials(mock(GoogleCredentials.class))
 			.build();
 
 		assertThat(details.getProjectId()).isEqualTo("my-project");
@@ -60,6 +61,7 @@ class GoogleGenAiImageConnectionDetailsTests {
 	void builderDefaultsLocationForVertexAiWhenMissing() {
 		GoogleGenAiImageConnectionDetails details = GoogleGenAiImageConnectionDetails.builder()
 			.projectId("my-project")
+			.credentials(mock(GoogleCredentials.class))
 			.build();
 
 		assertThat(details.getLocation()).isEqualTo(GoogleGenAiImageConnectionDetails.DEFAULT_LOCATION);
