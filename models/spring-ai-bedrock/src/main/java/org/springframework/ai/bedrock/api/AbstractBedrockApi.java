@@ -34,6 +34,7 @@ import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.auth.credentials.ProfileCredentialsProvider;
 import software.amazon.awssdk.core.SdkBytes;
 import software.amazon.awssdk.core.exception.SdkClientException;
+import software.amazon.awssdk.http.SdkHttpResponse;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeAsyncClient;
@@ -326,6 +327,43 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 		return eventSink.asFlux();
 	}
 
+	/**
+	 * Internal method to invoke the model and return the response along with the HTTP
+	 * response headers. Use this when the caller needs access to HTTP response headers
+	 * (e.g. bedrock invocation metrics not included in the JSON response body).
+	 * @param request Model invocation request.
+	 * @param clazz The response class type
+	 * @return The invocation response wrapper containing both the response body and the
+	 * HTTP response headers.
+	 */
+	protected BedrockResponse<O> internalInvocationForModel(I request, Class<O> clazz) {
+
+		SdkBytes body;
+		try {
+			body = SdkBytes.fromUtf8String(this.jsonMapper.writeValueAsString(request));
+		}
+		catch (JacksonException e) {
+			throw new IllegalArgumentException("Invalid JSON format for the input request: " + request, e);
+		}
+
+		InvokeModelRequest invokeRequest = InvokeModelRequest.builder()
+			.modelId(this.modelId)
+			.body(body)
+			.build();
+
+		InvokeModelResponse response = this.client.invokeModel(invokeRequest);
+
+		String responseBody = response.body().asString(StandardCharsets.UTF_8);
+
+		try {
+			O result = this.jsonMapper.readValue(responseBody, clazz);
+			return new BedrockResponse<>(result, response.sdkHttpResponse());
+		}
+		catch (JacksonException e) {
+			throw new IllegalArgumentException("Invalid JSON format for the response: " + responseBody, e);
+		}
+	}
+
 	private Region getRegion(Region region) {
 		if (ObjectUtils.isEmpty(region)) {
 			try {
@@ -338,6 +376,17 @@ public abstract class AbstractBedrockApi<I, O, SO> {
 		else {
 			return region;
 		}
+	}
+
+	/**
+	 * Wrapper for the model invocation result containing both the parsed response body
+	 * and the HTTP response for header access.
+	 *
+	 * @param <T> The response body type
+	 * @param result The parsed response body
+	 * @param httpResponse The raw HTTP response containing headers
+	 */
+	public record BedrockResponse<T>(T result, SdkHttpResponse httpResponse) {
 	}
 
 	/**
