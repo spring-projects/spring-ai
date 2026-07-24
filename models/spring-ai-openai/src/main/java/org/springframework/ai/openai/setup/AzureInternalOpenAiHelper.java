@@ -16,10 +16,16 @@
 
 package org.springframework.ai.openai.setup;
 
-import com.azure.identity.AuthenticationUtil;
+import java.time.OffsetDateTime;
+import java.util.function.Supplier;
+
+import com.azure.core.credential.AccessToken;
+import com.azure.core.credential.TokenCredential;
+import com.azure.core.credential.TokenRequestContext;
 import com.azure.identity.DefaultAzureCredentialBuilder;
 import com.openai.credential.BearerTokenCredential;
 import com.openai.credential.Credential;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Specific configuration for authenticating on Azure. This is in a separate class to
@@ -33,12 +39,50 @@ import com.openai.credential.Credential;
  */
 final class AzureInternalOpenAiHelper {
 
+	private static final String COGNITIVE_SERVICES_SCOPE = "https://cognitiveservices.azure.com/.default";
+
 	private AzureInternalOpenAiHelper() {
 	}
 
 	static Credential getAzureCredential() {
-		return BearerTokenCredential.create(AuthenticationUtil.getBearerTokenSupplier(
-				new DefaultAzureCredentialBuilder().build(), "https://cognitiveservices.azure.com/.default"));
+		return getAzureCredential(new DefaultAzureCredentialBuilder().build());
+	}
+
+	static Credential getAzureCredential(TokenCredential credential) {
+		TokenRequestContext request = new TokenRequestContext().addScopes(COGNITIVE_SERVICES_SCOPE);
+		// Not via AuthenticationUtil.getBearerTokenSupplier: that sends a
+		// request to https://www.example.com on every call to harvest the
+		// Authorization header, which fails behind TLS-inspecting proxies.
+		return BearerTokenCredential.create(new CachingTokenSupplier(credential, request));
+	}
+
+	/**
+	 * Caches the token because {@link BearerTokenCredential} calls this supplier on each
+	 * request, so the credential is queried only on first use and when it nears expiry.
+	 */
+	private static final class CachingTokenSupplier implements Supplier<String> {
+
+		private final TokenCredential credential;
+
+		private final TokenRequestContext request;
+
+		private @Nullable AccessToken cachedToken;
+
+		CachingTokenSupplier(TokenCredential credential, TokenRequestContext request) {
+			this.credential = credential;
+			this.request = request;
+		}
+
+		@Override
+		public synchronized String get() {
+			@Nullable AccessToken token = this.cachedToken;
+			if (token == null || OffsetDateTime.now().plusMinutes(5).isAfter(token.getExpiresAt())) {
+				token = this.credential.getTokenSync(this.request);
+				this.cachedToken = token;
+			}
+			return token.getToken();
+		}
+
 	}
 
 }
