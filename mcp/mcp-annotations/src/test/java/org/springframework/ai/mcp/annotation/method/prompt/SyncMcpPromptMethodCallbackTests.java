@@ -417,6 +417,19 @@ public class SyncMcpPromptMethodCallbackTests {
 	}
 
 	@Test
+	public void testInvalidMapGenericArguments() throws Exception {
+		TestPromptProvider provider = new TestPromptProvider();
+		Method method = TestPromptProvider.class.getMethod("invalidMapGenericArguments", Map.class);
+
+		Prompt prompt = createTestPrompt("invalid", "Invalid generic parameters");
+
+		assertThatThrownBy(
+				() -> SyncMcpPromptMethodCallback.builder().method(method).bean(provider).prompt(prompt).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("Map parameter must have String as key type");
+	}
+
+	@Test
 	public void testNullRequest() throws Exception {
 		TestPromptProvider provider = new TestPromptProvider();
 		Method method = TestPromptProvider.class.getMethod("getPromptWithRequest", GetPromptRequest.class);
@@ -905,6 +918,10 @@ public class SyncMcpPromptMethodCallbackTests {
 
 		public Mono<GetPromptResult> invalidSyncRequestContextInAsyncMethod(McpSyncRequestContext context) {
 			return Mono.just(GetPromptResult.builder(List.of()).description("Invalid").build());
+		}
+
+		public GetPromptResult invalidMapGenericArguments(Map<java.math.BigInteger, String> args) {
+			return GetPromptResult.builder(List.of()).description("Invalid").build();
 		}
 
 	}
