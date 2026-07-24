@@ -113,20 +113,20 @@ The prefix `spring.ai.google.genai.image` is the property prefix that lets you c
 
 | spring.ai.model.image | Enable Google GenAI API model. | google-genai
 
-| spring.ai.google.genai.image.options.n | The number of images to generate. Must be between 1 and 4. | 4
-| spring.ai.google.genai.image.options.model | The https://docs.cloud.google.com/gemini-enterprise-agent-platform/models[Google GenAI model] to use. Supported models include `gemini-2.5-flash-image`, `gemini-3-pro-image` and `gemini-3.1-flash-image` | -
-| spring.ai.google.genai.image.options.aspect-ratio | The aspect ratio of the generated images. Supported values are 1:1, 3:4, 4:3, 9:16, and 16:9 | 1:1
-| spring.ai.google.genai.image.options.seed | Random seed for image generation. This is not available when `add-watermark` is set to true. | -
-| spring.ai.google.genai.image.options.safety-filter-level | Filter level for safety filtering. Supported values are BLOCK_LOW_AND_ABOVE, BLOCK_MEDIUM_AND_ABOVE, BLOCK_ONLY_HIGH and BLOCK_NONE. | -
-| spring.ai.google.genai.image.options.person-generation | Allows generation of people by the model. Supported values are DONT_ALLOW, ALLOW_ADULT and ALLOW_ALL. | -
-| spring.ai.google.genai.image.options.output-mime-type | MIME type of the generated image. | -
-| spring.ai.google.genai.image.options.output-compression-quality | Compression quality of the generated image (for `image/jpeg` only). | -
-| spring.ai.google.genai.image.options.labels | User specified labels to track billing usage. | -
-| spring.ai.google.genai.image.options.image-size | The size of the largest dimension of the generated image. Supported sizes are 1K and 2K. | -
-| spring.ai.google.genai.image.options.temperature | Controls the degree of randomness in token selection. Lower values produce less open-ended responses, higher values produce more diverse or creative results. | -
-| spring.ai.google.genai.image.options.top-p | Tokens are selected from the most to least probable until the sum of their probabilities equals this value. | -
-| spring.ai.google.genai.image.options.top-k | For each token selection step, the `top-k` tokens with the highest probabilities are sampled. | -
-| spring.ai.google.genai.image.options.max-output-tokens | Maximum number of tokens that can be generated in the response. | -
+| spring.ai.google.genai.image.n | The number of images to generate. Must be between 1 and 4. | -
+| spring.ai.google.genai.image.model | The https://docs.cloud.google.com/gemini-enterprise-agent-platform/models[Google GenAI model] to use. Supported models include `gemini-2.5-flash-image`, `gemini-3-pro-image` and `gemini-3.1-flash-image` | -
+| spring.ai.google.genai.image.aspect-ratio | The aspect ratio of the generated images. Supported values are 1:1, 3:4, 4:3, 9:16, and 16:9 | 1:1
+| spring.ai.google.genai.image.seed | Random seed for image generation. This is not available when `add-watermark` is set to true. | -
+| spring.ai.google.genai.image.safety-filter-level | Filter level for safety filtering. Supported values are BLOCK_LOW_AND_ABOVE, BLOCK_MEDIUM_AND_ABOVE, BLOCK_ONLY_HIGH and BLOCK_NONE. | -
+| spring.ai.google.genai.image.person-generation | Allows generation of people by the model. Supported values are DONT_ALLOW, ALLOW_ADULT and ALLOW_ALL. | -
+| spring.ai.google.genai.image.output-mime-type | MIME type of the generated image. | -
+| spring.ai.google.genai.image.output-compression-quality | Compression quality of the generated image (for `image/jpeg` only). | -
+| spring.ai.google.genai.image.labels | User specified labels to track billing usage. | -
+| spring.ai.google.genai.image.image-size | The size of the largest dimension of the generated image. Supported sizes are 1K and 2K. | -
+| spring.ai.google.genai.image.temperature | Controls the degree of randomness in token selection. Lower values produce less open-ended responses, higher values produce more diverse or creative results. | -
+| spring.ai.google.genai.image.top-p | Tokens are selected from the most to least probable until the sum of their probabilities equals this value. | -
+| spring.ai.google.genai.image.top-k | For each token selection step, the `top-k` tokens with the highest probabilities are sampled. | -
+| spring.ai.google.genai.image.max-output-tokens | Maximum number of tokens that can be generated in the response. | -
 
 |====
 

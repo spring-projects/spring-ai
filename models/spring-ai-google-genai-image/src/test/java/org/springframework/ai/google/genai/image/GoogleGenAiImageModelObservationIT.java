@@ -43,8 +43,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Olivier Le Quellec
  */
 @SpringBootTest(classes = GoogleGenAiImageModelObservationIT.Config.class)
-@EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_PROJECT", matches = ".+")
-@EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_LOCATION", matches = ".+")
+@EnabledIfEnvironmentVariable(named = "GOOGLE_API_KEY", matches = ".+")
 public class GoogleGenAiImageModelObservationIT {
 
 	@Autowired
@@ -96,10 +95,7 @@ public class GoogleGenAiImageModelObservationIT {
 
 		@Bean
 		public GoogleGenAiImageConnectionDetails connectionDetails() {
-			return GoogleGenAiImageConnectionDetails.builder()
-				.projectId(System.getenv("GOOGLE_CLOUD_PROJECT"))
-				.location(System.getenv("GOOGLE_CLOUD_LOCATION"))
-				.build();
+			return GoogleGenAiImageConnectionDetails.builder().apiKey(System.getenv("GOOGLE_API_KEY")).build();
 		}
 
 		@Bean

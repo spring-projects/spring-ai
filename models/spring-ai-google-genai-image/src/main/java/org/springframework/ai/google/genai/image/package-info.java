@@ -17,5 +17,7 @@
 /**
  * Google GenAI image generation support for Spring AI.
  */
-@org.jspecify.annotations.NullMarked
+@NullMarked
 package org.springframework.ai.google.genai.image;
+
+import org.jspecify.annotations.NullMarked;

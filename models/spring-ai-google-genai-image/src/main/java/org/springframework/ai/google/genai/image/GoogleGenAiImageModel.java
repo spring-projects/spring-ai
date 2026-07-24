@@ -42,6 +42,7 @@ import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.metadata.DefaultUsage;
+import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.image.Image;
@@ -217,7 +218,7 @@ public class GoogleGenAiImageModel implements ImageModel {
 		return Optional.ofNullable(imagesResponse)
 			.flatMap(GenerateContentResponse::usageMetadata)
 			.map(GoogleGenAiImageModel::toUsage)
-			.orElseGet(() -> new DefaultUsage(0, 0, 0));
+			.orElseGet(EmptyUsage::new);
 	}
 
 	private static Usage toUsage(GenerateContentResponseUsageMetadata usageMetadata) {
@@ -321,7 +322,8 @@ public class GoogleGenAiImageModel implements ImageModel {
 			imageConfigBuilder.imageSize(options.getImageSize());
 			hasImageConfig = true;
 		}
-		if (Objects.nonNull(options.getPersonGeneration())) {
+		if (Objects.nonNull(options.getPersonGeneration()) && options
+			.getPersonGeneration() != GoogleGenAiImageOptions.PersonGeneration.PERSON_GENERATION_UNSPECIFIED) {
 			imageConfigBuilder.personGeneration(options.getPersonGeneration().name());
 			hasImageConfig = true;
 		}

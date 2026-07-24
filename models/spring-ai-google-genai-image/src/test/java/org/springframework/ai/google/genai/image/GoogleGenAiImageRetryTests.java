@@ -492,6 +492,26 @@ public class GoogleGenAiImageRetryTests {
 		verify(this.mockModels, times(1)).generateContent(anyString(), anyList(), any(GenerateContentConfig.class));
 	}
 
+	@Test
+	public void googleGenAiImageWithPersonGenerationUnspecified() {
+		// Covers the personGeneration == UNSPECIFIED branch (skips personGeneration in
+		// the
+		// image config)
+		GenerateContentResponse mockResponse = buildMockResponse();
+		given(this.mockModels.generateContent(anyString(), anyList(), any(GenerateContentConfig.class)))
+			.willReturn(mockResponse);
+
+		var options = GoogleGenAiImageOptions.builder()
+			.model("model")
+			.personGeneration(GoogleGenAiImageOptions.PersonGeneration.PERSON_GENERATION_UNSPECIFIED)
+			.build();
+
+		ImageResponse result = this.imageModel.call(new ImagePrompt("A golden doodle", options));
+
+		assertThat(result).isNotNull();
+		verify(this.mockModels, times(1)).generateContent(anyString(), anyList(), any(GenerateContentConfig.class));
+	}
+
 	// ======= getImageConfigBuilder tests =======
 
 	@Test

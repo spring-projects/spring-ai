@@ -46,6 +46,14 @@ public class ImageMessage implements MediaContent {
 		this(text, weight, new ArrayList<>(), Map.of());
 	}
 
+	/**
+	 * Create a new {@code ImageMessage}.
+	 * @param text the text of the message
+	 * @param weight the weight of the message, or {@code null} if not set
+	 * @param media the media associated with the message
+	 * @param metadata the metadata associated with the message
+	 * @since 2.0.1
+	 */
 	public ImageMessage(String text, @Nullable Float weight, Collection<Media> media, Map<String, Object> metadata) {
 		this.text = text;
 		this.weight = weight;

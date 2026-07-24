@@ -39,6 +39,16 @@ public class ImageResponseMetadata extends MutableResponseMetadata {
 		this(System.currentTimeMillis(), new EmptyUsage());
 	}
 
+	public ImageResponseMetadata(Long created) {
+		this(created, new EmptyUsage());
+	}
+
+	/**
+	 * Create a new {@code ImageResponseMetadata}.
+	 * @param created the creation timestamp
+	 * @param usage the token usage associated with the image response
+	 * @since 2.0.1
+	 */
 	public ImageResponseMetadata(Long created, Usage usage) {
 		this.created = created;
 		this.usage = usage;
@@ -48,10 +58,18 @@ public class ImageResponseMetadata extends MutableResponseMetadata {
 		return this.created;
 	}
 
+	/**
+	 * Return the token usage associated with the image response.
+	 * @since 2.0.1
+	 */
 	public Usage getUsage() {
 		return this.usage;
 	}
 
+	/**
+	 * Set the token usage associated with the image response.
+	 * @since 2.0.1
+	 */
 	public void setUsage(Usage usage) {
 		this.usage = usage;
 	}
