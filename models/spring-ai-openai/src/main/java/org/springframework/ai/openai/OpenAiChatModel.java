@@ -36,6 +36,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openai.client.OpenAIClient;
 import com.openai.client.OpenAIClientAsync;
 import com.openai.core.JsonValue;
+import com.openai.core.http.HttpResponseFor;
 import com.openai.errors.OpenAIInvalidDataException;
 import com.openai.models.FunctionDefinition;
 import com.openai.models.FunctionParameters;
@@ -85,7 +86,9 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
+import org.springframework.ai.chat.metadata.EmptyRateLimit;
 import org.springframework.ai.chat.metadata.EmptyUsage;
+import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -101,6 +104,7 @@ import org.springframework.ai.content.Media;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.openai.http.okhttp.OpenAiHttpClientBuilderCustomizer;
+import org.springframework.ai.openai.metadata.OpenAiRateLimit;
 import org.springframework.ai.openai.setup.OpenAiSetup;
 import org.springframework.ai.support.UsageCalculator;
 import org.springframework.ai.tool.definition.ToolDefinition;
@@ -216,37 +220,45 @@ public final class OpenAiChatModel implements ChatModel {
 					this.observationRegistry)
 			.observe(() -> {
 
-				ChatCompletion chatCompletion = this.openAiClient.chat().completions().create(request);
+				try (HttpResponseFor<ChatCompletion> rawResponse = this.openAiClient.chat()
+					.completions()
+					.withRawResponse()
+					.create(request)) {
 
-				List<ChatCompletion.Choice> choices = chatCompletion.choices();
-				if (choices.isEmpty()) {
-					if (logger.isWarnEnabled()) {
-						logger.warn("No choices returned for prompt: " + prompt);
+					ChatCompletion chatCompletion = rawResponse.parse();
+					RateLimit rateLimit = OpenAiRateLimit.from(rawResponse.headers());
+
+					List<ChatCompletion.Choice> choices = chatCompletion.choices();
+					if (choices.isEmpty()) {
+						if (logger.isWarnEnabled()) {
+							logger.warn("No choices returned for prompt: " + prompt);
+						}
+						return new ChatResponse(List.of());
 					}
-					return new ChatResponse(List.of());
+
+					List<Generation> generations = choices.stream().map(choice -> {
+						Map<String, Object> metadata = Map.of("id", chatCompletion.id(), "role",
+								choice.message()._role().asString().isPresent()
+										? choice.message()._role().asStringOrThrow() : "",
+								"index", choice.index(), "finishReason", choice.finishReason().value().toString(),
+								"refusal", choice.message().refusal().orElse(""), "annotations",
+								choice.message().annotations().orElse((List) List.of(Map.of())), REASONING_CONTENT,
+								getReasoningContent(choice));
+						return buildGeneration(choice, metadata, request);
+					}).toList();
+
+					// Current usage
+					CompletionUsage usage = chatCompletion.usage().orElse(null);
+					Usage currentChatResponseUsage = usage != null ? getDefaultUsage(usage) : new EmptyUsage();
+					Usage accumulatedUsage = UsageCalculator.getCumulativeUsage(currentChatResponseUsage,
+							previousChatResponse);
+					ChatResponse chatResponse = new ChatResponse(generations,
+							from(chatCompletion, accumulatedUsage, rateLimit));
+
+					observationContext.setResponse(chatResponse);
+
+					return chatResponse;
 				}
-
-				List<Generation> generations = choices.stream().map(choice -> {
-					Map<String, Object> metadata = Map.of("id", chatCompletion.id(), "role",
-							choice.message()._role().asString().isPresent() ? choice.message()._role().asStringOrThrow()
-									: "",
-							"index", choice.index(), "finishReason", choice.finishReason().value().toString(),
-							"refusal", choice.message().refusal().orElse(""), "annotations",
-							choice.message().annotations().orElse((List) List.of(Map.of())), REASONING_CONTENT,
-							getReasoningContent(choice));
-					return buildGeneration(choice, metadata, request);
-				}).toList();
-
-				// Current usage
-				CompletionUsage usage = chatCompletion.usage().orElse(null);
-				Usage currentChatResponseUsage = usage != null ? getDefaultUsage(usage) : new EmptyUsage();
-				Usage accumulatedUsage = UsageCalculator.getCumulativeUsage(currentChatResponseUsage,
-						previousChatResponse);
-				ChatResponse chatResponse = new ChatResponse(generations, from(chatCompletion, accumulatedUsage));
-
-				observationContext.setResponse(chatResponse);
-
-				return chatResponse;
 
 			});
 
@@ -445,6 +457,10 @@ public final class OpenAiChatModel implements ChatModel {
 	}
 
 	private ChatResponseMetadata from(ChatCompletion result, Usage usage) {
+		return from(result, usage, new EmptyRateLimit());
+	}
+
+	private ChatResponseMetadata from(ChatCompletion result, Usage usage, RateLimit rateLimit) {
 		Assert.notNull(result, "OpenAI ChatCompletion must not be null");
 		result.model();
 		result.id();
@@ -452,6 +468,7 @@ public final class OpenAiChatModel implements ChatModel {
 			.id(result.id())
 			.usage(usage)
 			.model(result.model())
+			.rateLimit(rateLimit)
 			.keyValue("created", getCreated(result));
 
 		result._additionalProperties().forEach((key, jsonValue) -> {
