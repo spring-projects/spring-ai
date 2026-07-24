@@ -76,7 +76,7 @@ class GoogleGenAiImageAutoConfigurationTests {
 		});
 	}
 
-	@Configuration
+	@Configuration(proxyBeanMethods = false)
 	static class CustomImageModelConfiguration {
 
 		static final GoogleGenAiImageModel CUSTOM_MODEL = Mockito.mock(GoogleGenAiImageModel.class);

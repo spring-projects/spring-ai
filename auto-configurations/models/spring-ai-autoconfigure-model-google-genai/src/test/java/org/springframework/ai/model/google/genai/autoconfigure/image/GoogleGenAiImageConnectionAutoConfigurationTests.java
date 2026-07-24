@@ -52,7 +52,8 @@ class GoogleGenAiImageConnectionAutoConfigurationTests {
 	void projectAndLocationDefaultToVertexAiMode() {
 		this.contextRunner
 			.withPropertyValues("spring.ai.google.genai.project-id=test-project",
-					"spring.ai.google.genai.location=us-central1")
+					"spring.ai.google.genai.location=us-central1",
+					"spring.ai.google.genai.credentials-uri=classpath:fake-credentials.json")
 			.run(context -> {
 				GoogleGenAiImageConnectionDetails details = context.getBean(GoogleGenAiImageConnectionDetails.class);
 				assertThat(details.getProjectId()).isEqualTo("test-project");
@@ -65,7 +66,8 @@ class GoogleGenAiImageConnectionAutoConfigurationTests {
 	void explicitVertexAiModeIsHonored() {
 		this.contextRunner
 			.withPropertyValues("spring.ai.google.genai.vertex-ai=true",
-					"spring.ai.google.genai.project-id=test-project", "spring.ai.google.genai.location=us-central1")
+					"spring.ai.google.genai.project-id=test-project", "spring.ai.google.genai.location=us-central1",
+					"spring.ai.google.genai.credentials-uri=classpath:fake-credentials.json")
 			.run(context -> {
 				GoogleGenAiImageConnectionDetails details = context.getBean(GoogleGenAiImageConnectionDetails.class);
 				assertThat(details.getProjectId()).isEqualTo("test-project");
@@ -79,7 +81,8 @@ class GoogleGenAiImageConnectionAutoConfigurationTests {
 		// config present, vertex-ai explicitly enabled -> vertex wins.
 		this.contextRunner
 			.withPropertyValues("spring.ai.google.genai.vertex-ai=true", "spring.ai.google.genai.api-key=test-key",
-					"spring.ai.google.genai.project-id=test-project", "spring.ai.google.genai.location=us-central1")
+					"spring.ai.google.genai.project-id=test-project", "spring.ai.google.genai.location=us-central1",
+					"spring.ai.google.genai.credentials-uri=classpath:fake-credentials.json")
 			.run(context -> {
 				GoogleGenAiImageConnectionDetails details = context.getBean(GoogleGenAiImageConnectionDetails.class);
 				assertThat(details.getGenAiClient()).isNotNull();
