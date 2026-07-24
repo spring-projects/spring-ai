@@ -16,7 +16,9 @@
 
 package org.springframework.ai.converter;
 
+import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -25,6 +27,7 @@ import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.util.JacksonUtils;
@@ -188,10 +191,36 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	@SuppressWarnings("unchecked")
 	@Override
 	public T convert(String text) {
-		// Clean the text using the configured text cleaner
 		text = this.textCleaner.clean(text);
 
+		if (text != null && isListType(this.type) && text.startsWith("{")) {
+			JsonNode node = this.jsonMapper.readTree(text);
+			if (node.isObject() && node.has("items") && node.get("items").isArray() && node.has("type")
+					&& "array".equals(node.get("type").asText())) {
+				text = this.jsonMapper.writeValueAsString(node.get("items"));
+			}
+		}
+
 		return (T) this.jsonMapper.readValue(text, this.jsonMapper.constructType(this.type));
+	}
+
+	/**
+	 * Checks whether the given type is a {@link List} or a subtype of it.
+	 * @param type the type to check
+	 * @return {@code true} if the type is a List type, {@code false} otherwise
+	 */
+	private static boolean isListType(Type type) {
+		Class<?> rawType;
+		if (type instanceof ParameterizedType pt) {
+			rawType = (Class<?>) pt.getRawType();
+		}
+		else if (type instanceof Class<?> c) {
+			rawType = c;
+		}
+		else {
+			return false;
+		}
+		return List.class.isAssignableFrom(rawType);
 	}
 
 	/**
