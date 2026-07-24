@@ -97,6 +97,20 @@ class AbstractMcpAnnotatedBeansTests {
 	}
 
 	@Test
+	void testAddSameBeanWithAdditionalAnnotation() {
+		Object bean = new Object();
+
+		this.annotatedBeans.addMcpAnnotatedBean(bean, Collections.singleton(Deprecated.class));
+		this.annotatedBeans.addMcpAnnotatedBean(bean, Set.of(Deprecated.class, Override.class));
+
+		assertEquals(1, this.annotatedBeans.getCount());
+		assertEquals(1, this.annotatedBeans.getBeansByAnnotation(Deprecated.class).size());
+		assertEquals(1, this.annotatedBeans.getBeansByAnnotation(Override.class).size());
+		assertTrue(this.annotatedBeans.getBeansByAnnotation(Deprecated.class).contains(bean));
+		assertTrue(this.annotatedBeans.getBeansByAnnotation(Override.class).contains(bean));
+	}
+
+	@Test
 	void testGetCount() {
 		assertEquals(0, this.annotatedBeans.getCount());
 
