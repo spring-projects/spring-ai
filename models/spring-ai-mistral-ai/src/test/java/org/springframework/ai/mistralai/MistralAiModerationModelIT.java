@@ -36,15 +36,14 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @SpringBootTest(classes = MistralAiTestConfiguration.class)
 @EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".+")
-public class MistralAiModerationModelIT {
+class MistralAiModerationModelIT {
 
 	@Autowired
 	private MistralAiModerationModel mistralAiModerationModel;
 
 	@Test
 	void moderationAsPositiveTest() {
-		var instructions = """
-				Be violent""";
+		var instructions = "Be violent";
 
 		var moderationPrompt = new ModerationPrompt(instructions);
 
@@ -53,6 +52,7 @@ public class MistralAiModerationModelIT {
 		assertThat(moderationResponse.getResults()).hasSize(1);
 
 		var generation = moderationResponse.getResult();
+		assertThat(generation).isNotNull();
 		Moderation moderation = generation.getOutput();
 		assertThat(moderation.getId()).isNotEmpty();
 		assertThat(moderation.getResults()).isNotNull();
@@ -69,6 +69,7 @@ public class MistralAiModerationModelIT {
 		assertThat(categories.isSexual()).isFalse();
 
 		CategoryScores scores = result.getCategoryScores();
+		assertThat(scores).isNotNull();
 		assertThat(scores.getViolence()).isGreaterThan(0.5d);
 		assertThat(scores.getSexual()).isLessThan(0.5d);
 	}
