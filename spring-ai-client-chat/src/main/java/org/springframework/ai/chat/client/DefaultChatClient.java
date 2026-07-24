@@ -940,7 +940,11 @@ public class DefaultChatClient implements ChatClient {
 				.defaultToolContext(this.toolContext);
 
 			if (!CollectionUtils.isEmpty(this.advisors)) {
-				builder.defaultAdvisors(a -> a.advisors(this.advisors).params(this.advisorParams));
+				builder.defaultAdvisors(a -> a.advisors(this.advisors));
+			}
+
+			if (!CollectionUtils.isEmpty(this.advisorParams)) {
+				builder.defaultAdvisors(a -> a.params(this.advisorParams));
 			}
 
 			if (StringUtils.hasText(this.userText)) {
