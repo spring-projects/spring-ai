@@ -16,25 +16,44 @@
 
 package org.springframework.ai.image;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import org.jspecify.annotations.Nullable;
 
-public class ImageMessage {
+import org.springframework.ai.content.Media;
+import org.springframework.ai.content.MediaContent;
+
+public class ImageMessage implements MediaContent {
 
 	private final String text;
 
 	private @Nullable Float weight;
 
+	private final List<Media> media;
+
+	private final Map<String, Object> metadata;
+
 	public ImageMessage(String text) {
-		this.text = text;
+		this(text, null, new ArrayList<>(), Map.of());
 	}
 
-	public ImageMessage(String text, Float weight) {
+	public ImageMessage(String text, @Nullable Float weight) {
+		this(text, weight, new ArrayList<>(), Map.of());
+	}
+
+	public ImageMessage(String text, @Nullable Float weight, Collection<Media> media, Map<String, Object> metadata) {
 		this.text = text;
 		this.weight = weight;
+		this.media = new ArrayList<>(media);
+		this.metadata = new HashMap<>(metadata);
 	}
 
+	@Override
 	public String getText() {
 		return this.text;
 	}
@@ -44,8 +63,19 @@ public class ImageMessage {
 	}
 
 	@Override
+	public List<Media> getMedia() {
+		return this.media;
+	}
+
+	@Override
+	public Map<String, Object> getMetadata() {
+		return this.metadata;
+	}
+
+	@Override
 	public String toString() {
-		return "ImageMessage{" + "text='" + this.text + '\'' + ", weight=" + this.weight + '}';
+		return "ImageMessage{" + "text='" + this.text + '\'' + ", weight=" + this.weight + ", media=" + this.media
+				+ ", metadata=" + this.metadata + '}';
 	}
 
 	@Override
@@ -56,12 +86,13 @@ public class ImageMessage {
 		if (!(o instanceof ImageMessage that)) {
 			return false;
 		}
-		return Objects.equals(this.text, that.text) && Objects.equals(this.weight, that.weight);
+		return Objects.equals(this.text, that.text) && Objects.equals(this.weight, that.weight)
+				&& Objects.equals(this.media, that.media) && Objects.equals(this.metadata, that.metadata);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.text, this.weight);
+		return Objects.hash(this.text, this.weight, this.media, this.metadata);
 	}
 
 }
