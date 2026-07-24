@@ -185,6 +185,22 @@ public abstract class AbstractMcpPromptMethodCallback {
 					throw new IllegalArgumentException("Method cannot have more than one Map parameter: "
 							+ method.getName() + " in " + method.getDeclaringClass().getName());
 				}
+				java.lang.reflect.Type genericType = param.getParameterizedType();
+				if (genericType instanceof java.lang.reflect.ParameterizedType parameterizedType) {
+					java.lang.reflect.Type[] typeArgs = parameterizedType.getActualTypeArguments();
+					if (typeArgs.length == 2) {
+						java.lang.reflect.Type keyType = typeArgs[0];
+						java.lang.reflect.Type valueType = typeArgs[1];
+						if (keyType instanceof Class<?> keyClass && !keyClass.isAssignableFrom(String.class)) {
+							throw new IllegalArgumentException("Map parameter must have String as key type: "
+									+ method.getName() + " in " + method.getDeclaringClass().getName());
+						}
+						if (valueType instanceof Class<?> valueClass && !valueClass.isAssignableFrom(Object.class)) {
+							throw new IllegalArgumentException("Map parameter must have Object as value type: "
+									+ method.getName() + " in " + method.getDeclaringClass().getName());
+						}
+					}
+				}
 				hasMapParam = true;
 			}
 			// Other parameter types are assumed to be individual arguments
