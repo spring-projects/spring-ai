@@ -18,6 +18,7 @@ package org.springframework.ai.transformers;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -27,6 +28,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import org.springframework.core.io.DefaultResourceLoader;
+import org.springframework.util.StreamUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -99,6 +101,37 @@ public class ResourceCacheServiceTests {
 			.describedAs(
 					"As both resources come from the same parent segments they should be cached in a single common parent.");
 		assertThat(this.tempDir.listFiles()[0].listFiles()).hasSize(2);
+	}
+
+	@Test
+	public void reCachesResourceWhenSourceContentChanges(@TempDir File sourceDir) throws IOException {
+		var cache = new ResourceCacheService(this.tempDir);
+
+		cache.setExcludedUriSchemas(List.of()); // erase the excluded schema names,
+		// including 'file'.
+
+		// Simulate a resource bundled in a fat jar (e.g. an ONNX model) that is later
+		// replaced in place by a rebuilt jar shipping a different version. The cache key
+		// is
+		// derived from the resource location, so the location stays the same across
+		// builds.
+		File source = new File(sourceDir, "model.onnx");
+		Files.writeString(source.toPath(), "first-model-payload");
+		var originalResourceUri = source.toURI().toString();
+
+		var firstCached = cache.getCachedResource(originalResourceUri);
+		assertThat(StreamUtils.copyToString(firstCached.getInputStream(), StandardCharsets.UTF_8))
+			.isEqualTo("first-model-payload");
+
+		// Replace the source content (a different size, as a differently sized model
+		// would
+		// produce) at the same location.
+		Files.writeString(source.toPath(), "second-model");
+
+		var secondCached = cache.getCachedResource(originalResourceUri);
+		assertThat(StreamUtils.copyToString(secondCached.getInputStream(), StandardCharsets.UTF_8))
+			.describedAs("The cached copy must be refreshed after the source resource is replaced in place")
+			.isEqualTo("second-model");
 	}
 
 	@Test
