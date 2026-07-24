@@ -1,5 +1,0 @@
-services:
-  localstack:
-    image: '{imageName}'
-    ports:
-      - '4566'

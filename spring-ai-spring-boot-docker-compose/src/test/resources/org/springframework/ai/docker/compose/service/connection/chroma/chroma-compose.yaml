@@ -1,5 +1,0 @@
-services:
-  chroma:
-    image: '{imageName}'
-    ports:
-      - '8000'

@@ -1,7 +1,0 @@
-[[audio-models]]
-= Audio Models
-
-Spring AI supports processing audio using transcription (Speech-to-Text) and speech (Text-to-Speech) models.
-
-* xref:api/audio/transcriptions.adoc[Speech-To-Text (STT) Transcription API]
-* xref:api/audio/speech.adoc[Text-To-Speech (TTS) API]

@@ -1,7 +1,0 @@
-[[moderation-models]]
-= Moderation Models
-
-Spring AI supports the Moderation API to identify potential violations or check text safety.
-
-* xref:api/moderation/openai-moderation.adoc[OpenAI Moderation]
-* xref:api/moderation/mistral-ai-moderation.adoc[Mistral AI Moderation]
