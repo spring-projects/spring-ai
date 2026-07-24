@@ -430,8 +430,8 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 					Usage currentUsage = (usage.isPresent()) ? getDefaultUsage(usage.get(), options)
 							: getDefaultUsage(null, options);
 					Usage cumulativeUsage = UsageCalculator.getCumulativeUsage(currentUsage, previousChatResponse);
-					ChatResponse chatResponse = new ChatResponse(generations,
-							toChatResponseMetadata(cumulativeUsage, generateContentResponse.modelVersion().get()));
+					ChatResponse chatResponse = new ChatResponse(generations, toChatResponseMetadata(cumulativeUsage,
+							generateContentResponse.modelVersion().orElse(geminiRequest.modelName())));
 
 					observationContext.setResponse(chatResponse);
 					return chatResponse;
@@ -489,8 +489,8 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 					Usage currentUsage = usage.isPresent() ? getDefaultUsage(usage.get(), options)
 							: getDefaultUsage(null, options);
 					Usage cumulativeUsage = UsageCalculator.getCumulativeUsage(currentUsage, previousChatResponse);
-					ChatResponse chatResponse = new ChatResponse(generations,
-							toChatResponseMetadata(cumulativeUsage, response.modelVersion().get()));
+					ChatResponse chatResponse = new ChatResponse(generations, toChatResponseMetadata(cumulativeUsage,
+							response.modelVersion().orElse(request.modelName())));
 					return Flux.just(chatResponse);
 				});
 
