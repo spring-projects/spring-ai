@@ -893,8 +893,8 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 	}
 
 	/**
-	 * Validates ThinkingLevel compatibility with the model. Gemini 3 Pro only supports
-	 * LOW and HIGH. Gemini 3 Flash supports all levels.
+	 * Validates ThinkingLevel compatibility with the model. Gemini 3.1 Pro doesn't
+	 * support MINIMAL. Gemini 3 Flash supports all levels.
 	 * @param level the thinking level to validate
 	 * @param modelName the model name
 	 * @throws IllegalArgumentException if the level is not supported for the model
