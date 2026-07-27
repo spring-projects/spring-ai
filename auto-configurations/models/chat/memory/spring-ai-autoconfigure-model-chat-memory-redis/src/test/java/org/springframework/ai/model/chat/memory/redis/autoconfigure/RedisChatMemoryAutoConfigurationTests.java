@@ -16,12 +16,19 @@
 
 package org.springframework.ai.model.chat.memory.redis.autoconfigure;
 
+import org.apache.commons.pool2.PooledObjectFactory;
 import org.junit.jupiter.api.Test;
+import redis.clients.jedis.ConnectionFactory;
+import redis.clients.jedis.JedisClientConfig;
+import redis.clients.jedis.RedisClient;
+import redis.clients.jedis.providers.PooledConnectionProvider;
+import redis.clients.jedis.util.Pool;
 
 import org.springframework.ai.model.chat.memory.repository.redis.autoconfigure.RedisChatMemoryRepositoryAutoConfiguration;
 import org.springframework.ai.model.chat.memory.repository.redis.autoconfigure.RedisChatMemoryRepositoryProperties;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -66,6 +73,100 @@ class RedisChatMemoryAutoConfigurationTests {
 				assertThat(chatProperties.getPort()).isEqualTo(6380);
 				assertThat(chatProperties.getInitializeSchema()).isEqualTo(false);
 			});
+	}
+
+	@Test
+	void jedisClientUsesUsernameAndPasswordFromLegacyPrefix() {
+		this.contextRunner
+			.withPropertyValues("spring.ai.chat.memory.redis.host=10.0.0.1", "spring.ai.chat.memory.redis.port=6380",
+					"spring.ai.chat.memory.redis.username=app-user", "spring.ai.chat.memory.redis.password=secret",
+					"spring.ai.chat.memory.redis.initialize-schema=false")
+			.run(context -> {
+				RedisChatMemoryRepositoryProperties properties = context
+					.getBean(RedisChatMemoryRepositoryProperties.class);
+				assertThat(properties.getUsername()).isEqualTo("app-user");
+				assertThat(properties.getPassword()).isEqualTo("secret");
+
+				JedisClientConfig clientConfig = extractJedisClientConfig(context.getBean(RedisClient.class));
+				assertThat(clientConfig.getUser()).isEqualTo("app-user");
+				assertThat(clientConfig.getPassword()).isEqualTo("secret");
+			});
+	}
+
+	@Test
+	void jedisClientUsesUsernameAndPasswordFromNewPrefix() {
+		this.contextRunner
+			.withPropertyValues("spring.ai.chat.memory.repository.redis.host=10.0.0.1",
+					"spring.ai.chat.memory.repository.redis.port=6380",
+					"spring.ai.chat.memory.repository.redis.username=app-user",
+					"spring.ai.chat.memory.repository.redis.password=secret",
+					"spring.ai.chat.memory.repository.redis.initialize-schema=false")
+			.run(context -> {
+				RedisChatMemoryRepositoryProperties properties = context
+					.getBean(RedisChatMemoryRepositoryProperties.class);
+				assertThat(properties.getUsername()).isEqualTo("app-user");
+				assertThat(properties.getPassword()).isEqualTo("secret");
+
+				JedisClientConfig clientConfig = extractJedisClientConfig(context.getBean(RedisClient.class));
+				assertThat(clientConfig.getUser()).isEqualTo("app-user");
+				assertThat(clientConfig.getPassword()).isEqualTo("secret");
+			});
+	}
+
+	@Test
+	void jedisClientUsesPasswordFromLegacyPrefix() {
+		this.contextRunner
+			.withPropertyValues("spring.ai.chat.memory.redis.host=10.0.0.1", "spring.ai.chat.memory.redis.port=6380",
+					"spring.ai.chat.memory.redis.password=secret",
+					"spring.ai.chat.memory.redis.initialize-schema=false")
+			.run(context -> {
+				assertThat(context.getBean(RedisChatMemoryRepositoryProperties.class).getPassword())
+					.isEqualTo("secret");
+				assertThat(extractJedisClientConfig(context.getBean(RedisClient.class)).getPassword())
+					.isEqualTo("secret");
+			});
+	}
+
+	@Test
+	void jedisClientUsesPasswordFromNewPrefix() {
+		this.contextRunner
+			.withPropertyValues("spring.ai.chat.memory.repository.redis.host=10.0.0.1",
+					"spring.ai.chat.memory.repository.redis.port=6380",
+					"spring.ai.chat.memory.repository.redis.password=secret",
+					"spring.ai.chat.memory.repository.redis.initialize-schema=false")
+			.run(context -> {
+				assertThat(context.getBean(RedisChatMemoryRepositoryProperties.class).getPassword())
+					.isEqualTo("secret");
+				assertThat(extractJedisClientConfig(context.getBean(RedisClient.class)).getPassword())
+					.isEqualTo("secret");
+			});
+	}
+
+	@Test
+	void jedisClientWithoutCredentialsDoesNotConfigureUserOrPassword() {
+		this.contextRunner
+			.withPropertyValues("spring.ai.chat.memory.repository.redis.host=10.0.0.1",
+					"spring.ai.chat.memory.repository.redis.port=6380",
+					"spring.ai.chat.memory.repository.redis.initialize-schema=false")
+			.run(context -> {
+				RedisChatMemoryRepositoryProperties properties = context
+					.getBean(RedisChatMemoryRepositoryProperties.class);
+				assertThat(properties.getUsername()).isNull();
+				assertThat(properties.getPassword()).isNull();
+
+				JedisClientConfig clientConfig = extractJedisClientConfig(context.getBean(RedisClient.class));
+				assertThat(clientConfig.getUser()).isNull();
+				assertThat(clientConfig.getPassword()).isNull();
+			});
+	}
+
+	private static JedisClientConfig extractJedisClientConfig(RedisClient redisClient) {
+		Object provider = ReflectionTestUtils.getField(redisClient, "provider");
+		assertThat(provider).isInstanceOf(PooledConnectionProvider.class);
+		Pool<?> pool = ((PooledConnectionProvider) provider).getPool();
+		PooledObjectFactory<?> factory = pool.getFactory();
+		assertThat(factory).isInstanceOf(ConnectionFactory.class);
+		return (JedisClientConfig) ReflectionTestUtils.getField(factory, "clientConfig");
 	}
 
 }
