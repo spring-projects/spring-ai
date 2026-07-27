@@ -54,6 +54,7 @@ import org.reactivestreams.Publisher;
 import reactor.core.Disposable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.util.context.ContextView;
 import reactor.util.function.Tuple2;
 import reactor.util.function.Tuples;
 
@@ -127,6 +128,10 @@ public final class WebClientStreamableHttpTransport implements McpClientTranspor
 
 	private final String latestSupportedProtocolVersion;
 
+	private final AtomicReference<@Nullable String> negotiatedProtocolVersion = new AtomicReference<>();
+
+	private final AtomicReference<Boolean> reconnectPendingAfterInitialization = new AtomicReference<>(false);
+
 	private WebClientStreamableHttpTransport(McpJsonMapper jsonMapper, WebClient.Builder webClientBuilder,
 			String endpoint, boolean resumableStreams, boolean openConnectionOnStartup,
 			List<String> supportedProtocolVersions) {
@@ -185,6 +190,15 @@ public final class WebClientStreamableHttpTransport implements McpClientTranspor
 					})
 					.then();
 		return new DefaultMcpTransportSession(onClose);
+	}
+
+	private String resolveProtocolVersion(ContextView ctx) {
+		String protocolVersion = ctx.getOrDefault(McpAsyncClient.NEGOTIATED_PROTOCOL_VERSION, null);
+		if (protocolVersion != null) {
+			this.negotiatedProtocolVersion.set(protocolVersion);
+			return protocolVersion;
+		}
+		return Objects.requireNonNullElse(this.negotiatedProtocolVersion.get(), this.latestSupportedProtocolVersion);
 	}
 
 	@Override
@@ -255,9 +269,7 @@ public final class WebClientStreamableHttpTransport implements McpClientTranspor
 			Disposable connection = this.webClient.get()
 				.uri(this.endpoint)
 				.accept(MediaType.TEXT_EVENT_STREAM)
-				.header(HttpHeaders.PROTOCOL_VERSION,
-						Objects.requireNonNullElse(ctx.getOrDefault(McpAsyncClient.NEGOTIATED_PROTOCOL_VERSION,
-								this.latestSupportedProtocolVersion), this.latestSupportedProtocolVersion))
+				.header(HttpHeaders.PROTOCOL_VERSION, this.resolveProtocolVersion(ctx))
 				.headers(httpHeaders -> {
 					transportSession.sessionId().ifPresent(id -> httpHeaders.add(HttpHeaders.MCP_SESSION_ID, id));
 					if (stream != null) {
@@ -341,96 +353,110 @@ public final class WebClientStreamableHttpTransport implements McpClientTranspor
 			// If it doesn't, nothing actually happens here, that's just the way it is...
 			final AtomicReference<@Nullable Disposable> disposableRef = new AtomicReference<>();
 
-			Disposable connection = Flux.deferContextual(ctx -> this.webClient.post()
-				.uri(this.endpoint)
-				.contentType(MediaType.APPLICATION_JSON)
-				.accept(MediaType.APPLICATION_JSON, MediaType.TEXT_EVENT_STREAM)
-				.header(HttpHeaders.PROTOCOL_VERSION,
-						Objects.requireNonNullElse(ctx.getOrDefault(McpAsyncClient.NEGOTIATED_PROTOCOL_VERSION,
-								this.latestSupportedProtocolVersion), this.latestSupportedProtocolVersion))
-				.headers(httpHeaders -> transportSession.sessionId()
-					.ifPresent(id -> httpHeaders.add(HttpHeaders.MCP_SESSION_ID, id)))
-				.bodyValue(jsonText)
-				.exchangeToFlux(response -> {
-					if (transportSession
-						.markInitialized(response.headers().asHttpHeaders().getFirst(HttpHeaders.MCP_SESSION_ID))) {
-						// Once we have a session, we try to open an async stream for
-						// the server to send notifications and requests out-of-band.
-						reconnect((McpTransportStream<Disposable>) null).contextWrite(sink.contextView()).subscribe();
-					}
-
-					String sessionRepresentation = sessionIdOrPlaceholder(transportSession);
-
-					// The spec mentions only ACCEPTED, but the existing SDKs can return
-					// 200 OK for notifications
-					if (response.statusCode().is2xxSuccessful()) {
-						Optional<MediaType> contentType = response.headers().contentType();
-						long contentLength = response.headers().contentLength().orElse(-1);
-						// Existing SDKs consume notifications with no response body nor
-						// content type
-						if (contentType.isEmpty() || contentLength == 0
-								|| response.statusCode().equals(HttpStatus.ACCEPTED)) {
-							if (logger.isTraceEnabled()) {
-								logger.trace(
-										"Message was successfully sent via POST for session " + sessionRepresentation);
-							}
-							// signal the caller that the message was successfully
-							// delivered
-							sink.success();
-							// communicate to downstream there is no streamed data coming
-							return Flux.empty();
-						}
-						else {
-							MediaType mediaType = contentType.get();
-							if (mediaType.isCompatibleWith(MediaType.TEXT_EVENT_STREAM)) {
-								logger.debug("Established SSE stream via POST");
-								// communicate to caller that the message was delivered
-								sink.success();
-								// starting a stream
-								return newEventStream(response, sessionRepresentation);
-							}
-							else if (mediaType.isCompatibleWith(MediaType.APPLICATION_JSON)) {
-								if (logger.isTraceEnabled()) {
-									logger.trace("Received response to POST for session " + sessionRepresentation);
-								}
-								// communicate to caller the message was delivered
-								sink.success();
-								return directResponseFlux(message, response);
+			Disposable connection = Flux.deferContextual(ctx -> {
+				String protocolVersion = this.resolveProtocolVersion(ctx);
+				if (Boolean.TRUE.equals(this.reconnectPendingAfterInitialization.getAndSet(false))) {
+					reconnect((McpTransportStream<Disposable>) null).contextWrite(ctx).subscribe();
+				}
+				return this.webClient.post()
+					.uri(this.endpoint)
+					.contentType(MediaType.APPLICATION_JSON)
+					.accept(MediaType.APPLICATION_JSON, MediaType.TEXT_EVENT_STREAM)
+					.header(HttpHeaders.PROTOCOL_VERSION, protocolVersion)
+					.headers(httpHeaders -> transportSession.sessionId()
+						.ifPresent(id -> httpHeaders.add(HttpHeaders.MCP_SESSION_ID, id)))
+					.bodyValue(jsonText)
+					.exchangeToFlux(response -> {
+						if (transportSession
+							.markInitialized(response.headers().asHttpHeaders().getFirst(HttpHeaders.MCP_SESSION_ID))) {
+							// Once we have a session, we try to open an async stream for
+							// the server to send notifications and requests out-of-band.
+							if (this.negotiatedProtocolVersion.get() != null) {
+								reconnect((McpTransportStream<Disposable>) null).contextWrite(ctx).subscribe();
 							}
 							else {
-								if (logger.isWarnEnabled()) {
-									logger.warn("Unknown media type " + contentType + " returned for POST in session "
-											+ sessionRepresentation);
-								}
-								return Flux.error(new RuntimeException("Unknown media type returned: " + contentType));
+								this.reconnectPendingAfterInitialization.set(true);
 							}
 						}
-					}
-					else {
-						if (isNotFound(response) && !sessionRepresentation.equals(MISSING_SESSION_ID)) {
-							return mcpSessionNotFoundError(sessionRepresentation);
+
+						String sessionRepresentation = sessionIdOrPlaceholder(transportSession);
+
+						// The spec mentions only ACCEPTED, but the existing SDKs can
+						// return
+						// 200 OK for notifications
+						if (response.statusCode().is2xxSuccessful()) {
+							Optional<MediaType> contentType = response.headers().contentType();
+							long contentLength = response.headers().contentLength().orElse(-1);
+							// Existing SDKs consume notifications with no response body
+							// nor
+							// content type
+							if (contentType.isEmpty() || contentLength == 0
+									|| response.statusCode().equals(HttpStatus.ACCEPTED)) {
+								if (logger.isTraceEnabled()) {
+									logger.trace("Message was successfully sent via POST for session "
+											+ sessionRepresentation);
+								}
+								// signal the caller that the message was successfully
+								// delivered
+								sink.success();
+								// communicate to downstream there is no streamed data
+								// coming
+								return Flux.empty();
+							}
+							else {
+								MediaType mediaType = contentType.get();
+								if (mediaType.isCompatibleWith(MediaType.TEXT_EVENT_STREAM)) {
+									logger.debug("Established SSE stream via POST");
+									// communicate to caller that the message was
+									// delivered
+									sink.success();
+									// starting a stream
+									return newEventStream(response, sessionRepresentation);
+								}
+								else if (mediaType.isCompatibleWith(MediaType.APPLICATION_JSON)) {
+									if (logger.isTraceEnabled()) {
+										logger.trace("Received response to POST for session " + sessionRepresentation);
+									}
+									// communicate to caller the message was delivered
+									sink.success();
+									return directResponseFlux(message, response);
+								}
+								else {
+									if (logger.isWarnEnabled()) {
+										logger.warn("Unknown media type " + contentType
+												+ " returned for POST in session " + sessionRepresentation);
+									}
+									return Flux
+										.error(new RuntimeException("Unknown media type returned: " + contentType));
+								}
+							}
 						}
-						return this.extractError(response, sessionRepresentation);
-					}
-				})).flatMap(jsonRpcMessage -> requestHandler.apply(Mono.just(jsonRpcMessage))).onErrorComplete(t -> {
-					// handle the error first
-					try {
-						this.handleException(t);
-					}
-					catch (Exception e) {
-						if (logger.isErrorEnabled()) {
-							logger.error("Error handling exception " + t.getMessage(), e);
+						else {
+							if (isNotFound(response) && !sessionRepresentation.equals(MISSING_SESSION_ID)) {
+								return mcpSessionNotFoundError(sessionRepresentation);
+							}
+							return this.extractError(response, sessionRepresentation);
 						}
+					});
+			}).flatMap(jsonRpcMessage -> requestHandler.apply(Mono.just(jsonRpcMessage))).onErrorComplete(t -> {
+				// handle the error first
+				try {
+					this.handleException(t);
+				}
+				catch (Exception e) {
+					if (logger.isErrorEnabled()) {
+						logger.error("Error handling exception " + t.getMessage(), e);
 					}
-					// inform the caller of sendMessage
-					sink.error(t);
-					return true;
-				}).doFinally(s -> {
-					@Nullable Disposable ref = disposableRef.getAndSet(null);
-					if (ref != null) {
-						transportSession.removeConnection(ref);
-					}
-				}).contextWrite(sink.contextView()).subscribe();
+				}
+				// inform the caller of sendMessage
+				sink.error(t);
+				return true;
+			}).doFinally(s -> {
+				@Nullable Disposable ref = disposableRef.getAndSet(null);
+				if (ref != null) {
+					transportSession.removeConnection(ref);
+				}
+			}).contextWrite(sink.contextView()).subscribe();
 			disposableRef.set(connection);
 			transportSession.addConnection(connection);
 		});
