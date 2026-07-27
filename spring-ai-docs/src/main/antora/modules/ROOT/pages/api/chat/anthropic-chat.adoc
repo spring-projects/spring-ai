@@ -55,7 +55,8 @@ Use the `spring.ai.anthropic.*` properties to configure the Anthropic connection
 
 | `spring.ai.anthropic.api-key` | Anthropic API key | -
 | `spring.ai.anthropic.base-url` | API base URL | `https://api.anthropic.com`
-| `spring.ai.anthropic.timeout` | Request timeout for the Anthropic client | `60s`
+| `spring.ai.anthropic.timeout` | Construction-time default timeout baked into the shared HTTP client at startup.
+Can be overridden per call via `AnthropicChatOptions.timeout()` set on a `ChatClient` or per-request prompt options. | `60s`
 | `spring.ai.anthropic.max-retries` | Maximum number of retries for failed requests | `2`
 | `spring.ai.anthropic.custom-headers.*` | Custom HTTP headers to add to all Anthropic client requests | -
 | `spring.ai.anthropic.chat.model` | Model name | `claude-haiku-4-5`
@@ -191,7 +192,8 @@ ChatResponse response = chatModel.call(
 | stopSequences | Custom sequences that will cause the model to stop generating. | -
 | apiKey | The API key for authentication. Auto-detects from `ANTHROPIC_API_KEY` environment variable if not set. | -
 | baseUrl | The base URL for the Anthropic API. | https://api.anthropic.com
-| timeout | Request timeout duration. | 60 seconds
+| timeout | Per-call timeout override.
+When set via `ChatClient.Builder.defaultOptions()` or a per-request `ChatClient.prompt().options(...)`, it bounds only that call and overrides the `spring.ai.anthropic.timeout` construction-time default. | 60 seconds
 | maxRetries | Maximum number of retry attempts for failed requests. | 2
 | proxy | Proxy settings for the HTTP client. | -
 | customHeaders | Custom HTTP headers to include on all requests (client-level). | -

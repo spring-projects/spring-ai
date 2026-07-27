@@ -592,8 +592,6 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	}
 
 	private static AnthropicChatOptions resolveAnthropicOptions(Prompt prompt) {
-		// Use the prompt's merged AnthropicChatOptions, or empty options if it carries a
-		// different ChatOptions implementation.
 		ChatOptions options = prompt.getOptions();
 		return options instanceof AnthropicChatOptions anthropicOptions ? anthropicOptions
 				: AnthropicChatOptions.builder().build();
