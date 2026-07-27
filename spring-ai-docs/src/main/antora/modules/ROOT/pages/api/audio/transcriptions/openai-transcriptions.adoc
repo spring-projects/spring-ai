@@ -88,12 +88,16 @@ The prefix `spring.ai.openai.audio.transcription` is used as the property prefix
 | spring.ai.openai.audio.transcription.api-key    | The API Key           |  -
 | spring.ai.openai.audio.transcription.organization-id | Optionally you can specify which organization  used for an API request. |  -
 | spring.ai.openai.audio.transcription.project-id      | Optionally, you can specify which project is used for an API request. |  -
-| spring.ai.openai.audio.transcription.model  | ID of the model to use for transcription. Available models: `gpt-4o-transcribe` (speech-to-text powered by GPT-4o), `gpt-4o-mini-transcribe` (speech-to-text powered by GPT-4o mini), or `whisper-1` (general-purpose speech recognition model, default). |  whisper-1
-| spring.ai.openai.audio.transcription.response-format | The format of the transcript output, in one of these options: json, text, srt, verbose_json, or vtt. |  json
+| spring.ai.openai.audio.transcription.model  | ID of the model to use for transcription. Available models: `gpt-4o-transcribe` (speech-to-text powered by GPT-4o), `gpt-4o-mini-transcribe` (speech-to-text powered by GPT-4o mini), `gpt-4o-transcribe-diarize` (speaker diarization), or `whisper-1` (general-purpose speech recognition model, default). |  whisper-1
+| spring.ai.openai.audio.transcription.response-format | The format of the transcript output: `json`, `text`, `srt`, `verbose_json`, `vtt`, or `diarized_json` (speaker-labeled segments, requires `gpt-4o-transcribe-diarize`). |  text
 | spring.ai.openai.audio.transcription.prompt | An optional text to guide the model's style or continue a previous audio segment. The prompt should match the audio language. |
 | spring.ai.openai.audio.transcription.language | The language of the input audio. Supplying the input language in ISO-639-1 format will improve accuracy and latency. |
 | spring.ai.openai.audio.transcription.temperature | The sampling temperature, between 0 and 1. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic. If set to 0, the model will use log probability to automatically increase the temperature until certain thresholds are hit. | 0
-| spring.ai.openai.audio.transcription.timestamp_granularities | The timestamp granularities to populate for this transcription. response_format must be set verbose_json to use timestamp granularities. Either or both of these options are supported: word, or segment. Note: There is no additional latency for segment timestamps, but generating word timestamps incurs additional latency. | segment
+| spring.ai.openai.audio.transcription.timestamp-granularities | The timestamp granularities to populate for this transcription. response_format must be set to `verbose_json` to use timestamp granularities. Either or both of these options are supported: `word`, or `segment`. Note: There is no additional latency for segment timestamps, but generating word timestamps incurs additional latency. | segment
+| spring.ai.openai.audio.transcription.known-speaker-names | Speaker names (up to 4), positionally matched with `known-speaker-references`. Only used with `gpt-4o-transcribe-diarize`. |
+| spring.ai.openai.audio.transcription.known-speaker-references | Audio samples (as data URLs, e.g. `data:audio/wav;base64,...`) of the known speakers, positionally matched with `known-speaker-names`. Only used with `gpt-4o-transcribe-diarize`. |
+| spring.ai.openai.audio.transcription.chunking-strategy | Controls how the audio is chunked. Only `auto` is supported through this property; use `OpenAiAudioTranscriptionOptions.Builder` programmatically for voice-activity-detection tuning. Not supported by `whisper-1`. |
+| spring.ai.openai.audio.transcription.diarized-json-workaround-enabled | Whether to work around a known OpenAI Java SDK bug (link:https://github.com/openai/openai-java/issues/802[openai-java#802]) that misclassifies `diarized_json` responses. See <<diarized-json-workaround>>. | true
 |====
 
 NOTE: You can override the common `spring.ai.openai.base-url`, `spring.ai.openai.api-key`, `spring.ai.openai.organization-id` and `spring.ai.openai.project-id` properties.
@@ -111,17 +115,24 @@ For example:
 
 [source,java]
 ----
-OpenAiAudioApi.TranscriptResponseFormat responseFormat = OpenAiAudioApi.TranscriptResponseFormat.VTT;
-
 OpenAiAudioTranscriptionOptions transcriptionOptions = OpenAiAudioTranscriptionOptions.builder()
     .language("en")
     .prompt("Ask not this, but ask that")
     .temperature(0f)
-    .responseFormat(this.responseFormat)
+    .responseFormat(AudioResponseFormat.VTT)
     .build();
-AudioTranscriptionPrompt transcriptionRequest = new AudioTranscriptionPrompt(audioFile, this.transcriptionOptions);
-AudioTranscriptionResponse response = openAiTranscriptionModel.call(this.transcriptionRequest);
+AudioTranscriptionPrompt transcriptionRequest = new AudioTranscriptionPrompt(audioFile, transcriptionOptions);
+AudioTranscriptionResponse response = openAiTranscriptionModel.call(transcriptionRequest);
 ----
+
+=== Response Metadata
+
+For `verbose_json` and `diarized_json`, `response.getMetadata()` is an `OpenAiAudioTranscriptionResponseMetadata` exposing `getDuration()`, `getLanguage()`, `getUsage()`, `getSegments()` and `getWords()` in addition to the transcribed text. These are `null`/empty for other response formats.
+
+[[diarized-json-workaround]]
+=== `diarized_json` SDK Workaround
+
+The OpenAI Java SDK (as of `4.42.0`) misclassifies `diarized_json` responses, which would otherwise surface the raw JSON payload as the transcript text (link:https://github.com/openai/openai-java/issues/802[openai-java#802]). Spring AI detects this and recovers the clean text, speaker segments and usage automatically. `duration` stays unavailable for this format since the API doesn't return it. Disable the workaround with `OpenAiAudioTranscriptionOptions.Builder#diarizedJsonWorkaroundEnabled(false)` or `spring.ai.openai.audio.transcription.diarized-json-workaround-enabled=false`.
 
 == Manual Configuration
 
@@ -150,19 +161,20 @@ Next, create a `OpenAiAudioTranscriptionModel`
 
 [source,java]
 ----
-var openAiAudioApi = new OpenAiAudioApi(System.getenv("OPENAI_API_KEY"));
-
-var openAiAudioTranscriptionModel = new OpenAiAudioTranscriptionModel(this.openAiAudioApi);
-
 var transcriptionOptions = OpenAiAudioTranscriptionOptions.builder()
-    .responseFormat(TranscriptResponseFormat.TEXT)
+    .apiKey(System.getenv("OPENAI_API_KEY"))
+    .responseFormat(AudioResponseFormat.TEXT)
     .temperature(0f)
+    .build();
+
+var openAiAudioTranscriptionModel = OpenAiAudioTranscriptionModel.builder()
+    .options(transcriptionOptions)
     .build();
 
 var audioFile = new FileSystemResource("/path/to/your/resource/speech/jfk.flac");
 
-AudioTranscriptionPrompt transcriptionRequest = new AudioTranscriptionPrompt(this.audioFile, this.transcriptionOptions);
-AudioTranscriptionResponse response = openAiTranscriptionModel.call(this.transcriptionRequest);
+AudioTranscriptionPrompt transcriptionRequest = new AudioTranscriptionPrompt(audioFile, transcriptionOptions);
+AudioTranscriptionResponse response = openAiAudioTranscriptionModel.call(transcriptionRequest);
 ----
 
 include::partial$openai/openai-http-client-customization.adoc[]
