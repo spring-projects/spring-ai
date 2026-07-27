@@ -16,7 +16,6 @@
 
 package org.springframework.ai.google.genai;
 
-import java.net.MalformedURLException;
 import java.net.URI;
 import java.util.List;
 import java.util.Locale;
@@ -54,6 +53,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * @author Soby Chacko
  * @author Sebastien Deleuze
  * @author Dimitar Proynov
+ * @author guan xu
  */
 @ExtendWith(MockitoExtension.class)
 public class CreateGeminiRequestTests {
@@ -80,7 +80,7 @@ public class CreateGeminiRequestTests {
 	}
 
 	@Test
-	public void createRequestWithSystemMessage() throws MalformedURLException {
+	public void createRequestWithSystemMessage() {
 
 		var systemMessage = new SystemMessage("System Message Text");
 
@@ -413,7 +413,7 @@ public class CreateGeminiRequestTests {
 	@Test
 	public void createRequestWithThinkingLevelMinimalOnProModelThrows() {
 		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
-			.model("gemini-3-pro-preview")
+			.model("gemini-3.1-pro-preview")
 			.thinkingLevel(GoogleGenAiThinkingLevel.MINIMAL)
 			.build();
 		var client = GoogleGenAiChatModel.builder().genAiClient(this.genAiClient).build();
@@ -427,23 +427,23 @@ public class CreateGeminiRequestTests {
 
 	@Test
 	public void createRequestWithThinkingLevelMediumOnProModelThrows() {
+		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
+			.model("gemini-3.1-pro-preview")
+			.thinkingLevel(GoogleGenAiThinkingLevel.MEDIUM)
+			.build();
 		var client = GoogleGenAiChatModel.builder().genAiClient(this.genAiClient).build();
 
-		assertThatThrownBy(() -> client.createGeminiRequest(new Prompt("Test message content",
-				GoogleGenAiChatOptions.builder()
-					.model("gemini-3-pro-preview")
-					.thinkingLevel(GoogleGenAiThinkingLevel.MEDIUM)
-					.build())))
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("MEDIUM")
-			.hasMessageContaining("not supported")
-			.hasMessageContaining("Gemini 3 Pro");
+		GeminiRequest request = client.createGeminiRequest(new Prompt("Test message content", options));
+
+		assertThat(request.config().thinkingConfig()).isPresent();
+		assertThat(request.config().thinkingConfig().get().thinkingLevel()).isPresent();
+		assertThat(request.config().thinkingConfig().get().thinkingLevel().get().toString()).isEqualTo("MEDIUM");
 	}
 
 	@Test
 	public void createRequestWithThinkingLevelLowOnProModel() {
 		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
-			.model("gemini-3-pro-preview")
+			.model("gemini-3.1-pro-preview")
 			.thinkingLevel(GoogleGenAiThinkingLevel.LOW)
 			.build();
 		var client = GoogleGenAiChatModel.builder().genAiClient(this.genAiClient).build();
@@ -461,7 +461,7 @@ public class CreateGeminiRequestTests {
 
 		GeminiRequest request = client.createGeminiRequest(new Prompt("Test message content",
 				GoogleGenAiChatOptions.builder()
-					.model("gemini-3-pro-preview")
+					.model("gemini-3.1-pro-preview")
 					.thinkingLevel(GoogleGenAiThinkingLevel.HIGH)
 					.build()));
 
