@@ -18,9 +18,12 @@ package org.springframework.ai.chat.client.advisor;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationHandler;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import io.micrometer.tracing.handler.DefaultTracingObservationHandler;
@@ -34,6 +37,7 @@ import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
+import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationContext;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
@@ -79,10 +83,9 @@ class ToolCallingAdvisorSpanHierarchyTests {
 	private static final String MODEL_ADVISOR_NAME = "Model Stream Advisor";
 
 	@Test
-	void modelCallSpansNestUnderToolCallingAdvisorEvenWhenAnOuterScopeIsOpen() {
+	void modelCallSpansNestUnderToolCallingAdvisorEvenWhenAnOuterScopeIsOpen() throws InterruptedException {
 		SimpleTracer tracer = new SimpleTracer();
 		ObservationRegistry registry = ObservationRegistry.create();
-		registry.observationConfig().observationHandler(new DefaultTracingObservationHandler(tracer));
 
 		// Mocked tool execution: one tool round, then the loop continues to the LLM
 		// again.
@@ -96,10 +99,32 @@ class ToolCallingAdvisorSpanHierarchyTests {
 			.toolCallingManager(toolCallingManager)
 			.build();
 
+		// The ToolCallingAdvisor's own span is stopped from a doFinally that wraps the
+		// whole (possibly recursive, boundedElastic-scheduled) tool-calling loop, so its
+		// name/tags - written by DefaultTracingObservationHandler#onStop - can still be
+		// in flight on a different thread by the time collectList().block() returns
+		// below. Registering this handler *before* the tracing handler makes it run
+		// *after* it on stop (ObservationHandler notifications fire in reverse
+		// registration order), so the latch only opens once the span is fully tagged.
+		CountDownLatch toolCallingAdvisorSpanStopped = new CountDownLatch(1);
+		registry.observationConfig().observationHandler(new ObservationHandler<Observation.Context>() {
+			@Override
+			public boolean supportsContext(Observation.Context context) {
+				return context instanceof AdvisorObservationContext advisorContext
+						&& toolCallingAdvisor.getName().equals(advisorContext.getAdvisorName());
+			}
+
+			@Override
+			public void onStop(Observation.Context context) {
+				toolCallingAdvisorSpanStopped.countDown();
+			}
+		});
+		registry.observationConfig().observationHandler(new DefaultTracingObservationHandler(tracer));
+
 		// Terminal advisor standing in for the model: first call returns a tool call,
 		// second call (after tool execution) returns the final answer. Emits
-		// synchronously
-		// so the first iteration runs on the calling thread, under the outer scope.
+		// synchronously so the first iteration runs on the calling thread, under the
+		// outer scope.
 		AtomicInteger calls = new AtomicInteger();
 		StreamAdvisor modelAdvisor = new StreamAdvisor() {
 			@Override
@@ -140,6 +165,15 @@ class ToolCallingAdvisorSpanHierarchyTests {
 		}
 		outer.stop();
 
+		// block() completing only means the emitted elements were all signalled; the
+		// ToolCallingAdvisor's own observation.stop() (called from a doFinally around the
+		// boundedElastic-scheduled tool-call recursion) can still be finishing up on that
+		// other thread. Wait for it explicitly instead of racing tracer.getSpans()
+		// against it.
+		assertThat(toolCallingAdvisorSpanStopped.await(1, TimeUnit.SECONDS))
+			.as("the ToolCallingAdvisor span must have been stopped (and tagged) by now")
+			.isTrue();
+
 		assertThat(results).isNotNull();
 		assertThat(calls).hasValue(2); // one tool-call round + one final answer
 
@@ -150,20 +184,16 @@ class ToolCallingAdvisorSpanHierarchyTests {
 		List<SimpleSpan> modelSpans = spansForAdvisor(spans, MODEL_ADVISOR_NAME);
 
 		// Sanity: the loop produced two model-call spans (the tool-requesting call and
-		// the
-		// follow-up call), and the ToolCallingAdvisor span sits under the outer span.
+		// the follow-up call), and the ToolCallingAdvisor span sits under the outer span.
 		assertThat(modelSpans).hasSize(2);
 		assertThat(toolCallingAdvisorSpan.context().parentId())
 			.as("the ToolCallingAdvisor span must be a child of the outer (HTTP-like) span")
 			.isEqualTo(outerSpan.context().spanId());
 
 		// The actual regression: every model-call span must nest under the
-		// ToolCallingAdvisor
-		// span. Without the parent-scope handling, the first iteration's span escapes to
-		// the
-		// outer span (because it is started on the calling thread while the outer scope
-		// is
-		// still open).
+		// ToolCallingAdvisor span. Without the parent-scope handling, the first
+		// iteration's span escapes to the outer span (because it is started on the
+		// calling thread while the outer scope is still open).
 		assertThat(modelSpans).allSatisfy(span -> assertThat(span.context().parentId())
 			.as("model-call span %s must nest under the ToolCallingAdvisor span (%s), not escape to the outer span (%s)",
 					span.context().spanId(), toolCallingAdvisorSpan.context().spanId(), outerSpan.context().spanId())
