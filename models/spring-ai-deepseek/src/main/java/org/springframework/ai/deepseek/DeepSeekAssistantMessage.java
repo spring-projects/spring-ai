@@ -26,9 +26,18 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.content.Media;
 
 /**
+ * DeepSeek-specific {@link AssistantMessage} that extends the standard assistant message
+ * with DeepSeek reasoning model capabilities.
+ * <p>
+ * In addition to the regular assistant content, DeepSeek reasoning models (such as
+ * {@code deepseek-reasoner}) may emit a {@link #getReasoningContent() reasoning content}
+ * that exposes the model's chain-of-thought, and a {@link #getPrefix() prefix} flag that
+ * indicates whether the provided content should be treated as a completion prefix.
+ *
  * @author Mark Pollack
  * @author Soby Chacko
  * @author Sun Yuhan
+ * @author guan xu
  */
 public class DeepSeekAssistantMessage extends AssistantMessage {
 
@@ -68,6 +77,16 @@ public class DeepSeekAssistantMessage extends AssistantMessage {
 
 	public void setReasoningContent(@Nullable String reasoningContent) {
 		this.reasoningContent = reasoningContent;
+	}
+
+	@Override
+	public Builder mutate() {
+		return builder().content(getText())
+			.properties(getMetadata())
+			.toolCalls(getToolCalls())
+			.media(getMedia())
+			.reasoningContent(getReasoningContent())
+			.prefix(getPrefix());
 	}
 
 	@Override
