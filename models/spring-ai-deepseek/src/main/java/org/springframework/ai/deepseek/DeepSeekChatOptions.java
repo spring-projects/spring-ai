@@ -86,7 +86,7 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 	 * while lower values like 0.2 will make it more focused and deterministic.
 	 * We generally recommend altering this or top_p but not both.
 	 */
-	private final Double temperature;
+	private @Nullable final Double temperature;
 
 	/**
 	 * An alternative to sampling with temperature, called nucleus sampling,
@@ -165,7 +165,7 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 		this.presencePenalty = presencePenalty;
 		this.responseFormat = responseFormat;
 		this.stop = (stop != null ? List.copyOf(stop) : null);
-		this.temperature = temperature != null ? temperature : 0.7;
+		this.temperature = temperature;
 		this.topP = topP;
 		this.logprobs = logprobs;
 		this.topLogprobs = topLogprobs;
@@ -215,7 +215,7 @@ public class DeepSeekChatOptions implements ToolCallingChatOptions {
 	}
 
 	@Override
-	public Double getTemperature() {
+	public @Nullable Double getTemperature() {
 		return this.temperature;
 	}
 
