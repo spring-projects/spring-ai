@@ -231,7 +231,14 @@ public class FilterExpressionTextParser {
 
 		@Override
 		public Filter.Operand visitIntegerConstant(FiltersParser.IntegerConstantContext ctx) {
-			return new Filter.Value(Integer.valueOf(ctx.getText()));
+			String text = ctx.getText();
+			try {
+				return new Filter.Value(Integer.valueOf(text));
+			}
+			catch (NumberFormatException ex) {
+				// Fall back to Long for literals that exceed the int range (gh-4705).
+				return new Filter.Value(Long.valueOf(text));
+			}
 		}
 
 		@Override
