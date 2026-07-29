@@ -16,7 +16,6 @@
 
 package org.springframework.ai.deepseek.api;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -652,7 +651,7 @@ public class DeepSeekApi {
 		 */
 		public static class Builder {
 
-			private List<ChatCompletionMessage> messages = new ArrayList<>();
+			private @Nullable List<ChatCompletionMessage> messages;
 
 			private @Nullable String model;
 

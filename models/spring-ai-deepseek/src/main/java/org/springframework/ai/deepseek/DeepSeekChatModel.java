@@ -16,6 +16,7 @@
 
 package org.springframework.ai.deepseek;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -391,6 +392,9 @@ public class DeepSeekChatModel implements ChatModel {
 
 		DeepSeekChatOptions options = (DeepSeekChatOptions) prompt.getOptions();
 		Assert.state(options != null, "requestOptions must not be null");
+
+		validateThinkingParameters(options);
+
 		if (options.getModel() != null) {
 			requestBuilder.model(options.getModel());
 		}
@@ -441,6 +445,39 @@ public class DeepSeekChatModel implements ChatModel {
 		}
 
 		return requestBuilder.build();
+	}
+
+	/**
+	 * Thinking mode does not support the {@code temperature}, {@code top_p},
+	 * {@code presence_penalty}, or {@code frequency_penalty} parameters. For
+	 * compatibility with existing software, setting these parameters does not trigger an
+	 * error but also has no effect, so a warning is logged to alert callers that the
+	 * values will be silently ignored by the DeepSeek API.
+	 * @param options the chat options to validate
+	 */
+	private void validateThinkingParameters(DeepSeekChatOptions options) {
+		if (logger.isWarnEnabled()) {
+			ChatCompletionRequest.Thinking thinking = options.getThinking();
+			if (thinking == null || ChatCompletionRequest.Thinking.Type.ENABLED == thinking.type()) {
+				List<String> ignoredParameters = new ArrayList<>();
+				if (options.getTemperature() != null) {
+					ignoredParameters.add("temperature");
+				}
+				if (options.getTopP() != null) {
+					ignoredParameters.add("top_p");
+				}
+				if (options.getPresencePenalty() != null) {
+					ignoredParameters.add("presence_penalty");
+				}
+				if (options.getFrequencyPenalty() != null) {
+					ignoredParameters.add("frequency_penalty");
+				}
+				if (!ignoredParameters.isEmpty()) {
+					logger.warn("Thinking mode does not support the " + String.join(", ", ignoredParameters)
+							+ " parameter(s). Please note that, for compatibility with existing software, setting these parameters will not trigger an error but will also have no effect.");
+				}
+			}
+		}
 	}
 
 	private List<DeepSeekApi.FunctionTool> getFunctionTools(List<ToolDefinition> toolDefinitions) {
