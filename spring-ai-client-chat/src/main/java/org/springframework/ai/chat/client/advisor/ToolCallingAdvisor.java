@@ -280,11 +280,20 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 		ChatResponse previousAccumulatedResponse = usageAccumulator.accumulatedResponse();
 
 		return CHAT_CLIENT_MESSAGE_AGGREGATOR.aggregateChatClientResponse(responseFlux, aggregatedResponseRef::set)
-			.map(chatClientResponse -> UsageAccumulator.applyPreviousAccumulatedUsageToChunk(chatClientResponse,
-					previousAccumulatedResponse))
-			.concatWith(Flux.defer(() -> this.handleToolCallRecursion(aggregatedResponseRef.get(), finalRequest,
-					streamAdvisorChain, originalRequest, optionsCopy, usageAccumulator)))
-			.filter(ccr -> !this.toolExecutionEligibilityChecker.isToolCallResponse(ccr.chatResponse()));
+			.collectList()
+			.flatMapMany(roundResponses -> Flux.defer(() -> {
+				ChatClientResponse aggregatedResponse = aggregatedResponseRef.get();
+				boolean isToolCall = aggregatedResponse != null
+						&& this.toolExecutionEligibilityChecker.isToolCallResponse(aggregatedResponse.chatResponse());
+
+				Flux<ChatClientResponse> roundFlux = isToolCall ? Flux.empty()
+						: Flux.fromIterable(roundResponses)
+							.map(chatClientResponse -> UsageAccumulator
+								.applyPreviousAccumulatedUsageToChunk(chatClientResponse, previousAccumulatedResponse));
+
+				return roundFlux.concatWith(this.handleToolCallRecursion(aggregatedResponse, finalRequest,
+						streamAdvisorChain, originalRequest, optionsCopy, usageAccumulator));
+			}));
 	}
 
 	/**
