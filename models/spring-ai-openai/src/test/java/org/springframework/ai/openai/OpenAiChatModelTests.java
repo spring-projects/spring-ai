@@ -17,6 +17,7 @@
 package org.springframework.ai.openai;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -39,6 +40,7 @@ import com.openai.models.chat.completions.ChatCompletion;
 import com.openai.models.chat.completions.ChatCompletionAssistantMessageParam;
 import com.openai.models.chat.completions.ChatCompletionChunk;
 import com.openai.models.chat.completions.ChatCompletionContentPart;
+import com.openai.models.chat.completions.ChatCompletionContentPartInputAudio;
 import com.openai.models.chat.completions.ChatCompletionCreateParams;
 import com.openai.models.chat.completions.ChatCompletionFunctionTool;
 import com.openai.models.chat.completions.ChatCompletionMessage;
@@ -72,6 +74,7 @@ import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.openai.OpenAiChatModel.ResponseFormat;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.util.JsonHelper;
+import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -1054,6 +1057,53 @@ class OpenAiChatModelTests {
 			.orElseThrow()
 			.file();
 		assertThat(file.fileData()).contains("data:application/pdf;base64,JVBERi0xLjc=");
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = { "audio/mp3", "audio/mpeg", "audio/MPEG" })
+	void userMessageMp3MediaMapsToMp3InputAudioFormat(String mimeType) {
+		assertThat(audioInputFormatFor(mimeType)).isEqualTo(ChatCompletionContentPartInputAudio.InputAudio.Format.MP3);
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = { "audio/wav", "audio/x-wav", "audio/vnd.wave" })
+	void userMessageWavMediaMapsToWavInputAudioFormat(String mimeType) {
+		assertThat(audioInputFormatFor(mimeType)).isEqualTo(ChatCompletionContentPartInputAudio.InputAudio.Format.WAV);
+	}
+
+	private ChatCompletionContentPartInputAudio.InputAudio.Format audioInputFormatFor(String mimeType) {
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		UserMessage userMessage = UserMessage.builder()
+			.text("What is this recording about?")
+			.media(Media.builder()
+				.mimeType(MimeTypeUtils.parseMimeType(mimeType))
+				.data("audio".getBytes(StandardCharsets.UTF_8))
+				.build())
+			.build();
+
+		ChatCompletionCreateParams request = chatModel.createRequest(new Prompt(List.<Message>of(userMessage), options),
+				false);
+
+		ChatCompletionContentPartInputAudio.InputAudio inputAudio = request.messages()
+			.get(0)
+			.user()
+			.orElseThrow()
+			.content()
+			.arrayOfContentParts()
+			.orElseThrow()
+			.get(1)
+			.inputAudio()
+			.orElseThrow()
+			.inputAudio();
+		assertThat(inputAudio.data())
+			.isEqualTo(Base64.getEncoder().encodeToString("audio".getBytes(StandardCharsets.UTF_8)));
+		return inputAudio.format();
 	}
 
 	@Test
