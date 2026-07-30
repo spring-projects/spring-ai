@@ -288,7 +288,12 @@ public class BedrockProxyChatModel implements ChatModel {
 				List<ContentBlock> contents = new ArrayList<>();
 				if (message instanceof UserMessage) {
 					var userMessage = (UserMessage) message;
-					contents.add(ContentBlock.fromText(userMessage.getText()));
+					// The Converse API rejects empty text content blocks, so only send
+					// the text when there is any. A user message may legitimately carry
+					// media only (gh-6695).
+					if (StringUtils.hasText(userMessage.getText())) {
+						contents.add(ContentBlock.fromText(userMessage.getText()));
+					}
 
 					if (!CollectionUtils.isEmpty(userMessage.getMedia())) {
 						List<ContentBlock> mediaContent = userMessage.getMedia()

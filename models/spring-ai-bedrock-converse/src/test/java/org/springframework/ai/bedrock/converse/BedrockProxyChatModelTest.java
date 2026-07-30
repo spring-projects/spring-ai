@@ -415,6 +415,58 @@ class BedrockProxyChatModelTest {
 		assertThat(tools.get(1).cachePoint().ttlAsString()).isEqualTo("1h");
 	}
 
+	// -------------------------------------------------------------------------
+	// Empty user message text (gh-6695)
+	// -------------------------------------------------------------------------
+
+	@Test
+	void mediaOnlyUserMessageOmitsEmptyTextContentBlock() {
+		BedrockProxyChatModel model = newModel();
+
+		Prompt prompt = new Prompt(List.of(UserMessage.builder().text("").media(pngMedia()).build()),
+				BedrockChatOptions.builder().build());
+
+		List<ContentBlock> contents = model.createRequest(prompt).messages().get(0).content();
+
+		assertThat(contents).hasSize(1);
+		assertThat(contents.get(0).image()).isNotNull();
+		assertThat(contents).noneMatch(content -> content.text() != null);
+	}
+
+	@Test
+	void blankUserMessageTextOmitsEmptyTextContentBlock() {
+		BedrockProxyChatModel model = newModel();
+
+		Prompt prompt = new Prompt(List.of(UserMessage.builder().text("   \n\t").media(pngMedia()).build()),
+				BedrockChatOptions.builder().build());
+
+		List<ContentBlock> contents = model.createRequest(prompt).messages().get(0).content();
+
+		assertThat(contents).hasSize(1);
+		assertThat(contents.get(0).image()).isNotNull();
+	}
+
+	@Test
+	void userMessageWithTextAndMediaKeepsBothContentBlocks() {
+		BedrockProxyChatModel model = newModel();
+
+		Prompt prompt = new Prompt(List.of(UserMessage.builder().text("Describe the image").media(pngMedia()).build()),
+				BedrockChatOptions.builder().build());
+
+		List<ContentBlock> contents = model.createRequest(prompt).messages().get(0).content();
+
+		assertThat(contents).hasSize(2);
+		assertThat(contents.get(0).text()).isEqualTo("Describe the image");
+		assertThat(contents.get(1).image()).isNotNull();
+	}
+
+	private static Media pngMedia() {
+		return Media.builder()
+			.mimeType(MimeType.valueOf("image/png"))
+			.data(new byte[] { (byte) 0x89, 'P', 'N', 'G' })
+			.build();
+	}
+
 	public record WeatherRequest(String location, String unit) {
 	}
 
