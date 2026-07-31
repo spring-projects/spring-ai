@@ -594,12 +594,16 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			return List.of(new Generation(assistantMessage, chatGenerationMetadata));
 		}
 		else {
+			if (!candidate.content().isPresent()) {
+				return List.of();
+			}
 			List<Generation> generations = candidate.content()
 				.get()
 				.parts()
 				.orElse(List.of())
 				.stream()
-				.filter(part -> part.toolCall().isEmpty() && part.toolResponse().isEmpty())
+				.filter(part -> part.toolCall().isEmpty() && part.toolResponse().isEmpty()
+						&& StringUtils.hasText(part.text().orElse("")))
 				.map(part -> {
 					var partMessageMetadata = new HashMap<>(messageMetadata);
 					partMessageMetadata.put("isThought", part.thought().orElse(false));
@@ -612,13 +616,17 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 				.toList();
 
 			// If all parts were server-side tool invocations, return a single generation
-			// with empty text but with the server-side tool invocation metadata
+			// with empty text but with the server-side tool invocation metadata.
+			// If all parts were simply empty text, drop this candidate entirely.
 			if (generations.isEmpty()) {
-				AssistantMessage assistantMessage = AssistantMessage.builder()
-					.content("")
-					.properties(messageMetadata)
-					.build();
-				return List.of(new Generation(assistantMessage, chatGenerationMetadata));
+				if (messageMetadata.containsKey("serverSideToolInvocations")) {
+					AssistantMessage assistantMessage = AssistantMessage.builder()
+						.content("")
+						.properties(messageMetadata)
+						.build();
+					return List.of(new Generation(assistantMessage, chatGenerationMetadata));
+				}
+				return List.of();
 			}
 
 			return generations;
