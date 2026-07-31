@@ -591,7 +591,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		return response;
 	}
 
-	private static AnthropicChatOptions resolveAnthropicOptions(Prompt prompt) {
+	static AnthropicChatOptions resolveAnthropicOptions(Prompt prompt) {
 		ChatOptions options = prompt.getOptions();
 		return options instanceof AnthropicChatOptions anthropicOptions ? anthropicOptions
 				: AnthropicChatOptions.builder().build();
@@ -615,6 +615,23 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	 * @return the constructed request parameters
 	 */
 	MessageCreateParams createRequest(Prompt prompt, boolean stream) {
+		return createRequest(prompt, this.toolCallingManager, this.options.getSkillContainer());
+	}
+
+	/**
+	 * Same mapping as {@link #createRequest(Prompt, boolean)}, with the collaborators
+	 * passed in explicitly so that other Anthropic models in this module — notably
+	 * {@link AnthropicBatchModel} — reuse the exact same {@link Prompt} to
+	 * {@link MessageCreateParams} conversion instead of duplicating it.
+	 * @param prompt the prompt with message history and options
+	 * @param toolCallingManager resolves the tool definitions to advertise
+	 * @param defaultSkillContainer fallback skill container when the prompt options carry
+	 * none; may be {@code null}
+	 * @return the constructed request parameters
+	 * @since 2.0.0
+	 */
+	static MessageCreateParams createRequest(Prompt prompt, ToolCallingManager toolCallingManager,
+			@Nullable AnthropicSkillContainer defaultSkillContainer) {
 
 		MessageCreateParams.Builder builder = MessageCreateParams.builder();
 
@@ -856,9 +873,9 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		List<ToolUnion> allTools = new ArrayList<>();
 
 		// Add user-defined tool definitions
-		List<ToolDefinition> toolDefinitions = this.toolCallingManager.resolveToolDefinitions(requestOptions);
+		List<ToolDefinition> toolDefinitions = toolCallingManager.resolveToolDefinitions(requestOptions);
 		if (!CollectionUtils.isEmpty(toolDefinitions)) {
-			List<Tool> tools = toolDefinitions.stream().map(this::toAnthropicTool).toList();
+			List<Tool> tools = toolDefinitions.stream().map(AnthropicChatModel::toAnthropicTool).toList();
 
 			// Apply cache control to the last tool if caching strategy includes tools
 			CacheControlEphemeral toolCacheControl = cacheResolver.resolveToolCacheControl();
@@ -907,8 +924,8 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 		// Skills support
 		AnthropicSkillContainer skillContainer = requestOptions.getSkillContainer();
-		if (skillContainer == null && this.options.getSkillContainer() != null) {
-			skillContainer = this.options.getSkillContainer();
+		if (skillContainer == null && defaultSkillContainer != null) {
+			skillContainer = defaultSkillContainer;
 		}
 		if (skillContainer != null) {
 			// Add container with skills config
@@ -953,7 +970,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	 * @param lastUserIndex the index of the last user message (inclusive)
 	 * @return the combined text of eligible messages
 	 */
-	private String combineEligibleMessagesText(List<org.springframework.ai.chat.messages.Message> messages,
+	private static String combineEligibleMessagesText(List<org.springframework.ai.chat.messages.Message> messages,
 			int lastUserIndex) {
 		StringBuilder combined = new StringBuilder();
 		for (int i = 0; i <= lastUserIndex && i < messages.size(); i++) {
@@ -965,7 +982,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		return combined.toString();
 	}
 
-	private String combineToolResponsesText(List<ToolResponseMessage.ToolResponse> responses) {
+	private static String combineToolResponsesText(List<ToolResponseMessage.ToolResponse> responses) {
 		StringBuilder combined = new StringBuilder();
 		for (ToolResponseMessage.ToolResponse response : responses) {
 			String data = response.responseData();
@@ -984,7 +1001,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	 * @param webSearchAccumulator collects web search results found in response
 	 * @return list of generations with text, tool calls, and/or thinking content
 	 */
-	private List<Generation> buildGenerations(Message message, List<Citation> citationAccumulator,
+	static List<Generation> buildGenerations(Message message, List<Citation> citationAccumulator,
 			List<AnthropicWebSearchResult> webSearchAccumulator) {
 		List<Generation> generations = new ArrayList<>();
 
@@ -1067,7 +1084,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	 * @param usage the usage information
 	 * @return the chat response metadata
 	 */
-	private ChatResponseMetadata from(Message message, Usage usage, List<Citation> citations,
+	static ChatResponseMetadata from(Message message, Usage usage, List<Citation> citations,
 			List<AnthropicWebSearchResult> webSearchResults, RateLimit rateLimit) {
 		Assert.notNull(message, "Anthropic Message must not be null");
 		ChatResponseMetadata.Builder metadataBuilder = ChatResponseMetadata.builder()
@@ -1090,7 +1107,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	 * @param usage the Anthropic SDK usage
 	 * @return the Spring AI usage
 	 */
-	private Usage getDefaultUsage(com.anthropic.models.messages.Usage usage) {
+	static Usage getDefaultUsage(com.anthropic.models.messages.Usage usage) {
 		if (usage == null) {
 			return new EmptyUsage();
 		}
@@ -1103,7 +1120,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 				Integer.valueOf(Math.toIntExact(inputTokens + outputTokens)), usage, cacheRead, cacheWrite);
 	}
 
-	private @Nullable Citation convertTextCitation(TextCitation textCitation) {
+	private static @Nullable Citation convertTextCitation(TextCitation textCitation) {
 		if (textCitation.isCharLocation()) {
 			return fromCharLocation(textCitation.asCharLocation());
 		}
@@ -1119,7 +1136,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		return null;
 	}
 
-	private @Nullable Citation convertStreamingCitation(CitationsDelta.Citation citation) {
+	private static @Nullable Citation convertStreamingCitation(CitationsDelta.Citation citation) {
 		if (citation.isCharLocation()) {
 			return fromCharLocation(citation.asCharLocation());
 		}
@@ -1135,22 +1152,22 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		return null;
 	}
 
-	private Citation fromCharLocation(CitationCharLocation loc) {
+	private static Citation fromCharLocation(CitationCharLocation loc) {
 		return Citation.ofCharLocation(loc.citedText(), (int) loc.documentIndex(), loc.documentTitle().orElse(null),
 				(int) loc.startCharIndex(), (int) loc.endCharIndex());
 	}
 
-	private Citation fromPageLocation(CitationPageLocation loc) {
+	private static Citation fromPageLocation(CitationPageLocation loc) {
 		return Citation.ofPageLocation(loc.citedText(), (int) loc.documentIndex(), loc.documentTitle().orElse(null),
 				(int) loc.startPageNumber(), (int) loc.endPageNumber());
 	}
 
-	private Citation fromContentBlockLocation(CitationContentBlockLocation loc) {
+	private static Citation fromContentBlockLocation(CitationContentBlockLocation loc) {
 		return Citation.ofContentBlockLocation(loc.citedText(), (int) loc.documentIndex(),
 				loc.documentTitle().orElse(null), (int) loc.startBlockIndex(), (int) loc.endBlockIndex());
 	}
 
-	private Citation fromWebSearchResultLocation(CitationsWebSearchResultLocation loc) {
+	private static Citation fromWebSearchResultLocation(CitationsWebSearchResultLocation loc) {
 		return Citation.ofWebSearchResultLocation(loc.citedText(), loc.url(), loc.title().orElse(null));
 	}
 
@@ -1162,7 +1179,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	 * @return a valid JSON string
 	 * @throws RuntimeException if serialization fails
 	 */
-	private String convertJsonValueToString(JsonValue jsonValue) {
+	private static String convertJsonValueToString(JsonValue jsonValue) {
 		try {
 			var jsonMapper = tools.jackson.databind.json.JsonMapper.builder().build();
 			// Convert to native Java objects first, then serialize with Jackson
@@ -1180,7 +1197,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	 * @param jsonValue the SDK's JsonValue to convert
 	 * @return the equivalent native Java object, or null for JSON null
 	 */
-	private @Nullable Object convertJsonValueToNative(JsonValue jsonValue) {
+	private static @Nullable Object convertJsonValueToNative(JsonValue jsonValue) {
 		return jsonValue.accept(new JsonValue.Visitor<@Nullable Object>() {
 			@Override
 			public @Nullable Object visitNull() {
@@ -1232,7 +1249,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	 * @param argumentsJson the JSON string containing tool call arguments
 	 * @return a ToolUseBlockParam.Input with the parsed arguments
 	 */
-	private ToolUseBlockParam.Input buildToolInput(String argumentsJson) {
+	private static ToolUseBlockParam.Input buildToolInput(String argumentsJson) {
 		ToolUseBlockParam.Input.Builder inputBuilder = ToolUseBlockParam.Input.builder();
 		if (argumentsJson != null && !argumentsJson.isEmpty()) {
 			try {
@@ -1267,7 +1284,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	 * @throws RuntimeException if the JSON schema cannot be parsed
 	 */
 	@SuppressWarnings("unchecked")
-	private Tool toAnthropicTool(ToolDefinition toolDefinition) {
+	private static Tool toAnthropicTool(ToolDefinition toolDefinition) {
 		try {
 			// Parse the JSON schema string into a Map
 			var jsonMapper = tools.jackson.databind.json.JsonMapper.builder().build();
@@ -1314,7 +1331,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	 * @param webSearchTool the web search configuration
 	 * @return the SDK web search tool
 	 */
-	private WebSearchTool20260209 toSdkWebSearchTool(AnthropicWebSearchTool webSearchTool) {
+	private static WebSearchTool20260209 toSdkWebSearchTool(AnthropicWebSearchTool webSearchTool) {
 		WebSearchTool20260209.Builder sdkBuilder = WebSearchTool20260209.builder();
 
 		if (webSearchTool.getAllowedDomains() != null) {
@@ -1355,7 +1372,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	 * @return the appropriate ContentBlockParam (ImageBlockParam or DocumentBlockParam)
 	 * @throws IllegalArgumentException if the media type is unsupported
 	 */
-	private ContentBlockParam getContentBlockParamByMedia(Media media) {
+	private static ContentBlockParam getContentBlockParamByMedia(Media media) {
 		MimeType mimeType = media.getMimeType();
 		String data = fromMediaData(media.getData());
 
@@ -1374,7 +1391,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	 * @param mimeType the MIME type to check
 	 * @return true if the type is image/*
 	 */
-	private boolean isImageMedia(MimeType mimeType) {
+	private static boolean isImageMedia(MimeType mimeType) {
 		return "image".equals(mimeType.getType());
 	}
 
@@ -1383,7 +1400,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	 * @param mimeType the MIME type to check
 	 * @return true if the type is application/pdf
 	 */
-	private boolean isPdfMedia(MimeType mimeType) {
+	private static boolean isPdfMedia(MimeType mimeType) {
 		return "application".equals(mimeType.getType()) && "pdf".equals(mimeType.getSubtype());
 	}
 
@@ -1394,7 +1411,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	 * @return base64-encoded string or URL string
 	 * @throws IllegalArgumentException if data type is unsupported
 	 */
-	private String fromMediaData(Object mediaData) {
+	private static String fromMediaData(Object mediaData) {
 		if (mediaData instanceof byte[] bytes) {
 			return Base64.getEncoder().encodeToString(bytes);
 		}
@@ -1411,7 +1428,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	 * @param data base64-encoded image data or HTTPS URL
 	 * @return the ImageBlockParam wrapped in ContentBlockParam
 	 */
-	private ContentBlockParam createImageBlockParam(MimeType mimeType, String data) {
+	private static ContentBlockParam createImageBlockParam(MimeType mimeType, String data) {
 		ImageBlockParam.Source source;
 		if (data.startsWith("https://")) {
 			source = ImageBlockParam.Source.ofUrl(UrlImageSource.builder().url(data).build());
@@ -1428,7 +1445,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	 * @param data base64-encoded PDF data or HTTPS URL
 	 * @return the DocumentBlockParam wrapped in ContentBlockParam
 	 */
-	private ContentBlockParam createDocumentBlockParam(String data) {
+	private static ContentBlockParam createDocumentBlockParam(String data) {
 		DocumentBlockParam.Source source;
 		if (data.startsWith("https://")) {
 			source = DocumentBlockParam.Source.ofUrl(UrlPdfSource.builder().url(data).build());
@@ -1445,7 +1462,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	 * @return the SDK media type enum value
 	 * @throws IllegalArgumentException if the image type is unsupported
 	 */
-	private Base64ImageSource.MediaType toSdkImageMediaType(MimeType mimeType) {
+	private static Base64ImageSource.MediaType toSdkImageMediaType(MimeType mimeType) {
 		String subtype = mimeType.getSubtype();
 		return switch (subtype) {
 			case "png" -> Base64ImageSource.MediaType.IMAGE_PNG;
@@ -1461,7 +1478,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	 * Applies {@code disableParallelToolUse} to an existing {@link ToolChoice} by
 	 * rebuilding the appropriate subtype with the flag set to {@code true}.
 	 */
-	private ToolChoice applyDisableParallelToolUse(ToolChoice toolChoice) {
+	private static ToolChoice applyDisableParallelToolUse(ToolChoice toolChoice) {
 		if (toolChoice.isAuto()) {
 			return ToolChoice.ofAuto(toolChoice.asAuto().toBuilder().disableParallelToolUse(true).build());
 		}
