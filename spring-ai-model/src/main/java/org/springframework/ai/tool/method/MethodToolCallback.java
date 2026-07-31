@@ -38,8 +38,6 @@ import org.springframework.ai.tool.metadata.ToolMetadata;
 import org.springframework.ai.util.JsonHelper;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.util.Assert;
-import org.springframework.util.ClassUtils;
-import org.springframework.util.CollectionUtils;
 
 /**
  * A {@link ToolCallback} implementation to invoke methods as tools.
@@ -104,8 +102,6 @@ public final class MethodToolCallback implements ToolCallback {
 			logger.debug("Starting execution of tool: " + this.toolDefinition.name());
 		}
 
-		this.validateToolContextSupport(toolContext);
-
 		Map<String, Object> toolArguments = this.extractToolArguments(toolInput);
 		Assert.state(toolArguments != null, "toolArguments must not be null");
 
@@ -122,15 +118,6 @@ public final class MethodToolCallback implements ToolCallback {
 		return this.toolCallResultConverter.convert(result, returnType);
 	}
 
-	private void validateToolContextSupport(@Nullable ToolContext toolContext) {
-		var isNonEmptyToolContextProvided = toolContext != null && !CollectionUtils.isEmpty(toolContext.getContext());
-		var isToolContextAcceptedByMethod = Stream.of(this.toolMethod.getParameterTypes())
-			.anyMatch(type -> ClassUtils.isAssignable(ToolContext.class, type));
-		if (isToolContextAcceptedByMethod && !isNonEmptyToolContextProvided) {
-			throw new IllegalArgumentException("ToolContext is required by the method as an argument");
-		}
-	}
-
 	private @Nullable Map<String, Object> extractToolArguments(String toolInput) {
 		try {
 			return jsonHelper.fromJson(toolInput, new ParameterizedTypeReference<>() {
@@ -143,12 +130,11 @@ public final class MethodToolCallback implements ToolCallback {
 		}
 	}
 
-	// Based on the implementation in MethodToolCallback.
 	@SuppressWarnings("null")
 	private Object[] buildMethodArguments(Map<String, Object> toolInputArguments, @Nullable ToolContext toolContext) {
 		return Stream.of(this.toolMethod.getParameters()).map(parameter -> {
 			if (parameter.getType().isAssignableFrom(ToolContext.class)) {
-				return toolContext;
+				return toolContext != null ? toolContext : new ToolContext(Map.of());
 			}
 			Object rawArgument = toolInputArguments.get(parameter.getName());
 			return buildTypedArgument(rawArgument, parameter.getParameterizedType());
