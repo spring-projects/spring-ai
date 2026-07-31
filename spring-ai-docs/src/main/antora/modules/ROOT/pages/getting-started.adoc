@@ -12,6 +12,81 @@ NOTE: Spring AI 2.0.x supports Spring Boot 4.0.x and 4.1.x.
 
 Head on over to https://start.spring.io/[start.spring.io] and select the AI Models and Vector Stores that you want to use in your new applications.
 
+[[console-application]]
+== Creating a Console Application
+
+Spring AI can be used in non-web console applications without requiring a web server.
+A web starter dependency is not required for simple command-line applications.
+
+No `spring-boot-starter-web` dependency is required.
+
+=== Required Dependency
+
+[tabs]
+======
+Maven::
++
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-model-openai</artifactId>
+</dependency>
+----
+
+Gradle::
++
+[source,groovy]
+----
+implementation 'org.springframework.ai:spring-ai-starter-model-openai'
+----
+======
+
+=== Example
+
+[source,java]
+----
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class ConsoleApplication implements CommandLineRunner {
+
+    private final ChatClient chatClient;
+
+    public ConsoleApplication(ChatClient.Builder builder) {
+        this.chatClient = builder.build();
+    }
+
+    public static void main(String[] args) {
+        SpringApplication.run(ConsoleApplication.class, args);
+    }
+
+    @Override
+    public void run(String... args) {
+        String response = this.chatClient.prompt()
+                .user("Tell me a joke")
+                .call()
+                .content();
+
+        System.out.println(response);
+    }
+}
+----
+
+=== Configuration
+
+[source,yaml]
+----
+spring:
+  ai:
+    openai:
+      api-key: YOUR_API_KEY
+----
+
+
 [[artifact-repositories]]
 == Artifact Repositories
 
