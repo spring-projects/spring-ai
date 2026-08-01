@@ -304,7 +304,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	 * chunks and the final response with tool call information or the model's final
 	 * answer.
 	 */
-	public Flux<ChatResponse> internalStream(Prompt prompt, @Nullable ChatResponse previousChatResponse) {
+	private Flux<ChatResponse> internalStream(Prompt prompt, @Nullable ChatResponse previousChatResponse) {
 
 		return Flux.deferContextual(contextView -> {
 			MessageCreateParams request = createRequest(prompt, true);
@@ -541,7 +541,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	 * turn.
 	 * @return The final {@link ChatResponse} after all tool calls (if any) are resolved.
 	 */
-	public ChatResponse internalCall(Prompt prompt, @Nullable ChatResponse previousChatResponse) {
+	private ChatResponse internalCall(Prompt prompt, @Nullable ChatResponse previousChatResponse) {
 
 		MessageCreateParams request = createRequest(prompt, false);
 
