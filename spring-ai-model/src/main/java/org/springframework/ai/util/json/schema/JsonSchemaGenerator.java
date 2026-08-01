@@ -114,6 +114,12 @@ public final class JsonSchemaGenerator {
 	private JsonSchemaGenerator() {
 	}
 
+	private static ObjectNode generateSchema(SchemaGenerator generator, Type type) {
+		synchronized (generator) {
+			return generator.generateSchema(type);
+		}
+	}
+
 	/**
 	 * Generate a JSON Schema for a method's input parameters.
 	 */
@@ -139,7 +145,7 @@ public final class JsonSchemaGenerator {
 			if (isMethodParameterRequired(method, i)) {
 				required.add(parameterName);
 			}
-			ObjectNode parameterNode = SUBTYPE_SCHEMA_GENERATOR.generateSchema(parameterType);
+			ObjectNode parameterNode = generateSchema(SUBTYPE_SCHEMA_GENERATOR, parameterType);
 			// Remove OpenAPI format as some LLMs (like Mistral) don't handle them.
 			parameterNode.remove("format");
 			String parameterDescription = getMethodParameterDescription(method, i);
@@ -162,7 +168,7 @@ public final class JsonSchemaGenerator {
 	 */
 	public static String generateForType(Type type, SchemaOption... schemaOptions) {
 		Assert.notNull(type, "type cannot be null");
-		ObjectNode schema = TYPE_SCHEMA_GENERATOR.generateSchema(type);
+		ObjectNode schema = generateSchema(TYPE_SCHEMA_GENERATOR, type);
 		if ((type == Void.class) && !schema.has("properties")) {
 			schema.putObject("properties");
 		}
