@@ -16,9 +16,15 @@
 
 package org.springframework.ai.chat.memory.repository.neo4j;
 
+import java.util.function.BiFunction;
+import java.util.stream.Stream;
+
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Result;
@@ -28,7 +34,13 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+/**
+ * Integration tests for {@link Neo4jChatMemoryRepositoryConfig}.
+ *
+ * @author Soby Chacko
+ */
 @Testcontainers
 class Neo4JChatMemoryRepositoryConfigIT {
 
@@ -85,6 +97,34 @@ class Neo4JChatMemoryRepositoryConfigIT {
 			.build();
 		assertThat(config.getSessionLabel()).isEqualTo(customSessionLabel);
 		assertThat(config.getMessageLabel()).isEqualTo(customMessageLabel);
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = { "1Session", "Session Label", "Session-Label", "Session`", "Session)" })
+	void shouldRejectMalformedSessionLabel(String invalidLabel) {
+		assertThatThrownBy(() -> Neo4jChatMemoryRepositoryConfig.builder()
+			.withDriver(driver)
+			.withSessionLabel(invalidLabel)
+			.build()).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("Invalid Neo4j node label");
+	}
+
+	static Stream<BiFunction<Neo4jChatMemoryRepositoryConfig.Builder, String, Neo4jChatMemoryRepositoryConfig.Builder>> allLabelSetters() {
+		return Stream.of(Neo4jChatMemoryRepositoryConfig.Builder::withSessionLabel,
+				Neo4jChatMemoryRepositoryConfig.Builder::withMessageLabel,
+				Neo4jChatMemoryRepositoryConfig.Builder::withMetadataLabel,
+				Neo4jChatMemoryRepositoryConfig.Builder::withMediaLabel,
+				Neo4jChatMemoryRepositoryConfig.Builder::withToolCallLabel,
+				Neo4jChatMemoryRepositoryConfig.Builder::withToolResponseLabel);
+	}
+
+	@ParameterizedTest
+	@MethodSource("allLabelSetters")
+	void shouldRejectSpecialCharactersInAnyLabel(
+			BiFunction<Neo4jChatMemoryRepositoryConfig.Builder, String, Neo4jChatMemoryRepositoryConfig.Builder> setter) {
+		assertThatThrownBy(
+				() -> setter.apply(Neo4jChatMemoryRepositoryConfig.builder().withDriver(driver), "Bad`) Label").build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("Invalid Neo4j node label");
 	}
 
 	@Test

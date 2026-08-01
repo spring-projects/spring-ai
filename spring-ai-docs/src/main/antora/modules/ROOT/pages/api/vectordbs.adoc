@@ -667,6 +667,35 @@ Expression exp = b.and(b.isNotNull("year")).build();
 
 NOTE: `IS NULL` and `IS NOT NULL` have not been implemented in all vector stores yet.
 
+=== Partitioning a Shared Index
+
+A single vector store is often shared by many logical groups of documents — for example one index holding content for several customers, projects, or knowledge bases.
+A `VectorStore` operates over the whole index and returns or removes documents based on similarity and the filter you provide, so a filter expression is what selects the group you want to work with.
+
+The approach is to tag each document with metadata that identifies its group when it is written, and then apply a matching filter on searches and deletes:
+
+[source,java]
+----
+// When writing, record the group the document belongs to.
+Document document = new Document(content, Map.of("group", groupId));
+vectorStore.add(List.of(document));
+
+// When searching, select documents from that group.
+List<Document> results = vectorStore.similaritySearch(SearchRequest.builder()
+    .query(query)
+    .filterExpression("group == '" + groupId + "'")
+    .build());
+
+// When deleting by filter, target the same group.
+Filter.Expression scoped = new FilterExpressionBuilder().eq("group", groupId).build();
+vectorStore.delete(scoped);
+----
+
+A couple of practices keep the groups cleanly separated:
+
+* Add the identifying metadata to every document at write time, so it is always available to filter on later.
+* Apply the corresponding filter consistently on searches and deletes so an operation only affects the intended group.
+
 == Deleting Documents from Vector Store
 
 The Vector Store interface provides multiple methods for deleting documents, allowing you to remove data either by specific document IDs or using filter expressions.

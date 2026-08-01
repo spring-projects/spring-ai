@@ -893,8 +893,8 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 	}
 
 	/**
-	 * Validates ThinkingLevel compatibility with the model. Gemini 3 Pro only supports
-	 * LOW and HIGH. Gemini 3 Flash supports all levels.
+	 * Validates ThinkingLevel compatibility with the model. Gemini 3.1 Pro doesn't
+	 * support MINIMAL. Gemini 3 Flash supports all levels.
 	 * @param level the thinking level to validate
 	 * @param modelName the model name
 	 * @throws IllegalArgumentException if the level is not supported for the model
@@ -904,10 +904,10 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			return;
 		}
 		if (isGemini3ProModel(modelName)) {
-			if (level == GoogleGenAiThinkingLevel.MINIMAL || level == GoogleGenAiThinkingLevel.MEDIUM) {
+			if (level == GoogleGenAiThinkingLevel.MINIMAL) {
 				throw new IllegalArgumentException(
 						String.format("ThinkingLevel.%s is not supported for Gemini 3 Pro models. "
-								+ "Supported levels: LOW, HIGH. Model: %s", level, modelName));
+								+ "Supported levels: LOW, MEDIUM, HIGH. Model: %s", level, modelName));
 			}
 		}
 	}

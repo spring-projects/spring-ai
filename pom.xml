@@ -115,6 +115,7 @@
 		<module>models/spring-ai-elevenlabs</module>
 		<module>models/spring-ai-google-genai</module>
 		<module>models/spring-ai-google-genai-embedding</module>
+		<module>models/spring-ai-google-genai-image</module>
 		<module>models/spring-ai-mistral-ai</module>
 		<module>models/spring-ai-ollama</module>
 		<module>models/spring-ai-openai</module>
@@ -142,6 +143,7 @@
 		<module>starters/spring-ai-starter-model-elevenlabs</module>
 		<module>starters/spring-ai-starter-model-google-genai</module>
 		<module>starters/spring-ai-starter-model-google-genai-embedding</module>
+		<module>starters/spring-ai-starter-model-google-genai-image</module>
 		<module>starters/spring-ai-starter-model-mistral-ai</module>
 		<module>starters/spring-ai-starter-model-ollama</module>
 		<module>starters/spring-ai-starter-model-openai</module>

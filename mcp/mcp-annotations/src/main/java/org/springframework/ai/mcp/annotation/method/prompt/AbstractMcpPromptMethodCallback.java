@@ -17,6 +17,8 @@
 package org.springframework.ai.mcp.annotation.method.prompt;
 
 import java.lang.reflect.Method;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -293,7 +295,7 @@ public abstract class AbstractMcpPromptMethodCallback {
 		}
 		else if (targetType == Integer.class || targetType == int.class) {
 			if (value instanceof Number) {
-				return ((Number) value).intValue();
+				return this.toIntegerExact((Number) value);
 			}
 			else {
 				return Integer.parseInt(value.toString());
@@ -301,7 +303,7 @@ public abstract class AbstractMcpPromptMethodCallback {
 		}
 		else if (targetType == Long.class || targetType == long.class) {
 			if (value instanceof Number) {
-				return ((Number) value).longValue();
+				return this.toLongExact((Number) value);
 			}
 			else {
 				return Long.parseLong(value.toString());
@@ -326,6 +328,42 @@ public abstract class AbstractMcpPromptMethodCallback {
 
 		// For other types, return as is and hope for the best
 		return value;
+	}
+
+	private int toIntegerExact(Number value) {
+		try {
+			return this.toBigDecimal(value).intValueExact();
+		}
+		catch (ArithmeticException | NumberFormatException ex) {
+			throw new IllegalArgumentException("Cannot safely convert numeric value '" + value + "' to int", ex);
+		}
+	}
+
+	private long toLongExact(Number value) {
+		try {
+			return this.toBigDecimal(value).longValueExact();
+		}
+		catch (ArithmeticException | NumberFormatException ex) {
+			throw new IllegalArgumentException("Cannot safely convert numeric value '" + value + "' to long", ex);
+		}
+	}
+
+	private BigDecimal toBigDecimal(Number value) {
+		if (value instanceof BigDecimal bigDecimal) {
+			return bigDecimal;
+		}
+		if (value instanceof BigInteger bigInteger) {
+			return new BigDecimal(bigInteger);
+		}
+		if (value instanceof Byte || value instanceof Short || value instanceof Integer || value instanceof Long) {
+			return BigDecimal.valueOf(value.longValue());
+		}
+		if (value instanceof Float || value instanceof Double) {
+			// Use the exact binary floating-point value. The shorter toString()
+			// representation may denote a different integer near large boundaries.
+			return new BigDecimal(value.doubleValue());
+		}
+		return new BigDecimal(value.toString());
 	}
 
 	/**

@@ -35,6 +35,14 @@
 			<optional>true</optional>
 		</dependency>
 
+		<!-- Google GenAI Image -->
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-google-genai-image</artifactId>
+			<version>${project.parent.version}</version>
+			<optional>true</optional>
+		</dependency>
+
 		<!-- Spring AI auto configurations -->
 
 		<dependency>
@@ -58,6 +66,12 @@
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-autoconfigure-model-embedding-observation</artifactId>
+			<version>${project.parent.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-autoconfigure-model-image-observation</artifactId>
 			<version>${project.parent.version}</version>
 		</dependency>
 
