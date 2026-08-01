@@ -19,6 +19,7 @@ package org.springframework.ai.chat.memory.repository.mongo;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.IntStream;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -57,11 +58,16 @@ public final class MongoChatMemoryRepository implements ChatMemoryRepository {
 		return this.mongoTemplate.query(Conversation.class).distinct("conversationId").as(String.class).all();
 	}
 
+	/**
+	 * Messages are ordered by their position within the conversation. Documents written
+	 * before the {@code sequence} field was introduced do not have one and fall back to
+	 * the {@code timestamp} ordering used at the time they were written.
+	 */
 	@Override
 	public List<Message> findByConversationId(String conversationId) {
 		var messages = this.mongoTemplate.query(Conversation.class)
 			.matching(Query.query(Criteria.where("conversationId").is(conversationId))
-				.with(Sort.by("timestamp").ascending()));
+				.with(Sort.by(Sort.Order.asc("sequence"), Sort.Order.asc("timestamp"))));
 		return messages.stream().map(MongoChatMemoryRepository::mapMessage).filter(Objects::nonNull).toList();
 	}
 
@@ -77,11 +83,13 @@ public final class MongoChatMemoryRepository implements ChatMemoryRepository {
 							+ conversationId);
 		}
 		deleteByConversationId(conversationId);
-		var conversations = persistableMessages.stream()
-			.map(message -> new Conversation(conversationId,
+		var timestamp = Instant.now();
+		var conversations = IntStream.range(0, persistableMessages.size()).mapToObj(sequence -> {
+			var message = persistableMessages.get(sequence);
+			return new Conversation(conversationId,
 					new Conversation.Message(message.getText(), message.getMessageType().name(), message.getMetadata()),
-					Instant.now()))
-			.toList();
+					timestamp, sequence);
+		}).toList();
 		this.mongoTemplate.insert(conversations, Conversation.class);
 	}
 

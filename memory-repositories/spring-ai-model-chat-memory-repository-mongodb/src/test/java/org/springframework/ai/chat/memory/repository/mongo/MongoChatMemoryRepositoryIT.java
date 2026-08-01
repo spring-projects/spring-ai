@@ -16,9 +16,14 @@
 
 package org.springframework.ai.chat.memory.repository.mongo;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
+import org.bson.Document;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -40,6 +45,7 @@ import org.springframework.boot.mongodb.autoconfigure.MongoAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Bean;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
@@ -139,6 +145,56 @@ public class MongoChatMemoryRepositoryIT {
 	}
 
 	@Test
+	void messagesAreStoredWithTheirPositionInTheConversation() {
+		var conversationId = UUID.randomUUID().toString();
+		var messages = List.<Message>of(new UserMessage("First message"), new AssistantMessage("Second message"),
+				new UserMessage("Third message"));
+
+		this.chatMemoryRepository.saveAll(conversationId, messages);
+
+		var stored = this.mongoTemplate.query(Conversation.class)
+			.matching(Query.query(Criteria.where("conversationId").is(conversationId))
+				.with(Sort.by("sequence").ascending()))
+			.all();
+
+		assertThat(stored).extracting(Conversation::sequence).containsExactly(0, 1, 2);
+		assertThat(stored).extracting(conversation -> conversation.message().content())
+			.containsExactly("First message", "Second message", "Third message");
+	}
+
+	@Test
+	void messageOrderIsPreservedAcrossSaves() {
+		var conversationId = UUID.randomUUID().toString();
+		var messages = new ArrayList<Message>(
+				List.of(new UserMessage("First message"), new AssistantMessage("Second message")));
+
+		this.chatMemoryRepository.saveAll(conversationId, messages);
+
+		messages.add(new UserMessage("Third message"));
+		messages.add(new AssistantMessage("Fourth message"));
+		this.chatMemoryRepository.saveAll(conversationId, messages);
+
+		assertThat(this.chatMemoryRepository.findByConversationId(conversationId)).isEqualTo(messages);
+	}
+
+	@Test
+	void documentsWithoutSequenceAreOrderedByTimestamp() {
+		var conversationId = UUID.randomUUID().toString();
+		var timestamp = Instant.now().truncatedTo(ChronoUnit.MILLIS);
+
+		this.mongoTemplate.insert(
+				List.of(legacyDocument(conversationId, "First message", "USER", timestamp),
+						legacyDocument(conversationId, "Second message", "ASSISTANT", timestamp.plusMillis(1)),
+						legacyDocument(conversationId, "Third message", "USER", timestamp.plusMillis(2))),
+				"ai_chat_memory");
+
+		var results = this.chatMemoryRepository.findByConversationId(conversationId);
+
+		assertThat(results).extracting(Message::getText)
+			.containsExactly("First message", "Second message", "Third message");
+	}
+
+	@Test
 	void toolResponseMessagesAreFilteredOnSave() {
 		var conversationId = UUID.randomUUID().toString();
 		var user = new UserMessage("Hello");
@@ -185,6 +241,13 @@ public class MongoChatMemoryRepositoryIT {
 			.all();
 
 		assertThat(results.size()).isZero();
+	}
+
+	private static Document legacyDocument(String conversationId, String content, String type, Instant timestamp) {
+		return new Document().append("conversationId", conversationId)
+			.append("message",
+					new Document().append("content", content).append("type", type).append("metadata", new Document()))
+			.append("timestamp", Date.from(timestamp));
 	}
 
 	@SpringBootConfiguration
