@@ -39,12 +39,10 @@ public interface BaseAdvisorChain extends CallAdvisorChain, StreamAdvisorChain {
 	 * <p>
 	 * Concrete {@link BaseAdvisorChain} classes must override this to return the most
 	 * concrete builder implementation.
+	 * </p>
 	 * @return a pre-populated {@link Builder}
 	 */
-	// TODO: change from default to abstract once all implementations override mutate()
-	default Builder<?> mutate() {
-		throw new UnsupportedOperationException("mutate() must be overridden to return the most concrete Builder");
-	}
+	Builder<?> mutate();
 
 	/**
 	 * Creates a new {@link Builder} for the default {@link BaseAdvisorChain}
