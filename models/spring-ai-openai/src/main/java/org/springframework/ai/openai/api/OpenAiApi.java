@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAnySetter;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -795,7 +796,7 @@ public class OpenAiApi {
 	public enum ChatCompletionFinishReason {
 
 		/**
-		 * Handles, empty, NULL and unknown values
+		 * Fallback for empty and unknown values
 		 */
 		@JsonProperty("")
 		UNKNOWN,
@@ -823,7 +824,31 @@ public class OpenAiApi {
 		 * Only for compatibility with Mistral AI API.
 		 */
 		@JsonProperty("tool_call")
-		TOOL_CALL
+		TOOL_CALL;
+
+		/**
+		 * Creates a finish reason from its API value.
+		 *
+		 * @param value finish reason from the API
+		 * @return matching finish reason, {@link #UNKNOWN} if the value is not
+		 *         recognized, or {@code null} if the input is {@code null}
+		 */
+		@JsonCreator
+		public static ChatCompletionFinishReason fromValue(String value) {
+			if (value == null) {
+				return null;
+			}
+
+			return switch (value) {
+				case "" -> UNKNOWN;
+				case "stop" -> STOP;
+				case "length" -> LENGTH;
+				case "content_filter" -> CONTENT_FILTER;
+				case "tool_calls" -> TOOL_CALLS;
+				case "tool_call" -> TOOL_CALL;
+				default -> UNKNOWN;
+			};
+		}
 
 	}
 

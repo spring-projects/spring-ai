@@ -22,6 +22,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Flux;
@@ -178,6 +181,28 @@ public class OpenAiStreamingFinishReasonTests {
 		assertThat(choice.delta().reasoningContent()).isEqualTo("test");
 	}
 
+	@ParameterizedTest
+	@ValueSource(strings = { "null", "abort" })
+	void testJsonDeserializationWithUnknownFinishReason(String finishReason) {
+		ChatCompletionChunk chunk = deserializeChunk(finishReason);
+
+		assertThat(chunk.choices()).singleElement()
+			.extracting(ChunkChoice::finishReason)
+			.isEqualTo(ChatCompletionFinishReason.UNKNOWN);
+	}
+
+	@ParameterizedTest
+	@CsvSource({ "stop, STOP", "length, LENGTH", "content_filter, CONTENT_FILTER", "tool_calls, TOOL_CALLS",
+			"tool_call, TOOL_CALL" })
+	void testJsonDeserializationWithKnownFinishReason(String finishReason,
+			ChatCompletionFinishReason expectedFinishReason) {
+		ChatCompletionChunk chunk = deserializeChunk(finishReason);
+
+		assertThat(chunk.choices()).singleElement()
+			.extracting(ChunkChoice::finishReason)
+			.isEqualTo(expectedFinishReason);
+	}
+
 	@Test
 	void testStreamingWithEmptyStringFinishReasonUsingMockWebServer() {
 		// Setup
@@ -243,6 +268,27 @@ public class OpenAiStreamingFinishReasonTests {
 		var choice = chunk.choices().get(0);
 		// The critical test: how does ModelOptionsUtils handle empty string -> enum?
 		assertThat(choice.finishReason()).isEqualTo(ChatCompletionFinishReason.UNKNOWN);
+	}
+
+	private static ChatCompletionChunk deserializeChunk(String finishReason) {
+		String json = """
+				{
+					"id": "chatcmpl-test",
+					"object": "chat.completion.chunk",
+					"created": 1726239401,
+					"model": "openai-compatible-model",
+					"choices": [{
+						"index": 0,
+						"delta": {
+							"role": "assistant",
+							"content": "Hello"
+						},
+						"finish_reason": "%s"
+					}]
+				}
+				""".formatted(finishReason);
+
+		return ModelOptionsUtils.jsonToObject(json, ChatCompletionChunk.class);
 	}
 
 	private void setupChatModel() {
