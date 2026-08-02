@@ -282,6 +282,8 @@ var chatClient = ChatClient.builder(chatModel)
 
 To avoid duplicate writes, `ToolCallingAdvisor`'s internal conversation history must be disabled when a memory advisor sits inside the loop. **With the auto-registered `ToolCallingAdvisor`, this is automatic** — `DefaultChatClient` detects any `MemoryAdvisor` inside the loop and disables internal history with no additional configuration. If you construct a `ToolCallingAdvisor` manually, call `.disableInternalConversationHistory()` on the builder yourself.
 
+NOTE: Disabling internal history only changes what's forwarded to the rest of the chain each round — xref:#tool-call-limits[tool call limits] still see the complete history for the current turn regardless, so limits keep working correctly with a memory advisor nested inside the loop.
+
 image::tools/spring-ai-tool-calling-with-inside-memory.png[ChatMemoryAdvisor inside the ToolCallingAdvisor loop, width=800, align="center"]
 
 [[backend-compatibility]]
@@ -819,6 +821,46 @@ ToolExecutionExceptionProcessor toolExecutionExceptionProcessor() {
 ----
 
 NOTE: If you implement your own `ToolCallback`, throw `ToolExecutionException` from `call()` when execution fails — that's what the processor expects.
+
+[[tool-call-limits]]
+=== Tool Call Limits
+
+`DefaultToolCallingManager` caps how many times a tool can be called within a turn, to guard against runaway loops:
+
+[source,java]
+----
+ToolCallingManager toolCallingManager = ToolCallingManager.builder()
+    .maxCallsPerTool(40)                           // per-tool default
+    .maxCallsPerTool("search", 10)                  // override for one tool
+    .excludeToolFromLimit("getCurrentWeather")      // no limit for this tool
+    .maxTotalToolCalls(150)                         // cap across all tools combined
+    .onLimitExceeded(ToolCallLimitBehavior.THROW)   // or RETURN_ERROR_RESPONSE
+    .build();
+----
+
+These defaults (`DefaultToolCallingManager.DEFAULT_MAX_CALLS_PER_TOOL` / `DEFAULT_MAX_TOTAL_TOOL_CALLS`) apply even without calling these methods. Use `unlimitedCallsPerTool()` / `unlimitedTotalToolCalls()` to disable a cap entirely.
+
+==== Counting
+
+Counts are scoped to the current turn only: only `ToolResponseMessage` entries from the last `UserMessage` onward are tallied, so history replayed by a `ChatMemory` advisor outside the loop never inflates the count for a new turn. Nothing is cached on the manager itself — counts are recomputed from `prompt.getInstructions()` on every call, so a single `ToolCallingManager` instance stays safe to share across concurrent requests. This also means disabling `ToolCallingAdvisor`'s internal conversation history (see xref:#inside-the-loop[Inside the Loop]) has no effect on limit counting — it always sees the complete turn history regardless of what's trimmed for the rest of the chain.
+
+==== Behavior When a Limit Is Exceeded
+
+`DefaultToolCallingManager` throws `ToolCallLimitExceededException`, carrying the tool name (`null` for a total-limit breach), the limit that was hit, and the partial `ToolExecutionResult` already executed in the current batch, so no completed work is discarded. `ToolCallingAdvisor` catches it and returns that partial result as the final response, the same "break the loop" path used for `returnDirect`.
+
+With `onLimitExceeded(ToolCallLimitBehavior.RETURN_ERROR_RESPONSE)`, the manager instead skips the call and synthesizes an error `ToolResponse` — the same mechanism used for `ToolExecutionException` — so the model is told the limit was reached and the conversation continues instead of terminating. This is also the option to reach for if you call `ToolCallingManager.executeToolCalls(...)` directly instead of going through `ToolCallingAdvisor`.
+
+Configure via properties:
+
+[cols="6,3,1", stripes=even]
+|====
+| Property | Description | Default
+| `spring.ai.tools.limits.max-calls-per-tool-default` | Max calls to one tool per turn. `-1` disables. | `40`
+| `spring.ai.tools.limits.max-calls-per-tool.<name>` | Per-tool override; `-1` exempts that tool. | —
+| `spring.ai.tools.limits.excluded-tools` | Tool names exempt from the per-tool limit. | —
+| `spring.ai.tools.limits.max-total-tool-calls` | Max tool calls across all tools per turn. `-1` disables. | `150`
+| `spring.ai.tools.limits.on-limit-exceeded` | `THROW` or `RETURN_ERROR_RESPONSE`. | `THROW`
+|====
 
 [[tool-resolution]]
 == Tool Resolution

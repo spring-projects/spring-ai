@@ -26,7 +26,11 @@ import reactor.core.publisher.Flux;
 import org.springframework.ai.anthropic.AnthropicChatModel;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.model.anthropic.autoconfigure.AnthropicChatAutoConfiguration;
+import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
@@ -119,6 +123,45 @@ class FunctionCallWithFunctionBeanIT {
 
 				content = response.collectList().block().stream().collect(Collectors.joining());
 				assertThat(content).contains("30", "10", "15");
+			});
+	}
+
+	@Test
+	void toolCallLimitEnforcedThroughAutoConfiguredToolCallingManager() {
+		// spring.ai.tools.limits.max-calls-per-tool is read by
+		// ToolCallingAutoConfiguration.toolCallingManager(...). This module has no
+		// ChatClientAutoConfiguration on its test classpath, so the real bean is
+		// fetched explicitly here and wired into the ToolCallingAdvisor used for the
+		// call, proving the property reaches the manager that actually executes tool
+		// calls, rather than some other default instance.
+		this.contextRunner
+			.withPropertyValues("spring.ai.anthropic.chat.model=" + Model.CLAUDE_HAIKU_4_5.asString(),
+					"spring.ai.tools.limits.max-calls-per-tool=1")
+			.run(context -> {
+
+				AnthropicChatModel chatModel = context.getBean(AnthropicChatModel.class);
+				ToolCallback weatherFunction = context.getBean("weatherFunction", ToolCallback.class);
+				ToolCallingManager toolCallingManager = context.getBean(ToolCallingManager.class);
+
+				ChatResponse response = ChatClient.create(chatModel)
+					.prompt()
+					.advisors(ToolCallingAdvisor.builder().toolCallingManager(toolCallingManager).build())
+					.user("What's the weather like in San Francisco, in Paris, France and in Tokyo, Japan?"
+							+ " Call the weather tool once for each of the 3 locations.")
+					.tools(weatherFunction)
+					.call()
+					.chatResponse();
+
+				String allResults = response.getResults()
+					.stream()
+					.map(Generation::getOutput)
+					.map(AssistantMessage::getText)
+					.collect(Collectors.joining("\n"));
+
+				// Only the first call to weatherFunction is allowed; the rest are
+				// rejected with the message DefaultToolCallingManager synthesizes when
+				// a configured limit is exceeded.
+				assertThat(allResults).contains("limit");
 			});
 	}
 

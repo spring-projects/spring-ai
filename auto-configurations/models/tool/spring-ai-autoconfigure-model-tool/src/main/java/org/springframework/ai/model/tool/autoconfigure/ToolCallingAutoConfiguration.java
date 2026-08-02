@@ -62,6 +62,13 @@ public class ToolCallingAutoConfiguration {
 	private static final Log logger = LogFactory.getLog(ToolCallingAutoConfiguration.class);
 
 	/**
+	 * Value a {@code spring.ai.tools.limits.*} property can be set to in order to disable
+	 * that limit entirely, translated into the corresponding
+	 * {@code unlimited*}/{@code excludeToolFromLimit} builder call below.
+	 */
+	private static final int UNLIMITED = -1;
+
+	/**
 	 * The default {@link ToolCallbackResolver} resolves tools by name for methods,
 	 * functions, and {@link ToolCallbackProvider} beans.
 	 * <p>
@@ -128,14 +135,50 @@ public class ToolCallingAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	ToolCallingManager toolCallingManager(ToolCallbackResolver toolCallbackResolver,
-			ToolExecutionExceptionProcessor toolExecutionExceptionProcessor,
+			ToolExecutionExceptionProcessor toolExecutionExceptionProcessor, ToolCallingProperties properties,
 			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<ToolCallingObservationConvention> observationConvention) {
-		var toolCallingManager = ToolCallingManager.builder()
+		var builder = ToolCallingManager.builder()
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.toolCallbackResolver(toolCallbackResolver)
-			.toolExecutionExceptionProcessor(toolExecutionExceptionProcessor)
-			.build();
+			.toolExecutionExceptionProcessor(toolExecutionExceptionProcessor);
+
+		ToolCallingProperties.Limits limits = properties.getLimits();
+
+		Integer maxCallsPerToolDefault = limits.getMaxCallsPerToolDefault();
+		if (maxCallsPerToolDefault != null) {
+			if (maxCallsPerToolDefault == UNLIMITED) {
+				builder.unlimitedCallsPerTool();
+			}
+			else {
+				builder.maxCallsPerTool(maxCallsPerToolDefault);
+			}
+		}
+
+		limits.getMaxCallsPerTool().forEach((toolName, maxCalls) -> {
+			if (maxCalls == UNLIMITED) {
+				builder.excludeToolFromLimit(toolName);
+			}
+			else {
+				builder.maxCallsPerTool(toolName, maxCalls);
+			}
+		});
+
+		limits.getExcludedTools().forEach(builder::excludeToolFromLimit);
+
+		Integer maxTotalToolCalls = limits.getMaxTotalToolCalls();
+		if (maxTotalToolCalls != null) {
+			if (maxTotalToolCalls == UNLIMITED) {
+				builder.unlimitedTotalToolCalls();
+			}
+			else {
+				builder.maxTotalToolCalls(maxTotalToolCalls);
+			}
+		}
+
+		builder.onLimitExceeded(limits.getOnLimitExceeded());
+
+		var toolCallingManager = builder.build();
 
 		observationConvention.ifAvailable(toolCallingManager::setObservationConvention);
 

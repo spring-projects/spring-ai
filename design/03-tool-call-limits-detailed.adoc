@@ -1,0 +1,419 @@
+= Design Document 03 - Tool Call Limits in DefaultToolCallingManager
+
+This document proposes adding configurable limits on the number of tool
+calls executed by `DefaultToolCallingManager`, both per tool name and
+per turn, to guard against runaway agentic loops. Sensible caps are
+baked in as real defaults (not merely documented suggestions an
+application must opt into), so the guard is present out of the box;
+applications that legitimately need more calls raise the limit or
+disable it explicitly (see Default values and User Impact below).
+
+"Turn" and "session" are used here with the same meaning as the
+`spring-ai-session` project (planned to merge into Spring AI): a *turn*
+is one `UserMessage` plus everything up to the next `UserMessage`; a
+*session* is the full persisted, multi-turn conversation.
+
+== Problems
+
+`DefaultToolCallingManager.executeToolCalls(Prompt, ChatResponse)` (see
+`spring-ai-model/src/main/java/org/springframework/ai/model/tool/DefaultToolCallingManager.java`)
+has no built-in bound on how many times a tool can be invoked. A model
+can keep calling the same tool (e.g. stuck in a retry pattern) or
+accumulate an unbounded number of distinct tool calls across a single
+`ToolCallingAdvisor` loop, driving up latency and cost with no
+circuit breaker in the framework itself. Today the only way to stop
+this is for application code to inspect every round manually.
+
+== Anti Goals
+
+* This is not a general-purpose, cross-user rate limiter or quota
+  system. It only bounds calls observable within a single
+  `Prompt` / tool-calling loop.
+* This does not address token or monetary cost budgets; that is a
+  separate concern.
+* This does not persist counts across process restarts or across
+  independent `Prompt` instances that do not share message history.
+* This is not meant to be a precise or user-tunable-per-request budget
+  out of the box; the baked-in defaults are a coarse, one-size-fits-most
+  safety net. Applications with unusual needs (either much lower or much
+  higher legitimate call volumes) are expected to configure their own
+  values rather than rely on the defaults being universally right.
+
+== Solution
+
+=== Configuration
+
+Limits are configured once on `DefaultToolCallingManager.Builder`,
+consistent with how `observationRegistry`, `toolCallbackResolver`, and
+`toolExecutionExceptionProcessor` are already wired at construction
+time (the manager is typically a singleton bean, so limits are an
+app-wide policy rather than a per-call parameter). Internally, `Builder`
+assembles the five limit-related settings into a single package-private
+`ToolCallLimits` value at `build()` time and passes just that one object
+to `DefaultToolCallingManager`'s constructor, instead of threading five
+separate parameters through it (see Implementation note below); this is
+purely an internal grouping and does not change the builder methods
+themselves:
+
+* `maxCallsPerTool(int)` - default cap applied to every tool name.
+* `maxCallsPerTool(String toolName, int max)` - per-tool override.
+* `excludeToolFromLimit(String toolName)` - exempt a specific tool
+  name from the default cap set by `maxCallsPerTool(int)`, i.e. that
+  tool can be called an unlimited number of times.
+* `maxTotalToolCalls(int)` - cap on the total number of tool calls
+  across all tools for the turn (see below).
+* `unlimitedCallsPerTool()` / `unlimitedTotalToolCalls()` - disable the
+  per-tool or total cap entirely, undoing the baked-in default (see
+  Default values below) or an earlier `maxCallsPerTool(int)` /
+  `maxTotalToolCalls(int)` call.
+
+`excludeToolFromLimit` is a dedicated method rather than a sentinel
+value (e.g. `maxCallsPerTool(toolName, -1)` or
+`maxCallsPerTool(toolName, Integer.MAX_VALUE)`) passed to the numeric
+override. A sentinel keeps the public API surface smaller, but pushes
+a magic-number convention onto every caller: reading
+`maxCallsPerTool("search", -1)` at a call site does not obviously mean
+"unlimited" without checking the Javadoc, and `Integer.MAX_VALUE` reads
+as an arbitrary large number rather than expressing intent. A separate,
+named method is self-documenting at the call site and keeps
+`maxCallsPerTool(String, int)`'s contract simple - it always takes a
+real, positive cap. Internally, exclusions can still be tracked however
+is convenient (a `Set<String>` checked before the per-tool map, or a
+sentinel stored only internally); that implementation detail is never
+exposed publicly.
+
+`excludeToolFromLimit` only exempts a tool from the *per-tool* cap.
+Calls to that tool still count toward `maxTotalToolCalls`, since that
+cap is about bounding the overall turn regardless of which tools
+were involved. A tool that should be unbounded on both axes needs no
+extra configuration beyond exclusion plus not configuring
+`maxTotalToolCalls` at all, or being fine with it still contributing to
+that separate total.
+
+`ToolContext`-based per-request overrides are explicitly deferred (see
+FAQ) - the builder API can be extended later without a breaking change.
+
+=== Default values
+
+`DefaultToolCallingManager.Builder` does not start unlimited. It ships
+with two public constants as its real defaults:
+
+* `DefaultToolCallingManager.DEFAULT_MAX_CALLS_PER_TOOL = 40` - a
+  generous ceiling for legitimate iterative tool use (pagination,
+  retries) while still catching a runaway loop long before it becomes
+  expensive.
+* `DefaultToolCallingManager.DEFAULT_MAX_TOTAL_TOOL_CALLS = 150` -
+  roughly 3-4x the per-tool default, since a healthy multi-tool agent
+  turn typically uses a handful of different tools a few times each.
+
+Both constants are `public` so callers can reference them symbolically
+(e.g. in their own configuration, logging, or tests) instead of
+hardcoding `40`/`150`. Both the public 3-arg
+`DefaultToolCallingManager` constructor and an unconfigured `Builder`
+apply these same values, so there is exactly one place a caller needs
+to look to know what "default" means.
+
+Disabling either limit entirely requires an explicit, deliberate call:
+`Builder.unlimitedCallsPerTool()` / `Builder.unlimitedTotalToolCalls()`
+in code, or setting the corresponding
+`spring.ai.tools.limits.*` property to `-1` (see below). This mirrors a
+common Spring Boot convention (e.g. various Tomcat/HikariCP settings
+that accept `-1` for "unbounded") rather than requiring a caller to
+pass an arbitrarily large number.
+
+=== Spring Boot auto-configuration
+
+The five builder settings are also exposed as `spring.ai.tools.limits.*`
+properties in `spring-ai-autoconfigure-model-tool`, mirroring the
+existing `spring.ai.tools.throw-exception-on-error` and
+`spring.ai.tools.observations.include-content` properties on
+`ToolCallingProperties`:
+
+* `spring.ai.tools.limits.max-calls-per-tool-default` - defaults to
+  `DefaultToolCallingManager.DEFAULT_MAX_CALLS_PER_TOOL` (40); maps to
+  `maxCallsPerTool(int)`. Set to `-1` to call `unlimitedCallsPerTool()`
+  instead, disabling the limit entirely.
+* `spring.ai.tools.limits.max-calls-per-tool.<toolName>` - a
+  `Map<String, Integer>` maps to repeated
+  `maxCallsPerTool(String, int)` calls, one per entry. An entry's value
+  of `-1` maps to `excludeToolFromLimit(toolName)` instead, exempting
+  just that tool.
+* `spring.ai.tools.limits.excluded-tools` - a list of tool names maps
+  to repeated `excludeToolFromLimit(String)` calls.
+* `spring.ai.tools.limits.max-total-tool-calls` - defaults to
+  `DefaultToolCallingManager.DEFAULT_MAX_TOTAL_TOOL_CALLS` (150); maps
+  to `maxTotalToolCalls(int)`. Set to `-1` to call
+  `unlimitedTotalToolCalls()` instead.
+* `spring.ai.tools.limits.on-limit-exceeded` - binds directly to the
+  `ToolCallLimitBehavior` enum and maps to `onLimitExceeded(...)`;
+  the enum is reused as-is rather than duplicated as a
+  properties-specific type.
+
+`ToolCallingAutoConfiguration.toolCallingManager(...)` (still
+`@ConditionalOnMissingBean`, so a user-supplied `ToolCallingManager`
+bean bypasses these properties entirely, same as today for the other
+properties) reads `ToolCallingProperties.Limits` and, for each of the
+two scalar settings, checks the value against a private
+`UNLIMITED = -1` sentinel constant to decide whether to call the
+numeric builder method or the `unlimited*`/`excludeToolFromLimit`
+escape hatch. The scalar fields (`maxCallsPerTool`, `maxTotalToolCalls`)
+are boxed `Integer`, not primitive `int`, defaulting to the same
+`DEFAULT_MAX_CALLS_PER_TOOL`/`DEFAULT_MAX_TOTAL_TOOL_CALLS` constants:
+the builder's numeric methods require a real positive value and reject
+`0` (`Assert.isTrue(... > 0)`), so a primitive `int` defaulting to `0`
+would either fail validation or be misread as "block every call" -
+`Integer` lets the field default to a real, meaningful value while
+still allowing a caller to reset it to `null` programmatically if they
+build `ToolCallingProperties` themselves outside of normal property
+binding.
+
+=== Counting mechanism (stateless)
+
+No new mutable state is added to `DefaultToolCallingManager` itself.
+Instead, counts are derived from `prompt.getInstructions()` each time
+`executeToolCalls` is invoked:
+
+* `ToolCallingAdvisor` accumulates conversation history across the
+  tool-calling loop: each round's `AssistantMessage` (carrying the
+  requested `toolCalls`) and resulting `ToolResponseMessage` are
+  appended to `instructions`, which becomes the `Prompt` passed into
+  the *next* `executeToolCalls` call (see
+  `spring-ai-client-chat/.../advisor/ToolCallingAdvisor.java`, the
+  `do { ... } while (isToolCall)` loop and
+  `doGetNextInstructionsForToolCall`).
+* Because of this, `prompt.getInstructions()` already contains every
+  prior `ToolResponseMessage.ToolResponse` for the current turn. On
+  entry to `executeToolCalls`, the manager scans only the portion of
+  that history from the last `UserMessage` onward - the current,
+  still-open turn - to tally executed calls per tool name and in
+  total, then adds to that running tally as it processes the new
+  batch of tool calls requested by the current `AssistantMessage`,
+  checking the relevant limit before invoking each `ToolCallback`.
+  Bounding the scan to the last `UserMessage` (rather than the entire
+  `Prompt`) matters once a `ChatMemory` advisor outside the loop
+  replays a whole persisted session into the prompt - see What counts
+  as a "turn" below.
+
+This keeps `DefaultToolCallingManager` free of per-turn state, so a
+single instance remains safe to share across concurrent, unrelated
+requests.
+
+==== Implementation note: `ToolCallLimits`
+
+The five limit-related settings (`defaultMaxCallsPerTool`,
+`maxCallsPerTool`, `toolsExcludedFromLimit`, `maxTotalToolCalls`,
+`onLimitExceeded`), the history-scanning tally, and the breach check
+are grouped into a package-private `ToolCallLimits` class
+(`spring-ai-model/.../model/tool/ToolCallLimits.java`) rather than
+living as five separate fields plus two separate methods directly on
+`DefaultToolCallingManager`. `DefaultToolCallingManager` holds a single
+`ToolCallLimits` field and delegates to it
+(`ToolCallLimits.countPriorToolCalls(...)` and
+`this.toolCallLimits.check(...)`), which keeps the limit policy and its
+evaluation logic cohesive in one place and shrinks the manager's
+package-private constructor from eight parameters down to four. This
+is an internal refactor only: `DefaultToolCallingManager.Builder`'s
+public methods, and everything else described in this document, are
+unaffected.
+
+==== What counts as a "turn"
+
+The counting scope is the last `UserMessage` in the `Prompt` given to
+`executeToolCalls`, plus everything after it - the same Turn boundary
+the `spring-ai-session` project defines. This is deliberately narrower
+than "whatever message history is present in the `Prompt`": a
+`ChatMemory` advisor sitting outside the loop may replay an entire
+persisted session's history into the prompt, and without bounding the
+scan to the last `UserMessage`, tool calls from *every* prior turn
+would inflate the count for the *current* turn - eventually locking
+tool calling out permanently for a long-running conversation once the
+cumulative history alone exceeded the limit, regardless of what the
+current turn actually needs. Scanning only from the last `UserMessage`
+keeps the limit reliably turn-scoped no matter how much prior history
+is present.
+
+`ToolCallingAdvisor.conversationHistoryEnabled(false)` composes
+correctly with this. If it did not, the current turn's own `UserMessage`
+would go missing mid-turn — only the system message and the last
+message are kept between rounds when disabled (see
+`doGetNextInstructionsForToolCall`) — and history-based counting would
+undercount, since it would no longer be able to see earlier rounds.
+`ToolCallingAdvisor` avoids this by maintaining two separate values per
+round instead of one: `instructions` (what is forwarded to the rest of
+the chain, trimmed when disabled - e.g. for a memory advisor nested
+inside the loop, such as `spring-ai-session`'s `SessionMemoryAdvisor`,
+that does not itself de-duplicate against what `ToolCallingAdvisor`
+already holds) and `fullTurnHistory` (always the complete, untrimmed
+history for the current turn). `executeToolCalls` is always given
+`fullTurnHistory`, never the trimmed `instructions`, so trimming what
+is forwarded downstream never hides earlier rounds from the limit
+counter.
+
+=== Behavior when a limit is exceeded
+
+`DefaultToolCallingManager` throws a new unchecked
+`ToolCallLimitExceededException`, carrying:
+
+* the tool name and configured limit that was hit (when it is a
+  per-tool breach) or an indication it was the total-turn limit,
+* the partial `ToolExecutionResult` built from whichever calls in the
+  current batch already executed successfully before the limit was
+  hit, so a caller can still produce a coherent response instead of
+  discarding completed work.
+
+`ToolCallingAdvisor` (both `adviseCall` and `adviseStream`) catches
+this exception at its two `executeToolCalls` call sites and converts
+it into a terminal `ChatResponse`, reusing the same "break out of the
+loop" path already used today for `returnDirect` tool results (see
+`ToolCallingAdvisor.java:170-181`), rather than letting it propagate as
+an unhandled error to the `ChatClient` caller.
+
+For callers that do not go through `ToolCallingAdvisor` - e.g. a
+hand-rolled loop calling `ToolCallingManager.executeToolCalls(...)`
+directly - and do not want to catch `ToolCallLimitExceededException`
+themselves, the manager also supports a fallback mode configured via
+the builder:
+
+* `onLimitExceeded(ToolCallLimitBehavior.THROW)` (default) - throw as
+  described above.
+* `onLimitExceeded(ToolCallLimitBehavior.RETURN_ERROR_RESPONSE)` -
+  instead of throwing, skip invoking the `ToolCallback` and synthesize
+  a `ToolResponseMessage.ToolResponse` explaining the limit was
+  reached, consistent with how `ToolExecutionException` is already
+  turned into a tool response via `toolExecutionExceptionProcessor`
+  (`DefaultToolCallingManager.java:299-300`). The model sees the
+  rejection and can wrap up the turn in natural language.
+
+`GoogleGenAiToolCallingManager` (a thin schema-conversion wrapper
+around a delegate `ToolCallingManager`) needs no changes for this:
+`executeToolCalls` is a single-line delegate call with no `try`/`catch`
+of its own, so `ToolCallLimitExceededException` thrown by the wrapped
+manager propagates through it completely unchanged - ordinary Java
+exception propagation, not something that needed a special case. It
+already handles `THROW` exactly the same way `DefaultToolCallingManager`
+does; see `GoogleGenAiToolCallingManagerTests` for a test that verifies
+this against a real (not mocked) delegate.
+
+=== User Impact
+
+This is a deliberate behavior change, not a purely additive one:
+every `DefaultToolCallingManager` - whether built via the public 3-arg
+constructor, an unconfigured `Builder`, or through
+`ToolCallingAutoConfiguration` with no `spring.ai.tools.limits.*`
+properties set - now enforces the `DEFAULT_MAX_CALLS_PER_TOOL` (40) and
+`DEFAULT_MAX_TOTAL_TOOL_CALLS` (150) caps out of the box. Existing
+applications whose legitimate agentic workloads call the same tool more
+than 40 times, or make more than 150 tool calls total, in a single
+turn will see previously-successful conversations start throwing
+`ToolCallLimitExceededException` (or, wherever
+`ToolCallLimitBehavior.RETURN_ERROR_RESPONSE` is configured, receive a
+synthesized rejection instead of the tool actually running) after
+upgrading.
+
+Applications that need higher (or no) limits raise them explicitly:
+`Builder.maxCallsPerTool(int)`/`maxTotalToolCalls(int)` for a higher
+number, or `Builder.unlimitedCallsPerTool()`/`unlimitedTotalToolCalls()`
+(equivalently, the `spring.ai.tools.limits.*` properties set to `-1`)
+to disable a cap entirely. No changes are required to
+`ToolCallingChatOptions`, `ToolCallback`, or any existing tool
+implementation - only to `DefaultToolCallingManager`/
+`ToolCallingProperties` configuration, if the defaults do not fit.
+
+=== Backwards Compatibility and Upgrade Path
+
+* **Not purely additive**: unlike the rest of this change, the default
+  values themselves are a real behavior change on upgrade - see User
+  Impact above. Every other item below is additive.
+* Additive builder methods on `DefaultToolCallingManager.Builder`; no
+  existing method signatures change.
+* New `ToolCallLimitExceededException` type; unchecked, so it does not
+  affect the `ToolCallingManager` interface signature.
+* `ToolCallingAdvisor` gains a catch block around its two
+  `executeToolCalls` call sites; this only activates once a limit is
+  actually hit (whether from an explicit configuration or the new
+  defaults).
+* `GoogleGenAiToolCallingManager` needs no changes - its delegate call
+  has no `try`/`catch` of its own, so the exception already propagates
+  through it unchanged (verified in `GoogleGenAiToolCallingManagerTests`).
+* The package-private `DefaultToolCallingManager` constructor now takes
+  a `ToolCallLimits` instead of five separate limit parameters; this
+  constructor is internal (not `public`), so it carries no external
+  compatibility impact.
+* New `spring.ai.tools.limits.*` properties on `ToolCallingProperties`,
+  defaulting to the same baked-in 40/150 values as the builder (not
+  unset) - so `ToolCallingAutoConfiguration.toolCallingManager(...)`
+  applies the caps with no properties set, consistent with the builder.
+
+== FAQ
+
+**Why defer `ToolContext`-based per-request limits?**
+Nothing today reads policy out of `ToolContext` - it is currently only
+handed to `ToolCallback.call(...)` as a data bag. Introducing a
+convention for framework-read keys is a bigger surface (naming,
+type-safety, precedence with builder defaults) than is justified
+before a concrete need for per-request variance shows up. Adding it
+later is backwards compatible: it would simply override the
+builder-configured defaults when present.
+
+**Does this add per-manager mutable state / thread-safety concerns?**
+No. Counts are recomputed from `prompt.getInstructions()` on every
+call rather than accumulated in fields on `DefaultToolCallingManager`,
+so the same manager instance remains safe to reuse concurrently across
+unrelated requests, exactly as it is today.
+
+**Why scope counting to the last `UserMessage` instead of the whole
+`Prompt`?**
+Without that bound, a long-running conversation whose full history is
+replayed by a `ChatMemory` advisor outside the loop would have every
+prior turn's tool calls count against the current turn's limit -
+eventually locking out tool calling permanently once the cumulative
+history alone exceeded the cap, regardless of what the current turn
+actually needs. Scoping to the last `UserMessage` (the same Turn
+boundary `spring-ai-session` defines) keeps the limit reliably
+turn-scoped no matter how much prior history is present.
+
+**Does `conversationHistoryEnabled(false)` break limit counting?**
+No, not since `ToolCallingAdvisor` maintains two values per round
+instead of one: `instructions` (what's forwarded to the rest of the
+chain - trimmed when disabled, so a nested memory advisor that
+doesn't self-deduplicate, such as `spring-ai-session`'s
+`SessionMemoryAdvisor`, doesn't see duplicate messages) and
+`fullTurnHistory` (always the complete, untrimmed history for the
+turn). `executeToolCalls` always receives `fullTurnHistory`, so
+trimming what's forwarded downstream never hides earlier rounds from
+the limit counter.
+
+**Does this work the same for streaming and non-streaming calls?**
+Yes. Both `adviseCall` and `adviseStream` in `ToolCallingAdvisor` call
+the same `DefaultToolCallingManager.executeToolCalls`, so the counting
+logic and exception type are shared; only the two catch sites differ
+in how they turn the exception into a terminal `ChatClientResponse`.
+
+**What happens to the current round's already-executed tool calls when
+the limit is hit mid-batch?**
+The partial `ToolExecutionResult` (successful calls already made in
+this round) is preserved on `ToolCallLimitExceededException` so callers
+are not forced to discard completed work when deciding how to respond.
+
+**Why bake in default limits instead of leaving them opt-in?**
+The alternative considered was keeping `DefaultToolCallingManager`
+unlimited unless explicitly configured, and only documenting `40`/`150`
+as suggested starting values in Javadoc/reference docs. That would have
+been non-breaking, but it also means the guard this document exists to
+add would do nothing for any application that does not already know to
+look for it - exactly the runaway-loop scenario described in Problems.
+Baking in real defaults means every application gets the protection
+immediately, at the cost of a real (if narrow) behavior change for
+the minority of applications whose legitimate workloads exceed 40
+calls to one tool or 150 total in a turn; those applications raise
+or disable the limit once, the same way they would tune any other
+newly-introduced safety default.
+
+**Why put the properties on `ToolCallingProperties` instead of a new
+properties class?**
+`ToolCallingProperties` already owns `spring.ai.tools.*` and is
+consumed by the same `toolCallingManager(...)` bean method that needs
+the limit settings, so adding a `Limits` nested class (parallel to the
+existing `Observations` nested class) keeps one property source per
+concern instead of introducing a second `@ConfigurationProperties` bean
+that would need its own prefix and wiring.

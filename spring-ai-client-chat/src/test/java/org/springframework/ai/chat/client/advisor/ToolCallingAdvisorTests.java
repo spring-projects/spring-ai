@@ -16,6 +16,7 @@
 
 package org.springframework.ai.chat.client.advisor;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
@@ -23,6 +24,7 @@ import java.util.function.BiFunction;
 import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -994,6 +996,145 @@ public class ToolCallingAdvisorTests {
 		assertThat(instructions).hasSize(2);
 		assertThat(instructions.get(0)).isInstanceOf(SystemMessage.class);
 		assertThat(instructions.get(1)).isInstanceOf(ToolResponseMessage.class);
+	}
+
+	@Test
+	void whenConversationHistoryDisabledThenExecuteToolCallsStillSeesFullTurnHistory() {
+		// Even though conversationHistoryEnabled(false) trims what's forwarded to the
+		// rest of the chain (verified by
+		// testDisableInternalConversationHistoryBuilderMethod
+		// above), executeToolCalls must still see the complete, untrimmed history for
+		// this turn on every round - otherwise DefaultToolCallingManager's tool call
+		// limit counting would silently undercount once earlier rounds' tool responses
+		// are no longer forwarded.
+		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder()
+			.toolCallingManager(this.toolCallingManager)
+			.disableInternalConversationHistory()
+			.build();
+
+		ChatClientRequest request = createMockRequest();
+		ChatClientResponse firstToolCallResponse = createMockResponse(true);
+		ChatClientResponse secondToolCallResponse = createMockResponse(true);
+		ChatClientResponse finalResponse = createMockResponse(false);
+
+		int[] callCount = { 0 };
+		CallAdvisor terminalAdvisor = new TerminalCallAdvisor((req, chain) -> {
+			callCount[0]++;
+			if (callCount[0] == 1) {
+				return firstToolCallResponse;
+			}
+			else if (callCount[0] == 2) {
+				return secondToolCallResponse;
+			}
+			else {
+				return finalResponse;
+			}
+		});
+
+		CallAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.of(advisor, terminalAdvisor))
+			.build();
+
+		ToolResponseMessage.ToolResponse round1Response = new ToolResponseMessage.ToolResponse("tool-1", "testTool",
+				"round1 result");
+		ToolResponseMessage round1ToolResponseMessage = ToolResponseMessage.builder()
+			.responses(List.of(round1Response))
+			.build();
+		List<Message> round1History = List.of(new UserMessage("test"), AssistantMessage.builder().content("").build(),
+				round1ToolResponseMessage);
+		ToolExecutionResult round1Result = ToolExecutionResult.builder().conversationHistory(round1History).build();
+
+		ToolResponseMessage.ToolResponse round2Response = new ToolResponseMessage.ToolResponse("tool-2", "testTool",
+				"round2 result");
+		ToolResponseMessage round2ToolResponseMessage = ToolResponseMessage.builder()
+			.responses(List.of(round2Response))
+			.build();
+		List<Message> round2History = new ArrayList<>(round1History);
+		round2History.add(AssistantMessage.builder().content("").build());
+		round2History.add(round2ToolResponseMessage);
+		ToolExecutionResult round2Result = ToolExecutionResult.builder().conversationHistory(round2History).build();
+
+		when(this.toolCallingManager.executeToolCalls(any(Prompt.class), any(ChatResponse.class)))
+			.thenReturn(round1Result, round2Result);
+
+		advisor.adviseCall(request, realChain);
+
+		ArgumentCaptor<Prompt> promptCaptor = ArgumentCaptor.forClass(Prompt.class);
+		verify(this.toolCallingManager, times(2)).executeToolCalls(promptCaptor.capture(), any(ChatResponse.class));
+
+		List<Prompt> capturedPrompts = promptCaptor.getAllValues();
+		// Round 1: only the original request, nothing to lose yet.
+		assertThat(capturedPrompts.get(0).getInstructions()).hasSize(1);
+		// Round 2: must be given the complete, untrimmed round1History (3 messages),
+		// not the version trimmed down to just the system message and the last
+		// message (2 messages) that gets forwarded to the rest of the chain. A weaker
+		// `contains(round1ToolResponseMessage)` check would not catch a regression
+		// here, since the trimmed version also happens to retain the last message.
+		assertThat(capturedPrompts.get(1).getInstructions()).isEqualTo(round1History);
+	}
+
+	@Test
+	void whenConversationHistoryDisabledThenStreamExecuteToolCallsStillSeesFullTurnHistory() {
+		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder()
+			.toolCallingManager(this.toolCallingManager)
+			.disableInternalConversationHistory()
+			.build();
+
+		ChatClientRequest request = createMockRequest();
+		ChatClientResponse firstToolCallResponse = createMockResponse(true);
+		ChatClientResponse secondToolCallResponse = createMockResponse(true);
+		ChatClientResponse finalResponse = createMockResponse(false);
+
+		int[] callCount = { 0 };
+		TerminalStreamAdvisor terminalAdvisor = new TerminalStreamAdvisor((req, chain) -> {
+			callCount[0]++;
+			if (callCount[0] == 1) {
+				return Flux.just(firstToolCallResponse);
+			}
+			else if (callCount[0] == 2) {
+				return Flux.just(secondToolCallResponse);
+			}
+			else {
+				return Flux.just(finalResponse);
+			}
+		});
+
+		StreamAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.<Advisor>of(advisor, terminalAdvisor))
+			.build();
+
+		ToolResponseMessage.ToolResponse round1Response = new ToolResponseMessage.ToolResponse("tool-1", "testTool",
+				"round1 result");
+		ToolResponseMessage round1ToolResponseMessage = ToolResponseMessage.builder()
+			.responses(List.of(round1Response))
+			.build();
+		List<Message> round1History = List.of(new UserMessage("test"), AssistantMessage.builder().content("").build(),
+				round1ToolResponseMessage);
+		ToolExecutionResult round1Result = ToolExecutionResult.builder().conversationHistory(round1History).build();
+
+		ToolResponseMessage.ToolResponse round2Response = new ToolResponseMessage.ToolResponse("tool-2", "testTool",
+				"round2 result");
+		ToolResponseMessage round2ToolResponseMessage = ToolResponseMessage.builder()
+			.responses(List.of(round2Response))
+			.build();
+		List<Message> round2History = new ArrayList<>(round1History);
+		round2History.add(AssistantMessage.builder().content("").build());
+		round2History.add(round2ToolResponseMessage);
+		ToolExecutionResult round2Result = ToolExecutionResult.builder().conversationHistory(round2History).build();
+
+		when(this.toolCallingManager.executeToolCalls(any(Prompt.class), any(ChatResponse.class)))
+			.thenReturn(round1Result, round2Result);
+
+		advisor.adviseStream(request, realChain).collectList().block();
+
+		ArgumentCaptor<Prompt> promptCaptor = ArgumentCaptor.forClass(Prompt.class);
+		verify(this.toolCallingManager, times(2)).executeToolCalls(promptCaptor.capture(), any(ChatResponse.class));
+
+		List<Prompt> capturedPrompts = promptCaptor.getAllValues();
+		assertThat(capturedPrompts.get(0).getInstructions()).hasSize(1);
+		// Must be the complete, untrimmed round1History (3 messages), not the trimmed
+		// 2-message version forwarded to the rest of the chain.
+		assertThat(capturedPrompts.get(1).getInstructions()).isEqualTo(round1History);
 	}
 
 	@Test

@@ -17,14 +17,20 @@
 package org.springframework.ai.model.openai.autoconfigure;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.ChatClientBuilderCustomizer;
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.model.chat.client.autoconfigure.ChatClientAutoConfiguration;
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
@@ -96,6 +102,43 @@ public class ChatClientAutoConfigurationIT {
 		});
 	}
 
+	@Test
+	void toolCallLimitEnforcedThroughAutoConfiguredToolCallingManager() {
+		// spring.ai.tools.limits.max-calls-per-tool is read by
+		// ToolCallingAutoConfiguration.toolCallingManager(...), which is the same
+		// ToolCallingManager bean that
+		// ChatClientAutoConfiguration.toolCallingAdvisorBuilder(...)
+		// wires into the ChatClient.Builder bean's default ToolCallingAdvisor. Setting
+		// it to 1 here proves the property genuinely reaches the manager used by a
+		// real, auto-configured ChatClient rather than some other default instance.
+		this.contextRunner.withPropertyValues("spring.ai.tools.limits.max-calls-per-tool=1")
+			.withUserConfiguration(WeatherToolConfig.class)
+			.run(context -> {
+				ChatClient.Builder builder = context.getBean(ChatClient.Builder.class);
+				ToolCallback weatherFunction = context.getBean("weatherFunction", ToolCallback.class);
+
+				ChatClient chatClient = builder.build();
+
+				ChatResponse response = chatClient.prompt()
+					.user("What's the weather like in San Francisco, Tokyo, and Paris? Please use the provided "
+							+ "tool to get the weather for all 3 cities.")
+					.tools(weatherFunction)
+					.call()
+					.chatResponse();
+
+				String allResults = response.getResults()
+					.stream()
+					.map(Generation::getOutput)
+					.map(AssistantMessage::getText)
+					.collect(Collectors.joining("\n"));
+
+				// Only the first call to weatherFunction is allowed; the rest are
+				// rejected with the message DefaultToolCallingManager synthesizes when
+				// a configured limit is exceeded.
+				assertThat(allResults).contains("limit");
+			});
+	}
+
 	record ActorsFilms(String actor, List<String> movies) {
 
 	}
@@ -107,6 +150,19 @@ public class ChatClientAutoConfigurationIT {
 		public ChatClientBuilderCustomizer chatClientCustomizer() {
 			return b -> b.defaultSystem("You are a movie expert.")
 				.defaultUser("Generate the filmography of 5 movies for {actor}.");
+		}
+
+	}
+
+	@Configuration
+	static class WeatherToolConfig {
+
+		@Bean
+		ToolCallback weatherFunction() {
+			return FunctionToolCallback.builder("weatherFunction", new MockWeatherService())
+				.description("Get the weather in location")
+				.inputType(MockWeatherService.Request.class)
+				.build();
 		}
 
 	}
