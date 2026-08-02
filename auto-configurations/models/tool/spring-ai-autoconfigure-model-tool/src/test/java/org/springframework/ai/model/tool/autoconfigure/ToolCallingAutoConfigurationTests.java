@@ -16,16 +16,22 @@
 
 package org.springframework.ai.model.tool.autoconfigure;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.ToolResponseMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.mcp.AsyncMcpToolCallbackProvider;
 import org.springframework.ai.mcp.SyncMcpToolCallbackProvider;
 import org.springframework.ai.model.tool.DefaultToolCallingManager;
+import org.springframework.ai.model.tool.ToolCallLimitExceededException;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionResult;
@@ -52,6 +58,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.util.ReflectionUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -301,6 +308,217 @@ class ToolCallingAutoConfigurationTests {
 				var manager = context.getBean(ToolCallingManager.class);
 				assertThat(manager).isNotNull();
 			});
+	}
+
+	@Test
+	void toolCallLimitsDefaultAppliesTwentyPerToolLimit() {
+		new ApplicationContextRunner().withConfiguration(AutoConfigurations.of(ToolCallingAutoConfiguration.class))
+			.withUserConfiguration(Config.class)
+			.run(context -> {
+				var toolCallingManager = context.getBean(ToolCallingManager.class);
+
+				// DefaultToolCallingManager.DEFAULT_MAX_CALLS_PER_TOOL prior calls
+				// already recorded; the next one should breach the baked-in default,
+				// which the auto-configuration applies with no properties set.
+				Prompt prompt = promptWithPriorToolResponses("getForecast",
+						DefaultToolCallingManager.DEFAULT_MAX_CALLS_PER_TOOL);
+				ChatResponse chatResponse = chatResponseRequestingTool("getForecast");
+
+				assertThatExceptionOfType(ToolCallLimitExceededException.class)
+					.isThrownBy(() -> toolCallingManager.executeToolCalls(prompt, chatResponse))
+					.satisfies(ex -> {
+						assertThat(ex.getToolName()).isEqualTo("getForecast");
+						assertThat(ex.getLimit()).isEqualTo(DefaultToolCallingManager.DEFAULT_MAX_CALLS_PER_TOOL);
+					});
+			});
+	}
+
+	@Test
+	void toolCallLimitsDefaultAppliesFiftyTotalLimit() {
+		new ApplicationContextRunner().withConfiguration(AutoConfigurations.of(ToolCallingAutoConfiguration.class))
+			.withUserConfiguration(Config.class)
+			.run(context -> {
+				var toolCallingManager = context.getBean(ToolCallingManager.class);
+
+				// DefaultToolCallingManager.DEFAULT_MAX_TOTAL_TOOL_CALLS prior calls
+				// to a different tool already recorded; the next call to any tool
+				// should breach the baked-in total default before even resolving it.
+				Prompt prompt = promptWithPriorToolResponses("toolB",
+						DefaultToolCallingManager.DEFAULT_MAX_TOTAL_TOOL_CALLS);
+				ChatResponse chatResponse = chatResponseRequestingTool("toolA");
+
+				assertThatExceptionOfType(ToolCallLimitExceededException.class)
+					.isThrownBy(() -> toolCallingManager.executeToolCalls(prompt, chatResponse))
+					.satisfies(ex -> {
+						assertThat(ex.getToolName()).isNull();
+						assertThat(ex.getLimit()).isEqualTo(DefaultToolCallingManager.DEFAULT_MAX_TOTAL_TOOL_CALLS);
+					});
+			});
+	}
+
+	@Test
+	void maxCallsPerToolPropertySetToUnlimitedSentinelDisablesDefaultLimit() {
+		new ApplicationContextRunner().withConfiguration(AutoConfigurations.of(ToolCallingAutoConfiguration.class))
+			.withPropertyValues("spring.ai.tools.limits.max-calls-per-tool-default=-1")
+			.withUserConfiguration(Config.class)
+			.run(context -> {
+				var toolCallingManager = context.getBean(ToolCallingManager.class);
+
+				// Well beyond the baked-in default; should still succeed since the
+				// -1 sentinel disables the per-tool limit entirely.
+				Prompt prompt = promptWithPriorToolResponses("getForecast",
+						DefaultToolCallingManager.DEFAULT_MAX_CALLS_PER_TOOL + 5);
+				ChatResponse chatResponse = chatResponseRequestingTool("getForecast");
+
+				ToolExecutionResult result = toolCallingManager.executeToolCalls(prompt, chatResponse);
+				assertThat(result.conversationHistory()).isNotEmpty();
+			});
+	}
+
+	@Test
+	void maxTotalToolCallsPropertySetToUnlimitedSentinelDisablesDefaultLimit() {
+		new ApplicationContextRunner().withConfiguration(AutoConfigurations.of(ToolCallingAutoConfiguration.class))
+			.withPropertyValues("spring.ai.tools.limits.max-calls-per-tool-default=-1",
+					"spring.ai.tools.limits.max-total-tool-calls=-1")
+			.withUserConfiguration(Config.class)
+			.run(context -> {
+				var toolCallingManager = context.getBean(ToolCallingManager.class);
+
+				// Well beyond the baked-in total default; the per-tool limit is also
+				// disabled here so it does not trip first on the same tool name.
+				Prompt prompt = promptWithPriorToolResponses("getForecast",
+						DefaultToolCallingManager.DEFAULT_MAX_TOTAL_TOOL_CALLS + 5);
+				ChatResponse chatResponse = chatResponseRequestingTool("getForecast");
+
+				ToolExecutionResult result = toolCallingManager.executeToolCalls(prompt, chatResponse);
+				assertThat(result.conversationHistory()).isNotEmpty();
+			});
+	}
+
+	@Test
+	void maxCallsPerToolOverrideSetToUnlimitedSentinelExemptsToolFromDefaultLimit() {
+		new ApplicationContextRunner().withConfiguration(AutoConfigurations.of(ToolCallingAutoConfiguration.class))
+			.withPropertyValues("spring.ai.tools.limits.max-calls-per-tool.getForecast=-1")
+			.withUserConfiguration(Config.class)
+			.run(context -> {
+				var toolCallingManager = context.getBean(ToolCallingManager.class);
+
+				// Well beyond the baked-in default of 20; should still succeed since
+				// the -1 override exempts this specific tool from the per-tool limit.
+				Prompt prompt = promptWithPriorToolResponses("getForecast",
+						DefaultToolCallingManager.DEFAULT_MAX_CALLS_PER_TOOL + 5);
+				ChatResponse chatResponse = chatResponseRequestingTool("getForecast");
+
+				ToolExecutionResult result = toolCallingManager.executeToolCalls(prompt, chatResponse);
+				assertThat(result.conversationHistory()).isNotEmpty();
+			});
+	}
+
+	@Test
+	void maxCallsPerToolPropertyThrowsWhenExceeded() {
+		new ApplicationContextRunner().withConfiguration(AutoConfigurations.of(ToolCallingAutoConfiguration.class))
+			.withPropertyValues("spring.ai.tools.limits.max-calls-per-tool-default=1")
+			.withUserConfiguration(Config.class)
+			.run(context -> {
+				var toolCallingManager = context.getBean(ToolCallingManager.class);
+
+				Prompt prompt = promptWithPriorToolResponses("someTool", 1);
+				ChatResponse chatResponse = chatResponseRequestingTool("someTool");
+
+				assertThatExceptionOfType(ToolCallLimitExceededException.class)
+					.isThrownBy(() -> toolCallingManager.executeToolCalls(prompt, chatResponse))
+					.satisfies(ex -> assertThat(ex.getToolName()).isEqualTo("someTool"));
+			});
+	}
+
+	@Test
+	void maxCallsPerToolOverridesPropertyAppliesPerTool() {
+		new ApplicationContextRunner().withConfiguration(AutoConfigurations.of(ToolCallingAutoConfiguration.class))
+			.withPropertyValues("spring.ai.tools.limits.max-calls-per-tool.someTool=1")
+			.withUserConfiguration(Config.class)
+			.run(context -> {
+				var toolCallingManager = context.getBean(ToolCallingManager.class);
+
+				Prompt prompt = promptWithPriorToolResponses("someTool", 1);
+				ChatResponse chatResponse = chatResponseRequestingTool("someTool");
+
+				assertThatExceptionOfType(ToolCallLimitExceededException.class)
+					.isThrownBy(() -> toolCallingManager.executeToolCalls(prompt, chatResponse));
+			});
+	}
+
+	@Test
+	void excludedToolsPropertyBypassesPerToolLimit() {
+		new ApplicationContextRunner().withConfiguration(AutoConfigurations.of(ToolCallingAutoConfiguration.class))
+			.withPropertyValues("spring.ai.tools.limits.max-calls-per-tool-default=1",
+					"spring.ai.tools.limits.excluded-tools=getForecast")
+			.withUserConfiguration(Config.class)
+			.run(context -> {
+				var toolCallingManager = context.getBean(ToolCallingManager.class);
+
+				Prompt prompt = promptWithPriorToolResponses("getForecast", 5);
+				ChatResponse chatResponse = chatResponseRequestingTool("getForecast");
+
+				ToolExecutionResult result = toolCallingManager.executeToolCalls(prompt, chatResponse);
+				assertThat(result.conversationHistory()).isNotEmpty();
+			});
+	}
+
+	@Test
+	void maxTotalToolCallsPropertyThrowsRegardlessOfToolName() {
+		new ApplicationContextRunner().withConfiguration(AutoConfigurations.of(ToolCallingAutoConfiguration.class))
+			.withPropertyValues("spring.ai.tools.limits.max-total-tool-calls=1")
+			.withUserConfiguration(Config.class)
+			.run(context -> {
+				var toolCallingManager = context.getBean(ToolCallingManager.class);
+
+				Prompt prompt = promptWithPriorToolResponses("toolB", 1);
+				ChatResponse chatResponse = chatResponseRequestingTool("toolA");
+
+				assertThatExceptionOfType(ToolCallLimitExceededException.class)
+					.isThrownBy(() -> toolCallingManager.executeToolCalls(prompt, chatResponse))
+					.satisfies(ex -> assertThat(ex.getToolName()).isNull());
+			});
+	}
+
+	@Test
+	void onLimitExceededReturnErrorResponsePropertySynthesizesErrorInsteadOfThrowing() {
+		new ApplicationContextRunner().withConfiguration(AutoConfigurations.of(ToolCallingAutoConfiguration.class))
+			.withPropertyValues("spring.ai.tools.limits.max-calls-per-tool-default=1",
+					"spring.ai.tools.limits.on-limit-exceeded=return_error_response")
+			.withUserConfiguration(Config.class)
+			.run(context -> {
+				var toolCallingManager = context.getBean(ToolCallingManager.class);
+
+				Prompt prompt = promptWithPriorToolResponses("someTool", 1);
+				ChatResponse chatResponse = chatResponseRequestingTool("someTool");
+
+				ToolExecutionResult result = toolCallingManager.executeToolCalls(prompt, chatResponse);
+
+				var lastMessage = (ToolResponseMessage) result.conversationHistory()
+					.get(result.conversationHistory().size() - 1);
+				assertThat(lastMessage.getResponses()).singleElement()
+					.satisfies(response -> assertThat(response.responseData()).contains("limit"));
+			});
+	}
+
+	private static Prompt promptWithPriorToolResponses(String toolName, int priorCallCount) {
+		List<ToolResponseMessage.ToolResponse> responses = new ArrayList<>();
+		for (int i = 0; i < priorCallCount; i++) {
+			responses.add(new ToolResponseMessage.ToolResponse("priorId" + i, toolName, "result"));
+		}
+		ToolResponseMessage priorToolResponse = ToolResponseMessage.builder().responses(responses).build();
+		return new Prompt(List.of(new UserMessage("Hello"), priorToolResponse),
+				ToolCallingChatOptions.builder().build());
+	}
+
+	private static ChatResponse chatResponseRequestingTool(String toolName) {
+		return ChatResponse.builder()
+			.generations(List.of(new Generation(AssistantMessage.builder()
+				.content("")
+				.toolCalls(List.of(new AssistantMessage.ToolCall(toolName, "function", toolName, "{}")))
+				.build())))
+			.build();
 	}
 
 	@Test

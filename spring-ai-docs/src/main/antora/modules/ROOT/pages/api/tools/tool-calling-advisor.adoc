@@ -163,7 +163,7 @@ protected List<Message> doGetNextInstructionsForToolCall(
 | Once, after the loop ends. Use to emit aggregate metrics, clean up session state, or attach a final transformation.
 
 | `doGetNextInstructionsForToolCall`
-| Decides what messages the next iteration sends to the model. The default behavior depends on `conversationHistoryEnabled`: when `true`, returns the full conversation history; when `false`, returns only the system message and the latest tool response.
+| Decides what messages the next iteration sends to the model. The default behavior depends on `conversationHistoryEnabled`: when `true`, returns the full conversation history; when `false`, returns only the system message and the latest tool response. This only affects what's forwarded to the rest of the chain — xref:api/tools.adoc#tool-call-limits[tool call limits] are always evaluated against the complete history for the current turn, independent of this setting.
 |====
 
 [[stream-hooks]]

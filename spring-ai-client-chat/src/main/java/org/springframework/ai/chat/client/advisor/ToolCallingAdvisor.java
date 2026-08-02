@@ -35,6 +35,7 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.tool.ToolCallLimitExceededException;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityChecker;
@@ -132,6 +133,13 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 		chatClientRequest = this.doInitializeLoop(chatClientRequest, callAdvisorChain);
 
 		var instructions = chatClientRequest.prompt().getInstructions();
+		// Always the complete history for this turn, independent of what
+		// doGetNextInstructionsForToolCall trims `instructions` down to for forwarding
+		// to the rest of the chain (e.g. for a memory advisor nested inside the loop
+		// that doesn't itself de-duplicate). This is what the ToolCallingManager sees,
+		// so trimming the forwarded prompt never hides earlier rounds from its tool
+		// call limit counting.
+		var fullTurnHistory = instructions;
 
 		ChatClientResponse chatClientResponse = null;
 		UsageAccumulator usageAccumulator = new UsageAccumulator();
@@ -160,8 +168,26 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 
 			if (isToolCall) {
 				Assert.notNull(chatResponse, "redundant check that should never fail, but here to help NullAway");
-				ToolExecutionResult toolExecutionResult = this.toolCallingManager
-					.executeToolCalls(processedChatClientRequest.prompt(), chatResponse);
+
+				ToolExecutionResult toolExecutionResult;
+				try {
+					toolExecutionResult = this.toolCallingManager
+						.executeToolCalls(new Prompt(fullTurnHistory, toolCallingChatOptions), chatResponse);
+				}
+				catch (ToolCallLimitExceededException ex) {
+					// A configured tool call limit was hit. Return whatever was
+					// executed so far directly to the application client instead of
+					// looping back to the LLM.
+					chatClientResponse = chatClientResponse.mutate()
+						.chatResponse(ChatResponse.builder()
+							.from(chatResponse)
+							.generations(ToolExecutionResult.buildGenerations(ex.getPartialToolExecutionResult()))
+							.build())
+						.build();
+					break;
+				}
+
+				fullTurnHistory = toolExecutionResult.conversationHistory();
 
 				if (toolExecutionResult.returnDirect()) {
 
@@ -241,14 +267,15 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 			ChatClientRequest initializedRequest = this.doInitializeLoopStream(chatClientRequest, streamAdvisorChain);
 			// Subscription-local accumulator so usage is not shared across subscriptions.
 			UsageAccumulator usageAccumulator = new UsageAccumulator();
+			List<Message> initialInstructions = initializedRequest.prompt().getInstructions();
 			return this.internalStream(streamAdvisorChain, initializedRequest, toolCallingChatOptions,
-					initializedRequest.prompt().getInstructions(), usageAccumulator);
+					initialInstructions, initialInstructions, usageAccumulator);
 		});
 	}
 
 	private Flux<ChatClientResponse> internalStream(StreamAdvisorChain streamAdvisorChain,
 			ChatClientRequest originalRequest, ToolCallingChatOptions toolCallingChatOptions,
-			List<Message> instructions, UsageAccumulator usageAccumulator) {
+			List<Message> instructions, List<Message> fullTurnHistory, UsageAccumulator usageAccumulator) {
 
 		return Flux.deferContextual(contextView -> {
 			// Build request with current instructions
@@ -266,14 +293,14 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 
 			Flux<ChatClientResponse> responseFlux = chainCopy.nextStream(processedRequest);
 
-			return streamWithToolCallResponses(responseFlux, finalRequest, streamAdvisorChain, originalRequest,
-					toolCallingChatOptions, usageAccumulator);
+			return streamWithToolCallResponses(responseFlux, finalRequest, fullTurnHistory, streamAdvisorChain,
+					originalRequest, toolCallingChatOptions, usageAccumulator);
 		});
 	}
 
 	private Flux<ChatClientResponse> streamWithToolCallResponses(Flux<ChatClientResponse> responseFlux,
-			ChatClientRequest finalRequest, StreamAdvisorChain streamAdvisorChain, ChatClientRequest originalRequest,
-			ToolCallingChatOptions optionsCopy, UsageAccumulator usageAccumulator) {
+			ChatClientRequest finalRequest, List<Message> fullTurnHistory, StreamAdvisorChain streamAdvisorChain,
+			ChatClientRequest originalRequest, ToolCallingChatOptions optionsCopy, UsageAccumulator usageAccumulator) {
 
 		AtomicReference<ChatClientResponse> aggregatedResponseRef = new AtomicReference<>();
 		// Snapshot of the usage accumulated from previous rounds (before this round).
@@ -283,7 +310,7 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 			.map(chatClientResponse -> UsageAccumulator.applyPreviousAccumulatedUsageToChunk(chatClientResponse,
 					previousAccumulatedResponse))
 			.concatWith(Flux.defer(() -> this.handleToolCallRecursion(aggregatedResponseRef.get(), finalRequest,
-					streamAdvisorChain, originalRequest, optionsCopy, usageAccumulator)))
+					fullTurnHistory, streamAdvisorChain, originalRequest, optionsCopy, usageAccumulator)))
 			.filter(ccr -> !this.toolExecutionEligibilityChecker.isToolCallResponse(ccr.chatResponse()));
 	}
 
@@ -292,8 +319,8 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 	 * flux if no tool call, or recursive stream if tool call detected.
 	 */
 	private Flux<ChatClientResponse> handleToolCallRecursion(ChatClientResponse aggregatedResponse,
-			ChatClientRequest finalRequest, StreamAdvisorChain streamAdvisorChain, ChatClientRequest originalRequest,
-			ToolCallingChatOptions optionsCopy, UsageAccumulator usageAccumulator) {
+			ChatClientRequest finalRequest, List<Message> fullTurnHistory, StreamAdvisorChain streamAdvisorChain,
+			ChatClientRequest originalRequest, ToolCallingChatOptions optionsCopy, UsageAccumulator usageAccumulator) {
 
 		if (aggregatedResponse == null) {
 			return Flux.empty();
@@ -324,7 +351,20 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 			ToolExecutionResult toolExecutionResult;
 			try {
 				ToolCallReactiveContextHolder.setContext(ctx);
-				toolExecutionResult = this.toolCallingManager.executeToolCalls(finalRequest.prompt(), chatResponse);
+				toolExecutionResult = this.toolCallingManager.executeToolCalls(new Prompt(fullTurnHistory, optionsCopy),
+						chatResponse);
+			}
+			catch (ToolCallLimitExceededException ex) {
+				// A configured tool call limit was hit. Return whatever was executed
+				// so far directly to the application client instead of looping back
+				// to the LLM.
+				ChatClientResponse limitResponse = finalAggregatedResponse.mutate()
+					.chatResponse(ChatResponse.builder()
+						.from(chatResponse)
+						.generations(ToolExecutionResult.buildGenerations(ex.getPartialToolExecutionResult()))
+						.build())
+					.build();
+				return Flux.just(usageAccumulator.applyAccumulatedUsage(limitResponse));
 			}
 			finally {
 				ToolCallReactiveContextHolder.clearContext();
@@ -345,7 +385,7 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 				List<Message> nextInstructions = this.doGetNextInstructionsForToolCallStream(finalRequest,
 						finalAggregatedResponse, toolExecutionResult);
 				return this.internalStream(streamAdvisorChain, originalRequest, optionsCopy, nextInstructions,
-						usageAccumulator);
+						toolExecutionResult.conversationHistory(), usageAccumulator);
 			}
 		});
 		return toolCallFlux.subscribeOn(Schedulers.boundedElastic());

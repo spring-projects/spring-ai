@@ -30,6 +30,7 @@ import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.ai.tool.metadata.ToolMetadata;
@@ -260,6 +261,53 @@ public abstract class AbstractToolCallingAdvisorIT {
 			// With returnDirect=true, the raw tool result is returned without LLM
 			// processing
 			assertThat(content).contains("temp");
+		}
+
+	}
+
+	@Nested
+	class ToolCallLimits {
+
+		@Test
+		void callToolCallLimitIsEnforced() {
+			ToolCallingManager limitedManager = ToolCallingManager.builder()
+				.maxCallsPerTool("getCurrentWeather", 1)
+				.build();
+
+			String response = ChatClient.create(getChatModel())
+				.prompt()
+				.advisors(ToolCallingAdvisor.builder().toolCallingManager(limitedManager).build())
+				.user("What's the weather like in San Francisco, Tokyo, and Paris in Celsius? Call the weather "
+						+ "tool once for each city.")
+				.tools(createWeatherToolCallback())
+				.call()
+				.content();
+
+			// Only the first call to getCurrentWeather is allowed; the rest are
+			// rejected with the message DefaultToolCallingManager synthesizes when a
+			// configured limit is exceeded.
+			assertThat(response).contains("limit");
+		}
+
+		@Test
+		void streamToolCallLimitIsEnforced() {
+			ToolCallingManager limitedManager = ToolCallingManager.builder()
+				.maxCallsPerTool("getCurrentWeather", 1)
+				.build();
+
+			Flux<String> response = ChatClient.create(getChatModel())
+				.prompt()
+				.advisors(ToolCallingAdvisor.builder().toolCallingManager(limitedManager).build())
+				.user("What's the weather like in San Francisco, Tokyo, and Paris in Celsius? Call the weather "
+						+ "tool once for each city.")
+				.tools(createWeatherToolCallback())
+				.stream()
+				.content();
+
+			List<String> chunks = response.collectList().block();
+			String content = Objects.requireNonNull(chunks).stream().collect(Collectors.joining());
+
+			assertThat(content).contains("limit");
 		}
 
 	}

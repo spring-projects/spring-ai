@@ -44,6 +44,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.tool.ToolCallLimitExceededException;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionResult;
@@ -52,6 +53,7 @@ import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.ai.tool.metadata.ToolMetadata;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 /**
  * Abstract integration-test base for {@link ToolCallingAdvisor} auto-registration
@@ -413,6 +415,49 @@ public abstract class AbstractToolCallingAdvisorAutoRegistrationIT {
 			var finalResponse = Objects.requireNonNull(response, "Expected a non-null final ChatResponse");
 			var finalGeneration = Objects.requireNonNull(finalResponse.getResult());
 			assertThat(finalGeneration.getOutput().getText()).contains("30", "10", "15");
+		}
+
+		@Test
+		void callPathManualLoopThrowsWhenToolCallLimitExceeded() {
+			ToolCallback weatherTool = createWeatherToolCallback();
+			ToolCallingManager toolCallingManager = ToolCallingManager.builder()
+				.maxCallsPerTool("getCurrentWeather", 1)
+				.build();
+			ToolCallingChatOptions toolOptions = ToolCallingChatOptions.builder()
+				.toolCallbacks(List.of(weatherTool))
+				.build();
+
+			ChatClient chatClient = ChatClient.create(getChatModel());
+			Prompt initialPrompt = new Prompt(
+					List.of(new UserMessage("What's the weather in San Francisco, Tokyo, and Paris in Celsius? Call "
+							+ "the weather tool once for each city.")),
+					toolOptions);
+
+			// Here the caller drives the tool-calling loop manually (no
+			// ToolCallingAdvisor to catch the exception), so the configured per-tool
+			// limit must surface directly as ToolCallLimitExceededException from
+			// executeToolCalls, proving the manager enforces the limit even outside
+			// the advisor-mediated path.
+			assertThatExceptionOfType(ToolCallLimitExceededException.class).isThrownBy(() -> {
+				Prompt currentPrompt = initialPrompt;
+				ChatResponse response = chatClient.prompt()
+					.messages(currentPrompt.getInstructions())
+					.tools(weatherTool)
+					.advisors(AdvisorParams.toolCallingAdvisorAutoRegister(false))
+					.call()
+					.chatResponse();
+
+				while (response != null && response.hasToolCalls()) {
+					ToolExecutionResult result = toolCallingManager.executeToolCalls(currentPrompt, response);
+					currentPrompt = new Prompt(result.conversationHistory(), toolOptions);
+					response = chatClient.prompt()
+						.messages(currentPrompt.getInstructions())
+						.tools(weatherTool)
+						.advisors(AdvisorParams.toolCallingAdvisorAutoRegister(false))
+						.call()
+						.chatResponse();
+				}
+			});
 		}
 
 		@Test
