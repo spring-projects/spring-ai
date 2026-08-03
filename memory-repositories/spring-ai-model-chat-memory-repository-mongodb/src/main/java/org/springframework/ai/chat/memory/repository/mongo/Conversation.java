@@ -24,13 +24,16 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 /**
- * A record representing a conversation in MongoDB.
+ * A record representing a conversation in MongoDB. The {@code sequence} holds the
+ * position of the message within the conversation and determines the order in which
+ * messages are retrieved. It is {@code null} for documents written before the field was
+ * introduced.
  *
  * @author Lukasz Jernas
  * @since 1.1.0
  */
 @Document("ai_chat_memory")
-public record Conversation(String conversationId, Message message, Instant timestamp) {
+public record Conversation(String conversationId, Message message, Instant timestamp, @Nullable Integer sequence) {
 	public record Message(@Nullable String content, String type, Map<String, Object> metadata) {
 	}
 }

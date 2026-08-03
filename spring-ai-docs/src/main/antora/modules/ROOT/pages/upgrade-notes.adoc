@@ -156,6 +156,46 @@ public class CustomTranscriptionModel implements TranscriptionModel {
 
 If streaming is not needed, no action is required — the default implementation is inherited automatically.
 
+=== MongoDB Chat Memory `sequence` Field
+
+Documents in the `ai_chat_memory` collection gain a `sequence` field that determines message ordering within a conversation.
+Previously, ordering relied on the `timestamp` field.
+MongoDB stores `java.time.Instant` with millisecond precision and `saveAll()` writes the whole conversation in a single batch, so all of its messages usually end up with the same timestamp, and MongoDB does not guarantee a consistent order for documents with equal sort keys.
+A dedicated integer sequence orders the conversation deterministically, the same approach the JDBC repository uses.
+
+The `timestamp` field is retained and still records when the conversation was written, so the optional TTL index is unaffected.
+It is also the secondary sort key: documents written by earlier versions have no `sequence` field, so they all tie on it and fall back to the `timestamp` ordering they were written with.
+Existing conversations are therefore read back exactly as before the upgrade, and are ordered by `sequence` from their next save onwards.
+
+==== Impact
+
+- The main index created by `MongoChatMemoryIndexCreatorAutoConfiguration` now covers `conversationId`, `sequence` and `timestamp` instead of `conversationId` and `timestamp`.
+Applications relying on the auto-configuration pick this up on startup; the previous index is not dropped automatically.
+- `Conversation` gains a nullable `sequence` record component.
+Code constructing it directly must pass the message position, and code reading it must handle the `null` that documents written by earlier versions map to.
+
+==== Migration
+
+No action is required.
+Existing documents keep their previous ordering behaviour, and a conversation gains explicit sequence numbers the next time a message is added to it.
+
+Backfilling is optional and only worthwhile for conversations that are no longer active.
+Note that it can only reconstruct the order from the existing `timestamp` values, which is the ordering this change replaces, so it does not recover an order that was already wrong:
+
+[source,javascript]
+----
+db.ai_chat_memory.aggregate([
+    { $sort: { conversationId: 1, timestamp: 1, _id: 1 } },
+    { $group: { _id: "$conversationId", ids: { $push: "$_id" } } }
+]).forEach(function (conversation) {
+    conversation.ids.forEach(function (id, sequence) {
+        db.ai_chat_memory.updateOne({ _id: id }, { $set: { sequence: sequence } });
+    });
+});
+----
+
+The previous index can be dropped with `db.ai_chat_memory.dropIndex({ conversationId: 1, timestamp: -1 })` once the new one is in place.
+
 [[upgrading-to-2-0-0]]
 == Upgrading to 2.0.0
 

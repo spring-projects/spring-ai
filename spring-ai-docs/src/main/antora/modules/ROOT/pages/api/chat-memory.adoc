@@ -409,7 +409,9 @@ The Neo4j repository will automatically ensure that indexes are created for conv
 
 `MongoChatMemoryRepository` is a built-in implementation that uses MongoDB to store messages. It is suitable for applications that require a flexible, document-oriented database for chat memory persistence.
 
-Messages are retrieved in ascending timestamp order (oldest-to-newest), which is the expected format for LLM conversation history. This ordering is consistent across all chat memory repository implementations.
+Messages are retrieved in ascending order (oldest-to-newest), which is the expected format for LLM conversation history.
+Ordering is maintained by a `sequence` field that records each message's position within its conversation.
+This ordering is consistent across all chat memory repository implementations.
 
 [WARNING]
 ====
@@ -481,6 +483,9 @@ ChatMemory chatMemory = MessageWindowChatMemory.builder()
 
 ==== Collection Initialization
 The auto-configuration will automatically create the `ai_chat_memory` collection on startup if it does not already exist.
+
+NOTE: As of 2.0.1, documents carry a `sequence` field that determines message ordering, and the main index covers `conversationId`, `sequence` and `timestamp`.
+Conversations written by earlier versions have no `sequence` field and keep their previous `timestamp` ordering until they are saved again, so no migration is required; see xref:upgrade-notes.adoc[] for details.
 
 === RedisChatMemoryRepository
 
