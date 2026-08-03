@@ -41,7 +41,7 @@ public class MarkdownCodeBlockCleaner implements ResponseTextCleaner {
 		text = text.trim();
 
 		// Check for and remove triple backticks
-		if (text.startsWith("```") && text.endsWith("```")) {
+		if (text.startsWith("```") && text.endsWith("```") && text.length() > 6) {
 			String[] lines = text.split("\n", 2);
 			String firstLine = lines[0].trim();
 			if (lines.length > 1) {
