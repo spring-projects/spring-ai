@@ -97,6 +97,7 @@ import org.springframework.ai.chat.observation.ChatModelObservationDocumentation
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.content.ContentPart;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.observation.conventions.AiProvider;
@@ -513,92 +514,29 @@ public final class OpenAiChatModel implements ChatModel {
 					// Handle simple text content for user and system messages
 					ChatCompletionUserMessageParam.Builder builder = ChatCompletionUserMessageParam.builder();
 
-					if (message instanceof UserMessage userMessage
-							&& !CollectionUtils.isEmpty(userMessage.getMedia())) {
-						// Handle media content (images, audio, files)
+					if (message instanceof UserMessage userMessage && (userMessage.hasInterleavedContent()
+							|| !CollectionUtils.isEmpty(userMessage.getMedia()))) {
+						// Handle media content (images, audio, files). Walking the
+						// content
+						// parts preserves the caller's text/media ordering; for a message
+						// built in the flat form the parts are the text followed by the
+						// media, so the resulting parts array is unchanged.
 						List<ChatCompletionContentPart> parts = new ArrayList<>();
 
-						String messageText = message.getText();
-						if (messageText != null && !messageText.isEmpty()) {
-							parts.add(ChatCompletionContentPart
-								.ofText(ChatCompletionContentPartText.builder().text(messageText).build()));
+						for (ContentPart contentPart : userMessage.getContentParts()) {
+							if (contentPart instanceof ContentPart.TextPart textPart) {
+								if (!textPart.text().isEmpty()) {
+									parts.add(ChatCompletionContentPart
+										.ofText(ChatCompletionContentPartText.builder().text(textPart.text()).build()));
+								}
+							}
+							else if (contentPart instanceof ContentPart.MediaPart mediaPart) {
+								ChatCompletionContentPart mediaContentPart = toContentPart(mediaPart.media());
+								if (mediaContentPart != null) {
+									parts.add(mediaContentPart);
+								}
+							}
 						}
-
-						// Add media content parts
-						userMessage.getMedia().forEach(media -> {
-							String mimeType = media.getMimeType().toString();
-							if (mimeType.startsWith("image/")) {
-								if (media.getData() instanceof java.net.URI uri) {
-									parts.add(ChatCompletionContentPart
-										.ofImageUrl(ChatCompletionContentPartImage.builder()
-											.imageUrl(ChatCompletionContentPartImage.ImageUrl.builder()
-												.url(uri.toString())
-												.build())
-											.build()));
-								}
-								else if (media.getData() instanceof String text) {
-									// The org.springframework.ai.content.Media object
-									// should store the URL as a java.net.URI but it
-									// transforms it to String somewhere along the way,
-									// for example in its Builder class. So, we accept
-									// String as well here for image URLs.
-									parts.add(ChatCompletionContentPart
-										.ofImageUrl(ChatCompletionContentPartImage.builder()
-											.imageUrl(
-													ChatCompletionContentPartImage.ImageUrl.builder().url(text).build())
-											.build()));
-								}
-								else if (media.getData() instanceof byte[] bytes) {
-									// Assume the bytes are an image. So, convert the
-									// bytes to a base64 encoded
-									ChatCompletionContentPartImage.ImageUrl.Builder imageUrlBuilder = ChatCompletionContentPartImage.ImageUrl
-										.builder();
-
-									imageUrlBuilder.url("data:" + mimeType + ";base64,"
-											+ Base64.getEncoder().encodeToString(bytes));
-									parts.add(ChatCompletionContentPart
-										.ofImageUrl(ChatCompletionContentPartImage.builder()
-											.imageUrl(imageUrlBuilder.build())
-											.build()));
-								}
-								else {
-									if (logger.isInfoEnabled()) {
-										logger.info("Could not process image media with data of type: "
-												+ media.getData().getClass().getSimpleName()
-												+ ". Only java.net.URI is supported for image URLs.");
-									}
-								}
-							}
-							else if (mimeType.startsWith("audio/")) {
-								parts.add(ChatCompletionContentPart
-									.ofInputAudio(ChatCompletionContentPartInputAudio.builder()
-										.inputAudio(ChatCompletionContentPartInputAudio.builder()
-											.inputAudio(ChatCompletionContentPartInputAudio.InputAudio.builder()
-												.data(fromAudioData(media.getData()))
-												.format(mimeType.contains("mp3")
-														? ChatCompletionContentPartInputAudio.InputAudio.Format.MP3
-														: ChatCompletionContentPartInputAudio.InputAudio.Format.WAV)
-												.build())
-											.build()
-											.inputAudio())
-										.build()));
-							}
-							else if ("application/pdf".equals(mimeType)) {
-								parts.add(ChatCompletionContentPart.ofFile(ChatCompletionContentPart.File.builder()
-									.file(ChatCompletionContentPart.File.FileObject.builder()
-										.filename(media.getName())
-										.fileData(fromMediaData(media.getMimeType(), media.getData()))
-										.build())
-									.build()));
-							}
-							else {
-								// Assume it's a file or other media type represented as a
-								// data URL
-								parts.add(ChatCompletionContentPart.ofText(ChatCompletionContentPartText.builder()
-									.text(fromMediaData(media.getMimeType(), media.getData()))
-									.build()));
-							}
-						});
 						builder.contentOfArrayOfContentParts(parts);
 					}
 					else {
@@ -949,6 +887,79 @@ public final class OpenAiChatModel implements ChatModel {
 				return ChatCompletionToolChoiceOption.ofAuto(ChatCompletionToolChoiceOption.Auto.NONE);
 			default:
 				throw new IllegalArgumentException("Unknown tool_choice type: " + type);
+		}
+	}
+
+	/**
+	 * Maps a single {@link Media} to the OpenAI content part that carries it.
+	 * @param media the media to map
+	 * @return the content part, or null when the media cannot be represented (an image
+	 * whose data is of an unsupported type), in which case it is left out of the request
+	 */
+	private @Nullable ChatCompletionContentPart toContentPart(Media media) {
+		String mimeType = media.getMimeType().toString();
+		if (mimeType.startsWith("image/")) {
+			if (media.getData() instanceof java.net.URI uri) {
+				return ChatCompletionContentPart.ofImageUrl(ChatCompletionContentPartImage.builder()
+					.imageUrl(ChatCompletionContentPartImage.ImageUrl.builder().url(uri.toString()).build())
+					.build());
+			}
+			else if (media.getData() instanceof String text) {
+				// The org.springframework.ai.content.Media object should store the URL as
+				// a
+				// java.net.URI but it transforms it to String somewhere along the way,
+				// for
+				// example in its Builder class. So, we accept String as well here for
+				// image
+				// URLs.
+				return ChatCompletionContentPart.ofImageUrl(ChatCompletionContentPartImage.builder()
+					.imageUrl(ChatCompletionContentPartImage.ImageUrl.builder().url(text).build())
+					.build());
+			}
+			else if (media.getData() instanceof byte[] bytes) {
+				// Assume the bytes are an image. So, convert the bytes to a base64
+				// encoded
+				ChatCompletionContentPartImage.ImageUrl.Builder imageUrlBuilder = ChatCompletionContentPartImage.ImageUrl
+					.builder();
+
+				imageUrlBuilder.url("data:" + mimeType + ";base64," + Base64.getEncoder().encodeToString(bytes));
+				return ChatCompletionContentPart
+					.ofImageUrl(ChatCompletionContentPartImage.builder().imageUrl(imageUrlBuilder.build()).build());
+			}
+			else {
+				if (logger.isInfoEnabled()) {
+					logger.info("Could not process image media with data of type: "
+							+ media.getData().getClass().getSimpleName()
+							+ ". Only java.net.URI is supported for image URLs.");
+				}
+				return null;
+			}
+		}
+		else if (mimeType.startsWith("audio/")) {
+			return ChatCompletionContentPart.ofInputAudio(ChatCompletionContentPartInputAudio.builder()
+				.inputAudio(ChatCompletionContentPartInputAudio.builder()
+					.inputAudio(ChatCompletionContentPartInputAudio.InputAudio.builder()
+						.data(fromAudioData(media.getData()))
+						.format(mimeType.contains("mp3") ? ChatCompletionContentPartInputAudio.InputAudio.Format.MP3
+								: ChatCompletionContentPartInputAudio.InputAudio.Format.WAV)
+						.build())
+					.build()
+					.inputAudio())
+				.build());
+		}
+		else if ("application/pdf".equals(mimeType)) {
+			return ChatCompletionContentPart.ofFile(ChatCompletionContentPart.File.builder()
+				.file(ChatCompletionContentPart.File.FileObject.builder()
+					.filename(media.getName())
+					.fileData(fromMediaData(media.getMimeType(), media.getData()))
+					.build())
+				.build());
+		}
+		else {
+			// Assume it's a file or other media type represented as a data URL
+			return ChatCompletionContentPart.ofText(ChatCompletionContentPartText.builder()
+				.text(fromMediaData(media.getMimeType(), media.getData()))
+				.build());
 		}
 	}
 
