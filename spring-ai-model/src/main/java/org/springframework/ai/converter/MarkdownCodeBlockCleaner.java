@@ -24,8 +24,6 @@ import org.jspecify.annotations.Nullable;
  * <ul>
  * <li>{@code ```json ... ```}</li>
  * <li>{@code ``` ... ```}</li>
- * <li>{@code ```json ...}</li>
- * <li>{@code ``` ...}</li>
  * </ul>
  *
  * @author liugddx
@@ -43,7 +41,7 @@ public class MarkdownCodeBlockCleaner implements ResponseTextCleaner {
 		text = text.trim();
 
 		// Check for and remove triple backticks
-		if (text.startsWith("```")) {
+		if (text.startsWith("```") && text.endsWith("```") && text.length() > 6) {
 			String[] lines = text.split("\n", 2);
 			String firstLine = lines[0].trim();
 			if (lines.length > 1) {
@@ -60,9 +58,7 @@ public class MarkdownCodeBlockCleaner implements ResponseTextCleaner {
 			}
 
 			// Remove trailing ```
-			if (text.endsWith("```")) {
-				text = text.substring(0, text.length() - 3);
-			}
+			text = text.substring(0, text.length() - 3);
 
 			// Trim again to remove any potential whitespace
 			text = text.trim();
