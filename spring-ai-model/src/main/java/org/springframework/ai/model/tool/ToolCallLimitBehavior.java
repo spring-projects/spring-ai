@@ -21,7 +21,7 @@ package org.springframework.ai.model.tool;
  * limit (per tool name or total per turn) is exceeded.
  *
  * @author Christian Tzolov
- * @since 2.0.0
+ * @since 2.0.1
  */
 public enum ToolCallLimitBehavior {
 

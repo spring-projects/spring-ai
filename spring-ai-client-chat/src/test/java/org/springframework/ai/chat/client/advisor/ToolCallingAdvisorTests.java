@@ -51,6 +51,7 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.tool.ToolCallLimitExceededException;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityChecker;
@@ -1135,6 +1136,88 @@ public class ToolCallingAdvisorTests {
 		// Must be the complete, untrimmed round1History (3 messages), not the trimmed
 		// 2-message version forwarded to the rest of the chain.
 		assertThat(capturedPrompts.get(1).getInstructions()).isEqualTo(round1History);
+	}
+
+	@Test
+	void whenToolCallLimitExceededThenAdviseCallReturnsPartialResult() {
+		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder().toolCallingManager(this.toolCallingManager).build();
+
+		ChatClientRequest request = createMockRequest();
+		ChatClientResponse responseWithToolCall = createMockResponse(true);
+
+		CallAdvisor terminalAdvisor = new TerminalCallAdvisor((req, chain) -> responseWithToolCall);
+
+		CallAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.of(advisor, terminalAdvisor))
+			.build();
+
+		ToolResponseMessage.ToolResponse partialToolResponse = new ToolResponseMessage.ToolResponse("tool-1",
+				"testTool", "partial result");
+		ToolResponseMessage partialToolResponseMessage = ToolResponseMessage.builder()
+			.responses(List.of(partialToolResponse))
+			.build();
+		List<Message> partialHistory = List.of(new UserMessage("test"), AssistantMessage.builder().content("").build(),
+				partialToolResponseMessage);
+		ToolExecutionResult partialResult = ToolExecutionResult.builder().conversationHistory(partialHistory).build();
+
+		when(this.toolCallingManager.executeToolCalls(any(Prompt.class), any(ChatResponse.class)))
+			.thenThrow(new ToolCallLimitExceededException("testTool", 1, partialResult));
+
+		ChatClientResponse result = advisor.adviseCall(request, realChain);
+
+		// The limit is hit on the first round, so the loop must break instead of
+		// looping back to the LLM.
+		verify(this.toolCallingManager, times(1)).executeToolCalls(any(Prompt.class), any(ChatResponse.class));
+
+		// The partial tool execution result carried by the exception is returned to
+		// the client instead of the exception propagating.
+		assertThat(result.chatResponse()).isNotNull();
+		assertThat(result.chatResponse().getResults()).hasSize(1);
+		assertThat(result.chatResponse().getResults().get(0).getOutput().getText()).isEqualTo("partial result");
+		assertThat(result.chatResponse().getResults().get(0).getMetadata().getFinishReason())
+			.isEqualTo(ToolExecutionResult.FINISH_REASON);
+	}
+
+	@Test
+	void whenToolCallLimitExceededThenAdviseStreamReturnsPartialResult() {
+		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder().toolCallingManager(this.toolCallingManager).build();
+
+		ChatClientRequest request = createMockRequest();
+		ChatClientResponse responseWithToolCall = createMockResponse(true);
+
+		TerminalStreamAdvisor terminalAdvisor = new TerminalStreamAdvisor(
+				(req, chain) -> Flux.just(responseWithToolCall));
+
+		StreamAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.<Advisor>of(advisor, terminalAdvisor))
+			.build();
+
+		ToolResponseMessage.ToolResponse partialToolResponse = new ToolResponseMessage.ToolResponse("tool-1",
+				"testTool", "partial result");
+		ToolResponseMessage partialToolResponseMessage = ToolResponseMessage.builder()
+			.responses(List.of(partialToolResponse))
+			.build();
+		List<Message> partialHistory = List.of(new UserMessage("test"), AssistantMessage.builder().content("").build(),
+				partialToolResponseMessage);
+		ToolExecutionResult partialResult = ToolExecutionResult.builder().conversationHistory(partialHistory).build();
+
+		when(this.toolCallingManager.executeToolCalls(any(Prompt.class), any(ChatResponse.class)))
+			.thenThrow(new ToolCallLimitExceededException("testTool", 1, partialResult));
+
+		List<ChatClientResponse> results = advisor.adviseStream(request, realChain).collectList().block();
+
+		// The limit is hit on the first round, so the loop must break instead of
+		// looping back to the LLM.
+		verify(this.toolCallingManager, times(1)).executeToolCalls(any(Prompt.class), any(ChatResponse.class));
+
+		// Intermediate tool call response is filtered out; only the partial result
+		// carried by the exception is emitted.
+		assertThat(results).isNotNull().hasSize(1);
+		assertThat(results.get(0).chatResponse()).isNotNull();
+		assertThat(results.get(0).chatResponse().getResults()).hasSize(1);
+		assertThat(results.get(0).chatResponse().getResults().get(0).getOutput().getText()).isEqualTo("partial result");
+		assertThat(results.get(0).chatResponse().getResults().get(0).getMetadata().getFinishReason())
+			.isEqualTo(ToolExecutionResult.FINISH_REASON);
 	}
 
 	@Test

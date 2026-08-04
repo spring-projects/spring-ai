@@ -27,7 +27,7 @@ import org.jspecify.annotations.Nullable;
  * still produce a coherent response instead of discarding completed work.
  *
  * @author Christian Tzolov
- * @since 2.0.0
+ * @since 2.0.1
  */
 public class ToolCallLimitExceededException extends RuntimeException {
 

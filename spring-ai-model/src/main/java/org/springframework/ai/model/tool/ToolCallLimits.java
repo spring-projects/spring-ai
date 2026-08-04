@@ -32,7 +32,7 @@ import org.springframework.ai.chat.messages.UserMessage;
  * evaluate it against the number of times a tool has been called.
  *
  * @author Christian Tzolov
- * @since 2.0.0
+ * @since 2.0.1
  */
 final class ToolCallLimits {
 
