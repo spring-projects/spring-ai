@@ -1,0 +1,37 @@
+name: GitHub Release
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Enter the release version (e.g., 1.2.3)."
+        required: true
+      latest:
+        description: "Whether to mark the release as the latest one."
+        type: boolean
+        required: false
+        default: false
+      draft:
+        description: "Whether to create the release as a draft."
+        type: boolean
+        required: false
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: ${{ github.workflow }}-${{ inputs.version }}
+jobs:
+  create-github-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check Out Code
+        uses: actions/checkout@v6
+      - name: Create GitHub Release
+        uses: ./.github/actions/create-github-release
+        with:
+          commercial: ${{ vars.COMMERCIAL }}
+          draft: ${{ inputs.draft }}
+          latest: ${{ inputs.latest }}
+          milestone: ${{ inputs.version }}
+          pre-release: ${{ contains(inputs.version, '-') }}
+          token: ${{ secrets.GH_ACTIONS_REPO_TOKEN }}
