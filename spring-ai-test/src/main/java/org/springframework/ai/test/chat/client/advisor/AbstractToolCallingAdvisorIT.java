@@ -30,6 +30,7 @@ import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
@@ -274,20 +275,22 @@ public abstract class AbstractToolCallingAdvisorIT {
 				.maxCallsPerTool("getCurrentWeather", 1)
 				.build();
 
-			String response = ChatClient.create(getChatModel())
+			ChatResponse response = Objects.requireNonNull(ChatClient.create(getChatModel())
 				.prompt()
 				.advisors(ToolCallingAdvisor.builder().toolCallingManager(limitedManager).build())
-				.system("You MUST call getCurrentWeather separately and sequentially for each city, "
-						+ "one tool call per city, never batching multiple cities into one call.")
 				.user("What's the weather like in San Francisco, Tokyo, and Paris in Celsius?")
 				.tools(createWeatherToolCallback())
 				.call()
-				.content();
+				.chatResponse());
 
 			// Only the first call to getCurrentWeather is allowed; the rest are
 			// rejected with the message DefaultToolCallingManager synthesizes when a
 			// configured limit is exceeded.
-			assertThat(response).contains("limit");
+			// First generation is the direct return from the first tool call, the second
+			// generation is the error message from the second tool call.
+			assertThat(response.getResults()).hasSize(2);
+			assertThat(response.getResults().get(0).getOutput().getText()).contains("{"); // difectReturn
+			assertThat(response.getResults().get(1).getOutput().getText()).contains("limit");
 		}
 
 		@Test
@@ -296,18 +299,22 @@ public abstract class AbstractToolCallingAdvisorIT {
 				.maxCallsPerTool("getCurrentWeather", 1)
 				.build();
 
-			Flux<String> response = ChatClient.create(getChatModel())
+			Flux<ChatResponse> response = ChatClient.create(getChatModel())
 				.prompt()
 				.advisors(ToolCallingAdvisor.builder().toolCallingManager(limitedManager).build())
-				.system("You MUST call getCurrentWeather separately and sequentially for each city, "
-						+ "one tool call per city, never batching multiple cities into one call.")
 				.user("What's the weather like in San Francisco, Tokyo, and Paris in Celsius?")
 				.tools(createWeatherToolCallback())
 				.stream()
-				.content();
+				.chatResponse();
 
-			List<String> chunks = response.collectList().block();
-			String content = Objects.requireNonNull(chunks).stream().collect(Collectors.joining());
+			List<ChatResponse> chunks = response.collectList().block();
+			String content = Objects.requireNonNull(chunks)
+				.stream()
+				.map(r -> r.getResults()
+					.stream()
+					.map(result -> result.getOutput().getText())
+					.collect(Collectors.joining()))
+				.collect(Collectors.joining());
 
 			assertThat(content).contains("limit");
 		}
