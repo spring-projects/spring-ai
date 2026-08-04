@@ -12,4 +12,4 @@ jobs:
       - name: Dispatch (full build)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh workflow run deploy-docs.yml -r docs-build
+        run: gh workflow run deploy-docs.yml -r docs-build --repo ${{ github.repository }}
