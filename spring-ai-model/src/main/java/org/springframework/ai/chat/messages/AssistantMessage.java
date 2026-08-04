@@ -36,6 +36,7 @@ import org.springframework.util.CollectionUtils;
  * @author Mark Pollack
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author guan xu
  * @since 1.0.0
  */
 public class AssistantMessage extends AbstractMessage implements MediaContent {
@@ -68,6 +69,14 @@ public class AssistantMessage extends AbstractMessage implements MediaContent {
 	@Override
 	public List<Media> getMedia() {
 		return this.media;
+	}
+
+	public AssistantMessage copy() {
+		return mutate().build();
+	}
+
+	public Builder<?> mutate() {
+		return builder().content(getText()).properties(getMetadata()).toolCalls(getToolCalls()).media(getMedia());
 	}
 
 	@Override

@@ -23,6 +23,8 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -32,6 +34,7 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
  * Unit tests for {@link DeepSeekAssistantMessage}.
  *
  * @author Sun Yuhan
+ * @author guan xu
  */
 class DeepSeekAssistantMessageTests {
 
@@ -200,6 +203,36 @@ class DeepSeekAssistantMessageTests {
 		assertThat(message.getMetadata()).containsAllEntriesOf(properties);
 		assertThat(message.getToolCalls()).isEqualTo(toolCalls);
 		assertThat(message.getMedia()).isEqualTo(media);
+	}
+
+	@Test
+	public void copyPreservesReasoningContentAndPrefix() {
+		DeepSeekAssistantMessage original = new DeepSeekAssistantMessage.Builder().content("hello")
+			.reasoningContent("thoughts")
+			.prefix(true)
+			.build();
+
+		DeepSeekAssistantMessage copy = (DeepSeekAssistantMessage) original.copy();
+
+		assertThat(copy).isNotSameAs(original);
+		assertThat(copy.getReasoningContent()).isEqualTo("thoughts");
+		assertThat(copy.getPrefix()).isTrue();
+	}
+
+	@Test
+	public void promptCopyPreservesDeepSeekAssistantMessage() {
+		DeepSeekAssistantMessage original = new DeepSeekAssistantMessage.Builder().content("hello")
+			.reasoningContent("thoughts")
+			.prefix(true)
+			.build();
+
+		Prompt copy = new Prompt(List.of(original)).copy();
+
+		Message copied = copy.getInstructions().get(0);
+		assertThat(copied).isInstanceOf(DeepSeekAssistantMessage.class);
+		DeepSeekAssistantMessage deepSeekCopy = (DeepSeekAssistantMessage) copied;
+		assertThat(deepSeekCopy.getReasoningContent()).isEqualTo("thoughts");
+		assertThat(deepSeekCopy.getPrefix()).isTrue();
 	}
 
 }

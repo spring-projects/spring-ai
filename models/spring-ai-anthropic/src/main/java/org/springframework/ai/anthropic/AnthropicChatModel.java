@@ -147,6 +147,7 @@ import org.springframework.util.MimeType;
  * @author Ilayaperumal Gopinathan
  * @author Jewoo Shin
  * @author Seeun Kim
+ * @author guan xu
  * @since 1.0.0
  * @see AnthropicChatOptions
  * @see <a href="https://docs.anthropic.com/en/api/messages">Anthropic Messages API</a>
@@ -1555,9 +1556,38 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		}
 
 		@Override
+		public Builder mutate() {
+			return builder().content(getText()).toolCalls(getToolCalls()).thinkingContents(getThinkingContents());
+		}
+
+		@Override
 		public String toString() {
 			return "AnthropicAssistantMessage [messageType=" + getMessageType() + ", toolCalls=" + getToolCalls()
 					+ ", textContent=" + getText() + ", thinkingContents=" + this.thinkingContents.size() + "]";
+		}
+
+		public static Builder builder() {
+			return new Builder();
+		}
+
+		static final class Builder extends AssistantMessage.Builder<Builder> {
+
+			private List<AnthropicThinkingContent> thinkingContents = List.of();
+
+			private Builder() {
+			}
+
+			Builder thinkingContents(List<AnthropicThinkingContent> thinkingContents) {
+				this.thinkingContents = thinkingContents;
+				return self();
+			}
+
+			@Override
+			public AnthropicAssistantMessage build() {
+				Assert.notNull(this.content, "content cannot be null");
+				return new AnthropicAssistantMessage(this.content, this.toolCalls, this.thinkingContents);
+			}
+
 		}
 
 	}
