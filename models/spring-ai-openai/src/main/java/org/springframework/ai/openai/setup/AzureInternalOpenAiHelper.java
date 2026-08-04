@@ -16,6 +16,7 @@
 
 package org.springframework.ai.openai.setup;
 
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.function.Supplier;
 
@@ -36,6 +37,8 @@ import org.jspecify.annotations.Nullable;
  * is coded by the same author (Julien Dubois, from Microsoft).
  *
  * @author Julien Dubois
+ * @author Subhash Polisetti
+ * @author Sebastien Deleuze
  */
 final class AzureInternalOpenAiHelper {
 
@@ -48,11 +51,18 @@ final class AzureInternalOpenAiHelper {
 		return getAzureCredential(new DefaultAzureCredentialBuilder().build());
 	}
 
+	/**
+	 * Create a bearer token credential backed by the given {@link TokenCredential}.
+	 * <p>
+	 * The token is deliberately read from the credential rather than through
+	 * {@code AuthenticationUtil#getBearerTokenSupplier}, which sends a throwaway
+	 * {@code GET https://www.example.com} request on every invocation just to harvest the
+	 * {@code Authorization} header from it. That request is useless here and fails in
+	 * environments where such a connection is not permitted, for example behind a
+	 * TLS-inspecting proxy requiring custom certificates.
+	 */
 	static Credential getAzureCredential(TokenCredential credential) {
 		TokenRequestContext request = new TokenRequestContext().addScopes(COGNITIVE_SERVICES_SCOPE);
-		// Not via AuthenticationUtil.getBearerTokenSupplier: that sends a
-		// request to https://www.example.com on every call to harvest the
-		// Authorization header, which fails behind TLS-inspecting proxies.
 		return BearerTokenCredential.create(new CachingTokenSupplier(credential, request));
 	}
 
@@ -61,6 +71,13 @@ final class AzureInternalOpenAiHelper {
 	 * request, so the credential is queried only on first use and when it nears expiry.
 	 */
 	private static final class CachingTokenSupplier implements Supplier<String> {
+
+		/**
+		 * Refresh margin applied before the token expires, so that a token is never
+		 * handed out too close to its expiration. {@link AccessToken#isExpired()} is not
+		 * used as it provides no such margin.
+		 */
+		private static final Duration REFRESH_MARGIN = Duration.ofMinutes(5);
 
 		private final TokenCredential credential;
 
@@ -75,8 +92,8 @@ final class AzureInternalOpenAiHelper {
 
 		@Override
 		public synchronized String get() {
-			@Nullable AccessToken token = this.cachedToken;
-			if (token == null || OffsetDateTime.now().plusMinutes(5).isAfter(token.getExpiresAt())) {
+			AccessToken token = this.cachedToken;
+			if (token == null || OffsetDateTime.now().plus(REFRESH_MARGIN).isAfter(token.getExpiresAt())) {
 				token = this.credential.getTokenSync(this.request);
 				this.cachedToken = token;
 			}

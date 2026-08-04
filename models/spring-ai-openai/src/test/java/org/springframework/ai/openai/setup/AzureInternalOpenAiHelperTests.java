@@ -32,16 +32,24 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 
+/**
+ * Unit tests for {@link AzureInternalOpenAiHelper}.
+ *
+ * @author Subhash Polisetti
+ */
 class AzureInternalOpenAiHelperTests {
+
+	private static final String COGNITIVE_SERVICES_SCOPE = "https://cognitiveservices.azure.com/.default";
+
+	private final TokenCredential credential = mock(TokenCredential.class);
 
 	@Test
 	void getAzureCredentialResolvesTokenDirectlyFromCredential() {
-		AccessToken accessToken = new AccessToken("test-token", OffsetDateTime.now().plusHours(1));
-		TokenCredential credential = mock(TokenCredential.class);
-		given(credential.getTokenSync(any(TokenRequestContext.class))).willReturn(accessToken);
+		givenTokens(new AccessToken("test-token", OffsetDateTime.now().plusHours(1)));
 
-		Credential azureCredential = AzureInternalOpenAiHelper.getAzureCredential(credential);
+		Credential azureCredential = AzureInternalOpenAiHelper.getAzureCredential(this.credential);
 
 		assertThat(azureCredential).isInstanceOf(BearerTokenCredential.class);
 		assertThat(((BearerTokenCredential) azureCredential).token()).isEqualTo("test-token");
@@ -49,45 +57,54 @@ class AzureInternalOpenAiHelperTests {
 
 	@Test
 	void getAzureCredentialRequestsCognitiveServicesScope() {
-		AccessToken accessToken = new AccessToken("test-token", OffsetDateTime.now().plusHours(1));
-		TokenCredential credential = mock(TokenCredential.class);
-		given(credential.getTokenSync(any(TokenRequestContext.class))).willReturn(accessToken);
+		givenTokens(new AccessToken("test-token", OffsetDateTime.now().plusHours(1)));
 
-		((BearerTokenCredential) AzureInternalOpenAiHelper.getAzureCredential(credential)).token();
+		bearerTokenCredential().token();
 
 		ArgumentCaptor<TokenRequestContext> captor = ArgumentCaptor.forClass(TokenRequestContext.class);
-		verify(credential).getTokenSync(captor.capture());
-		assertThat(captor.getValue().getScopes()).containsExactly("https://cognitiveservices.azure.com/.default");
+		verify(this.credential).getTokenSync(captor.capture());
+		assertThat(captor.getValue().getScopes()).containsExactly(COGNITIVE_SERVICES_SCOPE);
+	}
+
+	@Test
+	void getAzureCredentialDoesNotAcquireTokenEagerly() {
+		AzureInternalOpenAiHelper.getAzureCredential(this.credential);
+
+		verifyNoInteractions(this.credential);
 	}
 
 	@Test
 	void getAzureCredentialCachesTokenAcrossCalls() {
-		AccessToken accessToken = new AccessToken("test-token", OffsetDateTime.now().plusHours(1));
-		TokenCredential credential = mock(TokenCredential.class);
-		given(credential.getTokenSync(any(TokenRequestContext.class))).willReturn(accessToken);
+		givenTokens(new AccessToken("test-token", OffsetDateTime.now().plusHours(1)));
 
-		BearerTokenCredential azureCredential = (BearerTokenCredential) AzureInternalOpenAiHelper
-			.getAzureCredential(credential);
-		azureCredential.token();
-		azureCredential.token();
-		azureCredential.token();
+		BearerTokenCredential azureCredential = bearerTokenCredential();
+		assertThat(azureCredential.token()).isEqualTo("test-token");
+		assertThat(azureCredential.token()).isEqualTo("test-token");
+		assertThat(azureCredential.token()).isEqualTo("test-token");
 
-		verify(credential, times(1)).getTokenSync(any(TokenRequestContext.class));
+		verify(this.credential, times(1)).getTokenSync(any(TokenRequestContext.class));
 	}
 
 	@Test
 	void getAzureCredentialRefreshesTokenNearExpiry() {
-		TokenCredential credential = mock(TokenCredential.class);
-		given(credential.getTokenSync(any(TokenRequestContext.class))).willReturn(
-				new AccessToken("first", OffsetDateTime.now().plusMinutes(1)),
+		// The first token expires within the refresh margin, so it is not reused.
+		givenTokens(new AccessToken("first", OffsetDateTime.now().plusMinutes(1)),
 				new AccessToken("second", OffsetDateTime.now().plusHours(1)));
 
-		BearerTokenCredential azureCredential = (BearerTokenCredential) AzureInternalOpenAiHelper
-			.getAzureCredential(credential);
+		BearerTokenCredential azureCredential = bearerTokenCredential();
 
 		assertThat(azureCredential.token()).isEqualTo("first");
 		assertThat(azureCredential.token()).isEqualTo("second");
-		verify(credential, times(2)).getTokenSync(any(TokenRequestContext.class));
+		assertThat(azureCredential.token()).isEqualTo("second");
+		verify(this.credential, times(2)).getTokenSync(any(TokenRequestContext.class));
+	}
+
+	private void givenTokens(AccessToken token, AccessToken... additionalTokens) {
+		given(this.credential.getTokenSync(any(TokenRequestContext.class))).willReturn(token, additionalTokens);
+	}
+
+	private BearerTokenCredential bearerTokenCredential() {
+		return (BearerTokenCredential) AzureInternalOpenAiHelper.getAzureCredential(this.credential);
 	}
 
 }
