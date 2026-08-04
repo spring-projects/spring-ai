@@ -94,6 +94,7 @@ The prefix `spring.ai.openai.audio.speech` is used as the property prefix that l
 | spring.ai.openai.audio.speech.voice | The voice to use for synthesis. For OpenAI's TTS API, One of the available voices for the chosen model: alloy, echo, fable, onyx, nova, and shimmer. | alloy
 | spring.ai.openai.audio.speech.response-format | The format of the audio output. Supported formats are mp3, opus, aac, flac, wav, and pcm. | mp3
 | spring.ai.openai.audio.speech.speed | The speed of the voice synthesis. The acceptable range is from 0.25 (slowest) to 4.0 (fastest). | 1.0
+| spring.ai.openai.audio.speech.instructions | Control instructions for the voice delivery (e.g. tone, pace). Only supported by models such as `gpt-4o-mini-tts`; ignored by `tts-1` and `tts-1-hd`. | -
 |====
 
 NOTE: You can override the common `spring.ai.openai.base-url`, `spring.ai.openai.api-key`, `spring.ai.openai.organization-id` and `spring.ai.openai.project-id` properties.
@@ -118,6 +119,7 @@ OpenAiAudioSpeechOptions speechOptions = OpenAiAudioSpeechOptions.builder()
     .voice(OpenAiAudioApi.SpeechRequest.Voice.ALLOY)
     .responseFormat(OpenAiAudioApi.SpeechRequest.AudioResponseFormat.MP3)
     .speed(1.0)
+    .instructions("Friendly; warm tone; natural pauses")
     .build();
 
 TextToSpeechPrompt speechPrompt = new TextToSpeechPrompt("Hello, this is a text-to-speech example.", speechOptions);

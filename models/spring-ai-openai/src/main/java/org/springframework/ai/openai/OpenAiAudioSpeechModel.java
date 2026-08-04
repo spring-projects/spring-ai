@@ -137,6 +137,10 @@ public final class OpenAiAudioSpeechModel implements TextToSpeechModel {
 			paramsBuilder.speed(mergedOptions.getSpeed());
 		}
 
+		if (StringUtils.hasText(mergedOptions.getInstructions())) {
+			paramsBuilder.instructions(mergedOptions.getInstructions());
+		}
+
 		SpeechCreateParams params = paramsBuilder.build();
 
 		com.openai.core.http.HttpResponse httpResponse = this.openAiClient.audio().speech().create(params);

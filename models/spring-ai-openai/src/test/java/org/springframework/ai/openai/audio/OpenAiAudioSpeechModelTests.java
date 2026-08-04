@@ -164,6 +164,17 @@ class OpenAiAudioSpeechModelTests {
 	}
 
 	@Test
+	void testOptionsBuilderWithInstructions() {
+		OpenAiAudioSpeechOptions options = OpenAiAudioSpeechOptions.builder()
+			.model("gpt-4o-mini-tts")
+			.voice(OpenAiAudioSpeechOptions.Voice.VERSE)
+			.instructions("Friendly; warm tone; natural pauses")
+			.build();
+
+		assertThat(options.getInstructions()).isEqualTo("Friendly; warm tone; natural pauses");
+	}
+
+	@Test
 	void testAllVoiceConstants() {
 		assertThat(OpenAiAudioSpeechOptions.Voice.ALLOY.getValue()).isEqualTo("alloy");
 		assertThat(OpenAiAudioSpeechOptions.Voice.ECHO.getValue()).isEqualTo("echo");
