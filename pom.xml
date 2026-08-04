@@ -249,7 +249,7 @@
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
 		<!-- Spring Boot -->
-		<spring-boot.version>4.1.1-INTERNAL-SNAPSHOT</spring-boot.version>
+		<spring-boot.version>4.1.1</spring-boot.version>
 
 		<!-- MCP SDK -->
 		<mcp.sdk.version>2.0.0</mcp.sdk.version>
