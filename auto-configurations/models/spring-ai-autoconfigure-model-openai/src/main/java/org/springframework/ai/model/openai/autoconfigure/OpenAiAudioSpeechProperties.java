@@ -45,6 +45,8 @@ public class OpenAiAudioSpeechProperties extends AbstractOpenAiProperties {
 
 	private @Nullable Double speed;
 
+	private @Nullable String instructions;
+
 	public @Nullable String getModel() {
 		return this.model;
 	}
@@ -85,6 +87,14 @@ public class OpenAiAudioSpeechProperties extends AbstractOpenAiProperties {
 		this.speed = speed;
 	}
 
+	public @Nullable String getInstructions() {
+		return this.instructions;
+	}
+
+	public void setInstructions(@Nullable String instructions) {
+		this.instructions = instructions;
+	}
+
 	public OpenAiAudioSpeechOptions toOptions() {
 		return OpenAiAudioSpeechOptions.builder()
 			.model(this.getModel())
@@ -92,6 +102,7 @@ public class OpenAiAudioSpeechProperties extends AbstractOpenAiProperties {
 			.voice(this.voice)
 			.responseFormat(this.responseFormat)
 			.speed(this.speed)
+			.instructions(this.instructions)
 			.build();
 	}
 

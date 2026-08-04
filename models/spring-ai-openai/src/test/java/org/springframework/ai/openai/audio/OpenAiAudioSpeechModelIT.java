@@ -162,6 +162,24 @@ class OpenAiAudioSpeechModelIT {
 	}
 
 	@Test
+	void testInstructionsOption() {
+		OpenAiAudioSpeechOptions options = OpenAiAudioSpeechOptions.builder()
+			.model("gpt-4o-mini-tts")
+			.voice(OpenAiAudioSpeechOptions.Voice.VERSE)
+			.instructions("Friendly; warm tone; natural pauses; ~1.1x feel")
+			.build();
+
+		OpenAiAudioSpeechModel model = OpenAiAudioSpeechModel.builder().options(options).build();
+		TextToSpeechPrompt prompt = new TextToSpeechPrompt("Today is a wonderful day to build something people love!");
+
+		TextToSpeechResponse response = model.call(prompt);
+
+		assertThat(response).isNotNull();
+		assertThat(response.getResults()).hasSize(1);
+		assertThat(response.getResult().getOutput()).isNotEmpty();
+	}
+
+	@Test
 	void testRateLimitMetadata() {
 		// Verify that SDK extracts rate limit metadata from response headers
 		OpenAiAudioSpeechModel model = OpenAiAudioSpeechModel.builder().build();
