@@ -26,6 +26,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
+import io.micrometer.observation.Observation;
+import io.micrometer.observation.ObservationHandler;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import org.junit.jupiter.api.Disabled;
@@ -1474,6 +1476,53 @@ class DefaultChatClientTests {
 				assertThat(context.getResponse().chatResponse().getResults())
 					.isEqualTo(chatClientResponse.chatResponse().getResults());
 			});
+	}
+
+	@Test
+	@Disabled("GH-5971: streaming observations stop in reverse order (outer-first instead of LIFO). "
+			+ "Re-enable once the streaming observation lifecycle is fixed.")
+	void streamingChatClientStopsObservationsInLifoOrder() {
+		// Regression test for https://github.com/spring-projects/spring-ai/issues/5971.
+		// Expected behaviour: when the streaming Flux terminates, observations
+		// must be stopped in reverse-of-start order — `spring.ai.advisor` stops
+		// before `spring.ai.chat.client`. The observed buggy behaviour is the
+		// opposite (outer chat.client.stop fires before advisor.stop).
+		ChatModel chatModel = mockChatModel();
+		ArgumentCaptor<Prompt> promptCaptor = ArgumentCaptor.forClass(Prompt.class);
+		given(chatModel.stream(promptCaptor.capture()))
+			.willReturn(Flux.just(new ChatResponse(List.of(new Generation(new AssistantMessage("response"))))));
+
+		List<String> startEvents = new java.util.concurrent.CopyOnWriteArrayList<>();
+		List<String> stopEvents = new java.util.concurrent.CopyOnWriteArrayList<>();
+		TestObservationRegistry observationRegistry = TestObservationRegistry.create();
+		observationRegistry.observationConfig().observationHandler(new ObservationHandler<Observation.Context>() {
+			@Override
+			public boolean supportsContext(Observation.Context context) {
+				return true;
+			}
+
+			@Override
+			public void onStart(Observation.Context context) {
+				startEvents.add(context.getName());
+			}
+
+			@Override
+			public void onStop(Observation.Context context) {
+				stopEvents.add(context.getName());
+			}
+		});
+
+		ChatClient chatClient = new DefaultChatClientBuilder(chatModel, observationRegistry, null, null).build();
+		chatClient.prompt("hello").stream().chatResponse().blockLast();
+
+		// The two observations of interest must both have been started.
+		assertThat(startEvents).contains("spring.ai.chat.client", "spring.ai.advisor");
+		// LIFO order: the inner advisor observation must stop before the outer
+		// chat.client observation. Under the bug the order is reversed.
+		int chatClientStop = stopEvents.indexOf("spring.ai.chat.client");
+		int advisorStop = stopEvents.indexOf("spring.ai.advisor");
+		assertThat(advisorStop).as("spring.ai.advisor must stop before spring.ai.chat.client")
+			.isLessThan(chatClientStop);
 	}
 
 	@Test
