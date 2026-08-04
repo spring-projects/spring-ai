@@ -204,6 +204,23 @@ public class FilterExpressionTextParserTests {
 	}
 
 	@Test
+	public void testLargeIntegerFallsBackToLong() {
+		// Values exceeding Integer.MAX_VALUE should be parsed as Long without L suffix
+		Expression exp = this.parser.parse("id == " + Long.MAX_VALUE);
+		assertThat(exp).isEqualTo(new Expression(EQ, new Key("id"), new Value(Long.MAX_VALUE)));
+		assertThat(((Value) exp.right()).value()).isInstanceOf(Long.class);
+
+		exp = this.parser.parse("id == " + Long.MIN_VALUE);
+		assertThat(exp).isEqualTo(new Expression(EQ, new Key("id"), new Value(Long.MIN_VALUE)));
+		assertThat(((Value) exp.right()).value()).isInstanceOf(Long.class);
+
+		// Values within Integer range should still be parsed as Integer
+		exp = this.parser.parse("id == 42");
+		assertThat(exp).isEqualTo(new Expression(EQ, new Key("id"), new Value(42)));
+		assertThat(((Value) exp.right()).value()).isInstanceOf(Integer.class);
+	}
+
+	@Test
 	public void testIdentifiers() {
 		Expression exp = this.parser.parse("'country.1' == 'BG'");
 		assertThat(exp).isEqualTo(new Expression(EQ, new Key("country.1"), new Value("BG")));
