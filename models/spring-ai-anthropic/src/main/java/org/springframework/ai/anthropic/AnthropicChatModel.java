@@ -1584,7 +1584,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 			@Override
 			public AnthropicAssistantMessage build() {
-				Assert.hasText(this.content, "content cannot be null or empty");
+				Assert.notNull(this.content, "content cannot be null");
 				return new AnthropicAssistantMessage(this.content, this.toolCalls, this.thinkingContents);
 			}
 

@@ -33,9 +33,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 class AnthropicAssistantMessageTests {
 
 	@Test
-	void copyPreservesThinkingContents() {
+	void copyPreservesAnthropicAssistantMessageWithEmptyContent() {
 		AnthropicChatModel.AnthropicAssistantMessage original = AnthropicChatModel.AnthropicAssistantMessage.builder()
-			.content("hello")
+			.content("")
 			.thinkingContents(List.of(AnthropicChatModel.AnthropicThinkingContent.thinking("think", "sig")))
 			.build();
 
@@ -43,6 +43,7 @@ class AnthropicAssistantMessageTests {
 			.copy();
 
 		assertThat(copy).isNotSameAs(original);
+		assertThat(copy.getText()).isEmpty();
 		assertThat(copy.getThinkingContents()).hasSize(1);
 		assertThat(copy.getThinkingContents().get(0).thinking()).isEqualTo("think");
 		assertThat(copy.getThinkingContents().get(0).signature()).isEqualTo("sig");
@@ -61,7 +62,12 @@ class AnthropicAssistantMessageTests {
 		Message copied = copy.getInstructions().get(0);
 		assertThat(copied).isInstanceOf(AnthropicChatModel.AnthropicAssistantMessage.class);
 		AnthropicChatModel.AnthropicAssistantMessage anthropicCopy = (AnthropicChatModel.AnthropicAssistantMessage) copied;
+
+		assertThat(anthropicCopy).isNotSameAs(original);
 		assertThat(anthropicCopy.getThinkingContents()).hasSize(2);
+		assertThat(anthropicCopy.getThinkingContents().get(0).thinking()).isEqualTo("think");
+		assertThat(anthropicCopy.getThinkingContents().get(0).signature()).isEqualTo("sig");
+		assertThat(anthropicCopy.getThinkingContents().get(1).redactedData()).isEqualTo("data");
 	}
 
 }
