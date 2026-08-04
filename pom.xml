@@ -940,6 +940,31 @@
 				</plugins>
 			</build>
 		</profile>
+		<profile>
+			<id>commercial</id>
+			<repositories>
+				<repository>
+					<id>spring-enterprise-snapshot</id>
+					<url>${env.COMMERCIAL_SNAPSHOT_REPO_URL}</url>
+					<snapshots>
+						<enabled>true</enabled>
+					</snapshots>
+					<releases>
+						<enabled>false</enabled>
+					</releases>
+				</repository>
+				<repository>
+					<id>spring-enterprise-release</id>
+					<url>${env.COMMERCIAL_RELEASE_REPO_URL}</url>
+					<snapshots>
+						<enabled>false</enabled>
+					</snapshots>
+					<releases>
+						<enabled>true</enabled>
+					</releases>
+				</repository>
+			</repositories>
+		</profile>
 	</profiles>
 
 	<dependencyManagement>

@@ -6,7 +6,7 @@ permissions:
   actions: write
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ vars.COMMERCIAL && vars.UBUNTU_SMALL || 'ubuntu-latest' }}
     if: ${{ github.repository_owner == 'spring-projects' }}
     steps:
       - name: Dispatch (full build)

@@ -5,7 +5,7 @@ on:
 jobs:
   handle-documentation:
     name: Generate and upload javadocs
-    if: ${{ github.repository_owner == 'spring-projects' }}
+    if: ${{ github.repository == 'spring-projects/spring-ai' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout source code
