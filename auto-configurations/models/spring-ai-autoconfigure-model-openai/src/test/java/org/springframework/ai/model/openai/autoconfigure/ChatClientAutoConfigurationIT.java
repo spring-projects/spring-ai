@@ -104,14 +104,14 @@ public class ChatClientAutoConfigurationIT {
 
 	@Test
 	void toolCallLimitEnforcedThroughAutoConfiguredToolCallingManager() {
-		// spring.ai.tools.limits.max-calls-per-tool is read by
+		// spring.ai.tools.limits.max-calls-per-tool-default is read by
 		// ToolCallingAutoConfiguration.toolCallingManager(...), which is the same
 		// ToolCallingManager bean that
 		// ChatClientAutoConfiguration.toolCallingAdvisorBuilder(...)
 		// wires into the ChatClient.Builder bean's default ToolCallingAdvisor. Setting
 		// it to 1 here proves the property genuinely reaches the manager used by a
 		// real, auto-configured ChatClient rather than some other default instance.
-		this.contextRunner.withPropertyValues("spring.ai.tools.limits.max-calls-per-tool=1")
+		this.contextRunner.withPropertyValues("spring.ai.tools.limits.max-calls-per-tool-default=1")
 			.withUserConfiguration(WeatherToolConfig.class)
 			.run(context -> {
 				ChatClient.Builder builder = context.getBean(ChatClient.Builder.class);

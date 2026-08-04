@@ -128,7 +128,7 @@ class FunctionCallWithFunctionBeanIT {
 
 	@Test
 	void toolCallLimitEnforcedThroughAutoConfiguredToolCallingManager() {
-		// spring.ai.tools.limits.max-calls-per-tool is read by
+		// spring.ai.tools.limits.max-calls-per-tool-default is read by
 		// ToolCallingAutoConfiguration.toolCallingManager(...). This module has no
 		// ChatClientAutoConfiguration on its test classpath, so the real bean is
 		// fetched explicitly here and wired into the ToolCallingAdvisor used for the
@@ -136,7 +136,7 @@ class FunctionCallWithFunctionBeanIT {
 		// calls, rather than some other default instance.
 		this.contextRunner
 			.withPropertyValues("spring.ai.anthropic.chat.model=" + Model.CLAUDE_HAIKU_4_5.asString(),
-					"spring.ai.tools.limits.max-calls-per-tool=1")
+					"spring.ai.tools.limits.max-calls-per-tool-default=1")
 			.run(context -> {
 
 				AnthropicChatModel chatModel = context.getBean(AnthropicChatModel.class);
