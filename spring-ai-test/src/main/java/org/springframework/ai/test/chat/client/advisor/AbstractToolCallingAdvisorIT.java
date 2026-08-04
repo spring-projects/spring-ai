@@ -277,8 +277,9 @@ public abstract class AbstractToolCallingAdvisorIT {
 			String response = ChatClient.create(getChatModel())
 				.prompt()
 				.advisors(ToolCallingAdvisor.builder().toolCallingManager(limitedManager).build())
-				.user("What's the weather like in San Francisco, Tokyo, and Paris in Celsius? Call the weather "
-						+ "tool once for each city.")
+				.system("You MUST call getCurrentWeather separately and sequentially for each city, "
+						+ "one tool call per city, never batching multiple cities into one call.")
+				.user("What's the weather like in San Francisco, Tokyo, and Paris in Celsius?")
 				.tools(createWeatherToolCallback())
 				.call()
 				.content();
@@ -298,8 +299,9 @@ public abstract class AbstractToolCallingAdvisorIT {
 			Flux<String> response = ChatClient.create(getChatModel())
 				.prompt()
 				.advisors(ToolCallingAdvisor.builder().toolCallingManager(limitedManager).build())
-				.user("What's the weather like in San Francisco, Tokyo, and Paris in Celsius? Call the weather "
-						+ "tool once for each city.")
+				.system("You MUST call getCurrentWeather separately and sequentially for each city, "
+						+ "one tool call per city, never batching multiple cities into one call.")
+				.user("What's the weather like in San Francisco, Tokyo, and Paris in Celsius?")
 				.tools(createWeatherToolCallback())
 				.stream()
 				.content();
