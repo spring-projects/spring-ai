@@ -16,18 +16,37 @@
 
 package org.springframework.ai.openai.audio;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.time.Duration;
+import java.util.List;
+import java.util.Random;
+
 import com.openai.client.OpenAIClient;
+import com.openai.core.http.Headers;
+import com.openai.core.http.HttpResponse;
+import com.openai.models.audio.speech.SpeechCreateParams;
+import com.openai.services.blocking.AudioService;
+import com.openai.services.blocking.audio.SpeechService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import org.springframework.ai.audio.tts.TextToSpeechOptions;
+import org.springframework.ai.audio.tts.TextToSpeechPrompt;
+import org.springframework.ai.audio.tts.TextToSpeechResponse;
 import org.springframework.ai.openai.OpenAiAudioSpeechModel;
 import org.springframework.ai.openai.OpenAiAudioSpeechOptions;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for OpenAiAudioSpeechModel.
@@ -161,6 +180,45 @@ class OpenAiAudioSpeechModelTests {
 		assertThat(options.getVoice()).isEqualTo("echo");
 		assertThat(options.getResponseFormat()).isEqualTo("opus");
 		assertThat(options.getSpeed()).isEqualTo(2.0);
+	}
+
+	@Test
+	void testStreamEmitsMultipleChunksInOrder() {
+		byte[] audioBytes = new byte[20_000];
+		new Random(42).nextBytes(audioBytes);
+
+		AudioService audioService = mock(AudioService.class);
+		SpeechService speechService = mock(SpeechService.class);
+		HttpResponse httpResponse = mock(HttpResponse.class);
+		Headers headers = mock(Headers.class);
+
+		when(this.mockClient.audio()).thenReturn(audioService);
+		when(audioService.speech()).thenReturn(speechService);
+		when(speechService.create(any(SpeechCreateParams.class))).thenReturn(httpResponse);
+		when(httpResponse.body()).thenReturn(new ByteArrayInputStream(audioBytes));
+		when(httpResponse.headers()).thenReturn(headers);
+		when(headers.values(anyString())).thenReturn(List.of());
+
+		OpenAiAudioSpeechModel model = OpenAiAudioSpeechModel.builder().openAiClient(this.mockClient).build();
+		TextToSpeechPrompt prompt = new TextToSpeechPrompt("Testing streaming output");
+
+		List<TextToSpeechResponse> responses = model.stream(prompt).collectList().block(Duration.ofSeconds(5));
+
+		assertThat(responses).isNotNull();
+		// 20_000 bytes at an 8192-byte chunk size must be split across multiple chunks.
+		assertThat(responses.size()).isGreaterThan(1);
+
+		ByteArrayOutputStream reassembled = new ByteArrayOutputStream();
+		for (TextToSpeechResponse response : responses) {
+			reassembled.writeBytes(response.getResult().getOutput());
+		}
+		assertThat(reassembled.toByteArray()).isEqualTo(audioBytes);
+
+		ArgumentCaptor<SpeechCreateParams> paramsCaptor = ArgumentCaptor.forClass(SpeechCreateParams.class);
+		verify(speechService).create(paramsCaptor.capture());
+		assertThat(paramsCaptor.getValue().streamFormat()).contains(SpeechCreateParams.StreamFormat.AUDIO);
+
+		verify(httpResponse).close();
 	}
 
 	@Test

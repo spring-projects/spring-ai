@@ -18,12 +18,15 @@ package org.springframework.ai.openai;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InterruptedIOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
 import com.openai.client.OpenAIClient;
 import com.openai.core.http.Headers;
+import com.openai.core.http.HttpResponse;
 import com.openai.models.audio.speech.SpeechCreateParams;
 import com.openai.models.audio.speech.SpeechModel;
 import io.micrometer.observation.ObservationRegistry;
@@ -31,6 +34,8 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.SynchronousSink;
+import reactor.core.scheduler.Schedulers;
 
 import org.springframework.ai.audio.tts.Speech;
 import org.springframework.ai.audio.tts.TextToSpeechModel;
@@ -56,6 +61,8 @@ import org.springframework.util.StringUtils;
 public final class OpenAiAudioSpeechModel implements TextToSpeechModel {
 
 	private static final Log logger = LogFactory.getLog(OpenAiAudioSpeechModel.class);
+
+	private static final int STREAM_CHUNK_SIZE = 8192;
 
 	private final OpenAIClient openAiClient;
 
@@ -100,20 +107,105 @@ public final class OpenAiAudioSpeechModel implements TextToSpeechModel {
 	public TextToSpeechResponse call(TextToSpeechPrompt prompt) {
 		Assert.notNull(prompt, "Prompt must not be null");
 
-		// Merge request options with default options
-		OpenAiAudioSpeechOptions mergedOptions = OpenAiAudioSpeechOptions.builder()
-			.from(this.options)
-			.merge(prompt.getOptions())
-			.build();
-
+		OpenAiAudioSpeechOptions mergedOptions = mergeOptions(prompt);
 		String inputText = getInputText(prompt, mergedOptions);
+		traceRequest("Calling", mergedOptions);
 
+		SpeechCreateParams params = buildSpeechCreateParams(mergedOptions, inputText, false);
+
+		HttpResponse httpResponse = this.openAiClient.audio().speech().create(params);
+		Headers headers = httpResponse.headers();
+
+		byte[] audioBytes;
+		try (InputStream inputStream = httpResponse.body()) {
+			audioBytes = inputStream.readAllBytes();
+		}
+		catch (IOException e) {
+			throw new RuntimeException("Failed to read audio speech response", e);
+		}
+
+		if (audioBytes.length == 0) {
+			if (logger.isWarnEnabled()) {
+				logger.warn("No speech response returned for prompt: " + prompt);
+			}
+			return new TextToSpeechResponse(List.of(new Speech(new byte[0])));
+		}
+
+		Speech speech = new Speech(audioBytes);
+		OpenAiAudioSpeechResponseMetadata metadata = OpenAiAudioSpeechResponseMetadata.from(headers);
+
+		return new TextToSpeechResponse(List.of(speech), metadata);
+	}
+
+	@Override
+	public Flux<TextToSpeechResponse> stream(TextToSpeechPrompt prompt) {
+		Assert.notNull(prompt, "Prompt must not be null");
+
+		return Flux
+			.<TextToSpeechResponse, SpeechStreamState>generate(() -> openSpeechStream(prompt), this::emitNextChunk,
+					SpeechStreamState::close)
+			.subscribeOn(Schedulers.boundedElastic());
+	}
+
+	private SpeechStreamState openSpeechStream(TextToSpeechPrompt prompt) {
+		OpenAiAudioSpeechOptions mergedOptions = mergeOptions(prompt);
+		String inputText = getInputText(prompt, mergedOptions);
+		traceRequest("Streaming", mergedOptions);
+
+		SpeechCreateParams params = buildSpeechCreateParams(mergedOptions, inputText, true);
+
+		HttpResponse httpResponse = this.openAiClient.audio().speech().create(params);
+		InputStream inputStream = httpResponse.body();
+		OpenAiAudioSpeechResponseMetadata metadata = OpenAiAudioSpeechResponseMetadata.from(httpResponse.headers());
+
+		return new SpeechStreamState(httpResponse, inputStream, metadata);
+	}
+
+	private SpeechStreamState emitNextChunk(SpeechStreamState state, SynchronousSink<TextToSpeechResponse> sink) {
+		byte[] buffer = new byte[STREAM_CHUNK_SIZE];
+		int bytesRead;
+		try {
+			bytesRead = state.inputStream().read(buffer);
+		}
+		catch (InterruptedIOException e) {
+			// The blocking read was interrupted because the downstream subscriber
+			// cancelled (e.g. a consumer stopped reading early). This is a normal
+			// shutdown path, not a failure, so complete quietly instead of raising
+			// sink.error(), which would otherwise surface as a spurious "dropped
+			// error" once nothing is left to receive it.
+			Thread.currentThread().interrupt();
+			sink.complete();
+			return state;
+		}
+		catch (IOException e) {
+			sink.error(new RuntimeException("Failed to read audio speech stream", e));
+			return state;
+		}
+
+		if (bytesRead == -1) {
+			sink.complete();
+			return state;
+		}
+
+		byte[] chunk = (bytesRead == buffer.length) ? buffer : Arrays.copyOf(buffer, bytesRead);
+		sink.next(new TextToSpeechResponse(List.of(new Speech(chunk)), state.metadata()));
+		return state;
+	}
+
+	private OpenAiAudioSpeechOptions mergeOptions(TextToSpeechPrompt prompt) {
+		return OpenAiAudioSpeechOptions.builder().from(this.options).merge(prompt.getOptions()).build();
+	}
+
+	private void traceRequest(String verb, OpenAiAudioSpeechOptions mergedOptions) {
 		if (logger.isTraceEnabled()) {
-			logger.trace("Calling OpenAI SDK audio speech with model: " + mergedOptions.getModel() + ", voice: "
+			logger.trace(verb + " OpenAI SDK audio speech with model: " + mergedOptions.getModel() + ", voice: "
 					+ mergedOptions.getVoice() + ", format: " + mergedOptions.getResponseFormat() + ", speed: "
 					+ mergedOptions.getSpeed());
 		}
+	}
 
+	private SpeechCreateParams buildSpeechCreateParams(OpenAiAudioSpeechOptions mergedOptions, String inputText,
+			boolean streaming) {
 		String model;
 		if (mergedOptions.getDeploymentName() != null) {
 			model = mergedOptions.getDeploymentName();
@@ -141,37 +233,11 @@ public final class OpenAiAudioSpeechModel implements TextToSpeechModel {
 			paramsBuilder.instructions(mergedOptions.getInstructions());
 		}
 
-		SpeechCreateParams params = paramsBuilder.build();
-
-		com.openai.core.http.HttpResponse httpResponse = this.openAiClient.audio().speech().create(params);
-		Headers headers = httpResponse.headers();
-
-		byte[] audioBytes;
-		try (InputStream inputStream = httpResponse.body()) {
-			audioBytes = inputStream.readAllBytes();
-		}
-		catch (IOException e) {
-			throw new RuntimeException("Failed to read audio speech response", e);
+		if (streaming) {
+			paramsBuilder.streamFormat(SpeechCreateParams.StreamFormat.AUDIO);
 		}
 
-		if (audioBytes.length == 0) {
-			if (logger.isWarnEnabled()) {
-				logger.warn("No speech response returned for prompt: " + prompt);
-			}
-			return new TextToSpeechResponse(List.of(new Speech(new byte[0])));
-		}
-
-		Speech speech = new Speech(audioBytes);
-		OpenAiAudioSpeechResponseMetadata metadata = OpenAiAudioSpeechResponseMetadata.from(headers);
-
-		return new TextToSpeechResponse(List.of(speech), metadata);
-	}
-
-	@Override
-	public Flux<TextToSpeechResponse> stream(TextToSpeechPrompt prompt) {
-		// TODO: The OpenAI SDK audio().speech() API does not support streaming yet.
-		// Return the full response as a single element Flux.
-		return Flux.just(call(prompt));
+		return paramsBuilder.build();
 	}
 
 	/**
@@ -197,6 +263,19 @@ public final class OpenAiAudioSpeechModel implements TextToSpeechModel {
 			return options.getInput();
 		}
 		return prompt.getInstructions().getText();
+	}
+
+	/**
+	 * Holds the open HTTP response and its still-open body {@link InputStream} for the
+	 * duration of a {@link #stream(TextToSpeechPrompt)} subscription.
+	 */
+	private record SpeechStreamState(HttpResponse httpResponse, InputStream inputStream,
+			OpenAiAudioSpeechResponseMetadata metadata) {
+
+		void close() {
+			this.httpResponse.close();
+		}
+
 	}
 
 	/**

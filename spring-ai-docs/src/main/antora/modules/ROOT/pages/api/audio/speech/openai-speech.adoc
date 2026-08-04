@@ -203,6 +203,10 @@ Flux<TextToSpeechResponse> responseStream = openAiAudioSpeechModel.stream(speech
 Flux<byte[]> audioByteStream = openAiAudioSpeechModel.stream("Hello, world!");
 ----
 
+Each element of the stream carries at most 8 KB of audio, the internal read-buffer size `OpenAiAudioSpeechModel` uses when pulling bytes from the underlying HTTP response; chunks can be smaller than that, depending on how much data has arrived from OpenAI at the time of each read.
+
+TIP: If you need to hand this stream to an API that only accepts a blocking `java.io.InputStream`, see xref:api/audio/speech.adoc#streaming-consume-inputstream[Consuming the Stream as a Blocking InputStream] for the practices that matter and a tested reference implementation.
+
 include::partial$openai/openai-http-client-customization.adoc[]
 
 == Migration Guide
