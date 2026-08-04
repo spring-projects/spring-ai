@@ -29,7 +29,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.mistralai.ThinkingModelSource;
-import org.springframework.ai.mistralai.ThinkingModelUtils;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletion;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionChunk;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage;
@@ -42,6 +41,7 @@ import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.R
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.TextChunk;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.ToolCall;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest;
+import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ReasoningEffort;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ToolChoice;
 import org.springframework.ai.mistralai.api.MistralAiApi.Embedding;
 import org.springframework.ai.mistralai.api.MistralAiApi.EmbeddingList;
@@ -252,8 +252,8 @@ class MistralAiApiIT {
 	}
 
 	private static ChatCompletionRequest createChatCompletionRequest(MistralAiApi.ChatModel chatModel, boolean stream) {
-		var reasoningEffort = ThinkingModelUtils.provideReasoningEffort(chatModel);
-		var model = ThinkingModelUtils.provideChatModelValue(chatModel);
+		var reasoningEffort = ReasoningEffort.HIGH;
+		var model = chatModel.getValue();
 		var systemChatCompletionMessage = new ChatCompletionMessage(
 				List.of(new TextChunk("You are a helpful assistant providing accurate short answers.")), Role.SYSTEM);
 		var userChatCompletionMessage = new ChatCompletionMessage(

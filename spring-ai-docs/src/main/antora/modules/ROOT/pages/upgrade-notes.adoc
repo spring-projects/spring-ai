@@ -1,6 +1,31 @@
 [[upgrade-notes]]
 = Upgrade Notes
 
+[[upgrading-to-2-1-0]]
+== Upgrading to 2.1.0
+
+=== Mistral AI Chat Models
+
+The following deprecated Mistral AI chat models have been removed from the `MistralAiApi.ChatModel` enumeration, as they are no longer available (retired on the 31st of July 2026):
+
+- `DEVSTRAL`,
+- `MAGISTRAL_MEDIUM`,
+- `MAGISTRAL_SMALL`,
+- `OPEN_MISTRAL_NEMO`.
+
+==== Impact
+
+Using these models will now cause:
+
+- **Compilation failure**: If referenced directly from `MistralAiApi.ChatModel`.
+- **Potentially unintended behavior**: If used via the `spring.ai.mistralai.chat.model` property, as Mistral AI redirects requests to these deprecated models to alternative models (for instance, `magistral-medium-latest` is redirected to `mistral-medium-3.5`).
+
+==== Migration
+
+Replace these models with active alternatives. Refer to the https://docs.mistral.ai/models/overview#legacy-models[Mistral AI Legacy Models documentation] for recommended replacements.
+
+You could consider switching to `MISTRAL_SMALL` or `MISTRAL_MEDIUM` with reasoning effort set to `MistralAiApi.ChatCompletionRequest.ReasoningEffort.HIGH` if you were using a Magistral model previously.
+
 [[upgrading-to-2-0-1]]
 == Upgrading to 2.0.1
 

@@ -58,6 +58,7 @@ import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.ai.mistralai.api.MistralAiApi;
+import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ReasoningEffort;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ResponseFormat;
 import org.springframework.ai.model.tool.DefaultToolCallingManager;
 import org.springframework.ai.model.tool.ToolCallingManager;
@@ -642,9 +643,10 @@ class MistralAiChatModelIT {
 	}
 
 	private static Prompt createThinkingPrompt(MistralAiApi.ChatModel chatModel) {
-		var reasoningEffort = ThinkingModelUtils.provideReasoningEffort(chatModel);
-		var model = ThinkingModelUtils.provideChatModelValue(chatModel);
-		var chatOptions = MistralAiChatOptions.builder().model(model).reasoningEffort(reasoningEffort).build();
+		var chatOptions = MistralAiChatOptions.builder()
+			.model(chatModel.getValue())
+			.reasoningEffort(ReasoningEffort.HIGH)
+			.build();
 		var systemMessage = new SystemMessage("You are a helpful assistant providing accurate short answers.");
 		var userMessage = new UserMessage(
 				"What is the first planet of the solar system based on the mass in descending order?");

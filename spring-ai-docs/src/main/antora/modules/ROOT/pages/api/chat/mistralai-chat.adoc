@@ -262,7 +262,7 @@ For more information about structured outputs, see the xref:api/structured-outpu
 Mistral offers two approaches to reasoning:
 
 * Adjustable: Available on Mistral Small 4 and Mistral Medium 3.5 via the `reasoning_effort` parameter. Enables the model to think to varying degrees.
-* Native: Available for the Magistral model family. These models always generate reasoning traces and are purpose-built for deep reasoning tasks.
+* Native: Available for the Magistral model family. These models always generate reasoning traces and are purpose-built for deep reasoning tasks. They have been deprecated and are no longer available.
 
 === Reasoning Effort
 
