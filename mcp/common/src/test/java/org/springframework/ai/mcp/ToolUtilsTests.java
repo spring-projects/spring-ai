@@ -382,7 +382,7 @@ class ToolUtilsTests {
 
 		ListToolsResult listToolsResult = mock(ListToolsResult.class);
 		when(listToolsResult.tools()).thenReturn(List.of(tool1, tool2));
-		when(mockClient.listTools()).thenReturn(listToolsResult);
+		when(mockClient.listTools(McpSchema.FIRST_PAGE)).thenReturn(listToolsResult);
 
 		List<ToolCallback> result = McpToolUtils.getToolCallbacksFromSyncClients(mockClient);
 
@@ -421,14 +421,14 @@ class ToolUtilsTests {
 
 		ListToolsResult listToolsResult1 = mock(ListToolsResult.class);
 		when(listToolsResult1.tools()).thenReturn(List.of(tool1));
-		when(mockClient1.listTools()).thenReturn(listToolsResult1);
+		when(mockClient1.listTools(McpSchema.FIRST_PAGE)).thenReturn(listToolsResult1);
 
 		when(mockClient2.getClientInfo()).thenReturn(clientInfo2);
 		when(mockClient2.getClientCapabilities()).thenReturn(clientCapabilities2);
 
 		ListToolsResult listToolsResult2 = mock(ListToolsResult.class);
 		when(listToolsResult2.tools()).thenReturn(List.of(tool2));
-		when(mockClient2.listTools()).thenReturn(listToolsResult2);
+		when(mockClient2.listTools(McpSchema.FIRST_PAGE)).thenReturn(listToolsResult2);
 
 		List<ToolCallback> result = McpToolUtils.getToolCallbacksFromSyncClients(mockClient1, mockClient2);
 
@@ -467,14 +467,14 @@ class ToolUtilsTests {
 
 		ListToolsResult listToolsResult1 = mock(ListToolsResult.class);
 		when(listToolsResult1.tools()).thenReturn(List.of(tool1));
-		when(mockClient1.listTools()).thenReturn(listToolsResult1);
+		when(mockClient1.listTools(McpSchema.FIRST_PAGE)).thenReturn(listToolsResult1);
 
 		when(mockClient2.getClientInfo()).thenReturn(clientInfo2);
 		when(mockClient2.getClientCapabilities()).thenReturn(clientCapabilities2);
 
 		ListToolsResult listToolsResult2 = mock(ListToolsResult.class);
 		when(listToolsResult2.tools()).thenReturn(List.of(tool2));
-		when(mockClient2.listTools()).thenReturn(listToolsResult2);
+		when(mockClient2.listTools(McpSchema.FIRST_PAGE)).thenReturn(listToolsResult2);
 
 		assertThatThrownBy(() -> McpToolUtils.getToolCallbacksFromSyncClients(mockClient1, mockClient2))
 			.isInstanceOf(IllegalStateException.class)

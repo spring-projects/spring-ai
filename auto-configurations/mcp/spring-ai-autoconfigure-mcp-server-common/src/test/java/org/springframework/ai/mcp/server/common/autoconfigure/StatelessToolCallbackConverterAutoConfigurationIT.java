@@ -373,7 +373,7 @@ public class StatelessToolCallbackConverterAutoConfigurationIT {
 			when(mockClient.getClientCapabilities()).thenReturn(McpSchema.ClientCapabilities.builder().build());
 
 			McpSchema.ListToolsResult listToolsResult = McpSchema.ListToolsResult.builder(List.of(mockTool)).build();
-			Mockito.when(mockClient.listTools()).thenReturn(listToolsResult);
+			Mockito.when(mockClient.listTools(McpSchema.FIRST_PAGE)).thenReturn(listToolsResult);
 
 			return org.springframework.ai.mcp.SyncMcpToolCallbackProvider.builder()
 				.mcpClients(List.of(mockClient))

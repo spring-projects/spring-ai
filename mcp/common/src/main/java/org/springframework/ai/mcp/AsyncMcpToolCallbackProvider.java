@@ -40,6 +40,7 @@ import org.springframework.util.CollectionUtils;
  *
  * @author Christian Tzolov
  * @author YunKui Lu
+ * @author Sukhrob Tokhirov
  * @since 1.0.0
  */
 public class AsyncMcpToolCallbackProvider implements ToolCallbackProvider, ApplicationListener<McpToolsChangedEvent> {
@@ -140,9 +141,8 @@ public class AsyncMcpToolCallbackProvider implements ToolCallbackProvider, Appli
 
 					for (McpAsyncClient mcpClient : this.mcpClients) {
 
-						ToolCallback[] toolCallbacks = mcpClient.listTools()
-							.map(response -> response.tools()
-								.stream()
+						ToolCallback[] toolCallbacks = McpToolListingUtils.listAllTools(mcpClient)
+							.map(tools -> tools.stream()
 								.filter(tool -> this.toolFilter.test(connectionInfo(mcpClient), tool))
 								.<ToolCallback>map(tool -> AsyncMcpToolCallback.builder()
 									.mcpClient(mcpClient)

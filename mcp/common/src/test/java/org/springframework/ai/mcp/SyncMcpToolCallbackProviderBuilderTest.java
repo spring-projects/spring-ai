@@ -259,7 +259,7 @@ class SyncMcpToolCallbackProviderBuilderTest {
 		// Mock list tools response
 		McpSchema.ListToolsResult listToolsResult = Mockito.mock(McpSchema.ListToolsResult.class);
 		when(listToolsResult.tools()).thenReturn(List.of(tool));
-		when(mcpClient.listTools()).thenReturn(listToolsResult);
+		when(mcpClient.listTools(McpSchema.FIRST_PAGE)).thenReturn(listToolsResult);
 
 		return mcpClient;
 	}

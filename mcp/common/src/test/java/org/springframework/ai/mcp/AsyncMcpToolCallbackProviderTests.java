@@ -19,6 +19,7 @@ package org.springframework.ai.mcp;
 import java.util.List;
 
 import io.modelcontextprotocol.client.McpAsyncClient;
+import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.ClientCapabilities;
 import io.modelcontextprotocol.spec.McpSchema.Implementation;
 import io.modelcontextprotocol.spec.McpSchema.ListToolsResult;
@@ -35,6 +36,8 @@ import org.springframework.ai.tool.ToolCallback;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -47,7 +50,7 @@ class AsyncMcpToolCallbackProviderTests {
 	void getToolCallbacksShouldReturnEmptyArrayWhenNoTools() {
 		ListToolsResult listToolsResult = mock(ListToolsResult.class);
 		when(listToolsResult.tools()).thenReturn(List.of());
-		when(this.mcpClient.listTools()).thenReturn(Mono.just(listToolsResult));
+		when(this.mcpClient.listTools(McpSchema.FIRST_PAGE)).thenReturn(Mono.just(listToolsResult));
 
 		AsyncMcpToolCallbackProvider provider = AsyncMcpToolCallbackProvider.builder()
 			.mcpClients(this.mcpClient)
@@ -82,7 +85,7 @@ class AsyncMcpToolCallbackProviderTests {
 
 		ListToolsResult listToolsResult = mock(ListToolsResult.class);
 		when(listToolsResult.tools()).thenReturn(List.of(tool1, tool2));
-		when(this.mcpClient.listTools()).thenReturn(Mono.just(listToolsResult));
+		when(this.mcpClient.listTools(McpSchema.FIRST_PAGE)).thenReturn(Mono.just(listToolsResult));
 
 		AsyncMcpToolCallbackProvider provider = AsyncMcpToolCallbackProvider.builder()
 			.mcpClients(this.mcpClient)
@@ -108,7 +111,7 @@ class AsyncMcpToolCallbackProviderTests {
 
 		ListToolsResult listToolsResult = mock(ListToolsResult.class);
 		when(listToolsResult.tools()).thenReturn(List.of(tool1, tool2));
-		when(this.mcpClient.listTools()).thenReturn(Mono.just(listToolsResult));
+		when(this.mcpClient.listTools(McpSchema.FIRST_PAGE)).thenReturn(Mono.just(listToolsResult));
 
 		AsyncMcpToolCallbackProvider provider1 = AsyncMcpToolCallbackProvider.builder()
 			.toolNamePrefixGenerator(McpToolNamePrefixGenerator.noPrefix())
@@ -140,7 +143,7 @@ class AsyncMcpToolCallbackProviderTests {
 		McpAsyncClient mcpClient1 = mock(McpAsyncClient.class);
 		ListToolsResult listToolsResult1 = mock(ListToolsResult.class);
 		when(listToolsResult1.tools()).thenReturn(List.of(tool1));
-		when(mcpClient1.listTools()).thenReturn(Mono.just(listToolsResult1));
+		when(mcpClient1.listTools(McpSchema.FIRST_PAGE)).thenReturn(Mono.just(listToolsResult1));
 
 		var clientInfo1 = Implementation.builder("testClient1", "1.0.0").build();
 		when(mcpClient1.getClientInfo()).thenReturn(clientInfo1);
@@ -150,7 +153,7 @@ class AsyncMcpToolCallbackProviderTests {
 		McpAsyncClient mcpClient2 = mock(McpAsyncClient.class);
 		ListToolsResult listToolsResult2 = mock(ListToolsResult.class);
 		when(listToolsResult2.tools()).thenReturn(List.of(tool2));
-		when(mcpClient2.listTools()).thenReturn(Mono.just(listToolsResult2));
+		when(mcpClient2.listTools(McpSchema.FIRST_PAGE)).thenReturn(Mono.just(listToolsResult2));
 
 		var clientInfo2 = Implementation.builder("testClient2", "1.0.0").build();
 		when(mcpClient2.getClientInfo()).thenReturn(clientInfo2);
@@ -181,7 +184,7 @@ class AsyncMcpToolCallbackProviderTests {
 
 		ListToolsResult listToolsResult = mock(ListToolsResult.class);
 		when(listToolsResult.tools()).thenReturn(List.of(tool1, tool2));
-		when(this.mcpClient.listTools()).thenReturn(Mono.just(listToolsResult));
+		when(this.mcpClient.listTools(McpSchema.FIRST_PAGE)).thenReturn(Mono.just(listToolsResult));
 
 		// Using the builder without explicit filter (should use default filter that
 		// accepts all)
@@ -201,7 +204,7 @@ class AsyncMcpToolCallbackProviderTests {
 
 		ListToolsResult listToolsResult = mock(ListToolsResult.class);
 		when(listToolsResult.tools()).thenReturn(List.of(tool1, tool2));
-		when(this.mcpClient.listTools()).thenReturn(Mono.just(listToolsResult));
+		when(this.mcpClient.listTools(McpSchema.FIRST_PAGE)).thenReturn(Mono.just(listToolsResult));
 
 		var clientInfo = Implementation.builder("testClient", "1.0.0").build();
 		when(this.mcpClient.getClientInfo()).thenReturn(clientInfo);
@@ -240,7 +243,7 @@ class AsyncMcpToolCallbackProviderTests {
 
 		ListToolsResult listToolsResult = mock(ListToolsResult.class);
 		when(listToolsResult.tools()).thenReturn(List.of(tool1, tool2, tool3));
-		when(this.mcpClient.listTools()).thenReturn(Mono.just(listToolsResult));
+		when(this.mcpClient.listTools(McpSchema.FIRST_PAGE)).thenReturn(Mono.just(listToolsResult));
 
 		// Create a filter that only accepts tools with names containing "2" or "3"
 		McpToolFilter nameFilter = (client, tool) -> tool.name().contains("2") || tool.name().contains("3");
@@ -269,7 +272,7 @@ class AsyncMcpToolCallbackProviderTests {
 		McpAsyncClient mcpClient1 = mock(McpAsyncClient.class);
 		ListToolsResult listToolsResult1 = mock(ListToolsResult.class);
 		when(listToolsResult1.tools()).thenReturn(List.of(tool1));
-		when(mcpClient1.listTools()).thenReturn(Mono.just(listToolsResult1));
+		when(mcpClient1.listTools(McpSchema.FIRST_PAGE)).thenReturn(Mono.just(listToolsResult1));
 
 		var clientInfo1 = Implementation.builder("testClient1", "1.0.0").build();
 		when(mcpClient1.getClientInfo()).thenReturn(clientInfo1);
@@ -279,7 +282,7 @@ class AsyncMcpToolCallbackProviderTests {
 		McpAsyncClient mcpClient2 = mock(McpAsyncClient.class);
 		ListToolsResult listToolsResult2 = mock(ListToolsResult.class);
 		when(listToolsResult2.tools()).thenReturn(List.of(tool2));
-		when(mcpClient2.listTools()).thenReturn(Mono.just(listToolsResult2));
+		when(mcpClient2.listTools(McpSchema.FIRST_PAGE)).thenReturn(Mono.just(listToolsResult2));
 
 		var clientInfo2 = Implementation.builder("testClient2", "1.0.0").build();
 		when(mcpClient2.getClientInfo()).thenReturn(clientInfo2);
@@ -313,7 +316,7 @@ class AsyncMcpToolCallbackProviderTests {
 		McpAsyncClient weatherClient = mock(McpAsyncClient.class);
 		ListToolsResult weatherResult = mock(ListToolsResult.class);
 		when(weatherResult.tools()).thenReturn(List.of(tool1, tool2));
-		when(weatherClient.listTools()).thenReturn(Mono.just(weatherResult));
+		when(weatherClient.listTools(McpSchema.FIRST_PAGE)).thenReturn(Mono.just(weatherResult));
 
 		var weatherClientInfo = Implementation.builder("weather-service", "1.0.0").build();
 		when(weatherClient.getClientInfo()).thenReturn(weatherClientInfo);
@@ -363,7 +366,7 @@ class AsyncMcpToolCallbackProviderTests {
 
 		ListToolsResult listToolsResult = mock(ListToolsResult.class);
 		when(listToolsResult.tools()).thenReturn(List.of(tool1));
-		when(this.mcpClient.listTools()).thenReturn(Mono.just(listToolsResult));
+		when(this.mcpClient.listTools(McpSchema.FIRST_PAGE)).thenReturn(Mono.just(listToolsResult));
 
 		var flux = AsyncMcpToolCallbackProvider.asyncToolCallbacks(List.of(this.mcpClient));
 
@@ -382,7 +385,7 @@ class AsyncMcpToolCallbackProviderTests {
 
 		ListToolsResult listToolsResult = mock(ListToolsResult.class);
 		when(listToolsResult.tools()).thenReturn(List.of(tool1));
-		when(this.mcpClient.listTools()).thenReturn(Mono.just(listToolsResult));
+		when(this.mcpClient.listTools(McpSchema.FIRST_PAGE)).thenReturn(Mono.just(listToolsResult));
 
 		ToolContextToMcpMetaConverter customConverter = ToolContextToMcpMetaConverter.defaultConverter();
 
@@ -408,7 +411,7 @@ class AsyncMcpToolCallbackProviderTests {
 
 		ListToolsResult listToolsResult = mock(ListToolsResult.class);
 		when(listToolsResult.tools()).thenReturn(List.of(tool1));
-		when(this.mcpClient.listTools()).thenReturn(Mono.just(listToolsResult));
+		when(this.mcpClient.listTools(McpSchema.FIRST_PAGE)).thenReturn(Mono.just(listToolsResult));
 
 		AsyncMcpToolCallbackProvider provider = AsyncMcpToolCallbackProvider.builder()
 			.mcpClients(List.of(this.mcpClient))
@@ -431,7 +434,7 @@ class AsyncMcpToolCallbackProviderTests {
 
 		ListToolsResult listToolsResult = mock(ListToolsResult.class);
 		when(listToolsResult.tools()).thenReturn(List.of(tool1));
-		when(this.mcpClient.listTools()).thenReturn(Mono.just(listToolsResult));
+		when(this.mcpClient.listTools(McpSchema.FIRST_PAGE)).thenReturn(Mono.just(listToolsResult));
 
 		AsyncMcpToolCallbackProvider provider = AsyncMcpToolCallbackProvider.builder()
 			.mcpClients(this.mcpClient)
@@ -454,7 +457,7 @@ class AsyncMcpToolCallbackProviderTests {
 
 		ListToolsResult listToolsResult = mock(ListToolsResult.class);
 		when(listToolsResult.tools()).thenReturn(List.of(tool1));
-		when(this.mcpClient.listTools()).thenReturn(Mono.just(listToolsResult));
+		when(this.mcpClient.listTools(McpSchema.FIRST_PAGE)).thenReturn(Mono.just(listToolsResult));
 
 		McpToolNamePrefixGenerator customGenerator = (mcpConnectionInfo, tool) -> "custom_" + tool.name();
 
@@ -467,6 +470,52 @@ class AsyncMcpToolCallbackProviderTests {
 
 		assertThat(callbacks).hasSize(1);
 		assertThat(callbacks[0].getToolDefinition().name()).isEqualTo("custom_tool1");
+	}
+
+	@Test
+	void getToolCallbacksShouldStopPagingWhenServerReturnsAnEmptyCursor() {
+		var clientInfo = Implementation.builder("testClient", "1.0.0").build();
+		when(this.mcpClient.getClientInfo()).thenReturn(clientInfo);
+		var clientCapabilities = new ClientCapabilities(null, null, null, null);
+		when(this.mcpClient.getClientCapabilities()).thenReturn(clientCapabilities);
+
+		Tool tool1 = mock(Tool.class);
+		when(tool1.name()).thenReturn("tool1");
+
+		ListToolsResult firstPage = ListToolsResult.builder(List.of(tool1)).nextCursor("").build();
+		when(this.mcpClient.listTools(McpSchema.FIRST_PAGE)).thenReturn(Mono.just(firstPage));
+
+		AsyncMcpToolCallbackProvider provider = AsyncMcpToolCallbackProvider.builder()
+			.mcpClients(this.mcpClient)
+			.build();
+
+		assertThat(provider.getToolCallbacks()).hasSize(1);
+		verify(this.mcpClient, never()).listTools("");
+	}
+
+	@Test
+	void getToolCallbacksShouldReturnToolsFromEveryPage() {
+		var clientInfo = Implementation.builder("testClient", "1.0.0").build();
+		when(this.mcpClient.getClientInfo()).thenReturn(clientInfo);
+		var clientCapabilities = new ClientCapabilities(null, null, null, null);
+		when(this.mcpClient.getClientCapabilities()).thenReturn(clientCapabilities);
+
+		Tool tool1 = mock(Tool.class);
+		when(tool1.name()).thenReturn("tool1");
+
+		Tool tool2 = mock(Tool.class);
+		when(tool2.name()).thenReturn("tool2");
+
+		ListToolsResult firstPage = ListToolsResult.builder(List.of(tool1)).nextCursor("cursor1").build();
+		ListToolsResult secondPage = ListToolsResult.builder(List.of(tool2)).build();
+		when(this.mcpClient.listTools(McpSchema.FIRST_PAGE)).thenReturn(Mono.just(firstPage));
+		when(this.mcpClient.listTools("cursor1")).thenReturn(Mono.just(secondPage));
+
+		AsyncMcpToolCallbackProvider provider = AsyncMcpToolCallbackProvider.builder()
+			.mcpClients(this.mcpClient)
+			.build();
+
+		assertThat(provider.getToolCallbacks()).hasSize(2);
 	}
 
 }

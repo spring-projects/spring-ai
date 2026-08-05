@@ -38,6 +38,7 @@ import org.springframework.util.CollectionUtils;
  *
  * @author Christian Tzolov
  * @author YunKui Lu
+ * @author Sukhrob Tokhirov
  * @since 1.0.0
  */
 public class SyncMcpToolCallbackProvider implements ToolCallbackProvider, ApplicationListener<McpToolsChangedEvent> {
@@ -129,8 +130,7 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider, Applic
 			try {
 				if (this.invalidateCache) {
 					this.cachedToolCallbacks = this.mcpClients.stream()
-						.flatMap(mcpClient -> mcpClient.listTools()
-							.tools()
+						.flatMap(mcpClient -> McpToolListingUtils.listAllTools(mcpClient)
 							.stream()
 							.filter(tool -> this.toolFilter.test(connectionInfo(mcpClient), tool))
 							.<ToolCallback>map(tool -> SyncMcpToolCallback.builder()

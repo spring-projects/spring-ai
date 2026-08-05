@@ -106,7 +106,7 @@ public class McpToolCallbackAutoConfigurationConditionTests {
 				when(tool2.name()).thenReturn("tool2");
 				McpSchema.ListToolsResult listToolsResult1 = mock(McpSchema.ListToolsResult.class);
 				when(listToolsResult1.tools()).thenReturn(List.of(tool1, tool2));
-				when(syncClient1.listTools()).thenReturn(listToolsResult1);
+				when(syncClient1.listTools(McpSchema.FIRST_PAGE)).thenReturn(listToolsResult1);
 				assertThat(toolFilter.test(new McpConnectionInfo(null, syncClient1.getClientInfo(), null), tool1))
 					.isFalse();
 				assertThat(toolFilter.test(new McpConnectionInfo(null, syncClient1.getClientInfo(), null), tool2))
@@ -134,7 +134,7 @@ public class McpToolCallbackAutoConfigurationConditionTests {
 				when(tool2.name()).thenReturn("tool2");
 				McpSchema.ListToolsResult listToolsResult1 = mock(McpSchema.ListToolsResult.class);
 				when(listToolsResult1.tools()).thenReturn(List.of(tool1, tool2));
-				when(asyncClient1.listTools()).thenReturn(Mono.just(listToolsResult1));
+				when(asyncClient1.listTools(McpSchema.FIRST_PAGE)).thenReturn(Mono.just(listToolsResult1));
 				assertThat(toolFilter.test(new McpConnectionInfo(null, asyncClient1.getClientInfo(), null), tool1))
 					.isFalse();
 				assertThat(toolFilter.test(new McpConnectionInfo(null, asyncClient1.getClientInfo(), null), tool2))
