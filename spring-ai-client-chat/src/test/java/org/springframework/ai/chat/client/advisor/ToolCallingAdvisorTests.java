@@ -1151,10 +1151,16 @@ public class ToolCallingAdvisorTests {
 			.pushAll(List.of(advisor, terminalAdvisor))
 			.build();
 
-		ToolResponseMessage.ToolResponse partialToolResponse = new ToolResponseMessage.ToolResponse("tool-1",
-				"testTool", "partial result");
+		// Simulates a parallel tool-call batch where the first call to "testTool"
+		// already succeeded before the second call breached the limit.
+		// DefaultToolCallingManager always appends the synthesized breach response
+		// last.
+		ToolResponseMessage.ToolResponse successfulToolResponse = new ToolResponseMessage.ToolResponse("tool-1",
+				"testTool", "successful result");
+		ToolResponseMessage.ToolResponse breachToolResponse = new ToolResponseMessage.ToolResponse("tool-2", "testTool",
+				"Tool call limit (1) exceeded for tool 'testTool'.");
 		ToolResponseMessage partialToolResponseMessage = ToolResponseMessage.builder()
-			.responses(List.of(partialToolResponse))
+			.responses(List.of(successfulToolResponse, breachToolResponse))
 			.build();
 		List<Message> partialHistory = List.of(new UserMessage("test"), AssistantMessage.builder().content("").build(),
 				partialToolResponseMessage);
@@ -1169,13 +1175,19 @@ public class ToolCallingAdvisorTests {
 		// looping back to the LLM.
 		verify(this.toolCallingManager, times(1)).executeToolCalls(any(Prompt.class), any(ChatResponse.class));
 
-		// The partial tool execution result carried by the exception is returned to
-		// the client instead of the exception propagating.
+		// A single generation is returned to the client - carrying the breach message,
+		// not one of the successful calls from the same batch, so the limit is never
+		// mistaken for one of several equally valid answers. The successful call is
+		// preserved in metadata instead of being discarded or emitted as a sibling
+		// generation.
 		assertThat(result.chatResponse()).isNotNull();
 		assertThat(result.chatResponse().getResults()).hasSize(1);
-		assertThat(result.chatResponse().getResults().get(0).getOutput().getText()).isEqualTo("partial result");
-		assertThat(result.chatResponse().getResults().get(0).getMetadata().getFinishReason())
-			.isEqualTo(ToolExecutionResult.FINISH_REASON);
+		Generation generation = result.chatResponse().getResults().get(0);
+		assertThat(generation.getOutput().getText()).isEqualTo(breachToolResponse.responseData());
+		assertThat(generation.getMetadata().getFinishReason()).isEqualTo(ToolCallLimitExceededException.FINISH_REASON);
+		assertThat(generation.getMetadata().<List<ToolResponseMessage
+				.ToolResponse>>get(ToolCallLimitExceededException.METADATA_PARTIAL_TOOL_RESPONSES))
+			.containsExactly(successfulToolResponse);
 	}
 
 	@Test
@@ -1192,10 +1204,16 @@ public class ToolCallingAdvisorTests {
 			.pushAll(List.<Advisor>of(advisor, terminalAdvisor))
 			.build();
 
-		ToolResponseMessage.ToolResponse partialToolResponse = new ToolResponseMessage.ToolResponse("tool-1",
-				"testTool", "partial result");
+		// Simulates a parallel tool-call batch where the first call to "testTool"
+		// already succeeded before the second call breached the limit.
+		// DefaultToolCallingManager always appends the synthesized breach response
+		// last.
+		ToolResponseMessage.ToolResponse successfulToolResponse = new ToolResponseMessage.ToolResponse("tool-1",
+				"testTool", "successful result");
+		ToolResponseMessage.ToolResponse breachToolResponse = new ToolResponseMessage.ToolResponse("tool-2", "testTool",
+				"Tool call limit (1) exceeded for tool 'testTool'.");
 		ToolResponseMessage partialToolResponseMessage = ToolResponseMessage.builder()
-			.responses(List.of(partialToolResponse))
+			.responses(List.of(successfulToolResponse, breachToolResponse))
 			.build();
 		List<Message> partialHistory = List.of(new UserMessage("test"), AssistantMessage.builder().content("").build(),
 				partialToolResponseMessage);
@@ -1210,14 +1228,18 @@ public class ToolCallingAdvisorTests {
 		// looping back to the LLM.
 		verify(this.toolCallingManager, times(1)).executeToolCalls(any(Prompt.class), any(ChatResponse.class));
 
-		// Intermediate tool call response is filtered out; only the partial result
-		// carried by the exception is emitted.
+		// Intermediate tool call response is filtered out; only the single breach
+		// generation carried by the exception is emitted, with the successful call
+		// preserved in metadata rather than as a sibling generation.
 		assertThat(results).isNotNull().hasSize(1);
 		assertThat(results.get(0).chatResponse()).isNotNull();
 		assertThat(results.get(0).chatResponse().getResults()).hasSize(1);
-		assertThat(results.get(0).chatResponse().getResults().get(0).getOutput().getText()).isEqualTo("partial result");
-		assertThat(results.get(0).chatResponse().getResults().get(0).getMetadata().getFinishReason())
-			.isEqualTo(ToolExecutionResult.FINISH_REASON);
+		Generation generation = results.get(0).chatResponse().getResults().get(0);
+		assertThat(generation.getOutput().getText()).isEqualTo(breachToolResponse.responseData());
+		assertThat(generation.getMetadata().getFinishReason()).isEqualTo(ToolCallLimitExceededException.FINISH_REASON);
+		assertThat(generation.getMetadata().<List<ToolResponseMessage
+				.ToolResponse>>get(ToolCallLimitExceededException.METADATA_PARTIAL_TOOL_RESPONSES))
+			.containsExactly(successfulToolResponse);
 	}
 
 	@Test

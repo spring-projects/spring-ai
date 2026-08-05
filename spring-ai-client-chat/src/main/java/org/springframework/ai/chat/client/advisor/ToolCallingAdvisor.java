@@ -175,13 +175,12 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 						.executeToolCalls(new Prompt(fullTurnHistory, toolCallingChatOptions), chatResponse);
 				}
 				catch (ToolCallLimitExceededException ex) {
-					// A configured tool call limit was hit. Return whatever was
-					// executed so far directly to the application client instead of
-					// looping back to the LLM.
+					// Return the breach as a single generation - directly to the
+					// application client instead of looping back to the LLM.
 					chatClientResponse = chatClientResponse.mutate()
 						.chatResponse(ChatResponse.builder()
 							.from(chatResponse)
-							.generations(ToolExecutionResult.buildGenerations(ex.getPartialToolExecutionResult()))
+							.generations(List.of(ex.buildGeneration()))
 							.build())
 						.build();
 					break;
@@ -191,17 +190,14 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 
 				if (toolExecutionResult.returnDirect()) {
 
-					// Return tool execution result directly to the application client.
+					// Return tool execution result directly to the application client
+					// instead of returning it to the LLM.
 					chatClientResponse = chatClientResponse.mutate()
 						.chatResponse(ChatResponse.builder()
 							.from(chatResponse)
 							.generations(ToolExecutionResult.buildGenerations(toolExecutionResult))
 							.build())
 						.build();
-
-					// Interrupt the tool calling loop and return the tool execution
-					// result directly to the client application instead of returning
-					// it to the LLM.
 					break;
 				}
 
@@ -355,13 +351,15 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 						chatResponse);
 			}
 			catch (ToolCallLimitExceededException ex) {
-				// A configured tool call limit was hit. Return whatever was executed
-				// so far directly to the application client instead of looping back
-				// to the LLM.
+				// A configured tool call limit was hit. Return the breach as a single
+				// generation - rather than mixing it with any successful calls from
+				// the same batch as if they were equally valid alternative answers -
+				// directly to the application client instead of looping back to the
+				// LLM.
 				ChatClientResponse limitResponse = finalAggregatedResponse.mutate()
 					.chatResponse(ChatResponse.builder()
 						.from(chatResponse)
-						.generations(ToolExecutionResult.buildGenerations(ex.getPartialToolExecutionResult()))
+						.generations(List.of(ex.buildGeneration()))
 						.build())
 					.build();
 				return Flux.just(usageAccumulator.applyAccumulatedUsage(limitResponse));

@@ -30,6 +30,7 @@ import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
@@ -274,20 +275,23 @@ public abstract class AbstractToolCallingAdvisorIT {
 				.maxCallsPerTool("getCurrentWeather", 1)
 				.build();
 
-			String response = ChatClient.create(getChatModel())
+			ChatResponse response = Objects.requireNonNull(ChatClient.create(getChatModel())
 				.prompt()
 				.advisors(ToolCallingAdvisor.builder().toolCallingManager(limitedManager).build())
-				.system("You MUST call getCurrentWeather separately and sequentially for each city, "
-						+ "one tool call per city, never batching multiple cities into one call.")
 				.user("What's the weather like in San Francisco, Tokyo, and Paris in Celsius?")
 				.tools(createWeatherToolCallback())
 				.call()
-				.content();
+				.chatResponse());
 
 			// Only the first call to getCurrentWeather is allowed; the rest are
 			// rejected with the message DefaultToolCallingManager synthesizes when a
-			// configured limit is exceeded.
-			assertThat(response).contains("limit");
+			// configured limit is exceeded. Regardless of whether the model calls the
+			// tool sequentially or batches all three into one parallel round, the
+			// breach is always returned as the sole generation - never mixed in with a
+			// successful call from the same batch as if they were equally valid
+			// alternative answers.
+			assertThat(response.getResults()).hasSize(1);
+			assertThat(response.getResults().get(0).getOutput().getText()).contains("limit");
 		}
 
 		@Test
@@ -299,8 +303,6 @@ public abstract class AbstractToolCallingAdvisorIT {
 			Flux<String> response = ChatClient.create(getChatModel())
 				.prompt()
 				.advisors(ToolCallingAdvisor.builder().toolCallingManager(limitedManager).build())
-				.system("You MUST call getCurrentWeather separately and sequentially for each city, "
-						+ "one tool call per city, never batching multiple cities into one call.")
 				.user("What's the weather like in San Francisco, Tokyo, and Paris in Celsius?")
 				.tools(createWeatherToolCallback())
 				.stream()

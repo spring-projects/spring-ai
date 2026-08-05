@@ -16,7 +16,15 @@
 
 package org.springframework.ai.model.tool;
 
+import java.util.List;
+
 import org.jspecify.annotations.Nullable;
+
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.ToolResponseMessage;
+import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.model.Generation;
 
 /**
  * Thrown by {@link DefaultToolCallingManager} when a configured tool call limit is
@@ -30,6 +38,23 @@ import org.jspecify.annotations.Nullable;
  * @since 2.0.1
  */
 public class ToolCallLimitExceededException extends RuntimeException {
+
+	/**
+	 * {@link Generation#getMetadata()} finish reason set on the {@link Generation} built
+	 * by {@link #buildGeneration()}, distinguishing a forcibly aborted turn from a
+	 * regular {@link ToolExecutionResult#FINISH_REASON returnDirect} completion.
+	 */
+	public static final String FINISH_REASON = "toolCallLimitExceeded";
+
+	/**
+	 * {@link ChatGenerationMetadata} key under which the
+	 * {@link ToolResponseMessage.ToolResponse}s that completed successfully in the
+	 * current batch before the limit was hit are attached to the {@link Generation} built
+	 * by {@link #buildGeneration()}. Keeping them in metadata - rather than as separate,
+	 * sibling {@link Generation}s - avoids mixing successful tool output with the error
+	 * message as if they were equally valid alternative answers.
+	 */
+	public static final String METADATA_PARTIAL_TOOL_RESPONSES = "partialToolResponses";
 
 	private final @Nullable String toolName;
 
@@ -79,6 +104,37 @@ public class ToolCallLimitExceededException extends RuntimeException {
 	 */
 	public ToolExecutionResult getPartialToolExecutionResult() {
 		return this.partialToolExecutionResult;
+	}
+
+	/**
+	 * Builds a single {@link Generation} representing this exception, so that a limit
+	 * breach is never mistaken for one of several equally valid answers.
+	 * <p>
+	 * The {@link Generation}'s output is the breach message synthesized by
+	 * {@link DefaultToolCallingManager} for the call that exceeded the limit. Any tool
+	 * responses that completed successfully earlier in the same batch are attached under
+	 * {@value #METADATA_PARTIAL_TOOL_RESPONSES} instead of being emitted as separate,
+	 * sibling generations, so completed work isn't discarded but also isn't confused with
+	 * the error itself.
+	 */
+	public Generation buildGeneration() {
+		String breachMessage = getMessage();
+		List<ToolResponseMessage.ToolResponse> partialResponses = List.of();
+
+		List<Message> history = this.partialToolExecutionResult.conversationHistory();
+		if (!history.isEmpty() && history.get(history.size() - 1) instanceof ToolResponseMessage toolResponseMessage) {
+			List<ToolResponseMessage.ToolResponse> responses = toolResponseMessage.getResponses();
+			if (!responses.isEmpty()) {
+				breachMessage = responses.get(responses.size() - 1).responseData();
+				partialResponses = responses.subList(0, responses.size() - 1);
+			}
+		}
+
+		ChatGenerationMetadata metadata = ChatGenerationMetadata.builder()
+			.finishReason(FINISH_REASON)
+			.metadata(METADATA_PARTIAL_TOOL_RESPONSES, partialResponses)
+			.build();
+		return new Generation(new AssistantMessage(breachMessage), metadata);
 	}
 
 }
