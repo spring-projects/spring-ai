@@ -846,7 +846,7 @@ Counts are scoped to the current turn only: only `ToolResponseMessage` entries f
 
 ==== Behavior When a Limit Is Exceeded
 
-`DefaultToolCallingManager` throws `ToolCallLimitExceededException`, carrying the tool name (`null` for a total-limit breach), the limit that was hit, and the partial `ToolExecutionResult` already executed in the current batch, so no completed work is discarded. `ToolCallingAdvisor` catches it and returns that partial result as the final response, the same "break the loop" path used for `returnDirect`.
+`DefaultToolCallingManager` throws `ToolCallLimitExceededException`, carrying the tool name (`null` for a total-limit breach), the limit that was hit, and the partial `ToolExecutionResult` already executed in the current batch, so no completed work is discarded. `ToolCallingAdvisor` catches it and returns the breach as the final response - a single `Generation` (via `ex.buildGeneration()`), never one generation per tool call, so a successful call earlier in a parallel batch can't hide the breach from callers reading only the first result. Its finish reason is `ToolCallLimitExceededException.FINISH_REASON`, and any tool calls that did succeed earlier in the batch are preserved under the `METADATA_PARTIAL_TOOL_RESPONSES` metadata key instead of being discarded.
 
 With `onLimitExceeded(ToolCallLimitBehavior.RETURN_ERROR_RESPONSE)`, the manager instead skips the call and synthesizes an error `ToolResponse` — the same mechanism used for `ToolExecutionException` — so the model is told the limit was reached and the conversation continues instead of terminating. This is also the option to reach for if you call `ToolCallingManager.executeToolCalls(...)` directly instead of going through `ToolCallingAdvisor`.
 
