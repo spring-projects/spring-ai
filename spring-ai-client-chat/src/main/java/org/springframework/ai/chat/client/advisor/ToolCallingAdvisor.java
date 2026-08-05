@@ -289,8 +289,18 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 
 			Flux<ChatClientResponse> responseFlux = chainCopy.nextStream(processedRequest);
 
+			// Use the options doBeforeStream() produced on finalRequest - not the
+			// pre-doBeforeStream toolCallingChatOptions captured above - so that tool
+			// callbacks/context a subclass hook injects for this iteration (e.g. a
+			// dynamically resolved tool that only exists on the mutated options, not via
+			// any globally registered ToolCallbackResolver) are visible when the tool
+			// calls in the model's response are actually executed below.
+			ToolCallingChatOptions processedOptions = (ToolCallingChatOptions) finalRequest.prompt().getOptions();
+			Assert.notNull(processedOptions,
+					"redundant check that should never fail (doBeforeStream must not change the options type away from ToolCallingChatOptions), but here to help NullAway");
+
 			return streamWithToolCallResponses(responseFlux, finalRequest, fullTurnHistory, streamAdvisorChain,
-					originalRequest, toolCallingChatOptions, usageAccumulator);
+					originalRequest, processedOptions, usageAccumulator);
 		});
 	}
 
