@@ -54,9 +54,13 @@ public class TypesenseFilterExpressionConverter extends AbstractFilterExpression
 	}
 
 	@Override
-	protected void doGroup(Filter.Group group, StringBuilder context) {
-		this.convertOperand(new Filter.Expression(Filter.ExpressionType.AND, group.content(), group.content()),
-				context); // trick
+	protected void doStartGroup(Filter.Group group, StringBuilder context) {
+		context.append("(");
+	}
+
+	@Override
+	protected void doEndGroup(Filter.Group group, StringBuilder context) {
+		context.append(")");
 	}
 
 	@Override
