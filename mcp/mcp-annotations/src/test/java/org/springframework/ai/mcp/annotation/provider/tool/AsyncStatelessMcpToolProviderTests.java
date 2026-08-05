@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 import io.modelcontextprotocol.common.McpTransportContext;
+import io.modelcontextprotocol.server.McpAsyncServerExchange;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures.AsyncToolSpecification;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
@@ -31,6 +32,7 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import org.springframework.ai.mcp.annotation.McpTool;
+import org.springframework.ai.mcp.annotation.context.McpAsyncRequestContext;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -176,6 +178,48 @@ public class AsyncStatelessMcpToolProviderTests {
 		assertThat(toolSpecs).hasSize(1);
 		assertThat(toolSpecs.get(0).tool().name()).isEqualTo("async-tool");
 		assertThat(toolSpecs.get(0).tool().description()).isEqualTo("Asynchronous tool");
+	}
+
+	@Test
+	void testGetToolSpecificationsFailsFastForAsyncServerExchangeParameter() {
+		class InvalidStatelessTool {
+
+			@McpTool(name = "invalid-tool", description = "Tool requiring stateful exchange")
+			public Mono<String> invalidTool(McpAsyncServerExchange exchange) {
+				return Mono.just("never");
+			}
+
+		}
+
+		AsyncStatelessMcpToolProvider provider = new AsyncStatelessMcpToolProvider(List.of(new InvalidStatelessTool()));
+
+		assertThatThrownBy(provider::getToolSpecifications).isInstanceOf(IllegalStateException.class)
+			.hasMessageContaining("invalidTool")
+			.hasMessageContaining("McpAsyncServerExchange")
+			.hasMessageContaining("Stateless")
+			.hasMessageContaining("McpTransportContext")
+			.hasMessageContaining("stateful");
+	}
+
+	@Test
+	void testGetToolSpecificationsFailsFastForAsyncRequestContextParameter() {
+		class InvalidStatelessTool {
+
+			@McpTool(name = "invalid-tool", description = "Tool requiring request context")
+			public Mono<String> invalidTool(McpAsyncRequestContext requestContext) {
+				return Mono.just("never");
+			}
+
+		}
+
+		AsyncStatelessMcpToolProvider provider = new AsyncStatelessMcpToolProvider(List.of(new InvalidStatelessTool()));
+
+		assertThatThrownBy(provider::getToolSpecifications).isInstanceOf(IllegalStateException.class)
+			.hasMessageContaining("invalidTool")
+			.hasMessageContaining("McpAsyncRequestContext")
+			.hasMessageContaining("Stateless")
+			.hasMessageContaining("McpTransportContext")
+			.hasMessageContaining("stateful");
 	}
 
 	@Test
