@@ -796,6 +796,15 @@ spring.ai.openai.chat.extra-body.top_k=50
 spring.ai.openai.chat.extra-body.repetition_penalty=1.1
 ----
 
+For a hosted OpenAI-compatible endpoint such as https://runapi.ai[RunAPI], set the base URL and model ID:
+
+[source,properties]
+----
+spring.ai.openai.api-key=${RUNAPI_API_KEY}
+spring.ai.openai.base-url=https://runapi.ai/v1
+spring.ai.openai.chat.model=gpt-5.5
+----
+
 This configuration would produce a JSON request like:
 
 [source,json]
