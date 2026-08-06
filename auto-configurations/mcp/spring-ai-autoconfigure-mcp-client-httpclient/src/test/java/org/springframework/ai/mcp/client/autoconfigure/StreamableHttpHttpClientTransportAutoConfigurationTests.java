@@ -17,18 +17,28 @@
 package org.springframework.ai.mcp.client.autoconfigure;
 
 import java.lang.reflect.Field;
+import java.net.URI;
+import java.net.http.HttpRequest;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
+import io.modelcontextprotocol.client.transport.customizer.McpAsyncHttpClientRequestCustomizer;
+import io.modelcontextprotocol.client.transport.customizer.McpSyncHttpClientRequestCustomizer;
+import io.modelcontextprotocol.common.McpTransportContext;
 import org.junit.jupiter.api.Test;
+import reactor.core.publisher.Mono;
 import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.mcp.client.common.autoconfigure.NamedClientMcpTransport;
 import org.springframework.ai.mcp.client.httpclient.autoconfigure.StreamableHttpHttpClientTransportAutoConfiguration;
+import org.springframework.ai.mcp.customizer.McpClientCustomizer;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.util.ReflectionUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -162,6 +172,94 @@ public class StreamableHttpHttpClientTransportAutoConfigurationTests {
 			});
 	}
 
+	@Test
+	void asyncHttpRequestCustomizerBeanIsApplied() {
+		this.applicationContext.withUserConfiguration(AsyncRequestCustomizerConfiguration.class)
+			.withPropertyValues("spring.ai.mcp.client.streamable-http.connections.server1.url=http://localhost:8080")
+			.run(context -> {
+				List<NamedClientMcpTransport> transports = context.getBean("streamableHttpHttpClientTransports",
+						List.class);
+				assertThat(headersAppliedBy((HttpClientStreamableHttpTransport) transports.get(0).transport()))
+					.containsEntry("X-Async", "applied");
+			});
+	}
+
+	@Test
+	void syncHttpRequestCustomizerBeanIsApplied() {
+		this.applicationContext.withUserConfiguration(SyncRequestCustomizerConfiguration.class)
+			.withPropertyValues("spring.ai.mcp.client.streamable-http.connections.server1.url=http://localhost:8080")
+			.run(context -> {
+				List<NamedClientMcpTransport> transports = context.getBean("streamableHttpHttpClientTransports",
+						List.class);
+				assertThat(headersAppliedBy((HttpClientStreamableHttpTransport) transports.get(0).transport()))
+					.containsEntry("X-Sync", "applied");
+			});
+	}
+
+	@Test
+	void multipleRequestCustomizerBeansAreAllApplied() {
+		this.applicationContext
+			.withUserConfiguration(AsyncRequestCustomizerConfiguration.class, SyncRequestCustomizerConfiguration.class)
+			.withPropertyValues("spring.ai.mcp.client.streamable-http.connections.server1.url=http://localhost:8080")
+			.run(context -> {
+				List<NamedClientMcpTransport> transports = context.getBean("streamableHttpHttpClientTransports",
+						List.class);
+				assertThat(headersAppliedBy((HttpClientStreamableHttpTransport) transports.get(0).transport()))
+					.containsEntry("X-Async", "applied")
+					.containsEntry("X-Sync", "applied");
+			});
+	}
+
+	@Test
+	void requestCustomizerBeansAreAppliedInOrderAnnotationOrder() {
+		this.applicationContext.withUserConfiguration(OrderedRequestCustomizerConfiguration.class)
+			.withPropertyValues("spring.ai.mcp.client.streamable-http.connections.server1.url=http://localhost:8080")
+			.run(context -> {
+				List<NamedClientMcpTransport> transports = context.getBean("streamableHttpHttpClientTransports",
+						List.class);
+				assertThat(headersAppliedBy((HttpClientStreamableHttpTransport) transports.get(0).transport()))
+					.containsEntry("X-Order", "first,second");
+			});
+	}
+
+	@Test
+	void transportCustomizerStillWinsOverRequestCustomizerBeans() {
+		this.applicationContext
+			.withUserConfiguration(AsyncRequestCustomizerConfiguration.class, TransportCustomizerConfiguration.class)
+			.withPropertyValues("spring.ai.mcp.client.streamable-http.connections.server1.url=http://localhost:8080")
+			.run(context -> {
+				List<NamedClientMcpTransport> transports = context.getBean("streamableHttpHttpClientTransports",
+						List.class);
+				assertThat(headersAppliedBy((HttpClientStreamableHttpTransport) transports.get(0).transport()))
+					.containsEntry("X-Transport", "applied")
+					.doesNotContainKey("X-Async");
+			});
+	}
+
+	/**
+	 * Invokes the transport's request customizer against a throwaway request builder and
+	 * returns the headers it set. The transport exposes no getter for the customizer, so
+	 * the field is read reflectively, in the same way as
+	 * {@link #getStreamableHttpEndpoint(HttpClientStreamableHttpTransport)}.
+	 */
+	private Map<String, String> headersAppliedBy(HttpClientStreamableHttpTransport transport) {
+		Field privateField = ReflectionUtils.findField(HttpClientStreamableHttpTransport.class,
+				"httpRequestCustomizer");
+		ReflectionUtils.makeAccessible(privateField);
+		McpAsyncHttpClientRequestCustomizer customizer = (McpAsyncHttpClientRequestCustomizer) ReflectionUtils
+			.getField(privateField, transport);
+
+		URI endpoint = URI.create("http://localhost:8080/mcp");
+		HttpRequest.Builder builder = HttpRequest.newBuilder(endpoint);
+		HttpRequest.Builder customized = Mono
+			.from(customizer.customize(builder, "POST", endpoint, "{}", McpTransportContext.EMPTY))
+			.block();
+
+		Map<String, String> headers = new LinkedHashMap<>();
+		customized.build().headers().map().forEach((name, values) -> headers.put(name, String.join(",", values)));
+		return headers;
+	}
+
 	private String getStreamableHttpEndpoint(HttpClientStreamableHttpTransport transport) {
 		Field privateField = ReflectionUtils.findField(HttpClientStreamableHttpTransport.class, "endpoint");
 		ReflectionUtils.makeAccessible(privateField);
@@ -174,6 +272,69 @@ public class StreamableHttpHttpClientTransportAutoConfigurationTests {
 		@Bean
 		JsonMapper jsonMapper() {
 			return new JsonMapper();
+		}
+
+	}
+
+	@Configuration
+	static class AsyncRequestCustomizerConfiguration {
+
+		@Bean
+		McpAsyncHttpClientRequestCustomizer asyncRequestCustomizer() {
+			return (builder, method, endpoint, body, context) -> {
+				builder.setHeader("X-Async", "applied");
+				return Mono.just(builder);
+			};
+		}
+
+	}
+
+	@Configuration
+	static class SyncRequestCustomizerConfiguration {
+
+		@Bean
+		McpSyncHttpClientRequestCustomizer syncRequestCustomizer() {
+			return (builder, method, endpoint, body, context) -> builder.setHeader("X-Sync", "applied");
+		}
+
+	}
+
+	@Configuration
+	static class OrderedRequestCustomizerConfiguration {
+
+		@Bean
+		@Order(2)
+		McpAsyncHttpClientRequestCustomizer secondRequestCustomizer() {
+			return (builder, method, endpoint, body, context) -> {
+				builder.setHeader("X-Order", currentOrderHeader(builder) + ",second");
+				return Mono.just(builder);
+			};
+		}
+
+		@Bean
+		@Order(1)
+		McpAsyncHttpClientRequestCustomizer firstRequestCustomizer() {
+			return (builder, method, endpoint, body, context) -> {
+				builder.setHeader("X-Order", "first");
+				return Mono.just(builder);
+			};
+		}
+
+		private static String currentOrderHeader(HttpRequest.Builder builder) {
+			return builder.copy().build().headers().firstValue("X-Order").orElse("none");
+		}
+
+	}
+
+	@Configuration
+	static class TransportCustomizerConfiguration {
+
+		@Bean
+		McpClientCustomizer<HttpClientStreamableHttpTransport.Builder> transportCustomizer() {
+			return (name, builder) -> builder.asyncHttpRequestCustomizer((request, method, endpoint, body, context) -> {
+				request.setHeader("X-Transport", "applied");
+				return Mono.just(request);
+			});
 		}
 
 	}
