@@ -118,6 +118,11 @@ The prefix `spring.ai.openai` is used as the property prefix that lets you conne
 | spring.ai.openai.api-key    | The API Key           |  -
 | spring.ai.openai.organization-id | Optionally you can specify which organization  used for an API request. |  -
 | spring.ai.openai.project-id      | Optionally, you can specify which project is used for an API request. |  -
+| spring.ai.openai.timeout | Request timeout for the OpenAI client. |  60 sec.
+| spring.ai.openai.max-retries | Maximum number of retries for the OpenAI client. |  3
+| spring.ai.openai.proxy | Proxy settings for the OpenAI client. |  -
+| spring.ai.openai.custom-headers | Custom HTTP headers to add to OpenAI client requests. |  empty
+| spring.ai.openai.connection-pool-metrics-enabled | Whether to enable connection pool metrics for the underlying OkHttp client. |  false
 |====
 
 TIP: For users that belong to multiple organizations (or are accessing their projects through their legacy user API key), optionally, you can specify which organization and project is used for an API request. 

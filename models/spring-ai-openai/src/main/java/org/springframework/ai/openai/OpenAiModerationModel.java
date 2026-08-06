@@ -18,8 +18,10 @@ package org.springframework.ai.openai;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import com.openai.client.OpenAIClient;
+import com.openai.core.RequestOptions;
 import com.openai.models.moderations.ModerationCreateParams;
 import com.openai.models.moderations.ModerationCreateResponse;
 import io.micrometer.observation.ObservationRegistry;
@@ -32,11 +34,11 @@ import org.springframework.ai.moderation.CategoryScores;
 import org.springframework.ai.moderation.Generation;
 import org.springframework.ai.moderation.Moderation;
 import org.springframework.ai.moderation.ModerationModel;
-import org.springframework.ai.moderation.ModerationOptions;
 import org.springframework.ai.moderation.ModerationPrompt;
 import org.springframework.ai.moderation.ModerationResponse;
 import org.springframework.ai.moderation.ModerationResult;
 import org.springframework.ai.openai.http.okhttp.OpenAiHttpClientBuilderCustomizer;
+import org.springframework.ai.openai.setup.OpenAiSetup;
 import org.springframework.util.Assert;
 
 /**
@@ -49,6 +51,7 @@ import org.springframework.util.Assert;
  * @author Ilayaperumal Gopinathan
  * @author Sebastien Deleuze
  * @author Thomas Vitale
+ * @author guan xu
  */
 public final class OpenAiModerationModel implements ModerationModel {
 
@@ -59,23 +62,19 @@ public final class OpenAiModerationModel implements ModerationModel {
 	private final OpenAiModerationOptions options;
 
 	private OpenAiModerationModel(Builder builder) {
-		if (builder.options == null) {
-			this.options = OpenAiModerationOptions.builder()
-				.model(OpenAiModerationOptions.DEFAULT_MODERATION_MODEL)
-				.build();
-		}
-		else {
-			this.options = builder.options;
-		}
+		this.options = Objects.requireNonNullElseGet(builder.options,
+				() -> OpenAiModerationOptions.builder()
+					.model(OpenAiModerationOptions.DEFAULT_MODERATION_MODEL)
+					.build());
 
-		this.openAiClient = java.util.Objects.requireNonNullElseGet(builder.openAiClient,
-				() -> org.springframework.ai.openai.setup.OpenAiSetup.setupSyncClient(this.options.getBaseUrl(),
-						this.options.getApiKey(), this.options.getCredential(),
-						this.options.getMicrosoftDeploymentName(), this.options.getMicrosoftFoundryServiceVersion(),
-						this.options.getOrganizationId(), this.options.isMicrosoftFoundry(),
-						this.options.isGitHubModels(), this.options.getModel(), this.options.getTimeout(),
-						this.options.getMaxRetries(), this.options.getProxy(), this.options.getCustomHeaders(),
-						ObservationRegistry.NOOP, null, builder.httpClientCustomizers));
+		this.openAiClient = Objects.requireNonNullElseGet(builder.openAiClient,
+				() -> OpenAiSetup.setupSyncClient(this.options.getBaseUrl(), this.options.getApiKey(),
+						this.options.getCredential(), this.options.getMicrosoftDeploymentName(),
+						this.options.getMicrosoftFoundryServiceVersion(), this.options.getOrganizationId(),
+						this.options.isMicrosoftFoundry(), this.options.isGitHubModels(), this.options.getModel(),
+						this.options.getTimeout(), this.options.getMaxRetries(), this.options.getProxy(),
+						this.options.getCustomHeaders(), ObservationRegistry.NOOP, null,
+						builder.httpClientCustomizers));
 	}
 
 	public static Builder builder() {
@@ -90,7 +89,11 @@ public final class OpenAiModerationModel implements ModerationModel {
 	public ModerationResponse call(ModerationPrompt moderationPrompt) {
 		String text = moderationPrompt.getInstructions().getText();
 
-		OpenAiModerationOptions options = merge(moderationPrompt.getOptions(), this.options);
+		// Merge request options with default options
+		OpenAiModerationOptions options = OpenAiModerationOptions.builder()
+			.from(this.options)
+			.merge(moderationPrompt.getOptions())
+			.build();
 
 		ModerationCreateParams.Builder builder = ModerationCreateParams.builder()
 			.input(ModerationCreateParams.Input.ofString(text));
@@ -107,9 +110,25 @@ public final class OpenAiModerationModel implements ModerationModel {
 
 		ModerationCreateParams params = builder.build();
 
-		ModerationCreateResponse response = this.openAiClient.moderations().create(params);
+		RequestOptions requestOptions = this.buildRequestOptions(options);
+
+		ModerationCreateResponse response = this.openAiClient.moderations().create(params, requestOptions);
 
 		return convertResponse(response);
+	}
+
+	/**
+	 * Creates a RequestOptions instance from the given moderation options.
+	 * @param options the moderation options
+	 * @return a RequestOptions instance
+	 */
+	private RequestOptions buildRequestOptions(OpenAiModerationOptions options) {
+		Assert.notNull(options, "Options cannot be null");
+		RequestOptions.Builder requestOptionsBuilder = RequestOptions.builder();
+		if (options.getTimeout() != null) {
+			requestOptionsBuilder.timeout(options.getTimeout());
+		}
+		return requestOptionsBuilder.build();
 	}
 
 	private ModerationResponse convertResponse(ModerationCreateResponse response) {
@@ -165,10 +184,6 @@ public final class OpenAiModerationModel implements ModerationModel {
 			.build();
 
 		return new ModerationResponse(new Generation(moderation));
-	}
-
-	private static OpenAiModerationOptions merge(@Nullable ModerationOptions source, OpenAiModerationOptions target) {
-		return OpenAiModerationOptions.builder().from(target).merge(source).build();
 	}
 
 	public OpenAiModerationOptions getOptions() {

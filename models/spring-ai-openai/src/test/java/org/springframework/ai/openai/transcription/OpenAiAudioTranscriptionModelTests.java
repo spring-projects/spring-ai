@@ -17,6 +17,7 @@
 package org.springframework.ai.openai.transcription;
 
 import java.io.ByteArrayInputStream;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -25,6 +26,7 @@ import java.util.concurrent.Executor;
 
 import com.openai.client.OpenAIClient;
 import com.openai.client.OpenAIClientAsync;
+import com.openai.core.RequestOptions;
 import com.openai.core.http.AsyncStreamResponse;
 import com.openai.models.audio.AudioResponseFormat;
 import com.openai.models.audio.transcriptions.Transcription;
@@ -49,11 +51,14 @@ import org.springframework.ai.audio.transcription.AudioTranscriptionResponse;
 import org.springframework.ai.openai.OpenAiAudioTranscriptionModel;
 import org.springframework.ai.openai.OpenAiAudioTranscriptionOptions;
 import org.springframework.ai.openai.metadata.OpenAiAudioTranscriptionResponseMetadata;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.ClassPathResource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
@@ -519,7 +524,7 @@ class OpenAiAudioTranscriptionModelTests {
 		TranscriptionService transcriptionService = mock(TranscriptionService.class);
 		when(client.audio()).thenReturn(audioService);
 		when(audioService.transcriptions()).thenReturn(transcriptionService);
-		when(transcriptionService.create(paramsCaptor.capture())).thenReturn(
+		when(transcriptionService.create(paramsCaptor.capture(), any(RequestOptions.class))).thenReturn(
 				TranscriptionCreateResponse.ofTranscription(Transcription.builder().text("Hello world").build()));
 
 		OpenAiAudioTranscriptionOptions options = OpenAiAudioTranscriptionOptions.builder()
@@ -552,7 +557,7 @@ class OpenAiAudioTranscriptionModelTests {
 		TranscriptionService transcriptionService = mock(TranscriptionService.class);
 		when(client.audio()).thenReturn(audioService);
 		when(audioService.transcriptions()).thenReturn(transcriptionService);
-		when(transcriptionService.create(paramsCaptor.capture())).thenReturn(
+		when(transcriptionService.create(paramsCaptor.capture(), any(RequestOptions.class))).thenReturn(
 				TranscriptionCreateResponse.ofTranscription(Transcription.builder().text("Hello world").build()));
 
 		OpenAiAudioTranscriptionOptions options = OpenAiAudioTranscriptionOptions.builder()
@@ -596,7 +601,7 @@ class OpenAiAudioTranscriptionModelTests {
 		TranscriptionService transcriptionService = mock(TranscriptionService.class);
 		when(client.audio()).thenReturn(audioService);
 		when(audioService.transcriptions()).thenReturn(transcriptionService);
-		when(transcriptionService.create(paramsCaptor.capture()))
+		when(transcriptionService.create(paramsCaptor.capture(), any(RequestOptions.class)))
 			.thenReturn(TranscriptionCreateResponse.ofTranscription(Transcription.builder()
 				.text("Hello world")
 				.addLogprob(Transcription.Logprob.builder().token("Hello").logprob(-0.1).addByte(72).build())
@@ -631,7 +636,7 @@ class OpenAiAudioTranscriptionModelTests {
 		TranscriptionService transcriptionService = mock(TranscriptionService.class);
 		when(client.audio()).thenReturn(audioService);
 		when(audioService.transcriptions()).thenReturn(transcriptionService);
-		when(transcriptionService.create(paramsCaptor.capture())).thenReturn(
+		when(transcriptionService.create(paramsCaptor.capture(), any(RequestOptions.class))).thenReturn(
 				TranscriptionCreateResponse.ofTranscription(Transcription.builder().text("Hello world").build()));
 
 		OpenAiAudioTranscriptionModel model = OpenAiAudioTranscriptionModel.builder()
@@ -747,13 +752,43 @@ class OpenAiAudioTranscriptionModelTests {
 		assertThat(text).isEqualTo("Hello, streamed transcription result");
 	}
 
+	@Test
+	void testPropagatesTimeoutFromRequestOptions() {
+		Duration expectedTimeout = Duration.ofSeconds(30);
+
+		OpenAIClient mockClient = mock(OpenAIClient.class, RETURNS_DEEP_STUBS);
+		TranscriptionCreateResponse mockResponse = mock(TranscriptionCreateResponse.class);
+		when(mockClient.audio()
+			.transcriptions()
+			.create(any(TranscriptionCreateParams.class), any(RequestOptions.class))).thenReturn(mockResponse);
+
+		OpenAiAudioTranscriptionModel model = OpenAiAudioTranscriptionModel.builder()
+			.openAiClient(mockClient)
+			.openAiClientAsync(mock(OpenAIClientAsync.class))
+			.build();
+
+		OpenAiAudioTranscriptionOptions options = OpenAiAudioTranscriptionOptions.builder()
+			.timeout(expectedTimeout)
+			.build();
+
+		model.call(new AudioTranscriptionPrompt(new ByteArrayResource(new byte[] { 1 }), options));
+
+		ArgumentCaptor<RequestOptions> argumentCaptor = ArgumentCaptor.forClass(RequestOptions.class);
+		verify(mockClient.audio().transcriptions()).create(any(TranscriptionCreateParams.class),
+				argumentCaptor.capture());
+		RequestOptions value = argumentCaptor.getValue();
+		assertThat(value.getTimeout()).isNotNull();
+		assertThat(value.getTimeout().request()).isEqualTo(expectedTimeout);
+	}
+
 	private OpenAIClient createMockClient(TranscriptionCreateResponse mockResponse) {
 		OpenAIClient client = mock(OpenAIClient.class);
 		AudioService audioService = mock(AudioService.class);
 		TranscriptionService transcriptionService = mock(TranscriptionService.class);
 		when(client.audio()).thenReturn(audioService);
 		when(audioService.transcriptions()).thenReturn(transcriptionService);
-		when(transcriptionService.create(any())).thenReturn(mockResponse);
+		when(transcriptionService.create(any(TranscriptionCreateParams.class), any(RequestOptions.class)))
+			.thenReturn(mockResponse);
 		return client;
 	}
 
@@ -763,7 +798,8 @@ class OpenAiAudioTranscriptionModelTests {
 		TranscriptionServiceAsync transcriptionServiceAsync = mock(TranscriptionServiceAsync.class);
 		when(clientAsync.audio()).thenReturn(audioServiceAsync);
 		when(audioServiceAsync.transcriptions()).thenReturn(transcriptionServiceAsync);
-		when(transcriptionServiceAsync.createStreaming(any())).thenReturn(mockAsyncResponse);
+		when(transcriptionServiceAsync.createStreaming(any(TranscriptionCreateParams.class), any(RequestOptions.class)))
+			.thenReturn(mockAsyncResponse);
 		return clientAsync;
 	}
 
