@@ -979,7 +979,12 @@ public final class OpenAiChatModel implements ChatModel {
 			@Nullable OpenAiChatOptions requestOptions) {
 		return toolDefinitions.stream().map(toolDefinition -> {
 			FunctionParameters.Builder parametersBuilder = FunctionParameters.builder();
-			Boolean strictMode = true;
+			// Defaults to false: OpenAI's strict mode requires every schema property to
+			// appear in "required" (optionality is expressed via nullable types, not
+			// omission), which JsonSchemaGenerator does not produce. Callers that know
+			// their tool schemas are strict-mode compatible can opt in explicitly via
+			// OpenAiChatOptions#strict.
+			Boolean strictMode = false;
 			if (requestOptions != null && requestOptions.getStrict() != null) {
 				strictMode = requestOptions.getStrict();
 			}
