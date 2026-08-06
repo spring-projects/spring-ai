@@ -17,6 +17,7 @@
 package org.springframework.ai.mcp.client.autoconfigure;
 
 import java.lang.reflect.Field;
+import java.net.URI;
 import java.util.List;
 
 import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
@@ -109,6 +110,40 @@ public class StreamableHttpHttpClientTransportAutoConfigurationTests {
 	}
 
 	@Test
+	void fullUrlWithoutEndpointUsesPathAndQueryAsEndpoint() {
+		this.applicationContext
+			.withPropertyValues(
+					"spring.ai.mcp.client.streamable-http.connections.amap.url=https://mcp.amap.com/mcp?key=test")
+			.run(context -> {
+				List<NamedClientMcpTransport> transports = context.getBean("streamableHttpHttpClientTransports",
+						List.class);
+
+				assertThat(transports).hasSize(1);
+				HttpClientStreamableHttpTransport transport = (HttpClientStreamableHttpTransport) transports.get(0)
+					.transport();
+				assertThat(getBaseUri(transport)).isEqualTo(URI.create("https://mcp.amap.com"));
+				assertThat(getStreamableHttpEndpoint(transport)).isEqualTo("/mcp?key=test");
+			});
+	}
+
+	@Test
+	void explicitEndpointWithQueryIsRespected() {
+		this.applicationContext
+			.withPropertyValues("spring.ai.mcp.client.streamable-http.connections.amap.url=https://mcp.amap.com",
+					"spring.ai.mcp.client.streamable-http.connections.amap.endpoint=/mcp?key=test")
+			.run(context -> {
+				List<NamedClientMcpTransport> transports = context.getBean("streamableHttpHttpClientTransports",
+						List.class);
+
+				assertThat(transports).hasSize(1);
+				HttpClientStreamableHttpTransport transport = (HttpClientStreamableHttpTransport) transports.get(0)
+					.transport();
+				assertThat(getBaseUri(transport)).isEqualTo(URI.create("https://mcp.amap.com"));
+				assertThat(getStreamableHttpEndpoint(transport)).isEqualTo("/mcp?key=test");
+			});
+	}
+
+	@Test
 	void customJsonMapperIsUsed() {
 		this.applicationContext.withUserConfiguration(CustomJsonMapperConfiguration.class)
 			.withPropertyValues("spring.ai.mcp.client.streamable-http.connections.server1.url=http://localhost:8080")
@@ -166,6 +201,12 @@ public class StreamableHttpHttpClientTransportAutoConfigurationTests {
 		Field privateField = ReflectionUtils.findField(HttpClientStreamableHttpTransport.class, "endpoint");
 		ReflectionUtils.makeAccessible(privateField);
 		return (String) ReflectionUtils.getField(privateField, transport);
+	}
+
+	private URI getBaseUri(HttpClientStreamableHttpTransport transport) {
+		Field privateField = ReflectionUtils.findField(HttpClientStreamableHttpTransport.class, "baseUri");
+		ReflectionUtils.makeAccessible(privateField);
+		return (URI) ReflectionUtils.getField(privateField, transport);
 	}
 
 	@Configuration

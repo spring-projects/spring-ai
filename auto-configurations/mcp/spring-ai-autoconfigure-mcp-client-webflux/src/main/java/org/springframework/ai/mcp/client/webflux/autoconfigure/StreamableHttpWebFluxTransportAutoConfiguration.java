@@ -19,11 +19,12 @@ package org.springframework.ai.mcp.client.webflux.autoconfigure;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
 import tools.jackson.databind.json.JsonMapper;
 
+import org.springframework.ai.mcp.client.common.autoconfigure.McpStreamableHttpClientConnectionResolver;
+import org.springframework.ai.mcp.client.common.autoconfigure.McpStreamableHttpClientConnectionResolver.ResolvedConnection;
 import org.springframework.ai.mcp.client.common.autoconfigure.NamedClientMcpTransport;
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpClientCommonProperties;
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpStreamableHttpClientProperties;
@@ -102,13 +103,12 @@ public class StreamableHttpWebFluxTransportAutoConfiguration {
 		for (Map.Entry<String, ConnectionParameters> serverParameters : streamableProperties.getConnections()
 			.entrySet()) {
 			String connectionName = serverParameters.getKey();
-			String url = Objects.requireNonNull(serverParameters.getValue().url(),
-					"Missing url for server named " + connectionName);
-			var webClientBuilder = webClientBuilderTemplate.clone().baseUrl(url);
-			String streamableHttpEndpoint = Objects.requireNonNullElse(serverParameters.getValue().endpoint(), "/mcp");
+			ResolvedConnection connection = McpStreamableHttpClientConnectionResolver.resolve(connectionName,
+					serverParameters.getValue());
+			var webClientBuilder = webClientBuilderTemplate.clone().baseUrl(connection.baseUrl());
 
 			var transportBuilder = WebClientStreamableHttpTransport.builder(webClientBuilder)
-				.endpoint(streamableHttpEndpoint)
+				.endpoint(connection.endpoint())
 				.jsonMapper(new JacksonMcpJsonMapper(jsonMapper));
 
 			for (McpClientCustomizer<WebClientStreamableHttpTransport.Builder> customizer : transportCustomizers) {

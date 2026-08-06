@@ -25,6 +25,8 @@ import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTranspor
 import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
 import tools.jackson.databind.json.JsonMapper;
 
+import org.springframework.ai.mcp.client.common.autoconfigure.McpStreamableHttpClientConnectionResolver;
+import org.springframework.ai.mcp.client.common.autoconfigure.McpStreamableHttpClientConnectionResolver.ResolvedConnection;
 import org.springframework.ai.mcp.client.common.autoconfigure.NamedClientMcpTransport;
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpClientCommonProperties;
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpStreamableHttpClientProperties;
@@ -100,13 +102,12 @@ public class StreamableHttpHttpClientTransportAutoConfiguration {
 			.entrySet()) {
 
 			String name = serverParameters.getKey();
-			String baseUrl = serverParameters.getValue().url();
-			String streamableHttpEndpoint = serverParameters.getValue().endpoint() != null
-					? serverParameters.getValue().endpoint() : "/mcp";
+			ResolvedConnection connection = McpStreamableHttpClientConnectionResolver.resolve(name,
+					serverParameters.getValue());
 
 			HttpClientStreamableHttpTransport.Builder transportBuilder = HttpClientStreamableHttpTransport
-				.builder(baseUrl)
-				.endpoint(streamableHttpEndpoint)
+				.builder(connection.baseUrl())
+				.endpoint(connection.endpoint())
 				.clientBuilder(HttpClient.newBuilder())
 				.jsonMapper(new JacksonMcpJsonMapper(jsonMapper));
 

@@ -322,11 +322,11 @@ Properties for Streamable-HTTP transport are prefixed with `spring.ai.mcp.client
 |-
 
 |`connections.[name].url`
-|Base URL endpoint for Streamable-Http communication with the MCP server
+|Base URL for Streamable-HTTP communication with the MCP server. If `endpoint` is omitted, this may include the endpoint path and query parameters.
 |-
 
 |`connections.[name].endpoint`
-|the streamable-http endpoint (as url suffix) to use for the connection
+|Streamable-HTTP endpoint path and optional query parameters to use for the connection
 |`/mcp`
 |===
 
@@ -343,8 +343,15 @@ spring:
               url: http://localhost:8080
             server2:
               url: http://otherserver:8081
-              endpoint: /custom-sse
+              endpoint: /custom-mcp
+            server3:
+              url: https://mcp.example.com/mcp?key=abc123
+            server4:
+              url: https://mcp.example.com
+              endpoint: /mcp?key=abc123
 ----
+
+When `endpoint` is omitted, `url` may include the Streamable-HTTP endpoint path and query string. When `endpoint` is provided, put connection-specific path and query parameters on `endpoint`; the configured `endpoint` takes precedence.
 
 === SSE Transport Properties
 
@@ -435,11 +442,11 @@ Properties for Streamable Http transport are prefixed with `spring.ai.mcp.client
 |-
 
 |`connections.[name].url`
-|Base URL endpoint for Streamable-Http communication with the MCP server
+|Base URL for Streamable-HTTP communication with the MCP server. If `endpoint` is omitted, this may include the endpoint path and query parameters.
 |-
 
 |`connections.[name].endpoint`
-|the streamable-http endpoint (as url suffix) to use for the connection
+|Streamable-HTTP endpoint path and optional query parameters to use for the connection
 |`/mcp`
 |===
 
@@ -456,8 +463,15 @@ spring:
               url: http://localhost:8080
             server2:
               url: http://otherserver:8081
-              endpoint: /custom-sse
+              endpoint: /custom-mcp
+            server3:
+              url: https://mcp.example.com/mcp?key=abc123
+            server4:
+              url: https://mcp.example.com
+              endpoint: /mcp?key=abc123
 ----
+
+When `endpoint` is omitted, `url` may include the Streamable-HTTP endpoint path and query string. When `endpoint` is provided, put connection-specific path and query parameters on `endpoint`; the configured `endpoint` takes precedence.
 
 == Features
 
