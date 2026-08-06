@@ -147,7 +147,7 @@ public final class MethodToolCallback implements ToolCallback {
 	@SuppressWarnings("null")
 	private Object[] buildMethodArguments(Map<String, Object> toolInputArguments, @Nullable ToolContext toolContext) {
 		return Stream.of(this.toolMethod.getParameters()).map(parameter -> {
-			if (parameter.getType().isAssignableFrom(ToolContext.class)) {
+			if (ClassUtils.isAssignable(ToolContext.class, parameter.getType())) {
 				return toolContext;
 			}
 			Object rawArgument = toolInputArguments.get(parameter.getName());
