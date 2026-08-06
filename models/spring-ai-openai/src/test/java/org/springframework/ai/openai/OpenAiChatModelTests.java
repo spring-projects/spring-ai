@@ -1284,6 +1284,49 @@ class OpenAiChatModelTests {
 	}
 
 	@Test
+	void toolStrictTrueWidensOptionalPropertiesToNullableAndBackfillsRequired() {
+		ToolCallingManager mockToolCallingManager = mock(ToolCallingManager.class);
+
+		// "unit" is optional (absent from "required"), matching what
+		// JsonSchemaGenerator produces for a @ToolParam(required = false) parameter.
+		ToolDefinition toolDefinition = ToolDefinition.builder()
+			.name("get_weather")
+			.description("Get weather")
+			.inputSchema(
+					"{\"type\":\"object\",\"properties\":{\"location\":{\"type\":\"string\"},\"unit\":{\"type\":\"string\"}},\"required\":[\"location\"]}")
+			.build();
+
+		when(mockToolCallingManager.resolveToolDefinitions(any())).thenReturn(List.of(toolDefinition));
+
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("gpt-4.1").strict(true).build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.toolCallingManager(mockToolCallingManager)
+			.build();
+
+		ChatCompletionCreateParams request = chatModel.createRequest(new Prompt("test", options), false);
+
+		FunctionDefinition functionDef = request.tools().orElseThrow().get(0).function().orElseThrow().function();
+		assertThat(functionDef.strict()).contains(true);
+
+		Map<String, JsonValue> additionalProperties = functionDef.parameters().orElseThrow()._additionalProperties();
+
+		@SuppressWarnings("unchecked")
+		Map<String, Object> properties = additionalProperties.get("properties").convert(Map.class);
+		@SuppressWarnings("unchecked")
+		Map<String, Object> unitSchema = (Map<String, Object>) properties.get("unit");
+		// OpenAI strict mode requires every property in "required"; optionality is
+		// expressed by widening the type to also accept null instead.
+		assertThat(unitSchema.get("type")).isEqualTo(List.of("string", "null"));
+
+		@SuppressWarnings("unchecked")
+		List<String> required = additionalProperties.get("required").convert(List.class);
+		assertThat(required).containsExactlyInAnyOrder("location", "unit");
+	}
+
+	@Test
 	void toolStrictFalseOverrideAtRequestLevel() {
 		ToolCallingManager mockToolCallingManager = mock(ToolCallingManager.class);
 
