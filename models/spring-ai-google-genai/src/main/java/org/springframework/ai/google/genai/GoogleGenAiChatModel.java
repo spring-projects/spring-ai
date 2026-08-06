@@ -492,7 +492,7 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 					ChatResponse chatResponse = new ChatResponse(generations,
 							toChatResponseMetadata(cumulativeUsage, response.modelVersion().get()));
 					return Flux.just(chatResponse);
-				});
+				}).doOnNext(ignored -> observationContext.recordTimeToFirstChunk());
 
 				AtomicReference<ChatResponse> aggregatedResponseRef = new AtomicReference<>();
 
