@@ -22,8 +22,8 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * Data structure that contains content and metadata. Common parent for the
- * {@link org.springframework.ai.document.Document} and the
- * {@link org.springframework.ai.chat.messages.Message} classes.
+ * {@link org.springframework.ai.chat.messages.Message} and {@link MediaContent}
+ * types.
  *
  * @author Mark Pollack
  * @author Christian Tzolov
