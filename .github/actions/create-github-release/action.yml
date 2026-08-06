@@ -35,4 +35,5 @@ runs:
       shell: bash
       env:
         GITHUB_TOKEN: ${{ inputs.token }}
-      run: gh release create ${{ format('v{0}', inputs.milestone) }} --verify-tag --notes-file changelog.md ${{ inputs.pre-release == 'true' && '--prerelease' || format('--latest={0}', inputs.latest) }} ${{ inputs.draft == 'true' && '--draft' || '' }}
+        TAG: ${{ format('v{0}', inputs.milestone) }}
+      run: gh release create "$TAG" --title "$TAG" --verify-tag --notes-file changelog.md ${{ inputs.pre-release == 'true' && '--prerelease' || format('--latest={0}', inputs.latest) }} ${{ inputs.draft == 'true' && '--draft' || '' }}
