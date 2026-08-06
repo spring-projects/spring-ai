@@ -18,15 +18,16 @@ package org.springframework.ai.openai;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InterruptedIOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.openai.client.OpenAIClient;
 import com.openai.core.http.Headers;
 import com.openai.core.http.HttpResponse;
+import com.openai.errors.OpenAIIoException;
 import com.openai.models.audio.speech.SpeechCreateParams;
 import com.openai.models.audio.speech.SpeechModel;
 import io.micrometer.observation.ObservationRegistry;
@@ -141,44 +142,82 @@ public final class OpenAiAudioSpeechModel implements TextToSpeechModel {
 	public Flux<TextToSpeechResponse> stream(TextToSpeechPrompt prompt) {
 		Assert.notNull(prompt, "Prompt must not be null");
 
-		return Flux
-			.<TextToSpeechResponse, SpeechStreamState>generate(() -> openSpeechStream(prompt), this::emitNextChunk,
-					SpeechStreamState::close)
-			.subscribeOn(Schedulers.boundedElastic());
+		// Lets openSpeechStream/emitNextChunk tell a deliberate cancellation
+		// apart from a genuine I/O failure.
+		AtomicBoolean cancelled = new AtomicBoolean(false);
+
+		return Flux.<TextToSpeechResponse, SpeechStreamState>generate(() -> openSpeechStream(prompt, cancelled),
+				(state, sink) -> emitNextChunk(state, sink, cancelled), state -> {
+					if (state != null) {
+						state.close();
+					}
+				})
+			.subscribeOn(Schedulers.boundedElastic())
+			// After subscribeOn() so this runs before its worker is disposed -
+			// i.e. before the blocking call in progress gets interrupted -
+			// guaranteeing `cancelled` is already set when that's observed.
+			.doOnCancel(() -> cancelled.set(true));
 	}
 
-	private SpeechStreamState openSpeechStream(TextToSpeechPrompt prompt) {
+	private @Nullable SpeechStreamState openSpeechStream(TextToSpeechPrompt prompt, AtomicBoolean cancelled) {
 		OpenAiAudioSpeechOptions mergedOptions = mergeOptions(prompt);
 		String inputText = getInputText(prompt, mergedOptions);
 		traceRequest("Streaming", mergedOptions);
 
 		SpeechCreateParams params = buildSpeechCreateParams(mergedOptions, inputText, true);
 
-		HttpResponse httpResponse = this.openAiClient.audio().speech().create(params);
+		HttpResponse httpResponse;
+		try {
+			httpResponse = this.openAiClient.audio().speech().create(params);
+		}
+		catch (OpenAIIoException e) {
+			// The SDK wraps IOException - including one from this thread being
+			// interrupted on cancellation - into OpenAIIoException; `cancelled`
+			// tells that apart from a genuine connection failure.
+			if (Thread.interrupted()) {
+				Thread.currentThread().interrupt();
+			}
+			if (cancelled.get()) {
+				// No response ever arrived, so there's nothing to stream.
+				// Flux.generate supports a null state for this (see
+				// emitNextChunk's null check below).
+				return null;
+			}
+			throw e;
+		}
 		InputStream inputStream = httpResponse.body();
 		OpenAiAudioSpeechResponseMetadata metadata = OpenAiAudioSpeechResponseMetadata.from(httpResponse.headers());
 
 		return new SpeechStreamState(httpResponse, inputStream, metadata);
 	}
 
-	private SpeechStreamState emitNextChunk(SpeechStreamState state, SynchronousSink<TextToSpeechResponse> sink) {
+	private @Nullable SpeechStreamState emitNextChunk(@Nullable SpeechStreamState state,
+			SynchronousSink<TextToSpeechResponse> sink, AtomicBoolean cancelled) {
+		if (state == null) {
+			// Cancelled before openSpeechStream obtained a response.
+			sink.complete();
+			return null;
+		}
+
 		byte[] buffer = new byte[STREAM_CHUNK_SIZE];
 		int bytesRead;
 		try {
 			bytesRead = state.inputStream().read(buffer);
 		}
-		catch (InterruptedIOException e) {
-			// The blocking read was interrupted because the downstream subscriber
-			// cancelled (e.g. a consumer stopped reading early). This is a normal
-			// shutdown path, not a failure, so complete quietly instead of raising
-			// sink.error(), which would otherwise surface as a spurious "dropped
-			// error" once nothing is left to receive it.
-			Thread.currentThread().interrupt();
-			sink.complete();
-			return state;
-		}
 		catch (IOException e) {
-			sink.error(new RuntimeException("Failed to read audio speech stream", e));
+			// A blocked read can fail from cancellation (this thread gets
+			// interrupted) or from a genuine fault like a socket timeout -
+			// SocketTimeoutException is itself an InterruptedIOException, so
+			// the exception type alone can't tell them apart; `cancelled` can.
+			if (Thread.interrupted()) {
+				Thread.currentThread().interrupt();
+			}
+			if (cancelled.get()) {
+				sink.complete();
+			}
+			else {
+				sink.error(new RuntimeException("Failed to read audio speech stream", e));
+			}
 			return state;
 		}
 
