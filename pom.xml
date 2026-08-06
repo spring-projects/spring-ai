@@ -469,7 +469,11 @@
 							<goal>compile</goal>
 						</goals>
 						<configuration>
-							<compilerArgs>
+							<!-- combine.children="append" merges with, rather than
+								replaces, the plugin-level compilerArgs above (which carries
+								-parameters) - otherwise this execution-level list silently
+								overrides it and javac never receives -parameters. -->
+							<compilerArgs combine.children="append">
 								<arg>-XDcompilePolicy=simple</arg>
 								<!-- The following arg won't be necessary with JDK25+ -->
 								<arg>-XDaddTypeAnnotationsToSymbol=true</arg>
