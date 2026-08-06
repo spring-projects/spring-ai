@@ -1326,19 +1326,11 @@ public class ToolCallingAdvisorTests {
 
 	@Test
 	void streamToolExecutionSeesOptionsMutatedByDoBeforeStreamHook() {
-		// Subclasses (e.g. ToolSearchToolCallingAdvisor) use the doBeforeStream hook to
-		// inject per-iteration tool callbacks into the ToolCallingChatOptions - for
-		// example a synthetic "search for more tools" callback that isn't a globally
-		// resolvable bean. internalStream() captures `toolCallingChatOptions` from the
-		// incoming request *before* calling doBeforeStream, and
-		// streamWithToolCallResponses
-		// / handleToolCallRecursion go on to execute tool calls against that stale,
-		// pre-mutation options object instead of the one on the mutated request that was
-		// actually sent to the model. When the model calls the advisor-injected tool, the
-		// stale options don't contain it, so DefaultToolCallingManager falls through to
-		// the ToolCallbackResolver - which has no way to resolve a callback that only
-		// ever
-		// existed on the per-iteration mutated options - and resolution fails.
+		// Regression guard: a subclass (e.g. ToolSearchToolCallingAdvisor) may inject
+		// per-iteration tool callbacks into ToolCallingChatOptions from its
+		// doBeforeStream hook. executeToolCalls() must see that mutated options, not
+		// the pre-doBeforeStream snapshot - otherwise the injected tool can't be
+		// resolved when the model calls it.
 		ToolCallback injectedCallback = mock(ToolCallback.class, Mockito.withSettings().strictness(Strictness.LENIENT));
 		when(injectedCallback.getToolDefinition())
 			.thenReturn(ToolDefinition.builder().name("injectedTool").description("").inputSchema("{}").build());
@@ -1373,10 +1365,48 @@ public class ToolCallingAdvisorTests {
 		verify(this.toolCallingManager).executeToolCalls(promptCaptor.capture(), any(ChatResponse.class));
 
 		ToolCallingChatOptions executedOptions = (ToolCallingChatOptions) promptCaptor.getValue().getOptions();
-		// Fails today: executedOptions.getToolCallbacks() does not contain
-		// injectedCallback, because executeToolCalls was invoked with the options
-		// captured before doBeforeStream ran, not the mutated options doBeforeStream
-		// produced.
+		assertThat(executedOptions.getToolCallbacks()).contains(injectedCallback);
+	}
+
+	@Test
+	void callToolExecutionSeesOptionsMutatedByDoBeforeCallHook() {
+		// Non-streaming counterpart of
+		// streamToolExecutionSeesOptionsMutatedByDoBeforeStreamHook:
+		// the same options-mutation-visibility guarantee must hold for adviseCall().
+		ToolCallback injectedCallback = mock(ToolCallback.class, Mockito.withSettings().strictness(Strictness.LENIENT));
+		when(injectedCallback.getToolDefinition())
+			.thenReturn(ToolDefinition.builder().name("injectedTool").description("").inputSchema("{}").build());
+
+		MutatingToolCallingAdvisor advisor = new MutatingToolCallingAdvisor(this.toolCallingManager, injectedCallback);
+
+		ChatClientRequest request = createMockRequest();
+		ChatClientResponse responseWithToolCall = createMockResponse(true);
+		ChatClientResponse finalResponse = createMockResponse(false);
+
+		int[] callCount = { 0 };
+		TerminalCallAdvisor terminalAdvisor = new TerminalCallAdvisor((req, chain) -> {
+			callCount[0]++;
+			return callCount[0] == 1 ? responseWithToolCall : finalResponse;
+		});
+
+		CallAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.<Advisor>of(advisor, terminalAdvisor))
+			.build();
+
+		List<Message> conversationHistory = List.of(new UserMessage("test"),
+				AssistantMessage.builder().content("").build(), ToolResponseMessage.builder().build());
+		ToolExecutionResult toolExecutionResult = ToolExecutionResult.builder()
+			.conversationHistory(conversationHistory)
+			.build();
+		when(this.toolCallingManager.executeToolCalls(any(Prompt.class), any(ChatResponse.class)))
+			.thenReturn(toolExecutionResult);
+
+		advisor.adviseCall(request, realChain);
+
+		ArgumentCaptor<Prompt> promptCaptor = ArgumentCaptor.forClass(Prompt.class);
+		verify(this.toolCallingManager).executeToolCalls(promptCaptor.capture(), any(ChatResponse.class));
+
+		ToolCallingChatOptions executedOptions = (ToolCallingChatOptions) promptCaptor.getValue().getOptions();
 		assertThat(executedOptions.getToolCallbacks()).contains(injectedCallback);
 	}
 
@@ -1621,7 +1651,7 @@ public class ToolCallingAdvisorTests {
 
 	/**
 	 * Test subclass mimicking how {@code ToolSearchToolCallingAdvisor} uses the
-	 * doBeforeStream hook to inject a per-iteration tool callback into the
+	 * doBeforeCall/doBeforeStream hooks to inject a per-iteration tool callback into the
 	 * ToolCallingChatOptions on the mutated request.
 	 */
 	private static class MutatingToolCallingAdvisor extends ToolCallingAdvisor {
@@ -1636,6 +1666,16 @@ public class ToolCallingAdvisorTests {
 		@Override
 		protected ChatClientRequest doBeforeStream(ChatClientRequest chatClientRequest,
 				StreamAdvisorChain streamAdvisorChain) {
+			return injectCallback(chatClientRequest);
+		}
+
+		@Override
+		protected ChatClientRequest doBeforeCall(ChatClientRequest chatClientRequest,
+				CallAdvisorChain callAdvisorChain) {
+			return injectCallback(chatClientRequest);
+		}
+
+		private ChatClientRequest injectCallback(ChatClientRequest chatClientRequest) {
 			ToolCallingChatOptions options = (ToolCallingChatOptions) chatClientRequest.prompt().getOptions();
 			List<ToolCallback> callbacks = options.getToolCallbacks() != null
 					? new ArrayList<>(options.getToolCallbacks()) : new ArrayList<>();

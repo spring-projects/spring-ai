@@ -157,6 +157,13 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 			// Next Call
 			processedChatClientRequest = this.doBeforeCall(processedChatClientRequest, callAdvisorChain);
 
+			// Re-read the options doBeforeCall() may have mutated (e.g. a subclass
+			// injecting per-iteration tool callbacks) so executeToolCalls() below sees
+			// what was actually sent to the model, not the pre-doBeforeCall snapshot.
+			toolCallingChatOptions = (ToolCallingChatOptions) processedChatClientRequest.prompt().getOptions();
+			Assert.notNull(toolCallingChatOptions,
+					"redundant check that should never fail (doBeforeCall must not change the options type away from ToolCallingChatOptions), but here to help NullAway");
+
 			chatClientResponse = callAdvisorChain.copy(this).nextCall(processedChatClientRequest);
 
 			chatClientResponse = this.doAfterCall(chatClientResponse, callAdvisorChain);
@@ -289,12 +296,9 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 
 			Flux<ChatClientResponse> responseFlux = chainCopy.nextStream(processedRequest);
 
-			// Use the options doBeforeStream() produced on finalRequest - not the
-			// pre-doBeforeStream toolCallingChatOptions captured above - so that tool
-			// callbacks/context a subclass hook injects for this iteration (e.g. a
-			// dynamically resolved tool that only exists on the mutated options, not via
-			// any globally registered ToolCallbackResolver) are visible when the tool
-			// calls in the model's response are actually executed below.
+			// Re-read the options doBeforeStream() may have mutated (e.g. a subclass
+			// injecting per-iteration tool callbacks) so executeToolCalls() below sees
+			// what was actually sent to the model, not the pre-doBeforeStream snapshot.
 			ToolCallingChatOptions processedOptions = (ToolCallingChatOptions) finalRequest.prompt().getOptions();
 			Assert.notNull(processedOptions,
 					"redundant check that should never fail (doBeforeStream must not change the options type away from ToolCallingChatOptions), but here to help NullAway");
