@@ -30,6 +30,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.openai.client.OpenAIClient;
 import com.openai.core.http.Headers;
@@ -46,6 +47,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.Disposable;
 import reactor.core.publisher.Hooks;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
 
 import org.springframework.ai.audio.tts.TextToSpeechOptions;
 import org.springframework.ai.audio.tts.TextToSpeechPrompt;
@@ -233,6 +236,43 @@ class OpenAiAudioSpeechModelTests {
 		assertThat(paramsCaptor.getValue().streamFormat()).contains(SpeechCreateParams.StreamFormat.AUDIO);
 
 		verify(httpResponse).close();
+	}
+
+	@Test
+	void testStreamUsesCustomScheduler() {
+		byte[] audioBytes = new byte[100];
+		new Random(13).nextBytes(audioBytes);
+
+		AudioService audioService = mock(AudioService.class);
+		SpeechService speechService = mock(SpeechService.class);
+		HttpResponse httpResponse = mock(HttpResponse.class);
+		Headers headers = mock(Headers.class);
+
+		when(this.mockClient.audio()).thenReturn(audioService);
+		when(audioService.speech()).thenReturn(speechService);
+		when(speechService.create(any(SpeechCreateParams.class))).thenReturn(httpResponse);
+		when(httpResponse.body()).thenReturn(new ByteArrayInputStream(audioBytes));
+		when(httpResponse.headers()).thenReturn(headers);
+		when(headers.values(anyString())).thenReturn(List.of());
+
+		Scheduler customScheduler = Schedulers.newSingle("custom-speech-scheduler-test");
+		try {
+			OpenAiAudioSpeechModel model = OpenAiAudioSpeechModel.builder()
+				.openAiClient(this.mockClient)
+				.streamScheduler(customScheduler)
+				.build();
+			TextToSpeechPrompt prompt = new TextToSpeechPrompt("Testing custom scheduler usage");
+
+			AtomicReference<String> threadName = new AtomicReference<>();
+			model.stream(prompt)
+				.doOnNext(response -> threadName.set(Thread.currentThread().getName()))
+				.blockLast(Duration.ofSeconds(5));
+
+			assertThat(threadName.get()).startsWith("custom-speech-scheduler-test");
+		}
+		finally {
+			customScheduler.dispose();
+		}
 	}
 
 	@Test

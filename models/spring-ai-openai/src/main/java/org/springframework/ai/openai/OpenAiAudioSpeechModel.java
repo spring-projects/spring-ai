@@ -36,6 +36,7 @@ import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.SynchronousSink;
+import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
 
 import org.springframework.ai.audio.tts.Speech;
@@ -65,9 +66,21 @@ public final class OpenAiAudioSpeechModel implements TextToSpeechModel {
 
 	private static final int STREAM_CHUNK_SIZE = 8192;
 
+	/**
+	 * Default {@link #stream(TextToSpeechPrompt)} scheduler, used unless a
+	 * {@link Builder#streamScheduler(Scheduler) custom one} is set. A dedicated pool,
+	 * sized like Reactor's shared {@link Schedulers#boundedElastic()}, so long-lived
+	 * streams don't contend with unrelated blocking work elsewhere in the app.
+	 */
+	private static final Scheduler DEFAULT_STREAM_SCHEDULER = Schedulers.newBoundedElastic(
+			Schedulers.DEFAULT_BOUNDED_ELASTIC_SIZE, Schedulers.DEFAULT_BOUNDED_ELASTIC_QUEUESIZE,
+			"openai-audio-speech");
+
 	private final OpenAIClient openAiClient;
 
 	private final OpenAiAudioSpeechOptions options;
+
+	private final Scheduler streamScheduler;
 
 	private OpenAiAudioSpeechModel(Builder builder) {
 		this.options = Objects.requireNonNullElseGet(builder.options, () -> OpenAiAudioSpeechOptions.builder().build());
@@ -79,6 +92,7 @@ public final class OpenAiAudioSpeechModel implements TextToSpeechModel {
 						this.options.getTimeout(), this.options.getMaxRetries(), this.options.getProxy(),
 						this.options.getCustomHeaders(), ObservationRegistry.NOOP, null,
 						builder.httpClientCustomizers));
+		this.streamScheduler = Objects.requireNonNullElse(builder.streamScheduler, DEFAULT_STREAM_SCHEDULER);
 	}
 
 	/**
@@ -152,7 +166,7 @@ public final class OpenAiAudioSpeechModel implements TextToSpeechModel {
 						state.close();
 					}
 				})
-			.subscribeOn(Schedulers.boundedElastic())
+			.subscribeOn(this.streamScheduler)
 			// After subscribeOn() so this runs before its worker is disposed -
 			// i.e. before the blocking call in progress gets interrupted -
 			// guaranteeing `cancelled` is already set when that's observed.
@@ -326,6 +340,8 @@ public final class OpenAiAudioSpeechModel implements TextToSpeechModel {
 
 		private @Nullable OpenAiAudioSpeechOptions options;
 
+		private @Nullable Scheduler streamScheduler;
+
 		private List<OpenAiHttpClientBuilderCustomizer> httpClientCustomizers = new ArrayList<>();
 
 		/**
@@ -342,6 +358,7 @@ public final class OpenAiAudioSpeechModel implements TextToSpeechModel {
 		private Builder(OpenAiAudioSpeechModel model) {
 			this.openAiClient = model.openAiClient;
 			this.options = model.options;
+			this.streamScheduler = model.streamScheduler;
 		}
 
 		/**
@@ -363,6 +380,20 @@ public final class OpenAiAudioSpeechModel implements TextToSpeechModel {
 			if (options != null) {
 				this.options = options;
 			}
+			return this;
+		}
+
+		/**
+		 * Sets the {@link Scheduler} for
+		 * {@link OpenAiAudioSpeechModel#stream(TextToSpeechPrompt)}. Defaults to a
+		 * dedicated pool; override to share a scheduler across components or size it for
+		 * expected concurrent-stream load.
+		 * @param streamScheduler The scheduler to use, or {@code null} to restore the
+		 * default
+		 * @return This builder
+		 */
+		public Builder streamScheduler(@Nullable Scheduler streamScheduler) {
+			this.streamScheduler = streamScheduler;
 			return this;
 		}
 

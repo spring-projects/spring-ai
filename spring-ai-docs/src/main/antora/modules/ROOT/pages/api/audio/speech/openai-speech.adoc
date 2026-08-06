@@ -207,6 +207,9 @@ Each element of the stream carries at most 8 KB of audio, the internal read-buff
 
 TIP: If you need to hand this stream to an API that only accepts a blocking `java.io.InputStream`, see xref:api/audio/speech.adoc#streaming-consume-inputstream[Consuming the Stream as a Blocking InputStream] for the practices that matter and a tested reference implementation.
 
+Each open stream pins a thread for its whole response duration, so `OpenAiAudioSpeechModel` runs streaming on a dedicated bounded-elastic scheduler rather than Reactor's shared `Schedulers.boundedElastic()`, keeping heavy speech-streaming load from starving unrelated blocking work elsewhere in the application.
+Override it with `OpenAiAudioSpeechModel.builder().streamScheduler(customScheduler)` to share a scheduler across components or to size the pool differently for expected concurrent-stream load.
+
 include::partial$openai/openai-http-client-customization.adoc[]
 
 == Migration Guide
