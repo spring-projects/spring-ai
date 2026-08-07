@@ -4,11 +4,6 @@ run-name: Spring AI Integration Tests
 on:
   workflow_dispatch:
     inputs:
-      springBootVersion:
-        description: 'Spring Boot version to test against (leave empty to use the project default)'
-        required: false
-        default: ''
-        type: string
       test_suites:
         description: 'Test suites to run (comma-separated: ollama, anthropic, azure-openai, mistral-ai, elevenlabs, bedrock, deepseek, google-genai, vectorstores, autoconfigure, spring-ai-integration, docker-compose, testcontainers). Leave empty to run all.'
         required: false
@@ -16,6 +11,11 @@ on:
         type: string
       exclude_test_suites:
         description: 'Test suites to exclude (comma-separated). Takes precedence over test_suites.'
+        required: false
+        default: ''
+        type: string
+      springBootVersion:
+        description: 'Spring Boot version to test against (leave empty to use the project default)'
         required: false
         default: ''
         type: string
