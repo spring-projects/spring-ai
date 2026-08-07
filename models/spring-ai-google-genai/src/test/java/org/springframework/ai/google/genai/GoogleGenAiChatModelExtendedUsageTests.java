@@ -442,4 +442,26 @@ public class GoogleGenAiChatModelExtendedUsageTests {
 		assertThat(genAiUsage.getCachedContentTokenCount()).isNull();
 	}
 
+	@Test
+	void testResponseWithoutModelVersion() {
+		// Create mock response without modelVersion (like Vertex Gemma MaaS)
+		Content responseContent = Content.builder().parts(Part.builder().text("Response").build()).build();
+
+		Candidate candidate = Candidate.builder().content(responseContent).index(0).build();
+
+		GenerateContentResponse mockResponse = GenerateContentResponse.builder()
+			.candidates(List.of(candidate))
+			// Notice: .modelVersion(...) is NOT set
+			.build();
+
+		this.chatModel.setMockGenerateContentResponse(mockResponse);
+
+		UserMessage userMessage = new UserMessage("Test absent modelVersion");
+		Prompt prompt = new Prompt(List.of(userMessage));
+		ChatResponse response = this.chatModel.call(prompt);
+
+		// Should fall back to request model name and not throw NPE
+		assertThat(response.getMetadata().getModel()).isEqualTo("gemini-2.0-flash-thinking-exp");
+	}
+
 }
