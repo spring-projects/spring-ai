@@ -759,4 +759,29 @@ public class CreateGeminiRequestTests {
 
 	}
 
+	@Test
+	public void createRequestWithCodeExecution() {
+		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
+			.model("DEFAULT_MODEL")
+			.codeExecution(true)
+			.build();
+		var client = GoogleGenAiChatModel.builder().genAiClient(this.genAiClient).build();
+
+		GeminiRequest request = client.createGeminiRequest(new Prompt("Test message content", options));
+
+		assertThat(request.config().tools()).isPresent();
+		assertThat(request.config().tools().get()).hasSize(1);
+		assertThat(request.config().tools().get().get(0).codeExecution()).isPresent();
+	}
+
+	@Test
+	public void createRequestWithoutCodeExecutionByDefault() {
+		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder().model("DEFAULT_MODEL").build();
+		var client = GoogleGenAiChatModel.builder().genAiClient(this.genAiClient).build();
+
+		GeminiRequest request = client.createGeminiRequest(new Prompt("Test message content", options));
+
+		assertThat(request.config().tools()).isNotPresent();
+	}
+
 }

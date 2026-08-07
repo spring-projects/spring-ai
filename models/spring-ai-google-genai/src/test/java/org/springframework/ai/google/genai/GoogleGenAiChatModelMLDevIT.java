@@ -142,6 +142,29 @@ class GoogleGenAiChatModelMLDevIT {
 		assertThat(response).containsIgnoringCase("30");
 	}
 
+	@Test
+	void codeExecutionSurfacesGeneratedCodeAndResult() {
+		Prompt prompt = new Prompt(
+				new UserMessage("Calculate the sum of the first 50 prime numbers by writing and running code."),
+				GoogleGenAiChatOptions.builder().model(ChatModel.GEMINI_2_5_FLASH).codeExecution(true).build());
+
+		ChatResponse response = this.chatModel.call(prompt);
+
+		boolean hasExecutableCode = response.getResults()
+			.stream()
+			.anyMatch(generation -> generation.getOutput()
+				.getMetadata()
+				.containsKey(GoogleGenAiChatModel.METADATA_EXECUTABLE_CODE));
+		boolean hasExecutionResult = response.getResults()
+			.stream()
+			.anyMatch(generation -> generation.getOutput()
+				.getMetadata()
+				.containsKey(GoogleGenAiChatModel.METADATA_CODE_EXECUTION_RESULT));
+
+		assertThat(hasExecutableCode).isTrue();
+		assertThat(hasExecutionResult).isTrue();
+	}
+
 	@SpringBootConfiguration
 	public static class TestConfiguration {
 
