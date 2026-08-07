@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.openai.client.OpenAIClient;
 import com.openai.client.OpenAIClientAsync;
@@ -43,6 +44,7 @@ import com.openai.services.blocking.AudioService;
 import com.openai.services.blocking.audio.TranscriptionService;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import reactor.core.Disposable;
 
 import org.springframework.ai.audio.transcription.AudioTranscriptionPrompt;
 import org.springframework.ai.audio.transcription.AudioTranscriptionResponse;
@@ -745,6 +747,46 @@ class OpenAiAudioTranscriptionModelTests {
 		assertThat(chunks).isNotNull();
 		String text = String.join("", chunks);
 		assertThat(text).isEqualTo("Hello, streamed transcription result");
+	}
+
+	@Test
+	void streamClosesResponseWhenSubscriptionIsCancelled() {
+		AtomicBoolean closed = new AtomicBoolean();
+		AsyncStreamResponse<TranscriptionStreamEvent> openResponse = new AsyncStreamResponse<>() {
+			@Override
+			public AsyncStreamResponse<TranscriptionStreamEvent> subscribe(
+					AsyncStreamResponse.Handler<? super TranscriptionStreamEvent> handler) {
+				return this;
+			}
+
+			@Override
+			public AsyncStreamResponse<TranscriptionStreamEvent> subscribe(
+					AsyncStreamResponse.Handler<? super TranscriptionStreamEvent> handler, Executor executor) {
+				return this;
+			}
+
+			@Override
+			public CompletableFuture<Void> onCompleteFuture() {
+				return new CompletableFuture<>();
+			}
+
+			@Override
+			public void close() {
+				closed.set(true);
+			}
+		};
+
+		AudioTranscriptionPrompt prompt = new AudioTranscriptionPrompt(new ClassPathResource("/speech.flac"));
+
+		OpenAiAudioTranscriptionModel model = OpenAiAudioTranscriptionModel.builder()
+			.openAiClient(mock(OpenAIClient.class))
+			.openAiClientAsync(createMockAsyncClient(openResponse))
+			.build();
+
+		Disposable subscription = model.stream(prompt).subscribe();
+		subscription.dispose();
+
+		assertThat(closed).isTrue();
 	}
 
 	private OpenAIClient createMockClient(TranscriptionCreateResponse mockResponse) {
