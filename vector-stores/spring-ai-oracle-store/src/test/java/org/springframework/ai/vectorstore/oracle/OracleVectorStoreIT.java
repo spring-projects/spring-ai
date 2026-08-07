@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 import javax.sql.DataSource;
 
 import oracle.jdbc.pool.OracleDataSource;
+import oracle.sql.json.OracleJsonValue;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
@@ -284,6 +285,49 @@ public class OracleVectorStoreIT extends BaseVectorStoreTests {
 				assertThat(resultDoc.getId()).isEqualTo(document.getId());
 				assertThat(resultDoc.getText()).isEqualTo("The World is Big and Salvation Lurks Around the Corner");
 				assertThat(resultDoc.getMetadata()).containsKeys("meta2", DocumentMetadata.DISTANCE.value());
+
+				dropTable(context, ((OracleVectorStore) vectorStore).getTableName());
+			});
+	}
+
+	@Test
+	void shouldPreserveMetadataWhenRetrievedDocumentIsAddedAgain() {
+		this.contextRunner
+			.withPropertyValues("test.spring.ai.vectorstore.oracle.distanceType=COSINE",
+					"test.spring.ai.vectorstore.oracle.searchAccuracy=" + OracleVectorStore.DEFAULT_SEARCH_ACCURACY)
+			.run(context -> {
+				VectorStore vectorStore = context.getBean(VectorStore.class);
+
+				Document original = new Document(UUID.randomUUID().toString(), "Spring AI Oracle metadata round trip",
+						Map.of("conversationId", "conversation-123"));
+
+				vectorStore.add(List.of(original));
+
+				SearchRequest searchRequest = SearchRequest.builder()
+					.query("Spring AI Oracle metadata round trip")
+					.topK(1)
+					.similarityThresholdAll()
+					.build();
+
+				List<Document> firstResults = vectorStore.similaritySearch(searchRequest);
+
+				assertThat(firstResults).hasSize(1);
+
+				Document retrieved = firstResults.get(0);
+
+				assertThat(retrieved.getId()).isEqualTo(original.getId());
+				assertThat(retrieved.getMetadata().get("conversationId")).isInstanceOfSatisfying(OracleJsonValue.class,
+						value -> assertThat(value.asJsonString().getString()).isEqualTo("conversation-123"));
+
+				// Re-add the document returned by OracleVectorStore.
+				vectorStore.add(List.of(retrieved));
+
+				List<Document> secondResults = vectorStore.similaritySearch(searchRequest);
+
+				assertThat(secondResults).hasSize(1);
+				assertThat(secondResults.get(0).getMetadata().get("conversationId")).isInstanceOfSatisfying(
+						OracleJsonValue.class,
+						value -> assertThat(value.asJsonString().getString()).isEqualTo("conversation-123"));
 
 				dropTable(context, ((OracleVectorStore) vectorStore).getTableName());
 			});
