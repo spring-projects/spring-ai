@@ -258,8 +258,8 @@
 		<anthropic-sdk.version>2.48.0</anthropic-sdk.version>
 		<openai-sdk.version>4.49.0</openai-sdk.version>
 		<!-- NOTE: keep awssdk and bedrockruntime versions aligned -->
-		<awssdk.version>2.46.19</awssdk.version>
-		<bedrockruntime.version>2.46.19</bedrockruntime.version>
+		<awssdk.version>2.51.2</awssdk.version>
+		<bedrockruntime.version>2.51.2</bedrockruntime.version>
 		<azure-core.version>1.57.1</azure-core.version>
 		<azure-identity.version>1.18.2</azure-identity.version>
 		<azure-json.version>1.5.1</azure-json.version>
