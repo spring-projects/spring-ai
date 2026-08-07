@@ -19,11 +19,14 @@ package org.springframework.ai.google.genai;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -141,6 +144,7 @@ import org.springframework.util.StringUtils;
  * @author Dan Dobrin
  * @author Thomas Vitale
  * @author Sebastien Deleuze
+ * @author Dimitar Proynov
  * @since 0.8.1
  * @see GoogleGenAiChatOptions
  * @see ToolCallingManager
@@ -867,48 +871,65 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 	}
 
 	/**
-	 * Checks if the model name indicates a Gemini 3 Pro model.
-	 * @param modelName the model name to check
-	 * @return true if the model is a Gemini 3 Pro model
+	 * Per-model support matrix for {@code thinkingLevel} on the {@code generateContent}
+	 * API surface used by this client, keyed by exact model id (lower case). An empty set
+	 * means the model rejects {@code thinkingLevel} entirely (use
+	 * {@link GoogleGenAiChatOptions#getThinkingBudget() thinkingBudget} instead). Models
+	 * absent from this map are not validated client-side; gemini-2.5-pro thinking level
+	 * support is per account (API key) basis and cannot be validated here.
 	 */
-	private static boolean isGemini3ProModel(String modelName) {
-		if (modelName == null) {
-			return false;
-		}
-		String lower = modelName.toLowerCase(Locale.ROOT);
-		return lower.contains("gemini-3") && lower.contains("pro") && !lower.contains("flash");
-	}
+	private static final Map<String, Set<GoogleGenAiThinkingLevel>> THINKING_LEVEL_SUPPORT_BY_MODEL = Map.ofEntries(
+			Map.entry(ChatModel.GEMINI_2_5_FLASH.getValue(), EnumSet.noneOf(GoogleGenAiThinkingLevel.class)),
+			Map.entry(ChatModel.GEMINI_2_5_FLASH_LIGHT.getValue(), EnumSet.noneOf(GoogleGenAiThinkingLevel.class)),
+			Map.entry(ChatModel.GEMINI_3_0_PRO_PREVIEW.getValue(),
+					EnumSet.of(GoogleGenAiThinkingLevel.LOW, GoogleGenAiThinkingLevel.HIGH)),
+			Map.entry(ChatModel.GEMINI_3_1_PRO_PREVIEW.getValue(),
+					EnumSet.of(GoogleGenAiThinkingLevel.LOW, GoogleGenAiThinkingLevel.MEDIUM,
+							GoogleGenAiThinkingLevel.HIGH)),
+			Map.entry(ChatModel.GEMINI_3_FLASH_PREVIEW.getValue(),
+					EnumSet.of(GoogleGenAiThinkingLevel.MINIMAL, GoogleGenAiThinkingLevel.LOW,
+							GoogleGenAiThinkingLevel.MEDIUM, GoogleGenAiThinkingLevel.HIGH)),
+			Map.entry(ChatModel.GEMINI_3_5_FLASH.getValue(),
+					EnumSet.of(GoogleGenAiThinkingLevel.MINIMAL, GoogleGenAiThinkingLevel.LOW,
+							GoogleGenAiThinkingLevel.MEDIUM, GoogleGenAiThinkingLevel.HIGH)),
+			Map.entry(ChatModel.GEMINI_3_5_FLASH_LITE.getValue(),
+					EnumSet.of(GoogleGenAiThinkingLevel.MINIMAL, GoogleGenAiThinkingLevel.LOW,
+							GoogleGenAiThinkingLevel.MEDIUM, GoogleGenAiThinkingLevel.HIGH)),
+			Map.entry(ChatModel.GEMINI_3_6_FLASH.getValue(),
+					EnumSet.of(GoogleGenAiThinkingLevel.MINIMAL, GoogleGenAiThinkingLevel.LOW,
+							GoogleGenAiThinkingLevel.MEDIUM, GoogleGenAiThinkingLevel.HIGH)),
+			Map.entry(ChatModel.GEMINI_3_1_FLASH_LITE_IMAGE.getValue(),
+					EnumSet.of(GoogleGenAiThinkingLevel.MINIMAL, GoogleGenAiThinkingLevel.HIGH)));
 
 	/**
-	 * Checks if the model name indicates a Gemini 3 Flash model.
-	 * @param modelName the model name to check
-	 * @return true if the model is a Gemini 3 Flash model
-	 */
-	private static boolean isGemini3FlashModel(String modelName) {
-		if (modelName == null) {
-			return false;
-		}
-		String lower = modelName.toLowerCase(Locale.ROOT);
-		return lower.contains("gemini-3") && lower.contains("flash");
-	}
-
-	/**
-	 * Validates ThinkingLevel compatibility with the model. Gemini 3.1 Pro doesn't
-	 * support MINIMAL. Gemini 3 Flash supports all levels.
+	 * Validates that the requested {@code thinkingLevel} is supported by the target
+	 * model, using {@link #THINKING_LEVEL_SUPPORT_BY_MODEL}. Models that are not part of
+	 * that matrix are not validated here and are left to the API to accept or reject.
 	 * @param level the thinking level to validate
 	 * @param modelName the model name
 	 * @throws IllegalArgumentException if the level is not supported for the model
 	 */
 	private static void validateThinkingLevelForModel(GoogleGenAiThinkingLevel level, String modelName) {
-		if (level == null || level == GoogleGenAiThinkingLevel.THINKING_LEVEL_UNSPECIFIED) {
+		if (level == null || level == GoogleGenAiThinkingLevel.THINKING_LEVEL_UNSPECIFIED || modelName == null) {
 			return;
 		}
-		if (isGemini3ProModel(modelName)) {
-			if (level == GoogleGenAiThinkingLevel.MINIMAL) {
-				throw new IllegalArgumentException(
-						String.format("ThinkingLevel.%s is not supported for Gemini 3 Pro models. "
-								+ "Supported levels: LOW, MEDIUM, HIGH. Model: %s", level, modelName));
+		// Vertex AI style full resource names (e.g.
+		// "projects/{project}/locations/{location}/publishers/google/models/{model}")
+		// carry the model id as the last path segment.
+		String modelId = modelName.substring(modelName.lastIndexOf('/') + 1).toLowerCase(Locale.ROOT);
+		Set<GoogleGenAiThinkingLevel> supportedLevels = THINKING_LEVEL_SUPPORT_BY_MODEL.get(modelId);
+		if (supportedLevels == null) {
+			return;
+		}
+		if (!supportedLevels.contains(level)) {
+			if (supportedLevels.isEmpty()) {
+				throw new IllegalArgumentException(String.format(
+						"ThinkingLevel.%s is not supported for model '%s'. This model does not support thinkingLevel; use thinkingBudget instead.",
+						level, modelName));
 			}
+			throw new IllegalArgumentException(
+					String.format("ThinkingLevel.%s is not supported for model '%s'. Supported levels: %s.", level,
+							modelName, supportedLevels.stream().map(Enum::name).collect(Collectors.joining(", "))));
 		}
 	}
 
@@ -1163,11 +1184,21 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		@Deprecated
 		GEMINI_3_PRO_PREVIEW("gemini-3.1-pro-preview"),
 
+		GEMINI_3_0_PRO_PREVIEW("gemini-3-pro-preview"),
+
 		GEMINI_3_1_PRO_PREVIEW("gemini-3.1-pro-preview"),
+
+		GEMINI_3_FLASH_PREVIEW("gemini-3-flash-preview"),
 
 		GEMINI_3_1_FLASH_LITE("gemini-3.1-flash-lite"),
 
-		GEMINI_3_5_FLASH("gemini-3.5-flash");
+		GEMINI_3_1_FLASH_LITE_IMAGE("gemini-3.1-flash-lite-image"),
+
+		GEMINI_3_5_FLASH("gemini-3.5-flash"),
+
+		GEMINI_3_5_FLASH_LITE("gemini-3.5-flash-lite"),
+
+		GEMINI_3_6_FLASH("gemini-3.6-flash");
 
 		public final String value;
 
