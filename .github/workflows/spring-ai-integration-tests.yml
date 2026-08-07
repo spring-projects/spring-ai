@@ -44,7 +44,7 @@ jobs:
           COMMERCIAL_ARTIFACTORY_USERNAME: "${{ secrets.COMMERCIAL_ARTIFACTORY_USERNAME }}"
           COMMERCIAL_ARTIFACTORY_PASSWORD: "${{ secrets.COMMERCIAL_ARTIFACTORY_PASSWORD }}"
         run: |
-          ./mvnw ${{ vars.COMMERCIAL && '-s commercial-settings.xml' || '' }} --batch-mode -ntp --update-snapshots clean install -DskipTests \
+          ./mvnw ${{ vars.COMMERCIAL && '-s commercial-settings.xml -Pcommercial' || '' }} --batch-mode -ntp --update-snapshots clean install -DskipTests \
             ${{ inputs.springBootVersion != '' && format('-Dspring-boot.version={0}', inputs.springBootVersion) || '' }}
 
       - name: Upload Spring AI built artifacts
