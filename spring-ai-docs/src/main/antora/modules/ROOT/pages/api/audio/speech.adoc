@@ -216,6 +216,25 @@ public class TextToSpeechController {
 }
 ----
 
+[[streaming-consume-inputstream]]
+=== Consuming the Stream as a Blocking `InputStream`
+
+Some APIs only accept a `java.io.InputStream` rather than a reactive `Flux`.
+An audio-playback library or code that writes incrementally to disk with blocking I/O are typical examples.
+Bridging a `Flux<byte[]>` into an `InputStream` is straightforward, but it is worth being precise about what such a bridge actually guarantees.
+
+A well-behaved bridge should request one chunk at a time from the `Flux`, so it never buffers more than a single already-received chunk ahead of what the `InputStream` consumer has read.
+It should also cancel the underlying subscription when the `InputStream` is closed before reaching end-of-stream, so a consumer that stops early, for example aborting playback, releases the provider connection immediately instead of leaving it running until the response would otherwise have completed.
+A bridge built on `Flux#toIterable()` cannot offer that second property, since its iterator exposes no way to cancel the subscription.
+Bridging through a `reactor.core.publisher.BaseSubscriber` gives you both properties: request one element at a time from `hookOnNext`, and cancel from `close()` via `Subscriber.dispose()`.
+
+Pausing the `InputStream` consumer does propagate real backpressure to providers whose client uses HTTP/2, such as OpenAI's.
+The underlying transport, OkHttp, only sends the `WINDOW_UPDATE` frame that tells the server to send more data once application code actually reads the buffered bytes, so a stalled consumer eventually stops the server from sending further data on that connection.
+That effect is real but coarse-grained: it engages once a whole HTTP/2 flow-control window's worth of unread data has accumulated, commonly tens of kilobytes, not after a single unread chunk.
+It also only guarantees that the transport stops sending; whether a given provider's backend actually slows down generating audio once its send buffer fills, rather than continuing to buffer server-side, is provider-specific and not something a client-side bridge can control or verify.
+
+TIP: A complete, tested reference implementation, `FluxInputStream`, is available in `OpenAiAudioSpeechModelIT` in the `spring-ai-openai` module's test sources.
+
 === Configuration-Based Provider Selection
 
 Switch between providers using Spring profiles or properties:

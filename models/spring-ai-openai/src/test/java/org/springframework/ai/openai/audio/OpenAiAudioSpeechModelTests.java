@@ -16,18 +16,54 @@
 
 package org.springframework.ai.openai.audio;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InterruptedIOException;
+import java.net.SocketTimeoutException;
+import java.time.Duration;
+import java.util.List;
+import java.util.Random;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+
 import com.openai.client.OpenAIClient;
+import com.openai.core.http.Headers;
+import com.openai.core.http.HttpResponse;
+import com.openai.errors.OpenAIIoException;
+import com.openai.models.audio.speech.SpeechCreateParams;
+import com.openai.services.blocking.AudioService;
+import com.openai.services.blocking.audio.SpeechService;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import reactor.core.Disposable;
+import reactor.core.publisher.Hooks;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
 
 import org.springframework.ai.audio.tts.TextToSpeechOptions;
+import org.springframework.ai.audio.tts.TextToSpeechPrompt;
+import org.springframework.ai.audio.tts.TextToSpeechResponse;
 import org.springframework.ai.openai.OpenAiAudioSpeechModel;
 import org.springframework.ai.openai.OpenAiAudioSpeechOptions;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for OpenAiAudioSpeechModel.
@@ -161,6 +197,267 @@ class OpenAiAudioSpeechModelTests {
 		assertThat(options.getVoice()).isEqualTo("echo");
 		assertThat(options.getResponseFormat()).isEqualTo("opus");
 		assertThat(options.getSpeed()).isEqualTo(2.0);
+	}
+
+	@Test
+	void testStreamEmitsMultipleChunksInOrder() {
+		byte[] audioBytes = new byte[20_000];
+		new Random(42).nextBytes(audioBytes);
+
+		AudioService audioService = mock(AudioService.class);
+		SpeechService speechService = mock(SpeechService.class);
+		HttpResponse httpResponse = mock(HttpResponse.class);
+		Headers headers = mock(Headers.class);
+
+		when(this.mockClient.audio()).thenReturn(audioService);
+		when(audioService.speech()).thenReturn(speechService);
+		when(speechService.create(any(SpeechCreateParams.class))).thenReturn(httpResponse);
+		when(httpResponse.body()).thenReturn(new ByteArrayInputStream(audioBytes));
+		when(httpResponse.headers()).thenReturn(headers);
+		when(headers.values(anyString())).thenReturn(List.of());
+
+		OpenAiAudioSpeechModel model = OpenAiAudioSpeechModel.builder().openAiClient(this.mockClient).build();
+		TextToSpeechPrompt prompt = new TextToSpeechPrompt("Testing streaming output");
+
+		List<TextToSpeechResponse> responses = model.stream(prompt).collectList().block(Duration.ofSeconds(5));
+
+		assertThat(responses).isNotNull();
+		// 20_000 bytes at an 8192-byte chunk size must be split across multiple chunks.
+		assertThat(responses.size()).isGreaterThan(1);
+
+		ByteArrayOutputStream reassembled = new ByteArrayOutputStream();
+		for (TextToSpeechResponse response : responses) {
+			reassembled.writeBytes(response.getResult().getOutput());
+		}
+		assertThat(reassembled.toByteArray()).isEqualTo(audioBytes);
+
+		ArgumentCaptor<SpeechCreateParams> paramsCaptor = ArgumentCaptor.forClass(SpeechCreateParams.class);
+		verify(speechService).create(paramsCaptor.capture());
+		assertThat(paramsCaptor.getValue().streamFormat()).contains(SpeechCreateParams.StreamFormat.AUDIO);
+
+		verify(httpResponse).close();
+	}
+
+	@Test
+	void testStreamUsesCustomScheduler() {
+		byte[] audioBytes = new byte[100];
+		new Random(13).nextBytes(audioBytes);
+
+		AudioService audioService = mock(AudioService.class);
+		SpeechService speechService = mock(SpeechService.class);
+		HttpResponse httpResponse = mock(HttpResponse.class);
+		Headers headers = mock(Headers.class);
+
+		when(this.mockClient.audio()).thenReturn(audioService);
+		when(audioService.speech()).thenReturn(speechService);
+		when(speechService.create(any(SpeechCreateParams.class))).thenReturn(httpResponse);
+		when(httpResponse.body()).thenReturn(new ByteArrayInputStream(audioBytes));
+		when(httpResponse.headers()).thenReturn(headers);
+		when(headers.values(anyString())).thenReturn(List.of());
+
+		Scheduler customScheduler = Schedulers.newSingle("custom-speech-scheduler-test");
+		try {
+			OpenAiAudioSpeechModel model = OpenAiAudioSpeechModel.builder()
+				.openAiClient(this.mockClient)
+				.streamScheduler(customScheduler)
+				.build();
+			TextToSpeechPrompt prompt = new TextToSpeechPrompt("Testing custom scheduler usage");
+
+			AtomicReference<String> threadName = new AtomicReference<>();
+			model.stream(prompt)
+				.doOnNext(response -> threadName.set(Thread.currentThread().getName()))
+				.blockLast(Duration.ofSeconds(5));
+
+			assertThat(threadName.get()).startsWith("custom-speech-scheduler-test");
+		}
+		finally {
+			customScheduler.dispose();
+		}
+	}
+
+	@Test
+	void testStreamPropagatesSocketTimeoutAsError() throws IOException {
+		byte[] firstChunk = new byte[100];
+		new Random(7).nextBytes(firstChunk);
+
+		AudioService audioService = mock(AudioService.class);
+		SpeechService speechService = mock(SpeechService.class);
+		HttpResponse httpResponse = mock(HttpResponse.class);
+		Headers headers = mock(Headers.class);
+		InputStream inputStream = mock(InputStream.class);
+
+		when(this.mockClient.audio()).thenReturn(audioService);
+		when(audioService.speech()).thenReturn(speechService);
+		when(speechService.create(any(SpeechCreateParams.class))).thenReturn(httpResponse);
+		when(httpResponse.body()).thenReturn(inputStream);
+		when(httpResponse.headers()).thenReturn(headers);
+		when(headers.values(anyString())).thenReturn(List.of());
+		// SocketTimeoutException extends InterruptedIOException, so it must not
+		// be mistaken for a deliberate cancellation.
+		when(inputStream.read(any(byte[].class))).thenAnswer(invocation -> {
+			byte[] buffer = invocation.getArgument(0);
+			System.arraycopy(firstChunk, 0, buffer, 0, firstChunk.length);
+			return firstChunk.length;
+		}).thenThrow(new SocketTimeoutException("Read timed out"));
+
+		OpenAiAudioSpeechModel model = OpenAiAudioSpeechModel.builder().openAiClient(this.mockClient).build();
+		TextToSpeechPrompt prompt = new TextToSpeechPrompt("Testing timeout handling");
+
+		assertThatThrownBy(() -> model.stream(prompt).collectList().block(Duration.ofSeconds(5)))
+			.hasCauseInstanceOf(SocketTimeoutException.class);
+
+		verify(httpResponse).close();
+	}
+
+	@Test
+	void testCancellationDuringReadCompletesWithoutError() throws Exception {
+		byte[] firstChunk = new byte[100];
+		new Random(11).nextBytes(firstChunk);
+
+		AudioService audioService = mock(AudioService.class);
+		SpeechService speechService = mock(SpeechService.class);
+		HttpResponse httpResponse = mock(HttpResponse.class);
+		Headers headers = mock(Headers.class);
+		InputStream inputStream = mock(InputStream.class);
+
+		CountDownLatch secondReadStarted = new CountDownLatch(1);
+		CountDownLatch releaseSecondRead = new CountDownLatch(1);
+
+		when(this.mockClient.audio()).thenReturn(audioService);
+		when(audioService.speech()).thenReturn(speechService);
+		when(speechService.create(any(SpeechCreateParams.class))).thenReturn(httpResponse);
+		when(httpResponse.body()).thenReturn(inputStream);
+		when(httpResponse.headers()).thenReturn(headers);
+		when(headers.values(anyString())).thenReturn(List.of());
+		when(inputStream.read(any(byte[].class))).thenAnswer(invocation -> {
+			byte[] buffer = invocation.getArgument(0);
+			System.arraycopy(firstChunk, 0, buffer, 0, firstChunk.length);
+			return firstChunk.length;
+		}).thenAnswer(invocation -> {
+			// Block for real, so this exercises Reactor's actual cancellation
+			// machinery instead of racing real I/O timing like the IT test does.
+			secondReadStarted.countDown();
+			try {
+				releaseSecondRead.await(5, TimeUnit.SECONDS);
+				throw new IllegalStateException("Test did not interrupt the blocked read in time");
+			}
+			catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				throw new InterruptedIOException("Interrupted while reading");
+			}
+		});
+
+		OpenAiAudioSpeechModel model = OpenAiAudioSpeechModel.builder().openAiClient(this.mockClient).build();
+		TextToSpeechPrompt prompt = new TextToSpeechPrompt("Testing cancellation while a read is blocked");
+
+		List<Throwable> droppedErrors = new CopyOnWriteArrayList<>();
+		AtomicBoolean errorReceived = new AtomicBoolean(false);
+		AtomicInteger nextCount = new AtomicInteger(0);
+
+		Hooks.onErrorDropped(droppedErrors::add);
+		try {
+			Disposable subscription = model.stream(prompt)
+				.subscribe(response -> nextCount.incrementAndGet(), error -> errorReceived.set(true));
+
+			assertThat(secondReadStarted.await(5, TimeUnit.SECONDS)).isTrue();
+
+			// dispose() → SubscribeOnSubscriber.cancel() → (a) doOnCancel's callback sets
+			// cancelled=true synchronously, then (b) worker.dispose() interrupts the
+			// boundedElastic thread. That interrupt wakes releaseSecondRead.await(...)
+			// with an InterruptedException, which the mock converts to
+			// InterruptedIOException — mimicking what OkHttp actually
+			// does. emitNextChunk catches that, sees cancelled.get() == true, and calls
+			// sink.complete() instead of sink.error().
+			subscription.dispose();
+
+			// close() runs after emitNextChunk's catch block returns, so waiting
+			// for it also guarantees the assertions below have already settled.
+			verify(httpResponse, timeout(5000)).close();
+
+			assertThat(nextCount.get()).isEqualTo(1);
+			assertThat(errorReceived.get()).isFalse();
+			assertThat(droppedErrors).isEmpty();
+		}
+		finally {
+			Hooks.resetOnErrorDropped();
+		}
+	}
+
+	@Test
+	void testStreamPropagatesOpenAIIoExceptionWhenNotCancelled() {
+		AudioService audioService = mock(AudioService.class);
+		SpeechService speechService = mock(SpeechService.class);
+
+		when(this.mockClient.audio()).thenReturn(audioService);
+		when(audioService.speech()).thenReturn(speechService);
+		when(speechService.create(any(SpeechCreateParams.class)))
+			.thenThrow(new OpenAIIoException("Connection reset", new IOException("Connection reset")));
+
+		OpenAiAudioSpeechModel model = OpenAiAudioSpeechModel.builder().openAiClient(this.mockClient).build();
+		TextToSpeechPrompt prompt = new TextToSpeechPrompt("Testing a genuine connection failure");
+
+		assertThatThrownBy(() -> model.stream(prompt).collectList().block(Duration.ofSeconds(5)))
+			.isInstanceOf(OpenAIIoException.class)
+			.hasMessageContaining("Connection reset");
+	}
+
+	@Test
+	void testCancellationDuringConnectCompletesWithoutError() throws Exception {
+		AudioService audioService = mock(AudioService.class);
+		SpeechService speechService = mock(SpeechService.class);
+
+		CountDownLatch createStarted = new CountDownLatch(1);
+		CountDownLatch releaseCreate = new CountDownLatch(1);
+		AtomicBoolean interruptHandled = new AtomicBoolean(false);
+
+		when(this.mockClient.audio()).thenReturn(audioService);
+		when(audioService.speech()).thenReturn(speechService);
+		when(speechService.create(any(SpeechCreateParams.class))).thenAnswer(invocation -> {
+			// Simulate cancellation racing with the initial HTTP call, before any
+			// response exists.
+			createStarted.countDown();
+			try {
+				releaseCreate.await(5, TimeUnit.SECONDS);
+				throw new IllegalStateException("Test did not interrupt the blocked create() call in time");
+			}
+			catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				OpenAIIoException failure = new OpenAIIoException("Interrupted",
+						new InterruptedIOException("Interrupted while connecting"));
+				interruptHandled.set(true);
+				throw failure;
+			}
+		});
+
+		OpenAiAudioSpeechModel model = OpenAiAudioSpeechModel.builder().openAiClient(this.mockClient).build();
+		TextToSpeechPrompt prompt = new TextToSpeechPrompt("Testing cancellation before any response arrives");
+
+		List<Throwable> droppedErrors = new CopyOnWriteArrayList<>();
+		AtomicBoolean errorReceived = new AtomicBoolean(false);
+		AtomicInteger nextCount = new AtomicInteger(0);
+
+		Hooks.onErrorDropped(droppedErrors::add);
+		try {
+			Disposable subscription = model.stream(prompt)
+				.subscribe(response -> nextCount.incrementAndGet(), error -> errorReceived.set(true));
+
+			assertThat(createStarted.await(5, TimeUnit.SECONDS)).isTrue();
+			subscription.dispose();
+
+			// Unlike testCancellationDuringReadCompletesWithoutError, no
+			// GenerateSubscription exists yet, so Operators.setOnce cancels it on
+			// arrival without ever calling request()/emitNextChunk - there's no
+			// terminal signal to wait on, only the mock's own interrupt handling.
+			Awaitility.await().atMost(Duration.ofSeconds(5)).untilTrue(interruptHandled);
+
+			// The rest is synchronous, in-process work with nothing left to await.
+			assertThat(nextCount.get()).isZero();
+			assertThat(errorReceived.get()).isFalse();
+			assertThat(droppedErrors).isEmpty();
+		}
+		finally {
+			Hooks.resetOnErrorDropped();
+		}
 	}
 
 	@Test
