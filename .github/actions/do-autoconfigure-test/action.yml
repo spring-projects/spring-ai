@@ -151,7 +151,7 @@ runs:
           -Pintegration-tests ${{ inputs.maven-properties }} ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} -Dfailsafe.rerunFailingTestsCount=2 verify
 
     - name: Run Spring AI Autoconfigure Azure OpenAI test
-      if: ${{ inputs.spring-ai-branch != 'main' }}
+      if: ${{ inputs.spring-ai-branch == '1.0.x' || inputs.spring-ai-branch == '1.1.x' }}
       shell: bash
       run: |
         echo 'Running with maven properties:' ${{ inputs.maven-properties }}
@@ -177,7 +177,7 @@ runs:
           -Pintegration-tests ${{ inputs.maven-properties }} ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} -Dfailsafe.rerunFailingTestsCount=2 verify
 
     - name: Run Spring AI Autoconfigure Minimax test
-      if: ${{ inputs.spring-ai-branch != 'main' }}
+      if: ${{ inputs.spring-ai-branch == '1.0.x' || inputs.spring-ai-branch == '1.1.x' }}
       shell: bash
       run: |
         echo 'Running with maven properties:' ${{ inputs.maven-properties }}
