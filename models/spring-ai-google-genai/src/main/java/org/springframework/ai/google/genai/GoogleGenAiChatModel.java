@@ -595,8 +595,7 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		}
 		else {
 			List<Generation> generations = candidate.content()
-				.get()
-				.parts()
+				.flatMap(Content::parts)
 				.orElse(List.of())
 				.stream()
 				.filter(part -> part.toolCall().isEmpty() && part.toolResponse().isEmpty())
