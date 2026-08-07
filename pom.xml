@@ -265,7 +265,7 @@
 		<azure-json.version>1.5.1</azure-json.version>
 		<azure-search.version>11.7.6</azure-search.version>
 		<com.google.cloud.version>26.83.0</com.google.cloud.version>
-		<com.google.genai.version>1.58.0</com.google.genai.version>
+		<com.google.genai.version>1.65.0</com.google.genai.version>
 		<djl.version>0.36.0</djl.version>
 
 		<!-- Vector store clients -->
