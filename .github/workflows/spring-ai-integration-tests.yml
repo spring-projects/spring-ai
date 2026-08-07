@@ -398,12 +398,6 @@ jobs:
           name: build-artifacts
           path: ~/.m2/repository/org/springframework/ai
 
-      - name: Free Disk Space
-        if: ${{ !vars.COMMERCIAL }}
-        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
-        with:
-          large-packages: false
-
       - name: Configure Testcontainers
         run: |
           mkdir -p $HOME
@@ -441,12 +435,6 @@ jobs:
         with:
           name: build-artifacts
           path: ~/.m2/repository/org/springframework/ai
-
-      - name: Free Disk Space
-        if: ${{ !vars.COMMERCIAL }}
-        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
-        with:
-          large-packages: false
 
       - name: Autoconfigure Test
         uses: ./.github/actions/do-autoconfigure-test
@@ -519,12 +507,6 @@ jobs:
           name: build-artifacts
           path: ~/.m2/repository/org/springframework/ai
 
-      - name: Free Disk Space
-        if: ${{ !vars.COMMERCIAL }}
-        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
-        with:
-          large-packages: false
-
       - name: Configure Testcontainers
         run: |
           mkdir -p $HOME
@@ -559,13 +541,6 @@ jobs:
         with:
           name: build-artifacts
           path: ~/.m2/repository/org/springframework/ai
-
-      - name: Free Disk Space
-        if: ${{ !vars.COMMERCIAL }}
-        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
-        with:
-          large-packages: false
-          docker-images: false
 
       - name: Configure Testcontainers
         run: |
