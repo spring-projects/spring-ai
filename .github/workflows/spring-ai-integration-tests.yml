@@ -43,6 +43,8 @@ jobs:
         env:
           COMMERCIAL_ARTIFACTORY_USERNAME: "${{ secrets.COMMERCIAL_ARTIFACTORY_USERNAME }}"
           COMMERCIAL_ARTIFACTORY_PASSWORD: "${{ secrets.COMMERCIAL_ARTIFACTORY_PASSWORD }}"
+          COMMERCIAL_SNAPSHOT_REPO_URL: "${{ vars.COMMERCIAL_SNAPSHOT_REPO_URL }}"
+          COMMERCIAL_RELEASE_REPO_URL: "${{ vars.COMMERCIAL_RELEASE_REPO_URL }}"
         run: |
           ./mvnw ${{ vars.COMMERCIAL && '-s commercial-settings.xml -Pcommercial' || '' }} --batch-mode -ntp --update-snapshots clean install -DskipTests \
             ${{ inputs.springBootVersion != '' && format('-Dspring-boot.version={0}', inputs.springBootVersion) || '' }}
