@@ -67,6 +67,21 @@ public class FilterExpressionTextParserTests {
 	}
 
 	@Test
+	public void testLongValueLiteral() {
+		// id == 9223372036854775807 (Long.MAX_VALUE, exceeds the int range)
+		Expression exp = this.parser.parse("id == " + Long.MAX_VALUE);
+		assertThat(exp).isEqualTo(new Expression(EQ, new Key("id"), new Value(Long.MAX_VALUE)));
+
+		// id == -9223372036854775808 (Long.MIN_VALUE)
+		exp = this.parser.parse("id == " + Long.MIN_VALUE);
+		assertThat(exp).isEqualTo(new Expression(EQ, new Key("id"), new Value(Long.MIN_VALUE)));
+
+		// Values within the int range are still parsed as Integer
+		exp = this.parser.parse("year == 2020");
+		assertThat(((Value) exp.right()).value()).isInstanceOf(Integer.class).isEqualTo(2020);
+	}
+
+	@Test
 	public void tesEqAndGte() {
 		// genre == "drama" AND year >= 2020
 		Expression exp = this.parser.parse("genre == 'drama' && year >= 2020");
