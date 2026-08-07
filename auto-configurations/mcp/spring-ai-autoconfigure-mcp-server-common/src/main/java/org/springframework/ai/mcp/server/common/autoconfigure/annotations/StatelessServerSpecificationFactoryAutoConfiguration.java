@@ -28,10 +28,10 @@ import org.springframework.ai.mcp.annotation.spring.AsyncMcpAnnotationProviders;
 import org.springframework.ai.mcp.annotation.spring.SyncMcpAnnotationProviders;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerStatelessAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerStdioDisabledCondition;
-import org.springframework.ai.mcp.server.common.autoconfigure.StatelessToolCallbackConverterAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerAnnotationScannerAutoConfiguration.ServerMcpAnnotatedBeans;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
@@ -41,11 +41,11 @@ import org.springframework.context.annotation.Configuration;
  * @author Christian Tzolov
  */
 @AutoConfiguration(after = McpServerAnnotationScannerAutoConfiguration.class)
+@ConditionalOnClass(McpTool.class)
 @ConditionalOnProperty(prefix = McpServerAnnotationScannerProperties.CONFIG_PREFIX, name = "enabled",
 		havingValue = "true", matchIfMissing = true)
 @Conditional({ McpServerStdioDisabledCondition.class,
-		McpServerStatelessAutoConfiguration.EnabledStatelessServerCondition.class,
-		StatelessToolCallbackConverterAutoConfiguration.ToolCallbackConverterCondition.class })
+		McpServerStatelessAutoConfiguration.EnabledStatelessServerCondition.class })
 public class StatelessServerSpecificationFactoryAutoConfiguration {
 
 	@Configuration(proxyBeanMethods = false)
