@@ -145,7 +145,8 @@ class DefaultChatModelObservationConventionTests {
 		assertThat(this.observationConvention.getHighCardinalityKeyValues(observationContext)
 			.stream()
 			.map(KeyValue::getKey)
-			.toList()).doesNotContain(HighCardinalityKeyNames.REQUEST_FREQUENCY_PENALTY.asString(),
+			.toList()).doesNotContain(HighCardinalityKeyNames.CONVERSATION_ID.asString(),
+					HighCardinalityKeyNames.REQUEST_FREQUENCY_PENALTY.asString(),
 					HighCardinalityKeyNames.REQUEST_MAX_TOKENS.asString(),
 					HighCardinalityKeyNames.REQUEST_PRESENCE_PENALTY.asString(),
 					HighCardinalityKeyNames.REQUEST_STOP_SEQUENCES.asString(),
@@ -189,6 +190,18 @@ class DefaultChatModelObservationConventionTests {
 			.build();
 		assertThat(this.observationConvention.getHighCardinalityKeyValues(observationContext))
 			.contains(KeyValue.of(HighCardinalityKeyNames.REQUEST_STREAM.asString(), "true"));
+	}
+
+	@Test
+	void shouldHaveConversationIdWhenDefined() {
+		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
+			.prompt(generatePrompt(ChatOptions.builder().model("mistral").build()))
+			.provider("superprovider")
+			.conversationId("conversation-42")
+			.build();
+
+		assertThat(this.observationConvention.getHighCardinalityKeyValues(observationContext))
+			.contains(KeyValue.of(HighCardinalityKeyNames.CONVERSATION_ID.asString(), "conversation-42"));
 	}
 
 	@Test
