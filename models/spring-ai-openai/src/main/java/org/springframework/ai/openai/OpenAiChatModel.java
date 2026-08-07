@@ -979,7 +979,12 @@ public final class OpenAiChatModel implements ChatModel {
 			@Nullable OpenAiChatOptions requestOptions) {
 		return toolDefinitions.stream().map(toolDefinition -> {
 			FunctionParameters.Builder parametersBuilder = FunctionParameters.builder();
-			Boolean strictMode = true;
+			// Defaults to false: OpenAI's strict mode requires every schema property to
+			// appear in "required" (optionality is expressed via nullable types, not
+			// omission), which JsonSchemaGenerator does not produce by default. When a
+			// caller opts in via OpenAiChatOptions#strict, applyStrictModeRequirements
+			// below rewrites the schema to satisfy that contract.
+			Boolean strictMode = false;
 			if (requestOptions != null && requestOptions.getStrict() != null) {
 				strictMode = requestOptions.getStrict();
 			}
@@ -991,6 +996,10 @@ public final class OpenAiChatModel implements ChatModel {
 				try {
 					@SuppressWarnings("unchecked")
 					Map<String, Object> schemaMap = objectMapper.readValue(toolDefinition.inputSchema(), Map.class);
+
+					if (Boolean.TRUE.equals(strictMode)) {
+						applyStrictModeRequirements(schemaMap);
+					}
 
 					// Add each property from the schema to the parameters
 					schemaMap
@@ -1010,6 +1019,101 @@ public final class OpenAiChatModel implements ChatModel {
 			return ChatCompletionTool
 				.ofFunction(ChatCompletionFunctionTool.builder().function(functionDefinition).build());
 		}).toList();
+	}
+
+	/**
+	 * A JSON Schema fragment representing exactly the {@code null} type, used as the
+	 * extra {@code anyOf} branch when widening a {@code $ref}/{@code anyOf}-based
+	 * property to accept {@code null}.
+	 */
+	private static final Map<String, Object> NULL_TYPE_SCHEMA = Map.of("type", "null");
+
+	/**
+	 * Rewrites an object schema in place to satisfy OpenAI's strict function-calling
+	 * mode: every property must be listed in "required", with optionality expressed via a
+	 * nullable type rather than omission from "required". {@link JsonSchemaGenerator}
+	 * produces conventional JSON Schema instead - it omits
+	 * {@code @ToolParam(required = false)} properties from "required" - so this widens
+	 * the type of each such property to also accept {@code null} and backfills "required"
+	 * with every property key. Recurses into nested object/array-item schemas and
+	 * {@code $defs} definitions so their own optional properties are fixed up too.
+	 */
+	@SuppressWarnings("unchecked")
+	private static void applyStrictModeRequirements(Map<String, Object> schema) {
+		if (schema.get("$defs") instanceof Map<?, ?> defs) {
+			for (Object definition : defs.values()) {
+				if (definition instanceof Map<?, ?> definitionSchema) {
+					applyStrictModeRequirements((Map<String, Object>) definitionSchema);
+				}
+			}
+		}
+
+		if (!(schema.get("properties") instanceof Map<?, ?> properties) || properties.isEmpty()) {
+			return;
+		}
+
+		List<?> alreadyRequired = schema.get("required") instanceof List<?> required ? required : List.of();
+
+		for (Object propertySchemaValue : properties.values()) {
+			if (!(propertySchemaValue instanceof Map<?, ?> propertySchema)) {
+				continue;
+			}
+			applyStrictModeRequirements((Map<String, Object>) propertySchema);
+			if (propertySchema.get("items") instanceof Map<?, ?> itemsSchema) {
+				applyStrictModeRequirements((Map<String, Object>) itemsSchema);
+			}
+		}
+
+		for (Map.Entry<?, ?> property : properties.entrySet()) {
+			if (alreadyRequired.contains(property.getKey())
+					|| !(property.getValue() instanceof Map<?, ?> propertySchema)) {
+				continue;
+			}
+			widenToNullable((Map<String, Object>) propertySchema);
+		}
+
+		schema.put("required", new ArrayList<>(properties.keySet()));
+	}
+
+	/**
+	 * Widens a property schema's "type" to also accept {@code null}. Properties defined
+	 * purely via {@code $ref} or {@code anyOf} (no "type" key of their own - typically a
+	 * complex object parameter) are instead wrapped in an {@code anyOf} alongside a null
+	 * branch, since there is no "type" value to widen directly.
+	 */
+	private static void widenToNullable(Map<String, Object> propertySchema) {
+		Object type = propertySchema.get("type");
+		if (type instanceof String typeName) {
+			if (!"null".equals(typeName)) {
+				propertySchema.put("type", new ArrayList<>(List.of(typeName, "null")));
+			}
+			return;
+		}
+		if (type instanceof List<?> typeList) {
+			if (!typeList.contains("null")) {
+				List<Object> widened = new ArrayList<>(typeList);
+				widened.add("null");
+				propertySchema.put("type", widened);
+			}
+			return;
+		}
+		if (propertySchema.get("anyOf") instanceof List<?> anyOf) {
+			if (!anyOf.contains(NULL_TYPE_SCHEMA)) {
+				List<Object> widened = new ArrayList<>(anyOf);
+				widened.add(NULL_TYPE_SCHEMA);
+				propertySchema.put("anyOf", widened);
+			}
+			return;
+		}
+		if (propertySchema.containsKey("$ref")) {
+			Map<String, Object> refBranch = new LinkedHashMap<>(propertySchema);
+			Object description = refBranch.remove("description");
+			propertySchema.clear();
+			if (description != null) {
+				propertySchema.put("description", description);
+			}
+			propertySchema.put("anyOf", new ArrayList<>(List.of(refBranch, NULL_TYPE_SCHEMA)));
+		}
 	}
 
 	private String getReasoningContent(ChatCompletion.Choice choice) {

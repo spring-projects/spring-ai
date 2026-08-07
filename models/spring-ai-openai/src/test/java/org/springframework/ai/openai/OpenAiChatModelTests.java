@@ -1208,7 +1208,7 @@ class OpenAiChatModelTests {
 	}
 
 	@Test
-	void toolStrictIsEmittedAtFunctionLevel() {
+	void toolStrictDefaultsToFalseWhenUnset() {
 		ToolCallingManager mockToolCallingManager = mock(ToolCallingManager.class);
 
 		ToolDefinition toolDefinition = ToolDefinition.builder()
@@ -1220,7 +1220,10 @@ class OpenAiChatModelTests {
 		when(mockToolCallingManager.resolveToolDefinitions(any())).thenReturn(List.of(toolDefinition));
 
 		// Model options with model set, relying on the fallback default logic of
-		// strict(true)
+		// strict(false) - JsonSchemaGenerator omits optional properties from
+		// "required" instead of the nullable-type pattern OpenAI's strict mode expects,
+		// so defaulting to strict(true) would reject any tool with an optional
+		// parameter.
 		OpenAiChatOptions options = OpenAiChatOptions.builder().model("gpt-4.1").build();
 		OpenAiChatModel chatModel = OpenAiChatModel.builder()
 			.openAiClient(this.openAiClient)
@@ -1239,10 +1242,88 @@ class OpenAiChatModelTests {
 		ChatCompletionFunctionTool functionTool = tools.get(0).function().orElseThrow();
 		FunctionDefinition functionDef = functionTool.function();
 
-		assertThat(functionDef.strict()).contains(true);
+		assertThat(functionDef.strict()).contains(false);
 
 		FunctionParameters parameters = functionDef.parameters().orElseThrow();
 		assertThat(parameters._additionalProperties()).doesNotContainKey("strict");
+	}
+
+	@Test
+	void toolStrictTrueOverrideAtRequestLevel() {
+		ToolCallingManager mockToolCallingManager = mock(ToolCallingManager.class);
+
+		ToolDefinition toolDefinition = ToolDefinition.builder()
+			.name("get_weather")
+			.description("Get weather")
+			.inputSchema("{\"type\":\"object\",\"properties\":{\"location\":{\"type\":\"string\"}}}")
+			.build();
+
+		when(mockToolCallingManager.resolveToolDefinitions(any())).thenReturn(List.of(toolDefinition));
+
+		// Model configured with strict(false) by default (implicitly, nothing set)
+		OpenAiChatOptions modelOptions = OpenAiChatOptions.builder().model("gpt-4.1").build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(modelOptions)
+			.toolCallingManager(mockToolCallingManager)
+			.build();
+
+		// Prompt requests strict(true) override
+		OpenAiChatOptions requestOptions = OpenAiChatOptions.builder().strict(true).build();
+		ChatCompletionCreateParams request = chatModel.createRequest(new Prompt("test", requestOptions), false);
+
+		var tools = request.tools().orElseThrow();
+		assertThat(tools).hasSize(1);
+
+		ChatCompletionFunctionTool functionTool = tools.get(0).function().orElseThrow();
+		FunctionDefinition functionDef = functionTool.function();
+
+		// Verify that prompt-level option overrides the false default
+		assertThat(functionDef.strict()).contains(true);
+	}
+
+	@Test
+	void toolStrictTrueWidensOptionalPropertiesToNullableAndBackfillsRequired() {
+		ToolCallingManager mockToolCallingManager = mock(ToolCallingManager.class);
+
+		// "unit" is optional (absent from "required"), matching what
+		// JsonSchemaGenerator produces for a @ToolParam(required = false) parameter.
+		ToolDefinition toolDefinition = ToolDefinition.builder()
+			.name("get_weather")
+			.description("Get weather")
+			.inputSchema(
+					"{\"type\":\"object\",\"properties\":{\"location\":{\"type\":\"string\"},\"unit\":{\"type\":\"string\"}},\"required\":[\"location\"]}")
+			.build();
+
+		when(mockToolCallingManager.resolveToolDefinitions(any())).thenReturn(List.of(toolDefinition));
+
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("gpt-4.1").strict(true).build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.toolCallingManager(mockToolCallingManager)
+			.build();
+
+		ChatCompletionCreateParams request = chatModel.createRequest(new Prompt("test", options), false);
+
+		FunctionDefinition functionDef = request.tools().orElseThrow().get(0).function().orElseThrow().function();
+		assertThat(functionDef.strict()).contains(true);
+
+		Map<String, JsonValue> additionalProperties = functionDef.parameters().orElseThrow()._additionalProperties();
+
+		@SuppressWarnings("unchecked")
+		Map<String, Object> properties = additionalProperties.get("properties").convert(Map.class);
+		@SuppressWarnings("unchecked")
+		Map<String, Object> unitSchema = (Map<String, Object>) properties.get("unit");
+		// OpenAI strict mode requires every property in "required"; optionality is
+		// expressed by widening the type to also accept null instead.
+		assertThat(unitSchema.get("type")).isEqualTo(List.of("string", "null"));
+
+		@SuppressWarnings("unchecked")
+		List<String> required = additionalProperties.get("required").convert(List.class);
+		assertThat(required).containsExactlyInAnyOrder("location", "unit");
 	}
 
 	@Test

@@ -71,6 +71,7 @@ import org.springframework.ai.openai.OpenAiTestConfiguration;
 import org.springframework.ai.support.ToolCallbacks;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.annotation.Tool;
+import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -738,6 +739,32 @@ public class OpenAiChatModelIT {
 			.hasMessageContaining("Unknown parameter");
 	}
 
+	@Test
+	void toolWithOptionalParameterSucceedsUnderStrictMode() {
+		// OpenAiChatOptions#strict(true) requires every schema property to be listed
+		// in "required", with optionality expressed via a nullable type instead of
+		// omission - see OpenAiChatModel#applyStrictModeRequirements(). GreetingTools
+		// has one optional parameter ("title"), which previously made OpenAI reject
+		// the tool outright before the model ever got a chance to call it.
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
+
+		OpenAiChatOptions options = OpenAiChatOptions.builder()
+			.toolCallbacks(ToolCallbacks.from(new GreetingTools()))
+			.strict(true)
+			.build();
+
+		Prompt prompt = new Prompt(List.of(new UserMessage("Greet Alice")), options);
+		ChatResponse response = this.chatModel.call(prompt);
+
+		while (response.hasToolCalls()) {
+			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, response);
+			prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
+			response = this.chatModel.call(prompt);
+		}
+
+		assertThat(response.getResult().getOutput().getText()).contains("Alice");
+	}
+
 	record ActorsFilmsRecord(String actor, List<String> movies) {
 
 	}
@@ -747,6 +774,16 @@ public class OpenAiChatModelIT {
 		@Tool(description = "Multiply the two numbers")
 		double multiply(double a, double b) {
 			return a * b;
+		}
+
+	}
+
+	static class GreetingTools {
+
+		@Tool(description = "Builds a greeting for a person")
+		String greet(String name,
+				@ToolParam(required = false, description = "Optional title, e.g. Dr., Mr.") String title) {
+			return (title != null ? title + " " : "") + name;
 		}
 
 	}
