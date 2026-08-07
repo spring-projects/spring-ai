@@ -255,7 +255,7 @@
 		<mcp.sdk.version>2.0.0</mcp.sdk.version>
 
 		<!-- AI model SDKs -->
-		<anthropic-sdk.version>2.48.0</anthropic-sdk.version>
+		<anthropic-sdk.version>2.52.0</anthropic-sdk.version>
 		<openai-sdk.version>4.49.0</openai-sdk.version>
 		<!-- NOTE: keep awssdk and bedrockruntime versions aligned -->
 		<awssdk.version>2.51.2</awssdk.version>
