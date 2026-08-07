@@ -322,7 +322,10 @@ public class CreateGeminiRequestTests {
 
 		// Override default thinkingLevel with prompt-specific value
 		GeminiRequest request = client.createGeminiRequest(new Prompt("Test message content",
-				GoogleGenAiChatOptions.builder().thinkingLevel(GoogleGenAiThinkingLevel.HIGH).build()));
+				GoogleGenAiChatOptions.builder()
+					.model("DEFAULT_MODEL")
+					.thinkingLevel(GoogleGenAiThinkingLevel.HIGH)
+					.build()));
 
 		assertThat(request.config().thinkingConfig()).isPresent();
 		assertThat(request.config().thinkingConfig().get().thinkingLevel()).isPresent();
@@ -422,7 +425,7 @@ public class CreateGeminiRequestTests {
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("MINIMAL")
 			.hasMessageContaining("not supported")
-			.hasMessageContaining("Gemini 3 Pro");
+			.hasMessageContaining("gemini-3.1-pro-preview");
 	}
 
 	@Test
@@ -561,6 +564,66 @@ public class CreateGeminiRequestTests {
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("MINIMAL")
 			.hasMessageContaining("not supported");
+	}
+
+	@Test
+	public void createRequestWithThinkingLevelOnGemini25FlashThrows() {
+		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
+			.model("gemini-2.5-flash")
+			.thinkingLevel(GoogleGenAiThinkingLevel.HIGH)
+			.build();
+		var client = GoogleGenAiChatModel.builder().genAiClient(this.genAiClient).build();
+
+		assertThatThrownBy(() -> client.createGeminiRequest(new Prompt("Test message content", options)))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("HIGH")
+			.hasMessageContaining("not supported")
+			.hasMessageContaining("gemini-2.5-flash");
+	}
+
+	@Test
+	public void createRequestWithThinkingLevelOnGemini25FlashLiteThrows() {
+		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
+			.model("gemini-2.5-flash-lite")
+			.thinkingLevel(GoogleGenAiThinkingLevel.LOW)
+			.build();
+		var client = GoogleGenAiChatModel.builder().genAiClient(this.genAiClient).build();
+
+		assertThatThrownBy(() -> client.createGeminiRequest(new Prompt("Test message content", options)))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("LOW")
+			.hasMessageContaining("not supported")
+			.hasMessageContaining("gemini-2.5-flash-lite");
+	}
+
+	@Test
+	public void createRequestWithThinkingLevelUnspecifiedOnGemini25FlashDoesNotThrow() {
+		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
+			.model("gemini-2.5-flash")
+			.thinkingLevel(GoogleGenAiThinkingLevel.THINKING_LEVEL_UNSPECIFIED)
+			.build();
+		var client = GoogleGenAiChatModel.builder().genAiClient(this.genAiClient).build();
+
+		GeminiRequest request = client.createGeminiRequest(new Prompt("Test message content", options));
+
+		assertThat(request.config().thinkingConfig()).isPresent();
+	}
+
+	@Test
+	public void createRequestWithThinkingLevelOnGemini25ProDoesNotThrow() {
+		// gemini-2.5-pro's thinkingLevel support on generateContent could not be
+		// confirmed against the live API, so it is intentionally left unvalidated.
+		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
+			.model("gemini-2.5-pro")
+			.thinkingLevel(GoogleGenAiThinkingLevel.MINIMAL)
+			.build();
+		var client = GoogleGenAiChatModel.builder().genAiClient(this.genAiClient).build();
+
+		GeminiRequest request = client.createGeminiRequest(new Prompt("Test message content", options));
+
+		assertThat(request.config().thinkingConfig()).isPresent();
+		assertThat(request.config().thinkingConfig().get().thinkingLevel()).isPresent();
+		assertThat(request.config().thinkingConfig().get().thinkingLevel().get().toString()).isEqualTo("MINIMAL");
 	}
 
 	@Test
