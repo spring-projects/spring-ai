@@ -39,6 +39,7 @@ import com.tangosol.util.Filter;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
@@ -75,44 +76,6 @@ import org.springframework.util.StringUtils;
  */
 public class CoherenceVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
-	public enum IndexType {
-
-		/**
-		 * No index, use brute force exact calculation.
-		 */
-		NONE,
-
-		/**
-		 * Use Binary Quantization-based vector index
-		 */
-		BINARY,
-
-		/**
-		 * Use HNSW-based vector index
-		 */
-		HNSW
-
-	}
-
-	public enum DistanceType {
-
-		/**
-		 * Default dist. It calculates the cosine distance between two vectors.
-		 */
-		COSINE,
-
-		/**
-		 * Inner product.
-		 */
-		IP,
-
-		/**
-		 * Euclidean distance between two vectors (squared).
-		 */
-		L2
-
-	}
-
 	public static final String DEFAULT_MAP_NAME = "spring-ai-documents";
 
 	public static final DistanceType DEFAULT_DISTANCE_TYPE = DistanceType.COSINE;
@@ -122,9 +85,6 @@ public class CoherenceVectorStore extends AbstractObservationVectorStore impleme
 	private final int dimensions;
 
 	private final Session session;
-
-	@SuppressWarnings("NullAway.Init")
-	private NamedMap<DocumentChunk.Id, DocumentChunk> documentChunks;
 
 	/**
 	 * Map name where vectors will be stored.
@@ -139,6 +99,9 @@ public class CoherenceVectorStore extends AbstractObservationVectorStore impleme
 	private final boolean forcedNormalization;
 
 	private final IndexType indexType;
+
+	@SuppressWarnings("NullAway.Init")
+	private NamedMap<DocumentChunk.Id, DocumentChunk> documentChunks;
 
 	/**
 	 * Protected constructor that accepts a builder instance. This is the preferred way to
@@ -167,12 +130,20 @@ public class CoherenceVectorStore extends AbstractObservationVectorStore impleme
 	}
 
 	@Override
-	public void doAdd(final List<Document> documents) {
+	public void doAdd(List<Document> documents) {
+		Assert.notNull(documents, "The document list should not be null.");
+		this.doAdd(documents, EmbeddingOptions.builder().build());
+	}
+
+	@Override
+	public void doAdd(List<Document> documents, EmbeddingOptions options) {
+		Assert.notNull(documents, "The document list should not be null.");
+		Assert.notNull(options, "The embedding Options should not be null.");
 		Map<DocumentChunk.Id, DocumentChunk> chunks = new HashMap<>((int) Math.ceil(documents.size() / 0.75f));
 		for (Document doc : documents) {
 			var id = toChunkId(doc.getId());
 			var chunk = new DocumentChunk(doc.getText(), doc.getMetadata(),
-					toFloat32Vector(this.embeddingModel.embed(doc)));
+					toFloat32Vector(this.embeddingModel.embed(doc, options)));
 			chunks.put(id, chunk);
 		}
 		this.documentChunks.putAll(chunks);
@@ -241,8 +212,6 @@ public class CoherenceVectorStore extends AbstractObservationVectorStore impleme
 		}
 	}
 
-	// ---- helpers ----
-
 	private DocumentChunk.Id toChunkId(String id) {
 		return new DocumentChunk.Id(id, 0);
 	}
@@ -258,6 +227,8 @@ public class CoherenceVectorStore extends AbstractObservationVectorStore impleme
 	private Float32Vector toFloat32Vector(final float[] floats) {
 		return new Float32Vector(this.forcedNormalization ? Vectors.normalize(floats) : floats);
 	}
+
+	// ---- helpers ----
 
 	String getMapName() {
 		return this.mapName;
@@ -276,6 +247,44 @@ public class CoherenceVectorStore extends AbstractObservationVectorStore impleme
 		@SuppressWarnings("unchecked")
 		T client = (T) this.session;
 		return Optional.of(client);
+	}
+
+	public enum IndexType {
+
+		/**
+		 * No index, use brute force exact calculation.
+		 */
+		NONE,
+
+		/**
+		 * Use Binary Quantization-based vector index
+		 */
+		BINARY,
+
+		/**
+		 * Use HNSW-based vector index
+		 */
+		HNSW
+
+	}
+
+	public enum DistanceType {
+
+		/**
+		 * Default dist. It calculates the cosine distance between two vectors.
+		 */
+		COSINE,
+
+		/**
+		 * Inner product.
+		 */
+		IP,
+
+		/**
+		 * Euclidean distance between two vectors (squared).
+		 */
+		L2
+
 	}
 
 	/**

@@ -88,15 +88,15 @@ import org.springframework.util.Assert;
  * The CassandraVectorStore is for managing and querying vector data in an Apache
  * Cassandra db. It offers functionalities like adding, deleting, and performing
  * similarity searches on documents.
- *
+ * <p>
  * The store utilizes CQL to index and search vector data. It allows for custom metadata
  * fields in the documents to be stored alongside the vector and content data.
- *
+ * <p>
  * This class requires a CassandraVectorStore#CassandraBuilder configuration object for
  * initialization, which includes settings like connection details, index name, column
  * names, etc. It also requires an EmbeddingModel to convert documents into embeddings
  * before storing them.
- *
+ * <p>
  * A schema matching the configuration is automatically created if it doesn't exist.
  * Missing columns and indexes in existing tables will also be automatically created.
  * Disable this with the CassandraBuilder#initializeSchema(boolean) method().
@@ -147,15 +147,15 @@ import org.springframework.util.Assert;
  *     .batchingStrategy(new TokenCountBatchingStrategy())
  *     .build();
  * }</pre>
- *
+ * <p>
  * This class is designed to work with brand new tables that it creates for you, or on top
  * of existing Cassandra tables. The latter is appropriate when wanting to keep data in
  * place, creating embeddings next to it, and performing vector similarity searches
  * in-situ.
- *
+ * <p>
  * Instances of this class are not dynamic against server-side schema changes. If you
  * change the schema server-side you need a new CassandraVectorStore instance.
- *
+ * <p>
  * When adding documents with the method {@link #add(List<Document>)} it first calls
  * embeddingModel to create the embeddings. This is slow. Configure
  * {@link Builder#fixedThreadPoolExecutorSize(int)} accordingly to improve performance so
@@ -265,12 +265,27 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 		return embeddingFloat;
 	}
 
+	@VisibleForTesting
+	static void dropKeyspace(Builder builder) {
+		Preconditions.checkState(builder.keyspace.startsWith("test_"), "Only test keyspaces can be dropped");
+		Assert.state(builder.session != null, "builder.session should not be null");
+		builder.session.execute(SchemaBuilder.dropKeyspace(builder.keyspace).ifExists().build());
+	}
+
 	@Override
 	public void doAdd(List<Document> documents) {
+		Assert.notNull(documents, "The document list should not be null.");
+		this.doAdd(documents, EmbeddingOptions.builder().build());
+	}
+
+	@Override
+	public void doAdd(List<Document> documents, EmbeddingOptions options) {
+		Assert.notNull(documents, "The document list should not be null.");
+		Assert.notNull(options, "The embedding Options should not be null.");
+
 		var futures = new CompletableFuture[documents.size()];
 
-		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
-				this.batchingStrategy);
+		List<float[]> embeddings = this.embeddingModel.embed(documents, options, this.batchingStrategy);
 
 		for (int i = 0; i < documents.size(); i++) {
 			Document d = documents.get(i);
@@ -521,13 +536,6 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 				: this.schema.clusteringKeys().get(index - this.schema.partitionKeys().size());
 	}
 
-	@VisibleForTesting
-	static void dropKeyspace(Builder builder) {
-		Preconditions.checkState(builder.keyspace.startsWith("test_"), "Only test keyspaces can be dropped");
-		Assert.state(builder.session != null, "builder.session should not be null");
-		builder.session.execute(SchemaBuilder.dropKeyspace(builder.keyspace).ifExists().build());
-	}
-
 	void ensureSchemaExists(int vectorDimension) {
 		if (this.initializeSchema) {
 			SchemaUtil.ensureKeyspaceExists(this.session, this.schema.keyspace);
@@ -718,7 +726,7 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 
 	/**
 	 * Given a string document id, return the value for each primary key column.
-	 *
+	 * <p>
 	 * It is a requirement that an empty {@code List<Object>} returns an example formatted
 	 * id
 	 */
@@ -726,7 +734,9 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 
 	}
 
-	/** Given a list of primary key column values, return the document id. */
+	/**
+	 * Given a list of primary key column values, return the document id.
+	 */
 	public interface PrimaryKeyTranslator extends Function<List<Object>, String> {
 
 	}
@@ -759,19 +769,21 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 
 	/**
 	 * Builder for the Cassandra vector store.
-	 *
+	 * <p>
 	 * All metadata columns configured to the store will be fetched and added to all
 	 * queried documents.
-	 *
+	 * <p>
 	 * To filter expression search against a metadata column configure it with
 	 * SchemaColumnTags.INDEXED
-	 *
+	 * <p>
 	 * The Cassandra Java Driver is configured via the application.conf resource found in
 	 * the classpath. See
 	 * https://github.com/apache/cassandra-java-driver/tree/4.x/manual/core/configuration
 	 *
 	 */
 	public static class Builder extends AbstractVectorStoreBuilder<Builder> {
+
+		private final Set<SchemaColumn> metadataColumns = new HashSet<>();
 
 		private @Nullable CqlSession session;
 
@@ -792,8 +804,6 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 		private String contentColumnName = DEFAULT_CONTENT_COLUMN_NAME;
 
 		private String embeddingColumnName = DEFAULT_EMBEDDING_COLUMN_NAME;
-
-		private final Set<SchemaColumn> metadataColumns = new HashSet<>();
 
 		private boolean initializeSchema = true;
 
