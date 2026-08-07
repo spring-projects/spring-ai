@@ -54,6 +54,53 @@ The new module provides a smooth transition from the deprecated module:
 
 NOTE: Both the deprecated module and the legacy configuration prefix will be removed in a future release.
 
+=== Mistral AI Moderation Categories Restructured
+
+The Mistral AI moderation model has migrated from `mistral-moderation-2411` (retired June 30, 2026) to `mistral-moderation-2603`.
+As part of this migration, the single `dangerousAndCriminalContent` category has been split into two distinct categories: `dangerous` and `criminal`.
+A new `jailbreaking` category has also been added.
+
+==== Impact
+
+The following methods on `Categories` and `CategoryScores` are deprecated and will be removed in a future release:
+
+* `Categories.isDangerousAndCriminalContent()`
+* `Categories.Builder.dangerousAndCriminalContent(boolean)`
+* `CategoryScores.getDangerousAndCriminalContent()`
+* `CategoryScores.Builder.dangerousAndCriminalContent(double)`
+
+==== Migration
+
+Replace usages of the deprecated `dangerousAndCriminalContent` methods with the new `criminal` and `dangerous` equivalents:
+
+[source,java]
+----
+// Before
+boolean flagged = categories.isDangerousAndCriminalContent();
+double score = categoryScores.getDangerousAndCriminalContent();
+
+Categories categories = Categories.builder()
+    .dangerousAndCriminalContent(true)
+    .build();
+
+// After
+boolean flagged = categories.isCriminal() || categories.isDangerous();
+double score = categoryScores.getCriminal() + categoryScores.getDangerous();
+
+Categories categories = Categories.builder()
+    .criminal(true)
+    .dangerous(true)
+    .build();
+----
+
+You can also check the new `jailbreaking` category, which has no prior equivalent:
+
+[source,java]
+----
+boolean jailbreakAttempt = categories.isJailbreaking();
+double jailbreakScore = categoryScores.getJailbreaking();
+----
+
 === MCP Tool Exception Handling
 
 ==== Changed: `@McpTool` Exception Handling Now Mirrors `@Tool`

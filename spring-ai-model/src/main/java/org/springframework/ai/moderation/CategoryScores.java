@@ -150,14 +150,23 @@ public final class CategoryScores {
 		return this.dangerousAndCriminalContent;
 	}
 
+	/**
+	 * @since 2.0.1
+	 */
 	public double getCriminal() {
 		return this.criminal;
 	}
 
+	/**
+	 * @since 2.0.1
+	 */
 	public double getDangerous() {
 		return this.dangerous;
 	}
 
+	/**
+	 * @since 2.0.1
+	 */
 	public double getJailbreaking() {
 		return this.jailbreaking;
 	}
@@ -328,16 +337,25 @@ public final class CategoryScores {
 			return this;
 		}
 
+		/**
+		 * @since 2.0.1
+		 */
 		public Builder criminal(double criminal) {
 			this.criminal = criminal;
 			return this;
 		}
 
+		/**
+		 * @since 2.0.1
+		 */
 		public Builder dangerous(double dangerous) {
 			this.dangerous = dangerous;
 			return this;
 		}
 
+		/**
+		 * @since 2.0.1
+		 */
 		public Builder jailbreaking(double jailbreaking) {
 			this.jailbreaking = jailbreaking;
 			return this;
