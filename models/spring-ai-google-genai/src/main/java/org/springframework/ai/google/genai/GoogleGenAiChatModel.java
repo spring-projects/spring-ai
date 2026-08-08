@@ -80,6 +80,7 @@ import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.content.ContentPart;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.google.genai.cache.GoogleGenAiCachedContentService;
 import org.springframework.ai.google.genai.common.GoogleGenAiConstants;
@@ -251,6 +252,25 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			return parts;
 		}
 		else if (message instanceof UserMessage userMessage) {
+			// Ordered content maps one-to-one onto Gemini's part list, so a prompt that
+			// interleaves text and media survives verbatim. Never empty for a message
+			// carrying any text or media, so the branch below is only reached for a
+			// message
+			// with neither.
+			List<ContentPart> contentParts = userMessage.getContentParts();
+			if (!contentParts.isEmpty()) {
+				List<Part> parts = new ArrayList<>(contentParts.size());
+				for (ContentPart contentPart : contentParts) {
+					if (contentPart instanceof ContentPart.TextPart textPart) {
+						parts.add(Part.fromText(textPart.text()));
+					}
+					else if (contentPart instanceof ContentPart.MediaPart mediaPart) {
+						parts.add(mediaToPart(mediaPart.media()));
+					}
+				}
+				return parts;
+			}
+
 			List<Part> parts = new ArrayList<>();
 			if (userMessage.getText() != null) {
 				parts.add(Part.fromText(userMessage.getText()));
@@ -323,31 +343,25 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		}
 	}
 
-	private static List<Part> mediaToParts(Collection<Media> media) {
-		List<Part> parts = new ArrayList<>();
+	private static Part mediaToPart(Media media) {
+		Object data = media.getData();
+		String mimeType = media.getMimeType().toString();
 
-		List<Part> mediaParts = media.stream().map(mediaData -> {
-			Object data = mediaData.getData();
-			String mimeType = mediaData.getMimeType().toString();
-
-			if (data instanceof byte[]) {
-				return Part.fromBytes((byte[]) data, mimeType);
-			}
-			else if (data instanceof URI || data instanceof String) {
-				// Handle URI or String URLs
-				String uri = data.toString();
-				return Part.fromUri(uri, mimeType);
-			}
-			else {
-				throw new IllegalArgumentException("Unsupported media data type: " + data.getClass());
-			}
-		}).toList();
-
-		if (!CollectionUtils.isEmpty(mediaParts)) {
-			parts.addAll(mediaParts);
+		if (data instanceof byte[]) {
+			return Part.fromBytes((byte[]) data, mimeType);
 		}
+		else if (data instanceof URI || data instanceof String) {
+			// Handle URI or String URLs
+			String uri = data.toString();
+			return Part.fromUri(uri, mimeType);
+		}
+		else {
+			throw new IllegalArgumentException("Unsupported media data type: " + data.getClass());
+		}
+	}
 
-		return parts;
+	private static List<Part> mediaToParts(Collection<Media> media) {
+		return media.stream().map(GoogleGenAiChatModel::mediaToPart).toList();
 	}
 
 	// Helper methods for JSON/Map conversion

@@ -105,6 +105,7 @@ import org.springframework.ai.chat.observation.ChatModelObservationDocumentation
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.content.ContentPart;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.observation.conventions.AiProvider;
@@ -727,7 +728,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 					userCacheControl = cacheResolver.resolve(MessageType.USER, combinedText);
 				}
 
-				if (hasCitationDocs || hasMedia || userCacheControl != null) {
+				if (hasCitationDocs || hasMedia || userCacheControl != null || userMessage.hasInterleavedContent()) {
 					List<ContentBlockParam> contentBlocks = new ArrayList<>();
 
 					// Prepend citation document blocks to the first user message
@@ -737,19 +738,29 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 						}
 					}
 
-					String text = userMessage.getText();
-					if (text != null && !text.isEmpty()) {
-						TextBlockParam.Builder textBlockBuilder = TextBlockParam.builder().text(text);
-						if (userCacheControl != null) {
-							textBlockBuilder.cacheControl(userCacheControl);
-							cacheResolver.useCacheBlock();
+					// Walking the content parts preserves the caller's text/media
+					// ordering.
+					// For a message built in the flat form the parts are simply the text
+					// followed by the media, so this produces the same blocks as before.
+					List<ContentPart> contentParts = userMessage.getContentParts();
+					int cacheTextPartIndex = lastNonEmptyTextPartIndex(contentParts);
+					for (int p = 0; p < contentParts.size(); p++) {
+						ContentPart contentPart = contentParts.get(p);
+						if (contentPart instanceof ContentPart.TextPart textPart) {
+							if (textPart.text().isEmpty()) {
+								continue;
+							}
+							TextBlockParam.Builder textBlockBuilder = TextBlockParam.builder().text(textPart.text());
+							// A cache prefix has to cover the whole content, so it is
+							// attached to the final text block rather than the first.
+							if (userCacheControl != null && p == cacheTextPartIndex) {
+								textBlockBuilder.cacheControl(userCacheControl);
+								cacheResolver.useCacheBlock();
+							}
+							contentBlocks.add(ContentBlockParam.ofText(textBlockBuilder.build()));
 						}
-						contentBlocks.add(ContentBlockParam.ofText(textBlockBuilder.build()));
-					}
-
-					if (hasMedia) {
-						for (Media media : userMessage.getMedia()) {
-							contentBlocks.add(getContentBlockParamByMedia(media));
+						else if (contentPart instanceof ContentPart.MediaPart mediaPart) {
+							contentBlocks.add(getContentBlockParamByMedia(mediaPart.media()));
 						}
 					}
 
@@ -1346,6 +1357,20 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		}
 
 		return sdkBuilder.build();
+	}
+
+	/**
+	 * Index of the last content part that produces a text block, or -1 if there is none.
+	 * Empty text parts are skipped when building blocks, so they cannot carry the cache
+	 * control marker either.
+	 */
+	private static int lastNonEmptyTextPartIndex(List<ContentPart> contentParts) {
+		for (int i = contentParts.size() - 1; i >= 0; i--) {
+			if (contentParts.get(i) instanceof ContentPart.TextPart textPart && !textPart.text().isEmpty()) {
+				return i;
+			}
+		}
+		return -1;
 	}
 
 	/**
