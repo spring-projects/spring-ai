@@ -17,6 +17,7 @@
 package org.springframework.ai.openai;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -32,6 +33,8 @@ import com.openai.client.OpenAIClient;
 import com.openai.client.OpenAIClientAsync;
 import com.openai.core.JsonValue;
 import com.openai.core.http.AsyncStreamResponse;
+import com.openai.core.http.Headers;
+import com.openai.core.http.HttpResponseFor;
 import com.openai.models.FunctionDefinition;
 import com.openai.models.FunctionParameters;
 import com.openai.models.ReasoningEffort;
@@ -70,6 +73,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.openai.OpenAiChatModel.ResponseFormat;
+import org.springframework.ai.openai.metadata.OpenAiRateLimit;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.util.JsonHelper;
 
@@ -110,7 +114,7 @@ class OpenAiChatModelTests {
 		ChatCompletionService chatCompletionService = mock(ChatCompletionService.class);
 		when(this.openAiClient.chat()).thenReturn(chatService);
 		when(chatService.completions()).thenReturn(chatCompletionService);
-		when(chatCompletionService.create(any(ChatCompletionCreateParams.class))).thenReturn(ChatCompletion.builder()
+		ChatCompletion chatCompletion = ChatCompletion.builder()
 			.id("gen-1888888888-XYZabc123NewId")
 			.created(1777799928)
 			.model("moonshotai/kimi-k2.5-0127")
@@ -128,7 +132,8 @@ class OpenAiChatModelTests {
 					.build())
 				.build())
 			.additionalProperties(additionalProperties)
-			.build());
+			.build();
+		mockChatCompletion(chatCompletionService, chatCompletion);
 
 		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").build();
 		OpenAiChatModel chatModel = OpenAiChatModel.builder()
@@ -150,12 +155,65 @@ class OpenAiChatModelTests {
 	}
 
 	@Test
+	void mapsRateLimitHeadersForNonStreamingResponses() {
+		ChatService chatService = mock(ChatService.class);
+		ChatCompletionService chatCompletionService = mock(ChatCompletionService.class);
+		ChatCompletion chatCompletion = ChatCompletion.builder()
+			.id("chatcmpl-rate-limit")
+			.created(1777799928)
+			.model("test-model")
+			.usage(CompletionUsage.builder().promptTokens(1).completionTokens(1).totalTokens(2).build())
+			.addChoice(ChatCompletion.Choice.builder()
+				.finishReason(ChatCompletion.Choice.FinishReason.STOP)
+				.index(0)
+				.logprobs(Optional.empty())
+				.message(ChatCompletionMessage.builder()
+					.content("hello")
+					.refusal(Optional.empty())
+					.role(JsonValue.from("assistant"))
+					.annotations(List.of())
+					.toolCalls(List.of())
+					.build())
+				.build())
+			.build();
+
+		when(this.openAiClient.chat()).thenReturn(chatService);
+		when(chatService.completions()).thenReturn(chatCompletionService);
+		mockChatCompletion(chatCompletionService, chatCompletion,
+				Headers.builder()
+					.put("x-ratelimit-limit-requests", "10000")
+					.put("x-ratelimit-remaining-requests", "9999")
+					.put("x-ratelimit-reset-requests", "1s")
+					.put("x-ratelimit-limit-tokens", "1000000")
+					.put("x-ratelimit-remaining-tokens", "999000")
+					.put("x-ratelimit-reset-tokens", "6m0s")
+					.build());
+
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		ChatResponse response = chatModel.call(new Prompt("hi", options));
+
+		assertThat(response.getMetadata().getRateLimit()).isInstanceOf(OpenAiRateLimit.class);
+		assertThat(response.getMetadata().getRateLimit().getRequestsLimit()).isEqualTo(10000L);
+		assertThat(response.getMetadata().getRateLimit().getRequestsRemaining()).isEqualTo(9999L);
+		assertThat(response.getMetadata().getRateLimit().getRequestsReset()).isEqualTo(Duration.ofSeconds(1));
+		assertThat(response.getMetadata().getRateLimit().getTokensLimit()).isEqualTo(1000000L);
+		assertThat(response.getMetadata().getRateLimit().getTokensRemaining()).isEqualTo(999000L);
+		assertThat(response.getMetadata().getRateLimit().getTokensReset()).isEqualTo(Duration.ofMinutes(6));
+	}
+
+	@Test
 	void preserveUnmappedToolCallAdditionalProperties() {
 		ChatService chatService = mock(ChatService.class);
 		ChatCompletionService chatCompletionService = mock(ChatCompletionService.class);
 		when(this.openAiClient.chat()).thenReturn(chatService);
 		when(chatService.completions()).thenReturn(chatCompletionService);
-		when(chatCompletionService.create(any(ChatCompletionCreateParams.class))).thenReturn(ChatCompletion.builder()
+		ChatCompletion chatCompletion = ChatCompletion.builder()
 			.id("chatcmpl-test")
 			.created(1777799928)
 			.model("gemini-3.5-flash")
@@ -181,7 +239,8 @@ class OpenAiChatModelTests {
 							.build())))
 					.build())
 				.build())
-			.build());
+			.build();
+		mockChatCompletion(chatCompletionService, chatCompletion);
 
 		OpenAiChatOptions options = OpenAiChatOptions.builder().model("gemini-3.5-flash").build();
 		OpenAiChatModel chatModel = OpenAiChatModel.builder()
@@ -591,7 +650,7 @@ class OpenAiChatModelTests {
 
 		when(this.openAiClient.chat()).thenReturn(chatService);
 		when(chatService.completions()).thenReturn(chatCompletionService);
-		when(chatCompletionService.create(any(ChatCompletionCreateParams.class))).thenReturn(ChatCompletion.builder()
+		ChatCompletion chatCompletion = ChatCompletion.builder()
 			.id("gen-1888888888-XYZabc123NewId")
 			.created(1777799928)
 			.model("deepseek-reasoner")
@@ -609,7 +668,8 @@ class OpenAiChatModelTests {
 					.putAdditionalProperty("reasoning_content", JsonValue.from("Test reasoning content"))
 					.build())
 				.build())
-			.build());
+			.build();
+		mockChatCompletion(chatCompletionService, chatCompletion);
 
 		OpenAiChatOptions options = OpenAiChatOptions.builder().model("deepseek-reasoner").build();
 		OpenAiChatModel chatModel = OpenAiChatModel.builder()
@@ -631,7 +691,7 @@ class OpenAiChatModelTests {
 
 		when(this.openAiClient.chat()).thenReturn(chatService);
 		when(chatService.completions()).thenReturn(chatCompletionService);
-		when(chatCompletionService.create(any(ChatCompletionCreateParams.class))).thenReturn(ChatCompletion.builder()
+		ChatCompletion chatCompletion = ChatCompletion.builder()
 			.id("gen-1888888888-XYZabc123NewId")
 			.created(1777799928)
 			.model("test-reasoner")
@@ -649,7 +709,8 @@ class OpenAiChatModelTests {
 					.putAdditionalProperty("reasoning", JsonValue.from("Test reasoning content"))
 					.build())
 				.build())
-			.build());
+			.build();
+		mockChatCompletion(chatCompletionService, chatCompletion);
 
 		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-reasoner").build();
 		OpenAiChatModel chatModel = OpenAiChatModel.builder()
@@ -671,7 +732,7 @@ class OpenAiChatModelTests {
 
 		when(this.openAiClient.chat()).thenReturn(chatService);
 		when(chatService.completions()).thenReturn(chatCompletionService);
-		when(chatCompletionService.create(any(ChatCompletionCreateParams.class))).thenReturn(ChatCompletion.builder()
+		ChatCompletion chatCompletion = ChatCompletion.builder()
 			.id("gen-1888888888-XYZabc123NewId")
 			.created(1777799928)
 			.model("test-model")
@@ -688,7 +749,8 @@ class OpenAiChatModelTests {
 					.toolCalls(List.of())
 					.build())
 				.build())
-			.build());
+			.build();
+		mockChatCompletion(chatCompletionService, chatCompletion);
 
 		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").build();
 		OpenAiChatModel chatModel = OpenAiChatModel.builder()
@@ -708,7 +770,7 @@ class OpenAiChatModelTests {
 		ChatCompletionService chatCompletionService = mock(ChatCompletionService.class);
 		when(this.openAiClient.chat()).thenReturn(chatService);
 		when(chatService.completions()).thenReturn(chatCompletionService);
-		when(chatCompletionService.create(any(ChatCompletionCreateParams.class))).thenReturn(ChatCompletion.builder()
+		ChatCompletion chatCompletion = ChatCompletion.builder()
 			.id("test-id")
 			.created(1234567890L)
 			.model("test-model")
@@ -725,7 +787,8 @@ class OpenAiChatModelTests {
 					.toolCalls(List.of())
 					.build())
 				.build())
-			.build());
+			.build();
+		mockChatCompletion(chatCompletionService, chatCompletion);
 
 		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").build();
 		OpenAiChatModel chatModel = OpenAiChatModel.builder()
@@ -898,6 +961,20 @@ class OpenAiChatModelTests {
 		return chatModel.stream(new Prompt("Preserve reasoning metadata while streaming", options));
 	}
 
+	private void mockChatCompletion(ChatCompletionService chatCompletionService, ChatCompletion chatCompletion) {
+		mockChatCompletion(chatCompletionService, chatCompletion, Headers.builder().build());
+	}
+
+	private void mockChatCompletion(ChatCompletionService chatCompletionService, ChatCompletion chatCompletion,
+			Headers headers) {
+		ChatCompletionService.WithRawResponse rawResponseService = mock(ChatCompletionService.WithRawResponse.class);
+		HttpResponseFor<ChatCompletion> httpResponse = mock();
+		when(chatCompletionService.withRawResponse()).thenReturn(rawResponseService);
+		when(rawResponseService.create(any(ChatCompletionCreateParams.class))).thenReturn(httpResponse);
+		when(httpResponse.parse()).thenReturn(chatCompletion);
+		when(httpResponse.headers()).thenReturn(headers);
+	}
+
 	private static ChatCompletionChunk streamingChunk(
 			Consumer<ChatCompletionChunk.Choice.Delta.Builder> deltaCustomizer,
 			ChatCompletionChunk.Choice.FinishReason finishReason) {
@@ -1062,7 +1139,7 @@ class OpenAiChatModelTests {
 		ChatCompletionService chatCompletionService = mock(ChatCompletionService.class);
 		when(this.openAiClient.chat()).thenReturn(chatService);
 		when(chatService.completions()).thenReturn(chatCompletionService);
-		when(chatCompletionService.create(any(ChatCompletionCreateParams.class))).thenReturn(ChatCompletion.builder()
+		ChatCompletion chatCompletion = ChatCompletion.builder()
 			.id("test-id")
 			.created(1777799928)
 			.model("test-model")
@@ -1079,7 +1156,8 @@ class OpenAiChatModelTests {
 					.toolCalls(List.of())
 					.build())
 				.build())
-			.build());
+			.build();
+		mockChatCompletion(chatCompletionService, chatCompletion);
 
 		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").build();
 		OpenAiChatModel chatModel = OpenAiChatModel.builder()
