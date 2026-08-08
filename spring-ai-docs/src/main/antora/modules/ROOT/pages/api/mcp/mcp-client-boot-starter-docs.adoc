@@ -918,6 +918,18 @@ private List<McpSyncClient> mcpSyncClients;  // For sync client
 private List<McpAsyncClient> mcpAsyncClients;  // For async client
 ----
 
+For applications with multiple connections, an individual client can be injected by connection name:
+
+[source,java]
+----
+@Autowired
+@McpClient("server3")
+private McpSyncClient server3Client;
+----
+
+The same mechanism applies to `McpAsyncClient` when the client type is `ASYNC`.
+The standard `@Qualifier("server3")` annotation can also be used.
+
 When tool callbacks are enabled (the default behavior), the registered MCP Tools with all MCP clients are provided as a `ToolCallbackProvider` instance:
 
 [source,java]
