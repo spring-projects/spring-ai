@@ -288,7 +288,7 @@
 		<jsonschema.version>5.0.0</jsonschema.version>
 		<jtokkit.version>1.1.0</jtokkit.version>
 		<lucene.version>9.12.3</lucene.version>
-		<okhttp3.version>4.12.0</okhttp3.version>
+		<okhttp3.version>5.3.2</okhttp3.version>
 		<ST4.version>4.3.4</ST4.version>
 		<swagger-annotations.version>2.2.38</swagger-annotations.version>
 
