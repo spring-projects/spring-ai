@@ -71,6 +71,10 @@ import org.springframework.util.StringUtils;
  * If none of these annotations are present, the default behavior is to consider the
  * property as required and not to include a description.
  * <p>
+ * Enum values are aligned with Jackson's serialized form when the enum declares a
+ * {@code @JsonValue} method or all of its constants are annotated with
+ * {@code @JsonProperty}.
+ * <p>
  *
  * @author Thomas Vitale
  * @author Sebastien Deleuze
@@ -95,7 +99,8 @@ public final class JsonSchemaGenerator {
 	 */
 	static {
 		Module jacksonModule = new JacksonSchemaModule(JacksonOption.RESPECT_JSONPROPERTY_REQUIRED,
-				JacksonOption.RESPECT_JSONPROPERTY_ORDER);
+				JacksonOption.RESPECT_JSONPROPERTY_ORDER, JacksonOption.FLATTENED_ENUMS_FROM_JSONVALUE,
+				JacksonOption.FLATTENED_ENUMS_FROM_JSONPROPERTY);
 		Module openApiModule = new Swagger2Module();
 		Module springAiSchemaModule = PROPERTY_REQUIRED_BY_DEFAULT ? new SpringAiSchemaModule()
 				: new SpringAiSchemaModule(SpringAiSchemaModule.Option.PROPERTY_REQUIRED_FALSE_BY_DEFAULT);
