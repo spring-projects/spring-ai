@@ -258,12 +258,34 @@ public class Document {
 
 	/**
 	 * Determines whether this document contains text or media content.
-	 * @return true if this document contains text content (accessible via
-	 * {@link #getText()}), false if it contains media content (accessible via
-	 * {@link #getMedia()})
+	 *
+	 * <p>
+	 * Returns {@code true} when either:
+	 * <ul>
+	 * <li>the document was constructed with a plain-text {@code String}, <b>or</b></li>
+	 * <li>the document carries a {@link Media} whose MIME primary type is {@code "text"}
+	 * (e.g. {@code text/plain}, {@code text/xml}, {@code text/csv}).</li>
+	 * </ul>
+	 *
+	 * <p>
+	 * Previously only the first condition was tested, causing
+	 * {@code AbstractObservationVectorStore} to throw an {@code IllegalArgumentException}
+	 * when documents with text-typed {@code Media} were added to a vector store (Issue
+	 * #5600).
+	 * @return {@code true} if the document represents textual content, {@code false} if
+	 * it contains binary/non-text media (accessible via {@link #getMedia()})
 	 */
 	public boolean isText() {
-		return this.text != null;
+		// Case 1: classic text document built with a String
+		if (this.text != null) {
+			return true;
+		}
+		// Case 2: media document whose MIME primary type is "text"
+		// covers text/plain, text/xml, text/csv, text/html, etc.
+		if (this.media != null && this.media.getMimeType() != null) {
+			return "text".equalsIgnoreCase(this.media.getMimeType().getType());
+		}
+		return false;
 	}
 
 	/**
