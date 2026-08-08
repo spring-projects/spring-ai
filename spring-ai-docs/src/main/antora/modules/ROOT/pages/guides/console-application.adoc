@@ -1,0 +1,165 @@
+[[console-application]]
+= Creating a Console Application
+
+This guide shows how to use Spring AI in a console application without starting a web server.
+
+== Overview
+
+By default, Spring Boot applications with web dependencies start an embedded web server.
+However, many AI use cases don't require a web interface - for example:
+
+* Command-line tools and scripts
+* Batch processing applications
+* Background workers
+* Interactive console chatbots
+
+Spring AI works seamlessly in these scenarios with a simple configuration change.
+
+== Configuration
+
+To create a console application with Spring AI, add the following to your `application.properties` or `application.yaml`:
+
+[tabs]
+======
+application.properties::
++
+[source,properties]
+----
+spring.main.web-application-type=none
+----
+
+application.yaml::
++
+[source,yaml]
+----
+spring:
+  main:
+    web-application-type: none
+----
+======
+
+This tells Spring Boot not to start a web server, even if web dependencies are on the classpath.
+
+== Example: Interactive Console Chatbot
+
+Here's a complete example of a console-based chatbot using Spring AI:
+
+[source,java]
+----
+@SpringBootApplication
+public class ConsoleChatbotApplication implements CommandLineRunner {
+
+    private final ChatClient chatClient;
+
+    public ConsoleChatbotApplication(ChatClient.Builder chatClientBuilder) {
+        this.chatClient = chatClientBuilder.build();
+    }
+
+    public static void main(String[] args) {
+        SpringApplication.run(ConsoleChatbotApplication.class, args);
+    }
+
+    @Override
+    public void run(String... args) {
+        Scanner scanner = new Scanner(System.in);
+        System.out.println("Welcome to the AI Chatbot! Type 'exit' to quit.");
+
+        while (true) {
+            System.out.print("\nYou: ");
+            String userInput = scanner.nextLine();
+
+            if ("exit".equalsIgnoreCase(userInput.trim())) {
+                System.out.println("Goodbye!");
+                break;
+            }
+
+            String response = chatClient.prompt()
+                .user(userInput)
+                .call()
+                .content();
+
+            System.out.println("AI: " + response);
+        }
+        scanner.close();
+    }
+}
+----
+
+== Example: Batch Processing
+
+For batch processing scenarios, you can process data without user interaction:
+
+[source,java]
+----
+@SpringBootApplication
+public class BatchProcessorApplication implements CommandLineRunner {
+
+    private final ChatClient chatClient;
+
+    public BatchProcessorApplication(ChatClient.Builder chatClientBuilder) {
+        this.chatClient = chatClientBuilder.build();
+    }
+
+    public static void main(String[] args) {
+        SpringApplication.run(BatchProcessorApplication.class, args);
+    }
+
+    @Override
+    public void run(String... args) {
+        List<String> documents = loadDocuments();
+
+        for (String document : documents) {
+            String summary = chatClient.prompt()
+                .user("Summarize the following document:\n\n" + document)
+                .call()
+                .content();
+
+            System.out.println("Summary: " + summary);
+        }
+    }
+
+    private List<String> loadDocuments() {
+        // Load documents from file system, database, etc.
+        return List.of("Document 1 content...", "Document 2 content...");
+    }
+}
+----
+
+== Dependencies
+
+When creating a console application, you still need the appropriate Spring AI dependencies for your chosen AI provider, but you don't need `spring-boot-starter-web`.
+
+For example, using OpenAI:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-model-openai</artifactId>
+</dependency>
+----
+
+NOTE: If you do include web dependencies for other reasons (e.g., making HTTP calls with `WebClient`), setting `spring.main.web-application-type=none` ensures no web server is started.
+
+== Running the Application
+
+Run your console application like any other Spring Boot application:
+
+[source,bash]
+----
+./mvnw spring-boot:run
+----
+
+Or package and run as a JAR:
+
+[source,bash]
+----
+./mvnw package
+java -jar target/my-ai-app.jar
+----
+
+== See Also
+
+* xref:getting-started.adoc[Getting Started]
+* xref:api/chatclient.adoc[ChatClient API]
+
