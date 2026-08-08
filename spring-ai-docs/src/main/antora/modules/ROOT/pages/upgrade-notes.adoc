@@ -169,6 +169,51 @@ new SyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider, Exception.class
 new SyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
 ----
 
+=== Tool Calling
+
+==== New: Tool Call Limits
+
+`DefaultToolCallingManager` now caps tool calls per turn — `DefaultToolCallingManager.DEFAULT_MAX_CALLS_PER_TOOL` (40) per tool, `DEFAULT_MAX_TOTAL_TOOL_CALLS` (150) overall — where previously there was no limit at all.
+
+Most applications won't notice, since these defaults are generous. If a legitimate workload exceeds them, raise or disable the limit via `ToolCallingManager.builder().maxCallsPerTool(...)` / `.unlimitedCallsPerTool()` (or the `spring.ai.tools.limits.*` properties). See xref:api/tools.adoc#tool-call-limits[Tool Call Limits].
+
+==== Changed: `ToolCallingAdvisor` Usage Now Accumulated Across the Loop
+
+`ToolCallingAdvisor` now composes token usage across every internal model call in the tool-calling loop, instead of exposing only the last call's `Usage` on the final `ChatClientResponse`. Code or tests asserting an exact `Usage`/token count after a tool-calling exchange will observe higher, now-cumulative values. No API changes are required.
+
+=== OpenAI
+
+==== Changed: Tool Calling Strict Mode Now Defaults to `false`
+
+`OpenAiChatModel` no longer defaults tool schemas to `strict(true)`. `JsonSchemaGenerator` omits optional parameters from `required` instead of using the nullable-type pattern OpenAI's strict mode requires, so any tool with an optional parameter was rejected by OpenAI with a 400 error under the old default.
+
+===== Impact
+
+Tools that relied on the implicit `strict(true)` default are now sent as non-strict unless requested explicitly. This only affects OpenAI's own schema-adherence check; tool execution and results are unchanged.
+
+===== Migration
+
+Opt back in via `OpenAiChatOptions#strict(true)`. When enabled, optional parameters are automatically widened to nullable types and backfilled into `required` so the schema still satisfies OpenAI's strict-mode contract:
+
+[source,java]
+----
+OpenAiChatOptions options = OpenAiChatOptions.builder()
+    .strict(true)
+    .build();
+----
+
+==== Changed: `OpenAiAudioSpeechModel` Streaming Now Emits Real Audio Chunks
+
+`OpenAiAudioSpeechModel.stream(TextToSpeechPrompt)` previously buffered the entire response and emitted it as a single `Flux` element. It now requests `stream_format=audio` from OpenAI and emits chunks as they arrive.
+
+===== Impact
+
+Code that consumed only the first element of the `Flux` (e.g. via `blockFirst()`), assuming it held the complete audio, now gets only the first chunk.
+
+===== Migration
+
+Concatenate every emitted chunk instead of taking the first element. See xref:api/audio/speech.adoc#streaming-consume-inputstream[Bridging a Streaming Response] for a complete example.
+
 === TranscriptionModel Now Extends StreamingTranscriptionModel
 
 `TranscriptionModel` now extends `StreamingTranscriptionModel`, making streaming transcription a first-class capability of every transcription model.
@@ -203,11 +248,33 @@ public class CustomTranscriptionModel implements TranscriptionModel {
 
 If streaming is not needed, no action is required — the default implementation is inherited automatically.
 
-=== Tool Call Limits Introduced
+=== Media Builder: Typed `data()` Overloads Replace `data(Object)`
 
-`DefaultToolCallingManager` now caps tool calls per turn — `DefaultToolCallingManager.DEFAULT_MAX_CALLS_PER_TOOL` (40) per tool, `DEFAULT_MAX_TOTAL_TOOL_CALLS` (150) overall — where previously there was no limit at all.
+`Media.Builder.data(Object)` has been replaced with typed overloads: `data(byte[])`, `data(String)`, `data(URI)`, `data(URL)`, and `data(Resource)`.
 
-Most applications won't notice, since these defaults are generous. If a legitimate workload exceeds them, raise or disable the limit via `ToolCallingManager.builder().maxCallsPerTool(...)` / `.unlimitedCallsPerTool()` (or the `spring.ai.tools.limits.*` properties). See xref:api/tools.adoc#tool-call-limits[Tool Call Limits].
+==== Impact
+
+Code that calls `.data(...)` with an argument whose static type is `Object` no longer compiles — there is no matching overload.
+
+==== Migration
+
+Narrow to the concrete type before calling `.data(...)`:
+
+[source,java]
+----
+// Before
+Object data = getMediaData();
+Media.builder().mimeType(mimeType).data(data).build();
+
+// After
+Object data = getMediaData();
+if (data instanceof byte[] bytes) {
+    Media.builder().mimeType(mimeType).data(bytes).build();
+}
+else if (data instanceof String s) {
+    Media.builder().mimeType(mimeType).data(s).build();
+}
+----
 
 [[upgrading-to-2-0-0]]
 == Upgrading to 2.0.0
