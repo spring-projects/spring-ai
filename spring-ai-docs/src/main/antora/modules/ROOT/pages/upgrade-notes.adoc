@@ -101,6 +101,32 @@ boolean jailbreakAttempt = categories.isJailbreaking();
 double jailbreakScore = categoryScores.getJailbreaking();
 ----
 
+=== Mistral AI Chat Model Enumeration Updated
+
+`MistralAiApi.ChatModel` has been updated to track Mistral AI's https://docs.mistral.ai/models/overview#legacy-models[current model lineup]. Several constants pointed to models that Mistral AI has since retired.
+
+==== Impact
+
+* `ChatModel.MAGISTRAL_MEDIUM`, `ChatModel.MAGISTRAL_SMALL`, `ChatModel.DEVSTRAL` and `ChatModel.OPEN_MISTRAL_NEMO` have been removed. The models they pointed to (`magistral-medium-latest`, `magistral-small-latest`, `devstral-latest`, `open-mistral-nemo`) have all passed their retirement dates, so code referencing these constants will no longer compile.
+* `ChatModel.MISTRAL_SMALL` now targets `mistral-small-2603` (previously `mistral-small-latest`).
+* `ChatModel.MISTRAL_MEDIUM` now targets `mistral-medium-3-5` (previously `mistral-medium-latest`).
+* `ChatModel.MISTRAL_LARGE` now targets `mistral-medium-3-5` as well. Mistral Large has been retired, and Mistral AI recommends Mistral Medium 3.5 as its replacement; `MISTRAL_LARGE` is kept only as an alias for backward compatibility.
+
+==== Migration
+
+Replace any reference to a removed constant with a supported model:
+
+[source,java]
+----
+// Before
+String model = MistralAiApi.ChatModel.MAGISTRAL_MEDIUM.getValue();
+
+// After
+String model = MistralAiApi.ChatModel.MISTRAL_MEDIUM.getValue();
+----
+
+If you relied on Magistral's reasoning ("thinking") output, use `MistralAiApi.ChatCompletionRequest.ReasoningEffort` together with `MISTRAL_SMALL` or `MISTRAL_MEDIUM` instead.
+
 === MCP Tool Exception Handling
 
 ==== Changed: `@McpTool` Exception Handling Now Mirrors `@Tool`

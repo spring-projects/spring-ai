@@ -282,23 +282,16 @@ public class MistralAiApi {
 
 		// @formatter:off
 		// Premier Models
-		@Deprecated(forRemoval = true) // Retirement planned the 31st of July 2026
-		MAGISTRAL_MEDIUM("magistral-medium-latest"),
 		CODESTRAL("codestral-latest"),
 		// Free Models
 		MINISTRAL_3B("ministral-3b-latest"),
 		MINISTRAL_8B("ministral-8b-latest"),
 		MINISTRAL_14B("ministral-14b-latest"),
-		MISTRAL_SMALL("mistral-small-latest"),
-		MISTRAL_MEDIUM("mistral-medium-latest"),
-		MISTRAL_LARGE("mistral-large-latest"),
-		@Deprecated(forRemoval = true) // Retirement planned the 31st of July 2026
-		DEVSTRAL("devstral-latest"),
-		@Deprecated(forRemoval = true) // Retirement planned the 31st of July 2026
-		MAGISTRAL_SMALL("magistral-small-latest"),
-		// Free Models - Research
-		@Deprecated(forRemoval = true) // Retirement planned the 31st of July 2026
-		OPEN_MISTRAL_NEMO("open-mistral-nemo");
+		// Mistral 3.5B model family
+		MISTRAL_SMALL("mistral-small-2603"),
+		MISTRAL_MEDIUM("mistral-medium-3-5"),
+		@Deprecated(forRemoval = true) // Deprecated in favor of mistral-medium-3-5
+		MISTRAL_LARGE("mistral-large-latest");
 		// @formatter:on
 
 		private final String value;
