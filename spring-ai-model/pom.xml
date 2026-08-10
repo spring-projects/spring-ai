@@ -20,6 +20,13 @@
 			<version>${project.parent.version}</version>
 		</dependency>
 
+		<!-- Required by TokenCountBatchingStrategy; optional in spring-ai-commons. -->
+		<dependency>
+			<groupId>com.knuddels</groupId>
+			<artifactId>jtokkit</artifactId>
+			<version>${jtokkit.version}</version>
+		</dependency>
+
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-template-st</artifactId>

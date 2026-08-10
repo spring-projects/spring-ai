@@ -59,6 +59,7 @@
 			<groupId>com.knuddels</groupId>
 			<artifactId>jtokkit</artifactId>
 			<version>${jtokkit.version}</version>
+			<optional>true</optional>
 		</dependency>
 
 		<!-- test dependencies -->
