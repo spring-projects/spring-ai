@@ -619,8 +619,8 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 				List<ContentBlock> contentBlocks = message.content();
 				if (contentBlocks.isEmpty()) {
-					if (logger.isWarnEnabled()) {
-						logger.warn("No content blocks returned for prompt: " + prompt);
+					if (logger.isDebugEnabled()) {
+						logger.debug("No content blocks returned for prompt: " + prompt);
 					}
 					return new ChatResponse(List.of());
 				}

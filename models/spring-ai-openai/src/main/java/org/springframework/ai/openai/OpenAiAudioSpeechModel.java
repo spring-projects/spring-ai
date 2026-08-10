@@ -181,8 +181,8 @@ public final class OpenAiAudioSpeechModel implements TextToSpeechModel {
 
 						TextToSpeechResponse response;
 						if (audioBytes.length == 0) {
-							if (logger.isWarnEnabled()) {
-								logger.warn("No speech response returned for prompt: " + prompt);
+							if (logger.isDebugEnabled()) {
+								logger.debug("No speech response returned for prompt: " + prompt);
 							}
 							response = new TextToSpeechResponse(List.of(new Speech(new byte[0])));
 						}

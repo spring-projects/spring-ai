@@ -236,8 +236,8 @@ public final class OpenAiChatModel implements ChatModel {
 
 				List<ChatCompletion.Choice> choices = chatCompletion.choices();
 				if (choices.isEmpty()) {
-					if (logger.isWarnEnabled()) {
-						logger.warn("No choices returned for prompt: " + prompt);
+					if (logger.isDebugEnabled()) {
+						logger.debug("No choices returned for prompt: " + prompt);
 					}
 					return new ChatResponse(List.of());
 				}

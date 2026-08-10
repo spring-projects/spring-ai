@@ -192,8 +192,8 @@ public class MistralAiChatModel implements ChatModel {
 				ChatCompletion chatCompletion = completionEntity.getBody();
 
 				if (chatCompletion == null) {
-					if (logger.isWarnEnabled()) {
-						logger.warn("No chat completion returned for prompt: " + prompt);
+					if (logger.isDebugEnabled()) {
+						logger.debug("No chat completion returned for prompt: " + prompt);
 					}
 					return new ChatResponse(List.of());
 				}
