@@ -124,6 +124,7 @@ import org.springframework.util.StringUtils;
  * @author Eric Bottard
  * @author Taewoong Kim
  * @author Jewoo Shin
+ * @author Subhash Polisetti
  */
 public final class OpenAiChatModel implements ChatModel {
 
@@ -1208,6 +1209,12 @@ public final class OpenAiChatModel implements ChatModel {
 			}).orElse(List.of());
 
 			Delta.Builder deltaBuilder = left.toBuilder().toolCalls(tcs);
+			right.content()
+				.filter(StringUtils::hasLength)
+				.ifPresent(rightFragment -> deltaBuilder.content(left.content().orElse("") + rightFragment));
+			right.refusal()
+				.filter(StringUtils::hasLength)
+				.ifPresent(rightFragment -> deltaBuilder.refusal(left.refusal().orElse("") + rightFragment));
 			// Concatenate reasoning fragments (e.g. DeepSeek "reasoning_content") so
 			// they survive the tool-call chunk merge instead of keeping only the first
 			// chunk's value.
