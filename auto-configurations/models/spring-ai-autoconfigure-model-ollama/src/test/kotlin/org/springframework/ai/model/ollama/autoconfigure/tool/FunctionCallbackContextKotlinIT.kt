@@ -54,8 +54,7 @@ class FunctionCallbackResolverKotlinIT : BaseOllamaIT() {
 		.withPropertyValues(
 			"spring.ai.ollama.baseUrl=${getBaseUrl()}",
 			"spring.ai.ollama.chat.model=$MODEL_NAME",
-			"spring.ai.ollama.chat.temperature=0.5",
-			"spring.ai.ollama.chat.topK=10"
+			"spring.ai.ollama.chat.temperature=0.0"
 		)
 		.withConfiguration(ollamaAutoConfig(OllamaChatAutoConfiguration::class.java))
 		.withUserConfiguration(Config::class.java)

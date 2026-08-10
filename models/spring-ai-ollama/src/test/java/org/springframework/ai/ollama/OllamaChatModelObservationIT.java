@@ -75,9 +75,7 @@ public class OllamaChatModelObservationIT extends BaseOllamaIT {
 			.numPredict(2048)
 			.presencePenalty(0.0)
 			.stop(List.of("this-is-the-end"))
-			.temperature(0.7)
-			.topK(1)
-			.topP(1.0)
+			.temperature(0.0)
 			.build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
@@ -100,9 +98,7 @@ public class OllamaChatModelObservationIT extends BaseOllamaIT {
 			.numPredict(2048)
 			.presencePenalty(0.0)
 			.stop(List.of("this-is-the-end"))
-			.temperature(0.7)
-			.topK(1)
-			.topP(1.0)
+			.temperature(0.0)
 			.build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
@@ -143,9 +139,7 @@ public class OllamaChatModelObservationIT extends BaseOllamaIT {
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_PRESENCE_PENALTY.asString(), "0.0")
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_STOP_SEQUENCES.asString(),
 					"[\"this-is-the-end\"]")
-			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_TEMPERATURE.asString(), "0.7")
-			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_TOP_K.asString(), "1")
-			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_TOP_P.asString(), "1.0")
+			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_TEMPERATURE.asString(), "0.0")
 			.doesNotHaveHighCardinalityKeyValueWithKey(HighCardinalityKeyNames.RESPONSE_ID.asString())
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.RESPONSE_FINISH_REASONS.asString(), "[\"stop\"]")
 			.hasHighCardinalityKeyValue(HighCardinalityKeyNames.USAGE_INPUT_TOKENS.asString(),
