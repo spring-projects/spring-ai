@@ -419,7 +419,7 @@ jobs:
   test-autoconfigure:
     needs: build-all
     if: ${{ (github.event_name == 'schedule' || inputs.test_suites == '' || contains(inputs.test_suites, 'autoconfigure')) && !contains(inputs.exclude_test_suites || '', 'autoconfigure') }}
-    runs-on: ${{ inputs.runner != '' && inputs.runner || (vars.COMMERCIAL && vars.UBUNTU_SMALL || 'ubuntu-latest') }}
+    runs-on: ${{ inputs.runner != '' && inputs.runner || (vars.COMMERCIAL && vars.UBUNTU_MEDIUM || 'ubuntu-latest') }}
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -528,7 +528,7 @@ jobs:
   test-testcontainers:
     needs: build-all
     if: ${{ (github.event_name == 'schedule' || inputs.test_suites == '' || contains(inputs.test_suites, 'testcontainers')) && !contains(inputs.exclude_test_suites || '', 'testcontainers') }}
-    runs-on: ${{ inputs.runner != '' && inputs.runner || (vars.COMMERCIAL && vars.UBUNTU_SMALL || 'ubuntu24-2-8-OSS') }}
+    runs-on: ${{ inputs.runner != '' && inputs.runner || (vars.COMMERCIAL && vars.UBUNTU_MEDIUM || 'ubuntu24-2-8-OSS') }}
     env:
       DOCKER_QUIET: 1              # Suppresses Docker CLI progress output
       TESTCONTAINERS_QUIET: true   # Additional quieting for testcontainers
