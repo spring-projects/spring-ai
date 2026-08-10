@@ -629,6 +629,61 @@ class OpenAiChatModelTests {
 	}
 
 	@Test
+	void streamOptionsWithoutIncludeUsageKeepsUsageReporting() {
+		OpenAiChatOptions options = OpenAiChatOptions.builder()
+			.model("test-model")
+			.streamOptions(OpenAiChatOptions.StreamOptions.builder().includeObfuscation(true).build())
+			.build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		ChatCompletionCreateParams request = chatModel.createRequest(new Prompt("test", options), true);
+
+		assertThat(request.streamOptions()).isPresent();
+		assertThat(request.streamOptions().get().includeUsage()).contains(true);
+		assertThat(request.streamOptions().get().includeObfuscation()).contains(true);
+	}
+
+	@Test
+	void streamOptionsWithIncludeUsageDisabledIsHonored() {
+		OpenAiChatOptions options = OpenAiChatOptions.builder()
+			.model("test-model")
+			.streamOptions(OpenAiChatOptions.StreamOptions.builder().includeUsage(false).build())
+			.build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		ChatCompletionCreateParams request = chatModel.createRequest(new Prompt("test", options), true);
+
+		assertThat(request.streamOptions()).isPresent();
+		assertThat(request.streamOptions().get().includeUsage()).contains(false);
+	}
+
+	@Test
+	void streamOptionsWithoutIncludeObfuscationLeavesItUnset() {
+		OpenAiChatOptions options = OpenAiChatOptions.builder()
+			.model("test-model")
+			.streamOptions(OpenAiChatOptions.StreamOptions.builder().includeUsage(true).build())
+			.build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		ChatCompletionCreateParams request = chatModel.createRequest(new Prompt("test", options), true);
+
+		assertThat(request.streamOptions()).isPresent();
+		assertThat(request.streamOptions().get().includeObfuscation()).isEmpty();
+	}
+
+	@Test
 	void reasoningContentFromReasoningContentProperty() {
 		ChatService chatService = mock(ChatService.class);
 		ChatCompletionService chatCompletionService = mock(ChatCompletionService.class);
