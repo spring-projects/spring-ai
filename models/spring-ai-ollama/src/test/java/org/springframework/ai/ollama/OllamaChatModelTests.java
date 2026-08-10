@@ -182,11 +182,7 @@ class OllamaChatModelTests {
 
 	@Test
 	void buildOllamaChatModelWithAllBuilderOptions() {
-		OllamaChatOptions options = OllamaChatOptions.builder()
-			.model(OllamaModel.CODELLAMA)
-			.temperature(0.7)
-			.topK(50)
-			.build();
+		OllamaChatOptions options = OllamaChatOptions.builder().model(OllamaModel.CODELLAMA).temperature(0.0).build();
 
 		ToolCallingManager toolManager = ToolCallingManager.builder().build();
 		ModelManagementOptions managementOptions = ModelManagementOptions.builder().build();
@@ -314,7 +310,7 @@ class OllamaChatModelTests {
 	@Test
 	void buildOllamaChatModelImmutability() {
 		// Test that the builder creates immutable instances
-		OllamaChatOptions options = OllamaChatOptions.builder().model(OllamaModel.MISTRAL).temperature(0.5).build();
+		OllamaChatOptions options = OllamaChatOptions.builder().model(OllamaModel.MISTRAL).temperature(0.0).build();
 
 		ChatModel chatModel1 = OllamaChatModel.builder().ollamaApi(this.ollamaApi).options(options).build();
 

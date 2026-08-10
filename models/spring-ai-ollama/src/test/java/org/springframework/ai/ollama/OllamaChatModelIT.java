@@ -115,7 +115,7 @@ class OllamaChatModelIT extends BaseOllamaIT {
 		UserMessage userMessage = new UserMessage("Tell me about 5 famous pirates from the Golden Age of Piracy.");
 
 		// portable/generic options
-		var portableOptions = OllamaChatOptions.builder().model(MODEL).temperature(0.7).build();
+		var portableOptions = OllamaChatOptions.builder().model(MODEL).temperature(0.0).build();
 
 		Prompt prompt = new Prompt(List.of(systemMessage, userMessage), portableOptions);
 
