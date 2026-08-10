@@ -34,11 +34,13 @@ import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 
 /**
  * Unit tests for {@link OpenAiChatModel.ChunkMerger}, covering the merging of streamed
- * tool call deltas by their {@code index} field. OpenAI omits {@code id} and
- * {@code function.name} on continuation deltas, while some OpenAI-compatible providers
- * (e.g. DeepSeek) send them as empty strings instead.
+ * tool call deltas by their {@code index} field and of the assistant text carried by the
+ * same chunks. OpenAI omits {@code id} and {@code function.name} on continuation deltas,
+ * while some OpenAI-compatible providers (e.g. DeepSeek) send them as empty strings
+ * instead.
  *
  * @author Jewoo Shin
+ * @author Subhash Polisetti
  */
 class OpenAiChatModelChunkMergerTests {
 
@@ -116,6 +118,32 @@ class OpenAiChatModelChunkMergerTests {
 	}
 
 	@Test
+	void mergeContentDeltasAcrossToolCallChunks() {
+		ChatCompletionChunk merged = OpenAiChatModel.ChunkMerger
+			.mergeChunks(List.of(contentChunk("I'll check ", toolCallDelta(0, "call_1", "get_weather", "{\"city\": ")),
+					contentChunk("that now.", toolCallDelta(0, null, null, "\"London\"}")), finishChunk()));
+
+		assertThat(merged.choices().get(0).delta().content()).contains("I'll check that now.");
+		List<ToolCall> toolCalls = merged.choices().get(0).delta().toolCalls().orElseThrow();
+		assertThat(toolCalls.get(0).function().orElseThrow().arguments()).contains("{\"city\": \"London\"}");
+
+		ChatCompletion completion = OpenAiChatModel.ChunkMerger.chunkToChatCompletion(merged);
+		assertThat(completion.choices().get(0).message().content()).contains("I'll check that now.");
+	}
+
+	@Test
+	void mergeRefusalDeltasAcrossToolCallChunks() {
+		ChatCompletionChunk merged = OpenAiChatModel.ChunkMerger
+			.mergeChunks(List.of(refusalChunk("I cannot ", toolCallDelta(0, "call_1", "get_weather", "{\"city\": ")),
+					refusalChunk("help with that.", toolCallDelta(0, null, null, "\"London\"}")), finishChunk()));
+
+		assertThat(merged.choices().get(0).delta().refusal()).contains("I cannot help with that.");
+
+		ChatCompletion completion = OpenAiChatModel.ChunkMerger.chunkToChatCompletion(merged);
+		assertThat(completion.choices().get(0).message().refusal()).contains("I cannot help with that.");
+	}
+
+	@Test
 	void chunkToChatCompletionRequiresToolCallId() {
 		ChatCompletionChunk chunk = chunk(FinishReason.TOOL_CALLS,
 				toolCallDelta(0, null, "get_weather", "{\"city\":\"Seoul\"}"));
@@ -172,7 +200,19 @@ class OpenAiChatModelChunkMergerTests {
 	}
 
 	private static ChatCompletionChunk chunk(@Nullable FinishReason finishReason, ToolCall... toolCalls) {
-		Delta.Builder delta = Delta.builder();
+		return chunk(Delta.builder(), finishReason, toolCalls);
+	}
+
+	private static ChatCompletionChunk contentChunk(String content, ToolCall... toolCalls) {
+		return chunk(Delta.builder().content(content), null, toolCalls);
+	}
+
+	private static ChatCompletionChunk refusalChunk(String refusal, ToolCall... toolCalls) {
+		return chunk(Delta.builder().refusal(refusal), null, toolCalls);
+	}
+
+	private static ChatCompletionChunk chunk(Delta.Builder delta, @Nullable FinishReason finishReason,
+			ToolCall... toolCalls) {
 		if (toolCalls.length > 0) {
 			delta.toolCalls(List.of(toolCalls));
 		}
