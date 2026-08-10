@@ -19,6 +19,11 @@ on:
         required: false
         default: ''
         type: string
+      runner:
+        description: 'Runner label to use for all jobs (e.g. UBUNTU_SMALL, ubuntu-latest, ubuntu24-2-8-OSS). Leave empty to use the default.'
+        required: false
+        default: ''
+        type: string
   schedule:
     - cron: '0 4 * * 1,3,5'  # Mon, Wed, Fri at 4 AM UTC
 
@@ -27,7 +32,7 @@ jobs:
   build-all:
     name: Build all modules
     if: ${{ github.repository_owner == 'spring-projects' }}
-    runs-on: ${{ vars.COMMERCIAL && vars.UBUNTU_SMALL || 'ubuntu-latest' }}
+    runs-on: ${{ inputs.runner != '' && inputs.runner || (vars.COMMERCIAL && vars.UBUNTU_SMALL || 'ubuntu-latest') }}
     steps:
       - name: Checkout source code
         uses: actions/checkout@v6
@@ -62,7 +67,7 @@ jobs:
   test-ollama:
     needs: build-all
     if: ${{ (github.event_name == 'schedule' || inputs.test_suites == '' || contains(inputs.test_suites, 'ollama')) && !contains(inputs.exclude_test_suites || '', 'ollama') }}
-    runs-on: ${{ vars.COMMERCIAL && vars.UBUNTU_SMALL || 'ubuntu-latest' }}
+    runs-on: ${{ inputs.runner != '' && inputs.runner || (vars.COMMERCIAL && vars.UBUNTU_MEDIUM || 'ubuntu-latest') }}
     services:
       ollama:
         image: ollama/ollama:latest
@@ -102,7 +107,7 @@ jobs:
   test-anthropic:
     needs: build-all
     if: ${{ (github.event_name == 'schedule' || inputs.test_suites == '' || contains(inputs.test_suites, 'anthropic')) && !contains(inputs.exclude_test_suites || '', 'anthropic') }}
-    runs-on: ${{ vars.COMMERCIAL && vars.UBUNTU_SMALL || 'ubuntu-latest' }}
+    runs-on: ${{ inputs.runner != '' && inputs.runner || (vars.COMMERCIAL && vars.UBUNTU_SMALL || 'ubuntu-latest') }}
     env:
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
     steps:
@@ -140,7 +145,7 @@ jobs:
   test-azure-openai:
     needs: build-all
     if: ${{ (github.event_name == 'schedule' || inputs.test_suites == '' || contains(inputs.test_suites, 'azure-openai')) && !contains(inputs.exclude_test_suites || '', 'azure-openai') }}
-    runs-on: ${{ vars.COMMERCIAL && vars.UBUNTU_SMALL || 'ubuntu-latest' }}
+    runs-on: ${{ inputs.runner != '' && inputs.runner || (vars.COMMERCIAL && vars.UBUNTU_SMALL || 'ubuntu-latest') }}
     env:
       AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
       AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
@@ -183,7 +188,7 @@ jobs:
   test-mistral-ai:
     needs: build-all
     if: ${{ (github.event_name == 'schedule' || inputs.test_suites == '' || contains(inputs.test_suites, 'mistral-ai')) && !contains(inputs.exclude_test_suites || '', 'mistral-ai') }}
-    runs-on: ${{ vars.COMMERCIAL && vars.UBUNTU_SMALL || 'ubuntu-latest' }}
+    runs-on: ${{ inputs.runner != '' && inputs.runner || (vars.COMMERCIAL && vars.UBUNTU_SMALL || 'ubuntu-latest') }}
     env:
       MISTRAL_AI_API_KEY: ${{ secrets.MISTRAL_AI_API_KEY }}
     steps:
@@ -217,7 +222,7 @@ jobs:
   test-elevenlabs:
     needs: build-all
     if: ${{ (github.event_name == 'schedule' || inputs.test_suites == '' || contains(inputs.test_suites, 'elevenlabs')) && !contains(inputs.exclude_test_suites || '', 'elevenlabs') }}
-    runs-on: ${{ vars.COMMERCIAL && vars.UBUNTU_SMALL || 'ubuntu-latest' }}
+    runs-on: ${{ inputs.runner != '' && inputs.runner || (vars.COMMERCIAL && vars.UBUNTU_SMALL || 'ubuntu-latest') }}
     env:
       ELEVEN_LABS_API_KEY: ${{ secrets.ELEVEN_LABS_API_KEY }}
     steps:
@@ -251,7 +256,7 @@ jobs:
   test-bedrock:
     needs: build-all
     if: ${{ (github.event_name == 'schedule' || inputs.test_suites == '' || contains(inputs.test_suites, 'bedrock')) && !contains(inputs.exclude_test_suites || '', 'bedrock') }}
-    runs-on: ${{ vars.COMMERCIAL && vars.UBUNTU_SMALL || 'ubuntu-latest' }}
+    runs-on: ${{ inputs.runner != '' && inputs.runner || (vars.COMMERCIAL && vars.UBUNTU_SMALL || 'ubuntu-latest') }}
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -290,7 +295,7 @@ jobs:
   test-deepseek:
     needs: build-all
     if: ${{ (github.event_name == 'schedule' || inputs.test_suites == '' || contains(inputs.test_suites, 'deepseek')) && !contains(inputs.exclude_test_suites || '', 'deepseek') }}
-    runs-on: ${{ vars.COMMERCIAL && vars.UBUNTU_SMALL || 'ubuntu-latest' }}
+    runs-on: ${{ inputs.runner != '' && inputs.runner || (vars.COMMERCIAL && vars.UBUNTU_SMALL || 'ubuntu-latest') }}
     env:
       DEEPSEEK_API_KEY: ${{ secrets.DEEPSEEK_API_KEY }}
     steps:
@@ -328,7 +333,7 @@ jobs:
   test-google-genai:
     needs: build-all
     if: ${{ (github.event_name == 'schedule' || inputs.test_suites == '' || contains(inputs.test_suites, 'google-genai')) && !contains(inputs.exclude_test_suites || '', 'google-genai') }}
-    runs-on: ${{ vars.COMMERCIAL && vars.UBUNTU_SMALL || 'ubuntu-latest' }}
+    runs-on: ${{ inputs.runner != '' && inputs.runner || (vars.COMMERCIAL && vars.UBUNTU_SMALL || 'ubuntu-latest') }}
     env:
       GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
     steps:
@@ -366,7 +371,7 @@ jobs:
   test-vectorstores:
     needs: build-all
     if: ${{ (github.event_name == 'schedule' || inputs.test_suites == '' || contains(inputs.test_suites, 'vectorstores')) && !contains(inputs.exclude_test_suites || '', 'vectorstores') }}
-    runs-on: ${{ vars.COMMERCIAL && vars.UBUNTU_SMALL || 'ubuntu-latest' }}
+    runs-on: ${{ inputs.runner != '' && inputs.runner || (vars.COMMERCIAL && vars.UBUNTU_MEDIUM || 'ubuntu-latest') }}
     services:
       ollama:
         image: ollama/ollama:latest
@@ -414,7 +419,7 @@ jobs:
   test-autoconfigure:
     needs: build-all
     if: ${{ (github.event_name == 'schedule' || inputs.test_suites == '' || contains(inputs.test_suites, 'autoconfigure')) && !contains(inputs.exclude_test_suites || '', 'autoconfigure') }}
-    runs-on: ${{ vars.COMMERCIAL && vars.UBUNTU_SMALL || 'ubuntu-latest' }}
+    runs-on: ${{ inputs.runner != '' && inputs.runner || (vars.COMMERCIAL && vars.UBUNTU_SMALL || 'ubuntu-latest') }}
     env:
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -447,7 +452,7 @@ jobs:
   test-spring-ai-integration:
     needs: build-all
     if: ${{ (github.event_name == 'schedule' || inputs.test_suites == '' || contains(inputs.test_suites, 'spring-ai-integration')) && !contains(inputs.exclude_test_suites || '', 'spring-ai-integration') }}
-    runs-on: ${{ vars.COMMERCIAL && vars.UBUNTU_SMALL || 'ubuntu-latest' }}
+    runs-on: ${{ inputs.runner != '' && inputs.runner || (vars.COMMERCIAL && vars.UBUNTU_SMALL || 'ubuntu-latest') }}
     env:
       DOCKER_QUIET: 1              # Suppresses Docker CLI progress output
       TESTCONTAINERS_QUIET: true   # Additional quieting for testcontainers
@@ -488,7 +493,7 @@ jobs:
   test-docker-compose:
     needs: build-all
     if: ${{ (github.event_name == 'schedule' || inputs.test_suites == '' || contains(inputs.test_suites, 'docker-compose')) && !contains(inputs.exclude_test_suites || '', 'docker-compose') }}
-    runs-on: ${{ vars.COMMERCIAL && vars.UBUNTU_SMALL || 'ubuntu-latest' }}
+    runs-on: ${{ inputs.runner != '' && inputs.runner || (vars.COMMERCIAL && vars.UBUNTU_SMALL || 'ubuntu-latest') }}
     env:
       DOCKER_QUIET: 1              # Suppresses Docker CLI progress output
       TESTCONTAINERS_QUIET: true   # Additional quieting for testcontainers
@@ -523,7 +528,7 @@ jobs:
   test-testcontainers:
     needs: build-all
     if: ${{ (github.event_name == 'schedule' || inputs.test_suites == '' || contains(inputs.test_suites, 'testcontainers')) && !contains(inputs.exclude_test_suites || '', 'testcontainers') }}
-    runs-on: ${{ vars.COMMERCIAL && vars.UBUNTU_SMALL || 'ubuntu24-2-8-OSS' }}
+    runs-on: ${{ inputs.runner != '' && inputs.runner || (vars.COMMERCIAL && vars.UBUNTU_SMALL || 'ubuntu24-2-8-OSS') }}
     env:
       DOCKER_QUIET: 1              # Suppresses Docker CLI progress output
       TESTCONTAINERS_QUIET: true   # Additional quieting for testcontainers
