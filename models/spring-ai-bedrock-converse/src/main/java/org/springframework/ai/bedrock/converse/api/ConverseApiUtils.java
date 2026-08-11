@@ -19,6 +19,7 @@ package org.springframework.ai.bedrock.converse.api;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -100,7 +101,8 @@ public final class ConverseApiUtils {
 	private static Document convertMapToDocument(Map<String, Object> value) {
 		Map<String, Document> attr = value.entrySet()
 			.stream()
-			.collect(Collectors.toMap(e -> e.getKey(), e -> convertObjectToDocument(e.getValue())));
+			.collect(Collectors.toMap(Map.Entry::getKey, e -> convertObjectToDocument(e.getValue()), (a, b) -> b,
+					LinkedHashMap::new));
 
 		return Document.fromMap(attr);
 	}
