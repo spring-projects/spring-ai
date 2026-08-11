@@ -280,8 +280,30 @@ public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 	}
 
 	private DefaultUsage getDefaultUsage(CreateEmbeddingResponse.Usage nativeUsage) {
-		return new DefaultUsage(Math.toIntExact(nativeUsage.promptTokens()), 0,
-				Math.toIntExact(nativeUsage.totalTokens()), nativeUsage);
+		return new DefaultUsage(toIntTokenCount("promptTokens", nativeUsage.promptTokens()), 0,
+				toIntTokenCount("totalTokens", nativeUsage.totalTokens()), nativeUsage);
+	}
+
+	/**
+	 * Narrows a server-supplied token count to an {@code int}. Usage counts come from the
+	 * deserialised upstream response, so an out-of-range value means the response is not
+	 * trustworthy; fail clearly with the offending field and value rather than either
+	 * silently truncating the count (which would corrupt downstream cost/usage tracking
+	 * with a plausible-looking but wrong number) or letting a bare
+	 * {@link ArithmeticException} propagate.
+	 * @param fieldName the name of the usage field being converted, for diagnostics
+	 * @param value the upstream token count
+	 * @return the value narrowed to an {@code int}
+	 * @throws IllegalStateException if {@code value} is outside the {@code int} range
+	 */
+	private static int toIntTokenCount(String fieldName, long value) {
+		try {
+			return Math.toIntExact(value);
+		}
+		catch (ArithmeticException ex) {
+			throw new IllegalStateException(
+					"OpenAI-compatible provider returned an out-of-range " + fieldName + " value: " + value, ex);
+		}
 	}
 
 	private List<Embedding> generateEmbeddingList(List<com.openai.models.embeddings.Embedding> nativeData) {
