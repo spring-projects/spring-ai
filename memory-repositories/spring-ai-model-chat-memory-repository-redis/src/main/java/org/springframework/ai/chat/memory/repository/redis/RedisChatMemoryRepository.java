@@ -73,6 +73,7 @@ import org.springframework.util.MimeType;
  *
  * @author Brian Sam-Bodden
  * @author Yanming Zhou
+ * @author Dimitar Proynov
  */
 public final class RedisChatMemoryRepository implements ChatMemoryRepository, AdvancedRedisChatMemoryRepository {
 
@@ -114,8 +115,10 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 			}
 		}
 
-		// Get the next available timestamp for the first message
-		long nextTimestamp = getNextTimestampForConversation(conversationId);
+		// Atomically reserve a contiguous block of timestamps, one per message, so
+		// that concurrent add() calls for the same conversation never claim the same
+		// slot.
+		long nextTimestamp = reserveTimestampsForConversation(conversationId, messages.size());
 		final AtomicLong timestampSequence = new AtomicLong(nextTimestamp);
 
 		try (Pipeline pipeline = this.jedisClient.pipelined()) {
@@ -155,7 +158,7 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 		}
 
 		// Get the current highest timestamp for this conversation
-		long timestamp = getNextTimestampForConversation(conversationId);
+		long timestamp = reserveTimestampsForConversation(conversationId, 1);
 
 		String key = createKey(conversationId, timestamp);
 		Map<String, Object> documentMap = createMessageDocument(conversationId, message);
@@ -177,28 +180,33 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 	}
 
 	/**
-	 * Gets the next available timestamp for a conversation to ensure proper ordering.
-	 * Uses Redis Lua script for atomic operations to ensure thread safety when multiple
-	 * threads access the same conversation.
+	 * Atomically reserves a contiguous block of {@code count} timestamps for a
+	 * conversation and returns the first one. Uses a Redis Lua script so that the entire
+	 * block is reserved server-side in a single round-trip, ensuring that concurrent
+	 * callers (e.g. multiple application instances appending to the same conversation)
+	 * never end up with overlapping timestamp ranges, even when adding more than one
+	 * message at a time.
 	 * @param conversationId the conversation ID
-	 * @return the next timestamp to use
+	 * @param count the number of consecutive timestamps to reserve
+	 * @return the first timestamp of the reserved block; the caller owns
+	 * {@code [result, result + count - 1]}
 	 */
-	private long getNextTimestampForConversation(String conversationId) {
+	private long reserveTimestampsForConversation(String conversationId, int count) {
 		// Create a Redis key specifically for tracking the sequence
 		String sequenceKey = String.format("%scounter:%s", this.config.getKeyPrefix(), escapeKey(conversationId));
 
 		try {
 			// Get the current time as base timestamp
 			long baseTimestamp = Instant.now().toEpochMilli();
-			// Using a Lua script for atomic operation ensures that multiple threads
-			// will always get unique and increasing timestamps
+			// Using a Lua script for atomic operation ensures that concurrent callers
+			// always reserve disjoint blocks of unique and increasing timestamps
 			String script = "local exists = redis.call('EXISTS', KEYS[1]) " + "if exists == 0 then "
-					+ "  redis.call('SET', KEYS[1], ARGV[1]) " + "  return ARGV[1] " + "end "
-					+ "return redis.call('INCR', KEYS[1])";
+					+ "  redis.call('SET', KEYS[1], ARGV[1] + ARGV[2] - 1) " + "  return ARGV[1] " + "end "
+					+ "return redis.call('INCRBY', KEYS[1], ARGV[2]) - ARGV[2] + 1";
 
 			// Execute the script atomically
-			Object result = this.jedisClient.eval(script, java.util.Collections.singletonList(sequenceKey),
-					java.util.Collections.singletonList(String.valueOf(baseTimestamp)));
+			Object result = this.jedisClient.eval(script, Collections.singletonList(sequenceKey),
+					List.of(String.valueOf(baseTimestamp), String.valueOf(count)));
 
 			long nextTimestamp = Long.parseLong(result.toString());
 
@@ -208,7 +216,8 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 			}
 
 			if (logger.isDebugEnabled()) {
-				logger.debug("Generated atomic timestamp " + nextTimestamp + " for conversation " + conversationId);
+				logger.debug("Reserved " + count + " timestamp(s) starting at " + nextTimestamp + " for conversation "
+						+ conversationId);
 			}
 
 			return nextTimestamp;
@@ -217,8 +226,8 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 		catch (Exception e) {
 			// Log error and fall back to current timestamp with nanoTime for uniqueness
 			if (logger.isWarnEnabled()) {
-				logger.warn("Error getting atomic timestamp for conversation " + conversationId + ", using fallback: "
-						+ e.getMessage());
+				logger.warn("Error reserving atomic timestamps for conversation " + conversationId
+						+ ", using fallback: " + e.getMessage());
 			}
 			// Add nanoseconds to ensure uniqueness even in fallback scenario
 			return Instant.now().toEpochMilli() * 1000 + (System.nanoTime() % 1000);
