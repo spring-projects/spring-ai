@@ -24,12 +24,14 @@ import java.util.Map;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.core.io.Resource;
 
 /**
  * Anthropic connection properties.
  *
  * @author Soby Chacko
  * @author Sebastien Deleuze
+ * @author dragonfsky
  * @since 2.0.0
  */
 @ConfigurationProperties(AnthropicConnectionProperties.CONFIG_PREFIX)
@@ -48,6 +50,19 @@ public class AnthropicConnectionProperties {
 	private @Nullable Proxy proxy;
 
 	private Map<String, String> customHeaders = new HashMap<>();
+
+	/**
+	 * Backend type for the Anthropic API. Defaults to
+	 * {@link AnthropicBackendType#ANTHROPIC} (direct API). Set to
+	 * {@link AnthropicBackendType#VERTEX_AI} for Google Vertex AI.
+	 */
+	private AnthropicBackendType backend = AnthropicBackendType.ANTHROPIC;
+
+	/**
+	 * Vertex AI specific configuration. Only used when {@link #backend} is
+	 * {@link AnthropicBackendType#VERTEX_AI}.
+	 */
+	private Vertex vertex = new Vertex();
 
 	public @Nullable String getBaseUrl() {
 		return this.baseUrl;
@@ -95,6 +110,70 @@ public class AnthropicConnectionProperties {
 
 	public void setCustomHeaders(Map<String, String> customHeaders) {
 		this.customHeaders = customHeaders;
+	}
+
+	public AnthropicBackendType getBackend() {
+		return this.backend;
+	}
+
+	public void setBackend(AnthropicBackendType backend) {
+		this.backend = backend;
+	}
+
+	public Vertex getVertex() {
+		return this.vertex;
+	}
+
+	public void setVertex(Vertex vertex) {
+		this.vertex = vertex;
+	}
+
+	/**
+	 * Google Cloud Vertex AI configuration for Anthropic Claude models.
+	 */
+	public static class Vertex {
+
+		/**
+		 * Google Cloud project ID.
+		 */
+		private @Nullable String projectId;
+
+		/**
+		 * Vertex AI location. Examples: {@code global}, {@code us}, {@code eu},
+		 * {@code us-east5}.
+		 */
+		private @Nullable String location;
+
+		/**
+		 * Optional URI to a GCP service account JSON credentials file. When not
+		 * configured, Application Default Credentials (ADC) are used.
+		 */
+		private @Nullable Resource credentialsUri;
+
+		public @Nullable String getProjectId() {
+			return this.projectId;
+		}
+
+		public void setProjectId(@Nullable String projectId) {
+			this.projectId = projectId;
+		}
+
+		public @Nullable String getLocation() {
+			return this.location;
+		}
+
+		public void setLocation(@Nullable String location) {
+			this.location = location;
+		}
+
+		public @Nullable Resource getCredentialsUri() {
+			return this.credentialsUri;
+		}
+
+		public void setCredentialsUri(@Nullable Resource credentialsUri) {
+			this.credentialsUri = credentialsUri;
+		}
+
 	}
 
 }
