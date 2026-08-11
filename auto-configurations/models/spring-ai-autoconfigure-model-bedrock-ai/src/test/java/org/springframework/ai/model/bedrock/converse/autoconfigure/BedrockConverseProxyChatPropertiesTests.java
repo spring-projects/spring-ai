@@ -16,6 +16,8 @@
 
 package org.springframework.ai.model.bedrock.converse.autoconfigure;
 
+import java.util.Map;
+
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.bedrock.converse.BedrockProxyChatModel;
@@ -92,6 +94,27 @@ public class BedrockConverseProxyChatPropertiesTests {
 			.run(context -> {
 				assertThat(context.getBeansOfType(BedrockConverseProxyChatProperties.class)).isEmpty();
 				assertThat(context.getBeansOfType(BedrockProxyChatModel.class)).isEmpty();
+			});
+	}
+
+	@Test
+	public void requestParametersSupportsMixedFlatAndNestedValuesTest() {
+
+		new ApplicationContextRunner()
+			.withPropertyValues("spring.ai.bedrock.converse.chat.request-parameters.output_config.effort=low",
+					"spring.ai.bedrock.converse.chat.request-parameters.anthropic_version=bedrock-2023-05-31")
+			.withConfiguration(AutoConfigurations.of(BedrockConverseProxyChatAutoConfiguration.class,
+					ToolCallingAutoConfiguration.class))
+			.run(context -> {
+				var chatProperties = context.getBean(BedrockConverseProxyChatProperties.class);
+
+				assertThat(chatProperties.getRequestParameters()).containsEntry("anthropic_version",
+						"bedrock-2023-05-31");
+				assertThat(chatProperties.getRequestParameters().get("output_config")).isInstanceOfSatisfying(Map.class,
+						outputConfig -> assertThat(outputConfig).containsEntry("effort", "low"));
+
+				var options = chatProperties.toOptions();
+				assertThat(options.getRequestParameters()).containsKey("output_config");
 			});
 	}
 
