@@ -119,6 +119,13 @@ public class DefaultChatClientBuilder implements Builder {
 		return this.defaultRequest.mutate();
 	}
 
+	@Override
+	public Builder defaultStructuredOutputConverterFactory(StructuredOutputConverterFactory factory) {
+		Assert.notNull(factory, "factory cannot be null");
+		this.defaultRequest.structuredOutputConverterFactory(factory);
+		return this;
+	}
+
 	public Builder defaultAdvisors(Advisor... advisors) {
 		this.defaultRequest.advisors(advisors);
 		return this;
