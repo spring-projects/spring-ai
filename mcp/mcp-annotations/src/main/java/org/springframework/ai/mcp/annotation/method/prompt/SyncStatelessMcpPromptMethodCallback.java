@@ -118,7 +118,7 @@ public final class SyncStatelessMcpPromptMethodCallback extends AbstractMcpPromp
 				throw mcpError;
 			}
 
-			throw McpError.builder(ErrorCodes.INVALID_PARAMS)
+			throw McpError.builder(ErrorCodes.INTERNAL_ERROR)
 				.message("Error invoking prompt method: " + this.method.getName() + " in "
 						+ this.bean.getClass().getName() + ". /nCause: "
 						+ ErrorUtils.findCauseUsingPlainJava(e).getMessage())

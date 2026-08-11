@@ -129,7 +129,7 @@ public final class AsyncStatelessMcpPromptMethodCallback extends AbstractMcpProm
 					return Mono.error(mcpError);
 				}
 
-				return Mono.error(McpError.builder(ErrorCodes.INVALID_PARAMS)
+				return Mono.error(McpError.builder(ErrorCodes.INTERNAL_ERROR)
 					.message("Error invoking prompt method: " + this.method.getName() + " in "
 							+ this.bean.getClass().getName() + ". /nCause: "
 							+ ErrorUtils.findCauseUsingPlainJava(e).getMessage())
