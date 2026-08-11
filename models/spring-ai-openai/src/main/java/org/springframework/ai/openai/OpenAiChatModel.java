@@ -577,9 +577,7 @@ public final class OpenAiChatModel implements ChatModel {
 										.inputAudio(ChatCompletionContentPartInputAudio.builder()
 											.inputAudio(ChatCompletionContentPartInputAudio.InputAudio.builder()
 												.data(fromAudioData(media.getData()))
-												.format(mimeType.contains("mp3")
-														? ChatCompletionContentPartInputAudio.InputAudio.Format.MP3
-														: ChatCompletionContentPartInputAudio.InputAudio.Format.WAV)
+												.format(toInputAudioFormat(mimeType))
 												.build())
 											.build()
 											.inputAudio())
@@ -959,6 +957,26 @@ public final class OpenAiChatModel implements ChatModel {
 			return Base64.getEncoder().encodeToString(bytes);
 		}
 		throw new IllegalArgumentException("Unsupported audio data type: " + audioData.getClass().getSimpleName());
+	}
+
+	/**
+	 * Resolve the OpenAI audio input format for the given media MIME type. OpenAI accepts
+	 * only {@code mp3} and {@code wav} audio input.
+	 * @param mimeType the MIME type of the audio media
+	 * @return the matching OpenAI audio input format
+	 */
+	ChatCompletionContentPartInputAudio.InputAudio.Format toInputAudioFormat(String mimeType) {
+		String normalizedMimeType = mimeType.toLowerCase(Locale.ROOT);
+		// "audio/mpeg" is the media type registered for MP3 (RFC 3003) and the one
+		// returned by Spring's MimeType detection, while OpenAI names the format "mp3".
+		if (normalizedMimeType.contains("mp3") || normalizedMimeType.contains("mpeg")) {
+			return ChatCompletionContentPartInputAudio.InputAudio.Format.MP3;
+		}
+		if (!normalizedMimeType.contains("wav") && logger.isWarnEnabled()) {
+			logger.warn("OpenAI audio input supports only mp3 and wav, but got '" + mimeType
+					+ "'. Sending it as wav, which the model may reject.");
+		}
+		return ChatCompletionContentPartInputAudio.InputAudio.Format.WAV;
 	}
 
 	private String fromMediaData(org.springframework.util.MimeType mimeType, Object mediaContentData) {
