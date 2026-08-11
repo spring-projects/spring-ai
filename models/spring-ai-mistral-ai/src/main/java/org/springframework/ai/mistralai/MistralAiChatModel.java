@@ -16,6 +16,7 @@
 
 package org.springframework.ai.mistralai;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,6 +50,7 @@ import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.content.ContentPart;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.mistralai.api.MistralAiApi;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletion;
@@ -467,19 +469,25 @@ public class MistralAiChatModel implements ChatModel {
 	}
 
 	private ChatCompletionMessage createUserChatCompletionMessage(Message message) {
-		var content = message.getText();
-		Assert.state(content != null, "content must not be null");
-
-		if (message instanceof UserMessage userMessage && !CollectionUtils.isEmpty(userMessage.getMedia())) {
-			// @formatter:off
-			var contentChunks = Stream.<ChatCompletionMessage.ContentChunk>concat(
-				Stream.of(new ChatCompletionMessage.TextChunk(content)),
-				this.mapToImageUrlChunks(userMessage)
-			).toList();
-			// @formatter:on
+		// Ordered content is handled before the non-null text assertion below, since a
+		// message whose content starts with media has no leading text to assert on.
+		if (message instanceof UserMessage userMessage
+				&& (userMessage.hasInterleavedContent() || !CollectionUtils.isEmpty(userMessage.getMedia()))) {
+			var contentChunks = new ArrayList<ChatCompletionMessage.ContentChunk>();
+			for (ContentPart contentPart : userMessage.getContentParts()) {
+				if (contentPart instanceof ContentPart.TextPart textPart) {
+					contentChunks.add(new ChatCompletionMessage.TextChunk(textPart.text()));
+				}
+				else if (contentPart instanceof ContentPart.MediaPart mediaPart) {
+					contentChunks.add(this.mapToImageUrlChunk(mediaPart.media()));
+				}
+			}
 
 			return new ChatCompletionMessage(contentChunks, ChatCompletionMessage.Role.USER);
 		}
+
+		var content = message.getText();
+		Assert.state(content != null, "content must not be null");
 
 		return new ChatCompletionMessage(content, ChatCompletionMessage.Role.USER);
 	}
@@ -488,10 +496,6 @@ public class MistralAiChatModel implements ChatModel {
 		var function = new ChatCompletionFunction(toolCall.name(), toolCall.arguments());
 
 		return new ToolCall(toolCall.id(), toolCall.type(), function, null);
-	}
-
-	private Stream<ChatCompletionMessage.ImageUrlChunk> mapToImageUrlChunks(UserMessage userMessage) {
-		return userMessage.getMedia().stream().map(this::mapToImageUrlChunk);
 	}
 
 	private ChatCompletionMessage.ImageUrlChunk mapToImageUrlChunk(Media media) {
