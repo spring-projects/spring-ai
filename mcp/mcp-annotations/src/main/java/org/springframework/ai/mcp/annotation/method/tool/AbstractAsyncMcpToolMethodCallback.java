@@ -28,7 +28,6 @@ import reactor.core.publisher.Mono;
 
 import org.springframework.ai.mcp.annotation.McpTool;
 import org.springframework.ai.mcp.annotation.context.McpRequestContextTypes;
-import org.springframework.ai.util.JsonHelper;
 
 /**
  * Abstract base class for creating Function callbacks around async tool methods.
@@ -44,8 +43,6 @@ import org.springframework.ai.util.JsonHelper;
  */
 public abstract class AbstractAsyncMcpToolMethodCallback<T, RC extends McpRequestContextTypes<?>>
 		extends AbstractMcpToolMethodCallback<T, RC> {
-
-	private static final JsonHelper jsonHelper = new JsonHelper();
 
 	/**
 	 * @deprecated no longer consulted. Exception handling now follows the {@code @Tool}
@@ -91,7 +88,7 @@ public abstract class AbstractAsyncMcpToolMethodCallback<T, RC extends McpReques
 			// Handle Mono<Void> for VOID return type
 			if (ReactiveUtils.isReactiveReturnTypeOfVoid(this.toolMethod)) {
 				return monoResult
-					.then(Mono.just(CallToolResult.builder().addTextContent(jsonHelper.toJson("Done")).build()))
+					.then(Mono.just(CallToolResult.builder().addTextContent(getJsonHelper().toJson("Done")).build()))
 					.onErrorResume(this::toErrorResultOrPropagate);
 			}
 
@@ -111,7 +108,7 @@ public abstract class AbstractAsyncMcpToolMethodCallback<T, RC extends McpReques
 			// Handle Mono<Void> for VOID return type
 			if (ReactiveUtils.isReactiveReturnTypeOfVoid(this.toolMethod)) {
 				return fluxResult
-					.then(Mono.just(CallToolResult.builder().addTextContent(jsonHelper.toJson("Done")).build()))
+					.then(Mono.just(CallToolResult.builder().addTextContent(getJsonHelper().toJson("Done")).build()))
 					.onErrorResume(this::toErrorResultOrPropagate);
 			}
 
@@ -132,7 +129,7 @@ public abstract class AbstractAsyncMcpToolMethodCallback<T, RC extends McpReques
 			// Handle Mono<Void> for VOID return type
 			if (ReactiveUtils.isReactiveReturnTypeOfVoid(this.toolMethod)) {
 				return monoFromPublisher
-					.then(Mono.just(CallToolResult.builder().addTextContent(jsonHelper.toJson("Done")).build()))
+					.then(Mono.just(CallToolResult.builder().addTextContent(getJsonHelper().toJson("Done")).build()))
 					.onErrorResume(this::toErrorResultOrPropagate);
 			}
 

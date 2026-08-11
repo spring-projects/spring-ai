@@ -16,14 +16,20 @@
 
 package org.springframework.ai.mcp.server.common.autoconfigure.annotations;
 
+import java.lang.reflect.Method;
 import java.util.List;
 
+import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.mcp.annotation.McpComplete;
 import org.springframework.ai.mcp.annotation.McpPrompt;
 import org.springframework.ai.mcp.annotation.McpResource;
 import org.springframework.ai.mcp.annotation.McpTool;
+import org.springframework.ai.mcp.annotation.provider.tool.AsyncStatelessMcpToolProvider;
+import org.springframework.ai.mcp.annotation.provider.tool.SyncStatelessMcpToolProvider;
+import org.springframework.ai.mcp.annotation.spring.AnnotationProviderUtil;
 import org.springframework.ai.mcp.annotation.spring.AsyncMcpAnnotationProviders;
 import org.springframework.ai.mcp.annotation.spring.SyncMcpAnnotationProviders;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerStatelessAutoConfiguration;
@@ -31,6 +37,7 @@ import org.springframework.ai.mcp.server.common.autoconfigure.McpServerStdioDisa
 import org.springframework.ai.mcp.server.common.autoconfigure.StatelessToolCallbackConverterAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerAnnotationScannerAutoConfiguration.ServerMcpAnnotatedBeans;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
@@ -47,6 +54,28 @@ import org.springframework.context.annotation.Configuration;
 		McpServerStatelessAutoConfiguration.EnabledStatelessServerCondition.class,
 		StatelessToolCallbackConverterAutoConfiguration.ToolCallbackConverterCondition.class })
 public class StatelessServerSpecificationFactoryAutoConfiguration {
+
+	private static SyncStatelessMcpToolProvider syncToolProvider(List<Object> toolObjects, JsonMapper jsonMapper) {
+		var provider = new SyncStatelessMcpToolProvider(toolObjects) {
+			@Override
+			protected Method[] doGetClassMethods(Object bean) {
+				return AnnotationProviderUtil.beanMethods(bean);
+			}
+		};
+		provider.setJsonMapper(new JacksonMcpJsonMapper(jsonMapper));
+		return provider;
+	}
+
+	private static AsyncStatelessMcpToolProvider asyncToolProvider(List<Object> toolObjects, JsonMapper jsonMapper) {
+		var provider = new AsyncStatelessMcpToolProvider(toolObjects) {
+			@Override
+			protected Method[] doGetClassMethods(Object bean) {
+				return AnnotationProviderUtil.beanMethods(bean);
+			}
+		};
+		provider.setJsonMapper(new JacksonMcpJsonMapper(jsonMapper));
+		return provider;
+	}
 
 	@Configuration(proxyBeanMethods = false)
 	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
@@ -83,10 +112,12 @@ public class StatelessServerSpecificationFactoryAutoConfiguration {
 
 		@Bean
 		public List<McpStatelessServerFeatures.SyncToolSpecification> toolSpecs(
-				ServerMcpAnnotatedBeans beansWithMcpMethodAnnotations) {
+				ServerMcpAnnotatedBeans beansWithMcpMethodAnnotations,
+				@Qualifier("mcpServerJsonMapper") JsonMapper jsonMapper) {
 			List<Object> beansByAnnotation = beansWithMcpMethodAnnotations.getBeansByAnnotation(McpTool.class);
-			List<McpStatelessServerFeatures.SyncToolSpecification> syncToolSpecifications = SyncMcpAnnotationProviders
-				.statelessToolSpecifications(beansByAnnotation);
+			List<McpStatelessServerFeatures.SyncToolSpecification> syncToolSpecifications = syncToolProvider(
+					beansByAnnotation, jsonMapper)
+				.getToolSpecifications();
 			return syncToolSpecifications;
 		}
 
@@ -126,9 +157,10 @@ public class StatelessServerSpecificationFactoryAutoConfiguration {
 
 		@Bean
 		public List<McpStatelessServerFeatures.AsyncToolSpecification> toolSpecs(
-				ServerMcpAnnotatedBeans beansWithMcpMethodAnnotations) {
-			return AsyncMcpAnnotationProviders
-				.statelessToolSpecifications(beansWithMcpMethodAnnotations.getBeansByAnnotation(McpTool.class));
+				ServerMcpAnnotatedBeans beansWithMcpMethodAnnotations,
+				@Qualifier("mcpServerJsonMapper") JsonMapper jsonMapper) {
+			return asyncToolProvider(beansWithMcpMethodAnnotations.getBeansByAnnotation(McpTool.class), jsonMapper)
+				.getToolSpecifications();
 		}
 
 	}
