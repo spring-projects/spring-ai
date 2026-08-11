@@ -107,7 +107,7 @@ public class ResourceCacheService {
 			}
 
 			File cachedFile = getCachedFile(originalResource);
-			if (!cachedFile.exists()) {
+			if (!cachedFile.exists() || isCachedFileStale(originalResource, cachedFile)) {
 				FileCopyUtils.copy(StreamUtils.copyToByteArray(originalResource.getInputStream()), cachedFile);
 				logger.info("Caching the " + originalResource.toString() + " resource to: " + cachedFile);
 			}
@@ -115,6 +115,40 @@ public class ResourceCacheService {
 		}
 		catch (Exception e) {
 			throw new IllegalStateException("Failed to cache the resource: " + originalResource.getDescription(), e);
+		}
+	}
+
+	/**
+	 * Determine whether an existing cached file is out of date with respect to the
+	 * original resource. Because the cache key is derived only from the resource
+	 * location, a resource replaced in place (for example an ONNX model bundled in a
+	 * rebuilt fat jar) keeps the same cache path and would otherwise be served from a
+	 * stale copy. A cached file is treated as stale when its size differs from the
+	 * original resource, or when the original resource has been modified more recently
+	 * than the cached copy.
+	 * @param originalResource the source resource being cached
+	 * @param cachedFile the existing cached copy on the local file system
+	 * @return {@code true} if the cached file should be refreshed from the original
+	 * resource
+	 */
+	private boolean isCachedFileStale(Resource originalResource, File cachedFile) {
+		try {
+			long originalLength = originalResource.contentLength();
+			if (originalLength >= 0 && originalLength != cachedFile.length()) {
+				return true;
+			}
+		}
+		catch (IOException ex) {
+			// Content length is not available for this resource; fall back to the
+			// modification time check below.
+		}
+		try {
+			long originalLastModified = originalResource.lastModified();
+			return originalLastModified > 0 && originalLastModified > cachedFile.lastModified();
+		}
+		catch (IOException ex) {
+			// Modification time is not available either; keep the existing cached copy.
+			return false;
 		}
 	}
 
