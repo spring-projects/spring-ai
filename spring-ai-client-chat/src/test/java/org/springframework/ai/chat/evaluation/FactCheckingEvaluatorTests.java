@@ -34,6 +34,8 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.chat.prompt.PromptTemplate;
+import org.springframework.ai.document.Document;
 import org.springframework.ai.evaluation.EvaluationRequest;
 import org.springframework.ai.evaluation.EvaluationResponse;
 
@@ -79,6 +81,7 @@ class FactCheckingEvaluatorTests {
 		assertThat(evaluator).isNotNull();
 	}
 
+	@SuppressWarnings("deprecation")
 	@ParameterizedTest
 	@ValueSource(strings = { "yes", " yes", "yes ", " yes ", "YES", " YES\n", "\tYes\t" })
 	void whenEvaluationResponseIsYesWithWhitespaceThenPass(String response) {
@@ -92,6 +95,7 @@ class FactCheckingEvaluatorTests {
 		assertThat(result.isPass()).isTrue();
 	}
 
+	@SuppressWarnings("deprecation")
 	@ParameterizedTest
 	@ValueSource(strings = { "no", " no ", "yes and more", "maybe" })
 	void whenEvaluationResponseIsNotYesThenFail(String response) {
@@ -103,6 +107,106 @@ class FactCheckingEvaluatorTests {
 		EvaluationResponse result = evaluator.evaluate(new EvaluationRequest("query", List.of(), "response content"));
 
 		assertThat(result.isPass()).isFalse();
+	}
+
+	@Test
+	void whenCreatedWithChatClientBuilderThenEvaluatorIsCreated() {
+		FactCheckingEvaluator evaluator = new FactCheckingEvaluator(ChatClient.builder(mock(ChatModel.class)));
+
+		assertThat(evaluator).isNotNull();
+	}
+
+	@Test
+	void whenConstructorChatClientBuilderIsNullThenThrow() {
+		assertThatThrownBy(() -> new FactCheckingEvaluator(null)).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("chatClientBuilder cannot be null");
+	}
+
+	@Test
+	void whenCreatedWithNewBuilderThenEvaluatorIsCreated() {
+		FactCheckingEvaluator evaluator = FactCheckingEvaluator.builder()
+			.chatClientBuilder(ChatClient.builder(mock(ChatModel.class)))
+			.build();
+
+		assertThat(evaluator).isNotNull();
+	}
+
+	@Test
+	void whenNewBuilderChatClientBuilderIsNullThenThrow() {
+		assertThatThrownBy(() -> FactCheckingEvaluator.builder().build()).isInstanceOf(IllegalStateException.class)
+			.hasMessageContaining("ChatClientBuilder cannot be null");
+	}
+
+	@Test
+	void whenPromptTemplateIsConfiguredThenUseIt() {
+		given(this.chatModel.call(this.promptCaptor.capture()))
+			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("yes")))));
+		given(this.chatModel.getOptions()).willReturn(ChatOptions.builder().build());
+
+		PromptTemplate promptTemplate = new PromptTemplate("""
+				Custom fact check
+				Document: {document}
+				Claim: {claim}
+				""");
+		FactCheckingEvaluator evaluator = FactCheckingEvaluator.builder()
+			.chatClientBuilder(ChatClient.builder(this.chatModel))
+			.promptTemplate(promptTemplate)
+			.build();
+
+		evaluator
+			.evaluate(new EvaluationRequest("query", List.of(new Document("supporting context")), "response content"));
+
+		assertThat(this.promptCaptor.getValue().getContents()).contains("Custom fact check", "supporting context",
+				"response content");
+	}
+
+	@SuppressWarnings("deprecation")
+	@Test
+	void whenLegacyEvaluationPromptIsConfiguredThenUseIt() {
+		given(this.chatModel.call(this.promptCaptor.capture()))
+			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("yes")))));
+		given(this.chatModel.getOptions()).willReturn(ChatOptions.builder().build());
+
+		FactCheckingEvaluator evaluator = FactCheckingEvaluator.builder(ChatClient.builder(this.chatModel))
+			.evaluationPrompt("""
+					Legacy fact check
+					Document: {document}
+					Claim: {claim}
+					""")
+			.build();
+
+		evaluator
+			.evaluate(new EvaluationRequest("query", List.of(new Document("supporting context")), "response content"));
+
+		assertThat(this.promptCaptor.getValue().getContents()).contains("Legacy fact check", "supporting context",
+				"response content");
+	}
+
+	@Test
+	void whenProtectedStringConstructorIsUsedThenUsePrompt() {
+		given(this.chatModel.call(this.promptCaptor.capture()))
+			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("yes")))));
+		given(this.chatModel.getOptions()).willReturn(ChatOptions.builder().build());
+
+		FactCheckingEvaluator evaluator = new FactCheckingEvaluator(ChatClient.builder(this.chatModel), """
+				Protected constructor fact check
+				Document: {document}
+				Claim: {claim}
+				""");
+
+		evaluator
+			.evaluate(new EvaluationRequest("query", List.of(new Document("supporting context")), "response content"));
+
+		assertThat(this.promptCaptor.getValue().getContents()).contains("Protected constructor fact check",
+				"supporting context", "response content");
+	}
+
+	@SuppressWarnings("deprecation")
+	@Test
+	void whenLegacyEvaluationPromptIsNullThenThrow() {
+		assertThatThrownBy(() -> FactCheckingEvaluator.builder(ChatClient.builder(mock(ChatModel.class)))
+			.evaluationPrompt(null)
+			.build()).isInstanceOf(IllegalStateException.class).hasMessageContaining("EvaluationPrompt cannot be null");
 	}
 
 }
