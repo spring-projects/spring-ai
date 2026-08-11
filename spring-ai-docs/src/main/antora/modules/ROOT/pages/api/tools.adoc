@@ -1,4 +1,6 @@
 [[Tools]]
+:page-aliases: api/functions.adoc
+
 = Tool Calling
 
 _Tool calling_ — the ability for an AI model to invoke application-defined functions and act on their results — is the essential building block of agentic AI systems. A model that can only generate text is a chatbot; a model that can discover information, take action, and loop until a goal is reached is an agent.
