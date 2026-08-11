@@ -115,8 +115,28 @@ You can use the following properties in your Spring Boot configuration to custom
 |`spring.ai.vectorstore.azure.content-field-name`|content
 |`spring.ai.vectorstore.azure.embedding-field-name`|embedding
 |`spring.ai.vectorstore.azure.metadata-field-name`|metadata
+|`spring.ai.vectorstore.azure.metadata-fields`|[] (empty list). List of filterable metadata fields with `name` and `field-type` (string, int32, int64, decimal, bool, date). Also accepts `metadata-fileds` (typo alias)
 |===
 
+You can configure filterable metadata fields via YAML (both `metadata-fields` and `metadata-fileds` work):
+
+[source,yaml]
+----
+spring:
+  ai:
+    vectorstore:
+      azure:
+        url: https://your-search-endpoint.search.windows.net
+        api-key: ${AZURE_AI_SEARCH_API_KEY}
+        initialize-schema: true
+        metadata-fields:
+          - name: department
+            field-type: string
+          - name: year
+            field-type: int64
+          - name: created_date
+            field-type: date
+----
 
 == Sample Code
 
