@@ -71,6 +71,7 @@ import org.springframework.util.StringUtils;
  * {@link ToolIndexEvictionStrategy}.
  *
  * @author Christian Tzolov
+ * @author Yanming Zhou
  * @since 2.0.0
  */
 public class ToolSearchToolCallingAdvisor extends ToolCallingAdvisor {
@@ -322,11 +323,10 @@ public class ToolSearchToolCallingAdvisor extends ToolCallingAdvisor {
 
 	private String getSessionId(Map<String, @Nullable Object> context) {
 		Assert.notNull(context, "context cannot be null");
-		Assert.noNullElements(context.keySet().toArray(), "context cannot contain null keys");
-		Assert.notNull(context.get(this.sessionIdKeyName),
-				"context must contain a non-null value for '" + this.sessionIdKeyName + "'");
+		Object sessionIdKey = context.get(this.sessionIdKeyName);
+		Assert.notNull(sessionIdKey, "context must contain a non-null value for '" + this.sessionIdKeyName + "'");
 
-		return context.get(this.sessionIdKeyName).toString();
+		return sessionIdKey.toString();
 	}
 
 	/**
