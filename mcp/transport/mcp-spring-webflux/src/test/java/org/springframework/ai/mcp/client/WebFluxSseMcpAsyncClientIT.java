@@ -23,11 +23,11 @@ import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.spec.McpClientTransport;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Timeout;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import org.springframework.ai.mcp.client.webflux.transport.WebFluxSseClientTransport;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -37,13 +37,13 @@ import org.springframework.web.reactive.function.client.WebClient;
  *
  * @author Christian Tzolov
  */
+@Testcontainers
 @Timeout(60)
 class WebFluxSseMcpAsyncClientIT extends AbstractMcpAsyncClientTests {
 
 	private static final Log logger = LogFactory.getLog(WebFluxSseMcpAsyncClientIT.class);
 
-	static String host = "http://localhost:3001";
-
+	@Container
 	@SuppressWarnings("resource")
 	static GenericContainer<?> container = new GenericContainer<>("docker.io/node:lts-alpine3.23")
 		.withCommand("npx -y @modelcontextprotocol/server-everything@2025.12.18 sse")
@@ -53,19 +53,8 @@ class WebFluxSseMcpAsyncClientIT extends AbstractMcpAsyncClientTests {
 
 	@Override
 	protected McpClientTransport createMcpTransport() {
+		String host = "http://" + container.getHost() + ":" + container.getMappedPort(3001);
 		return WebFluxSseClientTransport.builder(WebClient.builder().baseUrl(host)).build();
-	}
-
-	@BeforeAll
-	static void startContainer() {
-		container.start();
-		int port = container.getMappedPort(3001);
-		host = "http://" + container.getHost() + ":" + port;
-	}
-
-	@AfterAll
-	static void stopContainer() {
-		container.stop();
 	}
 
 	protected Duration getInitializationTimeout() {
