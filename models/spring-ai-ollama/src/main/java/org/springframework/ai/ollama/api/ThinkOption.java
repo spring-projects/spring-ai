@@ -100,6 +100,7 @@ public sealed interface ThinkOption {
 	 *
 	 * @param enabled whether thinking is enabled
 	 */
+	@JsonSerialize(using = ThinkOption.ThinkOptionSerializer.class)
 	record ThinkBoolean(boolean enabled) implements ThinkOption {
 
 		/**
@@ -124,6 +125,7 @@ public sealed interface ThinkOption {
 	 *
 	 * @param level the thinking level: "low", "medium", or "high"
 	 */
+	@JsonSerialize(using = ThinkOption.ThinkOptionSerializer.class)
 	record ThinkLevel(String level) implements ThinkOption {
 
 		private static final List<String> VALID_LEVELS = List.of("low", "medium", "high");
