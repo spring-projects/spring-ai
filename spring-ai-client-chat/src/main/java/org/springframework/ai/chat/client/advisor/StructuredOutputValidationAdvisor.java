@@ -171,6 +171,11 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 					logger.debug("JSON validation succeeded");
 				}
 			}
+			else {
+				// Hand the tool call request back to the outer tool-calling advisor for
+				// execution; re-invoking the model instead would discard the request.
+				break;
+			}
 		}
 
 		return usageAccumulator.applyAccumulatedUsage(Objects.requireNonNull(chatClientResponse));
