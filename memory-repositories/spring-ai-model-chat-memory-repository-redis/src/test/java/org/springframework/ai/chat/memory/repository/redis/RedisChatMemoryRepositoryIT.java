@@ -16,6 +16,7 @@
 
 package org.springframework.ai.chat.memory.repository.redis;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.redis.testcontainers.RedisContainer;
@@ -173,6 +174,30 @@ class RedisChatMemoryRepositoryIT {
 			this.chatMemoryRepository.deleteByConversationId("test-conversation");
 
 			// Verify conversation is gone
+			assertThat(this.chatMemoryRepository.findByConversationId("test-conversation")).isEmpty();
+			assertThat(this.chatMemoryRepository.findConversationIds()).doesNotContain("test-conversation");
+		});
+	}
+
+	@Test
+	void shouldDeleteConversationWithMoreThanTenMessages() {
+		this.contextRunner.run(context -> {
+			// FT.SEARCH defaults to LIMIT 0 10, so use more than 10 messages to
+			// verify clear() pages through all matching documents instead of only
+			// deleting the first page.
+			List<Message> messages = new ArrayList<>();
+			for (int i = 0; i < 15; i++) {
+				messages.add(new UserMessage("Message " + i));
+			}
+			this.chatMemoryRepository.saveAll("test-conversation", messages);
+
+			// Verify initial state
+			assertThat(this.chatMemoryRepository.findByConversationId("test-conversation")).hasSize(15);
+
+			// Delete the conversation
+			this.chatMemoryRepository.deleteByConversationId("test-conversation");
+
+			// Verify every message was removed, not just the first 10
 			assertThat(this.chatMemoryRepository.findByConversationId("test-conversation")).isEmpty();
 			assertThat(this.chatMemoryRepository.findConversationIds()).doesNotContain("test-conversation");
 		});

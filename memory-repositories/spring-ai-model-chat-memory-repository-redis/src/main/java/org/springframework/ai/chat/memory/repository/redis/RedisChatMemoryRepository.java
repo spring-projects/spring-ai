@@ -363,13 +363,20 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 		// Use QueryBuilders to create a tag field query
 		QueryNode queryNode = QueryBuilders.intersect("conversation_id",
 				Values.tags(RediSearchUtil.escape(conversationId)));
-		Query query = new Query(queryNode.toString());
-		SearchResult result = this.jedisClient.ftSearch(this.config.getIndexName(), query);
 
-		try (Pipeline pipeline = this.jedisClient.pipelined()) {
-			result.getDocuments().forEach(doc -> pipeline.del(doc.getId()));
-			pipeline.sync();
+		// FT.SEARCH defaults to LIMIT 0 10, so page through the matching documents,
+		// deleting each batch, until none remain.
+		SearchResult result;
+		do {
+			Query query = new Query(queryNode.toString());
+			result = this.jedisClient.ftSearch(this.config.getIndexName(), query);
+
+			try (Pipeline pipeline = this.jedisClient.pipelined()) {
+				result.getDocuments().forEach(doc -> pipeline.del(doc.getId()));
+				pipeline.sync();
+			}
 		}
+		while (!result.getDocuments().isEmpty());
 	}
 
 	private void initializeSchema() {
