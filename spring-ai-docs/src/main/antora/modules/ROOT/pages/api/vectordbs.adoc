@@ -236,7 +236,10 @@ In this configuration:
 2. `8000`: Sets the maximum input token count. This value should be less than or equal to the maximum context window size of your embedding model.
 3. `0.1`: Sets the reserve percentage. The percentage of tokens to reserve from the max input token count. This creates a buffer for potential token count increases during processing.
 
-By default, this constructor uses `Document.DEFAULT_CONTENT_FORMATTER` for content formatting and `MetadataMode.NONE` for metadata handling. If you need to customize these parameters, you can use the full constructor with additional parameters.
+By default, this constructor uses `Document.DEFAULT_CONTENT_FORMATTER` for content formatting and `MetadataMode.EMBED` for metadata handling.
+For a metadata-aware embedding model that includes document metadata in the text it submits, estimating with `MetadataMode.NONE` undercounts that text and can produce batches larger than the configured limit.
+Applications whose embedding model embeds the document text only can pass `MetadataMode.NONE` to the full constructor.
+If you need to customize these parameters, you can use the full constructor with additional parameters.
 
 Once defined, this custom `TokenCountBatchingStrategy` bean will be automatically used by the `EmbeddingModel` implementations in your application, replacing the default strategy.
 
@@ -253,7 +256,7 @@ TokenCountBatchingStrategy strategy = new TokenCountBatchingStrategy(
     8000,  // maxInputTokenCount
     0.1,   // reservePercentage
     Document.DEFAULT_CONTENT_FORMATTER,
-    MetadataMode.NONE
+    MetadataMode.EMBED
 );
 ----
 
