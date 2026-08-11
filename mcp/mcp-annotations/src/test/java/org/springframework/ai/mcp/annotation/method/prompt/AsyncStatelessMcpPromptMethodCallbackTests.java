@@ -39,6 +39,7 @@ import reactor.test.StepVerifier;
 
 import org.springframework.ai.mcp.annotation.McpArg;
 import org.springframework.ai.mcp.annotation.McpMeta;
+import org.springframework.ai.mcp.annotation.McpProgressToken;
 import org.springframework.ai.mcp.annotation.McpPrompt;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -781,6 +782,38 @@ public class AsyncStatelessMcpPromptMethodCallbackTests {
 			.hasMessageContaining("Use McpTransportContext instead");
 	}
 
+	@Test
+	public void testCallbackInjectsProgressTokenFromRequest() throws Exception {
+		TestPromptProvider provider = new TestPromptProvider();
+		Method method = TestPromptProvider.class.getMethod("getPromptWithProgressToken", String.class, String.class);
+
+		Prompt prompt = createTestPrompt("progress-token", "A prompt with progress token");
+
+		BiFunction<McpTransportContext, GetPromptRequest, Mono<GetPromptResult>> callback = AsyncStatelessMcpPromptMethodCallback
+			.builder()
+			.method(method)
+			.bean(provider)
+			.prompt(prompt)
+			.build();
+
+		McpTransportContext context = mock(McpTransportContext.class);
+		Map<String, Object> args = new HashMap<>();
+		args.put("name", "John");
+		GetPromptRequest request = new GetPromptRequest("progress-token", args,
+				Map.of("progressToken", "progress-123"));
+
+		Mono<GetPromptResult> resultMono = callback.apply(context, request);
+
+		StepVerifier.create(resultMono).assertNext(result -> {
+			assertThat(result).isNotNull();
+			assertThat(result.description()).isEqualTo("Progress token prompt");
+			assertThat(result.messages()).hasSize(1);
+			PromptMessage message = result.messages().get(0);
+			assertThat(message.role()).isEqualTo(Role.ASSISTANT);
+			assertThat(((TextContent) message.content()).text()).isEqualTo("Hello John (token: progress-123)");
+		}).verifyComplete();
+	}
+
 	private static class TestPromptProvider {
 
 		@McpPrompt(name = "greeting", description = "A simple greeting prompt")
@@ -799,6 +832,14 @@ public class AsyncStatelessMcpPromptMethodCallbackTests {
 						TextContent.builder("Hello with context from " + request.name()).build())))
 				.description("Greeting with context")
 				.build();
+		}
+
+		@McpPrompt(name = "progress-token", description = "A prompt with progress token")
+		public GetPromptResult getPromptWithProgressToken(@McpProgressToken String progressToken,
+				@McpArg(name = "name", description = "The user's name", required = true) String name) {
+			String tokenInfo = progressToken != null ? " (token: " + progressToken + ")" : " (no token)";
+			return new GetPromptResult("Progress token prompt",
+					List.of(new PromptMessage(Role.ASSISTANT, new TextContent("Hello " + name + tokenInfo))));
 		}
 
 		@McpPrompt(name = "arguments-greeting", description = "A greeting prompt with arguments")
