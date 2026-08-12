@@ -71,7 +71,7 @@ public class DefaultAdvisorObservationConvention implements AdvisorObservationCo
 	}
 
 	protected KeyValue aiOperationType(AdvisorObservationContext context) {
-		return KeyValue.of(LowCardinalityKeyNames.AI_OPERATION_TYPE, AiOperationType.FRAMEWORK.value());
+		return KeyValue.of(LowCardinalityKeyNames.AI_OPERATION_TYPE, AiOperationType.INVOKE_WORKFLOW.value());
 	}
 
 	protected KeyValue aiProvider(AdvisorObservationContext context) {
