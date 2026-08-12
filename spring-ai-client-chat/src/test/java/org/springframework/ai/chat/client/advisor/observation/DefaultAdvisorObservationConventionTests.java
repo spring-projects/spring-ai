@@ -64,6 +64,25 @@ class DefaultAdvisorObservationConventionTests {
 	}
 
 	@Test
+	void contextualNameNormalizesWhitespaceForStructuredOutputValidationAdvisor() {
+		AdvisorObservationContext observationContext = AdvisorObservationContext.builder()
+			.chatClientRequest(ChatClientRequest.builder().prompt(new Prompt("Hello")).build())
+			.advisorName("Structured Output Validation Advisor")
+			.build();
+		assertThat(this.observationConvention.getContextualName(observationContext))
+			.isEqualTo("structured_output_validation");
+	}
+
+	@Test
+	void contextualNameStripsAroundAdvisorSuffix() {
+		AdvisorObservationContext observationContext = AdvisorObservationContext.builder()
+			.chatClientRequest(ChatClientRequest.builder().prompt(new Prompt("Hello")).build())
+			.advisorName("MyAroundAdvisor")
+			.build();
+		assertThat(this.observationConvention.getContextualName(observationContext)).isEqualTo("my");
+	}
+
+	@Test
 	void supportsAdvisorObservationContext() {
 		AdvisorObservationContext observationContext = AdvisorObservationContext.builder()
 			.chatClientRequest(ChatClientRequest.builder().prompt(new Prompt("Hello")).build())
