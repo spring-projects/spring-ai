@@ -55,6 +55,15 @@ class DefaultAdvisorObservationConventionTests {
 	}
 
 	@Test
+	void contextualNameNormalizesWhitespaceInAdvisorName() {
+		AdvisorObservationContext observationContext = AdvisorObservationContext.builder()
+			.chatClientRequest(ChatClientRequest.builder().prompt(new Prompt("Hello")).build())
+			.advisorName("Tool Calling Advisor")
+			.build();
+		assertThat(this.observationConvention.getContextualName(observationContext)).isEqualTo("tool_calling");
+	}
+
+	@Test
 	void supportsAdvisorObservationContext() {
 		AdvisorObservationContext observationContext = AdvisorObservationContext.builder()
 			.chatClientRequest(ChatClientRequest.builder().prompt(new Prompt("Hello")).build())
