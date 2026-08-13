@@ -1018,6 +1018,8 @@ public class BedrockProxyChatModel implements ChatModel {
 
 		private @Nullable BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient;
 
+		private @Nullable MediaFetcher mediaFetcher;
+
 		private Builder() {
 		}
 
@@ -1104,6 +1106,21 @@ public class BedrockProxyChatModel implements ChatModel {
 			return this;
 		}
 
+		/**
+		 * Sets the {@link MediaFetcher} used to retrieve user-supplied media URLs.
+		 * Configure one with a host allowlist (e.g.
+		 * {@code new MediaFetcher(Set.of("*.trusted-cdn.com"))}) to restrict media
+		 * fetching to known-good hosts instead of relying solely on the SSRF blocklist.
+		 * Defaults to {@code new MediaFetcher()} (blocklist-only) when not set.
+		 * @param mediaFetcher the media fetcher to use
+		 * @return this builder
+		 */
+		public Builder mediaFetcher(MediaFetcher mediaFetcher) {
+			Assert.notNull(mediaFetcher, "'mediaFetcher' must not be null.");
+			this.mediaFetcher = mediaFetcher;
+			return this;
+		}
+
 		public BedrockProxyChatModel build() {
 
 			if (this.bedrockRuntimeClient == null) {
@@ -1142,7 +1159,8 @@ public class BedrockProxyChatModel implements ChatModel {
 					: ToolCallingManager.builder().observationRegistry(this.observationRegistry).build();
 
 			BedrockProxyChatModel bedrockProxyChatModel = new BedrockProxyChatModel(this.bedrockRuntimeClient,
-					this.bedrockRuntimeAsyncClient, this.options, this.observationRegistry, this.toolCallingManager);
+					this.bedrockRuntimeAsyncClient, this.options, this.observationRegistry, this.toolCallingManager,
+					this.mediaFetcher != null ? this.mediaFetcher : new MediaFetcher());
 
 			if (this.customObservationConvention != null) {
 				bedrockProxyChatModel.setObservationConvention(this.customObservationConvention);

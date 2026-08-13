@@ -1084,6 +1084,29 @@ along with the text message "You are a very professional document summarization 
 ...
 ----
 
+=== Security Considerations
+
+When `Media` content is supplied as a `String` or `java.net.URL` pointing to an `http`/`https` resource, `BedrockProxyChatModel` fetches the bytes server-side before forwarding them to Amazon Bedrock.
+Fetching a URL supplied by an untrusted caller (for example, a URL pasted by a chat user) is a classic Server-Side Request Forgery (SSRF) risk: without protection, the application server could be made to reach internal services that were never meant to be exposed.
+
+By default, `BedrockProxyChatModel` fetches through a `MediaFetcher` that blocks requests to addresses that are not globally reachable, including loopback, link-local, and private-use ranges, as well as less common ones such as IPv6 Unique Local Addresses and IPv4 carrier-grade NAT space.
+
+IMPORTANT: This blocklist is defense-in-depth, not a substitute for restricting fetches to known-good hosts.
+A blocklist can only reject address ranges it already knows about, so it cannot guarantee that every current or future non-public address range is covered.
+If your application accepts media URLs from untrusted users, configure `MediaFetcher` with an explicit host allowlist instead of relying on the blocklist alone.
+
+[source,java]
+----
+MediaFetcher mediaFetcher = new MediaFetcher(Set.of("*.trusted-cdn.com", "images.example.com"));
+
+BedrockProxyChatModel chatModel = BedrockProxyChatModel.builder()
+    .bedrockRuntimeClient(runtimeClient)
+    .bedrockRuntimeAsyncClient(asyncClient)
+    .mediaFetcher(mediaFetcher)
+    .build();
+----
+
+Only hosts in the allowlist (exact matches or `*.suffix` wildcards) are fetched; every other host is rejected before any network request is made, regardless of what the blocklist would otherwise allow.
 
 == Sample Controller
 

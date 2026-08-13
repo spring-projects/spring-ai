@@ -83,6 +83,154 @@ class URLValidatorTest {
 	}
 
 	// -------------------------------------------------------------------------
+	// IPv4 shared address space / carrier-grade NAT (RFC 6598)
+	// -------------------------------------------------------------------------
+
+	@ParameterizedTest(name = "assertNoInternalAddress blocks CGNAT: {0}")
+	@ValueSource(strings = { "100.64.0.1", "100.100.100.200", "100.127.255.255" })
+	void cgnatThrowsSecurityException(String host) {
+		// 100.100.100.200 is Alibaba Cloud's IPv6/CGNAT-addressed metadata service
+		assertThatThrownBy(() -> URLValidator.assertNoInternalAddress(host)).isInstanceOf(SecurityException.class)
+			.hasMessageContaining(host);
+	}
+
+	@ParameterizedTest(name = "assertNoInternalAddress does not block addresses outside CGNAT: {0}")
+	@ValueSource(strings = { "100.63.255.255", "100.128.0.0" })
+	void justOutsideCgnatDoesNotThrow(String host) {
+		assertThatCode(() -> URLValidator.assertNoInternalAddress(host)).doesNotThrowAnyException();
+	}
+
+	// -------------------------------------------------------------------------
+	// IPv4 limited broadcast, multicast, and benchmarking ranges
+	// -------------------------------------------------------------------------
+
+	@Test
+	void limitedBroadcastThrowsSecurityException() {
+		assertThatThrownBy(() -> URLValidator.assertNoInternalAddress("255.255.255.255"))
+			.isInstanceOf(SecurityException.class);
+	}
+
+	@Test
+	void multicastThrowsSecurityException() {
+		assertThatThrownBy(() -> URLValidator.assertNoInternalAddress("224.0.0.1"))
+			.isInstanceOf(SecurityException.class);
+	}
+
+	@ParameterizedTest(name = "assertNoInternalAddress blocks IPv4 benchmarking: {0}")
+	@ValueSource(strings = { "198.18.0.1", "198.19.255.255" })
+	void benchmarkingIpv4ThrowsSecurityException(String host) {
+		assertThatThrownBy(() -> URLValidator.assertNoInternalAddress(host)).isInstanceOf(SecurityException.class);
+	}
+
+	// -------------------------------------------------------------------------
+	// IPv4 reserved range 240.0.0.0/4 (former class E) — the limited broadcast
+	// address above is the top of this range, not an isolated /32
+	// -------------------------------------------------------------------------
+
+	@ParameterizedTest(name = "assertNoInternalAddress blocks IPv4 reserved: {0}")
+	@ValueSource(strings = { "240.0.0.1", "250.1.2.3", "255.0.0.1", "255.255.255.254" })
+	void reservedIpv4ThrowsSecurityException(String host) {
+		assertThatThrownBy(() -> URLValidator.assertNoInternalAddress(host)).isInstanceOf(SecurityException.class);
+	}
+
+	@Test
+	void justOutsideReservedIpv4DoesNotThrow() {
+		// 223.255.255.255 is the last public address below the multicast range that
+		// precedes 240.0.0.0/4; it must remain allowed
+		assertThatCode(() -> URLValidator.assertNoInternalAddress("223.255.255.255")).doesNotThrowAnyException();
+	}
+
+	// -------------------------------------------------------------------------
+	// IPv6 Unique Local Addresses (RFC 4193) — the modern successor to the
+	// deprecated site-local range that isSiteLocalAddress() already covers
+	// -------------------------------------------------------------------------
+
+	@ParameterizedTest(name = "assertNoInternalAddress blocks IPv6 ULA: {0}")
+	@ValueSource(strings = { "fc00::1", "fd00::1", "fd00:ec2::254", "fd12:3456::a" })
+	void uniqueLocalIpv6ThrowsSecurityException(String host) {
+		// fd00:ec2::254 is AWS's documented IPv6 IMDS endpoint for Nitro instances
+		assertThatThrownBy(() -> URLValidator.assertNoInternalAddress(host)).isInstanceOf(SecurityException.class);
+	}
+
+	// -------------------------------------------------------------------------
+	// IPv6 discard-only and benchmarking ranges
+	// -------------------------------------------------------------------------
+
+	@Test
+	void discardOnlyIpv6ThrowsSecurityException() {
+		assertThatThrownBy(() -> URLValidator.assertNoInternalAddress("100::1")).isInstanceOf(SecurityException.class);
+	}
+
+	@Test
+	void benchmarkingIpv6ThrowsSecurityException() {
+		assertThatThrownBy(() -> URLValidator.assertNoInternalAddress("2001:2::1"))
+			.isInstanceOf(SecurityException.class);
+	}
+
+	// -------------------------------------------------------------------------
+	// Tunneling / embedding schemes — the embedded IPv4 address must be
+	// recovered and checked, not just the outer IPv6 literal
+	// -------------------------------------------------------------------------
+
+	@Test
+	void ipv4MappedEmbeddingLoopbackThrowsSecurityException() {
+		// ::ffff:127.0.0.1 — IPv4-mapped address embedding the loopback address
+		assertThatThrownBy(() -> URLValidator.assertNoInternalAddress("::ffff:127.0.0.1"))
+			.isInstanceOf(SecurityException.class);
+	}
+
+	@Test
+	void nat64EmbeddingLoopbackThrowsSecurityException() {
+		// 64:ff9b::7f00:1 — NAT64 embedding 127.0.0.1
+		assertThatThrownBy(() -> URLValidator.assertNoInternalAddress("64:ff9b::7f00:1"))
+			.isInstanceOf(SecurityException.class);
+	}
+
+	@Test
+	void sixToFourEmbeddingLoopbackThrowsSecurityException() {
+		// 2002:7f00:1:: — 6to4 embedding 127.0.0.1 in bits 16-47
+		assertThatThrownBy(() -> URLValidator.assertNoInternalAddress("2002:7f00:1::"))
+			.isInstanceOf(SecurityException.class);
+	}
+
+	@Test
+	void teredoEmbeddingLoopbackThrowsSecurityException() {
+		// 2001::80ff:fffe — Teredo embedding 127.0.0.1, bitwise negated per RFC 4380
+		assertThatThrownBy(() -> URLValidator.assertNoInternalAddress("2001::80ff:fffe"))
+			.isInstanceOf(SecurityException.class);
+	}
+
+	@ParameterizedTest(name = "assertNoInternalAddress blocks local-use NAT64: {0}")
+	@ValueSource(strings = { "64:ff9b:1::", "64:ff9b:1::7f00:1", "64:ff9b:1:ffff::1", "64:ff9b:1:0:a00:1::" })
+	void localUseNat64ThrowsSecurityException(String host) {
+		// 64:ff9b:1::/48 is the RFC 8215 local-use translation prefix. It is blocked
+		// on the prefix alone, so it is rejected regardless of which offset the
+		// embedded IPv4 address sits at — including 64:ff9b:1:: with none at all.
+		assertThatThrownBy(() -> URLValidator.assertNoInternalAddress(host)).isInstanceOf(SecurityException.class);
+	}
+
+	@Test
+	void nat64OutsideLocalUsePrefixDoesNotThrow() {
+		// 64:ff9b:2::/48 is not a special-purpose prefix — neither the well-known
+		// 64:ff9b::/96 NAT64 prefix nor the local-use 64:ff9b:1::/48 one — so
+		// blocking it would mean the local-use check had over-matched
+		assertThatCode(() -> URLValidator.assertNoInternalAddress("64:ff9b:2::808:808")).doesNotThrowAnyException();
+	}
+
+	@Test
+	void sixToFourEmbeddingPublicAddressDoesNotThrow() {
+		// 2002:808:808:: — 6to4 embedding the public address 8.8.8.8; must remain
+		// allowed, otherwise the tunnel-unwrapping logic would over-block
+		assertThatCode(() -> URLValidator.assertNoInternalAddress("2002:808:808::")).doesNotThrowAnyException();
+	}
+
+	@Test
+	void publicIpv6DoesNotThrow() {
+		// A real public IPv6 address (Google Public DNS) must remain allowed
+		assertThatCode(() -> URLValidator.assertNoInternalAddress("2001:4860:4860::8888")).doesNotThrowAnyException();
+	}
+
+	// -------------------------------------------------------------------------
 	// Unresolvable host — fail-closed
 	// -------------------------------------------------------------------------
 

@@ -383,6 +383,29 @@ class BedrockProxyChatModelTest {
 	}
 
 	@Test
+	void builderMediaFetcherIsUsedByModel() {
+		try (MockedStatic<DefaultAwsRegionProviderChain> mocked = mockStatic(DefaultAwsRegionProviderChain.class)) {
+			when(this.awsRegionProviderBuilder.build().getRegion())
+				.thenThrow(SdkClientException.builder().message("failed load").build());
+			mocked.when(DefaultAwsRegionProviderChain::builder).thenReturn(this.awsRegionProviderBuilder);
+
+			BedrockProxyChatModel model = BedrockProxyChatModel.builder()
+				.mediaFetcher(new MediaFetcher(java.util.Set.of("trusted-cdn.com")))
+				.build();
+
+			Media media = Media.builder()
+				.mimeType(MimeType.valueOf("image/png"))
+				.data("http://babaluga.com/image.png")
+				.build();
+
+			assertThatThrownBy(() -> model.mapMediaToContentBlock(media)).isInstanceOf(RuntimeException.class)
+				.cause()
+				.isInstanceOf(SecurityException.class)
+				.hasMessageContaining("babaluga.com");
+		}
+	}
+
+	@Test
 	void multiBlockSystemCachingPlacesCachePointBeforeLastSystemBlock() {
 		BedrockProxyChatModel model = newModel();
 
