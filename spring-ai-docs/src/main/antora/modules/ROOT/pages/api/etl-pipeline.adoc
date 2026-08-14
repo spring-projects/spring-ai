@@ -676,6 +676,29 @@ class MyTikaDocumentReader {
 }
 ----
 
+==== Limiting the extracted text
+
+The extracted text is held in memory, so the reader extracts at most `TikaDocumentReader.DEFAULT_MAX_CHARACTERS` (10,000,000) characters per document and throws an `IllegalStateException` if a document exceeds that limit.
+This prevents a large document from exhausting the JVM heap.
+
+The limit is an absolute ceiling and complements the guard Apache Tika applies on its own.
+Tika rejects a document whose extracted text is disproportionate to its input, but that guard is relative to the size of the input, so a large enough input can still expand to an arbitrary amount of text without tripping it.
+
+Pass an explicit limit to read larger documents, or `-1` to disable the limit altogether.
+Because the extracted text is held in memory, disabling the limit is only safe for documents from trusted sources.
+
+[source,java]
+----
+List<Document> loadText() {
+    TikaDocumentReader tikaDocumentReader = new TikaDocumentReader(this.resource, 20_000_000,
+            ExtractedTextFormatter.defaults());
+    return tikaDocumentReader.read();
+}
+----
+
+The limit bounds the extracted text, not the size of the input.
+When documents come from untrusted sources, also bound the size of the input itself, for example with the `spring.servlet.multipart.max-file-size` property for uploads.
+
 == Transformers
 
 === TextSplitter
