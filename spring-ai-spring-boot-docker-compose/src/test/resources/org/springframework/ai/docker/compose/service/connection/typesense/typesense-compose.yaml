@@ -1,0 +1,8 @@
+services:
+  typesense:
+    image: '{imageName}'
+    ports:
+      - '8108'
+    command: '--data-dir /tmp --enable-cors'
+    environment:
+        - TYPESENSE_API_KEY=secret

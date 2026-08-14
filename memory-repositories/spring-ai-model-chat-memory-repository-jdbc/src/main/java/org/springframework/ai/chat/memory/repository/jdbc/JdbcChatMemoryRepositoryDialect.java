@@ -1,0 +1,92 @@
+/*
+ * Copyright 2023-present the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package org.springframework.ai.chat.memory.repository.jdbc;
+
+import java.sql.DatabaseMetaData;
+
+import javax.sql.DataSource;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+import org.springframework.jdbc.support.JdbcUtils;
+
+/**
+ * Abstraction for database-specific SQL for chat memory repository.
+ */
+public interface JdbcChatMemoryRepositoryDialect {
+
+	Log logger = LogFactory.getLog(JdbcChatMemoryRepositoryDialect.class);
+
+	/**
+	 * Returns the SQL to fetch messages for a conversation, ordered by sequence id.
+	 */
+	default String getSelectMessagesSql() {
+		return "SELECT content, type, timestamp FROM SPRING_AI_CHAT_MEMORY WHERE conversation_id = ? ORDER BY sequence_id";
+	}
+
+	/**
+	 * Returns the SQL to insert a message.
+	 */
+	default String getInsertMessageSql() {
+		return "INSERT INTO SPRING_AI_CHAT_MEMORY (conversation_id, content, type, timestamp, sequence_id) VALUES (?, ?, ?, ?, ?)";
+	}
+
+	/**
+	 * Returns the SQL to fetch conversation IDs.
+	 */
+	default String getSelectConversationIdsSql() {
+		return "SELECT DISTINCT conversation_id FROM SPRING_AI_CHAT_MEMORY";
+	}
+
+	/**
+	 * Returns the SQL to delete all messages for a conversation.
+	 */
+	default String getDeleteMessagesSql() {
+		return "DELETE FROM SPRING_AI_CHAT_MEMORY WHERE conversation_id = ?";
+	}
+
+	/**
+	 * Detects the dialect from the DataSource.
+	 */
+	static JdbcChatMemoryRepositoryDialect from(DataSource dataSource) {
+		String productName = null;
+		try {
+			productName = JdbcUtils.extractDatabaseMetaData(dataSource, DatabaseMetaData::getDatabaseProductName);
+		}
+		catch (Exception e) {
+			logger.warn("Due to failure in establishing JDBC connection or parsing metadata, the JDBC database vendor "
+					+ "could not be determined", e);
+		}
+		if (productName == null || productName.trim().isEmpty()) {
+			logger.warn("Database product name is null or empty, defaulting to Postgres dialect.");
+			return new PostgresChatMemoryRepositoryDialect();
+		}
+		return switch (productName) {
+			case "PostgreSQL" -> new PostgresChatMemoryRepositoryDialect();
+			case "MySQL", "MariaDB" -> new MysqlChatMemoryRepositoryDialect();
+			case "Microsoft SQL Server" -> new SqlServerChatMemoryRepositoryDialect();
+			case "HSQL Database Engine" -> new HsqldbChatMemoryRepositoryDialect();
+			case "SQLite" -> new SqliteChatMemoryRepositoryDialect();
+			case "H2" -> new H2ChatMemoryRepositoryDialect();
+			case "Oracle" -> new OracleChatMemoryRepositoryDialect();
+			default -> // Add more as needed
+				new PostgresChatMemoryRepositoryDialect();
+		};
+	}
+
+}

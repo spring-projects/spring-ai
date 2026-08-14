@@ -1,0 +1,39 @@
+{
+  "0": {
+    "url": "https://en.wikipedia.org/wiki/2024_Nobel_Peace_Prize",
+    "title": "2024 Nobel Peace Prize",
+    "snippets": [
+      [
+        "The 2024 Nobel Peace Prize, an international peace prize established according to Alfred Nobel's will, was awarded to Nihon Hidankyo (the Japan Confederation of A- and H-Bomb Sufferers Organizations), for their activism against nuclear weapons, assisted by victim/survivors (known as Hibakusha) of the atomic bombings of Hiroshima and Nagasaki in 1945.",
+        "They will receive the prize at a ceremony on 10 December 2024 at Oslo, Norway."
+      ]
+    ],
+    "description": null,
+    "date": "2024-11-26T17:39:55.057454",
+    "source": "wikipedia"
+  },
+  "1": {
+    "url": "https://en.wikipedia.org/wiki/Climate_Change",
+    "title": "Climate Change",
+    "snippets": [
+      [
+        "Present-day climate change includes both global warming—the ongoing increase in global average temperature—and its wider effects on Earth’s climate system. Climate change in a broader sense also includes previous long-term changes to Earth's climate. The current rise in global temperatures is driven by human activities, especially fossil fuel burning since the Industrial Revolution. Fossil fuel use, deforestation, and some agricultural and industrial practices release greenhouse gases. These gases absorb some of the heat that the Earth radiates after it warms from sunlight, warming the lower atmosphere. Carbon dioxide, the primary gas driving global warming, has increased in concentration by about 50% since the pre-industrial era to levels not seen for millions of years."
+      ]
+    ],
+    "description": null,
+    "date": "2024-11-26T17:39:55.057454",
+    "source": "wikipedia"
+  },
+  "2": {
+    "url": "https://en.wikipedia.org/wiki/Artificial_Intelligence",
+    "title": "Artificial Intelligence",
+    "snippets": [
+      [
+        "Artificial intelligence (AI) refers to the capability of computational systems to perform tasks typically associated with human intelligence, such as learning, reasoning, problem-solving, perception, and decision-making. It is a field of research in computer science that develops and studies methods and software that enable machines to perceive their environment and use learning and intelligence to take actions that maximize their chances of achieving defined goals. Such machines may be called AIs."
+      ]
+    ],
+    "description": null,
+    "date": "2024-11-26T17:39:55.057454",
+    "source": "wikipedia"
+  }
+}

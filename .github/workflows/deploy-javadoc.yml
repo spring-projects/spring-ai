@@ -1,0 +1,76 @@
+name: Deploy Javadoc
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  deploy-javadoc:
+    name: Deploy Javadoc
+    if: ${{ github.repository_owner == 'spring-projects' }}
+    runs-on: ${{ vars.COMMERCIAL && vars.UBUNTU_SMALL || 'ubuntu-latest' }}
+    steps:
+      - name: Check Out
+        uses: actions/checkout@v4
+
+      - name: Set Up Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'liberica'
+
+      - name: Generate Javadoc (commercial)
+        if: ${{ vars.COMMERCIAL }}
+        shell: bash
+        env:
+          COMMERCIAL_RELEASE_REPO_URL: ${{ vars.COMMERCIAL_RELEASE_REPO_URL }}
+          COMMERCIAL_ARTIFACTORY_PASSWORD: ${{ secrets.COMMERCIAL_ARTIFACTORY_PASSWORD }}
+          COMMERCIAL_ARTIFACTORY_USERNAME: ${{ secrets.COMMERCIAL_ARTIFACTORY_USERNAME }}
+          COMMERCIAL_SNAPSHOT_REPO_URL: ${{ vars.COMMERCIAL_SNAPSHOT_REPO_URL }}
+          USW1_USERNAME: ${{ secrets.COMMERCIAL_ARTIFACTORY_RO_USERNAME }}
+          USW1_PASSWORD: ${{ secrets.COMMERCIAL_ARTIFACTORY_RO_PASSWORD }}
+        run: ./mvnw -s commercial-settings.xml --batch-mode -ntp javadoc:aggregate-jar
+
+      - name: Generate Javadoc (OSS)
+        if: ${{ !vars.COMMERCIAL }}
+        run: ./mvnw --batch-mode -ntp javadoc:aggregate-jar
+
+      - name: Capture project version
+        run: echo PROJECT_VERSION=$(./mvnw ${{ vars.COMMERCIAL && '-s commercial-settings.xml' || '' }} help:evaluate -Dexpression=project.version --quiet -DforceStdout) >> $GITHUB_ENV
+
+      - name: Extract Javadoc
+        if: ${{ vars.COMMERCIAL }}
+        run: |
+          mkdir -p target/javadoc-site/${PROJECT_VERSION}/api
+          unzip target/spring-ai-parent-${PROJECT_VERSION}-javadoc.jar -d target/javadoc-site/${PROJECT_VERSION}/api
+
+      - name: Authenticate to GCP
+        if: ${{ vars.COMMERCIAL }}
+        uses: google-github-actions/auth@v2.1.0
+        with:
+          credentials_json: ${{ secrets.COMMERCIAL_DOCS_GCP_BUCKET_JSON }}
+
+      - name: Upload Javadoc to GCP (commercial)
+        if: ${{ vars.COMMERCIAL }}
+        uses: google-github-actions/upload-cloud-storage@v2.1.0
+        with:
+          path: target/javadoc-site
+          destination: ${{ secrets.COMMERCIAL_DOCS_HOST }}/spring-ai/docs/
+          parent: false
+
+      - name: Setup SSH key (OSS)
+        if: ${{ !vars.COMMERCIAL }}
+        run: |
+          mkdir "$HOME/.ssh"
+          echo "${{ secrets.DOCS_SSH_KEY }}" > "$HOME/.ssh/key"
+          chmod 600 "$HOME/.ssh/key"
+          echo "${{ secrets.DOCS_SSH_HOST_KEY }}" > "$HOME/.ssh/known_hosts"
+
+      - name: Deploy Javadoc via SSH (OSS)
+        if: ${{ !vars.COMMERCIAL }}
+        run: |
+          ssh -i $HOME/.ssh/key ${{ secrets.DOCS_USERNAME }}@${{ secrets.DOCS_HOST }} "cd ${{ secrets.DOCS_PATH }} && rm -fr $PROJECT_VERSION && mkdir -p $PROJECT_VERSION"
+          scp -i $HOME/.ssh/key target/spring-ai-parent-${PROJECT_VERSION}-javadoc.jar ${{ secrets.DOCS_USERNAME }}@${{ secrets.DOCS_HOST }}:${{ secrets.DOCS_PATH }}/$PROJECT_VERSION
+          ssh -i $HOME/.ssh/key ${{ secrets.DOCS_USERNAME }}@${{ secrets.DOCS_HOST }} "cd ${{ secrets.DOCS_PATH }}/${PROJECT_VERSION} && unzip spring-ai-parent-${PROJECT_VERSION}-javadoc.jar -d api && rm spring-ai-parent-${PROJECT_VERSION}-javadoc.jar"

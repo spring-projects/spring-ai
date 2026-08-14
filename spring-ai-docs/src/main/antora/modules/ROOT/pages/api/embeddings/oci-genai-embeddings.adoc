@@ -1,0 +1,3 @@
+= OCI GenAI Embeddings
+
+The Oracle Cloud Infrastructure Generative AI integration is now maintained by the community, please see the https://github.com/oracle/spring-cloud-oracle/tree/main/spring-ai-oracle[related documentation] for more details.

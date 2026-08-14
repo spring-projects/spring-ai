@@ -1,0 +1,12 @@
+name: ai
+version: true
+title: Spring AI
+nav:
+  - modules/ROOT/nav.adoc
+ext:
+  collector:
+    - run:
+        command: mvnw process-resources
+        local: true
+      scan:
+        dir: spring-ai-docs/target/classes/antora-resources

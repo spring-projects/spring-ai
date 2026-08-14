@@ -1,0 +1,1 @@
+org.springframework.ai.vectorstore.mariadb.autoconfigure.MariaDbStoreAutoConfiguration

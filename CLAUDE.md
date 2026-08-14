@@ -1,0 +1,1 @@
+Follow @CONTRIBUTING.md for code style, commit messages, pull requests and to learn the most useful build commands.

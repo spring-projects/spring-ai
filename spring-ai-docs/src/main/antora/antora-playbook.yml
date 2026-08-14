@@ -1,0 +1,48 @@
+# PACKAGES antora@3.2.0-alpha.6 @antora/atlas-extension:1.0.0-alpha.1 @antora/collector-extension@1.0.0-alpha.3 @springio/antora-extensions@1.1.0-alpha.2 @asciidoctor/tabs@1.0.0-alpha.12 @opendevise/antora-release-line-extension@1.0.0-alpha.2
+#
+# The purpose of this Antora playbook is to build the docs in the current branch.
+antora:
+  extensions:
+    - '@antora/collector-extension'
+    # - require: '@springio/antora-extensions/root-component-extension'
+    - require: '@springio/antora-extensions'
+      root_component_name: 'ai'
+site:
+  title: Spring AI Reference
+  url: https://docs.spring.io/spring-ai/reference
+  robots: allow
+git:
+  ensure_git_suffix: false  
+content:
+  sources:
+    - url: ./../../../..
+      branches: HEAD
+      start_path: spring-ai-docs/src/main/antora
+      worktrees: true
+asciidoc:
+  attributes:
+    page-related-doc-categories: ai,java,ml
+    page-pagination: ''
+    hide-uri-scheme: '@'
+    tabs-sync-option: '@'
+    chomp: 'all'
+    stem: 'asciimath'
+  extensions:
+    - '@asciidoctor/tabs'
+    - '@springio/asciidoctor-extensions'
+    - '@springio/asciidoctor-extensions/javadoc-extension'
+    - '@springio/asciidoctor-extensions/include-code-extension'
+    - '@djencks/asciidoctor-mathjax'
+  sourcemap: true
+urls:
+  latest_version_segment_strategy: redirect:to
+  latest_version_segment: ''
+  redirect_facility: httpd
+runtime:
+  log:
+    failure_level: warn
+    format: pretty
+ui:
+  bundle:
+    url: https://github.com/spring-io/antora-ui-spring/releases/download/v0.4.17/ui-bundle.zip
+    snapshot: true

@@ -1,0 +1,11 @@
+{
+  "groups": [
+	{
+	  "name": "spring.ai.mistralai.chat.tool-choice",
+	  "type": "org.springframework.ai.mistralai.api.MistralAiApi$ChatCompletionRequest$ToolChoice",
+	  "sourceType": "org.springframework.ai.model.mistralai.autoconfigure.MistralAiChatProperties"
+	}
+  ],
+  "properties": [],
+  "hints": []
+}

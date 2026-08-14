@@ -1,0 +1,8 @@
+services:
+  opensearch:
+    image: '{imageName}'
+    ports:
+      - '9200'
+    environment:
+      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=D3v3l0p-ment
+      - discovery.type=single-node

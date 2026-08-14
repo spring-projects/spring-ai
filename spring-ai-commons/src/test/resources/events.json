@@ -1,0 +1,15 @@
+[
+  {
+    "sessions": [
+      {
+        "description": "Session one"
+      },
+      {
+        "description": "Session two"
+      },
+      {
+        "description": "Session three"
+      }
+    ]
+  }
+]

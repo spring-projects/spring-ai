@@ -1,0 +1,22 @@
+services:
+  milvus:
+    image: '{imageName}'
+    command: milvus run standalone
+    ports:
+      - '9091'
+      - '19530'
+    environment:
+      - COMMON_STORAGETYPE=local
+      - DEPLOY_MODE=STANDALONE
+      - ETCD_USE_EMBED=true
+      - ETCD_DATA_DIR=/var/lib/milvus/etcd
+      - ETCD_CONFIG_PATH=/milvus/configs/embedEtcd.yaml
+    configs:
+      - source: embedEtcd
+        target: /milvus/configs/embedEtcd.yaml
+
+configs:
+  embedEtcd:
+    content: |
+      listen-client-urls: http://0.0.0.0:2379
+      advertise-client-urls: http://0.0.0.0:2379

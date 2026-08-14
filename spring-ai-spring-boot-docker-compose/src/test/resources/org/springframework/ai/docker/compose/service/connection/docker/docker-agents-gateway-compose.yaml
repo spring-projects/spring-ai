@@ -1,0 +1,9 @@
+services:
+  mcp-gateway:
+    image: '{imageName}'
+    ports:
+      - 8811
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    command:
+      - --transport=sse

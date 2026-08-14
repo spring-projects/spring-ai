@@ -1,0 +1,3 @@
+org.springframework.ai.mcp.client.webflux.autoconfigure.SseWebFluxTransportAutoConfiguration
+org.springframework.ai.mcp.client.webflux.autoconfigure.StreamableHttpWebFluxTransportAutoConfiguration
+
