@@ -16,6 +16,7 @@
 
 package org.springframework.ai.model.openai.autoconfigure;
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.decision.observation.DecisionModelObservationContext;
@@ -85,6 +86,15 @@ class OpenAiDecisionAutoConfigurationTests {
 		this.contextRunner.withUserConfiguration(CustomConventionConfiguration.class)
 			.run(context -> assertThat(context).hasSingleBean(OpenAiDecisionModel.class)
 				.hasSingleBean(DecisionModelObservationConvention.class));
+	}
+
+	@Test
+	void connectionPoolMetricsEnabled() {
+		this.contextRunner.withPropertyValues("spring.ai.openai.connection-pool-metrics-enabled=true")
+			.withBean(SimpleMeterRegistry.class)
+			.run(context -> assertThat(
+					context.getBean(SimpleMeterRegistry.class).find("okhttp.pool.connection.count").gauges())
+				.isNotEmpty());
 	}
 
 	@Configuration(proxyBeanMethods = false)

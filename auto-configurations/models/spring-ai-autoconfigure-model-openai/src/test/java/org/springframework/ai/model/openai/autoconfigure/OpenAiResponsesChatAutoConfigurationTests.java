@@ -18,6 +18,7 @@ package org.springframework.ai.model.openai.autoconfigure;
 
 import java.util.List;
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.model.ChatModel;
@@ -166,6 +167,17 @@ class OpenAiResponsesChatAutoConfigurationTests {
 			assertThat(context).hasFailed();
 			assertThat(context.getStartupFailure()).hasStackTraceContaining("spring.ai.openai.chat.api");
 		});
+	}
+
+	@Test
+	void connectionPoolMetricsEnabled() {
+		this.contextRunner
+			.withPropertyValues("spring.ai.openai.chat.api=responses",
+					"spring.ai.openai.connection-pool-metrics-enabled=true")
+			.withBean(SimpleMeterRegistry.class)
+			.run(context -> assertThat(
+					context.getBean(SimpleMeterRegistry.class).find("okhttp.pool.connection.count").gauges())
+				.isNotEmpty());
 	}
 
 }
