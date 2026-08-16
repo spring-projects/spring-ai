@@ -1,0 +1,35 @@
+name: Release to Maven Central
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Release project
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Check out sources
+        uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: 25
+          cache: 'maven'
+
+      - name: Install GPG key
+        run: |
+          echo "${{ secrets.GPG_PRIVATE_KEY }}" > gpg.asc
+          echo "${{ secrets.GPG_PASSPHRASE }}" | gpg --batch --yes --passphrase-fd 0 --import gpg.asc
+
+      - name: Release to Maven Central
+        env:
+          CENTRAL_TOKEN_USERNAME: ${{ secrets.CENTRAL_TOKEN_USERNAME }}
+          CENTRAL_TOKEN_PASSWORD: ${{ secrets.CENTRAL_TOKEN_PASSWORD }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        run: |
+          ./mvnw -B -ntp clean install -DskipTests
+          ./mvnw -B -ntp clean deploy -Psonatype -s settings.xml
