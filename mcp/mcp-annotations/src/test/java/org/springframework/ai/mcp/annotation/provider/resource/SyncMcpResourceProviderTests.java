@@ -25,11 +25,13 @@ import io.modelcontextprotocol.server.McpSyncServerExchange;
 import io.modelcontextprotocol.spec.McpSchema.ReadResourceRequest;
 import io.modelcontextprotocol.spec.McpSchema.ReadResourceResult;
 import io.modelcontextprotocol.spec.McpSchema.ResourceContents;
+import io.modelcontextprotocol.spec.McpSchema.Role;
 import io.modelcontextprotocol.spec.McpSchema.TextResourceContents;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 
 import org.springframework.ai.mcp.annotation.McpResource;
+import org.springframework.ai.mcp.annotation.McpResource.McpAnnotations;
 import org.springframework.ai.mcp.annotation.context.MetaProvider;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -529,6 +531,97 @@ public class SyncMcpResourceProviderTests {
 		ResourceContents content = result.contents().get(0);
 		assertThat(content).isInstanceOf(TextResourceContents.class);
 		assertThat(((TextResourceContents) content).text()).isEqualTo("No parameters needed");
+	}
+
+	@Test
+	void testDefaultAnnotationsAreNotPropagated() {
+		class NoAnnotationsResource {
+
+			@McpResource(uri = "no-ann://resource", name = "no-ann", description = "no annotations")
+			public String noAnnotations() {
+				return "";
+			}
+
+		}
+
+		SyncMcpResourceProvider provider = new SyncMcpResourceProvider(List.of(new NoAnnotationsResource()));
+
+		List<SyncResourceSpecification> resourceSpecs = provider.getResourceSpecifications();
+
+		assertThat(resourceSpecs).hasSize(1);
+		assertThat(resourceSpecs.get(0).resource().annotations()).isNull();
+	}
+
+	@Test
+	void testExplicitAnnotationsArePropagatedToResource() {
+		class AnnotatedResource {
+
+			@McpResource(uri = "ann://resource", name = "ann", description = "explicit annotations",
+					annotations = @McpAnnotations(audience = { Role.ASSISTANT }, priority = 1.0,
+							lastModified = "2026-08-16T00:00:00Z"))
+			public String annotated() {
+				return "";
+			}
+
+		}
+
+		SyncMcpResourceProvider provider = new SyncMcpResourceProvider(List.of(new AnnotatedResource()));
+
+		List<SyncResourceSpecification> resourceSpecs = provider.getResourceSpecifications();
+
+		assertThat(resourceSpecs).hasSize(1);
+		var annotations = resourceSpecs.get(0).resource().annotations();
+		assertThat(annotations).isNotNull();
+		assertThat(annotations.audience()).containsExactly(Role.ASSISTANT);
+		assertThat(annotations.priority()).isEqualTo(1.0);
+		assertThat(annotations.lastModified()).isEqualTo("2026-08-16T00:00:00Z");
+	}
+
+	@Test
+	void testExplicitAnnotationsArePropagatedToResourceTemplate() {
+		class AnnotatedTemplate {
+
+			@McpResource(uri = "ann://template/{id}", name = "ann-template", description = "annotated template",
+					annotations = @McpAnnotations(audience = { Role.USER, Role.ASSISTANT }, priority = 0.25))
+			public String annotatedTemplate(String id) {
+				return id;
+			}
+
+		}
+
+		SyncMcpResourceProvider provider = new SyncMcpResourceProvider(List.of(new AnnotatedTemplate()));
+
+		List<SyncResourceTemplateSpecification> resourceTemplateSpecs = provider.getResourceTemplateSpecifications();
+
+		assertThat(resourceTemplateSpecs).hasSize(1);
+		var annotations = resourceTemplateSpecs.get(0).resourceTemplate().annotations();
+		assertThat(annotations).isNotNull();
+		assertThat(annotations.audience()).containsExactly(Role.USER, Role.ASSISTANT);
+		assertThat(annotations.priority()).isEqualTo(0.25);
+	}
+
+	@Test
+	void testAudienceOnlyChangeIsPropagated() {
+		class AudienceOnly {
+
+			@McpResource(uri = "audience-only://resource", name = "audience-only",
+					annotations = @McpAnnotations(audience = { Role.ASSISTANT }, priority = 0.5))
+			public String audienceOnly() {
+				return "";
+			}
+
+		}
+
+		SyncMcpResourceProvider provider = new SyncMcpResourceProvider(List.of(new AudienceOnly()));
+
+		List<SyncResourceSpecification> resourceSpecs = provider.getResourceSpecifications();
+
+		assertThat(resourceSpecs).hasSize(1);
+		var annotations = resourceSpecs.get(0).resource().annotations();
+		assertThat(annotations).isNotNull();
+		assertThat(annotations.audience()).containsExactly(Role.ASSISTANT);
+		assertThat(annotations.priority()).isEqualTo(0.5);
+		assertThat(annotations.lastModified()).isNullOrEmpty();
 	}
 
 	public static class ResourceMetaProvider implements MetaProvider {

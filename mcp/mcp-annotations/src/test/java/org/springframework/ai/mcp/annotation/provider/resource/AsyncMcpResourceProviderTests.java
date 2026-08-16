@@ -24,12 +24,14 @@ import io.modelcontextprotocol.server.McpServerFeatures.AsyncResourceTemplateSpe
 import io.modelcontextprotocol.spec.McpSchema.ReadResourceRequest;
 import io.modelcontextprotocol.spec.McpSchema.ReadResourceResult;
 import io.modelcontextprotocol.spec.McpSchema.ResourceContents;
+import io.modelcontextprotocol.spec.McpSchema.Role;
 import io.modelcontextprotocol.spec.McpSchema.TextResourceContents;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import org.springframework.ai.mcp.annotation.McpResource;
+import org.springframework.ai.mcp.annotation.McpResource.McpAnnotations;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -493,6 +495,73 @@ public class AsyncMcpResourceProviderTests {
 			assertThat(content).isInstanceOf(TextResourceContents.class);
 			assertThat(((TextResourceContents) content).text()).isEqualTo("Sync method returning Mono content");
 		}).verifyComplete();
+	}
+
+	@Test
+	void testDefaultAnnotationsAreNotPropagated() {
+		class NoAnnotationsResource {
+
+			@McpResource(uri = "no-ann://resource", name = "no-ann")
+			public Mono<String> noAnnotations() {
+				return Mono.just("");
+			}
+
+		}
+
+		AsyncMcpResourceProvider provider = new AsyncMcpResourceProvider(List.of(new NoAnnotationsResource()));
+
+		List<AsyncResourceSpecification> resourceSpecs = provider.getResourceSpecifications();
+
+		assertThat(resourceSpecs).hasSize(1);
+		assertThat(resourceSpecs.get(0).resource().annotations()).isNull();
+	}
+
+	@Test
+	void testExplicitAnnotationsArePropagatedToResource() {
+		class AnnotatedResource {
+
+			@McpResource(uri = "ann://resource", name = "ann",
+					annotations = @McpAnnotations(audience = { Role.ASSISTANT }, priority = 1.0,
+							lastModified = "2026-08-16T00:00:00Z"))
+			public Mono<String> annotated() {
+				return Mono.just("");
+			}
+
+		}
+
+		AsyncMcpResourceProvider provider = new AsyncMcpResourceProvider(List.of(new AnnotatedResource()));
+
+		List<AsyncResourceSpecification> resourceSpecs = provider.getResourceSpecifications();
+
+		assertThat(resourceSpecs).hasSize(1);
+		var annotations = resourceSpecs.get(0).resource().annotations();
+		assertThat(annotations).isNotNull();
+		assertThat(annotations.audience()).containsExactly(Role.ASSISTANT);
+		assertThat(annotations.priority()).isEqualTo(1.0);
+		assertThat(annotations.lastModified()).isEqualTo("2026-08-16T00:00:00Z");
+	}
+
+	@Test
+	void testExplicitAnnotationsArePropagatedToResourceTemplate() {
+		class AnnotatedTemplate {
+
+			@McpResource(uri = "ann://template/{id}", name = "ann-template",
+					annotations = @McpAnnotations(audience = { Role.USER, Role.ASSISTANT }, priority = 0.25))
+			public Mono<String> annotatedTemplate(String id) {
+				return Mono.just(id);
+			}
+
+		}
+
+		AsyncMcpResourceProvider provider = new AsyncMcpResourceProvider(List.of(new AnnotatedTemplate()));
+
+		List<AsyncResourceTemplateSpecification> resourceTemplateSpecs = provider.getResourceTemplateSpecifications();
+
+		assertThat(resourceTemplateSpecs).hasSize(1);
+		var annotations = resourceTemplateSpecs.get(0).resourceTemplate().annotations();
+		assertThat(annotations).isNotNull();
+		assertThat(annotations.audience()).containsExactly(Role.USER, Role.ASSISTANT);
+		assertThat(annotations.priority()).isEqualTo(0.25);
 	}
 
 }
