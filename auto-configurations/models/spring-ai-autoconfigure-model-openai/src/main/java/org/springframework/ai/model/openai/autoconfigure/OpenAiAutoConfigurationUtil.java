@@ -64,6 +64,9 @@ public final class OpenAiAutoConfigurationUtil {
 
 		resolved.setGitHubModels(modelProperties.isGitHubModels() || commonProperties.isGitHubModels());
 
+		resolved.setConnectionPoolMetricsEnabled(
+				modelProperties.isConnectionPoolMetricsEnabled() || commonProperties.isConnectionPoolMetricsEnabled());
+
 		resolved.setMaxRetries(modelProperties.getMaxRetries() != OpenAiCommonProperties.DEFAULT_MAX_RETRIES
 				? modelProperties.getMaxRetries() : commonProperties.getMaxRetries());
 
