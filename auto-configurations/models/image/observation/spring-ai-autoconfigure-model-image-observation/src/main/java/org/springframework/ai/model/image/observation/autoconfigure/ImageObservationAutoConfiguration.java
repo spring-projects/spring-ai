@@ -44,6 +44,8 @@ import org.springframework.context.annotation.Configuration;
  * @author Jonatan Ivanov
  * @since 1.0.0
  */
+// afterName: CompositeMeterRegistryAutoConfiguration declares a MeterRegistry bean that
+// some beans here are conditional on
 @AutoConfiguration(
 		afterName = "org.springframework.boot.micrometer.metrics.autoconfigure.CompositeMeterRegistryAutoConfiguration")
 @ConditionalOnClass(ImageModel.class)
