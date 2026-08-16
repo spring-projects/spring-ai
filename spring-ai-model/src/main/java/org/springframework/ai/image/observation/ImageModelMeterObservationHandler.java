@@ -16,6 +16,8 @@
 
 package org.springframework.ai.image.observation;
 
+import java.util.Objects;
+
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationHandler;
@@ -38,8 +40,8 @@ public class ImageModelMeterObservationHandler implements ObservationHandler<Ima
 
 	@Override
 	public void onStop(ImageModelObservationContext context) {
-		if (context.getResponse() != null && context.getResponse().getMetadata() != null
-				&& context.getResponse().getMetadata().getUsage() != null) {
+		if (Objects.nonNull(context.getResponse()) && Objects.nonNull(context.getResponse().getMetadata())
+				&& Objects.nonNull(context.getResponse().getMetadata().getUsage())) {
 			ModelUsageMetricsGenerator.generate(context.getResponse().getMetadata().getUsage(), context,
 					this.meterRegistry);
 		}
