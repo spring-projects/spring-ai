@@ -183,6 +183,41 @@ public class FilterExpressionTextParserTests {
 	}
 
 	@Test
+	public void testNotBindsTighterThanAnd() {
+		// (NOT country == 'BG') AND year >= 2020
+		String expText = "NOT country == 'BG' AND year >= 2020";
+		Expression exp = this.parser.parse(expText);
+
+		assertThat(exp).isEqualTo(
+				new Expression(AND, new Expression(NOT, new Expression(EQ, new Key("country"), new Value("BG")), null),
+						new Expression(GTE, new Key("year"), new Value(2020))));
+
+		assertThat(this.parser.getCache().get("WHERE " + expText)).isEqualTo(exp);
+	}
+
+	@Test
+	public void testNotBindsTighterThanOr() {
+		// (NOT country == 'BG') OR year >= 2020
+		String expText = "NOT country == 'BG' OR year >= 2020";
+		Expression exp = this.parser.parse(expText);
+
+		assertThat(exp).isEqualTo(
+				new Expression(OR, new Expression(NOT, new Expression(EQ, new Key("country"), new Value("BG")), null),
+						new Expression(GTE, new Key("year"), new Value(2020))));
+	}
+
+	@Test
+	public void testNotAppliesToWholeGroupWhenParenthesized() {
+		// NOT(country == 'BG' AND year >= 2020)
+		Expression exp = this.parser.parse("NOT (country == 'BG' AND year >= 2020)");
+
+		assertThat(exp).isEqualTo(new Expression(NOT,
+				new Group(new Expression(AND, new Expression(EQ, new Key("country"), new Value("BG")),
+						new Expression(GTE, new Key("year"), new Value(2020)))),
+				null));
+	}
+
+	@Test
 	public void testDecimal() {
 		// temperature >= -15.6 && temperature <= +20.13
 		String expText = "temperature >= -15.6 && temperature <= +20.13";
