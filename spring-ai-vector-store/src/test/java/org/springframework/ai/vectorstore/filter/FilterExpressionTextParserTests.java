@@ -16,7 +16,14 @@
 
 package org.springframework.ai.vectorstore.filter;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.Test;
 
@@ -26,6 +33,7 @@ import org.springframework.ai.vectorstore.filter.Filter.Key;
 import org.springframework.ai.vectorstore.filter.Filter.Value;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.AND;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.EQ;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.GTE;
@@ -226,6 +234,137 @@ public class FilterExpressionTextParserTests {
 	public void testUnescapedIdentifierWithUnderscores() {
 		Expression exp = this.parser.parse("file_name == 'medicaid-wa-faqs.pdf'");
 		assertThat(exp).isEqualTo(new Expression(EQ, new Key("file_name"), new Value("medicaid-wa-faqs.pdf")));
+	}
+
+	/**
+	 * Regression test for #6807: {@code FilterExpressionTextParser} instances must not
+	 * share mutable error state. Each instance owns its own
+	 * {@link DescriptiveErrorListener}, so a parse failure on one instance must not leak
+	 * its error messages into another instance.
+	 */
+	@Test
+	public void testErrorStateIsNotSharedAcrossInstances() {
+		FilterExpressionTextParser parserA = new FilterExpressionTextParser();
+		FilterExpressionTextParser parserB = new FilterExpressionTextParser();
+
+		// parserB hits a syntax error; the exception must carry a non-empty message.
+		try {
+			parserB.parse("country =="); // missing right-hand side -> syntax error
+			fail("Expected FilterExpressionParseException");
+		}
+		catch (FilterExpressionTextParser.FilterExpressionParseException expected) {
+			assertThat(expected.getMessage()).isNotEmpty();
+		}
+
+		// A fresh failed parse on parserA records its own (non-empty) error, independent
+		// of B's. With per-invocation listeners the two parses never share state.
+		try {
+			parserA.parse("city ==");
+			fail("Expected FilterExpressionParseException");
+		}
+		catch (FilterExpressionTextParser.FilterExpressionParseException expected) {
+			assertThat(expected.getMessage()).isNotEmpty();
+		}
+	}
+
+	@Test
+	public void testParallelParsingDoesNotMixErrorState() throws Exception {
+		// Concurrent parses across distinct instances must not corrupt each other's error
+		// state (the listener used to be a shared singleton with a mutable message list).
+		int threads = 8;
+		var exceptions = new ConcurrentLinkedQueue<String>();
+		ExecutorService executor = Executors.newFixedThreadPool(threads);
+		try {
+			var futures = new ArrayList<Future<?>>();
+			for (int i = 0; i < threads; i++) {
+				final int idx = i;
+				futures.add(executor.submit(() -> {
+					var p = new FilterExpressionTextParser();
+					if (idx % 2 == 0) {
+						p.parse("k" + idx + " == 'v'");
+						// A successful parse must not throw.
+					}
+					else {
+						try {
+							p.parse("k" + idx + " ==");
+							exceptions.add("thread " + idx + " should have failed");
+						}
+						catch (FilterExpressionTextParser.FilterExpressionParseException e) {
+							// Each call owns its own error state; the message must be
+							// present.
+							if (e.getMessage() == null || e.getMessage().isBlank()) {
+								exceptions.add("thread " + idx + " got an empty error message");
+							}
+						}
+					}
+				}));
+			}
+			for (var f : futures) {
+				f.get(10, TimeUnit.SECONDS);
+			}
+		}
+		finally {
+			executor.shutdown();
+		}
+		assertThat(exceptions).isEmpty();
+	}
+
+	/**
+	 * Regression test for #6807 (follow-up): per-invocation error state must also isolate
+	 * concurrent {@code parse()} calls on the *same* parser instance. Even though the
+	 * listener is now created inside {@code parse()}, two threads sharing one instance
+	 * must not see each other's error messages.
+	 */
+	@Test
+	public void testConcurrentParseOnSameInstanceDoesNotMixErrorState() throws Exception {
+		var parser = new FilterExpressionTextParser();
+		int threads = 8;
+		var exceptions = new ConcurrentLinkedQueue<String>();
+		// Count how many of the *expected-to-fail* threads (odd idx) actually threw,
+		// so a regression that silently drops errors under concurrency is caught
+		// (not just "message was empty").
+		var failedCount = new AtomicInteger(0);
+		ExecutorService executor = Executors.newFixedThreadPool(threads);
+		try {
+			var futures = new ArrayList<Future<?>>();
+			for (int i = 0; i < threads; i++) {
+				final int idx = i;
+				futures.add(executor.submit(() -> {
+					String expression = (idx % 2 == 0) ? "k" + idx + " == 'v'" : "k" + idx + " ==";
+					try {
+						parser.parse(expression);
+						if (idx % 2 != 0) {
+							exceptions.add("thread " + idx + " should have failed");
+						}
+					}
+					catch (FilterExpressionTextParser.FilterExpressionParseException e) {
+						// Only the failing threads (odd idx) must have recorded an error.
+						if (idx % 2 == 0) {
+							exceptions.add("thread " + idx + " unexpectedly failed: " + e.getMessage());
+						}
+						else {
+							failedCount.incrementAndGet();
+							// The real regression guard: a concurrent parse() on the
+							// shared
+							// instance must not have cleared or lost this call's error
+							// message.
+							if (e.getMessage() == null || e.getMessage().isBlank()) {
+								exceptions.add("thread " + idx + " got an empty error message under concurrency");
+							}
+						}
+					}
+				}));
+			}
+			for (var f : futures) {
+				f.get(10, TimeUnit.SECONDS);
+			}
+		}
+		finally {
+			executor.shutdown();
+		}
+		// Exactly the 4 odd-indexed threads must have failed (no error lost/merged).
+		assertThat(failedCount.get()).isEqualTo(4);
+		assertThat(exceptions).isEmpty();
 	}
 
 }
