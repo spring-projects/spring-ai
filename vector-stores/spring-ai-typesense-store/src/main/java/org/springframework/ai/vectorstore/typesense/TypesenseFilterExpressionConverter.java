@@ -16,6 +16,8 @@
 
 package org.springframework.ai.vectorstore.typesense;
 
+import java.util.Date;
+
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.converter.AbstractFilterExpressionConverter;
 import org.springframework.util.Assert;
@@ -25,6 +27,7 @@ import org.springframework.util.Assert;
  * (https://typesense.org/docs/0.24.0/api/search.html#filter-parameters)
  *
  * @author Pablo Sanchidrian
+ * @author Dimitar Proynov
  */
 public class TypesenseFilterExpressionConverter extends AbstractFilterExpressionConverter {
 
@@ -75,15 +78,28 @@ public class TypesenseFilterExpressionConverter extends AbstractFilterExpression
 	}
 
 	/**
-	 * Serialize values using JSON serialization for Typesense filter expressions.
-	 * Delegates to {@link #emitJsonValue(Object, StringBuilder)} for Jackson-based JSON
-	 * serialization.
+	 * Serialize values for Typesense filter expressions. Typesense's tokenizer has no
+	 * escape mechanism for an embedded backtick (it unconditionally toggles literal mode
+	 * on every backtick character), so a value containing one is rejected outright rather
+	 * than risk breaking out of the literal.
 	 * @param value the value to serialize
-	 * @param context the context to append the JSON representation to
+	 * @param context the context to append the representation to
 	 */
 	@Override
 	protected void doSingleValue(Object value, StringBuilder context) {
-		emitJsonValue(value, context);
+		if (value instanceof Number || value instanceof Boolean) {
+			context.append(value);
+		}
+		else if (value instanceof Date date) {
+			context.append(date.getTime());
+		}
+		else {
+			String stringValue = String.valueOf(value);
+			if (stringValue.indexOf('`') >= 0) {
+				throw new IllegalArgumentException("Illegal character '`' in filter value: " + stringValue);
+			}
+			context.append('`').append(stringValue).append('`');
+		}
 	}
 
 }

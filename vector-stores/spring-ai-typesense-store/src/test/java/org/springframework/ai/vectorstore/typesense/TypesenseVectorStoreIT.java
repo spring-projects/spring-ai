@@ -21,6 +21,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -283,6 +284,168 @@ public class TypesenseVectorStoreIT extends BaseVectorStoreTests {
 				.containsExactlyInAnyOrder("A", "B");
 			assertThat(results.stream().map(doc -> doc.getMetadata().get("priority")).collect(Collectors.toList()))
 				.containsExactlyInAnyOrder(1, 1);
+
+			((TypesenseVectorStore) vectorStore).dropCollection();
+		});
+	}
+
+	@Test
+	void filterValueCannotInjectAdditionalClauses() {
+		// Verifies against a real Typesense server that a filter value cannot break out
+		// of its literal and inject an additional `||` clause. Typesense's filter_by
+		// tokenizer only honours backticks as string-literal delimiters, so before the
+		// values were backtick-delimited the injected clause was tokenized as a separate
+		// condition and bypassed the tenant constraint.
+		this.contextRunner.run(context -> {
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+
+			var attackerDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
+					Map.of("tenant", "attacker", "country", "BG"));
+			var victimDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
+					Map.of("tenant", "victim", "country", "US"));
+
+			vectorStore.add(List.of(attackerDocument, victimDocument));
+
+			// Baseline: the tenant constraint alone returns only the attacker's document.
+			List<Document> results = vectorStore.similaritySearch(SearchRequest.builder()
+				.query("The World")
+				.topK(5)
+				.similarityThresholdAll()
+				.filterExpression("tenant == 'attacker' && country == 'BG'")
+				.build());
+			assertThat(results).hasSize(1);
+			assertThat(results.get(0).getId()).isEqualTo(attackerDocument.getId());
+
+			// Control: a non-matching country returns nothing.
+			results = vectorStore.similaritySearch(SearchRequest.builder()
+				.query("The World")
+				.topK(5)
+				.similarityThresholdAll()
+				.filterExpression("tenant == 'attacker' && country == 'FR'")
+				.build());
+			assertThat(results).isEmpty();
+
+			// Attack: the injected clause must be matched as literal text rather than
+			// evaluated, so the result is the same as the non-matching control above.
+			results = vectorStore.similaritySearch(SearchRequest.builder()
+				.query("The World")
+				.topK(5)
+				.similarityThresholdAll()
+				.filterExpression("tenant == 'attacker' && country == 'x\" || metadata.tenant: \"victim'")
+				.build());
+			assertThat(results).isEmpty();
+
+			((TypesenseVectorStore) vectorStore).dropCollection();
+		});
+	}
+
+	@Test
+	void deleteWithFilterValueCannotInjectAdditionalClauses() {
+		// The delete path runs the same converter output through filter_by, so verify the
+		// injected clause cannot widen a delete beyond the tenant constraint either.
+		this.contextRunner.run(context -> {
+			TypesenseVectorStore vectorStore = context.getBean(TypesenseVectorStore.class);
+
+			var attackerDocument = new Document("Content one", Map.of("tenant", "attacker", "country", "BG"));
+			var victimDocument = new Document("Content two", Map.of("tenant", "victim", "country", "US"));
+
+			vectorStore.add(List.of(attackerDocument, victimDocument));
+
+			Map<String, Object> info = vectorStore.getCollectionInfo();
+			assertThat(info.get("num_documents")).isEqualTo(2L);
+
+			Filter.Expression injected = new Filter.Expression(Filter.ExpressionType.AND,
+					new Filter.Expression(Filter.ExpressionType.EQ, new Filter.Key("tenant"),
+							new Filter.Value("attacker")),
+					new Filter.Expression(Filter.ExpressionType.EQ, new Filter.Key("country"),
+							new Filter.Value("x\" || metadata.tenant: \"victim")));
+
+			vectorStore.delete(injected);
+
+			// Nothing matches the literal value, so both documents survive.
+			info = vectorStore.getCollectionInfo();
+			assertThat(info.get("num_documents")).isEqualTo(2L);
+
+			vectorStore.dropCollection();
+		});
+	}
+
+	@Test
+	void searchWithFilterValueContainingFilterMetacharacters() {
+		// Verifies that backtick delimiting does not regress legitimate values, including
+		// ones containing characters that filter_by would otherwise treat as syntax. Such
+		// values were matched incorrectly before they were delimited as literals.
+		this.contextRunner.run(context -> {
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+
+			var commaDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
+					Map.of("label", "alpha,beta"));
+			var parenthesisDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
+					Map.of("label", "gamma(delta)"));
+			var operatorDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
+					Map.of("label", "epsilon && zeta"));
+
+			vectorStore.add(List.of(commaDocument, parenthesisDocument, operatorDocument));
+
+			assertLabelFilterMatchesOnly(vectorStore, "alpha,beta", commaDocument);
+			assertLabelFilterMatchesOnly(vectorStore, "gamma(delta)", parenthesisDocument);
+			assertLabelFilterMatchesOnly(vectorStore, "epsilon && zeta", operatorDocument);
+
+			((TypesenseVectorStore) vectorStore).dropCollection();
+		});
+	}
+
+	private void assertLabelFilterMatchesOnly(VectorStore vectorStore, String label, Document expected) {
+		Filter.Expression filter = new Filter.Expression(Filter.ExpressionType.EQ, new Filter.Key("label"),
+				new Filter.Value(label));
+
+		List<Document> results = vectorStore.similaritySearch(SearchRequest.builder()
+			.query("The World")
+			.topK(5)
+			.similarityThresholdAll()
+			.filterExpression(filter)
+			.build());
+
+		assertThat(results).hasSize(1);
+		assertThat(results.get(0).getId()).isEqualTo(expected.getId());
+	}
+
+	@Test
+	void searchWithDateFilter() {
+		// The Typesense client stores a Date as epoch millis, so the converter must emit
+		// the same representation. A quoted ISO-8601 string never matched the stored
+		// numeric value.
+		this.contextRunner.run(context -> {
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+
+			var earlyDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
+					Map.of("activationDate", new Date(1000)));
+			var lateDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
+					Map.of("activationDate", new Date(3000)));
+
+			vectorStore.add(List.of(earlyDocument, lateDocument));
+
+			List<Document> results = vectorStore.similaritySearch(SearchRequest.builder()
+				.query("The World")
+				.topK(5)
+				.similarityThresholdAll()
+				.filterExpression(new Filter.Expression(Filter.ExpressionType.GT, new Filter.Key("activationDate"),
+						new Filter.Value(new Date(2000))))
+				.build());
+
+			assertThat(results).hasSize(1);
+			assertThat(results.get(0).getId()).isEqualTo(lateDocument.getId());
+
+			// The same filter expressed as an ISO-8601 string is normalized to a Date.
+			results = vectorStore.similaritySearch(SearchRequest.builder()
+				.query("The World")
+				.topK(5)
+				.similarityThresholdAll()
+				.filterExpression("activationDate > '1970-01-01T00:00:02Z'")
+				.build());
+
+			assertThat(results).hasSize(1);
+			assertThat(results.get(0).getId()).isEqualTo(lateDocument.getId());
 
 			((TypesenseVectorStore) vectorStore).dropCollection();
 		});

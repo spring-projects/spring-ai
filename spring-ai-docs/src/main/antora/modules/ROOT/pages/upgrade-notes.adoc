@@ -44,6 +44,56 @@ new TikaDocumentReader(resource, 50_000_000, ExtractedTextFormatter.defaults());
 new TikaDocumentReader(resource, -1, ExtractedTextFormatter.defaults());
 ----
 
+=== Typesense Vector Store Filter Value Escaping Hardened
+
+`TypesenseFilterExpressionConverter` no longer serializes filter values as JSON.
+The `filter_by` grammar is not JSON: only backticks delimit string literals, and a double quote is matched as part of the value rather than as a delimiter.
+Values are now emitted as backtick literals, values containing a backtick are rejected, and `java.util.Date` values are emitted as epoch milliseconds.
+
+==== Impact
+
+* The generated `filter_by` string for string-valued filters changed format, delimiting values with backticks instead of double quotes:
+
+[source]
+----
+# Before
+metadata.country: "BG"
+
+# After
+metadata.country: `BG`
+----
+
+Typesense evaluates both forms identically for values that do not contain a backtick, double quote, parenthesis, square bracket, comma, `&&`, or `||`, so most applications will see no behavior change beyond the wire format.
+Values containing any of those characters were matched incorrectly before this change.
+* Filter values containing a literal backtick character are now rejected with `IllegalArgumentException` at conversion time.
+Typesense's `filter_by` parser has no escape mechanism for an embedded backtick, so such values could not be represented safely and were already unreliable before this change.
+* Values that are neither `Number`, `Boolean` nor `Date` are converted with `String#valueOf` and emitted as backtick literals.
+Previously such values were JSON-serialized, which quoted them with double quotes.
+For example, an enum filter value now produces ``metadata.day: `MONDAY` `` instead of `metadata.day: "MONDAY"`.
+* `java.util.Date` filter values are now emitted as epoch milliseconds, matching the representation the Typesense client uses when storing them:
+
+[source]
+----
+# Before
+metadata.activationDate: "1970-01-01T00:00:02.000Z"
+
+# After
+metadata.activationDate: 2000
+----
+
+Date filters could not match any document before this change, because the stored value is a number while the filter compared against a quoted string.
+
+==== Migration
+
+No code changes are required unless your application:
+
+* Asserts the exact string produced by `TypesenseFilterExpressionConverter#convertExpression()`, for example in tests.
+Update expectations to the backtick-delimited format.
+* Passes metadata values containing a backtick character into `SearchRequest.filterExpression()` for a Typesense-backed vector store.
+Remove or replace the backtick, as such values are no longer accepted.
+* Works around the previously broken date filtering, for example by passing epoch milliseconds as a number instead of a `Date`.
+Such filters keep working, and `Date` values can now be passed directly.
+
 [[upgrading-to-2-0-2]]
 == Upgrading to 2.0.2
 
