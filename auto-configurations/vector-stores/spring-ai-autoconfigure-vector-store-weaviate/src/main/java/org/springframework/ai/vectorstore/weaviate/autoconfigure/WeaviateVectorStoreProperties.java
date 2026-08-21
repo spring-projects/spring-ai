@@ -18,6 +18,8 @@ package org.springframework.ai.vectorstore.weaviate.autoconfigure;
 
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.vectorstore.weaviate.WeaviateVectorStore;
 import org.springframework.ai.vectorstore.weaviate.WeaviateVectorStore.ConsistentLevel;
 import org.springframework.ai.vectorstore.weaviate.WeaviateVectorStore.MetadataField;
@@ -28,6 +30,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  *
  * @author Christian Tzolov
  * @author Jonghoon Park
+ * @author Taewoong Kim
  */
 @ConfigurationProperties(WeaviateVectorStoreProperties.CONFIG_PREFIX)
 public class WeaviateVectorStoreProperties {
@@ -45,6 +48,12 @@ public class WeaviateVectorStoreProperties {
 	private String contentFieldName = "content";
 
 	private String metaFieldPrefix = "meta_";
+
+	/**
+	 * The Weaviate tenant name used to scope add, delete, and search operations. When
+	 * unset or blank, non-tenant behavior is used.
+	 */
+	private @Nullable String tenantName;
 
 	private ConsistentLevel consistencyLevel = WeaviateVectorStore.ConsistentLevel.ONE;
 
@@ -113,6 +122,17 @@ public class WeaviateVectorStoreProperties {
 	 */
 	public void setMetaFieldPrefix(String metaFieldPrefix) {
 		this.metaFieldPrefix = metaFieldPrefix;
+	}
+
+	/**
+	 * @since 2.0.1
+	 */
+	public @Nullable String getTenantName() {
+		return this.tenantName;
+	}
+
+	public void setTenantName(@Nullable String tenantName) {
+		this.tenantName = tenantName;
 	}
 
 	public ConsistentLevel getConsistencyLevel() {
