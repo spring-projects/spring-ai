@@ -637,6 +637,7 @@ If no custom filter is provided, all discovered tools are included by default.
 Note: Only one `McpToolFilter` bean should be defined in the application context.
 If multiple filters are needed, combine them into a single composite filter implementation.
 
+[[mcp-tool-name-prefix-generation]]
 === Tool Name Prefix Generation
 
 The MCP Client Boot Starter supports customizable tool name prefix generation through the `McpToolNamePrefixGenerator` interface. This feature helps avoid naming conflicts when integrating tools from multiple MCP servers by adding unique prefixes to tool names.
@@ -704,6 +705,9 @@ The prefix generator is automatically detected and applied to both synchronous a
 If no custom generator bean is provided, the `DefaultMcpToolNamePrefixGenerator` is used automatically.
 
 WARNING: When using `McpToolNamePrefixGenerator.noPrefix()` with multiple MCP servers, duplicate tool names will cause an `IllegalStateException`. The default `DefaultMcpToolNamePrefixGenerator` prevents this by automatically adding unique prefixes to duplicate tool names.
+
+NOTE: This generator only de-duplicates names across MCP connections; it has no visibility into local `@Tool` methods.
+See xref:api/tools.adoc#combining-local-and-mcp-tools[Combining Local and MCP Tools] for the local/remote collision case and which call paths actually guard against it.
 
 === Tool Context to MCP Meta Converter
 
