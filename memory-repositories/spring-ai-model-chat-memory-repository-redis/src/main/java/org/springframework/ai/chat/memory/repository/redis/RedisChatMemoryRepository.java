@@ -26,7 +26,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -106,43 +105,55 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 		Assert.notNull(conversationId, "Conversation ID must not be null");
 		Assert.notNull(messages, "Messages must not be null");
 
+		List<PreparedMessage> preparedMessages = prepareMessages(conversationId, messages);
+		writeMessages(preparedMessages);
+	}
+
+	private List<PreparedMessage> prepareMessages(String conversationId, List<Message> messages) {
 		if (messages.isEmpty()) {
-			return;
+			return Collections.emptyList();
 		}
 
 		if (logger.isDebugEnabled()) {
-			if (logger.isDebugEnabled()) {
-				logger.debug("Adding " + messages.size() + " messages to conversation: " + conversationId);
-			}
+			logger.debug("Adding " + messages.size() + " messages to conversation: " + conversationId);
 		}
 
 		// Atomically reserve a contiguous block of timestamps, one per message, so
 		// that concurrent add() calls for the same conversation never claim the same
 		// slot.
 		long nextTimestamp = reserveTimestampsForConversation(conversationId, messages.size());
-		final AtomicLong timestampSequence = new AtomicLong(nextTimestamp);
+		List<PreparedMessage> preparedMessages = new ArrayList<>(messages.size());
+
+		for (Message message : messages) {
+			long timestamp = nextTimestamp++;
+			String key = createKey(conversationId, timestamp);
+
+			Map<String, Object> documentMap = createMessageDocument(conversationId, message);
+			// Ensure the timestamp in the document matches the key timestamp for
+			// consistency
+			documentMap.put("timestamp", timestamp);
+
+			preparedMessages.add(new PreparedMessage(key, gson.toJson(documentMap)));
+		}
+
+		return preparedMessages;
+	}
+
+	private void writeMessages(List<PreparedMessage> messages) {
+		if (messages.isEmpty()) {
+			return;
+		}
 
 		try (Pipeline pipeline = this.jedisClient.pipelined()) {
-			for (Message message : messages) {
-				long timestamp = timestampSequence.getAndIncrement();
-				String key = createKey(conversationId, timestamp);
-
-				Map<String, Object> documentMap = createMessageDocument(conversationId, message);
-				// Ensure the timestamp in the document matches the key timestamp for
-				// consistency
-				documentMap.put("timestamp", timestamp);
-
-				String json = gson.toJson(documentMap);
-
+			for (PreparedMessage message : messages) {
 				if (logger.isDebugEnabled()) {
-					logger.debug("Storing batch message with key: " + key + ", type: " + message.getMessageType()
-							+ ", content: " + message.getText());
+					logger.debug("Storing batch message with key: " + message.key());
 				}
 
-				pipeline.jsonSet(key, ROOT_PATH, json);
+				pipeline.jsonSet(message.key(), ROOT_PATH, message.json());
 
 				if (this.config.getTimeToLiveSeconds() != -1) {
-					pipeline.expire(key, this.config.getTimeToLiveSeconds());
+					pipeline.expire(message.key(), this.config.getTimeToLiveSeconds());
 				}
 			}
 			pipeline.sync();
@@ -590,11 +601,14 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 
 	@Override
 	public void saveAll(String conversationId, List<Message> messages) {
-		// First clear any existing messages for this conversation
-		clear(conversationId);
+		Assert.notNull(conversationId, "Conversation ID must not be null");
+		Assert.notNull(messages, "Messages must not be null");
 
-		// Then add all the new messages
-		add(conversationId, messages);
+		// Prepare every replacement before deleting the existing conversation so that
+		// validation or serialization failures cannot erase its history.
+		List<PreparedMessage> preparedMessages = prepareMessages(conversationId, messages);
+		clear(conversationId);
+		writeMessages(preparedMessages);
 	}
 
 	@Override
@@ -1127,6 +1141,9 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 			return new RedisChatMemoryRepository(config);
 		}
 
+	}
+
+	private record PreparedMessage(String key, String json) {
 	}
 
 }
