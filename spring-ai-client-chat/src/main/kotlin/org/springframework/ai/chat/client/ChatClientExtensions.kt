@@ -25,8 +25,17 @@ import org.springframework.core.ParameterizedTypeReference
  * @author Josh Long
  */
 
-inline fun <reified T : Any> ChatClient.CallResponseSpec.entity(): T =
-	entity(object : ParameterizedTypeReference<T>() {}) as T
+/**
+ * Deserializes the response into a [T] instance.
+ *
+ * Returns `null` when the model response is empty or contains no parsable
+ * content, matching the `@Nullable` contract of the underlying
+ * [ChatClient.CallResponseSpec.entity] method. The previous implementation
+ * used an unchecked `as T` cast which caused an eager
+ * [NullPointerException] the moment the model returned no content.
+ */
+inline fun <reified T : Any> ChatClient.CallResponseSpec.entity(): T? =
+	entity(object : ParameterizedTypeReference<T>() {})
 
 inline fun <reified T : Any> ChatClient.CallResponseSpec.responseEntity(): ResponseEntity<ChatResponse, T> =
 	responseEntity(object : ParameterizedTypeReference<T>() {}) 
