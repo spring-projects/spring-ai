@@ -62,6 +62,7 @@ class BedrockCohereEmbeddingModelIT {
 		assertThat(embeddingResponse.getResults()).hasSize(1);
 		assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
 		assertThat(this.embeddingModel.dimensions()).isEqualTo(1024);
+		assertTokenUsageNotEmpty(embeddingResponse);
 	}
 
 	@Test
@@ -98,7 +99,7 @@ class BedrockCohereEmbeddingModelIT {
 
 		EmbeddingResponse embeddingResponse = this.embeddingModel.embedForResponse(List.of(longText));
 
-		verify(this.embeddingApi).embedding(requestCaptor.capture());
+		verify(this.embeddingApi).embeddingForModel(requestCaptor.capture());
 		CohereEmbeddingBedrockApi.CohereEmbeddingRequest capturedRequest = requestCaptor.getValue();
 
 		assertThat(capturedRequest.texts()).hasSize(1);
@@ -123,7 +124,7 @@ class BedrockCohereEmbeddingModelIT {
 		EmbeddingResponse embeddingResponse = this.embeddingModelStartTruncate.embedForResponse(List.of(longText));
 
 		// Verify truncation behavior
-		verify(this.embeddingApi).embedding(requestCaptor.capture());
+		verify(this.embeddingApi).embeddingForModel(requestCaptor.capture());
 		String truncatedText = requestCaptor.getValue().texts().get(0);
 		assertThat(truncatedText.length()).isLessThanOrEqualTo(2048);
 		assertThat(truncatedText).doesNotContain(startMarker);
@@ -147,6 +148,7 @@ class BedrockCohereEmbeddingModelIT {
 		assertThat(embeddingResponse.getResults().get(1).getIndex()).isEqualTo(1);
 
 		assertThat(this.embeddingModel.dimensions()).isEqualTo(1024);
+		assertTokenUsageNotEmpty(embeddingResponse);
 	}
 
 	@Test
@@ -162,6 +164,13 @@ class BedrockCohereEmbeddingModelIT {
 		assertThat(embeddingResponse.getResults().get(1).getIndex()).isEqualTo(1);
 
 		assertThat(this.embeddingModel.dimensions()).isEqualTo(1024);
+	}
+
+	private static void assertTokenUsageNotEmpty(EmbeddingResponse response) {
+		assertThat(response.getMetadata()).isNotNull();
+		assertThat(response.getMetadata().getUsage()).isNotNull();
+		assertThat(response.getMetadata().getUsage().getPromptTokens()).isNotNull();
+		assertThat(response.getMetadata().getUsage().getPromptTokens()).isPositive();
 	}
 
 	@SpringBootConfiguration
