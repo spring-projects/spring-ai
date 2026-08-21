@@ -168,9 +168,17 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 	}
 
 	@Override
-	public void doAdd(final List<Document> documents) {
-		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
-				this.batchingStrategy);
+	public void doAdd(List<Document> documents) {
+		Assert.notNull(documents, "The document list should not be null.");
+		this.doAdd(documents, EmbeddingOptions.builder().build());
+	}
+
+	@Override
+	public void doAdd(List<Document> documents, EmbeddingOptions options) {
+		Assert.notNull(documents, "The document list should not be null.");
+		Assert.notNull(options, "The embedding Options should not be null.");
+
+		List<float[]> embeddings = this.embeddingModel.embed(documents, options, this.batchingStrategy);
 		this.jdbcTemplate.batchUpdate(getIngestStatement(), new BatchPreparedStatementSetter() {
 
 			@Override
@@ -592,7 +600,7 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 		 * enhance search efficiency by narrowing the search area through the use of
 		 * neighbor partitions or clusters.
 		 * </p>
-		 *
+		 * <p>
 		 * * @see <a href=
 		 * "https://docs.oracle.com/en/database/oracle/oracle-database/23/vecse/understand-inverted-file-flat-vector-indexes.html">Oracle
 		 * Database documentation</a>

@@ -138,8 +138,6 @@ import org.springframework.util.StringUtils;
  */
 public class Neo4jVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
-	private static final Log logger = LogFactory.getLog(Neo4jVectorStore.class);
-
 	public static final int DEFAULT_TRANSACTION_SIZE = 10_000;
 
 	public static final String DEFAULT_LABEL = "Document";
@@ -153,6 +151,8 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 	public static final String DEFAULT_TEXT_PROPERTY = "text";
 
 	public static final String DEFAULT_CONSTRAINT_NAME = DEFAULT_LABEL + "_unique_idx";
+
+	private static final Log logger = LogFactory.getLog(Neo4jVectorStore.class);
 
 	private static final Map<Neo4jDistanceType, VectorStoreSimilarityMetric> SIMILARITY_TYPE_MAPPING = Map.of(
 			Neo4jDistanceType.COSINE, VectorStoreSimilarityMetric.COSINE, Neo4jDistanceType.EUCLIDEAN,
@@ -204,11 +204,22 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 		this.filterExpressionConverter = builder.filterExpressionConverter;
 	}
 
+	public static Builder builder(Driver driver, EmbeddingModel embeddingModel) {
+		return new Builder(driver, embeddingModel);
+	}
+
 	@Override
 	public void doAdd(List<Document> documents) {
+		Assert.notNull(documents, "The document list should not be null.");
+		this.doAdd(documents, EmbeddingOptions.builder().build());
+	}
 
-		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
-				this.batchingStrategy);
+	@Override
+	public void doAdd(List<Document> documents, EmbeddingOptions options) {
+		Assert.notNull(documents, "The document list should not be null.");
+		Assert.notNull(options, "The embedding Options should not be null.");
+
+		List<float[]> embeddings = this.embeddingModel.embed(documents, options, this.batchingStrategy);
 
 		var rows = IntStream.range(0, documents.size())
 			.mapToObj(i -> documentToRecord(documents.get(i), embeddings.get(i)))
@@ -400,10 +411,6 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 			this.name = name;
 		}
 
-	}
-
-	public static Builder builder(Driver driver, EmbeddingModel embeddingModel) {
-		return new Builder(driver, embeddingModel);
 	}
 
 	public static class Builder extends AbstractVectorStoreBuilder<Builder> {
