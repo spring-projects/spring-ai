@@ -16,10 +16,13 @@
 
 package org.springframework.ai.vectorstore.redis.autoconfigure;
 
+import java.util.List;
+
 import io.micrometer.observation.ObservationRegistry;
 import redis.clients.jedis.DefaultJedisClientConfig;
 import redis.clients.jedis.JedisClientConfig;
 import redis.clients.jedis.RedisClient;
+import redis.clients.jedis.search.Schema.FieldType;
 
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -27,6 +30,7 @@ import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.vectorstore.SpringAIVectorStoreTypes;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.ai.vectorstore.redis.RedisVectorStore;
+import org.springframework.ai.vectorstore.redis.RedisVectorStore.MetadataField;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -35,6 +39,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
+import org.springframework.util.CollectionUtils;
 
 /**
  * {@link AutoConfiguration Auto-configuration} for Redis Vector Store.
@@ -92,6 +97,19 @@ public class RedisVectorStoreAutoConfiguration {
 
 		// Configure HNSW parameters if available
 		hnswConfiguration(builder, properties);
+
+		// Configure metadata fields if provided
+		if (!CollectionUtils.isEmpty(properties.getMetadataFields())) {
+			List<MetadataField> fields = properties.getMetadataFields().stream().map(m -> {
+				String name = m.get("name");
+				String type = m.get("type");
+				if (name == null || type == null) {
+					throw new IllegalArgumentException("Metadata field must have both 'name' and 'type' defined: " + m);
+				}
+				return new MetadataField(name, FieldType.valueOf(type.toUpperCase()));
+			}).toList();
+			builder.metadataFields(fields);
+		}
 
 		return builder.build();
 	}

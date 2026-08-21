@@ -16,6 +16,9 @@
 
 package org.springframework.ai.vectorstore.redis.autoconfigure;
 
+import java.util.List;
+import java.util.Map;
+
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -61,6 +64,16 @@ class RedisVectorStorePropertiesTests {
 		assertThat(props.getHnsw().getM()).isEqualTo(32);
 		assertThat(props.getHnsw().getEfConstruction()).isEqualTo(100);
 		assertThat(props.getHnsw().getEfRuntime()).isEqualTo(50);
+	}
+
+	@Test
+	void customMetadataFields() {
+		var props = new RedisVectorStoreProperties();
+		props.setMetadataFields(List.of(Map.of("name", "conversationId", "type", "TAG")));
+
+		assertThat(props.getMetadataFields()).hasSize(1);
+		assertThat(props.getMetadataFields().get(0)).containsEntry("name", "conversationId")
+			.containsEntry("type", "TAG");
 	}
 
 }
