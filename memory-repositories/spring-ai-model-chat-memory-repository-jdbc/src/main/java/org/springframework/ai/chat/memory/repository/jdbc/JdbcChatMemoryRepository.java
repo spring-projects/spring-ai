@@ -43,6 +43,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.Assert;
 
@@ -81,11 +82,22 @@ public final class JdbcChatMemoryRepository implements ChatMemoryRepository {
 		Assert.notNull(dialect, "dialect cannot be null");
 		this.jdbcTemplate = jdbcTemplate;
 		this.dialect = dialect;
+		boolean usingDefaultTransactionManager = txManager == null;
+		PlatformTransactionManager effectiveTransactionManager;
 		if (txManager == null) {
 			Assert.state(jdbcTemplate.getDataSource() != null, "jdbcTemplate dataSource cannot be null");
-			txManager = new DataSourceTransactionManager(jdbcTemplate.getDataSource());
+			effectiveTransactionManager = new DataSourceTransactionManager(jdbcTemplate.getDataSource());
 		}
-		this.transactionTemplate = new TransactionTemplate(txManager);
+		else {
+			effectiveTransactionManager = txManager;
+		}
+		this.transactionTemplate = new TransactionTemplate(effectiveTransactionManager);
+		if (usingDefaultTransactionManager && dialect instanceof MysqlChatMemoryRepositoryDialect) {
+			// Under MySQL and MariaDB's default REPEATABLE READ isolation, concurrent
+			// deletes for different missing conversation IDs can acquire overlapping gap
+			// locks and deadlock when saveAll() subsequently inserts the messages.
+			this.transactionTemplate.setIsolationLevel(TransactionDefinition.ISOLATION_READ_COMMITTED);
+		}
 	}
 
 	@Override
