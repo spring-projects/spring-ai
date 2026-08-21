@@ -31,6 +31,7 @@ import org.springframework.ai.mcp.annotation.spring.scan.AbstractMcpAnnotatedBea
 import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
+import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -38,6 +39,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ImportRuntimeHints;
+import org.springframework.context.annotation.Role;
 
 /**
  * @author Christian Tzolov
@@ -49,6 +51,7 @@ import org.springframework.context.annotation.ImportRuntimeHints;
 		havingValue = "true", matchIfMissing = true)
 @EnableConfigurationProperties(McpServerAnnotationScannerProperties.class)
 @ImportRuntimeHints(McpServerAnnotationScannerAutoConfiguration.AnnotationHints.class)
+@Role(BeanDefinition.ROLE_INFRASTRUCTURE)
 public class McpServerAnnotationScannerAutoConfiguration {
 
 	private static final Set<Class<? extends Annotation>> SERVER_MCP_ANNOTATIONS = Set.of(McpTool.class,
@@ -56,6 +59,7 @@ public class McpServerAnnotationScannerAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
+	@Role(BeanDefinition.ROLE_INFRASTRUCTURE)
 	public ServerMcpAnnotatedBeans serverAnnotatedBeanRegistry() {
 		return new ServerMcpAnnotatedBeans();
 	}
@@ -63,7 +67,7 @@ public class McpServerAnnotationScannerAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public static ServerAnnotatedMethodBeanPostProcessor serverAnnotatedMethodBeanPostProcessor(
-			ServerMcpAnnotatedBeans serverMcpAnnotatedBeans, McpServerAnnotationScannerProperties properties) {
+			ServerMcpAnnotatedBeans serverMcpAnnotatedBeans) {
 		return new ServerAnnotatedMethodBeanPostProcessor(serverMcpAnnotatedBeans, SERVER_MCP_ANNOTATIONS);
 	}
 
