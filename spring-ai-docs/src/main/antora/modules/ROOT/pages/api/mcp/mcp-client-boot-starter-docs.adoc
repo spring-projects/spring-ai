@@ -499,7 +499,7 @@ Clients can control logging verbosity by setting minimum log levels
 
 ==== Client Customization Example
 
-You can implement `McpCustomizer<McpClient.SyncSpec>` for synchronous clients or `McpCustomizer<McpClient.AsyncSpec>` for asynchronous clients, depending on your application's needs.
+You can implement `McpClientCustomizer<McpClient.SyncSpec>` for synchronous clients or `McpClientCustomizer<McpClient.AsyncSpec>` for asynchronous clients, depending on your application's needs.
 
 [tabs]
 ======
