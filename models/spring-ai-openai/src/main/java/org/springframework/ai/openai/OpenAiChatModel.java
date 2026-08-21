@@ -1299,25 +1299,28 @@ public final class OpenAiChatModel implements ChatModel {
 					// so they are readable on the message, as in the non-streaming path.
 					.putAllAdditionalProperties(cccc.delta()._additionalProperties());
 				cccc.delta().toolCalls().ifPresent(ccctcs -> {
-					msgBuilder.toolCalls(ccctcs.stream().map(tc -> {
+					List<ChatCompletionMessageToolCall> toolCalls = ccctcs.stream().flatMap(tc -> {
+						if (tc.function().isEmpty() || tc.id().filter(StringUtils::hasText).isEmpty()) {
+							return Stream.empty();
+						}
 						ChatCompletionMessageFunctionToolCall.Builder toolCallBuilder = ChatCompletionMessageFunctionToolCall
 							.builder();
-						Function function = tc.function()
-							.orElseThrow(() -> new IllegalStateException("Tool call function is missing"));
-						String id = tc.id()
-							.filter(StringUtils::hasText)
-							.orElseThrow(() -> new IllegalStateException("Tool call id is missing"));
-						String name = function.name()
-							.filter(StringUtils::hasText)
-							.orElseThrow(() -> new IllegalStateException("Tool call function name is missing"));
+						Function function = tc.function().get();
+						Optional<String> name = function.name().filter(StringUtils::hasText);
+						if (name.isEmpty()) {
+							return Stream.empty();
+						}
 						toolCallBuilder.putAllAdditionalProperties(tc._additionalProperties());
-						toolCallBuilder.id(id);
+						toolCallBuilder.id(tc.id().get());
 						toolCallBuilder.function(ChatCompletionMessageFunctionToolCall.Function.builder()
-							.name(name)
+							.name(name.get())
 							.arguments(function.arguments().orElse(""))
 							.build());
-						return ChatCompletionMessageToolCall.ofFunction(toolCallBuilder.build());
-					}).toList());
+						return Stream.of(ChatCompletionMessageToolCall.ofFunction(toolCallBuilder.build()));
+					}).toList();
+					if (!toolCalls.isEmpty()) {
+						msgBuilder.toolCalls(toolCalls);
+					}
 				});
 				choiceBuilder.message(msgBuilder.build());
 				return choiceBuilder.build();

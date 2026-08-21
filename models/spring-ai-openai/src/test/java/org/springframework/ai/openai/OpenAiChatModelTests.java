@@ -904,6 +904,22 @@ class OpenAiChatModelTests {
 	}
 
 	@Test
+	void streamingTextIgnoresEmptyToolCalls() {
+		List<ChatCompletionChunk> chunks = List.of(
+				streamingChunk(delta -> delta.role(ChatCompletionChunk.Choice.Delta.Role.ASSISTANT)
+					.content("Hel")
+					.toolCalls(List.of()), null),
+				streamingChunk(delta -> delta.content("lo").toolCalls(List.of()), null),
+				streamingChunk(delta -> delta.content("!").toolCalls(List.of()),
+						ChatCompletionChunk.Choice.FinishReason.STOP));
+
+		AssistantMessage aggregated = aggregateStreaming(chunks);
+
+		assertThat(aggregated.getText()).isEqualTo("Hello!");
+		assertThat(aggregated.getToolCalls()).isEmpty();
+	}
+
+	@Test
 	void streamingReasoningContentAccumulatesAcrossIntermediateResponses() {
 		List<ChatCompletionChunk> chunks = List.of(
 				streamingChunk(delta -> delta.role(ChatCompletionChunk.Choice.Delta.Role.ASSISTANT)
