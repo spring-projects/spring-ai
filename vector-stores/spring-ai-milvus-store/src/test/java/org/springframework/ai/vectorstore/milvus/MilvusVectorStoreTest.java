@@ -16,15 +16,20 @@
 
 package org.springframework.ai.vectorstore.milvus;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
 import com.google.gson.JsonObject;
 import io.milvus.client.MilvusServiceClient;
+import io.milvus.grpc.DataType;
 import io.milvus.grpc.MutationResult;
 import io.milvus.grpc.SearchResultData;
 import io.milvus.grpc.SearchResults;
 import io.milvus.param.R;
+import io.milvus.param.RpcStatus;
+import io.milvus.param.collection.CreateCollectionParam;
+import io.milvus.param.collection.FieldType;
 import io.milvus.param.dml.DeleteParam;
 import io.milvus.param.dml.InsertParam;
 import io.milvus.param.dml.SearchParam;
@@ -46,6 +51,7 @@ import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.vectorstore.SearchRequest;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockConstruction;
@@ -257,6 +263,140 @@ class MilvusVectorStoreTest {
 	}
 
 	@Test
+	void shouldPerformSimilaritySearchWithScalarMetadataFieldFilterExpression() {
+		this.vectorStore = MilvusVectorStore.builder(this.milvusClient, this.embeddingModel)
+			.metadataFields(MilvusVectorStore.MetadataField.int64("age"))
+			.build();
+
+		try (MockedStatic<EmbeddingUtils> mockedEmbeddingUtils = mockStatic(EmbeddingUtils.class);
+				MockedConstruction<SearchResultsWrapper> mockedSearchResultsWrapper = mockConstruction(
+						SearchResultsWrapper.class,
+						(mock, context) -> when(mock.getRowRecords(0)).thenReturn(List.of()))) {
+
+			SearchRequest request = SearchRequest.builder()
+				.query("sample query")
+				.topK(5)
+				.similarityThreshold(0.7)
+				.filterExpression("age > 30 && country == 'NL'")
+				.build();
+
+			SearchParam capturedParam = performSimilaritySearch(mockedEmbeddingUtils, request);
+
+			assertThat(capturedParam.getExpr()).isEqualTo("age > 30 && metadata[\"country\"] == \"NL\"");
+		}
+	}
+
+	@Test
+	void shouldInsertConfiguredScalarMetadataFields() {
+		this.vectorStore = MilvusVectorStore.builder(this.milvusClient, this.embeddingModel)
+			.metadataFields(MilvusVectorStore.MetadataField.int64("year"),
+					MilvusVectorStore.MetadataField.text("category"), MilvusVectorStore.MetadataField.bool("published"))
+			.build();
+
+		when(this.embeddingModel.embed(any(), any(), any()))
+			.thenReturn(List.of(new float[] { 0.1f, 0.2f, 0.3f }, new float[] { 0.4f, 0.5f, 0.6f }));
+		when(this.milvusClient.insert(any(InsertParam.class)))
+			.thenReturn(R.success(MutationResult.getDefaultInstance()));
+
+		try (MockedStatic<EmbeddingUtils> mockedEmbeddingUtils = mockStatic(EmbeddingUtils.class)) {
+			mockedEmbeddingUtils.when(() -> EmbeddingUtils.toList(any())).thenReturn(List.of(0.1f, 0.2f, 0.3f));
+
+			this.vectorStore.doAdd(List.of(
+					new Document("doc-1", "content one", Map.of("year", 2020, "category", "news", "published", true)),
+					new Document("doc-2", "content two", Map.of("category", "blog", "published", false))));
+		}
+
+		ArgumentCaptor<InsertParam> captor = ArgumentCaptor.forClass(InsertParam.class);
+		verify(this.milvusClient).insert(captor.capture());
+
+		List<InsertParam.Field> fields = captor.getValue().getFields();
+		assertThat(field(fields, "year").getValues()).isEqualTo(Arrays.asList(2020L, null));
+		assertThat(field(fields, "category").getValues()).isEqualTo(List.of("news", "blog"));
+		assertThat(field(fields, "published").getValues()).isEqualTo(List.of(true, false));
+
+		JsonObject metadata = (JsonObject) field(fields, MilvusVectorStore.METADATA_FIELD_NAME).getValues().get(0);
+		assertThat(metadata.get("year").getAsInt()).isEqualTo(2020);
+		assertThat(metadata.get("category").getAsString()).isEqualTo("news");
+		assertThat(metadata.get("published").getAsBoolean()).isTrue();
+	}
+
+	@Test
+	void shouldRejectFractionalValueForIntegerScalarMetadataField() {
+		this.vectorStore = MilvusVectorStore.builder(this.milvusClient, this.embeddingModel)
+			.metadataFields(MilvusVectorStore.MetadataField.int64("year"))
+			.build();
+
+		when(this.embeddingModel.embed(any(), any(), any())).thenReturn(List.of(new float[] { 0.1f, 0.2f, 0.3f }));
+
+		assertThatIllegalArgumentException()
+			.isThrownBy(() -> this.vectorStore.doAdd(List.of(new Document("doc-1", "content", Map.of("year", 2020.5)))))
+			.withMessageContaining("integer value");
+	}
+
+	@Test
+	void shouldRejectOutOfRangeValueForIntegerScalarMetadataField() {
+		this.vectorStore = MilvusVectorStore.builder(this.milvusClient, this.embeddingModel)
+			.metadataFields(new MilvusVectorStore.MetadataField("priority", DataType.Int8))
+			.build();
+
+		when(this.embeddingModel.embed(any(), any(), any())).thenReturn(List.of(new float[] { 0.1f, 0.2f, 0.3f }));
+
+		assertThatIllegalArgumentException()
+			.isThrownBy(
+					() -> this.vectorStore.doAdd(List.of(new Document("doc-1", "content", Map.of("priority", 128)))))
+			.withMessageContaining("out of range");
+	}
+
+	@Test
+	void shouldCreateScalarMetadataFieldsInCollectionSchema() {
+		when(this.milvusClient.createCollection(any(CreateCollectionParam.class)))
+			.thenReturn(R.success(new RpcStatus(RpcStatus.SUCCESS_MSG)));
+
+		this.vectorStore.createCollection("default", "test_collection", "doc_id", false, "content", "metadata",
+				"embedding", List.of(MilvusVectorStore.MetadataField.int64("year"),
+						MilvusVectorStore.MetadataField.text("category")));
+
+		ArgumentCaptor<CreateCollectionParam> captor = ArgumentCaptor.forClass(CreateCollectionParam.class);
+		verify(this.milvusClient).createCollection(captor.capture());
+
+		List<FieldType> fields = captor.getValue().getFieldTypes();
+		FieldType yearField = fieldType(fields, "year");
+		assertThat(yearField.getDataType()).isEqualTo(DataType.Int64);
+		assertThat(yearField.isNullable()).isTrue();
+
+		FieldType categoryField = fieldType(fields, "category");
+		assertThat(categoryField.getDataType()).isEqualTo(DataType.VarChar);
+		assertThat(categoryField.getMaxLength()).isEqualTo(65535);
+		assertThat(categoryField.isNullable()).isTrue();
+	}
+
+	@Test
+	void shouldRejectDuplicateScalarMetadataFieldNames() {
+		assertThatIllegalArgumentException()
+			.isThrownBy(() -> MilvusVectorStore.builder(this.milvusClient, this.embeddingModel)
+				.metadataFields(MilvusVectorStore.MetadataField.int64("year"),
+						MilvusVectorStore.MetadataField.int32("year"))
+				.build())
+			.withMessageContaining("duplicate names");
+	}
+
+	@Test
+	void shouldRejectScalarMetadataFieldNameConflict() {
+		assertThatIllegalArgumentException()
+			.isThrownBy(() -> MilvusVectorStore.builder(this.milvusClient, this.embeddingModel)
+				.metadataFields(MilvusVectorStore.MetadataField.text(MilvusVectorStore.METADATA_FIELD_NAME))
+				.build())
+			.withMessageContaining("metadata field name");
+	}
+
+	@Test
+	void shouldRejectUnsupportedScalarMetadataFieldType() {
+		assertThatIllegalArgumentException()
+			.isThrownBy(() -> new MilvusVectorStore.MetadataField("attributes", DataType.JSON))
+			.withMessageContaining("JSON");
+	}
+
+	@Test
 	void shouldPreserveMetadataIntegerNumberTypesInSearchResults() {
 		long externalId = 10_000_000_000_000_001L;
 		JsonObject metadata = new JsonObject();
@@ -334,6 +474,14 @@ class MilvusVectorStoreTest {
 		assertThat(results).isNotNull();
 		verify(this.milvusClient).search(searchParamCaptor.capture());
 		return searchParamCaptor.getValue();
+	}
+
+	private InsertParam.Field field(List<InsertParam.Field> fields, String name) {
+		return fields.stream().filter(field -> field.getName().equals(name)).findFirst().orElseThrow();
+	}
+
+	private FieldType fieldType(List<FieldType> fields, String name) {
+		return fields.stream().filter(field -> field.getName().equals(name)).findFirst().orElseThrow();
 	}
 
 }
