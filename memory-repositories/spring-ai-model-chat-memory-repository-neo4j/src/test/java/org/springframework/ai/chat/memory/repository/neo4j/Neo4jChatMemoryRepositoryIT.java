@@ -429,6 +429,30 @@ class Neo4jChatMemoryRepositoryIT {
 			.hasMessageContaining("Unable to convert java.util.Optional");
 	}
 
+	@Test
+	void saveAllKeepsTheExistingConversationWhenAWriteFails() {
+		var conversationId = UUID.randomUUID().toString();
+
+		this.chatMemoryRepository.saveAll(conversationId,
+				List.of(new UserMessage("First message"), new AssistantMessage("Second message")));
+		assertThat(this.chatMemoryRepository.findByConversationId(conversationId)).hasSize(2);
+
+		// Optional-typed metadata cannot be serialized, so the replacement write
+		// fails on its second message. See
+		// saveAssistantMessageWithOptionalMetadataFails.
+		AssistantMessage unstorable = AssistantMessage.builder()
+			.content("Replacement that cannot be stored")
+			.properties(Map.of("refusal", Optional.of("I cannot answer that")))
+			.build();
+
+		assertThatThrownBy(() -> this.chatMemoryRepository.saveAll(conversationId,
+				List.of(new UserMessage("Replacement message"), unstorable)))
+			.isInstanceOf(org.neo4j.driver.exceptions.ClientException.class);
+
+		assertThat(this.chatMemoryRepository.findByConversationId(conversationId)).extracting(Message::getText)
+			.containsExactly("First message", "Second message");
+	}
+
 	private Message createMessageByType(String content, MessageType messageType) {
 		return switch (messageType) {
 			case ASSISTANT -> new AssistantMessage(content);
