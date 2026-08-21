@@ -768,6 +768,38 @@ public class CustomToolContextToMcpMetaConverter implements ToolContextToMcpMeta
 }
 ----
 
+==== Scoping Metadata to Specific MCP Servers
+
+WARNING: The same `ToolContext` and converter are shared across every MCP server registered with the application. If you populate the tool context with sensitive data (auth tokens, user identifiers) for one server's benefit, the default converter forwards it to *every* server a tool call happens to target, not just the one that needs it.
+
+To scope what gets forwarded based on the destination server, override `convert(ToolContext, McpConnectionInfo)` instead of `convert(ToolContext)`.
+The `McpConnectionInfo` identifies which MCP server the resulting metadata is about to be sent to, using the same connection info already used by `McpToolFilter` to scope tool discovery:
+
+[source,java]
+----
+@Component
+public class ScopedToolContextToMcpMetaConverter implements ToolContextToMcpMetaConverter {
+
+    @Override
+    public Map<String, Object> convert(ToolContext toolContext) {
+        // Not used directly once convert(ToolContext, McpConnectionInfo) is overridden,
+        // but still required by the interface for callers that only have a ToolContext.
+        return Map.of();
+    }
+
+    @Override
+    public Map<String, Object> convert(ToolContext toolContext, McpConnectionInfo connectionInfo) {
+        // Only forward the session token to the internal, trusted MCP server.
+        if (!"internal-tools-server".equals(connectionInfo.clientInfo().name())) {
+            return Map.of();
+        }
+        return Map.of("sessionJwt", toolContext.getContext().get("sessionJwt"));
+    }
+}
+----
+
+`convert(ToolContext, McpConnectionInfo)` has a default implementation that delegates to `convert(ToolContext)`, so existing converters that don't override it keep working unchanged.
+
 ==== Built-in Converters
 
 The framework provides built-in converters:
