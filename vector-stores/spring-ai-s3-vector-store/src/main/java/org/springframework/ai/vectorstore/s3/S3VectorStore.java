@@ -53,6 +53,7 @@ import org.springframework.util.StringUtils;
 /**
  * @author Matej Nedic
  * @author Jewoo Shin
+ * @author Taewoong Kim
  */
 public class S3VectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
@@ -181,7 +182,7 @@ public class S3VectorStore extends AbstractObservationVectorStore implements Ini
 		if (vector.distance() != null) {
 			metadata.put("SPRING_AI_S3_DISTANCE", vector.distance());
 		}
-		return Document.builder().metadata(metadata).text(vector.key()).build();
+		return Document.builder().id(vector.key()).metadata(metadata).text(vector.key()).build();
 	}
 
 	private boolean matchesFilter(ListOutputVector vector, Filter.Expression filterExpression) {
