@@ -16,10 +16,12 @@
 
 package org.springframework.ai.model.image.observation.autoconfigure;
 
+import io.micrometer.core.instrument.composite.CompositeMeterRegistry;
 import io.micrometer.tracing.Tracer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import org.springframework.ai.image.observation.ImageModelMeterObservationHandler;
 import org.springframework.ai.image.observation.ImageModelObservationContext;
 import org.springframework.ai.image.observation.ImageModelPromptContentObservationHandler;
 import org.springframework.ai.observation.TracingAwareLoggingObservationHandler;
@@ -45,6 +47,17 @@ class ImageObservationAutoConfigurationTests {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(ImageObservationAutoConfiguration.class));
+
+	@Test
+	void meterObservationHandlerEnabled() {
+		this.contextRunner.withBean(CompositeMeterRegistry.class)
+			.run(context -> assertThat(context).hasSingleBean(ImageModelMeterObservationHandler.class));
+	}
+
+	@Test
+	void meterObservationHandlerDisabled() {
+		this.contextRunner.run(context -> assertThat(context).doesNotHaveBean(ImageModelMeterObservationHandler.class));
+	}
 
 	@Test
 	void imageModelPromptContentHandlerNoTracer() {
