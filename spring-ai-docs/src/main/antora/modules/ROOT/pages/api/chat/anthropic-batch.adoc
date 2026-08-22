@@ -1,0 +1,177 @@
+[[anthropic-batch]]
+= Anthropic Message Batches
+
+The link:https://platform.claude.com/docs/en/api/messages/batches[Message Batches API] processes a large number of prompts asynchronously at reduced cost.
+Spring AI exposes it through `AnthropicBatchModel`, a dedicated abstraction rather than a `ChatModel`: `submit(...)` returns as soon as Anthropic accepts the batch, and there is no `ChatResponse` to return yet.
+
+This page covers the batch model only.
+See xref:api/chat/anthropic-chat.adoc[Anthropic Chat] for the dependency, the Boot starter and the `spring.ai.anthropic.*` connection properties, which the batch model shares.
+
+[IMPORTANT]
+====
+**Spring AI provides the provider access, not the orchestration.**
+
+There is no automatic polling, no persistence, no scheduling and no business retry.
+Deciding how often to call `retrieve(...)`, where to store the batch id and the `customId` correlations, when to notify and how to account for cost all stay with your application.
+====
+
+== Dependency and auto-configuration
+
+The batch model ships in the same `spring-ai-starter-model-anthropic` starter as the chat model, but it is **opt-in** so that applications which never submit batches do not pay for a second HTTP client:
+
+[source,properties]
+----
+spring.ai.anthropic.batch.enabled=true
+----
+
+Connection settings (`spring.ai.anthropic.*`) and model defaults (`spring.ai.anthropic.chat.*`) are shared with the chat model, so a batch reuses the same credentials, base URL, timeout, retries, proxy, custom headers and `AnthropicHttpClientBuilderCustomizer` beans as realtime calls.
+
+[cols="3,4"]
+|====
+| Property | Description
+
+| `spring.ai.anthropic.batch.enabled`
+| Whether to expose an `AnthropicBatchModel` bean. Default `false`.
+
+| `spring.ai.anthropic.batch.model`
+| Model for batch entries. Falls back to `spring.ai.anthropic.chat.model`.
+
+| `spring.ai.anthropic.batch.max-tokens`
+| Output-token ceiling per batch entry. Falls back to `spring.ai.anthropic.chat.max-tokens`.
+|====
+
+Outside Spring Boot, build one directly — the builder accepts the same connection and observability configuration as `AnthropicChatModel.builder()`:
+
+[source,java]
+----
+AnthropicBatchModel batchModel = AnthropicBatchModel.builder()
+    .options(AnthropicChatOptions.builder()
+        .model("claude-haiku-4-5")
+        .maxTokens(1024)
+        .build())
+    .observationRegistry(observationRegistry)
+    .build();
+----
+
+== Submitting a batch
+
+Every entry pairs a `customId` with a `Prompt`.
+The prompt is mapped through the *same* conversion used by `AnthropicChatModel.call(...)`, so system messages, conversation history, images and PDF documents, prompt caching, thinking, structured output and tool definitions all behave identically on both paths.
+Per-entry options are taken from the prompt when it carries `AnthropicChatOptions`; otherwise the batch model's defaults apply.
+
+[source,java]
+----
+AnthropicBatch batch = batchModel.submit(List.of(
+    AnthropicBatchRequest.of("invoice-1", "Summarize invoice 1"),
+    AnthropicBatchRequest.of("invoice-2", "Summarize invoice 2",
+        AnthropicChatOptions.builder().model("claude-sonnet-4-6").maxTokens(2048).build()),
+    AnthropicBatchRequest.of("invoice-3", new Prompt(List.of(
+        new SystemMessage("Answer in one sentence."),
+        new UserMessage("Summarize invoice 3"))))));
+
+// Persist these before returning: they are the only handle on the work in flight
+String batchId = batch.id();
+----
+
+`customId` must be 1–64 characters limited to letters, digits, underscores and hyphens, and must be unique within the batch.
+Both rules are enforced client-side, so a malformed identifier fails fast instead of costing a round trip.
+
+== Checking status
+
+Batch processing is asynchronous and **can take up to 24 hours**.
+Poll on your own schedule:
+
+[source,java]
+----
+AnthropicBatch current = batchModel.retrieve(batchId);
+
+if (current.isEnded()) {
+    // results can now be read
+}
+
+// Progress reporting without reading the result stream
+AnthropicBatchRequestCounts counts = current.requestCounts();
+log.info("{}/{} done ({} errored)", counts.completed(), counts.total(), counts.errored());
+----
+
+`AnthropicBatch` also exposes `createdAt()`, `expiresAt()`, `endedAt()`, `cancelInitiatedAt()`, `archivedAt()` and `resultsUrl()`.
+`status()` is an `AnthropicBatchStatus`: `IN_PROGRESS`, `CANCELING`, `ENDED`, or `UNKNOWN` for a status added by the API after your Spring AI release.
+
+== Reading results
+
+`results(...)` returns a `Flux` that consumes the JSONL stream lazily and closes the underlying SDK stream when the flux terminates or is cancelled, so a batch with a very large number of entries is never held in memory.
+
+[IMPORTANT]
+====
+**Results are not returned in submission order.** Key them by `customId`, never by position in the stream.
+====
+
+Individual failures are emitted as `ERRORED` items rather than thrown, so one bad entry never hides the rest of the batch:
+
+[source,java]
+----
+batchModel.results(batchId)
+    .doOnNext(result -> {
+        switch (result.status()) {
+            case SUCCEEDED -> {
+                ChatResponse response = result.chatResponse();
+                store(result.customId(), response.getResult().getOutput().getText());
+                recordCost(result.customId(), result.usage());
+            }
+            case ERRORED -> {
+                AnthropicBatchError error = result.error();
+                log.warn("{} failed: {} — {}", result.customId(), error.type(), error.message());
+            }
+            case CANCELED, EXPIRED, UNKNOWN -> requeue(result.customId());
+        }
+    })
+    .blockLast();
+----
+
+A succeeded result carries a full `ChatResponse` — same generations, same metadata keys (including `anthropic-response`, citations and web-search results) and same `Usage` as a realtime call — so downstream code that already consumes `ChatResponse` needs no change.
+`AnthropicBatchResult` adds `getText()` and `usage()` shortcuts for the common cases.
+
+== Cancelling and deleting
+
+[source,java]
+----
+// Cancellation is not immediate: the batch moves to CANCELING, entries that already
+// completed keep their result, and the rest end up CANCELED.
+AnthropicBatch canceling = batchModel.cancel(batchId);
+
+// Only batches whose processing has ended can be deleted.
+batchModel.delete(batchId);
+----
+
+== Correlating results with your domain
+
+`customId` is the only correlation handle the API offers, and results outlive the JVM that submitted them.
+Persist the batch id together with the `customId` of every entry, mapped to your own identifiers, before `submit(...)` returns to the caller — otherwise a restart mid-flight leaves results that cannot be attributed.
+
+[source,java]
+----
+// customId built from a domain identifier so correlation survives a restart
+AnthropicBatchRequest.of("invoice-" + invoice.getId(), prompt(invoice));
+----
+
+== Tool calling limitation
+
+Tool definitions resolved from the request options *are* sent with each entry, but a batch response containing `tool_use` blocks is returned as-is: there is **no interactive tool-execution loop**, because a batch entry cannot be continued mid-flight.
+Read the tool calls off the assistant message and submit a follow-up batch if you need a second turn:
+
+[source,java]
+----
+AssistantMessage output = result.chatResponse().getResult().getOutput();
+if (!output.getToolCalls().isEmpty()) {
+    // execute locally, then submit a follow-up batch with the tool results appended
+}
+----
+
+== Observability
+
+Every batch operation emits a `spring.ai.anthropic.batch.operation` observation whose `gen_ai.operation.name` tag is `batch_create`, `batch_retrieve`, `batch_results`, `batch_cancel` or `batch_delete`, alongside `gen_ai.system`, `gen_ai.request.model` and `spring.ai.anthropic.batch.status`.
+The submitted request count and the per-outcome counters are recorded as high-cardinality tags.
+
+Neither the batch id nor any prompt or generated content is exposed as a tag: batch ids are unbounded in cardinality, and prompt content must not reach a metrics backend.
+
+Supply your own `AnthropicBatchObservationConvention` bean to customise the tags.
