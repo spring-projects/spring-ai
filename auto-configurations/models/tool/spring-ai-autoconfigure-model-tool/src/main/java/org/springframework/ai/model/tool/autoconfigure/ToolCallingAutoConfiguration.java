@@ -141,7 +141,8 @@ public class ToolCallingAutoConfiguration {
 		var builder = ToolCallingManager.builder()
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.toolCallbackResolver(toolCallbackResolver)
-			.toolExecutionExceptionProcessor(toolExecutionExceptionProcessor);
+			.toolExecutionExceptionProcessor(toolExecutionExceptionProcessor)
+			.resolutionFallbackEnabled(properties.getResolution().getFallback().isEnabled());
 
 		ToolCallingProperties.Limits limits = properties.getLimits();
 

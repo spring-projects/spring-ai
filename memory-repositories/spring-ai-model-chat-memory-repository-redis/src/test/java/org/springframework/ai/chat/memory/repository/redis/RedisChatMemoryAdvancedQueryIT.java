@@ -43,6 +43,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author Brian Sam-Bodden
  * @author Yanming Zhou
+ * @author Soby Chacko
  */
 @Testcontainers
 class RedisChatMemoryAdvancedQueryIT {
@@ -396,6 +397,47 @@ class RedisChatMemoryAdvancedQueryIT {
 
 			// Clean up
 			chatMemory.clear(conversationId);
+		});
+	}
+
+	@Test
+	void shouldNeutralizeTagInjectionInFindByMetadata() {
+		this.contextRunner.run(context -> {
+			RedisChatMemoryRepository chatMemory = context.getBean(RedisChatMemoryRepository.class);
+
+			// Clear any existing test data
+			chatMemory.findConversationIds().forEach(chatMemory::clear);
+
+			String conversationA = "tag-injection-a";
+			String conversationB = "tag-injection-b";
+
+			// 'priority' is configured as a TAG field
+			UserMessage messageA = new UserMessage("Message in conversation A");
+			messageA.getMetadata().put("priority", "high");
+			UserMessage messageB = new UserMessage("Message in conversation B");
+			messageB.getMetadata().put("priority", "low");
+
+			chatMemory.add(conversationA, messageA);
+			chatMemory.add(conversationB, messageB);
+
+			// Give Redis time to index the documents
+			Thread.sleep(100);
+
+			// Sanity: a legitimate tag value matches only its own message
+			assertThat(((AdvancedRedisChatMemoryRepository) chatMemory).findByMetadata("priority", "high", 10))
+				.hasSize(1);
+
+			// A crafted value that, unescaped, closes the tag clause and unions a
+			// second one: @metadata_priority:{high} | @metadata_priority:{low}
+			// Expect: value treated as a literal tag, matching nothing
+			List<AdvancedRedisChatMemoryRepository.MessageWithConversation> injected = ((AdvancedRedisChatMemoryRepository) chatMemory)
+				.findByMetadata("priority", "high} | @metadata_priority:{low", 10);
+
+			assertThat(injected).isEmpty();
+
+			// Clean up
+			chatMemory.clear(conversationA);
+			chatMemory.clear(conversationB);
 		});
 	}
 

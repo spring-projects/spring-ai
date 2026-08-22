@@ -31,6 +31,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * Configuration properties for tool calling.
  *
  * @author Thomas Vitale
+ * @author Dimitar Proynov
  * @since 1.0.0
  */
 @ConfigurationProperties(ToolCallingProperties.CONFIG_PREFIX)
@@ -40,14 +41,20 @@ public class ToolCallingProperties {
 
 	private final Observations observations = new Observations();
 
+	private final Resolution resolution = new Resolution();
+
+	private final Limits limits = new Limits();
+
 	public Observations getObservations() {
 		return this.observations;
 	}
 
-	private final Limits limits = new Limits();
-
 	public Limits getLimits() {
 		return this.limits;
+	}
+
+	public Resolution getResolution() {
+		return this.resolution;
 	}
 
 	/**
@@ -156,6 +163,42 @@ public class ToolCallingProperties {
 
 		public void setOnLimitExceeded(ToolCallLimitBehavior onLimitExceeded) {
 			this.onLimitExceeded = onLimitExceeded;
+		}
+
+	}
+
+	public static class Resolution {
+
+		private final Fallback fallback = new Fallback();
+
+		public Fallback getFallback() {
+			return this.fallback;
+		}
+
+		public static class Fallback {
+
+			/**
+			 * Whether a requested tool that is absent from the request's tool callbacks
+			 * may be resolved by name through the {@code ToolCallbackResolver} (backed by
+			 * every {@code ToolCallback} bean in the application context) and executed.
+			 * <p>
+			 * Disabled by default: the tools attached to a request are the only tools
+			 * that can be executed for that request.
+			 * <p>
+			 * <strong>Enable with care.</strong> When enabled, any tool reachable through
+			 * the resolver becomes executable whenever the model names it, regardless of
+			 * what the request attached — including risk-tier and destructive tools.
+			 */
+			private boolean enabled = false;
+
+			public boolean isEnabled() {
+				return this.enabled;
+			}
+
+			public void setEnabled(boolean enabled) {
+				this.enabled = enabled;
+			}
+
 		}
 
 	}

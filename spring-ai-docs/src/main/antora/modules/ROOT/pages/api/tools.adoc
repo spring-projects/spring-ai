@@ -410,6 +410,18 @@ A few things to be aware of in hybrid setups:
 * **Name conflicts are only handled within the MCP side.** `DefaultMcpToolNamePrefixGenerator` prefixes duplicates across MCP servers, but it doesn't know about local `@Tool` methods. If a local tool and a remote MCP tool share a name, you need to rename one of them yourself, or use an `McpToolFilter` to drop the remote one.
 * **Restrict what's exposed.** MCP tools come from external sources whose surface you don't fully control. An `McpToolFilter` bean lets you select which tools enter the namespace based on server identity, tool name, or description — useful for limiting the blast radius of a chatty or untrusted MCP server.
 
+[WARNING]
+====
+A name conflict between two tool sources is only caught when the merged list goes through `ChatClient`.
+`.tools(...)` and `.defaultTools(...)` validate the full merged list and throw `IllegalStateException` if any two callbacks share a name, so a conflict here fails the request instead of running the wrong tool.
+
+That validation does not run if you call `ChatModel.call()`/`.stream()` directly, or build your own tool-calling loop, with a hand-assembled `ToolCallingChatOptions`.
+On that path, tool execution resolves by name only: whichever callback comes first in the merged list wins, silently, with no error or log.
+A remote MCP tool that happens to share a name with a trusted local tool can therefore execute in its place.
+
+If you combine local and MCP tools outside `ChatClient`, either keep the sources namespaced so their names can't collide (see xref:api/mcp/mcp-client-boot-starter-docs.adoc#mcp-tool-name-prefix-generation[Tool Name Prefix Generation]), or call `ToolCallingChatOptions.validateToolCallbacks(...)` yourself on the merged list before use.
+====
+
 [[tool-argument-augmentation]]
 == Tool Argument Augmentation
 
@@ -889,6 +901,23 @@ ToolCallbackResolver toolCallbackResolver(List<ToolCallback> toolCallbacks) {
 ----
 
 The resolver is used internally by `ToolCallingManager` to support both xref:#the-tool-calling-loop[advisor-controlled execution] and xref:#user-controlled-tool-execution[user-controlled execution].
+
+To enable the behavior — where a tool known to the resolver, but not attached to the request may be resolved by name and executed — enable the resolution fallback:
+
+[source,properties]
+----
+spring.ai.tools.resolution.fallback.enabled=true
+----
+
+[cols="6,3,1", stripes=even]
+|====
+| Property | Description | Default
+| `spring.ai.tools.resolution.fallback.enabled` | If `true`, a requested tool that is absent from the request's tool callbacks may be resolved by name through the `ToolCallbackResolver` and executed. If `false`, only the tools attached to the request can be executed. | `false`
+|====
+
+When constructing a `ToolCallingManager` directly, the same switch is available on the builder via `.resolutionFallbackEnabled(true)` (default `false`).
+
+WARNING: Enabling the resolution fallback makes every tool reachable through the resolver executable whenever the model names it, regardless of what a request attached — including risk-tier and destructive tools. Enable it only when you fully control which tools the resolver exposes.
 
 [[observability]]
 == Observability

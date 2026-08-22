@@ -60,6 +60,7 @@ import org.springframework.util.StringUtils;
  * @author Thomas Vitale
  * @author chabinhwang
  * @author Christian Tzolov
+ * @author Dimitar Proynov
  * @since 1.0.0
  */
 public final class DefaultToolCallingManager implements ToolCallingManager {
@@ -79,6 +80,8 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 
 	private static final ToolExecutionExceptionProcessor DEFAULT_TOOL_EXECUTION_EXCEPTION_PROCESSOR
 			= DefaultToolExecutionExceptionProcessor.builder().build();
+
+	private static final boolean DEFAULT_RESOLUTION_FALLBACK_ENABLED = false;
 
 	private static final String POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING_START = "LLM may have adapted the tool name '";
 	private static final String POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING_END
@@ -111,17 +114,44 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 
 	private final ToolCallLimits toolCallLimits;
 
+	/**
+	 * Whether a call to a tool that is not part of the request's tool callbacks may still
+	 * be executed by resolving it through the {@link ToolCallbackResolver}. When
+	 * {@code false} (the default), the tools attached to the request are the only tools
+	 * that can be executed.
+	 */
+	private final boolean resolutionFallbackEnabled;
+
 	private ToolCallingObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
 	public DefaultToolCallingManager(ObservationRegistry observationRegistry, ToolCallbackResolver toolCallbackResolver,
 			ToolExecutionExceptionProcessor toolExecutionExceptionProcessor) {
 		this(observationRegistry, toolCallbackResolver, toolExecutionExceptionProcessor,
 				new ToolCallLimits(DEFAULT_MAX_CALLS_PER_TOOL, Map.of(), Set.of(), DEFAULT_MAX_TOTAL_TOOL_CALLS,
-						ToolCallLimitBehavior.THROW));
+						ToolCallLimitBehavior.THROW),
+				DEFAULT_RESOLUTION_FALLBACK_ENABLED);
 	}
 
 	DefaultToolCallingManager(ObservationRegistry observationRegistry, ToolCallbackResolver toolCallbackResolver,
 			ToolExecutionExceptionProcessor toolExecutionExceptionProcessor, ToolCallLimits toolCallLimits) {
+		this(observationRegistry, toolCallbackResolver, toolExecutionExceptionProcessor, toolCallLimits,
+				DEFAULT_RESOLUTION_FALLBACK_ENABLED);
+	}
+
+	/**
+	 * Create a {@link DefaultToolCallingManager}.
+	 * @param observationRegistry the observation registry
+	 * @param toolCallbackResolver the resolver consulted for name-based tool resolution
+	 * @param toolExecutionExceptionProcessor the processor for tool execution exceptions
+	 * @param toolCallLimits the limits applied to tool calls within a turn
+	 * @param resolutionFallbackEnabled whether tools that are not part of the request's
+	 * tool callbacks may be resolved and executed via the {@code toolCallbackResolver};
+	 * defaults to {@code false} so that the request's tool callbacks bound execution
+	 * @since 2.0.1
+	 */
+	DefaultToolCallingManager(ObservationRegistry observationRegistry, ToolCallbackResolver toolCallbackResolver,
+			ToolExecutionExceptionProcessor toolExecutionExceptionProcessor, ToolCallLimits toolCallLimits,
+			boolean resolutionFallbackEnabled) {
 		Assert.notNull(observationRegistry, "observationRegistry cannot be null");
 		Assert.notNull(toolCallbackResolver, "toolCallbackResolver cannot be null");
 		Assert.notNull(toolExecutionExceptionProcessor, "toolCallExceptionConverter cannot be null");
@@ -131,6 +161,7 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 		this.toolCallbackResolver = toolCallbackResolver;
 		this.toolExecutionExceptionProcessor = toolExecutionExceptionProcessor;
 		this.toolCallLimits = toolCallLimits;
+		this.resolutionFallbackEnabled = resolutionFallbackEnabled;
 	}
 
 	@Override
@@ -255,7 +286,7 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 			ToolCallback toolCallback = toolCallbacks.stream()
 				.filter(tool -> toolName.equals(tool.getToolDefinition().name()))
 				.findFirst()
-				.orElseGet(() -> this.toolCallbackResolver.resolve(toolName));
+				.orElseGet(() -> this.resolutionFallbackEnabled ? this.toolCallbackResolver.resolve(toolName) : null);
 
 			if (toolCallback == null) {
 				if (logger.isWarnEnabled()) {
@@ -347,6 +378,8 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 		private int maxTotalToolCalls = DEFAULT_MAX_TOTAL_TOOL_CALLS;
 
 		private ToolCallLimitBehavior onLimitExceeded = ToolCallLimitBehavior.THROW;
+
+		private boolean resolutionFallbackEnabled = DEFAULT_RESOLUTION_FALLBACK_ENABLED;
 
 		private Builder() {
 		}
@@ -448,11 +481,25 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 			return this;
 		}
 
+		/**
+		 * Whether a call to a tool that is not part of the request's tool callbacks may
+		 * still be executed by resolving it through the {@link ToolCallbackResolver}.
+		 * Defaults to {@code false}, so that the tools attached to a request bound what
+		 * can be executed for that request.
+		 * @param resolutionFallbackEnabled {@code true} to allow name-based resolution of
+		 * tools absent from the request via the resolver
+		 * @since 2.0.1
+		 */
+		public Builder resolutionFallbackEnabled(boolean resolutionFallbackEnabled) {
+			this.resolutionFallbackEnabled = resolutionFallbackEnabled;
+			return this;
+		}
+
 		public DefaultToolCallingManager build() {
 			ToolCallLimits toolCallLimits = new ToolCallLimits(this.defaultMaxCallsPerTool, this.maxCallsPerTool,
 					this.toolsExcludedFromLimit, this.maxTotalToolCalls, this.onLimitExceeded);
 			return new DefaultToolCallingManager(this.observationRegistry, this.toolCallbackResolver,
-					this.toolExecutionExceptionProcessor, toolCallLimits);
+					this.toolExecutionExceptionProcessor, toolCallLimits, this.resolutionFallbackEnabled);
 		}
 
 	}
