@@ -195,9 +195,9 @@ public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 						this.options.getCredential(), this.options.getMicrosoftDeploymentName(),
 						this.options.getMicrosoftFoundryServiceVersion(), this.options.getOrganizationId(),
 						this.options.isMicrosoftFoundry(), this.options.isGitHubModels(), this.options.getModel(),
-						this.options.getTimeout(), this.options.getMaxRetries(), this.options.getProxy(),
-						this.options.getCustomHeaders(), this.observationRegistry, null,
-						builder.httpClientCustomizers));
+						Objects.requireNonNullElse(this.options.getTimeout(), AbstractOpenAiOptions.DEFAULT_TIMEOUT),
+						this.options.getMaxRetries(), this.options.getProxy(), this.options.getCustomHeaders(),
+						this.observationRegistry, null, builder.httpClientCustomizers));
 	}
 
 	@Override
