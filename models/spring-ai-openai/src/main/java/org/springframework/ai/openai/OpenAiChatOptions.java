@@ -109,9 +109,10 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 	private final boolean isGitHubModels;
 
 	/**
-	 * Request timeout for OpenAI client.
+	 * Request timeout for OpenAI client. When {@code null}, the timeout configured on the
+	 * OpenAI client is used.
 	 */
-	private final Duration timeout;
+	private final @Nullable Duration timeout;
 
 	/**
 	 * Maximum number of retries for OpenAI client.
@@ -217,7 +218,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 		this.organizationId = organizationId;
 		this.isMicrosoftFoundry = (isMicrosoftFoundry != null ? isMicrosoftFoundry : false);
 		this.isGitHubModels = (isGitHubModels != null ? isGitHubModels : false);
-		this.timeout = (timeout != null ? timeout : AbstractOpenAiOptions.DEFAULT_TIMEOUT);
+		this.timeout = timeout;
 		this.maxRetries = (maxRetries != null ? maxRetries : AbstractOpenAiOptions.DEFAULT_MAX_RETRIES);
 		this.proxy = proxy;
 		this.customHeaders = (customHeaders != null ? Map.copyOf(customHeaders) : null);
@@ -303,7 +304,11 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 		return this.isGitHubModels;
 	}
 
-	public Duration getTimeout() {
+	/**
+	 * Return the request timeout, or {@code null} to inherit the timeout configured on
+	 * the OpenAI client.
+	 */
+	public @Nullable Duration getTimeout() {
 		return this.timeout;
 	}
 

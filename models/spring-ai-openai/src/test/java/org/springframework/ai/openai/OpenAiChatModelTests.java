@@ -1582,4 +1582,49 @@ class OpenAiChatModelTests {
 		assertThat(value.getTimeout().request()).isEqualTo(expectedTimeout);
 	}
 
+	@Test
+	void unsetTimeoutIsNotPropagatedToRequestOptions() {
+		ChatService chatService = mock(ChatService.class);
+		ChatCompletionService chatCompletionService = mock(ChatCompletionService.class);
+		when(this.openAiClient.chat()).thenReturn(chatService);
+		when(chatService.completions()).thenReturn(chatCompletionService);
+		when(chatCompletionService.create(any(ChatCompletionCreateParams.class), any(RequestOptions.class)))
+			.thenReturn(ChatCompletion.builder()
+				.id("test-id")
+				.created(1777799928)
+				.model("test-model")
+				.usage(CompletionUsage.builder().promptTokens(1).completionTokens(1).totalTokens(2).build())
+				.addChoice(ChatCompletion.Choice.builder()
+					.finishReason(ChatCompletion.Choice.FinishReason.STOP)
+					.index(0)
+					.logprobs(Optional.empty())
+					.message(ChatCompletionMessage.builder()
+						.content("hello")
+						.refusal(Optional.empty())
+						.role(JsonValue.from("assistant"))
+						.annotations(List.of())
+						.toolCalls(List.of())
+						.build())
+					.build())
+				.build());
+
+		// No timeout set: the request must not override the timeout configured on the
+		// OpenAI client, otherwise long streaming turns are cut short by OkHttp's
+		// callTimeout.
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").build();
+		assertThat(options.getTimeout()).isNull();
+
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		chatModel.call(new Prompt("hi", options));
+
+		ArgumentCaptor<RequestOptions> argumentCaptor = ArgumentCaptor.forClass(RequestOptions.class);
+		verify(chatCompletionService).create(any(ChatCompletionCreateParams.class), argumentCaptor.capture());
+		assertThat(argumentCaptor.getValue().getTimeout()).isNull();
+	}
+
 }

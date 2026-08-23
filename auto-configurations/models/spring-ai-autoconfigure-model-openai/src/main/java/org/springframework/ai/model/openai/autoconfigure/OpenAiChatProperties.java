@@ -316,6 +316,7 @@ public class OpenAiChatProperties extends AbstractOpenAiProperties {
 
 	public OpenAiChatOptions toOptions() {
 		return OpenAiChatOptions.builder()
+			.timeout(this.getTimeout())
 			.model(this.model)
 			.frequencyPenalty(this.frequencyPenalty)
 			.logitBias(this.logitBias)

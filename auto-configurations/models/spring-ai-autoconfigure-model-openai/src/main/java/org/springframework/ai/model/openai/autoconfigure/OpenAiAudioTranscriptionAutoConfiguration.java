@@ -25,6 +25,7 @@ import io.micrometer.observation.ObservationRegistry;
 
 import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.model.SpringAIModels;
+import org.springframework.ai.model.openai.autoconfigure.OpenAiAutoConfigurationUtil.ResolvedConnectionProperties;
 import org.springframework.ai.openai.OpenAiAudioTranscriptionModel;
 import org.springframework.ai.openai.http.okhttp.OpenAiHttpClientBuilderCustomizer;
 import org.springframework.ai.openai.setup.OpenAiSetup;
@@ -73,7 +74,7 @@ public class OpenAiAudioTranscriptionAutoConfiguration {
 			.build();
 	}
 
-	private OpenAIClient openAiClient(OpenAiCommonProperties commonProperties,
+	private OpenAIClient openAiClient(ResolvedConnectionProperties commonProperties,
 			ObjectProvider<ObservationRegistry> observationRegistry, ObjectProvider<MeterRegistry> meterRegistry,
 			List<OpenAiHttpClientBuilderCustomizer> httpClientCustomizers) {
 
@@ -89,7 +90,7 @@ public class OpenAiAudioTranscriptionAutoConfiguration {
 				meterRegistryToUse, httpClientCustomizers);
 	}
 
-	private OpenAIClientAsync openAiClientAsync(OpenAiCommonProperties commonProperties,
+	private OpenAIClientAsync openAiClientAsync(ResolvedConnectionProperties commonProperties,
 			ObjectProvider<ObservationRegistry> observationRegistry, ObjectProvider<MeterRegistry> meterRegistry,
 			List<OpenAiHttpClientBuilderCustomizer> httpClientCustomizers) {
 

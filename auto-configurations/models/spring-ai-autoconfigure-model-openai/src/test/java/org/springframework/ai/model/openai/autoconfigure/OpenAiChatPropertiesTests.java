@@ -16,6 +16,7 @@
 
 package org.springframework.ai.model.openai.autoconfigure;
 
+import java.time.Duration;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -23,6 +24,7 @@ import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
 
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
+import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
@@ -62,6 +64,41 @@ public class OpenAiChatPropertiesTests {
 				var options = chatProperties.toOptions();
 				assertThat(options.getModel()).isEqualTo("MODEL_XYZ");
 				assertThat(options.getTemperature()).isEqualTo(0.55);
+			});
+	}
+
+	@Test
+	public void configuredTimeoutReachesTheChatModelOptions() {
+
+		this.contextRunner.withPropertyValues(
+		// @formatter:off
+				"spring.ai.openai.api-key=abc123",
+				"spring.ai.openai.chat.timeout=30m")
+				// @formatter:on
+			.withConfiguration(
+					AutoConfigurations.of(OpenAiChatAutoConfiguration.class, ToolCallingAutoConfiguration.class))
+			.run(context -> {
+				var chatModel = context.getBean(OpenAiChatModel.class);
+				assertThat(chatModel.getOptions().getTimeout()).isEqualTo(Duration.ofMinutes(30));
+			});
+	}
+
+	@Test
+	public void unsetChatTimeoutLeavesTheOptionsTimeoutNull() {
+
+		// The chat options carry no timeout, so requests do not override the timeout the
+		// OpenAI client was built with. Resolution of the common-level timeout is covered
+		// by OpenAiAutoConfigurationUtilTests.
+		this.contextRunner.withPropertyValues(
+		// @formatter:off
+				"spring.ai.openai.api-key=abc123",
+				"spring.ai.openai.timeout=30m")
+				// @formatter:on
+			.withConfiguration(
+					AutoConfigurations.of(OpenAiChatAutoConfiguration.class, ToolCallingAutoConfiguration.class))
+			.run(context -> {
+				var chatModel = context.getBean(OpenAiChatModel.class);
+				assertThat(chatModel.getOptions().getTimeout()).isNull();
 			});
 	}
 

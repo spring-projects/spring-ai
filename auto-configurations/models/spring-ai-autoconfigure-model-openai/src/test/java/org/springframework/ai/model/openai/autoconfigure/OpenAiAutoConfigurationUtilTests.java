@@ -16,6 +16,8 @@
 
 package org.springframework.ai.model.openai.autoconfigure;
 
+import java.time.Duration;
+
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -30,6 +32,43 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Ilayaperumal Gopinathan
  */
 public class OpenAiAutoConfigurationUtilTests {
+
+	@Test
+	void modelTimeoutTakesPrecedenceOverCommonTimeout() {
+		var common = properties(null);
+		common.setTimeout(Duration.ofMinutes(10));
+		var model = properties(null);
+		model.setTimeout(Duration.ofMinutes(30));
+
+		assertThat(OpenAiAutoConfigurationUtil.resolveCommonProperties(common, model).getTimeout())
+			.isEqualTo(Duration.ofMinutes(30));
+	}
+
+	@Test
+	void commonTimeoutUsedWhenModelTimeoutIsNotSet() {
+		var common = properties(null);
+		common.setTimeout(Duration.ofMinutes(30));
+
+		assertThat(OpenAiAutoConfigurationUtil.resolveCommonProperties(common, properties(null)).getTimeout())
+			.isEqualTo(Duration.ofMinutes(30));
+	}
+
+	@Test
+	void explicitModelTimeoutMatchingTheDefaultIsNotTreatedAsUnset() {
+		var common = properties(null);
+		common.setTimeout(Duration.ofMinutes(30));
+		var model = properties(null);
+		model.setTimeout(AbstractOpenAiProperties.DEFAULT_TIMEOUT);
+
+		assertThat(OpenAiAutoConfigurationUtil.resolveCommonProperties(common, model).getTimeout())
+			.isEqualTo(AbstractOpenAiProperties.DEFAULT_TIMEOUT);
+	}
+
+	@Test
+	void defaultTimeoutUsedWhenNeitherIsSet() {
+		assertThat(OpenAiAutoConfigurationUtil.resolveCommonProperties(properties(null), properties(null)).getTimeout())
+			.isEqualTo(AbstractOpenAiProperties.DEFAULT_TIMEOUT);
+	}
 
 	@Test
 	void modelApiKeyTakesPrecedenceOverCommonApiKey() {

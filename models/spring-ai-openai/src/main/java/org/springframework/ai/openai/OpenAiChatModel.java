@@ -1612,18 +1612,24 @@ public final class OpenAiChatModel implements ChatModel {
 							resolvedOptions.getCredential(), resolvedOptions.getMicrosoftDeploymentName(),
 							resolvedOptions.getMicrosoftFoundryServiceVersion(), resolvedOptions.getOrganizationId(),
 							resolvedOptions.isMicrosoftFoundry(), resolvedOptions.isGitHubModels(),
-							resolvedOptions.getModel(), resolvedOptions.getTimeout(), resolvedOptions.getMaxRetries(),
-							resolvedOptions.getProxy(), resolvedOptions.getCustomHeaders(), resolvedObservationRegistry,
-							this.meterRegistry, this.httpClientCustomizers));
+							resolvedOptions.getModel(),
+							Objects.requireNonNullElse(resolvedOptions.getTimeout(),
+									AbstractOpenAiOptions.DEFAULT_TIMEOUT),
+							resolvedOptions.getMaxRetries(), resolvedOptions.getProxy(),
+							resolvedOptions.getCustomHeaders(), resolvedObservationRegistry, this.meterRegistry,
+							this.httpClientCustomizers));
 
 			OpenAIClientAsync resolvedClientAsync = Objects.requireNonNullElseGet(this.openAiClientAsync,
 					() -> OpenAiSetup.setupAsyncClient(resolvedOptions.getBaseUrl(), resolvedOptions.getApiKey(),
 							resolvedOptions.getCredential(), resolvedOptions.getMicrosoftDeploymentName(),
 							resolvedOptions.getMicrosoftFoundryServiceVersion(), resolvedOptions.getOrganizationId(),
 							resolvedOptions.isMicrosoftFoundry(), resolvedOptions.isGitHubModels(),
-							resolvedOptions.getModel(), resolvedOptions.getTimeout(), resolvedOptions.getMaxRetries(),
-							resolvedOptions.getProxy(), resolvedOptions.getCustomHeaders(), resolvedObservationRegistry,
-							this.meterRegistry, this.httpClientCustomizers));
+							resolvedOptions.getModel(),
+							Objects.requireNonNullElse(resolvedOptions.getTimeout(),
+									AbstractOpenAiOptions.DEFAULT_TIMEOUT),
+							resolvedOptions.getMaxRetries(), resolvedOptions.getProxy(),
+							resolvedOptions.getCustomHeaders(), resolvedObservationRegistry, this.meterRegistry,
+							this.httpClientCustomizers));
 
 			ToolCallingManager resolvedToolCallingManager = Objects.requireNonNullElse(this.toolCallingManager,
 					ToolCallingManager.builder().observationRegistry(resolvedObservationRegistry).build());
