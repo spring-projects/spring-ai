@@ -60,6 +60,7 @@
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-deepseek</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-elevenlabs</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-google-genai</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-gpullama3</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-mistral-ai</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-ollama</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-openai</module>
@@ -116,6 +117,7 @@
 		<module>models/spring-ai-google-genai</module>
 		<module>models/spring-ai-google-genai-embedding</module>
 		<module>models/spring-ai-google-genai-image</module>
+		<module>models/spring-ai-gpullama3</module>
 		<module>models/spring-ai-mistral-ai</module>
 		<module>models/spring-ai-ollama</module>
 		<module>models/spring-ai-openai</module>
@@ -144,6 +146,7 @@
 		<module>starters/spring-ai-starter-model-google-genai</module>
 		<module>starters/spring-ai-starter-model-google-genai-embedding</module>
 		<module>starters/spring-ai-starter-model-google-genai-image</module>
+		<module>starters/spring-ai-starter-model-gpullama3</module>
 		<module>starters/spring-ai-starter-model-mistral-ai</module>
 		<module>starters/spring-ai-starter-model-ollama</module>
 		<module>starters/spring-ai-starter-model-openai</module>
@@ -267,6 +270,8 @@
 		<com.google.cloud.version>26.83.0</com.google.cloud.version>
 		<com.google.genai.version>1.58.0</com.google.genai.version>
 		<djl.version>0.36.0</djl.version>
+
+		<gpullama3.version>0.2.2</gpullama3.version>
 
 		<!-- Vector store clients -->
 		<coherence.version>24.09</coherence.version>

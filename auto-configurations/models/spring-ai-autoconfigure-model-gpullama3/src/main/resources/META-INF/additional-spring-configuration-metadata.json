@@ -1,0 +1,56 @@
+{
+  "properties": [
+    {
+      "name": "spring.ai.gpullama3.chat.enabled",
+      "description": "Whether GPULlama3 chat auto-configuration is enabled when the local model path is configured."
+    },
+    {
+      "name": "spring.ai.gpullama3.chat.model-path",
+      "description": "Path to the local GGUF model file. GPULlama3 chat auto-configuration activates only when this property is set."
+    },
+    {
+      "name": "spring.ai.gpullama3.chat.model",
+      "description": "Optional model name reported in chat responses. When unset, the GGUF file name is used."
+    },
+    {
+      "name": "spring.ai.gpullama3.chat.on-gpu",
+      "description": "Whether to use the GPU execution path. The default is false because GPU execution requires the appropriate TornadoVM launch environment."
+    },
+    {
+      "name": "spring.ai.gpullama3.chat.context-length",
+      "description": "Maximum context length used when loading the local model."
+    },
+    {
+      "name": "spring.ai.gpullama3.chat.options.max-tokens",
+      "description": "Maximum number of tokens to generate for each request."
+    },
+    {
+      "name": "spring.ai.gpullama3.chat.options.temperature",
+      "description": "Sampling temperature used during generation."
+    },
+    {
+      "name": "spring.ai.gpullama3.chat.options.top-p",
+      "description": "Nucleus sampling probability used during generation."
+    },
+    {
+      "name": "spring.ai.gpullama3.chat.options.seed",
+      "description": "Sampling seed used during generation."
+    },
+    {
+      "name": "spring.ai.gpullama3.chat.options.stop-sequences",
+      "description": "Portable Spring AI option retained for API compatibility. GPULlama3 currently ignores it and uses model-defined stop tokens."
+    },
+    {
+      "name": "spring.ai.gpullama3.chat.options.top-k",
+      "description": "Portable Spring AI option retained for API compatibility. GPULlama3 currently ignores it because its sampler does not expose top-k sampling."
+    },
+    {
+      "name": "spring.ai.gpullama3.chat.options.frequency-penalty",
+      "description": "Portable Spring AI option retained for API compatibility. GPULlama3 currently ignores it because its sampler does not expose frequency penalties."
+    },
+    {
+      "name": "spring.ai.gpullama3.chat.options.presence-penalty",
+      "description": "Portable Spring AI option retained for API compatibility. GPULlama3 currently ignores it because its sampler does not expose presence penalties."
+    }
+  ]
+}

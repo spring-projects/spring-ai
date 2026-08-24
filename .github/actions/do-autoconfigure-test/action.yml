@@ -150,6 +150,15 @@ runs:
           -pl auto-configurations/models/spring-ai-autoconfigure-model-google-genai \
           -Pintegration-tests ${{ inputs.maven-properties }} ${{ inputs.spring-boot-version != '' && format('-Dspring-boot.version={0}', inputs.spring-boot-version) || '' }} -Dfailsafe.rerunFailingTestsCount=2 verify
 
+    - name: Run Spring AI Autoconfigure GPULlama3 test
+      if: ${{ inputs.spring-ai-branch == 'main' }}
+      shell: bash
+      run: |
+        echo 'Running with maven properties:' ${{ inputs.maven-properties }}
+        ./mvnw --batch-mode -ntp --no-snapshot-updates \
+          -pl auto-configurations/models/spring-ai-autoconfigure-model-gpullama3 \
+          -Pintegration-tests ${{ inputs.maven-properties }} -Dfailsafe.rerunFailingTestsCount=2 verify
+
     - name: Run Spring AI Autoconfigure Azure OpenAI test
       if: ${{ inputs.spring-ai-branch != 'main' }}
       shell: bash
