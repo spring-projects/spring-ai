@@ -19,4 +19,7 @@
  *
  * @since 2.0.1
  */
+@NullMarked
 package org.springframework.ai.gpullama3;
+
+import org.jspecify.annotations.NullMarked;

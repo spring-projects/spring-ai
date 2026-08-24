@@ -73,17 +73,14 @@
 
 	<build>
 		<plugins>
-			<!-- gpu-llama3 0.4.0-jdk21 requires preview features and the Vector incubator
-			     module at compile and test time. error-prone/NullAway are disabled for this
-			     module because gpu-llama3's preview class files are outside their supported
-			     configuration; the surrounding modules keep those checks. -->
+			<!-- gpu-llama3 0.4.0-jdk21 ships preview-flagged classes and uses the Vector
+			     incubator module, so preview features are appended to the inherited compiler
+			     arguments, which keep the error-prone/NullAway null-safety checks. -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<configuration>
-					<release>21</release>
-					<compilerArgs combine.self="override">
-						<arg>-parameters</arg>
+					<compilerArgs combine.children="append">
 						<arg>--enable-preview</arg>
 						<arg>--add-modules</arg>
 						<arg>jdk.incubator.vector</arg>
@@ -92,14 +89,8 @@
 				<executions>
 					<execution>
 						<id>java-compile</id>
-						<phase>compile</phase>
-						<goals>
-							<goal>compile</goal>
-						</goals>
-						<configuration combine.self="override">
-							<release>21</release>
-							<compilerArgs>
-								<arg>-parameters</arg>
+						<configuration>
+							<compilerArgs combine.children="append">
 								<arg>--enable-preview</arg>
 								<arg>--add-modules</arg>
 								<arg>jdk.incubator.vector</arg>

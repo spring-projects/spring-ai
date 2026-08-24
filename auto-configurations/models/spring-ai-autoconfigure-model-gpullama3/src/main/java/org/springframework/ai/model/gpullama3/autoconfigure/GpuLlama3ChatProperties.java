@@ -19,6 +19,8 @@ package org.springframework.ai.model.gpullama3.autoconfigure;
 import java.nio.file.Path;
 import java.util.List;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.gpullama3.GpuLlama3ChatOptions;
 import org.springframework.ai.model.SpringAIModels;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -38,9 +40,9 @@ public class GpuLlama3ChatProperties {
 
 	private boolean enabled = true;
 
-	private Path modelPath;
+	private @Nullable Path modelPath;
 
-	private String model;
+	private @Nullable String model;
 
 	private Boolean onGpu = false;
 
@@ -56,7 +58,7 @@ public class GpuLlama3ChatProperties {
 		this.enabled = enabled;
 	}
 
-	public Path getModelPath() {
+	public @Nullable Path getModelPath() {
 		return this.modelPath;
 	}
 
@@ -64,7 +66,7 @@ public class GpuLlama3ChatProperties {
 		this.modelPath = modelPath;
 	}
 
-	public String getModel() {
+	public @Nullable String getModel() {
 		return this.model;
 	}
 
@@ -134,13 +136,13 @@ public class GpuLlama3ChatProperties {
 
 		private Long seed = 12345L;
 
-		private List<String> stopSequences;
+		private @Nullable List<String> stopSequences;
 
-		private Integer topK;
+		private @Nullable Integer topK;
 
-		private Double frequencyPenalty;
+		private @Nullable Double frequencyPenalty;
 
-		private Double presencePenalty;
+		private @Nullable Double presencePenalty;
 
 		public Integer getMaxTokens() {
 			return this.maxTokens;
@@ -174,7 +176,7 @@ public class GpuLlama3ChatProperties {
 			this.seed = seed;
 		}
 
-		public List<String> getStopSequences() {
+		public @Nullable List<String> getStopSequences() {
 			return this.stopSequences;
 		}
 
@@ -182,7 +184,7 @@ public class GpuLlama3ChatProperties {
 			this.stopSequences = stopSequences;
 		}
 
-		public Integer getTopK() {
+		public @Nullable Integer getTopK() {
 			return this.topK;
 		}
 
@@ -190,7 +192,7 @@ public class GpuLlama3ChatProperties {
 			this.topK = topK;
 		}
 
-		public Double getFrequencyPenalty() {
+		public @Nullable Double getFrequencyPenalty() {
 			return this.frequencyPenalty;
 		}
 
@@ -198,7 +200,7 @@ public class GpuLlama3ChatProperties {
 			this.frequencyPenalty = frequencyPenalty;
 		}
 
-		public Double getPresencePenalty() {
+		public @Nullable Double getPresencePenalty() {
 			return this.presencePenalty;
 		}
 

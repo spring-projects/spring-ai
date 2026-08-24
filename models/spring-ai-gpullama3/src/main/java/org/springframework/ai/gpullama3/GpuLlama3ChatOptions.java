@@ -50,32 +50,32 @@ import org.springframework.ai.chat.prompt.ChatOptions;
  */
 public final class GpuLlama3ChatOptions implements ChatOptions {
 
-	private final Path modelPath; // load .gguf file
+	private final @Nullable Path modelPath; // load .gguf file
 
-	private final String model;
+	private final @Nullable String model;
 
-	private final Boolean onGpu;
+	private final @Nullable Boolean onGpu;
 
-	private final Integer contextLength;
+	private final @Nullable Integer contextLength;
 
-	private final Integer maxTokens;
+	private final @Nullable Integer maxTokens;
 
-	private final Double temperature;
+	private final @Nullable Double temperature;
 
-	private final Double topP;
+	private final @Nullable Double topP;
 
-	private final Long seed;
+	private final @Nullable Long seed;
 
 	/**
 	 * Spring AI compatibility options currently ignored by GPULlama3.
 	 */
-	private final List<String> stopSequences;
+	private final @Nullable List<String> stopSequences;
 
-	private final Integer topK;
+	private final @Nullable Integer topK;
 
-	private final Double frequencyPenalty;
+	private final @Nullable Double frequencyPenalty;
 
-	private final Double presencePenalty;
+	private final @Nullable Double presencePenalty;
 
 	private GpuLlama3ChatOptions(Builder builder) {
 		this.modelPath = builder.modelPath;
@@ -228,7 +228,7 @@ public final class GpuLlama3ChatOptions implements ChatOptions {
 		}
 	}
 
-	private static List<String> copyList(@Nullable List<String> values) {
+	private static @Nullable List<String> copyList(@Nullable List<String> values) {
 		return values == null ? null : List.copyOf(values);
 	}
 
@@ -272,29 +272,29 @@ public final class GpuLlama3ChatOptions implements ChatOptions {
 	 */
 	public static final class Builder implements ChatOptions.Builder<Builder> {
 
-		private Path modelPath;
+		private @Nullable Path modelPath;
 
-		private String model;
+		private @Nullable String model;
 
-		private Boolean onGpu;
+		private @Nullable Boolean onGpu;
 
-		private Integer contextLength;
+		private @Nullable Integer contextLength;
 
-		private Integer maxTokens;
+		private @Nullable Integer maxTokens;
 
-		private Double temperature;
+		private @Nullable Double temperature;
 
-		private Double topP;
+		private @Nullable Double topP;
 
-		private Long seed;
+		private @Nullable Long seed;
 
-		private List<String> stopSequences;
+		private @Nullable List<String> stopSequences;
 
-		private Integer topK;
+		private @Nullable Integer topK;
 
-		private Double frequencyPenalty;
+		private @Nullable Double frequencyPenalty;
 
-		private Double presencePenalty;
+		private @Nullable Double presencePenalty;
 
 		private Builder() {
 		}
@@ -319,70 +319,70 @@ public final class GpuLlama3ChatOptions implements ChatOptions {
 			return new Builder(build());
 		}
 
-		public Builder modelPath(Path modelPath) {
+		public Builder modelPath(@Nullable Path modelPath) {
 			this.modelPath = modelPath;
 			return this;
 		}
 
 		@Override
-		public Builder model(String model) {
+		public Builder model(@Nullable String model) {
 			this.model = model;
 			return this;
 		}
 
-		public Builder onGpu(Boolean onGpu) {
+		public Builder onGpu(@Nullable Boolean onGpu) {
 			this.onGpu = onGpu;
 			return this;
 		}
 
-		public Builder contextLength(Integer contextLength) {
+		public Builder contextLength(@Nullable Integer contextLength) {
 			this.contextLength = contextLength;
 			return this;
 		}
 
 		@Override
-		public Builder maxTokens(Integer maxTokens) {
+		public Builder maxTokens(@Nullable Integer maxTokens) {
 			this.maxTokens = maxTokens;
 			return this;
 		}
 
 		@Override
-		public Builder temperature(Double temperature) {
+		public Builder temperature(@Nullable Double temperature) {
 			this.temperature = temperature;
 			return this;
 		}
 
 		@Override
-		public Builder topP(Double topP) {
+		public Builder topP(@Nullable Double topP) {
 			this.topP = topP;
 			return this;
 		}
 
-		public Builder seed(Long seed) {
+		public Builder seed(@Nullable Long seed) {
 			this.seed = seed;
 			return this;
 		}
 
 		@Override
-		public Builder stopSequences(List<String> stopSequences) {
+		public Builder stopSequences(@Nullable List<String> stopSequences) {
 			this.stopSequences = copyList(stopSequences);
 			return this;
 		}
 
 		@Override
-		public Builder topK(Integer topK) {
+		public Builder topK(@Nullable Integer topK) {
 			this.topK = topK;
 			return this;
 		}
 
 		@Override
-		public Builder frequencyPenalty(Double frequencyPenalty) {
+		public Builder frequencyPenalty(@Nullable Double frequencyPenalty) {
 			this.frequencyPenalty = frequencyPenalty;
 			return this;
 		}
 
 		@Override
-		public Builder presencePenalty(Double presencePenalty) {
+		public Builder presencePenalty(@Nullable Double presencePenalty) {
 			this.presencePenalty = presencePenalty;
 			return this;
 		}
