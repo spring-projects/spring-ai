@@ -19,6 +19,7 @@ package org.springframework.ai.chat.client.advisor;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiFunction;
 
 import io.micrometer.observation.ObservationRegistry;
@@ -1138,6 +1139,83 @@ public class ToolCallingAdvisorTests {
 		// Must be the complete, untrimmed round1History (3 messages), not the trimmed
 		// 2-message version forwarded to the rest of the chain.
 		assertThat(capturedPrompts.get(1).getInstructions()).isEqualTo(round1History);
+	}
+
+	@Test
+	void streamPreservesMessageInjectedByHookAcrossSubsequentToolCall() {
+		AtomicBoolean feedbackAdded = new AtomicBoolean();
+		UserMessage feedbackMessage = new UserMessage("FOO_BAR_FEEDBACK");
+
+		ToolCallingAdvisor advisor = new ToolCallingAdvisor(this.toolCallingManager,
+				ToolCallingAdvisor.DEFAULT_TOOL_EXECUTION_ELIGIBILITY_CHECKER, ToolCallingAdvisor.DEFAULT_ORDER, true) {
+
+			@Override
+			protected List<Message> doGetNextInstructionsForToolCallStream(ChatClientRequest chatClientRequest,
+					ChatClientResponse chatClientResponse, ToolExecutionResult toolExecutionResult) {
+				List<Message> instructions = new ArrayList<>(super.doGetNextInstructionsForToolCallStream(
+						chatClientRequest, chatClientResponse, toolExecutionResult));
+				if (feedbackAdded.compareAndSet(false, true)) {
+					instructions.add(feedbackMessage);
+				}
+				return instructions;
+			}
+		};
+
+		ChatClientRequest request = createMockRequest();
+		ChatClientResponse firstToolCallResponse = createMockResponse(true);
+		ChatClientResponse secondToolCallResponse = createMockResponse(true);
+		ChatClientResponse finalResponse = createMockResponse(false);
+
+		int[] callCount = { 0 };
+		TerminalStreamAdvisor terminalAdvisor = new TerminalStreamAdvisor((req, chain) -> {
+			callCount[0]++;
+			if (callCount[0] == 1) {
+				return Flux.just(firstToolCallResponse);
+			}
+			else if (callCount[0] == 2) {
+				return Flux.just(secondToolCallResponse);
+			}
+			else {
+				return Flux.just(finalResponse);
+			}
+		});
+
+		StreamAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.<Advisor>of(advisor, terminalAdvisor))
+			.build();
+
+		ToolResponseMessage.ToolResponse round1Response = new ToolResponseMessage.ToolResponse("tool-1", "testTool",
+				"round1 result");
+		ToolResponseMessage round1ToolResponseMessage = ToolResponseMessage.builder()
+			.responses(List.of(round1Response))
+			.build();
+		List<Message> round1History = List.of(new UserMessage("test"), AssistantMessage.builder().content("").build(),
+				round1ToolResponseMessage);
+		ToolExecutionResult round1Result = ToolExecutionResult.builder().conversationHistory(round1History).build();
+
+		ToolResponseMessage.ToolResponse round2Response = new ToolResponseMessage.ToolResponse("tool-2", "testTool",
+				"round2 result");
+		ToolResponseMessage round2ToolResponseMessage = ToolResponseMessage.builder()
+			.responses(List.of(round2Response))
+			.build();
+		List<Message> round2History = new ArrayList<>(round1History);
+		round2History.add(feedbackMessage);
+		round2History.add(AssistantMessage.builder().content("").build());
+		round2History.add(round2ToolResponseMessage);
+		ToolExecutionResult round2Result = ToolExecutionResult.builder().conversationHistory(round2History).build();
+
+		when(this.toolCallingManager.executeToolCalls(any(Prompt.class), any(ChatResponse.class)))
+			.thenReturn(round1Result, round2Result);
+
+		advisor.adviseStream(request, realChain).collectList().block();
+
+		ArgumentCaptor<Prompt> promptCaptor = ArgumentCaptor.forClass(Prompt.class);
+		verify(this.toolCallingManager, times(2)).executeToolCalls(promptCaptor.capture(), any(ChatResponse.class));
+
+		List<Prompt> capturedPrompts = promptCaptor.getAllValues();
+		// Round 2's request must still contain the message the hook injected after round
+		// 1, not just round1History with round 2's tool-call/response appended.
+		assertThat(capturedPrompts.get(1).getInstructions()).contains(feedbackMessage);
 	}
 
 	@Test

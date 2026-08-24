@@ -16,6 +16,7 @@
 
 package org.springframework.ai.chat.client.advisor;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -396,8 +397,27 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 				// Recursive call with updated conversation history
 				List<Message> nextInstructions = this.doGetNextInstructionsForToolCallStream(finalRequest,
 						finalAggregatedResponse, toolExecutionResult);
+				// Compare against what the un-overridden default would have produced for
+				// these exact inputs, not against conversationHistory() directly: the
+				// default itself reshapes that list (e.g. trims it to [system, last] when
+				// conversationHistoryEnabled is false), and diffing against the raw
+				// history
+				// would misidentify that reshaping as subclass-injected content. Diffing
+				// against the default isolates only what an override actually added.
+				List<Message> defaultInstructions = this.defaultNextInstructionsForToolCallStream(finalRequest,
+						toolExecutionResult);
+				List<Message> baseHistory = toolExecutionResult.conversationHistory();
+				List<Message> nextFullTurnHistory = baseHistory;
+				if (!nextInstructions.equals(defaultInstructions)) {
+					List<Message> injected = new ArrayList<>(nextInstructions);
+					injected.removeAll(defaultInstructions);
+					if (!injected.isEmpty()) {
+						nextFullTurnHistory = new ArrayList<>(baseHistory);
+						nextFullTurnHistory.addAll(injected);
+					}
+				}
 				return this.internalStream(streamAdvisorChain, originalRequest, optionsCopy, nextInstructions,
-						toolExecutionResult.conversationHistory(), usageAccumulator);
+						nextFullTurnHistory, usageAccumulator);
 			}
 		});
 		return toolCallFlux.subscribeOn(Schedulers.boundedElastic());
@@ -461,6 +481,17 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 	 */
 	protected List<Message> doGetNextInstructionsForToolCallStream(ChatClientRequest chatClientRequest,
 			ChatClientResponse chatClientResponse, ToolExecutionResult toolExecutionResult) {
+		return this.defaultNextInstructionsForToolCallStream(chatClientRequest, toolExecutionResult);
+	}
+
+	/**
+	 * The default (non-overridden) computation behind
+	 * {@link #doGetNextInstructionsForToolCallStream}. Kept separate so the streaming
+	 * loop can compare a subclass override's result against this baseline and identify
+	 * exactly which messages, if any, the override added.
+	 */
+	private List<Message> defaultNextInstructionsForToolCallStream(ChatClientRequest chatClientRequest,
+			ToolExecutionResult toolExecutionResult) {
 
 		if (!this.conversationHistoryEnabled) {
 			List<Message> history = toolExecutionResult.conversationHistory();
