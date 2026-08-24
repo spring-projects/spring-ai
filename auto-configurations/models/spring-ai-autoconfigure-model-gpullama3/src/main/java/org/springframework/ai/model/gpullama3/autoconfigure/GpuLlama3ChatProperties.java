@@ -26,6 +26,8 @@ import org.springframework.util.Assert;
 
 /**
  * Configuration properties for the GPULlama3 chat model.
+ *
+ * @since 2.0.1
  */
 @ConfigurationProperties(GpuLlama3ChatProperties.CONFIG_PREFIX)
 public class GpuLlama3ChatProperties {
@@ -117,6 +119,11 @@ public class GpuLlama3ChatProperties {
 			.build();
 	}
 
+	/**
+	 * Request-level generation options for the GPULlama3 chat model.
+	 *
+	 * @since 2.0.1
+	 */
 	public static class Options {
 
 		private Integer maxTokens = 512;

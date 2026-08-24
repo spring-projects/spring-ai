@@ -41,6 +41,8 @@ import java.util.Objects;
  * <li>{@code finishReason}: copied into Spring AI generation metadata.</li>
  * <li>{@code durationNanos}: copied into provider metadata for timing information.</li>
  * </ul>
+ *
+ * @since 2.0.1
  */
 public record GpuLlama3GenerationResult(List<Integer> promptTokens, List<Integer> completionTokens, String rawText,
 		String finishReason, long durationNanos) {

@@ -45,6 +45,8 @@ import org.springframework.ai.chat.prompt.ChatOptions;
  * GPULlama3 does not currently support them directly, including {@code stopSequences},
  * {@code topK}, {@code frequencyPenalty}, and {@code presencePenalty}.
  * </p>
+ *
+ * @since 2.0.1
  */
 public final class GpuLlama3ChatOptions implements ChatOptions {
 
@@ -265,6 +267,8 @@ public final class GpuLlama3ChatOptions implements ChatOptions {
 
 	/**
 	 * Implementation of the Builder pattern for GpuLlama3ChatOptions
+	 *
+	 * @since 2.0.1
 	 */
 	public static final class Builder implements ChatOptions.Builder<Builder> {
 

@@ -16,5 +16,7 @@
 
 /**
  * Spring Boot auto-configuration for the GPULlama3 Spring AI chat model.
+ *
+ * @since 2.0.1
  */
 package org.springframework.ai.model.gpullama3.autoconfigure;

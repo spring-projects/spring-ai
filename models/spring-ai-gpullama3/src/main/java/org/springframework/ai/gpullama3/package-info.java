@@ -16,5 +16,7 @@
 
 /**
  * Spring AI integration for GPULlama3 local chat models.
+ *
+ * @since 2.0.1
  */
 package org.springframework.ai.gpullama3;

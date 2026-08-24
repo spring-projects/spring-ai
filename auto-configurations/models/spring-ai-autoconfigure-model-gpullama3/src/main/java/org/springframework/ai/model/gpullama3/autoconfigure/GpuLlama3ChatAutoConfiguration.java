@@ -30,6 +30,8 @@ import org.springframework.context.annotation.Bean;
 
 /**
  * Spring Boot autoconfiguration for the GPULlama3 chat model.
+ *
+ * @since 2.0.1
  */
 @AutoConfiguration
 @ConditionalOnClass(GpuLlama3ChatModel.class)

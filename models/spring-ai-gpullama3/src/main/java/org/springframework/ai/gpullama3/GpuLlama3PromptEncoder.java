@@ -73,6 +73,7 @@ import org.springframework.util.Assert;
  * multimodal input.
  * </p>
  *
+ * @since 2.0.1
  */
 public final class GpuLlama3PromptEncoder {
 

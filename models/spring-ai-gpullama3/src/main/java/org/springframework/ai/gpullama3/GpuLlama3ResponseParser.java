@@ -28,6 +28,8 @@ import org.jspecify.annotations.Nullable;
  * text before the opening tag is treated as visible content and the text after it is
  * treated as thinking content. This preserves partially generated thinking text when
  * generation stops because of a length limit.
+ *
+ * @since 2.0.1
  */
 public final class GpuLlama3ResponseParser {
 
@@ -83,6 +85,11 @@ public final class GpuLlama3ResponseParser {
 		}
 	}
 
+	/**
+	 * Parsed GPULlama3 response content and optional thinking text.
+	 *
+	 * @since 2.0.1
+	 */
 	public record ParsedResponse(String content, @Nullable String thinking) {
 	}
 

@@ -60,6 +60,8 @@ import org.springframework.util.Assert;
  * The runtime is {@link AutoCloseable}; closing it releases the TornadoVM execution plan
  * when GPU mode is enabled.
  * </p>
+ *
+ * @since 2.0.1
  */
 public final class GpuLlama3Runtime implements AutoCloseable {
 
