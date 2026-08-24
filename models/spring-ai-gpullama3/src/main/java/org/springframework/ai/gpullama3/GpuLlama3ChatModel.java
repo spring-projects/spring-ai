@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.IntConsumer;
 
-import org.beehive.gpullama3.tokenizer.impl.Tokenizer;
+import org.beehive.gpullama3.tokenizer.Tokenizer;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -62,6 +62,8 @@ import org.springframework.util.Assert;
  * underlying GPULlama3 state and GPU execution plan are not treated as safely reusable by
  * concurrent requests.
  * </p>
+ *
+ * @since 2.0.1
  */
 public final class GpuLlama3ChatModel implements ChatModel, AutoCloseable {
 
