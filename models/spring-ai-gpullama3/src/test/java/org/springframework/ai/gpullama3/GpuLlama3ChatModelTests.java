@@ -172,7 +172,7 @@ class GpuLlama3ChatModelTests {
 		try (GpuLlama3ChatModel chatModel = chatModel(model)) {
 			List<String> chunks = collectStream(chatModel).stream().map(GpuLlama3ChatModelTests::outputText).toList();
 
-			assertThat(chunks).containsExactly("你", "Hello ", "");
+			assertThat(chunks).containsExactly("€", "Hello ", "");
 		}
 	}
 
@@ -587,7 +587,7 @@ class GpuLlama3ChatModelTests {
 				Integer token = tokens.get(i);
 				if (token == 200) {
 					if (i + 1 < tokens.size() && tokens.get(i + 1) == 201) {
-						decoded.append("你");
+						decoded.append("€");
 						i++;
 					}
 					else {
