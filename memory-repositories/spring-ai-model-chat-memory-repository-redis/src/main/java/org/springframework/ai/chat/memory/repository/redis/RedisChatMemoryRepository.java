@@ -80,6 +80,8 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 
 	private static final Log logger = LogFactory.getLog(RedisChatMemoryRepository.class);
 
+	private static final String REDIS_SPECIAL_SYNTAX_CHARS = "\\(){}|@:\"-~$";
+
 	private static final Gson gson = new Gson();
 
 	private static final Path2 ROOT_PATH = Path2.of("$");
@@ -619,9 +621,8 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 		Assert.isTrue(limit > 0, "Limit must be greater than 0");
 
 		// Use QueryBuilders to create a text field query
-		// Note: We don't escape the contentPattern here because Redis full-text search
-		// should handle the special characters appropriately in text fields
-		QueryNode queryNode = QueryBuilders.intersect("content", Values.value(contentPattern));
+		final String contentPatternStr = escapeContentQuerySyntax(contentPattern);
+		QueryNode queryNode = QueryBuilders.intersect("content", Values.value(contentPatternStr));
 		Query query = new Query(queryNode.toString()).setSortBy("timestamp", true).limit(0, limit);
 
 		if (logger.isDebugEnabled()) {
@@ -786,6 +787,48 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 		}
 
 		return executeSearchQuery(redisQuery);
+	}
+
+	/**
+	 * Escapes only the RedisSearch characters that carry query-syntax meaning ({@code ( )
+	 * | @ { } : " - ~ $ \}), so a caller-supplied content pattern cannot break out of the
+	 * surrounding {@code @content:(...)} clause. Unlike {@link RediSearchUtil#escape},
+	 * this deliberately leaves other punctuation (such as {@code + .}) untouched, since
+	 * the default tokenizer strips it from both indexed content and query terms, and
+	 * escaping it would make those characters match literally instead, breaking ordinary
+	 * full-text search.
+	 * <p>
+	 * Wildcards such as {@code prog*} remain supported. Only a token made up solely of
+	 * {@code *} characters is escaped, because RediSearch rejects it with a syntax error.
+	 * </p>
+	 * Use this method only to escape content, not {@link RediSearchUtil#escape}!
+	 */
+	private static String escapeContentQuerySyntax(String value) {
+		StringBuilder escaped = new StringBuilder(value.length());
+		for (int i = 0; i < value.length(); i++) {
+			char c = value.charAt(i);
+			if (c == '*' && isStandaloneWildcard(value, i)) {
+				escaped.append('\\');
+			}
+			else if (REDIS_SPECIAL_SYNTAX_CHARS.indexOf(c) >= 0) {
+				escaped.append('\\');
+			}
+			escaped.append(c);
+		}
+		return escaped.toString();
+	}
+
+	private static boolean isStandaloneWildcard(String value, int index) {
+		int start = index;
+		while (start > 0 && value.charAt(start - 1) == '*') {
+			start--;
+		}
+		int end = index;
+		while (end < value.length() - 1 && value.charAt(end + 1) == '*') {
+			end++;
+		}
+		return (start == 0 || Character.isWhitespace(value.charAt(start - 1)))
+				&& (end == value.length() - 1 || Character.isWhitespace(value.charAt(end + 1)));
 	}
 
 	/**
