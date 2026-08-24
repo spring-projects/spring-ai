@@ -38,7 +38,7 @@ import org.beehive.gpullama3.model.Configuration;
 import org.beehive.gpullama3.model.Model;
 import org.beehive.gpullama3.model.ModelType;
 import org.beehive.gpullama3.model.format.ChatFormat;
-import org.beehive.gpullama3.tokenizer.impl.Tokenizer;
+import org.beehive.gpullama3.tokenizer.Tokenizer;
 import org.beehive.gpullama3.tornadovm.TornadoVMMasterPlan;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
@@ -468,6 +468,11 @@ class GpuLlama3ChatModelTests {
 	}
 
 	private static final class FakeConfiguration implements Configuration {
+
+		@Override
+		public String quantization() {
+			return "F16";
+		}
 
 		@Override
 		public int dim() {
