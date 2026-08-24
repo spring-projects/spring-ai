@@ -22,6 +22,8 @@ import java.util.Objects;
 
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -31,6 +33,8 @@ import org.springframework.ai.chat.prompt.Prompt;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class GpuLlama3ChatModelLlamaIT {
+
+	private static final Logger logger = LoggerFactory.getLogger(GpuLlama3ChatModelLlamaIT.class);
 
 	private static final String MODEL_PATH_PROPERTY = "gpullama3.llama.model";
 
@@ -67,8 +71,8 @@ class GpuLlama3ChatModelLlamaIT {
 			Generation generation = Objects.requireNonNull(response.getResult(), "response result must not be null");
 			String answer = generation.getOutput().getText();
 
-			System.out.println("GPULlama3 Llama prompt: " + prompt);
-			System.out.println("GPULlama3 Llama answer: " + answer);
+			logger.info("GPULlama3 Llama prompt: {}", prompt);
+			logger.info("GPULlama3 Llama answer: {}", answer);
 
 			assertThat(answer).isNotBlank();
 			assertThat(response.getMetadata().getModel()).isEqualTo("llama-3.2-1b-instruct");
