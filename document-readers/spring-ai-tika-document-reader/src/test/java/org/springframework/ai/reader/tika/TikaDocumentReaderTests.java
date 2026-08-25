@@ -16,7 +16,11 @@
 
 package org.springframework.ai.reader.tika;
 
+import org.apache.tika.sax.BodyContentHandler;
+import org.junit.jupiter.api.Test;
+
 import org.junit.jupiter.params.ParameterizedTest;
+import org.springframework.core.io.DefaultResourceLoader;
 import org.junit.jupiter.params.provider.CsvSource;
 
 import org.springframework.ai.reader.ExtractedTextFormatter;
@@ -70,6 +74,32 @@ public class TikaDocumentReaderTests {
 		docs = new TikaDocumentReader(resourceUri).get();
 		doc = docs.get(0);
 		assertThat(doc.getText()).contains(contentSnipped);
+	}
+
+	@Test
+	void testGetIsReentrant() {
+		var reader = new TikaDocumentReader("classpath:/word-sample.docx");
+
+		var first = reader.get();
+		var second = reader.get();
+
+		assertThat(first).hasSize(1);
+		assertThat(second).hasSize(1);
+		assertThat(second.get(0).getText()).isEqualTo(first.get(0).getText());
+		assertThat(second.get(0).getMetadata()).isEqualTo(first.get(0).getMetadata());
+	}
+
+	@Test
+	void testCustomHandlerSupplierCreatesFreshHandlerPerCall() {
+		var reader = new TikaDocumentReader(new DefaultResourceLoader().getResource("classpath:/word-sample.docx"),
+				() -> new BodyContentHandler(-1), ExtractedTextFormatter.defaults());
+
+		var first = reader.get();
+		var second = reader.get();
+
+		assertThat(first).hasSize(1);
+		assertThat(second).hasSize(1);
+		assertThat(second.get(0).getText()).isEqualTo(first.get(0).getText());
 	}
 
 }
