@@ -924,6 +924,26 @@ class OpenAiChatModelTests {
 			.isEqualTo("Think step one. Think step two.");
 	}
 
+	@Test
+	void streamingReasoningContentDeltaExposedForTypewriterUx() { // gh-6833
+		List<ChatCompletionChunk> chunks = List.of(
+				streamingChunk(delta -> delta.role(ChatCompletionChunk.Choice.Delta.Role.ASSISTANT)
+					.putAdditionalProperty("reasoning_content", JsonValue.from("Think step one. ")), null),
+				streamingChunk(
+						delta -> delta.putAdditionalProperty("reasoning_content", JsonValue.from("Think step two.")),
+						null),
+				streamingChunk(delta -> delta.content("Hello"), ChatCompletionChunk.Choice.FinishReason.STOP));
+
+		List<ChatResponse> responses = streamResponses(chunks).collectList().block();
+
+		assertThat(responses).hasSize(3);
+		assertThat(responses.get(0).getResult().getOutput().getMetadata().get("reasoningContentDelta"))
+			.isEqualTo("Think step one. ");
+		assertThat(responses.get(1).getResult().getOutput().getMetadata().get("reasoningContentDelta"))
+			.isEqualTo("Think step two.");
+		assertThat(responses.get(2).getResult().getOutput().getMetadata().get("reasoningContentDelta")).isEqualTo("");
+	}
+
 	private AssistantMessage aggregateStreaming(List<ChatCompletionChunk> chunks) {
 		Flux<ChatResponse> responses = streamResponses(chunks);
 
