@@ -61,6 +61,7 @@ import org.springframework.web.reactive.function.server.ServerResponse;
  * @author Dariusz Jędrzejczyk
  * @author Christian Tzolov
  * @author Dimitar Proynov
+ * @author Taewoong Kim
  */
 public final class WebFluxStreamableServerTransportProvider implements McpStreamableServerTransportProvider {
 
@@ -325,27 +326,30 @@ public final class WebFluxStreamableServerTransportProvider implements McpStream
 		}
 
 		return request.bodyToMono(String.class).<ServerResponse>flatMap(body -> {
+			McpSchema.@Nullable JSONRPCMessage message = null;
 			try {
-				McpSchema.JSONRPCMessage message = McpSchema.deserializeJsonRpcMessage(this.jsonMapper, body);
+				message = McpSchema.deserializeJsonRpcMessage(this.jsonMapper, body);
 				if (message instanceof McpSchema.JSONRPCRequest jsonrpcRequest
 						&& jsonrpcRequest.method().equals(McpSchema.METHOD_INITIALIZE)) {
 					return handleInitRequest(jsonrpcRequest, hasMcpSessionIdHeader(request));
 				}
 				if (!hasMcpSessionIdHeader(request)) {
-					return ServerResponse.badRequest()
-						.bodyValue(McpError.builder(McpSchema.ErrorCodes.METHOD_NOT_FOUND)
-							.message("Session ID missing")
-							.build());
+					return WebFluxJsonRpcErrorResponse.create(this.jsonMapper, HttpStatus.BAD_REQUEST,
+							WebFluxJsonRpcErrorResponse.requestId(message),
+							McpError.builder(McpSchema.ErrorCodes.METHOD_NOT_FOUND)
+								.message("Session ID missing")
+								.build());
 				}
 
 				String sessionId = request.headers().asHttpHeaders().getFirst(HttpHeaders.MCP_SESSION_ID);
 				McpStreamableServerSession session = this.sessions.get(sessionId);
 
 				if (session == null || sessionId == null) {
-					return ServerResponse.status(HttpStatus.NOT_FOUND)
-						.bodyValue(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
-							.message("Session not found: " + sessionId)
-							.build());
+					return WebFluxJsonRpcErrorResponse.create(this.jsonMapper, HttpStatus.NOT_FOUND,
+							WebFluxJsonRpcErrorResponse.requestId(message),
+							McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
+								.message("Session not found: " + sessionId)
+								.build());
 				}
 
 				touchSession(sessionId);
@@ -373,20 +377,21 @@ public final class WebFluxStreamableServerTransportProvider implements McpStream
 								ServerSentEvent.class);
 				}
 				else {
-					return ServerResponse.badRequest()
-						.bodyValue(McpError.builder(McpSchema.ErrorCodes.INVALID_REQUEST)
-							.message("Unknown message type")
-							.build());
+					return WebFluxJsonRpcErrorResponse.create(this.jsonMapper, HttpStatus.BAD_REQUEST, null,
+							McpError.builder(McpSchema.ErrorCodes.INVALID_REQUEST)
+								.message("Unknown message type")
+								.build());
 				}
 			}
 			catch (IllegalArgumentException | IOException e) {
 				if (logger.isErrorEnabled()) {
 					logger.error("Failed to deserialize message: " + e.getMessage());
 				}
-				return ServerResponse.badRequest()
-					.bodyValue(McpError.builder(McpSchema.ErrorCodes.INVALID_REQUEST)
-						.message("Invalid message format")
-						.build());
+				return WebFluxJsonRpcErrorResponse.create(this.jsonMapper, HttpStatus.BAD_REQUEST,
+						WebFluxJsonRpcErrorResponse.requestId(message),
+						McpError.builder(McpSchema.ErrorCodes.INVALID_REQUEST)
+							.message("Invalid message format")
+							.build());
 			}
 		})
 			.switchIfEmpty(ServerResponse.badRequest().build())
@@ -437,22 +442,24 @@ public final class WebFluxStreamableServerTransportProvider implements McpStream
 	private Mono<ServerResponse> handleInitRequest(final McpSchema.JSONRPCRequest jsonrpcRequest,
 			final boolean hasMcpSessionIdHeader) {
 		if (this.sessionFactory == null) {
-			return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
-				.bodyValue(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
-					.message("Session factory not initialized")
-					.build());
+			return WebFluxJsonRpcErrorResponse.create(this.jsonMapper, HttpStatus.INTERNAL_SERVER_ERROR,
+					jsonrpcRequest.id(),
+					McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
+						.message("Session factory not initialized")
+						.build());
 		}
 		if (hasMcpSessionIdHeader) {
-			return ServerResponse.status(HttpStatus.BAD_REQUEST)
-				.bodyValue(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
-					.message("Session already initialized")
-					.build());
+			return WebFluxJsonRpcErrorResponse.create(this.jsonMapper, HttpStatus.BAD_REQUEST, jsonrpcRequest.id(),
+					McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
+						.message("Session already initialized")
+						.build());
 		}
 		if (this.sessions.size() >= this.maxSessions) {
-			return ServerResponse.status(HttpStatus.SERVICE_UNAVAILABLE)
-				.bodyValue(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
-					.message("Max number of sessions reached")
-					.build());
+			return WebFluxJsonRpcErrorResponse.create(this.jsonMapper, HttpStatus.SERVICE_UNAVAILABLE,
+					jsonrpcRequest.id(),
+					McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
+						.message("Max number of sessions reached")
+						.build());
 		}
 		var typeReference = new TypeRef<McpSchema.InitializeRequest>() {
 		};
