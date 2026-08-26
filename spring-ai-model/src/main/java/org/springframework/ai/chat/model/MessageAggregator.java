@@ -61,6 +61,8 @@ public class MessageAggregator {
 		AtomicReference<StringBuilder> outputWithoutThoughtsRef = new AtomicReference<>(new StringBuilder());
 		AtomicReference<Map<String, Object>> messageMetadataMapRef = new AtomicReference<>();
 		AtomicReference<List<ToolCall>> toolCallsRef = new AtomicReference<>(new ArrayList<>());
+		AtomicReference<AssistantMessage> assistantMessageRef = new AtomicReference<>(
+				AssistantMessage.builder().build());
 
 		// ChatGeneration Metadata
 		AtomicReference<ChatGenerationMetadata> generationMetadataRef = new AtomicReference<>(
@@ -83,6 +85,7 @@ public class MessageAggregator {
 			outputWithoutThoughtsRef.set(new StringBuilder());
 			messageMetadataMapRef.set(new HashMap<>());
 			toolCallsRef.set(new ArrayList<>());
+			assistantMessageRef.set(AssistantMessage.builder().build());
 			metadataIdRef.set("");
 			metadataModelRef.set("");
 			metadataUsagePromptTokensRef.set(0);
@@ -115,6 +118,10 @@ public class MessageAggregator {
 					messageMetadataMapRef.get().putAll(chatResponse.getResult().getOutput().getMetadata());
 				}
 				AssistantMessage outputMessage = chatResponse.getResult().getOutput();
+				if (outputMessage.getClass() != AssistantMessage.class
+						|| assistantMessageRef.get().getClass() == AssistantMessage.class) {
+					assistantMessageRef.set(outputMessage);
+				}
 				if (!CollectionUtils.isEmpty(outputMessage.getToolCalls())) {
 					toolCallsRef.get().addAll(outputMessage.getToolCalls());
 				}
@@ -165,28 +172,18 @@ public class MessageAggregator {
 				.promptMetadata(metadataPromptMetadataRef.get())
 				.build();
 
-			AssistantMessage finalAssistantMessage;
 			var messageMetadata = messageMetadataMapRef.get();
 			if (!thoughtsRef.get().isEmpty()) {
 				messageMetadata.put("thoughts", thoughtsRef.get().toString());
 				messageMetadata.put("outputWithoutThoughts", outputWithoutThoughtsRef.get().toString());
 			}
 			List<ToolCall> collectedToolCalls = toolCallsRef.get();
-
-			if (!CollectionUtils.isEmpty(collectedToolCalls)) {
-
-				finalAssistantMessage = AssistantMessage.builder()
-					.content(messageTextContentRef.get().toString())
-					.properties(messageMetadata)
-					.toolCalls(collectedToolCalls)
-					.build();
-			}
-			else {
-				finalAssistantMessage = AssistantMessage.builder()
-					.content(messageTextContentRef.get().toString())
-					.properties(messageMetadata)
-					.build();
-			}
+			AssistantMessage finalAssistantMessage = assistantMessageRef.get()
+				.mutate()
+				.content(messageTextContentRef.get().toString())
+				.properties(messageMetadata)
+				.toolCalls(collectedToolCalls)
+				.build();
 			onAggregationComplete.accept(new ChatResponse(List.of(new Generation(finalAssistantMessage,
 
 					generationMetadataRef.get())), chatResponseMetadata));
@@ -196,6 +193,7 @@ public class MessageAggregator {
 			outputWithoutThoughtsRef.set(new StringBuilder());
 			messageMetadataMapRef.set(new HashMap<>());
 			toolCallsRef.set(new ArrayList<>());
+			assistantMessageRef.set(AssistantMessage.builder().build());
 			metadataIdRef.set("");
 			metadataModelRef.set("");
 			metadataUsagePromptTokensRef.set(0);
