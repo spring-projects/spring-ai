@@ -176,11 +176,11 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 	private static final Log logger = LogFactory.getLog(PgVectorStore.class);
 
-	private static final PgDistanceType EUCLIDEAN_DISTANCE = new PgDistanceType("EUCLIDEAN_DISTANCE", "<->",
+	static final PgDistanceType EUCLIDEAN_DISTANCE = new PgDistanceType("EUCLIDEAN_DISTANCE", "<->",
 			"vector_l2_ops",
 			"SELECT *, embedding <-> ? AS distance FROM %s WHERE embedding <-> ? < ? %s ORDER BY distance LIMIT ? ");
 
-	private static final PgDistanceType NEGATIVE_INNER_PRODUCT = new PgDistanceType("NEGATIVE_INNER_PRODUCT", "<#>",
+	static final PgDistanceType NEGATIVE_INNER_PRODUCT = new PgDistanceType("NEGATIVE_INNER_PRODUCT", "<#>",
 			"vector_ip_ops",
 			"SELECT *, (1 + (embedding <#> ?)) AS distance FROM %s WHERE (1 + (embedding <#> ?)) < ? %s ORDER BY distance LIMIT ? ");
 
