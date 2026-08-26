@@ -16,23 +16,19 @@
 
 package org.springframework.ai.vectorstore.pgvector;
 
-import java.util.List;
-
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
-import org.springframework.ai.vectorstore.filter.FilterExpressionTextParser;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 /**
  * Unit tests for {@link PgVectorStore} configurable distance type behavior.
@@ -43,7 +39,6 @@ class PgVectorStoreDistanceTypeTests {
 
 	public static final PgDistanceType CUSTOM_DISTANCE_TYPE = new PgDistanceType("CUSTOM", "<custom>", "custom_ops",
 			"SELECT CUSTOM ?");
-	private final FilterExpressionTextParser filterParser = new FilterExpressionTextParser();
 
 	@Test
 	void shouldUseCustomDistanceType() {
@@ -64,7 +59,7 @@ class PgVectorStoreDistanceTypeTests {
 	}
 
 	@Test
-	void similaritySearchShouldUseConfiguredDistanceTypeOperator() {
+	void similaritySearchShouldUseConfiguredDistanceType() {
 		// Given
 		var jdbcTemplate = mock(JdbcTemplate.class);
 		var embeddingModel = mock(EmbeddingModel.class);
@@ -93,10 +88,8 @@ class PgVectorStoreDistanceTypeTests {
 		String sql = sqlCaptor.getValue();
 
 		// Verify that the custom distance operator is used in the SQL
-		assertThat(sql).contains("SELECT CUSTOM ?");
-		assertThat(sql).doesNotContain("<->");
-		assertThat(sql).doesNotContain("<=>");
-		assertThat(sql).doesNotContain("<#>");
+		assertThat(sql).contains("SELECT CUSTOM ?")
+				.doesNotContain("<->","<=>","<#>");
 	}
 
 }
