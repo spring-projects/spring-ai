@@ -176,15 +176,57 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 	private static final Log logger = LogFactory.getLog(PgVectorStore.class);
 
-	static final PgDistanceType EUCLIDEAN_DISTANCE = new PgDistanceType("EUCLIDEAN_DISTANCE", "<->",
+	/**
+	 * Default implementation of {@link PgDistanceType}.
+	 */
+	private static final class DefaultPgDistanceType implements PgDistanceType {
+
+		private final String name;
+
+		private final String operator;
+
+		private final String index;
+
+		private final String similaritySearchSqlTemplate;
+
+		DefaultPgDistanceType(String name, String operator, String index, String similaritySearchSqlTemplate) {
+			this.name = name;
+			this.operator = operator;
+			this.index = index;
+			this.similaritySearchSqlTemplate = similaritySearchSqlTemplate;
+		}
+
+		@Override
+		public String name() {
+			return this.name;
+		}
+
+		@Override
+		public String operator() {
+			return this.operator;
+		}
+
+		@Override
+		public String index() {
+			return this.index;
+		}
+
+		@Override
+		public String similaritySearchSqlTemplate() {
+			return this.similaritySearchSqlTemplate;
+		}
+
+	}
+
+	static final PgDistanceType EUCLIDEAN_DISTANCE = new DefaultPgDistanceType("EUCLIDEAN_DISTANCE", "<->",
 			"vector_l2_ops",
 			"SELECT *, embedding <-> ? AS distance FROM %s WHERE embedding <-> ? < ? %s ORDER BY distance LIMIT ? ");
 
-	static final PgDistanceType NEGATIVE_INNER_PRODUCT = new PgDistanceType("NEGATIVE_INNER_PRODUCT", "<#>",
+	static final PgDistanceType NEGATIVE_INNER_PRODUCT = new DefaultPgDistanceType("NEGATIVE_INNER_PRODUCT", "<#>",
 			"vector_ip_ops",
 			"SELECT *, (1 + (embedding <#> ?)) AS distance FROM %s WHERE (1 + (embedding <#> ?)) < ? %s ORDER BY distance LIMIT ? ");
 
-	static final PgDistanceType COSINE_DISTANCE = new PgDistanceType("COSINE_DISTANCE", "<=>",
+	static final PgDistanceType COSINE_DISTANCE = new DefaultPgDistanceType("COSINE_DISTANCE", "<=>",
 			"vector_cosine_ops",
 			"SELECT *, embedding <=> ? AS distance FROM %s WHERE embedding <=> ? < ? %s ORDER BY distance LIMIT ? ");
 

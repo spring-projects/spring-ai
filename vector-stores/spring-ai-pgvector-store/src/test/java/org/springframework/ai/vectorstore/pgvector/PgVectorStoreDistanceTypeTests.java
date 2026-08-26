@@ -33,12 +33,68 @@ import static org.mockito.Mockito.*;
 /**
  * Unit tests for {@link PgVectorStore} configurable distance type behavior.
  *
- * @author Spring AI Team
  */
 class PgVectorStoreDistanceTypeTests {
 
-	public static final PgDistanceType CUSTOM_DISTANCE_TYPE = new PgDistanceType("CUSTOM", "<custom>", "custom_ops",
-			"SELECT CUSTOM ?");
+	public static final TestPgDistanceType CUSTOM_DISTANCE_TYPE = new TestPgDistanceType("CUSTOM", "<custom>", "custom_ops",
+			"SELECT * CUSTOM ?");
+
+	/**
+	 * Test implementation of {@link PgDistanceType}.
+	 */
+	private static class TestPgDistanceType implements PgDistanceType {
+
+		private final String name;
+
+		private final String operator;
+
+		private final String index;
+
+		private final String similaritySearchSqlTemplate;
+
+		TestPgDistanceType(String name, String operator, String index, String similaritySearchSqlTemplate) {
+			this.name = name;
+			this.operator = operator;
+			this.index = index;
+			this.similaritySearchSqlTemplate = similaritySearchSqlTemplate;
+		}
+
+		@Override
+		public String name() {
+			return this.name;
+		}
+
+		@Override
+		public String operator() {
+			return this.operator;
+		}
+
+		@Override
+		public String index() {
+			return this.index;
+		}
+
+		@Override
+		public String similaritySearchSqlTemplate() {
+			return this.similaritySearchSqlTemplate;
+		}
+
+	}
+
+	@Test
+	void shouldUseCosineDistanceByDefault() {
+		// Given
+		var jdbcTemplate = mock(JdbcTemplate.class);
+		var embeddingModel = mock(EmbeddingModel.class);
+
+		// When
+		var vectorStore = PgVectorStore.builder(jdbcTemplate, embeddingModel).build();
+
+		// Then
+		assertThat(vectorStore.getDistanceType()).isEqualTo(PgVectorStore.COSINE_DISTANCE);
+		assertThat(vectorStore.getDistanceType().operator()).isEqualTo("<=>");
+		assertThat(vectorStore.getDistanceType().index()).isEqualTo("vector_cosine_ops");
+	}
 
 	@Test
 	void shouldUseCustomDistanceType() {
@@ -55,11 +111,11 @@ class PgVectorStoreDistanceTypeTests {
 		assertThat(vectorStore.getDistanceType()).isEqualTo(CUSTOM_DISTANCE_TYPE);
 		assertThat(vectorStore.getDistanceType().operator()).isEqualTo("<custom>");
 		assertThat(vectorStore.getDistanceType().index()).isEqualTo("custom_ops");
-		assertThat(vectorStore.getDistanceType().similaritySearchSqlTemplate()).isEqualTo("SELECT CUSTOM ?");
 	}
 
+
 	@Test
-	void similaritySearchShouldUseConfiguredDistanceType() {
+	void similaritySearchShouldUseConfiguredDistanceTypeOperator() {
 		// Given
 		var jdbcTemplate = mock(JdbcTemplate.class);
 		var embeddingModel = mock(EmbeddingModel.class);
@@ -88,7 +144,7 @@ class PgVectorStoreDistanceTypeTests {
 		String sql = sqlCaptor.getValue();
 
 		// Verify that the custom distance operator is used in the SQL
-		assertThat(sql).contains("SELECT CUSTOM ?")
+		assertThat(sql).contains("SELECT * CUSTOM ?")
 				.doesNotContain("<->","<=>","<#>");
 	}
 
