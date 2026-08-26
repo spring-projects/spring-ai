@@ -176,10 +176,21 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 	private static final Log logger = LogFactory.getLog(PgVectorStore.class);
 
+	static final PgDistanceType EUCLIDEAN_DISTANCE = new PgDistanceType("EUCLIDEAN_DISTANCE", "<->",
+			"vector_l2_ops",
+			"SELECT *, embedding <-> ? AS distance FROM %s WHERE embedding <-> ? < ? %s ORDER BY distance LIMIT ? ");
+
+	static final PgDistanceType NEGATIVE_INNER_PRODUCT = new PgDistanceType("NEGATIVE_INNER_PRODUCT", "<#>",
+			"vector_ip_ops",
+			"SELECT *, (1 + (embedding <#> ?)) AS distance FROM %s WHERE (1 + (embedding <#> ?)) < ? %s ORDER BY distance LIMIT ? ");
+
+	static final PgDistanceType COSINE_DISTANCE = new PgDistanceType("COSINE_DISTANCE", "<=>",
+			"vector_cosine_ops",
+			"SELECT *, embedding <=> ? AS distance FROM %s WHERE embedding <=> ? < ? %s ORDER BY distance LIMIT ? ");
+
 	private static final Map<PgDistanceType, VectorStoreSimilarityMetric> SIMILARITY_TYPE_MAPPING = Map.of(
-			PgDistanceType.COSINE_DISTANCE, VectorStoreSimilarityMetric.COSINE, PgDistanceType.EUCLIDEAN_DISTANCE,
-			VectorStoreSimilarityMetric.EUCLIDEAN, PgDistanceType.NEGATIVE_INNER_PRODUCT,
-			VectorStoreSimilarityMetric.DOT);
+			COSINE_DISTANCE, VectorStoreSimilarityMetric.COSINE, EUCLIDEAN_DISTANCE,
+			VectorStoreSimilarityMetric.EUCLIDEAN, NEGATIVE_INNER_PRODUCT, VectorStoreSimilarityMetric.DOT);
 
 	public final FilterExpressionConverter filterExpressionConverter = new PgVectorFilterExpressionConverter();
 
@@ -370,7 +381,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		PGvector queryEmbedding = getQueryEmbedding(request.getQuery());
 
 		return this.jdbcTemplate.query(
-				String.format(this.getDistanceType().similaritySearchSqlTemplate, getFullyQualifiedTableName(),
+				String.format(this.getDistanceType().similaritySearchSqlTemplate(), getFullyQualifiedTableName(),
 						jsonPathFilter),
 				this.documentRowMapper, queryEmbedding, queryEmbedding, distance, request.getTopK());
 	}
@@ -394,7 +405,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 	}
 
 	private String comparisonOperator() {
-		return this.getDistanceType().operator;
+		return this.getDistanceType().operator();
 	}
 
 	// ---------------------------------------------------------------------------------
@@ -453,7 +464,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 			this.jdbcTemplate.execute(String.format("""
 					CREATE INDEX IF NOT EXISTS %s ON %s USING %s (embedding %s)
 					""", this.getVectorIndexName(), this.getFullyQualifiedTableName(), this.createIndexMethod,
-					this.getDistanceType().index));
+					this.getDistanceType().index()));
 		}
 
 		validateTableSchemaIfEnabled();
@@ -574,43 +585,6 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 	}
 
-	/**
-	 * Defaults to CosineDistance. But if vectors are normalized to length 1 (like OpenAI
-	 * embeddings), use inner product (NegativeInnerProduct) for best performance.
-	 */
-	public enum PgDistanceType {
-
-		// NOTE: works only if vectors are normalized to length 1 (like OpenAI
-		// embeddings), use inner product for best performance.
-		// The Sentence transformers are NOT normalized:
-		// https://github.com/UKPLab/sentence-transformers/issues/233
-		EUCLIDEAN_DISTANCE("<->", "vector_l2_ops",
-				"SELECT *, embedding <-> ? AS distance FROM %s WHERE embedding <-> ? < ? %s ORDER BY distance LIMIT ? "),
-
-		// NOTE: works only if vectors are normalized to length 1 (like OpenAI
-		// embeddings), use inner product for best performance.
-		// The Sentence transformers are NOT normalized:
-		// https://github.com/UKPLab/sentence-transformers/issues/233
-		NEGATIVE_INNER_PRODUCT("<#>", "vector_ip_ops",
-				"SELECT *, (1 + (embedding <#> ?)) AS distance FROM %s WHERE (1 + (embedding <#> ?)) < ? %s ORDER BY distance LIMIT ? "),
-
-		COSINE_DISTANCE("<=>", "vector_cosine_ops",
-				"SELECT *, embedding <=> ? AS distance FROM %s WHERE embedding <=> ? < ? %s ORDER BY distance LIMIT ? ");
-
-		public final String operator;
-
-		public final String index;
-
-		public final String similaritySearchSqlTemplate;
-
-		PgDistanceType(String operator, String index, String sqlTemplate) {
-			this.operator = operator;
-			this.index = index;
-			this.similaritySearchSqlTemplate = sqlTemplate;
-		}
-
-	}
-
 	private static class DocumentRowMapper implements RowMapper<Document> {
 
 		private static final String COLUMN_METADATA = "metadata";
@@ -668,7 +642,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 		private int dimensions = PgVectorStore.INVALID_EMBEDDING_DIMENSION;
 
-		private PgDistanceType distanceType = PgDistanceType.COSINE_DISTANCE;
+		private PgDistanceType distanceType = COSINE_DISTANCE;
 
 		private boolean removeExistingVectorStoreTable = false;
 
