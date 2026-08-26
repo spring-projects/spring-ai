@@ -1054,12 +1054,16 @@ public final class OpenAiChatModel implements ChatModel {
 	/**
 	 * Rewrites an object schema in place to satisfy OpenAI's strict function-calling
 	 * mode: every property must be listed in "required", with optionality expressed via a
-	 * nullable type rather than omission from "required". {@link JsonSchemaGenerator}
+	 * nullable type rather than omission from "required", and every object level must pin
+	 * {@code "additionalProperties"} to {@code false}. {@link JsonSchemaGenerator}
 	 * produces conventional JSON Schema instead - it omits
 	 * {@code @ToolParam(required = false)} properties from "required" - so this widens
 	 * the type of each such property to also accept {@code null} and backfills "required"
-	 * with every property key. Recurses into nested object/array-item schemas and
-	 * {@code $defs} definitions so their own optional properties are fixed up too.
+	 * with every property key. Schemas from other sources (MCP servers, hand-written
+	 * inputSchema JSON) may also lack "additionalProperties", so it is backfilled with
+	 * {@code false} wherever absent; an explicit value is preserved. Recurses into nested
+	 * object/array-item schemas and {@code $defs} definitions so their own optional
+	 * properties are fixed up too.
 	 */
 	@SuppressWarnings("unchecked")
 	private static void applyStrictModeRequirements(Map<String, Object> schema) {
@@ -1071,7 +1075,13 @@ public final class OpenAiChatModel implements ChatModel {
 			}
 		}
 
-		if (!(schema.get("properties") instanceof Map<?, ?> properties) || properties.isEmpty()) {
+		if (!(schema.get("properties") instanceof Map<?, ?> properties)) {
+			return;
+		}
+
+		schema.putIfAbsent("additionalProperties", false);
+
+		if (properties.isEmpty()) {
 			return;
 		}
 
