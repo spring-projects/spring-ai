@@ -139,6 +139,25 @@ public class ToolSearchToolCallingAdvisor extends ToolCallingAdvisor {
 		return "ToolSearchToolCallingAdvisor";
 	}
 
+	/**
+	 * Returns the tool callback backing the built-in tool search tool.
+	 * <p>
+	 * Subclasses may override this to decorate the callback, for example to report the
+	 * search to a UI alongside the tool calls that follow it, or to record metrics.
+	 * Without a decorated callback the search is the one tool call an application cannot
+	 * observe, because it is the one tool the application does not supply.
+	 * <p>
+	 * The tool set bound to each iteration and the tool name that
+	 * {@code extractToolNameReferences} looks for both come from this method, so an
+	 * override that renames the tool stays self-consistent. Implementations should return
+	 * the same instance on every call.
+	 * @return the tool search tool callback
+	 * @since 2.0.2
+	 */
+	protected ToolCallback toolSearchToolCallback() {
+		return this.toolSearchToolCallback;
+	}
+
 	// -------------------------------------------------------------------------
 	// Sync hooks
 	// -------------------------------------------------------------------------
@@ -246,7 +265,7 @@ public class ToolSearchToolCallingAdvisor extends ToolCallingAdvisor {
 		ToolCallingChatOptions toolOptions = Objects
 			.requireNonNull((ToolCallingChatOptions) chatClientRequest.prompt().getOptions());
 
-		Set<ToolCallback> selectedToolCallbacks = new HashSet<>(List.of(this.toolSearchToolCallback));
+		Set<ToolCallback> selectedToolCallbacks = new HashSet<>(List.of(this.toolSearchToolCallback()));
 
 		var cachedToolCallbacks = (Map<String, ToolCallback>) chatClientRequest.context()
 			.get(CACHED_TOOL_CALLBACKS_KEY);
@@ -297,7 +316,7 @@ public class ToolSearchToolCallingAdvisor extends ToolCallingAdvisor {
 			.filter(m -> m.getMessageType() == MessageType.TOOL)
 			.map(m -> ((ToolResponseMessage) m).getResponses()
 				.stream()
-				.filter(r -> r.name().equalsIgnoreCase(this.toolSearchToolCallback.getToolDefinition().name()))
+				.filter(r -> r.name().equalsIgnoreCase(this.toolSearchToolCallback().getToolDefinition().name()))
 				.toList())
 			.filter(responses -> !responses.isEmpty())
 			.toList();
