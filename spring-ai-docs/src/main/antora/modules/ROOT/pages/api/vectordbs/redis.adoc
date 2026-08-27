@@ -82,6 +82,16 @@ vectorStore.add(documents);
 List<Document> results = this.vectorStore.similaritySearch(SearchRequest.builder().query("Spring").topK(5).build());
 ----
 
+To include custom metadata fields in the auto-configured Redis schema, define a `List<RedisVectorStore.MetadataField>` bean:
+
+[source,java]
+----
+@Bean
+List<RedisVectorStore.MetadataField> redisMetadataFields() {
+    return List.of(RedisVectorStore.MetadataField.tag("conversationId"));
+}
+----
+
 [[redisvector-properties]]
 === Configuration Properties
 
