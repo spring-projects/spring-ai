@@ -16,6 +16,8 @@
 
 package org.springframework.ai.vectorstore.redis.autoconfigure;
 
+import java.util.List;
+
 import io.micrometer.observation.ObservationRegistry;
 import redis.clients.jedis.DefaultJedisClientConfig;
 import redis.clients.jedis.JedisClientConfig;
@@ -70,6 +72,7 @@ public class RedisVectorStoreAutoConfiguration {
 	 * @param jedisConnectionFactory the Jedis connection factory
 	 * @param observationRegistry the observation registry
 	 * @param convention the custom observation convention
+	 * @param metadataFields the custom metadata fields
 	 * @param batchingStrategy the batching strategy
 	 * @return the configured Redis vector store
 	 */
@@ -79,6 +82,7 @@ public class RedisVectorStoreAutoConfiguration {
 			final RedisVectorStoreProperties properties, final JedisConnectionFactory jedisConnectionFactory,
 			final ObjectProvider<ObservationRegistry> observationRegistry,
 			final ObjectProvider<VectorStoreObservationConvention> convention,
+			final ObjectProvider<List<RedisVectorStore.MetadataField>> metadataFields,
 			final BatchingStrategy batchingStrategy) {
 
 		RedisClient jedisClient = jedisClient(jedisConnectionFactory);
@@ -88,7 +92,8 @@ public class RedisVectorStoreAutoConfiguration {
 			.customObservationConvention(convention.getIfAvailable())
 			.batchingStrategy(batchingStrategy)
 			.indexName(properties.getIndexName())
-			.prefix(properties.getPrefix());
+			.prefix(properties.getPrefix())
+			.metadataFields(metadataFields.getIfAvailable(List::of));
 
 		// Configure HNSW parameters if available
 		hnswConfiguration(builder, properties);
