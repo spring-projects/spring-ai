@@ -39,8 +39,10 @@ import org.springframework.ai.evaluation.EvaluationResponse;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for {@link RelevancyEvaluator}.
@@ -90,6 +92,8 @@ class RelevancyEvaluatorTests {
 
 		assertThat(result.isPass()).isTrue();
 		assertThat(result.getScore()).isEqualTo(1.0f);
+		assertThat(result.getFeedback()).isEqualTo(response);
+		assertThat(result.getMetadata()).containsEntry(RelevancyEvaluator.LLM_RAW_RESPONSE_METADATA_KEY, response);
 	}
 
 	@ParameterizedTest
@@ -104,6 +108,31 @@ class RelevancyEvaluatorTests {
 
 		assertThat(result.isPass()).isFalse();
 		assertThat(result.getScore()).isEqualTo(0.0f);
+		assertThat(result.getFeedback()).isEqualTo(response);
+		assertThat(result.getMetadata()).containsEntry(RelevancyEvaluator.LLM_RAW_RESPONSE_METADATA_KEY, response);
+	}
+
+	@Test
+	void whenLlmReturnsNullThenPassIsFalseAndFeedbackIsEmpty() {
+		ChatClient.Builder builder = mock(ChatClient.Builder.class);
+		ChatClient chatClient = mock(ChatClient.class);
+		ChatClient.ChatClientRequestSpec requestSpec = mock(ChatClient.ChatClientRequestSpec.class);
+		ChatClient.CallResponseSpec callResponseSpec = mock(ChatClient.CallResponseSpec.class);
+
+		when(builder.build()).thenReturn(chatClient);
+		when(chatClient.prompt()).thenReturn(requestSpec);
+		when(requestSpec.user(anyString())).thenReturn(requestSpec);
+		when(requestSpec.call()).thenReturn(callResponseSpec);
+		when(callResponseSpec.content()).thenReturn(null);
+
+		EvaluationResponse result = RelevancyEvaluator.builder()
+			.chatClientBuilder(builder)
+			.build()
+			.evaluate(new EvaluationRequest("What is Spring?", List.of(), "Spring is a Java framework."));
+
+		assertThat(result.isPass()).isFalse();
+		assertThat(result.getScore()).isEqualTo(0.0f);
+		assertThat(result.getFeedback()).isEmpty();
 	}
 
 }
