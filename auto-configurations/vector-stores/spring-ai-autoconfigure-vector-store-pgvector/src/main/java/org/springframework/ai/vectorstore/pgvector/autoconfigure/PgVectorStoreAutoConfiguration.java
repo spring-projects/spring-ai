@@ -25,6 +25,7 @@ import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.vectorstore.SpringAIVectorStoreTypes;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
+import org.springframework.ai.vectorstore.pgvector.PgDistanceType;
 import org.springframework.ai.vectorstore.pgvector.PgVectorStore;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -61,7 +62,7 @@ public class PgVectorStoreAutoConfiguration {
 	public PgVectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel,
 			PgVectorStoreProperties properties, ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
-			BatchingStrategy batchingStrategy) {
+			BatchingStrategy batchingStrategy, PgDistanceType distanceType) {
 
 		var initializeSchema = properties.isInitializeSchema();
 
@@ -71,7 +72,7 @@ public class PgVectorStoreAutoConfiguration {
 			.vectorTableName(properties.getTableName())
 			.vectorTableValidationsEnabled(properties.isSchemaValidation())
 			.dimensions(properties.getDimensions())
-			.distanceType(properties.getDistanceType())
+			.distanceType(distanceType)
 			.removeExistingVectorStoreTable(properties.isRemoveExistingVectorStoreTable())
 			.indexType(properties.getIndexType())
 			.initializeSchema(initializeSchema)
@@ -80,6 +81,16 @@ public class PgVectorStoreAutoConfiguration {
 			.batchingStrategy(batchingStrategy)
 			.maxDocumentBatchSize(properties.getMaxDocumentBatchSize())
 			.build();
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	public PgDistanceType distanceType(PgVectorStoreProperties properties) {
+		return switch (properties.getDistanceType()) {
+			case "EUCLIDEAN_DISTANCE" -> PgVectorStore.EUCLIDEAN_DISTANCE;
+			case "NEGATIVE_INNER_PRODUCT" -> PgVectorStore.NEGATIVE_INNER_PRODUCT;
+			default -> PgVectorStore.COSINE_DISTANCE;
+		};
 	}
 
 }

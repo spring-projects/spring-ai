@@ -218,19 +218,19 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 	}
 
-	static final PgDistanceType EUCLIDEAN_DISTANCE = new DefaultPgDistanceType("EUCLIDEAN_DISTANCE", "<->",
+	public static final PgDistanceType EUCLIDEAN_DISTANCE = new DefaultPgDistanceType("EUCLIDEAN_DISTANCE", "<->",
 			"vector_l2_ops",
 			"SELECT *, embedding <-> ? AS distance FROM %s WHERE embedding <-> ? < ? %s ORDER BY distance LIMIT ? ");
 
-	static final PgDistanceType NEGATIVE_INNER_PRODUCT = new DefaultPgDistanceType("NEGATIVE_INNER_PRODUCT", "<#>",
+	public static final PgDistanceType NEGATIVE_INNER_PRODUCT = new DefaultPgDistanceType("NEGATIVE_INNER_PRODUCT", "<#>",
 			"vector_ip_ops",
 			"SELECT *, (1 + (embedding <#> ?)) AS distance FROM %s WHERE (1 + (embedding <#> ?)) < ? %s ORDER BY distance LIMIT ? ");
 
-	static final PgDistanceType COSINE_DISTANCE = new DefaultPgDistanceType("COSINE_DISTANCE", "<=>",
+	public static final PgDistanceType COSINE_DISTANCE = new DefaultPgDistanceType("COSINE_DISTANCE", "<=>",
 			"vector_cosine_ops",
 			"SELECT *, embedding <=> ? AS distance FROM %s WHERE embedding <=> ? < ? %s ORDER BY distance LIMIT ? ");
 
-	private static final Map<PgDistanceType, VectorStoreSimilarityMetric> SIMILARITY_TYPE_MAPPING = Map.of(
+	public static final Map<PgDistanceType, VectorStoreSimilarityMetric> SIMILARITY_TYPE_MAPPING = Map.of(
 			COSINE_DISTANCE, VectorStoreSimilarityMetric.COSINE, EUCLIDEAN_DISTANCE,
 			VectorStoreSimilarityMetric.EUCLIDEAN, NEGATIVE_INNER_PRODUCT, VectorStoreSimilarityMetric.DOT);
 
