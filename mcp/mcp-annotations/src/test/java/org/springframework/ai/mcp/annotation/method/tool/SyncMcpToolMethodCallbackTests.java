@@ -47,6 +47,21 @@ import static org.mockito.Mockito.mock;
 public class SyncMcpToolMethodCallbackTests {
 
 	@Test
+	public void testToolWithCustomParameterName() throws Exception {
+		TestToolProvider provider = new TestToolProvider();
+		Method method = TestToolProvider.class.getMethod("getWeather", String.class);
+		SyncMcpToolMethodCallback callback = new SyncMcpToolMethodCallback(ReturnMode.TEXT, method, provider);
+
+		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
+		CallToolRequest request = new CallToolRequest("get-weather", Map.of("city_name", "Paris"));
+
+		CallToolResult result = callback.apply(exchange, request);
+
+		assertThat(result.isError()).isFalse();
+		assertThat(((TextContent) result.content().get(0)).text()).isEqualTo("Paris");
+	}
+
+	@Test
 	public void testSimpleToolCallback() throws Exception {
 		TestToolProvider provider = new TestToolProvider();
 		Method method = TestToolProvider.class.getMethod("simpleTool", String.class);
@@ -621,6 +636,11 @@ public class SyncMcpToolMethodCallbackTests {
 		@McpTool(name = "object-tool", description = "Tool with object parameter")
 		public String processObject(TestObject obj) {
 			return "Object: " + obj.name + " - " + obj.value;
+		}
+
+		@McpTool(name = "get-weather", description = "Get weather for a city")
+		public String getWeather(@McpToolParam(name = "city_name") String cityName) {
+			return cityName;
 		}
 
 		@McpTool(name = "optional-params-tool", description = "Tool with optional parameters")
