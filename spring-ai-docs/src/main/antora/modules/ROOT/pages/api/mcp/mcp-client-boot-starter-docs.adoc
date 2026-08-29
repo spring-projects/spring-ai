@@ -473,6 +473,44 @@ The starter supports two types of clients:
 
 **NOTE:** The ASYNC client will register only asynchronous MCP annotated methods. Synchronous methods will be ignored.
 
+[[client-scope-and-session-boundaries]]
+=== Client Scope and Session Boundaries
+
+The auto-configured `McpSyncClient` and `McpAsyncClient` beans are application-scoped singletons.
+One client bean is created per configured MCP server connection, and that bean is shared by every request the application serves.
+
+Each client represents a single MCP protocol session.
+The session stays attached to the client bean for its whole lifetime and is replaced only when the server terminates it (HTTP 404) or the client is closed.
+
+[WARNING]
+====
+*The MCP session is not a per-user boundary.*
+
+Per-request credentials propagated through `transportContextProvider(...)`, a `McpSyncHttpClientRequestCustomizer`, or a `WebClient` `ExchangeFilterFunction` are applied per request and do reach the server with the calling user's identity.
+The MCP protocol session underneath them is still shared by every caller of that client bean.
+Multi-user applications should account for the following:
+
+* The `initialize` and `tools/list` exchanges happen once, under whatever identity is available when the client connects, not under the identity of the user who later invokes a tool.
+* Any server-side state keyed on the MCP session alone is shared by all users of the client bean.
+* Server-initiated interactions such as sampling and elicitation arrive on a shared stream and carry no per-user attribution.
+
+Do not treat the MCP session as a user or tenant boundary on either side of the connection.
+====
+
+Whether this matters depends on the MCP server you connect to.
+A shared client is fine against a stateless server, and against a stateful one that authorizes every request from the supplied token and keeps no user-meaningful state on the session.
+Consider a separate session per user or per tenant when:
+
+* The server filters `tools/list`, resources, or prompts by identity, since discovery runs once and every user then sees the first caller's view.
+* The server keeps user-meaningful state on the session, such as a working directory, subscriptions, pagination cursors, or cached context.
+* You use sampling or elicitation and need those server-initiated requests attributed to a specific user.
+* The server audits or rate-limits by session, or your deployment requires that tenants not share a protocol session.
+* You cannot verify how a third-party server treats its sessions.
+
+Applications that need a separate MCP protocol session per user or per tenant must manage that lifecycle themselves, creating one transport and client per principal and closing it when that principal's work completes.
+The auto-configured beans are not suitable for this, and Spring AI does not provide per-user client pooling.
+See xref:api/mcp/mcp-security.adoc#_working_around_spring_ai_autoconfiguration[Working Around Spring AI Autoconfiguration] for programmatic client construction.
+
 === Client Customization
 
 The auto-configuration provides extensive client spec customization capabilities through callback interfaces. These customizers allow you to configure various aspects of the MCP client behavior, from request timeouts to event handling and message processing.

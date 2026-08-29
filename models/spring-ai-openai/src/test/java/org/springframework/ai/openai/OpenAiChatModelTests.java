@@ -1385,6 +1385,144 @@ class OpenAiChatModelTests {
 	}
 
 	@Test
+	void toolStrictTrueBackfillsAdditionalPropertiesFalseAtEveryObjectLevel() {
+		ToolCallingManager mockToolCallingManager = mock(ToolCallingManager.class);
+
+		// Schemas from MCP servers or hand-written inputSchema JSON typically lack
+		// "additionalProperties", which OpenAI strict mode requires to be false on
+		// every object level.
+		ToolDefinition toolDefinition = ToolDefinition.builder()
+			.name("get_weather")
+			.description("Get weather")
+			.inputSchema("""
+					{
+						"type": "object",
+						"$defs": {
+							"Address": {
+								"type": "object",
+								"properties": { "city": { "type": "string" } },
+								"required": ["city"]
+							}
+						},
+						"properties": {
+							"location": { "type": "string" },
+							"details": {
+								"type": "object",
+								"properties": { "zip": { "type": "string" } },
+								"required": ["zip"]
+							},
+							"tags": {
+								"type": "array",
+								"items": {
+									"type": "object",
+									"properties": { "name": { "type": "string" } },
+									"required": ["name"]
+								}
+							}
+						},
+						"required": ["location", "details", "tags"]
+					}
+					""")
+			.build();
+
+		when(mockToolCallingManager.resolveToolDefinitions(any())).thenReturn(List.of(toolDefinition));
+
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("gpt-4.1").strict(true).build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.toolCallingManager(mockToolCallingManager)
+			.build();
+
+		ChatCompletionCreateParams request = chatModel.createRequest(new Prompt("test", options), false);
+
+		FunctionDefinition functionDef = request.tools().orElseThrow().get(0).function().orElseThrow().function();
+		Map<String, JsonValue> parameters = functionDef.parameters().orElseThrow()._additionalProperties();
+
+		assertThat(parameters.get("additionalProperties").convert(Boolean.class)).isFalse();
+
+		@SuppressWarnings("unchecked")
+		Map<String, Object> properties = parameters.get("properties").convert(Map.class);
+		@SuppressWarnings("unchecked")
+		Map<String, Object> detailsSchema = (Map<String, Object>) properties.get("details");
+		assertThat(detailsSchema.get("additionalProperties")).isEqualTo(false);
+
+		@SuppressWarnings("unchecked")
+		Map<String, Object> tagsSchema = (Map<String, Object>) properties.get("tags");
+		@SuppressWarnings("unchecked")
+		Map<String, Object> tagsItemsSchema = (Map<String, Object>) tagsSchema.get("items");
+		assertThat(tagsItemsSchema.get("additionalProperties")).isEqualTo(false);
+
+		@SuppressWarnings("unchecked")
+		Map<String, Object> defs = parameters.get("$defs").convert(Map.class);
+		@SuppressWarnings("unchecked")
+		Map<String, Object> addressSchema = (Map<String, Object>) defs.get("Address");
+		assertThat(addressSchema.get("additionalProperties")).isEqualTo(false);
+	}
+
+	@Test
+	void toolStrictTruePreservesExplicitAdditionalProperties() {
+		ToolCallingManager mockToolCallingManager = mock(ToolCallingManager.class);
+
+		// A Map<K,V>-style schema declares "additionalProperties" as a type reference;
+		// the strict-mode rewrite must not clobber an explicit value.
+		ToolDefinition toolDefinition = ToolDefinition.builder()
+			.name("get_weather")
+			.description("Get weather")
+			.inputSchema(
+					"{\"type\":\"object\",\"properties\":{\"location\":{\"type\":\"string\"}},\"required\":[\"location\"],\"additionalProperties\":{\"type\":\"string\"}}")
+			.build();
+
+		when(mockToolCallingManager.resolveToolDefinitions(any())).thenReturn(List.of(toolDefinition));
+
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("gpt-4.1").strict(true).build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.toolCallingManager(mockToolCallingManager)
+			.build();
+
+		ChatCompletionCreateParams request = chatModel.createRequest(new Prompt("test", options), false);
+
+		FunctionDefinition functionDef = request.tools().orElseThrow().get(0).function().orElseThrow().function();
+		Map<String, JsonValue> parameters = functionDef.parameters().orElseThrow()._additionalProperties();
+
+		@SuppressWarnings("unchecked")
+		Map<String, Object> explicitAdditionalProperties = parameters.get("additionalProperties").convert(Map.class);
+		assertThat(explicitAdditionalProperties).isEqualTo(Map.of("type", "string"));
+	}
+
+	@Test
+	void toolStrictFalseLeavesAdditionalPropertiesAbsent() {
+		ToolCallingManager mockToolCallingManager = mock(ToolCallingManager.class);
+
+		ToolDefinition toolDefinition = ToolDefinition.builder()
+			.name("get_weather")
+			.description("Get weather")
+			.inputSchema("{\"type\":\"object\",\"properties\":{\"location\":{\"type\":\"string\"}}}")
+			.build();
+
+		when(mockToolCallingManager.resolveToolDefinitions(any())).thenReturn(List.of(toolDefinition));
+
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("gpt-4.1").strict(false).build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.toolCallingManager(mockToolCallingManager)
+			.build();
+
+		ChatCompletionCreateParams request = chatModel.createRequest(new Prompt("test", options), false);
+
+		FunctionDefinition functionDef = request.tools().orElseThrow().get(0).function().orElseThrow().function();
+		Map<String, JsonValue> parameters = functionDef.parameters().orElseThrow()._additionalProperties();
+
+		assertThat(parameters).doesNotContainKey("additionalProperties");
+	}
+
+	@Test
 	void toolStrictFalseOverrideAtRequestLevel() {
 		ToolCallingManager mockToolCallingManager = mock(ToolCallingManager.class);
 
@@ -1580,6 +1718,51 @@ class OpenAiChatModelTests {
 		RequestOptions value = argumentCaptor.getValue();
 		assertThat(value.getTimeout()).isNotNull();
 		assertThat(value.getTimeout().request()).isEqualTo(expectedTimeout);
+	}
+
+	@Test
+	void unsetTimeoutIsNotPropagatedToRequestOptions() {
+		ChatService chatService = mock(ChatService.class);
+		ChatCompletionService chatCompletionService = mock(ChatCompletionService.class);
+		when(this.openAiClient.chat()).thenReturn(chatService);
+		when(chatService.completions()).thenReturn(chatCompletionService);
+		when(chatCompletionService.create(any(ChatCompletionCreateParams.class), any(RequestOptions.class)))
+			.thenReturn(ChatCompletion.builder()
+				.id("test-id")
+				.created(1777799928)
+				.model("test-model")
+				.usage(CompletionUsage.builder().promptTokens(1).completionTokens(1).totalTokens(2).build())
+				.addChoice(ChatCompletion.Choice.builder()
+					.finishReason(ChatCompletion.Choice.FinishReason.STOP)
+					.index(0)
+					.logprobs(Optional.empty())
+					.message(ChatCompletionMessage.builder()
+						.content("hello")
+						.refusal(Optional.empty())
+						.role(JsonValue.from("assistant"))
+						.annotations(List.of())
+						.toolCalls(List.of())
+						.build())
+					.build())
+				.build());
+
+		// No timeout set: the request must not override the timeout configured on the
+		// OpenAI client, otherwise long streaming turns are cut short by OkHttp's
+		// callTimeout.
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").build();
+		assertThat(options.getTimeout()).isNull();
+
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		chatModel.call(new Prompt("hi", options));
+
+		ArgumentCaptor<RequestOptions> argumentCaptor = ArgumentCaptor.forClass(RequestOptions.class);
+		verify(chatCompletionService).create(any(ChatCompletionCreateParams.class), argumentCaptor.capture());
+		assertThat(argumentCaptor.getValue().getTimeout()).isNull();
 	}
 
 }
