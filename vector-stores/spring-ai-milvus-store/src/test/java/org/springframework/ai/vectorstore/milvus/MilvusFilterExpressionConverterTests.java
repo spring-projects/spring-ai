@@ -17,6 +17,7 @@
 package org.springframework.ai.vectorstore.milvus;
 
 import java.util.List;
+import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
@@ -60,6 +61,26 @@ public class MilvusFilterExpressionConverterTests {
 		String vectorExpr = customConverter.convertExpression(new Expression(EQ, new Key("country"), new Value("BG")));
 
 		assertThat(vectorExpr).isEqualTo("meta[\"country\"] == \"BG\"");
+	}
+
+	@Test
+	public void testEQWithScalarMetadataField() {
+		FilterExpressionConverter scalarConverter = new MilvusFilterExpressionConverter("metadata", Set.of("country"));
+
+		String vectorExpr = scalarConverter.convertExpression(new Expression(EQ, new Key("country"), new Value("BG")));
+
+		assertThat(vectorExpr).isEqualTo("country == \"BG\"");
+	}
+
+	@Test
+	public void testMixedJsonAndScalarMetadataFields() {
+		FilterExpressionConverter scalarConverter = new MilvusFilterExpressionConverter("metadata", Set.of("year"));
+
+		String vectorExpr = scalarConverter
+			.convertExpression(new Expression(AND, new Expression(EQ, new Key("genre"), new Value("drama")),
+					new Expression(GTE, new Key("year"), new Value(2020))));
+
+		assertThat(vectorExpr).isEqualTo("metadata[\"genre\"] == \"drama\" && year >= 2020");
 	}
 
 	@Test
