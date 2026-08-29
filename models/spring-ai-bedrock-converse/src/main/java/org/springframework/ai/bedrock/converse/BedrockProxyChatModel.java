@@ -99,6 +99,7 @@ import org.springframework.ai.chat.observation.ChatModelObservationDocumentation
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.content.ContentPart;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.observation.conventions.AiProvider;
@@ -288,14 +289,24 @@ public class BedrockProxyChatModel implements ChatModel {
 				List<ContentBlock> contents = new ArrayList<>();
 				if (message instanceof UserMessage) {
 					var userMessage = (UserMessage) message;
-					contents.add(ContentBlock.fromText(userMessage.getText()));
-
-					if (!CollectionUtils.isEmpty(userMessage.getMedia())) {
-						List<ContentBlock> mediaContent = userMessage.getMedia()
-							.stream()
-							.map(this::mapMediaToContentBlock)
-							.toList();
-						contents.addAll(mediaContent);
+					// Walking the content parts preserves the caller's text/media
+					// ordering,
+					// which Bedrock's content block list expresses directly. For a
+					// message
+					// built in the flat form the parts are the text followed by the
+					// media.
+					for (ContentPart contentPart : userMessage.getContentParts()) {
+						if (contentPart instanceof ContentPart.TextPart textPart) {
+							// Bedrock rejects an empty text block, so blank text is
+							// skipped
+							// rather than sent as an empty content block.
+							if (StringUtils.hasText(textPart.text())) {
+								contents.add(ContentBlock.fromText(textPart.text()));
+							}
+						}
+						else if (contentPart instanceof ContentPart.MediaPart mediaPart) {
+							contents.add(mapMediaToContentBlock(mediaPart.media()));
+						}
 					}
 				}
 

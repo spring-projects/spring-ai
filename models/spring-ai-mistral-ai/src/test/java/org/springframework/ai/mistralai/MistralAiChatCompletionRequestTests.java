@@ -113,8 +113,7 @@ class MistralAiChatCompletionRequestTests {
 
 	@Test
 	void createChatCompletionMessagesWithUserMessage() {
-		var userMessage = new UserMessage(TEXT_CONTENT);
-		userMessage.getMedia().add(IMAGE_MEDIA);
+		var userMessage = UserMessage.builder().text(TEXT_CONTENT).media(IMAGE_MEDIA).build();
 		var prompt = createPrompt(userMessage);
 		var chatCompletionRequest = this.chatModel.createRequest(prompt, false);
 		verifyUserChatCompletionMessages(chatCompletionRequest.messages());
