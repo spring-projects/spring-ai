@@ -16,6 +16,7 @@
 
 package org.springframework.ai.google.genai.embedding;
 
+import com.google.auth.oauth2.GoogleCredentials;
 import com.google.genai.Client;
 import org.jspecify.annotations.Nullable;
 
@@ -126,6 +127,12 @@ public final class GoogleGenAiEmbeddingConnectionDetails {
 		private @Nullable String apiKey;
 
 		/**
+		 * The credentials used to authenticate Vertex AI calls. If null, Application
+		 * Default Credentials are used. Ignored in Gemini Developer API mode.
+		 */
+		private @Nullable GoogleCredentials credentials;
+
+		/**
 		 * Custom GenAI client instance. If provided, other settings will be ignored.
 		 */
 		private @Nullable Client genAiClient;
@@ -142,6 +149,18 @@ public final class GoogleGenAiEmbeddingConnectionDetails {
 
 		public Builder apiKey(@Nullable String apiKey) {
 			this.apiKey = apiKey;
+			return this;
+		}
+
+		/**
+		 * Sets the credentials used to authenticate Vertex AI calls.
+		 * @param credentials the credentials, or {@code null} to fall back to Application
+		 * Default Credentials
+		 * @return this builder
+		 * @since 2.0.1
+		 */
+		public Builder credentials(@Nullable GoogleCredentials credentials) {
+			this.credentials = credentials;
 			return this;
 		}
 
@@ -173,6 +192,10 @@ public final class GoogleGenAiEmbeddingConnectionDetails {
 				}
 
 				clientBuilder.project(this.projectId).location(this.location).vertexAI(true);
+
+				if (this.credentials != null) {
+					clientBuilder.credentials(this.credentials);
+				}
 			}
 
 			Client builtClient = clientBuilder.build();
