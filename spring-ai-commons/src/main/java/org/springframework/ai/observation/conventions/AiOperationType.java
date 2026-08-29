@@ -46,13 +46,24 @@ public enum AiOperationType {
 
 	/**
 	 * AI operation type for framework.
+	 * @deprecated since 2.0.1 because {@code framework} is not among the values allowed
+	 * for {@code gen_ai.operation.name} by the OpenTelemetry Semantic Conventions for
+	 * Generative AI. Use {@link #INVOKE_WORKFLOW} instead.
 	 */
+	@Deprecated(since = "2.0.1", forRemoval = false)
 	FRAMEWORK("framework"),
 
 	/**
 	 * AI operation type for image.
 	 */
 	IMAGE("image"),
+
+	/**
+	 * AI operation type for the invocation of a GenAI workflow, such as a chat client
+	 * call or an advisor in its chain.
+	 * @since 2.0.1
+	 */
+	INVOKE_WORKFLOW("invoke_workflow"),
 
 	/**
 	 * AI operation type for text completion.
