@@ -1,0 +1,221 @@
+= Google GenAI Speech-to-Text (Chirp)
+
+Spring AI supports audio transcription with Google Cloud https://cloud.google.com/speech-to-text/v2/docs[Speech-to-Text V2] Chirp models through the `GoogleGenAiTranscriptionModel`, an implementation of the portable `TranscriptionModel` interface.
+
+NOTE: Speech-to-Text V2 is a distinct Google Cloud product from the Gemini Developer API / Vertex AI Gemini endpoints used by the Google GenAI chat, embedding and image models. It is backed by the `com.google.cloud:google-cloud-speech` client library rather than the `com.google.genai` SDK.
+
+== Prerequisites
+
+You will need a Google Cloud project with the Speech-to-Text API enabled.
+
+IMPORTANT: Unlike the Gemini Developer API, Speech-to-Text V2 resource names always embed a Google Cloud project. A `project-id` is therefore *required in every authentication mode*, including API-key mode.
+
+Authentication can be provided in one of the following ways:
+
+* *API key*: set `spring.ai.google.genai.transcription.api-key` together with `spring.ai.google.genai.transcription.project-id`.
+* *Application Default Credentials (ADC)*: set only `spring.ai.google.genai.transcription.project-id` (and optionally `location`) and let the client pick up ADC from the environment.
+* *Explicit credentials*: point `spring.ai.google.genai.transcription.credentials-uri` at a service account JSON, together with `project-id`.
+
+Speech-to-Text V2 uses location-specific regional endpoints. The `global` location uses `speech.googleapis.com`, and any other location (for example `us` or `eu`) uses `<location>-speech.googleapis.com`. The default location is `global`.
+
+== Auto-configuration
+
+[NOTE]
+====
+There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
+Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
+====
+
+Spring AI provides Spring Boot auto-configuration for the Google GenAI Transcription Model.
+To enable it add the following dependency to your project's Maven `pom.xml` file:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-model-google-genai-transcription</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file:
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-starter-model-google-genai-transcription'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+== Transcription Properties
+
+=== Connection Properties
+
+The prefix `spring.ai.google.genai.transcription` is used as the property prefix that lets you connect to Speech-to-Text V2.
+
+[cols="3,4,1", stripes=even]
+|====
+| Property | Description | Default
+
+| spring.ai.google.genai.transcription.api-key   | The API key used to authenticate requests. | -
+| spring.ai.google.genai.transcription.project-id | The Google Cloud project ID (required). | -
+| spring.ai.google.genai.transcription.location   | The Speech-to-Text V2 location. | global
+| spring.ai.google.genai.transcription.credentials-uri | Resource URI to a Google Cloud credentials JSON. | -
+|====
+
+=== Enabling and Disabling Transcription Auto-Configuration
+
+Spring AI uses the configuration property `spring.ai.model.audio.transcription` to let you enable or disable the transcription model.
+
+To enable, `spring.ai.model.audio.transcription` set to `google-genai` (It is enabled by default).
+
+To disable, `spring.ai.model.audio.transcription` set to `none` (or any value which doesn't match `google-genai`).
+
+This configuration is useful to allow multiple different transcription providers.
+
+[source,application.properties]
+----
+spring.ai.model.audio.transcription=google-genai
+----
+
+=== Transcription generation Properties
+
+The prefix `spring.ai.google.genai.transcription` is the property prefix that lets you configure the transcription model.
+
+[cols="3,4,1", stripes=even]
+|====
+| Property | Description | Default
+
+| spring.ai.google.genai.transcription.model | The Chirp model to use (`chirp_2`, `chirp_3`). | chirp_2
+| spring.ai.google.genai.transcription.language | A single BCP-47 language code (convenience for a single-entry `language-codes`). | -
+| spring.ai.google.genai.transcription.language-codes | The BCP-47 language codes used for recognition. | -
+| spring.ai.google.genai.transcription.enable-automatic-punctuation | Whether to add punctuation to the recognition hypotheses. | -
+| spring.ai.google.genai.transcription.enable-spoken-punctuation | Whether to replace spoken punctuation with punctuation marks. | -
+| spring.ai.google.genai.transcription.enable-spoken-emojis | Whether to replace spoken emoji with the corresponding emoji. | -
+| spring.ai.google.genai.transcription.profanity-filter | Whether to filter out profanities. | -
+| spring.ai.google.genai.transcription.enable-word-time-offsets | Whether to include word-level start/end time offsets. | -
+| spring.ai.google.genai.transcription.enable-word-confidence | Whether to include word-level confidence scores. | -
+| spring.ai.google.genai.transcription.max-alternatives | Maximum number of recognition hypotheses returned. | -
+| spring.ai.google.genai.transcription.multi-channel-mode | Multi-channel recognition mode (`MULTI_CHANNEL_MODE_UNSPECIFIED`, `SEPARATE_RECOGNITION_PER_CHANNEL`). | -
+| spring.ai.google.genai.transcription.enable-speaker-diarization | Whether to enable speaker diarization (`chirp_3` only). | -
+| spring.ai.google.genai.transcription.min-speaker-count | Minimum number of speakers to detect during diarization. | -
+| spring.ai.google.genai.transcription.max-speaker-count | Maximum number of speakers to detect during diarization. | -
+| spring.ai.google.genai.transcription.translation-target-language | Target BCP-47 language code for translation (`chirp_2` only). | -
+| spring.ai.google.genai.transcription.encoding | Explicit audio encoding (`LINEAR16`, `MULAW`, `ALAW`, `AMR`, `AMR_WB`, `FLAC`, `MP3`, `OGG_OPUS`, `WEBM_OPUS`, `MP4_AAC`, `M4A_AAC`, `MOV_AAC`). When unset the encoding is auto-detected. | -
+| spring.ai.google.genai.transcription.sample-rate-hertz | Sample rate in hertz (used with explicit decoding). | -
+| spring.ai.google.genai.transcription.audio-channel-count | Number of channels in the audio data (used with explicit decoding). | -
+|====
+
+== Model Selection
+
+Google Chirp offers different model generations with different capabilities:
+
+* `chirp_2` supports translation via `translation-target-language`.
+* `chirp_3` supports speaker diarization (`enable-speaker-diarization`) and automatic language detection.
+
+Select the model that matches the feature you need. Requesting translation with `chirp_3`, or diarization with `chirp_2`, is not supported by the underlying API.
+
+== Runtime Options
+
+The `GoogleGenAiAudioTranscriptionOptions` class provides the options to use when making a transcription.
+On start up, the options specified by the `spring.ai.google.genai.transcription` properties are used, but you can override these at runtime.
+
+For example:
+
+[source,java]
+----
+GoogleGenAiAudioTranscriptionOptions transcriptionOptions = GoogleGenAiAudioTranscriptionOptions.builder()
+    .model("chirp_2")
+    .languageCodes(List.of("en-US"))
+    .enableAutomaticPunctuation(true)
+    .enableWordTimeOffsets(true)
+    .build();
+
+AudioTranscriptionPrompt transcriptionRequest = new AudioTranscriptionPrompt(audioFile, transcriptionOptions);
+AudioTranscriptionResponse response = transcriptionModel.call(transcriptionRequest);
+----
+
+== Sample Controller
+
+Create a new Spring Boot project and add the `spring-ai-starter-model-google-genai-transcription` to your dependencies.
+
+Add an `application.properties` file under `src/main/resources`:
+
+[source,application.properties]
+----
+spring.ai.google.genai.transcription.project-id=YOUR_PROJECT_ID
+spring.ai.google.genai.transcription.location=global
+spring.ai.google.genai.transcription.model=chirp_2
+spring.ai.google.genai.transcription.language-codes=en-US
+----
+
+[source,java]
+----
+@RestController
+public class TranscriptionController {
+
+    private final GoogleGenAiTranscriptionModel transcriptionModel;
+
+    @Value("classpath:/speech/jfk.flac")
+    private Resource audioFile;
+
+    TranscriptionController(GoogleGenAiTranscriptionModel transcriptionModel) {
+        this.transcriptionModel = transcriptionModel;
+    }
+
+    @GetMapping("/ai/transcription")
+    public String transcribe() {
+        AudioTranscriptionPrompt prompt = new AudioTranscriptionPrompt(this.audioFile);
+        AudioTranscriptionResponse response = this.transcriptionModel.call(prompt);
+        return response.getResult().getOutput();
+    }
+}
+----
+
+== Manual Configuration
+
+Add the `spring-ai-google-genai-transcription` dependency to your project's Maven `pom.xml` file:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-google-genai-transcription</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file:
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-google-genai-transcription'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+Next, create a `GoogleGenAiTranscriptionModel`:
+
+[source,java]
+----
+var connectionDetails = GoogleGenAiTranscriptionConnectionDetails.builder()
+    .projectId("YOUR_PROJECT_ID")
+    .location("global")
+    .apiKey(System.getenv("GOOGLE_API_KEY"))
+    .build();
+
+var options = GoogleGenAiAudioTranscriptionOptions.builder()
+    .model("chirp_2")
+    .languageCodes(List.of("en-US"))
+    .enableAutomaticPunctuation(true)
+    .build();
+
+var transcriptionModel = new GoogleGenAiTranscriptionModel(connectionDetails, options);
+
+var audioFile = new FileSystemResource("/path/to/audio.wav");
+AudioTranscriptionResponse response = transcriptionModel
+    .call(new AudioTranscriptionPrompt(audioFile));
+System.out.println(response.getResult().getOutput());
+----

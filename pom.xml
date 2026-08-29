@@ -55,6 +55,7 @@
 		<module>auto-configurations/models/chat/observation/spring-ai-autoconfigure-model-chat-observation</module>
 		<module>auto-configurations/models/embedding/observation/spring-ai-autoconfigure-model-embedding-observation</module>
 		<module>auto-configurations/models/image/observation/spring-ai-autoconfigure-model-image-observation</module>
+		<module>auto-configurations/models/audio/observation/spring-ai-autoconfigure-model-transcription-observation</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-anthropic</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-bedrock-ai</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-deepseek</module>
@@ -116,6 +117,7 @@
 		<module>models/spring-ai-google-genai</module>
 		<module>models/spring-ai-google-genai-embedding</module>
 		<module>models/spring-ai-google-genai-image</module>
+		<module>models/spring-ai-google-genai-transcription</module>
 		<module>models/spring-ai-mistral-ai</module>
 		<module>models/spring-ai-ollama</module>
 		<module>models/spring-ai-openai</module>
@@ -144,6 +146,7 @@
 		<module>starters/spring-ai-starter-model-google-genai</module>
 		<module>starters/spring-ai-starter-model-google-genai-embedding</module>
 		<module>starters/spring-ai-starter-model-google-genai-image</module>
+		<module>starters/spring-ai-starter-model-google-genai-transcription</module>
 		<module>starters/spring-ai-starter-model-mistral-ai</module>
 		<module>starters/spring-ai-starter-model-ollama</module>
 		<module>starters/spring-ai-starter-model-openai</module>
@@ -266,6 +269,8 @@
 		<azure-search.version>11.7.6</azure-search.version>
 		<com.google.cloud.version>26.83.0</com.google.cloud.version>
 		<com.google.genai.version>1.65.0</com.google.genai.version>
+		<google-cloud-speech.version>4.90.0</google-cloud-speech.version>
+		<google-auth-library.version>1.50.0</google-auth-library.version>
 		<djl.version>0.36.0</djl.version>
 
 		<!-- Vector store clients -->
@@ -998,6 +1003,16 @@
 				<groupId>com.networknt</groupId>
 				<artifactId>json-schema-validator</artifactId>
 				<version>${json-schema-validator.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.google.auth</groupId>
+				<artifactId>google-auth-library-credentials</artifactId>
+				<version>${google-auth-library.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>com.google.auth</groupId>
+				<artifactId>google-auth-library-oauth2-http</artifactId>
+				<version>${google-auth-library.version}</version>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
