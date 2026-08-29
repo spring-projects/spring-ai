@@ -498,6 +498,25 @@ public interface ChatClient {
 	 */
 	interface Builder {
 
+		/**
+		 * Configure the default factory used to create converters for type-based
+		 * {@link CallResponseSpec#entity(Class)} and
+		 * {@link CallResponseSpec#responseEntity(Class)} calls, including their
+		 * {@link ParameterizedTypeReference} variants.
+		 * <p>
+		 * Explicit converter overloads bypass this factory.
+		 * @param factory the structured output converter factory
+		 * @return this builder
+		 * @throws UnsupportedOperationException if this builder implementation does not
+		 * support structured output converter factory configuration
+		 * @since 2.0.1
+		 */
+		default Builder defaultStructuredOutputConverterFactory(StructuredOutputConverterFactory factory) {
+			Assert.notNull(factory, "factory cannot be null");
+			throw new UnsupportedOperationException(
+					"Structured output converter factory configuration is not supported by " + getClass().getName());
+		}
+
 		Builder defaultAdvisors(Advisor... advisors);
 
 		Builder defaultAdvisors(Consumer<AdvisorSpec> advisorSpecConsumer);

@@ -95,6 +95,13 @@ public class DefaultChatClient implements ChatClient {
 
 	private static final ChatClientMessageAggregator CHAT_CLIENT_MESSAGE_AGGREGATOR = new ChatClientMessageAggregator();
 
+	private static final StructuredOutputConverterFactory DEFAULT_STRUCTURED_OUTPUT_CONVERTER_FACTORY = new StructuredOutputConverterFactory() {
+		@Override
+		public <T> StructuredOutputConverter<T> create(ParameterizedTypeReference<T> targetType) {
+			return new BeanOutputConverter<>(targetType);
+		}
+	};
+
 	private final DefaultChatClientRequestSpec defaultChatClientRequest;
 
 	public DefaultChatClient(DefaultChatClientRequestSpec defaultChatClientRequest) {
@@ -438,17 +445,28 @@ public class DefaultChatClient implements ChatClient {
 
 		private final ChatClientObservationConvention observationConvention;
 
+		private final StructuredOutputConverterFactory structuredOutputConverterFactory;
+
 		public DefaultCallResponseSpec(ChatClientRequest chatClientRequest, BaseAdvisorChain advisorChain,
 				ObservationRegistry observationRegistry, ChatClientObservationConvention observationConvention) {
+			this(chatClientRequest, advisorChain, observationRegistry, observationConvention,
+					DEFAULT_STRUCTURED_OUTPUT_CONVERTER_FACTORY);
+		}
+
+		DefaultCallResponseSpec(ChatClientRequest chatClientRequest, BaseAdvisorChain advisorChain,
+				ObservationRegistry observationRegistry, ChatClientObservationConvention observationConvention,
+				StructuredOutputConverterFactory structuredOutputConverterFactory) {
 			Assert.notNull(chatClientRequest, "chatClientRequest cannot be null");
 			Assert.notNull(advisorChain, "advisorChain cannot be null");
 			Assert.notNull(observationRegistry, "observationRegistry cannot be null");
 			Assert.notNull(observationConvention, "observationConvention cannot be null");
+			Assert.notNull(structuredOutputConverterFactory, "structuredOutputConverterFactory cannot be null");
 
 			this.request = chatClientRequest;
 			this.advisorChain = advisorChain;
 			this.observationRegistry = observationRegistry;
 			this.observationConvention = observationConvention;
+			this.structuredOutputConverterFactory = structuredOutputConverterFactory;
 		}
 
 		@Override
@@ -456,14 +474,14 @@ public class DefaultChatClient implements ChatClient {
 				Consumer<EntityParamSpec> entityParamSpecConsumer) {
 			Assert.notNull(type, "type cannot be null");
 			Assert.notNull(entityParamSpecConsumer, "entityParamSpecConsumer cannot be null");
-			var converter = new BeanOutputConverter<>(type);
+			StructuredOutputConverter<T> converter = createConverter(type);
 			return doResponseEntity(converter, resolveAdvisorChain(entityParamSpecConsumer, converter));
 		}
 
 		@Override
 		public <T> ResponseEntity<ChatResponse, T> responseEntity(Class<T> type) {
 			Assert.notNull(type, "type cannot be null");
-			return doResponseEntity(new BeanOutputConverter<>(type));
+			return doResponseEntity(createConverter(type));
 		}
 
 		@Override
@@ -471,14 +489,14 @@ public class DefaultChatClient implements ChatClient {
 				Consumer<EntityParamSpec> entityParamSpecConsumer) {
 			Assert.notNull(type, "type cannot be null");
 			Assert.notNull(entityParamSpecConsumer, "entityParamSpecConsumer cannot be null");
-			var converter = new BeanOutputConverter<>(type);
+			StructuredOutputConverter<T> converter = createConverter(type);
 			return doResponseEntity(converter, resolveAdvisorChain(entityParamSpecConsumer, converter));
 		}
 
 		@Override
 		public <T> ResponseEntity<ChatResponse, T> responseEntity(ParameterizedTypeReference<T> type) {
 			Assert.notNull(type, "type cannot be null");
-			return doResponseEntity(new BeanOutputConverter<>(type));
+			return doResponseEntity(createConverter(type));
 		}
 
 		@Override
@@ -530,22 +548,22 @@ public class DefaultChatClient implements ChatClient {
 				Consumer<EntityParamSpec> entitySpecConsumer) {
 			Assert.notNull(type, "type cannot be null");
 			Assert.notNull(entitySpecConsumer, "entitySpecConsumer cannot be null");
-			var converter = new BeanOutputConverter<>(type);
-			return doSingleWithBeanOutputConverter(converter, resolveAdvisorChain(entitySpecConsumer, converter));
+			StructuredOutputConverter<T> converter = createConverter(type);
+			return doSingleWithStructuredOutputConverter(converter, resolveAdvisorChain(entitySpecConsumer, converter));
 		}
 
 		@Override
 		public <T> @Nullable T entity(Class<T> type, Consumer<EntityParamSpec> entitySpecConsumer) {
 			Assert.notNull(type, "type cannot be null");
 			Assert.notNull(entitySpecConsumer, "entitySpecConsumer cannot be null");
-			var converter = new BeanOutputConverter<>(type);
-			return doSingleWithBeanOutputConverter(converter, resolveAdvisorChain(entitySpecConsumer, converter));
+			StructuredOutputConverter<T> converter = createConverter(type);
+			return doSingleWithStructuredOutputConverter(converter, resolveAdvisorChain(entitySpecConsumer, converter));
 		}
 
 		@Override
 		public <T> @Nullable T entity(ParameterizedTypeReference<T> type) {
 			Assert.notNull(type, "type cannot be null");
-			return doSingleWithBeanOutputConverter(new BeanOutputConverter<>(type));
+			return doSingleWithStructuredOutputConverter(createConverter(type));
 		}
 
 		@Override
@@ -553,20 +571,30 @@ public class DefaultChatClient implements ChatClient {
 				Consumer<EntityParamSpec> entitySpecConsumer) {
 			Assert.notNull(structuredOutputConverter, "structuredOutputConverter cannot be null");
 			Assert.notNull(entitySpecConsumer, "entitySpecConsumer cannot be null");
-			return doSingleWithBeanOutputConverter(structuredOutputConverter,
+			return doSingleWithStructuredOutputConverter(structuredOutputConverter,
 					resolveAdvisorChain(entitySpecConsumer, structuredOutputConverter));
 		}
 
 		@Override
 		public <T> @Nullable T entity(StructuredOutputConverter<T> structuredOutputConverter) {
 			Assert.notNull(structuredOutputConverter, "structuredOutputConverter cannot be null");
-			return doSingleWithBeanOutputConverter(structuredOutputConverter);
+			return doSingleWithStructuredOutputConverter(structuredOutputConverter);
 		}
 
 		@Override
 		public <T> @Nullable T entity(Class<T> type) {
 			Assert.notNull(type, "type cannot be null");
-			return doSingleWithBeanOutputConverter(new BeanOutputConverter<>(type));
+			return doSingleWithStructuredOutputConverter(createConverter(type));
+		}
+
+		private <T> StructuredOutputConverter<T> createConverter(Class<T> targetType) {
+			return createConverter(ParameterizedTypeReference.forType(targetType));
+		}
+
+		private <T> StructuredOutputConverter<T> createConverter(ParameterizedTypeReference<T> targetType) {
+			StructuredOutputConverter<T> converter = this.structuredOutputConverterFactory.create(targetType);
+			Assert.notNull(converter, "structuredOutputConverterFactory must not return null");
+			return converter;
 		}
 
 		private BaseAdvisorChain resolveAdvisorChain(Consumer<EntityParamSpec> consumer,
@@ -585,11 +613,11 @@ public class DefaultChatClient implements ChatClient {
 			return this.advisorChain;
 		}
 
-		private <T> @Nullable T doSingleWithBeanOutputConverter(StructuredOutputConverter<T> outputConverter) {
-			return doSingleWithBeanOutputConverter(outputConverter, this.advisorChain);
+		private <T> @Nullable T doSingleWithStructuredOutputConverter(StructuredOutputConverter<T> outputConverter) {
+			return doSingleWithStructuredOutputConverter(outputConverter, this.advisorChain);
 		}
 
-		private <T> @Nullable T doSingleWithBeanOutputConverter(StructuredOutputConverter<T> outputConverter,
+		private <T> @Nullable T doSingleWithStructuredOutputConverter(StructuredOutputConverter<T> outputConverter,
 				BaseAdvisorChain advisorChain) {
 
 			if (StringUtils.hasText(outputConverter.getFormat())) {
@@ -800,6 +828,8 @@ public class DefaultChatClient implements ChatClient {
 
 		private final ToolCallingAdvisor.Builder<?> toolCallingAdvisorBuilder;
 
+		private StructuredOutputConverterFactory structuredOutputConverterFactory = DEFAULT_STRUCTURED_OUTPUT_CONVERTER_FACTORY;
+
 		/* copy constructor */
 		DefaultChatClientRequestSpec(DefaultChatClientRequestSpec ccr) {
 			this(ccr.chatModel, ccr.userText, ccr.userParams, ccr.userMetadata, ccr.systemText, ccr.systemParams,
@@ -807,6 +837,7 @@ public class DefaultChatClient implements ChatClient {
 					ccr.optionsCustomizer, ccr.advisors, ccr.advisorParams, ccr.observationRegistry,
 					ccr.chatClientObservationConvention, ccr.toolContext, ccr.templateRenderer,
 					ccr.advisorObservationConvention, ccr.toolCallingAdvisorBuilder);
+			this.structuredOutputConverterFactory = ccr.structuredOutputConverterFactory;
 		}
 
 		public DefaultChatClientRequestSpec(ChatModel chatModel, @Nullable String userText,
@@ -917,6 +948,11 @@ public class DefaultChatClient implements ChatClient {
 			return this.templateRenderer;
 		}
 
+		void structuredOutputConverterFactory(StructuredOutputConverterFactory factory) {
+			Assert.notNull(factory, "factory cannot be null");
+			this.structuredOutputConverterFactory = factory;
+		}
+
 		/* package */ ChatModel getChatModel() {
 			return this.chatModel;
 		}
@@ -937,7 +973,8 @@ public class DefaultChatClient implements ChatClient {
 				.defaultTemplateRenderer(this.templateRenderer)
 				.defaultTools(this.toolCallbacks.toArray(new ToolCallback[0]))
 				.defaultTools((Object[]) this.toolCallbackProviders.toArray(new ToolCallbackProvider[0]))
-				.defaultToolContext(this.toolContext);
+				.defaultToolContext(this.toolContext)
+				.defaultStructuredOutputConverterFactory(this.structuredOutputConverterFactory);
 
 			if (!CollectionUtils.isEmpty(this.advisors)) {
 				builder.defaultAdvisors(a -> a.advisors(this.advisors).params(this.advisorParams));
@@ -1176,7 +1213,8 @@ public class DefaultChatClient implements ChatClient {
 		public CallResponseSpec call() {
 			BaseAdvisorChain advisorChain = buildAdvisorChain();
 			return new DefaultCallResponseSpec(DefaultChatClientUtils.toChatClientRequest(this), advisorChain,
-					this.observationRegistry, this.chatClientObservationConvention);
+					this.observationRegistry, this.chatClientObservationConvention,
+					this.structuredOutputConverterFactory);
 		}
 
 		@Override
