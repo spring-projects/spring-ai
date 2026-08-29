@@ -37,6 +37,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  *
  * @author Mark Pollack
  * @author Jonghoon Park
+ * @author Taewoong Kim
  */
 @ExtendWith(MockitoExtension.class)
 class WeaviateVectorStoreBuilderTests {
@@ -65,10 +66,23 @@ class WeaviateVectorStoreBuilderTests {
 		WeaviateVectorStore vectorStore = WeaviateVectorStore.builder(weaviateClient, this.embeddingModel)
 			.options(options)
 			.consistencyLevel(ConsistentLevel.QUORUM)
+			.tenantName("TenantA")
 			.filterMetadataFields(List.of(MetadataField.text("country"), MetadataField.number("year")))
 			.build();
 
 		assertThat(vectorStore).isNotNull();
+		assertThat(vectorStore.createObservationContextBuilder("query").build().getNamespace()).isEqualTo("TenantA");
+	}
+
+	@Test
+	void shouldTreatBlankTenantNameAsNotConfigured() {
+		WeaviateClient weaviateClient = new WeaviateClient(new Config("http", "localhost:8080"));
+
+		WeaviateVectorStore vectorStore = WeaviateVectorStore.builder(weaviateClient, this.embeddingModel)
+			.tenantName(" ")
+			.build();
+
+		assertThat(vectorStore.createObservationContextBuilder("query").build().getNamespace()).isNull();
 	}
 
 	@Test
