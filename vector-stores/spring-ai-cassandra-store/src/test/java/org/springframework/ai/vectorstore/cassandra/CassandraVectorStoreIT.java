@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -53,6 +54,7 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.DefaultResourceLoader;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -136,6 +138,19 @@ class CassandraVectorStoreIT extends BaseVectorStoreTests {
 				Assertions.assertNotNull(store);
 				store.checkSchemaValid();
 			}
+		});
+	}
+
+	@Test
+	void closeShutsDownExecutor() {
+		this.contextRunner.run(context -> {
+			CassandraVectorStore store = createTestStore(context);
+			ExecutorService executor = (ExecutorService) ReflectionTestUtils.getField(store, "executor");
+			Assertions.assertNotNull(executor);
+			Assertions.assertFalse(executor.isShutdown());
+			store.close();
+			Assertions.assertTrue(executor.isShutdown());
+			Assertions.assertTrue(executor.isTerminated());
 		});
 	}
 
