@@ -22,11 +22,11 @@ public class EvaluationRequest {
 
 	private final String userText;
 
-	private final List<Content> dataList;
+	private final List<Document> dataList;
 
 	private final String responseContent;
 
-	public EvaluationRequest(String userText, List<Content> dataList, String responseContent) {
+	public EvaluationRequest(String userText, List<Document> dataList, String responseContent) {
 		this.userText = userText;
 		this.dataList = dataList;
 		this.responseContent = responseContent;
@@ -131,13 +131,22 @@ The 'claim' and 'document' are presented to the AI model for evaluation. Smaller
 
 
 === Usage
-The FactCheckingEvaluator constructor takes a ChatClient.Builder as a parameter:
+The `FactCheckingEvaluator` is created through a factory method or its builder rather than a public constructor.
+
+For the Bespoke Minicheck model there is a dedicated factory method that wires the appropriate prompt:
 [source,java]
 ----
-public FactCheckingEvaluator(ChatClient.Builder chatClientBuilder) {
-  this.chatClientBuilder = chatClientBuilder;
-}
+FactCheckingEvaluator evaluator = FactCheckingEvaluator.forBespokeMinicheck(chatClientBuilder);
 ----
+
+For any other model, use the builder, optionally supplying a custom evaluation prompt:
+[source,java]
+----
+FactCheckingEvaluator evaluator = FactCheckingEvaluator.builder(chatClientBuilder)
+    .evaluationPrompt(myCustomPrompt) // optional
+    .build();
+----
+
 The evaluator uses the following prompt template for fact-checking:
 [source,text]
 ----
@@ -147,21 +156,26 @@ Claim: {claim}
 Where `+{document}+` is the context information, and `+{claim}+` is the AI model's response to be evaluated.
 
 === Example
-Here's an example of how to use the FactCheckingEvaluator with an Ollama-based ChatModel, specifically the Bespoke-Minicheck model:
+Here's an example of how to use the `FactCheckingEvaluator` with an Ollama-based `ChatModel`, specifically the Bespoke-Minicheck model:
 
 [source,java]
 ----
 @Test
 void testFactChecking() {
   // Set up the Ollama API
-  OllamaApi ollamaApi = new OllamaApi("http://localhost:11434");
+  OllamaApi ollamaApi = OllamaApi.builder().baseUrl("http://localhost:11434").build();
 
-  ChatModel chatModel = new OllamaChatModel(ollamaApi,
-				OllamaChatOptions.builder().model(BESPOKE_MINICHECK).numPredict(2).temperature(0.0d).build())
+  ChatModel chatModel = OllamaChatModel.builder()
+      .ollamaApi(ollamaApi)
+      .defaultOptions(OllamaChatOptions.builder()
+          .model(BESPOKE_MINICHECK)
+          .numPredict(2)
+          .temperature(0.0d)
+          .build())
+      .build();
 
-
-  // Create the FactCheckingEvaluator
-  var factCheckingEvaluator = new FactCheckingEvaluator(ChatClient.builder(chatModel));
+  // Create the FactCheckingEvaluator using the Bespoke Minicheck factory method
+  FactCheckingEvaluator factCheckingEvaluator = FactCheckingEvaluator.forBespokeMinicheck(ChatClient.builder(chatModel));
 
   // Example context and claim
   String context = "The Earth is the third planet from the Sun and the only astronomical object known to harbor life.";
@@ -177,3 +191,123 @@ void testFactChecking() {
 
 }
 ----
+
+== Writing a Custom Evaluator
+
+Because `Evaluator` is a functional interface, you can implement your own evaluation logic for criteria the built-in evaluators do not cover (for example, tone, format compliance, or a domain-specific rubric). Implement `evaluate(EvaluationRequest)` and return an `EvaluationResponse` describing whether the response passed, an optional score, feedback, and metadata.
+
+The `Evaluator` interface also provides a default `doGetSupportingData(EvaluationRequest)` method that concatenates the text of the `dataList` documents, which is convenient when your evaluator needs the retrieved context as a single string.
+
+[source,java]
+----
+public class JsonFormatEvaluator implements Evaluator {
+
+    @Override
+    public EvaluationResponse evaluate(EvaluationRequest evaluationRequest) {
+        String response = evaluationRequest.getResponseContent();
+        boolean pass = isValidJson(response);
+        float score = pass ? 1.0f : 0.0f;
+        String feedback = pass ? "Response is valid JSON" : "Response is not valid JSON";
+        return new EvaluationResponse(pass, score, feedback, Map.of());
+    }
+
+    private boolean isValidJson(String candidate) {
+        // ... your validation logic ...
+    }
+}
+----
+
+You can then use it like any other evaluator:
+
+[source,java]
+----
+Evaluator evaluator = new JsonFormatEvaluator();
+EvaluationResponse response = evaluator.evaluate(
+    new EvaluationRequest(userQuestion, List.of(), modelResponse));
+assertThat(response.isPass()).isTrue();
+----
+
+== Reusable Test Base Classes
+
+The `spring-ai-test` module ships abstract base classes that contribute ready-made conformance tests. They are primarily used to validate Spring AI's own providers, but they are equally useful if you build a custom `VectorStore`, `ChatModel`, or `ChatOptions` implementation: extend the base class, implement one or two template methods, and you inherit the full test suite.
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-test</artifactId>
+    <scope>test</scope>
+</dependency>
+----
+
+=== BaseVectorStoreTests
+
+`BaseVectorStoreTests` contributes delete-behavior tests (`deleteById`, `deleteWithStringFilterExpression`, and `deleteByFilter`) to any `VectorStore`. Extend it and implement `executeTest(Consumer<VectorStore>)`, which is responsible for providing a live `VectorStore` to the inherited test logic. A common approach uses Spring Boot's `ApplicationContextRunner`:
+
+[source,java]
+----
+class MyVectorStoreIT extends BaseVectorStoreTests {
+
+    private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
+        .withUserConfiguration(TestApplication.class);
+
+    @Override
+    protected void executeTest(Consumer<VectorStore> testFunction) {
+        this.contextRunner.run(context -> {
+            VectorStore vectorStore = context.getBean(VectorStore.class);
+            testFunction.accept(vectorStore);
+        });
+    }
+}
+----
+
+Override the protected `createDocument(String country, Integer year)` helper if your store needs documents shaped a particular way. Several built-in stores extend this class (for example, `PgVectorStoreIT` and `CassandraVectorStoreIT`).
+
+=== AbstractToolCallAdvisorIT
+
+`AbstractToolCallAdvisorIT` is a conformance suite for tool (function) calling through the `ChatClient`. It exercises both synchronous (`call`) and streaming (`stream`) flows, with and without external chat memory, grouped into nested `CallTests` and `StreamTests` classes. Extend it and return your `ChatModel` from `getChatModel()`:
+
+[source,java]
+----
+class MyToolCallAdvisorIT extends AbstractToolCallAdvisorIT {
+
+    @Override
+    protected ChatModel getChatModel() {
+        return MyChatModel.builder()
+            .options(MyChatOptions.builder()
+                .apiKey(System.getenv("MY_API_KEY"))
+                .model("my-default-model")
+                .build())
+            .build();
+    }
+}
+----
+
+The suite drives a shared `MockWeatherService` tool (returning 30°C for San Francisco, 10°C for Tokyo, and 15°C for Paris), so your model integration is tested against deterministic tool results. The built-in `OpenAiToolCallAdvisorIT` is a concrete example.
+
+=== AbstractChatOptionsTests
+
+`AbstractChatOptionsTests<O extends ChatOptions, B extends ChatOptions.Builder<B>>` verifies that a `ChatOptions` implementation returns fresh instances from its builder (`builderShouldReturnNewInstances`) and supports `mutate()` correctly (`testMutateBehavior`). Implement the two template methods:
+
+[source,java]
+----
+class MyChatOptionsTests extends AbstractChatOptionsTests<MyChatOptions, MyChatOptions.Builder> {
+
+    @Override
+    protected Class<MyChatOptions> getConcreteOptionsClass() {
+        return MyChatOptions.class;
+    }
+
+    @Override
+    protected MyChatOptions.Builder readyToBuildBuilder() {
+        return MyChatOptions.builder().model("my-default-model").maxTokens(500);
+    }
+}
+----
+
+`AnthropicChatOptionsTests` is a concrete example.
+
+=== Other utilities
+
+* `ObservationTestUtil.assertObservationRegistry(registry, provider, operation)` asserts that a vector store operation produced the expected Micrometer observation against a `TestObservationRegistry`.
+* `CurlyBracketEscaper.escapeCurlyBrackets(input)` / `unescapeCurlyBrackets(input)` are null-safe helpers to escape `{` and `}` in user-provided content so it does not collide with prompt-template placeholders.
