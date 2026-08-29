@@ -47,6 +47,7 @@ import org.springframework.ai.mcp.annotation.context.McpSyncRequestContext;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.InstanceOfAssertFactories.type;
 import static org.mockito.Mockito.mock;
 
 /**
@@ -86,7 +87,10 @@ public class SyncMcpPromptMethodCallbackTests {
 		// The new error handling should throw McpError instead of
 		// McpPromptMethodException
 		assertThatThrownBy(() -> callback.apply(exchange, request)).isInstanceOf(McpError.class)
-			.hasMessageContaining("Error invoking prompt method");
+			.hasMessageContaining("Error invoking prompt method")
+			.asInstanceOf(type(McpError.class))
+			.extracting(McpError::getJsonRpcError)
+			.satisfies(error -> assertThat(error.code()).isEqualTo(ErrorCodes.INTERNAL_ERROR));
 	}
 
 	@Test
