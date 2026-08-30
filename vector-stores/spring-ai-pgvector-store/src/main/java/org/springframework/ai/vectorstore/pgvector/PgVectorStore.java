@@ -81,7 +81,7 @@ import org.springframework.util.StringUtils;
  * <pre>{@code
  * PgVectorStore vectorStore = PgVectorStore.builder(jdbcTemplate, embeddingModel)
  *     .dimensions(1536) // Optional: defaults to model dimensions or 1536
- *     .distanceType(PgDistanceType.COSINE_DISTANCE)
+ *     .distanceType(PgVectorStore.COSINE_DISTANCE)
  *     .indexType(PgIndexType.HNSW)
  *     .build();
  *
@@ -107,7 +107,7 @@ import org.springframework.util.StringUtils;
  * PgVectorStore vectorStore = PgVectorStore.builder(jdbcTemplate, embeddingModel)
  *     .schemaName("custom_schema")
  *     .vectorTableName("custom_vectors")
- *     .distanceType(PgDistanceType.NEGATIVE_INNER_PRODUCT)
+ *     .distanceType(PgVectorStore.NEGATIVE_INNER_PRODUCT)
  *     .removeExistingVectorStoreTable(true)
  *     .initializeSchema(true)
  *     .maxDocumentBatchSize(1000)
@@ -154,6 +154,7 @@ import org.springframework.util.StringUtils;
  * @author Jonghoon Park
  * @author Yanming Zhou
  * @author Siarhei Dudzin
+ * @author Martin Grofcik
  * @since 1.0.0
  */
 public class PgVectorStore extends AbstractObservationVectorStore implements InitializingBean {
@@ -179,60 +180,38 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 	/**
 	 * Default implementation of {@link PgDistanceType}.
 	 */
-	private static final class DefaultPgDistanceType implements PgDistanceType {
-
-		private final String name;
-
-		private final String operator;
-
-		private final String index;
-
-		private final String similaritySearchSqlTemplate;
-
-		DefaultPgDistanceType(String name, String operator, String index, String similaritySearchSqlTemplate) {
-			this.name = name;
-			this.operator = operator;
-			this.index = index;
-			this.similaritySearchSqlTemplate = similaritySearchSqlTemplate;
-		}
-
-		@Override
-		public String name() {
-			return this.name;
-		}
-
-		@Override
-		public String operator() {
-			return this.operator;
-		}
-
-		@Override
-		public String index() {
-			return this.index;
-		}
-
-		@Override
-		public String similaritySearchSqlTemplate() {
-			return this.similaritySearchSqlTemplate;
-		}
-
+	private record DefaultPgDistanceType(String name, String operator, String index,
+			String similaritySearchSqlTemplate) implements org.springframework.ai.vectorstore.pgvector.PgDistanceType {
 	}
 
-	public static final PgDistanceType EUCLIDEAN_DISTANCE = new DefaultPgDistanceType("EUCLIDEAN_DISTANCE", "<->",
-			"vector_l2_ops",
+	/*
+	 * @since 2.0.2
+	 */
+	public static final org.springframework.ai.vectorstore.pgvector.PgDistanceType EUCLIDEAN_DISTANCE = new DefaultPgDistanceType(
+			"EUCLIDEAN_DISTANCE", "<->", "vector_l2_ops",
 			"SELECT *, embedding <-> ? AS distance FROM %s WHERE embedding <-> ? < ? %s ORDER BY distance LIMIT ? ");
 
-	public static final PgDistanceType NEGATIVE_INNER_PRODUCT = new DefaultPgDistanceType("NEGATIVE_INNER_PRODUCT", "<#>",
-			"vector_ip_ops",
+	/*
+	 * @since 2.0.2
+	 */
+	public static final org.springframework.ai.vectorstore.pgvector.PgDistanceType NEGATIVE_INNER_PRODUCT = new DefaultPgDistanceType(
+			"NEGATIVE_INNER_PRODUCT", "<#>", "vector_ip_ops",
 			"SELECT *, (1 + (embedding <#> ?)) AS distance FROM %s WHERE (1 + (embedding <#> ?)) < ? %s ORDER BY distance LIMIT ? ");
 
-	public static final PgDistanceType COSINE_DISTANCE = new DefaultPgDistanceType("COSINE_DISTANCE", "<=>",
-			"vector_cosine_ops",
+	/**
+	 * Defaults to CosineDistance. But if vectors are normalized to length 1 (like
+	 * OpenAI * embeddings), use inner product (NegativeInnerProduct) for best
+	 * performance.
+	 *
+	 * @since 2.0.2
+	 */
+	public static final org.springframework.ai.vectorstore.pgvector.PgDistanceType COSINE_DISTANCE = new DefaultPgDistanceType(
+			"COSINE_DISTANCE", "<=>", "vector_cosine_ops",
 			"SELECT *, embedding <=> ? AS distance FROM %s WHERE embedding <=> ? < ? %s ORDER BY distance LIMIT ? ");
 
-	public static final Map<PgDistanceType, VectorStoreSimilarityMetric> SIMILARITY_TYPE_MAPPING = Map.of(
-			COSINE_DISTANCE, VectorStoreSimilarityMetric.COSINE, EUCLIDEAN_DISTANCE,
-			VectorStoreSimilarityMetric.EUCLIDEAN, NEGATIVE_INNER_PRODUCT, VectorStoreSimilarityMetric.DOT);
+	private static final Map<org.springframework.ai.vectorstore.pgvector.PgDistanceType, VectorStoreSimilarityMetric> SIMILARITY_TYPE_MAPPING = Map
+		.of(COSINE_DISTANCE, VectorStoreSimilarityMetric.COSINE, EUCLIDEAN_DISTANCE,
+				VectorStoreSimilarityMetric.EUCLIDEAN, NEGATIVE_INNER_PRODUCT, VectorStoreSimilarityMetric.DOT);
 
 	public final FilterExpressionConverter filterExpressionConverter = new PgVectorFilterExpressionConverter();
 
@@ -252,7 +231,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 	private final int dimensions;
 
-	private final PgDistanceType distanceType;
+	private final org.springframework.ai.vectorstore.pgvector.PgDistanceType distanceType;
 
 	private final JsonMapper jsonMapper;
 
@@ -301,7 +280,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		this.maxDocumentBatchSize = builder.maxDocumentBatchSize;
 	}
 
-	public PgDistanceType getDistanceType() {
+	public org.springframework.ai.vectorstore.pgvector.PgDistanceType getDistanceType() {
 		return this.distanceType;
 	}
 
@@ -627,6 +606,47 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 	}
 
+	/**
+     * Defaults to CosineDistance. But if vectors are normalized to length 1 (like OpenAI
+     * embeddings), use inner product (NegativeInnerProduct) for best performance.
+     *
+     * @deprecated in favor of
+     * {@link org.springframework.ai.vectorstore.pgvector.PgDistanceType}.
+     */
+	@Deprecated(since = "2.0.2")
+	public enum PgDistanceType {
+
+		// NOTE: works only if vectors are normalized to length 1 (like OpenAI
+		// embeddings), use inner product for best performance.
+		// The Sentence transformers are NOT normalized:
+		// https://github.com/UKPLab/sentence-transformers/issues/233
+		EUCLIDEAN_DISTANCE("<->", "vector_l2_ops",
+				"SELECT *, embedding <-> ? AS distance FROM %s WHERE embedding <-> ? < ? %s ORDER BY distance LIMIT ? "),
+
+		// NOTE: works only if vectors are normalized to length 1 (like OpenAI
+		// embeddings), use inner product for best performance.
+		// The Sentence transformers are NOT normalized:
+		// https://github.com/UKPLab/sentence-transformers/issues/233
+		NEGATIVE_INNER_PRODUCT("<#>", "vector_ip_ops",
+				"SELECT *, (1 + (embedding <#> ?)) AS distance FROM %s WHERE (1 + (embedding <#> ?)) < ? %s ORDER BY distance LIMIT ? "),
+
+		COSINE_DISTANCE("<=>", "vector_cosine_ops",
+				"SELECT *, embedding <=> ? AS distance FROM %s WHERE embedding <=> ? < ? %s ORDER BY distance LIMIT ? ");
+
+		public final String operator;
+
+		public final String index;
+
+		public final String similaritySearchSqlTemplate;
+
+		PgDistanceType(String operator, String index, String sqlTemplate) {
+			this.operator = operator;
+			this.index = index;
+			this.similaritySearchSqlTemplate = sqlTemplate;
+		}
+
+	}
+
 	private static class DocumentRowMapper implements RowMapper<Document> {
 
 		private static final String COLUMN_METADATA = "metadata";
@@ -684,7 +704,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 		private int dimensions = PgVectorStore.INVALID_EMBEDDING_DIMENSION;
 
-		private PgDistanceType distanceType = COSINE_DISTANCE;
+		private org.springframework.ai.vectorstore.pgvector.PgDistanceType distanceType = COSINE_DISTANCE;
 
 		private boolean removeExistingVectorStoreTable = false;
 
@@ -725,7 +745,24 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 			return this;
 		}
 
+		/**
+		 * @deprecated in favor of
+		 * {@link #distanceType(org.springframework.ai.vectorstore.pgvector.PgDistanceType)}
+		 * @param distanceType distanceType to set.
+		 * @return builder.
+		 */
+		@Deprecated(since = "2.0.2")
 		public PgVectorStoreBuilder distanceType(PgDistanceType distanceType) {
+			this.distanceType = switch (distanceType) {
+				case EUCLIDEAN_DISTANCE -> PgVectorStore.EUCLIDEAN_DISTANCE;
+				case NEGATIVE_INNER_PRODUCT -> PgVectorStore.NEGATIVE_INNER_PRODUCT;
+				case COSINE_DISTANCE -> PgVectorStore.COSINE_DISTANCE;
+			};
+			return this;
+		}
+
+		public PgVectorStoreBuilder distanceType(
+				org.springframework.ai.vectorstore.pgvector.PgDistanceType distanceType) {
 			this.distanceType = distanceType;
 			return this;
 		}

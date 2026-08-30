@@ -36,48 +36,15 @@ import static org.mockito.Mockito.*;
  */
 class PgVectorStoreDistanceTypeTests {
 
-	public static final TestPgDistanceType CUSTOM_DISTANCE_TYPE = new TestPgDistanceType("CUSTOM", "<custom>", "custom_ops",
-			"SELECT * CUSTOM ?");
+	public static final TestPgDistanceType CUSTOM_DISTANCE_TYPE = new TestPgDistanceType("CUSTOM", "<custom>",
+			"custom_ops", "SELECT * CUSTOM ?");
 
 	/**
 	 * Test implementation of {@link PgDistanceType}.
 	 */
-	private static class TestPgDistanceType implements PgDistanceType {
+		private record TestPgDistanceType(String name, String operator, String index,
+										  String similaritySearchSqlTemplate) implements PgDistanceType {
 
-		private final String name;
-
-		private final String operator;
-
-		private final String index;
-
-		private final String similaritySearchSqlTemplate;
-
-		TestPgDistanceType(String name, String operator, String index, String similaritySearchSqlTemplate) {
-			this.name = name;
-			this.operator = operator;
-			this.index = index;
-			this.similaritySearchSqlTemplate = similaritySearchSqlTemplate;
-		}
-
-		@Override
-		public String name() {
-			return this.name;
-		}
-
-		@Override
-		public String operator() {
-			return this.operator;
-		}
-
-		@Override
-		public String index() {
-			return this.index;
-		}
-
-		@Override
-		public String similaritySearchSqlTemplate() {
-			return this.similaritySearchSqlTemplate;
-		}
 
 	}
 
@@ -104,15 +71,14 @@ class PgVectorStoreDistanceTypeTests {
 
 		// When
 		var vectorStore = PgVectorStore.builder(jdbcTemplate, embeddingModel)
-				.distanceType(CUSTOM_DISTANCE_TYPE)
-				.build();
+			.distanceType(CUSTOM_DISTANCE_TYPE)
+			.build();
 
 		// Then
 		assertThat(vectorStore.getDistanceType()).isEqualTo(CUSTOM_DISTANCE_TYPE);
 		assertThat(vectorStore.getDistanceType().operator()).isEqualTo("<custom>");
 		assertThat(vectorStore.getDistanceType().index()).isEqualTo("custom_ops");
 	}
-
 
 	@Test
 	void similaritySearchShouldUseConfiguredDistanceTypeOperator() {
@@ -121,19 +87,14 @@ class PgVectorStoreDistanceTypeTests {
 		var embeddingModel = mock(EmbeddingModel.class);
 		when(embeddingModel.dimensions()).thenReturn(3);
 		when(embeddingModel.embed(anyString())).thenReturn(new float[] { 0.1f, 0.2f, 0.3f });
-		when(jdbcTemplate.query(anyString(), any(RowMapper.class), any(), any(), any(), any()))
-				.thenReturn(List.of());
+		when(jdbcTemplate.query(anyString(), any(RowMapper.class), any(), any(), any(), any())).thenReturn(List.of());
 
 		var vectorStore = PgVectorStore.builder(jdbcTemplate, embeddingModel)
-				.distanceType(CUSTOM_DISTANCE_TYPE)
-				.initializeSchema(false)
-				.build();
+			.distanceType(CUSTOM_DISTANCE_TYPE)
+			.initializeSchema(false)
+			.build();
 
-		var request = SearchRequest.builder()
-				.query("test query")
-				.topK(5)
-				.similarityThresholdAll()
-				.build();
+		var request = SearchRequest.builder().query("test query").topK(5).similarityThresholdAll().build();
 
 		// When
 		vectorStore.doSimilaritySearch(request);
@@ -144,8 +105,7 @@ class PgVectorStoreDistanceTypeTests {
 		String sql = sqlCaptor.getValue();
 
 		// Verify that the custom distance operator is used in the SQL
-		assertThat(sql).contains("SELECT * CUSTOM ?")
-				.doesNotContain("<->","<=>","<#>");
+		assertThat(sql).contains("SELECT * CUSTOM ?").doesNotContain("<->", "<=>", "<#>");
 	}
 
 }

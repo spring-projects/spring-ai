@@ -35,6 +35,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.util.StringUtils;
 
 /**
  * {@link AutoConfiguration Auto-configuration} for PostgreSQL Vector Store.
@@ -86,10 +87,14 @@ public class PgVectorStoreAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public PgDistanceType distanceType(PgVectorStoreProperties properties) {
+		if (!StringUtils.hasText(properties.getDistanceType())) {
+			return PgVectorStore.COSINE_DISTANCE;
+		}
 		return switch (properties.getDistanceType()) {
 			case "EUCLIDEAN_DISTANCE" -> PgVectorStore.EUCLIDEAN_DISTANCE;
 			case "NEGATIVE_INNER_PRODUCT" -> PgVectorStore.NEGATIVE_INNER_PRODUCT;
-			default -> PgVectorStore.COSINE_DISTANCE;
+			case "COSINE_DISTANCE" -> PgVectorStore.COSINE_DISTANCE;
+			default -> throw new IllegalArgumentException("Unsupported distance type: " + properties.getDistanceType());
 		};
 	}
 

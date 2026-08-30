@@ -19,7 +19,9 @@ package org.springframework.ai.vectorstore.pgvector;
 /**
  * Interface representing a distance type for pgvector operations.
  *
- * @author Spring AI Team
+ * @author Martin Grofcik
+ *
+ * @since 2.0.2
  */
 public interface PgDistanceType {
 
