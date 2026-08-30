@@ -153,6 +153,25 @@ public class GoogleGenAiAudioTranscriptionOptions implements AudioTranscriptionO
 	 */
 	private final @Nullable Integer audioChannelCount;
 
+	/**
+	 * Whether to denoise the audio before sending it to the transcription model. May not
+	 * be supported by all models and may have no effect.
+	 */
+	private final @Nullable Boolean denoiseAudio;
+
+	/**
+	 * Signal-to-noise ratio threshold below which audio is considered too quiet and is
+	 * withheld from the transcription model. A value of {@code 0} disables filtering.
+	 * Used with {@link #denoiseAudio}.
+	 */
+	private final @Nullable Float snrThreshold;
+
+	/**
+	 * Custom natural-language instructions that override the default transcription
+	 * instructions (chirp_3 only).
+	 */
+	private final @Nullable String customPrompt;
+
 	protected GoogleGenAiAudioTranscriptionOptions(@Nullable String model, @Nullable String language,
 			@Nullable List<String> languageCodes, @Nullable Boolean enableAutomaticPunctuation,
 			@Nullable Boolean enableSpokenPunctuation, @Nullable Boolean enableSpokenEmojis,
@@ -161,7 +180,8 @@ public class GoogleGenAiAudioTranscriptionOptions implements AudioTranscriptionO
 			@Nullable MultiChannelMode multiChannelMode, @Nullable Boolean enableSpeakerDiarization,
 			@Nullable Integer minSpeakerCount, @Nullable Integer maxSpeakerCount,
 			@Nullable String translationTargetLanguage, @Nullable AudioEncoding encoding,
-			@Nullable Integer sampleRateHertz, @Nullable Integer audioChannelCount) {
+			@Nullable Integer sampleRateHertz, @Nullable Integer audioChannelCount, @Nullable Boolean denoiseAudio,
+			@Nullable Float snrThreshold, @Nullable String customPrompt) {
 		this.model = model;
 		this.language = language;
 		this.languageCodes = Optional.ofNullable(languageCodes).<List<String>>map(ArrayList::new).orElse(null);
@@ -180,6 +200,9 @@ public class GoogleGenAiAudioTranscriptionOptions implements AudioTranscriptionO
 		this.encoding = encoding;
 		this.sampleRateHertz = sampleRateHertz;
 		this.audioChannelCount = audioChannelCount;
+		this.denoiseAudio = denoiseAudio;
+		this.snrThreshold = snrThreshold;
+		this.customPrompt = customPrompt;
 	}
 
 	public static Builder builder() {
@@ -259,6 +282,18 @@ public class GoogleGenAiAudioTranscriptionOptions implements AudioTranscriptionO
 		return this.audioChannelCount;
 	}
 
+	public @Nullable Boolean getDenoiseAudio() {
+		return this.denoiseAudio;
+	}
+
+	public @Nullable Float getSnrThreshold() {
+		return this.snrThreshold;
+	}
+
+	public @Nullable String getCustomPrompt() {
+		return this.customPrompt;
+	}
+
 	@Override
 	public boolean equals(@Nullable Object o) {
 		if (o == null || getClass() != o.getClass()) {
@@ -281,7 +316,10 @@ public class GoogleGenAiAudioTranscriptionOptions implements AudioTranscriptionO
 				&& Objects.equals(this.translationTargetLanguage, that.translationTargetLanguage)
 				&& Objects.equals(this.encoding, that.encoding)
 				&& Objects.equals(this.sampleRateHertz, that.sampleRateHertz)
-				&& Objects.equals(this.audioChannelCount, that.audioChannelCount);
+				&& Objects.equals(this.audioChannelCount, that.audioChannelCount)
+				&& Objects.equals(this.denoiseAudio, that.denoiseAudio)
+				&& Objects.equals(this.snrThreshold, that.snrThreshold)
+				&& Objects.equals(this.customPrompt, that.customPrompt);
 	}
 
 	@Override
@@ -290,7 +328,7 @@ public class GoogleGenAiAudioTranscriptionOptions implements AudioTranscriptionO
 				this.enableSpokenPunctuation, this.enableSpokenEmojis, this.profanityFilter, this.enableWordTimeOffsets,
 				this.enableWordConfidence, this.maxAlternatives, this.multiChannelMode, this.enableSpeakerDiarization,
 				this.minSpeakerCount, this.maxSpeakerCount, this.translationTargetLanguage, this.encoding,
-				this.sampleRateHertz, this.audioChannelCount);
+				this.sampleRateHertz, this.audioChannelCount, this.denoiseAudio, this.snrThreshold, this.customPrompt);
 	}
 
 	public static final class Builder {
@@ -330,6 +368,12 @@ public class GoogleGenAiAudioTranscriptionOptions implements AudioTranscriptionO
 		private @Nullable Integer sampleRateHertz;
 
 		private @Nullable Integer audioChannelCount;
+
+		private @Nullable Boolean denoiseAudio;
+
+		private @Nullable Float snrThreshold;
+
+		private @Nullable String customPrompt;
 
 		private Builder() {
 		}
@@ -388,6 +432,15 @@ public class GoogleGenAiAudioTranscriptionOptions implements AudioTranscriptionO
 			}
 			if (Objects.nonNull(fromOptions.audioChannelCount)) {
 				this.audioChannelCount = fromOptions.audioChannelCount;
+			}
+			if (Objects.nonNull(fromOptions.denoiseAudio)) {
+				this.denoiseAudio = fromOptions.denoiseAudio;
+			}
+			if (Objects.nonNull(fromOptions.snrThreshold)) {
+				this.snrThreshold = fromOptions.snrThreshold;
+			}
+			if (StringUtils.hasText(fromOptions.customPrompt)) {
+				this.customPrompt = fromOptions.customPrompt;
 			}
 			return this;
 		}
@@ -482,12 +535,28 @@ public class GoogleGenAiAudioTranscriptionOptions implements AudioTranscriptionO
 			return this;
 		}
 
+		public Builder denoiseAudio(@Nullable Boolean denoiseAudio) {
+			this.denoiseAudio = denoiseAudio;
+			return this;
+		}
+
+		public Builder snrThreshold(@Nullable Float snrThreshold) {
+			this.snrThreshold = snrThreshold;
+			return this;
+		}
+
+		public Builder customPrompt(@Nullable String customPrompt) {
+			this.customPrompt = customPrompt;
+			return this;
+		}
+
 		public GoogleGenAiAudioTranscriptionOptions build() {
 			return new GoogleGenAiAudioTranscriptionOptions(this.model, this.language, this.languageCodes,
 					this.enableAutomaticPunctuation, this.enableSpokenPunctuation, this.enableSpokenEmojis,
 					this.profanityFilter, this.enableWordTimeOffsets, this.enableWordConfidence, this.maxAlternatives,
 					this.multiChannelMode, this.enableSpeakerDiarization, this.minSpeakerCount, this.maxSpeakerCount,
-					this.translationTargetLanguage, this.encoding, this.sampleRateHertz, this.audioChannelCount);
+					this.translationTargetLanguage, this.encoding, this.sampleRateHertz, this.audioChannelCount,
+					this.denoiseAudio, this.snrThreshold, this.customPrompt);
 		}
 
 	}

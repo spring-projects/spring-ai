@@ -23,6 +23,8 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 
 import com.google.cloud.speech.v2.AutoDetectDecodingConfig;
+import com.google.cloud.speech.v2.CustomPromptConfig;
+import com.google.cloud.speech.v2.DenoiserConfig;
 import com.google.cloud.speech.v2.ExplicitDecodingConfig;
 import com.google.cloud.speech.v2.RecognitionConfig;
 import com.google.cloud.speech.v2.RecognitionFeatures;
@@ -179,6 +181,11 @@ public class GoogleGenAiTranscriptionModel implements TranscriptionModel {
 			configBuilder.setAutoDecodingConfig(AutoDetectDecodingConfig.getDefaultInstance());
 		}
 
+		final DenoiserConfig denoiserConfig = buildDenoiserConfig(options);
+		if (Objects.nonNull(denoiserConfig)) {
+			configBuilder.setDenoiserConfig(denoiserConfig);
+		}
+
 		// Translation is supported by chirp_2 only.
 		if (StringUtils.hasText(options.getTranslationTargetLanguage())) {
 			configBuilder.setTranslationConfig(
@@ -186,6 +193,21 @@ public class GoogleGenAiTranscriptionModel implements TranscriptionModel {
 		}
 
 		return configBuilder.build();
+	}
+
+	private @Nullable static DenoiserConfig buildDenoiserConfig(GoogleGenAiAudioTranscriptionOptions options) {
+		if (Objects.isNull(options.getDenoiseAudio()) && Objects.isNull(options.getSnrThreshold())) {
+			return null;
+		}
+
+		final DenoiserConfig.Builder builder = DenoiserConfig.newBuilder();
+		if (Objects.nonNull(options.getDenoiseAudio())) {
+			builder.setDenoiseAudio(options.getDenoiseAudio());
+		}
+		if (Objects.nonNull(options.getSnrThreshold())) {
+			builder.setSnrThreshold(options.getSnrThreshold());
+		}
+		return builder.build();
 	}
 
 	private static List<String> resolveLanguageCodes(GoogleGenAiAudioTranscriptionOptions options) {
@@ -246,6 +268,12 @@ public class GoogleGenAiTranscriptionModel implements TranscriptionModel {
 				diarizationBuilder.setMaxSpeakerCount(options.getMaxSpeakerCount());
 			}
 			builder.setDiarizationConfig(diarizationBuilder.build());
+			hasFeature = true;
+		}
+		// Custom prompt is supported by chirp_3 only.
+		if (StringUtils.hasText(options.getCustomPrompt())) {
+			builder.setCustomPromptConfig(
+					CustomPromptConfig.newBuilder().setCustomPrompt(options.getCustomPrompt()).build());
 			hasFeature = true;
 		}
 

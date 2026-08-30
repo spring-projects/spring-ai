@@ -72,6 +72,12 @@ public class GoogleGenAiTranscriptionProperties {
 
 	private @Nullable Integer audioChannelCount;
 
+	private @Nullable Boolean denoiseAudio;
+
+	private @Nullable Float snrThreshold;
+
+	private @Nullable String customPrompt;
+
 	public @Nullable String getModel() {
 		return this.model;
 	}
@@ -216,6 +222,30 @@ public class GoogleGenAiTranscriptionProperties {
 		this.audioChannelCount = audioChannelCount;
 	}
 
+	public @Nullable Boolean getDenoiseAudio() {
+		return this.denoiseAudio;
+	}
+
+	public void setDenoiseAudio(@Nullable Boolean denoiseAudio) {
+		this.denoiseAudio = denoiseAudio;
+	}
+
+	public @Nullable Float getSnrThreshold() {
+		return this.snrThreshold;
+	}
+
+	public void setSnrThreshold(@Nullable Float snrThreshold) {
+		this.snrThreshold = snrThreshold;
+	}
+
+	public @Nullable String getCustomPrompt() {
+		return this.customPrompt;
+	}
+
+	public void setCustomPrompt(@Nullable String customPrompt) {
+		this.customPrompt = customPrompt;
+	}
+
 	public GoogleGenAiAudioTranscriptionOptions toOptions() {
 		return GoogleGenAiAudioTranscriptionOptions.builder()
 			.model(this.model)
@@ -236,6 +266,9 @@ public class GoogleGenAiTranscriptionProperties {
 			.encoding(this.encoding)
 			.sampleRateHertz(this.sampleRateHertz)
 			.audioChannelCount(this.audioChannelCount)
+			.denoiseAudio(this.denoiseAudio)
+			.snrThreshold(this.snrThreshold)
+			.customPrompt(this.customPrompt)
 			.build();
 	}
 

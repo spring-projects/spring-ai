@@ -74,7 +74,10 @@ class GoogleGenAiTranscriptionPropertiesTests {
 					"spring.ai.google.genai.transcription.translation-target-language=es-ES",
 					"spring.ai.google.genai.transcription.encoding=LINEAR16",
 					"spring.ai.google.genai.transcription.sample-rate-hertz=16000",
-					"spring.ai.google.genai.transcription.audio-channel-count=2")
+					"spring.ai.google.genai.transcription.audio-channel-count=2",
+					"spring.ai.google.genai.transcription.denoise-audio=true",
+					"spring.ai.google.genai.transcription.snr-threshold=5.0",
+					"spring.ai.google.genai.transcription.custom-prompt=Transcribe verbatim.")
 			.run(context -> {
 				GoogleGenAiTranscriptionProperties props = context.getBean(GoogleGenAiTranscriptionProperties.class);
 				GoogleGenAiAudioTranscriptionOptions options = props.toOptions();
@@ -96,6 +99,9 @@ class GoogleGenAiTranscriptionPropertiesTests {
 				assertThat(options.getEncoding()).isEqualTo(AudioEncoding.LINEAR16);
 				assertThat(options.getSampleRateHertz()).isEqualTo(16000);
 				assertThat(options.getAudioChannelCount()).isEqualTo(2);
+				assertThat(options.getDenoiseAudio()).isTrue();
+				assertThat(options.getSnrThreshold()).isEqualTo(5.0f);
+				assertThat(options.getCustomPrompt()).isEqualTo("Transcribe verbatim.");
 			});
 	}
 
@@ -133,6 +139,9 @@ class GoogleGenAiTranscriptionPropertiesTests {
 		props.setEncoding(AudioEncoding.FLAC);
 		props.setSampleRateHertz(8000);
 		props.setAudioChannelCount(1);
+		props.setDenoiseAudio(true);
+		props.setSnrThreshold(3.5f);
+		props.setCustomPrompt("Include speaker labels.");
 
 		assertThat(props.getModel()).isEqualTo("chirp_2");
 		assertThat(props.getLanguage()).isEqualTo("en-US");
@@ -141,6 +150,9 @@ class GoogleGenAiTranscriptionPropertiesTests {
 		assertThat(props.getEncoding()).isEqualTo(AudioEncoding.FLAC);
 		assertThat(props.getSampleRateHertz()).isEqualTo(8000);
 		assertThat(props.getAudioChannelCount()).isEqualTo(1);
+		assertThat(props.getDenoiseAudio()).isTrue();
+		assertThat(props.getSnrThreshold()).isEqualTo(3.5f);
+		assertThat(props.getCustomPrompt()).isEqualTo("Include speaker labels.");
 	}
 
 	@Configuration

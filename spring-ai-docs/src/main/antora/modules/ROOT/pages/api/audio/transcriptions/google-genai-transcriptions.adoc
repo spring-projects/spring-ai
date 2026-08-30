@@ -2,18 +2,17 @@
 
 Spring AI supports audio transcription with Google Cloud https://cloud.google.com/speech-to-text/v2/docs[Speech-to-Text V2] Chirp models through the `GoogleGenAiTranscriptionModel`, an implementation of the portable `TranscriptionModel` interface.
 
-NOTE: Speech-to-Text V2 is a distinct Google Cloud product from the Gemini Developer API / Vertex AI Gemini endpoints used by the Google GenAI chat, embedding and image models. It is backed by the `com.google.cloud:google-cloud-speech` client library rather than the `com.google.genai` SDK.
+NOTE: Speech-to-Text V2 is a distinct Google Cloud product from the Gemini Developer API / Vertex AI Gemini endpoints used by the Google GenAI chat, embedding and image models. It is backed by the `com.google.cloud:google-cloud-speech` client library rather than the `com.google.genai` SDK. In particular, its `RecognitionConfig`/`RecognitionFeatures` schema is unrelated to `com.google.genai.types.AudioTranscriptionConfig`, which configures input/output audio transcription for Gemini *Live API* sessions (`LiveConnectConfig.inputAudioTranscription`/`outputAudioTranscription`), not standalone Chirp transcription.
 
 == Prerequisites
 
 You will need a Google Cloud project with the Speech-to-Text API enabled.
 
-IMPORTANT: Unlike the Gemini Developer API, Speech-to-Text V2 resource names always embed a Google Cloud project. A `project-id` is therefore *required in every authentication mode*, including API-key mode.
+IMPORTANT: Speech-to-Text V2 does not support API-key authentication; it is authenticated exclusively through Application Default Credentials (ADC) or an explicit service account. Its resource names always embed a Google Cloud project, so `project-id` is *required in every authentication mode*.
 
 Authentication can be provided in one of the following ways:
 
-* *API key*: set `spring.ai.google.genai.transcription.api-key` together with `spring.ai.google.genai.transcription.project-id`.
-* *Application Default Credentials (ADC)*: set only `spring.ai.google.genai.transcription.project-id` (and optionally `location`) and let the client pick up ADC from the environment.
+* *Application Default Credentials (ADC)*: set `spring.ai.google.genai.transcription.project-id` (and optionally `location`) and let the client pick up ADC from the environment (for example, `gcloud auth application-default login`).
 * *Explicit credentials*: point `spring.ai.google.genai.transcription.credentials-uri` at a service account JSON, together with `project-id`.
 
 Speech-to-Text V2 uses location-specific regional endpoints. The `global` location uses `speech.googleapis.com`, and any other location (for example `us` or `eu`) uses `<location>-speech.googleapis.com`. The default location is `global`.
@@ -58,10 +57,9 @@ The prefix `spring.ai.google.genai.transcription` is used as the property prefix
 |====
 | Property | Description | Default
 
-| spring.ai.google.genai.transcription.api-key   | The API key used to authenticate requests. | -
 | spring.ai.google.genai.transcription.project-id | The Google Cloud project ID (required). | -
 | spring.ai.google.genai.transcription.location   | The Speech-to-Text V2 location. | global
-| spring.ai.google.genai.transcription.credentials-uri | Resource URI to a Google Cloud credentials JSON. | -
+| spring.ai.google.genai.transcription.credentials-uri | Resource URI to a Google Cloud credentials JSON. When unset, Application Default Credentials (ADC) are used. | -
 |====
 
 === Enabling and Disabling Transcription Auto-Configuration
@@ -99,12 +97,15 @@ The prefix `spring.ai.google.genai.transcription` is the property prefix that le
 | spring.ai.google.genai.transcription.max-alternatives | Maximum number of recognition hypotheses returned. | -
 | spring.ai.google.genai.transcription.multi-channel-mode | Multi-channel recognition mode (`MULTI_CHANNEL_MODE_UNSPECIFIED`, `SEPARATE_RECOGNITION_PER_CHANNEL`). | -
 | spring.ai.google.genai.transcription.enable-speaker-diarization | Whether to enable speaker diarization (`chirp_3` only). | -
-| spring.ai.google.genai.transcription.min-speaker-count | Minimum number of speakers to detect during diarization. | -
-| spring.ai.google.genai.transcription.max-speaker-count | Maximum number of speakers to detect during diarization. | -
+| spring.ai.google.genai.transcription.min-speaker-count | Minimum number of speakers to detect during diarization. Per the Speech-to-Text V2 API, this value is not currently used; the number of speakers is determined automatically. | -
+| spring.ai.google.genai.transcription.max-speaker-count | Maximum number of speakers to detect during diarization. Per the Speech-to-Text V2 API, this value is not currently used; the number of speakers is determined automatically. | -
 | spring.ai.google.genai.transcription.translation-target-language | Target BCP-47 language code for translation (`chirp_2` only). | -
 | spring.ai.google.genai.transcription.encoding | Explicit audio encoding (`LINEAR16`, `MULAW`, `ALAW`, `AMR`, `AMR_WB`, `FLAC`, `MP3`, `OGG_OPUS`, `WEBM_OPUS`, `MP4_AAC`, `M4A_AAC`, `MOV_AAC`). When unset the encoding is auto-detected. | -
 | spring.ai.google.genai.transcription.sample-rate-hertz | Sample rate in hertz (used with explicit decoding). | -
 | spring.ai.google.genai.transcription.audio-channel-count | Number of channels in the audio data (used with explicit decoding). | -
+| spring.ai.google.genai.transcription.denoise-audio | Whether to denoise the audio before sending it to the transcription model. May not be supported by all models and may have no effect. | -
+| spring.ai.google.genai.transcription.snr-threshold | Signal-to-noise ratio threshold below which audio is considered too quiet and is withheld from the transcription model. A value of `0` disables filtering. Used with `denoise-audio`. | -
+| spring.ai.google.genai.transcription.custom-prompt | Custom natural-language instructions that override the default transcription instructions (`chirp_3` only). | -
 |====
 
 == Model Selection
@@ -203,7 +204,6 @@ Next, create a `GoogleGenAiTranscriptionModel`:
 var connectionDetails = GoogleGenAiTranscriptionConnectionDetails.builder()
     .projectId("YOUR_PROJECT_ID")
     .location("global")
-    .apiKey(System.getenv("GOOGLE_API_KEY"))
     .build();
 
 var options = GoogleGenAiAudioTranscriptionOptions.builder()

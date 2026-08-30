@@ -59,6 +59,9 @@ class GoogleGenAiAudioTranscriptionOptionsTests {
 			.encoding(AudioEncoding.LINEAR16)
 			.sampleRateHertz(16000)
 			.audioChannelCount(2)
+			.denoiseAudio(true)
+			.snrThreshold(5.0f)
+			.customPrompt("Transcribe verbatim, including filler words.")
 			.build();
 
 		assertThat(options.getModel()).isEqualTo("chirp_3");
@@ -79,6 +82,9 @@ class GoogleGenAiAudioTranscriptionOptionsTests {
 		assertThat(options.getEncoding()).isEqualTo(AudioEncoding.LINEAR16);
 		assertThat(options.getSampleRateHertz()).isEqualTo(16000);
 		assertThat(options.getAudioChannelCount()).isEqualTo(2);
+		assertThat(options.getDenoiseAudio()).isTrue();
+		assertThat(options.getSnrThreshold()).isEqualTo(5.0f);
+		assertThat(options.getCustomPrompt()).isEqualTo("Transcribe verbatim, including filler words.");
 	}
 
 	@Test
