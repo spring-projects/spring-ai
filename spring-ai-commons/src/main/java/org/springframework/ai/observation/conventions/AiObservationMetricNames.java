@@ -34,6 +34,10 @@ public enum AiObservationMetricNames {
 	 */
 	OPERATION_DURATION("gen_ai.client.operation.duration"),
 	/**
+	 * The time to the first chunk of a streaming AI operation.
+	 */
+	OPERATION_TIME_TO_FIRST_CHUNK("gen_ai.client.operation.time_to_first_chunk"),
+	/**
 	 * The number of AI operations.
 	 */
 	TOKEN_USAGE("gen_ai.client.token.usage");
