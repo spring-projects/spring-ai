@@ -36,7 +36,7 @@ import static org.mockito.Mockito.*;
  */
 class PgVectorStoreDistanceTypeTests {
 
-	public static final TestPgDistanceType CUSTOM_DISTANCE_TYPE = new TestPgDistanceType("CUSTOM", "<custom>",
+	private static final TestPgDistanceType CUSTOM_DISTANCE_TYPE = new TestPgDistanceType("CUSTOM", "<custom>",
 			"custom_ops", "SELECT * CUSTOM ?");
 
 	/**
