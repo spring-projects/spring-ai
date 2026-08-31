@@ -21,6 +21,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.google.genai.tts.GoogleGenAiAudioSpeechOptions;
+import org.springframework.ai.google.genai.tts.GoogleGenAiAudioSpeechOptions.MultiSpeakerTurn;
 import org.springframework.ai.google.genai.tts.GoogleGenAiAudioSpeechOptions.SpeakerVoiceConfig;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -141,6 +142,21 @@ class GoogleGenAiTextToSpeechPropertiesTests {
 				assertThat(options.getCustomPronunciations().get(0).phrase()).isEqualTo("apple");
 				assertThat(options.getCustomPronunciations().get(0).phoneticEncoding())
 					.isEqualTo(GoogleGenAiAudioSpeechOptions.PhoneticEncoding.IPA);
+			});
+	}
+
+	@Test
+	void multiSpeakerTurnsBinding() {
+		this.contextRunner
+			.withPropertyValues("spring.ai.google.genai.tts.multi-speaker-turns[0].speaker=Sam",
+					"spring.ai.google.genai.tts.multi-speaker-turns[0].text=How's it going?",
+					"spring.ai.google.genai.tts.multi-speaker-turns[1].speaker=Bob",
+					"spring.ai.google.genai.tts.multi-speaker-turns[1].text=Not too bad.")
+			.run(context -> {
+				GoogleGenAiTextToSpeechProperties props = context.getBean(GoogleGenAiTextToSpeechProperties.class);
+				List<MultiSpeakerTurn> turns = props.toOptions().getMultiSpeakerTurns();
+				assertThat(turns).containsExactly(new MultiSpeakerTurn("Sam", "How's it going?"),
+						new MultiSpeakerTurn("Bob", "Not too bad."));
 			});
 	}
 

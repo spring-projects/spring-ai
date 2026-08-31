@@ -34,7 +34,8 @@ import org.springframework.ai.audio.tts.TextToSpeechOptions;
  * {@link #getStylePrompt() stylePrompt} to {@code input.prompt},
  * {@link #getSpeakerVoiceConfigs() speakerVoiceConfigs} to
  * {@code voice.multiSpeakerVoiceConfig.speakerVoiceConfigs}, {@link #getSsml()
- * ssml}/{@link #getMarkup() markup} to {@code input.ssml}/ {@code input.markup},
+ * ssml}/{@link #getMarkup() markup}/{@link #getMultiSpeakerTurns() multiSpeakerTurns} to
+ * {@code input.ssml}/{@code input.markup}/ {@code input.multiSpeakerMarkup.turns},
  * {@link #getCustomPronunciations() customPronunciations} to
  * {@code input.customPronunciations}, {@link #getSsmlGender() ssmlGender} to
  * {@code voice.ssmlGender}, {@link #getCustomVoiceModel() customVoiceModel} to
@@ -105,6 +106,14 @@ public class GoogleGenAiAudioSpeechOptions implements TextToSpeechOptions {
 	 * the {@code TextToSpeechPrompt}.
 	 */
 	private @Nullable String markup;
+
+	/**
+	 * The multi-speaker turns to be synthesized (maps to
+	 * {@code input.multiSpeakerMarkup.turns}). Mutually exclusive with {@link #ssml} and
+	 * {@link #markup}; when set, this takes precedence over the plain text carried by the
+	 * {@code TextToSpeechPrompt}.
+	 */
+	private @Nullable List<MultiSpeakerTurn> multiSpeakerTurns;
 
 	/**
 	 * Pronunciation customizations applied to the input (maps to
@@ -232,6 +241,14 @@ public class GoogleGenAiAudioSpeechOptions implements TextToSpeechOptions {
 		this.markup = markup;
 	}
 
+	public @Nullable List<MultiSpeakerTurn> getMultiSpeakerTurns() {
+		return this.multiSpeakerTurns;
+	}
+
+	public void setMultiSpeakerTurns(@Nullable List<MultiSpeakerTurn> multiSpeakerTurns) {
+		this.multiSpeakerTurns = multiSpeakerTurns;
+	}
+
 	public @Nullable List<CustomPronunciation> getCustomPronunciations() {
 		return this.customPronunciations;
 	}
@@ -341,6 +358,7 @@ public class GoogleGenAiAudioSpeechOptions implements TextToSpeechOptions {
 				&& Objects.equals(this.stylePrompt, that.stylePrompt)
 				&& Objects.equals(this.speakerVoiceConfigs, that.speakerVoiceConfigs)
 				&& Objects.equals(this.ssml, that.ssml) && Objects.equals(this.markup, that.markup)
+				&& Objects.equals(this.multiSpeakerTurns, that.multiSpeakerTurns)
 				&& Objects.equals(this.customPronunciations, that.customPronunciations)
 				&& this.ssmlGender == that.ssmlGender && Objects.equals(this.customVoiceModel, that.customVoiceModel)
 				&& Objects.equals(this.voiceCloningKey, that.voiceCloningKey)
@@ -353,9 +371,9 @@ public class GoogleGenAiAudioSpeechOptions implements TextToSpeechOptions {
 	@Override
 	public int hashCode() {
 		return Objects.hash(this.model, this.voiceName, this.languageCode, this.stylePrompt, this.speakerVoiceConfigs,
-				this.ssml, this.markup, this.customPronunciations, this.ssmlGender, this.customVoiceModel,
-				this.voiceCloningKey, this.audioEncoding, this.speed, this.pitch, this.volumeGainDb,
-				this.sampleRateHertz, this.effectsProfileIds);
+				this.ssml, this.markup, this.multiSpeakerTurns, this.customPronunciations, this.ssmlGender,
+				this.customVoiceModel, this.voiceCloningKey, this.audioEncoding, this.speed, this.pitch,
+				this.volumeGainDb, this.sampleRateHertz, this.effectsProfileIds);
 	}
 
 	@Override
@@ -363,11 +381,12 @@ public class GoogleGenAiAudioSpeechOptions implements TextToSpeechOptions {
 		return "GoogleGenAiAudioSpeechOptions{" + "model='" + this.model + '\'' + ", voiceName='" + this.voiceName
 				+ '\'' + ", languageCode='" + this.languageCode + '\'' + ", stylePrompt='" + this.stylePrompt + '\''
 				+ ", speakerVoiceConfigs=" + this.speakerVoiceConfigs + ", ssml='" + this.ssml + '\'' + ", markup='"
-				+ this.markup + '\'' + ", customPronunciations=" + this.customPronunciations + ", ssmlGender="
-				+ this.ssmlGender + ", customVoiceModel='" + this.customVoiceModel + '\'' + ", voiceCloningKey='"
-				+ this.voiceCloningKey + '\'' + ", audioEncoding=" + this.audioEncoding + ", speed=" + this.speed
-				+ ", pitch=" + this.pitch + ", volumeGainDb=" + this.volumeGainDb + ", sampleRateHertz="
-				+ this.sampleRateHertz + ", effectsProfileIds=" + this.effectsProfileIds + '}';
+				+ this.markup + '\'' + ", multiSpeakerTurns=" + this.multiSpeakerTurns + ", customPronunciations="
+				+ this.customPronunciations + ", ssmlGender=" + this.ssmlGender + ", customVoiceModel='"
+				+ this.customVoiceModel + '\'' + ", voiceCloningKey='" + this.voiceCloningKey + '\''
+				+ ", audioEncoding=" + this.audioEncoding + ", speed=" + this.speed + ", pitch=" + this.pitch
+				+ ", volumeGainDb=" + this.volumeGainDb + ", sampleRateHertz=" + this.sampleRateHertz
+				+ ", effectsProfileIds=" + this.effectsProfileIds + '}';
 	}
 
 	/**
@@ -378,6 +397,16 @@ public class GoogleGenAiAudioSpeechOptions implements TextToSpeechOptions {
 	 * {@code "Kore"})
 	 */
 	public record SpeakerVoiceConfig(String speakerAlias, String speakerId) {
+	}
+
+	/**
+	 * A single speaker turn used for multi-speaker synthesis input (maps to
+	 * {@code input.multiSpeakerMarkup.turns}).
+	 *
+	 * @param speaker the speaker of the turn, for example {@code "O"} or {@code "Q"}
+	 * @param text the text to speak for that turn
+	 */
+	public record MultiSpeakerTurn(String speaker, String text) {
 	}
 
 	/**
@@ -536,6 +565,11 @@ public class GoogleGenAiAudioSpeechOptions implements TextToSpeechOptions {
 
 		public Builder markup(@Nullable String markup) {
 			this.options.setMarkup(markup);
+			return this;
+		}
+
+		public Builder multiSpeakerTurns(@Nullable List<MultiSpeakerTurn> multiSpeakerTurns) {
+			this.options.setMultiSpeakerTurns(multiSpeakerTurns);
 			return this;
 		}
 

@@ -16,6 +16,9 @@
 
 package org.springframework.ai.model.google.genai.autoconfigure.tts;
 
+import io.micrometer.observation.ObservationRegistry;
+
+import org.springframework.ai.audio.tts.observation.TextToSpeechModelObservationConvention;
 import org.springframework.ai.google.genai.tts.GoogleGenAiTextToSpeechConnectionDetails;
 import org.springframework.ai.google.genai.tts.GoogleGenAiTextToSpeechModel;
 import org.springframework.ai.model.SpringAIModelProperties;
@@ -47,13 +50,19 @@ public class GoogleGenAiTextToSpeechAutoConfiguration {
 	@ConditionalOnMissingBean
 	public GoogleGenAiTextToSpeechModel googleGenAiTextToSpeechModel(
 			GoogleGenAiTextToSpeechConnectionDetails connectionDetails,
-			GoogleGenAiTextToSpeechProperties speechProperties, ObjectProvider<RetryTemplate> retryTemplate) {
+			GoogleGenAiTextToSpeechProperties speechProperties, ObjectProvider<RetryTemplate> retryTemplate,
+			ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<TextToSpeechModelObservationConvention> observationConvention) {
 
-		return GoogleGenAiTextToSpeechModel.builder()
+		final GoogleGenAiTextToSpeechModel textToSpeechModel = GoogleGenAiTextToSpeechModel.builder()
 			.connectionDetails(connectionDetails)
 			.options(speechProperties.toOptions())
 			.retryTemplate(retryTemplate.getIfUnique(() -> RetryUtils.DEFAULT_RETRY_TEMPLATE))
 			.build();
+
+		observationConvention.ifAvailable(textToSpeechModel::setObservationConvention);
+
+		return textToSpeechModel;
 	}
 
 }

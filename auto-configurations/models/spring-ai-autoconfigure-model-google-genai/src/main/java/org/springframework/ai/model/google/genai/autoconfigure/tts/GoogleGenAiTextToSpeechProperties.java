@@ -23,6 +23,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.ai.google.genai.tts.GoogleGenAiAudioSpeechOptions;
 import org.springframework.ai.google.genai.tts.GoogleGenAiAudioSpeechOptions.AudioEncoding;
 import org.springframework.ai.google.genai.tts.GoogleGenAiAudioSpeechOptions.CustomPronunciation;
+import org.springframework.ai.google.genai.tts.GoogleGenAiAudioSpeechOptions.MultiSpeakerTurn;
 import org.springframework.ai.google.genai.tts.GoogleGenAiAudioSpeechOptions.SpeakerVoiceConfig;
 import org.springframework.ai.google.genai.tts.GoogleGenAiAudioSpeechOptions.SsmlVoiceGender;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -79,6 +80,13 @@ public class GoogleGenAiTextToSpeechProperties {
 	 * with {@code ssml}.
 	 */
 	private @Nullable String markup;
+
+	/**
+	 * The multi-speaker turns to be synthesized (maps to
+	 * {@code input.multiSpeakerMarkup.turns}). Mutually exclusive with {@code ssml} and
+	 * {@code markup}.
+	 */
+	private @Nullable List<MultiSpeakerTurn> multiSpeakerTurns;
 
 	/**
 	 * Pronunciation customizations applied to the input (maps to
@@ -193,6 +201,14 @@ public class GoogleGenAiTextToSpeechProperties {
 		this.markup = markup;
 	}
 
+	public @Nullable List<MultiSpeakerTurn> getMultiSpeakerTurns() {
+		return this.multiSpeakerTurns;
+	}
+
+	public void setMultiSpeakerTurns(@Nullable List<MultiSpeakerTurn> multiSpeakerTurns) {
+		this.multiSpeakerTurns = multiSpeakerTurns;
+	}
+
 	public @Nullable List<CustomPronunciation> getCustomPronunciations() {
 		return this.customPronunciations;
 	}
@@ -282,6 +298,7 @@ public class GoogleGenAiTextToSpeechProperties {
 			.speakerVoiceConfigs(this.speakerVoiceConfigs)
 			.ssml(this.ssml)
 			.markup(this.markup)
+			.multiSpeakerTurns(this.multiSpeakerTurns)
 			.customPronunciations(this.customPronunciations)
 			.ssmlGender(this.ssmlGender)
 			.customVoiceModel(this.customVoiceModel)

@@ -18,11 +18,13 @@ package org.springframework.ai.google.genai.tts;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 import com.google.cloud.texttospeech.v1.AudioConfig;
 import com.google.cloud.texttospeech.v1.CustomPronunciationParams;
 import com.google.cloud.texttospeech.v1.CustomPronunciations;
 import com.google.cloud.texttospeech.v1.CustomVoiceParams;
+import com.google.cloud.texttospeech.v1.MultiSpeakerMarkup;
 import com.google.cloud.texttospeech.v1.MultiSpeakerVoiceConfig;
 import com.google.cloud.texttospeech.v1.MultispeakerPrebuiltVoice;
 import com.google.cloud.texttospeech.v1.SynthesisInput;
@@ -111,11 +113,12 @@ public class GoogleGenAiTextToSpeechModel implements TextToSpeechModel {
 			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 					this.observationRegistry)
 			.observe(() -> {
-				final String text = textToSpeechPrompt.getInstructions().getText();
-				Assert.hasText(text, "TextToSpeechPrompt must contain non-empty text");
-
 				final GoogleGenAiAudioSpeechOptions options = (GoogleGenAiAudioSpeechOptions) textToSpeechPrompt
 					.getOptions();
+				Assert.notNull(options, "Options must not be null");
+
+				final String text = textToSpeechPrompt.getInstructions().getText();
+				Assert.hasText(text, "TextToSpeechPrompt must contain non-empty text");
 
 				final SynthesisInput input = createSynthesisInput(text, options);
 				final VoiceSelectionParams voice = createVoiceSelectionParams(options);
@@ -145,16 +148,16 @@ public class GoogleGenAiTextToSpeechModel implements TextToSpeechModel {
 	}
 
 	private SynthesisInput createSynthesisInput(String text, GoogleGenAiAudioSpeechOptions options) {
-		boolean hasSsml = StringUtils.hasText(options.getSsml());
-		boolean hasMarkup = StringUtils.hasText(options.getMarkup());
-		Assert.state(!(hasSsml && hasMarkup), "'ssml' and 'markup' are mutually exclusive; set only one of them");
-
-		SynthesisInput.Builder inputBuilder = SynthesisInput.newBuilder();
-		if (hasSsml) {
+		final SynthesisInput.Builder inputBuilder = SynthesisInput.newBuilder();
+		if (StringUtils.hasText(options.getSsml())) {
 			inputBuilder.setSsml(options.getSsml());
 		}
-		else if (hasMarkup) {
+		else if (StringUtils.hasText(options.getMarkup())) {
 			inputBuilder.setMarkup(options.getMarkup());
+		}
+		else if (!CollectionUtils.isEmpty(options.getMultiSpeakerTurns())) {
+			inputBuilder.setMultiSpeakerMarkup(
+					createMultiSpeakerMarkup(Optional.ofNullable(options.getMultiSpeakerTurns()).orElse(List.of())));
 		}
 		else {
 			inputBuilder.setText(text);
@@ -168,37 +171,38 @@ public class GoogleGenAiTextToSpeechModel implements TextToSpeechModel {
 		return inputBuilder.build();
 	}
 
+	private MultiSpeakerMarkup createMultiSpeakerMarkup(
+			List<GoogleGenAiAudioSpeechOptions.MultiSpeakerTurn> multiSpeakerTurns) {
+		final MultiSpeakerMarkup.Builder builder = MultiSpeakerMarkup.newBuilder();
+		builder.addAllTurns(multiSpeakerTurns.stream()
+			.map(turn -> MultiSpeakerMarkup.Turn.newBuilder().setSpeaker(turn.speaker()).setText(turn.text()).build())
+			.toList());
+		return builder.build();
+	}
+
 	private CustomPronunciations createCustomPronunciations(
 			List<GoogleGenAiAudioSpeechOptions.CustomPronunciation> customPronunciations) {
-		CustomPronunciations.Builder builder = CustomPronunciations.newBuilder();
-		for (GoogleGenAiAudioSpeechOptions.CustomPronunciation customPronunciation : customPronunciations) {
-			CustomPronunciationParams.Builder paramsBuilder = CustomPronunciationParams.newBuilder()
+		final CustomPronunciations.Builder builder = CustomPronunciations.newBuilder();
+		builder.addAllPronunciations(customPronunciations.stream()
+			.map(customPronunciation -> CustomPronunciationParams.newBuilder()
 				.setPhrase(customPronunciation.phrase())
-				.setPronunciation(customPronunciation.pronunciation());
-			if (customPronunciation.phoneticEncoding() != null) {
-				paramsBuilder.setPhoneticEncoding(CustomPronunciationParams.PhoneticEncoding
-					.valueOf("PHONETIC_ENCODING_" + customPronunciation.phoneticEncoding().name()));
-			}
-			builder.addPronunciations(paramsBuilder.build());
-		}
+				.setPronunciation(customPronunciation.pronunciation())
+				.setPhoneticEncoding(CustomPronunciationParams.PhoneticEncoding
+					.valueOf("PHONETIC_ENCODING_" + customPronunciation.phoneticEncoding().name()))
+				.build())
+			.toList());
 		return builder.build();
 	}
 
 	private VoiceSelectionParams createVoiceSelectionParams(GoogleGenAiAudioSpeechOptions options) {
-		boolean hasVoiceName = StringUtils.hasText(options.getVoiceName());
-		List<GoogleGenAiAudioSpeechOptions.SpeakerVoiceConfig> speakerVoiceConfigs = options.getSpeakerVoiceConfigs();
-		boolean hasSpeakerVoiceConfigs = !CollectionUtils.isEmpty(speakerVoiceConfigs);
-		Assert.state(!(hasVoiceName && hasSpeakerVoiceConfigs),
-				"'voiceName' and 'speakerVoiceConfigs' are mutually exclusive; set only one of them");
-
-		VoiceSelectionParams.Builder voiceBuilder = VoiceSelectionParams.newBuilder();
+		final VoiceSelectionParams.Builder voiceBuilder = VoiceSelectionParams.newBuilder();
 		if (StringUtils.hasText(options.getModel())) {
 			voiceBuilder.setModelName(options.getModel());
 		}
 		if (StringUtils.hasText(options.getLanguageCode())) {
 			voiceBuilder.setLanguageCode(options.getLanguageCode());
 		}
-		if (options.getSsmlGender() != null) {
+		if (Objects.nonNull(options.getSsmlGender())) {
 			voiceBuilder.setSsmlGender(
 					com.google.cloud.texttospeech.v1.SsmlVoiceGender.valueOf(options.getSsmlGender().name()));
 		}
@@ -208,42 +212,46 @@ public class GoogleGenAiTextToSpeechModel implements TextToSpeechModel {
 		if (StringUtils.hasText(options.getVoiceCloningKey())) {
 			voiceBuilder.setVoiceClone(VoiceCloneParams.newBuilder().setVoiceCloningKey(options.getVoiceCloningKey()));
 		}
-		if (hasVoiceName) {
+		if (StringUtils.hasText(options.getVoiceName())) {
 			voiceBuilder.setName(options.getVoiceName());
 		}
-		else if (speakerVoiceConfigs != null && hasSpeakerVoiceConfigs) {
+
+		final List<GoogleGenAiAudioSpeechOptions.SpeakerVoiceConfig> speakerVoiceConfigs = options
+			.getSpeakerVoiceConfigs();
+		if (Objects.nonNull(speakerVoiceConfigs) && !CollectionUtils.isEmpty(speakerVoiceConfigs)) {
 			voiceBuilder.setMultiSpeakerVoiceConfig(createMultiSpeakerVoiceConfig(speakerVoiceConfigs));
 		}
+
 		return voiceBuilder.build();
 	}
 
 	private MultiSpeakerVoiceConfig createMultiSpeakerVoiceConfig(
 			List<GoogleGenAiAudioSpeechOptions.SpeakerVoiceConfig> speakerVoiceConfigs) {
-		MultiSpeakerVoiceConfig.Builder builder = MultiSpeakerVoiceConfig.newBuilder();
-		for (GoogleGenAiAudioSpeechOptions.SpeakerVoiceConfig config : speakerVoiceConfigs) {
-			builder.addSpeakerVoiceConfigs(MultispeakerPrebuiltVoice.newBuilder()
+		final MultiSpeakerVoiceConfig.Builder builder = MultiSpeakerVoiceConfig.newBuilder();
+		builder.addAllSpeakerVoiceConfigs(speakerVoiceConfigs.stream()
+			.map(config -> MultispeakerPrebuiltVoice.newBuilder()
 				.setSpeakerAlias(config.speakerAlias())
 				.setSpeakerId(config.speakerId())
-				.build());
-		}
+				.build())
+			.toList());
 		return builder.build();
 	}
 
 	private AudioConfig createAudioConfig(GoogleGenAiAudioSpeechOptions options) {
-		GoogleGenAiAudioSpeechOptions.AudioEncoding audioEncoding = options.getAudioEncoding() != null
+		final GoogleGenAiAudioSpeechOptions.AudioEncoding audioEncoding = Objects.nonNull(options.getAudioEncoding())
 				? options.getAudioEncoding() : GoogleGenAiAudioSpeechOptions.DEFAULT_AUDIO_ENCODING;
-		AudioConfig.Builder audioConfigBuilder = AudioConfig.newBuilder()
+		final AudioConfig.Builder audioConfigBuilder = AudioConfig.newBuilder()
 			.setAudioEncoding(com.google.cloud.texttospeech.v1.AudioEncoding.valueOf(audioEncoding.name()));
-		if (options.getSpeed() != null) {
+		if (Objects.nonNull(options.getSpeed())) {
 			audioConfigBuilder.setSpeakingRate(options.getSpeed());
 		}
-		if (options.getPitch() != null) {
+		if (Objects.nonNull(options.getPitch())) {
 			audioConfigBuilder.setPitch(options.getPitch());
 		}
-		if (options.getVolumeGainDb() != null) {
+		if (Objects.nonNull(options.getVolumeGainDb())) {
 			audioConfigBuilder.setVolumeGainDb(options.getVolumeGainDb());
 		}
-		if (options.getSampleRateHertz() != null) {
+		if (Objects.nonNull(options.getSampleRateHertz())) {
 			audioConfigBuilder.setSampleRateHertz(options.getSampleRateHertz());
 		}
 		if (!CollectionUtils.isEmpty(options.getEffectsProfileIds())) {
@@ -272,6 +280,8 @@ public class GoogleGenAiTextToSpeechModel implements TextToSpeechModel {
 							this.defaultOptions.getSpeakerVoiceConfigs()))
 					.ssml(ModelOptionsUtils.mergeOption(googleOptions.getSsml(), this.defaultOptions.getSsml()))
 					.markup(ModelOptionsUtils.mergeOption(googleOptions.getMarkup(), this.defaultOptions.getMarkup()))
+					.multiSpeakerTurns(ModelOptionsUtils.mergeOption(googleOptions.getMultiSpeakerTurns(),
+							this.defaultOptions.getMultiSpeakerTurns()))
 					.customPronunciations(ModelOptionsUtils.mergeOption(googleOptions.getCustomPronunciations(),
 							this.defaultOptions.getCustomPronunciations()))
 					.ssmlGender(ModelOptionsUtils.mergeOption(googleOptions.getSsmlGender(),

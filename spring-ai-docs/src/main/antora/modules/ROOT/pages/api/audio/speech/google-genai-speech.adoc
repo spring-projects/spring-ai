@@ -90,8 +90,9 @@ The prefix `spring.ai.google.genai.tts` is the property prefix that lets you con
 | spring.ai.google.genai.tts.language-code | The BCP-47 language/locale code for the speech synthesis (maps to `voice.languageCode`), for example `en-us`. | -
 | spring.ai.google.genai.tts.style-prompt | Optional natural-language styling instructions describing how the text should be spoken, for example "Say the following in a curious way." (maps to `input.prompt`). This is separate from the text passed in the `TextToSpeechPrompt`, which maps to `input.text`. | -
 | spring.ai.google.genai.tts.speaker-voice-configs | List of speaker-alias-to-voice mappings for multi-speaker synthesis (maps to `voice.multiSpeakerVoiceConfig.speakerVoiceConfigs`). Each entry pairs a `speakerAlias` (matching the speaker label used in the text) with a `speakerId` (a voice name). Not supported by `gemini-2.5-flash-lite-preview-tts`. Mutually exclusive with `voice-name`. | -
-| spring.ai.google.genai.tts.ssml | An SSML document to synthesize (maps to `input.ssml`), used instead of the plain text passed in the `TextToSpeechPrompt`. Mutually exclusive with `markup`. | -
-| spring.ai.google.genai.tts.markup | Markup for Chirp 3: HD voices (maps to `input.markup`), used instead of the plain text passed in the `TextToSpeechPrompt`. Mutually exclusive with `ssml`. | -
+| spring.ai.google.genai.tts.ssml | An SSML document to synthesize (maps to `input.ssml`), used instead of the plain text passed in the `TextToSpeechPrompt`. Mutually exclusive with `markup` and `multi-speaker-turns`. | -
+| spring.ai.google.genai.tts.markup | Markup for Chirp 3: HD voices (maps to `input.markup`), used instead of the plain text passed in the `TextToSpeechPrompt`. Mutually exclusive with `ssml` and `multi-speaker-turns`. | -
+| spring.ai.google.genai.tts.multi-speaker-turns | List of multi-speaker turns to synthesize (maps to `input.multiSpeakerMarkup.turns`), used instead of the plain text passed in the `TextToSpeechPrompt`. Each entry pairs a `speaker` (matching a speaker alias from `speaker-voice-configs`) with the `text` to speak for that turn. Mutually exclusive with `ssml` and `markup`. | -
 | spring.ai.google.genai.tts.custom-pronunciations | List of pronunciation customizations applied to the input (maps to `input.customPronunciations`). Each entry pairs a `phrase`, a `phoneticEncoding` (one of `IPA`, `X_SAMPA`, `JAPANESE_YOMIGANA`, `PINYIN`) and a `pronunciation`. | -
 | spring.ai.google.genai.tts.ssml-gender | The preferred gender of the voice (maps to `voice.ssmlGender`). One of `MALE`, `FEMALE`, `NEUTRAL`. | -
 | spring.ai.google.genai.tts.custom-voice-model | The name of the AutoML model that synthesizes a custom voice (maps to `voice.customVoice.model`). | -
@@ -151,6 +152,24 @@ String text = """
         """;
 
 TextToSpeechPrompt ttsRequest = new TextToSpeechPrompt(text, ttsOptions);
+TextToSpeechResponse response = ttsModel.call(ttsRequest);
+----
+
+Multi-speaker input can also be provided directly through `multiSpeakerTurns`, instead of relying on the model to parse speaker labels from plain text:
+
+[source,java]
+----
+GoogleGenAiAudioSpeechOptions ttsOptions = GoogleGenAiAudioSpeechOptions.builder()
+    .model("gemini-2.5-flash-tts")
+    .speakerVoiceConfigs(List.of(
+        new SpeakerVoiceConfig("Sam", "Kore"),
+        new SpeakerVoiceConfig("Bob", "Charon")))
+    .multiSpeakerTurns(List.of(
+        new MultiSpeakerTurn("Sam", "How's it going today?"),
+        new MultiSpeakerTurn("Bob", "Not too bad, how about you?")))
+    .build();
+
+TextToSpeechPrompt ttsRequest = new TextToSpeechPrompt("ignored, turns take precedence", ttsOptions);
 TextToSpeechResponse response = ttsModel.call(ttsRequest);
 ----
 
