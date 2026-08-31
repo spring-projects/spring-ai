@@ -35,6 +35,8 @@ class GoogleGenAiAudioSpeechOptionsTests {
 	void builderSetsAllProperties() {
 		List<SpeakerVoiceConfig> speakers = List.of(new SpeakerVoiceConfig("Sam", "Kore"),
 				new SpeakerVoiceConfig("Bob", "Charon"));
+		List<GoogleGenAiAudioSpeechOptions.MultiSpeakerTurn> turns = List
+			.of(new GoogleGenAiAudioSpeechOptions.MultiSpeakerTurn("Sam", "Hi"));
 		List<GoogleGenAiAudioSpeechOptions.CustomPronunciation> pronunciations = List
 			.of(new GoogleGenAiAudioSpeechOptions.CustomPronunciation("apple",
 					GoogleGenAiAudioSpeechOptions.PhoneticEncoding.IPA, "ˈæpəl"));
@@ -47,6 +49,7 @@ class GoogleGenAiAudioSpeechOptionsTests {
 			.speakerVoiceConfigs(speakers)
 			.ssml("<speak>Hi</speak>")
 			.markup("Hi")
+			.multiSpeakerTurns(turns)
 			.customPronunciations(pronunciations)
 			.ssmlGender(GoogleGenAiAudioSpeechOptions.SsmlVoiceGender.FEMALE)
 			.customVoiceModel("custom-model")
@@ -67,6 +70,7 @@ class GoogleGenAiAudioSpeechOptionsTests {
 		assertThat(options.getSpeakerVoiceConfigs()).isEqualTo(speakers);
 		assertThat(options.getSsml()).isEqualTo("<speak>Hi</speak>");
 		assertThat(options.getMarkup()).isEqualTo("Hi");
+		assertThat(options.getMultiSpeakerTurns()).isEqualTo(turns);
 		assertThat(options.getCustomPronunciations()).isEqualTo(pronunciations);
 		assertThat(options.getSsmlGender()).isEqualTo(GoogleGenAiAudioSpeechOptions.SsmlVoiceGender.FEMALE);
 		assertThat(options.getCustomVoiceModel()).isEqualTo("custom-model");

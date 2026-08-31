@@ -161,6 +161,42 @@ class GoogleGenAiTextToSpeechModelTests {
 	}
 
 	@Test
+	void ssmlAndMultiSpeakerTurnsAreMutuallyExclusive() {
+		GoogleGenAiAudioSpeechOptions options = GoogleGenAiAudioSpeechOptions.builder()
+			.ssml("<speak>Hi</speak>")
+			.multiSpeakerTurns(List.of(new GoogleGenAiAudioSpeechOptions.MultiSpeakerTurn("Sam", "Hi")))
+			.build();
+		GoogleGenAiTextToSpeechModel model = new GoogleGenAiTextToSpeechModel(this.connectionDetails, options);
+
+		assertThatThrownBy(() -> model.call(new TextToSpeechPrompt("Hi", options)))
+			.isInstanceOf(IllegalStateException.class)
+			.hasMessageContaining("mutually exclusive");
+	}
+
+	@Test
+	void multiSpeakerTurnsMapToInput() {
+		GoogleGenAiAudioSpeechOptions options = GoogleGenAiAudioSpeechOptions.builder()
+			.multiSpeakerTurns(List.of(new GoogleGenAiAudioSpeechOptions.MultiSpeakerTurn("Sam", "How's it going?"),
+					new GoogleGenAiAudioSpeechOptions.MultiSpeakerTurn("Bob", "Not too bad.")))
+			.build();
+		GoogleGenAiTextToSpeechModel model = new GoogleGenAiTextToSpeechModel(this.connectionDetails, options);
+
+		model.call(new TextToSpeechPrompt("Hi", options));
+
+		ArgumentCaptor<SynthesisInput> inputCaptor = ArgumentCaptor.forClass(SynthesisInput.class);
+		verify(this.client).synthesizeSpeech(inputCaptor.capture(), any(VoiceSelectionParams.class),
+				any(AudioConfig.class));
+
+		SynthesisInput input = inputCaptor.getValue();
+		assertThat(input.getText()).isEmpty();
+		assertThat(input.getMultiSpeakerMarkup().getTurnsList()).hasSize(2);
+		assertThat(input.getMultiSpeakerMarkup().getTurns(0).getSpeaker()).isEqualTo("Sam");
+		assertThat(input.getMultiSpeakerMarkup().getTurns(0).getText()).isEqualTo("How's it going?");
+		assertThat(input.getMultiSpeakerMarkup().getTurns(1).getSpeaker()).isEqualTo("Bob");
+		assertThat(input.getMultiSpeakerMarkup().getTurns(1).getText()).isEqualTo("Not too bad.");
+	}
+
+	@Test
 	void ssmlOverridesPlainTextInput() {
 		GoogleGenAiAudioSpeechOptions options = GoogleGenAiAudioSpeechOptions.builder()
 			.ssml("<speak>Hello</speak>")
