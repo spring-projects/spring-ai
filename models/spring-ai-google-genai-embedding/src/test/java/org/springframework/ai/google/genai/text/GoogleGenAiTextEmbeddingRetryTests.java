@@ -18,6 +18,11 @@ package org.springframework.ai.google.genai.text;
 
 import java.lang.reflect.Field;
 import java.util.List;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import com.google.genai.Client;
 import com.google.genai.Models;
@@ -134,6 +139,50 @@ public class GoogleGenAiTextEmbeddingRetryTests {
 		// Verify that embedContent was called only once (no retries for non-transient
 		// errors)
 		verify(this.mockModels, times(1)).embedContent(anyString(), any(List.class), any(EmbedContentConfig.class));
+	}
+
+	@Test
+	public void unknownModelDimensionsCanBeResolvedConcurrently() throws Exception {
+		ContentEmbedding embedding = mock(ContentEmbedding.class);
+		given(embedding.values()).willReturn(java.util.Optional.of(List.of(1.0f, 2.0f)));
+		given(embedding.statistics()).willReturn(java.util.Optional.empty());
+		EmbedContentResponse response = mock(EmbedContentResponse.class);
+		given(response.embeddings()).willReturn(java.util.Optional.of(List.of(embedding)));
+
+		CountDownLatch embeddingCallsStarted = new CountDownLatch(2);
+		CountDownLatch releaseEmbeddingCalls = new CountDownLatch(1);
+		given(this.mockModels.embedContent(anyString(), any(List.class), any(EmbedContentConfig.class)))
+			.willAnswer(invocation -> {
+				embeddingCallsStarted.countDown();
+				assertThat(embeddingCallsStarted.await(10, TimeUnit.SECONDS)).isTrue();
+				assertThat(releaseEmbeddingCalls.await(10, TimeUnit.SECONDS)).isTrue();
+				return response;
+			});
+
+		GoogleGenAiTextEmbeddingOptions options = GoogleGenAiTextEmbeddingOptions.builder()
+			.model("unknown-model-" + UUID.randomUUID())
+			.build();
+		GoogleGenAiTextEmbeddingModel firstModel = new GoogleGenAiTextEmbeddingModel(this.mockConnectionDetails,
+				options, this.retryTemplate);
+		GoogleGenAiTextEmbeddingModel secondModel = new GoogleGenAiTextEmbeddingModel(this.mockConnectionDetails,
+				options, this.retryTemplate);
+
+		ExecutorService executor = Executors.newFixedThreadPool(2);
+		try {
+			var firstDimensions = executor.submit(() -> firstModel.dimensions());
+			var secondDimensions = executor.submit(() -> secondModel.dimensions());
+
+			assertThat(embeddingCallsStarted.await(10, TimeUnit.SECONDS)).isTrue();
+			releaseEmbeddingCalls.countDown();
+
+			assertThat(firstDimensions.get(10, TimeUnit.SECONDS)).isEqualTo(2);
+			assertThat(secondDimensions.get(10, TimeUnit.SECONDS)).isEqualTo(2);
+		}
+		finally {
+			executor.shutdownNow();
+		}
+
+		verify(this.mockModels, times(2)).embedContent(anyString(), any(List.class), any(EmbedContentConfig.class));
 	}
 
 	private static class TestRetryListener implements RetryListener {
