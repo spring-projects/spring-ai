@@ -270,7 +270,7 @@
 		<com.google.cloud.version>26.83.0</com.google.cloud.version>
 		<com.google.genai.version>1.68.0</com.google.genai.version>
 		<google-cloud-speech.version>4.90.0</google-cloud-speech.version>
-		<google-auth-library.version>1.50.0</google-auth-library.version>
+		<com.google.auth.version>1.51.0</com.google.auth.version>
 		<djl.version>0.36.0</djl.version>
 
 		<!-- Vector store clients -->
@@ -1003,16 +1003,6 @@
 				<groupId>com.networknt</groupId>
 				<artifactId>json-schema-validator</artifactId>
 				<version>${json-schema-validator.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>com.google.auth</groupId>
-				<artifactId>google-auth-library-credentials</artifactId>
-				<version>${google-auth-library.version}</version>
-			</dependency>
-			<dependency>
-				<groupId>com.google.auth</groupId>
-				<artifactId>google-auth-library-oauth2-http</artifactId>
-				<version>${google-auth-library.version}</version>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
