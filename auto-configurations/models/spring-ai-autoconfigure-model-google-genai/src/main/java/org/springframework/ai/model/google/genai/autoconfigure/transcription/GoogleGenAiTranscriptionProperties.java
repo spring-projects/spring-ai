@@ -24,6 +24,7 @@ import org.springframework.ai.google.genai.transcription.GoogleGenAiAudioTranscr
 import org.springframework.ai.google.genai.transcription.GoogleGenAiAudioTranscriptionOptions.AudioEncoding;
 import org.springframework.ai.google.genai.transcription.GoogleGenAiAudioTranscriptionOptions.MultiChannelMode;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.util.Assert;
 
 /**
  * Configuration properties for Google GenAI Transcription.
@@ -77,6 +78,12 @@ public class GoogleGenAiTranscriptionProperties {
 	private @Nullable Float snrThreshold;
 
 	private @Nullable String customPrompt;
+
+	private @Nullable List<PhraseHintProperties> phraseHints;
+
+	private @Nullable Float phraseSetBoost;
+
+	private @Nullable List<TranscriptNormalizationEntryProperties> transcriptNormalizationEntries;
 
 	public @Nullable String getModel() {
 		return this.model;
@@ -246,6 +253,31 @@ public class GoogleGenAiTranscriptionProperties {
 		this.customPrompt = customPrompt;
 	}
 
+	public @Nullable List<PhraseHintProperties> getPhraseHints() {
+		return this.phraseHints;
+	}
+
+	public void setPhraseHints(@Nullable List<PhraseHintProperties> phraseHints) {
+		this.phraseHints = phraseHints;
+	}
+
+	public @Nullable Float getPhraseSetBoost() {
+		return this.phraseSetBoost;
+	}
+
+	public void setPhraseSetBoost(@Nullable Float phraseSetBoost) {
+		this.phraseSetBoost = phraseSetBoost;
+	}
+
+	public @Nullable List<TranscriptNormalizationEntryProperties> getTranscriptNormalizationEntries() {
+		return this.transcriptNormalizationEntries;
+	}
+
+	public void setTranscriptNormalizationEntries(
+			@Nullable List<TranscriptNormalizationEntryProperties> transcriptNormalizationEntries) {
+		this.transcriptNormalizationEntries = transcriptNormalizationEntries;
+	}
+
 	public GoogleGenAiAudioTranscriptionOptions toOptions() {
 		return GoogleGenAiAudioTranscriptionOptions.builder()
 			.model(this.model)
@@ -269,7 +301,103 @@ public class GoogleGenAiTranscriptionProperties {
 			.denoiseAudio(this.denoiseAudio)
 			.snrThreshold(this.snrThreshold)
 			.customPrompt(this.customPrompt)
+			.phraseHints(toPhraseHints(this.phraseHints))
+			.phraseSetBoost(this.phraseSetBoost)
+			.transcriptNormalizationEntries(toTranscriptNormalizationEntries(this.transcriptNormalizationEntries))
 			.build();
+	}
+
+	private static @Nullable List<GoogleGenAiAudioTranscriptionOptions.PhraseHint> toPhraseHints(
+			@Nullable List<PhraseHintProperties> phraseHints) {
+		if (phraseHints == null) {
+			return null;
+		}
+		return phraseHints.stream().map(phraseHint -> {
+			Assert.hasText(phraseHint.getValue(), "Each phrase hint must define a value");
+			String value = phraseHint.getValue();
+			Float boost = phraseHint.getBoost();
+			return boost != null ? GoogleGenAiAudioTranscriptionOptions.PhraseHint.of(value, boost)
+					: GoogleGenAiAudioTranscriptionOptions.PhraseHint.of(value);
+		}).toList();
+	}
+
+	private static @Nullable List<GoogleGenAiAudioTranscriptionOptions.TranscriptNormalizationEntry> toTranscriptNormalizationEntries(
+			@Nullable List<TranscriptNormalizationEntryProperties> transcriptNormalizationEntries) {
+		if (transcriptNormalizationEntries == null) {
+			return null;
+		}
+		return transcriptNormalizationEntries.stream().map(entry -> {
+			Assert.hasText(entry.getSearch(), "Each transcript normalization entry must define a search value");
+			Assert.hasText(entry.getReplace(), "Each transcript normalization entry must define a replace value");
+			return GoogleGenAiAudioTranscriptionOptions.TranscriptNormalizationEntry.of(entry.getSearch(),
+					entry.getReplace(), entry.isCaseSensitive());
+		}).toList();
+	}
+
+	/**
+	 * A phrase to boost during recognition (inline speech adaptation). Mirrors
+	 * {@link GoogleGenAiAudioTranscriptionOptions.PhraseHint}.
+	 */
+	public static class PhraseHintProperties {
+
+		private @Nullable String value;
+
+		private @Nullable Float boost;
+
+		public @Nullable String getValue() {
+			return this.value;
+		}
+
+		public void setValue(@Nullable String value) {
+			this.value = value;
+		}
+
+		public @Nullable Float getBoost() {
+			return this.boost;
+		}
+
+		public void setBoost(@Nullable Float boost) {
+			this.boost = boost;
+		}
+
+	}
+
+	/**
+	 * A search/replace rule applied to the transcript after recognition. Mirrors
+	 * {@link GoogleGenAiAudioTranscriptionOptions.TranscriptNormalizationEntry}.
+	 */
+	public static class TranscriptNormalizationEntryProperties {
+
+		private @Nullable String search;
+
+		private @Nullable String replace;
+
+		private boolean caseSensitive;
+
+		public @Nullable String getSearch() {
+			return this.search;
+		}
+
+		public void setSearch(@Nullable String search) {
+			this.search = search;
+		}
+
+		public @Nullable String getReplace() {
+			return this.replace;
+		}
+
+		public void setReplace(@Nullable String replace) {
+			this.replace = replace;
+		}
+
+		public boolean isCaseSensitive() {
+			return this.caseSensitive;
+		}
+
+		public void setCaseSensitive(boolean caseSensitive) {
+			this.caseSensitive = caseSensitive;
+		}
+
 	}
 
 }

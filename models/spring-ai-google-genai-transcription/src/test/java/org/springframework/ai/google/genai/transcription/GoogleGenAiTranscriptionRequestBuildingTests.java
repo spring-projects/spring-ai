@@ -17,6 +17,7 @@
 package org.springframework.ai.google.genai.transcription;
 
 import java.io.IOException;
+import java.util.List;
 
 import com.google.cloud.speech.v2.RecognizeRequest;
 import com.google.cloud.speech.v2.RecognizeResponse;
@@ -120,6 +121,107 @@ class GoogleGenAiTranscriptionRequestBuildingTests {
 		verify(this.mockSpeechClient).recognize(requestCaptor.capture());
 
 		assertThat(requestCaptor.getValue().getConfig().hasDenoiserConfig()).isFalse();
+	}
+
+	@Test
+	void phraseHintsAreSetOnInlinePhraseSetAdaptation() {
+		GoogleGenAiTranscriptionConnectionDetails connectionDetails = GoogleGenAiTranscriptionConnectionDetails
+			.builder()
+			.projectId("my-project")
+			.speechClient(this.mockSpeechClient)
+			.build();
+
+		GoogleGenAiAudioTranscriptionOptions options = GoogleGenAiAudioTranscriptionOptions.builder()
+			.phraseHints(List.of(GoogleGenAiAudioTranscriptionOptions.PhraseHint.of("Spring AI"),
+					GoogleGenAiAudioTranscriptionOptions.PhraseHint.of("Chirp", 15.0f)))
+			.phraseSetBoost(5.0f)
+			.build();
+
+		GoogleGenAiTranscriptionModel transcriptionModel = new GoogleGenAiTranscriptionModel(connectionDetails,
+				options);
+		transcriptionModel.call(new AudioTranscriptionPrompt(this.audioResource));
+
+		ArgumentCaptor<RecognizeRequest> requestCaptor = ArgumentCaptor.forClass(RecognizeRequest.class);
+		verify(this.mockSpeechClient).recognize(requestCaptor.capture());
+
+		com.google.cloud.speech.v2.PhraseSet phraseSet = requestCaptor.getValue()
+			.getConfig()
+			.getAdaptation()
+			.getPhraseSets(0)
+			.getInlinePhraseSet();
+		assertThat(phraseSet.getBoost()).isEqualTo(5.0f);
+		assertThat(phraseSet.getPhrasesList()).extracting(com.google.cloud.speech.v2.PhraseSet.Phrase::getValue)
+			.containsExactly("Spring AI", "Chirp");
+		assertThat(phraseSet.getPhrases(1).getBoost()).isEqualTo(15.0f);
+	}
+
+	@Test
+	void noAdaptationWhenNoPhraseHintsAreSet() {
+		GoogleGenAiTranscriptionConnectionDetails connectionDetails = GoogleGenAiTranscriptionConnectionDetails
+			.builder()
+			.projectId("my-project")
+			.speechClient(this.mockSpeechClient)
+			.build();
+
+		GoogleGenAiAudioTranscriptionOptions options = GoogleGenAiAudioTranscriptionOptions.builder().build();
+
+		GoogleGenAiTranscriptionModel transcriptionModel = new GoogleGenAiTranscriptionModel(connectionDetails,
+				options);
+		transcriptionModel.call(new AudioTranscriptionPrompt(this.audioResource));
+
+		ArgumentCaptor<RecognizeRequest> requestCaptor = ArgumentCaptor.forClass(RecognizeRequest.class);
+		verify(this.mockSpeechClient).recognize(requestCaptor.capture());
+
+		assertThat(requestCaptor.getValue().getConfig().hasAdaptation()).isFalse();
+	}
+
+	@Test
+	void transcriptNormalizationEntriesAreSetOnRecognitionConfig() {
+		GoogleGenAiTranscriptionConnectionDetails connectionDetails = GoogleGenAiTranscriptionConnectionDetails
+			.builder()
+			.projectId("my-project")
+			.speechClient(this.mockSpeechClient)
+			.build();
+
+		GoogleGenAiAudioTranscriptionOptions options = GoogleGenAiAudioTranscriptionOptions.builder()
+			.transcriptNormalizationEntries(List
+				.of(GoogleGenAiAudioTranscriptionOptions.TranscriptNormalizationEntry.of("Mister", "Mr.", true)))
+			.build();
+
+		GoogleGenAiTranscriptionModel transcriptionModel = new GoogleGenAiTranscriptionModel(connectionDetails,
+				options);
+		transcriptionModel.call(new AudioTranscriptionPrompt(this.audioResource));
+
+		ArgumentCaptor<RecognizeRequest> requestCaptor = ArgumentCaptor.forClass(RecognizeRequest.class);
+		verify(this.mockSpeechClient).recognize(requestCaptor.capture());
+
+		com.google.cloud.speech.v2.TranscriptNormalization.Entry entry = requestCaptor.getValue()
+			.getConfig()
+			.getTranscriptNormalization()
+			.getEntries(0);
+		assertThat(entry.getSearch()).isEqualTo("Mister");
+		assertThat(entry.getReplace()).isEqualTo("Mr.");
+		assertThat(entry.getCaseSensitive()).isTrue();
+	}
+
+	@Test
+	void noTranscriptNormalizationWhenNoEntriesAreSet() {
+		GoogleGenAiTranscriptionConnectionDetails connectionDetails = GoogleGenAiTranscriptionConnectionDetails
+			.builder()
+			.projectId("my-project")
+			.speechClient(this.mockSpeechClient)
+			.build();
+
+		GoogleGenAiAudioTranscriptionOptions options = GoogleGenAiAudioTranscriptionOptions.builder().build();
+
+		GoogleGenAiTranscriptionModel transcriptionModel = new GoogleGenAiTranscriptionModel(connectionDetails,
+				options);
+		transcriptionModel.call(new AudioTranscriptionPrompt(this.audioResource));
+
+		ArgumentCaptor<RecognizeRequest> requestCaptor = ArgumentCaptor.forClass(RecognizeRequest.class);
+		verify(this.mockSpeechClient).recognize(requestCaptor.capture());
+
+		assertThat(requestCaptor.getValue().getConfig().hasTranscriptNormalization()).isFalse();
 	}
 
 }

@@ -42,13 +42,11 @@ class GoogleGenAiTranscriptionPropertiesTests {
 	@Test
 	void connectionPropertiesBinding() {
 		this.contextRunner
-			.withPropertyValues("spring.ai.google.genai.transcription.api-key=test-key",
-					"spring.ai.google.genai.transcription.project-id=test-project",
+			.withPropertyValues("spring.ai.google.genai.transcription.project-id=test-project",
 					"spring.ai.google.genai.transcription.location=us")
 			.run(context -> {
 				GoogleGenAiTranscriptionConnectionProperties props = context
 					.getBean(GoogleGenAiTranscriptionConnectionProperties.class);
-				assertThat(props.getApiKey()).isEqualTo("test-key");
 				assertThat(props.getProjectId()).isEqualTo("test-project");
 				assertThat(props.getLocation()).isEqualTo("us");
 			});
@@ -106,6 +104,46 @@ class GoogleGenAiTranscriptionPropertiesTests {
 	}
 
 	@Test
+	void phraseHintsAndTranscriptNormalizationPropertiesBinding() {
+		this.contextRunner
+			.withPropertyValues("spring.ai.google.genai.transcription.phrase-hints[0].value=Spring AI",
+					"spring.ai.google.genai.transcription.phrase-hints[1].value=Chirp",
+					"spring.ai.google.genai.transcription.phrase-hints[1].boost=15.0",
+					"spring.ai.google.genai.transcription.phrase-set-boost=5.0",
+					"spring.ai.google.genai.transcription.transcript-normalization-entries[0].search=Mister",
+					"spring.ai.google.genai.transcription.transcript-normalization-entries[0].replace=Mr.",
+					"spring.ai.google.genai.transcription.transcript-normalization-entries[0].case-sensitive=true")
+			.run(context -> {
+				GoogleGenAiTranscriptionProperties props = context.getBean(GoogleGenAiTranscriptionProperties.class);
+				GoogleGenAiAudioTranscriptionOptions options = props.toOptions();
+
+				assertThat(options.getPhraseHints())
+					.extracting(GoogleGenAiAudioTranscriptionOptions.PhraseHint::getValue)
+					.containsExactly("Spring AI", "Chirp");
+				assertThat(options.getPhraseHints().get(0).getBoost()).isNull();
+				assertThat(options.getPhraseHints().get(1).getBoost()).isEqualTo(15.0f);
+				assertThat(options.getPhraseSetBoost()).isEqualTo(5.0f);
+
+				assertThat(options.getTranscriptNormalizationEntries()).hasSize(1);
+				assertThat(options.getTranscriptNormalizationEntries().get(0).getSearch()).isEqualTo("Mister");
+				assertThat(options.getTranscriptNormalizationEntries().get(0).getReplace()).isEqualTo("Mr.");
+				assertThat(options.getTranscriptNormalizationEntries().get(0).isCaseSensitive()).isTrue();
+			});
+	}
+
+	@Test
+	void noPhraseHintsOrTranscriptNormalizationWhenNotConfigured() {
+		this.contextRunner.run(context -> {
+			GoogleGenAiTranscriptionProperties props = context.getBean(GoogleGenAiTranscriptionProperties.class);
+			GoogleGenAiAudioTranscriptionOptions options = props.toOptions();
+
+			assertThat(options.getPhraseHints()).isNull();
+			assertThat(options.getPhraseSetBoost()).isNull();
+			assertThat(options.getTranscriptNormalizationEntries()).isNull();
+		});
+	}
+
+	@Test
 	void defaultOptionsBinding() {
 		this.contextRunner.run(context -> {
 			GoogleGenAiTranscriptionProperties props = context.getBean(GoogleGenAiTranscriptionProperties.class);
@@ -116,14 +154,12 @@ class GoogleGenAiTranscriptionPropertiesTests {
 	@Test
 	void connectionPropertiesGettersAndSetters() {
 		GoogleGenAiTranscriptionConnectionProperties props = new GoogleGenAiTranscriptionConnectionProperties();
-		props.setApiKey("api-key");
 		props.setProjectId("project-id");
 		props.setLocation("global");
 		org.springframework.core.io.Resource credentialsUri = new org.springframework.core.io.ClassPathResource(
 				"fake-credentials.json");
 		props.setCredentialsUri(credentialsUri);
 
-		assertThat(props.getApiKey()).isEqualTo("api-key");
 		assertThat(props.getProjectId()).isEqualTo("project-id");
 		assertThat(props.getLocation()).isEqualTo("global");
 		assertThat(props.getCredentialsUri()).isEqualTo(credentialsUri);
@@ -153,6 +189,25 @@ class GoogleGenAiTranscriptionPropertiesTests {
 		assertThat(props.getDenoiseAudio()).isTrue();
 		assertThat(props.getSnrThreshold()).isEqualTo(3.5f);
 		assertThat(props.getCustomPrompt()).isEqualTo("Include speaker labels.");
+	}
+
+	@Test
+	void phraseHintAndTranscriptNormalizationEntryPropertiesGettersAndSetters() {
+		GoogleGenAiTranscriptionProperties.PhraseHintProperties phraseHint = new GoogleGenAiTranscriptionProperties.PhraseHintProperties();
+		phraseHint.setValue("Spring AI");
+		phraseHint.setBoost(10.0f);
+
+		assertThat(phraseHint.getValue()).isEqualTo("Spring AI");
+		assertThat(phraseHint.getBoost()).isEqualTo(10.0f);
+
+		GoogleGenAiTranscriptionProperties.TranscriptNormalizationEntryProperties entry = new GoogleGenAiTranscriptionProperties.TranscriptNormalizationEntryProperties();
+		entry.setSearch("Mister");
+		entry.setReplace("Mr.");
+		entry.setCaseSensitive(true);
+
+		assertThat(entry.getSearch()).isEqualTo("Mister");
+		assertThat(entry.getReplace()).isEqualTo("Mr.");
+		assertThat(entry.isCaseSensitive()).isTrue();
 	}
 
 	@Configuration

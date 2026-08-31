@@ -28,7 +28,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.util.Assert;
-import org.springframework.util.StringUtils;
 
 /**
  * Auto-configuration for the Google GenAI Transcription connection.
@@ -53,10 +52,7 @@ public class GoogleGenAiTranscriptionConnectionAutoConfiguration {
 			.projectId(connectionProperties.getProjectId())
 			.location(connectionProperties.getLocation());
 
-		if (StringUtils.hasText(connectionProperties.getApiKey())) {
-			connectionBuilder.apiKey(connectionProperties.getApiKey());
-		}
-		else if (connectionProperties.getCredentialsUri() != null) {
+		if (connectionProperties.getCredentialsUri() != null) {
 			try (var is = connectionProperties.getCredentialsUri().getInputStream()) {
 				connectionBuilder.credentials(GoogleCredentials.fromStream(is));
 			}

@@ -26,14 +26,17 @@ import com.google.cloud.speech.v2.AutoDetectDecodingConfig;
 import com.google.cloud.speech.v2.CustomPromptConfig;
 import com.google.cloud.speech.v2.DenoiserConfig;
 import com.google.cloud.speech.v2.ExplicitDecodingConfig;
+import com.google.cloud.speech.v2.PhraseSet;
 import com.google.cloud.speech.v2.RecognitionConfig;
 import com.google.cloud.speech.v2.RecognitionFeatures;
 import com.google.cloud.speech.v2.RecognitionResponseMetadata;
 import com.google.cloud.speech.v2.RecognizeRequest;
 import com.google.cloud.speech.v2.RecognizeResponse;
 import com.google.cloud.speech.v2.SpeakerDiarizationConfig;
+import com.google.cloud.speech.v2.SpeechAdaptation;
 import com.google.cloud.speech.v2.SpeechRecognitionAlternative;
 import com.google.cloud.speech.v2.SpeechRecognitionResult;
+import com.google.cloud.speech.v2.TranscriptNormalization;
 import com.google.cloud.speech.v2.TranslationConfig;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.util.Durations;
@@ -192,6 +195,16 @@ public class GoogleGenAiTranscriptionModel implements TranscriptionModel {
 					TranslationConfig.newBuilder().setTargetLanguage(options.getTranslationTargetLanguage()).build());
 		}
 
+		final SpeechAdaptation adaptation = buildSpeechAdaptation(options);
+		if (Objects.nonNull(adaptation)) {
+			configBuilder.setAdaptation(adaptation);
+		}
+
+		final TranscriptNormalization transcriptNormalization = buildTranscriptNormalization(options);
+		if (Objects.nonNull(transcriptNormalization)) {
+			configBuilder.setTranscriptNormalization(transcriptNormalization);
+		}
+
 		return configBuilder.build();
 	}
 
@@ -218,6 +231,49 @@ public class GoogleGenAiTranscriptionModel implements TranscriptionModel {
 			return List.of(options.getLanguage());
 		}
 		return List.of(AUTO_LANGUAGE);
+	}
+
+	private @Nullable static SpeechAdaptation buildSpeechAdaptation(GoogleGenAiAudioTranscriptionOptions options) {
+		if (CollectionUtils.isEmpty(options.getPhraseHints())) {
+			return null;
+		}
+
+		final PhraseSet.Builder phraseSetBuilder = PhraseSet.newBuilder();
+		for (GoogleGenAiAudioTranscriptionOptions.PhraseHint phraseHint : options.getPhraseHints()) {
+			final PhraseSet.Phrase.Builder phraseBuilder = PhraseSet.Phrase.newBuilder()
+				.setValue(phraseHint.getValue());
+			if (Objects.nonNull(phraseHint.getBoost())) {
+				phraseBuilder.setBoost(phraseHint.getBoost());
+			}
+			phraseSetBuilder.addPhrases(phraseBuilder.build());
+		}
+		if (Objects.nonNull(options.getPhraseSetBoost())) {
+			phraseSetBuilder.setBoost(options.getPhraseSetBoost());
+		}
+
+		final SpeechAdaptation.AdaptationPhraseSet adaptationPhraseSet = SpeechAdaptation.AdaptationPhraseSet
+			.newBuilder()
+			.setInlinePhraseSet(phraseSetBuilder.build())
+			.build();
+		return SpeechAdaptation.newBuilder().addPhraseSets(adaptationPhraseSet).build();
+	}
+
+	private @Nullable static TranscriptNormalization buildTranscriptNormalization(
+			GoogleGenAiAudioTranscriptionOptions options) {
+		if (CollectionUtils.isEmpty(options.getTranscriptNormalizationEntries())) {
+			return null;
+		}
+
+		final TranscriptNormalization.Builder builder = TranscriptNormalization.newBuilder();
+		for (GoogleGenAiAudioTranscriptionOptions.TranscriptNormalizationEntry entry : options
+			.getTranscriptNormalizationEntries()) {
+			builder.addEntries(TranscriptNormalization.Entry.newBuilder()
+				.setSearch(entry.getSearch())
+				.setReplace(entry.getReplace())
+				.setCaseSensitive(entry.isCaseSensitive())
+				.build());
+		}
+		return builder.build();
 	}
 
 	private @Nullable static RecognitionFeatures buildRecognitionFeatures(
@@ -298,8 +354,7 @@ public class GoogleGenAiTranscriptionModel implements TranscriptionModel {
 		final String text = recognizeResponse.getResultsList()
 			.stream()
 			.map(SpeechRecognitionResult::getAlternativesList)
-			.filter(alternatives -> !alternatives.isEmpty())
-			.map(alternatives -> alternatives.get(0))
+			.flatMap(List::stream)
 			.map(SpeechRecognitionAlternative::getTranscript)
 			.collect(Collectors.joining(" "));
 

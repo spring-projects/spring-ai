@@ -62,6 +62,11 @@ class GoogleGenAiAudioTranscriptionOptionsTests {
 			.denoiseAudio(true)
 			.snrThreshold(5.0f)
 			.customPrompt("Transcribe verbatim, including filler words.")
+			.phraseHints(List.of(GoogleGenAiAudioTranscriptionOptions.PhraseHint.of("Spring AI"),
+					GoogleGenAiAudioTranscriptionOptions.PhraseHint.of("Chirp", 10.0f)))
+			.phraseSetBoost(5.0f)
+			.transcriptNormalizationEntries(List
+				.of(GoogleGenAiAudioTranscriptionOptions.TranscriptNormalizationEntry.of("Mister", "Mr.", true)))
 			.build();
 
 		assertThat(options.getModel()).isEqualTo("chirp_3");
@@ -85,6 +90,14 @@ class GoogleGenAiAudioTranscriptionOptionsTests {
 		assertThat(options.getDenoiseAudio()).isTrue();
 		assertThat(options.getSnrThreshold()).isEqualTo(5.0f);
 		assertThat(options.getCustomPrompt()).isEqualTo("Transcribe verbatim, including filler words.");
+		assertThat(options.getPhraseHints()).extracting(GoogleGenAiAudioTranscriptionOptions.PhraseHint::getValue)
+			.containsExactly("Spring AI", "Chirp");
+		assertThat(options.getPhraseHints().get(1).getBoost()).isEqualTo(10.0f);
+		assertThat(options.getPhraseSetBoost()).isEqualTo(5.0f);
+		assertThat(options.getTranscriptNormalizationEntries()).hasSize(1);
+		assertThat(options.getTranscriptNormalizationEntries().get(0).getSearch()).isEqualTo("Mister");
+		assertThat(options.getTranscriptNormalizationEntries().get(0).getReplace()).isEqualTo("Mr.");
+		assertThat(options.getTranscriptNormalizationEntries().get(0).isCaseSensitive()).isTrue();
 	}
 
 	@Test

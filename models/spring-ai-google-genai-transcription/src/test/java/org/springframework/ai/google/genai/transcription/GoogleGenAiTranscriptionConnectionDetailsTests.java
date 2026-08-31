@@ -44,21 +44,6 @@ import static org.mockito.Mockito.times;
 class GoogleGenAiTranscriptionConnectionDetailsTests {
 
 	@Test
-	void builderWithApiKey() throws IOException {
-		SpeechClient customClient = mock(SpeechClient.class);
-		GoogleGenAiTranscriptionConnectionDetails details = GoogleGenAiTranscriptionConnectionDetails.builder()
-			.projectId("my-project")
-			.apiKey("test-api-key")
-			.speechClient(customClient)
-			.build();
-
-		assertThat(details.getApiKey()).isEqualTo("test-api-key");
-		assertThat(details.getProjectId()).isEqualTo("my-project");
-		assertThat(details.getLocation()).isEqualTo(GoogleGenAiTranscriptionConnectionDetails.DEFAULT_LOCATION);
-		assertThat(details.getSpeechClient()).isSameAs(customClient);
-	}
-
-	@Test
 	void builderDefaultsLocationToDefaultLocation() throws IOException {
 		GoogleGenAiTranscriptionConnectionDetails details = GoogleGenAiTranscriptionConnectionDetails.builder()
 			.projectId("my-project")
@@ -91,7 +76,7 @@ class GoogleGenAiTranscriptionConnectionDetailsTests {
 		SpeechClient customClient = mock(SpeechClient.class);
 		GoogleGenAiTranscriptionConnectionDetails details = GoogleGenAiTranscriptionConnectionDetails.builder()
 			.projectId("my-project")
-			.apiKey("ignored")
+			.location("ignored")
 			.speechClient(customClient)
 			.build();
 
@@ -107,39 +92,6 @@ class GoogleGenAiTranscriptionConnectionDetailsTests {
 			.build();
 
 		assertThat(details.getRecognizerName()).isEqualTo("projects/my-project/locations/eu/recognizers/_");
-	}
-
-	@Test
-	void getApiKeyReturnsNullWhenNotProvided() throws IOException {
-		GoogleGenAiTranscriptionConnectionDetails details = GoogleGenAiTranscriptionConnectionDetails.builder()
-			.projectId("my-project")
-			.speechClient(mock(SpeechClient.class))
-			.build();
-
-		assertThat(details.getApiKey()).isNull();
-	}
-
-	@Test
-	void builderWithApiKeyAndWithoutCustomClientCreatesClientWithNoCredentialsProvider() throws IOException {
-		SpeechClient createdClient = mock(SpeechClient.class);
-		ArgumentCaptor<SpeechSettings> settingsCaptor = ArgumentCaptor.forClass(SpeechSettings.class);
-
-		try (MockedStatic<SpeechClient> mockedSpeechClient = mockStatic(SpeechClient.class)) {
-			mockedSpeechClient.when(() -> SpeechClient.create(any(SpeechSettings.class))).thenReturn(createdClient);
-
-			GoogleGenAiTranscriptionConnectionDetails details = GoogleGenAiTranscriptionConnectionDetails.builder()
-				.projectId("my-project")
-				.location("us")
-				.apiKey("test-api-key")
-				.build();
-
-			assertThat(details.getSpeechClient()).isSameAs(createdClient);
-			mockedSpeechClient.verify(() -> SpeechClient.create(settingsCaptor.capture()), times(1));
-			SpeechSettings capturedSettings = settingsCaptor.getValue();
-			assertThat(capturedSettings.getEndpoint()).isEqualTo("us-speech.googleapis.com:443");
-			assertThat(capturedSettings.getCredentialsProvider()).isInstanceOf(NoCredentialsProvider.class);
-			assertThat(capturedSettings.getApiKey()).isEqualTo("test-api-key");
-		}
 	}
 
 	@Test
@@ -167,7 +119,7 @@ class GoogleGenAiTranscriptionConnectionDetailsTests {
 	}
 
 	@Test
-	void builderWithoutApiKeyOrCredentialsAndWithoutCustomClientUsesDefaultCredentialsProvider() throws IOException {
+	void builderWithoutCredentialsAndWithoutCustomClientUsesDefaultCredentialsProvider() throws IOException {
 		SpeechClient createdClient = mock(SpeechClient.class);
 		ArgumentCaptor<SpeechSettings> settingsCaptor = ArgumentCaptor.forClass(SpeechSettings.class);
 
@@ -193,10 +145,9 @@ class GoogleGenAiTranscriptionConnectionDetailsTests {
 		try (MockedStatic<SpeechClient> mockedSpeechClient = mockStatic(SpeechClient.class)) {
 			mockedSpeechClient.when(() -> SpeechClient.create(any(SpeechSettings.class))).thenThrow(cause);
 
-			assertThatThrownBy(() -> GoogleGenAiTranscriptionConnectionDetails.builder()
-				.projectId("my-project")
-				.apiKey("test-api-key")
-				.build()).isInstanceOf(UncheckedIOException.class)
+			assertThatThrownBy(
+					() -> GoogleGenAiTranscriptionConnectionDetails.builder().projectId("my-project").build())
+				.isInstanceOf(UncheckedIOException.class)
 				.hasMessageContaining("Failed to create the Speech client")
 				.hasCause(cause);
 

@@ -40,28 +40,6 @@ public class GoogleGenAiAudioTranscriptionOptions implements AudioTranscriptionO
 	public static final String DEFAULT_MODEL_NAME = "chirp_3";
 
 	/**
-	 * Audio encoding of the data sent in the audio message. Mirrors
-	 * {@code com.google.cloud.speech.v2.ExplicitDecodingConfig.AudioEncoding}. When left
-	 * unset, the encoding is auto-detected.
-	 */
-	public enum AudioEncoding {
-
-		AUDIO_ENCODING_UNSPECIFIED, LINEAR16, MULAW, ALAW, AMR, AMR_WB, FLAC, MP3, OGG_OPUS, WEBM_OPUS, MP4_AAC,
-		M4A_AAC, MOV_AAC
-
-	}
-
-	/**
-	 * Mode for recognizing multi-channel audio. Mirrors
-	 * {@code com.google.cloud.speech.v2.RecognitionFeatures.MultiChannelMode}.
-	 */
-	public enum MultiChannelMode {
-
-		MULTI_CHANNEL_MODE_UNSPECIFIED, SEPARATE_RECOGNITION_PER_CHANNEL
-
-	}
-
-	/**
 	 * The Chirp model to use (e.g. {@code chirp_2}, {@code chirp_3}).
 	 */
 	private final @Nullable String model;
@@ -172,6 +150,22 @@ public class GoogleGenAiAudioTranscriptionOptions implements AudioTranscriptionO
 	 */
 	private final @Nullable String customPrompt;
 
+	/**
+	 * Phrases to boost during recognition (inline speech adaptation).
+	 */
+	private final @Nullable List<PhraseHint> phraseHints;
+
+	/**
+	 * Overall boost applied to all {@link #phraseHints} that do not specify their own
+	 * boost value.
+	 */
+	private final @Nullable Float phraseSetBoost;
+
+	/**
+	 * Search/replace rules applied to the transcript after recognition.
+	 */
+	private final @Nullable List<TranscriptNormalizationEntry> transcriptNormalizationEntries;
+
 	protected GoogleGenAiAudioTranscriptionOptions(@Nullable String model, @Nullable String language,
 			@Nullable List<String> languageCodes, @Nullable Boolean enableAutomaticPunctuation,
 			@Nullable Boolean enableSpokenPunctuation, @Nullable Boolean enableSpokenEmojis,
@@ -181,7 +175,9 @@ public class GoogleGenAiAudioTranscriptionOptions implements AudioTranscriptionO
 			@Nullable Integer minSpeakerCount, @Nullable Integer maxSpeakerCount,
 			@Nullable String translationTargetLanguage, @Nullable AudioEncoding encoding,
 			@Nullable Integer sampleRateHertz, @Nullable Integer audioChannelCount, @Nullable Boolean denoiseAudio,
-			@Nullable Float snrThreshold, @Nullable String customPrompt) {
+			@Nullable Float snrThreshold, @Nullable String customPrompt, @Nullable List<PhraseHint> phraseHints,
+			@Nullable Float phraseSetBoost,
+			@Nullable List<TranscriptNormalizationEntry> transcriptNormalizationEntries) {
 		this.model = model;
 		this.language = language;
 		this.languageCodes = Optional.ofNullable(languageCodes).<List<String>>map(ArrayList::new).orElse(null);
@@ -203,6 +199,11 @@ public class GoogleGenAiAudioTranscriptionOptions implements AudioTranscriptionO
 		this.denoiseAudio = denoiseAudio;
 		this.snrThreshold = snrThreshold;
 		this.customPrompt = customPrompt;
+		this.phraseHints = Optional.ofNullable(phraseHints).<List<PhraseHint>>map(ArrayList::new).orElse(null);
+		this.phraseSetBoost = phraseSetBoost;
+		this.transcriptNormalizationEntries = Optional.ofNullable(transcriptNormalizationEntries)
+			.<List<TranscriptNormalizationEntry>>map(ArrayList::new)
+			.orElse(null);
 	}
 
 	public static Builder builder() {
@@ -294,6 +295,18 @@ public class GoogleGenAiAudioTranscriptionOptions implements AudioTranscriptionO
 		return this.customPrompt;
 	}
 
+	public @Nullable List<PhraseHint> getPhraseHints() {
+		return this.phraseHints;
+	}
+
+	public @Nullable Float getPhraseSetBoost() {
+		return this.phraseSetBoost;
+	}
+
+	public @Nullable List<TranscriptNormalizationEntry> getTranscriptNormalizationEntries() {
+		return this.transcriptNormalizationEntries;
+	}
+
 	@Override
 	public boolean equals(@Nullable Object o) {
 		if (o == null || getClass() != o.getClass()) {
@@ -319,7 +332,10 @@ public class GoogleGenAiAudioTranscriptionOptions implements AudioTranscriptionO
 				&& Objects.equals(this.audioChannelCount, that.audioChannelCount)
 				&& Objects.equals(this.denoiseAudio, that.denoiseAudio)
 				&& Objects.equals(this.snrThreshold, that.snrThreshold)
-				&& Objects.equals(this.customPrompt, that.customPrompt);
+				&& Objects.equals(this.customPrompt, that.customPrompt)
+				&& Objects.equals(this.phraseHints, that.phraseHints)
+				&& Objects.equals(this.phraseSetBoost, that.phraseSetBoost)
+				&& Objects.equals(this.transcriptNormalizationEntries, that.transcriptNormalizationEntries);
 	}
 
 	@Override
@@ -328,7 +344,135 @@ public class GoogleGenAiAudioTranscriptionOptions implements AudioTranscriptionO
 				this.enableSpokenPunctuation, this.enableSpokenEmojis, this.profanityFilter, this.enableWordTimeOffsets,
 				this.enableWordConfidence, this.maxAlternatives, this.multiChannelMode, this.enableSpeakerDiarization,
 				this.minSpeakerCount, this.maxSpeakerCount, this.translationTargetLanguage, this.encoding,
-				this.sampleRateHertz, this.audioChannelCount, this.denoiseAudio, this.snrThreshold, this.customPrompt);
+				this.sampleRateHertz, this.audioChannelCount, this.denoiseAudio, this.snrThreshold, this.customPrompt,
+				this.phraseHints, this.phraseSetBoost, this.transcriptNormalizationEntries);
+	}
+
+	/**
+	 * Audio encoding of the data sent in the audio message. Mirrors
+	 * {@code com.google.cloud.speech.v2.ExplicitDecodingConfig.AudioEncoding}. When left
+	 * unset, the encoding is auto-detected.
+	 */
+	public enum AudioEncoding {
+
+		AUDIO_ENCODING_UNSPECIFIED, LINEAR16, MULAW, ALAW, AMR, AMR_WB, FLAC, MP3, OGG_OPUS, WEBM_OPUS, MP4_AAC,
+		M4A_AAC, MOV_AAC
+
+	}
+
+	/**
+	 * Mode for recognizing multi-channel audio. Mirrors
+	 * {@code com.google.cloud.speech.v2.RecognitionFeatures.MultiChannelMode}.
+	 */
+	public enum MultiChannelMode {
+
+		MULTI_CHANNEL_MODE_UNSPECIFIED, SEPARATE_RECOGNITION_PER_CHANNEL
+
+	}
+
+	/**
+	 * A phrase to boost during recognition (speech adaptation), optionally with a
+	 * per-phrase boost value. Mirrors
+	 * {@code com.google.cloud.speech.v2.PhraseSet.Phrase}.
+	 */
+	public static final class PhraseHint {
+
+		private final String value;
+
+		private final @Nullable Float boost;
+
+		private PhraseHint(String value, @Nullable Float boost) {
+			this.value = value;
+			this.boost = boost;
+		}
+
+		public static PhraseHint of(String value) {
+			return new PhraseHint(value, null);
+		}
+
+		public static PhraseHint of(String value, float boost) {
+			return new PhraseHint(value, boost);
+		}
+
+		public String getValue() {
+			return this.value;
+		}
+
+		public @Nullable Float getBoost() {
+			return this.boost;
+		}
+
+		@Override
+		public boolean equals(@Nullable Object o) {
+			if (this == o) {
+				return true;
+			}
+			if (o == null || getClass() != o.getClass()) {
+				return false;
+			}
+			final PhraseHint that = (PhraseHint) o;
+			return Objects.equals(this.value, that.value) && Objects.equals(this.boost, that.boost);
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(this.value, this.boost);
+		}
+
+	}
+
+	/**
+	 * A search/replace rule applied to the transcript after recognition. Mirrors
+	 * {@code com.google.cloud.speech.v2.TranscriptNormalization.Entry}.
+	 */
+	public static final class TranscriptNormalizationEntry {
+
+		private final String search;
+
+		private final String replace;
+
+		private final boolean caseSensitive;
+
+		private TranscriptNormalizationEntry(String search, String replace, boolean caseSensitive) {
+			this.search = search;
+			this.replace = replace;
+			this.caseSensitive = caseSensitive;
+		}
+
+		public static TranscriptNormalizationEntry of(String search, String replace, boolean caseSensitive) {
+			return new TranscriptNormalizationEntry(search, replace, caseSensitive);
+		}
+
+		public String getSearch() {
+			return this.search;
+		}
+
+		public String getReplace() {
+			return this.replace;
+		}
+
+		public boolean isCaseSensitive() {
+			return this.caseSensitive;
+		}
+
+		@Override
+		public boolean equals(@Nullable Object o) {
+			if (this == o) {
+				return true;
+			}
+			if (o == null || getClass() != o.getClass()) {
+				return false;
+			}
+			final TranscriptNormalizationEntry that = (TranscriptNormalizationEntry) o;
+			return this.caseSensitive == that.caseSensitive && Objects.equals(this.search, that.search)
+					&& Objects.equals(this.replace, that.replace);
+		}
+
+		@Override
+		public int hashCode() {
+			return Objects.hash(this.search, this.replace, this.caseSensitive);
+		}
+
 	}
 
 	public static final class Builder {
@@ -374,6 +518,12 @@ public class GoogleGenAiAudioTranscriptionOptions implements AudioTranscriptionO
 		private @Nullable Float snrThreshold;
 
 		private @Nullable String customPrompt;
+
+		private @Nullable List<PhraseHint> phraseHints;
+
+		private @Nullable Float phraseSetBoost;
+
+		private @Nullable List<TranscriptNormalizationEntry> transcriptNormalizationEntries;
 
 		private Builder() {
 		}
@@ -441,6 +591,15 @@ public class GoogleGenAiAudioTranscriptionOptions implements AudioTranscriptionO
 			}
 			if (StringUtils.hasText(fromOptions.customPrompt)) {
 				this.customPrompt = fromOptions.customPrompt;
+			}
+			if (Objects.nonNull(fromOptions.phraseHints)) {
+				this.phraseHints = fromOptions.phraseHints;
+			}
+			if (Objects.nonNull(fromOptions.phraseSetBoost)) {
+				this.phraseSetBoost = fromOptions.phraseSetBoost;
+			}
+			if (Objects.nonNull(fromOptions.transcriptNormalizationEntries)) {
+				this.transcriptNormalizationEntries = fromOptions.transcriptNormalizationEntries;
 			}
 			return this;
 		}
@@ -550,13 +709,30 @@ public class GoogleGenAiAudioTranscriptionOptions implements AudioTranscriptionO
 			return this;
 		}
 
+		public Builder phraseHints(@Nullable List<PhraseHint> phraseHints) {
+			this.phraseHints = phraseHints;
+			return this;
+		}
+
+		public Builder phraseSetBoost(@Nullable Float phraseSetBoost) {
+			this.phraseSetBoost = phraseSetBoost;
+			return this;
+		}
+
+		public Builder transcriptNormalizationEntries(
+				@Nullable List<TranscriptNormalizationEntry> transcriptNormalizationEntries) {
+			this.transcriptNormalizationEntries = transcriptNormalizationEntries;
+			return this;
+		}
+
 		public GoogleGenAiAudioTranscriptionOptions build() {
 			return new GoogleGenAiAudioTranscriptionOptions(this.model, this.language, this.languageCodes,
 					this.enableAutomaticPunctuation, this.enableSpokenPunctuation, this.enableSpokenEmojis,
 					this.profanityFilter, this.enableWordTimeOffsets, this.enableWordConfidence, this.maxAlternatives,
 					this.multiChannelMode, this.enableSpeakerDiarization, this.minSpeakerCount, this.maxSpeakerCount,
 					this.translationTargetLanguage, this.encoding, this.sampleRateHertz, this.audioChannelCount,
-					this.denoiseAudio, this.snrThreshold, this.customPrompt);
+					this.denoiseAudio, this.snrThreshold, this.customPrompt, this.phraseHints, this.phraseSetBoost,
+					this.transcriptNormalizationEntries);
 		}
 
 	}

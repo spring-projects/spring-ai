@@ -106,6 +106,12 @@ The prefix `spring.ai.google.genai.transcription` is the property prefix that le
 | spring.ai.google.genai.transcription.denoise-audio | Whether to denoise the audio before sending it to the transcription model. May not be supported by all models and may have no effect. | -
 | spring.ai.google.genai.transcription.snr-threshold | Signal-to-noise ratio threshold below which audio is considered too quiet and is withheld from the transcription model. A value of `0` disables filtering. Used with `denoise-audio`. | -
 | spring.ai.google.genai.transcription.custom-prompt | Custom natural-language instructions that override the default transcription instructions (`chirp_3` only). | -
+| spring.ai.google.genai.transcription.phrase-hints[<index>].value | A phrase to boost during recognition (inline speech adaptation). | -
+| spring.ai.google.genai.transcription.phrase-hints[<index>].boost | Boost value applied to that specific phrase; falls back to `phrase-set-boost` when unset. | -
+| spring.ai.google.genai.transcription.phrase-set-boost | Overall boost applied to phrase hints that do not specify their own boost value. | -
+| spring.ai.google.genai.transcription.transcript-normalization-entries[<index>].search | Text to search for in the transcript after recognition. | -
+| spring.ai.google.genai.transcription.transcript-normalization-entries[<index>].replace | Replacement text for the matched search value. | -
+| spring.ai.google.genai.transcription.transcript-normalization-entries[<index>].case-sensitive | Whether the search is case-sensitive. | false
 |====
 
 == Model Selection
@@ -135,6 +141,48 @@ GoogleGenAiAudioTranscriptionOptions transcriptionOptions = GoogleGenAiAudioTran
 
 AudioTranscriptionPrompt transcriptionRequest = new AudioTranscriptionPrompt(audioFile, transcriptionOptions);
 AudioTranscriptionResponse response = transcriptionModel.call(transcriptionRequest);
+----
+
+=== Phrase Boosting and Transcript Normalization
+
+`GoogleGenAiAudioTranscriptionOptions` also exposes the remaining `RecognitionConfig` capabilities that have no dedicated configuration property:
+
+* `phraseHints`/`phraseSetBoost`: boost recognition of specific words or phrases (for example proper nouns or jargon) using an inline `SpeechAdaptation` phrase set.
+* `transcriptNormalizationEntries`: apply search/replace rules to the transcript after recognition (for example replacing `"Mister"` with `"Mr."`).
+
+[source,java]
+----
+GoogleGenAiAudioTranscriptionOptions transcriptionOptions = GoogleGenAiAudioTranscriptionOptions.builder()
+    .phraseHints(List.of(
+        GoogleGenAiAudioTranscriptionOptions.PhraseHint.of("Spring AI"),
+        GoogleGenAiAudioTranscriptionOptions.PhraseHint.of("Chirp", 15.0f)))
+    .phraseSetBoost(5.0f)
+    .transcriptNormalizationEntries(List.of(
+        GoogleGenAiAudioTranscriptionOptions.TranscriptNormalizationEntry.of("Mister", "Mr.", true)))
+    .build();
+----
+
+`PhraseHint.of(value, boost)` overrides `phraseSetBoost` for that specific phrase; `PhraseHint.of(value)` falls back to `phraseSetBoost`.
+Referencing standalone `PhraseSet`/`CustomClass` resources by name (instead of the inline phrase set built from `phraseHints`) is not supported.
+
+Both can also be configured through `spring.ai.google.genai.transcription.*` properties (see table above), for example in YAML:
+
+[source,yaml]
+----
+spring:
+  ai:
+    google:
+      genai:
+        transcription:
+          phrase-hints:
+            - value: Spring AI
+            - value: Chirp
+              boost: 15.0
+          phrase-set-boost: 5.0
+          transcript-normalization-entries:
+            - search: Mister
+              replace: Mr.
+              case-sensitive: true
 ----
 
 == Sample Controller

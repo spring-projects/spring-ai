@@ -35,21 +35,6 @@ class GoogleGenAiTranscriptionConnectionAutoConfigurationTests {
 		.withConfiguration(AutoConfigurations.of(GoogleGenAiTranscriptionConnectionAutoConfiguration.class));
 
 	@Test
-	void apiKeyAndProjectConfigureConnection() {
-		this.contextRunner
-			.withPropertyValues("spring.ai.google.genai.transcription.api-key=test-key",
-					"spring.ai.google.genai.transcription.project-id=test-project")
-			.run(context -> {
-				GoogleGenAiTranscriptionConnectionDetails details = context
-					.getBean(GoogleGenAiTranscriptionConnectionDetails.class);
-				assertThat(details.getApiKey()).isEqualTo("test-key");
-				assertThat(details.getProjectId()).isEqualTo("test-project");
-				assertThat(details.getLocation()).isEqualTo(GoogleGenAiTranscriptionConnectionDetails.DEFAULT_LOCATION);
-				assertThat(details.getSpeechClient()).isNotNull();
-			});
-	}
-
-	@Test
 	void projectAndCredentialsUriConfigureConnection() {
 		this.contextRunner
 			.withPropertyValues("spring.ai.google.genai.transcription.project-id=test-project",
@@ -66,7 +51,7 @@ class GoogleGenAiTranscriptionConnectionAutoConfigurationTests {
 
 	@Test
 	void missingProjectIdFails() {
-		this.contextRunner.withPropertyValues("spring.ai.google.genai.transcription.api-key=test-key").run(context -> {
+		this.contextRunner.run(context -> {
 			assertThat(context).hasFailed();
 			assertThat(context.getStartupFailure()).rootCause()
 				.isInstanceOf(IllegalArgumentException.class)

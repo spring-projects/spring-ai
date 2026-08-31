@@ -33,11 +33,6 @@ public class GoogleGenAiTranscriptionConnectionProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.google.genai.transcription";
 
 	/**
-	 * Google GenAI API Key used to authenticate Speech-to-Text V2 requests.
-	 */
-	private @Nullable String apiKey;
-
-	/**
 	 * Google Cloud project ID. Required by Speech-to-Text V2 resource names.
 	 */
 	private @Nullable String projectId;
@@ -48,17 +43,10 @@ public class GoogleGenAiTranscriptionConnectionProperties {
 	private @Nullable String location;
 
 	/**
-	 * URI to Google Cloud credentials (optional; used when no API key is provided).
+	 * URI to Google Cloud credentials (optional; Application Default Credentials are used
+	 * when unset).
 	 */
 	private @Nullable Resource credentialsUri;
-
-	public @Nullable String getApiKey() {
-		return this.apiKey;
-	}
-
-	public void setApiKey(@Nullable String apiKey) {
-		this.apiKey = apiKey;
-	}
 
 	public @Nullable String getProjectId() {
 		return this.projectId;

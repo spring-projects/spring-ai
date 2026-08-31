@@ -21,7 +21,6 @@ import java.io.UncheckedIOException;
 import java.util.Objects;
 
 import com.google.api.gax.core.FixedCredentialsProvider;
-import com.google.api.gax.core.NoCredentialsProvider;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.speech.v2.SpeechClient;
 import com.google.cloud.speech.v2.SpeechSettings;
@@ -45,47 +44,29 @@ import org.springframework.util.StringUtils;
  */
 public final class GoogleGenAiTranscriptionConnectionDetails {
 
-	/**
-	 * The default Speech-to-Text V2 location. The {@code global} location uses the
-	 * multi-regional endpoint.
-	 */
-	public static final String DEFAULT_LOCATION = "europe-west2";
+	public static final String DEFAULT_LOCATION = "global";
 
-	/**
-	 * The well-known recognizer identifier used for inline (recognizer-less) recognition.
-	 */
 	private static final String INLINE_RECOGNIZER = "_";
 
-	/**
-	 * Your Google Cloud project ID.
-	 */
 	private final String projectId;
 
-	/**
-	 * The Speech-to-Text V2 location (e.g. {@code global}, {@code us}, {@code eu}).
-	 */
 	private final String location;
 
-	/**
-	 * The API key used for authentication. If null, Google credentials are used.
-	 */
-	private final @Nullable String apiKey;
-
-	/**
-	 * The Speech client instance configured for this connection.
-	 */
 	private final SpeechClient speechClient;
 
-	private GoogleGenAiTranscriptionConnectionDetails(String projectId, String location, @Nullable String apiKey,
-			SpeechClient speechClient) {
+	private GoogleGenAiTranscriptionConnectionDetails(String projectId, String location, SpeechClient speechClient) {
 		this.projectId = projectId;
 		this.location = location;
-		this.apiKey = apiKey;
 		this.speechClient = speechClient;
 	}
 
 	public static Builder builder() {
 		return new Builder();
+	}
+
+	public static String getEndpoint(String location) {
+		return DEFAULT_LOCATION.equals(location) ? "speech.googleapis.com:443"
+				: location + "-speech.googleapis.com:443";
 	}
 
 	public String getProjectId() {
@@ -96,19 +77,10 @@ public final class GoogleGenAiTranscriptionConnectionDetails {
 		return this.location;
 	}
 
-	public @Nullable String getApiKey() {
-		return this.apiKey;
-	}
-
 	public SpeechClient getSpeechClient() {
 		return this.speechClient;
 	}
 
-	/**
-	 * Returns the fully-qualified recognizer resource name used for inline recognition.
-	 * @return the recognizer resource name in the format
-	 * {@code projects/{project}/locations/{location}/recognizers/_}
-	 */
 	public String getRecognizerName() {
 		return "projects/%s/locations/%s/recognizers/%s".formatted(this.projectId, this.location, INLINE_RECOGNIZER);
 	}
@@ -118,8 +90,6 @@ public final class GoogleGenAiTranscriptionConnectionDetails {
 		private @Nullable String projectId;
 
 		private @Nullable String location;
-
-		private @Nullable String apiKey;
 
 		private @Nullable GoogleCredentials credentials;
 
@@ -135,11 +105,6 @@ public final class GoogleGenAiTranscriptionConnectionDetails {
 
 		public Builder location(@Nullable String location) {
 			this.location = location;
-			return this;
-		}
-
-		public Builder apiKey(@Nullable String apiKey) {
-			this.apiKey = apiKey;
 			return this;
 		}
 
@@ -162,28 +127,21 @@ public final class GoogleGenAiTranscriptionConnectionDetails {
 		public GoogleGenAiTranscriptionConnectionDetails build() {
 			Assert.hasText(this.projectId, "Project ID must be provided");
 
-			if (!StringUtils.hasText(this.location)) {
-				this.location = DEFAULT_LOCATION;
-			}
+			final String location = StringUtils.hasText(this.location) ? this.location : DEFAULT_LOCATION;
 
 			if (Objects.nonNull(this.speechClient)) {
-				return new GoogleGenAiTranscriptionConnectionDetails(this.projectId, this.location, this.apiKey,
-						this.speechClient);
+				return new GoogleGenAiTranscriptionConnectionDetails(this.projectId, location, this.speechClient);
 			}
 
-			return new GoogleGenAiTranscriptionConnectionDetails(this.projectId, this.location, this.apiKey,
-					createSpeechClient(this.location));
+			return new GoogleGenAiTranscriptionConnectionDetails(this.projectId, location,
+					createSpeechClient(location));
 		}
 
 		private SpeechClient createSpeechClient(String location) {
 			final SpeechSettings.Builder settingsBuilder = SpeechSettings.newBuilder()
-				.setEndpoint("%s-speech.googleapis.com:443".formatted(location));
+				.setEndpoint(getEndpoint(location));
 
-			if (StringUtils.hasText(this.apiKey)) {
-				settingsBuilder.setCredentialsProvider(NoCredentialsProvider.create());
-				settingsBuilder.setApiKey(this.apiKey);
-			}
-			else if (this.credentials != null) {
+			if (Objects.nonNull(this.credentials)) {
 				settingsBuilder.setCredentialsProvider(FixedCredentialsProvider.create(this.credentials));
 			}
 
