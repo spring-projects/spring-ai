@@ -43,6 +43,14 @@
 			<optional>true</optional>
 		</dependency>
 
+		<!-- Google GenAI Text-to-Speech -->
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-google-genai-tts</artifactId>
+			<version>${project.parent.version}</version>
+			<optional>true</optional>
+		</dependency>
+
 		<!-- Spring AI auto configurations -->
 
 		<dependency>
