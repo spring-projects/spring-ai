@@ -152,26 +152,33 @@ public class RedisFilterExpressionConverter extends AbstractFilterExpressionConv
 	private String textStringValue(Expression expression, Value value) {
 		String delimiter = tagValueDelimiter(expression);
 		if (value.value() instanceof List<?> list) {
-			return list.stream()
-				.map(String::valueOf)
-				.map(RediSearchUtil::escapeQuery)
-				.collect(Collectors.joining(delimiter));
+			return list.stream().map(String::valueOf).map(this::escapeTextValue).collect(Collectors.joining(delimiter));
 		}
-		return RediSearchUtil.escapeQuery(String.valueOf(value.value()));
+		return escapeTextValue(String.valueOf(value.value()));
+	}
+
+	/**
+	 * Escapes characters that have special meaning inside a RediSearch TEXT query clause
+	 * ({@code @field:(value)}). {@link RediSearchUtil#escapeQuery(String)} escapes the
+	 * query separators but not the backslash itself, so the backslashes are doubled first
+	 * to keep them literal.
+	 */
+	private String escapeTextValue(String value) {
+		return RediSearchUtil.escapeQuery(value.replace("\\", "\\\\"));
 	}
 
 	/**
 	 * Escapes characters that have special meaning inside a RediSearch TAG query clause
 	 * ({@code @field:\{value\}}). The following characters are escaped with a backslash:
 	 * {@code $}, {@code \}, {@code |}, {@code {}, {@code }}, {@code (}, {@code )},
-	 * {@code [}, {@code ]}, {@code -}, and {@code '}.
+	 * {@code [}, {@code ]}, {@code -}, {@code '} and {@code *}.
 	 */
 	private String escapeTagValue(String value) {
 		StringBuilder sb = new StringBuilder(value.length());
 		for (int i = 0; i < value.length(); i++) {
 			char c = value.charAt(i);
 			switch (c) {
-				case '\\', '$', '|', '{', '}', '(', ')', '[', ']', '-', '\'' -> sb.append('\\').append(c);
+				case '\\', '$', '|', '{', '}', '(', ')', '[', ']', '-', '\'', '*' -> sb.append('\\').append(c);
 				default -> sb.append(c);
 			}
 		}
