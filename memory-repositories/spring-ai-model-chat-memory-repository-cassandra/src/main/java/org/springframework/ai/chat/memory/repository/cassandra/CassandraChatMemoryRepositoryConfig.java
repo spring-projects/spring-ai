@@ -204,14 +204,14 @@ public final class CassandraChatMemoryRepositoryConfig {
 
 	private void ensureMessageTypeExist() {
 
-		SimpleStatement stmt = SchemaBuilder.createType(this.messageUDT)
+		SimpleStatement stmt = SchemaBuilder.createType(this.schema.keyspace(), this.messageUDT)
 			.ifNotExists()
 			.withField(this.messageUdtTimestampColumn, DataTypes.TIMESTAMP)
 			.withField(this.messageUdtTypeColumn, DataTypes.TEXT)
 			.withField(this.messageUdtContentColumn, DataTypes.TEXT)
 			.build();
 
-		this.session.execute(stmt.setKeyspace(this.schema.keyspace));
+		this.session.execute(stmt);
 	}
 
 	private void ensureTableColumnsExist() {
