@@ -57,17 +57,24 @@ import org.springframework.ai.mcp.server.common.autoconfigure.annotations.Statel
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
+import org.springframework.boot.LazyInitializationBeanFactoryPostProcessor;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.support.GenericApplicationContext;
 import org.springframework.stereotype.Component;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
+/**
+ * Integration tests for {@link McpServerStatelessAutoConfiguration}.
+ *
+ * @author Jewoo Shin
+ */
 public class McpStatelessServerAutoConfigurationIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
@@ -146,6 +153,31 @@ public class McpStatelessServerAutoConfigurationIT {
 
 				McpStatelessSyncServer server = context.getBean(McpStatelessSyncServer.class);
 				assertThat(server).isNotNull();
+			});
+	}
+
+	@Test
+	void syncServerIsEagerlyCreatedWithLazyInitialization() {
+		// gh-5964: with spring.main.lazy-initialization=true the stateless sync server
+		// must still be eagerly created so the transport handler is wired before any
+		// request arrives.
+		this.contextRunner
+			.withInitializer(context -> ((GenericApplicationContext) context)
+				.registerBean(LazyInitializationBeanFactoryPostProcessor.class))
+			.run(context -> {
+				assertThat(context).hasSingleBean(McpStatelessSyncServer.class);
+				assertThat(context.getBeanFactory().containsSingleton("mcpStatelessSyncServer")).isTrue();
+			});
+	}
+
+	@Test
+	void asyncServerIsEagerlyCreatedWithLazyInitialization() {
+		this.contextRunner.withPropertyValues("spring.ai.mcp.server.type=ASYNC")
+			.withInitializer(context -> ((GenericApplicationContext) context)
+				.registerBean(LazyInitializationBeanFactoryPostProcessor.class))
+			.run(context -> {
+				assertThat(context).hasSingleBean(McpStatelessAsyncServer.class);
+				assertThat(context.getBeanFactory().containsSingleton("mcpStatelessAsyncServer")).isTrue();
 			});
 	}
 
