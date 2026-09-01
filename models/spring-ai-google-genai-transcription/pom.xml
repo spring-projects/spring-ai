@@ -38,6 +38,12 @@
 			<version>${google-cloud-speech.version}</version>
 		</dependency>
 
+		<dependency>
+			<groupId>com.google.auth</groupId>
+			<artifactId>google-auth-library-oauth2-http</artifactId>
+			<version>${com.google.auth.version}</version>
+		</dependency>
+
 		<!-- production dependencies -->
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
