@@ -63,7 +63,7 @@ class ImageModelPromptContentObservationHandlerTests {
 			.provider("superprovider")
 			.build();
 		this.observationHandler.onStop(context);
-		assertThat(output).contains("""
+		assertThat(output).containsIgnoringNewLines("""
 				INFO  o.s.a.i.o.ImageModelPromptContentObservationHandler -- Image Model Prompt Content:
 				[""]
 				""");
@@ -77,7 +77,7 @@ class ImageModelPromptContentObservationHandlerTests {
 			.provider("superprovider")
 			.build();
 		this.observationHandler.onStop(context);
-		assertThat(output).contains("""
+		assertThat(output).containsIgnoringNewLines("""
 				INFO  o.s.a.i.o.ImageModelPromptContentObservationHandler -- Image Model Prompt Content:
 				["supercalifragilisticexpialidocious"]
 				""");
@@ -93,7 +93,7 @@ class ImageModelPromptContentObservationHandlerTests {
 			.provider("superprovider")
 			.build();
 		this.observationHandler.onStop(context);
-		assertThat(output).contains("""
+		assertThat(output).containsIgnoringNewLines("""
 				INFO  o.s.a.i.o.ImageModelPromptContentObservationHandler -- Image Model Prompt Content:
 				["you're a chimney sweep", "supercalifragilisticexpialidocious"]
 				""");

@@ -43,7 +43,7 @@ import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.OR
 public class WeaviateFilterExpressionConverterTests {
 
 	private static String format(String text) {
-		return text.trim().replace(" " + System.lineSeparator(), System.lineSeparator()) + System.lineSeparator();
+		return text.trim().replace(" \n", "\n") + "\n";
 	}
 
 	@Test
