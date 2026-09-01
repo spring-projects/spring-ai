@@ -18,6 +18,7 @@ package org.springframework.ai.chat.model;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.Test;
@@ -27,6 +28,7 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.EmptyRateLimit;
 import org.springframework.ai.chat.metadata.RateLimit;
+import org.springframework.ai.content.Media;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -60,9 +62,96 @@ class MessageAggregatorTests {
 		assertThat(aggregated.get().getMetadata().getRateLimit()).isInstanceOf(EmptyRateLimit.class);
 	}
 
+	@Test
+	void assistantMessageSubtypeSurvivesAggregation() {
+		AssistantMessage.ToolCall toolCall = new AssistantMessage.ToolCall("id", "function", "test", "{}");
+		Flux<ChatResponse> responses = Flux.just(
+				chunk(TestAssistantMessage.builder()
+					.content("Hello")
+					.properties(Map.of("first", true))
+					.marker("state")
+					.build()),
+				chunk(TestAssistantMessage.builder()
+					.content(" world")
+					.properties(Map.of("second", true))
+					.toolCalls(List.of(toolCall))
+					.marker("state")
+					.build()));
+
+		AtomicReference<ChatResponse> aggregated = new AtomicReference<>();
+		new MessageAggregator().aggregate(responses, aggregated::set).blockLast();
+
+		AssistantMessage output = aggregated.get().getResult().getOutput();
+		assertThat(output).isInstanceOf(TestAssistantMessage.class);
+		assertThat(((TestAssistantMessage) output).marker).isEqualTo("state");
+		assertThat(output.getText()).isEqualTo("Hello world");
+		assertThat(output.getMetadata()).containsEntry("first", true).containsEntry("second", true);
+		assertThat(output.getToolCalls()).containsExactly(toolCall);
+	}
+
+	@Test
+	void assistantMessageSubtypeSurvivesLaterPlainTerminalChunk() {
+		Flux<ChatResponse> responses = Flux.just(
+				chunk(TestAssistantMessage.builder().content("Hello").marker("state").build()),
+				chunk(AssistantMessage.builder().content(" world").build()));
+
+		AtomicReference<ChatResponse> aggregated = new AtomicReference<>();
+		new MessageAggregator().aggregate(responses, aggregated::set).blockLast();
+
+		AssistantMessage output = aggregated.get().getResult().getOutput();
+		assertThat(output).isInstanceOf(TestAssistantMessage.class);
+		assertThat(((TestAssistantMessage) output).marker).isEqualTo("state");
+		assertThat(output.getText()).isEqualTo("Hello world");
+	}
+
 	private static ChatResponse chunk(String text, RateLimit rateLimit) {
 		ChatResponseMetadata metadata = ChatResponseMetadata.builder().rateLimit(rateLimit).build();
 		return new ChatResponse(List.of(new Generation(new AssistantMessage(text))), metadata);
+	}
+
+	private static ChatResponse chunk(AssistantMessage message) {
+		return new ChatResponse(List.of(new Generation(message)));
+	}
+
+	private static final class TestAssistantMessage extends AssistantMessage {
+
+		private final String marker;
+
+		private TestAssistantMessage(String content, Map<String, Object> properties, List<ToolCall> toolCalls,
+				List<Media> media, String marker) {
+			super(content, properties, toolCalls, media);
+			this.marker = marker;
+		}
+
+		@Override
+		public Builder mutate() {
+			return builder().content(getText())
+				.properties(getMetadata())
+				.toolCalls(getToolCalls())
+				.media(getMedia())
+				.marker(this.marker);
+		}
+
+		public static Builder builder() {
+			return new Builder();
+		}
+
+		private static final class Builder extends AssistantMessage.Builder<Builder> {
+
+			private String marker;
+
+			Builder marker(String marker) {
+				this.marker = marker;
+				return self();
+			}
+
+			@Override
+			public TestAssistantMessage build() {
+				return new TestAssistantMessage(this.content, this.properties, this.toolCalls, this.media, this.marker);
+			}
+
+		}
+
 	}
 
 	private static final class TestRateLimit implements RateLimit {

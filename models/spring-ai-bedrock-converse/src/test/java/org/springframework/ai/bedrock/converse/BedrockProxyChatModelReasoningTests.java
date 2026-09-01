@@ -17,7 +17,10 @@
 package org.springframework.ai.bedrock.converse;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,25 +28,37 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import reactor.core.publisher.Flux;
 import software.amazon.awssdk.core.SdkBytes;
+import software.amazon.awssdk.core.async.SdkPublisher;
 import software.amazon.awssdk.core.document.internal.MapDocument;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeAsyncClient;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
 import software.amazon.awssdk.services.bedrockruntime.model.ContentBlock;
+import software.amazon.awssdk.services.bedrockruntime.model.ContentBlockDelta;
+import software.amazon.awssdk.services.bedrockruntime.model.ContentBlockDeltaEvent;
+import software.amazon.awssdk.services.bedrockruntime.model.ContentBlockStart;
 import software.amazon.awssdk.services.bedrockruntime.model.ConversationRole;
 import software.amazon.awssdk.services.bedrockruntime.model.ConverseMetrics;
 import software.amazon.awssdk.services.bedrockruntime.model.ConverseOutput;
 import software.amazon.awssdk.services.bedrockruntime.model.ConverseRequest;
 import software.amazon.awssdk.services.bedrockruntime.model.ConverseResponse;
+import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamOutput;
+import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamRequest;
+import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamResponseHandler;
 import software.amazon.awssdk.services.bedrockruntime.model.Message;
 import software.amazon.awssdk.services.bedrockruntime.model.ReasoningContentBlock;
+import software.amazon.awssdk.services.bedrockruntime.model.ReasoningContentBlockDelta;
 import software.amazon.awssdk.services.bedrockruntime.model.ReasoningTextBlock;
 import software.amazon.awssdk.services.bedrockruntime.model.StopReason;
 import software.amazon.awssdk.services.bedrockruntime.model.TokenUsage;
 import software.amazon.awssdk.services.bedrockruntime.model.ToolUseBlock;
+import software.amazon.awssdk.services.bedrockruntime.model.ToolUseBlockDelta;
+import software.amazon.awssdk.services.bedrockruntime.model.ToolUseBlockStart;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionResult;
@@ -53,6 +68,7 @@ import org.springframework.ai.tool.function.FunctionToolCallback;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -194,6 +210,85 @@ class BedrockProxyChatModelReasoningTests {
 		// reasoning block on replay.
 		assertThat(indexOfType(content, ContentBlock.Type.REASONING_CONTENT)).isEqualTo(-1);
 		assertThat(indexOfType(content, ContentBlock.Type.TOOL_USE)).isGreaterThanOrEqualTo(0);
+	}
+
+	@Test
+	void streamingReasoningContentSurvivesAggregationAndReplay() {
+		byte[] redacted = "redacted-reasoning".getBytes(StandardCharsets.UTF_8);
+		AtomicReference<ConverseStreamResponseHandler> handlerRef = new AtomicReference<>();
+		doAnswer(invocation -> {
+			handlerRef.set(invocation.getArgument(1));
+			return CompletableFuture.completedFuture(null);
+		}).when(this.bedrockRuntimeAsyncClient)
+			.converseStream(isA(ConverseStreamRequest.class), isA(ConverseStreamResponseHandler.class));
+
+		CompletableFuture<List<ChatResponse>> chunksFuture = this.chatModel.stream(new Prompt("Use the weather tool"))
+			.collectList()
+			.toFuture();
+		ConverseStreamResponseHandler handler = handlerRef.get();
+		handler.onEventStream(SdkPublisher.fromIterable(streamEvents(redacted)));
+		handler.complete();
+		List<ChatResponse> chunks = chunksFuture.join();
+		AtomicReference<ChatResponse> aggregated = new AtomicReference<>();
+		new MessageAggregator().aggregate(Flux.fromIterable(chunks), aggregated::set).blockLast();
+
+		AssistantMessage output = aggregated.get().getResult().getOutput();
+		assertThat(output).isInstanceOf(BedrockAssistantMessage.class);
+		assertThat(output.getText()).isEqualTo("Ordinary text");
+		assertThat(output.getToolCalls()).singleElement().satisfies(toolCall -> {
+			assertThat(toolCall.name()).isEqualTo("getCurrentWeather");
+			assertThat(toolCall.arguments()).isEqualTo("{\"location\":\"Paris\"}");
+		});
+
+		List<BedrockReasoningContent> reasoningContents = ((BedrockAssistantMessage) output).getReasoningContents();
+		assertThat(reasoningContents).hasSize(2);
+		assertThat(reasoningContents.get(0).getRedactedContent()).isEqualTo(redacted);
+		assertThat(reasoningContents.get(1).getText()).isEqualTo("Think before using the tool.");
+		assertThat(reasoningContents.get(1).getSignature()).isEqualTo("signed-reasoning");
+
+		ConverseRequest replay = this.chatModel
+			.createRequest(new Prompt(List.of(output), BedrockChatOptions.builder().build()));
+		List<ContentBlock> replayedContent = replay.messages().get(0).content();
+		assertThat(replayedContent.stream().filter(block -> block.type() == ContentBlock.Type.REASONING_CONTENT))
+			.map(ContentBlock::reasoningContent)
+			.containsExactly(reasoningContents.get(0).toContentBlock().reasoningContent(),
+					reasoningContents.get(1).toContentBlock().reasoningContent());
+		assertThat(indexOfType(replayedContent, ContentBlock.Type.REASONING_CONTENT))
+			.isLessThan(indexOfType(replayedContent, ContentBlock.Type.TOOL_USE));
+	}
+
+	private static List<ConverseStreamOutput> streamEvents(byte[] redacted) {
+		List<ConverseStreamOutput> events = new ArrayList<>();
+		events.add(reasoningDelta(1, ReasoningContentBlockDelta.fromText("Think before ")));
+		events.add(reasoningDelta(0, ReasoningContentBlockDelta.fromRedactedContent(SdkBytes.fromByteArray(redacted))));
+		events.add(reasoningDelta(1, ReasoningContentBlockDelta.fromText("using the tool.")));
+		events.add(reasoningDelta(1, ReasoningContentBlockDelta.fromSignature("signed-")));
+		events.add(reasoningDelta(1, ReasoningContentBlockDelta.fromSignature("reasoning")));
+		events.add(ConverseStreamOutput.contentBlockStartBuilder()
+			.contentBlockIndex(2)
+			.start(ContentBlockStart
+				.fromToolUse(ToolUseBlockStart.builder().toolUseId("tooluse_123").name("getCurrentWeather").build()))
+			.build());
+		events.add(ConverseStreamOutput.contentBlockDeltaBuilder()
+			.contentBlockIndex(2)
+			.delta(ContentBlockDelta.fromToolUse(ToolUseBlockDelta.builder().input("{\"location\":\"Paris\"}").build()))
+			.build());
+		events.add(ConverseStreamOutput.contentBlockDeltaBuilder()
+			.contentBlockIndex(3)
+			.delta(ContentBlockDelta.fromText("Ordinary text"))
+			.build());
+		events.add(ConverseStreamOutput.messageStopBuilder().stopReason(StopReason.TOOL_USE).build());
+		events.add(ConverseStreamOutput.metadataBuilder()
+			.usage(TokenUsage.builder().inputTokens(10).outputTokens(20).totalTokens(30).build())
+			.build());
+		return events;
+	}
+
+	private static ContentBlockDeltaEvent reasoningDelta(int index, ReasoningContentBlockDelta delta) {
+		return ConverseStreamOutput.contentBlockDeltaBuilder()
+			.contentBlockIndex(index)
+			.delta(ContentBlockDelta.fromReasoningContent(delta))
+			.build();
 	}
 
 	private void runToolLoop() {

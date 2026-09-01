@@ -60,6 +60,7 @@ import software.amazon.awssdk.services.bedrockruntime.model.Message;
 import software.amazon.awssdk.services.bedrockruntime.model.OutputConfig;
 import software.amazon.awssdk.services.bedrockruntime.model.OutputFormat;
 import software.amazon.awssdk.services.bedrockruntime.model.OutputFormatStructure;
+import software.amazon.awssdk.services.bedrockruntime.model.ReasoningContentBlock;
 import software.amazon.awssdk.services.bedrockruntime.model.S3Location;
 import software.amazon.awssdk.services.bedrockruntime.model.SystemContentBlock;
 import software.amazon.awssdk.services.bedrockruntime.model.TokenUsage;
@@ -815,7 +816,8 @@ public class BedrockProxyChatModel implements ChatModel {
 
 			Flux<ChatResponse> chatResponses = new ConverseChatResponseStream(this.bedrockRuntimeAsyncClient,
 					converseStreamRequest, accumulatedUsage)
-				.stream();
+				.stream()
+				.map(this::toBedrockStreamingChatResponse);
 
 			ChatOptions options = prompt.getOptions();
 			Assert.state(options != null, "Prompt options must not be null");
@@ -827,6 +829,35 @@ public class BedrockProxyChatModel implements ChatModel {
 
 			return new MessageAggregator().aggregate(chatResponseFlux, observationContext::setResponse);
 		});
+	}
+
+	private ChatResponse toBedrockStreamingChatResponse(ChatResponse chatResponse) {
+		Generation generation = chatResponse.getResult();
+		if (generation == null) {
+			return chatResponse;
+		}
+
+		AssistantMessage output = generation.getOutput();
+		Object reasoningContent = output.getMetadata().get(ReasoningContentBlock.class.getName());
+		if (!(reasoningContent instanceof List<?> reasoningContentBlocks) || reasoningContentBlocks.isEmpty()) {
+			return chatResponse;
+		}
+
+		List<BedrockReasoningContent> reasoningContents = reasoningContentBlocks.stream()
+			.map(ReasoningContentBlock.class::cast)
+			.map(BedrockReasoningContent::from)
+			.toList();
+		Map<String, Object> properties = new HashMap<>(output.getMetadata());
+		properties.remove(ReasoningContentBlock.class.getName());
+		BedrockAssistantMessage assistantMessage = BedrockAssistantMessage.builder()
+			.content(output.getText())
+			.properties(properties)
+			.toolCalls(output.getToolCalls())
+			.media(output.getMedia())
+			.reasoningContents(reasoningContents)
+			.build();
+		return new ChatResponse(List.of(new Generation(assistantMessage, generation.getMetadata())),
+				chatResponse.getMetadata());
 	}
 
 	/**
