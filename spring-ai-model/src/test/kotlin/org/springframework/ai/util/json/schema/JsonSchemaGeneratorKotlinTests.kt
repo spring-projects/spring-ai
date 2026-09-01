@@ -19,6 +19,7 @@ package org.springframework.ai.util.json.schema
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.springframework.ai.tool.annotation.Tool
+import org.springframework.ai.tool.annotation.ToolParam
 import tools.jackson.databind.JsonNode
 import tools.jackson.databind.json.JsonMapper
 
@@ -77,11 +78,44 @@ class JsonSchemaGeneratorKotlinTests {
 		assertThat(requiredNames(schemaNode["required"])).containsExactly("url")
 	}
 
+	@Test
+	fun `@ToolParam description on nested Kotlin data class parameter is included in schema`() {
+		val method = WeatherTools::class.java.getMethod("getWeather", Address::class.java)
+		val schema = JsonSchemaGenerator.generateForMethodInput(method)
+		val schemaNode = jsonMapper.readTree(schema)
+
+		val streetNode = schemaNode["properties"]["address"]["properties"]["street"]
+		assertThat(streetNode["description"].asString())
+			.isEqualTo("The street (without number) of the address")
+	}
+
+	@Test
+	fun `unannotated nested Kotlin data class fields have no description in schema`() {
+		val method = WeatherTools::class.java.getMethod("getWeather", Address::class.java)
+		val schema = JsonSchemaGenerator.generateForMethodInput(method)
+		val schemaNode = jsonMapper.readTree(schema)
+
+		val addressProps = schemaNode["properties"]["address"]["properties"]
+		assertThat(addressProps["postalCode"].has("description")).isFalse()
+		assertThat(addressProps["city"].has("description")).isFalse()
+	}
+
 	private fun requiredNames(required: JsonNode?): List<String> {
 		if (required == null || required.isNull) {
 			return emptyList()
 		}
 		return required.iterator().asSequence().map { it.asString() }.toList()
+	}
+
+	private data class Address(
+		@ToolParam(description = "The street (without number) of the address") val street: String,
+		val postalCode: String,
+		val city: String,
+	)
+
+	private class WeatherTools {
+		@Tool(description = "Get the weather at a specific address")
+		fun getWeather(address: Address): String = "sunny"
 	}
 
 	private data class Filter(val name: String?, val ids: List<String>?)
