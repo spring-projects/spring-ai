@@ -301,7 +301,7 @@
 		<rest-assured-bom.version>5.5.6</rest-assured-bom.version>
 
 		<!-- Build plugins -->
-		<antlr.version>4.13.1</antlr.version>
+ 		<antlr.version>4.13.2</antlr.version>
 		<antora-maven-plugin.version>1.0.0-alpha.5</antora-maven-plugin.version>
 		<antora-component-version-maven-plugin.version>0.0.4</antora-component-version-maven-plugin.version>
 		<flatten-maven-plugin.version>1.5.0</flatten-maven-plugin.version>
