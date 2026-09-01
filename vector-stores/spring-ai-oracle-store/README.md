@@ -1,1 +1,0 @@
-[Oracle AI Vector Search Documentation](https://docs.oracle.com/en/database/oracle/oracle-database/23/nfcoa/ai_vector_search.html)

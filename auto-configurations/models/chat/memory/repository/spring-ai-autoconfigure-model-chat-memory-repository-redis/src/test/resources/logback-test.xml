@@ -1,8 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<configuration>
-    <include resource="org/springframework/boot/logging/logback/base.xml"/>
-    <logger name="org.springframework.ai" level="INFO"/>
-    <logger name="org.springframework.ai.chat.memory.repository.redis" level="DEBUG"/>
-    <logger name="org.springframework.ai.model.chat.memory.repository.redis.autoconfigure" level="DEBUG"/>
-    <logger name="redis.clients.jedis" level="INFO"/>
-</configuration>

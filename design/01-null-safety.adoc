@@ -134,7 +134,49 @@ Spring Boot `@ConfigurationProperties` classes should be annotated using the fol
 * if the property field does *not* have a default value, then obviously the getter needs to also be annotated with `@Nullable` (and the configuration class that uses the `@ConfigurationProperties` class is responsible for checking the value). Even though the setter will never be invoked with `null`, our practice is to annotate the setter as `@Nullable` nevertheless, because the symetry between getter and setter allows Kotlin to correctly mark the property as nullable.
 
 === Nullability and the Builder pattern
-TODO
+Builder classes in Spring AI follow a consistent pattern for null safety:
+
+* All optional fields in the builder are annotated with @Nullable,
+* The uild() method validates required fields using Assert.notNull(),
+* Collection and map fields are initialized to empty structures in the builder,
+* The builder's clone() method performs deep copy of mutable collections.
+
+Here is an example from AnthropicChatOptions:
+
+[source,java]
+----
+public static class Builder extends AbstractBuilder<Builder> {
+
+}
+
+protected abstract static class AbstractBuilder<B extends AbstractBuilder<B>>
+        extends DefaultToolCallingChatOptions.Builder<B> 
+        implements StructuredOutputChatOptions.Builder<B> {
+
+    // All optional fields are @Nullable
+    private @Nullable String baseUrl;
+    private @Nullable String apiKey;
+    private @Nullable Duration timeout;
+    private @Nullable Map<String, String> customHeaders;
+    // ...
+
+    @Override
+    public B clone() {
+        AbstractBuilder<B> copy = super.clone();
+        // Deep copy mutable collections
+        copy.customHeaders = this.customHeaders == null ? null : new HashMap<>(this.customHeaders);
+        copy.citationDocuments = this.citationDocuments == null ? null : new ArrayList<>(this.citationDocuments);
+        return (B) copy;
+    }
+}
+----
+
+This pattern ensures that:
+
+* Required fields (like model) are enforced at build time,
+* Optional fields can be safely ignored by callers,
+* Mutable collections are properly isolated between instances,
+* The builder can be safely reused or cloned.
 
 === User Impact
 Checks are only performed in scopes that are annotated as `@NullMarked`.
@@ -147,3 +189,4 @@ For further reference, please consult the following:
 * JSpecify https://jspecify.dev/docs/user-guide/[user-guide]
 * Spring https://spring.io/blog/2025/03/10/null-safety-in-spring-apps-with-jspecify-and-null-away[Blog] https://spring.io/blog/2025/11/12/null-safe-applications-with-spring-boot-4[Posts] about null safety
 * https://github.com/uber/NullAway[NullAway] and https://errorprone.info/[ErrorProne]
+

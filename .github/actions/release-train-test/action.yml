@@ -1,7 +1,0 @@
-name: Test Release
-runs:
-  using: composite
-  steps:
-    - name: Test Release
-      shell: bash
-      run: ./mvnw --batch-mode -ntp -PreleaseTrain --settings release-train-settings.xml test

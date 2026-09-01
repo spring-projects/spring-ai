@@ -1,3 +1,0 @@
-= Azure Cosmos DB
-
-The Azure Cosmos DB Vector Store integration is now maintained by the community, please see the https://azurecosmosdb.github.io/spring-ai/docs/index.html[related documentation] for more details.
