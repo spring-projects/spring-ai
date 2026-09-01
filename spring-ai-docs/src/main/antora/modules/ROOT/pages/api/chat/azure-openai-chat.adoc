@@ -1,3 +1,0 @@
-= Azure OpenAI Chat
-
-As of Spring AI `2.0.0-M5`, xref:api/chat/openai-chat.adoc[OpenAI Chat] should be use to access OpenAI models deployed on Azure / Microsoft Foundry.

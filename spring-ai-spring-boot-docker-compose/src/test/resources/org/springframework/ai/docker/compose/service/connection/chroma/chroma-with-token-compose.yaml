@@ -1,8 +1,0 @@
-services:
-  chroma:
-    image: '{imageName}'
-    ports:
-      - '8000'
-    environment:
-      - CHROMA_SERVER_AUTHN_CREDENTIALS=secret
-      - CHROMA_SERVER_AUTHN_PROVIDER=chromadb.auth.token_authn.TokenAuthenticationServerProvider
