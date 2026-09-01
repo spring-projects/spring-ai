@@ -135,42 +135,62 @@ class GoogleGenAiTextToSpeechModelTests {
 	}
 
 	@Test
-	void voiceNameAndSpeakerVoiceConfigsAreMutuallyExclusive() {
+	void voiceNameAndSpeakerVoiceConfigsAreBothMapped() {
 		GoogleGenAiAudioSpeechOptions options = GoogleGenAiAudioSpeechOptions.builder()
 			.voiceName("Kore")
 			.speakerVoiceConfigs(List.of(new SpeakerVoiceConfig("Sam", "Kore")))
 			.build();
 		GoogleGenAiTextToSpeechModel model = new GoogleGenAiTextToSpeechModel(this.connectionDetails, options);
 
-		assertThatThrownBy(() -> model.call(new TextToSpeechPrompt("Hi", options)))
-			.isInstanceOf(IllegalStateException.class)
-			.hasMessageContaining("mutually exclusive");
+		model.call(new TextToSpeechPrompt("Hi", options));
+
+		ArgumentCaptor<VoiceSelectionParams> voiceCaptor = ArgumentCaptor.forClass(VoiceSelectionParams.class);
+		verify(this.client).synthesizeSpeech(any(SynthesisInput.class), voiceCaptor.capture(), any(AudioConfig.class));
+
+		// both the voiceName and the speakerVoiceConfigs are set on the request, since
+		// the model performs no mutual-exclusivity validation between them
+		assertThat(voiceCaptor.getValue().getName()).isEqualTo("Kore");
+		assertThat(voiceCaptor.getValue().hasMultiSpeakerVoiceConfig()).isTrue();
 	}
 
 	@Test
-	void ssmlAndMarkupAreMutuallyExclusive() {
+	void ssmlTakesPrecedenceOverMarkup() {
 		GoogleGenAiAudioSpeechOptions options = GoogleGenAiAudioSpeechOptions.builder()
 			.ssml("<speak>Hi</speak>")
 			.markup("Hi")
 			.build();
 		GoogleGenAiTextToSpeechModel model = new GoogleGenAiTextToSpeechModel(this.connectionDetails, options);
 
-		assertThatThrownBy(() -> model.call(new TextToSpeechPrompt("Hi", options)))
-			.isInstanceOf(IllegalStateException.class)
-			.hasMessageContaining("mutually exclusive");
+		model.call(new TextToSpeechPrompt("Hi", options));
+
+		ArgumentCaptor<SynthesisInput> inputCaptor = ArgumentCaptor.forClass(SynthesisInput.class);
+		verify(this.client).synthesizeSpeech(inputCaptor.capture(), any(VoiceSelectionParams.class),
+				any(AudioConfig.class));
+
+		// ssml is checked first in createSynthesisInput, so it takes precedence over
+		// markup
+		assertThat(inputCaptor.getValue().getSsml()).isEqualTo("<speak>Hi</speak>");
+		assertThat(inputCaptor.getValue().getMarkup()).isEmpty();
 	}
 
 	@Test
-	void ssmlAndMultiSpeakerTurnsAreMutuallyExclusive() {
+	void ssmlTakesPrecedenceOverMultiSpeakerTurns() {
 		GoogleGenAiAudioSpeechOptions options = GoogleGenAiAudioSpeechOptions.builder()
 			.ssml("<speak>Hi</speak>")
 			.multiSpeakerTurns(List.of(new GoogleGenAiAudioSpeechOptions.MultiSpeakerTurn("Sam", "Hi")))
 			.build();
 		GoogleGenAiTextToSpeechModel model = new GoogleGenAiTextToSpeechModel(this.connectionDetails, options);
 
-		assertThatThrownBy(() -> model.call(new TextToSpeechPrompt("Hi", options)))
-			.isInstanceOf(IllegalStateException.class)
-			.hasMessageContaining("mutually exclusive");
+		model.call(new TextToSpeechPrompt("Hi", options));
+
+		ArgumentCaptor<SynthesisInput> inputCaptor = ArgumentCaptor.forClass(SynthesisInput.class);
+		verify(this.client).synthesizeSpeech(inputCaptor.capture(), any(VoiceSelectionParams.class),
+				any(AudioConfig.class));
+
+		// ssml is checked first in createSynthesisInput, so it takes precedence over
+		// multiSpeakerTurns
+		assertThat(inputCaptor.getValue().getSsml()).isEqualTo("<speak>Hi</speak>");
+		assertThat(inputCaptor.getValue().hasMultiSpeakerMarkup()).isFalse();
 	}
 
 	@Test
