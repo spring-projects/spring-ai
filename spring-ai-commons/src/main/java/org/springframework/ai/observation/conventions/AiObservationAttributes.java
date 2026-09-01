@@ -21,6 +21,7 @@ package org.springframework.ai.observation.conventions;
  * by the OpenTelemetry Semantic Conventions for Generative AI.
  *
  * @author Thomas Vitale
+ * @author Jewoo Shin
  * @since 1.0.0
  * @see <a href="https://opentelemetry.io/docs/specs/semconv/gen-ai">OpenTelemetry
  * Semantic Conventions for Generative AI</a>.
@@ -115,6 +116,11 @@ public enum AiObservationAttributes {
 	 * The name of the model that generated the response.
 	 */
 	RESPONSE_MODEL("gen_ai.response.model"),
+	/**
+	 * The completion messages returned by the model. Opt-in, as it may contain sensitive
+	 * information.
+	 */
+	OUTPUT_MESSAGES("gen_ai.output.messages"),
 
 	// GenAI Usage
 
