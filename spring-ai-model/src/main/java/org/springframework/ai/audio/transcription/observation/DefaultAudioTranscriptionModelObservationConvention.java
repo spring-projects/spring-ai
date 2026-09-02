@@ -16,6 +16,8 @@
 
 package org.springframework.ai.audio.transcription.observation;
 
+import java.util.Objects;
+
 import io.micrometer.common.KeyValue;
 import io.micrometer.common.KeyValues;
 
@@ -44,7 +46,7 @@ public class DefaultAudioTranscriptionModelObservationConvention
 	@Override
 	public String getContextualName(AudioTranscriptionModelObservationContext context) {
 		AudioTranscriptionOptions options = context.getRequest().getOptions();
-		if (options != null && StringUtils.hasText(options.getModel())) {
+		if (Objects.nonNull(options) && StringUtils.hasText(options.getModel())) {
 			return "%s %s".formatted(context.getOperationMetadata().operationType(), options.getModel());
 		}
 		return context.getOperationMetadata().operationType();
@@ -67,7 +69,7 @@ public class DefaultAudioTranscriptionModelObservationConvention
 
 	protected KeyValue requestModel(AudioTranscriptionModelObservationContext context) {
 		AudioTranscriptionOptions options = context.getRequest().getOptions();
-		if (options != null && StringUtils.hasText(options.getModel())) {
+		if (Objects.nonNull(options) && StringUtils.hasText(options.getModel())) {
 			return KeyValue.of(AudioTranscriptionModelObservationDocumentation.LowCardinalityKeyNames.REQUEST_MODEL,
 					options.getModel());
 		}
