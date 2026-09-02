@@ -32,7 +32,7 @@ import org.springframework.ai.audio.transcription.AudioTranscriptionResponseMeta
  */
 public class GoogleGenAiAudioTranscriptionResponseMetadata extends AudioTranscriptionResponseMetadata {
 
-	private final @Nullable Double duration;
+	private final @Nullable Long duration;
 
 	private final @Nullable String language;
 
@@ -44,7 +44,7 @@ public class GoogleGenAiAudioTranscriptionResponseMetadata extends AudioTranscri
 		this(null, null, null, null);
 	}
 
-	public GoogleGenAiAudioTranscriptionResponseMetadata(@Nullable Double duration, @Nullable String language,
+	public GoogleGenAiAudioTranscriptionResponseMetadata(@Nullable Long duration, @Nullable String language,
 			@Nullable String model, @Nullable String requestId) {
 		this.duration = duration;
 		this.language = language;
@@ -56,7 +56,7 @@ public class GoogleGenAiAudioTranscriptionResponseMetadata extends AudioTranscri
 	 * Returns the billed audio duration in seconds, or {@code null} if not returned by
 	 * the API.
 	 */
-	public @Nullable Double getDuration() {
+	public @Nullable Long getDuration() {
 		return this.duration;
 	}
 

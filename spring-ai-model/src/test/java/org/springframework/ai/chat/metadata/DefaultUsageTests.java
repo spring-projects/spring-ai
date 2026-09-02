@@ -290,6 +290,56 @@ public class DefaultUsageTests {
 	}
 
 	@Test
+	void testDurationField() {
+		DefaultUsage usage = new DefaultUsage(12L);
+		assertThat(usage.getDuration()).isEqualTo(12L);
+		assertThat(usage.getPromptTokens()).isEqualTo(0);
+		assertThat(usage.getCompletionTokens()).isEqualTo(0);
+		assertThat(usage.getTotalTokens()).isEqualTo(0);
+	}
+
+	@Test
+	void testDurationNullByDefault() {
+		DefaultUsage usage = new DefaultUsage(100, 50, 150);
+		assertThat(usage.getDuration()).isNull();
+
+		DefaultUsage usageWithCache = new DefaultUsage(100, 50, 150, null, 500L, 200L);
+		assertThat(usageWithCache.getDuration()).isNull();
+	}
+
+	@Test
+	void testToStringWithDuration() {
+		DefaultUsage usage = new DefaultUsage(12L);
+		assertThat(usage)
+			.hasToString("DefaultUsage{promptTokens=0, completionTokens=0, totalTokens=0, " + "duration=12}");
+	}
+
+	@Test
+	void testSerializationWithDuration() throws Exception {
+		DefaultUsage usage = new DefaultUsage(12L);
+		String json = JsonMapper.shared().writeValueAsString(usage);
+		assertThat(json).contains("\"duration\":12");
+	}
+
+	@Test
+	void testDeserializationWithDuration() throws Exception {
+		String json = "{\"promptTokens\":100,\"completionTokens\":50,\"totalTokens\":150,\"duration\":12}";
+		DefaultUsage usage = JsonMapper.shared().readValue(json, DefaultUsage.class);
+		assertThat(usage.getDuration()).isEqualTo(12L);
+	}
+
+	@Test
+	void testEqualsAndHashCodeWithDuration() {
+		DefaultUsage usage1 = new DefaultUsage(12L);
+		DefaultUsage usage2 = new DefaultUsage(12L);
+		DefaultUsage usage3 = new DefaultUsage(20L);
+
+		assertThat(usage1).isEqualTo(usage2);
+		assertThat(usage1.hashCode()).isEqualTo(usage2.hashCode());
+		assertThat(usage1).isNotEqualTo(usage3);
+	}
+
+	@Test
 	void testCalculatedTotalTokens() {
 		// Test when total tokens is null and should be calculated
 		DefaultUsage usage = new DefaultUsage(Integer.valueOf(100), Integer.valueOf(50), null);

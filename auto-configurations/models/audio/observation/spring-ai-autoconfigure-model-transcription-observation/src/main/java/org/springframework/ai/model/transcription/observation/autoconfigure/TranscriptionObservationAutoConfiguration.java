@@ -16,23 +16,17 @@
 
 package org.springframework.ai.model.transcription.observation.autoconfigure;
 
-import io.micrometer.tracing.Tracer;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import io.micrometer.core.instrument.MeterRegistry;
 
 import org.springframework.ai.audio.transcription.TranscriptionModel;
-import org.springframework.ai.audio.transcription.observation.AudioTranscriptionModelObservationContext;
-import org.springframework.ai.audio.transcription.observation.AudioTranscriptionPromptContentObservationHandler;
-import org.springframework.ai.observation.TracingAwareLoggingObservationHandler;
+import org.springframework.ai.audio.transcription.observation.TranscriptionModelMeterObservationHandler;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingClass;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 
 /**
  * Auto-configuration for Spring AI transcription model observations.
@@ -40,50 +34,18 @@ import org.springframework.context.annotation.Configuration;
  * @author Olivier Le Quellec
  * @since 2.0.1
  */
-@AutoConfiguration
+@AutoConfiguration(
+		afterName = "org.springframework.boot.micrometer.metrics.autoconfigure.CompositeMeterRegistryAutoConfiguration")
 @ConditionalOnClass(TranscriptionModel.class)
 @EnableConfigurationProperties(TranscriptionObservationProperties.class)
 public class TranscriptionObservationAutoConfiguration {
 
-	private static final Log logger = LogFactory.getLog(TranscriptionObservationAutoConfiguration.class);
-
-	private static void logPromptContentWarning() {
-		logger.warn(
-				"You have enabled logging out the transcription prompt content with the risk of exposing sensitive or private information. Please, be careful!");
-	}
-
-	@Configuration(proxyBeanMethods = false)
-	@ConditionalOnClass(Tracer.class)
-	@ConditionalOnBean(Tracer.class)
-	static class TracerPresentObservationConfiguration {
-
-		@Bean
-		@ConditionalOnMissingBean(value = AudioTranscriptionPromptContentObservationHandler.class,
-				name = "transcriptionModelPromptContentObservationHandler")
-		@ConditionalOnProperty(prefix = TranscriptionObservationProperties.CONFIG_PREFIX, name = "log-prompt",
-				havingValue = "true")
-		TracingAwareLoggingObservationHandler<AudioTranscriptionModelObservationContext> transcriptionModelPromptContentObservationHandler(
-				Tracer tracer) {
-			logPromptContentWarning();
-			return new TracingAwareLoggingObservationHandler<>(new AudioTranscriptionPromptContentObservationHandler(),
-					tracer);
-		}
-
-	}
-
-	@Configuration(proxyBeanMethods = false)
-	@ConditionalOnMissingClass("io.micrometer.tracing.Tracer")
-	static class TracerNotPresentObservationConfiguration {
-
-		@Bean
-		@ConditionalOnMissingBean
-		@ConditionalOnProperty(prefix = TranscriptionObservationProperties.CONFIG_PREFIX, name = "log-prompt",
-				havingValue = "true")
-		AudioTranscriptionPromptContentObservationHandler transcriptionModelPromptContentObservationHandler() {
-			logPromptContentWarning();
-			return new AudioTranscriptionPromptContentObservationHandler();
-		}
-
+	@Bean
+	@ConditionalOnMissingBean
+	@ConditionalOnBean(MeterRegistry.class)
+	TranscriptionModelMeterObservationHandler transcriptionModelMeterObservationHandler(
+			ObjectProvider<MeterRegistry> meterRegistry) {
+		return new TranscriptionModelMeterObservationHandler(meterRegistry.getObject());
 	}
 
 }

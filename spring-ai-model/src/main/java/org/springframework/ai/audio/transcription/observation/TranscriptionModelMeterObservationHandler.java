@@ -16,24 +16,35 @@
 
 package org.springframework.ai.audio.transcription.observation;
 
+import java.util.Objects;
+
+import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationHandler;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+
+import org.springframework.ai.model.observation.ModelUsageMetricsGenerator;
 
 /**
- * Handler for emitting transcription prompt content to logs.
+ * Handler for generating metrics from audio transcription model observations.
  *
  * @author Olivier Le Quellec
- * @since 2.0.1
+ * @since 2.0.2
  */
-public class AudioTranscriptionPromptContentObservationHandler
+public class TranscriptionModelMeterObservationHandler
 		implements ObservationHandler<AudioTranscriptionModelObservationContext> {
 
-	private static final Log logger = LogFactory.getLog(AudioTranscriptionPromptContentObservationHandler.class);
+	private final MeterRegistry meterRegistry;
+
+	public TranscriptionModelMeterObservationHandler(MeterRegistry meterRegistry) {
+		this.meterRegistry = meterRegistry;
+	}
 
 	@Override
 	public void onStop(AudioTranscriptionModelObservationContext context) {
+		if (Objects.nonNull(context.getResponse())) {
+			ModelUsageMetricsGenerator.generate(context.getResponse().getMetadata().getUsage(), context,
+					this.meterRegistry);
+		}
 	}
 
 	@Override

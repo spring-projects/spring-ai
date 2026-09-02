@@ -54,6 +54,7 @@ import org.springframework.ai.audio.transcription.observation.AudioTranscription
 import org.springframework.ai.audio.transcription.observation.AudioTranscriptionModelObservationConvention;
 import org.springframework.ai.audio.transcription.observation.AudioTranscriptionModelObservationDocumentation;
 import org.springframework.ai.audio.transcription.observation.DefaultAudioTranscriptionModelObservationConvention;
+import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.google.genai.transcription.metadata.GoogleGenAiAudioTranscriptionResponseMetadata;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.retry.RetryUtils;
@@ -369,9 +370,11 @@ public class GoogleGenAiTranscriptionModel implements TranscriptionModel {
 
 		final RecognitionResponseMetadata metadata = recognizeResponse.getMetadata();
 
+		final long billedDuration = Durations.toSeconds(metadata.getTotalBilledDuration());
+
 		final AudioTranscriptionResponseMetadata responseMetadata = new GoogleGenAiAudioTranscriptionResponseMetadata(
-				Durations.toSecondsAsDouble(metadata.getTotalBilledDuration()), language, options.getModel(),
-				metadata.getRequestId());
+				billedDuration, language, options.getModel(), metadata.getRequestId());
+		responseMetadata.setUsage(new DefaultUsage(billedDuration));
 
 		return new AudioTranscriptionResponse(transcription, responseMetadata);
 	}
