@@ -18,7 +18,9 @@ package org.springframework.ai.model.bedrock.titan.autoconfigure;
 
 import java.util.Base64;
 import java.util.List;
+import java.util.stream.IntStream;
 
+import org.assertj.core.data.Offset;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.regions.Region;
 
@@ -80,6 +82,27 @@ public class BedrockTitanEmbeddingAutoConfigurationIT {
 			assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
 			assertThat(embeddingModel.dimensions()).isEqualTo(1024);
 		});
+	}
+
+	@Test
+	public void singleV2TextEmbedding() {
+		this.contextRunner.withPropertyValues("spring.ai.bedrock.titan.embedding.input-type=TEXT",
+				"spring.ai.bedrock.titan.embedding.model=" + TitanEmbeddingModel.TITAN_EMBED_TEXT_V2.id(),
+				"spring.ai.bedrock.titan.embedding.dimensions=512", "spring.ai.bedrock.titan.embedding.normalize=false")
+			.run(context -> {
+				BedrockTitanEmbeddingModel embeddingModel = context.getBean(BedrockTitanEmbeddingModel.class);
+				assertThat(embeddingModel).isNotNull();
+
+				EmbeddingResponse embeddingResponse = embeddingModel.embedForResponse(List.of("Hello World"));
+				assertThat(embeddingResponse.getResults()).hasSize(1);
+				assertThat(embeddingResponse.getResults().get(0).getOutput()).isNotEmpty();
+				assertThat(embeddingModel.dimensions()).isEqualTo(512);
+
+				float[] embedding = embeddingResponse.getResult().getOutput();
+				double l2Norm = Math
+					.sqrt(IntStream.range(0, embedding.length).mapToDouble(i -> embedding[i] * embedding[i]).sum());
+				assertThat(l2Norm).isNotCloseTo(1.0, Offset.offset(0.001));
+			});
 	}
 
 	@Test
