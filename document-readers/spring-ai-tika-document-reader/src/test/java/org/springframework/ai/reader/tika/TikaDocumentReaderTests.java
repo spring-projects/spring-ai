@@ -57,7 +57,10 @@ public class TikaDocumentReaderTests {
 			"classpath:/sample.pptx,sample.pptx,Sample FILE" })
 	public void testReaderWithFormatter(String resourceUri, String resourceName, String contentSnipped) {
 
-		ExtractedTextFormatter formatter = ExtractedTextFormatter.builder().withNumberOfTopTextLinesToDelete(5).build();
+		ExtractedTextFormatter formatter = ExtractedTextFormatter.builder()
+			.overrideLineSeparator("\n")
+			.withNumberOfTopTextLinesToDelete(5)
+			.build();
 		var docs = new TikaDocumentReader(resourceUri, formatter).get();
 
 		assertThat(docs).hasSize(1);
