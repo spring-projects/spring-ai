@@ -314,6 +314,12 @@
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-wavespeed</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-transformers</artifactId>
 				<version>${project.version}</version>
 			</dependency>
@@ -664,6 +670,12 @@
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-autoconfigure-model-wavespeed</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-autoconfigure-model-transformers</artifactId>
 				<version>${project.version}</version>
 			</dependency>
@@ -993,6 +1005,12 @@
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-starter-model-stability-ai</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-model-wavespeed</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
