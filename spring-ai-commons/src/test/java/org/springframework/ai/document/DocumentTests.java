@@ -18,7 +18,10 @@ package org.springframework.ai.document;
 
 import java.net.URI;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.json.JsonMapper;
@@ -29,6 +32,7 @@ import org.springframework.ai.util.JacksonUtils;
 import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class DocumentTests {
@@ -277,6 +281,30 @@ public class DocumentTests {
 		assertThat(mutated.getScore()).isEqualTo(0.8);
 		assertThat(mutated.getMetadata()).containsEntry("new", "metadata");
 		assertThat(original.getText()).isEqualTo("Original text"); // Original unchanged
+	}
+
+	@Test
+	void testMutateDoesNotAlterOriginalMetadata() {
+		Document original = Document.builder().text("Original text").metadata("original", "value").build();
+
+		Document mutated = original.mutate().metadata("new", "metadata").build();
+
+		assertThat(mutated.getMetadata()).containsEntry("original", "value").containsEntry("new", "metadata");
+		assertThat(original.getMetadata()).containsExactly(entry("original", "value"));
+	}
+
+	@Test
+	void testMutatedDocumentDoesNotEvictOriginalFromHashSet() {
+		Document original = Document.builder().text("Original text").metadata("original", "value").build();
+		Set<Document> documents = new HashSet<>(List.of(original));
+
+		original.mutate().metadata("new", "metadata").build();
+
+		// metadata participates in equals/hashCode, so mutating a copy must not move the
+		// original within a hash-based collection. Assert on Set#contains rather than
+		// AssertJ's contains, which scans linearly with equals and would not exercise
+		// the hash bucket.
+		assertThat(documents.contains(original)).isTrue();
 	}
 
 	@Test
