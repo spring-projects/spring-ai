@@ -58,6 +58,16 @@ public class FilterExpressionTextParserTests {
 	}
 
 	@Test
+	public void testKeyStartingWithWhereKeyword() {
+		// The field name starts with the letters of the WHERE keyword.
+		Expression exp = this.parser.parse("whereabouts == 'BG'");
+		assertThat(exp).isEqualTo(new Expression(EQ, new Key("whereabouts"), new Value("BG")));
+
+		exp = this.parser.parse("where_clause == 'BG'");
+		assertThat(exp).isEqualTo(new Expression(EQ, new Key("where_clause"), new Value("BG")));
+	}
+
+	@Test
 	public void testEQ() {
 		// country == "BG"
 		Expression exp = this.parser.parse("country == 'BG'");
