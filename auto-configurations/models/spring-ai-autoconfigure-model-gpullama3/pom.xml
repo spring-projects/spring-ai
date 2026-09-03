@@ -132,6 +132,19 @@
 					<argLine>--enable-preview --add-modules jdk.incubator.vector</argLine>
 				</configuration>
 			</plugin>
+			<!-- Javadoc must also see the engine's preview-flagged classes and the Vector
+			     incubator module, so pass the same flags to the javadoc tool. -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<configuration>
+					<additionalOptions>
+						<additionalOption>--enable-preview</additionalOption>
+						<additionalOption>--add-modules</additionalOption>
+						<additionalOption>jdk.incubator.vector</additionalOption>
+					</additionalOptions>
+				</configuration>
+			</plugin>
 		</plugins>
 	</build>
 
