@@ -32,7 +32,7 @@ import org.jspecify.annotations.Nullable;
  * @since 1.0.0
  */
 @JsonPropertyOrder({ "promptTokens", "completionTokens", "totalTokens", "cacheReadInputTokens", "cacheWriteInputTokens",
-		"nativeUsage" })
+		"duration", "nativeUsage" })
 public class DefaultUsage implements Usage {
 
 	private final Integer promptTokens;
@@ -46,6 +46,8 @@ public class DefaultUsage implements Usage {
 	private final @Nullable Long cacheReadInputTokens;
 
 	private final @Nullable Long cacheWriteInputTokens;
+
+	private final @Nullable Long duration;
 
 	/**
 	 * Create a new DefaultUsage with promptTokens, completionTokens, totalTokens and
@@ -83,13 +85,29 @@ public class DefaultUsage implements Usage {
 	public DefaultUsage(@Nullable Integer promptTokens, @Nullable Integer completionTokens,
 			@Nullable Integer totalTokens, @Nullable Object nativeUsage, @Nullable Long cacheReadInputTokens,
 			@Nullable Long cacheWriteInputTokens) {
-		this.promptTokens = promptTokens != null ? promptTokens : 0;
-		this.completionTokens = completionTokens != null ? completionTokens : 0;
-		this.totalTokens = totalTokens != null ? totalTokens
-				: calculateTotalTokens(this.promptTokens, this.completionTokens);
+		this.promptTokens = Objects.nonNull(promptTokens) ? promptTokens : 0;
+		this.completionTokens = Objects.nonNull(completionTokens) ? completionTokens : 0;
+		this.totalTokens = Objects.nonNull(totalTokens) ? totalTokens : this.promptTokens + this.completionTokens;
 		this.nativeUsage = nativeUsage;
 		this.cacheReadInputTokens = cacheReadInputTokens;
 		this.cacheWriteInputTokens = cacheWriteInputTokens;
+		this.duration = null;
+	}
+
+	/**
+	 * Create a new DefaultUsage for AI providers that bill based on the duration of the
+	 * operation (for example, audio transcription) rather than on token usage.
+	 * @param duration the billed duration, in seconds, or {@code null} if not available
+	 * @since 2.0.2
+	 */
+	public DefaultUsage(@Nullable Long duration) {
+		this.promptTokens = 0;
+		this.completionTokens = 0;
+		this.totalTokens = 0;
+		this.nativeUsage = null;
+		this.cacheReadInputTokens = null;
+		this.cacheWriteInputTokens = null;
+		this.duration = duration;
 	}
 
 	/**
@@ -131,7 +149,11 @@ public class DefaultUsage implements Usage {
 			@JsonProperty("completionTokens") Integer completionTokens,
 			@JsonProperty("totalTokens") Integer totalTokens, @JsonProperty("nativeUsage") Object nativeUsage,
 			@JsonProperty("cacheReadInputTokens") @Nullable Long cacheReadInputTokens,
-			@JsonProperty("cacheWriteInputTokens") @Nullable Long cacheWriteInputTokens) {
+			@JsonProperty("cacheWriteInputTokens") @Nullable Long cacheWriteInputTokens,
+			@JsonProperty("duration") @Nullable Long duration) {
+		if (Objects.nonNull(duration)) {
+			return new DefaultUsage(duration);
+		}
 		return new DefaultUsage(promptTokens, completionTokens, totalTokens, nativeUsage, cacheReadInputTokens,
 				cacheWriteInputTokens);
 	}
@@ -175,8 +197,11 @@ public class DefaultUsage implements Usage {
 		return this.cacheWriteInputTokens;
 	}
 
-	private Integer calculateTotalTokens(Integer promptTokens, Integer completionTokens) {
-		return promptTokens + completionTokens;
+	@Override
+	@JsonProperty("duration")
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	public @Nullable Long getDuration() {
+		return this.duration;
 	}
 
 	@Override
@@ -193,18 +218,14 @@ public class DefaultUsage implements Usage {
 				&& Objects.equals(this.completionTokens, that.completionTokens)
 				&& Objects.equals(this.nativeUsage, that.nativeUsage)
 				&& Objects.equals(this.cacheReadInputTokens, that.cacheReadInputTokens)
-				&& Objects.equals(this.cacheWriteInputTokens, that.cacheWriteInputTokens);
+				&& Objects.equals(this.cacheWriteInputTokens, that.cacheWriteInputTokens)
+				&& Objects.equals(this.duration, that.duration);
 	}
 
 	@Override
 	public int hashCode() {
-		int result = Objects.hashCode(this.promptTokens);
-		result = 31 * result + Objects.hashCode(this.completionTokens);
-		result = 31 * result + this.totalTokens;
-		result = 31 * result + Objects.hashCode(this.nativeUsage);
-		result = 31 * result + Objects.hashCode(this.cacheReadInputTokens);
-		result = 31 * result + Objects.hashCode(this.cacheWriteInputTokens);
-		return result;
+		return Objects.hash(this.promptTokens, this.completionTokens, this.totalTokens, this.nativeUsage,
+				this.cacheReadInputTokens, this.cacheWriteInputTokens, this.duration);
 	}
 
 	@Override
@@ -213,11 +234,14 @@ public class DefaultUsage implements Usage {
 		sb.append("promptTokens=").append(this.promptTokens);
 		sb.append(", completionTokens=").append(this.completionTokens);
 		sb.append(", totalTokens=").append(this.totalTokens);
-		if (this.cacheReadInputTokens != null) {
+		if (Objects.nonNull(this.cacheReadInputTokens)) {
 			sb.append(", cacheReadInputTokens=").append(this.cacheReadInputTokens);
 		}
-		if (this.cacheWriteInputTokens != null) {
+		if (Objects.nonNull(this.cacheWriteInputTokens)) {
 			sb.append(", cacheWriteInputTokens=").append(this.cacheWriteInputTokens);
+		}
+		if (Objects.nonNull(this.duration)) {
+			sb.append(", duration=").append(this.duration);
 		}
 		sb.append('}');
 		return sb.toString();

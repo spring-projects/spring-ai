@@ -18,10 +18,12 @@ package org.springframework.ai.model.observation;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import io.micrometer.common.KeyValue;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.micrometer.observation.Observation;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.metadata.Usage;
@@ -117,18 +119,40 @@ class ModelUsageMetricsGeneratorTests {
 			.count()).isEqualTo(100);
 	}
 
+	@Test
+	void whenDurationUsageThenDurationMetricAndNoTokenMetric() {
+		var meterRegistry = new SimpleMeterRegistry();
+		var usage = new TestUsage(12L);
+		ModelUsageMetricsGenerator.generate(usage, buildContext(), meterRegistry);
+
+		assertThat(meterRegistry.find(AiObservationMetricNames.TOKEN_USAGE.value()).meters()).isEmpty();
+		assertThat(meterRegistry.get(AiObservationMetricNames.OPERATION_DURATION.value())
+			.timer()
+			.totalTime(TimeUnit.SECONDS)).isEqualTo(12.0);
+	}
+
 	static class TestUsage implements Usage {
 
-		private final Integer promptTokens;
+		private final @Nullable Integer promptTokens;
 
-		private final Integer generationTokens;
+		private final @Nullable Integer generationTokens;
 
 		private final int totalTokens;
+
+		private final @Nullable Long duration;
 
 		TestUsage(Integer promptTokens, Integer generationTokens, int totalTokens) {
 			this.promptTokens = promptTokens;
 			this.generationTokens = generationTokens;
 			this.totalTokens = totalTokens;
+			this.duration = null;
+		}
+
+		TestUsage(Long duration) {
+			this.promptTokens = 0;
+			this.generationTokens = 0;
+			this.totalTokens = 0;
+			this.duration = duration;
 		}
 
 		@Override
@@ -144,6 +168,11 @@ class ModelUsageMetricsGeneratorTests {
 		@Override
 		public Integer getTotalTokens() {
 			return this.totalTokens;
+		}
+
+		@Override
+		public @Nullable Long getDuration() {
+			return this.duration;
 		}
 
 		@Override

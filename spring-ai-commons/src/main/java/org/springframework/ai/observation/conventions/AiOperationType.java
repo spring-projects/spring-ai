@@ -57,7 +57,12 @@ public enum AiOperationType {
 	/**
 	 * AI operation type for text completion.
 	 */
-	TEXT_COMPLETION("text_completion");
+	TEXT_COMPLETION("text_completion"),
+
+	/**
+	 * AI operation type for transcription.
+	 */
+	TRANSCRIPTION("transcription");
 
 	private final String value;
 
