@@ -825,7 +825,8 @@ public class BedrockProxyChatModel implements ChatModel {
 				.doFinally(s -> observation.stop())
 				.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
 
-			return new MessageAggregator().aggregate(chatResponseFlux, observationContext::setResponse);
+			return new MessageAggregator().aggregate(chatResponseFlux, observationContext::setResponse,
+					observationContext::recordTimeToFirstChunk);
 		});
 	}
 

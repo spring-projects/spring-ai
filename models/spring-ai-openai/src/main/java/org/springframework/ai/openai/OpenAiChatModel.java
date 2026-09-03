@@ -362,7 +362,8 @@ public final class OpenAiChatModel implements ChatModel {
 				.doFinally(s -> observation.stop())
 				.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
 
-			return new MessageAggregator().aggregate(observedResponses, observationContext::setResponse);
+			return new MessageAggregator().aggregate(observedResponses, observationContext::setResponse,
+					observationContext::recordTimeToFirstChunk);
 
 		});
 	}
