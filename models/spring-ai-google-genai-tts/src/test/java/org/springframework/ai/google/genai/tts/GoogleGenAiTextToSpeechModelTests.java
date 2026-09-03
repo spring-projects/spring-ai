@@ -286,6 +286,21 @@ class GoogleGenAiTextToSpeechModelTests {
 	}
 
 	@Test
+	void usageReflectsInputTextAndOutputAudioSize() {
+		GoogleGenAiAudioSpeechOptions options = GoogleGenAiAudioSpeechOptions.builder()
+			.model("gemini-2.5-flash-tts")
+			.voiceName("Kore")
+			.build();
+		GoogleGenAiTextToSpeechModel model = new GoogleGenAiTextToSpeechModel(this.connectionDetails, options);
+
+		TextToSpeechResponse response = model.call(new TextToSpeechPrompt("Hello world", options));
+
+		assertThat(response.getMetadata().getUsage().getPromptTokens()).isEqualTo("Hello world".length());
+		assertThat(response.getMetadata().getUsage().getCompletionTokens()).isEqualTo(AUDIO.length);
+		assertThat(response.getMetadata().getUsage().getTotalTokens()).isEqualTo("Hello world".length() + AUDIO.length);
+	}
+
+	@Test
 	void getOptionsReturnsDefaults() {
 		GoogleGenAiAudioSpeechOptions defaults = GoogleGenAiAudioSpeechOptions.builder().voiceName("Kore").build();
 		GoogleGenAiTextToSpeechModel model = new GoogleGenAiTextToSpeechModel(this.connectionDetails, defaults);
