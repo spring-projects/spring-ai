@@ -238,6 +238,10 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 					if (logger.isErrorEnabled()) {
 						logger.error("Failed to send message to session " + session.getId() + ": " + e.getMessage());
 					}
+					// The SSE write failed, so the client socket is gone: evict the session
+					// and release its resources instead of leaking it until the next DELETE.
+					removeSession(session.getId());
+					session.closeGracefully().onErrorComplete().subscribe();
 				}
 			});
 		});
@@ -352,14 +356,22 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 
 		try {
 			return ServerResponse.sse(sseBuilder -> {
+				WebMvcStreamableMcpSessionTransport sessionTransport = new WebMvcStreamableMcpSessionTransport(
+						sessionId, sseBuilder);
+
 				sseBuilder.onTimeout(() -> {
 					if (logger.isDebugEnabled()) {
 						logger.debug("SSE connection timed out for session: " + sessionId);
 					}
+					sessionTransport.close();
 				});
 
-				WebMvcStreamableMcpSessionTransport sessionTransport = new WebMvcStreamableMcpSessionTransport(
-						sessionId, sseBuilder);
+				sseBuilder.onError(error -> {
+					if (logger.isDebugEnabled()) {
+						logger.debug("SSE connection errored for session: " + sessionId);
+					}
+					sessionTransport.close();
+				});
 
 				// Check if this is a replay request
 				if (!request.headers().header(HttpHeaders.LAST_EVENT_ID).isEmpty()) {
