@@ -17,9 +17,11 @@
 package org.springframework.ai.model.google.genai.autoconfigure.tts;
 
 import com.google.cloud.texttospeech.v1.TextToSpeechClient;
+import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import org.springframework.ai.audio.tts.observation.TextToSpeechModelObservationConvention;
 import org.springframework.ai.google.genai.tts.GoogleGenAiTextToSpeechConnectionDetails;
 import org.springframework.ai.google.genai.tts.GoogleGenAiTextToSpeechModel;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -70,6 +72,26 @@ class GoogleGenAiTextToSpeechAutoConfigurationTests {
 	@Test
 	void enabledWhenAudioSpeechModelIsGoogleGenAi() {
 		this.contextRunner.withPropertyValues("spring.ai.model.audio.speech=google-genai")
+			.run(context -> assertThat(context.getBeansOfType(GoogleGenAiTextToSpeechModel.class)).hasSize(1));
+	}
+
+	@Test
+	void appliesCustomObservationConventionWhenProvided() {
+		TextToSpeechModelObservationConvention customConvention = Mockito
+			.mock(TextToSpeechModelObservationConvention.class);
+
+		this.contextRunner.withBean(TextToSpeechModelObservationConvention.class, () -> customConvention)
+			.run(context -> {
+				assertThat(context.getBeansOfType(GoogleGenAiTextToSpeechModel.class)).hasSize(1);
+				assertThat(context.getBean(TextToSpeechModelObservationConvention.class)).isSameAs(customConvention);
+			});
+	}
+
+	@Test
+	void usesCustomObservationRegistryWhenProvided() {
+		ObservationRegistry customRegistry = ObservationRegistry.create();
+
+		this.contextRunner.withBean(ObservationRegistry.class, () -> customRegistry)
 			.run(context -> assertThat(context.getBeansOfType(GoogleGenAiTextToSpeechModel.class)).hasSize(1));
 	}
 

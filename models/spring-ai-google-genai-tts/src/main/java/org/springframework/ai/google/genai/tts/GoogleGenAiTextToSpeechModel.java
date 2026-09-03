@@ -40,10 +40,12 @@ import org.springframework.ai.audio.tts.TextToSpeechModel;
 import org.springframework.ai.audio.tts.TextToSpeechOptions;
 import org.springframework.ai.audio.tts.TextToSpeechPrompt;
 import org.springframework.ai.audio.tts.TextToSpeechResponse;
+import org.springframework.ai.audio.tts.TextToSpeechResponseMetadata;
 import org.springframework.ai.audio.tts.observation.DefaultTextToSpeechModelObservationConvention;
 import org.springframework.ai.audio.tts.observation.TextToSpeechModelObservationContext;
 import org.springframework.ai.audio.tts.observation.TextToSpeechModelObservationConvention;
 import org.springframework.ai.audio.tts.observation.TextToSpeechModelObservationDocumentation;
+import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.retry.RetryUtils;
@@ -128,12 +130,17 @@ public class GoogleGenAiTextToSpeechModel implements TextToSpeechModel {
 						() -> this.connectionDetails.getTextToSpeechClient()
 							.synthesizeSpeech(input, voice, audioConfig));
 
-				final TextToSpeechResponse ttsResponse = new TextToSpeechResponse(
-						List.of(new Speech(response.getAudioContent().toByteArray())));
+				final byte[] audioContent = response.getAudioContent().toByteArray();
 
-				observationContext.setResponse(ttsResponse);
+				final TextToSpeechResponseMetadata metadata = new TextToSpeechResponseMetadata();
+				metadata.setUsage(new DefaultUsage(text.length(), audioContent.length));
 
-				return ttsResponse;
+				final TextToSpeechResponse textToSpeechResponse = new TextToSpeechResponse(
+						List.of(new Speech(audioContent)), metadata);
+
+				observationContext.setResponse(textToSpeechResponse);
+
+				return textToSpeechResponse;
 			});
 	}
 

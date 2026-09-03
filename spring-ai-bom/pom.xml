@@ -564,6 +564,14 @@
 				<version>${project.version}</version>
 			</dependency>
 
+			<!-- Spring AI Text-to-Speech model observation autoconfiguration -->
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-autoconfigure-model-tts-observation</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
 			<!-- Spring AI MCP client autoconfiguration -->
 
 			<dependency>

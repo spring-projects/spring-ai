@@ -58,6 +58,7 @@ public class GoogleGenAiTextToSpeechAutoConfiguration {
 			.connectionDetails(connectionDetails)
 			.options(speechProperties.toOptions())
 			.retryTemplate(retryTemplate.getIfUnique(() -> RetryUtils.DEFAULT_RETRY_TEMPLATE))
+			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.build();
 
 		observationConvention.ifAvailable(textToSpeechModel::setObservationConvention);
