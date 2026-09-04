@@ -17,9 +17,11 @@
 package org.springframework.ai.reader.pdf;
 
 import java.io.ByteArrayOutputStream;
+import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -112,6 +114,32 @@ public class ParagraphPdfDocumentReaderTests {
 		assertThat(documents).hasSize(2);
 		assertThat(documents.get(0).getMetadata().get("title")).isEqualTo("Chapter 1");
 		assertThat(documents.get(1).getMetadata().get("title")).isEqualTo("Chapter 3");
+	}
+
+	@Test
+	void closesTheResourceInputStreamWhenConstructionFails() throws IOException {
+		// sample1.pdf has no table of contents, so the constructor throws after the
+		// document has been parsed. The stream must still be released.
+		AtomicBoolean closed = new AtomicBoolean();
+		byte[] pdf = new ClassPathResource("/sample1.pdf").getContentAsByteArray();
+
+		Resource resource = new ByteArrayResource(pdf) {
+			@Override
+			public InputStream getInputStream() throws IOException {
+				return new FilterInputStream(super.getInputStream()) {
+					@Override
+					public void close() throws IOException {
+						closed.set(true);
+						super.close();
+					}
+				};
+			}
+		};
+
+		assertThatThrownBy(() -> new ParagraphPdfDocumentReader(resource, PdfDocumentReaderConfig.defaultConfig()))
+			.isInstanceOf(IllegalArgumentException.class);
+
+		assertThat(closed).isTrue();
 	}
 
 }

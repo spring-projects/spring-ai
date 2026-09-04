@@ -16,7 +16,11 @@
 
 package org.springframework.ai.reader.pdf;
 
+import java.io.FilterInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
@@ -24,6 +28,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.reader.ExtractedTextFormatter;
 import org.springframework.ai.reader.pdf.config.PdfDocumentReaderConfig;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -254,6 +261,35 @@ class PagePdfDocumentReaderTests {
 		assertThat(rangedDocuments).extracting(Document::getText)
 			.containsExactly(fullDocuments.get(9).getText(), fullDocuments.get(10).getText(),
 					fullDocuments.get(11).getText());
+	}
+
+	@Test
+	void closesTheResourceInputStream() throws IOException {
+		AtomicBoolean closed = new AtomicBoolean();
+		Resource resource = closeTrackingResource(closed);
+
+		PagePdfDocumentReader reader = new PagePdfDocumentReader(resource, PdfDocumentReaderConfig.defaultConfig());
+
+		assertThat(closed).isTrue();
+		// RandomAccessReadBuffer copies the stream into memory, so releasing the
+		// stream leaves the parsed document fully readable.
+		assertThat(reader.get()).isNotEmpty();
+	}
+
+	private static Resource closeTrackingResource(AtomicBoolean closed) throws IOException {
+		byte[] pdf = new ClassPathResource("/sample1.pdf").getContentAsByteArray();
+		return new ByteArrayResource(pdf) {
+			@Override
+			public InputStream getInputStream() throws IOException {
+				return new FilterInputStream(super.getInputStream()) {
+					@Override
+					public void close() throws IOException {
+						closed.set(true);
+						super.close();
+					}
+				};
+			}
+		};
 	}
 
 }
