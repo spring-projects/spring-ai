@@ -31,6 +31,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
@@ -820,6 +821,43 @@ public class CreateGeminiRequestTests {
 		assertThat(request.config().serviceTier()).isPresent();
 		assertThat(request.config().serviceTier().get().toString()).isEqualTo("priority");
 
+	}
+
+	@Test
+	public void createRequestWithJsonToolResponse() {
+		var client = GoogleGenAiChatModel.builder().genAiClient(this.genAiClient).build();
+
+		ToolResponseMessage toolResponseMessage = ToolResponseMessage.builder()
+			.responses(List.of(new ToolResponseMessage.ToolResponse("1", "tool1", "{\"temperature\": 30}")))
+			.build();
+
+		GeminiRequest request = client
+			.createGeminiRequest(new Prompt(List.of(new UserMessage("Test message content"), toolResponseMessage),
+					GoogleGenAiChatOptions.builder().model("DEFAULT_MODEL").build()));
+
+		assertThat(request.contents()).hasSize(2);
+		Part part = request.contents().get(1).parts().get().get(0);
+		Map<String, Object> response = part.functionResponse().get().response().get();
+		assertThat(response).containsEntry("temperature", 30);
+	}
+
+	@Test
+	public void createRequestWithPlainTextToolResponse() {
+		var client = GoogleGenAiChatModel.builder().genAiClient(this.genAiClient).build();
+
+		String plainText = "Tool call limit (1) exceeded for tool 'tool1'. No further calls to this tool are allowed in this turn.";
+		ToolResponseMessage toolResponseMessage = ToolResponseMessage.builder()
+			.responses(List.of(new ToolResponseMessage.ToolResponse("1", "tool1", plainText)))
+			.build();
+
+		GeminiRequest request = client
+			.createGeminiRequest(new Prompt(List.of(new UserMessage("Test message content"), toolResponseMessage),
+					GoogleGenAiChatOptions.builder().model("DEFAULT_MODEL").build()));
+
+		assertThat(request.contents()).hasSize(2);
+		Part part = request.contents().get(1).parts().get().get(0);
+		Map<String, Object> response = part.functionResponse().get().response().get();
+		assertThat(response).containsEntry("result", plainText);
 	}
 
 }
