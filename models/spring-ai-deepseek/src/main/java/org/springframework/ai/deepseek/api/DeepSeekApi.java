@@ -42,6 +42,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -218,7 +219,7 @@ public class DeepSeekApi {
 			.map(ChatCompletionMessage::prefix)
 			.filter(Objects::nonNull)
 			.anyMatch(prefix -> prefix);
-		String endpointPrefix = isPrefix ? this.betaPrefixPath : "";
+		String endpointPrefix = isPrefix || StringUtils.hasText(request.suffix) ? this.betaPrefixPath : "";
 		return endpointPrefix + this.completionsPath;
 	}
 
@@ -517,7 +518,9 @@ public class DeepSeekApi {
 			@JsonProperty("tools") @Nullable List<FunctionTool> tools,
 			@JsonProperty("tool_choice") @Nullable Object toolChoice,
 			@JsonProperty("thinking") @Nullable Thinking thinking,
-			@JsonProperty("reasoning_effort") @Nullable ReasoningEffort reasoningEffort) {
+			@JsonProperty("reasoning_effort") @Nullable ReasoningEffort reasoningEffort,
+			@JsonProperty("echo") @Nullable Boolean echo,
+			@JsonProperty("suffix") @Nullable String suffix) {
 
 		/**
 		 * Create a new {@link ChatCompletionRequest} builder.
@@ -537,7 +540,7 @@ public class DeepSeekApi {
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, Boolean stream) {
 			this(messages, null, null, null, null, null,
 					null, stream, null, null, null, null, null,
-					null, null, null);
+					null, null, null, null, null);
 		}
 
 		/**
@@ -550,7 +553,7 @@ public class DeepSeekApi {
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature) {
 			this(messages, model, null,
 		null, null, null, null,  false,  temperature, null,
-			null, null, null, null, null, null);
+			null, null, null, null, null, null, null, null);
 		}
 
 		/**
@@ -565,7 +568,7 @@ public class DeepSeekApi {
 		public ChatCompletionRequest(List<ChatCompletionMessage> messages, String model, Double temperature, boolean stream) {
 			this(messages, model, null,
 					null, null, null, null,  stream,  temperature, null,
-				null, null, null, null, null, null);
+				null, null, null, null, null, null, null, null);
 		}
 
 		/**
@@ -682,6 +685,10 @@ public class DeepSeekApi {
 			private @Nullable ReasoningEffort reasoningEffort;
 
 			private @Nullable Thinking thinking;
+
+			private @Nullable Boolean echo;
+
+			private @Nullable String suffix;
 
 			/**
 			 * Set the messages comprising the conversation so far.
@@ -844,6 +851,26 @@ public class DeepSeekApi {
 			}
 
 			/**
+			 * Set whether to echo the prompt.
+			 * @param echo whether to echo the prompt.
+			 * @return this builder.
+			 */
+			public Builder echo(@Nullable Boolean echo) {
+				this.echo = echo;
+				return this;
+			}
+
+			/**
+			 * Set the suffix.
+			 * @param suffix the suffix.
+			 * @return this builder.
+			 */
+			public Builder suffix(@Nullable String suffix) {
+				this.suffix = suffix;
+				return this;
+			}
+
+			/**
 			 * Build the {@link ChatCompletionRequest}.
 			 * @return a new {@link ChatCompletionRequest}.
 			 */
@@ -852,7 +879,7 @@ public class DeepSeekApi {
 				return new ChatCompletionRequest(this.messages, this.model, this.frequencyPenalty, this.maxTokens,
 						this.presencePenalty, this.responseFormat, this.stop, this.stream, this.temperature, this.topP,
 						this.logprobs, this.topLogprobs, this.tools, this.toolChoice, this.thinking,
-						this.reasoningEffort);
+						this.reasoningEffort, this.echo, this.suffix);
 			}
 
 		}
