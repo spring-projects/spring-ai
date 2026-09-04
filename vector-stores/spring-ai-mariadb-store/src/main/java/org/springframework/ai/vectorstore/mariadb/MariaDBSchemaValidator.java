@@ -109,24 +109,32 @@ public class MariaDBSchemaValidator {
 
 			// Check each column against expected fields
 			List<String> availableColumns = new ArrayList<>();
+			String rawIdColumnName = null;
 			for (Map<String, Object> column : columns) {
 				String columnName = (String) column.get("COLUMN_NAME");
 				Assert.state(columnName != null, "COLUMN_NAME result should not be null");
-				columnName = validateAndEnquoteIdentifier(columnName, false);
-				availableColumns.add(columnName);
+				String quotedColumnName = validateAndEnquoteIdentifier(columnName, false);
+				availableColumns.add(quotedColumnName);
+				if (quotedColumnName.equals(idFieldName)) {
+					rawIdColumnName = columnName;
+				}
 			}
-
-			// TODO ensure id is a primary key for batch update
 
 			expectedColumns.removeAll(availableColumns);
 
-			if (expectedColumns.isEmpty()) {
-				logger.info("MariaDB VectorStore schema validation successful");
-			}
-			else {
+			if (!expectedColumns.isEmpty()) {
 				throw new IllegalStateException("Missing fields " + expectedColumns);
 			}
 
+			Assert.state(rawIdColumnName != null, "id column must be present after passing schema validation");
+			if (!isSoleUniqueOrPrimaryKeyColumn(schemaName, tableName, rawIdColumnName)) {
+				throw new IllegalStateException(String
+					.format("Column '%s' must be the sole column of a PRIMARY KEY or UNIQUE constraint on table '%s' "
+							+ "so that 'INSERT ... ON DUPLICATE KEY UPDATE' can detect duplicates during batch updates",
+							idFieldName, tableName));
+			}
+
+			logger.info("MariaDB VectorStore schema validation successful");
 		}
 		catch (DataAccessException | IllegalStateException e) {
 			if (logger.isErrorEnabled()) {
@@ -150,6 +158,26 @@ public class MariaDBSchemaValidator {
 			}
 			throw new IllegalStateException(e);
 		}
+	}
+
+	/**
+	 * Checks whether the given column is, on its own, guaranteed to be unique i.e. it is
+	 * the sole column of either the table's PRIMARY KEY or a UNIQUE constraint.
+	 * <p>
+	 * A column that is merely part of a multi-column PRIMARY KEY or UNIQUE constraint is
+	 * intentionally excluded, since the column's value alone does not guarantee
+	 * uniqueness in that case, and 'INSERT ... ON DUPLICATE KEY UPDATE' would not detect
+	 * a "duplicate" row that only matches on that column.
+	 */
+	private boolean isSoleUniqueOrPrimaryKeyColumn(@Nullable String schemaName, String tableName,
+			String rawColumnName) {
+		String query = "SELECT s.INDEX_NAME FROM INFORMATION_SCHEMA.STATISTICS s "
+				+ "WHERE s.TABLE_SCHEMA = ? AND s.TABLE_NAME = ? AND s.NON_UNIQUE = 0 " + "GROUP BY s.INDEX_NAME "
+				+ "HAVING COUNT(*) = 1 AND SUM(s.COLUMN_NAME = ?) = 1";
+
+		List<Map<String, @Nullable Object>> matches = this.jdbcTemplate.queryForList(query, schemaName, tableName,
+				rawColumnName);
+		return !matches.isEmpty();
 	}
 
 	/**
