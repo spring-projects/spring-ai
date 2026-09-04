@@ -26,6 +26,7 @@ import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.observation.conventions.SpringAiKind;
 import org.springframework.ai.util.ParsingUtils;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 /**
  * Default implementation of the {@link AdvisorObservationConvention}.
@@ -55,7 +56,8 @@ public class DefaultAdvisorObservationConvention implements AdvisorObservationCo
 	@Override
 	public String getContextualName(AdvisorObservationContext context) {
 		Assert.notNull(context, "context cannot be null");
-		return ParsingUtils.reConcatenateCamelCase(context.getAdvisorName(), "_")
+		String advisorName = StringUtils.trimAllWhitespace(context.getAdvisorName());
+		return ParsingUtils.reConcatenateCamelCase(advisorName, "_")
 			.replace("_around_advisor", "")
 			.replace("_advisor", "");
 	}
