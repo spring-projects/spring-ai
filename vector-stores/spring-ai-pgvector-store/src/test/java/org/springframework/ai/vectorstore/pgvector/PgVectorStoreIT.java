@@ -75,6 +75,7 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
  * @author Jihoon Kim
  * @author YeongMin Song
  * @author Eddú Meléndez
+ * @author Raviteja Daggupati
  */
 @Testcontainers
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
@@ -121,6 +122,24 @@ public class PgVectorStoreIT extends BaseVectorStoreTests {
 				Arguments.of("year in [2020]", 1), // Numeric Filters In
 				Arguments.of("country not in ['BG']", 1), // String Filter Not In
 				Arguments.of("year not in [2020]", 2) // Numeric Filter Not In
+		);
+	}
+
+	/**
+	 * Null checks against the same three-document fixture, where {@code nlDocument} is
+	 * the only one without a {@code year}. A missing key counts as null, matching
+	 * {@code SimpleVectorStoreFilterExpressionEvaluator}.
+	 * <p>
+	 * The third case is the one that pins the JSONPath grouping down: without a group
+	 * around the null check, {@code &&} binds tighter than {@code ||} and the expression
+	 * degrades to {@code !exists($."year") || (...)}, which matches {@code nlDocument}
+	 * and returns one record instead of none.
+	 */
+	static Stream<Arguments> provideNullFilters() {
+		return Stream.of(Arguments.of("year IS NULL", 1), // missing key counts as null
+				Arguments.of("year IS NOT NULL", 2), //
+				Arguments.of("year IS NULL && country == 'BG'", 0), //
+				Arguments.of("year IS NULL || year >= 2023", 2) //
 		);
 	}
 
@@ -306,6 +325,37 @@ public class PgVectorStoreIT extends BaseVectorStoreTests {
 				assertThat(results).hasSize(expectedRecords);
 
 				// Remove all documents from the store
+				dropTable(context);
+			});
+	}
+
+	@ParameterizedTest(name = "Filter expression {0} should return {1} records ")
+	@MethodSource("provideNullFilters")
+	public void searchWithNullFilter(String expression, Integer expectedRecords) {
+
+		this.contextRunner.withPropertyValues("test.spring.ai.vectorstore.pgvector.distanceType=COSINE_DISTANCE")
+			.run(context -> {
+
+				VectorStore vectorStore = context.getBean(VectorStore.class);
+
+				var bgDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
+						Map.of("country", "BG", "year", 2020));
+				var nlDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
+						Map.of("country", "NL"));
+				var bgDocument2 = new Document("The World is Big and Salvation Lurks Around the Corner",
+						Map.of("country", "BG", "year", 2023));
+
+				vectorStore.add(List.of(bgDocument, nlDocument, bgDocument2));
+
+				SearchRequest searchRequest = SearchRequest.builder()
+					.query("The World")
+					.filterExpression(expression)
+					.topK(5)
+					.similarityThresholdAll()
+					.build();
+
+				assertThat(vectorStore.similaritySearch(searchRequest)).hasSize(expectedRecords);
+
 				dropTable(context);
 			});
 	}
