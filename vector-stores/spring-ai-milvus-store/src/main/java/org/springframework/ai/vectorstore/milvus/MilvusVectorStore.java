@@ -246,8 +246,14 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 
 	@Override
 	public void doAdd(List<Document> documents) {
+		Assert.notNull(documents, "The document list should not be null.");
+		this.doAdd(documents, EmbeddingOptions.builder().build());
+	}
 
-		Assert.notNull(documents, "Documents must not be null");
+	@Override
+	public void doAdd(List<Document> documents, EmbeddingOptions options) {
+		Assert.notNull(documents, "The document list should not be null.");
+		Assert.notNull(options, "The embedding Options should not be null.");
 
 		List<String> docIdArray = new ArrayList<>();
 		List<String> contentArray = new ArrayList<>();
@@ -255,8 +261,7 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 		List<List<Float>> embeddingArray = new ArrayList<>();
 
 		// TODO: Need to customize how we pass the embedding options
-		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
-				this.batchingStrategy);
+		List<float[]> embeddings = this.embeddingModel.embed(documents, options, this.batchingStrategy);
 
 		for (int i = 0; i < documents.size(); i++) {
 			Document document = documents.get(i);

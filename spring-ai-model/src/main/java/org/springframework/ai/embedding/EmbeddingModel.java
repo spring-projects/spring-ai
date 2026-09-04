@@ -48,7 +48,18 @@ public interface EmbeddingModel extends Model<EmbeddingRequest, EmbeddingRespons
 	 */
 	default float[] embed(String text) {
 		Assert.notNull(text, "Text must not be null");
-		List<float[]> response = this.embed(List.of(text));
+		return this.embed(text, EmbeddingOptions.builder().build());
+	}
+
+	/**
+	 * Embeds the given text into a vector.
+	 * @param text the text to embed.
+	 * @return the embedded vector.
+	 */
+	default float[] embed(String text, EmbeddingOptions options) {
+		Assert.notNull(text, "Text must not be null");
+		Assert.notNull(options, "Embedding options must not be null");
+		List<float[]> response = this.embed(List.of(text), options);
 		return response.iterator().next();
 	}
 
@@ -57,7 +68,11 @@ public interface EmbeddingModel extends Model<EmbeddingRequest, EmbeddingRespons
 	 * @param document the document to embed.
 	 * @return the embedded vector.
 	 */
-	float[] embed(Document document);
+	default float[] embed(Document document) {
+		return this.embed(document, EmbeddingOptions.builder().build());
+	}
+
+	float[] embed(Document document, EmbeddingOptions options);
 
 	/**
 	 * Extracts the text content from a {@link Document} to be used for embedding. By
@@ -82,11 +97,20 @@ public interface EmbeddingModel extends Model<EmbeddingRequest, EmbeddingRespons
 	 */
 	default List<float[]> embed(List<String> texts) {
 		Assert.notNull(texts, "Texts must not be null");
-		return this.call(new EmbeddingRequest(texts, EmbeddingOptions.builder().build()))
-			.getResults()
-			.stream()
-			.map(Embedding::getOutput)
-			.toList();
+		return this.embed(texts, EmbeddingOptions.builder().build());
+	}
+
+	/**
+	 * Embeds a batch of texts into vectors.
+	 * @param texts list of texts to embed.
+	 * @param options {@link EmbeddingOptions}.
+	 * @return list of embedded vectors.
+	 */
+	default List<float[]> embed(List<String> texts, EmbeddingOptions options) {
+		Assert.notNull(texts, "Texts must not be null");
+		Assert.notNull(options, "Embedding options must not be null");
+
+		return this.call(new EmbeddingRequest(texts, options)).getResults().stream().map(Embedding::getOutput).toList();
 	}
 
 	/**
@@ -102,6 +126,8 @@ public interface EmbeddingModel extends Model<EmbeddingRequest, EmbeddingRespons
 	default List<float[]> embed(List<Document> documents, @Nullable EmbeddingOptions options,
 			BatchingStrategy batchingStrategy) {
 		Assert.notNull(documents, "Documents must not be null");
+		Assert.notNull(options, "Embedding options must not be null");
+
 		List<float[]> embeddings = new ArrayList<>(documents.size());
 		List<List<Document>> batch = batchingStrategy.batch(documents);
 		for (List<Document> subBatch : batch) {

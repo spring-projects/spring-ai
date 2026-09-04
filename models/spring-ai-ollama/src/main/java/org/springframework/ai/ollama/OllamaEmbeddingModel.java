@@ -27,6 +27,7 @@ import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.AbstractEmbeddingModel;
 import org.springframework.ai.embedding.Embedding;
+import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
@@ -99,7 +100,15 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 	public float[] embed(Document document) {
 		String text = document.getText();
 		Assert.state(text != null, "text must not be null");
-		return embed(text);
+		return embed(text, this.options);
+	}
+
+	@Override
+	public float[] embed(Document document, EmbeddingOptions options) {
+		String text = document.getText();
+		Assert.state(text != null, "text must not be null");
+		Assert.notNull(options, "Embedding options must not be null");
+		return embed(text, options);
 	}
 
 	@Override
@@ -170,18 +179,14 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 		if (requestOptions instanceof OllamaEmbeddingOptions ro) {
 			builder.keepAlive(ModelOptionsUtils.mergeOption(ro.getKeepAlive(), options.getKeepAlive()))
 				.truncate(ModelOptionsUtils.mergeOption(ro.getTruncate(), options.getTruncate()))
-				.useNUMA(ModelOptionsUtils.mergeOption(ro.getUseNUMA(), options.getUseNUMA()))
+				.seed(ModelOptionsUtils.mergeOption(ro.getSeed(), options.getSeed()))
+				.temperature(ModelOptionsUtils.mergeOption(ro.getTemperature(), options.getTemperature()))
+				.topK(ModelOptionsUtils.mergeOption(ro.getTopK(), options.getTopK()))
+				.topP(ModelOptionsUtils.mergeOption(ro.getTopP(), options.getTopP()))
+				.minP(ModelOptionsUtils.mergeOption(ro.getMinP(), options.getMinP()))
+				.stop(ModelOptionsUtils.mergeOption(ro.getStop(), options.getStop()))
 				.numCtx(ModelOptionsUtils.mergeOption(ro.getNumCtx(), options.getNumCtx()))
-				.numBatch(ModelOptionsUtils.mergeOption(ro.getNumBatch(), options.getNumBatch()))
-				.numGPU(ModelOptionsUtils.mergeOption(ro.getNumGPU(), options.getNumGPU()))
-				.mainGPU(ModelOptionsUtils.mergeOption(ro.getMainGPU(), options.getMainGPU()))
-				.lowVRAM(ModelOptionsUtils.mergeOption(ro.getLowVRAM(), options.getLowVRAM()))
-				.f16KV(ModelOptionsUtils.mergeOption(ro.getF16KV(), options.getF16KV()))
-				.logitsAll(ModelOptionsUtils.mergeOption(ro.getLogitsAll(), options.getLogitsAll()))
-				.vocabOnly(ModelOptionsUtils.mergeOption(ro.getVocabOnly(), options.getVocabOnly()))
-				.useMMap(ModelOptionsUtils.mergeOption(ro.getUseMMap(), options.getUseMMap()))
-				.useMLock(ModelOptionsUtils.mergeOption(ro.getUseMLock(), options.getUseMLock()))
-				.numThread(ModelOptionsUtils.mergeOption(ro.getNumThread(), options.getNumThread()));
+				.numPredict(ModelOptionsUtils.mergeOption(ro.getNumPredict(), options.getNumPredict()));
 		}
 
 		return builder.build();

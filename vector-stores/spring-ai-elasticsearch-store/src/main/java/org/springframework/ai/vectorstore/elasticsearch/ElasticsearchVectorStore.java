@@ -181,12 +181,28 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 			.withTransportOptions(t -> t.addHeader("user-agent", "spring-ai elastic-java/" + version));
 	}
 
+	/**
+	 * Creates a new builder instance for ElasticsearchVectorStore.
+	 * @return a new ElasticsearchBuilder instance
+	 */
+	public static Builder builder(Rest5Client restClient, EmbeddingModel embeddingModel) {
+		return new Builder(restClient, embeddingModel);
+	}
+
 	@Override
 	public void doAdd(List<Document> documents) {
+		Assert.notNull(documents, "The document list should not be null.");
+		this.doAdd(documents, EmbeddingOptions.builder().build());
+	}
+
+	@Override
+	public void doAdd(List<Document> documents, EmbeddingOptions options) {
+		Assert.notNull(documents, "The document list should not be null.");
+		Assert.notNull(options, "The embedding Options should not be null.");
+
 		BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
 
-		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
-				this.batchingStrategy);
+		List<float[]> embeddings = this.embeddingModel.embed(documents, options, this.batchingStrategy);
 
 		for (int i = 0; i < embeddings.size(); i++) {
 			Document document = documents.get(i);
@@ -385,14 +401,6 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 		@SuppressWarnings("unchecked")
 		T client = (T) this.elasticsearchClient;
 		return Optional.of(client);
-	}
-
-	/**
-	 * Creates a new builder instance for ElasticsearchVectorStore.
-	 * @return a new ElasticsearchBuilder instance
-	 */
-	public static Builder builder(Rest5Client restClient, EmbeddingModel embeddingModel) {
-		return new Builder(restClient, embeddingModel);
 	}
 
 	public static class Builder extends AbstractVectorStoreBuilder<Builder> {

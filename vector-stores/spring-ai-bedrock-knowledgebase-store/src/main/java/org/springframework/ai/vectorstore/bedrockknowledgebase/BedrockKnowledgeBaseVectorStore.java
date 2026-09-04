@@ -38,6 +38,7 @@ import software.amazon.awssdk.services.bedrockagentruntime.model.VectorSearchRer
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
+import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.Filter;
@@ -100,6 +101,11 @@ public final class BedrockKnowledgeBaseVectorStore implements VectorStore {
 
 	@Override
 	public void add(final List<Document> documents) {
+		throw new UnsupportedOperationException("Documents are ingested via data source sync, not direct add.");
+	}
+
+	@Override
+	public void add(final List<Document> documents, EmbeddingOptions options) {
 		throw new UnsupportedOperationException("Documents are ingested via data source sync, not direct add.");
 	}
 

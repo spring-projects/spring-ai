@@ -24,10 +24,12 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.Filter;
+import org.springframework.util.Assert;
 
 /**
  * Abstract base class for {@link VectorStore} implementations that provides observation
@@ -41,13 +43,13 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 
 	private static final VectorStoreObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultVectorStoreObservationConvention();
 
-	private final ObservationRegistry observationRegistry;
-
-	private final @Nullable VectorStoreObservationConvention customObservationConvention;
-
 	protected final EmbeddingModel embeddingModel;
 
 	protected final BatchingStrategy batchingStrategy;
+
+	private final ObservationRegistry observationRegistry;
+
+	private final @Nullable VectorStoreObservationConvention customObservationConvention;
 
 	private AbstractObservationVectorStore(EmbeddingModel embeddingModel, ObservationRegistry observationRegistry,
 			@Nullable VectorStoreObservationConvention customObservationConvention, BatchingStrategy batchingStrategy) {
@@ -73,6 +75,15 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 	 */
 	@Override
 	public void add(List<Document> documents) {
+		Assert.notNull(documents, "The document list should not be null.");
+		this.add(documents, EmbeddingOptions.builder().build());
+	}
+
+	@Override
+	public void add(List<Document> documents, EmbeddingOptions options) {
+		Assert.notNull(documents, "The document list should not be null.");
+		Assert.notNull(options, "The embedding Options should not be null.");
+
 		validateNonTextDocuments(documents);
 		VectorStoreObservationContext observationContext = this
 			.createObservationContextBuilder(VectorStoreObservationContext.Operation.ADD.value())
@@ -81,7 +92,7 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 		VectorStoreObservationDocumentation.AI_VECTOR_STORE
 			.observation(this.customObservationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 					this.observationRegistry)
-			.observe(() -> this.doAdd(documents));
+			.observe(() -> this.doAdd(documents, options));
 	}
 
 	private void validateNonTextDocuments(List<Document> documents) {
@@ -146,7 +157,12 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 	 * Perform the actual add operation.
 	 * @param documents the documents to add
 	 */
-	public abstract void doAdd(List<Document> documents);
+	public void doAdd(List<Document> documents) {
+		Assert.notNull(documents, "The document list should not be null.");
+		this.doAdd(documents, EmbeddingOptions.builder().build());
+	}
+
+	public abstract void doAdd(List<Document> documents, EmbeddingOptions options);
 
 	/**
 	 * Perform the actual delete operation.
