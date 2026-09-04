@@ -133,6 +133,8 @@ public final class OpenAiChatModel implements ChatModel {
 
 	private static final String REASONING_CONTENT = "reasoningContent";
 
+	private static final String REASONING_CONTENT_DELTA = "reasoningContentDelta";
+
 	static final String TOOL_CALL_ADDITIONAL_PROPERTIES_METADATA_KEY = "openai.tool_calls.additional_properties";
 
 	private static final TypeReference<Map<String, Object>> MAP_TYPE_REF = new TypeReference<>() {
@@ -276,6 +278,7 @@ public final class OpenAiChatModel implements ChatModel {
 			RequestOptions requestOptions = this.buildRequestOptions(prompt);
 			ConcurrentHashMap<String, String> roleMap = new ConcurrentHashMap<>();
 			ConcurrentHashMap<String, String> reasoningMap = new ConcurrentHashMap<>();
+			ConcurrentHashMap<String, String> reasoningPrevMap = new ConcurrentHashMap<>();
 			final ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 				.prompt(prompt)
 				.provider(AiProvider.OPENAI.value())
@@ -336,8 +339,11 @@ public final class OpenAiChatModel implements ChatModel {
 					// Accumulate reasoning fragments across the streamed chunks so the
 					// final response of this stream carries the full reasoning content,
 					// surviving last-wins metadata aggregation (e.g. MessageAggregator).
-					String accumulatedReasoning = reasoningMap.merge(id + ":" + choice.index(),
-							getReasoningContent(choice), String::concat);
+					String key = id + ":" + choice.index();
+					String accumulatedReasoning = reasoningMap.merge(key, getReasoningContent(choice), String::concat);
+					String prevReasoning = reasoningPrevMap.getOrDefault(key, "");
+					String reasoningDelta = accumulatedReasoning.substring(prevReasoning.length());
+					reasoningPrevMap.put(key, accumulatedReasoning);
 
 					Map<String, Object> metadata = Map.of("id", id, //
 							"role", roleMap.getOrDefault(id, ""), //
@@ -345,7 +351,8 @@ public final class OpenAiChatModel implements ChatModel {
 							"finishReason", choice.finishReason().value(), //
 							"refusal", choice.message().refusal().orElse(""), //
 							"annotations", choice.message().annotations().orElseGet(List::of), //
-							REASONING_CONTENT, accumulatedReasoning //
+							REASONING_CONTENT, accumulatedReasoning, //
+							REASONING_CONTENT_DELTA, reasoningDelta //
 					);
 
 					return buildGeneration(choice, metadata, request);
