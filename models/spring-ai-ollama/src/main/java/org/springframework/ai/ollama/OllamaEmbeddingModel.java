@@ -74,6 +74,17 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 
 	private EmbeddingModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
+	/**
+	 * @deprecated since 1.0.0-M2 in favor of
+	 * {@link #OllamaEmbeddingModel(OllamaApi, OllamaEmbeddingOptions, ObservationRegistry, ModelManagementOptions)}.
+	 */
+	@Deprecated(since = "1.0.0-M2", forRemoval = false)
+	public OllamaEmbeddingModel(OllamaApi ollamaApi, org.springframework.ai.ollama.api.OllamaOptions options,
+			ObservationRegistry observationRegistry, ModelManagementOptions modelManagementOptions) {
+		this(ollamaApi, options != null ? options.toEmbeddingOptions() : OllamaEmbeddingOptions.builder().build(),
+				observationRegistry, modelManagementOptions);
+	}
+
 	public OllamaEmbeddingModel(OllamaApi ollamaApi, OllamaEmbeddingOptions options,
 			ObservationRegistry observationRegistry, ModelManagementOptions modelManagementOptions) {
 		Assert.notNull(ollamaApi, "ollamaApi must not be null");
@@ -183,6 +194,22 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 				.useMLock(ModelOptionsUtils.mergeOption(ro.getUseMLock(), options.getUseMLock()))
 				.numThread(ModelOptionsUtils.mergeOption(ro.getNumThread(), options.getNumThread()));
 		}
+		else if (requestOptions instanceof org.springframework.ai.ollama.api.OllamaOptions ro) {
+			builder.keepAlive(ModelOptionsUtils.mergeOption(ro.getKeepAlive(), options.getKeepAlive()))
+				.truncate(ModelOptionsUtils.mergeOption(ro.getTruncate(), options.getTruncate()))
+				.useNUMA(ModelOptionsUtils.mergeOption(ro.getUseNUMA(), options.getUseNUMA()))
+				.numCtx(ModelOptionsUtils.mergeOption(ro.getNumCtx(), options.getNumCtx()))
+				.numBatch(ModelOptionsUtils.mergeOption(ro.getNumBatch(), options.getNumBatch()))
+				.numGPU(ModelOptionsUtils.mergeOption(ro.getNumGPU(), options.getNumGPU()))
+				.mainGPU(ModelOptionsUtils.mergeOption(ro.getMainGPU(), options.getMainGPU()))
+				.lowVRAM(ModelOptionsUtils.mergeOption(ro.getLowVRAM(), options.getLowVRAM()))
+				.f16KV(ModelOptionsUtils.mergeOption(ro.getF16KV(), options.getF16KV()))
+				.logitsAll(ModelOptionsUtils.mergeOption(ro.getLogitsAll(), options.getLogitsAll()))
+				.vocabOnly(ModelOptionsUtils.mergeOption(ro.getVocabOnly(), options.getVocabOnly()))
+				.useMMap(ModelOptionsUtils.mergeOption(ro.getUseMMap(), options.getUseMMap()))
+				.useMLock(ModelOptionsUtils.mergeOption(ro.getUseMLock(), options.getUseMLock()))
+				.numThread(ModelOptionsUtils.mergeOption(ro.getNumThread(), options.getNumThread()));
+		}
 
 		return builder.build();
 	}
@@ -234,6 +261,16 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 
 		public Builder ollamaApi(OllamaApi ollamaApi) {
 			this.ollamaApi = ollamaApi;
+			return this;
+		}
+
+		/**
+		 * @deprecated since 1.0.0-M2 in favor of
+		 * {@link #options(OllamaEmbeddingOptions)}.
+		 */
+		@Deprecated(since = "1.0.0-M2", forRemoval = false)
+		public Builder options(org.springframework.ai.ollama.api.OllamaOptions options) {
+			this.options = options != null ? options.toEmbeddingOptions() : OllamaEmbeddingOptions.builder().build();
 			return this;
 		}
 
