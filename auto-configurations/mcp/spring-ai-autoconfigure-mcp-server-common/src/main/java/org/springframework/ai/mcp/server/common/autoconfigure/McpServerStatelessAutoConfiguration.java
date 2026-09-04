@@ -38,6 +38,8 @@ import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.Implementation;
 import io.modelcontextprotocol.spec.McpStatelessServerTransport;
 
+import org.springframework.ai.mcp.customizer.McpStatelessAsyncServerCustomizer;
+import org.springframework.ai.mcp.customizer.McpStatelessSyncServerCustomizer;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -80,7 +82,8 @@ public class McpServerStatelessAutoConfiguration {
 			ObjectProvider<List<SyncResourceSpecification>> resources,
 			ObjectProvider<List<SyncResourceTemplateSpecification>> resourceTemplates,
 			ObjectProvider<List<SyncPromptSpecification>> prompts,
-			ObjectProvider<List<SyncCompletionSpecification>> completions, Environment environment) {
+			ObjectProvider<List<SyncCompletionSpecification>> completions, Environment environment,
+			ObjectProvider<McpStatelessSyncServerCustomizer> customizers) {
 
 		McpSchema.Implementation serverInfo = Implementation
 			.builder(serverProperties.getName(), serverProperties.getVersion())
@@ -160,6 +163,8 @@ public class McpServerStatelessAutoConfiguration {
 			serverBuilder.immediateExecution(true);
 		}
 
+		customizers.orderedStream().forEach(customizer -> customizer.customize(serverBuilder));
+
 		return serverBuilder.build();
 	}
 
@@ -171,7 +176,8 @@ public class McpServerStatelessAutoConfiguration {
 			ObjectProvider<List<AsyncResourceSpecification>> resources,
 			ObjectProvider<List<AsyncResourceTemplateSpecification>> resourceTemplates,
 			ObjectProvider<List<AsyncPromptSpecification>> prompts,
-			ObjectProvider<List<AsyncCompletionSpecification>> completions) {
+			ObjectProvider<List<AsyncCompletionSpecification>> completions,
+			ObjectProvider<McpStatelessAsyncServerCustomizer> customizers) {
 
 		McpSchema.Implementation serverInfo = Implementation
 			.builder(serverProperties.getName(), serverProperties.getVersion())
@@ -247,6 +253,8 @@ public class McpServerStatelessAutoConfiguration {
 		serverBuilder.instructions(serverProperties.getInstructions());
 
 		serverBuilder.requestTimeout(serverProperties.getRequestTimeout());
+
+		customizers.orderedStream().forEach(customizer -> customizer.customize(serverBuilder));
 
 		return serverBuilder.build();
 	}
