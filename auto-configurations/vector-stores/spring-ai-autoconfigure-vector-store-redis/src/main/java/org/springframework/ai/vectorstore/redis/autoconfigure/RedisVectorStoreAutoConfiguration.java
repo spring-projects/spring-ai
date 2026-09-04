@@ -78,7 +78,7 @@ public class RedisVectorStoreAutoConfiguration {
 	 */
 	@Bean
 	@ConditionalOnMissingBean
-	public RedisVectorStore vectorStore(final EmbeddingModel embeddingModel,
+	public RedisVectorStore redisVectorStore(final EmbeddingModel embeddingModel,
 			final RedisVectorStoreProperties properties, final JedisConnectionFactory jedisConnectionFactory,
 			final ObjectProvider<ObservationRegistry> observationRegistry,
 			final ObjectProvider<VectorStoreObservationConvention> convention,
