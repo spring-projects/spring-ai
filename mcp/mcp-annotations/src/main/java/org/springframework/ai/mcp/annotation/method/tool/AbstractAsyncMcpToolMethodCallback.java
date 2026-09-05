@@ -29,6 +29,7 @@ import reactor.core.publisher.Mono;
 import org.springframework.ai.mcp.annotation.McpTool;
 import org.springframework.ai.mcp.annotation.context.McpRequestContextTypes;
 import org.springframework.ai.util.JsonHelper;
+import io.modelcontextprotocol.spec.McpSchema.Content;
 
 /**
  * Abstract base class for creating Function callbacks around async tool methods.
@@ -105,7 +106,15 @@ public abstract class AbstractAsyncMcpToolMethodCallback<T, RC extends McpReques
 
 			// Check if the Flux contains CallToolResult
 			if (ReactiveUtils.isReactiveReturnTypeOfCallToolResult(this.toolMethod)) {
-				return ((Flux<CallToolResult>) fluxResult).next().onErrorResume(this::toErrorResultOrPropagate);
+				return ((Flux<CallToolResult>) fluxResult).collectList().map(results -> {
+    				var builder = CallToolResult.builder();
+    				for (CallToolResult r : results) {
+        				for (Content c : r.content()) {
+            				builder.addContent(c);
+        				}
+    				}
+    				return builder.build();
+				}).onErrorResume(this::toErrorResultOrPropagate);
 			}
 
 			// Handle Mono<Void> for VOID return type
@@ -116,7 +125,16 @@ public abstract class AbstractAsyncMcpToolMethodCallback<T, RC extends McpReques
 			}
 
 			// Handle other Flux types by taking the first element and mapping
-			return fluxResult.next().map(this::mapValueToCallToolResult).onErrorResume(this::toErrorResultOrPropagate);
+			return fluxResult.collectList().map(items -> {
+    			var builder = CallToolResult.builder();
+				for (Object item : items) {
+        			CallToolResult itemResult = this.mapValueToCallToolResult(item);
+        			for (Content c : itemResult.content()) {
+            			builder.addContent(c);
+        			}
+    			}
+    			return builder.build();
+			}).onErrorResume(this::toErrorResultOrPropagate);
 		}
 
 		// Handle other Publisher types
