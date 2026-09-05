@@ -16,9 +16,12 @@
 
 package org.springframework.ai.chat.client.advisor;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
 
@@ -144,6 +147,8 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 		ChatClientResponse chatClientResponse = null;
 		UsageAccumulator usageAccumulator = new UsageAccumulator();
 
+		Map<String, @Nullable Object> context = new HashMap<>(chatClientRequest.context());
+
 		boolean isToolCall = false;
 
 		do {
@@ -151,7 +156,7 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 			// Before Call
 			var processedChatClientRequest = ChatClientRequest.builder()
 				.prompt(new Prompt(instructions, toolCallingChatOptions))
-				.context(chatClientRequest.context())
+				.context(context)
 				.build();
 
 			// Next Call
@@ -210,6 +215,10 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 
 				instructions = this.doGetNextInstructionsForToolCall(processedChatClientRequest, chatClientResponse,
 						toolExecutionResult);
+
+				// Preserve context written by advisors during this iteration for the
+				// next tool-call iteration.
+				context = new HashMap<>(chatClientResponse.context());
 			}
 
 		}
@@ -396,7 +405,13 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 				// Recursive call with updated conversation history
 				List<Message> nextInstructions = this.doGetNextInstructionsForToolCallStream(finalRequest,
 						finalAggregatedResponse, toolExecutionResult);
-				return this.internalStream(streamAdvisorChain, originalRequest, optionsCopy, nextInstructions,
+				// Preserve context written by advisors during this iteration for the
+				// next tool-call iteration, mirroring the call path.
+				ChatClientRequest nextRequest = ChatClientRequest.builder()
+					.prompt(originalRequest.prompt())
+					.context(finalAggregatedResponse.context())
+					.build();
+				return this.internalStream(streamAdvisorChain, nextRequest, optionsCopy, nextInstructions,
 						toolExecutionResult.conversationHistory(), usageAccumulator);
 			}
 		});
