@@ -35,6 +35,7 @@ import com.openai.client.OpenAIClientAsync;
 import com.openai.core.JsonValue;
 import com.openai.core.RequestOptions;
 import com.openai.core.http.AsyncStreamResponse;
+import com.openai.errors.InternalServerException;
 import com.openai.models.FunctionDefinition;
 import com.openai.models.FunctionParameters;
 import com.openai.models.ReasoningEffort;
@@ -100,6 +101,29 @@ class OpenAiChatModelTests {
 
 	@Mock
 	OpenAIClientAsync openAiClientAsync;
+
+	@Test
+	void mapEmbeddedProviderErrorToSdkException() {
+		ChatService chatService = mock(ChatService.class);
+		ChatCompletionService chatCompletionService = mock(ChatCompletionService.class);
+		ChatCompletion chatCompletion = mock(ChatCompletion.class);
+		when(chatCompletion._additionalProperties()).thenReturn(
+				Map.of("error", JsonValue.from(Map.of("message", "Service temporarily overloaded", "code", 502))));
+		when(this.openAiClient.chat()).thenReturn(chatService);
+		when(chatService.completions()).thenReturn(chatCompletionService);
+		when(chatCompletionService.create(any(ChatCompletionCreateParams.class), any(RequestOptions.class)))
+			.thenReturn(chatCompletion);
+
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		assertThatThrownBy(() -> chatModel.call(new Prompt("hi", options))).isInstanceOf(InternalServerException.class)
+			.hasMessageContaining("Service temporarily overloaded");
+	}
 
 	@Test
 	void preserveUnmappedRootResponseMetadata() {
