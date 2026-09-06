@@ -52,7 +52,7 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 /**
- * A class representing a Vertex AI Text Embedding Model using the new Google Gen AI SDK.
+ * A class representing a Google Gen AI Text Embedding Model using the Google Gen AI SDK.
  *
  * @author Christian Tzolov
  * @author Mark Pollack
@@ -151,9 +151,15 @@ public class GoogleGenAiTextEmbeddingModel extends AbstractEmbeddingModel {
 					configBuilder.outputDimensionality(options.getDimensions());
 				}
 
-				// Set task type if specified - this might need to be handled differently
-				// as the new SDK might not have a direct taskType field
-				// We'll need to check the SDK documentation for this
+				if (options.getTaskType() != null) {
+					configBuilder.taskType(options.getTaskType().name());
+				}
+				if (StringUtils.hasText(options.getTitle())) {
+					configBuilder.title(options.getTitle());
+				}
+				if (options.getAutoTruncate() != null) {
+					configBuilder.autoTruncate(options.getAutoTruncate().booleanValue());
+				}
 
 				EmbedContentConfig config = configBuilder.build();
 

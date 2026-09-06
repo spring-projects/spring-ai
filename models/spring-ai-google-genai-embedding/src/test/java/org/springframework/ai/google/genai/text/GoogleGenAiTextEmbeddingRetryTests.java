@@ -27,6 +27,7 @@ import com.google.genai.types.EmbedContentResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -134,6 +135,36 @@ public class GoogleGenAiTextEmbeddingRetryTests {
 		// Verify that embedContent was called only once (no retries for non-transient
 		// errors)
 		verify(this.mockModels, times(1)).embedContent(anyString(), any(List.class), any(EmbedContentConfig.class));
+	}
+
+	@Test
+	public void embeddingOptionsAreForwardedToConfig() {
+		ContentEmbedding mockEmbedding = mock(ContentEmbedding.class);
+		given(mockEmbedding.values()).willReturn(java.util.Optional.of(List.of(1.0f)));
+		given(mockEmbedding.statistics()).willReturn(java.util.Optional.empty());
+
+		EmbedContentResponse mockResponse = mock(EmbedContentResponse.class);
+		given(mockResponse.embeddings()).willReturn(java.util.Optional.of(List.of(mockEmbedding)));
+
+		given(this.mockModels.embedContent(anyString(), any(List.class), any(EmbedContentConfig.class)))
+			.willReturn(mockResponse);
+
+		GoogleGenAiTextEmbeddingOptions options = GoogleGenAiTextEmbeddingOptions.builder()
+			.model("model")
+			.taskType(GoogleGenAiTextEmbeddingOptions.TaskType.RETRIEVAL_DOCUMENT)
+			.title("my-title")
+			.autoTruncate(false)
+			.build();
+
+		this.embeddingModel.call(new EmbeddingRequest(List.of("text1"), options));
+
+		ArgumentCaptor<EmbedContentConfig> configCaptor = ArgumentCaptor.forClass(EmbedContentConfig.class);
+		verify(this.mockModels).embedContent(anyString(), any(List.class), configCaptor.capture());
+
+		EmbedContentConfig capturedConfig = configCaptor.getValue();
+		assertThat(capturedConfig.taskType()).isPresent().hasValue("RETRIEVAL_DOCUMENT");
+		assertThat(capturedConfig.title()).isPresent().hasValue("my-title");
+		assertThat(capturedConfig.autoTruncate()).isPresent().hasValue(false);
 	}
 
 	private static class TestRetryListener implements RetryListener {
