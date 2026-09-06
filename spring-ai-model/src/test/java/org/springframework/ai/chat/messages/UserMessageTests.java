@@ -16,10 +16,15 @@
 
 package org.springframework.ai.chat.messages;
 
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.content.ContentPart;
 import org.springframework.ai.content.Media;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
@@ -261,6 +266,273 @@ class UserMessageTests {
 
 		String toString = message.toString();
 		assertThat(toString).contains("UserMessage").contains(text).contains("media");
+	}
+
+	private static Media imageMedia() {
+		return new Media(MimeTypeUtils.IMAGE_PNG, URI.create("https://example.com/image.png"));
+	}
+
+	@Test
+	void userMessageFromContentPartsPreservesOrder() {
+		Media media1 = imageMedia();
+		Media media2 = imageMedia();
+		UserMessage message = UserMessage.builder()
+			.contentParts(ContentPart.text("--- p1 ---"), ContentPart.media(media1), ContentPart.text("--- p2 ---"),
+					ContentPart.media(media2))
+			.build();
+
+		assertThat(message.getContentParts()).containsExactly(ContentPart.text("--- p1 ---"), ContentPart.media(media1),
+				ContentPart.text("--- p2 ---"), ContentPart.media(media2));
+		assertThat(message.getText()).isEqualTo("--- p1 ---\n--- p2 ---");
+		assertThat(message.getMedia()).containsExactly(media1, media2);
+	}
+
+	@Test
+	void userMessageFromContentPartsJoinsTextWithLiteralNewline() {
+		UserMessage message = UserMessage.builder()
+			.contentParts(ContentPart.text("first"), ContentPart.text("second"))
+			.build();
+
+		// A literal "\n", never System.lineSeparator(): the projection is persisted and
+		// participates in equals, so it must not vary by platform.
+		assertThat(message.getText()).isEqualTo("first\nsecond");
+	}
+
+	@Test
+	void userMessageFromContentPartsWithMediaOnly() {
+		Media media = imageMedia();
+		UserMessage message = UserMessage.builder().contentParts(ContentPart.media(media)).build();
+
+		assertThat(message.getText()).isEmpty();
+		assertThat(message.getMedia()).containsExactly(media);
+		assertThat(message.getContentParts()).hasSize(1);
+	}
+
+	@Test
+	void userMessageFromEmptyContentParts() {
+		UserMessage message = UserMessage.builder().contentParts(List.of()).build();
+
+		assertThat(message.getText()).isEmpty();
+		assertThat(message.getMedia()).isEmpty();
+		assertThat(message.getContentParts()).isEmpty();
+	}
+
+	@Test
+	void userMessageTextProjectionOmitsMedia() {
+		// Components that treat user text as a retrieval query read getText() directly,
+		// so
+		// no media marker may leak into it.
+		Media media = imageMedia();
+		UserMessage message = UserMessage.builder()
+			.contentParts(ContentPart.text("what is this?"), ContentPart.media(media))
+			.build();
+
+		assertThat(message.getText()).isEqualTo("what is this?");
+		assertThat(message.getText()).doesNotContain(media.getName());
+	}
+
+	@Test
+	void userMessageDerivesContentPartsFromTextAndMedia() {
+		Media media1 = imageMedia();
+		Media media2 = imageMedia();
+		UserMessage message = UserMessage.builder().text("Hello").media(media1, media2).build();
+
+		assertThat(message.getContentParts()).containsExactly(ContentPart.text("Hello"), ContentPart.media(media1),
+				ContentPart.media(media2));
+	}
+
+	@Test
+	void userMessageDerivesContentPartsFromBlankText() {
+		// Derivation keys on text != null, not on the text being non-blank, so blank text
+		// round-trips through copy().
+		assertThat(new UserMessage("").getContentParts()).containsExactly(ContentPart.text(""));
+		assertThat(new UserMessage("   \t\n   ").getContentParts()).containsExactly(ContentPart.text("   \t\n   "));
+	}
+
+	@Test
+	void userMessageBuilderTextDiscardsContentParts() {
+		Media media = imageMedia();
+		UserMessage message = UserMessage.builder()
+			.contentParts(ContentPart.text("ordered"), ContentPart.media(media))
+			.text("flat")
+			.build();
+
+		assertThat(message.getText()).isEqualTo("flat");
+		assertThat(message.getContentParts()).containsExactly(ContentPart.text("flat"));
+		assertThat(message.getMedia()).isEmpty();
+	}
+
+	@Test
+	void userMessageBuilderMediaDiscardsContentParts() {
+		Media ordered = imageMedia();
+		Media flat = imageMedia();
+		UserMessage message = UserMessage.builder()
+			.contentParts(ContentPart.text("ordered"), ContentPart.media(ordered))
+			.text("flat")
+			.media(flat)
+			.build();
+
+		assertThat(message.getContentParts()).containsExactly(ContentPart.text("flat"), ContentPart.media(flat));
+	}
+
+	@Test
+	void userMessageBuilderContentPartsOverridesText() {
+		UserMessage message = UserMessage.builder().text("discarded").contentParts(ContentPart.text("ordered")).build();
+
+		assertThat(message.getText()).isEqualTo("ordered");
+		assertThat(message.getContentParts()).containsExactly(ContentPart.text("ordered"));
+	}
+
+	@Test
+	void userMessageBuilderStillRejectsTextAndResourceTogether() {
+		assertThatThrownBy(
+				() -> UserMessage.builder().text("some text").text(new ClassPathResource("prompt-user.txt")).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("textContent and resource cannot be set at the same time");
+	}
+
+	@Test
+	void userMessageCopyPreservesContentParts() {
+		Media media = imageMedia();
+		UserMessage original = UserMessage.builder()
+			.contentParts(ContentPart.text("a"), ContentPart.media(media), ContentPart.text("b"))
+			.build();
+
+		UserMessage copy = original.copy();
+
+		assertThat(copy).isNotSameAs(original);
+		assertThat(copy.getContentParts()).isEqualTo(original.getContentParts());
+		assertThat(copy.getText()).isEqualTo("a\nb");
+	}
+
+	@Test
+	void userMessageMutateWithTextFlattensWithoutStaleText() {
+		Media media = imageMedia();
+		UserMessage original = UserMessage.builder()
+			.contentParts(ContentPart.text("old"), ContentPart.media(media))
+			.build();
+
+		UserMessage mutated = original.mutate().text("replaced").build();
+
+		// The whole point of eager invalidation: no part may still carry the old text, or
+		// a
+		// parts-aware provider would silently send a prompt the caller already replaced.
+		assertThat(mutated.getText()).isEqualTo("replaced");
+		assertThat(mutated.getContentParts()).doesNotContain(ContentPart.text("old"));
+		assertThat(mutated.getContentParts()).containsExactly(ContentPart.text("replaced"), ContentPart.media(media));
+		assertThat(mutated.getMedia()).containsExactly(media);
+	}
+
+	@Test
+	void userMessageMutateAppendTextPreservesContentParts() {
+		Media media = imageMedia();
+		UserMessage original = UserMessage.builder()
+			.contentParts(ContentPart.text("body"), ContentPart.media(media))
+			.build();
+
+		UserMessage appended = original.mutate().appendText("FORMAT").build();
+
+		assertThat(appended.getContentParts()).containsExactly(ContentPart.text("body"), ContentPart.media(media),
+				ContentPart.text("FORMAT"));
+		assertThat(appended.getMedia()).containsExactly(media);
+	}
+
+	@Test
+	void userMessageAppendTextConcatenatesFlatText() {
+		UserMessage message = UserMessage.builder().text("body").appendText("\nFORMAT").build();
+
+		assertThat(message.getText()).isEqualTo("body\nFORMAT");
+		assertThat(message.getContentParts()).containsExactly(ContentPart.text("body\nFORMAT"));
+	}
+
+	@Test
+	void userMessageAppendTextIgnoresNullAndBlank() {
+		UserMessage message = UserMessage.builder().text("body").appendText(null).appendText("   ").build();
+
+		assertThat(message.getText()).isEqualTo("body");
+	}
+
+	@Test
+	void userMessageBuilderRejectsNullContentParts() {
+		assertThatThrownBy(() -> UserMessage.builder().contentParts((List<ContentPart>) null))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("contentParts cannot be null");
+
+		assertThatThrownBy(() -> UserMessage.builder().contentParts(Arrays.asList(ContentPart.text("a"), null)))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("contentParts cannot have null elements");
+	}
+
+	@Test
+	void userMessageContentPartsAndMediaAreUnmodifiable() {
+		Media media = imageMedia();
+		UserMessage message = UserMessage.builder()
+			.contentParts(ContentPart.text("a"), ContentPart.media(media))
+			.build();
+
+		assertThatThrownBy(() -> message.getContentParts().add(ContentPart.text("b")))
+			.isInstanceOf(UnsupportedOperationException.class);
+		assertThatThrownBy(() -> message.getMedia().add(imageMedia()))
+			.isInstanceOf(UnsupportedOperationException.class);
+	}
+
+	@Test
+	void userMessageContentPartsIndependentOfCallerList() {
+		List<ContentPart> parts = new ArrayList<>();
+		parts.add(ContentPart.text("a"));
+		UserMessage message = UserMessage.builder().contentParts(parts).build();
+
+		parts.add(ContentPart.text("b"));
+
+		assertThat(message.getContentParts()).containsExactly(ContentPart.text("a"));
+		assertThat(message.getText()).isEqualTo("a");
+	}
+
+	@Test
+	void userMessageHasInterleavedContentOnlyWhenFlatteningWouldLose() {
+		Media media = imageMedia();
+
+		// Flat-equivalent shapes: a single leading text, then media. Providers with a
+		// flat
+		// fast path may keep using it for these.
+		assertThat(new UserMessage("just text").hasInterleavedContent()).isFalse();
+		assertThat(UserMessage.builder().text("text").media(media).build().hasInterleavedContent()).isFalse();
+		assertThat(UserMessage.builder()
+			.contentParts(ContentPart.text("text"), ContentPart.media(media))
+			.build()
+			.hasInterleavedContent()).isFalse();
+		assertThat(UserMessage.builder().contentParts(ContentPart.media(media)).build().hasInterleavedContent())
+			.isFalse();
+		assertThat(UserMessage.builder().contentParts(List.of()).build().hasInterleavedContent()).isFalse();
+
+		// Shapes that only the ordered form can express: text after media, or several
+		// texts
+		// (whose separate blocks a provider concatenates without the projection's
+		// newline).
+		assertThat(UserMessage.builder()
+			.contentParts(ContentPart.media(media), ContentPart.text("after"))
+			.build()
+			.hasInterleavedContent()).isTrue();
+		assertThat(UserMessage.builder()
+			.contentParts(ContentPart.text("one"), ContentPart.text("two"))
+			.build()
+			.hasInterleavedContent()).isTrue();
+	}
+
+	@Test
+	void userMessageEqualityIgnoresContentPartOrdering() {
+		Media media = imageMedia();
+		UserMessage textFirst = UserMessage.builder()
+			.contentParts(ContentPart.text("a"), ContentPart.media(media))
+			.build();
+		UserMessage mediaFirst = UserMessage.builder()
+			.contentParts(ContentPart.media(media), ContentPart.text("a"))
+			.build();
+
+		// Pinning existing semantics, not endorsing them: UserMessage does not override
+		// equals/hashCode, so neither media nor part ordering participates in equality.
+		// Fixing that requires value-based equals on Media first.
+		assertThat(textFirst).isEqualTo(mediaFirst);
 	}
 
 }

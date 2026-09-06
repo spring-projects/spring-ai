@@ -375,6 +375,13 @@ public class OllamaChatModel implements ChatModel {
 				return List.of(OllamaApi.Message.builder(Role.SYSTEM).content(message.getText()).build());
 			}
 			else if (message.getMessageType() == MessageType.USER) {
+				// Ollama's message format is a text plus a separate image list, so it
+				// cannot
+				// express an ordering between the two. Ordered content parts are
+				// therefore
+				// flattened to text-then-images via getText()/getMedia(), which is the
+				// most
+				// this wire format can carry.
 				var messageBuilder = OllamaApi.Message.builder(Role.USER).content(message.getText());
 				if (message instanceof UserMessage userMessage) {
 					if (!CollectionUtils.isEmpty(userMessage.getMedia())) {

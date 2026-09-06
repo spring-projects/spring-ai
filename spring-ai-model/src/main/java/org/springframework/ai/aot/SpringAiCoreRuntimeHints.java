@@ -28,6 +28,7 @@ import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.content.Content;
+import org.springframework.ai.content.ContentPart;
 import org.springframework.ai.content.MediaContent;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
@@ -43,7 +44,7 @@ public class SpringAiCoreRuntimeHints implements RuntimeHintsRegistrar {
 
 		var chatTypes = Set.of(AbstractMessage.class, AssistantMessage.class, ToolResponseMessage.class, Message.class,
 				ToolCallback.class, ToolDefinition.class, AssistantMessage.ToolCall.class, MessageType.class,
-				UserMessage.class, SystemMessage.class, Content.class, MediaContent.class);
+				UserMessage.class, SystemMessage.class, Content.class, MediaContent.class, ContentPart.class);
 
 		var memberCategories = MemberCategory.values();
 

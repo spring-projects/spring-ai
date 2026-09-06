@@ -33,6 +33,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.content.ContentPart;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.google.genai.GoogleGenAiChatModel.GeminiRequest;
 import org.springframework.ai.google.genai.common.GoogleGenAiServiceTier;
@@ -115,6 +116,90 @@ public class CreateGeminiRequestTests {
 		// The test needs to be updated based on how media is handled in the new SDK
 		Part mediaPart = parts.get(1);
 		assertThat(mediaPart.fileData().isPresent()).isTrue();
+	}
+
+	@Test
+	public void createRequestWithInterleavedContentParts() {
+
+		var image1 = Media.builder()
+			.mimeType(MimeTypeUtils.IMAGE_JPEG)
+			.data(URI.create("http://example.com/page1.jpg"))
+			.build();
+		var image2 = Media.builder()
+			.mimeType(MimeTypeUtils.IMAGE_JPEG)
+			.data(URI.create("http://example.com/page2.jpg"))
+			.build();
+
+		// A per-page prompt: each image must stay directly after its own page marker.
+		var userMessage = UserMessage.builder()
+			.contentParts(ContentPart.text("--- page 1 ---"), ContentPart.media(image1),
+					ContentPart.text("--- page 2 ---"), ContentPart.media(image2))
+			.build();
+
+		var client = GoogleGenAiChatModel.builder().genAiClient(this.genAiClient).build();
+
+		GeminiRequest request = client.createGeminiRequest(
+				new Prompt(List.of(userMessage), GoogleGenAiChatOptions.builder().model("DEFAULT_MODEL").build()));
+
+		assertThat(request.contents()).hasSize(1);
+		List<Part> parts = request.contents().get(0).parts().orElse(List.of());
+		assertThat(parts).hasSize(4);
+
+		assertThat(parts.get(0).text().orElse("")).isEqualTo("--- page 1 ---");
+		assertThat(parts.get(1).fileData()).isPresent();
+		assertThat(parts.get(1).fileData().get().fileUri().orElse("")).isEqualTo("http://example.com/page1.jpg");
+		assertThat(parts.get(2).text().orElse("")).isEqualTo("--- page 2 ---");
+		assertThat(parts.get(3).fileData()).isPresent();
+		assertThat(parts.get(3).fileData().get().fileUri().orElse("")).isEqualTo("http://example.com/page2.jpg");
+	}
+
+	@Test
+	public void createRequestWithContentPartsAndSystemMessage() {
+
+		var systemMessage = new SystemMessage("System Message Text");
+		var userMessage = UserMessage.builder()
+			.contentParts(ContentPart.text("first"), ContentPart.text("second"))
+			.build();
+
+		var client = GoogleGenAiChatModel.builder().genAiClient(this.genAiClient).build();
+
+		GeminiRequest request = client.createGeminiRequest(new Prompt(List.of(systemMessage, userMessage),
+				GoogleGenAiChatOptions.builder().model("DEFAULT_MODEL").build()));
+
+		// The system message is still hoisted out of contents into systemInstruction.
+		assertThat(request.config().systemInstruction()).isPresent();
+		assertThat(request.config().systemInstruction().get().parts().get().get(0).text().orElse(""))
+			.isEqualTo("System Message Text");
+
+		assertThat(request.contents()).hasSize(1);
+		List<Part> parts = request.contents().get(0).parts().orElse(List.of());
+		assertThat(parts).hasSize(2);
+		assertThat(parts.get(0).text().orElse("")).isEqualTo("first");
+		assertThat(parts.get(1).text().orElse("")).isEqualTo("second");
+	}
+
+	@Test
+	public void createRequestWithLegacyTextAndMediaIsUnchanged() {
+
+		// Pins the flat text-plus-media path: text first, then all media. A regression in
+		// how content parts are derived would show up here.
+		var userMessage = UserMessage.builder()
+			.text("User Message Text")
+			.media(List
+				.of(Media.builder().mimeType(MimeTypeUtils.IMAGE_PNG).data(URI.create("http://example.com")).build()))
+			.build();
+
+		var client = GoogleGenAiChatModel.builder().genAiClient(this.genAiClient).build();
+
+		GeminiRequest request = client.createGeminiRequest(
+				new Prompt(List.of(userMessage), GoogleGenAiChatOptions.builder().model("DEFAULT_MODEL").build()));
+
+		assertThat(request.contents()).hasSize(1);
+		List<Part> parts = request.contents().get(0).parts().orElse(List.of());
+		assertThat(parts).hasSize(2);
+		assertThat(parts.get(0).text().orElse("")).isEqualTo("User Message Text");
+		assertThat(parts.get(1).fileData()).isPresent();
+		assertThat(parts.get(1).fileData().get().fileUri().orElse("")).isEqualTo("http://example.com");
 	}
 
 	@Test
