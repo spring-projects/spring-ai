@@ -201,6 +201,11 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 	private final @Nullable Map<String, String> labels;
 
 	/**
+	 * Optional. HTTP headers to include in the API request.
+	 */
+	private final @Nullable Map<String, String> httpHeaders;
+
+	/**
 	 * Optional. The service tier to use for the request.
 	 */
 	private final @Nullable GoogleGenAiServiceTier serviceTier;
@@ -218,6 +223,25 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 			@Nullable Boolean googleSearchRetrieval, @Nullable Boolean includeServerSideToolInvocations,
 			@Nullable List<GoogleGenAiSafetySetting> safetySettings, @Nullable Map<String, String> labels,
 			@Nullable GoogleGenAiServiceTier serviceTier) {
+		this(model, frequencyPenalty, maxOutputTokens, presencePenalty, stopSequences, temperature, topK, topP,
+				toolChoice, toolCallbacks, toolContext, candidateCount, responseMimeType, responseSchema,
+				thinkingBudget, includeThoughts, thinkingLevel, includeExtendedUsageMetadata, cachedContentName,
+				useCachedContent, autoCacheThreshold, autoCacheTtl, googleSearchRetrieval,
+				includeServerSideToolInvocations, safetySettings, labels, null, serviceTier);
+	}
+
+	private GoogleGenAiChatOptions(@Nullable String model, @Nullable Double frequencyPenalty,
+			@Nullable Integer maxOutputTokens, @Nullable Double presencePenalty, @Nullable List<String> stopSequences,
+			@Nullable Double temperature, @Nullable Integer topK, @Nullable Double topP,
+			@Nullable ToolChoice toolChoice, @Nullable List<ToolCallback> toolCallbacks,
+			@Nullable Map<String, Object> toolContext, @Nullable Integer candidateCount,
+			@Nullable String responseMimeType, @Nullable String responseSchema, @Nullable Integer thinkingBudget,
+			@Nullable Boolean includeThoughts, @Nullable GoogleGenAiThinkingLevel thinkingLevel,
+			@Nullable Boolean includeExtendedUsageMetadata, @Nullable String cachedContentName,
+			@Nullable Boolean useCachedContent, @Nullable Integer autoCacheThreshold, @Nullable Duration autoCacheTtl,
+			@Nullable Boolean googleSearchRetrieval, @Nullable Boolean includeServerSideToolInvocations,
+			@Nullable List<GoogleGenAiSafetySetting> safetySettings, @Nullable Map<String, String> labels,
+			@Nullable Map<String, String> httpHeaders, @Nullable GoogleGenAiServiceTier serviceTier) {
 		this.model = model != null ? model : ChatModel.GEMINI_2_5_FLASH.getValue();
 		this.frequencyPenalty = frequencyPenalty;
 		this.maxOutputTokens = maxOutputTokens;
@@ -244,6 +268,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 		this.includeServerSideToolInvocations = Boolean.TRUE.equals(includeServerSideToolInvocations);
 		this.safetySettings = (safetySettings != null ? List.copyOf(safetySettings) : null);
 		this.labels = (labels != null ? Map.copyOf(labels) : null);
+		this.httpHeaders = (httpHeaders != null ? Map.copyOf(httpHeaders) : null);
 		this.serviceTier = serviceTier;
 	}
 
@@ -370,6 +395,15 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 	}
 
 	/**
+	 * Return the HTTP headers to include in the API request.
+	 * @return the request HTTP headers, or {@code null} if none are configured
+	 * @since 2.0.2
+	 */
+	public @Nullable Map<String, String> getHttpHeaders() {
+		return this.httpHeaders;
+	}
+
+	/**
 	 * @since 2.0.0
 	 */
 	public @Nullable GoogleGenAiServiceTier getServiceTier() {
@@ -411,6 +445,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 				&& Objects.equals(this.toolCallbacks, that.toolCallbacks)
 				&& Objects.equals(this.safetySettings, that.safetySettings)
 				&& Objects.equals(this.toolContext, that.toolContext) && Objects.equals(this.labels, that.labels)
+				&& Objects.equals(this.httpHeaders, that.httpHeaders)
 				&& Objects.equals(this.serviceTier, that.serviceTier);
 	}
 
@@ -421,7 +456,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 				this.includeThoughts, this.thinkingLevel, this.maxOutputTokens, this.model, this.responseMimeType,
 				this.responseSchema, this.toolCallbacks, this.googleSearchRetrieval,
 				this.includeServerSideToolInvocations, this.safetySettings, this.toolContext, this.labels,
-				this.serviceTier);
+				this.httpHeaders, this.serviceTier);
 	}
 
 	@Override
@@ -457,6 +492,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 			.includeServerSideToolInvocations(this.includeServerSideToolInvocations)
 			.safetySettings(this.safetySettings)
 			.labels(this.labels)
+			.httpHeaders(this.httpHeaders)
 			.serviceTier(this.serviceTier)
 			.responseMimeType(this.responseMimeType);
 	}
@@ -475,6 +511,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 			B copy = super.clone();
 			copy.safetySettings = this.safetySettings == null ? null : new ArrayList<>(this.safetySettings);
 			copy.labels = this.labels == null ? null : new HashMap<>(this.labels);
+			copy.httpHeaders = this.httpHeaders == null ? null : new HashMap<>(this.httpHeaders);
 			return copy;
 		}
 
@@ -509,6 +546,8 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 		protected @Nullable List<GoogleGenAiSafetySetting> safetySettings;
 
 		protected @Nullable Map<String, String> labels;
+
+		protected @Nullable Map<String, String> httpHeaders;
 
 		protected @Nullable GoogleGenAiServiceTier serviceTier;
 
@@ -596,6 +635,17 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 
 		public B labels(@Nullable Map<String, String> labels) {
 			this.labels = labels;
+			return self();
+		}
+
+		/**
+		 * Configure HTTP headers to include in the API request.
+		 * @param httpHeaders the request HTTP headers
+		 * @return this builder
+		 * @since 2.0.2
+		 */
+		public B httpHeaders(@Nullable Map<String, String> httpHeaders) {
+			this.httpHeaders = httpHeaders;
 			return self();
 		}
 
@@ -689,6 +739,16 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 						this.labels = merged;
 					}
 				}
+				if (that.httpHeaders != null) {
+					if (this.httpHeaders == null) {
+						this.httpHeaders = new HashMap<>(that.httpHeaders);
+					}
+					else {
+						Map<String, String> merged = new HashMap<>(this.httpHeaders);
+						merged.putAll(that.httpHeaders);
+						this.httpHeaders = merged;
+					}
+				}
 				if (that.serviceTier != null) {
 					this.serviceTier = that.serviceTier;
 				}
@@ -707,7 +767,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 					this.thinkingBudget, this.includeThoughts, this.thinkingLevel, this.includeExtendedUsageMetadata,
 					this.cachedContentName, this.useCachedContent, this.autoCacheThreshold, this.autoCacheTtl,
 					this.googleSearchRetrieval, this.includeServerSideToolInvocations, this.safetySettings, this.labels,
-					this.serviceTier);
+					this.httpHeaders, this.serviceTier);
 		}
 
 	}
