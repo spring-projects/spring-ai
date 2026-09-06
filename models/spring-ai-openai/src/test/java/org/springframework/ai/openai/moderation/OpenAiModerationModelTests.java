@@ -268,4 +268,22 @@ class OpenAiModerationModelTests {
 		assertThat(value.getTimeout().request()).isEqualTo(expectedTimeout);
 	}
 
+	@Test
+	void testPropagatesPerRequestCustomHeaders() {
+		OpenAIClient mockClient = mock(OpenAIClient.class, RETURNS_DEEP_STUBS);
+		when(mockClient.moderations().create(any(ModerationCreateParams.class), any(RequestOptions.class))).thenReturn(
+				ModerationCreateResponse.builder().id("TEST_ID").model("TEST_MODEL").results(List.of()).build());
+
+		OpenAiModerationModel model = OpenAiModerationModel.builder().openAiClient(mockClient).build();
+		OpenAiModerationOptions options = OpenAiModerationOptions.builder()
+			.customHeaders(Map.of("x-request-id", "VALUE_123"))
+			.build();
+
+		model.call(new ModerationPrompt("hi", options));
+
+		ArgumentCaptor<ModerationCreateParams> paramsCaptor = ArgumentCaptor.forClass(ModerationCreateParams.class);
+		verify(mockClient.moderations()).create(paramsCaptor.capture(), any(RequestOptions.class));
+		assertThat(paramsCaptor.getValue()._additionalHeaders().values("x-request-id")).containsExactly("VALUE_123");
+	}
+
 }

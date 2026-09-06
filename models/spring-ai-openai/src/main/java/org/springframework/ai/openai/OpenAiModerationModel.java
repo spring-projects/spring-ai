@@ -40,6 +40,7 @@ import org.springframework.ai.moderation.ModerationResult;
 import org.springframework.ai.openai.http.okhttp.OpenAiHttpClientBuilderCustomizer;
 import org.springframework.ai.openai.setup.OpenAiSetup;
 import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 
 /**
  * OpenAI SDK Moderation Model implementation.
@@ -107,6 +108,9 @@ public final class OpenAiModerationModel implements ModerationModel {
 		}
 		Assert.notNull(model, "Model must not be null");
 		builder.model(com.openai.models.moderations.ModerationModel.of(model));
+		if (!CollectionUtils.isEmpty(options.getCustomHeaders())) {
+			options.getCustomHeaders().forEach(builder::putAdditionalHeader);
+		}
 
 		ModerationCreateParams params = builder.build();
 

@@ -20,6 +20,7 @@ import java.io.ByteArrayInputStream;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -581,6 +582,30 @@ class OpenAiAudioTranscriptionModelTests {
 		assertThat(sentParams.knownSpeakerNames()).contains(List.of("Alice", "Bob"));
 		assertThat(sentParams.knownSpeakerReferences())
 			.contains(List.of("data:audio/wav;base64,AAAA", "data:audio/wav;base64,BBBB"));
+	}
+
+	@Test
+	void callPropagatesPerRequestCustomHeaders() {
+		ArgumentCaptor<TranscriptionCreateParams> paramsCaptor = ArgumentCaptor
+			.forClass(TranscriptionCreateParams.class);
+		OpenAIClient client = mock(OpenAIClient.class);
+		AudioService audioService = mock(AudioService.class);
+		TranscriptionService transcriptionService = mock(TranscriptionService.class);
+		when(client.audio()).thenReturn(audioService);
+		when(audioService.transcriptions()).thenReturn(transcriptionService);
+		when(transcriptionService.create(paramsCaptor.capture(), any(RequestOptions.class))).thenReturn(
+				TranscriptionCreateResponse.ofTranscription(Transcription.builder().text("Hello world").build()));
+
+		OpenAiAudioTranscriptionModel model = OpenAiAudioTranscriptionModel.builder()
+			.openAiClient(client)
+			.openAiClientAsync(mock(OpenAIClientAsync.class))
+			.build();
+
+		AudioTranscriptionPrompt prompt = new AudioTranscriptionPrompt(new ClassPathResource("/speech.flac"),
+				OpenAiAudioTranscriptionOptions.builder().customHeaders(Map.of("x-request-id", "VALUE_123")).build());
+		model.call(prompt);
+
+		assertThat(paramsCaptor.getValue()._additionalHeaders().values("x-request-id")).containsExactly("VALUE_123");
 	}
 
 	@Test

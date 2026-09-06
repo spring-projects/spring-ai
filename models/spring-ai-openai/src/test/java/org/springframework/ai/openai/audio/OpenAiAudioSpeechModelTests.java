@@ -24,6 +24,7 @@ import java.io.InterruptedIOException;
 import java.net.SocketTimeoutException;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
@@ -621,6 +622,26 @@ class OpenAiAudioSpeechModelTests {
 		RequestOptions value = argumentCaptor.getValue();
 		assertThat(value.getTimeout()).isNotNull();
 		assertThat(value.getTimeout().request()).isEqualTo(expectedTimeout);
+	}
+
+	@Test
+	void testPropagatesPerRequestCustomHeaders() {
+		OpenAIClient mockClient = mock(OpenAIClient.class, RETURNS_DEEP_STUBS);
+		HttpResponse mockResponse = mock(HttpResponse.class);
+		when(mockResponse.body()).thenReturn(new ByteArrayInputStream(new byte[0]));
+		when(mockClient.audio().speech().create(any(SpeechCreateParams.class), any(RequestOptions.class)))
+			.thenReturn(mockResponse);
+
+		OpenAiAudioSpeechModel model = OpenAiAudioSpeechModel.builder().openAiClient(mockClient).build();
+		OpenAiAudioSpeechOptions options = OpenAiAudioSpeechOptions.builder()
+			.customHeaders(Map.of("x-request-id", "VALUE_123"))
+			.build();
+
+		model.call(new TextToSpeechPrompt("hello", options));
+
+		ArgumentCaptor<SpeechCreateParams> paramsCaptor = ArgumentCaptor.forClass(SpeechCreateParams.class);
+		verify(mockClient.audio().speech()).create(paramsCaptor.capture(), any(RequestOptions.class));
+		assertThat(paramsCaptor.getValue()._additionalHeaders().values("x-request-id")).containsExactly("VALUE_123");
 	}
 
 }
