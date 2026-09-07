@@ -231,6 +231,9 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 				else if (o instanceof Boolean) {
 					gen.write(key, (Boolean) o);
 				}
+				else if (o instanceof OracleJsonValue oracleJsonValue) {
+					gen.write(key, oracleJsonValue);
+				}
 			}
 			gen.writeEnd();
 		}
