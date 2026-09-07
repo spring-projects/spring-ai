@@ -40,6 +40,7 @@ import org.springframework.core.Nullness;
  *
  * @author Thomas Vitale
  * @author Christian Tzolov
+ * @author Jewoo Shin
  * @since 1.0.0
  */
 public abstract class AbstractSpringAiSchemaModule implements Module {
@@ -109,6 +110,10 @@ public abstract class AbstractSpringAiSchemaModule implements Module {
 		if (schemaAnnotation != null) {
 			return schemaAnnotation.requiredMode() == Schema.RequiredMode.REQUIRED
 					|| schemaAnnotation.requiredMode() == Schema.RequiredMode.AUTO || schemaAnnotation.required();
+		}
+
+		if (JsonNullableSupport.isJsonNullableType(member.getDeclaredType().getErasedType())) {
+			return false;
 		}
 
 		Nullness nullness;
