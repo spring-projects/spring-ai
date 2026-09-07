@@ -18,6 +18,7 @@ package org.springframework.ai.reader.pdf;
 
 import java.awt.Rectangle;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -78,9 +79,8 @@ public class PagePdfDocumentReader implements DocumentReader {
 	}
 
 	public PagePdfDocumentReader(Resource pdfResource, PdfDocumentReaderConfig config) {
-		try {
-			PDFParser pdfParser = new PDFParser(
-					new org.apache.pdfbox.io.RandomAccessReadBuffer(pdfResource.getInputStream()));
+		try (InputStream inputStream = pdfResource.getInputStream()) {
+			PDFParser pdfParser = new PDFParser(new org.apache.pdfbox.io.RandomAccessReadBuffer(inputStream));
 			this.document = pdfParser.parse();
 
 			this.resourceFileName = pdfResource.getFilename();
