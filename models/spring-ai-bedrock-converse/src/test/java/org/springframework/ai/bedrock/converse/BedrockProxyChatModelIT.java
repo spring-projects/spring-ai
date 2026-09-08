@@ -41,6 +41,7 @@ import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -780,6 +781,59 @@ class BedrockProxyChatModelIT {
 			assertThat(cacheRead).as("Cache read should meet the 4096 token minimum for Claude Haiku 4.5")
 				.isGreaterThan(4096);
 			assertThat(cacheWrite).as("A cache read hit should not also write").isIn(null, 0);
+		});
+	}
+
+	@Test
+	void testToolResultPromptCachingWithClaude() {
+		// Keep the prefix before the tool result deliberately small. A cache read above
+		// Claude Haiku 4.5's 4096-token minimum therefore demonstrates that the large
+		// tool result is included in the cached prefix.
+		String model = "us.anthropic.claude-haiku-4-5-20251001-v1:0";
+		StringBuilder largeToolResult = new StringBuilder("Detailed hourly weather report for San Francisco.\n");
+		for (int hour = 0; hour < 240; hour++) {
+			largeToolResult.append("Hour ")
+				.append(hour)
+				.append(": temperature 18C, humidity 72%, wind 12 km/h from the west, visibility 10 km, ")
+				.append("pressure 1013 hPa, no precipitation expected, UV index moderate.\n");
+		}
+
+		String runMarker = "Session " + System.currentTimeMillis();
+		BedrockCacheOptions cacheOptions = BedrockCacheOptions.builder()
+			.strategy(BedrockCacheStrategy.CONVERSATION_HISTORY)
+			.cacheToolResults(true)
+			.build();
+		BedrockChatOptions chatOptions = BedrockChatOptions.builder()
+			.model(model)
+			.cacheOptions(cacheOptions)
+			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.description("Get current weather for a location")
+				.inputType(MockWeatherService.Request.class)
+				.build()))
+			.maxTokens(80)
+			.build();
+
+		List<Message> conversation = List.of(new SystemMessage("You are a weather assistant. " + runMarker),
+				new UserMessage("What's the detailed weather in San Francisco?"),
+				AssistantMessage.builder()
+					.content("")
+					.toolCalls(List.of(new AssistantMessage.ToolCall("tool_sf_1", "function", "getCurrentWeather",
+							"{\"location\":\"San Francisco, CA\",\"unit\":\"C\"}")))
+					.build(),
+				ToolResponseMessage.builder()
+					.responses(List.of(new ToolResponseMessage.ToolResponse("tool_sf_1", "getCurrentWeather",
+							largeToolResult.toString())))
+					.build());
+		Prompt prompt = new Prompt(conversation, chatOptions);
+
+		// Cross-region inference can route the first calls to different regions. Retry
+		// the identical prompt until it reaches a region where the prefix was written.
+		Awaitility.await().atMost(Duration.ofMinutes(2)).pollInterval(Duration.ofSeconds(3)).untilAsserted(() -> {
+			ChatResponse response = this.chatModel.call(prompt);
+			assertThat(response.getResults()).hasSize(1);
+			assertThat(response.getResult().getOutput().getText()).isNotEmpty();
+			Integer cacheRead = response.getMetadata().get("cacheReadInputTokens");
+			assertThat(cacheRead).as("Should read the cached tool result prefix").isNotNull().isGreaterThan(4096);
 		});
 	}
 

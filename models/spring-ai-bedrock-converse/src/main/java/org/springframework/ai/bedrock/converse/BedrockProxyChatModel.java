@@ -253,6 +253,9 @@ public class BedrockProxyChatModel implements ChatModel {
 		BedrockCacheOptions cacheOptions = options.getCacheOptions();
 		boolean shouldCacheConversationHistory = cacheOptions != null
 				&& cacheOptions.getStrategy() == BedrockCacheStrategy.CONVERSATION_HISTORY;
+		boolean shouldCacheToolResults = cacheOptions != null
+				&& cacheOptions.getStrategy() == BedrockCacheStrategy.CONVERSATION_HISTORY
+				&& cacheOptions.isCacheToolResults();
 
 		// Get all non-system messages
 		List<org.springframework.ai.chat.messages.Message> allNonSystemMessages = prompt.getInstructions()
@@ -275,6 +278,19 @@ public class BedrockProxyChatModel implements ChatModel {
 			}
 		}
 
+		// Find the final tool result message. Placing a cache point after its last
+		// content block caches all prior tool outputs for subsequent tool-calling rounds.
+		int lastToolMessageIndex = -1;
+		if (shouldCacheToolResults) {
+			for (int i = allNonSystemMessages.size() - 1; i >= 0; i--) {
+				if (allNonSystemMessages.get(i).getMessageType() == MessageType.TOOL
+						&& !((ToolResponseMessage) allNonSystemMessages.get(i)).getResponses().isEmpty()) {
+					lastToolMessageIndex = i;
+					break;
+				}
+			}
+		}
+
 		// Build instruction messages with potential caching
 		List<Message> instructionMessages = new ArrayList<>();
 		for (int i = 0; i < allNonSystemMessages.size(); i++) {
@@ -282,7 +298,7 @@ public class BedrockProxyChatModel implements ChatModel {
 
 			// Determine if this message should have a cache point
 			// For CONVERSATION_HISTORY: cache point goes on the last user message
-			boolean shouldApplyCachePoint = shouldCacheConversationHistory && i == lastUserMessageIndex;
+			boolean shouldApplyUserCachePoint = shouldCacheConversationHistory && i == lastUserMessageIndex;
 
 			if (message.getMessageType() == MessageType.USER) {
 				List<ContentBlock> contents = new ArrayList<>();
@@ -305,7 +321,7 @@ public class BedrockProxyChatModel implements ChatModel {
 				}
 
 				// Apply cache point if this is the last user message
-				if (shouldApplyCachePoint) {
+				if (shouldApplyUserCachePoint) {
 					contents.add(ContentBlock.fromCachePoint(buildCachePoint(cacheOptions)));
 					logger.debug("Applied cache point on last user message (conversation history caching)");
 				}
@@ -354,6 +370,14 @@ public class BedrockProxyChatModel implements ChatModel {
 								.build();
 							return ContentBlock.fromToolResult(toolResultBlock);
 						}).toList());
+
+				// ContentBlock is a union: toolResult and cachePoint must be separate
+				// blocks. Avoid emitting a cache-point-only message for an empty
+				// response.
+				if (i == lastToolMessageIndex && !contentBlocks.isEmpty()) {
+					contentBlocks.add(ContentBlock.fromCachePoint(buildCachePoint(cacheOptions)));
+					logger.debug("Applied cache point after last tool result message");
+				}
 
 				instructionMessages.add(Message.builder().content(contentBlocks).role(ConversationRole.USER).build());
 			}
