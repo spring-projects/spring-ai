@@ -36,4 +36,21 @@ public interface ResponseTextCleaner {
 	 */
 	@Nullable String clean(@Nullable String text);
 
+	/**
+	 * The cleaner applied by the built-in {@link StructuredOutputConverter}
+	 * implementations, handling the response shapes commonly produced by AI models:
+	 * surrounding whitespace, reasoning tags, and markdown code fences.
+	 * @return a cleaner combining {@link WhitespaceCleaner}, {@link ThinkingTagCleaner}
+	 * and {@link MarkdownCodeBlockCleaner}
+	 * @since 1.1.0
+	 */
+	static ResponseTextCleaner defaultCleaner() {
+		return CompositeResponseTextCleaner.builder()
+			.addCleaner(new WhitespaceCleaner())
+			.addCleaner(new ThinkingTagCleaner())
+			.addCleaner(new MarkdownCodeBlockCleaner())
+			.addCleaner(new WhitespaceCleaner()) // Final trim after all cleanups
+			.build();
+	}
+
 }
