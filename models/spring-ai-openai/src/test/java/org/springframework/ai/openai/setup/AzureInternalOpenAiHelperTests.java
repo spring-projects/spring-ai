@@ -56,6 +56,16 @@ class AzureInternalOpenAiHelperTests {
 	}
 
 	@Test
+	void publicFactoryAdaptsTokenCredential() {
+		givenTokens(new AccessToken("test-token", OffsetDateTime.now().plusHours(1)));
+
+		Credential azureCredential = AzureOpenAiCredentials.from(this.credential);
+
+		assertThat(azureCredential).isInstanceOf(BearerTokenCredential.class);
+		assertThat(((BearerTokenCredential) azureCredential).token()).isEqualTo("test-token");
+	}
+
+	@Test
 	void getAzureCredentialRequestsCognitiveServicesScope() {
 		givenTokens(new AccessToken("test-token", OffsetDateTime.now().plusHours(1)));
 
