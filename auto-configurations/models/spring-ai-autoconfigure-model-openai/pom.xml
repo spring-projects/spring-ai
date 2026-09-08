@@ -116,6 +116,13 @@
 			<artifactId>mockito-core</artifactId>
 			<scope>test</scope>
 		</dependency>
+
+		<dependency>
+			<groupId>uk.org.webcompere</groupId>
+			<artifactId>system-stubs-jupiter</artifactId>
+			<version>2.1.7</version>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 
 </project>
