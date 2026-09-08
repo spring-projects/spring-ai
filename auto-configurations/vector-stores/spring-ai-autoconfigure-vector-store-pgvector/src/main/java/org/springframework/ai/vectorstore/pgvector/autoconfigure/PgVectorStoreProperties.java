@@ -17,6 +17,7 @@
 package org.springframework.ai.vectorstore.pgvector.autoconfigure;
 
 import org.springframework.ai.vectorstore.pgvector.PgVectorStore;
+import org.springframework.ai.vectorstore.pgvector.PgVectorStore.PgDistanceType;
 import org.springframework.ai.vectorstore.pgvector.PgVectorStore.PgIndexType;
 import org.springframework.ai.vectorstore.properties.CommonVectorStoreProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -37,7 +38,7 @@ public class PgVectorStoreProperties extends CommonVectorStoreProperties {
 
 	private PgIndexType indexType = PgIndexType.HNSW;
 
-	private String distanceType = "COSINE_DISTANCE";
+	private PgDistanceType distanceType = PgDistanceType.COSINE_DISTANCE;
 
 	private boolean removeExistingVectorStoreTable = false;
 
@@ -68,11 +69,11 @@ public class PgVectorStoreProperties extends CommonVectorStoreProperties {
 		this.indexType = createIndexMethod;
 	}
 
-	public String getDistanceType() {
+	public PgDistanceType getDistanceType() {
 		return this.distanceType;
 	}
 
-	public void setDistanceType(String distanceType) {
+	public void setDistanceType(PgDistanceType distanceType) {
 		this.distanceType = distanceType;
 	}
 
