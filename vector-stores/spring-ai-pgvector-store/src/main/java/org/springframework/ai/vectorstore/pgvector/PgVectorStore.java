@@ -214,7 +214,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		JsonMapper jsonMapper = JsonMapper.builder().addModules(JacksonUtils.instantiateAvailableModules()).build();
 		this.documentExtractor = new RowMapperResultSetExtractor<>(new DocumentRowMapper(jsonMapper));
 
-		this.sqlVectorStoreStatementCreator = builder.getSqlVectorStoreStatementCreator();
+		this.sqlVectorStoreStatementCreator = builder.sqlVectorStoreStatementCreator;
 		String vectorTable = builder.vectorTableName;
 		this.vectorTableName = vectorTable.isEmpty() ? DEFAULT_TABLE_NAME : vectorTable.trim();
 		if (logger.isInfoEnabled()) {
@@ -242,8 +242,9 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		return this.distanceType;
 	}
 
-	public static PgVectorStoreBuilder builder(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
-		return new PgVectorStoreBuilder(jdbcTemplate, embeddingModel);
+	public static PgVectorStoreBuilder builder(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel,
+			SqlVectorStoreStatementCreator sqlVectorStoreStatementCreator) {
+		return new PgVectorStoreBuilder(jdbcTemplate, embeddingModel, sqlVectorStoreStatementCreator);
 	}
 
 	@Override
@@ -583,10 +584,15 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 		private int maxDocumentBatchSize = MAX_DOCUMENT_BATCH_SIZE;
 
-		private PgVectorStoreBuilder(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
+		private SqlVectorStoreStatementCreator sqlVectorStoreStatementCreator;
+
+		private PgVectorStoreBuilder(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel,
+				SqlVectorStoreStatementCreator sqlVectorStoreStatementCreator) {
 			super(embeddingModel);
 			Assert.notNull(jdbcTemplate, "JdbcTemplate must not be null");
+			Assert.notNull(sqlVectorStoreStatementCreator, "SqlVectorStoreStatementCreator must not be null");
 			this.jdbcTemplate = jdbcTemplate;
+			this.sqlVectorStoreStatementCreator = sqlVectorStoreStatementCreator;
 		}
 
 		public PgVectorStoreBuilder schemaName(String schemaName) {
@@ -641,12 +647,6 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 		public PgVectorStore build() {
 			return new PgVectorStore(this);
-		}
-
-		public SqlVectorStoreStatementCreator getSqlVectorStoreStatementCreator() {
-			return new PgVectorStoreStatementCreator(this.distanceType, this.vectorTableName, this.schemaName,
-					this.embeddingModel, this.idType, this.batchingStrategy, this.maxDocumentBatchSize,
-					JsonMapper.builder().addModules(JacksonUtils.instantiateAvailableModules()).build());
 		}
 
 	}

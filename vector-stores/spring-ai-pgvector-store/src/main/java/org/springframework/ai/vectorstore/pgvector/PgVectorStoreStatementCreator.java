@@ -44,10 +44,10 @@ import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.util.StringUtils;
 
 /**
- * A statement creator for generating SQL statements for the PostgreSQL vector store.
+ * A creator for generating SQL statements for the PostgreSQL vector store.
  *
  * @author Martin Grofcik
- *
+ * @since 2.0.2
  */
 public class PgVectorStoreStatementCreator implements SqlVectorStoreStatementCreator {
 
@@ -230,28 +230,18 @@ public class PgVectorStoreStatementCreator implements SqlVectorStoreStatementCre
 
 	}
 
-	private static class DefaultVectorStorePreparedStatement
-			implements org.springframework.ai.vectorstore.pgvector.SqlVectorStorePreparedStatement {
-
-		private final PreparedStatementCreator statement;
-
-		private final BatchPreparedStatementSetter setter;
-
-		DefaultVectorStorePreparedStatement(PreparedStatementCreator statement, BatchPreparedStatementSetter setter) {
-			this.statement = statement;
-			this.setter = setter;
-		}
+	private record DefaultVectorStorePreparedStatement(PreparedStatementCreator creator,
+			BatchPreparedStatementSetter setter) implements SqlVectorStorePreparedStatement {
 
 		@Override
 		public PreparedStatementCreator getCreator() {
-			return this.statement;
+			return this.creator;
 		}
 
 		@Override
 		public BatchPreparedStatementSetter getSetter() {
 			return this.setter;
 		}
-
 	}
 
 }

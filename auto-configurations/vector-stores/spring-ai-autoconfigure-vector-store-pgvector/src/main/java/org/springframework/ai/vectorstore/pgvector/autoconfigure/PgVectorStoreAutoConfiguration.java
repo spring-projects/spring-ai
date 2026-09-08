@@ -19,13 +19,17 @@ package org.springframework.ai.vectorstore.pgvector.autoconfigure;
 import javax.sql.DataSource;
 
 import io.micrometer.observation.ObservationRegistry;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.TokenCountBatchingStrategy;
+import org.springframework.ai.util.JacksonUtils;
 import org.springframework.ai.vectorstore.SpringAIVectorStoreTypes;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
 import org.springframework.ai.vectorstore.pgvector.PgVectorStore;
+import org.springframework.ai.vectorstore.pgvector.PgVectorStoreStatementCreator;
+import org.springframework.ai.vectorstore.pgvector.SqlVectorStoreStatementCreator;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -41,6 +45,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
  * @author Christian Tzolov
  * @author Josh Long
  * @author Soby Chacko
+ * @author Martin Grofcik
  * @since 1.0.0
  */
 @AutoConfiguration
@@ -58,28 +63,36 @@ public class PgVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public PgVectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel,
+	public PgVectorStore vectorStore(JdbcTemplate jdbcTemplate,
 			PgVectorStoreProperties properties, ObjectProvider<ObservationRegistry> observationRegistry,
-			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
-			BatchingStrategy batchingStrategy, PgVectorStore.PgDistanceType distanceType) {
+			ObjectProvider<VectorStoreObservationConvention> customObservationConvention, EmbeddingModel embeddingModel,
+			SqlVectorStoreStatementCreator vectorStoreStatementCreator
+			) {
 
 		var initializeSchema = properties.isInitializeSchema();
 
-		return PgVectorStore.builder(jdbcTemplate, embeddingModel)
+		return PgVectorStore.builder(jdbcTemplate, embeddingModel, vectorStoreStatementCreator)
 			.schemaName(properties.getSchemaName())
 			.idType(properties.getIdType())
 			.vectorTableName(properties.getTableName())
 			.vectorTableValidationsEnabled(properties.isSchemaValidation())
 			.dimensions(properties.getDimensions())
-			.distanceType(distanceType)
 			.removeExistingVectorStoreTable(properties.isRemoveExistingVectorStoreTable())
 			.indexType(properties.getIndexType())
 			.initializeSchema(initializeSchema)
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.customObservationConvention(customObservationConvention.getIfAvailable())
-			.batchingStrategy(batchingStrategy)
-			.maxDocumentBatchSize(properties.getMaxDocumentBatchSize())
 			.build();
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	public SqlVectorStoreStatementCreator vectorStoreStatementCreator(PgVectorStoreProperties properties, EmbeddingModel embeddingModel, BatchingStrategy batchingStrategy) {
+		return new PgVectorStoreStatementCreator(
+				properties.getDistanceType(), properties.getTableName(), properties.getSchemaName(), embeddingModel, properties.getIdType(), batchingStrategy,
+				properties.getMaxDocumentBatchSize(),
+				JsonMapper.builder().addModules(JacksonUtils.instantiateAvailableModules()).build()
+		);
 	}
 
 }
