@@ -4,6 +4,16 @@
 [[upgrading-to-2-0-1]]
 == Upgrading to 2.0.1
 
+=== JSON Schemas Honor Custom Enum Values from `@JsonValue` and `@JsonProperty`
+
+JSON schemas generated for tool calling and structured output now use Jackson's serialized form for enums that declare a `@JsonValue` method or annotate all constants with `@JsonProperty`.
+Previously the schema advertised the Java constant names while deserialization expected the custom values, causing an `InvalidFormatException` when the model followed the schema.
+
+==== Impact
+
+Generated schemas change only for enums using those annotations: the `enum` values now match what Jackson accepts during deserialization.
+Enums without these annotations keep emitting their constant names.
+
 === Redis Chat Memory Repository Auto-Configuration Module Renaming
 
 The Redis chat memory auto-configurations module renamed to `spring-ai-autoconfigure-model-chat-memory-repository-redis`.

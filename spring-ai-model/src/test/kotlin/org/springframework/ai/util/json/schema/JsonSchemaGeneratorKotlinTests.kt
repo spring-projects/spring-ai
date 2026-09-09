@@ -16,6 +16,7 @@
 
 package org.springframework.ai.util.json.schema
 
+import com.fasterxml.jackson.annotation.JsonValue
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.springframework.ai.tool.annotation.Tool
@@ -77,6 +78,17 @@ class JsonSchemaGeneratorKotlinTests {
 		assertThat(requiredNames(schemaNode["required"])).containsExactly("url")
 	}
 
+	// gh-1985: victools resolves @JsonValue from methods, so Kotlin properties must use
+	// the get-site target for their values to surface in the generated schema.
+	@Test
+	fun `enum values follow get-site JsonValue annotation`() {
+		val schema = JsonSchemaGenerator.generateForType(UnitHolder::class.java)
+		val schemaNode = jsonMapper.readTree(schema)
+		val values = schemaNode.at("/properties/unit/enum").iterator().asSequence().map { it.asString() }.toList()
+
+		assertThat(values).containsExactly("C", "F")
+	}
+
 	private fun requiredNames(required: JsonNode?): List<String> {
 		if (required == null || required.isNull) {
 			return emptyList()
@@ -89,6 +101,14 @@ class JsonSchemaGeneratorKotlinTests {
 	private data class FilterWithDefaultValue(val name: String?, val ids: List<String> = emptyList())
 
 	private data class SearchRequest(val query: String, val filter: String?)
+
+	private data class UnitHolder(val unit: TemperatureUnit)
+
+	enum class TemperatureUnit(@get:JsonValue val symbol: String) {
+
+		CELSIUS("C"), FAHRENHEIT("F")
+
+	}
 
 	private class SearchTools {
 
