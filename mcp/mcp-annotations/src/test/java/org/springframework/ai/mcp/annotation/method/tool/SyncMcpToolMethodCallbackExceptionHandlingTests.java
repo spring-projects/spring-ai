@@ -101,6 +101,35 @@ public class SyncMcpToolMethodCallbackExceptionHandlingTests {
 	}
 
 	@Test
+	public void exceptionWithoutCauseIsReportedOnce() throws Exception {
+		SyncMcpToolMethodCallback callback = callbackFor("illegalArgumentTool");
+		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
+		CallToolRequest request = CallToolRequest.builder("illegal-argument-tool")
+			.arguments(Map.of("input", "test"))
+			.build();
+
+		CallToolResult result = callback.apply(exchange, request);
+
+		assertThat(result.isError()).isTrue();
+		assertThat(((TextContent) result.content().get(0)).text()).isEqualTo("Illegal argument: test");
+	}
+
+	@Test
+	public void exceptionWithCauseAppendsRootCauseMessage() throws Exception {
+		SyncMcpToolMethodCallback callback = callbackFor("wrappedExceptionTool");
+		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
+		CallToolRequest request = CallToolRequest.builder("wrapped-exception-tool")
+			.arguments(Map.of("input", "test"))
+			.build();
+
+		CallToolResult result = callback.apply(exchange, request);
+
+		assertThat(result.isError()).isTrue();
+		assertThat(((TextContent) result.content().get(0)).text())
+			.isEqualTo("Outer failure: test" + System.lineSeparator() + "Root cause: test");
+	}
+
+	@Test
 	public void declaredCheckedExceptionBubblesUp() throws Exception {
 		SyncMcpToolMethodCallback callback = callbackFor("checkedExceptionTool");
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
@@ -217,6 +246,12 @@ public class SyncMcpToolMethodCallbackExceptionHandlingTests {
 		@McpTool(name = "illegal-argument-tool", description = "Throws IllegalArgumentException")
 		public String illegalArgumentTool(String input) {
 			throw new IllegalArgumentException("Illegal argument: " + input);
+		}
+
+		@McpTool(name = "wrapped-exception-tool", description = "Throws an exception wrapping a cause")
+		public String wrappedExceptionTool(String input) {
+			throw new IllegalStateException("Outer failure: " + input,
+					new IllegalArgumentException("Root cause: " + input));
 		}
 
 		@McpTool(name = "checked-exception-tool", description = "Throws declared checked exception")

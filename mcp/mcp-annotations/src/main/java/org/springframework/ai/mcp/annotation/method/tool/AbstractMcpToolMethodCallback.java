@@ -228,6 +228,21 @@ public abstract class AbstractMcpToolMethodCallback<T, RC extends McpRequestCont
 		return rootCause;
 	}
 
+	/**
+	 * Creates the message for an error {@link CallToolResult}, appending the root cause
+	 * message only when it adds information. An exception with no cause is its own root
+	 * cause, so appending unconditionally would report the same message twice.
+	 * @param e The exception that occurred
+	 * @return The error message string
+	 */
+	protected String createErrorResultMessage(Throwable e) {
+		Throwable rootCause = findCauseUsingPlainJava(e);
+		if (rootCause == e || Objects.equals(rootCause.getMessage(), e.getMessage())) {
+			return e.getMessage();
+		}
+		return e.getMessage() + System.lineSeparator() + rootCause.getMessage();
+	}
+
 	protected abstract RC createRequestContext(T exchange, CallToolRequest request);
 
 	/**

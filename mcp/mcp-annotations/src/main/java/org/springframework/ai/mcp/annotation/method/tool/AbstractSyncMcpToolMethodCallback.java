@@ -71,11 +71,7 @@ public abstract class AbstractSyncMcpToolMethodCallback<T, RC extends McpRequest
 	 * @return A CallToolResult representing the error
 	 */
 	protected CallToolResult createSyncErrorResult(Exception e) {
-		Throwable rootCause = findCauseUsingPlainJava(e);
-		return CallToolResult.builder()
-			.isError(true)
-			.addTextContent(e.getMessage() + System.lineSeparator() + rootCause.getMessage())
-			.build();
+		return CallToolResult.builder().isError(true).addTextContent(createErrorResultMessage(e)).build();
 	}
 
 	/**
