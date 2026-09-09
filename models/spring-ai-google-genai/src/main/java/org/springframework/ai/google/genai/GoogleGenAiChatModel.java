@@ -44,6 +44,7 @@ import com.google.genai.types.GenerateContentConfig;
 import com.google.genai.types.GenerateContentResponse;
 import com.google.genai.types.GenerateContentResponseUsageMetadata;
 import com.google.genai.types.GoogleSearch;
+import com.google.genai.types.HttpOptions;
 import com.google.genai.types.Part;
 import com.google.genai.types.SafetySetting;
 import com.google.genai.types.Schema;
@@ -723,6 +724,9 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 
 		if (requestOptions.getLabels() != null && !requestOptions.getLabels().isEmpty()) {
 			configBuilder.labels(requestOptions.getLabels());
+		}
+		if (!CollectionUtils.isEmpty(requestOptions.getHttpHeaders())) {
+			configBuilder.httpOptions(HttpOptions.builder().headers(requestOptions.getHttpHeaders()).build());
 		}
 
 		if (requestOptions.getServiceTier() != null) {
