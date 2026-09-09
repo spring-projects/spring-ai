@@ -1334,14 +1334,32 @@ public final class OpenAiChatModel implements ChatModel {
 			}).toList();
 
 			return ChatCompletion.builder()
-				.id(chunk.id())
+				.id(getId(chunk))
 				.choices(choices)
 				.created(getCreated(chunk))
-				.model(chunk.model())
+				.model(getModel(chunk))
 				.usage(chunk.usage()
 					.orElse(CompletionUsage.builder().promptTokens(0).completionTokens(0).totalTokens(0).build()))
 				.putAllAdditionalProperties(chunk._additionalProperties())
 				.build();
+		}
+
+		private static String getId(ChatCompletionChunk chunk) {
+			try {
+				return chunk.id();
+			}
+			catch (OpenAIInvalidDataException ex) {
+				return "";
+			}
+		}
+
+		private static String getModel(ChatCompletionChunk chunk) {
+			try {
+				return chunk.model();
+			}
+			catch (OpenAIInvalidDataException ex) {
+				return "";
+			}
 		}
 
 		/**
