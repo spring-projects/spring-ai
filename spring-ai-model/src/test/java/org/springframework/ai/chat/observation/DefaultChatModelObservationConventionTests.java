@@ -192,6 +192,44 @@ class DefaultChatModelObservationConventionTests {
 	}
 
 	@Test
+	void shouldHaveTimeToFirstChunkWhenStreamingAndRecorded() {
+		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
+			.prompt(generatePrompt(ChatOptions.builder().model("mistral").build()))
+			.provider("superprovider")
+			.streaming(true)
+			.build();
+		observationContext.setTimeToFirstChunk(0.123);
+		assertThat(this.observationConvention.getHighCardinalityKeyValues(observationContext))
+			.contains(KeyValue.of(HighCardinalityKeyNames.RESPONSE_TIME_TO_FIRST_CHUNK.asString(), "0.123"));
+	}
+
+	@Test
+	void shouldNotHaveTimeToFirstChunkWhenStreamingButNotRecorded() {
+		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
+			.prompt(generatePrompt(ChatOptions.builder().model("mistral").build()))
+			.provider("superprovider")
+			.streaming(true)
+			.build();
+		assertThat(this.observationConvention.getHighCardinalityKeyValues(observationContext)
+			.stream()
+			.map(KeyValue::getKey)
+			.toList()).doesNotContain(HighCardinalityKeyNames.RESPONSE_TIME_TO_FIRST_CHUNK.asString());
+	}
+
+	@Test
+	void shouldNotHaveTimeToFirstChunkForNonStreamingCall() {
+		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
+			.prompt(generatePrompt(ChatOptions.builder().model("mistral").build()))
+			.provider("superprovider")
+			.build();
+		observationContext.setTimeToFirstChunk(0.123);
+		assertThat(this.observationConvention.getHighCardinalityKeyValues(observationContext)
+			.stream()
+			.map(KeyValue::getKey)
+			.toList()).doesNotContain(HighCardinalityKeyNames.RESPONSE_TIME_TO_FIRST_CHUNK.asString());
+	}
+
+	@Test
 	void shouldHaveKeyValuesWhenCacheTokensDefined() {
 		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 			.prompt(generatePrompt(ChatOptions.builder().model("mistral").build()))

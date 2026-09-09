@@ -504,7 +504,7 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 						aggregatedResponse -> {
 							aggregatedResponseRef.set(aggregatedResponse);
 							observationContext.setResponse(aggregatedResponse);
-						});
+						}, observationContext::recordTimeToFirstChunk);
 
 				return aggregatedFlux.doOnError(observation::error)
 					.doFinally(s -> observation.stop())

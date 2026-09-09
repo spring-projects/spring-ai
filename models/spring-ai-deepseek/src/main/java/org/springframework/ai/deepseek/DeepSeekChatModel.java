@@ -267,7 +267,8 @@ public class DeepSeekChatModel implements ChatModel {
 				.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
 			// @formatter:on
 
-			return new MessageAggregator().aggregate(flux, observationContext::setResponse);
+			return new MessageAggregator().aggregate(flux, observationContext::setResponse,
+					observationContext::recordTimeToFirstChunk);
 
 		});
 	}

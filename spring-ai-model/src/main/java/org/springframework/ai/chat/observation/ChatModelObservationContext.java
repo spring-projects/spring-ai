@@ -33,16 +33,56 @@ import org.springframework.util.Assert;
  */
 public class ChatModelObservationContext extends ModelObservationContext<Prompt, ChatResponse> {
 
+	private static final double NANOS_PER_SECOND = 1_000_000_000.0;
+
 	private final boolean streaming;
+
+	private final long requestStartNanos;
+
+	private @Nullable Double timeToFirstChunk;
 
 	ChatModelObservationContext(Prompt prompt, String provider, boolean streaming) {
 		super(prompt,
 				AiOperationMetadata.builder().operationType(AiOperationType.CHAT.value()).provider(provider).build());
 		this.streaming = streaming;
+		this.requestStartNanos = System.nanoTime();
 	}
 
 	public boolean isStreaming() {
 		return this.streaming;
+	}
+
+	/**
+	 * The elapsed time, in seconds, between the start of the model request and the first
+	 * {@link ChatResponse} chunk emitted by a streaming call, or {@code null} if no chunk
+	 * was received (for example, a non-streaming call or an empty/failed stream).
+	 * @return the time to first chunk in seconds, or {@code null} if not available
+	 * @since 2.0.3
+	 */
+	public @Nullable Double getTimeToFirstChunk() {
+		return this.timeToFirstChunk;
+	}
+
+	/**
+	 * Set the time to first chunk, in seconds.
+	 * @param timeToFirstChunk the time to first chunk in seconds, or {@code null}
+	 * @since 2.0.3
+	 */
+	public void setTimeToFirstChunk(@Nullable Double timeToFirstChunk) {
+		this.timeToFirstChunk = timeToFirstChunk;
+	}
+
+	/**
+	 * Record the time to first chunk as the elapsed time since this context was created,
+	 * measured with {@link System#nanoTime()}. The value is captured only once:
+	 * subsequent invocations (for example, for later chunks in the same stream) are
+	 * ignored.
+	 * @since 2.0.3
+	 */
+	public void recordTimeToFirstChunk() {
+		if (this.timeToFirstChunk == null) {
+			this.timeToFirstChunk = (System.nanoTime() - this.requestStartNanos) / NANOS_PER_SECOND;
+		}
 	}
 
 	public static Builder builder() {

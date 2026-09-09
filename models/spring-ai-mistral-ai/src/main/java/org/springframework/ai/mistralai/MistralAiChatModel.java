@@ -301,7 +301,8 @@ public class MistralAiChatModel implements ChatModel {
 			.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
 			// @formatter:on
 
-			return new MessageAggregator().aggregate(chatResponseFlux, observationContext::setResponse);
+			return new MessageAggregator().aggregate(chatResponseFlux, observationContext::setResponse,
+					observationContext::recordTimeToFirstChunk);
 		});
 
 	}

@@ -16,11 +16,19 @@
 
 package org.springframework.ai.chat.observation;
 
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+
+import io.micrometer.common.KeyValue;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Tag;
+import io.micrometer.core.instrument.Timer;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationHandler;
 
 import org.springframework.ai.model.observation.ModelUsageMetricsGenerator;
+import org.springframework.ai.observation.conventions.AiObservationMetricNames;
 
 /**
  * Handler for generating metrics from chat model observations.
@@ -38,6 +46,14 @@ public class ChatModelMeterObservationHandler implements ObservationHandler<Chat
 
 	@Override
 	public void onStop(ChatModelObservationContext context) {
+		Double timeToFirstChunk = context.getTimeToFirstChunk();
+		if (timeToFirstChunk != null) {
+			Timer.builder(AiObservationMetricNames.OPERATION_TIME_TO_FIRST_CHUNK.value())
+				.description("Time from the streaming request start to the first chat response chunk")
+				.tags(lowCardinalityTags(context))
+				.register(this.meterRegistry)
+				.record(Duration.ofNanos(Math.round(timeToFirstChunk * 1_000_000_000L)));
+		}
 		if (context.getResponse() != null && context.getResponse().getMetadata() != null
 				&& context.getResponse().getMetadata().getUsage() != null) {
 			ModelUsageMetricsGenerator.generate(context.getResponse().getMetadata().getUsage(), context,
@@ -48,6 +64,14 @@ public class ChatModelMeterObservationHandler implements ObservationHandler<Chat
 	@Override
 	public boolean supportsContext(Observation.Context context) {
 		return context instanceof ChatModelObservationContext;
+	}
+
+	private static List<Tag> lowCardinalityTags(ChatModelObservationContext context) {
+		List<Tag> tags = new ArrayList<>();
+		for (KeyValue keyValue : context.getLowCardinalityKeyValues()) {
+			tags.add(Tag.of(keyValue.getKey(), keyValue.getValue()));
+		}
+		return tags;
 	}
 
 }
