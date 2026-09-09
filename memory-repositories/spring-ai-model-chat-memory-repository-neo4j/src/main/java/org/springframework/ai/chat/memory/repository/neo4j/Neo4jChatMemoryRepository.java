@@ -26,6 +26,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.neo4j.driver.Session;
+import org.neo4j.driver.SimpleQueryRunner;
 import org.neo4j.driver.Transaction;
 import org.neo4j.driver.TransactionContext;
 
@@ -124,12 +125,12 @@ public final class Neo4jChatMemoryRepository implements ChatMemoryRepository {
 
 	@Override
 	public void saveAll(String conversationId, List<Message> messages) {
-		// First delete existing messages for this conversation
-		deleteByConversationId(conversationId);
-
-		// Then add the new messages
+		// Replace the conversation in a single transaction. Deleting through a
+		// separate, already committed transaction loses the previous messages when
+		// the write that follows it fails.
 		try (Session s = this.config.getDriver().session()) {
 			s.executeWriteWithoutResult(tx -> {
+				deleteConversation(tx, conversationId);
 				for (Message m : messages) {
 					addMessageToTransaction(tx, conversationId, m);
 				}
@@ -139,6 +140,19 @@ public final class Neo4jChatMemoryRepository implements ChatMemoryRepository {
 
 	@Override
 	public void deleteByConversationId(String conversationId) {
+		try (Session s = this.config.getDriver().session()) {
+			try (Transaction t = s.beginTransaction()) {
+				deleteConversation(t, conversationId);
+				t.commit();
+			}
+		}
+	}
+
+	public Neo4jChatMemoryRepositoryConfig getConfig() {
+		return this.config;
+	}
+
+	private void deleteConversation(SimpleQueryRunner queryRunner, String conversationId) {
 		String deleteMessagesStatement = """
 				MATCH (s:$($sessionLabel) {id:$conversationId})-[r:HAS_MESSAGE]->(m:$($messageLabel))
 				OPTIONAL MATCH (m)-[:HAS_METADATA]->(metadata:$($metadataLabel))
@@ -158,17 +172,8 @@ public final class Neo4jChatMemoryRepository implements ChatMemoryRepository {
 				this.config.getMetadataLabel(), "mediaLabel", this.config.getMediaLabel(), "toolResponseLabel",
 				this.config.getToolResponseLabel(), "toolCallLabel", this.config.getToolCallLabel());
 
-		try (Session s = this.config.getDriver().session()) {
-			try (Transaction t = s.beginTransaction()) {
-				t.run(deleteMessagesStatement, params);
-				t.run(deleteConversationStatement, params);
-				t.commit();
-			}
-		}
-	}
-
-	public Neo4jChatMemoryRepositoryConfig getConfig() {
-		return this.config;
+		queryRunner.run(deleteMessagesStatement, params);
+		queryRunner.run(deleteConversationStatement, params);
 	}
 
 	private Message buildToolMessage(org.neo4j.driver.Record record) {
