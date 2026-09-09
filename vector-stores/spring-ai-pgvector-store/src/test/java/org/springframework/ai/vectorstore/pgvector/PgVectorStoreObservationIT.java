@@ -187,7 +187,7 @@ public class PgVectorStoreObservationIT {
 		public VectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel,
 				ObservationRegistry observationRegistry) {
 			return PgVectorStore.builder(jdbcTemplate, embeddingModel)
-				.distanceType(PgVectorStore.PgDistanceType.COSINE_DISTANCE)
+				.distanceType(PgVectorStore.COSINE_DISTANCE)
 				.indexType(PgIndexType.HNSW)
 				.observationRegistry(observationRegistry)
 				.initializeSchema(true)
