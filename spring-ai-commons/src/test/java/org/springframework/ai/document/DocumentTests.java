@@ -21,6 +21,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.exc.ValueInstantiationException;
 import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.content.Media;
@@ -29,6 +31,7 @@ import org.springframework.ai.util.JacksonUtils;
 import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class DocumentTests {
@@ -479,6 +482,76 @@ public class DocumentTests {
 
 		assertThat(deserialized.getText()).isEqualTo(specialText);
 		assertThat(deserialized).isEqualTo(original);
+	}
+
+	/**
+	 * Regression test for GitHub issue 6834: URI-backed media must serialize without
+	 * Jackson treating the derived byte-array accessor as a bean property.
+	 */
+	@Test
+	void roundTripUriBackedMediaDocument() throws Exception {
+		JsonMapper mapper = JacksonUtils.getDefaultJsonMapper();
+		Media originalMedia = Media.builder()
+			.mimeType(MimeTypeUtils.IMAGE_PNG)
+			.data(URI.create("https://www.wikimedia.org/static/images/wmf-logo-2x.png"))
+			.name("image")
+			.build();
+		Document original = Document.builder().id("media-doc").media(originalMedia).build();
+
+		String json = mapper.writeValueAsString(original);
+		Document deserialized = mapper.readValue(json, Document.class);
+
+		JsonNode mediaNode = mapper.readTree(json).get("media");
+		assertThat(mediaNode.get("data").asText()).isEqualTo("https://www.wikimedia.org/static/images/wmf-logo-2x.png");
+		assertThat(mediaNode.has("dataAsByteArray")).isFalse();
+		assertThat(deserialized.getId()).isEqualTo("media-doc");
+		assertThat(deserialized.getMedia()).isNotNull();
+		assertThat(deserialized.getMedia().getMimeType()).isEqualTo(MimeTypeUtils.IMAGE_PNG);
+		assertThat(deserialized.getMedia().getData())
+			.isEqualTo("https://www.wikimedia.org/static/images/wmf-logo-2x.png");
+		assertThat(deserialized.getMedia().getName()).isEqualTo("image");
+	}
+
+	/**
+	 * Round-trip for a document whose media data is a {@code byte[]}. Jackson serializes
+	 * the data as a base64 string, so the data comes back as a {@link String} (not a
+	 * {@code byte[]}), while the {@code dataAsByteArray} accessor is excluded from the
+	 * JSON (see issue 6834).
+	 */
+	@Test
+	void roundTripByteArrayBackedMediaDocument() throws Exception {
+		JsonMapper mapper = JacksonUtils.getDefaultJsonMapper();
+		Media originalMedia = Media.builder()
+			.mimeType(MimeTypeUtils.IMAGE_PNG)
+			.data(new byte[] { 1, 2, 3 })
+			.name("bytes")
+			.build();
+		Document original = Document.builder().id("media-bytes").media(originalMedia).build();
+
+		String json = mapper.writeValueAsString(original);
+		Document deserialized = mapper.readValue(json, Document.class);
+
+		JsonNode mediaNode = mapper.readTree(json).get("media");
+		assertThat(mediaNode.get("data").asText()).isEqualTo("AQID");
+		assertThat(mediaNode.has("dataAsByteArray")).isFalse();
+		assertThat(deserialized.getMedia().getData()).isEqualTo("AQID");
+	}
+
+	/**
+	 * Deserialization must reject JSON whose media data is not one of the shapes the
+	 * builder allows (e.g. an object), instead of silently creating a {@link Media}
+	 * instance the builder could never produce.
+	 */
+	@Test
+	void deserializationRejectsObjectMediaData() throws Exception {
+		JsonMapper mapper = JacksonUtils.getDefaultJsonMapper();
+		String json = "{\"id\":\"media-reject\",\"text\":null,\"media\":{\"mimeType\":{\"type\":\"image\","
+				+ "\"subtype\":\"png\",\"parameters\":{}},\"data\":{\"unexpected\":true},\"id\":null,\"name\":\"x\"},"
+				+ "\"metadata\":{},\"score\":null}";
+
+		assertThatThrownBy(() -> mapper.readValue(json, Document.class)).isInstanceOf(ValueInstantiationException.class)
+			.hasRootCauseInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("Unsupported data type for deserialized Media");
 	}
 
 	/**

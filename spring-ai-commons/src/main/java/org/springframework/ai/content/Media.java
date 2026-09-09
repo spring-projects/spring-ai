@@ -19,7 +19,12 @@ package org.springframework.ai.content;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
+import java.util.Base64;
+import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.core.io.Resource;
@@ -146,11 +151,23 @@ public class Media {
 	}
 
 	/**
-	 * Create a new Media instance.
+	 * Create a Media instance from deserialized JSON values.
+	 * <p>
+	 * Jackson uses this property-based creator when reading media back from JSON, so we
+	 * accept the serialized shape directly instead of requiring a dedicated DTO. The data
+	 * is normalized to its string form, and shapes the builder never allows are rejected
+	 * explicitly.
 	 * @param mimeType the media MIME type
 	 * @param data the media data
 	 * @param id the media id
+	 * @param name the media name
 	 */
+	@JsonCreator
+	private Media(@JsonProperty("mimeType") Object mimeType, @JsonProperty("data") Object data,
+			@JsonProperty("id") @Nullable String id, @JsonProperty("name") @Nullable String name) {
+		this(toMimeType(mimeType), toData(data), id, name);
+	}
+
 	private Media(MimeType mimeType, Object data, @Nullable String id, @Nullable String name) {
 		Assert.notNull(mimeType, "MimeType must not be null");
 		Assert.notNull(data, "Data must not be null");
@@ -162,6 +179,83 @@ public class Media {
 
 	private static String generateDefaultName(MimeType mimeType) {
 		return NAME_PREFIX + mimeType.getSubtype() + "-" + java.util.UUID.randomUUID();
+	}
+
+	/**
+	 * Convert the Jackson materialized MIME type value back to a {@link MimeType}.
+	 * <p>
+	 * Jackson may provide either a {@link MimeType} instance, a raw string, or a nested
+	 * map representation depending on the serializer/deserializer pair in use.
+	 * @param mimeType the serialized MIME type value
+	 * @return the normalized {@link MimeType} instance
+	 */
+	private static MimeType toMimeType(Object mimeType) {
+		Assert.notNull(mimeType, "MimeType must not be null");
+		// Jackson may materialize MimeType as either the real type, a simple string, or a
+		// nested object map depending on the active serializer/deserializer pair.
+		if (mimeType instanceof MimeType) {
+			return (MimeType) mimeType;
+		}
+		if (mimeType instanceof String) {
+			return MimeType.valueOf((String) mimeType);
+		}
+		if (mimeType instanceof Map) {
+			return MimeType.valueOf(toMimeTypeString((Map<?, ?>) mimeType));
+		}
+		throw new IllegalArgumentException("Unsupported MimeType value: " + mimeType.getClass().getName());
+	}
+
+	/**
+	 * Reconstruct the canonical MIME type string from Jackson's map representation.
+	 * <p>
+	 * This keeps the parsing logic in one place so the creator can normalize
+	 * object-shaped MIME type values before delegating to
+	 * {@link MimeType#valueOf(String)}.
+	 * @param mimeType the Jackson map representation of a MIME type
+	 * @return the canonical MIME type string
+	 */
+	private static String toMimeTypeString(Map<?, ?> mimeType) {
+		Object type = mimeType.get("type");
+		Object subtype = mimeType.get("subtype");
+		Assert.state(type instanceof String && !((String) type).trim().isEmpty(), "MimeType type must not be blank");
+		Assert.state(subtype instanceof String && !((String) subtype).trim().isEmpty(),
+				"MimeType subtype must not be blank");
+
+		// Rebuild the canonical MIME type string so MimeType.valueOf(...) can parse it.
+		StringBuilder value = new StringBuilder((String) type).append('/').append((String) subtype);
+		Object parameters = mimeType.get("parameters");
+		if (parameters instanceof Map) {
+			for (Map.Entry<?, ?> entry : ((Map<?, ?>) parameters).entrySet()) {
+				value.append(';').append(entry.getKey()).append('=').append(entry.getValue());
+			}
+		}
+		return value.toString();
+	}
+
+	/**
+	 * Normalize the Jackson materialized data value to the canonical string form that a
+	 * JSON round-trip produces from the builder's supported shapes ({@code String},
+	 * {@code byte[]}, {@link URL}, {@link URI}), and reject shapes the builder never
+	 * allows (e.g. objects, arrays, numbers) with a clear exception.
+	 * @param data the Jackson materialized data value
+	 * @return the normalized media data, as a {@code String}
+	 */
+	private static Object toData(Object data) {
+		Assert.notNull(data, "Data must not be null");
+		if (data instanceof String text) {
+			return text;
+		}
+		if (data instanceof byte[] bytes) {
+			return Base64.getEncoder().encodeToString(bytes);
+		}
+		if (data instanceof URL url) {
+			return url.toString();
+		}
+		if (data instanceof URI uri) {
+			return uri.toString();
+		}
+		throw new IllegalArgumentException(
+				"Unsupported data type for deserialized Media: " + data.getClass().getName());
 	}
 
 	/**
@@ -185,6 +279,7 @@ public class Media {
 	 * Get the media data as a byte array
 	 * @return the media data as a byte array
 	 */
+	@JsonIgnore
 	public byte[] getDataAsByteArray() {
 		if (this.data instanceof byte[]) {
 			return (byte[]) this.data;
