@@ -268,6 +268,8 @@
 		<com.google.genai.version>1.65.0</com.google.genai.version>
 		<djl.version>0.36.0</djl.version>
 
+		<gpullama3.version>0.4.0-jdk21</gpullama3.version>
+
 		<!-- Vector store clients -->
 		<coherence.version>24.09</coherence.version>
 		<milvus.version>2.6.21</milvus.version>
@@ -592,6 +594,22 @@
 	</build>
 
 	<profiles>
+		<profile>
+			<!-- The GPULlama3 modules require Java 21 (preview features and the
+			     jdk.incubator.vector module), so they are built only on JDK 21+. On the
+			     JDK 17 CI baseline this profile stays inactive and the modules are skipped,
+			     keeping the whole reactor buildable on a single JDK. Build them on a JDK 21,
+			     where this profile auto-activates. -->
+			<id>gpullama3</id>
+			<activation>
+				<jdk>[21,)</jdk>
+			</activation>
+			<modules>
+				<module>models/spring-ai-gpullama3</module>
+				<module>auto-configurations/models/spring-ai-autoconfigure-model-gpullama3</module>
+				<module>starters/spring-ai-starter-model-gpullama3</module>
+			</modules>
+		</profile>
 		<profile>
 			<id>format-check</id>
 			<activation>

@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright 2023-present the original author or authors.
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~      https://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.springframework.ai</groupId>
+		<artifactId>spring-ai-parent</artifactId>
+		<version>2.0.1-SNAPSHOT</version>
+		<relativePath>../../pom.xml</relativePath>
+	</parent>
+
+	<artifactId>spring-ai-gpullama3</artifactId>
+
+	<packaging>jar</packaging>
+	<name>Spring AI Model - GPULlama3</name>
+	<description>GPULlama3 chat model support</description>
+	<url>https://github.com/spring-projects/spring-ai</url>
+
+	<properties>
+		<!-- gpu-llama3 ships preview-flagged classes (Java SE 21) and uses the Vector
+		     incubator module, so this module builds against Java 21 with preview features. -->
+		<java.version>21</java.version>
+	</properties>
+
+	<dependencies>
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-model</artifactId>
+			<version>${project.parent.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>io.github.beehive-lab</groupId>
+			<artifactId>gpu-llama3</artifactId>
+			<version>${gpullama3.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.junit.jupiter</groupId>
+			<artifactId>junit-jupiter</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.assertj</groupId>
+			<artifactId>assertj-core</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.mockito</groupId>
+			<artifactId>mockito-core</artifactId>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+
+	<build>
+		<plugins>
+			<!-- gpu-llama3 0.4.0-jdk21 ships preview-flagged classes and uses the Vector
+			     incubator module, so preview features are appended to the inherited compiler
+			     arguments, which keep the error-prone/NullAway null-safety checks. -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<compilerArgs combine.children="append">
+						<arg>--enable-preview</arg>
+						<arg>--add-modules</arg>
+						<arg>jdk.incubator.vector</arg>
+					</compilerArgs>
+				</configuration>
+				<executions>
+					<execution>
+						<id>java-compile</id>
+						<configuration>
+							<compilerArgs combine.children="append">
+								<arg>--enable-preview</arg>
+								<arg>--add-modules</arg>
+								<arg>jdk.incubator.vector</arg>
+							</compilerArgs>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<configuration>
+					<argLine>--enable-preview --add-modules jdk.incubator.vector</argLine>
+				</configuration>
+			</plugin>
+			<!-- Javadoc must also see the engine's preview-flagged classes and the Vector
+			     incubator module, so pass the same flags to the javadoc tool. -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<configuration>
+					<additionalOptions>
+						<additionalOption>--enable-preview</additionalOption>
+						<additionalOption>--add-modules</additionalOption>
+						<additionalOption>jdk.incubator.vector</additionalOption>
+					</additionalOptions>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+
+</project>
