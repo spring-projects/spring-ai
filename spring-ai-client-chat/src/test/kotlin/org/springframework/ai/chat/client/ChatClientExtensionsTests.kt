@@ -19,6 +19,7 @@ package org.springframework.ai.chat.client
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import org.springframework.ai.chat.model.ChatResponse
 import org.springframework.core.ParameterizedTypeReference
@@ -39,9 +40,18 @@ class ChatClientExtensionsTests {
 	@Test
 	fun entity() {
 		val crs = mockk<ChatClient.CallResponseSpec>()
-		val joke =  mockk<Joke>()
-		every { crs.entity(any<ParameterizedTypeReference<Joke>>()) } returns joke 
+		val joke = mockk<Joke>()
+		every { crs.entity(any<ParameterizedTypeReference<Joke>>()) } returns joke
 		crs.entity<Joke>()
+		verify { crs.entity(object : ParameterizedTypeReference<Joke>(){}) }
+	}
+
+	@Test
+	fun entityReturnsNullWhenModelSendsNoContent() {
+		val crs = mockk<ChatClient.CallResponseSpec>()
+		every { crs.entity(any<ParameterizedTypeReference<Joke>>()) } returns null
+		val entity = crs.entity<Joke>()
+		assertNull(entity)
 		verify { crs.entity(object : ParameterizedTypeReference<Joke>(){}) }
 	}
 }
