@@ -40,6 +40,7 @@ import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.tool.internal.ToolCallReactiveContextHolder;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
 import org.springframework.ai.tool.execution.ToolExecutionException;
@@ -293,7 +294,8 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 					logger.warn(POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING_START + toolName
 							+ POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING_END);
 				}
-				throw new IllegalStateException("No ToolCallback found for tool name: " + toolName);
+				throw new ToolExecutionException(new DefaultToolDefinition(toolName, "", ""),
+    				new IllegalStateException("No ToolCallback found for tool name: " + toolName));
 			}
 
 			if (returnDirect == null) {
