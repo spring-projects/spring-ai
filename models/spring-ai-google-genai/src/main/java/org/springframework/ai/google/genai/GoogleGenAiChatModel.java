@@ -313,7 +313,7 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 				.map(response -> Part.builder()
 					.functionResponse(FunctionResponse.builder()
 						.name(response.name())
-						.response(parseJsonToMap(response.responseData()))
+						.response(toolResponseToMap(response.responseData()))
 						.build())
 					.build())
 				.toList();
@@ -374,6 +374,23 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		}
 		catch (Exception e) {
 			throw new RuntimeException("Failed to parse JSON: " + json, e);
+		}
+	}
+
+	/**
+	 * Converts a tool response payload to the map structure required by the Gemini API.
+	 * JSON content is converted with {@link #parseJsonToMap(String)}. Plain text that is
+	 * not valid JSON is wrapped as {@code {"result": <text>}}, the same way non-object
+	 * JSON values are wrapped, so the tool result is always accepted by the API.
+	 */
+	private Map<String, Object> toolResponseToMap(String responseData) {
+		try {
+			return parseJsonToMap(responseData);
+		}
+		catch (RuntimeException ex) {
+			Map<String, Object> wrapper = new HashMap<>();
+			wrapper.put("result", responseData);
+			return wrapper;
 		}
 	}
 
