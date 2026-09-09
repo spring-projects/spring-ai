@@ -140,10 +140,16 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 
 	@Override
 	public void doAdd(List<Document> documents) {
-		Assert.notNull(documents, "Documents must not be null");
+		Assert.notNull(documents, "The document list should not be null.");
+		this.doAdd(documents, EmbeddingOptions.builder().build());
+	}
 
-		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
-				this.batchingStrategy);
+	@Override
+	public void doAdd(List<Document> documents, EmbeddingOptions options) {
+		Assert.notNull(documents, "Documents must not be null");
+		Assert.notNull(options, "The embedding Options should not be null.");
+
+		List<float[]> embeddings = this.embeddingModel.embed(documents, options, this.batchingStrategy);
 
 		List<HashMap<String, Object>> documentList = IntStream.range(0, documents.size()).mapToObj(i -> {
 			Document document = documents.get(i);
@@ -413,11 +419,11 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 
 	public static class Builder extends AbstractVectorStoreBuilder<Builder> {
 
+		private final Client client;
+
 		private String collectionName = DEFAULT_COLLECTION_NAME;
 
 		private int embeddingDimension = INVALID_EMBEDDING_DIMENSION;
-
-		private final Client client;
 
 		private boolean initializeSchema = false;
 

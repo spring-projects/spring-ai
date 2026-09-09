@@ -67,6 +67,8 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 
 	public static final String CONTENT_FIELD_NAME = "document_content";
 
+	private static final Log logger = LogFactory.getLog(PineconeVectorStore.class);
+
 	public final FilterExpressionConverter filterExpressionConverter = new PineconeFilterExpressionConverter();
 
 	private final String pineconeNamespace;
@@ -78,8 +80,6 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 	private final String pineconeDistanceMetadataFieldName;
 
 	private final Pinecone pinecone;
-
-	private static final Log logger = LogFactory.getLog(PineconeVectorStore.class);
 
 	/**
 	 * Creates a new PineconeVectorStore using the builder pattern.
@@ -103,17 +103,17 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 	 * Creates a new builder for constructing a PineconeVectorStore instance. This builder
 	 * implements a type-safe step pattern that guides users through the required
 	 * configuration fields in a specific order, followed by optional configurations.
-	 *
+	 * <p>
 	 * Required fields must be provided in this sequence:
 	 * <ol>
 	 * <li>embeddingModel (provided to this method)</li>
 	 * <li>apiKey</li>
 	 * <li>indexName</li>
 	 * </ol>
-	 *
+	 * <p>
 	 * After all required fields are set, optional configurations can be added using the
 	 * fluent builder pattern.
-	 *
+	 * <p>
 	 * Example usage: <pre>{@code
 	 * PineconeVectorStore store = PineconeVectorStore.builder(embeddingModel)
 	 *     .apiKey("your-api-key")
@@ -135,8 +135,17 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 	 * @param namespace The namespace to add the documents to
 	 */
 	public void add(List<Document> documents, String namespace) {
-		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
-				this.batchingStrategy);
+		Assert.notNull(documents, "The document list should not be null.");
+		Assert.notNull(namespace, "The namespace should not be null.");
+		this.add(documents, namespace, EmbeddingOptions.builder().build());
+	}
+
+	public void add(List<Document> documents, String namespace, EmbeddingOptions options) {
+		Assert.notNull(documents, "The document list should not be null.");
+		Assert.notNull(namespace, "The namespace should not be null.");
+		Assert.notNull(options, "The embedding Options should not be null.");
+
+		List<float[]> embeddings = this.embeddingModel.embed(documents, options, this.batchingStrategy);
 		List<VectorWithUnsignedIndices> upsertVectors = new ArrayList<>();
 		for (int i = 0; i < documents.size(); i++) {
 			Document document = documents.get(i);
@@ -152,7 +161,15 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 	 */
 	@Override
 	public void doAdd(List<Document> documents) {
-		add(documents, this.pineconeNamespace);
+		Assert.notNull(documents, "The document list should not be null.");
+		this.add(documents, this.pineconeNamespace);
+	}
+
+	@Override
+	public void doAdd(List<Document> documents, EmbeddingOptions options) {
+		Assert.notNull(documents, "The document list should not be null.");
+		Assert.notNull(options, "The embedding Options should not be null.");
+		this.add(documents, this.pineconeNamespace, options);
 	}
 
 	/**
@@ -333,13 +350,13 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 	 * Builder class for creating {@link PineconeVectorStore} instances. This implements a
 	 * type-safe step builder pattern to ensure all required fields are provided in a
 	 * specific order before optional configuration.
-	 *
+	 * <p>
 	 * The required fields must be provided in this sequence: 1. embeddingModel (via
 	 * builder method) 2. apiKey 3. indexName
-	 *
+	 * <p>
 	 * After all required fields are set, optional configurations can be provided using
 	 * the fluent builder pattern.
-	 *
+	 * <p>
 	 * Example usage: <pre>{@code
 	 * PineconeVectorStore store = PineconeVectorStore.builder(embeddingModel)
 	 *     .apiKey("your-api-key")
@@ -350,10 +367,14 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 	 */
 	public static class Builder extends AbstractVectorStoreBuilder<Builder> {
 
-		/** Required field for Pinecone API authentication */
+		/**
+		 * Required field for Pinecone API authentication
+		 */
 		private final String apiKey;
 
-		/** Required field specifying the Pinecone index name */
+		/**
+		 * Required field specifying the Pinecone index name
+		 */
 		private final String indexName;
 
 		// Optional fields with default values

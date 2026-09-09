@@ -24,6 +24,7 @@ import io.micrometer.observation.ObservationRegistry;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentWriter;
 import org.springframework.ai.embedding.BatchingStrategy;
+import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.observation.DefaultVectorStoreObservationConvention;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationConvention;
@@ -49,6 +50,14 @@ public interface VectorStore extends DocumentWriter, VectorStoreRetriever {
 	 * underlying provider checks for duplicate IDs.
 	 */
 	void add(List<Document> documents);
+
+	/**
+	 * Adds list of {@link Document}s to the vector store.
+	 * @param documents the list of documents to store. Throws an exception if the
+	 * underlying provider checks for duplicate IDs.
+	 * @param options {@link EmbeddingOptions}
+	 */
+	void add(List<Document> documents, EmbeddingOptions options);
 
 	@Override
 	default void accept(List<Document> documents) {
@@ -85,17 +94,17 @@ public interface VectorStore extends DocumentWriter, VectorStoreRetriever {
 
 	/**
 	 * Returns the native client if available in this vector store implementation.
-	 *
+	 * <p>
 	 * Note on usage: 1. Returns empty Optional when no native client is available 2. Due
 	 * to Java type erasure, runtime type checking is not possible
-	 *
+	 * <p>
 	 * Example usage: When working with implementation with known native client:
 	 * Optional<NativeClientType> client = vectorStore.getNativeClient();
-	 *
+	 * <p>
 	 * Note: Using Optional<?> will return the native client if one exists, rather than an
 	 * empty Optional. For type safety, prefer using the specific client type.
-	 * @return Optional containing native client if available, empty Optional otherwise
 	 * @param <T> The type of the native client
+	 * @return Optional containing native client if available, empty Optional otherwise
 	 */
 	default <T> Optional<T> getNativeClient() {
 		return Optional.empty();

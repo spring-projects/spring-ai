@@ -83,7 +83,14 @@ public class BedrockTitanEmbeddingModel extends AbstractEmbeddingModel {
 	public float[] embed(Document document) {
 		String text = document.getText();
 		Assert.state(text != null, "Document text must not be null");
-		return embed(text);
+		return this.embed(text, EmbeddingOptions.builder().build());
+	}
+
+	@Override
+	public float[] embed(Document document, EmbeddingOptions options) {
+		String text = document.getText();
+		Assert.state(text != null, "Document text must not be null");
+		return embed(text, options);
 	}
 
 	@Override
@@ -132,7 +139,7 @@ public class BedrockTitanEmbeddingModel extends AbstractEmbeddingModel {
 							+ summarizeInput(inputContent), ex);
 				}
 				throw ex; // Optional: Continue instead of throwing if you want partial
-							// success
+				// success
 			}
 		}
 

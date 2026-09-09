@@ -83,14 +83,14 @@ public class GoogleGenAiTextEmbeddingModel extends AbstractEmbeddingModel {
 	private final ObservationRegistry observationRegistry;
 
 	/**
-	 * Conventions to use for generating observations.
-	 */
-	private EmbeddingModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
-
-	/**
 	 * The GenAI client instance.
 	 */
 	private final Client genAiClient;
+
+	/**
+	 * Conventions to use for generating observations.
+	 */
+	private EmbeddingModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
 	public GoogleGenAiTextEmbeddingModel(GoogleGenAiEmbeddingConnectionDetails connectionDetails,
 			GoogleGenAiTextEmbeddingOptions defaultEmbeddingOptions) {
@@ -119,7 +119,14 @@ public class GoogleGenAiTextEmbeddingModel extends AbstractEmbeddingModel {
 	@Override
 	public float[] embed(Document document) {
 		Assert.notNull(document, "Document must not be null");
-		return this.embed(document.getFormattedContent());
+		return this.embed(document.getFormattedContent(), this.options);
+	}
+
+	@Override
+	public float[] embed(Document document, EmbeddingOptions options) {
+		Assert.notNull(document, "Document must not be null");
+		Assert.notNull(options, "GoogleGenAiTextEmbeddingOptions must not be null");
+		return this.embed(document.getFormattedContent(), options);
 	}
 
 	@Override

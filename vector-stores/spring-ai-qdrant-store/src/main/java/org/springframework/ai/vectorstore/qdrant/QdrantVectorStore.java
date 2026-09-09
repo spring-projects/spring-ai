@@ -128,11 +128,11 @@ import org.springframework.util.Assert;
  */
 public class QdrantVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
-	private static final Log logger = LogFactory.getLog(QdrantVectorStore.class);
-
 	public static final String DEFAULT_COLLECTION_NAME = "vector_store";
 
 	public static final String DEFAULT_CONTENT_FIELD_NAME = "doc_content";
+
+	private static final Log logger = LogFactory.getLog(QdrantVectorStore.class);
 
 	private final QdrantClient qdrantClient;
 
@@ -179,11 +179,18 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 	 */
 	@Override
 	public void doAdd(List<Document> documents) {
+		Assert.notNull(documents, "The document list should not be null.");
+		this.doAdd(documents, EmbeddingOptions.builder().build());
+	}
+
+	@Override
+	public void doAdd(List<Document> documents, EmbeddingOptions options) {
+		Assert.notNull(documents, "The document list should not be null.");
+		Assert.notNull(options, "The embedding Options should not be null.");
 		try {
 
 			// Compute and assign an embedding to the document.
-			List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
-					this.batchingStrategy);
+			List<float[]> embeddings = this.embeddingModel.embed(documents, options, this.batchingStrategy);
 
 			List<PointStruct> points = IntStream.range(0, documents.size()).mapToObj(i -> {
 				Document document = documents.get(i);

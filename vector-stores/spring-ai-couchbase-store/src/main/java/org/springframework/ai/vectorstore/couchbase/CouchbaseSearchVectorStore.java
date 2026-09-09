@@ -117,6 +117,10 @@ public class CouchbaseSearchVectorStore extends AbstractObservationVectorStore
 		this.indexOptimization = builder.indexOptimization;
 	}
 
+	public static Builder builder(Cluster cluster, EmbeddingModel embeddingModel) {
+		return new Builder(cluster, embeddingModel);
+	}
+
 	@Override
 	public void afterPropertiesSet() {
 
@@ -135,11 +139,20 @@ public class CouchbaseSearchVectorStore extends AbstractObservationVectorStore
 
 	@Override
 	public void doAdd(List<Document> documents) {
+		Assert.notNull(documents, "The document list should not be null.");
+		this.doAdd(documents, EmbeddingOptions.builder().build());
+	}
+
+	@Override
+	public void doAdd(List<Document> documents, EmbeddingOptions options) {
 		logger.info("Trying Add");
 		logger.info(this.bucketName);
 		logger.info(this.scopeName);
-		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
-				this.batchingStrategy);
+
+		Assert.notNull(documents, "The document list should not be null.");
+		Assert.notNull(options, "The embedding Options should not be null.");
+
+		List<float[]> embeddings = this.embeddingModel.embed(documents, options, this.batchingStrategy);
 		for (int i = 0; i < documents.size(); i++) {
 			Document document = documents.get(i);
 			CouchbaseDocument cbDoc = new CouchbaseDocument(document.getId(),
@@ -215,10 +228,6 @@ public class CouchbaseSearchVectorStore extends AbstractObservationVectorStore
 		return VectorStoreObservationContext.builder(VectorStoreProvider.COUCHBASE.value(), operationName)
 			.collectionName(this.collection.name())
 			.dimensions(this.embeddingModel.dimensions());
-	}
-
-	public static Builder builder(Cluster cluster, EmbeddingModel embeddingModel) {
-		return new Builder(cluster, embeddingModel);
 	}
 
 	public void initCluster() throws InterruptedException {
@@ -363,6 +372,10 @@ public class CouchbaseSearchVectorStore extends AbstractObservationVectorStore
 
 	public static class Builder extends AbstractVectorStoreBuilder<Builder> {
 
+		private final Cluster cluster;
+
+		private final CouchbaseAiSearchFilterExpressionConverter filterExpressionConverter = new CouchbaseAiSearchFilterExpressionConverter();
+
 		private String collectionName = DEFAULT_COLLECTION_NAME;
 
 		private String scopeName = DEFAULT_SCOPE_NAME;
@@ -376,10 +389,6 @@ public class CouchbaseSearchVectorStore extends AbstractObservationVectorStore
 		private CouchbaseSimilarityFunction similarityFunction = CouchbaseSimilarityFunction.dot_product;
 
 		private CouchbaseIndexOptimization indexOptimization = CouchbaseIndexOptimization.recall;
-
-		private final Cluster cluster;
-
-		private final CouchbaseAiSearchFilterExpressionConverter filterExpressionConverter = new CouchbaseAiSearchFilterExpressionConverter();
 
 		private boolean initializeSchema = false;
 
