@@ -109,8 +109,6 @@ public class FilterExpressionTextParser {
 
 	private static final String WHERE_PREFIX = "WHERE";
 
-	private final DescriptiveErrorListener errorListener;
-
 	private final ANTLRErrorStrategy errorHandler;
 
 	private final Map<String, Filter.Expression> cache = new ConcurrentHashMap<>();
@@ -120,7 +118,6 @@ public class FilterExpressionTextParser {
 	}
 
 	public FilterExpressionTextParser(ANTLRErrorStrategy handler) {
-		this.errorListener = DescriptiveErrorListener.INSTANCE;
 		this.errorHandler = handler;
 	}
 
@@ -141,9 +138,11 @@ public class FilterExpressionTextParser {
 		var tokens = new CommonTokenStream(lexer);
 		var parser = new FiltersParser(tokens);
 
+		// Per-invocation error listener: each parse() call owns its own error state,
+		// so concurrent calls on the same instance do not share mutable error state.
+		var errorListener = new DescriptiveErrorListener();
 		parser.removeErrorListeners();
-		this.errorListener.errorMessages.clear();
-		parser.addErrorListener(this.errorListener);
+		parser.addErrorListener(errorListener);
 
 		if (this.errorHandler != null) {
 			parser.setErrorHandler(this.errorHandler);
@@ -157,7 +156,7 @@ public class FilterExpressionTextParser {
 			return filterExpression;
 		}
 		catch (ParseCancellationException e) {
-			var msg = String.join("", this.errorListener.errorMessages);
+			var msg = String.join("", errorListener.errorMessages);
 			var rootCause = NestedExceptionUtils.getRootCause(e);
 			throw new FilterExpressionParseException(msg, rootCause);
 		}
@@ -328,8 +327,6 @@ public class FilterExpressionTextParser {
 	}
 
 	public static class DescriptiveErrorListener extends BaseErrorListener {
-
-		public static final DescriptiveErrorListener INSTANCE = new DescriptiveErrorListener();
 
 		public final List<String> errorMessages = new CopyOnWriteArrayList<>();
 
