@@ -204,14 +204,20 @@ public final class CassandraChatMemoryRepositoryConfig {
 
 	private void ensureMessageTypeExist() {
 
-		SimpleStatement stmt = SchemaBuilder.createType(this.messageUDT)
+		// Qualify the keyspace in the statement rather than setting it per request. A
+		// per-request keyspace requires native protocol V5, and servers such as Astra DB
+		// cap at V4, where the driver rejects the statement before it reaches the server.
+		SimpleStatement stmt = SchemaBuilder.createType(this.schema.keyspace, this.messageUDT)
 			.ifNotExists()
 			.withField(this.messageUdtTimestampColumn, DataTypes.TIMESTAMP)
 			.withField(this.messageUdtTypeColumn, DataTypes.TEXT)
 			.withField(this.messageUdtContentColumn, DataTypes.TEXT)
 			.build();
 
-		this.session.execute(stmt.setKeyspace(this.schema.keyspace));
+		if (logger.isDebugEnabled()) {
+			logger.debug("Executing " + stmt.getQuery());
+		}
+		this.session.execute(stmt);
 	}
 
 	private void ensureTableColumnsExist() {
