@@ -16,6 +16,7 @@
 
 package org.springframework.ai.chat.memory.repository.redis;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,12 +31,16 @@ import redis.clients.jedis.RedisClient;
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Integration tests for RedisChatMemoryRepository implementation of ChatMemoryRepository
@@ -226,6 +231,91 @@ class RedisChatMemoryRepositoryIT {
 			assertThat(storedMessages).hasSize(7);
 			assertThat(storedMessages.stream().map(Message::getText).toList()).containsExactly("first-1", "first-2",
 					"first-3", "second-1", "second-2", "second-3", "second-4");
+		});
+	}
+
+	@Test
+	void shouldPreserveExistingMessagesWhenReplacementPreparationFails() {
+		this.contextRunner.run(context -> {
+			String conversationId = "test-conversation";
+			this.chatMemoryRepository.saveAll(conversationId,
+					List.of(new UserMessage("First message"), new AssistantMessage("Second message")));
+			assertThat(this.chatMemoryRepository.findByConversationId(conversationId)).hasSize(2);
+
+			Message failingMessage = mock(Message.class);
+			when(failingMessage.getMessageType()).thenReturn(MessageType.USER);
+			when(failingMessage.getText()).thenThrow(new IllegalStateException("Message preparation failed"));
+
+			assertThatThrownBy(() -> this.chatMemoryRepository.saveAll(conversationId,
+					List.of(new UserMessage("Replacement message"), failingMessage)))
+				.isInstanceOf(IllegalStateException.class)
+				.hasMessage("Message preparation failed");
+
+			assertThat(this.chatMemoryRepository.findByConversationId(conversationId)
+				.stream()
+				.map(Message::getText)
+				.toList()).containsExactly("First message", "Second message");
+		});
+	}
+
+	@Test
+	void shouldPreserveExistingMessagesWhenReplacementMessagesAreNull() {
+		this.contextRunner.run(context -> {
+			String conversationId = "test-conversation";
+			this.chatMemoryRepository.saveAll(conversationId,
+					List.of(new UserMessage("First message"), new AssistantMessage("Second message")));
+			assertThat(this.chatMemoryRepository.findByConversationId(conversationId)).hasSize(2);
+
+			assertThatThrownBy(() -> this.chatMemoryRepository.saveAll(conversationId, null))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessage("Messages must not be null");
+
+			assertThat(this.chatMemoryRepository.findByConversationId(conversationId)
+				.stream()
+				.map(Message::getText)
+				.toList()).containsExactly("First message", "Second message");
+		});
+	}
+
+	@Test
+	void shouldApplyTimeToLiveToReplacementMessages() {
+		this.contextRunner.run(context -> {
+			RedisChatMemoryRepository ttlRepository = RedisChatMemoryRepository.builder()
+				.jedisClient(this.jedisClient)
+				.indexName("test-save-all-ttl-" + RedisChatMemoryConfig.DEFAULT_INDEX_NAME)
+				.keyPrefix("save-all-ttl:")
+				.timeToLive(Duration.ofSeconds(1))
+				.build();
+
+			String conversationId = "ttl-test-conversation";
+			ttlRepository.saveAll(conversationId, List.of(new UserMessage("Original message")));
+			assertThat(ttlRepository.findByConversationId(conversationId).stream().map(Message::getText).toList())
+				.containsExactly("Original message");
+
+			ttlRepository.saveAll(conversationId,
+					List.of(new UserMessage("First replacement"), new AssistantMessage("Second replacement")));
+
+			assertThat(ttlRepository.findByConversationId(conversationId).stream().map(Message::getText).toList())
+				.containsExactly("First replacement", "Second replacement");
+
+			Thread.sleep(1500);
+
+			assertThat(ttlRepository.findByConversationId(conversationId)).isEmpty();
+		});
+	}
+
+	@Test
+	void shouldClearExistingMessagesWhenReplacementIsEmpty() {
+		this.contextRunner.run(context -> {
+			String conversationId = "test-conversation";
+			this.chatMemoryRepository.saveAll(conversationId,
+					List.of(new UserMessage("First message"), new AssistantMessage("Second message")));
+			assertThat(this.chatMemoryRepository.findByConversationId(conversationId)).hasSize(2);
+
+			this.chatMemoryRepository.saveAll(conversationId, List.of());
+
+			assertThat(this.chatMemoryRepository.findByConversationId(conversationId)).isEmpty();
+			assertThat(this.chatMemoryRepository.findConversationIds()).doesNotContain(conversationId);
 		});
 	}
 
