@@ -18,6 +18,7 @@ package org.springframework.ai.transformer.splitter;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import com.knuddels.jtokkit.Encodings;
 import com.knuddels.jtokkit.api.Encoding;
@@ -36,6 +37,12 @@ import org.springframework.util.Assert;
  * @author Jemin Huh
  */
 public class TokenTextSplitter extends TextSplitter {
+
+	/**
+	 * Matches any line break, so that chunks are split the same way regardless of the
+	 * line separator used by the document or by the host operating system.
+	 */
+	private static final Pattern LINE_BREAK = Pattern.compile("\\R");
 
 	private static final int DEFAULT_CHUNK_SIZE = 800;
 
@@ -186,8 +193,7 @@ public class TokenTextSplitter extends TextSplitter {
 				}
 			}
 
-			String chunkTextToAppend = (this.keepSeparator) ? chunkText.trim()
-					: chunkText.replace(System.lineSeparator(), " ").trim();
+			String chunkTextToAppend = (this.keepSeparator) ? chunkText.trim() : replaceLineBreaks(chunkText);
 			if (chunkTextToAppend.length() > this.minChunkLengthToEmbed) {
 				chunks.add(chunkTextToAppend);
 			}
@@ -200,13 +206,19 @@ public class TokenTextSplitter extends TextSplitter {
 
 		// Handle the remaining tokens
 		if (!tokens.isEmpty()) {
-			String remaining_text = decodeTokens(tokens).replace(System.lineSeparator(), " ").trim();
+			String decodedRemainder = decodeTokens(tokens);
+			String remaining_text = (this.keepSeparator) ? decodedRemainder.trim()
+					: replaceLineBreaks(decodedRemainder);
 			if (remaining_text.length() > this.minChunkLengthToEmbed) {
 				chunks.add(remaining_text);
 			}
 		}
 
 		return chunks;
+	}
+
+	private static String replaceLineBreaks(String text) {
+		return LINE_BREAK.matcher(text).replaceAll(" ").trim();
 	}
 
 	protected int getLastPunctuationIndex(String chunkText) {
