@@ -126,12 +126,17 @@ public class TitanEmbeddingBedrockApi extends
 	 * @param inputText The text to compute the embedding for.
 	 * @param inputImage The image to compute the embedding for. Only applicable for the 'Titan Multimodal Embeddings
 	 * G1' model.
+	 * @param dimensions The number of dimensions for the embedding. Only applicable for the 'Titan Text Embeddings V2'
+	 * model.
+	 * @param normalize Whether to normalize the embedding. Only applicable for the 'Titan Text Embeddings V2' model.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	public record TitanEmbeddingRequest(
 			@JsonProperty("inputText") @Nullable String inputText,
-			@JsonProperty("inputImage") @Nullable String inputImage) {
-
+			@JsonProperty("inputImage") @Nullable String inputImage,
+			@JsonProperty("dimensions") @Nullable Integer dimensions,
+			@JsonProperty("normalize") @Nullable Boolean normalize
+	) {
 
 		public static Builder builder() {
 			return new Builder();
@@ -144,6 +149,8 @@ public class TitanEmbeddingBedrockApi extends
 
 			private @Nullable String inputText;
 			private @Nullable String inputImage;
+			private @Nullable Integer dimensions;
+			private @Nullable Boolean normalize;
 
 			public Builder inputText(@Nullable String inputText) {
 				this.inputText = inputText;
@@ -155,13 +162,23 @@ public class TitanEmbeddingBedrockApi extends
 				return this;
 			}
 
+			public Builder dimensions(@Nullable Integer dimensions) {
+				this.dimensions = dimensions;
+				return this;
+			}
+
+			public Builder normalize(@Nullable Boolean normalize) {
+				this.normalize = normalize;
+				return this;
+			}
+
 			public TitanEmbeddingRequest build() {
 				Assert.isTrue(this.inputText != null || this.inputImage != null,
 						"At least one of the inputText or inputImage parameters must be provided!");
 				Assert.isTrue(!(this.inputText != null && this.inputImage != null),
 						"Only one of the inputText or inputImage parameters must be provided!");
 
-				return new TitanEmbeddingRequest(this.inputText, this.inputImage);
+				return new TitanEmbeddingRequest(this.inputText, this.inputImage, this.dimensions, this.normalize);
 			}
 		}
 

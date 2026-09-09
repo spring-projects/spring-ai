@@ -59,15 +59,18 @@ public class BedrockTitanEmbeddingModel extends AbstractEmbeddingModel {
 
 	private final ObservationRegistry observationRegistry;
 
-	/**
-	 * Titan Embedding API input types. Could be either text or image (encoded in base64).
-	 */
-	private InputType inputType = InputType.TEXT;
+	private BedrockTitanEmbeddingOptions options;
+
+	public BedrockTitanEmbeddingModel(TitanEmbeddingBedrockApi titanEmbeddingBedrockApi,
+			BedrockTitanEmbeddingOptions options, ObservationRegistry observationRegistry) {
+		this.embeddingApi = titanEmbeddingBedrockApi;
+		this.options = options;
+		this.observationRegistry = observationRegistry;
+	}
 
 	public BedrockTitanEmbeddingModel(TitanEmbeddingBedrockApi titanEmbeddingBedrockApi,
 			ObservationRegistry observationRegistry) {
-		this.embeddingApi = titanEmbeddingBedrockApi;
-		this.observationRegistry = observationRegistry;
+		this(titanEmbeddingBedrockApi, new BedrockTitanEmbeddingOptions(InputType.TEXT), observationRegistry);
 	}
 
 	/**
@@ -75,8 +78,13 @@ public class BedrockTitanEmbeddingModel extends AbstractEmbeddingModel {
 	 * @param inputType the input type to use.
 	 */
 	public BedrockTitanEmbeddingModel withInputType(InputType inputType) {
-		this.inputType = inputType;
+		this.options = new BedrockTitanEmbeddingOptions(inputType, this.options.getDimensions(),
+				this.options.getNormalize());
 		return this;
+	}
+
+	private static InputType getInputTypeOrDefault(BedrockTitanEmbeddingOptions options) {
+		return options.getInputType() != null ? options.getInputType() : InputType.TEXT;
 	}
 
 	@Override
@@ -101,10 +109,11 @@ public class BedrockTitanEmbeddingModel extends AbstractEmbeddingModel {
 			var apiRequest = createTitanEmbeddingRequest(inputContent, request.getOptions());
 
 			try {
+				InputType inputType = getInputTypeOrDefault(this.options);
 				TitanEmbeddingResponse response = Observation
 					.createNotStarted("bedrock.embedding", this.observationRegistry)
 					.lowCardinalityKeyValue("model", "titan")
-					.lowCardinalityKeyValue("input_type", this.inputType.name().toLowerCase(Locale.ROOT))
+					.lowCardinalityKeyValue("input_type", inputType.name().toLowerCase(Locale.ROOT))
 					.highCardinalityKeyValue("input_length", String.valueOf(inputContent.length()))
 					.observe(() -> {
 						TitanEmbeddingResponse r = this.embeddingApi.embedding(apiRequest);
@@ -144,19 +153,24 @@ public class BedrockTitanEmbeddingModel extends AbstractEmbeddingModel {
 
 	private TitanEmbeddingRequest createTitanEmbeddingRequest(String inputContent,
 			@Nullable EmbeddingOptions requestOptions) {
-		InputType inputType = this.inputType;
+		BedrockTitanEmbeddingOptions options = this.options;
 
 		if (requestOptions instanceof BedrockTitanEmbeddingOptions bedrockTitanEmbeddingOptions) {
-			inputType = bedrockTitanEmbeddingOptions.getInputType();
+			options = bedrockTitanEmbeddingOptions;
 		}
 
-		return (inputType == InputType.IMAGE) ? new TitanEmbeddingRequest.Builder().inputImage(inputContent).build()
-				: new TitanEmbeddingRequest.Builder().inputText(inputContent).build();
+		return switch (getInputTypeOrDefault(options)) {
+			case IMAGE -> new TitanEmbeddingRequest.Builder().inputImage(inputContent).build();
+			case TEXT -> new TitanEmbeddingRequest.Builder().inputText(inputContent)
+				.dimensions(options.getDimensions())
+				.normalize(options.getNormalize())
+				.build();
+		};
 	}
 
 	@Override
 	public int dimensions() {
-		if (this.inputType == InputType.IMAGE) {
+		if (this.options.getInputType() == InputType.IMAGE) {
 			if (this.embeddingDimensions.get() < 0) {
 				this.embeddingDimensions.set(dimensions(this, this.embeddingApi.getModelId(),
 						// small base64 encoded image
@@ -168,7 +182,7 @@ public class BedrockTitanEmbeddingModel extends AbstractEmbeddingModel {
 	}
 
 	private String summarizeInput(String input) {
-		if (this.inputType == InputType.IMAGE) {
+		if (this.options.getInputType() == InputType.IMAGE) {
 			return "[image content omitted, length=" + input.length() + "]";
 		}
 		return input.length() > 100 ? input.substring(0, 100) + "..." : input;

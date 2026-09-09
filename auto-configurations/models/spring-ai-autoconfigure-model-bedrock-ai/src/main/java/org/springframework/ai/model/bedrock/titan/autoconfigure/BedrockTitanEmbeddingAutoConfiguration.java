@@ -22,6 +22,7 @@ import software.amazon.awssdk.regions.providers.AwsRegionProvider;
 import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.bedrock.titan.BedrockTitanEmbeddingModel;
+import org.springframework.ai.bedrock.titan.BedrockTitanEmbeddingOptions;
 import org.springframework.ai.bedrock.titan.api.TitanEmbeddingBedrockApi;
 import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.model.SpringAIModels;
@@ -80,9 +81,13 @@ public class BedrockTitanEmbeddingAutoConfiguration {
 			throw new IllegalArgumentException("InputType property for BedrockTitanEmbeddingModel is missing.");
 		}
 
-		return new BedrockTitanEmbeddingModel(titanEmbeddingApi,
-				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
-			.withInputType(properties.getInputType());
+		var options = BedrockTitanEmbeddingOptions.builder()
+			.inputType(properties.getInputType())
+			.dimensions(properties.getDimensions())
+			.normalize(properties.getNormalize())
+			.build();
+		return new BedrockTitanEmbeddingModel(titanEmbeddingApi, options,
+				observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
 	}
 
 }
