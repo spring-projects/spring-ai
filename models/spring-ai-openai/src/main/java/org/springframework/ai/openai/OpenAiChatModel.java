@@ -38,7 +38,17 @@ import com.openai.client.OpenAIClientAsync;
 import com.openai.core.JsonValue;
 import com.openai.core.RequestOptions;
 import com.openai.core.http.AsyncStreamResponse;
+import com.openai.core.http.Headers;
+import com.openai.errors.BadRequestException;
+import com.openai.errors.InternalServerException;
+import com.openai.errors.NotFoundException;
 import com.openai.errors.OpenAIInvalidDataException;
+import com.openai.errors.PermissionDeniedException;
+import com.openai.errors.RateLimitException;
+import com.openai.errors.UnauthorizedException;
+import com.openai.errors.UnexpectedStatusCodeException;
+import com.openai.errors.UnprocessableEntityException;
+import com.openai.models.ErrorObject;
 import com.openai.models.FunctionDefinition;
 import com.openai.models.FunctionParameters;
 import com.openai.models.ReasoningEffort;
@@ -221,6 +231,7 @@ public final class OpenAiChatModel implements ChatModel {
 			.observe(() -> {
 
 				ChatCompletion chatCompletion = this.openAiClient.chat().completions().create(request, requestOptions);
+				throwIfErrorResponse(chatCompletion);
 
 				List<ChatCompletion.Choice> choices = chatCompletion.choices();
 				if (choices.isEmpty()) {
@@ -255,6 +266,46 @@ public final class OpenAiChatModel implements ChatModel {
 			});
 
 		return response;
+	}
+
+	private static void throwIfErrorResponse(ChatCompletion chatCompletion) {
+		JsonValue errorValue = chatCompletion._additionalProperties().get("error");
+		if (errorValue == null) {
+			return;
+		}
+
+		@SuppressWarnings("unchecked")
+		Map<String, Object> error = errorValue.convert(Map.class);
+		Assert.state(error != null, "Provider error must be a JSON object");
+		Object code = error.get("code");
+		int statusCode = code instanceof Number number ? number.intValue() : 500;
+		ErrorObject errorObject = ErrorObject.builder()
+			.message(String.valueOf(error.getOrDefault("message", "OpenAI-compatible provider returned an error")))
+			.type(String.valueOf(error.getOrDefault("type", "provider_error")))
+			.code(Optional.ofNullable(code).map(String::valueOf))
+			.param(Optional.empty())
+			.build();
+		Headers headers = Headers.builder().build();
+
+		throw switch (statusCode) {
+			case 400 -> BadRequestException.builder().headers(headers).error(errorObject).build();
+			case 401 -> UnauthorizedException.builder().headers(headers).error(errorObject).build();
+			case 403 -> PermissionDeniedException.builder().headers(headers).error(errorObject).build();
+			case 404 -> NotFoundException.builder().headers(headers).error(errorObject).build();
+			case 422 -> UnprocessableEntityException.builder().headers(headers).error(errorObject).build();
+			case 429 -> RateLimitException.builder().headers(headers).error(errorObject).build();
+			default -> statusCode >= 500
+					? InternalServerException.builder()
+						.statusCode(statusCode)
+						.headers(headers)
+						.error(errorObject)
+						.build()
+					: UnexpectedStatusCodeException.builder()
+						.statusCode(statusCode)
+						.headers(headers)
+						.error(errorObject)
+						.build();
+		};
 	}
 
 	@Override
