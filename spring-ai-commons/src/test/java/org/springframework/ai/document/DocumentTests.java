@@ -280,6 +280,16 @@ public class DocumentTests {
 	}
 
 	@Test
+	void testMutateDoesNotAlterOriginalMetadata() {
+		Document original = Document.builder().text("Original text").metadata("original", "value").build();
+
+		Document mutated = original.mutate().metadata("new", "metadata").build();
+
+		assertThat(mutated.getMetadata()).containsEntry("original", "value").containsEntry("new", "metadata");
+		assertThat(original.getMetadata()).doesNotContainKey("new"); // Original unchanged
+	}
+
+	@Test
 	void testDocumentEqualityWithDifferentScores() {
 		Document doc1 = Document.builder().id("sameId").text("Same text").score(0.5).build();
 
