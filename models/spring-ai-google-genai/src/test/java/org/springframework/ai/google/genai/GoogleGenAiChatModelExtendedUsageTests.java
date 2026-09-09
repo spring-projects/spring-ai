@@ -21,6 +21,7 @@ import java.util.List;
 import com.google.genai.Client;
 import com.google.genai.types.Candidate;
 import com.google.genai.types.Content;
+import com.google.genai.types.FinishReason;
 import com.google.genai.types.GenerateContentResponse;
 import com.google.genai.types.GenerateContentResponseUsageMetadata;
 import com.google.genai.types.MediaModality;
@@ -440,6 +441,36 @@ public class GoogleGenAiChatModelExtendedUsageTests {
 		assertThat(genAiUsage.getTotalTokens()).isEqualTo(0);
 		assertThat(genAiUsage.getThoughtsTokenCount()).isNull();
 		assertThat(genAiUsage.getCachedContentTokenCount()).isNull();
+	}
+
+	@Test
+	void testSafetyBlockedCandidateWithoutContent() {
+		// Safety-blocked candidates may have no content at all (absent Optional).
+		// Verify that responseCandidateToGeneration does not throw NoSuchElementException
+		// and returns a valid empty generation instead.
+		Candidate blockedCandidate = Candidate.builder()
+			.index(0)
+			.finishReason(new FinishReason(FinishReason.Known.SAFETY))
+			// intentionally no .content(...) — content() Optional is absent
+			.build();
+
+		GenerateContentResponse mockResponse = GenerateContentResponse.builder()
+			.candidates(List.of(blockedCandidate))
+			.modelVersion("gemini-2.5-flash")
+			.build();
+
+		this.chatModel.setMockGenerateContentResponse(mockResponse);
+
+		UserMessage userMessage = new UserMessage("Test safety-blocked response");
+		Prompt prompt = new Prompt(List.of(userMessage));
+
+		// Must not throw NoSuchElementException
+		ChatResponse response = this.chatModel.call(prompt);
+
+		assertThat(response).isNotNull();
+		assertThat(response.getResults()).hasSize(1);
+		assertThat(response.getResult().getOutput().getText()).isEmpty();
+		assertThat(response.getMetadata().getModel()).isEqualTo("gemini-2.5-flash");
 	}
 
 }
