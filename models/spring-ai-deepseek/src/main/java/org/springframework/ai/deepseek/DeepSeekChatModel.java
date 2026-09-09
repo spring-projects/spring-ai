@@ -73,6 +73,7 @@ import org.springframework.util.CollectionUtils;
  * @author Thomas Vitale
  * @author Sebastien Deleuze
  * @author guan xu
+ * @author Subhash Polisetti
  */
 public class DeepSeekChatModel implements ChatModel {
 
@@ -366,7 +367,6 @@ public class DeepSeekChatModel implements ChatModel {
 					}
 				}
 				String text = assistantMessage.getText();
-				Assert.state(text != null, "text must not be null");
 				return List.of(new ChatCompletionMessage(text, ChatCompletionMessage.Role.ASSISTANT, null, null,
 						toolCalls, isPrefixAssistantMessage, reasoningContent));
 			}
