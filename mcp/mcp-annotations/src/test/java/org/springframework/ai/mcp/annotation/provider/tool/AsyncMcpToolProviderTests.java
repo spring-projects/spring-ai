@@ -918,6 +918,42 @@ public class AsyncMcpToolProviderTests {
 	}
 
 	@Test
+	void testToolWithStructuredListReturnType() {
+		record CustomResult(String message) {
+		}
+
+		class ListResponseTool {
+
+			@McpTool(name = "list-response", description = "Tool List response", generateOutputSchema = true)
+			public Mono<List<CustomResult>> listResponseTool(String input) {
+				return Mono.just(List.of(new CustomResult("Processed: " + input)));
+			}
+
+		}
+
+		AsyncMcpToolProvider provider = new AsyncMcpToolProvider(List.of(new ListResponseTool()));
+
+		List<AsyncToolSpecification> toolSpecs = provider.getToolSpecifications();
+
+		assertThat(toolSpecs).hasSize(1);
+		AsyncToolSpecification toolSpec = toolSpecs.get(0);
+		assertThat(toolSpec.tool().outputSchema()).containsEntry("type", "array").containsKey("items");
+		assertThat(toolSpec.tool().outputSchema().toString()).contains("message");
+
+		Mono<CallToolResult> result = toolSpec.callHandler()
+			.apply(mock(McpAsyncServerExchange.class),
+					CallToolRequest.builder("list-response").arguments(Map.of("input", "test")).build());
+
+		StepVerifier.create(result).assertNext(callToolResult -> {
+			assertThat(callToolResult.isError()).isFalse();
+			assertThat(callToolResult.structuredContent()).isInstanceOf(List.class);
+			assertThat((List<?>) callToolResult.structuredContent()).singleElement()
+				.isInstanceOfSatisfying(Map.class,
+						item -> assertThat(item).containsEntry("message", "Processed: test"));
+		}).verifyComplete();
+	}
+
+	@Test
 	void testToolWithFluxReturnType() {
 
 		record CustomResult(String message) {
