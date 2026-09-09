@@ -53,6 +53,7 @@
 **** xref:api/image/openai-image.adoc[OpenAI]
 **** xref:api/image/stabilityai-image.adoc[Stability]
 **** xref:api/image/google-genai-image.adoc[Google GenAI]
+**** xref:api/image/wavespeed-image.adoc[WaveSpeed AI]
 
 *** xref:api/audio.adoc[Audio Models]
 **** xref:api/audio/transcriptions.adoc[]
