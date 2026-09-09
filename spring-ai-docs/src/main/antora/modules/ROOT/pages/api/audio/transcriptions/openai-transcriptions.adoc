@@ -1,4 +1,5 @@
 = OpenAI Transcriptions
+:page-title: OpenAI Transcriptions
 
 Spring AI supports https://platform.openai.com/docs/api-reference/audio/createTranscription[OpenAI's Transcription model].
 
