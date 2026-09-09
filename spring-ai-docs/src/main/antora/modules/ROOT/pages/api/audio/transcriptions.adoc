@@ -6,6 +6,7 @@ Spring AI provides a unified API for Speech-to-Text transcription through the `T
 == Supported Providers
 
 - xref:api/audio/transcriptions/openai-transcriptions.adoc[OpenAI's Whisper API]
+- xref:api/audio/transcriptions/google-genai-transcriptions.adoc[Google GenAI Transcription API]
 
 == Common Interface
 

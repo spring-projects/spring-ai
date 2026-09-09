@@ -81,7 +81,7 @@ public class OpenAiAudioTranscriptionResponseMetadata extends AudioTranscription
 	 * {@link TranscriptionDiarized.Usage} for {@code diarized_json}, or
 	 * {@link Transcription.Usage} otherwise.
 	 */
-	public @Nullable Object getUsage() {
+	public @Nullable Object getNativeUsage() {
 		return this.usage;
 	}
 
@@ -109,7 +109,7 @@ public class OpenAiAudioTranscriptionResponseMetadata extends AudioTranscription
 	@Override
 	public String toString() {
 		return "{ @type: %1$s, duration: %2$s, language: %3$s, usage: %4$s, segments: %5$s, words: %6$s }"
-			.formatted(getClass().getName(), getDuration(), getLanguage(), getUsage(), getSegments(), getWords());
+			.formatted(getClass().getName(), getDuration(), getLanguage(), getNativeUsage(), getSegments(), getWords());
 	}
 
 }
