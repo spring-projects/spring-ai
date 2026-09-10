@@ -90,6 +90,13 @@ class DefaultChatClientTests {
 		return chatModel;
 	}
 
+	private static ToolCallback createToolCallback(String name) {
+		return FunctionToolCallback.builder(name, input -> "result")
+			.description("description")
+			.inputType(String.class)
+			.build();
+	}
+
 	// Constructor
 
 	@Test
@@ -2429,18 +2436,17 @@ class DefaultChatClientTests {
 		verify(provider, never()).getToolCallbacks();
 	}
 
-	@Disabled("TODO: check this test does not make sense anymore")
 	@Test
 	void whenToolCallbackProviderThenLazilyEvaluatedOnCall() {
 		ChatModel chatModel = mockChatModel();
-		// use options that at least support tool calls for this test to make sense
 		when(chatModel.getOptions()).thenReturn(ToolCallingChatOptions.builder().build());
 		ArgumentCaptor<Prompt> promptCaptor = ArgumentCaptor.forClass(Prompt.class);
 		given(chatModel.call(promptCaptor.capture()))
 			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
 
+		ToolCallback toolCallback = createToolCallback("providedTool");
 		ToolCallbackProvider provider = mock(ToolCallbackProvider.class);
-		when(provider.getToolCallbacks()).thenReturn(new ToolCallback[] {});
+		when(provider.getToolCallbacks()).thenReturn(new ToolCallback[] { toolCallback });
 
 		ChatClient chatClient = new DefaultChatClientBuilder(chatModel).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt().user("test").tools(provider);
@@ -2453,18 +2459,21 @@ class DefaultChatClientTests {
 
 		// Verify getToolCallbacks() WAS called during execution
 		verify(provider, times(1)).getToolCallbacks();
+		ToolCallingChatOptions options = (ToolCallingChatOptions) promptCaptor.getValue().getOptions();
+		assertThat(options.getToolCallbacks()).containsExactly(toolCallback);
 	}
 
-	@Disabled("TODO: check this test does not make sense anymore")
 	@Test
 	void whenToolCallbackProviderThenLazilyEvaluatedOnStream() {
 		ChatModel chatModel = mockChatModel();
+		when(chatModel.getOptions()).thenReturn(ToolCallingChatOptions.builder().build());
 		ArgumentCaptor<Prompt> promptCaptor = ArgumentCaptor.forClass(Prompt.class);
 		given(chatModel.stream(promptCaptor.capture()))
 			.willReturn(Flux.just(new ChatResponse(List.of(new Generation(new AssistantMessage("response"))))));
 
+		ToolCallback toolCallback = createToolCallback("providedTool");
 		ToolCallbackProvider provider = mock(ToolCallbackProvider.class);
-		when(provider.getToolCallbacks()).thenReturn(new ToolCallback[] {});
+		when(provider.getToolCallbacks()).thenReturn(new ToolCallback[] { toolCallback });
 
 		ChatClient chatClient = new DefaultChatClientBuilder(chatModel).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt().user("test").tools(provider);
@@ -2477,21 +2486,25 @@ class DefaultChatClientTests {
 
 		// Verify getToolCallbacks() WAS called during execution
 		verify(provider, times(1)).getToolCallbacks();
+		ToolCallingChatOptions options = (ToolCallingChatOptions) promptCaptor.getValue().getOptions();
+		assertThat(options.getToolCallbacks()).containsExactly(toolCallback);
 	}
 
-	@Disabled("TODO: check this test does not make sense anymore")
 	@Test
 	void whenMultipleToolCallbackProvidersThenAllLazilyEvaluated() {
 		ChatModel chatModel = mockChatModel();
+		when(chatModel.getOptions()).thenReturn(ToolCallingChatOptions.builder().build());
 		ArgumentCaptor<Prompt> promptCaptor = ArgumentCaptor.forClass(Prompt.class);
 		given(chatModel.call(promptCaptor.capture()))
 			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
 
+		ToolCallback toolCallback1 = createToolCallback("providedTool1");
 		ToolCallbackProvider provider1 = mock(ToolCallbackProvider.class);
-		when(provider1.getToolCallbacks()).thenReturn(new ToolCallback[] {});
+		when(provider1.getToolCallbacks()).thenReturn(new ToolCallback[] { toolCallback1 });
 
+		ToolCallback toolCallback2 = createToolCallback("providedTool2");
 		ToolCallbackProvider provider2 = mock(ToolCallbackProvider.class);
-		when(provider2.getToolCallbacks()).thenReturn(new ToolCallback[] {});
+		when(provider2.getToolCallbacks()).thenReturn(new ToolCallback[] { toolCallback2 });
 
 		ChatClient chatClient = new DefaultChatClientBuilder(chatModel).build();
 		ChatClient.ChatClientRequestSpec spec = chatClient.prompt().user("test").tools(provider1, provider2);
@@ -2506,21 +2519,25 @@ class DefaultChatClientTests {
 		// Verify both getToolCallbacks() were called during execution
 		verify(provider1, times(1)).getToolCallbacks();
 		verify(provider2, times(1)).getToolCallbacks();
+		ToolCallingChatOptions options = (ToolCallingChatOptions) promptCaptor.getValue().getOptions();
+		assertThat(options.getToolCallbacks()).containsExactly(toolCallback1, toolCallback2);
 	}
 
-	@Disabled("TODO: check this test does not make sense anymore")
 	@Test
 	void whenToolCallbacksAndProvidersThenBothUsed() {
 		ChatModel chatModel = mockChatModel();
+		when(chatModel.getOptions()).thenReturn(ToolCallingChatOptions.builder().build());
 		ArgumentCaptor<Prompt> promptCaptor = ArgumentCaptor.forClass(Prompt.class);
 		given(chatModel.call(promptCaptor.capture()))
 			.willReturn(new ChatResponse(List.of(new Generation(new AssistantMessage("response")))));
 
+		ToolCallback directToolCallback = createToolCallback("directTool");
+		ToolCallback providedToolCallback = createToolCallback("providedTool");
 		ToolCallbackProvider provider = mock(ToolCallbackProvider.class);
-		when(provider.getToolCallbacks()).thenReturn(new ToolCallback[] {});
+		when(provider.getToolCallbacks()).thenReturn(new ToolCallback[] { providedToolCallback });
 
 		ChatClient chatClient = new DefaultChatClientBuilder(chatModel).build();
-		ChatClient.ChatClientRequestSpec spec = chatClient.prompt().user("test").tools(provider);
+		ChatClient.ChatClientRequestSpec spec = chatClient.prompt().user("test").tools(directToolCallback, provider);
 
 		// Verify provider not called yet
 		verify(provider, never()).getToolCallbacks();
@@ -2530,6 +2547,8 @@ class DefaultChatClientTests {
 
 		// Verify provider was called during execution
 		verify(provider, times(1)).getToolCallbacks();
+		ToolCallingChatOptions options = (ToolCallingChatOptions) promptCaptor.getValue().getOptions();
+		assertThat(options.getToolCallbacks()).containsExactly(directToolCallback, providedToolCallback);
 	}
 
 	record Person(String name) {
