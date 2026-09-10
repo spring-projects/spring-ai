@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.antlr.v4.runtime.ANTLRErrorStrategy;
@@ -133,8 +134,13 @@ public class FilterExpressionTextParser {
 		// Prefix the expression with the compulsory WHERE keyword, unless the
 		// expression already starts with the standalone WHERE keyword. A prefix
 		// match alone is not enough, as an identifier such as 'whereabouts' also
-		// starts with the WHERE letters.
-		if (!WHERE_PREFIX_PATTERN.matcher(textFilterExpression).find()) {
+		// starts with the WHERE letters. An existing keyword is normalized to the
+		// uppercase spelling, as the grammar only accepts 'WHERE' and 'where'.
+		Matcher whereMatcher = WHERE_PREFIX_PATTERN.matcher(textFilterExpression);
+		if (whereMatcher.find()) {
+			textFilterExpression = WHERE_PREFIX + textFilterExpression.substring(whereMatcher.end());
+		}
+		else {
 			textFilterExpression = String.format("%s %s", WHERE_PREFIX, textFilterExpression);
 		}
 
