@@ -16,22 +16,30 @@
 
 package org.springframework.ai.mcp.server.webmvc.transport;
 
+import java.io.IOException;
 import java.time.Duration;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 import io.modelcontextprotocol.spec.HttpHeaders;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpStreamableServerSession;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import reactor.core.publisher.Mono;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.test.web.servlet.client.MockMvcWebTestClient;
+import org.springframework.web.servlet.function.ServerResponse.SseBuilder;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -191,6 +199,73 @@ class WebMvcStreamableServerTransportProviderTests {
 			.isEqualTo(HttpStatus.BAD_REQUEST)
 			.expectBody(String.class)
 			.value(body -> assertThat(body).contains("Session already initialized"));
+	}
+
+	@Test
+	void sseLifecycleCallbacksCloseStreamOnCompleteTimeoutAndError() {
+		SseBuilder sseBuilder = mock(SseBuilder.class);
+		AtomicInteger closeCount = new AtomicInteger();
+
+		WebMvcStreamableServerTransportProvider.registerSseLifecycle(sseBuilder, "session-1",
+				closeCount::incrementAndGet);
+
+		ArgumentCaptor<Runnable> completeCaptor = ArgumentCaptor.captor();
+		verify(sseBuilder).onComplete(completeCaptor.capture());
+		completeCaptor.getValue().run();
+
+		ArgumentCaptor<Runnable> timeoutCaptor = ArgumentCaptor.captor();
+		verify(sseBuilder).onTimeout(timeoutCaptor.capture());
+		timeoutCaptor.getValue().run();
+
+		ArgumentCaptor<Consumer<Throwable>> errorCaptor = ArgumentCaptor.captor();
+		verify(sseBuilder).onError(errorCaptor.capture());
+		errorCaptor.getValue().accept(new RuntimeException("boom"));
+
+		assertThat(closeCount).hasValue(3);
+	}
+
+	@Test
+	void sseWriteFailureClosesOnlyCurrentTransportWithoutRemovingSession() throws Exception {
+		String sessionId = "session-send-failure";
+		McpStreamableServerSession session = mock(McpStreamableServerSession.class);
+		when(session.getId()).thenReturn(sessionId);
+		when(session.delete()).thenReturn(Mono.empty());
+
+		McpSchema.InitializeResult initResult = McpSchema.InitializeResult
+			.builder("2024-11-05", McpSchema.ServerCapabilities.builder().build(),
+					McpSchema.Implementation.builder("test-server", "1.0.0").build())
+			.build();
+
+		WebMvcStreamableServerTransportProvider provider = WebMvcStreamableServerTransportProvider.builder().build();
+		provider.setSessionFactory(initializeRequest -> new McpStreamableServerSession.McpStreamableServerSessionInit(
+				session, Mono.just(initResult)));
+
+		WebTestClient client = MockMvcWebTestClient.bindToRouterFunction(provider.getRouterFunction()).build();
+
+		client.post()
+			.uri("/mcp")
+			.contentType(MediaType.APPLICATION_JSON)
+			.accept(MediaType.APPLICATION_JSON, MediaType.TEXT_EVENT_STREAM)
+			.bodyValue(INITIALIZE_REQUEST)
+			.exchange()
+			.expectStatus()
+			.isOk();
+
+		SseBuilder sseBuilder = mock(SseBuilder.class);
+		when(sseBuilder.id(anyString())).thenReturn(sseBuilder);
+		when(sseBuilder.event(anyString())).thenReturn(sseBuilder);
+		doThrow(new IOException("broken pipe")).when(sseBuilder).data(any());
+
+		var transport = provider.createSessionTransport(sessionId, sseBuilder);
+		McpSchema.JSONRPCMessage message = new McpSchema.JSONRPCNotification("2.0", "server/notification", Map.of());
+		transport.sendMessage(message, "message-1").block();
+
+		verify(sseBuilder).complete();
+
+		// A DELETE with the same id still finds the session instead of returning 404,
+		// proving the write failure closed only the transport and did not remove the
+		// logical MCP session.
+		client.delete().uri("/mcp").header(HttpHeaders.MCP_SESSION_ID, sessionId).exchange().expectStatus().isOk();
 	}
 
 }
