@@ -102,6 +102,35 @@ public class AsyncMcpToolMethodCallbackExceptionHandlingTests {
 	}
 
 	@Test
+	public void exceptionWithoutCauseIsEmittedOnce() throws Exception {
+		AsyncMcpToolMethodCallback callback = callbackFor("bareExceptionTool");
+		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
+		CallToolRequest request = new CallToolRequest("bare-exception-tool", Map.of("input", "test"));
+
+		Mono<CallToolResult> result = callback.apply(exchange, request);
+
+		StepVerifier.create(result).assertNext(r -> {
+			assertThat(r.isError()).isTrue();
+			assertThat(((TextContent) r.content().get(0)).text()).isEqualTo("Bare error: test");
+		}).verifyComplete();
+	}
+
+	@Test
+	public void wrappedExceptionRetainsDistinctRootCauseMessage() throws Exception {
+		AsyncMcpToolMethodCallback callback = callbackFor("wrappedExceptionTool");
+		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
+		CallToolRequest request = new CallToolRequest("wrapped-exception-tool", Map.of("input", "test"));
+
+		Mono<CallToolResult> result = callback.apply(exchange, request);
+
+		StepVerifier.create(result).assertNext(r -> {
+			assertThat(r.isError()).isTrue();
+			String text = ((TextContent) r.content().get(0)).text();
+			assertThat(text).contains("Wrapper failed: test").contains("Root failure: test");
+		}).verifyComplete();
+	}
+
+	@Test
 	public void declaredCheckedExceptionBubblesUp() throws Exception {
 		AsyncMcpToolMethodCallback callback = callbackFor("checkedExceptionTool");
 		McpAsyncServerExchange exchange = mock(McpAsyncServerExchange.class);
@@ -280,6 +309,17 @@ public class AsyncMcpToolMethodCallbackExceptionHandlingTests {
 		@McpTool(name = "illegal-argument-tool", description = "Throws IllegalArgumentException")
 		public Mono<String> illegalArgumentTool(String input) {
 			throw new IllegalArgumentException("Illegal argument: " + input);
+		}
+
+		@McpTool(name = "bare-exception-tool", description = "Throws an exception without a cause")
+		public Mono<String> bareExceptionTool(String input) {
+			throw new IllegalArgumentException("Bare error: " + input);
+		}
+
+		@McpTool(name = "wrapped-exception-tool", description = "Throws an exception wrapping another")
+		public Mono<String> wrappedExceptionTool(String input) {
+			throw new IllegalStateException("Wrapper failed: " + input,
+					new IllegalArgumentException("Root failure: " + input));
 		}
 
 		@McpTool(name = "checked-exception-tool", description = "Throws declared checked exception")

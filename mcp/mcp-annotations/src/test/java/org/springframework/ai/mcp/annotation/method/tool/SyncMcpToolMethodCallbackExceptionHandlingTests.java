@@ -101,6 +101,35 @@ public class SyncMcpToolMethodCallbackExceptionHandlingTests {
 	}
 
 	@Test
+	public void exceptionWithoutCauseIsEmittedOnce() throws Exception {
+		SyncMcpToolMethodCallback callback = callbackFor("bareExceptionTool");
+		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
+		CallToolRequest request = CallToolRequest.builder("bare-exception-tool")
+			.arguments(Map.of("input", "test"))
+			.build();
+
+		CallToolResult result = callback.apply(exchange, request);
+
+		assertThat(result.isError()).isTrue();
+		assertThat(((TextContent) result.content().get(0)).text()).isEqualTo("Bare error: test");
+	}
+
+	@Test
+	public void wrappedExceptionRetainsDistinctRootCauseMessage() throws Exception {
+		SyncMcpToolMethodCallback callback = callbackFor("wrappedExceptionTool");
+		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
+		CallToolRequest request = CallToolRequest.builder("wrapped-exception-tool")
+			.arguments(Map.of("input", "test"))
+			.build();
+
+		CallToolResult result = callback.apply(exchange, request);
+
+		assertThat(result.isError()).isTrue();
+		String text = ((TextContent) result.content().get(0)).text();
+		assertThat(text).contains("Wrapper failed: test").contains("Root failure: test");
+	}
+
+	@Test
 	public void declaredCheckedExceptionBubblesUp() throws Exception {
 		SyncMcpToolMethodCallback callback = callbackFor("checkedExceptionTool");
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
@@ -217,6 +246,17 @@ public class SyncMcpToolMethodCallbackExceptionHandlingTests {
 		@McpTool(name = "illegal-argument-tool", description = "Throws IllegalArgumentException")
 		public String illegalArgumentTool(String input) {
 			throw new IllegalArgumentException("Illegal argument: " + input);
+		}
+
+		@McpTool(name = "bare-exception-tool", description = "Throws an exception without a cause")
+		public String bareExceptionTool(String input) {
+			throw new IllegalArgumentException("Bare error: " + input);
+		}
+
+		@McpTool(name = "wrapped-exception-tool", description = "Throws an exception wrapping another")
+		public String wrappedExceptionTool(String input) {
+			throw new IllegalStateException("Wrapper failed: " + input,
+					new IllegalArgumentException("Root failure: " + input));
 		}
 
 		@McpTool(name = "checked-exception-tool", description = "Throws declared checked exception")

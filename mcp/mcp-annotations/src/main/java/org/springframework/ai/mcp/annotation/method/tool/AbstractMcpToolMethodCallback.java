@@ -211,6 +211,21 @@ public abstract class AbstractMcpToolMethodCallback<T, RC extends McpRequestCont
 	}
 
 	/**
+	 * Builds the text conveyed to the model for an exception thrown by a tool method. The
+	 * root cause message is appended only when it adds information, so an exception
+	 * without a distinct root cause is not reported twice.
+	 * @param e The exception that occurred
+	 * @return The error text
+	 */
+	protected String buildErrorText(Exception e) {
+		Throwable rootCause = findCauseUsingPlainJava(e);
+		if (rootCause == e || Objects.equals(rootCause.getMessage(), e.getMessage())) {
+			return e.getMessage();
+		}
+		return e.getMessage() + System.lineSeparator() + rootCause.getMessage();
+	}
+
+	/**
 	 * Determines if the given parameter type is an exchange or context type that should
 	 * be injected. Subclasses must implement this method to specify which types are
 	 * considered exchange or context types.
