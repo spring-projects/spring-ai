@@ -85,7 +85,7 @@ class OpenAiImageModelTests {
 	@Test
 	void callRejectsImageResponseWithoutData() {
 		when(this.openAiClient.images()).thenReturn(this.imageService);
-		when(this.imageService.generate(any(ImageGenerateParams.class)))
+		when(this.imageService.generate(any(ImageGenerateParams.class), any(RequestOptions.class)))
 			.thenReturn(ImagesResponse.builder().created(1).build());
 
 		OpenAiImageModel imageModel = OpenAiImageModel.builder()
@@ -101,7 +101,7 @@ class OpenAiImageModelTests {
 	@Test
 	void callRejectsImageResponseWithEmptyData() {
 		when(this.openAiClient.images()).thenReturn(this.imageService);
-		when(this.imageService.generate(any(ImageGenerateParams.class)))
+		when(this.imageService.generate(any(ImageGenerateParams.class), any(RequestOptions.class)))
 			.thenReturn(ImagesResponse.builder().created(1).data(List.of()).build());
 
 		OpenAiImageModel imageModel = OpenAiImageModel.builder()
