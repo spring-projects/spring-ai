@@ -685,6 +685,17 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			}
 		}
 
+		// Citation documents are attached once, to the first user message. Repeating
+		// them on every user turn would re-send the source material on each request
+		// and place it after any cache breakpoint set on the previous turn.
+		int firstUserIndex = -1;
+		for (int i = 0; i < nonSystemMessages.size(); i++) {
+			if (nonSystemMessages.get(i).getMessageType() == MessageType.USER) {
+				firstUserIndex = i;
+				break;
+			}
+		}
+
 		// Pre-compute last user message index for CONVERSATION_HISTORY strategy
 		int lastUserIndex = -1;
 		if (cacheResolver.isCachingEnabled()) {
@@ -715,7 +726,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 			if (message.getMessageType() == MessageType.USER) {
 				UserMessage userMessage = (UserMessage) message;
-				boolean hasCitationDocs = !CollectionUtils.isEmpty(citationDocuments);
+				boolean hasCitationDocs = !CollectionUtils.isEmpty(citationDocuments) && i == firstUserIndex;
 				boolean hasMedia = !CollectionUtils.isEmpty(userMessage.getMedia());
 				boolean isLastUserMessage = (i == lastUserIndex);
 				boolean applyCacheToUser = isLastUserMessage && cacheResolver.isCachingEnabled();
@@ -730,10 +741,21 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 				if (hasCitationDocs || hasMedia || userCacheControl != null) {
 					List<ContentBlockParam> contentBlocks = new ArrayList<>();
 
-					// Prepend citation document blocks to the first user message
+					// Prepend citation documents to the first user message. The cache
+					// breakpoint goes on the last document to cover the whole set.
 					if (hasCitationDocs) {
-						for (AnthropicCitationDocument doc : Objects.requireNonNull(citationDocuments)) {
-							contentBlocks.add(ContentBlockParam.ofDocument(doc.toDocumentBlockParam()));
+						List<AnthropicCitationDocument> documents = Objects.requireNonNull(citationDocuments);
+						CacheControlEphemeral documentCacheControl = cacheResolver
+							.resolveCitationDocumentCacheControl();
+						for (int d = 0; d < documents.size(); d++) {
+							DocumentBlockParam.Builder documentBuilder = documents.get(d)
+								.toDocumentBlockParam()
+								.toBuilder();
+							if (documentCacheControl != null && d == documents.size() - 1) {
+								documentBuilder.cacheControl(documentCacheControl);
+								cacheResolver.useCacheBlock();
+							}
+							contentBlocks.add(ContentBlockParam.ofDocument(documentBuilder.build()));
 						}
 					}
 

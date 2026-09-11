@@ -51,6 +51,7 @@ import com.anthropic.models.messages.StopReason;
 import com.anthropic.models.messages.TextBlock;
 import com.anthropic.models.messages.ThinkingBlock;
 import com.anthropic.models.messages.ToolResultBlockParam;
+import com.anthropic.models.messages.ToolUnion;
 import com.anthropic.models.messages.ToolUseBlock;
 import com.anthropic.models.messages.Usage;
 import com.anthropic.services.async.MessageServiceAsync;
@@ -960,6 +961,141 @@ class AnthropicChatModelTests {
 		assertThat(rateLimit.getRequestsRemaining()).isEqualTo(99L);
 		assertThat(rateLimit.getTokensLimit()).isEqualTo(50000L);
 		assertThat(rateLimit.getTokensRemaining()).isEqualTo(49000L);
+	}
+
+	@Test
+	void citationDocumentsAreSentOnlyInFirstUserMessage() {
+		Message mockResponse = createMockMessage("Answer", StopReason.END_TURN);
+		given(this.messageService.create(any(MessageCreateParams.class))).willReturn(mockResponse);
+
+		AnthropicCitationDocument document = AnthropicCitationDocument.builder()
+			.plainText("Reference material")
+			.title("Reference")
+			.citationsEnabled(true)
+			.build();
+		AnthropicChatOptions options = AnthropicChatOptions.builder().citationDocuments(document).build();
+
+		UserMessage user1 = new UserMessage("First question");
+		AssistantMessage assistant1 = new AssistantMessage("First answer");
+		UserMessage user2 = new UserMessage("Second question");
+
+		this.chatModel.call(new Prompt(List.of(user1, assistant1, user2), options));
+
+		ArgumentCaptor<MessageCreateParams> captor = ArgumentCaptor.forClass(MessageCreateParams.class);
+		verify(this.messageService).create(captor.capture());
+
+		List<MessageParam> messages = captor.getValue().messages();
+		assertThat(messages).hasSize(3);
+
+		List<ContentBlockParam> firstUserBlocks = messages.get(0).content().blockParams().orElseThrow();
+		assertThat(firstUserBlocks).hasSize(2);
+		assertThat(firstUserBlocks.get(0).isDocument()).isTrue();
+		assertThat(firstUserBlocks.get(1).asText().text()).isEqualTo("First question");
+
+		assertThat(messages.get(2).content().string()).contains("Second question");
+		assertThat(messages.get(2).content().blockParams()).isEmpty();
+
+		long documentBlocks = messages.stream()
+			.flatMap(message -> message.content().blockParams().stream().flatMap(List::stream))
+			.filter(ContentBlockParam::isDocument)
+			.count();
+		assertThat(documentBlocks).isEqualTo(1);
+	}
+
+	@Test
+	void citationDocumentCacheBreakpointPerStrategy() {
+		assertThat(lastDocumentHasCacheControl(AnthropicCacheStrategy.NONE)).isFalse();
+		assertThat(lastDocumentHasCacheControl(AnthropicCacheStrategy.TOOLS_ONLY)).isFalse();
+		assertThat(lastDocumentHasCacheControl(AnthropicCacheStrategy.SYSTEM_ONLY)).isTrue();
+		assertThat(lastDocumentHasCacheControl(AnthropicCacheStrategy.SYSTEM_AND_TOOLS)).isTrue();
+		assertThat(lastDocumentHasCacheControl(AnthropicCacheStrategy.CONVERSATION_HISTORY)).isTrue();
+	}
+
+	@Test
+	void citationDocumentCacheBreakpointGoesOnLastDocumentOnly() {
+		AnthropicCitationDocument first = AnthropicCitationDocument.builder().plainText("First").build();
+		AnthropicCitationDocument second = AnthropicCitationDocument.builder().plainText("Second").build();
+		AnthropicChatOptions options = AnthropicChatOptions.builder()
+			.citationDocuments(first, second)
+			.cacheOptions(AnthropicCacheOptions.builder().strategy(AnthropicCacheStrategy.SYSTEM_ONLY).build())
+			.build();
+
+		MessageCreateParams request = this.chatModel.createRequest(new Prompt("Question", options), false);
+
+		List<ContentBlockParam> blocks = request.messages().get(0).content().blockParams().orElseThrow();
+		assertThat(blocks).hasSize(3);
+		assertThat(blocks.get(0).asDocument().cacheControl()).isEmpty();
+		assertThat(blocks.get(1).asDocument().cacheControl()).isPresent();
+		// SYSTEM_ONLY does not cache the user text
+		assertThat(blocks.get(2).asText().cacheControl()).isEmpty();
+	}
+
+	@Test
+	void citationDocumentAndUserTextBothCachedUnderConversationHistory() {
+		// Batch Q&A over the same document: each request is a fresh single-turn
+		// prompt, so the document breakpoint is what produces cache hits across
+		// requests while the user text breakpoint changes every time.
+		AnthropicCitationDocument document = AnthropicCitationDocument.builder().plainText("Reference").build();
+		AnthropicChatOptions options = AnthropicChatOptions.builder()
+			.citationDocuments(document)
+			.cacheOptions(AnthropicCacheOptions.builder().strategy(AnthropicCacheStrategy.CONVERSATION_HISTORY).build())
+			.build();
+
+		MessageCreateParams request = this.chatModel.createRequest(new Prompt("Question", options), false);
+
+		List<ContentBlockParam> blocks = request.messages().get(0).content().blockParams().orElseThrow();
+		assertThat(blocks).hasSize(2);
+		assertThat(blocks.get(0).asDocument().cacheControl()).isPresent();
+		assertThat(blocks.get(1).asText().cacheControl()).isPresent();
+	}
+
+	@Test
+	void citationDocumentBreakpointTakesPrecedenceOverToolDefinitions() {
+		// System, document, last user text, and last tool result each take a
+		// breakpoint, which is all four. Tool definitions are resolved last and get
+		// none. That is harmless: tools precede the system prompt in the request and
+		// are inside the prefix cached by the system breakpoint.
+		AnthropicCitationDocument document = AnthropicCitationDocument.builder().plainText("Reference").build();
+		AnthropicCacheOptions cacheOptions = AnthropicCacheOptions.builder()
+			.strategy(AnthropicCacheStrategy.CONVERSATION_HISTORY)
+			.cacheToolResults(true)
+			.build();
+		AnthropicChatOptions options = AnthropicChatOptions.builder()
+			.citationDocuments(document)
+			.cacheOptions(cacheOptions)
+			.toolCallbacks(List.of(new TestToolCallback("getWeather")))
+			.build();
+
+		List<org.springframework.ai.chat.messages.Message> messages = new java.util.ArrayList<>();
+		messages.add(new SystemMessage("You are a helpful assistant."));
+		messages.addAll(toolCallingConversation());
+
+		MessageCreateParams request = this.chatModel.createRequest(new Prompt(messages, options), false);
+
+		assertThat(request.system().orElseThrow().asTextBlockParams().get(0).cacheControl()).isPresent();
+
+		List<ContentBlockParam> firstUserBlocks = request.messages().get(0).content().blockParams().orElseThrow();
+		assertThat(firstUserBlocks.get(0).asDocument().cacheControl()).isPresent();
+		assertThat(firstUserBlocks.get(1).asText().cacheControl()).isPresent();
+
+		assertThat(lastToolResultBlock(request).cacheControl()).isPresent();
+
+		List<ToolUnion> tools = request.tools().orElseThrow();
+		assertThat(tools).hasSize(1);
+		assertThat(tools.get(0).asTool().cacheControl()).isEmpty();
+	}
+
+	private boolean lastDocumentHasCacheControl(AnthropicCacheStrategy strategy) {
+		AnthropicCitationDocument document = AnthropicCitationDocument.builder().plainText("Reference").build();
+		AnthropicChatOptions options = AnthropicChatOptions.builder()
+			.citationDocuments(document)
+			.cacheOptions(AnthropicCacheOptions.builder().strategy(strategy).build())
+			.build();
+
+		MessageCreateParams request = this.chatModel.createRequest(new Prompt("Question", options), false);
+
+		List<ContentBlockParam> blocks = request.messages().get(0).content().blockParams().orElseThrow();
+		return blocks.get(0).asDocument().cacheControl().isPresent();
 	}
 
 	static class TestToolCallback implements ToolCallback {
