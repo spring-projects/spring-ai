@@ -40,11 +40,17 @@ import org.springframework.boot.mongodb.autoconfigure.MongoAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Bean;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.spy;
 
 /**
  * Integration tests for {@link MongoChatMemoryRepository}.
@@ -185,6 +191,28 @@ public class MongoChatMemoryRepositoryIT {
 			.all();
 
 		assertThat(results.size()).isZero();
+	}
+
+	@Test
+	void shouldPreserveExistingMessagesWhenInsertFails() {
+		var conversationId = UUID.randomUUID().toString();
+		var existingMessages = List.<Message>of(new UserMessage("First message"),
+				new AssistantMessage("Second message"));
+
+		this.chatMemoryRepository.saveAll(conversationId, existingMessages);
+
+		var failingMongoTemplate = spy(this.mongoTemplate);
+		doThrow(new DataIntegrityViolationException("Insert failed")).when(failingMongoTemplate)
+			.insert(anyCollection(), eq(Conversation.class));
+
+		var failingRepository = MongoChatMemoryRepository.builder().mongoTemplate(failingMongoTemplate).build();
+
+		assertThatThrownBy(
+				() -> failingRepository.saveAll(conversationId, List.of(new UserMessage("Replacement message"))))
+			.isInstanceOf(DataIntegrityViolationException.class);
+
+		var results = this.chatMemoryRepository.findByConversationId(conversationId);
+		assertThat(results).isEqualTo(existingMessages);
 	}
 
 	@SpringBootConfiguration

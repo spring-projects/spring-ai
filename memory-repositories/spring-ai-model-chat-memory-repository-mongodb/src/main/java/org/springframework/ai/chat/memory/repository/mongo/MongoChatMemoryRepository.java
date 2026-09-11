@@ -31,9 +31,13 @@ import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.mongodb.MongoDatabaseFactory;
+import org.springframework.data.mongodb.MongoTransactionManager;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.Assert;
 
 /**
@@ -48,8 +52,18 @@ public final class MongoChatMemoryRepository implements ChatMemoryRepository {
 
 	private final MongoTemplate mongoTemplate;
 
-	private MongoChatMemoryRepository(MongoTemplate mongoTemplate) {
+	private final TransactionTemplate transactionTemplate;
+
+	private MongoChatMemoryRepository(MongoTemplate mongoTemplate,
+			@Nullable PlatformTransactionManager transactionManager) {
+		Assert.notNull(mongoTemplate, "mongoTemplate cannot be null");
 		this.mongoTemplate = mongoTemplate;
+		if (transactionManager == null) {
+			MongoDatabaseFactory mongoDatabaseFactory = mongoTemplate.getMongoDatabaseFactory();
+			Assert.notNull(mongoDatabaseFactory, "mongoTemplate mongoDatabaseFactory cannot be null");
+			transactionManager = new MongoTransactionManager(mongoDatabaseFactory);
+		}
+		this.transactionTemplate = new TransactionTemplate(transactionManager);
 	}
 
 	@Override
@@ -76,13 +90,16 @@ public final class MongoChatMemoryRepository implements ChatMemoryRepository {
 					"MongoChatMemoryRepository does not support tool call messages. Some messages were filtered out for conversation: "
 							+ conversationId);
 		}
-		deleteByConversationId(conversationId);
-		var conversations = persistableMessages.stream()
-			.map(message -> new Conversation(conversationId,
-					new Conversation.Message(message.getText(), message.getMessageType().name(), message.getMetadata()),
-					Instant.now()))
-			.toList();
-		this.mongoTemplate.insert(conversations, Conversation.class);
+		this.transactionTemplate.executeWithoutResult(status -> {
+			deleteByConversationId(conversationId);
+			var conversations = persistableMessages.stream()
+				.map(message -> new Conversation(conversationId,
+						new Conversation.Message(message.getText(), message.getMessageType().name(),
+								message.getMetadata()),
+						Instant.now()))
+				.toList();
+			this.mongoTemplate.insert(conversations, Conversation.class);
+		});
 	}
 
 	@Override
@@ -117,6 +134,8 @@ public final class MongoChatMemoryRepository implements ChatMemoryRepository {
 
 		private @Nullable MongoTemplate mongoTemplate;
 
+		private @Nullable PlatformTransactionManager transactionManager;
+
 		private Builder() {
 		}
 
@@ -125,9 +144,23 @@ public final class MongoChatMemoryRepository implements ChatMemoryRepository {
 			return this;
 		}
 
+		/**
+		 * Optionally provide a {@link PlatformTransactionManager} used to make
+		 * {@link #saveAll(String, List)} atomic. When omitted, a
+		 * {@link MongoTransactionManager} is created from the {@link MongoTemplate}'s
+		 * database factory (MongoDB multi-document transactions require a replica set).
+		 * @param transactionManager the transaction manager, or {@code null} to create a
+		 * default
+		 * @return this builder
+		 */
+		public Builder transactionManager(@Nullable PlatformTransactionManager transactionManager) {
+			this.transactionManager = transactionManager;
+			return this;
+		}
+
 		public MongoChatMemoryRepository build() {
 			Assert.state(this.mongoTemplate != null, "mongoTemplate must be provided");
-			return new MongoChatMemoryRepository(this.mongoTemplate);
+			return new MongoChatMemoryRepository(this.mongoTemplate, this.transactionManager);
 		}
 
 	}
