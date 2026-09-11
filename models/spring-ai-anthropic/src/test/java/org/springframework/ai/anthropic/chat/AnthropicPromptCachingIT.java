@@ -31,6 +31,7 @@ import org.springframework.ai.anthropic.AnthropicCacheStrategy;
 import org.springframework.ai.anthropic.AnthropicCacheTtl;
 import org.springframework.ai.anthropic.AnthropicChatModel;
 import org.springframework.ai.anthropic.AnthropicChatOptions;
+import org.springframework.ai.anthropic.AnthropicCitationDocument;
 import org.springframework.ai.anthropic.AnthropicTestConfiguration;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -458,6 +459,44 @@ class AnthropicPromptCachingIT {
 			.withFailMessage("Expected either cache creation or cache read tokens, but got creation=%d, read=%d",
 					cacheCreation, cacheRead)
 			.isTrue();
+	}
+
+	@Test
+	void shouldCachePdfCitationDocumentAcrossRequests() throws IOException {
+		// Batch Q&A over one PDF: every request is a fresh single-turn prompt, so the
+		// only breakpoint that can produce cache reads is the one on the document.
+		AnthropicCitationDocument document = AnthropicCitationDocument.builder()
+			.pdfFile("src/test/resources/spring-ai-reference-overview.pdf")
+			.title("Spring AI Reference")
+			.citationsEnabled(true)
+			.build();
+
+		AnthropicChatOptions options = AnthropicChatOptions.builder()
+			.model(Model.CLAUDE_SONNET_4_5.asString())
+			.citationDocuments(document)
+			.cacheOptions(AnthropicCacheOptions.builder().strategy(AnthropicCacheStrategy.SYSTEM_ONLY).build())
+			.maxTokens(150)
+			.temperature(0.0)
+			.build();
+
+		ChatResponse first = this.chatModel
+			.call(new Prompt(List.of(new UserMessage("Based only on the document, what is Spring AI?")), options));
+		Usage firstUsage = getSdkUsage(first);
+		assertThat(firstUsage).isNotNull();
+		long firstCreation = firstUsage.cacheCreationInputTokens().orElse(0L);
+		long firstRead = firstUsage.cacheReadInputTokens().orElse(0L);
+		assertThat(firstCreation > 0 || firstRead > 0)
+			.withFailMessage("Expected the document to be written to or read from cache, but got creation=%d, read=%d",
+					firstCreation, firstRead)
+			.isTrue();
+
+		ChatResponse second = this.chatModel.call(new Prompt(
+				List.of(new UserMessage("Based only on the document, which models does it support?")), options));
+		Usage secondUsage = getSdkUsage(second);
+		assertThat(secondUsage).isNotNull();
+		assertThat(secondUsage.cacheReadInputTokens().orElse(0L))
+			.as("Second request should read the document from cache")
+			.isGreaterThan(0);
 	}
 
 }

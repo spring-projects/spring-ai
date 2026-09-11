@@ -709,6 +709,33 @@ ChatResponse response = chatModel.call(
 );
 ----
 
+=== Caching Citation Documents
+
+Citation documents are sent as part of the first user message and are typically large and identical across requests, which makes them a natural fit for xref:_prompt_caching[prompt caching].
+When a cache strategy other than `NONE` or `TOOLS_ONLY` is active, a cache breakpoint is placed on the last citation document block.
+The breakpoint covers all documents in the request, and Anthropic reads them from cache on subsequent requests that send the same documents.
+
+[source,java]
+----
+AnthropicCitationDocument document = AnthropicCitationDocument.builder()
+    .pdf(pdfBytes)
+    .title("Annual Report")
+    .citationsEnabled(true)
+    .build();
+
+AnthropicChatOptions options = AnthropicChatOptions.builder()
+    .citationDocuments(document)
+    .cacheOptions(AnthropicCacheOptions.builder()
+        .strategy(AnthropicCacheStrategy.SYSTEM_ONLY)
+        .build())
+    .build();
+----
+
+The document breakpoint uses the `MessageType.SYSTEM` TTL and consumes one of the four cache breakpoints allowed per request.
+`TOOLS_ONLY` does not cache documents, because a breakpoint on a document block would also cache the system prompt that precedes it.
+
+In a multi-turn conversation the documents are attached only to the first user message, so the cached prefix stays stable as the conversation grows.
+
 === Accessing Citations
 
 Citations are returned in the response metadata:
@@ -896,10 +923,10 @@ Five caching strategies are available via `AnthropicCacheStrategy`:
 | Strategy | Description
 
 | `NONE` | No caching (default). No cache control headers are added.
-| `SYSTEM_ONLY` | Cache system message content. Uses 1 cache breakpoint.
+| `SYSTEM_ONLY` | Cache system message content and citation documents. Uses up to 2 cache breakpoints.
 | `TOOLS_ONLY` | Cache tool definitions only. Uses 1 cache breakpoint.
-| `SYSTEM_AND_TOOLS` | Cache both system messages and tool definitions. Uses 2 cache breakpoints.
-| `CONVERSATION_HISTORY` | Cache system messages, tool definitions, and conversation messages. Uses up to 4 cache breakpoints.
+| `SYSTEM_AND_TOOLS` | Cache system messages, tool definitions, and citation documents. Uses up to 3 cache breakpoints.
+| `CONVERSATION_HISTORY` | Cache system messages, tool definitions, citation documents, and conversation messages. Uses up to 4 cache breakpoints.
 |====
 
 NOTE: Anthropic allows a maximum of 4 cache breakpoints per request. The implementation tracks breakpoint usage and stops adding cache control once the limit is reached.
@@ -963,7 +990,9 @@ var cacheOptions = AnthropicCacheOptions.builder()
     .build();
 ----
 
-The breakpoint moves to the latest tool result on each round, so the previous rounds' tool outputs are read from cache while the newest is written. This consumes one additional cache breakpoint (Anthropic allows up to four per request), leaving room for the tool, system, and last-user breakpoints under `CONVERSATION_HISTORY`. The TTL and minimum content length are configurable via `messageTypeTtl(MessageType.TOOL, ...)` and `messageTypeMinContentLength(MessageType.TOOL, ...)`.
+The breakpoint moves to the latest tool result on each round, so the previous rounds' tool outputs are read from cache while the newest is written. This consumes one additional cache breakpoint (Anthropic allows up to four per request), leaving room for the tool, system, and last-user breakpoints under `CONVERSATION_HISTORY`.
+If citation documents are also present, five breakpoints compete for four slots and the tool definition breakpoint is dropped.
+This does not affect caching, since tool definitions precede the system prompt in the request and are covered by the system breakpoint. The TTL and minimum content length are configurable via `messageTypeTtl(MessageType.TOOL, ...)` and `messageTypeMinContentLength(MessageType.TOOL, ...)`.
 
 === Multi-Block System Caching
 
