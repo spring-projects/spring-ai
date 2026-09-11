@@ -163,8 +163,6 @@ public final class DefaultMcpAsyncRequestContext implements McpAsyncRequestConte
 
 	private Map<String, Object> generateElicitSchema(Type type) {
 		Map<String, Object> schema = jsonHelper.fromJsonToMap(McpJsonSchemaGenerator.generateFromType(type));
-		// remove as elicitation schema does not support it
-		schema.remove("$schema");
 		return schema;
 	}
 
