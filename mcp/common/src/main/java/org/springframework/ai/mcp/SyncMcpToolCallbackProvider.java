@@ -16,6 +16,8 @@
 
 package org.springframework.ai.mcp;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.locks.Lock;
@@ -50,7 +52,11 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider, Applic
 
 	private final ToolContextToMcpMetaConverter toolContextToMcpMetaConverter;
 
+	private final Duration cacheTtl;
+
 	private volatile boolean invalidateCache = true;
+
+	private volatile Instant cacheExpiresAt = Instant.MAX;
 
 	private volatile List<ToolCallback> cachedToolCallbacks = List.of();
 
@@ -65,7 +71,7 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider, Applic
 	@Deprecated
 	public SyncMcpToolCallbackProvider(McpToolFilter toolFilter, List<McpSyncClient> mcpClients) {
 		this(toolFilter, McpToolNamePrefixGenerator.noPrefix(), mcpClients,
-				ToolContextToMcpMetaConverter.defaultConverter());
+				ToolContextToMcpMetaConverter.defaultConverter(), Duration.ofSeconds(-1));
 	}
 
 	/**
@@ -74,9 +80,12 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider, Applic
 	 * @param toolNamePrefixGenerator generates prefixes for tool names
 	 * @param toolFilter filter for discovered tools
 	 * @param toolContextToMcpMetaConverter converts tool context to MCP metadata
+	 * @param cacheTtl time-to-live for cached tools, zero or negative for infinite
+	 * caching
 	 */
 	private SyncMcpToolCallbackProvider(McpToolFilter toolFilter, McpToolNamePrefixGenerator toolNamePrefixGenerator,
-			List<McpSyncClient> mcpClients, ToolContextToMcpMetaConverter toolContextToMcpMetaConverter) {
+			List<McpSyncClient> mcpClients, ToolContextToMcpMetaConverter toolContextToMcpMetaConverter,
+			Duration cacheTtl) {
 		Assert.notNull(mcpClients, "MCP clients must not be null");
 		Assert.notNull(toolFilter, "Tool filter must not be null");
 		Assert.notNull(toolNamePrefixGenerator, "Tool name prefix generator must not be null");
@@ -85,6 +94,7 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider, Applic
 		this.toolFilter = toolFilter;
 		this.toolNamePrefixGenerator = toolNamePrefixGenerator;
 		this.toolContextToMcpMetaConverter = toolContextToMcpMetaConverter;
+		this.cacheTtl = cacheTtl;
 	}
 
 	/**
@@ -107,8 +117,8 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider, Applic
 	@Deprecated
 	public SyncMcpToolCallbackProvider(McpToolFilter toolFilter, McpToolNamePrefixGenerator toolNamePrefixGenerator,
 			McpSyncClient... mcpClients) {
-		this(toolFilter, toolNamePrefixGenerator, List.of(mcpClients),
-				ToolContextToMcpMetaConverter.defaultConverter());
+		this(toolFilter, toolNamePrefixGenerator, List.of(mcpClients), ToolContextToMcpMetaConverter.defaultConverter(),
+				Duration.ofSeconds(-1));
 	}
 
 	/**
@@ -124,10 +134,10 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider, Applic
 	@Override
 	public ToolCallback[] getToolCallbacks() {
 
-		if (this.invalidateCache) {
+		if (shouldRefreshCache()) {
 			this.lock.lock();
 			try {
-				if (this.invalidateCache) {
+				if (shouldRefreshCache()) {
 					this.cachedToolCallbacks = this.mcpClients.stream()
 						.flatMap(mcpClient -> mcpClient.listTools()
 							.tools()
@@ -143,6 +153,7 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider, Applic
 						.toList();
 
 					this.validateToolCallbacks(this.cachedToolCallbacks);
+					this.cacheExpiresAt = computeCacheExpiration();
 					this.invalidateCache = false;
 				}
 			}
@@ -152,6 +163,29 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider, Applic
 		}
 
 		return this.cachedToolCallbacks.toArray(new ToolCallback[0]);
+	}
+
+	/**
+	 * Checks if the cache should be refreshed based on invalidation flag or TTL
+	 * expiration.
+	 * @return true if the cache should be refreshed
+	 */
+	private boolean shouldRefreshCache() {
+		if (this.invalidateCache) {
+			return true;
+		}
+		return Instant.now().isAfter(this.cacheExpiresAt);
+	}
+
+	/**
+	 * Computes the cache expiration time based on the configured TTL.
+	 * @return the expiration instant, or {@link Instant#MAX} if TTL is zero or negative
+	 */
+	private Instant computeCacheExpiration() {
+		if (this.cacheTtl.isZero() || this.cacheTtl.isNegative()) {
+			return Instant.MAX;
+		}
+		return Instant.now().plus(this.cacheTtl);
 	}
 
 	/**
@@ -225,6 +259,8 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider, Applic
 		private ToolContextToMcpMetaConverter toolContextToMcpMetaConverter = ToolContextToMcpMetaConverter
 			.defaultConverter();
 
+		private Duration cacheTtl = Duration.ofSeconds(-1);
+
 		/**
 		 * Sets MCP clients for tool discovery (replaces existing).
 		 * @param mcpClients list of MCP clients
@@ -293,6 +329,24 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider, Applic
 		}
 
 		/**
+		 * Sets the time-to-live (TTL) for cached tool callbacks. When the cache expires,
+		 * tools will be re-discovered from the MCP servers on the next request. This is
+		 * useful for stateless MCP servers that don't send tool change notifications.
+		 * <p>
+		 * By default, the cache never expires (TTL is negative), meaning tools are only
+		 * re-discovered when {@link #invalidateCache()} is called or when a
+		 * {@link McpToolsChangedEvent} is received.
+		 * @param cacheTtl the cache time-to-live, zero or negative for infinite caching
+		 * (default)
+		 * @return this builder
+		 */
+		public Builder cacheTtl(Duration cacheTtl) {
+			Assert.notNull(cacheTtl, "Cache TTL must not be null");
+			this.cacheTtl = cacheTtl;
+			return this;
+		}
+
+		/**
 		 * Builds the provider with configured parameters.
 		 * @return configured {@code SyncMcpToolCallbackProvider}
 		 */
@@ -300,7 +354,7 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider, Applic
 			// Assert.notEmpty(this.mcpClients, "At least one MCP client must be
 			// provided");
 			return new SyncMcpToolCallbackProvider(this.toolFilter, this.toolNamePrefixGenerator, this.mcpClients,
-					this.toolContextToMcpMetaConverter);
+					this.toolContextToMcpMetaConverter, this.cacheTtl);
 		}
 
 	}

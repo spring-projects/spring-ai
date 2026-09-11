@@ -16,6 +16,8 @@
 
 package org.springframework.ai.mcp;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.locks.Lock;
@@ -52,7 +54,11 @@ public class AsyncMcpToolCallbackProvider implements ToolCallbackProvider, Appli
 
 	private final ToolContextToMcpMetaConverter toolContextToMcpMetaConverter;
 
+	private final Duration cacheTtl;
+
 	private volatile boolean invalidateCache = true;
+
+	private volatile Instant cacheExpiresAt = Instant.MAX;
 
 	private volatile List<ToolCallback> cachedToolCallbacks = List.of();
 
@@ -67,7 +73,7 @@ public class AsyncMcpToolCallbackProvider implements ToolCallbackProvider, Appli
 	@Deprecated
 	public AsyncMcpToolCallbackProvider(McpToolFilter toolFilter, List<McpAsyncClient> mcpClients) {
 		this(toolFilter, McpToolNamePrefixGenerator.noPrefix(), ToolContextToMcpMetaConverter.defaultConverter(),
-				mcpClients);
+				mcpClients, Duration.ofSeconds(-1));
 	}
 
 	/**
@@ -76,9 +82,12 @@ public class AsyncMcpToolCallbackProvider implements ToolCallbackProvider, Appli
 	 * @param toolNamePrefixGenerator generates prefixes for tool names
 	 * @param toolContextToMcpMetaConverter converts tool context to MCP metadata
 	 * @param mcpClients MCP clients for tool discovery
+	 * @param cacheTtl time-to-live for cached tools, zero or negative for infinite
+	 * caching
 	 */
 	private AsyncMcpToolCallbackProvider(McpToolFilter toolFilter, McpToolNamePrefixGenerator toolNamePrefixGenerator,
-			ToolContextToMcpMetaConverter toolContextToMcpMetaConverter, List<McpAsyncClient> mcpClients) {
+			ToolContextToMcpMetaConverter toolContextToMcpMetaConverter, List<McpAsyncClient> mcpClients,
+			Duration cacheTtl) {
 		Assert.notNull(mcpClients, "MCP clients must not be null");
 		Assert.notNull(toolFilter, "Tool filter must not be null");
 		Assert.notNull(toolNamePrefixGenerator, "Tool name prefix generator must not be null");
@@ -87,6 +96,7 @@ public class AsyncMcpToolCallbackProvider implements ToolCallbackProvider, Appli
 		this.mcpClients = mcpClients;
 		this.toolNamePrefixGenerator = toolNamePrefixGenerator;
 		this.toolContextToMcpMetaConverter = toolContextToMcpMetaConverter;
+		this.cacheTtl = cacheTtl;
 	}
 
 	/**
@@ -132,10 +142,10 @@ public class AsyncMcpToolCallbackProvider implements ToolCallbackProvider, Appli
 	@Override
 	public ToolCallback[] getToolCallbacks() {
 
-		if (this.invalidateCache) {
+		if (shouldRefreshCache()) {
 			this.lock.lock();
 			try {
-				if (this.invalidateCache) {
+				if (shouldRefreshCache()) {
 					List<ToolCallback> toolCallbackList = new ArrayList<>();
 
 					for (McpAsyncClient mcpClient : this.mcpClients) {
@@ -161,6 +171,7 @@ public class AsyncMcpToolCallbackProvider implements ToolCallbackProvider, Appli
 
 					this.validateToolCallbacks(this.cachedToolCallbacks);
 
+					this.cacheExpiresAt = computeCacheExpiration();
 					this.invalidateCache = false;
 				}
 			}
@@ -170,6 +181,29 @@ public class AsyncMcpToolCallbackProvider implements ToolCallbackProvider, Appli
 		}
 
 		return this.cachedToolCallbacks.toArray(new ToolCallback[0]);
+	}
+
+	/**
+	 * Checks if the cache should be refreshed based on invalidation flag or TTL
+	 * expiration.
+	 * @return true if the cache should be refreshed
+	 */
+	private boolean shouldRefreshCache() {
+		if (this.invalidateCache) {
+			return true;
+		}
+		return Instant.now().isAfter(this.cacheExpiresAt);
+	}
+
+	/**
+	 * Computes the cache expiration time based on the configured TTL.
+	 * @return the expiration instant, or {@link Instant#MAX} if TTL is zero or negative
+	 */
+	private Instant computeCacheExpiration() {
+		if (this.cacheTtl.isZero() || this.cacheTtl.isNegative()) {
+			return Instant.MAX;
+		}
+		return Instant.now().plus(this.cacheTtl);
 	}
 
 	/**
@@ -243,6 +277,8 @@ public class AsyncMcpToolCallbackProvider implements ToolCallbackProvider, Appli
 		private ToolContextToMcpMetaConverter toolContextToMcpMetaConverter = ToolContextToMcpMetaConverter
 			.defaultConverter();
 
+		private Duration cacheTtl = Duration.ofSeconds(-1);
+
 		private Builder() {
 		}
 
@@ -301,9 +337,25 @@ public class AsyncMcpToolCallbackProvider implements ToolCallbackProvider, Appli
 			return this;
 		}
 
+		/**
+		 * Sets the cache time-to-live duration.
+		 * <p>
+		 * When set, the cached tools will be refreshed after the specified duration has
+		 * elapsed since the last cache update. This is useful when working with stateless
+		 * MCP servers that don't send tool change notifications.
+		 * @param cacheTtl time-to-live for cached tools, zero or negative for infinite
+		 * caching (default is -1 second)
+		 * @return this builder
+		 */
+		public Builder cacheTtl(Duration cacheTtl) {
+			Assert.notNull(cacheTtl, "Cache TTL must not be null");
+			this.cacheTtl = cacheTtl;
+			return this;
+		}
+
 		public AsyncMcpToolCallbackProvider build() {
 			return new AsyncMcpToolCallbackProvider(this.toolFilter, this.toolNamePrefixGenerator,
-					this.toolContextToMcpMetaConverter, this.mcpClients);
+					this.toolContextToMcpMetaConverter, this.mcpClients, this.cacheTtl);
 		}
 
 	}
