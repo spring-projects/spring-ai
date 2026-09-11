@@ -524,6 +524,9 @@ The reader preserves formatting like inline code, lists, and text styling within
 === PDF Page
 The `PagePdfDocumentReader` uses Apache PdfBox library to parse PDF documents.
 
+NOTE: The constructor parses the whole PDF and the reader holds on to it until it is closed.
+`PagePdfDocumentReader` implements `Closeable`, so use it in a try-with-resources block to release the parsed document once the documents have been read.
+
 ==== Dependencies
 Add the dependency to your project using Maven or Gradle.
 
@@ -556,18 +559,19 @@ dependencies {
 @Component
 public class MyPagePdfDocumentReader {
 
-	List<Document> getDocsFromPdf() {
+	List<Document> getDocsFromPdf() throws IOException {
 
-		PagePdfDocumentReader pdfReader = new PagePdfDocumentReader("classpath:/sample1.pdf",
+		try (PagePdfDocumentReader pdfReader = new PagePdfDocumentReader("classpath:/sample1.pdf",
 				PdfDocumentReaderConfig.builder()
 					.withPageTopMargin(0)
 					.withPageExtractedTextFormatter(ExtractedTextFormatter.builder()
 						.withNumberOfTopTextLinesToDelete(0)
 						.build())
 					.withPagesPerDocument(1)
-					.build());
+					.build())) {
 
-		return pdfReader.read();
+			return pdfReader.read();
+		}
     }
 
 }
@@ -578,6 +582,9 @@ public class MyPagePdfDocumentReader {
 The `ParagraphPdfDocumentReader` uses the PDF catalog (e.g. TOC) information to split the input PDF into text paragraphs and output a single `Document` per paragraph.
 NOTE: Not all PDF documents contain the PDF catalog.
 
+NOTE: The constructor parses the whole PDF and the reader holds on to it until it is closed.
+`ParagraphPdfDocumentReader` implements `Closeable`, so use it in a try-with-resources block to release the parsed document once the documents have been read.
+
 ==== Dependencies
 Add the dependency to your project using Maven or Gradle.
 
@@ -610,18 +617,19 @@ dependencies {
 @Component
 public class MyPagePdfDocumentReader {
 
-	List<Document> getDocsFromPdfWithCatalog() {
+	List<Document> getDocsFromPdfWithCatalog() throws IOException {
 
-        ParagraphPdfDocumentReader pdfReader = new ParagraphPdfDocumentReader("classpath:/sample1.pdf",
+        try (ParagraphPdfDocumentReader pdfReader = new ParagraphPdfDocumentReader("classpath:/sample1.pdf",
                 PdfDocumentReaderConfig.builder()
                     .withPageTopMargin(0)
                     .withPageExtractedTextFormatter(ExtractedTextFormatter.builder()
                         .withNumberOfTopTextLinesToDelete(0)
                         .build())
                     .withPagesPerDocument(1)
-                    .build());
+                    .build())) {
 
-	    return pdfReader.read();
+            return pdfReader.read();
+        }
     }
 }
 ----
