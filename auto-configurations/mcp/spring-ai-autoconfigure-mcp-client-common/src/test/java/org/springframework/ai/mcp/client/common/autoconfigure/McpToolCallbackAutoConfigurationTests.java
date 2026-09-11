@@ -24,6 +24,7 @@ import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
 import org.junit.jupiter.api.Test;
+import reactor.core.publisher.Mono;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.mcp.AsyncMcpToolCallbackProvider;
@@ -39,6 +40,7 @@ import org.springframework.context.annotation.Configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class McpToolCallbackAutoConfigurationTests {
 
@@ -248,6 +250,22 @@ public class McpToolCallbackAutoConfigurationTests {
 		});
 	}
 
+	@Test
+	void failFastPropertyConfiguresSyncToolDiscovery() {
+		this.applicationContext.withUserConfiguration(FailingSyncClientConfig.class)
+			.withPropertyValues("spring.ai.mcp.client.fail-fast=false")
+			.run(context -> assertThat(context.getBean(SyncMcpToolCallbackProvider.class).getToolCallbacks())
+				.isEmpty());
+	}
+
+	@Test
+	void failFastPropertyConfiguresAsyncToolDiscovery() {
+		this.applicationContext.withUserConfiguration(FailingAsyncClientConfig.class)
+			.withPropertyValues("spring.ai.mcp.client.type=ASYNC", "spring.ai.mcp.client.fail-fast=false")
+			.run(context -> assertThat(context.getBean(AsyncMcpToolCallbackProvider.class).getToolCallbacks())
+				.isEmpty());
+	}
+
 	@Configuration
 	static class CustomPrefixGeneratorConfig {
 
@@ -343,6 +361,30 @@ public class McpToolCallbackAutoConfigurationTests {
 		@Bean
 		public McpAsyncClient mcpAsyncClient2() {
 			return mock(McpAsyncClient.class);
+		}
+
+	}
+
+	@Configuration
+	static class FailingSyncClientConfig {
+
+		@Bean
+		List<McpSyncClient> failingSyncClients() {
+			McpSyncClient client = mock(McpSyncClient.class);
+			when(client.listTools()).thenThrow(new IllegalStateException("Connection unavailable"));
+			return List.of(client);
+		}
+
+	}
+
+	@Configuration
+	static class FailingAsyncClientConfig {
+
+		@Bean
+		List<McpAsyncClient> failingAsyncClients() {
+			McpAsyncClient client = mock(McpAsyncClient.class);
+			when(client.listTools()).thenReturn(Mono.error(new IllegalStateException("Connection unavailable")));
+			return List.of(client);
 		}
 
 	}
