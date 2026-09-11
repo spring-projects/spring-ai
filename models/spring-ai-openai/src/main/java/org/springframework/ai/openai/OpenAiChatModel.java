@@ -854,8 +854,12 @@ public final class OpenAiChatModel implements ChatModel {
 
 				var ops = requestOptions.getStreamOptions();
 
-				streamOptionsBuilder.includeObfuscation(ops.includeObfuscation() != null && ops.includeObfuscation());
-				streamOptionsBuilder.includeUsage(ops.includeUsage() != null && ops.includeUsage());
+				Boolean includeObfuscation = ops.includeObfuscation();
+				if (includeObfuscation != null) {
+					streamOptionsBuilder.includeObfuscation(includeObfuscation);
+				}
+				Boolean includeUsage = ops.includeUsage();
+				streamOptionsBuilder.includeUsage(includeUsage != null ? includeUsage : true);
 
 				if (!CollectionUtils.isEmpty(ops.additionalProperties())) {
 					Map<String, com.openai.core.JsonValue> nativeParams = ops.additionalProperties()
