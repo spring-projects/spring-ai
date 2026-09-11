@@ -17,11 +17,18 @@
 package org.springframework.ai.mcp;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import io.modelcontextprotocol.client.McpSyncClient;
+import io.modelcontextprotocol.spec.McpSchema;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
@@ -42,6 +49,8 @@ import org.springframework.util.CollectionUtils;
  */
 public class SyncMcpToolCallbackProvider implements ToolCallbackProvider, ApplicationListener<McpToolsChangedEvent> {
 
+	private static final Log logger = LogFactory.getLog(SyncMcpToolCallbackProvider.class);
+
 	private final List<McpSyncClient> mcpClients;
 
 	private final McpToolFilter toolFilter;
@@ -50,9 +59,17 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider, Applic
 
 	private final ToolContextToMcpMetaConverter toolContextToMcpMetaConverter;
 
+	private final boolean failFast;
+
 	private volatile boolean invalidateCache = true;
 
 	private volatile List<ToolCallback> cachedToolCallbacks = List.of();
+
+	private final Map<Integer, List<ToolCallback>> toolCallbacksByClient = new HashMap<>();
+
+	private final Set<Integer> failedClients = new HashSet<>();
+
+	private volatile boolean retryFailedClients;
 
 	private final Lock lock = new ReentrantLock();
 
@@ -65,7 +82,7 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider, Applic
 	@Deprecated
 	public SyncMcpToolCallbackProvider(McpToolFilter toolFilter, List<McpSyncClient> mcpClients) {
 		this(toolFilter, McpToolNamePrefixGenerator.noPrefix(), mcpClients,
-				ToolContextToMcpMetaConverter.defaultConverter());
+				ToolContextToMcpMetaConverter.defaultConverter(), true);
 	}
 
 	/**
@@ -74,9 +91,11 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider, Applic
 	 * @param toolNamePrefixGenerator generates prefixes for tool names
 	 * @param toolFilter filter for discovered tools
 	 * @param toolContextToMcpMetaConverter converts tool context to MCP metadata
+	 * @param failFast whether tool discovery failures are fatal
 	 */
 	private SyncMcpToolCallbackProvider(McpToolFilter toolFilter, McpToolNamePrefixGenerator toolNamePrefixGenerator,
-			List<McpSyncClient> mcpClients, ToolContextToMcpMetaConverter toolContextToMcpMetaConverter) {
+			List<McpSyncClient> mcpClients, ToolContextToMcpMetaConverter toolContextToMcpMetaConverter,
+			boolean failFast) {
 		Assert.notNull(mcpClients, "MCP clients must not be null");
 		Assert.notNull(toolFilter, "Tool filter must not be null");
 		Assert.notNull(toolNamePrefixGenerator, "Tool name prefix generator must not be null");
@@ -85,6 +104,7 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider, Applic
 		this.toolFilter = toolFilter;
 		this.toolNamePrefixGenerator = toolNamePrefixGenerator;
 		this.toolContextToMcpMetaConverter = toolContextToMcpMetaConverter;
+		this.failFast = failFast;
 	}
 
 	/**
@@ -107,8 +127,8 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider, Applic
 	@Deprecated
 	public SyncMcpToolCallbackProvider(McpToolFilter toolFilter, McpToolNamePrefixGenerator toolNamePrefixGenerator,
 			McpSyncClient... mcpClients) {
-		this(toolFilter, toolNamePrefixGenerator, List.of(mcpClients),
-				ToolContextToMcpMetaConverter.defaultConverter());
+		this(toolFilter, toolNamePrefixGenerator, List.of(mcpClients), ToolContextToMcpMetaConverter.defaultConverter(),
+				true);
 	}
 
 	/**
@@ -124,13 +144,37 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider, Applic
 	@Override
 	public ToolCallback[] getToolCallbacks() {
 
-		if (this.invalidateCache) {
+		if (this.invalidateCache || this.retryFailedClients) {
 			this.lock.lock();
 			try {
-				if (this.invalidateCache) {
-					this.cachedToolCallbacks = this.mcpClients.stream()
-						.flatMap(mcpClient -> mcpClient.listTools()
-							.tools()
+				if (this.invalidateCache || this.retryFailedClients) {
+					boolean refreshAll = this.invalidateCache;
+					Set<Integer> clientsToRetry = new HashSet<>(this.failedClients);
+
+					for (int i = 0; i < this.mcpClients.size(); i++) {
+						if (!refreshAll && !clientsToRetry.contains(i)) {
+							continue;
+						}
+
+						McpSyncClient mcpClient = this.mcpClients.get(i);
+						McpSchema.ListToolsResult listToolsResult;
+						try {
+							listToolsResult = mcpClient.listTools();
+						}
+						catch (RuntimeException ex) {
+							if (this.failFast) {
+								throw ex;
+							}
+							boolean firstFailure = this.failedClients.add(i);
+							this.toolCallbacksByClient.remove(i);
+							if (firstFailure) {
+								logger.warn("Failed to discover tools from MCP client '" + clientName(mcpClient)
+										+ "'. The client will be retried on the next discovery attempt", ex);
+							}
+							continue;
+						}
+
+						List<ToolCallback> clientToolCallbacks = listToolsResult.tools()
 							.stream()
 							.filter(tool -> this.toolFilter.test(connectionInfo(mcpClient), tool))
 							.<ToolCallback>map(tool -> SyncMcpToolCallback.builder()
@@ -139,11 +183,22 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider, Applic
 								.prefixedToolName(
 										this.toolNamePrefixGenerator.prefixedToolName(connectionInfo(mcpClient), tool))
 								.toolContextToMcpMetaConverter(this.toolContextToMcpMetaConverter)
-								.build()))
-						.toList();
+								.build())
+							.toList();
+
+						this.toolCallbacksByClient.put(i, clientToolCallbacks);
+						this.failedClients.remove(i);
+					}
+
+					List<ToolCallback> toolCallbacks = new ArrayList<>();
+					for (int i = 0; i < this.mcpClients.size(); i++) {
+						toolCallbacks.addAll(this.toolCallbacksByClient.getOrDefault(i, List.of()));
+					}
+					this.cachedToolCallbacks = toolCallbacks;
 
 					this.validateToolCallbacks(this.cachedToolCallbacks);
 					this.invalidateCache = false;
+					this.retryFailedClients = !this.failedClients.isEmpty();
 				}
 			}
 			finally {
@@ -172,6 +227,11 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider, Applic
 			.clientInfo(mcpClient.getClientInfo())
 			.initializeResult(mcpClient.getCurrentInitializationResult())
 			.build();
+	}
+
+	private static String clientName(McpSyncClient mcpClient) {
+		var clientInfo = mcpClient.getClientInfo();
+		return clientInfo != null ? clientInfo.name() : "unknown";
 	}
 
 	/**
@@ -224,6 +284,8 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider, Applic
 
 		private ToolContextToMcpMetaConverter toolContextToMcpMetaConverter = ToolContextToMcpMetaConverter
 			.defaultConverter();
+
+		private boolean failFast = true;
 
 		/**
 		 * Sets MCP clients for tool discovery (replaces existing).
@@ -293,6 +355,18 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider, Applic
 		}
 
 		/**
+		 * Configures whether a tool discovery failure from one MCP client should abort
+		 * discovery for all clients. Defaults to {@code true}.
+		 * @param failFast whether to fail immediately on a client error
+		 * @return this builder
+		 * @since 2.0.2
+		 */
+		public Builder failFast(boolean failFast) {
+			this.failFast = failFast;
+			return this;
+		}
+
+		/**
 		 * Builds the provider with configured parameters.
 		 * @return configured {@code SyncMcpToolCallbackProvider}
 		 */
@@ -300,7 +374,7 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider, Applic
 			// Assert.notEmpty(this.mcpClients, "At least one MCP client must be
 			// provided");
 			return new SyncMcpToolCallbackProvider(this.toolFilter, this.toolNamePrefixGenerator, this.mcpClients,
-					this.toolContextToMcpMetaConverter);
+					this.toolContextToMcpMetaConverter, this.failFast);
 		}
 
 	}
