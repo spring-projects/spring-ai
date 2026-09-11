@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.jspecify.annotations.Nullable;
 import software.amazon.awssdk.core.document.Document;
 
 /**
@@ -75,6 +76,39 @@ public final class ConverseApiUtils {
 		}
 		else {
 			throw new IllegalArgumentException("Unsupported value type:" + value.getClass().getSimpleName());
+		}
+	}
+
+	/**
+	 * Convert an AWS SDK {@link Document} back into a plain Java value. This is the
+	 * inverse of {@link #convertObjectToDocument(Object)}: null maps to null, STRING to
+	 * String, NUMBER to {@link BigDecimal}, BOOLEAN to Boolean, LIST to List and MAP to
+	 * Map.
+	 */
+	public static @Nullable Object convertDocumentToObject(Document value) {
+		if (value == null || value.isNull()) {
+			return null;
+		}
+		else if (value.isString()) {
+			return value.asString();
+		}
+		else if (value.isBoolean()) {
+			return value.asBoolean();
+		}
+		else if (value.isNumber()) {
+			return value.asNumber().bigDecimalValue();
+		}
+		else if (value.isList()) {
+			return value.asList().stream().map(ConverseApiUtils::convertDocumentToObject).toList();
+		}
+		else if (value.isMap()) {
+			return value.asMap()
+				.entrySet()
+				.stream()
+				.collect(Collectors.toMap(Map.Entry::getKey, e -> convertDocumentToObject(e.getValue())));
+		}
+		else {
+			throw new IllegalArgumentException("Unsupported document type:" + value.getClass().getSimpleName());
 		}
 	}
 

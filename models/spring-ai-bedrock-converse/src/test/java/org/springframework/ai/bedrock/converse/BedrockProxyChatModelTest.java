@@ -18,6 +18,7 @@ package org.springframework.ai.bedrock.converse;
 
 import java.net.URL;
 import java.util.List;
+import java.util.Map;
 
 import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Test;
@@ -26,31 +27,42 @@ import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+import software.amazon.awssdk.core.document.Document;
 import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeAsyncClient;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
 import software.amazon.awssdk.services.bedrockruntime.model.ContentBlock;
+import software.amazon.awssdk.services.bedrockruntime.model.ConversationRole;
+import software.amazon.awssdk.services.bedrockruntime.model.ConverseOutput;
 import software.amazon.awssdk.services.bedrockruntime.model.ConverseRequest;
+import software.amazon.awssdk.services.bedrockruntime.model.ConverseResponse;
 import software.amazon.awssdk.services.bedrockruntime.model.Message;
+import software.amazon.awssdk.services.bedrockruntime.model.StopReason;
 import software.amazon.awssdk.services.bedrockruntime.model.SystemContentBlock;
+import software.amazon.awssdk.services.bedrockruntime.model.TokenUsage;
 import software.amazon.awssdk.services.bedrockruntime.model.Tool;
+import software.amazon.awssdk.services.bedrockruntime.model.ToolUseBlock;
 
 import org.springframework.ai.bedrock.converse.api.BedrockCacheOptions;
 import org.springframework.ai.bedrock.converse.api.BedrockCacheStrategy;
 import org.springframework.ai.bedrock.converse.api.BedrockCacheTtl;
 import org.springframework.ai.bedrock.converse.api.MediaFetcher;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
+import org.springframework.ai.util.JsonHelper;
 import org.springframework.util.MimeType;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
@@ -413,6 +425,52 @@ class BedrockProxyChatModelTest {
 		assertThat(tools.get(1).cachePoint()).isNotNull();
 		assertThat(tools.get(1).cachePoint().typeAsString()).isEqualTo("default");
 		assertThat(tools.get(1).cachePoint().ttlAsString()).isEqualTo("1h");
+	}
+
+	// -------------------------------------------------------------------------
+	// Tool-use arguments serialization (gh-6962)
+	// -------------------------------------------------------------------------
+
+	@Test
+	void toolUseArgumentsWithControlCharactersRoundTripAsValidJson() {
+		BedrockProxyChatModel model = newModel();
+
+		String multilineLocation = "Paris\nÎle-de-France\tFrance";
+		Document toolInput = Document.fromMap(
+				Map.of("location", Document.fromString(multilineLocation), "unit", Document.fromString("celsius")));
+		ConverseResponse toolUseResponse = converseResponse(ContentBlock.builder()
+			.toolUse(ToolUseBlock.builder().toolUseId("toolu-1").name("getCurrentWeather").input(toolInput).build())
+			.build(), StopReason.TOOL_USE);
+
+		when(this.syncClient.converse(any(ConverseRequest.class))).thenReturn(toolUseResponse);
+
+		Prompt prompt = new Prompt(List.of(new UserMessage("What's the weather?")),
+				BedrockChatOptions.builder().build());
+
+		ChatResponse response = model.call(prompt);
+
+		AssistantMessage.ToolCall toolCall = response.getResults()
+			.stream()
+			.map(org.springframework.ai.chat.model.Generation::getOutput)
+			.filter(output -> !output.getToolCalls().isEmpty())
+			.findFirst()
+			.orElseThrow()
+			.getToolCalls()
+			.get(0);
+		assertThat(toolCall.name()).isEqualTo("getCurrentWeather");
+		Map<String, Object> arguments = new JsonHelper().fromJsonToMap(toolCall.arguments());
+		assertThat(arguments.get("location")).isEqualTo(multilineLocation);
+		assertThat(arguments.get("unit")).isEqualTo("celsius");
+	}
+
+	private ConverseResponse converseResponse(ContentBlock contentBlock, StopReason stopReason) {
+		return ConverseResponse.builder()
+			.output(ConverseOutput.builder()
+				.message(Message.builder().role(ConversationRole.ASSISTANT).content(List.of(contentBlock)).build())
+				.build())
+			.stopReason(stopReason)
+			.usage(TokenUsage.builder().inputTokens(1).outputTokens(1).totalTokens(2).build())
+			.build();
 	}
 
 	// -------------------------------------------------------------------------
