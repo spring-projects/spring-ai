@@ -99,17 +99,20 @@ public class BedrockConverseProxyChatPropertiesTests {
 	public void cacheOptionsTest() {
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.bedrock.converse.chat.cache-options.strategy=SYSTEM_ONLY",
-					"spring.ai.bedrock.converse.chat.cache-options.ttl=ONE_HOUR")
+					"spring.ai.bedrock.converse.chat.cache-options.ttl=ONE_HOUR",
+					"spring.ai.bedrock.converse.chat.cache-options.cache-tool-results=true")
 			.withConfiguration(AutoConfigurations.of(BedrockConverseProxyChatAutoConfiguration.class,
 					ToolCallingAutoConfiguration.class))
 			.run(context -> {
 				var chatProperties = context.getBean(BedrockConverseProxyChatProperties.class);
 				assertThat(chatProperties.getCacheOptions().getStrategy()).isEqualTo(BedrockCacheStrategy.SYSTEM_ONLY);
 				assertThat(chatProperties.getCacheOptions().getTtl()).isEqualTo(BedrockCacheTtl.ONE_HOUR);
+				assertThat(chatProperties.getCacheOptions().isCacheToolResults()).isTrue();
 
 				var options = chatProperties.toOptions();
 				assertThat(options.getCacheOptions().getStrategy()).isEqualTo(BedrockCacheStrategy.SYSTEM_ONLY);
 				assertThat(options.getCacheOptions().getTtl()).isEqualTo(BedrockCacheTtl.ONE_HOUR);
+				assertThat(options.getCacheOptions().isCacheToolResults()).isTrue();
 			});
 	}
 
