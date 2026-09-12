@@ -293,7 +293,17 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 					logger.warn(POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING_START + toolName
 							+ POSSIBLE_LLM_TOOL_NAME_CHANGE_WARNING_END);
 				}
-				throw new IllegalStateException("No ToolCallback found for tool name: " + toolName);
+				ToolDefinition toolDefinition = ToolDefinition.builder()
+					.name(toolName)
+					.description("Tool requested by the chat model")
+					.inputSchema("{}")
+					.build();
+				ToolExecutionException exception = new ToolExecutionException(toolDefinition,
+						new IllegalStateException("No ToolCallback found for tool name: " + toolName));
+				String toolCallResult = this.toolExecutionExceptionProcessor.process(exception);
+				toolResponses.add(new ToolResponseMessage.ToolResponse(toolCall.id(), toolName,
+						toolCallResult != null ? toolCallResult : ""));
+				continue;
 			}
 
 			if (returnDirect == null) {
