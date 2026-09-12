@@ -41,6 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.same;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
@@ -141,6 +142,30 @@ class AbstractAnnotatedMethodBeanPostProcessorTests {
 		Set<Class<? extends java.lang.annotation.Annotation>> capturedAnnotations = annotationsCaptor.getValue();
 		assertEquals(1, capturedAnnotations.size());
 		assertTrue(capturedAnnotations.contains(TestAnnotation.class));
+	}
+
+	@Test
+	void scansUnannotatedClassOnlyOnce() {
+		var processor = spy(this.processor);
+		for (int i = 0; i < 100; i++) {
+			NoAnnotationBean bean = new NoAnnotationBean();
+			assertSame(bean, processor.postProcessAfterInitialization(bean, "prototypeBean"));
+		}
+		verify(processor).scan(NoAnnotationBean.class);
+		verify(this.registry, never()).addMcpAnnotatedBean(any(), any());
+	}
+
+	@Test
+	void cachesAnnotationsWhileRegisteringEachBeanInstance() {
+		var processor = spy(this.processor);
+		AnnotatedBean first = new AnnotatedBean();
+		AnnotatedBean second = new AnnotatedBean();
+		processor.postProcessAfterInitialization(first, "first");
+		processor.postProcessAfterInitialization(second, "second");
+
+		verify(processor).scan(AnnotatedBean.class);
+		verify(this.registry).addMcpAnnotatedBean(same(first), any());
+		verify(this.registry).addMcpAnnotatedBean(same(second), any());
 	}
 
 	@Retention(RetentionPolicy.RUNTIME)
