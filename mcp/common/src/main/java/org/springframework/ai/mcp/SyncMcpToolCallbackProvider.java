@@ -167,11 +167,7 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider, Applic
 	}
 
 	private static McpConnectionInfo connectionInfo(McpSyncClient mcpClient) {
-		return McpConnectionInfo.builder()
-			.clientCapabilities(mcpClient.getClientCapabilities())
-			.clientInfo(mcpClient.getClientInfo())
-			.initializeResult(mcpClient.getCurrentInitializationResult())
-			.build();
+		return McpConnectionInfo.from(mcpClient);
 	}
 
 	/**
