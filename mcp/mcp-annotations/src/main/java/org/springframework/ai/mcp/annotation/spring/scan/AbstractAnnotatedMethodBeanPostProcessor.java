@@ -17,7 +17,9 @@
 package org.springframework.ai.mcp.annotation.spring.scan;
 
 import java.lang.annotation.Annotation;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.springframework.aop.support.AopUtils;
 import org.springframework.beans.BeansException;
@@ -33,6 +35,8 @@ public abstract class AbstractAnnotatedMethodBeanPostProcessor extends Annotated
 
 	private final AbstractMcpAnnotatedBeans registry;
 
+	private final Map<Class<?>, Set<Class<? extends Annotation>>> annotationCache = new ConcurrentHashMap<>();
+
 	public AbstractAnnotatedMethodBeanPostProcessor(AbstractMcpAnnotatedBeans registry,
 			Set<Class<? extends Annotation>> targetAnnotations) {
 		super(targetAnnotations);
@@ -44,7 +48,7 @@ public abstract class AbstractAnnotatedMethodBeanPostProcessor extends Annotated
 	@Override
 	public Object postProcessAfterInitialization(Object bean, String beanName) throws BeansException {
 		Class<?> beanClass = AopUtils.getTargetClass(bean); // Handle proxied beans
-		Set<Class<? extends Annotation>> foundAnnotations = scan(beanClass);
+		Set<Class<? extends Annotation>> foundAnnotations = this.annotationCache.computeIfAbsent(beanClass, this::scan);
 		// Register the bean if it has any of our target annotations
 		if (!foundAnnotations.isEmpty()) {
 			this.registry.addMcpAnnotatedBean(bean, foundAnnotations);
