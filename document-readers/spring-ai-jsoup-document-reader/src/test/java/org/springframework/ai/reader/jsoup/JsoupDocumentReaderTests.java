@@ -96,6 +96,21 @@ class JsoupDocumentReaderTests {
 	}
 
 	@Test
+	void testWithRelativeLinkUrls() {
+		JsoupDocumentReader reader = new JsoupDocumentReader(
+				new DefaultResourceLoader().getResource("classpath:/test-relative-links.html"),
+				JsoupDocumentReaderConfig.builder().includeLinkUrls(true).build());
+		List<Document> documents = reader.get();
+		assertThat(documents).hasSize(1);
+		Document document = documents.get(0);
+
+		List<String> linkUrls = (List<String>) document.getMetadata().get("linkUrls");
+		assertThat(linkUrls).contains("https://spring.io/");
+		assertThat(linkUrls).noneMatch(String::isEmpty);
+		assertThat(linkUrls).anySatisfy(url -> assertThat(url).endsWith("/guide.html"));
+	}
+
+	@Test
 	void testWithMetadataTags() {
 		JsoupDocumentReader reader = new JsoupDocumentReader(
 				new DefaultResourceLoader().getResource("classpath:/test.html"),

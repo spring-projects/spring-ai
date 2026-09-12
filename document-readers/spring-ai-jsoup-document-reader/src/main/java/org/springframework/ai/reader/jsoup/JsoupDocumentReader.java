@@ -69,7 +69,7 @@ public class JsoupDocumentReader implements DocumentReader {
 	@Override
 	public List<Document> get() {
 		try (InputStream inputStream = this.htmlResource.getInputStream()) {
-			org.jsoup.nodes.Document doc = Jsoup.parse(inputStream, this.config.charset, "");
+			org.jsoup.nodes.Document doc = Jsoup.parse(inputStream, this.config.charset, resolveBaseUri());
 
 			List<Document> documents = new ArrayList<>();
 
@@ -105,6 +105,22 @@ public class JsoupDocumentReader implements DocumentReader {
 		}
 		catch (IOException e) {
 			throw new RuntimeException("Failed to read HTML resource: " + this.htmlResource, e);
+		}
+	}
+
+	/**
+	 * Returns the base URI used to resolve relative links against, taken from the
+	 * resource itself. Resources that cannot be resolved to a URL, such as a
+	 * {@link org.springframework.core.io.ByteArrayResource}, have no base to resolve
+	 * against and keep an empty one.
+	 */
+	private String resolveBaseUri() {
+		try {
+			return this.htmlResource.getURL().toString();
+		}
+		catch (IOException ignored) {
+			// A resource without a URL has no base to resolve against.
+			return "";
 		}
 	}
 
