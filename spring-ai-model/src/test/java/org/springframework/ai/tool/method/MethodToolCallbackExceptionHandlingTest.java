@@ -49,7 +49,7 @@ public class MethodToolCallbackExceptionHandlingTest {
 		String result = callback.call(toolInput);
 
 		// Verify the result
-		assertThat(result).isEqualTo("3 strings processed: [one, two, three]");
+		assertThat(result).isEqualTo("\"3 strings processed: [one, two, three]\"");
 
 		// Verify
 		String ivalidToolInput = """
