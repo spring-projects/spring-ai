@@ -309,7 +309,26 @@ class DeepSeekChatModelIT {
 		assertThat(deepSeekAssistantMessage.getText()).isNotEmpty();
 	}
 
+	@Test
+	void suffixCompletionTest() {
+		// DeepSeek FIM (fill-in-the-middle) completion API usage:
+		// prompt="def fib(a):"
+		// suffix=" return fib(a-1) + fib(a-2)"
+		String promptContent = "def fib(a):";
+		String suffix = "    return fib(a-1) + fib(a-2)";
+		Prompt prompt = Prompt.builder()
+			.messages(UserMessage.builder().text(promptContent).build())
+			.chatOptions(DeepSeekChatOptions.builder().echo(true).suffix(suffix).maxTokens(128).build())
+			.build();
+		ChatResponse response = this.chatModel.call(prompt);
+
+		String output = response.getResult().getOutput().getText();
+		assertThat(output).isNotEmpty();
+		assertThat(output).contains(promptContent);
+	}
+
 	record ActorsFilmsRecord(String actor, List<String> movies) {
+
 	}
 
 }

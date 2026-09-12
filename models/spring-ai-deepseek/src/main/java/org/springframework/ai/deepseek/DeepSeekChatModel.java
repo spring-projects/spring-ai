@@ -437,6 +437,12 @@ public class DeepSeekChatModel implements ChatModel {
 		if (options.getReasoningEffort() != null) {
 			requestBuilder.reasoningEffort(options.getReasoningEffort());
 		}
+		if (options.getEcho() != null) {
+			requestBuilder.echo(options.getEcho());
+		}
+		if (options.getSuffix() != null) {
+			requestBuilder.suffix(options.getSuffix());
+		}
 
 		// Add the tool definitions to the request's tools parameter.
 		List<ToolDefinition> toolDefinitions = this.toolCallingManager.resolveToolDefinitions(options);

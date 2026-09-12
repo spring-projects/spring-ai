@@ -119,7 +119,9 @@ public class DeepSeekPropertiesTests {
 				"spring.ai.deepseek.chat.top-p=0.56",
 				"spring.ai.deepseek.chat.user=userXYZ",
 				"spring.ai.deepseek.chat.thinking.type=disabled",
-				"spring.ai.deepseek.chat.reasoning-effort=max"
+				"spring.ai.deepseek.chat.reasoning-effort=max",
+				"spring.ai.deepseek.chat.echo=true",
+				"spring.ai.deepseek.chat.suffix=return x"
 				)
 			// @formatter:on
 			.withConfiguration(AutoConfigurations.of(DeepSeekChatAutoConfiguration.class,
@@ -141,6 +143,13 @@ public class DeepSeekPropertiesTests {
 				assertThat(chatProperties.getTopP()).isEqualTo(0.56);
 				assertThat(chatProperties.getThinking()).isEqualTo(Thinking.DISABLED);
 				assertThat(chatProperties.getReasoningEffort()).isEqualTo(ReasoningEffort.MAX);
+
+				assertThat(chatProperties.getEcho()).isTrue();
+				assertThat(chatProperties.getSuffix()).isEqualTo("return x");
+
+				var chatOptions = chatProperties.toOptions();
+				assertThat(chatOptions.getEcho()).isTrue();
+				assertThat(chatOptions.getSuffix()).isEqualTo("return x");
 			});
 	}
 
