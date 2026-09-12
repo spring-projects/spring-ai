@@ -189,6 +189,8 @@ Spring AI supports multiple relational databases via a dialect abstraction. The 
 - MySQL / MariaDB
 - SQL Server
 - HSQLDB
+- H2
+- SQLite
 - Oracle Database
 
 The correct dialect can be auto-detected from the JDBC URL when using `JdbcChatMemoryRepositoryDialect.from(DataSource)`. You can extend support for other databases by implementing the `JdbcChatMemoryRepositoryDialect` interface.
@@ -237,6 +239,90 @@ ChatMemoryRepository chatMemoryRepository = JdbcChatMemoryRepository.builder()
     .build();
 ----
 
+
+=== H2
+
+H2 stores chat memory through the `JdbcChatMemoryRepository` using the `H2ChatMemoryRepositoryDialect`.
+Because H2 is an embedded database that requires no external server, it is a convenient choice for development, testing, and small single-node deployments.
+
+All the `JdbcChatMemoryRepository` behavior described above applies, including `sequence_id` ordering, the `timestamp` metadata, and the lack of support for tool call messages.
+
+To use H2, add the JDBC chat memory repository starter and the H2 dependency to your project.
+The starter brings in `spring-boot-starter-jdbc` but does not include a JDBC driver, so H2 has to be declared explicitly:
+
+[tabs]
+======
+Maven::
++
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-model-chat-memory-repository-jdbc</artifactId>
+</dependency>
+
+<dependency>
+    <groupId>com.h2database</groupId>
+    <artifactId>h2</artifactId>
+    <scope>runtime</scope>
+</dependency>
+----
+
+Gradle::
++
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-starter-model-chat-memory-repository-jdbc'
+    runtimeOnly 'com.h2database:h2'
+}
+----
+======
+
+With H2 on the classpath, Spring Boot auto-configures an in-memory `DataSource` and Spring AI detects the H2 dialect from it, so the repository is ready to use directly in your application:
+
+[source,java]
+----
+@Autowired
+JdbcChatMemoryRepository chatMemoryRepository;
+
+ChatMemory chatMemory = MessageWindowChatMemory.builder()
+    .chatMemoryRepository(chatMemoryRepository)
+    .maxMessages(10)
+    .build();
+----
+
+If you'd rather create the `JdbcChatMemoryRepository` manually, pass the H2 dialect to the builder:
+
+[source,java]
+----
+ChatMemoryRepository chatMemoryRepository = JdbcChatMemoryRepository.builder()
+    .jdbcTemplate(jdbcTemplate)
+    .dialect(new H2ChatMemoryRepositoryDialect())
+    .build();
+
+ChatMemory chatMemory = MessageWindowChatMemory.builder()
+    .chatMemoryRepository(chatMemoryRepository)
+    .maxMessages(10)
+    .build();
+----
+
+To use a file-based or server-mode H2 database instead of the default in-memory one, configure the standard Spring Boot datasource properties:
+
+[source,properties]
+----
+spring.datasource.url=jdbc:h2:file:./data/chatmemory
+spring.datasource.username=sa
+spring.datasource.password=
+----
+
+==== Schema Initialization
+
+The auto-configuration will automatically create the `SPRING_AI_CHAT_MEMORY` table on startup from the `schema-h2.sql` script.
+Since H2 is an embedded database, this happens without any additional configuration, because `spring.ai.chat.memory.repository.jdbc.initialize-schema` defaults to `embedded`.
+
+NOTE: An in-memory H2 database is discarded when the application stops, so conversations do not survive a restart.
+Use a file-based or server-mode H2 URL if the chat memory needs to outlive the application.
 
 === CassandraChatMemoryRepository
 
