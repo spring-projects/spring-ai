@@ -20,6 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -37,16 +38,27 @@ import org.springframework.messaging.support.MessageBuilder;
  */
 public class MapOutputConverter extends AbstractMessageOutputConverter<Map<String, Object>> {
 
+	private final ResponseTextCleaner textCleaner;
+
 	public MapOutputConverter() {
+		this(null);
+	}
+
+	/**
+	 * @param textCleaner cleaner applied to the response before parsing, or {@code null}
+	 * to use {@link ResponseTextCleaner#defaultCleaner()}
+	 * @since 1.1.0
+	 */
+	public MapOutputConverter(@Nullable ResponseTextCleaner textCleaner) {
 		super(new JacksonJsonMessageConverter(
 				JsonMapper.builder().disable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)));
+		this.textCleaner = (textCleaner != null) ? textCleaner : ResponseTextCleaner.defaultCleaner();
 	}
 
 	@Override
 	public Map<String, Object> convert(String text) {
-		if (text.startsWith("```json") && text.endsWith("```")) {
-			text = text.substring(7, text.length() - 3);
-		}
+		String cleaned = this.textCleaner.clean(text);
+		text = (cleaned != null) ? cleaned : text;
 
 		Message<?> message = MessageBuilder.withPayload(text.getBytes(StandardCharsets.UTF_8)).build();
 		Map result = (Map) this.getMessageConverter().fromMessage(message, HashMap.class);
