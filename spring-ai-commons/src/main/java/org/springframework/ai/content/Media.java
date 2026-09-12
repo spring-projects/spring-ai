@@ -20,7 +20,12 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.databind.annotation.JsonSerialize;
+import tools.jackson.databind.ser.std.ToStringSerializer;
 
 import org.springframework.core.io.Resource;
 import org.springframework.util.Assert;
@@ -160,6 +165,12 @@ public class Media {
 		this.data = data;
 	}
 
+	@JsonCreator
+	private Media(@JsonProperty("mimeType") String mimeType, @JsonProperty("data") String data,
+			@JsonProperty("id") @Nullable String id, @JsonProperty("name") @Nullable String name) {
+		this(MimeType.valueOf(mimeType), data, id, name);
+	}
+
 	private static String generateDefaultName(MimeType mimeType) {
 		return NAME_PREFIX + mimeType.getSubtype() + "-" + java.util.UUID.randomUUID();
 	}
@@ -168,6 +179,7 @@ public class Media {
 	 * Get the media MIME type
 	 * @return the media MIME type
 	 */
+	@JsonSerialize(using = ToStringSerializer.class)
 	public MimeType getMimeType() {
 		return this.mimeType;
 	}
@@ -185,6 +197,7 @@ public class Media {
 	 * Get the media data as a byte array
 	 * @return the media data as a byte array
 	 */
+	@JsonIgnore
 	public byte[] getDataAsByteArray() {
 		if (this.data instanceof byte[]) {
 			return (byte[]) this.data;

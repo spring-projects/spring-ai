@@ -393,6 +393,26 @@ public class DocumentTests {
 		assertThat(deserialized).isEqualTo(original);
 	}
 
+	@Test
+	void roundTripUriBackedMediaDocument() throws Exception {
+		JsonMapper mapper = JacksonUtils.getDefaultJsonMapper();
+		Media media = Media.builder()
+			.mimeType(MimeTypeUtils.IMAGE_PNG)
+			// Spring's official GitHub account avatar.
+			.data(URI.create("https://avatars.githubusercontent.com/u/317776"))
+			.name("image")
+			.build();
+		Document document = Document.builder().media(media).build();
+
+		String json = mapper.writeValueAsString(document);
+		Document restored = mapper.readValue(json, Document.class);
+
+		assertThat(json).contains("\"mimeType\":\"image/png\"").doesNotContain("dataAsByteArray");
+		assertThat(restored.getMedia()).returns(media.getMimeType(), Media::getMimeType)
+			.returns(media.getData(), Media::getData)
+			.returns(media.getName(), Media::getName); // gh-6834
+	}
+
 	/**
 	 * Round-trip with all metadata value types that are valid for vector stores (string,
 	 * int, float, boolean).
