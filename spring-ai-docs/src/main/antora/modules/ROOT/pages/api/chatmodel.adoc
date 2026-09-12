@@ -211,6 +211,192 @@ public class Generation implements ModelResult<AssistantMessage> {
 }
 ----
 
+[[custom-chat-model]]
+== Implementing a Custom Chat Model
+
+Implement `ChatModel` to integrate a provider that does not have a Spring AI implementation.
+The implementation translates `Prompt` messages and options into the provider's request format and translates its response into `ChatResponse`.
+Applications can then use the implementation through `ChatClient`, just like the built-in models.
+
+Before writing an implementation, check whether an existing model supports the provider's API through a custom base URL or provider-specific options.
+For example, see the xref:api/chat/openai-chat.adoc[OpenAI Chat] documentation for OpenAI-compatible services.
+
+=== Mapping Requests and Responses
+
+The following example uses `RestClient` to call an illustrative text generation service.
+It requires `spring-ai-client-chat` for `ChatClient`, `spring-web` for `RestClient`, and a JSON message converter on the classpath.
+It assumes that `POST /generate` accepts `model`, `temperature`, and an ordered `messages` array of objects with `role` and `content` fields, and returns a JSON object with a `text` field.
+These fields describe the example service's API, not an API defined by Spring AI.
+Adapt the request and response records to your provider's API, or inject its SDK client instead.
+
+The example supports text messages with `system`, `user`, and `assistant` roles and maps only the `model` and `temperature` options.
+It rejects media and tool messages because this service does not support them.
+
+[[custom-chat-model-implementation]]
+[source,java]
+----
+package example;
+
+import java.util.List;
+
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.MessageType;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.content.MediaContent;
+import org.springframework.http.MediaType;
+import org.springframework.util.Assert;
+import org.springframework.web.client.RestClient;
+
+public class CustomChatModel implements ChatModel {
+
+	private final RestClient restClient;
+
+	private final ChatOptions options;
+
+	public CustomChatModel(RestClient restClient, ChatOptions options) {
+		Assert.notNull(restClient, "restClient cannot be null");
+		Assert.notNull(options, "options cannot be null");
+		this.restClient = restClient;
+		this.options = options.mutate().build();
+	}
+
+	@Override
+	public ChatOptions getOptions() {
+		return this.options;
+	}
+
+	@Override
+	public ChatResponse call(Prompt prompt) {
+		ChatOptions requestOptions = prompt.getOptions() != null ? prompt.getOptions() : this.options;
+		Assert.hasText(requestOptions.getModel(), "model must be specified");
+		List<TextMessage> messages = prompt.getInstructions().stream().map(this::toTextMessage).toList();
+		TextRequest request = new TextRequest(requestOptions.getModel(), requestOptions.getTemperature(), messages);
+		TextResponse response = this.restClient.post()
+			.uri("/generate")
+			.contentType(MediaType.APPLICATION_JSON)
+			.body(request)
+			.retrieve()
+			.body(TextResponse.class);
+		Assert.state(response != null && response.text() != null, "The provider returned no text response");
+		return new ChatResponse(List.of(new Generation(new AssistantMessage(response.text()))));
+	}
+
+	private TextMessage toTextMessage(Message message) {
+		Assert.isTrue(message.getMessageType() != MessageType.TOOL, "Tool responses are not supported");
+		if (message instanceof AssistantMessage assistant) {
+			Assert.isTrue(!assistant.hasToolCalls(), "Tool calls are not supported");
+		}
+		if (message instanceof MediaContent mediaContent) {
+			Assert.isTrue(mediaContent.getMedia().isEmpty(), "Media is not supported");
+		}
+		return new TextMessage(message.getMessageType().getValue(), message.getText());
+	}
+
+	public record TextMessage(String role, String content) {
+	}
+
+	public record TextRequest(String model, Double temperature, List<TextMessage> messages) {
+	}
+
+	public record TextResponse(String text) {
+	}
+
+}
+----
+
+Keep the complete ordered message list when adapting a request, including system instructions and earlier conversation turns.
+Using only the last user message would discard context supplied by the application or its advisors.
+Map provider response metadata, such as usage and finish reasons, when the provider supplies it.
+This example service returns only text, so the example does not populate that metadata.
+
+Configure the injected client with the provider's base URL, authentication, and timeouts.
+`RestClient.retrieve()` raises an exception for HTTP error responses by default; the example lets those errors propagate to the caller.
+If your provider requires different error handling or retries, configure them at that integration boundary.
+
+=== Registering and Using the Model
+
+The model can be constructed directly without a Spring application context.
+In a Spring application, register it as a bean and inject it into the code that builds your `ChatClient`.
+For example, with a `RestClient` bean already configured for your provider:
+
+[[custom-chat-model-configuration]]
+[source,java]
+----
+package example;
+
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.client.RestClient;
+
+@Configuration(proxyBeanMethods = false)
+public class CustomChatConfiguration {
+
+	@Bean
+	ChatModel customChatModel(RestClient providerRestClient) {
+		return new CustomChatModel(providerRestClient,
+				ChatOptions.builder().model("text-model").temperature(0.7).build());
+	}
+
+	@Bean
+	ChatClient chatClient(ChatModel customChatModel) {
+		return ChatClient.builder(customChatModel).build();
+	}
+
+}
+----
+
+If you register multiple models or HTTP clients, use Spring qualifiers to select the intended bean.
+
+=== Handling Options
+
+Return the model's default options from `getOptions()` so that `ChatClient` can derive request options from them.
+With Spring AI 2.x, `ChatClient` combines request-specific option builders with the defaults before calling the model:
+
+[source,java]
+----
+String answer = chatClient.prompt()
+	.user("Explain dependency injection")
+	.options(ChatOptions.builder().temperature(0.2))
+	.call()
+	.content();
+----
+
+In this example, the request uses `text-model` with a temperature of `0.2`, while later requests still use the default temperature of `0.7`.
+
+When calling `ChatModel` directly, use the model defaults only if `Prompt.getOptions()` is `null`.
+A prompt with non-null options supplies the complete request options; the model does not merge them with its defaults.
+To change only selected values on a direct call, derive a complete options object explicitly:
+
+[source,java]
+----
+ChatOptions requestOptions = customChatModel.getOptions().mutate().temperature(0.2).build();
+ChatResponse response = customChatModel.call(new Prompt("Explain dependency injection", requestOptions));
+----
+
+For more detail, see xref:api/chatclient.adoc[ChatClient] and its options management documentation.
+If you introduce provider-specific options, preserve them through the options' `mutate()` and builder operations so they remain available on subsequent requests.
+
+=== Supporting Additional Capabilities
+
+`ChatModel` already extends `StreamingChatModel`.
+Its default `stream(Prompt)` implementation throws `UnsupportedOperationException`, so a model that supports streaming must override it.
+Adapt the provider's stream into a `Flux<ChatResponse>` and apply the same message and option handling as for `call(Prompt)`.
+Emit incremental response content, and preserve error and cancellation signals from the provider.
+Wrapping a blocking `call(Prompt)` in `Flux.just(...)` does not provide incremental streaming.
+
+Tool calling also requires provider-specific request and response mapping.
+Extending `DefaultToolCallingChatOptions` alone does not implement that capability.
+See xref:api/tools.adoc[Tool Calling] for tool definitions, tool execution, and the responsibilities of a model integration.
+For observations in a provider integration, see xref:observability/index.adoc[Observability].
+
 == Available Implementations
 
 This diagram illustrates the unified interfaces, `ChatModel` and `StreamingChatModel`, are used for interacting with various AI chat models from different providers, allowing easy integration and switching between different AI services while maintaining a consistent API for the client application.
