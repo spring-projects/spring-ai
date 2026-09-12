@@ -492,8 +492,31 @@ public final class OpenAiChatModel implements ChatModel {
 
 	private DefaultUsage getDefaultUsage(CompletionUsage usage) {
 		Long cacheRead = usage.promptTokensDetails().flatMap(details -> details.cachedTokens()).orElse(null);
-		return new DefaultUsage(Math.toIntExact(usage.promptTokens()), Math.toIntExact(usage.completionTokens()),
-				Math.toIntExact(usage.totalTokens()), usage, cacheRead, null);
+		return new DefaultUsage(toIntTokenCount("promptTokens", usage.promptTokens()),
+				toIntTokenCount("completionTokens", usage.completionTokens()),
+				toIntTokenCount("totalTokens", usage.totalTokens()), usage, cacheRead, null);
+	}
+
+	/**
+	 * Narrows a server-supplied token count to an {@code int}. Usage counts come from the
+	 * deserialised upstream response, so an out-of-range value means the response is not
+	 * trustworthy; fail clearly with the offending field and value rather than either
+	 * silently truncating the count (which would corrupt downstream cost/usage tracking
+	 * with a plausible-looking but wrong number) or letting a bare
+	 * {@link ArithmeticException} propagate.
+	 * @param field the name of the usage field being converted, for diagnostics
+	 * @param value the upstream token count
+	 * @return the value narrowed to an {@code int}
+	 * @throws IllegalStateException if {@code value} is outside the {@code int} range
+	 */
+	private static int toIntTokenCount(String field, long value) {
+		try {
+			return Math.toIntExact(value);
+		}
+		catch (ArithmeticException ex) {
+			throw new IllegalStateException(
+					"OpenAI-compatible provider returned an out-of-range " + field + " value: " + value, ex);
+		}
 	}
 
 	private void verifyPromptChatOptions(Prompt prompt) {
