@@ -31,6 +31,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.execution.DefaultToolCallResultConverter;
+import org.springframework.ai.tool.execution.TextToolCallResultConverter;
 import org.springframework.ai.tool.execution.ToolCallResultConverter;
 import org.springframework.core.annotation.AliasFor;
 
@@ -97,6 +98,16 @@ class MethodToolCallbackProviderTests {
 			.build();
 		assertThat(provider.getToolCallbacks()).hasSize(1);
 		assertThat(provider.getToolCallbacks()[0].getToolDefinition().name()).isEqualTo("objectTool");
+	}
+
+	@Test
+	void whenToolObjectHasTextResultConverterThenReturnText() {
+		MethodToolCallbackProvider provider = MethodToolCallbackProvider.builder()
+			.toolObjects(new TextResultConverterToolObject())
+			.build();
+
+		assertThat(provider.getToolCallbacks()).hasSize(1);
+		assertThat(provider.getToolCallbacks()[0].call("{}")).isEqualTo("Plain text result");
 	}
 
 	@Test
@@ -210,6 +221,15 @@ class MethodToolCallbackProviderTests {
 		@Tool
 		public Object objectTool() {
 			return "Object tool result";
+		}
+
+	}
+
+	static class TextResultConverterToolObject {
+
+		@Tool(resultConverter = TextToolCallResultConverter.class)
+		public String textTool() {
+			return "Plain text result";
 		}
 
 	}

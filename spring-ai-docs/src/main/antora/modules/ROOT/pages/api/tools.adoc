@@ -780,7 +780,17 @@ public interface ToolCallResultConverter {
 }
 ----
 
-The default `DefaultToolCallResultConverter` uses Jackson to serialize the result. Configure a custom converter on the `@Tool` annotation (`resultConverter`) or via `ToolMetadata`.
+The default `DefaultToolCallResultConverter` uses Jackson to serialize the result.
+Configure a custom converter on the `@Tool` annotation (`resultConverter`).
+For tools that return plain text, use `TextToolCallResultConverter` to return `String` values unchanged while keeping the default conversion for non-String results:
+
+[source,java]
+----
+@Tool(resultConverter = TextToolCallResultConverter.class)
+String readLog() {
+    return "Log uploaded. Access it at /tmp/log.txt";
+}
+----
 
 [[method-tool-limitations]]
 === Method Tool Limitations
