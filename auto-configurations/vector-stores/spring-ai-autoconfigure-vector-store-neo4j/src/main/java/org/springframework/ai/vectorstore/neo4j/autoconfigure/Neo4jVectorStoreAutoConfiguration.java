@@ -57,7 +57,7 @@ public class Neo4jVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public Neo4jVectorStore vectorStore(Driver driver, EmbeddingModel embeddingModel,
+	public Neo4jVectorStore neo4jVectorStore(Driver driver, EmbeddingModel embeddingModel,
 			Neo4jVectorStoreProperties properties, ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
 			BatchingStrategy batchingStrategy) {
