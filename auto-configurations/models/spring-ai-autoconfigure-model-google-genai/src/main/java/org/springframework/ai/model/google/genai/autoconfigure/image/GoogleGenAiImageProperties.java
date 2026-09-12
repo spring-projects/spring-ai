@@ -46,6 +46,8 @@ public class GoogleGenAiImageProperties {
 
 	private GoogleGenAiImageOptions.@Nullable PersonGeneration personGeneration;
 
+	private GoogleGenAiImageOptions.@Nullable ProminentPeople prominentPeople;
+
 	private @Nullable String outputMimeType;
 
 	private @Nullable Integer outputCompressionQuality;
@@ -108,6 +110,14 @@ public class GoogleGenAiImageProperties {
 
 	public void setPersonGeneration(GoogleGenAiImageOptions.@Nullable PersonGeneration personGeneration) {
 		this.personGeneration = personGeneration;
+	}
+
+	public GoogleGenAiImageOptions.@Nullable ProminentPeople getProminentPeople() {
+		return this.prominentPeople;
+	}
+
+	public void setProminentPeople(GoogleGenAiImageOptions.@Nullable ProminentPeople prominentPeople) {
+		this.prominentPeople = prominentPeople;
 	}
 
 	public @Nullable String getOutputMimeType() {
@@ -182,6 +192,7 @@ public class GoogleGenAiImageProperties {
 			.seed(this.seed)
 			.safetyFilterLevel(this.safetyFilterLevel)
 			.personGeneration(this.personGeneration)
+			.prominentPeople(this.prominentPeople)
 			.outputMimeType(this.outputMimeType)
 			.outputCompressionQuality(this.outputCompressionQuality)
 			.labels(this.labels)

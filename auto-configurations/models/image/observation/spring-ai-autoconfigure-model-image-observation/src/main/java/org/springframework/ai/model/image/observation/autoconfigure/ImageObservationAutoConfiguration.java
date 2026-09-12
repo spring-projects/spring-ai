@@ -16,14 +16,17 @@
 
 package org.springframework.ai.model.image.observation.autoconfigure;
 
+import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.tracing.Tracer;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.springframework.ai.image.ImageModel;
+import org.springframework.ai.image.observation.ImageModelMeterObservationHandler;
 import org.springframework.ai.image.observation.ImageModelObservationContext;
 import org.springframework.ai.image.observation.ImageModelPromptContentObservationHandler;
 import org.springframework.ai.observation.TracingAwareLoggingObservationHandler;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -41,7 +44,8 @@ import org.springframework.context.annotation.Configuration;
  * @author Jonatan Ivanov
  * @since 1.0.0
  */
-@AutoConfiguration
+@AutoConfiguration(
+		afterName = "org.springframework.boot.micrometer.metrics.autoconfigure.CompositeMeterRegistryAutoConfiguration")
 @ConditionalOnClass(ImageModel.class)
 @EnableConfigurationProperties(ImageObservationProperties.class)
 public class ImageObservationAutoConfiguration {
@@ -51,6 +55,13 @@ public class ImageObservationAutoConfiguration {
 	private static void logPromptContentWarning() {
 		logger.warn(
 				"You have enabled logging out the image prompt content with the risk of exposing sensitive or private information. Please, be careful!");
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	@ConditionalOnBean(MeterRegistry.class)
+	ImageModelMeterObservationHandler imageModelMeterObservationHandler(ObjectProvider<MeterRegistry> meterRegistry) {
+		return new ImageModelMeterObservationHandler(meterRegistry.getObject());
 	}
 
 	@Configuration(proxyBeanMethods = false)
