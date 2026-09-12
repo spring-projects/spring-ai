@@ -128,6 +128,10 @@ public class BedrockKnowledgeBaseVectorStoreAutoConfiguration {
 			builder.rerankingModelArn(properties.getRerankingModelArn());
 		}
 
+		if (properties.getNumberOfRerankedResults() != null) {
+			builder.numberOfRerankedResults(properties.getNumberOfRerankedResults());
+		}
+
 		return builder.build();
 	}
 

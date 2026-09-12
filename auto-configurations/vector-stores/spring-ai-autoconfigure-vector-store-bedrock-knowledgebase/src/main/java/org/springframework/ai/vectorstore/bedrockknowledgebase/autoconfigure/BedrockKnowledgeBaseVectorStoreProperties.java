@@ -102,6 +102,13 @@ public class BedrockKnowledgeBaseVectorStoreProperties {
 	 */
 	private @Nullable String rerankingModelArn;
 
+	/**
+	 * The number of results to return after reranking. Only takes effect when
+	 * reranking-model-arn is set. Default: null (uses the service default)
+	 */
+	@Min(1)
+	private @Nullable Integer numberOfRerankedResults;
+
 	public @Nullable String getKnowledgeBaseId() {
 		return this.knowledgeBaseId;
 	}
@@ -148,6 +155,14 @@ public class BedrockKnowledgeBaseVectorStoreProperties {
 
 	public void setRerankingModelArn(@Nullable String rerankingModelArn) {
 		this.rerankingModelArn = rerankingModelArn;
+	}
+
+	public @Nullable Integer getNumberOfRerankedResults() {
+		return this.numberOfRerankedResults;
+	}
+
+	public void setNumberOfRerankedResults(@Nullable Integer numberOfRerankedResults) {
+		this.numberOfRerankedResults = numberOfRerankedResults;
 	}
 
 }
