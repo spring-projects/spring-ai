@@ -519,6 +519,9 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 	}
 
 	protected List<Generation> responseCandidateToGeneration(Candidate candidate) {
+		if (candidate == null) {
+			return List.of();
+		}
 
 		// TODO - The candidateIndex (e.g. choice must be assigned to the generation).
 		int candidateIndex = candidate.index().orElse(0);
@@ -527,6 +530,19 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		Map<String, Object> messageMetadata = new HashMap<>();
 		messageMetadata.put("candidateIndex", candidateIndex);
 		messageMetadata.put("finishReason", candidateFinishReason);
+
+		// Safe Guard: Handle candidate responses with empty content (e.g., safety block
+		// or citation grounding chunks)
+		if (candidate.content().isEmpty()) {
+			AssistantMessage assistantMessage = AssistantMessage.builder()
+				.content("")
+				.properties(messageMetadata)
+				.build();
+			ChatGenerationMetadata chatGenerationMetadata = ChatGenerationMetadata.builder()
+				.finishReason(candidateFinishReason.toString())
+				.build();
+			return List.of(new Generation(assistantMessage, chatGenerationMetadata));
+		}
 
 		// Extract thought signatures from response parts if present
 		if (candidate.content().isPresent() && candidate.content().get().parts().isPresent()) {
