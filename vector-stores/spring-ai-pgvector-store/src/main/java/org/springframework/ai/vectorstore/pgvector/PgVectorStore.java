@@ -635,7 +635,13 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 			Float distance = rs.getFloat(COLUMN_DISTANCE);
 
 			Map<String, Object> metadata = toMap(pgMetadata);
-			metadata.put(DocumentMetadata.DISTANCE.value(), distance);
+			if (metadata.containsKey(DocumentMetadata.DISTANCE.value())) {
+				logger.warn("Skipping computed similarity distance for document " + id
+						+ " because its metadata already contains a '" + DocumentMetadata.DISTANCE.value() + "' key");
+			}
+			else {
+				metadata.put(DocumentMetadata.DISTANCE.value(), distance);
+			}
 
 			// @formatter:off
 			return Document.builder()
