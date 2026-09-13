@@ -26,8 +26,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.util.Assert;
-import org.springframework.util.StringUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 
@@ -35,6 +33,7 @@ import org.springframework.web.client.RestClient;
  * OCR {@link AutoConfiguration Auto-configuration} for Mistral AI OCR.
  *
  * @author Alexandros Pappas
+ * @author Nicolas Krier
  * @since 1.1.0
  */
 @AutoConfiguration
@@ -45,20 +44,11 @@ public class MistralAiOcrAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public MistralOcrApi mistralOcrApi(MistralAiCommonProperties commonProperties, MistralAiOcrProperties ocrProperties,
+	MistralOcrApi mistralOcrApi(MistralAiCommonProperties commonProperties, MistralAiOcrProperties ocrProperties,
 			ObjectProvider<RestClient.Builder> restClientBuilderProvider,
 			ObjectProvider<ResponseErrorHandler> responseErrorHandler) {
-
-		var apiKey = ocrProperties.getApiKey();
-		var baseUrl = ocrProperties.getBaseUrl();
-
-		var resolvedApiKey = StringUtils.hasText(apiKey) ? apiKey : commonProperties.getApiKey();
-		var resolvedBaseUrl = StringUtils.hasText(baseUrl) ? baseUrl : commonProperties.getBaseUrl();
-
-		Assert.hasText(resolvedApiKey, "Mistral API key must be set");
-		Assert.hasText(resolvedBaseUrl, "Mistral base URL must be set");
-
-		return new MistralOcrApi(resolvedBaseUrl, resolvedApiKey,
+		return new MistralOcrApi(ocrProperties.getBaseUrlOrDefaultFrom(commonProperties),
+				ocrProperties.getApiKeyOrDefaultFrom(commonProperties),
 				restClientBuilderProvider.getIfAvailable(RestClient::builder),
 				responseErrorHandler.getIfAvailable(() -> RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER));
 	}
