@@ -440,12 +440,14 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 				return null;
 			}
 
-			// Thinking chunk — emit with thinking metadata
+			// Thinking chunk — emit with thinking metadata. The text is exposed in
+			// metadata, not content, so it is not aggregated into the message text.
 			if (delta.isThinking()) {
 				String thinkingText = delta.asThinking().thinking();
 				streamingState.appendThinking(thinkingText);
 				Map<String, Object> thinkingProperties = new HashMap<>();
 				thinkingProperties.put("thinking", Boolean.TRUE);
+				thinkingProperties.put("thinkingText", thinkingText);
 				AssistantMessage assistantMessage = AssistantMessage.builder().properties(thinkingProperties).build();
 				return new ChatResponse(List.of(new Generation(assistantMessage)));
 			}
