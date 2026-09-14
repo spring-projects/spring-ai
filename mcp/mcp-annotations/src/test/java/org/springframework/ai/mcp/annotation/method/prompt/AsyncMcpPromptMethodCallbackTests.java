@@ -395,8 +395,9 @@ public class AsyncMcpPromptMethodCallbackTests {
 
 		// The new error handling should throw McpError instead of custom exceptions
 		StepVerifier.create(resultMono)
-			.expectErrorMatches(throwable -> throwable instanceof McpError
-					&& throwable.getMessage().contains("Error invoking prompt method"))
+			.expectErrorMatches(throwable -> throwable instanceof McpError mcpError
+					&& mcpError.getMessage().contains("Error invoking prompt method")
+					&& mcpError.getJsonRpcError().code() == ErrorCodes.INTERNAL_ERROR)
 			.verify();
 	}
 
