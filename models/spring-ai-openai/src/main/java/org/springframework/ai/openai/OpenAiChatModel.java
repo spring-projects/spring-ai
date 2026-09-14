@@ -133,6 +133,8 @@ public final class OpenAiChatModel implements ChatModel {
 
 	private static final String REASONING_CONTENT = "reasoningContent";
 
+	private static final String INCLUDE_REASONING = "include_reasoning";
+
 	static final String TOOL_CALL_ADDITIONAL_PROPERTIES_METADATA_KEY = "openai.tool_calls.additional_properties";
 
 	private static final TypeReference<Map<String, Object>> MAP_TYPE_REF = new TypeReference<>() {
@@ -512,6 +514,10 @@ public final class OpenAiChatModel implements ChatModel {
 	 */
 	ChatCompletionCreateParams createRequest(Prompt prompt, boolean stream) {
 
+		OpenAiChatOptions requestOptions = (OpenAiChatOptions) prompt.getOptions();
+		Assert.state(requestOptions != null, "ChatOptions must not be null");
+		boolean replayReasoningContent = shouldReplayReasoningContent(requestOptions);
+
 		List<ChatCompletionMessageParam> chatCompletionMessageParams = prompt.getInstructions()
 			.stream()
 			.map(message -> {
@@ -671,10 +677,12 @@ public final class OpenAiChatModel implements ChatModel {
 						builder.toolCalls(toolCalls);
 					}
 
-					// Replay reasoning content only when present - plain OpenAI is
-					// unaffected
+					// Replay reasoning content only when present and not explicitly
+					// disabled
+					// by an OpenAI-compatible provider.
 					Object reasoningContent = assistantMessage.getMetadata().get(REASONING_CONTENT);
-					if (reasoningContent instanceof String reasoning && StringUtils.hasText(reasoning)) {
+					if (replayReasoningContent && reasoningContent instanceof String reasoning
+							&& StringUtils.hasText(reasoning)) {
 						// "reasoning_content" is the wire field; REASONING_CONTENT is the
 						// metadata key
 						builder.putAdditionalProperty("reasoning_content", JsonValue.from(reasoning));
@@ -710,9 +718,6 @@ public final class OpenAiChatModel implements ChatModel {
 		ChatCompletionCreateParams.Builder builder = ChatCompletionCreateParams.builder();
 
 		chatCompletionMessageParams.forEach(builder::addMessage);
-
-		OpenAiChatOptions requestOptions = (OpenAiChatOptions) prompt.getOptions();
-		Assert.state(requestOptions != null, "ChatOptions must not be null");
 
 		// Use deployment name if available (for Microsoft Foundry), otherwise use model
 		// name
@@ -919,6 +924,11 @@ public final class OpenAiChatModel implements ChatModel {
 		}
 
 		return builder.build();
+	}
+
+	private boolean shouldReplayReasoningContent(OpenAiChatOptions requestOptions) {
+		Map<String, Object> extraBody = requestOptions.getExtraBody();
+		return extraBody == null || !Boolean.FALSE.equals(extraBody.get(INCLUDE_REASONING));
 	}
 
 	/**
