@@ -136,11 +136,14 @@ public class OpenAiChatModelObservationIT {
 			.hasBeenStarted()
 			.hasBeenStopped();
 		if (streaming) {
-			observationAssert.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_STREAM.asString(), "true");
+			observationAssert.hasHighCardinalityKeyValue(HighCardinalityKeyNames.REQUEST_STREAM.asString(), "true")
+				.hasHighCardinalityKeyValueWithKey(HighCardinalityKeyNames.RESPONSE_TIME_TO_FIRST_CHUNK.asString());
 		}
 		else {
 			observationAssert
-				.doesNotHaveHighCardinalityKeyValueWithKey(HighCardinalityKeyNames.REQUEST_STREAM.asString());
+				.doesNotHaveHighCardinalityKeyValueWithKey(HighCardinalityKeyNames.REQUEST_STREAM.asString())
+				.doesNotHaveHighCardinalityKeyValueWithKey(
+						HighCardinalityKeyNames.RESPONSE_TIME_TO_FIRST_CHUNK.asString());
 		}
 	}
 

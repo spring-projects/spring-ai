@@ -18,6 +18,7 @@ package org.springframework.ai.chat.model;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.Test;
@@ -29,6 +30,7 @@ import org.springframework.ai.chat.metadata.EmptyRateLimit;
 import org.springframework.ai.chat.metadata.RateLimit;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Unit tests for {@link MessageAggregator}.
@@ -36,6 +38,51 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Soby Chacko
  */
 class MessageAggregatorTests {
+
+	@Test
+	void firstChatResponseCallbackInvokedOnceForMultipleChunks() {
+		Flux<ChatResponse> responses = Flux.just(chunk("Hello", new EmptyRateLimit()),
+				chunk(" world", new EmptyRateLimit()), chunk("!", new EmptyRateLimit()));
+
+		AtomicInteger firstChunkCount = new AtomicInteger();
+		new MessageAggregator().aggregate(responses, r -> {
+		}, firstChunkCount::incrementAndGet).blockLast();
+
+		assertThat(firstChunkCount).hasValue(1);
+	}
+
+	@Test
+	void firstChatResponseCallbackInvokedForSingleChunk() {
+		Flux<ChatResponse> responses = Flux.just(chunk("Hello", new EmptyRateLimit()));
+
+		AtomicInteger firstChunkCount = new AtomicInteger();
+		new MessageAggregator().aggregate(responses, r -> {
+		}, firstChunkCount::incrementAndGet).blockLast();
+
+		assertThat(firstChunkCount).hasValue(1);
+	}
+
+	@Test
+	void firstChatResponseCallbackNotInvokedForEmptyStream() {
+		AtomicInteger firstChunkCount = new AtomicInteger();
+		new MessageAggregator().aggregate(Flux.empty(), r -> {
+		}, firstChunkCount::incrementAndGet).blockLast();
+
+		assertThat(firstChunkCount).hasValue(0);
+	}
+
+	@Test
+	void firstChatResponseCallbackInvokedBeforeStreamFailure() {
+		Flux<ChatResponse> responses = Flux.just(chunk("Hello", new EmptyRateLimit()))
+			.concatWith(Flux.error(new IllegalStateException("boom")));
+
+		AtomicInteger firstChunkCount = new AtomicInteger();
+		Flux<ChatResponse> aggregated = new MessageAggregator().aggregate(responses, r -> {
+		}, firstChunkCount::incrementAndGet);
+
+		assertThatThrownBy(aggregated::blockLast).isInstanceOf(IllegalStateException.class);
+		assertThat(firstChunkCount).hasValue(1);
+	}
 
 	@Test
 	void rateLimitFromStreamedChunkSurvivesAggregation() {

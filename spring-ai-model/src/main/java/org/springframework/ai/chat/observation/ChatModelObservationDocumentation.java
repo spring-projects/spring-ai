@@ -214,6 +214,18 @@ public enum ChatModelObservationDocumentation implements ObservationDocumentatio
 			}
 		},
 
+		/**
+		 * The time (in seconds) to the first chunk of a streaming response, measured from
+		 * the start of the model request. Only present for streaming calls that emitted
+		 * at least one chunk.
+		 */
+		RESPONSE_TIME_TO_FIRST_CHUNK {
+			@Override
+			public String asString() {
+				return AiObservationAttributes.RESPONSE_TIME_TO_FIRST_CHUNK.value();
+			}
+		},
+
 		// Usage
 
 		/**

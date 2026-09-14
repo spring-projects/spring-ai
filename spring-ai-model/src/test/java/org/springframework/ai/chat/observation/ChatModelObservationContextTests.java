@@ -72,6 +72,58 @@ class ChatModelObservationContextTests {
 		assertThat(observationContext.isStreaming()).isFalse();
 	}
 
+	@Test
+	void whenNoFirstChunkRecordedThenTimeToFirstChunkIsNull() {
+		var observationContext = ChatModelObservationContext.builder()
+			.prompt(generatePrompt(ChatOptions.builder().model("supermodel").build()))
+			.provider("superprovider")
+			.streaming(true)
+			.build();
+
+		assertThat(observationContext.getTimeToFirstChunk()).isNull();
+	}
+
+	@Test
+	void whenFirstChunkRecordedThenTimeToFirstChunkIsPositive() {
+		var observationContext = ChatModelObservationContext.builder()
+			.prompt(generatePrompt(ChatOptions.builder().model("supermodel").build()))
+			.provider("superprovider")
+			.streaming(true)
+			.build();
+
+		observationContext.recordTimeToFirstChunk();
+
+		assertThat(observationContext.getTimeToFirstChunk()).isNotNull().isGreaterThanOrEqualTo(0.0);
+	}
+
+	@Test
+	void whenFirstChunkRecordedMultipleTimesThenValueIsNotReset() {
+		var observationContext = ChatModelObservationContext.builder()
+			.prompt(generatePrompt(ChatOptions.builder().model("supermodel").build()))
+			.provider("superprovider")
+			.streaming(true)
+			.build();
+
+		observationContext.recordTimeToFirstChunk();
+		Double firstValue = observationContext.getTimeToFirstChunk();
+		observationContext.recordTimeToFirstChunk();
+
+		assertThat(observationContext.getTimeToFirstChunk()).isEqualTo(firstValue);
+	}
+
+	@Test
+	void whenTimeToFirstChunkSetThenReturn() {
+		var observationContext = ChatModelObservationContext.builder()
+			.prompt(generatePrompt(ChatOptions.builder().model("supermodel").build()))
+			.provider("superprovider")
+			.streaming(true)
+			.build();
+
+		observationContext.setTimeToFirstChunk(0.42);
+
+		assertThat(observationContext.getTimeToFirstChunk()).isEqualTo(0.42);
+	}
+
 	private Prompt generatePrompt(ChatOptions chatOptions) {
 		return new Prompt("hello", chatOptions);
 	}

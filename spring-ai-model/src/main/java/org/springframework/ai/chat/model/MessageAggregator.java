@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
@@ -51,6 +52,31 @@ import org.springframework.util.StringUtils;
 public class MessageAggregator {
 
 	private static final Log logger = LogFactory.getLog(MessageAggregator.class);
+
+	/**
+	 * Aggregate a stream of {@link ChatResponse} chunks, additionally notifying a
+	 * callback the first time a chunk is emitted. This is used to measure the time to
+	 * first chunk for streaming observations.
+	 * @param fluxChatResponse the stream of chat response chunks
+	 * @param onAggregationComplete invoked with the aggregated response once the stream
+	 * completes
+	 * @param onFirstChatResponse invoked exactly once, when the first chunk is emitted;
+	 * not invoked for an empty stream
+	 * @return the aggregated stream
+	 * @since 2.0.3
+	 */
+	public Flux<ChatResponse> aggregate(Flux<ChatResponse> fluxChatResponse,
+			Consumer<ChatResponse> onAggregationComplete, Runnable onFirstChatResponse) {
+		AtomicBoolean firstChatResponseReceived = new AtomicBoolean(false);
+		Flux<ChatResponse> firstChunkAwareFlux = fluxChatResponse
+			.doOnSubscribe(subscription -> firstChatResponseReceived.set(false))
+			.doOnNext(chatResponse -> {
+				if (firstChatResponseReceived.compareAndSet(false, true)) {
+					onFirstChatResponse.run();
+				}
+			});
+		return aggregate(firstChunkAwareFlux, onAggregationComplete);
+	}
 
 	public Flux<ChatResponse> aggregate(Flux<ChatResponse> fluxChatResponse,
 			Consumer<ChatResponse> onAggregationComplete) {

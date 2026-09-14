@@ -361,7 +361,8 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			// @formatter:on
 
 			// Aggregate streaming responses and handle tool execution on final response
-			return new MessageAggregator().aggregate(flux, observationContext::setResponse);
+			return new MessageAggregator().aggregate(flux, observationContext::setResponse,
+					observationContext::recordTimeToFirstChunk);
 		});
 	}
 

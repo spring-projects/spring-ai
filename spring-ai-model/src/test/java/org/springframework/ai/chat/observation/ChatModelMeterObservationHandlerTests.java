@@ -146,6 +146,43 @@ class ChatModelMeterObservationHandlerTests {
 	}
 
 	@Test
+	void shouldCreateTimeToFirstChunkMeterWhenRecorded() {
+		var observationContext = ChatModelObservationContext.builder()
+			.prompt(generatePrompt(ChatOptions.builder().model("mistral").build()))
+			.provider("superprovider")
+			.streaming(true)
+			.build();
+		var observation = Observation
+			.createNotStarted(new DefaultChatModelObservationConvention(), () -> observationContext,
+					this.observationRegistry)
+			.start();
+
+		observationContext.setTimeToFirstChunk(0.25);
+
+		observation.stop();
+
+		assertThat(this.meterRegistry.get(AiObservationMetricNames.OPERATION_TIME_TO_FIRST_CHUNK.value())
+			.tag(LowCardinalityKeyNames.AI_PROVIDER.asString(), "superprovider")
+			.timer()
+			.count()).isEqualTo(1);
+	}
+
+	@Test
+	void shouldNotCreateTimeToFirstChunkMeterWhenNotRecorded() {
+		var observationContext = generateObservationContext();
+		var observation = Observation
+			.createNotStarted(new DefaultChatModelObservationConvention(), () -> observationContext,
+					this.observationRegistry)
+			.start();
+
+		observation.stop();
+
+		assertThat(this.meterRegistry.getMeters()).noneMatch(meter -> meter.getId()
+			.getName()
+			.equals(AiObservationMetricNames.OPERATION_TIME_TO_FIRST_CHUNK.value()));
+	}
+
+	@Test
 	void shouldHandleObservationWithoutResponse() {
 		var observationContext = generateObservationContext();
 		var observation = Observation
