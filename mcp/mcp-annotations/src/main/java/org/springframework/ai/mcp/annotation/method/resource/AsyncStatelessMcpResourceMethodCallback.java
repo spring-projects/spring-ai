@@ -16,6 +16,7 @@
 
 package org.springframework.ai.mcp.annotation.method.resource;
 
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.List;
 import java.util.Map;
@@ -150,7 +151,12 @@ public final class AsyncStatelessMcpResourceMethodCallback extends AbstractMcpRe
 					return Mono.error(mcpError);
 				}
 
-				return Mono.error(McpError.builder(ErrorCodes.INVALID_PARAMS)
+				// An exception from the method body is an internal error, while a
+				// failure binding the request is an invalid parameter error.
+				int errorCode = (e instanceof InvocationTargetException) ? ErrorCodes.INTERNAL_ERROR
+						: ErrorCodes.INVALID_PARAMS;
+
+				return Mono.error(McpError.builder(errorCode)
 					.message("Error invoking resource method: " + this.method.getName() + " in "
 							+ this.bean.getClass().getName() + ". /nCause: "
 							+ ErrorUtils.findCauseUsingPlainJava(e).getMessage())

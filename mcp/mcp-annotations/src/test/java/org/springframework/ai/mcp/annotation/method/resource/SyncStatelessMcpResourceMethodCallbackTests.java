@@ -26,6 +26,7 @@ import io.modelcontextprotocol.server.McpAsyncServerExchange;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
 import io.modelcontextprotocol.spec.McpError;
 import io.modelcontextprotocol.spec.McpSchema.BlobResourceContents;
+import io.modelcontextprotocol.spec.McpSchema.ErrorCodes;
 import io.modelcontextprotocol.spec.McpSchema.ReadResourceRequest;
 import io.modelcontextprotocol.spec.McpSchema.ReadResourceResult;
 import io.modelcontextprotocol.spec.McpSchema.ResourceContents;
@@ -42,6 +43,7 @@ import org.springframework.ai.mcp.annotation.context.MetaProvider;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.InstanceOfAssertFactories.type;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -831,7 +833,10 @@ public class SyncStatelessMcpResourceMethodCallbackTests {
 
 		// The new error handling should throw McpError instead of custom exceptions
 		assertThatThrownBy(() -> callback.apply(context, request)).isInstanceOf(McpError.class)
-			.hasMessageContaining("Error invoking resource method");
+			.hasMessageContaining("Error invoking resource method")
+			.asInstanceOf(type(McpError.class))
+			.extracting(McpError::getJsonRpcError)
+			.satisfies(error -> assertThat(error.code()).isEqualTo(ErrorCodes.INTERNAL_ERROR));
 	}
 
 	@Test
