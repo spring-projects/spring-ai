@@ -16,6 +16,8 @@
 
 package org.springframework.ai.vectorstore.neo4j.autoconfigure;
 
+import java.util.List;
+
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.vectorstore.neo4j.Neo4jVectorStore;
@@ -32,6 +34,14 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 public class Neo4jVectorStoreProperties extends CommonVectorStoreProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.vectorstore.neo4j";
+
+	/** Vector index query strategy; SEARCH requires Neo4j 2026.01 or later. */
+	private Neo4jVectorStore.SearchStrategy searchStrategy = Neo4jVectorStore.SearchStrategy.VECTOR_QUERY;
+
+	/**
+	 * Logical metadata keys indexed for SEARCH filtering, without the metadata. prefix.
+	 */
+	private List<String> filterableMetadataFields = List.of();
 
 	private @Nullable String databaseName;
 
@@ -50,6 +60,38 @@ public class Neo4jVectorStoreProperties extends CommonVectorStoreProperties {
 	private String constraintName = Neo4jVectorStore.DEFAULT_CONSTRAINT_NAME;
 
 	private String textProperty = Neo4jVectorStore.DEFAULT_TEXT_PROPERTY;
+
+	/**
+	 * @return the vector index query strategy
+	 * @since 2.1.0
+	 */
+	public Neo4jVectorStore.SearchStrategy getSearchStrategy() {
+		return this.searchStrategy;
+	}
+
+	/**
+	 * @param searchStrategy the vector index query strategy
+	 * @since 2.1.0
+	 */
+	public void setSearchStrategy(Neo4jVectorStore.SearchStrategy searchStrategy) {
+		this.searchStrategy = searchStrategy;
+	}
+
+	/**
+	 * @return the metadata keys indexed for SEARCH filtering
+	 * @since 2.1.0
+	 */
+	public List<String> getFilterableMetadataFields() {
+		return this.filterableMetadataFields;
+	}
+
+	/**
+	 * @param filterableMetadataFields the logical metadata keys
+	 * @since 2.1.0
+	 */
+	public void setFilterableMetadataFields(List<String> filterableMetadataFields) {
+		this.filterableMetadataFields = filterableMetadataFields;
+	}
 
 	public @Nullable String getDatabaseName() {
 		return this.databaseName;

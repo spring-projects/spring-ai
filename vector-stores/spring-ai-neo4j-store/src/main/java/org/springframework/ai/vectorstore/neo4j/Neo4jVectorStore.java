@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import org.apache.commons.logging.Log;
@@ -184,6 +185,10 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 
 	private final FilterExpressionConverter filterExpressionConverter;
 
+	private final SearchStrategy searchStrategy;
+
+	private final List<String> filterableMetadataFields;
+
 	protected Neo4jVectorStore(Builder builder) {
 		super(builder);
 
@@ -202,6 +207,14 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 		this.constraintName = SchemaNames.sanitize(builder.constraintName).orElseThrow();
 		this.initializeSchema = builder.initializeSchema;
 		this.filterExpressionConverter = builder.filterExpressionConverter;
+		this.searchStrategy = builder.searchStrategy;
+		this.filterableMetadataFields = List.copyOf(builder.filterableMetadataFields);
+		Assert.isTrue(this.searchStrategy == SearchStrategy.SEARCH || this.filterableMetadataFields.isEmpty(),
+				"filterableMetadataFields requires the SEARCH strategy");
+		Assert.isTrue(
+				this.searchStrategy != SearchStrategy.SEARCH
+						|| this.filterExpressionConverter.getClass() == Neo4jVectorFilterExpressionConverter.class,
+				"The SEARCH strategy does not support a custom filterExpressionConverter");
 	}
 
 	@Override
@@ -278,6 +291,10 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 		Assert.isTrue(request.getSimilarityThreshold() >= 0 && request.getSimilarityThreshold() <= 1,
 				"The similarity score is bounded between 0 and 1; least to most similar respectively.");
 
+		if (this.searchStrategy == SearchStrategy.SEARCH) {
+			return similaritySearchUsingSearchClause(request);
+		}
+
 		var embedding = Values.value(this.embeddingModel.embed(request.getQuery()));
 		try (var session = this.driver.session(this.sessionConfig)) {
 			StringBuilder condition = new StringBuilder("score >= $threshold");
@@ -300,6 +317,35 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 		}
 	}
 
+	private List<Document> similaritySearchUsingSearchClause(SearchRequest request) {
+		var parameters = new HashMap<String, Object>();
+		String filterClause = "";
+		var filter = request.getFilterExpression();
+		if (filter != null) {
+			var converted = Neo4jSearchFilter.convert(filter, this.filterableMetadataFields);
+			filterClause = "WHERE " + converted.predicate();
+			parameters.putAll(converted.parameters());
+		}
+		parameters.put("embeddingValue", Values.value(this.embeddingModel.embed(request.getQuery())));
+		parameters.put("topK", request.getTopK());
+		parameters.put("threshold", request.getSimilarityThreshold());
+		String query = """
+				CYPHER 25
+				MATCH (node:%s)
+				SEARCH node IN (
+					VECTOR INDEX %s
+					FOR $embeddingValue
+					%s
+					LIMIT $topK
+				) SCORE AS score
+				WHERE score >= $threshold
+				RETURN node, score
+				""".formatted(this.label, this.indexName, filterClause);
+		try (var session = this.driver.session(this.sessionConfig)) {
+			return session.executeRead(tx -> tx.run(query, parameters).list(this::recordToDocument));
+		}
+	}
+
 	@Override
 	public void afterPropertiesSet() {
 
@@ -313,19 +359,50 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 				tx.run("CREATE CONSTRAINT %s IF NOT EXISTS FOR (n:%s) REQUIRE n.%s IS UNIQUE"
 					.formatted(this.constraintName, this.label, this.idProperty)).consume();
 
+				String filterProperties = this.filterableMetadataFields.stream()
+					.map(field -> "n." + SchemaNames.sanitize("metadata." + field, true).orElseThrow())
+					.collect(Collectors.joining(", "));
+				String filterDefinition = filterProperties.isEmpty() ? "" : "WITH [" + filterProperties + "]";
 				var statement = """
-						CREATE VECTOR INDEX %s IF NOT EXISTS FOR (n:%s) ON (n.%s)
+						%sCREATE VECTOR INDEX %s IF NOT EXISTS FOR (n:%s) ON (n.%s)
+						%s
 								OPTIONS {indexConfig: {
 								`vector.dimensions`: %d,
 								`vector.similarity_function`: '%s'
 								}}
-						""".formatted(this.indexName, this.label, this.embeddingProperty, this.embeddingDimension,
+						""".formatted(this.searchStrategy == SearchStrategy.SEARCH ? "CYPHER 25 " : "", this.indexName,
+						this.label, this.embeddingProperty, filterDefinition, this.embeddingDimension,
 						this.distanceType.name);
 				tx.run(statement).consume();
 			});
 
 			// Bad idea to retry this...
 			session.run("CALL db.awaitIndexes()").consume();
+			if (this.searchStrategy == SearchStrategy.SEARCH) {
+				var indexes = session.run("""
+						SHOW VECTOR INDEXES YIELD name, entityType, labelsOrTypes, properties, options
+						WHERE name = $indexName
+						RETURN entityType, labelsOrTypes, properties, options
+						""", Map.of("indexName", this.indexNameNotSanitized)).list();
+				Assert.state(indexes.size() == 1, "The configured SEARCH vector index does not exist");
+				var index = indexes.get(0);
+				var properties = index.get("properties").asList(org.neo4j.driver.Value::asString);
+				var labels = index.get("labelsOrTypes").asList(org.neo4j.driver.Value::asString);
+				var config = index.get("options").get("indexConfig");
+				boolean compatible = "NODE".equals(index.get("entityType").asString()) && labels.size() == 1
+						&& SchemaNames.sanitize(labels.get(0)).orElseThrow().equals(this.label) && !properties.isEmpty()
+						&& SchemaNames.sanitize(properties.get(0)).orElseThrow().equals(this.embeddingProperty)
+						&& this.filterableMetadataFields.stream()
+							.allMatch(field -> properties.subList(1, properties.size()).contains("metadata." + field))
+						&& this.distanceType.name.equalsIgnoreCase(config.get("vector.similarity_function").asString())
+						&& (config.get("vector.dimensions").isNull()
+								|| config.get("vector.dimensions").asInt() == this.embeddingDimension);
+				Assert.state(compatible, "Vector index '" + this.indexNameNotSanitized
+						+ "' is incompatible with the SEARCH configuration. Create a new index with the configured "
+						+ "label, embedding property, similarity function, dimensions and filterableMetadataFields, "
+						+ "then select it with indexName. Existing indexes are not migrated automatically. Found: "
+						+ index.asMap());
+			}
 		}
 	}
 
@@ -388,6 +465,21 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 	}
 
 	/**
+	 * Strategy used to query the vector index.
+	 *
+	 * @since 2.1.0
+	 */
+	public enum SearchStrategy {
+
+		/** The default procedure-based search, with metadata post-filtering. */
+		VECTOR_QUERY,
+
+		/** Cypher 25 SEARCH with in-index filtering. Requires Neo4j 2026.01 or later. */
+		SEARCH
+
+	}
+
+	/**
 	 * An enum to configure the distance function used in the Neo4j vector index.
 	 */
 	public enum Neo4jDistanceType {
@@ -429,6 +521,10 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 		private String constraintName = DEFAULT_CONSTRAINT_NAME;
 
 		private boolean initializeSchema = false;
+
+		private SearchStrategy searchStrategy = SearchStrategy.VECTOR_QUERY;
+
+		private List<String> filterableMetadataFields = List.of();
 
 		private FilterExpressionConverter filterExpressionConverter = new Neo4jVectorFilterExpressionConverter();
 
@@ -577,6 +673,40 @@ public class Neo4jVectorStore extends AbstractObservationVectorStore implements 
 		public Builder filterExpressionConverter(FilterExpressionConverter filterExpressionConverter) {
 			Assert.notNull(filterExpressionConverter, "FilterExpressionConverter must not be null");
 			this.filterExpressionConverter = filterExpressionConverter;
+			return this;
+		}
+
+		/**
+		 * Sets the vector index query strategy. Defaults to
+		 * {@link SearchStrategy#VECTOR_QUERY}. The {@link SearchStrategy#SEARCH} strategy
+		 * requires Neo4j 2026.01 or later and does not fall back to post-filtering for
+		 * unsupported expressions or indexes.
+		 * @param searchStrategy the query strategy
+		 * @return this builder
+		 * @since 2.1.0
+		 */
+		public Builder searchStrategy(SearchStrategy searchStrategy) {
+			Assert.notNull(searchStrategy, "Search strategy must not be null");
+			this.searchStrategy = searchStrategy;
+			return this;
+		}
+
+		/**
+		 * Sets the metadata keys included in the vector index for SEARCH filtering. Use
+		 * logical keys, such as {@code category}, without the {@code metadata.} prefix.
+		 * Requires {@link SearchStrategy#SEARCH}. Existing indexes are not migrated;
+		 * externally managed indexes must already include these properties.
+		 * @param fields the metadata keys, empty by default
+		 * @return this builder
+		 * @since 2.1.0
+		 */
+		public Builder filterableMetadataFields(List<String> fields) {
+			Assert.notNull(fields, "Filterable metadata fields must not be null");
+			fields.forEach(field -> {
+				Assert.hasText(field, "Filterable metadata fields must not contain blank keys");
+				SchemaNames.sanitize("metadata." + field, true).orElseThrow();
+			});
+			this.filterableMetadataFields = fields.stream().distinct().toList();
 			return this;
 		}
 
