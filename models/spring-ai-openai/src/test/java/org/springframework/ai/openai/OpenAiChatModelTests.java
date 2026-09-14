@@ -843,10 +843,12 @@ class OpenAiChatModelTests {
 	}
 
 	@Test
-	void reasoningContentIsNotReplayedWhenProviderDisablesReasoning() {
+	void reasoningContentNotReplayedWhenOptedOut() {
+		// Groq returns reasoning_content on the response but rejects the property on a
+		// subsequent request, so providers in that position opt out of the replay.
 		OpenAiChatOptions options = OpenAiChatOptions.builder()
-			.model("openai/gpt-oss-120b")
-			.extraBody(Map.of("include_reasoning", false))
+			.model("test-model")
+			.replayReasoningContent(false)
 			.build();
 		OpenAiChatModel chatModel = OpenAiChatModel.builder()
 			.openAiClient(this.openAiClient)
@@ -856,7 +858,6 @@ class OpenAiChatModelTests {
 
 		AssistantMessage assistantMessage = AssistantMessage.builder()
 			.content("100")
-			.toolCalls(List.of(new AssistantMessage.ToolCall("call_1", "function", "getCurrentTime", "{}")))
 			.properties(Map.of("reasoningContent", "25 * 4 = 100."))
 			.build();
 		Prompt prompt = new Prompt(
@@ -871,8 +872,21 @@ class OpenAiChatModelTests {
 			.map(ChatCompletionMessageParam::asAssistant)
 			.findFirst()
 			.orElseThrow();
-		assertThat(assistantParam.toolCalls()).hasValueSatisfying(toolCalls -> assertThat(toolCalls).hasSize(1));
 		assertThat(assistantParam._additionalProperties()).doesNotContainKey("reasoning_content");
+		// Only the replay is dropped; the assistant turn itself still goes out.
+		assertThat(assistantParam.content().orElseThrow().text()).hasValue("100");
+	}
+
+	@Test
+	void replayReasoningContentIsCarriedOverByTheBuilder() {
+		OpenAiChatOptions options = OpenAiChatOptions.builder()
+			.model("test-model")
+			.replayReasoningContent(false)
+			.build();
+
+		assertThat(options.mutate().build().getReplayReasoningContent()).isFalse();
+		assertThat(OpenAiChatOptions.builder().combineWith(options.mutate()).build().getReplayReasoningContent())
+			.isFalse();
 	}
 
 	@ParameterizedTest
