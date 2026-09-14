@@ -475,7 +475,10 @@ public class Document {
 		 */
 		public Builder metadata(Map<String, Object> metadata) {
 			Assert.notNull(metadata, "metadata cannot be null");
-			this.metadata = metadata;
+			// Copy defensively: the supplied map may be owned by another Document (as it
+			// is
+			// for mutate()), and metadata(String, Object) writes into this map.
+			this.metadata = new HashMap<>(metadata);
 			return this;
 		}
 
