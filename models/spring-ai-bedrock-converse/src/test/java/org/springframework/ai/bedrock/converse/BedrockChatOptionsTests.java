@@ -108,7 +108,7 @@ class BedrockChatOptionsTests extends AbstractChatOptionsTests<BedrockChatOption
 
 	@Test
 	void cloneCreatesIndependentRequestParameters() {
-		Map<String, String> requestParameters = new HashMap<>();
+		Map<String, Object> requestParameters = new HashMap<>();
 		requestParameters.put("key", "value");
 
 		Builder source = BedrockChatOptions.builder().requestParameters(requestParameters);
@@ -121,6 +121,35 @@ class BedrockChatOptionsTests extends AbstractChatOptionsTests<BedrockChatOption
 	@Test
 	void cloneHandlesNullRequestParameters() {
 		assertThat(BedrockChatOptions.builder().clone().build().getRequestParameters()).isNull();
+	}
+
+	@Test
+	void requestParametersSupportsFlatStringValues() {
+		Map<String, Object> flatRequestParameters = Map.of("anthropic_version", "bedrock-2023-05-31");
+
+		BedrockChatOptions options = BedrockChatOptions.builder().requestParameters(flatRequestParameters).build();
+
+		assertThat(options.getRequestParameters()).containsEntry("anthropic_version", "bedrock-2023-05-31");
+	}
+
+	@Test
+	void requestParametersSupportsNestedMapValues() {
+		Map<String, Object> nestedRequestParameters = Map.of("output_config", Map.of("effort", "low"));
+
+		BedrockChatOptions options = BedrockChatOptions.builder().requestParameters(nestedRequestParameters).build();
+
+		assertThat(options.getRequestParameters().get("output_config")).isEqualTo(Map.of("effort", "low"));
+	}
+
+	@Test
+	void requestParametersSupportsMixedFlatAndNestedValuesInOneCall() {
+		Map<String, Object> mixedRequestParameters = Map.of("anthropic_version", "bedrock-2023-05-31", "output_config",
+				Map.of("effort", "low"));
+
+		BedrockChatOptions options = BedrockChatOptions.builder().requestParameters(mixedRequestParameters).build();
+
+		assertThat(options.getRequestParameters()).containsEntry("anthropic_version", "bedrock-2023-05-31");
+		assertThat(options.getRequestParameters().get("output_config")).isEqualTo(Map.of("effort", "low"));
 	}
 
 }
