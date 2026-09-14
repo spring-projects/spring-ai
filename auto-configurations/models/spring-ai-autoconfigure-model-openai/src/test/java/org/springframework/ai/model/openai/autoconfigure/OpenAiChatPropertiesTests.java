@@ -209,4 +209,47 @@ public class OpenAiChatPropertiesTests {
 			});
 	}
 
+	@Test
+	public void chatReplayReasoningContentTest() {
+
+		this.contextRunner
+			.withPropertyValues(// @formatter:off
+				"spring.ai.openai.api-key=API_KEY",
+				"spring.ai.openai.base-url=http://TEST.BASE.URL",
+				"spring.ai.openai.chat.replay-reasoning-content=false"
+			)
+			// @formatter:on
+			.withConfiguration(
+					AutoConfigurations.of(OpenAiChatAutoConfiguration.class, ToolCallingAutoConfiguration.class))
+			.run(context -> {
+				var chatProperties = context.getBean(OpenAiChatProperties.class);
+
+				assertThat(chatProperties.getReplayReasoningContent()).isFalse();
+
+				var options = chatProperties.toOptions();
+				assertThat(options.getReplayReasoningContent()).isFalse();
+			});
+	}
+
+	@Test
+	public void chatReplayReasoningContentDefaultsToReplaying() {
+
+		this.contextRunner
+			.withPropertyValues(// @formatter:off
+				"spring.ai.openai.api-key=API_KEY",
+				"spring.ai.openai.base-url=http://TEST.BASE.URL"
+			)
+			// @formatter:on
+			.withConfiguration(
+					AutoConfigurations.of(OpenAiChatAutoConfiguration.class, ToolCallingAutoConfiguration.class))
+			.run(context -> {
+				var chatProperties = context.getBean(OpenAiChatProperties.class);
+
+				// Absent the property the replay stays on, which is what DeepSeek's
+				// thinking mode requires.
+				assertThat(chatProperties.getReplayReasoningContent()).isNull();
+				assertThat(chatProperties.toOptions().getReplayReasoningContent()).isNull();
+			});
+	}
+
 }
