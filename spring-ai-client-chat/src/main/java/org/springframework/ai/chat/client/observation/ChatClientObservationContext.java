@@ -45,8 +45,8 @@ public class ChatClientObservationContext extends Observation.Context {
 
 	private @Nullable ChatClientResponse response;
 
-	private final AiOperationMetadata operationMetadata = new AiOperationMetadata(AiOperationType.FRAMEWORK.value(),
-			AiProvider.SPRING_AI.value());
+	private final AiOperationMetadata operationMetadata = new AiOperationMetadata(
+			AiOperationType.INVOKE_WORKFLOW.value(), AiProvider.SPRING_AI.value());
 
 	private final List<? extends Advisor> advisors;
 
