@@ -352,18 +352,13 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 
 		try {
 			return ServerResponse.sse(sseBuilder -> {
-				sseBuilder.onTimeout(() -> {
-					if (logger.isDebugEnabled()) {
-						logger.debug("SSE connection timed out for session: " + sessionId);
-					}
-				});
-
-				WebMvcStreamableMcpSessionTransport sessionTransport = new WebMvcStreamableMcpSessionTransport(
-						sessionId, sseBuilder);
+				WebMvcStreamableMcpSessionTransport sessionTransport = createSessionTransport(sessionId, sseBuilder);
 
 				// Check if this is a replay request
 				if (!request.headers().header(HttpHeaders.LAST_EVENT_ID).isEmpty()) {
 					String lastId = request.headers().asHttpHeaders().getFirst(HttpHeaders.LAST_EVENT_ID);
+
+					registerSseLifecycle(sseBuilder, sessionId, sessionTransport::close);
 
 					try {
 						session.replay(lastId)
@@ -379,7 +374,7 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 									if (logger.isErrorEnabled()) {
 										logger.error("Failed to replay message: " + e.getMessage());
 									}
-									sseBuilder.error(e);
+									sessionTransport.close();
 								}
 							});
 					}
@@ -387,7 +382,7 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 						if (logger.isErrorEnabled()) {
 							logger.error("Failed to replay messages: " + e.getMessage());
 						}
-						sseBuilder.error(e);
+						sessionTransport.close();
 					}
 				}
 				else {
@@ -395,12 +390,7 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 					McpStreamableServerSession.McpStreamableServerSessionStream listeningStream = session
 						.listeningStream(sessionTransport);
 
-					sseBuilder.onComplete(() -> {
-						if (logger.isDebugEnabled()) {
-							logger.debug("SSE connection completed for session: " + sessionId);
-						}
-						listeningStream.close();
-					});
+					registerSseLifecycle(sseBuilder, sessionId, listeningStream::close);
 				}
 			}, Duration.ZERO);
 		}
@@ -487,19 +477,10 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 			else if (message instanceof McpSchema.JSONRPCRequest jsonrpcRequest) {
 				// For streaming responses, we need to return SSE
 				return ServerResponse.sse(sseBuilder -> {
-					sseBuilder.onComplete(() -> {
-						if (logger.isDebugEnabled()) {
-							logger.debug("Request response stream completed for session: " + sessionId);
-						}
-					});
-					sseBuilder.onTimeout(() -> {
-						if (logger.isDebugEnabled()) {
-							logger.debug("Request response stream timed out for session: " + sessionId);
-						}
-					});
+					WebMvcStreamableMcpSessionTransport sessionTransport = createSessionTransport(sessionId,
+							sseBuilder);
 
-					WebMvcStreamableMcpSessionTransport sessionTransport = new WebMvcStreamableMcpSessionTransport(
-							sessionId, sseBuilder);
+					registerSseLifecycle(sseBuilder, sessionId, sessionTransport::close);
 
 					try {
 						session.responseStream(jsonrpcRequest, sessionTransport)
@@ -510,7 +491,7 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 						if (logger.isErrorEnabled()) {
 							logger.error("Failed to handle request stream: " + e.getMessage());
 						}
-						sseBuilder.error(e);
+						sessionTransport.close();
 					}
 				}, Duration.ZERO);
 			}
@@ -690,6 +671,31 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 		return this.sessions.remove(sessionId);
 	}
 
+	static void registerSseLifecycle(SseBuilder sseBuilder, String sessionId, Runnable onClose) {
+		sseBuilder.onComplete(() -> {
+			if (logger.isDebugEnabled()) {
+				logger.debug("SSE connection completed for session: " + sessionId);
+			}
+			onClose.run();
+		});
+		sseBuilder.onTimeout(() -> {
+			if (logger.isDebugEnabled()) {
+				logger.debug("SSE connection timed out for session: " + sessionId);
+			}
+			onClose.run();
+		});
+		sseBuilder.onError(error -> {
+			if (logger.isDebugEnabled()) {
+				logger.debug("SSE connection errored for session: " + sessionId, error);
+			}
+			onClose.run();
+		});
+	}
+
+	WebMvcStreamableMcpSessionTransport createSessionTransport(String sessionId, SseBuilder sseBuilder) {
+		return new WebMvcStreamableMcpSessionTransport(sessionId, sseBuilder);
+	}
+
 	public static Builder builder() {
 		return new Builder();
 	}
@@ -703,7 +709,7 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 	 * underlying SSE builder to prevent race conditions when multiple threads attempt to
 	 * send messages concurrently.
 	 */
-	private class WebMvcStreamableMcpSessionTransport implements McpStreamableServerTransport {
+	class WebMvcStreamableMcpSessionTransport implements McpStreamableServerTransport {
 
 		private final String sessionId;
 
@@ -774,15 +780,7 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 					if (logger.isErrorEnabled()) {
 						logger.error("Failed to send message to session " + this.sessionId + ": " + e.getMessage());
 					}
-					try {
-						this.sseBuilder.error(e);
-					}
-					catch (Exception errorException) {
-						if (logger.isErrorEnabled()) {
-							logger.error("Failed to send error to SSE builder for session " + this.sessionId + ": "
-									+ errorException.getMessage());
-						}
-					}
+					this.close();
 				}
 				finally {
 					this.lock.unlock();
