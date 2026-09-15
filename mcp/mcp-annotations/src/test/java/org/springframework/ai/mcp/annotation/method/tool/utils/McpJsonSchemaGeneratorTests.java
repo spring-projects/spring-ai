@@ -19,6 +19,8 @@ package org.springframework.ai.mcp.annotation.method.tool.utils;
 import java.lang.reflect.Method;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonValue;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.JsonNode;
 
@@ -126,6 +128,31 @@ class McpJsonSchemaGeneratorTests {
 			.isEqualTo("#/$defs/Filter_2");
 	}
 
+	// gh-1985: enum constants annotated with @JsonProperty must surface their custom
+	// values in the generated schema, matching Jackson's deserialization behavior.
+	@Test
+	void generateSchemaForMethodWithCustomEnumValues() throws Exception {
+		Method method = TestMethods.class.getDeclaredMethod("useCustomEnum", CustomEnum.class);
+
+		String schema = McpJsonSchemaGenerator.generateForMethodInput(method);
+		JsonNode schemaNode = jsonHelper.fromJson(schema, JsonNode.class);
+
+		assertThat(schemaNode.at("/properties/status/enum")).map(JsonNode::asString)
+			.containsExactly("value.a", "value.b");
+	}
+
+	// gh-1985: enums serialized through a @JsonValue method must surface those values
+	// in the generated schema as well.
+	@Test
+	void generateSchemaForMethodWithJsonValueEnum() throws Exception {
+		Method method = TestMethods.class.getDeclaredMethod("useJsonValueEnum", TemperatureUnit.class);
+
+		String schema = McpJsonSchemaGenerator.generateForMethodInput(method);
+		JsonNode schemaNode = jsonHelper.fromJson(schema, JsonNode.class);
+
+		assertThat(schemaNode.at("/properties/unit/enum")).map(JsonNode::asString).containsExactly("C", "F");
+	}
+
 	@Test
 	void generateForMethodInputThrowsWhenMethodIsNull() {
 		assertThatThrownBy(() -> McpJsonSchemaGenerator.generateForMethodInput(null))
@@ -163,6 +190,37 @@ class McpJsonSchemaGeneratorTests {
 		}
 
 		public void peerReferenceMethod(PeerA.SearchRequest a, PeerB.SearchRequest b) {
+		}
+
+		public void useCustomEnum(CustomEnum status) {
+		}
+
+		public void useJsonValueEnum(TemperatureUnit unit) {
+		}
+
+	}
+
+	enum CustomEnum {
+
+		@JsonProperty("value.a")
+		A, @JsonProperty("value.b")
+		B
+
+	}
+
+	public enum TemperatureUnit {
+
+		CELSIUS("C"), FAHRENHEIT("F");
+
+		private final String symbol;
+
+		TemperatureUnit(String symbol) {
+			this.symbol = symbol;
+		}
+
+		@JsonValue
+		public String symbol() {
+			return this.symbol;
 		}
 
 	}

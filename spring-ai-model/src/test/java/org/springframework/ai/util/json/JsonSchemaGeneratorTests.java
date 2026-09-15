@@ -36,6 +36,7 @@ import com.fasterxml.jackson.annotation.JsonClassDescription;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.annotation.JsonValue;
 import io.swagger.v3.oas.annotations.media.Schema;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
@@ -749,6 +750,50 @@ class JsonSchemaGeneratorTests {
 	}
 
 	@Test
+	void generateSchemaForEnumWithJsonPropertyValues() {
+		String schema = JsonSchemaGenerator.generateForType(CustomEnumWrapper.class);
+		String expectedJsonSchema = """
+				{
+				  "$schema" : "https://json-schema.org/draft/2020-12/schema",
+				  "type" : "object",
+				  "properties" : {
+				    "values" : {
+				      "type" : "string",
+				      "enum" : [ "value.a", "value.b" ]
+				    }
+				  },
+				  "required" : [ "values" ],
+				  "additionalProperties" : false
+				}
+				""";
+		assertThat(schema).isEqualToIgnoringWhitespace(expectedJsonSchema);
+	}
+
+	@Test
+	void generateSchemaForEnumWithJsonValue() {
+		String schema = JsonSchemaGenerator.generateForType(TemperatureUnit.class);
+		String expectedJsonSchema = """
+				{
+				  "$schema" : "https://json-schema.org/draft/2020-12/schema",
+				  "type" : "string",
+				  "enum" : [ "C", "F" ]
+				}
+				""";
+		assertThat(schema).isEqualToIgnoringWhitespace(expectedJsonSchema);
+	}
+
+	@Test
+	void generateSchemaForMethodInputWithCustomEnumValues() throws Exception {
+		Method method = CustomEnumMethods.class.getDeclaredMethod("setTemperature", CustomEnumWrapper.CustomEnum.class,
+				TemperatureUnit.class);
+		String schema = JsonSchemaGenerator.generateForMethodInput(method);
+		JsonNode schemaNode = JacksonUtils.getDefaultJsonMapper().readTree(schema);
+		assertThat(schemaNode.at("/properties/value/enum")).map(JsonNode::asString)
+			.containsExactly("value.a", "value.b");
+		assertThat(schemaNode.at("/properties/unit/enum")).map(JsonNode::asString).containsExactly("C", "F");
+	}
+
+	@Test
 	void generateSchemaForTypeWithJSpecifyNullableField() {
 		String schema = JsonSchemaGenerator.generateForType(JSpecifyNullablePerson.class);
 		String expectedJsonSchema = """
@@ -1118,6 +1163,42 @@ class JsonSchemaGeneratorTests {
 	}
 
 	record WithMapField(String name, Map<String, Integer> scores) {
+
+	}
+
+	record CustomEnumWrapper(CustomEnum values) {
+
+		enum CustomEnum {
+
+			@JsonProperty("value.a")
+			A, @JsonProperty("value.b")
+			B
+
+		}
+
+	}
+
+	public enum TemperatureUnit {
+
+		CELSIUS("C"), FAHRENHEIT("F");
+
+		private final String symbol;
+
+		TemperatureUnit(String symbol) {
+			this.symbol = symbol;
+		}
+
+		@JsonValue
+		public String symbol() {
+			return this.symbol;
+		}
+
+	}
+
+	static class CustomEnumMethods {
+
+		public void setTemperature(CustomEnumWrapper.CustomEnum value, TemperatureUnit unit) {
+		}
 
 	}
 

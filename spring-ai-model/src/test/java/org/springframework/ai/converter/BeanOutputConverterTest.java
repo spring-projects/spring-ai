@@ -23,6 +23,7 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.annotation.JsonValue;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -133,6 +134,39 @@ class BeanOutputConverterTest {
 	record TestClassWithNullable(String requiredField, @Nullable String optionalField) {
 	}
 
+	record TestClassWithCustomEnumValues(CustomEnum values) {
+
+		enum CustomEnum {
+
+			@JsonProperty("value.a")
+			A, @JsonProperty("value.b")
+			B
+
+		}
+
+	}
+
+	record TestClassWithJsonValueEnum(TemperatureUnit unit) {
+
+		public enum TemperatureUnit {
+
+			CELSIUS("C"), FAHRENHEIT("F");
+
+			private final String symbol;
+
+			TemperatureUnit(String symbol) {
+				this.symbol = symbol;
+			}
+
+			@JsonValue
+			public String symbol() {
+				return this.symbol;
+			}
+
+		}
+
+	}
+
 	@Nested
 	class ConverterTest {
 
@@ -148,6 +182,24 @@ class BeanOutputConverterTest {
 			var converter = new BeanOutputConverter<>(TestClassWithDateProperty.class);
 			var testClass = converter.convert("{ \"someString\": \"2020-01-01\" }");
 			assertThat(testClass.getSomeString()).isEqualTo(LocalDate.of(2020, 1, 1));
+		}
+
+		@Test
+		void convertEnumWithCustomJsonPropertyValues() {
+			var converter = new BeanOutputConverter<>(TestClassWithCustomEnumValues.class);
+			// the generated schema must advertise the same enum values that the
+			// deserializer accepts
+			assertThat(converter.getJsonSchema()).contains("value.a", "value.b");
+			var result = converter.convert("{ \"values\": \"value.a\" }");
+			assertThat(result.values()).isEqualTo(TestClassWithCustomEnumValues.CustomEnum.A);
+		}
+
+		@Test
+		void convertEnumWithJsonValueMappings() {
+			var converter = new BeanOutputConverter<>(TestClassWithJsonValueEnum.class);
+			assertThat(converter.getJsonSchema()).contains("\"C\"", "\"F\"");
+			var result = converter.convert("{ \"unit\": \"C\" }");
+			assertThat(result.unit()).isEqualTo(TestClassWithJsonValueEnum.TemperatureUnit.CELSIUS);
 		}
 
 		@Test
