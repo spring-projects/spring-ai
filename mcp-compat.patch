@@ -1,13 +1,3 @@
-diff --git a/.gitignore b/.gitignore
-index 82fc833bc..3dbd20a38 100644
---- a/.gitignore
-+++ b/.gitignore
-@@ -55,3 +55,5 @@ tmp
- 
- 
- plans
-+
-+.worktree/
 diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-common/pom.xml b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-common/pom.xml
 index b1ac29291..74174541a 100644
 --- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-common/pom.xml
@@ -1297,7 +1287,7 @@ index ef9aaffa6..afdb5b63e 100644
  
  	private data class Filter(val name: String? = null, val ids: List<String>? = null)
 diff --git a/mcp/transport/mcp-spring-webflux/pom.xml b/mcp/transport/mcp-spring-webflux/pom.xml
-index 741c7027c..a76ba9631 100644
+index 741c7027c..66f736e53 100644
 --- a/mcp/transport/mcp-spring-webflux/pom.xml
 +++ b/mcp/transport/mcp-spring-webflux/pom.xml
 @@ -6,7 +6,7 @@
@@ -1341,7 +1331,7 @@ index 741c7027c..a76ba9631 100644
  		<dependency>
  			<groupId>org.testcontainers</groupId>
 -			<artifactId>testcontainers-toxiproxy</artifactId>			
-+			<artifactId>toxiproxy</artifactId>			
++			<artifactId>toxiproxy</artifactId>
  			<scope>test</scope>
  		</dependency>
  

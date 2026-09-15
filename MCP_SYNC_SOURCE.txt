@@ -1,1 +1,8 @@
-v2.0.1  655d6b24ee15da353d2446a4da8f126a93cefc70
+# Upstream sync source pinned by mcp-sync-gate.sh (KEY=VALUE; do not reformat).
+# SYNC_SRC_TAG pins the annotated tag object and SYNC_SRC_COMMIT its peeled
+# commit, so a moved or deleted upstream tag fails the gate.
+SYNC_SRC=v2.0.1
+SYNC_SRC_TAG=655d6b24ee15da353d2446a4da8f126a93cefc70
+SYNC_SRC_COMMIT=c9107fdac0a6c88489c08bb88abcee74c146981d
+# The pure-mirror commit ("mcp: mirror MCP module from upstream v2.0.1").
+MIRROR_COMMIT=edb77d2860b2a29d616c37bf036479c26e8eb039
