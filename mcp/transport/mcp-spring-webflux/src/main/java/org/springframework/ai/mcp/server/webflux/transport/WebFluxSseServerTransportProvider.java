@@ -87,6 +87,7 @@ import org.springframework.web.util.UriComponentsBuilder;
  * @author Christian Tzolov
  * @author Alexandros Pappas
  * @author Dariusz Jędrzejczyk
+ * @author Taewoong Kim
  * @see McpServerTransport
  * @see ServerSentEvent
  * @deprecated The SSE transport has been deprecated in the 2025-03-26 version of the
@@ -424,26 +425,39 @@ public final class WebFluxSseServerTransportProvider implements McpServerTranspo
 		}
 
 		if (request.queryParam("sessionId").isEmpty()) {
-			return ServerResponse.badRequest()
-				.bodyValue(McpError.builder(McpSchema.ErrorCodes.METHOD_NOT_FOUND)
-					.message("Session ID missing in message endpoint")
-					.build());
+			return WebFluxJsonRpcErrorResponse.create(this.jsonMapper, HttpStatus.BAD_REQUEST, null,
+					McpError.builder(McpSchema.ErrorCodes.METHOD_NOT_FOUND)
+						.message("Session ID missing in message endpoint")
+						.build());
 		}
 
 		McpServerSession session = this.sessions.get(request.queryParam("sessionId").get());
 
 		if (session == null) {
-			return ServerResponse.status(HttpStatus.NOT_FOUND)
-				.bodyValue(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
-					.message("Session not found: " + request.queryParam("sessionId").get())
-					.build());
+			return WebFluxJsonRpcErrorResponse.create(this.jsonMapper, HttpStatus.NOT_FOUND, null,
+					McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
+						.message("Session not found: " + request.queryParam("sessionId").get())
+						.build());
 		}
 
 		McpTransportContext transportContext = this.contextExtractor.extract(request);
 
 		return request.bodyToMono(String.class).flatMap(body -> {
+			McpSchema.JSONRPCMessage message;
 			try {
-				McpSchema.JSONRPCMessage message = McpSchema.deserializeJsonRpcMessage(this.jsonMapper, body);
+				message = McpSchema.deserializeJsonRpcMessage(this.jsonMapper, body);
+			}
+			catch (IllegalArgumentException | IOException e) {
+				if (logger.isErrorEnabled()) {
+					logger.error("Failed to deserialize message: " + e.getMessage());
+				}
+				return WebFluxJsonRpcErrorResponse.create(this.jsonMapper, HttpStatus.BAD_REQUEST, null,
+						McpError.builder(McpSchema.ErrorCodes.INVALID_REQUEST)
+							.message("Invalid message format")
+							.build());
+			}
+
+			try {
 				return session.handle(message).flatMap(response -> ServerResponse.ok().build()).onErrorResume(error -> {
 					if (logger.isErrorEnabled()) {
 						logger.error("Error processing  message: " + error.getMessage());
@@ -451,20 +465,22 @@ public final class WebFluxSseServerTransportProvider implements McpServerTranspo
 					// TODO: instead of signalling the error, just respond with 200 OK
 					// - the error is signalled on the SSE connection
 					// return ServerResponse.ok().build();
-					return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
-						.bodyValue(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
-							.message("Internal server error. Check server logs for details.")
-							.build());
+					return WebFluxJsonRpcErrorResponse.create(this.jsonMapper, HttpStatus.INTERNAL_SERVER_ERROR,
+							WebFluxJsonRpcErrorResponse.requestId(message),
+							McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
+								.message("Internal server error. Check server logs for details.")
+								.build());
 				});
 			}
-			catch (IllegalArgumentException | IOException e) {
+			catch (IllegalArgumentException e) {
 				if (logger.isErrorEnabled()) {
-					logger.error("Failed to deserialize message: " + e.getMessage());
+					logger.error("Failed to process message: " + e.getMessage());
 				}
-				return ServerResponse.badRequest()
-					.bodyValue(McpError.builder(McpSchema.ErrorCodes.INVALID_REQUEST)
-						.message("Invalid message format")
-						.build());
+				return WebFluxJsonRpcErrorResponse.create(this.jsonMapper, HttpStatus.BAD_REQUEST,
+						WebFluxJsonRpcErrorResponse.requestId(message),
+						McpError.builder(McpSchema.ErrorCodes.INVALID_REQUEST)
+							.message("Invalid message format")
+							.build());
 			}
 		}).contextWrite(ctx -> ctx.put(McpTransportContext.KEY, transportContext));
 	}
