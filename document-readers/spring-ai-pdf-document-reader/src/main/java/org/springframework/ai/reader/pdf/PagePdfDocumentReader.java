@@ -17,6 +17,7 @@
 package org.springframework.ai.reader.pdf;
 
 import java.awt.Rectangle;
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -44,10 +45,14 @@ import org.springframework.util.StringUtils;
  * options. The default configuration is: - pagesPerDocument = 1 - pageTopMargin = 0 -
  * pageBottomMargin = 0
  *
+ * The constructor parses the whole PDF and the reader holds on to it until
+ * {@link #close()} is called, so instances are best used in a try-with-resources block.
+ *
  * @author Christian Tzolov
  * @author Fu Jian
+ * @author chabinhwang
  */
-public class PagePdfDocumentReader implements DocumentReader {
+public class PagePdfDocumentReader implements DocumentReader, Closeable {
 
 	public static final String METADATA_START_PAGE_NUMBER = "page_number";
 
@@ -207,6 +212,18 @@ public class PagePdfDocumentReader implements DocumentReader {
 			doc.getMetadata().put(METADATA_FILE_NAME, this.resourceFileName);
 		}
 		return doc;
+	}
+
+	/**
+	 * Releases the {@link PDDocument} parsed by the constructor, along with the buffered
+	 * document content and the parsed object graph it holds. The reader must not be used
+	 * after it has been closed; closing an already closed reader has no effect.
+	 * @throws IOException if the parsed document cannot be closed
+	 * @since 2.0.2
+	 */
+	@Override
+	public void close() throws IOException {
+		this.document.close();
 	}
 
 }

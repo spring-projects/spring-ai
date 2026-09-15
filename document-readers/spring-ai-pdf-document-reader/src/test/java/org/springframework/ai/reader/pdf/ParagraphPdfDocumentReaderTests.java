@@ -36,12 +36,14 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 /**
  * @author Christian Tzolov
  * @author Heonwoo Kim
+ * @author chabinhwang
  */
 public class ParagraphPdfDocumentReaderTests {
 
@@ -112,6 +114,46 @@ public class ParagraphPdfDocumentReaderTests {
 		assertThat(documents).hasSize(2);
 		assertThat(documents.get(0).getMetadata().get("title")).isEqualTo("Chapter 1");
 		assertThat(documents.get(1).getMetadata().get("title")).isEqualTo("Chapter 3");
+	}
+
+	@Test
+	void closeReleasesTheParsedDocument() throws IOException {
+
+		ParagraphPdfDocumentReader pdfReader = new ParagraphPdfDocumentReader("classpath:/sample3.pdf",
+				PdfDocumentReaderConfig.defaultConfig());
+
+		assertThat(pdfReader.document.getDocument().isClosed()).isFalse();
+
+		pdfReader.close();
+
+		assertThat(pdfReader.document.getDocument().isClosed()).isTrue();
+	}
+
+	@Test
+	void closeCanBeCalledMoreThanOnce() throws IOException {
+
+		ParagraphPdfDocumentReader pdfReader = new ParagraphPdfDocumentReader("classpath:/sample3.pdf",
+				PdfDocumentReaderConfig.defaultConfig());
+
+		pdfReader.close();
+
+		assertThatNoException().isThrownBy(pdfReader::close);
+	}
+
+	@Test
+	void readsAllParagraphsInsideTryWithResources() throws IOException {
+
+		PDDocument parsedDocument;
+		List<Document> documents;
+
+		try (ParagraphPdfDocumentReader pdfReader = new ParagraphPdfDocumentReader("classpath:/sample3.pdf",
+				PdfDocumentReaderConfig.defaultConfig())) {
+			parsedDocument = pdfReader.document;
+			documents = pdfReader.get();
+		}
+
+		assertThat(documents).isNotEmpty();
+		assertThat(parsedDocument.getDocument().isClosed()).isTrue();
 	}
 
 }

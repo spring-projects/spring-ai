@@ -16,9 +16,11 @@
 
 package org.springframework.ai.reader.pdf;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.apache.pdfbox.pdmodel.PDDocument;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.document.Document;
@@ -26,12 +28,14 @@ import org.springframework.ai.reader.ExtractedTextFormatter;
 import org.springframework.ai.reader.pdf.config.PdfDocumentReaderConfig;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * @author Christian Tzolov
  * @author Tibor Tarnai
  * @author Fu Jian
+ * @author chabinhwang
  */
 class PagePdfDocumentReaderTests {
 
@@ -254,6 +258,46 @@ class PagePdfDocumentReaderTests {
 		assertThat(rangedDocuments).extracting(Document::getText)
 			.containsExactly(fullDocuments.get(9).getText(), fullDocuments.get(10).getText(),
 					fullDocuments.get(11).getText());
+	}
+
+	@Test
+	void closeReleasesTheParsedDocument() throws IOException {
+
+		PagePdfDocumentReader pdfReader = new PagePdfDocumentReader("classpath:/sample1.pdf",
+				PdfDocumentReaderConfig.defaultConfig());
+
+		assertThat(pdfReader.document.getDocument().isClosed()).isFalse();
+
+		pdfReader.close();
+
+		assertThat(pdfReader.document.getDocument().isClosed()).isTrue();
+	}
+
+	@Test
+	void closeCanBeCalledMoreThanOnce() throws IOException {
+
+		PagePdfDocumentReader pdfReader = new PagePdfDocumentReader("classpath:/sample1.pdf",
+				PdfDocumentReaderConfig.defaultConfig());
+
+		pdfReader.close();
+
+		assertThatNoException().isThrownBy(pdfReader::close);
+	}
+
+	@Test
+	void readsAllDocumentsInsideTryWithResources() throws IOException {
+
+		PDDocument parsedDocument;
+		List<Document> docs;
+
+		try (PagePdfDocumentReader pdfReader = new PagePdfDocumentReader("classpath:/sample1.pdf",
+				PdfDocumentReaderConfig.defaultConfig())) {
+			parsedDocument = pdfReader.document;
+			docs = pdfReader.get();
+		}
+
+		assertThat(docs).hasSize(4);
+		assertThat(parsedDocument.getDocument().isClosed()).isTrue();
 	}
 
 }
