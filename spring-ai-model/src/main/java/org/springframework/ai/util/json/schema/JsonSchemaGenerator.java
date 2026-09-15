@@ -35,6 +35,7 @@ import com.github.victools.jsonschema.generator.SchemaGeneratorConfigBuilder;
 import com.github.victools.jsonschema.generator.SchemaVersion;
 import com.github.victools.jsonschema.module.jackson.JacksonOption;
 import com.github.victools.jsonschema.module.jackson.JacksonSchemaModule;
+import com.github.victools.jsonschema.module.jakarta.validation.JakartaValidationModule;
 import com.github.victools.jsonschema.module.swagger2.Swagger2Module;
 import io.swagger.v3.oas.annotations.media.Schema;
 import org.jspecify.annotations.Nullable;
@@ -74,6 +75,7 @@ import org.springframework.util.StringUtils;
  *
  * @author Thomas Vitale
  * @author Sebastien Deleuze
+ * @author Nicolas Krier
  * @since 1.0.0
  */
 public final class JsonSchemaGenerator {
@@ -85,6 +87,8 @@ public final class JsonSchemaGenerator {
 	 * {@link JsonProperty#required()}, or {@link Schema#requiredMode()}} annotation.
 	 */
 	private static final boolean PROPERTY_REQUIRED_BY_DEFAULT = true;
+
+	private static final String JAKARTA_CONSTRAINT_CLASS_NAME = "jakarta.validation.Constraint";
 
 	private static final SchemaGenerator typeSchemaGenerator;
 
@@ -108,6 +112,10 @@ public final class JsonSchemaGenerator {
 			.with(Option.EXTRA_OPEN_API_FORMAT_VALUES)
 			.with(Option.PLAIN_DEFINITION_KEYS);
 
+		if (isJakartaConstraintPresent()) {
+			schemaGeneratorConfigBuilder.with(new JakartaValidationModule());
+		}
+
 		if (KotlinDetector.isKotlinReflectPresent()) {
 			schemaGeneratorConfigBuilder.with(new KotlinModule());
 		}
@@ -122,6 +130,12 @@ public final class JsonSchemaGenerator {
 	}
 
 	private JsonSchemaGenerator() {
+	}
+
+	private static boolean isJakartaConstraintPresent() {
+		var classLoader = JsonSchemaGenerator.class.getClassLoader();
+
+		return ClassUtils.isPresent(JAKARTA_CONSTRAINT_CLASS_NAME, classLoader);
 	}
 
 	private static ObjectNode generateSchema(SchemaGenerator generator, Type type) {
