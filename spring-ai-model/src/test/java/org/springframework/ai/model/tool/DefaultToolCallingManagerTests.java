@@ -144,11 +144,16 @@ class DefaultToolCallingManagerTests {
 	}
 
 	@Test
-	void whenToolCallbackFallbackIsDefaultThenUnlistedToolIsRejected() {
+	void whenToolCallbackFallbackIsDefaultThenUnlistedToolErrorIsProcessed() {
 		ToolCallback resolverOnlyTool = new TestToolCallback("resolverOnlyTool");
 		ToolCallbackResolver toolCallbackResolver = new StaticToolCallbackResolver(List.of(resolverOnlyTool));
 		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder()
 			.toolCallbackResolver(toolCallbackResolver)
+			.toolExecutionExceptionProcessor(exception -> {
+				assertThat(exception.getToolDefinition().name()).isEqualTo("resolverOnlyTool");
+				assertThat(exception.getCause()).isInstanceOf(IllegalStateException.class);
+				return "Tool is not available";
+			})
 			.build();
 
 		Prompt prompt = new Prompt(new UserMessage("Hello"), ToolCallingChatOptions.builder().build());
@@ -161,9 +166,12 @@ class DefaultToolCallingManagerTests {
 				.build())))
 			.build();
 
-		assertThatThrownBy(() -> toolCallingManager.executeToolCalls(prompt, chatResponse))
-			.isInstanceOf(IllegalStateException.class)
-			.hasMessage("No ToolCallback found for tool name: resolverOnlyTool");
+		ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, chatResponse);
+
+		ToolResponseMessage expectedToolResponse = ToolResponseMessage.builder()
+			.responses(List.of(new ToolResponse("resolverOnlyTool", "resolverOnlyTool", "Tool is not available")))
+			.build();
+		assertThat(toolExecutionResult.conversationHistory()).contains(expectedToolResponse);
 	}
 
 	@Test
