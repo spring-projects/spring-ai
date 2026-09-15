@@ -44,7 +44,9 @@ import org.springframework.core.KotlinDetector;
 import org.springframework.core.MethodParameter;
 
 /**
- * Constants that indicate nullness, as well as related utility methods.
+ * Constants that indicate nullness, as well as related utility methods. Backported
+ * verbatim from Spring Framework 7.0 ({@code org.springframework.core.Nullness});
+ * Spring Framework 6.x does not provide it.
  *
  * <p>
  * Nullness applies to type usage, a field, a method return type, or a parameter.
@@ -61,7 +63,7 @@ import org.springframework.core.MethodParameter;
  * recommended.
  *
  * @author Sebastien Deleuze
- * @since 7.0
+ * @since 1.1.8
  */
 public enum Nullness {
 

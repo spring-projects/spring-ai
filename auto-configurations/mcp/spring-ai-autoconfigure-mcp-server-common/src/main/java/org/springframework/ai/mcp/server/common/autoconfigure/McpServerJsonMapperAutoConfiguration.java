@@ -59,11 +59,16 @@ public class McpServerJsonMapperAutoConfiguration {
 		return JsonMapper.builder()
 			// Deserialization configuration
 			.enable(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT)
+			// Lenient deserialization: Jackson 3 disables this by default, Jackson 2
+			// enables it, and both baselines (v1.1.8 and Jackson 3) are lenient here.
+			.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
 			// Serialization configuration
 			.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
+			.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
 			// Register Jackson modules via reflective instantiation
 			.addModules(JacksonUtils.instantiateAvailableModules())
-			.defaultPropertyInclusion(JsonInclude.Value.construct(JsonInclude.Include.NON_NULL, JsonInclude.Include.NON_NULL))
+			.defaultPropertyInclusion(
+					JsonInclude.Value.construct(JsonInclude.Include.NON_NULL, JsonInclude.Include.NON_NULL))
 			.build();
 	}
 

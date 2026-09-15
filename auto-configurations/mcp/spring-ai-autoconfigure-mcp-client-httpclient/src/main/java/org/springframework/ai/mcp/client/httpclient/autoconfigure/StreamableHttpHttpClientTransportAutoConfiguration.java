@@ -33,6 +33,7 @@ import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpClie
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpStreamableHttpClientProperties;
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpStreamableHttpClientProperties.ConnectionParameters;
 import org.springframework.ai.mcp.customizer.McpClientCustomizer;
+import org.springframework.ai.util.JacksonUtils;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -111,7 +112,7 @@ public class StreamableHttpHttpClientTransportAutoConfiguration {
 			ObjectProvider<McpAsyncHttpClientRequestCustomizer> asyncRequestCustomizers,
 			ObjectProvider<McpClientCustomizer<HttpClientStreamableHttpTransport.Builder>> transportCustomizers) {
 
-		JsonMapper jsonMapper = jsonMapperProvider.getIfAvailable(JsonMapper::new);
+		JsonMapper jsonMapper = jsonMapperProvider.getIfAvailable(JacksonUtils::getDefaultJsonMapper);
 
 		List<McpAsyncHttpClientRequestCustomizer> requestCustomizers = requestCustomizers(syncRequestCustomizers,
 				asyncRequestCustomizers);

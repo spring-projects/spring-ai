@@ -29,14 +29,11 @@ index b1ac29291..74174541a 100644
  			<groupId>org.springframework.ai</groupId>
  			<artifactId>spring-ai-mcp</artifactId>
 diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-common/src/main/java/org/springframework/ai/mcp/client/common/autoconfigure/StdioTransportAutoConfiguration.java b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-common/src/main/java/org/springframework/ai/mcp/client/common/autoconfigure/StdioTransportAutoConfiguration.java
-index 2e31effa5..33473bba9 100644
+index 2e31effa5..0da579c94 100644
 --- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-common/src/main/java/org/springframework/ai/mcp/client/common/autoconfigure/StdioTransportAutoConfiguration.java
 +++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-common/src/main/java/org/springframework/ai/mcp/client/common/autoconfigure/StdioTransportAutoConfiguration.java
-@@ -20,10 +20,10 @@ import java.util.ArrayList;
- import java.util.List;
- import java.util.Map;
+@@ -22,11 +22,11 @@ import java.util.Map;
  
-+import com.fasterxml.jackson.databind.json.JsonMapper;
  import io.modelcontextprotocol.client.transport.ServerParameters;
  import io.modelcontextprotocol.client.transport.StdioClientTransport;
 -import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
@@ -45,38 +42,43 @@ index 2e31effa5..33473bba9 100644
  
  import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpClientCommonProperties;
  import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpStdioClientProperties;
++import org.springframework.ai.util.JacksonUtils;
+ import org.springframework.boot.autoconfigure.AutoConfiguration;
+ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+ import org.springframework.boot.context.properties.EnableConfigurationProperties;
 @@ -76,7 +76,7 @@ public class StdioTransportAutoConfiguration {
  
  		for (Map.Entry<String, ServerParameters> serverParameters : stdioProperties.toServerParameters().entrySet()) {
  			var transport = new StdioClientTransport(serverParameters.getValue(),
 -					new JacksonMcpJsonMapper(JsonMapper.shared()));
-+					new JacksonMcpJsonMapper(new JsonMapper()));
++					new JacksonMcpJsonMapper(JacksonUtils.getDefaultJsonMapper()));
  			stdioTransports.add(new NamedClientMcpTransport(serverParameters.getKey(), transport));
  
  		}
 diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-common/src/main/java/org/springframework/ai/mcp/client/common/autoconfigure/properties/McpStdioClientProperties.java b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-common/src/main/java/org/springframework/ai/mcp/client/common/autoconfigure/properties/McpStdioClientProperties.java
-index f4fe0efa3..c9656c5f9 100644
+index f4fe0efa3..58f2ac986 100644
 --- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-common/src/main/java/org/springframework/ai/mcp/client/common/autoconfigure/properties/McpStdioClientProperties.java
 +++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-common/src/main/java/org/springframework/ai/mcp/client/common/autoconfigure/properties/McpStdioClientProperties.java
-@@ -24,10 +24,10 @@ import java.util.stream.Collectors;
+@@ -24,11 +24,11 @@ import java.util.stream.Collectors;
  
  import com.fasterxml.jackson.annotation.JsonInclude;
  import com.fasterxml.jackson.annotation.JsonProperty;
 +import com.fasterxml.jackson.core.type.TypeReference;
-+import com.fasterxml.jackson.databind.json.JsonMapper;
  import io.modelcontextprotocol.client.transport.ServerParameters;
  import org.jspecify.annotations.Nullable;
 -import tools.jackson.core.type.TypeReference;
 -import tools.jackson.databind.json.JsonMapper;
  
++import org.springframework.ai.util.JacksonUtils;
  import org.springframework.boot.context.properties.ConfigurationProperties;
  import org.springframework.core.io.Resource;
+ 
 @@ -80,7 +80,7 @@ public class McpStdioClientProperties {
  			return Collections.emptyMap();
  		}
  		try {
 -			Map<String, Map<String, Parameters>> stdioConnection = JsonMapper.shared()
-+			Map<String, Map<String, Parameters>> stdioConnection = new JsonMapper()
++			Map<String, Map<String, Parameters>> stdioConnection = JacksonUtils.getDefaultJsonMapper()
  				.readValue(this.serversConfiguration.getInputStream(), new TypeReference<>() {
  				});
  
@@ -120,7 +122,7 @@ index eee086874..a89337b29 100644
  		</dependency>
  	</dependencies>
 diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-httpclient/src/main/java/org/springframework/ai/mcp/client/httpclient/autoconfigure/SseHttpClientTransportAutoConfiguration.java b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-httpclient/src/main/java/org/springframework/ai/mcp/client/httpclient/autoconfigure/SseHttpClientTransportAutoConfiguration.java
-index e1c6c0323..c791db6bc 100644
+index e1c6c0323..b9778f84e 100644
 --- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-httpclient/src/main/java/org/springframework/ai/mcp/client/httpclient/autoconfigure/SseHttpClientTransportAutoConfiguration.java
 +++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-httpclient/src/main/java/org/springframework/ai/mcp/client/httpclient/autoconfigure/SseHttpClientTransportAutoConfiguration.java
 @@ -21,9 +21,9 @@ import java.util.ArrayList;
@@ -135,11 +137,28 @@ index e1c6c0323..c791db6bc 100644
  
  import org.springframework.ai.mcp.client.common.autoconfigure.McpSseClientConnectionDetails;
  import org.springframework.ai.mcp.client.common.autoconfigure.NamedClientMcpTransport;
+@@ -32,6 +32,7 @@ import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpClie
+ import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpSseClientProperties;
+ import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpSseClientProperties.SseParameters;
+ import org.springframework.ai.mcp.customizer.McpClientCustomizer;
++import org.springframework.ai.util.JacksonUtils;
+ import org.springframework.beans.factory.ObjectProvider;
+ import org.springframework.boot.autoconfigure.AutoConfiguration;
+ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+@@ -101,7 +102,7 @@ public class SseHttpClientTransportAutoConfiguration {
+ 			ObjectProvider<JsonMapper> jsonMapperProvider,
+ 			ObjectProvider<McpClientCustomizer<HttpClientSseClientTransport.Builder>> transportCustomizers) {
+ 
+-		JsonMapper jsonMapper = jsonMapperProvider.getIfAvailable(JsonMapper::new);
++		JsonMapper jsonMapper = jsonMapperProvider.getIfAvailable(JacksonUtils::getDefaultJsonMapper);
+ 
+ 		List<NamedClientMcpTransport> sseTransports = new ArrayList<>();
+ 
 diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-httpclient/src/main/java/org/springframework/ai/mcp/client/httpclient/autoconfigure/StreamableHttpHttpClientTransportAutoConfiguration.java b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-httpclient/src/main/java/org/springframework/ai/mcp/client/httpclient/autoconfigure/StreamableHttpHttpClientTransportAutoConfiguration.java
-index e25864825..320a4e229 100644
+index e25864825..88df85461 100644
 --- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-httpclient/src/main/java/org/springframework/ai/mcp/client/httpclient/autoconfigure/StreamableHttpHttpClientTransportAutoConfiguration.java
 +++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-httpclient/src/main/java/org/springframework/ai/mcp/client/httpclient/autoconfigure/StreamableHttpHttpClientTransportAutoConfiguration.java
-@@ -21,12 +21,12 @@ import java.util.ArrayList;
+@@ -21,18 +21,19 @@ import java.util.ArrayList;
  import java.util.List;
  import java.util.Map;
  
@@ -154,12 +173,19 @@ index e25864825..320a4e229 100644
  
  import org.springframework.ai.mcp.client.common.autoconfigure.NamedClientMcpTransport;
  import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpClientCommonProperties;
-@@ -111,7 +111,7 @@ public class StreamableHttpHttpClientTransportAutoConfiguration {
+ import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpStreamableHttpClientProperties;
+ import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpStreamableHttpClientProperties.ConnectionParameters;
+ import org.springframework.ai.mcp.customizer.McpClientCustomizer;
++import org.springframework.ai.util.JacksonUtils;
+ import org.springframework.beans.factory.ObjectProvider;
+ import org.springframework.boot.autoconfigure.AutoConfiguration;
+ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+@@ -111,7 +112,7 @@ public class StreamableHttpHttpClientTransportAutoConfiguration {
  			ObjectProvider<McpAsyncHttpClientRequestCustomizer> asyncRequestCustomizers,
  			ObjectProvider<McpClientCustomizer<HttpClientStreamableHttpTransport.Builder>> transportCustomizers) {
  
 -		JsonMapper jsonMapper = jsonMapperProvider.getIfAvailable(JsonMapper::shared);
-+		JsonMapper jsonMapper = jsonMapperProvider.getIfAvailable(JsonMapper::new);
++		JsonMapper jsonMapper = jsonMapperProvider.getIfAvailable(JacksonUtils::getDefaultJsonMapper);
  
  		List<McpAsyncHttpClientRequestCustomizer> requestCustomizers = requestCustomizers(syncRequestCustomizers,
  				asyncRequestCustomizers);
@@ -238,7 +264,7 @@ index 098f854bf..d4b9353ae 100644
  		</dependency>
  
 diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-webflux/src/main/java/org/springframework/ai/mcp/client/webflux/autoconfigure/SseWebFluxTransportAutoConfiguration.java b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-webflux/src/main/java/org/springframework/ai/mcp/client/webflux/autoconfigure/SseWebFluxTransportAutoConfiguration.java
-index 1ebb40f6b..7bfa94ce1 100644
+index 1ebb40f6b..cb36c1ac7 100644
 --- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-webflux/src/main/java/org/springframework/ai/mcp/client/webflux/autoconfigure/SseWebFluxTransportAutoConfiguration.java
 +++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-webflux/src/main/java/org/springframework/ai/mcp/client/webflux/autoconfigure/SseWebFluxTransportAutoConfiguration.java
 @@ -21,8 +21,8 @@ import java.util.List;
@@ -252,17 +278,25 @@ index 1ebb40f6b..7bfa94ce1 100644
  
  import org.springframework.ai.mcp.client.common.autoconfigure.McpSseClientConnectionDetails;
  import org.springframework.ai.mcp.client.common.autoconfigure.NamedClientMcpTransport;
-@@ -104,7 +104,7 @@ public class SseWebFluxTransportAutoConfiguration {
+@@ -32,6 +32,7 @@ import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpSseC
+ import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpSseClientProperties.SseParameters;
+ import org.springframework.ai.mcp.client.webflux.transport.WebFluxSseClientTransport;
+ import org.springframework.ai.mcp.customizer.McpClientCustomizer;
++import org.springframework.ai.util.JacksonUtils;
+ import org.springframework.beans.factory.ObjectProvider;
+ import org.springframework.boot.autoconfigure.AutoConfiguration;
+ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+@@ -104,7 +105,7 @@ public class SseWebFluxTransportAutoConfiguration {
  		List<NamedClientMcpTransport> sseTransports = new ArrayList<>();
  
  		var webClientBuilderTemplate = webClientBuilderProvider.getIfAvailable(WebClient::builder);
 -		var jsonMapper = jsonMapperProvider.getIfAvailable(JsonMapper::shared);
-+		var jsonMapper = jsonMapperProvider.getIfAvailable(JsonMapper::new);
++		var jsonMapper = jsonMapperProvider.getIfAvailable(JacksonUtils::getDefaultJsonMapper);
  
  		for (Map.Entry<String, SseParameters> serverParameters : connectionDetails.getConnections().entrySet()) {
  			String connectionName = serverParameters.getKey();
 diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-webflux/src/main/java/org/springframework/ai/mcp/client/webflux/autoconfigure/StreamableHttpWebFluxTransportAutoConfiguration.java b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-webflux/src/main/java/org/springframework/ai/mcp/client/webflux/autoconfigure/StreamableHttpWebFluxTransportAutoConfiguration.java
-index 3f1be2395..cf39e1077 100644
+index 3f1be2395..ba3220d61 100644
 --- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-webflux/src/main/java/org/springframework/ai/mcp/client/webflux/autoconfigure/StreamableHttpWebFluxTransportAutoConfiguration.java
 +++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-webflux/src/main/java/org/springframework/ai/mcp/client/webflux/autoconfigure/StreamableHttpWebFluxTransportAutoConfiguration.java
 @@ -21,8 +21,8 @@ import java.util.List;
@@ -276,6 +310,23 @@ index 3f1be2395..cf39e1077 100644
  
  import org.springframework.ai.mcp.client.common.autoconfigure.NamedClientMcpTransport;
  import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpClientCommonProperties;
+@@ -30,6 +30,7 @@ import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpStre
+ import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpStreamableHttpClientProperties.ConnectionParameters;
+ import org.springframework.ai.mcp.client.webflux.transport.WebClientStreamableHttpTransport;
+ import org.springframework.ai.mcp.customizer.McpClientCustomizer;
++import org.springframework.ai.util.JacksonUtils;
+ import org.springframework.beans.factory.ObjectProvider;
+ import org.springframework.boot.autoconfigure.AutoConfiguration;
+ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+@@ -97,7 +98,7 @@ public class StreamableHttpWebFluxTransportAutoConfiguration {
+ 		List<NamedClientMcpTransport> streamableHttpTransports = new ArrayList<>();
+ 
+ 		var webClientBuilderTemplate = webClientBuilderProvider.getIfAvailable(WebClient::builder);
+-		var jsonMapper = jsonMapperProvider.getIfAvailable(JsonMapper::new);
++		var jsonMapper = jsonMapperProvider.getIfAvailable(JacksonUtils::getDefaultJsonMapper);
+ 
+ 		for (Map.Entry<String, ConnectionParameters> serverParameters : streamableProperties.getConnections()
+ 			.entrySet()) {
 diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-webflux/src/test/java/org/springframework/ai/mcp/client/webflux/autoconfigure/SseWebFluxTransportAutoConfigurationTests.java b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-webflux/src/test/java/org/springframework/ai/mcp/client/webflux/autoconfigure/SseWebFluxTransportAutoConfigurationTests.java
 index 6568e7ae6..bb88ef94d 100644
 --- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-webflux/src/test/java/org/springframework/ai/mcp/client/webflux/autoconfigure/SseWebFluxTransportAutoConfigurationTests.java
@@ -359,7 +410,7 @@ index 7be6b7735..7889856a3 100644
  import org.springframework.ai.mcp.customizer.McpAsyncServerCustomizer;
  import org.springframework.ai.mcp.customizer.McpSyncServerCustomizer;
 diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-common/src/main/java/org/springframework/ai/mcp/server/common/autoconfigure/McpServerJsonMapperAutoConfiguration.java b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-common/src/main/java/org/springframework/ai/mcp/server/common/autoconfigure/McpServerJsonMapperAutoConfiguration.java
-index e5bb31cdb..537688bab 100644
+index e5bb31cdb..77a5c8ea1 100644
 --- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-common/src/main/java/org/springframework/ai/mcp/server/common/autoconfigure/McpServerJsonMapperAutoConfiguration.java
 +++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-common/src/main/java/org/springframework/ai/mcp/server/common/autoconfigure/McpServerJsonMapperAutoConfiguration.java
 @@ -17,10 +17,10 @@
@@ -385,16 +436,23 @@ index e5bb31cdb..537688bab 100644
  	 * </ul>
  	 * <p>
  	 * This bean can be overridden by providing a custom {@link JsonMapper} bean with the
-@@ -61,10 +61,9 @@ public class McpServerJsonMapperAutoConfiguration {
+@@ -59,12 +59,16 @@ public class McpServerJsonMapperAutoConfiguration {
+ 		return JsonMapper.builder()
+ 			// Deserialization configuration
  			.enable(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT)
++			// Lenient deserialization: Jackson 3 disables this by default, Jackson 2
++			// enables it, and both baselines (v1.1.8 and Jackson 3) are lenient here.
++			.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
  			// Serialization configuration
  			.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
 -			// Register Jackson modules via server loader
++			.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
 +			// Register Jackson modules via reflective instantiation
  			.addModules(JacksonUtils.instantiateAvailableModules())
 -			.changeDefaultPropertyInclusion(
 -					incl -> JsonInclude.Value.construct(JsonInclude.Include.NON_NULL, JsonInclude.Include.NON_NULL))
-+			.defaultPropertyInclusion(JsonInclude.Value.construct(JsonInclude.Include.NON_NULL, JsonInclude.Include.NON_NULL))
++			.defaultPropertyInclusion(
++					JsonInclude.Value.construct(JsonInclude.Include.NON_NULL, JsonInclude.Include.NON_NULL))
  			.build();
  	}
  
@@ -574,25 +632,26 @@ index 29a3e7847..6da5c786b 100644
  import org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration;
  import org.springframework.ai.mcp.server.common.autoconfigure.McpServerJsonMapperAutoConfiguration;
 diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/test/java/org/springframework/ai/mcp/server/webflux/autoconfigure/McpServerSseWebFluxAutoConfigurationTests.java b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/test/java/org/springframework/ai/mcp/server/webflux/autoconfigure/McpServerSseWebFluxAutoConfigurationTests.java
-index 47c137c53..4b5fd65a0 100644
+index 47c137c53..6e036f672 100644
 --- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/test/java/org/springframework/ai/mcp/server/webflux/autoconfigure/McpServerSseWebFluxAutoConfigurationTests.java
 +++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/test/java/org/springframework/ai/mcp/server/webflux/autoconfigure/McpServerSseWebFluxAutoConfigurationTests.java
-@@ -16,8 +16,8 @@
+@@ -16,8 +16,9 @@
  
  package org.springframework.ai.mcp.server.webflux.autoconfigure;
  
++import com.fasterxml.jackson.databind.DeserializationFeature;
 +import com.fasterxml.jackson.databind.json.JsonMapper;
  import org.junit.jupiter.api.Test;
 -import tools.jackson.databind.json.JsonMapper;
  
  import org.springframework.ai.mcp.server.common.autoconfigure.McpServerJsonMapperAutoConfiguration;
  import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
-@@ -47,7 +47,7 @@ class McpServerSseWebFluxAutoConfigurationTests {
+@@ -47,7 +48,7 @@ class McpServerSseWebFluxAutoConfigurationTests {
  
  			// Verify that the JsonMapper is configured to ignore unknown properties
  
 -			assertThat(jsonMapper.isEnabled(tools.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES))
-+			assertThat(jsonMapper.isEnabled(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES))
++			assertThat(jsonMapper.isEnabled(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES))
  				.isFalse();
  
  			// Test with a JSON payload containing unknown fields
@@ -1446,7 +1505,7 @@ index 777aae3f3..bf189e917 100644
  		// Create a mock async MCP client
  		io.modelcontextprotocol.client.McpAsyncClient mockMcpClient = mock(
 diff --git a/pom.xml b/pom.xml
-index c2084fc6c..e6eb30217 100644
+index c2084fc6c..d593b3d41 100644
 --- a/pom.xml
 +++ b/pom.xml
 @@ -230,7 +230,9 @@
@@ -1469,19 +1528,20 @@ index c2084fc6c..e6eb30217 100644
  
  		<!-- NOTE: keep bedrockruntime and awssdk versions aligned -->
  		<bedrockruntime.version>2.36.3</bedrockruntime.version>
-@@ -342,7 +344,10 @@
+@@ -342,8 +344,10 @@
  		<json-unit-assertj.version>4.1.0</json-unit-assertj.version>
  
  		<!-- MCP-->
 -		<mcp.sdk.version>0.18.3</mcp.sdk.version>
+-		<mcp-annotations.version>0.9.0</mcp-annotations.version>
 +		<mcp.sdk.version>2.0.0</mcp.sdk.version>
 +		<jspecify.version>1.0.0</jspecify.version>
-+		<json-schema-validator.version>1.5.9</json-schema-validator.version>
++		<json-schema-validator.version>2.0.0</json-schema-validator.version>
 +		<junit.version>5.14.4</junit.version>
- 		<mcp-annotations.version>0.9.0</mcp-annotations.version>
  
  		<!-- plugin versions -->
-@@ -994,6 +999,23 @@
+ 		<antlr.version>4.13.1</antlr.version>
+@@ -994,6 +998,23 @@
  
  	<dependencyManagement>
  		<dependencies>
@@ -1505,7 +1565,7 @@ index c2084fc6c..e6eb30217 100644
  			<dependency>
  				<groupId>org.springframework.boot</groupId>
  				<artifactId>spring-boot-dependencies</artifactId>
-@@ -1008,6 +1030,21 @@
+@@ -1008,6 +1029,21 @@
  				<type>pom</type>
  				<scope>import</scope>
  			</dependency>
@@ -1516,9 +1576,9 @@ index c2084fc6c..e6eb30217 100644
 +				<artifactId>jspecify</artifactId>
 +				<version>${jspecify.version}</version>
 +			</dependency>
-+			<!-- networknt JSON Schema validator (replaces the MCP SDK's removed
-+				DefaultJsonSchemaValidator used by StructuredOutputValidationAdvisor).
-+				Jackson 2-compatible 1.5.x line. -->
++			<!-- networknt JSON Schema validator. Aligned with the 2.0.0 version that
++				mcp-json-jackson2:2.0.0 itself depends on (networknt 2.x is Jackson 2-based,
++				same stack as the v1.1.8 SDK validator); also used by StructuredOutputValidationAdvisor. -->
 +			<dependency>
 +				<groupId>com.networknt</groupId>
 +				<artifactId>json-schema-validator</artifactId>
@@ -1567,7 +1627,7 @@ index 5abb6a1f9..8e7050391 100644
  		<dependency>
  			<groupId>org.springframework.ai</groupId>
 diff --git a/spring-ai-client-chat/src/main/java/org/springframework/ai/chat/client/advisor/StructuredOutputValidationAdvisor.java b/spring-ai-client-chat/src/main/java/org/springframework/ai/chat/client/advisor/StructuredOutputValidationAdvisor.java
-index 380e5aec6..1be0dc052 100644
+index 380e5aec6..e13ce2e68 100644
 --- a/spring-ai-client-chat/src/main/java/org/springframework/ai/chat/client/advisor/StructuredOutputValidationAdvisor.java
 +++ b/spring-ai-client-chat/src/main/java/org/springframework/ai/chat/client/advisor/StructuredOutputValidationAdvisor.java
 @@ -17,15 +17,17 @@
@@ -1576,16 +1636,16 @@ index 380e5aec6..1be0dc052 100644
  import java.lang.reflect.Type;
 -import java.util.HashMap;
 -import java.util.Map;
-+import java.util.Set;
++import java.util.List;
 +import java.util.stream.Collectors;
  
  import com.fasterxml.jackson.core.type.TypeReference;
 +import com.fasterxml.jackson.databind.JsonNode;
  import com.fasterxml.jackson.databind.ObjectMapper;
-+import com.networknt.schema.JsonSchema;
-+import com.networknt.schema.JsonSchemaFactory;
-+import com.networknt.schema.SpecVersion;
-+import com.networknt.schema.ValidationMessage;
++import com.networknt.schema.Error;
++import com.networknt.schema.Schema;
++import com.networknt.schema.SchemaRegistry;
++import com.networknt.schema.SpecificationVersion;
  import io.modelcontextprotocol.json.TypeRef;
 -import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
 -import io.modelcontextprotocol.json.schema.JsonSchemaValidator.ValidationResponse;
@@ -1608,7 +1668,7 @@ index 380e5aec6..1be0dc052 100644
  	 * The JSON schema used for validation.
  	 */
 -	private final Map<String, Object> jsonSchema;
-+	private final JsonSchema jsonSchema;
++	private final Schema jsonSchema;
  
  	/**
 -	 * The JSON schema validator.
@@ -1619,7 +1679,7 @@ index 380e5aec6..1be0dc052 100644
  
  	private final int maxRepeatAttempts;
  
-@@ -95,20 +94,13 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
+@@ -95,20 +94,12 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
  
  		this.advisorOrder = advisorOrder;
  
@@ -1637,24 +1697,23 @@ index 380e5aec6..1be0dc052 100644
 -		catch (Exception e) {
 -			throw new IllegalArgumentException("Failed to parse JSON schema", e);
 -		}
-+		JsonSchemaFactory schemaFactory = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V202012);
-+		this.jsonSchema = schemaFactory.getSchema(jsonSchemaText);
++		this.jsonSchema = SchemaRegistry.withDefaultDialect(SpecificationVersion.DRAFT_2020_12).getSchema(jsonSchemaText);
 +		this.objectMapper = objectMapper;
  
  		this.maxRepeatAttempts = maxRepeatAttempts;
  	}
-@@ -198,7 +190,18 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
+@@ -198,7 +189,18 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
  
  		logger.debug("Validating JSON output against schema. Attempts left: " + this.maxRepeatAttempts);
  
 -		return this.jsonvalidator.validate(this.jsonSchema, json);
 +		try {
 +			JsonNode instance = this.objectMapper.readTree(json);
-+			Set<ValidationMessage> errors = this.jsonSchema.validate(instance);
++			List<Error> errors = this.jsonSchema.validate(instance);
 +			if (errors.isEmpty()) {
 +				return ValidationResponse.asValid();
 +			}
-+			String message = errors.stream().map(ValidationMessage::getMessage).collect(Collectors.joining("; "));
++			String message = errors.stream().map(Error::getMessage).collect(Collectors.joining("; "));
 +			return ValidationResponse.asInvalid(message);
 +		}
 +		catch (Exception e) {
@@ -1663,7 +1722,7 @@ index 380e5aec6..1be0dc052 100644
  	}
  
  	@SuppressWarnings("null")
-@@ -329,4 +332,16 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
+@@ -329,4 +331,16 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
  
  	}
  
@@ -1697,20 +1756,21 @@ index 7bbb6f216..dc2593479 100644
  		<dependency>
  			<groupId>org.springframework</groupId>
 diff --git a/spring-ai-commons/src/main/java/org/springframework/ai/util/JacksonUtils.java b/spring-ai-commons/src/main/java/org/springframework/ai/util/JacksonUtils.java
-index 1ecc255b1..759b9de55 100644
+index 1ecc255b1..768a775ef 100644
 --- a/spring-ai-commons/src/main/java/org/springframework/ai/util/JacksonUtils.java
 +++ b/spring-ai-commons/src/main/java/org/springframework/ai/util/JacksonUtils.java
-@@ -19,7 +19,9 @@ package org.springframework.ai.util;
+@@ -19,7 +19,10 @@ package org.springframework.ai.util;
  import java.util.ArrayList;
  import java.util.List;
  
 +import com.fasterxml.jackson.databind.DeserializationFeature;
  import com.fasterxml.jackson.databind.Module;
++import com.fasterxml.jackson.databind.SerializationFeature;
 +import com.fasterxml.jackson.databind.json.JsonMapper;
  
  import org.springframework.beans.BeanUtils;
  import org.springframework.core.KotlinDetector;
-@@ -88,4 +90,24 @@ public abstract class JacksonUtils {
+@@ -88,4 +91,30 @@ public abstract class JacksonUtils {
  		return modules;
  	}
  
@@ -1720,6 +1780,10 @@ index 1ecc255b1..759b9de55 100644
 +		jsonMapper = JsonMapper.builder()
 +			.disable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
 +			.enable(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT)
++			// Jackson 2 defaults that Jackson 3 turned off: disable them to keep the
++			// upstream (Jackson 3) JsonHelper and tool-argument semantics.
++			.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
++			.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
 +			.addModules(JacksonUtils.instantiateAvailableModules())
 +			.build();
 +	}
@@ -1727,8 +1791,10 @@ index 1ecc255b1..759b9de55 100644
 +	/**
 +	 * Returns a default Jackson {@link JsonMapper} instance customized with
 +	 * {@link DeserializationFeature#FAIL_ON_TRAILING_TOKENS} disabled and the Jackson
-+	 * modules found by {@link #instantiateAvailableModules} configured.
-+	 * @since 2.0.0
++	 * modules found by {@link #instantiateAvailableModules} configured. Jackson 2
++	 * defaults that Jackson 3 changed ({@code FAIL_ON_UNKNOWN_PROPERTIES},
++	 * {@code WRITE_DATES_AS_TIMESTAMPS}) are disabled to preserve Jackson 3 semantics.
++	 * @since 1.1.8
 +	 */
 +	public static JsonMapper getDefaultJsonMapper() {
 +		return jsonMapper;
@@ -1737,7 +1803,7 @@ index 1ecc255b1..759b9de55 100644
  }
 diff --git a/spring-ai-commons/src/main/java/org/springframework/ai/util/JsonHelper.java b/spring-ai-commons/src/main/java/org/springframework/ai/util/JsonHelper.java
 new file mode 100644
-index 000000000..b06549c82
+index 000000000..84294bae1
 --- /dev/null
 +++ b/spring-ai-commons/src/main/java/org/springframework/ai/util/JsonHelper.java
 @@ -0,0 +1,219 @@
@@ -1776,7 +1842,7 @@ index 000000000..b06549c82
 + * Helper for JSON processing.
 + *
 + * @author Sebastien Deleuze
-+ * @since 2.0.0
++ * @since 1.1.8
 + */
 +public class JsonHelper {
 +
@@ -1960,6 +2026,379 @@ index 000000000..b06549c82
 +	}
 +
 +}
+diff --git a/spring-ai-commons/src/test/java/org/springframework/ai/util/JacksonUtilsTests.java b/spring-ai-commons/src/test/java/org/springframework/ai/util/JacksonUtilsTests.java
+index c9b66ec65..1c7636fe1 100644
+--- a/spring-ai-commons/src/test/java/org/springframework/ai/util/JacksonUtilsTests.java
++++ b/spring-ai-commons/src/test/java/org/springframework/ai/util/JacksonUtilsTests.java
+@@ -17,6 +17,7 @@
+ package org.springframework.ai.util;
+ 
+ import java.time.Duration;
++import java.time.LocalDate;
+ import java.time.temporal.ChronoUnit;
+ 
+ import com.fasterxml.jackson.core.JsonProcessingException;
+@@ -50,7 +51,52 @@ class JacksonUtilsTests {
+ 
+ 	}
+ 
++	@Test
++	void shouldGetJsonMapper() {
++		var jsonMapper = JacksonUtils.getDefaultJsonMapper();
++		assertThat(jsonMapper).isNotNull();
++	}
++
++	@Test
++	void shouldDeserializeEmptyStringToNullEnum() throws Exception {
++		var jsonMapper = JacksonUtils.getDefaultJsonMapper();
++		var output = jsonMapper.readValue("{\"myEnum\":\"\"}", MyRecord.class);
++		assertThat(output.myEnum()).isNull();
++	}
++
++	@Test
++	void defaultJsonMapperIgnoresUnknownProperties() throws Exception {
++		// Jackson 2 enables FAIL_ON_UNKNOWN_PROPERTIES by default; the default mapper
++		// must disable it to preserve Jackson 3 (upstream) semantics.
++		var output = JacksonUtils.getDefaultJsonMapper()
++			.readValue("{\"name\":\"x\",\"extra\":1}", UnknownPropsRecord.class);
++		assertThat(output.name()).isEqualTo("x");
++	}
++
++	@Test
++	void defaultJsonMapperWritesDatesAsIso8601() throws Exception {
++		// Jackson 2 enables WRITE_DATES_AS_TIMESTAMPS by default; the default mapper
++		// must disable it to preserve Jackson 3 (upstream) semantics.
++		var json = JacksonUtils.getDefaultJsonMapper().writeValueAsString(new DateRecord(LocalDate.of(2026, 4, 22)));
++		assertThat(json).contains("\"2026-04-22\"").doesNotContain("[2026,4,22]");
++	}
++
+ 	record Cell(String name, Duration lifespan) {
+ 	}
+ 
++	record MyRecord(MyEnum myEnum) {
++	}
++
++	enum MyEnum {
++
++		A, B
++
++	}
++
++	record UnknownPropsRecord(String name) {
++	}
++
++	record DateRecord(LocalDate date) {
++	}
++
+ }
+diff --git a/spring-ai-commons/src/test/java/org/springframework/ai/util/JsonHelperTests.java b/spring-ai-commons/src/test/java/org/springframework/ai/util/JsonHelperTests.java
+new file mode 100644
+index 000000000..4809bc353
+--- /dev/null
++++ b/spring-ai-commons/src/test/java/org/springframework/ai/util/JsonHelperTests.java
+@@ -0,0 +1,302 @@
++/*
++ * Copyright 2023-present the original author or authors.
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *      https://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++package org.springframework.ai.util;
++
++import java.lang.reflect.Type;
++import java.time.LocalDateTime;
++
++import org.assertj.core.api.Assertions;
++import org.junit.jupiter.api.Test;
++
++import org.springframework.core.ParameterizedTypeReference;
++
++import static org.assertj.core.api.Assertions.assertThat;
++import static org.assertj.core.api.Assertions.assertThatThrownBy;
++
++/**
++ * Tests for the {@link JsonHelper} class.
++ *
++ * @author Sebastien Deleuze
++ */
++class JsonHelperTests {
++
++	private final JsonHelper jsonHelper = new JsonHelper();
++
++	@Test
++	void shouldThrowExceptionWhenJsonIsNull() {
++		assertThatThrownBy(() -> this.jsonHelper.fromJson(null, TestRecord.class))
++			.isInstanceOf(IllegalArgumentException.class)
++			.hasMessage("json cannot be null");
++	}
++
++	@Test
++	void shouldReturnNullWhenJsonIsJsonNull() {
++		assertThat(this.jsonHelper.fromJson("null", TestRecord.class)).isNull();
++	}
++
++	@Test
++	void shouldThrowExceptionWhenClassIsNull() {
++		assertThatThrownBy(() -> this.jsonHelper.fromJson("{}", (Class<?>) null))
++			.isInstanceOf(IllegalArgumentException.class)
++			.hasMessage("type cannot be null");
++	}
++
++	@Test
++	void shouldThrowExceptionWhenTypeIsNull() {
++		assertThatThrownBy(() -> this.jsonHelper.fromJson("{}", (ParameterizedTypeReference<?>) null))
++			.isInstanceOf(IllegalArgumentException.class)
++			.hasMessage("type cannot be null");
++	}
++
++	@Test
++	void fromJsonToObject() {
++		var json = """
++					{
++						"name" : "John",
++						"age" : 30
++					}
++				""";
++		var object = this.jsonHelper.fromJson(json, TestRecord.class);
++		Assertions.assertThat(object).isNotNull();
++		Assertions.assertThat(object.name).isEqualTo("John");
++		Assertions.assertThat(object.age).isEqualTo(30);
++	}
++
++	@Test
++	void fromJsonToObjectWithMissingProperty() {
++		var json = """
++					{
++						"name": "John"
++					}
++				""";
++		var object = this.jsonHelper.fromJson(json, TestRecord.class);
++		Assertions.assertThat(object).isNotNull();
++		Assertions.assertThat(object.name).isEqualTo("John");
++		Assertions.assertThat(object.age).isNull();
++	}
++
++	@Test
++	void fromJsonToObjectWithNullProperty() {
++		var json = """
++					{
++						"name": "John",
++						"age": null
++					}
++				""";
++		var object = this.jsonHelper.fromJson(json, TestRecord.class);
++		Assertions.assertThat(object).isNotNull();
++		Assertions.assertThat(object.name).isEqualTo("John");
++		Assertions.assertThat(object.age).isNull();
++	}
++
++	@Test
++	void fromJsonToObjectWithOtherNullProperty() {
++		var json = """
++					{
++						"name": null,
++						"age": 21
++					}
++				""";
++		var object = this.jsonHelper.fromJson(json, TestRecord.class);
++		Assertions.assertThat(object).isNotNull();
++		Assertions.assertThat(object.name).isNull();
++		Assertions.assertThat(object.age).isEqualTo(21);
++	}
++
++	@Test
++	void fromJsonToObjectWithUnknownProperty() {
++		var json = """
++					{
++						"name": "James",
++						"surname": "Bond"
++					}
++				""";
++		var object = this.jsonHelper.fromJson(json, TestRecord.class);
++		Assertions.assertThat(object).isNotNull();
++		Assertions.assertThat(object.name).isEqualTo("James");
++	}
++
++	@Test
++	void fromJsonToObjectWithType() {
++		var json = """
++					{
++						"name" : "John",
++						"age" : 30
++					}
++				""";
++		TestRecord object = this.jsonHelper.fromJson(json, (Type) TestRecord.class);
++		assertThat(object).isNotNull();
++		assertThat(object.name).isEqualTo("John");
++		assertThat(object.age).isEqualTo(30);
++	}
++
++	@Test
++	void fromObjectToJson() {
++		var object = new TestRecord("John", 30);
++		var json = this.jsonHelper.toJson(object);
++		Assertions.assertThat(json).isEqualToIgnoringWhitespace("""
++					{
++						"name" : "John",
++						"age" : 30
++					}
++				""");
++	}
++
++	@Test
++	void fromObjectToJsonWithNullValues() {
++		var object = new TestRecord("John", null);
++		var json = this.jsonHelper.toJson(object);
++		Assertions.assertThat(json).isEqualToIgnoringWhitespace("""
++					{
++						"name" : "John",
++						"age" : null
++					}
++				""");
++	}
++
++	@Test
++	void fromNullObjectToJson() {
++		var json = this.jsonHelper.toJson(null);
++		Assertions.assertThat(json).isEqualToIgnoringWhitespace("null");
++	}
++
++	@Test
++	void fromObjectToString() {
++		var value = this.jsonHelper.convertToTypedObject("John", String.class);
++		Assertions.assertThat(value).isOfAnyClassIn(String.class);
++		Assertions.assertThat(value).isEqualTo("John");
++	}
++
++	@Test
++	void fromObjectToByte() {
++		var value = this.jsonHelper.convertToTypedObject("1", Byte.class);
++		Assertions.assertThat(value).isOfAnyClassIn(Byte.class);
++		Assertions.assertThat(value).isEqualTo((byte) 1);
++	}
++
++	@Test
++	void fromObjectToInteger() {
++		var value = this.jsonHelper.convertToTypedObject("1", Integer.class);
++		Assertions.assertThat(value).isOfAnyClassIn(Integer.class);
++		Assertions.assertThat(value).isEqualTo(1);
++	}
++
++	@Test
++	void fromObjectToShort() {
++		var value = this.jsonHelper.convertToTypedObject("1", Short.class);
++		Assertions.assertThat(value).isOfAnyClassIn(Short.class);
++		Assertions.assertThat(value).isEqualTo((short) 1);
++	}
++
++	@Test
++	void fromObjectToLong() {
++		var value = this.jsonHelper.convertToTypedObject("1", Long.class);
++		Assertions.assertThat(value).isOfAnyClassIn(Long.class);
++		Assertions.assertThat(value).isEqualTo(1L);
++	}
++
++	@Test
++	void fromObjectToDouble() {
++		var value = this.jsonHelper.convertToTypedObject("1.0", Double.class);
++		Assertions.assertThat(value).isOfAnyClassIn(Double.class);
++		Assertions.assertThat(value).isEqualTo(1.0);
++	}
++
++	@Test
++	void fromObjectToFloat() {
++		var value = this.jsonHelper.convertToTypedObject("1.0", Float.class);
++		Assertions.assertThat(value).isOfAnyClassIn(Float.class);
++		Assertions.assertThat(value).isEqualTo(1.0f);
++	}
++
++	@Test
++	void fromObjectToBoolean() {
++		var value = this.jsonHelper.convertToTypedObject("true", Boolean.class);
++		Assertions.assertThat(value).isOfAnyClassIn(Boolean.class);
++		Assertions.assertThat(value).isEqualTo(true);
++	}
++
++	@Test
++	void fromObjectToEnum() {
++		var value = this.jsonHelper.convertToTypedObject("VALUE", TestEnum.class);
++		Assertions.assertThat(value).isOfAnyClassIn(TestEnum.class);
++		Assertions.assertThat(value).isEqualTo(TestEnum.VALUE);
++	}
++
++	@Test
++	void fromObjectToRecord() {
++		var record = new TestRecord("John", 30);
++		var value = this.jsonHelper.convertToTypedObject(record, TestRecord.class);
++		Assertions.assertThat(value).isOfAnyClassIn(TestRecord.class);
++		Assertions.assertThat(value).isEqualTo(new TestRecord("John", 30));
++	}
++
++	@Test
++	void fromStringToObject() {
++		String jsonString = """
++				{
++					"name": "foo",
++					"age": 7
++				}
++				""";
++		var value = this.jsonHelper.convertToTypedObject(jsonString, TestSimpleObject.class);
++		Assertions.assertThat(value).isOfAnyClassIn(TestSimpleObject.class);
++
++		TestSimpleObject testSimpleObject = (TestSimpleObject) value;
++		assertThat(testSimpleObject.name).isEqualTo("foo");
++		assertThat(testSimpleObject.age).isEqualTo(7);
++	}
++
++	@Test
++	void fromScientificNotationToInteger() {
++		var value = this.jsonHelper.convertToTypedObject("1.5E7", Integer.class);
++		Assertions.assertThat(value).isInstanceOf(Integer.class);
++		Assertions.assertThat(value).isEqualTo(15_000_000);
++	}
++
++	@Test
++	void fromScientificNotationToLong() {
++		var value = this.jsonHelper.convertToTypedObject("1.5E12", Long.class);
++		Assertions.assertThat(value).isInstanceOf(Long.class);
++		Assertions.assertThat(value).isEqualTo(1_500_000_000_000L);
++	}
++
++	@Test
++	void localDateTime() {
++		String input = "2026-04-19T07:12:00";
++		LocalDateTime result = (LocalDateTime) this.jsonHelper.convertToTypedObject(input, LocalDateTime.class);
++		assertThat(result.getYear()).isEqualTo(2026);
++	}
++
++	record TestRecord(String name, Integer age) {
++	}
++
++	static class TestSimpleObject {
++
++		public String name;
++
++		public int age;
++
++	}
++
++	enum TestEnum {
++
++		VALUE
++
++	}
++
++}
 diff --git a/spring-ai-model/pom.xml b/spring-ai-model/pom.xml
 index 66f44d47a..ed7164ee3 100644
 --- a/spring-ai-model/pom.xml
@@ -1978,10 +2417,10 @@ index 66f44d47a..ed7164ee3 100644
  			<artifactId>spring-ai-commons</artifactId>
 diff --git a/spring-ai-model/src/main/java/org/springframework/ai/util/Nullness.java b/spring-ai-model/src/main/java/org/springframework/ai/util/Nullness.java
 new file mode 100644
-index 000000000..2f89da17f
+index 000000000..13c86b07e
 --- /dev/null
 +++ b/spring-ai-model/src/main/java/org/springframework/ai/util/Nullness.java
-@@ -0,0 +1,268 @@
+@@ -0,0 +1,270 @@
 +/*
 + * Copyright 2023-present the original author or authors.
 + *
@@ -2028,7 +2467,9 @@ index 000000000..2f89da17f
 +import org.springframework.core.MethodParameter;
 +
 +/**
-+ * Constants that indicate nullness, as well as related utility methods.
++ * Constants that indicate nullness, as well as related utility methods. Backported
++ * verbatim from Spring Framework 7.0 ({@code org.springframework.core.Nullness});
++ * Spring Framework 6.x does not provide it.
 + *
 + * <p>
 + * Nullness applies to type usage, a field, a method return type, or a parameter.
@@ -2045,7 +2486,7 @@ index 000000000..2f89da17f
 + * recommended.
 + *
 + * @author Sebastien Deleuze
-+ * @since 7.0
++ * @since 1.1.8
 + */
 +public enum Nullness {
 +
@@ -2252,7 +2693,7 @@ index 000000000..2f89da17f
 +}
 diff --git a/spring-ai-model/src/main/java/org/springframework/ai/util/json/schema/AbstractSpringAiSchemaModule.java b/spring-ai-model/src/main/java/org/springframework/ai/util/json/schema/AbstractSpringAiSchemaModule.java
 new file mode 100644
-index 000000000..cc9eccfa5
+index 000000000..718a8bbff
 --- /dev/null
 +++ b/spring-ai-model/src/main/java/org/springframework/ai/util/json/schema/AbstractSpringAiSchemaModule.java
 @@ -0,0 +1,149 @@
@@ -2298,7 +2739,7 @@ index 000000000..cc9eccfa5
 + *
 + * @author Thomas Vitale
 + * @author Christian Tzolov
-+ * @since 1.0.0
++ * @since 1.1.8
 + */
 +public abstract class AbstractSpringAiSchemaModule implements Module {
 +

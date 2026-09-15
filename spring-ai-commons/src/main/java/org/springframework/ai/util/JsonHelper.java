@@ -33,7 +33,7 @@ import org.springframework.util.Assert;
  * Helper for JSON processing.
  *
  * @author Sebastien Deleuze
- * @since 2.0.0
+ * @since 1.1.8
  */
 public class JsonHelper {
 

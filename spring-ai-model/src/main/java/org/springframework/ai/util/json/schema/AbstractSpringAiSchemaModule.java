@@ -40,7 +40,7 @@ import org.springframework.core.KotlinDetector;
  *
  * @author Thomas Vitale
  * @author Christian Tzolov
- * @since 1.0.0
+ * @since 1.1.8
  */
 public abstract class AbstractSpringAiSchemaModule implements Module {
 

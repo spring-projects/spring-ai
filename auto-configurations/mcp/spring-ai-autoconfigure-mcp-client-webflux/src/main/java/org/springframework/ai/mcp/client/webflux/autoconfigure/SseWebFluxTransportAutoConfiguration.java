@@ -32,6 +32,7 @@ import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpSseC
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpSseClientProperties.SseParameters;
 import org.springframework.ai.mcp.client.webflux.transport.WebFluxSseClientTransport;
 import org.springframework.ai.mcp.customizer.McpClientCustomizer;
+import org.springframework.ai.util.JacksonUtils;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -104,7 +105,7 @@ public class SseWebFluxTransportAutoConfiguration {
 		List<NamedClientMcpTransport> sseTransports = new ArrayList<>();
 
 		var webClientBuilderTemplate = webClientBuilderProvider.getIfAvailable(WebClient::builder);
-		var jsonMapper = jsonMapperProvider.getIfAvailable(JsonMapper::new);
+		var jsonMapper = jsonMapperProvider.getIfAvailable(JacksonUtils::getDefaultJsonMapper);
 
 		for (Map.Entry<String, SseParameters> serverParameters : connectionDetails.getConnections().entrySet()) {
 			String connectionName = serverParameters.getKey();

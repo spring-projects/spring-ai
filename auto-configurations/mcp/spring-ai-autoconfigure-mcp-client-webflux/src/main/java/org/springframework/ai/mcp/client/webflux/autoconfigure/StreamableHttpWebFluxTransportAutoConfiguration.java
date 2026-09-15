@@ -30,6 +30,7 @@ import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpStre
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpStreamableHttpClientProperties.ConnectionParameters;
 import org.springframework.ai.mcp.client.webflux.transport.WebClientStreamableHttpTransport;
 import org.springframework.ai.mcp.customizer.McpClientCustomizer;
+import org.springframework.ai.util.JacksonUtils;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -97,7 +98,7 @@ public class StreamableHttpWebFluxTransportAutoConfiguration {
 		List<NamedClientMcpTransport> streamableHttpTransports = new ArrayList<>();
 
 		var webClientBuilderTemplate = webClientBuilderProvider.getIfAvailable(WebClient::builder);
-		var jsonMapper = jsonMapperProvider.getIfAvailable(JsonMapper::new);
+		var jsonMapper = jsonMapperProvider.getIfAvailable(JacksonUtils::getDefaultJsonMapper);
 
 		for (Map.Entry<String, ConnectionParameters> serverParameters : streamableProperties.getConnections()
 			.entrySet()) {

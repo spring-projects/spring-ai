@@ -32,6 +32,7 @@ import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpClie
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpSseClientProperties;
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpSseClientProperties.SseParameters;
 import org.springframework.ai.mcp.customizer.McpClientCustomizer;
+import org.springframework.ai.util.JacksonUtils;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -101,7 +102,7 @@ public class SseHttpClientTransportAutoConfiguration {
 			ObjectProvider<JsonMapper> jsonMapperProvider,
 			ObjectProvider<McpClientCustomizer<HttpClientSseClientTransport.Builder>> transportCustomizers) {
 
-		JsonMapper jsonMapper = jsonMapperProvider.getIfAvailable(JsonMapper::new);
+		JsonMapper jsonMapper = jsonMapperProvider.getIfAvailable(JacksonUtils::getDefaultJsonMapper);
 
 		List<NamedClientMcpTransport> sseTransports = new ArrayList<>();
 

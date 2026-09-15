@@ -25,10 +25,10 @@ import java.util.stream.Collectors;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.json.JsonMapper;
 import io.modelcontextprotocol.client.transport.ServerParameters;
 import org.jspecify.annotations.Nullable;
 
+import org.springframework.ai.util.JacksonUtils;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.core.io.Resource;
 
@@ -80,7 +80,7 @@ public class McpStdioClientProperties {
 			return Collections.emptyMap();
 		}
 		try {
-			Map<String, Map<String, Parameters>> stdioConnection = new JsonMapper()
+			Map<String, Map<String, Parameters>> stdioConnection = JacksonUtils.getDefaultJsonMapper()
 				.readValue(this.serversConfiguration.getInputStream(), new TypeReference<>() {
 				});
 

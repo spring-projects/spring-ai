@@ -17,16 +17,16 @@
 package org.springframework.ai.chat.client.advisor;
 
 import java.lang.reflect.Type;
-import java.util.Set;
+import java.util.List;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.networknt.schema.JsonSchema;
-import com.networknt.schema.JsonSchemaFactory;
-import com.networknt.schema.SpecVersion;
-import com.networknt.schema.ValidationMessage;
+import com.networknt.schema.Error;
+import com.networknt.schema.Schema;
+import com.networknt.schema.SchemaRegistry;
+import com.networknt.schema.SpecificationVersion;
 import io.modelcontextprotocol.json.TypeRef;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,7 +74,7 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 	/**
 	 * The JSON schema used for validation.
 	 */
-	private final JsonSchema jsonSchema;
+	private final Schema jsonSchema;
 
 	/**
 	 * The ObjectMapper used to parse the model JSON output before validation.
@@ -98,8 +98,7 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 
 		logger.info("Generated JSON Schema:\n" + jsonSchemaText);
 
-		JsonSchemaFactory schemaFactory = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V202012);
-		this.jsonSchema = schemaFactory.getSchema(jsonSchemaText);
+		this.jsonSchema = SchemaRegistry.withDefaultDialect(SpecificationVersion.DRAFT_2020_12).getSchema(jsonSchemaText);
 		this.objectMapper = objectMapper;
 
 		this.maxRepeatAttempts = maxRepeatAttempts;
@@ -192,11 +191,11 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 
 		try {
 			JsonNode instance = this.objectMapper.readTree(json);
-			Set<ValidationMessage> errors = this.jsonSchema.validate(instance);
+			List<Error> errors = this.jsonSchema.validate(instance);
 			if (errors.isEmpty()) {
 				return ValidationResponse.asValid();
 			}
-			String message = errors.stream().map(ValidationMessage::getMessage).collect(Collectors.joining("; "));
+			String message = errors.stream().map(Error::getMessage).collect(Collectors.joining("; "));
 			return ValidationResponse.asInvalid(message);
 		}
 		catch (Exception e) {

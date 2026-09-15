@@ -17,6 +17,7 @@
 package org.springframework.ai.util;
 
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -50,7 +51,52 @@ class JacksonUtilsTests {
 
 	}
 
+	@Test
+	void shouldGetJsonMapper() {
+		var jsonMapper = JacksonUtils.getDefaultJsonMapper();
+		assertThat(jsonMapper).isNotNull();
+	}
+
+	@Test
+	void shouldDeserializeEmptyStringToNullEnum() throws Exception {
+		var jsonMapper = JacksonUtils.getDefaultJsonMapper();
+		var output = jsonMapper.readValue("{\"myEnum\":\"\"}", MyRecord.class);
+		assertThat(output.myEnum()).isNull();
+	}
+
+	@Test
+	void defaultJsonMapperIgnoresUnknownProperties() throws Exception {
+		// Jackson 2 enables FAIL_ON_UNKNOWN_PROPERTIES by default; the default mapper
+		// must disable it to preserve Jackson 3 (upstream) semantics.
+		var output = JacksonUtils.getDefaultJsonMapper()
+			.readValue("{\"name\":\"x\",\"extra\":1}", UnknownPropsRecord.class);
+		assertThat(output.name()).isEqualTo("x");
+	}
+
+	@Test
+	void defaultJsonMapperWritesDatesAsIso8601() throws Exception {
+		// Jackson 2 enables WRITE_DATES_AS_TIMESTAMPS by default; the default mapper
+		// must disable it to preserve Jackson 3 (upstream) semantics.
+		var json = JacksonUtils.getDefaultJsonMapper().writeValueAsString(new DateRecord(LocalDate.of(2026, 4, 22)));
+		assertThat(json).contains("\"2026-04-22\"").doesNotContain("[2026,4,22]");
+	}
+
 	record Cell(String name, Duration lifespan) {
+	}
+
+	record MyRecord(MyEnum myEnum) {
+	}
+
+	enum MyEnum {
+
+		A, B
+
+	}
+
+	record UnknownPropsRecord(String name) {
+	}
+
+	record DateRecord(LocalDate date) {
 	}
 
 }

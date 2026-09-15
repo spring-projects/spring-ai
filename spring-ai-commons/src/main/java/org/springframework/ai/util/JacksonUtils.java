@@ -21,6 +21,7 @@ import java.util.List;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.Module;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 
 import org.springframework.beans.BeanUtils;
@@ -96,6 +97,10 @@ public abstract class JacksonUtils {
 		jsonMapper = JsonMapper.builder()
 			.disable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
 			.enable(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT)
+			// Jackson 2 defaults that Jackson 3 turned off: disable them to keep the
+			// upstream (Jackson 3) JsonHelper and tool-argument semantics.
+			.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+			.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
 			.addModules(JacksonUtils.instantiateAvailableModules())
 			.build();
 	}
@@ -103,8 +108,10 @@ public abstract class JacksonUtils {
 	/**
 	 * Returns a default Jackson {@link JsonMapper} instance customized with
 	 * {@link DeserializationFeature#FAIL_ON_TRAILING_TOKENS} disabled and the Jackson
-	 * modules found by {@link #instantiateAvailableModules} configured.
-	 * @since 2.0.0
+	 * modules found by {@link #instantiateAvailableModules} configured. Jackson 2
+	 * defaults that Jackson 3 changed ({@code FAIL_ON_UNKNOWN_PROPERTIES},
+	 * {@code WRITE_DATES_AS_TIMESTAMPS}) are disabled to preserve Jackson 3 semantics.
+	 * @since 1.1.8
 	 */
 	public static JsonMapper getDefaultJsonMapper() {
 		return jsonMapper;
