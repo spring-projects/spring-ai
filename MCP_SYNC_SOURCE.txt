@@ -5,4 +5,4 @@ SYNC_SRC=v2.0.1
 SYNC_SRC_TAG=655d6b24ee15da353d2446a4da8f126a93cefc70
 SYNC_SRC_COMMIT=c9107fdac0a6c88489c08bb88abcee74c146981d
 # The pure-mirror commit ("mcp: mirror MCP module from upstream v2.0.1").
-MIRROR_COMMIT=a68a8e0f0b443cfa5d3617b7b091354ad620909c
+MIRROR_COMMIT=6cb0c65c2bd4a8fd3c97a701b4a6d4c22ba86a55
