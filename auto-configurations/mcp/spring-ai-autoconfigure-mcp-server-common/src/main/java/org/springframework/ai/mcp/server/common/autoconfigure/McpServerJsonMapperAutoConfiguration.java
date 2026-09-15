@@ -63,8 +63,7 @@ public class McpServerJsonMapperAutoConfiguration {
 			.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
 			// Register Jackson modules via server loader
 			.addModules(JacksonUtils.instantiateAvailableModules())
-			.changeDefaultPropertyInclusion(
-					incl -> JsonInclude.Value.construct(JsonInclude.Include.NON_NULL, JsonInclude.Include.NON_NULL))
+			.serializationInclusion(JsonInclude.Include.NON_NULL)
 			.build();
 	}
 

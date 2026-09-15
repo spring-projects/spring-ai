@@ -17,7 +17,7 @@
 package org.springframework.ai.mcp.server.webflux.autoconfigure;
 
 import com.fasterxml.jackson.databind.json.JsonMapper;
-import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
+import io.modelcontextprotocol.json.jackson2.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.spec.McpSchema;
 
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerStatelessAutoConfiguration;

@@ -17,15 +17,17 @@
 package org.springframework.ai.chat.client.advisor;
 
 import java.lang.reflect.Type;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.networknt.schema.JsonSchema;
+import com.networknt.schema.JsonSchemaFactory;
+import com.networknt.schema.SpecVersion;
+import com.networknt.schema.ValidationMessage;
 import io.modelcontextprotocol.json.TypeRef;
-import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
-import io.modelcontextprotocol.json.schema.JsonSchemaValidator.ValidationResponse;
-import io.modelcontextprotocol.json.schema.jackson.DefaultJsonSchemaValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import reactor.core.publisher.Flux;
@@ -60,9 +62,6 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 
 	private static final Logger logger = LoggerFactory.getLogger(StructuredOutputValidationAdvisor.class);
 
-	private static final TypeRef<HashMap<String, Object>> MAP_TYPE_REF = new TypeRef<>() {
-	};
-
 	/**
 	 * Set the order close to {@link Ordered#LOWEST_PRECEDENCE} to ensure an advisor is
 	 * executed toward the last (but before the model call) in the chain (last for request
@@ -75,12 +74,12 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 	/**
 	 * The JSON schema used for validation.
 	 */
-	private final Map<String, Object> jsonSchema;
+	private final JsonSchema jsonSchema;
 
 	/**
-	 * The JSON schema validator.
+	 * The ObjectMapper used to parse the model JSON output before validation.
 	 */
-	private final DefaultJsonSchemaValidator jsonvalidator;
+	private final ObjectMapper objectMapper;
 
 	private final int maxRepeatAttempts;
 
@@ -95,20 +94,13 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 
 		this.advisorOrder = advisorOrder;
 
-		this.jsonvalidator = new DefaultJsonSchemaValidator(objectMapper);
-
 		String jsonSchemaText = JsonSchemaGenerator.generateForType(outputType);
 
 		logger.info("Generated JSON Schema:\n" + jsonSchemaText);
 
-		var jsonMapper = new JacksonMcpJsonMapper(JsonParser.getObjectMapper());
-
-		try {
-			this.jsonSchema = jsonMapper.readValue(jsonSchemaText, MAP_TYPE_REF);
-		}
-		catch (Exception e) {
-			throw new IllegalArgumentException("Failed to parse JSON schema", e);
-		}
+		JsonSchemaFactory schemaFactory = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V202012);
+		this.jsonSchema = schemaFactory.getSchema(jsonSchemaText);
+		this.objectMapper = objectMapper;
 
 		this.maxRepeatAttempts = maxRepeatAttempts;
 	}
@@ -198,7 +190,18 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 
 		logger.debug("Validating JSON output against schema. Attempts left: " + this.maxRepeatAttempts);
 
-		return this.jsonvalidator.validate(this.jsonSchema, json);
+		try {
+			JsonNode instance = this.objectMapper.readTree(json);
+			Set<ValidationMessage> errors = this.jsonSchema.validate(instance);
+			if (errors.isEmpty()) {
+				return ValidationResponse.asValid();
+			}
+			String message = errors.stream().map(ValidationMessage::getMessage).collect(Collectors.joining("; "));
+			return ValidationResponse.asInvalid(message);
+		}
+		catch (Exception e) {
+			return ValidationResponse.asInvalid("Invalid JSON: " + e.getMessage());
+		}
 	}
 
 	@SuppressWarnings("null")
@@ -325,6 +328,18 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 			}
 			return new StructuredOutputValidationAdvisor(this.advisorOrder, this.outputType, this.maxRepeatAttempts,
 					this.objectMapper);
+		}
+
+	}
+
+	private record ValidationResponse(boolean valid, String errorMessage) {
+
+		static ValidationResponse asValid() {
+			return new ValidationResponse(true, null);
+		}
+
+		static ValidationResponse asInvalid(String errorMessage) {
+			return new ValidationResponse(false, errorMessage);
 		}
 
 	}

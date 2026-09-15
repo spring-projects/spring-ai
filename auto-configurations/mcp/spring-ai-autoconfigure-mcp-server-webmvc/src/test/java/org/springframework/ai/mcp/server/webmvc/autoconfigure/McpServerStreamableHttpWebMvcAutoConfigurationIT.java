@@ -17,7 +17,7 @@
 package org.springframework.ai.mcp.server.webmvc.autoconfigure;
 
 import com.fasterxml.jackson.databind.json.JsonMapper;
-import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
+import io.modelcontextprotocol.json.jackson2.JacksonMcpJsonMapper;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerJsonMapperAutoConfiguration;
