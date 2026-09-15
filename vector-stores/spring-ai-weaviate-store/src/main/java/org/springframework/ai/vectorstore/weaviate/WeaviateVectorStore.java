@@ -44,6 +44,7 @@ import io.weaviate.client.v1.graphql.query.fields.Field;
 import io.weaviate.client.v1.graphql.query.fields.Fields;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -91,6 +92,7 @@ import org.springframework.util.StringUtils;
  * @author Soby Chacko
  * @author Thomas Vitale
  * @author Jonghoon Park
+ * @author Taewoong Kim
  * @since 1.0.0
  */
 public class WeaviateVectorStore extends AbstractObservationVectorStore {
@@ -112,6 +114,8 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 	private final WeaviateVectorStoreOptions options;
 
 	private final ConsistentLevel consistencyLevel;
+
+	private final @Nullable String tenantName;
 
 	/**
 	 * List of metadata fields (as field name and type) that can be used in similarity
@@ -153,6 +157,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 
 		this.weaviateClient = builder.weaviateClient;
 		this.consistencyLevel = builder.consistencyLevel;
+		this.tenantName = builder.tenantName;
 		this.filterMetadataFields = builder.filterMetadataFields;
 		this.filterExpressionConverter = new WeaviateFilterExpressionConverter(
 				this.filterMetadataFields.stream().map(MetadataField::name).toList(),
@@ -258,18 +263,21 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 			}
 		}
 
-		return WeaviateObject.builder()
+		var objectBuilder = WeaviateObject.builder()
 			.className(this.options.getObjectClass())
 			.id(document.getId())
 			.vector(EmbeddingUtils.toFloatArray(embeddings.get(documents.indexOf(document))))
-			.properties(fields)
-			.build();
+			.properties(fields);
+		if (this.tenantName != null) {
+			objectBuilder.tenant(this.tenantName);
+		}
+		return objectBuilder.build();
 	}
 
 	@Override
 	public void doDelete(List<String> documentIds) {
 
-		Result<BatchDeleteResponse> result = this.weaviateClient.batch()
+		var batchDeleter = this.weaviateClient.batch()
 			.objectsBatchDeleter()
 			.withClassName(this.options.getObjectClass())
 			.withConsistencyLevel(this.consistencyLevel.name())
@@ -277,8 +285,11 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 				.path("id")
 				.operator(Operator.ContainsAny)
 				.valueString(documentIds.toArray(new String[0]))
-				.build())
-			.run();
+				.build());
+		if (this.tenantName != null) {
+			batchDeleter.withTenant(this.tenantName);
+		}
+		Result<BatchDeleteResponse> result = batchDeleter.run();
 
 		if (result.hasErrors()) {
 			String errorMessages = result.getError()
@@ -341,6 +352,9 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 			.withWhereFilter(WhereArgument.builder().build()) // adds an empty 'where:{}'
 			// placeholder.
 			.fields(Fields.builder().fields(this.weaviateSimilaritySearchFields).build());
+		if (this.tenantName != null) {
+			queryBuilder.tenant(this.tenantName);
+		}
 
 		String graphQLQuery = queryBuilder.build().buildQuery();
 
@@ -427,9 +441,14 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 	@Override
 	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
 
-		return VectorStoreObservationContext.builder(VectorStoreProvider.WEAVIATE.value(), operationName)
+		VectorStoreObservationContext.Builder builder = VectorStoreObservationContext
+			.builder(VectorStoreProvider.WEAVIATE.value(), operationName)
 			.dimensions(this.embeddingModel.dimensions())
 			.collectionName(this.options.getObjectClass());
+		if (this.tenantName != null) {
+			builder.namespace(this.tenantName);
+		}
+		return builder;
 	}
 
 	@Override
@@ -525,6 +544,8 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 
 		private ConsistentLevel consistencyLevel = ConsistentLevel.ONE;
 
+		private @Nullable String tenantName;
+
 		private List<MetadataField> filterMetadataFields = List.of();
 
 		private final WeaviateClient weaviateClient;
@@ -564,6 +585,20 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 		public Builder consistencyLevel(ConsistentLevel consistencyLevel) {
 			Assert.notNull(consistencyLevel, "consistencyLevel must not be null");
 			this.consistencyLevel = consistencyLevel;
+			return this;
+		}
+
+		/**
+		 * Configures the tenant used to scope operations on an existing multi-tenant
+		 * collection. This vector store does not manage tenant or collection lifecycle.
+		 * Automatic tenant creation follows the Weaviate collection configuration.
+		 * @param tenantName the tenant name to scope operations to ({@code null} or blank
+		 * keeps the existing non-tenant behavior)
+		 * @return this builder instance
+		 * @since 2.0.1
+		 */
+		public Builder tenantName(@Nullable String tenantName) {
+			this.tenantName = StringUtils.hasText(tenantName) ? tenantName : null;
 			return this;
 		}
 

@@ -20,6 +20,10 @@ import java.util.List;
 import java.util.Map;
 
 import io.micrometer.observation.tck.TestObservationRegistry;
+import io.weaviate.client.WeaviateClient;
+import io.weaviate.client.v1.misc.model.MultiTenancyConfig;
+import io.weaviate.client.v1.schema.model.Tenant;
+import io.weaviate.client.v1.schema.model.WeaviateClass;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.junit.jupiter.Container;
@@ -50,9 +54,12 @@ import static org.springframework.ai.test.vectorstore.ObservationTestUtil.assert
  * @author Soby Chacko
  * @author Thomas Vitale
  * @author Jonghoon Park
+ * @author Taewoong Kim
  */
 @Testcontainers
 public class WeaviateVectorStoreAutoConfigurationIT {
+
+	private static final String MULTI_TENANT_OBJECT_CLASS = "SpringAiAutoConfiguredMultiTenant";
 
 	@Container
 	static WeaviateContainer weaviate = new WeaviateContainer("semitechnologies/weaviate:1.31.22")
@@ -191,6 +198,62 @@ public class WeaviateVectorStoreAutoConfigurationIT {
 				assertThat(options.getObjectClass()).isEqualTo("CustomObjectClass");
 				assertThat(options.getContentFieldName()).isEqualTo("customContentFieldName");
 				assertThat(options.getMetaFieldPrefix()).isEqualTo("custom_");
+			});
+	}
+
+	@Test
+	void tenantNamePropertyScopesOperations() {
+		this.contextRunner
+			.withPropertyValues("spring.ai.vectorstore.weaviate.object-class=" + MULTI_TENANT_OBJECT_CLASS,
+					"spring.ai.vectorstore.weaviate.tenant-name=TenantA")
+			.run(context -> {
+				WeaviateClient weaviateClient = context.getBean(WeaviateClient.class);
+				WeaviateVectorStoreProperties properties = context.getBean(WeaviateVectorStoreProperties.class);
+				WeaviateVectorStore vectorStore = context.getBean(WeaviateVectorStore.class);
+
+				weaviateClient.schema().classDeleter().withClassName(MULTI_TENANT_OBJECT_CLASS).run();
+				var createClassResult = weaviateClient.schema()
+					.classCreator()
+					.withClass(WeaviateClass.builder()
+						.className(MULTI_TENANT_OBJECT_CLASS)
+						.vectorizer("none")
+						.multiTenancyConfig(
+								MultiTenancyConfig.builder().enabled(true).autoTenantCreation(false).build())
+						.build())
+					.run();
+				assertThat(createClassResult.hasErrors()).isFalse();
+
+				var createTenantResult = weaviateClient.schema()
+					.tenantsCreator()
+					.withClassName(MULTI_TENANT_OBJECT_CLASS)
+					.withTenants(Tenant.builder().name("TenantA").build())
+					.run();
+				assertThat(createTenantResult.hasErrors()).isFalse();
+
+				Document tenantDocument = new Document("Spring AI auto-configured tenant",
+						Map.of("country", "KR", "year", 2026, "active", true, "price", 3.14));
+				try {
+					assertThat(properties.getTenantName()).isEqualTo("TenantA");
+					assertThat(vectorStore.createObservationContextBuilder("query").build().getNamespace())
+						.isEqualTo("TenantA");
+
+					vectorStore.add(List.of(tenantDocument));
+					assertThat(vectorStore.similaritySearch(SearchRequest.builder()
+						.query("auto-configured tenant")
+						.topK(5)
+						.similarityThresholdAll()
+						.build())).extracting(Document::getId).containsExactly(tenantDocument.getId());
+
+					vectorStore.delete(List.of(tenantDocument.getId()));
+					assertThat(vectorStore.similaritySearch(SearchRequest.builder()
+						.query("auto-configured tenant")
+						.topK(5)
+						.similarityThresholdAll()
+						.build())).isEmpty();
+				}
+				finally {
+					weaviateClient.schema().classDeleter().withClassName(MULTI_TENANT_OBJECT_CLASS).run();
+				}
 			});
 	}
 
