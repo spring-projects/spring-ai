@@ -33,6 +33,7 @@ import java.util.function.Consumer;
 import com.openai.client.OpenAIClient;
 import com.openai.client.OpenAIClientAsync;
 import com.openai.core.JsonValue;
+import com.openai.core.ObjectMappers;
 import com.openai.core.RequestOptions;
 import com.openai.core.http.AsyncStreamResponse;
 import com.openai.models.FunctionDefinition;
@@ -922,6 +923,27 @@ class OpenAiChatModelTests {
 			.isEqualTo("Think step one. Think step two.");
 		assertThat(responses.get(2).getResult().getOutput().getMetadata().get("reasoningContent"))
 			.isEqualTo("Think step one. Think step two.");
+	}
+
+	@Test // gh-6928
+	void streamingUsageChunkWithoutRequiredMetadataIsAggregated() throws Exception {
+		ChatCompletionChunk usageChunk = ObjectMappers.jsonMapper().readValue("""
+				{"choices":[],"usage":{"prompt_tokens":10,"completion_tokens":20,"total_tokens":30}}
+				""", ChatCompletionChunk.class);
+		List<ChatCompletionChunk> chunks = List.of(
+				streamingChunk(delta -> delta.content("Hello"), ChatCompletionChunk.Choice.FinishReason.STOP),
+				usageChunk);
+
+		AtomicReference<ChatResponse> aggregatedResponse = new AtomicReference<>();
+		new MessageAggregator().aggregate(streamResponses(chunks), aggregatedResponse::set).blockLast();
+
+		assertThat(aggregatedResponse.get()).isNotNull();
+		assertThat(aggregatedResponse.get().getResult().getOutput().getText()).isEqualTo("Hello");
+		assertThat(aggregatedResponse.get().getMetadata().getId()).isEqualTo("chatcmpl-123");
+		assertThat(aggregatedResponse.get().getMetadata().getModel()).isEqualTo("deepseek-reasoner");
+		assertThat(aggregatedResponse.get().getMetadata().getUsage().getPromptTokens()).isEqualTo(10);
+		assertThat(aggregatedResponse.get().getMetadata().getUsage().getCompletionTokens()).isEqualTo(20);
+		assertThat(aggregatedResponse.get().getMetadata().getUsage().getTotalTokens()).isEqualTo(30);
 	}
 
 	private AssistantMessage aggregateStreaming(List<ChatCompletionChunk> chunks) {
