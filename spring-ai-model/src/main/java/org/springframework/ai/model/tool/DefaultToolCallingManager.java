@@ -318,24 +318,26 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 				.toolCallArguments(finalToolInputArguments)
 				.build();
 
-			String toolCallResult = ToolCallingObservationDocumentation.TOOL_CALL
+			ToolResponseMessage.ToolResponse toolResponse = ToolCallingObservationDocumentation.TOOL_CALL
 				.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 						this.observationRegistry)
 				.parentObservation(parent)
 				.observe(() -> {
 					String toolResult;
+					ToolExecutionException toolExecutionException;
 					try {
 						toolResult = toolCallback.call(finalToolInputArguments, toolContext);
+						toolExecutionException = null;
 					}
 					catch (ToolExecutionException ex) {
 						toolResult = this.toolExecutionExceptionProcessor.process(ex);
+						toolExecutionException = ex;
 					}
 					observationContext.setToolCallResult(toolResult);
-					return toolResult;
+					return new ToolResponseMessage.ToolResponse(toolCall.id(), toolName, toolResult, toolExecutionException);
 				});
 
-			toolResponses.add(new ToolResponseMessage.ToolResponse(toolCall.id(), toolName,
-					toolCallResult != null ? toolCallResult : ""));
+			toolResponses.add(toolResponse);
 		}
 
 		return new InternalToolExecutionResult(ToolResponseMessage.builder().responses(toolResponses).build(),
