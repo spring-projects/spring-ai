@@ -1,5 +1,5 @@
 diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-common/pom.xml b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-common/pom.xml
-index b1ac29291..74174541a 100644
+index b1ac29291..51ced6aef 100644
 --- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-common/pom.xml
 +++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-common/pom.xml
 @@ -6,7 +6,7 @@
@@ -7,7 +7,7 @@ index b1ac29291..74174541a 100644
  		<groupId>org.springframework.ai</groupId>
  		<artifactId>spring-ai-parent</artifactId>
 -		<version>2.0.1</version>
-+		<version>1.1.8</version>
++		<version>1.1.9-SNAPSHOT</version>
  		<relativePath>../../../pom.xml</relativePath>
  	</parent>
  	<artifactId>spring-ai-autoconfigure-mcp-client-common</artifactId>
@@ -83,7 +83,7 @@ index f4fe0efa3..58f2ac986 100644
  				});
  
 diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-httpclient/pom.xml b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-httpclient/pom.xml
-index eee086874..a89337b29 100644
+index eee086874..2c813cc32 100644
 --- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-httpclient/pom.xml
 +++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-httpclient/pom.xml
 @@ -6,7 +6,7 @@
@@ -91,7 +91,7 @@ index eee086874..a89337b29 100644
  		<groupId>org.springframework.ai</groupId>
  		<artifactId>spring-ai-parent</artifactId>
 -		<version>2.0.1</version>
-+		<version>1.1.8</version>
++		<version>1.1.9-SNAPSHOT</version>
  		<relativePath>../../../pom.xml</relativePath>
  	</parent>
  	<artifactId>spring-ai-autoconfigure-mcp-client-httpclient</artifactId>
@@ -225,7 +225,7 @@ index ea0402f3b..4a83c9363 100644
  import org.springframework.ai.mcp.client.common.autoconfigure.NamedClientMcpTransport;
  import org.springframework.ai.mcp.client.httpclient.autoconfigure.StreamableHttpHttpClientTransportAutoConfiguration;
 diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-webflux/pom.xml b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-webflux/pom.xml
-index 098f854bf..d4b9353ae 100644
+index 098f854bf..7df4de311 100644
 --- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-webflux/pom.xml
 +++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-webflux/pom.xml
 @@ -6,7 +6,7 @@
@@ -233,7 +233,7 @@ index 098f854bf..d4b9353ae 100644
  		<groupId>org.springframework.ai</groupId>
  		<artifactId>spring-ai-parent</artifactId>
 -		<version>2.0.1</version>
-+		<version>1.1.8</version>
++		<version>1.1.9-SNAPSHOT</version>
  		<relativePath>../../../pom.xml</relativePath>
  	</parent>
  	<artifactId>spring-ai-autoconfigure-mcp-client-webflux</artifactId>
@@ -358,7 +358,7 @@ index be27e038d..25cab60e7 100644
  import org.springframework.ai.mcp.client.common.autoconfigure.NamedClientMcpTransport;
  import org.springframework.ai.mcp.client.webflux.transport.WebClientStreamableHttpTransport;
 diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-common/pom.xml b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-common/pom.xml
-index d7a8f9480..06ae43f01 100644
+index d7a8f9480..366a690d0 100644
 --- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-common/pom.xml
 +++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-common/pom.xml
 @@ -6,7 +6,7 @@
@@ -366,7 +366,7 @@ index d7a8f9480..06ae43f01 100644
  		<groupId>org.springframework.ai</groupId>
  		<artifactId>spring-ai-parent</artifactId>
 -		<version>2.0.1</version>
-+		<version>1.1.8</version>
++		<version>1.1.9-SNAPSHOT</version>
  		<relativePath>../../../pom.xml</relativePath>
  	</parent>
  	<artifactId>spring-ai-autoconfigure-mcp-server-common</artifactId>
@@ -518,7 +518,7 @@ index b07687edc..bcbe62cde 100644
  import org.springframework.ai.mcp.annotation.McpTool;
  import org.springframework.ai.mcp.annotation.McpToolParam;
 diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/pom.xml b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/pom.xml
-index b9e708f17..41290afd9 100644
+index b9e708f17..21f29948e 100644
 --- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/pom.xml
 +++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/pom.xml
 @@ -6,7 +6,7 @@
@@ -526,7 +526,7 @@ index b9e708f17..41290afd9 100644
  		<groupId>org.springframework.ai</groupId>
  		<artifactId>spring-ai-parent</artifactId>
 -		<version>2.0.1</version>
-+		<version>1.1.8</version>
++		<version>1.1.9-SNAPSHOT</version>
  		<relativePath>../../../pom.xml</relativePath>
  	</parent>
  	<artifactId>spring-ai-autoconfigure-mcp-server-webflux</artifactId>
@@ -912,7 +912,7 @@ index 675304ac7..249fb7f0f 100644
  import org.springframework.ai.mcp.client.common.autoconfigure.McpClientAutoConfiguration;
  import org.springframework.ai.mcp.client.common.autoconfigure.McpToolCallbackAutoConfiguration;
 diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webmvc/pom.xml b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webmvc/pom.xml
-index dfee15830..fbded600e 100644
+index dfee15830..e4428be6e 100644
 --- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webmvc/pom.xml
 +++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webmvc/pom.xml
 @@ -6,7 +6,7 @@
@@ -920,7 +920,7 @@ index dfee15830..fbded600e 100644
  		<groupId>org.springframework.ai</groupId>
  		<artifactId>spring-ai-parent</artifactId>
 -		<version>2.0.1</version>
-+		<version>1.1.8</version>
++		<version>1.1.9-SNAPSHOT</version>
  		<relativePath>../../../pom.xml</relativePath>
  	</parent>
  	<artifactId>spring-ai-autoconfigure-mcp-server-webmvc</artifactId>
@@ -1037,7 +1037,7 @@ index c0b8316f3..c8d824b41 100644
  import org.springframework.ai.mcp.server.common.autoconfigure.McpServerJsonMapperAutoConfiguration;
  import org.springframework.ai.mcp.server.webmvc.transport.WebMvcStreamableServerTransportProvider;
 diff --git a/mcp/common/pom.xml b/mcp/common/pom.xml
-index 4618b6f87..ba1c2bf62 100644
+index 4618b6f87..f8332f942 100644
 --- a/mcp/common/pom.xml
 +++ b/mcp/common/pom.xml
 @@ -6,7 +6,7 @@
@@ -1045,7 +1045,7 @@ index 4618b6f87..ba1c2bf62 100644
  		<groupId>org.springframework.ai</groupId>
  		<artifactId>spring-ai-parent</artifactId>
 -		<version>2.0.1</version>
-+		<version>1.1.8</version>
++		<version>1.1.9-SNAPSHOT</version>
  		<relativePath>../../pom.xml</relativePath>
  	</parent>
  	<artifactId>spring-ai-mcp</artifactId>
@@ -1082,7 +1082,7 @@ index 53a904ba0..48711efac 100644
  import io.modelcontextprotocol.server.McpStatelessServerFeatures;
  import io.modelcontextprotocol.server.McpSyncServerExchange;
 diff --git a/mcp/mcp-annotations/pom.xml b/mcp/mcp-annotations/pom.xml
-index 588392615..b0d1a7395 100644
+index 588392615..5aff07362 100644
 --- a/mcp/mcp-annotations/pom.xml
 +++ b/mcp/mcp-annotations/pom.xml
 @@ -7,7 +7,7 @@
@@ -1090,7 +1090,7 @@ index 588392615..b0d1a7395 100644
  		<groupId>org.springframework.ai</groupId>
  		<artifactId>spring-ai-parent</artifactId>
 -		<version>2.0.1</version>
-+		<version>1.1.8</version>
++		<version>1.1.9-SNAPSHOT</version>
  		<relativePath>../../pom.xml</relativePath>
  	</parent>
  
@@ -1346,7 +1346,7 @@ index ef9aaffa6..afdb5b63e 100644
  
  	private data class Filter(val name: String? = null, val ids: List<String>? = null)
 diff --git a/mcp/transport/mcp-spring-webflux/pom.xml b/mcp/transport/mcp-spring-webflux/pom.xml
-index 741c7027c..66f736e53 100644
+index 741c7027c..5d4c144a2 100644
 --- a/mcp/transport/mcp-spring-webflux/pom.xml
 +++ b/mcp/transport/mcp-spring-webflux/pom.xml
 @@ -6,7 +6,7 @@
@@ -1354,7 +1354,7 @@ index 741c7027c..66f736e53 100644
  		<groupId>org.springframework.ai</groupId>
  		<artifactId>spring-ai-parent</artifactId>
 -		<version>2.0.1</version>
-+		<version>1.1.8</version>
++		<version>1.1.9-SNAPSHOT</version>
  		<relativePath>../../../pom.xml</relativePath>
  	</parent>
  	<artifactId>mcp-spring-webflux</artifactId>
@@ -1420,7 +1420,7 @@ index 908f39235..d00f21685 100644
  import org.springframework.http.codec.ServerSentEvent;
  import org.springframework.web.reactive.function.client.WebClient;
 diff --git a/mcp/transport/mcp-spring-webmvc/pom.xml b/mcp/transport/mcp-spring-webmvc/pom.xml
-index b7b5622d3..be3b29eb0 100644
+index b7b5622d3..18a2343d9 100644
 --- a/mcp/transport/mcp-spring-webmvc/pom.xml
 +++ b/mcp/transport/mcp-spring-webmvc/pom.xml
 @@ -6,7 +6,7 @@
@@ -1428,7 +1428,7 @@ index b7b5622d3..be3b29eb0 100644
  		<groupId>org.springframework.ai</groupId>
  		<artifactId>spring-ai-parent</artifactId>
 -		<version>2.0.1</version>
-+		<version>1.1.8</version>
++		<version>1.1.9-SNAPSHOT</version>
  		<relativePath>../../../pom.xml</relativePath>
  	</parent>
  	<artifactId>mcp-spring-webmvc</artifactId>
@@ -1505,7 +1505,7 @@ index 777aae3f3..bf189e917 100644
  		// Create a mock async MCP client
  		io.modelcontextprotocol.client.McpAsyncClient mockMcpClient = mock(
 diff --git a/pom.xml b/pom.xml
-index c2084fc6c..d593b3d41 100644
+index 1447b3c09..167a50a82 100644
 --- a/pom.xml
 +++ b/pom.xml
 @@ -230,7 +230,9 @@
@@ -1588,7 +1588,7 @@ index c2084fc6c..d593b3d41 100644
  			<dependency>
  				<groupId>org.apache.commons</groupId>
 diff --git a/spring-ai-bom/pom.xml b/spring-ai-bom/pom.xml
-index 987c5af0f..2ede921cd 100644
+index ffc380eae..db46095e5 100644
 --- a/spring-ai-bom/pom.xml
 +++ b/spring-ai-bom/pom.xml
 @@ -149,6 +149,18 @@
@@ -1611,7 +1611,7 @@ index 987c5af0f..2ede921cd 100644
  
  			<dependency>
 diff --git a/spring-ai-client-chat/pom.xml b/spring-ai-client-chat/pom.xml
-index 5abb6a1f9..8e7050391 100644
+index 41a3a2655..d30b1fdb3 100644
 --- a/spring-ai-client-chat/pom.xml
 +++ b/spring-ai-client-chat/pom.xml
 @@ -37,6 +37,11 @@
@@ -1740,7 +1740,7 @@ index 380e5aec6..e13ce2e68 100644
 +
  }
 diff --git a/spring-ai-commons/pom.xml b/spring-ai-commons/pom.xml
-index 7bbb6f216..dc2593479 100644
+index 1c4fbdf5b..31eb693e8 100644
 --- a/spring-ai-commons/pom.xml
 +++ b/spring-ai-commons/pom.xml
 @@ -37,6 +37,11 @@
@@ -2400,7 +2400,7 @@ index 000000000..4809bc353
 +
 +}
 diff --git a/spring-ai-model/pom.xml b/spring-ai-model/pom.xml
-index 66f44d47a..ed7164ee3 100644
+index 64786e940..23a287ec2 100644
 --- a/spring-ai-model/pom.xml
 +++ b/spring-ai-model/pom.xml
 @@ -41,6 +41,11 @@
@@ -2968,7 +2968,7 @@ index ebbdcfc94..ce4bcaf19 100644
 +
  }
 diff --git a/starters/spring-ai-starter-mcp-client-webflux/pom.xml b/starters/spring-ai-starter-mcp-client-webflux/pom.xml
-index 839a870f2..80665d79f 100644
+index 839a870f2..7474274c9 100644
 --- a/starters/spring-ai-starter-mcp-client-webflux/pom.xml
 +++ b/starters/spring-ai-starter-mcp-client-webflux/pom.xml
 @@ -6,7 +6,7 @@
@@ -2976,12 +2976,12 @@ index 839a870f2..80665d79f 100644
  		<groupId>org.springframework.ai</groupId>
  		<artifactId>spring-ai-parent</artifactId>
 -		<version>2.0.1</version>
-+		<version>1.1.8</version>
++		<version>1.1.9-SNAPSHOT</version>
  		<relativePath>../../pom.xml</relativePath>
  	</parent>
  	<artifactId>spring-ai-starter-mcp-client-webflux</artifactId>
 diff --git a/starters/spring-ai-starter-mcp-client/pom.xml b/starters/spring-ai-starter-mcp-client/pom.xml
-index eec738d17..86a76ec91 100644
+index eec738d17..219024ee2 100644
 --- a/starters/spring-ai-starter-mcp-client/pom.xml
 +++ b/starters/spring-ai-starter-mcp-client/pom.xml
 @@ -4,7 +4,7 @@
@@ -2989,12 +2989,12 @@ index eec738d17..86a76ec91 100644
  		<groupId>org.springframework.ai</groupId>
  		<artifactId>spring-ai-parent</artifactId>
 -		<version>2.0.1</version>
-+		<version>1.1.8</version>
++		<version>1.1.9-SNAPSHOT</version>
  		<relativePath>../../pom.xml</relativePath>
  	</parent>
  	<artifactId>spring-ai-starter-mcp-client</artifactId>
 diff --git a/starters/spring-ai-starter-mcp-server-webflux/pom.xml b/starters/spring-ai-starter-mcp-server-webflux/pom.xml
-index a659bee55..36467fbb0 100644
+index a659bee55..af3c3b0e6 100644
 --- a/starters/spring-ai-starter-mcp-server-webflux/pom.xml
 +++ b/starters/spring-ai-starter-mcp-server-webflux/pom.xml
 @@ -6,7 +6,7 @@
@@ -3002,12 +3002,12 @@ index a659bee55..36467fbb0 100644
  		<groupId>org.springframework.ai</groupId>
  		<artifactId>spring-ai-parent</artifactId>
 -		<version>2.0.1</version>
-+		<version>1.1.8</version>
++		<version>1.1.9-SNAPSHOT</version>
  		<relativePath>../../pom.xml</relativePath>
  	</parent>
  	<artifactId>spring-ai-starter-mcp-server-webflux</artifactId>
 diff --git a/starters/spring-ai-starter-mcp-server-webmvc/pom.xml b/starters/spring-ai-starter-mcp-server-webmvc/pom.xml
-index f7e73a0fd..b80f480fc 100644
+index f7e73a0fd..d1859547a 100644
 --- a/starters/spring-ai-starter-mcp-server-webmvc/pom.xml
 +++ b/starters/spring-ai-starter-mcp-server-webmvc/pom.xml
 @@ -6,7 +6,7 @@
@@ -3015,12 +3015,12 @@ index f7e73a0fd..b80f480fc 100644
  		<groupId>org.springframework.ai</groupId>
  		<artifactId>spring-ai-parent</artifactId>
 -		<version>2.0.1</version>
-+		<version>1.1.8</version>
++		<version>1.1.9-SNAPSHOT</version>
  		<relativePath>../../pom.xml</relativePath>
  	</parent>
  	<artifactId>spring-ai-starter-mcp-server-webmvc</artifactId>
 diff --git a/starters/spring-ai-starter-mcp-server/pom.xml b/starters/spring-ai-starter-mcp-server/pom.xml
-index 14cb6962b..10dba14bf 100644
+index 14cb6962b..6b84e5e97 100644
 --- a/starters/spring-ai-starter-mcp-server/pom.xml
 +++ b/starters/spring-ai-starter-mcp-server/pom.xml
 @@ -4,7 +4,7 @@
@@ -3028,7 +3028,7 @@ index 14cb6962b..10dba14bf 100644
  		<groupId>org.springframework.ai</groupId>
  		<artifactId>spring-ai-parent</artifactId>
 -		<version>2.0.1</version>
-+		<version>1.1.8</version>
++		<version>1.1.9-SNAPSHOT</version>
  		<relativePath>../../pom.xml</relativePath>
  	</parent>
  	<artifactId>spring-ai-starter-mcp-server</artifactId>
