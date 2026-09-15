@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.tool.annotation.ToolParam;
+import org.springframework.ai.util.json.schema.JsonSchemaGenerator;
 import org.springframework.ai.tool.augment.ToolInputSchemaAugmenter.AugmentedArgumentType;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -58,6 +59,25 @@ class ToolInputSchemaAugmenterTest {
 
 	public record MixedAnnotationsRecord(@ToolParam(description = "Annotated field", required = true) String annotated,
 			String notAnnotated) {
+	}
+
+	public record DefaultPolicyRecord(String plain, @ToolParam(description = "Annotated field") String annotated,
+			@ToolParam(required = false) String optional) {
+	}
+
+	@Test
+	void generatedAndAugmentedSchemasUseTheSameDefaults() {
+		JsonMapper mapper = new JsonMapper();
+		JsonNode generated = mapper.readTree(JsonSchemaGenerator.generateForType(DefaultPolicyRecord.class));
+		JsonNode augmented = mapper.readTree(ToolInputSchemaAugmenter.augmentToolInputSchema("{}",
+				ToolInputSchemaAugmenter.toAugmentedArgumentTypes(DefaultPolicyRecord.class)));
+
+		for (String field : List.of("plain", "annotated", "optional")) {
+			assertEquals(generated.path("properties").path(field).get("description"),
+					augmented.path("properties").path(field).get("description"));
+			assertEquals(generated.path("required").valueStream().anyMatch(node -> field.equals(node.asString())),
+					augmented.path("required").valueStream().anyMatch(node -> field.equals(node.asString())));
+		}
 	}
 
 	@Nested
@@ -150,8 +170,8 @@ class ToolInputSchemaAugmenterTest {
 			assertEquals(2, argumentTypes.size());
 
 			for (AugmentedArgumentType argType : argumentTypes) {
-				assertEquals("no description", argType.description());
-				assertFalse(argType.required());
+				assertEquals("", argType.description());
+				assertTrue(argType.required());
 			}
 		}
 
@@ -174,8 +194,8 @@ class ToolInputSchemaAugmenterTest {
 				.filter(arg -> "notAnnotated".equals(arg.name()))
 				.findFirst()
 				.orElseThrow();
-			assertEquals("no description", notAnnotatedArg.description());
-			assertFalse(notAnnotatedArg.required());
+			assertEquals("", notAnnotatedArg.description());
+			assertTrue(notAnnotatedArg.required());
 		}
 
 		@Test
