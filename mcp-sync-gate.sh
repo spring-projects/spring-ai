@@ -64,17 +64,20 @@ BAD=$(git status --porcelain | grep -vE \
 [ -z "$BAD" ] || fail "uncommitted/untracked files present (commit them or record them in the patch):
 $BAD"
 
-# 3) Exact drift: the stored patch must equal the full mirror->HEAD diff.
+# 3) Exact drift: the COMMITTED patch must equal the full mirror->HEAD diff.
+#    Compared against `git show HEAD:mcp-compat.patch` (the canonical LF blob) so a
+#    CRLF-smudged working-tree copy cannot produce false failures or hide real ones.
 TMP=$(mktemp)
 trap 'rm -f "$TMP"' EXIT
 git diff "$MIRROR_COMMIT" HEAD -- . \
     ':(exclude)mcp-compat.patch' ':(exclude)mcp-sync-gate.sh' ':(exclude)MCP_SYNC_SOURCE.txt' \
     ':(exclude).gitignore' > "$TMP"
-cmp -s "$TMP" mcp-compat.patch || fail "mcp-compat.patch does not match the actual mirror->HEAD drift.
+git show HEAD:mcp-compat.patch > "$TMP.stored"
+cmp -s "$TMP" "$TMP.stored" || fail "mcp-compat.patch does not match the actual mirror->HEAD drift.
 Regenerate with:
   git diff $MIRROR_COMMIT HEAD -- . ':(exclude)mcp-compat.patch' ':(exclude)mcp-sync-gate.sh' ':(exclude)MCP_SYNC_SOURCE.txt' ':(exclude).gitignore' > mcp-compat.patch"
 
-# 4) The patch reverse-applies cleanly to the (verified-clean) working tree.
-git apply -R --check mcp-compat.patch || fail "mcp-compat.patch does not reverse-apply to the working tree"
+# 4) The patch reverse-applies cleanly to the committed index (EOL-proof).
+git apply -R --check --cached mcp-compat.patch || fail "mcp-compat.patch does not reverse-apply to the committed tree"
 
 echo "SYNC GATE PASSED: HEAD == $SYNC_SRC (commit $COMMIT_SHA) MCP cross-section + exactly mcp-compat.patch (whole-tree verified)"
