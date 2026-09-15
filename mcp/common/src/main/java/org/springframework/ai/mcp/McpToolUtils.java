@@ -17,6 +17,7 @@
 package org.springframework.ai.mcp;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.BiFunction;
@@ -27,22 +28,24 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.micrometer.common.util.StringUtils;
 import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.client.McpSyncClient;
+import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.server.McpServerFeatures;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.Role;
+import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
 import org.springframework.ai.chat.model.ToolContext;
-import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.ai.util.JacksonUtils;
+import org.springframework.ai.util.JsonHelper;
 import org.springframework.ai.util.json.schema.JsonSchemaUtils;
-import org.springframework.lang.Nullable;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
 
@@ -69,6 +72,8 @@ import org.springframework.util.MimeType;
  */
 public final class McpToolUtils {
 
+	private static final JsonHelper jsonHelper = new JsonHelper();
+
 	/**
 	 * The name of tool context key used to store the MCP exchange object.
 	 */
@@ -84,7 +89,7 @@ public final class McpToolUtils {
 	 * @param toolName original MCP server tool name.
 	 * @return the prefix to use for the tool to avoid name collisions.
 	 */
-	public static String prefixedToolName(String prefix, String title, String toolName) {
+	public static String prefixedToolName(String prefix, @Nullable String title, String toolName) {
 
 		if (StringUtils.isEmpty(prefix) || StringUtils.isEmpty(toolName)) {
 			throw new IllegalArgumentException("Prefix or toolName cannot be null or empty");
@@ -129,7 +134,7 @@ public final class McpToolUtils {
 			return "";
 		}
 
-		return Stream.of(input.toLowerCase().split("_"))
+		return Stream.of(input.toLowerCase(Locale.ROOT).split("_"))
 			.filter(word -> !word.isEmpty())
 			.map(word -> String.valueOf(word.charAt(0)))
 			.collect(java.util.stream.Collectors.joining("_"));
@@ -198,13 +203,11 @@ public final class McpToolUtils {
 	 * @throws RuntimeException if there's an error during the function execution
 	 */
 	public static McpServerFeatures.SyncToolSpecification toSyncToolSpecification(ToolCallback toolCallback,
-			MimeType mimeType) {
+			@Nullable MimeType mimeType) {
 
 		SharedSyncToolSpecification sharedSpec = toSharedSyncToolSpecification(toolCallback, mimeType);
 
 		return new McpServerFeatures.SyncToolSpecification(sharedSpec.tool(),
-				(exchange, map) -> sharedSpec.sharedHandler()
-					.apply(exchange, new CallToolRequest(sharedSpec.tool().name(), map)),
 				(exchange, request) -> sharedSpec.sharedHandler().apply(exchange, request));
 	}
 
@@ -221,7 +224,7 @@ public final class McpToolUtils {
 	 * @throws RuntimeException if there's an error during the function execution
 	 */
 	public static McpStatelessServerFeatures.SyncToolSpecification toStatelessSyncToolSpecification(
-			ToolCallback toolCallback, MimeType mimeType) {
+			ToolCallback toolCallback, @Nullable MimeType mimeType) {
 
 		var sharedSpec = toSharedSyncToolSpecification(toolCallback, mimeType);
 
@@ -241,33 +244,45 @@ public final class McpToolUtils {
 		return DefaultToolDefinition.builder()
 			.name(prefixedToolName)
 			.description(tool.description())
-			.inputSchema(JsonSchemaUtils.ensureValidInputSchema(ModelOptionsUtils.toJsonString(tool.inputSchema())))
+			.inputSchema(JsonSchemaUtils.ensureValidInputSchema(jsonHelper.toJson(tool.inputSchema())))
 			.build();
 	}
 
 	private static SharedSyncToolSpecification toSharedSyncToolSpecification(ToolCallback toolCallback,
-			MimeType mimeType) {
+			@Nullable MimeType mimeType) {
 
-		var tool = McpSchema.Tool.builder()
-			.name(toolCallback.getToolDefinition().name())
+		var tool = McpSchema.Tool
+			.builder(toolCallback.getToolDefinition().name(),
+					new JacksonMcpJsonMapper(JacksonUtils.getDefaultJsonMapper()),
+					toolCallback.getToolDefinition().inputSchema())
 			.description(toolCallback.getToolDefinition().description())
-			.inputSchema(ModelOptionsUtils.jsonToObject(toolCallback.getToolDefinition().inputSchema(),
-					McpSchema.JsonSchema.class))
 			.build();
 
 		return new SharedSyncToolSpecification(tool, (exchangeOrContext, request) -> {
 			try {
-				String callResult = toolCallback.call(ModelOptionsUtils.toJsonString(request.arguments()),
+				String callResult = toolCallback.call(jsonHelper.toJson(request.arguments()),
 						new ToolContext(Map.of(TOOL_CONTEXT_MCP_EXCHANGE_KEY, exchangeOrContext)));
 				if (mimeType != null && mimeType.toString().startsWith("image")) {
-					McpSchema.Annotations annotations = new McpSchema.Annotations(List.of(Role.ASSISTANT), null);
-					return new McpSchema.CallToolResult(
-							List.of(new McpSchema.ImageContent(annotations, callResult, mimeType.toString())), false);
+					McpSchema.Annotations annotations = McpSchema.Annotations.builder()
+						.audience(List.of(Role.ASSISTANT))
+						.build();
+					return McpSchema.CallToolResult.builder()
+						.content(List.of(McpSchema.ImageContent.builder(callResult, mimeType.toString())
+							.annotations(annotations)
+							.build()))
+						.isError(false)
+						.build();
 				}
-				return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(callResult)), false);
+				return McpSchema.CallToolResult.builder()
+					.content(List.of(McpSchema.TextContent.builder(callResult).build()))
+					.isError(false)
+					.build();
 			}
 			catch (Exception e) {
-				return new McpSchema.CallToolResult(List.of(new McpSchema.TextContent(e.getMessage())), true);
+				return McpSchema.CallToolResult.builder()
+					.content(List.of(McpSchema.TextContent.builder(e.getMessage()).build()))
+					.isError(true)
+					.build();
 			}
 		});
 	}
@@ -368,7 +383,7 @@ public final class McpToolUtils {
 	 * @see Schedulers#boundedElastic()
 	 */
 	public static McpServerFeatures.AsyncToolSpecification toAsyncToolSpecification(ToolCallback toolCallback,
-			MimeType mimeType) {
+			@Nullable MimeType mimeType) {
 
 		McpServerFeatures.SyncToolSpecification syncToolSpecification = toSyncToolSpecification(toolCallback, mimeType);
 
@@ -382,7 +397,7 @@ public final class McpToolUtils {
 	}
 
 	public static McpStatelessServerFeatures.AsyncToolSpecification toStatelessAsyncToolSpecification(
-			ToolCallback toolCallback, MimeType mimeType) {
+			ToolCallback toolCallback, @Nullable MimeType mimeType) {
 
 		McpStatelessServerFeatures.SyncToolSpecification statelessSyncToolSpecification = toStatelessSyncToolSpecification(
 				toolCallback, mimeType);

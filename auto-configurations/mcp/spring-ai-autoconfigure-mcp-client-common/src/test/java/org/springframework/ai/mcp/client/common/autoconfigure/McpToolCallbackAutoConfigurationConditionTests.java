@@ -98,7 +98,7 @@ public class McpToolCallbackAutoConfigurationConditionTests {
 				field.setAccessible(true);
 				McpToolFilter toolFilter = (McpToolFilter) field.get(toolCallbackProvider);
 				McpSyncClient syncClient1 = mock(McpSyncClient.class);
-				var clientInfo1 = new McpSchema.Implementation("client1", "1.0.0");
+				var clientInfo1 = McpSchema.Implementation.builder("client1", "1.0.0").build();
 				when(syncClient1.getClientInfo()).thenReturn(clientInfo1);
 				McpSchema.Tool tool1 = mock(McpSchema.Tool.class);
 				when(tool1.name()).thenReturn("tool1");
@@ -126,7 +126,7 @@ public class McpToolCallbackAutoConfigurationConditionTests {
 				field.setAccessible(true);
 				McpToolFilter toolFilter = (McpToolFilter) field.get(toolCallbackProvider);
 				McpAsyncClient asyncClient1 = mock(McpAsyncClient.class);
-				var clientInfo1 = new McpSchema.Implementation("client1", "1.0.0");
+				var clientInfo1 = McpSchema.Implementation.builder("client1", "1.0.0").build();
 				when(asyncClient1.getClientInfo()).thenReturn(clientInfo1);
 				McpSchema.Tool tool1 = mock(McpSchema.Tool.class);
 				when(tool1.name()).thenReturn("tool1");

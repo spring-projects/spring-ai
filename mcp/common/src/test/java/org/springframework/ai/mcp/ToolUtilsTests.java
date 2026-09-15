@@ -19,6 +19,7 @@ package org.springframework.ai.mcp;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import io.modelcontextprotocol.client.McpSyncClient;
@@ -28,6 +29,7 @@ import io.modelcontextprotocol.server.McpServerFeatures.SyncToolSpecification;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
+import io.modelcontextprotocol.spec.McpSchema.ClientCapabilities;
 import io.modelcontextprotocol.spec.McpSchema.Implementation;
 import io.modelcontextprotocol.spec.McpSchema.ListToolsResult;
 import io.modelcontextprotocol.spec.McpSchema.TextContent;
@@ -210,6 +212,21 @@ class ToolUtilsTests {
 	}
 
 	@Test
+	void prefixedToolNameShouldHandleTrLocale() {
+		Locale defaultLocale = Locale.getDefault();
+		try {
+			Locale.setDefault(Locale.forLanguageTag("tr-TR"));
+			// Prefix "Inventory" would be lowercased to "ı" (dotless i) in turkish locale
+			// if not properly handled.
+			String result = McpToolUtils.prefixedToolName("Inventory", "server1", "toolName");
+			assertThat(result).isEqualTo("i_server1_toolName");
+		}
+		finally {
+			Locale.setDefault(defaultLocale);
+		}
+	}
+
+	@Test
 	void constructorShouldBePrivate() throws Exception {
 		Constructor<McpToolUtils> constructor = McpToolUtils.class.getDeclaredConstructor();
 		assertThat(Modifier.isPrivate(constructor.getModifiers())).isTrue();
@@ -227,7 +244,9 @@ class ToolUtilsTests {
 		assertThat(toolSpecification).isNotNull();
 		assertThat(toolSpecification.tool().name()).isEqualTo("test");
 
-		CallToolResult result = toolSpecification.call().apply(mock(McpSyncServerExchange.class), Map.of());
+		CallToolResult result = toolSpecification.callHandler()
+			.apply(mock(McpSyncServerExchange.class),
+					McpSchema.CallToolRequest.builder("test").arguments(Map.of()).build());
 		TextContent content = (TextContent) result.content().get(0);
 		assertThat(content.text()).isEqualTo("success");
 		assertThat(result.isError()).isFalse();
@@ -240,7 +259,9 @@ class ToolUtilsTests {
 		SyncToolSpecification toolSpecification = McpToolUtils.toSyncToolSpecification(callback);
 
 		assertThat(toolSpecification).isNotNull();
-		CallToolResult result = toolSpecification.call().apply(mock(McpSyncServerExchange.class), Map.of());
+		CallToolResult result = toolSpecification.callHandler()
+			.apply(mock(McpSyncServerExchange.class),
+					McpSchema.CallToolRequest.builder("test").arguments(Map.of()).build());
 		TextContent content = (TextContent) result.content().get(0);
 		assertThat(content.text()).isEqualTo("error");
 		assertThat(result.isError()).isTrue();
@@ -345,7 +366,8 @@ class ToolUtilsTests {
 	@Test
 	void getToolCallbacksFromSyncClientsWithSingleClientShouldReturnToolCallbacks() {
 		McpSyncClient mockClient = mock(McpSyncClient.class);
-		Implementation clientInfo = new Implementation("test-client", "1.0.0");
+		Implementation clientInfo = Implementation.builder("test-client", "1.0.0").build();
+		ClientCapabilities clientCapabilities = new ClientCapabilities(null, null, null, null);
 
 		Tool tool1 = mock(Tool.class);
 		when(tool1.name()).thenReturn("tool1");
@@ -356,6 +378,7 @@ class ToolUtilsTests {
 		when(tool2.description()).thenReturn("Test Tool 2");
 
 		when(mockClient.getClientInfo()).thenReturn(clientInfo);
+		when(mockClient.getClientCapabilities()).thenReturn(clientCapabilities);
 
 		ListToolsResult listToolsResult = mock(ListToolsResult.class);
 		when(listToolsResult.tools()).thenReturn(List.of(tool1, tool2));
@@ -378,26 +401,30 @@ class ToolUtilsTests {
 	void getToolCallbacksFromSyncClientsWithMultipleClientsShouldReturnCombinedToolCallbacks() {
 
 		McpSyncClient mockClient1 = mock(McpSyncClient.class);
-		Implementation clientInfo1 = new Implementation("client1", "1.0.0");
+		Implementation clientInfo1 = Implementation.builder("client1", "1.0.0").build();
+		ClientCapabilities clientCapabilities1 = new ClientCapabilities(null, null, null, null);
 
 		Tool tool1 = mock(Tool.class);
 		when(tool1.name()).thenReturn("tool1");
 		when(tool1.description()).thenReturn("Test Tool 1");
 
 		McpSyncClient mockClient2 = mock(McpSyncClient.class);
-		Implementation clientInfo2 = new Implementation("client2", "1.0.0");
+		Implementation clientInfo2 = Implementation.builder("client2", "1.0.0").build();
+		ClientCapabilities clientCapabilities2 = new ClientCapabilities(null, null, null, null);
 
 		Tool tool2 = mock(Tool.class);
 		when(tool2.name()).thenReturn("tool2");
 		when(tool2.description()).thenReturn("Test Tool 2");
 
 		when(mockClient1.getClientInfo()).thenReturn(clientInfo1);
+		when(mockClient1.getClientCapabilities()).thenReturn(clientCapabilities1);
 
 		ListToolsResult listToolsResult1 = mock(ListToolsResult.class);
 		when(listToolsResult1.tools()).thenReturn(List.of(tool1));
 		when(mockClient1.listTools()).thenReturn(listToolsResult1);
 
 		when(mockClient2.getClientInfo()).thenReturn(clientInfo2);
+		when(mockClient2.getClientCapabilities()).thenReturn(clientCapabilities2);
 
 		ListToolsResult listToolsResult2 = mock(ListToolsResult.class);
 		when(listToolsResult2.tools()).thenReturn(List.of(tool2));
@@ -420,26 +447,30 @@ class ToolUtilsTests {
 	void getToolCallbacksFromSyncClientsShouldHandleDuplicateToolNames() {
 
 		McpSyncClient mockClient1 = mock(McpSyncClient.class);
-		Implementation clientInfo1 = new Implementation("client", "1.0.0");
+		Implementation clientInfo1 = Implementation.builder("client", "1.0.0").build();
+		ClientCapabilities clientCapabilities1 = new ClientCapabilities(null, null, null, null);
 
 		Tool tool1 = mock(Tool.class);
 		when(tool1.name()).thenReturn("tool");
 		when(tool1.description()).thenReturn("Test Tool 1");
 
 		McpSyncClient mockClient2 = mock(McpSyncClient.class);
-		Implementation clientInfo2 = new Implementation("client", "1.0.0");
+		Implementation clientInfo2 = Implementation.builder("client", "1.0.0").build();
+		ClientCapabilities clientCapabilities2 = new ClientCapabilities(null, null, null, null);
 
 		Tool tool2 = mock(Tool.class);
 		when(tool2.name()).thenReturn("tool");
 		when(tool2.description()).thenReturn("Test Tool 2");
 
 		when(mockClient1.getClientInfo()).thenReturn(clientInfo1);
+		when(mockClient1.getClientCapabilities()).thenReturn(clientCapabilities1);
 
 		ListToolsResult listToolsResult1 = mock(ListToolsResult.class);
 		when(listToolsResult1.tools()).thenReturn(List.of(tool1));
 		when(mockClient1.listTools()).thenReturn(listToolsResult1);
 
 		when(mockClient2.getClientInfo()).thenReturn(clientInfo2);
+		when(mockClient2.getClientCapabilities()).thenReturn(clientCapabilities2);
 
 		ListToolsResult listToolsResult2 = mock(ListToolsResult.class);
 		when(listToolsResult2.tools()).thenReturn(List.of(tool2));

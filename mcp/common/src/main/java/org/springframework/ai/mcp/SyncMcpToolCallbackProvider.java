@@ -46,7 +46,7 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider, Applic
 
 	private final McpToolFilter toolFilter;
 
-	private McpToolNamePrefixGenerator toolNamePrefixGenerator;
+	private final McpToolNamePrefixGenerator toolNamePrefixGenerator;
 
 	private final ToolContextToMcpMetaConverter toolContextToMcpMetaConverter;
 

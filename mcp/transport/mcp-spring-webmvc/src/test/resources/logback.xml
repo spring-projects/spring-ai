@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE configuration>
+
+<configuration>
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Main MCP package -->
+    <logger name="io.modelcontextprotocol" level="INFO"/>
+
+    <!-- Client packages -->
+    <logger name="io.modelcontextprotocol.client" level="INFO"/>
+
+    <!-- Server transport package -->
+    <logger name="io.modelcontextprotocol.server.transport" level="INFO"/>
+
+    <!-- Spec package -->
+    <logger name="io.modelcontextprotocol.spec" level="INFO"/>
+
+    <!-- Root logger -->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+</configuration>

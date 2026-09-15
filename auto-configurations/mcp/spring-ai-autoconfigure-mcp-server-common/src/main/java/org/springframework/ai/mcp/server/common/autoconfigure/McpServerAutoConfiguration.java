@@ -22,8 +22,7 @@ import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
+import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.server.McpAsyncServer;
 import io.modelcontextprotocol.server.McpAsyncServerExchange;
 import io.modelcontextprotocol.server.McpServer;
@@ -48,6 +47,7 @@ import io.modelcontextprotocol.spec.McpServerTransportProvider;
 import io.modelcontextprotocol.spec.McpServerTransportProviderBase;
 import io.modelcontextprotocol.spec.McpStreamableServerTransportProvider;
 import reactor.core.publisher.Mono;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.mcp.customizer.McpAsyncServerCustomizer;
 import org.springframework.ai.mcp.customizer.McpSyncServerCustomizer;
@@ -78,13 +78,7 @@ import org.springframework.util.CollectionUtils;
  * @since 1.0.0
  * @see McpServerProperties
  */
-@AutoConfiguration(afterName = {
-		"org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerSpecificationFactoryAutoConfiguration",
-		"org.springframework.ai.mcp.server.common.autoconfigure.ToolCallbackConverterAutoConfiguration",
-		"org.springframework.ai.mcp.server.autoconfigure.McpServerSseWebFluxAutoConfiguration",
-		"org.springframework.ai.mcp.server.autoconfigure.McpServerSseWebMvcAutoConfiguration",
-		"org.springframework.ai.mcp.server.autoconfigure.McpServerStreamableHttpWebMvcAutoConfiguration",
-		"org.springframework.ai.mcp.server.autoconfigure.McpServerStreamableHttpWebFluxAutoConfiguration" })
+@AutoConfiguration
 @ConditionalOnClass(McpSchema.class)
 @EnableConfigurationProperties({ McpServerProperties.class, McpServerChangeNotificationProperties.class })
 @ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
@@ -97,8 +91,8 @@ public class McpServerAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public McpServerTransportProviderBase stdioServerTransport(
-			@Qualifier("mcpServerObjectMapper") ObjectMapper mcpServerObjectMapper) {
-		return new StdioServerTransportProvider(new JacksonMcpJsonMapper(mcpServerObjectMapper));
+			@Qualifier("mcpServerJsonMapper") JsonMapper mcpServerJsonMapper) {
+		return new StdioServerTransportProvider(new JacksonMcpJsonMapper(mcpServerJsonMapper));
 	}
 
 	@Bean
@@ -121,8 +115,9 @@ public class McpServerAutoConfiguration {
 			ObjectProvider<BiConsumer<McpSyncServerExchange, List<McpSchema.Root>>> rootsChangeConsumers,
 			Optional<McpSyncServerCustomizer> mcpSyncServerCustomizer) {
 
-		McpSchema.Implementation serverInfo = new Implementation(serverProperties.getName(),
-				serverProperties.getVersion());
+		McpSchema.Implementation serverInfo = Implementation
+			.builder(serverProperties.getName(), serverProperties.getVersion())
+			.build();
 
 		// Create the server with both tool and resource capabilities
 		SyncSpecification<?> serverBuilder;
@@ -242,8 +237,9 @@ public class McpServerAutoConfiguration {
 			ObjectProvider<BiConsumer<McpAsyncServerExchange, List<McpSchema.Root>>> rootsChangeConsumer,
 			Optional<McpAsyncServerCustomizer> asyncServerCustomizer) {
 
-		McpSchema.Implementation serverInfo = new Implementation(serverProperties.getName(),
-				serverProperties.getVersion());
+		McpSchema.Implementation serverInfo = Implementation
+			.builder(serverProperties.getName(), serverProperties.getVersion())
+			.build();
 
 		// Create the server with both tool and resource capabilities
 		AsyncSpecification<?> serverBuilder;

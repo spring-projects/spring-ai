@@ -19,14 +19,15 @@ package org.springframework.ai.mcp.client.common.autoconfigure.annotations;
 import java.lang.annotation.Annotation;
 import java.util.Set;
 
-import org.springaicommunity.mcp.annotation.McpElicitation;
-import org.springaicommunity.mcp.annotation.McpLogging;
-import org.springaicommunity.mcp.annotation.McpProgress;
-import org.springaicommunity.mcp.annotation.McpPromptListChanged;
-import org.springaicommunity.mcp.annotation.McpResourceListChanged;
-import org.springaicommunity.mcp.annotation.McpSampling;
-import org.springaicommunity.mcp.annotation.McpToolListChanged;
+import org.jspecify.annotations.Nullable;
 
+import org.springframework.ai.mcp.annotation.McpElicitation;
+import org.springframework.ai.mcp.annotation.McpLogging;
+import org.springframework.ai.mcp.annotation.McpProgress;
+import org.springframework.ai.mcp.annotation.McpPromptListChanged;
+import org.springframework.ai.mcp.annotation.McpResourceListChanged;
+import org.springframework.ai.mcp.annotation.McpSampling;
+import org.springframework.ai.mcp.annotation.McpToolListChanged;
 import org.springframework.ai.mcp.annotation.spring.ClientMcpAsyncHandlersRegistry;
 import org.springframework.ai.mcp.annotation.spring.ClientMcpSyncHandlersRegistry;
 import org.springframework.ai.mcp.annotation.spring.scan.AbstractAnnotatedMethodBeanFactoryInitializationAotProcessor;
@@ -97,7 +98,7 @@ public class McpClientAnnotationScannerAutoConfiguration {
 	static class AnnotationHints implements RuntimeHintsRegistrar {
 
 		@Override
-		public void registerHints(RuntimeHints hints, ClassLoader classLoader) {
+		public void registerHints(RuntimeHints hints, @Nullable ClassLoader classLoader) {
 			CLIENT_MCP_ANNOTATIONS.forEach(an -> hints.reflection().registerType(an, MemberCategory.values()));
 		}
 

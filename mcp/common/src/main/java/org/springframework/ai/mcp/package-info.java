@@ -34,9 +34,7 @@
  * @author Christian Tzolov
  * @since 1.0.0
  */
-@NonNullApi
-@NonNullFields
+@NullMarked
 package org.springframework.ai.mcp;
 
-import org.springframework.lang.NonNullApi;
-import org.springframework.lang.NonNullFields;
+import org.jspecify.annotations.NullMarked;
