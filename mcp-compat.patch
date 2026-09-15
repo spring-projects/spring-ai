@@ -1,3 +1,13 @@
+diff --git a/.gitignore b/.gitignore
+index 82fc833bc..3dbd20a38 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -55,3 +55,5 @@ tmp
+ 
+ 
+ plans
++
++.worktree/
 diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-common/pom.xml b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-common/pom.xml
 index b1ac29291..74174541a 100644
 --- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-common/pom.xml
@@ -81,7 +91,7 @@ index f4fe0efa3..c9656c5f9 100644
  				});
  
 diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-httpclient/pom.xml b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-httpclient/pom.xml
-index eee086874..7399fbc07 100644
+index eee086874..a89337b29 100644
 --- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-httpclient/pom.xml
 +++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-httpclient/pom.xml
 @@ -6,7 +6,7 @@
@@ -110,6 +120,15 @@ index eee086874..7399fbc07 100644
  		<dependency>
  			<groupId>org.springframework.ai</groupId>
  			<artifactId>spring-ai-mcp</artifactId>
+@@ -75,7 +85,7 @@
+ 		
+ 		<dependency>
+ 			<groupId>org.testcontainers</groupId>
+-			<artifactId>testcontainers-junit-jupiter</artifactId>
++			<artifactId>junit-jupiter</artifactId>
+ 			<scope>test</scope>
+ 		</dependency>
+ 	</dependencies>
 diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-httpclient/src/main/java/org/springframework/ai/mcp/client/httpclient/autoconfigure/SseHttpClientTransportAutoConfiguration.java b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-httpclient/src/main/java/org/springframework/ai/mcp/client/httpclient/autoconfigure/SseHttpClientTransportAutoConfiguration.java
 index e1c6c0323..c791db6bc 100644
 --- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-httpclient/src/main/java/org/springframework/ai/mcp/client/httpclient/autoconfigure/SseHttpClientTransportAutoConfiguration.java
@@ -190,7 +209,7 @@ index ea0402f3b..4a83c9363 100644
  import org.springframework.ai.mcp.client.common.autoconfigure.NamedClientMcpTransport;
  import org.springframework.ai.mcp.client.httpclient.autoconfigure.StreamableHttpHttpClientTransportAutoConfiguration;
 diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-webflux/pom.xml b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-webflux/pom.xml
-index 098f854bf..ea22e4124 100644
+index 098f854bf..d4b9353ae 100644
 --- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-webflux/pom.xml
 +++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-webflux/pom.xml
 @@ -6,7 +6,7 @@
@@ -219,6 +238,15 @@ index 098f854bf..ea22e4124 100644
  		<dependency>
  			<groupId>org.springframework.ai</groupId>
  			<artifactId>spring-ai-mcp</artifactId>
+@@ -82,7 +92,7 @@
+ 
+ 		<dependency>
+ 			<groupId>org.testcontainers</groupId>
+-			<artifactId>testcontainers-junit-jupiter</artifactId>
++			<artifactId>junit-jupiter</artifactId>
+ 			<scope>test</scope>
+ 		</dependency>
+ 
 diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-webflux/src/main/java/org/springframework/ai/mcp/client/webflux/autoconfigure/SseWebFluxTransportAutoConfiguration.java b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-webflux/src/main/java/org/springframework/ai/mcp/client/webflux/autoconfigure/SseWebFluxTransportAutoConfiguration.java
 index 1ebb40f6b..7bfa94ce1 100644
 --- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-webflux/src/main/java/org/springframework/ai/mcp/client/webflux/autoconfigure/SseWebFluxTransportAutoConfiguration.java
@@ -341,7 +369,7 @@ index 7be6b7735..7889856a3 100644
  import org.springframework.ai.mcp.customizer.McpAsyncServerCustomizer;
  import org.springframework.ai.mcp.customizer.McpSyncServerCustomizer;
 diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-common/src/main/java/org/springframework/ai/mcp/server/common/autoconfigure/McpServerJsonMapperAutoConfiguration.java b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-common/src/main/java/org/springframework/ai/mcp/server/common/autoconfigure/McpServerJsonMapperAutoConfiguration.java
-index e5bb31cdb..95d8970cc 100644
+index e5bb31cdb..babdf6090 100644
 --- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-common/src/main/java/org/springframework/ai/mcp/server/common/autoconfigure/McpServerJsonMapperAutoConfiguration.java
 +++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-common/src/main/java/org/springframework/ai/mcp/server/common/autoconfigure/McpServerJsonMapperAutoConfiguration.java
 @@ -17,10 +17,10 @@
@@ -364,7 +392,7 @@ index e5bb31cdb..95d8970cc 100644
  			.addModules(JacksonUtils.instantiateAvailableModules())
 -			.changeDefaultPropertyInclusion(
 -					incl -> JsonInclude.Value.construct(JsonInclude.Include.NON_NULL, JsonInclude.Include.NON_NULL))
-+			.serializationInclusion(JsonInclude.Include.NON_NULL)
++			.defaultPropertyInclusion(JsonInclude.Value.construct(JsonInclude.Include.NON_NULL, JsonInclude.Include.NON_NULL))
  			.build();
  	}
  
@@ -1245,7 +1273,7 @@ index ef9aaffa6..afdb5b63e 100644
  
  	private data class Filter(val name: String? = null, val ids: List<String>? = null)
 diff --git a/mcp/transport/mcp-spring-webflux/pom.xml b/mcp/transport/mcp-spring-webflux/pom.xml
-index 741c7027c..7bf59eb51 100644
+index 741c7027c..a76ba9631 100644
 --- a/mcp/transport/mcp-spring-webflux/pom.xml
 +++ b/mcp/transport/mcp-spring-webflux/pom.xml
 @@ -6,7 +6,7 @@
@@ -1278,44 +1306,21 @@ index 741c7027c..7bf59eb51 100644
  			<version>${mcp.sdk.version}</version>
  			<scope>test</scope>
  		</dependency>
-diff --git a/mcp/transport/mcp-spring-webflux/src/main/java/org/springframework/ai/mcp/client/webflux/transport/WebClientStreamableHttpTransport.java b/mcp/transport/mcp-spring-webflux/src/main/java/org/springframework/ai/mcp/client/webflux/transport/WebClientStreamableHttpTransport.java
-index 12dfa7cf0..5475bfd2b 100644
---- a/mcp/transport/mcp-spring-webflux/src/main/java/org/springframework/ai/mcp/client/webflux/transport/WebClientStreamableHttpTransport.java
-+++ b/mcp/transport/mcp-spring-webflux/src/main/java/org/springframework/ai/mcp/client/webflux/transport/WebClientStreamableHttpTransport.java
-@@ -295,7 +295,8 @@ public final class WebClientStreamableHttpTransport implements McpClientTranspor
- 					return true;
- 				})
- 				.doFinally(s -> {
--					@Nullable Disposable ref = disposableRef.getAndSet(null);
-+					@Nullable
-+					Disposable ref = disposableRef.getAndSet(null);
- 					if (ref != null) {
- 						transportSession.removeConnection(ref);
- 					}
-@@ -427,7 +428,8 @@ public final class WebClientStreamableHttpTransport implements McpClientTranspor
- 					sink.error(t);
- 					return true;
- 				}).doFinally(s -> {
--					@Nullable Disposable ref = disposableRef.getAndSet(null);
-+					@Nullable
-+					Disposable ref = disposableRef.getAndSet(null);
- 					if (ref != null) {
- 						transportSession.removeConnection(ref);
- 					}
-diff --git a/mcp/transport/mcp-spring-webflux/src/main/java/org/springframework/ai/mcp/server/webflux/transport/WebFluxSseServerTransportProvider.java b/mcp/transport/mcp-spring-webflux/src/main/java/org/springframework/ai/mcp/server/webflux/transport/WebFluxSseServerTransportProvider.java
-index a8d4199bb..c2d63130e 100644
---- a/mcp/transport/mcp-spring-webflux/src/main/java/org/springframework/ai/mcp/server/webflux/transport/WebFluxSseServerTransportProvider.java
-+++ b/mcp/transport/mcp-spring-webflux/src/main/java/org/springframework/ai/mcp/server/webflux/transport/WebFluxSseServerTransportProvider.java
-@@ -477,7 +477,8 @@ public final class WebFluxSseServerTransportProvider implements McpServerTranspo
+@@ -91,12 +96,12 @@
+ 		</dependency>
+ 		<dependency>
+ 			<groupId>org.testcontainers</groupId>
+-			<artifactId>testcontainers-junit-jupiter</artifactId>
++			<artifactId>junit-jupiter</artifactId>
+ 			<scope>test</scope>
+ 		</dependency>
+ 		<dependency>
+ 			<groupId>org.testcontainers</groupId>
+-			<artifactId>testcontainers-toxiproxy</artifactId>			
++			<artifactId>toxiproxy</artifactId>			
+ 			<scope>test</scope>
+ 		</dependency>
  
- 		private final FluxSink<ServerSentEvent<?>> sink;
- 
--		@Nullable private volatile String sessionId;
-+		@Nullable
-+		private volatile String sessionId;
- 
- 		WebFluxMcpSessionTransport(FluxSink<ServerSentEvent<?>> sink) {
- 			this.sink = sink;
 diff --git a/mcp/transport/mcp-spring-webflux/src/test/java/org/springframework/ai/mcp/client/webflux/transport/WebFluxSseClientTransportIT.java b/mcp/transport/mcp-spring-webflux/src/test/java/org/springframework/ai/mcp/client/webflux/transport/WebFluxSseClientTransportIT.java
 index 908f39235..d00f21685 100644
 --- a/mcp/transport/mcp-spring-webflux/src/test/java/org/springframework/ai/mcp/client/webflux/transport/WebFluxSseClientTransportIT.java
@@ -1342,7 +1347,7 @@ index 908f39235..d00f21685 100644
  import org.springframework.http.codec.ServerSentEvent;
  import org.springframework.web.reactive.function.client.WebClient;
 diff --git a/mcp/transport/mcp-spring-webmvc/pom.xml b/mcp/transport/mcp-spring-webmvc/pom.xml
-index b7b5622d3..42b8dd812 100644
+index b7b5622d3..be3b29eb0 100644
 --- a/mcp/transport/mcp-spring-webmvc/pom.xml
 +++ b/mcp/transport/mcp-spring-webmvc/pom.xml
 @@ -6,7 +6,7 @@
@@ -1375,6 +1380,15 @@ index b7b5622d3..42b8dd812 100644
  			<version>${mcp.sdk.version}</version>
  			<scope>test</scope>
  		</dependency>
+@@ -87,7 +92,7 @@
+ 		</dependency>
+ 		<dependency>
+ 			<groupId>org.testcontainers</groupId>
+-			<artifactId>testcontainers-junit-jupiter</artifactId>
++			<artifactId>junit-jupiter</artifactId>
+ 			<scope>test</scope>
+ 		</dependency>
+ 
 diff --git a/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/OpenAiChatModelIT.java b/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/OpenAiChatModelIT.java
 index 777aae3f3..bf189e917 100644
 --- a/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/OpenAiChatModelIT.java
@@ -1418,7 +1432,7 @@ index 777aae3f3..bf189e917 100644
  		// Create a mock async MCP client
  		io.modelcontextprotocol.client.McpAsyncClient mockMcpClient = mock(
 diff --git a/pom.xml b/pom.xml
-index c2084fc6c..f3a48b697 100644
+index c2084fc6c..e6eb30217 100644
 --- a/pom.xml
 +++ b/pom.xml
 @@ -230,7 +230,9 @@
@@ -1453,7 +1467,7 @@ index c2084fc6c..f3a48b697 100644
  		<mcp-annotations.version>0.9.0</mcp-annotations.version>
  
  		<!-- plugin versions -->
-@@ -994,6 +999,13 @@
+@@ -994,6 +999,23 @@
  
  	<dependencyManagement>
  		<dependencies>
@@ -1464,25 +1478,23 @@ index c2084fc6c..f3a48b697 100644
 +				<type>pom</type>
 +				<scope>import</scope>
 +			</dependency>
++			<!-- Keep kotlin-stdlib/-reflect aligned with the kotlin-maven-plugin version
++				(SB 3.5.x manages Kotlin 1.9.x, but the mirrored mcp-annotations Kotlin test
++				and json-unit-assertj 4.1.0 require Kotlin 2.1 metadata compatibility). -->
++			<dependency>
++				<groupId>org.jetbrains.kotlin</groupId>
++				<artifactId>kotlin-bom</artifactId>
++				<version>${kotlin.version}</version>
++				<type>pom</type>
++				<scope>import</scope>
++			</dependency>
  			<dependency>
  				<groupId>org.springframework.boot</groupId>
  				<artifactId>spring-boot-dependencies</artifactId>
-@@ -1008,6 +1020,33 @@
+@@ -1008,6 +1030,21 @@
  				<type>pom</type>
  				<scope>import</scope>
  			</dependency>
-+			<!-- Testcontainers 2.x test artifacts used by the mirrored MCP integration
-+				tests; the Spring Boot 3.5.x BOM still manages Testcontainers 1.x. -->
-+			<dependency>
-+				<groupId>org.testcontainers</groupId>
-+				<artifactId>testcontainers-junit-jupiter</artifactId>
-+				<version>2.0.5</version>
-+			</dependency>
-+			<dependency>
-+				<groupId>org.testcontainers</groupId>
-+				<artifactId>testcontainers-toxiproxy</artifactId>
-+				<version>2.0.5</version>
-+			</dependency>
 +			<!-- jspecify nullability annotations (used by the mirrored MCP sources;
 +				not transitively provided by Spring Framework 6.2) -->
 +			<dependency>

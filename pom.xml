@@ -1006,6 +1006,16 @@
 				<type>pom</type>
 				<scope>import</scope>
 			</dependency>
+			<!-- Keep kotlin-stdlib/-reflect aligned with the kotlin-maven-plugin version
+				(SB 3.5.x manages Kotlin 1.9.x, but the mirrored mcp-annotations Kotlin test
+				and json-unit-assertj 4.1.0 require Kotlin 2.1 metadata compatibility). -->
+			<dependency>
+				<groupId>org.jetbrains.kotlin</groupId>
+				<artifactId>kotlin-bom</artifactId>
+				<version>${kotlin.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
 			<dependency>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-dependencies</artifactId>
@@ -1019,18 +1029,6 @@
 				<version>${mcp.sdk.version}</version>
 				<type>pom</type>
 				<scope>import</scope>
-			</dependency>
-			<!-- Testcontainers 2.x test artifacts used by the mirrored MCP integration
-				tests; the Spring Boot 3.5.x BOM still manages Testcontainers 1.x. -->
-			<dependency>
-				<groupId>org.testcontainers</groupId>
-				<artifactId>testcontainers-junit-jupiter</artifactId>
-				<version>2.0.5</version>
-			</dependency>
-			<dependency>
-				<groupId>org.testcontainers</groupId>
-				<artifactId>testcontainers-toxiproxy</artifactId>
-				<version>2.0.5</version>
 			</dependency>
 			<!-- jspecify nullability annotations (used by the mirrored MCP sources;
 				not transitively provided by Spring Framework 6.2) -->
