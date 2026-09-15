@@ -4,6 +4,11 @@
 	  "name": "spring.ai.openai.chat.output-audio",
 	  "type": "org.springframework.ai.openai.OpenAiChatOptions$AudioParameters",
 	  "sourceType": "org.springframework.ai.openai.OpenAiChatOptions"
+	},
+	{
+	  "name": "spring.ai.openai.responses.response-format",
+	  "type": "org.springframework.ai.openai.OpenAiChatModel$ResponseFormat",
+	  "sourceType": "org.springframework.ai.model.openai.autoconfigure.OpenAiResponsesChatProperties"
 	}
   ],
   "properties": [
@@ -16,7 +21,137 @@
 	  "name": "spring.ai.openai.chat.output-audio.format",
 	  "type": "org.springframework.ai.openai.OpenAiChatOptions$AudioParameters$AudioResponseFormat",
 	  "sourceType": "org.springframework.ai.openai.OpenAiChatOptions$AudioParameters"
+	},
+	{
+	  "name": "spring.ai.openai.chat.api",
+	  "type": "java.lang.String",
+	  "sourceType": "org.springframework.ai.model.openai.autoconfigure.OpenAiChatProperties",
+	  "description": "Which OpenAI endpoint the ChatModel bean talks to. 'chat-completions' is the default; 'responses' selects the Responses API, which is required for reasoning together with tool calling on GPT-5.4 and later. Exactly one ChatModel bean is created either way.",
+	  "defaultValue": "chat-completions"
+	},
+	{
+	  "name": "spring.ai.openai.responses.max-output-tokens",
+	  "type": "java.lang.Integer",
+	  "sourceType": "org.springframework.ai.model.openai.autoconfigure.OpenAiResponsesChatProperties",
+	  "description": "Upper bound on the tokens the model may generate, including reasoning tokens."
+	},
+	{
+	  "name": "spring.ai.openai.responses.reasoning-effort",
+	  "type": "java.lang.String",
+	  "sourceType": "org.springframework.ai.model.openai.autoconfigure.OpenAiResponsesChatProperties",
+	  "description": "How hard the model should think: none, minimal, low, medium or high. Anything other than 'none' together with tool calling is the case Chat Completions no longer serves on recent models."
+	},
+	{
+	  "name": "spring.ai.openai.responses.reasoning-summary",
+	  "type": "java.lang.String",
+	  "sourceType": "org.springframework.ai.model.openai.autoconfigure.OpenAiResponsesChatProperties",
+	  "description": "Whether to summarize the model's reasoning: auto, concise or detailed. Summaries appear under the 'reasoningContent' metadata key. Raw reasoning text is never returned by OpenAI."
+	},
+	{
+	  "name": "spring.ai.openai.responses.verbosity",
+	  "type": "java.lang.String",
+	  "sourceType": "org.springframework.ai.model.openai.autoconfigure.OpenAiResponsesChatProperties",
+	  "description": "How verbose the answer should be: low, medium or high."
+	},
+	{
+	  "name": "spring.ai.openai.responses.strict",
+	  "type": "java.lang.Boolean",
+	  "sourceType": "org.springframework.ai.model.openai.autoconfigure.OpenAiResponsesChatProperties",
+	  "description": "Whether tool schemas are sent as strict. Left unset, Spring AI sends strict=false explicitly, matching OpenAiChatModel; the Responses API would otherwise attempt strict mode, which Spring AI's generated schemas frequently do not satisfy.",
+	  "defaultValue": false
+	},
+	{
+	  "name": "spring.ai.openai.responses.include",
+	  "type": "java.util.List<java.lang.String>",
+	  "sourceType": "org.springframework.ai.model.openai.autoconfigure.OpenAiResponsesChatProperties",
+	  "description": "Extra fields to include in the response, for example web_search_call.results. reasoning.encrypted_content is always requested, because replaying a reasoning turn is impossible without it."
+	},
+	{
+	  "name": "spring.ai.openai.responses.truncation",
+	  "type": "java.lang.String",
+	  "sourceType": "org.springframework.ai.model.openai.autoconfigure.OpenAiResponsesChatProperties",
+	  "description": "'auto' lets OpenAI drop items when the context window overflows; 'disabled' fails instead."
+	},
+	{
+	  "name": "spring.ai.openai.responses.max-tool-calls",
+	  "type": "java.lang.Integer",
+	  "sourceType": "org.springframework.ai.model.openai.autoconfigure.OpenAiResponsesChatProperties",
+	  "description": "Upper bound on the number of tool calls in a single response."
+	},
+	{
+	  "name": "spring.ai.openai.responses.safety-identifier",
+	  "type": "java.lang.String",
+	  "sourceType": "org.springframework.ai.model.openai.autoconfigure.OpenAiResponsesChatProperties",
+	  "description": "A stable, non-identifying id for the end user, used by OpenAI's abuse detection."
+	},
+	{
+	  "name": "spring.ai.openai.responses.hosted-tools.web-search.enabled",
+	  "type": "java.lang.Boolean",
+	  "sourceType": "org.springframework.ai.model.openai.autoconfigure.OpenAiResponsesChatProperties$HostedTools$WebSearch",
+	  "description": "Let OpenAI search the web inside the request. Its calls are reported under the 'openai.responses.hosted_tool_calls' key on the generation metadata and are never surfaced as tool calls for the application to run.",
+	  "defaultValue": false
+	},
+	{
+	  "name": "spring.ai.openai.responses.hosted-tools.file-search.vector-store-ids",
+	  "type": "java.util.List<java.lang.String>",
+	  "sourceType": "org.springframework.ai.model.openai.autoconfigure.OpenAiResponsesChatProperties$HostedTools$FileSearch",
+	  "description": "Vector stores hosted at OpenAI to search. Setting at least one enables the file search tool."
+	},
+	{
+	  "name": "spring.ai.openai.responses.hosted-tools.code-interpreter.enabled",
+	  "type": "java.lang.Boolean",
+	  "sourceType": "org.springframework.ai.model.openai.autoconfigure.OpenAiResponsesChatProperties$HostedTools$CodeInterpreter",
+	  "description": "Let OpenAI run Python in a sandboxed container inside the request.",
+	  "defaultValue": false
+	},
+	{
+	  "name": "spring.ai.openai.responses.hosted-tools.image-generation.enabled",
+	  "type": "java.lang.Boolean",
+	  "sourceType": "org.springframework.ai.model.openai.autoconfigure.OpenAiResponsesChatProperties$HostedTools$ImageGeneration",
+	  "description": "Let OpenAI generate images inside the request. Generated images arrive as media on the assistant message.",
+	  "defaultValue": false
 	}
   ],
-  "hints": []
+  "hints": [
+	{
+	  "name": "spring.ai.openai.chat.api",
+	  "values": [
+		{ "value": "chat-completions" },
+		{ "value": "responses" }
+	  ]
+	},
+	{
+	  "name": "spring.ai.openai.responses.reasoning-effort",
+	  "values": [
+		{ "value": "none" },
+		{ "value": "minimal" },
+		{ "value": "low" },
+		{ "value": "medium" },
+		{ "value": "high" }
+	  ]
+	},
+	{
+	  "name": "spring.ai.openai.responses.reasoning-summary",
+	  "values": [
+		{ "value": "auto" },
+		{ "value": "concise" },
+		{ "value": "detailed" }
+	  ]
+	},
+	{
+	  "name": "spring.ai.openai.responses.verbosity",
+	  "values": [
+		{ "value": "low" },
+		{ "value": "medium" },
+		{ "value": "high" }
+	  ]
+	},
+	{
+	  "name": "spring.ai.openai.responses.truncation",
+	  "values": [
+		{ "value": "auto" },
+		{ "value": "disabled" }
+	  ]
+	}
+  ]
 }
