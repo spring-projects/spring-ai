@@ -1033,7 +1033,7 @@ index 53a904ba0..48711efac 100644
  import io.modelcontextprotocol.server.McpStatelessServerFeatures;
  import io.modelcontextprotocol.server.McpSyncServerExchange;
 diff --git a/mcp/mcp-annotations/pom.xml b/mcp/mcp-annotations/pom.xml
-index 588392615..d146bb66c 100644
+index 588392615..b0d1a7395 100644
 --- a/mcp/mcp-annotations/pom.xml
 +++ b/mcp/mcp-annotations/pom.xml
 @@ -7,7 +7,7 @@
@@ -1045,7 +1045,7 @@ index 588392615..d146bb66c 100644
  		<relativePath>../../pom.xml</relativePath>
  	</parent>
  
-@@ -17,10 +17,15 @@
+@@ -17,10 +17,20 @@
  	<url>https://github.com/spring-projects/spring-ai</url>
  
  	<dependencies>
@@ -1059,6 +1059,11 @@ index 588392615..d146bb66c 100644
  			<groupId>io.modelcontextprotocol.sdk</groupId>
 -			<artifactId>mcp</artifactId>
 +			<artifactId>mcp-core</artifactId>
++		</dependency>
++
++		<dependency>
++			<groupId>io.modelcontextprotocol.sdk</groupId>
++			<artifactId>mcp-json-jackson2</artifactId>
  		</dependency>
  
  		<dependency>
