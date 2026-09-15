@@ -77,7 +77,10 @@ cmp -s "$TMP" "$TMP.stored" || fail "mcp-compat.patch does not match the actual 
 Regenerate with:
   git diff $MIRROR_COMMIT HEAD -- . ':(exclude)mcp-compat.patch' ':(exclude)mcp-sync-gate.sh' ':(exclude)MCP_SYNC_SOURCE.txt' ':(exclude).gitignore' > mcp-compat.patch"
 
-# 4) The patch reverse-applies cleanly to the committed index (EOL-proof).
-git apply -R --check --cached mcp-compat.patch || fail "mcp-compat.patch does not reverse-apply to the committed tree"
+# 4) The COMMITTED patch reverse-applies cleanly to the committed index
+#    (both read from the repository blobs, so working-tree CRLF smudging
+#    of the checkout cannot affect the result).
+git show HEAD:mcp-compat.patch > "$TMP.patch"
+git apply -R --check --cached "$TMP.patch" || fail "mcp-compat.patch does not reverse-apply to the committed tree"
 
 echo "SYNC GATE PASSED: HEAD == $SYNC_SRC (commit $COMMIT_SHA) MCP cross-section + exactly mcp-compat.patch (whole-tree verified)"
