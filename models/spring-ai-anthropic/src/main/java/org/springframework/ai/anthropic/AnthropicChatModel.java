@@ -1056,7 +1056,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			}
 		}
 
-		generations.add(new Generation(buildAssistantMessage(textContent.toString(), toolCalls, thinkingContents),
+		generations.add(0, new Generation(buildAssistantMessage(textContent.toString(), toolCalls, thinkingContents),
 				generationMetadata));
 
 		return generations;
