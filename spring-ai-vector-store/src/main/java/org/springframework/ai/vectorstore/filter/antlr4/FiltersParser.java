@@ -727,7 +727,7 @@ public class FiltersParser extends Parser {
 						setState(46);
 						match(NOT);
 						setState(47);
-						booleanExpression(1);
+						booleanExpression(3);
 					}
 						break;
 				}
@@ -750,12 +750,12 @@ public class FiltersParser extends Parser {
 									((AndExpressionContext) _localctx).left = _prevctx;
 									pushNewRecursionContext(_localctx, _startState, RULE_booleanExpression);
 									setState(50);
-									if (!(precpred(_ctx, 4)))
-										throw new FailedPredicateException(this, "precpred(_ctx, 4)");
+									if (!(precpred(_ctx, 2)))
+										throw new FailedPredicateException(this, "precpred(_ctx, 2)");
 									setState(51);
 									((AndExpressionContext) _localctx).operator = match(AND);
 									setState(52);
-									((AndExpressionContext) _localctx).right = booleanExpression(5);
+									((AndExpressionContext) _localctx).right = booleanExpression(3);
 								}
 									break;
 								case 2: {
@@ -764,12 +764,12 @@ public class FiltersParser extends Parser {
 									((OrExpressionContext) _localctx).left = _prevctx;
 									pushNewRecursionContext(_localctx, _startState, RULE_booleanExpression);
 									setState(53);
-									if (!(precpred(_ctx, 3)))
-										throw new FailedPredicateException(this, "precpred(_ctx, 3)");
+									if (!(precpred(_ctx, 1)))
+										throw new FailedPredicateException(this, "precpred(_ctx, 1)");
 									setState(54);
 									((OrExpressionContext) _localctx).operator = match(OR);
 									setState(55);
-									((OrExpressionContext) _localctx).right = booleanExpression(4);
+									((OrExpressionContext) _localctx).right = booleanExpression(2);
 								}
 									break;
 							}
@@ -1494,9 +1494,9 @@ public class FiltersParser extends Parser {
 	private boolean booleanExpression_sempred(BooleanExpressionContext _localctx, int predIndex) {
 		switch (predIndex) {
 			case 0:
-				return precpred(_ctx, 4);
+				return precpred(_ctx, 2);
 			case 1:
-				return precpred(_ctx, 3);
+				return precpred(_ctx, 1);
 		}
 		return true;
 	}
@@ -1537,12 +1537,12 @@ public class FiltersParser extends Parser {
 			+ "\u0015\u0000\u0000()\u0005\u0017\u0000\u0000)1\u0001\u0000\u0000\u0000"
 			+ "*+\u0005\u0007\u0000\u0000+,\u0003\u0002\u0001\u0000,-\u0005\b\u0000\u0000"
 			+ "-1\u0001\u0000\u0000\u0000./\u0005\u0015\u0000\u0000/1\u0003\u0002\u0001"
-			+ "\u00010\u0010\u0001\u0000\u0000\u00000\u0015\u0001\u0000\u0000\u00000"
+			+ "\u00030\u0010\u0001\u0000\u0000\u00000\u0015\u0001\u0000\u0000\u00000"
 			+ "\u0019\u0001\u0000\u0000\u00000!\u0001\u0000\u0000\u00000%\u0001\u0000"
 			+ "\u0000\u00000*\u0001\u0000\u0000\u00000.\u0001\u0000\u0000\u00001:\u0001"
-			+ "\u0000\u0000\u000023\n\u0004\u0000\u000034\u0005\u0011\u0000\u000049\u0003"
-			+ "\u0002\u0001\u000556\n\u0003\u0000\u000067\u0005\u0012\u0000\u000079\u0003"
-			+ "\u0002\u0001\u000482\u0001\u0000\u0000\u000085\u0001\u0000\u0000\u0000"
+			+ "\u0000\u0000\u000023\n\u0002\u0000\u000034\u0005\u0011\u0000\u000049\u0003"
+			+ "\u0002\u0001\u000356\n\u0001\u0000\u000067\u0005\u0012\u0000\u000079\u0003"
+			+ "\u0002\u0001\u000282\u0001\u0000\u0000\u000085\u0001\u0000\u0000\u0000"
 			+ "9<\u0001\u0000\u0000\u0000:8\u0001\u0000\u0000\u0000:;\u0001\u0000\u0000"
 			+ "\u0000;\u0003\u0001\u0000\u0000\u0000<:\u0001\u0000\u0000\u0000=>\u0005"
 			+ "\u0005\u0000\u0000>C\u0003\n\u0005\u0000?@\u0005\u0004\u0000\u0000@B\u0003"
