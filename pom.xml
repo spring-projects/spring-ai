@@ -284,7 +284,7 @@
 		<openai-sdk.version>4.17.0</openai-sdk.version>
 		<azure-identity.version>1.18.2</azure-identity.version>
 		<jtokkit.version>1.1.0</jtokkit.version>
-		<kotlin.version>1.9.25</kotlin.version>
+		<kotlin.version>2.1.21</kotlin.version>
 
 		<!-- NOTE: keep bedrockruntime and awssdk versions aligned -->
 		<bedrockruntime.version>2.36.3</bedrockruntime.version>
@@ -347,6 +347,7 @@
 		<mcp.sdk.version>2.0.0</mcp.sdk.version>
 		<jspecify.version>1.0.0</jspecify.version>
 		<json-schema-validator.version>1.5.9</json-schema-validator.version>
+		<junit.version>5.14.4</junit.version>
 		<mcp-annotations.version>0.9.0</mcp-annotations.version>
 
 		<!-- plugin versions -->
@@ -998,6 +999,13 @@
 
 	<dependencyManagement>
 		<dependencies>
+			<dependency>
+				<groupId>org.junit</groupId>
+				<artifactId>junit-bom</artifactId>
+				<version>${junit.version}</version>
+				<type>pom</type>
+				<scope>import</scope>
+			</dependency>
 			<dependency>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-dependencies</artifactId>

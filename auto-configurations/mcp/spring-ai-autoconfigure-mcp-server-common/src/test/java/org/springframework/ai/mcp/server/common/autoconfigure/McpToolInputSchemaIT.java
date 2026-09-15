@@ -161,7 +161,7 @@ public class McpToolInputSchemaIT {
 		List<String> result = new ArrayList<>();
 		JsonNode arr = node.get("required");
 		if (arr != null && arr.isArray()) {
-			arr.forEach(n -> result.add(n.asString()));
+			arr.forEach(n -> result.add(n.asText()));
 		}
 		return result;
 	}

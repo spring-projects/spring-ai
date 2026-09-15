@@ -479,16 +479,13 @@ public class OpenAiChatModelIT extends AbstractIT {
 
 		// Mock a parameter-less JsonSchema (no properties field)
 		// This simulates what an external MCP server might provide
-		McpSchema.JsonSchema mockJsonSchema = mock(McpSchema.JsonSchema.class);
-		when(mockJsonSchema.type()).thenReturn("object");
-		when(mockJsonSchema.additionalProperties()).thenReturn(false);
-		when(mockJsonSchema.properties()).thenReturn(null); // No properties field
+		Map<String, Object> mockInputSchema = Map.of("type", "object", "additionalProperties", false);
 
 		// Create a mock MCP tool
 		McpSchema.Tool mockMcpTool = mock(McpSchema.Tool.class);
 		when(mockMcpTool.name()).thenReturn("getCurrentTime");
 		when(mockMcpTool.description()).thenReturn("Get the current server time");
-		when(mockMcpTool.inputSchema()).thenReturn(mockJsonSchema);
+		when(mockMcpTool.inputSchema()).thenReturn(mockInputSchema);
 
 		// Create a mock MCP client
 		io.modelcontextprotocol.client.McpSyncClient mockMcpClient = mock(
@@ -540,16 +537,13 @@ public class OpenAiChatModelIT extends AbstractIT {
 
 		// Mock a parameter-less JsonSchema (no properties field)
 		// This simulates what an external MCP server might provide
-		McpSchema.JsonSchema mockJsonSchema = mock(McpSchema.JsonSchema.class);
-		when(mockJsonSchema.type()).thenReturn("object");
-		when(mockJsonSchema.additionalProperties()).thenReturn(false);
-		when(mockJsonSchema.properties()).thenReturn(null); // No properties field
+		Map<String, Object> mockInputSchema = Map.of("type", "object", "additionalProperties", false);
 
 		// Create a mock MCP tool
 		McpSchema.Tool mockMcpTool = mock(McpSchema.Tool.class);
 		when(mockMcpTool.name()).thenReturn("getCurrentTime");
 		when(mockMcpTool.description()).thenReturn("Get the current server time");
-		when(mockMcpTool.inputSchema()).thenReturn(mockJsonSchema);
+		when(mockMcpTool.inputSchema()).thenReturn(mockInputSchema);
 
 		// Create a mock async MCP client
 		io.modelcontextprotocol.client.McpAsyncClient mockMcpClient = mock(
