@@ -1,0 +1,2567 @@
+diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-common/pom.xml b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-common/pom.xml
+index b1ac29291..74174541a 100644
+--- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-common/pom.xml
++++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-common/pom.xml
+@@ -6,7 +6,7 @@
+ 	<parent>
+ 		<groupId>org.springframework.ai</groupId>
+ 		<artifactId>spring-ai-parent</artifactId>
+-		<version>2.0.1</version>
++		<version>1.1.8</version>
+ 		<relativePath>../../../pom.xml</relativePath>
+ 	</parent>
+ 	<artifactId>spring-ai-autoconfigure-mcp-client-common</artifactId>
+@@ -16,6 +16,16 @@
+ 	<url>https://github.com/spring-projects/spring-ai</url>
+ 
+ 	<dependencies>
++		<dependency>
++			<groupId>io.modelcontextprotocol.sdk</groupId>
++			<artifactId>mcp-json-jackson2</artifactId>
++		</dependency>
++
++		<dependency>
++			<groupId>org.jspecify</groupId>
++			<artifactId>jspecify</artifactId>
++		</dependency>
++
+ 		<dependency>
+ 			<groupId>org.springframework.ai</groupId>
+ 			<artifactId>spring-ai-mcp</artifactId>
+diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-common/src/main/java/org/springframework/ai/mcp/client/common/autoconfigure/StdioTransportAutoConfiguration.java b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-common/src/main/java/org/springframework/ai/mcp/client/common/autoconfigure/StdioTransportAutoConfiguration.java
+index 2e31effa5..33473bba9 100644
+--- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-common/src/main/java/org/springframework/ai/mcp/client/common/autoconfigure/StdioTransportAutoConfiguration.java
++++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-common/src/main/java/org/springframework/ai/mcp/client/common/autoconfigure/StdioTransportAutoConfiguration.java
+@@ -20,10 +20,10 @@ import java.util.ArrayList;
+ import java.util.List;
+ import java.util.Map;
+ 
++import com.fasterxml.jackson.databind.json.JsonMapper;
+ import io.modelcontextprotocol.client.transport.ServerParameters;
+ import io.modelcontextprotocol.client.transport.StdioClientTransport;
+-import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
+-import tools.jackson.databind.json.JsonMapper;
++import io.modelcontextprotocol.json.jackson2.JacksonMcpJsonMapper;
+ 
+ import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpClientCommonProperties;
+ import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpStdioClientProperties;
+@@ -76,7 +76,7 @@ public class StdioTransportAutoConfiguration {
+ 
+ 		for (Map.Entry<String, ServerParameters> serverParameters : stdioProperties.toServerParameters().entrySet()) {
+ 			var transport = new StdioClientTransport(serverParameters.getValue(),
+-					new JacksonMcpJsonMapper(JsonMapper.shared()));
++					new JacksonMcpJsonMapper(new JsonMapper()));
+ 			stdioTransports.add(new NamedClientMcpTransport(serverParameters.getKey(), transport));
+ 
+ 		}
+diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-common/src/main/java/org/springframework/ai/mcp/client/common/autoconfigure/properties/McpStdioClientProperties.java b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-common/src/main/java/org/springframework/ai/mcp/client/common/autoconfigure/properties/McpStdioClientProperties.java
+index f4fe0efa3..c9656c5f9 100644
+--- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-common/src/main/java/org/springframework/ai/mcp/client/common/autoconfigure/properties/McpStdioClientProperties.java
++++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-common/src/main/java/org/springframework/ai/mcp/client/common/autoconfigure/properties/McpStdioClientProperties.java
+@@ -24,10 +24,10 @@ import java.util.stream.Collectors;
+ 
+ import com.fasterxml.jackson.annotation.JsonInclude;
+ import com.fasterxml.jackson.annotation.JsonProperty;
++import com.fasterxml.jackson.core.type.TypeReference;
++import com.fasterxml.jackson.databind.json.JsonMapper;
+ import io.modelcontextprotocol.client.transport.ServerParameters;
+ import org.jspecify.annotations.Nullable;
+-import tools.jackson.core.type.TypeReference;
+-import tools.jackson.databind.json.JsonMapper;
+ 
+ import org.springframework.boot.context.properties.ConfigurationProperties;
+ import org.springframework.core.io.Resource;
+@@ -80,7 +80,7 @@ public class McpStdioClientProperties {
+ 			return Collections.emptyMap();
+ 		}
+ 		try {
+-			Map<String, Map<String, Parameters>> stdioConnection = JsonMapper.shared()
++			Map<String, Map<String, Parameters>> stdioConnection = new JsonMapper()
+ 				.readValue(this.serversConfiguration.getInputStream(), new TypeReference<>() {
+ 				});
+ 
+diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-httpclient/pom.xml b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-httpclient/pom.xml
+index eee086874..7399fbc07 100644
+--- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-httpclient/pom.xml
++++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-httpclient/pom.xml
+@@ -6,7 +6,7 @@
+ 	<parent>
+ 		<groupId>org.springframework.ai</groupId>
+ 		<artifactId>spring-ai-parent</artifactId>
+-		<version>2.0.1</version>
++		<version>1.1.8</version>
+ 		<relativePath>../../../pom.xml</relativePath>
+ 	</parent>
+ 	<artifactId>spring-ai-autoconfigure-mcp-client-httpclient</artifactId>
+@@ -16,6 +16,16 @@
+ 	<url>https://github.com/spring-projects/spring-ai</url>
+ 
+ 	<dependencies>
++		<dependency>
++			<groupId>io.modelcontextprotocol.sdk</groupId>
++			<artifactId>mcp-json-jackson2</artifactId>
++		</dependency>
++
++		<dependency>
++			<groupId>org.jspecify</groupId>
++			<artifactId>jspecify</artifactId>
++		</dependency>
++
+ 		<dependency>
+ 			<groupId>org.springframework.ai</groupId>
+ 			<artifactId>spring-ai-mcp</artifactId>
+diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-httpclient/src/main/java/org/springframework/ai/mcp/client/httpclient/autoconfigure/SseHttpClientTransportAutoConfiguration.java b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-httpclient/src/main/java/org/springframework/ai/mcp/client/httpclient/autoconfigure/SseHttpClientTransportAutoConfiguration.java
+index e1c6c0323..c791db6bc 100644
+--- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-httpclient/src/main/java/org/springframework/ai/mcp/client/httpclient/autoconfigure/SseHttpClientTransportAutoConfiguration.java
++++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-httpclient/src/main/java/org/springframework/ai/mcp/client/httpclient/autoconfigure/SseHttpClientTransportAutoConfiguration.java
+@@ -21,9 +21,9 @@ import java.util.ArrayList;
+ import java.util.List;
+ import java.util.Map;
+ 
++import com.fasterxml.jackson.databind.json.JsonMapper;
+ import io.modelcontextprotocol.client.transport.HttpClientSseClientTransport;
+-import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
+-import tools.jackson.databind.json.JsonMapper;
++import io.modelcontextprotocol.json.jackson2.JacksonMcpJsonMapper;
+ 
+ import org.springframework.ai.mcp.client.common.autoconfigure.McpSseClientConnectionDetails;
+ import org.springframework.ai.mcp.client.common.autoconfigure.NamedClientMcpTransport;
+diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-httpclient/src/main/java/org/springframework/ai/mcp/client/httpclient/autoconfigure/StreamableHttpHttpClientTransportAutoConfiguration.java b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-httpclient/src/main/java/org/springframework/ai/mcp/client/httpclient/autoconfigure/StreamableHttpHttpClientTransportAutoConfiguration.java
+index e25864825..320a4e229 100644
+--- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-httpclient/src/main/java/org/springframework/ai/mcp/client/httpclient/autoconfigure/StreamableHttpHttpClientTransportAutoConfiguration.java
++++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-httpclient/src/main/java/org/springframework/ai/mcp/client/httpclient/autoconfigure/StreamableHttpHttpClientTransportAutoConfiguration.java
+@@ -21,12 +21,12 @@ import java.util.ArrayList;
+ import java.util.List;
+ import java.util.Map;
+ 
++import com.fasterxml.jackson.databind.json.JsonMapper;
+ import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
+ import io.modelcontextprotocol.client.transport.customizer.DelegatingMcpAsyncHttpClientRequestCustomizer;
+ import io.modelcontextprotocol.client.transport.customizer.McpAsyncHttpClientRequestCustomizer;
+ import io.modelcontextprotocol.client.transport.customizer.McpSyncHttpClientRequestCustomizer;
+-import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
+-import tools.jackson.databind.json.JsonMapper;
++import io.modelcontextprotocol.json.jackson2.JacksonMcpJsonMapper;
+ 
+ import org.springframework.ai.mcp.client.common.autoconfigure.NamedClientMcpTransport;
+ import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpClientCommonProperties;
+@@ -111,7 +111,7 @@ public class StreamableHttpHttpClientTransportAutoConfiguration {
+ 			ObjectProvider<McpAsyncHttpClientRequestCustomizer> asyncRequestCustomizers,
+ 			ObjectProvider<McpClientCustomizer<HttpClientStreamableHttpTransport.Builder>> transportCustomizers) {
+ 
+-		JsonMapper jsonMapper = jsonMapperProvider.getIfAvailable(JsonMapper::shared);
++		JsonMapper jsonMapper = jsonMapperProvider.getIfAvailable(JsonMapper::new);
+ 
+ 		List<McpAsyncHttpClientRequestCustomizer> requestCustomizers = requestCustomizers(syncRequestCustomizers,
+ 				asyncRequestCustomizers);
+diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-httpclient/src/test/java/org/springframework/ai/mcp/client/autoconfigure/SseHttpClientTransportAutoConfigurationTests.java b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-httpclient/src/test/java/org/springframework/ai/mcp/client/autoconfigure/SseHttpClientTransportAutoConfigurationTests.java
+index 564ce10e5..eebcc3940 100644
+--- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-httpclient/src/test/java/org/springframework/ai/mcp/client/autoconfigure/SseHttpClientTransportAutoConfigurationTests.java
++++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-httpclient/src/test/java/org/springframework/ai/mcp/client/autoconfigure/SseHttpClientTransportAutoConfigurationTests.java
+@@ -19,10 +19,10 @@ package org.springframework.ai.mcp.client.autoconfigure;
+ import java.lang.reflect.Field;
+ import java.util.List;
+ 
++import com.fasterxml.jackson.databind.json.JsonMapper;
+ import io.modelcontextprotocol.client.transport.HttpClientSseClientTransport;
+ import org.junit.jupiter.api.Test;
+ import org.mockito.Mockito;
+-import tools.jackson.databind.json.JsonMapper;
+ 
+ import org.springframework.ai.mcp.client.common.autoconfigure.NamedClientMcpTransport;
+ import org.springframework.ai.mcp.client.httpclient.autoconfigure.SseHttpClientTransportAutoConfiguration;
+diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-httpclient/src/test/java/org/springframework/ai/mcp/client/autoconfigure/StreamableHttpHttpClientTransportAutoConfigurationTests.java b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-httpclient/src/test/java/org/springframework/ai/mcp/client/autoconfigure/StreamableHttpHttpClientTransportAutoConfigurationTests.java
+index ea0402f3b..4a83c9363 100644
+--- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-httpclient/src/test/java/org/springframework/ai/mcp/client/autoconfigure/StreamableHttpHttpClientTransportAutoConfigurationTests.java
++++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-httpclient/src/test/java/org/springframework/ai/mcp/client/autoconfigure/StreamableHttpHttpClientTransportAutoConfigurationTests.java
+@@ -23,13 +23,13 @@ import java.util.LinkedHashMap;
+ import java.util.List;
+ import java.util.Map;
+ 
++import com.fasterxml.jackson.databind.json.JsonMapper;
+ import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
+ import io.modelcontextprotocol.client.transport.customizer.McpAsyncHttpClientRequestCustomizer;
+ import io.modelcontextprotocol.client.transport.customizer.McpSyncHttpClientRequestCustomizer;
+ import io.modelcontextprotocol.common.McpTransportContext;
+ import org.junit.jupiter.api.Test;
+ import reactor.core.publisher.Mono;
+-import tools.jackson.databind.json.JsonMapper;
+ 
+ import org.springframework.ai.mcp.client.common.autoconfigure.NamedClientMcpTransport;
+ import org.springframework.ai.mcp.client.httpclient.autoconfigure.StreamableHttpHttpClientTransportAutoConfiguration;
+diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-webflux/pom.xml b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-webflux/pom.xml
+index 098f854bf..ea22e4124 100644
+--- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-webflux/pom.xml
++++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-webflux/pom.xml
+@@ -6,7 +6,7 @@
+ 	<parent>
+ 		<groupId>org.springframework.ai</groupId>
+ 		<artifactId>spring-ai-parent</artifactId>
+-		<version>2.0.1</version>
++		<version>1.1.8</version>
+ 		<relativePath>../../../pom.xml</relativePath>
+ 	</parent>
+ 	<artifactId>spring-ai-autoconfigure-mcp-client-webflux</artifactId>
+@@ -16,6 +16,16 @@
+ 	<url>https://github.com/spring-projects/spring-ai</url>
+ 
+ 	<dependencies>
++		<dependency>
++			<groupId>io.modelcontextprotocol.sdk</groupId>
++			<artifactId>mcp-json-jackson2</artifactId>
++		</dependency>
++
++		<dependency>
++			<groupId>org.jspecify</groupId>
++			<artifactId>jspecify</artifactId>
++		</dependency>
++
+ 		<dependency>
+ 			<groupId>org.springframework.ai</groupId>
+ 			<artifactId>spring-ai-mcp</artifactId>
+diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-webflux/src/main/java/org/springframework/ai/mcp/client/webflux/autoconfigure/SseWebFluxTransportAutoConfiguration.java b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-webflux/src/main/java/org/springframework/ai/mcp/client/webflux/autoconfigure/SseWebFluxTransportAutoConfiguration.java
+index 1ebb40f6b..7bfa94ce1 100644
+--- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-webflux/src/main/java/org/springframework/ai/mcp/client/webflux/autoconfigure/SseWebFluxTransportAutoConfiguration.java
++++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-webflux/src/main/java/org/springframework/ai/mcp/client/webflux/autoconfigure/SseWebFluxTransportAutoConfiguration.java
+@@ -21,8 +21,8 @@ import java.util.List;
+ import java.util.Map;
+ import java.util.Objects;
+ 
+-import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
+-import tools.jackson.databind.json.JsonMapper;
++import com.fasterxml.jackson.databind.json.JsonMapper;
++import io.modelcontextprotocol.json.jackson2.JacksonMcpJsonMapper;
+ 
+ import org.springframework.ai.mcp.client.common.autoconfigure.McpSseClientConnectionDetails;
+ import org.springframework.ai.mcp.client.common.autoconfigure.NamedClientMcpTransport;
+@@ -104,7 +104,7 @@ public class SseWebFluxTransportAutoConfiguration {
+ 		List<NamedClientMcpTransport> sseTransports = new ArrayList<>();
+ 
+ 		var webClientBuilderTemplate = webClientBuilderProvider.getIfAvailable(WebClient::builder);
+-		var jsonMapper = jsonMapperProvider.getIfAvailable(JsonMapper::shared);
++		var jsonMapper = jsonMapperProvider.getIfAvailable(JsonMapper::new);
+ 
+ 		for (Map.Entry<String, SseParameters> serverParameters : connectionDetails.getConnections().entrySet()) {
+ 			String connectionName = serverParameters.getKey();
+diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-webflux/src/main/java/org/springframework/ai/mcp/client/webflux/autoconfigure/StreamableHttpWebFluxTransportAutoConfiguration.java b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-webflux/src/main/java/org/springframework/ai/mcp/client/webflux/autoconfigure/StreamableHttpWebFluxTransportAutoConfiguration.java
+index 3f1be2395..cf39e1077 100644
+--- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-webflux/src/main/java/org/springframework/ai/mcp/client/webflux/autoconfigure/StreamableHttpWebFluxTransportAutoConfiguration.java
++++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-webflux/src/main/java/org/springframework/ai/mcp/client/webflux/autoconfigure/StreamableHttpWebFluxTransportAutoConfiguration.java
+@@ -21,8 +21,8 @@ import java.util.List;
+ import java.util.Map;
+ import java.util.Objects;
+ 
+-import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
+-import tools.jackson.databind.json.JsonMapper;
++import com.fasterxml.jackson.databind.json.JsonMapper;
++import io.modelcontextprotocol.json.jackson2.JacksonMcpJsonMapper;
+ 
+ import org.springframework.ai.mcp.client.common.autoconfigure.NamedClientMcpTransport;
+ import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpClientCommonProperties;
+diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-webflux/src/test/java/org/springframework/ai/mcp/client/webflux/autoconfigure/SseWebFluxTransportAutoConfigurationTests.java b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-webflux/src/test/java/org/springframework/ai/mcp/client/webflux/autoconfigure/SseWebFluxTransportAutoConfigurationTests.java
+index 6568e7ae6..bb88ef94d 100644
+--- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-webflux/src/test/java/org/springframework/ai/mcp/client/webflux/autoconfigure/SseWebFluxTransportAutoConfigurationTests.java
++++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-webflux/src/test/java/org/springframework/ai/mcp/client/webflux/autoconfigure/SseWebFluxTransportAutoConfigurationTests.java
+@@ -19,9 +19,9 @@ package org.springframework.ai.mcp.client.webflux.autoconfigure;
+ import java.lang.reflect.Field;
+ import java.util.List;
+ 
++import com.fasterxml.jackson.databind.json.JsonMapper;
+ import org.junit.jupiter.api.Test;
+ import org.mockito.Mockito;
+-import tools.jackson.databind.json.JsonMapper;
+ 
+ import org.springframework.ai.mcp.client.common.autoconfigure.NamedClientMcpTransport;
+ import org.springframework.ai.mcp.client.webflux.transport.WebFluxSseClientTransport;
+diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-webflux/src/test/java/org/springframework/ai/mcp/client/webflux/autoconfigure/StreamableHttpWebFluxTransportAutoConfigurationTests.java b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-webflux/src/test/java/org/springframework/ai/mcp/client/webflux/autoconfigure/StreamableHttpWebFluxTransportAutoConfigurationTests.java
+index be27e038d..25cab60e7 100644
+--- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-webflux/src/test/java/org/springframework/ai/mcp/client/webflux/autoconfigure/StreamableHttpWebFluxTransportAutoConfigurationTests.java
++++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-client-webflux/src/test/java/org/springframework/ai/mcp/client/webflux/autoconfigure/StreamableHttpWebFluxTransportAutoConfigurationTests.java
+@@ -19,9 +19,9 @@ package org.springframework.ai.mcp.client.webflux.autoconfigure;
+ import java.lang.reflect.Field;
+ import java.util.List;
+ 
++import com.fasterxml.jackson.databind.json.JsonMapper;
+ import org.junit.jupiter.api.Test;
+ import org.mockito.Mockito;
+-import tools.jackson.databind.json.JsonMapper;
+ 
+ import org.springframework.ai.mcp.client.common.autoconfigure.NamedClientMcpTransport;
+ import org.springframework.ai.mcp.client.webflux.transport.WebClientStreamableHttpTransport;
+diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-common/pom.xml b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-common/pom.xml
+index d7a8f9480..06ae43f01 100644
+--- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-common/pom.xml
++++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-common/pom.xml
+@@ -6,7 +6,7 @@
+ 	<parent>
+ 		<groupId>org.springframework.ai</groupId>
+ 		<artifactId>spring-ai-parent</artifactId>
+-		<version>2.0.1</version>
++		<version>1.1.8</version>
+ 		<relativePath>../../../pom.xml</relativePath>
+ 	</parent>
+ 	<artifactId>spring-ai-autoconfigure-mcp-server-common</artifactId>
+@@ -16,6 +16,16 @@
+ 	<url>https://github.com/spring-projects/spring-ai</url>
+ 
+ 	<dependencies>
++		<dependency>
++			<groupId>io.modelcontextprotocol.sdk</groupId>
++			<artifactId>mcp-json-jackson2</artifactId>
++		</dependency>
++
++		<dependency>
++			<groupId>org.jspecify</groupId>
++			<artifactId>jspecify</artifactId>
++		</dependency>
++
+ 		<dependency>
+ 			<groupId>org.springframework.ai</groupId>
+ 			<artifactId>spring-ai-commons</artifactId>
+diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-common/src/main/java/org/springframework/ai/mcp/server/common/autoconfigure/McpServerAutoConfiguration.java b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-common/src/main/java/org/springframework/ai/mcp/server/common/autoconfigure/McpServerAutoConfiguration.java
+index 7be6b7735..7889856a3 100644
+--- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-common/src/main/java/org/springframework/ai/mcp/server/common/autoconfigure/McpServerAutoConfiguration.java
++++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-common/src/main/java/org/springframework/ai/mcp/server/common/autoconfigure/McpServerAutoConfiguration.java
+@@ -22,7 +22,8 @@ import java.util.Optional;
+ import java.util.function.BiConsumer;
+ import java.util.function.BiFunction;
+ 
+-import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
++import com.fasterxml.jackson.databind.json.JsonMapper;
++import io.modelcontextprotocol.json.jackson2.JacksonMcpJsonMapper;
+ import io.modelcontextprotocol.server.McpAsyncServer;
+ import io.modelcontextprotocol.server.McpAsyncServerExchange;
+ import io.modelcontextprotocol.server.McpServer;
+@@ -47,7 +48,6 @@ import io.modelcontextprotocol.spec.McpServerTransportProvider;
+ import io.modelcontextprotocol.spec.McpServerTransportProviderBase;
+ import io.modelcontextprotocol.spec.McpStreamableServerTransportProvider;
+ import reactor.core.publisher.Mono;
+-import tools.jackson.databind.json.JsonMapper;
+ 
+ import org.springframework.ai.mcp.customizer.McpAsyncServerCustomizer;
+ import org.springframework.ai.mcp.customizer.McpSyncServerCustomizer;
+diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-common/src/main/java/org/springframework/ai/mcp/server/common/autoconfigure/McpServerJsonMapperAutoConfiguration.java b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-common/src/main/java/org/springframework/ai/mcp/server/common/autoconfigure/McpServerJsonMapperAutoConfiguration.java
+index e5bb31cdb..95d8970cc 100644
+--- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-common/src/main/java/org/springframework/ai/mcp/server/common/autoconfigure/McpServerJsonMapperAutoConfiguration.java
++++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-common/src/main/java/org/springframework/ai/mcp/server/common/autoconfigure/McpServerJsonMapperAutoConfiguration.java
+@@ -17,10 +17,10 @@
+ package org.springframework.ai.mcp.server.common.autoconfigure;
+ 
+ import com.fasterxml.jackson.annotation.JsonInclude;
++import com.fasterxml.jackson.databind.DeserializationFeature;
++import com.fasterxml.jackson.databind.SerializationFeature;
++import com.fasterxml.jackson.databind.json.JsonMapper;
+ import io.modelcontextprotocol.spec.McpSchema;
+-import tools.jackson.databind.DeserializationFeature;
+-import tools.jackson.databind.SerializationFeature;
+-import tools.jackson.databind.json.JsonMapper;
+ 
+ import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
+ import org.springframework.ai.util.JacksonUtils;
+@@ -63,8 +63,7 @@ public class McpServerJsonMapperAutoConfiguration {
+ 			.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
+ 			// Register Jackson modules via server loader
+ 			.addModules(JacksonUtils.instantiateAvailableModules())
+-			.changeDefaultPropertyInclusion(
+-					incl -> JsonInclude.Value.construct(JsonInclude.Include.NON_NULL, JsonInclude.Include.NON_NULL))
++			.serializationInclusion(JsonInclude.Include.NON_NULL)
+ 			.build();
+ 	}
+ 
+diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-common/src/test/java/org/springframework/ai/mcp/server/common/autoconfigure/McpServerJsonMapperAutoConfigurationIT.java b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-common/src/test/java/org/springframework/ai/mcp/server/common/autoconfigure/McpServerJsonMapperAutoConfigurationIT.java
+index e11824dab..845260da5 100644
+--- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-common/src/test/java/org/springframework/ai/mcp/server/common/autoconfigure/McpServerJsonMapperAutoConfigurationIT.java
++++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-common/src/test/java/org/springframework/ai/mcp/server/common/autoconfigure/McpServerJsonMapperAutoConfigurationIT.java
+@@ -16,8 +16,8 @@
+ 
+ package org.springframework.ai.mcp.server.common.autoconfigure;
+ 
++import com.fasterxml.jackson.databind.json.JsonMapper;
+ import org.junit.jupiter.api.Test;
+-import tools.jackson.databind.json.JsonMapper;
+ 
+ import org.springframework.boot.autoconfigure.AutoConfigurations;
+ import org.springframework.boot.context.annotation.UserConfigurations;
+diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-common/src/test/java/org/springframework/ai/mcp/server/common/autoconfigure/McpToolInputSchemaIT.java b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-common/src/test/java/org/springframework/ai/mcp/server/common/autoconfigure/McpToolInputSchemaIT.java
+index c3b75fd90..902d38b18 100644
+--- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-common/src/test/java/org/springframework/ai/mcp/server/common/autoconfigure/McpToolInputSchemaIT.java
++++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-common/src/test/java/org/springframework/ai/mcp/server/common/autoconfigure/McpToolInputSchemaIT.java
+@@ -22,12 +22,12 @@ import java.util.List;
+ import java.util.concurrent.CopyOnWriteArrayList;
+ 
+ import com.fasterxml.jackson.annotation.JsonProperty;
++import com.fasterxml.jackson.databind.JsonNode;
+ import io.modelcontextprotocol.server.McpAsyncServer;
+ import io.modelcontextprotocol.server.McpServerFeatures.AsyncToolSpecification;
+ import io.modelcontextprotocol.server.McpSyncServer;
+ import org.jspecify.annotations.Nullable;
+ import org.junit.jupiter.api.Test;
+-import tools.jackson.databind.JsonNode;
+ 
+ import org.springframework.ai.mcp.annotation.McpTool;
+ import org.springframework.ai.mcp.annotation.method.tool.utils.McpJsonSchemaGenerator;
+@@ -161,7 +161,7 @@ public class McpToolInputSchemaIT {
+ 		List<String> result = new ArrayList<>();
+ 		JsonNode arr = node.get("required");
+ 		if (arr != null && arr.isArray()) {
+-			arr.forEach(n -> result.add(n.asString()));
++			arr.forEach(n -> result.add(n.asText()));
+ 		}
+ 		return result;
+ 	}
+diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-common/src/test/java/org/springframework/ai/mcp/server/common/autoconfigure/McpToolWithStdioIT.java b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-common/src/test/java/org/springframework/ai/mcp/server/common/autoconfigure/McpToolWithStdioIT.java
+index b07687edc..bcbe62cde 100644
+--- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-common/src/test/java/org/springframework/ai/mcp/server/common/autoconfigure/McpToolWithStdioIT.java
++++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-common/src/test/java/org/springframework/ai/mcp/server/common/autoconfigure/McpToolWithStdioIT.java
+@@ -19,6 +19,7 @@ package org.springframework.ai.mcp.server.common.autoconfigure;
+ import java.util.List;
+ import java.util.concurrent.CopyOnWriteArrayList;
+ 
++import com.fasterxml.jackson.databind.json.JsonMapper;
+ import io.modelcontextprotocol.server.McpAsyncServer;
+ import io.modelcontextprotocol.server.McpServerFeatures.AsyncToolSpecification;
+ import io.modelcontextprotocol.server.McpSyncServer;
+@@ -26,7 +27,6 @@ import io.modelcontextprotocol.server.transport.StdioServerTransportProvider;
+ import io.modelcontextprotocol.spec.McpSchema;
+ import io.modelcontextprotocol.spec.McpServerTransportProviderBase;
+ import org.junit.jupiter.api.Test;
+-import tools.jackson.databind.json.JsonMapper;
+ 
+ import org.springframework.ai.mcp.annotation.McpTool;
+ import org.springframework.ai.mcp.annotation.McpToolParam;
+diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/pom.xml b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/pom.xml
+index b9e708f17..41290afd9 100644
+--- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/pom.xml
++++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/pom.xml
+@@ -6,7 +6,7 @@
+ 	<parent>
+ 		<groupId>org.springframework.ai</groupId>
+ 		<artifactId>spring-ai-parent</artifactId>
+-		<version>2.0.1</version>
++		<version>1.1.8</version>
+ 		<relativePath>../../../pom.xml</relativePath>
+ 	</parent>
+ 	<artifactId>spring-ai-autoconfigure-mcp-server-webflux</artifactId>
+@@ -16,6 +16,16 @@
+ 	<url>https://github.com/spring-projects/spring-ai</url>
+ 
+ 	<dependencies>
++		<dependency>
++			<groupId>io.modelcontextprotocol.sdk</groupId>
++			<artifactId>mcp-json-jackson2</artifactId>
++		</dependency>
++
++		<dependency>
++			<groupId>org.jspecify</groupId>
++			<artifactId>jspecify</artifactId>
++		</dependency>
++
+ 
+ 		<dependency>
+ 			<groupId>org.springframework.ai</groupId>
+@@ -99,18 +109,13 @@
+ 
+ 		<dependency>
+ 			<groupId>org.springframework.boot</groupId>
+-			<artifactId>spring-boot-starter-webflux-test</artifactId>
++			<artifactId>spring-boot-starter-test</artifactId>
+ 			<scope>test</scope>
+ 		</dependency>
+ 
+ 		<dependency>
+ 			<groupId>org.springframework.boot</groupId>
+-			<artifactId>spring-boot-starter-restclient-test</artifactId>
+-			<scope>test</scope>
+-		</dependency>
+-		<dependency>
+-			<groupId>org.springframework.boot</groupId>
+-			<artifactId>spring-boot-starter-webclient-test</artifactId>
++			<artifactId>spring-boot-starter-webflux</artifactId>
+ 			<scope>test</scope>
+ 		</dependency>
+ 
+diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/main/java/org/springframework/ai/mcp/server/webflux/autoconfigure/McpServerSseWebFluxAutoConfiguration.java b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/main/java/org/springframework/ai/mcp/server/webflux/autoconfigure/McpServerSseWebFluxAutoConfiguration.java
+index c9166d4f0..0acb183ce 100644
+--- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/main/java/org/springframework/ai/mcp/server/webflux/autoconfigure/McpServerSseWebFluxAutoConfiguration.java
++++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/main/java/org/springframework/ai/mcp/server/webflux/autoconfigure/McpServerSseWebFluxAutoConfiguration.java
+@@ -16,9 +16,9 @@
+ 
+ package org.springframework.ai.mcp.server.webflux.autoconfigure;
+ 
+-import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
++import com.fasterxml.jackson.databind.json.JsonMapper;
++import io.modelcontextprotocol.json.jackson2.JacksonMcpJsonMapper;
+ import io.modelcontextprotocol.spec.McpServerTransportProvider;
+-import tools.jackson.databind.json.JsonMapper;
+ 
+ import org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration;
+ import org.springframework.ai.mcp.server.common.autoconfigure.McpServerStdioDisabledCondition;
+diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/main/java/org/springframework/ai/mcp/server/webflux/autoconfigure/McpServerStatelessWebFluxAutoConfiguration.java b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/main/java/org/springframework/ai/mcp/server/webflux/autoconfigure/McpServerStatelessWebFluxAutoConfiguration.java
+index a15c05bd9..72ce50f7c 100644
+--- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/main/java/org/springframework/ai/mcp/server/webflux/autoconfigure/McpServerStatelessWebFluxAutoConfiguration.java
++++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/main/java/org/springframework/ai/mcp/server/webflux/autoconfigure/McpServerStatelessWebFluxAutoConfiguration.java
+@@ -16,9 +16,9 @@
+ 
+ package org.springframework.ai.mcp.server.webflux.autoconfigure;
+ 
+-import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
++import com.fasterxml.jackson.databind.json.JsonMapper;
++import io.modelcontextprotocol.json.jackson2.JacksonMcpJsonMapper;
+ import io.modelcontextprotocol.spec.McpSchema;
+-import tools.jackson.databind.json.JsonMapper;
+ 
+ import org.springframework.ai.mcp.server.common.autoconfigure.McpServerStatelessAutoConfiguration;
+ import org.springframework.ai.mcp.server.common.autoconfigure.McpServerStdioDisabledCondition;
+diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/main/java/org/springframework/ai/mcp/server/webflux/autoconfigure/McpServerStreamableHttpWebFluxAutoConfiguration.java b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/main/java/org/springframework/ai/mcp/server/webflux/autoconfigure/McpServerStreamableHttpWebFluxAutoConfiguration.java
+index bc12af994..bd90496e2 100644
+--- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/main/java/org/springframework/ai/mcp/server/webflux/autoconfigure/McpServerStreamableHttpWebFluxAutoConfiguration.java
++++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/main/java/org/springframework/ai/mcp/server/webflux/autoconfigure/McpServerStreamableHttpWebFluxAutoConfiguration.java
+@@ -16,9 +16,9 @@
+ 
+ package org.springframework.ai.mcp.server.webflux.autoconfigure;
+ 
+-import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
++import com.fasterxml.jackson.databind.json.JsonMapper;
++import io.modelcontextprotocol.json.jackson2.JacksonMcpJsonMapper;
+ import io.modelcontextprotocol.spec.McpSchema;
+-import tools.jackson.databind.json.JsonMapper;
+ 
+ import org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration;
+ import org.springframework.ai.mcp.server.common.autoconfigure.McpServerStdioDisabledCondition;
+diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/test/java/org/springframework/ai/mcp/server/webflux/autoconfigure/McpServerSseWebFluxAutoConfigurationIT.java b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/test/java/org/springframework/ai/mcp/server/webflux/autoconfigure/McpServerSseWebFluxAutoConfigurationIT.java
+index 29a3e7847..6da5c786b 100644
+--- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/test/java/org/springframework/ai/mcp/server/webflux/autoconfigure/McpServerSseWebFluxAutoConfigurationIT.java
++++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/test/java/org/springframework/ai/mcp/server/webflux/autoconfigure/McpServerSseWebFluxAutoConfigurationIT.java
+@@ -16,9 +16,9 @@
+ 
+ package org.springframework.ai.mcp.server.webflux.autoconfigure;
+ 
++import com.fasterxml.jackson.databind.json.JsonMapper;
+ import io.modelcontextprotocol.server.McpSyncServer;
+ import org.junit.jupiter.api.Test;
+-import tools.jackson.databind.json.JsonMapper;
+ 
+ import org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration;
+ import org.springframework.ai.mcp.server.common.autoconfigure.McpServerJsonMapperAutoConfiguration;
+diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/test/java/org/springframework/ai/mcp/server/webflux/autoconfigure/McpServerSseWebFluxAutoConfigurationTests.java b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/test/java/org/springframework/ai/mcp/server/webflux/autoconfigure/McpServerSseWebFluxAutoConfigurationTests.java
+index 47c137c53..4b5fd65a0 100644
+--- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/test/java/org/springframework/ai/mcp/server/webflux/autoconfigure/McpServerSseWebFluxAutoConfigurationTests.java
++++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/test/java/org/springframework/ai/mcp/server/webflux/autoconfigure/McpServerSseWebFluxAutoConfigurationTests.java
+@@ -16,8 +16,8 @@
+ 
+ package org.springframework.ai.mcp.server.webflux.autoconfigure;
+ 
++import com.fasterxml.jackson.databind.json.JsonMapper;
+ import org.junit.jupiter.api.Test;
+-import tools.jackson.databind.json.JsonMapper;
+ 
+ import org.springframework.ai.mcp.server.common.autoconfigure.McpServerJsonMapperAutoConfiguration;
+ import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
+@@ -47,7 +47,7 @@ class McpServerSseWebFluxAutoConfigurationTests {
+ 
+ 			// Verify that the JsonMapper is configured to ignore unknown properties
+ 
+-			assertThat(jsonMapper.isEnabled(tools.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES))
++			assertThat(jsonMapper.isEnabled(com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES))
+ 				.isFalse();
+ 
+ 			// Test with a JSON payload containing unknown fields
+diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/test/java/org/springframework/ai/mcp/server/webflux/autoconfigure/McpServerStatelessWebFluxAutoConfigurationIT.java b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/test/java/org/springframework/ai/mcp/server/webflux/autoconfigure/McpServerStatelessWebFluxAutoConfigurationIT.java
+index f3c94ce79..27440fa46 100644
+--- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/test/java/org/springframework/ai/mcp/server/webflux/autoconfigure/McpServerStatelessWebFluxAutoConfigurationIT.java
++++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/test/java/org/springframework/ai/mcp/server/webflux/autoconfigure/McpServerStatelessWebFluxAutoConfigurationIT.java
+@@ -16,9 +16,9 @@
+ 
+ package org.springframework.ai.mcp.server.webflux.autoconfigure;
+ 
+-import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
++import com.fasterxml.jackson.databind.json.JsonMapper;
++import io.modelcontextprotocol.json.jackson2.JacksonMcpJsonMapper;
+ import org.junit.jupiter.api.Test;
+-import tools.jackson.databind.json.JsonMapper;
+ 
+ import org.springframework.ai.mcp.server.common.autoconfigure.McpServerJsonMapperAutoConfiguration;
+ import org.springframework.ai.mcp.server.webflux.transport.WebFluxStatelessServerTransport;
+diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/test/java/org/springframework/ai/mcp/server/webflux/autoconfigure/McpServerStreamableHttpWebFluxAutoConfigurationIT.java b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/test/java/org/springframework/ai/mcp/server/webflux/autoconfigure/McpServerStreamableHttpWebFluxAutoConfigurationIT.java
+index a37cf58f5..92434b65a 100644
+--- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/test/java/org/springframework/ai/mcp/server/webflux/autoconfigure/McpServerStreamableHttpWebFluxAutoConfigurationIT.java
++++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/test/java/org/springframework/ai/mcp/server/webflux/autoconfigure/McpServerStreamableHttpWebFluxAutoConfigurationIT.java
+@@ -16,9 +16,9 @@
+ 
+ package org.springframework.ai.mcp.server.webflux.autoconfigure;
+ 
+-import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
++import com.fasterxml.jackson.databind.json.JsonMapper;
++import io.modelcontextprotocol.json.jackson2.JacksonMcpJsonMapper;
+ import org.junit.jupiter.api.Test;
+-import tools.jackson.databind.json.JsonMapper;
+ 
+ import org.springframework.ai.mcp.server.common.autoconfigure.McpServerJsonMapperAutoConfiguration;
+ import org.springframework.ai.mcp.server.webflux.transport.WebFluxStreamableServerTransportProvider;
+diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/test/java/org/springframework/ai/mcp/server/webflux/autoconfigure/McpToolCallProviderCachingIT.java b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/test/java/org/springframework/ai/mcp/server/webflux/autoconfigure/McpToolCallProviderCachingIT.java
+index 0e971d441..989e880bd 100644
+--- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/test/java/org/springframework/ai/mcp/server/webflux/autoconfigure/McpToolCallProviderCachingIT.java
++++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/test/java/org/springframework/ai/mcp/server/webflux/autoconfigure/McpToolCallProviderCachingIT.java
+@@ -47,9 +47,9 @@ import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfigurat
+ import org.springframework.ai.tool.ToolCallbackProvider;
+ import org.springframework.ai.tool.function.FunctionToolCallback;
+ import org.springframework.boot.autoconfigure.AutoConfigurations;
+-import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
++import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
++import org.springframework.boot.autoconfigure.web.reactive.function.client.WebClientAutoConfiguration;
+ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+-import org.springframework.boot.webclient.autoconfigure.WebClientAutoConfiguration;
+ import org.springframework.context.ApplicationContext;
+ import org.springframework.context.annotation.Bean;
+ import org.springframework.http.server.reactive.HttpHandler;
+diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/test/java/org/springframework/ai/mcp/server/webflux/autoconfigure/McpToolCallbackParameterlessToolIT.java b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/test/java/org/springframework/ai/mcp/server/webflux/autoconfigure/McpToolCallbackParameterlessToolIT.java
+index 5cc69aaeb..67ef2ce56 100644
+--- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/test/java/org/springframework/ai/mcp/server/webflux/autoconfigure/McpToolCallbackParameterlessToolIT.java
++++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/test/java/org/springframework/ai/mcp/server/webflux/autoconfigure/McpToolCallbackParameterlessToolIT.java
+@@ -23,14 +23,14 @@ import java.util.List;
+ import java.util.Map;
+ import java.util.stream.Stream;
+ 
+-import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
++import com.fasterxml.jackson.databind.json.JsonMapper;
++import io.modelcontextprotocol.json.jackson2.JacksonMcpJsonMapper;
+ import io.modelcontextprotocol.server.McpServerFeatures;
+ import io.modelcontextprotocol.server.McpSyncServer;
+ import io.modelcontextprotocol.spec.McpSchema;
+ import org.junit.jupiter.api.Test;
+ import reactor.netty.DisposableServer;
+ import reactor.netty.http.server.HttpServer;
+-import tools.jackson.databind.json.JsonMapper;
+ 
+ import org.springframework.ai.mcp.SyncMcpToolCallbackProvider;
+ import org.springframework.ai.mcp.client.common.autoconfigure.McpClientAutoConfiguration;
+@@ -48,9 +48,9 @@ import org.springframework.ai.tool.ToolCallbackProvider;
+ import org.springframework.ai.tool.definition.ToolDefinition;
+ import org.springframework.ai.util.JsonHelper;
+ import org.springframework.boot.autoconfigure.AutoConfigurations;
+-import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
++import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
++import org.springframework.boot.autoconfigure.web.reactive.function.client.WebClientAutoConfiguration;
+ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+-import org.springframework.boot.webclient.autoconfigure.WebClientAutoConfiguration;
+ import org.springframework.context.ApplicationContext;
+ import org.springframework.http.server.reactive.HttpHandler;
+ import org.springframework.http.server.reactive.ReactorHttpHandlerAdapter;
+diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/test/java/org/springframework/ai/mcp/server/webflux/autoconfigure/SseWebClientWebFluxServerIT.java b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/test/java/org/springframework/ai/mcp/server/webflux/autoconfigure/SseWebClientWebFluxServerIT.java
+index 9d23de50c..cb22a22fc 100644
+--- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/test/java/org/springframework/ai/mcp/server/webflux/autoconfigure/SseWebClientWebFluxServerIT.java
++++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/test/java/org/springframework/ai/mcp/server/webflux/autoconfigure/SseWebClientWebFluxServerIT.java
+@@ -25,9 +25,10 @@ import java.util.concurrent.atomic.AtomicReference;
+ import java.util.function.Function;
+ import java.util.stream.Collectors;
+ 
++import com.fasterxml.jackson.databind.json.JsonMapper;
+ import io.modelcontextprotocol.client.McpClient;
+ import io.modelcontextprotocol.client.McpSyncClient;
+-import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
++import io.modelcontextprotocol.json.jackson2.JacksonMcpJsonMapper;
+ import io.modelcontextprotocol.server.McpServerFeatures;
+ import io.modelcontextprotocol.server.McpSyncServer;
+ import io.modelcontextprotocol.spec.McpSchema;
+@@ -56,7 +57,6 @@ import net.javacrumbs.jsonunit.core.Option;
+ import org.junit.jupiter.api.Test;
+ import reactor.netty.DisposableServer;
+ import reactor.netty.http.server.HttpServer;
+-import tools.jackson.databind.json.JsonMapper;
+ 
+ import org.springframework.ai.mcp.client.common.autoconfigure.McpClientAutoConfiguration;
+ import org.springframework.ai.mcp.client.common.autoconfigure.McpToolCallbackAutoConfiguration;
+diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/test/java/org/springframework/ai/mcp/server/webflux/autoconfigure/StatelessWebClientWebFluxServerIT.java b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/test/java/org/springframework/ai/mcp/server/webflux/autoconfigure/StatelessWebClientWebFluxServerIT.java
+index 9323d4abd..b6659d539 100644
+--- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/test/java/org/springframework/ai/mcp/server/webflux/autoconfigure/StatelessWebClientWebFluxServerIT.java
++++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/test/java/org/springframework/ai/mcp/server/webflux/autoconfigure/StatelessWebClientWebFluxServerIT.java
+@@ -21,9 +21,10 @@ import java.util.List;
+ import java.util.Locale;
+ import java.util.Map;
+ 
++import com.fasterxml.jackson.databind.json.JsonMapper;
+ import io.modelcontextprotocol.client.McpClient;
+ import io.modelcontextprotocol.client.McpSyncClient;
+-import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
++import io.modelcontextprotocol.json.jackson2.JacksonMcpJsonMapper;
+ import io.modelcontextprotocol.server.McpStatelessServerFeatures;
+ import io.modelcontextprotocol.server.McpStatelessSyncServer;
+ import io.modelcontextprotocol.spec.McpSchema;
+@@ -44,7 +45,6 @@ import net.javacrumbs.jsonunit.core.Option;
+ import org.junit.jupiter.api.Test;
+ import reactor.netty.DisposableServer;
+ import reactor.netty.http.server.HttpServer;
+-import tools.jackson.databind.json.JsonMapper;
+ 
+ import org.springframework.ai.chat.model.ToolContext;
+ import org.springframework.ai.mcp.McpToolUtils;
+diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/test/java/org/springframework/ai/mcp/server/webflux/autoconfigure/StreamableMcpAnnotations2IT.java b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/test/java/org/springframework/ai/mcp/server/webflux/autoconfigure/StreamableMcpAnnotations2IT.java
+index 0050cbee7..3694907a2 100644
+--- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/test/java/org/springframework/ai/mcp/server/webflux/autoconfigure/StreamableMcpAnnotations2IT.java
++++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/test/java/org/springframework/ai/mcp/server/webflux/autoconfigure/StreamableMcpAnnotations2IT.java
+@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
+ import java.util.concurrent.atomic.AtomicReference;
+ import java.util.stream.Collectors;
+ 
++import com.fasterxml.jackson.databind.json.JsonMapper;
+ import io.modelcontextprotocol.client.McpSyncClient;
+ import io.modelcontextprotocol.server.McpSyncServer;
+ import io.modelcontextprotocol.spec.McpSchema;
+@@ -51,7 +52,6 @@ import net.javacrumbs.jsonunit.core.Option;
+ import org.junit.jupiter.api.Test;
+ import reactor.netty.DisposableServer;
+ import reactor.netty.http.server.HttpServer;
+-import tools.jackson.databind.json.JsonMapper;
+ 
+ import org.springframework.ai.mcp.annotation.McpArg;
+ import org.springframework.ai.mcp.annotation.McpComplete;
+@@ -379,7 +379,7 @@ public class StreamableMcpAnnotations2IT {
+ 				try {
+ 					var systemInfo = Map.of("os", System.getProperty("os.name"), "os_version",
+ 							System.getProperty("os.version"), "java_version", System.getProperty("java.version"));
+-					String jsonContent = JsonMapper.shared().writeValueAsString(systemInfo);
++					String jsonContent = new JsonMapper().writeValueAsString(systemInfo);
+ 					return ReadResourceResult
+ 						.builder(List.of(McpSchema.TextResourceContents.builder(request.uri(), jsonContent)
+ 							.mimeType("application/json")
+diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/test/java/org/springframework/ai/mcp/server/webflux/autoconfigure/StreamableMcpAnnotationsIT.java b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/test/java/org/springframework/ai/mcp/server/webflux/autoconfigure/StreamableMcpAnnotationsIT.java
+index be08ecc40..c61f70728 100644
+--- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/test/java/org/springframework/ai/mcp/server/webflux/autoconfigure/StreamableMcpAnnotationsIT.java
++++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/test/java/org/springframework/ai/mcp/server/webflux/autoconfigure/StreamableMcpAnnotationsIT.java
+@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
+ import java.util.concurrent.atomic.AtomicReference;
+ import java.util.stream.Collectors;
+ 
++import com.fasterxml.jackson.databind.json.JsonMapper;
+ import io.modelcontextprotocol.client.McpSyncClient;
+ import io.modelcontextprotocol.server.McpSyncServer;
+ import io.modelcontextprotocol.server.McpSyncServerExchange;
+@@ -53,7 +54,6 @@ import net.javacrumbs.jsonunit.core.Option;
+ import org.junit.jupiter.api.Test;
+ import reactor.netty.DisposableServer;
+ import reactor.netty.http.server.HttpServer;
+-import tools.jackson.databind.json.JsonMapper;
+ 
+ import org.springframework.ai.mcp.annotation.McpArg;
+ import org.springframework.ai.mcp.annotation.McpComplete;
+@@ -392,7 +392,7 @@ public class StreamableMcpAnnotationsIT {
+ 				try {
+ 					var systemInfo = Map.of("os", System.getProperty("os.name"), "os_version",
+ 							System.getProperty("os.version"), "java_version", System.getProperty("java.version"));
+-					String jsonContent = JsonMapper.shared().writeValueAsString(systemInfo);
++					String jsonContent = new JsonMapper().writeValueAsString(systemInfo);
+ 					return McpSchema.ReadResourceResult
+ 						.builder(List.of(McpSchema.TextResourceContents.builder(request.uri(), jsonContent)
+ 							.mimeType("application/json")
+diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/test/java/org/springframework/ai/mcp/server/webflux/autoconfigure/StreamableMcpAnnotationsManualIT.java b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/test/java/org/springframework/ai/mcp/server/webflux/autoconfigure/StreamableMcpAnnotationsManualIT.java
+index 18d8c2af9..12f8b5ca6 100644
+--- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/test/java/org/springframework/ai/mcp/server/webflux/autoconfigure/StreamableMcpAnnotationsManualIT.java
++++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/test/java/org/springframework/ai/mcp/server/webflux/autoconfigure/StreamableMcpAnnotationsManualIT.java
+@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
+ import java.util.concurrent.atomic.AtomicReference;
+ import java.util.stream.Collectors;
+ 
++import com.fasterxml.jackson.databind.json.JsonMapper;
+ import io.modelcontextprotocol.client.McpSyncClient;
+ import io.modelcontextprotocol.server.McpSyncServer;
+ import io.modelcontextprotocol.server.McpSyncServerExchange;
+@@ -54,7 +55,6 @@ import org.junit.jupiter.api.Test;
+ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+ import reactor.netty.DisposableServer;
+ import reactor.netty.http.server.HttpServer;
+-import tools.jackson.databind.json.JsonMapper;
+ 
+ import org.springframework.ai.chat.client.ChatClient;
+ import org.springframework.ai.mcp.annotation.McpArg;
+@@ -399,7 +399,7 @@ public class StreamableMcpAnnotationsManualIT {
+ 				try {
+ 					var systemInfo = Map.of("os", System.getProperty("os.name"), "os_version",
+ 							System.getProperty("os.version"), "java_version", System.getProperty("java.version"));
+-					String jsonContent = JsonMapper.shared().writeValueAsString(systemInfo);
++					String jsonContent = new JsonMapper().writeValueAsString(systemInfo);
+ 					return McpSchema.ReadResourceResult
+ 						.builder(List.of(McpSchema.TextResourceContents.builder(request.uri(), jsonContent)
+ 							.mimeType("application/json")
+diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/test/java/org/springframework/ai/mcp/server/webflux/autoconfigure/StreamableMcpAnnotationsWithLLMIT.java b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/test/java/org/springframework/ai/mcp/server/webflux/autoconfigure/StreamableMcpAnnotationsWithLLMIT.java
+index 9d9f41c0f..03ebb0ed7 100644
+--- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/test/java/org/springframework/ai/mcp/server/webflux/autoconfigure/StreamableMcpAnnotationsWithLLMIT.java
++++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/test/java/org/springframework/ai/mcp/server/webflux/autoconfigure/StreamableMcpAnnotationsWithLLMIT.java
+@@ -61,9 +61,9 @@ import org.springframework.ai.model.chat.client.autoconfigure.ChatClientAutoConf
+ import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
+ import org.springframework.ai.tool.ToolCallbackProvider;
+ import org.springframework.boot.autoconfigure.AutoConfigurations;
+-import org.springframework.boot.restclient.autoconfigure.RestClientAutoConfiguration;
++import org.springframework.boot.autoconfigure.web.client.RestClientAutoConfiguration;
++import org.springframework.boot.autoconfigure.web.reactive.function.client.WebClientAutoConfiguration;
+ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+-import org.springframework.boot.webclient.autoconfigure.WebClientAutoConfiguration;
+ import org.springframework.context.ApplicationContext;
+ import org.springframework.context.annotation.Bean;
+ import org.springframework.context.annotation.ComponentScan;
+diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/test/java/org/springframework/ai/mcp/server/webflux/autoconfigure/StreamableWebClientWebFluxServerIT.java b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/test/java/org/springframework/ai/mcp/server/webflux/autoconfigure/StreamableWebClientWebFluxServerIT.java
+index 675304ac7..249fb7f0f 100644
+--- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/test/java/org/springframework/ai/mcp/server/webflux/autoconfigure/StreamableWebClientWebFluxServerIT.java
++++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux/src/test/java/org/springframework/ai/mcp/server/webflux/autoconfigure/StreamableWebClientWebFluxServerIT.java
+@@ -26,9 +26,10 @@ import java.util.concurrent.atomic.AtomicReference;
+ import java.util.function.Function;
+ import java.util.stream.Collectors;
+ 
++import com.fasterxml.jackson.databind.json.JsonMapper;
+ import io.modelcontextprotocol.client.McpClient;
+ import io.modelcontextprotocol.client.McpSyncClient;
+-import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
++import io.modelcontextprotocol.json.jackson2.JacksonMcpJsonMapper;
+ import io.modelcontextprotocol.server.McpServerFeatures;
+ import io.modelcontextprotocol.server.McpSyncServer;
+ import io.modelcontextprotocol.spec.McpSchema;
+@@ -57,7 +58,6 @@ import net.javacrumbs.jsonunit.core.Option;
+ import org.junit.jupiter.api.Test;
+ import reactor.netty.DisposableServer;
+ import reactor.netty.http.server.HttpServer;
+-import tools.jackson.databind.json.JsonMapper;
+ 
+ import org.springframework.ai.mcp.client.common.autoconfigure.McpClientAutoConfiguration;
+ import org.springframework.ai.mcp.client.common.autoconfigure.McpToolCallbackAutoConfiguration;
+diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webmvc/pom.xml b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webmvc/pom.xml
+index dfee15830..fbded600e 100644
+--- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webmvc/pom.xml
++++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webmvc/pom.xml
+@@ -6,7 +6,7 @@
+ 	<parent>
+ 		<groupId>org.springframework.ai</groupId>
+ 		<artifactId>spring-ai-parent</artifactId>
+-		<version>2.0.1</version>
++		<version>1.1.8</version>
+ 		<relativePath>../../../pom.xml</relativePath>
+ 	</parent>
+ 	<artifactId>spring-ai-autoconfigure-mcp-server-webmvc</artifactId>
+@@ -16,6 +16,16 @@
+ 	<url>https://github.com/spring-projects/spring-ai</url>
+ 
+ 	<dependencies>
++		<dependency>
++			<groupId>io.modelcontextprotocol.sdk</groupId>
++			<artifactId>mcp-json-jackson2</artifactId>
++		</dependency>
++
++		<dependency>
++			<groupId>org.jspecify</groupId>
++			<artifactId>jspecify</artifactId>
++		</dependency>
++
+ 
+ 		<dependency>
+ 			<groupId>org.springframework.ai</groupId>
+diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webmvc/src/main/java/org/springframework/ai/mcp/server/webmvc/autoconfigure/McpServerSseWebMvcAutoConfiguration.java b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webmvc/src/main/java/org/springframework/ai/mcp/server/webmvc/autoconfigure/McpServerSseWebMvcAutoConfiguration.java
+index 58f4f804f..fede52ae4 100644
+--- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webmvc/src/main/java/org/springframework/ai/mcp/server/webmvc/autoconfigure/McpServerSseWebMvcAutoConfiguration.java
++++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webmvc/src/main/java/org/springframework/ai/mcp/server/webmvc/autoconfigure/McpServerSseWebMvcAutoConfiguration.java
+@@ -16,9 +16,9 @@
+ 
+ package org.springframework.ai.mcp.server.webmvc.autoconfigure;
+ 
+-import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
++import com.fasterxml.jackson.databind.json.JsonMapper;
++import io.modelcontextprotocol.json.jackson2.JacksonMcpJsonMapper;
+ import io.modelcontextprotocol.spec.McpServerTransportProvider;
+-import tools.jackson.databind.json.JsonMapper;
+ 
+ import org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration;
+ import org.springframework.ai.mcp.server.common.autoconfigure.McpServerStdioDisabledCondition;
+diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webmvc/src/main/java/org/springframework/ai/mcp/server/webmvc/autoconfigure/McpServerStatelessWebMvcAutoConfiguration.java b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webmvc/src/main/java/org/springframework/ai/mcp/server/webmvc/autoconfigure/McpServerStatelessWebMvcAutoConfiguration.java
+index 7561bb37c..b84545552 100644
+--- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webmvc/src/main/java/org/springframework/ai/mcp/server/webmvc/autoconfigure/McpServerStatelessWebMvcAutoConfiguration.java
++++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webmvc/src/main/java/org/springframework/ai/mcp/server/webmvc/autoconfigure/McpServerStatelessWebMvcAutoConfiguration.java
+@@ -16,9 +16,9 @@
+ 
+ package org.springframework.ai.mcp.server.webmvc.autoconfigure;
+ 
+-import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
++import com.fasterxml.jackson.databind.json.JsonMapper;
++import io.modelcontextprotocol.json.jackson2.JacksonMcpJsonMapper;
+ import io.modelcontextprotocol.spec.McpSchema;
+-import tools.jackson.databind.json.JsonMapper;
+ 
+ import org.springframework.ai.mcp.server.common.autoconfigure.McpServerStatelessAutoConfiguration;
+ import org.springframework.ai.mcp.server.common.autoconfigure.McpServerStdioDisabledCondition;
+diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webmvc/src/main/java/org/springframework/ai/mcp/server/webmvc/autoconfigure/McpServerStreamableHttpWebMvcAutoConfiguration.java b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webmvc/src/main/java/org/springframework/ai/mcp/server/webmvc/autoconfigure/McpServerStreamableHttpWebMvcAutoConfiguration.java
+index bf97cc8fe..270b359c9 100644
+--- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webmvc/src/main/java/org/springframework/ai/mcp/server/webmvc/autoconfigure/McpServerStreamableHttpWebMvcAutoConfiguration.java
++++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webmvc/src/main/java/org/springframework/ai/mcp/server/webmvc/autoconfigure/McpServerStreamableHttpWebMvcAutoConfiguration.java
+@@ -16,9 +16,9 @@
+ 
+ package org.springframework.ai.mcp.server.webmvc.autoconfigure;
+ 
+-import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
++import com.fasterxml.jackson.databind.json.JsonMapper;
++import io.modelcontextprotocol.json.jackson2.JacksonMcpJsonMapper;
+ import io.modelcontextprotocol.spec.McpSchema;
+-import tools.jackson.databind.json.JsonMapper;
+ 
+ import org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration;
+ import org.springframework.ai.mcp.server.common.autoconfigure.McpServerStdioDisabledCondition;
+diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webmvc/src/test/java/org/springframework/ai/mcp/server/webmvc/autoconfigure/McpServerSseWebMvcAutoConfigurationIT.java b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webmvc/src/test/java/org/springframework/ai/mcp/server/webmvc/autoconfigure/McpServerSseWebMvcAutoConfigurationIT.java
+index b22cb84f7..9dce6a318 100644
+--- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webmvc/src/test/java/org/springframework/ai/mcp/server/webmvc/autoconfigure/McpServerSseWebMvcAutoConfigurationIT.java
++++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webmvc/src/test/java/org/springframework/ai/mcp/server/webmvc/autoconfigure/McpServerSseWebMvcAutoConfigurationIT.java
+@@ -16,9 +16,9 @@
+ 
+ package org.springframework.ai.mcp.server.webmvc.autoconfigure;
+ 
++import com.fasterxml.jackson.databind.json.JsonMapper;
+ import io.modelcontextprotocol.server.McpSyncServer;
+ import org.junit.jupiter.api.Test;
+-import tools.jackson.databind.json.JsonMapper;
+ 
+ import org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration;
+ import org.springframework.ai.mcp.server.common.autoconfigure.McpServerJsonMapperAutoConfiguration;
+diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webmvc/src/test/java/org/springframework/ai/mcp/server/webmvc/autoconfigure/McpServerStatelessWebMvcAutoConfigurationIT.java b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webmvc/src/test/java/org/springframework/ai/mcp/server/webmvc/autoconfigure/McpServerStatelessWebMvcAutoConfigurationIT.java
+index fe07a336a..1fa03036e 100644
+--- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webmvc/src/test/java/org/springframework/ai/mcp/server/webmvc/autoconfigure/McpServerStatelessWebMvcAutoConfigurationIT.java
++++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webmvc/src/test/java/org/springframework/ai/mcp/server/webmvc/autoconfigure/McpServerStatelessWebMvcAutoConfigurationIT.java
+@@ -16,9 +16,9 @@
+ 
+ package org.springframework.ai.mcp.server.webmvc.autoconfigure;
+ 
+-import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
++import com.fasterxml.jackson.databind.json.JsonMapper;
++import io.modelcontextprotocol.json.jackson2.JacksonMcpJsonMapper;
+ import org.junit.jupiter.api.Test;
+-import tools.jackson.databind.json.JsonMapper;
+ 
+ import org.springframework.ai.mcp.server.common.autoconfigure.McpServerJsonMapperAutoConfiguration;
+ import org.springframework.ai.mcp.server.webmvc.transport.WebMvcStatelessServerTransport;
+diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webmvc/src/test/java/org/springframework/ai/mcp/server/webmvc/autoconfigure/McpServerStreamableHttpWebMvcAutoConfigurationIT.java b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webmvc/src/test/java/org/springframework/ai/mcp/server/webmvc/autoconfigure/McpServerStreamableHttpWebMvcAutoConfigurationIT.java
+index c0b8316f3..c8d824b41 100644
+--- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webmvc/src/test/java/org/springframework/ai/mcp/server/webmvc/autoconfigure/McpServerStreamableHttpWebMvcAutoConfigurationIT.java
++++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webmvc/src/test/java/org/springframework/ai/mcp/server/webmvc/autoconfigure/McpServerStreamableHttpWebMvcAutoConfigurationIT.java
+@@ -16,9 +16,9 @@
+ 
+ package org.springframework.ai.mcp.server.webmvc.autoconfigure;
+ 
+-import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
++import com.fasterxml.jackson.databind.json.JsonMapper;
++import io.modelcontextprotocol.json.jackson2.JacksonMcpJsonMapper;
+ import org.junit.jupiter.api.Test;
+-import tools.jackson.databind.json.JsonMapper;
+ 
+ import org.springframework.ai.mcp.server.common.autoconfigure.McpServerJsonMapperAutoConfiguration;
+ import org.springframework.ai.mcp.server.webmvc.transport.WebMvcStreamableServerTransportProvider;
+diff --git a/mcp/common/pom.xml b/mcp/common/pom.xml
+index 4618b6f87..2f8e9413e 100644
+--- a/mcp/common/pom.xml
++++ b/mcp/common/pom.xml
+@@ -6,7 +6,7 @@
+ 	<parent>
+ 		<groupId>org.springframework.ai</groupId>
+ 		<artifactId>spring-ai-parent</artifactId>
+-		<version>2.0.1</version>
++		<version>1.1.8</version>
+ 		<relativePath>../../pom.xml</relativePath>
+ 	</parent>
+ 	<artifactId>spring-ai-mcp</artifactId>
+@@ -16,6 +16,16 @@
+ 	<url>https://github.com/spring-projects/spring-ai</url>
+ 
+ 	<dependencies>
++		<dependency>
++			<groupId>io.modelcontextprotocol.sdk</groupId>
++			<artifactId>mcp-json-jackson2</artifactId>
++		</dependency>
++
++		<dependency>
++			<groupId>org.jspecify</groupId>
++			<artifactId>jspecify</artifactId>
++		</dependency>
++
+ 		<dependency>
+ 			<groupId>io.modelcontextprotocol.sdk</groupId>
+ 			<artifactId>mcp</artifactId>
+diff --git a/mcp/common/src/main/java/org/springframework/ai/mcp/McpToolUtils.java b/mcp/common/src/main/java/org/springframework/ai/mcp/McpToolUtils.java
+index 53a904ba0..48711efac 100644
+--- a/mcp/common/src/main/java/org/springframework/ai/mcp/McpToolUtils.java
++++ b/mcp/common/src/main/java/org/springframework/ai/mcp/McpToolUtils.java
+@@ -28,7 +28,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+ import io.micrometer.common.util.StringUtils;
+ import io.modelcontextprotocol.client.McpAsyncClient;
+ import io.modelcontextprotocol.client.McpSyncClient;
+-import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
++import io.modelcontextprotocol.json.jackson2.JacksonMcpJsonMapper;
+ import io.modelcontextprotocol.server.McpServerFeatures;
+ import io.modelcontextprotocol.server.McpStatelessServerFeatures;
+ import io.modelcontextprotocol.server.McpSyncServerExchange;
+diff --git a/mcp/mcp-annotations/pom.xml b/mcp/mcp-annotations/pom.xml
+index 588392615..09da50720 100644
+--- a/mcp/mcp-annotations/pom.xml
++++ b/mcp/mcp-annotations/pom.xml
+@@ -7,7 +7,7 @@
+ 	<parent>
+ 		<groupId>org.springframework.ai</groupId>
+ 		<artifactId>spring-ai-parent</artifactId>
+-		<version>2.0.1</version>
++		<version>1.1.8</version>
+ 		<relativePath>../../pom.xml</relativePath>
+ 	</parent>
+ 
+@@ -17,6 +17,11 @@
+ 	<url>https://github.com/spring-projects/spring-ai</url>
+ 
+ 	<dependencies>
++		<dependency>
++			<groupId>org.jspecify</groupId>
++			<artifactId>jspecify</artifactId>
++		</dependency>
++
+ 		
+ 		<dependency>
+ 			<groupId>io.modelcontextprotocol.sdk</groupId>
+diff --git a/mcp/mcp-annotations/src/main/java/org/springframework/ai/mcp/annotation/method/tool/utils/McpJsonSchemaGenerator.java b/mcp/mcp-annotations/src/main/java/org/springframework/ai/mcp/annotation/method/tool/utils/McpJsonSchemaGenerator.java
+index f9aada568..1a962af0a 100644
+--- a/mcp/mcp-annotations/src/main/java/org/springframework/ai/mcp/annotation/method/tool/utils/McpJsonSchemaGenerator.java
++++ b/mcp/mcp-annotations/src/main/java/org/springframework/ai/mcp/annotation/method/tool/utils/McpJsonSchemaGenerator.java
+@@ -26,6 +26,7 @@ import java.util.Map;
+ 
+ import com.fasterxml.jackson.annotation.JsonProperty;
+ import com.fasterxml.jackson.annotation.JsonPropertyDescription;
++import com.fasterxml.jackson.databind.node.ObjectNode;
+ import com.github.victools.jsonschema.generator.Module;
+ import com.github.victools.jsonschema.generator.Option;
+ import com.github.victools.jsonschema.generator.OptionPreset;
+@@ -33,8 +34,8 @@ import com.github.victools.jsonschema.generator.SchemaGenerator;
+ import com.github.victools.jsonschema.generator.SchemaGeneratorConfig;
+ import com.github.victools.jsonschema.generator.SchemaGeneratorConfigBuilder;
+ import com.github.victools.jsonschema.generator.SchemaVersion;
++import com.github.victools.jsonschema.module.jackson.JacksonModule;
+ import com.github.victools.jsonschema.module.jackson.JacksonOption;
+-import com.github.victools.jsonschema.module.jackson.JacksonSchemaModule;
+ import com.github.victools.jsonschema.module.swagger2.Swagger2Module;
+ import io.modelcontextprotocol.common.McpTransportContext;
+ import io.modelcontextprotocol.server.McpAsyncServerExchange;
+@@ -44,7 +45,6 @@ import io.modelcontextprotocol.util.Assert;
+ import io.modelcontextprotocol.util.Utils;
+ import io.swagger.v3.oas.annotations.media.Schema;
+ import org.jspecify.annotations.Nullable;
+-import tools.jackson.databind.node.ObjectNode;
+ 
+ import org.springframework.ai.mcp.annotation.McpMeta;
+ import org.springframework.ai.mcp.annotation.McpProgressToken;
+@@ -53,10 +53,10 @@ import org.springframework.ai.mcp.annotation.context.McpAsyncRequestContext;
+ import org.springframework.ai.mcp.annotation.context.McpSyncRequestContext;
+ import org.springframework.ai.model.KotlinModule;
+ import org.springframework.ai.util.JacksonUtils;
++import org.springframework.ai.util.Nullness;
+ import org.springframework.ai.util.json.schema.JsonSchemaGenerator.SchemaOption;
+ import org.springframework.ai.util.json.schema.JsonSchemaUtils;
+ import org.springframework.core.KotlinDetector;
+-import org.springframework.core.Nullness;
+ import org.springframework.util.ClassUtils;
+ import org.springframework.util.ConcurrentReferenceHashMap;
+ 
+@@ -83,7 +83,7 @@ public final class McpJsonSchemaGenerator {
+ 	 * spring-ai-model's JsonSchemaGenerator.
+ 	 */
+ 	static {
+-		Module jacksonModule = new JacksonSchemaModule(JacksonOption.RESPECT_JSONPROPERTY_REQUIRED);
++		Module jacksonModule = new JacksonModule(JacksonOption.RESPECT_JSONPROPERTY_REQUIRED);
+ 		Module openApiModule = new Swagger2Module();
+ 		Module springAiSchemaModule = PROPERTY_REQUIRED_BY_DEFAULT ? new McpSpringAiSchemaModule()
+ 				: new McpSpringAiSchemaModule(McpSpringAiSchemaModule.Option.PROPERTY_REQUIRED_FALSE_BY_DEFAULT);
+diff --git a/mcp/mcp-annotations/src/test/java/org/springframework/ai/mcp/annotation/method/tool/CallToolRequestSupportTests.java b/mcp/mcp-annotations/src/test/java/org/springframework/ai/mcp/annotation/method/tool/CallToolRequestSupportTests.java
+index 6cd4c9b4b..cf2816ba8 100644
+--- a/mcp/mcp-annotations/src/test/java/org/springframework/ai/mcp/annotation/method/tool/CallToolRequestSupportTests.java
++++ b/mcp/mcp-annotations/src/test/java/org/springframework/ai/mcp/annotation/method/tool/CallToolRequestSupportTests.java
+@@ -20,14 +20,14 @@ import java.lang.reflect.Method;
+ import java.util.List;
+ import java.util.Map;
+ 
++import com.fasterxml.jackson.databind.JsonNode;
++import com.fasterxml.jackson.databind.json.JsonMapper;
+ import io.modelcontextprotocol.server.McpSyncServerExchange;
+ import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
+ import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
+ import io.modelcontextprotocol.spec.McpSchema.TextContent;
+ import org.junit.jupiter.api.Test;
+ import reactor.core.publisher.Mono;
+-import tools.jackson.databind.JsonNode;
+-import tools.jackson.databind.json.JsonMapper;
+ 
+ import org.springframework.ai.mcp.annotation.McpMeta;
+ import org.springframework.ai.mcp.annotation.McpProgressToken;
+@@ -193,7 +193,7 @@ public class CallToolRequestSupportTests {
+ 
+ 		// Should have minimal schema with empty properties
+ 		assertThat(schemaNode.has("type")).isTrue();
+-		assertThat(schemaNode.get("type").asString()).isEqualTo("object");
++		assertThat(schemaNode.get("type").asText()).isEqualTo("object");
+ 		assertThat(schemaNode.has("properties")).isTrue();
+ 		assertThat(schemaNode.get("properties").size()).isEqualTo(0);
+ 		assertThat(schemaNode.has("required")).isTrue();
+@@ -221,7 +221,7 @@ public class CallToolRequestSupportTests {
+ 		assertThat(schemaNode.has("required")).isTrue();
+ 		JsonNode required = schemaNode.get("required");
+ 		assertThat(required.size()).isEqualTo(1);
+-		assertThat(required.get(0).asString()).isEqualTo("requiredParam");
++		assertThat(required.get(0).asText()).isEqualTo("requiredParam");
+ 	}
+ 
+ 	@Test
+@@ -427,7 +427,7 @@ public class CallToolRequestSupportTests {
+ 		assertThat(schemaNode.has("required")).isTrue();
+ 		JsonNode required = schemaNode.get("required");
+ 		assertThat(required.size()).isEqualTo(1);
+-		assertThat(required.get(0).asString()).isEqualTo("input");
++		assertThat(required.get(0).asText()).isEqualTo("input");
+ 	}
+ 
+ 	@Test
+@@ -451,7 +451,7 @@ public class CallToolRequestSupportTests {
+ 		assertThat(schemaNode.has("required")).isTrue();
+ 		JsonNode required = schemaNode.get("required");
+ 		assertThat(required.size()).isEqualTo(1);
+-		assertThat(required.get(0).asString()).isEqualTo("regularParam");
++		assertThat(required.get(0).asText()).isEqualTo("regularParam");
+ 	}
+ 
+ 	@Test
+@@ -541,7 +541,7 @@ public class CallToolRequestSupportTests {
+ 		assertThat(schemaNode.has("required")).isTrue();
+ 		JsonNode required = schemaNode.get("required");
+ 		assertThat(required.size()).isEqualTo(1);
+-		assertThat(required.get(0).asString()).isEqualTo("input");
++		assertThat(required.get(0).asText()).isEqualTo("input");
+ 	}
+ 
+ 	private static class CallToolRequestTestProvider {
+diff --git a/mcp/mcp-annotations/src/test/java/org/springframework/ai/mcp/annotation/method/tool/utils/McpJsonSchemaGeneratorTests.java b/mcp/mcp-annotations/src/test/java/org/springframework/ai/mcp/annotation/method/tool/utils/McpJsonSchemaGeneratorTests.java
+index 8c448fd71..622f26eef 100644
+--- a/mcp/mcp-annotations/src/test/java/org/springframework/ai/mcp/annotation/method/tool/utils/McpJsonSchemaGeneratorTests.java
++++ b/mcp/mcp-annotations/src/test/java/org/springframework/ai/mcp/annotation/method/tool/utils/McpJsonSchemaGeneratorTests.java
+@@ -19,8 +19,8 @@ package org.springframework.ai.mcp.annotation.method.tool.utils;
+ import java.lang.reflect.Method;
+ import java.util.List;
+ 
++import com.fasterxml.jackson.databind.JsonNode;
+ import org.junit.jupiter.api.Test;
+-import tools.jackson.databind.JsonNode;
+ 
+ import org.springframework.ai.util.JsonHelper;
+ 
+@@ -51,9 +51,9 @@ class McpJsonSchemaGeneratorTests {
+ 		assertThat(schemaNode.at("/properties/request").has("$defs"))
+ 			.as("$defs must not remain nested inside the parameter sub-schema")
+ 			.isFalse();
+-		assertThat(schemaNode.at("/properties/request/properties/filters/items/$ref").asString())
++		assertThat(schemaNode.at("/properties/request/properties/filters/items/$ref").asText())
+ 			.isEqualTo("#/$defs/RecursiveFilter");
+-		assertThat(schemaNode.at("/$defs/RecursiveFilter/properties/filters/items/$ref").asString())
++		assertThat(schemaNode.at("/$defs/RecursiveFilter/properties/filters/items/$ref").asText())
+ 			.isEqualTo("#/$defs/RecursiveFilter");
+ 	}
+ 
+@@ -71,9 +71,9 @@ class McpJsonSchemaGeneratorTests {
+ 
+ 		assertThat(schemaNode.at("/$defs").size()).isEqualTo(1);
+ 		assertThat(schemaNode.at("/$defs").has("RecursiveFilter")).isTrue();
+-		assertThat(schemaNode.at("/properties/a/properties/filters/items/$ref").asString())
++		assertThat(schemaNode.at("/properties/a/properties/filters/items/$ref").asText())
+ 			.isEqualTo("#/$defs/RecursiveFilter");
+-		assertThat(schemaNode.at("/properties/b/properties/filters/items/$ref").asString())
++		assertThat(schemaNode.at("/properties/b/properties/filters/items/$ref").asText())
+ 			.isEqualTo("#/$defs/RecursiveFilter");
+ 	}
+ 
+@@ -95,12 +95,12 @@ class McpJsonSchemaGeneratorTests {
+ 		assertThat(schemaNode.at("/$defs/Filter_2").has("properties")).isTrue();
+ 		assertThat(schemaNode.at("/$defs/Filter/properties").has("label")).isTrue();
+ 		assertThat(schemaNode.at("/$defs/Filter_2/properties").has("code")).isTrue();
+-		assertThat(schemaNode.at("/properties/a/properties/filters/items/$ref").asString()).isEqualTo("#/$defs/Filter");
+-		assertThat(schemaNode.at("/properties/b/properties/filters/items/$ref").asString())
++		assertThat(schemaNode.at("/properties/a/properties/filters/items/$ref").asText()).isEqualTo("#/$defs/Filter");
++		assertThat(schemaNode.at("/properties/b/properties/filters/items/$ref").asText())
+ 			.isEqualTo("#/$defs/Filter_2");
+-		assertThat(schemaNode.at("/$defs/Filter/properties/children/items/$ref").asString())
++		assertThat(schemaNode.at("/$defs/Filter/properties/children/items/$ref").asText())
+ 			.isEqualTo("#/$defs/Filter");
+-		assertThat(schemaNode.at("/$defs/Filter_2/properties/children/items/$ref").asString())
++		assertThat(schemaNode.at("/$defs/Filter_2/properties/children/items/$ref").asText())
+ 			.isEqualTo("#/$defs/Filter_2");
+ 	}
+ 
+@@ -118,11 +118,11 @@ class McpJsonSchemaGeneratorTests {
+ 		assertThat(schemaNode.at("/$defs/Filter/properties").has("label")).isTrue();
+ 		assertThat(schemaNode.at("/$defs/Filter_2/properties").has("code")).isTrue();
+ 		assertThat(schemaNode.at("/$defs/Wrapper").has("properties")).isTrue();
+-		assertThat(schemaNode.at("/$defs/Wrapper/properties/filters/items/$ref").asString())
++		assertThat(schemaNode.at("/$defs/Wrapper/properties/filters/items/$ref").asText())
+ 			.isEqualTo("#/$defs/Filter_2");
+-		assertThat(schemaNode.at("/$defs/Wrapper/properties/nested/items/$ref").asString())
++		assertThat(schemaNode.at("/$defs/Wrapper/properties/nested/items/$ref").asText())
+ 			.isEqualTo("#/$defs/Wrapper");
+-		assertThat(schemaNode.at("/$defs/Filter_2/properties/children/items/$ref").asString())
++		assertThat(schemaNode.at("/$defs/Filter_2/properties/children/items/$ref").asText())
+ 			.isEqualTo("#/$defs/Filter_2");
+ 	}
+ 
+@@ -138,7 +138,7 @@ class McpJsonSchemaGeneratorTests {
+ 		String schema = McpJsonSchemaGenerator.generateFromClass(SearchRequest.class);
+ 		JsonNode schemaNode = jsonHelper.fromJson(schema, JsonNode.class);
+ 
+-		assertThat(schemaNode.get("type").asString()).isEqualTo("object");
++		assertThat(schemaNode.get("type").asText()).isEqualTo("object");
+ 		assertThat(schemaNode.has("properties")).isTrue();
+ 	}
+ 
+@@ -147,7 +147,7 @@ class McpJsonSchemaGeneratorTests {
+ 		String schema = McpJsonSchemaGenerator.generateFromType(SearchRequest.class);
+ 		JsonNode schemaNode = jsonHelper.fromJson(schema, JsonNode.class);
+ 
+-		assertThat(schemaNode.get("type").asString()).isEqualTo("object");
++		assertThat(schemaNode.get("type").asText()).isEqualTo("object");
+ 		assertThat(schemaNode.has("properties")).isTrue();
+ 	}
+ 
+diff --git a/mcp/mcp-annotations/src/test/kotlin/org/springframework/ai/mcp/annotation/method/tool/utils/McpJsonSchemaGeneratorKotlinTests.kt b/mcp/mcp-annotations/src/test/kotlin/org/springframework/ai/mcp/annotation/method/tool/utils/McpJsonSchemaGeneratorKotlinTests.kt
+index ef9aaffa6..afdb5b63e 100644
+--- a/mcp/mcp-annotations/src/test/kotlin/org/springframework/ai/mcp/annotation/method/tool/utils/McpJsonSchemaGeneratorKotlinTests.kt
++++ b/mcp/mcp-annotations/src/test/kotlin/org/springframework/ai/mcp/annotation/method/tool/utils/McpJsonSchemaGeneratorKotlinTests.kt
+@@ -20,8 +20,8 @@ import org.assertj.core.api.Assertions.assertThat
+ import org.junit.jupiter.api.Test
+ import org.springframework.ai.mcp.annotation.McpTool
+ import org.springframework.ai.mcp.annotation.McpToolParam
+-import tools.jackson.databind.JsonNode
+-import tools.jackson.databind.json.JsonMapper
++import com.fasterxml.jackson.databind.JsonNode
++import com.fasterxml.jackson.databind.json.JsonMapper
+ 
+ class McpJsonSchemaGeneratorKotlinTests {
+ 
+@@ -71,7 +71,7 @@ class McpJsonSchemaGeneratorKotlinTests {
+ 		if (required == null || required.isNull) {
+ 			return emptyList()
+ 		}
+-		return required.iterator().asSequence().map { it.asString() }.toList()
++		return required.iterator().asSequence().map { it.asText() }.toList()
+ 	}
+ 
+ 	private data class Filter(val name: String? = null, val ids: List<String>? = null)
+diff --git a/mcp/transport/mcp-spring-webflux/pom.xml b/mcp/transport/mcp-spring-webflux/pom.xml
+index 741c7027c..7bf59eb51 100644
+--- a/mcp/transport/mcp-spring-webflux/pom.xml
++++ b/mcp/transport/mcp-spring-webflux/pom.xml
+@@ -6,7 +6,7 @@
+ 	<parent>
+ 		<groupId>org.springframework.ai</groupId>
+ 		<artifactId>spring-ai-parent</artifactId>
+-		<version>2.0.1</version>
++		<version>1.1.8</version>
+ 		<relativePath>../../../pom.xml</relativePath>
+ 	</parent>
+ 	<artifactId>mcp-spring-webflux</artifactId>
+@@ -17,6 +17,11 @@
+ 	<url>https://github.com/spring-projects/spring-ai</url>
+ 
+ 	<dependencies>
++		<dependency>
++			<groupId>org.jspecify</groupId>
++			<artifactId>jspecify</artifactId>
++		</dependency>
++
+ 
+ 		<dependency>
+ 			<groupId>io.modelcontextprotocol.sdk</groupId>
+@@ -38,7 +43,7 @@
+ 
+ 		<dependency>
+ 			<groupId>io.modelcontextprotocol.sdk</groupId>
+-			<artifactId>mcp-json-jackson3</artifactId>
++			<artifactId>mcp-json-jackson2</artifactId>
+ 			<version>${mcp.sdk.version}</version>
+ 			<scope>test</scope>
+ 		</dependency>
+diff --git a/mcp/transport/mcp-spring-webflux/src/main/java/org/springframework/ai/mcp/client/webflux/transport/WebClientStreamableHttpTransport.java b/mcp/transport/mcp-spring-webflux/src/main/java/org/springframework/ai/mcp/client/webflux/transport/WebClientStreamableHttpTransport.java
+index 12dfa7cf0..5475bfd2b 100644
+--- a/mcp/transport/mcp-spring-webflux/src/main/java/org/springframework/ai/mcp/client/webflux/transport/WebClientStreamableHttpTransport.java
++++ b/mcp/transport/mcp-spring-webflux/src/main/java/org/springframework/ai/mcp/client/webflux/transport/WebClientStreamableHttpTransport.java
+@@ -295,7 +295,8 @@ public final class WebClientStreamableHttpTransport implements McpClientTranspor
+ 					return true;
+ 				})
+ 				.doFinally(s -> {
+-					@Nullable Disposable ref = disposableRef.getAndSet(null);
++					@Nullable
++					Disposable ref = disposableRef.getAndSet(null);
+ 					if (ref != null) {
+ 						transportSession.removeConnection(ref);
+ 					}
+@@ -427,7 +428,8 @@ public final class WebClientStreamableHttpTransport implements McpClientTranspor
+ 					sink.error(t);
+ 					return true;
+ 				}).doFinally(s -> {
+-					@Nullable Disposable ref = disposableRef.getAndSet(null);
++					@Nullable
++					Disposable ref = disposableRef.getAndSet(null);
+ 					if (ref != null) {
+ 						transportSession.removeConnection(ref);
+ 					}
+diff --git a/mcp/transport/mcp-spring-webflux/src/main/java/org/springframework/ai/mcp/server/webflux/transport/WebFluxSseServerTransportProvider.java b/mcp/transport/mcp-spring-webflux/src/main/java/org/springframework/ai/mcp/server/webflux/transport/WebFluxSseServerTransportProvider.java
+index a8d4199bb..c2d63130e 100644
+--- a/mcp/transport/mcp-spring-webflux/src/main/java/org/springframework/ai/mcp/server/webflux/transport/WebFluxSseServerTransportProvider.java
++++ b/mcp/transport/mcp-spring-webflux/src/main/java/org/springframework/ai/mcp/server/webflux/transport/WebFluxSseServerTransportProvider.java
+@@ -477,7 +477,8 @@ public final class WebFluxSseServerTransportProvider implements McpServerTranspo
+ 
+ 		private final FluxSink<ServerSentEvent<?>> sink;
+ 
+-		@Nullable private volatile String sessionId;
++		@Nullable
++		private volatile String sessionId;
+ 
+ 		WebFluxMcpSessionTransport(FluxSink<ServerSentEvent<?>> sink) {
+ 			this.sink = sink;
+diff --git a/mcp/transport/mcp-spring-webflux/src/test/java/org/springframework/ai/mcp/client/webflux/transport/WebFluxSseClientTransportIT.java b/mcp/transport/mcp-spring-webflux/src/test/java/org/springframework/ai/mcp/client/webflux/transport/WebFluxSseClientTransportIT.java
+index 908f39235..d00f21685 100644
+--- a/mcp/transport/mcp-spring-webflux/src/test/java/org/springframework/ai/mcp/client/webflux/transport/WebFluxSseClientTransportIT.java
++++ b/mcp/transport/mcp-spring-webflux/src/test/java/org/springframework/ai/mcp/client/webflux/transport/WebFluxSseClientTransportIT.java
+@@ -23,10 +23,11 @@ import java.util.concurrent.CopyOnWriteArrayList;
+ import java.util.concurrent.atomic.AtomicInteger;
+ import java.util.function.Function;
+ 
++import com.fasterxml.jackson.databind.json.JsonMapper;
+ import io.modelcontextprotocol.client.transport.InvalidSseMessageEndpointException;
+ import io.modelcontextprotocol.client.transport.SseMessageEndpointValidator;
+ import io.modelcontextprotocol.json.McpJsonMapper;
+-import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
++import io.modelcontextprotocol.json.jackson2.JacksonMcpJsonMapper;
+ import io.modelcontextprotocol.spec.McpSchema;
+ import io.modelcontextprotocol.spec.McpSchema.JSONRPCRequest;
+ import io.modelcontextprotocol.util.McpJsonMapperUtils;
+@@ -45,7 +46,6 @@ import reactor.core.publisher.Flux;
+ import reactor.core.publisher.Mono;
+ import reactor.core.publisher.Sinks;
+ import reactor.test.StepVerifier;
+-import tools.jackson.databind.json.JsonMapper;
+ 
+ import org.springframework.http.codec.ServerSentEvent;
+ import org.springframework.web.reactive.function.client.WebClient;
+diff --git a/mcp/transport/mcp-spring-webmvc/pom.xml b/mcp/transport/mcp-spring-webmvc/pom.xml
+index b7b5622d3..42b8dd812 100644
+--- a/mcp/transport/mcp-spring-webmvc/pom.xml
++++ b/mcp/transport/mcp-spring-webmvc/pom.xml
+@@ -6,7 +6,7 @@
+ 	<parent>
+ 		<groupId>org.springframework.ai</groupId>
+ 		<artifactId>spring-ai-parent</artifactId>
+-		<version>2.0.1</version>
++		<version>1.1.8</version>
+ 		<relativePath>../../../pom.xml</relativePath>
+ 	</parent>
+ 	<artifactId>mcp-spring-webmvc</artifactId>
+@@ -17,6 +17,11 @@
+ 	<url>https://github.com/spring-projects/spring-ai</url>
+ 
+ 	<dependencies>
++		<dependency>
++			<groupId>org.jspecify</groupId>
++			<artifactId>jspecify</artifactId>
++		</dependency>
++
+ 
+ 		<dependency>
+ 			<groupId>io.modelcontextprotocol.sdk</groupId>
+@@ -45,7 +50,7 @@
+ 
+ 		<dependency>
+ 			<groupId>io.modelcontextprotocol.sdk</groupId>
+-			<artifactId>mcp-json-jackson3</artifactId>
++			<artifactId>mcp-json-jackson2</artifactId>
+ 			<version>${mcp.sdk.version}</version>
+ 			<scope>test</scope>
+ 		</dependency>
+diff --git a/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/OpenAiChatModelIT.java b/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/OpenAiChatModelIT.java
+index 777aae3f3..bf189e917 100644
+--- a/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/OpenAiChatModelIT.java
++++ b/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/OpenAiChatModelIT.java
+@@ -479,16 +479,13 @@ public class OpenAiChatModelIT extends AbstractIT {
+ 
+ 		// Mock a parameter-less JsonSchema (no properties field)
+ 		// This simulates what an external MCP server might provide
+-		McpSchema.JsonSchema mockJsonSchema = mock(McpSchema.JsonSchema.class);
+-		when(mockJsonSchema.type()).thenReturn("object");
+-		when(mockJsonSchema.additionalProperties()).thenReturn(false);
+-		when(mockJsonSchema.properties()).thenReturn(null); // No properties field
++		Map<String, Object> mockInputSchema = Map.of("type", "object", "additionalProperties", false);
+ 
+ 		// Create a mock MCP tool
+ 		McpSchema.Tool mockMcpTool = mock(McpSchema.Tool.class);
+ 		when(mockMcpTool.name()).thenReturn("getCurrentTime");
+ 		when(mockMcpTool.description()).thenReturn("Get the current server time");
+-		when(mockMcpTool.inputSchema()).thenReturn(mockJsonSchema);
++		when(mockMcpTool.inputSchema()).thenReturn(mockInputSchema);
+ 
+ 		// Create a mock MCP client
+ 		io.modelcontextprotocol.client.McpSyncClient mockMcpClient = mock(
+@@ -540,16 +537,13 @@ public class OpenAiChatModelIT extends AbstractIT {
+ 
+ 		// Mock a parameter-less JsonSchema (no properties field)
+ 		// This simulates what an external MCP server might provide
+-		McpSchema.JsonSchema mockJsonSchema = mock(McpSchema.JsonSchema.class);
+-		when(mockJsonSchema.type()).thenReturn("object");
+-		when(mockJsonSchema.additionalProperties()).thenReturn(false);
+-		when(mockJsonSchema.properties()).thenReturn(null); // No properties field
++		Map<String, Object> mockInputSchema = Map.of("type", "object", "additionalProperties", false);
+ 
+ 		// Create a mock MCP tool
+ 		McpSchema.Tool mockMcpTool = mock(McpSchema.Tool.class);
+ 		when(mockMcpTool.name()).thenReturn("getCurrentTime");
+ 		when(mockMcpTool.description()).thenReturn("Get the current server time");
+-		when(mockMcpTool.inputSchema()).thenReturn(mockJsonSchema);
++		when(mockMcpTool.inputSchema()).thenReturn(mockInputSchema);
+ 
+ 		// Create a mock async MCP client
+ 		io.modelcontextprotocol.client.McpAsyncClient mockMcpClient = mock(
+diff --git a/pom.xml b/pom.xml
+index c2084fc6c..f3a48b697 100644
+--- a/pom.xml
++++ b/pom.xml
+@@ -230,7 +230,9 @@
+ 		<module>spring-ai-integration-tests</module>
+ 
+ 		<module>mcp/common</module>
+-		<module>mcp/mcp-annotations-spring</module>
++		<module>mcp/mcp-annotations</module>
++		<module>mcp/transport/mcp-spring-webflux</module>
++		<module>mcp/transport/mcp-spring-webmvc</module>
+ 	</modules>
+ 
+ 	<organization>
+@@ -282,7 +284,7 @@
+ 		<openai-sdk.version>4.17.0</openai-sdk.version>
+ 		<azure-identity.version>1.18.2</azure-identity.version>
+ 		<jtokkit.version>1.1.0</jtokkit.version>
+-		<kotlin.version>1.9.25</kotlin.version>
++		<kotlin.version>2.1.21</kotlin.version>
+ 
+ 		<!-- NOTE: keep bedrockruntime and awssdk versions aligned -->
+ 		<bedrockruntime.version>2.36.3</bedrockruntime.version>
+@@ -342,7 +344,10 @@
+ 		<json-unit-assertj.version>4.1.0</json-unit-assertj.version>
+ 
+ 		<!-- MCP-->
+-		<mcp.sdk.version>0.18.3</mcp.sdk.version>
++		<mcp.sdk.version>2.0.0</mcp.sdk.version>
++		<jspecify.version>1.0.0</jspecify.version>
++		<json-schema-validator.version>1.5.9</json-schema-validator.version>
++		<junit.version>5.14.4</junit.version>
+ 		<mcp-annotations.version>0.9.0</mcp-annotations.version>
+ 
+ 		<!-- plugin versions -->
+@@ -994,6 +999,13 @@
+ 
+ 	<dependencyManagement>
+ 		<dependencies>
++			<dependency>
++				<groupId>org.junit</groupId>
++				<artifactId>junit-bom</artifactId>
++				<version>${junit.version}</version>
++				<type>pom</type>
++				<scope>import</scope>
++			</dependency>
+ 			<dependency>
+ 				<groupId>org.springframework.boot</groupId>
+ 				<artifactId>spring-boot-dependencies</artifactId>
+@@ -1008,6 +1020,33 @@
+ 				<type>pom</type>
+ 				<scope>import</scope>
+ 			</dependency>
++			<!-- Testcontainers 2.x test artifacts used by the mirrored MCP integration
++				tests; the Spring Boot 3.5.x BOM still manages Testcontainers 1.x. -->
++			<dependency>
++				<groupId>org.testcontainers</groupId>
++				<artifactId>testcontainers-junit-jupiter</artifactId>
++				<version>2.0.5</version>
++			</dependency>
++			<dependency>
++				<groupId>org.testcontainers</groupId>
++				<artifactId>testcontainers-toxiproxy</artifactId>
++				<version>2.0.5</version>
++			</dependency>
++			<!-- jspecify nullability annotations (used by the mirrored MCP sources;
++				not transitively provided by Spring Framework 6.2) -->
++			<dependency>
++				<groupId>org.jspecify</groupId>
++				<artifactId>jspecify</artifactId>
++				<version>${jspecify.version}</version>
++			</dependency>
++			<!-- networknt JSON Schema validator (replaces the MCP SDK's removed
++				DefaultJsonSchemaValidator used by StructuredOutputValidationAdvisor).
++				Jackson 2-compatible 1.5.x line. -->
++			<dependency>
++				<groupId>com.networknt</groupId>
++				<artifactId>json-schema-validator</artifactId>
++				<version>${json-schema-validator.version}</version>
++			</dependency>
+ 			<!-- Override commons-lang3 to fix CVE (Uncontrolled Recursion) in 3.17.0 -->
+ 			<dependency>
+ 				<groupId>org.apache.commons</groupId>
+diff --git a/spring-ai-bom/pom.xml b/spring-ai-bom/pom.xml
+index 987c5af0f..2ede921cd 100644
+--- a/spring-ai-bom/pom.xml
++++ b/spring-ai-bom/pom.xml
+@@ -149,6 +149,18 @@
+ 				<version>${project.version}</version>
+ 			</dependency>
+ 
++			<dependency>
++				<groupId>org.springframework.ai</groupId>
++				<artifactId>mcp-spring-webflux</artifactId>
++				<version>${project.version}</version>
++			</dependency>
++
++			<dependency>
++				<groupId>org.springframework.ai</groupId>
++				<artifactId>mcp-spring-webmvc</artifactId>
++				<version>${project.version}</version>
++			</dependency>
++
+ 			<!-- Spring AI Document Readers -->
+ 
+ 			<dependency>
+diff --git a/spring-ai-client-chat/pom.xml b/spring-ai-client-chat/pom.xml
+index 5abb6a1f9..8e7050391 100644
+--- a/spring-ai-client-chat/pom.xml
++++ b/spring-ai-client-chat/pom.xml
+@@ -37,6 +37,11 @@
+ 	</scm>
+ 
+ 	<dependencies>
++		<dependency>
++			<groupId>com.networknt</groupId>
++			<artifactId>json-schema-validator</artifactId>
++		</dependency>
++
+ 
+ 		<dependency>
+ 			<groupId>org.springframework.ai</groupId>
+diff --git a/spring-ai-client-chat/src/main/java/org/springframework/ai/chat/client/advisor/StructuredOutputValidationAdvisor.java b/spring-ai-client-chat/src/main/java/org/springframework/ai/chat/client/advisor/StructuredOutputValidationAdvisor.java
+index 380e5aec6..1be0dc052 100644
+--- a/spring-ai-client-chat/src/main/java/org/springframework/ai/chat/client/advisor/StructuredOutputValidationAdvisor.java
++++ b/spring-ai-client-chat/src/main/java/org/springframework/ai/chat/client/advisor/StructuredOutputValidationAdvisor.java
+@@ -17,15 +17,17 @@
+ package org.springframework.ai.chat.client.advisor;
+ 
+ import java.lang.reflect.Type;
+-import java.util.HashMap;
+-import java.util.Map;
++import java.util.Set;
++import java.util.stream.Collectors;
+ 
+ import com.fasterxml.jackson.core.type.TypeReference;
++import com.fasterxml.jackson.databind.JsonNode;
+ import com.fasterxml.jackson.databind.ObjectMapper;
++import com.networknt.schema.JsonSchema;
++import com.networknt.schema.JsonSchemaFactory;
++import com.networknt.schema.SpecVersion;
++import com.networknt.schema.ValidationMessage;
+ import io.modelcontextprotocol.json.TypeRef;
+-import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
+-import io.modelcontextprotocol.json.schema.JsonSchemaValidator.ValidationResponse;
+-import io.modelcontextprotocol.json.schema.jackson.DefaultJsonSchemaValidator;
+ import org.slf4j.Logger;
+ import org.slf4j.LoggerFactory;
+ import reactor.core.publisher.Flux;
+@@ -60,9 +62,6 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
+ 
+ 	private static final Logger logger = LoggerFactory.getLogger(StructuredOutputValidationAdvisor.class);
+ 
+-	private static final TypeRef<HashMap<String, Object>> MAP_TYPE_REF = new TypeRef<>() {
+-	};
+-
+ 	/**
+ 	 * Set the order close to {@link Ordered#LOWEST_PRECEDENCE} to ensure an advisor is
+ 	 * executed toward the last (but before the model call) in the chain (last for request
+@@ -75,12 +74,12 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
+ 	/**
+ 	 * The JSON schema used for validation.
+ 	 */
+-	private final Map<String, Object> jsonSchema;
++	private final JsonSchema jsonSchema;
+ 
+ 	/**
+-	 * The JSON schema validator.
++	 * The ObjectMapper used to parse the model JSON output before validation.
+ 	 */
+-	private final DefaultJsonSchemaValidator jsonvalidator;
++	private final ObjectMapper objectMapper;
+ 
+ 	private final int maxRepeatAttempts;
+ 
+@@ -95,20 +94,13 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
+ 
+ 		this.advisorOrder = advisorOrder;
+ 
+-		this.jsonvalidator = new DefaultJsonSchemaValidator(objectMapper);
+-
+ 		String jsonSchemaText = JsonSchemaGenerator.generateForType(outputType);
+ 
+ 		logger.info("Generated JSON Schema:\n" + jsonSchemaText);
+ 
+-		var jsonMapper = new JacksonMcpJsonMapper(JsonParser.getObjectMapper());
+-
+-		try {
+-			this.jsonSchema = jsonMapper.readValue(jsonSchemaText, MAP_TYPE_REF);
+-		}
+-		catch (Exception e) {
+-			throw new IllegalArgumentException("Failed to parse JSON schema", e);
+-		}
++		JsonSchemaFactory schemaFactory = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V202012);
++		this.jsonSchema = schemaFactory.getSchema(jsonSchemaText);
++		this.objectMapper = objectMapper;
+ 
+ 		this.maxRepeatAttempts = maxRepeatAttempts;
+ 	}
+@@ -198,7 +190,18 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
+ 
+ 		logger.debug("Validating JSON output against schema. Attempts left: " + this.maxRepeatAttempts);
+ 
+-		return this.jsonvalidator.validate(this.jsonSchema, json);
++		try {
++			JsonNode instance = this.objectMapper.readTree(json);
++			Set<ValidationMessage> errors = this.jsonSchema.validate(instance);
++			if (errors.isEmpty()) {
++				return ValidationResponse.asValid();
++			}
++			String message = errors.stream().map(ValidationMessage::getMessage).collect(Collectors.joining("; "));
++			return ValidationResponse.asInvalid(message);
++		}
++		catch (Exception e) {
++			return ValidationResponse.asInvalid("Invalid JSON: " + e.getMessage());
++		}
+ 	}
+ 
+ 	@SuppressWarnings("null")
+@@ -329,4 +332,16 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
+ 
+ 	}
+ 
++	private record ValidationResponse(boolean valid, String errorMessage) {
++
++		static ValidationResponse asValid() {
++			return new ValidationResponse(true, null);
++		}
++
++		static ValidationResponse asInvalid(String errorMessage) {
++			return new ValidationResponse(false, errorMessage);
++		}
++
++	}
++
+ }
+diff --git a/spring-ai-commons/pom.xml b/spring-ai-commons/pom.xml
+index 7bbb6f216..dc2593479 100644
+--- a/spring-ai-commons/pom.xml
++++ b/spring-ai-commons/pom.xml
+@@ -37,6 +37,11 @@
+ 	</scm>
+ 
+ 	<dependencies>
++		<dependency>
++			<groupId>org.jspecify</groupId>
++			<artifactId>jspecify</artifactId>
++		</dependency>
++
+ 		<!-- Spring Framework -->
+ 		<dependency>
+ 			<groupId>org.springframework</groupId>
+diff --git a/spring-ai-commons/src/main/java/org/springframework/ai/util/JacksonUtils.java b/spring-ai-commons/src/main/java/org/springframework/ai/util/JacksonUtils.java
+index 1ecc255b1..759b9de55 100644
+--- a/spring-ai-commons/src/main/java/org/springframework/ai/util/JacksonUtils.java
++++ b/spring-ai-commons/src/main/java/org/springframework/ai/util/JacksonUtils.java
+@@ -19,7 +19,9 @@ package org.springframework.ai.util;
+ import java.util.ArrayList;
+ import java.util.List;
+ 
++import com.fasterxml.jackson.databind.DeserializationFeature;
+ import com.fasterxml.jackson.databind.Module;
++import com.fasterxml.jackson.databind.json.JsonMapper;
+ 
+ import org.springframework.beans.BeanUtils;
+ import org.springframework.core.KotlinDetector;
+@@ -88,4 +90,24 @@ public abstract class JacksonUtils {
+ 		return modules;
+ 	}
+ 
++	private static final JsonMapper jsonMapper;
++
++	static {
++		jsonMapper = JsonMapper.builder()
++			.disable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
++			.enable(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT)
++			.addModules(JacksonUtils.instantiateAvailableModules())
++			.build();
++	}
++
++	/**
++	 * Returns a default Jackson {@link JsonMapper} instance customized with
++	 * {@link DeserializationFeature#FAIL_ON_TRAILING_TOKENS} disabled and the Jackson
++	 * modules found by {@link #instantiateAvailableModules} configured.
++	 * @since 2.0.0
++	 */
++	public static JsonMapper getDefaultJsonMapper() {
++		return jsonMapper;
++	}
++
+ }
+diff --git a/spring-ai-commons/src/main/java/org/springframework/ai/util/JsonHelper.java b/spring-ai-commons/src/main/java/org/springframework/ai/util/JsonHelper.java
+new file mode 100644
+index 000000000..b06549c82
+--- /dev/null
++++ b/spring-ai-commons/src/main/java/org/springframework/ai/util/JsonHelper.java
+@@ -0,0 +1,219 @@
++/*
++ * Copyright 2023-present the original author or authors.
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *      https://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++package org.springframework.ai.util;
++
++import java.lang.reflect.Type;
++import java.util.Collections;
++import java.util.Map;
++import java.util.Objects;
++
++import com.fasterxml.jackson.core.JacksonException;
++import com.fasterxml.jackson.core.type.TypeReference;
++import com.fasterxml.jackson.databind.json.JsonMapper;
++import org.jspecify.annotations.Nullable;
++
++import org.springframework.core.ParameterizedTypeReference;
++import org.springframework.util.Assert;
++
++/**
++ * Helper for JSON processing.
++ *
++ * @author Sebastien Deleuze
++ * @since 2.0.0
++ */
++public class JsonHelper {
++
++	private final JsonMapper jsonMapper;
++
++	private static final TypeReference<Map<String, Object>> MAP_TYPE_REF = new TypeReference<>() {
++	};
++
++	public JsonHelper() {
++		this(JacksonUtils.getDefaultJsonMapper());
++	}
++
++	public JsonHelper(JsonMapper jsonMapper) {
++		Assert.notNull(jsonMapper, "jsonMapper cannot be null");
++		this.jsonMapper = jsonMapper;
++	}
++
++	/**
++	 * Converts a JSON string to a Java object.
++	 * @param json the JSON string to parse
++	 * @param type the target type
++	 * @return the converted object
++	 */
++	public <T> @Nullable T fromJson(String json, Class<T> type) {
++		Assert.notNull(json, "json cannot be null");
++		Assert.notNull(type, "type cannot be null");
++
++		try {
++			return this.jsonMapper.readValue(json, type);
++		}
++		catch (JacksonException ex) {
++			throw new IllegalStateException("Conversion from JSON to %s failed".formatted(type.getName()), ex);
++		}
++	}
++
++	/**
++	 * Converts a JSON string to a Java object.
++	 * @param json the JSON string to parse
++	 * @param type the target type
++	 * @return the converted object
++	 */
++	public <T> @Nullable T fromJson(String json, Type type) {
++		Assert.notNull(json, "json cannot be null");
++		Assert.notNull(type, "type cannot be null");
++
++		try {
++			return this.jsonMapper.readValue(json, this.jsonMapper.constructType(type));
++		}
++		catch (JacksonException ex) {
++			throw new IllegalStateException("Conversion from JSON to %s failed".formatted(type.getTypeName()), ex);
++		}
++	}
++
++	/**
++	 * Converts a JSON string to a Java object.
++	 * @param json the JSON string to parse
++	 * @param type the target type
++	 * @return the converted object
++	 */
++	public <T> @Nullable T fromJson(String json, ParameterizedTypeReference<T> type) {
++		Assert.notNull(json, "json cannot be null");
++		Assert.notNull(type, "type cannot be null");
++
++		try {
++			return this.jsonMapper.readValue(json, this.jsonMapper.constructType(type.getType()));
++		}
++		catch (JacksonException ex) {
++			throw new IllegalStateException("Conversion from JSON to %s failed".formatted(type.getType().getTypeName()),
++					ex);
++		}
++	}
++
++	/**
++	 * Converts the given JSON string to a Map of String and Object.
++	 * @param json the JSON string to parse
++	 * @return the converted map
++	 */
++	public Map<String, Object> fromJsonToMap(String json) {
++		try {
++			Map<String, Object> map = this.jsonMapper.readValue(json, MAP_TYPE_REF);
++			return map != null ? map : Collections.emptyMap();
++		}
++		catch (JacksonException ex) {
++			throw new IllegalStateException(
++					"Conversion from JSON to %s failed".formatted(MAP_TYPE_REF.getType().getTypeName()), ex);
++		}
++	}
++
++	/**
++	 * Converts a Java object to a JSON string.
++	 */
++	public String toJson(@Nullable Object object) {
++		return toJson(object, false);
++	}
++
++	/**
++	 * Converts a Java object to a JSON string.
++	 * @param forwardIfValidJson when true and object being a valid JSON string, just
++	 * return it
++	 */
++	public String toJson(@Nullable Object object, boolean forwardIfValidJson) {
++		if (forwardIfValidJson && object instanceof String str && isValidJson(str)) {
++			return str;
++		}
++		try {
++			return this.jsonMapper.writeValueAsString(object);
++		}
++		catch (JacksonException ex) {
++			throw new IllegalStateException("Conversion to JSON failed", ex);
++		}
++	}
++
++	/**
++	 * Checks if a string is a valid JSON string.
++	 */
++	private boolean isValidJson(String input) {
++		try {
++			this.jsonMapper.readTree(input);
++			return true;
++		}
++		catch (JacksonException e) {
++			return false;
++		}
++	}
++
++	/**
++	 * Converts a map to a Java object.
++	 * @param map the map to convert
++	 * @param type the target type
++	 * @return the converted object
++	 */
++	public <T> T convertFromMap(Map<String, Object> map, Class<T> type) {
++		return this.jsonMapper.convertValue(map, type);
++	}
++
++	/**
++	 * Converts a map to a Java object.
++	 * @param map the map to convert
++	 * @param type the target type
++	 * @return the converted object
++	 */
++	public <T> T convertFromMap(Map<String, Object> map, ParameterizedTypeReference<T> type) {
++		return this.jsonMapper.convertValue(map, this.jsonMapper.constructType(type.getType()));
++	}
++
++	public Map<String, Object> convertToMap(Object object) {
++		Assert.notNull(object, "object cannot be null");
++		return this.jsonMapper.convertValue(object, MAP_TYPE_REF);
++	}
++
++	/**
++	 * Convert a Java Object to a typed Object. Based on the implementation in
++	 * MethodToolCallback.
++	 * @param value the object to convert
++	 * @param type the target type
++	 * @return the converted typed object
++	 */
++	public Object convertToTypedObject(Object value, Class<?> type) {
++		Assert.notNull(value, "value cannot be null");
++		Assert.notNull(type, "type cannot be null");
++
++		Object result = null;
++		if (value instanceof String jsonString) {
++			try {
++				result = this.jsonMapper.convertValue(jsonString, type);
++			}
++			catch (IllegalArgumentException e) {
++				// If the type is a raw string that should read as JSON String,
++				// parsing will fail but pass the following toJson -> fromJson cycle.
++				// Example: LocalDate, with jsonString = "2026-04-22", which is not valid
++				// JSON. Instead, it should be "\"2026-04-22\"".
++			}
++		}
++
++		if (result == null) {
++			String json = toJson(value, true);
++			result = fromJson(json, type);
++		}
++
++		return Objects.requireNonNull(result);
++	}
++
++}
+diff --git a/spring-ai-model/pom.xml b/spring-ai-model/pom.xml
+index 66f44d47a..ed7164ee3 100644
+--- a/spring-ai-model/pom.xml
++++ b/spring-ai-model/pom.xml
+@@ -41,6 +41,11 @@
+ 	</properties>
+ 
+ 	<dependencies>
++		<dependency>
++			<groupId>org.jspecify</groupId>
++			<artifactId>jspecify</artifactId>
++		</dependency>
++
+ 		<dependency>
+ 			<groupId>org.springframework.ai</groupId>
+ 			<artifactId>spring-ai-commons</artifactId>
+diff --git a/spring-ai-model/src/main/java/org/springframework/ai/util/Nullness.java b/spring-ai-model/src/main/java/org/springframework/ai/util/Nullness.java
+new file mode 100644
+index 000000000..2f89da17f
+--- /dev/null
++++ b/spring-ai-model/src/main/java/org/springframework/ai/util/Nullness.java
+@@ -0,0 +1,268 @@
++/*
++ * Copyright 2023-present the original author or authors.
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *      https://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++package org.springframework.ai.util;
++
++import java.lang.annotation.Annotation;
++import java.lang.reflect.AnnotatedElement;
++import java.lang.reflect.AnnotatedType;
++import java.lang.reflect.Constructor;
++import java.lang.reflect.Executable;
++import java.lang.reflect.Field;
++import java.lang.reflect.Method;
++import java.lang.reflect.Parameter;
++import java.util.Objects;
++import java.util.function.Predicate;
++
++import kotlin.jvm.JvmClassMappingKt;
++import kotlin.reflect.KClass;
++import kotlin.reflect.KFunction;
++import kotlin.reflect.KParameter;
++import kotlin.reflect.KProperty;
++import kotlin.reflect.KType;
++import kotlin.reflect.full.KClasses;
++import kotlin.reflect.jvm.ReflectJvmMapping;
++import org.jspecify.annotations.NonNull;
++import org.jspecify.annotations.NullMarked;
++import org.jspecify.annotations.NullUnmarked;
++import org.jspecify.annotations.Nullable;
++
++import org.springframework.core.KotlinDetector;
++import org.springframework.core.MethodParameter;
++
++/**
++ * Constants that indicate nullness, as well as related utility methods.
++ *
++ * <p>
++ * Nullness applies to type usage, a field, a method return type, or a parameter.
++ * <a href="https://jspecify.dev/docs/user-guide/">JSpecify annotations</a> are fully
++ * supported, as well as <a href="https://kotlinlang.org/docs/null-safety.html">Kotlin
++ * null safety</a>, {@code @Nullable} annotations regardless of their package, and Java
++ * primitive types.
++ *
++ * <p>
++ * JSR-305 annotations as well as Spring null safety annotations in the
++ * {@code org.springframework.lang} package such as {@code @NonNullApi},
++ * {@code @NonNullFields}, and {@code @NonNull} are not supported by this API. However,
++ * {@code @Nullable} is supported via the package-less check. Migrating to JSpecify is
++ * recommended.
++ *
++ * @author Sebastien Deleuze
++ * @since 7.0
++ */
++public enum Nullness {
++
++	/**
++	 * Unspecified nullness (Java default for non-primitive types and JSpecify
++	 * {@code @NullUnmarked} code).
++	 */
++	UNSPECIFIED,
++
++	/**
++	 * Can include null (typically specified with a {@code @Nullable} annotation).
++	 */
++	NULLABLE,
++
++	/**
++	 * Will not include null (Kotlin default and JSpecify {@code @NullMarked} code).
++	 */
++	NON_NULL;
++
++	private static final boolean KOTLIN_REFLECT_PRESENT = KotlinDetector.isKotlinReflectPresent();
++
++	/**
++	 * Return the nullness of the return type for the given method.
++	 * @param method the source for the method return type
++	 * @return the corresponding nullness
++	 */
++	public static Nullness forMethodReturnType(Method method) {
++		if (KOTLIN_REFLECT_PRESENT && KotlinDetector.isKotlinType(method.getDeclaringClass())) {
++			return KotlinDelegate.forMethodReturnType(method);
++		}
++		return (hasNullableAnnotation(method) ? Nullness.NULLABLE
++				: jSpecifyNullness(method, method.getDeclaringClass(), method.getAnnotatedReturnType()));
++	}
++
++	/**
++	 * Return the nullness of the given parameter.
++	 * @param parameter the parameter descriptor
++	 * @return the corresponding nullness
++	 */
++	public static Nullness forParameter(Parameter parameter) {
++		if (KOTLIN_REFLECT_PRESENT
++				&& KotlinDetector.isKotlinType(parameter.getDeclaringExecutable().getDeclaringClass())) {
++			// TODO Optimize when kotlin-reflect provide a more direct Parameter to
++			// KParameter resolution
++			MethodParameter methodParameter = MethodParameter.forParameter(parameter);
++			return KotlinDelegate.forParameter(methodParameter.getExecutable(), methodParameter.getParameterIndex());
++		}
++		Executable executable = parameter.getDeclaringExecutable();
++		return (hasNullableAnnotation(parameter) ? Nullness.NULLABLE
++				: jSpecifyNullness(executable, executable.getDeclaringClass(), parameter.getAnnotatedType()));
++	}
++
++	/**
++	 * Return the nullness of the given method parameter.
++	 * @param methodParameter the method parameter descriptor
++	 * @return the corresponding nullness
++	 */
++	public static Nullness forMethodParameter(MethodParameter methodParameter) {
++		return (methodParameter.getParameterIndex() < 0
++				? forMethodReturnType(Objects.requireNonNull(methodParameter.getMethod()))
++				: forParameter(methodParameter.getParameter()));
++	}
++
++	/**
++	 * Return the nullness of the given field.
++	 * @param field the field descriptor
++	 * @return the corresponding nullness
++	 */
++	public static Nullness forField(Field field) {
++		if (KOTLIN_REFLECT_PRESENT && KotlinDetector.isKotlinType(field.getDeclaringClass())) {
++			return KotlinDelegate.forField(field);
++		}
++		return (hasNullableAnnotation(field) ? Nullness.NULLABLE
++				: jSpecifyNullness(field, field.getDeclaringClass(), field.getAnnotatedType()));
++	}
++
++	// Check method and parameter level @Nullable annotations regardless of the package
++	// (including Spring and JSR 305 annotations)
++	private static boolean hasNullableAnnotation(AnnotatedElement element) {
++		for (Annotation annotation : element.getDeclaredAnnotations()) {
++			if ("Nullable".equals(annotation.annotationType().getSimpleName())) {
++				return true;
++			}
++		}
++		return false;
++	}
++
++	private static Nullness jSpecifyNullness(AnnotatedElement annotatedElement, Class<?> declaringClass,
++			AnnotatedType annotatedType) {
++
++		if (annotatedType.getType() instanceof Class<?> clazz && clazz.isPrimitive()) {
++			return (clazz != void.class ? Nullness.NON_NULL : Nullness.UNSPECIFIED);
++		}
++		if (annotatedType.isAnnotationPresent(Nullable.class)) {
++			return Nullness.NULLABLE;
++		}
++		if (annotatedType.isAnnotationPresent(NonNull.class)) {
++			return Nullness.NON_NULL;
++		}
++		Nullness nullness = Nullness.UNSPECIFIED;
++		// Package level
++		Package declaringPackage = declaringClass.getPackage();
++		if (declaringPackage.isAnnotationPresent(NullMarked.class)) {
++			nullness = Nullness.NON_NULL;
++		}
++		// Class level
++		if (declaringClass.isAnnotationPresent(NullMarked.class)) {
++			nullness = Nullness.NON_NULL;
++		}
++		else if (declaringClass.isAnnotationPresent(NullUnmarked.class)) {
++			nullness = Nullness.UNSPECIFIED;
++		}
++		// Annotated element level
++		if (annotatedElement.isAnnotationPresent(NullMarked.class)) {
++			nullness = Nullness.NON_NULL;
++		}
++		else if (annotatedElement.isAnnotationPresent(NullUnmarked.class)) {
++			nullness = Nullness.UNSPECIFIED;
++		}
++		return nullness;
++	}
++
++	/**
++	 * Inner class to avoid a hard dependency on Kotlin at runtime.
++	 */
++	private static class KotlinDelegate {
++
++		public static Nullness forMethodReturnType(Method method) {
++			KFunction<?> function = ReflectJvmMapping.getKotlinFunction(method);
++			if (function == null) {
++				String methodName = method.getName();
++				if (methodName.startsWith("get")) {
++					String propertyName = accessorToPropertyName(methodName);
++					KClass<?> kClass = JvmClassMappingKt.getKotlinClass(method.getDeclaringClass());
++					for (KProperty<?> property : KClasses.getMemberProperties(kClass)) {
++						if (property.getName().equals(propertyName)) {
++							return (property.getReturnType().isMarkedNullable() ? Nullness.NULLABLE
++									: Nullness.NON_NULL);
++						}
++					}
++				}
++			}
++			else {
++				KType type = function.getReturnType();
++				if (ReflectJvmMapping.getJavaType(type) != void.class) {
++					return (type.isMarkedNullable() ? Nullness.NULLABLE : Nullness.NON_NULL);
++				}
++			}
++			return Nullness.UNSPECIFIED;
++		}
++
++		public static Nullness forParameter(Executable executable, int parameterIndex) {
++			KFunction<?> function;
++			Predicate<KParameter> predicate;
++			if (executable instanceof Method method) {
++				function = ReflectJvmMapping.getKotlinFunction(method);
++				predicate = p -> KParameter.Kind.VALUE.equals(p.getKind());
++			}
++			else {
++				function = ReflectJvmMapping.getKotlinFunction((Constructor<?>) executable);
++				predicate = p -> (KParameter.Kind.VALUE.equals(p.getKind())
++						|| KParameter.Kind.INSTANCE.equals(p.getKind()));
++			}
++			if (function == null) {
++				String methodName = executable.getName();
++				if (methodName.startsWith("set")) {
++					String propertyName = accessorToPropertyName(methodName);
++					KClass<?> kClass = JvmClassMappingKt.getKotlinClass(executable.getDeclaringClass());
++					for (KProperty<?> property : KClasses.getMemberProperties(kClass)) {
++						if (property.getName().equals(propertyName)) {
++							return (property.getReturnType().isMarkedNullable() ? Nullness.NULLABLE
++									: Nullness.NON_NULL);
++						}
++					}
++				}
++			}
++			else {
++				int i = 0;
++				for (KParameter kParameter : function.getParameters()) {
++					if (predicate.test(kParameter) && parameterIndex == i++) {
++						return (kParameter.getType().isMarkedNullable() ? Nullness.NULLABLE : Nullness.NON_NULL);
++					}
++				}
++			}
++			return Nullness.UNSPECIFIED;
++		}
++
++		public static Nullness forField(Field field) {
++			KProperty<?> property = ReflectJvmMapping.getKotlinProperty(field);
++			if (property != null) {
++				return (property.getReturnType().isMarkedNullable() ? Nullness.NULLABLE : Nullness.NON_NULL);
++			}
++			return Nullness.UNSPECIFIED;
++		}
++
++		private static String accessorToPropertyName(String method) {
++			char[] methodNameChars = method.toCharArray();
++			methodNameChars[3] = Character.toLowerCase(methodNameChars[3]);
++			return new String(methodNameChars, 3, methodNameChars.length - 3);
++		}
++
++	}
++
++}
+diff --git a/spring-ai-model/src/main/java/org/springframework/ai/util/json/schema/AbstractSpringAiSchemaModule.java b/spring-ai-model/src/main/java/org/springframework/ai/util/json/schema/AbstractSpringAiSchemaModule.java
+new file mode 100644
+index 000000000..cc9eccfa5
+--- /dev/null
++++ b/spring-ai-model/src/main/java/org/springframework/ai/util/json/schema/AbstractSpringAiSchemaModule.java
+@@ -0,0 +1,149 @@
++/*
++ * Copyright 2023-present the original author or authors.
++ *
++ * Licensed under the Apache License, Version 2.0 (the "License");
++ * you may not use this file except in compliance with the License.
++ * You may obtain a copy of the License at
++ *
++ *      https://www.apache.org/licenses/LICENSE-2.0
++ *
++ * Unless required by applicable law or agreed to in writing, software
++ * distributed under the License is distributed on an "AS IS" BASIS,
++ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
++ * See the License for the specific language governing permissions and
++ * limitations under the License.
++ */
++
++package org.springframework.ai.util.json.schema;
++
++import java.util.stream.Stream;
++
++import com.fasterxml.jackson.annotation.JsonProperty;
++import com.github.victools.jsonschema.generator.FieldScope;
++import com.github.victools.jsonschema.generator.MemberScope;
++import com.github.victools.jsonschema.generator.MethodScope;
++import com.github.victools.jsonschema.generator.Module;
++import com.github.victools.jsonschema.generator.SchemaGeneratorConfigBuilder;
++import com.github.victools.jsonschema.generator.SchemaGeneratorConfigPart;
++import io.swagger.v3.oas.annotations.media.Schema;
++import org.jspecify.annotations.Nullable;
++
++import org.springframework.ai.util.Nullness;
++import org.springframework.core.KotlinDetector;
++
++/**
++ * Abstract base for JSON Schema Generator Modules in Spring AI.
++ * <p>
++ * Provides shared logic for description resolution and required-field determination,
++ * delegating annotation-specific lookups to subclasses via
++ * {@link #resolveToolParamDescription} and {@link #resolveToolParamRequired}.
++ *
++ * @author Thomas Vitale
++ * @author Christian Tzolov
++ * @since 1.0.0
++ */
++public abstract class AbstractSpringAiSchemaModule implements Module {
++
++	private final boolean requiredByDefault;
++
++	protected AbstractSpringAiSchemaModule(Option... options) {
++		this.requiredByDefault = Stream.of(options)
++			.noneMatch(option -> option == Option.PROPERTY_REQUIRED_FALSE_BY_DEFAULT);
++	}
++
++	@Override
++	public void applyToConfigBuilder(SchemaGeneratorConfigBuilder builder) {
++		this.applyToConfigBuilder(builder.forFields());
++	}
++
++	private void applyToConfigBuilder(SchemaGeneratorConfigPart<FieldScope> configPart) {
++		configPart.withDescriptionResolver(this::resolveDescription);
++		configPart.withRequiredCheck(this::checkRequired);
++	}
++
++	/**
++	 * Extract the description from the tool-param annotation for the given member, or
++	 * return {@code null} if the annotation is absent or its description is blank.
++	 */
++	protected abstract @Nullable String resolveToolParamDescription(MemberScope<?, ?> member);
++
++	/**
++	 * Extract the required flag from the tool-param annotation for the given member, or
++	 * return {@code null} if the annotation is absent.
++	 */
++	protected abstract @Nullable Boolean resolveToolParamRequired(MemberScope<?, ?> member);
++
++	private @Nullable String resolveDescription(MemberScope<?, ?> member) {
++		return resolveToolParamDescription(member);
++	}
++
++	/**
++	 * Determines whether a property is required based on the presence of a series of
++	 * annotations.
++	 * <p>
++	 * <ul>
++	 * <li>tool-param annotation ({@code required = ...})</li>
++	 * <li>{@code @JsonProperty(required = ...)}</li>
++	 * <li>{@code @Schema(required = ...)}</li>
++	 * <li>{@code @Nullable}</li>
++	 * </ul>
++	 * <p>
++	 * If none of these annotations are present, the default behavior is to consider the
++	 * property as required, unless the {@link Option#PROPERTY_REQUIRED_FALSE_BY_DEFAULT}
++	 * option is set.
++	 */
++	@SuppressWarnings("deprecation") // Schema.required() kept for backwards compatibility
++										// with pre-requiredMode usages
++	private boolean checkRequired(MemberScope<?, ?> member) {
++		Boolean toolParamRequired = resolveToolParamRequired(member);
++		if (toolParamRequired != null) {
++			return toolParamRequired;
++		}
++
++		var propertyAnnotation = member.getAnnotationConsideringFieldAndGetter(JsonProperty.class);
++		if (propertyAnnotation != null) {
++			return propertyAnnotation.required();
++		}
++
++		var schemaAnnotation = member.getAnnotationConsideringFieldAndGetter(Schema.class);
++		if (schemaAnnotation != null) {
++			return schemaAnnotation.requiredMode() == Schema.RequiredMode.REQUIRED
++					|| schemaAnnotation.requiredMode() == Schema.RequiredMode.AUTO || schemaAnnotation.required();
++		}
++
++		Nullness nullness;
++		if (member instanceof FieldScope fs) {
++			nullness = Nullness.forField(fs.getRawMember());
++		}
++		else if (member instanceof MethodScope ms) {
++			nullness = Nullness.forMethodReturnType(ms.getRawMember());
++		}
++		else {
++			throw new IllegalStateException("Unsupported member type: " + member);
++		}
++		if (nullness == Nullness.NULLABLE) {
++			return false;
++		}
++		if (KotlinDetector.isKotlinReflectPresent()
++				&& KotlinDetector.isKotlinType(member.getDeclaringType().getErasedType())) {
++			// Defer to KotlinModule for additional checks like default values
++			return false;
++		}
++
++		return this.requiredByDefault;
++	}
++
++	/**
++	 * Options for customizing the behavior of the module.
++	 */
++	public enum Option {
++
++		/**
++		 * Properties are only required if marked as such via one of the supported
++		 * annotations.
++		 */
++		PROPERTY_REQUIRED_FALSE_BY_DEFAULT
++
++	}
++
++}
+diff --git a/spring-ai-model/src/main/java/org/springframework/ai/util/json/schema/JsonSchemaUtils.java b/spring-ai-model/src/main/java/org/springframework/ai/util/json/schema/JsonSchemaUtils.java
+index ebbdcfc94..ce4bcaf19 100644
+--- a/spring-ai-model/src/main/java/org/springframework/ai/util/json/schema/JsonSchemaUtils.java
++++ b/spring-ai-model/src/main/java/org/springframework/ai/util/json/schema/JsonSchemaUtils.java
+@@ -16,7 +16,16 @@
+ 
+ package org.springframework.ai.util.json.schema;
+ 
++import java.util.ArrayList;
++import java.util.HashSet;
++import java.util.LinkedHashMap;
++import java.util.List;
+ import java.util.Map;
++import java.util.Set;
++
++import com.fasterxml.jackson.databind.JsonNode;
++import com.fasterxml.jackson.databind.node.ObjectNode;
++import org.jspecify.annotations.Nullable;
+ 
+ import org.springframework.ai.model.ModelOptionsUtils;
+ import org.springframework.util.StringUtils;
+@@ -69,4 +78,99 @@ public final class JsonSchemaUtils {
+ 		return ModelOptionsUtils.toJsonString(schemaMap);
+ 	}
+ 
++	/**
++	 * Moves any {@code $defs} block found on {@code subSchema} into the {@code $defs}
++	 * block of {@code rootSchema}, creating one on the root if needed. On key collisions
++	 * the existing root entry is reused when the two definitions are structurally equal;
++	 * otherwise the incoming entry is renamed with a numeric suffix and every
++	 * {@code "#/$defs/<oldKey>"} reference inside the inlined sub-schema and inside every
++	 * definition inserted by this call is rewritten to point at the new key.
++	 * <p>
++	 * This is needed because victools generates self-contained schemas where
++	 * {@code $defs} and the {@code $ref} pointers into them are rooted at the sub-schema.
++	 * Inlining the sub-schema under {@code properties.<paramName>} re-parents existing
++	 * {@code "#/$defs/<Name>"} refs to the outer root, leaving them unresolvable unless
++	 * {@code $defs} is hoisted first.
++	 * @param rootSchema the wrapper schema that will receive the hoisted definitions
++	 * @param subSchema the per-parameter sub-schema whose {@code $defs} block is consumed
++	 */
++	public static void hoistDefsToRoot(ObjectNode rootSchema, ObjectNode subSchema) {
++		JsonNode nestedDefs = subSchema.remove("$defs");
++		if (nestedDefs == null || !nestedDefs.isObject()) {
++			return;
++		}
++		ObjectNode rootDefs = rootSchema.has("$defs") ? (ObjectNode) rootSchema.get("$defs")
++				: rootSchema.putObject("$defs");
++		// Collect all keys from this batch upfront so uniqueDefsKey can avoid claiming
++		// a suffix that another pending entry in the same batch already occupies.
++		Set<String> batchKeys = new HashSet<>();
++		((ObjectNode) nestedDefs).properties().forEach(e -> batchKeys.add(e.getKey()));
++		Map<String, String> renames = new LinkedHashMap<>();
++		List<String> insertedKeys = new ArrayList<>();
++		((ObjectNode) nestedDefs).properties().forEach(entry -> {
++			String key = entry.getKey();
++			JsonNode value = entry.getValue();
++			if (!rootDefs.has(key)) {
++				rootDefs.set(key, value);
++				insertedKeys.add(key);
++				return;
++			}
++			if (rootDefs.get(key).equals(value)) {
++				return;
++			}
++			String renamed = uniqueDefsKey(rootDefs, key, batchKeys);
++			rootDefs.set(renamed, value);
++			renames.put(key, renamed);
++			insertedKeys.add(renamed);
++		});
++		if (renames.isEmpty()) {
++			return;
++		}
++		rewriteDefsRefs(subSchema, renames);
++		// Only rewrite $refs inside the definitions inserted by THIS call. Entries added
++		// to rootDefs by earlier hoistDefsToRoot calls have already had their own renames
++		// applied; rewriting them again with the current batch's rename map would corrupt
++		// any $refs that legitimately point at the original (pre-rename) keys.
++		for (String insertedKey : insertedKeys) {
++			rewriteDefsRefs(rootDefs.get(insertedKey), renames);
++		}
++	}
++
++	private static String uniqueDefsKey(ObjectNode rootDefs, String base, Set<String> batchKeys) {
++		int suffix = 2;
++		String candidate;
++		do {
++			candidate = base + "_" + suffix++;
++		}
++		while (rootDefs.has(candidate) || batchKeys.contains(candidate));
++		return candidate;
++	}
++
++	private static void rewriteDefsRefs(@Nullable JsonNode node, Map<String, String> renames) {
++		if (node == null) {
++			return;
++		}
++		if (node.isObject()) {
++			ObjectNode object = (ObjectNode) node;
++			JsonNode refNode = object.get("$ref");
++			if (refNode != null && refNode.isTextual()) {
++				String ref = refNode.asText();
++				String prefix = "#/$defs/";
++				if (ref.startsWith(prefix)) {
++					String rest = ref.substring(prefix.length());
++					int slash = rest.indexOf('/');
++					String key = slash < 0 ? rest : rest.substring(0, slash);
++					String renamed = renames.get(key);
++					if (renamed != null) {
++						object.put("$ref", prefix + renamed + (slash < 0 ? "" : rest.substring(slash)));
++					}
++				}
++			}
++			object.properties().forEach(e -> rewriteDefsRefs(e.getValue(), renames));
++		}
++		else if (node.isArray()) {
++			node.forEach(child -> rewriteDefsRefs(child, renames));
++		}
++	}
++
+ }
+diff --git a/starters/spring-ai-starter-mcp-client-webflux/pom.xml b/starters/spring-ai-starter-mcp-client-webflux/pom.xml
+index 839a870f2..80665d79f 100644
+--- a/starters/spring-ai-starter-mcp-client-webflux/pom.xml
++++ b/starters/spring-ai-starter-mcp-client-webflux/pom.xml
+@@ -6,7 +6,7 @@
+ 	<parent>
+ 		<groupId>org.springframework.ai</groupId>
+ 		<artifactId>spring-ai-parent</artifactId>
+-		<version>2.0.1</version>
++		<version>1.1.8</version>
+ 		<relativePath>../../pom.xml</relativePath>
+ 	</parent>
+ 	<artifactId>spring-ai-starter-mcp-client-webflux</artifactId>
+diff --git a/starters/spring-ai-starter-mcp-client/pom.xml b/starters/spring-ai-starter-mcp-client/pom.xml
+index eec738d17..86a76ec91 100644
+--- a/starters/spring-ai-starter-mcp-client/pom.xml
++++ b/starters/spring-ai-starter-mcp-client/pom.xml
+@@ -4,7 +4,7 @@
+ 	<parent>
+ 		<groupId>org.springframework.ai</groupId>
+ 		<artifactId>spring-ai-parent</artifactId>
+-		<version>2.0.1</version>
++		<version>1.1.8</version>
+ 		<relativePath>../../pom.xml</relativePath>
+ 	</parent>
+ 	<artifactId>spring-ai-starter-mcp-client</artifactId>
+diff --git a/starters/spring-ai-starter-mcp-server-webflux/pom.xml b/starters/spring-ai-starter-mcp-server-webflux/pom.xml
+index a659bee55..36467fbb0 100644
+--- a/starters/spring-ai-starter-mcp-server-webflux/pom.xml
++++ b/starters/spring-ai-starter-mcp-server-webflux/pom.xml
+@@ -6,7 +6,7 @@
+ 	<parent>
+ 		<groupId>org.springframework.ai</groupId>
+ 		<artifactId>spring-ai-parent</artifactId>
+-		<version>2.0.1</version>
++		<version>1.1.8</version>
+ 		<relativePath>../../pom.xml</relativePath>
+ 	</parent>
+ 	<artifactId>spring-ai-starter-mcp-server-webflux</artifactId>
+diff --git a/starters/spring-ai-starter-mcp-server-webmvc/pom.xml b/starters/spring-ai-starter-mcp-server-webmvc/pom.xml
+index f7e73a0fd..b80f480fc 100644
+--- a/starters/spring-ai-starter-mcp-server-webmvc/pom.xml
++++ b/starters/spring-ai-starter-mcp-server-webmvc/pom.xml
+@@ -6,7 +6,7 @@
+ 	<parent>
+ 		<groupId>org.springframework.ai</groupId>
+ 		<artifactId>spring-ai-parent</artifactId>
+-		<version>2.0.1</version>
++		<version>1.1.8</version>
+ 		<relativePath>../../pom.xml</relativePath>
+ 	</parent>
+ 	<artifactId>spring-ai-starter-mcp-server-webmvc</artifactId>
+diff --git a/starters/spring-ai-starter-mcp-server/pom.xml b/starters/spring-ai-starter-mcp-server/pom.xml
+index 14cb6962b..10dba14bf 100644
+--- a/starters/spring-ai-starter-mcp-server/pom.xml
++++ b/starters/spring-ai-starter-mcp-server/pom.xml
+@@ -4,7 +4,7 @@
+ 	<parent>
+ 		<groupId>org.springframework.ai</groupId>
+ 		<artifactId>spring-ai-parent</artifactId>
+-		<version>2.0.1</version>
++		<version>1.1.8</version>
+ 		<relativePath>../../pom.xml</relativePath>
+ 	</parent>
+ 	<artifactId>spring-ai-starter-mcp-server</artifactId>
