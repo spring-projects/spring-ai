@@ -45,7 +45,7 @@ public class McpServerJsonMapperAutoConfiguration {
 	 * <li>Lenient deserialization that doesn't fail on unknown properties</li>
 	 * <li>Proper handling of empty beans during serialization</li>
 	 * <li>Exclusion of null values from JSON output</li>
-	 * <li>Jackson modules via service loader</li>
+	 * <li>Jackson modules via reflective instantiation</li>
 	 * </ul>
 	 * <p>
 	 * This bean can be overridden by providing a custom {@link JsonMapper} bean with the
@@ -61,7 +61,7 @@ public class McpServerJsonMapperAutoConfiguration {
 			.enable(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT)
 			// Serialization configuration
 			.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
-			// Register Jackson modules via server loader
+			// Register Jackson modules via reflective instantiation
 			.addModules(JacksonUtils.instantiateAvailableModules())
 			.defaultPropertyInclusion(JsonInclude.Value.construct(JsonInclude.Include.NON_NULL, JsonInclude.Include.NON_NULL))
 			.build();

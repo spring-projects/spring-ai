@@ -369,7 +369,7 @@ index 7be6b7735..7889856a3 100644
  import org.springframework.ai.mcp.customizer.McpAsyncServerCustomizer;
  import org.springframework.ai.mcp.customizer.McpSyncServerCustomizer;
 diff --git a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-common/src/main/java/org/springframework/ai/mcp/server/common/autoconfigure/McpServerJsonMapperAutoConfiguration.java b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-common/src/main/java/org/springframework/ai/mcp/server/common/autoconfigure/McpServerJsonMapperAutoConfiguration.java
-index e5bb31cdb..babdf6090 100644
+index e5bb31cdb..537688bab 100644
 --- a/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-common/src/main/java/org/springframework/ai/mcp/server/common/autoconfigure/McpServerJsonMapperAutoConfiguration.java
 +++ b/auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-common/src/main/java/org/springframework/ai/mcp/server/common/autoconfigure/McpServerJsonMapperAutoConfiguration.java
 @@ -17,10 +17,10 @@
@@ -386,9 +386,21 @@ index e5bb31cdb..babdf6090 100644
  
  import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
  import org.springframework.ai.util.JacksonUtils;
-@@ -63,8 +63,7 @@ public class McpServerJsonMapperAutoConfiguration {
+@@ -45,7 +45,7 @@ public class McpServerJsonMapperAutoConfiguration {
+ 	 * <li>Lenient deserialization that doesn't fail on unknown properties</li>
+ 	 * <li>Proper handling of empty beans during serialization</li>
+ 	 * <li>Exclusion of null values from JSON output</li>
+-	 * <li>Jackson modules via service loader</li>
++	 * <li>Jackson modules via reflective instantiation</li>
+ 	 * </ul>
+ 	 * <p>
+ 	 * This bean can be overridden by providing a custom {@link JsonMapper} bean with the
+@@ -61,10 +61,9 @@ public class McpServerJsonMapperAutoConfiguration {
+ 			.enable(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT)
+ 			// Serialization configuration
  			.disable(SerializationFeature.FAIL_ON_EMPTY_BEANS)
- 			// Register Jackson modules via server loader
+-			// Register Jackson modules via server loader
++			// Register Jackson modules via reflective instantiation
  			.addModules(JacksonUtils.instantiateAvailableModules())
 -			.changeDefaultPropertyInclusion(
 -					incl -> JsonInclude.Value.construct(JsonInclude.Include.NON_NULL, JsonInclude.Include.NON_NULL))
@@ -976,7 +988,7 @@ index c0b8316f3..c8d824b41 100644
  import org.springframework.ai.mcp.server.common.autoconfigure.McpServerJsonMapperAutoConfiguration;
  import org.springframework.ai.mcp.server.webmvc.transport.WebMvcStreamableServerTransportProvider;
 diff --git a/mcp/common/pom.xml b/mcp/common/pom.xml
-index 4618b6f87..2f8e9413e 100644
+index 4618b6f87..ba1c2bf62 100644
 --- a/mcp/common/pom.xml
 +++ b/mcp/common/pom.xml
 @@ -6,7 +6,7 @@
@@ -988,12 +1000,11 @@ index 4618b6f87..2f8e9413e 100644
  		<relativePath>../../pom.xml</relativePath>
  	</parent>
  	<artifactId>spring-ai-mcp</artifactId>
-@@ -16,6 +16,16 @@
- 	<url>https://github.com/spring-projects/spring-ai</url>
- 
+@@ -18,7 +18,17 @@
  	<dependencies>
-+		<dependency>
-+			<groupId>io.modelcontextprotocol.sdk</groupId>
+ 		<dependency>
+ 			<groupId>io.modelcontextprotocol.sdk</groupId>
+-			<artifactId>mcp</artifactId>
 +			<artifactId>mcp-json-jackson2</artifactId>
 +		</dependency>
 +
@@ -1002,9 +1013,12 @@ index 4618b6f87..2f8e9413e 100644
 +			<artifactId>jspecify</artifactId>
 +		</dependency>
 +
- 		<dependency>
- 			<groupId>io.modelcontextprotocol.sdk</groupId>
- 			<artifactId>mcp</artifactId>
++		<dependency>
++			<groupId>io.modelcontextprotocol.sdk</groupId>
++			<artifactId>mcp-core</artifactId>
+ 		</dependency>
+ 
+ 		<!-- Test dependencies -->
 diff --git a/mcp/common/src/main/java/org/springframework/ai/mcp/McpToolUtils.java b/mcp/common/src/main/java/org/springframework/ai/mcp/McpToolUtils.java
 index 53a904ba0..48711efac 100644
 --- a/mcp/common/src/main/java/org/springframework/ai/mcp/McpToolUtils.java
@@ -1019,7 +1033,7 @@ index 53a904ba0..48711efac 100644
  import io.modelcontextprotocol.server.McpStatelessServerFeatures;
  import io.modelcontextprotocol.server.McpSyncServerExchange;
 diff --git a/mcp/mcp-annotations/pom.xml b/mcp/mcp-annotations/pom.xml
-index 588392615..09da50720 100644
+index 588392615..d146bb66c 100644
 --- a/mcp/mcp-annotations/pom.xml
 +++ b/mcp/mcp-annotations/pom.xml
 @@ -7,7 +7,7 @@
@@ -1031,7 +1045,7 @@ index 588392615..09da50720 100644
  		<relativePath>../../pom.xml</relativePath>
  	</parent>
  
-@@ -17,6 +17,11 @@
+@@ -17,10 +17,15 @@
  	<url>https://github.com/spring-projects/spring-ai</url>
  
  	<dependencies>
@@ -1043,6 +1057,11 @@ index 588392615..09da50720 100644
  		
  		<dependency>
  			<groupId>io.modelcontextprotocol.sdk</groupId>
+-			<artifactId>mcp</artifactId>
++			<artifactId>mcp-core</artifactId>
+ 		</dependency>
+ 
+ 		<dependency>
 diff --git a/mcp/mcp-annotations/src/main/java/org/springframework/ai/mcp/annotation/method/tool/utils/McpJsonSchemaGenerator.java b/mcp/mcp-annotations/src/main/java/org/springframework/ai/mcp/annotation/method/tool/utils/McpJsonSchemaGenerator.java
 index f9aada568..1a962af0a 100644
 --- a/mcp/mcp-annotations/src/main/java/org/springframework/ai/mcp/annotation/method/tool/utils/McpJsonSchemaGenerator.java
