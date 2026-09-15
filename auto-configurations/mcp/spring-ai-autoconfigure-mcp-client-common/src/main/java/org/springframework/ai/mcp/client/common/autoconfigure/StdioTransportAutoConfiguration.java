@@ -20,10 +20,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import io.modelcontextprotocol.client.transport.ServerParameters;
 import io.modelcontextprotocol.client.transport.StdioClientTransport;
-import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
-import tools.jackson.databind.json.JsonMapper;
+import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
 
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpClientCommonProperties;
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpStdioClientProperties;
@@ -76,7 +76,7 @@ public class StdioTransportAutoConfiguration {
 
 		for (Map.Entry<String, ServerParameters> serverParameters : stdioProperties.toServerParameters().entrySet()) {
 			var transport = new StdioClientTransport(serverParameters.getValue(),
-					new JacksonMcpJsonMapper(JsonMapper.shared()));
+					new JacksonMcpJsonMapper(new JsonMapper()));
 			stdioTransports.add(new NamedClientMcpTransport(serverParameters.getKey(), transport));
 
 		}

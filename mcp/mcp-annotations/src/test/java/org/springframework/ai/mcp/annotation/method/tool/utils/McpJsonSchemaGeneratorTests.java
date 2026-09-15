@@ -19,8 +19,8 @@ package org.springframework.ai.mcp.annotation.method.tool.utils;
 import java.lang.reflect.Method;
 import java.util.List;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import org.junit.jupiter.api.Test;
-import tools.jackson.databind.JsonNode;
 
 import org.springframework.ai.util.JsonHelper;
 

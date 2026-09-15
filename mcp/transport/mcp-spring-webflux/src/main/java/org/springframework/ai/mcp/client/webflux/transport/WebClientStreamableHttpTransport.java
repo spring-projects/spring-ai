@@ -295,7 +295,8 @@ public final class WebClientStreamableHttpTransport implements McpClientTranspor
 					return true;
 				})
 				.doFinally(s -> {
-					@Nullable Disposable ref = disposableRef.getAndSet(null);
+					@Nullable
+					Disposable ref = disposableRef.getAndSet(null);
 					if (ref != null) {
 						transportSession.removeConnection(ref);
 					}
@@ -427,7 +428,8 @@ public final class WebClientStreamableHttpTransport implements McpClientTranspor
 					sink.error(t);
 					return true;
 				}).doFinally(s -> {
-					@Nullable Disposable ref = disposableRef.getAndSet(null);
+					@Nullable
+					Disposable ref = disposableRef.getAndSet(null);
 					if (ref != null) {
 						transportSession.removeConnection(ref);
 					}

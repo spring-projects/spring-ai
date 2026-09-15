@@ -26,6 +26,7 @@ import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.github.victools.jsonschema.generator.Module;
 import com.github.victools.jsonschema.generator.Option;
 import com.github.victools.jsonschema.generator.OptionPreset;
@@ -44,7 +45,6 @@ import io.modelcontextprotocol.util.Assert;
 import io.modelcontextprotocol.util.Utils;
 import io.swagger.v3.oas.annotations.media.Schema;
 import org.jspecify.annotations.Nullable;
-import tools.jackson.databind.node.ObjectNode;
 
 import org.springframework.ai.mcp.annotation.McpMeta;
 import org.springframework.ai.mcp.annotation.McpProgressToken;
@@ -53,10 +53,10 @@ import org.springframework.ai.mcp.annotation.context.McpAsyncRequestContext;
 import org.springframework.ai.mcp.annotation.context.McpSyncRequestContext;
 import org.springframework.ai.model.KotlinModule;
 import org.springframework.ai.util.JacksonUtils;
+import org.springframework.ai.util.Nullness;
 import org.springframework.ai.util.json.schema.JsonSchemaGenerator.SchemaOption;
 import org.springframework.ai.util.json.schema.JsonSchemaUtils;
 import org.springframework.core.KotlinDetector;
-import org.springframework.core.Nullness;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.ConcurrentReferenceHashMap;
 

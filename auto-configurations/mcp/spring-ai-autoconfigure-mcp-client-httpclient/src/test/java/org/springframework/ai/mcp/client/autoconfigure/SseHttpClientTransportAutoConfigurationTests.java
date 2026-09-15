@@ -19,10 +19,10 @@ package org.springframework.ai.mcp.client.autoconfigure;
 import java.lang.reflect.Field;
 import java.util.List;
 
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import io.modelcontextprotocol.client.transport.HttpClientSseClientTransport;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.mcp.client.common.autoconfigure.NamedClientMcpTransport;
 import org.springframework.ai.mcp.client.httpclient.autoconfigure.SseHttpClientTransportAutoConfiguration;

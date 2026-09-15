@@ -21,12 +21,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
 import io.modelcontextprotocol.client.transport.customizer.DelegatingMcpAsyncHttpClientRequestCustomizer;
 import io.modelcontextprotocol.client.transport.customizer.McpAsyncHttpClientRequestCustomizer;
 import io.modelcontextprotocol.client.transport.customizer.McpSyncHttpClientRequestCustomizer;
-import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
-import tools.jackson.databind.json.JsonMapper;
+import io.modelcontextprotocol.json.jackson.JacksonMcpJsonMapper;
 
 import org.springframework.ai.mcp.client.common.autoconfigure.NamedClientMcpTransport;
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpClientCommonProperties;
@@ -111,7 +111,7 @@ public class StreamableHttpHttpClientTransportAutoConfiguration {
 			ObjectProvider<McpAsyncHttpClientRequestCustomizer> asyncRequestCustomizers,
 			ObjectProvider<McpClientCustomizer<HttpClientStreamableHttpTransport.Builder>> transportCustomizers) {
 
-		JsonMapper jsonMapper = jsonMapperProvider.getIfAvailable(JsonMapper::shared);
+		JsonMapper jsonMapper = jsonMapperProvider.getIfAvailable(JsonMapper::new);
 
 		List<McpAsyncHttpClientRequestCustomizer> requestCustomizers = requestCustomizers(syncRequestCustomizers,
 				asyncRequestCustomizers);

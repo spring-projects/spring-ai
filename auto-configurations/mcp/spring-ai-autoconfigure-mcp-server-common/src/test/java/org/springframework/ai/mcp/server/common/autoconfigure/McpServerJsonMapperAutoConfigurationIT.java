@@ -16,8 +16,8 @@
 
 package org.springframework.ai.mcp.server.common.autoconfigure;
 
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import org.junit.jupiter.api.Test;
-import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.context.annotation.UserConfigurations;

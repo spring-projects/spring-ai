@@ -19,9 +19,9 @@ package org.springframework.ai.mcp.client.webflux.autoconfigure;
 import java.lang.reflect.Field;
 import java.util.List;
 
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.mcp.client.common.autoconfigure.NamedClientMcpTransport;
 import org.springframework.ai.mcp.client.webflux.transport.WebClientStreamableHttpTransport;

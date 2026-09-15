@@ -37,6 +37,11 @@
 	</scm>
 
 	<dependencies>
+		<dependency>
+			<groupId>org.jspecify</groupId>
+			<artifactId>jspecify</artifactId>
+		</dependency>
+
 		<!-- Spring Framework -->
 		<dependency>
 			<groupId>org.springframework</groupId>

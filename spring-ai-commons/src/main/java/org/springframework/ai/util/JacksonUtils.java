@@ -19,7 +19,9 @@ package org.springframework.ai.util;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.Module;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 
 import org.springframework.beans.BeanUtils;
 import org.springframework.core.KotlinDetector;
@@ -86,6 +88,26 @@ public abstract class JacksonUtils {
 			}
 		}
 		return modules;
+	}
+
+	private static final JsonMapper jsonMapper;
+
+	static {
+		jsonMapper = JsonMapper.builder()
+			.disable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
+			.enable(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT)
+			.addModules(JacksonUtils.instantiateAvailableModules())
+			.build();
+	}
+
+	/**
+	 * Returns a default Jackson {@link JsonMapper} instance customized with
+	 * {@link DeserializationFeature#FAIL_ON_TRAILING_TOKENS} disabled and the Jackson
+	 * modules found by {@link #instantiateAvailableModules} configured.
+	 * @since 2.0.0
+	 */
+	public static JsonMapper getDefaultJsonMapper() {
+		return jsonMapper;
 	}
 
 }

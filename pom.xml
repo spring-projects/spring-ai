@@ -230,7 +230,9 @@
 		<module>spring-ai-integration-tests</module>
 
 		<module>mcp/common</module>
-		<module>mcp/mcp-annotations-spring</module>
+		<module>mcp/mcp-annotations</module>
+		<module>mcp/transport/mcp-spring-webflux</module>
+		<module>mcp/transport/mcp-spring-webmvc</module>
 	</modules>
 
 	<organization>
@@ -342,7 +344,8 @@
 		<json-unit-assertj.version>4.1.0</json-unit-assertj.version>
 
 		<!-- MCP-->
-		<mcp.sdk.version>0.18.3</mcp.sdk.version>
+		<mcp.sdk.version>2.0.0</mcp.sdk.version>
+		<jspecify.version>1.0.0</jspecify.version>
 		<mcp-annotations.version>0.9.0</mcp-annotations.version>
 
 		<!-- plugin versions -->
@@ -1007,6 +1010,25 @@
 				<version>${mcp.sdk.version}</version>
 				<type>pom</type>
 				<scope>import</scope>
+			</dependency>
+			<!-- Testcontainers 2.x test artifacts used by the mirrored MCP integration
+				tests; the Spring Boot 3.5.x BOM still manages Testcontainers 1.x. -->
+			<dependency>
+				<groupId>org.testcontainers</groupId>
+				<artifactId>testcontainers-junit-jupiter</artifactId>
+				<version>2.0.5</version>
+			</dependency>
+			<dependency>
+				<groupId>org.testcontainers</groupId>
+				<artifactId>testcontainers-toxiproxy</artifactId>
+				<version>2.0.5</version>
+			</dependency>
+			<!-- jspecify nullability annotations (used by the mirrored MCP sources;
+				not transitively provided by Spring Framework 6.2) -->
+			<dependency>
+				<groupId>org.jspecify</groupId>
+				<artifactId>jspecify</artifactId>
+				<version>${jspecify.version}</version>
 			</dependency>
 			<!-- Override commons-lang3 to fix CVE (Uncontrolled Recursion) in 3.17.0 -->
 			<dependency>

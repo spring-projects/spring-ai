@@ -20,8 +20,8 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.springframework.ai.mcp.annotation.McpTool
 import org.springframework.ai.mcp.annotation.McpToolParam
-import tools.jackson.databind.JsonNode
-import tools.jackson.databind.json.JsonMapper
+import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.json.JsonMapper
 
 class McpJsonSchemaGeneratorKotlinTests {
 
