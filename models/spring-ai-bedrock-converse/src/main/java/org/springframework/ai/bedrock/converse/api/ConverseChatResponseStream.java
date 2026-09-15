@@ -16,6 +16,7 @@
 
 package org.springframework.ai.bedrock.converse.api;
 
+import java.io.ByteArrayOutputStream;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +29,7 @@ import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
+import software.amazon.awssdk.core.SdkBytes;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeAsyncClient;
 import software.amazon.awssdk.services.bedrockruntime.model.ContentBlockDelta;
 import software.amazon.awssdk.services.bedrockruntime.model.ContentBlockDeltaEvent;
@@ -37,6 +39,9 @@ import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamMetada
 import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamRequest;
 import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamResponseHandler;
 import software.amazon.awssdk.services.bedrockruntime.model.MessageStopEvent;
+import software.amazon.awssdk.services.bedrockruntime.model.ReasoningContentBlock;
+import software.amazon.awssdk.services.bedrockruntime.model.ReasoningContentBlockDelta;
+import software.amazon.awssdk.services.bedrockruntime.model.ReasoningTextBlock;
 import software.amazon.awssdk.services.bedrockruntime.model.TokenUsage;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -75,6 +80,8 @@ public class ConverseChatResponseStream implements ConverseStreamResponseHandler
 	private final AtomicReference<String> stopReason = new AtomicReference<>();
 
 	private final Map<Integer, StreamingToolCallBuilder> toolUseMap = new ConcurrentHashMap<>();
+
+	private final Map<Integer, StreamingReasoningContentBuilder> reasoningContentMap = new ConcurrentHashMap<>();
 
 	private final Sinks.Many<ChatResponse> eventSink = Sinks.many().multicast().onBackpressureBuffer();
 
@@ -119,6 +126,11 @@ public class ConverseChatResponseStream implements ConverseStreamResponseHandler
 		else if (ContentBlockDelta.Type.TEXT.equals(event.delta().type())) {
 			this.emitChatResponse(new Generation(AssistantMessage.builder().content(event.delta().text()).build()));
 		}
+		else if (ContentBlockDelta.Type.REASONING_CONTENT.equals(event.delta().type())) {
+			this.reasoningContentMap
+				.computeIfAbsent(event.contentBlockIndex(), key -> new StreamingReasoningContentBuilder())
+				.delta(event.delta().reasoningContent());
+		}
 	}
 
 	@Override
@@ -144,13 +156,18 @@ public class ConverseChatResponseStream implements ConverseStreamResponseHandler
 			.map(StreamingToolCallBuilder::build)
 			.toList();
 
-		if (!toolCalls.isEmpty()) {
-			this.emitChatResponse(new Generation(AssistantMessage.builder().content("").toolCalls(toolCalls).build(),
-					generationMetadata));
+		List<ReasoningContentBlock> reasoningContents = this.reasoningContentMap.entrySet()
+			.stream()
+			.sorted(Map.Entry.comparingByKey())
+			.map(Map.Entry::getValue)
+			.map(StreamingReasoningContentBuilder::build)
+			.toList();
+
+		AssistantMessage.Builder<?> messageBuilder = AssistantMessage.builder().content("").toolCalls(toolCalls);
+		if (!reasoningContents.isEmpty()) {
+			messageBuilder.properties(Map.of(ReasoningContentBlock.class.getName(), reasoningContents));
 		}
-		else {
-			this.emitChatResponse(new Generation(AssistantMessage.builder().content("").build(), generationMetadata));
-		}
+		this.emitChatResponse(new Generation(messageBuilder.build(), generationMetadata));
 	}
 
 	private void mergeNativeTokenUsage(TokenUsage tokenUsage) {
@@ -230,6 +247,55 @@ public class ConverseChatResponseStream implements ConverseStreamResponseHandler
 		this.bedrockRuntimeAsyncClient.converseStream(this.converseStreamRequest, responseHandler);
 
 		return this.eventSink.asFlux();
+	}
+
+	private static final class StreamingReasoningContentBuilder {
+
+		private @Nullable StringBuilder text;
+
+		private @Nullable StringBuilder signature;
+
+		private @Nullable ByteArrayOutputStream redactedContent;
+
+		void delta(ReasoningContentBlockDelta delta) {
+			switch (delta.type()) {
+				case TEXT -> {
+					if (this.text == null) {
+						this.text = new StringBuilder();
+					}
+					this.text.append(delta.text());
+				}
+				case SIGNATURE -> {
+					if (this.signature == null) {
+						this.signature = new StringBuilder();
+					}
+					this.signature.append(delta.signature());
+				}
+				case REDACTED_CONTENT -> {
+					if (this.redactedContent == null) {
+						this.redactedContent = new ByteArrayOutputStream();
+					}
+					this.redactedContent.writeBytes(delta.redactedContent().asByteArray());
+				}
+				case UNKNOWN_TO_SDK_VERSION -> {
+				}
+			}
+		}
+
+		ReasoningContentBlock build() {
+			if (this.redactedContent != null) {
+				return ReasoningContentBlock.builder()
+					.redactedContent(SdkBytes.fromByteArray(this.redactedContent.toByteArray()))
+					.build();
+			}
+			return ReasoningContentBlock.builder()
+				.reasoningText(ReasoningTextBlock.builder()
+					.text(this.text != null ? this.text.toString() : null)
+					.signature(this.signature != null ? this.signature.toString() : null)
+					.build())
+				.build();
+		}
+
 	}
 
 }
