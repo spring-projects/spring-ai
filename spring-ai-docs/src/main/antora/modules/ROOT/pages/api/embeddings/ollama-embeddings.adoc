@@ -259,6 +259,17 @@ spring.ai.ollama.init.pull-model-strategy=always
 - `spring.ai.ollama.init.pull-model-strategy=always`: (optional) Enables automatic model pulling at startup time. 
 For production, you should pre-download the models to avoid delays: `ollama pull hf.co/mixedbread-ai/mxbai-embed-large-v1`.
 
+== Using with llmman [[llmman]]
+
+https://github.com/llmmanorg/llmman[llmman] serves the Ollama API on port `17434`, so the `OllamaEmbeddingModel` and xref:auto-pulling-models[auto-pulling] work unchanged.
+Only the base URL differs from a default Ollama installation (see also xref:api/chat/ollama-chat.adoc#llmman[Using with llmman] on the chat page):
+
+[source,properties]
+----
+spring.ai.ollama.base-url=http://localhost:17434
+spring.ai.ollama.embedding.model=hf.co/mixedbread-ai/mxbai-embed-large-v1
+----
+
 == Sample Controller
 
 This will create a `EmbeddingModel` implementation that you can inject into your class.

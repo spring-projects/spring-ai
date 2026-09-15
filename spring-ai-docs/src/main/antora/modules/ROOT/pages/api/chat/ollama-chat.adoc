@@ -660,6 +660,24 @@ The reasoning content is captured automatically without requiring additional con
 
 Check the link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/test/java/org/springframework/ai/openai/chat/proxy/OllamaWithOpenAiChatModelIT.java[OllamaWithOpenAiChatModelIT.java] tests for examples of using Ollama over Spring AI OpenAI.
 
+== Using with llmman [[llmman]]
+
+https://github.com/llmmanorg/llmman[llmman] is a local model runner that serves the Ollama API (alongside OpenAI- and Anthropic-compatible ones) on port `17434`.
+Models are pulled as OCI artifacts from any container registry or directly from Hugging Face (`hf.co/<username>/<model-repository>`) and served by `llama.cpp`, `vllm` or `mlx-lm`.
+
+Because llmman implements the Ollama `/api/chat`, `/api/tags`, `/api/show` and `/api/pull` endpoints (including `tools`, `images`, `format` and `keep_alive`), the `OllamaChatModel` and xref:auto-pulling-models[auto-pulling] work unchanged.
+Only the base URL differs from a default Ollama installation:
+
+[source,properties]
+----
+spring.ai.ollama.base-url=http://localhost:17434
+spring.ai.ollama.chat.model=gemma4
+----
+
+Start the server with `llmman serve` and pull a model with `llmman pull gemma4` (or configure `spring.ai.ollama.init.pull-model-strategy`).
+If you started llmman on a different address via the `LLMMAN_HOST` environment variable, set `spring.ai.ollama.base-url` accordingly.
+The same base URL applies to the xref:api/embeddings/ollama-embeddings.adoc#llmman[`OllamaEmbeddingModel`].
+
 == HuggingFace Models
 
 Ollama can access, out of the box, all https://huggingface.co/models?library=gguf&sort=trending[GGUF Hugging Face ] Chat Models.
