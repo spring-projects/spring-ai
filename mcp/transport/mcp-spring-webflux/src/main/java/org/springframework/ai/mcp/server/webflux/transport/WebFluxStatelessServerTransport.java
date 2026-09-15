@@ -52,6 +52,8 @@ public final class WebFluxStatelessServerTransport implements McpStatelessServer
 
 	private static final Log logger = LogFactory.getLog(WebFluxStatelessServerTransport.class);
 
+	public static final String DEFAULT_MCP_ENDPOINT = "/mcp";
+
 	private final McpJsonMapper jsonMapper;
 
 	private final String mcpEndpoint;
@@ -60,7 +62,7 @@ public final class WebFluxStatelessServerTransport implements McpStatelessServer
 
 	private @Nullable McpStatelessServerHandler mcpHandler;
 
-	private McpTransportContextExtractor<ServerRequest> contextExtractor;
+	private final McpTransportContextExtractor<ServerRequest> contextExtractor;
 
 	private volatile boolean isClosing = false;
 
@@ -204,7 +206,7 @@ public final class WebFluxStatelessServerTransport implements McpStatelessServer
 
 		private @Nullable McpJsonMapper jsonMapper;
 
-		private String mcpEndpoint = "/mcp";
+		private String mcpEndpoint = DEFAULT_MCP_ENDPOINT;
 
 		private McpTransportContextExtractor<ServerRequest> contextExtractor = serverRequest -> McpTransportContext.EMPTY;
 
