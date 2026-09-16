@@ -182,6 +182,61 @@ public enum OllamaModel implements ChatModelDescription {
 	GEMMA3("gemma3"),
 
 	/**
+	 * Gemma 3 1B is the smallest model in the Gemma 3 family, optimized for low-latency
+	 * inference and resource-constrained environments while providing strong
+	 * instruction-following and reasoning capabilities.
+	 */
+	GEMMA3_1B("gemma3:1b"),
+
+	/**
+	 * Gemma 3 4B is a compact model in the Gemma 3 family, balancing performance and
+	 * efficiency for general-purpose language understanding, reasoning, and
+	 * instruction-following tasks.
+	 */
+	GEMMA3_4B("gemma3:4b"),
+
+	/**
+	 * Gemma 3 12B is a high-capacity model in the Gemma 3 family, delivering enhanced
+	 * reasoning, coding, and instruction-following capabilities for demanding AI
+	 * applications.
+	 */
+	GEMMA3_12B("gemma3:12b"),
+
+	/**
+	 * Gemma 4 E2B (Effective 2B) is the most lightweight model in the Gemma 4 family,
+	 * optimized for efficient inference, advanced reasoning, and deployment on
+	 * resource-constrained devices.
+	 */
+	GEMMA4_E2B("gemma4:e2b"),
+
+	/**
+	 * Gemma 4 E4B (Effective 4B) is a compact model in the Gemma 4 family, providing an
+	 * excellent balance between efficiency, reasoning, and instruction-following
+	 * performance.
+	 */
+	GEMMA4_E4B("gemma4:e4b"),
+
+	/**
+	 * Gemma 4 26B is a large mixture-of-experts model in the Gemma 4 family, designed for
+	 * advanced reasoning, coding, and complex enterprise AI applications.
+	 */
+	GEMMA4_26B("gemma4:26b"),
+
+	/**
+	 * Gemma 4 31B is the flagship dense model in the Gemma 4 family, delivering the
+	 * highest level of reasoning, instruction-following, coding, and multimodal
+	 * performance for demanding AI workloads.
+	 */
+	GEMMA4_31B("gemma4:31b"),
+
+	/**
+	 * Gemma 4 12B is a unified model in the Gemma 4 family, offering strong reasoning,
+	 * coding, and multimodal capabilities while remaining efficient for production
+	 * workloads.
+	 */
+	GEMMA4_12B("gemma4:12b"),
+
+	/**
 	 * Uncensored Llama 2 model
 	 */
 	LLAMA2_UNCENSORED("llama2-uncensored"),
