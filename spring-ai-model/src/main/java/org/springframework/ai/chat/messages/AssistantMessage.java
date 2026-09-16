@@ -57,10 +57,6 @@ import org.springframework.util.Assert;
  */
 public class AssistantMessage extends AbstractMessage implements MediaContent {
 
-	private final List<ToolCall> toolCalls;
-
-	private final List<ReasoningPart> reasoning;
-
 	/**
 	 * The media of this message, derived from its {@link MediaPart}s.
 	 * @deprecated since 2.1.0 in favor of {@link #getMedia()}; kept so existing
@@ -88,8 +84,6 @@ public class AssistantMessage extends AbstractMessage implements MediaContent {
 	protected AssistantMessage(List<MessagePart> parts, Map<String, Object> properties) {
 		super(MessageType.ASSISTANT, parts, properties);
 		this.media = select(MediaPart.class).map(MediaPart::media).toList();
-		this.toolCalls = select(ToolCallPart.class).map(ToolCallPart::toolCall).toList();
-		this.reasoning = select(ReasoningPart.class).toList();
 	}
 
 	private static List<MessagePart> legacyParts(@Nullable String content, List<ToolCall> toolCalls,
@@ -115,15 +109,15 @@ public class AssistantMessage extends AbstractMessage implements MediaContent {
 	 * @since 2.1.0
 	 */
 	public List<ReasoningPart> getReasoning() {
-		return this.reasoning;
+		return select(ReasoningPart.class).toList();
 	}
 
 	public List<ToolCall> getToolCalls() {
-		return this.toolCalls;
+		return select(ToolCallPart.class).map(ToolCallPart::toolCall).toList();
 	}
 
 	public boolean hasToolCalls() {
-		return !this.toolCalls.isEmpty();
+		return getParts().stream().anyMatch(ToolCallPart.class::isInstance);
 	}
 
 	@Override
@@ -142,7 +136,7 @@ public class AssistantMessage extends AbstractMessage implements MediaContent {
 	@Override
 	public String toString() {
 		return "AssistantMessage [messageType=" + this.messageType + ", parts=" + getParts() + ", textContent="
-				+ this.textContent + ", metadata=" + this.metadata + "]";
+				+ getText() + ", metadata=" + this.metadata + "]";
 	}
 
 	public static Builder<?> builder() {

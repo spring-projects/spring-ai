@@ -28,19 +28,17 @@ import org.springframework.util.Assert;
  * The provider-neutral {@code text} and {@code summary} are for display. The
  * {@link #payload()} carries what the producing provider requires to be replayed verbatim
  * (a signature, encrypted content, a thought signature) and is only meaningful to that
- * provider; see {@link #replayableTo(String)}. A {@code redacted} part has no text and
- * carries only its payload.
+ * provider; see {@link #replayableTo(String)}.
  *
- * @param text the human-readable reasoning, or {@code null} when redacted or absent
+ * @param text the human-readable reasoning, or {@code null} when absent
  * @param summary a provider-supplied summary of the reasoning, or {@code null}
- * @param redacted whether the provider withheld the reasoning text
  * @param payload provider data to replay with this part, or {@code null}
  * @param attributes free-form attributes, copied and unmodifiable
  * @author Christian Tzolov
  * @since 2.1.0
  */
-public record ReasoningPart(@Nullable String text, @Nullable String summary, boolean redacted,
-		@Nullable OpaquePayload payload, Map<String, String> attributes) implements MessagePart {
+public record ReasoningPart(@Nullable String text, @Nullable String summary, @Nullable OpaquePayload payload,
+		Map<String, String> attributes) implements MessagePart {
 
 	public ReasoningPart {
 		Assert.notNull(attributes, "attributes must not be null");
@@ -49,7 +47,7 @@ public record ReasoningPart(@Nullable String text, @Nullable String summary, boo
 
 	@Override
 	public ReasoningPart withAttributes(Map<String, String> attributes) {
-		return new ReasoningPart(this.text, this.summary, this.redacted, this.payload, attributes);
+		return new ReasoningPart(this.text, this.summary, this.payload, attributes);
 	}
 
 	/**
@@ -59,7 +57,7 @@ public record ReasoningPart(@Nullable String text, @Nullable String summary, boo
 	 */
 	public static ReasoningPart of(String text) {
 		Assert.notNull(text, "text must not be null");
-		return new ReasoningPart(text, null, false, null, Map.of());
+		return new ReasoningPart(text, null, null, Map.of());
 	}
 
 	/**

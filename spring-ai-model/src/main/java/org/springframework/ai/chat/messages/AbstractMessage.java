@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.jspecify.annotations.Nullable;
@@ -48,8 +49,11 @@ public abstract class AbstractMessage implements Message {
 	protected final MessageType messageType;
 
 	/**
-	 * The content of the message.
+	 * The text content of this message, derived from its {@link TextPart}s.
+	 * @deprecated since 2.1.0 in favor of {@link #getText()}; kept so existing subclasses
+	 * that read the field keep compiling. Will be removed in a future release.
 	 */
+	@Deprecated(since = "2.1.0", forRemoval = true)
 	protected final @Nullable String textContent;
 
 	/**
@@ -86,13 +90,11 @@ public abstract class AbstractMessage implements Message {
 		Assert.notNull(parts, "Parts must not be null");
 		Assert.notNull(metadata, "Metadata must not be null");
 		this.parts = List.copyOf(parts);
-		String textContent = joinText(this.parts);
-		if ((messageType == MessageType.SYSTEM || messageType == MessageType.USER) && textContent == null) {
+		if (messageType == MessageType.SYSTEM || messageType == MessageType.USER) {
 			Assert.notEmpty(this.parts, "Content must not be null for SYSTEM or USER messages");
-			textContent = "";
 		}
 		this.messageType = messageType;
-		this.textContent = textContent;
+		this.textContent = joinText(this.parts);
 		this.metadata = new HashMap<>(metadata);
 		this.metadata.put(MESSAGE_TYPE, messageType);
 	}
@@ -115,30 +117,15 @@ public abstract class AbstractMessage implements Message {
 	 */
 	private static @Nullable String joinText(List<MessagePart> parts) {
 		Assert.notNull(parts, "Parts must not be null");
-		String single = null;
-		StringBuilder sb = null;
-		for (MessagePart part : parts) {
-			if (part instanceof TextPart textPart) {
-				if (single == null && sb == null) {
-					// Common case: one text part, hand back its own string instance.
-					single = textPart.text();
-				}
-				else {
-					if (sb == null) {
-						sb = new StringBuilder(single);
-						single = null;
-					}
-					sb.append(textPart.text());
-				}
-			}
+		if (parts.isEmpty()) {
+			return null;
 		}
-		if (sb != null) {
-			return sb.toString();
+		List<TextPart> textParts = parts.stream().filter(TextPart.class::isInstance).map(TextPart.class::cast).toList();
+		if (textParts.size() == 1) {
+			// Common case: hand back the part's own string instance rather than a copy.
+			return textParts.get(0).text();
 		}
-		if (single != null) {
-			return single;
-		}
-		return parts.isEmpty() ? null : "";
+		return textParts.stream().map(TextPart::text).collect(Collectors.joining());
 	}
 
 	/**
@@ -185,13 +172,13 @@ public abstract class AbstractMessage implements Message {
 		if (!(o instanceof AbstractMessage that)) {
 			return false;
 		}
-		return this.messageType == that.messageType && Objects.equals(this.textContent, that.textContent)
-				&& Objects.equals(this.metadata, that.metadata) && Objects.equals(this.parts, that.parts);
+		return this.messageType == that.messageType && Objects.equals(this.metadata, that.metadata)
+				&& Objects.equals(this.parts, that.parts);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.messageType, this.textContent, this.metadata, this.parts);
+		return Objects.hash(this.messageType, this.metadata, this.parts);
 	}
 
 }

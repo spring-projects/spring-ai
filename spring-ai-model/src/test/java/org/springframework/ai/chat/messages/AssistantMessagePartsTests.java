@@ -48,7 +48,7 @@ class AssistantMessagePartsTests {
 
 	private static final ToolCall TIME_CALL = new ToolCall("toolu_02", "function", "getTime", "{}");
 
-	private static final ReasoningPart SIGNED_REASONING = new ReasoningPart("The user wants the weather", null, false,
+	private static final ReasoningPart SIGNED_REASONING = new ReasoningPart("The user wants the weather", null,
 			new OpaquePayload("anthropic", "signature", "EqQBCkYIBBgC"), Map.of());
 
 	private static final Media IMAGE = Media.builder()

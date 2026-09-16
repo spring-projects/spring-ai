@@ -59,7 +59,7 @@ class StreamingPartsTests {
 	@Test
 	void stampingPreservesOtherAttributesAndPayload() {
 		OpaquePayload payload = new OpaquePayload("anthropic", "signature", "sig");
-		ReasoningPart original = new ReasoningPart("t", null, false, payload, Map.of("k", "v"));
+		ReasoningPart original = new ReasoningPart("t", null, payload, Map.of("k", "v"));
 
 		MessagePart stamped = StreamingParts.partial(original, 1);
 
@@ -103,8 +103,8 @@ class StreamingPartsTests {
 
 		assertThat(new TextPart("t", payload, Map.of()).withAttributes(attributes))
 			.isEqualTo(new TextPart("t", payload, attributes));
-		assertThat(new ReasoningPart("t", "s", true, payload, Map.of()).withAttributes(attributes))
-			.isEqualTo(new ReasoningPart("t", "s", true, payload, attributes));
+		assertThat(new ReasoningPart("t", "s", payload, Map.of()).withAttributes(attributes))
+			.isEqualTo(new ReasoningPart("t", "s", payload, attributes));
 		assertThat(new ToolCallPart(toolCall, payload, Map.of()).withAttributes(attributes))
 			.isEqualTo(new ToolCallPart(toolCall, payload, attributes));
 		assertThat(new ToolResultPart("id", "name", List.of(TextPart.of("r")), true, payload, Map.of())

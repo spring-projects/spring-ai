@@ -75,8 +75,8 @@ class MessageAggregatorTests {
 
 	@Test
 	void reasoningAndUnknownPartsAreCarriedThroughAggregation() {
-		ReasoningPart reasoning = new ReasoningPart("think", null, false,
-				new OpaquePayload("anthropic", "signature", "sig"), Map.of());
+		ReasoningPart reasoning = new ReasoningPart("think", null, new OpaquePayload("anthropic", "signature", "sig"),
+				Map.of());
 		UnknownPart unknown = new UnknownPart("anthropic", "server_tool_use", "{\"type\":\"server_tool_use\"}", null,
 				Map.of());
 		ToolCall toolCall = new ToolCall("toolu_1", "function", "getWeather", "{}");
@@ -107,7 +107,7 @@ class MessageAggregatorTests {
 		ToolCall toolCall = new ToolCall("toolu_1", "function", "getWeather", "{\"city\":\"Paris\"}");
 		Flux<ChatResponse> responses = Flux.just(indexed("msg_1", StreamingParts.partial(ReasoningPart.of("think"), 0)),
 				indexed("msg_1", StreamingParts.partial(ReasoningPart.of("ing"), 0)),
-				indexed("msg_1", StreamingParts.partial(new ReasoningPart("", null, false, signature, Map.of()), 0)),
+				indexed("msg_1", StreamingParts.partial(new ReasoningPart("", null, signature, Map.of()), 0)),
 				indexed("msg_1", StreamingParts.partial(TextPart.of("Let me "), 1)),
 				indexed("msg_1", StreamingParts.partial(TextPart.of("check."), 1)),
 				indexed("msg_1", StreamingParts.partial(TextPart.of(" Done."), 3)),
@@ -115,7 +115,7 @@ class MessageAggregatorTests {
 
 		AssistantMessage output = aggregate(responses);
 
-		assertThat(output.getParts()).containsExactly(new ReasoningPart("thinking", null, false, signature, Map.of()),
+		assertThat(output.getParts()).containsExactly(new ReasoningPart("thinking", null, signature, Map.of()),
 				TextPart.of("Let me check."), ToolCallPart.of(toolCall), TextPart.of(" Done."));
 		assertThat(output.getText()).isEqualTo("Let me check. Done.");
 		assertThat(output.getToolCalls()).containsExactly(toolCall);
@@ -165,12 +165,12 @@ class MessageAggregatorTests {
 	void redactedFlagAndNullTextMergeSafely() {
 		OpaquePayload redacted = new OpaquePayload("anthropic", "redacted_thinking", "blob");
 		Flux<ChatResponse> responses = Flux.just(
-				indexed("msg_1", StreamingParts.complete(new ReasoningPart(null, null, true, redacted, Map.of()), 0)),
+				indexed("msg_1", StreamingParts.complete(new ReasoningPart(null, null, redacted, Map.of()), 0)),
 				indexed("msg_1", StreamingParts.partial(TextPart.of("ok"), 1)));
 
 		AssistantMessage output = aggregate(responses);
 
-		assertThat(output.getParts()).containsExactly(new ReasoningPart(null, null, true, redacted, Map.of()),
+		assertThat(output.getParts()).containsExactly(new ReasoningPart(null, null, redacted, Map.of()),
 				TextPart.of("ok"));
 	}
 
@@ -180,17 +180,16 @@ class MessageAggregatorTests {
 		OpaquePayload sig2 = new OpaquePayload("anthropic", "signature", "sig-2");
 		Flux<ChatResponse> responses = Flux.just(
 				indexed("msg_1", StreamingParts.partial(ReasoningPart.of("round one"), 0)),
-				indexed("msg_1", StreamingParts.partial(new ReasoningPart("", null, false, sig1, Map.of()), 0)),
+				indexed("msg_1", StreamingParts.partial(new ReasoningPart("", null, sig1, Map.of()), 0)),
 				indexed("msg_1", StreamingParts.partial(TextPart.of("Checking. "), 1)),
 				indexed("msg_2", StreamingParts.partial(ReasoningPart.of("round two"), 0)),
-				indexed("msg_2", StreamingParts.partial(new ReasoningPart("", null, false, sig2, Map.of()), 0)),
+				indexed("msg_2", StreamingParts.partial(new ReasoningPart("", null, sig2, Map.of()), 0)),
 				indexed("msg_2", StreamingParts.partial(TextPart.of("Sunny."), 1)));
 
 		AssistantMessage output = aggregate(responses);
 
-		assertThat(output.getParts()).containsExactly(new ReasoningPart("round one", null, false, sig1, Map.of()),
-				TextPart.of("Checking. "), new ReasoningPart("round two", null, false, sig2, Map.of()),
-				TextPart.of("Sunny."));
+		assertThat(output.getParts()).containsExactly(new ReasoningPart("round one", null, sig1, Map.of()),
+				TextPart.of("Checking. "), new ReasoningPart("round two", null, sig2, Map.of()), TextPart.of("Sunny."));
 		assertThat(output.getText()).isEqualTo("Checking. Sunny.");
 	}
 
@@ -265,13 +264,13 @@ class MessageAggregatorTests {
 				indexed("", StreamingParts.partial(TextPart.of("Checking. "), 1)),
 				indexed("", StreamingParts.complete(new ToolCallPart(toolCall, sig1, Map.of()), 2)),
 				indexed("", StreamingParts.partial(ReasoningPart.of("round two"), 0)),
-				indexed("", StreamingParts.partial(new ReasoningPart("", null, false, sig2, Map.of()), 0)),
+				indexed("", StreamingParts.partial(new ReasoningPart("", null, sig2, Map.of()), 0)),
 				indexed("", StreamingParts.partial(TextPart.of("Sunny."), 1)));
 
 		AssistantMessage output = aggregate(responses);
 
 		assertThat(output.getParts()).containsExactly(ReasoningPart.of("round one"), TextPart.of("Checking. "),
-				new ToolCallPart(toolCall, sig1, Map.of()), new ReasoningPart("round two", null, false, sig2, Map.of()),
+				new ToolCallPart(toolCall, sig1, Map.of()), new ReasoningPart("round two", null, sig2, Map.of()),
 				TextPart.of("Sunny."));
 	}
 

@@ -363,8 +363,6 @@ public class MessageAggregator {
 
 		private boolean summaryPresent;
 
-		private boolean redacted;
-
 		private @Nullable OpaquePayload payload;
 
 		private final StringBuilder arguments = new StringBuilder();
@@ -401,7 +399,6 @@ public class MessageAggregator {
 					this.summary.append(delta.summary());
 					this.summaryPresent = true;
 				}
-				this.redacted = this.redacted || delta.redacted();
 			}
 			else if (incoming instanceof ToolCallPart delta) {
 				ToolCall toolCall = delta.toolCall();
@@ -433,7 +430,6 @@ public class MessageAggregator {
 			this.arguments.setLength(0);
 			this.textPresent = false;
 			this.summaryPresent = false;
-			this.redacted = false;
 			if (incoming instanceof TextPart delta) {
 				this.text.append(delta.text());
 				this.textPresent = true;
@@ -447,7 +443,6 @@ public class MessageAggregator {
 					this.summary.append(delta.summary());
 					this.summaryPresent = true;
 				}
-				this.redacted = delta.redacted();
 			}
 			else if (incoming instanceof ToolCallPart delta) {
 				ToolCall toolCall = delta.toolCall();
@@ -471,8 +466,7 @@ public class MessageAggregator {
 			}
 			if (last instanceof ReasoningPart current) {
 				return new ReasoningPart(this.textPresent ? this.text.toString() : null,
-						this.summaryPresent ? this.summary.toString() : null, this.redacted, this.payload,
-						current.attributes());
+						this.summaryPresent ? this.summary.toString() : null, this.payload, current.attributes());
 			}
 			if (last instanceof ToolCallPart current) {
 				return new ToolCallPart(

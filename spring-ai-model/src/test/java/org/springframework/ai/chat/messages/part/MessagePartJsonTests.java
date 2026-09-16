@@ -53,7 +53,7 @@ class MessagePartJsonTests {
 
 	@Test
 	void reasoningPartRoundTripsWithPayload() {
-		ReasoningPart part = new ReasoningPart("The user wants the weather", "summary", false,
+		ReasoningPart part = new ReasoningPart("The user wants the weather", "summary",
 				new OpaquePayload("anthropic", "signature", "EqQBCkYIBBgC"), Map.of());
 
 		String json = this.mapper.writeValueAsString(part);
@@ -61,18 +61,7 @@ class MessagePartJsonTests {
 
 		assertThat(json).contains("\"type\":\"reasoning\"")
 			.contains("\"provider\":\"anthropic\"")
-			.contains("\"kind\":\"signature\"")
-			.contains("\"redacted\":false");
-		assertThat(back).isEqualTo(part);
-	}
-
-	@Test
-	void redactedReasoningPartRoundTripsWithNullText() {
-		ReasoningPart part = new ReasoningPart(null, null, true,
-				new OpaquePayload("anthropic", "redacted_thinking", "blob"), Map.of());
-
-		MessagePart back = this.mapper.readValue(this.mapper.writeValueAsString(part), MessagePart.class);
-
+			.contains("\"kind\":\"signature\"");
 		assertThat(back).isEqualTo(part);
 	}
 
@@ -196,7 +185,7 @@ class MessagePartJsonTests {
 	@Test
 	void mixedPartListRoundTripsInOrder() {
 		List<MessagePart> parts = List.of(
-				new ReasoningPart("think", null, false, new OpaquePayload("anthropic", "signature", "s"), Map.of()),
+				new ReasoningPart("think", null, new OpaquePayload("anthropic", "signature", "s"), Map.of()),
 				ToolCallPart.of(new ToolCall("toolu_01", "function", "getWeather", "{}")), TextPart.of("Let me check."),
 				new UnknownPart("anthropic", "server_tool_use", "{\"type\":\"server_tool_use\"}", null, Map.of()));
 

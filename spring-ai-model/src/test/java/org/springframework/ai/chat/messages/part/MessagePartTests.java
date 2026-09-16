@@ -85,7 +85,6 @@ class MessagePartTests {
 
 		assertThat(part.text()).isEqualTo("thinking...");
 		assertThat(part.summary()).isNull();
-		assertThat(part.redacted()).isFalse();
 		assertThat(part.payload()).isNull();
 	}
 
@@ -99,21 +98,10 @@ class MessagePartTests {
 
 	@Test
 	void reasoningPartWithPayloadIsReplayableOnlyToItsProvider() {
-		ReasoningPart part = new ReasoningPart("thinking...", null, false, ANTHROPIC_SIGNATURE, Map.of());
+		ReasoningPart part = new ReasoningPart("thinking...", null, ANTHROPIC_SIGNATURE, Map.of());
 
 		assertThat(part.replayableTo("anthropic")).isTrue();
 		assertThat(part.replayableTo("openai")).isFalse();
-	}
-
-	@Test
-	void redactedReasoningPartMayHaveNullText() {
-		OpaquePayload redacted = new OpaquePayload("anthropic", "redacted_thinking", "blob");
-
-		ReasoningPart part = new ReasoningPart(null, null, true, redacted, Map.of());
-
-		assertThat(part.text()).isNull();
-		assertThat(part.redacted()).isTrue();
-		assertThat(part.payload()).isEqualTo(redacted);
 	}
 
 	@Test
@@ -207,8 +195,8 @@ class MessagePartTests {
 	@Test
 	void partsWithSameComponentsAreEqual() {
 		assertThat(TextPart.of("a")).isEqualTo(TextPart.of("a")).hasSameHashCodeAs(TextPart.of("a"));
-		assertThat(new ReasoningPart("t", null, false, ANTHROPIC_SIGNATURE, Map.of()))
-			.isEqualTo(new ReasoningPart("t", null, false, ANTHROPIC_SIGNATURE, Map.of()));
+		assertThat(new ReasoningPart("t", null, ANTHROPIC_SIGNATURE, Map.of()))
+			.isEqualTo(new ReasoningPart("t", null, ANTHROPIC_SIGNATURE, Map.of()));
 		assertThat(TextPart.of("a")).isNotEqualTo(ReasoningPart.of("a"));
 	}
 

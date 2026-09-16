@@ -41,8 +41,6 @@ import org.springframework.util.Assert;
  */
 public class ToolResponseMessage extends AbstractMessage {
 
-	private final List<ToolResultPart> results;
-
 	/**
 	 * The responses of this message, derived from its {@link ToolResultPart}s.
 	 * @deprecated since 2.1.0 in favor of {@link #getResponses()}; kept so existing
@@ -65,11 +63,7 @@ public class ToolResponseMessage extends AbstractMessage {
 	 */
 	protected ToolResponseMessage(Map<String, Object> metadata, List<MessagePart> parts) {
 		super(MessageType.TOOL, parts, metadata);
-		this.results = getParts().stream()
-			.filter(ToolResultPart.class::isInstance)
-			.map(ToolResultPart.class::cast)
-			.toList();
-		this.responses = this.results.stream().map(ToolResultPart::toToolResponse).toList();
+		this.responses = select(ToolResultPart.class).map(ToolResultPart::toToolResponse).toList();
 	}
 
 	private static List<MessagePart> legacyParts(List<ToolResponse> responses) {
@@ -91,7 +85,7 @@ public class ToolResponseMessage extends AbstractMessage {
 	 * @since 2.1.0
 	 */
 	public List<ToolResultPart> getResults() {
-		return this.results;
+		return select(ToolResultPart.class).toList();
 	}
 
 	/**
