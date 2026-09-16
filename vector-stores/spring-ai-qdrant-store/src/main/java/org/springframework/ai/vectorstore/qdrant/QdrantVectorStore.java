@@ -43,6 +43,7 @@ import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
+import org.springframework.ai.vectorstore.EmbeddedDocument;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
@@ -197,6 +198,41 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 			this.qdrantClient.upsertAsync(this.collectionName, points).get();
 		}
 		catch (InterruptedException | ExecutionException | IllegalArgumentException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	@Override
+	protected void doUpsert(List<EmbeddedDocument> entries) {
+		// Whole-batch dimension pre-check before any write, so a mismatched vector fails
+		// fast and cannot partially write. The collection's vector size matches the
+		// embedding model dimensions. Non-empty and finiteness are already enforced by
+		// the EmbeddedDocument constructor.
+		int expected = this.embeddingModel.dimensions();
+		for (int i = 0; i < entries.size(); i++) {
+			int actual = entries.get(i).embedding().length;
+			if (actual != expected) {
+				throw new IllegalArgumentException("Embedding at index " + i + " has dimension " + actual
+						+ " but the store expects dimension " + expected);
+			}
+		}
+
+		try {
+			List<PointStruct> points = IntStream.range(0, entries.size()).mapToObj(i -> {
+				// Pair positionally: the document and its embedding come from the same
+				// entry, so there is no indexOf lookup to slip.
+				EmbeddedDocument entry = entries.get(i);
+				Document document = entry.document();
+				return PointStruct.newBuilder()
+					.setId(io.qdrant.client.PointIdFactory.id(UUID.fromString(document.getId())))
+					.setVectors(io.qdrant.client.VectorsFactory.vectors(entry.embedding()))
+					.putAllPayload(toPayload(document))
+					.build();
+			}).toList();
+
+			this.qdrantClient.upsertAsync(this.collectionName, points).get();
+		}
+		catch (InterruptedException | ExecutionException e) {
 			throw new RuntimeException(e);
 		}
 	}

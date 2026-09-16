@@ -214,6 +214,12 @@ is converted into the proprietary Elasticsearch filter format:
 (metadata.author:john OR jill) AND metadata.article_type:blog
 ----
 
+== Upsert support
+
+`ElasticsearchVectorStore` implements `upsert(List<EmbeddedDocument>)`, so you can write documents together with embeddings you computed elsewhere instead of having the store embed them.
+Writing the same id again replaces the existing row, so a re-run with stable ids does not create duplicates.
+See xref:api/vectordbs.adoc#writing-precomputed-embeddings[Writing Pre-computed Embeddings] for details.
+
 == Manual Configuration
 
 Instead of using the Spring Boot auto-configuration, you can manually configure the Elasticsearch vector store. For this you need to add the `spring-ai-elasticsearch-store` to your project:

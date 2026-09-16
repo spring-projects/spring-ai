@@ -32,7 +32,28 @@ public enum DocumentMetadata {
 	 * The lower the distance, the more they are similar.
 	 * It's the opposite of the similarity score.
 	 */
-	DISTANCE("distance");
+	DISTANCE("distance"),
+
+	/**
+	 * Metadata key holding a pointer to content kept outside the vector store.
+	 * <p>
+	 * Use it when a row's embedding was computed from something that isn't stored
+	 * in the row itself &mdash; an image, a video frame, an audio clip, or a
+	 * document too large to inline. The vector is stored and stays searchable, but
+	 * in place of the content the row keeps a reference to where the content really
+	 * lives (for example an S3 URI, a CDN URL, or a database key). The store treats
+	 * this reference as an opaque string and never resolves it; after a search
+	 * returns the row, the application follows the pointer to fetch the content.
+	 * <p>
+	 * Such a row is created with an empty-text {@link Document} plus this key, and
+	 * written with a caller-supplied embedding through {@code VectorStore.upsert}
+	 * (which stores the vector as given and never embeds). Note the empty text only
+	 * exists to satisfy the document's text-or-media rule; it is not content, so a
+	 * document carrying this key is a reference row even though {@code isText()}
+	 * reports true.
+	 * @since 2.1.0
+	 */
+	CONTENT_REF("content_ref");
 
 	private final String value;
 

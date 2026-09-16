@@ -57,6 +57,8 @@ public interface VectorStore extends DocumentWriter, VectorStoreRetriever {
 
     void add(List<Document> documents);
 
+    default void upsert(List<EmbeddedDocument> entries) { ... }
+
     void delete(List<String> idList);
 
     void delete(Filter.Expression filterExpression);
@@ -70,6 +72,7 @@ public interface VectorStore extends DocumentWriter, VectorStoreRetriever {
 ----
 
 The `VectorStore` interface combines both read and write operations, allowing you to add, delete, and search for documents in a vector database.
+While `add` computes the embeddings for you, `upsert` writes documents together with embeddings you already have; see <<writing-precomputed-embeddings,Writing Pre-computed Embeddings>>.
 
 === SearchRequest Builder
 
@@ -436,6 +439,93 @@ void load(String sourceFile) {
     this.vectorStore.add(documents);
 }
 ----
+
+[[writing-precomputed-embeddings]]
+=== Writing Pre-computed Embeddings
+
+`add` computes an embedding for every document inside the store, using the store's embedding model.
+Sometimes you already have the vectors and want to write them as-is: a provider's batch API computed them overnight at half price, another team owns the embedding pipeline, or you are migrating from a system that exports text and vectors together.
+For those cases the `VectorStore` interface offers `upsert`, which takes the document and its vector paired together in an `EmbeddedDocument` and never embeds anything itself:
+
+[source,java]
+----
+public record EmbeddedDocument(Document document, float[] embedding) {
+}
+----
+
+As the name says, `upsert` replaces by id: writing the same id again overwrites the existing row rather than adding a duplicate.
+That makes a re-run with stable ids safe, which is useful for an ingestion job that may be retried after a failure.
+
+[source,java]
+----
+@Autowired
+VectorStore vectorStore;
+
+// a vector you computed elsewhere
+float[] embedding = ...;
+Document document = new Document("42", "some text", Map.of("source", "manual"));
+
+this.vectorStore.upsert(List.of(new EmbeddedDocument(document, embedding)));
+----
+
+To write plain text through `upsert`, embed it first and hand over the result:
+
+[source,java]
+----
+@Autowired
+EmbeddingModel embeddingModel;
+
+float[] vector = this.embeddingModel.embed(document);
+this.vectorStore.upsert(List.of(new EmbeddedDocument(document, vector)));
+----
+
+`upsert` is opt-in per store: the default implementation throws `UnsupportedOperationException`, so a store supports it only once it has been implemented.
+It is available on pgvector, Redis, Elasticsearch, and Qdrant, with more stores to follow.
+Stores that implement it validate that every vector matches the index dimension before writing anything, so a wrong-sized vector fails fast and cannot partially write.
+
+=== Indexing Non-Text or Oversized Content
+
+With text, the store keeps the document and its vector together in one row: search matches on the vector and hands back the text.
+A multimodal model breaks that assumption. It gives you a searchable vector for an image, a video segment, or an audio clip, but the content itself lives in S3, a CDN, or a database, and there is no text to put in the row.
+The same applies to text that is simply too large for the row, such as a full article whose chunks were indexed.
+
+The row then keeps everything except the content: id, metadata, vector, and a pointer to where the content lives.
+The pointer goes in metadata under `DocumentMetadata.CONTENT_REF`, and the store never interprets it: it is an S3 URI, a CDN URL, or a database key that only your application resolves.
+Such a row is written with `upsert`, because you supply the vector from the multimodal model yourself:
+
+[source,java]
+----
+byte[] frame = ...;                                 // the image/video/audio bytes
+float[] embedding = multimodalModel.embed(frame);   // your multimodal model
+
+Document reference = Document.builder()
+    .id("video-42/frame-4711")
+    .text("")                                       // empty: the content lives elsewhere
+    .metadata(DocumentMetadata.CONTENT_REF.value(), "s3://media/video-42.mp4#t=4711")
+    .metadata("camera", "north-gate")               // still filterable like any row
+    .build();
+
+this.vectorStore.upsert(List.of(new EmbeddedDocument(reference, embedding)));
+----
+
+NOTE: A document carrying `CONTENT_REF` is a reference row regardless of what `isText()` reports. The empty text only satisfies the document's text-or-media rule; it is not content.
+
+Search is unchanged. `similaritySearch` matches on vectors and returns `Document` s as always, and for these rows the caller follows the pointer:
+
+[source,java]
+----
+List<Document> results = this.vectorStore.similaritySearch(SearchRequest.builder()
+    .query("a truck at the north gate after dark")   // embedded by the same multimodal model
+    .filterExpression("camera == 'north-gate'")
+    .build());
+
+for (Document doc : results) {
+    String ref = (String) doc.getMetadata().get(DocumentMetadata.CONTENT_REF.value());
+    byte[] frame = mediaStorage.fetch(ref);           // S3, CDN, wherever the pointer leads
+}
+----
+
+Text queries against image vectors work when the store's embedding model is the multimodal model's text encoder, so query and content land in the same vector space.
 
 === Reading from a Vector Store
 

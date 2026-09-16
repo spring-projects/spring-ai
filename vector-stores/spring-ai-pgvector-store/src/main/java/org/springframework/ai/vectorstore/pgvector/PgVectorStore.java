@@ -39,6 +39,7 @@ import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.util.JacksonUtils;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
+import org.springframework.ai.vectorstore.EmbeddedDocument;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.Filter;
@@ -181,6 +182,12 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 			VectorStoreSimilarityMetric.EUCLIDEAN, PgDistanceType.NEGATIVE_INNER_PRODUCT,
 			VectorStoreSimilarityMetric.DOT);
 
+	// Replace-by-id write shared by add (doAdd) and upsert (doUpsert). The single
+	// %s is the fully-qualified table name. Kept in one place so the two write paths
+	// cannot drift.
+	private static final String UPSERT_SQL = "INSERT INTO %s (id, content, metadata, embedding) VALUES (?, ?, ?::jsonb, ?) "
+			+ "ON CONFLICT (id) DO UPDATE SET content = ? , metadata = ?::jsonb , embedding = ? ";
+
 	public final FilterExpressionConverter filterExpressionConverter = new PgVectorFilterExpressionConverter();
 
 	private final String vectorTableName;
@@ -274,9 +281,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 	}
 
 	private void insertOrUpdateBatch(List<Document> batch, List<Document> documents, List<float[]> embeddings) {
-		String sql = "INSERT INTO " + getFullyQualifiedTableName()
-				+ " (id, content, metadata, embedding) VALUES (?, ?, ?::jsonb, ?) " + "ON CONFLICT (id) DO "
-				+ "UPDATE SET content = ? , metadata = ?::jsonb , embedding = ? ";
+		String sql = UPSERT_SQL.formatted(getFullyQualifiedTableName());
 
 		this.jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
 
@@ -289,6 +294,65 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 				var json = toJson(document.getMetadata());
 				var embedding = embeddings.get(documents.indexOf(document));
 				var pGvector = new PGvector(embedding);
+
+				StatementCreatorUtils.setParameterValue(ps, 1, SqlTypeValue.TYPE_UNKNOWN, id);
+				StatementCreatorUtils.setParameterValue(ps, 2, SqlTypeValue.TYPE_UNKNOWN, content);
+				StatementCreatorUtils.setParameterValue(ps, 3, SqlTypeValue.TYPE_UNKNOWN, json);
+				StatementCreatorUtils.setParameterValue(ps, 4, SqlTypeValue.TYPE_UNKNOWN, pGvector);
+				StatementCreatorUtils.setParameterValue(ps, 5, SqlTypeValue.TYPE_UNKNOWN, content);
+				StatementCreatorUtils.setParameterValue(ps, 6, SqlTypeValue.TYPE_UNKNOWN, json);
+				StatementCreatorUtils.setParameterValue(ps, 7, SqlTypeValue.TYPE_UNKNOWN, pGvector);
+			}
+
+			@Override
+			public int getBatchSize() {
+				return batch.size();
+			}
+		});
+	}
+
+	@Override
+	protected void doUpsert(List<EmbeddedDocument> entries) {
+		// Whole-batch dimension pre-check before any write, so a mismatched vector fails
+		// fast and cannot partially write. Non-empty and finiteness are already enforced
+		// by the EmbeddedDocument constructor.
+		int expected = embeddingDimensions();
+		for (int i = 0; i < entries.size(); i++) {
+			int actual = entries.get(i).embedding().length;
+			if (actual != expected) {
+				throw new IllegalArgumentException("Embedding at index " + i + " has dimension " + actual
+						+ " but the store expects dimension " + expected);
+			}
+		}
+
+		List<List<EmbeddedDocument>> batchedEntries = batchEmbeddedDocuments(entries);
+		batchedEntries.forEach(this::upsertBatch);
+	}
+
+	private List<List<EmbeddedDocument>> batchEmbeddedDocuments(List<EmbeddedDocument> entries) {
+		List<List<EmbeddedDocument>> batches = new ArrayList<>();
+		for (int i = 0; i < entries.size(); i += this.maxDocumentBatchSize) {
+			batches.add(entries.subList(i, Math.min(i + this.maxDocumentBatchSize, entries.size())));
+		}
+		return batches;
+	}
+
+	private void upsertBatch(List<EmbeddedDocument> batch) {
+		String sql = UPSERT_SQL.formatted(getFullyQualifiedTableName());
+
+		this.jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
+
+			@Override
+			public void setValues(PreparedStatement ps, int i) throws SQLException {
+
+				// Pair positionally within the batch: the document and its embedding come
+				// from the same entry, so there is no indexOf lookup to slip.
+				var entry = batch.get(i);
+				var document = entry.document();
+				var id = convertIdToPgType(document.getId());
+				var content = document.getText();
+				var json = toJson(document.getMetadata());
+				var pGvector = new PGvector(entry.embedding());
 
 				StatementCreatorUtils.setParameterValue(ps, 1, SqlTypeValue.TYPE_UNKNOWN, id);
 				StatementCreatorUtils.setParameterValue(ps, 2, SqlTypeValue.TYPE_UNKNOWN, content);

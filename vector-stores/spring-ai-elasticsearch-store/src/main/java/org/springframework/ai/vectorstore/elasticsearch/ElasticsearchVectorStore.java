@@ -48,6 +48,7 @@ import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
+import org.springframework.ai.vectorstore.EmbeddedDocument;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
@@ -191,6 +192,44 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 		for (int i = 0; i < embeddings.size(); i++) {
 			Document document = documents.get(i);
 			float[] embedding = embeddings.get(i);
+			bulkRequestBuilder.operations(op -> op.index(idx -> idx.index(this.options.getIndexName())
+				.id(document.getId())
+				.document(getDocument(document, embedding, this.options.getEmbeddingFieldName()))));
+		}
+		BulkResponse bulkRequest = bulkRequest(bulkRequestBuilder.build());
+		if (bulkRequest.errors()) {
+			List<BulkResponseItem> bulkResponseItems = bulkRequest.items();
+			for (BulkResponseItem bulkResponseItem : bulkResponseItems) {
+				if (bulkResponseItem.error() != null) {
+					throw new IllegalStateException(bulkResponseItem.error().reason());
+				}
+			}
+		}
+	}
+
+	@Override
+	protected void doUpsert(List<EmbeddedDocument> entries) {
+		// Whole-batch dimension pre-check before any write, so a mismatched vector fails
+		// fast and cannot partially write. The authoritative dimension is the index
+		// mapping (options), not the query embedding model, since upsert stores
+		// caller-supplied vectors. Non-empty and finiteness are already enforced by the
+		// EmbeddedDocument constructor.
+		int expected = this.options.getDimensions();
+		for (int i = 0; i < entries.size(); i++) {
+			int actual = entries.get(i).embedding().length;
+			if (actual != expected) {
+				throw new IllegalArgumentException("Embedding at index " + i + " has dimension " + actual
+						+ " but the store expects dimension " + expected);
+			}
+		}
+
+		BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
+		for (int i = 0; i < entries.size(); i++) {
+			// Pair positionally: the document and its embedding come from the same entry,
+			// so there is no indexOf lookup to slip.
+			EmbeddedDocument entry = entries.get(i);
+			Document document = entry.document();
+			float[] embedding = entry.embedding();
 			bulkRequestBuilder.operations(op -> op.index(idx -> idx.index(this.options.getIndexName())
 				.id(document.getId())
 				.document(getDocument(document, embedding, this.options.getEmbeddingFieldName()))));

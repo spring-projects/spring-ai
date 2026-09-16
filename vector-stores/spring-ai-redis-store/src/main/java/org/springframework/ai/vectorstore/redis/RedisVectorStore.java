@@ -56,6 +56,7 @@ import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
+import org.springframework.ai.vectorstore.EmbeddedDocument;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
@@ -379,6 +380,49 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 			Optional<Object> errResponse = responses.stream().filter(Predicate.not(RESPONSE_OK)).findAny();
 			if (errResponse.isPresent()) {
 				String message = MessageFormat.format("Could not add document: {0}", errResponse.get());
+				logger.error(message);
+				throw new RuntimeException(message);
+			}
+		}
+	}
+
+	@Override
+	protected void doUpsert(List<EmbeddedDocument> entries) {
+		// Whole-batch dimension pre-check before any write, so a mismatched vector fails
+		// fast and cannot partially write. Non-empty and finiteness are already enforced
+		// by the EmbeddedDocument constructor.
+		int expected = this.embeddingModel.dimensions();
+		for (int i = 0; i < entries.size(); i++) {
+			int actual = entries.get(i).embedding().length;
+			if (actual != expected) {
+				throw new IllegalArgumentException("Embedding at index " + i + " has dimension " + actual
+						+ " but the store expects dimension " + expected);
+			}
+		}
+
+		try (Pipeline pipeline = this.jedisClient.pipelined()) {
+			for (int i = 0; i < entries.size(); i++) {
+				// Pair positionally: the document and its embedding come from the same
+				// entry, so there is no indexOf lookup to slip.
+				EmbeddedDocument entry = entries.get(i);
+				Document document = entry.document();
+				var fields = new HashMap<String, Object>();
+				float[] embedding = entry.embedding();
+
+				// Normalize embeddings for COSINE distance metric
+				if (this.distanceMetric == DistanceMetric.COSINE) {
+					embedding = normalize(embedding);
+				}
+
+				fields.put(this.embeddingFieldName, embedding);
+				fields.put(this.contentFieldName, document.getText());
+				fields.putAll(document.getMetadata());
+				pipeline.jsonSetWithEscape(key(document.getId()), JSON_SET_PATH, fields);
+			}
+			List<Object> responses = pipeline.syncAndReturnAll();
+			Optional<Object> errResponse = responses.stream().filter(Predicate.not(RESPONSE_OK)).findAny();
+			if (errResponse.isPresent()) {
+				String message = MessageFormat.format("Could not upsert document: {0}", errResponse.get());
 				logger.error(message);
 				throw new RuntimeException(message);
 			}
