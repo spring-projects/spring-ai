@@ -25,6 +25,7 @@ import java.util.function.Consumer;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -70,6 +71,9 @@ public class MessageAggregator {
 		AtomicReference<Integer> metadataUsagePromptTokensRef = new AtomicReference<>(0);
 		AtomicReference<Integer> metadataUsageGenerationTokensRef = new AtomicReference<>(0);
 		AtomicReference<Integer> metadataUsageTotalTokensRef = new AtomicReference<>(0);
+		AtomicReference<@Nullable Long> metadataUsageCacheReadInputTokensRef = new AtomicReference<>();
+		AtomicReference<@Nullable Long> metadataUsageCacheWriteInputTokensRef = new AtomicReference<>();
+		AtomicReference<@Nullable Object> metadataNativeUsageRef = new AtomicReference<>();
 
 		AtomicReference<PromptMetadata> metadataPromptMetadataRef = new AtomicReference<>(PromptMetadata.empty());
 		AtomicReference<RateLimit> metadataRateLimitRef = new AtomicReference<>(new EmptyRateLimit());
@@ -88,6 +92,9 @@ public class MessageAggregator {
 			metadataUsagePromptTokensRef.set(0);
 			metadataUsageGenerationTokensRef.set(0);
 			metadataUsageTotalTokensRef.set(0);
+			metadataUsageCacheReadInputTokensRef.set(null);
+			metadataUsageCacheWriteInputTokensRef.set(null);
+			metadataNativeUsageRef.set(null);
 			metadataPromptMetadataRef.set(PromptMetadata.empty());
 			metadataRateLimitRef.set(new EmptyRateLimit());
 
@@ -129,6 +136,15 @@ public class MessageAggregator {
 							: metadataUsageGenerationTokensRef.get());
 					metadataUsageTotalTokensRef
 						.set(usage.getTotalTokens() > 0 ? usage.getTotalTokens() : metadataUsageTotalTokensRef.get());
+					if (usage.getCacheReadInputTokens() != null) {
+						metadataUsageCacheReadInputTokensRef.set(usage.getCacheReadInputTokens());
+					}
+					if (usage.getCacheWriteInputTokens() != null) {
+						metadataUsageCacheWriteInputTokensRef.set(usage.getCacheWriteInputTokens());
+					}
+					if (usage.getNativeUsage() != null) {
+						metadataNativeUsageRef.set(usage.getNativeUsage());
+					}
 				}
 				if (chatResponse.getMetadata().getPromptMetadata() != null
 						&& chatResponse.getMetadata().getPromptMetadata().iterator().hasNext()) {
@@ -154,8 +170,10 @@ public class MessageAggregator {
 			}
 		}).doOnComplete(() -> {
 
-			var usage = new DefaultUsage(metadataUsagePromptTokensRef.get(), metadataUsageGenerationTokensRef.get(),
-					metadataUsageTotalTokensRef.get());
+			var usage = new org.springframework.ai.chat.metadata.DefaultUsage(metadataUsagePromptTokensRef.get(),
+					metadataUsageGenerationTokensRef.get(), metadataUsageTotalTokensRef.get(),
+					metadataNativeUsageRef.get(), metadataUsageCacheReadInputTokensRef.get(),
+					metadataUsageCacheWriteInputTokensRef.get());
 
 			var chatResponseMetadata = ChatResponseMetadata.builder()
 				.id(metadataIdRef.get())
@@ -201,6 +219,9 @@ public class MessageAggregator {
 			metadataUsagePromptTokensRef.set(0);
 			metadataUsageGenerationTokensRef.set(0);
 			metadataUsageTotalTokensRef.set(0);
+			metadataUsageCacheReadInputTokensRef.set(null);
+			metadataUsageCacheWriteInputTokensRef.set(null);
+			metadataNativeUsageRef.set(null);
 			metadataPromptMetadataRef.set(PromptMetadata.empty());
 			metadataRateLimitRef.set(new EmptyRateLimit());
 
