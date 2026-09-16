@@ -57,6 +57,7 @@
 	</scm>
 
 	<properties>
+		<project.build.outputTimestamp>1980-02-01T00:00:00Z</project.build.outputTimestamp>
 		<flatten-maven-plugin.version>1.5.0</flatten-maven-plugin.version>
 	</properties>
 
