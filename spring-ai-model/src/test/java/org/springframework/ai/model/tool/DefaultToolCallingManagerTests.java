@@ -369,7 +369,7 @@ class DefaultToolCallingManagerTests {
 
 	@Test
 	void whenToolCallWithExceptionThenReturnError() {
-		ToolCallback toolCallback = new FailingToolCallback("toolC");
+		FailingToolCallback toolCallback = new FailingToolCallback("toolC");
 		ToolCallbackResolver toolCallbackResolver = new StaticToolCallbackResolver(List.of(toolCallback));
 		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder()
 			.toolCallbackResolver(toolCallbackResolver)
@@ -386,7 +386,8 @@ class DefaultToolCallingManagerTests {
 			.build();
 
 		ToolResponseMessage expectedToolResponse = ToolResponseMessage.builder()
-			.responses(List.of(new ToolResponse("toolC", "toolC", "You failed this city!")))
+			.responses(List.of(new ToolResponse("toolC", "toolC", "You failed this city!",
+					toolCallback.getToolExecutionException())))
 			.build();
 
 		ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, chatResponse);
@@ -896,9 +897,12 @@ class DefaultToolCallingManagerTests {
 	static class FailingToolCallback implements ToolCallback {
 
 		private final ToolDefinition toolDefinition;
+		private final ToolExecutionException toolExecutionException;
 
 		FailingToolCallback(String name) {
 			this.toolDefinition = DefaultToolDefinition.builder().name(name).inputSchema("{}").build();
+			this.toolExecutionException = new ToolExecutionException(this.toolDefinition,
+					new IllegalStateException("You failed this city!"));
 		}
 
 		@Override
@@ -908,7 +912,11 @@ class DefaultToolCallingManagerTests {
 
 		@Override
 		public String call(String toolInput) {
-			throw new ToolExecutionException(this.toolDefinition, new IllegalStateException("You failed this city!"));
+			throw this.toolExecutionException;
+		}
+
+		public ToolExecutionException getToolExecutionException() {
+			return this.toolExecutionException;
 		}
 
 	}

@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import org.jspecify.annotations.Nullable;
+import org.springframework.ai.tool.execution.ToolExecutionException;
 
 /**
  * The ToolResponseMessage class represents a message with a function content in a chat
@@ -72,8 +73,11 @@ public class ToolResponseMessage extends AbstractMessage {
 				+ ", metadata=" + this.metadata + '}';
 	}
 
-	public record ToolResponse(String id, String name, String responseData) {
-
+	public record ToolResponse(String id, String name, String responseData, @Nullable ToolExecutionException exception) {
+		
+		public ToolResponse(String id, String name, String responseData) {
+			this(id, name, responseData, null);
+		}
 	}
 
 	public static final class Builder {
