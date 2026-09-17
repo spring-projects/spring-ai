@@ -1,3 +1,20 @@
 = Azure OpenAI Chat
 
 As of Spring AI `2.0.0-M5`, xref:api/chat/openai-chat.adoc[OpenAI Chat] should be use to access OpenAI models deployed on Azure / Microsoft Foundry.
+
+== Custom Microsoft Entra credentials
+
+Use `AzureOpenAiCredentials` to authenticate with a custom Azure `TokenCredential`, such as a user-assigned managed identity:
+
+[source,java]
+----
+TokenCredential tokenCredential = new DefaultAzureCredentialBuilder()
+    .managedIdentityClientId(clientId)
+    .build();
+
+OpenAiChatOptions options = OpenAiChatOptions.builder()
+    .credential(AzureOpenAiCredentials.from(tokenCredential))
+    .build();
+----
+
+Add `com.azure:azure-identity` to the application dependencies when using Microsoft Entra authentication.
