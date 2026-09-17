@@ -102,7 +102,7 @@ class UserMessagePartsTests {
 		UserMessage message = new UserMessage("hello");
 
 		assertThat(message.getParts()).containsExactly(TextPart.of("hello"));
-		assertThat(message.getText()).isSameAs("hello");
+		assertThat(message.getText()).isEqualTo("hello");
 	}
 
 	@Test

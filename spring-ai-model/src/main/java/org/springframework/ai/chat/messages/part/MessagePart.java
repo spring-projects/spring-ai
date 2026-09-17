@@ -46,7 +46,8 @@ import org.jspecify.annotations.Nullable;
 		@JsonSubTypes.Type(value = MediaPart.class, name = "media"),
 		@JsonSubTypes.Type(value = UnknownPart.class, name = "unknown") })
 @JsonIgnoreProperties(ignoreUnknown = true)
-public interface MessagePart {
+public sealed interface MessagePart
+		permits MediaPart, ReasoningPart, TextPart, ToolCallPart, ToolResultPart, UnknownPart {
 
 	/**
 	 * Provider-owned data that must be replayed verbatim to the same provider, such as a

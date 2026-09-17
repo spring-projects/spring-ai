@@ -120,12 +120,11 @@ public abstract class AbstractMessage implements Message {
 		if (parts.isEmpty()) {
 			return null;
 		}
-		List<TextPart> textParts = parts.stream().filter(TextPart.class::isInstance).map(TextPart.class::cast).toList();
-		if (textParts.size() == 1) {
-			// Common case: hand back the part's own string instance rather than a copy.
-			return textParts.get(0).text();
-		}
-		return textParts.stream().map(TextPart::text).collect(Collectors.joining());
+		return parts.stream()
+			.filter(TextPart.class::isInstance)
+			.map(TextPart.class::cast)
+			.map(TextPart::text)
+			.collect(Collectors.joining());
 	}
 
 	/**
