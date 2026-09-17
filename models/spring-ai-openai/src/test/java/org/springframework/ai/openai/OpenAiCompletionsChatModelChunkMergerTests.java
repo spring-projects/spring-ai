@@ -33,18 +33,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 
 /**
- * Unit tests for {@link OpenAiChatModel.ChunkMerger}, covering the merging of streamed
- * tool call deltas by their {@code index} field. OpenAI omits {@code id} and
+ * Unit tests for {@link OpenAiCompletionsChatModel.ChunkMerger}, covering the merging of
+ * streamed tool call deltas by their {@code index} field. OpenAI omits {@code id} and
  * {@code function.name} on continuation deltas, while some OpenAI-compatible providers
  * (e.g. DeepSeek) send them as empty strings instead.
  *
  * @author Jewoo Shin
  */
-class OpenAiChatModelChunkMergerTests {
+class OpenAiCompletionsChatModelChunkMergerTests {
 
 	@Test
 	void mergeToolCallDeltasWithAbsentContinuationIds() {
-		ChatCompletionChunk merged = OpenAiChatModel.ChunkMerger
+		ChatCompletionChunk merged = OpenAiCompletionsChatModel.ChunkMerger
 			.mergeChunks(List.of(chunk(null, toolCallDelta(0, "call_1", "get_weather", "")),
 					chunk(null, toolCallDelta(0, null, null, "{\"city\": ")),
 					chunk(null, toolCallDelta(0, null, null, "\"Seoul\"}")), finishChunk()));
@@ -58,7 +58,7 @@ class OpenAiChatModelChunkMergerTests {
 
 	@Test // gh-6374
 	void mergeToolCallDeltasWithEmptyContinuationIds() {
-		ChatCompletionChunk merged = OpenAiChatModel.ChunkMerger
+		ChatCompletionChunk merged = OpenAiCompletionsChatModel.ChunkMerger
 			.mergeChunks(List.of(chunk(null, toolCallDelta(0, "call_1d70a7ee", "show_options", "")),
 					chunk(null, toolCallDelta(0, "", "", "{\"options\": [\"a\"")),
 					chunk(null, toolCallDelta(0, "", "", ", \"b\"]}")), finishChunk()));
@@ -70,7 +70,7 @@ class OpenAiChatModelChunkMergerTests {
 		assertThat(toolCalls.get(0).function().orElseThrow().name()).contains("show_options");
 		assertThat(toolCalls.get(0).function().orElseThrow().arguments()).contains("{\"options\": [\"a\", \"b\"]}");
 
-		ChatCompletion completion = OpenAiChatModel.ChunkMerger.chunkToChatCompletion(merged);
+		ChatCompletion completion = OpenAiCompletionsChatModel.ChunkMerger.chunkToChatCompletion(merged);
 		ChatCompletionMessageFunctionToolCall functionToolCall = completion.choices()
 			.get(0)
 			.message()
@@ -86,7 +86,7 @@ class OpenAiChatModelChunkMergerTests {
 
 	@Test
 	void mergeParallelToolCallDeltasByIndex() {
-		ChatCompletionChunk merged = OpenAiChatModel.ChunkMerger
+		ChatCompletionChunk merged = OpenAiCompletionsChatModel.ChunkMerger
 			.mergeChunks(List.of(chunk(null, toolCallDelta(0, "call_a", "tool_a", "")),
 					chunk(null, toolCallDelta(1, "call_b", "tool_b", "")),
 					chunk(null, toolCallDelta(0, null, null, "{\"a\": 1}")),
@@ -102,7 +102,7 @@ class OpenAiChatModelChunkMergerTests {
 
 	@Test
 	void mergeMultipleToolCallDeltasInSingleChunk() {
-		ChatCompletionChunk merged = OpenAiChatModel.ChunkMerger.mergeChunks(List.of(
+		ChatCompletionChunk merged = OpenAiCompletionsChatModel.ChunkMerger.mergeChunks(List.of(
 				chunk(null, toolCallDelta(0, "call_a", "tool_a", ""), toolCallDelta(1, "call_b", "tool_b", "")),
 				chunk(null, toolCallDelta(0, null, null, "{\"a\": 1}"), toolCallDelta(1, null, null, "{\"b\": 2}")),
 				finishChunk()));
@@ -122,10 +122,11 @@ class OpenAiChatModelChunkMergerTests {
 		ChatCompletionChunk blankIdChunk = chunk(FinishReason.TOOL_CALLS,
 				toolCallDelta(0, " ", "get_weather", "{\"city\":\"Seoul\"}"));
 
-		assertThatIllegalStateException().isThrownBy(() -> OpenAiChatModel.ChunkMerger.chunkToChatCompletion(chunk))
+		assertThatIllegalStateException()
+			.isThrownBy(() -> OpenAiCompletionsChatModel.ChunkMerger.chunkToChatCompletion(chunk))
 			.withMessage("Tool call id is missing");
 		assertThatIllegalStateException()
-			.isThrownBy(() -> OpenAiChatModel.ChunkMerger.chunkToChatCompletion(blankIdChunk))
+			.isThrownBy(() -> OpenAiCompletionsChatModel.ChunkMerger.chunkToChatCompletion(blankIdChunk))
 			.withMessage("Tool call id is missing");
 	}
 
@@ -133,7 +134,8 @@ class OpenAiChatModelChunkMergerTests {
 	void chunkToChatCompletionRequiresToolCallFunction() {
 		ChatCompletionChunk chunk = chunk(FinishReason.TOOL_CALLS, toolCallDeltaWithoutFunction(0, "call_1"));
 
-		assertThatIllegalStateException().isThrownBy(() -> OpenAiChatModel.ChunkMerger.chunkToChatCompletion(chunk))
+		assertThatIllegalStateException()
+			.isThrownBy(() -> OpenAiCompletionsChatModel.ChunkMerger.chunkToChatCompletion(chunk))
 			.withMessage("Tool call function is missing");
 	}
 
@@ -144,10 +146,11 @@ class OpenAiChatModelChunkMergerTests {
 		ChatCompletionChunk blankNameChunk = chunk(FinishReason.TOOL_CALLS,
 				toolCallDelta(0, "call_1", " ", "{\"city\":\"Seoul\"}"));
 
-		assertThatIllegalStateException().isThrownBy(() -> OpenAiChatModel.ChunkMerger.chunkToChatCompletion(chunk))
+		assertThatIllegalStateException()
+			.isThrownBy(() -> OpenAiCompletionsChatModel.ChunkMerger.chunkToChatCompletion(chunk))
 			.withMessage("Tool call function name is missing");
 		assertThatIllegalStateException()
-			.isThrownBy(() -> OpenAiChatModel.ChunkMerger.chunkToChatCompletion(blankNameChunk))
+			.isThrownBy(() -> OpenAiCompletionsChatModel.ChunkMerger.chunkToChatCompletion(blankNameChunk))
 			.withMessage("Tool call function name is missing");
 	}
 
@@ -156,7 +159,7 @@ class OpenAiChatModelChunkMergerTests {
 		ChatCompletionChunk chunk = chunk(FinishReason.TOOL_CALLS,
 				toolCallDeltaWithoutArguments(0, "call_1", "get_weather"));
 
-		ChatCompletion completion = OpenAiChatModel.ChunkMerger.chunkToChatCompletion(chunk);
+		ChatCompletion completion = OpenAiCompletionsChatModel.ChunkMerger.chunkToChatCompletion(chunk);
 
 		ChatCompletionMessageFunctionToolCall functionToolCall = completion.choices()
 			.get(0)

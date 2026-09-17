@@ -30,6 +30,8 @@ import org.springframework.ai.model.SpringAIModels;
 import org.springframework.ai.model.openai.autoconfigure.OpenAiAutoConfigurationUtil.ResolvedConnectionProperties;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.openai.OpenAiChatModel;
+import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.ai.openai.OpenAiChatOptions.Api;
 import org.springframework.ai.openai.http.okhttp.OpenAiHttpClientBuilderCustomizer;
 import org.springframework.ai.openai.setup.OpenAiSetup;
 import org.springframework.beans.factory.ObjectProvider;
@@ -50,6 +52,7 @@ import org.springframework.context.annotation.Bean;
  * @author Issam El-atif
  * @author Ilayaperumal Gopinathan
  * @author Sebastien Deleuze
+ * @author Dimitar Proynov
  */
 @AutoConfiguration
 @EnableConfigurationProperties({ OpenAiCommonProperties.class, OpenAiChatProperties.class })
@@ -81,7 +84,7 @@ public class OpenAiChatAutoConfiguration {
 		var chatModel = OpenAiChatModel.builder()
 			.openAiClient(openAIClient)
 			.openAiClientAsync(openAIClientAsync)
-			.options(chatProperties.toOptions())
+			.options(resolveOptions(chatProperties, resolvedProperties))
 			.toolCallingManager(toolCallingManager)
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.meterRegistry(meterRegistryToUse)
@@ -90,6 +93,34 @@ public class OpenAiChatAutoConfiguration {
 		observationConvention.ifAvailable(chatModel::setObservationConvention);
 
 		return chatModel;
+	}
+
+	/**
+	 * The options the {@code ChatModel} is configured with, pinned to Chat Completions
+	 * when the provider serves nothing else.
+	 * <p>
+	 * Which endpoint a request goes to is otherwise the model's own business, but the
+	 * provider is not: it is decided by the connection properties, which never reach
+	 * {@link OpenAiChatOptions}, so the one provider that cannot serve the Responses API
+	 * has to be settled here.
+	 */
+	private OpenAiChatOptions resolveOptions(OpenAiChatProperties chatProperties,
+			ResolvedConnectionProperties resolvedProperties) {
+
+		OpenAiChatOptions options = chatProperties.toOptions();
+		boolean gitHubModels = OpenAiSetup.detectModelProvider(resolvedProperties.isMicrosoftFoundry(),
+				resolvedProperties.isGitHubModels(), resolvedProperties.getBaseUrl(),
+				resolvedProperties.getMicrosoftDeploymentName(),
+				resolvedProperties.getMicrosoftFoundryServiceVersion()) == OpenAiSetup.ModelProvider.GITHUB_MODELS;
+		if (!gitHubModels) {
+			return options;
+		}
+		if (options.getApi() == Api.RESPONSES) {
+			throw new IllegalStateException("GitHub Models does not support the OpenAI Responses API. " + "Remove "
+					+ OpenAiChatProperties.CONFIG_PREFIX + ".api=responses, "
+					+ "or point spring.ai.openai.base-url at a provider that serves it.");
+		}
+		return options.mutate().api(Api.CHAT_COMPLETIONS).build();
 	}
 
 	private OpenAIClient openAiClient(ResolvedConnectionProperties commonProperties,

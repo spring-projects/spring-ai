@@ -18,6 +18,7 @@ package org.springframework.ai.model.openai.autoconfigure;
 
 import java.net.Proxy;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -27,17 +28,25 @@ import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.openai.OpenAiChatModel.ResponseFormat;
 import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.ai.openai.OpenAiChatOptions.Api;
 import org.springframework.ai.openai.OpenAiChatOptions.AudioParameters;
 import org.springframework.ai.openai.OpenAiChatOptions.StreamOptions;
+import org.springframework.ai.openai.responses.ServersideTool;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.DeprecatedConfigurationProperty;
 
 /**
  * OpenAI SDK Chat autoconfiguration properties.
+ * <p>
+ * {@code spring.ai.openai.chat.api} selects the endpoint the single
+ * {@link org.springframework.ai.openai.OpenAiChatModel} bean talks to. Properties that
+ * only one of the two endpoints honours are marked as such; setting one the other ignores
+ * is logged and dropped, not rejected.
  *
  * @author Christian Tzolov
  * @author Sebastien Deleuze
  * @author guan xu
+ * @author Dimitar Proynov
  */
 @ConfigurationProperties(OpenAiChatProperties.CONFIG_PREFIX)
 public class OpenAiChatProperties extends AbstractOpenAiProperties {
@@ -97,6 +106,22 @@ public class OpenAiChatProperties extends AbstractOpenAiProperties {
 	private @Nullable String promptCacheKey;
 
 	private @Nullable Map<String, Object> extraBody;
+
+	private @Nullable Api api;
+
+	private @Nullable Boolean strict;
+
+	private @Nullable String reasoningSummary;
+
+	private @Nullable Integer maxToolCalls;
+
+	private @Nullable List<String> include;
+
+	private @Nullable String truncation;
+
+	private @Nullable String safetyIdentifier;
+
+	private ServersideTools serversideTools = new ServersideTools();
 
 	public @Nullable String getModel() {
 		return this.model;
@@ -314,6 +339,111 @@ public class OpenAiChatProperties extends AbstractOpenAiProperties {
 		this.extraBody = extraBody;
 	}
 
+	/**
+	 * Which OpenAI endpoint the {@code ChatModel} bean talks to. Defaults to
+	 * {@link Api#AUTO}: the Responses API for GPT-5.4 and later, and whenever a
+	 * Responses-only property below is set, Chat Completions otherwise.
+	 */
+	public @Nullable Api getApi() {
+		return this.api;
+	}
+
+	public void setApi(@Nullable Api api) {
+		this.api = api;
+	}
+
+	/**
+	 * Whether tool schemas are sent as strict.
+	 */
+	public @Nullable Boolean getStrict() {
+		return this.strict;
+	}
+
+	public void setStrict(@Nullable Boolean strict) {
+		this.strict = strict;
+	}
+
+	/**
+	 * Whether to summarize the model's reasoning: {@code auto}, {@code concise} or
+	 * {@code detailed}.
+	 * <p>
+	 * Responses API only.
+	 */
+	public @Nullable String getReasoningSummary() {
+		return this.reasoningSummary;
+	}
+
+	public void setReasoningSummary(@Nullable String reasoningSummary) {
+		this.reasoningSummary = reasoningSummary;
+	}
+
+	/**
+	 * Upper bound on the number of tool calls in a single response.
+	 * <p>
+	 * Responses API only.
+	 */
+	public @Nullable Integer getMaxToolCalls() {
+		return this.maxToolCalls;
+	}
+
+	public void setMaxToolCalls(@Nullable Integer maxToolCalls) {
+		this.maxToolCalls = maxToolCalls;
+	}
+
+	/**
+	 * Extra fields to include in the response, for example
+	 * {@code web_search_call.results}.
+	 * <p>
+	 * Responses API only.
+	 */
+	public @Nullable List<String> getInclude() {
+		return this.include;
+	}
+
+	public void setInclude(@Nullable List<String> include) {
+		this.include = include;
+	}
+
+	/**
+	 * {@code auto} lets OpenAI drop items when the context window overflows;
+	 * {@code disabled} fails instead.
+	 * <p>
+	 * Responses API only.
+	 */
+	public @Nullable String getTruncation() {
+		return this.truncation;
+	}
+
+	public void setTruncation(@Nullable String truncation) {
+		this.truncation = truncation;
+	}
+
+	/**
+	 * A stable, non-identifying id for the end user, used by OpenAI's abuse detection.
+	 * The replacement for {@code user}, which OpenAI has deprecated and the Responses API
+	 * does not accept at all.
+	 */
+	public @Nullable String getSafetyIdentifier() {
+		return this.safetyIdentifier;
+	}
+
+	public void setSafetyIdentifier(@Nullable String safetyIdentifier) {
+		this.safetyIdentifier = safetyIdentifier;
+	}
+
+	/**
+	 * Tools OpenAI runs server-side within the request.
+	 * <p>
+	 * Responses API only.
+	 */
+	public ServersideTools getServersideTools() {
+		return this.serversideTools;
+	}
+
+	public void setServersideTools(ServersideTools serversideTools) {
+		this.serversideTools = serversideTools;
+	}
+
 	public OpenAiChatOptions toOptions() {
 		return OpenAiChatOptions.builder()
 			.timeout(this.getTimeout())
@@ -344,6 +474,14 @@ public class OpenAiChatProperties extends AbstractOpenAiProperties {
 			.serviceTier(this.serviceTier)
 			.promptCacheKey(this.promptCacheKey)
 			.extraBody(this.extraBody)
+			.api(this.api)
+			.strict(this.strict)
+			.reasoningSummary(this.reasoningSummary)
+			.maxToolCalls(this.maxToolCalls)
+			.include(this.include)
+			.truncation(this.truncation)
+			.safetyIdentifier(this.safetyIdentifier)
+			.serversideTools(this.serversideTools.toServersideTools())
 			.build();
 	}
 
@@ -784,6 +922,192 @@ public class OpenAiChatProperties extends AbstractOpenAiProperties {
 
 		public void setExtraBody(@Nullable Map<String, Object> extraBody) {
 			OpenAiChatProperties.this.setExtraBody(extraBody);
+		}
+
+	}
+
+	/**
+	 * The subset of server-executed tools that is configurable declaratively. Anything
+	 * richer is configured with the builder, since a server-side tool can carry structure
+	 * that does not map onto flat properties.
+	 */
+	public static class ServersideTools {
+
+		private WebSearch webSearch = new WebSearch();
+
+		private FileSearch fileSearch = new FileSearch();
+
+		private CodeInterpreter codeInterpreter = new CodeInterpreter();
+
+		private ImageGeneration imageGeneration = new ImageGeneration();
+
+		public WebSearch getWebSearch() {
+			return this.webSearch;
+		}
+
+		public void setWebSearch(WebSearch webSearch) {
+			this.webSearch = webSearch;
+		}
+
+		public FileSearch getFileSearch() {
+			return this.fileSearch;
+		}
+
+		public void setFileSearch(FileSearch fileSearch) {
+			this.fileSearch = fileSearch;
+		}
+
+		public CodeInterpreter getCodeInterpreter() {
+			return this.codeInterpreter;
+		}
+
+		public void setCodeInterpreter(CodeInterpreter codeInterpreter) {
+			this.codeInterpreter = codeInterpreter;
+		}
+
+		public ImageGeneration getImageGeneration() {
+			return this.imageGeneration;
+		}
+
+		public void setImageGeneration(ImageGeneration imageGeneration) {
+			this.imageGeneration = imageGeneration;
+		}
+
+		@Nullable List<ServersideTool> toServersideTools() {
+			List<ServersideTool> tools = new ArrayList<>();
+			if (this.webSearch.isEnabled()) {
+				tools.add(new ServersideTool.WebSearch(this.webSearch.getSearchContextSize(),
+						this.webSearch.getAllowedDomains()));
+			}
+			if (this.fileSearch.getVectorStoreIds() != null && !this.fileSearch.getVectorStoreIds().isEmpty()) {
+				tools.add(new ServersideTool.FileSearch(this.fileSearch.getVectorStoreIds(),
+						this.fileSearch.getMaxNumResults()));
+			}
+			if (this.codeInterpreter.isEnabled()) {
+				tools.add(new ServersideTool.CodeInterpreter(this.codeInterpreter.getContainerId()));
+			}
+			if (this.imageGeneration.isEnabled()) {
+				tools.add(new ServersideTool.ImageGeneration(this.imageGeneration.getModel(),
+						this.imageGeneration.getSize()));
+			}
+			// Null rather than empty, so it reads as "not configured" when merged
+			return tools.isEmpty() ? null : tools;
+		}
+
+		public static class WebSearch {
+
+			private boolean enabled;
+
+			private @Nullable String searchContextSize;
+
+			private @Nullable List<String> allowedDomains;
+
+			public boolean isEnabled() {
+				return this.enabled;
+			}
+
+			public void setEnabled(boolean enabled) {
+				this.enabled = enabled;
+			}
+
+			public @Nullable String getSearchContextSize() {
+				return this.searchContextSize;
+			}
+
+			public void setSearchContextSize(@Nullable String searchContextSize) {
+				this.searchContextSize = searchContextSize;
+			}
+
+			public @Nullable List<String> getAllowedDomains() {
+				return this.allowedDomains;
+			}
+
+			public void setAllowedDomains(@Nullable List<String> allowedDomains) {
+				this.allowedDomains = allowedDomains;
+			}
+
+		}
+
+		public static class FileSearch {
+
+			private @Nullable List<String> vectorStoreIds;
+
+			private @Nullable Integer maxNumResults;
+
+			public @Nullable List<String> getVectorStoreIds() {
+				return this.vectorStoreIds;
+			}
+
+			public void setVectorStoreIds(@Nullable List<String> vectorStoreIds) {
+				this.vectorStoreIds = vectorStoreIds;
+			}
+
+			public @Nullable Integer getMaxNumResults() {
+				return this.maxNumResults;
+			}
+
+			public void setMaxNumResults(@Nullable Integer maxNumResults) {
+				this.maxNumResults = maxNumResults;
+			}
+
+		}
+
+		public static class CodeInterpreter {
+
+			private boolean enabled;
+
+			private @Nullable String containerId;
+
+			public boolean isEnabled() {
+				return this.enabled;
+			}
+
+			public void setEnabled(boolean enabled) {
+				this.enabled = enabled;
+			}
+
+			public @Nullable String getContainerId() {
+				return this.containerId;
+			}
+
+			public void setContainerId(@Nullable String containerId) {
+				this.containerId = containerId;
+			}
+
+		}
+
+		public static class ImageGeneration {
+
+			private boolean enabled;
+
+			private @Nullable String model;
+
+			private @Nullable String size;
+
+			public boolean isEnabled() {
+				return this.enabled;
+			}
+
+			public void setEnabled(boolean enabled) {
+				this.enabled = enabled;
+			}
+
+			public @Nullable String getModel() {
+				return this.model;
+			}
+
+			public void setModel(@Nullable String model) {
+				this.model = model;
+			}
+
+			public @Nullable String getSize() {
+				return this.size;
+			}
+
+			public void setSize(@Nullable String size) {
+				this.size = size;
+			}
+
 		}
 
 	}
