@@ -233,7 +233,8 @@ class OpenAiResponsesChatModelIT {
 		assertThat(message.hasToolCalls()).isFalse();
 		assertThat(message.getText()).isNotBlank();
 
-		// The hosted call surfaces as metadata only, and the citations it produced are the
+		// The hosted call surfaces as metadata only, and the citations it produced are
+		// the
 		// reason to enable the tool in the first place.
 		assertThat(metadata.<List<Map<String, Object>>>get(OpenAiResponsesMetadata.HOSTED_TOOL_CALLS))
 			.as("transcript %s", message.getParts())
@@ -293,7 +294,8 @@ class OpenAiResponsesChatModelIT {
 		AssistantMessage reasoned = this.chatModel.call(new Prompt(List.of(first), options)).getResult().getOutput();
 
 		assertThat(reasoned.getReasoning()).as("transcript %s", reasoned.getParts()).isNotEmpty();
-		// Reasoning precedes the answer it justified, which is the order it gets replayed in.
+		// Reasoning precedes the answer it justified, which is the order it gets replayed
+		// in.
 		assertThat(reasoned.getParts().get(0)).isInstanceOf(ReasoningPart.class);
 
 		ChatResponse followUp = this.chatModel.call(new Prompt(
@@ -305,8 +307,9 @@ class OpenAiResponsesChatModelIT {
 	}
 
 	/**
-	 * The same replay, but with the first turn streamed: the reasoning part the aggregator
-	 * assembles from deltas has to be as replayable as the one a single call returns.
+	 * The same replay, but with the first turn streamed: the reasoning part the
+	 * aggregator assembles from deltas has to be as replayable as the one a single call
+	 * returns.
 	 */
 	@Test
 	void streamedReasoningIsReplayedOnTheNextUserTurn() {
@@ -370,9 +373,7 @@ class OpenAiResponsesChatModelIT {
 
 		UserMessage question = new UserMessage(
 				"What is the weather in Paris? Answer with the temperature (in Celsius) only.");
-		AssistantMessage withCall = this.chatModel.call(new Prompt(List.of(question), options))
-			.getResult()
-			.getOutput();
+		AssistantMessage withCall = this.chatModel.call(new Prompt(List.of(question), options)).getResult().getOutput();
 
 		assertThat(withCall.hasToolCalls()).as("transcript %s", withCall.getParts()).isTrue();
 		AssistantMessage.ToolCall call = withCall.getToolCalls().get(0);

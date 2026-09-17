@@ -102,8 +102,8 @@ final class ResponsesStreamAssembler {
 	private @Nullable String responseId;
 
 	/**
-	 * The output index whose reasoning summary is currently being accumulated, or -1 before
-	 * the first summary delta, so that the summaries of two different items end up
+	 * The output index whose reasoning summary is currently being accumulated, or -1
+	 * before the first summary delta, so that the summaries of two different items end up
 	 * separated the same way the non-streaming path separates them.
 	 */
 	private int reasoningIndex = -1;
@@ -139,18 +139,23 @@ final class ResponsesStreamAssembler {
 			this.streamedReasoningSummary.add(index);
 			appendReasoning(index, delta.delta());
 			MessagePart part = StreamingParts.partial(new ReasoningPart(null, delta.delta(), null, Map.of()), index);
-			return List.of(chunk(AssistantMessage.builder().part(part).build(), ChatGenerationMetadata.builder()
-				.metadata(OpenAiResponsesMetadata.REASONING_CONTENT, this.reasoning.toString())
-				.build()));
+			return List.of(chunk(AssistantMessage.builder().part(part).build(),
+					ChatGenerationMetadata.builder()
+						.metadata(OpenAiResponsesMetadata.REASONING_CONTENT, this.reasoning.toString())
+						.build()));
 		}
 		if (event.isRefusalDelta()) {
 			this.refusal.append(event.refusalDelta().orElseThrow().delta());
-			// No refusal part type, so the running total on the generation metadata is the
-			// only channel. The aggregator keeps the last generation metadata it is given,
-			// and the terminal chunk repeats this value, so the total survives either way.
-			return List.of(chunk(AssistantMessage.builder().content("").build(), ChatGenerationMetadata.builder()
-				.metadata(OpenAiResponsesMetadata.REFUSAL, this.refusal.toString())
-				.build()));
+			// No refusal part type, so the running total on the generation metadata is
+			// the
+			// only channel. The aggregator keeps the last generation metadata it is
+			// given,
+			// and the terminal chunk repeats this value, so the total survives either
+			// way.
+			return List.of(chunk(AssistantMessage.builder().content("").build(),
+					ChatGenerationMetadata.builder()
+						.metadata(OpenAiResponsesMetadata.REFUSAL, this.refusal.toString())
+						.build()));
 		}
 		if (event.isOutputItemDone()) {
 			var done = event.outputItemDone().orElseThrow();
@@ -198,8 +203,8 @@ final class ResponsesStreamAssembler {
 
 	/**
 	 * Accumulate the flattened reasoning summary, separating the summaries of two
-	 * different items exactly as the non-streaming path does, so the same response reports
-	 * the same {@link OpenAiResponsesMetadata#REASONING_CONTENT} either way.
+	 * different items exactly as the non-streaming path does, so the same response
+	 * reports the same {@link OpenAiResponsesMetadata#REASONING_CONTENT} either way.
 	 */
 	private void appendReasoning(int index, String delta) {
 		if (this.reasoningIndex >= 0 && this.reasoningIndex != index) {
@@ -215,9 +220,9 @@ final class ResponsesStreamAssembler {
 	 * the items collected off the stream, falling back to the terminal response only when
 	 * no item event arrived, so the finish reason cannot disagree with the transcript.
 	 * <p>
-	 * Only the metadata is derived here. The parts were built once already, as their items
-	 * completed, and rebuilding them would decode a generated image and re-serialize every
-	 * hosted-tool item a second time.
+	 * Only the metadata is derived here. The parts were built once already, as their
+	 * items completed, and rebuilding them would decode a generated image and
+	 * re-serialize every hosted-tool item a second time.
 	 */
 	private ChatResponse terminalChunk(Response response) {
 		boolean noItemEvents = this.outputItems.isEmpty();
@@ -245,8 +250,9 @@ final class ResponsesStreamAssembler {
 
 	/**
 	 * The whole transcript as indexed parts. A block whose content already arrived as
-	 * deltas is emptied rather than skipped: the aggregator still needs the item's payload
-	 * and attributes for that index, and the raw flux must not show its text twice.
+	 * deltas is emptied rather than skipped: the aggregator still needs the item's
+	 * payload and attributes for that index, and the raw flux must not show its text
+	 * twice.
 	 */
 	private List<MessagePart> indexedParts(List<ResponseOutputItem> items) {
 		List<MessagePart> parts = new ArrayList<>();
@@ -262,8 +268,8 @@ final class ResponsesStreamAssembler {
 
 	/**
 	 * A chunk of one streamed response. The assistant message carries no metadata: what a
-	 * turn reports beyond its parts goes on the generation metadata, which is the only one
-	 * of the two that {@code MessageAggregator} carries through verbatim rather than
+	 * turn reports beyond its parts goes on the generation metadata, which is the only
+	 * one of the two that {@code MessageAggregator} carries through verbatim rather than
 	 * merging key by key.
 	 */
 	private ChatResponse chunk(AssistantMessage message, ChatGenerationMetadata generationMetadata) {

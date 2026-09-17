@@ -162,8 +162,9 @@ class OpenAiResponsesChatModelTests {
 
 	/**
 	 * Native runtime options are a complete specification of the request and replace the
-	 * model's defaults rather than merging with them, which is what {@code OpenAiChatModel}
-	 * does too. {@code mutate()} is the way to override one setting and keep the rest.
+	 * model's defaults rather than merging with them, which is what
+	 * {@code OpenAiChatModel} does too. {@code mutate()} is the way to override one
+	 * setting and keep the rest.
 	 */
 	@Test
 	void nativeRuntimeOptionsReplaceTheModelDefaultsRatherThanMergingWithThem() {
@@ -175,7 +176,8 @@ class OpenAiResponsesChatModelTests {
 
 		ResponseCreateParams request = captureRequest();
 		assertThat(request.temperature()).contains(0.25);
-		// Neither the model nor the reasoning effort of the defaults survives: the runtime
+		// Neither the model nor the reasoning effort of the defaults survives: the
+		// runtime
 		// options fall back to their own defaults for everything they leave unset
 		assertThat(request.reasoning()).isEmpty();
 		assertThat(request.model().flatMap(ResponsesModel::string))

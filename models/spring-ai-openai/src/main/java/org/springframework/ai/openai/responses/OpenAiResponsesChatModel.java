@@ -247,11 +247,11 @@ public final class OpenAiResponsesChatModel implements ChatModel {
 	 * {@link ChatOptions} are merged over them, so a {@code ChatClient} request that only
 	 * sets a temperature keeps the configured model, reasoning effort and hosted tools.
 	 * <p>
-	 * Runtime options that are already {@link OpenAiResponsesChatOptions} <em>replace</em>
-	 * the defaults rather than merging with them: they are a complete specification of the
-	 * request, so a setting they leave unset falls back to
-	 * {@link OpenAiResponsesChatOptions}' own default and not to this model's. This is what
-	 * {@code OpenAiChatModel} does with native options too, and it is why
+	 * Runtime options that are already {@link OpenAiResponsesChatOptions}
+	 * <em>replace</em> the defaults rather than merging with them: they are a complete
+	 * specification of the request, so a setting they leave unset falls back to
+	 * {@link OpenAiResponsesChatOptions}' own default and not to this model's. This is
+	 * what {@code OpenAiChatModel} does with native options too, and it is why
 	 * {@link OpenAiResponsesChatOptions#mutate()} exists - start from the model's options
 	 * to override one field and keep the rest.
 	 */

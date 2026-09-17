@@ -104,10 +104,10 @@ public final class OpenAiResponsesMetadata {
 	 * Summary of the tools OpenAI executed server-side within the request, as a list of
 	 * {@code {type, id, status}} maps. These are never surfaced as tool calls.
 	 * <p>
-	 * The summary describes activity inside a single request, so it is neither replayed on
-	 * the next turn nor worth persisting with the conversation. The authoritative copy of
-	 * each item is the {@link org.springframework.ai.chat.messages.part.UnknownPart} it was
-	 * mapped to, which holds the item verbatim and is replayed as-is.
+	 * The summary describes activity inside a single request, so it is neither replayed
+	 * on the next turn nor worth persisting with the conversation. The authoritative copy
+	 * of each item is the {@link org.springframework.ai.chat.messages.part.UnknownPart}
+	 * it was mapped to, which holds the item verbatim and is replayed as-is.
 	 */
 	public static final String HOSTED_TOOL_CALLS = "openai.responses.hosted_tool_calls";
 

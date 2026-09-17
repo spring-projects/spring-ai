@@ -302,8 +302,8 @@ class ResponsesItemMapperTests {
 
 	/**
 	 * The image generation tool can be asked for JPEG or WebP, and the item echoes the
-	 * format back. Labelling those bytes {@code image/png} would have the application write
-	 * a file no viewer opens.
+	 * format back. Labelling those bytes {@code image/png} would have the application
+	 * write a file no viewer opens.
 	 */
 	@Test
 	void aGeneratedImageIsLabelledWithTheOutputFormatTheItemReports() {

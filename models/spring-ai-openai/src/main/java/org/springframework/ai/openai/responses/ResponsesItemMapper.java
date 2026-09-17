@@ -286,7 +286,8 @@ final class ResponsesItemMapper {
 			}
 			else if (part instanceof ToolResultPart) {
 				// Reachable from application code: AssistantMessage.Builder.part() is
-				// public, so this rejects a caller-supplied argument rather than reporting
+				// public, so this rejects a caller-supplied argument rather than
+				// reporting
 				// a broken invariant of this class.
 				throw new IllegalArgumentException(
 						"Tool results belong in a tool response message, not an assistant message");
@@ -455,8 +456,9 @@ final class ResponsesItemMapper {
 	 * The generation metadata of a turn.
 	 * <p>
 	 * {@code streamedReasoning} and {@code streamedRefusal} are what a stream delivered
-	 * for the two fields the terminal response object does not always repeat; {@code null}
-	 * means "derive it from the items", which is what the non-streaming path does.
+	 * for the two fields the terminal response object does not always repeat;
+	 * {@code null} means "derive it from the items", which is what the non-streaming path
+	 * does.
 	 */
 	static ChatGenerationMetadata toGenerationMetadata(Response response, List<ResponseOutputItem> outputItems,
 			@Nullable String streamedReasoning, @Nullable String streamedRefusal) {
@@ -476,22 +478,6 @@ final class ResponsesItemMapper {
 			.ifPresent(reason -> metadata.metadata(OpenAiResponsesMetadata.INCOMPLETE_REASON, reason.asString()));
 
 		return metadata.build();
-	}
-
-	/**
-	 * What a turn reports beyond its {@link MessagePart}s, read off the output items: a
-	 * flattened view of several items, or a description of activity inside the request.
-	 * Every field ends up on the generation metadata, {@code hasToolCalls} by way of the
-	 * finish reason.
-	 *
-	 * @param refusal the concatenated refusal text, or an empty string
-	 * @param reasoning the reasoning summaries, one item per line, or an empty string
-	 * @param annotations the citations attached to the generated text
-	 * @param hostedToolCalls a {@code {type, id, status}} map per server-executed tool
-	 * @param hasToolCalls whether any item was a {@code function_call}
-	 */
-	private record ReportedValues(String refusal, String reasoning, List<Map<String, Object>> annotations,
-			List<Map<String, Object>> hostedToolCalls, boolean hasToolCalls) {
 	}
 
 	private static ReportedValues reportedValues(List<ResponseOutputItem> outputItems) {
@@ -729,7 +715,8 @@ final class ResponsesItemMapper {
 		return response.usage().<Usage>map(usage -> {
 			// Read through the raw fields rather than the typed accessors, all the way up
 			// to the details object itself: every typed accessor here is a required field
-			// that throws when absent, and an OpenAI-compatible backend may omit the whole
+			// that throws when absent, and an OpenAI-compatible backend may omit the
+			// whole
 			// input_tokens_details object rather than just a token-details field of it.
 			var details = usage._inputTokensDetails().asKnown().orElse(null);
 			Long cacheRead = (details != null) ? optionalLong(details._cachedTokens()) : null;
@@ -765,6 +752,22 @@ final class ResponsesItemMapper {
 	static OpenAiResponsesException failure(Response response) {
 		return new OpenAiResponsesException(response.error().map(error -> error.code().asString()).orElse(null),
 				response.error().map(ResponseError::message).orElse("The OpenAI response failed"));
+	}
+
+	/**
+	 * What a turn reports beyond its {@link MessagePart}s, read off the output items: a
+	 * flattened view of several items, or a description of activity inside the request.
+	 * Every field ends up on the generation metadata, {@code hasToolCalls} by way of the
+	 * finish reason.
+	 *
+	 * @param refusal the concatenated refusal text, or an empty string
+	 * @param reasoning the reasoning summaries, one item per line, or an empty string
+	 * @param annotations the citations attached to the generated text
+	 * @param hostedToolCalls a {@code {type, id, status}} map per server-executed tool
+	 * @param hasToolCalls whether any item was a {@code function_call}
+	 */
+	private record ReportedValues(String refusal, String reasoning, List<Map<String, Object>> annotations,
+			List<Map<String, Object>> hostedToolCalls, boolean hasToolCalls) {
 	}
 
 	/**
