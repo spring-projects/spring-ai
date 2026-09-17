@@ -21,6 +21,7 @@ import java.util.Map;
 import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.spec.McpError;
 import io.modelcontextprotocol.spec.McpSchema;
+import io.modelcontextprotocol.spec.McpSchema.ClientCapabilities;
 import io.modelcontextprotocol.spec.McpSchema.Implementation;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,6 +37,7 @@ import org.springframework.ai.tool.execution.ToolExecutionException;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -194,6 +196,8 @@ class AsyncMcpToolCallbackTest {
 			.isError(false)
 			.build();
 		when(this.mcpClient.callTool(any(McpSchema.CallToolRequest.class))).thenReturn(Mono.just(callToolResult));
+		when(this.mcpClient.getClientCapabilities()).thenReturn(new ClientCapabilities(null, null, null, null));
+		when(this.mcpClient.getClientInfo()).thenReturn(Implementation.builder("testClient", "1.0.0").build());
 
 		ToolContext toolContext = mock(ToolContext.class);
 		when(toolContext.getContext()).thenReturn(Map.of("key", "value"));
@@ -288,9 +292,12 @@ class AsyncMcpToolCallbackTest {
 
 		var callToolResult = McpSchema.CallToolResult.builder().addTextContent("Success").isError(false).build();
 		when(this.mcpClient.callTool(any(McpSchema.CallToolRequest.class))).thenReturn(Mono.just(callToolResult));
+		when(this.mcpClient.getClientCapabilities()).thenReturn(new ClientCapabilities(null, null, null, null));
+		when(this.mcpClient.getClientInfo()).thenReturn(Implementation.builder("testClient", "1.0.0").build());
 
 		ToolContext toolContext = mock(ToolContext.class);
-		when(customConverter.convert(toolContext)).thenReturn(Map.of("custom", "meta"));
+		when(customConverter.convert(eq(toolContext), any(McpConnectionInfo.class)))
+			.thenReturn(Map.of("custom", "meta"));
 
 		// Act
 		var callback = AsyncMcpToolCallback.builder()
@@ -303,7 +310,7 @@ class AsyncMcpToolCallbackTest {
 		callback.call("{}", toolContext);
 
 		// Assert
-		verify(customConverter).convert(toolContext);
+		verify(customConverter).convert(eq(toolContext), any(McpConnectionInfo.class));
 	}
 
 	@Test
