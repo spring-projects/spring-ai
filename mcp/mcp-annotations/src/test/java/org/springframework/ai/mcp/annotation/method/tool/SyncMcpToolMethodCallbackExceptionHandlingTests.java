@@ -101,6 +101,75 @@ public class SyncMcpToolMethodCallbackExceptionHandlingTests {
 	}
 
 	@Test
+	public void exceptionWithoutCauseIsReportedOnce() throws Exception {
+		SyncMcpToolMethodCallback callback = callbackFor("illegalArgumentTool");
+		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
+		CallToolRequest request = CallToolRequest.builder("illegal-argument-tool")
+			.arguments(Map.of("input", "test"))
+			.build();
+
+		CallToolResult result = callback.apply(exchange, request);
+
+		assertThat(result.isError()).isTrue();
+		assertThat(((TextContent) result.content().get(0)).text()).isEqualTo("Illegal argument: test");
+	}
+
+	@Test
+	public void exceptionWithCauseAppendsRootCauseMessage() throws Exception {
+		SyncMcpToolMethodCallback callback = callbackFor("wrappedExceptionTool");
+		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
+		CallToolRequest request = CallToolRequest.builder("wrapped-exception-tool")
+			.arguments(Map.of("input", "test"))
+			.build();
+
+		CallToolResult result = callback.apply(exchange, request);
+
+		assertThat(result.isError()).isTrue();
+		assertThat(((TextContent) result.content().get(0)).text())
+			.isEqualTo("Outer failure: test" + System.lineSeparator() + "Root cause: test");
+	}
+
+	@Test
+	public void exceptionWithoutAnyMessageFallsBackToClassName() throws Exception {
+		SyncMcpToolMethodCallback callback = callbackFor("noMessageTool");
+		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
+		CallToolRequest request = CallToolRequest.builder("no-message-tool").arguments(Map.of("input", "test")).build();
+
+		CallToolResult result = callback.apply(exchange, request);
+
+		assertThat(result.isError()).isTrue();
+		assertThat(((TextContent) result.content().get(0)).text()).isEqualTo("java.lang.IllegalStateException");
+	}
+
+	@Test
+	public void causeWithoutMessageIsNotAppended() throws Exception {
+		SyncMcpToolMethodCallback callback = callbackFor("nullMessageCauseTool");
+		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
+		CallToolRequest request = CallToolRequest.builder("null-message-cause-tool")
+			.arguments(Map.of("input", "test"))
+			.build();
+
+		CallToolResult result = callback.apply(exchange, request);
+
+		assertThat(result.isError()).isTrue();
+		assertThat(((TextContent) result.content().get(0)).text()).isEqualTo("Outer failure: test");
+	}
+
+	@Test
+	public void nullOuterMessageUsesRootCauseMessage() throws Exception {
+		SyncMcpToolMethodCallback callback = callbackFor("nullOuterMessageTool");
+		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
+		CallToolRequest request = CallToolRequest.builder("null-outer-message-tool")
+			.arguments(Map.of("input", "test"))
+			.build();
+
+		CallToolResult result = callback.apply(exchange, request);
+
+		assertThat(result.isError()).isTrue();
+		assertThat(((TextContent) result.content().get(0)).text()).isEqualTo("Root cause: test");
+	}
+
+	@Test
 	public void declaredCheckedExceptionBubblesUp() throws Exception {
 		SyncMcpToolMethodCallback callback = callbackFor("checkedExceptionTool");
 		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
@@ -217,6 +286,27 @@ public class SyncMcpToolMethodCallbackExceptionHandlingTests {
 		@McpTool(name = "illegal-argument-tool", description = "Throws IllegalArgumentException")
 		public String illegalArgumentTool(String input) {
 			throw new IllegalArgumentException("Illegal argument: " + input);
+		}
+
+		@McpTool(name = "wrapped-exception-tool", description = "Throws an exception wrapping a cause")
+		public String wrappedExceptionTool(String input) {
+			throw new IllegalStateException("Outer failure: " + input,
+					new IllegalArgumentException("Root cause: " + input));
+		}
+
+		@McpTool(name = "no-message-tool", description = "Throws an exception with no message and no cause")
+		public String noMessageTool(String input) {
+			throw new IllegalStateException();
+		}
+
+		@McpTool(name = "null-message-cause-tool", description = "Throws an exception wrapping a cause with no message")
+		public String nullMessageCauseTool(String input) {
+			throw new IllegalStateException("Outer failure: " + input, new IllegalArgumentException());
+		}
+
+		@McpTool(name = "null-outer-message-tool", description = "Throws an exception with no message wrapping a cause")
+		public String nullOuterMessageTool(String input) {
+			throw new IllegalStateException(null, new IllegalArgumentException("Root cause: " + input));
 		}
 
 		@McpTool(name = "checked-exception-tool", description = "Throws declared checked exception")
