@@ -35,8 +35,10 @@ import org.springframework.ai.chat.messages.part.TextPart;
 import org.springframework.ai.chat.messages.part.ToolCallPart;
 import org.springframework.ai.chat.messages.part.UnknownPart;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.metadata.EmptyRateLimit;
 import org.springframework.ai.chat.metadata.RateLimit;
+import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.content.Media;
 import org.springframework.util.MimeTypeUtils;
 
@@ -318,6 +320,24 @@ class MessageAggregatorTests {
 		assertThat(usage.getCompletionTokens()).isEqualTo(2);
 		assertThat(usage.getTotalTokens()).isEqualTo(3);
 		assertThat(usage.getNativeUsage()).containsEntry("totalTokens", 3);
+	}
+
+	@Test
+	void usageMetricsArePreservedWhenAggregatingStreamingResponses() {
+		Usage chunkUsage = new DefaultUsage(10, 5, 15, Map.of("provider", "test"), 42L, 7L);
+		ChatResponse chunk = new ChatResponse(List.of(new Generation(new AssistantMessage("hi"))),
+				ChatResponseMetadata.builder().usage(chunkUsage).build());
+
+		AtomicReference<ChatResponse> aggregated = new AtomicReference<>();
+		new MessageAggregator().aggregate(Flux.just(chunk), aggregated::set).blockLast();
+
+		Usage usage = aggregated.get().getMetadata().getUsage();
+		assertThat(usage.getPromptTokens()).isEqualTo(10);
+		assertThat(usage.getCompletionTokens()).isEqualTo(5);
+		assertThat(usage.getTotalTokens()).isEqualTo(15);
+		assertThat(usage.getCacheReadInputTokens()).isEqualTo(42L);
+		assertThat(usage.getCacheWriteInputTokens()).isEqualTo(7L);
+		assertThat(usage.getNativeUsage()).isEqualTo(Map.of("provider", "test"));
 	}
 
 	private static AssistantMessage aggregate(Flux<ChatResponse> responses) {
