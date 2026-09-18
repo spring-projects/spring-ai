@@ -28,26 +28,47 @@ import javax.imageio.ImageIO;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.util.JsonHelper;
+import org.springframework.util.Assert;
 
 /**
  * A default implementation of {@link ToolCallResultConverter}.
  *
  * @author Thomas Vitale
+ * @author Jewoo Shin
  * @since 1.0.0
  */
 public final class DefaultToolCallResultConverter implements ToolCallResultConverter {
 
-	private static final JsonHelper jsonHelper = new JsonHelper();
-
 	private static final Log logger = LogFactory.getLog(DefaultToolCallResultConverter.class);
+
+	private final JsonHelper jsonHelper;
+
+	public DefaultToolCallResultConverter() {
+		this.jsonHelper = new JsonHelper();
+	}
+
+	/**
+	 * Create a converter that serializes tool results using the given {@link JsonMapper}.
+	 * <p>
+	 * Use this constructor to apply a customized {@code JsonMapper} (e.g. one that
+	 * suppresses {@code null} properties) to the JSON produced for tool results, without
+	 * replacing the conversion logic of the default converter.
+	 * @param jsonMapper the {@link JsonMapper} to use for JSON serialization
+	 * @since 2.0.0
+	 */
+	public DefaultToolCallResultConverter(JsonMapper jsonMapper) {
+		Assert.notNull(jsonMapper, "jsonMapper cannot be null");
+		this.jsonHelper = new JsonHelper(jsonMapper);
+	}
 
 	@Override
 	public String convert(@Nullable Object result, @Nullable Type returnType) {
 		if (returnType == Void.TYPE) {
 			logger.debug("The tool has no return type. Converting to conventional response.");
-			return jsonHelper.toJson("Done");
+			return this.jsonHelper.toJson("Done");
 		}
 		if (result instanceof RenderedImage) {
 			final var buf = new ByteArrayOutputStream(1024 * 4);
@@ -58,11 +79,11 @@ public final class DefaultToolCallResultConverter implements ToolCallResultConve
 				return "Failed to convert tool result to a base64 image: " + e.getMessage();
 			}
 			final var imgB64 = Base64.getEncoder().encodeToString(buf.toByteArray());
-			return jsonHelper.toJson(Map.of("mimeType", "image/png", "data", imgB64));
+			return this.jsonHelper.toJson(Map.of("mimeType", "image/png", "data", imgB64));
 		}
 		else {
 			logger.debug("Converting tool result to JSON.");
-			return jsonHelper.toJson(result, true);
+			return this.jsonHelper.toJson(result, true);
 		}
 	}
 
