@@ -16,6 +16,8 @@
 
 package org.springframework.ai.aot;
 
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.messages.AbstractMessage;
@@ -25,6 +27,14 @@ import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.messages.part.MediaPart;
+import org.springframework.ai.chat.messages.part.MessagePart;
+import org.springframework.ai.chat.messages.part.OpaquePayload;
+import org.springframework.ai.chat.messages.part.ReasoningPart;
+import org.springframework.ai.chat.messages.part.TextPart;
+import org.springframework.ai.chat.messages.part.ToolCallPart;
+import org.springframework.ai.chat.messages.part.ToolResultPart;
+import org.springframework.ai.chat.messages.part.UnknownPart;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.aot.hint.RuntimeHints;
@@ -60,6 +70,18 @@ class SpringAiCoreRuntimeHintsTests {
 				typeHint -> assertThat(typeHint.getType()).isEqualTo(TypeReference.of(ToolResponseMessage.class)));
 		assertThat(runtimeHints.reflection().typeHints())
 			.anySatisfy(typeHint -> assertThat(typeHint.getType()).isEqualTo(TypeReference.of(UserMessage.class)));
+
+		// Verify the message part types (and their nested classes) are registered
+		for (Class<?> partType : List.of(MessagePart.class, TextPart.class, ReasoningPart.class, ToolCallPart.class,
+				ToolResultPart.class, MediaPart.class, UnknownPart.class, OpaquePayload.class,
+				MediaPart.MediaDto.class)) {
+			assertThat(runtimeHints.reflection().typeHints()).as(partType.getName())
+				.anySatisfy(typeHint -> assertThat(typeHint.getType()).isEqualTo(TypeReference.of(partType)));
+		}
+		// The package-private Jackson deserializer of UnknownPart is a nested class of it
+		TypeReference deserializer = TypeReference.of(UnknownPart.class.getName() + "$Deserializer");
+		assertThat(runtimeHints.reflection().typeHints())
+			.anySatisfy(typeHint -> assertThat(typeHint.getType()).isEqualTo(deserializer));
 
 		// Verify tool types are registered
 		assertThat(runtimeHints.reflection().typeHints())
