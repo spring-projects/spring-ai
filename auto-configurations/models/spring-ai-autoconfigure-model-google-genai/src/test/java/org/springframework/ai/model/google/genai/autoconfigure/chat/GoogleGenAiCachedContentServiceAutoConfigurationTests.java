@@ -25,7 +25,9 @@ import org.springframework.ai.google.genai.cache.GoogleGenAiCachedContentService
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
+import org.springframework.boot.autoconfigure.context.PropertyPlaceholderAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -54,11 +56,7 @@ public class GoogleGenAiCachedContentServiceAutoConfigurationTests {
 					"spring.ai.google.genai.chat.model=gemini-2.0-flash")
 			.run(context -> {
 				assertThat(context).hasSingleBean(GoogleGenAiChatModel.class);
-				// The CachedContentServiceCondition will prevent the bean from being
-				// created
-				// if the service is null, but with our mock it returns a non-null service
-				// However, the condition runs during auto-configuration and our mock
-				// configuration creates the bean directly, bypassing the condition
+				assertThat(context).hasSingleBean(GoogleGenAiCachedContentService.class);
 				GoogleGenAiChatModel chatModel = context.getBean(GoogleGenAiChatModel.class);
 				assertThat(chatModel.getCachedContentService()).isNotNull();
 			});
@@ -98,9 +96,8 @@ public class GoogleGenAiCachedContentServiceAutoConfigurationTests {
 					"spring.ai.google.genai.chat.model=gemini-2.0-flash")
 			.run(context -> {
 				assertThat(context).hasSingleBean(GoogleGenAiChatModel.class);
-				// The bean will actually be created but return null (which should be
-				// handled gracefully)
-				// Let's verify the bean exists but the underlying service is null
+				assertThat(context.getBeansOfType(GoogleGenAiCachedContentService.class)).isEmpty();
+				assertThat(context.getBeanProvider(GoogleGenAiCachedContentService.class).getIfAvailable()).isNull();
 				GoogleGenAiChatModel chatModel = context.getBean(GoogleGenAiChatModel.class);
 				assertThat(chatModel.getCachedContentService()).isNull();
 			});
@@ -141,6 +138,33 @@ public class GoogleGenAiCachedContentServiceAutoConfigurationTests {
 				assertThat(options).isNotNull();
 				// The property should be configured
 			});
+	}
+
+	@Test
+	void userDefinedClientBeanReceivesResolvedValuePlaceholders() {
+		new ApplicationContextRunner()
+			.withConfiguration(AutoConfigurations.of(PropertyPlaceholderAutoConfiguration.class,
+					SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class,
+					GoogleGenAiChatAutoConfiguration.class))
+			.withUserConfiguration(CustomClientConfiguration.class)
+			.withPropertyValues("spring.ai.google.genai.api-key=test-key")
+			.run(context -> {
+				assertThat(context).hasNotFailed();
+				assertThat(CustomClientConfiguration.capturedApiKey).isEqualTo("test-key");
+			});
+	}
+
+	@Configuration(proxyBeanMethods = false)
+	static class CustomClientConfiguration {
+
+		static String capturedApiKey;
+
+		@Bean
+		Client genAiClient(@Value("${spring.ai.google.genai.api-key}") String apiKey) {
+			capturedApiKey = apiKey;
+			return Client.builder().apiKey(apiKey).build();
+		}
+
 	}
 
 	@Configuration
