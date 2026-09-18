@@ -56,6 +56,14 @@ public class McpClientCommonProperties {
 	private boolean initialized = true;
 
 	/**
+	 * Whether a failure to initialize a client or discover its tools should be fatal.
+	 * <p>
+	 * When set to false, unavailable clients are skipped and retried on a subsequent
+	 * operation, allowing other clients to remain available.
+	 */
+	private boolean failFast = true;
+
+	/**
 	 * The timeout duration for MCP client requests.
 	 * <p>
 	 * Defaults to 20 seconds.
@@ -135,6 +143,24 @@ public class McpClientCommonProperties {
 
 	public void setInitialized(boolean initialized) {
 		this.initialized = initialized;
+	}
+
+	/**
+	 * Return whether client initialization and tool discovery failures are fatal.
+	 * @return whether failures are fatal
+	 * @since 2.0.2
+	 */
+	public boolean isFailFast() {
+		return this.failFast;
+	}
+
+	/**
+	 * Set whether client initialization and tool discovery failures are fatal.
+	 * @param failFast whether failures are fatal
+	 * @since 2.0.2
+	 */
+	public void setFailFast(boolean failFast) {
+		this.failFast = failFast;
 	}
 
 	public Duration getRequestTimeout() {
