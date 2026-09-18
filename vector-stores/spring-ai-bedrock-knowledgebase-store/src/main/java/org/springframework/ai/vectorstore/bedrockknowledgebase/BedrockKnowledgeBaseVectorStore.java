@@ -75,6 +75,8 @@ public final class BedrockKnowledgeBaseVectorStore implements VectorStore {
 
 	private final @Nullable String rerankingModelArn;
 
+	private final @Nullable Integer numberOfRerankedResults;
+
 	private final BedrockKnowledgeBaseFilterExpressionConverter filterConverter;
 
 	private BedrockKnowledgeBaseVectorStore(final Builder builder) {
@@ -84,6 +86,7 @@ public final class BedrockKnowledgeBaseVectorStore implements VectorStore {
 		this.defaultSimilarityThreshold = builder.similarityThreshold;
 		this.searchType = builder.searchType;
 		this.rerankingModelArn = builder.rerankingModelArn;
+		this.numberOfRerankedResults = builder.numberOfRerankedResults;
 		this.filterConverter = builder.filterConverter != null ? builder.filterConverter
 				: new BedrockKnowledgeBaseFilterExpressionConverter();
 	}
@@ -185,9 +188,13 @@ public final class BedrockKnowledgeBaseVectorStore implements VectorStore {
 			.builder()
 			.modelArn(this.rerankingModelArn)
 			.build();
-		VectorSearchBedrockRerankingConfiguration bedrockConfig = VectorSearchBedrockRerankingConfiguration.builder()
-			.modelConfiguration(modelConfig)
-			.build();
+		VectorSearchBedrockRerankingConfiguration.Builder bedrockConfigBuilder = VectorSearchBedrockRerankingConfiguration
+			.builder()
+			.modelConfiguration(modelConfig);
+		if (this.numberOfRerankedResults != null) {
+			bedrockConfigBuilder.numberOfRerankedResults(this.numberOfRerankedResults);
+		}
+		VectorSearchBedrockRerankingConfiguration bedrockConfig = bedrockConfigBuilder.build();
 		return VectorSearchRerankingConfiguration.builder()
 			.type(type)
 			.bedrockRerankingConfiguration(bedrockConfig)
@@ -338,6 +345,8 @@ public final class BedrockKnowledgeBaseVectorStore implements VectorStore {
 
 		private @Nullable String rerankingModelArn;
 
+		private @Nullable Integer numberOfRerankedResults;
+
 		private @Nullable BedrockKnowledgeBaseFilterExpressionConverter filterConverter;
 
 		private Builder(final BedrockAgentRuntimeClient client, final String knowledgeBaseId) {
@@ -387,6 +396,20 @@ public final class BedrockKnowledgeBaseVectorStore implements VectorStore {
 		 */
 		public Builder rerankingModelArn(@Nullable final String modelArn) {
 			this.rerankingModelArn = modelArn;
+			return this;
+		}
+
+		/**
+		 * Sets the number of results to return after reranking. Only applied when
+		 * reranking is enabled via {@link #rerankingModelArn(String)}.
+		 * @param numberOfRerankedResults the number of reranked results (1 to 100)
+		 * @return this builder
+		 * @since 2.0.1
+		 */
+		public Builder numberOfRerankedResults(@Nullable final Integer numberOfRerankedResults) {
+			Assert.isTrue(numberOfRerankedResults == null || numberOfRerankedResults > 0,
+					"numberOfRerankedResults must be positive");
+			this.numberOfRerankedResults = numberOfRerankedResults;
 			return this;
 		}
 
