@@ -1,1 +1,2 @@
 org.springframework.ai.model.anthropic.autoconfigure.AnthropicChatAutoConfiguration
+org.springframework.ai.model.anthropic.autoconfigure.AnthropicBatchAutoConfiguration

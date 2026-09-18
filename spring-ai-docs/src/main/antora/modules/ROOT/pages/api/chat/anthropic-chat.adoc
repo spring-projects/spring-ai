@@ -1642,6 +1642,13 @@ spring.ai.anthropic.chat.web-search-tool.user-location.city=San Francisco
 spring.ai.anthropic.chat.web-search-tool.user-location.country=US
 ----
 
+== Message Batches
+
+Anthropic can process a large number of prompts asynchronously at reduced cost through the Message Batches API.
+Spring AI exposes it as a dedicated `AnthropicBatchModel` rather than a `ChatModel`, because a submitted batch has no immediate response to return.
+
+See xref:api/chat/anthropic-batch.adoc[Anthropic Message Batches] for submitting a batch, polling it, reading results, and the auto-configuration properties.
+
 == Observability
 
 Spring AI emits Micrometer observations at two layers for every Anthropic call:

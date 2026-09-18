@@ -32,6 +32,7 @@ This module supports:
 - **Citations** - Document-grounded responses with source attribution
 - **Prompt Caching** - Reduce costs for repeated context with configurable strategies
 - **Structured Output** - JSON schema-constrained responses with effort control
+- **Message Batches** - Asynchronous bulk processing at reduced cost, correlated by `custom_id`
 - **Per-Request HTTP Headers** - Custom headers per API call for tracking, beta features, and routing
 - **Observability** - Micrometer-based metrics and tracing
 
@@ -265,6 +266,66 @@ var options = AnthropicChatOptions.builder()
 
 ChatResponse response = chatModel.call(new Prompt("Hello", options));
 ```
+
+## Message Batches
+
+Submit many prompts at once for asynchronous processing. Batch results are not returned in
+submission order, so every entry carries a `customId` used to correlate its result.
+
+Processing can take up to 24 hours. Spring AI deliberately performs **no polling, no
+persistence and no scheduling**: it exposes the five provider operations, and the application
+owns the orchestration.
+
+```java
+AnthropicBatchModel batchModel = AnthropicBatchModel.builder()
+    .options(AnthropicChatOptions.builder().model("claude-haiku-4-5").maxTokens(1024).build())
+    .build();
+
+// 1. Submit — returns as soon as Anthropic accepts the batch
+AnthropicBatch batch = batchModel.submit(List.of(
+    AnthropicBatchRequest.of("invoice-1", "Summarize invoice 1"),
+    AnthropicBatchRequest.of("invoice-2", new Prompt("Summarize invoice 2", perRequestOptions))));
+
+// Persist batch.id() and the customIds so polling survives a restart
+String batchId = batch.id();
+
+// 2. Poll on your own schedule
+if (batchModel.retrieve(batchId).isEnded()) {
+
+    // 3. Stream the results — never buffered wholesale
+    batchModel.results(batchId)
+        .doOnNext(result -> {
+            switch (result.status()) {
+                case SUCCEEDED -> store(result.customId(), result.getText(), result.usage());
+                case ERRORED -> logFailure(result.customId(), result.error());
+                case CANCELED, EXPIRED, UNKNOWN -> requeue(result.customId());
+            }
+        })
+        .blockLast();
+}
+
+// Optional lifecycle control
+batchModel.cancel(batchId);
+batchModel.delete(batchId);
+```
+
+In Spring Boot the batch model is opt-in, so applications that never submit batches do not
+pay for a second HTTP client:
+
+```properties
+spring.ai.anthropic.batch.enabled=true
+```
+
+Connection settings (`spring.ai.anthropic.*`) and model defaults
+(`spring.ai.anthropic.chat.*`) are shared with the chat model; `spring.ai.anthropic.batch.model`
+and `spring.ai.anthropic.batch.max-tokens` override them for batch entries only.
+
+Requests go through the same `Prompt` conversion as `AnthropicChatModel.call(...)`, and a
+succeeded result is converted back into the same `ChatResponse` shape.
+
+> **Tool calls are not executed.** Tool definitions are sent, but a batch response containing
+> `tool_use` blocks is returned as-is — a batch entry cannot be continued mid-flight. Read the
+> tool calls off the assistant message and submit a follow-up batch for the next turn.
 
 ## Logging
 
