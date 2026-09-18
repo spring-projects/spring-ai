@@ -14,25 +14,11 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.chat.messages;
-
-import org.springframework.ai.content.Content;
-import org.springframework.ai.content.Media;
-
 /**
- * The Message interface represents a message that can be sent or received in a chat
- * application. Messages can have content, media attachments, properties, and message
- * types.
- *
- * @see Media
- * @see MessageType
+ * Ordered, typed content parts carried by chat messages: text, tool calls, tool results,
+ * media and an opaque fallback for provider blocks that are not modeled yet.
  */
-public interface Message extends Content {
+@NullMarked
+package org.springframework.ai.chat.messages.part;
 
-	/**
-	 * Get the message type.
-	 * @return the message type
-	 */
-	MessageType getMessageType();
-
-}
+import org.jspecify.annotations.NullMarked;

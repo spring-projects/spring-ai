@@ -408,4 +408,44 @@ class MediaTests {
 		assertValidMediaName(pngMediaBuilder.getName(), "png");
 	}
 
+	@Test
+	void mediaWithSameIdMimeTypeAndDataAreEqualRegardlessOfName() {
+		Media first = Media.builder().mimeType(MimeType.valueOf("image/png")).data("https://example.com/a.png").build();
+		Media second = Media.builder()
+			.mimeType(MimeType.valueOf("image/png"))
+			.data("https://example.com/a.png")
+			.name("explicit-name")
+			.build();
+
+		assertThat(first.getName()).isNotEqualTo(second.getName());
+		assertThat(first).isEqualTo(second);
+		assertThat(first.hashCode()).isEqualTo(second.hashCode());
+	}
+
+	@Test
+	void mediaByteDataIsComparedByContent() {
+		Media first = Media.builder().mimeType(MimeType.valueOf("image/png")).data(new byte[] { 1, 2, 3 }).build();
+		Media second = Media.builder().mimeType(MimeType.valueOf("image/png")).data(new byte[] { 1, 2, 3 }).build();
+		Media different = Media.builder().mimeType(MimeType.valueOf("image/png")).data(new byte[] { 1, 2 }).build();
+
+		assertThat(first).isEqualTo(second).hasSameHashCodeAs(second);
+		assertThat(first).isNotEqualTo(different);
+	}
+
+	@Test
+	void mediaDifferInIdOrMimeTypeOrData() {
+		Media base = Media.builder().mimeType(MimeType.valueOf("image/png")).data("https://example.com/a.png").build();
+
+		assertThat(base).isNotEqualTo(Media.builder()
+			.mimeType(MimeType.valueOf("image/png"))
+			.data("https://example.com/a.png")
+			.id("file_1")
+			.build());
+		assertThat(base).isNotEqualTo(
+				Media.builder().mimeType(MimeType.valueOf("image/jpeg")).data("https://example.com/a.png").build());
+		assertThat(base).isNotEqualTo(
+				Media.builder().mimeType(MimeType.valueOf("image/png")).data("https://example.com/b.png").build());
+		assertThat(base).isNotEqualTo("not media");
+	}
+
 }

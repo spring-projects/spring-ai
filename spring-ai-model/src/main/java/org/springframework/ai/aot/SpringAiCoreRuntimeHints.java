@@ -27,6 +27,14 @@ import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.messages.part.MediaPart;
+import org.springframework.ai.chat.messages.part.MessagePart;
+import org.springframework.ai.chat.messages.part.OpaquePayload;
+import org.springframework.ai.chat.messages.part.ReasoningPart;
+import org.springframework.ai.chat.messages.part.TextPart;
+import org.springframework.ai.chat.messages.part.ToolCallPart;
+import org.springframework.ai.chat.messages.part.ToolResultPart;
+import org.springframework.ai.chat.messages.part.UnknownPart;
 import org.springframework.ai.content.Content;
 import org.springframework.ai.content.MediaContent;
 import org.springframework.ai.tool.ToolCallback;
@@ -43,7 +51,11 @@ public class SpringAiCoreRuntimeHints implements RuntimeHintsRegistrar {
 
 		var chatTypes = Set.of(AbstractMessage.class, AssistantMessage.class, ToolResponseMessage.class, Message.class,
 				ToolCallback.class, ToolDefinition.class, AssistantMessage.ToolCall.class, MessageType.class,
-				UserMessage.class, SystemMessage.class, Content.class, MediaContent.class);
+				UserMessage.class, SystemMessage.class, Content.class, MediaContent.class,
+				// message parts, serialized by Jackson through the MessagePart type
+				// registry
+				MessagePart.class, TextPart.class, ReasoningPart.class, ToolCallPart.class, ToolResultPart.class,
+				MediaPart.class, UnknownPart.class, OpaquePayload.class);
 
 		var memberCategories = MemberCategory.values();
 
