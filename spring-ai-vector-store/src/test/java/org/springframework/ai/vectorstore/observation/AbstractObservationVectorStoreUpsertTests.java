@@ -23,12 +23,15 @@ import io.micrometer.observation.tck.TestObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistryAssert;
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.content.Media;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.EmbeddedDocument;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.util.MimeType;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -72,6 +75,37 @@ class AbstractObservationVectorStoreUpsertTests {
 			.that()
 			.hasLowCardinalityKeyValue(
 					VectorStoreObservationDocumentation.LowCardinalityKeyNames.DB_OPERATION_NAME.asString(), "upsert");
+	}
+
+	@Test
+	void mediaDocumentIsRejectedBeforeDoUpsert() {
+		AtomicReference<List<EmbeddedDocument>> captured = new AtomicReference<>();
+		TestVectorStore store = new TestVectorStore(TestObservationRegistry.create(), captured);
+
+		Media media = new Media(MimeType.valueOf("image/png"), new ByteArrayResource(new byte[] { 0x00 }));
+		Document imageDocument = Document.builder().id("a").media(media).build();
+		List<EmbeddedDocument> entries = List.of(new EmbeddedDocument(imageDocument, new float[] { 0.1f, 0.2f }));
+
+		// No store can persist a row that carries no text, so the entry is rejected up
+		// front and never reaches doUpsert.
+		assertThatThrownBy(() -> store.upsert(entries)).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("Only text documents are supported");
+		assertThat(captured.get()).isNull();
+	}
+
+	@Test
+	void emptyTextDocumentIsAccepted() {
+		AtomicReference<List<EmbeddedDocument>> captured = new AtomicReference<>();
+		TestVectorStore store = new TestVectorStore(TestObservationRegistry.create(), captured);
+
+		// A reference row carries no content of its own, only a pointer in metadata, so
+		// empty text has to stay valid.
+		List<EmbeddedDocument> entries = List
+			.of(new EmbeddedDocument(Document.builder().id("a").text("").build(), new float[] { 0.1f, 0.2f }));
+
+		store.upsert(entries);
+
+		assertThat(captured.get()).isSameAs(entries);
 	}
 
 	@Test

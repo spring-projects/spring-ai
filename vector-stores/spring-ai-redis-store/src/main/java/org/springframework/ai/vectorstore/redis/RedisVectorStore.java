@@ -324,6 +324,8 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 
 	private final AtomicBoolean undeclaredMetadataWarned = new AtomicBoolean();
 
+	private final AtomicBoolean reservedMetadataKeyWarned = new AtomicBoolean();
+
 	protected RedisVectorStore(Builder builder) {
 		super(builder);
 
@@ -374,6 +376,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 			for (int i = 0; i < documents.size(); i++) {
 				Document document = documents.get(i);
 				warnOnUndeclaredMetadata(document);
+				warnOnReservedMetadataKeys(document);
 				var fields = new HashMap<String, Object>();
 				float[] embedding = embeddings.get(i);
 
@@ -382,9 +385,11 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 					embedding = normalize(embedding);
 				}
 
+				// Metadata first, so a key that collides with the embedding or content
+				// field name cannot overwrite the vector or the text.
+				fields.putAll(document.getMetadata());
 				fields.put(this.embeddingFieldName, embedding);
 				fields.put(this.contentFieldName, document.getText());
-				fields.putAll(document.getMetadata());
 				pipeline.jsonSetWithEscape(key(document.getId()), JSON_SET_PATH, fields);
 			}
 			List<Object> responses = pipeline.syncAndReturnAll();
@@ -418,6 +423,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 				EmbeddedDocument entry = entries.get(i);
 				Document document = entry.document();
 				warnOnUndeclaredMetadata(document);
+				warnOnReservedMetadataKeys(document);
 				var fields = new HashMap<String, Object>();
 				float[] embedding = entry.embedding();
 
@@ -426,9 +432,11 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 					embedding = normalize(embedding);
 				}
 
+				// Metadata first, so a key that collides with the embedding or content
+				// field name cannot overwrite the vector or the text.
+				fields.putAll(document.getMetadata());
 				fields.put(this.embeddingFieldName, embedding);
 				fields.put(this.contentFieldName, document.getText());
-				fields.putAll(document.getMetadata());
 				pipeline.jsonSetWithEscape(key(document.getId()), JSON_SET_PATH, fields);
 			}
 			List<Object> responses = pipeline.syncAndReturnAll();
@@ -448,6 +456,25 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 	 * visible without flooding the log on every write.
 	 * @param document the document about to be written
 	 */
+	/**
+	 * Warns when a document's metadata contains a key that collides with the embedding or
+	 * content field name. Those two fields are written last and win, so the colliding
+	 * metadata entry is dropped rather than corrupting the row.
+	 * @param document the document about to be written
+	 */
+	private void warnOnReservedMetadataKeys(Document document) {
+		if (this.reservedMetadataKeyWarned.get()) {
+			return;
+		}
+		Map<String, Object> metadata = document.getMetadata();
+		if ((metadata.containsKey(this.embeddingFieldName) || metadata.containsKey(this.contentFieldName))
+				&& this.reservedMetadataKeyWarned.compareAndSet(false, true)) {
+			logger.warn("Document '" + document.getId() + "' has metadata using the reserved field name '"
+					+ this.embeddingFieldName + "' or '" + this.contentFieldName
+					+ "'. The store's own values win, so that metadata entry is not stored.");
+		}
+	}
+
 	private void warnOnUndeclaredMetadata(Document document) {
 		if (this.undeclaredMetadataWarned.get() || document.getMetadata().isEmpty()) {
 			return;

@@ -315,13 +315,17 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 	protected void doUpsert(List<EmbeddedDocument> entries) {
 		// Whole-batch dimension pre-check before any write, so a mismatched vector fails
 		// fast and cannot partially write. Non-empty and finiteness are already enforced
-		// by the EmbeddedDocument constructor.
-		int expected = embeddingDimensions();
-		for (int i = 0; i < entries.size(); i++) {
-			int actual = entries.get(i).embedding().length;
-			if (actual != expected) {
-				throw new IllegalArgumentException("Embedding at index " + i + " has dimension " + actual
-						+ " but the store expects dimension " + expected);
+		// by the EmbeddedDocument constructor. Only runs when the dimension is actually
+		// known: guessing it would reject vectors the table would have accepted, so in
+		// that case the check is left to Postgres.
+		int expected = knownEmbeddingDimensions();
+		if (expected > 0) {
+			for (int i = 0; i < entries.size(); i++) {
+				int actual = entries.get(i).embedding().length;
+				if (actual != expected) {
+					throw new IllegalArgumentException("Embedding at index " + i + " has dimension " + actual
+							+ " but the store expects dimension " + expected);
+				}
 			}
 		}
 
@@ -557,6 +561,28 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 			case SERIAL -> "serial";
 			case BIGSERIAL -> "bigserial";
 		};
+	}
+
+	/**
+	 * The embedding dimension when it is known, or -1 when it is not. Mirrors
+	 * {@link #embeddingDimensions()} without its fallback to a default, so a caller that
+	 * must not guess can tell the two cases apart.
+	 * @return the known dimension, or -1
+	 */
+	private int knownEmbeddingDimensions() {
+		if (this.dimensions > 0) {
+			return this.dimensions;
+		}
+		try {
+			int modelDimensions = this.embeddingModel.dimensions();
+			if (modelDimensions > 0) {
+				return modelDimensions;
+			}
+		}
+		catch (Exception ex) {
+			logger.debug("Could not obtain the embedding dimensions from the embedding model", ex);
+		}
+		return -1;
 	}
 
 	int embeddingDimensions() {

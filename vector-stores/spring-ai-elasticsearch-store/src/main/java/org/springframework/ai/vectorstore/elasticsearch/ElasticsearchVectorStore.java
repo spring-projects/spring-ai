@@ -167,6 +167,10 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 
 	private final boolean initializeSchema;
 
+	// True when this store created the index, which is the only case where the
+	// configured dimension is known to match the index mapping.
+	private volatile boolean indexMappingCreatedHere;
+
 	protected ElasticsearchVectorStore(Builder builder) {
 		super(builder);
 
@@ -211,15 +215,19 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 	protected void doUpsert(List<EmbeddedDocument> entries) {
 		// Whole-batch dimension pre-check before any write, so a mismatched vector fails
 		// fast and cannot partially write. The authoritative dimension is the index
-		// mapping (options), not the query embedding model, since upsert stores
-		// caller-supplied vectors. Non-empty and finiteness are already enforced by the
+		// mapping, not the query embedding model, since upsert stores caller-supplied
+		// vectors. The configured dimension is only known to match that mapping when this
+		// store created the index; for a pre-existing index the check is left to
+		// Elasticsearch. Non-empty and finiteness are already enforced by the
 		// EmbeddedDocument constructor.
-		int expected = this.options.getDimensions();
-		for (int i = 0; i < entries.size(); i++) {
-			int actual = entries.get(i).embedding().length;
-			if (actual != expected) {
-				throw new IllegalArgumentException("Embedding at index " + i + " has dimension " + actual
-						+ " but the store expects dimension " + expected);
+		if (this.indexMappingCreatedHere) {
+			int expected = this.options.getDimensions();
+			for (int i = 0; i < entries.size(); i++) {
+				int actual = entries.get(i).embedding().length;
+				if (actual != expected) {
+					throw new IllegalArgumentException("Embedding at index " + i + " has dimension " + actual
+							+ " but the store expects dimension " + expected);
+				}
 			}
 		}
 
@@ -402,6 +410,7 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 			throw new IllegalArgumentException("Index not found");
 		}
 		createIndexMapping();
+		this.indexMappingCreatedHere = true;
 	}
 
 	@Override

@@ -86,15 +86,15 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 	}
 
 	/**
-	 * Unlike {@link #add(List)}, this path does not restrict entries to text documents.
-	 * The text-only guard on {@code add} exists because it invokes the text embedding
-	 * model, and {@code upsert} uses caller-supplied embeddings and never embeds. That
-	 * makes an empty-text document valid here, which is how a row points at content held
-	 * outside the store. Whether a media document is accepted depends on the store, since
-	 * several of them expect the document to carry text.
+	 * Like {@link #add(List)}, this path accepts text documents only, but for a different
+	 * reason: {@code add} is restricted because it invokes the text embedding model,
+	 * while {@code upsert} never embeds and is restricted because no store can persist a
+	 * row that carries no text. A document whose text is empty is fine, which is how a
+	 * row points at content held outside the store.
 	 */
 	@Override
 	public void upsert(List<EmbeddedDocument> entries) {
+		validateNonTextDocuments(entries.stream().map(EmbeddedDocument::document).toList());
 		VectorStoreObservationContext observationContext = this
 			.createObservationContextBuilder(VectorStoreObservationContext.Operation.UPSERT.value())
 			.build();

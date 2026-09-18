@@ -463,10 +463,15 @@ VectorStore vectorStore;
 
 // a vector you computed elsewhere
 float[] embedding = ...;
-Document document = new Document("42", "some text", Map.of("source", "manual"));
+Document document = new Document("8f14e45f-ceea-467a-9a3e-5b1c2d6f7a90", "some text",
+        Map.of("source", "manual"));
 
 this.vectorStore.upsert(List.of(new EmbeddedDocument(document, embedding)));
 ----
+
+NOTE: Some stores constrain the document id.
+Qdrant requires a UUID, and `PgVectorStore` stores the id in a UUID column unless you configure `idType`, so an arbitrary string fails on those.
+Deriving the UUID from a key of your own, for example `UUID.nameUUIDFromBytes(key.getBytes(UTF_8))`, keeps the id stable across runs, which is what makes a re-run replace the row rather than add a second one.
 
 To write plain text through `upsert`, embed it first and hand over the result:
 
@@ -481,7 +486,17 @@ this.vectorStore.upsert(List.of(new EmbeddedDocument(document, vector)));
 
 `upsert` is opt-in per store: the default implementation throws `UnsupportedOperationException`, so a store supports it only once it has been implemented.
 It is available on pgvector, Redis, Elasticsearch, and Qdrant, with more stores to follow.
-Stores that implement it validate that every vector matches the index dimension before writing anything, so a wrong-sized vector fails fast and cannot partially write.
+When a store knows its index dimension, it checks every vector in the batch against it before writing anything, so a wrong-sized vector fails fast and cannot partially write.
+Where that dimension can only be guessed, the check is left to the database, which rejects the vector with its own error.
+
+Because the vectors come from outside the store, lining them up with the index is yours to get right.
+Three things have to agree, and only the first is checked for you:
+
+Width:: Your embedding model decides the width, and the index has to be created with that same width, for example `dimensions(1024)` on the store builder or a pre-created index whose mapping says 1024.
+A mismatch fails on the first write.
+Vector space:: Nothing records which model produced a row, so vectors written by one model and searched with another come back plausible but meaningless, with no error anywhere.
+Writing the model name and version into metadata costs nothing and tells a later reader what a row actually holds.
+The query side:: `similaritySearch` still embeds the query with the store's own `EmbeddingModel`, so that model has to produce vectors in the same space and of the same width as the ones you upserted.
 
 === Indexing Non-Text or Oversized Content
 
@@ -498,8 +513,11 @@ Such a row is written with `upsert`, because you supply the vector from the mult
 byte[] frame = ...;                                 // the image/video/audio bytes
 float[] embedding = multimodalModel.embed(frame);   // your multimodal model
 
+String key = "video-42/frame-4711";
+
 Document reference = Document.builder()
-    .id("video-42/frame-4711")
+    // Stable and UUID-shaped, so a re-run replaces this row
+    .id(UUID.nameUUIDFromBytes(key.getBytes(UTF_8)).toString())
     .text("")                                       // empty: the content lives elsewhere
     .metadata(DocumentMetadata.CONTENT_REF.value(), "s3://media/video-42.mp4#t=4711")
     .metadata("camera", "north-gate")               // still filterable like any row
@@ -508,7 +526,7 @@ Document reference = Document.builder()
 this.vectorStore.upsert(List.of(new EmbeddedDocument(reference, embedding)));
 ----
 
-NOTE: A document carrying `CONTENT_REF` is a reference row regardless of what `isText()` reports. The empty text only satisfies the document's text-or-media rule; it is not content.
+NOTE: The empty text is what makes the document valid; it is not content. A document carrying `CONTENT_REF` is a reference row even though `isText()` reports true. `upsert` requires text for this reason: no store can persist a row that carries none, so a media document is rejected rather than half-written.
 
 The pointer is an ordinary metadata entry.
 Nothing in the framework reads or validates it, so keeping it non-empty is up to you.
