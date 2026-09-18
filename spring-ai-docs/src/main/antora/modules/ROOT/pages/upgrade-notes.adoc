@@ -1,6 +1,46 @@
 [[upgrade-notes]]
 = Upgrade Notes
 
+[[upgrading-to-2-1-0]]
+== Upgrading to 2.1.0
+
+=== Message Parts
+
+==== New: Ordered `MessagePart` Content on `AssistantMessage` and `UserMessage`
+
+`AssistantMessage` and `UserMessage` now hold their content as an ordered list of `MessagePart` entries (`TextPart`, `ReasoningPart`, `ToolCallPart`, `ToolResultPart`, `MediaPart`, `UnknownPart`), available through `getParts()`.
+`getText()`, `getMedia()`, `getToolCalls()` and the new `getReasoning()` are views over the parts.
+See xref:api/chatmodel.adoc#message-parts[Message Parts].
+
+===== Impact
+
+The constructors and the existing builder methods keep working and produce the parts in the order text, tool calls, media, so no code change is required.
+
+* `getMedia()` and `getToolCalls()` return unmodifiable lists; add media and tool calls through the builder instead of mutating the returned list.
+* `equals()` and `hashCode()` of both message types compare the parts, so media now takes part in equality; `Media` gained value equality over id, MIME type and data (the name is excluded because it defaults to a random value).
+* A message with parts but no text part has an empty text; `getText()` is `null` only for a message without any part.
+
+===== Deprecated
+
+The following are still written or accepted for one release and will be removed afterwards.
+
+* The protected `textContent` field for all subclasses of AbstractMessage, is kept, but should be accessed via `getText()`
+* The protected `media` field of `AssistantMessage` and `UserMessage`, kept for subclasses that read it.
+* The protected `responses` field of `ToolResponseMessage`, kept for subclasses that read it.
+
+
+==== New: Streaming Contract for Parts
+
+Streamed chunks carry indexed partial parts (`StreamingParts`) and the response id, and `MessageAggregator` rebuilds the complete parts from them.
+Raw `ChatModel.stream()` subscribers that only read `getText()` see the text deltas exactly as before.
+Reasoning deltas now carry their text in a `ReasoningPart`.
+
+===== Impact
+
+A streamed chunk never has a `null` text, so `map(AssistantMessage::getText).collect(Collectors.joining())` keeps working.
+By default, tool calls are still buffered and arrive once as a complete call.
+Partial parts are not tool calls, so nothing executes on them, and `ChatClient` hides them either way.
+
 [[upgrading-to-2-0-1]]
 == Upgrading to 2.0.1
 

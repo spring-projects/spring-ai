@@ -111,7 +111,7 @@ public class DeepSeekAssistantMessage extends AssistantMessage {
 	@Override
 	public String toString() {
 		return "DeepSeekAssistantMessage [messageType=" + this.messageType + ", toolCalls=" + super.getToolCalls()
-				+ ", textContent=" + this.textContent + ", reasoningContent=" + this.reasoningContent + ", prefix="
+				+ ", textContent=" + getText() + ", reasoningContent=" + this.reasoningContent + ", prefix="
 				+ this.prefix + ", metadata=" + this.metadata + "]";
 	}
 

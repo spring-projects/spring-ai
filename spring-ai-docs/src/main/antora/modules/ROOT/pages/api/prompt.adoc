@@ -92,7 +92,24 @@ public interface MediaContent extends Content {
 }
 ----
 
-Various implementations of the `Message` interface correspond to different categories of messages that an AI model can process. 
+All subclasses of `AbstractMessage` hold their content as an ordered list of `MessagePart` entries, available through `getParts()`.
+`getText()` joins the `TextPart` entries and `getMedia()` (in `UserMessage`) selects the `MediaPart` entries, in part order, so the two accessors stay valid views over the parts.
+Text and media can therefore interleave in a user message: add the parts in the order they should reach the model.
+
+[source,java]
+----
+UserMessage message = UserMessage.builder()
+    .part(TextPart.of("What is in this picture?"))
+    .part(MediaPart.of(image))
+    .part(TextPart.of("Answer in one sentence."))
+    .build();
+----
+
+The `text(...)` and `media(...)` builder methods keep working and replace the corresponding parts, so an advisor that rewrites the question through `mutate().text(...)` keeps the media.
+A builder without explicit parts produces the legacy order, text then media.
+The `getMedia()` list is an unmodifiable view; add media through the builder.
+
+Various implementations of the `Message` interface correspond to different categories of messages that an AI model can process.
 The Models distinguish between message categories based on conversational roles. 
 
 image::spring-ai-message-api.jpg[Spring AI Message API, width=800, align="center"]
