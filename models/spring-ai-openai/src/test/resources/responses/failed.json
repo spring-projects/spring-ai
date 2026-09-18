@@ -1,0 +1,14 @@
+{
+  "id": "resp_failed_1",
+  "object": "response",
+  "created_at": 1757000400,
+  "status": "failed",
+  "error": { "code": "server_error", "message": "The model run failed" },
+  "model": "gpt-5-mini",
+  "output": [],
+  "parallel_tool_calls": true,
+  "tool_choice": "auto",
+  "tools": [],
+  "temperature": 1.0,
+  "top_p": 1.0
+}
