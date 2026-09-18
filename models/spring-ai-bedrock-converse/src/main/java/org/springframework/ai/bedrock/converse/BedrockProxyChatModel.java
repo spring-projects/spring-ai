@@ -673,7 +673,8 @@ public class BedrockProxyChatModel implements ChatModel {
 
 				var functionCallId = toolUseContentBlock.toolUse().toolUseId();
 				var functionName = toolUseContentBlock.toolUse().name();
-				var functionArguments = toolUseContentBlock.toolUse().input().toString();
+				var functionArguments = jsonHelper
+					.toJson(ConverseApiUtils.convertDocumentToObject(toolUseContentBlock.toolUse().input()));
 
 				toolCalls
 					.add(new AssistantMessage.ToolCall(functionCallId, "function", functionName, functionArguments));
