@@ -17,9 +17,11 @@
 package org.springframework.ai.reader.pdf;
 
 import java.io.ByteArrayOutputStream;
+import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
@@ -112,6 +114,28 @@ public class ParagraphPdfDocumentReaderTests {
 		assertThat(documents).hasSize(2);
 		assertThat(documents.get(0).getMetadata().get("title")).isEqualTo("Chapter 1");
 		assertThat(documents.get(1).getMetadata().get("title")).isEqualTo("Chapter 3");
+	}
+
+	@Test
+	void closesTheResourceInputStream() throws IOException {
+
+		AtomicBoolean closed = new AtomicBoolean();
+		Resource resource = new ByteArrayResource(new ClassPathResource("sample3.pdf").getContentAsByteArray()) {
+			@Override
+			public InputStream getInputStream() throws IOException {
+				return new FilterInputStream(super.getInputStream()) {
+					@Override
+					public void close() throws IOException {
+						closed.set(true);
+						super.close();
+					}
+				};
+			}
+		};
+
+		new ParagraphPdfDocumentReader(resource, PdfDocumentReaderConfig.defaultConfig());
+
+		assertThat(closed).isTrue();
 	}
 
 }
