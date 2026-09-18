@@ -72,7 +72,7 @@ public interface VectorStore extends DocumentWriter, VectorStoreRetriever {
 ----
 
 The `VectorStore` interface combines both read and write operations, allowing you to add, delete, and search for documents in a vector database.
-While `add` computes the embeddings for you, `upsert` writes documents together with embeddings you already have; see <<writing-precomputed-embeddings,Writing Pre-computed Embeddings>>.
+While `add` computes the embeddings for you, `upsert` writes ones you supply yourself; see <<writing-precomputed-embeddings,Writing User-Supplied Embeddings>>.
 
 === SearchRequest Builder
 
@@ -440,8 +440,11 @@ void load(String sourceFile) {
 }
 ----
 
+`add` computes the embeddings for you.
+If you already have the vectors, write them as they are with `upsert` instead; see <<writing-precomputed-embeddings,Writing User-Supplied Embeddings>>.
+
 [[writing-precomputed-embeddings]]
-=== Writing Pre-computed Embeddings
+=== Writing User-Supplied Embeddings
 
 `add` computes an embedding for every document inside the store, using the store's embedding model.
 Sometimes you already have the vectors and want to write them as-is: a provider's batch API computed them overnight at half price, another team owns the embedding pipeline, or you are migrating from a system that exports text and vectors together.
@@ -486,6 +489,7 @@ this.vectorStore.upsert(List.of(new EmbeddedDocument(document, vector)));
 
 `upsert` is opt-in per store: the default implementation throws `UnsupportedOperationException`, so a store supports it only once it has been implemented.
 It is available on pgvector, Redis, Elasticsearch, and Qdrant, with more stores to follow.
+`EmbeddedDocument` rejects a vector that is empty or holds `NaN` or an infinity, which is worth knowing when the vectors come from a pipeline you do not control: a `NaN` would otherwise corrupt distance maths rather than fail.
 When a store knows its index dimension, it checks every vector in the batch against it before writing anything, so a wrong-sized vector fails fast and cannot partially write.
 Where that dimension can only be guessed, the check is left to the database, which rejects the vector with its own error.
 
@@ -530,8 +534,19 @@ NOTE: The empty text is what makes the document valid; it is not content. A docu
 
 The pointer is an ordinary metadata entry.
 Nothing in the framework reads or validates it, so keeping it non-empty is up to you.
-A row that still has real text of its own can be written with `add`, which is how a summary or a chunk keeps a pointer back to the full article.
-A row with empty text has to go through `upsert`, because `add` embeds the text and there is nothing there to embed.
+A row that still has real text of its own can be written with `add`, which is how a summary or a chunk keeps a pointer back to the full article:
+
+[source,java]
+----
+Document chunk = Document.builder()
+    .text(chunkText)                                                  // real text, so add can embed it
+    .metadata(DocumentMetadata.CONTENT_REF.value(), "articles/1042")  // where the full article lives
+    .build();
+
+this.vectorStore.add(List.of(chunk));
+----
+
+Only a row with empty text has to go through `upsert`, because `add` embeds the text and there would be nothing to embed.
 
 Search is unchanged. `similaritySearch` matches on vectors and returns `Document` s as always, and for these rows the caller follows the pointer:
 
@@ -548,7 +563,9 @@ for (Document doc : results) {
 }
 ----
 
-Text queries against image vectors work when the store's embedding model is the multimodal model's text encoder, so query and content land in the same vector space.
+WARNING: Two models are in play here and they have to produce vectors in the same space and of the same width: the one you embed the content with, and the store's own `EmbeddingModel`, which embeds the query inside `similaritySearch`.
+Spring AI's `VertexAiMultimodalEmbeddingModel` puts text and images in one 1408-dimension space, but it implements `DocumentEmbeddingModel` rather than `EmbeddingModel`, so using it on both sides means wrapping it for the store.
+Wire an ordinary text model instead and your queries land somewhere else entirely: an error if the widths differ, and quietly meaningless results if they happen to match.
 
 NOTE: Redis returns only the metadata fields declared when the store is built, so `content_ref` has to be declared for the pointer to survive a read: `.metadataFields(MetadataField.tag(DocumentMetadata.CONTENT_REF.value()))`.
 The same goes for any field you filter on, such as `camera` above.

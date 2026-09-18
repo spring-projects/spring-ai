@@ -112,7 +112,7 @@ Properties starting with `spring.ai.vectorstore.qdrant.*` are used to configure 
 
 `QdrantVectorStore` implements `upsert(List<EmbeddedDocument>)`, so you can write documents together with embeddings you computed elsewhere instead of having the store embed them.
 Writing the same id again replaces the existing row, so a re-run with stable ids does not create duplicates.
-See xref:api/vectordbs.adoc#writing-precomputed-embeddings[Writing Pre-computed Embeddings] for details.
+See xref:api/vectordbs.adoc#writing-precomputed-embeddings[Writing User-Supplied Embeddings] for details.
 
 == Manual Configuration
 
