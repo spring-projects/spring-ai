@@ -193,6 +193,20 @@ is converted into the proprietary Redis filter format:
 Writing the same id again replaces the existing row, so a re-run with stable ids does not create duplicates.
 See xref:api/vectordbs.adoc#writing-precomputed-embeddings[Writing Pre-computed Embeddings] for details.
 
+Redis stores every metadata key you write, but a search returns only the fields declared through `metadataFields`, so anything else comes back missing.
+Declare the keys you need returned, not just the ones you filter on:
+
+[source,java]
+----
+RedisVectorStore.builder(jedisClient, embeddingModel)
+    .metadataFields(MetadataField.tag(DocumentMetadata.CONTENT_REF.value()))
+    .initializeSchema(true)
+    .build();
+----
+
+The store logs a warning the first time it writes a document carrying an undeclared field.
+Adding a field to a store that already has an index means recreating the index.
+
 == Manual Configuration
 
 Instead of using the Spring Boot auto-configuration, you can manually configure the Redis vector store. For this you need to add the `spring-ai-redis-store` to your project:

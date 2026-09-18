@@ -24,6 +24,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import redis.clients.jedis.RedisClient;
 
+import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.test.vectorstore.AbstractVectorStoreUpsertTests;
 import org.springframework.ai.test.vectorstore.FixedDimensionEmbeddingModel;
@@ -85,7 +86,9 @@ public class RedisVectorStoreUpsertIT extends AbstractVectorStoreUpsertTests {
 				.builder(RedisClient.builder()
 					.hostAndPort(redisContainer.getHost(), redisContainer.getFirstMappedPort())
 					.build(), embeddingModel)
-				.metadataFields(MetadataField.tag("tag"))
+				// Redis returns only the fields declared here, so both the suite's "tag"
+				// and the content_ref pointer have to be declared to survive a read.
+				.metadataFields(MetadataField.tag("tag"), MetadataField.tag(DocumentMetadata.CONTENT_REF.value()))
 				.initializeSchema(true)
 				.build();
 		}

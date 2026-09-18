@@ -26,6 +26,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -317,6 +318,12 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 
 	private final Set<String> stopwords = new HashSet<>();
 
+	// Names of the metadata fields declared at build time. Redis only returns these on
+	// read, so anything else is stored and then dropped.
+	private final Set<String> declaredMetadataFieldNames;
+
+	private final AtomicBoolean undeclaredMetadataWarned = new AtomicBoolean();
+
 	protected RedisVectorStore(Builder builder) {
 		super(builder);
 
@@ -330,6 +337,9 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 		this.vectorAlgorithm = builder.vectorAlgorithm;
 		this.distanceMetric = builder.distanceMetric;
 		this.metadataFields = builder.metadataFields;
+		this.declaredMetadataFieldNames = this.metadataFields.stream()
+			.map(MetadataField::name)
+			.collect(Collectors.toUnmodifiableSet());
 		this.initializeSchema = builder.initializeSchema;
 		this.hnswM = builder.hnswM;
 		this.hnswEfConstruction = builder.hnswEfConstruction;
@@ -363,6 +373,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 
 			for (int i = 0; i < documents.size(); i++) {
 				Document document = documents.get(i);
+				warnOnUndeclaredMetadata(document);
 				var fields = new HashMap<String, Object>();
 				float[] embedding = embeddings.get(i);
 
@@ -406,6 +417,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 				// entry, so there is no indexOf lookup to slip.
 				EmbeddedDocument entry = entries.get(i);
 				Document document = entry.document();
+				warnOnUndeclaredMetadata(document);
 				var fields = new HashMap<String, Object>();
 				float[] embedding = entry.embedding();
 
@@ -424,8 +436,32 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 			if (errResponse.isPresent()) {
 				String message = MessageFormat.format("Could not upsert document: {0}", errResponse.get());
 				logger.error(message);
-				throw new RuntimeException(message);
+				throw new IllegalStateException(message);
 			}
+		}
+	}
+
+	/**
+	 * Warns when a document carries metadata that was not declared through
+	 * {@code metadataFields}. Redis stores every key, but a search only returns the
+	 * declared ones, so the rest come back missing. Warns once per store so the loss is
+	 * visible without flooding the log on every write.
+	 * @param document the document about to be written
+	 */
+	private void warnOnUndeclaredMetadata(Document document) {
+		if (this.undeclaredMetadataWarned.get() || document.getMetadata().isEmpty()) {
+			return;
+		}
+		List<String> undeclared = document.getMetadata()
+			.keySet()
+			.stream()
+			.filter(key -> !this.declaredMetadataFieldNames.contains(key))
+			.sorted()
+			.toList();
+		if (!undeclared.isEmpty() && this.undeclaredMetadataWarned.compareAndSet(false, true)) {
+			logger.warn("Document '" + document.getId() + "' carries metadata fields that were not declared "
+					+ "at build time: " + undeclared + ". Redis stores them, but a similarity search will not "
+					+ "return them. Declare them with metadataFields(...) to get them back.");
 		}
 	}
 

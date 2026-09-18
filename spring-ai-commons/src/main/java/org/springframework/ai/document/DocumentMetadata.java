@@ -51,6 +51,14 @@ public enum DocumentMetadata {
 	 * exists to satisfy the document's text-or-media rule; it is not content, so a
 	 * document carrying this key is a reference row even though {@code isText()}
 	 * reports true.
+	 * <p>
+	 * Nothing in the framework reads or validates this key. It is an ordinary
+	 * metadata entry that the application writes and later resolves, and keeping the
+	 * pointer non-empty is up to the caller. A row that still has real text of its own
+	 * can be written with {@code VectorStore.add}, which is how a summary or a chunk
+	 * keeps a pointer back to the full article. A row with empty text has to go
+	 * through {@code upsert}, because {@code add} embeds the text and there is nothing
+	 * there to embed.
 	 * @since 2.1.0
 	 */
 	CONTENT_REF("content_ref");

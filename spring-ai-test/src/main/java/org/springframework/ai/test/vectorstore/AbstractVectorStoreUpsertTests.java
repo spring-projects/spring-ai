@@ -30,6 +30,7 @@ import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.document.Document;
+import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.vectorstore.EmbeddedDocument;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
@@ -169,6 +170,33 @@ public abstract class AbstractVectorStoreUpsertTests {
 			List<Document> results = readAll(vectorStore, 10);
 			assertThat(results).hasSize(1);
 			assertThat(results.get(0).getId()).isEqualTo(baselineId);
+		});
+	}
+
+	@Test
+	protected void contentRefRoundTrip() {
+		executeTest(vectorStore -> {
+			String id = UUID.randomUUID().toString();
+			String pointer = "s3://media/video-42.mp4#t=4711";
+
+			// A reference row: no content of its own, just a pointer to where the content
+			// really lives. It has to go through upsert, because add embeds the text and
+			// there is nothing there to embed.
+			Document reference = Document.builder()
+				.id(id)
+				.text("")
+				.metadata(DocumentMetadata.CONTENT_REF.value(), pointer)
+				.build();
+
+			vectorStore.upsert(List.of(new EmbeddedDocument(reference, vectorFor(id))));
+
+			await().atMost(5, TimeUnit.SECONDS).pollInterval(Duration.ofMillis(500)).untilAsserted(() -> {
+				List<Document> results = readAll(vectorStore, 10);
+				assertThat(results).hasSize(1);
+				assertThat(results.get(0).getId()).isEqualTo(id);
+				assertThat(normalizeValue(results.get(0).getMetadata().get(DocumentMetadata.CONTENT_REF.value())))
+					.isEqualTo(pointer);
+			});
 		});
 	}
 

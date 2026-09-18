@@ -88,8 +88,10 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 	/**
 	 * Unlike {@link #add(List)}, this path does not restrict entries to text documents.
 	 * The text-only guard on {@code add} exists because it invokes the text embedding
-	 * model; {@code upsert} uses caller-supplied embeddings and never embeds, so it also
-	 * accepts media documents carrying a caller-computed multimodal vector.
+	 * model, and {@code upsert} uses caller-supplied embeddings and never embeds. That
+	 * makes an empty-text document valid here, which is how a row points at content held
+	 * outside the store. Whether a media document is accepted depends on the store, since
+	 * several of them expect the document to carry text.
 	 */
 	@Override
 	public void upsert(List<EmbeddedDocument> entries) {

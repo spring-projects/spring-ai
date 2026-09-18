@@ -510,6 +510,11 @@ this.vectorStore.upsert(List.of(new EmbeddedDocument(reference, embedding)));
 
 NOTE: A document carrying `CONTENT_REF` is a reference row regardless of what `isText()` reports. The empty text only satisfies the document's text-or-media rule; it is not content.
 
+The pointer is an ordinary metadata entry.
+Nothing in the framework reads or validates it, so keeping it non-empty is up to you.
+A row that still has real text of its own can be written with `add`, which is how a summary or a chunk keeps a pointer back to the full article.
+A row with empty text has to go through `upsert`, because `add` embeds the text and there is nothing there to embed.
+
 Search is unchanged. `similaritySearch` matches on vectors and returns `Document` s as always, and for these rows the caller follows the pointer:
 
 [source,java]
@@ -526,6 +531,10 @@ for (Document doc : results) {
 ----
 
 Text queries against image vectors work when the store's embedding model is the multimodal model's text encoder, so query and content land in the same vector space.
+
+NOTE: Redis returns only the metadata fields declared when the store is built, so `content_ref` has to be declared for the pointer to survive a read: `.metadataFields(MetadataField.tag(DocumentMetadata.CONTENT_REF.value()))`.
+The same goes for any field you filter on, such as `camera` above.
+Adding a field to a store that already has an index means recreating the index.
 
 === Reading from a Vector Store
 

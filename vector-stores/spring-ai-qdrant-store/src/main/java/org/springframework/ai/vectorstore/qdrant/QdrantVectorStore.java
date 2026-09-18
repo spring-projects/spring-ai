@@ -232,8 +232,13 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 
 			this.qdrantClient.upsertAsync(this.collectionName, points).get();
 		}
-		catch (InterruptedException | ExecutionException e) {
-			throw new RuntimeException(e);
+		catch (InterruptedException e) {
+			// Restore the flag so a caller that interrupted us can still see it.
+			Thread.currentThread().interrupt();
+			throw new IllegalStateException("Upsert was interrupted", e);
+		}
+		catch (ExecutionException e) {
+			throw new IllegalStateException("Could not upsert documents", e);
 		}
 	}
 
