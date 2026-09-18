@@ -1314,12 +1314,15 @@ public final class OpenAiChatModel implements ChatModel {
 							.builder();
 						Function function = tc.function()
 							.orElseThrow(() -> new IllegalStateException("Tool call function is missing"));
-						String id = tc.id()
-							.filter(StringUtils::hasText)
-							.orElseThrow(() -> new IllegalStateException("Tool call id is missing"));
-						String name = function.name()
-							.filter(StringUtils::hasText)
-							.orElseThrow(() -> new IllegalStateException("Tool call function name is missing"));
+						// After merging streaming chunks, id and name may arrive as
+						// empty strings on continuation deltas from some
+						// OpenAI-compatible providers (e.g. vLLM, DeepSeek). Using
+						// orElse("") instead of orElseThrow avoids a
+						// NoSuchElementException that aborts the entire stream; the
+						// complete values will be present on the final aggregated chunk.
+						// See: https://github.com/spring-projects/spring-ai/issues/6762
+						String id = tc.id().filter(StringUtils::hasText).orElse("");
+						String name = function.name().filter(StringUtils::hasText).orElse("");
 						toolCallBuilder.putAllAdditionalProperties(tc._additionalProperties());
 						toolCallBuilder.id(id);
 						toolCallBuilder.function(ChatCompletionMessageFunctionToolCall.Function.builder()
