@@ -195,7 +195,6 @@ public class PgVectorStoreCustomNamesIT {
 				.vectorTableName(this.vectorTableName)
 				.vectorTableValidationsEnabled(this.schemaValidation)
 				.dimensions(this.dimensions)
-				.distanceType(PgVectorStore.PgDistanceType.COSINE_DISTANCE)
 				.removeExistingVectorStoreTable(true)
 				.indexType(PgIndexType.HNSW)
 				.initializeSchema(true)
