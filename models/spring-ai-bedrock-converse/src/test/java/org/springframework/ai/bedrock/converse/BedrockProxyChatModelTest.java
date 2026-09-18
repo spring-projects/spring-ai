@@ -40,7 +40,9 @@ import org.springframework.ai.bedrock.converse.api.BedrockCacheOptions;
 import org.springframework.ai.bedrock.converse.api.BedrockCacheStrategy;
 import org.springframework.ai.bedrock.converse.api.BedrockCacheTtl;
 import org.springframework.ai.bedrock.converse.api.MediaFetcher;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
@@ -464,6 +466,125 @@ class BedrockProxyChatModelTest {
 		return Media.builder()
 			.mimeType(MimeType.valueOf("image/png"))
 			.data(new byte[] { (byte) 0x89, 'P', 'N', 'G' })
+			.build();
+	}
+
+	@Test
+	void cacheToolResultsPlacesCachePointAfterLastToolResultBlock() {
+		BedrockProxyChatModel model = newModel();
+
+		BedrockChatOptions options = BedrockChatOptions.builder()
+			.cacheOptions(BedrockCacheOptions.builder()
+				.strategy(BedrockCacheStrategy.CONVERSATION_HISTORY)
+				.cacheToolResults(true)
+				.ttl(BedrockCacheTtl.ONE_HOUR)
+				.build())
+			.build();
+
+		List<org.springframework.ai.chat.messages.Message> messages = List.of(
+				new UserMessage("Compare the weather in Paris and Berlin"),
+				assistantToolCalls("tool-1", "Paris", "tool-2", "Berlin"),
+				toolResults("tool-1", "Sunny in Paris", "tool-2", "Cloudy in Berlin"));
+		ConverseRequest request = model.createRequest(new Prompt(messages, options));
+		List<ContentBlock> toolResultContent = request.messages().get(2).content();
+
+		assertThat(toolResultContent).hasSize(3);
+		assertThat(toolResultContent.get(0).toolResult()).isNotNull();
+		assertThat(toolResultContent.get(1).toolResult()).isNotNull();
+		assertThat(toolResultContent.get(2).cachePoint()).isNotNull();
+		assertThat(toolResultContent.get(2).cachePoint().typeAsString()).isEqualTo("default");
+		assertThat(toolResultContent.get(2).cachePoint().ttlAsString()).isEqualTo("1h");
+	}
+
+	@Test
+	void cacheToolResultsDisabledByDefaultLeavesToolResultsUncached() {
+		BedrockProxyChatModel model = newModel();
+
+		BedrockChatOptions options = BedrockChatOptions.builder()
+			.cacheOptions(BedrockCacheOptions.builder().strategy(BedrockCacheStrategy.CONVERSATION_HISTORY).build())
+			.build();
+
+		ConverseRequest request = model.createRequest(new Prompt(toolCallingConversation(), options));
+		List<ContentBlock> toolResultContent = request.messages().get(2).content();
+
+		assertThat(toolResultContent).hasSize(1);
+		assertThat(toolResultContent.get(0).toolResult()).isNotNull();
+		assertThat(toolResultContent.get(0).cachePoint()).isNull();
+	}
+
+	@Test
+	void cacheToolResultsOnlyCachesLastToolResultMessage() {
+		BedrockProxyChatModel model = newModel();
+
+		BedrockChatOptions options = BedrockChatOptions.builder()
+			.cacheOptions(BedrockCacheOptions.builder()
+				.strategy(BedrockCacheStrategy.CONVERSATION_HISTORY)
+				.cacheToolResults(true)
+				.build())
+			.build();
+
+		List<org.springframework.ai.chat.messages.Message> messages = List.of(
+				new UserMessage("Compare Paris and Berlin"), assistantToolCall("tool-1", "Paris"),
+				toolResult("tool-1", "Sunny in Paris"), assistantToolCall("tool-2", "Berlin"),
+				toolResult("tool-2", "Cloudy in Berlin"));
+		ConverseRequest request = model.createRequest(new Prompt(messages, options));
+
+		assertThat(request.messages().get(2).content()).hasSize(1);
+		assertThat(request.messages().get(2).content().get(0).toolResult()).isNotNull();
+		assertThat(request.messages().get(4).content()).hasSize(2);
+		assertThat(request.messages().get(4).content().get(0).toolResult()).isNotNull();
+		assertThat(request.messages().get(4).content().get(1).cachePoint()).isNotNull();
+	}
+
+	@Test
+	void cacheToolResultsHasNoEffectOutsideConversationHistoryStrategy() {
+		BedrockProxyChatModel model = newModel();
+
+		BedrockChatOptions options = BedrockChatOptions.builder()
+			.cacheOptions(
+					BedrockCacheOptions.builder().strategy(BedrockCacheStrategy.NONE).cacheToolResults(true).build())
+			.build();
+
+		ConverseRequest request = model.createRequest(new Prompt(toolCallingConversation(), options));
+
+		assertThat(request.messages().get(2).content()).hasSize(1);
+		assertThat(request.messages().get(2).content().get(0).toolResult()).isNotNull();
+	}
+
+	private static List<org.springframework.ai.chat.messages.Message> toolCallingConversation() {
+		return List.of(new UserMessage("What's the weather in Paris?"), assistantToolCall("tool-1", "Paris"),
+				toolResult("tool-1", "Sunny in Paris"));
+	}
+
+	private static AssistantMessage assistantToolCall(String id, String city) {
+		return AssistantMessage.builder()
+			.toolCalls(List
+				.of(new AssistantMessage.ToolCall(id, "function", "getWeather", "{\"location\":\"" + city + "\"}")))
+			.build();
+	}
+
+	private static AssistantMessage assistantToolCalls(String firstId, String firstCity, String secondId,
+			String secondCity) {
+		return AssistantMessage.builder()
+			.toolCalls(List.of(
+					new AssistantMessage.ToolCall(firstId, "function", "getWeather",
+							"{\"location\":\"" + firstCity + "\"}"),
+					new AssistantMessage.ToolCall(secondId, "function", "getWeather",
+							"{\"location\":\"" + secondCity + "\"}")))
+			.build();
+	}
+
+	private static ToolResponseMessage toolResult(String id, String responseData) {
+		return ToolResponseMessage.builder()
+			.responses(List.of(new ToolResponseMessage.ToolResponse(id, "getWeather", responseData)))
+			.build();
+	}
+
+	private static ToolResponseMessage toolResults(String firstId, String firstResponseData, String secondId,
+			String secondResponseData) {
+		return ToolResponseMessage.builder()
+			.responses(List.of(new ToolResponseMessage.ToolResponse(firstId, "getWeather", firstResponseData),
+					new ToolResponseMessage.ToolResponse(secondId, "getWeather", secondResponseData)))
 			.build();
 	}
 

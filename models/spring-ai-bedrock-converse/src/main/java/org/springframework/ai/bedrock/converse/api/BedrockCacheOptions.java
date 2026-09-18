@@ -59,15 +59,23 @@ public class BedrockCacheOptions {
 
 	private final @Nullable BedrockCacheTtl ttl;
 
+	private final boolean cacheToolResults;
+
 	protected BedrockCacheOptions(@Nullable BedrockCacheStrategy strategy, boolean multiBlockSystemCaching) {
-		this(strategy, multiBlockSystemCaching, null);
+		this(strategy, multiBlockSystemCaching, null, false);
 	}
 
 	protected BedrockCacheOptions(@Nullable BedrockCacheStrategy strategy, boolean multiBlockSystemCaching,
 			@Nullable BedrockCacheTtl ttl) {
+		this(strategy, multiBlockSystemCaching, ttl, false);
+	}
+
+	protected BedrockCacheOptions(@Nullable BedrockCacheStrategy strategy, boolean multiBlockSystemCaching,
+			@Nullable BedrockCacheTtl ttl, boolean cacheToolResults) {
 		this.strategy = (strategy != null ? strategy : BedrockCacheStrategy.NONE);
 		this.multiBlockSystemCaching = multiBlockSystemCaching;
 		this.ttl = ttl;
+		this.cacheToolResults = cacheToolResults;
 	}
 
 	/**
@@ -113,6 +121,18 @@ public class BedrockCacheOptions {
 	}
 
 	/**
+	 * Returns whether prompt caching is enabled for tool result messages. When enabled
+	 * with {@link BedrockCacheStrategy#CONVERSATION_HISTORY}, a cache point is placed
+	 * after the last tool result message in a request so previous tool outputs can be
+	 * reused in subsequent tool-calling rounds. Disabled by default.
+	 * @return {@code true} if tool result caching is enabled; {@code false} otherwise
+	 * @since 2.0.2
+	 */
+	public boolean isCacheToolResults() {
+		return this.cacheToolResults;
+	}
+
+	/**
 	 * Builder for constructing BedrockCacheOptions instances.
 	 */
 	public static class Builder {
@@ -122,6 +142,8 @@ public class BedrockCacheOptions {
 		private boolean multiBlockSystemCaching = false;
 
 		private @Nullable BedrockCacheTtl ttl;
+
+		private boolean cacheToolResults = false;
 
 		/**
 		 * Sets the caching strategy.
@@ -161,11 +183,25 @@ public class BedrockCacheOptions {
 		}
 
 		/**
+		 * Sets whether to cache tool result messages. This option takes effect only with
+		 * {@link BedrockCacheStrategy#CONVERSATION_HISTORY} and defaults to
+		 * {@code false}.
+		 * @param cacheToolResults whether to cache tool result messages
+		 * @return this Builder instance
+		 * @since 2.0.2
+		 */
+		public Builder cacheToolResults(boolean cacheToolResults) {
+			this.cacheToolResults = cacheToolResults;
+			return this;
+		}
+
+		/**
 		 * Builds the BedrockCacheOptions instance.
 		 * @return the configured BedrockCacheOptions
 		 */
 		public BedrockCacheOptions build() {
-			return new BedrockCacheOptions(this.strategy, this.multiBlockSystemCaching, this.ttl);
+			return new BedrockCacheOptions(this.strategy, this.multiBlockSystemCaching, this.ttl,
+					this.cacheToolResults);
 		}
 
 	}
