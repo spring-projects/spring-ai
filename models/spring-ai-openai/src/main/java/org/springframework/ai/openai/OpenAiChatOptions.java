@@ -40,10 +40,16 @@ import org.springframework.ai.model.tool.DefaultToolCallingChatOptions;
 import org.springframework.ai.model.tool.StructuredOutputChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.openai.OpenAiChatModel.ResponseFormat.Type;
+import org.springframework.ai.openai.responses.ServersideTool;
 import org.springframework.ai.tool.ToolCallback;
 
 /**
  * Configuration information for the Chat Model implementation using the OpenAI Java SDK.
+ * <p>
+ * The same options configure both endpoints {@link OpenAiChatModel} can talk to, selected
+ * with {@link Builder#api(Api)}. A few settings only exist on one of them: they are
+ * documented as such, and setting one the request's endpoint has no equivalent for logs a
+ * warning once and is otherwise ignored, rather than failing the request.
  *
  * @author Julien Dubois
  * @author Christian Tzolov
@@ -193,6 +199,23 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 
 	private final @Nullable Map<String, Object> toolContext;
 
+	/**
+	 * Which OpenAI endpoint a request built from these options is sent to.
+	 */
+	private final Api api;
+
+	private final @Nullable String reasoningSummary;
+
+	private final @Nullable Integer maxToolCalls;
+
+	private final @Nullable List<ServersideTool> serversideTools;
+
+	private final @Nullable List<String> include;
+
+	private final @Nullable String truncation;
+
+	private final @Nullable String safetyIdentifier;
+
 	protected OpenAiChatOptions(@Nullable String baseUrl, @Nullable String apiKey, @Nullable Credential credential,
 			@Nullable String model, @Nullable String microsoftDeploymentName,
 			@Nullable AzureOpenAIServiceVersion microsoftFoundryServiceVersion, @Nullable String organizationId,
@@ -208,7 +231,9 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 			@Nullable String user, @Nullable Boolean parallelToolCalls, @Nullable Boolean store,
 			@Nullable Boolean strict, @Nullable Map<String, String> metadata, @Nullable String reasoningEffort,
 			@Nullable String verbosity, @Nullable String serviceTier, @Nullable String promptCacheKey,
-			@Nullable Map<String, Object> extraBody) {
+			@Nullable Map<String, Object> extraBody, @Nullable Api api, @Nullable String reasoningSummary,
+			@Nullable Integer maxToolCalls, @Nullable List<ServersideTool> serversideTools,
+			@Nullable List<String> include, @Nullable String truncation, @Nullable String safetyIdentifier) {
 		this.baseUrl = baseUrl;
 		this.apiKey = apiKey;
 		this.credential = credential;
@@ -254,6 +279,14 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 		this.serviceTier = serviceTier;
 		this.promptCacheKey = promptCacheKey;
 		this.extraBody = (extraBody != null ? Map.copyOf(extraBody) : null);
+		// Responses API specific
+		this.api = (api != null ? api : Api.AUTO);
+		this.reasoningSummary = reasoningSummary;
+		this.maxToolCalls = maxToolCalls;
+		this.serversideTools = (serversideTools != null ? List.copyOf(serversideTools) : null);
+		this.include = (include != null ? List.copyOf(include) : null);
+		this.truncation = truncation;
+		this.safetyIdentifier = safetyIdentifier;
 	}
 
 	/**
@@ -530,6 +563,98 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 		return this.extraBody;
 	}
 
+	/**
+	 * Which OpenAI endpoint a request built from these options is sent to. Never
+	 * {@code null}; {@link Api#AUTO} means "decide from the model", see
+	 * {@link #resolveApi()}.
+	 */
+	public Api getApi() {
+		return this.api;
+	}
+
+	/**
+	 * The endpoint {@link #getApi()} amounts to for these options, with {@link Api#AUTO}
+	 * already decided: the Responses API for models that need it and for requests using a
+	 * setting only it provides, Chat Completions otherwise.
+	 * @return either {@link Api#CHAT_COMPLETIONS} or {@link Api#RESPONSES}, never
+	 * {@link Api#AUTO}
+	 */
+	public Api resolveApi() {
+		return OpenAiChatApiSelection.resolve(this);
+	}
+
+	/**
+	 * Upper bound on the tokens the model may generate, reasoning tokens included. This
+	 * is {@code max_output_tokens} on the Responses API, which has a single cap where
+	 * Chat Completions has two: {@link #getMaxCompletionTokens()} is preferred, and
+	 * {@link #getMaxTokens()} is the fallback.
+	 */
+	public @Nullable Integer getMaxOutputTokens() {
+		return this.maxCompletionTokens != null ? this.maxCompletionTokens : this.maxTokens;
+	}
+
+	/**
+	 * Whether and how to summarize the model's reasoning: {@code auto}, {@code concise}
+	 * or {@code detailed}. Summaries surface under
+	 * {@link org.springframework.ai.openai.responses.OpenAiResponsesMetadata#REASONING_CONTENT}
+	 * and, unlike the Chat Completions key of the same name, as replayable
+	 * {@link org.springframework.ai.chat.messages.part.ReasoningPart reasoning parts} on
+	 * the assistant message. Raw reasoning text is never returned by OpenAI.
+	 * <p>
+	 * Responses API only.
+	 */
+	public @Nullable String getReasoningSummary() {
+		return this.reasoningSummary;
+	}
+
+	/**
+	 * Upper bound on the number of tool calls in a single response.
+	 * <p>
+	 * Responses API only.
+	 */
+	public @Nullable Integer getMaxToolCalls() {
+		return this.maxToolCalls;
+	}
+
+	/**
+	 * Tools OpenAI runs server-side within the request.
+	 * <p>
+	 * Responses API only.
+	 */
+	public @Nullable List<ServersideTool> getServersideTools() {
+		return this.serversideTools;
+	}
+
+	/**
+	 * Extra fields to include in the response, e.g. {@code web_search_call.results}.
+	 * {@code reasoning.encrypted_content} is always added, because stateless reasoning is
+	 * impossible without it.
+	 * <p>
+	 * Responses API only.
+	 */
+	public @Nullable List<String> getInclude() {
+		return this.include;
+	}
+
+	/**
+	 * {@code auto} to let OpenAI drop middle-of-conversation items when the context
+	 * window overflows, or {@code disabled} to fail instead.
+	 * <p>
+	 * Responses API only.
+	 */
+	public @Nullable String getTruncation() {
+		return this.truncation;
+	}
+
+	/**
+	 * A stable, non-identifying id for the end user, used by OpenAI's abuse detection.
+	 * Sent to both endpoints, and the replacement for {@link #getUser()}, which OpenAI
+	 * has deprecated and the Responses API does not accept at all.
+	 */
+	public @Nullable String getSafetyIdentifier() {
+		return this.safetyIdentifier;
+	}
+
 	@Override
 	public @Nullable List<ToolCallback> getToolCallbacks() {
 		return this.toolCallbacks;
@@ -603,7 +728,15 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 			.verbosity(this.verbosity)
 			.serviceTier(this.serviceTier)
 			.promptCacheKey(this.promptCacheKey)
-			.extraBody(this.extraBody);
+			.extraBody(this.extraBody)
+			// Responses API specific
+			.api(this.api)
+			.reasoningSummary(this.reasoningSummary)
+			.maxToolCalls(this.maxToolCalls)
+			.serversideTools(this.serversideTools)
+			.include(this.include)
+			.truncation(this.truncation)
+			.safetyIdentifier(this.safetyIdentifier);
 	}
 
 	@Override
@@ -638,7 +771,12 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 				&& Objects.equals(this.promptCacheKey, options.promptCacheKey)
 				&& Objects.equals(this.extraBody, options.extraBody)
 				&& Objects.equals(this.toolCallbacks, options.toolCallbacks)
-				&& Objects.equals(this.toolContext, options.toolContext);
+				&& Objects.equals(this.toolContext, options.toolContext) && this.api == options.api
+				&& Objects.equals(this.reasoningSummary, options.reasoningSummary)
+				&& Objects.equals(this.maxToolCalls, options.maxToolCalls)
+				&& Objects.equals(this.serversideTools, options.serversideTools)
+				&& Objects.equals(this.include, options.include) && Objects.equals(this.truncation, options.truncation)
+				&& Objects.equals(this.safetyIdentifier, options.safetyIdentifier);
 	}
 
 	@Override
@@ -648,7 +786,8 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 				this.presencePenalty, this.responseFormat, this.streamOptions, this.seed, this.stop, this.temperature,
 				this.topP, this.toolChoice, this.user, this.parallelToolCalls, this.store, this.strict, this.metadata,
 				this.reasoningEffort, this.verbosity, this.serviceTier, this.promptCacheKey, this.extraBody,
-				this.toolCallbacks, this.toolContext);
+				this.toolCallbacks, this.toolContext, this.api, this.reasoningSummary, this.maxToolCalls,
+				this.serversideTools, this.include, this.truncation, this.safetyIdentifier);
 	}
 
 	public record AudioParameters(@Nullable Voice voice, @Nullable AudioResponseFormat format) {
@@ -739,6 +878,38 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 
 	}
 
+	/**
+	 * The OpenAI endpoint a request is sent to.
+	 * <p>
+	 * The two are not interchangeable: Chat Completions is the endpoint every
+	 * OpenAI-compatible provider implements, while the Responses API is where new OpenAI
+	 * capability lands and the only one that serves reasoning together with tool calling
+	 * on GPT-5.4 and later.
+	 */
+	public enum Api {
+
+		/**
+		 * Let Spring AI decide, which is the default: the {@link #RESPONSES} endpoint for
+		 * GPT-5.4 and later, and for any request that uses a setting only it provides
+		 * (server-side tools, reasoning summaries, {@code include},
+		 * {@code max_tool_calls}, {@code truncation}); {@link #CHAT_COMPLETIONS}
+		 * otherwise.
+		 */
+		AUTO,
+
+		/**
+		 * The {@code /v1/chat/completions} endpoint.
+		 */
+		CHAT_COMPLETIONS,
+
+		/**
+		 * The {@code /v1/responses} endpoint. Stateless: every request carries the whole
+		 * prompt, and OpenAI is never asked to remember the conversation.
+		 */
+		RESPONSES
+
+	}
+
 	// public Builder class exposed to users. Avoids having to deal with noisy generic
 	// parameters.
 	public static class Builder extends AbstractBuilder<Builder> {
@@ -756,6 +927,8 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 			copy.outputModalities = this.outputModalities == null ? null : new ArrayList<>(this.outputModalities);
 			copy.metadata = this.metadata == null ? null : new HashMap<>(this.metadata);
 			copy.extraBody = this.extraBody == null ? null : new HashMap<>(this.extraBody);
+			copy.serversideTools = this.serversideTools == null ? null : new ArrayList<>(this.serversideTools);
+			copy.include = this.include == null ? null : new ArrayList<>(this.include);
 			return copy;
 		}
 
@@ -825,6 +998,21 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 		protected @Nullable String promptCacheKey;
 
 		protected @Nullable Map<String, Object> extraBody;
+
+		// Responses API specific fields
+		protected @Nullable Api api;
+
+		protected @Nullable String reasoningSummary;
+
+		protected @Nullable Integer maxToolCalls;
+
+		protected @Nullable List<ServersideTool> serversideTools;
+
+		protected @Nullable List<String> include;
+
+		protected @Nullable String truncation;
+
+		protected @Nullable String safetyIdentifier;
 
 		@Override
 		public B maxTokens(@Nullable Integer maxTokens) {
@@ -1055,6 +1243,97 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 			return self();
 		}
 
+		/**
+		 * Selects the OpenAI endpoint this request is sent to. Defaults to
+		 * {@link Api#AUTO}.
+		 */
+		public B api(@Nullable Api api) {
+			this.api = api;
+			return self();
+		}
+
+		/**
+		 * Alias for {@link #maxCompletionTokens(Integer)}, named after the Responses API
+		 * field. Both endpoints cap generated tokens, reasoning included, with the same
+		 * number.
+		 */
+		public B maxOutputTokens(@Nullable Integer maxOutputTokens) {
+			return this.maxCompletionTokens(maxOutputTokens);
+		}
+
+		/**
+		 * Whether and how to summarize the model's reasoning: {@code auto},
+		 * {@code concise} or {@code detailed}.
+		 * <p>
+		 * Responses API only.
+		 */
+		public B reasoningSummary(@Nullable String reasoningSummary) {
+			this.reasoningSummary = reasoningSummary;
+			return self();
+		}
+
+		/**
+		 * Upper bound on the number of tool calls in a single response.
+		 * <p>
+		 * Responses API only.
+		 */
+		public B maxToolCalls(@Nullable Integer maxToolCalls) {
+			this.maxToolCalls = maxToolCalls;
+			return self();
+		}
+
+		/**
+		 * Tools OpenAI runs server-side within the request. Configuring any of them is
+		 * enough for {@link Api#AUTO} to select the Responses API.
+		 * <p>
+		 * Responses API only.
+		 */
+		public B serversideTools(@Nullable List<ServersideTool> serversideTools) {
+			this.serversideTools = serversideTools;
+			return self();
+		}
+
+		/**
+		 * Tools OpenAI runs server-side within the request.
+		 * <p>
+		 * Responses API only.
+		 */
+		public B serversideTools(ServersideTool... serversideTools) {
+			this.serversideTools = List.of(serversideTools);
+			return self();
+		}
+
+		/**
+		 * Extra fields to include in the response, e.g. {@code web_search_call.results}.
+		 * <p>
+		 * Responses API only.
+		 */
+		public B include(@Nullable List<String> include) {
+			this.include = include;
+			return self();
+		}
+
+		/**
+		 * {@code auto} to let OpenAI drop middle-of-conversation items when the context
+		 * window overflows, or {@code disabled} to fail instead.
+		 * <p>
+		 * Responses API only.
+		 */
+		public B truncation(@Nullable String truncation) {
+			this.truncation = truncation;
+			return self();
+		}
+
+		/**
+		 * A stable, non-identifying id for the end user, used by OpenAI's abuse
+		 * detection. The replacement for {@link #user(String)}, which OpenAI has
+		 * deprecated and the Responses API does not accept at all.
+		 */
+		public B safetyIdentifier(@Nullable String safetyIdentifier) {
+			this.safetyIdentifier = safetyIdentifier;
+			return self();
+		}
+
 		@Override
 		public B outputSchema(@Nullable String outputSchema) {
 			if (outputSchema != null) {
@@ -1207,6 +1486,32 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 				if (that.maxRetries != null) {
 					this.maxRetries = that.maxRetries;
 				}
+				if (that.api != null) {
+					this.api = that.api;
+				}
+				if (that.reasoningSummary != null) {
+					this.reasoningSummary = that.reasoningSummary;
+				}
+				if (that.maxToolCalls != null) {
+					this.maxToolCalls = that.maxToolCalls;
+				}
+				if (that.serversideTools != null) {
+					this.serversideTools = new ArrayList<>(that.serversideTools);
+				}
+				if (that.include != null) {
+					// Union: reasoning.encrypted_content is always added anyway, and a
+					// runtime request asking for one more field should not drop the
+					// fields configured on the bean.
+					List<String> merged = new ArrayList<>(this.include != null ? this.include : List.of());
+					that.include.stream().filter(field -> !merged.contains(field)).forEach(merged::add);
+					this.include = merged;
+				}
+				if (that.truncation != null) {
+					this.truncation = that.truncation;
+				}
+				if (that.safetyIdentifier != null) {
+					this.safetyIdentifier = that.safetyIdentifier;
+				}
 			}
 			return self();
 		}
@@ -1221,7 +1526,9 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 					this.topLogprobs, this.maxCompletionTokens, this.n, this.outputModalities, this.outputAudio,
 					this.responseFormat, this.streamOptions, this.seed, this.toolChoice, this.user,
 					this.parallelToolCalls, this.store, this.strict, this.metadata, this.reasoningEffort,
-					this.verbosity, this.serviceTier, this.promptCacheKey, this.extraBody);
+					this.verbosity, this.serviceTier, this.promptCacheKey, this.extraBody, this.api,
+					this.reasoningSummary, this.maxToolCalls, this.serversideTools, this.include, this.truncation,
+					this.safetyIdentifier);
 		}
 
 	}
