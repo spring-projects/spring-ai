@@ -21,6 +21,7 @@
 **** xref:api/chat/anthropic-chat.adoc[Anthropic]
 **** xref:api/chat/azure-openai-chat.adoc[Azure OpenAI]
 **** xref:api/chat/deepseek-chat.adoc[DeepSeek]
+**** xref:api/chat/deliverance-chat.adoc[Deliverance]
 **** xref:api/chat/dmr-chat.adoc[Docker Model Runner]
 **** xref:api/chat/google-genai-chat.adoc[Google GenAI]
 **** xref:api/chat/groq-chat.adoc[Groq]
