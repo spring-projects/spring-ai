@@ -56,6 +56,30 @@ public interface VectorStore extends DocumentWriter, VectorStoreRetriever {
 	}
 
 	/**
+	 * Upserts a list of {@link EmbeddedDocument}s into the vector store using
+	 * caller-supplied embeddings, bypassing the store's own embedding model.
+	 * <p>
+	 * Write semantics are replace-by-id: if an entry's document id already exists, the
+	 * existing row is replaced; otherwise a new row is inserted. As a result, an
+	 * ingestion job that uses stable ids is safe to re-run — the same input yields the
+	 * same rows with no duplicates. This is in contrast to {@link #add(List)}, whose
+	 * behavior for a repeated id is left to the underlying provider.
+	 * <p>
+	 * If any entry fails, the operation throws. A backend may have written some entries
+	 * before failing, so callers should treat the batch outcome as unknown and retry the
+	 * whole batch, which replace-by-id makes safe.
+	 * <p>
+	 * The default implementation throws {@link UnsupportedOperationException}; each store
+	 * opts in independently.
+	 * @param entries the documents and their pre-computed embeddings to upsert
+	 * @throws UnsupportedOperationException if the store does not support upsert
+	 * @since 2.1.0
+	 */
+	default void upsert(List<EmbeddedDocument> entries) {
+		throw new UnsupportedOperationException(getName() + " does not support upsert");
+	}
+
+	/**
 	 * Deletes documents from the vector store.
 	 * @param idList list of document ids for which documents will be removed.
 	 */
