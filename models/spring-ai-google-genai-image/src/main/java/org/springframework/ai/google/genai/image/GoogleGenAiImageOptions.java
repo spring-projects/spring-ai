@@ -46,6 +46,12 @@ public class GoogleGenAiImageOptions implements ImageOptions {
 
 	}
 
+	public enum ProminentPeople {
+
+		ALLOW_PROMINENT_PEOPLE, BLOCK_PROMINENT_PEOPLE, PROMINENT_PEOPLE_UNSPECIFIED
+
+	}
+
 	public static final String DEFAULT_MODEL_NAME = GoogleGenAiImageModelName.GEMINI_2_5_FLASH_IMAGE.getName();
 
 	/**
@@ -77,6 +83,11 @@ public class GoogleGenAiImageOptions implements ImageOptions {
 	 * Allows generation of people by the model.
 	 */
 	private final @Nullable PersonGeneration personGeneration;
+
+	/**
+	 * Allows generation of images of prominent (well-known) people by the model.
+	 */
+	private final @Nullable ProminentPeople prominentPeople;
 
 	/**
 	 * MIME type of the generated image (e.g. {@code image/png}, {@code image/jpeg}).
@@ -125,16 +136,17 @@ public class GoogleGenAiImageOptions implements ImageOptions {
 
 	protected GoogleGenAiImageOptions(@Nullable String model, @Nullable Integer n, @Nullable String aspectRatio,
 			@Nullable Integer seed, @Nullable SafetyFilterLevel safetyFilterLevel,
-			@Nullable PersonGeneration personGeneration, @Nullable String outputMimeType,
-			@Nullable Integer outputCompressionQuality, @Nullable Map<String, String> labels,
-			@Nullable String imageSize, @Nullable Float temperature, @Nullable Float topP, @Nullable Float topK,
-			@Nullable Integer maxOutputTokens) {
+			@Nullable PersonGeneration personGeneration, @Nullable ProminentPeople prominentPeople,
+			@Nullable String outputMimeType, @Nullable Integer outputCompressionQuality,
+			@Nullable Map<String, String> labels, @Nullable String imageSize, @Nullable Float temperature,
+			@Nullable Float topP, @Nullable Float topK, @Nullable Integer maxOutputTokens) {
 		this.model = model;
 		this.n = n;
 		this.aspectRatio = aspectRatio;
 		this.seed = seed;
 		this.safetyFilterLevel = safetyFilterLevel;
 		this.personGeneration = personGeneration;
+		this.prominentPeople = prominentPeople;
 		this.outputMimeType = outputMimeType;
 		this.outputCompressionQuality = outputCompressionQuality;
 		this.labels = Optional.ofNullable(labels).map(LinkedHashMap::new).orElse(null);
@@ -205,6 +217,10 @@ public class GoogleGenAiImageOptions implements ImageOptions {
 		return this.personGeneration;
 	}
 
+	public @Nullable ProminentPeople getProminentPeople() {
+		return this.prominentPeople;
+	}
+
 	public @Nullable String getOutputMimeType() {
 		return this.outputMimeType;
 	}
@@ -248,6 +264,7 @@ public class GoogleGenAiImageOptions implements ImageOptions {
 				&& Objects.equals(this.aspectRatio, that.aspectRatio) && Objects.equals(this.seed, that.seed)
 				&& Objects.equals(this.safetyFilterLevel, that.safetyFilterLevel)
 				&& Objects.equals(this.personGeneration, that.personGeneration)
+				&& Objects.equals(this.prominentPeople, that.prominentPeople)
 				&& Objects.equals(this.outputMimeType, that.outputMimeType)
 				&& Objects.equals(this.outputCompressionQuality, that.outputCompressionQuality)
 				&& Objects.equals(this.labels, that.labels) && Objects.equals(this.imageSize, that.imageSize)
@@ -258,8 +275,8 @@ public class GoogleGenAiImageOptions implements ImageOptions {
 	@Override
 	public int hashCode() {
 		return Objects.hash(this.model, this.n, this.aspectRatio, this.seed, this.safetyFilterLevel,
-				this.personGeneration, this.outputMimeType, this.outputCompressionQuality, this.labels, this.imageSize,
-				this.temperature, this.topP, this.topK, this.maxOutputTokens);
+				this.personGeneration, this.prominentPeople, this.outputMimeType, this.outputCompressionQuality,
+				this.labels, this.imageSize, this.temperature, this.topP, this.topK, this.maxOutputTokens);
 	}
 
 	public static final class Builder {
@@ -275,6 +292,8 @@ public class GoogleGenAiImageOptions implements ImageOptions {
 		private @Nullable SafetyFilterLevel safetyFilterLevel;
 
 		private @Nullable PersonGeneration personGeneration;
+
+		private @Nullable ProminentPeople prominentPeople;
 
 		private @Nullable String outputMimeType;
 
@@ -313,6 +332,9 @@ public class GoogleGenAiImageOptions implements ImageOptions {
 			}
 			if (Objects.nonNull(fromOptions.getPersonGeneration())) {
 				this.personGeneration = fromOptions.getPersonGeneration();
+			}
+			if (Objects.nonNull(fromOptions.getProminentPeople())) {
+				this.prominentPeople = fromOptions.getProminentPeople();
 			}
 			if (StringUtils.hasText(fromOptions.getOutputMimeType())) {
 				this.outputMimeType = fromOptions.getOutputMimeType();
@@ -364,6 +386,9 @@ public class GoogleGenAiImageOptions implements ImageOptions {
 				}
 				if (Objects.nonNull(castFrom.getPersonGeneration())) {
 					this.personGeneration = castFrom.getPersonGeneration();
+				}
+				if (Objects.nonNull(castFrom.getProminentPeople())) {
+					this.prominentPeople = castFrom.getProminentPeople();
 				}
 				if (StringUtils.hasText(castFrom.getOutputMimeType())) {
 					this.outputMimeType = castFrom.getOutputMimeType();
@@ -430,6 +455,11 @@ public class GoogleGenAiImageOptions implements ImageOptions {
 			return this;
 		}
 
+		public Builder prominentPeople(@Nullable ProminentPeople prominentPeople) {
+			this.prominentPeople = prominentPeople;
+			return this;
+		}
+
 		public Builder outputMimeType(@Nullable String outputMimeType) {
 			this.outputMimeType = outputMimeType;
 			return this;
@@ -472,8 +502,8 @@ public class GoogleGenAiImageOptions implements ImageOptions {
 
 		public GoogleGenAiImageOptions build() {
 			return new GoogleGenAiImageOptions(this.model, this.n, this.aspectRatio, this.seed, this.safetyFilterLevel,
-					this.personGeneration, this.outputMimeType, this.outputCompressionQuality, this.labels,
-					this.imageSize, this.temperature, this.topP, this.topK, this.maxOutputTokens);
+					this.personGeneration, this.prominentPeople, this.outputMimeType, this.outputCompressionQuality,
+					this.labels, this.imageSize, this.temperature, this.topP, this.topK, this.maxOutputTokens);
 		}
 
 	}
