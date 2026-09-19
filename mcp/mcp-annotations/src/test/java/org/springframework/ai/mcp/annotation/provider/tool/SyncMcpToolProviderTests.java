@@ -36,6 +36,7 @@ import reactor.core.publisher.Mono;
 
 import org.springframework.ai.mcp.annotation.McpTool;
 import org.springframework.ai.mcp.annotation.context.MetaProvider;
+import org.springframework.aop.framework.ProxyFactory;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -916,6 +917,30 @@ public class SyncMcpToolProviderTests {
 
 		// The input schema should be minimal when only CallToolRequest is present
 		assertThat(toolSpec.tool().inputSchema()).isNotNull();
+	}
+
+	@Test // gh-4405
+	void testGetToolSpecificationsWithAopProxiedBean() {
+		AopProxiedTool target = new AopProxiedTool();
+		ProxyFactory proxyFactory = new ProxyFactory(target);
+		Object proxy = proxyFactory.getProxy();
+
+		SyncMcpToolProvider provider = new SyncMcpToolProvider(List.of(proxy));
+
+		List<SyncToolSpecification> toolSpecs = provider.getToolSpecifications();
+
+		assertThat(toolSpecs).hasSize(1);
+		assertThat(toolSpecs.get(0).tool().name()).isEqualTo("proxied-tool");
+		assertThat(toolSpecs.get(0).tool().description()).isEqualTo("Tool declared on an AOP-proxied bean");
+	}
+
+	public static class AopProxiedTool {
+
+		@McpTool(name = "proxied-tool", description = "Tool declared on an AOP-proxied bean")
+		public String proxiedTool(String input) {
+			return "Proxied: " + input;
+		}
+
 	}
 
 	public static class UiMetaProvider implements MetaProvider {

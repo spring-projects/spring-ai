@@ -24,6 +24,7 @@ import io.modelcontextprotocol.json.McpJsonMapper;
 import io.modelcontextprotocol.util.Assert;
 
 import org.springframework.ai.mcp.annotation.McpTool;
+import org.springframework.aop.support.AopUtils;
 
 /**
  * @author Christian Tzolov
@@ -43,7 +44,10 @@ public abstract class AbstractMcpToolProvider {
 	}
 
 	protected Method[] doGetClassMethods(Object bean) {
-		return bean.getClass().getDeclaredMethods();
+		// Resolve to the target class so @McpTool methods are still found when the
+		// bean is wrapped in a Spring AOP proxy (JDK dynamic proxy or CGLIB).
+		Class<?> targetClass = AopUtils.isAopProxy(bean) ? AopUtils.getTargetClass(bean) : bean.getClass();
+		return targetClass.getDeclaredMethods();
 	}
 
 	protected McpTool doGetMcpToolAnnotation(Method method) {
