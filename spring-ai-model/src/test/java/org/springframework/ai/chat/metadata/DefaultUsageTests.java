@@ -17,10 +17,16 @@
 package org.springframework.ai.chat.metadata;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.json.JsonMapper;
+
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.util.JacksonUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -302,6 +308,91 @@ public class DefaultUsageTests {
 		assertThat(usageWithExplicitTotal.getTotalTokens()).isEqualTo(200); // Should use
 																			// explicit
 																			// value
+	}
+
+	@Test
+	void testSerializationFallsBackToToStringForNonSerializableNativeUsage() throws Exception {
+		DefaultUsage usage = new DefaultUsage(100, 50, 150, new ThrowingNativeUsage());
+		String json = JsonMapper.shared().writeValueAsString(usage);
+		assertThat(json).isEqualTo(
+				"{\"promptTokens\":100,\"completionTokens\":50,\"totalTokens\":150,\"nativeUsage\":\"ThrowingNativeUsage{tokens=7}\"}");
+	}
+
+	@Test
+	void testSerializationFallsBackToToStringForSelfReferencingNativeUsage() throws Exception {
+		DefaultUsage usage = new DefaultUsage(100, 50, 150, new SelfReferencingNativeUsage());
+		String json = JsonMapper.shared().writeValueAsString(usage);
+		assertThat(json).isEqualTo(
+				"{\"promptTokens\":100,\"completionTokens\":50,\"totalTokens\":150,\"nativeUsage\":\"SelfReferencingNativeUsage\"}");
+	}
+
+	@Test
+	void testSerializationOfSerializableNativeUsageIsUnchanged() throws Exception {
+		DefaultUsage usage = new DefaultUsage(100, 50, 150, new PlainNativeUsage(7));
+		String json = JsonMapper.shared().writeValueAsString(usage);
+		assertThat(json).isEqualTo(
+				"{\"promptTokens\":100,\"completionTokens\":50,\"totalTokens\":150,\"nativeUsage\":{\"tokens\":7}}");
+	}
+
+	@Test
+	void testChatResponseWithNonSerializableNativeUsageIsSerializable() throws Exception {
+		DefaultUsage usage = new DefaultUsage(100, 50, 150, new ThrowingNativeUsage());
+		ChatResponse chatResponse = ChatResponse.builder()
+			.generations(List.of(new Generation(new AssistantMessage("Hello"))))
+			.metadata(ChatResponseMetadata.builder().usage(usage).build())
+			.build();
+
+		// Mirrors SimpleLoggerAdvisor.DEFAULT_RESPONSE_TO_STRING
+		String json = JacksonUtils.getDefaultJsonMapper()
+			.writerWithDefaultPrettyPrinter()
+			.writeValueAsString(chatResponse);
+
+		assertThat(json).contains("\"nativeUsage\" : \"ThrowingNativeUsage{tokens=7}\"");
+		assertThat(json).contains("\"promptTokens\" : 100");
+	}
+
+	/**
+	 * Simulates a provider-native usage object (e.g. a protobuf message) whose accessors
+	 * cannot be introspected by Jackson.
+	 */
+	static class ThrowingNativeUsage {
+
+		public int getTokens() {
+			throw new UnsupportedOperationException("not serializable");
+		}
+
+		@Override
+		public String toString() {
+			return "ThrowingNativeUsage{tokens=7}";
+		}
+
+	}
+
+	static class SelfReferencingNativeUsage {
+
+		public SelfReferencingNativeUsage getSelf() {
+			return this;
+		}
+
+		@Override
+		public String toString() {
+			return "SelfReferencingNativeUsage";
+		}
+
+	}
+
+	static class PlainNativeUsage {
+
+		private final int tokens;
+
+		PlainNativeUsage(int tokens) {
+			this.tokens = tokens;
+		}
+
+		public int getTokens() {
+			return this.tokens;
+		}
+
 	}
 
 }
