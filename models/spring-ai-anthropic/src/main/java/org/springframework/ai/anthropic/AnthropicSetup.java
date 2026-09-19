@@ -305,6 +305,7 @@ public final class AnthropicSetup {
 		AnthropicBackend backend = buildBackend(resolvedBaseUrl, resolvedApiKey);
 
 		ClientOptions.Builder optsBuilder = ClientOptions.builder()
+			.baseUrl(resolvedBaseUrl)
 			.timeout(resolvedTimeout)
 			.maxRetries(resolvedMaxRetries)
 			.putHeader("User-Agent", DEFAULT_USER_AGENT);
