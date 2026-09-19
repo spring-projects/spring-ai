@@ -42,6 +42,7 @@
 		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-common</module>
 		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webflux</module>
 		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-server-webmvc</module>
+		<module>auto-configurations/mcp/spring-ai-autoconfigure-mcp-toolbox</module>
 
 		<module>auto-configurations/models/chat/client/spring-ai-autoconfigure-model-chat-client</module>
 		<module>auto-configurations/models/chat/memory/repository/spring-ai-autoconfigure-model-chat-memory-repository-cassandra</module>
@@ -99,6 +100,7 @@
 
 		<module>mcp/common</module>
 		<module>mcp/mcp-annotations</module>
+		<module>mcp/mcp-toolbox</module>
 		<module>mcp/transport/mcp-spring-webflux</module>
 		<module>mcp/transport/mcp-spring-webmvc</module>
 
@@ -129,6 +131,7 @@
 		<module>starters/spring-ai-starter-mcp-server</module>
 		<module>starters/spring-ai-starter-mcp-server-webflux</module>
 		<module>starters/spring-ai-starter-mcp-server-webmvc</module>
+		<module>starters/spring-ai-starter-mcp-toolbox</module>
 
 		<module>starters/spring-ai-starter-model-anthropic</module>
 		<module>starters/spring-ai-starter-model-bedrock</module>

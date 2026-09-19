@@ -180,6 +180,30 @@
 				<version>${project.version}</version>
 			</dependency>
 
+			<dependency>
+				<groupId>com.google.cloud.mcp</groupId>
+				<artifactId>mcp-toolbox-sdk-java</artifactId>
+				<version>1.0.0</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-mcp-toolbox</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-autoconfigure-mcp-toolbox</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-mcp-toolbox</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
 			<!-- Spring AI Document Readers -->
 
 			<dependency>
