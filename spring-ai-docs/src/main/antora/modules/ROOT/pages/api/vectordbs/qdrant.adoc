@@ -108,6 +108,12 @@ Properties starting with `spring.ai.vectorstore.qdrant.*` are used to configure 
 |`spring.ai.vectorstore.qdrant.initialize-schema`| Whether to initialize the schema | `false`
 |===
 
+== Upsert support
+
+`QdrantVectorStore` implements `upsert(List<EmbeddedDocument>)`, so you can write documents together with embeddings you computed elsewhere instead of having the store embed them.
+Writing the same id again replaces the existing row, so a re-run with stable ids does not create duplicates.
+See xref:api/vectordbs.adoc#writing-precomputed-embeddings[Writing User-Supplied Embeddings] for details.
+
 == Manual Configuration
 
 Instead of using the Spring Boot auto-configuration, you can manually configure the Qdrant vector store. For this you need to add the `spring-ai-qdrant-store` to your project:
