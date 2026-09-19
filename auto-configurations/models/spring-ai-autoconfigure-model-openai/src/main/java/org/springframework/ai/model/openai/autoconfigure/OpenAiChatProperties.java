@@ -96,6 +96,8 @@ public class OpenAiChatProperties extends AbstractOpenAiProperties {
 
 	private @Nullable String promptCacheKey;
 
+	private @Nullable Boolean replayReasoningContent;
+
 	private @Nullable Map<String, Object> extraBody;
 
 	public @Nullable String getModel() {
@@ -306,6 +308,14 @@ public class OpenAiChatProperties extends AbstractOpenAiProperties {
 		this.promptCacheKey = promptCacheKey;
 	}
 
+	public @Nullable Boolean getReplayReasoningContent() {
+		return this.replayReasoningContent;
+	}
+
+	public void setReplayReasoningContent(@Nullable Boolean replayReasoningContent) {
+		this.replayReasoningContent = replayReasoningContent;
+	}
+
 	public @Nullable Map<String, Object> getExtraBody() {
 		return this.extraBody;
 	}
@@ -343,6 +353,7 @@ public class OpenAiChatProperties extends AbstractOpenAiProperties {
 			.verbosity(this.verbosity)
 			.serviceTier(this.serviceTier)
 			.promptCacheKey(this.promptCacheKey)
+			.replayReasoningContent(this.replayReasoningContent)
 			.extraBody(this.extraBody)
 			.build();
 	}
@@ -774,6 +785,16 @@ public class OpenAiChatProperties extends AbstractOpenAiProperties {
 
 		public void setPromptCacheKey(@Nullable String promptCacheKey) {
 			OpenAiChatProperties.this.setPromptCacheKey(promptCacheKey);
+		}
+
+		@DeprecatedConfigurationProperty(replacement = "spring.ai.openai.chat.replay-reasoning-content")
+		@Deprecated(since = "2.0.0", forRemoval = true)
+		public @Nullable Boolean getReplayReasoningContent() {
+			return OpenAiChatProperties.this.getReplayReasoningContent();
+		}
+
+		public void setReplayReasoningContent(@Nullable Boolean replayReasoningContent) {
+			OpenAiChatProperties.this.setReplayReasoningContent(replayReasoningContent);
 		}
 
 		@DeprecatedConfigurationProperty(replacement = "spring.ai.openai.chat.extra-body")
