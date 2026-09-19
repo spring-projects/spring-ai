@@ -66,7 +66,7 @@ public class AsyncMcpProgressProviderTests {
 			latch.await(3, TimeUnit.SECONDS);
 		}
 		catch (InterruptedException e) {
-			e.printStackTrace();
+			Thread.currentThread().interrupt();
 		}
 
 		assertThat(progressHandler.lastNotification).isEqualTo(notification);

@@ -38,7 +38,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.fail;
 
 @ExtendWith(SpringExtension.class)
 @SpringBootTest(classes = JdbcChatMemoryRepositoryHsqldbAutoConfigurationIT.TestConfig.class,
@@ -86,16 +85,10 @@ public class JdbcChatMemoryRepositoryHsqldbAutoConfigurationIT {
 		assertThat(this.context.containsBean("jdbcChatMemoryScriptDatabaseInitializer")).isTrue();
 
 		// Verify the table exists by executing a direct query
-		try {
-			boolean tableExists = this.jdbcTemplate.queryForObject(
-					"SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'SPRING_AI_CHAT_MEMORY'",
-					Integer.class) > 0;
-			assertThat(tableExists).isTrue();
-		}
-		catch (Exception e) {
-			e.printStackTrace();
-			fail("Failed to check if table exists: " + e.getMessage());
-		}
+		boolean tableExists = this.jdbcTemplate.queryForObject(
+				"SELECT COUNT(*) FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'SPRING_AI_CHAT_MEMORY'",
+				Integer.class) > 0;
+		assertThat(tableExists).isTrue();
 
 		// Now test the ChatMemory functionality
 		assertThat(this.context.getBean(org.springframework.ai.chat.memory.ChatMemory.class)).isNotNull();
