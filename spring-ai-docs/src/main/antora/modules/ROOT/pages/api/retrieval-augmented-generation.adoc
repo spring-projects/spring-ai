@@ -428,6 +428,57 @@ A component for post-processing retrieved documents based on a query, addressing
 
 For example, it could rank documents based on their relevance to the query, remove irrelevant or redundant documents, or compress the content of each document to reduce noise and redundancy.
 
+===== RerankingDocumentPostProcessor
+
+A `RerankingDocumentPostProcessor` reranks retrieved documents before they are passed to the model.
+This is useful when you want to retrieve a larger candidate set from a vector store and then keep only the most relevant documents for generation.
+
+In a Spring Boot application, add the RAG module and the vector store starter you want to use.
+For example, with Gradle:
+
+[source,groovy]
+----
+dependencies {
+    implementation platform("org.springframework.ai:spring-ai-bom:2.0.0")
+    implementation "org.springframework.ai:spring-ai-rag"
+    implementation "org.springframework.ai:spring-ai-starter-vector-store-pgvector"
+
+    // Choose the chat model starter used by your application.
+    implementation "org.springframework.ai:spring-ai-starter-model-openai"
+}
+----
+
+Then implement a `DocumentReranker` using your preferred reranking provider.
+The reranker receives the user query and the retrieved documents, and returns the documents in relevance order.
+
+[source,java]
+----
+@Bean
+DocumentReranker documentReranker(MyRerankClient rerankClient) {
+    return (query, documents) -> rerankClient.rerank(query.text(), documents);
+}
+----
+
+Finally, configure the post-processor in the `RetrievalAugmentationAdvisor`.
+In this example, the vector store retrieves 20 candidates and the reranker keeps the best 5.
+
+[source,java]
+----
+@Bean
+Advisor retrievalAugmentationAdvisor(VectorStore vectorStore, DocumentReranker documentReranker) {
+    return RetrievalAugmentationAdvisor.builder()
+        .documentRetriever(VectorStoreDocumentRetriever.builder()
+            .vectorStore(vectorStore)
+            .topK(20)
+            .build())
+        .documentPostProcessors(RerankingDocumentPostProcessor.builder()
+            .documentReranker(documentReranker)
+            .topN(5)
+            .build())
+        .build();
+}
+----
+
 === Generation
 
 Generation modules are responsible for generating the final response based on the user query and retrieved documents.
