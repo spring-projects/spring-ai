@@ -18,6 +18,7 @@ package org.springframework.ai.openai;
 
 import java.util.List;
 
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.openai.models.chat.completions.ChatCompletion;
 import com.openai.models.chat.completions.ChatCompletionChunk;
 import com.openai.models.chat.completions.ChatCompletionChunk.Choice;
@@ -169,6 +170,19 @@ class OpenAiChatModelChunkMergerTests {
 		assertThat(functionToolCall.id()).isEqualTo("call_1");
 		assertThat(functionToolCall.function().name()).isEqualTo("get_weather");
 		assertThat(functionToolCall.function().arguments()).isEmpty();
+	}
+
+	@Test // gh-6928
+	void chunkToChatCompletionUsesDefaultsForMissingChunkMetadata() throws Exception {
+		ChatCompletionChunk chunk = JsonMapper.builder()
+			.build()
+			.readValue("{\"choices\":[]}", ChatCompletionChunk.class);
+
+		ChatCompletion completion = OpenAiChatModel.ChunkMerger.chunkToChatCompletion(chunk);
+
+		assertThat(completion.id()).isEmpty();
+		assertThat(completion.model()).isEmpty();
+		assertThat(completion.created()).isZero();
 	}
 
 	private static ChatCompletionChunk chunk(@Nullable FinishReason finishReason, ToolCall... toolCalls) {

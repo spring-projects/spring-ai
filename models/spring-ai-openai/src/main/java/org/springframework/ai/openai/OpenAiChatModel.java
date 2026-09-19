@@ -1334,10 +1334,10 @@ public final class OpenAiChatModel implements ChatModel {
 			}).toList();
 
 			return ChatCompletion.builder()
-				.id(chunk.id())
+				.id(chunk._id().asKnown().orElse(""))
 				.choices(choices)
 				.created(getCreated(chunk))
-				.model(chunk.model())
+				.model(chunk._model().asKnown().orElse(""))
 				.usage(chunk.usage()
 					.orElse(CompletionUsage.builder().promptTokens(0).completionTokens(0).totalTokens(0).build()))
 				.putAllAdditionalProperties(chunk._additionalProperties())
