@@ -23,11 +23,19 @@ import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
+import org.springframework.ai.chat.memory.InMemoryChatMemoryRepository;
+import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.memory.repository.redis.RedisChatMemoryRepository;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.model.chat.memory.autoconfigure.ChatMemoryAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.data.redis.autoconfigure.DataRedisAutoConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -87,6 +95,71 @@ class RedisChatMemoryRepositoryAutoConfigurationIT {
 
 			assertThat(repository).isSameAs(redisChatMemory);
 		});
+	}
+
+	@Test
+	void defaultChatMemoryUsesRedisRepository() {
+		this.contextRunner.withConfiguration(AutoConfigurations.of(ChatMemoryAutoConfiguration.class)).run(context -> {
+			assertThat(context).hasNotFailed();
+			assertThat(context).hasSingleBean(ChatMemoryRepository.class);
+			assertThat(context).hasSingleBean(RedisChatMemoryRepository.class);
+			assertThat(context).hasSingleBean(ChatMemory.class);
+
+			ChatMemory chatMemory = context.getBean(ChatMemory.class);
+			chatMemory.add("default-chat-memory", new UserMessage("Hello"));
+
+			RedisChatMemoryRepository repository = context.getBean(RedisChatMemoryRepository.class);
+			assertThat(repository.findByConversationId("default-chat-memory")).extracting(Message::getText)
+				.containsExactly("Hello");
+		});
+	}
+
+	@Test
+	void customChatMemoryUsesRedisRepository() {
+		this.contextRunner.withConfiguration(AutoConfigurations.of(ChatMemoryAutoConfiguration.class))
+			.withUserConfiguration(CustomChatMemoryConfiguration.class)
+			.run(context -> {
+				assertThat(context).hasNotFailed();
+				assertThat(context).hasSingleBean(ChatMemoryRepository.class);
+				assertThat(context).hasSingleBean(RedisChatMemoryRepository.class);
+				assertThat(context).hasSingleBean(ChatMemory.class);
+				assertThat(context.getBean(ChatMemory.class)).isSameAs(context.getBean("customChatMemory"));
+
+				ChatMemory chatMemory = context.getBean(ChatMemory.class);
+				chatMemory.add("custom-chat-memory", new UserMessage("Hello"));
+
+				RedisChatMemoryRepository repository = context.getBean(RedisChatMemoryRepository.class);
+				assertThat(repository.findByConversationId("custom-chat-memory")).extracting(Message::getText)
+					.containsExactly("Hello");
+			});
+	}
+
+	@Test
+	void customChatMemoryRepositoryTakesPrecedence() {
+		ChatMemoryRepository repository = new InMemoryChatMemoryRepository();
+		this.contextRunner.withConfiguration(AutoConfigurations.of(ChatMemoryAutoConfiguration.class))
+			.withBean(ChatMemoryRepository.class, () -> repository)
+			.run(context -> {
+				assertThat(context).hasNotFailed();
+				assertThat(context).hasSingleBean(ChatMemoryRepository.class);
+				assertThat(context).doesNotHaveBean(RedisChatMemoryRepository.class);
+				assertThat(context.getBean(ChatMemoryRepository.class)).isSameAs(repository);
+				assertThat(context).hasSingleBean(ChatMemory.class);
+
+				context.getBean(ChatMemory.class).add("custom-repository", new UserMessage("Hello"));
+				assertThat(repository.findByConversationId("custom-repository")).extracting(Message::getText)
+					.containsExactly("Hello");
+			});
+	}
+
+	@Configuration(proxyBeanMethods = false)
+	static class CustomChatMemoryConfiguration {
+
+		@Bean
+		ChatMemory customChatMemory(RedisChatMemoryRepository repository) {
+			return MessageWindowChatMemory.builder().chatMemoryRepository(repository).maxMessages(10).build();
+		}
+
 	}
 
 }
