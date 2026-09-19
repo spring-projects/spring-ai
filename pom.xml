@@ -257,6 +257,7 @@
 
 		<!-- MCP SDK -->
 		<mcp.sdk.version>2.0.0</mcp.sdk.version>
+		<mcp-toolbox-sdk-java.version>1.0.0</mcp-toolbox-sdk-java.version>
 
 		<!-- AI model SDKs -->
 		<anthropic-sdk.version>2.64.0</anthropic-sdk.version>
@@ -997,6 +998,11 @@
 				<version>${mcp.sdk.version}</version>
 				<type>pom</type>
 				<scope>import</scope>
+			</dependency>
+			<dependency>
+				<groupId>com.google.cloud.mcp</groupId>
+				<artifactId>mcp-toolbox-sdk-java</artifactId>
+				<version>${mcp-toolbox-sdk-java.version}</version>
 			</dependency>
 			<dependency>
 				<groupId>com.networknt</groupId>

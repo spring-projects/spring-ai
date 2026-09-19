@@ -18,9 +18,12 @@ package org.springframework.ai.mcp.toolbox;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -40,7 +43,8 @@ import org.springframework.util.CollectionUtils;
 
 /**
  * {@link ToolCallbackProvider} implementation that resolves and memoizes database tools
- * from a {@link McpToolboxClient} instance.
+ * from a {@link McpToolboxClient} instance alongside optional pre-configured {@link Tool}
+ * beans.
  *
  * @author Stenal P Jolly
  * @since 2.1.0
@@ -53,35 +57,56 @@ public class McpToolboxToolCallbackProvider implements ToolCallbackProvider {
 
 	private final McpToolboxClient client;
 
-	private final List<String> toolsets;
+	private final Set<String> toolsets;
 
-	private final List<String> tools;
+	private final Set<String> tools;
+
+	private final List<Tool> preconfiguredTools;
 
 	private final Duration timeout;
 
 	private final ObjectMapper objectMapper;
 
+	private final Object cacheLock = new Object();
+
 	private final AtomicReference<ToolCallback @Nullable []> cachedCallbacks = new AtomicReference<>();
 
 	public McpToolboxToolCallbackProvider(McpToolboxClient client) {
-		this(client, List.of(), List.of(), DEFAULT_TIMEOUT, DEFAULT_OBJECT_MAPPER);
+		this(client, List.of(), List.of(), List.of(), DEFAULT_TIMEOUT, DEFAULT_OBJECT_MAPPER);
 	}
 
 	public McpToolboxToolCallbackProvider(McpToolboxClient client, List<String> toolsets, List<String> tools) {
-		this(client, toolsets, tools, DEFAULT_TIMEOUT, DEFAULT_OBJECT_MAPPER);
+		this(client, toolsets, tools, List.of(), DEFAULT_TIMEOUT, DEFAULT_OBJECT_MAPPER);
 	}
 
 	public McpToolboxToolCallbackProvider(McpToolboxClient client, List<String> toolsets, List<String> tools,
 			Duration timeout, ObjectMapper objectMapper) {
+		this(client, toolsets, tools, List.of(), timeout, objectMapper);
+	}
+
+	public McpToolboxToolCallbackProvider(McpToolboxClient client, List<String> toolsets, List<String> tools,
+			List<Tool> preconfiguredTools, Duration timeout, ObjectMapper objectMapper) {
+		this(client, toolsets != null ? Collections.unmodifiableSet(new LinkedHashSet<>(toolsets)) : Set.of(),
+				tools != null ? Collections.unmodifiableSet(new LinkedHashSet<>(tools)) : Set.of(), preconfiguredTools,
+				timeout, objectMapper);
+	}
+
+	private McpToolboxToolCallbackProvider(McpToolboxClient client, Set<String> toolsets, Set<String> tools,
+			List<Tool> preconfiguredTools, Duration timeout, ObjectMapper objectMapper) {
 		Assert.notNull(client, "McpToolboxClient must not be null");
 		Assert.notNull(timeout, "Timeout must not be null");
 		Assert.isTrue(!timeout.isNegative() && !timeout.isZero(), "Timeout must be positive");
 		Assert.notNull(objectMapper, "ObjectMapper must not be null");
 		this.client = client;
-		this.toolsets = toolsets != null ? List.copyOf(toolsets) : List.of();
-		this.tools = tools != null ? List.copyOf(tools) : List.of();
+		this.toolsets = toolsets;
+		this.tools = tools;
+		this.preconfiguredTools = preconfiguredTools != null ? List.copyOf(preconfiguredTools) : List.of();
 		this.timeout = timeout;
 		this.objectMapper = objectMapper;
+	}
+
+	public static Builder builder() {
+		return new Builder();
 	}
 
 	@Override
@@ -90,7 +115,7 @@ public class McpToolboxToolCallbackProvider implements ToolCallbackProvider {
 		if (existing != null) {
 			return existing.clone();
 		}
-		synchronized (this.cachedCallbacks) {
+		synchronized (this.cacheLock) {
 			existing = this.cachedCallbacks.get();
 			if (existing == null) {
 				existing = resolveToolCallbacks();
@@ -105,7 +130,7 @@ public class McpToolboxToolCallbackProvider implements ToolCallbackProvider {
 	 * invocation reloads tool definitions from the MCP Toolbox server.
 	 */
 	public void invalidateCache() {
-		synchronized (this.cachedCallbacks) {
+		synchronized (this.cacheLock) {
 			this.cachedCallbacks.set(null);
 		}
 	}
@@ -114,7 +139,8 @@ public class McpToolboxToolCallbackProvider implements ToolCallbackProvider {
 		Map<String, ToolCallback> callbacksByName = new LinkedHashMap<>();
 
 		try {
-			if (CollectionUtils.isEmpty(this.toolsets) && CollectionUtils.isEmpty(this.tools)) {
+			if (CollectionUtils.isEmpty(this.toolsets) && CollectionUtils.isEmpty(this.tools)
+					&& CollectionUtils.isEmpty(this.preconfiguredTools)) {
 				Map<String, ToolDefinition> definitions = this.client.listTools()
 					.get(this.timeout.toMillis(), TimeUnit.MILLISECONDS);
 				definitions.forEach((name, def) -> callbacksByName.put(name,
@@ -136,8 +162,10 @@ public class McpToolboxToolCallbackProvider implements ToolCallbackProvider {
 			allFutures.addAll(toolsetFutures);
 			allFutures.addAll(toolFutures);
 
-			CompletableFuture.allOf(allFutures.toArray(new CompletableFuture<?>[0]))
-				.get(this.timeout.toMillis(), TimeUnit.MILLISECONDS);
+			if (!allFutures.isEmpty()) {
+				CompletableFuture.allOf(allFutures.toArray(new CompletableFuture<?>[0]))
+					.get(this.timeout.toMillis(), TimeUnit.MILLISECONDS);
+			}
 
 			for (CompletableFuture<Map<String, ToolDefinition>> future : toolsetFutures) {
 				Map<String, ToolDefinition> definitions = future.get();
@@ -148,7 +176,20 @@ public class McpToolboxToolCallbackProvider implements ToolCallbackProvider {
 			for (CompletableFuture<Tool> future : toolFutures) {
 				Tool loadedTool = future.get();
 				callbacksByName.put(loadedTool.name(),
-						new McpToolboxToolCallback(loadedTool, this.timeout, this.objectMapper));
+						McpToolboxToolCallback.builder()
+							.tool(loadedTool)
+							.timeout(this.timeout)
+							.objectMapper(this.objectMapper)
+							.build());
+			}
+
+			for (Tool preconfiguredTool : this.preconfiguredTools) {
+				callbacksByName.put(preconfiguredTool.name(),
+						McpToolboxToolCallback.builder()
+							.tool(preconfiguredTool)
+							.timeout(this.timeout)
+							.objectMapper(this.objectMapper)
+							.build());
 			}
 
 			return callbacksByName.values().toArray(new ToolCallback[0]);
@@ -165,6 +206,66 @@ public class McpToolboxToolCallbackProvider implements ToolCallbackProvider {
 			throw new IllegalStateException(
 					"Timed out after " + this.timeout + " while loading tools from MCP Toolbox server", ex);
 		}
+	}
+
+	/**
+	 * Fluent builder for {@link McpToolboxToolCallbackProvider}.
+	 */
+	public static final class Builder {
+
+		@Nullable private McpToolboxClient client;
+
+		private Set<String> toolsets = Set.of();
+
+		private Set<String> tools = Set.of();
+
+		private List<Tool> preconfiguredTools = List.of();
+
+		private Duration timeout = DEFAULT_TIMEOUT;
+
+		private ObjectMapper objectMapper = DEFAULT_OBJECT_MAPPER;
+
+		private Builder() {
+		}
+
+		public Builder client(McpToolboxClient client) {
+			this.client = client;
+			return this;
+		}
+
+		public Builder toolsets(List<String> toolsets) {
+			this.toolsets = toolsets != null ? Collections.unmodifiableSet(new LinkedHashSet<>(toolsets)) : Set.of();
+			return this;
+		}
+
+		public Builder tools(List<String> tools) {
+			this.tools = tools != null ? Collections.unmodifiableSet(new LinkedHashSet<>(tools)) : Set.of();
+			return this;
+		}
+
+		public Builder preconfiguredTools(List<Tool> preconfiguredTools) {
+			this.preconfiguredTools = preconfiguredTools != null ? List.copyOf(preconfiguredTools) : List.of();
+			return this;
+		}
+
+		public Builder timeout(Duration timeout) {
+			Assert.notNull(timeout, "Timeout must not be null");
+			this.timeout = timeout;
+			return this;
+		}
+
+		public Builder objectMapper(ObjectMapper objectMapper) {
+			Assert.notNull(objectMapper, "ObjectMapper must not be null");
+			this.objectMapper = objectMapper;
+			return this;
+		}
+
+		public McpToolboxToolCallbackProvider build() {
+			Assert.notNull(this.client, "McpToolboxClient must not be null");
+			return new McpToolboxToolCallbackProvider(this.client, this.toolsets, this.tools, this.preconfiguredTools,
+					this.timeout, this.objectMapper);
+		}
+
 	}
 
 }

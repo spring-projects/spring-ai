@@ -183,7 +183,7 @@
 			<dependency>
 				<groupId>com.google.cloud.mcp</groupId>
 				<artifactId>mcp-toolbox-sdk-java</artifactId>
-				<version>1.0.0</version>
+				<version>${mcp-toolbox-sdk-java.version}</version>
 			</dependency>
 
 			<dependency>

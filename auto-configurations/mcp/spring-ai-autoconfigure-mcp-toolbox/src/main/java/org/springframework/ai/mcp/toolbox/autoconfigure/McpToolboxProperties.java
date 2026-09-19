@@ -20,6 +20,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
+import com.google.cloud.mcp.ProtocolVersion;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -60,6 +61,11 @@ public class McpToolboxProperties {
 	 * Client application version sent in telemetry headers to the MCP Toolbox server.
 	 */
 	private String clientVersion = "1.0.0";
+
+	/**
+	 * Optional preferred MCP protocol version (for example, VERSION_2025_11_25).
+	 */
+	@Nullable private ProtocolVersion protocolVersion;
 
 	/**
 	 * Maximum timeout for MCP Toolbox tool discovery and invocation requests.
@@ -128,6 +134,14 @@ public class McpToolboxProperties {
 		this.clientVersion = clientVersion;
 	}
 
+	@Nullable public ProtocolVersion getProtocolVersion() {
+		return this.protocolVersion;
+	}
+
+	public void setProtocolVersion(@Nullable ProtocolVersion protocolVersion) {
+		this.protocolVersion = protocolVersion;
+	}
+
 	public Duration getTimeout() {
 		return this.timeout;
 	}
@@ -166,9 +180,9 @@ public class McpToolboxProperties {
 	public String toString() {
 		return "McpToolboxProperties{" + "enabled=" + this.enabled + ", url='" + this.url + '\'' + ", apiKey='"
 				+ (this.apiKey != null ? "***" : "null") + '\'' + ", clientName='" + this.clientName + '\''
-				+ ", clientVersion='" + this.clientVersion + '\'' + ", timeout=" + this.timeout + ", headers="
-				+ (this.headers.isEmpty() ? "{}" : "[REDACTED]") + ", toolsets=" + this.toolsets + ", tools="
-				+ this.tools + '}';
+				+ ", clientVersion='" + this.clientVersion + '\'' + ", protocolVersion=" + this.protocolVersion
+				+ ", timeout=" + this.timeout + ", headers=" + (this.headers.isEmpty() ? "{}" : "[REDACTED]")
+				+ ", toolsets=" + this.toolsets + ", tools=" + this.tools + '}';
 	}
 
 }

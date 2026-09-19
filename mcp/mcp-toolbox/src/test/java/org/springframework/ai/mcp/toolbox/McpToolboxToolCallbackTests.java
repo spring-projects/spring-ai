@@ -31,9 +31,15 @@ import com.google.cloud.mcp.tool.ToolDefinition.Parameter;
 import com.google.cloud.mcp.tool.ToolResult;
 import com.google.cloud.mcp.tool.ToolResult.Content;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
+import org.springframework.ai.chat.model.ToolContext;
+import org.springframework.ai.mcp.toolbox.aot.McpToolboxRuntimeHints;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.execution.ToolExecutionException;
+import org.springframework.ai.tool.metadata.ToolMetadata;
+import org.springframework.aot.hint.RuntimeHints;
+import org.springframework.aot.hint.predicate.RuntimeHintsPredicates;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -45,8 +51,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * Unit tests for {@link McpToolboxToolCallback} and
- * {@link McpToolboxToolCallbackProvider}.
+ * Unit tests for {@link McpToolboxToolCallback}, {@link McpToolboxToolCallbackProvider},
+ * and {@link McpToolboxRuntimeHints}.
  *
  * @author Stenal P Jolly
  */
@@ -55,19 +61,28 @@ class McpToolboxToolCallbackTests {
 	private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
 	@Test
-	void shouldBuildStructuredJsonSchemaAndInvokeTool() throws Exception {
+	void shouldBuildStructuredJsonSchemaPropagateToolContextAndRespectToolMetadata() throws Exception {
 		McpToolboxClient mockClient = mock(McpToolboxClient.class);
 		ToolDefinition definition = new ToolDefinition("Search hotels by city",
-				List.of(new Parameter("city", "string", true, "City name", List.of(), "Zurich")), List.of());
+				List.of(new Parameter("city", "string", true, "City name", List.of(), "Zurich"),
+						new Parameter("boundTenant", "string", true, "Bound tenant ID", List.of())),
+				List.of());
 		ToolResult toolResult = new ToolResult(List.of(new Content("text", "[{\"name\":\"Grand Hotel\"}]")), false);
 
 		when(mockClient.invokeTool(eq("search-hotels"), anyMap(), anyMap()))
 			.thenReturn(CompletableFuture.completedFuture(toolResult));
 
-		McpToolboxToolCallback callback = new McpToolboxToolCallback("search-hotels", definition, mockClient);
+		Tool tool = new Tool("search-hotels", definition, mockClient).bindParam("boundTenant", "acme-bound");
+		McpToolboxToolCallback callback = McpToolboxToolCallback.builder()
+			.tool(tool)
+			.toolMetadata(ToolMetadata.builder().returnDirect(true).build())
+			.timeout(Duration.ofSeconds(10))
+			.objectMapper(OBJECT_MAPPER)
+			.build();
 
 		assertThat(callback.getToolDefinition().name()).isEqualTo("search-hotels");
 		assertThat(callback.getToolDefinition().description()).isEqualTo("Search hotels by city");
+		assertThat(callback.getToolMetadata().returnDirect()).isTrue();
 
 		JsonNode schemaNode = OBJECT_MAPPER.readTree(callback.getToolDefinition().inputSchema());
 		assertThat(schemaNode.get("type").asText()).isEqualTo("object");
@@ -75,10 +90,25 @@ class McpToolboxToolCallbackTests {
 		assertThat(schemaNode.at("/properties/city/type").asText()).isEqualTo("string");
 		assertThat(schemaNode.at("/properties/city/description").asText()).isEqualTo("City name");
 		assertThat(schemaNode.at("/properties/city/default").asText()).isEqualTo("Zurich");
+		assertThat(schemaNode.at("/properties/boundTenant").isMissingNode()).isTrue();
 		assertThat(schemaNode.get("required").get(0).asText()).isEqualTo("city");
 
-		String response = callback.call("{\"city\":\"Basel\"}");
+		ToolContext toolContext = new ToolContext(Map.of(McpToolboxToolCallback.TOOL_CONTEXT_HEADERS_KEY,
+				Map.of("X-Request-Id", "req-123"), "X-Tenant-Id", "acme-corp", "X-Goog-Api-Key", "malicious-override"));
+		String response = callback.call("{\"city\":\"Basel\"}", toolContext);
 		assertThat(response).isEqualTo("[{\"name\":\"Grand Hotel\"}]");
+
+		@SuppressWarnings("unchecked")
+		ArgumentCaptor<Map<String, Object>> argsCaptor = ArgumentCaptor.forClass(Map.class);
+		@SuppressWarnings("unchecked")
+		ArgumentCaptor<Map<String, String>> headersCaptor = ArgumentCaptor.forClass(Map.class);
+		verify(mockClient).invokeTool(eq("search-hotels"), argsCaptor.capture(), headersCaptor.capture());
+		assertThat(argsCaptor.getValue()).containsOnlyKeys("city", "boundTenant")
+			.containsEntry("city", "Basel")
+			.containsEntry("boundTenant", "acme-bound");
+		assertThat(headersCaptor.getValue()).containsEntry("X-Request-Id", "req-123")
+			.containsEntry("X-Tenant-Id", "acme-corp")
+			.doesNotContainKey("X-Goog-Api-Key");
 	}
 
 	@Test
@@ -141,23 +171,43 @@ class McpToolboxToolCallbackTests {
 	}
 
 	@Test
-	void providerShouldLoadConfiguredToolsetsAndToolsAndDeduplicate() {
+	void providerShouldLoadConfiguredToolsetsToolsAndPreconfiguredBoundTools() {
 		McpToolboxClient mockClient = mock(McpToolboxClient.class);
 		ToolDefinition sharedDef = new ToolDefinition("Shared tool", List.of(), List.of());
 		ToolDefinition extraDef = new ToolDefinition("Extra tool", List.of(), List.of());
+		ToolDefinition boundDef = new ToolDefinition("Bound tool",
+				List.of(new Parameter("orgId", "string", true, "Org ID", List.of())), List.of());
+
 		Tool loadedSharedTool = new Tool("shared-tool", sharedDef, mockClient);
+		Tool preconfiguredBoundTool = new Tool("bound-tool", boundDef, mockClient).bindParam("orgId", "org-99");
 
 		when(mockClient.loadToolset("catalog-toolset"))
 			.thenReturn(CompletableFuture.completedFuture(Map.of("shared-tool", sharedDef, "extra-tool", extraDef)));
 		when(mockClient.loadTool("shared-tool")).thenReturn(CompletableFuture.completedFuture(loadedSharedTool));
 
-		McpToolboxToolCallbackProvider provider = new McpToolboxToolCallbackProvider(mockClient,
-				List.of("catalog-toolset"), List.of("shared-tool"));
+		McpToolboxToolCallbackProvider provider = McpToolboxToolCallbackProvider.builder()
+			.client(mockClient)
+			.toolsets(List.of("catalog-toolset"))
+			.tools(List.of("shared-tool"))
+			.preconfiguredTools(List.of(preconfiguredBoundTool))
+			.build();
 
 		ToolCallback[] callbacks = provider.getToolCallbacks();
-		assertThat(callbacks).hasSize(2);
-		assertThat(List.of(callbacks[0].getToolDefinition().name(), callbacks[1].getToolDefinition().name()))
-			.containsExactlyInAnyOrder("shared-tool", "extra-tool");
+		assertThat(callbacks).hasSize(3);
+		assertThat(List.of(callbacks[0].getToolDefinition().name(), callbacks[1].getToolDefinition().name(),
+				callbacks[2].getToolDefinition().name()))
+			.containsExactlyInAnyOrder("shared-tool", "extra-tool", "bound-tool");
+	}
+
+	@Test
+	void runtimeHintsShouldRegisterReflectionForMcpToolboxSchemaTypes() {
+		RuntimeHints hints = new RuntimeHints();
+		new McpToolboxRuntimeHints().registerHints(hints, getClass().getClassLoader());
+
+		assertThat(RuntimeHintsPredicates.reflection().onType(ToolDefinition.class)).accepts(hints);
+		assertThat(RuntimeHintsPredicates.reflection().onType(ToolDefinition.Parameter.class)).accepts(hints);
+		assertThat(RuntimeHintsPredicates.reflection().onType(ToolResult.class)).accepts(hints);
+		assertThat(RuntimeHintsPredicates.reflection().onType(ToolResult.Content.class)).accepts(hints);
 	}
 
 }

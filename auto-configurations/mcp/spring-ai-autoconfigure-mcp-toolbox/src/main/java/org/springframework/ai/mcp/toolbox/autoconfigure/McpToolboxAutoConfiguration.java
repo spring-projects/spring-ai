@@ -17,12 +17,15 @@
 package org.springframework.ai.mcp.toolbox.autoconfigure;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.cloud.mcp.McpToolboxClient;
+import com.google.cloud.mcp.tool.Tool;
 
 import org.springframework.ai.mcp.toolbox.McpToolboxToolCallbackProvider;
+import org.springframework.ai.mcp.toolbox.aot.McpToolboxRuntimeHints;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -30,6 +33,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ImportRuntimeHints;
 import org.springframework.util.StringUtils;
 
 /**
@@ -43,6 +47,7 @@ import org.springframework.util.StringUtils;
 @ConditionalOnProperty(prefix = McpToolboxProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 		matchIfMissing = true)
 @EnableConfigurationProperties(McpToolboxProperties.class)
+@ImportRuntimeHints(McpToolboxRuntimeHints.class)
 public class McpToolboxAutoConfiguration {
 
 	@Bean
@@ -52,6 +57,9 @@ public class McpToolboxAutoConfiguration {
 		McpToolboxClient.Builder builder = McpToolboxClient.builder().baseUrl(properties.getUrl());
 		if (StringUtils.hasText(properties.getApiKey())) {
 			builder.apiKey(properties.getApiKey());
+		}
+		if (properties.getProtocolVersion() != null) {
+			builder.protocolVersion(properties.getProtocolVersion());
 		}
 
 		Map<String, String> mergedHeaders = new LinkedHashMap<>();
@@ -69,10 +77,18 @@ public class McpToolboxAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public McpToolboxToolCallbackProvider mcpToolboxToolCallbackProvider(McpToolboxClient mcpToolboxClient,
-			McpToolboxProperties properties, ObjectProvider<ObjectMapper> objectMapperProvider) {
+			McpToolboxProperties properties, ObjectProvider<Tool> preconfiguredToolsProvider,
+			ObjectProvider<ObjectMapper> objectMapperProvider) {
 		ObjectMapper mapper = objectMapperProvider.getIfAvailable(ObjectMapper::new);
-		return new McpToolboxToolCallbackProvider(mcpToolboxClient, properties.getToolsets(), properties.getTools(),
-				properties.getTimeout(), mapper);
+		List<Tool> preconfiguredTools = preconfiguredToolsProvider.orderedStream().toList();
+		return McpToolboxToolCallbackProvider.builder()
+			.client(mcpToolboxClient)
+			.toolsets(properties.getToolsets())
+			.tools(properties.getTools())
+			.preconfiguredTools(preconfiguredTools)
+			.timeout(properties.getTimeout())
+			.objectMapper(mapper)
+			.build();
 	}
 
 }

@@ -17,10 +17,14 @@
 package org.springframework.ai.mcp.toolbox.autoconfigure;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.cloud.mcp.McpToolboxClient;
+import com.google.cloud.mcp.ProtocolVersion;
+import com.google.cloud.mcp.tool.Tool;
+import com.google.cloud.mcp.tool.ToolDefinition;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.mcp.toolbox.McpToolboxToolCallbackProvider;
@@ -42,11 +46,11 @@ class McpToolboxAutoConfigurationTests {
 		.withConfiguration(AutoConfigurations.of(McpToolboxAutoConfiguration.class));
 
 	@Test
-	void shouldRegisterBeansByDefault() {
+	void shouldRegisterBeansByDefaultAndBindAllProperties() {
 		this.contextRunner
 			.withPropertyValues("spring.ai.mcp.toolbox.url=http://localhost:5005/mcp",
 					"spring.ai.mcp.toolbox.client-name=custom-client", "spring.ai.mcp.toolbox.client-version=2.0.0",
-					"spring.ai.mcp.toolbox.timeout=15s")
+					"spring.ai.mcp.toolbox.protocol-version=VERSION_2025_11_25", "spring.ai.mcp.toolbox.timeout=15s")
 			.run(context -> {
 				assertThat(context).hasSingleBean(McpToolboxClient.class);
 				assertThat(context).hasSingleBean(McpToolboxToolCallbackProvider.class);
@@ -54,7 +58,23 @@ class McpToolboxAutoConfigurationTests {
 				assertThat(props.getUrl()).isEqualTo("http://localhost:5005/mcp");
 				assertThat(props.getClientName()).isEqualTo("custom-client");
 				assertThat(props.getClientVersion()).isEqualTo("2.0.0");
+				assertThat(props.getProtocolVersion()).isEqualTo(ProtocolVersion.VERSION_2025_11_25);
 				assertThat(props.getTimeout().getSeconds()).isEqualTo(15);
+			});
+	}
+
+	@Test
+	void shouldAutoDiscoverPreconfiguredToolBeans() {
+		McpToolboxClient customClient = mock(McpToolboxClient.class);
+		Tool preconfiguredTool = new Tool("bound-sql-tool", new ToolDefinition("Bound SQL tool", List.of(), List.of()),
+				customClient);
+
+		this.contextRunner.withBean(McpToolboxClient.class, () -> customClient)
+			.withBean(Tool.class, () -> preconfiguredTool)
+			.run(context -> {
+				McpToolboxToolCallbackProvider provider = context.getBean(McpToolboxToolCallbackProvider.class);
+				assertThat(provider.getToolCallbacks()).hasSize(1);
+				assertThat(provider.getToolCallbacks()[0].getToolDefinition().name()).isEqualTo("bound-sql-tool");
 			});
 	}
 
