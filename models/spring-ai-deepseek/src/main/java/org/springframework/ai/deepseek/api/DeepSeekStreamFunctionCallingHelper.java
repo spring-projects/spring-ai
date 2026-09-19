@@ -80,7 +80,8 @@ public class DeepSeekStreamFunctionCallingHelper {
 
 	private ChatCompletionMessage merge(@Nullable ChatCompletionMessage previous, ChatCompletionMessage current) {
 		String content = (previous != null && previous.content() != null)
-				? previous.content() + (current.content() != null ? current.content() : "") : current.content();
+				? (String) previous.content() + (current.content() != null ? (String) current.content() : "")
+				: (String) current.content();
 		Role role = current.role();
 		String name = (current.name() != null ? current.name() : (previous != null ? previous.name() : null));
 		String toolCallId = (current.toolCallId() != null ? current.toolCallId()
