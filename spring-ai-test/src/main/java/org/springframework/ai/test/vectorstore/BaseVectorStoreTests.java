@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
@@ -91,7 +90,7 @@ public abstract class BaseVectorStoreTests {
 			List<Document> results = vectorStore
 				.similaritySearch(SearchRequest.builder().query("The World").topK(10).similarityThresholdAll().build());
 
-			List<String> foundIds = results.stream().map(Document::getId).collect(Collectors.toList());
+			List<String> foundIds = results.stream().map(Document::getId).toList();
 
 			assertThat(foundIds).doesNotContainAnyElementsOf(deletedIds);
 		});
@@ -130,7 +129,7 @@ public abstract class BaseVectorStoreTests {
 			List<String> bgDocIds = documents.stream()
 				.filter(d -> "BG".equals(d.getMetadata().get("country")))
 				.map(Document::getId)
-				.collect(Collectors.toList());
+				.toList();
 
 			vectorStore.delete("country == 'BG'");
 			verifyDocumentsDeleted(vectorStore, bgDocIds);
@@ -154,7 +153,7 @@ public abstract class BaseVectorStoreTests {
 			List<String> bgDocIds = documents.stream()
 				.filter(d -> "BG".equals(d.getMetadata().get("country")))
 				.map(Document::getId)
-				.collect(Collectors.toList());
+				.toList();
 
 			Filter.Expression filterExpression = new Filter.Expression(Filter.ExpressionType.EQ,
 					new Filter.Key("country"), new Filter.Value("BG"));
