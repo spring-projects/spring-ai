@@ -31,8 +31,61 @@ import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException
 /**
  * @author Ricken Bazolo
  * @author Jemin Huh
+ * @author Oleksandr Klymenko
  */
 public class TokenTextSplitterTest {
+
+	private static String threeLines(String lineSeparator) {
+		return "In the end, writing arises when man realizes that memory is not enough." + lineSeparator
+				+ "The most oppressive thing about the labyrinth is that you are constantly being forced to choose."
+				+ lineSeparator + "It isn't the lack of an exit, but the abundance of exits that is so disorienting.";
+	}
+
+	@Test
+	public void shouldRemoveLineFeedWhenSeparatorNotKept() {
+		var splitter = TokenTextSplitter.builder().withKeepSeparator(false).build();
+
+		var chunks = splitter.apply(List.of(new Document(threeLines("\n"))));
+
+		assertThat(chunks).hasSize(1);
+		assertThat(chunks.get(0).getText()).doesNotContain("\n").doesNotContain("  ");
+	}
+
+	@Test
+	public void shouldRemoveCarriageReturnLineFeedWhenSeparatorNotKept() {
+		var splitter = TokenTextSplitter.builder().withKeepSeparator(false).build();
+
+		var chunks = splitter.apply(List.of(new Document(threeLines("\r\n"))));
+
+		assertThat(chunks).hasSize(1);
+		assertThat(chunks.get(0).getText()).doesNotContain("\r").doesNotContain("\n").doesNotContain("  ");
+	}
+
+	@Test
+	public void shouldProduceSameChunksRegardlessOfLineSeparator() {
+		var splitter = TokenTextSplitter.builder().withKeepSeparator(false).build();
+
+		var lineFeed = splitter.apply(List.of(new Document(threeLines("\n"))));
+		var carriageReturnLineFeed = splitter.apply(List.of(new Document(threeLines("\r\n"))));
+
+		assertThat(lineFeed.get(0).getText()).isEqualTo(carriageReturnLineFeed.get(0).getText());
+	}
+
+	@Test
+	public void shouldKeepLineSeparatorInTrailingChunkWhenSeparatorKept() {
+		var splitter = TokenTextSplitter.builder()
+			.withKeepSeparator(true)
+			.withChunkSize(20)
+			.withMaxNumChunks(1)
+			.withMinChunkSizeChars(1)
+			.withMinChunkLengthToEmbed(1)
+			.build();
+
+		var chunks = splitter.apply(List.of(new Document(threeLines("\n"))));
+
+		assertThat(chunks).hasSize(2);
+		assertThat(chunks.get(1).getText()).contains("\n");
+	}
 
 	@Test
 	public void testTokenTextSplitterBuilderWithDefaultValues() {
