@@ -16,8 +16,11 @@
 
 package org.springframework.ai.mcp.toolbox;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -29,8 +32,11 @@ import java.util.concurrent.TimeoutException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.cloud.mcp.McpToolboxClient;
+import com.google.cloud.mcp.auth.AuthTokenGetter;
 import com.google.cloud.mcp.tool.Tool;
 import com.google.cloud.mcp.tool.ToolDefinition.Parameter;
+import com.google.cloud.mcp.tool.ToolPostProcessor;
+import com.google.cloud.mcp.tool.ToolPreProcessor;
 import com.google.cloud.mcp.tool.ToolResult;
 import org.jspecify.annotations.Nullable;
 
@@ -41,11 +47,17 @@ import org.springframework.ai.tool.execution.ToolExecutionException;
 import org.springframework.ai.tool.metadata.ToolMetadata;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.ReflectionUtils;
 import org.springframework.util.StringUtils;
 
 /**
- * Adapter bridging a Google Cloud MCP Toolbox {@link Tool} to Spring AI's
- * {@link ToolCallback} interface.
+ * {@link ToolCallback} implementation that adapts a Google Cloud MCP Toolbox {@link Tool}
+ * into a Spring AI {@link ToolCallback}.
+ *
+ * <p>
+ * Supports {@link ToolContext} dynamic HTTP header propagation, {@link ToolMetadata}
+ * (including {@code returnDirect}), and pre-configured {@link Tool} parameter/auth
+ * bindings.
  *
  * @author Stenal P Jolly
  * @since 2.1.0
@@ -138,8 +150,11 @@ public class McpToolboxToolCallback implements ToolCallback {
 
 			Map<String, String> dynamicHeaders = extractDynamicHeaders(toolContext);
 			Tool executionTool = applyDynamicAuthTokens(this.tool, toolContext);
+			if (!dynamicHeaders.isEmpty()) {
+				executionTool = withDynamicHeadersClient(executionTool, dynamicHeaders);
+			}
 
-			ToolResult result = executionTool.execute(parsedArguments, dynamicHeaders)
+			ToolResult result = executionTool.execute(parsedArguments)
 				.get(this.timeout.toMillis(), TimeUnit.MILLISECONDS);
 			if (result.isError()) {
 				String sanitizedError = sanitizeErrorMessage(result.text());
@@ -165,6 +180,43 @@ public class McpToolboxToolCallback implements ToolCallback {
 		}
 		catch (Exception ex) {
 			throw new ToolExecutionException(this.toolDefinition, ex);
+		}
+	}
+
+	@SuppressWarnings("unchecked")
+	private static Tool withDynamicHeadersClient(Tool baseTool, Map<String, String> dynamicHeaders) {
+		try {
+			Field clientField = ReflectionUtils.findField(Tool.class, "client");
+			Field boundParamsField = ReflectionUtils.findField(Tool.class, "boundParameters");
+			Field authGettersField = ReflectionUtils.findField(Tool.class, "authGetters");
+			Field preProcessorsField = ReflectionUtils.findField(Tool.class, "preProcessors");
+			Field postProcessorsField = ReflectionUtils.findField(Tool.class, "postProcessors");
+			if (clientField == null || boundParamsField == null || authGettersField == null
+					|| preProcessorsField == null || postProcessorsField == null) {
+				return baseTool;
+			}
+			ReflectionUtils.makeAccessible(clientField);
+			ReflectionUtils.makeAccessible(boundParamsField);
+			ReflectionUtils.makeAccessible(authGettersField);
+			ReflectionUtils.makeAccessible(preProcessorsField);
+			ReflectionUtils.makeAccessible(postProcessorsField);
+
+			McpToolboxClient delegateClient = (McpToolboxClient) clientField.get(baseTool);
+			Map<String, Object> boundParams = (Map<String, Object>) boundParamsField.get(baseTool);
+			Map<String, AuthTokenGetter> authGetters = (Map<String, AuthTokenGetter>) authGettersField.get(baseTool);
+			List<ToolPreProcessor> preProcessors = (List<ToolPreProcessor>) preProcessorsField.get(baseTool);
+			List<ToolPostProcessor> postProcessors = (List<ToolPostProcessor>) postProcessorsField.get(baseTool);
+
+			McpToolboxClient wrappedClient = new HeaderPropagatingMcpToolboxClient(delegateClient, dynamicHeaders);
+			Constructor<Tool> ctor = Tool.class.getDeclaredConstructor(String.class,
+					com.google.cloud.mcp.tool.ToolDefinition.class, McpToolboxClient.class, Map.class, Map.class,
+					List.class, List.class);
+			ReflectionUtils.makeAccessible(ctor);
+			return ctor.newInstance(baseTool.name(), baseTool.definition(), wrappedClient, boundParams, authGetters,
+					preProcessors, postProcessors);
+		}
+		catch (Exception ex) {
+			throw new IllegalStateException("Failed to attach dynamic headers client to MCP Toolbox Tool", ex);
 		}
 	}
 
@@ -265,6 +317,54 @@ public class McpToolboxToolCallback implements ToolCallback {
 		catch (Exception ex) {
 			throw new IllegalStateException("Failed to serialize JSON schema for tool " + tool.name(), ex);
 		}
+	}
+
+	private record HeaderPropagatingMcpToolboxClient(McpToolboxClient delegate,
+			Map<String, String> dynamicHeaders) implements McpToolboxClient {
+
+		@Override
+		public CompletableFuture<Map<String, com.google.cloud.mcp.tool.ToolDefinition>> listTools() {
+			return this.delegate.listTools();
+		}
+
+		@Override
+		public CompletableFuture<Map<String, com.google.cloud.mcp.tool.ToolDefinition>> loadToolset(
+				String toolsetName) {
+			return this.delegate.loadToolset(toolsetName);
+		}
+
+		@Override
+		public CompletableFuture<Map<String, Tool>> loadToolset(String toolsetName,
+				Map<String, Map<String, Object>> paramBinds, Map<String, Map<String, AuthTokenGetter>> authBinds,
+				boolean strict) {
+			return this.delegate.loadToolset(toolsetName, paramBinds, authBinds, strict);
+		}
+
+		@Override
+		public CompletableFuture<Tool> loadTool(String toolName) {
+			return this.delegate.loadTool(toolName);
+		}
+
+		@Override
+		public CompletableFuture<Tool> loadTool(String toolName, Map<String, AuthTokenGetter> authTokenGetters) {
+			return this.delegate.loadTool(toolName, authTokenGetters);
+		}
+
+		@Override
+		public CompletableFuture<ToolResult> invokeTool(String toolName, Map<String, Object> arguments) {
+			return invokeTool(toolName, arguments, Map.of());
+		}
+
+		@Override
+		public CompletableFuture<ToolResult> invokeTool(String toolName, Map<String, Object> arguments,
+				Map<String, String> extraHeaders) {
+			Map<String, String> mergedHeaders = new LinkedHashMap<>(this.dynamicHeaders);
+			if (extraHeaders != null) {
+				mergedHeaders.putAll(extraHeaders);
+			}
+			return this.delegate.invokeTool(toolName, arguments, Collections.unmodifiableMap(mergedHeaders));
+		}
+
 	}
 
 	/**

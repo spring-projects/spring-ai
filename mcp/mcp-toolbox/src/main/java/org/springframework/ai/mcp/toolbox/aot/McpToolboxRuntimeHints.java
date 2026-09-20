@@ -18,6 +18,7 @@ package org.springframework.ai.mcp.toolbox.aot;
 
 import java.util.List;
 
+import com.google.cloud.mcp.tool.Tool;
 import com.google.cloud.mcp.tool.ToolDefinition;
 import com.google.cloud.mcp.tool.ToolResult;
 import com.google.cloud.mcp.transport.TransportManifest;
@@ -37,8 +38,8 @@ import org.springframework.aot.hint.TypeReference;
  */
 public class McpToolboxRuntimeHints implements RuntimeHintsRegistrar {
 
-	private static final List<Class<?>> PUBLIC_TYPES = List.of(ToolDefinition.class, ToolDefinition.Parameter.class,
-			ToolResult.class, ToolResult.Content.class, TransportManifest.class);
+	private static final List<Class<?>> PUBLIC_TYPES = List.of(Tool.class, ToolDefinition.class,
+			ToolDefinition.Parameter.class, ToolResult.class, ToolResult.Content.class, TransportManifest.class);
 
 	private static final List<String> PACKAGE_PRIVATE_TYPE_NAMES = List.of("com.google.cloud.mcp.transport.JsonRpc",
 			"com.google.cloud.mcp.transport.JsonRpc$Request", "com.google.cloud.mcp.transport.JsonRpc$Response",
