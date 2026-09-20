@@ -85,6 +85,9 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.messages.part.MediaPart;
+import org.springframework.ai.chat.messages.part.MessagePart;
+import org.springframework.ai.chat.messages.part.TextPart;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
@@ -291,16 +294,15 @@ public class BedrockProxyChatModel implements ChatModel {
 					// The Converse API rejects empty text content blocks, so only send
 					// the text when there is any. A user message may legitimately carry
 					// media only (gh-6695).
-					if (StringUtils.hasText(userMessage.getText())) {
-						contents.add(ContentBlock.fromText(userMessage.getText()));
-					}
-
-					if (!CollectionUtils.isEmpty(userMessage.getMedia())) {
-						List<ContentBlock> mediaContent = userMessage.getMedia()
-							.stream()
-							.map(this::mapMediaToContentBlock)
-							.toList();
-						contents.addAll(mediaContent);
+					for (MessagePart part : userMessage.getParts()) {
+						if (part instanceof TextPart textPart) {
+							if (StringUtils.hasText(textPart.text())) {
+								contents.add(ContentBlock.fromText(textPart.text()));
+							}
+						}
+						else if (part instanceof MediaPart mediaPart) {
+							contents.add(mapMediaToContentBlock(mediaPart.media()));
+						}
 					}
 				}
 

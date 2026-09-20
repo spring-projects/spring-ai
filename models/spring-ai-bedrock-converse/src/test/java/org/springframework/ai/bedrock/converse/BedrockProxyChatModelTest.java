@@ -42,6 +42,8 @@ import org.springframework.ai.bedrock.converse.api.BedrockCacheTtl;
 import org.springframework.ai.bedrock.converse.api.MediaFetcher;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.messages.part.MediaPart;
+import org.springframework.ai.chat.messages.part.TextPart;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.model.tool.ToolCallingManager;
@@ -458,6 +460,21 @@ class BedrockProxyChatModelTest {
 		assertThat(contents).hasSize(2);
 		assertThat(contents.get(0).text()).isEqualTo("Describe the image");
 		assertThat(contents.get(1).image()).isNotNull();
+	}
+
+	@Test
+	void userMessagePartsRespectPartOrderWhenMediaPrecedesText() {
+		BedrockProxyChatModel model = newModel();
+
+		Prompt prompt = new Prompt(List
+			.of(UserMessage.builder().part(MediaPart.of(pngMedia())).part(TextPart.of("Describe the image")).build()),
+				BedrockChatOptions.builder().build());
+
+		List<ContentBlock> contents = model.createRequest(prompt).messages().get(0).content();
+
+		assertThat(contents).hasSize(2);
+		assertThat(contents.get(0).image()).isNotNull();
+		assertThat(contents.get(1).text()).isEqualTo("Describe the image");
 	}
 
 	private static Media pngMedia() {
