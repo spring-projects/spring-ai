@@ -130,7 +130,9 @@ public class AssistantMessage extends AbstractMessage implements MediaContent {
 	}
 
 	public Builder<?> mutate() {
-		return builder().parts(getParts()).properties(getMetadata());
+		Builder<?> builder = builder().parts(getParts()).properties(getMetadata());
+		builder.replaceOnBuild = true;
+		return builder;
 	}
 
 	@Override
@@ -170,6 +172,19 @@ public class AssistantMessage extends AbstractMessage implements MediaContent {
 		protected List<ToolCall> toolCalls = List.of();
 
 		protected List<Media> media = List.of();
+
+		/**
+		 * Whether the legacy setters were invoked, so {@link #buildParts()} can replace
+		 * the corresponding part types when this builder came from
+		 * {@link AssistantMessage#mutate()}.
+		 */
+		protected boolean contentSet;
+
+		protected boolean toolCallsSet;
+
+		protected boolean mediaSet;
+
+		protected boolean replaceOnBuild;
 
 		protected Builder() {
 		}
@@ -212,13 +227,38 @@ public class AssistantMessage extends AbstractMessage implements MediaContent {
 
 		/**
 		 * The parts this builder would put in the message: explicit parts first, then the
-		 * legacy text, tool calls and media in that order.
+		 * legacy text, tool calls and media in that order. When this builder came from
+		 * {@link AssistantMessage#mutate()} the legacy setters replace the corresponding
+		 * part types (instead of appending a duplicate) so a mutated copy keeps its other
+		 * parts while updating text, tool calls or media.
 		 * @return the parts, in message order
 		 * @since 2.1.0
 		 */
 		protected List<MessagePart> buildParts() {
 			List<MessagePart> allParts = new ArrayList<>(this.explicitParts);
-			allParts.addAll(legacyParts(this.content, this.toolCalls, this.media));
+			if (this.replaceOnBuild) {
+				if (this.contentSet) {
+					allParts.removeIf(TextPart.class::isInstance);
+					if (this.content != null) {
+						allParts.add(TextPart.of(this.content));
+					}
+				}
+				if (this.toolCallsSet) {
+					allParts.removeIf(ToolCallPart.class::isInstance);
+					for (ToolCall toolCall : this.toolCalls) {
+						allParts.add(ToolCallPart.of(toolCall));
+					}
+				}
+				if (this.mediaSet) {
+					allParts.removeIf(MediaPart.class::isInstance);
+					for (Media medium : this.media) {
+						allParts.add(MediaPart.of(medium));
+					}
+				}
+			}
+			else {
+				allParts.addAll(legacyParts(this.content, this.toolCalls, this.media));
+			}
 			return allParts;
 		}
 
@@ -263,6 +303,7 @@ public class AssistantMessage extends AbstractMessage implements MediaContent {
 
 		public B content(@Nullable String content) {
 			this.content = content;
+			this.contentSet = true;
 			return self();
 		}
 
@@ -273,11 +314,13 @@ public class AssistantMessage extends AbstractMessage implements MediaContent {
 
 		public B toolCalls(List<ToolCall> toolCalls) {
 			this.toolCalls = toolCalls;
+			this.toolCallsSet = true;
 			return self();
 		}
 
 		public B media(List<Media> media) {
 			this.media = media;
+			this.mediaSet = true;
 			return self();
 		}
 
