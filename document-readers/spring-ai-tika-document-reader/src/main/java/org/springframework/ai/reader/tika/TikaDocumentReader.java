@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.AutoDetectParser;
@@ -61,14 +62,10 @@ public class TikaDocumentReader implements DocumentReader {
 	private final AutoDetectParser parser;
 
 	/**
-	 * Handler to manage content extraction.
+	 * Supplier of handlers to manage content extraction. Invoked on every {@link #get()} call
+	 * so that each extraction parses into a fresh {@link ContentHandler}.
 	 */
-	private final ContentHandler handler;
-
-	/**
-	 * Metadata associated with the document being read.
-	 */
-	private final Metadata metadata;
+	private final Supplier<ContentHandler> contentHandlerSupplier;
 
 	/**
 	 * Parsing context containing information about the parsing process.
@@ -118,23 +115,38 @@ public class TikaDocumentReader implements DocumentReader {
 	 * @param textFormatter Formatter for the extracted text
 	 */
 	public TikaDocumentReader(Resource resource, ExtractedTextFormatter textFormatter) {
-		this(resource, new BodyContentHandler(-1), textFormatter);
+		this(resource, () -> new BodyContentHandler(-1), textFormatter);
 	}
 
 	/**
-	 * Constructor initializing the reader with a resource, content handler, and a text
-	 * formatter.
+	 * Constructor initializing the reader with a resource, content handler supplier, and a text
+	 * formatter. The supplier is invoked on every call to {@link #get()}, so each extraction
+	 * parses into a fresh {@link ContentHandler}, making the reader safe to call repeatedly.
 	 * @param resource Resource pointing to the document
-	 * @param contentHandler Handler to manage content extraction
+	 * @param contentHandlerSupplier Supplier of handler to manage content extraction
 	 * @param textFormatter Formatter for the extracted text
 	 */
-	public TikaDocumentReader(Resource resource, ContentHandler contentHandler, ExtractedTextFormatter textFormatter) {
+	public TikaDocumentReader(Resource resource, Supplier<ContentHandler> contentHandlerSupplier,
+			ExtractedTextFormatter textFormatter) {
 		this.parser = new AutoDetectParser();
-		this.handler = contentHandler;
-		this.metadata = new Metadata();
+		this.contentHandlerSupplier = contentHandlerSupplier;
 		this.context = new ParseContext();
 		this.resource = resource;
 		this.textFormatter = textFormatter;
+	}
+
+	/**
+	 * Constructor initializing the reader with a resource, content handler, and a text formatter.
+	 * @param resource Resource pointing to the document
+	 * @param contentHandler Handler to manage content extraction
+	 * @param textFormatter Formatter for the extracted text
+	 * @deprecated the supplied handler instance is reused for every extraction and accumulates
+	 * text across calls to {@link #get()}; use
+	 * {@link #TikaDocumentReader(Resource, Supplier, ExtractedTextFormatter)} instead
+	 */
+	@Deprecated
+	public TikaDocumentReader(Resource resource, ContentHandler contentHandler, ExtractedTextFormatter textFormatter) {
+		this(resource, () -> contentHandler, textFormatter);
 	}
 
 	/**
@@ -144,8 +156,10 @@ public class TikaDocumentReader implements DocumentReader {
 	@Override
 	public List<Document> get() {
 		try (InputStream stream = this.resource.getInputStream()) {
-			this.parser.parse(stream, this.handler, this.metadata, this.context);
-			return List.of(toDocument(this.handler.toString()));
+			ContentHandler contentHandler = this.contentHandlerSupplier.get();
+			Metadata parseMetadata = new Metadata();
+			this.parser.parse(stream, contentHandler, parseMetadata, this.context);
+			return List.of(toDocument(contentHandler.toString()));
 		}
 		catch (Exception e) {
 			throw new RuntimeException(e);
