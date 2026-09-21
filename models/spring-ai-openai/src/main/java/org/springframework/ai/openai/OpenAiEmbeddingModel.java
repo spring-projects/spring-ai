@@ -286,14 +286,27 @@ public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 
 	private List<Embedding> generateEmbeddingList(List<com.openai.models.embeddings.Embedding> nativeData) {
 		List<Embedding> data = new ArrayList<>();
-		for (com.openai.models.embeddings.Embedding nativeDatum : nativeData) {
+		for (int i = 0; i < nativeData.size(); i++) {
+			com.openai.models.embeddings.Embedding nativeDatum = nativeData.get(i);
 			List<Float> nativeDatumEmbedding = nativeDatum.embedding();
-			long nativeIndex = nativeDatum.index();
+			long nativeIndex = resolveIndex(nativeDatum, i);
 			Embedding embedding = new Embedding(EmbeddingUtils.toPrimitive(nativeDatumEmbedding),
 					Math.toIntExact(nativeIndex));
 			data.add(embedding);
 		}
 		return data;
+	}
+
+	/**
+	 * Resolve the embedding index, falling back to the position within the response list
+	 * when the provider omits the (redundant) {@code index} field. Some OpenAI-compatible
+	 * endpoints - for example Google Gemini's OpenAI compatibility mode - do not include
+	 * it, which makes {@link com.openai.models.embeddings.Embedding#index()} throw. The
+	 * OpenAI API guarantees the index correlates with the position of the input.
+	 */
+	private long resolveIndex(com.openai.models.embeddings.Embedding nativeDatum, int position) {
+		com.openai.core.JsonField<Long> indexField = nativeDatum._index();
+		return indexField.asKnown().orElse((long) position);
 	}
 
 	/**
