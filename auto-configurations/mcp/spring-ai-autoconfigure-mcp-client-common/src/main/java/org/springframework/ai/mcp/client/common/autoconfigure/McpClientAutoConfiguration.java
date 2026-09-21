@@ -31,12 +31,14 @@ import org.springframework.ai.mcp.client.common.autoconfigure.configurer.McpSync
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpClientCommonProperties;
 import org.springframework.ai.mcp.customizer.McpClientCustomizer;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import org.springframework.util.CollectionUtils;
 
 /**
@@ -97,6 +99,7 @@ import org.springframework.util.CollectionUtils;
  * @see StdioTransportAutoConfiguration
  */
 @AutoConfiguration
+@Import(McpConnectionBeanRegistrar.class)
 @EnableConfigurationProperties(McpClientCommonProperties.class)
 @ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 		matchIfMissing = true)
@@ -205,7 +208,7 @@ public class McpClientAutoConfiguration {
 	@Bean
 	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
 			matchIfMissing = true)
-	public CloseableMcpSyncClients makeSyncClientsClosable(List<McpSyncClient> clients) {
+	public CloseableMcpSyncClients makeSyncClientsClosable(@Qualifier("mcpSyncClients") List<McpSyncClient> clients) {
 		return new CloseableMcpSyncClients(clients);
 	}
 
@@ -290,7 +293,8 @@ public class McpClientAutoConfiguration {
 
 	@Bean
 	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
-	public CloseableMcpAsyncClients makeAsyncClientsClosable(List<McpAsyncClient> clients) {
+	public CloseableMcpAsyncClients makeAsyncClientsClosable(
+			@Qualifier("mcpAsyncClients") List<McpAsyncClient> clients) {
 		return new CloseableMcpAsyncClients(clients);
 	}
 
