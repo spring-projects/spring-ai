@@ -62,6 +62,9 @@ public final class UsageCalculator {
 		}
 		// For a valid usage from previous chat response, accumulate it to the current
 		// usage.
+		if (usageFromPreviousChatResponse == null) {
+			return currentUsage;
+		}
 		if (!isEmpty(currentUsage)) {
 			Integer promptTokens = currentUsage.getPromptTokens();
 			Integer generationTokens = currentUsage.getCompletionTokens();

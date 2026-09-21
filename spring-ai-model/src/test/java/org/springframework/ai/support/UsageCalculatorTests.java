@@ -46,6 +46,20 @@ class UsageCalculatorTests {
 	}
 
 	@Test
+	void getCumulativeUsageReturnsCurrentWhenPreviousResponseHasNullUsage() {
+		// https://github.com/spring-projects/spring-ai/issues/7022
+		// A provider that does not report usage on a given response propagates a null
+		// ChatResponseMetadata usage; accumulating against it must not NPE.
+		Usage current = new DefaultUsage(10, 20, 30);
+		ChatResponse previous = responseWith(null);
+
+		Usage result = UsageCalculator.getCumulativeUsage(current, previous);
+
+		// Nothing to accumulate from the previous response: current is returned as-is.
+		assertThat(result).isSameAs(current);
+	}
+
+	@Test
 	void getCumulativeUsageReturnsCurrentWhenPreviousUsageIsEmpty() {
 		Usage current = new DefaultUsage(10, 20, 30);
 		ChatResponse previous = responseWith(new DefaultUsage(0, 0, 0));
