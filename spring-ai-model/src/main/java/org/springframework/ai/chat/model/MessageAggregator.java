@@ -96,6 +96,13 @@ public class MessageAggregator {
 
 		AtomicReference<PromptMetadata> metadataPromptMetadataRef = new AtomicReference<>(PromptMetadata.empty());
 		AtomicReference<RateLimit> metadataRateLimitRef = new AtomicReference<>(new EmptyRateLimit());
+		// Usage details reported by the provider on the chunk that carries real usage:
+		// the native usage object (OpenAI CompletionUsage, Anthropic Usage, ...) and the
+		// prompt-cache metrics. They are reused for the aggregated response so that it
+		// does not collapse to plain token counts (gh-6996).
+		AtomicReference<@Nullable Object> metadataNativeUsageRef = new AtomicReference<>();
+		AtomicReference<@Nullable Long> metadataCacheReadTokensRef = new AtomicReference<>();
+		AtomicReference<@Nullable Long> metadataCacheWriteTokensRef = new AtomicReference<>();
 
 		AtomicReference<String> metadataIdRef = new AtomicReference<>("");
 		AtomicReference<String> metadataModelRef = new AtomicReference<>("");
@@ -115,6 +122,9 @@ public class MessageAggregator {
 			metadataUsageTotalTokensRef.set(0);
 			metadataPromptMetadataRef.set(PromptMetadata.empty());
 			metadataRateLimitRef.set(new EmptyRateLimit());
+			metadataNativeUsageRef.set(null);
+			metadataCacheReadTokensRef.set(null);
+			metadataCacheWriteTokensRef.set(null);
 
 		}).doOnNext(chatResponse -> {
 
@@ -156,12 +166,28 @@ public class MessageAggregator {
 			if (chatResponse.getMetadata() != null) {
 				if (chatResponse.getMetadata().getUsage() != null) {
 					Usage usage = chatResponse.getMetadata().getUsage();
-					metadataUsagePromptTokensRef.set(
-							usage.getPromptTokens() > 0 ? usage.getPromptTokens() : metadataUsagePromptTokensRef.get());
-					metadataUsageGenerationTokensRef.set(usage.getCompletionTokens() > 0 ? usage.getCompletionTokens()
-							: metadataUsageGenerationTokensRef.get());
-					metadataUsageTotalTokensRef
-						.set(usage.getTotalTokens() > 0 ? usage.getTotalTokens() : metadataUsageTotalTokensRef.get());
+					// Empty usages carry no tokens and no provider information, so they
+					// must
+					// not clobber what a usage with real data reported on another chunk.
+					if (reportedTokens(usage)) {
+						metadataUsagePromptTokensRef.set(usage.getPromptTokens() > 0 ? usage.getPromptTokens()
+								: metadataUsagePromptTokensRef.get());
+						metadataUsageGenerationTokensRef.set(usage.getCompletionTokens() > 0
+								? usage.getCompletionTokens() : metadataUsageGenerationTokensRef.get());
+						metadataUsageTotalTokensRef.set(usage.getTotalTokens() > 0 ? usage.getTotalTokens()
+								: metadataUsageTotalTokensRef.get());
+						// Keep the provider details for the aggregated response
+						// (gh-6996).
+						if (usage.getNativeUsage() != null) {
+							metadataNativeUsageRef.set(usage.getNativeUsage());
+						}
+						if (usage.getCacheReadInputTokens() != null) {
+							metadataCacheReadTokensRef.set(usage.getCacheReadInputTokens());
+						}
+						if (usage.getCacheWriteInputTokens() != null) {
+							metadataCacheWriteTokensRef.set(usage.getCacheWriteInputTokens());
+						}
+					}
 				}
 				if (chatResponse.getMetadata().getPromptMetadata() != null
 						&& chatResponse.getMetadata().getPromptMetadata().iterator().hasNext()) {
@@ -187,8 +213,23 @@ public class MessageAggregator {
 			}
 		}).doOnComplete(() -> {
 
-			var usage = new DefaultUsage(metadataUsagePromptTokensRef.get(), metadataUsageGenerationTokensRef.get(),
-					metadataUsageTotalTokensRef.get());
+			Object nativeUsage = metadataNativeUsageRef.get();
+			Long cacheReadInputTokens = metadataCacheReadTokensRef.get();
+			Long cacheWriteInputTokens = metadataCacheWriteTokensRef.get();
+			// Keep the provider-native usage object (for example OpenAI
+			// CompletionUsage) and the prompt-cache metrics reported by the model, so
+			// that the aggregated response does not lose them. When nothing beyond the
+			// token counts is available, fall back to the previous token-only usage.
+			Usage usage;
+			if (nativeUsage != null || cacheReadInputTokens != null || cacheWriteInputTokens != null) {
+				usage = new org.springframework.ai.chat.metadata.DefaultUsage(metadataUsagePromptTokensRef.get(),
+						metadataUsageGenerationTokensRef.get(), metadataUsageTotalTokensRef.get(), nativeUsage,
+						cacheReadInputTokens, cacheWriteInputTokens);
+			}
+			else {
+				usage = new DefaultUsage(metadataUsagePromptTokensRef.get(), metadataUsageGenerationTokensRef.get(),
+						metadataUsageTotalTokensRef.get());
+			}
 
 			var chatResponseMetadata = ChatResponseMetadata.builder()
 				.id(metadataIdRef.get())
@@ -250,6 +291,9 @@ public class MessageAggregator {
 			metadataUsageTotalTokensRef.set(0);
 			metadataPromptMetadataRef.set(PromptMetadata.empty());
 			metadataRateLimitRef.set(new EmptyRateLimit());
+			metadataNativeUsageRef.set(null);
+			metadataCacheReadTokensRef.set(null);
+			metadataCacheWriteTokensRef.set(null);
 
 		}).doOnError(e -> logger.error("Aggregation Error", e));
 	}
@@ -287,6 +331,16 @@ public class MessageAggregator {
 		IndexedGroup group = new IndexedGroup(id);
 		groups.add(group);
 		return group;
+	}
+
+	/**
+	 * Whether the given usage reports at least one non-zero token count, meaning it was
+	 * actually populated by the provider.
+	 * @param usage the usage to inspect
+	 * @return {@code true} when the usage carries token information
+	 */
+	private static boolean reportedTokens(Usage usage) {
+		return usage.getPromptTokens() > 0 || usage.getCompletionTokens() > 0 || usage.getTotalTokens() > 0;
 	}
 
 	/**

@@ -320,6 +320,58 @@ class MessageAggregatorTests {
 		assertThat(usage.getNativeUsage()).containsEntry("totalTokens", 3);
 	}
 
+	// gh-6996: the provider-native usage object must survive aggregation instead of
+	// being downgraded to a generic token-only usage.
+	@Test
+	void nativeUsageFromChunkIsPreservedThroughAggregation() {
+		Object nativeUsage = new Object();
+		org.springframework.ai.chat.metadata.Usage usage = new org.springframework.ai.chat.metadata.DefaultUsage(10, 5,
+				15, nativeUsage);
+		ChatResponse finalChunk = new ChatResponse(List.of(new Generation(new AssistantMessage("hi"))),
+				ChatResponseMetadata.builder().usage(usage).build());
+
+		AtomicReference<ChatResponse> aggregated = new AtomicReference<>();
+		new MessageAggregator().aggregate(Flux.just(chunk("Hello", new EmptyRateLimit()), finalChunk), aggregated::set)
+			.blockLast();
+
+		assertThat(aggregated.get().getMetadata().getUsage().getNativeUsage()).isSameAs(nativeUsage);
+		assertThat(aggregated.get().getMetadata().getUsage().getPromptTokens()).isEqualTo(10);
+		assertThat(aggregated.get().getMetadata().getUsage().getTotalTokens()).isEqualTo(15);
+	}
+
+	// gh-6996: prompt-cache token counts reported by the provider must survive
+	// aggregation rather than being dropped.
+	@Test
+	void cacheReadInputTokensFromChunkArePreservedThroughAggregation() {
+		org.springframework.ai.chat.metadata.Usage usage = new org.springframework.ai.chat.metadata.DefaultUsage(10, 5,
+				15, null, 4L, null);
+		ChatResponse finalChunk = new ChatResponse(List.of(new Generation(new AssistantMessage("hi"))),
+				ChatResponseMetadata.builder().usage(usage).build());
+
+		AtomicReference<ChatResponse> aggregated = new AtomicReference<>();
+		new MessageAggregator().aggregate(Flux.just(chunk("Hello", new EmptyRateLimit()), finalChunk), aggregated::set)
+			.blockLast();
+
+		assertThat(aggregated.get().getMetadata().getUsage().getCacheReadInputTokens()).isEqualTo(4L);
+	}
+
+	// Providers that report nothing beyond the token counts must keep the previous
+	// behaviour (a synthetic native map) to avoid a regression.
+	@Test
+	void tokenOnlyUsageStillYieldsSyntheticNativeMap() {
+		org.springframework.ai.chat.metadata.Usage usage = new org.springframework.ai.chat.metadata.DefaultUsage(10, 5,
+				15);
+		ChatResponse finalChunk = new ChatResponse(List.of(new Generation(new AssistantMessage("hi"))),
+				ChatResponseMetadata.builder().usage(usage).build());
+
+		AtomicReference<ChatResponse> aggregated = new AtomicReference<>();
+		new MessageAggregator().aggregate(Flux.just(chunk("Hello", new EmptyRateLimit()), finalChunk), aggregated::set)
+			.blockLast();
+
+		assertThat(aggregated.get().getMetadata().getUsage().getNativeUsage())
+			.isEqualTo(Map.of("promptTokens", 10, "completionTokens", 5, "totalTokens", 15));
+	}
+
 	private static AssistantMessage aggregate(Flux<ChatResponse> responses) {
 		AtomicReference<ChatResponse> aggregated = new AtomicReference<>();
 		new MessageAggregator().aggregate(responses, aggregated::set).blockLast();

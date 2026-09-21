@@ -62,6 +62,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Flux;
 
+import org.springframework.ai.chat.client.ChatClientMessageAggregator;
+import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
@@ -1763,6 +1765,105 @@ class OpenAiChatModelTests {
 		ArgumentCaptor<RequestOptions> argumentCaptor = ArgumentCaptor.forClass(RequestOptions.class);
 		verify(chatCompletionService).create(any(ChatCompletionCreateParams.class), argumentCaptor.capture());
 		assertThat(argumentCaptor.getValue().getTimeout()).isNull();
+	}
+
+	@Test
+	void repro6996ToolCallStreamingUsagePreserved() {
+		ChatServiceAsync chatServiceAsync = mock(ChatServiceAsync.class);
+		ChatCompletionServiceAsync chatCompletionServiceAsync = mock(ChatCompletionServiceAsync.class);
+		when(this.openAiClientAsync.chat()).thenReturn(chatServiceAsync);
+		when(chatServiceAsync.completions()).thenReturn(chatCompletionServiceAsync);
+		when(chatCompletionServiceAsync.createStreaming(any(ChatCompletionCreateParams.class),
+				any(RequestOptions.class)))
+			.thenReturn(asyncStreamResponse(ChatCompletionChunk.builder()
+				.id("chatcmpl-stream-test")
+				.created(1777799928)
+				.model("test-model")
+				.addChoice(ChatCompletionChunk.Choice.builder()
+					.index(0)
+					.finishReason(Optional.empty())
+					.delta(ChatCompletionChunk.Choice.Delta.builder()
+						.addToolCall(ChatCompletionChunk.Choice.Delta.ToolCall.builder().index(0).id("call_1").build())
+						.build())
+					.build())
+				.build(),
+					ChatCompletionChunk.builder()
+						.id("chatcmpl-stream-test")
+						.created(1777799928)
+						.model("test-model")
+						.addChoice(ChatCompletionChunk.Choice.builder()
+							.index(0)
+							.finishReason(Optional.empty())
+							.delta(ChatCompletionChunk.Choice.Delta.builder()
+								.addToolCall(ChatCompletionChunk.Choice.Delta.ToolCall.builder()
+									.index(0)
+									.function(ChatCompletionChunk.Choice.Delta.ToolCall.Function.builder()
+										.name("get_current_weather")
+										.build())
+									.build())
+								.build())
+							.build())
+						.build(),
+					ChatCompletionChunk.builder()
+						.id("chatcmpl-stream-test")
+						.created(1777799928)
+						.model("test-model")
+						.addChoice(ChatCompletionChunk.Choice.builder()
+							.index(0)
+							.finishReason(Optional.empty())
+							.delta(ChatCompletionChunk.Choice.Delta.builder()
+								.addToolCall(ChatCompletionChunk.Choice.Delta.ToolCall.builder()
+									.index(0)
+									.function(ChatCompletionChunk.Choice.Delta.ToolCall.Function.builder()
+										.arguments("{\"location\":\"Seoul\"}")
+										.build())
+									.build())
+								.build())
+							.build())
+						.build(),
+					ChatCompletionChunk.builder()
+						.id("chatcmpl-stream-test")
+						.created(1777799928)
+						.model("test-model")
+						.addChoice(ChatCompletionChunk.Choice.builder()
+							.index(0)
+							.finishReason(ChatCompletionChunk.Choice.FinishReason.TOOL_CALLS)
+							.delta(ChatCompletionChunk.Choice.Delta.builder().build())
+							.build())
+						.build(),
+					ChatCompletionChunk.builder()
+						.id("chatcmpl-stream-test")
+						.created(1777799928)
+						.model("test-model")
+						.choices(java.util.List.of())
+						.usage(CompletionUsage.builder().promptTokens(10).completionTokens(5).totalTokens(15).build())
+						.build()));
+
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		// Drive the stream through the ChatClient aggregation layer (the same path a
+		// ChatClient streaming / tool-calling flow uses) and capture the *aggregated*
+		// response, which is what the caller ultimately receives.
+		AtomicReference<ChatClientResponse> aggregated = new AtomicReference<>();
+		Flux<ChatClientResponse> aggregatedFlux = new ChatClientMessageAggregator().aggregateChatClientResponse(
+				chatModel.stream(new Prompt("hi", options))
+					.map(chatResponse -> ChatClientResponse.builder().chatResponse(chatResponse).build()),
+				aggregated::set);
+		aggregatedFlux.blockLast();
+
+		ChatResponse response = aggregated.get().chatResponse();
+		assertThat(response).isNotNull();
+		assertThat(response.getMetadata().getUsage()).isNotNull();
+		assertThat(response.getMetadata().getUsage().getPromptTokens()).isGreaterThan(0);
+		// gh-6996: the provider-native usage object must survive aggregation, not be
+		// replaced by a generic map (otherwise OpenAI CompletionUsage details are lost /
+		// Anthropic nativeUsage becomes null).
+		assertThat(response.getMetadata().getUsage().getNativeUsage()).isInstanceOf(CompletionUsage.class);
 	}
 
 }
