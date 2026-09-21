@@ -528,13 +528,6 @@
 				<version>${project.version}</version>
 			</dependency>
 
-			<!-- Note: deprecated, use spring-ai-autoconfigure-model-chat-memory-repository-redis instead -->
-			<dependency>
-				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-autoconfigure-model-chat-memory-redis</artifactId>
-				<version>${project.version}</version>
-			</dependency>
-
 			<!-- Spring AI Chat model observation autoconfiguration -->
 
 			<dependency>
