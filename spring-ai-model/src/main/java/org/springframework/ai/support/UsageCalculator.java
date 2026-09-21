@@ -51,13 +51,15 @@ public final class UsageCalculator {
 	 */
 	public static Usage getCumulativeUsage(final Usage currentUsage,
 			final @Nullable ChatResponse previousChatResponse) {
-		Usage usageFromPreviousChatResponse = null;
-		if (previousChatResponse != null) {
-			usageFromPreviousChatResponse = previousChatResponse.getMetadata().getUsage();
-		}
-		else {
+		if (previousChatResponse == null) {
 			// Return the current usage when the previous chat response usage is empty or
 			// null.
+			return currentUsage;
+		}
+		@Nullable Usage usageFromPreviousChatResponse = previousChatResponse.getMetadata().getUsage();
+		if (usageFromPreviousChatResponse == null) {
+			// Return the current usage when the previous chat response reports no usage
+			// at all, since there is nothing to accumulate.
 			return currentUsage;
 		}
 		// For a valid usage from previous chat response, accumulate it to the current
