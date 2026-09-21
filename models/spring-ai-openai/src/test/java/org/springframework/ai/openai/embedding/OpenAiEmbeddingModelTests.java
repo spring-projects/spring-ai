@@ -20,6 +20,8 @@ import java.time.Duration;
 import java.util.List;
 
 import com.openai.client.OpenAIClient;
+import com.openai.core.JsonField;
+import com.openai.core.JsonMissing;
 import com.openai.core.RequestOptions;
 import com.openai.models.embeddings.CreateEmbeddingResponse;
 import com.openai.models.embeddings.EmbeddingCreateParams;
@@ -27,6 +29,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import org.springframework.ai.embedding.EmbeddingRequest;
+import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.OpenAiEmbeddingOptions;
 
@@ -51,7 +54,7 @@ class OpenAiEmbeddingModelTests {
 		OpenAIClient mockClient = mock(OpenAIClient.class, RETURNS_DEEP_STUBS);
 		CreateEmbeddingResponse mockResponse = mock(CreateEmbeddingResponse.class);
 		when(mockResponse.data()).thenReturn(List.of());
-		when(mockResponse.usage()).thenReturn(mock(CreateEmbeddingResponse.Usage.class));
+		when(mockResponse._usage()).thenReturn(JsonField.of(mock(CreateEmbeddingResponse.Usage.class)));
 		when(mockClient.embeddings().create(any(EmbeddingCreateParams.class), any(RequestOptions.class)))
 			.thenReturn(mockResponse);
 
@@ -66,6 +69,26 @@ class OpenAiEmbeddingModelTests {
 		RequestOptions value = argumentCaptor.getValue();
 		assertThat(value.getTimeout()).isNotNull();
 		assertThat(value.getTimeout().request()).isEqualTo(expectedTimeout);
+	}
+
+	@Test
+	void testEmbeddingWithoutUsageDoesNotFail() {
+		OpenAIClient mockClient = mock(OpenAIClient.class, RETURNS_DEEP_STUBS);
+		CreateEmbeddingResponse mockResponse = mock(CreateEmbeddingResponse.class);
+		when(mockResponse.data()).thenReturn(List.of());
+		when(mockResponse._usage()).thenReturn(JsonMissing.of());
+		when(mockClient.embeddings().create(any(EmbeddingCreateParams.class), any(RequestOptions.class)))
+			.thenReturn(mockResponse);
+
+		OpenAiEmbeddingModel model = OpenAiEmbeddingModel.builder().openAiClient(mockClient).build();
+
+		EmbeddingResponse response = model
+			.call(new EmbeddingRequest(List.of("hi"), OpenAiEmbeddingOptions.builder().build()));
+
+		assertThat(response).isNotNull();
+		// Gemini's OpenAI-compatible embeddings responses may omit usage; no NPE should
+		// be thrown
+		assertThat(response.getMetadata().getUsage().getPromptTokens()).isNotNull();
 	}
 
 }

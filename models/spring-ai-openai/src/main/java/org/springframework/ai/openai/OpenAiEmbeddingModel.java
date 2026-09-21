@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Objects;
 
 import com.openai.client.OpenAIClient;
+import com.openai.core.JsonField;
 import com.openai.core.RequestOptions;
 import com.openai.models.embeddings.CreateEmbeddingResponse;
 import com.openai.models.embeddings.EmbeddingCreateParams;
@@ -275,11 +276,15 @@ public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 		List<Embedding> data = generateEmbeddingList(response.data());
 		EmbeddingResponseMetadata metadata = new EmbeddingResponseMetadata();
 		metadata.setModel(response.model());
-		metadata.setUsage(getDefaultUsage(response.usage()));
+		metadata.setUsage(getDefaultUsage(response._usage()));
 		return new EmbeddingResponse(data, metadata);
 	}
 
-	private DefaultUsage getDefaultUsage(CreateEmbeddingResponse.Usage nativeUsage) {
+	private DefaultUsage getDefaultUsage(JsonField<CreateEmbeddingResponse.Usage> nativeUsageField) {
+		CreateEmbeddingResponse.Usage nativeUsage = nativeUsageField.asKnown().orElse(null);
+		if (nativeUsage == null) {
+			return new DefaultUsage(null, null, null, null);
+		}
 		return new DefaultUsage(Math.toIntExact(nativeUsage.promptTokens()), 0,
 				Math.toIntExact(nativeUsage.totalTokens()), nativeUsage);
 	}
