@@ -34,6 +34,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author Geng Rong
  * @author guan xu
+ * @author Subhash Polisetti
  */
 public class DeepSeekChatCompletionRequestTests {
 
@@ -216,6 +217,30 @@ public class DeepSeekChatCompletionRequestTests {
 		var request = client.createRequest(prompt, false);
 
 		assertThat(request.reasoningEffort()).isNull();
+	}
+
+	@Test
+	public void createRequestWithAssistantToolCallWithoutContent() {
+		var client = DeepSeekChatModel.builder().deepSeekApi(DeepSeekApi.builder().apiKey("TEST").build()).build();
+
+		var toolCall = new AssistantMessage.ToolCall("call_1", "function", "getCurrentWeather",
+				"{\"location\":\"Paris\"}");
+		AssistantMessage assistantMessage = AssistantMessage.builder().toolCalls(List.of(toolCall)).build();
+
+		var prompt = new Prompt(List.of(assistantMessage),
+				DeepSeekChatOptions.builder().model("deepseek-chat").build());
+
+		var request = client.createRequest(prompt, false);
+
+		assertThat(request.messages()).hasSize(1);
+		ChatCompletionMessage message = request.messages().get(0);
+		assertThat(message.role()).isEqualTo(ChatCompletionMessage.Role.ASSISTANT);
+		assertThat(message.content()).isNull();
+		assertThat(message.toolCalls()).hasSize(1);
+		ChatCompletionMessage.ToolCall requestToolCall = message.toolCalls().get(0);
+		assertThat(requestToolCall.id()).isEqualTo("call_1");
+		assertThat(requestToolCall.function().name()).isEqualTo("getCurrentWeather");
+		assertThat(requestToolCall.function().arguments()).isEqualTo("{\"location\":\"Paris\"}");
 	}
 
 }
