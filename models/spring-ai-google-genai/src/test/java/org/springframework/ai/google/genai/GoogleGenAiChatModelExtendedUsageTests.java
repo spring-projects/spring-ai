@@ -16,6 +16,7 @@
 
 package org.springframework.ai.google.genai;
 
+import java.nio.charset.StandardCharsets;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,7 +45,6 @@ import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
-import org.springframework.ai.google.genai.common.GoogleGenAiThinkingLevel;
 import org.springframework.ai.google.genai.metadata.GoogleGenAiModalityTokenCount;
 import org.springframework.ai.google.genai.metadata.GoogleGenAiTrafficType;
 import org.springframework.ai.google.genai.metadata.GoogleGenAiUsage;
@@ -141,6 +141,8 @@ public class GoogleGenAiChatModelExtendedUsageTests {
 			.thoughtsTokenCount(25) // Thinking tokens for thinking models
 			.build();
 
+		byte[] thoughtSignature = "thoughtSignature bla bla".getBytes(StandardCharsets.UTF_8);
+
 		Content responseContent = Content.builder()
 			.parts(Part.builder().text("This is a thoughts").thought(true).build(), Part.builder()
 				.functionCall(FunctionCall.builder().id("id_1").name("getCurrentWeather").args(new LinkedHashMap<>() {
@@ -149,6 +151,7 @@ public class GoogleGenAiChatModelExtendedUsageTests {
 						put("unit", "C");
 					}
 				}).build())
+				.thoughtSignature(thoughtSignature)
 				.build(),
 					Part.builder()
 						.functionCall(
@@ -175,8 +178,6 @@ public class GoogleGenAiChatModelExtendedUsageTests {
 		UserMessage userMessage = new UserMessage("Tell me about thinking models");
 		var promptOptions = GoogleGenAiChatOptions.builder()
 			.includeThoughts(true)
-			.internalToolExecutionEnabled(false)
-			.thinkingLevel(GoogleGenAiThinkingLevel.HIGH)
 			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description("Get the current weather in a given location")
 				.inputType(MockWeatherService.Request.class)
@@ -195,7 +196,8 @@ public class GoogleGenAiChatModelExtendedUsageTests {
 				AssistantMessage.builder()
 					.content("This is a thoughts")
 					.properties(Map.of("finishReason", new FinishReason(FinishReason.Known.STOP), "messageType",
-							MessageType.ASSISTANT, "candidateIndex", 0, "isThought", true))
+							MessageType.ASSISTANT, "candidateIndex", 0, "isThought", true, "thoughtSignatures",
+							List.of(thoughtSignature)))
 					.build(),
 				AssistantMessage.builder()
 					.content("")
@@ -205,7 +207,7 @@ public class GoogleGenAiChatModelExtendedUsageTests {
 							new AssistantMessage.ToolCall("id_2", "function", "getCurrentWeather",
 									"{\"location\":\"London\",\"unit\":\"C\"}")))
 					.properties(Map.of("finishReason", new FinishReason(FinishReason.Known.STOP), "messageType",
-							MessageType.ASSISTANT, "candidateIndex", 0))
+							MessageType.ASSISTANT, "candidateIndex", 0, "thoughtSignatures", List.of(thoughtSignature)))
 					.build());
 	}
 
@@ -254,8 +256,6 @@ public class GoogleGenAiChatModelExtendedUsageTests {
 		UserMessage userMessage = new UserMessage("Tell me about thinking models");
 		var promptOptions = GoogleGenAiChatOptions.builder()
 			.includeThoughts(true)
-			.internalToolExecutionEnabled(false)
-			.thinkingLevel(GoogleGenAiThinkingLevel.HIGH)
 			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description("Get the current weather in a given location")
 				.inputType(MockWeatherService.Request.class)
@@ -320,11 +320,7 @@ public class GoogleGenAiChatModelExtendedUsageTests {
 		this.chatModel.setMockGenerateContentResponse(mockResponse);
 
 		UserMessage userMessage = new UserMessage("Tell me about thinking models");
-		var promptOptions = GoogleGenAiChatOptions.builder()
-			.includeThoughts(true)
-			.internalToolExecutionEnabled(false)
-			.thinkingLevel(GoogleGenAiThinkingLevel.HIGH)
-			.build();
+		var promptOptions = GoogleGenAiChatOptions.builder().includeThoughts(true).build();
 		Prompt prompt = new Prompt(List.of(userMessage), promptOptions);
 
 		// Execute chat call
@@ -391,8 +387,6 @@ public class GoogleGenAiChatModelExtendedUsageTests {
 		UserMessage userMessage = new UserMessage("Tell me about thinking models");
 		var promptOptions = GoogleGenAiChatOptions.builder()
 			.includeThoughts(true)
-			.internalToolExecutionEnabled(false)
-			.thinkingLevel(GoogleGenAiThinkingLevel.HIGH)
 			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description("Get the current weather in a given location")
 				.inputType(MockWeatherService.Request.class)

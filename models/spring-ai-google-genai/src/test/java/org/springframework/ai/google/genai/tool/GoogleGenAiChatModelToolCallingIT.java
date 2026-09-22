@@ -25,11 +25,11 @@ import com.google.genai.Client;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
-import org.springframework.ai.chat.messages.AbstractMessage;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.google.genai.GoogleGenAiChatModel;
@@ -110,7 +110,6 @@ public class GoogleGenAiChatModelToolCallingIT {
 
 		var promptOptions = GoogleGenAiChatOptions.builder()
 			.includeThoughts(true)
-			.internalToolExecutionEnabled(false)
 			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description("Get the current weather in a given location")
 				.inputType(MockWeatherService.Request.class)
@@ -118,13 +117,6 @@ public class GoogleGenAiChatModelToolCallingIT {
 			.build();
 
 		List<Generation> generations = this.chatModel.call(new Prompt(messages, promptOptions)).getResults();
-
-		String responseString = generations.stream()
-			.map(Generation::getOutput)
-			.map(AbstractMessage::getText)
-			.collect(Collectors.joining("\n\n"));
-
-		logger.info("Response: {}", responseString);
 
 		assertThat(generations).hasSize(2);
 
