@@ -33,6 +33,7 @@ import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionRequest.Rea
 import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionRequest.Thinking;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Unit tests for {@link DeepSeekApi.ChatCompletionRequest}.
@@ -261,6 +262,20 @@ public class DeepSeekChatCompletionRequestTests {
 		ChatCompletionMessage.ImageUrlContent imageUrlContent = (ChatCompletionMessage.ImageUrlContent) ((List<?>) message
 			.content()).get(1);
 		assertThat(imageUrlContent.imageUrl().url()).isEqualTo("https://example.com/image.jpg");
+	}
+
+	@Test
+	public void createRequestWithNonImageMediaRejected() {
+		var client = DeepSeekChatModel.builder().deepSeekApi(DeepSeekApi.builder().apiKey("TEST").build()).build();
+
+		byte[] pdfBytes = new byte[] { 1, 2, 3 };
+		Media media = Media.builder().mimeType(Media.Format.DOC_PDF).data(pdfBytes).build();
+		UserMessage userMessage = UserMessage.builder().text("Here is a document").media(media).build();
+
+		assertThatThrownBy(
+				() -> client.createRequest(new Prompt(userMessage, DeepSeekChatOptions.builder().build()), false))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("only supports image media");
 	}
 
 	@Test

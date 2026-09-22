@@ -461,12 +461,14 @@ public class DeepSeekChatModel implements ChatModel {
 
 		List<ChatCompletionMessage.ContentChunk> contentChunks = new ArrayList<>();
 		contentChunks.add(new ChatCompletionMessage.TextContent(text));
-		userMessage.getMedia().forEach(media -> contentChunks.add(mapToImageUrlContent(media)));
+		userMessage.getMedia().stream().map(this::mapToImageUrlContent).forEach(contentChunks::add);
 
 		return new ChatCompletionMessage(contentChunks, ChatCompletionMessage.Role.USER);
 	}
 
 	private ChatCompletionMessage.ImageUrlContent mapToImageUrlContent(Media media) {
+		Assert.isTrue("image".equals(media.getMimeType().getType()),
+				"DeepSeek vision only supports image media, got: " + media.getMimeType());
 		return new ChatCompletionMessage.ImageUrlContent(
 				new ChatCompletionMessage.ImageUrlContent.ImageUrl(urlOrDataUri(media)));
 	}

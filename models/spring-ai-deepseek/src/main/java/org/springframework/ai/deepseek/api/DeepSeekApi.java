@@ -911,12 +911,15 @@ public class DeepSeekApi {
 		}
 
 		/**
-		 * Create a chat completion message with the given content chunks and role. All
-		 * other fields are null.
+		 * Create a chat completion message with the given content and role. All other
+		 * fields are null.
+		 * <p>
+		 * The content can be either a {@link String} (plain text message) or a
+		 * {@link List} of {@link ContentChunk}s (multimodal message).
 		 * @param content The contents of the message.
 		 * @param role The role of the author of this message.
 		 */
-		public ChatCompletionMessage(List<ContentChunk> content, Role role) {
+		public ChatCompletionMessage(Object content, Role role) {
 			this(content, role, null, null, null, null, null);
 		}
 
