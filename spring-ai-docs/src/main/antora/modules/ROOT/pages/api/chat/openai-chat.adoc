@@ -895,7 +895,8 @@ Spring AI maps this field from the JSON response to the `reasoningContent` key i
 
 Official OpenAI reasoning models hide the chain-of-thought content when using the Chat Completions API.
 They only expose `reasoning_tokens` count in usage statistics.
-To access actual reasoning text from official OpenAI models, you must use OpenAI's Responses API (a separate endpoint not currently supported by this client).
+To get reasoning summaries from official OpenAI models, use OpenAI's Responses API through xref:api/chat/openai-responses-chat.adoc[`OpenAiResponsesChatModel`].
+That endpoint is also the only one that supports reasoning together with tool calling on GPT-5.4 and later.
 
 **Fallback behavior:** When `reasoning_content` is not provided by the server (e.g., official OpenAI Chat Completions), the `reasoningContent` metadata field will be an empty string.
 ====

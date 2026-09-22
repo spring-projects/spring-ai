@@ -246,16 +246,17 @@
 		<kotlin.compiler.jvmTarget>${java.version}</kotlin.compiler.jvmTarget>
 		<kotlin.compiler.daemon>false</kotlin.compiler.daemon>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<project.build.outputTimestamp>1980-02-01T00:00:00Z</project.build.outputTimestamp>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
 		<!-- Spring Boot -->
-		<spring-boot.version>4.1.1</spring-boot.version>
+		<spring-boot.version>4.2.0-SNAPSHOT</spring-boot.version>
 
 		<!-- MCP SDK -->
 		<mcp.sdk.version>2.0.0</mcp.sdk.version>
 
 		<!-- AI model SDKs -->
-		<anthropic-sdk.version>2.52.0</anthropic-sdk.version>
+		<anthropic-sdk.version>2.64.0</anthropic-sdk.version>
 		<openai-sdk.version>4.49.0</openai-sdk.version>
 		<!-- NOTE: keep awssdk and bedrockruntime versions aligned -->
 		<awssdk.version>2.51.2</awssdk.version>

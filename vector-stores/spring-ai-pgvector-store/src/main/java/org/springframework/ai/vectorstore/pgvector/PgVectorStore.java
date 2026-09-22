@@ -35,6 +35,7 @@ import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.util.JacksonUtils;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
+import org.springframework.ai.vectorstore.EmbeddedDocument;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
@@ -405,6 +406,28 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 			case SERIAL -> "serial";
 			case BIGSERIAL -> "bigserial";
 		};
+	}
+
+	/**
+	 * The embedding dimension when it is known, or -1 when it is not. Mirrors
+	 * {@link #embeddingDimensions()} without its fallback to a default, so a caller that
+	 * must not guess can tell the two cases apart.
+	 * @return the known dimension, or -1
+	 */
+	private int knownEmbeddingDimensions() {
+		if (this.dimensions > 0) {
+			return this.dimensions;
+		}
+		try {
+			int modelDimensions = this.embeddingModel.dimensions();
+			if (modelDimensions > 0) {
+				return modelDimensions;
+			}
+		}
+		catch (Exception ex) {
+			logger.debug("Could not obtain the embedding dimensions from the embedding model", ex);
+		}
+		return -1;
 	}
 
 	int embeddingDimensions() {
