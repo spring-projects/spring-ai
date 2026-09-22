@@ -48,6 +48,9 @@ import org.springframework.util.StringUtils;
 /**
  * A creator for generating SQL statements for the PostgreSQL vector store.
  *
+ * @author Jonghoon Park
+ * @author Yanming Zhou
+ * @author Siarhei Dudzin
  * @author Martin Grofcik
  * @since 2.0.2
  */

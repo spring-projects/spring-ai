@@ -63,9 +63,9 @@ public class PgVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public PgVectorStore vectorStore(JdbcTemplate jdbcTemplate, PgVectorStoreProperties properties,
-			ObjectProvider<ObservationRegistry> observationRegistry,
-			ObjectProvider<VectorStoreObservationConvention> customObservationConvention, EmbeddingModel embeddingModel,
+	public PgVectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel,
+			PgVectorStoreProperties properties, ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
 			SqlVectorStoreStatementCreator vectorStoreStatementCreator) {
 
 		var initializeSchema = properties.isInitializeSchema();
