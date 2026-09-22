@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -82,9 +83,11 @@ public class PgVectorStoreTests {
 	void invalidTableNameIsRejectedBeforeAnySqlReachesTheDatabase() {
 		var jdbcTemplate = mock(JdbcTemplate.class);
 		var embeddingModel = mock(EmbeddingModel.class);
+		var statementCreator = PgVectorStoreStatementCreator.builder(embeddingModel, JsonMapper.builder().build())
+			.build();
 
 		// Names are interpolated into the initialization SQL, reject them before it runs
-		var vectorStore = PgVectorStore.builder(jdbcTemplate, embeddingModel)
+		var vectorStore = PgVectorStore.builder(jdbcTemplate, embeddingModel, statementCreator)
 			.vectorTableName("vector_store; DROP TABLE users;")
 			.dimensions(1024)
 			.initializeSchema(true)
@@ -100,7 +103,10 @@ public class PgVectorStoreTests {
 		// Given
 		var jdbcTemplate = mock(JdbcTemplate.class);
 		var embeddingModel = mock(EmbeddingModel.class);
-		var pgVectorStore = PgVectorStore.builder(jdbcTemplate, embeddingModel).maxDocumentBatchSize(1000).build();
+		var statementCreator = PgVectorStoreStatementCreator.builder(embeddingModel, JsonMapper.builder().build())
+			.maxDocumentBatchSize(1000)
+			.build();
+		var pgVectorStore = PgVectorStore.builder(jdbcTemplate, embeddingModel, statementCreator).build();
 
 		// Testing with 9989 documents
 		var documents = Collections.nCopies(9989, new Document("foo"));
@@ -130,7 +136,10 @@ public class PgVectorStoreTests {
 	void deleteByFilterDoublesSingleQuotesWhenMetadataKeyContainsApostrophe() {
 		var jdbcTemplate = mock(JdbcTemplate.class);
 		var embeddingModel = mock(EmbeddingModel.class);
-		var store = PgVectorStore.builder(jdbcTemplate, embeddingModel).build();
+		var statementCreator = PgVectorStoreStatementCreator.builder(embeddingModel, JsonMapper.builder().build())
+			.build();
+
+		var store = PgVectorStore.builder(jdbcTemplate, embeddingModel, statementCreator).build();
 
 		var expression = new Filter.Expression(Filter.ExpressionType.EQ, new Filter.Key("O'Brien"),
 				new Filter.Value("n"));
@@ -144,7 +153,9 @@ public class PgVectorStoreTests {
 	void deleteByFilterDoublesSingleQuotesWhenStringValueContainsApostrophe() {
 		var jdbcTemplate = mock(JdbcTemplate.class);
 		var embeddingModel = mock(EmbeddingModel.class);
-		var store = PgVectorStore.builder(jdbcTemplate, embeddingModel).build();
+		var statementCreator = PgVectorStoreStatementCreator.builder(embeddingModel, JsonMapper.builder().build())
+			.build();
+		var store = PgVectorStore.builder(jdbcTemplate, embeddingModel, statementCreator).build();
 
 		var expression = new Filter.Expression(Filter.ExpressionType.EQ, new Filter.Key("author"),
 				new Filter.Value("O'Connor"));

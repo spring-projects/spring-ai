@@ -40,6 +40,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
@@ -495,8 +496,9 @@ public class PgVectorStoreIT extends BaseVectorStoreTests {
 		PgIdType idType;
 
 		@Bean
-		public VectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
-			return PgVectorStore.builder(jdbcTemplate, embeddingModel)
+		public VectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel,
+				SqlVectorStoreStatementCreator statementCreator) {
+			return PgVectorStore.builder(jdbcTemplate, embeddingModel, statementCreator)
 				.dimensions(PgVectorStore.INVALID_EMBEDDING_DIMENSION)
 				.idType(this.idType)
 				.distanceType(this.distanceType)
@@ -505,6 +507,11 @@ public class PgVectorStoreIT extends BaseVectorStoreTests {
 				.removeExistingVectorStoreTable(true)
 				.maxDocumentBatchSize(2)
 				.build();
+		}
+
+		@Bean
+		public SqlVectorStoreStatementCreator statementCreator(EmbeddingModel embeddingModel) {
+			return PgVectorStoreStatementCreator.builder(embeddingModel, JsonMapper.builder().build()).build();
 		}
 
 		@Bean

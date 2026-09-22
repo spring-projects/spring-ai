@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -74,7 +75,9 @@ public class PgVectorSchemaValidatorIT {
 
 	@Test
 	void schemaValidationWithInitializeSchemaSucceedsOnFreshDatabase() {
-		PgVectorStore vectorStore = PgVectorStore.builder(this.jdbcTemplate, mock(EmbeddingModel.class))
+		EmbeddingModel embeddingModel = mock(EmbeddingModel.class);
+		PgVectorStore vectorStore = PgVectorStore
+			.builder(this.jdbcTemplate, embeddingModel, statementCreator(embeddingModel))
 			.vectorTableName("fresh_vector_store")
 			.dimensions(1024)
 			.initializeSchema(true)
@@ -83,6 +86,10 @@ public class PgVectorSchemaValidatorIT {
 
 		assertThatNoException().isThrownBy(vectorStore::afterPropertiesSet);
 		assertThat(this.schemaValidator.isTableExists("public", "fresh_vector_store")).isTrue();
+	}
+
+	private SqlVectorStoreStatementCreator statementCreator(EmbeddingModel embeddingModel) {
+		return PgVectorStoreStatementCreator.builder(embeddingModel, JsonMapper.builder().build()).build();
 	}
 
 	@Configuration(proxyBeanMethods = false)
