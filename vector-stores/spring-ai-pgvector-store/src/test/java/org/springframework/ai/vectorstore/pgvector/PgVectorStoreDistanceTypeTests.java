@@ -23,6 +23,7 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
@@ -49,9 +50,12 @@ class PgVectorStoreDistanceTypeTests {
 		// Given
 		var jdbcTemplate = mock(JdbcTemplate.class);
 		var embeddingModel = mock(EmbeddingModel.class);
+		PgVectorStoreStatementCreator sqlVectorStoreStatementCreator = PgVectorStoreStatementCreator
+			.builder(embeddingModel, new JsonMapper())
+			.build();
 
 		// When
-		var vectorStore = PgVectorStore.builder(jdbcTemplate, embeddingModel).build();
+		var vectorStore = PgVectorStore.builder(jdbcTemplate, embeddingModel, sqlVectorStoreStatementCreator).build();
 
 		// Then
 		assertThat(vectorStore.getDistanceType()).isEqualTo(PgVectorStore.PgDistanceType.COSINE_DISTANCE);
@@ -68,8 +72,11 @@ class PgVectorStoreDistanceTypeTests {
 		when(embeddingModel.embed(anyString())).thenReturn(new float[] { 0.1f, 0.2f, 0.3f });
 		when(jdbcTemplate.query(any(PreparedStatementCreator.class), any(ResultSetExtractor.class)))
 			.thenReturn(List.of());
+		PgVectorStoreStatementCreator sqlVectorStoreStatementCreator = PgVectorStoreStatementCreator
+			.builder(embeddingModel, new JsonMapper())
+			.build();
 
-		var vectorStore = PgVectorStore.builder(jdbcTemplate, embeddingModel)
+		var vectorStore = PgVectorStore.builder(jdbcTemplate, embeddingModel, sqlVectorStoreStatementCreator)
 			.distanceType(PgVectorStore.PgDistanceType.COSINE_DISTANCE)
 			.initializeSchema(false)
 			.build();

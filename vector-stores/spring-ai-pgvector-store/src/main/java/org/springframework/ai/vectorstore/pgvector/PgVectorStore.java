@@ -242,6 +242,12 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		return this.distanceType;
 	}
 
+	@Deprecated(since = "2.0.2")
+	public static PgVectorStoreBuilder builder(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
+		return new PgVectorStoreBuilder(jdbcTemplate, embeddingModel,
+				PgVectorStoreStatementCreator.builder(embeddingModel, new JsonMapper()).build());
+	}
+
 	public static PgVectorStoreBuilder builder(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel,
 			SqlVectorStoreStatementCreator sqlVectorStoreStatementCreator) {
 		return new PgVectorStoreBuilder(jdbcTemplate, embeddingModel, sqlVectorStoreStatementCreator);
@@ -454,6 +460,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		 * Performs exact nearest neighbor search, which provides perfect recall.
 		 */
 		NONE,
+
 		/**
 		 * An IVFFlat index divides vectors into lists, and then searches a subset of
 		 * those lists that are closest to the query vector. It has faster build times and
@@ -461,6 +468,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		 * speed-recall tradeoff).
 		 */
 		IVFFLAT,
+
 		/**
 		 * An HNSW index creates a multilayer graph. It has slower build times and uses
 		 * more memory than IVFFlat, but has better query performance (in terms of
@@ -545,11 +553,11 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 			// @formatter:off
 			return Document.builder()
-				.id(id)
-				.text(content)
-				.metadata(metadata)
-				.score(1.0 - distance)
-				.build(); // @formatter:on
+					.id(id)
+					.text(content)
+					.metadata(metadata)
+					.score(1.0 - distance)
+					.build(); // @formatter:on
 		}
 
 		private Map<String, Object> toMap(PGobject pgObject) {
@@ -640,6 +648,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 			return this;
 		}
 
+		@Deprecated(since = "2.0.2")
 		public PgVectorStoreBuilder maxDocumentBatchSize(int maxDocumentBatchSize) {
 			this.maxDocumentBatchSize = maxDocumentBatchSize;
 			return this;

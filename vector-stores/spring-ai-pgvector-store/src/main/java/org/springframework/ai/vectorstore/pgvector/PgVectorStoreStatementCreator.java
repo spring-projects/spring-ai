@@ -26,11 +26,13 @@ import java.util.stream.Stream;
 
 import com.pgvector.PGvector;
 import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptions;
+import org.springframework.ai.embedding.TokenCountBatchingStrategy;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
@@ -122,15 +124,15 @@ public class PgVectorStoreStatementCreator implements SqlVectorStoreStatementCre
 			.add(new DefaultVectorStorePreparedStatement(
 					this.statementFactory.newPreparedStatementCreator(
 							"DELETE FROM " + getFullyQualifiedTableName() + " WHERE id = ?", new Object[0]),
-					deleteByIdSetter(idList, keyHolder)))
+					deleteByIdSetter(idList)))
 			.build();
 	}
 
-	private BatchPreparedStatementSetter deleteByIdSetter(List<String> idList, KeyHolder keyHolder) {
+	private BatchPreparedStatementSetter deleteByIdSetter(List<String> idList) {
 		return new BatchPreparedStatementSetter() {
 
 			@Override
-			public void setValues(java.sql.PreparedStatement ps, int i) throws SQLException {
+			public void setValues(PreparedStatement ps, int i) throws SQLException {
 				var id = idList.get(i);
 				StatementCreatorUtils.setParameterValue(ps, 1, SqlTypeValue.TYPE_UNKNOWN, convertIdToPgType(id));
 			}
@@ -156,6 +158,10 @@ public class PgVectorStoreStatementCreator implements SqlVectorStoreStatementCre
 					new InsertBatchPreparedStatementSetter(documents, embeddings, i, offset)));
 		}
 		return batches.stream();
+	}
+
+	public static PgVectorStoreStatementCreatorBuilder builder(EmbeddingModel embeddingModel, JsonMapper jsonMapper) {
+		return new PgVectorStoreStatementCreatorBuilder(embeddingModel, jsonMapper);
 	}
 
 	private Object convertIdToPgType(String id) {
@@ -242,6 +248,83 @@ public class PgVectorStoreStatementCreator implements SqlVectorStoreStatementCre
 		public BatchPreparedStatementSetter getSetter() {
 			return this.setter;
 		}
+	}
+
+	/**
+	 * Builder for creating a {@link PgVectorStoreStatementCreator} instance.
+	 */
+	public static final class PgVectorStoreStatementCreatorBuilder {
+
+		private static final String DEFAULT_SCHEMA_NAME = "public";
+
+		private static final String DEFAULT_TABLE_NAME = "vector_store";
+
+		private static final PgVectorStore.PgIdType DEFAULT_ID_TYPE = PgVectorStore.PgIdType.UUID;
+
+		private static final PgVectorStore.PgDistanceType DEFAULT_DISTANCE_TYPE = PgVectorStore.PgDistanceType.COSINE_DISTANCE;
+
+		private static final int DEFAULT_MAX_DOCUMENT_BATCH_SIZE = 10_000;
+
+		private final EmbeddingModel embeddingModel;
+
+		private BatchingStrategy batchingStrategy = new TokenCountBatchingStrategy();
+
+		private String schemaName = DEFAULT_SCHEMA_NAME;
+
+		private String vectorTableName = DEFAULT_TABLE_NAME;
+
+		private PgVectorStore.PgIdType idType = DEFAULT_ID_TYPE;
+
+		private PgVectorStore.PgDistanceType distanceType = DEFAULT_DISTANCE_TYPE;
+
+		private int maxDocumentBatchSize = DEFAULT_MAX_DOCUMENT_BATCH_SIZE;
+
+		private ObjectMapper jsonMapper;
+
+		private PgVectorStoreStatementCreatorBuilder(EmbeddingModel embeddingModel, JsonMapper jsonMapper) {
+			this.embeddingModel = embeddingModel;
+			this.jsonMapper = jsonMapper;
+		}
+
+		public PgVectorStoreStatementCreatorBuilder schemaName(String schemaName) {
+			this.schemaName = schemaName;
+			return this;
+		}
+
+		public PgVectorStoreStatementCreatorBuilder vectorTableName(String vectorTableName) {
+			this.vectorTableName = vectorTableName;
+			return this;
+		}
+
+		public PgVectorStoreStatementCreatorBuilder idType(PgVectorStore.PgIdType idType) {
+			this.idType = idType;
+			return this;
+		}
+
+		public PgVectorStoreStatementCreatorBuilder distanceType(PgVectorStore.PgDistanceType distanceType) {
+			this.distanceType = distanceType;
+			return this;
+		}
+
+		public PgVectorStoreStatementCreatorBuilder maxDocumentBatchSize(int maxDocumentBatchSize) {
+			this.maxDocumentBatchSize = maxDocumentBatchSize;
+			return this;
+		}
+
+		public PgVectorStoreStatementCreator build() {
+			if (this.jsonMapper == null) {
+				this.jsonMapper = new ObjectMapper();
+			}
+			return new PgVectorStoreStatementCreator(this.distanceType, this.vectorTableName, this.schemaName,
+					this.embeddingModel, this.idType, this.batchingStrategy, this.maxDocumentBatchSize,
+					this.jsonMapper);
+		}
+
+		public PgVectorStoreStatementCreatorBuilder batchingStrategy(BatchingStrategy batchingStrategy) {
+			this.batchingStrategy = batchingStrategy;
+			return this;
+		}
+
 	}
 
 }

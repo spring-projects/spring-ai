@@ -63,11 +63,10 @@ public class PgVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public PgVectorStore vectorStore(JdbcTemplate jdbcTemplate,
-			PgVectorStoreProperties properties, ObjectProvider<ObservationRegistry> observationRegistry,
+	public PgVectorStore vectorStore(JdbcTemplate jdbcTemplate, PgVectorStoreProperties properties,
+			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention, EmbeddingModel embeddingModel,
-			SqlVectorStoreStatementCreator vectorStoreStatementCreator
-			) {
+			SqlVectorStoreStatementCreator vectorStoreStatementCreator) {
 
 		var initializeSchema = properties.isInitializeSchema();
 
@@ -87,12 +86,12 @@ public class PgVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public SqlVectorStoreStatementCreator vectorStoreStatementCreator(PgVectorStoreProperties properties, EmbeddingModel embeddingModel, BatchingStrategy batchingStrategy) {
-		return new PgVectorStoreStatementCreator(
-				properties.getDistanceType(), properties.getTableName(), properties.getSchemaName(), embeddingModel, properties.getIdType(), batchingStrategy,
+	public SqlVectorStoreStatementCreator vectorStoreStatementCreator(PgVectorStoreProperties properties,
+			EmbeddingModel embeddingModel, BatchingStrategy batchingStrategy) {
+		return new PgVectorStoreStatementCreator(properties.getDistanceType(), properties.getTableName(),
+				properties.getSchemaName(), embeddingModel, properties.getIdType(), batchingStrategy,
 				properties.getMaxDocumentBatchSize(),
-				JsonMapper.builder().addModules(JacksonUtils.instantiateAvailableModules()).build()
-		);
+				JsonMapper.builder().addModules(JacksonUtils.instantiateAvailableModules()).build());
 	}
 
 }

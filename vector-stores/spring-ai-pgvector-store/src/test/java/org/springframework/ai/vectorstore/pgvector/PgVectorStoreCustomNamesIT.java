@@ -26,6 +26,7 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.openai.OpenAiEmbeddingModel;
@@ -188,9 +189,10 @@ public class PgVectorStoreCustomNamesIT {
 		int dimensions = 768;
 
 		@Bean
-		public VectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
+		public VectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel,
+				SqlVectorStoreStatementCreator statementCreator) {
 
-			return PgVectorStore.builder(jdbcTemplate, embeddingModel)
+			return PgVectorStore.builder(jdbcTemplate, embeddingModel, statementCreator)
 				.schemaName(this.schemaName)
 				.vectorTableName(this.vectorTableName)
 				.vectorTableValidationsEnabled(this.schemaValidation)
@@ -199,6 +201,11 @@ public class PgVectorStoreCustomNamesIT {
 				.indexType(PgIndexType.HNSW)
 				.initializeSchema(true)
 				.build();
+		}
+
+		@Bean
+		public SqlVectorStoreStatementCreator statementCreator(EmbeddingModel embeddingModel) {
+			return PgVectorStoreStatementCreator.builder(embeddingModel, JsonMapper.builder().build()).build();
 		}
 
 		public Float[] generateFloatArray(int size, float min, float max) {
