@@ -1,0 +1,160 @@
+= Together AI Image Generation
+
+Spring AI supports Together AI's https://docs.together.ai/reference/post-images-generations[image generation API].
+
+== Prerequisites
+
+You will need to create an API key with Together AI to access their image models.
+
+The Spring AI project defines a configuration property named `spring.ai.togetherai.api-key` that you should set to the value of the API key obtained from Together AI.
+
+You can set this configuration property in your `application.properties` file:
+
+[source,properties]
+----
+spring.ai.togetherai.api-key=<your-togetherai-api-key>
+----
+
+For enhanced security when handling sensitive information like API keys, you can use Spring Expression Language (SpEL) to reference a custom environment variable:
+
+[source,yaml]
+----
+# In application.yml
+spring:
+  ai:
+    togetherai:
+      api-key: ${TOGETHERAI_API_KEY}
+----
+
+[source,bash]
+----
+# In your environment or .env file
+export TOGETHERAI_API_KEY=<your-togetherai-api-key>
+----
+
+You can also set this configuration programmatically in your application code:
+
+[source,java]
+----
+// Retrieve API key from a secure source or environment variable
+String apiKey = System.getenv("TOGETHERAI_API_KEY");
+----
+
+== Auto-configuration
+
+[NOTE]
+====
+There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
+Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
+====
+
+Spring AI provides Spring Boot auto-configuration for the Together AI Image Generation Client.
+To enable it add the following dependency to your project's Maven `pom.xml` file:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-model-together-ai</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-starter-model-together-ai'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+=== Image Generation Properties
+
+==== Connection Properties
+
+The prefix `spring.ai.togetherai` is used as the property prefix that lets you connect to Together AI.
+
+[cols="3,5,1"]
+|====
+| Property | Description | Default
+
+| spring.ai.togetherai.base-url   | The URL to connect to |  `https://api.together.ai`
+| spring.ai.togetherai.api-key    | The API Key           |  -
+|====
+
+==== Configuration Properties
+
+[NOTE]
+====
+Enabling and disabling of the image auto-configurations are now configured via top level properties with the prefix `spring.ai.model.image`.
+
+To enable, `spring.ai.model.image=togetherai`.
+
+To disable, `spring.ai.model.image=none` (or any value which doesn't match `togetherai`).
+
+This change is done to allow configuration of multiple models.
+====
+
+The prefix `spring.ai.togetherai.image` is the property prefix that lets you configure the `ImageModel` implementation for Together AI.
+
+[cols="3,5,1"]
+|====
+| Property | Description | Default
+
+| spring.ai.model.image | Enable Together AI image model. | togetherai
+| spring.ai.togetherai.image.base-url | Optional override of `spring.ai.togetherai.base-url`. | -
+| spring.ai.togetherai.image.api-key | Optional override of `spring.ai.togetherai.api-key`. | -
+| spring.ai.togetherai.image.model | The model to use for image generation. This property is required. | -
+| spring.ai.togetherai.image.steps | The number of sampling steps to use. | -
+| spring.ai.togetherai.image.image-url | An optional image URL to send with the request. | -
+| spring.ai.togetherai.image.seed | Random noise seed to use. | -
+| spring.ai.togetherai.image.n | The number of images to be generated. | -
+| spring.ai.togetherai.image.height | The height of the generated image, in pixels. | -
+| spring.ai.togetherai.image.width | The width of the generated image, in pixels. | -
+| spring.ai.togetherai.image.negative-prompt | A prompt fragment that should be avoided. | -
+| spring.ai.togetherai.image.response-format | The format in which the generated images are returned. Valid values are `base64` and `url`. | -
+| spring.ai.togetherai.image.guidance-scale | The guidance scale to use when generating the image. | -
+| spring.ai.togetherai.image.output-format | The output image format. Valid values are `jpeg` and `png`. | -
+| spring.ai.togetherai.image.image-loras | A list of image LoRA settings, each with a `path` and `scale`. | -
+| spring.ai.togetherai.image.reference-images | A list of reference image URLs. | -
+| spring.ai.togetherai.image.disable-safety-checker | Whether to disable the safety checker. | -
+|====
+
+NOTE: You can override the common `spring.ai.togetherai.base-url` and `spring.ai.togetherai.api-key` properties.
+The `spring.ai.togetherai.image.base-url` and `spring.ai.togetherai.image.api-key` properties, if set, take precedence over the common properties.
+This is useful if you want to use different Together AI accounts or endpoints for different models.
+The effective default base URL is `https://api.together.ai`.
+
+== Runtime Options [[image-options]]
+
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-together-ai/src/main/java/org/springframework/ai/togetherai/api/TogetherAiImageOptions.java[TogetherAiImageOptions.java] provides model configurations, such as the model to use, the number of steps, the output format, and the image references.
+
+On start-up, the default options can be configured with the `TogetherAiImageModel(TogetherAiApi togetherAiApi, TogetherAiImageOptions options)` constructor.
+Alternatively, use the `spring.ai.togetherai.image.*` properties described previously.
+
+At runtime, you can override the default options by adding new, request specific, options to the `ImagePrompt` call.
+For example, to override Together AI specific options such as the guidance scale and the number of images to create, use the following code example:
+
+[source,java]
+----
+ImageResponse response = togetherAiImageModel.call(
+        new ImagePrompt("A light cream colored mini golden doodle",
+        TogetherAiImageOptions.builder()
+                .model("black-forest-labs/FLUX.1-schnell")
+                .steps(20)
+                .n(4)
+                .height(1024)
+                .width(1024)
+                .guidanceScale(7.5f)
+                .outputFormat(TogetherAiImageOptions.OutputFormat.PNG)
+                .responseFormat(TogetherAiImageOptions.ResponseFormat.URL)
+                .build())
+
+);
+----
+
+TIP: In addition to the model specific https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-together-ai/src/main/java/org/springframework/ai/togetherai/api/TogetherAiImageOptions.java[TogetherAiImageOptions] you can use a portable https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/image/ImageOptions.java[ImageOptions] instance, created with the https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/image/ImageOptionsBuilder.java[ImageOptionsBuilder#builder()].
+
+NOTE: Together AI does not expose a style preset option.

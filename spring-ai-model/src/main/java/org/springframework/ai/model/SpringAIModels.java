@@ -56,4 +56,6 @@ public final class SpringAIModels {
 
 	public static final String ELEVEN_LABS = "elevenlabs";
 
+	public static final String TOGETHER_AI = "togetherai";
+
 }
