@@ -16,6 +16,8 @@
 
 package org.springframework.ai.chat.observation;
 
+import java.time.Duration;
+
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.prompt.ChatOptions;
@@ -70,6 +72,31 @@ class ChatModelObservationContextTests {
 			.build();
 
 		assertThat(observationContext.isStreaming()).isFalse();
+	}
+
+	@Test
+	void whenFirstChunkReceivedThenRecordElapsedTime() {
+		var observationContext = ChatModelObservationContext.builder()
+			.prompt(generatePrompt(ChatOptions.builder().model("supermodel").build()))
+			.provider("superprovider")
+			.streaming(true)
+			.build();
+
+		observationContext.recordTimeToFirstChunk();
+
+		assertThat(observationContext.getTimeToFirstChunk()).isNotNull().isGreaterThanOrEqualTo(Duration.ZERO);
+	}
+
+	@Test
+	void whenNotStreamingThenDoNotRecordElapsedTime() {
+		var observationContext = ChatModelObservationContext.builder()
+			.prompt(generatePrompt(ChatOptions.builder().model("supermodel").build()))
+			.provider("superprovider")
+			.build();
+
+		observationContext.recordTimeToFirstChunk();
+
+		assertThat(observationContext.getTimeToFirstChunk()).isNull();
 	}
 
 	private Prompt generatePrompt(ChatOptions chatOptions) {

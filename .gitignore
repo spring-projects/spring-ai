@@ -41,6 +41,7 @@ package.json
 shell.log
 
 .profiler
+.codebase-memory/
 nbproject/
 
 **/.claude/settings.local.json
