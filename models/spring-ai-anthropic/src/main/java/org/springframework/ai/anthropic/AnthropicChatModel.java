@@ -979,7 +979,9 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 	/**
 	 * Builds generations from the Anthropic message response. Extracts text, tool calls,
-	 * thinking content, and citations from the response content blocks.
+	 * thinking content, and citations from the response content blocks. The final
+	 * assistant generation is placed first so {@link ChatResponse#getResult()} returns
+	 * the answer; any thinking or redacted-thinking generations follow it.
 	 * @param message the Anthropic message response
 	 * @param citationAccumulator collects citations found in text blocks
 	 * @param webSearchAccumulator collects web search results found in response
