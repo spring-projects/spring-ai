@@ -267,12 +267,12 @@ class AnthropicChatModelTests {
 
 		ChatResponse response = this.chatModel.call(prompt);
 		assertThat(response.getResults()).hasSize(2);
-		Generation thinkingGeneration = response.getResults().get(0);
-		assertThat(thinkingGeneration.getOutput().getText()).isEqualTo("thinking text");
-		assertThat(thinkingGeneration.getOutput().getMetadata()).containsEntry("signature", "thinking-signature");
-		Generation toolCallGeneration = response.getResults().get(1);
+		Generation toolCallGeneration = response.getResults().get(0);
 		assertThat(toolCallGeneration.getOutput()).isInstanceOf(AnthropicChatModel.AnthropicAssistantMessage.class);
 		assertThat(toolCallGeneration.getOutput().getToolCalls()).hasSize(1);
+		Generation thinkingGeneration = response.getResults().get(1);
+		assertThat(thinkingGeneration.getOutput().getText()).isEqualTo("thinking text");
+		assertThat(thinkingGeneration.getOutput().getMetadata()).containsEntry("signature", "thinking-signature");
 
 		ToolExecutionResult toolExecutionResult = ToolCallingManager.builder()
 			.build()
@@ -305,11 +305,11 @@ class AnthropicChatModelTests {
 
 		ChatResponse response = this.chatModel.call(prompt);
 		assertThat(response.getResults()).hasSize(2);
-		Generation redactedGeneration = response.getResults().get(0);
-		assertThat(redactedGeneration.getOutput().getMetadata()).containsEntry("data", "redacted-data");
-		Generation toolCallGeneration = response.getResults().get(1);
+		Generation toolCallGeneration = response.getResults().get(0);
 		assertThat(toolCallGeneration.getOutput()).isInstanceOf(AnthropicChatModel.AnthropicAssistantMessage.class);
 		assertThat(toolCallGeneration.getOutput().getToolCalls()).hasSize(1);
+		Generation redactedGeneration = response.getResults().get(1);
+		assertThat(redactedGeneration.getOutput().getMetadata()).containsEntry("data", "redacted-data");
 
 		ToolExecutionResult toolExecutionResult = ToolCallingManager.builder()
 			.build()
@@ -327,7 +327,7 @@ class AnthropicChatModelTests {
 	}
 
 	@Test
-	void thinkingOnlyResponseExposesThinkingGenerationAndKeepsReplayState() {
+	void thinkingResponseReturnsAssistantMessageAsPrimaryGeneration() {
 		Message mockResponse = createMockMessageWithThinkingAndText("thinking text", "thinking-signature",
 				"Final answer.");
 		given(this.messageService.create(any(MessageCreateParams.class))).willReturn(mockResponse);
@@ -335,16 +335,35 @@ class AnthropicChatModelTests {
 		ChatResponse response = this.chatModel.call(new Prompt("Explain it"));
 
 		assertThat(response.getResults()).hasSize(2);
-		Generation thinkingGeneration = response.getResults().get(0);
-		assertThat(thinkingGeneration.getOutput().getText()).isEqualTo("thinking text");
-		assertThat(thinkingGeneration.getOutput().getMetadata()).containsEntry("signature", "thinking-signature");
 
-		Generation finalGeneration = response.getResults().get(1);
+		Generation finalGeneration = response.getResults().get(0);
+		assertThat(response.getResult()).isSameAs(finalGeneration);
 		assertThat(finalGeneration.getOutput().getText()).isEqualTo("Final answer.");
 		assertThat(finalGeneration.getOutput()).isInstanceOf(AnthropicChatModel.AnthropicAssistantMessage.class);
 		AnthropicChatModel.AnthropicAssistantMessage output = (AnthropicChatModel.AnthropicAssistantMessage) finalGeneration
 			.getOutput();
 		assertThat(output.hasThinkingContents()).isTrue();
+
+		Generation thinkingGeneration = response.getResults().get(1);
+		assertThat(thinkingGeneration.getOutput().getText()).isEqualTo("thinking text");
+		assertThat(thinkingGeneration.getOutput().getMetadata()).containsEntry("signature", "thinking-signature");
+	}
+
+	@Test
+	void redactedThinkingResponseReturnsAssistantMessageAsPrimaryGeneration() {
+		Message mockResponse = createMockMessageWithRedactedThinkingAndText("redacted-data", "Final answer.");
+		given(this.messageService.create(any(MessageCreateParams.class))).willReturn(mockResponse);
+
+		ChatResponse response = this.chatModel.call(new Prompt("Explain it"));
+
+		assertThat(response.getResults()).hasSize(2);
+
+		Generation finalGeneration = response.getResults().get(0);
+		assertThat(response.getResult()).isSameAs(finalGeneration);
+		assertThat(finalGeneration.getOutput().getText()).isEqualTo("Final answer.");
+
+		Generation redactedGeneration = response.getResults().get(1);
+		assertThat(redactedGeneration.getOutput().getMetadata()).containsEntry("data", "redacted-data");
 	}
 
 	@Test
@@ -692,6 +711,28 @@ class AnthropicChatModelTests {
 
 		return createMockMessage(List.of(redactedThinkingContentBlock, toolUseContentBlock), StopReason.TOOL_USE, 15L,
 				25L);
+	}
+
+	private Message createMockMessageWithRedactedThinkingAndText(String data, String text) {
+		RedactedThinkingBlock redactedThinkingBlock = mock(RedactedThinkingBlock.class);
+		given(redactedThinkingBlock.data()).willReturn(data);
+
+		ContentBlock redactedThinkingContentBlock = mock(ContentBlock.class);
+		given(redactedThinkingContentBlock.isText()).willReturn(false);
+		given(redactedThinkingContentBlock.isToolUse()).willReturn(false);
+		given(redactedThinkingContentBlock.isThinking()).willReturn(false);
+		given(redactedThinkingContentBlock.isRedactedThinking()).willReturn(true);
+		given(redactedThinkingContentBlock.asRedactedThinking()).willReturn(redactedThinkingBlock);
+
+		TextBlock textBlock = mock(TextBlock.class);
+		given(textBlock.text()).willReturn(text);
+
+		ContentBlock textContentBlock = mock(ContentBlock.class);
+		given(textContentBlock.isText()).willReturn(true);
+		given(textContentBlock.asText()).willReturn(textBlock);
+
+		return createMockMessage(List.of(redactedThinkingContentBlock, textContentBlock), StopReason.END_TURN, 10L,
+				20L);
 	}
 
 	private ContentBlock toolUseContentBlock(String toolId, String toolName, JsonValue input) {

@@ -1056,7 +1056,9 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			}
 		}
 
-		generations.add(new Generation(buildAssistantMessage(textContent.toString(), toolCalls, thinkingContents),
+		// ChatResponse.getResult() returns the first generation, so the assistant
+		// message must precede the thinking generations accumulated above.
+		generations.add(0, new Generation(buildAssistantMessage(textContent.toString(), toolCalls, thinkingContents),
 				generationMetadata));
 
 		return generations;
