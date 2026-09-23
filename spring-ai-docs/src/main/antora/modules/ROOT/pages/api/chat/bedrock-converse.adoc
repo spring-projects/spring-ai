@@ -981,6 +981,34 @@ along with the text message "You are a very professional document summarization 
 ...
 ----
 
+=== Content Order
+
+The content blocks of a user turn are sent to the Converse API in the order of the xref:api/chatmodel.adoc#message-parts[message parts] of the `UserMessage`.
+A message built with the `text(...)` and `media(...)` builder methods, or with the constructors, is sent with its text first, followed by its media, as shown in the examples above.
+
+The link:https://docs.aws.amazon.com/nova/latest/userguide/prompting-vision-prompting.html[Amazon Nova prompting guidance] recommends placing media such as images or videos before the instructional text.
+To control the order, add the parts directly and pass the message to the prompt:
+
+[source,java]
+----
+UserMessage message = UserMessage.builder()
+    .part(MediaPart.of(Media.builder()
+        .mimeType(Media.Format.VIDEO_MP4)
+        .data(new ClassPathResource("/test.video.mp4"))
+        .build()))
+    .part(TextPart.of("Explain what do you see in this video?"))
+    .build();
+
+String response = ChatClient.create(chatModel)
+    .prompt()
+    .messages(message)
+    .call()
+    .content();
+----
+
+The request then carries the video block before the text block.
+Blank text parts are not sent, and when conversation history caching is enabled the cache point is still added after the last part.
+
 
 == Sample Controller
 

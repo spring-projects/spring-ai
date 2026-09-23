@@ -18,6 +18,7 @@ package org.springframework.ai.bedrock.converse;
 
 import java.net.URL;
 import java.util.List;
+import java.util.Map;
 
 import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Test;
@@ -42,6 +43,9 @@ import org.springframework.ai.bedrock.converse.api.BedrockCacheTtl;
 import org.springframework.ai.bedrock.converse.api.MediaFetcher;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.messages.part.MediaPart;
+import org.springframework.ai.chat.messages.part.TextPart;
+import org.springframework.ai.chat.messages.part.UnknownPart;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.model.tool.ToolCallingManager;
@@ -460,10 +464,137 @@ class BedrockProxyChatModelTest {
 		assertThat(contents.get(1).image()).isNotNull();
 	}
 
+	// -------------------------------------------------------------------------
+	// Message part order (gh-7012)
+	// -------------------------------------------------------------------------
+
+	@Test
+	void userMessagePartsPlaceMediaBeforeText() {
+		BedrockProxyChatModel model = newModel();
+
+		UserMessage message = UserMessage.builder()
+			.part(MediaPart.of(mp4Media()))
+			.part(TextPart.of("Describe the video"))
+			.build();
+		Prompt prompt = new Prompt(List.of(message), BedrockChatOptions.builder().build());
+
+		List<ContentBlock> contents = model.createRequest(prompt).messages().get(0).content();
+
+		assertThat(contents).hasSize(2);
+		assertThat(contents.get(0).video()).isNotNull();
+		assertThat(contents.get(1).text()).isEqualTo("Describe the video");
+	}
+
+	@Test
+	void userMessagePartsKeepInterleavedOrder() {
+		BedrockProxyChatModel model = newModel();
+
+		UserMessage message = UserMessage.builder()
+			.part(TextPart.of("--- page 1 ---"))
+			.part(MediaPart.of(pngMedia()))
+			.part(TextPart.of("What is on this page?"))
+			.build();
+		Prompt prompt = new Prompt(List.of(message), BedrockChatOptions.builder().build());
+
+		List<ContentBlock> contents = model.createRequest(prompt).messages().get(0).content();
+
+		assertThat(contents).hasSize(3);
+		assertThat(contents.get(0).text()).isEqualTo("--- page 1 ---");
+		assertThat(contents.get(1).image()).isNotNull();
+		assertThat(contents.get(2).text()).isEqualTo("What is on this page?");
+	}
+
+	@Test
+	void blankTextPartIsOmittedFromContentBlocks() {
+		BedrockProxyChatModel model = newModel();
+
+		UserMessage message = UserMessage.builder().part(TextPart.of("   ")).part(MediaPart.of(pngMedia())).build();
+		Prompt prompt = new Prompt(List.of(message), BedrockChatOptions.builder().build());
+
+		List<ContentBlock> contents = model.createRequest(prompt).messages().get(0).content();
+
+		assertThat(contents).hasSize(1);
+		assertThat(contents.get(0).image()).isNotNull();
+	}
+
+	@Test
+	void legacyBuilderKeepsTextThenMediaOrder() {
+		BedrockProxyChatModel model = newModel();
+
+		// media(...) is called before text(...), the legacy order is still text first
+		UserMessage message = UserMessage.builder().media(pngMedia()).text("Describe the image").build();
+		Prompt prompt = new Prompt(List.of(message), BedrockChatOptions.builder().build());
+
+		List<ContentBlock> contents = model.createRequest(prompt).messages().get(0).content();
+
+		assertThat(contents).hasSize(2);
+		assertThat(contents.get(0).text()).isEqualTo("Describe the image");
+		assertThat(contents.get(1).image()).isNotNull();
+	}
+
+	@Test
+	void legacyConstructorKeepsTextThenMediaOrder() {
+		BedrockProxyChatModel model = newModel();
+
+		// the constructor yields the text part and mutate().media(...) appends the media
+		UserMessage message = new UserMessage("Describe the image").mutate().media(pngMedia()).build();
+		Prompt prompt = new Prompt(List.of(message), BedrockChatOptions.builder().build());
+
+		List<ContentBlock> contents = model.createRequest(prompt).messages().get(0).content();
+
+		assertThat(contents).hasSize(2);
+		assertThat(contents.get(0).text()).isEqualTo("Describe the image");
+		assertThat(contents.get(1).image()).isNotNull();
+	}
+
+	@Test
+	void cachePointStaysLastAfterOrderedParts() {
+		BedrockProxyChatModel model = newModel();
+
+		BedrockChatOptions options = BedrockChatOptions.builder()
+			.cacheOptions(BedrockCacheOptions.builder().strategy(BedrockCacheStrategy.CONVERSATION_HISTORY).build())
+			.build();
+		UserMessage message = UserMessage.builder()
+			.part(MediaPart.of(mp4Media()))
+			.part(TextPart.of("Describe the video"))
+			.build();
+		Prompt prompt = new Prompt(List.of(message), options);
+
+		List<ContentBlock> contents = model.createRequest(prompt).messages().get(0).content();
+
+		assertThat(contents).hasSize(3);
+		assertThat(contents.get(0).video()).isNotNull();
+		assertThat(contents.get(1).text()).isEqualTo("Describe the video");
+		assertThat(contents.get(2).cachePoint()).isNotNull();
+	}
+
+	@Test
+	void nonTextOrMediaPartsAreSkipped() {
+		BedrockProxyChatModel model = newModel();
+
+		UserMessage message = UserMessage.builder()
+			.part(new UnknownPart("other-provider", "custom", "{}", null, Map.of()))
+			.part(TextPart.of("Hello"))
+			.build();
+		Prompt prompt = new Prompt(List.of(message), BedrockChatOptions.builder().build());
+
+		List<ContentBlock> contents = model.createRequest(prompt).messages().get(0).content();
+
+		assertThat(contents).hasSize(1);
+		assertThat(contents.get(0).text()).isEqualTo("Hello");
+	}
+
 	private static Media pngMedia() {
 		return Media.builder()
 			.mimeType(MimeType.valueOf("image/png"))
 			.data(new byte[] { (byte) 0x89, 'P', 'N', 'G' })
+			.build();
+	}
+
+	private static Media mp4Media() {
+		return Media.builder()
+			.mimeType(MimeType.valueOf("video/mp4"))
+			.data(new byte[] { 0, 0, 0, 0x18, 'f', 't', 'y', 'p' })
 			.build();
 	}
 
