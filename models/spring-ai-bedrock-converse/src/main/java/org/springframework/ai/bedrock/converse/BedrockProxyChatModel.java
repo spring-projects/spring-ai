@@ -291,11 +291,16 @@ public class BedrockProxyChatModel implements ChatModel {
 				List<ContentBlock> contents = new ArrayList<>();
 				if (message instanceof UserMessage) {
 					var userMessage = (UserMessage) message;
-					// The Converse API rejects empty text content blocks, so only send
-					// the text when there is any. A user message may legitimately carry
-					// media only (gh-6695).
+					// Emit the content blocks in the order of the message parts, so a
+					// caller can place media before the text as the AWS Nova prompting
+					// guidance recommends (gh-7012). Messages built through the legacy
+					// constructors or the text(...)/media(...) builder methods keep their
+					// text-then-media order because that is the order of their parts.
 					for (MessagePart part : userMessage.getParts()) {
 						if (part instanceof TextPart textPart) {
+							// The Converse API rejects empty text content blocks, so only
+							// send the text when there is any. A user message may
+							// legitimately carry media only (gh-6695).
 							if (StringUtils.hasText(textPart.text())) {
 								contents.add(ContentBlock.fromText(textPart.text()));
 							}
@@ -303,6 +308,8 @@ public class BedrockProxyChatModel implements ChatModel {
 						else if (part instanceof MediaPart mediaPart) {
 							contents.add(mapMediaToContentBlock(mediaPart.media()));
 						}
+						// Other part types cannot be expressed in a Converse user turn and
+						// are skipped, as they were before.
 					}
 				}
 
