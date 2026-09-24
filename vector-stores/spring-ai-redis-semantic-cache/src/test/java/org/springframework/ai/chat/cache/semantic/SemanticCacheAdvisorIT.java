@@ -37,8 +37,11 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import redis.clients.jedis.RedisClient;
 
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.openai.OpenAiChatModel;
@@ -90,6 +93,10 @@ class SemanticCacheAdvisorIT {
 
 	private static final double DEFAULT_DISTANCE_THRESHOLD = 0.4;
 
+	private static final SemanticCacheScopeResolver SHARED_SCOPE = request -> "shared";
+
+	private static final String TENANT_PARAM = "tenantId";
+
 	private SemanticCacheAdvisor cacheAdvisor;
 
 	// ApplicationContextRunner for better test isolation and configuration testing
@@ -102,7 +109,10 @@ class SemanticCacheAdvisorIT {
 	@BeforeEach
 	void setUp() {
 		this.semanticCache.clear();
-		this.cacheAdvisor = SemanticCacheAdvisor.builder().cache(this.semanticCache).build();
+		this.cacheAdvisor = SemanticCacheAdvisor.builder()
+			.cache(this.semanticCache)
+			.scopeResolver(SHARED_SCOPE)
+			.build();
 	}
 
 	@AfterEach
@@ -258,7 +268,10 @@ class SemanticCacheAdvisorIT {
 			.distanceThreshold(0.2) // Very strict
 			.build();
 
-		SemanticCacheAdvisor strictAdvisor = SemanticCacheAdvisor.builder().cache(strictCache).build();
+		SemanticCacheAdvisor strictAdvisor = SemanticCacheAdvisor.builder()
+			.cache(strictCache)
+			.scopeResolver(SHARED_SCOPE)
+			.build();
 
 		// Cache with strict advisor
 		ChatClient.builder(this.openAiChatModel)
@@ -321,6 +334,37 @@ class SemanticCacheAdvisorIT {
 	}
 
 	@Test
+	void testAdvisorTTLSupport() throws InterruptedException {
+		// Test that the advisor stores cached responses with the configured TTL
+		SemanticCacheAdvisor ttlAdvisor = SemanticCacheAdvisor.builder()
+			.cache(this.semanticCache)
+			.scopeResolver(SHARED_SCOPE)
+			.ttl(Duration.ofSeconds(2))
+			.build();
+		String question = "What is the capital of France?";
+
+		ChatClient.builder(this.openAiChatModel).build().prompt(question).advisors(ttlAdvisor).call().chatResponse();
+
+		// Verify TTL is set in Redis
+		Optional<RedisClient> nativeClient = this.semanticCache.getStore().getNativeClient();
+		assertThat(nativeClient).isPresent();
+		RedisClient redisClient = nativeClient.get();
+
+		Set<String> keys = redisClient.keys("semantic-cache:*");
+		assertThat(keys).hasSize(1);
+		String key = keys.iterator().next();
+
+		Long ttl = redisClient.ttl(key);
+		assertThat(ttl).isGreaterThan(0).isLessThanOrEqualTo(2);
+
+		// Wait for expiration
+		Thread.sleep(2500);
+
+		// Verify it's gone
+		assertThat(redisClient.exists(key)).isFalse();
+	}
+
+	@Test
 	void testCacheIsolationWithNamespaces() {
 		String webQuestion = "What are the best programming languages for web development?";
 
@@ -350,8 +394,14 @@ class SemanticCacheAdvisorIT {
 		user1Cache.clear();
 		user2Cache.clear();
 
-		SemanticCacheAdvisor user1Advisor = SemanticCacheAdvisor.builder().cache(user1Cache).build();
-		SemanticCacheAdvisor user2Advisor = SemanticCacheAdvisor.builder().cache(user2Cache).build();
+		SemanticCacheAdvisor user1Advisor = SemanticCacheAdvisor.builder()
+			.cache(user1Cache)
+			.scopeResolver(SHARED_SCOPE)
+			.build();
+		SemanticCacheAdvisor user2Advisor = SemanticCacheAdvisor.builder()
+			.cache(user2Cache)
+			.scopeResolver(SHARED_SCOPE)
+			.build();
 
 		// User 1 query
 		ChatResponse user1Response = ChatClient.builder(this.openAiChatModel)
@@ -412,7 +462,10 @@ class SemanticCacheAdvisorIT {
 			.distanceThreshold(0.25)
 			.build();
 
-		SemanticCacheAdvisor advisor = SemanticCacheAdvisor.builder().cache(testCache).build();
+		SemanticCacheAdvisor advisor = SemanticCacheAdvisor.builder()
+			.cache(testCache)
+			.scopeResolver(SHARED_SCOPE)
+			.build();
 
 		String originalQuestion = "What is the largest city in Japan?";
 
@@ -669,8 +722,13 @@ class SemanticCacheAdvisorIT {
 
 	@Test
 	void testCacheIsolationBySystemPrompt() {
-		// Test that different system prompts result in different cache entries
-		// even for the same user question (GH-5256)
+		// Test that a scope resolver including the system prompt results in different
+		// cache entries for different system prompts, even for the same user question
+		// (GH-5256)
+		SemanticCacheAdvisor personaAdvisor = SemanticCacheAdvisor.builder()
+			.cache(this.semanticCache)
+			.scopeResolver(request -> "shared|" + request.prompt().getSystemMessage().getText())
+			.build();
 		String userQuestion = "What is the capital of France?";
 		String systemPromptFormal = "You are a formal geography teacher. Answer concisely.";
 		String systemPromptPirate = "You are a pirate. Answer like a pirate would.";
@@ -681,7 +739,7 @@ class SemanticCacheAdvisorIT {
 			.prompt()
 			.system(systemPromptFormal)
 			.user(userQuestion)
-			.advisors(this.cacheAdvisor)
+			.advisors(personaAdvisor)
 			.call()
 			.chatResponse();
 
@@ -695,7 +753,7 @@ class SemanticCacheAdvisorIT {
 			.prompt()
 			.system(systemPromptPirate)
 			.user(userQuestion)
-			.advisors(this.cacheAdvisor)
+			.advisors(personaAdvisor)
 			.call()
 			.chatResponse();
 
@@ -712,7 +770,7 @@ class SemanticCacheAdvisorIT {
 			.prompt()
 			.system(systemPromptFormal)
 			.user(userQuestion)
-			.advisors(this.cacheAdvisor)
+			.advisors(personaAdvisor)
 			.call()
 			.chatResponse();
 
@@ -728,7 +786,7 @@ class SemanticCacheAdvisorIT {
 			.prompt()
 			.system(systemPromptPirate)
 			.user(userQuestion)
-			.advisors(this.cacheAdvisor)
+			.advisors(personaAdvisor)
 			.call()
 			.chatResponse();
 
@@ -737,6 +795,68 @@ class SemanticCacheAdvisorIT {
 
 		// Should get the same cached response as the first pirate query
 		assertThat(pirateAgainText).isEqualTo(pirateText);
+	}
+
+	@Test
+	void testCacheIsolationByScope() {
+		// Test that the same question from different tenants never shares a cache entry
+		SemanticCacheAdvisor tenantAdvisor = SemanticCacheAdvisor.builder()
+			.cache(this.semanticCache)
+			.scopeResolver(request -> (String) request.context().get(TENANT_PARAM))
+			.build();
+		// Count the requests reaching the model, i.e. the cache misses
+		AtomicInteger modelCalls = new AtomicInteger();
+		ChatModel countingChatModel = new ChatModel() {
+
+			@Override
+			public ChatResponse call(Prompt prompt) {
+				modelCalls.incrementAndGet();
+				return SemanticCacheAdvisorIT.this.openAiChatModel.call(prompt);
+			}
+
+			@Override
+			public ChatOptions getOptions() {
+				// ChatClient builds the prompt options from these, OpenAiChatModel
+				// expects OpenAiChatOptions
+				return SemanticCacheAdvisorIT.this.openAiChatModel.getOptions();
+			}
+
+		};
+		ChatClient chatClient = ChatClient.builder(countingChatModel).defaultAdvisors(tenantAdvisor).build();
+		String userQuestion = "What is the capital of France?";
+
+		ChatResponse tenantAResponse = chatClient.prompt()
+			.user(userQuestion)
+			.advisors(a -> a.param(TENANT_PARAM, "tenant-a"))
+			.call()
+			.chatResponse();
+		assertThat(tenantAResponse).isNotNull();
+		assertThat(modelCalls).hasValue(1);
+
+		// Same tenant - cache HIT, the model is not called
+		ChatResponse tenantAAgainResponse = chatClient.prompt()
+			.user(userQuestion)
+			.advisors(a -> a.param(TENANT_PARAM, "tenant-a"))
+			.call()
+			.chatResponse();
+		assertThat(tenantAAgainResponse).isNotNull();
+		assertThat(tenantAAgainResponse.getResult().getOutput().getText())
+			.isEqualTo(tenantAResponse.getResult().getOutput().getText());
+		assertThat(modelCalls).hasValue(1);
+
+		// Different tenant - cache MISS, the model is called again
+		ChatResponse tenantBResponse = chatClient.prompt()
+			.user(userQuestion)
+			.advisors(a -> a.param(TENANT_PARAM, "tenant-b"))
+			.call()
+			.chatResponse();
+		assertThat(tenantBResponse).isNotNull();
+		assertThat(modelCalls).hasValue(2);
+
+		// No tenant - cache bypassed, the model is called again
+		ChatResponse noTenantResponse = chatClient.prompt().user(userQuestion).call().chatResponse();
+		assertThat(noTenantResponse).isNotNull();
+		assertThat(modelCalls).hasValue(3);
 	}
 
 	@Test
@@ -892,7 +1012,10 @@ class SemanticCacheAdvisorIT {
 		this.contextRunner.run(context -> {
 			// Test with default configuration
 			SemanticCache defaultCache = context.getBean(SemanticCache.class);
-			SemanticCacheAdvisor defaultAdvisor = SemanticCacheAdvisor.builder().cache(defaultCache).build();
+			SemanticCacheAdvisor defaultAdvisor = SemanticCacheAdvisor.builder()
+				.cache(defaultCache)
+				.scopeResolver(SHARED_SCOPE)
+				.build();
 
 			String testQuestion = "What is Spring Boot?";
 
@@ -929,7 +1052,10 @@ class SemanticCacheAdvisorIT {
 				.build();
 
 			strictCache.clear();
-			SemanticCacheAdvisor strictAdvisor = SemanticCacheAdvisor.builder().cache(strictCache).build();
+			SemanticCacheAdvisor strictAdvisor = SemanticCacheAdvisor.builder()
+				.cache(strictCache)
+				.scopeResolver(SHARED_SCOPE)
+				.build();
 
 			// Cache a response
 			String originalQuery = "What is dependency injection?";

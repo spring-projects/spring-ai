@@ -300,6 +300,35 @@ public final class DefaultSemanticCache implements SemanticCache {
 
 	@Override
 	public void set(String query, ChatResponse response, @Nullable String contextHash) {
+		setWithContext(query, response, contextHash, null);
+	}
+
+	@Override
+	public void set(String query, ChatResponse response, @Nullable String contextHash, Duration ttl) {
+		Assert.notNull(ttl, "TTL must not be null");
+		Assert.isTrue(ttl.toMillis() > 0, "TTL must be positive");
+		// Fail before storing anything, rather than storing an entry that never expires
+		if (!(this.vectorStore instanceof RedisVectorStore)) {
+			throw new UnsupportedOperationException(
+					"TTL requires a RedisVectorStore, but the cache uses " + this.vectorStore.getClass().getName());
+		}
+		setWithContext(query, response, contextHash, ttl);
+	}
+
+	/**
+	 * Stores a query and response with an optional context hash, replacing any similar
+	 * document with the same context, and applies the TTL if provided.
+	 * @param query the query text to be cached
+	 * @param response the chat response associated with the query
+	 * @param contextHash optional context hash for isolation
+	 * @param ttl optional duration after which the entry expires, requires a
+	 * {@link RedisVectorStore}
+	 */
+	private void setWithContext(String query, ChatResponse response, @Nullable String contextHash,
+			@Nullable Duration ttl) {
+		// Generate a unique ID for the document, needed to set the TTL on its key
+		String docId = UUID.randomUUID().toString();
+
 		// Convert response to JSON for storage
 		String responseJson = this.gson.toJson(response);
 		Assert.state(response.getResult() != null, "expected a non-empty response");
@@ -314,7 +343,7 @@ public final class DefaultSemanticCache implements SemanticCache {
 		}
 
 		// Create document with query as text (for embedding) and response in metadata
-		Document document = Document.builder().text(query).metadata(metadata).build();
+		Document document = Document.builder().id(docId).text(query).metadata(metadata).build();
 
 		// Check for and remove any existing similar documents with the same context
 		List<Document> existing = findSimilarDocuments(query, contextHash);
@@ -330,6 +359,11 @@ public final class DefaultSemanticCache implements SemanticCache {
 
 		// Add new document to vector store
 		this.vectorStore.add(List.of(document));
+
+		// Set TTL on the document key
+		if (ttl != null && this.vectorStore instanceof RedisVectorStore redisStore) {
+			redisStore.getJedisClient().pexpire(this.prefix + docId, ttl.toMillis());
+		}
 	}
 
 	@Override
