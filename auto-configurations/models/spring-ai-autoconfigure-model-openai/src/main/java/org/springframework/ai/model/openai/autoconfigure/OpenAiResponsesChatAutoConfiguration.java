@@ -29,8 +29,8 @@ import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.model.SpringAIModels;
 import org.springframework.ai.model.openai.autoconfigure.OpenAiAutoConfigurationUtil.ResolvedConnectionProperties;
 import org.springframework.ai.model.tool.ToolCallingManager;
-import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.http.okhttp.OpenAiHttpClientBuilderCustomizer;
+import org.springframework.ai.openai.responses.OpenAiResponsesChatModel;
 import org.springframework.ai.openai.setup.OpenAiSetup;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -40,50 +40,55 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 
 /**
- * Chat {@link AutoConfiguration Auto-configuration} for OpenAI SDK.
+ * Chat {@link AutoConfiguration Auto-configuration} for the OpenAI Responses API.
+ * <p>
+ * OpenAI is the default chat provider, and {@code ChatClient} auto-configuration needs
+ * exactly one {@code ChatModel} bean, so the two OpenAI endpoints are mutually exclusive
+ * rather than both configured: set {@code spring.ai.openai.chat.api=responses} to get
+ * this one instead of {@link OpenAiChatAutoConfiguration}'s. Applications that genuinely
+ * want both - say Chat Completions for cheap classification and Responses for an agent -
+ * declare the second one with its builder.
  *
- * @author Christian Tzolov
- * @author Soby Chacko
- * @author Thomas Vitale
- * @author Stefan Vassilev
- * @author Yanming Zhou
- * @author Issam El-atif
- * @author Ilayaperumal Gopinathan
- * @author Sebastien Deleuze
+ * @author Dimitar Proynov
+ * @since 2.1.0
  */
-@AutoConfiguration
-@EnableConfigurationProperties({ OpenAiCommonProperties.class, OpenAiChatProperties.class })
+@AutoConfiguration(after = OpenAiChatAutoConfiguration.class)
+@EnableConfigurationProperties({ OpenAiCommonProperties.class, OpenAiResponsesChatProperties.class })
 @ConditionalOnProperty(name = SpringAIModelProperties.CHAT_MODEL, havingValue = SpringAIModels.OPENAI,
 		matchIfMissing = true)
-public class OpenAiChatAutoConfiguration {
+public class OpenAiResponsesChatAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	@ConditionalOnProperty(name = OpenAiChatProperties.CONFIG_PREFIX + ".api", havingValue = "chat-completions",
-			matchIfMissing = true)
-	public OpenAiChatModel openAiChatModel(OpenAiCommonProperties commonProperties, OpenAiChatProperties chatProperties,
-			ToolCallingManager toolCallingManager, ObjectProvider<ObservationRegistry> observationRegistry,
-			ObjectProvider<MeterRegistry> meterRegistry,
+	@ConditionalOnProperty(name = OpenAiChatProperties.CONFIG_PREFIX + ".api", havingValue = "responses")
+	public OpenAiResponsesChatModel openAiResponsesChatModel(OpenAiCommonProperties commonProperties,
+			OpenAiResponsesChatProperties responsesProperties, ToolCallingManager toolCallingManager,
+			ObjectProvider<ObservationRegistry> observationRegistry, ObjectProvider<MeterRegistry> meterRegistry,
 			ObjectProvider<ChatModelObservationConvention> observationConvention,
 			ObjectProvider<OpenAiHttpClientBuilderCustomizer> httpClientBuilderCustomizers) {
 
-		var resolvedProperties = OpenAiAutoConfigurationUtil.resolveCommonProperties(commonProperties, chatProperties);
+		var resolvedProperties = OpenAiAutoConfigurationUtil.resolveCommonProperties(commonProperties,
+				responsesProperties);
+		if (OpenAiSetup.detectModelProvider(resolvedProperties.isMicrosoftFoundry(), false,
+				resolvedProperties.getBaseUrl(), resolvedProperties.getMicrosoftDeploymentName(),
+				resolvedProperties.getMicrosoftFoundryServiceVersion()) == OpenAiSetup.ModelProvider.GITHUB_MODELS) {
+			throw new IllegalStateException("GitHub Models does not support the OpenAI Responses API");
+		}
 
 		MeterRegistry meterRegistryToUse = resolvedProperties.isConnectionPoolMetricsEnabled()
 				? meterRegistry.getIfAvailable() : null;
 
 		List<OpenAiHttpClientBuilderCustomizer> customizers = httpClientBuilderCustomizers.orderedStream().toList();
 
-		OpenAIClient openAIClient = this.openAiClient(resolvedProperties, observationRegistry, meterRegistryToUse,
+		OpenAIClient openAIClient = openAiClient(resolvedProperties, observationRegistry, meterRegistryToUse,
 				customizers);
-
-		OpenAIClientAsync openAIClientAsync = this.openAiClientAsync(resolvedProperties, observationRegistry,
+		OpenAIClientAsync openAIClientAsync = openAiClientAsync(resolvedProperties, observationRegistry,
 				meterRegistryToUse, customizers);
 
-		var chatModel = OpenAiChatModel.builder()
+		var chatModel = OpenAiResponsesChatModel.builder()
 			.openAiClient(openAIClient)
 			.openAiClientAsync(openAIClientAsync)
-			.options(chatProperties.toOptions())
+			.options(responsesProperties.toOptions())
 			.toolCallingManager(toolCallingManager)
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.meterRegistry(meterRegistryToUse)
@@ -101,7 +106,7 @@ public class OpenAiChatAutoConfiguration {
 		return OpenAiSetup.setupSyncClient(commonProperties.getBaseUrl(), commonProperties.getApiKey(),
 				commonProperties.getCredential(), commonProperties.getMicrosoftDeploymentName(),
 				commonProperties.getMicrosoftFoundryServiceVersion(), commonProperties.getOrganizationId(),
-				commonProperties.isMicrosoftFoundry(), commonProperties.isGitHubModels(), commonProperties.getModel(),
+				commonProperties.isMicrosoftFoundry(), false, commonProperties.getModel(),
 				commonProperties.getTimeout(), commonProperties.getMaxRetries(), commonProperties.getProxy(),
 				commonProperties.getCustomHeaders(), observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
 				meterRegistry, httpClientCustomizers);
@@ -114,7 +119,7 @@ public class OpenAiChatAutoConfiguration {
 		return OpenAiSetup.setupAsyncClient(commonProperties.getBaseUrl(), commonProperties.getApiKey(),
 				commonProperties.getCredential(), commonProperties.getMicrosoftDeploymentName(),
 				commonProperties.getMicrosoftFoundryServiceVersion(), commonProperties.getOrganizationId(),
-				commonProperties.isMicrosoftFoundry(), commonProperties.isGitHubModels(), commonProperties.getModel(),
+				commonProperties.isMicrosoftFoundry(), false, commonProperties.getModel(),
 				commonProperties.getTimeout(), commonProperties.getMaxRetries(), commonProperties.getProxy(),
 				commonProperties.getCustomHeaders(), observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
 				meterRegistry, httpClientCustomizers);
