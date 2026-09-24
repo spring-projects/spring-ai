@@ -1,0 +1,29 @@
+{
+  "id": "resp_image_1",
+  "object": "response",
+  "created_at": 1757000400,
+  "status": "completed",
+  "model": "gpt-5-mini",
+  "output": [
+    {
+      "type": "image_generation_call",
+      "id": "ig_1",
+      "status": "completed",
+      "result": "AQID"
+    },
+    {
+      "type": "message",
+      "id": "msg_4",
+      "role": "assistant",
+      "status": "completed",
+      "content": [
+        { "type": "output_text", "text": "Here is the image.", "annotations": [] }
+      ]
+    }
+  ],
+  "parallel_tool_calls": true,
+  "tool_choice": "auto",
+  "tools": [],
+  "temperature": 1.0,
+  "top_p": 1.0
+}
