@@ -58,9 +58,10 @@ SemanticCache semanticCache = DefaultSemanticCache.builder()
     .similarityThreshold(0.85) // Optional: adjust similarity threshold (0-1)
     .build();
 
-// Create the cache advisor
+// Create the cache advisor, isolating cached responses per tenant
 SemanticCacheAdvisor cacheAdvisor = SemanticCacheAdvisor.builder()
     .cache(semanticCache)
+    .scopeResolver(request -> (String) request.context().get("tenantId"))
     .build();
 
 // Use with ChatClient
@@ -68,9 +69,14 @@ ChatResponse response = ChatClient.builder(chatModel)
     .build()
     .prompt("What is the capital of France?")
     .advisors(cacheAdvisor) // Add the advisor
+    .advisors(a -> a.param("tenantId", tenantId)) // Scope of the request
     .call()
     .chatResponse();
 ```
+
+The `scopeResolver` is mandatory.
+Cached responses are only shared between requests that resolve to the same scope, and requests without a scope (`null` or blank) bypass the cache.
+Return a constant only when all users are meant to share the same cached responses.
 
 ### Direct Cache Usage
 

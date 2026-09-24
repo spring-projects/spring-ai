@@ -59,15 +59,13 @@ public interface SemanticCache {
 	/**
 	 * Stores a query and its corresponding chat response in the cache with an optional
 	 * context identifier for isolation. The context hash ensures that cached responses
-	 * are only returned for queries with matching context (e.g., same system prompt).
+	 * are only returned for queries with matching context (e.g., same scope).
 	 * @param query The original query text to be cached
 	 * @param response The chat response associated with the query
-	 * @param contextHash Optional hash identifier for context isolation (e.g., system
-	 * prompt hash). If null, behaves the same as {@link #set(String, ChatResponse)}.
+	 * @param contextHash Optional hash identifier for context isolation. If null, the
+	 * entry is stored without context, like {@link #set(String, ChatResponse)}.
 	 */
-	default void set(String query, ChatResponse response, @Nullable String contextHash) {
-		set(query, response);
-	}
+	void set(String query, ChatResponse response, @Nullable String contextHash);
 
 	/**
 	 * Stores a query and response in the cache with a specified time-to-live duration.
@@ -77,6 +75,19 @@ public interface SemanticCache {
 	 * @param ttl The duration after which the cache entry should expire
 	 */
 	void set(String query, ChatResponse response, Duration ttl);
+
+	/**
+	 * Stores a query and response in the cache with an optional context identifier for
+	 * isolation and a specified time-to-live duration. After the TTL expires, the entry
+	 * should be automatically removed from the cache.
+	 * @param query The original query text to be cached
+	 * @param response The chat response associated with the query
+	 * @param contextHash Optional hash identifier for context isolation. If null, the
+	 * entry is stored without context, like {@link #set(String, ChatResponse, Duration)}.
+	 * @param ttl The duration after which the cache entry should expire
+	 * @since 2.0.2
+	 */
+	void set(String query, ChatResponse response, @Nullable String contextHash, Duration ttl);
 
 	/**
 	 * Retrieves a cached response for a semantically similar query. The implementation
@@ -96,16 +107,14 @@ public interface SemanticCache {
 	/**
 	 * Retrieves a cached response for a semantically similar query, filtered by context.
 	 * Only returns responses that were stored with the same context hash, ensuring
-	 * isolation between different contexts (e.g., different system prompts).
+	 * isolation between different contexts (e.g., different scopes).
 	 * @param query The query to find similar responses for
 	 * @param contextHash Optional hash identifier for context filtering. If null, behaves
 	 * the same as {@link #get(String)}.
 	 * @return Optional containing the most similar cached response if found, matches
 	 * context, and meets similarity threshold; empty Optional otherwise
 	 */
-	default Optional<ChatResponse> get(String query, @Nullable String contextHash) {
-		return get(query);
-	}
+	Optional<ChatResponse> get(String query, @Nullable String contextHash);
 
 	/**
 	 * Removes all entries from the cache. This operation should be atomic and

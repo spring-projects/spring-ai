@@ -598,6 +598,94 @@ DROP INDEX session_conversation_id_index IF EXISTS;
 DROP INDEX message_index_index IF EXISTS;
 ----
 
+[[upgrading-to-2-0-2]]
+== Upgrading to 2.0.2
+
+=== Mandatory Scope Resolver for `SemanticCacheAdvisor`
+
+`SemanticCacheAdvisor` now requires a `SemanticCacheScopeResolver` that returns the scope of each request, such as a tenant or user identifier.
+Cached responses are only shared between requests that resolve to the same scope, so a response generated for one user is no longer returned to another user asking a similar question.
+See xref:api/vectordbs/redis.adoc#semantic-cache-scope[Cache Scope].
+
+==== Impact
+
+* The `SemanticCacheAdvisor` constructors take a `SemanticCacheScopeResolver` as second argument, and `SemanticCacheAdvisor.Builder.build()` fails if no `scopeResolver` is set.
+* When the resolver returns `null` or a blank string, the request bypasses the cache: nothing is read from or written to it.
+* The auto-configuration only registers a `SemanticCacheAdvisor` bean when the application defines a `SemanticCacheScopeResolver` bean.
+* The scope replaces the system prompt as isolation boundary: requests with different system prompts share cached responses within a scope, unless the resolver includes the system prompt in the scope.
+* Custom `SemanticCache` implementations must implement the context hash methods, see <<semantic-cache-interface-changes>>.
+* `SemanticCacheAdvisor` accepts an optional time-to-live for cached responses through `SemanticCacheAdvisor.Builder.ttl(Duration)`, or the `spring.ai.vectorstore.redis.semantic-cache.ttl` property for the auto-configured advisor.
+Without it, cached responses never expire, as before.
+* The context hash stored with each cache entry is now the hash of the scope, so entries cached by a previous version are no longer returned; remove them with `SemanticCache.clear()` or let them expire if they were stored with a TTL.
+
+==== Migration
+
+Provide a scope resolver deriving the scope from a trusted source, for example an advisor parameter set by the application from the authenticated principal:
+
+[source,java]
+----
+SemanticCacheAdvisor cacheAdvisor = SemanticCacheAdvisor.builder()
+    .cache(semanticCache)
+    .scopeResolver(request -> (String) request.context().get("tenantId"))
+    .build();
+
+chatClient.prompt()
+    .user(question)
+    .advisors(a -> a.param("tenantId", tenantId))
+    .call();
+----
+
+When relying on the auto-configuration, declare the resolver as a bean:
+
+[source,java]
+----
+@Bean
+SemanticCacheScopeResolver semanticCacheScopeResolver() {
+    return request -> (String) request.context().get("tenantId");
+}
+----
+
+To keep the previous behavior of a single cache shared by all users and isolated by system prompt, include the system prompt in a constant scope, such as `request -> "shared|" + request.prompt().getSystemMessage().getText()`.
+
+[[semantic-cache-interface-changes]]
+=== `SemanticCache` Interface Changes
+
+The `SemanticCacheAdvisor` isolates cached responses by passing the hash of the scope as context hash to the `SemanticCache`.
+The context hash methods of `SemanticCache` used to be default methods that ignored the context hash, so a custom implementation that did not override them shared cached responses across all scopes.
+
+==== Impact
+
+* `set(String query, ChatResponse response, @Nullable String contextHash)` and `get(String query, @Nullable String contextHash)` are now abstract.
+* The new abstract method `set(String query, ChatResponse response, @Nullable String contextHash, Duration ttl)` stores a cached response that expires after the given time-to-live.
+It is used by the `SemanticCacheAdvisor` when a TTL is configured.
+* Custom `SemanticCache` implementations no longer compile until they implement these methods.
+`DefaultSemanticCache` implements them; its TTL variant requires the underlying vector store to be a `RedisVectorStore` and throws `UnsupportedOperationException` otherwise.
+
+==== Migration
+
+Implement the three methods in custom `SemanticCache` implementations.
+Store the context hash with each entry and only return entries stored with the same context hash:
+
+[source,java]
+----
+@Override
+public void set(String query, ChatResponse response, @Nullable String contextHash) {
+    // store the entry together with the context hash
+}
+
+@Override
+public void set(String query, ChatResponse response, @Nullable String contextHash, Duration ttl) {
+    // store the entry together with the context hash, expiring after the TTL
+}
+
+@Override
+public Optional<ChatResponse> get(String query, @Nullable String contextHash) {
+    // only match entries stored with the same context hash
+}
+----
+
+Do not delegate to `set(String, ChatResponse)` or `get(String)` while ignoring the context hash, as this shares cached responses across scopes.
+
 [[upgrading-to-2-0-1]]
 == Upgrading to 2.0.1
 

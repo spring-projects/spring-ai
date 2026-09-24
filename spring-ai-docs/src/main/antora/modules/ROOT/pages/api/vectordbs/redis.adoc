@@ -483,6 +483,7 @@ Properties starting with `spring.ai.vectorstore.redis.semantic-cache.*` configur
 |`spring.ai.vectorstore.redis.semantic-cache.similarity-threshold`| Similarity threshold for cache hits (0.0-1.0). Higher values require closer semantic matches. | `0.95`
 |`spring.ai.vectorstore.redis.semantic-cache.index-name`| Name of the Redis search index for cache entries | `semantic-cache-index`
 |`spring.ai.vectorstore.redis.semantic-cache.prefix`| Key prefix for cached entries in Redis | `semantic-cache:`
+|`spring.ai.vectorstore.redis.semantic-cache.ttl`| Time-to-live of the responses cached by the auto-configured `SemanticCacheAdvisor`, for example `1h`. Cached responses never expire when not set. | -
 |===
 
 Example configuration in `application.yml`:
@@ -505,7 +506,8 @@ spring:
 === Using the SemanticCacheAdvisor
 
 The `SemanticCacheAdvisor` integrates seamlessly with Spring AI's `ChatClient` advisor pattern.
-It automatically caches responses and returns cached results for similar queries:
+It automatically caches responses and returns cached results for similar queries.
+The advisor requires a `SemanticCacheScopeResolver` that decides which requests may share cached responses, see <<semantic-cache-scope>>:
 
 [source,java]
 ----
@@ -516,9 +518,10 @@ private SemanticCache semanticCache;
 private ChatModel chatModel;
 
 public void example() {
-    // Create the cache advisor
+    // Create the cache advisor, sharing cached responses across all users
     SemanticCacheAdvisor cacheAdvisor = SemanticCacheAdvisor.builder()
         .cache(semanticCache)
+        .scopeResolver(request -> "shared")
         .build();
 
     // First query - calls the LLM and caches the response
@@ -547,6 +550,42 @@ The advisor automatically:
 2. Returns cached responses when a match is found above the similarity threshold
 3. Caches new responses after successful LLM calls
 4. Supports both synchronous and streaming chat operations
+
+NOTE: The auto-configuration only registers a `SemanticCacheAdvisor` bean when the application defines a `SemanticCacheScopeResolver` bean.
+
+[[semantic-cache-scope]]
+=== Cache Scope
+
+A semantic cache returns the response generated for one request to any other semantically similar request.
+In a multi-user application, another user asking a similar question to a different user may get access to their data.
+
+To prevent this, the `SemanticCacheAdvisor` requires a `SemanticCacheScopeResolver`.
+The resolver has access to `ChatClientRequest` and returns the scope of the request, such as a tenant or user identifier.
+Cached responses are only shared between requests that resolve to the same scope.
+When the resolver returns `null` or a blank string, the request bypasses the cache: nothing is read from or written to it.
+
+An approach is to pass the scope as an advisor parameter, which ends up in the request context:
+
+[source,java]
+----
+@Bean
+public SemanticCacheScopeResolver semanticCacheScopeResolver() {
+    return request -> (String) request.context().get("tenantId");
+}
+
+// For each request
+ChatResponse response = chatClient.prompt()
+    .user("What is my account balance?")
+    .advisors(a -> a.param("tenantId", tenantId))
+    .call()
+    .chatResponse();
+----
+
+IMPORTANT: The scope must come from a trusted source, such as the authenticated principal, and not from a value the end user can choose.
+For streaming requests, the resolver may be invoked on a different thread than the one that issued the request, so prefer the request context over thread-bound
+state such as SpringSecurity `SecurityContextHolder`.
+
+Return a constant only when all users are meant to share the same cached responses.
 
 === Direct Cache Usage
 
@@ -604,6 +643,7 @@ public class SemanticCacheConfig {
     public SemanticCacheAdvisor semanticCacheAdvisor(SemanticCache cache) {
         return SemanticCacheAdvisor.builder()
             .cache(cache)
+            .scopeResolver(request -> (String) request.context().get("tenantId"))
             .build();
     }
 }
@@ -631,18 +671,24 @@ SemanticCache user2Cache = DefaultSemanticCache.builder()
 // Each user gets their own isolated cache space
 SemanticCacheAdvisor user1Advisor = SemanticCacheAdvisor.builder()
     .cache(user1Cache)
+    .scopeResolver(request -> "user-1")
     .build();
 ----
 
 === System Prompt Isolation
 
-The `SemanticCacheAdvisor` automatically isolates cached responses based on the system prompt.
-This ensures that the same user query with different system prompts returns different cached responses, which is essential for applications with multiple AI personas or context-dependent behavior.
+The scope is the only isolation boundary of the `SemanticCacheAdvisor`: requests with different system prompts share cached responses within a scope.
+Applications with multiple AI personas or context-dependent behavior can isolate them by including the system prompt in the scope, so that the same user query with different system prompts returns different cached responses.
 
 [source,java]
 ----
 SemanticCacheAdvisor cacheAdvisor = SemanticCacheAdvisor.builder()
     .cache(semanticCache)
+    .scopeResolver(request -> {
+        String tenantId = (String) request.context().get("tenantId");
+        // No tenant, no scope: bypass the cache instead of sharing a "null" scope
+        return (tenantId != null) ? tenantId + "|" + request.prompt().getSystemMessage().getText() : null;
+    })
     .build();
 
 // Query with technical support persona
@@ -679,11 +725,11 @@ ChatResponse technicalAgain = ChatClient.builder(chatModel)
 
 **How it works:**
 
-The advisor computes a deterministic hash of the system prompt and uses it as a metadata filter when storing and retrieving cached responses:
+The advisor computes a deterministic hash of the scope and uses it as a metadata filter when storing and retrieving cached responses:
 
-* Same user question + same system prompt → cache hit
-* Same user question + different system prompt → cache miss (separate cache entry)
-* Queries without a system prompt share a common cache space
+* Same scope + semantically similar user question → cache hit
+* Different scope → cache miss, regardless of the user question
+* With the scope resolver above, a different system prompt results in a different scope, and thus a cache miss
 
 === Context-Aware Cache API
 
@@ -746,6 +792,21 @@ semanticCache.set("What is photosynthesis?", scienceResponse);
 
 // Redis automatically removes expired entries
 ----
+
+The `SemanticCacheAdvisor` stores cached responses without TTL by default, so they never expire.
+Configure a TTL on the advisor, or with the `spring.ai.vectorstore.redis.semantic-cache.ttl` property for the auto-configured advisor, to expire them.
+This also limits how long a response generated for one request remains available to other requests of the same scope:
+
+[source,java]
+----
+SemanticCacheAdvisor cacheAdvisor = SemanticCacheAdvisor.builder()
+    .cache(semanticCache)
+    .scopeResolver(request -> (String) request.context().get("tenantId"))
+    .ttl(Duration.ofHours(1))
+    .build();
+----
+
+NOTE: A TTL requires the `DefaultSemanticCache` to be backed by a `RedisVectorStore`, otherwise storing a response fails with an `UnsupportedOperationException` instead of storing an entry that never expires.
 
 === How It Works
 
