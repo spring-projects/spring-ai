@@ -152,6 +152,24 @@ import org.springframework.util.StringUtils;
  */
 public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 
+	/**
+	 * Metadata key used to indicate whether a
+	 * {@link org.springframework.ai.chat.messages.AssistantMessage} represents a model
+	 * thought (reasoning) part rather than a final response.
+	 * <p>
+	 * When {@code includeThoughts} is enabled in {@link GoogleGenAiChatOptions}, Gemini
+	 * thinking models may return intermediate reasoning parts alongside the final
+	 * response. Each {@link org.springframework.ai.chat.model.Generation} in the response
+	 * will have this key set in its output message metadata with a {@code Boolean} value:
+	 * {@code true} if the generation is a thought, {@code false} otherwise.
+	 * <p>
+	 * Example usage: <pre>{@code
+	 * chatModel.call(prompt).getResults().stream()
+	 *     .filter(g -> Boolean.TRUE.equals(g.getOutput().getMetadata().get(GoogleGenAiChatModel.THOUGHT_METADATA_KEY)))
+	 *     .forEach(thought -> ...);
+	 * }</pre>
+	 * @since 2.0.2
+	 */
 	public static final String THOUGHT_METADATA_KEY = "isThought";
 
 	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
@@ -622,6 +640,12 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 	}
 
 	private int findIndexForModelResponse(List<AssistantMessage> messages) {
+		// Gemini responses follow predictable patterns:
+		// [Text(Thoughts), Text(Answer)]
+		// [Text(Thoughts), FunctionCall...]
+		// [FunctionCall...]
+		// [Text(Thoughts), FunctionCall..., Text(FinalAnswer)]
+		// In the last case, tool calls are inserted before the final text response.
 		for (int i = messages.size() - 1; i >= 0; i--) {
 			var message = messages.get(i);
 			boolean hasText = message.getText() != null && !message.getText().isBlank();
