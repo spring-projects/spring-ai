@@ -25,6 +25,7 @@ import java.util.function.Consumer;
 import io.modelcontextprotocol.spec.HttpHeaders;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpStreamableServerSession;
+import io.modelcontextprotocol.spec.McpTransportException;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import reactor.core.publisher.Mono;
@@ -258,9 +259,12 @@ class WebMvcStreamableServerTransportProviderTests {
 
 		var transport = provider.createSessionTransport(sessionId, sseBuilder);
 		McpSchema.JSONRPCMessage message = new McpSchema.JSONRPCNotification("2.0", "server/notification", Map.of());
-		transport.sendMessage(message, "message-1").block();
 
-		verify(sseBuilder).complete();
+		// The write failure must surface to the caller instead of completing normally,
+		// so that callers stop writing to a stream that no longer leads anywhere.
+		assertThatThrownBy(() -> transport.sendMessage(message, "message-1").block())
+			.isInstanceOf(McpTransportException.class)
+			.hasCauseInstanceOf(IOException.class);
 
 		// A DELETE with the same id still finds the session instead of returning 404,
 		// proving the write failure closed only the transport and did not remove the

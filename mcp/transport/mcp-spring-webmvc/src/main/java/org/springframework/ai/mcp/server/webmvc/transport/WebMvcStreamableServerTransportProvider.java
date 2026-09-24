@@ -36,6 +36,7 @@ import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpStreamableServerSession;
 import io.modelcontextprotocol.spec.McpStreamableServerTransport;
 import io.modelcontextprotocol.spec.McpStreamableServerTransportProvider;
+import io.modelcontextprotocol.spec.McpTransportException;
 import io.modelcontextprotocol.spec.ProtocolVersions;
 import io.modelcontextprotocol.util.Assert;
 import io.modelcontextprotocol.util.KeepAliveScheduler;
@@ -735,7 +736,10 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 		/**
 		 * Sends a JSON-RPC message to the client through the SSE connection.
 		 * @param message The JSON-RPC message to send
-		 * @return A Mono that completes when the message has been sent
+		 * @return A Mono that completes when the message has been sent, or fails with an
+		 * {@link McpTransportException} if the SSE write fails, in which case this
+		 * transport is closed but the logical MCP session is preserved for later
+		 * reconnects
 		 */
 		@Override
 		public Mono<Void> sendMessage(McpSchema.JSONRPCMessage message) {
@@ -747,7 +751,10 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 		 * specific message ID.
 		 * @param message The JSON-RPC message to send
 		 * @param messageId The message ID for SSE event identification
-		 * @return A Mono that completes when the message has been sent
+		 * @return A Mono that completes when the message has been sent, or fails with an
+		 * {@link McpTransportException} if the SSE write fails, in which case this
+		 * transport is closed but the logical MCP session is preserved for later
+		 * reconnects
 		 */
 		@Override
 		public Mono<Void> sendMessage(McpSchema.JSONRPCMessage message, @Nullable String messageId) {
@@ -780,7 +787,10 @@ public final class WebMvcStreamableServerTransportProvider implements McpStreama
 					if (logger.isErrorEnabled()) {
 						logger.error("Failed to send message to session " + this.sessionId + ": " + e.getMessage());
 					}
+					// Close only this transport: the logical MCP session is preserved so
+					// that a client can still reconnect with the same session id.
 					this.close();
+					throw new McpTransportException("Failed to send message to session " + this.sessionId, e);
 				}
 				finally {
 					this.lock.unlock();
