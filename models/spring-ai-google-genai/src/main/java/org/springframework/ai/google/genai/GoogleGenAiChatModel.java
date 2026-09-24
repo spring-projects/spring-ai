@@ -152,6 +152,26 @@ import org.springframework.util.StringUtils;
  */
 public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 
+	/**
+	 * Metadata key used to indicate whether a
+	 * {@link org.springframework.ai.chat.messages.AssistantMessage} represents a model
+	 * thought (reasoning) part rather than a final response.
+	 * <p>
+	 * When {@code includeThoughts} is enabled in {@link GoogleGenAiChatOptions}, Gemini
+	 * thinking models may return intermediate reasoning parts alongside the final
+	 * response. Each {@link org.springframework.ai.chat.model.Generation} in the response
+	 * will have this key set in its output message metadata with a {@code Boolean} value:
+	 * {@code true} if the generation is a thought, {@code false} otherwise.
+	 * <p>
+	 * Example usage: <pre>{@code
+	 * chatModel.call(prompt).getResults().stream()
+	 *     .filter(g -> Boolean.TRUE.equals(g.getOutput().getMetadata().get(GoogleGenAiChatModel.THOUGHT_METADATA_KEY)))
+	 *     .forEach(thought -> ...);
+	 * }</pre>
+	 * @since 2.0.2
+	 */
+	public static final String THOUGHT_METADATA_KEY = "isThought";
+
 	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
 
 	private final Log logger = LogFactory.getLog(getClass());
@@ -279,7 +299,8 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			// Add text part (without thought signature - signatures go on functionCall
 			// parts)
 			if (StringUtils.hasText(assistantMessage.getText())) {
-				parts.add(Part.builder().text(assistantMessage.getText()).build());
+				var thought = isThought(assistantMessage);
+				parts.add(Part.builder().text(assistantMessage.getText()).thought(thought).build());
 			}
 
 			// Add function call parts with thought signatures attached.
@@ -291,6 +312,7 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 					AssistantMessage.ToolCall toolCall = toolCalls.get(i);
 					Part.Builder partBuilder = Part.builder()
 						.functionCall(FunctionCall.builder()
+							.id(toolCall.id())
 							.name(toolCall.name())
 							.args(parseJsonToMap(toolCall.arguments()))
 							.build());
@@ -571,62 +593,81 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			.finishReason(candidateFinishReason.toString())
 			.build();
 
-		boolean isFunctionCall = candidate.content().isPresent() && candidate.content().get().parts().isPresent()
-				&& candidate.content().get().parts().get().stream().anyMatch(part -> part.functionCall().isPresent());
+		List<Part> parts = candidate.content().flatMap(Content::parts).orElse(List.of());
 
-		if (isFunctionCall) {
-			List<AssistantMessage.ToolCall> assistantToolCalls = candidate.content()
-				.get()
-				.parts()
-				.orElse(List.of())
-				.stream()
-				.filter(part -> part.functionCall().isPresent())
-				.map(part -> {
-					FunctionCall functionCall = part.functionCall().get();
-					var functionName = functionCall.name().orElse("");
-					String functionArguments = mapToJson(functionCall.args().orElse(Map.of()));
-					return new AssistantMessage.ToolCall("", "function", functionName, functionArguments);
-				})
-				.toList();
+		List<AssistantMessage> messages = parts.stream().filter(part -> part.text().isPresent()).map(part -> {
+			var metadata = new HashMap<>(messageMetadata);
+			metadata.put(THOUGHT_METADATA_KEY, part.thought().orElse(false));
 
-			AssistantMessage assistantMessage = AssistantMessage.builder()
+			return AssistantMessage.builder().content(part.text().orElse("")).properties(metadata).build();
+		}).collect(Collectors.toCollection(ArrayList::new));
+
+		List<AssistantMessage.ToolCall> toolCalls = parts.stream()
+			.filter(part -> part.functionCall().isPresent())
+			.map(part -> {
+				FunctionCall functionCall = part.functionCall().get();
+				var id = functionCall.id().orElse("");
+				var functionName = functionCall.name().orElse("");
+				var functionArguments = mapToJson(functionCall.args().orElse(Map.of()));
+				return new AssistantMessage.ToolCall(id, "function", functionName, functionArguments);
+			})
+			.toList();
+
+		if (!toolCalls.isEmpty()) {
+			var toolCallMessage = AssistantMessage.builder()
 				.content("")
 				.properties(messageMetadata)
-				.toolCalls(assistantToolCalls)
+				.toolCalls(toolCalls)
 				.build();
 
-			return List.of(new Generation(assistantMessage, chatGenerationMetadata));
-		}
-		else {
-			List<Generation> generations = candidate.content()
-				.get()
-				.parts()
-				.orElse(List.of())
-				.stream()
-				.filter(part -> part.toolCall().isEmpty() && part.toolResponse().isEmpty())
-				.map(part -> {
-					var partMessageMetadata = new HashMap<>(messageMetadata);
-					partMessageMetadata.put("isThought", part.thought().orElse(false));
-					return AssistantMessage.builder()
-						.content(part.text().orElse(""))
-						.properties(partMessageMetadata)
-						.build();
-				})
-				.map(assistantMessage -> new Generation(assistantMessage, chatGenerationMetadata))
-				.toList();
-
-			// If all parts were server-side tool invocations, return a single generation
-			// with empty text but with the server-side tool invocation metadata
-			if (generations.isEmpty()) {
-				AssistantMessage assistantMessage = AssistantMessage.builder()
-					.content("")
-					.properties(messageMetadata)
-					.build();
-				return List.of(new Generation(assistantMessage, chatGenerationMetadata));
+			// Insert tool call message before the model's final text response,
+			// as tool calls are an intermediate step that precedes it.
+			int responseIndex = findIndexForModelResponse(messages);
+			if (responseIndex >= 0) {
+				messages.add(responseIndex, toolCallMessage);
 			}
-
-			return generations;
+			else {
+				messages.add(toolCallMessage);
+			}
 		}
+
+		if (messages.isEmpty()) {
+			var assistantMessage = AssistantMessage.builder().content("").properties(messageMetadata).build();
+			messages.add(assistantMessage);
+		}
+
+		return messages.stream().map(m -> new Generation(m, chatGenerationMetadata)).toList();
+	}
+
+	private int findIndexForModelResponse(List<AssistantMessage> messages) {
+		// Gemini responses follow predictable patterns:
+		// [Text(Thoughts), Text(Answer)]
+		// [Text(Thoughts), FunctionCall...]
+		// [FunctionCall...]
+		// [Text(Thoughts), FunctionCall..., Text(FinalAnswer)]
+		// In the last case, tool calls are inserted before the final text response.
+		for (int i = messages.size() - 1; i >= 0; i--) {
+			var message = messages.get(i);
+			boolean hasText = message.getText() != null && !message.getText().isBlank();
+
+			if (hasText && !isThought(message)) {
+				return i;
+			}
+		}
+
+		return -1;
+	}
+
+	private boolean isThought(AssistantMessage message) {
+		if (message.getMetadata() == null) {
+			return false;
+		}
+
+		if (message.getMetadata().get(THOUGHT_METADATA_KEY) instanceof Boolean isThought) {
+			return isThought;
+		}
+
+		return false;
 	}
 
 	private ChatResponseMetadata toChatResponseMetadata(Usage usage, String modelVersion) {
