@@ -314,6 +314,22 @@ public class OpenAiChatProperties extends AbstractOpenAiProperties {
 		this.extraBody = extraBody;
 	}
 
+	/**
+	 * Which OpenAI endpoint the {@code ChatModel} bean talks to. {@code chat-completions}
+	 * (the default) keeps {@code OpenAiChatModel}; {@code responses} creates
+	 * {@code OpenAiResponsesChatModel} instead. Exactly one {@code ChatModel} bean is
+	 * created either way.
+	 */
+	private Api api = Api.CHAT_COMPLETIONS;
+
+	public Api getApi() {
+		return this.api;
+	}
+
+	public void setApi(Api api) {
+		this.api = api;
+	}
+
 	public OpenAiChatOptions toOptions() {
 		return OpenAiChatOptions.builder()
 			.timeout(this.getTimeout())
@@ -785,6 +801,23 @@ public class OpenAiChatProperties extends AbstractOpenAiProperties {
 		public void setExtraBody(@Nullable Map<String, Object> extraBody) {
 			OpenAiChatProperties.this.setExtraBody(extraBody);
 		}
+
+	}
+
+	/**
+	 * The OpenAI endpoints a {@code ChatModel} bean can be backed by.
+	 */
+	public enum Api {
+
+		/**
+		 * {@code /v1/chat/completions}, served by {@code OpenAiChatModel}.
+		 */
+		CHAT_COMPLETIONS,
+
+		/**
+		 * {@code /v1/responses}, served by {@code OpenAiResponsesChatModel}.
+		 */
+		RESPONSES
 
 	}
 

@@ -1,0 +1,41 @@
+{
+  "id": "resp_web_search_1",
+  "object": "response",
+  "created_at": 1757000200,
+  "status": "completed",
+  "model": "gpt-5-mini",
+  "output": [
+    {
+      "type": "web_search_call",
+      "id": "ws_1",
+      "status": "completed",
+      "action": { "type": "search", "query": "spring ai release notes" }
+    },
+    {
+      "type": "message",
+      "id": "msg_2",
+      "role": "assistant",
+      "status": "completed",
+      "content": [
+        {
+          "type": "output_text",
+          "text": "Spring AI 2.0 is out.",
+          "annotations": [
+            {
+              "type": "url_citation",
+              "url": "https://spring.io/blog",
+              "title": "Spring Blog",
+              "start_index": 0,
+              "end_index": 20
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "parallel_tool_calls": true,
+  "tool_choice": "auto",
+  "tools": [],
+  "temperature": 1.0,
+  "top_p": 1.0
+}
