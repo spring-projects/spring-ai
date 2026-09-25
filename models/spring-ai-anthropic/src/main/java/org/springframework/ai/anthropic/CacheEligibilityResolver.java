@@ -133,6 +133,44 @@ public class CacheEligibilityResolver {
 		return CacheControlEphemeral.builder().ttl(cacheTtl.getSdkTtl()).build();
 	}
 
+	/**
+	 * Resolves the cache control for citation documents. Documents are stable reference
+	 * material in the same way as the system prompt, so they receive a breakpoint under
+	 * every strategy that caches system content, using the {@code SYSTEM} TTL. Under
+	 * {@link AnthropicCacheStrategy#TOOLS_ONLY} documents are not cached, because a
+	 * breakpoint on a document would also cache the system prompt that precedes it.
+	 * @return the cache control to apply to the last document block, or {@code null} if
+	 * documents are not cached under the current strategy or all breakpoints are used
+	 * @since 2.1.0
+	 */
+	public @Nullable CacheControlEphemeral resolveCitationDocumentCacheControl() {
+		if (this.cacheStrategy != AnthropicCacheStrategy.SYSTEM_ONLY
+				&& this.cacheStrategy != AnthropicCacheStrategy.SYSTEM_AND_TOOLS
+				&& this.cacheStrategy != AnthropicCacheStrategy.CONVERSATION_HISTORY) {
+			if (logger.isDebugEnabled()) {
+				logger.debug("Caching not enabled for citation documents, cacheStrategy=" + this.cacheStrategy);
+			}
+			return null;
+		}
+
+		if (this.cacheBreakpointTracker.allBreakpointsAreUsed()) {
+			if (logger.isDebugEnabled()) {
+				logger.debug("Caching not enabled for citation documents, usedBreakpoints="
+						+ this.cacheBreakpointTracker.getCount());
+			}
+			return null;
+		}
+
+		AnthropicCacheTtl cacheTtl = this.messageTypeTtl.get(MessageType.SYSTEM);
+		Assert.state(cacheTtl != null, "messageTypeTtl must contain a 'system' entry");
+
+		if (logger.isDebugEnabled()) {
+			logger.debug("Caching enabled for citation documents, ttl=" + cacheTtl);
+		}
+
+		return CacheControlEphemeral.builder().ttl(cacheTtl.getSdkTtl()).build();
+	}
+
 	public boolean isCachingEnabled() {
 		return this.cacheStrategy != AnthropicCacheStrategy.NONE;
 	}
