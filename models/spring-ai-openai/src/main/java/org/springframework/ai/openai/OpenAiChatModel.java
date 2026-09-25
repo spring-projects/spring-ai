@@ -38,6 +38,7 @@ import com.openai.client.OpenAIClientAsync;
 import com.openai.core.JsonValue;
 import com.openai.core.RequestOptions;
 import com.openai.core.http.AsyncStreamResponse;
+import com.openai.core.http.HttpResponseFor;
 import com.openai.errors.OpenAIInvalidDataException;
 import com.openai.models.FunctionDefinition;
 import com.openai.models.FunctionParameters;
@@ -87,7 +88,9 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
+import org.springframework.ai.chat.metadata.EmptyRateLimit;
 import org.springframework.ai.chat.metadata.EmptyUsage;
+import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -103,6 +106,7 @@ import org.springframework.ai.content.Media;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.openai.http.okhttp.OpenAiHttpClientBuilderCustomizer;
+import org.springframework.ai.openai.metadata.OpenAiRateLimit;
 import org.springframework.ai.openai.setup.OpenAiSetup;
 import org.springframework.ai.support.UsageCalculator;
 import org.springframework.ai.tool.definition.ToolDefinition;
@@ -126,6 +130,7 @@ import org.springframework.util.StringUtils;
  * @author Taewoong Kim
  * @author Jewoo Shin
  * @author guan xu
+ * @author Raphael Vullriede
  */
 public final class OpenAiChatModel implements ChatModel {
 
@@ -220,7 +225,14 @@ public final class OpenAiChatModel implements ChatModel {
 					this.observationRegistry)
 			.observe(() -> {
 
-				ChatCompletion chatCompletion = this.openAiClient.chat().completions().create(request, requestOptions);
+				// The raw response carries the x-ratelimit-* headers alongside the parsed
+				// body; the plain create(...) call discards them.
+				HttpResponseFor<ChatCompletion> rawResponse = this.openAiClient.chat()
+					.completions()
+					.withRawResponse()
+					.create(request, requestOptions);
+				ChatCompletion chatCompletion = rawResponse.parse();
+				RateLimit rateLimit = OpenAiRateLimit.from(rawResponse.headers());
 
 				List<ChatCompletion.Choice> choices = chatCompletion.choices();
 				if (choices.isEmpty()) {
@@ -246,7 +258,8 @@ public final class OpenAiChatModel implements ChatModel {
 				Usage currentChatResponseUsage = usage != null ? getDefaultUsage(usage) : new EmptyUsage();
 				Usage accumulatedUsage = UsageCalculator.getCumulativeUsage(currentChatResponseUsage,
 						previousChatResponse);
-				ChatResponse chatResponse = new ChatResponse(generations, from(chatCompletion, accumulatedUsage));
+				ChatResponse chatResponse = new ChatResponse(generations,
+						from(chatCompletion, accumulatedUsage, rateLimit));
 
 				observationContext.setResponse(chatResponse);
 
@@ -354,7 +367,9 @@ public final class OpenAiChatModel implements ChatModel {
 				CompletionUsage usageVal = usage.orElse(null);
 				Usage currentUsage = usageVal != null ? getDefaultUsage(usageVal) : new EmptyUsage();
 				Usage accumulated = UsageCalculator.getCumulativeUsage(currentUsage, null);
-				return new ChatResponse(generations, from(chatCompletion, accumulated));
+				// Reading the rate limit here would mean the raw streaming call, whose
+				// blocking StreamResponse would hold a worker for the whole stream.
+				return new ChatResponse(generations, from(chatCompletion, accumulated, new EmptyRateLimit()));
 
 			});
 
@@ -450,7 +465,7 @@ public final class OpenAiChatModel implements ChatModel {
 		return result;
 	}
 
-	private ChatResponseMetadata from(ChatCompletion result, Usage usage) {
+	private ChatResponseMetadata from(ChatCompletion result, Usage usage, RateLimit rateLimit) {
 		Assert.notNull(result, "OpenAI ChatCompletion must not be null");
 		result.model();
 		result.id();
@@ -458,6 +473,7 @@ public final class OpenAiChatModel implements ChatModel {
 			.id(result.id())
 			.usage(usage)
 			.model(result.model())
+			.rateLimit(rateLimit)
 			.keyValue("created", getCreated(result));
 
 		result._additionalProperties().forEach((key, jsonValue) -> {

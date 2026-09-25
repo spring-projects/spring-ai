@@ -299,6 +299,30 @@ ChatResponse response = chatModel.call(
 
 TIP: In addition to the model specific https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/openai/OpenAiChatOptions.java[OpenAiChatOptions] you can use a portable link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance, created with link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/DefaultChatOptionsBuilder.java[ChatOptions#builder()].
 
+== Rate Limit Metadata
+
+OpenAI reports your current request and token budgets in https://developers.openai.com/api/docs/guides/rate-limits/#rate-limits-in-headers[rate limit response headers].
+Spring AI exposes them through the standard `ChatResponseMetadata#getRateLimit()` accessor, which returns an `OpenAiRateLimit` populated from those headers.
+
+[source,java]
+----
+ChatResponse response = chatModel.call(prompt);
+
+RateLimit rateLimit = response.getMetadata().getRateLimit();
+rateLimit.getRequestsLimit();      // overall request ceiling
+rateLimit.getRequestsRemaining();  // requests left in the current window
+rateLimit.getRequestsReset();      // time until the request window resets
+
+rateLimit.getTokensLimit();        // overall token ceiling
+rateLimit.getTokensRemaining();    // tokens left in the current window
+rateLimit.getTokensReset();        // time until the token window resets
+----
+
+If the response carries no rate-limit headers, `getRateLimit()` returns an `EmptyRateLimit` instance instead.
+
+NOTE: Rate-limit metadata is populated on `call(Prompt)` only.
+Reading it on `stream(Prompt)` would require the SDK's blocking streaming response, which would hold a worker thread for the whole stream, so `stream(Prompt)` reports an `EmptyRateLimit`.
+
 == Tool Calling
 
 `OpenAiChatModel` supports tool calling. The model can request tool execution but does not run tools itself — Spring AI handles execution.
