@@ -94,6 +94,9 @@ public class RedisVectorStoreAutoConfiguration {
 			.indexName(properties.getIndexName())
 			.prefix(properties.getPrefix())
 			.metadataFields(metadataFields.getIfAvailable(List::of));
+		if (properties.getDimensions() != null) {
+			builder.dimensions(properties.getDimensions());
+		}
 
 		// Configure HNSW parameters if available
 		hnswConfiguration(builder, properties);

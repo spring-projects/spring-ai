@@ -10,7 +10,7 @@ link:https://www.qdrant.tech/[Qdrant] is an open-source, high-performance vector
 * If required, an API key for the xref:api/embeddings.adoc#available-implementations[EmbeddingModel] to generate the embeddings stored by the `QdrantVectorStore`.
 
 NOTE: It is recommended that the Qdrant collection is link:https://qdrant.tech/documentation/concepts/collections/#create-a-collection[created] in advance with the appropriate dimensions and configurations.
-If the collection is not created, the `QdrantVectorStore` will attempt to create one using the `Cosine` similarity and the dimension of the configured `EmbeddingModel`.
+If the collection is not created, the `QdrantVectorStore` will attempt to create one using the `Cosine` similarity and the configured `dimensions`, or the dimension of the configured `EmbeddingModel` if none is set.
 
 == Auto-configuration
 
@@ -106,6 +106,7 @@ Properties starting with `spring.ai.vectorstore.qdrant.*` are used to configure 
 |`spring.ai.vectorstore.qdrant.content-field-name`| The name of the field storing document content in Qdrant payloads. Useful when integrating with existing collections that use different field names (e.g., "page_content", "text", "content"). | `doc_content`
 |`spring.ai.vectorstore.qdrant.use-tls`| Whether to use TLS(HTTPS) | `false`
 |`spring.ai.vectorstore.qdrant.initialize-schema`| Whether to initialize the schema | `false`
+|`spring.ai.vectorstore.qdrant.dimensions`| The vector size of the collection. Sizes a collection created by `initialize-schema` and is the size `upsert` checks vectors against. If not set, it is read from the existing collection, or taken from the `EmbeddingModel`. | -
 |===
 
 == Upsert support

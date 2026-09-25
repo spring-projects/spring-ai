@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import io.micrometer.observation.tck.TestObservationRegistry;
 import org.junit.jupiter.api.Test;
@@ -32,6 +33,7 @@ import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.test.vectorstore.ObservationTestUtil;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
+import org.springframework.ai.vectorstore.EmbeddedDocument;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
@@ -43,6 +45,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.DefaultResourceLoader;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
 /**
  * @author Christian Tzolov
@@ -140,6 +143,22 @@ public class QdrantVectorStoreAutoConfigurationIT {
 			assertThat(context.getBeansOfType(VectorStore.class)).isNotEmpty();
 			assertThat(context.getBean(VectorStore.class)).isInstanceOf(QdrantVectorStore.class);
 		});
+	}
+
+	@Test
+	public void dimensionsPropertyReachesTheStore() {
+		// The test embedding model produces 384-dimension vectors, so an expected size of
+		// 7 can only come from the property.
+		this.contextRunner
+			.withPropertyValues("spring.ai.vectorstore.qdrant.collection-name=dimensions_from_property",
+					"spring.ai.vectorstore.qdrant.dimensions=7")
+			.run(context -> {
+				VectorStore vectorStore = context.getBean(VectorStore.class);
+				EmbeddedDocument wrongSize = new EmbeddedDocument(
+						new Document(UUID.randomUUID().toString(), "wrong size", Map.of()), new float[8]);
+				assertThatIllegalArgumentException().isThrownBy(() -> vectorStore.upsert(List.of(wrongSize)))
+					.withMessageContaining("expects dimension 7");
+			});
 	}
 
 	@Configuration(proxyBeanMethods = false)
