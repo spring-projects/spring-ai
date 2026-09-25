@@ -322,6 +322,51 @@ In each round of the conversation, the model outputs the CoT (`reasoning_content
 
 image::deepseek_r1_multiround_example.png[Multimodal Test Image, align="center"]
 
+== Multimodal
+
+Multimodality refers to a model's ability to simultaneously understand and process information from various sources, including text, images, audio, and other data formats.
+DeepSeek models support text and vision modalities.
+
+=== Vision
+
+DeepSeek models offer vision multimodal support through OpenAI-compatible `image_url` content parts.
+Refer to the link:https://api-docs.deepseek.com/guides/vision[Vision] guide for more information.
+An image can be provided either as a base64-encoded data URI or as a publicly accessible HTTP(S) URL.
+
+Spring AI's link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-commons/src/main/java/org/springframework/ai/content/Media.java[Media] type carries the data and metadata of an image attachment.
+When a `UserMessage` holds one or more `Media`, the image data is sent to the model as an `image_url` content part.
+
+Below is an example sending a base64-encoded image from a local resource together with the user text:
+
+[source,java]
+----
+var imageResource = new ClassPathResource("/multimodal.test.png");
+
+var userMessage = new UserMessage("Explain what do you see on this picture?",
+        new Media(MimeTypeUtils.IMAGE_PNG, imageResource));
+
+ChatResponse response = chatModel.call(new Prompt(userMessage,
+        DeepSeekChatOptions.builder()
+            .model(DeepSeekApi.ChatModel.DEEPSEEK_V4_FLASH.getValue())
+            .build()));
+----
+
+or the image URL equivalent:
+
+[source,java]
+----
+var userMessage = new UserMessage("Explain what do you see on this picture?",
+        new Media(MimeTypeUtils.IMAGE_PNG,
+                URI.create("https://example.com/image.jpg")));
+
+ChatResponse response = chatModel.call(new Prompt(userMessage,
+        DeepSeekChatOptions.builder()
+            .model(DeepSeekApi.ChatModel.DEEPSEEK_V4_FLASH.getValue())
+            .build()));
+----
+
+TIP: You can pass multiple images as well.
+
 == Manual Configuration
 
 The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-deepseek/src/main/java/org/springframework/ai/deepseek/DeepSeekChatModel.java[DeepSeekChatModel] implements the `ChatModel` and `StreamingChatModel` and uses the <<low-level-api>> to connect to the DeepSeek service.

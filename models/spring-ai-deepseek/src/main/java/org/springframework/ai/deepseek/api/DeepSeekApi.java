@@ -16,6 +16,7 @@
 
 package org.springframework.ai.deepseek.api;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -25,13 +26,25 @@ import java.util.function.Predicate;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.JsonToken;
+import tools.jackson.databind.DeserializationContext;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.ValueSerializer;
+import tools.jackson.databind.annotation.JsonDeserialize;
+import tools.jackson.databind.annotation.JsonSerialize;
 
 import org.springframework.ai.model.ApiKey;
 import org.springframework.ai.model.ChatModelDescription;
@@ -862,8 +875,8 @@ public class DeepSeekApi {
 	/**
 	 * Message comprising the conversation.
 	 *
-	 * @param content The contents of the message. The message content is always a
-	 * {@link String}.
+	 * @param content The contents of the message. Can be either a {@link String} or a
+	 * {@link List} of {@link ContentChunk}s.
 	 * @param role The role of the messages author. Could be one of the {@link Role}
 	 * types.
 	 * @param name An optional name for the participant. Provides the model information to
@@ -877,7 +890,8 @@ public class DeepSeekApi {
 	@JsonInclude(Include.NON_NULL)
 	@JsonIgnoreProperties(ignoreUnknown = true)
 	public record ChatCompletionMessage(// @formatter:off
-			@JsonProperty("content") @Nullable String content, // null when tool calling is used
+			@JsonSerialize(using = ContentSerializer.class) @JsonDeserialize(using = ContentDeserializer.class)
+			@JsonProperty("content") @Nullable Object content, // null when tool calling is used
 			@JsonProperty("role") Role role,
 			@JsonProperty("name") @Nullable String name,
 			@JsonProperty("tool_call_id") @Nullable String toolCallId,
@@ -899,6 +913,19 @@ public class DeepSeekApi {
 		/**
 		 * Create a chat completion message with the given content and role. All other
 		 * fields are null.
+		 * <p>
+		 * The content can be either a {@link String} (plain text message) or a
+		 * {@link List} of {@link ContentChunk}s (multimodal message).
+		 * @param content The contents of the message.
+		 * @param role The role of the author of this message.
+		 */
+		public ChatCompletionMessage(Object content, Role role) {
+			this(content, role, null, null, null, null, null);
+		}
+
+		/**
+		 * Create a chat completion message with the given content and role. All other
+		 * fields are null.
 		 * @param content The contents of the message.
 		 * @param role The role of the author of this message.
 		 * @param name The name of the author of this message.
@@ -908,6 +935,32 @@ public class DeepSeekApi {
 		public ChatCompletionMessage(@Nullable String content, Role role, @Nullable String name,
 				@Nullable String toolCallId, @Nullable List<ToolCall> toolCalls) {
 			this(content, role, name, toolCallId, toolCalls, null, null);
+		}
+
+		/**
+		 * Extract the text content of the message. When the content is a {@link List} of
+		 * {@link ContentChunk}s, only the {@link TextContent} chunks are taken into
+		 * account.
+		 * @return the text content, or {@code null} when the message has no content
+		 */
+		@JsonIgnore
+		public @Nullable String text() {
+			if (this.content == null) {
+				return null;
+			}
+			if (this.content instanceof String text) {
+				return text;
+			}
+			if (this.content instanceof List<?> list) {
+				StringBuilder text = new StringBuilder();
+				for (Object chunk : list) {
+					if (chunk instanceof TextContent textContent) {
+						text.append(textContent.text());
+					}
+				}
+				return text.toString();
+			}
+			return null;
 		}
 
 		/**
@@ -975,6 +1028,122 @@ public class DeepSeekApi {
 		public record ChatCompletionFunction(// @formatter:off
 				@JsonProperty("name") String name,
 				@JsonProperty("arguments") String arguments) { // @formatter:on
+		}
+
+		/**
+		 * Marker interface representing the different content chunks supported. It is
+		 * also used for JSON serialization and deserialization.
+		 */
+		@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
+		// @formatter:off
+		@JsonSubTypes({
+				@JsonSubTypes.Type(value = TextContent.class, name = "text"),
+				@JsonSubTypes.Type(value = ImageUrlContent.class, name = "image_url")
+		})
+		// @formatter:on
+		public sealed interface ContentChunk {
+
+		}
+
+		/**
+		 * A content chunk with a text content.
+		 */
+		@JsonInclude(Include.NON_NULL)
+		public record TextContent(@JsonProperty("text") String text) implements ContentChunk {
+
+		}
+
+		/**
+		 * A content chunk with an image.
+		 */
+		@JsonInclude(Include.NON_NULL)
+		public record ImageUrlContent(
+		// @formatter:off
+				@JsonProperty("image_url") ImageUrl imageUrl
+				// @formatter:on
+		) implements ContentChunk {
+
+			@JsonInclude(Include.NON_NULL)
+			public record ImageUrl(
+			// @formatter:off
+					@JsonProperty("url") String url
+					// @formatter:on
+			) {
+
+			}
+
+		}
+
+		/**
+		 * Serializer for the {@code content} field of {@link ChatCompletionMessage}. The
+		 * content can be either a plain {@link String} or a list of
+		 * {@link ContentChunk}s.
+		 */
+		public static class ContentSerializer extends ValueSerializer<Object> {
+
+			@Override
+			public void serialize(Object value, JsonGenerator jsonGenerator,
+					SerializationContext serializationContext) {
+				if (value instanceof String text) {
+					jsonGenerator.writeString(text);
+				}
+				else if (value instanceof List<?> list) {
+					jsonGenerator.writeStartArray();
+
+					for (var object : list) {
+						if (object instanceof ContentChunk contentChunk) {
+							jsonGenerator.writePOJO(contentChunk);
+						}
+						else {
+							throw new IllegalArgumentException(
+									"Unexpected value type %s in the list!".formatted(object.getClass()));
+						}
+					}
+
+					jsonGenerator.writeEndArray();
+				}
+				else {
+					throw new IllegalArgumentException("Unexpected value type %s!".formatted(value.getClass()));
+				}
+			}
+
+		}
+
+		/**
+		 * Deserializer for the {@code content} field of {@link ChatCompletionMessage}.
+		 */
+		public static class ContentDeserializer extends ValueDeserializer<Object> {
+
+			@Override
+			public Object deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) {
+				var jsonToken = jsonParser.currentToken();
+
+				if (jsonToken == JsonToken.VALUE_STRING) {
+					return jsonParser.getValueAsString();
+				}
+
+				if (jsonToken == JsonToken.START_ARRAY) {
+					List<ContentChunk> contentChunks = new ArrayList<>();
+
+					while (jsonParser.nextToken() != JsonToken.END_ARRAY) {
+						jsonToken = jsonParser.currentToken();
+
+						if (jsonToken == JsonToken.START_OBJECT) {
+							var contentChunk = jsonParser.readValueAs(ContentChunk.class);
+							contentChunks.add(contentChunk);
+						}
+						else {
+							throw new IllegalStateException(
+									"Unexpected JSON token %s within the array!".formatted(jsonToken));
+						}
+					}
+
+					return List.copyOf(contentChunks);
+				}
+
+				throw new IllegalStateException("Unexpected JSON token %s!".formatted(jsonToken));
+			}
+
 		}
 	}
 

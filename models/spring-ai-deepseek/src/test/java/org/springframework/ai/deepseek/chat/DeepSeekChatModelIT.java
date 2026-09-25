@@ -16,6 +16,7 @@
 
 package org.springframework.ai.deepseek.chat;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -36,6 +37,7 @@ import org.springframework.ai.chat.model.StreamingChatModel;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.chat.prompt.SystemPromptTemplate;
+import org.springframework.ai.content.Media;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
@@ -81,6 +83,18 @@ class DeepSeekChatModelIT {
 		assertThat(response.getResults()).hasSize(1);
 		assertThat(response.getResults().get(0).getOutput().getText()).contains("Blackbeard");
 		// needs fine tuning... evaluateQuestionAndAnswer(request, response, false);
+	}
+
+	@Test
+	void multimodalTest() {
+		var userMessage = UserMessage.builder()
+			.text("What is shown in this image?")
+			.media(new Media(Media.Format.IMAGE_PNG,
+					URI.create("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png")))
+			.build();
+		ChatResponse response = this.chatModel.call(new Prompt(userMessage));
+		assertThat(response.getResults()).hasSize(1);
+		assertThat(response.getResults().get(0).getOutput().getText()).isNotBlank();
 	}
 
 	@Test

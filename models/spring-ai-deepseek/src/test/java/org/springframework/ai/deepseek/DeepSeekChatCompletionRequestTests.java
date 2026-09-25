@@ -16,18 +16,24 @@
 
 package org.springframework.ai.deepseek;
 
+import java.net.URI;
+import java.util.Base64;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.content.Media;
 import org.springframework.ai.deepseek.api.DeepSeekApi;
 import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionMessage;
 import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionRequest.ReasoningEffort;
 import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionRequest.Thinking;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Unit tests for {@link DeepSeekApi.ChatCompletionRequest}.
@@ -216,6 +222,78 @@ public class DeepSeekChatCompletionRequestTests {
 		var request = client.createRequest(prompt, false);
 
 		assertThat(request.reasoningEffort()).isNull();
+	}
+
+	@Test
+	public void createRequestWithBase64MediaContent() {
+		var client = DeepSeekChatModel.builder().deepSeekApi(DeepSeekApi.builder().apiKey("TEST").build()).build();
+
+		byte[] imageBytes = new byte[] { 1, 2, 3, 4, 5 };
+		Media media = Media.builder().mimeType(Media.Format.IMAGE_PNG).data(imageBytes).build();
+		UserMessage userMessage = UserMessage.builder().text("Describe this image").media(media).build();
+
+		var request = client.createRequest(new Prompt(userMessage, DeepSeekChatOptions.builder().build()), false);
+
+		assertThat(request.messages()).hasSize(1);
+		ChatCompletionMessage message = request.messages().get(0);
+		assertThat(message.role()).isEqualTo(ChatCompletionMessage.Role.USER);
+		assertThat(message.content()).isInstanceOf(List.class);
+
+		List<?> content = (List<?>) message.content();
+		assertThat(content).hasSize(2);
+		assertThat(content.get(0)).isInstanceOf(ChatCompletionMessage.TextContent.class);
+		assertThat(((ChatCompletionMessage.TextContent) content.get(0)).text()).isEqualTo("Describe this image");
+		assertThat(content.get(1)).isInstanceOf(ChatCompletionMessage.ImageUrlContent.class);
+		ChatCompletionMessage.ImageUrlContent imageUrlContent = (ChatCompletionMessage.ImageUrlContent) content.get(1);
+		assertThat(imageUrlContent.imageUrl().url())
+			.isEqualTo("data:image/png;base64," + Base64.getEncoder().encodeToString(imageBytes));
+	}
+
+	@Test
+	public void createRequestWithImageUrlMedia() throws Exception {
+		var client = DeepSeekChatModel.builder().deepSeekApi(DeepSeekApi.builder().apiKey("TEST").build()).build();
+
+		Media media = new Media(Media.Format.IMAGE_JPEG, new URI("https://example.com/image.jpg"));
+		UserMessage userMessage = UserMessage.builder().text("Describe this image").media(media).build();
+
+		var request = client.createRequest(new Prompt(userMessage, DeepSeekChatOptions.builder().build()), false);
+
+		ChatCompletionMessage message = request.messages().get(0);
+		ChatCompletionMessage.ImageUrlContent imageUrlContent = (ChatCompletionMessage.ImageUrlContent) ((List<?>) message
+			.content()).get(1);
+		assertThat(imageUrlContent.imageUrl().url()).isEqualTo("https://example.com/image.jpg");
+	}
+
+	@Test
+	public void createRequestWithNonImageMediaRejected() {
+		var client = DeepSeekChatModel.builder().deepSeekApi(DeepSeekApi.builder().apiKey("TEST").build()).build();
+
+		byte[] pdfBytes = new byte[] { 1, 2, 3 };
+		Media media = Media.builder().mimeType(Media.Format.DOC_PDF).data(pdfBytes).build();
+		UserMessage userMessage = UserMessage.builder().text("Here is a document").media(media).build();
+
+		assertThatThrownBy(
+				() -> client.createRequest(new Prompt(userMessage, DeepSeekChatOptions.builder().build()), false))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("only supports image media");
+	}
+
+	@Test
+	public void serializeMessageWithContentChunks() throws Exception {
+		var jsonMapper = JsonMapper.shared();
+
+		List<ChatCompletionMessage.ContentChunk> contentChunks = List
+			.of(new ChatCompletionMessage.TextContent("Describe this image"), new ChatCompletionMessage.ImageUrlContent(
+					new ChatCompletionMessage.ImageUrlContent.ImageUrl("https://example.com/image.jpg")));
+		ChatCompletionMessage message = new ChatCompletionMessage(contentChunks, ChatCompletionMessage.Role.USER);
+
+		String json = jsonMapper.writeValueAsString(message);
+
+		assertThat(json).contains("\"type\":\"text\",\"text\":\"Describe this image\"");
+		assertThat(json).contains("\"type\":\"image_url\",\"image_url\":{\"url\":\"https://example.com/image.jpg\"}");
+
+		ChatCompletionMessage deserialized = jsonMapper.readValue(json, ChatCompletionMessage.class);
+		assertThat(deserialized.content()).asList().isEqualTo(contentChunks);
 	}
 
 }

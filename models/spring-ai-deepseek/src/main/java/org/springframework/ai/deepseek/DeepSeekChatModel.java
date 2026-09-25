@@ -16,7 +16,10 @@
 
 package org.springframework.ai.deepseek;
 
+import java.net.URI;
+import java.net.URL;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -33,6 +36,7 @@ import reactor.core.publisher.Flux;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
@@ -48,6 +52,7 @@ import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.content.Media;
 import org.springframework.ai.deepseek.api.DeepSeekApi;
 import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletion;
 import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletion.Choice;
@@ -284,7 +289,7 @@ public class DeepSeekChatModel implements ChatModel {
 		String finishReason = (choice.finishReason() != null ? choice.finishReason().name() : "");
 		var generationMetadataBuilder = ChatGenerationMetadata.builder().finishReason(finishReason);
 
-		String textContent = choice.message().content();
+		String textContent = choice.message().text();
 		String reasoningContent = choice.message().reasoningContent();
 
 		DeepSeekAssistantMessage.Builder builder = new DeepSeekAssistantMessage.Builder();
@@ -342,7 +347,10 @@ public class DeepSeekChatModel implements ChatModel {
 	 */
 	ChatCompletionRequest createRequest(Prompt prompt, boolean stream) {
 		List<ChatCompletionMessage> chatCompletionMessages = prompt.getInstructions().stream().map(message -> {
-			if (message.getMessageType() == MessageType.USER || message.getMessageType() == MessageType.SYSTEM) {
+			if (message instanceof UserMessage userMessage && !CollectionUtils.isEmpty(userMessage.getMedia())) {
+				return List.of(createUserChatCompletionMessage(userMessage));
+			}
+			else if (message.getMessageType() == MessageType.USER || message.getMessageType() == MessageType.SYSTEM) {
 				String text = message.getText();
 				Assert.state(text != null, "text must not be null");
 				return List.of(new ChatCompletionMessage(text,
@@ -445,6 +453,43 @@ public class DeepSeekChatModel implements ChatModel {
 		}
 
 		return requestBuilder.build();
+	}
+
+	private ChatCompletionMessage createUserChatCompletionMessage(UserMessage userMessage) {
+		String text = userMessage.getText();
+		Assert.state(text != null, "text must not be null");
+
+		List<ChatCompletionMessage.ContentChunk> contentChunks = new ArrayList<>();
+		contentChunks.add(new ChatCompletionMessage.TextContent(text));
+		userMessage.getMedia().stream().map(this::mapToImageUrlContent).forEach(contentChunks::add);
+
+		return new ChatCompletionMessage(contentChunks, ChatCompletionMessage.Role.USER);
+	}
+
+	private ChatCompletionMessage.ImageUrlContent mapToImageUrlContent(Media media) {
+		Assert.isTrue("image".equals(media.getMimeType().getType()),
+				"DeepSeek vision only supports image media, got: " + media.getMimeType());
+		return new ChatCompletionMessage.ImageUrlContent(
+				new ChatCompletionMessage.ImageUrlContent.ImageUrl(urlOrDataUri(media)));
+	}
+
+	private String urlOrDataUri(Media media) {
+		Object data = media.getData();
+		if (data instanceof byte[] bytes) {
+			return "data:" + media.getMimeType() + ";base64," + Base64.getEncoder().encodeToString(bytes);
+		}
+		// Media stores a URL as a URI, but its builder turns some of them into Strings on
+		// the way through, so all three have to be accepted here.
+		if (data instanceof String text) {
+			return text;
+		}
+		if (data instanceof URI uri) {
+			return uri.toString();
+		}
+		if (data instanceof URL url) {
+			return url.toString();
+		}
+		throw new IllegalArgumentException("Unsupported media data type: " + data.getClass().getSimpleName());
 	}
 
 	/**
