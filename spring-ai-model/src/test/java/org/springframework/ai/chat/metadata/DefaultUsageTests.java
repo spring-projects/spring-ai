@@ -20,8 +20,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.DefaultTyping;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -349,6 +353,33 @@ public class DefaultUsageTests {
 
 		assertThat(json).contains("\"nativeUsage\" : \"ThrowingNativeUsage{tokens=7}\"");
 		assertThat(json).contains("\"promptTokens\" : 100");
+	}
+
+	@Test
+	void testSerializationWithDefaultTypingKeepsTypeIdForSerializableNativeUsage() throws Exception {
+		DefaultUsage usage = new DefaultUsage(100, 50, 150, new PlainNativeUsage(7));
+		JsonNode json = defaultTypingJsonMapper().readTree(defaultTypingJsonMapper().writeValueAsString(usage));
+		assertThat(json.get("nativeUsage").get("@class").asString()).isEqualTo(PlainNativeUsage.class.getName());
+		assertThat(json.get("nativeUsage").get("tokens").asInt()).isEqualTo(7);
+	}
+
+	@Test
+	void testSerializationWithDefaultTypingFallsBackToToStringForNonSerializableNativeUsage() throws Exception {
+		DefaultUsage usage = new DefaultUsage(100, 50, 150, new ThrowingNativeUsage());
+		JsonNode json = defaultTypingJsonMapper().readTree(defaultTypingJsonMapper().writeValueAsString(usage));
+		assertThat(json.get("nativeUsage").asString()).isEqualTo("ThrowingNativeUsage{tokens=7}");
+		assertThat(json.get("promptTokens").asInt()).isEqualTo(100);
+	}
+
+	/**
+	 * Mapper with default typing enabled, so that type information is written for
+	 * polymorphic values.
+	 */
+	private static JsonMapper defaultTypingJsonMapper() {
+		return JsonMapper.builder()
+			.activateDefaultTyping(BasicPolymorphicTypeValidator.builder().allowIfBaseType(Object.class).build(),
+					DefaultTyping.NON_FINAL, JsonTypeInfo.As.PROPERTY)
+			.build();
 	}
 
 	/**
