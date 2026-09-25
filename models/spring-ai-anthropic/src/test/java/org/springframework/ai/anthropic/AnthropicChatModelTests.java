@@ -417,9 +417,10 @@ class AnthropicChatModelTests {
 		assertThat(responses).isNotNull();
 		List<AssistantMessage> thinkingDeltas = responses.stream()
 			.map(response -> response.getResult().getOutput())
-			.filter(message -> message.getMetadata().containsKey("thinking"))
+			.filter(message -> message.getMetadata().containsKey(AnthropicChatModel.THINKING_METADATA_KEY))
 			.toList();
-		assertThat(thinkingDeltas).extracting(message -> message.getMetadata().get("thinkingText"))
+		assertThat(thinkingDeltas)
+			.extracting(message -> message.getMetadata().get(AnthropicChatModel.THINKING_TEXT_METADATA_KEY))
 			.containsExactly("thinking ", "text");
 		assertThat(thinkingDeltas).allSatisfy(message -> assertThat(message.getText()).isNull());
 	}
