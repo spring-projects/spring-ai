@@ -39,6 +39,7 @@ import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.vectorstore.EmbeddedDocument;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
+import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
@@ -46,10 +47,12 @@ import static org.awaitility.Awaitility.await;
 
 /**
  * Shared verification suite for {@link VectorStore#upsert(List)} implementations, a
- * sibling to {@link BaseVectorStoreTests}. A concrete store test extends this class,
- * provides a configured store through {@link #executeTest(Consumer)}, and reports the
- * embedding dimension its store expects through {@link #embeddingDimensions()} so the
- * suite can build correctly sized caller vectors.
+ * sibling to {@link BaseVectorStoreTests}. It also covers
+ * {@link VectorStore#similaritySearch(float[], SearchRequest)}, since only vectors the
+ * caller controls give a search result the test can predict. A concrete store test
+ * extends this class, provides a configured store through {@link #executeTest(Consumer)},
+ * and reports the embedding dimension its store expects through
+ * {@link #embeddingDimensions()} so the suite can build correctly sized caller vectors.
  * <p>
  * The read-back assertions rely on {@link SearchRequest.Builder#similarityThresholdAll()}
  * to return every stored row regardless of ranking, so they do not depend on the actual
@@ -258,6 +261,83 @@ public abstract class AbstractVectorStoreUpsertTests {
 		});
 	}
 
+	@Test
+	protected void searchWithQueryEmbeddingRanksNearestFirst() {
+		Assumptions.assumeTrue(embeddingDimensions() >= 3, "needs at least three dimensions for three distinct rows");
+		executeTest(vectorStore -> {
+			List<String> ids = List.of(UUID.randomUUID().toString(), UUID.randomUUID().toString(),
+					UUID.randomUUID().toString());
+			List<EmbeddedDocument> entries = new ArrayList<>();
+			for (int i = 0; i < ids.size(); i++) {
+				entries.add(new EmbeddedDocument(new Document(ids.get(i), "row " + i, Map.of("tag", "t" + i)),
+						pointingAt(i)));
+			}
+			vectorStore.upsert(entries);
+
+			// Each query vector points the same way as exactly one stored row.
+			for (int i = 0; i < ids.size(); i++) {
+				String expectedId = ids.get(i);
+				float[] queryEmbedding = pointingAt(i);
+				await().atMost(5, TimeUnit.SECONDS).pollInterval(Duration.ofMillis(500)).untilAsserted(() -> {
+					List<Document> results = vectorStore.similaritySearch(queryEmbedding,
+							SearchRequest.builder().topK(3).similarityThresholdAll().build());
+					assertThat(results).isNotEmpty();
+					assertThat(results.get(0).getId()).isEqualTo(expectedId);
+				});
+			}
+		});
+	}
+
+	@Test
+	protected void searchWithQueryEmbeddingAppliesFilter() {
+		Assumptions.assumeTrue(embeddingDimensions() >= 2, "needs at least two dimensions for two distinct rows");
+		executeTest(vectorStore -> {
+			String nearestId = UUID.randomUUID().toString();
+			String filteredId = UUID.randomUUID().toString();
+			vectorStore.upsert(List.of(
+					new EmbeddedDocument(new Document(nearestId, "nearest", Map.of("tag", "a")), pointingAt(0)),
+					new EmbeddedDocument(new Document(filteredId, "filtered", Map.of("tag", "b")), pointingAt(1))));
+
+			// The query is nearest to the "a" row, but the filter only admits "b".
+			SearchRequest request = SearchRequest.builder()
+				.topK(3)
+				.similarityThresholdAll()
+				.filterExpression(new FilterExpressionBuilder().eq("tag", "b").build())
+				.build();
+			await().atMost(5, TimeUnit.SECONDS).pollInterval(Duration.ofMillis(500)).untilAsserted(() -> {
+				List<Document> results = vectorStore.similaritySearch(pointingAt(0), request);
+				assertThat(results).extracting(Document::getId).containsExactly(filteredId);
+			});
+		});
+	}
+
+	@Test
+	protected void queryEmbeddingOfWrongDimensionRejected() {
+		executeTest(vectorStore -> assertThatExceptionOfType(IllegalArgumentException.class)
+			.isThrownBy(() -> vectorStore.similaritySearch(vectorOfLength(embeddingDimensions() + 1),
+					SearchRequest.builder().topK(3).build())));
+	}
+
+	@Test
+	protected void searchWithQueryEmbeddingWithoutEmbeddingModel() {
+		executeTest(vectorStore -> {
+			CallCountingEmbeddingModel embeddingModel = new CallCountingEmbeddingModel(embeddingDimensions());
+			VectorStore store = createStoreOverExistingSchema(vectorStore, embeddingModel);
+			Assumptions.assumeTrue(store != null, "store does not support building over an existing schema");
+
+			String id = UUID.randomUUID().toString();
+			store
+				.upsert(List.of(new EmbeddedDocument(new Document(id, "no model", Map.of("tag", "n")), pointingAt(0))));
+
+			await().atMost(5, TimeUnit.SECONDS).pollInterval(Duration.ofMillis(500)).untilAsserted(() -> {
+				List<Document> results = store.similaritySearch(pointingAt(0),
+						SearchRequest.builder().topK(3).similarityThresholdAll().build());
+				assertThat(results).extracting(Document::getId).containsExactly(id);
+			});
+			assertThat(embeddingModel.calls()).as("embedding model calls during upsert and search").isZero();
+		});
+	}
+
 	/**
 	 * Assert that the store's own pre-write check rejects a wrong-sized vector. Only that
 	 * check throws {@link IllegalArgumentException}; a database rejecting the vector
@@ -318,6 +398,21 @@ public abstract class AbstractVectorStoreUpsertTests {
 		int hash = id.hashCode();
 		for (int i = 0; i < dimensions; i++) {
 			vector[i] = ((hash >> (i % Integer.SIZE)) & 1) == 0 ? 0.1f * (i + 1) : 0.2f * (i + 1);
+		}
+		return vector;
+	}
+
+	/**
+	 * A vector that points mostly along one axis, so vectors for different axes are
+	 * clearly apart while staying similar enough to pass any similarity threshold.
+	 * @param axis the axis to point along; must be less than
+	 * {@link #embeddingDimensions()}
+	 * @return the vector
+	 */
+	private float[] pointingAt(int axis) {
+		float[] vector = new float[embeddingDimensions()];
+		for (int i = 0; i < vector.length; i++) {
+			vector[i] = (i == axis) ? 1.0f : 0.1f;
 		}
 		return vector;
 	}

@@ -218,14 +218,8 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 		// by the EmbeddedDocument constructor. Only runs when the dimension is actually
 		// known; otherwise the check is left to Qdrant.
 		int expected = vectorDimensions();
-		if (expected > 0) {
-			for (int i = 0; i < entries.size(); i++) {
-				int actual = entries.get(i).embedding().length;
-				if (actual != expected) {
-					throw new IllegalArgumentException("Embedding at index " + i + " has dimension " + actual
-							+ " but the store expects dimension " + expected);
-				}
-			}
+		for (int i = 0; i < entries.size(); i++) {
+			checkDimensions("Embedding at index " + i, entries.get(i).embedding().length, expected);
 		}
 
 		try {
@@ -303,12 +297,20 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 	 */
 	@Override
 	public List<Document> doSimilaritySearch(SearchRequest request) {
+		return searchByEmbedding(this.embeddingModel.embed(request.getQuery()), request);
+	}
+
+	@Override
+	protected List<Document> doSimilaritySearch(float[] queryEmbedding, SearchRequest request) {
+		checkDimensions("Query embedding", queryEmbedding.length, vectorDimensions());
+		return searchByEmbedding(queryEmbedding, request);
+	}
+
+	private List<Document> searchByEmbedding(float[] queryEmbedding, SearchRequest request) {
 		try {
 			Filter filter = (request.getFilterExpression() != null)
 					? this.filterExpressionConverter.convertExpression(request.getFilterExpression())
 					: Filter.getDefaultInstance();
-
-			float[] queryEmbedding = this.embeddingModel.embed(request.getQuery());
 
 			var searchPoints = SearchPoints.newBuilder()
 				.setCollectionName(this.collectionName)
