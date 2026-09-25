@@ -807,6 +807,7 @@ class OpenAiChatModelTests {
 
 		AssistantMessage assistantMessage = AssistantMessage.builder()
 			.content("100")
+			.toolCalls(List.of(new AssistantMessage.ToolCall("call_1", "function", "getCurrentTime", "{}")))
 			.properties(Map.of("reasoningContent", "25 * 4 = 100."))
 			.build();
 		Prompt prompt = new Prompt(
@@ -823,6 +824,39 @@ class OpenAiChatModelTests {
 			.orElseThrow();
 		assertThat(assistantParam._additionalProperties()).containsEntry("reasoning_content",
 				JsonValue.from("25 * 4 = 100."));
+	}
+
+	@Test
+	void reasoningContentIsNotReplayedWhenProviderDisablesReasoning() {
+		OpenAiChatOptions options = OpenAiChatOptions.builder()
+			.model("openai/gpt-oss-120b")
+			.extraBody(Map.of("include_reasoning", false))
+			.build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		AssistantMessage assistantMessage = AssistantMessage.builder()
+			.content("100")
+			.toolCalls(List.of(new AssistantMessage.ToolCall("call_1", "function", "getCurrentTime", "{}")))
+			.properties(Map.of("reasoningContent", "25 * 4 = 100."))
+			.build();
+		Prompt prompt = new Prompt(
+				List.of(new UserMessage("What's 25 * 4?"), assistantMessage, new UserMessage("Now divide that by 5")),
+				options);
+
+		ChatCompletionCreateParams request = chatModel.createRequest(prompt, false);
+
+		ChatCompletionAssistantMessageParam assistantParam = request.messages()
+			.stream()
+			.filter(ChatCompletionMessageParam::isAssistant)
+			.map(ChatCompletionMessageParam::asAssistant)
+			.findFirst()
+			.orElseThrow();
+		assertThat(assistantParam.toolCalls()).hasValueSatisfying(toolCalls -> assertThat(toolCalls).hasSize(1));
+		assertThat(assistantParam._additionalProperties()).doesNotContainKey("reasoning_content");
 	}
 
 	@ParameterizedTest
