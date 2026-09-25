@@ -59,6 +59,7 @@ import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.C
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.ToolCall;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest;
 import org.springframework.ai.model.ModelOptionsUtils;
+import org.springframework.ai.model.observation.ObservationTermination;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.support.UsageCalculator;
@@ -296,12 +297,11 @@ public class MistralAiChatModel implements ChatModel {
 			// @formatter:off
 			Flux<ChatResponse> chatResponseFlux = chatResponse.flatMap(response ->
 					Flux.just(response))
-			.doOnError(observation::error)
-			.doFinally(s -> observation.stop())
 			.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
 			// @formatter:on
 
-			return new MessageAggregator().aggregate(chatResponseFlux, observationContext::setResponse);
+			return new MessageAggregator().aggregate(chatResponseFlux, observationContext::setResponse)
+				.transform(ObservationTermination.stopOnTermination(observation));
 		});
 
 	}
