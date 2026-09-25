@@ -107,6 +107,24 @@ public class GoogleGenAiChatOptionsTest extends AbstractChatOptionsTests<GoogleG
 	}
 
 	@Test
+	public void testEqualsAndHashCodeWithHttpHeaders() {
+		GoogleGenAiChatOptions options1 = GoogleGenAiChatOptions.builder()
+			.httpHeaders(Map.of("x-some-header-id", "VALUE_123"))
+			.build();
+		GoogleGenAiChatOptions options2 = GoogleGenAiChatOptions.builder()
+			.httpHeaders(Map.of("x-some-header-id", "VALUE_123"))
+			.build();
+		GoogleGenAiChatOptions options3 = GoogleGenAiChatOptions.builder()
+			.httpHeaders(Map.of("x-some-header-id", "VALUE_456"))
+			.build();
+
+		assertThat(options1).isEqualTo(options2);
+		assertThat(options1.hashCode()).isEqualTo(options2.hashCode());
+		assertThat(options1).isNotEqualTo(options3);
+		assertThat(options1.hashCode()).isNotEqualTo(options3.hashCode());
+	}
+
+	@Test
 	public void testThinkingBudgetWithZeroValue() {
 		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder().thinkingBudget(0).build();
 
@@ -253,6 +271,7 @@ public class GoogleGenAiChatOptionsTest extends AbstractChatOptionsTests<GoogleG
 			.build();
 		GoogleGenAiChatOptions base = GoogleGenAiChatOptions.builder()
 			.labels(Map.of("base-key", "base-value"))
+			.httpHeaders(Map.of("base-header", "base-value", "shared-header", "base-value"))
 			.safetySettings(List.of(baseSafetySetting))
 			.build();
 
@@ -262,6 +281,7 @@ public class GoogleGenAiChatOptionsTest extends AbstractChatOptionsTests<GoogleG
 			.build();
 		GoogleGenAiChatOptions override = GoogleGenAiChatOptions.builder()
 			.labels(Map.of("override-key", "override-value"))
+			.httpHeaders(Map.of("override-header", "override-value", "shared-header", "override-value"))
 			.safetySettings(List.of(overrideSafetySetting))
 			.build();
 
@@ -269,6 +289,9 @@ public class GoogleGenAiChatOptionsTest extends AbstractChatOptionsTests<GoogleG
 
 		assertThat(merged.getLabels()).containsEntry("base-key", "base-value");
 		assertThat(merged.getLabels()).containsEntry("override-key", "override-value");
+		assertThat(merged.getHttpHeaders()).containsEntry("base-header", "base-value")
+			.containsEntry("override-header", "override-value")
+			.containsEntry("shared-header", "override-value");
 		assertThat(merged.getSafetySettings()).containsExactlyInAnyOrder(baseSafetySetting, overrideSafetySetting);
 	}
 
@@ -282,18 +305,25 @@ public class GoogleGenAiChatOptionsTest extends AbstractChatOptionsTests<GoogleG
 		safetySettings.add(safetySetting);
 		Map<String, String> labels = new HashMap<>();
 		labels.put("key", "value");
+		Map<String, String> httpHeaders = new HashMap<>();
+		httpHeaders.put("x-some-header-id", "VALUE_123");
 
-		Builder source = GoogleGenAiChatOptions.builder().safetySettings(safetySettings).labels(labels);
+		Builder source = GoogleGenAiChatOptions.builder()
+			.safetySettings(safetySettings)
+			.labels(labels)
+			.httpHeaders(httpHeaders);
 		Builder clone = source.clone();
 		safetySettings.add(new GoogleGenAiSafetySetting.Builder()
 			.withCategory(GoogleGenAiSafetySetting.HarmCategory.HARM_CATEGORY_HARASSMENT)
 			.withThreshold(GoogleGenAiSafetySetting.HarmBlockThreshold.BLOCK_MEDIUM_AND_ABOVE)
 			.build());
 		labels.put("anotherKey", "anotherValue");
+		httpHeaders.put("x-another-header-id", "VALUE_456");
 
 		GoogleGenAiChatOptions cloned = clone.build();
 		assertThat(cloned.getSafetySettings()).containsExactly(safetySetting);
 		assertThat(cloned.getLabels()).containsOnlyKeys("key");
+		assertThat(cloned.getHttpHeaders()).containsOnlyKeys("x-some-header-id");
 	}
 
 	@Test
@@ -301,6 +331,7 @@ public class GoogleGenAiChatOptionsTest extends AbstractChatOptionsTests<GoogleG
 		GoogleGenAiChatOptions cloned = GoogleGenAiChatOptions.builder().clone().build();
 		assertThat(cloned.getSafetySettings()).isNull();
 		assertThat(cloned.getLabels()).isNull();
+		assertThat(cloned.getHttpHeaders()).isNull();
 	}
 
 	@Test
