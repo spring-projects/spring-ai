@@ -27,9 +27,24 @@ On JDK 21, replace the former with the latter and run with `--enable-preview`:
 <dependency>
     <groupId>io.github.beehive-lab</groupId>
     <artifactId>jitllm</artifactId>
-    <version>1.0.0-jdk21</version>
+    <version>1.0.1-jdk21</version>
 </dependency>
 ----
+
+jitLLM's jar leaves TornadoVM to the TornadoVM SDK, which the `tornado` launcher (or `@$TORNADOVM_HOME/tornado-argfile`) puts on the module path.
+Its CPU path still uses TornadoVM's array types, so to run on the CPU without the SDK, add `tornado-api` from the same TornadoVM release, with `runtime` scope:
+
+[source,xml]
+----
+<dependency>
+    <groupId>io.github.beehive-lab</groupId>
+    <artifactId>tornado-api</artifactId>
+    <version>7.0.1-jdk22plus</version> <!-- 7.0.1-jdk21 on JDK 21 -->
+    <scope>runtime</scope>
+</dependency>
+----
+
+Do not add it when the application runs through TornadoVM: the SDK already provides it.
 
 === Add Repositories and BOM
 

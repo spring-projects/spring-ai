@@ -48,6 +48,8 @@ final class JitLlmConversions {
 
 	static final String FINISH_REASON_TOOL_CALLS = "TOOL_CALLS";
 
+	static final String FINISH_REASON_CANCELLED = "CANCELLED";
+
 	private static final String EMPTY_OBJECT_SCHEMA = "{\"type\":\"object\",\"properties\":{}}";
 
 	private static final JsonHelper jsonHelper = new JsonHelper();
@@ -121,6 +123,7 @@ final class JitLlmConversions {
 			case TOOL_CALL -> FINISH_REASON_TOOL_CALLS;
 			case MAX_TOKENS, CONTEXT_FULL -> FINISH_REASON_LENGTH;
 			case STOP_TOKEN, STOP_SEQUENCE -> FINISH_REASON_STOP;
+			case CANCELLED -> FINISH_REASON_CANCELLED;
 		};
 	}
 

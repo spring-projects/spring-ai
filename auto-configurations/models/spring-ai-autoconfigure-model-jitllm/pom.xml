@@ -44,6 +44,7 @@
 		     JDK 21 switches it to the JDK 21 line through the jitllm-jdk21 profile. -->
 		<java.version>21</java.version>
 		<jitllm.version>${jitllm.base.version}-jdk22plus</jitllm.version>
+		<jitllm.tornadovm.version>${jitllm.tornadovm.base.version}-jdk22plus</jitllm.tornadovm.version>
 		<jitllm.jvm.args>--add-modules jdk.incubator.vector</jitllm.jvm.args>
 	</properties>
 
@@ -101,6 +102,15 @@
 		</dependency>
 
 		<!-- Test dependencies -->
+		<!-- jitLLM's CPU path uses TornadoVM's array types, which the SDK supplies at runtime.
+		     Tests that load a model on the CPU in a plain JVM need them on the class path. -->
+		<dependency>
+			<groupId>io.github.beehive-lab</groupId>
+			<artifactId>tornado-api</artifactId>
+			<version>${jitllm.tornadovm.version}</version>
+			<scope>test</scope>
+		</dependency>
+
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-client-chat</artifactId>
@@ -178,6 +188,7 @@
 			</activation>
 			<properties>
 				<jitllm.version>${jitllm.base.version}-jdk21</jitllm.version>
+				<jitllm.tornadovm.version>${jitllm.tornadovm.base.version}-jdk21</jitllm.tornadovm.version>
 				<!-- jitllm:*-jdk21 uses java.lang.foreign, a preview API on JDK 21 -->
 				<jitllm.jvm.args>--enable-preview --add-modules jdk.incubator.vector</jitllm.jvm.args>
 			</properties>

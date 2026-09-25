@@ -169,6 +169,32 @@ class JitLlmChatModelTests {
 	}
 
 	@Test
+	void aCancelledStreamStopsTheGeneration() {
+		this.engine.session.script(result("one two three four five", FinishReason.STOP_TOKEN, List.of()), "one", " two",
+				" three", " four", " five");
+
+		List<ChatResponse> chunks = chatModel(JitLlmChatOptions.builder().build()).stream(new Prompt("count"))
+			.take(2)
+			.collectList()
+			.block(Duration.ofSeconds(10));
+
+		assertThat(chunks).hasSize(2);
+		GenerationRequest request = this.engine.session.requests.get(0);
+		assertThat(request.cancellation()).isNotNull();
+		assertThat(request.cancellation().isCancelled()).isTrue();
+		assertThat(this.engine.session.tokensEmitted).isLessThan(5);
+	}
+
+	@Test
+	void aCallCannotBeCancelledAndCarriesNoToken() {
+		this.engine.session.script(result("ok", FinishReason.STOP_TOKEN, List.of()));
+
+		chatModel(JitLlmChatOptions.builder().build()).call(new Prompt("hi"));
+
+		assertThat(this.engine.session.requests.get(0).cancellation()).isNull();
+	}
+
+	@Test
 	void anErrorDuringStreamingFailsTheStreamInsteadOfHangingIt() {
 		this.engine.session.failWith(new NoClassDefFoundError("uk/ac/manchester/tornado/api/types/arrays/IntArray"));
 
@@ -272,6 +298,8 @@ class JitLlmChatModelTests {
 
 		int resets;
 
+		int tokensEmitted;
+
 		private GenerationResult next;
 
 		private List<String> tokens = List.of();
@@ -299,7 +327,13 @@ class JitLlmChatModelTests {
 			}
 			if (request.onEvent() != null) {
 				for (String token : this.tokens) {
+					// The engine checks the token between tokens and stops with
+					// CANCELLED.
+					if (request.cancellation() != null && request.cancellation().isCancelled()) {
+						return result(this.next.text(), FinishReason.CANCELLED, List.of());
+					}
 					request.onEvent().accept(new GenerationEvent(0, token));
+					this.tokensEmitted++;
 				}
 			}
 			return this.next;

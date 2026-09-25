@@ -128,6 +128,7 @@ class JitLlmConversionsTests {
 		assertThat(JitLlmConversions.toSpringFinishReason(FinishReason.MAX_TOKENS)).isEqualTo("LENGTH");
 		assertThat(JitLlmConversions.toSpringFinishReason(FinishReason.CONTEXT_FULL)).isEqualTo("LENGTH");
 		assertThat(JitLlmConversions.toSpringFinishReason(FinishReason.TOOL_CALL)).isEqualTo("TOOL_CALLS");
+		assertThat(JitLlmConversions.toSpringFinishReason(FinishReason.CANCELLED)).isEqualTo("CANCELLED");
 	}
 
 	@Test

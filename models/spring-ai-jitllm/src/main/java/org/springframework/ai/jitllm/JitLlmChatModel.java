@@ -29,6 +29,7 @@ import java.util.function.Consumer;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
+import org.beehive.jitllm.api.CancellationToken;
 import org.beehive.jitllm.api.GenerationEvent;
 import org.beehive.jitllm.api.GenerationRequest;
 import org.beehive.jitllm.api.GenerationResult;
@@ -151,7 +152,7 @@ public final class JitLlmChatModel implements ChatModel, AutoCloseable {
 			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 					this.observationRegistry)
 			.observe(() -> {
-				GenerationResult result = generate(requestPrompt, null);
+				GenerationResult result = generate(requestPrompt, null, null);
 				ChatResponse chatResponse = toChatResponse(result, false);
 				observationContext.setResponse(chatResponse);
 				return chatResponse;
@@ -223,13 +224,20 @@ public final class JitLlmChatModel implements ChatModel, AutoCloseable {
 
 	private void streamInto(Prompt prompt, FluxSink<ChatResponse> sink) {
 		AtomicBoolean cancelled = new AtomicBoolean();
-		sink.onDispose(() -> cancelled.set(true));
+		// A subscriber that cancels (a client that disconnected, take(n)) stops the
+		// generation
+		// itself, rather than leaving the GPU to run to maxTokens for nobody.
+		CancellationToken cancellation = new CancellationToken();
+		sink.onDispose(() -> {
+			cancelled.set(true);
+			cancellation.cancel();
+		});
 		try {
 			if (!resolveTools(prompt).isEmpty()) {
 				// Tool calls are only known once generation ends, so a request that
 				// offers
 				// tools is answered in one chunk.
-				GenerationResult result = generate(prompt, null);
+				GenerationResult result = generate(prompt, cancellation, null);
 				if (!cancelled.get()) {
 					sink.next(toChatResponse(result, false));
 					sink.complete();
@@ -237,7 +245,7 @@ public final class JitLlmChatModel implements ChatModel, AutoCloseable {
 				return;
 			}
 			ThinkingFilter filter = new ThinkingFilter();
-			GenerationResult result = generate(prompt, event -> {
+			GenerationResult result = generate(prompt, cancellation, event -> {
 				String visible = filter.accept(event.text());
 				if (!cancelled.get() && !visible.isEmpty()) {
 					sink.next(new ChatResponse(List.of(new Generation(new AssistantMessage(visible)))));
@@ -265,7 +273,8 @@ public final class JitLlmChatModel implements ChatModel, AutoCloseable {
 		}
 	}
 
-	private GenerationResult generate(Prompt prompt, @Nullable Consumer<GenerationEvent> onEvent) {
+	private GenerationResult generate(Prompt prompt, @Nullable CancellationToken cancellation,
+			@Nullable Consumer<GenerationEvent> onEvent) {
 		JitLlmChatOptions options = (JitLlmChatOptions) Objects.requireNonNull(prompt.getOptions());
 		warnUnsupportedOptions(options);
 
@@ -292,6 +301,9 @@ public final class JitLlmChatModel implements ChatModel, AutoCloseable {
 		}
 		if (onEvent != null) {
 			request.onEvent(onEvent);
+		}
+		if (cancellation != null) {
+			request.cancellation(cancellation);
 		}
 
 		this.lock.lock();

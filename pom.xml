@@ -269,7 +269,10 @@
 		<com.google.genai.version>1.65.0</com.google.genai.version>
 		<djl.version>0.36.0</djl.version>
 		<!-- jitLLM: the JDK line suffix (-jdk21 / -jdk22plus) is chosen by spring-ai-jitllm -->
-		<jitllm.base.version>1.0.0</jitllm.base.version>
+		<jitllm.base.version>1.0.1</jitllm.base.version>
+		<!-- The TornadoVM release jitLLM is built against. jitLLM's jar leaves TornadoVM to the SDK;
+		     tests that run on the CPU without the SDK need tornado-api on the class path. -->
+		<jitllm.tornadovm.base.version>7.0.1</jitllm.tornadovm.base.version>
 
 		<!-- Vector store clients -->
 		<coherence.version>24.09</coherence.version>
