@@ -74,8 +74,8 @@ public final class ChatModelCallAdvisor implements CallAdvisor {
 			return chatClientRequest;
 		}
 
-		boolean usesNativeStructuredOutput = chatClientRequest.context()
-			.containsKey(ChatClientAttributes.STRUCTURED_OUTPUT_NATIVE.getKey());
+		boolean usesNativeStructuredOutput = Boolean.TRUE
+			.equals(chatClientRequest.context().get(ChatClientAttributes.STRUCTURED_OUTPUT_NATIVE.getKey()));
 
 		if (usesNativeStructuredOutput && StringUtils.hasText(outputSchema) && chatClientRequest.prompt()
 			.getOptions() instanceof StructuredOutputChatOptions structuredOutputChatOptions) {
@@ -87,6 +87,10 @@ public final class ChatModelCallAdvisor implements CallAdvisor {
 				.prompt(augmentedPrompt)
 				.context(Map.copyOf(chatClientRequest.context()))
 				.build();
+		}
+
+		if (!StringUtils.hasText(outputFormat)) {
+			return chatClientRequest;
 		}
 
 		Prompt augmentedPrompt = chatClientRequest.prompt()
