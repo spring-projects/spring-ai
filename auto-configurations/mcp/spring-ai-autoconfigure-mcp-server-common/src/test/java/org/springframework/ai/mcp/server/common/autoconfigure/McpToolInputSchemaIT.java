@@ -19,15 +19,21 @@ package org.springframework.ai.mcp.server.common.autoconfigure;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.modelcontextprotocol.server.McpAsyncServer;
 import io.modelcontextprotocol.server.McpServerFeatures.AsyncToolSpecification;
+import io.modelcontextprotocol.server.McpServerFeatures.SyncToolSpecification;
 import io.modelcontextprotocol.server.McpSyncServer;
+import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
+import io.modelcontextprotocol.spec.McpSchema.TextContent;
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.PropertyNamingStrategies;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.mcp.annotation.McpTool;
 import org.springframework.ai.mcp.annotation.method.tool.utils.McpJsonSchemaGenerator;
@@ -36,6 +42,8 @@ import org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpSer
 import org.springframework.ai.util.JacksonUtils;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -157,6 +165,47 @@ public class McpToolInputSchemaIT {
 			});
 	}
 
+	@SuppressWarnings("unchecked")
+	@Test
+	void annotatedToolUsesConfiguredMcpJsonMapper() {
+		this.contextRunner
+			.withUserConfiguration(McpServerAnnotationScannerAutoConfiguration.class,
+					McpServerSpecificationFactoryAutoConfiguration.class, SnakeCaseJsonMapperConfiguration.class)
+			.withBean(MapperToolComponent.class)
+			.run(context -> {
+				List<SyncToolSpecification> tools = (List<SyncToolSpecification>) context.getBean("toolSpecs");
+
+				assertThat(tools).hasSize(1);
+				var result = tools.get(0)
+					.callHandler()
+					.apply(null, CallToolRequest.builder("mapper_tool").arguments(Map.of()).build());
+
+				assertThat(result.content()).singleElement().isInstanceOf(TextContent.class);
+				assertThat(((TextContent) result.content().get(0)).text())
+					.isEqualTo("{\"display_name\":\"Spring AI\"}");
+			});
+	}
+
+	@SuppressWarnings("unchecked")
+	@Test
+	void annotatedToolUsesDefaultMcpJsonMapper() {
+		this.contextRunner
+			.withUserConfiguration(McpServerAnnotationScannerAutoConfiguration.class,
+					McpServerSpecificationFactoryAutoConfiguration.class)
+			.withBean(MapperToolComponent.class)
+			.run(context -> {
+				List<SyncToolSpecification> tools = (List<SyncToolSpecification>) context.getBean("toolSpecs");
+
+				assertThat(tools).hasSize(1);
+				var result = tools.get(0)
+					.callHandler()
+					.apply(null, CallToolRequest.builder("mapper_tool").arguments(Map.of()).build());
+
+				assertThat(result.content()).singleElement().isInstanceOf(TextContent.class);
+				assertThat(((TextContent) result.content().get(0)).text()).isEqualTo("{\"displayName\":\"Spring AI\"}");
+			});
+	}
+
 	private static List<String> requiredList(JsonNode node) {
 		List<String> result = new ArrayList<>();
 		JsonNode arr = node.get("required");
@@ -218,6 +267,29 @@ public class McpToolInputSchemaIT {
 		@McpTool(name = "create_jira_issue", description = "Create a Jira issue")
 		public String createJiraIssue(JiraCreateIssueRequest request) {
 			return "created: " + request.summary();
+		}
+
+	}
+
+	record MapperToolResult(String displayName) {
+	}
+
+	@Component
+	static class MapperToolComponent {
+
+		@McpTool(name = "mapper_tool", description = "Return a mapped result")
+		public MapperToolResult mapperTool() {
+			return new MapperToolResult("Spring AI");
+		}
+
+	}
+
+	@Configuration(proxyBeanMethods = false)
+	static class SnakeCaseJsonMapperConfiguration {
+
+		@Bean(name = "mcpServerJsonMapper")
+		JsonMapper mcpServerJsonMapper() {
+			return JsonMapper.builder().propertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE).build();
 		}
 
 	}

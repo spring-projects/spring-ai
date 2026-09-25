@@ -19,13 +19,10 @@ package org.springframework.ai.mcp.annotation.provider.tool;
 import java.lang.reflect.Method;
 import java.util.Comparator;
 import java.util.List;
-import java.util.function.BiFunction;
 import java.util.stream.Stream;
 
 import io.modelcontextprotocol.server.McpServerFeatures.SyncToolSpecification;
-import io.modelcontextprotocol.server.McpSyncServerExchange;
 import io.modelcontextprotocol.spec.McpSchema;
-import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.util.Utils;
 import org.apache.commons.logging.Log;
@@ -138,8 +135,8 @@ public class SyncMcpToolProvider extends AbstractMcpToolProvider {
 							: (methodReturnType == Void.TYPE || methodReturnType == void.class ? ReturnMode.VOID
 									: ReturnMode.TEXT);
 
-					BiFunction<McpSyncServerExchange, CallToolRequest, CallToolResult> methodCallback = new SyncMcpToolMethodCallback(
-							returnMode, mcpToolMethod, toolObject);
+					var methodCallback = new SyncMcpToolMethodCallback(returnMode, mcpToolMethod, toolObject);
+					methodCallback.setJsonMapper(this.getJsonMapper());
 
 					var toolSpec = SyncToolSpecification.builder().tool(tool).callHandler(methodCallback).build();
 
