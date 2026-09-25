@@ -16,16 +16,25 @@
 
 package org.springframework.ai.vectorstore.redis;
 
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.function.Consumer;
 
 import com.redis.testcontainers.RedisStackContainer;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import redis.clients.jedis.DefaultJedisClientConfig;
 import redis.clients.jedis.RedisClient;
+import redis.clients.jedis.RedisProtocol;
 
+import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.embedding.EmbeddingRequest;
+import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.test.vectorstore.AbstractVectorStoreUpsertTests;
 import org.springframework.ai.test.vectorstore.FixedDimensionEmbeddingModel;
 import org.springframework.ai.vectorstore.VectorStore;
@@ -33,6 +42,9 @@ import org.springframework.ai.vectorstore.redis.RedisVectorStore.MetadataField;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 
 /**
  * Upsert verification for {@link RedisVectorStore}, running the shared
@@ -77,6 +89,70 @@ public class RedisVectorStoreUpsertIT extends AbstractVectorStoreUpsertTests {
 		return EMBEDDING_DIMENSIONS;
 	}
 
+	@Override
+	protected VectorStore createStoreOverExistingSchema(VectorStore schemaOwner, EmbeddingModel embeddingModel) {
+		return RedisVectorStore.builder(((RedisVectorStore) schemaOwner).getJedisClient(), embeddingModel)
+			.metadataFields(MetadataField.tag("tag"), MetadataField.tag(DocumentMetadata.CONTENT_REF.value()))
+			.build();
+	}
+
+	@Override
+	protected VectorStore createStoreWithConfiguredDimensions(VectorStore schemaOwner, EmbeddingModel embeddingModel,
+			int dimensions) {
+		RedisVectorStore store = RedisVectorStore
+			.builder(((RedisVectorStore) schemaOwner).getJedisClient(), embeddingModel)
+			.indexName("upsert-configured-index")
+			.prefix("upsert-configured:")
+			.metadataFields(MetadataField.tag("tag"))
+			.dimensions(dimensions)
+			.initializeSchema(true)
+			.build();
+		store.afterPropertiesSet();
+		return store;
+	}
+
+	@Test
+	void upsertIntoExistingIndexOverResp2() {
+		executeTest(vectorStore -> {
+			// Over RESP2, FT.INFO describes each field as a flat list rather than a map.
+			RedisClient resp2Client = RedisClient.builder()
+				.hostAndPort(redisContainer.getHost(), redisContainer.getFirstMappedPort())
+				.clientConfig(DefaultJedisClientConfig.builder().protocol(RedisProtocol.RESP2).build())
+				.build();
+			try {
+				CallCountingEmbeddingModel embeddingModel = new CallCountingEmbeddingModel(EMBEDDING_DIMENSIONS);
+				RedisVectorStore writer = RedisVectorStore.builder(resp2Client, embeddingModel)
+					.metadataFields(MetadataField.tag("tag"))
+					.build();
+
+				writer.upsert(List.of(embeddedDocument(UUID.randomUUID().toString(), "resp2", Map.of("tag", "r"))));
+				assertWrongDimensionRejected(writer);
+				assertThat(embeddingModel.calls()).isZero();
+			}
+			finally {
+				resp2Client.close();
+			}
+		});
+	}
+
+	@Test
+	void upsertRefusedWhenVectorSizeUnknown() {
+		executeTest(vectorStore -> {
+			// No configured dimension, no index to read it from, and no reachable model:
+			// Redis would store a vector it can never find, so the write is refused.
+			RedisVectorStore writer = RedisVectorStore
+				.builder(((RedisVectorStore) vectorStore).getJedisClient(), new UnreachableEmbeddingModel())
+				.indexName("missing-index")
+				.prefix("missing:")
+				.build();
+
+			assertThatIllegalStateException()
+				.isThrownBy(() -> writer
+					.upsert(List.of(embeddedDocument(UUID.randomUUID().toString(), "unknown size", Map.of()))))
+				.withMessageContaining("missing-index");
+		});
+	}
+
 	@SpringBootConfiguration
 	public static class TestApplication {
 
@@ -96,6 +172,25 @@ public class RedisVectorStoreUpsertIT extends AbstractVectorStoreUpsertTests {
 		@Bean
 		public EmbeddingModel embeddingModel() {
 			return new FixedDimensionEmbeddingModel(EMBEDDING_DIMENSIONS);
+		}
+
+	}
+
+	private static final class UnreachableEmbeddingModel implements EmbeddingModel {
+
+		@Override
+		public EmbeddingResponse call(EmbeddingRequest request) {
+			throw new IllegalStateException("embedding model is unreachable");
+		}
+
+		@Override
+		public float[] embed(Document document) {
+			throw new IllegalStateException("embedding model is unreachable");
+		}
+
+		@Override
+		public int dimensions() {
+			throw new IllegalStateException("embedding model is unreachable");
 		}
 
 	}

@@ -98,6 +98,34 @@ public class ElasticsearchVectorStoreUpsertIT extends AbstractVectorStoreUpsertT
 		return EMBEDDING_DIMENSIONS;
 	}
 
+	@Override
+	protected VectorStore createStoreOverExistingSchema(VectorStore schemaOwner, EmbeddingModel embeddingModel) {
+		// Default options leave the configured dimension at its default of 1536, so the
+		// store has to read the real size from the index mapping.
+		return ElasticsearchVectorStore.builder(restClient(schemaOwner), embeddingModel).build();
+	}
+
+	@Override
+	protected VectorStore createStoreWithConfiguredDimensions(VectorStore schemaOwner, EmbeddingModel embeddingModel,
+			int dimensions) {
+		ElasticsearchVectorStoreOptions options = new ElasticsearchVectorStoreOptions();
+		options.setIndexName("upsert-configured-dimensions");
+		options.setDimensions(dimensions);
+		ElasticsearchVectorStore store = ElasticsearchVectorStore.builder(restClient(schemaOwner), embeddingModel)
+			.options(options)
+			.initializeSchema(true)
+			.build();
+		store.afterPropertiesSet();
+		return store;
+	}
+
+	// Reuse the schema owner's connection rather than opening one the test would have to
+	// close.
+	private static Rest5Client restClient(VectorStore schemaOwner) {
+		ElasticsearchClient client = schemaOwner.<ElasticsearchClient>getNativeClient().orElseThrow();
+		return ((Rest5ClientTransport) client._transport()).restClient();
+	}
+
 	@SpringBootConfiguration
 	public static class TestApplication {
 

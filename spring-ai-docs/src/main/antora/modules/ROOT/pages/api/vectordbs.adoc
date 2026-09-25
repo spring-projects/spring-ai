@@ -491,7 +491,11 @@ this.vectorStore.upsert(List.of(new EmbeddedDocument(document, vector)));
 It is available on pgvector, Redis, Elasticsearch, and Qdrant, with more stores to follow.
 `EmbeddedDocument` rejects a vector that is empty or holds `NaN` or an infinity, which is worth knowing when the vectors come from a pipeline you do not control: a `NaN` would otherwise corrupt distance maths rather than fail.
 When a store knows its index dimension, it checks every vector in the batch against it before writing anything, so a wrong-sized vector fails fast and cannot partially write.
-Where that dimension can only be guessed, the check is left to the database, which rejects the vector with its own error.
+The store works out that dimension from a `dimensions` value you configured, or otherwise reads it from the existing index, table, or collection, and asks the embedding model only as a last resort.
+Elasticsearch is the one exception to the first step: its configured `dimensions` has a default, so it is trusted only when the store created the index itself.
+So an application that only upserts into an existing index, or that configures `dimensions`, never contacts the embedding model and does not need to be able to reach it.
+Where the dimension cannot be determined at all, the check is left to the database, which rejects the vector with its own error.
+Redis cannot do that: it stores a wrong-sized vector without complaint and never finds it again, so `RedisVectorStore` refuses the write instead.
 
 Because the vectors come from outside the store, lining them up with the index is yours to get right.
 Three things have to agree, and only the first is checked for you:

@@ -326,6 +326,11 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 
 	private final AtomicBoolean reservedMetadataKeyWarned = new AtomicBoolean();
 
+	private final int dimensions;
+
+	// Cache for vectorDimensions(); only a known size is stored.
+	private volatile int resolvedVectorDimensions = -1;
+
 	protected RedisVectorStore(Builder builder) {
 		super(builder);
 
@@ -343,6 +348,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 			.map(MetadataField::name)
 			.collect(Collectors.toUnmodifiableSet());
 		this.initializeSchema = builder.initializeSchema;
+		this.dimensions = builder.dimensions;
 		this.hnswM = builder.hnswM;
 		this.hnswEfConstruction = builder.hnswEfConstruction;
 		this.hnswEfRuntime = builder.hnswEfRuntime;
@@ -406,8 +412,17 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 	protected void doUpsert(List<EmbeddedDocument> entries) {
 		// Whole-batch dimension pre-check before any write, so a mismatched vector fails
 		// fast and cannot partially write. Non-empty and finiteness are already enforced
-		// by the EmbeddedDocument constructor.
-		int expected = this.embeddingModel.dimensions();
+		// by the EmbeddedDocument constructor. Unlike the other stores, Redis cannot
+		// leave
+		// this check to the database: it stores a wrong-sized vector without complaint
+		// and the index then silently skips it, so the row can never be found. So when
+		// the dimension cannot be determined at all, refuse to write rather than risk
+		// that.
+		int expected = vectorDimensions();
+		if (expected <= 0) {
+			throw new IllegalStateException("Could not determine the vector size of index " + this.indexName
+					+ ". Configure dimensions on the store, or create the index before upserting.");
+		}
 		for (int i = 0; i < entries.size(); i++) {
 			int actual = entries.get(i).embedding().length;
 			if (actual != expected) {
@@ -767,7 +782,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 
 	private Iterable<SchemaField> schemaFields() {
 		Map<String, Object> vectorAttrs = new HashMap<>();
-		vectorAttrs.put("DIM", this.embeddingModel.dimensions());
+		vectorAttrs.put("DIM", (this.dimensions > 0) ? this.dimensions : this.embeddingModel.dimensions());
 		vectorAttrs.put("DISTANCE_METRIC", this.distanceMetric.getRedisName());
 		vectorAttrs.put("TYPE", VECTOR_TYPE_FLOAT32);
 
@@ -831,6 +846,88 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 		return JSON_PATH_PREFIX + field;
 	}
 
+	/**
+	 * The vector size the index accepts, or -1 when it cannot be determined.
+	 * <p>
+	 * The size comes from the {@link Builder#dimensions(int) configured dimensions} if
+	 * set, otherwise from the existing index definition, and only then from the embedding
+	 * model. Reading it from the index means a store that only upserts into an existing
+	 * index never has to contact the embedding model. A known size is cached.
+	 * @return the known dimension, or -1
+	 */
+	private int vectorDimensions() {
+		int cached = this.resolvedVectorDimensions;
+		if (cached > 0) {
+			return cached;
+		}
+		int resolved = resolveVectorDimensions();
+		if (resolved > 0) {
+			this.resolvedVectorDimensions = resolved;
+		}
+		return resolved;
+	}
+
+	private int resolveVectorDimensions() {
+		if (this.dimensions > 0) {
+			return this.dimensions;
+		}
+		try {
+			int indexDimensions = indexVectorDimensions();
+			if (indexDimensions > 0) {
+				return indexDimensions;
+			}
+		}
+		catch (Exception ex) {
+			logger.debug("Could not read the vector size of index " + this.indexName, ex);
+		}
+		try {
+			int modelDimensions = this.embeddingModel.dimensions();
+			if (modelDimensions > 0) {
+				return modelDimensions;
+			}
+		}
+		catch (Exception ex) {
+			logger.debug("Could not obtain the embedding dimensions from the embedding model", ex);
+		}
+		return -1;
+	}
+
+	/**
+	 * Reads the vector size from the index definition returned by {@code FT.INFO}. Its
+	 * {@code attributes} entry describes each field of the index: as a map over RESP3,
+	 * the Jedis default, or as a flat list of alternating names and values over RESP2.
+	 * The embedding field is the one whose {@code attribute} is the embedding field name,
+	 * and its size is under {@code dim}.
+	 * @return the size of the embedding field, or -1 when the index has no such field
+	 */
+	private int indexVectorDimensions() {
+		Object attributes = this.jedisClient.ftInfo(this.indexName).get("attributes");
+		if (!(attributes instanceof List<?> fields)) {
+			return -1;
+		}
+		for (Object field : fields) {
+			Map<String, Object> properties = fieldProperties(field);
+			Object dim = properties.get("dim");
+			if (dim != null && this.embeddingFieldName.equals(String.valueOf(properties.get("attribute")))) {
+				return Integer.parseInt(String.valueOf(dim));
+			}
+		}
+		return -1;
+	}
+
+	private static Map<String, Object> fieldProperties(Object field) {
+		Map<String, Object> properties = new HashMap<>();
+		if (field instanceof Map<?, ?> map) {
+			map.forEach((name, value) -> properties.put(String.valueOf(name).toLowerCase(Locale.ROOT), value));
+		}
+		else if (field instanceof List<?> list) {
+			for (int i = 0; i + 1 < list.size(); i += 2) {
+				properties.put(String.valueOf(list.get(i)).toLowerCase(Locale.ROOT), list.get(i + 1));
+			}
+		}
+		return properties;
+	}
+
 	@Override
 	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
 		VectorStoreSimilarityMetric similarityMetric = switch (this.distanceMetric) {
@@ -841,7 +938,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 
 		return VectorStoreObservationContext.builder(VectorStoreProvider.REDIS.value(), operationName)
 			.collectionName(this.indexName)
-			.dimensions(this.embeddingModel.dimensions())
+			.dimensions(vectorDimensions())
 			.fieldName(this.embeddingFieldName)
 			.similarityMetric(similarityMetric.value());
 	}
@@ -1426,6 +1523,8 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 
 		private boolean initializeSchema = false;
 
+		private int dimensions = -1;
+
 		// Default HNSW algorithm parameters
 		private Integer hnswM = 16;
 
@@ -1548,6 +1647,23 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 		 */
 		public Builder initializeSchema(boolean initializeSchema) {
 			this.initializeSchema = initializeSchema;
+			return this;
+		}
+
+		/**
+		 * Sets the vector size of the index. When set, it sizes the index the store
+		 * creates and is the size {@code upsert} checks vectors against. When not set,
+		 * the store reads the size from the existing index, and falls back to asking the
+		 * embedding model. Set it for an application that only upserts pre-computed
+		 * vectors, so the store never has to contact the embedding model.
+		 * @param dimensions the vector size; must be positive
+		 * @return the builder instance
+		 * @throws IllegalArgumentException if dimensions is not positive
+		 * @since 2.1.0
+		 */
+		public Builder dimensions(int dimensions) {
+			Assert.isTrue(dimensions > 0, "dimensions must be positive");
+			this.dimensions = dimensions;
 			return this;
 		}
 
