@@ -100,6 +100,7 @@ import org.springframework.ai.chat.observation.DefaultChatModelObservationConven
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
+import org.springframework.ai.model.observation.ObservationTermination;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.openai.http.okhttp.OpenAiHttpClientBuilderCustomizer;
@@ -358,11 +359,11 @@ public final class OpenAiChatModel implements ChatModel {
 
 			});
 
-			Flux<ChatResponse> observedResponses = chatResponses.doOnError(observation::error)
-				.doFinally(s -> observation.stop())
+			Flux<ChatResponse> observedResponses = chatResponses
 				.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
 
-			return new MessageAggregator().aggregate(observedResponses, observationContext::setResponse);
+			return new MessageAggregator().aggregate(observedResponses, observationContext::setResponse)
+				.transform(ObservationTermination.stopOnTermination(observation));
 
 		});
 	}
