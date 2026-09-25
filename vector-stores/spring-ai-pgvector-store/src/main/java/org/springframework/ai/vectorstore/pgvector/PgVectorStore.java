@@ -323,14 +323,8 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		// known: guessing it would reject vectors the table would have accepted, so in
 		// that case the check is left to Postgres.
 		int expected = vectorDimensions();
-		if (expected > 0) {
-			for (int i = 0; i < entries.size(); i++) {
-				int actual = entries.get(i).embedding().length;
-				if (actual != expected) {
-					throw new IllegalArgumentException("Embedding at index " + i + " has dimension " + actual
-							+ " but the store expects dimension " + expected);
-				}
-			}
+		for (int i = 0; i < entries.size(); i++) {
+			checkDimensions("Embedding at index " + i, entries.get(i).embedding().length, expected);
 		}
 
 		List<List<EmbeddedDocument>> batchedEntries = batchEmbeddedDocuments(entries);
@@ -427,6 +421,16 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 	@Override
 	public List<Document> doSimilaritySearch(SearchRequest request) {
+		return searchByEmbedding(getQueryEmbedding(request.getQuery()), request);
+	}
+
+	@Override
+	protected List<Document> doSimilaritySearch(float[] queryEmbedding, SearchRequest request) {
+		checkDimensions("Query embedding", queryEmbedding.length, vectorDimensions());
+		return searchByEmbedding(new PGvector(queryEmbedding), request);
+	}
+
+	private List<Document> searchByEmbedding(PGvector queryEmbedding, SearchRequest request) {
 
 		String nativeFilterExpression = (request.getFilterExpression() != null)
 				? this.filterExpressionConverter.convertExpression(request.getFilterExpression()) : "";
@@ -438,8 +442,6 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		}
 
 		double distance = 1 - request.getSimilarityThreshold();
-
-		PGvector queryEmbedding = getQueryEmbedding(request.getQuery());
 
 		return this.jdbcTemplate.query(
 				String.format(this.getDistanceType().similaritySearchSqlTemplate, getFullyQualifiedTableName(),

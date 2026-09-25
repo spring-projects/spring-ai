@@ -226,14 +226,8 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 		// constructor. Only runs when the dimension is actually known; otherwise the
 		// check is left to Elasticsearch.
 		int expected = vectorDimensions();
-		if (expected > 0) {
-			for (int i = 0; i < entries.size(); i++) {
-				int actual = entries.get(i).embedding().length;
-				if (actual != expected) {
-					throw new IllegalArgumentException("Embedding at index " + i + " has dimension " + actual
-							+ " but the store expects dimension " + expected);
-				}
-			}
+		for (int i = 0; i < entries.size(); i++) {
+			checkDimensions("Embedding at index " + i, entries.get(i).embedding().length, expected);
 		}
 
 		BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
@@ -299,6 +293,16 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 	@Override
 	public List<Document> doSimilaritySearch(SearchRequest searchRequest) {
 		Assert.notNull(searchRequest, "The search request must not be null.");
+		return searchByEmbedding(this.embeddingModel.embed(searchRequest.getQuery()), searchRequest);
+	}
+
+	@Override
+	protected List<Document> doSimilaritySearch(float[] queryEmbedding, SearchRequest searchRequest) {
+		checkDimensions("Query embedding", queryEmbedding.length, vectorDimensions());
+		return searchByEmbedding(queryEmbedding, searchRequest);
+	}
+
+	private List<Document> searchByEmbedding(float[] vectors, SearchRequest searchRequest) {
 		try {
 			float threshold = (float) searchRequest.getSimilarityThreshold();
 			// reverting l2_norm distance to its original value
@@ -306,7 +310,6 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 				threshold = 1 - threshold;
 			}
 			final float finalThreshold = threshold;
-			float[] vectors = this.embeddingModel.embed(searchRequest.getQuery());
 
 			SearchResponse<ObjectNode> res = this.elasticsearchClient.search(sr -> sr.index(this.options.getIndexName())
 				.knn(knn -> knn.queryVector(EmbeddingUtils.toList(vectors))

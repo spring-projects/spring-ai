@@ -38,6 +38,8 @@ public interface VectorStoreRetriever {
     default List<Document> similaritySearch(String query) {
         return this.similaritySearch(SearchRequest.builder().query(query).build());
     }
+
+    default List<Document> similaritySearch(float[] queryEmbedding, SearchRequest request) { ... }
 }
 ----
 
@@ -504,7 +506,8 @@ Width:: Your embedding model decides the width, and the index has to be created 
 A mismatch fails on the first write.
 Vector space:: Nothing records which model produced a row, so vectors written by one model and searched with another come back plausible but meaningless, with no error anywhere.
 Writing the model name and version into metadata costs nothing and tells a later reader what a row actually holds.
-The query side:: `similaritySearch` still embeds the query with the store's own `EmbeddingModel`, so that model has to produce vectors in the same space and of the same width as the ones you upserted.
+The query side:: `similaritySearch` with query text embeds the query with the store's own `EmbeddingModel`, so that model has to produce vectors in the same space and of the same width as the ones you upserted.
+To keep the store's model out of it, embed the query yourself with the same model and search with the vector; see <<searching-with-precomputed-embeddings,Searching with a User-Supplied Query Embedding>>.
 
 === Indexing Non-Text or Oversized Content
 
@@ -600,6 +603,36 @@ List<Document> filteredDocuments = retriever.similaritySearch(request);
 ----
 
 Additional options can be passed into the `similaritySearch` method to define how many documents to retrieve and a threshold of the similarity search.
+
+[[searching-with-precomputed-embeddings]]
+=== Searching with a User-Supplied Query Embedding
+
+Searching with text embeds the query with the store's own `EmbeddingModel`.
+If your application computes its embeddings itself, for example because the vectors were written with `upsert`, it can embed the query the same way and search with the vector:
+
+[source,java]
+----
+float[] queryEmbedding = myEmbeddingPipeline.embed(question);
+
+SearchRequest request = SearchRequest.builder()
+    .topK(5)
+    .similarityThreshold(0.7)
+    .filterExpression("tenant == 'acme'")
+    .build();
+
+List<Document> documents = retriever.similaritySearch(queryEmbedding, request);
+----
+
+The request supplies everything except the query: `topK`, the similarity threshold, and the filter expression.
+Its query text, if set, is ignored.
+The store's `EmbeddingModel` is never used, so an application that writes with `upsert` and searches this way does not need to be able to reach it.
+
+The query embedding has to come from the same model, with the same settings, as the vectors it is compared against.
+A query vector from a different model is not rejected when its width happens to match; the search simply returns results that look plausible and mean nothing.
+What is checked for you: the vector must not be empty or contain `NaN` or infinity, and its width must match the store's dimension when the store knows it.
+
+Searching with a query embedding is opt-in per store, like `upsert`: the default implementation throws `UnsupportedOperationException`.
+It is available on pgvector, Redis, Elasticsearch, and Qdrant.
 
 === Separation of Read and Write Operations
 

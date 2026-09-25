@@ -19,6 +19,7 @@ package org.springframework.ai.vectorstore.redis;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -105,6 +106,29 @@ class RedisVectorStoreIT extends BaseVectorStoreTests {
 	void ensureIndexGetsCreated() {
 		this.contextRunner.run(context -> assertThat(context.getBean(RedisVectorStore.class).getJedisClient().ftList())
 			.contains(RedisVectorStore.DEFAULT_INDEX_NAME));
+	}
+
+	@Test
+	void searchResultsAreOrderedByScore() {
+		this.contextRunner.run(context -> {
+			RedisVectorStore vectorStore = context.getBean(RedisVectorStore.class);
+			vectorStore.add(this.documents);
+
+			// The best match is the document added last. Unsorted, Redis tends to return
+			// results in insertion order, which would put it at the end.
+			String query = "The Great Depression and the economic collapse of the 1930s";
+
+			List<Document> results = vectorStore
+				.similaritySearch(SearchRequest.builder().query(query).topK(3).similarityThresholdAll().build());
+			assertThat(results).hasSize(3);
+			assertThat(results.get(0).getId()).isEqualTo("3");
+			assertThat(results).extracting(Document::getScore).isSortedAccordingTo(Comparator.reverseOrder());
+
+			List<Document> rangeResults = vectorStore.searchByRange(query, 0.0);
+			assertThat(rangeResults).isNotEmpty();
+			assertThat(rangeResults.get(0).getId()).isEqualTo("3");
+			assertThat(rangeResults).extracting(Document::getScore).isSortedAccordingTo(Comparator.reverseOrder());
+		});
 	}
 
 	@Test

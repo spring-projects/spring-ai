@@ -424,11 +424,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 					+ ". Configure dimensions on the store, or create the index before upserting.");
 		}
 		for (int i = 0; i < entries.size(); i++) {
-			int actual = entries.get(i).embedding().length;
-			if (actual != expected) {
-				throw new IllegalArgumentException("Embedding at index " + i + " has dimension " + actual
-						+ " but the store expects dimension " + expected);
-			}
+			checkDimensions("Embedding at index " + i, entries.get(i).embedding().length, expected);
 		}
 
 		try (Pipeline pipeline = this.jedisClient.pipelined()) {
@@ -578,6 +574,16 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 
 	@Override
 	public List<Document> doSimilaritySearch(SearchRequest request) {
+		return searchByEmbedding(this.embeddingModel.embed(request.getQuery()), request);
+	}
+
+	@Override
+	protected List<Document> doSimilaritySearch(float[] queryEmbedding, SearchRequest request) {
+		checkDimensions("Query embedding", queryEmbedding.length, vectorDimensions());
+		return searchByEmbedding(queryEmbedding, request);
+	}
+
+	private List<Document> searchByEmbedding(float[] queryEmbedding, SearchRequest request) {
 
 		Assert.isTrue(request.getTopK() > 0, "The number of documents to be returned must be greater than zero");
 		Assert.isTrue(request.getSimilarityThreshold() >= 0 && request.getSimilarityThreshold() <= 1,
@@ -598,15 +604,18 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 		String queryString = String.format(QUERY_FORMAT, filter, request.getTopK(), this.embeddingFieldName,
 				EMBEDDING_PARAM_NAME, DISTANCE_FIELD_NAME);
 
-		float[] embedding = this.embeddingModel.embed(request.getQuery());
+		float[] embedding = queryEmbedding;
 
 		// Normalize embeddings for COSINE distance metric
 		if (this.distanceMetric == DistanceMetric.COSINE) {
 			embedding = normalize(embedding);
 		}
 
+		// RediSearch does not order KNN results by distance on its own, so ask for it;
+		// otherwise the nearest match can come back anywhere in the list.
 		Query query = new Query(queryString).addParam(EMBEDDING_PARAM_NAME, RediSearchUtil.toByteArray(embedding))
 			.returnFields(getReturnFields().toArray(new String[0]))
+			.setSortBy(DISTANCE_FIELD_NAME, true)
 			.limit(0, request.getTopK())
 			.dialect(2);
 
@@ -1333,9 +1342,12 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 			logger.debug("Effective radius (distance): " + effectiveRadius);
 		}
 
+		// Sorted by distance, like the KNN search, so the nearest matches come first and
+		// are the ones kept by the result limit.
 		Query query1 = new Query(queryString).addParam("radius", effectiveRadius)
 			.addParam(EMBEDDING_PARAM_NAME, RediSearchUtil.toByteArray(embedding))
 			.returnFields(getReturnFields().toArray(new String[0]))
+			.setSortBy(DISTANCE_FIELD_NAME, true)
 			.dialect(2);
 
 		SearchResult result = this.jedisClient.ftSearch(this.indexName, query1);
