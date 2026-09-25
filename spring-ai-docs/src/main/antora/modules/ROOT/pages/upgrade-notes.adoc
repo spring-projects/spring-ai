@@ -41,6 +41,23 @@ A streamed chunk never has a `null` text, so `map(AssistantMessage::getText).col
 By default, tool calls are still buffered and arrive once as a complete call.
 Partial parts are not tool calls, so nothing executes on them, and `ChatClient` hides them either way.
 
+[[upgrading-to-2-0-2]]
+== Upgrading to 2.0.2
+
+=== Redis Chat Memory: Deprecated Module and Legacy Prefix Removed
+
+The transitional compatibility introduced in 2.0.1 has been removed.
+
+==== Impact
+
+* The `spring-ai-autoconfigure-model-chat-memory-redis` artifact no longer exists. Consumers must depend on `spring-ai-autoconfigure-model-chat-memory-repository-redis` (or the `spring-ai-starter-model-chat-memory-repository-redis` starter).
+* The legacy configuration prefix `spring.ai.chat.memory.redis.*` is no longer bound. Use `spring.ai.chat.memory.repository.redis.*` instead.
+* The deprecated `RedisChatMemoryAutoConfiguration` and `RedisChatMemoryProperties` types (in the `org.springframework.ai.model.chat.memory.redis.autoconfigure` package) have been deleted.
+
+==== Migration
+
+Follow the 2.0.1 xref:upgrading-to-2-0-1[migration steps] below if you have not done so already; the transitional fallbacks described there are no longer applied at runtime.
+
 [[upgrading-to-2-0-1]]
 == Upgrading to 2.0.1
 
@@ -87,12 +104,12 @@ spring.ai.chat.memory.repository.redis.*=xxx
 
 ==== Smooth Transition
 
-The new module provides a smooth transition from the deprecated module:
+The new module provided a smooth transition from the deprecated module in the 2.0.1 release line:
 
-- The deprecated `spring-ai-autoconfigure-model-chat-memory-redis` module still exists and depends on the new module via a transitive dependency, so existing dependencies continue to work without changes.
-- The deprecated `RedisChatMemoryProperties` (`spring.ai.chat.memory.redis`) delegates every property to the current `RedisChatMemoryRepositoryProperties` (`spring.ai.chat.memory.repository.redis`), the same delegation mechanism used for the `.options` deprecation further down in this page, so existing property configurations continue to work.
+- The deprecated `spring-ai-autoconfigure-model-chat-memory-redis` module still existed and depended on the new module via a transitive dependency, so existing dependencies continued to work without changes.
+- The deprecated `RedisChatMemoryProperties` (`spring.ai.chat.memory.redis`) delegated every property to the current `RedisChatMemoryRepositoryProperties` (`spring.ai.chat.memory.repository.redis`), the same delegation mechanism used for the `.options` deprecation further down in this page, so existing property configurations continued to work.
 
-NOTE: Both the deprecated module and the legacy configuration prefix will be removed in a future release.
+NOTE: Both the deprecated module and the legacy configuration prefix have been removed in 2.0.2. See xref:upgrading-to-2-0-2[Upgrading to 2.0.2].
 
 === Mistral AI Moderation Categories Restructured
 
