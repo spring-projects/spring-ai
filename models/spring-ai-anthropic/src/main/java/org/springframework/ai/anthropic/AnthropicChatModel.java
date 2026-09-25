@@ -106,6 +106,7 @@ import org.springframework.ai.chat.observation.DefaultChatModelObservationConven
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
+import org.springframework.ai.model.observation.ObservationTermination;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.support.UsageCalculator;
@@ -355,13 +356,12 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 			// @formatter:off
 			Flux<ChatResponse> flux = chatResponseFlux
-				.doOnError(observation::error)
-				.doFinally(s -> observation.stop())
 				.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
 			// @formatter:on
 
 			// Aggregate streaming responses and handle tool execution on final response
-			return new MessageAggregator().aggregate(flux, observationContext::setResponse);
+			return new MessageAggregator().aggregate(flux, observationContext::setResponse)
+				.transform(ObservationTermination.stopOnTermination(observation));
 		});
 	}
 

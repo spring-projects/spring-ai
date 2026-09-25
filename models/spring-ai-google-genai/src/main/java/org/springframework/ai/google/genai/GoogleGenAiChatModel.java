@@ -88,6 +88,7 @@ import org.springframework.ai.google.genai.common.GoogleGenAiThinkingLevel;
 import org.springframework.ai.google.genai.metadata.GoogleGenAiUsage;
 import org.springframework.ai.google.genai.schema.GoogleGenAiToolCallingManager;
 import org.springframework.ai.model.ChatModelDescription;
+import org.springframework.ai.model.observation.ObservationTermination;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.support.UsageCalculator;
@@ -506,8 +507,7 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 							observationContext.setResponse(aggregatedResponse);
 						});
 
-				return aggregatedFlux.doOnError(observation::error)
-					.doFinally(s -> observation.stop())
+				return aggregatedFlux.transform(ObservationTermination.stopOnTermination(observation))
 					.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
 
 			}

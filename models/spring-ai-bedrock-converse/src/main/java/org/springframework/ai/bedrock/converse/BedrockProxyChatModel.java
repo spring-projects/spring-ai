@@ -100,6 +100,7 @@ import org.springframework.ai.chat.observation.DefaultChatModelObservationConven
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
+import org.springframework.ai.model.observation.ObservationTermination;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.tool.definition.ToolDefinition;
@@ -826,11 +827,10 @@ public class BedrockProxyChatModel implements ChatModel {
 			Assert.state(options != null, "Prompt options must not be null");
 
 			Flux<ChatResponse> chatResponseFlux = chatResponses.concatMap(chatResponse -> Flux.just(chatResponse))
-				.doOnError(observation::error)
-				.doFinally(s -> observation.stop())
 				.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
 
-			return new MessageAggregator().aggregate(chatResponseFlux, observationContext::setResponse);
+			return new MessageAggregator().aggregate(chatResponseFlux, observationContext::setResponse)
+				.transform(ObservationTermination.stopOnTermination(observation));
 		});
 	}
 
