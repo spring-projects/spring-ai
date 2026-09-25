@@ -89,10 +89,33 @@ public class S3VectorStore extends AbstractObservationVectorStore implements Ini
 		this.vectorBucketName = builder.vectorBucketName;
 	}
 
+	private static software.amazon.awssdk.core.document.Document constructMetadata(
+			Map<String, Object> originalMetadata) {
+		Map<String, software.amazon.awssdk.core.document.Document> metadata = new HashMap<>(originalMetadata.size());
+		originalMetadata.forEach((k, v) -> metadata.put(k, DocumentUtils.toDocument(v)));
+		return software.amazon.awssdk.core.document.Document.fromMap(metadata);
+	}
+
+	private static VectorData constructVectorData(float[] embedding) {
+		ArrayList<Float> float32 = new ArrayList<>(embedding.length);
+		for (float v : embedding) {
+			float32.add(v);
+		}
+		return VectorData.builder().float32(float32).build();
+	}
+
 	@Override
 	public void doAdd(List<Document> documents) {
-		List<float[]> embedding = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
-				this.batchingStrategy);
+		Assert.notNull(documents, "The document list should not be null.");
+		this.doAdd(documents, EmbeddingOptions.builder().build());
+	}
+
+	@Override
+	public void doAdd(List<Document> documents, EmbeddingOptions options) {
+		Assert.notNull(documents, "The document list should not be null.");
+		Assert.notNull(options, "The embedding Options should not be null.");
+
+		List<float[]> embedding = this.embeddingModel.embed(documents, options, this.batchingStrategy);
 
 		PutVectorsRequest.Builder requestBuilder = PutVectorsRequest.builder();
 		requestBuilder.indexName(this.indexName).vectorBucketName(this.vectorBucketName);
@@ -204,21 +227,6 @@ public class S3VectorStore extends AbstractObservationVectorStore implements Ini
 				.vectorBucketName(this.vectorBucketName)
 				.build());
 		}
-	}
-
-	private static software.amazon.awssdk.core.document.Document constructMetadata(
-			Map<String, Object> originalMetadata) {
-		Map<String, software.amazon.awssdk.core.document.Document> metadata = new HashMap<>(originalMetadata.size());
-		originalMetadata.forEach((k, v) -> metadata.put(k, DocumentUtils.toDocument(v)));
-		return software.amazon.awssdk.core.document.Document.fromMap(metadata);
-	}
-
-	private static VectorData constructVectorData(float[] embedding) {
-		ArrayList<Float> float32 = new ArrayList<>(embedding.length);
-		for (float v : embedding) {
-			float32.add(v);
-		}
-		return VectorData.builder().float32(float32).build();
 	}
 
 	@Override
