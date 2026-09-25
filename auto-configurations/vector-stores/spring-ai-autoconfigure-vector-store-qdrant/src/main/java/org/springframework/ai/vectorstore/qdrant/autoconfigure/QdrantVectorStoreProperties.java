@@ -64,6 +64,13 @@ public class QdrantVectorStoreProperties extends CommonVectorStoreProperties {
 	 */
 	private @Nullable String apiKey = null;
 
+	/**
+	 * The vector size of the collection. When set, it sizes a collection created by
+	 * initialize-schema and is the size upsert checks vectors against. When not set, it
+	 * is read from the existing collection, or taken from the embedding model.
+	 */
+	private @Nullable Integer dimensions;
+
 	public String getCollectionName() {
 		return this.collectionName;
 	}
@@ -110,6 +117,14 @@ public class QdrantVectorStoreProperties extends CommonVectorStoreProperties {
 
 	public void setApiKey(@Nullable String apiKey) {
 		this.apiKey = apiKey;
+	}
+
+	public @Nullable Integer getDimensions() {
+		return this.dimensions;
+	}
+
+	public void setDimensions(@Nullable Integer dimensions) {
+		this.dimensions = dimensions;
 	}
 
 }

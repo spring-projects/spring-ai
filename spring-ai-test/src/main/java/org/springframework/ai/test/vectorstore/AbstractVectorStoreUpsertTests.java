@@ -23,14 +23,19 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import org.jspecify.annotations.Nullable;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
+import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.embedding.EmbeddingRequest;
+import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.vectorstore.EmbeddedDocument;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
@@ -77,6 +82,45 @@ public abstract class AbstractVectorStoreUpsertTests {
 	 * @return the embedding dimension
 	 */
 	protected abstract int embeddingDimensions();
+
+	/**
+	 * Build a second store over the schema that the store from
+	 * {@link #executeTest(Consumer)} has already created, the way an application that
+	 * only writes pre-computed vectors would: schema initialization off, no configured
+	 * dimension, and the given embedding model. The suite passes a model that counts its
+	 * calls, to prove {@code upsert} learns the vector size from the existing schema
+	 * without contacting the model.
+	 * <p>
+	 * The default returns {@code null}, which skips
+	 * {@link #upsertIntoExistingSchemaWithoutEmbeddingModel()}.
+	 * @param schemaOwner the store that created the schema
+	 * @param embeddingModel the embedding model the new store must be built with
+	 * @return a store over the existing schema, or {@code null} if not supported
+	 */
+	protected @Nullable VectorStore createStoreOverExistingSchema(VectorStore schemaOwner,
+			EmbeddingModel embeddingModel) {
+		return null;
+	}
+
+	/**
+	 * Build and initialize a store over a new schema of its own, separate from the one
+	 * used by {@link #executeTest(Consumer)}, with schema initialization on and the given
+	 * dimension configured. The suite passes a model that counts its calls, to prove that
+	 * a store with a configured dimension creates its schema and upserts without
+	 * contacting the model.
+	 * <p>
+	 * The default returns {@code null}, which skips
+	 * {@link #upsertWithConfiguredDimensionsWithoutEmbeddingModel()}.
+	 * @param schemaOwner the store from {@link #executeTest(Consumer)}, for access to its
+	 * client
+	 * @param embeddingModel the embedding model the new store must be built with
+	 * @param dimensions the dimension to configure on the new store
+	 * @return an initialized store, or {@code null} if not supported
+	 */
+	protected @Nullable VectorStore createStoreWithConfiguredDimensions(VectorStore schemaOwner,
+			EmbeddingModel embeddingModel, int dimensions) {
+		return null;
+	}
 
 	@Test
 	protected void replaceById() {
@@ -174,6 +218,62 @@ public abstract class AbstractVectorStoreUpsertTests {
 	}
 
 	@Test
+	protected void upsertIntoExistingSchemaWithoutEmbeddingModel() {
+		executeTest(vectorStore -> {
+			CallCountingEmbeddingModel embeddingModel = new CallCountingEmbeddingModel(embeddingDimensions());
+			VectorStore writer = createStoreOverExistingSchema(vectorStore, embeddingModel);
+			Assumptions.assumeTrue(writer != null, "store does not support building over an existing schema");
+
+			String id = UUID.randomUUID().toString();
+			writer.upsert(List.of(embeddedDocument(id, "written without a model", Map.of("tag", "w"))));
+			assertWrongDimensionRejected(writer);
+			assertThat(embeddingModel.calls()).as("embedding model calls during upsert").isZero();
+
+			await().atMost(5, TimeUnit.SECONDS).pollInterval(Duration.ofMillis(500)).untilAsserted(() -> {
+				List<Document> results = readAll(vectorStore, 10);
+				assertThat(results).hasSize(1);
+				assertThat(results.get(0).getId()).isEqualTo(id);
+			});
+		});
+	}
+
+	@Test
+	protected void upsertWithConfiguredDimensionsWithoutEmbeddingModel() {
+		executeTest(vectorStore -> {
+			CallCountingEmbeddingModel embeddingModel = new CallCountingEmbeddingModel(embeddingDimensions());
+			VectorStore store = createStoreWithConfiguredDimensions(vectorStore, embeddingModel, embeddingDimensions());
+			Assumptions.assumeTrue(store != null, "store does not support a configured dimension");
+
+			String id = UUID.randomUUID().toString();
+			store.upsert(List.of(embeddedDocument(id, "configured dimension", Map.of("tag", "c"))));
+			assertWrongDimensionRejected(store);
+			assertThat(embeddingModel.calls()).as("embedding model calls during schema creation and upsert").isZero();
+
+			// Reading back embeds the query, so the model is used from here on.
+			await().atMost(5, TimeUnit.SECONDS).pollInterval(Duration.ofMillis(500)).untilAsserted(() -> {
+				List<Document> results = readAll(store, 10);
+				assertThat(results).hasSize(1);
+				assertThat(results.get(0).getId()).isEqualTo(id);
+			});
+		});
+	}
+
+	/**
+	 * Assert that the store's own pre-write check rejects a wrong-sized vector. Only that
+	 * check throws {@link IllegalArgumentException}; a database rejecting the vector
+	 * fails differently, and Redis does not fail at all. So a pass proves the store knew
+	 * the right size up front.
+	 * @param vectorStore the store to write to
+	 */
+	protected void assertWrongDimensionRejected(VectorStore vectorStore) {
+		EmbeddedDocument wrongSize = new EmbeddedDocument(
+				new Document(UUID.randomUUID().toString(), "wrong dimension", new HashMap<>()),
+				vectorOfLength(embeddingDimensions() + 1));
+		assertThatExceptionOfType(IllegalArgumentException.class)
+			.isThrownBy(() -> vectorStore.upsert(List.of(wrongSize)));
+	}
+
+	@Test
 	protected void contentRefRoundTrip() {
 		executeTest(vectorStore -> {
 			String id = UUID.randomUUID().toString();
@@ -240,6 +340,55 @@ public abstract class AbstractVectorStoreUpsertTests {
 			return null;
 		}
 		return value.toString().replaceAll("^\"|\"$", "").trim();
+	}
+
+	/**
+	 * An embedding model that counts every call made to it, for asserting that a code
+	 * path never contacts the model. It returns a constant vector of the given size, so a
+	 * store built with it can still be searched once the counted part is over.
+	 */
+	protected static final class CallCountingEmbeddingModel implements EmbeddingModel {
+
+		private final AtomicInteger calls = new AtomicInteger();
+
+		private final FixedDimensionEmbeddingModel delegate;
+
+		public CallCountingEmbeddingModel(int dimensions) {
+			this.delegate = new FixedDimensionEmbeddingModel(dimensions);
+		}
+
+		@Override
+		public EmbeddingResponse call(EmbeddingRequest request) {
+			this.calls.incrementAndGet();
+			return this.delegate.call(request);
+		}
+
+		@Override
+		public float[] embed(Document document) {
+			this.calls.incrementAndGet();
+			return this.delegate.embed(document);
+		}
+
+		@Override
+		public float[] embed(String text) {
+			this.calls.incrementAndGet();
+			return this.delegate.embed(text);
+		}
+
+		@Override
+		public int dimensions() {
+			this.calls.incrementAndGet();
+			return this.delegate.dimensions();
+		}
+
+		/**
+		 * Returns the number of calls made to this model so far.
+		 * @return the call count
+		 */
+		public int calls() {
+			return this.calls.get();
+		}
+
 	}
 
 }
