@@ -169,6 +169,18 @@ class JitLlmChatModelTests {
 	}
 
 	@Test
+	void anErrorDuringStreamingFailsTheStreamInsteadOfHangingIt() {
+		this.engine.session.failWith(new NoClassDefFoundError("uk/ac/manchester/tornado/api/types/arrays/IntArray"));
+
+		assertThatIllegalStateException()
+			.isThrownBy(() -> chatModel(JitLlmChatOptions.builder().build()).stream(new Prompt("hi"))
+				.collectList()
+				.block(Duration.ofSeconds(10)))
+			.withMessageStartingWith("jitLLM generation failed")
+			.withCauseInstanceOf(NoClassDefFoundError.class);
+	}
+
+	@Test
 	void streamingWithToolsAnswersInOneChunk() {
 		this.engine.session.script(result("", FinishReason.TOOL_CALL,
 				List.of(new ChatContent.ToolCall("call_1", "getWeather", "{\"city\":\"Munich\"}"))));
@@ -264,8 +276,14 @@ class JitLlmChatModelTests {
 
 		private List<String> tokens = List.of();
 
+		private Error failure;
+
 		FakeSession(List<String> events) {
 			this.events = events;
+		}
+
+		void failWith(Error failure) {
+			this.failure = failure;
 		}
 
 		void script(GenerationResult result, String... tokens) {
@@ -276,6 +294,9 @@ class JitLlmChatModelTests {
 		@Override
 		public GenerationResult generate(GenerationRequest request) {
 			this.requests.add(request);
+			if (this.failure != null) {
+				throw this.failure;
+			}
 			if (request.onEvent() != null) {
 				for (String token : this.tokens) {
 					request.onEvent().accept(new GenerationEvent(0, token));

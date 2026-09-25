@@ -253,6 +253,16 @@ public final class JitLlmChatModel implements ChatModel, AutoCloseable {
 				sink.error(ex);
 			}
 		}
+		catch (Error ex) {
+			// An Error (a missing TornadoVM class, say) would end the scheduler's task
+			// and
+			// leave the subscriber waiting forever, and Reactor drops JVM-fatal errors
+			// such
+			// as LinkageError rather than signalling them, so it is wrapped.
+			if (!cancelled.get()) {
+				sink.error(new IllegalStateException("jitLLM generation failed: " + ex, ex));
+			}
+		}
 	}
 
 	private GenerationResult generate(Prompt prompt, @Nullable Consumer<GenerationEvent> onEvent) {
