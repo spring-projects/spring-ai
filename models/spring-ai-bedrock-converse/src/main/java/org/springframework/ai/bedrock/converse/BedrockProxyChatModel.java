@@ -875,7 +875,7 @@ public class BedrockProxyChatModel implements ChatModel {
 
 		private Duration connectionAcquisitionTimeout = Duration.ofSeconds(30L);
 
-		private Duration socketTimeout = Duration.ofSeconds(30L);
+		private Duration socketTimeout = Duration.ofSeconds(90L);
 
 		private @Nullable ToolCallingManager toolCallingManager;
 
