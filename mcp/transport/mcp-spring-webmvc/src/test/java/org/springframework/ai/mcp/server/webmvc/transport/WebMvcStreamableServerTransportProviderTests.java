@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import io.modelcontextprotocol.spec.HttpHeaders;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpStreamableServerSession;
+import net.javacrumbs.jsonunit.assertj.JsonAssertions;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 
@@ -41,6 +42,7 @@ import static org.mockito.Mockito.when;
  * Unit tests for {@link WebMvcStreamableServerTransportProvider}.
  *
  * @author Dimitar Proynov
+ * @author Taewoong Kim
  */
 class WebMvcStreamableServerTransportProviderTests {
 
@@ -72,9 +74,22 @@ class WebMvcStreamableServerTransportProviderTests {
 			.exchange()
 			.expectStatus()
 			.isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR)
+			.expectHeader()
+			.contentType(MediaType.APPLICATION_JSON)
 			.expectBody(String.class)
-			.value(body -> assertThat(body).contains("Internal server error. Check server logs for details.")
-				.doesNotContain(sensitiveDetail));
+			.value(body -> {
+				JsonAssertions.assertThatJson(body).isEqualTo("""
+						{
+							"jsonrpc": "2.0",
+							"id": "1",
+							"error": {
+								"code": -32603,
+								"message": "Internal server error. Check server logs for details."
+							}
+						}
+						""");
+				assertThat(body).doesNotContain(sensitiveDetail);
+			});
 	}
 
 	@Test
@@ -158,8 +173,19 @@ class WebMvcStreamableServerTransportProviderTests {
 			.exchange()
 			.expectStatus()
 			.isEqualTo(HttpStatus.SERVICE_UNAVAILABLE)
+			.expectHeader()
+			.contentType(MediaType.APPLICATION_JSON)
 			.expectBody(String.class)
-			.value(body -> assertThat(body).contains("Max number of sessions reached"));
+			.value(body -> JsonAssertions.assertThatJson(body).isEqualTo("""
+					{
+						"jsonrpc": "2.0",
+						"id": "1",
+						"error": {
+							"code": -32603,
+							"message": "Max number of sessions reached"
+						}
+					}
+					"""));
 	}
 
 	@Test
@@ -189,8 +215,19 @@ class WebMvcStreamableServerTransportProviderTests {
 			.exchange()
 			.expectStatus()
 			.isEqualTo(HttpStatus.BAD_REQUEST)
+			.expectHeader()
+			.contentType(MediaType.APPLICATION_JSON)
 			.expectBody(String.class)
-			.value(body -> assertThat(body).contains("Session already initialized"));
+			.value(body -> JsonAssertions.assertThatJson(body).isEqualTo("""
+					{
+						"jsonrpc": "2.0",
+						"id": "1",
+						"error": {
+							"code": -32603,
+							"message": "Session already initialized"
+						}
+					}
+					"""));
 	}
 
 }

@@ -50,6 +50,7 @@ import org.springframework.web.servlet.function.ServerResponse;
  * {@link io.modelcontextprotocol.server.transport.WebFluxStatelessServerTransport}
  *
  * @author Christian Tzolov
+ * @author Taewoong Kim
  */
 public final class WebMvcStatelessServerTransport implements McpStatelessServerTransport {
 
@@ -144,10 +145,10 @@ public final class WebMvcStatelessServerTransport implements McpStatelessServerT
 
 		var handler = this.mcpHandler;
 		if (handler == null) {
-			return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
-				.body(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
-					.message("MCP handler not configured")
-					.build());
+			return WebMvcJsonRpcErrorResponse.create(this.jsonMapper, HttpStatus.INTERNAL_SERVER_ERROR, null,
+					McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
+						.message("MCP handler not configured")
+						.build());
 		}
 
 		try {
@@ -166,10 +167,11 @@ public final class WebMvcStatelessServerTransport implements McpStatelessServerT
 					if (logger.isErrorEnabled()) {
 						logger.error("Failed to handle request: " + e.getMessage());
 					}
-					return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
-						.body(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
-							.message("Failed to handle request. Check server logs for details.")
-							.build());
+					return WebMvcJsonRpcErrorResponse.create(this.jsonMapper, HttpStatus.INTERNAL_SERVER_ERROR,
+							jsonrpcRequest.id(),
+							McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
+								.message("Failed to handle request. Check server logs for details.")
+								.build());
 				}
 			}
 			else if (message instanceof McpSchema.JSONRPCNotification jsonrpcNotification) {
@@ -183,34 +185,34 @@ public final class WebMvcStatelessServerTransport implements McpStatelessServerT
 					if (logger.isErrorEnabled()) {
 						logger.error("Failed to handle notification: " + e.getMessage());
 					}
-					return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
-						.body(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
-							.message("Failed to handle notification. Check server logs for details.")
-							.build());
+					return WebMvcJsonRpcErrorResponse.create(this.jsonMapper, HttpStatus.INTERNAL_SERVER_ERROR, null,
+							McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
+								.message("Failed to handle notification. Check server logs for details.")
+								.build());
 				}
 			}
 			else {
-				return ServerResponse.badRequest()
-					.body(McpError.builder(McpSchema.ErrorCodes.INVALID_REQUEST)
-						.message("The server accepts either requests or notifications")
-						.build());
+				return WebMvcJsonRpcErrorResponse.create(this.jsonMapper, HttpStatus.BAD_REQUEST, null,
+						McpError.builder(McpSchema.ErrorCodes.INVALID_REQUEST)
+							.message("The server accepts either requests or notifications")
+							.build());
 			}
 		}
 		catch (IllegalArgumentException | IOException e) {
 			if (logger.isErrorEnabled()) {
 				logger.error("Failed to deserialize message: " + e.getMessage());
 			}
-			return ServerResponse.badRequest()
-				.body(McpError.builder(McpSchema.ErrorCodes.INVALID_REQUEST).message("Invalid message format").build());
+			return WebMvcJsonRpcErrorResponse.create(this.jsonMapper, HttpStatus.BAD_REQUEST, null,
+					McpError.builder(McpSchema.ErrorCodes.INVALID_REQUEST).message("Invalid message format").build());
 		}
 		catch (Exception e) {
 			if (logger.isErrorEnabled()) {
 				logger.error("Unexpected error handling message: " + e.getMessage());
 			}
-			return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
-				.body(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
-					.message("Internal server error. Check server logs for details.")
-					.build());
+			return WebMvcJsonRpcErrorResponse.create(this.jsonMapper, HttpStatus.INTERNAL_SERVER_ERROR, null,
+					McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
+						.message("Internal server error. Check server logs for details.")
+						.build());
 		}
 	}
 
