@@ -16,16 +16,24 @@
 
 package org.springframework.ai.deepseek;
 
+import java.net.URI;
+import java.util.Base64;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.content.Media;
 import org.springframework.ai.deepseek.api.DeepSeekApi;
 import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionMessage;
+import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionMessage.ImageUrlChunk;
+import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionMessage.TextChunk;
 import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionRequest.ReasoningEffort;
 import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionRequest.Thinking;
+import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -216,6 +224,89 @@ public class DeepSeekChatCompletionRequestTests {
 		var request = client.createRequest(prompt, false);
 
 		assertThat(request.reasoningEffort()).isNull();
+	}
+
+	@Test
+	public void createRequestWithImageMediaUrl() {
+		var client = DeepSeekChatModel.builder().deepSeekApi(DeepSeekApi.builder().apiKey("TEST").build()).build();
+
+		var userMessage = UserMessage.builder()
+			.text("这个图片讲了什么")
+			.media(new Media(MimeTypeUtils.IMAGE_PNG, URI.create("https://example.com/diagnostic.png")))
+			.build();
+
+		var prompt = new Prompt(List.of(userMessage), DeepSeekChatOptions.builder().model("deepseek-flash").build());
+
+		var request = client.createRequest(prompt, false);
+
+		assertThat(request.messages()).hasSize(1);
+		ChatCompletionMessage message = request.messages().get(0);
+		assertThat(message.role()).isEqualTo(ChatCompletionMessage.Role.USER);
+		assertThat(message.content()).isInstanceOf(List.class);
+		List<?> contentChunks = (List<?>) message.content();
+		assertThat(contentChunks).hasSize(2);
+		var textChunk = (TextChunk) contentChunks.get(0);
+		assertThat(textChunk.text()).isEqualTo("这个图片讲了什么");
+		var imageUrlChunk = (ImageUrlChunk) contentChunks.get(1);
+		assertThat(imageUrlChunk.imageUrl().url()).isEqualTo("https://example.com/diagnostic.png");
+	}
+
+	@Test
+	public void createRequestWithImageMediaBytes() {
+		var client = DeepSeekChatModel.builder().deepSeekApi(DeepSeekApi.builder().apiKey("TEST").build()).build();
+
+		byte[] imageBytes = "fake-image-bytes".getBytes();
+		var userMessage = UserMessage.builder()
+			.text("What is in this image?")
+			.media(Media.builder().mimeType(MimeTypeUtils.IMAGE_PNG).data(imageBytes).build())
+			.build();
+
+		var prompt = new Prompt(List.of(userMessage), DeepSeekChatOptions.builder().model("deepseek-flash").build());
+
+		var request = client.createRequest(prompt, false);
+
+		ChatCompletionMessage message = request.messages().get(0);
+		List<?> contentChunks = (List<?>) message.content();
+		assertThat(contentChunks).hasSize(2);
+		var imageUrlChunk = (ImageUrlChunk) contentChunks.get(1);
+		var expectedDataUri = "data:image/png;base64," + Base64.getEncoder().encodeToString(imageBytes);
+		assertThat(imageUrlChunk.imageUrl().url()).isEqualTo(expectedDataUri);
+	}
+
+	@Test
+	public void createRequestWithTextOnlyUserMessageKeepsStringContent() {
+		var client = DeepSeekChatModel.builder().deepSeekApi(DeepSeekApi.builder().apiKey("TEST").build()).build();
+
+		var userMessage = new UserMessage("Test message content");
+
+		var prompt = new Prompt(List.of(userMessage), DeepSeekChatOptions.builder().model("deepseek-chat").build());
+
+		var request = client.createRequest(prompt, false);
+
+		ChatCompletionMessage message = request.messages().get(0);
+		assertThat(message.role()).isEqualTo(ChatCompletionMessage.Role.USER);
+		assertThat(message.content()).isEqualTo("Test message content");
+	}
+
+	@Test
+	public void serializeRequestWithImageMediaProducesContentArray() {
+		var client = DeepSeekChatModel.builder().deepSeekApi(DeepSeekApi.builder().apiKey("TEST").build()).build();
+
+		var userMessage = UserMessage.builder()
+			.text("这个图片讲了什么")
+			.media(new Media(MimeTypeUtils.IMAGE_PNG, URI.create("https://example.com/diagnostic.png")))
+			.build();
+
+		var prompt = new Prompt(List.of(userMessage), DeepSeekChatOptions.builder().model("deepseek-flash").build());
+
+		var request = client.createRequest(prompt, false);
+
+		var json = new JsonMapper().writeValueAsString(request.messages());
+
+		assertThat(json).contains("\"role\":\"user\"");
+		assertThat(json).contains("\"type\":\"text\",\"text\":\"这个图片讲了什么\"");
+		assertThat(json)
+			.contains("\"type\":\"image_url\",\"image_url\":{\"url\":\"https://example.com/diagnostic.png\"}");
 	}
 
 }

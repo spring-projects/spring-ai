@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Stream;
 
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
@@ -33,6 +34,7 @@ import reactor.core.publisher.Flux;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
@@ -48,11 +50,15 @@ import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.content.Media;
 import org.springframework.ai.deepseek.api.DeepSeekApi;
 import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletion;
 import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletion.Choice;
 import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionMessage;
 import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionMessage.ChatCompletionFunction;
+import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionMessage.ContentChunk;
+import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionMessage.ImageUrlChunk;
+import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionMessage.TextChunk;
 import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionMessage.ToolCall;
 import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionRequest;
 import org.springframework.ai.deepseek.api.common.DeepSeekConstants;
@@ -64,6 +70,7 @@ import org.springframework.core.retry.RetryTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.MimeType;
 
 /**
  * {@link ChatModel} and {@link StreamingChatModel} implementation for {@literal DeepSeek}
@@ -284,7 +291,7 @@ public class DeepSeekChatModel implements ChatModel {
 		String finishReason = (choice.finishReason() != null ? choice.finishReason().name() : "");
 		var generationMetadataBuilder = ChatGenerationMetadata.builder().finishReason(finishReason);
 
-		String textContent = choice.message().content();
+		String textContent = (String) choice.message().content();
 		String reasoningContent = choice.message().reasoningContent();
 
 		DeepSeekAssistantMessage.Builder builder = new DeepSeekAssistantMessage.Builder();
@@ -345,6 +352,9 @@ public class DeepSeekChatModel implements ChatModel {
 			if (message.getMessageType() == MessageType.USER || message.getMessageType() == MessageType.SYSTEM) {
 				String text = message.getText();
 				Assert.state(text != null, "text must not be null");
+				if (message instanceof UserMessage userMessage && !CollectionUtils.isEmpty(userMessage.getMedia())) {
+					return List.of(createUserChatCompletionMessage(userMessage));
+				}
 				return List.of(new ChatCompletionMessage(text,
 						ChatCompletionMessage.Role.valueOf(message.getMessageType().name())));
 			}
@@ -445,6 +455,43 @@ public class DeepSeekChatModel implements ChatModel {
 		}
 
 		return requestBuilder.build();
+	}
+
+	/**
+	 * Build a user {@link ChatCompletionMessage} for the given {@link UserMessage},
+	 * mapping any attached {@link Media} to image URL content chunks as supported by the
+	 * DeepSeek vision API.
+	 */
+	private ChatCompletionMessage createUserChatCompletionMessage(UserMessage userMessage) {
+		var content = userMessage.getText();
+		Assert.state(content != null, "content must not be null");
+
+		// @formatter:off
+		var contentChunks = Stream.<ContentChunk>concat(
+			Stream.of(new TextChunk(content)),
+			userMessage.getMedia().stream().map(this::mapToImageUrlChunk)
+		).toList();
+		// @formatter:on
+
+		return new ChatCompletionMessage(contentChunks, ChatCompletionMessage.Role.USER);
+	}
+
+	private ImageUrlChunk mapToImageUrlChunk(Media media) {
+		return new ImageUrlChunk(fromMediaData(media.getMimeType(), media.getData()));
+	}
+
+	private ImageUrlChunk.ImageUrl fromMediaData(MimeType mimeType, Object mediaData) {
+		if (mediaData instanceof byte[] bytes) {
+			// Assume the bytes are an image.
+			return ImageUrlChunk.ImageUrl.fromImageData(mimeType, bytes);
+		}
+		else if (mediaData instanceof String text) {
+			// Assume the text is a URL or a base64 encoded image prefixed by the user.
+			return new ImageUrlChunk.ImageUrl(text);
+		}
+		else {
+			throw new IllegalArgumentException("Unsupported media data type: " + mediaData.getClass().getSimpleName());
+		}
 	}
 
 	/**
