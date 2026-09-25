@@ -70,6 +70,10 @@ The common properties are prefixed with `spring.ai.mcp.client`:
 |Whether to initialize clients on creation
 |`true`
 
+|`fail-fast`
+|Whether a failure to initialize a client or discover its tools should be fatal. Set to `false` to skip unavailable clients and retry them on a subsequent operation
+|`true`
+
 |`request-timeout`
 |Timeout duration for MCP client requests
 |`20s`
@@ -86,6 +90,22 @@ The common properties are prefixed with `spring.ai.mcp.client`:
 |Enable/disable the MCP tool callback integration with Spring AI's tool execution framework
 |`true`
 |===
+
+By default, MCP clients connect during application startup and any connection failure prevents the application from starting.
+To defer connections until tools are first discovered, while allowing available clients to keep working when another client is unavailable, disable both initialization and fail-fast behavior:
+
+[source,yaml]
+----
+spring:
+  ai:
+    mcp:
+      client:
+        initialized: false
+        fail-fast: false
+----
+
+With `fail-fast=false`, unavailable clients are logged and retried on subsequent tool discovery operations.
+Available clients remain cached while retries are attempted.
 
 === MCP Annotations Properties
 
