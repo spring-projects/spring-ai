@@ -304,4 +304,30 @@ public class DefaultUsageTests {
 																			// value
 	}
 
+	@Test
+	void testDeserializationWithLegacyGenerationTokens() throws Exception {
+		String json = "{\"promptTokens\":100,\"generationTokens\":50,\"totalTokens\":150}";
+		DefaultUsage usage = JsonMapper.shared().readValue(json, DefaultUsage.class);
+		assertThat(usage.getPromptTokens()).isEqualTo(100);
+		assertThat(usage.getCompletionTokens()).isEqualTo(50);
+		assertThat(usage.getTotalTokens()).isEqualTo(150);
+	}
+
+	@Test
+	void testDeserializationWithLegacyGenerationTokensAndNoTotalTokens() throws Exception {
+		String json = "{\"promptTokens\":100,\"generationTokens\":50}";
+		DefaultUsage usage = JsonMapper.shared().readValue(json, DefaultUsage.class);
+		assertThat(usage.getPromptTokens()).isEqualTo(100);
+		assertThat(usage.getCompletionTokens()).isEqualTo(50);
+		assertThat(usage.getTotalTokens()).isEqualTo(150);
+	}
+
+	@Test
+	void testSerializationUsesCompletionTokensOnly() throws Exception {
+		DefaultUsage usage = JsonMapper.shared()
+			.readValue("{\"promptTokens\":100,\"generationTokens\":50,\"totalTokens\":150}", DefaultUsage.class);
+		String json = JsonMapper.shared().writeValueAsString(usage);
+		assertThat(json).isEqualTo("{\"promptTokens\":100,\"completionTokens\":50,\"totalTokens\":150}");
+	}
+
 }
