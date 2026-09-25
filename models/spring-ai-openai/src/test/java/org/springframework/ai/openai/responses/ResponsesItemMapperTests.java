@@ -20,10 +20,13 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.openai.core.ObjectMappers;
 import com.openai.models.responses.Response;
 import com.openai.models.responses.ResponseInputItem;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import org.springframework.ai.chat.messages.AbstractMessage;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -479,6 +482,31 @@ class ResponsesItemMapperTests {
 		assertThat(usage.getCacheReadInputTokens()).isNull();
 	}
 
+	/**
+	 * Usage counts come from the upstream response, so one outside the {@code int} range
+	 * means the response cannot be trusted. It has to fail naming the field and the
+	 * value, rather than with a bare {@code ArithmeticException("integer overflow")} or a
+	 * truncated count that corrupts cost tracking downstream.
+	 */
+	@ParameterizedTest
+	@CsvSource({ "input_tokens, inputTokens, 2147483648", "output_tokens, outputTokens, 2147483648",
+			"total_tokens, totalTokens, 2147483648", "input_tokens, inputTokens, -2147483649" })
+	void usageCountsOutsideIntRangeFailNamingTheFieldAndValue(String jsonField, String fieldName, long value) {
+		Response response = fixtureWithUsage("reasoning-with-function-call.json", jsonField, value);
+
+		assertThatThrownBy(() -> ResponsesItemMapper.toUsage(response)).isInstanceOf(IllegalStateException.class)
+			.hasMessageContaining(fieldName)
+			.hasMessageContaining(String.valueOf(value))
+			.hasCauseInstanceOf(ArithmeticException.class);
+	}
+
+	@Test
+	void usageCountsAtTheEdgeOfIntRangeAreMappedUnchanged() {
+		Response response = fixtureWithUsage("reasoning-with-function-call.json", "total_tokens", Integer.MAX_VALUE);
+
+		assertThat(ResponsesItemMapper.toUsage(response).getTotalTokens()).isEqualTo(Integer.MAX_VALUE);
+	}
+
 	@Test
 	void responseMetadataCarriesTheResponseIdModelAndStatus() {
 		Response response = fixture("text-with-reasoning-summary.json");
@@ -501,6 +529,17 @@ class ResponsesItemMapperTests {
 
 	private static Response fixture(String name) {
 		return ResponsesTestFixtures.response(name);
+	}
+
+	private static Response fixtureWithUsage(String name, String usageField, long value) {
+		try {
+			ObjectNode json = (ObjectNode) ObjectMappers.jsonMapper().readTree(ResponsesTestFixtures.json(name));
+			((ObjectNode) json.path("usage")).put(usageField, value);
+			return ObjectMappers.jsonMapper().treeToValue(json, Response.class);
+		}
+		catch (Exception ex) {
+			throw new IllegalStateException(ex);
+		}
 	}
 
 	private static List<Map<String, Object>> maps(Generation generation, String metadataKey) {
