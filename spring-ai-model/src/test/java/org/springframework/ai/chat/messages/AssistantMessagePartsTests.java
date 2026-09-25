@@ -200,6 +200,52 @@ class AssistantMessagePartsTests {
 	}
 
 	@Test
+	void mutateReplacesTextInsteadOfAppending() {
+		// gh-7010: content() on a mutated copy must replace the text, not append a
+		// second text part; post-processing that rewrites a formatted response
+		// depends on the replaced text being the only text part.
+		AssistantMessage original = AssistantMessage.builder().content("original").build();
+
+		AssistantMessage updated = original.mutate().content("replacement").build();
+
+		assertThat(updated.getText()).isEqualTo("replacement");
+		assertThat(updated.getParts()).containsExactly(TextPart.of("replacement"));
+	}
+
+	@Test
+	void mutateKeepsOtherPartsAndPropertiesWhenReplacingText() {
+		AssistantMessage original = AssistantMessage.builder()
+			.part(SIGNED_REASONING)
+			.content("text")
+			.toolCalls(List.of(TIME_CALL))
+			.properties(Map.of("k", "v"))
+			.build();
+
+		AssistantMessage updated = original.mutate().content("replacement").build();
+
+		assertThat(updated.getText()).isEqualTo("replacement");
+		assertThat(updated.getReasoning()).containsExactly(SIGNED_REASONING);
+		assertThat(updated.getToolCalls()).containsExactly(TIME_CALL);
+		assertThat(updated.getMetadata()).containsEntry("k", "v");
+	}
+
+	@Test
+	void mutateWithEmptyToolCallsClearsToolCalls() {
+		// gh-7010: toolCalls(List.of()) on a mutated copy must clear the original
+		// tool-call parts so applications can strip tool calls before replaying.
+		AssistantMessage original = AssistantMessage.builder()
+			.content("text")
+			.toolCalls(List.of(WEATHER_CALL, TIME_CALL))
+			.build();
+
+		AssistantMessage updated = original.mutate().toolCalls(List.of()).build();
+
+		assertThat(updated.hasToolCalls()).isFalse();
+		assertThat(updated.getToolCalls()).isEmpty();
+		assertThat(updated.getText()).isEqualTo("text");
+	}
+
+	@Test
 	void equalityIsDefinedOverParts() {
 		AssistantMessage a = AssistantMessage.builder().part(SIGNED_REASONING).part(TextPart.of("text")).build();
 		AssistantMessage b = AssistantMessage.builder().part(SIGNED_REASONING).part(TextPart.of("text")).build();
