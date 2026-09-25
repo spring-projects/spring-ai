@@ -46,7 +46,7 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 
 	private final @Nullable Double presencePenalty;
 
-	private final @Nullable Map<String, String> requestParameters;
+	private final @Nullable Map<String, Object> requestParameters;
 
 	private final @Nullable List<String> stopSequences;
 
@@ -65,7 +65,7 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 	private final @Nullable String outputSchema;
 
 	protected BedrockChatOptions(@Nullable String model, @Nullable Double frequencyPenalty, @Nullable Integer maxTokens,
-			@Nullable Double presencePenalty, @Nullable Map<String, String> requestParameters,
+			@Nullable Double presencePenalty, @Nullable Map<String, Object> requestParameters,
 			@Nullable List<String> stopSequences, @Nullable Double temperature, @Nullable Integer topK,
 			@Nullable Double topP, @Nullable List<ToolCallback> toolCallbacks,
 			@Nullable Map<String, Object> toolContext, @Nullable BedrockCacheOptions cacheOptions,
@@ -104,7 +104,14 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 		return this.maxTokens;
 	}
 
-	public @Nullable Map<String, String> getRequestParameters() {
+	/**
+	 * Additional Bedrock Converse {@code additionalModelRequestFields}, passed through
+	 * verbatim to the underlying model. Values may be nested {@link Map}s or
+	 * {@link List}s (in addition to plain scalars) to express structured fields such as
+	 * Anthropic's {@code output_config}, e.g. {@code Map.of("output_config",
+	 * Map.of("effort", "low"))}.
+	 */
+	public @Nullable Map<String, Object> getRequestParameters() {
 		return this.requestParameters;
 	}
 
@@ -216,13 +223,16 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 			return copy;
 		}
 
-		protected @Nullable Map<String, String> requestParameters;
+		protected @Nullable Map<String, Object> requestParameters;
 
 		protected @Nullable BedrockCacheOptions cacheOptions;
 
 		private @Nullable String outputSchema;
 
-		public B requestParameters(@Nullable Map<String, String> requestParameters) {
+		/**
+		 * @see BedrockChatOptions#getRequestParameters()
+		 */
+		public B requestParameters(@Nullable Map<String, Object> requestParameters) {
 			this.requestParameters = requestParameters;
 			return self();
 		}
@@ -240,7 +250,7 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 						this.requestParameters = new HashMap<>(that.requestParameters);
 					}
 					else {
-						Map<String, String> merged = new HashMap<>(this.requestParameters);
+						Map<String, Object> merged = new HashMap<>(this.requestParameters);
 						merged.putAll(that.requestParameters);
 						this.requestParameters = merged;
 					}
