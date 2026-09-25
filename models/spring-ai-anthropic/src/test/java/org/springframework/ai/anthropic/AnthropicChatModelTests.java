@@ -394,6 +394,38 @@ class AnthropicChatModelTests {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked")
+	void streamingThinkingDeltasExposeThinkingTextInMetadata() {
+		List<RawMessageStreamEvent> events = List.of(messageStartEvent(), thinkingStartEvent(),
+				thinkingDeltaEvent("thinking "), thinkingDeltaEvent("text"), signatureDeltaEvent("thinking-signature"),
+				contentBlockStopEvent(0), messageDeltaEvent(StopReason.END_TURN));
+		StreamResponse<RawMessageStreamEvent> streamResponse = mock(StreamResponse.class);
+		given(streamResponse.stream()).willReturn(events.stream());
+
+		HttpResponseFor<StreamResponse<RawMessageStreamEvent>> rawResponse = mock(HttpResponseFor.class);
+		given(rawResponse.parse()).willReturn(streamResponse);
+		given(rawResponse.headers()).willReturn(Headers.builder().build());
+
+		given(this.anthropicClientAsync.messages()).willReturn(this.messageServiceAsync);
+		given(this.messageServiceAsync.withRawResponse()).willReturn(this.messageServiceAsyncWithRawResponse);
+		given(this.messageServiceAsyncWithRawResponse.createStreaming(any(MessageCreateParams.class),
+				any(RequestOptions.class)))
+			.willReturn(CompletableFuture.completedFuture(rawResponse));
+
+		List<ChatResponse> responses = this.chatModel.stream(new Prompt("Think about it.")).collectList().block();
+
+		assertThat(responses).isNotNull();
+		List<AssistantMessage> thinkingDeltas = responses.stream()
+			.map(response -> response.getResult().getOutput())
+			.filter(message -> message.getMetadata().containsKey(AnthropicChatModel.THINKING_METADATA_KEY))
+			.toList();
+		assertThat(thinkingDeltas)
+			.extracting(message -> message.getMetadata().get(AnthropicChatModel.THINKING_TEXT_METADATA_KEY))
+			.containsExactly("thinking ", "text");
+		assertThat(thinkingDeltas).allSatisfy(message -> assertThat(message.getText()).isNull());
+	}
+
+	@Test
 	void cacheOptionsIsMergedFromRuntimePrompt() {
 		AnthropicChatModel model = AnthropicChatModel.builder()
 			.anthropicClient(this.anthropicClient)

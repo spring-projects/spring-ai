@@ -166,6 +166,33 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 	static final String ANTHROPIC_THINKING_CONTENTS_PROPERTY = "anthropicThinkingContents";
 
+	/**
+	 * Metadata key set to {@code true} on streaming {@link AssistantMessage} chunks that
+	 * carry incremental thinking (reasoning) text from a thinking-enabled model.
+	 * <p>
+	 * Use this key to identify thinking deltas in a streaming response: <pre>{@code
+	 * chatModel.stream(prompt).subscribe(response -> {
+	 *     AssistantMessage message = response.getResult().getOutput();
+	 *     if (Boolean.TRUE.equals(message.getMetadata().get(AnthropicChatModel.THINKING_METADATA_KEY))) {
+	 *         String chunk = (String) message.getMetadata().get(AnthropicChatModel.THINKING_TEXT_METADATA_KEY);
+	 *     }
+	 * });
+	 * }</pre>
+	 * @since 2.0.2
+	 * @see #THINKING_TEXT_METADATA_KEY
+	 */
+	public static final String THINKING_METADATA_KEY = "thinking";
+
+	/**
+	 * Metadata key holding the incremental thinking text on streaming
+	 * {@link AssistantMessage} chunks where {@link #THINKING_METADATA_KEY} is
+	 * {@code true}. The chunk content ({@code getText()}) is {@code null} so that
+	 * thinking text is not aggregated into the final answer.
+	 * @since 2.0.2
+	 * @see #THINKING_METADATA_KEY
+	 */
+	public static final String THINKING_TEXT_METADATA_KEY = "thinkingText";
+
 	private static final ToolCallingManager DEFAULT_TOOL_CALLING_MANAGER = ToolCallingManager.builder().build();
 
 	private final AnthropicClient anthropicClient;
@@ -440,12 +467,14 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 				return null;
 			}
 
-			// Thinking chunk — emit with thinking metadata
+			// Thinking chunk — emit with thinking metadata. The text is exposed in
+			// metadata, not content, so it is not aggregated into the message text.
 			if (delta.isThinking()) {
 				String thinkingText = delta.asThinking().thinking();
 				streamingState.appendThinking(thinkingText);
 				Map<String, Object> thinkingProperties = new HashMap<>();
-				thinkingProperties.put("thinking", Boolean.TRUE);
+				thinkingProperties.put(THINKING_METADATA_KEY, Boolean.TRUE);
+				thinkingProperties.put(THINKING_TEXT_METADATA_KEY, thinkingText);
 				AssistantMessage assistantMessage = AssistantMessage.builder().properties(thinkingProperties).build();
 				return new ChatResponse(List.of(new Generation(assistantMessage)));
 			}
