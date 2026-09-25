@@ -840,7 +840,8 @@ class SemanticCacheAdvisorIT {
 		// Verify context_hash is stored in metadata
 		assertThat(cachedDoc.getMetadata()).containsKey("context_hash");
 		String storedHash = (String) cachedDoc.getMetadata().get("context_hash");
-		assertThat(storedHash).isNotNull().hasSize(8); // 8 hex chars from SHA-256
+		assertThat(storedHash).isNotNull().hasSize(64); // 64 hex chars (32 bytes) from
+														// SHA-256
 	}
 
 	@Test

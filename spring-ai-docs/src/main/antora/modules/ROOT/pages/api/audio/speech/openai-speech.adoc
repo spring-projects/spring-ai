@@ -61,6 +61,11 @@ The prefix `spring.ai.openai` is used as the property prefix that lets you conne
 | spring.ai.openai.api-key    | The API Key           |  -
 | spring.ai.openai.organization-id | Optionally you can specify which organization  used for an API request. |  -
 | spring.ai.openai.project-id      | Optionally, you can specify which project is used for an API request. |  -
+| spring.ai.openai.timeout | Request timeout for the OpenAI client. |  60 sec.
+| spring.ai.openai.max-retries | Maximum number of retries for the OpenAI client. |  3
+| spring.ai.openai.proxy | Proxy settings for the OpenAI client. |  -
+| spring.ai.openai.custom-headers | Custom HTTP headers to add to OpenAI client requests. |  empty
+| spring.ai.openai.connection-pool-metrics-enabled | Whether to enable connection pool metrics for the underlying OkHttp client. |  false
 |====
 
 TIP: For users that belong to multiple organizations (or are accessing their projects through their legacy user API key), optionally, you can specify which organization and project is used for an API request. 
@@ -94,6 +99,7 @@ The prefix `spring.ai.openai.audio.speech` is used as the property prefix that l
 | spring.ai.openai.audio.speech.voice | The voice to use for synthesis. For OpenAI's TTS API, One of the available voices for the chosen model: alloy, echo, fable, onyx, nova, and shimmer. | alloy
 | spring.ai.openai.audio.speech.response-format | The format of the audio output. Supported formats are mp3, opus, aac, flac, wav, and pcm. | mp3
 | spring.ai.openai.audio.speech.speed | The speed of the voice synthesis. The acceptable range is from 0.25 (slowest) to 4.0 (fastest). | 1.0
+| spring.ai.openai.audio.speech.instructions | Control instructions for the voice delivery (e.g. tone, pace). Only supported by models such as `gpt-4o-mini-tts`; ignored by `tts-1` and `tts-1-hd`. | -
 |====
 
 NOTE: You can override the common `spring.ai.openai.base-url`, `spring.ai.openai.api-key`, `spring.ai.openai.organization-id` and `spring.ai.openai.project-id` properties.
@@ -118,6 +124,7 @@ OpenAiAudioSpeechOptions speechOptions = OpenAiAudioSpeechOptions.builder()
     .voice(OpenAiAudioApi.SpeechRequest.Voice.ALLOY)
     .responseFormat(OpenAiAudioApi.SpeechRequest.AudioResponseFormat.MP3)
     .speed(1.0)
+    .instructions("Friendly; warm tone; natural pauses")
     .build();
 
 TextToSpeechPrompt speechPrompt = new TextToSpeechPrompt("Hello, this is a text-to-speech example.", speechOptions);
@@ -200,6 +207,13 @@ Flux<TextToSpeechResponse> responseStream = openAiAudioSpeechModel.stream(speech
 // You can also stream raw audio bytes directly
 Flux<byte[]> audioByteStream = openAiAudioSpeechModel.stream("Hello, world!");
 ----
+
+Each element of the stream carries at most 8 KB of audio, the internal read-buffer size `OpenAiAudioSpeechModel` uses when pulling bytes from the underlying HTTP response; chunks can be smaller than that, depending on how much data has arrived from OpenAI at the time of each read.
+
+TIP: If you need to hand this stream to an API that only accepts a blocking `java.io.InputStream`, see xref:api/audio/speech.adoc#streaming-consume-inputstream[Consuming the Stream as a Blocking InputStream] for the practices that matter and a tested reference implementation.
+
+Each open stream pins a thread for its whole response duration, so `OpenAiAudioSpeechModel` runs streaming on a dedicated bounded-elastic scheduler rather than Reactor's shared `Schedulers.boundedElastic()`, keeping heavy speech-streaming load from starving unrelated blocking work elsewhere in the application.
+Override it with `OpenAiAudioSpeechModel.builder().streamScheduler(customScheduler)` to share a scheduler across components or to size the pool differently for expected concurrent-stream load.
 
 include::partial$openai/openai-http-client-customization.adoc[]
 

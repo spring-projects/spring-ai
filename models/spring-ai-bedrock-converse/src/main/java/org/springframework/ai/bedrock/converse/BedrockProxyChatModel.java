@@ -288,7 +288,12 @@ public class BedrockProxyChatModel implements ChatModel {
 				List<ContentBlock> contents = new ArrayList<>();
 				if (message instanceof UserMessage) {
 					var userMessage = (UserMessage) message;
-					contents.add(ContentBlock.fromText(userMessage.getText()));
+					// The Converse API rejects empty text content blocks, so only send
+					// the text when there is any. A user message may legitimately carry
+					// media only (gh-6695).
+					if (StringUtils.hasText(userMessage.getText())) {
+						contents.add(ContentBlock.fromText(userMessage.getText()));
+					}
 
 					if (!CollectionUtils.isEmpty(userMessage.getMedia())) {
 						List<ContentBlock> mediaContent = userMessage.getMedia()
@@ -668,7 +673,11 @@ public class BedrockProxyChatModel implements ChatModel {
 
 				var functionCallId = toolUseContentBlock.toolUse().toolUseId();
 				var functionName = toolUseContentBlock.toolUse().name();
-				var functionArguments = toolUseContentBlock.toolUse().input().toString();
+				// Serialize the tool input as JSON. Document.toString() is not a JSON
+				// serializer: it leaves control characters (e.g. newlines) unescaped,
+				// breaking strict JSON parsing of the arguments downstream.
+				var functionArguments = jsonHelper
+					.toJson(ConverseApiUtils.convertDocumentToObject(toolUseContentBlock.toolUse().input()));
 
 				toolCalls
 					.add(new AssistantMessage.ToolCall(functionCallId, "function", functionName, functionArguments));

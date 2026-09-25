@@ -55,7 +55,7 @@ import static org.mockito.Mockito.when;
  * @author Jewoo Shin
  */
 @ExtendWith(MockitoExtension.class)
-public class StructuredOutputValidationAdvisorTests {
+class StructuredOutputValidationAdvisorTests {
 
 	@Mock
 	private CallAdvisorChain callAdvisorChain;
@@ -791,10 +791,12 @@ public class StructuredOutputValidationAdvisorTests {
 
 	@Test
 	void testValidationWithWrongTypeInField() {
+		int maxRepeatAttempts = 3;
+		int lastAttemptNumber = maxRepeatAttempts + 1;
 		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
 			.outputType(new TypeReference<Person>() {
 			})
-			.maxRepeatAttempts(1)
+			.maxRepeatAttempts(maxRepeatAttempts)
 			.build();
 
 		ChatClientRequest request = createMockRequest();
@@ -808,7 +810,7 @@ public class StructuredOutputValidationAdvisorTests {
 		int[] callCount = { 0 };
 		CallAdvisor terminalAdvisor = terminalAdvisor((req, chain) -> {
 			callCount[0]++;
-			return callCount[0] == 1 ? invalidResponse : validResponse;
+			return callCount[0] == lastAttemptNumber ? validResponse : invalidResponse;
 		});
 
 		CallAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
@@ -818,7 +820,7 @@ public class StructuredOutputValidationAdvisorTests {
 		ChatClientResponse result = realChain.nextCall(request);
 
 		assertThat(result).isEqualTo(validResponse);
-		assertThat(callCount[0]).isEqualTo(2);
+		assertThat(callCount[0]).isEqualTo(lastAttemptNumber);
 	}
 
 	@Test

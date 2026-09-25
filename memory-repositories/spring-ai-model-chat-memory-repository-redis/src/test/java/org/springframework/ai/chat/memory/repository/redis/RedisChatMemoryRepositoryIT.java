@@ -16,6 +16,7 @@
 
 package org.springframework.ai.chat.memory.repository.redis;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.redis.testcontainers.RedisContainer;
@@ -54,6 +55,8 @@ class RedisChatMemoryRepositoryIT {
 
 	private ChatMemoryRepository chatMemoryRepository;
 
+	private RedisChatMemoryRepository redisChatMemoryRepository;
+
 	private RedisClient jedisClient;
 
 	@BeforeEach
@@ -64,10 +67,11 @@ class RedisChatMemoryRepositoryIT {
 			.hostAndPort(redisContainer.getHost(), redisContainer.getFirstMappedPort())
 			.build();
 
-		this.chatMemoryRepository = RedisChatMemoryRepository.builder()
+		this.redisChatMemoryRepository = RedisChatMemoryRepository.builder()
 			.jedisClient(this.jedisClient)
 			.indexName("test-" + RedisChatMemoryConfig.DEFAULT_INDEX_NAME)
 			.build();
+		this.chatMemoryRepository = this.redisChatMemoryRepository;
 
 		// Clear any existing data
 		for (String conversationId : this.chatMemoryRepository.findConversationIds()) {
@@ -175,6 +179,53 @@ class RedisChatMemoryRepositoryIT {
 			// Verify conversation is gone
 			assertThat(this.chatMemoryRepository.findByConversationId("test-conversation")).isEmpty();
 			assertThat(this.chatMemoryRepository.findConversationIds()).doesNotContain("test-conversation");
+		});
+	}
+
+	@Test
+	void shouldDeleteConversationWithMoreThanTenMessages() {
+		this.contextRunner.run(context -> {
+			// FT.SEARCH defaults to LIMIT 0 10, so use more than 10 messages to
+			// verify clear() pages through all matching documents instead of only
+			// deleting the first page.
+			List<Message> messages = new ArrayList<>();
+			for (int i = 0; i < 15; i++) {
+				messages.add(new UserMessage("Message " + i));
+			}
+			this.chatMemoryRepository.saveAll("test-conversation", messages);
+
+			// Verify initial state
+			assertThat(this.chatMemoryRepository.findByConversationId("test-conversation")).hasSize(15);
+
+			// Delete the conversation
+			this.chatMemoryRepository.deleteByConversationId("test-conversation");
+
+			// Verify every message was removed, not just the first 10
+			assertThat(this.chatMemoryRepository.findByConversationId("test-conversation")).isEmpty();
+			assertThat(this.chatMemoryRepository.findConversationIds()).doesNotContain("test-conversation");
+		});
+	}
+
+	@Test
+	void shouldNotOverwriteMessagesAcrossConsecutiveBatchAdds() {
+		this.contextRunner.run(context -> {
+			// add(List) used to reserve a single counter slot per
+			// call regardless of batch size, so a second batch add() for the same
+			// conversation could derive keys that overlapped the previous batch's and
+			// silently overwrite those messages.
+			List<Message> firstBatch = List.of(new UserMessage("first-1"), new UserMessage("first-2"),
+					new UserMessage("first-3"));
+			this.redisChatMemoryRepository.add("test-conversation", firstBatch);
+
+			List<Message> secondBatch = List.of(new UserMessage("second-1"), new UserMessage("second-2"),
+					new UserMessage("second-3"), new UserMessage("second-4"));
+			this.redisChatMemoryRepository.add("test-conversation", secondBatch);
+
+			List<Message> storedMessages = this.redisChatMemoryRepository.findByConversationId("test-conversation");
+
+			assertThat(storedMessages).hasSize(7);
+			assertThat(storedMessages.stream().map(Message::getText).toList()).containsExactly("first-1", "first-2",
+					"first-3", "second-1", "second-2", "second-3", "second-4");
 		});
 	}
 

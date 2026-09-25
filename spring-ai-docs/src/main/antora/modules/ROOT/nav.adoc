@@ -31,6 +31,7 @@
 **** xref:api/chat/perplexity-chat.adoc[Perplexity AI]
 **** xref:api/chat/oci-genai-chat.adoc[OCI Generative AI]
 **** xref:api/chat/openai-chat.adoc[OpenAI]
+**** xref:api/chat/openai-responses-chat.adoc[OpenAI Responses API]
 
 *** xref:api/embeddings.adoc[Embedding Models]
 **** xref:api/bedrock.adoc[Amazon Bedrock]
@@ -52,6 +53,7 @@
 **** xref:api/image/azure-openai-image.adoc[Azure OpenAI]
 **** xref:api/image/openai-image.adoc[OpenAI]
 **** xref:api/image/stabilityai-image.adoc[Stability]
+**** xref:api/image/google-genai-image.adoc[Google GenAI]
 
 *** xref:api/audio.adoc[Audio Models]
 **** xref:api/audio/transcriptions.adoc[]

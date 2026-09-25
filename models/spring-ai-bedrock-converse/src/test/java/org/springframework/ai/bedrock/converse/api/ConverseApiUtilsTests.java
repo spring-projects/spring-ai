@@ -25,14 +25,31 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.core.document.Document;
 
+import org.springframework.ai.util.JsonHelper;
+
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 /**
- * Tests for {@link ConverseApiUtils}.
+ * Tests for {@link ConverseApiUtils}, covering both directions of the {@link Document}
+ * <-> plain Java object conversion.
+ * <p>
+ * {@link ConverseApiUtils#convertObjectToDocument(Object)} turns a plain Java object into
+ * a {@link Document}, recursing through nested {@link Map}s and {@link List}s so that
+ * structured provider fields (for example Anthropic's {@code output_config}) survive the
+ * round trip.
+ * <p>
+ * {@link ConverseApiUtils#convertDocumentToObject(Document)} is the inverse: a tool-use
+ * input {@link Document} is turned into a plain Java object that serializes to valid
+ * JSON, so that arguments containing control characters (such as newlines) survive the
+ * strict JSON parsing performed on tool-call arguments.
  *
  * @author Seyed Hosseini
+ * @author Andrei Shakirin
  */
 class ConverseApiUtilsTests {
+
+	private final JsonHelper jsonHelper = new JsonHelper();
 
 	@Test
 	void convertsScalarValues() {
@@ -101,6 +118,69 @@ class ConverseApiUtilsTests {
 		Document level2List = document.asMap().get("level1").asMap().get("level2");
 		assertThat(level2List.isList()).isTrue();
 		assertThat(level2List.asList().get(0).asMap().get("level3")).isEqualTo(Document.fromString("value"));
+	}
+
+	@Test
+	void convertsScalarNodeTypes() {
+		assertThat(ConverseApiUtils.convertDocumentToObject(Document.fromNull())).isNull();
+		assertThat(ConverseApiUtils.convertDocumentToObject(null)).isNull();
+		assertThat(ConverseApiUtils.convertDocumentToObject(Document.fromString("hello"))).isEqualTo("hello");
+		assertThat(ConverseApiUtils.convertDocumentToObject(Document.fromBoolean(true))).isEqualTo(true);
+		assertThat(ConverseApiUtils.convertDocumentToObject(Document.fromNumber(42))).isEqualTo(new BigDecimal("42"));
+	}
+
+	@Test
+	void convertsNestedMapsAndLists() {
+		Document document = Document.mapBuilder()
+			.putString("channel", "VIBER_BM")
+			.putList("tags", List.of(Document.fromString("a"), Document.fromString("b")))
+			.putDocument("nested", Document.mapBuilder().putNumber("count", 2).build())
+			.build();
+
+		Object result = ConverseApiUtils.convertDocumentToObject(document);
+
+		assertThat(result).isInstanceOf(Map.class);
+		@SuppressWarnings("unchecked")
+		Map<String, Object> map = (Map<String, Object>) result;
+		assertThat(map).containsEntry("channel", "VIBER_BM");
+		assertThat(map.get("tags")).isEqualTo(List.of("a", "b"));
+		assertThat(map.get("nested")).isEqualTo(Map.of("count", new BigDecimal("2")));
+	}
+
+	@Test
+	void isInverseOfConvertObjectToDocument() {
+		Map<String, Object> original = Map.of("channel", "SMS", "to", "385911234567", "retries", new BigDecimal("3"));
+
+		Object roundTripped = ConverseApiUtils
+			.convertDocumentToObject(ConverseApiUtils.convertObjectToDocument(original));
+
+		assertThat(roundTripped).isEqualTo(original);
+	}
+
+	/**
+	 * Regression: a tool argument whose string value contains a newline and emoji must
+	 * serialize to valid JSON. Previously {@code Document.toString()} left the control
+	 * character unescaped, which broke the strict JSON parsing of tool-call arguments.
+	 */
+	@Test
+	void producesValidJsonForStringValuesWithControlCharacters() {
+		String multilineText = "Line one\nLine two 🌊\tafter tab";
+		Document input = Document.mapBuilder()
+			.putString("channel", "VIBER_BM")
+			.putString("to", "385911234567")
+			.putString("text", multilineText)
+			.build();
+
+		String json = this.jsonHelper.toJson(ConverseApiUtils.convertDocumentToObject(input));
+
+		// The raw control characters must not appear unescaped in the JSON string.
+		assertThat(json).doesNotContain("\n").doesNotContain("\t").contains("\\n").contains("\\t");
+
+		// And the JSON must parse back cleanly, preserving the original text.
+		assertThatCode(() -> {
+			Map<String, Object> parsed = this.jsonHelper.fromJsonToMap(json);
+			assertThat(parsed).containsEntry("text", multilineText).containsEntry("channel", "VIBER_BM");
+		}).doesNotThrowAnyException();
 	}
 
 }

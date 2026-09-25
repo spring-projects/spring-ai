@@ -34,14 +34,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Integration tests for ThinkingLevel validation with Gemini 3 models.
- *
- * <p>
- * Gemini 3 Pro only supports LOW and HIGH thinking levels. Gemini 3 Flash supports all
- * levels (MINIMAL, LOW, MEDIUM, HIGH).
+ * Gemini 3.1 Pro supports LOW, MEDIUM and HIGH thinking levels, but not MINIMAL. Gemini
+ * 3.5 Flash supports all levels (MINIMAL, LOW, MEDIUM, HIGH). Gemini 2.5 Flash and Flash
+ * Lite reject {@code thinkingLevel} entirely on the {@code generateContent} API. Gemini
+ * 2.5 Pro is intentionally not covered here: its behavior depends on the account used.
  *
  * @author Dan Dobrin
  * @author Sebastien Deleuze
+ * @author Dimitar Proynov
  */
 @EnabledIfEnvironmentVariable(named = "GOOGLE_API_KEY", matches = ".+")
 class GoogleGenAiThinkingLevelIT {
@@ -55,17 +55,16 @@ class GoogleGenAiThinkingLevelIT {
 	}
 
 	static Stream<Arguments> proModelUnsupportedLevels() {
-		return Stream.of(
-				Arguments.of(GoogleGenAiChatModel.ChatModel.GEMINI_3_1_PRO_PREVIEW.getValue(),
-						GoogleGenAiThinkingLevel.MINIMAL),
-				Arguments.of(GoogleGenAiChatModel.ChatModel.GEMINI_3_1_PRO_PREVIEW.getValue(),
-						GoogleGenAiThinkingLevel.MEDIUM));
+		return Stream.of(Arguments.of(GoogleGenAiChatModel.ChatModel.GEMINI_3_1_PRO_PREVIEW.getValue(),
+				GoogleGenAiThinkingLevel.MINIMAL));
 	}
 
 	static Stream<Arguments> proModelSupportedLevels() {
 		return Stream.of(
 				Arguments.of(GoogleGenAiChatModel.ChatModel.GEMINI_3_1_PRO_PREVIEW.getValue(),
 						GoogleGenAiThinkingLevel.LOW),
+				Arguments.of(GoogleGenAiChatModel.ChatModel.GEMINI_3_1_PRO_PREVIEW.getValue(),
+						GoogleGenAiThinkingLevel.MEDIUM),
 				Arguments.of(GoogleGenAiChatModel.ChatModel.GEMINI_3_1_PRO_PREVIEW.getValue(),
 						GoogleGenAiThinkingLevel.HIGH));
 	}
@@ -78,6 +77,24 @@ class GoogleGenAiThinkingLevelIT {
 				Arguments.of(GoogleGenAiChatModel.ChatModel.GEMINI_3_5_FLASH.getValue(),
 						GoogleGenAiThinkingLevel.MEDIUM),
 				Arguments.of(GoogleGenAiChatModel.ChatModel.GEMINI_3_5_FLASH.getValue(),
+						GoogleGenAiThinkingLevel.HIGH));
+	}
+
+	static Stream<Arguments> gemini25FlashRejectsThinkingLevel() {
+		return Stream.of(
+				Arguments.of(GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH.getValue(),
+						GoogleGenAiThinkingLevel.MINIMAL),
+				Arguments.of(GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH.getValue(), GoogleGenAiThinkingLevel.LOW),
+				Arguments.of(GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH.getValue(),
+						GoogleGenAiThinkingLevel.MEDIUM),
+				Arguments.of(GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH.getValue(), GoogleGenAiThinkingLevel.HIGH),
+				Arguments.of(GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH_LIGHT.getValue(),
+						GoogleGenAiThinkingLevel.MINIMAL),
+				Arguments.of(GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH_LIGHT.getValue(),
+						GoogleGenAiThinkingLevel.LOW),
+				Arguments.of(GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH_LIGHT.getValue(),
+						GoogleGenAiThinkingLevel.MEDIUM),
+				Arguments.of(GoogleGenAiChatModel.ChatModel.GEMINI_2_5_FLASH_LIGHT.getValue(),
 						GoogleGenAiThinkingLevel.HIGH));
 	}
 
@@ -95,7 +112,7 @@ class GoogleGenAiThinkingLevelIT {
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining(level.name())
 			.hasMessageContaining("not supported")
-			.hasMessageContaining("Gemini 3 Pro");
+			.hasMessageContaining(modelName);
 	}
 
 	@ParameterizedTest
@@ -130,6 +147,23 @@ class GoogleGenAiThinkingLevelIT {
 		assertThat(response).isNotNull();
 		assertThat(response.getResult()).isNotNull();
 		assertThat(response.getResult().getOutput().getText()).isNotBlank();
+	}
+
+	@ParameterizedTest
+	@MethodSource("gemini25FlashRejectsThinkingLevel")
+	void testGemini25FlashRejectsThinkingLevel(String modelName, GoogleGenAiThinkingLevel level) {
+		var chatModel = GoogleGenAiChatModel.builder()
+			.genAiClient(this.genAiClient)
+			.options(GoogleGenAiChatOptions.builder().model(modelName).thinkingLevel(level).build())
+			.toolCallingManager(ToolCallingManager.builder().build())
+			.observationRegistry(ObservationRegistry.NOOP)
+			.build();
+
+		assertThatThrownBy(() -> chatModel.call(new Prompt("What is 2+2?")))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining(level.name())
+			.hasMessageContaining("not supported")
+			.hasMessageContaining(modelName);
 	}
 
 }

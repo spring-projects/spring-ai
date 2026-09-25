@@ -21,8 +21,12 @@ package org.springframework.ai.google.genai.common;
  * the depth of reasoning the model applies during generation.
  *
  * <p>
- * <strong>Model Compatibility:</strong> This option is only supported by Gemini 3 Pro
- * models. For Gemini 2.5 series and earlier models, use
+ * <strong>Model Compatibility:</strong> Not every level is supported by every model, and
+ * not every model supports {@code thinkingLevel} at all. For example, {@code
+ * gemini-3-pro-preview} only supports {@link #LOW} and {@link #HIGH}, while {@code
+ * gemini-2.5-flash} and {@code gemini-2.5-flash-lite} don't support {@code
+ * thinkingLevel} at all on the {@code generateContent} API. Models that don't support
+ * {@code thinkingLevel}, use
  * {@link org.springframework.ai.google.genai.GoogleGenAiChatOptions#getThinkingBudget()
  * thinkingBudget} instead.
  *

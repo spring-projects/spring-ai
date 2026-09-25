@@ -25,9 +25,11 @@ import com.google.genai.Client;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.google.genai.GoogleGenAiChatModel;
@@ -97,6 +99,41 @@ public class GoogleGenAiChatModelToolCallingIT {
 			response = this.chatModel.call(prompt);
 		}
 		assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
+	}
+
+	@Test
+	public void includeThoughtsInResponseWithToolCalls() {
+		UserMessage userMessage = new UserMessage(
+				"What's the weather like in Tokyo, Japan? Return the temperature in Celsius.");
+
+		List<Message> messages = new ArrayList<>(List.of(userMessage));
+
+		var promptOptions = GoogleGenAiChatOptions.builder()
+			.includeThoughts(true)
+			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.description("Get the current weather in a given location")
+				.inputType(MockWeatherService.Request.class)
+				.build()))
+			.build();
+
+		List<Generation> generations = this.chatModel.call(new Prompt(messages, promptOptions)).getResults();
+
+		assertThat(generations).hasSize(2);
+
+		var thought = generations.get(0).getOutput();
+		assertThat((Boolean) thought.getMetadata().get("isThought")).isTrue();
+		assertThat(thought.getText()).isNotBlank();
+		assertThat(thought.hasToolCalls()).isFalse();
+
+		var toolCalls = generations.get(1).getOutput();
+		assertThat(toolCalls.getText()).isBlank();
+		assertThat(toolCalls.getToolCalls()).containsAnyOf(
+				// JSON serialization of Map doesn't guarantee key order,
+				// so check both possible orderings to avoid flaky tests
+				new AssistantMessage.ToolCall("", "function", "getCurrentWeather",
+						"{\"location\":\"Tokyo, Japan\",\"unit\":\"C\"}"),
+				new AssistantMessage.ToolCall("", "function", "getCurrentWeather",
+						"{\"unit\":\"C\",\"location\":\"Tokyo, Japan\"}"));
 	}
 
 	@Test

@@ -99,4 +99,46 @@ class OpenAiEmbeddingOptionsTests {
 			.containsEntry("merged-header2", "merged-value2");
 	}
 
+	@Test
+	void extraBodyIsPassedAsAdditionalBodyProperties() {
+		OpenAiEmbeddingOptions options = OpenAiEmbeddingOptions.builder()
+			.model("test-model")
+			.extraBody(Map.of("top_k", 40, "repetition_penalty", 1.2))
+			.build();
+
+		EmbeddingCreateParams createParams = options.toOpenAiCreateParams(List.of("test input"));
+
+		assertThat(options.getExtraBody()).containsEntry("top_k", 40).containsEntry("repetition_penalty", 1.2);
+		assertThat(createParams._additionalBodyProperties()).containsKeys("top_k", "repetition_penalty");
+		assertThat(createParams._additionalBodyProperties().get("top_k").asNumber().get()).isEqualTo(40);
+		assertThat(createParams._additionalBodyProperties().get("repetition_penalty").asNumber().get()).isEqualTo(1.2);
+	}
+
+	@Test
+	void extraBodyIsCopiedAndMerged() {
+		OpenAiEmbeddingOptions source = OpenAiEmbeddingOptions.builder()
+			.model("test-model")
+			.extraBody(Map.of("top_k", 40))
+			.build();
+
+		OpenAiEmbeddingOptions copied = OpenAiEmbeddingOptions.builder().from(source).build();
+		OpenAiEmbeddingOptions merged = OpenAiEmbeddingOptions.builder()
+			.extraBody(Map.of("repetition_penalty", 1.2))
+			.merge(source)
+			.build();
+
+		assertThat(copied.getExtraBody()).containsEntry("top_k", 40);
+		assertThat(merged.getExtraBody()).containsEntry("top_k", 40).containsEntry("repetition_penalty", 1.2);
+	}
+
+	@Test
+	void emptyExtraBodyIsNotAddedToCreateParams() {
+		OpenAiEmbeddingOptions options = OpenAiEmbeddingOptions.builder().model("test-model").build();
+
+		EmbeddingCreateParams createParams = options.toOpenAiCreateParams(List.of("test input"));
+
+		assertThat(options.getExtraBody()).isNull();
+		assertThat(createParams._additionalBodyProperties()).isEmpty();
+	}
+
 }

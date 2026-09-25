@@ -70,4 +70,14 @@ class MarkdownCodeBlockCleanerTest {
 		assertThat(cleaner.clean(input)).isEqualTo(input);
 	}
 
+	@Test
+	void shouldHandleMalformedInput() {
+		MarkdownCodeBlockCleaner cleaner = new MarkdownCodeBlockCleaner();
+		assertThat(cleaner.clean("")).isEmpty();
+		assertThat(cleaner.clean("`")).isEqualTo("`");
+		assertThat(cleaner.clean("```")).isEqualTo("```");
+		assertThat(cleaner.clean("``````")).isEqualTo("``````");
+		assertThat(cleaner.clean("```````")).isEqualTo("`");
+	}
+
 }

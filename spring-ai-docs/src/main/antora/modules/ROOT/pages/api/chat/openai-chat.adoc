@@ -120,6 +120,11 @@ The prefix `spring.ai.openai` is used as the property prefix that lets you conne
 | spring.ai.openai.api-key         | The API Key           |  -
 | spring.ai.openai.organization-id | Optionally, you can specify which organization to use for an API request. |  -
 | spring.ai.openai.project-id      | Optionally, you can specify which project to use for an API request. |  -
+| spring.ai.openai.timeout | Request timeout for the OpenAI client. |  60 sec.
+| spring.ai.openai.max-retries | Maximum number of retries for the OpenAI client. |  3
+| spring.ai.openai.proxy | Proxy settings for the OpenAI client. |  -
+| spring.ai.openai.custom-headers | Custom HTTP headers to add to OpenAI client requests. |  empty
+| spring.ai.openai.connection-pool-metrics-enabled | Whether to enable connection pool metrics for the underlying OkHttp client. |  false
 |====
 
 TIP: For users that belong to multiple organizations (or are accessing their projects through their legacy user API key), you can optionally specify which organization and project is used for an API request.
@@ -186,6 +191,7 @@ The `JSON_SCHEMA` type enables link:https://platform.openai.com/docs/guides/stru
 | spring.ai.openai.chat.user | A unique identifier representing your end-user, which can help OpenAI to monitor and detect abuse. | -
 | spring.ai.openai.chat.stream-usage | (For streaming only) Set to add an additional chunk with token usage statistics for the entire request. The `choices` field for this chunk is an empty array and all other chunks will also include a usage field, but with a null value. | false
 | spring.ai.openai.chat.parallel-tool-calls | Whether to enable link:https://platform.openai.com/docs/guides/function-calling/parallel-function-calling[parallel function calling] during tool use. | true
+| spring.ai.openai.chat.reasoning-effort | Controls the reasoning effort for models that support it. The value is forwarded to the OpenAI Chat Completions API; use only values supported by the selected model. For models that do not support function tools when reasoning is enabled, set this to `none` or use a compatible API/model combination. | -
 | spring.ai.openai.chat.prompt-cache-key | A cache key used by OpenAI to optimize cache hit rates for similar requests. Improves latency and reduces costs. Replaces the deprecated `user` field for caching purposes. link:https://platform.openai.com/docs/guides/prompt-caching[Learn more]. | -
 | spring.ai.openai.chat.safety-identifier | A stable identifier to help OpenAI detect users violating usage policies. Should be a hashed value (e.g., hashed username or email). Replaces the deprecated `user` field for safety tracking. link:https://platform.openai.com/docs/guides/safety-best-practices#safety-identifiers[Learn more]. | -
 | spring.ai.openai.chat.http-headers | Optional HTTP headers to be added to the chat completion request. To override the `api-key` you need to use an `Authorization` header key, and you have to prefix the key value with the `Bearer` prefix. | -
@@ -889,7 +895,8 @@ Spring AI maps this field from the JSON response to the `reasoningContent` key i
 
 Official OpenAI reasoning models hide the chain-of-thought content when using the Chat Completions API.
 They only expose `reasoning_tokens` count in usage statistics.
-To access actual reasoning text from official OpenAI models, you must use OpenAI's Responses API (a separate endpoint not currently supported by this client).
+To get reasoning summaries from official OpenAI models, use OpenAI's Responses API through xref:api/chat/openai-responses-chat.adoc[`OpenAiResponsesChatModel`].
+That endpoint is also the only one that supports reasoning together with tool calling on GPT-5.4 and later.
 
 **Fallback behavior:** When `reasoning_content` is not provided by the server (e.g., official OpenAI Chat Completions), the `reasoningContent` metadata field will be an empty string.
 ====

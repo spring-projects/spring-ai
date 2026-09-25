@@ -214,40 +214,28 @@ public class SemanticCacheAdvisor implements BaseChatMemoryAdvisor {
 	 */
 	private @Nullable String extractContextHash(ChatClientRequest request) {
 		var systemMessage = request.prompt().getSystemMessage();
-		if (systemMessage != null && systemMessage.getText() != null && !systemMessage.getText().isEmpty()) {
+		if (systemMessage.getText() != null && !systemMessage.getText().isEmpty()) {
 			return computeHash(systemMessage.getText());
 		}
 		return null;
 	}
 
 	/**
-	 * Computes a deterministic hash for the given string. Uses the first 8 characters of
-	 * the SHA-256 hash to create a compact but unique identifier.
+	 * Computes a deterministic hash for the given string. Uses a SHA-256 hash to create a
+	 * unique identifier.
 	 * @param text the text to hash
-	 * @return an 8-character hash string
+	 * @return a 64-character hash string
 	 */
 	private String computeHash(String text) {
 		try {
 			java.security.MessageDigest digest = java.security.MessageDigest.getInstance("SHA-256");
 			byte[] hash = digest.digest(text.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-			StringBuilder hexString = new StringBuilder();
-			// Take first 4 bytes of SHA-256 hash → 8 hex characters
-			// (4 billion possible values - sufficient for context differentiation)
-			for (int i = 0; i < 4; i++) {
-				// 0xff mask converts signed byte (-128..127) to unsigned (0..255)
-				// ensuring correct hex representation (e.g., byte -1 → "ff", not
-				// "ffffffff")
-				String hex = Integer.toHexString(0xff & hash[i]);
-				if (hex.length() == 1) {
-					hexString.append('0');
-				}
-				hexString.append(hex);
-			}
-			return hexString.toString();
+			return java.util.HexFormat.of().formatHex(hash);
 		}
 		catch (java.security.NoSuchAlgorithmException e) {
-			// SHA-256 is always available in Java, but fallback to hashCode if needed
-			return Integer.toHexString(text.hashCode());
+			// possible only on a broken/tampered with java.security provider
+			// configuration
+			throw new IllegalStateException(e);
 		}
 	}
 

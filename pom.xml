@@ -5,7 +5,7 @@
 
 	<groupId>org.springframework.ai</groupId>
 	<artifactId>spring-ai-parent</artifactId>
-	<version>2.0.1-SNAPSHOT</version>
+	<version>2.1.0-SNAPSHOT</version>
 
 	<packaging>pom</packaging>
 	<url>https://github.com/spring-projects/spring-ai</url>
@@ -115,6 +115,7 @@
 		<module>models/spring-ai-elevenlabs</module>
 		<module>models/spring-ai-google-genai</module>
 		<module>models/spring-ai-google-genai-embedding</module>
+		<module>models/spring-ai-google-genai-image</module>
 		<module>models/spring-ai-mistral-ai</module>
 		<module>models/spring-ai-ollama</module>
 		<module>models/spring-ai-openai</module>
@@ -142,6 +143,7 @@
 		<module>starters/spring-ai-starter-model-elevenlabs</module>
 		<module>starters/spring-ai-starter-model-google-genai</module>
 		<module>starters/spring-ai-starter-model-google-genai-embedding</module>
+		<module>starters/spring-ai-starter-model-google-genai-image</module>
 		<module>starters/spring-ai-starter-model-mistral-ai</module>
 		<module>starters/spring-ai-starter-model-ollama</module>
 		<module>starters/spring-ai-starter-model-openai</module>
@@ -244,26 +246,27 @@
 		<kotlin.compiler.jvmTarget>${java.version}</kotlin.compiler.jvmTarget>
 		<kotlin.compiler.daemon>false</kotlin.compiler.daemon>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<project.build.outputTimestamp>2026-09-24T10:28:26Z</project.build.outputTimestamp>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
 		<!-- Spring Boot -->
-		<spring-boot.version>4.1.1-SNAPSHOT</spring-boot.version>
+		<spring-boot.version>4.2.0-SNAPSHOT</spring-boot.version>
 
 		<!-- MCP SDK -->
 		<mcp.sdk.version>2.0.0</mcp.sdk.version>
 
 		<!-- AI model SDKs -->
-		<anthropic-sdk.version>2.48.0</anthropic-sdk.version>
-		<openai-sdk.version>4.41.0</openai-sdk.version>
+		<anthropic-sdk.version>2.64.0</anthropic-sdk.version>
+		<openai-sdk.version>4.49.0</openai-sdk.version>
 		<!-- NOTE: keep awssdk and bedrockruntime versions aligned -->
-		<awssdk.version>2.46.19</awssdk.version>
-		<bedrockruntime.version>2.46.19</bedrockruntime.version>
+		<awssdk.version>2.51.2</awssdk.version>
+		<bedrockruntime.version>2.51.2</bedrockruntime.version>
 		<azure-core.version>1.57.1</azure-core.version>
 		<azure-identity.version>1.18.2</azure-identity.version>
 		<azure-json.version>1.5.1</azure-json.version>
 		<azure-search.version>11.7.6</azure-search.version>
 		<com.google.cloud.version>26.83.0</com.google.cloud.version>
-		<com.google.genai.version>1.58.0</com.google.genai.version>
+		<com.google.genai.version>1.65.0</com.google.genai.version>
 		<djl.version>0.36.0</djl.version>
 
 		<!-- Vector store clients -->
@@ -467,7 +470,11 @@
 							<goal>compile</goal>
 						</goals>
 						<configuration>
-							<compilerArgs>
+							<!-- combine.children="append" merges with, rather than
+								replaces, the plugin-level compilerArgs above (which carries
+								-parameters) - otherwise this execution-level list silently
+								overrides it and javac never receives -parameters. -->
+							<compilerArgs combine.children="append">
 								<arg>-XDcompilePolicy=simple</arg>
 								<!-- The following arg won't be necessary with JDK25+ -->
 								<arg>-XDaddTypeAnnotationsToSymbol=true</arg>
@@ -937,6 +944,31 @@
 					</plugin>
 				</plugins>
 			</build>
+		</profile>
+		<profile>
+			<id>commercial</id>
+			<repositories>
+				<repository>
+					<id>spring-enterprise-snapshot</id>
+					<url>${env.COMMERCIAL_SNAPSHOT_REPO_URL}</url>
+					<snapshots>
+						<enabled>true</enabled>
+					</snapshots>
+					<releases>
+						<enabled>false</enabled>
+					</releases>
+				</repository>
+				<repository>
+					<id>spring-enterprise-release</id>
+					<url>${env.COMMERCIAL_RELEASE_REPO_URL}</url>
+					<snapshots>
+						<enabled>false</enabled>
+					</snapshots>
+					<releases>
+						<enabled>true</enabled>
+					</releases>
+				</repository>
+			</repositories>
 		</profile>
 	</profiles>
 

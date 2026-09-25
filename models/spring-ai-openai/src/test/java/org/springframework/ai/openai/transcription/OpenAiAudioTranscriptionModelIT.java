@@ -16,12 +16,16 @@
 
 package org.springframework.ai.openai.transcription;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.util.Base64;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
 import com.openai.models.audio.AudioModel;
 import com.openai.models.audio.AudioResponseFormat;
+import com.openai.models.audio.transcriptions.TranscriptionCreateParams;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import reactor.core.publisher.Flux;
@@ -32,6 +36,7 @@ import org.springframework.ai.audio.transcription.AudioTranscriptionResponse;
 import org.springframework.ai.openai.OpenAiAudioTranscriptionModel;
 import org.springframework.ai.openai.OpenAiAudioTranscriptionOptions;
 import org.springframework.ai.openai.OpenAiTestConfiguration;
+import org.springframework.ai.openai.metadata.OpenAiAudioTranscriptionResponseMetadata;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.core.io.ClassPathResource;
@@ -94,6 +99,122 @@ public class OpenAiAudioTranscriptionModelIT {
 		String text = this.transcriptionModel.transcribe(new ClassPathResource("/speech.flac"), options);
 
 		assertThat(text).isNotBlank();
+	}
+
+	@Test
+	void transcribeWithVerboseFormatExposesUsageAndSegments() {
+		OpenAiAudioTranscriptionOptions options = OpenAiAudioTranscriptionOptions.builder()
+			.responseFormat(AudioResponseFormat.VERBOSE_JSON)
+			.timestampGranularities(List.of(TranscriptionCreateParams.TimestampGranularity.WORD,
+					TranscriptionCreateParams.TimestampGranularity.SEGMENT))
+			.build();
+
+		AudioTranscriptionPrompt prompt = new AudioTranscriptionPrompt(new ClassPathResource("/speech.flac"), options);
+		AudioTranscriptionResponse response = this.transcriptionModel.call(prompt);
+
+		assertThat(response.getResult().getOutput()).isNotBlank();
+		OpenAiAudioTranscriptionResponseMetadata metadata = (OpenAiAudioTranscriptionResponseMetadata) response
+			.getMetadata();
+		assertThat(metadata.getDuration()).isPositive();
+		assertThat(metadata.getLanguage()).isNotBlank();
+		assertThat(metadata.getUsage()).isNotNull();
+		assertThat(metadata.getSegments()).isNotEmpty();
+		assertThat(metadata.getWords()).isNotEmpty();
+	}
+
+	@Test
+	void transcribeWithDiarizedFormatExposesSpeakerSegments() {
+		// The OpenAI Java SDK (4.42.0) misclassifies diarized_json
+		// responses as a plain Transcription instead of TranscriptionDiarized, because
+		// the real API response omits the "duration" field the SDK treats as required
+		// (see https://github.com/openai/openai-java/issues/802). Spring AI works
+		// around this (DiarizedJsonMisclassificationRecovery, enabled by default) by
+		// recovering the clean text, speaker segments and usage from the raw JSON
+		// payload the SDK would otherwise surface as-is. Duration itself stays
+		// unavailable since the API never sends it for this format.
+		OpenAiAudioTranscriptionOptions options = OpenAiAudioTranscriptionOptions.builder()
+			.model(AudioModel.GPT_4O_TRANSCRIBE_DIARIZE.asString())
+			.responseFormat(AudioResponseFormat.DIARIZED_JSON)
+			.build();
+
+		AudioTranscriptionPrompt prompt = new AudioTranscriptionPrompt(new ClassPathResource("/speech.flac"), options);
+		AudioTranscriptionResponse response = this.transcriptionModel.call(prompt);
+
+		assertThat(response.getResult().getOutput()).isNotBlank();
+		assertThat(response.getResult().getOutput()).doesNotStartWith("{");
+		OpenAiAudioTranscriptionResponseMetadata metadata = (OpenAiAudioTranscriptionResponseMetadata) response
+			.getMetadata();
+		assertThat(metadata.getDuration()).isNull();
+		assertThat(metadata.getSegments()).isNotEmpty();
+		assertThat(metadata.getUsage()).isNotNull();
+	}
+
+	@Test
+	void transcribeWithDiarizedFormatAndWorkaroundDisabledReturnsRawJson() {
+		// With the workaround explicitly turned off, the SDK's broken raw-JSON
+		// fallback text passes through unchanged.
+		// TODO: remove after the https://github.com/openai/openai-java/issues/802 is
+		// fixed.
+		OpenAiAudioTranscriptionOptions options = OpenAiAudioTranscriptionOptions.builder()
+			.model(AudioModel.GPT_4O_TRANSCRIBE_DIARIZE.asString())
+			.responseFormat(AudioResponseFormat.DIARIZED_JSON)
+			.diarizedJsonWorkaroundEnabled(false)
+			.build();
+
+		AudioTranscriptionPrompt prompt = new AudioTranscriptionPrompt(new ClassPathResource("/speech.flac"), options);
+		AudioTranscriptionResponse response = this.transcriptionModel.call(prompt);
+
+		assertThat(response.getResult().getOutput()).startsWith("{");
+	}
+
+	@Test
+	void transcribeWithChunkingStrategyAutoSucceeds() {
+		// chunking_strategy is only accepted by the streaming-capable gpt-4o-transcribe
+		// family, not by whisper-1.
+		OpenAiAudioTranscriptionOptions options = OpenAiAudioTranscriptionOptions.builder()
+			.model(AudioModel.GPT_4O_MINI_TRANSCRIBE.asString())
+			.chunkingStrategy(TranscriptionCreateParams.ChunkingStrategy.ofAuto())
+			.build();
+
+		AudioTranscriptionPrompt prompt = new AudioTranscriptionPrompt(new ClassPathResource("/speech.flac"), options);
+		AudioTranscriptionResponse response = this.transcriptionModel.call(prompt);
+
+		assertThat(response.getResult().getOutput()).isNotBlank();
+	}
+
+	@Test
+	void transcribeWithKnownSpeakerNamesAndReferences() {
+		// known_speaker_names/known_speaker_references let callers help the
+		// gpt-4o-transcribe-diarize model attach a real name to a speaker instead of a
+		// generic "A"/"B" label.
+		// The API rejects multipart fields over 1024KB once base64-encoded, so
+		// a trimmed ~3s clip is used instead.
+		String speakerReference = "data:audio/flac;base64," + base64Encode("/speech-speaker-reference.flac");
+
+		OpenAiAudioTranscriptionOptions options = OpenAiAudioTranscriptionOptions.builder()
+			.model(AudioModel.GPT_4O_TRANSCRIBE_DIARIZE.asString())
+			.responseFormat(AudioResponseFormat.DIARIZED_JSON)
+			.knownSpeakerNames(List.of("JFK"))
+			.knownSpeakerReferences(List.of(speakerReference))
+			.build();
+
+		AudioTranscriptionPrompt prompt = new AudioTranscriptionPrompt(new ClassPathResource("/speech.flac"), options);
+		AudioTranscriptionResponse response = this.transcriptionModel.call(prompt);
+
+		assertThat(response.getResult().getOutput()).isNotBlank();
+		OpenAiAudioTranscriptionResponseMetadata metadata = (OpenAiAudioTranscriptionResponseMetadata) response
+			.getMetadata();
+		assertThat(metadata.getSegments()).isNotEmpty();
+	}
+
+	private static String base64Encode(String classpathResource) {
+		try {
+			return Base64.getEncoder()
+				.encodeToString(new ClassPathResource(classpathResource).getInputStream().readAllBytes());
+		}
+		catch (IOException ex) {
+			throw new UncheckedIOException(ex);
+		}
 	}
 
 	@Test

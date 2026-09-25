@@ -16,6 +16,8 @@
 
 package org.springframework.ai.model.chat.memory.repository.redis.autoconfigure;
 
+import redis.clients.jedis.DefaultJedisClientConfig;
+import redis.clients.jedis.JedisClientConfig;
 import redis.clients.jedis.RedisClient;
 
 import org.springframework.ai.chat.memory.ChatMemory;
@@ -71,6 +73,20 @@ public class RedisChatMemoryRepositoryAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public RedisClient jedisClient(RedisChatMemoryRepositoryProperties properties) {
+		if (StringUtils.hasText(properties.getUsername()) || StringUtils.hasText(properties.getPassword())) {
+			DefaultJedisClientConfig.Builder configBuilder = DefaultJedisClientConfig.builder();
+			if (StringUtils.hasText(properties.getUsername())) {
+				configBuilder.user(properties.getUsername());
+			}
+			if (StringUtils.hasText(properties.getPassword())) {
+				configBuilder.password(properties.getPassword());
+			}
+			JedisClientConfig clientConfig = configBuilder.build();
+			return RedisClient.builder()
+				.hostAndPort(properties.getHost(), properties.getPort())
+				.clientConfig(clientConfig)
+				.build();
+		}
 		return RedisClient.builder().hostAndPort(properties.getHost(), properties.getPort()).build();
 	}
 

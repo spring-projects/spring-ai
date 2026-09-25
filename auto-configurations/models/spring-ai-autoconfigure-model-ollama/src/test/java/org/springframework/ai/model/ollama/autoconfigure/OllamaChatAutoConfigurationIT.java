@@ -51,8 +51,7 @@ public class OllamaChatAutoConfigurationIT extends BaseOllamaIT {
 	// @formatter:off
 				"spring.ai.ollama.base-url=" + getBaseUrl(),
 				"spring.ai.ollama.chat.model=" + MODEL_NAME,
-				"spring.ai.ollama.chat.temperature=0.5",
-				"spring.ai.ollama.chat.top-k=10")
+				"spring.ai.ollama.chat.temperature=0.0")
 				// @formatter:on
 		.withConfiguration(ollamaAutoConfig(OllamaChatAutoConfiguration.class));
 

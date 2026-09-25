@@ -47,6 +47,16 @@ public class RedisChatMemoryRepositoryProperties {
 	private int port = 6379;
 
 	/**
+	 * Redis ACL username.
+	 */
+	private @Nullable String username;
+
+	/**
+	 * Redis server password.
+	 */
+	private @Nullable String password;
+
+	/**
 	 * Name of the Redis search index.
 	 */
 	private String indexName = RedisChatMemoryConfig.DEFAULT_INDEX_NAME;
@@ -101,6 +111,22 @@ public class RedisChatMemoryRepositoryProperties {
 
 	public void setPort(int port) {
 		this.port = port;
+	}
+
+	public @Nullable String getUsername() {
+		return this.username;
+	}
+
+	public void setUsername(@Nullable String username) {
+		this.username = username;
+	}
+
+	public @Nullable String getPassword() {
+		return this.password;
+	}
+
+	public void setPassword(@Nullable String password) {
+		this.password = password;
 	}
 
 	public String getIndexName() {

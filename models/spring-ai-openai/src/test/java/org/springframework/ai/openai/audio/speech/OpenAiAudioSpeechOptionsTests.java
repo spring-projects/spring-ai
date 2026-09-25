@@ -50,6 +50,24 @@ class OpenAiAudioSpeechOptionsTests {
 	}
 
 	@Test
+	void instructionsAreSetAndMerged() {
+		OpenAiAudioSpeechOptions defaultOptions = OpenAiAudioSpeechOptions.builder()
+			.instructions("default-instructions")
+			.build();
+
+		OpenAiAudioSpeechOptions requestOptions = OpenAiAudioSpeechOptions.builder()
+			.instructions("request-instructions")
+			.build();
+
+		OpenAiAudioSpeechOptions mergedOptions = OpenAiAudioSpeechOptions.builder()
+			.from(defaultOptions)
+			.merge(requestOptions)
+			.build();
+
+		assertThat(mergedOptions.getInstructions()).isEqualTo("request-instructions");
+	}
+
+	@Test
 	void testOptionsBuilderMergeCustomHeaders() {
 		OpenAiAudioSpeechOptions defaultOptions = OpenAiAudioSpeechOptions.builder()
 			.customHeaders(Map.of("default-header", "default-value"))

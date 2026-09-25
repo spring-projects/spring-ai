@@ -439,7 +439,9 @@ public final class WebMvcSseServerTransportProvider implements McpServerTranspor
 				logger.error("Error handling message: " + e.getMessage());
 			}
 			return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
-				.body(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR).message(e.getMessage()).build());
+				.body(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
+					.message("Internal server error. Check server logs for details.")
+					.build());
 		}
 	}
 

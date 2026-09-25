@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Objects;
 
 import com.openai.client.OpenAIClient;
+import com.openai.core.RequestOptions;
 import com.openai.models.embeddings.CreateEmbeddingResponse;
 import com.openai.models.embeddings.EmbeddingCreateParams;
 import io.micrometer.observation.ObservationRegistry;
@@ -55,6 +56,7 @@ import org.springframework.util.CollectionUtils;
  * @author Thomas Vitale
  * @author Christian Tzolov
  * @author Josh Long
+ * @author guan xu
  */
 public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 
@@ -185,7 +187,7 @@ public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 	}
 
 	private OpenAiEmbeddingModel(Builder builder) {
-		this.options = builder.options != null ? builder.options : OpenAiEmbeddingOptions.builder().build();
+		this.options = Objects.requireNonNullElseGet(builder.options, () -> OpenAiEmbeddingOptions.builder().build());
 		this.metadataMode = Objects.requireNonNullElse(builder.metadataMode, MetadataMode.EMBED);
 		this.observationRegistry = Objects.requireNonNullElse(builder.observationRegistry, ObservationRegistry.NOOP);
 		this.openAiClient = Objects.requireNonNullElseGet(builder.openAiClient,
@@ -193,9 +195,9 @@ public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 						this.options.getCredential(), this.options.getMicrosoftDeploymentName(),
 						this.options.getMicrosoftFoundryServiceVersion(), this.options.getOrganizationId(),
 						this.options.isMicrosoftFoundry(), this.options.isGitHubModels(), this.options.getModel(),
-						this.options.getTimeout(), this.options.getMaxRetries(), this.options.getProxy(),
-						this.options.getCustomHeaders(), this.observationRegistry, null,
-						builder.httpClientCustomizers));
+						Objects.requireNonNullElse(this.options.getTimeout(), AbstractOpenAiOptions.DEFAULT_TIMEOUT),
+						this.options.getMaxRetries(), this.options.getProxy(), this.options.getCustomHeaders(),
+						this.observationRegistry, null, builder.httpClientCustomizers));
 	}
 
 	@Override
@@ -233,6 +235,8 @@ public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 					+ embeddingCreateParams);
 		}
 
+		RequestOptions requestOptions = this.buildRequestOptions(options);
+
 		var observationContext = EmbeddingModelObservationContext.builder()
 			.embeddingRequest(embeddingRequestWithMergedOptions)
 			.provider(AiProvider.OPENAI.value())
@@ -243,12 +247,27 @@ public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 					.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 							this.observationRegistry)
 					.observe(() -> {
-						CreateEmbeddingResponse response = this.openAiClient.embeddings().create(embeddingCreateParams);
+						CreateEmbeddingResponse response = this.openAiClient.embeddings()
+							.create(embeddingCreateParams, requestOptions);
 
 						var embeddingResponse = generateEmbeddingResponse(response);
 						observationContext.setResponse(embeddingResponse);
 						return embeddingResponse;
 					}));
+	}
+
+	/**
+	 * Creates a RequestOptions instance from the given embedding options.
+	 * @param options the embedding options
+	 * @return a RequestOptions instance
+	 */
+	private RequestOptions buildRequestOptions(OpenAiEmbeddingOptions options) {
+		Assert.notNull(options, "Options cannot be null");
+		RequestOptions.Builder requestOptionsBuilder = RequestOptions.builder();
+		if (options.getTimeout() != null) {
+			requestOptionsBuilder.timeout(options.getTimeout());
+		}
+		return requestOptionsBuilder.build();
 	}
 
 	private EmbeddingResponse generateEmbeddingResponse(CreateEmbeddingResponse response) {
@@ -261,8 +280,30 @@ public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 	}
 
 	private DefaultUsage getDefaultUsage(CreateEmbeddingResponse.Usage nativeUsage) {
-		return new DefaultUsage(Math.toIntExact(nativeUsage.promptTokens()), 0,
-				Math.toIntExact(nativeUsage.totalTokens()), nativeUsage);
+		return new DefaultUsage(toIntTokenCount("promptTokens", nativeUsage.promptTokens()), 0,
+				toIntTokenCount("totalTokens", nativeUsage.totalTokens()), nativeUsage);
+	}
+
+	/**
+	 * Narrows a server-supplied token count to an {@code int}. Usage counts come from the
+	 * deserialised upstream response, so an out-of-range value means the response is not
+	 * trustworthy; fail clearly with the offending field and value rather than either
+	 * silently truncating the count (which would corrupt downstream cost/usage tracking
+	 * with a plausible-looking but wrong number) or letting a bare
+	 * {@link ArithmeticException} propagate.
+	 * @param fieldName the name of the usage field being converted, for diagnostics
+	 * @param value the upstream token count
+	 * @return the value narrowed to an {@code int}
+	 * @throws IllegalStateException if {@code value} is outside the {@code int} range
+	 */
+	private static int toIntTokenCount(String fieldName, long value) {
+		try {
+			return Math.toIntExact(value);
+		}
+		catch (ArithmeticException ex) {
+			throw new IllegalStateException(
+					"OpenAI-compatible provider returned an out-of-range " + fieldName + " value: " + value, ex);
+		}
 	}
 
 	private List<Embedding> generateEmbeddingList(List<com.openai.models.embeddings.Embedding> nativeData) {

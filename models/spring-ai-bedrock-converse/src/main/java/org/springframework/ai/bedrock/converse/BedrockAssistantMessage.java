@@ -39,6 +39,7 @@ import org.springframework.util.CollectionUtils;
  *
  * @author Jewoo Shin
  * @author Soby Chacko
+ * @author guan xu
  * @see BedrockReasoningContent
  */
 final class BedrockAssistantMessage extends AssistantMessage {
@@ -57,6 +58,15 @@ final class BedrockAssistantMessage extends AssistantMessage {
 
 	boolean hasReasoningContents() {
 		return !CollectionUtils.isEmpty(this.reasoningContents);
+	}
+
+	@Override
+	public Builder mutate() {
+		return builder().content(getText())
+			.properties(getMetadata())
+			.toolCalls(getToolCalls())
+			.media(getMedia())
+			.reasoningContents(getReasoningContents());
 	}
 
 	@Override
@@ -81,7 +91,7 @@ final class BedrockAssistantMessage extends AssistantMessage {
 	@Override
 	public String toString() {
 		return "BedrockAssistantMessage [messageType=" + this.messageType + ", toolCalls=" + super.getToolCalls()
-				+ ", textContent=" + this.textContent + ", reasoningContents=" + this.reasoningContents + ", metadata="
+				+ ", textContent=" + getText() + ", reasoningContents=" + this.reasoningContents + ", metadata="
 				+ this.metadata + "]";
 	}
 

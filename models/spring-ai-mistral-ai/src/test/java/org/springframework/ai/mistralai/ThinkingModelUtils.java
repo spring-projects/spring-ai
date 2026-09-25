@@ -29,7 +29,6 @@ public interface ThinkingModelUtils {
 
 	// @formatter:off
 	Set<ChatModel> THINKING_MODELS = Set.of(
-			ChatModel.MAGISTRAL_MEDIUM,
 			ChatModel.MISTRAL_MEDIUM,
 			ChatModel.MISTRAL_SMALL
 	);
@@ -38,16 +37,13 @@ public interface ThinkingModelUtils {
 	static String provideChatModelValue(ChatModel chatModel) {
 		verifyChatModelIsReasoning(chatModel);
 
-		// Mistral Medium Latest does not yet target model version 3.5, so this temporary
-		// workaround is used.
-		return ChatModel.MISTRAL_MEDIUM == chatModel ? "mistral-medium-3.5" : chatModel.getValue();
+		return chatModel.getValue();
 	}
 
 	static ReasoningEffort provideReasoningEffort(ChatModel chatModel) {
 		verifyChatModelIsReasoning(chatModel);
 
-		// Reasoning effort is not supported by Magistral Medium model.
-		return ChatModel.MAGISTRAL_MEDIUM == chatModel ? null : ReasoningEffort.HIGH;
+		return ReasoningEffort.HIGH;
 	}
 
 	private static void verifyChatModelIsReasoning(ChatModel chatModel) {

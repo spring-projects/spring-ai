@@ -412,6 +412,42 @@ public class WebClientStreamableHttpTransportErrorHandlingIT {
 		StepVerifier.create(transport.closeGracefully()).verifyComplete();
 	}
 
+	/**
+	 * Test that an SSE event omitting the optional {@code event} field is parsed as a
+	 * message, as mandated by the SSE specification.
+	 */
+	@Test
+	void testParseSseEventWithoutEventField() throws InterruptedException {
+		CountDownLatch handlerLatch = new CountDownLatch(1);
+		AtomicReference<McpSchema.JSONRPCMessage> receivedMessage = new AtomicReference<>();
+
+		// SSE endpoint responding with a data-only event, i.e. no "event" field
+		this.server.createContext("/mcp-sse-no-event-field", exchange -> {
+			exchange.getResponseHeaders().set("Content-Type", "text/event-stream");
+			exchange.sendResponseHeaders(200, 0);
+			String response = "data: {\"jsonrpc\":\"2.0\",\"id\":\"test-id\",\"result\":{}}\n\n";
+			exchange.getResponseBody().write(response.getBytes());
+			exchange.close();
+		});
+
+		var transport = WebClientStreamableHttpTransport.builder(WebClient.builder().baseUrl(this.host))
+			.endpoint("/mcp-sse-no-event-field")
+			.build();
+
+		StepVerifier.create(transport.connect(inbound -> inbound.doOnNext(message -> {
+			receivedMessage.set(message);
+			handlerLatch.countDown();
+		}))).verifyComplete();
+
+		StepVerifier.create(transport.sendMessage(createTestMessage())).verifyComplete();
+
+		assertThat(handlerLatch.await(5, TimeUnit.SECONDS)).isTrue();
+		assertThat(receivedMessage.get()).isInstanceOf(McpSchema.JSONRPCResponse.class);
+		assertThat(((McpSchema.JSONRPCResponse) receivedMessage.get()).id()).isEqualTo("test-id");
+
+		StepVerifier.create(transport.closeGracefully()).verifyComplete();
+	}
+
 	private McpSchema.JSONRPCRequest createTestMessage() {
 		var initializeRequest = McpSchema.InitializeRequest
 			.builder(ProtocolVersions.MCP_2025_03_26, McpSchema.ClientCapabilities.builder().roots(true).build(),

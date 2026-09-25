@@ -18,6 +18,7 @@ package org.springframework.ai.mcp.server.webflux.transport;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -59,6 +60,7 @@ import org.springframework.web.reactive.function.server.ServerResponse;
  *
  * @author Dariusz Jędrzejczyk
  * @author Christian Tzolov
+ * @author Dimitar Proynov
  */
 public final class WebFluxStreamableServerTransportProvider implements McpStreamableServerTransportProvider {
 
@@ -85,13 +87,33 @@ public final class WebFluxStreamableServerTransportProvider implements McpStream
 	private @Nullable KeepAliveScheduler keepAliveScheduler;
 
 	/**
+	 * Duration of inactivity after which an idle session is evicted. If {@code null},
+	 * idle sessions are never evicted.
+	 */
+	private final @Nullable Duration sessionIdleTimeout;
+
+	/**
+	 * Tracks the last access time per session id, used to evict idle sessions.
+	 */
+	private final ConcurrentHashMap<String, Instant> sessionLastAccessTimes = new ConcurrentHashMap<>();
+
+	private @Nullable Disposable idleSessionScheduler;
+
+	/**
+	 * Max number of session this provider supports before discarding new initialization
+	 * requests.
+	 */
+	private final long maxSessions;
+
+	/**
 	 * Security validator for validating HTTP requests.
 	 */
 	private final ServerTransportSecurityValidator securityValidator;
 
 	private WebFluxStreamableServerTransportProvider(McpJsonMapper jsonMapper, String mcpEndpoint,
 			McpTransportContextExtractor<ServerRequest> contextExtractor, boolean disallowDelete,
-			@Nullable Duration keepAliveInterval, ServerTransportSecurityValidator securityValidator) {
+			@Nullable Duration keepAliveInterval, @Nullable Duration sessionIdleTimeout,
+			ServerTransportSecurityValidator securityValidator, long maxSessions) {
 		Assert.notNull(jsonMapper, "JsonMapper must not be null");
 		Assert.notNull(mcpEndpoint, "Message endpoint must not be null");
 		Assert.notNull(contextExtractor, "Context extractor must not be null");
@@ -102,6 +124,8 @@ public final class WebFluxStreamableServerTransportProvider implements McpStream
 		this.contextExtractor = contextExtractor;
 		this.disallowDelete = disallowDelete;
 		this.securityValidator = securityValidator;
+		this.maxSessions = maxSessions;
+		this.sessionIdleTimeout = sessionIdleTimeout;
 		this.routerFunction = RouterFunctions.route()
 			.GET(this.mcpEndpoint, this::handleGet)
 			.POST(this.mcpEndpoint, this::handlePost)
@@ -116,6 +140,11 @@ public final class WebFluxStreamableServerTransportProvider implements McpStream
 				.build();
 
 			this.keepAliveScheduler.start();
+		}
+
+		if (sessionIdleTimeout != null) {
+			this.idleSessionScheduler = Flux.interval(sessionIdleTimeout, sessionIdleTimeout)
+				.subscribe(tick -> this.evictIdleSessions());
 		}
 	}
 
@@ -175,8 +204,12 @@ public final class WebFluxStreamableServerTransportProvider implements McpStream
 			}).flatMap(McpStreamableServerSession::closeGracefully).then();
 		}).then().doOnSuccess(v -> {
 			this.sessions.clear();
+			this.sessionLastAccessTimes.clear();
 			if (this.keepAliveScheduler != null) {
 				this.keepAliveScheduler.shutdown();
+			}
+			if (this.idleSessionScheduler != null) {
+				this.idleSessionScheduler.dispose();
 			}
 		});
 	}
@@ -225,7 +258,7 @@ public final class WebFluxStreamableServerTransportProvider implements McpStream
 				return ServerResponse.badRequest().build();
 			}
 
-			if (request.headers().header(HttpHeaders.MCP_SESSION_ID).isEmpty()) {
+			if (!hasMcpSessionIdHeader(request)) {
 				return ServerResponse.badRequest().build(); // TODO: say we need a session
 															// id
 			}
@@ -234,9 +267,11 @@ public final class WebFluxStreamableServerTransportProvider implements McpStream
 
 			McpStreamableServerSession session = this.sessions.get(sessionId);
 
-			if (session == null) {
+			if (sessionId == null || session == null) {
 				return ServerResponse.notFound().build();
 			}
+
+			touchSession(sessionId);
 
 			if (!request.headers().header(HttpHeaders.LAST_EVENT_ID).isEmpty()) {
 				String lastId = request.headers().asHttpHeaders().getFirst(HttpHeaders.LAST_EVENT_ID);
@@ -294,37 +329,9 @@ public final class WebFluxStreamableServerTransportProvider implements McpStream
 				McpSchema.JSONRPCMessage message = McpSchema.deserializeJsonRpcMessage(this.jsonMapper, body);
 				if (message instanceof McpSchema.JSONRPCRequest jsonrpcRequest
 						&& jsonrpcRequest.method().equals(McpSchema.METHOD_INITIALIZE)) {
-					if (this.sessionFactory == null) {
-						return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
-							.bodyValue(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
-								.message("Session factory not initialized")
-								.build());
-					}
-					var typeReference = new TypeRef<McpSchema.InitializeRequest>() {
-					};
-					McpSchema.InitializeRequest initializeRequest = this.jsonMapper
-						.convertValue(jsonrpcRequest.params(), typeReference);
-					McpStreamableServerSession.McpStreamableServerSessionInit init = this.sessionFactory
-						.startSession(initializeRequest);
-					this.sessions.put(init.session().getId(), init.session());
-					return init.initResult().map(initializeResult -> {
-						McpSchema.JSONRPCResponse jsonrpcResponse = new McpSchema.JSONRPCResponse(
-								McpSchema.JSONRPC_VERSION, jsonrpcRequest.id(), initializeResult, null);
-						try {
-							return this.jsonMapper.writeValueAsString(jsonrpcResponse);
-						}
-						catch (IOException e) {
-							logger.warn("Failed to serialize initResponse", e);
-							throw Exceptions.propagate(e);
-						}
-					})
-						.flatMap(initResult -> ServerResponse.ok()
-							.contentType(MediaType.APPLICATION_JSON)
-							.header(HttpHeaders.MCP_SESSION_ID, init.session().getId())
-							.bodyValue(initResult));
+					return handleInitRequest(jsonrpcRequest, hasMcpSessionIdHeader(request));
 				}
-
-				if (request.headers().header(HttpHeaders.MCP_SESSION_ID).isEmpty()) {
+				if (!hasMcpSessionIdHeader(request)) {
 					return ServerResponse.badRequest()
 						.bodyValue(McpError.builder(McpSchema.ErrorCodes.METHOD_NOT_FOUND)
 							.message("Session ID missing")
@@ -334,12 +341,14 @@ public final class WebFluxStreamableServerTransportProvider implements McpStream
 				String sessionId = request.headers().asHttpHeaders().getFirst(HttpHeaders.MCP_SESSION_ID);
 				McpStreamableServerSession session = this.sessions.get(sessionId);
 
-				if (session == null) {
+				if (session == null || sessionId == null) {
 					return ServerResponse.status(HttpStatus.NOT_FOUND)
 						.bodyValue(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
 							.message("Session not found: " + sessionId)
 							.build());
 				}
+
+				touchSession(sessionId);
 
 				if (message instanceof McpSchema.JSONRPCResponse jsonrpcResponse) {
 					return session.accept(jsonrpcResponse).then(ServerResponse.accepted().build());
@@ -401,7 +410,7 @@ public final class WebFluxStreamableServerTransportProvider implements McpStream
 		McpTransportContext transportContext = this.contextExtractor.extract(request);
 
 		return Mono.defer(() -> {
-			if (request.headers().header(HttpHeaders.MCP_SESSION_ID).isEmpty()) {
+			if (!hasMcpSessionIdHeader(request)) {
 				return ServerResponse.badRequest().build(); // TODO: say we need a session
 															// id
 			}
@@ -417,9 +426,108 @@ public final class WebFluxStreamableServerTransportProvider implements McpStream
 			if (session == null) {
 				return ServerResponse.notFound().build();
 			}
-
-			return session.delete().then(ServerResponse.ok().build());
+			return session.delete().doOnSuccess(unused -> {
+				if (sessionId != null) {
+					removeSession(sessionId);
+				}
+			}).then(ServerResponse.ok().build());
 		}).contextWrite(ctx -> ctx.put(McpTransportContext.KEY, transportContext));
+	}
+
+	private Mono<ServerResponse> handleInitRequest(final McpSchema.JSONRPCRequest jsonrpcRequest,
+			final boolean hasMcpSessionIdHeader) {
+		if (this.sessionFactory == null) {
+			return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
+				.bodyValue(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
+					.message("Session factory not initialized")
+					.build());
+		}
+		if (hasMcpSessionIdHeader) {
+			return ServerResponse.status(HttpStatus.BAD_REQUEST)
+				.bodyValue(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
+					.message("Session already initialized")
+					.build());
+		}
+		if (this.sessions.size() >= this.maxSessions) {
+			return ServerResponse.status(HttpStatus.SERVICE_UNAVAILABLE)
+				.bodyValue(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
+					.message("Max number of sessions reached")
+					.build());
+		}
+		var typeReference = new TypeRef<McpSchema.InitializeRequest>() {
+		};
+		McpSchema.InitializeRequest initializeRequest = this.jsonMapper.convertValue(jsonrpcRequest.params(),
+				typeReference);
+		McpStreamableServerSession.McpStreamableServerSessionInit init = this.sessionFactory
+			.startSession(initializeRequest);
+		this.sessions.put(init.session().getId(), init.session());
+		if (this.sessionIdleTimeout != null) {
+			this.sessionLastAccessTimes.put(init.session().getId(), Instant.now());
+		}
+		return init.initResult().map(initializeResult -> {
+			McpSchema.JSONRPCResponse jsonrpcResponse = new McpSchema.JSONRPCResponse(McpSchema.JSONRPC_VERSION,
+					jsonrpcRequest.id(), initializeResult, null);
+			try {
+				return this.jsonMapper.writeValueAsString(jsonrpcResponse);
+			}
+			catch (IOException e) {
+				logger.warn("Failed to serialize initResponse", e);
+				throw Exceptions.propagate(e);
+			}
+		})
+			.flatMap(initResult -> ServerResponse.ok()
+				.contentType(MediaType.APPLICATION_JSON)
+				.header(HttpHeaders.MCP_SESSION_ID, init.session().getId())
+				.bodyValue(initResult));
+	}
+
+	/**
+	 * Records the current time as the last access time for the given session, so that an
+	 * active session is not evicted as idle. No-op when idle eviction is disabled or the
+	 * session is no longer tracked.
+	 * @param sessionId the id of the session that was just accessed
+	 */
+	private void touchSession(String sessionId) {
+		if (this.sessionIdleTimeout != null) {
+			this.sessionLastAccessTimes.computeIfPresent(sessionId, (id, lastAccess) -> Instant.now());
+		}
+	}
+
+	/**
+	 * Evicts and closes sessions that have been idle for longer than the configured
+	 * {@code sessionIdleTimeout}. This reclaims session slots held by clients that
+	 * initialized a session but never interacted with it again, mitigating resource
+	 * exhaustion from abandoned sessions.
+	 */
+	private void evictIdleSessions() {
+		if (this.sessionIdleTimeout == null || this.isClosing) {
+			return;
+		}
+		final Instant now = Instant.now();
+		for (var entry : this.sessionLastAccessTimes.entrySet()) {
+			if (Duration.between(entry.getValue(), now).compareTo(this.sessionIdleTimeout) > 0) {
+				final String sessionId = entry.getKey();
+				McpStreamableServerSession session = removeSession(sessionId);
+				if (logger.isDebugEnabled()) {
+					logger.debug("Evicting idle session: " + sessionId);
+				}
+				session.closeGracefully().onErrorComplete().subscribe();
+			}
+		}
+	}
+
+	/**
+	 * Checks whether the given request carries an {@code Mcp-Session-Id} header.
+	 * @param request the incoming server request
+	 * @return {@code true} if the header is present, regardless of its value
+	 */
+	private static boolean hasMcpSessionIdHeader(ServerRequest request) {
+		return !request.headers().header(HttpHeaders.MCP_SESSION_ID).isEmpty();
+	}
+
+	private McpStreamableServerSession removeSession(String sessionId) {
+		this.sessionLastAccessTimes.remove(sessionId);
+		return this.sessions.remove(sessionId);
 	}
 
 	public static Builder builder() {
@@ -497,7 +605,11 @@ public final class WebFluxStreamableServerTransportProvider implements McpStream
 
 		private @Nullable Duration keepAliveInterval;
 
+		private long maxSessions = 100_000L;
+
 		private ServerTransportSecurityValidator securityValidator = ServerTransportSecurityValidator.NOOP;
+
+		private @Nullable Duration sessionIdleTimeout;
 
 		private Builder() {
 			// used by a static method
@@ -579,6 +691,41 @@ public final class WebFluxStreamableServerTransportProvider implements McpStream
 		}
 
 		/**
+		 * Sets the maximum supported sessions for this provider. If not set defaults to
+		 * 100_000.
+		 * @param maxSessions - maximum allowed sessions for this provider
+		 * @return this builder instance
+		 * @throws IllegalArgumentException if maximum sessions is not positive number
+		 */
+		public Builder maxSessions(long maxSessions) {
+			Assert.isTrue(maxSessions >= 0, "Max sessions must be greater than 0");
+			this.maxSessions = maxSessions;
+			return this;
+		}
+
+		/**
+		 * Sets the idle timeout after which sessions with no client activity are evicted
+		 * and closed. Activity is any inbound request (GET, POST or DELETE) resolving to
+		 * the session. This reclaims session slots held by clients that initialized a
+		 * session but never interacted with it again, mitigating resource exhaustion from
+		 * abandoned sessions.
+		 * <p>
+		 * Keep-alive and idle eviction are complementary and may be enabled together:
+		 * keep-alive pings preserve connected clients (a ping response counts as
+		 * activity), while idle eviction reclaims abandoned sessions. When both are set,
+		 * {@code sessionIdleTimeout} must be greater than the keep-alive interval so that
+		 * a connected client answering pings is not evicted before it can respond;
+		 * otherwise {@link #build()} throws.
+		 * @param sessionIdleTimeout the maximum idle duration before eviction, or null to
+		 * disable idle eviction (the default)
+		 * @return this builder instance
+		 */
+		public Builder sessionIdleTimeout(@Nullable Duration sessionIdleTimeout) {
+			this.sessionIdleTimeout = sessionIdleTimeout;
+			return this;
+		}
+
+		/**
 		 * Builds a new instance of {@link WebFluxStreamableServerTransportProvider} with
 		 * the configured settings.
 		 * @return A new WebFluxStreamableServerTransportProvider instance
@@ -586,8 +733,14 @@ public final class WebFluxStreamableServerTransportProvider implements McpStream
 		 */
 		public WebFluxStreamableServerTransportProvider build() {
 			Assert.notNull(this.mcpEndpoint, "Message endpoint must be set");
+			if (this.sessionIdleTimeout != null && this.keepAliveInterval != null) {
+				Assert.isTrue(this.sessionIdleTimeout.compareTo(this.keepAliveInterval) > 0,
+						"sessionIdleTimeout must be greater than keepAliveInterval, otherwise a connected client "
+								+ "may be evicted before it can answer a keep-alive ping");
+			}
 			return new WebFluxStreamableServerTransportProvider(this.jsonMapper, this.mcpEndpoint,
-					this.contextExtractor, this.disallowDelete, this.keepAliveInterval, this.securityValidator);
+					this.contextExtractor, this.disallowDelete, this.keepAliveInterval, this.sessionIdleTimeout,
+					this.securityValidator, this.maxSessions);
 		}
 
 	}

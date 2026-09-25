@@ -19,6 +19,8 @@ package org.springframework.ai.content;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
+import java.util.Arrays;
+import java.util.Objects;
 
 import org.jspecify.annotations.Nullable;
 
@@ -208,6 +210,37 @@ public class Media {
 	 */
 	public String getName() {
 		return this.name;
+	}
+
+	/**
+	 * Two media are equal when they have the same id, MIME type and data (byte arrays are
+	 * compared by content). The {@link #getName() name} is a model-facing label that
+	 * defaults to a random value per instance, so it does not take part in equality.
+	 * @since 2.1.0
+	 */
+	@Override
+	public boolean equals(@Nullable Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (!(o instanceof Media that)) {
+			return false;
+		}
+		return Objects.equals(this.id, that.id) && this.mimeType.equals(that.mimeType)
+				&& dataEquals(this.data, that.data);
+	}
+
+	@Override
+	public int hashCode() {
+		int dataHash = this.data instanceof byte[] bytes ? Arrays.hashCode(bytes) : this.data.hashCode();
+		return Objects.hash(this.id, this.mimeType, dataHash);
+	}
+
+	private static boolean dataEquals(Object left, Object right) {
+		if (left instanceof byte[] leftBytes && right instanceof byte[] rightBytes) {
+			return Arrays.equals(leftBytes, rightBytes);
+		}
+		return left.equals(right);
 	}
 
 	/**

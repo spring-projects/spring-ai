@@ -28,6 +28,7 @@ import java.util.stream.Stream;
 import com.anthropic.client.AnthropicClient;
 import com.anthropic.client.AnthropicClientAsync;
 import com.anthropic.core.JsonValue;
+import com.anthropic.core.RequestOptions;
 import com.anthropic.core.http.Headers;
 import com.anthropic.core.http.HttpResponseFor;
 import com.anthropic.core.http.StreamResponse;
@@ -95,6 +96,7 @@ import static org.mockito.Mockito.verify;
  * @author Soby Chacko
  * @author Sebastien Deleuze
  * @author Jewoo Shin
+ * @author Seeun Kim
  */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -125,14 +127,15 @@ class AnthropicChatModelTests {
 	void setUp() {
 		given(this.anthropicClient.messages()).willReturn(this.messageService);
 		given(this.messageService.withRawResponse()).willReturn(this.messageServiceWithRawResponse);
-		given(this.messageServiceWithRawResponse.create(any(MessageCreateParams.class))).willAnswer(invocation -> {
-			MessageCreateParams params = invocation.getArgument(0);
-			Message message = this.messageService.create(params);
-			HttpResponseFor<Message> rawResponse = mock(HttpResponseFor.class);
-			given(rawResponse.parse()).willReturn(message);
-			given(rawResponse.headers()).willReturn(Headers.builder().build());
-			return rawResponse;
-		});
+		given(this.messageServiceWithRawResponse.create(any(MessageCreateParams.class), any(RequestOptions.class)))
+			.willAnswer(invocation -> {
+				MessageCreateParams params = invocation.getArgument(0);
+				Message message = this.messageService.create(params);
+				HttpResponseFor<Message> rawResponse = mock(HttpResponseFor.class);
+				given(rawResponse.parse()).willReturn(message);
+				given(rawResponse.headers()).willReturn(Headers.builder().build());
+				return rawResponse;
+			});
 
 		this.chatModel = AnthropicChatModel.builder()
 			.anthropicClient(this.anthropicClient)
@@ -264,12 +267,12 @@ class AnthropicChatModelTests {
 
 		ChatResponse response = this.chatModel.call(prompt);
 		assertThat(response.getResults()).hasSize(2);
-		Generation thinkingGeneration = response.getResults().get(0);
-		assertThat(thinkingGeneration.getOutput().getText()).isEqualTo("thinking text");
-		assertThat(thinkingGeneration.getOutput().getMetadata()).containsEntry("signature", "thinking-signature");
-		Generation toolCallGeneration = response.getResults().get(1);
+		Generation toolCallGeneration = response.getResult();
 		assertThat(toolCallGeneration.getOutput()).isInstanceOf(AnthropicChatModel.AnthropicAssistantMessage.class);
 		assertThat(toolCallGeneration.getOutput().getToolCalls()).hasSize(1);
+		Generation thinkingGeneration = response.getResults().get(1);
+		assertThat(thinkingGeneration.getOutput().getText()).isEqualTo("thinking text");
+		assertThat(thinkingGeneration.getOutput().getMetadata()).containsEntry("signature", "thinking-signature");
 
 		ToolExecutionResult toolExecutionResult = ToolCallingManager.builder()
 			.build()
@@ -302,11 +305,11 @@ class AnthropicChatModelTests {
 
 		ChatResponse response = this.chatModel.call(prompt);
 		assertThat(response.getResults()).hasSize(2);
-		Generation redactedGeneration = response.getResults().get(0);
-		assertThat(redactedGeneration.getOutput().getMetadata()).containsEntry("data", "redacted-data");
-		Generation toolCallGeneration = response.getResults().get(1);
+		Generation toolCallGeneration = response.getResult();
 		assertThat(toolCallGeneration.getOutput()).isInstanceOf(AnthropicChatModel.AnthropicAssistantMessage.class);
 		assertThat(toolCallGeneration.getOutput().getToolCalls()).hasSize(1);
+		Generation redactedGeneration = response.getResults().get(1);
+		assertThat(redactedGeneration.getOutput().getMetadata()).containsEntry("data", "redacted-data");
 
 		ToolExecutionResult toolExecutionResult = ToolCallingManager.builder()
 			.build()
@@ -324,7 +327,7 @@ class AnthropicChatModelTests {
 	}
 
 	@Test
-	void thinkingOnlyResponseExposesThinkingGenerationAndKeepsReplayState() {
+	void thinkingResponseReturnsFinalAssistantGenerationAsPrimary() {
 		Message mockResponse = createMockMessageWithThinkingAndText("thinking text", "thinking-signature",
 				"Final answer.");
 		given(this.messageService.create(any(MessageCreateParams.class))).willReturn(mockResponse);
@@ -332,16 +335,16 @@ class AnthropicChatModelTests {
 		ChatResponse response = this.chatModel.call(new Prompt("Explain it"));
 
 		assertThat(response.getResults()).hasSize(2);
-		Generation thinkingGeneration = response.getResults().get(0);
-		assertThat(thinkingGeneration.getOutput().getText()).isEqualTo("thinking text");
-		assertThat(thinkingGeneration.getOutput().getMetadata()).containsEntry("signature", "thinking-signature");
-
-		Generation finalGeneration = response.getResults().get(1);
+		Generation finalGeneration = response.getResult();
 		assertThat(finalGeneration.getOutput().getText()).isEqualTo("Final answer.");
 		assertThat(finalGeneration.getOutput()).isInstanceOf(AnthropicChatModel.AnthropicAssistantMessage.class);
 		AnthropicChatModel.AnthropicAssistantMessage output = (AnthropicChatModel.AnthropicAssistantMessage) finalGeneration
 			.getOutput();
 		assertThat(output.hasThinkingContents()).isTrue();
+
+		Generation thinkingGeneration = response.getResults().get(1);
+		assertThat(thinkingGeneration.getOutput().getText()).isEqualTo("thinking text");
+		assertThat(thinkingGeneration.getOutput().getMetadata()).containsEntry("signature", "thinking-signature");
 	}
 
 	@Test
@@ -361,7 +364,8 @@ class AnthropicChatModelTests {
 
 		given(this.anthropicClientAsync.messages()).willReturn(this.messageServiceAsync);
 		given(this.messageServiceAsync.withRawResponse()).willReturn(this.messageServiceAsyncWithRawResponse);
-		given(this.messageServiceAsyncWithRawResponse.createStreaming(any(MessageCreateParams.class)))
+		given(this.messageServiceAsyncWithRawResponse.createStreaming(any(MessageCreateParams.class),
+				any(RequestOptions.class)))
 			.willReturn(CompletableFuture.completedFuture(rawResponse));
 		Message finalResponse = createMockMessage("Done.", StopReason.END_TURN);
 		given(this.messageService.create(any(MessageCreateParams.class))).willReturn(finalResponse);
@@ -387,6 +391,38 @@ class AnthropicChatModelTests {
 		assertThat(replayedAssistantBlocks.get(0).asThinking().thinking()).isEqualTo("thinking text");
 		assertThat(replayedAssistantBlocks.get(0).asThinking().signature()).isEqualTo("thinking-signature");
 		assertThat(replayedAssistantBlocks.get(1).isToolUse()).isTrue();
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void streamingThinkingDeltasExposeThinkingTextInMetadata() {
+		List<RawMessageStreamEvent> events = List.of(messageStartEvent(), thinkingStartEvent(),
+				thinkingDeltaEvent("thinking "), thinkingDeltaEvent("text"), signatureDeltaEvent("thinking-signature"),
+				contentBlockStopEvent(0), messageDeltaEvent(StopReason.END_TURN));
+		StreamResponse<RawMessageStreamEvent> streamResponse = mock(StreamResponse.class);
+		given(streamResponse.stream()).willReturn(events.stream());
+
+		HttpResponseFor<StreamResponse<RawMessageStreamEvent>> rawResponse = mock(HttpResponseFor.class);
+		given(rawResponse.parse()).willReturn(streamResponse);
+		given(rawResponse.headers()).willReturn(Headers.builder().build());
+
+		given(this.anthropicClientAsync.messages()).willReturn(this.messageServiceAsync);
+		given(this.messageServiceAsync.withRawResponse()).willReturn(this.messageServiceAsyncWithRawResponse);
+		given(this.messageServiceAsyncWithRawResponse.createStreaming(any(MessageCreateParams.class),
+				any(RequestOptions.class)))
+			.willReturn(CompletableFuture.completedFuture(rawResponse));
+
+		List<ChatResponse> responses = this.chatModel.stream(new Prompt("Think about it.")).collectList().block();
+
+		assertThat(responses).isNotNull();
+		List<AssistantMessage> thinkingDeltas = responses.stream()
+			.map(response -> response.getResult().getOutput())
+			.filter(message -> message.getMetadata().containsKey(AnthropicChatModel.THINKING_METADATA_KEY))
+			.toList();
+		assertThat(thinkingDeltas)
+			.extracting(message -> message.getMetadata().get(AnthropicChatModel.THINKING_TEXT_METADATA_KEY))
+			.containsExactly("thinking ", "text");
+		assertThat(thinkingDeltas).allSatisfy(message -> assertThat(message.getText()).isNull());
 	}
 
 	@Test
@@ -849,14 +885,15 @@ class AnthropicChatModelTests {
 			.put("anthropic-ratelimit-tokens-reset", resetAt.toString())
 			.build();
 
-		given(this.messageServiceWithRawResponse.create(any(MessageCreateParams.class))).willAnswer(invocation -> {
-			MessageCreateParams params = invocation.getArgument(0);
-			Message message = this.messageService.create(params);
-			HttpResponseFor<Message> rawResponse = mock(HttpResponseFor.class);
-			given(rawResponse.parse()).willReturn(message);
-			given(rawResponse.headers()).willReturn(rateLimitHeaders);
-			return rawResponse;
-		});
+		given(this.messageServiceWithRawResponse.create(any(MessageCreateParams.class), any(RequestOptions.class)))
+			.willAnswer(invocation -> {
+				MessageCreateParams params = invocation.getArgument(0);
+				Message message = this.messageService.create(params);
+				HttpResponseFor<Message> rawResponse = mock(HttpResponseFor.class);
+				given(rawResponse.parse()).willReturn(message);
+				given(rawResponse.headers()).willReturn(rateLimitHeaders);
+				return rawResponse;
+			});
 
 		ChatResponse response = this.chatModel.call(new Prompt("test"));
 
@@ -883,7 +920,8 @@ class AnthropicChatModelTests {
 
 		given(this.anthropicClientAsync.messages()).willReturn(this.messageServiceAsync);
 		given(this.messageServiceAsync.withRawResponse()).willReturn(this.messageServiceAsyncWithRawResponse);
-		given(this.messageServiceAsyncWithRawResponse.createStreaming(any(MessageCreateParams.class)))
+		given(this.messageServiceAsyncWithRawResponse.createStreaming(any(MessageCreateParams.class),
+				any(RequestOptions.class)))
 			.willReturn(CompletableFuture.completedFuture(rawResponse));
 
 		this.chatModel.stream(new Prompt("test")).collectList().block();
@@ -936,7 +974,8 @@ class AnthropicChatModelTests {
 
 		given(this.anthropicClientAsync.messages()).willReturn(this.messageServiceAsync);
 		given(this.messageServiceAsync.withRawResponse()).willReturn(this.messageServiceAsyncWithRawResponse);
-		given(this.messageServiceAsyncWithRawResponse.createStreaming(any(MessageCreateParams.class)))
+		given(this.messageServiceAsyncWithRawResponse.createStreaming(any(MessageCreateParams.class),
+				any(RequestOptions.class)))
 			.willReturn(CompletableFuture.completedFuture(rawResponse));
 
 		List<ChatResponse> responses = this.chatModel.stream(new Prompt("test")).collectList().block();

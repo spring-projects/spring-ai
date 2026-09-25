@@ -26,6 +26,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -56,6 +57,7 @@ import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
+import org.springframework.ai.vectorstore.EmbeddedDocument;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
@@ -239,6 +241,7 @@ import org.springframework.util.StringUtils;
  * @author Jihoon Kim
  * @author chabinhwang
  * @author Yanming Zhou
+ * @author Taewoong Kim
  * @see EmbeddingModel
  * @since 1.0.0
  */
@@ -315,6 +318,14 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 
 	private final Set<String> stopwords = new HashSet<>();
 
+	// Names of the metadata fields declared at build time. Redis only returns these on
+	// read, so anything else is stored and then dropped.
+	private final Set<String> declaredMetadataFieldNames;
+
+	private final AtomicBoolean undeclaredMetadataWarned = new AtomicBoolean();
+
+	private final AtomicBoolean reservedMetadataKeyWarned = new AtomicBoolean();
+
 	protected RedisVectorStore(Builder builder) {
 		super(builder);
 
@@ -328,6 +339,9 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 		this.vectorAlgorithm = builder.vectorAlgorithm;
 		this.distanceMetric = builder.distanceMetric;
 		this.metadataFields = builder.metadataFields;
+		this.declaredMetadataFieldNames = this.metadataFields.stream()
+			.map(MetadataField::name)
+			.collect(Collectors.toUnmodifiableSet());
 		this.initializeSchema = builder.initializeSchema;
 		this.hnswM = builder.hnswM;
 		this.hnswEfConstruction = builder.hnswEfConstruction;
@@ -361,6 +375,8 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 
 			for (int i = 0; i < documents.size(); i++) {
 				Document document = documents.get(i);
+				warnOnUndeclaredMetadata(document);
+				warnOnReservedMetadataKeys(document);
 				var fields = new HashMap<String, Object>();
 				float[] embedding = embeddings.get(i);
 
@@ -369,9 +385,11 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 					embedding = normalize(embedding);
 				}
 
+				// Metadata first, so a key that collides with the embedding or content
+				// field name cannot overwrite the vector or the text.
+				fields.putAll(document.getMetadata());
 				fields.put(this.embeddingFieldName, embedding);
 				fields.put(this.contentFieldName, document.getText());
-				fields.putAll(document.getMetadata());
 				pipeline.jsonSetWithEscape(key(document.getId()), JSON_SET_PATH, fields);
 			}
 			List<Object> responses = pipeline.syncAndReturnAll();
@@ -381,6 +399,96 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 				logger.error(message);
 				throw new RuntimeException(message);
 			}
+		}
+	}
+
+	@Override
+	protected void doUpsert(List<EmbeddedDocument> entries) {
+		// Whole-batch dimension pre-check before any write, so a mismatched vector fails
+		// fast and cannot partially write. Non-empty and finiteness are already enforced
+		// by the EmbeddedDocument constructor.
+		int expected = this.embeddingModel.dimensions();
+		for (int i = 0; i < entries.size(); i++) {
+			int actual = entries.get(i).embedding().length;
+			if (actual != expected) {
+				throw new IllegalArgumentException("Embedding at index " + i + " has dimension " + actual
+						+ " but the store expects dimension " + expected);
+			}
+		}
+
+		try (Pipeline pipeline = this.jedisClient.pipelined()) {
+			for (int i = 0; i < entries.size(); i++) {
+				// Pair positionally: the document and its embedding come from the same
+				// entry, so there is no indexOf lookup to slip.
+				EmbeddedDocument entry = entries.get(i);
+				Document document = entry.document();
+				warnOnUndeclaredMetadata(document);
+				warnOnReservedMetadataKeys(document);
+				var fields = new HashMap<String, Object>();
+				float[] embedding = entry.embedding();
+
+				// Normalize embeddings for COSINE distance metric
+				if (this.distanceMetric == DistanceMetric.COSINE) {
+					embedding = normalize(embedding);
+				}
+
+				// Metadata first, so a key that collides with the embedding or content
+				// field name cannot overwrite the vector or the text.
+				fields.putAll(document.getMetadata());
+				fields.put(this.embeddingFieldName, embedding);
+				fields.put(this.contentFieldName, document.getText());
+				pipeline.jsonSetWithEscape(key(document.getId()), JSON_SET_PATH, fields);
+			}
+			List<Object> responses = pipeline.syncAndReturnAll();
+			Optional<Object> errResponse = responses.stream().filter(Predicate.not(RESPONSE_OK)).findAny();
+			if (errResponse.isPresent()) {
+				String message = MessageFormat.format("Could not upsert document: {0}", errResponse.get());
+				logger.error(message);
+				throw new IllegalStateException(message);
+			}
+		}
+	}
+
+	/**
+	 * Warns when a document carries metadata that was not declared through
+	 * {@code metadataFields}. Redis stores every key, but a search only returns the
+	 * declared ones, so the rest come back missing. Warns once per store so the loss is
+	 * visible without flooding the log on every write.
+	 * @param document the document about to be written
+	 */
+	/**
+	 * Warns when a document's metadata contains a key that collides with the embedding or
+	 * content field name. Those two fields are written last and win, so the colliding
+	 * metadata entry is dropped rather than corrupting the row.
+	 * @param document the document about to be written
+	 */
+	private void warnOnReservedMetadataKeys(Document document) {
+		if (this.reservedMetadataKeyWarned.get()) {
+			return;
+		}
+		Map<String, Object> metadata = document.getMetadata();
+		if ((metadata.containsKey(this.embeddingFieldName) || metadata.containsKey(this.contentFieldName))
+				&& this.reservedMetadataKeyWarned.compareAndSet(false, true)) {
+			logger.warn("Document '" + document.getId() + "' has metadata using the reserved field name '"
+					+ this.embeddingFieldName + "' or '" + this.contentFieldName
+					+ "'. The store's own values win, so that metadata entry is not stored.");
+		}
+	}
+
+	private void warnOnUndeclaredMetadata(Document document) {
+		if (this.undeclaredMetadataWarned.get() || document.getMetadata().isEmpty()) {
+			return;
+		}
+		List<String> undeclared = document.getMetadata()
+			.keySet()
+			.stream()
+			.filter(key -> !this.declaredMetadataFieldNames.contains(key))
+			.sorted()
+			.toList();
+		if (!undeclared.isEmpty() && this.undeclaredMetadataWarned.compareAndSet(false, true)) {
+			logger.warn("Document '" + document.getId() + "' carries metadata fields that were not declared "
+					+ "at build time: " + undeclared + ". Redis stores them, but a similarity search will not "
+					+ "return them. Declare them with metadataFields(...) to get them back.");
 		}
 	}
 
@@ -475,11 +583,6 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 		String queryString = String.format(QUERY_FORMAT, filter, request.getTopK(), this.embeddingFieldName,
 				EMBEDDING_PARAM_NAME, DISTANCE_FIELD_NAME);
 
-		List<String> returnFields = new ArrayList<>();
-		this.metadataFields.stream().map(MetadataField::name).forEach(returnFields::add);
-		returnFields.add(this.embeddingFieldName);
-		returnFields.add(this.contentFieldName);
-		returnFields.add(DISTANCE_FIELD_NAME);
 		float[] embedding = this.embeddingModel.embed(request.getQuery());
 
 		// Normalize embeddings for COSINE distance metric
@@ -488,7 +591,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 		}
 
 		Query query = new Query(queryString).addParam(EMBEDDING_PARAM_NAME, RediSearchUtil.toByteArray(embedding))
-			.returnFields(returnFields.toArray(new String[0]))
+			.returnFields(getReturnFields().toArray(new String[0]))
 			.limit(0, request.getTopK())
 			.dialect(2);
 
@@ -757,7 +860,6 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 	private List<String> getReturnFields() {
 		List<String> returnFields = new ArrayList<>();
 		this.metadataFields.stream().map(MetadataField::name).forEach(returnFields::add);
-		returnFields.add(this.embeddingFieldName);
 		returnFields.add(this.contentFieldName);
 		returnFields.add(DISTANCE_FIELD_NAME);
 		return returnFields;
@@ -1128,12 +1230,6 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 			queryString = "(" + queryString + " " + filterExpression + ")";
 		}
 
-		List<String> returnFields = new ArrayList<>();
-		this.metadataFields.stream().map(MetadataField::name).forEach(returnFields::add);
-		returnFields.add(this.embeddingFieldName);
-		returnFields.add(this.contentFieldName);
-		returnFields.add(DISTANCE_FIELD_NAME);
-
 		// Log query information for debugging
 		if (logger.isDebugEnabled()) {
 			logger.debug("Range query string: " + queryString);
@@ -1142,7 +1238,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 
 		Query query1 = new Query(queryString).addParam("radius", effectiveRadius)
 			.addParam(EMBEDDING_PARAM_NAME, RediSearchUtil.toByteArray(embedding))
-			.returnFields(returnFields.toArray(new String[0]))
+			.returnFields(getReturnFields().toArray(new String[0]))
 			.dialect(2);
 
 		SearchResult result = this.jedisClient.ftSearch(this.indexName, query1);

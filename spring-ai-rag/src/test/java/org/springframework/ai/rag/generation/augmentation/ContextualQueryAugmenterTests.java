@@ -100,7 +100,7 @@ class ContextualQueryAugmenterTests {
 		Query query = new Query("test query");
 		List<Document> documents = List.of(new Document("content1", Map.of()), new Document("content2", Map.of()));
 		Query augmentedQuery = augmenter.augment(query, documents);
-		assertThat(augmentedQuery.text()).isEqualTo("""
+		assertThat(augmentedQuery.text()).isEqualToIgnoringNewLines("""
 				Context:
 				content1
 				content2

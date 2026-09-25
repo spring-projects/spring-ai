@@ -65,7 +65,7 @@ public interface StreamingTranscriptionModel
 	 */
 	default Flux<String> streamTranscribe(Resource resource, @Nullable AudioTranscriptionOptions options) {
 		AudioTranscriptionPrompt prompt = new AudioTranscriptionPrompt(resource, options);
-		return stream(prompt)
+		return this.stream(prompt)
 			.map(response -> Optional.ofNullable(response.getResult()).map(AudioTranscription::getOutput).orElse(""));
 	}
 

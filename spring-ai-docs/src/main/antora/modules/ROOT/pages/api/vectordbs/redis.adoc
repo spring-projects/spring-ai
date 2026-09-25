@@ -82,6 +82,16 @@ vectorStore.add(documents);
 List<Document> results = this.vectorStore.similaritySearch(SearchRequest.builder().query("Spring").topK(5).build());
 ----
 
+To include custom metadata fields in the auto-configured Redis schema, define a `List<RedisVectorStore.MetadataField>` bean:
+
+[source,java]
+----
+@Bean
+List<RedisVectorStore.MetadataField> redisMetadataFields() {
+    return List.of(RedisVectorStore.MetadataField.tag("conversationId"));
+}
+----
+
 [[redisvector-properties]]
 === Configuration Properties
 
@@ -176,6 +186,29 @@ is converted into the proprietary Redis filter format:
 ----
 @country:{UK | NL} @year:[2020 inf]
 ----
+
+== Upsert support
+
+`RedisVectorStore` implements `upsert(List<EmbeddedDocument>)`, so you can write documents together with embeddings you computed elsewhere instead of having the store embed them.
+Writing the same id again replaces the existing row, so a re-run with stable ids does not create duplicates.
+See xref:api/vectordbs.adoc#writing-precomputed-embeddings[Writing User-Supplied Embeddings] for details.
+
+Redis stores every metadata key you write, but a search returns only the fields declared through `metadataFields`, so anything else comes back missing.
+Declare the keys you need returned, not just the ones you filter on:
+
+[source,java]
+----
+RedisVectorStore.builder(jedisClient, embeddingModel)
+    .metadataFields(MetadataField.tag(DocumentMetadata.CONTENT_REF.value()))
+    .initializeSchema(true)
+    .build();
+----
+
+The store logs a warning the first time it writes a document carrying an undeclared field.
+
+CAUTION: A vector whose width does not match the index is written successfully and then never indexed, so the row exists but no search returns it.
+The only trace is the `hash_indexing_failures` counter in `FT.INFO`.
+Adding a field to a store that already has an index means recreating the index.
 
 == Manual Configuration
 

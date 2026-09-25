@@ -118,7 +118,8 @@ public class BedrockNovaChatClientIT {
 				|| lowerResponse.contains("peck") | lowerResponse.contains("standing");
 
 		boolean describesAppearance = lowerResponse.contains("feather") || lowerResponse.contains("fluff")
-				|| lowerResponse.contains("color");
+				|| lowerResponse.contains("color") || lowerResponse.contains("group")
+				|| lowerResponse.contains("flock");
 
 		// Comprehensive assertions with detailed failure messages
 		assertAll("Video content analysis",

@@ -62,7 +62,7 @@ class ChatClientPromptContentObservationHandlerTests {
 			.request(ChatClientRequest.builder().prompt(new Prompt(List.of())).build())
 			.build();
 		this.observationHandler.onStop(context);
-		assertThat(output).contains("""
+		assertThat(output).containsIgnoringNewLines("""
 				INFO  o.s.a.c.c.o.ChatClientPromptContentObservationHandler -- Chat Client Prompt Content:
 				[]
 				""");
@@ -74,7 +74,7 @@ class ChatClientPromptContentObservationHandlerTests {
 			.request(ChatClientRequest.builder().prompt(new Prompt("supercalifragilisticexpialidocious")).build())
 			.build();
 		this.observationHandler.onStop(context);
-		assertThat(output).contains("""
+		assertThat(output).containsIgnoringNewLines("""
 				INFO  o.s.a.c.c.o.ChatClientPromptContentObservationHandler -- Chat Client Prompt Content:
 				["user":"supercalifragilisticexpialidocious"]
 				""");
@@ -89,7 +89,7 @@ class ChatClientPromptContentObservationHandlerTests {
 				.build())
 			.build();
 		this.observationHandler.onStop(context);
-		assertThat(output).contains("""
+		assertThat(output).containsIgnoringNewLines("""
 				INFO  o.s.a.c.c.o.ChatClientPromptContentObservationHandler -- Chat Client Prompt Content:
 				["system":"you're a chimney sweep", "user":"supercalifragilisticexpialidocious"]
 				""");

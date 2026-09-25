@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.openai.azure.AzureOpenAIServiceVersion;
+import com.openai.azure.AzureUrlPathMode;
 import com.openai.azure.credential.AzureApiKeyCredential;
 import com.openai.client.OpenAIClient;
 import com.openai.client.OpenAIClientAsync;
@@ -49,6 +50,7 @@ import org.springframework.ai.openai.http.okhttp.SpringAiOpenAiHttpClient;
  *
  * @author Julien Dubois
  * @author Thomas Vitale
+ * @author Jewoo Shin
  */
 public final class OpenAiSetup {
 
@@ -163,9 +165,11 @@ public final class OpenAiSetup {
 			customizer.customize(httpBuilder);
 		}
 
+		String calculatedBaseUrl = calculateBaseUrl(baseUrl, modelProvider, modelName, azureDeploymentName);
+
 		ClientOptions.Builder clientOptions = ClientOptions.builder()
 			.httpClient(httpBuilder.build())
-			.baseUrl(calculateBaseUrl(baseUrl, modelProvider, modelName, azureDeploymentName))
+			.baseUrl(calculatedBaseUrl)
 			.organization(organizationId)
 			.timeout(timeout)
 			.maxRetries(maxRetries)
@@ -190,6 +194,9 @@ public final class OpenAiSetup {
 
 		if (azureOpenAiServiceVersion != null) {
 			clientOptions.azureServiceVersion(azureOpenAiServiceVersion);
+		}
+		if (modelProvider == ModelProvider.MICROSOFT_FOUNDRY) {
+			clientOptions.azureUrlPathMode(resolveAzureUrlPathMode(calculatedBaseUrl));
 		}
 		if (customHeaders != null) {
 			clientOptions.putAllHeaders(customHeaders.entrySet()
@@ -226,10 +233,12 @@ public final class OpenAiSetup {
 			customizer.customize(httpBuilder);
 		}
 
+		String calculatedBaseUrl = calculateBaseUrl(baseUrl, modelProvider, modelName, azureDeploymentName);
+
 		ClientOptions.Builder clientOptions = ClientOptions.builder()
 			.httpClient(httpBuilder.build())
 			.apiKey(NO_AUTH_PLACEHOLDER_KEY)
-			.baseUrl(calculateBaseUrl(baseUrl, modelProvider, modelName, azureDeploymentName))
+			.baseUrl(calculatedBaseUrl)
 			.organization(organizationId)
 			.timeout(timeout)
 			.maxRetries(maxRetries)
@@ -237,6 +246,9 @@ public final class OpenAiSetup {
 
 		if (azureOpenAiServiceVersion != null) {
 			clientOptions.azureServiceVersion(azureOpenAiServiceVersion);
+		}
+		if (modelProvider == ModelProvider.MICROSOFT_FOUNDRY) {
+			clientOptions.azureUrlPathMode(resolveAzureUrlPathMode(calculatedBaseUrl));
 		}
 		if (customHeaders != null) {
 			clientOptions.putAllHeaders(customHeaders.entrySet()
@@ -347,6 +359,11 @@ public final class OpenAiSetup {
 			return System.getenv(GITHUB_TOKEN);
 		}
 		return null;
+	}
+
+	static AzureUrlPathMode resolveAzureUrlPathMode(@Nullable String baseUrl) {
+		return (baseUrl != null && baseUrl.trim().endsWith("/openai/v1")) ? AzureUrlPathMode.UNIFIED
+				: AzureUrlPathMode.LEGACY;
 	}
 
 }

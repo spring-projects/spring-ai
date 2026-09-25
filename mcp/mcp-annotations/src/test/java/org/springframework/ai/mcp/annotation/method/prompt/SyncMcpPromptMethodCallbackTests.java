@@ -17,13 +17,17 @@
 package org.springframework.ai.mcp.annotation.method.prompt;
 
 import java.lang.reflect.Method;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 
+import io.modelcontextprotocol.json.McpJsonDefaults;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
 import io.modelcontextprotocol.spec.McpError;
+import io.modelcontextprotocol.spec.McpSchema.ErrorCodes;
 import io.modelcontextprotocol.spec.McpSchema.GetPromptRequest;
 import io.modelcontextprotocol.spec.McpSchema.GetPromptResult;
 import io.modelcontextprotocol.spec.McpSchema.Prompt;
@@ -201,6 +205,157 @@ public class SyncMcpPromptMethodCallbackTests {
 		PromptMessage message = result.messages().get(0);
 		assertThat(message.role()).isEqualTo(Role.ASSISTANT);
 		assertThat(((TextContent) message.content()).text()).isEqualTo("Hello John, you are 30 years old");
+	}
+
+	@Test
+	public void testCallbackRejectsUnsafeIntegerConversions() throws Exception {
+		TestPromptProvider provider = new TestPromptProvider();
+
+		assertInvalidNumericArgument(provider, "getPromptWithIntegerArgument", int.class, 1.5);
+		assertThat(provider.integerArgument).isNull();
+
+		assertInvalidNumericArgument(provider, "getPromptWithIntegerArgument", int.class, (long) Integer.MAX_VALUE + 1);
+		assertThat(provider.integerArgument).isNull();
+
+		assertInvalidNumericArgument(provider, "getPromptWithIntegerArgument", int.class, Double.NaN);
+		assertThat(provider.integerArgument).isNull();
+
+		assertInvalidNumericArgument(provider, "getPromptWithIntegerArgument", int.class, Double.POSITIVE_INFINITY);
+		assertThat(provider.integerArgument).isNull();
+	}
+
+	@Test
+	public void testCallbackRejectsUnsafeLongConversions() throws Exception {
+		TestPromptProvider provider = new TestPromptProvider();
+
+		assertInvalidNumericArgument(provider, "getPromptWithLongArgument", long.class, 1.5);
+		assertThat(provider.longArgument).isNull();
+
+		assertInvalidNumericArgument(provider, "getPromptWithLongArgument", long.class,
+				BigInteger.valueOf(Long.MAX_VALUE).add(BigInteger.ONE));
+		assertThat(provider.longArgument).isNull();
+
+		assertInvalidNumericArgument(provider, "getPromptWithLongArgument", long.class,
+				BigInteger.valueOf(Long.MIN_VALUE).subtract(BigInteger.ONE));
+		assertThat(provider.longArgument).isNull();
+
+		assertInvalidNumericArgument(provider, "getPromptWithLongArgument", long.class, new BigDecimal("42.001"));
+		assertThat(provider.longArgument).isNull();
+
+		assertInvalidNumericArgument(provider, "getPromptWithLongArgument", long.class, Double.NEGATIVE_INFINITY);
+		assertThat(provider.longArgument).isNull();
+	}
+
+	@Test
+	public void testCallbackAcceptsExactNumericConversions() throws Exception {
+		TestPromptProvider provider = new TestPromptProvider();
+
+		BiFunction<McpSyncServerExchange, GetPromptRequest, GetPromptResult> integerCallback = createNumericCallback(
+				provider, "getPromptWithIntegerArgument", int.class);
+		GetPromptRequest integerRequest = GetPromptRequest.builder("numeric-argument")
+			.arguments(Map.of("value", 1.0))
+			.build();
+		integerCallback.apply(mock(McpSyncServerExchange.class), integerRequest);
+		assertThat(provider.integerArgument).isEqualTo(1);
+
+		integerRequest = GetPromptRequest.builder("numeric-argument")
+			.arguments(Map.of("value", (float) Integer.MIN_VALUE))
+			.build();
+		integerCallback.apply(mock(McpSyncServerExchange.class), integerRequest);
+		assertThat(provider.integerArgument).isEqualTo(Integer.MIN_VALUE);
+
+		integerRequest = GetPromptRequest.builder("numeric-argument")
+			.arguments(Map.of("value", BigInteger.valueOf(Integer.MAX_VALUE)))
+			.build();
+		integerCallback.apply(mock(McpSyncServerExchange.class), integerRequest);
+		assertThat(provider.integerArgument).isEqualTo(Integer.MAX_VALUE);
+
+		BiFunction<McpSyncServerExchange, GetPromptRequest, GetPromptResult> longCallback = createNumericCallback(
+				provider, "getPromptWithLongArgument", long.class);
+		GetPromptRequest longRequest = GetPromptRequest.builder("numeric-argument")
+			.arguments(Map.of("value", new BigDecimal("42.000")))
+			.build();
+		longCallback.apply(mock(McpSyncServerExchange.class), longRequest);
+		assertThat(provider.longArgument).isEqualTo(42L);
+
+		longRequest = GetPromptRequest.builder("numeric-argument")
+			.arguments(Map.of("value", (double) Long.MIN_VALUE))
+			.build();
+		longCallback.apply(mock(McpSyncServerExchange.class), longRequest);
+		assertThat(provider.longArgument).isEqualTo(Long.MIN_VALUE);
+
+		double largeExactInteger = Math.nextDown(Math.scalb(1.0, 63));
+		longRequest = GetPromptRequest.builder("numeric-argument")
+			.arguments(Map.of("value", largeExactInteger))
+			.build();
+		longCallback.apply(mock(McpSyncServerExchange.class), longRequest);
+		assertThat(provider.longArgument).isEqualTo((long) largeExactInteger);
+
+		longRequest = GetPromptRequest.builder("numeric-argument")
+			.arguments(Map.of("value", new BigDecimal("1E3")))
+			.build();
+		longCallback.apply(mock(McpSyncServerExchange.class), longRequest);
+		assertThat(provider.longArgument).isEqualTo(1000L);
+
+		longRequest = GetPromptRequest.builder("numeric-argument")
+			.arguments(Map.of("value", new BigDecimal("1.5E1")))
+			.build();
+		longCallback.apply(mock(McpSyncServerExchange.class), longRequest);
+		assertThat(provider.longArgument).isEqualTo(15L);
+	}
+
+	@Test
+	public void testCallbackWithDeserializedNumericArguments() throws Exception {
+		TestPromptProvider provider = new TestPromptProvider();
+		BiFunction<McpSyncServerExchange, GetPromptRequest, GetPromptResult> integerCallback = createNumericCallback(
+				provider, "getPromptWithIntegerArgument", int.class);
+		BiFunction<McpSyncServerExchange, GetPromptRequest, GetPromptResult> longCallback = createNumericCallback(
+				provider, "getPromptWithLongArgument", long.class);
+		McpSyncServerExchange exchange = mock(McpSyncServerExchange.class);
+
+		GetPromptRequest fractionalRequest = deserializeNumericRequest("1.5");
+		assertInvalidNumericRequest(integerCallback, exchange, fractionalRequest);
+		assertThat(provider.integerArgument).isNull();
+
+		GetPromptRequest largeExactIntegerRequest = deserializeNumericRequest("9223372036854774784.0");
+		longCallback.apply(exchange, largeExactIntegerRequest);
+		assertThat(provider.longArgument).isEqualTo(9223372036854774784L);
+
+		provider.longArgument = null;
+		GetPromptRequest outOfRangeRequest = deserializeNumericRequest("9223372036854775808");
+		assertInvalidNumericRequest(longCallback, exchange, outOfRangeRequest);
+		assertThat(provider.longArgument).isNull();
+	}
+
+	private void assertInvalidNumericArgument(TestPromptProvider provider, String methodName, Class<?> parameterType,
+			Number value) throws Exception {
+		BiFunction<McpSyncServerExchange, GetPromptRequest, GetPromptResult> callback = createNumericCallback(provider,
+				methodName, parameterType);
+		GetPromptRequest request = GetPromptRequest.builder("numeric-argument")
+			.arguments(Map.of("value", value))
+			.build();
+
+		assertInvalidNumericRequest(callback, mock(McpSyncServerExchange.class), request);
+	}
+
+	private void assertInvalidNumericRequest(
+			BiFunction<McpSyncServerExchange, GetPromptRequest, GetPromptResult> callback,
+			McpSyncServerExchange exchange, GetPromptRequest request) {
+		assertThatThrownBy(() -> callback.apply(exchange, request)).isInstanceOfSatisfying(McpError.class,
+				error -> assertThat(error.getJsonRpcError().code()).isEqualTo(ErrorCodes.INVALID_PARAMS));
+	}
+
+	private GetPromptRequest deserializeNumericRequest(String value) throws Exception {
+		return McpJsonDefaults.getMapper()
+			.readValue("{\"name\":\"numeric-argument\",\"arguments\":{\"value\":" + value + "}}",
+					GetPromptRequest.class);
+	}
+
+	private BiFunction<McpSyncServerExchange, GetPromptRequest, GetPromptResult> createNumericCallback(
+			TestPromptProvider provider, String methodName, Class<?> parameterType) throws Exception {
+		Method method = TestPromptProvider.class.getMethod(methodName, parameterType);
+		Prompt prompt = createTestPrompt("numeric-argument", "A prompt with a numeric argument");
+		return SyncMcpPromptMethodCallback.builder().method(method).bean(provider).prompt(prompt).build();
 	}
 
 	@Test
@@ -717,6 +872,10 @@ public class SyncMcpPromptMethodCallbackTests {
 
 	private static class TestPromptProvider {
 
+		private Integer integerArgument;
+
+		private Long longArgument;
+
 		@McpPrompt(name = "failing-prompt", description = "A prompt that throws an exception")
 		public GetPromptResult getFailingPrompt(GetPromptRequest request) {
 			throw new RuntimeException("Test exception");
@@ -759,6 +918,20 @@ public class SyncMcpPromptMethodCallbackTests {
 						TextContent.builder("Hello " + name + ", you are " + age + " years old").build())))
 				.description("Individual arguments prompt")
 				.build();
+		}
+
+		@McpPrompt(name = "integer-argument", description = "A prompt with an integer argument")
+		public GetPromptResult getPromptWithIntegerArgument(
+				@McpArg(name = "value", description = "An integer value", required = true) int value) {
+			this.integerArgument = value;
+			return GetPromptResult.builder(List.of()).description("Integer argument prompt").build();
+		}
+
+		@McpPrompt(name = "long-argument", description = "A prompt with a long argument")
+		public GetPromptResult getPromptWithLongArgument(
+				@McpArg(name = "value", description = "A long value", required = true) long value) {
+			this.longArgument = value;
+			return GetPromptResult.builder(List.of()).description("Long argument prompt").build();
 		}
 
 		@McpPrompt(name = "mixed-args", description = "A prompt with mixed argument types")

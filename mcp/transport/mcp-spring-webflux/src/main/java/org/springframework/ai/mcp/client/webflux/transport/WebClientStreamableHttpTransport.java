@@ -61,6 +61,7 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
+import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.ClientResponse;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -548,17 +549,23 @@ public final class WebClientStreamableHttpTransport implements McpClientTranspor
 	}
 
 	private Tuple2<Optional<String>, Iterable<McpSchema.JSONRPCMessage>> parse(ServerSentEvent<String> event) {
-		if (MESSAGE_EVENT_TYPE.equals(event.event())) {
+		if (isMessageEvent(event.event())) {
+			String data = event.data();
+			if (data == null || data.isEmpty()) {
+				// messages without `event: ` may be empty and should be ignored
+				logger.debug("Ignoring SSE message event with empty data: %s".formatted(event));
+				return Tuples.of(Optional.empty(), List.of());
+			}
 			try {
 				// We don't support batching ATM and probably won't since the next version
 				// considers removing it.
-				McpSchema.JSONRPCMessage message = McpSchema.deserializeJsonRpcMessage(this.jsonMapper, event.data());
+				McpSchema.JSONRPCMessage message = McpSchema.deserializeJsonRpcMessage(this.jsonMapper, data);
 				String eventId = event.id();
 				Optional<String> idOpt = (eventId != null) ? Optional.of(eventId) : Optional.empty();
 				return Tuples.of(idOpt, List.of(message));
 			}
 			catch (IOException ioException) {
-				throw new McpTransportException("Error parsing JSON-RPC message: " + event.data(), ioException);
+				throw new McpTransportException("Error parsing JSON-RPC message: " + data, ioException);
 			}
 		}
 		else {
@@ -567,6 +574,11 @@ public final class WebClientStreamableHttpTransport implements McpClientTranspor
 			}
 			return Tuples.of(Optional.empty(), List.of());
 		}
+	}
+
+	private static boolean isMessageEvent(@Nullable String eventType) {
+		// Per SSE semantics, missing/blank event type defaults to "message".
+		return !StringUtils.hasText(eventType) || MESSAGE_EVENT_TYPE.equals(eventType);
 	}
 
 	/**

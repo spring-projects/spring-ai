@@ -501,6 +501,21 @@ public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatO
 	}
 
 	@Test
+	void testTimeoutIsNullWhenUnset() {
+		assertThat(OpenAiChatOptions.builder().build().getTimeout()).isNull();
+	}
+
+	@Test
+	void testCombineWithKeepsTimeoutWhenOverrideLeavesItUnset() {
+		OpenAiChatOptions base = OpenAiChatOptions.builder().timeout(java.time.Duration.ofMinutes(30)).build();
+
+		OpenAiChatOptions merged = base.mutate().combineWith(OpenAiChatOptions.builder().model("override")).build();
+
+		assertThat(merged.getTimeout()).isEqualTo(java.time.Duration.ofMinutes(30));
+		assertThat(merged.getModel()).isEqualTo("override");
+	}
+
+	@Test
 	void testCombineWith() {
 		OpenAiChatOptions base = OpenAiChatOptions.builder()
 			.model("base-model")

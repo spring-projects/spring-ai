@@ -16,6 +16,8 @@
 
 package org.springframework.ai.chat.memory.repository.neo4j;
 
+import java.util.regex.Pattern;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
@@ -27,6 +29,7 @@ import org.springframework.util.Assert;
  * Configuration for the Neo4j Chat Memory store.
  *
  * @author Enrico Rampazzo
+ * @author Soby Chacko
  */
 public final class Neo4jChatMemoryRepositoryConfig {
 
@@ -45,6 +48,8 @@ public final class Neo4jChatMemoryRepositoryConfig {
 	public static final String DEFAULT_MEDIA_LABEL = "Media";
 
 	private static final Log logger = LogFactory.getLog(Neo4jChatMemoryRepositoryConfig.class);
+
+	private static final Pattern SAFE_LABEL = Pattern.compile("[\\p{Alpha}_][\\p{Alnum}_]*");
 
 	private final Driver driver;
 
@@ -97,7 +102,18 @@ public final class Neo4jChatMemoryRepositoryConfig {
 		this.toolCallLabel = builder.toolCallLabel;
 		this.metadataLabel = builder.metadataLabel;
 		this.toolResponseLabel = builder.toolResponseLabel;
+		validateLabels();
 		ensureIndexes();
+	}
+
+	private void validateLabels() {
+		for (String label : new String[] { this.sessionLabel, this.messageLabel, this.metadataLabel, this.mediaLabel,
+				this.toolCallLabel, this.toolResponseLabel }) {
+			if (!SAFE_LABEL.matcher(label).matches()) {
+				throw new IllegalArgumentException("Invalid Neo4j node label: '" + label
+						+ "'. Labels must start with a letter or underscore and contain only letters, digits, or underscores.");
+			}
+		}
 	}
 
 	/**

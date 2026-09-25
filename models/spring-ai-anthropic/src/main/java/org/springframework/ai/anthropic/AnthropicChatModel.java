@@ -16,6 +16,7 @@
 
 package org.springframework.ai.anthropic;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.HashMap;
@@ -29,6 +30,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import com.anthropic.client.AnthropicClient;
 import com.anthropic.client.AnthropicClientAsync;
 import com.anthropic.core.JsonValue;
+import com.anthropic.core.RequestOptions;
 import com.anthropic.core.http.HttpResponseFor;
 import com.anthropic.core.http.StreamResponse;
 import com.anthropic.models.messages.Base64ImageSource;
@@ -144,6 +146,8 @@ import org.springframework.util.MimeType;
  * @author Sebastien Deleuze
  * @author Ilayaperumal Gopinathan
  * @author Jewoo Shin
+ * @author Seeun Kim
+ * @author guan xu
  * @since 1.0.0
  * @see AnthropicChatOptions
  * @see <a href="https://docs.anthropic.com/en/api/messages">Anthropic Messages API</a>
@@ -161,6 +165,33 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	private static final String BETA_FILES_API = "files-api-2025-04-14";
 
 	static final String ANTHROPIC_THINKING_CONTENTS_PROPERTY = "anthropicThinkingContents";
+
+	/**
+	 * Metadata key set to {@code true} on streaming {@link AssistantMessage} chunks that
+	 * carry incremental thinking (reasoning) text from a thinking-enabled model.
+	 * <p>
+	 * Use this key to identify thinking deltas in a streaming response: <pre>{@code
+	 * chatModel.stream(prompt).subscribe(response -> {
+	 *     AssistantMessage message = response.getResult().getOutput();
+	 *     if (Boolean.TRUE.equals(message.getMetadata().get(AnthropicChatModel.THINKING_METADATA_KEY))) {
+	 *         String chunk = (String) message.getMetadata().get(AnthropicChatModel.THINKING_TEXT_METADATA_KEY);
+	 *     }
+	 * });
+	 * }</pre>
+	 * @since 2.0.2
+	 * @see #THINKING_TEXT_METADATA_KEY
+	 */
+	public static final String THINKING_METADATA_KEY = "thinking";
+
+	/**
+	 * Metadata key holding the incremental thinking text on streaming
+	 * {@link AssistantMessage} chunks where {@link #THINKING_METADATA_KEY} is
+	 * {@code true}. The chunk content ({@code getText()}) is {@code null} so that
+	 * thinking text is not aggregated into the final answer.
+	 * @since 2.0.2
+	 * @see #THINKING_METADATA_KEY
+	 */
+	public static final String THINKING_TEXT_METADATA_KEY = "thinkingText";
 
 	private static final ToolCallingManager DEFAULT_TOOL_CALLING_MANAGER = ToolCallingManager.builder().build();
 
@@ -330,7 +361,9 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			// stream start) can be captured. The SDK exposes this as a blocking
 			// StreamResponse, so events are pulled on a boundedElastic worker.
 			Flux<ChatResponse> chatResponseFlux = Mono
-				.fromFuture(() -> this.anthropicClientAsync.messages().withRawResponse().createStreaming(request))
+				.fromFuture(() -> this.anthropicClientAsync.messages()
+					.withRawResponse()
+					.createStreaming(request, requestOptionsFor(prompt)))
 				.flatMapMany(rawResponse -> {
 					streamingState.setRateLimit(AnthropicRateLimit.from(rawResponse.headers()));
 					StreamResponse<RawMessageStreamEvent> streamResponse = rawResponse.parse();
@@ -434,12 +467,14 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 				return null;
 			}
 
-			// Thinking chunk — emit with thinking metadata
+			// Thinking chunk — emit with thinking metadata. The text is exposed in
+			// metadata, not content, so it is not aggregated into the message text.
 			if (delta.isThinking()) {
 				String thinkingText = delta.asThinking().thinking();
 				streamingState.appendThinking(thinkingText);
 				Map<String, Object> thinkingProperties = new HashMap<>();
-				thinkingProperties.put("thinking", Boolean.TRUE);
+				thinkingProperties.put(THINKING_METADATA_KEY, Boolean.TRUE);
+				thinkingProperties.put(THINKING_TEXT_METADATA_KEY, thinkingText);
 				AssistantMessage assistantMessage = AssistantMessage.builder().properties(thinkingProperties).build();
 				return new ChatResponse(List.of(new Generation(assistantMessage)));
 			}
@@ -552,7 +587,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 				HttpResponseFor<Message> rawResponse = this.anthropicClient.messages()
 					.withRawResponse()
-					.create(request);
+					.create(request, requestOptionsFor(prompt));
 				Message message = rawResponse.parse();
 				RateLimit rateLimit = AnthropicRateLimit.from(rawResponse.headers());
 
@@ -586,6 +621,20 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		return response;
 	}
 
+	private static AnthropicChatOptions resolveAnthropicOptions(Prompt prompt) {
+		ChatOptions options = prompt.getOptions();
+		return options instanceof AnthropicChatOptions anthropicOptions ? anthropicOptions
+				: AnthropicChatOptions.builder().build();
+	}
+
+	private static RequestOptions requestOptionsFor(Prompt prompt) {
+		// Carry the resolved timeout as per-call RequestOptions; the SDK only honors a
+		// timeout supplied here, so otherwise AnthropicChatOptions#getTimeout() is
+		// ignored.
+		Duration timeout = resolveAnthropicOptions(prompt).getTimeout();
+		return timeout != null ? RequestOptions.builder().timeout(timeout).build() : RequestOptions.none();
+	}
+
 	/**
 	 * Creates a {@link MessageCreateParams} request from a Spring AI {@link Prompt}. Maps
 	 * message types to Anthropic format: TOOL messages become user messages with
@@ -599,9 +648,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 		MessageCreateParams.Builder builder = MessageCreateParams.builder();
 
-		ChatOptions options = prompt.getOptions();
-		AnthropicChatOptions requestOptions = options instanceof AnthropicChatOptions anthropicOptions
-				? anthropicOptions : AnthropicChatOptions.builder().build();
+		AnthropicChatOptions requestOptions = resolveAnthropicOptions(prompt);
 
 		// Set required fields
 		builder.model(requestOptions.getModel()).maxTokens(requestOptions.getMaxTokens());
@@ -961,7 +1008,9 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 	/**
 	 * Builds generations from the Anthropic message response. Extracts text, tool calls,
-	 * thinking content, and citations from the response content blocks.
+	 * thinking content, and citations from the response content blocks. The final
+	 * assistant generation is placed first so {@link ChatResponse#getResult()} returns
+	 * the answer; any thinking or redacted-thinking generations follow it.
 	 * @param message the Anthropic message response
 	 * @param citationAccumulator collects citations found in text blocks
 	 * @param webSearchAccumulator collects web search results found in response
@@ -1038,7 +1087,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			}
 		}
 
-		generations.add(new Generation(buildAssistantMessage(textContent.toString(), toolCalls, thinkingContents),
+		generations.add(0, new Generation(buildAssistantMessage(textContent.toString(), toolCalls, thinkingContents),
 				generationMetadata));
 
 		return generations;
@@ -1538,9 +1587,38 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		}
 
 		@Override
+		public Builder mutate() {
+			return builder().content(getText()).toolCalls(getToolCalls()).thinkingContents(getThinkingContents());
+		}
+
+		@Override
 		public String toString() {
 			return "AnthropicAssistantMessage [messageType=" + getMessageType() + ", toolCalls=" + getToolCalls()
 					+ ", textContent=" + getText() + ", thinkingContents=" + this.thinkingContents.size() + "]";
+		}
+
+		public static Builder builder() {
+			return new Builder();
+		}
+
+		static final class Builder extends AssistantMessage.Builder<Builder> {
+
+			private List<AnthropicThinkingContent> thinkingContents = List.of();
+
+			private Builder() {
+			}
+
+			Builder thinkingContents(List<AnthropicThinkingContent> thinkingContents) {
+				this.thinkingContents = thinkingContents;
+				return self();
+			}
+
+			@Override
+			public AnthropicAssistantMessage build() {
+				Assert.notNull(this.content, "content cannot be null");
+				return new AnthropicAssistantMessage(this.content, this.toolCalls, this.thinkingContents);
+			}
+
 		}
 
 	}

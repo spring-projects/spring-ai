@@ -17,6 +17,7 @@
 package org.springframework.ai.openai;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -25,12 +26,14 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 import com.openai.client.OpenAIClient;
 import com.openai.client.OpenAIClientAsync;
 import com.openai.core.JsonValue;
+import com.openai.core.RequestOptions;
 import com.openai.core.http.AsyncStreamResponse;
 import com.openai.models.FunctionDefinition;
 import com.openai.models.FunctionParameters;
@@ -54,6 +57,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Flux;
@@ -77,6 +81,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
@@ -110,25 +115,26 @@ class OpenAiChatModelTests {
 		ChatCompletionService chatCompletionService = mock(ChatCompletionService.class);
 		when(this.openAiClient.chat()).thenReturn(chatService);
 		when(chatService.completions()).thenReturn(chatCompletionService);
-		when(chatCompletionService.create(any(ChatCompletionCreateParams.class))).thenReturn(ChatCompletion.builder()
-			.id("gen-1888888888-XYZabc123NewId")
-			.created(1777799928)
-			.model("moonshotai/kimi-k2.5-0127")
-			.usage(CompletionUsage.builder().promptTokens(1).completionTokens(1).totalTokens(2).build())
-			.addChoice(ChatCompletion.Choice.builder()
-				.finishReason(ChatCompletion.Choice.FinishReason.STOP)
-				.index(0)
-				.logprobs(Optional.empty())
-				.message(ChatCompletionMessage.builder()
-					.content("hello")
-					.refusal(Optional.empty())
-					.role(JsonValue.from("assistant"))
-					.annotations(List.of())
-					.toolCalls(List.of())
+		when(chatCompletionService.create(any(ChatCompletionCreateParams.class), any(RequestOptions.class)))
+			.thenReturn(ChatCompletion.builder()
+				.id("gen-1888888888-XYZabc123NewId")
+				.created(1777799928)
+				.model("moonshotai/kimi-k2.5-0127")
+				.usage(CompletionUsage.builder().promptTokens(1).completionTokens(1).totalTokens(2).build())
+				.addChoice(ChatCompletion.Choice.builder()
+					.finishReason(ChatCompletion.Choice.FinishReason.STOP)
+					.index(0)
+					.logprobs(Optional.empty())
+					.message(ChatCompletionMessage.builder()
+						.content("hello")
+						.refusal(Optional.empty())
+						.role(JsonValue.from("assistant"))
+						.annotations(List.of())
+						.toolCalls(List.of())
+						.build())
 					.build())
-				.build())
-			.additionalProperties(additionalProperties)
-			.build());
+				.additionalProperties(additionalProperties)
+				.build());
 
 		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").build();
 		OpenAiChatModel chatModel = OpenAiChatModel.builder()
@@ -155,33 +161,34 @@ class OpenAiChatModelTests {
 		ChatCompletionService chatCompletionService = mock(ChatCompletionService.class);
 		when(this.openAiClient.chat()).thenReturn(chatService);
 		when(chatService.completions()).thenReturn(chatCompletionService);
-		when(chatCompletionService.create(any(ChatCompletionCreateParams.class))).thenReturn(ChatCompletion.builder()
-			.id("chatcmpl-test")
-			.created(1777799928)
-			.model("gemini-3.5-flash")
-			.usage(CompletionUsage.builder().promptTokens(1).completionTokens(1).totalTokens(2).build())
-			.addChoice(ChatCompletion.Choice.builder()
-				.finishReason(ChatCompletion.Choice.FinishReason.TOOL_CALLS)
-				.index(0)
-				.logprobs(Optional.empty())
-				.message(ChatCompletionMessage.builder()
-					.content("")
-					.refusal(Optional.empty())
-					.role(JsonValue.from("assistant"))
-					.annotations(List.of())
-					.toolCalls(List
-						.of(ChatCompletionMessageToolCall.ofFunction(ChatCompletionMessageFunctionToolCall.builder()
-							.id("call_1")
-							.function(ChatCompletionMessageFunctionToolCall.Function.builder()
-								.name("get_current_weather")
-								.arguments("{\"location\":\"Seoul\"}")
-								.build())
-							.putAdditionalProperty("extra_content",
-									JsonValue.from(Map.of("google", Map.of("thought_signature", "signature-123"))))
-							.build())))
+		when(chatCompletionService.create(any(ChatCompletionCreateParams.class), any(RequestOptions.class)))
+			.thenReturn(ChatCompletion.builder()
+				.id("chatcmpl-test")
+				.created(1777799928)
+				.model("gemini-3.5-flash")
+				.usage(CompletionUsage.builder().promptTokens(1).completionTokens(1).totalTokens(2).build())
+				.addChoice(ChatCompletion.Choice.builder()
+					.finishReason(ChatCompletion.Choice.FinishReason.TOOL_CALLS)
+					.index(0)
+					.logprobs(Optional.empty())
+					.message(ChatCompletionMessage.builder()
+						.content("")
+						.refusal(Optional.empty())
+						.role(JsonValue.from("assistant"))
+						.annotations(List.of())
+						.toolCalls(List
+							.of(ChatCompletionMessageToolCall.ofFunction(ChatCompletionMessageFunctionToolCall.builder()
+								.id("call_1")
+								.function(ChatCompletionMessageFunctionToolCall.Function.builder()
+									.name("get_current_weather")
+									.arguments("{\"location\":\"Seoul\"}")
+									.build())
+								.putAdditionalProperty("extra_content",
+										JsonValue.from(Map.of("google", Map.of("thought_signature", "signature-123"))))
+								.build())))
+						.build())
 					.build())
-				.build())
-			.build());
+				.build());
 
 		OpenAiChatOptions options = OpenAiChatOptions.builder().model("gemini-3.5-flash").build();
 		OpenAiChatModel chatModel = OpenAiChatModel.builder()
@@ -208,7 +215,8 @@ class OpenAiChatModelTests {
 		ChatCompletionServiceAsync chatCompletionServiceAsync = mock(ChatCompletionServiceAsync.class);
 		when(this.openAiClientAsync.chat()).thenReturn(chatServiceAsync);
 		when(chatServiceAsync.completions()).thenReturn(chatCompletionServiceAsync);
-		when(chatCompletionServiceAsync.createStreaming(any(ChatCompletionCreateParams.class)))
+		when(chatCompletionServiceAsync.createStreaming(any(ChatCompletionCreateParams.class),
+				any(RequestOptions.class)))
 			.thenReturn(asyncStreamResponse(
 					ChatCompletionChunk.builder()
 						.id("chatcmpl-stream-test")
@@ -286,7 +294,8 @@ class OpenAiChatModelTests {
 		ChatCompletionServiceAsync chatCompletionServiceAsync = mock(ChatCompletionServiceAsync.class);
 		when(this.openAiClientAsync.chat()).thenReturn(chatServiceAsync);
 		when(chatServiceAsync.completions()).thenReturn(chatCompletionServiceAsync);
-		when(chatCompletionServiceAsync.createStreaming(any(ChatCompletionCreateParams.class)))
+		when(chatCompletionServiceAsync.createStreaming(any(ChatCompletionCreateParams.class),
+				any(RequestOptions.class)))
 			.thenReturn(asyncStreamResponse(ChatCompletionChunk.builder()
 				.id("chatcmpl-stream-test")
 				.created(1777799928)
@@ -360,6 +369,41 @@ class OpenAiChatModelTests {
 			assertThat(toolCall.name()).isEqualTo("get_current_weather");
 			assertThat(toolCall.arguments()).isEqualTo("{\"location\":\"Seoul\"}");
 		});
+	}
+
+	@Test
+	void closesAsyncStreamResponseOnCancellation() {
+		ChatServiceAsync chatServiceAsync = mock(ChatServiceAsync.class);
+		ChatCompletionServiceAsync chatCompletionServiceAsync = mock(ChatCompletionServiceAsync.class);
+		when(this.openAiClientAsync.chat()).thenReturn(chatServiceAsync);
+		when(chatServiceAsync.completions()).thenReturn(chatCompletionServiceAsync);
+		AtomicBoolean closed = new AtomicBoolean();
+		AsyncStreamResponse<ChatCompletionChunk> streamResponse = asyncStreamResponse(closed, false,
+				ChatCompletionChunk.builder()
+					.id("chatcmpl-stream-test")
+					.created(1777799928)
+					.model("test-model")
+					.addChoice(ChatCompletionChunk.Choice.builder()
+						.index(0)
+						.finishReason(ChatCompletionChunk.Choice.FinishReason.STOP)
+						.delta(ChatCompletionChunk.Choice.Delta.builder().content("hello").build())
+						.build())
+					.build());
+		when(chatCompletionServiceAsync.createStreaming(any(ChatCompletionCreateParams.class),
+				any(RequestOptions.class)))
+			.thenReturn(streamResponse);
+
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		ChatResponse response = chatModel.stream(new Prompt("hi", options)).take(1).blockLast();
+
+		assertThat(response).isNotNull();
+		assertThat(closed).isTrue();
 	}
 
 	@Test
@@ -447,6 +491,11 @@ class OpenAiChatModelTests {
 	}
 
 	private AsyncStreamResponse<ChatCompletionChunk> asyncStreamResponse(ChatCompletionChunk... chunks) {
+		return asyncStreamResponse(new AtomicBoolean(), true, chunks);
+	}
+
+	private AsyncStreamResponse<ChatCompletionChunk> asyncStreamResponse(AtomicBoolean closed, boolean complete,
+			ChatCompletionChunk... chunks) {
 		return new AsyncStreamResponse<>() {
 			private final CompletableFuture<Void> completion = new CompletableFuture<>();
 
@@ -457,8 +506,10 @@ class OpenAiChatModelTests {
 					for (ChatCompletionChunk chunk : chunks) {
 						handler.onNext(chunk);
 					}
-					handler.onComplete(Optional.empty());
-					this.completion.complete(null);
+					if (complete) {
+						handler.onComplete(Optional.empty());
+						this.completion.complete(null);
+					}
 				}
 				catch (Throwable throwable) {
 					handler.onComplete(Optional.of(throwable));
@@ -481,6 +532,7 @@ class OpenAiChatModelTests {
 
 			@Override
 			public void close() {
+				closed.set(true);
 			}
 		};
 	}
@@ -591,25 +643,26 @@ class OpenAiChatModelTests {
 
 		when(this.openAiClient.chat()).thenReturn(chatService);
 		when(chatService.completions()).thenReturn(chatCompletionService);
-		when(chatCompletionService.create(any(ChatCompletionCreateParams.class))).thenReturn(ChatCompletion.builder()
-			.id("gen-1888888888-XYZabc123NewId")
-			.created(1777799928)
-			.model("deepseek-reasoner")
-			.usage(CompletionUsage.builder().promptTokens(1).completionTokens(1).totalTokens(2).build())
-			.addChoice(ChatCompletion.Choice.builder()
-				.finishReason(ChatCompletion.Choice.FinishReason.STOP)
-				.index(0)
-				.logprobs(Optional.empty())
-				.message(ChatCompletionMessage.builder()
-					.content("hello")
-					.refusal(Optional.empty())
-					.role(JsonValue.from("assistant"))
-					.annotations(List.of())
-					.toolCalls(List.of())
-					.putAdditionalProperty("reasoning_content", JsonValue.from("Test reasoning content"))
+		when(chatCompletionService.create(any(ChatCompletionCreateParams.class), any(RequestOptions.class)))
+			.thenReturn(ChatCompletion.builder()
+				.id("gen-1888888888-XYZabc123NewId")
+				.created(1777799928)
+				.model("deepseek-reasoner")
+				.usage(CompletionUsage.builder().promptTokens(1).completionTokens(1).totalTokens(2).build())
+				.addChoice(ChatCompletion.Choice.builder()
+					.finishReason(ChatCompletion.Choice.FinishReason.STOP)
+					.index(0)
+					.logprobs(Optional.empty())
+					.message(ChatCompletionMessage.builder()
+						.content("hello")
+						.refusal(Optional.empty())
+						.role(JsonValue.from("assistant"))
+						.annotations(List.of())
+						.toolCalls(List.of())
+						.putAdditionalProperty("reasoning_content", JsonValue.from("Test reasoning content"))
+						.build())
 					.build())
-				.build())
-			.build());
+				.build());
 
 		OpenAiChatOptions options = OpenAiChatOptions.builder().model("deepseek-reasoner").build();
 		OpenAiChatModel chatModel = OpenAiChatModel.builder()
@@ -631,25 +684,26 @@ class OpenAiChatModelTests {
 
 		when(this.openAiClient.chat()).thenReturn(chatService);
 		when(chatService.completions()).thenReturn(chatCompletionService);
-		when(chatCompletionService.create(any(ChatCompletionCreateParams.class))).thenReturn(ChatCompletion.builder()
-			.id("gen-1888888888-XYZabc123NewId")
-			.created(1777799928)
-			.model("test-reasoner")
-			.usage(CompletionUsage.builder().promptTokens(1).completionTokens(1).totalTokens(2).build())
-			.addChoice(ChatCompletion.Choice.builder()
-				.finishReason(ChatCompletion.Choice.FinishReason.STOP)
-				.index(0)
-				.logprobs(Optional.empty())
-				.message(ChatCompletionMessage.builder()
-					.content("hello")
-					.refusal(Optional.empty())
-					.role(JsonValue.from("assistant"))
-					.annotations(List.of())
-					.toolCalls(List.of())
-					.putAdditionalProperty("reasoning", JsonValue.from("Test reasoning content"))
+		when(chatCompletionService.create(any(ChatCompletionCreateParams.class), any(RequestOptions.class)))
+			.thenReturn(ChatCompletion.builder()
+				.id("gen-1888888888-XYZabc123NewId")
+				.created(1777799928)
+				.model("test-reasoner")
+				.usage(CompletionUsage.builder().promptTokens(1).completionTokens(1).totalTokens(2).build())
+				.addChoice(ChatCompletion.Choice.builder()
+					.finishReason(ChatCompletion.Choice.FinishReason.STOP)
+					.index(0)
+					.logprobs(Optional.empty())
+					.message(ChatCompletionMessage.builder()
+						.content("hello")
+						.refusal(Optional.empty())
+						.role(JsonValue.from("assistant"))
+						.annotations(List.of())
+						.toolCalls(List.of())
+						.putAdditionalProperty("reasoning", JsonValue.from("Test reasoning content"))
+						.build())
 					.build())
-				.build())
-			.build());
+				.build());
 
 		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-reasoner").build();
 		OpenAiChatModel chatModel = OpenAiChatModel.builder()
@@ -671,24 +725,25 @@ class OpenAiChatModelTests {
 
 		when(this.openAiClient.chat()).thenReturn(chatService);
 		when(chatService.completions()).thenReturn(chatCompletionService);
-		when(chatCompletionService.create(any(ChatCompletionCreateParams.class))).thenReturn(ChatCompletion.builder()
-			.id("gen-1888888888-XYZabc123NewId")
-			.created(1777799928)
-			.model("test-model")
-			.usage(CompletionUsage.builder().promptTokens(1).completionTokens(1).totalTokens(2).build())
-			.addChoice(ChatCompletion.Choice.builder()
-				.finishReason(ChatCompletion.Choice.FinishReason.STOP)
-				.index(0)
-				.logprobs(Optional.empty())
-				.message(ChatCompletionMessage.builder()
-					.content("hello")
-					.refusal(Optional.empty())
-					.role(JsonValue.from("assistant"))
-					.annotations(List.of())
-					.toolCalls(List.of())
+		when(chatCompletionService.create(any(ChatCompletionCreateParams.class), any(RequestOptions.class)))
+			.thenReturn(ChatCompletion.builder()
+				.id("gen-1888888888-XYZabc123NewId")
+				.created(1777799928)
+				.model("test-model")
+				.usage(CompletionUsage.builder().promptTokens(1).completionTokens(1).totalTokens(2).build())
+				.addChoice(ChatCompletion.Choice.builder()
+					.finishReason(ChatCompletion.Choice.FinishReason.STOP)
+					.index(0)
+					.logprobs(Optional.empty())
+					.message(ChatCompletionMessage.builder()
+						.content("hello")
+						.refusal(Optional.empty())
+						.role(JsonValue.from("assistant"))
+						.annotations(List.of())
+						.toolCalls(List.of())
+						.build())
 					.build())
-				.build())
-			.build());
+				.build());
 
 		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").build();
 		OpenAiChatModel chatModel = OpenAiChatModel.builder()
@@ -703,29 +758,78 @@ class OpenAiChatModelTests {
 	}
 
 	@Test
+	void usageCountsBeyondIntRangeFailClearlyInsteadOfBareArithmeticException() {
+		ChatService chatService = mock(ChatService.class);
+		ChatCompletionService chatCompletionService = mock(ChatCompletionService.class);
+		when(this.openAiClient.chat()).thenReturn(chatService);
+		when(chatService.completions()).thenReturn(chatCompletionService);
+		// A hostile or misbehaving OpenAI-compatible endpoint could return usage counts
+		// beyond Integer range. Such a response can't be trusted, so it should fail
+		// clearly instead of silently truncating the count into a plausible-looking but
+		// wrong number, or propagating a bare ArithmeticException("integer overflow").
+		long promptTokens = Integer.MAX_VALUE + 1L;
+		when(chatCompletionService.create(any(ChatCompletionCreateParams.class), any(RequestOptions.class)))
+			.thenReturn(ChatCompletion.builder()
+				.id("test-id")
+				.created(1777799928)
+				.model("test-model")
+				.usage(CompletionUsage.builder()
+					.promptTokens(promptTokens)
+					.completionTokens(0)
+					.totalTokens(promptTokens)
+					.build())
+				.addChoice(ChatCompletion.Choice.builder()
+					.finishReason(ChatCompletion.Choice.FinishReason.STOP)
+					.index(0)
+					.logprobs(Optional.empty())
+					.message(ChatCompletionMessage.builder()
+						.content("hello")
+						.refusal(Optional.empty())
+						.role(JsonValue.from("assistant"))
+						.annotations(List.of())
+						.toolCalls(List.of())
+						.build())
+					.build())
+				.build());
+
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		assertThatThrownBy(() -> chatModel.call(new Prompt("hi", options))).isInstanceOf(IllegalStateException.class)
+			.hasMessageContaining("promptTokens")
+			.hasMessageContaining(String.valueOf(promptTokens))
+			.hasCauseInstanceOf(ArithmeticException.class);
+	}
+
+	@Test
 	void createdFieldPassedThroughInMetadata() {
 		ChatService chatService = mock(ChatService.class);
 		ChatCompletionService chatCompletionService = mock(ChatCompletionService.class);
 		when(this.openAiClient.chat()).thenReturn(chatService);
 		when(chatService.completions()).thenReturn(chatCompletionService);
-		when(chatCompletionService.create(any(ChatCompletionCreateParams.class))).thenReturn(ChatCompletion.builder()
-			.id("test-id")
-			.created(1234567890L)
-			.model("test-model")
-			.usage(CompletionUsage.builder().promptTokens(10).completionTokens(20).totalTokens(30).build())
-			.addChoice(ChatCompletion.Choice.builder()
-				.finishReason(ChatCompletion.Choice.FinishReason.STOP)
-				.index(0)
-				.logprobs(Optional.empty())
-				.message(ChatCompletionMessage.builder()
-					.content("hello")
-					.refusal(Optional.empty())
-					.role(JsonValue.from("assistant"))
-					.annotations(List.of())
-					.toolCalls(List.of())
+		when(chatCompletionService.create(any(ChatCompletionCreateParams.class), any(RequestOptions.class)))
+			.thenReturn(ChatCompletion.builder()
+				.id("test-id")
+				.created(1234567890L)
+				.model("test-model")
+				.usage(CompletionUsage.builder().promptTokens(10).completionTokens(20).totalTokens(30).build())
+				.addChoice(ChatCompletion.Choice.builder()
+					.finishReason(ChatCompletion.Choice.FinishReason.STOP)
+					.index(0)
+					.logprobs(Optional.empty())
+					.message(ChatCompletionMessage.builder()
+						.content("hello")
+						.refusal(Optional.empty())
+						.role(JsonValue.from("assistant"))
+						.annotations(List.of())
+						.toolCalls(List.of())
+						.build())
 					.build())
-				.build())
-			.build());
+				.build());
 
 		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").build();
 		OpenAiChatModel chatModel = OpenAiChatModel.builder()
@@ -885,7 +989,8 @@ class OpenAiChatModelTests {
 		ChatCompletionServiceAsync chatCompletionServiceAsync = mock(ChatCompletionServiceAsync.class);
 		when(this.openAiClientAsync.chat()).thenReturn(chatServiceAsync);
 		when(chatServiceAsync.completions()).thenReturn(chatCompletionServiceAsync);
-		when(chatCompletionServiceAsync.createStreaming(any(ChatCompletionCreateParams.class)))
+		when(chatCompletionServiceAsync.createStreaming(any(ChatCompletionCreateParams.class),
+				any(RequestOptions.class)))
 			.thenReturn(asyncStreamResponseOf(chunks));
 
 		OpenAiChatOptions options = OpenAiChatOptions.builder().model("deepseek-reasoner").build();
@@ -1062,24 +1167,25 @@ class OpenAiChatModelTests {
 		ChatCompletionService chatCompletionService = mock(ChatCompletionService.class);
 		when(this.openAiClient.chat()).thenReturn(chatService);
 		when(chatService.completions()).thenReturn(chatCompletionService);
-		when(chatCompletionService.create(any(ChatCompletionCreateParams.class))).thenReturn(ChatCompletion.builder()
-			.id("test-id")
-			.created(1777799928)
-			.model("test-model")
-			.usage(CompletionUsage.builder().promptTokens(1).completionTokens(1).totalTokens(2).build())
-			.addChoice(ChatCompletion.Choice.builder()
-				.finishReason(ChatCompletion.Choice.FinishReason.STOP)
-				.index(0)
-				.logprobs(Optional.empty())
-				.message(ChatCompletionMessage.builder()
-					.content("hello")
-					.refusal(Optional.empty())
-					.role(JsonValue.from("assistant"))
-					.annotations(List.of())
-					.toolCalls(List.of())
+		when(chatCompletionService.create(any(ChatCompletionCreateParams.class), any(RequestOptions.class)))
+			.thenReturn(ChatCompletion.builder()
+				.id("test-id")
+				.created(1777799928)
+				.model("test-model")
+				.usage(CompletionUsage.builder().promptTokens(1).completionTokens(1).totalTokens(2).build())
+				.addChoice(ChatCompletion.Choice.builder()
+					.finishReason(ChatCompletion.Choice.FinishReason.STOP)
+					.index(0)
+					.logprobs(Optional.empty())
+					.message(ChatCompletionMessage.builder()
+						.content("hello")
+						.refusal(Optional.empty())
+						.role(JsonValue.from("assistant"))
+						.annotations(List.of())
+						.toolCalls(List.of())
+						.build())
 					.build())
-				.build())
-			.build());
+				.build());
 
 		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").build();
 		OpenAiChatModel chatModel = OpenAiChatModel.builder()
@@ -1208,7 +1314,7 @@ class OpenAiChatModelTests {
 	}
 
 	@Test
-	void toolStrictIsEmittedAtFunctionLevel() {
+	void toolStrictDefaultsToFalseWhenUnset() {
 		ToolCallingManager mockToolCallingManager = mock(ToolCallingManager.class);
 
 		ToolDefinition toolDefinition = ToolDefinition.builder()
@@ -1220,7 +1326,10 @@ class OpenAiChatModelTests {
 		when(mockToolCallingManager.resolveToolDefinitions(any())).thenReturn(List.of(toolDefinition));
 
 		// Model options with model set, relying on the fallback default logic of
-		// strict(true)
+		// strict(false) - JsonSchemaGenerator omits optional properties from
+		// "required" instead of the nullable-type pattern OpenAI's strict mode expects,
+		// so defaulting to strict(true) would reject any tool with an optional
+		// parameter.
 		OpenAiChatOptions options = OpenAiChatOptions.builder().model("gpt-4.1").build();
 		OpenAiChatModel chatModel = OpenAiChatModel.builder()
 			.openAiClient(this.openAiClient)
@@ -1239,10 +1348,226 @@ class OpenAiChatModelTests {
 		ChatCompletionFunctionTool functionTool = tools.get(0).function().orElseThrow();
 		FunctionDefinition functionDef = functionTool.function();
 
-		assertThat(functionDef.strict()).contains(true);
+		assertThat(functionDef.strict()).contains(false);
 
 		FunctionParameters parameters = functionDef.parameters().orElseThrow();
 		assertThat(parameters._additionalProperties()).doesNotContainKey("strict");
+	}
+
+	@Test
+	void toolStrictTrueOverrideAtRequestLevel() {
+		ToolCallingManager mockToolCallingManager = mock(ToolCallingManager.class);
+
+		ToolDefinition toolDefinition = ToolDefinition.builder()
+			.name("get_weather")
+			.description("Get weather")
+			.inputSchema("{\"type\":\"object\",\"properties\":{\"location\":{\"type\":\"string\"}}}")
+			.build();
+
+		when(mockToolCallingManager.resolveToolDefinitions(any())).thenReturn(List.of(toolDefinition));
+
+		// Model configured with strict(false) by default (implicitly, nothing set)
+		OpenAiChatOptions modelOptions = OpenAiChatOptions.builder().model("gpt-4.1").build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(modelOptions)
+			.toolCallingManager(mockToolCallingManager)
+			.build();
+
+		// Prompt requests strict(true) override
+		OpenAiChatOptions requestOptions = OpenAiChatOptions.builder().strict(true).build();
+		ChatCompletionCreateParams request = chatModel.createRequest(new Prompt("test", requestOptions), false);
+
+		var tools = request.tools().orElseThrow();
+		assertThat(tools).hasSize(1);
+
+		ChatCompletionFunctionTool functionTool = tools.get(0).function().orElseThrow();
+		FunctionDefinition functionDef = functionTool.function();
+
+		// Verify that prompt-level option overrides the false default
+		assertThat(functionDef.strict()).contains(true);
+	}
+
+	@Test
+	void toolStrictTrueWidensOptionalPropertiesToNullableAndBackfillsRequired() {
+		ToolCallingManager mockToolCallingManager = mock(ToolCallingManager.class);
+
+		// "unit" is optional (absent from "required"), matching what
+		// JsonSchemaGenerator produces for a @ToolParam(required = false) parameter.
+		ToolDefinition toolDefinition = ToolDefinition.builder()
+			.name("get_weather")
+			.description("Get weather")
+			.inputSchema(
+					"{\"type\":\"object\",\"properties\":{\"location\":{\"type\":\"string\"},\"unit\":{\"type\":\"string\"}},\"required\":[\"location\"]}")
+			.build();
+
+		when(mockToolCallingManager.resolveToolDefinitions(any())).thenReturn(List.of(toolDefinition));
+
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("gpt-4.1").strict(true).build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.toolCallingManager(mockToolCallingManager)
+			.build();
+
+		ChatCompletionCreateParams request = chatModel.createRequest(new Prompt("test", options), false);
+
+		FunctionDefinition functionDef = request.tools().orElseThrow().get(0).function().orElseThrow().function();
+		assertThat(functionDef.strict()).contains(true);
+
+		Map<String, JsonValue> additionalProperties = functionDef.parameters().orElseThrow()._additionalProperties();
+
+		@SuppressWarnings("unchecked")
+		Map<String, Object> properties = additionalProperties.get("properties").convert(Map.class);
+		@SuppressWarnings("unchecked")
+		Map<String, Object> unitSchema = (Map<String, Object>) properties.get("unit");
+		// OpenAI strict mode requires every property in "required"; optionality is
+		// expressed by widening the type to also accept null instead.
+		assertThat(unitSchema.get("type")).isEqualTo(List.of("string", "null"));
+
+		@SuppressWarnings("unchecked")
+		List<String> required = additionalProperties.get("required").convert(List.class);
+		assertThat(required).containsExactlyInAnyOrder("location", "unit");
+	}
+
+	@Test
+	void toolStrictTrueBackfillsAdditionalPropertiesFalseAtEveryObjectLevel() {
+		ToolCallingManager mockToolCallingManager = mock(ToolCallingManager.class);
+
+		// Schemas from MCP servers or hand-written inputSchema JSON typically lack
+		// "additionalProperties", which OpenAI strict mode requires to be false on
+		// every object level.
+		ToolDefinition toolDefinition = ToolDefinition.builder()
+			.name("get_weather")
+			.description("Get weather")
+			.inputSchema("""
+					{
+						"type": "object",
+						"$defs": {
+							"Address": {
+								"type": "object",
+								"properties": { "city": { "type": "string" } },
+								"required": ["city"]
+							}
+						},
+						"properties": {
+							"location": { "type": "string" },
+							"details": {
+								"type": "object",
+								"properties": { "zip": { "type": "string" } },
+								"required": ["zip"]
+							},
+							"tags": {
+								"type": "array",
+								"items": {
+									"type": "object",
+									"properties": { "name": { "type": "string" } },
+									"required": ["name"]
+								}
+							}
+						},
+						"required": ["location", "details", "tags"]
+					}
+					""")
+			.build();
+
+		when(mockToolCallingManager.resolveToolDefinitions(any())).thenReturn(List.of(toolDefinition));
+
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("gpt-4.1").strict(true).build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.toolCallingManager(mockToolCallingManager)
+			.build();
+
+		ChatCompletionCreateParams request = chatModel.createRequest(new Prompt("test", options), false);
+
+		FunctionDefinition functionDef = request.tools().orElseThrow().get(0).function().orElseThrow().function();
+		Map<String, JsonValue> parameters = functionDef.parameters().orElseThrow()._additionalProperties();
+
+		assertThat(parameters.get("additionalProperties").convert(Boolean.class)).isFalse();
+
+		@SuppressWarnings("unchecked")
+		Map<String, Object> properties = parameters.get("properties").convert(Map.class);
+		@SuppressWarnings("unchecked")
+		Map<String, Object> detailsSchema = (Map<String, Object>) properties.get("details");
+		assertThat(detailsSchema.get("additionalProperties")).isEqualTo(false);
+
+		@SuppressWarnings("unchecked")
+		Map<String, Object> tagsSchema = (Map<String, Object>) properties.get("tags");
+		@SuppressWarnings("unchecked")
+		Map<String, Object> tagsItemsSchema = (Map<String, Object>) tagsSchema.get("items");
+		assertThat(tagsItemsSchema.get("additionalProperties")).isEqualTo(false);
+
+		@SuppressWarnings("unchecked")
+		Map<String, Object> defs = parameters.get("$defs").convert(Map.class);
+		@SuppressWarnings("unchecked")
+		Map<String, Object> addressSchema = (Map<String, Object>) defs.get("Address");
+		assertThat(addressSchema.get("additionalProperties")).isEqualTo(false);
+	}
+
+	@Test
+	void toolStrictTruePreservesExplicitAdditionalProperties() {
+		ToolCallingManager mockToolCallingManager = mock(ToolCallingManager.class);
+
+		// A Map<K,V>-style schema declares "additionalProperties" as a type reference;
+		// the strict-mode rewrite must not clobber an explicit value.
+		ToolDefinition toolDefinition = ToolDefinition.builder()
+			.name("get_weather")
+			.description("Get weather")
+			.inputSchema(
+					"{\"type\":\"object\",\"properties\":{\"location\":{\"type\":\"string\"}},\"required\":[\"location\"],\"additionalProperties\":{\"type\":\"string\"}}")
+			.build();
+
+		when(mockToolCallingManager.resolveToolDefinitions(any())).thenReturn(List.of(toolDefinition));
+
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("gpt-4.1").strict(true).build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.toolCallingManager(mockToolCallingManager)
+			.build();
+
+		ChatCompletionCreateParams request = chatModel.createRequest(new Prompt("test", options), false);
+
+		FunctionDefinition functionDef = request.tools().orElseThrow().get(0).function().orElseThrow().function();
+		Map<String, JsonValue> parameters = functionDef.parameters().orElseThrow()._additionalProperties();
+
+		@SuppressWarnings("unchecked")
+		Map<String, Object> explicitAdditionalProperties = parameters.get("additionalProperties").convert(Map.class);
+		assertThat(explicitAdditionalProperties).isEqualTo(Map.of("type", "string"));
+	}
+
+	@Test
+	void toolStrictFalseLeavesAdditionalPropertiesAbsent() {
+		ToolCallingManager mockToolCallingManager = mock(ToolCallingManager.class);
+
+		ToolDefinition toolDefinition = ToolDefinition.builder()
+			.name("get_weather")
+			.description("Get weather")
+			.inputSchema("{\"type\":\"object\",\"properties\":{\"location\":{\"type\":\"string\"}}}")
+			.build();
+
+		when(mockToolCallingManager.resolveToolDefinitions(any())).thenReturn(List.of(toolDefinition));
+
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("gpt-4.1").strict(false).build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.toolCallingManager(mockToolCallingManager)
+			.build();
+
+		ChatCompletionCreateParams request = chatModel.createRequest(new Prompt("test", options), false);
+
+		FunctionDefinition functionDef = request.tools().orElseThrow().get(0).function().orElseThrow().function();
+		Map<String, JsonValue> parameters = functionDef.parameters().orElseThrow()._additionalProperties();
+
+		assertThat(parameters).doesNotContainKey("additionalProperties");
 	}
 
 	@Test
@@ -1397,6 +1722,95 @@ class OpenAiChatModelTests {
 		assertThat(responses.get(0).getResult().getMetadata().getFinishReason()).isNull();
 		assertThat(responses.get(1).getResult().getMetadata().getFinishReason()).isNull();
 		assertThat(responses.get(2).getResult().getMetadata().getFinishReason()).isEqualTo("STOP");
+	}
+
+	@Test
+	void testPropagatesTimeoutFromRequestOptions() {
+		Duration expectedTimeout = Duration.ofSeconds(30);
+
+		ChatService chatService = mock(ChatService.class);
+		ChatCompletionService chatCompletionService = mock(ChatCompletionService.class);
+		when(this.openAiClient.chat()).thenReturn(chatService);
+		when(chatService.completions()).thenReturn(chatCompletionService);
+		when(chatCompletionService.create(any(ChatCompletionCreateParams.class), any(RequestOptions.class)))
+			.thenReturn(ChatCompletion.builder()
+				.id("test-id")
+				.created(1777799928)
+				.model("test-model")
+				.usage(CompletionUsage.builder().promptTokens(1).completionTokens(1).totalTokens(2).build())
+				.addChoice(ChatCompletion.Choice.builder()
+					.finishReason(ChatCompletion.Choice.FinishReason.STOP)
+					.index(0)
+					.logprobs(Optional.empty())
+					.message(ChatCompletionMessage.builder()
+						.content("hello")
+						.refusal(Optional.empty())
+						.role(JsonValue.from("assistant"))
+						.annotations(List.of())
+						.toolCalls(List.of())
+						.build())
+					.build())
+				.build());
+
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").timeout(expectedTimeout).build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		chatModel.call(new Prompt("hi", options));
+
+		ArgumentCaptor<RequestOptions> argumentCaptor = ArgumentCaptor.forClass(RequestOptions.class);
+		verify(chatCompletionService).create(any(ChatCompletionCreateParams.class), argumentCaptor.capture());
+		RequestOptions value = argumentCaptor.getValue();
+		assertThat(value.getTimeout()).isNotNull();
+		assertThat(value.getTimeout().request()).isEqualTo(expectedTimeout);
+	}
+
+	@Test
+	void unsetTimeoutIsNotPropagatedToRequestOptions() {
+		ChatService chatService = mock(ChatService.class);
+		ChatCompletionService chatCompletionService = mock(ChatCompletionService.class);
+		when(this.openAiClient.chat()).thenReturn(chatService);
+		when(chatService.completions()).thenReturn(chatCompletionService);
+		when(chatCompletionService.create(any(ChatCompletionCreateParams.class), any(RequestOptions.class)))
+			.thenReturn(ChatCompletion.builder()
+				.id("test-id")
+				.created(1777799928)
+				.model("test-model")
+				.usage(CompletionUsage.builder().promptTokens(1).completionTokens(1).totalTokens(2).build())
+				.addChoice(ChatCompletion.Choice.builder()
+					.finishReason(ChatCompletion.Choice.FinishReason.STOP)
+					.index(0)
+					.logprobs(Optional.empty())
+					.message(ChatCompletionMessage.builder()
+						.content("hello")
+						.refusal(Optional.empty())
+						.role(JsonValue.from("assistant"))
+						.annotations(List.of())
+						.toolCalls(List.of())
+						.build())
+					.build())
+				.build());
+
+		// No timeout set: the request must not override the timeout configured on the
+		// OpenAI client, otherwise long streaming turns are cut short by OkHttp's
+		// callTimeout.
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").build();
+		assertThat(options.getTimeout()).isNull();
+
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		chatModel.call(new Prompt("hi", options));
+
+		ArgumentCaptor<RequestOptions> argumentCaptor = ArgumentCaptor.forClass(RequestOptions.class);
+		verify(chatCompletionService).create(any(ChatCompletionCreateParams.class), argumentCaptor.capture());
+		assertThat(argumentCaptor.getValue().getTimeout()).isNull();
 	}
 
 }

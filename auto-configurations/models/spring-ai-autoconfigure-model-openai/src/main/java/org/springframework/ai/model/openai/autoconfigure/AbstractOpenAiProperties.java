@@ -89,9 +89,10 @@ public class AbstractOpenAiProperties {
 	private boolean isGitHubModels;
 
 	/**
-	 * Request timeout for OpenAI client.
+	 * Request timeout for OpenAI client. When {@code null}, the value is inherited from
+	 * the common properties, falling back to {@link #DEFAULT_TIMEOUT}.
 	 */
-	private Duration timeout = DEFAULT_TIMEOUT;
+	private @Nullable Duration timeout;
 
 	/**
 	 * Maximum number of retries for OpenAI client.
@@ -199,11 +200,14 @@ public class AbstractOpenAiProperties {
 		this.isGitHubModels = gitHubModels;
 	}
 
-	public Duration getTimeout() {
+	/**
+	 * Return the configured request timeout, or {@code null} when not set.
+	 */
+	public @Nullable Duration getTimeout() {
 		return this.timeout;
 	}
 
-	public void setTimeout(Duration timeout) {
+	public void setTimeout(@Nullable Duration timeout) {
 		this.timeout = timeout;
 	}
 

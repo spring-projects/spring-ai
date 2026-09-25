@@ -19,11 +19,14 @@ package org.springframework.ai.google.genai;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -141,12 +144,33 @@ import org.springframework.util.StringUtils;
  * @author Dan Dobrin
  * @author Thomas Vitale
  * @author Sebastien Deleuze
+ * @author Dimitar Proynov
  * @since 0.8.1
  * @see GoogleGenAiChatOptions
  * @see ToolCallingManager
  * @see ChatModel
  */
 public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
+
+	/**
+	 * Metadata key used to indicate whether a
+	 * {@link org.springframework.ai.chat.messages.AssistantMessage} represents a model
+	 * thought (reasoning) part rather than a final response.
+	 * <p>
+	 * When {@code includeThoughts} is enabled in {@link GoogleGenAiChatOptions}, Gemini
+	 * thinking models may return intermediate reasoning parts alongside the final
+	 * response. Each {@link org.springframework.ai.chat.model.Generation} in the response
+	 * will have this key set in its output message metadata with a {@code Boolean} value:
+	 * {@code true} if the generation is a thought, {@code false} otherwise.
+	 * <p>
+	 * Example usage: <pre>{@code
+	 * chatModel.call(prompt).getResults().stream()
+	 *     .filter(g -> Boolean.TRUE.equals(g.getOutput().getMetadata().get(GoogleGenAiChatModel.THOUGHT_METADATA_KEY)))
+	 *     .forEach(thought -> ...);
+	 * }</pre>
+	 * @since 2.0.2
+	 */
+	public static final String THOUGHT_METADATA_KEY = "isThought";
 
 	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
 
@@ -275,7 +299,8 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			// Add text part (without thought signature - signatures go on functionCall
 			// parts)
 			if (StringUtils.hasText(assistantMessage.getText())) {
-				parts.add(Part.builder().text(assistantMessage.getText()).build());
+				var thought = isThought(assistantMessage);
+				parts.add(Part.builder().text(assistantMessage.getText()).thought(thought).build());
 			}
 
 			// Add function call parts with thought signatures attached.
@@ -287,6 +312,7 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 					AssistantMessage.ToolCall toolCall = toolCalls.get(i);
 					Part.Builder partBuilder = Part.builder()
 						.functionCall(FunctionCall.builder()
+							.id(toolCall.id())
 							.name(toolCall.name())
 							.args(parseJsonToMap(toolCall.arguments()))
 							.build());
@@ -567,62 +593,81 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			.finishReason(candidateFinishReason.toString())
 			.build();
 
-		boolean isFunctionCall = candidate.content().isPresent() && candidate.content().get().parts().isPresent()
-				&& candidate.content().get().parts().get().stream().anyMatch(part -> part.functionCall().isPresent());
+		List<Part> parts = candidate.content().flatMap(Content::parts).orElse(List.of());
 
-		if (isFunctionCall) {
-			List<AssistantMessage.ToolCall> assistantToolCalls = candidate.content()
-				.get()
-				.parts()
-				.orElse(List.of())
-				.stream()
-				.filter(part -> part.functionCall().isPresent())
-				.map(part -> {
-					FunctionCall functionCall = part.functionCall().get();
-					var functionName = functionCall.name().orElse("");
-					String functionArguments = mapToJson(functionCall.args().orElse(Map.of()));
-					return new AssistantMessage.ToolCall("", "function", functionName, functionArguments);
-				})
-				.toList();
+		List<AssistantMessage> messages = parts.stream().filter(part -> part.text().isPresent()).map(part -> {
+			var metadata = new HashMap<>(messageMetadata);
+			metadata.put(THOUGHT_METADATA_KEY, part.thought().orElse(false));
 
-			AssistantMessage assistantMessage = AssistantMessage.builder()
+			return AssistantMessage.builder().content(part.text().orElse("")).properties(metadata).build();
+		}).collect(Collectors.toCollection(ArrayList::new));
+
+		List<AssistantMessage.ToolCall> toolCalls = parts.stream()
+			.filter(part -> part.functionCall().isPresent())
+			.map(part -> {
+				FunctionCall functionCall = part.functionCall().get();
+				var id = functionCall.id().orElse("");
+				var functionName = functionCall.name().orElse("");
+				var functionArguments = mapToJson(functionCall.args().orElse(Map.of()));
+				return new AssistantMessage.ToolCall(id, "function", functionName, functionArguments);
+			})
+			.toList();
+
+		if (!toolCalls.isEmpty()) {
+			var toolCallMessage = AssistantMessage.builder()
 				.content("")
 				.properties(messageMetadata)
-				.toolCalls(assistantToolCalls)
+				.toolCalls(toolCalls)
 				.build();
 
-			return List.of(new Generation(assistantMessage, chatGenerationMetadata));
-		}
-		else {
-			List<Generation> generations = candidate.content()
-				.get()
-				.parts()
-				.orElse(List.of())
-				.stream()
-				.filter(part -> part.toolCall().isEmpty() && part.toolResponse().isEmpty())
-				.map(part -> {
-					var partMessageMetadata = new HashMap<>(messageMetadata);
-					partMessageMetadata.put("isThought", part.thought().orElse(false));
-					return AssistantMessage.builder()
-						.content(part.text().orElse(""))
-						.properties(partMessageMetadata)
-						.build();
-				})
-				.map(assistantMessage -> new Generation(assistantMessage, chatGenerationMetadata))
-				.toList();
-
-			// If all parts were server-side tool invocations, return a single generation
-			// with empty text but with the server-side tool invocation metadata
-			if (generations.isEmpty()) {
-				AssistantMessage assistantMessage = AssistantMessage.builder()
-					.content("")
-					.properties(messageMetadata)
-					.build();
-				return List.of(new Generation(assistantMessage, chatGenerationMetadata));
+			// Insert tool call message before the model's final text response,
+			// as tool calls are an intermediate step that precedes it.
+			int responseIndex = findIndexForModelResponse(messages);
+			if (responseIndex >= 0) {
+				messages.add(responseIndex, toolCallMessage);
 			}
-
-			return generations;
+			else {
+				messages.add(toolCallMessage);
+			}
 		}
+
+		if (messages.isEmpty()) {
+			var assistantMessage = AssistantMessage.builder().content("").properties(messageMetadata).build();
+			messages.add(assistantMessage);
+		}
+
+		return messages.stream().map(m -> new Generation(m, chatGenerationMetadata)).toList();
+	}
+
+	private int findIndexForModelResponse(List<AssistantMessage> messages) {
+		// Gemini responses follow predictable patterns:
+		// [Text(Thoughts), Text(Answer)]
+		// [Text(Thoughts), FunctionCall...]
+		// [FunctionCall...]
+		// [Text(Thoughts), FunctionCall..., Text(FinalAnswer)]
+		// In the last case, tool calls are inserted before the final text response.
+		for (int i = messages.size() - 1; i >= 0; i--) {
+			var message = messages.get(i);
+			boolean hasText = message.getText() != null && !message.getText().isBlank();
+
+			if (hasText && !isThought(message)) {
+				return i;
+			}
+		}
+
+		return -1;
+	}
+
+	private boolean isThought(AssistantMessage message) {
+		if (message.getMetadata() == null) {
+			return false;
+		}
+
+		if (message.getMetadata().get(THOUGHT_METADATA_KEY) instanceof Boolean isThought) {
+			return isThought;
+		}
+
+		return false;
 	}
 
 	private ChatResponseMetadata toChatResponseMetadata(Usage usage, String modelVersion) {
@@ -867,48 +912,65 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 	}
 
 	/**
-	 * Checks if the model name indicates a Gemini 3 Pro model.
-	 * @param modelName the model name to check
-	 * @return true if the model is a Gemini 3 Pro model
+	 * Per-model support matrix for {@code thinkingLevel} on the {@code generateContent}
+	 * API surface used by this client, keyed by exact model id (lower case). An empty set
+	 * means the model rejects {@code thinkingLevel} entirely (use
+	 * {@link GoogleGenAiChatOptions#getThinkingBudget() thinkingBudget} instead). Models
+	 * absent from this map are not validated client-side; gemini-2.5-pro thinking level
+	 * support is per account (API key) basis and cannot be validated here.
 	 */
-	private static boolean isGemini3ProModel(String modelName) {
-		if (modelName == null) {
-			return false;
-		}
-		String lower = modelName.toLowerCase(Locale.ROOT);
-		return lower.contains("gemini-3") && lower.contains("pro") && !lower.contains("flash");
-	}
+	private static final Map<String, Set<GoogleGenAiThinkingLevel>> THINKING_LEVEL_SUPPORT_BY_MODEL = Map.ofEntries(
+			Map.entry(ChatModel.GEMINI_2_5_FLASH.getValue(), EnumSet.noneOf(GoogleGenAiThinkingLevel.class)),
+			Map.entry(ChatModel.GEMINI_2_5_FLASH_LIGHT.getValue(), EnumSet.noneOf(GoogleGenAiThinkingLevel.class)),
+			Map.entry(ChatModel.GEMINI_3_0_PRO_PREVIEW.getValue(),
+					EnumSet.of(GoogleGenAiThinkingLevel.LOW, GoogleGenAiThinkingLevel.HIGH)),
+			Map.entry(ChatModel.GEMINI_3_1_PRO_PREVIEW.getValue(),
+					EnumSet.of(GoogleGenAiThinkingLevel.LOW, GoogleGenAiThinkingLevel.MEDIUM,
+							GoogleGenAiThinkingLevel.HIGH)),
+			Map.entry(ChatModel.GEMINI_3_FLASH_PREVIEW.getValue(),
+					EnumSet.of(GoogleGenAiThinkingLevel.MINIMAL, GoogleGenAiThinkingLevel.LOW,
+							GoogleGenAiThinkingLevel.MEDIUM, GoogleGenAiThinkingLevel.HIGH)),
+			Map.entry(ChatModel.GEMINI_3_5_FLASH.getValue(),
+					EnumSet.of(GoogleGenAiThinkingLevel.MINIMAL, GoogleGenAiThinkingLevel.LOW,
+							GoogleGenAiThinkingLevel.MEDIUM, GoogleGenAiThinkingLevel.HIGH)),
+			Map.entry(ChatModel.GEMINI_3_5_FLASH_LITE.getValue(),
+					EnumSet.of(GoogleGenAiThinkingLevel.MINIMAL, GoogleGenAiThinkingLevel.LOW,
+							GoogleGenAiThinkingLevel.MEDIUM, GoogleGenAiThinkingLevel.HIGH)),
+			Map.entry(ChatModel.GEMINI_3_6_FLASH.getValue(),
+					EnumSet.of(GoogleGenAiThinkingLevel.MINIMAL, GoogleGenAiThinkingLevel.LOW,
+							GoogleGenAiThinkingLevel.MEDIUM, GoogleGenAiThinkingLevel.HIGH)),
+			Map.entry(ChatModel.GEMINI_3_1_FLASH_LITE_IMAGE.getValue(),
+					EnumSet.of(GoogleGenAiThinkingLevel.MINIMAL, GoogleGenAiThinkingLevel.HIGH)));
 
 	/**
-	 * Checks if the model name indicates a Gemini 3 Flash model.
-	 * @param modelName the model name to check
-	 * @return true if the model is a Gemini 3 Flash model
-	 */
-	private static boolean isGemini3FlashModel(String modelName) {
-		if (modelName == null) {
-			return false;
-		}
-		String lower = modelName.toLowerCase(Locale.ROOT);
-		return lower.contains("gemini-3") && lower.contains("flash");
-	}
-
-	/**
-	 * Validates ThinkingLevel compatibility with the model. Gemini 3 Pro only supports
-	 * LOW and HIGH. Gemini 3 Flash supports all levels.
+	 * Validates that the requested {@code thinkingLevel} is supported by the target
+	 * model, using {@link #THINKING_LEVEL_SUPPORT_BY_MODEL}. Models that are not part of
+	 * that matrix are not validated here and are left to the API to accept or reject.
 	 * @param level the thinking level to validate
 	 * @param modelName the model name
 	 * @throws IllegalArgumentException if the level is not supported for the model
 	 */
 	private static void validateThinkingLevelForModel(GoogleGenAiThinkingLevel level, String modelName) {
-		if (level == null || level == GoogleGenAiThinkingLevel.THINKING_LEVEL_UNSPECIFIED) {
+		if (level == null || level == GoogleGenAiThinkingLevel.THINKING_LEVEL_UNSPECIFIED || modelName == null) {
 			return;
 		}
-		if (isGemini3ProModel(modelName)) {
-			if (level == GoogleGenAiThinkingLevel.MINIMAL || level == GoogleGenAiThinkingLevel.MEDIUM) {
-				throw new IllegalArgumentException(
-						String.format("ThinkingLevel.%s is not supported for Gemini 3 Pro models. "
-								+ "Supported levels: LOW, HIGH. Model: %s", level, modelName));
+		// Vertex AI style full resource names (e.g.
+		// "projects/{project}/locations/{location}/publishers/google/models/{model}")
+		// carry the model id as the last path segment.
+		String modelId = modelName.substring(modelName.lastIndexOf('/') + 1).toLowerCase(Locale.ROOT);
+		Set<GoogleGenAiThinkingLevel> supportedLevels = THINKING_LEVEL_SUPPORT_BY_MODEL.get(modelId);
+		if (supportedLevels == null) {
+			return;
+		}
+		if (!supportedLevels.contains(level)) {
+			if (supportedLevels.isEmpty()) {
+				throw new IllegalArgumentException(String.format(
+						"ThinkingLevel.%s is not supported for model '%s'. This model does not support thinkingLevel; use thinkingBudget instead.",
+						level, modelName));
 			}
+			throw new IllegalArgumentException(
+					String.format("ThinkingLevel.%s is not supported for model '%s'. Supported levels: %s.", level,
+							modelName, supportedLevels.stream().map(Enum::name).collect(Collectors.joining(", "))));
 		}
 	}
 
@@ -1163,11 +1225,21 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		@Deprecated
 		GEMINI_3_PRO_PREVIEW("gemini-3.1-pro-preview"),
 
+		GEMINI_3_0_PRO_PREVIEW("gemini-3-pro-preview"),
+
 		GEMINI_3_1_PRO_PREVIEW("gemini-3.1-pro-preview"),
+
+		GEMINI_3_FLASH_PREVIEW("gemini-3-flash-preview"),
 
 		GEMINI_3_1_FLASH_LITE("gemini-3.1-flash-lite"),
 
-		GEMINI_3_5_FLASH("gemini-3.5-flash");
+		GEMINI_3_1_FLASH_LITE_IMAGE("gemini-3.1-flash-lite-image"),
+
+		GEMINI_3_5_FLASH("gemini-3.5-flash"),
+
+		GEMINI_3_5_FLASH_LITE("gemini-3.5-flash-lite"),
+
+		GEMINI_3_6_FLASH("gemini-3.6-flash");
 
 		public final String value;
 

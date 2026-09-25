@@ -68,6 +68,7 @@ class AzureOpenAiChatModelObservationIT {
 	void observationForImperativeChatOperation() {
 
 		var options = OpenAiChatOptions.builder()
+			.deploymentName("gpt-4o")
 			.frequencyPenalty(0.0)
 			.maxTokens(2048)
 			.presencePenalty(0.0)

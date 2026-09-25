@@ -36,6 +36,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openai.client.OpenAIClient;
 import com.openai.client.OpenAIClientAsync;
 import com.openai.core.JsonValue;
+import com.openai.core.RequestOptions;
+import com.openai.core.http.AsyncStreamResponse;
 import com.openai.errors.OpenAIInvalidDataException;
 import com.openai.models.FunctionDefinition;
 import com.openai.models.FunctionParameters;
@@ -123,6 +125,7 @@ import org.springframework.util.StringUtils;
  * @author Eric Bottard
  * @author Taewoong Kim
  * @author Jewoo Shin
+ * @author guan xu
  */
 public final class OpenAiChatModel implements ChatModel {
 
@@ -204,7 +207,8 @@ public final class OpenAiChatModel implements ChatModel {
 	 */
 	private ChatResponse internalCall(Prompt prompt, @Nullable ChatResponse previousChatResponse) {
 
-		ChatCompletionCreateParams request = createRequest(prompt, false);
+		ChatCompletionCreateParams request = this.createRequest(prompt, false);
+		RequestOptions requestOptions = this.buildRequestOptions(prompt);
 
 		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 			.prompt(prompt)
@@ -216,7 +220,7 @@ public final class OpenAiChatModel implements ChatModel {
 					this.observationRegistry)
 			.observe(() -> {
 
-				ChatCompletion chatCompletion = this.openAiClient.chat().completions().create(request);
+				ChatCompletion chatCompletion = this.openAiClient.chat().completions().create(request, requestOptions);
 
 				List<ChatCompletion.Choice> choices = chatCompletion.choices();
 				if (choices.isEmpty()) {
@@ -268,7 +272,8 @@ public final class OpenAiChatModel implements ChatModel {
 	 */
 	private Flux<ChatResponse> internalStream(Prompt prompt) {
 		return Flux.deferContextual(contextView -> {
-			ChatCompletionCreateParams request = createRequest(prompt, true);
+			ChatCompletionCreateParams request = this.createRequest(prompt, true);
+			RequestOptions requestOptions = this.buildRequestOptions(prompt);
 			ConcurrentHashMap<String, String> roleMap = new ConcurrentHashMap<>();
 			ConcurrentHashMap<String, String> reasoningMap = new ConcurrentHashMap<>();
 			final ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
@@ -293,19 +298,20 @@ public final class OpenAiChatModel implements ChatModel {
 			}
 
 			// Convert from AsyncStreamResponse<ChatCompletionChunk> to Flux<CCC>
-			Flux<ChatCompletionChunk> chunks = Flux.<ChatCompletionChunk>create(sink -> this.openAiClientAsync.chat()
-				.completions()
-				.createStreaming(request)
-				.subscribe(sink::next)
-				.onCompleteFuture()
-				.whenComplete((unused, throwable) -> {
+			Flux<ChatCompletionChunk> chunks = Flux.<ChatCompletionChunk>create(sink -> {
+				AsyncStreamResponse<ChatCompletionChunk> response = this.openAiClientAsync.chat()
+					.completions()
+					.createStreaming(request, requestOptions);
+				sink.onDispose(response::close);
+				response.subscribe(sink::next).onCompleteFuture().whenComplete((unused, throwable) -> {
 					if (throwable != null) {
 						sink.error(throwable);
 					}
 					else {
 						sink.complete();
 					}
-				}));
+				});
+			});
 
 			// Next, aggregate CCCs that deal with tool calls together
 			AtomicBoolean isInsideTool = new AtomicBoolean(false);
@@ -486,8 +492,31 @@ public final class OpenAiChatModel implements ChatModel {
 
 	private DefaultUsage getDefaultUsage(CompletionUsage usage) {
 		Long cacheRead = usage.promptTokensDetails().flatMap(details -> details.cachedTokens()).orElse(null);
-		return new DefaultUsage(Math.toIntExact(usage.promptTokens()), Math.toIntExact(usage.completionTokens()),
-				Math.toIntExact(usage.totalTokens()), usage, cacheRead, null);
+		return new DefaultUsage(toIntTokenCount("promptTokens", usage.promptTokens()),
+				toIntTokenCount("completionTokens", usage.completionTokens()),
+				toIntTokenCount("totalTokens", usage.totalTokens()), usage, cacheRead, null);
+	}
+
+	/**
+	 * Narrows a server-supplied token count to an {@code int}. Usage counts come from the
+	 * deserialised upstream response, so an out-of-range value means the response is not
+	 * trustworthy; fail clearly with the offending field and value rather than either
+	 * silently truncating the count (which would corrupt downstream cost/usage tracking
+	 * with a plausible-looking but wrong number) or letting a bare
+	 * {@link ArithmeticException} propagate.
+	 * @param fieldName the name of the usage field being converted, for diagnostics
+	 * @param value the upstream token count
+	 * @return the value narrowed to an {@code int}
+	 * @throws IllegalStateException if {@code value} is outside the {@code int} range
+	 */
+	private static int toIntTokenCount(String fieldName, long value) {
+		try {
+			return Math.toIntExact(value);
+		}
+		catch (ArithmeticException ex) {
+			throw new IllegalStateException(
+					"OpenAI-compatible provider returned an out-of-range " + fieldName + " value: " + value, ex);
+		}
 	}
 
 	private void verifyPromptChatOptions(Prompt prompt) {
@@ -905,15 +934,31 @@ public final class OpenAiChatModel implements ChatModel {
 		// Add extraBody parameters as additional body properties for OpenAI-compatible
 		// providers
 		if (requestOptions.getExtraBody() != null && !requestOptions.getExtraBody().isEmpty()) {
-			Map<String, com.openai.core.JsonValue> extraParams = requestOptions.getExtraBody()
+			Map<String, JsonValue> extraParams = requestOptions.getExtraBody()
 				.entrySet()
 				.stream()
-				.collect(java.util.stream.Collectors.toMap(Map.Entry::getKey,
-						entry -> com.openai.core.JsonValue.from(entry.getValue())));
+				.collect(Collectors.toMap(Map.Entry::getKey, entry -> JsonValue.from(entry.getValue())));
 			builder.additionalBodyProperties(extraParams);
 		}
 
 		return builder.build();
+	}
+
+	/**
+	 * Creates a RequestOptions instance from the given prompt.
+	 * @param prompt the prompt containing messages and options
+	 * @return a RequestOptions instance
+	 */
+	private RequestOptions buildRequestOptions(Prompt prompt) {
+		Assert.notNull(prompt, "Prompt cannot be null");
+		Assert.isInstanceOf(OpenAiChatOptions.class, prompt.getOptions(),
+				"Prompt options must be OpenAiChatOptions type");
+		OpenAiChatOptions chatOptions = (OpenAiChatOptions) prompt.getOptions();
+		RequestOptions.Builder requestOptionsBuilder = RequestOptions.builder();
+		if (chatOptions.getTimeout() != null) {
+			requestOptionsBuilder.timeout(chatOptions.getTimeout());
+		}
+		return requestOptionsBuilder.build();
 	}
 
 	private Map<String, String> toolCallAdditionalPropertiesFromMetadata(AssistantMessage assistantMessage) {
@@ -980,7 +1025,12 @@ public final class OpenAiChatModel implements ChatModel {
 			@Nullable OpenAiChatOptions requestOptions) {
 		return toolDefinitions.stream().map(toolDefinition -> {
 			FunctionParameters.Builder parametersBuilder = FunctionParameters.builder();
-			Boolean strictMode = true;
+			// Defaults to false: OpenAI's strict mode requires every schema property to
+			// appear in "required" (optionality is expressed via nullable types, not
+			// omission), which JsonSchemaGenerator does not produce by default. When a
+			// caller opts in via OpenAiChatOptions#strict, applyStrictModeRequirements
+			// below rewrites the schema to satisfy that contract.
+			Boolean strictMode = false;
 			if (requestOptions != null && requestOptions.getStrict() != null) {
 				strictMode = requestOptions.getStrict();
 			}
@@ -992,6 +1042,10 @@ public final class OpenAiChatModel implements ChatModel {
 				try {
 					@SuppressWarnings("unchecked")
 					Map<String, Object> schemaMap = objectMapper.readValue(toolDefinition.inputSchema(), Map.class);
+
+					if (Boolean.TRUE.equals(strictMode)) {
+						applyStrictModeRequirements(schemaMap);
+					}
 
 					// Add each property from the schema to the parameters
 					schemaMap
@@ -1011,6 +1065,111 @@ public final class OpenAiChatModel implements ChatModel {
 			return ChatCompletionTool
 				.ofFunction(ChatCompletionFunctionTool.builder().function(functionDefinition).build());
 		}).toList();
+	}
+
+	/**
+	 * A JSON Schema fragment representing exactly the {@code null} type, used as the
+	 * extra {@code anyOf} branch when widening a {@code $ref}/{@code anyOf}-based
+	 * property to accept {@code null}.
+	 */
+	private static final Map<String, Object> NULL_TYPE_SCHEMA = Map.of("type", "null");
+
+	/**
+	 * Rewrites an object schema in place to satisfy OpenAI's strict function-calling
+	 * mode: every property must be listed in "required", with optionality expressed via a
+	 * nullable type rather than omission from "required", and every object level must pin
+	 * {@code "additionalProperties"} to {@code false}. {@link JsonSchemaGenerator}
+	 * produces conventional JSON Schema instead - it omits
+	 * {@code @ToolParam(required = false)} properties from "required" - so this widens
+	 * the type of each such property to also accept {@code null} and backfills "required"
+	 * with every property key. Schemas from other sources (MCP servers, hand-written
+	 * inputSchema JSON) may also lack "additionalProperties", so it is backfilled with
+	 * {@code false} wherever absent; an explicit value is preserved. Recurses into nested
+	 * object/array-item schemas and {@code $defs} definitions so their own optional
+	 * properties are fixed up too.
+	 */
+	@SuppressWarnings("unchecked")
+	private static void applyStrictModeRequirements(Map<String, Object> schema) {
+		if (schema.get("$defs") instanceof Map<?, ?> defs) {
+			for (Object definition : defs.values()) {
+				if (definition instanceof Map<?, ?> definitionSchema) {
+					applyStrictModeRequirements((Map<String, Object>) definitionSchema);
+				}
+			}
+		}
+
+		if (!(schema.get("properties") instanceof Map<?, ?> properties)) {
+			return;
+		}
+
+		schema.putIfAbsent("additionalProperties", false);
+
+		if (properties.isEmpty()) {
+			return;
+		}
+
+		List<?> alreadyRequired = schema.get("required") instanceof List<?> required ? required : List.of();
+
+		for (Object propertySchemaValue : properties.values()) {
+			if (!(propertySchemaValue instanceof Map<?, ?> propertySchema)) {
+				continue;
+			}
+			applyStrictModeRequirements((Map<String, Object>) propertySchema);
+			if (propertySchema.get("items") instanceof Map<?, ?> itemsSchema) {
+				applyStrictModeRequirements((Map<String, Object>) itemsSchema);
+			}
+		}
+
+		for (Map.Entry<?, ?> property : properties.entrySet()) {
+			if (alreadyRequired.contains(property.getKey())
+					|| !(property.getValue() instanceof Map<?, ?> propertySchema)) {
+				continue;
+			}
+			widenToNullable((Map<String, Object>) propertySchema);
+		}
+
+		schema.put("required", new ArrayList<>(properties.keySet()));
+	}
+
+	/**
+	 * Widens a property schema's "type" to also accept {@code null}. Properties defined
+	 * purely via {@code $ref} or {@code anyOf} (no "type" key of their own - typically a
+	 * complex object parameter) are instead wrapped in an {@code anyOf} alongside a null
+	 * branch, since there is no "type" value to widen directly.
+	 */
+	private static void widenToNullable(Map<String, Object> propertySchema) {
+		Object type = propertySchema.get("type");
+		if (type instanceof String typeName) {
+			if (!"null".equals(typeName)) {
+				propertySchema.put("type", new ArrayList<>(List.of(typeName, "null")));
+			}
+			return;
+		}
+		if (type instanceof List<?> typeList) {
+			if (!typeList.contains("null")) {
+				List<Object> widened = new ArrayList<>(typeList);
+				widened.add("null");
+				propertySchema.put("type", widened);
+			}
+			return;
+		}
+		if (propertySchema.get("anyOf") instanceof List<?> anyOf) {
+			if (!anyOf.contains(NULL_TYPE_SCHEMA)) {
+				List<Object> widened = new ArrayList<>(anyOf);
+				widened.add(NULL_TYPE_SCHEMA);
+				propertySchema.put("anyOf", widened);
+			}
+			return;
+		}
+		if (propertySchema.containsKey("$ref")) {
+			Map<String, Object> refBranch = new LinkedHashMap<>(propertySchema);
+			Object description = refBranch.remove("description");
+			propertySchema.clear();
+			if (description != null) {
+				propertySchema.put("description", description);
+			}
+			propertySchema.put("anyOf", new ArrayList<>(List.of(refBranch, NULL_TYPE_SCHEMA)));
+		}
 	}
 
 	private String getReasoningContent(ChatCompletion.Choice choice) {
@@ -1476,8 +1635,8 @@ public final class OpenAiChatModel implements ChatModel {
 		 * @return the configured chat model
 		 */
 		public OpenAiChatModel build() {
-			OpenAiChatOptions resolvedOptions = this.options != null ? this.options
-					: OpenAiChatOptions.builder().build();
+			OpenAiChatOptions resolvedOptions = Objects.requireNonNullElseGet(this.options,
+					() -> OpenAiChatOptions.builder().build());
 			ObservationRegistry resolvedObservationRegistry = Objects.requireNonNullElse(this.observationRegistry,
 					ObservationRegistry.NOOP);
 
@@ -1486,18 +1645,24 @@ public final class OpenAiChatModel implements ChatModel {
 							resolvedOptions.getCredential(), resolvedOptions.getMicrosoftDeploymentName(),
 							resolvedOptions.getMicrosoftFoundryServiceVersion(), resolvedOptions.getOrganizationId(),
 							resolvedOptions.isMicrosoftFoundry(), resolvedOptions.isGitHubModels(),
-							resolvedOptions.getModel(), resolvedOptions.getTimeout(), resolvedOptions.getMaxRetries(),
-							resolvedOptions.getProxy(), resolvedOptions.getCustomHeaders(), resolvedObservationRegistry,
-							this.meterRegistry, this.httpClientCustomizers));
+							resolvedOptions.getModel(),
+							Objects.requireNonNullElse(resolvedOptions.getTimeout(),
+									AbstractOpenAiOptions.DEFAULT_TIMEOUT),
+							resolvedOptions.getMaxRetries(), resolvedOptions.getProxy(),
+							resolvedOptions.getCustomHeaders(), resolvedObservationRegistry, this.meterRegistry,
+							this.httpClientCustomizers));
 
 			OpenAIClientAsync resolvedClientAsync = Objects.requireNonNullElseGet(this.openAiClientAsync,
 					() -> OpenAiSetup.setupAsyncClient(resolvedOptions.getBaseUrl(), resolvedOptions.getApiKey(),
 							resolvedOptions.getCredential(), resolvedOptions.getMicrosoftDeploymentName(),
 							resolvedOptions.getMicrosoftFoundryServiceVersion(), resolvedOptions.getOrganizationId(),
 							resolvedOptions.isMicrosoftFoundry(), resolvedOptions.isGitHubModels(),
-							resolvedOptions.getModel(), resolvedOptions.getTimeout(), resolvedOptions.getMaxRetries(),
-							resolvedOptions.getProxy(), resolvedOptions.getCustomHeaders(), resolvedObservationRegistry,
-							this.meterRegistry, this.httpClientCustomizers));
+							resolvedOptions.getModel(),
+							Objects.requireNonNullElse(resolvedOptions.getTimeout(),
+									AbstractOpenAiOptions.DEFAULT_TIMEOUT),
+							resolvedOptions.getMaxRetries(), resolvedOptions.getProxy(),
+							resolvedOptions.getCustomHeaders(), resolvedObservationRegistry, this.meterRegistry,
+							this.httpClientCustomizers));
 
 			ToolCallingManager resolvedToolCallingManager = Objects.requireNonNullElse(this.toolCallingManager,
 					ToolCallingManager.builder().observationRegistry(resolvedObservationRegistry).build());

@@ -16,6 +16,7 @@
 
 package org.springframework.ai.model.openai.autoconfigure;
 
+import java.time.Duration;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -23,6 +24,7 @@ import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
 
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
+import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
@@ -62,6 +64,41 @@ public class OpenAiChatPropertiesTests {
 				var options = chatProperties.toOptions();
 				assertThat(options.getModel()).isEqualTo("MODEL_XYZ");
 				assertThat(options.getTemperature()).isEqualTo(0.55);
+			});
+	}
+
+	@Test
+	public void configuredTimeoutReachesTheChatModelOptions() {
+
+		this.contextRunner.withPropertyValues(
+		// @formatter:off
+				"spring.ai.openai.api-key=abc123",
+				"spring.ai.openai.chat.timeout=30m")
+				// @formatter:on
+			.withConfiguration(
+					AutoConfigurations.of(OpenAiChatAutoConfiguration.class, ToolCallingAutoConfiguration.class))
+			.run(context -> {
+				var chatModel = context.getBean(OpenAiChatModel.class);
+				assertThat(chatModel.getOptions().getTimeout()).isEqualTo(Duration.ofMinutes(30));
+			});
+	}
+
+	@Test
+	public void unsetChatTimeoutLeavesTheOptionsTimeoutNull() {
+
+		// The chat options carry no timeout, so requests do not override the timeout the
+		// OpenAI client was built with. Resolution of the common-level timeout is covered
+		// by OpenAiAutoConfigurationUtilTests.
+		this.contextRunner.withPropertyValues(
+		// @formatter:off
+				"spring.ai.openai.api-key=abc123",
+				"spring.ai.openai.timeout=30m")
+				// @formatter:on
+			.withConfiguration(
+					AutoConfigurations.of(OpenAiChatAutoConfiguration.class, ToolCallingAutoConfiguration.class))
+			.run(context -> {
+				var chatModel = context.getBean(OpenAiChatModel.class);
+				assertThat(chatModel.getOptions().getTimeout()).isNull();
 			});
 	}
 
@@ -139,6 +176,37 @@ public class OpenAiChatPropertiesTests {
 					assertThat(chatProperties.toOptions().getToolChoice()).isEqualTo(toolChoice);
 				});
 		}
+	}
+
+	@Test
+	public void chatExtraBodyTest() {
+
+		this.contextRunner
+			.withPropertyValues(// @formatter:off
+				"spring.ai.openai.api-key=API_KEY",
+				"spring.ai.openai.base-url=http://TEST.BASE.URL",
+
+				"spring.ai.openai.chat.extra-body.key1=value1",
+				"spring.ai.openai.chat.extra-body.key2=123",
+				"spring.ai.openai.chat.extra-body.nested.key3=true"
+			)
+			// @formatter:on
+			.withConfiguration(
+					AutoConfigurations.of(OpenAiChatAutoConfiguration.class, ToolCallingAutoConfiguration.class))
+			.run(context -> {
+				var chatProperties = context.getBean(OpenAiChatProperties.class);
+
+				assertThat(chatProperties.getExtraBody()).isNotNull();
+				assertThat(chatProperties.getExtraBody()).containsEntry("key1", "value1");
+				assertThat(chatProperties.getExtraBody()).containsEntry("key2", "123");
+				assertThat(chatProperties.getExtraBody()).containsKey("nested");
+
+				var options = chatProperties.toOptions();
+				assertThat(options.getExtraBody()).isNotNull();
+				assertThat(options.getExtraBody()).containsEntry("key1", "value1");
+				assertThat(options.getExtraBody()).containsEntry("key2", "123");
+				assertThat(options.getExtraBody()).containsKey("nested");
+			});
 	}
 
 }
