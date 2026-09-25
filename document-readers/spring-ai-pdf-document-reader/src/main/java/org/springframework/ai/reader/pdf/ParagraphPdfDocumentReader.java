@@ -17,6 +17,8 @@
 package org.springframework.ai.reader.pdf;
 
 import java.awt.Rectangle;
+import java.io.Closeable;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -46,10 +48,14 @@ import org.springframework.util.StringUtils;
  * Apache PDFBox library for parsing PDF content and converting it into text paragraphs.
  * The paragraphs are grouped into {@link Document} objects.
  *
+ * The constructor parses the whole PDF and the reader holds on to it until
+ * {@link #close()} is called, so instances are best used in a try-with-resources block.
+ *
  * @author Christian Tzolov
  * @author Heonwoo Kim
+ * @author chabinhwang
  */
-public class ParagraphPdfDocumentReader implements DocumentReader {
+public class ParagraphPdfDocumentReader implements DocumentReader, Closeable {
 
 	// Constants for metadata keys
 	private static final String METADATA_START_PAGE = "page_number";
@@ -107,22 +113,46 @@ public class ParagraphPdfDocumentReader implements DocumentReader {
 		Assert.isTrue(!config.hasPageRanges(),
 				"Page ranges are not supported by ParagraphPdfDocumentReader; use PagePdfDocumentReader instead.");
 
+		PDDocument parsedDocument = null;
 		try {
 			PDFParser pdfParser = new PDFParser(
 					new org.apache.pdfbox.io.RandomAccessReadBuffer(pdfResource.getInputStream()));
-			this.document = pdfParser.parse();
+			parsedDocument = pdfParser.parse();
 
 			this.config = config;
 
-			this.paragraphTextExtractor = new ParagraphManager(this.document);
+			this.paragraphTextExtractor = new ParagraphManager(parsedDocument);
 
 			this.resourceFileName = pdfResource.getFilename();
+
+			this.document = parsedDocument;
 		}
 		catch (IllegalArgumentException iae) {
+			closeAfterFailedInitialization(parsedDocument, iae);
 			throw iae;
 		}
 		catch (Exception e) {
-			throw new RuntimeException(e);
+			RuntimeException failure = new RuntimeException(e);
+			closeAfterFailedInitialization(parsedDocument, failure);
+			throw failure;
+		}
+	}
+
+	/**
+	 * Releases a document that was parsed before the reader could be fully initialized,
+	 * for example when the PDF has no table of contents. Without this the parsed document
+	 * would stay in memory with no reference left to close it.
+	 * @param parsedDocument the parsed document, or {@code null} if parsing itself failed
+	 * @param failure the exception that is about to be propagated
+	 */
+	private static void closeAfterFailedInitialization(@Nullable PDDocument parsedDocument, Throwable failure) {
+		if (parsedDocument != null) {
+			try {
+				parsedDocument.close();
+			}
+			catch (IOException ex) {
+				failure.addSuppressed(ex);
+			}
 		}
 	}
 
@@ -254,6 +284,18 @@ public class ParagraphPdfDocumentReader implements DocumentReader {
 		catch (Exception e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	/**
+	 * Releases the {@link PDDocument} parsed by the constructor, along with the buffered
+	 * document content and the parsed object graph it holds. The reader must not be used
+	 * after it has been closed; closing an already closed reader has no effect.
+	 * @throws IOException if the parsed document cannot be closed
+	 * @since 2.0.2
+	 */
+	@Override
+	public void close() throws IOException {
+		this.document.close();
 	}
 
 }
