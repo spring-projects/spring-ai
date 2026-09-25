@@ -213,6 +213,45 @@ public class GoogleGenAiChatOptionsTest extends AbstractChatOptionsTests<GoogleG
 	}
 
 	@Test
+	public void testOptionalBooleanDefaultsRemainUnset() {
+		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder().build();
+
+		assertThat(options.getGoogleSearchRetrieval()).isNull();
+		assertThat(options.getIncludeServerSideToolInvocations()).isNull();
+	}
+
+	@Test
+	public void testCombineWithPreservesOptionalBooleanDefaults() {
+		GoogleGenAiChatOptions defaults = GoogleGenAiChatOptions.builder()
+			.googleSearchRetrieval(true)
+			.includeServerSideToolInvocations(true)
+			.build();
+		GoogleGenAiChatOptions requestOptions = GoogleGenAiChatOptions.builder().temperature(0.2).build();
+
+		GoogleGenAiChatOptions merged = defaults.mutate().combineWith(requestOptions.mutate()).build();
+
+		assertThat(merged.getGoogleSearchRetrieval()).isTrue();
+		assertThat(merged.getIncludeServerSideToolInvocations()).isTrue();
+	}
+
+	@Test
+	public void testCombineWithOverridesOptionalBooleansWhenExplicitlySet() {
+		GoogleGenAiChatOptions defaults = GoogleGenAiChatOptions.builder()
+			.googleSearchRetrieval(true)
+			.includeServerSideToolInvocations(true)
+			.build();
+		GoogleGenAiChatOptions requestOptions = GoogleGenAiChatOptions.builder()
+			.googleSearchRetrieval(false)
+			.includeServerSideToolInvocations(false)
+			.build();
+
+		GoogleGenAiChatOptions merged = defaults.mutate().combineWith(requestOptions.mutate()).build();
+
+		assertThat(merged.getGoogleSearchRetrieval()).isFalse();
+		assertThat(merged.getIncludeServerSideToolInvocations()).isFalse();
+	}
+
+	@Test
 	public void testServiceTierWithBuilder() {
 		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder()
 			.model("test-model")
