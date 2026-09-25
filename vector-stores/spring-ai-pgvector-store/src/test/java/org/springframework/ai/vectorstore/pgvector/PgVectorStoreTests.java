@@ -16,6 +16,7 @@
 
 package org.springframework.ai.vectorstore.pgvector;
 
+import java.sql.ResultSet;
 import java.util.Collections;
 import java.util.List;
 
@@ -24,8 +25,10 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
+import org.postgresql.util.PGobject;
 
 import org.springframework.ai.document.Document;
+import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.filter.Filter;
@@ -204,6 +207,61 @@ public class PgVectorStoreTests {
 				any(), any());
 		assertThat(sqlCaptor.getValue()).contains("metadata::jsonb @@ '");
 		assertThat(sqlCaptor.getValue()).contains("O''Brien");
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void rowMapperSkipsDistanceMetadataWhenUserAlreadyUsesThatKey() throws Exception {
+		var jdbcTemplate = mock(JdbcTemplate.class);
+		var embeddingModel = mock(EmbeddingModel.class);
+		ArgumentCaptor<RowMapper<Document>> rowMapperCaptor = ArgumentCaptor.forClass(RowMapper.class);
+		when(jdbcTemplate.query(anyString(), rowMapperCaptor.capture(), any(), any(), any(), any()))
+			.thenReturn(List.of());
+
+		var store = PgVectorStore.builder(jdbcTemplate, embeddingModel).build();
+		store.doSimilaritySearch(SearchRequest.builder().query("hello").topK(5).similarityThresholdAll().build());
+
+		var pgMetadata = new PGobject();
+		pgMetadata.setType("json");
+		pgMetadata.setValue("{\"distance\": \"12.5 miles from depot\"}");
+
+		var resultSet = mock(ResultSet.class);
+		when(resultSet.getString("id")).thenReturn("doc-1");
+		when(resultSet.getString("content")).thenReturn("hello world");
+		when(resultSet.getObject("metadata", PGobject.class)).thenReturn(pgMetadata);
+		when(resultSet.getFloat("distance")).thenReturn(0.42f);
+
+		Document document = rowMapperCaptor.getValue().mapRow(resultSet, 0);
+
+		assertThat(document.getMetadata()).containsEntry(DocumentMetadata.DISTANCE.value(), "12.5 miles from depot");
+		assertThat(document.getScore()).isEqualTo(1.0 - 0.42f);
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void rowMapperAddsDistanceMetadataWhenAbsent() throws Exception {
+		var jdbcTemplate = mock(JdbcTemplate.class);
+		var embeddingModel = mock(EmbeddingModel.class);
+		ArgumentCaptor<RowMapper<Document>> rowMapperCaptor = ArgumentCaptor.forClass(RowMapper.class);
+		when(jdbcTemplate.query(anyString(), rowMapperCaptor.capture(), any(), any(), any(), any()))
+			.thenReturn(List.of());
+
+		var store = PgVectorStore.builder(jdbcTemplate, embeddingModel).build();
+		store.doSimilaritySearch(SearchRequest.builder().query("hello").topK(5).similarityThresholdAll().build());
+
+		var pgMetadata = new PGobject();
+		pgMetadata.setType("json");
+		pgMetadata.setValue("{\"author\": \"jane\"}");
+
+		var resultSet = mock(ResultSet.class);
+		when(resultSet.getString("id")).thenReturn("doc-1");
+		when(resultSet.getString("content")).thenReturn("hello world");
+		when(resultSet.getObject("metadata", PGobject.class)).thenReturn(pgMetadata);
+		when(resultSet.getFloat("distance")).thenReturn(0.42f);
+
+		Document document = rowMapperCaptor.getValue().mapRow(resultSet, 0);
+
+		assertThat(document.getMetadata()).containsEntry(DocumentMetadata.DISTANCE.value(), 0.42f);
 	}
 
 }
