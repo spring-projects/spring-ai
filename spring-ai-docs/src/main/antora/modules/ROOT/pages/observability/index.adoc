@@ -108,6 +108,7 @@ IMPORTANT: The `gen_ai.client.token.usage` metrics measures number of input and 
 |===
 |Name | Description
 
+|`error.type` | The canonical class name of the exception the operation ended with, or its binary name when it has no canonical name. Only present when the operation failed.
 |`gen_ai.request.frequency_penalty` | The frequency penalty setting for the model request.
 |`gen_ai.request.max_tokens` | The maximum number of tokens the model generates for a request.
 |`gen_ai.request.presence_penalty` | The presence penalty setting for the model request.
@@ -216,6 +217,7 @@ IMPORTANT: The `gen_ai.client.token.usage` metrics measures number of input and 
 |===
 |Name | Description
 
+|`error.type` | The canonical class name of the exception the operation ended with, or its binary name when it has no canonical name. Only present when the operation failed.
 |`gen_ai.request.embedding.dimensions` | The number of dimensions the resulting output embeddings have.
 |`gen_ai.usage.input_tokens` | The number of tokens used in the model input.
 |`gen_ai.usage.total_tokens` | The total number of tokens used in the model exchange.
@@ -246,6 +248,7 @@ They measure the time spent on method completion and propagate the related traci
 |===
 |Name | Description
 
+|`error.type` | The canonical class name of the exception the operation ended with, or its binary name when it has no canonical name. Only present when the operation failed.
 |`gen_ai.request.image.response_format` | The format in which the generated image is returned.
 |`gen_ai.request.image.size` | The size of the image to generate (e.g. `1024x1024`).
 |`gen_ai.request.image.style` | The style of the image to generate.
