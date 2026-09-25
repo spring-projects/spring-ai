@@ -28,6 +28,7 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.BatchingStrategy;
@@ -169,8 +170,9 @@ public class PgVectorStoreAutoTruncationIT {
 
 		@Bean
 		public VectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel,
-				BatchingStrategy batchingStrategy) {
-			return PgVectorStore.builder(jdbcTemplate, embeddingModel)
+				BatchingStrategy batchingStrategy, SqlVectorStoreStatementCreator statementCreator) {
+
+			return PgVectorStore.builder(jdbcTemplate, embeddingModel, statementCreator)
 				.dimensions(PgVectorStore.INVALID_EMBEDDING_DIMENSION)
 				.batchingStrategy(batchingStrategy)
 				.idType(this.idType)
@@ -179,6 +181,11 @@ public class PgVectorStoreAutoTruncationIT {
 				.indexType(PgVectorStore.PgIndexType.HNSW)
 				.removeExistingVectorStoreTable(true)
 				.build();
+		}
+
+		@Bean
+		public SqlVectorStoreStatementCreator statementCreator(EmbeddingModel embeddingModel) {
+			return PgVectorStoreStatementCreator.builder(embeddingModel, JsonMapper.builder().build()).build();
 		}
 
 		@Bean
