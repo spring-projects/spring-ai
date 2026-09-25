@@ -16,6 +16,9 @@
 
 package org.springframework.ai.vectorstore.neo4j;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 import org.neo4j.driver.Driver;
 
@@ -60,6 +63,52 @@ class Neo4jVectorStoreBuilderTests {
 				() -> Neo4jVectorStore.builder(this.driver, this.embeddingModel).filterExpressionConverter(null))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("FilterExpressionConverter must not be null");
+	}
+
+	@Test
+	void defaultSearchStrategyPreservesProcedurePath() {
+		var store = Neo4jVectorStore.builder(this.driver, this.embeddingModel).build();
+		assertThat(ReflectionTestUtils.getField(store, "searchStrategy"))
+			.isEqualTo(Neo4jVectorStore.SearchStrategy.VECTOR_QUERY);
+		assertThat(ReflectionTestUtils.getField(store, "filterableMetadataFields")).isEqualTo(List.of());
+	}
+
+	@Test
+	void searchConfigurationCopiesMetadataFields() {
+		var fields = new ArrayList<>(List.of("category", "category"));
+		var builder = Neo4jVectorStore.builder(this.driver, this.embeddingModel)
+			.searchStrategy(Neo4jVectorStore.SearchStrategy.SEARCH)
+			.filterableMetadataFields(fields);
+		fields.add("year");
+		var store = builder.build();
+		assertThat(ReflectionTestUtils.getField(store, "searchStrategy"))
+			.isEqualTo(Neo4jVectorStore.SearchStrategy.SEARCH);
+		assertThat(ReflectionTestUtils.getField(store, "filterableMetadataFields")).isEqualTo(List.of("category"));
+	}
+
+	@Test
+	void rejectsMetadataFieldsWithLegacyStrategy() {
+		assertThatThrownBy(() -> Neo4jVectorStore.builder(this.driver, this.embeddingModel)
+			.filterableMetadataFields(List.of("category"))
+			.build()).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("requires the SEARCH strategy");
+	}
+
+	@Test
+	void rejectsCustomConverterWithSearchStrategy() {
+		assertThatThrownBy(() -> Neo4jVectorStore.builder(this.driver, this.embeddingModel)
+			.searchStrategy(Neo4jVectorStore.SearchStrategy.SEARCH)
+			.filterExpressionConverter(mock(FilterExpressionConverter.class))
+			.build()).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("custom filterExpressionConverter");
+	}
+
+	@Test
+	void rejectsInvalidSearchConfiguration() {
+		var builder = Neo4jVectorStore.builder(this.driver, this.embeddingModel);
+		assertThatThrownBy(() -> builder.searchStrategy(null)).isInstanceOf(IllegalArgumentException.class);
+		assertThatThrownBy(() -> builder.filterableMetadataFields(null)).isInstanceOf(IllegalArgumentException.class);
+		assertThatThrownBy(() -> builder.filterableMetadataFields(List.of(" ")))
+			.isInstanceOf(IllegalArgumentException.class);
 	}
 
 }
