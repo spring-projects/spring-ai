@@ -7,6 +7,7 @@ Spring AI provides a unified API for Text-To-Speech (TTS) through the `TextToSpe
 
 - xref:api/audio/speech/openai-speech.adoc[OpenAI's Speech API]
 - xref:api/audio/speech/elevenlabs-speech.adoc[Eleven Labs Text-To-Speech API]
+- xref:api/audio/speech/google-genai-speech.adoc[Google GenAI Text-To-Speech API]
 
 == Common Interface
 
