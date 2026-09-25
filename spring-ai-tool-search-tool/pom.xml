@@ -35,6 +35,12 @@
 			<optional>true</optional>
 		</dependency>
 
+		<dependency>
+			<groupId>com.openai</groupId>
+			<artifactId>openai-java-core</artifactId>
+			<version>${openai-sdk.version}</version>
+			<optional>true</optional>
+		</dependency>
 
 		<!-- Test dependencies -->
 		<dependency>
