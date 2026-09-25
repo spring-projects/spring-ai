@@ -24,6 +24,7 @@
 **** xref:api/chat/dmr-chat.adoc[Docker Model Runner]
 **** xref:api/chat/google-genai-chat.adoc[Google GenAI]
 **** xref:api/chat/groq-chat.adoc[Groq]
+**** xref:api/chat/jitllm-chat.adoc[jitLLM]
 **** xref:api/chat/mistralai-chat.adoc[Mistral AI]
 **** xref:api/chat/minimax-chat.adoc[MiniMax]
 **** xref:api/chat/nvidia-chat.adoc[NVIDIA]
