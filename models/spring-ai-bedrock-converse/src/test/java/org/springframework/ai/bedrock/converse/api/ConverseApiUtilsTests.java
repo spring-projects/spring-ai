@@ -69,7 +69,7 @@ class ConverseApiUtilsTests {
 
 	@Test
 	void isInverseOfConvertObjectToDocument() {
-		Map<String, Object> original = Map.of("channel", "SMS", "to", "385911234567", "retries", new BigDecimal("3"));
+		Map<String, Object> original = Map.of("channel", "SMS", "to", "123456789123", "retries", new BigDecimal("3"));
 
 		Object roundTripped = ConverseApiUtils
 			.convertDocumentToObject(ConverseApiUtils.convertObjectToDocument(original));
