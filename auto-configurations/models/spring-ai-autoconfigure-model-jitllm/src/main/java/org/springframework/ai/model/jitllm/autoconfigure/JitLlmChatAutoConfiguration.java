@@ -16,9 +16,6 @@
 
 package org.springframework.ai.model.jitllm.autoconfigure;
 
-import java.nio.file.Path;
-import java.util.Objects;
-
 import io.micrometer.observation.ObservationRegistry;
 
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
@@ -29,6 +26,7 @@ import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -36,7 +34,8 @@ import org.springframework.context.annotation.Bean;
 
 /**
  * {@link AutoConfiguration Auto-configuration} for the jitLLM chat model. Active when
- * {@code spring.ai.jitllm.chat.model-path} is set.
+ * {@code spring.ai.jitllm.chat.model-path} or {@code spring.ai.jitllm.chat.model-url} is
+ * set.
  *
  * @author Yuheng Zhou
  * @author Michalis Papadimitriou
@@ -46,7 +45,7 @@ import org.springframework.context.annotation.Bean;
 @ConditionalOnClass(JitLlmChatModel.class)
 @ConditionalOnProperty(name = SpringAIModelProperties.CHAT_MODEL, havingValue = SpringAIModels.JITLLM,
 		matchIfMissing = true)
-@ConditionalOnProperty(prefix = JitLlmChatProperties.CONFIG_PREFIX, name = "model-path")
+@ConditionalOnExpression("'${spring.ai.jitllm.chat.model-path:}' != '' or '${spring.ai.jitllm.chat.model-url:}' != ''")
 @EnableConfigurationProperties(JitLlmChatProperties.class)
 public class JitLlmChatAutoConfiguration {
 
@@ -55,17 +54,21 @@ public class JitLlmChatAutoConfiguration {
 	public JitLlmChatModel jitLlmChatModel(JitLlmChatProperties properties, ToolCallingManager toolCallingManager,
 			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<ChatModelObservationConvention> observationConvention) {
-		Path modelPath = Objects.requireNonNull(properties.getModelPath(),
-				JitLlmChatProperties.CONFIG_PREFIX + ".model-path must be set");
-		JitLlmChatModel chatModel = JitLlmChatModel.builder()
-			.modelPath(modelPath)
+		JitLlmChatModel.Builder builder = JitLlmChatModel.builder()
+			.modelPath(properties.getModelPath())
+			.modelUrl(properties.getModelUrl())
+			.huggingFaceToken(properties.getHuggingFaceToken())
+			.thinking(properties.getThinking())
 			.modelName(properties.getModelName())
 			.onGpu(properties.isOnGpu())
 			.contextLength(properties.getContextLength())
 			.defaultOptions(properties.toOptions())
 			.toolCallingManager(toolCallingManager)
-			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
-			.build();
+			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));
+		if (properties.getCacheDirectory() != null) {
+			builder.cacheDirectory(properties.getCacheDirectory());
+		}
+		JitLlmChatModel chatModel = builder.build();
 		observationConvention.ifAvailable(chatModel::setObservationConvention);
 		return chatModel;
 	}

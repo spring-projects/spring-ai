@@ -20,7 +20,9 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
+import org.beehive.jitllm.api.ThinkingMode;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import org.springframework.ai.jitllm.JitLlmChatModel;
 import org.springframework.ai.jitllm.JitLlmChatOptions;
@@ -59,6 +61,34 @@ class JitLlmChatAutoConfigurationTests {
 	}
 
 	@Test
+	void aModelUrlAlsoActivatesTheModelAndIsDownloadedIntoTheCacheDirectory(@TempDir Path cache) {
+		// Nothing listens on the discard port, so the download fails at startup: proof
+		// that the model-url alone activated the auto-configuration and reached the
+		// downloader.
+		this.contextRunner
+			.withPropertyValues("spring.ai.jitllm.chat.model-url=http://127.0.0.1:9/models/model.gguf",
+					"spring.ai.jitllm.chat.cache-directory=" + cache)
+			.run(context -> assertThat(context).getFailure()
+				.hasMessageContaining("Downloading http://127.0.0.1:9/models/model.gguf failed"));
+	}
+
+	@Test
+	void modelSourceAndThinkingPropertiesBind() {
+		Map<String, String> source = Map.of("spring.ai.jitllm.chat.model-url", "hf://owner/repo/model.gguf",
+				"spring.ai.jitllm.chat.cache-directory", "/var/cache/models",
+				"spring.ai.jitllm.chat.hugging-face-token", "secret", "spring.ai.jitllm.chat.thinking", "disabled");
+
+		JitLlmChatProperties properties = new Binder(new MapConfigurationPropertySource(source))
+			.bind(JitLlmChatProperties.CONFIG_PREFIX, JitLlmChatProperties.class)
+			.get();
+
+		assertThat(properties.getModelUrl()).isEqualTo("hf://owner/repo/model.gguf");
+		assertThat(properties.getCacheDirectory()).isEqualTo(Path.of("/var/cache/models"));
+		assertThat(properties.getHuggingFaceToken()).isEqualTo("secret");
+		assertThat(properties.getThinking()).isEqualTo(ThinkingMode.DISABLED);
+	}
+
+	@Test
 	void propertiesBindAndBecomeTheDefaultOptions() {
 		Map<String, String> source = Map.of("spring.ai.jitllm.chat.model-path", "/models/qwen3.gguf",
 				"spring.ai.jitllm.chat.model-name", "qwen3", "spring.ai.jitllm.chat.on-gpu", "true",
@@ -87,6 +117,7 @@ class JitLlmChatAutoConfigurationTests {
 		JitLlmChatProperties properties = new JitLlmChatProperties();
 
 		assertThat(properties.isOnGpu()).isFalse();
+		assertThat(properties.getThinking()).isEqualTo(ThinkingMode.DEFAULT);
 		assertThat(properties.getContextLength()).isZero();
 		assertThat(properties.toOptions()).isEqualTo(JitLlmChatOptions.builder().build());
 	}

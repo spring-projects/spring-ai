@@ -33,11 +33,14 @@ import org.beehive.jitllm.api.GenerationEvent;
 import org.beehive.jitllm.api.GenerationRequest;
 import org.beehive.jitllm.api.GenerationResult;
 import org.beehive.jitllm.api.GenerationSession;
+import org.beehive.jitllm.api.InsufficientDeviceMemoryException;
 import org.beehive.jitllm.api.LocalModel;
 import org.beehive.jitllm.api.LocalModels;
 import org.beehive.jitllm.api.ModelOptions;
 import org.beehive.jitllm.api.TextGenerationModel;
+import org.beehive.jitllm.api.ThinkingMode;
 import org.beehive.jitllm.runtime.backend.BackendId;
+import org.beehive.jitllm.runtime.memory.MemoryPlan;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -429,7 +432,19 @@ public final class JitLlmChatModel implements ChatModel, AutoCloseable {
 	 */
 	public static final class Builder {
 
+		/** The default model cache: {@code ~/.cache/jitllm/models}. */
+		public static final Path DEFAULT_CACHE_DIRECTORY = Path.of(System.getProperty("user.home"), ".cache", "jitllm",
+				"models");
+
 		private @Nullable Path modelPath;
+
+		private @Nullable String modelUrl;
+
+		private Path cacheDirectory = DEFAULT_CACHE_DIRECTORY;
+
+		private @Nullable String huggingFaceToken;
+
+		private ThinkingMode thinking = ThinkingMode.DEFAULT;
 
 		private boolean onGpu;
 
@@ -447,12 +462,57 @@ public final class JitLlmChatModel implements ChatModel, AutoCloseable {
 		}
 
 		/**
-		 * The GGUF model file to load. Required.
+		 * The GGUF model file to load. Set this or {@link #modelUrl(String)}.
 		 * @param modelPath the model file
 		 * @return this builder
 		 */
-		public Builder modelPath(Path modelPath) {
+		public Builder modelPath(@Nullable Path modelPath) {
 			this.modelPath = modelPath;
+			return this;
+		}
+
+		/**
+		 * The GGUF model to download, once, into {@link #cacheDirectory(Path)}: an
+		 * {@code https} URL, or {@code hf://<owner>/<repository>/<file>.gguf} for a file
+		 * on a Hugging Face repository's {@code main} branch. Set this or
+		 * {@link #modelPath(Path)}.
+		 * @param modelUrl the model URL
+		 * @return this builder
+		 */
+		public Builder modelUrl(@Nullable String modelUrl) {
+			this.modelUrl = modelUrl;
+			return this;
+		}
+
+		/**
+		 * Where downloaded models are kept. Defaults to {@link #DEFAULT_CACHE_DIRECTORY}.
+		 * @param cacheDirectory the cache directory
+		 * @return this builder
+		 */
+		public Builder cacheDirectory(Path cacheDirectory) {
+			this.cacheDirectory = cacheDirectory;
+			return this;
+		}
+
+		/**
+		 * The Hugging Face access token, for gated or private models.
+		 * @param huggingFaceToken the token
+		 * @return this builder
+		 */
+		public Builder huggingFaceToken(@Nullable String huggingFaceToken) {
+			this.huggingFaceToken = huggingFaceToken;
+			return this;
+		}
+
+		/**
+		 * Whether a model with a reasoning phase, such as Qwen 3, uses it. Defaults to
+		 * {@link ThinkingMode#DEFAULT}, the model's own behaviour. {@code ENABLED} and
+		 * {@code DISABLED} are rejected by a model that cannot represent the control.
+		 * @param thinking the reasoning mode
+		 * @return this builder
+		 */
+		public Builder thinking(ThinkingMode thinking) {
+			this.thinking = thinking;
 			return this;
 		}
 
@@ -507,9 +567,15 @@ public final class JitLlmChatModel implements ChatModel, AutoCloseable {
 		 * @return the chat model
 		 */
 		public JitLlmChatModel build() {
-			Assert.notNull(this.modelPath, "modelPath must not be null");
+			Assert.isTrue(this.modelPath != null ^ this.modelUrl != null,
+					"exactly one of modelPath and modelUrl must be set");
 			Assert.isTrue(this.contextLength >= 0, "contextLength must not be negative");
-			ModelOptions.Builder options = ModelOptions.builder().contextLength(this.contextLength);
+			Path modelFile = this.modelPath != null ? this.modelPath
+					: new JitLlmModelDownloader(this.cacheDirectory, this.huggingFaceToken)
+						.resolve(Objects.requireNonNull(this.modelUrl));
+			ModelOptions.Builder options = ModelOptions.builder()
+				.contextLength(this.contextLength)
+				.thinkingMode(this.thinking);
 			if (this.onGpu) {
 				// Naming a backend (CUDA, say) makes the engine reject an SDK built for
 				// another; leaving it unset runs on the one the SDK provides.
@@ -519,21 +585,62 @@ public final class JitLlmChatModel implements ChatModel, AutoCloseable {
 			else {
 				options.backend(BackendId.CPU);
 			}
+			ModelOptions modelOptions = options.build();
+			if (this.onGpu) {
+				preflight(modelFile, modelOptions);
+			}
 			LocalModel loaded;
 			try {
-				loaded = LocalModels.load(this.modelPath, options.build());
+				loaded = LocalModels.load(modelFile, modelOptions);
 			}
 			catch (IOException ex) {
-				throw new UncheckedIOException("Failed to load the model from " + this.modelPath, ex);
+				throw new UncheckedIOException("Failed to load the model from " + modelFile, ex);
+			}
+			catch (InsufficientDeviceMemoryException ex) {
+				throw new IllegalStateException(doesNotFit(modelFile, ex.plan()), ex);
 			}
 			if (!(loaded instanceof TextGenerationModel textModel)) {
 				loaded.close();
-				throw new IllegalArgumentException(this.modelPath + " is not a text generation model");
+				throw new IllegalArgumentException(modelFile + " is not a text generation model");
 			}
-			String name = this.modelName != null ? this.modelName : String.valueOf(this.modelPath.getFileName());
+			String name = this.modelName != null ? this.modelName : String.valueOf(modelFile.getFileName());
 			return new JitLlmChatModel(textModel, name, this.onGpu, this.defaultOptions,
 					Objects.requireNonNullElse(this.toolCallingManager, DEFAULT_TOOL_CALLING_MANAGER),
 					this.observationRegistry);
+		}
+
+		/**
+		 * Reports the predicted device memory before loading. The engine itself refuses a
+		 * load that a reliable prediction says cannot fit; a prediction that is only an
+		 * upper bound is reported here instead.
+		 */
+		private static void preflight(Path modelFile, ModelOptions options) {
+			MemoryPlan plan;
+			try {
+				plan = LocalModels.preflight(modelFile, options);
+			}
+			catch (IOException | RuntimeException ex) {
+				logger.debug("No device memory prediction for {}", modelFile, ex);
+				return;
+			}
+			logger.info("{}", plan.describe());
+			if (!plan.fitsConfiguredBudget() && plan.confidence() == MemoryPlan.Confidence.CONSERVATIVE) {
+				logger.warn(
+						"{} may not fit the device memory budget (-Dtornado.device.memory): up to {} MiB "
+								+ "predicted, {} MiB configured",
+						modelFile.getFileName(), mib(plan.predictedBudgetBytes()), mib(plan.configuredBudgetBytes()));
+			}
+		}
+
+		static String doesNotFit(Path modelFile, MemoryPlan plan) {
+			return modelFile.getFileName() + " does not fit the device memory budget: "
+					+ mib(plan.predictedBudgetBytes()) + " MiB predicted, " + mib(plan.configuredBudgetBytes())
+					+ " MiB configured. Raise -Dtornado.device.memory, lower the context length, or use a smaller"
+					+ " or more quantized model.\n" + plan.describe();
+		}
+
+		private static long mib(long bytes) {
+			return bytes / (1024 * 1024);
 		}
 
 	}

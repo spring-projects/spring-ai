@@ -19,6 +19,7 @@ package org.springframework.ai.model.jitllm.autoconfigure;
 import java.nio.file.Path;
 import java.util.List;
 
+import org.beehive.jitllm.api.ThinkingMode;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.jitllm.JitLlmChatOptions;
@@ -37,9 +38,32 @@ public class JitLlmChatProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.jitllm.chat";
 
 	/**
-	 * The GGUF model file to load.
+	 * The GGUF model file to load. Set this or model-url.
 	 */
 	private @Nullable Path modelPath;
+
+	/**
+	 * The GGUF model to download, once, into the cache directory: an https URL, or
+	 * hf://owner/repository/file.gguf for a file on a Hugging Face repository's main
+	 * branch. Set this or model-path.
+	 */
+	private @Nullable String modelUrl;
+
+	/**
+	 * Where downloaded models are kept. Defaults to ~/.cache/jitllm/models.
+	 */
+	private @Nullable Path cacheDirectory;
+
+	/**
+	 * The Hugging Face access token, for gated or private models.
+	 */
+	private @Nullable String huggingFaceToken;
+
+	/**
+	 * Whether a model with a reasoning phase, such as Qwen 3, uses it: default (the
+	 * model's own behaviour), enabled or disabled.
+	 */
+	private ThinkingMode thinking = ThinkingMode.DEFAULT;
 
 	/**
 	 * The model name reported in response metadata. Defaults to the model file name.
@@ -88,6 +112,38 @@ public class JitLlmChatProperties {
 
 	public void setModelPath(@Nullable Path modelPath) {
 		this.modelPath = modelPath;
+	}
+
+	public @Nullable String getModelUrl() {
+		return this.modelUrl;
+	}
+
+	public void setModelUrl(@Nullable String modelUrl) {
+		this.modelUrl = modelUrl;
+	}
+
+	public @Nullable Path getCacheDirectory() {
+		return this.cacheDirectory;
+	}
+
+	public void setCacheDirectory(@Nullable Path cacheDirectory) {
+		this.cacheDirectory = cacheDirectory;
+	}
+
+	public @Nullable String getHuggingFaceToken() {
+		return this.huggingFaceToken;
+	}
+
+	public void setHuggingFaceToken(@Nullable String huggingFaceToken) {
+		this.huggingFaceToken = huggingFaceToken;
+	}
+
+	public ThinkingMode getThinking() {
+		return this.thinking;
+	}
+
+	public void setThinking(ThinkingMode thinking) {
+		this.thinking = thinking;
 	}
 
 	public @Nullable String getModelName() {

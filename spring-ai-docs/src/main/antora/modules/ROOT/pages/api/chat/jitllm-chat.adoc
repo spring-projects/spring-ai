@@ -62,7 +62,7 @@ dependencies {
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
-The chat model is created when `spring.ai.jitllm.chat.model-path` is set.
+The chat model is created when `spring.ai.jitllm.chat.model-path` or `spring.ai.jitllm.chat.model-url` is set.
 
 === Chat Properties
 
@@ -73,7 +73,11 @@ The prefix `spring.ai.jitllm.chat` is the property prefix that configures the ji
 | Property | Description | Default
 
 | spring.ai.model.chat | Enable the jitLLM chat model. | jitllm
-| spring.ai.jitllm.chat.model-path | The GGUF model file to load. | -
+| spring.ai.jitllm.chat.model-path | The GGUF model file to load. Set this or `model-url`. | -
+| spring.ai.jitllm.chat.model-url | The GGUF model to download, once, into the cache directory: an `https` URL, or `hf://<owner>/<repository>/<file>.gguf` for a file on a Hugging Face repository's `main` branch. Set this or `model-path`. | -
+| spring.ai.jitllm.chat.cache-directory | Where downloaded models are kept. | `~/.cache/jitllm/models`
+| spring.ai.jitllm.chat.hugging-face-token | A Hugging Face access token, for gated or private models. | -
+| spring.ai.jitllm.chat.thinking | Whether a model with a reasoning phase, such as Qwen 3, uses it: `default` (the model's own behaviour), `enabled` or `disabled`. A model that cannot represent the control rejects `enabled` and `disabled`. | default
 | spring.ai.jitllm.chat.model-name | The model name reported in response metadata. | the model file name
 | spring.ai.jitllm.chat.on-gpu | Run on a GPU through TornadoVM. The JVM must be started through TornadoVM's `tornado` launcher with `-Duse.tornadovm=true`; the backend is whichever one the SDK provides. | false
 | spring.ai.jitllm.chat.context-length | The context length to allocate, in tokens; `0` uses the model's own. | 0
@@ -86,7 +90,19 @@ The prefix `spring.ai.jitllm.chat` is the property prefix that configures the ji
 
 `topK`, `frequencyPenalty` and `presencePenalty` are accepted in `ChatOptions` but ignored: jitLLM's sampler does not support them.
 
-TIP: All properties except `model-path`, `model-name`, `on-gpu` and `context-length`, which are fixed when the model is loaded, can be overridden per request with `JitLlmChatOptions`.
+TIP: The sampling properties (`max-tokens`, `temperature`, `top-p`, `seed`, `stop-sequences`) can be overridden per request with `JitLlmChatOptions`. The others are fixed when the model is loaded.
+
+== Downloading Models
+
+Instead of a local file, name a model to download:
+
+[source,properties]
+----
+spring.ai.jitllm.chat.model-url=hf://unsloth/Qwen3-0.6B-GGUF/Qwen3-0.6B-Q8_0.gguf
+----
+
+The file is downloaded at startup into `<cache-directory>/<owner>/<repository>/<file>` (or `<cache-directory>/<host>/<path>` for an `https` URL), and later starts use the cached copy.
+A download is written to a `.part` file and moved into place only once complete.
 
 == Runtime Options [[chat-options]]
 
@@ -114,6 +130,9 @@ When a request offers tools, a streaming call returns the response in a single c
 
 For reasoning models such as Qwen 3, the content of `<think>` blocks is removed from the answer and returned in the assistant message's `thinking` metadata. Streamed chunks carry only the answer.
 
+Set `spring.ai.jitllm.chat.thinking=disabled` to skip the reasoning phase, which saves the tokens and time it takes.
+jitLLM treats the reasoning mode as model configuration, so it is set when the model is loaded rather than per request.
+
 == Running on a GPU
 
 Start the application through TornadoVM's launcher:
@@ -125,6 +144,11 @@ tornado --jvm="-Duse.tornadovm=true --add-modules jdk.incubator.vector -Dtornado
 ----
 
 with `spring.ai.jitllm.chat.on-gpu=true`. Response metadata reports `on-gpu` and the prompt and generated token rates.
+
+Before loading on the GPU, the model's device memory is predicted from its metadata and logged, and compared with TornadoVM's budget, `-Dtornado.device.memory`.
+A model that is predicted not to fit is refused at startup with the prediction and what to change (a larger budget, a shorter context, or a smaller or more quantized model), rather than failing part-way through allocation.
+
+NOTE: Load one GPU model per JVM. Closing a GPU model resets TornadoVM state that another GPU model in the same JVM still uses.
 
 == Manual Configuration
 

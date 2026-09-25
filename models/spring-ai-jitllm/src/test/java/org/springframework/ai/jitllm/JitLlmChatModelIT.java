@@ -21,7 +21,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.beehive.jitllm.api.ThinkingMode;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
@@ -34,6 +36,7 @@ import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 
 /**
  * Runs {@link JitLlmChatModel} against a real GGUF model. Set {@code MODEL} to the model
@@ -114,6 +117,55 @@ class JitLlmChatModelIT {
 		assertThat(output.getText() + output.getMetadata().getOrDefault(JitLlmChatModel.THINKING_METADATA_KEY, ""))
 			.isNotBlank();
 		assertThat(response.getResult().getMetadata().getFinishReason()).isEqualTo("LENGTH");
+	}
+
+	@Test
+	void thinkingCanBeTurnedOff() {
+		Assumptions.assumeTrue(Objects.requireNonNull(System.getenv("MODEL")).contains("Qwen3"),
+				"needs a model with a reasoning phase");
+		// On the CPU: closing a second GPU model in this JVM would reset the TornadoVM
+		// state
+		// the shared model uses. Thinking control is the chat template's, whatever the
+		// backend.
+		try (JitLlmChatModel noThinking = JitLlmChatModel.builder()
+			.modelPath(Path.of(Objects.requireNonNull(System.getenv("MODEL"))))
+			.onGpu(false)
+			.contextLength(1024)
+			.thinking(ThinkingMode.DISABLED)
+			.defaultOptions(JitLlmChatOptions.builder().temperature(0.0).maxTokens(64).build())
+			.build()) {
+			ChatResponse response = noThinking.call(new Prompt("What is 2 + 2? Answer with the number."));
+
+			assertThat(response.getResult().getOutput().getText()).contains("4");
+			assertThat(String.valueOf(response.getResult()
+				.getOutput()
+				.getMetadata()
+				.getOrDefault(JitLlmChatModel.THINKING_METADATA_KEY, ""))).isBlank();
+			assertThat(response.getMetadata().getUsage().getCompletionTokens()).isLessThan(20);
+		}
+	}
+
+	@Test
+	void aModelThatDoesNotFitTheDeviceBudgetIsRefusedBeforeLoading() {
+		Assumptions.assumeTrue(Boolean.getBoolean("use.tornadovm"), "needs a GPU");
+		String budget = System.getProperty("tornado.device.memory");
+		System.setProperty("tornado.device.memory", "64MB");
+		try {
+			assertThatIllegalStateException()
+				.isThrownBy(() -> JitLlmChatModel.builder()
+					.modelPath(Path.of(Objects.requireNonNull(System.getenv("MODEL"))))
+					.onGpu(true)
+					.build())
+				.withMessageContaining("does not fit the device memory budget");
+		}
+		finally {
+			if (budget != null) {
+				System.setProperty("tornado.device.memory", budget);
+			}
+			else {
+				System.clearProperty("tornado.device.memory");
+			}
+		}
 	}
 
 	static class WeatherTools {
