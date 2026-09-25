@@ -63,10 +63,9 @@ public class GoogleGenAiEmbeddingConnectionAutoConfiguration {
 				.location(connectionProperties.getLocation());
 
 			if (connectionProperties.getCredentialsUri() != null) {
-				GoogleCredentials credentials = GoogleCredentials
-					.fromStream(connectionProperties.getCredentialsUri().getInputStream());
-				// Note: Credentials are handled automatically by the SDK when using
-				// Vertex AI mode
+				try (var is = connectionProperties.getCredentialsUri().getInputStream()) {
+					connectionBuilder.credentials(GoogleCredentials.fromStream(is));
+				}
 			}
 		}
 
