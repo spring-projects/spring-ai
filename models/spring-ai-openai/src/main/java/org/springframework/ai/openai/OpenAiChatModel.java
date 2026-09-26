@@ -315,17 +315,22 @@ public final class OpenAiChatModel implements ChatModel {
 
 			// Next, aggregate CCCs that deal with tool calls together
 			AtomicBoolean isInsideTool = new AtomicBoolean(false);
-			Flux<ChatCompletion> aggregatedChatCompletions = chunks.doOnNext(chunk -> {
-				if (ChunkMerger.hasToolCall(chunk)) {
-					isInsideTool.set(true);
-				}
-			}).bufferUntil(chunk -> {
-				if (isInsideTool.get() && ChunkMerger.toolCallsDone(chunk)) {
-					isInsideTool.set(false);
-					return true;
-				}
-				return !isInsideTool.get();
-			}).map(ChunkMerger::mergeChunks).map(ChunkMerger::chunkToChatCompletion);
+			Flux<ChatCompletion> aggregatedChatCompletions = chunks
+				.filter(chunk -> chunk.choices().stream().allMatch(choice -> !choice._delta().isMissing()))
+				.doOnNext(chunk -> {
+					if (ChunkMerger.hasToolCall(chunk)) {
+						isInsideTool.set(true);
+					}
+				})
+				.bufferUntil(chunk -> {
+					if (isInsideTool.get() && ChunkMerger.toolCallsDone(chunk)) {
+						isInsideTool.set(false);
+						return true;
+					}
+					return !isInsideTool.get();
+				})
+				.map(ChunkMerger::mergeChunks)
+				.map(ChunkMerger::chunkToChatCompletion);
 
 			Flux<ChatResponse> chatResponses = aggregatedChatCompletions.map(chatCompletion -> {
 				String id = chatCompletion.id();

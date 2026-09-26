@@ -32,6 +32,7 @@ import java.util.function.Consumer;
 
 import com.openai.client.OpenAIClient;
 import com.openai.client.OpenAIClientAsync;
+import com.openai.core.JsonMissing;
 import com.openai.core.JsonValue;
 import com.openai.core.RequestOptions;
 import com.openai.core.http.AsyncStreamResponse;
@@ -949,6 +950,44 @@ class OpenAiChatModelTests {
 
 		assertThat(aggregated.getText()).isEqualTo("Hello!");
 		assertThat(aggregated.getMetadata().get("reasoningContent")).isEqualTo("Quick thought. Another thought.");
+	}
+
+	@Test
+	void streamingSkipsAzureContentFilterAnnotationsWithoutDelta() {
+		ChatCompletionChunk annotationChunk = ChatCompletionChunk.builder()
+			.id("chatcmpl-123")
+			.created(1777799928L)
+			.model("gpt-4o")
+			.addChoice(ChatCompletionChunk.Choice.builder()
+				.index(0L)
+				.delta(JsonMissing.of())
+				.finishReason(Optional.empty())
+				.putAdditionalProperty("content_filter_results", JsonValue.from(Map.of()))
+				.build())
+			.build();
+		ChatCompletionChunk usageChunk = ChatCompletionChunk.builder()
+			.id("chatcmpl-123")
+			.created(1777799928L)
+			.model("gpt-4o")
+			.choices(List.of())
+			.usage(CompletionUsage.builder().promptTokens(1).completionTokens(2).totalTokens(3).build())
+			.build();
+
+		assertThat(annotationChunk.choices().get(0)._delta().isMissing()).isTrue();
+
+		List<ChatResponse> responses = streamResponses(List.of(
+				streamingChunk(delta -> delta.role(ChatCompletionChunk.Choice.Delta.Role.ASSISTANT).content("Hello"),
+						null),
+				annotationChunk,
+				streamingChunk(delta -> delta.content(" world!"), ChatCompletionChunk.Choice.FinishReason.STOP),
+				usageChunk))
+			.collectList()
+			.block();
+
+		assertThat(responses).hasSize(3);
+		assertThat(responses.get(0).getResult().getOutput().getText()).isEqualTo("Hello");
+		assertThat(responses.get(1).getResult().getOutput().getText()).isEqualTo(" world!");
+		assertThat(responses.get(2).getMetadata().getUsage().getTotalTokens()).isEqualTo(3);
 	}
 
 	@Test
