@@ -120,6 +120,15 @@ public class ToolSearchToolCallingAdvisor extends ToolCallingAdvisor {
 
 	protected ToolSearchToolCallingAdvisor(ToolCallingManager toolCallingManager, int advisorOrder,
 			ToolExecutionEligibilityChecker toolExecutionEligibilityChecker, ToolIndex toolIndex,
+			String systemMessageSuffix, boolean referenceToolNameAccumulation, @Nullable Integer maxResults,
+			boolean conversationHistoryEnabled, String sessionIdKeyName, ToolIndexEvictionStrategy evictionStrategy) {
+		this(toolCallingManager, advisorOrder, toolExecutionEligibilityChecker, toolIndex, toolCallback -> false,
+				systemMessageSuffix, referenceToolNameAccumulation, maxResults, conversationHistoryEnabled,
+				sessionIdKeyName, evictionStrategy);
+	}
+
+	protected ToolSearchToolCallingAdvisor(ToolCallingManager toolCallingManager, int advisorOrder,
+			ToolExecutionEligibilityChecker toolExecutionEligibilityChecker, ToolIndex toolIndex,
 			Predicate<ToolCallback> alwaysDeclaredToolPredicate, String systemMessageSuffix,
 			boolean referenceToolNameAccumulation, @Nullable Integer maxResults, boolean conversationHistoryEnabled,
 			String sessionIdKeyName, ToolIndexEvictionStrategy evictionStrategy) {
