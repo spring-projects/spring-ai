@@ -19,6 +19,7 @@ package org.springframework.ai.util.json.schema;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -36,6 +37,7 @@ import com.github.victools.jsonschema.generator.SchemaVersion;
 import com.github.victools.jsonschema.module.jackson.JacksonOption;
 import com.github.victools.jsonschema.module.jackson.JacksonSchemaModule;
 import com.github.victools.jsonschema.module.swagger2.Swagger2Module;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Schema;
 import org.jspecify.annotations.Nullable;
 import tools.jackson.databind.JsonNode;
@@ -70,6 +72,12 @@ import org.springframework.util.StringUtils;
  * <p>
  * If none of these annotations are present, the default behavior is to consider the
  * property as required and not to include a description.
+ * <p>
+ * Validation constraints declared via {@code @Schema} (e.g. {@code minLength},
+ * {@code maxLength}, {@code pattern}, {@code minimum}, {@code maximum},
+ * {@code multipleOf}) and {@code @ArraySchema} (e.g. {@code minItems}, {@code maxItems},
+ * {@code uniqueItems}) are also reflected in the generated schema, for both type fields
+ * and method parameters.
  * <p>
  *
  * @author Thomas Vitale
@@ -175,6 +183,7 @@ public final class JsonSchemaGenerator {
 			if (StringUtils.hasText(parameterDescription)) {
 				parameterNode.put("description", parameterDescription);
 			}
+			applyParameterConstraints(parameterNode, method.getParameters()[i]);
 			properties.set(parameterName, parameterNode);
 		}
 
@@ -286,6 +295,73 @@ public final class JsonSchemaGenerator {
 		}
 
 		return null;
+	}
+
+	/**
+	 * Applies the JSON Schema validation keywords declared via {@link Schema} and
+	 * {@link ArraySchema} on a method parameter to its generated schema node.
+	 *
+	 * <p>
+	 * Such constraints are honored by the underlying generator when the annotations are
+	 * placed on a type's fields, but a method parameter's annotations are invisible to
+	 * it. They are therefore applied here so that tool method parameters behave
+	 * consistently with type fields. The supported keywords mirror those produced for
+	 * fields:
+	 * <ul>
+	 * <li>{@code minLength}, {@code maxLength}, {@code pattern} for strings;</li>
+	 * <li>{@code minimum}, {@code maximum}, {@code exclusiveMinimum},
+	 * {@code exclusiveMaximum}, {@code multipleOf} for numbers;</li>
+	 * <li>{@code minItems}, {@code maxItems}, {@code uniqueItems} for arrays.</li>
+	 * </ul>
+	 */
+	private static void applyParameterConstraints(ObjectNode parameterNode, Parameter parameter) {
+		JsonNode typeNode = parameterNode.get("type");
+		String type = (typeNode != null && typeNode.isString()) ? typeNode.asString() : null;
+
+		if ("array".equals(type)) {
+			ArraySchema arraySchema = parameter.getAnnotation(ArraySchema.class);
+			if (arraySchema != null) {
+				if (arraySchema.minItems() != Integer.MAX_VALUE) {
+					parameterNode.put("minItems", arraySchema.minItems());
+				}
+				if (arraySchema.maxItems() != Integer.MIN_VALUE) {
+					parameterNode.put("maxItems", arraySchema.maxItems());
+				}
+				if (arraySchema.uniqueItems()) {
+					parameterNode.put("uniqueItems", true);
+				}
+			}
+			return;
+		}
+
+		Schema schema = parameter.getAnnotation(Schema.class);
+		if (schema == null) {
+			return;
+		}
+		if ("string".equals(type)) {
+			if (schema.minLength() > 0) {
+				parameterNode.put("minLength", schema.minLength());
+			}
+			if (schema.maxLength() < Integer.MAX_VALUE) {
+				parameterNode.put("maxLength", schema.maxLength());
+			}
+			if (StringUtils.hasText(schema.pattern())) {
+				parameterNode.put("pattern", schema.pattern());
+			}
+		}
+		else if ("integer".equals(type) || "number".equals(type)) {
+			if (StringUtils.hasText(schema.minimum())) {
+				parameterNode.put(schema.exclusiveMinimum() ? "exclusiveMinimum" : "minimum",
+						new BigDecimal(schema.minimum()));
+			}
+			if (StringUtils.hasText(schema.maximum())) {
+				parameterNode.put(schema.exclusiveMaximum() ? "exclusiveMaximum" : "maximum",
+						new BigDecimal(schema.maximum()));
+			}
+			if (schema.multipleOf() != 0) {
+				parameterNode.put("multipleOf", BigDecimal.valueOf(schema.multipleOf()));
+			}
+		}
 	}
 
 	/**
