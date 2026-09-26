@@ -351,10 +351,16 @@ public class McpStatelessServerAutoConfigurationIT {
 			.run(context -> assertThat(context).hasSingleBean(ToolCallbackProvider.class));
 	}
 
-	@SuppressWarnings("unchecked")
 	@Test
 	void syncStatelessServerSpecificationConfiguration() {
-		this.contextRunner
+		assertSyncStatelessServerSpecificationConfiguration(this.contextRunner);
+		assertSyncStatelessServerSpecificationConfiguration(
+				this.contextRunner.withPropertyValues("spring.ai.mcp.server.tool-callback-converter=false"));
+	}
+
+	@SuppressWarnings("unchecked")
+	private void assertSyncStatelessServerSpecificationConfiguration(ApplicationContextRunner contextRunner) {
+		contextRunner
 			.withUserConfiguration(McpServerAnnotationScannerAutoConfiguration.class,
 					StatelessServerSpecificationFactoryAutoConfiguration.class)
 			.withBean(SyncTestMcpSpecsComponent.class)
@@ -390,10 +396,16 @@ public class McpStatelessServerAutoConfigurationIT {
 			});
 	}
 
-	@SuppressWarnings("unchecked")
 	@Test
 	void asyncStatelessServerSpecificationConfiguration() {
-		this.contextRunner
+		assertAsyncStatelessServerSpecificationConfiguration(this.contextRunner);
+		assertAsyncStatelessServerSpecificationConfiguration(
+				this.contextRunner.withPropertyValues("spring.ai.mcp.server.tool-callback-converter=false"));
+	}
+
+	@SuppressWarnings("unchecked")
+	private void assertAsyncStatelessServerSpecificationConfiguration(ApplicationContextRunner contextRunner) {
+		contextRunner
 			.withUserConfiguration(McpServerAnnotationScannerAutoConfiguration.class,
 					StatelessServerSpecificationFactoryAutoConfiguration.class)
 			.withBean(AsyncTestMcpSpecsComponent.class)
