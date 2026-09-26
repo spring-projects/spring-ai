@@ -90,6 +90,7 @@ public class McpServerAutoConfigurationIT {
 			assertThat(properties.getVersion()).isEqualTo("1.0.0");
 			assertThat(properties.getType()).isEqualTo(McpServerProperties.ApiType.SYNC);
 			assertThat(properties.getRequestTimeout().getSeconds()).isEqualTo(20);
+			assertThat(properties.isToolCallbackConverter()).isTrue();
 
 			// Check capabilities
 			assertThat(properties.getCapabilities().isTool()).isTrue();
@@ -103,6 +104,14 @@ public class McpServerAutoConfigurationIT {
 			assertThat(changeNotificationProperties.isResourceChangeNotification()).isTrue();
 			assertThat(changeNotificationProperties.isPromptChangeNotification()).isTrue();
 
+		});
+	}
+
+	@Test
+	void toolCallbackConverterConfiguration() {
+		this.contextRunner.withPropertyValues("spring.ai.mcp.server.tool-callback-converter=false").run(context -> {
+			McpServerProperties properties = context.getBean(McpServerProperties.class);
+			assertThat(properties.isToolCallbackConverter()).isFalse();
 		});
 	}
 
