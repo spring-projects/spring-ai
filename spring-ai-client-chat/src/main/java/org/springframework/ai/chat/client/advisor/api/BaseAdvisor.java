@@ -37,6 +37,7 @@ import org.springframework.util.Assert;
  * {@link #after(ChatClientResponse, AdvisorChain advisorChain)} methods.
  *
  * @author Thomas Vitale
+ * @author Yanming Zhou
  * @since 1.0.0
  */
 public interface BaseAdvisor extends CallAdvisor, StreamAdvisor {
@@ -81,12 +82,16 @@ public interface BaseAdvisor extends CallAdvisor, StreamAdvisor {
 	/**
 	 * Logic to be executed before the rest of the advisor chain is called.
 	 */
-	ChatClientRequest before(ChatClientRequest chatClientRequest, AdvisorChain advisorChain);
+	default ChatClientRequest before(ChatClientRequest chatClientRequest, AdvisorChain advisorChain) {
+		return chatClientRequest;
+	}
 
 	/**
 	 * Logic to be executed after the rest of the advisor chain is called.
 	 */
-	ChatClientResponse after(ChatClientResponse chatClientResponse, AdvisorChain advisorChain);
+	default ChatClientResponse after(ChatClientResponse chatClientResponse, AdvisorChain advisorChain) {
+		return chatClientResponse;
+	}
 
 	/**
 	 * Scheduler used for processing the advisor logic when streaming.
