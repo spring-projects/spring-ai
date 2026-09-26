@@ -42,6 +42,8 @@ import org.springframework.ai.bedrock.converse.api.BedrockCacheTtl;
 import org.springframework.ai.bedrock.converse.api.MediaFetcher;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.messages.part.MediaPart;
+import org.springframework.ai.chat.messages.part.TextPart;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.model.tool.ToolCallingManager;
@@ -458,6 +460,96 @@ class BedrockProxyChatModelTest {
 		assertThat(contents).hasSize(2);
 		assertThat(contents.get(0).text()).isEqualTo("Describe the image");
 		assertThat(contents.get(1).image()).isNotNull();
+	}
+
+	@Test
+	void userMessagePartsRespectPartOrderWhenMediaPrecedesText() {
+		BedrockProxyChatModel model = newModel();
+
+		Prompt prompt = new Prompt(List
+			.of(UserMessage.builder().part(MediaPart.of(pngMedia())).part(TextPart.of("Describe the image")).build()),
+				BedrockChatOptions.builder().build());
+
+		List<ContentBlock> contents = model.createRequest(prompt).messages().get(0).content();
+
+		assertThat(contents).hasSize(2);
+		assertThat(contents.get(0).image()).isNotNull();
+		assertThat(contents.get(1).text()).isEqualTo("Describe the image");
+	}
+
+	@Test
+	void userMessagePartsKeepInterleavedOrder() {
+		BedrockProxyChatModel model = newModel();
+
+		UserMessage message = UserMessage.builder()
+			.part(TextPart.of("--- page 1 ---"))
+			.part(MediaPart.of(pngMedia()))
+			.part(TextPart.of("What is on this page?"))
+			.build();
+
+		Prompt prompt = new Prompt(List.of(message), BedrockChatOptions.builder().build());
+		List<ContentBlock> contents = model.createRequest(prompt).messages().get(0).content();
+
+		assertThat(contents).hasSize(3);
+		assertThat(contents.get(0).text()).isEqualTo("--- page 1 ---");
+		assertThat(contents.get(1).image()).isNotNull();
+		assertThat(contents.get(2).text()).isEqualTo("What is on this page?");
+	}
+
+	@Test
+	void blankTextPartIsOmittedFromContentBlocks() {
+		BedrockProxyChatModel model = newModel();
+
+		UserMessage message = UserMessage.builder()
+			.part(TextPart.of("   "))
+			.part(MediaPart.of(pngMedia()))
+			.build();
+
+		Prompt prompt = new Prompt(List.of(message), BedrockChatOptions.builder().build());
+		List<ContentBlock> contents = model.createRequest(prompt).messages().get(0).content();
+
+		assertThat(contents).hasSize(1);
+		assertThat(contents.get(0).image()).isNotNull();
+	}
+
+	@Test
+	void legacyBuilderKeepsTextThenMediaOrder() {
+		BedrockProxyChatModel model = newModel();
+
+		// media(...) is called before text(...), but the legacy builder still
+		// exposes the parts in text-then-media order; the loop must keep that.
+		UserMessage message = UserMessage.builder().media(pngMedia()).text("Describe the image").build();
+
+		Prompt prompt = new Prompt(List.of(message), BedrockChatOptions.builder().build());
+		List<ContentBlock> contents = model.createRequest(prompt).messages().get(0).content();
+
+		assertThat(contents).hasSize(2);
+		assertThat(contents.get(0).text()).isEqualTo("Describe the image");
+		assertThat(contents.get(1).image()).isNotNull();
+	}
+
+	@Test
+	void cachePointStaysLastAfterOrderedParts() {
+		BedrockProxyChatModel model = newModel();
+
+		BedrockChatOptions options = BedrockChatOptions.builder()
+			.cacheOptions(BedrockCacheOptions.builder()
+				.strategy(BedrockCacheStrategy.CONVERSATION_HISTORY)
+				.build())
+			.build();
+
+		UserMessage message = UserMessage.builder()
+			.part(MediaPart.of(pngMedia()))
+			.part(TextPart.of("Describe the image"))
+			.build();
+
+		Prompt prompt = new Prompt(List.of(message), options);
+		List<ContentBlock> contents = model.createRequest(prompt).messages().get(0).content();
+
+		assertThat(contents).hasSize(3);
+		assertThat(contents.get(0).image()).isNotNull();
+		assertThat(contents.get(1).text()).isEqualTo("Describe the image");
+		assertThat(contents.get(2).cachePoint()).isNotNull();
 	}
 
 	private static Media pngMedia() {
