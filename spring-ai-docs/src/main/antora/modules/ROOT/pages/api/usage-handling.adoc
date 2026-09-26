@@ -8,16 +8,18 @@ This change simplifies how different AI models can track and report their usage 
 
 === Usage Interface Enhancement
 The `Usage` interface now includes a new method:
-```java
+[source,java]
+----
 Object getNativeUsage();
-```
+----
 This method allows access to the model-specific native usage data, enabling more detailed usage tracking when needed.
 
 === Using with ChatModel
 
 Here's a complete example showing how to track usage with OpenAI's ChatModel:
 
-```java
+[source,java]
+----
 @SpringBootConfiguration
 public class Configuration {
 
@@ -79,13 +81,14 @@ public class ChatService {
         }
     }
 }
-```
+----
 
 === Using with ChatClient
 
 If you are using the `ChatClient`, you can access the usage information using the `ChatResponse` object:
 
-```java
+[source,java]
+----
 // Create a chat prompt
 Prompt prompt = new Prompt("What is the weather like today?");
 
@@ -99,7 +102,7 @@ ChatResponse response = chatClient.prompt(prompt)
 
 // Access the usage information
 Usage usage = response.getMetadata().getUsage();
-```
+----
 
 == Prompt Cache Usage Metrics
 
@@ -172,11 +175,13 @@ If you need the provider's native usage object, read it from an individual `Chat
 === Type Safety Considerations
 
 When working with native usage data, consider type casting carefully:
-```java
+
+[source,java]
+----
 // Safe way to access native usage
 if (usage.getNativeUsage() instanceof com.openai.models.completions.CompletionUsage) {
     com.openai.models.completions.CompletionUsage nativeUsage =
         (com.openai.models.completions.CompletionUsage) usage.getNativeUsage();
     // Work with native usage data
 }
-```
+----
