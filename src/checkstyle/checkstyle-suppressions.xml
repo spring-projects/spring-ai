@@ -46,6 +46,7 @@
 
 	<suppress files="[\\/]src[\\/]test[\\/]java[\\/]" id="bannedNullabilityImports" />
 	<suppress files="spring-ai-integration-tests" id="bannedNullabilityImports" />
+	<suppress files="JsonNullableSchemaModule\.java" id="bannedNullabilityImports" />
 
 	<suppress files="spring-ai-integration-tests" checks="JavadocPackage" />
 </suppressions>
