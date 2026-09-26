@@ -75,9 +75,9 @@ public class AsyncStatelessMcpToolProvider extends AbstractMcpToolProvider {
 			.map(toolObject -> Stream.of(doGetClassMethods(toolObject))
 				.filter(method -> method.isAnnotationPresent(McpTool.class))
 				.filter(McpPredicates.filterNonReactiveReturnTypeMethod())
-				.filter(McpPredicates.filterMethodWithBidirectionalParameters())
 				.sorted(Comparator.comparing(Method::getName))
 				.map(mcpToolMethod -> {
+					McpPredicates.validateStatelessMethodDoesNotUseBidirectionalParameters(mcpToolMethod, "tool");
 
 					var toolJavaAnnotation = doGetMcpToolAnnotation(mcpToolMethod);
 
