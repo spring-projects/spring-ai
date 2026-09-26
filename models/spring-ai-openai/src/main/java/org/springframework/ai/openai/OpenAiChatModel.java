@@ -535,6 +535,13 @@ public final class OpenAiChatModel implements ChatModel {
 	 */
 	ChatCompletionCreateParams createRequest(Prompt prompt, boolean stream) {
 
+		// Replaying reasoning content is what OpenAI-compatible reasoning endpoints such
+		// as DeepSeek's thinking mode require, and what Groq rejects outright, so it can
+		// be turned off per request. Absent an explicit opt-out the content is replayed
+		// whenever present, which is the behavior plain OpenAI is unaffected by.
+		boolean replayReasoningContent = !(prompt.getOptions() instanceof OpenAiChatOptions chatOptions)
+				|| !Boolean.FALSE.equals(chatOptions.getReplayReasoningContent());
+
 		List<ChatCompletionMessageParam> chatCompletionMessageParams = prompt.getInstructions()
 			.stream()
 			.map(message -> {
@@ -694,10 +701,11 @@ public final class OpenAiChatModel implements ChatModel {
 						builder.toolCalls(toolCalls);
 					}
 
-					// Replay reasoning content only when present - plain OpenAI is
-					// unaffected
+					// Replay reasoning content only when present and not opted out -
+					// plain OpenAI is unaffected
 					Object reasoningContent = assistantMessage.getMetadata().get(REASONING_CONTENT);
-					if (reasoningContent instanceof String reasoning && StringUtils.hasText(reasoning)) {
+					if (replayReasoningContent && reasoningContent instanceof String reasoning
+							&& StringUtils.hasText(reasoning)) {
 						// "reasoning_content" is the wire field; REASONING_CONTENT is the
 						// metadata key
 						builder.putAdditionalProperty("reasoning_content", JsonValue.from(reasoning));

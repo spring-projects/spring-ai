@@ -873,6 +873,53 @@ class OpenAiChatModelTests {
 				JsonValue.from("25 * 4 = 100."));
 	}
 
+	@Test
+	void reasoningContentNotReplayedWhenOptedOut() {
+		// Groq returns reasoning_content on the response but rejects the property on a
+		// subsequent request, so providers in that position opt out of the replay.
+		OpenAiChatOptions options = OpenAiChatOptions.builder()
+			.model("test-model")
+			.replayReasoningContent(false)
+			.build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		AssistantMessage assistantMessage = AssistantMessage.builder()
+			.content("100")
+			.properties(Map.of("reasoningContent", "25 * 4 = 100."))
+			.build();
+		Prompt prompt = new Prompt(
+				List.of(new UserMessage("What's 25 * 4?"), assistantMessage, new UserMessage("Now divide that by 5")),
+				options);
+
+		ChatCompletionCreateParams request = chatModel.createRequest(prompt, false);
+
+		ChatCompletionAssistantMessageParam assistantParam = request.messages()
+			.stream()
+			.filter(ChatCompletionMessageParam::isAssistant)
+			.map(ChatCompletionMessageParam::asAssistant)
+			.findFirst()
+			.orElseThrow();
+		assertThat(assistantParam._additionalProperties()).doesNotContainKey("reasoning_content");
+		// Only the replay is dropped; the assistant turn itself still goes out.
+		assertThat(assistantParam.content().orElseThrow().text()).hasValue("100");
+	}
+
+	@Test
+	void replayReasoningContentIsCarriedOverByTheBuilder() {
+		OpenAiChatOptions options = OpenAiChatOptions.builder()
+			.model("test-model")
+			.replayReasoningContent(false)
+			.build();
+
+		assertThat(options.mutate().build().getReplayReasoningContent()).isFalse();
+		assertThat(OpenAiChatOptions.builder().combineWith(options.mutate()).build().getReplayReasoningContent())
+			.isFalse();
+	}
+
 	@ParameterizedTest
 	@ValueSource(strings = { "reasoning_content", "reasoning" })
 	void streamingReasoningContentSurvivesAggregationWithToolCalls(String reasoningKey) {

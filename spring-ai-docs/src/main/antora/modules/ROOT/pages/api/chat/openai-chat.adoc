@@ -198,6 +198,7 @@ The `JSON_SCHEMA` type enables link:https://platform.openai.com/docs/guides/stru
 | spring.ai.openai.chat.tool-callbacks | Tool Callbacks to register with the ChatModel. | -
 | spring.ai.openai.chat.service-tier | Specifies the link:https://platform.openai.com/docs/api-reference/responses/create#responses_create-service_tier[processing type] used for serving the request. | -
 | spring.ai.openai.chat.extra-body | Additional parameters to include in the request. Accepts any key-value pairs that are flattened to the top level of the JSON request. Intended for use with OpenAI-compatible servers (vLLM, Ollama, etc.) that support parameters beyond the standard OpenAI API. The official OpenAI API rejects unknown parameters with a 400 error. See <<openai-compatible-servers>> for details. | -
+| spring.ai.openai.chat.replay-reasoning-content | Whether a previous assistant message's reasoning content is sent back as the `reasoning_content` property of the next request. OpenAI-compatible reasoning endpoints such as DeepSeek's thinking mode require the property and reject a request without it, while others such as Groq reject the property itself. Set to `false` for the latter. | true
 |====
 
 [NOTE]
