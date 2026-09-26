@@ -287,6 +287,39 @@ String response = chatClient.prompt()
     .content();
 ----
 
+==== Tool Result Caching
+
+Multi-round tool calling appends an assistant `toolUse` message and a user `toolResult` message on every round.
+With conversation-history caching alone, those appended tool results remain after the user-message cache point and are processed again on the next request.
+
+Enable `cacheToolResults` to add another cache point after the final tool result message in the request:
+
+[source,java]
+----
+BedrockCacheOptions cacheOptions = BedrockCacheOptions.builder()
+    .strategy(BedrockCacheStrategy.CONVERSATION_HISTORY)
+    .cacheToolResults(true)
+    .build();
+----
+
+The option defaults to `false` and takes effect only with the `CONVERSATION_HISTORY` strategy.
+When multiple tool-calling rounds are present, only the last tool result message receives the additional cache point, allowing all preceding tool outputs to become part of the cached prefix.
+This additional point counts toward AWS Bedrock's per-request cache checkpoint limit.
+
+The same option can be configured through Spring Boot properties:
+
+[source,yaml]
+----
+spring:
+  ai:
+    bedrock:
+      converse:
+        chat:
+          cache-options:
+            strategy: CONVERSATION_HISTORY
+            cache-tool-results: true
+----
+
 ==== Multi-Block System Message Caching
 
 When using advisors (e.g., RAG context injection), your system prompt may consist of multiple `SystemMessage` instances: a static prefix (your base instructions) and a dynamic suffix (advisor-injected context that changes each request).
@@ -1026,4 +1059,3 @@ public class ChatController {
     }
 }
 ----
-
