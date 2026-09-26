@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.utils
+package org.springframework.ai.util
 
 import org.assertj.core.api.Assertions
 import org.junit.jupiter.api.Test
-import org.springframework.ai.util.JacksonUtils
 import tools.jackson.databind.json.JsonMapper
 
 /**
