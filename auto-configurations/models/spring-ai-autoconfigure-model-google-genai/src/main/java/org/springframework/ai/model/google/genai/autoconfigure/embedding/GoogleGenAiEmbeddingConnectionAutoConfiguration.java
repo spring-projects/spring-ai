@@ -22,9 +22,12 @@ import com.google.auth.oauth2.GoogleCredentials;
 import com.google.genai.Client;
 
 import org.springframework.ai.google.genai.embedding.GoogleGenAiEmbeddingConnectionDetails;
+import org.springframework.ai.model.SpringAIModelProperties;
+import org.springframework.ai.model.SpringAIModels;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.util.Assert;
@@ -40,6 +43,8 @@ import org.springframework.util.StringUtils;
  */
 @AutoConfiguration
 @ConditionalOnClass({ Client.class, GoogleGenAiEmbeddingConnectionDetails.class })
+@ConditionalOnProperty(name = SpringAIModelProperties.TEXT_EMBEDDING_MODEL, havingValue = SpringAIModels.GOOGLE_GEN_AI,
+		matchIfMissing = true)
 @EnableConfigurationProperties(GoogleGenAiEmbeddingConnectionProperties.class)
 public class GoogleGenAiEmbeddingConnectionAutoConfiguration {
 
