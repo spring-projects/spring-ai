@@ -17,6 +17,7 @@
 package org.springframework.ai.reader.pdf;
 
 import java.awt.Rectangle;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -107,9 +108,8 @@ public class ParagraphPdfDocumentReader implements DocumentReader {
 		Assert.isTrue(!config.hasPageRanges(),
 				"Page ranges are not supported by ParagraphPdfDocumentReader; use PagePdfDocumentReader instead.");
 
-		try {
-			PDFParser pdfParser = new PDFParser(
-					new org.apache.pdfbox.io.RandomAccessReadBuffer(pdfResource.getInputStream()));
+		try (InputStream inputStream = pdfResource.getInputStream()) {
+			PDFParser pdfParser = new PDFParser(new org.apache.pdfbox.io.RandomAccessReadBuffer(inputStream));
 			this.document = pdfParser.parse();
 
 			this.config = config;
