@@ -17,7 +17,6 @@
 package org.springframework.ai.model.mistralai.autoconfigure;
 
 import io.micrometer.observation.ObservationRegistry;
-import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.mistralai.MistralAiChatModel;
@@ -34,8 +33,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.retry.RetryTemplate;
-import org.springframework.util.Assert;
-import org.springframework.util.StringUtils;
 import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -49,6 +46,7 @@ import org.springframework.web.reactive.function.client.WebClient;
  * @author Ilayaperumal Gopinathan
  * @author Yanming Zhou
  * @author Sebastien Deleuze
+ * @author Nicolas Krier
  * @since 0.8.1
  */
 @AutoConfiguration
@@ -60,15 +58,13 @@ public class MistralAiChatAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public MistralAiChatModel mistralAiChatModel(MistralAiCommonProperties commonProperties,
+	MistralAiChatModel mistralAiChatModel(MistralAiCommonProperties commonProperties,
 			MistralAiChatProperties chatProperties, ObjectProvider<RestClient.Builder> restClientBuilderProvider,
 			ObjectProvider<WebClient.Builder> webClientBuilderProvider, ToolCallingManager toolCallingManager,
 			ObjectProvider<RetryTemplate> retryTemplate, ObjectProvider<ResponseErrorHandler> responseErrorHandler,
 			ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<ChatModelObservationConvention> observationConvention) {
-
-		var mistralAiApi = mistralAiApi(chatProperties.getApiKey(), commonProperties.getApiKey(),
-				chatProperties.getBaseUrl(), commonProperties.getBaseUrl(),
+		var mistralAiApi = mistralAiApi(commonProperties, chatProperties,
 				restClientBuilderProvider.getIfAvailable(RestClient::builder),
 				webClientBuilderProvider.getIfAvailable(WebClient::builder), responseErrorHandler);
 
@@ -85,19 +81,12 @@ public class MistralAiChatAutoConfiguration {
 		return chatModel;
 	}
 
-	private MistralAiApi mistralAiApi(@Nullable String apiKey, @Nullable String commonApiKey, @Nullable String baseUrl,
-			@Nullable String commonBaseUrl, RestClient.Builder restClientBuilder, WebClient.Builder webClientBuilder,
-			ObjectProvider<ResponseErrorHandler> responseErrorHandler) {
-
-		var resolvedApiKey = StringUtils.hasText(apiKey) ? apiKey : commonApiKey;
-		var resoledBaseUrl = StringUtils.hasText(baseUrl) ? baseUrl : commonBaseUrl;
-
-		Assert.hasText(resolvedApiKey, "Mistral API key must be set");
-		Assert.hasText(resoledBaseUrl, "Mistral base URL must be set");
-
+	private static MistralAiApi mistralAiApi(MistralAiCommonProperties commonProperties,
+			MistralAiChatProperties chatProperties, RestClient.Builder restClientBuilder,
+			WebClient.Builder webClientBuilder, ObjectProvider<ResponseErrorHandler> responseErrorHandler) {
 		return MistralAiApi.builder()
-			.baseUrl(resoledBaseUrl)
-			.apiKey(resolvedApiKey)
+			.baseUrl(chatProperties.getBaseUrlOrDefaultFrom(commonProperties))
+			.apiKey(chatProperties.getApiKeyOrDefaultFrom(commonProperties))
 			.restClientBuilder(restClientBuilder)
 			.webClientBuilder(webClientBuilder)
 			.responseErrorHandler(responseErrorHandler.getIfAvailable(() -> RetryUtils.DEFAULT_RESPONSE_ERROR_HANDLER))
