@@ -173,6 +173,27 @@ Integer values are returned as `Long` and decimal values as `Double`.
 Code that casts integer metadata fields directly to `Double` should be
 updated to use `Long` or the `Number` supertype instead.
 
+=== Scalar metadata fields
+
+By default, Milvus stores document metadata in a JSON field and filter expressions reference that JSON field.
+You can opt in to storing selected metadata keys as Milvus scalar fields when you want those keys to be filtered as top-level Milvus fields.
+The original JSON metadata field is still stored and used to reconstruct returned `Document` metadata.
+When Spring AI creates a collection, configured metadata keys are added as scalar fields.
+Generated filters reference configured keys as scalar fields, while unconfigured keys continue to use the JSON metadata field.
+Scalar fields created by Spring AI are nullable, so documents may omit a configured metadata key.
+
+NOTE: Existing collections must already contain matching scalar fields, and existing documents must have values in those fields to match scalar filters.
+
+[source,java]
+----
+MilvusVectorStore vectorStore = MilvusVectorStore.builder(milvusClient, embeddingModel)
+    .metadataFields(
+        MilvusVectorStore.MetadataField.int64("year"),
+        MilvusVectorStore.MetadataField.text("category"))
+    .initializeSchema(true)
+    .build();
+----
+
 == Using MilvusSearchRequest
 
 MilvusSearchRequest extends SearchRequest, allowing you to use Milvus-specific search parameters such as native expressions and search parameter JSON.
