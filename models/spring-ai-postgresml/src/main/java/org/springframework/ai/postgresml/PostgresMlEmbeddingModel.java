@@ -107,7 +107,20 @@ public class PostgresMlEmbeddingModel extends AbstractEmbeddingModel implements 
 
 	@Override
 	public float[] embed(Document document) {
-		return this.embed(document.getFormattedContent(this.options.getMetadataMode()));
+		Assert.notNull(document, "Document must not be null");
+		return this.embed(document, this.options);
+	}
+
+	public float[] embed(Document document, EmbeddingOptions options) {
+		Assert.notNull(document, "Document must not be null");
+		Assert.notNull(options, "PostgresMlEmbeddingOptions must not be null");
+		if (!(options instanceof PostgresMlEmbeddingOptions runtimeOptions)) {
+			throw new IllegalArgumentException(
+					String.format("Expected options of type %s, but got %s", PostgresMlEmbeddingOptions.class.getName(),
+							options == null ? "null" : options.getClass().getName()));
+		}
+
+		return this.embed(document.getFormattedContent(runtimeOptions.getMetadataMode()), runtimeOptions);
 	}
 
 	@Override

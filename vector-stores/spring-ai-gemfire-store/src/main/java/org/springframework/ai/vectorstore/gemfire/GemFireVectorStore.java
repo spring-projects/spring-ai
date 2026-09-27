@@ -66,17 +66,6 @@ import org.springframework.web.util.UriComponentsBuilder;
  */
 public class GemFireVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
-	private static final Log logger = LogFactory.getLog(GemFireVectorStore.class);
-
-	private static final String DEFAULT_URI = "http{ssl}://{host}:{port}/gemfire-vectordb/v1/indexes";
-
-	private static final String EMBEDDINGS = "/embeddings";
-
-	// Query Defaults
-	private static final String QUERY = "/query";
-
-	private static final String DOCUMENT_FIELD = "document";
-
 	// Create Index DEFAULT Values
 	public static final String DEFAULT_HOST = "localhost";
 
@@ -88,8 +77,6 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 
 	public static final int DEFAULT_BEAM_WIDTH = 100;
 
-	private static final int UPPER_BOUND_MAX_CONNECTIONS = 512;
-
 	public static final int DEFAULT_MAX_CONNECTIONS = 16;
 
 	public static final String DEFAULT_SIMILARITY_FUNCTION = "COSINE";
@@ -99,6 +86,19 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 	public static final int DEFAULT_BUCKETS = 0;
 
 	public static final boolean DEFAULT_SSL_ENABLED = false;
+
+	private static final Log logger = LogFactory.getLog(GemFireVectorStore.class);
+
+	private static final String DEFAULT_URI = "http{ssl}://{host}:{port}/gemfire-vectordb/v1/indexes";
+
+	private static final String EMBEDDINGS = "/embeddings";
+
+	// Query Defaults
+	private static final String QUERY = "/query";
+
+	private static final String DOCUMENT_FIELD = "document";
+
+	private static final int UPPER_BOUND_MAX_CONNECTIONS = 512;
 
 	private final WebClient client;
 
@@ -226,8 +226,17 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 
 	@Override
 	public void doAdd(List<Document> documents) {
-		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
-				this.batchingStrategy);
+		Assert.notNull(documents, "The document list should not be null.");
+		this.doAdd(documents, EmbeddingOptions.builder().build());
+	}
+
+	@Override
+	public void doAdd(List<Document> documents, EmbeddingOptions options) {
+		Assert.notNull(documents, "The document list should not be null.");
+		Assert.notNull(options, "The embedding Options should not be null.");
+
+		List<float[]> embeddings = this.embeddingModel.embed(documents, options, this.batchingStrategy);
+
 		UploadRequest upload = new UploadRequest(IntStream.range(0, documents.size()).mapToObj(i -> {
 			Document document = documents.get(i);
 			return new UploadRequest.Embedding(document.getId(), embeddings.get(i), DOCUMENT_FIELD,
@@ -416,13 +425,13 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 
 		private final List<Embedding> embeddings;
 
-		public List<Embedding> getEmbeddings() {
-			return this.embeddings;
-		}
-
 		@JsonCreator
 		UploadRequest(@JsonProperty("embeddings") List<Embedding> embeddings) {
 			this.embeddings = embeddings;
+		}
+
+		public List<Embedding> getEmbeddings() {
+			return this.embeddings;
 		}
 
 		private static final class Embedding {
@@ -511,8 +520,8 @@ public class GemFireVectorStore extends AbstractObservationVectorStore implement
 	}
 
 	@SuppressWarnings("NullAway.Init") // fields late-initialized by deserialization from
-										// an
-										// http body
+	// an
+	// http body
 	private static final class QueryResponse {
 
 		private String key;

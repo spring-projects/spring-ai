@@ -146,8 +146,6 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 
 	public static final int MAX_DOCUMENT_BATCH_SIZE = 10_000;
 
-	private static final Log logger = LogFactory.getLog(MariaDBVectorStore.class);
-
 	public static final String DEFAULT_TABLE_NAME = "vector_store";
 
 	public static final String DEFAULT_COLUMN_EMBEDDING = "embedding";
@@ -157,6 +155,8 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 	public static final String DEFAULT_COLUMN_ID = "id";
 
 	public static final String DEFAULT_COLUMN_CONTENT = "content";
+
+	private static final Log logger = LogFactory.getLog(MariaDBVectorStore.class);
 
 	private static final Map<MariaDBDistanceType, VectorStoreSimilarityMetric> SIMILARITY_TYPE_MAPPING = Map.of(
 			MariaDBDistanceType.COSINE, VectorStoreSimilarityMetric.COSINE, MariaDBDistanceType.EUCLIDEAN,
@@ -251,9 +251,16 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 
 	@Override
 	public void doAdd(List<Document> documents) {
+		Assert.notNull(documents, "The document list should not be null.");
+		this.doAdd(documents, EmbeddingOptions.builder().build());
+	}
+
+	@Override
+	public void doAdd(List<Document> documents, EmbeddingOptions options) {
+		Assert.notNull(documents, "The document list should not be null.");
+		Assert.notNull(options, "The embedding Options should not be null.");
 		// Batch the documents based on the batching strategy
-		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
-				this.batchingStrategy);
+		List<float[]> embeddings = this.embeddingModel.embed(documents, options, this.batchingStrategy);
 
 		List<List<MariaDBDocument>> batchedDocuments = batchDocuments(documents, embeddings);
 		batchedDocuments.forEach(this::insertOrUpdateBatch);
@@ -526,6 +533,8 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 	 */
 	public static final class MariaDBBuilder extends AbstractVectorStoreBuilder<MariaDBBuilder> {
 
+		private final JdbcTemplate jdbcTemplate;
+
 		private String contentFieldName = DEFAULT_COLUMN_CONTENT;
 
 		private String embeddingFieldName = DEFAULT_COLUMN_EMBEDDING;
@@ -533,8 +542,6 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 		private String idFieldName = DEFAULT_COLUMN_ID;
 
 		private String metadataFieldName = DEFAULT_COLUMN_METADATA;
-
-		private final JdbcTemplate jdbcTemplate;
 
 		private @Nullable String schemaName;
 

@@ -75,7 +75,15 @@ public class BedrockCohereEmbeddingModel extends AbstractEmbeddingModel {
 	public float[] embed(Document document) {
 		String text = document.getText();
 		Assert.state(text != null, "Document text must not be null");
-		return embed(text);
+		return embed(text, this.options);
+	}
+
+	@Override
+	public float[] embed(Document document, EmbeddingOptions options) {
+		String text = document.getText();
+		Assert.state(text != null, "Document text must not be null");
+		Assert.notNull(options, "Embedding options must not be null");
+		return embed(text, options);
 	}
 
 	@Override
@@ -103,13 +111,13 @@ public class BedrockCohereEmbeddingModel extends AbstractEmbeddingModel {
 			// Handle truncation based on option
 			return switch (truncate) {
 				case END -> text.substring(0, COHERE_MAX_CHARACTERS); // Keep first 2048
-																		// chars
+				// chars
 				case START -> text.substring(text.length() - COHERE_MAX_CHARACTERS); // Keep
-																						// last
-																						// 2048
-																						// chars
+				// last
+				// 2048
+				// chars
 				default -> text.substring(0, COHERE_MAX_CHARACTERS); // Default to END
-																		// behavior
+				// behavior
 			};
 		}).toList();
 

@@ -64,6 +64,8 @@ import org.springframework.util.CollectionUtils;
  */
 public class ChromaVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
+	private static final Log logger = LogFactory.getLog(ChromaVectorStore.class);
+
 	private final ChromaApi chromaApi;
 
 	private final String tenantName;
@@ -74,15 +76,13 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 
 	private final FilterExpressionConverter filterExpressionConverter;
 
-	private @Nullable String collectionId;
-
 	private final boolean initializeSchema;
 
 	private final JsonMapper jsonMapper;
 
-	private boolean initialized = false;
+	private @Nullable String collectionId;
 
-	private static final Log logger = LogFactory.getLog(ChromaVectorStore.class);
+	private boolean initialized = false;
 
 	/**
 	 * @param builder {@link VectorStore.Builder} for chroma vector store
@@ -145,7 +145,15 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 
 	@Override
 	public void doAdd(List<Document> documents) {
-		Assert.notNull(documents, "Documents must not be null");
+		Assert.notNull(documents, "The document list should not be null.");
+		this.doAdd(documents, EmbeddingOptions.builder().build());
+	}
+
+	@Override
+	public void doAdd(List<Document> documents, EmbeddingOptions options) {
+		Assert.notNull(documents, "The document list should not be null.");
+		Assert.notNull(options, "The embedding Options should not be null.");
+
 		if (CollectionUtils.isEmpty(documents)) {
 			return;
 		}
@@ -155,8 +163,7 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 		List<String> contents = new ArrayList<>();
 		List<float[]> embeddings = new ArrayList<>();
 
-		List<float[]> documentEmbeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
-				this.batchingStrategy);
+		List<float[]> documentEmbeddings = this.embeddingModel.embed(documents, options, this.batchingStrategy);
 
 		for (int i = 0; i < documents.size(); i++) {
 			Document document = documents.get(i);

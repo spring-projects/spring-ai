@@ -110,6 +110,11 @@ public class TransformersEmbeddingModel extends AbstractEmbeddingModel implement
 	 */
 	private final ObservationRegistry observationRegistry;
 
+	/**
+	 * ONNX runtime configurations: https://onnxruntime.ai/docs/get-started/with-java.html
+	 */
+	private final OrtEnvironment environment = OrtEnvironment.getEnvironment();
+
 	public Map<String, String> tokenizerOptions = Map.of();
 
 	private Resource tokenizerResource = toResource(DEFAULT_ONNX_TOKENIZER_URI);
@@ -124,11 +129,6 @@ public class TransformersEmbeddingModel extends AbstractEmbeddingModel implement
 	 */
 	@SuppressWarnings("NullAway.Init") // initialized in afterPropertiesSet()
 	private HuggingFaceTokenizer tokenizer;
-
-	/**
-	 * ONNX runtime configurations: https://onnxruntime.ai/docs/get-started/with-java.html
-	 */
-	private final OrtEnvironment environment = OrtEnvironment.getEnvironment();
 
 	/**
 	 * Runtime session that wraps the ONNX generative and enables inference calls.
@@ -291,6 +291,12 @@ public class TransformersEmbeddingModel extends AbstractEmbeddingModel implement
 	@Override
 	public float[] embed(Document document) {
 		return this.embed(document.getFormattedContent(this.metadataMode));
+	}
+
+	public float[] embed(Document document, EmbeddingOptions options) {
+		Assert.notNull(document, "Document must not be null");
+		Assert.notNull(options, "EmbeddingOptions must not be null");
+		return this.embed(document.getFormattedContent(this.metadataMode), options);
 	}
 
 	@Override
