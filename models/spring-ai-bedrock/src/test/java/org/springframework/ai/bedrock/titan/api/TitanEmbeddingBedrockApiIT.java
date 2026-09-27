@@ -19,7 +19,9 @@ package org.springframework.ai.bedrock.titan.api;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Base64;
+import java.util.stream.IntStream;
 
+import org.assertj.core.data.Offset;
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
@@ -70,6 +72,31 @@ public class TitanEmbeddingBedrockApiIT {
 		assertThat(response).isNotNull();
 		assertThat(response.inputTextTokenCount()).isEqualTo(7);
 		assertThat(response.embedding()).hasSize(1024);
+	}
+
+	@Test
+	public void embedTextV2WithDimensionsAndNormalize() {
+
+		TitanEmbeddingBedrockApi titanEmbedApi = new TitanEmbeddingBedrockApi(
+				TitanEmbeddingModel.TITAN_EMBED_TEXT_V2.id(), EnvironmentVariableCredentialsProvider.create(),
+				Region.US_EAST_1.id(), new JsonMapper(), Duration.ofMinutes(2));
+
+		TitanEmbeddingRequest request = TitanEmbeddingRequest.builder()
+			.inputText("I like to eat apples.")
+			.dimensions(512)
+			.normalize(false)
+			.build();
+
+		TitanEmbeddingResponse response = titanEmbedApi.embedding(request);
+
+		assertThat(response).isNotNull();
+		assertThat(response.inputTextTokenCount()).isEqualTo(7);
+		assertThat(response.embedding()).hasSize(512);
+
+		double l2Norm = Math.sqrt(IntStream.range(0, response.embedding().length)
+			.mapToDouble(i -> response.embedding()[i] * response.embedding()[i])
+			.sum());
+		assertThat(l2Norm).isNotCloseTo(1.0, Offset.offset(0.001));
 	}
 
 	@Test
