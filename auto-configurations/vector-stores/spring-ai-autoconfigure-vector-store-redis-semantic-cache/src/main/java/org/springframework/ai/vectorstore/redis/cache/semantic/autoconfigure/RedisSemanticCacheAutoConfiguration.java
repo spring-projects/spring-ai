@@ -75,40 +75,18 @@ public class RedisSemanticCacheAutoConfiguration {
 	}
 
 	/**
-	 * Creates a RedisClient client for Redis connections, honoring the SSL, password,
-	 * client name, and timeout settings from the {@link JedisConnectionFactory}.
-	 * @param jedisConnectionFactory the Jedis connection factory
-	 * @return the RedisClient client
-	 */
-	@Bean
-	@ConditionalOnMissingBean
-	@ConditionalOnBean(EmbeddingModel.class)
-	public RedisClient jedisClient(final JedisConnectionFactory jedisConnectionFactory) {
-		String host = jedisConnectionFactory.getHostName();
-		int port = jedisConnectionFactory.getPort();
-
-		JedisClientConfig clientConfig = DefaultJedisClientConfig.builder()
-			.ssl(jedisConnectionFactory.isUseSsl())
-			.clientName(jedisConnectionFactory.getClientName())
-			.timeoutMillis(jedisConnectionFactory.getTimeout())
-			.password(jedisConnectionFactory.getPassword())
-			.build();
-
-		return RedisClient.builder().hostAndPort(host, port).clientConfig(clientConfig).build();
-	}
-
-	/**
 	 * Creates the semantic cache instance.
-	 * @param jedisClient the Jedis client
 	 * @param embeddingModel the embedding model
 	 * @param properties the semantic cache properties
+	 * @param jedisConnectionFactory the Jedis connection factory
 	 * @return the configured semantic cache
 	 */
 	@Bean
 	@ConditionalOnMissingBean
 	@ConditionalOnBean(EmbeddingModel.class)
-	public SemanticCache semanticCache(final RedisClient jedisClient, final EmbeddingModel embeddingModel,
-			final RedisSemanticCacheProperties properties) {
+	public SemanticCache semanticCache(final EmbeddingModel embeddingModel,
+			final RedisSemanticCacheProperties properties, final JedisConnectionFactory jedisConnectionFactory) {
+		RedisClient jedisClient = jedisClient(jedisConnectionFactory);
 		DefaultSemanticCache.Builder builder = DefaultSemanticCache.builder()
 			.jedisClient(jedisClient)
 			.embeddingModel(embeddingModel);
@@ -136,6 +114,20 @@ public class RedisSemanticCacheAutoConfiguration {
 	@ConditionalOnBean(SemanticCache.class)
 	public SemanticCacheAdvisor semanticCacheAdvisor(final SemanticCache semanticCache) {
 		return new SemanticCacheAdvisor(semanticCache);
+	}
+
+	private RedisClient jedisClient(final JedisConnectionFactory jedisConnectionFactory) {
+		String host = jedisConnectionFactory.getHostName();
+		int port = jedisConnectionFactory.getPort();
+
+		JedisClientConfig clientConfig = DefaultJedisClientConfig.builder()
+			.ssl(jedisConnectionFactory.isUseSsl())
+			.clientName(jedisConnectionFactory.getClientName())
+			.timeoutMillis(jedisConnectionFactory.getTimeout())
+			.password(jedisConnectionFactory.getPassword())
+			.build();
+
+		return RedisClient.builder().hostAndPort(host, port).clientConfig(clientConfig).build();
 	}
 
 }
