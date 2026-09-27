@@ -29,9 +29,11 @@
 		<module>spring-ai-tool-search-tool</module>
 		<module>spring-ai-vector-store</module>
 
+		<module>advisors/spring-ai-governance-advisor</module>
 		<module>advisors/spring-ai-tool-search-advisor</module>
 		<module>advisors/spring-ai-vector-store-advisor</module>
 
+		<module>auto-configurations/advisors/spring-ai-autoconfigure-governance-advisor</module>
 		<module>auto-configurations/advisors/spring-ai-autoconfigure-tool-search-advisor</module>
 
 		<module>auto-configurations/common/spring-ai-autoconfigure-retry</module>
