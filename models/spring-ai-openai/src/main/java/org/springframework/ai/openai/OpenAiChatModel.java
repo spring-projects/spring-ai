@@ -35,10 +35,22 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openai.client.OpenAIClient;
 import com.openai.client.OpenAIClientAsync;
+import com.openai.core.JsonField;
 import com.openai.core.JsonValue;
 import com.openai.core.RequestOptions;
 import com.openai.core.http.AsyncStreamResponse;
+import com.openai.core.http.Headers;
+import com.openai.errors.BadRequestException;
+import com.openai.errors.InternalServerException;
+import com.openai.errors.NotFoundException;
 import com.openai.errors.OpenAIInvalidDataException;
+import com.openai.errors.OpenAIServiceException;
+import com.openai.errors.PermissionDeniedException;
+import com.openai.errors.RateLimitException;
+import com.openai.errors.UnauthorizedException;
+import com.openai.errors.UnexpectedStatusCodeException;
+import com.openai.errors.UnprocessableEntityException;
+import com.openai.models.ErrorObject;
 import com.openai.models.FunctionDefinition;
 import com.openai.models.FunctionParameters;
 import com.openai.models.ReasoningEffort;
@@ -222,6 +234,8 @@ public final class OpenAiChatModel implements ChatModel {
 
 				ChatCompletion chatCompletion = this.openAiClient.chat().completions().create(request, requestOptions);
 
+				throwIfErrorResponse(chatCompletion);
+
 				List<ChatCompletion.Choice> choices = chatCompletion.choices();
 				if (choices.isEmpty()) {
 					if (logger.isWarnEnabled()) {
@@ -262,6 +276,62 @@ public final class OpenAiChatModel implements ChatModel {
 		Prompt requestPrompt = buildRequestPrompt(prompt);
 		verifyPromptChatOptions(requestPrompt);
 		return internalStream(requestPrompt);
+	}
+
+	/**
+	 * Some OpenAI API compatible providers, such as OpenRouter, report upstream failures
+	 * with an HTTP 200 response whose body carries an "error" object instead of
+	 * "choices". Accessing the missing "choices" field would fail with a generic
+	 * {@link OpenAIInvalidDataException}, so surface the provider error as the
+	 * corresponding openai-java service exception instead.
+	 * @param chatCompletion the chat completion returned by the provider
+	 */
+	static void throwIfErrorResponse(ChatCompletion chatCompletion) {
+		if (!chatCompletion._choices().isMissing()) {
+			return;
+		}
+		JsonValue error = chatCompletion._additionalProperties().get("error");
+		if (error == null || error.isMissing() || error.isNull()) {
+			return;
+		}
+		Optional<Map<String, JsonValue>> errorFields = error.asObject();
+		String message = errorFields.flatMap(fields -> Optional.ofNullable((JsonField<?>) fields.get("message")))
+			.flatMap(JsonField::asString)
+			.orElseGet(error::toString);
+		int statusCode = errorFields.flatMap(fields -> Optional.ofNullable((JsonField<?>) fields.get("code")))
+			.flatMap(JsonField::asNumber)
+			.map(Number::intValue)
+			.orElse(0);
+		ErrorObject errorObject = ErrorObject.builder()
+			.code(statusCode > 0 ? Optional.of(String.valueOf(statusCode)) : Optional.empty())
+			.message(message)
+			.param(Optional.empty())
+			.type("error")
+			.build();
+		throw buildServiceException(statusCode, errorObject);
+	}
+
+	private static OpenAIServiceException buildServiceException(int statusCode, ErrorObject errorObject) {
+		Headers headers = Headers.builder().build();
+		return switch (statusCode) {
+			case 400 -> BadRequestException.builder().headers(headers).error(errorObject).build();
+			case 401 -> UnauthorizedException.builder().headers(headers).error(errorObject).build();
+			case 403 -> PermissionDeniedException.builder().headers(headers).error(errorObject).build();
+			case 404 -> NotFoundException.builder().headers(headers).error(errorObject).build();
+			case 422 -> UnprocessableEntityException.builder().headers(headers).error(errorObject).build();
+			case 429 -> RateLimitException.builder().headers(headers).error(errorObject).build();
+			default -> (statusCode >= 500 && statusCode < 600)
+					? InternalServerException.builder()
+						.statusCode(statusCode)
+						.headers(headers)
+						.error(errorObject)
+						.build()
+					: UnexpectedStatusCodeException.builder()
+						.statusCode(statusCode)
+						.headers(headers)
+						.error(errorObject)
+						.build();
+		};
 	}
 
 	/**
