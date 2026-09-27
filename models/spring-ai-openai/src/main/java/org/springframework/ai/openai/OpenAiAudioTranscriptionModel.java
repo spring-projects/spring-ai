@@ -223,6 +223,9 @@ public final class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 		if (!CollectionUtils.isEmpty(options.getKnownSpeakerReferences())) {
 			builder.knownSpeakerReferences(options.getKnownSpeakerReferences());
 		}
+		if (!CollectionUtils.isEmpty(options.getCustomHeaders())) {
+			options.getCustomHeaders().forEach(builder::putAdditionalHeader);
+		}
 		return builder.build();
 	}
 

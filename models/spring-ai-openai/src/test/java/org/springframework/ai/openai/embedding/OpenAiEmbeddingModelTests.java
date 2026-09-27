@@ -34,6 +34,7 @@ import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.OpenAiEmbeddingOptions;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
@@ -89,6 +90,30 @@ class OpenAiEmbeddingModelTests {
 		// Gemini's OpenAI-compatible embeddings responses may omit usage; no NPE should
 		// be thrown
 		assertThat(response.getMetadata().getUsage().getPromptTokens()).isNotNull();
+	}
+
+	@Test
+	void usageCountsBeyondIntRangeFailClearlyInsteadOfBareArithmeticException() {
+		OpenAIClient mockClient = mock(OpenAIClient.class, RETURNS_DEEP_STUBS);
+		// An out-of-range usage count means the upstream response can't be trusted, so
+		// it should fail clearly instead of propagating a bare
+		// ArithmeticException("integer overflow").
+		long promptTokens = Integer.MAX_VALUE + 1L;
+		CreateEmbeddingResponse response = CreateEmbeddingResponse.builder()
+			.data(List.of())
+			.model("test-model")
+			.usage(CreateEmbeddingResponse.Usage.builder().promptTokens(promptTokens).totalTokens(promptTokens).build())
+			.build();
+		when(mockClient.embeddings().create(any(EmbeddingCreateParams.class), any(RequestOptions.class)))
+			.thenReturn(response);
+
+		OpenAiEmbeddingModel model = OpenAiEmbeddingModel.builder().openAiClient(mockClient).build();
+		EmbeddingRequest request = new EmbeddingRequest(List.of("hi"), OpenAiEmbeddingOptions.builder().build());
+
+		assertThatThrownBy(() -> model.call(request)).isInstanceOf(IllegalStateException.class)
+			.hasMessageContaining("promptTokens")
+			.hasMessageContaining(String.valueOf(promptTokens))
+			.hasCauseInstanceOf(ArithmeticException.class);
 	}
 
 }
