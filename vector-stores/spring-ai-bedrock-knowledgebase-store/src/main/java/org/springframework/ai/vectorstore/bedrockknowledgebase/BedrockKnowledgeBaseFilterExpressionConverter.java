@@ -84,7 +84,7 @@ public class BedrockKnowledgeBaseFilterExpressionConverter {
 	}
 
 	private RetrievalFilter convertNot(final Expression expression) {
-		Filter.Operand negated = FilterHelper.negate(expression);
+		Filter.Operand negated = FilterHelper.negate(expression.left());
 		if (negated instanceof Expression negatedExpr) {
 			return convert(negatedExpr);
 		}
