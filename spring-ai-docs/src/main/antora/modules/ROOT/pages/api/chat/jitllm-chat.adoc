@@ -27,7 +27,7 @@ On JDK 21, replace the former with the latter and run with `--enable-preview`:
 <dependency>
     <groupId>io.github.beehive-lab</groupId>
     <artifactId>jitllm</artifactId>
-    <version>1.0.1-jdk21</version>
+    <version>1.0.2-jdk21</version>
 </dependency>
 ----
 
