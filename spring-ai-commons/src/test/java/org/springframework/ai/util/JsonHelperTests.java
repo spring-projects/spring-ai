@@ -175,6 +175,41 @@ class JsonHelperTests {
 	}
 
 	@Test
+	void fromJsonStringToJsonShouldForwardValidJson() {
+		assertThat(this.jsonHelper.toJson("""
+				{"status":"ok"}
+				""", true)).isEqualToIgnoringWhitespace("""
+				{"status":"ok"}
+				""");
+		assertThat(this.jsonHelper.toJson("""
+				["ok"]
+				""", true)).isEqualToIgnoringWhitespace("""
+				["ok"]
+				""");
+	}
+
+	@Test
+	void fromStringWithJsonNumberPrefixToJsonShouldNotForwardAsJson() {
+		var json = this.jsonHelper.toJson("22 console logs uploaded", true);
+
+		assertThat(json).isEqualTo("\"22 console logs uploaded\"");
+	}
+
+	@Test
+	void fromStringWithJsonBooleanPrefixToJsonShouldNotForwardAsJson() {
+		var json = this.jsonHelper.toJson("true story", true);
+
+		assertThat(json).isEqualTo("\"true story\"");
+	}
+
+	@Test
+	void fromStringWithJsonNullPrefixToJsonShouldNotForwardAsJson() {
+		var json = this.jsonHelper.toJson("null value", true);
+
+		assertThat(json).isEqualTo("\"null value\"");
+	}
+
+	@Test
 	void fromObjectToString() {
 		var value = this.jsonHelper.convertToTypedObject("John", String.class);
 		Assertions.assertThat(value).isOfAnyClassIn(String.class);
