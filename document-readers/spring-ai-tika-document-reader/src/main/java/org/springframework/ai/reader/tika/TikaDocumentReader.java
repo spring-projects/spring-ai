@@ -21,6 +21,7 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Objects;
 
+import org.apache.tika.io.TikaInputStream;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.parser.AutoDetectParser;
 import org.apache.tika.parser.ParseContext;
@@ -143,7 +144,8 @@ public class TikaDocumentReader implements DocumentReader {
 	 */
 	@Override
 	public List<Document> get() {
-		try (InputStream stream = this.resource.getInputStream()) {
+		try (InputStream inputStream = this.resource.getInputStream();
+				TikaInputStream stream = TikaInputStream.get(inputStream)) {
 			this.parser.parse(stream, this.handler, this.metadata, this.context);
 			return List.of(toDocument(this.handler.toString()));
 		}
