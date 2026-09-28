@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.databind.annotation.JsonSerialize;
 
 /**
  * Default implementation of the {@link Usage} interface.
@@ -179,6 +180,7 @@ public class DefaultUsage implements Usage {
 	@Override
 	@JsonProperty("nativeUsage")
 	@JsonInclude(JsonInclude.Include.NON_NULL)
+	@JsonSerialize(using = NativeUsageSerializer.class)
 	public @Nullable Object getNativeUsage() {
 		return this.nativeUsage;
 	}

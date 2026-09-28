@@ -758,6 +758,54 @@ class OpenAiChatModelTests {
 	}
 
 	@Test
+	void usageCountsBeyondIntRangeFailClearlyInsteadOfBareArithmeticException() {
+		ChatService chatService = mock(ChatService.class);
+		ChatCompletionService chatCompletionService = mock(ChatCompletionService.class);
+		when(this.openAiClient.chat()).thenReturn(chatService);
+		when(chatService.completions()).thenReturn(chatCompletionService);
+		// A hostile or misbehaving OpenAI-compatible endpoint could return usage counts
+		// beyond Integer range. Such a response can't be trusted, so it should fail
+		// clearly instead of silently truncating the count into a plausible-looking but
+		// wrong number, or propagating a bare ArithmeticException("integer overflow").
+		long promptTokens = Integer.MAX_VALUE + 1L;
+		when(chatCompletionService.create(any(ChatCompletionCreateParams.class), any(RequestOptions.class)))
+			.thenReturn(ChatCompletion.builder()
+				.id("test-id")
+				.created(1777799928)
+				.model("test-model")
+				.usage(CompletionUsage.builder()
+					.promptTokens(promptTokens)
+					.completionTokens(0)
+					.totalTokens(promptTokens)
+					.build())
+				.addChoice(ChatCompletion.Choice.builder()
+					.finishReason(ChatCompletion.Choice.FinishReason.STOP)
+					.index(0)
+					.logprobs(Optional.empty())
+					.message(ChatCompletionMessage.builder()
+						.content("hello")
+						.refusal(Optional.empty())
+						.role(JsonValue.from("assistant"))
+						.annotations(List.of())
+						.toolCalls(List.of())
+						.build())
+					.build())
+				.build());
+
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		assertThatThrownBy(() -> chatModel.call(new Prompt("hi", options))).isInstanceOf(IllegalStateException.class)
+			.hasMessageContaining("promptTokens")
+			.hasMessageContaining(String.valueOf(promptTokens))
+			.hasCauseInstanceOf(ArithmeticException.class);
+	}
+
+	@Test
 	void createdFieldPassedThroughInMetadata() {
 		ChatService chatService = mock(ChatService.class);
 		ChatCompletionService chatCompletionService = mock(ChatCompletionService.class);

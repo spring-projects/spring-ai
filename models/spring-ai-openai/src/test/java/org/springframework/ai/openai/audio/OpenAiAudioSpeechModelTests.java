@@ -238,7 +238,9 @@ class OpenAiAudioSpeechModelTests {
 		verify(speechService).create(paramsCaptor.capture(), any(RequestOptions.class));
 		assertThat(paramsCaptor.getValue().streamFormat()).contains(SpeechCreateParams.StreamFormat.AUDIO);
 
-		verify(httpResponse).close();
+		// Flux.generate signals the terminal event downstream before running its state
+		// cleanup on the stream scheduler thread, so close() may lag behind block().
+		verify(httpResponse, timeout(5000)).close();
 	}
 
 	@Test
@@ -309,7 +311,9 @@ class OpenAiAudioSpeechModelTests {
 		assertThatThrownBy(() -> model.stream(prompt).collectList().block(Duration.ofSeconds(5)))
 			.hasCauseInstanceOf(SocketTimeoutException.class);
 
-		verify(httpResponse).close();
+		// Flux.generate signals the terminal event downstream before running its state
+		// cleanup on the stream scheduler thread, so close() may lag behind block().
+		verify(httpResponse, timeout(5000)).close();
 	}
 
 	@Test
