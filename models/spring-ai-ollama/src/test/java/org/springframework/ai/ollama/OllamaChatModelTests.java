@@ -21,12 +21,15 @@ import java.time.Instant;
 import java.util.List;
 
 import io.micrometer.observation.ObservationRegistry;
+import okhttp3.mockwebserver.MockResponse;
+import okhttp3.mockwebserver.MockWebServer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -65,6 +68,11 @@ class OllamaChatModelTests {
 	@Mock
 	OllamaApi ollamaApi;
 
+	private static final String ERROR_MID_STREAM = """
+			{"model":"mistral","created_at":"2026-01-01T00:00:00Z","message":{"role":"assistant","content":"Hel"},"done":false}
+			{"error":"unable to process image"}
+			""";
+
 	@Test
 	void buildOllamaChatModelWithConstructor() {
 		ChatModel chatModel = new OllamaChatModel(this.ollamaApi,
@@ -89,6 +97,74 @@ class OllamaChatModelTests {
 					.modelManagementOptions(null)
 					.build());
 		assertEquals("modelManagementOptions must not be null", exception.getMessage());
+	}
+
+	@Test
+	void streamWhenServerReportsAnErrorMidStreamShouldNotFail() throws Exception {
+		try (MockWebServer server = new MockWebServer()) {
+			server.enqueue(new MockResponse().setResponseCode(200)
+				.setHeader("Content-Type", "application/x-ndjson")
+				.setBody(ERROR_MID_STREAM));
+			server.start();
+
+			ChatModel chatModel = OllamaChatModel.builder()
+				.ollamaApi(OllamaApi.builder().baseUrl(server.url("/").toString()).build())
+				.options(OllamaChatOptions.builder().model(OllamaModel.MISTRAL).build())
+				.build();
+
+			List<ChatResponse> responses = chatModel.stream(new Prompt(new UserMessage("Hello"))).collectList().block();
+
+			assertThat(responses).hasSize(2);
+			assertThat(responses.get(0).getResult().getOutput().getText()).isEqualTo("Hel");
+			assertThat(responses.get(1).getResult().getOutput().getText()).isEmpty();
+		}
+	}
+
+	@Test
+	void streamWhenChunkHasNoMessageShouldNotFail() {
+		// A chunk that reports an error instead of a chat message deserializes into a
+		// response with every field unset.
+		OllamaApi.ChatResponse errorChunk = new OllamaApi.ChatResponse(null, null, null, null, null, null, null, null,
+				null, null, null);
+		OllamaApi.ChatResponse doneChunk = new OllamaApi.ChatResponse("model", Instant.now(),
+				OllamaApi.Message.builder(OllamaApi.Message.Role.ASSISTANT).content("Hello").build(), "stop", true,
+				null, null, null, null, null, null);
+		when(this.ollamaApi.streamingChat(any())).thenReturn(Flux.just(errorChunk, doneChunk));
+
+		ChatModel chatModel = OllamaChatModel.builder()
+			.ollamaApi(this.ollamaApi)
+			.options(OllamaChatOptions.builder().model(OllamaModel.MISTRAL).build())
+			.build();
+
+		List<ChatResponse> responses = chatModel.stream(new Prompt(new UserMessage("Hello"))).collectList().block();
+
+		assertThat(responses).hasSize(2);
+		AssistantMessage errorMessage = responses.get(0).getResult().getOutput();
+		assertThat(errorMessage.getText()).isEmpty();
+		assertThat(errorMessage.getToolCalls()).isEmpty();
+		assertThat(errorMessage.getMetadata()).doesNotContainKey("thinking");
+		assertThat(responses.get(0).getMetadata().getModel()).isEmpty();
+		assertThat(responses.get(1).getResult().getOutput().getText()).isEqualTo("Hello");
+	}
+
+	@Test
+	void callWhenResponseHasNoMessageShouldNotFail() {
+		OllamaApi.ChatResponse response = new OllamaApi.ChatResponse(null, null, null, null, null, null, null, null,
+				null, null, null);
+		when(this.ollamaApi.chat(any())).thenReturn(response);
+
+		ChatModel chatModel = OllamaChatModel.builder()
+			.ollamaApi(this.ollamaApi)
+			.options(OllamaChatOptions.builder().model(OllamaModel.MISTRAL).build())
+			.build();
+
+		ChatResponse chatResponse = chatModel.call(new Prompt(new UserMessage("Hello")));
+
+		AssistantMessage assistantMessage = chatResponse.getResult().getOutput();
+		assertThat(assistantMessage.getText()).isEmpty();
+		assertThat(assistantMessage.getToolCalls()).isEmpty();
+		assertThat(assistantMessage.getMetadata()).doesNotContainKey("thinking");
+		assertThat(chatResponse.getMetadata().getModel()).isEmpty();
 	}
 
 	@Test
