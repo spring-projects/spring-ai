@@ -28,7 +28,9 @@ import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.annotation.JsonValue;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.node.ObjectNode;
 
 import org.springframework.ai.util.JsonHelper;
@@ -204,9 +206,60 @@ class JsonSchemaUtilsTests {
 		}
 	}
 
+	// gh-1985: enum constants annotated with @JsonProperty must surface their custom
+	// values in the generated schema, matching Jackson's deserialization behavior.
+	@Test
+	void getJsonSchemaHonorsJsonPropertyEnumValues() {
+		ObjectNode schema = JsonSchemaUtils.getJsonSchema(CustomEnumHolder.class);
+
+		assertThat(schema.at("/properties/status/enum")).map(JsonNode::asString).containsExactly("value.a", "value.b");
+	}
+
+	// gh-1985: enums serialized through a @JsonValue method must surface those values
+	// in the generated schema as well.
+	@Test
+	void getJsonSchemaHonorsJsonValueEnumValues() {
+		ObjectNode schema = JsonSchemaUtils.getJsonSchema(UnitHolder.class);
+
+		assertThat(schema.at("/properties/unit/enum")).map(JsonNode::asString).containsExactly("C", "F");
+	}
+
 	@JsonPropertyOrder({ "accountId", "accountName", "currency", "totals" })
 	record OrderedStatement(@JsonProperty(required = true) String accountId,
 			@JsonProperty(required = true) String accountName, String currency, Map<String, Double> totals) {
+
+	}
+
+	record CustomEnumHolder(CustomEnum status) {
+
+		enum CustomEnum {
+
+			@JsonProperty("value.a")
+			A, @JsonProperty("value.b")
+			B
+
+		}
+
+	}
+
+	record UnitHolder(TemperatureUnit unit) {
+
+	}
+
+	public enum TemperatureUnit {
+
+		CELSIUS("C"), FAHRENHEIT("F");
+
+		private final String symbol;
+
+		TemperatureUnit(String symbol) {
+			this.symbol = symbol;
+		}
+
+		@JsonValue
+		public String symbol() {
+			return this.symbol;
+		}
 
 	}
 
