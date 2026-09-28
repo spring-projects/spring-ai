@@ -32,6 +32,7 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -185,13 +186,18 @@ public class PgVectorStoreObservationIT {
 
 		@Bean
 		public VectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel,
-				ObservationRegistry observationRegistry) {
-			return PgVectorStore.builder(jdbcTemplate, embeddingModel)
+				ObservationRegistry observationRegistry, SqlVectorStoreStatementCreator statementCreator) {
+			return PgVectorStore.builder(jdbcTemplate, embeddingModel, statementCreator)
 				.distanceType(PgVectorStore.PgDistanceType.COSINE_DISTANCE)
 				.indexType(PgIndexType.HNSW)
 				.observationRegistry(observationRegistry)
 				.initializeSchema(true)
 				.build();
+		}
+
+		@Bean
+		public SqlVectorStoreStatementCreator statementCreator(EmbeddingModel embeddingModel) {
+			return PgVectorStoreStatementCreator.builder(embeddingModel, JsonMapper.builder().build()).build();
 		}
 
 		@Bean

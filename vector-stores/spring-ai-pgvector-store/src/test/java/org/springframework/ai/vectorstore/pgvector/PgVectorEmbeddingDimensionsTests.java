@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -46,8 +47,11 @@ public class PgVectorEmbeddingDimensionsTests {
 	public void explicitlySetDimensions() {
 
 		final int explicitDimensions = 696;
+		SqlVectorStoreStatementCreator statementCreator = PgVectorStoreStatementCreator
+			.builder(this.embeddingModel, JsonMapper.builder().build())
+			.build();
 
-		PgVectorStore pgVectorStore = PgVectorStore.builder(this.jdbcTemplate, this.embeddingModel)
+		PgVectorStore pgVectorStore = PgVectorStore.builder(this.jdbcTemplate, this.embeddingModel, statementCreator)
 			.dimensions(explicitDimensions)
 			.build();
 		var dim = pgVectorStore.embeddingDimensions();
@@ -61,7 +65,11 @@ public class PgVectorEmbeddingDimensionsTests {
 		int expectedDimensions = 969;
 		given(this.embeddingModel.dimensions()).willReturn(expectedDimensions);
 
-		PgVectorStore pgVectorStore = PgVectorStore.builder(this.jdbcTemplate, this.embeddingModel).build();
+		SqlVectorStoreStatementCreator statementCreator = PgVectorStoreStatementCreator
+			.builder(this.embeddingModel, JsonMapper.builder().build())
+			.build();
+		PgVectorStore pgVectorStore = PgVectorStore.builder(this.jdbcTemplate, this.embeddingModel, statementCreator)
+			.build();
 		int actualDimensions = pgVectorStore.embeddingDimensions();
 
 		assertThat(actualDimensions).isEqualTo(expectedDimensions);
@@ -71,8 +79,12 @@ public class PgVectorEmbeddingDimensionsTests {
 	@Test
 	public void fallBackToDefaultDimensions() {
 		given(this.embeddingModel.dimensions()).willThrow(new RuntimeException("Embedding model error"));
+		SqlVectorStoreStatementCreator statementCreator = PgVectorStoreStatementCreator
+			.builder(this.embeddingModel, JsonMapper.builder().build())
+			.build();
 
-		PgVectorStore pgVectorStore = PgVectorStore.builder(this.jdbcTemplate, this.embeddingModel).build();
+		PgVectorStore pgVectorStore = PgVectorStore.builder(this.jdbcTemplate, this.embeddingModel, statementCreator)
+			.build();
 		int actualDimensions = pgVectorStore.embeddingDimensions();
 
 		assertThat(actualDimensions).isEqualTo(PgVectorStore.OPENAI_EMBEDDING_DIMENSION_SIZE);
@@ -82,8 +94,12 @@ public class PgVectorEmbeddingDimensionsTests {
 	@Test
 	public void embeddingModelReturnsZeroDimensions() {
 		given(this.embeddingModel.dimensions()).willReturn(0);
+		SqlVectorStoreStatementCreator statementCreator = PgVectorStoreStatementCreator
+			.builder(this.embeddingModel, JsonMapper.builder().build())
+			.build();
 
-		PgVectorStore pgVectorStore = PgVectorStore.builder(this.jdbcTemplate, this.embeddingModel).build();
+		PgVectorStore pgVectorStore = PgVectorStore.builder(this.jdbcTemplate, this.embeddingModel, statementCreator)
+			.build();
 		int actualDimensions = pgVectorStore.embeddingDimensions();
 
 		assertThat(actualDimensions).isEqualTo(PgVectorStore.OPENAI_EMBEDDING_DIMENSION_SIZE);
@@ -93,8 +109,12 @@ public class PgVectorEmbeddingDimensionsTests {
 	@Test
 	public void embeddingModelReturnsNegativeDimensions() {
 		given(this.embeddingModel.dimensions()).willReturn(-5);
+		SqlVectorStoreStatementCreator statementCreator = PgVectorStoreStatementCreator
+			.builder(this.embeddingModel, JsonMapper.builder().build())
+			.build();
 
-		PgVectorStore pgVectorStore = PgVectorStore.builder(this.jdbcTemplate, this.embeddingModel).build();
+		PgVectorStore pgVectorStore = PgVectorStore.builder(this.jdbcTemplate, this.embeddingModel, statementCreator)
+			.build();
 		int actualDimensions = pgVectorStore.embeddingDimensions();
 
 		assertThat(actualDimensions).isEqualTo(PgVectorStore.OPENAI_EMBEDDING_DIMENSION_SIZE);
@@ -105,8 +125,11 @@ public class PgVectorEmbeddingDimensionsTests {
 	public void explicitZeroDimensionsUsesEmbeddingModel() {
 		int embeddingModelDimensions = 768;
 		given(this.embeddingModel.dimensions()).willReturn(embeddingModelDimensions);
+		SqlVectorStoreStatementCreator statementCreator = PgVectorStoreStatementCreator
+			.builder(this.embeddingModel, JsonMapper.builder().build())
+			.build();
 
-		PgVectorStore pgVectorStore = PgVectorStore.builder(this.jdbcTemplate, this.embeddingModel)
+		PgVectorStore pgVectorStore = PgVectorStore.builder(this.jdbcTemplate, this.embeddingModel, statementCreator)
 			.dimensions(0)
 			.build();
 		int actualDimensions = pgVectorStore.embeddingDimensions();
@@ -119,8 +142,11 @@ public class PgVectorEmbeddingDimensionsTests {
 	public void explicitNegativeDimensionsUsesEmbeddingModel() {
 		int embeddingModelDimensions = 512;
 		given(this.embeddingModel.dimensions()).willReturn(embeddingModelDimensions);
+		SqlVectorStoreStatementCreator statementCreator = PgVectorStoreStatementCreator
+			.builder(this.embeddingModel, JsonMapper.builder().build())
+			.build();
 
-		PgVectorStore pgVectorStore = PgVectorStore.builder(this.jdbcTemplate, this.embeddingModel)
+		PgVectorStore pgVectorStore = PgVectorStore.builder(this.jdbcTemplate, this.embeddingModel, statementCreator)
 			.dimensions(-1)
 			.build();
 		int actualDimensions = pgVectorStore.embeddingDimensions();

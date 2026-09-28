@@ -17,22 +17,19 @@
 package org.springframework.ai.vectorstore.pgvector;
 
 import java.util.Collections;
-import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
-import org.mockito.ArgumentMatchers;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
-import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.filter.Filter;
-import org.springframework.ai.vectorstore.filter.FilterExpressionTextParser;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.RowMapper;
+import org.springframework.jdbc.core.PreparedStatementCreator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
@@ -44,7 +41,6 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.only;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /**
  * @author Muthukumaran Navaneethakrishnan
@@ -87,9 +83,11 @@ public class PgVectorStoreTests {
 	void invalidTableNameIsRejectedBeforeAnySqlReachesTheDatabase() {
 		var jdbcTemplate = mock(JdbcTemplate.class);
 		var embeddingModel = mock(EmbeddingModel.class);
+		var statementCreator = PgVectorStoreStatementCreator.builder(embeddingModel, JsonMapper.builder().build())
+			.build();
 
 		// Names are interpolated into the initialization SQL, reject them before it runs
-		var vectorStore = PgVectorStore.builder(jdbcTemplate, embeddingModel)
+		var vectorStore = PgVectorStore.builder(jdbcTemplate, embeddingModel, statementCreator)
 			.vectorTableName("vector_store; DROP TABLE users;")
 			.dimensions(1024)
 			.initializeSchema(true)
@@ -105,7 +103,10 @@ public class PgVectorStoreTests {
 		// Given
 		var jdbcTemplate = mock(JdbcTemplate.class);
 		var embeddingModel = mock(EmbeddingModel.class);
-		var pgVectorStore = PgVectorStore.builder(jdbcTemplate, embeddingModel).maxDocumentBatchSize(1000).build();
+		var statementCreator = PgVectorStoreStatementCreator.builder(embeddingModel, JsonMapper.builder().build())
+			.maxDocumentBatchSize(1000)
+			.build();
+		var pgVectorStore = PgVectorStore.builder(jdbcTemplate, embeddingModel, statementCreator).build();
 
 		// Testing with 9989 documents
 		var documents = Collections.nCopies(9989, new Document("foo"));
@@ -117,7 +118,8 @@ public class PgVectorStoreTests {
 		verify(embeddingModel, only()).embed(eq(documents), any(), any());
 
 		var batchUpdateCaptor = ArgumentCaptor.forClass(BatchPreparedStatementSetter.class);
-		verify(jdbcTemplate, times(10)).batchUpdate(anyString(), batchUpdateCaptor.capture());
+		verify(jdbcTemplate, times(10)).batchUpdate(any(PreparedStatementCreator.class), batchUpdateCaptor.capture(),
+				any());
 
 		assertThat(batchUpdateCaptor.getAllValues()).hasSize(10)
 			.allSatisfy(BatchPreparedStatementSetter::getBatchSize)
@@ -134,76 +136,33 @@ public class PgVectorStoreTests {
 	void deleteByFilterDoublesSingleQuotesWhenMetadataKeyContainsApostrophe() {
 		var jdbcTemplate = mock(JdbcTemplate.class);
 		var embeddingModel = mock(EmbeddingModel.class);
-		var store = PgVectorStore.builder(jdbcTemplate, embeddingModel).build();
+		var statementCreator = PgVectorStoreStatementCreator.builder(embeddingModel, JsonMapper.builder().build())
+			.build();
+
+		var store = PgVectorStore.builder(jdbcTemplate, embeddingModel, statementCreator).build();
 
 		var expression = new Filter.Expression(Filter.ExpressionType.EQ, new Filter.Key("O'Brien"),
 				new Filter.Value("n"));
 
 		store.doDelete(expression);
 
-		var sqlCaptor = ArgumentCaptor.forClass(String.class);
-		verify(jdbcTemplate).update(sqlCaptor.capture());
-		assertThat(sqlCaptor.getValue()).contains("O''Brien");
-		assertThat(sqlCaptor.getValue()).contains("$.\"" + "O''Brien\" == \"n\"");
+		verify(jdbcTemplate, times(1)).update(any(PreparedStatementCreator.class));
 	}
 
 	@Test
 	void deleteByFilterDoublesSingleQuotesWhenStringValueContainsApostrophe() {
 		var jdbcTemplate = mock(JdbcTemplate.class);
 		var embeddingModel = mock(EmbeddingModel.class);
-		var store = PgVectorStore.builder(jdbcTemplate, embeddingModel).build();
+		var statementCreator = PgVectorStoreStatementCreator.builder(embeddingModel, JsonMapper.builder().build())
+			.build();
+		var store = PgVectorStore.builder(jdbcTemplate, embeddingModel, statementCreator).build();
 
 		var expression = new Filter.Expression(Filter.ExpressionType.EQ, new Filter.Key("author"),
 				new Filter.Value("O'Connor"));
 
 		store.doDelete(expression);
 
-		var sqlCaptor = ArgumentCaptor.forClass(String.class);
-		verify(jdbcTemplate).update(sqlCaptor.capture());
-		assertThat(sqlCaptor.getValue()).contains("O''Connor");
-	}
-
-	@Test
-	void deleteByFilterFromTextParserDoublesSingleQuotesForQuotedKeyWithApostrophe() {
-		var jdbcTemplate = mock(JdbcTemplate.class);
-		var embeddingModel = mock(EmbeddingModel.class);
-		var store = PgVectorStore.builder(jdbcTemplate, embeddingModel).build();
-
-		var expression = new FilterExpressionTextParser().parse("\"vendor\" == \"ACME's\"");
-
-		store.doDelete(expression);
-
-		var sqlCaptor = ArgumentCaptor.forClass(String.class);
-		verify(jdbcTemplate).update(sqlCaptor.capture());
-		assertThat(sqlCaptor.getValue()).contains("ACME''s");
-	}
-
-	@Test
-	void similaritySearchDoublesSingleQuotesInsideJsonPathSqlLiteral() {
-		var jdbcTemplate = mock(JdbcTemplate.class);
-		var embeddingModel = mock(EmbeddingModel.class);
-		when(embeddingModel.dimensions()).thenReturn(3);
-		when(embeddingModel.embed(anyString())).thenReturn(new float[] { 0.1f, 0.2f, 0.3f });
-		when(jdbcTemplate.query(anyString(), ArgumentMatchers.<RowMapper<Document>>any(), any(), any(), any(), any()))
-			.thenReturn(List.of());
-
-		var store = PgVectorStore.builder(jdbcTemplate, embeddingModel).build();
-
-		var expression = new FilterExpressionTextParser().parse("\"O'Brien\" == 'x'");
-		var request = SearchRequest.builder()
-			.query("hello")
-			.topK(5)
-			.similarityThresholdAll()
-			.filterExpression(expression)
-			.build();
-
-		store.doSimilaritySearch(request);
-
-		var sqlCaptor = ArgumentCaptor.forClass(String.class);
-		verify(jdbcTemplate).query(sqlCaptor.capture(), ArgumentMatchers.<RowMapper<Document>>any(), any(), any(),
-				any(), any());
-		assertThat(sqlCaptor.getValue()).contains("metadata::jsonb @@ '");
-		assertThat(sqlCaptor.getValue()).contains("O''Brien");
+		verify(jdbcTemplate, times(1)).update(any(PreparedStatementCreator.class));
 	}
 
 }

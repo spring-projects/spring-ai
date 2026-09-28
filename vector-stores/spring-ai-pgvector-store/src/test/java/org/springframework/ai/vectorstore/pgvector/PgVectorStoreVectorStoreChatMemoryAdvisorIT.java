@@ -23,6 +23,7 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.vectorstore.VectorStoreChatMemoryAdvisor;
@@ -68,9 +69,13 @@ public class PgVectorStoreVectorStoreChatMemoryAdvisorIT {
 				.build())
 			.build();
 
+		SqlVectorStoreStatementCreator statementCreator = PgVectorStoreStatementCreator
+			.builder(embeddingModel, JsonMapper.builder().build())
+			.build();
+
 		// Create PgVectorStore
 		JdbcTemplate jdbcTemplate = createJdbcTemplateWithConnectionToTestcontainer();
-		PgVectorStore store = PgVectorStore.builder(jdbcTemplate, embeddingModel)
+		PgVectorStore store = PgVectorStore.builder(jdbcTemplate, embeddingModel, statementCreator)
 			.dimensions(1536) // OpenAI default embedding size (adjust if needed)
 			.initializeSchema(true)
 			.build();
@@ -110,7 +115,11 @@ public class PgVectorStoreVectorStoreChatMemoryAdvisorIT {
 				.build())
 			.build();
 		JdbcTemplate jdbcTemplate = createJdbcTemplateWithConnectionToTestcontainer();
-		PgVectorStore store = PgVectorStore.builder(jdbcTemplate, embeddingModel)
+		SqlVectorStoreStatementCreator statementCreator = PgVectorStoreStatementCreator
+			.builder(embeddingModel, JsonMapper.builder().build())
+			.build();
+
+		PgVectorStore store = PgVectorStore.builder(jdbcTemplate, embeddingModel, statementCreator)
 			.dimensions(1536)
 			.initializeSchema(true)
 			.build();
@@ -156,7 +165,11 @@ public class PgVectorStoreVectorStoreChatMemoryAdvisorIT {
 				.build())
 			.build();
 		JdbcTemplate jdbcTemplate = createJdbcTemplateWithConnectionToTestcontainer();
-		PgVectorStore store = PgVectorStore.builder(jdbcTemplate, embeddingModel)
+		SqlVectorStoreStatementCreator statementCreator = PgVectorStoreStatementCreator
+			.builder(embeddingModel, JsonMapper.builder().build())
+			.build();
+
+		PgVectorStore store = PgVectorStore.builder(jdbcTemplate, embeddingModel, statementCreator)
 			.dimensions(1536)
 			.initializeSchema(true)
 			.build();
@@ -192,7 +205,10 @@ public class PgVectorStoreVectorStoreChatMemoryAdvisorIT {
 				.build())
 			.build();
 		JdbcTemplate jdbcTemplate = createJdbcTemplateWithConnectionToTestcontainer();
-		PgVectorStore store = PgVectorStore.builder(jdbcTemplate, embeddingModel)
+		SqlVectorStoreStatementCreator statementCreator = PgVectorStoreStatementCreator
+			.builder(embeddingModel, JsonMapper.builder().build())
+			.build();
+		PgVectorStore store = PgVectorStore.builder(jdbcTemplate, embeddingModel, statementCreator)
 			.dimensions(1536)
 			.initializeSchema(true)
 			.build();
@@ -229,7 +245,10 @@ public class PgVectorStoreVectorStoreChatMemoryAdvisorIT {
 				.build())
 			.build();
 		JdbcTemplate jdbcTemplate = createJdbcTemplateWithConnectionToTestcontainer();
-		PgVectorStore store = PgVectorStore.builder(jdbcTemplate, embeddingModel)
+		SqlVectorStoreStatementCreator statementCreator = PgVectorStoreStatementCreator
+			.builder(embeddingModel, JsonMapper.builder().build())
+			.build();
+		PgVectorStore store = PgVectorStore.builder(jdbcTemplate, embeddingModel, statementCreator)
 			.dimensions(1536)
 			.initializeSchema(true)
 			.build();
@@ -268,7 +287,10 @@ public class PgVectorStoreVectorStoreChatMemoryAdvisorIT {
 				.build())
 			.build();
 		JdbcTemplate jdbcTemplate = createJdbcTemplateWithConnectionToTestcontainer();
-		PgVectorStore store = PgVectorStore.builder(jdbcTemplate, embeddingModel)
+		SqlVectorStoreStatementCreator statementCreator = PgVectorStoreStatementCreator
+			.builder(embeddingModel, JsonMapper.builder().build())
+			.build();
+		PgVectorStore store = PgVectorStore.builder(jdbcTemplate, embeddingModel, statementCreator)
 			.dimensions(1536)
 			.initializeSchema(true)
 			.build();
@@ -304,7 +326,10 @@ public class PgVectorStoreVectorStoreChatMemoryAdvisorIT {
 				.build())
 			.build();
 		JdbcTemplate jdbcTemplate = createJdbcTemplateWithConnectionToTestcontainer();
-		PgVectorStore store = PgVectorStore.builder(jdbcTemplate, embeddingModel)
+		SqlVectorStoreStatementCreator statementCreator = PgVectorStoreStatementCreator
+			.builder(embeddingModel, JsonMapper.builder().build())
+			.build();
+		PgVectorStore store = PgVectorStore.builder(jdbcTemplate, embeddingModel, statementCreator)
 			.dimensions(1536)
 			.initializeSchema(true)
 			.build();
@@ -342,7 +367,10 @@ public class PgVectorStoreVectorStoreChatMemoryAdvisorIT {
 				.build())
 			.build();
 		JdbcTemplate jdbcTemplate = createJdbcTemplateWithConnectionToTestcontainer();
-		PgVectorStore store = PgVectorStore.builder(jdbcTemplate, embeddingModel)
+		SqlVectorStoreStatementCreator statementCreator = PgVectorStoreStatementCreator
+			.builder(embeddingModel, JsonMapper.builder().build())
+			.build();
+		PgVectorStore store = PgVectorStore.builder(jdbcTemplate, embeddingModel, statementCreator)
 			.dimensions(1536)
 			.initializeSchema(true)
 			.build();

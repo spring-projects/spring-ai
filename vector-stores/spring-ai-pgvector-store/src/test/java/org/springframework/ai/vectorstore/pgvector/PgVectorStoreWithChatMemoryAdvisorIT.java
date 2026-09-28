@@ -31,6 +31,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import reactor.core.publisher.Flux;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.vectorstore.VectorStoreChatMemoryAdvisor;
@@ -91,11 +92,15 @@ class PgVectorStoreWithChatMemoryAdvisorIT {
 
 	private static PgVectorStore createPgVectorStoreUsingTestcontainer(EmbeddingModel embeddingModel) throws Exception {
 		JdbcTemplate jdbcTemplate = createJdbcTemplateWithConnectionToTestcontainer();
-		return PgVectorStore.builder(jdbcTemplate, embeddingModel)
+		return PgVectorStore.builder(jdbcTemplate, embeddingModel, statementCreator(embeddingModel))
 			.dimensions(3) // match
 			// embeddings
 			.initializeSchema(true)
 			.build();
+	}
+
+	private static SqlVectorStoreStatementCreator statementCreator(EmbeddingModel embeddingModel) {
+		return PgVectorStoreStatementCreator.builder(embeddingModel, JsonMapper.builder().build()).build();
 	}
 
 	private static @NonNull JdbcTemplate createJdbcTemplateWithConnectionToTestcontainer() {
