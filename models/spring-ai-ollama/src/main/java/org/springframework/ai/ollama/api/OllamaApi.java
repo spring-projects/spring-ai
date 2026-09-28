@@ -593,6 +593,7 @@ public final class OllamaApi {
 	 * @param model The model used for generating the response.
 	 * @param createdAt The timestamp of the response generation.
 	 * @param message The response {@link Message} with {@link Message.Role#ASSISTANT}.
+	 * It is {@code null} when Ollama reports an error instead of a chat message.
 	 * @param doneReason The reason the model stopped generating text.
 	 * @param done Whether this is the final response. For streaming response only the
 	 * last message is marked as done. If true, this response may be followed by another
@@ -616,7 +617,7 @@ public final class OllamaApi {
 	public record ChatResponse(
 			@JsonProperty("model") String model,
 			@JsonProperty("created_at") Instant createdAt,
-			@JsonProperty("message") Message message,
+			@JsonProperty("message") @Nullable Message message,
 			@JsonProperty("done_reason") @Nullable String doneReason,
 			@JsonProperty("done") @Nullable Boolean done,
 			@JsonProperty("total_duration") @Nullable Long totalDuration,
