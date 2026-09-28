@@ -41,6 +41,27 @@ A streamed chunk never has a `null` text, so `map(AssistantMessage::getText).col
 By default, tool calls are still buffered and arrive once as a complete call.
 Partial parts are not tool calls, so nothing executes on them, and `ChatClient` hides them either way.
 
+=== Anthropic
+
+==== Changed: Thinking Is Returned as `ReasoningPart`s of a Single Generation
+
+`AnthropicChatModel` maps every content block of a response to one `MessagePart`, in block order: thinking and redacted thinking become a `ReasoningPart` whose payload carries the signature or the redacted block data, and blocks Spring AI does not model yet (server tool use, server tool results, container upload) become an `UnknownPart` instead of being dropped.
+An assistant message is replayed to Anthropic in part order, so the signed thinking block stays in front of the tool call it justified; reasoning produced by another provider and `UnknownPart`s are not replayed.
+See xref:api/chat/anthropic-chat.adoc#_response_structure[Response Structure].
+
+===== Impact
+
+* A non-streaming response has a single `Generation`; the separate thinking and redacted thinking generations are gone.
+Read the reasoning from `getResult().getOutput().getReasoning()`.
+* The package-private `AnthropicChatModel.AnthropicAssistantMessage` is removed, together with the `anthropicThinkingContents` metadata entry.
+Messages restored from a chat memory written by an earlier version lose their thinking blocks on replay.
+* The `signature` and `data` metadata keys are no longer set on the non-streaming response.
+* A redacted thinking `ReasoningPart` has no text; its payload kind is `AnthropicChatModel.PAYLOAD_REDACTED_THINKING`.
+
+===== Deprecated
+
+The streamed chunks still carry the `thinking` (`AnthropicChatModel.THINKING_METADATA_KEY`), `thinkingText` (`AnthropicChatModel.THINKING_TEXT_METADATA_KEY`), `signature` and `data` metadata keys for one release; read the chunk's parts instead.
+
 [[upgrading-to-2-0-1]]
 == Upgrading to 2.0.1
 
