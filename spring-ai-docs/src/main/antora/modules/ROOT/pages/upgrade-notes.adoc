@@ -62,6 +62,9 @@ Read the thoughts with `AssistantMessage.getReasoning()`.
 
 Replace code that iterates over `getResults()` and filters on `GoogleGenAiChatModel.THOUGHT_METADATA_KEY`:
 
+[source,java]
+----
+// Before
 List<String> thoughts = response.getResults().stream()
     .filter(g -> Boolean.TRUE.equals(g.getOutput().getMetadata().get(GoogleGenAiChatModel.THOUGHT_METADATA_KEY)))
     .map(g -> g.getOutput().getText())
@@ -119,7 +122,6 @@ Change any explicitly typed `Map<String, String>` variable to `Map<String, Objec
 [source,java]
 ----
 // Before
-
 Map<String, String> params = Map.of("anthropic_version", "bedrock-2023-05-31");
 BedrockChatOptions options = BedrockChatOptions.builder()
     .requestParameters(params)
