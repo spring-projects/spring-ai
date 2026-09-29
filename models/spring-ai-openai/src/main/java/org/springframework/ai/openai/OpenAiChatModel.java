@@ -138,8 +138,6 @@ public final class OpenAiChatModel implements ChatModel {
 
 	private static final String REASONING_CONTENT = "reasoningContent";
 
-	private static final String INCLUDE_REASONING = "include_reasoning";
-
 	static final String TOOL_CALL_ADDITIONAL_PROPERTIES_METADATA_KEY = "openai.tool_calls.additional_properties";
 
 	private static final TypeReference<Map<String, Object>> MAP_TYPE_REF = new TypeReference<>() {

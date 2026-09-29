@@ -198,7 +198,7 @@ The `JSON_SCHEMA` type enables link:https://platform.openai.com/docs/guides/stru
 | spring.ai.openai.chat.tool-callbacks | Tool Callbacks to register with the ChatModel. | -
 | spring.ai.openai.chat.service-tier | Specifies the link:https://platform.openai.com/docs/api-reference/responses/create#responses_create-service_tier[processing type] used for serving the request. | -
 | spring.ai.openai.chat.extra-body | Additional parameters to include in the request. Accepts any key-value pairs that are flattened to the top level of the JSON request. Intended for use with OpenAI-compatible servers (vLLM, Ollama, etc.) that support parameters beyond the standard OpenAI API. The official OpenAI API rejects unknown parameters with a 400 error. See <<openai-compatible-servers>> for details. | -
-| spring.ai.openai.chat.replay-reasoning-content | Whether a previous assistant message's reasoning content is sent back as the `reasoning_content` property of the next request. OpenAI-compatible reasoning endpoints such as DeepSeek's thinking mode require the property and reject a request without it, while others such as Groq reject the property itself. Set to `false` for the latter. | true
+| spring.ai.openai.chat.replay-reasoning-content | Whether a previous assistant message's reasoning content is sent back as the `reasoning_content` property of the next request. OpenAI-compatible reasoning endpoints such as DeepSeek's thinking mode require the property and reject a request without it, while others such as Groq reject the property itself. Set to `false` for the latter. Defaults to replaying whenever present. | -
 |====
 
 [NOTE]
@@ -1046,6 +1046,33 @@ The availability of `reasoning_content` depends entirely on the inference server
 Not all OpenAI-compatible servers expose reasoning content, even when using reasoning-capable models.
 Always refer to your server's API documentation to understand what fields are available in responses.
 ====
+
+==== Replaying Reasoning Content in Multi-Turn Conversations
+
+When an assistant message that carries `reasoning_content` is included in a subsequent request, Spring AI replays that content as the `reasoning_content` property of the next request.
+Some OpenAI-compatible reasoning endpoints — such as DeepSeek's thinking mode — require this and return HTTP 400 if the property is absent.
+Other endpoints, such as Groq, reject the property outright.
+
+You can control this behavior with `spring.ai.openai.chat.replay-reasoning-content` (or `OpenAiChatOptions.replayReasoningContent`).
+When unset (the default), the content is replayed whenever it is present.
+Set to `false` to suppress the replay:
+
+[source,properties]
+----
+# Disable reasoning content replay (e.g. for Groq)
+spring.ai.openai.chat.replay-reasoning-content=false
+----
+
+Or per-request via options:
+
+[source,java]
+----
+OpenAiChatOptions options = OpenAiChatOptions.builder()
+    .replayReasoningContent(false)
+    .build();
+
+ChatResponse response = chatModel.call(new Prompt(messages, options));
+----
 
 === Tool Call Additional Properties for OpenAI-Compatible Providers
 
