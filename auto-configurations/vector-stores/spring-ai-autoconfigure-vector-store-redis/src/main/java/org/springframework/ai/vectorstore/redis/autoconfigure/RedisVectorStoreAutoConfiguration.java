@@ -17,11 +17,13 @@
 package org.springframework.ai.vectorstore.redis.autoconfigure;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import io.micrometer.observation.ObservationRegistry;
 import redis.clients.jedis.DefaultJedisClientConfig;
 import redis.clients.jedis.JedisClientConfig;
 import redis.clients.jedis.RedisClient;
+import redis.clients.jedis.search.Schema.FieldType;
 
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -86,6 +88,14 @@ public class RedisVectorStoreAutoConfiguration {
 			final BatchingStrategy batchingStrategy) {
 
 		RedisClient jedisClient = jedisClient(jedisConnectionFactory);
+
+		// Bean-registered fields take precedence; fall back to application.properties.
+		List<RedisVectorStore.MetadataField> resolvedMetadataFields = metadataFields.getIfAvailable(() -> properties
+			.getMetadataFields()
+			.stream()
+			.map(f -> new RedisVectorStore.MetadataField(f.getName(), FieldType.valueOf(f.getType())))
+			.collect(Collectors.toList()));
+
 		RedisVectorStore.Builder builder = RedisVectorStore.builder(jedisClient, embeddingModel)
 			.initializeSchema(properties.isInitializeSchema())
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
@@ -93,7 +103,7 @@ public class RedisVectorStoreAutoConfiguration {
 			.batchingStrategy(batchingStrategy)
 			.indexName(properties.getIndexName())
 			.prefix(properties.getPrefix())
-			.metadataFields(metadataFields.getIfAvailable(List::of));
+			.metadataFields(resolvedMetadataFields);
 
 		// Configure HNSW parameters if available
 		hnswConfiguration(builder, properties);
