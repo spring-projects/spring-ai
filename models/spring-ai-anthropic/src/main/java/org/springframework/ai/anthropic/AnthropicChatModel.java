@@ -1271,9 +1271,11 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		catch (Exception ex) {
 			// Better a turn missing one block than a failed turn.
 			if (logger.isWarnEnabled()) {
-				logger.warn(
-						"Could not replay the Anthropic content block of kind " + unknownPart.kind() + "; dropping it",
-						ex);
+				logger.warn("Could not replay the Anthropic content block of kind " + unknownPart.kind()
+						+ "; dropping it: " + ex.getMessage());
+			}
+			if (logger.isDebugEnabled()) {
+				logger.debug("Failure converting the Anthropic content block of kind " + unknownPart.kind(), ex);
 			}
 			return null;
 		}
