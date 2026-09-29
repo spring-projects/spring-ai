@@ -84,7 +84,7 @@ The prefix `spring.ai.google.genai.embedding` is used as the property prefix tha
 
 [NOTE]
 ====
-The connection properties are shared with the Google GenAI Chat module. If you're using both chat and embeddings, you only need to configure the connection once using either `spring.ai.google.genai` prefix (for chat) or `spring.ai.google.genai.embedding` prefix (for embeddings).
+The connection properties are shared with the Google GenAI Chat module. If you're using both chat and embeddings, you only need to configure the connection once using the `spring.ai.google.genai` prefix. The `spring.ai.google.genai.embedding` properties act as embedding-specific overrides: when a property is not set there, its shared `spring.ai.google.genai` counterpart is used as a fallback.
 ====
 
 [cols="3,5,1", stripes=even]

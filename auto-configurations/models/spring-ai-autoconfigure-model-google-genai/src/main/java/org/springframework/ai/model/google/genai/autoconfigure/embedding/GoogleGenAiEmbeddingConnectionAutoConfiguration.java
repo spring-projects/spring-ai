@@ -20,14 +20,18 @@ import java.io.IOException;
 
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.genai.Client;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.google.genai.embedding.GoogleGenAiEmbeddingConnectionDetails;
+import org.springframework.ai.model.google.genai.autoconfigure.chat.GoogleGenAiConnectionProperties;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.util.Assert;
+import org.springframework.core.io.Resource;
 import org.springframework.util.StringUtils;
 
 /**
@@ -40,37 +44,82 @@ import org.springframework.util.StringUtils;
  */
 @AutoConfiguration
 @ConditionalOnClass({ Client.class, GoogleGenAiEmbeddingConnectionDetails.class })
-@EnableConfigurationProperties(GoogleGenAiEmbeddingConnectionProperties.class)
+@EnableConfigurationProperties({ GoogleGenAiEmbeddingConnectionProperties.class,
+		GoogleGenAiConnectionProperties.class })
 public class GoogleGenAiEmbeddingConnectionAutoConfiguration {
+
+	private static final Log logger = LogFactory.getLog(GoogleGenAiEmbeddingConnectionAutoConfiguration.class);
 
 	@Bean
 	@ConditionalOnMissingBean
 	public GoogleGenAiEmbeddingConnectionDetails googleGenAiEmbeddingConnectionDetails(
-			GoogleGenAiEmbeddingConnectionProperties connectionProperties) throws IOException {
+			GoogleGenAiEmbeddingConnectionProperties connectionProperties,
+			GoogleGenAiConnectionProperties sharedConnectionProperties) throws IOException {
 
 		var connectionBuilder = GoogleGenAiEmbeddingConnectionDetails.builder();
 
-		if (StringUtils.hasText(connectionProperties.getApiKey())) {
-			// Gemini Developer API mode
-			connectionBuilder.apiKey(connectionProperties.getApiKey());
-		}
-		else {
-			// Vertex AI mode
-			Assert.hasText(connectionProperties.getProjectId(), "Google GenAI project-id must be set!");
-			Assert.hasText(connectionProperties.getLocation(), "Google GenAI location must be set!");
+		// The embedding-specific properties win; the shared spring.ai.google.genai.*
+		// properties act as fallbacks so a single api-key (or Vertex AI
+		// project/location) can configure the chat and embedding modules together.
+		var apiKey = StringUtils.hasText(connectionProperties.getApiKey()) ? connectionProperties.getApiKey()
+				: sharedConnectionProperties.getApiKey();
+		var projectId = StringUtils.hasText(connectionProperties.getProjectId()) ? connectionProperties.getProjectId()
+				: sharedConnectionProperties.getProjectId();
+		var location = StringUtils.hasText(connectionProperties.getLocation()) ? connectionProperties.getLocation()
+				: sharedConnectionProperties.getLocation();
+		var credentialsUri = connectionProperties.getCredentialsUri() != null ? connectionProperties.getCredentialsUri()
+				: sharedConnectionProperties.getCredentialsUri();
 
-			connectionBuilder.projectId(connectionProperties.getProjectId())
-				.location(connectionProperties.getLocation());
+		boolean hasApiKey = StringUtils.hasText(apiKey);
+		boolean vertexAi = connectionProperties.isVertexAi() || sharedConnectionProperties.isVertexAi();
 
-			if (connectionProperties.getCredentialsUri() != null) {
-				GoogleCredentials credentials = GoogleCredentials
-					.fromStream(connectionProperties.getCredentialsUri().getInputStream());
-				// Note: Credentials are handled automatically by the SDK when using
-				// Vertex AI mode
+		// Ambiguity Guard: Professional logging
+		if (hasApiKey && StringUtils.hasText(projectId) && StringUtils.hasText(location)) {
+			if (vertexAi) {
+				logger.info(
+						"Both API Key and Vertex AI config detected. Vertex AI mode is explicitly enabled; the API key will be ignored.");
+			}
+			else {
+				logger.warn("Both API Key and Vertex AI config detected. Defaulting to Gemini Developer API (API Key). "
+						+ "To use Vertex AI instead, set 'spring.ai.google.genai.vertex-ai=true'.");
 			}
 		}
 
+		// Mode Selection with Fail-Fast Validation
+		if (vertexAi) {
+			if (projectId == null || location == null) {
+				throw new IllegalStateException(
+						"Vertex AI mode requires both 'project-id' and 'location' to be configured.");
+			}
+			configureVertexAi(connectionBuilder, projectId, location, credentialsUri);
+		}
+		else if (hasApiKey) {
+			connectionBuilder.apiKey(apiKey);
+		}
+		else if (projectId != null && location != null) {
+			logger.debug("Project ID and Location detected. Defaulting to Vertex AI mode.");
+			configureVertexAi(connectionBuilder, projectId, location, credentialsUri);
+		}
+		else {
+			throw new IllegalStateException(
+					"Incomplete Google GenAI configuration: Provide 'spring.ai.google.genai.embedding.api-key' (or the shared 'spring.ai.google.genai.api-key') for the Gemini Developer API, "
+							+ "or 'project-id' and 'location' for Vertex AI.");
+		}
+
 		return connectionBuilder.build();
+	}
+
+	private void configureVertexAi(GoogleGenAiEmbeddingConnectionDetails.Builder connectionBuilder,
+			@Nullable String projectId, @Nullable String location, @Nullable Resource credentialsUri)
+			throws IOException {
+
+		connectionBuilder.projectId(projectId).location(location);
+
+		if (credentialsUri != null) {
+			GoogleCredentials.fromStream(credentialsUri.getInputStream());
+			// Note: Credentials are handled automatically by the SDK when using
+			// Vertex AI mode
+		}
 	}
 
 }
