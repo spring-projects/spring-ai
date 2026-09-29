@@ -96,6 +96,30 @@ spring:
 
 NOTE: Map keys bind literally — use the exact provider field name (e.g. `output_config`, not `output-config`).
 
+=== PgVector Store
+
+==== `distance` is a reserved metadata key in `PgVectorStore`
+
+`PgVectorStore` writes the computed similarity distance into each returned document's metadata under the key `distance` (via `DocumentMetadata.DISTANCE`).
+Previously, if a stored document already contained a `distance` key in its own metadata, it was silently overwritten with the computed value.
+This has been fixed: the stored value is now preserved and a warning is logged when the collision is detected.
+
+===== Impact
+
+If your documents store a field named `distance` for domain-specific data (e.g. a geographic distance), that value now survives a similarity search.
+A `WARN`-level log entry is emitted for each affected document:
+
+----
+Skipping computed similarity distance for document <id> because its metadata already contains a 'distance' key
+----
+
+The computed similarity score is still available via `Document.getScore()` regardless of whether the metadata key was written.
+
+===== Migration
+
+If you rely on reading the computed similarity distance from `document.getMetadata().get("distance")`, switch to `document.getScore()` instead, which is always populated and returns `1.0 - distance` (higher means more similar).
+If your documents use `distance` for domain-specific data, consider renaming that field to avoid the collision and the warning.
+
 [[upgrading-to-2-0-1]]
 == Upgrading to 2.0.1
 
