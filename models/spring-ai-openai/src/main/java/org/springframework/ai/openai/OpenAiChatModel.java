@@ -138,8 +138,6 @@ public final class OpenAiChatModel implements ChatModel {
 
 	private static final String REASONING_CONTENT = "reasoningContent";
 
-	private static final String INCLUDE_REASONING = "include_reasoning";
-
 	static final String TOOL_CALL_ADDITIONAL_PROPERTIES_METADATA_KEY = "openai.tool_calls.additional_properties";
 
 	private static final TypeReference<Map<String, Object>> MAP_TYPE_REF = new TypeReference<>() {
@@ -555,7 +553,13 @@ public final class OpenAiChatModel implements ChatModel {
 
 		OpenAiChatOptions requestOptions = (OpenAiChatOptions) prompt.getOptions();
 		Assert.state(requestOptions != null, "ChatOptions must not be null");
-		boolean replayReasoningContent = shouldReplayReasoningContent(requestOptions);
+
+		// Replaying reasoning content is what OpenAI-compatible reasoning endpoints such
+		// as DeepSeek's thinking mode require, and what Groq rejects outright, so it can
+		// be turned off per request. Absent an explicit opt-out the content is replayed
+		// whenever present, which is the behavior plain OpenAI is unaffected by.
+		boolean replayReasoningContent = !(prompt.getOptions() instanceof OpenAiChatOptions chatOptions)
+				|| !Boolean.FALSE.equals(chatOptions.getReplayReasoningContent());
 
 		List<ChatCompletionMessageParam> chatCompletionMessageParams = prompt.getInstructions()
 			.stream()
@@ -716,9 +720,8 @@ public final class OpenAiChatModel implements ChatModel {
 						builder.toolCalls(toolCalls);
 					}
 
-					// Replay reasoning content only when present and not explicitly
-					// disabled
-					// by an OpenAI-compatible provider.
+					// Replay reasoning content only when present and not opted out -
+					// plain OpenAI is unaffected
 					Object reasoningContent = assistantMessage.getMetadata().get(REASONING_CONTENT);
 					if (replayReasoningContent && reasoningContent instanceof String reasoning
 							&& StringUtils.hasText(reasoning)) {
@@ -963,11 +966,6 @@ public final class OpenAiChatModel implements ChatModel {
 		}
 
 		return builder.build();
-	}
-
-	private boolean shouldReplayReasoningContent(OpenAiChatOptions requestOptions) {
-		Map<String, Object> extraBody = requestOptions.getExtraBody();
-		return extraBody == null || !Boolean.FALSE.equals(extraBody.get(INCLUDE_REASONING));
 	}
 
 	/**
