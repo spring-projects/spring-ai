@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import com.anthropic.client.AnthropicClient;
 import com.anthropic.client.AnthropicClientAsync;
 import com.anthropic.core.JsonValue;
+import com.anthropic.core.ObjectMappers;
 import com.anthropic.core.RequestOptions;
 import com.anthropic.core.http.HttpResponseFor;
 import com.anthropic.core.http.StreamResponse;
@@ -848,7 +849,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 				}
 				else {
 					List<ContentBlockParam> blocks = toAssistantBlockParams(assistantMessage);
-					if (thinkingEnabled && i == lastIndexOf(nonSystemMessages, MessageType.ASSISTANT)) {
+					if (thinkingEnabled && onlyToolResponsesFollow(nonSystemMessages, i)) {
 						warnIfThinkingNotReplayed(assistantMessage, blocks);
 					}
 					if (blocks.isEmpty()) {
@@ -1040,6 +1041,23 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	}
 
 	/**
+	 * Tells whether only tool response messages follow the message at the given index,
+	 * meaning the tool use loop of that message is still open.
+	 * @param messages the list of non-system messages
+	 * @param index the index of the message
+	 * @return {@code true} if every later message is a tool response, or there is none
+	 */
+	private static boolean onlyToolResponsesFollow(List<org.springframework.ai.chat.messages.Message> messages,
+			int index) {
+		for (int i = index + 1; i < messages.size(); i++) {
+			if (messages.get(i).getMessageType() != MessageType.TOOL) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	/**
 	 * Combines text from all messages up to and including the specified index, for use in
 	 * cache eligibility length checks during CONVERSATION_HISTORY caching.
 	 * @param messages the list of non-system messages
@@ -1173,9 +1191,8 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 	/**
 	 * Converts an assistant message to Anthropic content blocks in part order. Reasoning
-	 * parts are replayed only when their payload was produced by Anthropic; reasoning
-	 * from another provider, tool results and unknown parts from other providers are
-	 * skipped.
+	 * and unknown parts are replayed only when they were produced by Anthropic; those
+	 * from another provider and media are skipped.
 	 * @param assistantMessage the message to convert
 	 * @return the content blocks
 	 */
@@ -1217,9 +1234,9 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 						"Tool results belong in a tool response message, not in an assistant message");
 			}
 			else if (part instanceof UnknownPart unknownPart) {
-				if (logger.isDebugEnabled()) {
-					logger.debug("Skipping unknown part of kind " + unknownPart.kind() + " from provider "
-							+ unknownPart.provider() + " on replay to Anthropic");
+				ContentBlockParam block = toUnknownBlockParam(unknownPart);
+				if (block != null) {
+					blocks.add(block);
 				}
 			}
 			else {
@@ -1230,11 +1247,45 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	}
 
 	/**
-	 * Warns when the last assistant turn of a request with extended thinking enabled has
-	 * tool calls but no thinking block to replay. Anthropic requires that turn to start
-	 * with the thinking block it returned, so the API is expected to reject the request;
-	 * its error does not say why the block is missing, which this warning does.
-	 * @param assistantMessage the last assistant message of the request
+	 * Rebuilds a content block this model keeps as an {@link UnknownPart}, such as a
+	 * server tool use or its result, from the JSON it arrived as. Anthropic needs these
+	 * blocks back, for example to continue a turn paused with {@code pause_turn}, or to
+	 * cite web search results through their encrypted content. The conversion is schema
+	 * agnostic, so a block type this SDK version does not know still round-trips.
+	 * @param unknownPart the part to convert
+	 * @return the content block, or {@code null} if the part was produced by another
+	 * provider or its JSON cannot be converted
+	 */
+	private static @Nullable ContentBlockParam toUnknownBlockParam(UnknownPart unknownPart) {
+		if (!ANTHROPIC_PROVIDER.equals(unknownPart.provider())) {
+			if (logger.isDebugEnabled()) {
+				logger.debug("Skipping unknown part of kind " + unknownPart.kind() + " from provider "
+						+ unknownPart.provider() + " on replay to Anthropic");
+			}
+			return null;
+		}
+		try {
+			JsonValue json = ObjectMappers.jsonMapper().readValue(unknownPart.rawJson(), JsonValue.class);
+			return json.convert(ContentBlockParam.class);
+		}
+		catch (Exception ex) {
+			// Better a turn missing one block than a failed turn.
+			if (logger.isWarnEnabled()) {
+				logger.warn(
+						"Could not replay the Anthropic content block of kind " + unknownPart.kind() + "; dropping it",
+						ex);
+			}
+			return null;
+		}
+	}
+
+	/**
+	 * Warns when an assistant turn whose tool use loop is still open, with extended
+	 * thinking enabled, has tool calls but no thinking block to replay. Anthropic expects
+	 * that turn to start with the thinking block it returned; without it, the API does
+	 * not fail but silently answers the request without extended thinking, and this
+	 * warning says why.
+	 * @param assistantMessage the assistant message followed only by tool responses
 	 * @param blocks the content blocks the message was converted to
 	 */
 	private static void warnIfThinkingNotReplayed(AssistantMessage assistantMessage, List<ContentBlockParam> blocks) {
@@ -1243,10 +1294,10 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		}
 		boolean replayedThinking = blocks.stream().anyMatch(block -> block.isThinking() || block.isRedactedThinking());
 		if (!replayedThinking) {
-			logger.warn("Extended thinking is enabled but the last assistant turn with tool calls has no Anthropic "
-					+ "thinking block to replay; the API is expected to reject this request. The conversation "
-					+ "history was likely stored or rebuilt without its message parts, or produced by another "
-					+ "provider or with thinking disabled.");
+			logger.warn("Extended thinking is enabled but the assistant turn awaiting tool results has no Anthropic "
+					+ "thinking block to replay, so Anthropic is expected to answer without extended thinking. The "
+					+ "conversation history was likely stored or rebuilt without its message parts, or produced by "
+					+ "another provider or with thinking disabled.");
 		}
 	}
 

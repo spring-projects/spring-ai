@@ -518,7 +518,7 @@ When thinking is enabled, the response message holds these parts:
 | **`ReasoningPart` (redacted)** | `OpaquePayload("anthropic", "redacted_thinking", ...)` | Safety-redacted reasoning, identified by the `AnthropicChatModel.PAYLOAD_REDACTED_THINKING` payload kind. `text()` is `null`.
 | **`TextPart`** | _(none)_ | The answer text, also available joined through `getText()`.
 | **`ToolCallPart`** | _(none)_ | A tool call, also available through `getToolCalls()`.
-| **`UnknownPart`** | _(none)_ | A block Spring AI does not model yet (server tool use, web search and code execution results, container upload), kept as raw JSON. It is not replayed to Anthropic.
+| **`UnknownPart`** | _(none)_ | A block Spring AI does not model yet (server tool use, web search and code execution results, container upload), kept as raw JSON. It is replayed to Anthropic as is, for example to continue a turn paused with `pause_turn`, or to keep citing web search results. A part from another provider is not replayed.
 |====
 
 === Thinking with Tool Calls
@@ -526,7 +526,7 @@ When thinking is enabled, the response message holds these parts:
 When thinking is enabled and Claude decides to call a tool, the thinking blocks from
 that response are automatically preserved and replayed in the follow-up request
 alongside the tool results.
-This is required by the Anthropic API — omitting the thinking blocks from the replay causes an API error.
+Omitting the thinking blocks from the replay does not fail the request, but Anthropic then silently answers it without extended thinking; Spring AI logs a warning when this happens.
 
 No special configuration is needed.
 Spring AI handles the replay transparently whether you use the auto-managed tool loop

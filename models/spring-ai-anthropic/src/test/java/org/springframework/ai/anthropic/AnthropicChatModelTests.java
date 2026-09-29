@@ -18,6 +18,7 @@ package org.springframework.ai.anthropic;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -90,6 +91,8 @@ import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -109,7 +112,7 @@ import static org.mockito.Mockito.verify;
  * @author Jewoo Shin
  * @author Seeun Kim
  */
-@ExtendWith(MockitoExtension.class)
+@ExtendWith({ MockitoExtension.class, OutputCaptureExtension.class })
 @MockitoSettings(strictness = Strictness.LENIENT)
 class AnthropicChatModelTests {
 
@@ -437,7 +440,7 @@ class AnthropicChatModelTests {
 	}
 
 	@Test
-	void thinkingEnabledToolTurnWithoutAnthropicReasoningIsStillSent() {
+	void thinkingEnabledToolTurnWithoutAnthropicReasoningIsStillSent(CapturedOutput output) {
 		Message mockResponse = createMockMessage("Done.", StopReason.END_TURN);
 		given(this.messageService.create(any(MessageCreateParams.class))).willReturn(mockResponse);
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
@@ -455,6 +458,24 @@ class AnthropicChatModelTests {
 		List<ContentBlockParam> blocks = assistantBlockParams(captor.getValue());
 		assertThat(blocks).hasSize(1);
 		assertThat(blocks.get(0).isToolUse()).isTrue();
+		assertThat(output).contains("has no Anthropic thinking block to replay");
+	}
+
+	@Test
+	void thinkingEnabledToolTurnWithoutAnthropicReasoningIsNotWarnedOnceTheToolLoopIsClosed(CapturedOutput output) {
+		Message mockResponse = createMockMessage("Done.", StopReason.END_TURN);
+		given(this.messageService.create(any(MessageCreateParams.class))).willReturn(mockResponse);
+		AnthropicChatOptions options = AnthropicChatOptions.builder()
+			.maxTokens(4096)
+			.thinkingEnabled(2048)
+			.toolCallbacks(List.of(new TestToolCallback("getWeather")))
+			.build();
+		List<org.springframework.ai.chat.messages.Message> conversation = new ArrayList<>(toolCallingConversation());
+		conversation.add(new UserMessage("And tomorrow?"));
+
+		this.chatModel.call(new Prompt(conversation, options));
+
+		assertThat(output).doesNotContain("has no Anthropic thinking block to replay");
 	}
 
 	@Test
@@ -697,7 +718,7 @@ class AnthropicChatModelTests {
 	}
 
 	@Test
-	void serverToolBlocksBecomeUnknownPartsAndAreNotReplayed() throws Exception {
+	void serverToolBlocksBecomeUnknownPartsAndAreReplayed() throws Exception {
 		ContentBlock serverToolUse = ObjectMappers.jsonMapper()
 			.readValue(SERVER_TOOL_USE_JSON.formatted("{\"query\":\"spring ai\"}"), ContentBlock.class);
 		ContentBlock webSearchResult = ObjectMappers.jsonMapper().readValue(WEB_SEARCH_RESULT_JSON, ContentBlock.class);
@@ -725,8 +746,55 @@ class AnthropicChatModelTests {
 		ArgumentCaptor<MessageCreateParams> captor = ArgumentCaptor.forClass(MessageCreateParams.class);
 		verify(this.messageService, times(2)).create(captor.capture());
 		List<ContentBlockParam> blocks = assistantBlockParams(captor.getAllValues().get(1));
+		assertThat(blocks).hasSize(3);
+		assertThat(blocks.get(0).asServerToolUse().id()).isEqualTo("srvtoolu_01");
+		assertThat(blocks.get(0).asServerToolUse().input()._additionalProperties()).containsEntry("query",
+				JsonValue.from("spring ai"));
+		assertThat(blocks.get(1).asWebSearchToolResult().toolUseId()).isEqualTo("srvtoolu_01");
+		assertThat(ObjectMappers.jsonMapper().writeValueAsString(blocks.get(1)))
+			.contains("\"encrypted_content\":\"enc\"");
+		assertThat(blocks.get(2).asText().text()).isEqualTo("Answer.");
+	}
+
+	@Test
+	void unknownPartOfABlockTypeTheSdkDoesNotKnowIsReplayedAsIs() throws Exception {
+		Message mockResponse = createMockMessage("Done.", StopReason.END_TURN);
+		given(this.messageService.create(any(MessageCreateParams.class))).willReturn(mockResponse);
+		AssistantMessage assistant = AssistantMessage.builder()
+			.part(new UnknownPart("anthropic", "future_block", "{\"type\":\"future_block\",\"foo\":\"bar\"}", null,
+					Map.of()))
+			.part(TextPart.of("Answer."))
+			.build();
+
+		this.chatModel.call(new Prompt(List.of(new UserMessage("Hi"), assistant, new UserMessage("Again"))));
+
+		ArgumentCaptor<MessageCreateParams> captor = ArgumentCaptor.forClass(MessageCreateParams.class);
+		verify(this.messageService).create(captor.capture());
+		List<ContentBlockParam> blocks = assistantBlockParams(captor.getValue());
+		assertThat(blocks).hasSize(2);
+		assertThat(ObjectMappers.jsonMapper().writeValueAsString(blocks.get(0)))
+			.isEqualTo("{\"type\":\"future_block\",\"foo\":\"bar\"}");
+		assertThat(blocks.get(1).asText().text()).isEqualTo("Answer.");
+	}
+
+	@Test
+	void unknownPartFromAnotherProviderOrWithInvalidJsonIsNotReplayed(CapturedOutput output) {
+		Message mockResponse = createMockMessage("Done.", StopReason.END_TURN);
+		given(this.messageService.create(any(MessageCreateParams.class))).willReturn(mockResponse);
+		AssistantMessage assistant = AssistantMessage.builder()
+			.part(new UnknownPart("openai", "web_search_call", "{\"type\":\"web_search_call\"}", null, Map.of()))
+			.part(new UnknownPart("anthropic", "server_tool_use", "{", null, Map.of()))
+			.part(TextPart.of("Answer."))
+			.build();
+
+		this.chatModel.call(new Prompt(List.of(new UserMessage("Hi"), assistant, new UserMessage("Again"))));
+
+		ArgumentCaptor<MessageCreateParams> captor = ArgumentCaptor.forClass(MessageCreateParams.class);
+		verify(this.messageService).create(captor.capture());
+		List<ContentBlockParam> blocks = assistantBlockParams(captor.getValue());
 		assertThat(blocks).hasSize(1);
 		assertThat(blocks.get(0).asText().text()).isEqualTo("Answer.");
+		assertThat(output).contains("Could not replay the Anthropic content block of kind server_tool_use");
 	}
 
 	@Test

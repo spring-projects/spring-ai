@@ -46,7 +46,7 @@ Partial parts are not tool calls, so nothing executes on them, and `ChatClient` 
 ==== Changed: Thinking Is Returned as `ReasoningPart`s of a Single Generation
 
 `AnthropicChatModel` maps every content block of a response to one `MessagePart`, in block order: thinking and redacted thinking become a `ReasoningPart` whose payload carries the signature or the redacted block data, and blocks Spring AI does not model yet (server tool use, server tool results, container upload) become an `UnknownPart` instead of being dropped.
-An assistant message is replayed to Anthropic in part order, so the signed thinking block stays in front of the tool call it justified; reasoning produced by another provider and `UnknownPart`s are not replayed.
+An assistant message is replayed to Anthropic in part order, so the signed thinking block stays in front of the tool call it justified, and server tool blocks go back as the JSON they arrived as; reasoning and `UnknownPart`s produced by another provider are not replayed.
 See xref:api/chat/anthropic-chat.adoc#_response_structure[Response Structure].
 
 ===== Impact
