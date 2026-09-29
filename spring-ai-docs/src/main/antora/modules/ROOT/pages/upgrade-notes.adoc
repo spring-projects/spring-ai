@@ -41,6 +41,20 @@ A streamed chunk never has a `null` text, so `map(AssistantMessage::getText).col
 By default, tool calls are still buffered and arrive once as a complete call.
 Partial parts are not tool calls, so nothing executes on them, and `ChatClient` hides them either way.
 
+=== Elasticsearch Vector Store
+
+==== Metadata String Values Are Mapped as `keyword`
+
+When `ElasticsearchVectorStore` creates the index, string values under `metadata` are now mapped as `keyword` instead of being left to the Elasticsearch default of analyzed `text`.
+An equality filter against an analyzed field matched every value that analyzed to the same tokens, so `author == 'Tolkien'` also matched `Tolkien and Lewis` and `tolkien`, and `delete(Filter.Expression)` removed those documents too.
+
+===== Impact
+
+Equality filters on string metadata are exact and case-sensitive, as they already are in the other vector stores.
+Code that relied on the previous partial or case-insensitive matching has to normalize the values it stores and filters on.
+The mapping only applies to indices the store creates, so an existing index keeps its current mapping until you reindex.
+A metadata string longer than the Lucene term limit is stored but not indexed, so it is still returned with the document but can no longer be filtered on.
+
 [[upgrading-to-2-0-1]]
 == Upgrading to 2.0.1
 

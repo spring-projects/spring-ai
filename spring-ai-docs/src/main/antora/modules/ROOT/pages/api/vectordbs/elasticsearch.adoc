@@ -200,6 +200,10 @@ vectorStore.similaritySearch(SearchRequest.builder()
 
 NOTE: Those (portable) filter expressions get automatically converted into the proprietary Elasticsearch link:https://www.elastic.co/guide/en/elasticsearch/reference/current/query-dsl-query-string-query.html[Query string query].
 
+NOTE: When the store creates the index, it maps string values under `metadata` as `keyword`, so an equality filter matches the stored value exactly and is case-sensitive.
+An index created outside the store keeps its own mapping; with the Elasticsearch default of analyzed `text`, an equality filter matches every value that analyzes to the same tokens.
+A metadata string longer than the Lucene term limit is stored but not indexed, so it is returned with the document but cannot be filtered on.
+
 For example, this portable filter expression:
 
 [source,sql]

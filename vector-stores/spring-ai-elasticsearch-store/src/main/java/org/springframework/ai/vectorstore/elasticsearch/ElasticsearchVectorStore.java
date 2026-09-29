@@ -25,6 +25,7 @@ import java.util.Optional;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.mapping.DenseVectorSimilarity;
+import co.elastic.clients.elasticsearch._types.mapping.DynamicTemplate;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
@@ -34,6 +35,7 @@ import co.elastic.clients.json.jackson.Jackson3JsonpMapper;
 import co.elastic.clients.transport.Version;
 import co.elastic.clients.transport.rest5_client.Rest5ClientTransport;
 import co.elastic.clients.transport.rest5_client.low_level.Rest5Client;
+import co.elastic.clients.util.NamedValue;
 import org.jspecify.annotations.Nullable;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.cfg.DateTimeFeature;
@@ -146,9 +148,24 @@ import org.springframework.util.Assert;
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
  * @author Jonghoon Park
+ * @author Xuhan Zhuang
  * @since 1.0.0
  */
 public class ElasticsearchVectorStore extends AbstractObservationVectorStore implements InitializingBean {
+
+	private static final String METADATA_FIELD_NAME = "metadata";
+
+	/**
+	 * Name of the dynamic template that maps metadata string values as keyword.
+	 */
+	private static final String METADATA_KEYWORD_TEMPLATE_NAME = "spring_ai_metadata_keyword";
+
+	/**
+	 * Length above which a metadata string is stored but not indexed. Lucene rejects a
+	 * term over 32766 bytes, which a shorter string can still reach once encoded, so the
+	 * limit is the largest character count that cannot exceed it.
+	 */
+	private static final int METADATA_KEYWORD_IGNORE_ABOVE = 32766 / 4;
 
 	private static final Map<SimilarityFunction, VectorStoreSimilarityMetric> SIMILARITY_TYPE_MAPPING = Map.of(
 			SimilarityFunction.cosine, VectorStoreSimilarityMetric.COSINE, SimilarityFunction.l2_norm,
@@ -256,8 +273,8 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 	private Object getDocument(Document document, float[] embedding, String embeddingFieldName) {
 		Assert.notNull(document.getText(), "document's text must not be null");
 
-		return Map.of("id", document.getId(), "content", document.getText(), "metadata", document.getMetadata(),
-				embeddingFieldName, embedding);
+		return Map.of("id", document.getId(), "content", document.getText(), METADATA_FIELD_NAME,
+				document.getMetadata(), embeddingFieldName, embedding);
 	}
 
 	@Override
@@ -334,8 +351,8 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 		Assert.notNull(id, "id must not be null");
 		String content = source.has("content") ? source.get("content").asString() : null;
 		Map<String, Object> metadata = new HashMap<>();
-		if (source.has("metadata")) {
-			tools.jackson.databind.JsonNode metadataNode = source.get("metadata");
+		if (source.has(METADATA_FIELD_NAME)) {
+			tools.jackson.databind.JsonNode metadataNode = source.get(METADATA_FIELD_NAME);
 			Map<String, Object> extractedMetadata = this.jsonMapper.convertValue(metadataNode,
 					new tools.jackson.core.type.TypeReference<Map<String, Object>>() {
 					});
@@ -375,15 +392,28 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 		}
 	}
 
+	/**
+	 * Creates the index, mapping metadata string values as keyword rather than letting
+	 * Elasticsearch default them to analyzed text. Metadata is only ever filtered on, and
+	 * an equality filter against an analyzed field matches every value that analyzes to
+	 * the same tokens, so it would also match values that merely contain the one asked
+	 * for.
+	 */
 	private void createIndexMapping() {
 		try {
 			this.elasticsearchClient.indices()
 				.create(cr -> cr.index(this.options.getIndexName())
 					.mappings(
-							map -> map.properties(this.options.getEmbeddingFieldName(),
-									p -> p.denseVector(dv -> dv
-										.similarity(parseSimilarity(this.options.getSimilarity().toString()))
-										.dims(this.options.getDimensions())))));
+							map -> map
+								.properties(this.options.getEmbeddingFieldName(),
+										p -> p.denseVector(dv -> dv
+											.similarity(parseSimilarity(this.options.getSimilarity().toString()))
+											.dims(this.options.getDimensions())))
+								.dynamicTemplates(NamedValue.of(METADATA_KEYWORD_TEMPLATE_NAME, DynamicTemplate
+									.of(dt -> dt.pathMatch(METADATA_FIELD_NAME + ".*")
+										.matchMappingType("string")
+										.mapping(
+												p -> p.keyword(k -> k.ignoreAbove(METADATA_KEYWORD_IGNORE_ABOVE))))))));
 		}
 		catch (IOException e) {
 			throw new RuntimeException(e);
