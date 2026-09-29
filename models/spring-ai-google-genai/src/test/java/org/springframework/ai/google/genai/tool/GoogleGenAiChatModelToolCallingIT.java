@@ -118,16 +118,15 @@ public class GoogleGenAiChatModelToolCallingIT {
 
 		List<Generation> generations = this.chatModel.call(new Prompt(messages, promptOptions)).getResults();
 
-		assertThat(generations).hasSize(2);
+		// One generation per candidate: the thought is a reasoning part of the message
+		// that also holds the tool call, and is not part of its text
+		assertThat(generations).hasSize(1);
 
-		var thought = generations.get(0).getOutput();
-		assertThat((Boolean) thought.getMetadata().get("isThought")).isTrue();
-		assertThat(thought.getText()).isNotBlank();
-		assertThat(thought.hasToolCalls()).isFalse();
-
-		var toolCalls = generations.get(1).getOutput();
-		assertThat(toolCalls.getText()).isBlank();
-		assertThat(toolCalls.getToolCalls()).containsAnyOf(
+		var output = generations.get(0).getOutput();
+		assertThat(output.getReasoning()).isNotEmpty();
+		assertThat(output.getReasoning().get(0).text()).isNotBlank();
+		assertThat(output.getText()).isBlank();
+		assertThat(output.getToolCalls()).containsAnyOf(
 				// JSON serialization of Map doesn't guarantee key order,
 				// so check both possible orderings to avoid flaky tests
 				new AssistantMessage.ToolCall("", "function", "getCurrentWeather",
