@@ -18,6 +18,7 @@ package org.springframework.ai.mcp.client.common.autoconfigure;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 import io.modelcontextprotocol.client.McpAsyncClient;
@@ -30,6 +31,7 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import reactor.core.publisher.Mono;
 
+import org.springframework.ai.mcp.SyncMcpToolCallbackProvider;
 import org.springframework.ai.mcp.client.common.autoconfigure.annotations.McpClientAnnotationScannerAutoConfiguration;
 import org.springframework.ai.mcp.client.common.autoconfigure.configurer.McpSyncClientConfigurer;
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpClientCommonProperties;
@@ -133,6 +135,51 @@ public class McpClientAutoConfigurationIT {
 				assertThat(properties.getType()).isEqualTo(McpClientCommonProperties.ClientType.ASYNC);
 				assertThat(properties.getRequestTimeout()).isEqualTo(Duration.ofSeconds(60));
 				assertThat(properties.isInitialized()).isFalse();
+			});
+	}
+
+	@Test
+	void syncClientInitializationFailureIsFatalByDefault() {
+		this.contextRunner.withUserConfiguration(FailingTransportConfiguration.class)
+			.run(context -> assertThat(context).hasFailed());
+	}
+
+	@Test
+	void asyncClientInitializationFailureIsFatalByDefault() {
+		this.contextRunner.withUserConfiguration(FailingTransportConfiguration.class)
+			.withPropertyValues("spring.ai.mcp.client.type=ASYNC")
+			.run(context -> assertThat(context).hasFailed());
+	}
+
+	@Test
+	void syncClientInitializationFailureCanBeIgnored() {
+		this.contextRunner.withUserConfiguration(FailingTransportConfiguration.class)
+			.withPropertyValues("spring.ai.mcp.client.fail-fast=false")
+			.run(context -> {
+				assertThat(context).hasNotFailed();
+				assertThat(context.getBean("mcpSyncClients", List.class)).hasSize(1);
+			});
+	}
+
+	@Test
+	void asyncClientInitializationFailureCanBeIgnored() {
+		this.contextRunner.withUserConfiguration(FailingTransportConfiguration.class)
+			.withPropertyValues("spring.ai.mcp.client.type=ASYNC", "spring.ai.mcp.client.fail-fast=false")
+			.run(context -> {
+				assertThat(context).hasNotFailed();
+				assertThat(context.getBean("mcpAsyncClients", List.class)).hasSize(1);
+			});
+	}
+
+	@Test
+	void healthyToolsRemainAvailableWhenAnotherClientIsUnavailable() {
+		this.contextRunner.withUserConfiguration(MixedTransportConfiguration.class)
+			.withPropertyValues("spring.ai.mcp.client.fail-fast=false")
+			.run(context -> {
+				assertThat(context).hasNotFailed();
+				assertThat(context.getBean(SyncMcpToolCallbackProvider.class).getToolCallbacks())
+					.extracting(callback -> callback.getToolDefinition().name())
+					.containsExactly("echo");
 			});
 	}
 
@@ -266,6 +313,35 @@ public class McpClientAutoConfigurationIT {
 	}
 
 	@Configuration
+	static class FailingTransportConfiguration {
+
+		@Bean
+		List<NamedClientMcpTransport> failingTransports() {
+			McpClientTransport mockTransport = Mockito.mock(McpClientTransport.class);
+			Mockito.when(mockTransport.protocolVersions()).thenReturn(List.of("2024-11-05"));
+			Mockito.when(mockTransport.connect(Mockito.any()))
+				.thenReturn(Mono.error(new IllegalStateException("Connection unavailable")));
+			return List.of(new NamedClientMcpTransport("unavailable", mockTransport));
+		}
+
+	}
+
+	@Configuration
+	static class MixedTransportConfiguration {
+
+		@Bean
+		List<NamedClientMcpTransport> mixedTransports() {
+			McpClientTransport failingTransport = Mockito.mock(McpClientTransport.class);
+			Mockito.when(failingTransport.protocolVersions()).thenReturn(List.of("2024-11-05"));
+			Mockito.when(failingTransport.connect(Mockito.any()))
+				.thenReturn(Mono.error(new IllegalStateException("Connection unavailable")));
+			return List.of(new NamedClientMcpTransport("healthy", new HealthyClientTransport()),
+					new NamedClientMcpTransport("unavailable", failingTransport));
+		}
+
+	}
+
+	@Configuration
 	static class CustomTransportConfiguration {
 
 		@Bean
@@ -312,6 +388,59 @@ public class McpClientAutoConfigurationIT {
 		@Override
 		public Mono<Void> closeGracefully() {
 			return Mono.empty(); // Test implementation
+		}
+
+	}
+
+	static class HealthyClientTransport implements McpClientTransport {
+
+		private Function<Mono<McpSchema.JSONRPCMessage>, Mono<McpSchema.JSONRPCMessage>> messageHandler = messages -> Mono
+			.empty();
+
+		@Override
+		public Mono<Void> connect(
+				Function<Mono<McpSchema.JSONRPCMessage>, Mono<McpSchema.JSONRPCMessage>> messageHandler) {
+			this.messageHandler = messageHandler;
+			return Mono.empty();
+		}
+
+		@Override
+		public Mono<Void> sendMessage(McpSchema.JSONRPCMessage message) {
+			if (!(message instanceof McpSchema.JSONRPCRequest request)) {
+				return Mono.empty();
+			}
+
+			Object result;
+			if (McpSchema.METHOD_INITIALIZE.equals(request.method())) {
+				McpSchema.InitializeRequest initializeRequest = (McpSchema.InitializeRequest) request.params();
+				result = McpSchema.InitializeResult
+					.builder(initializeRequest.protocolVersion(),
+							McpSchema.ServerCapabilities.builder().tools(false).build(),
+							new McpSchema.Implementation("healthy-server", "1.0.0"))
+					.build();
+			}
+			else if (McpSchema.METHOD_TOOLS_LIST.equals(request.method())) {
+				McpSchema.Tool tool = McpSchema.Tool.builder("echo", Map.of("type", "object"))
+					.description("Echo")
+					.build();
+				result = McpSchema.ListToolsResult.builder(List.of(tool)).build();
+			}
+			else {
+				return Mono.empty();
+			}
+
+			return this.messageHandler.apply(Mono.just(McpSchema.JSONRPCResponse.result(request.id(), result))).then();
+		}
+
+		@SuppressWarnings("unchecked")
+		@Override
+		public <T> T unmarshalFrom(Object data, TypeRef<T> typeRef) {
+			return (T) data;
+		}
+
+		@Override
+		public Mono<Void> closeGracefully() {
+			return Mono.empty();
 		}
 
 	}
