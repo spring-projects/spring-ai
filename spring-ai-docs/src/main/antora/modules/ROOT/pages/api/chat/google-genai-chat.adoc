@@ -341,6 +341,10 @@ ChatResponse response = chatModel.call(
 
 NOTE: Server-side tool invocations are observational only — the client does not execute them. They are surfaced in metadata separately from client-side function calls to avoid interfering with the tool execution loop.
 
+The server-side tool call and response parts are also kept in the message parts, in order, as `UnknownPart`s of provider `google` and kind `toolCall` or `toolResponse`, holding the Gemini part as raw JSON.
+They are never tool calls, so `ToolCallingAdvisor` does not try to execute them.
+When the assistant message is sent back to Gemini, for example in the next round of a tool-call loop, they are replayed verbatim together with their thought signatures.
+
 == Thinking Configuration [[thinking-config]]
 
 Gemini models support a "thinking" capability that allows the model to perform deeper reasoning before generating responses. This is controlled through the `ThinkingConfig` which includes three related options: `thinkingBudget`, `thinkingLevel`, and `includeThoughts`.
@@ -576,26 +580,67 @@ String response = ChatClient.create(this.chatModel)
 
 === User-Controlled Tool Execution with Thought Signatures
 
-When using a manual tool execution loop, you must preserve thought signatures by keeping the original `AssistantMessage` (with its metadata) in the conversation history. Spring AI automatically attaches the signatures to the correct `functionCall` parts when converting messages.
+When using a manual tool execution loop, you must preserve thought signatures by keeping the original `AssistantMessage` in the conversation history.
+Each thought signature travels as the `OpaquePayload` of the message part that carried it (see <<message-parts>>), and Spring AI restores it on exactly that Gemini part when converting messages.
 
 **Requirements for manual tool execution with thought signatures:**
 
-1. Extract thought signatures from the response metadata:
+1. If you need to inspect the signatures, read them from the parts:
 +
 [source,java]
 ----
 AssistantMessage assistantMessage = response.getResult().getOutput();
-Map<String, Object> metadata = assistantMessage.getMetadata();
-List<byte[]> thoughtSignatures = (List<byte[]>) metadata.get("thoughtSignatures");
+for (MessagePart part : assistantMessage.getParts()) {
+    OpaquePayload payload = part.payload();
+    if (payload != null && GoogleGenAiChatModel.GOOGLE_PROVIDER.equals(payload.provider())) {
+        // kind is GoogleGenAiChatModel.PAYLOAD_THOUGHT_SIGNATURE,
+        // data is the Base64 encoded signature
+    }
+}
 ----
 
-2. When sending back function responses, include the original `AssistantMessage` with its metadata intact in your message history. Spring AI will automatically attach the thought signatures to the correct `functionCall` parts.
+2. When sending back function responses, include the original `AssistantMessage`, with its parts intact, in your message history.
+Spring AI will automatically attach the thought signatures to the correct parts.
 
 3. For Gemini 3 Pro, failing to preserve thought signatures during the current turn will result in HTTP 400 errors from the API.
+
+NOTE: The message metadata still carries all signatures of a response as a `thoughtSignatures` list of byte arrays, for chat memories that keep message metadata but not message parts.
+When no part of an assistant message carries a Google payload, the signatures of that list are attached to its function calls in order, which is how messages written by earlier versions keep replaying.
 
 IMPORTANT: Only the current turn's function calls require thought signatures. When starting a new conversation turn (after completing a function calling round), you do not need to preserve the previous turn's signatures.
 
 NOTE: Enabling `includeThoughts` increases token usage as thought processes are included in responses. This impacts API costs but provides better reasoning transparency.
+
+== Message Parts [[message-parts]]
+
+A response candidate is a single `Generation` whose `AssistantMessage` holds the Gemini parts, in their order, as xref:api/chatmodel.adoc#message-parts[message parts]:
+
+[cols="1,2", stripes=even]
+|====
+| Gemini part | Message part
+
+| thought text (`thought: true`) | `ReasoningPart`
+| text | `TextPart`
+| `functionCall` | `ToolCallPart`, with the function call id as the `ToolCall` id
+| `inlineData` | `MediaPart`
+| anything else: server-side `toolCall` and `toolResponse`, `executableCode`, `codeExecutionResult`, `fileData` | `UnknownPart` of provider `google`, holding the Gemini part as raw JSON
+|====
+
+A thought signature is the `OpaquePayload` of the part that carried it.
+`getText()` returns the answer text only, and thought summaries are available through `getReasoning()`:
+
+[source,java]
+----
+AssistantMessage message = chatModel.call(prompt).getResult().getOutput();
+
+String answer = message.getText();
+List<String> thoughts = message.getReasoning().stream().map(ReasoningPart::text).toList();
+----
+
+When the message is sent back to Gemini, every part is replayed as it was received: thoughts as thought parts, each signature on its own part, unknown parts verbatim.
+Reasoning and unknown parts produced by another provider are skipped.
+
+When streaming, every chunk carries the response id and its parts are stamped with a synthesized content block index, so that `MessageAggregator` concatenates consecutive text or thought deltas and keeps the signature Gemini sends on the last delta of a part.
 
 == Multimodal
 
@@ -622,6 +667,9 @@ var userMessage = UserMessage.builder()
 
 ChatResponse response = chatModel.call(new Prompt(List.of(this.userMessage)));
 ----
+
+The parts of a `UserMessage` are sent to Gemini in their order, so text and media can interleave when the message is built from parts, for example `UserMessage.builder().part(TextPart.of("Look at ")).part(MediaPart.of(image)).part(TextPart.of("this.")).build()`.
+A message built with `text(...)` and `media(...)` keeps the order text then media.
 
 === PDF
 

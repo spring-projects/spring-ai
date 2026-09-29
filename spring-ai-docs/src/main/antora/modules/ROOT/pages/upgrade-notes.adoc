@@ -41,6 +41,47 @@ A streamed chunk never has a `null` text, so `map(AssistantMessage::getText).col
 By default, tool calls are still buffered and arrive once as a complete call.
 Partial parts are not tool calls, so nothing executes on them, and `ChatClient` hides them either way.
 
+=== Google GenAI
+
+==== Changed: One `Generation` per Candidate, with Ordered Message Parts
+
+`GoogleGenAiChatModel` now returns one `Generation` per response candidate, whose message holds the Gemini parts in order: thoughts as `ReasoningPart`, text as `TextPart`, function calls as `ToolCallPart`, inline data as `MediaPart`, and server-side tool calls and responses, executable code, code execution results and file data as `UnknownPart`.
+Each thought signature is the `OpaquePayload` of the part that carried it, and is replayed on that same part.
+See xref:api/chat/google-genai-chat.adoc#message-parts[Message Parts].
+
+===== Impact
+
+* With `includeThoughts` enabled, thoughts are no longer separate generations flagged with the `isThought` metadata key, and a function call candidate is no longer split into a thought, a tool call and an answer generation.
+`getResult()` is the whole candidate, so `ChatClient...content()` returns the answer instead of the first thought.
+Read the thoughts with `AssistantMessage.getReasoning()`.
+* Text that precedes a function call in the same candidate is part of the message text.
+* Server-side tool parts, executable code and code execution results are sent back to Gemini when the message is replayed, instead of being dropped.
+* Streamed chunks carry the response id and indexed partial parts, as described in the streaming contract above.
+
+===== Migration
+
+Replace code that iterates over `getResults()` and filters on `GoogleGenAiChatModel.THOUGHT_METADATA_KEY`:
+
+[source,java]
+----
+// Before
+List<String> thoughts = response.getResults().stream()
+    .filter(g -> Boolean.TRUE.equals(g.getOutput().getMetadata().get(GoogleGenAiChatModel.THOUGHT_METADATA_KEY)))
+    .map(g -> g.getOutput().getText())
+    .toList();
+
+// After
+List<String> thoughts = response.getResult().getOutput().getReasoning().stream()
+    .map(ReasoningPart::text)
+    .toList();
+----
+
+===== Deprecated
+
+* `GoogleGenAiChatModel.THOUGHT_METADATA_KEY` is no longer written.
+An assistant message that still carries it, for example one restored from a chat memory written by an earlier version, has its text replayed to Gemini as a thought.
+* The `thoughtSignatures` message metadata list is still written, and is used to replay the signatures of messages whose parts carry none, but the part payloads are the source of truth.
+
 [[upgrading-to-2-0-1]]
 == Upgrading to 2.0.1
 
