@@ -41,6 +41,61 @@ A streamed chunk never has a `null` text, so `map(AssistantMessage::getText).col
 By default, tool calls are still buffered and arrive once as a complete call.
 Partial parts are not tool calls, so nothing executes on them, and `ChatClient` hides them either way.
 
+=== Bedrock Converse
+
+==== `BedrockChatOptions.requestParameters` widened to `Map<String, Object>`
+
+`BedrockChatOptions.requestParameters` (and its Spring Boot property mirror `BedrockConverseProxyChatProperties.requestParameters`) has been widened from `Map<String, String>` to `Map<String, Object>`.
+This allows nested maps and lists as values, which is required for structured provider-specific fields such as Anthropic's `output_config` passed through Bedrock Converse's `additionalModelRequestFields`.
+
+===== Impact
+
+This is a source-level breaking change for callers that hold an explicitly typed `Map<String, String>` variable assigned to or read from this API.
+Inline map literals and callers already using `Map<String, Object>` (or `var`) are unaffected.
+
+===== Migration
+
+Change any explicitly typed `Map<String, String>` variable to `Map<String, Object>`:
+
+[source,java]
+----
+// Before
+Map<String, String> params = Map.of("anthropic_version", "bedrock-2023-05-31");
+BedrockChatOptions options = BedrockChatOptions.builder()
+    .requestParameters(params)
+    .build();
+
+// After
+Map<String, Object> params = Map.of("anthropic_version", "bedrock-2023-05-31");
+BedrockChatOptions options = BedrockChatOptions.builder()
+    .requestParameters(params)
+    .build();
+----
+
+Nested values are now supported:
+
+[source,java]
+----
+BedrockChatOptions options = BedrockChatOptions.builder()
+    .requestParameters(Map.of("output_config", Map.of("effort", "low")))
+    .build();
+----
+
+[source,yaml]
+----
+spring:
+  ai:
+    bedrock:
+      converse:
+        chat:
+          request-parameters:
+            output_config:
+              effort: low
+            anthropic_version: bedrock-2023-05-31
+----
+
+NOTE: Map keys bind literally — use the exact provider field name (e.g. `output_config`, not `output-config`).
+
 [[upgrading-to-2-0-1]]
 == Upgrading to 2.0.1
 

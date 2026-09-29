@@ -110,6 +110,8 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 	 * {@link List}s (in addition to plain scalars) to express structured fields such as
 	 * Anthropic's {@code output_config}, e.g. {@code Map.of("output_config",
 	 * Map.of("effort", "low"))}.
+	 *
+	 * @since 2.1.0
 	 */
 	public @Nullable Map<String, Object> getRequestParameters() {
 		return this.requestParameters;
@@ -231,6 +233,7 @@ public class BedrockChatOptions implements ToolCallingChatOptions, StructuredOut
 
 		/**
 		 * @see BedrockChatOptions#getRequestParameters()
+		 * @since 2.1.0
 		 */
 		public B requestParameters(@Nullable Map<String, Object> requestParameters) {
 			this.requestParameters = requestParameters;

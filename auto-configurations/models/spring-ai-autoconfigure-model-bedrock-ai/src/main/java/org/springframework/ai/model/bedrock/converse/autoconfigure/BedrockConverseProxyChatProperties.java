@@ -112,11 +112,16 @@ public class BedrockConverseProxyChatProperties {
 	 * such as Anthropic's {@code output_config}, e.g.: <pre>{@code
 	 * spring.ai.bedrock.converse.chat.request-parameters.output_config.effort=low
 	 * }</pre>
+	 *
+	 * @since 2.1.0
 	 */
 	public Map<String, Object> getRequestParameters() {
 		return this.requestParameters;
 	}
 
+	/**
+	 * @since 2.1.0
+	 */
 	public void setRequestParameters(Map<String, Object> requestParameters) {
 		this.requestParameters = requestParameters;
 	}
