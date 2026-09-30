@@ -95,6 +95,17 @@ public class FactCheckingEvaluator implements Evaluator {
 	private final String evaluationPrompt;
 
 	/**
+	 * Constructs a new FactCheckingEvaluator with the provided ChatClient.Builder, using
+	 * the default evaluation prompt.
+	 * @param chatClientBuilder the builder for the ChatClient used to perform the
+	 * evaluation
+	 * @since 2.0.0
+	 */
+	public FactCheckingEvaluator(ChatClient.Builder chatClientBuilder) {
+		this(chatClientBuilder, null);
+	}
+
+	/**
 	 * Constructs a new FactCheckingEvaluator with the provided ChatClient.Builder and
 	 * evaluation prompt.
 	 * @param chatClientBuilder The builder for the ChatClient used to perform the
