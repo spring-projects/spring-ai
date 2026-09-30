@@ -35,6 +35,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openai.client.OpenAIClient;
 import com.openai.client.OpenAIClientAsync;
 import com.openai.core.JsonValue;
+import com.openai.core.ObjectMappers;
 import com.openai.core.RequestOptions;
 import com.openai.core.http.AsyncStreamResponse;
 import com.openai.core.http.HttpResponseFor;
@@ -86,6 +87,13 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.messages.part.MediaPart;
+import org.springframework.ai.chat.messages.part.MessagePart;
+import org.springframework.ai.chat.messages.part.OpaquePayload;
+import org.springframework.ai.chat.messages.part.ReasoningPart;
+import org.springframework.ai.chat.messages.part.StreamingParts;
+import org.springframework.ai.chat.messages.part.TextPart;
+import org.springframework.ai.chat.messages.part.ToolCallPart;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
@@ -119,6 +127,24 @@ import org.springframework.util.StringUtils;
 
 /**
  * Chat Model implementation using the OpenAI Java SDK.
+ * <p>
+ * The assistant message of each choice is built from ordered {@link MessagePart}s:
+ * <ul>
+ * <li>the {@code reasoning_content} (or {@code reasoning}) field that some
+ * OpenAI-compatible servers return becomes a {@link ReasoningPart} without a
+ * payload;</li>
+ * <li>the {@code content} becomes a {@link TextPart};</li>
+ * <li>each {@code function} tool call becomes a {@link ToolCallPart}, and the extra
+ * fields of the tool call, if any, become its
+ * {@link #PAYLOAD_TOOL_CALL_ADDITIONAL_PROPERTIES} payload;</li>
+ * <li>the audio output becomes a {@link MediaPart}.</li>
+ * </ul>
+ * Chat Completions has no way to interleave these items on the wire, so an assistant
+ * message is replayed as one message: the text parts are joined into the {@code content},
+ * the reasoning parts are joined into {@code reasoning_content}, unless another provider
+ * signed some of them, and the tool call parts become the {@code tool_calls}. Media and
+ * other parts are not replayed. User message parts are sent in their order, so text and
+ * media can interleave.
  *
  * @author Julien Dubois
  * @author Christian Tzolov
@@ -130,20 +156,52 @@ import org.springframework.util.StringUtils;
  * @author Jewoo Shin
  * @author guan xu
  * @author Raphael Vullriede
+ * @author Dimitar Proynov
  */
 public final class OpenAiChatModel implements ChatModel {
 
+	/**
+	 * The {@link OpaquePayload#provider() provider} of the payloads this model produces.
+	 * Only payloads of this provider are replayed by this model.
+	 * @since 2.1.0
+	 */
+	public static final String CHAT_COMPLETIONS_PROVIDER = "openai.chat.completions";
+
+	/**
+	 * The {@link OpaquePayload#kind() kind} of a {@link ToolCallPart} payload that holds
+	 * the extra fields an OpenAI-compatible server returned on that tool call, as a JSON
+	 * object string. The fields are sent back verbatim when the tool call is replayed.
+	 * @since 2.1.0
+	 */
+	public static final String PAYLOAD_TOOL_CALL_ADDITIONAL_PROPERTIES = "tool_call_additional_properties";
+
 	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
 
+	/**
+	 * Message metadata key holding the reasoning content as a single string. Superseded
+	 * by the {@link ReasoningPart}s of the message: still written for one release, and
+	 * read on replay only for a message that has no reasoning part, such as one persisted
+	 * by an earlier version.
+	 */
 	private static final String REASONING_CONTENT = "reasoningContent";
 
+	/**
+	 * Message metadata key holding a map from tool call id to the JSON string of the
+	 * extra fields of that tool call. Superseded by the
+	 * {@link #PAYLOAD_TOOL_CALL_ADDITIONAL_PROPERTIES} payload of the
+	 * {@link ToolCallPart}: still written for one release, and read on replay only for a
+	 * tool call part without that payload.
+	 */
 	static final String TOOL_CALL_ADDITIONAL_PROPERTIES_METADATA_KEY = "openai.tool_calls.additional_properties";
 
 	private static final TypeReference<Map<String, Object>> MAP_TYPE_REF = new TypeReference<>() {
 	};
 
-	// Jackson 2 required due to OpenAI deserializers
-	private static final ObjectMapper objectMapper = new ObjectMapper();
+	/**
+	 * The OpenAI SDK's own Jackson 2 mapper, the one the SDK (de)serializes its types
+	 * with: its types need Jackson 2, and this configuration round-trips them exactly.
+	 */
+	private static final ObjectMapper objectMapper = ObjectMappers.jsonMapper();
 
 	private final Log logger = LogFactory.getLog(OpenAiChatModel.class);
 
@@ -255,7 +313,7 @@ public final class OpenAiChatModel implements ChatModel {
 			RateLimit rateLimit) {
 		List<Generation> generations = chatCompletion.choices()
 			.stream()
-			.map(choice -> buildGeneration(choice, choiceMetadata(chatCompletion.id(), choice), request))
+			.map(choice -> buildGeneration(choice, choiceMetadata(chatCompletion.id(), choice), request, null))
 			.toList();
 		return new ChatResponse(generations,
 				chatResponseMetadataFrom(chatCompletion, currentUsage(chatCompletion), rateLimit));
@@ -369,7 +427,8 @@ public final class OpenAiChatModel implements ChatModel {
 		String id = chatCompletion.id();
 		List<Generation> generations = chatCompletion.choices()
 			.stream()
-			.map(choice -> buildGeneration(choice, streamedChoiceMetadata(id, choice, streamAccumulator), request))
+			.map(choice -> buildGeneration(choice, streamedChoiceMetadata(id, choice, streamAccumulator), request,
+					streamAccumulator.partIndexer(id)))
 			.toList();
 		// Reading the rate limit here would mean the raw streaming call, whose
 		// blocking StreamResponse would hold a worker for the whole stream.
@@ -392,28 +451,71 @@ public final class OpenAiChatModel implements ChatModel {
 		);
 	}
 
+	/**
+	 * Builds the generation of one choice. When {@code partIndexer} is not {@code null}
+	 * the choice is a streamed chunk, and its parts are stamped with their stream index,
+	 * see {@link StreamingPartIndexer}.
+	 */
 	private Generation buildGeneration(ChatCompletion.Choice choice, Map<String, Object> metadata,
-			ChatCompletionCreateParams request) {
+			ChatCompletionCreateParams request, @Nullable StreamingPartIndexer partIndexer) {
 		ChatCompletionMessage message = choice.message();
 		Map<String, String> toolCallAdditionalProperties = extractToolCallAdditionalProperties(message);
 		ChatCompletionAudio audioOutput = audioOutput(message, request);
 
-		String textContent = message.content().orElse("");
-		List<Media> media = new ArrayList<>();
-		if (audioOutput != null) {
-			media.add(audioMedia(audioOutput, request));
-			if (!StringUtils.hasText(textContent)) {
-				textContent = audioOutput.transcript();
-			}
-		}
-
 		var assistantMessage = AssistantMessage.builder()
-			.content(textContent)
+			.parts(assistantParts(choice, audioOutput, request, toolCallAdditionalProperties, partIndexer))
 			.properties(assistantMessageMetadata(metadata, toolCallAdditionalProperties))
-			.toolCalls(assistantToolCalls(message))
-			.media(media)
 			.build();
 		return new Generation(assistantMessage, generationMetadata(choice, audioOutput));
+	}
+
+	/**
+	 * The parts of the assistant message of one choice, in order: reasoning, text, tool
+	 * calls, then the audio output.
+	 */
+	private static List<MessagePart> assistantParts(ChatCompletion.Choice choice,
+			@Nullable ChatCompletionAudio audioOutput, ChatCompletionCreateParams request,
+			Map<String, String> toolCallAdditionalProperties, @Nullable StreamingPartIndexer partIndexer) {
+		List<MessagePart> parts = new ArrayList<>();
+		String reasoning = getReasoningContent(choice);
+		// hasLength, not hasText: a streamed reasoning delta is often a single
+		// whitespace or newline token that must be kept.
+		if (StringUtils.hasLength(reasoning)) {
+			parts.add(ReasoningPart.of(reasoning));
+		}
+		// An empty content has no text part: a tool-call answer or a reasoning-only
+		// chunk carries none, and the "" some servers stream next to every reasoning
+		// delta must not open a text part between two reasoning deltas.
+		String text = assistantText(choice.message(), audioOutput);
+		if (StringUtils.hasLength(text)) {
+			parts.add(TextPart.of(text));
+		}
+		parts.addAll(toolCallParts(choice.message(), toolCallAdditionalProperties));
+		if (audioOutput != null) {
+			parts.add(MediaPart.of(audioMedia(audioOutput, request)));
+		}
+		if (partIndexer != null) {
+			parts.replaceAll(partIndexer::stamp);
+		}
+		if (parts.isEmpty()) {
+			// A message without any part, such as a refusal or the role-only first
+			// chunk of a stream, keeps the empty text it always had, so that getText()
+			// is not null and streamed chunk texts can be joined without a null check.
+			parts.add(TextPart.of(""));
+		}
+		return parts;
+	}
+
+	/**
+	 * The content of the message, or the transcript of its audio output when the content
+	 * is empty.
+	 */
+	private static String assistantText(ChatCompletionMessage message, @Nullable ChatCompletionAudio audioOutput) {
+		String text = message.content().orElse("");
+		if (audioOutput != null && !StringUtils.hasText(text)) {
+			return audioOutput.transcript();
+		}
+		return text;
 	}
 
 	/**
@@ -472,14 +574,27 @@ public final class OpenAiChatModel implements ChatModel {
 	 * type, such as {@code custom} tool calls, cannot be executed by a tool callback and
 	 * are dropped.
 	 */
-	private static List<AssistantMessage.ToolCall> assistantToolCalls(ChatCompletionMessage message) {
+	private static List<MessagePart> toolCallParts(ChatCompletionMessage message,
+			Map<String, String> toolCallAdditionalProperties) {
 		return message.toolCalls()
 			.orElse(List.of())
 			.stream()
 			.flatMap(toolCall -> toolCall.function().stream())
-			.map(functionToolCall -> new AssistantMessage.ToolCall(functionToolCall.id(), "function",
-					functionToolCall.function().name(), functionToolCall.function().arguments()))
+			.map(functionToolCall -> toolCallPart(functionToolCall, toolCallAdditionalProperties))
 			.toList();
+	}
+
+	/**
+	 * A {@code function} tool call becomes a {@link ToolCallPart} whose payload holds the
+	 * extra fields of the call, if any.
+	 */
+	private static MessagePart toolCallPart(ChatCompletionMessageFunctionToolCall call,
+			Map<String, String> toolCallAdditionalProperties) {
+		String additionalProperties = toolCallAdditionalProperties.get(call.id());
+		OpaquePayload payload = additionalProperties != null ? new OpaquePayload(CHAT_COMPLETIONS_PROVIDER,
+				PAYLOAD_TOOL_CALL_ADDITIONAL_PROPERTIES, additionalProperties) : null;
+		return new ToolCallPart(new AssistantMessage.ToolCall(call.id(), "function", call.function().name(),
+				call.function().arguments()), payload, Map.of());
 	}
 
 	private Map<String, String> extractToolCallAdditionalProperties(ChatCompletionMessage message) {
@@ -642,15 +757,16 @@ public final class OpenAiChatModel implements ChatModel {
 
 	/**
 	 * Converts a user or a system message. A user message with media is sent as content
-	 * parts: its text, then its media (images, audio, files). Any other message is sent
-	 * as simple text content.
+	 * parts, in the order of its message parts, so that text and media can interleave. A
+	 * message built with the constructors or the text() and media() setters has its text
+	 * part first, then its media. Any other message is sent as simple text content.
 	 */
 	private ChatCompletionUserMessageParam userMessageParam(Message message) {
 		ChatCompletionUserMessageParam.Builder builder = ChatCompletionUserMessageParam.builder()
 			.role(JsonValue.from(message.getMessageType().getValue()));
 
 		String messageText = message.getText();
-		if (message instanceof UserMessage userMessage && !CollectionUtils.isEmpty(userMessage.getMedia())) {
+		if (message instanceof UserMessage userMessage && hasMediaPart(userMessage)) {
 			builder.contentOfArrayOfContentParts(userContentParts(userMessage));
 		}
 		else if (messageText != null) {
@@ -659,19 +775,38 @@ public final class OpenAiChatModel implements ChatModel {
 		return builder.build();
 	}
 
+	private static boolean hasMediaPart(UserMessage userMessage) {
+		return userMessage.getParts().stream().anyMatch(MediaPart.class::isInstance);
+	}
+
 	private List<ChatCompletionContentPart> userContentParts(UserMessage userMessage) {
-		List<ChatCompletionContentPart> parts = new ArrayList<>();
-		String messageText = userMessage.getText();
-		if (messageText != null && !messageText.isEmpty()) {
-			parts.add(textContentPart(messageText));
-		}
-		for (Media media : userMessage.getMedia()) {
-			ChatCompletionContentPart contentPart = toContentPart(media);
+		List<ChatCompletionContentPart> contentParts = new ArrayList<>();
+		for (MessagePart part : userMessage.getParts()) {
+			ChatCompletionContentPart contentPart = userContentPart(part);
 			if (contentPart != null) {
-				parts.add(contentPart);
+				contentParts.add(contentPart);
 			}
 		}
-		return parts;
+		return contentParts;
+	}
+
+	/**
+	 * Converts one part of a user message to a content part. Returns {@code null} for an
+	 * empty text part, for media that cannot be converted, and for a part this API has no
+	 * content part for.
+	 */
+	private @Nullable ChatCompletionContentPart userContentPart(MessagePart part) {
+		if (part instanceof TextPart textPart) {
+			return textPart.text().isEmpty() ? null : textContentPart(textPart.text());
+		}
+		if (part instanceof MediaPart mediaPart) {
+			return toContentPart(mediaPart.media());
+		}
+		if (logger.isDebugEnabled()) {
+			logger.debug("Skipping a user message part the OpenAI Chat Completions API has no content part for: "
+					+ part.getClass().getSimpleName());
+		}
+		return null;
 	}
 
 	/**
@@ -758,9 +893,22 @@ public final class OpenAiChatModel implements ChatModel {
 	}
 
 	/**
-	 * Converts an assistant message with its tool calls and, unless
-	 * {@code replayReasoningContent} is {@code false}, its reasoning content, see
-	 * {@link OpenAiChatOptions#getReplayReasoningContent()}.
+	 * Converts an assistant message to a {@link ChatCompletionAssistantMessageParam}.
+	 * <p>
+	 * Unlike the {@link MessagePart}s of the message, the SDK type has no ordered list of
+	 * content blocks: it has one field per kind of content. So the parts are not sent one
+	 * by one but folded into those fields:
+	 * <ul>
+	 * <li>the text of the {@link TextPart}s, joined, becomes its {@code content};</li>
+	 * <li>the {@link ToolCallPart}s become its {@code tool_calls}, in part order;</li>
+	 * <li>the text of the {@link ReasoningPart}s, joined, becomes its
+	 * {@code reasoning_content} additional property, unless
+	 * {@code replayReasoningContent} is {@code false} (see
+	 * {@link OpenAiChatOptions#getReplayReasoningContent()}) or the reasoning cannot be
+	 * replayed (see {@link #reasoningContent(AssistantMessage)}).</li>
+	 * </ul>
+	 * Any other part, such as a {@link MediaPart} holding the audio output of an earlier
+	 * turn, has no field and is not sent.
 	 */
 	private ChatCompletionAssistantMessageParam assistantMessageParam(AssistantMessage assistantMessage,
 			boolean replayReasoningContent) {
@@ -789,12 +937,36 @@ public final class OpenAiChatModel implements ChatModel {
 		return builder.build();
 	}
 
+	/**
+	 * The tool calls of an assistant message, one per {@link ToolCallPart}, in part
+	 * order.
+	 */
 	private List<ChatCompletionMessageToolCall> messageToolCalls(AssistantMessage assistantMessage) {
-		Map<String, String> toolCallAdditionalProperties = toolCallAdditionalPropertiesFromMetadata(assistantMessage);
-		return assistantMessage.getToolCalls()
+		// Messages persisted before the parts model carry the extra tool call fields in
+		// the metadata.
+		Map<String, String> legacyToolCallAdditionalProperties = toolCallAdditionalPropertiesFromMetadata(
+				assistantMessage);
+		return assistantMessage.getParts()
 			.stream()
-			.map(toolCall -> functionToolCall(toolCall, toolCallAdditionalProperties.get(toolCall.id())))
+			.filter(ToolCallPart.class::isInstance)
+			.map(ToolCallPart.class::cast)
+			.map(part -> functionToolCall(part.toolCall(),
+					additionalPropertiesJson(part, legacyToolCallAdditionalProperties)))
 			.toList();
+	}
+
+	/**
+	 * The extra fields of a tool call: the payload of the part when this model produced
+	 * it, or else the legacy metadata of the message.
+	 */
+	private static @Nullable String additionalPropertiesJson(ToolCallPart part,
+			Map<String, String> legacyToolCallAdditionalProperties) {
+		OpaquePayload payload = part.payload();
+		if (payload != null && CHAT_COMPLETIONS_PROVIDER.equals(payload.provider())
+				&& PAYLOAD_TOOL_CALL_ADDITIONAL_PROPERTIES.equals(payload.kind())) {
+			return payload.data();
+		}
+		return legacyToolCallAdditionalProperties.get(part.toolCall().id());
 	}
 
 	/**
@@ -831,8 +1003,31 @@ public final class OpenAiChatModel implements ChatModel {
 		return additionalProperties;
 	}
 
-	private static @Nullable String reasoningContent(AssistantMessage assistantMessage) {
-		return assistantMessage.getMetadata().get(REASONING_CONTENT) instanceof String reasoning ? reasoning : null;
+	/**
+	 * The reasoning of an assistant message, joined from its reasoning parts. A message
+	 * without reasoning parts, such as one persisted by an earlier version, falls back to
+	 * the metadata key. A message in which another provider signed some of the reasoning
+	 * has none replayed: signed reasoning is only valid with its payload, which this API
+	 * has no field for, and the unsigned parts of a provider that signs only some of its
+	 * reasoning parts are only a fragment of it.
+	 */
+	private @Nullable String reasoningContent(AssistantMessage assistantMessage) {
+		List<ReasoningPart> reasoningParts = assistantMessage.getReasoning();
+		if (reasoningParts.isEmpty()) {
+			return assistantMessage.getMetadata().get(REASONING_CONTENT) instanceof String reasoning ? reasoning : null;
+		}
+		if (reasoningParts.stream().anyMatch(OpenAiChatModel::isSignedByAnotherProvider)) {
+			if (logger.isDebugEnabled()) {
+				logger.debug("Not replaying reasoning signed by another provider");
+			}
+			return null;
+		}
+		return reasoningParts.stream().map(ReasoningPart::text).filter(Objects::nonNull).collect(Collectors.joining());
+	}
+
+	private static boolean isSignedByAnotherProvider(ReasoningPart part) {
+		OpaquePayload payload = part.payload();
+		return payload != null && !CHAT_COMPLETIONS_PROVIDER.equals(payload.provider());
 	}
 
 	/**
@@ -1374,16 +1569,18 @@ public final class OpenAiChatModel implements ChatModel {
 
 	/**
 	 * The state of a streaming call that outlives a single chunk: the role, which only
-	 * the first chunk of a response carries, and the reasoning fragments of each choice.
-	 * The fragments are accumulated so that the final response of the stream carries the
-	 * full reasoning content, surviving last-wins metadata aggregation (e.g.
-	 * {@link MessageAggregator}).
+	 * the first chunk of a response carries, the reasoning fragments of each choice, and
+	 * the {@link StreamingPartIndexer} of each response. The fragments are accumulated so
+	 * that the final response of the stream carries the full reasoning content, surviving
+	 * last-wins metadata aggregation (e.g. {@link MessageAggregator}).
 	 */
 	private static final class StreamAccumulator {
 
 		private final Map<String, String> roleByResponseId = new ConcurrentHashMap<>();
 
 		private final Map<String, String> reasoningByChoice = new ConcurrentHashMap<>();
+
+		private final Map<String, StreamingPartIndexer> partIndexerByResponseId = new ConcurrentHashMap<>();
 
 		String role(String responseId, ChatCompletionMessage message) {
 			this.roleByResponseId.putIfAbsent(responseId, roleOf(message));
@@ -1393,6 +1590,88 @@ public final class OpenAiChatModel implements ChatModel {
 		String accumulateReasoning(String responseId, ChatCompletion.Choice choice) {
 			return this.reasoningByChoice.merge(responseId + ":" + choice.index(), getReasoningContent(choice),
 					String::concat);
+		}
+
+		/**
+		 * The part indexer of a response, shared by all its choices, see
+		 * {@link StreamingPartIndexer}.
+		 */
+		StreamingPartIndexer partIndexer(String responseId) {
+			return this.partIndexerByResponseId.computeIfAbsent(responseId, key -> new StreamingPartIndexer());
+		}
+
+	}
+
+	/**
+	 * Assigns the {@link StreamingParts} index to the parts of a streamed response, so
+	 * that {@link MessageAggregator} can rebuild the complete parts from the chunks.
+	 * <p>
+	 * The aggregator merges streamed parts by index: a {@linkplain StreamingParts#partial
+	 * partial} part is appended to what was received earlier at the same index, and a
+	 * {@linkplain StreamingParts#complete complete} part replaces it. Providers that
+	 * stream content blocks, such as Anthropic, send that index with every delta. Chat
+	 * Completions does not: a chunk only carries a {@code reasoning_content} delta, a
+	 * {@code content} delta, or the tool calls that {@link ChunkMerger} has merged. This
+	 * class synthesizes the index from the order in which the parts arrive:
+	 * <ul>
+	 * <li>A reasoning delta or a text delta continues the current index when the previous
+	 * part was a delta of the same kind, and starts the next index otherwise. So a run of
+	 * reasoning deltas becomes one {@link ReasoningPart}, and a run of text deltas one
+	 * {@link TextPart}.</li>
+	 * <li>A tool call is already complete when it arrives, and gets the next index for
+	 * itself. It also ends the current run, so a text delta that follows it starts a new
+	 * text part.</li>
+	 * <li>Media is not indexed. The aggregator does not carry unindexed media, which is
+	 * how streamed media was handled before message parts.</li>
+	 * </ul>
+	 * For example, the deltas {@code reasoning("Think ")}, {@code reasoning("more.")},
+	 * {@code text("Hel")} and {@code text("lo")}, followed by one complete tool call, are
+	 * stamped as partial 0, partial 0, partial 1, partial 1 and complete 2. They
+	 * aggregate to a reasoning part {@code "Think more."}, a text part {@code "Hello"}
+	 * and the tool call, in that order.
+	 * <p>
+	 * One instance is used per response id, and it is shared by all the choices of that
+	 * response. The aggregator groups indexed parts by response id alone, so separate
+	 * indices per choice would make the parts of two choices ({@code n > 1}) overwrite
+	 * each other at the same index. With a shared instance, parts of different choices
+	 * never share an index unless they form a run of the same kind, in which case their
+	 * deltas are concatenated in arrival order and nothing is lost. The instance is
+	 * stateful and is not thread-safe; the chunks of a stream are processed one at a
+	 * time.
+	 */
+	private static final class StreamingPartIndexer {
+
+		/**
+		 * The index of the most recently stamped part, {@code -1} before the first one.
+		 */
+		private int index = -1;
+
+		/**
+		 * The type of the most recently stamped delta, {@link TextPart} or
+		 * {@link ReasoningPart}, or {@code null} when the most recent part was complete,
+		 * meaning no run is in progress.
+		 */
+		private @Nullable Class<? extends MessagePart> lastDeltaKind;
+
+		/**
+		 * Returns a copy of the part with its stream index set, and advances this
+		 * indexer. Call it once per part, in the order the parts appear in the response.
+		 * @param part the part of a streamed chunk, without an index
+		 * @return a {@link TextPart} or {@link ReasoningPart} stamped as partial, with
+		 * the index of the current run of deltas of its kind, or the next index when it
+		 * starts a new run; a {@link MediaPart} unchanged; any other part stamped as
+		 * complete, with the next index
+		 */
+		MessagePart stamp(MessagePart part) {
+			if (part instanceof MediaPart) {
+				return part;
+			}
+			boolean delta = part instanceof TextPart || part instanceof ReasoningPart;
+			if (!delta || part.getClass() != this.lastDeltaKind) {
+				this.index++;
+			}
+			this.lastDeltaKind = delta ? part.getClass() : null;
+			return delta ? StreamingParts.partial(part, this.index) : StreamingParts.complete(part, this.index);
 		}
 
 	}
@@ -1450,6 +1729,11 @@ public final class OpenAiChatModel implements ChatModel {
 			}).orElse(List.of());
 
 			Delta.Builder deltaBuilder = left.toBuilder().toolCalls(tcs);
+			// Concatenate text fragments too: some servers stream text next to or after
+			// the tool call deltas, and only the first chunk's text was kept otherwise.
+			right.content()
+				.filter(StringUtils::hasLength)
+				.ifPresent(rightFragment -> deltaBuilder.content(left.content().orElse("") + rightFragment));
 			// Concatenate reasoning fragments (e.g. DeepSeek "reasoning_content") so
 			// they survive the tool-call chunk merge instead of keeping only the first
 			// chunk's value.
