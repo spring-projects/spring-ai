@@ -17,6 +17,10 @@
 package org.springframework.ai.mcp;
 
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.spec.McpSchema.ClientCapabilities;
@@ -27,6 +31,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import org.springframework.ai.tool.ToolCallback;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -440,6 +446,55 @@ class SyncMcpToolCallbackProviderTests {
 		var callbacks = provider.getToolCallbacks();
 
 		assertThat(callbacks).hasSize(1);
+	}
+
+	@Test
+	void invalidationDuringRefreshShouldTriggerAnotherRefresh() throws Exception {
+		var clientInfo = Implementation.builder("testClient", "1.0.0").build();
+		when(this.mcpClient.getClientInfo()).thenReturn(clientInfo);
+		when(this.mcpClient.getClientCapabilities()).thenReturn(new ClientCapabilities(null, null, null, null));
+
+		Tool firstTool = mock(Tool.class);
+		when(firstTool.name()).thenReturn("first");
+		Tool secondTool = mock(Tool.class);
+		when(secondTool.name()).thenReturn("second");
+		ListToolsResult firstResult = mock(ListToolsResult.class);
+		when(firstResult.tools()).thenReturn(List.of(firstTool));
+		ListToolsResult secondResult = mock(ListToolsResult.class);
+		when(secondResult.tools()).thenReturn(List.of(secondTool));
+
+		CountDownLatch refreshStarted = new CountDownLatch(1);
+		CountDownLatch continueRefresh = new CountDownLatch(1);
+		AtomicInteger calls = new AtomicInteger();
+		when(this.mcpClient.listTools()).thenAnswer(invocation -> {
+			if (calls.getAndIncrement() == 0) {
+				refreshStarted.countDown();
+				if (!continueRefresh.await(5, TimeUnit.SECONDS)) {
+					throw new IllegalStateException("Timed out waiting to resume tool discovery");
+				}
+				return firstResult;
+			}
+			return secondResult;
+		});
+
+		SyncMcpToolCallbackProvider provider = SyncMcpToolCallbackProvider.builder().mcpClients(this.mcpClient).build();
+
+		FutureTask<ToolCallback[]> firstRefresh = new FutureTask<>(provider::getToolCallbacks);
+		new Thread(firstRefresh).start();
+		assertThat(refreshStarted.await(5, TimeUnit.SECONDS)).isTrue();
+		provider.onApplicationEvent(new McpToolsChangedEvent("testClient", List.of(secondTool)));
+		provider.onApplicationEvent(new McpToolsChangedEvent("testClient", List.of(secondTool)));
+
+		FutureTask<ToolCallback[]> waitingRefresh = new FutureTask<>(provider::getToolCallbacks);
+		new Thread(waitingRefresh).start();
+		continueRefresh.countDown();
+
+		assertThat(firstRefresh.get(5, TimeUnit.SECONDS)).hasSize(1);
+		var callbacks = waitingRefresh.get(5, TimeUnit.SECONDS);
+
+		assertThat(callbacks).hasSize(1);
+		assertThat(callbacks[0].getToolDefinition().name()).isEqualTo("second");
+		assertThat(calls).hasValue(2);
 	}
 
 }
