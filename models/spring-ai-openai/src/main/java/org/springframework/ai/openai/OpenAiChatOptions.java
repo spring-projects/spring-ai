@@ -21,7 +21,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 
@@ -674,14 +673,81 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 				this.replayReasoningContent, this.extraBody, this.toolCallbacks, this.toolContext);
 	}
 
-	public record AudioParameters(@Nullable Voice voice, @Nullable AudioResponseFormat format) {
+	/**
+	 * Parameters for audio output. The voice and format are sent to the model as given,
+	 * so values other than the {@link Voice} and {@link AudioResponseFormat} constants,
+	 * such as the voices of an OpenAI-compatible provider, can be used.
+	 *
+	 * @param voice the voice the model uses to respond, for example {@code "alloy"}
+	 * @param format the output audio format, for example {@code "wav"}
+	 */
+	public record AudioParameters(@Nullable String voice, @Nullable String format) {
+
+		/**
+		 * Create audio parameters with the given voice and format, sent as given.
+		 * @param voice the voice the model uses to respond, for example {@code "alloy"}
+		 * @param format the output audio format, for example {@code "wav"}
+		 * @since 2.1.0
+		 */
+		public AudioParameters(@Nullable String voice, @Nullable String format) {
+			this.voice = voice;
+			this.format = format;
+		}
+
+		/**
+		 * Create audio parameters from the voice and format constants of OpenAI.
+		 * @param voice the voice the model uses to respond
+		 * @param format the output audio format
+		 */
+		public AudioParameters(@Nullable Voice voice, @Nullable AudioResponseFormat format) {
+			this(voice != null ? voice.getValue() : null, format != null ? format.getValue() : null);
+		}
 
 		/**
 		 * Specifies the voice type.
 		 */
 		public enum Voice {
 
-			ALLOY, ASH, BALLAD, CORAL, ECHO, FABLE, ONYX, NOVA, SAGE, SHIMMER
+			ALLOY("alloy"),
+
+			ASH("ash"),
+
+			BALLAD("ballad"),
+
+			CORAL("coral"),
+
+			ECHO("echo"),
+
+			FABLE("fable"),
+
+			ONYX("onyx"),
+
+			NOVA("nova"),
+
+			SAGE("sage"),
+
+			SHIMMER("shimmer"),
+
+			VERSE("verse"),
+
+			MARIN("marin"),
+
+			CEDAR("cedar");
+
+			private final String value;
+
+			Voice(String value) {
+				this.value = value;
+			}
+
+			/**
+			 * Return the voice as sent to OpenAI.
+			 * @return the voice value
+			 * @since 2.1.0
+			 */
+			public String getValue() {
+				return this.value;
+			}
 
 		}
 
@@ -690,17 +756,42 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 		 */
 		public enum AudioResponseFormat {
 
-			MP3, FLAC, OPUS, PCM16, WAV, AAC
+			MP3("mp3"),
+
+			FLAC("flac"),
+
+			OPUS("opus"),
+
+			PCM16("pcm16"),
+
+			WAV("wav"),
+
+			AAC("aac");
+
+			private final String value;
+
+			AudioResponseFormat(String value) {
+				this.value = value;
+			}
+
+			/**
+			 * Return the format as sent to OpenAI.
+			 * @return the format value
+			 * @since 2.1.0
+			 */
+			public String getValue() {
+				return this.value;
+			}
 
 		}
 
 		public ChatCompletionAudioParam toChatCompletionAudioParam() {
 			ChatCompletionAudioParam.Builder builder = ChatCompletionAudioParam.builder();
 			if (this.voice() != null) {
-				builder.voice(voice().name().toLowerCase(Locale.ROOT));
+				builder.voice(this.voice());
 			}
 			if (this.format() != null) {
-				builder.format(ChatCompletionAudioParam.Format.of(this.format().name().toLowerCase(Locale.ROOT)));
+				builder.format(ChatCompletionAudioParam.Format.of(this.format()));
 			}
 			return builder.build();
 		}
