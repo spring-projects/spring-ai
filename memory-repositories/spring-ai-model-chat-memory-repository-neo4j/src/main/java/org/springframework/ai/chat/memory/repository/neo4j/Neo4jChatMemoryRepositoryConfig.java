@@ -30,6 +30,7 @@ import org.springframework.util.Assert;
  *
  * @author Enrico Rampazzo
  * @author Soby Chacko
+ * @author chabinhwang
  */
 public final class Neo4jChatMemoryRepositoryConfig {
 
@@ -117,21 +118,21 @@ public final class Neo4jChatMemoryRepositoryConfig {
 	}
 
 	/**
-	 * Ensures that indexes exist on conversationId for Session nodes and index for
-	 * Message nodes. This improves query performance for lookups and ordering.
+	 * Ensures that indexes exist on the properties the repository queries: {@code id} on
+	 * Session nodes, which every conversation is looked up and merged by, and {@code idx}
+	 * on Message nodes, which the messages of a conversation are ordered by.
 	 */
 	private void ensureIndexes() {
 		try (var session = this.driver.session()) {
-			// Index for conversationId on Session nodes
-			String sessionIndexCypher = String.format(
-					"CREATE INDEX session_conversation_id_index IF NOT EXISTS FOR (n:%s) ON (n.conversationId)",
-					this.sessionLabel);
-			// Index for index on Message nodes
+			// Index for id on Session nodes
+			String sessionIndexCypher = String
+				.format("CREATE INDEX session_id_index IF NOT EXISTS FOR (n:%s) ON (n.id)", this.sessionLabel);
+			// Index for idx on Message nodes
 			String messageIndexCypher = String
-				.format("CREATE INDEX message_index_index IF NOT EXISTS FOR (n:%s) ON (n.index)", this.messageLabel);
+				.format("CREATE INDEX message_idx_index IF NOT EXISTS FOR (n:%s) ON (n.idx)", this.messageLabel);
 			session.run(sessionIndexCypher);
 			session.run(messageIndexCypher);
-			logger.info("Ensured Neo4j indexes for conversationId and message index.");
+			logger.info("Ensured Neo4j indexes for session id and message idx.");
 		}
 		catch (Exception e) {
 			if (logger.isWarnEnabled()) {

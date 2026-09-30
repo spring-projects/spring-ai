@@ -46,7 +46,9 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.DefaultUsage;
+import org.springframework.ai.chat.metadata.EmptyRateLimit;
 import org.springframework.ai.chat.metadata.EmptyUsage;
+import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
@@ -281,6 +283,20 @@ public class OpenAiChatModelIT {
 		// Verify metadata fields are preserved during chunk aggregation
 		assertThat(streamingResponse.getMetadata().getRateLimit()).isNotNull();
 		assertThat(streamingResponse.getMetadata().getPromptMetadata()).isNotNull();
+	}
+
+	@Test
+	void nonStreamingCallIncludesRateLimitMetadata() {
+		ChatResponse response = this.chatModel.call(new Prompt("Reply with OK."));
+
+		RateLimit rateLimit = response.getMetadata().getRateLimit();
+		assertThat(rateLimit).isNotInstanceOf(EmptyRateLimit.class);
+		assertThat(rateLimit.getRequestsLimit()).isPositive();
+		assertThat(rateLimit.getRequestsRemaining()).isNotNull();
+		assertThat(rateLimit.getRequestsReset()).isNotNull();
+		assertThat(rateLimit.getTokensLimit()).isPositive();
+		assertThat(rateLimit.getTokensRemaining()).isNotNull();
+		assertThat(rateLimit.getTokensReset()).isNotNull();
 	}
 
 	@Test
