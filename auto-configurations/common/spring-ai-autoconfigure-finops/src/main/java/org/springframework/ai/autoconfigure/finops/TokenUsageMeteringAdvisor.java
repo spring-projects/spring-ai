@@ -85,6 +85,9 @@ public class TokenUsageMeteringAdvisor implements CallAdvisor {
 
 	@Override
 	public ChatClientResponse adviseCall(ChatClientRequest chatClientRequest, CallAdvisorChain callAdvisorChain) {
+		// Once the budget has been exceeded, short-circuit before calling the model so
+		// no further tokens are spent.
+		assertWithinBudget();
 		ChatClientResponse chatClientResponse = callAdvisorChain.nextCall(chatClientRequest);
 		try {
 			recordMetrics(chatClientResponse);
@@ -164,8 +167,15 @@ public class TokenUsageMeteringAdvisor implements CallAdvisor {
 	}
 
 	private void checkBudget(Usage usage) {
+		if (usage.getTotalTokens() == null) {
+			return;
+		}
+		assertWithinBudget();
+	}
+
+	private void assertWithinBudget() {
 		double threshold = this.properties.budgetThresholdUsd();
-		if (threshold <= 0.0 || usage.getTotalTokens() == null) {
+		if (threshold <= 0.0) {
 			return;
 		}
 

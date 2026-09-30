@@ -36,7 +36,9 @@ import org.springframework.ai.chat.prompt.Prompt;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 
 /**
  * Unit tests for {@link TokenUsageMeteringAdvisor}.
@@ -138,6 +140,21 @@ class TokenUsageMeteringAdvisorTests {
 		assertThatThrownBy(() -> advisor.adviseCall(this.request, chain))
 			.isInstanceOf(TokenBudgetExceededException.class)
 			.hasMessageContaining("budget");
+	}
+
+	@Test
+	void shortCircuitsBeforeCallingModelOnceBudgetIsExceeded() {
+		FinOpsProperties properties = new FinOpsProperties(true, 3.00, 15.00, 0.01);
+		TokenUsageMeteringAdvisor advisor = new TokenUsageMeteringAdvisor(this.meterRegistry, properties);
+		CallAdvisorChain chain = chainReturning(chatClientResponse("gpt-4o", 1_000_000, 1_000_000, null, null));
+
+		assertThatThrownBy(() -> advisor.adviseCall(this.request, chain))
+			.isInstanceOf(TokenBudgetExceededException.class);
+		assertThatThrownBy(() -> advisor.adviseCall(this.request, chain))
+			.isInstanceOf(TokenBudgetExceededException.class);
+
+		// The second call must be rejected without invoking the model again.
+		then(chain).should(times(1)).nextCall(org.mockito.ArgumentMatchers.any());
 	}
 
 	@Test
