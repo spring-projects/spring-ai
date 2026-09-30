@@ -62,9 +62,6 @@ Read the thoughts with `AssistantMessage.getReasoning()`.
 
 Replace code that iterates over `getResults()` and filters on `GoogleGenAiChatModel.THOUGHT_METADATA_KEY`:
 
-[source,java]
-----
-// Before
 List<String> thoughts = response.getResults().stream()
     .filter(g -> Boolean.TRUE.equals(g.getOutput().getMetadata().get(GoogleGenAiChatModel.THOUGHT_METADATA_KEY)))
     .map(g -> g.getOutput().getText())
@@ -81,6 +78,107 @@ List<String> thoughts = response.getResult().getOutput().getReasoning().stream()
 * `GoogleGenAiChatModel.THOUGHT_METADATA_KEY` is no longer written.
 An assistant message that still carries it, for example one restored from a chat memory written by an earlier version, has its text replayed to Gemini as a thought.
 * The `thoughtSignatures` message metadata list is still written, and is used to replay the signatures of messages whose parts carry none, but the part payloads are the source of truth.
+
+=== Anthropic
+
+==== Changed: Thinking Is Returned as `ReasoningPart`s of a Single Generation
+
+`AnthropicChatModel` maps every content block of a response to one `MessagePart`, in block order: thinking and redacted thinking become a `ReasoningPart` whose payload carries the signature or the redacted block data, and blocks Spring AI does not model yet (server tool use, server tool results, container upload) become an `UnknownPart` instead of being dropped.
+An assistant message is replayed to Anthropic in part order, so the signed thinking block stays in front of the tool call it justified, and server tool blocks go back as the JSON they arrived as; reasoning and `UnknownPart`s produced by another provider are not replayed.
+See xref:api/chat/anthropic-chat.adoc#_response_structure[Response Structure].
+
+===== Impact
+
+* A non-streaming response has a single `Generation`; the separate thinking and redacted thinking generations are gone.
+Read the reasoning from `getResult().getOutput().getReasoning()`.
+* The package-private `AnthropicChatModel.AnthropicAssistantMessage` is removed, together with the `anthropicThinkingContents` metadata entry.
+Messages restored from a chat memory written by an earlier version lose their thinking blocks on replay.
+* The `signature` and `data` metadata keys are no longer set on the non-streaming response.
+* A redacted thinking `ReasoningPart` has no text; its payload kind is `AnthropicChatModel.PAYLOAD_REDACTED_THINKING`.
+
+===== Deprecated
+
+The streamed chunks still carry the `thinking` (`AnthropicChatModel.THINKING_METADATA_KEY`), `thinkingText` (`AnthropicChatModel.THINKING_TEXT_METADATA_KEY`), `signature` and `data` metadata keys for one release; read the chunk's parts instead.
+
+=== Bedrock Converse
+
+==== `BedrockChatOptions.requestParameters` widened to `Map<String, Object>`
+
+`BedrockChatOptions.requestParameters` (and its Spring Boot property mirror `BedrockConverseProxyChatProperties.requestParameters`) has been widened from `Map<String, String>` to `Map<String, Object>`.
+This allows nested maps and lists as values, which is required for structured provider-specific fields such as Anthropic's `output_config` passed through Bedrock Converse's `additionalModelRequestFields`.
+
+===== Impact
+
+This is a source-level breaking change for callers that hold an explicitly typed `Map<String, String>` variable assigned to or read from this API.
+Inline map literals and callers already using `Map<String, Object>` (or `var`) are unaffected.
+
+===== Migration
+
+Change any explicitly typed `Map<String, String>` variable to `Map<String, Object>`:
+
+[source,java]
+----
+// Before
+
+Map<String, String> params = Map.of("anthropic_version", "bedrock-2023-05-31");
+BedrockChatOptions options = BedrockChatOptions.builder()
+    .requestParameters(params)
+    .build();
+
+// After
+Map<String, Object> params = Map.of("anthropic_version", "bedrock-2023-05-31");
+BedrockChatOptions options = BedrockChatOptions.builder()
+    .requestParameters(params)
+    .build();
+----
+
+Nested values are now supported:
+
+[source,java]
+----
+BedrockChatOptions options = BedrockChatOptions.builder()
+    .requestParameters(Map.of("output_config", Map.of("effort", "low")))
+    .build();
+----
+
+[source,yaml]
+----
+spring:
+  ai:
+    bedrock:
+      converse:
+        chat:
+          request-parameters:
+            output_config:
+              effort: low
+            anthropic_version: bedrock-2023-05-31
+----
+
+NOTE: Map keys bind literally — use the exact provider field name (e.g. `output_config`, not `output-config`).
+
+=== PgVector Store
+
+==== `distance` is a reserved metadata key in `PgVectorStore`
+
+`PgVectorStore` writes the computed similarity distance into each returned document's metadata under the key `distance` (via `DocumentMetadata.DISTANCE`).
+Previously, if a stored document already contained a `distance` key in its own metadata, it was silently overwritten with the computed value.
+This has been fixed: the stored value is now preserved and a warning is logged when the collision is detected.
+
+===== Impact
+
+If your documents store a field named `distance` for domain-specific data (e.g. a geographic distance), that value now survives a similarity search.
+A `WARN`-level log entry is emitted for each affected document:
+
+----
+Skipping computed similarity distance for document <id> because its metadata already contains a 'distance' key
+----
+
+The computed similarity score is still available via `Document.getScore()` regardless of whether the metadata key was written.
+
+===== Migration
+
+If you rely on reading the computed similarity distance from `document.getMetadata().get("distance")`, switch to `document.getScore()` instead, which is always populated and returns `1.0 - distance` (higher means more similar).
+If your documents use `distance` for domain-specific data, consider renaming that field to avoid the collision and the warning.
 
 [[upgrading-to-2-0-1]]
 == Upgrading to 2.0.1
