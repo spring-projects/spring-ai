@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -95,6 +94,12 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 	public static final String DEFAULT_COLLECTION_NAME = "vector_store";
 
 	public static final int INVALID_EMBEDDING_DIMENSION = -1;
+
+	/**
+	 * Estimated number of characters a single embedding value contributes to the vector
+	 * query, including its separator, used to pre-size the query buffer.
+	 */
+	private static final int ESTIMATED_CHARS_PER_EMBEDDING_VALUE = 12;
 
 	private static final Log logger = LogFactory.getLog(TypesenseVectorStore.class);
 
@@ -240,11 +245,8 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 		multiSearchCollectionParameters.collection(this.collectionName);
 		multiSearchCollectionParameters.q("*");
 
-		Stream<Float> floatStream = IntStream.range(0, embedding.length).mapToObj(i -> embedding[i]);
 		// typesense uses only cosine similarity
-		String vectorQuery = EMBEDDING_FIELD_NAME + ":(" + "["
-				+ String.join(",", floatStream.map(String::valueOf).toList()) + "], " + "k: " + request.getTopK() + ", "
-				+ "distance_threshold: " + (1 - request.getSimilarityThreshold()) + ")";
+		String vectorQuery = buildVectorQuery(embedding, request.getTopK(), request.getSimilarityThreshold());
 
 		multiSearchCollectionParameters.vectorQuery(vectorQuery);
 		multiSearchCollectionParameters.filterBy(nativeFilterExpressions);
@@ -284,6 +286,30 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 			logger.error("Failed to search documents", e);
 			return List.of();
 		}
+	}
+
+	/**
+	 * Builds the Typesense vector query for the given embedding using a single pre-sized
+	 * {@link StringBuilder}. The estimated capacity assumes about 12 characters per
+	 * value, which is enough for typical embedding values and their separators, so the
+	 * buffer does not have to grow.
+	 */
+	static String buildVectorQuery(float[] embedding, int topK, double similarityThreshold) {
+		StringBuilder vectorQueryBuilder = new StringBuilder(
+				EMBEDDING_FIELD_NAME.length() + embedding.length * ESTIMATED_CHARS_PER_EMBEDDING_VALUE + 64);
+		vectorQueryBuilder.append(EMBEDDING_FIELD_NAME).append(":([");
+		for (int i = 0; i < embedding.length; i++) {
+			if (i > 0) {
+				vectorQueryBuilder.append(',');
+			}
+			vectorQueryBuilder.append(embedding[i]);
+		}
+		return vectorQueryBuilder.append("], k: ")
+			.append(topK)
+			.append(", distance_threshold: ")
+			.append(1 - similarityThreshold)
+			.append(')')
+			.toString();
 	}
 
 	int embeddingDimensions() {
