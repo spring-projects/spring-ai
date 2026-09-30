@@ -1,6 +1,39 @@
 [[upgrade-notes]]
 = Upgrade Notes
 
+[[upgrading-to-2-0-2]]
+== Upgrading to 2.0.2
+
+=== Neo4j Chat Memory Repository
+
+==== Stale indexes replaced with correct property indexes
+
+The indexes created by `Neo4jChatMemoryRepositoryConfig` were referencing the wrong node properties
+and were therefore always empty, causing every conversation lookup to fall back to a full label scan.
+
+===== Impact
+
+Existing deployments have two stale indexes that index properties no node carries:
+
+* `session_conversation_id_index` on `Session.conversationId` (the repository queries `Session.id`)
+* `message_index_index` on `Message.index` (the repository orders by `Message.idx`)
+
+Two new indexes with the correct properties are created on startup:
+
+* `session_id_index` on `Session.id`
+* `message_idx_index` on `Message.idx`
+
+===== Migration
+
+The stale indexes are harmless but waste space.
+Remove them manually after upgrading:
+
+[source,cypher]
+----
+DROP INDEX session_conversation_id_index IF EXISTS;
+DROP INDEX message_index_index IF EXISTS;
+----
+
 [[upgrading-to-2-0-1]]
 == Upgrading to 2.0.1
 
