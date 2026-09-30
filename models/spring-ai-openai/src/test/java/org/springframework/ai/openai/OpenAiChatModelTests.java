@@ -42,6 +42,7 @@ import com.openai.models.FunctionParameters;
 import com.openai.models.ReasoningEffort;
 import com.openai.models.chat.completions.ChatCompletion;
 import com.openai.models.chat.completions.ChatCompletionAssistantMessageParam;
+import com.openai.models.chat.completions.ChatCompletionAudio;
 import com.openai.models.chat.completions.ChatCompletionChunk;
 import com.openai.models.chat.completions.ChatCompletionContentPart;
 import com.openai.models.chat.completions.ChatCompletionCreateParams;
@@ -1278,9 +1279,9 @@ class OpenAiChatModelTests {
 		try {
 			Locale.setDefault(new Locale("tr", "TR"));
 			// SHIMMER contains an uppercase I; under tr_TR it lowers to "shımmer"
-			// instead of the wire-correct "shimmer". The fix lives in
-			// OpenAiChatOptions.AudioParameters#toChatCompletionAudioParam(),
-			// but it's only reachable through OpenAiChatModel#createRequest.
+			// instead of the wire-correct "shimmer". The Voice constants carry their
+			// wire value, so the default locale must not reach it on the way to
+			// OpenAiChatModel#createRequest.
 			OpenAiChatOptions options = OpenAiChatOptions.builder()
 				.model("test-model")
 				.outputAudio(new OpenAiChatOptions.AudioParameters(OpenAiChatOptions.AudioParameters.Voice.SHIMMER,
@@ -1295,11 +1296,90 @@ class OpenAiChatModelTests {
 			ChatCompletionCreateParams request = chatModel.createRequest(new Prompt("test", options), false);
 
 			assertThat(request.audio()).isPresent();
-			assertThat(request.audio().get().voice().string().get().equals("shimmer"));
+			assertThat(request.audio().get().voice().asString()).isEqualTo("shimmer");
 		}
 		finally {
 			Locale.setDefault(original);
 		}
+	}
+
+	@Test
+	void customAudioVoiceAndFormatAreSentAsGiven() {
+		OpenAiChatOptions options = OpenAiChatOptions.builder()
+			.model("test-model")
+			.outputAudio(new OpenAiChatOptions.AudioParameters("Chloe", "Ogg_Opus"))
+			.build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		ChatCompletionCreateParams request = chatModel.createRequest(new Prompt("test", options), false);
+
+		assertThat(request.audio()).isPresent();
+		assertThat(request.audio().get().voice().asString()).isEqualTo("Chloe");
+		assertThat(request.audio().get().format().asString()).isEqualTo("Ogg_Opus");
+	}
+
+	@Test
+	void audioOutputUsesRequestedFormatAsMimeType() {
+		AssistantMessage output = callWithAudioOutput("ogg");
+
+		assertThat(output.getText()).isEqualTo("Hello there");
+		assertThat(output.getMedia()).singleElement().satisfies(media -> {
+			assertThat(media.getMimeType().toString()).isEqualTo("audio/ogg");
+			assertThat(media.getDataAsByteArray()).isEqualTo("RIFF".getBytes(StandardCharsets.US_ASCII));
+		});
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = { "", "ogg/opus", "mp3 128k", "audio/wav", "wav;\n=x", "pcm16 \r\n=24000" })
+	void audioOutputIsKeptWhenFormatIsNotAMimeSubtype(String format) {
+		AssistantMessage output = callWithAudioOutput(format);
+
+		assertThat(output.getText()).isEqualTo("Hello there");
+		assertThat(output.getMedia()).singleElement().satisfies(media -> {
+			assertThat(media.getMimeType().toString()).isEqualTo("application/octet-stream");
+			assertThat(media.getDataAsByteArray()).isEqualTo("RIFF".getBytes(StandardCharsets.US_ASCII));
+		});
+	}
+
+	private AssistantMessage callWithAudioOutput(String format) {
+		givenChatCompletion(ChatCompletion.builder()
+			.id("test-id")
+			.created(1777799928)
+			.model("test-model")
+			.addChoice(ChatCompletion.Choice.builder()
+				.finishReason(ChatCompletion.Choice.FinishReason.STOP)
+				.index(0)
+				.logprobs(Optional.empty())
+				.message(ChatCompletionMessage.builder()
+					.content(Optional.empty())
+					.refusal(Optional.empty())
+					.role(JsonValue.from("assistant"))
+					.audio(ChatCompletionAudio.builder()
+						.id("audio-id")
+						.data("UklGRg==")
+						.expiresAt(1777803528)
+						.transcript("Hello there")
+						.build())
+					.build())
+				.build())
+			.build());
+
+		OpenAiChatOptions options = OpenAiChatOptions.builder()
+			.model("test-model")
+			.outputModalities(List.of("text", "audio"))
+			.outputAudio(new OpenAiChatOptions.AudioParameters("Chloe", format))
+			.build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		return chatModel.call(new Prompt("hi", options)).getResult().getOutput();
 	}
 
 	@Test

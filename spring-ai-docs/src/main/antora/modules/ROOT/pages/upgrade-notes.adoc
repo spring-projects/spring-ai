@@ -117,6 +117,58 @@ spring:
 
 NOTE: Map keys bind literally — use the exact provider field name (e.g. `output_config`, not `output-config`).
 
+=== OpenAI
+
+==== `OpenAiChatOptions.AudioParameters` accepts any voice and format
+
+`OpenAiChatOptions.AudioParameters` now holds the voice and format as `String` values and sends them as given, so the voices of OpenAI-compatible providers can be used for audio output.
+The `Voice` and `AudioResponseFormat` enums remain as the values OpenAI offers, and `Voice` gains `VERSE`, `MARIN` and `CEDAR`.
+
+===== Impact
+
+* `new AudioParameters(Voice.ALLOY, AudioResponseFormat.WAV)` keeps working.
+`new AudioParameters(null, null)` no longer compiles because it matches both constructors; cast one argument, as in `new AudioParameters((String) null, null)`.
+* The `voice()` and `format()` accessors return `String` instead of the enums.
+* `OpenAiChatProperties.getOutputAudio()`, and the deprecated `OpenAiChatProperties.Options.getOutputAudio()`, return the new `OpenAiChatProperties.OutputAudio` instead of `AudioParameters`.
+It is never `null`, so check its `getVoice()` and `getFormat()` to find out whether audio output is configured.
+* The `setOutputAudio(AudioParameters)` setters of `OpenAiChatProperties` and `OpenAiChatProperties.Options` are removed; set the voice and format on the `OutputAudio` instead.
+* The `spring.ai.openai.chat.output-audio.voice` and `spring.ai.openai.chat.output-audio.format` property names are unchanged.
+Their values are no longer converted to the enums, so they must use the case the provider expects, such as `alloy` rather than `ALLOY` for OpenAI.
+
+===== Migration
+
+Compare the accessors against the enum values:
+
+[source,java]
+----
+// Before
+boolean alloy = audioParameters.voice() == Voice.ALLOY;
+
+// After
+boolean alloy = Voice.ALLOY.getValue().equals(audioParameters.voice());
+----
+
+Configure the properties through the `OutputAudio`:
+
+[source,java]
+----
+// Before
+properties.setOutputAudio(new AudioParameters(Voice.ALLOY, AudioResponseFormat.WAV));
+
+// After
+properties.getOutputAudio().setVoice(Voice.ALLOY.getValue());
+properties.getOutputAudio().setFormat(AudioResponseFormat.WAV.getValue());
+----
+
+Pass a provider's own voice as a `String`:
+
+[source,java]
+----
+OpenAiChatOptions.builder()
+    .outputAudio(new AudioParameters("Chloe", "wav"))
+    .build();
+----
+
 === PgVector Store
 
 ==== `distance` is a reserved metadata key in `PgVectorStore`
