@@ -57,6 +57,18 @@ class UsageCalculatorTests {
 	}
 
 	@Test
+	void getCumulativeUsageReturnsCurrentWhenPreviousUsageIsNull() {
+		Usage current = new DefaultUsage(10, 20, 30);
+		ChatResponse previous = responseWith(null);
+
+		Usage result = UsageCalculator.getCumulativeUsage(current, previous);
+
+		// A previous response that reports no usage contributes nothing, so the current
+		// usage is returned unchanged rather than failing with a NullPointerException.
+		assertThat(result).isSameAs(current);
+	}
+
+	@Test
 	void getCumulativeUsageReturnsPreviousWhenCurrentIsEmpty() {
 		Usage current = new DefaultUsage(0, 0, 0);
 		Usage previousUsage = new DefaultUsage(1, 2, 3);
