@@ -161,21 +161,23 @@ public final class OpenAiAudioSpeechModel implements TextToSpeechModel {
 	public Flux<TextToSpeechResponse> stream(TextToSpeechPrompt prompt) {
 		Assert.notNull(prompt, "Prompt must not be null");
 
-		// Lets openSpeechStream/emitNextChunk tell a deliberate cancellation
-		// apart from a genuine I/O failure.
-		AtomicBoolean cancelled = new AtomicBoolean(false);
+		return Flux.defer(() -> {
+			// Lets openSpeechStream/emitNextChunk tell a deliberate cancellation
+			// apart from a genuine I/O failure. This state belongs to one subscription.
+			AtomicBoolean cancelled = new AtomicBoolean(false);
 
-		return Flux.<TextToSpeechResponse, SpeechStreamState>generate(() -> openSpeechStream(prompt, cancelled),
-				(state, sink) -> emitNextChunk(state, sink, cancelled), state -> {
-					if (state != null) {
-						state.close();
-					}
-				})
-			.subscribeOn(this.streamScheduler)
-			// After subscribeOn() so this runs before its worker is disposed -
-			// i.e. before the blocking call in progress gets interrupted -
-			// guaranteeing `cancelled` is already set when that's observed.
-			.doOnCancel(() -> cancelled.set(true));
+			return Flux.<TextToSpeechResponse, SpeechStreamState>generate(() -> openSpeechStream(prompt, cancelled),
+					(state, sink) -> emitNextChunk(state, sink, cancelled), state -> {
+						if (state != null) {
+							state.close();
+						}
+					})
+				.subscribeOn(this.streamScheduler)
+				// After subscribeOn() so this runs before its worker is disposed -
+				// i.e. before the blocking call in progress gets interrupted -
+				// guaranteeing `cancelled` is already set when that's observed.
+				.doOnCancel(() -> cancelled.set(true));
+		});
 	}
 
 	private @Nullable SpeechStreamState openSpeechStream(TextToSpeechPrompt prompt, AtomicBoolean cancelled) {
