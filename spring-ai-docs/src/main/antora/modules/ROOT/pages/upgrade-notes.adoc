@@ -141,6 +141,20 @@ The computed similarity score is still available via `Document.getScore()` regar
 If you rely on reading the computed similarity distance from `document.getMetadata().get("distance")`, switch to `document.getScore()` instead, which is always populated and returns `1.0 - distance` (higher means more similar).
 If your documents use `distance` for domain-specific data, consider renaming that field to avoid the collision and the warning.
 
+=== RAG Query History
+
+==== `Query.history` no longer contains the current query
+
+`RetrievalAugmentationAdvisor` built the `Query` history from the whole prompt instruction list, which ends with the user message the query text is taken from.
+The current query therefore appeared both as the last turn of the conversation history and as the query itself.
+The history is now built from the instructions without that message.
+
+===== Impact
+
+`CompressionQueryTransformer` no longer repeats the current query in the `Conversation history` section of its prompt.
+On the first turn of a conversation the history is empty, and `CompressionQueryTransformer` now returns such a query unchanged instead of asking the model to compress it, so no model call is made.
+
+A custom `QueryTransformer`, `QueryExpander` or `DocumentRetriever` that read the current query from the last entry of `Query.history()` has to read it from `Query.text()` instead.
 
 [[upgrading-to-2-0-2]]
 == Upgrading to 2.0.2
