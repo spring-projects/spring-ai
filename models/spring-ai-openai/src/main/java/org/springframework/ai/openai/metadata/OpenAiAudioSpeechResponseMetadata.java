@@ -16,39 +16,25 @@
 
 package org.springframework.ai.openai.metadata;
 
-import java.time.Duration;
-
 import com.openai.core.http.Headers;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.audio.tts.TextToSpeechResponseMetadata;
 import org.springframework.ai.chat.metadata.EmptyRateLimit;
 import org.springframework.ai.chat.metadata.RateLimit;
-import org.springframework.util.Assert;
 
 /**
  * Audio speech metadata implementation for OpenAI using the OpenAI Java SDK.
  *
  * @author Ahmed Yousri
  * @author Ilayaperumal Gopinathan
+ * @author Raphael Vullriede
  */
 public class OpenAiAudioSpeechResponseMetadata extends TextToSpeechResponseMetadata {
 
 	public static final OpenAiAudioSpeechResponseMetadata NULL = new OpenAiAudioSpeechResponseMetadata();
 
 	protected static final String AI_METADATA_STRING = "{ @type: %1$s, rateLimit: %2$s }";
-
-	private static final String REQUESTS_LIMIT_HEADER = "x-ratelimit-limit-requests";
-
-	private static final String REQUESTS_REMAINING_HEADER = "x-ratelimit-remaining-requests";
-
-	private static final String REQUESTS_RESET_HEADER = "x-ratelimit-reset-requests";
-
-	private static final String TOKENS_LIMIT_HEADER = "x-ratelimit-limit-tokens";
-
-	private static final String TOKENS_REMAINING_HEADER = "x-ratelimit-remaining-tokens";
-
-	private static final String TOKENS_RESET_HEADER = "x-ratelimit-reset-tokens";
 
 	private final @Nullable RateLimit rateLimit;
 
@@ -61,46 +47,7 @@ public class OpenAiAudioSpeechResponseMetadata extends TextToSpeechResponseMetad
 	}
 
 	public static OpenAiAudioSpeechResponseMetadata from(Headers headers) {
-		Assert.notNull(headers, "Headers must not be null");
-
-		Long requestsLimit = getHeaderAsLong(headers, REQUESTS_LIMIT_HEADER);
-		Long requestsRemaining = getHeaderAsLong(headers, REQUESTS_REMAINING_HEADER);
-		Duration requestsReset = getHeaderAsDuration(headers, REQUESTS_RESET_HEADER);
-
-		Long tokensLimit = getHeaderAsLong(headers, TOKENS_LIMIT_HEADER);
-		Long tokensRemaining = getHeaderAsLong(headers, TOKENS_REMAINING_HEADER);
-		Duration tokensReset = getHeaderAsDuration(headers, TOKENS_RESET_HEADER);
-
-		RateLimit rateLimit = (requestsLimit != null || tokensLimit != null) ? new OpenAiRateLimit(requestsLimit,
-				requestsRemaining, requestsReset, tokensLimit, tokensRemaining, tokensReset) : new EmptyRateLimit();
-
-		return new OpenAiAudioSpeechResponseMetadata(rateLimit);
-	}
-
-	private static @Nullable Long getHeaderAsLong(Headers headers, String headerName) {
-		var values = headers.values(headerName);
-		if (!values.isEmpty()) {
-			try {
-				return Long.parseLong(values.get(0).trim());
-			}
-			catch (NumberFormatException e) {
-				return null;
-			}
-		}
-		return null;
-	}
-
-	private static @Nullable Duration getHeaderAsDuration(Headers headers, String headerName) {
-		var values = headers.values(headerName);
-		if (!values.isEmpty()) {
-			try {
-				return Duration.ofSeconds(Long.parseLong(values.get(0).trim()));
-			}
-			catch (Exception e) {
-				return null;
-			}
-		}
-		return null;
+		return new OpenAiAudioSpeechResponseMetadata(OpenAiRateLimit.from(headers));
 	}
 
 	public @Nullable RateLimit getRateLimit() {

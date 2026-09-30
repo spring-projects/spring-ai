@@ -16,6 +16,7 @@
 
 package org.springframework.ai.reader.tika;
 
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
@@ -27,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 /**
  * @author Christian Tzolov
  * @author Shahbaz Aamir
+ * @author ikaitist
  */
 public class TikaDocumentReaderTests {
 
@@ -73,6 +75,19 @@ public class TikaDocumentReaderTests {
 		docs = new TikaDocumentReader(resourceUri).get();
 		doc = docs.get(0);
 		assertThat(doc.getText()).contains(contentSnipped);
+	}
+
+	@Test
+	void testGetIsReentrant() {
+		var reader = new TikaDocumentReader("classpath:/word-sample.docx");
+
+		var first = reader.get();
+		var second = reader.get();
+
+		assertThat(first).hasSize(1);
+		assertThat(second).hasSize(1);
+		assertThat(second.get(0).getText()).isEqualTo(first.get(0).getText());
+		assertThat(second.get(0).getMetadata()).isEqualTo(first.get(0).getMetadata());
 	}
 
 }
