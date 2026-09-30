@@ -19,6 +19,8 @@ The constructors and the existing builder methods keep working and produce the p
 * `getMedia()` and `getToolCalls()` return unmodifiable lists; add media and tool calls through the builder instead of mutating the returned list.
 * `equals()` and `hashCode()` of both message types compare the parts, so media now takes part in equality; `Media` gained value equality over id, MIME type and data (the name is excluded because it defaults to a random value).
 * A message with parts but no text part has an empty text; `getText()` is `null` only for a message without any part.
+* On a builder that also holds parts, for example one returned by `mutate()`, the legacy setters replace the parts of their type in place instead of adding to them: `content(...)` the text parts, `toolCalls(...)` the tool call parts, `media(...)` the media parts and, on `ToolResponseMessage`, `responses(...)` the tool result parts.
+To keep the existing text parts and append a new one at the end of the parts, use `part(TextPart.of(...))` instead.
 
 ===== Deprecated
 

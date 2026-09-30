@@ -107,6 +107,8 @@ UserMessage message = UserMessage.builder()
 
 The `text(...)` and `media(...)` builder methods keep working and replace the corresponding parts, so an advisor that rewrites the question through `mutate().text(...)` keeps the media.
 A builder without explicit parts produces the legacy order, text then media.
+The `AssistantMessage` builder follows the same rule: `content(...)`, `toolCalls(...)` and `media(...)` replace the text, tool call and media parts in place, so `mutate().content(...)` rewrites the text without moving the reasoning or tool calls, and `mutate().toolCalls(List.of())` removes the tool calls.
+Likewise, `responses(...)` on the `ToolResponseMessage` builder replaces its tool result parts.
 The `getMedia()` list is an unmodifiable view; add media through the builder.
 
 Various implementations of the `Message` interface correspond to different categories of messages that an AI model can process.
