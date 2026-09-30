@@ -96,6 +96,8 @@ public class OpenAiChatProperties extends AbstractOpenAiProperties {
 
 	private @Nullable String promptCacheKey;
 
+	private @Nullable Boolean replayReasoningContent;
+
 	private @Nullable Map<String, Object> extraBody;
 
 	public @Nullable String getModel() {
@@ -306,12 +308,36 @@ public class OpenAiChatProperties extends AbstractOpenAiProperties {
 		this.promptCacheKey = promptCacheKey;
 	}
 
+	public @Nullable Boolean getReplayReasoningContent() {
+		return this.replayReasoningContent;
+	}
+
+	public void setReplayReasoningContent(@Nullable Boolean replayReasoningContent) {
+		this.replayReasoningContent = replayReasoningContent;
+	}
+
 	public @Nullable Map<String, Object> getExtraBody() {
 		return this.extraBody;
 	}
 
 	public void setExtraBody(@Nullable Map<String, Object> extraBody) {
 		this.extraBody = extraBody;
+	}
+
+	/**
+	 * Which OpenAI endpoint the {@code ChatModel} bean talks to. {@code chat-completions}
+	 * (the default) keeps {@code OpenAiChatModel}; {@code responses} creates
+	 * {@code OpenAiResponsesChatModel} instead. Exactly one {@code ChatModel} bean is
+	 * created either way.
+	 */
+	private Api api = Api.CHAT_COMPLETIONS;
+
+	public Api getApi() {
+		return this.api;
+	}
+
+	public void setApi(Api api) {
+		this.api = api;
 	}
 
 	public OpenAiChatOptions toOptions() {
@@ -343,6 +369,7 @@ public class OpenAiChatProperties extends AbstractOpenAiProperties {
 			.verbosity(this.verbosity)
 			.serviceTier(this.serviceTier)
 			.promptCacheKey(this.promptCacheKey)
+			.replayReasoningContent(this.replayReasoningContent)
 			.extraBody(this.extraBody)
 			.build();
 	}
@@ -776,6 +803,16 @@ public class OpenAiChatProperties extends AbstractOpenAiProperties {
 			OpenAiChatProperties.this.setPromptCacheKey(promptCacheKey);
 		}
 
+		@DeprecatedConfigurationProperty(replacement = "spring.ai.openai.chat.replay-reasoning-content")
+		@Deprecated(since = "2.0.0", forRemoval = true)
+		public @Nullable Boolean getReplayReasoningContent() {
+			return OpenAiChatProperties.this.getReplayReasoningContent();
+		}
+
+		public void setReplayReasoningContent(@Nullable Boolean replayReasoningContent) {
+			OpenAiChatProperties.this.setReplayReasoningContent(replayReasoningContent);
+		}
+
 		@DeprecatedConfigurationProperty(replacement = "spring.ai.openai.chat.extra-body")
 		@Deprecated(since = "2.0.0", forRemoval = true)
 		public @Nullable Map<String, Object> getExtraBody() {
@@ -785,6 +822,23 @@ public class OpenAiChatProperties extends AbstractOpenAiProperties {
 		public void setExtraBody(@Nullable Map<String, Object> extraBody) {
 			OpenAiChatProperties.this.setExtraBody(extraBody);
 		}
+
+	}
+
+	/**
+	 * The OpenAI endpoints a {@code ChatModel} bean can be backed by.
+	 */
+	public enum Api {
+
+		/**
+		 * {@code /v1/chat/completions}, served by {@code OpenAiChatModel}.
+		 */
+		CHAT_COMPLETIONS,
+
+		/**
+		 * {@code /v1/responses}, served by {@code OpenAiResponsesChatModel}.
+		 */
+		RESPONSES
 
 	}
 

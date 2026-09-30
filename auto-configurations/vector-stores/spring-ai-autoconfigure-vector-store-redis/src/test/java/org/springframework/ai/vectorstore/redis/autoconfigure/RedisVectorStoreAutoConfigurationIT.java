@@ -139,6 +139,24 @@ class RedisVectorStoreAutoConfigurationIT {
 		});
 	}
 
+	@Test
+	void customMetadataFieldsAreApplied() {
+		this.contextRunner.withUserConfiguration(MetadataFieldsConfig.class)
+			.withPropertyValues("spring.ai.vectorstore.redis.index-name=metadata-fields-index")
+			.run(context -> {
+				VectorStore vectorStore = context.getBean(VectorStore.class);
+				Document document = new Document("Custom metadata", Map.of("conversationId", "conversation-1"));
+
+				vectorStore.add(List.of(document));
+
+				List<Document> results = vectorStore.similaritySearch(SearchRequest.builder()
+					.query("metadata")
+					.filterExpression("conversationId == 'conversation-1'")
+					.build());
+				assertThat(results).extracting(Document::getId).contains(document.getId());
+			});
+	}
+
 	@Configuration(proxyBeanMethods = false)
 	static class Config {
 
@@ -150,6 +168,16 @@ class RedisVectorStoreAutoConfigurationIT {
 		@Bean
 		public EmbeddingModel embeddingModel() {
 			return new TransformersEmbeddingModel();
+		}
+
+	}
+
+	@Configuration(proxyBeanMethods = false)
+	static class MetadataFieldsConfig {
+
+		@Bean
+		List<RedisVectorStore.MetadataField> metadataFields() {
+			return List.of(RedisVectorStore.MetadataField.tag("conversationId"));
 		}
 
 	}

@@ -25,6 +25,7 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
+import org.springframework.ai.vectorstore.EmbeddedDocument;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.Filter;
@@ -82,6 +83,26 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 			.observation(this.customObservationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 					this.observationRegistry)
 			.observe(() -> this.doAdd(documents));
+	}
+
+	/**
+	 * Like {@link #add(List)}, this path accepts text documents only, but for a different
+	 * reason: {@code add} is restricted because it invokes the text embedding model,
+	 * while {@code upsert} never embeds and is restricted because no store can persist a
+	 * row that carries no text. A document whose text is empty is fine, which is how a
+	 * row points at content held outside the store.
+	 */
+	@Override
+	public void upsert(List<EmbeddedDocument> entries) {
+		validateNonTextDocuments(entries.stream().map(EmbeddedDocument::document).toList());
+		VectorStoreObservationContext observationContext = this
+			.createObservationContextBuilder(VectorStoreObservationContext.Operation.UPSERT.value())
+			.build();
+
+		VectorStoreObservationDocumentation.AI_VECTOR_STORE
+			.observation(this.customObservationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
+					this.observationRegistry)
+			.observe(() -> this.doUpsert(entries));
 	}
 
 	private void validateNonTextDocuments(List<Document> documents) {
@@ -147,6 +168,16 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 	 * @param documents the documents to add
 	 */
 	public abstract void doAdd(List<Document> documents);
+
+	/**
+	 * Template method for concrete implementations to provide upsert logic using
+	 * caller-supplied embeddings. The default implementation throws, so stores opt in
+	 * independently.
+	 * @param entries the documents and their pre-computed embeddings to upsert
+	 */
+	protected void doUpsert(List<EmbeddedDocument> entries) {
+		throw new UnsupportedOperationException(getName() + " does not support upsert");
+	}
 
 	/**
 	 * Perform the actual delete operation.

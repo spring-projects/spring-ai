@@ -91,7 +91,7 @@ final class BedrockAssistantMessage extends AssistantMessage {
 	@Override
 	public String toString() {
 		return "BedrockAssistantMessage [messageType=" + this.messageType + ", toolCalls=" + super.getToolCalls()
-				+ ", textContent=" + this.textContent + ", reasoningContents=" + this.reasoningContents + ", metadata="
+				+ ", textContent=" + getText() + ", reasoningContents=" + this.reasoningContents + ", metadata="
 				+ this.metadata + "]";
 	}
 

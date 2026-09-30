@@ -57,6 +57,8 @@ public interface VectorStore extends DocumentWriter, VectorStoreRetriever {
 
     void add(List<Document> documents);
 
+    default void upsert(List<EmbeddedDocument> entries) { ... }
+
     void delete(List<String> idList);
 
     void delete(Filter.Expression filterExpression);
@@ -70,6 +72,7 @@ public interface VectorStore extends DocumentWriter, VectorStoreRetriever {
 ----
 
 The `VectorStore` interface combines both read and write operations, allowing you to add, delete, and search for documents in a vector database.
+While `add` computes the embeddings for you, `upsert` writes ones you supply yourself; see <<writing-precomputed-embeddings,Writing User-Supplied Embeddings>>.
 
 === SearchRequest Builder
 
@@ -436,6 +439,137 @@ void load(String sourceFile) {
     this.vectorStore.add(documents);
 }
 ----
+
+`add` computes the embeddings for you.
+If you already have the vectors, write them as they are with `upsert` instead; see <<writing-precomputed-embeddings,Writing User-Supplied Embeddings>>.
+
+[[writing-precomputed-embeddings]]
+=== Writing User-Supplied Embeddings
+
+`add` computes an embedding for every document inside the store, using the store's embedding model.
+Sometimes you already have the vectors and want to write them as-is: a provider's batch API computed them overnight at half price, another team owns the embedding pipeline, or you are migrating from a system that exports text and vectors together.
+For those cases the `VectorStore` interface offers `upsert`, which takes the document and its vector paired together in an `EmbeddedDocument` and never embeds anything itself:
+
+[source,java]
+----
+public record EmbeddedDocument(Document document, float[] embedding) {
+}
+----
+
+As the name says, `upsert` replaces by id: writing the same id again overwrites the existing row rather than adding a duplicate.
+That makes a re-run with stable ids safe, which is useful for an ingestion job that may be retried after a failure.
+
+[source,java]
+----
+@Autowired
+VectorStore vectorStore;
+
+// a vector you computed elsewhere
+float[] embedding = ...;
+Document document = new Document("8f14e45f-ceea-467a-9a3e-5b1c2d6f7a90", "some text",
+        Map.of("source", "manual"));
+
+this.vectorStore.upsert(List.of(new EmbeddedDocument(document, embedding)));
+----
+
+NOTE: Some stores constrain the document id.
+Qdrant requires a UUID, and `PgVectorStore` stores the id in a UUID column unless you configure `idType`, so an arbitrary string fails on those.
+Deriving the UUID from a key of your own, for example `UUID.nameUUIDFromBytes(key.getBytes(UTF_8))`, keeps the id stable across runs, which is what makes a re-run replace the row rather than add a second one.
+
+To write plain text through `upsert`, embed it first and hand over the result:
+
+[source,java]
+----
+@Autowired
+EmbeddingModel embeddingModel;
+
+float[] vector = this.embeddingModel.embed(document);
+this.vectorStore.upsert(List.of(new EmbeddedDocument(document, vector)));
+----
+
+`upsert` is opt-in per store: the default implementation throws `UnsupportedOperationException`, so a store supports it only once it has been implemented.
+It is available on pgvector, Redis, Elasticsearch, and Qdrant, with more stores to follow.
+`EmbeddedDocument` rejects a vector that is empty or holds `NaN` or an infinity, which is worth knowing when the vectors come from a pipeline you do not control: a `NaN` would otherwise corrupt distance maths rather than fail.
+When a store knows its index dimension, it checks every vector in the batch against it before writing anything, so a wrong-sized vector fails fast and cannot partially write.
+Where that dimension can only be guessed, the check is left to the database, which rejects the vector with its own error.
+
+Because the vectors come from outside the store, lining them up with the index is yours to get right.
+Three things have to agree, and only the first is checked for you:
+
+Width:: Your embedding model decides the width, and the index has to be created with that same width, for example `dimensions(1024)` on the store builder or a pre-created index whose mapping says 1024.
+A mismatch fails on the first write.
+Vector space:: Nothing records which model produced a row, so vectors written by one model and searched with another come back plausible but meaningless, with no error anywhere.
+Writing the model name and version into metadata costs nothing and tells a later reader what a row actually holds.
+The query side:: `similaritySearch` still embeds the query with the store's own `EmbeddingModel`, so that model has to produce vectors in the same space and of the same width as the ones you upserted.
+
+=== Indexing Non-Text or Oversized Content
+
+With text, the store keeps the document and its vector together in one row: search matches on the vector and hands back the text.
+A multimodal model breaks that assumption. It gives you a searchable vector for an image, a video segment, or an audio clip, but the content itself lives in S3, a CDN, or a database, and there is no text to put in the row.
+The same applies to text that is simply too large for the row, such as a full article whose chunks were indexed.
+
+The row then keeps everything except the content: id, metadata, vector, and a pointer to where the content lives.
+The pointer goes in metadata under `DocumentMetadata.CONTENT_REF`, and the store never interprets it: it is an S3 URI, a CDN URL, or a database key that only your application resolves.
+Such a row is written with `upsert`, because you supply the vector from the multimodal model yourself:
+
+[source,java]
+----
+byte[] frame = ...;                                 // the image/video/audio bytes
+float[] embedding = multimodalModel.embed(frame);   // your multimodal model
+
+String key = "video-42/frame-4711";
+
+Document reference = Document.builder()
+    // Stable and UUID-shaped, so a re-run replaces this row
+    .id(UUID.nameUUIDFromBytes(key.getBytes(UTF_8)).toString())
+    .text("")                                       // empty: the content lives elsewhere
+    .metadata(DocumentMetadata.CONTENT_REF.value(), "s3://media/video-42.mp4#t=4711")
+    .metadata("camera", "north-gate")               // still filterable like any row
+    .build();
+
+this.vectorStore.upsert(List.of(new EmbeddedDocument(reference, embedding)));
+----
+
+NOTE: The empty text is what makes the document valid; it is not content. A document carrying `CONTENT_REF` is a reference row even though `isText()` reports true. `upsert` requires text for this reason: no store can persist a row that carries none, so a media document is rejected rather than half-written.
+
+The pointer is an ordinary metadata entry.
+Nothing in the framework reads or validates it, so keeping it non-empty is up to you.
+A row that still has real text of its own can be written with `add`, which is how a summary or a chunk keeps a pointer back to the full article:
+
+[source,java]
+----
+Document chunk = Document.builder()
+    .text(chunkText)                                                  // real text, so add can embed it
+    .metadata(DocumentMetadata.CONTENT_REF.value(), "articles/1042")  // where the full article lives
+    .build();
+
+this.vectorStore.add(List.of(chunk));
+----
+
+Only a row with empty text has to go through `upsert`, because `add` embeds the text and there would be nothing to embed.
+
+Search is unchanged. `similaritySearch` matches on vectors and returns `Document` s as always, and for these rows the caller follows the pointer:
+
+[source,java]
+----
+List<Document> results = this.vectorStore.similaritySearch(SearchRequest.builder()
+    .query("a truck at the north gate after dark")   // embedded by the same multimodal model
+    .filterExpression("camera == 'north-gate'")
+    .build());
+
+for (Document doc : results) {
+    String ref = (String) doc.getMetadata().get(DocumentMetadata.CONTENT_REF.value());
+    byte[] frame = mediaStorage.fetch(ref);           // S3, CDN, wherever the pointer leads
+}
+----
+
+WARNING: Two models are in play here and they have to produce vectors in the same space and of the same width: the one you embed the content with, and the store's own `EmbeddingModel`, which embeds the query inside `similaritySearch`.
+Spring AI's `VertexAiMultimodalEmbeddingModel` puts text and images in one 1408-dimension space, but it implements `DocumentEmbeddingModel` rather than `EmbeddingModel`, so using it on both sides means wrapping it for the store.
+Wire an ordinary text model instead and your queries land somewhere else entirely: an error if the widths differ, and quietly meaningless results if they happen to match.
+
+NOTE: Redis returns only the metadata fields declared when the store is built, so `content_ref` has to be declared for the pointer to survive a read: `.metadataFields(MetadataField.tag(DocumentMetadata.CONTENT_REF.value()))`.
+The same goes for any field you filter on, such as `camera` above.
+Adding a field to a store that already has an index means recreating the index.
 
 === Reading from a Vector Store
 

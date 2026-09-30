@@ -59,6 +59,8 @@ public class OpenAiChatAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
+	@ConditionalOnProperty(name = OpenAiChatProperties.CONFIG_PREFIX + ".api", havingValue = "chat-completions",
+			matchIfMissing = true)
 	public OpenAiChatModel openAiChatModel(OpenAiCommonProperties commonProperties, OpenAiChatProperties chatProperties,
 			ToolCallingManager toolCallingManager, ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<MeterRegistry> meterRegistry,

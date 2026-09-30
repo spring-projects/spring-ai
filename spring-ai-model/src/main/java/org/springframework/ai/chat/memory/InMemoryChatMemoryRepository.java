@@ -51,7 +51,7 @@ public final class InMemoryChatMemoryRepository implements ChatMemoryRepository 
 		Assert.hasText(conversationId, "conversationId cannot be null or empty");
 		Assert.notNull(messages, "messages cannot be null");
 		Assert.noNullElements(messages, "messages cannot contain null elements");
-		this.chatMemoryStore.put(conversationId, messages);
+		this.chatMemoryStore.put(conversationId, List.copyOf(messages));
 	}
 
 	@Override

@@ -45,13 +45,21 @@ public class MariaDBSchemaValidator {
 		this.jdbcTemplate = jdbcTemplate;
 	}
 
-	private boolean isTableExists(@Nullable String schemaName, String tableName) {
+	private String resolveSchemaName(@Nullable String schemaName) {
+		if (schemaName != null) {
+			return schemaName;
+		}
+		String currentSchema = this.jdbcTemplate.queryForObject("SELECT SCHEMA()", String.class);
+		Assert.state(currentSchema != null, "No schema name configured and no schema selected on the connection");
+		return currentSchema;
+	}
+
+	private boolean isTableExists(String schemaName, String tableName) {
 		// schema and table are expected to be escaped
 		String sql = "SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?";
 		try {
 			// Query for a single integer value, if it exists, table exists
-			this.jdbcTemplate.queryForObject(sql, Integer.class, (schemaName == null) ? "SCHEMA()" : schemaName,
-					tableName);
+			this.jdbcTemplate.queryForObject(sql, Integer.class, schemaName, tableName);
 			return true;
 		}
 		catch (DataAccessException e) {
@@ -62,16 +70,17 @@ public class MariaDBSchemaValidator {
 	void validateTableSchema(@Nullable String schemaName, String tableName, String idFieldName, String contentFieldName,
 			String metadataFieldName, String embeddingFieldName, int embeddingDimensions) {
 
-		if (!isTableExists(schemaName, tableName)) {
+		String resolvedSchemaName = resolveSchemaName(schemaName);
+
+		if (!isTableExists(resolvedSchemaName, tableName)) {
 			throw new IllegalStateException(
-					String.format("Table '%s' does not exist in schema '%s'", tableName, schemaName));
+					String.format("Table '%s' does not exist in schema '%s'", tableName, resolvedSchemaName));
 		}
 
 		// ensure server support VECTORs
 		try {
 			// Query for a single integer value, if it exists, database support vector
-			this.jdbcTemplate.queryForObject("SELECT vec_distance_euclidean(x'0000803f', x'0000803f')", Integer.class,
-					schemaName, tableName);
+			this.jdbcTemplate.queryForObject("SELECT vec_distance_euclidean(x'0000803f', x'0000803f')", Integer.class);
 		}
 		catch (DataAccessException e) {
 			if (logger.isErrorEnabled()) {
@@ -87,7 +96,8 @@ public class MariaDBSchemaValidator {
 
 		try {
 			if (logger.isInfoEnabled()) {
-				logger.info("Validating MariaDBStore schema for table: " + tableName + " in schema: " + schemaName);
+				logger.info(
+						"Validating MariaDBStore schema for table: " + tableName + " in schema: " + resolvedSchemaName);
 			}
 
 			List<String> expectedColumns = new ArrayList<>();
@@ -100,11 +110,12 @@ public class MariaDBSchemaValidator {
 			// Include the schema name in the query to target the correct table
 			String query = "SELECT COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS "
 					+ "WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?";
-			List<Map<String, @Nullable Object>> columns = this.jdbcTemplate.queryForList(query, schemaName, tableName);
+			List<Map<String, @Nullable Object>> columns = this.jdbcTemplate.queryForList(query, resolvedSchemaName,
+					tableName);
 
 			if (columns.isEmpty()) {
 				throw new IllegalStateException("Error while validating table schema, Table " + tableName
-						+ " does not exist in schema " + schemaName);
+						+ " does not exist in schema " + resolvedSchemaName);
 			}
 
 			// Check each column against expected fields
@@ -142,9 +153,8 @@ public class MariaDBSchemaValidator {
 										%s JSON,
 										%s VECTOR(%d) NOT NULL,
 										VECTOR INDEX (%s)
-								) ENGINE=InnoDB""", schemaName == null ? tableName : schemaName + "." + tableName,
-								idFieldName, contentFieldName, metadataFieldName, embeddingFieldName,
-								embeddingDimensions, embeddingFieldName)
+								) ENGINE=InnoDB""", resolvedSchemaName + "." + tableName, idFieldName, contentFieldName,
+								metadataFieldName, embeddingFieldName, embeddingDimensions, embeddingFieldName)
 						+ "\n" + "Please adjust these commands based on your specific configuration and the"
 						+ " capabilities of your vector database system.");
 			}

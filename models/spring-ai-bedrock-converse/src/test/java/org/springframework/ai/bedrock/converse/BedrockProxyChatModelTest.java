@@ -18,6 +18,7 @@ package org.springframework.ai.bedrock.converse;
 
 import java.net.URL;
 import java.util.List;
+import java.util.Map;
 
 import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Test;
@@ -26,6 +27,7 @@ import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+import software.amazon.awssdk.core.document.Document;
 import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeAsyncClient;
@@ -211,6 +213,30 @@ class BedrockProxyChatModelTest {
 			.cause()
 			.isInstanceOf(SecurityException.class)
 			.hasMessageContaining("evil.com");
+	}
+
+	@Test
+	void requestParametersWithMixedFlatAndNestedValuesBuildAdditionalModelRequestFields() {
+		BedrockProxyChatModel model = newModel();
+
+		BedrockChatOptions options = BedrockChatOptions.builder()
+			.requestParameters(
+					Map.of("anthropic_version", "bedrock-2023-05-31", "output_config", Map.of("effort", "low")))
+			.build();
+
+		Prompt prompt = new Prompt(List.of(new UserMessage("Question?")), options);
+
+		ConverseRequest request = model.createRequest(prompt);
+
+		Document additionalModelRequestFields = request.additionalModelRequestFields();
+		assertThat(additionalModelRequestFields.isMap()).isTrue();
+
+		Document anthropicVersion = additionalModelRequestFields.asMap().get("anthropic_version");
+		assertThat(anthropicVersion.asString()).isEqualTo("bedrock-2023-05-31");
+
+		Document outputConfig = additionalModelRequestFields.asMap().get("output_config");
+		assertThat(outputConfig.isMap()).isTrue();
+		assertThat(outputConfig.asMap().get("effort").asString()).isEqualTo("low");
 	}
 
 	@Test
@@ -413,6 +439,58 @@ class BedrockProxyChatModelTest {
 		assertThat(tools.get(1).cachePoint()).isNotNull();
 		assertThat(tools.get(1).cachePoint().typeAsString()).isEqualTo("default");
 		assertThat(tools.get(1).cachePoint().ttlAsString()).isEqualTo("1h");
+	}
+
+	// -------------------------------------------------------------------------
+	// Empty user message text (gh-6695)
+	// -------------------------------------------------------------------------
+
+	@Test
+	void mediaOnlyUserMessageOmitsEmptyTextContentBlock() {
+		BedrockProxyChatModel model = newModel();
+
+		Prompt prompt = new Prompt(List.of(UserMessage.builder().text("").media(pngMedia()).build()),
+				BedrockChatOptions.builder().build());
+
+		List<ContentBlock> contents = model.createRequest(prompt).messages().get(0).content();
+
+		assertThat(contents).hasSize(1);
+		assertThat(contents.get(0).image()).isNotNull();
+		assertThat(contents).noneMatch(content -> content.text() != null);
+	}
+
+	@Test
+	void blankUserMessageTextOmitsEmptyTextContentBlock() {
+		BedrockProxyChatModel model = newModel();
+
+		Prompt prompt = new Prompt(List.of(UserMessage.builder().text("   \n\t").media(pngMedia()).build()),
+				BedrockChatOptions.builder().build());
+
+		List<ContentBlock> contents = model.createRequest(prompt).messages().get(0).content();
+
+		assertThat(contents).hasSize(1);
+		assertThat(contents.get(0).image()).isNotNull();
+	}
+
+	@Test
+	void userMessageWithTextAndMediaKeepsBothContentBlocks() {
+		BedrockProxyChatModel model = newModel();
+
+		Prompt prompt = new Prompt(List.of(UserMessage.builder().text("Describe the image").media(pngMedia()).build()),
+				BedrockChatOptions.builder().build());
+
+		List<ContentBlock> contents = model.createRequest(prompt).messages().get(0).content();
+
+		assertThat(contents).hasSize(2);
+		assertThat(contents.get(0).text()).isEqualTo("Describe the image");
+		assertThat(contents.get(1).image()).isNotNull();
+	}
+
+	private static Media pngMedia() {
+		return Media.builder()
+			.mimeType(MimeType.valueOf("image/png"))
+			.data(new byte[] { (byte) 0x89, 'P', 'N', 'G' })
+			.build();
 	}
 
 	public record WeatherRequest(String location, String unit) {

@@ -1,0 +1,39 @@
+{
+  "id": "resp_text_1",
+  "object": "response",
+  "created_at": 1757000100,
+  "status": "completed",
+  "model": "gpt-5-mini",
+  "output": [
+    {
+      "type": "reasoning",
+      "id": "rs_2",
+      "summary": [
+        { "type": "summary_text", "text": "Report the temperature the tool returned." }
+      ],
+      "encrypted_content": "gAAAAABsecond-opaque-blob"
+    },
+    {
+      "type": "message",
+      "id": "msg_1",
+      "role": "assistant",
+      "status": "completed",
+      "phase": "final_answer",
+      "content": [
+        { "type": "output_text", "text": "It is 18 degrees in Paris.", "annotations": [] }
+      ]
+    }
+  ],
+  "usage": {
+    "input_tokens": 200,
+    "input_tokens_details": { "cached_tokens": 128, "cache_write_tokens": 0 },
+    "output_tokens": 25,
+    "output_tokens_details": { "reasoning_tokens": 10 },
+    "total_tokens": 225
+  },
+  "parallel_tool_calls": true,
+  "tool_choice": "auto",
+  "tools": [],
+  "temperature": 1.0,
+  "top_p": 1.0
+}

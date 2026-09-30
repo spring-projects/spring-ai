@@ -85,6 +85,18 @@ public class InMemoryChatMemoryRepositoryTests {
 	}
 
 	@Test
+	void saveMessagesCopiesCallerOwnedList() {
+		String conversationId = UUID.randomUUID().toString();
+		Message message = new UserMessage("Hello");
+		List<Message> messages = new ArrayList<>(List.of(message));
+
+		this.chatMemoryRepository.saveAll(conversationId, messages);
+		messages.clear();
+
+		assertThat(this.chatMemoryRepository.findByConversationId(conversationId)).containsExactly(message);
+	}
+
+	@Test
 	void findNonExistingConversation() {
 		String conversationId = UUID.randomUUID().toString();
 

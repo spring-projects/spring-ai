@@ -1,0 +1,369 @@
+= OpenAI Responses API
+
+Spring AI supports OpenAI's Responses API (`/v1/responses`) through `OpenAiResponsesChatModel`, a second OpenAI `ChatModel` alongside the Chat Completions one described in xref:api/chat/openai-chat.adoc[OpenAI Chat].
+
+The Responses API is the endpoint where new OpenAI capability lands.
+Two reasons to choose it:
+
+* **Reasoning together with tool calling.** Starting with GPT-5.4, Chat Completions does not support tool calling with a reasoning effort other than `none`. Responses does. If you are building an agent on a current flagship model, this is a correctness gap rather than a missing feature.
+* **Reasoning summaries and server-executed tools.** Web search, file search, code interpreter, remote MCP and image generation run inside OpenAI's own request, and reasoning summaries are returned rather than hidden.
+
+[IMPORTANT]
+====
+`OpenAiResponsesChatModel` is **stateless**.
+Every call sends the whole `Prompt`; OpenAI is never asked to remember your conversation.
+"Responses API" does not mean "OpenAI stores the thread for you" here - see <<statelessness,Statelessness>>.
+====
+
+[IMPORTANT]
+====
+No chat memory repository persists message parts yet, so only `InMemoryChatMemoryRepository` preserves full conversation (including reasoning).
+Memory implementations are expected in 2.1.0-M2
+
+Where continuity is lost the conversation still works and answers are still correct; the model reasons from scratch each turn.
+Within a single tool loop continuity is always preserved, because chat memory sits outside the loop.
+====
+
+== Prerequisites
+
+The same as for xref:api/chat/openai-chat.adoc[OpenAI Chat]: an API key set through `spring.ai.openai.api-key`, and the `spring-ai-starter-model-openai` starter on the classpath.
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-model-openai</artifactId>
+</dependency>
+----
+
+== Selecting the endpoint
+
+OpenAI is Spring AI's default chat provider, and `ChatClient` auto-configuration requires exactly one `ChatModel` bean, so the two OpenAI endpoints are mutually exclusive rather than both configured.
+One property picks which one you get:
+
+[source,properties]
+----
+# chat-completions (default) | responses
+spring.ai.openai.chat.api=responses
+----
+
+With `responses`, the auto-configuration creates a single `OpenAiResponsesChatModel` bean and no `OpenAiChatModel` bean.
+Connection settings stay where they are, under `spring.ai.openai`.
+
+If you genuinely want both - say Chat Completions for cheap classification and Responses for an agent - leave the property at its default and declare the second model yourself:
+
+[source,java]
+----
+@Bean
+OpenAiResponsesChatModel agentChatModel() {
+	return OpenAiResponsesChatModel.builder()
+		.options(OpenAiResponsesChatOptions.builder()
+			.model("gpt-5-mini")
+			.reasoningEffort("medium")
+			.build())
+		.build();
+}
+----
+
+Note that a second `ChatModel` bean makes `ChatClient` auto-configuration ambiguous, so mark one `@Primary` or build your `ChatClient` instances explicitly.
+
+== Chat properties
+
+The `spring.ai.openai.responses` prefix configures the model.
+
+[cols="3,5,1", stripes=even]
+|====
+| Property | Description | Default
+
+| spring.ai.openai.responses.model | The model to use. | gpt-5-mini
+| spring.ai.openai.responses.max-output-tokens | Upper bound on generated tokens, reasoning tokens included. | -
+| spring.ai.openai.responses.temperature | Sampling temperature. | -
+| spring.ai.openai.responses.top-p | Nucleus sampling. | -
+| spring.ai.openai.responses.reasoning-effort | `none`, `minimal`, `low`, `medium` or `high`. | -
+| spring.ai.openai.responses.reasoning-summary | `auto`, `concise` or `detailed`. | -
+| spring.ai.openai.responses.verbosity | `low`, `medium` or `high`. | -
+| spring.ai.openai.responses.strict | Whether tool schemas are sent as strict. | false
+| spring.ai.openai.responses.parallel-tool-calls | Whether the model may request several tools at once. | -
+| spring.ai.openai.responses.max-tool-calls | Upper bound on tool calls in one response. | -
+| spring.ai.openai.responses.tool-choice | `auto`, `none`, `required`, or a JSON object naming a function or a hosted tool type. | -
+| spring.ai.openai.responses.include | Extra response fields, e.g. `web_search_call.results`. | -
+| spring.ai.openai.responses.truncation | `auto` to drop items on context overflow, `disabled` to fail. | -
+| spring.ai.openai.responses.service-tier | Processing tier. | -
+| spring.ai.openai.responses.prompt-cache-key | Cache key for prompt caching. | -
+| spring.ai.openai.responses.safety-identifier | Stable, non-identifying end-user id. | -
+| spring.ai.openai.responses.metadata | Arbitrary key/value pairs attached to the response. | -
+| spring.ai.openai.responses.extra-body | Extra request body properties. | -
+| spring.ai.openai.responses.hosted-tools.web-search.enabled | Enable server-side web search. | false
+| spring.ai.openai.responses.hosted-tools.web-search.search-context-size | `low`, `medium` or `high`. | -
+| spring.ai.openai.responses.hosted-tools.web-search.allowed-domains | Restrict results to these domains. | -
+| spring.ai.openai.responses.hosted-tools.file-search.vector-store-ids | Vector stores to search; setting one enables the tool. | -
+| spring.ai.openai.responses.hosted-tools.file-search.max-num-results | Maximum results. | -
+| spring.ai.openai.responses.hosted-tools.code-interpreter.enabled | Enable server-side Python execution. | false
+| spring.ai.openai.responses.hosted-tools.image-generation.enabled | Enable server-side image generation. | false
+|====
+
+Connection properties (`api-key`, `base-url`, `timeout`, `max-retries`, `proxy`, `custom-headers`, Microsoft Foundry and GitHub Models flags) are shared with the other OpenAI models under `spring.ai.openai`, and can be overridden per model under `spring.ai.openai.responses`.
+
+All of these can also be set per request through `OpenAiResponsesChatOptions`:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(new Prompt("Plan a two-day trip to Rome.",
+		OpenAiResponsesChatOptions.builder()
+			.model("gpt-5-mini")
+			.reasoningEffort("medium")
+			.reasoningSummary("auto")
+			.maxOutputTokens(1024)
+			.build()));
+----
+
+[#statelessness]
+== Statelessness
+
+Spring AI currently implements only the stateless mode of Responses API
+
+Consequently `store: false` is sent on every request, and is not configurable.
+Two reasons, both correctness rather than preference:
+
+* There is nothing for OpenAI to retain. The conversation lives in the `Prompt`, and neither `previous_response_id` nor server-side conversations are supported, so a stored response would only be a copy nobody reads.
+* It is what makes reasoning replay work at all. With `store: true` OpenAI keeps the reasoning server-side for `previous_response_id` to address and returns no reasoning to hand back, so `include: ["reasoning.encrypted_content"]` yields nothing and continuity is silently lost.
+
+Responses are therefore not retained by OpenAI on Spring AI's behalf; your organization's data-retention settings still apply to the request itself.
+
+[#lossless-replay]
+== Lossless replay of assistant turns
+
+A reasoning model returns its chain of thought as an **opaque encrypted blob**, that you cannot read.
+To keep the model's train of thought across a tool call or a follow-up turn, that exact blob has to be handed back on the next request.
+Dropping it produces no error - just worse answers, more tokens and repeated work.
+
+A whole assistant turn is therefore not one message but a transcript of typed items - a reasoning item, then the function calls it produced, then a text message.
+That transcript is the assistant message's ordered `List<MessagePart>`, one part per item, so the interleaving survives and the encrypted blob travels with the reasoning it belongs to:
+
+[cols="2,3", stripes=even]
+|====
+| Output item | Message part
+
+| `reasoning` | `ReasoningPart`, whose `payload()` is an `OpaquePayload("openai.responses", "encrypted_content", <blob>)`
+| `message` | `TextPart`
+| `function_call` | `ToolCallPart`, whose `ToolCall.id()` is the `call_id`
+| `image_generation_call` with a result | `MediaPart`, also visible through `getMedia()`
+| anything else, including an item type the SDK does not model yet | `UnknownPart`, holding the item verbatim
+|====
+
+On the next request each part is turned back into the item it came from, in part order.
+The item id, the item status and the assistant message `phase` ride along in the part's `attributes()`, because an item cannot be rebuilt without them.
+
+Two things are deliberately not replayed: citation `annotations` on a previous assistant turn, which stay readable on the generation metadata but are of no use to the model, and generated media, for which the API has no input item.
+
+A reasoning part is replayed only when its payload came from this provider, which `ReasoningPart.replayableTo("openai.responses")` reports.
+The Responses API rejects reasoning without its own encrypted content, so a reasoning part produced by Anthropic or Bedrock, or one whose payload was lost on the way through, is skipped with a `DEBUG` log rather than sent and refused.
+The turn still goes through; the model simply reasons from scratch.
+
+== Tool calling
+
+Application-side tools work exactly as they do with `OpenAiChatModel`, through `ToolCallingAdvisor`.
+The model runs no tool loop of its own.
+
+[source,java]
+----
+String answer = ChatClient.create(chatModel)
+	.prompt()
+	.advisors(ToolCallingAdvisor.builder().build())
+	.tools(new WeatherTools())
+	.user("What is the weather in Paris?")
+	.call()
+	.content();
+----
+
+Two behaviours are specific to this endpoint:
+
+* **Tool schemas are sent as non-strict** unless you set `strict`. The Responses API attempts strict mode when the flag is omitted, and Spring AI's generated schemas frequently do not satisfy it, so sending it explicitly keeps a tool behaving the same across both OpenAI models.
+* **Server-executed tools never appear as tool calls.**
+They are reported under the `openai.responses.hosted_tool_calls` key on the generation metadata instead, so `ToolCallingAdvisor` never looks for a local callback named `web_search`.
+
+== Server-executed tools
+
+These run inside OpenAI's request; there is nothing for your application to execute.
+
+[source,java]
+----
+var options = OpenAiResponsesChatOptions.builder()
+	.model("gpt-5-mini")
+	.hostedTools(
+			new HostedTool.WebSearch("high", List.of("spring.io")),
+			HostedTool.FileSearch.of("vs_abc123"),
+			HostedTool.CodeInterpreter.of(),
+			HostedTool.Mcp.of("my-server", "https://mcp.example.com"),
+			HostedTool.ImageGeneration.of())
+	.build();
+----
+
+`HostedTool.Raw` is the escape hatch for tools OpenAI ships before Spring AI types them:
+
+[source,java]
+----
+new HostedTool.Raw(Map.of("type", "local_shell"))
+----
+
+Citations from web and file search land under the `annotations` key on the generation metadata.
+Generated images arrive as `Media` on the assistant message, labelled with the `output_format` the item reports.
+
+The MCP approval round-trip is not implemented, so `HostedTool.Mcp` rejects `requireApproval = "always"` at construction: an `mcp_approval_request` would end the turn without the tool running. Use `never`.
+
+== Reasoning
+
+[source,java]
+----
+var options = OpenAiResponsesChatOptions.builder()
+	.model("gpt-5-mini")
+	.reasoningEffort("medium")
+	.reasoningSummary("auto")
+	.build();
+
+ChatResponse response = chatModel.call(new Prompt("...", options));
+String summary = response.getResult().getMetadata().get(OpenAiResponsesMetadata.REASONING_CONTENT);
+----
+
+OpenAI never returns raw reasoning text - only summaries and the encrypted blob.
+Reasoning token counts are available through the native usage object, `response.getMetadata().getUsage().getNativeUsage()`.
+
+Spring AI always adds `include: ["reasoning.encrypted_content"]` to the request.
+This is one of only two framework-level defaults on this model, and it is there for correctness: without the blob coming back, replaying a reasoning turn is impossible rather than merely degraded.
+The other is the non-strict tool schema described above.
+
+== Structured output
+
+`ChatClient.entity()` works unchanged.
+Underneath, `response_format` becomes `text.format`.
+
+[source,java]
+----
+ActorFilms films = ChatClient.create(chatModel)
+	.prompt("Generate the filmography for a random actor.")
+	.call()
+	.entity(ActorFilms.class);
+----
+
+== Multimodal input
+
+Images (by URL or bytes) and PDFs are supported.
+
+[source,java]
+----
+var media = Media.builder()
+	.mimeType(MimeTypeUtils.IMAGE_PNG)
+	.data(new ClassPathResource("/chart.png"))
+	.build();
+
+String description = ChatClient.create(chatModel)
+	.prompt()
+	.user(user -> user.text("Explain this chart.").media(media))
+	.call()
+	.content();
+----
+
+Audio input and output are not supported by this endpoint and are rejected with a clear message; use `OpenAiChatModel` for audio.
+
+== Typed access to the turn transcript
+
+For the cases where you want the transcript rather than the flattened message, read the parts:
+
+[source,java]
+----
+ChatResponse response = chatModel.call(new Prompt("..."));
+AssistantMessage message = response.getResult().getOutput();
+
+for (MessagePart part : message.getParts()) {
+	if (part instanceof ReasoningPart reasoning) {
+		System.out.println("thought: " + reasoning.summary());
+	}
+	else if (part instanceof ToolCallPart toolCall) {
+		System.out.println("calls: " + toolCall.toolCall().name());
+	}
+	else if (part instanceof UnknownPart hostedTool) {
+		System.out.println("ran server-side: " + hostedTool.kind());
+	}
+}
+----
+
+`getReasoning()`, `getToolCalls()`, `getMedia()` and `getText()` are views over the same list, so the familiar accessors keep working.
+There is no OpenAI-specific `AssistantMessage` subclass: the parts are provider-neutral, which is what lets replay keep working after streaming aggregation or a chat memory round-trip.
+
+[#metadata-reference]
+== Metadata reference
+
+The assistant message carries no metadata.
+Everything a turn reports beyond its parts describes one response rather than the message, so it lives on the generation and response metadata; message metadata is persisted by some chat memory repositories and dropped by others, which makes it the wrong place for anything that matters.
+This differs from `OpenAiChatModel`, which publishes `id`, `role`, `finishReason`, `refusal`, `annotations` and `reasoningContent` on the message.
+The keys below keep those names where they apply, so swapping the bean only changes where you read them.
+
+On the generation metadata, read with `response.getResult().getMetadata()`:
+
+[cols="3,4", stripes=even]
+|====
+| Key | Meaning
+
+| `getFinishReason()` | `STOP`, `TOOL_CALLS`, `LENGTH` or `CONTENT_FILTER`, through the typed accessor rather than a key
+| `openai.responses.status` | `completed`, `incomplete`, `failed`, ...
+| `openai.responses.incomplete_reason` | `max_output_tokens` or `content_filter`
+| `openai.responses.hosted_tool_calls` | Server-executed tool calls, as `{type, id, status}` entries
+| `refusal` | The model's refusal text, or an empty string
+| `annotations` | Citations attached to the generated text
+| `reasoningContent` | The reasoning summaries, one line per reasoning item
+|====
+
+`reasoningContent` is a flattened view, published under the key `OpenAiChatModel` and DeepSeek use.
+The authoritative form is the `ReasoningPart`s, which keep each reasoning item separate, in place among the tool calls it justified, and carry the encrypted content needed to replay it.
+
+`openai.responses.hosted_tool_calls` summarizes activity inside a single request, so there is nothing to replay on the next turn; the authoritative copy of each item is the `UnknownPart` it was mapped to, which holds the item verbatim.
+
+The `annotations` key matches `OpenAiChatModel` by name only.
+This model publishes `List<Map<String, Object>>`; `OpenAiChatModel` publishes the OpenAI SDK's own annotation objects.
+Code that casts the entries needs adjusting when you swap one bean for the other.
+
+On the response metadata, read with `response.getMetadata()`:
+
+[cols="3,4", stripes=even]
+|====
+| Key | Meaning
+
+| `getId()` | The `resp_...` id of the response, through the typed accessor
+| `openai.responses.created_at` | Response creation time, in seconds since the epoch
+| `openai.responses.status` | `completed`, `incomplete`, `failed`, ...
+| `openai.responses.incomplete_reason` | `max_output_tokens` or `content_filter`
+|====
+
+Note that `response.getMetadata()` is rebuilt from a fixed field set during streaming aggregation, so the `openai.responses.*` keys are present on each streamed chunk but not on the aggregated response.
+`getId()`, `getModel()` and `getUsage()` survive aggregation.
+
+Finish reasons:
+`STOP`, `TOOL_CALLS`, `LENGTH` (incomplete because of `max_output_tokens`) and `CONTENT_FILTER`.
+A `failed` response raises `OpenAiResponsesException` rather than returning an empty answer.
+
+== Limitations
+
+[cols="3,5", stripes=even]
+|====
+| Area | Behaviour
+
+| `n`, stop sequences, frequency and presence penalties, `seed`, `logit_bias`, `topK` | No Responses equivalent. Warned about once per option and ignored.
+| Audio in and out | Not supported by the endpoint. Rejected with a clear message.
+| Server-side conversation state | Not implemented; see <<statelessness,Statelessness>>.
+| `store` | Always sent as `false` and not configurable, because a stored response returns no reasoning to replay. See <<statelessness,Statelessness>>.
+| Background execution, context compaction, MCP approvals, WebSocket mode | Not implemented.
+| Reasoning continuity with store-backed chat memory | Lost, because no repository persists message parts yet. Preserved with `InMemoryChatMemoryRepository` and within a tool loop. See <<lossless-replay,Lossless replay>>.
+| OpenAI-compatible backends (vLLM, Ollama, LiteLLM, gateways) | Frequently implement `/v1/chat/completions` but not `/v1/responses`. Chat Completions remains the default for that reason.
+| GitHub Models | GitHub Models do not support the Responses API
+|====
+
+== Migrating from Chat Completions
+
+. Set `spring.ai.openai.chat.api=responses`.
+. Move option properties from `spring.ai.openai.chat.*` to `spring.ai.openai.responses.*`. Most names carry over; `max-tokens` becomes `max-output-tokens`, and `response-format`/`verbosity` are unchanged from your point of view.
+. Drop any `n`, stop-sequence, penalty, `seed` or `logit_bias` settings - they are ignored here.
+. Move any read of `id`, `role`, `finishReason`, `refusal`, `annotations` or `reasoningContent` from the assistant message's metadata to `response.getResult().getMetadata()`. This model publishes nothing on the message; see <<metadata-reference,Metadata reference>>.
+. If you rely on reasoning continuity across turns, check your chat memory repository against the table in <<lossless-replay,Lossless replay>>. Only `InMemoryChatMemoryRepository` preserves it today.
+. Drop any `store` setting. This endpoint always sends `store=false`; if you depended on OpenAI retaining Chat Completions output, that no longer happens here.
+. Replace any request-time `OpenAiChatOptions` with `OpenAiResponsesChatOptions`. An `OpenAiChatOptions` builder merges into this model like any other provider's options: `model`, `temperature`, `top-p`, `max-tokens` and tools carry over, but OpenAI-specific settings such as `reasoningEffort`, `responseFormat` and `toolChoice` do not.
+. `ChatClient` code, advisors, `.tools()` and `.entity()` need no changes.
