@@ -25,6 +25,7 @@ import org.skyscreamer.jsonassert.JSONCompareMode;
 
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.openai.OpenAiChatModel;
+import org.springframework.ai.openai.OpenAiChatOptions.AudioParameters;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
@@ -206,6 +207,69 @@ public class OpenAiChatPropertiesTests {
 				assertThat(options.getExtraBody()).containsEntry("key1", "value1");
 				assertThat(options.getExtraBody()).containsEntry("key2", "123");
 				assertThat(options.getExtraBody()).containsKey("nested");
+			});
+	}
+
+	@Test
+	public void chatOutputAudioTest() {
+
+		this.contextRunner
+			.withPropertyValues(// @formatter:off
+				"spring.ai.openai.api-key=API_KEY",
+				"spring.ai.openai.base-url=http://TEST.BASE.URL",
+				"spring.ai.openai.chat.output-modalities=text,audio",
+				"spring.ai.openai.chat.output-audio.voice=Chloe",
+				"spring.ai.openai.chat.output-audio.format=Ogg_Opus"
+			)
+			// @formatter:on
+			.withConfiguration(
+					AutoConfigurations.of(OpenAiChatAutoConfiguration.class, ToolCallingAutoConfiguration.class))
+			.run(context -> {
+				var chatProperties = context.getBean(OpenAiChatProperties.class);
+
+				// Custom voices of OpenAI-compatible providers are bound as given.
+				assertThat(chatProperties.getOutputAudio().getVoice()).isEqualTo("Chloe");
+				assertThat(chatProperties.getOutputAudio().getFormat()).isEqualTo("Ogg_Opus");
+				assertThat(chatProperties.toOptions().getOutputAudio())
+					.isEqualTo(new AudioParameters("Chloe", "Ogg_Opus"));
+			});
+	}
+
+	@Test
+	public void deprecatedChatOptionsOutputAudioTest() {
+
+		this.contextRunner
+			.withPropertyValues(// @formatter:off
+				"spring.ai.openai.api-key=API_KEY",
+				"spring.ai.openai.base-url=http://TEST.BASE.URL",
+				"spring.ai.openai.chat.options.output-audio.voice=alloy",
+				"spring.ai.openai.chat.options.output-audio.format=mp3"
+			)
+			// @formatter:on
+			.withConfiguration(
+					AutoConfigurations.of(OpenAiChatAutoConfiguration.class, ToolCallingAutoConfiguration.class))
+			.run(context -> {
+				var chatProperties = context.getBean(OpenAiChatProperties.class);
+
+				assertThat(chatProperties.toOptions().getOutputAudio()).isEqualTo(new AudioParameters("alloy", "mp3"));
+			});
+	}
+
+	@Test
+	public void chatOutputAudioDefaultsToNull() {
+
+		this.contextRunner
+			.withPropertyValues(// @formatter:off
+				"spring.ai.openai.api-key=API_KEY",
+				"spring.ai.openai.base-url=http://TEST.BASE.URL"
+			)
+			// @formatter:on
+			.withConfiguration(
+					AutoConfigurations.of(OpenAiChatAutoConfiguration.class, ToolCallingAutoConfiguration.class))
+			.run(context -> {
+				var chatProperties = context.getBean(OpenAiChatProperties.class);
+
+				assertThat(chatProperties.toOptions().getOutputAudio()).isNull();
 			});
 	}
 

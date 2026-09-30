@@ -417,13 +417,10 @@ public final class OpenAiChatModel implements ChatModel {
 		if (message.audio().isPresent() && StringUtils.hasText(message.audio().get().data())
 				&& request.audio().isPresent()) {
 			var audioOutput = message.audio().get();
-			String mimeType = String.format("audio/%s",
-					request.audio().get().format().value().name().toLowerCase(Locale.ROOT));
 			byte[] audioData = Base64.getDecoder().decode(audioOutput.data());
 			Resource resource = new ByteArrayResource(audioData);
-			Media.builder().mimeType(MimeTypeUtils.parseMimeType(mimeType)).data(resource).id(audioOutput.id()).build();
 			media.add(Media.builder()
-				.mimeType(MimeTypeUtils.parseMimeType(mimeType))
+				.mimeType(audioMimeType(request.audio().get().format().asString()))
 				.data(resource)
 				.id(audioOutput.id())
 				.build());
@@ -1019,6 +1016,20 @@ public final class OpenAiChatModel implements ChatModel {
 				return ChatCompletionToolChoiceOption.ofAuto(ChatCompletionToolChoiceOption.Auto.NONE);
 			default:
 				throw new IllegalArgumentException("Unknown tool_choice type: " + type);
+		}
+	}
+
+	/**
+	 * Return the MIME type of audio generated in the given format. The format is sent to
+	 * the model as given, so it may not be a valid MIME subtype, in which case the audio
+	 * is returned as {@code application/octet-stream} rather than failing the response.
+	 */
+	private static org.springframework.util.MimeType audioMimeType(String format) {
+		try {
+			return MimeTypeUtils.parseMimeType("audio/" + format);
+		}
+		catch (IllegalArgumentException ex) {
+			return MimeTypeUtils.APPLICATION_OCTET_STREAM;
 		}
 	}
 
