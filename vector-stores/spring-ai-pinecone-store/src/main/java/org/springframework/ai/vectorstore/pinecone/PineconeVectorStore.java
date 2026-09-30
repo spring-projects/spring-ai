@@ -25,8 +25,8 @@ import java.util.Optional;
 import com.google.protobuf.Struct;
 import com.google.protobuf.Value;
 import com.google.protobuf.util.JsonFormat;
+import io.pinecone.clients.Index;
 import io.pinecone.clients.Pinecone;
-import io.pinecone.proto.QueryRequest;
 import io.pinecone.unsigned_indices_model.QueryResponseWithUnsignedIndices;
 import io.pinecone.unsigned_indices_model.VectorWithUnsignedIndices;
 import org.apache.commons.logging.Log;
@@ -79,6 +79,8 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 
 	private final Pinecone pinecone;
 
+	private volatile @Nullable Index index;
+
 	private static final Log logger = LogFactory.getLog(PineconeVectorStore.class);
 
 	/**
@@ -97,6 +99,28 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 		this.pineconeDistanceMetadataFieldName = builder.distanceMetadataFieldName;
 
 		this.pinecone = new Pinecone.Builder(builder.apiKey).build();
+	}
+
+	/**
+	 * Returns a cached index connection, resolved lazily on first use. The Pinecone
+	 * client's {@code getIndexConnection} performs a blocking control-plane call
+	 * ({@code describeIndex}) on every invocation, so the connection is created once and
+	 * reused across operations. It is intentionally not closed on shutdown, as the
+	 * connection is held in the client's shared, static connection map and closing it
+	 * would affect other stores using the same index.
+	 */
+	private Index getIndex() {
+		Index localIndex = this.index;
+		if (localIndex == null) {
+			synchronized (this) {
+				localIndex = this.index;
+				if (localIndex == null) {
+					localIndex = this.pinecone.getIndexConnection(this.pineconeIndexName);
+					this.index = localIndex;
+				}
+			}
+		}
+		return localIndex;
 	}
 
 	/**
@@ -143,7 +167,7 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 			upsertVectors.add(io.pinecone.commons.IndexInterface.buildUpsertVectorWithUnsignedIndices(document.getId(),
 					EmbeddingUtils.toList(embeddings.get(i)), null, null, metadataToStruct(document)));
 		}
-		this.pinecone.getIndexConnection(this.pineconeIndexName).upsert(upsertVectors, namespace);
+		getIndex().upsert(upsertVectors, namespace);
 	}
 
 	/**
@@ -189,7 +213,7 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 	 * @param namespace The namespace of the document IDs.
 	 */
 	public void delete(List<String> documentIds, String namespace) {
-		this.pinecone.getIndexConnection(this.pineconeIndexName).delete(documentIds, false, namespace, null);
+		getIndex().delete(documentIds, false, namespace, null);
 	}
 
 	/**
@@ -208,22 +232,11 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 
 		float[] queryEmbedding = this.embeddingModel.embed(request.getQuery());
 
-		var queryRequestBuilder = QueryRequest.newBuilder()
-			.addAllVector(EmbeddingUtils.toList(queryEmbedding))
-			.setTopK(request.getTopK())
-			.setIncludeMetadata(true)
-			.setNamespace(namespace);
-
-		if (StringUtils.hasText(nativeExpressionFilters)) {
-			queryRequestBuilder.setFilter(metadataFiltersToStruct(nativeExpressionFilters));
-		}
-
 		Struct filterStruct = StringUtils.hasText(nativeExpressionFilters)
 				? metadataFiltersToStruct(nativeExpressionFilters) : null;
 
-		QueryResponseWithUnsignedIndices queryResponse = this.pinecone.getIndexConnection(this.pineconeIndexName)
-			.queryByVector(request.getTopK(), EmbeddingUtils.toList(queryEmbedding), namespace, filterStruct, false,
-					true);
+		QueryResponseWithUnsignedIndices queryResponse = getIndex().queryByVector(request.getTopK(),
+				EmbeddingUtils.toList(queryEmbedding), namespace, filterStruct, false, true);
 
 		return queryResponse.getMatchesList()
 			.stream()
