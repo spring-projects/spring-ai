@@ -210,7 +210,7 @@ public interface StreamAdvisorChain extends AdvisorChain {
 
 == Implementing an Advisor
 
-To create an advisor, implement either `CallAdvisor` or `StreamAdvisor` (or both). The key method to implement is `nextCall()` for non-streaming or `nextStream()` for streaming advisors.
+To create an advisor, implement either `CallAdvisor` or `StreamAdvisor` (or both). The key method to implement is `adviseCall()` for non-streaming or `adviseStream()` for streaming advisors. To continue the chain, invoke `CallAdvisorChain#nextCall()` or `StreamAdvisorChain#nextStream()`.
 
 === Examples
 
