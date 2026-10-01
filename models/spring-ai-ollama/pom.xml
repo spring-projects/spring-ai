@@ -90,5 +90,11 @@
 			<version>${json-unit-assertj.version}</version>
 			<scope>test</scope>
 		</dependency>
+
+		<dependency>
+			<groupId>jakarta.validation</groupId>
+			<artifactId>jakarta.validation-api</artifactId>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 </project>
