@@ -42,6 +42,7 @@ import org.springframework.ai.chat.client.advisor.observation.AdvisorObservation
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationConvention;
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationDocumentation;
 import org.springframework.ai.chat.client.advisor.observation.DefaultAdvisorObservationConvention;
+import org.springframework.ai.model.observation.ObservationTermination;
 import org.springframework.core.OrderComparator;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
@@ -156,12 +157,11 @@ public class DefaultAroundAdvisorChain implements BaseAdvisorChain {
 
 			// @formatter:off
 			Flux<ChatClientResponse> chatClientResponse = Flux.defer(() -> advisor.adviseStream(chatClientRequest, this)
-						.doOnError(observation::error)
-						.doFinally(s -> observation.stop())
 						.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation)));
 			// @formatter:on
-			return CHAT_CLIENT_MESSAGE_AGGREGATOR.aggregateChatClientResponse(chatClientResponse,
-					observationContext::setChatClientResponse);
+			return CHAT_CLIENT_MESSAGE_AGGREGATOR
+				.aggregateChatClientResponse(chatClientResponse, observationContext::setChatClientResponse)
+				.transform(ObservationTermination.stopOnTermination(observation));
 		});
 	}
 
