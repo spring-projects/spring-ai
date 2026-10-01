@@ -25,15 +25,20 @@ import java.util.Optional;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.mapping.DenseVectorSimilarity;
+import co.elastic.clients.elasticsearch._types.mapping.Property;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
 import co.elastic.clients.elasticsearch.core.search.Hit;
+import co.elastic.clients.elasticsearch.indices.GetMappingResponse;
+import co.elastic.clients.elasticsearch.indices.get_mapping.IndexMappingRecord;
 import co.elastic.clients.json.jackson.Jackson3JsonpMapper;
 import co.elastic.clients.transport.Version;
 import co.elastic.clients.transport.rest5_client.Rest5ClientTransport;
 import co.elastic.clients.transport.rest5_client.low_level.Rest5Client;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.cfg.DateTimeFeature;
@@ -150,6 +155,8 @@ import org.springframework.util.Assert;
  */
 public class ElasticsearchVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
+	private static final Log logger = LogFactory.getLog(ElasticsearchVectorStore.class);
+
 	private static final Map<SimilarityFunction, VectorStoreSimilarityMetric> SIMILARITY_TYPE_MAPPING = Map.of(
 			SimilarityFunction.cosine, VectorStoreSimilarityMetric.COSINE, SimilarityFunction.l2_norm,
 			VectorStoreSimilarityMetric.EUCLIDEAN, SimilarityFunction.dot_product, VectorStoreSimilarityMetric.DOT);
@@ -167,9 +174,8 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 
 	private final boolean initializeSchema;
 
-	// True when this store created the index, which is the only case where the
-	// configured dimension is known to match the index mapping.
-	private volatile boolean indexMappingCreatedHere;
+	// Cache for vectorDimensions(); only a known size is stored.
+	private volatile int resolvedVectorDimensions = -1;
 
 	protected ElasticsearchVectorStore(Builder builder) {
 		super(builder);
@@ -216,19 +222,12 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 		// Whole-batch dimension pre-check before any write, so a mismatched vector fails
 		// fast and cannot partially write. The authoritative dimension is the index
 		// mapping, not the query embedding model, since upsert stores caller-supplied
-		// vectors. The configured dimension is only known to match that mapping when this
-		// store created the index; for a pre-existing index the check is left to
-		// Elasticsearch. Non-empty and finiteness are already enforced by the
-		// EmbeddedDocument constructor.
-		if (this.indexMappingCreatedHere) {
-			int expected = this.options.getDimensions();
-			for (int i = 0; i < entries.size(); i++) {
-				int actual = entries.get(i).embedding().length;
-				if (actual != expected) {
-					throw new IllegalArgumentException("Embedding at index " + i + " has dimension " + actual
-							+ " but the store expects dimension " + expected);
-				}
-			}
+		// vectors. Non-empty and finiteness are already enforced by the EmbeddedDocument
+		// constructor. Only runs when the dimension is actually known; otherwise the
+		// check is left to Elasticsearch.
+		int expected = vectorDimensions();
+		for (int i = 0; i < entries.size(); i++) {
+			checkDimensions("Embedding at index " + i, entries.get(i).embedding().length, expected);
 		}
 
 		BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
@@ -294,6 +293,16 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 	@Override
 	public List<Document> doSimilaritySearch(SearchRequest searchRequest) {
 		Assert.notNull(searchRequest, "The search request must not be null.");
+		return searchByEmbedding(this.embeddingModel.embed(searchRequest.getQuery()), searchRequest);
+	}
+
+	@Override
+	protected List<Document> doSimilaritySearch(float[] queryEmbedding, SearchRequest searchRequest) {
+		checkDimensions("Query embedding", queryEmbedding.length, vectorDimensions());
+		return searchByEmbedding(queryEmbedding, searchRequest);
+	}
+
+	private List<Document> searchByEmbedding(float[] vectors, SearchRequest searchRequest) {
 		try {
 			float threshold = (float) searchRequest.getSimilarityThreshold();
 			// reverting l2_norm distance to its original value
@@ -301,7 +310,6 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 				threshold = 1 - threshold;
 			}
 			final float finalThreshold = threshold;
-			float[] vectors = this.embeddingModel.embed(searchRequest.getQuery());
 
 			SearchResponse<ObjectNode> res = this.elasticsearchClient.search(sr -> sr.index(this.options.getIndexName())
 				.knn(knn -> knn.queryVector(EmbeddingUtils.toList(vectors))
@@ -410,14 +418,83 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 			throw new IllegalArgumentException("Index not found");
 		}
 		createIndexMapping();
-		this.indexMappingCreatedHere = true;
+		// The index was just created with the configured size, so there is nothing to
+		// read back.
+		this.resolvedVectorDimensions = this.options.getDimensions();
+	}
+
+	/**
+	 * The vector size the index accepts, or -1 when it cannot be determined.
+	 * <p>
+	 * When this store created the index, that is the configured
+	 * {@link ElasticsearchVectorStoreOptions#getDimensions() dimensions}. Otherwise the
+	 * size is read from the {@code dims} of the embedding field in the existing index
+	 * mapping, and only then taken from the embedding model. Reading it from the mapping
+	 * means a store that only upserts into an existing index never has to contact the
+	 * embedding model. A known size is cached.
+	 * @return the known dimension, or -1
+	 */
+	private int vectorDimensions() {
+		int cached = this.resolvedVectorDimensions;
+		if (cached > 0) {
+			return cached;
+		}
+		int resolved = resolveVectorDimensions();
+		if (resolved > 0) {
+			this.resolvedVectorDimensions = resolved;
+		}
+		return resolved;
+	}
+
+	private int resolveVectorDimensions() {
+		try {
+			int mappingDimensions = mappingVectorDimensions();
+			if (mappingDimensions > 0) {
+				return mappingDimensions;
+			}
+		}
+		catch (Exception ex) {
+			logger.debug("Could not read the vector size of index " + this.options.getIndexName(), ex);
+		}
+		try {
+			int modelDimensions = this.embeddingModel.dimensions();
+			if (modelDimensions > 0) {
+				return modelDimensions;
+			}
+		}
+		catch (Exception ex) {
+			logger.debug("Could not obtain the embedding dimensions from the embedding model", ex);
+		}
+		return -1;
+	}
+
+	private int mappingVectorDimensions() throws IOException {
+		String indexName = this.options.getIndexName();
+		GetMappingResponse response = this.elasticsearchClient.indices().getMapping(m -> m.index(indexName));
+		// The response is keyed by concrete index name, which differs from the configured
+		// name when that name is an alias.
+		IndexMappingRecord record = response.get(indexName);
+		if (record == null && response.mappings().size() == 1) {
+			record = response.mappings().values().iterator().next();
+		}
+		if (record == null || record.mappings() == null) {
+			return -1;
+		}
+		Property property = record.mappings().properties().get(this.options.getEmbeddingFieldName());
+		if (property == null || !property.isDenseVector()) {
+			return -1;
+		}
+		// A mapping may leave dims out, in which case Elasticsearch fixes the size from
+		// the first document written and there is nothing to read yet.
+		Integer dims = property.denseVector().dims();
+		return (dims != null) ? dims : -1;
 	}
 
 	@Override
 	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
 		return VectorStoreObservationContext.builder(VectorStoreProvider.ELASTICSEARCH.value(), operationName)
 			.collectionName(this.options.getIndexName())
-			.dimensions(this.embeddingModel.dimensions())
+			.dimensions(vectorDimensions())
 			.similarityMetric(getSimilarityMetric());
 	}
 

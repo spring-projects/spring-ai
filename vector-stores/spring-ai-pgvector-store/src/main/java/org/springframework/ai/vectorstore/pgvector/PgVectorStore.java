@@ -47,6 +47,7 @@ import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -220,6 +221,9 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 	private final int maxDocumentBatchSize;
 
+	// Cache for vectorDimensions(); only a known size is stored.
+	private volatile int resolvedVectorDimensions = INVALID_EMBEDDING_DIMENSION;
+
 	/**
 	 * @param builder {@link VectorStore.Builder} for pg vector store
 	 */
@@ -318,15 +322,9 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		// by the EmbeddedDocument constructor. Only runs when the dimension is actually
 		// known: guessing it would reject vectors the table would have accepted, so in
 		// that case the check is left to Postgres.
-		int expected = knownEmbeddingDimensions();
-		if (expected > 0) {
-			for (int i = 0; i < entries.size(); i++) {
-				int actual = entries.get(i).embedding().length;
-				if (actual != expected) {
-					throw new IllegalArgumentException("Embedding at index " + i + " has dimension " + actual
-							+ " but the store expects dimension " + expected);
-				}
-			}
+		int expected = vectorDimensions();
+		for (int i = 0; i < entries.size(); i++) {
+			checkDimensions("Embedding at index " + i, entries.get(i).embedding().length, expected);
 		}
 
 		List<List<EmbeddedDocument>> batchedEntries = batchEmbeddedDocuments(entries);
@@ -423,6 +421,16 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 	@Override
 	public List<Document> doSimilaritySearch(SearchRequest request) {
+		return searchByEmbedding(getQueryEmbedding(request.getQuery()), request);
+	}
+
+	@Override
+	protected List<Document> doSimilaritySearch(float[] queryEmbedding, SearchRequest request) {
+		checkDimensions("Query embedding", queryEmbedding.length, vectorDimensions());
+		return searchByEmbedding(new PGvector(queryEmbedding), request);
+	}
+
+	private List<Document> searchByEmbedding(PGvector queryEmbedding, SearchRequest request) {
 
 		String nativeFilterExpression = (request.getFilterExpression() != null)
 				? this.filterExpressionConverter.convertExpression(request.getFilterExpression()) : "";
@@ -434,8 +442,6 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		}
 
 		double distance = 1 - request.getSimilarityThreshold();
-
-		PGvector queryEmbedding = getQueryEmbedding(request.getQuery());
 
 		return this.jdbcTemplate.query(
 				String.format(this.getDistanceType().similaritySearchSqlTemplate, getFullyQualifiedTableName(),
@@ -564,14 +570,40 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 	}
 
 	/**
-	 * The embedding dimension when it is known, or -1 when it is not. Mirrors
-	 * {@link #embeddingDimensions()} without its fallback to a default, so a caller that
-	 * must not guess can tell the two cases apart.
+	 * The vector size the table accepts, or -1 when it cannot be determined. Unlike
+	 * {@link #embeddingDimensions()} it never guesses a default, so a caller that must
+	 * not guess can tell the two cases apart.
+	 * <p>
+	 * The size comes from the configured {@code dimensions} if set, otherwise from the
+	 * declared type of the table's {@code embedding} column, and only then from the
+	 * embedding model. Reading it from the table means a store that only upserts into an
+	 * existing table never has to contact the embedding model. A known size is cached.
 	 * @return the known dimension, or -1
 	 */
-	private int knownEmbeddingDimensions() {
+	private int vectorDimensions() {
+		int cached = this.resolvedVectorDimensions;
+		if (cached > 0) {
+			return cached;
+		}
+		int resolved = resolveVectorDimensions();
+		if (resolved > 0) {
+			this.resolvedVectorDimensions = resolved;
+		}
+		return resolved;
+	}
+
+	private int resolveVectorDimensions() {
 		if (this.dimensions > 0) {
 			return this.dimensions;
+		}
+		try {
+			int columnDimensions = this.schemaValidator.vectorColumnDimensions(this.schemaName, this.vectorTableName);
+			if (columnDimensions > 0) {
+				return columnDimensions;
+			}
+		}
+		catch (DataAccessException ex) {
+			logger.debug("Could not read the embedding dimensions from the vector table", ex);
 		}
 		try {
 			int modelDimensions = this.embeddingModel.dimensions();
@@ -582,7 +614,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		catch (Exception ex) {
 			logger.debug("Could not obtain the embedding dimensions from the embedding model", ex);
 		}
-		return -1;
+		return INVALID_EMBEDDING_DIMENSION;
 	}
 
 	int embeddingDimensions() {
@@ -609,7 +641,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 		return VectorStoreObservationContext.builder(VectorStoreProvider.PG_VECTOR.value(), operationName)
 			.collectionName(this.vectorTableName)
-			.dimensions(this.embeddingDimensions())
+			.dimensions(this.vectorDimensions())
 			.namespace(this.schemaName)
 			.similarityMetric(getSimilarityMetric());
 	}
