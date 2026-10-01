@@ -193,7 +193,7 @@ public class OllamaChatModel implements ChatModel {
 
 		return ChatResponseMetadata.builder()
 			.usage(aggregatedUsage)
-			.model(response.model())
+			.model((response.model() != null) ? response.model() : "")
 			.keyValue(METADATA_CREATED_AT, response.createdAt())
 			.keyValue(METADATA_EVAL_DURATION, evalDuration)
 			.keyValue(METADATA_EVAL_COUNT, aggregatedUsage.getCompletionTokens())
@@ -236,19 +236,23 @@ public class OllamaChatModel implements ChatModel {
 				OllamaApi.ChatResponse ollamaResponse = RetryUtils.execute(this.retryTemplate,
 						() -> this.chatApi.chat(request));
 
-				List<AssistantMessage.ToolCall> toolCalls = ollamaResponse.message().toolCalls() == null ? List.of()
-						: ollamaResponse.message()
-							.toolCalls()
-							.stream()
-							.map(toolCall -> new AssistantMessage.ToolCall(toolCall.id(), "function",
-									toolCall.function().name(), jsonHelper.toJson(toolCall.function().arguments())))
-							.toList();
+				OllamaApi.Message responseMessage = ollamaResponse.message();
 
-				String thinking = ollamaResponse.message().thinking();
+				List<AssistantMessage.ToolCall> toolCalls = List.of();
+
+				if (responseMessage != null && responseMessage.toolCalls() != null) {
+					toolCalls = responseMessage.toolCalls()
+						.stream()
+						.map(toolCall -> new AssistantMessage.ToolCall(toolCall.id(), "function",
+								toolCall.function().name(), jsonHelper.toJson(toolCall.function().arguments())))
+						.toList();
+				}
+
+				String thinking = (responseMessage != null) ? responseMessage.thinking() : null;
 				Map<String, Object> messageProperties = thinking != null ? Map.of(THINKING_METADATA_KEY, thinking)
 						: Map.of();
 				var assistantMessage = AssistantMessage.builder()
-					.content(ollamaResponse.message().content())
+					.content((responseMessage != null) ? responseMessage.content() : "")
 					.properties(messageProperties)
 					.toolCalls(toolCalls)
 					.build();
@@ -308,21 +312,23 @@ public class OllamaChatModel implements ChatModel {
 			Flux<OllamaApi.ChatResponse> ollamaResponse = this.chatApi.streamingChat(request);
 
 			Flux<ChatResponse> chatResponse = ollamaResponse.map(chunk -> {
-				String content = (chunk.message() != null) ? chunk.message().content() : "";
+				// A streamed chunk does not always carry a message, for example when
+				// Ollama reports an error instead of a chat message.
+				OllamaApi.Message chunkMessage = chunk.message();
+
+				String content = (chunkMessage != null) ? chunkMessage.content() : "";
 
 				List<AssistantMessage.ToolCall> toolCalls = List.of();
 
-				// Added null checks to prevent NPE when accessing tool calls
-				if (chunk.message() != null && chunk.message().toolCalls() != null) {
-					toolCalls = chunk.message()
-						.toolCalls()
+				if (chunkMessage != null && chunkMessage.toolCalls() != null) {
+					toolCalls = chunkMessage.toolCalls()
 						.stream()
 						.map(toolCall -> new AssistantMessage.ToolCall(toolCall.id(), "function",
 								toolCall.function().name(), jsonHelper.toJson(toolCall.function().arguments())))
 						.toList();
 				}
 
-				String thinking = chunk.message().thinking();
+				String thinking = (chunkMessage != null) ? chunkMessage.thinking() : null;
 				Map<String, Object> messageProperties = thinking != null ? Map.of(THINKING_METADATA_KEY, thinking)
 						: Map.of();
 				var assistantMessage = AssistantMessage.builder()
