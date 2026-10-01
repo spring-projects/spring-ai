@@ -32,7 +32,9 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.Query;
 import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
+import org.springframework.ai.rag.preretrieval.query.expansion.QueryExpander;
 import org.springframework.ai.rag.preretrieval.query.transformation.QueryTransformer;
+import org.springframework.ai.rag.retrieval.join.ReciprocalRankFusionDocumentJoiner;
 import org.springframework.ai.rag.retrieval.search.DocumentRetriever;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -46,6 +48,7 @@ import static org.mockito.Mockito.when;
  *
  * @author Thomas Vitale
  * @author Sebastien Deleuze
+ * @author pj991207
  */
 class RetrievalAugmentationAdvisorTests {
 
@@ -127,6 +130,63 @@ class RetrievalAugmentationAdvisorTests {
 				Query: What would I get if I added a pinch of Moonstone to a dash of powdered Gold?
 
 				Answer:
+				""");
+	}
+
+	@Test
+	void theOneWithTheReciprocalRankFusionDocumentJoiner() {
+		// Chat Model
+		var chatModel = mock(ChatModel.class);
+		when(chatModel.getOptions()).thenReturn(ChatOptions.builder().build());
+		var promptCaptor = ArgumentCaptor.forClass(Prompt.class);
+		given(chatModel.call(promptCaptor.capture())).willReturn(ChatResponse.builder()
+			.generations(List.of(new Generation(new AssistantMessage("Felix Felicis"))))
+			.build());
+
+		// Query Expander
+		var moonstoneQuery = new Query("What is a Moonstone?");
+		var goldQuery = new Query("What is powdered Gold?");
+		QueryExpander queryExpander = query -> List.of(moonstoneQuery, goldQuery);
+
+		// Document Retriever
+		var documentOne = Document.builder().id("1").text("doc1").build();
+		var documentTwo = Document.builder().id("2").text("doc2").build();
+		var documentThree = Document.builder().id("3").text("doc3").build();
+		var documentRetriever = Mockito.mock(DocumentRetriever.class);
+		given(documentRetriever.retrieve(moonstoneQuery)).willReturn(List.of(documentOne, documentTwo));
+		given(documentRetriever.retrieve(goldQuery)).willReturn(List.of(documentTwo, documentThree));
+
+		// Advisor
+		var advisor = RetrievalAugmentationAdvisor.builder()
+			.queryExpander(queryExpander)
+			.documentRetriever(documentRetriever)
+			.documentJoiner(new ReciprocalRankFusionDocumentJoiner())
+			.build();
+
+		// Chat Client
+		var chatClient = ChatClient.builder(chatModel)
+			.defaultAdvisors(advisor)
+			.defaultSystem("You are a wizard!")
+			.build();
+
+		// Call
+		var chatResponse = chatClient.prompt()
+			.user("What would I get if I added a pinch of Moonstone to a dash of powdered Gold?")
+			.call()
+			.chatResponse();
+
+		// Verify: "doc2" is retrieved by both queries, so it is ranked first.
+		assertThat(chatResponse.getMetadata().<List<Document>>get(RetrievalAugmentationAdvisor.DOCUMENT_CONTEXT))
+			.extracting(Document::getId)
+			.containsExactly("2", "1", "3");
+
+		var prompt = promptCaptor.getValue();
+		assertThat(prompt.getContents()).containsIgnoringNewLines("""
+				---------------------
+				doc2
+				doc1
+				doc3
+				---------------------
 				""");
 	}
 
