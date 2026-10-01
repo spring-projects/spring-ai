@@ -241,7 +241,8 @@ class SyncMcpToolCallbackTests {
 		String response = callback.call("{\"param\":\"value\"}");
 
 		assertThat(response).isNotNull();
-		assertThat(response).isEqualTo("[{\"text\":\"First content\"},{\"text\":\"Second content\"}]");
+		assertThat(response).isEqualTo(
+				"[{\"type\":\"text\",\"text\":\"First content\"},{\"type\":\"text\",\"text\":\"Second content\"}]");
 	}
 
 	@Test
@@ -263,7 +264,7 @@ class SyncMcpToolCallbackTests {
 		String response = callback.call("{\"param\":\"value\"}");
 
 		assertThat(response).isNotNull();
-		assertThat(response).isEqualTo("[{\"data\":\"base64data\",\"mimeType\":\"image/png\"}]");
+		assertThat(response).isEqualTo("[{\"type\":\"image\",\"data\":\"base64data\",\"mimeType\":\"image/png\"}]");
 	}
 
 	@Test
