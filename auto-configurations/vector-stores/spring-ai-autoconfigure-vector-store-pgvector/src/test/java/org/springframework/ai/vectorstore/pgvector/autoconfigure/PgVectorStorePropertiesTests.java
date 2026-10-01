@@ -41,6 +41,9 @@ public class PgVectorStorePropertiesTests {
 		assertThat(props.getSchemaName()).isEqualTo(PgVectorStore.DEFAULT_SCHEMA_NAME);
 		assertThat(props.getTableName()).isEqualTo(PgVectorStore.DEFAULT_TABLE_NAME);
 
+		assertThat(props.getContentFieldName()).isEqualTo(PgVectorStore.DEFAULT_CONTENT_FIELD_NAME);
+		assertThat(props.getMetadataFieldName()).isEqualTo(PgVectorStore.DEFAULT_METADATA_FIELD_NAME);
+		assertThat(props.getEmbeddingFieldName()).isEqualTo(PgVectorStore.DEFAULT_EMBEDDING_FIELD_NAME);
 	}
 
 	@Test
@@ -56,6 +59,10 @@ public class PgVectorStorePropertiesTests {
 		props.setSchemaName("my_vector_schema");
 		props.setTableName("my_vector_table");
 
+		props.setContentFieldName("body");
+		props.setMetadataFieldName("meta");
+		props.setEmbeddingFieldName("vec");
+
 		assertThat(props.getDimensions()).isEqualTo(1536);
 		assertThat(props.getDistanceType()).isEqualTo(PgDistanceType.EUCLIDEAN_DISTANCE);
 		assertThat(props.getIndexType()).isEqualTo(PgIndexType.IVFFLAT);
@@ -64,6 +71,10 @@ public class PgVectorStorePropertiesTests {
 		assertThat(props.isSchemaValidation()).isTrue();
 		assertThat(props.getSchemaName()).isEqualTo("my_vector_schema");
 		assertThat(props.getTableName()).isEqualTo("my_vector_table");
+
+		assertThat(props.getContentFieldName()).isEqualTo("body");
+		assertThat(props.getMetadataFieldName()).isEqualTo("meta");
+		assertThat(props.getEmbeddingFieldName()).isEqualTo("vec");
 	}
 
 }

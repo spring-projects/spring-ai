@@ -104,6 +104,76 @@ public class PgVectorStoreTests {
 	}
 
 	@Test
+	void invalidContentFieldNameIsRejectedBeforeAnySqlReachesTheDatabase() {
+		var jdbcTemplate = mock(JdbcTemplate.class);
+		var embeddingModel = mock(EmbeddingModel.class);
+
+		assertThatIllegalArgumentException().isThrownBy(() -> PgVectorStore.builder(jdbcTemplate, embeddingModel)
+			.contentFieldName("content; DROP TABLE users;")
+			.build());
+	}
+
+	@Test
+	void customColumnNamesAreUsedInUpsertAndSimilaritySearchSql() {
+		var jdbcTemplate = mock(JdbcTemplate.class);
+		var embeddingModel = mock(EmbeddingModel.class);
+		when(embeddingModel.dimensions()).thenReturn(3);
+		when(embeddingModel.embed(anyString())).thenReturn(new float[] { 0.1f, 0.2f, 0.3f });
+		when(jdbcTemplate.query(anyString(), ArgumentMatchers.<RowMapper<Document>>any(), any(), any(), any(), any()))
+			.thenReturn(List.of());
+
+		var store = PgVectorStore.builder(jdbcTemplate, embeddingModel)
+			.contentFieldName("body")
+			.metadataFieldName("meta")
+			.embeddingFieldName("vec")
+			.build();
+
+		store.doAdd(List.of(new Document("foo")));
+
+		var upsertSqlCaptor = ArgumentCaptor.forClass(String.class);
+		verify(jdbcTemplate).batchUpdate(upsertSqlCaptor.capture(), any(BatchPreparedStatementSetter.class));
+		assertThat(upsertSqlCaptor.getValue()).contains("body", "meta", "vec").doesNotContain("content", "embedding");
+
+		store.doSimilaritySearch(SearchRequest.builder().query("hello").topK(5).similarityThresholdAll().build());
+
+		var searchSqlCaptor = ArgumentCaptor.forClass(String.class);
+		verify(jdbcTemplate).query(searchSqlCaptor.capture(), ArgumentMatchers.<RowMapper<Document>>any(), any(), any(),
+				any(), any());
+		assertThat(searchSqlCaptor.getValue()).contains("vec").doesNotContain("embedding <");
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void rowMapperUsesCustomContentAndMetadataColumnNames() throws Exception {
+		var jdbcTemplate = mock(JdbcTemplate.class);
+		var embeddingModel = mock(EmbeddingModel.class);
+		ArgumentCaptor<RowMapper<Document>> rowMapperCaptor = ArgumentCaptor.forClass(RowMapper.class);
+		when(jdbcTemplate.query(anyString(), rowMapperCaptor.capture(), any(), any(), any(), any()))
+			.thenReturn(List.of());
+
+		var store = PgVectorStore.builder(jdbcTemplate, embeddingModel)
+			.contentFieldName("body")
+			.metadataFieldName("meta")
+			.build();
+		store.doSimilaritySearch(SearchRequest.builder().query("hello").topK(5).similarityThresholdAll().build());
+
+		var pgMetadata = new PGobject();
+		pgMetadata.setType("json");
+		pgMetadata.setValue("{\"author\": \"jane\"}");
+
+		var resultSet = mock(ResultSet.class);
+		when(resultSet.getString("id")).thenReturn("doc-1");
+		when(resultSet.getString("body")).thenReturn("hello world");
+		when(resultSet.getObject("meta", PGobject.class)).thenReturn(pgMetadata);
+		when(resultSet.getFloat("distance")).thenReturn(0.42f);
+
+		Document document = rowMapperCaptor.getValue().mapRow(resultSet, 0);
+
+		assertThat(document.getText()).isEqualTo("hello world");
+		assertThat(document.getMetadata()).containsEntry("author", "jane");
+	}
+
+	@Test
 	void shouldAddDocumentsInBatchesAndEmbedOnce() {
 		// Given
 		var jdbcTemplate = mock(JdbcTemplate.class);
