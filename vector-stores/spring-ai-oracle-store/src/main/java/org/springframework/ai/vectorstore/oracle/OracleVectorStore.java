@@ -17,6 +17,8 @@
 package org.springframework.ai.vectorstore.oracle;
 
 import java.io.ByteArrayOutputStream;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -30,12 +32,13 @@ import java.util.Optional;
 
 import oracle.jdbc.OracleType;
 import oracle.sql.VECTOR;
+import oracle.sql.json.OracleJsonDecimal;
 import oracle.sql.json.OracleJsonFactory;
 import oracle.sql.json.OracleJsonGenerator;
-import oracle.sql.json.OracleJsonObject;
 import oracle.sql.json.OracleJsonValue;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
@@ -657,13 +660,70 @@ public class OracleVectorStore extends AbstractObservationVectorStore implements
 			final Map<String, Object> result = new HashMap<>();
 
 			if (value != null) {
-				final OracleJsonObject json = value.asJsonObject();
-				for (String key : json.keySet()) {
-					result.put(key, json.get(key));
-				}
+				value.asJsonObject().forEach((key, jsonValue) -> {
+					Object converted = toJavaValue(jsonValue);
+					if (converted != null) {
+						result.put(key, converted);
+					}
+				});
 			}
 
 			return result;
+		}
+
+		/**
+		 * Converts an Oracle JSON value to the plain Java type used in document metadata.
+		 * @param value the Oracle JSON value
+		 * @return the converted value, or {@code null} for a JSON null
+		 */
+		private @Nullable Object toJavaValue(OracleJsonValue value) {
+			return switch (value.getOracleJsonType()) {
+				case STRING -> value.asJsonString().getString();
+				case TRUE -> Boolean.TRUE;
+				case FALSE -> Boolean.FALSE;
+				case NULL -> null;
+				case DECIMAL -> toNumber(value.asJsonDecimal());
+				case DOUBLE -> value.asJsonDouble().doubleValue();
+				case FLOAT -> value.asJsonFloat().floatValue();
+				case OBJECT -> {
+					Map<String, @Nullable Object> map = new HashMap<>();
+					value.asJsonObject().forEach((key, nested) -> map.put(key, toJavaValue(nested)));
+					yield map;
+				}
+				case ARRAY -> {
+					List<@Nullable Object> list = new ArrayList<>();
+					value.asJsonArray().forEach(nested -> list.add(toJavaValue(nested)));
+					yield list;
+				}
+				default -> value;
+			};
+		}
+
+		/**
+		 * Converts an Oracle JSON decimal to an {@link Integer}, {@link Long} or
+		 * {@link BigDecimal}.
+		 * @param decimal the Oracle JSON decimal
+		 * @return the converted number
+		 */
+		private Number toNumber(OracleJsonDecimal decimal) {
+			OracleJsonDecimal.TargetType targetType = decimal.getTargetType();
+			if (targetType != null) {
+				return switch (targetType) {
+					case INT -> decimal.intValue();
+					case LONG -> decimal.longValue();
+					case DECIMAL -> decimal.bigDecimalValue();
+				};
+			}
+			if (decimal.isIntegral()) {
+				BigInteger value = decimal.bigIntegerValue();
+				if (value.bitLength() < Integer.SIZE) {
+					return value.intValue();
+				}
+				if (value.bitLength() < Long.SIZE) {
+					return value.longValue();
+				}
+			}
+			return decimal.bigDecimalValue();
 		}
 
 		private List<Float> toFloatList(final float[] embeddings) {
