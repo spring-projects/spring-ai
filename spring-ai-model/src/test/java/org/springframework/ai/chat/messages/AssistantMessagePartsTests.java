@@ -158,7 +158,7 @@ class AssistantMessagePartsTests {
 	}
 
 	@Test
-	void legacySettersReplaceExplicitPartsOfTheirTypeInPlaceAndAppendOtherwise() {
+	void legacySettersReplaceExplicitPartsOfTheirTypeInPlaceAndKeepTheLegacyOrderOtherwise() {
 		AssistantMessage message = AssistantMessage.builder()
 			.content("legacy text")
 			.toolCalls(List.of(TIME_CALL))
@@ -166,8 +166,8 @@ class AssistantMessagePartsTests {
 			.part(ToolCallPart.of(WEATHER_CALL))
 			.build();
 
-		assertThat(message.getParts()).containsExactly(SIGNED_REASONING, ToolCallPart.of(TIME_CALL),
-				TextPart.of("legacy text"));
+		assertThat(message.getParts()).containsExactly(SIGNED_REASONING, TextPart.of("legacy text"),
+				ToolCallPart.of(TIME_CALL));
 		assertThat(message.getToolCalls()).containsExactly(TIME_CALL);
 	}
 
@@ -221,7 +221,7 @@ class AssistantMessagePartsTests {
 	}
 
 	@Test
-	void mutateContentAppendsTheTextWhenThereWasNone() {
+	void mutateContentPutsTheTextBeforeTheToolCallsWhenThereWasNone() {
 		AssistantMessage original = AssistantMessage.builder()
 			.part(SIGNED_REASONING)
 			.part(ToolCallPart.of(WEATHER_CALL))
@@ -229,8 +229,76 @@ class AssistantMessagePartsTests {
 
 		AssistantMessage updated = original.mutate().content("text").build();
 
-		assertThat(updated.getParts()).containsExactly(SIGNED_REASONING, ToolCallPart.of(WEATHER_CALL),
-				TextPart.of("text"));
+		assertThat(updated.getParts()).containsExactly(SIGNED_REASONING, TextPart.of("text"),
+				ToolCallPart.of(WEATHER_CALL));
+	}
+
+	@Test
+	void mutateContentAppendsTheTextWhenThereAreNoToolCallsOrMedia() {
+		AssistantMessage original = AssistantMessage.builder().part(SIGNED_REASONING).build();
+
+		AssistantMessage updated = original.mutate().content("text").build();
+
+		assertThat(updated.getParts()).containsExactly(SIGNED_REASONING, TextPart.of("text"));
+	}
+
+	@Test
+	void mutateSettersOnAMessageWithoutPartsOfTheirTypeKeepTheLegacyOrder() {
+		AssistantMessage legacy = AssistantMessage.builder()
+			.content("text")
+			.toolCalls(List.of(WEATHER_CALL))
+			.media(List.of(IMAGE))
+			.build();
+
+		AssistantMessage textAdded = AssistantMessage.builder()
+			.toolCalls(List.of(WEATHER_CALL))
+			.media(List.of(IMAGE))
+			.build()
+			.mutate()
+			.content("text")
+			.build();
+		AssistantMessage toolCallsAdded = AssistantMessage.builder()
+			.content("text")
+			.media(List.of(IMAGE))
+			.build()
+			.mutate()
+			.toolCalls(List.of(WEATHER_CALL))
+			.build();
+		AssistantMessage mediaAdded = AssistantMessage.builder()
+			.content("text")
+			.toolCalls(List.of(WEATHER_CALL))
+			.build()
+			.mutate()
+			.media(List.of(IMAGE))
+			.build();
+
+		assertThat(legacy.getParts()).containsExactly(TextPart.of("text"), ToolCallPart.of(WEATHER_CALL),
+				MediaPart.of(IMAGE));
+		assertThat(textAdded).isEqualTo(legacy);
+		assertThat(toolCallsAdded).isEqualTo(legacy);
+		assertThat(mediaAdded).isEqualTo(legacy);
+	}
+
+	@Test
+	void mutateToolCallsPutsTheToolCallsBeforeTheMediaWhenThereWereNone() {
+		AssistantMessage original = AssistantMessage.builder()
+			.part(SIGNED_REASONING)
+			.part(TextPart.of("text"))
+			.part(MediaPart.of(IMAGE))
+			.build();
+
+		AssistantMessage updated = original.mutate().toolCalls(List.of(WEATHER_CALL)).build();
+
+		assertThat(updated.getParts()).containsExactly(SIGNED_REASONING, TextPart.of("text"),
+				ToolCallPart.of(WEATHER_CALL), MediaPart.of(IMAGE));
+	}
+
+	@Test
+	void contentReplacesTextPartsAddedAfterTheSetterWasCalled() {
+		AssistantMessage message = AssistantMessage.builder().content("a").part(TextPart.of("b")).build();
+
+		assertThat(message.getParts()).containsExactly(TextPart.of("a"));
+		assertThat(message.getText()).isEqualTo("a");
 	}
 
 	@Test

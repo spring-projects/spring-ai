@@ -126,6 +126,27 @@ public abstract class AbstractMessage implements Message {
 		parts.addAll(insertAt >= 0 ? insertAt : Math.min(fallbackIndex, parts.size()), replacements);
 	}
 
+	/**
+	 * The index of the first part that is an instance of any of the given types, for use
+	 * as the {@code fallbackIndex} of {@link #replace}.
+	 * @param parts the parts to search
+	 * @param types the types to look for
+	 * @return the index of the first matching part, or the size of {@code parts} when
+	 * there is none
+	 * @since 2.1.0
+	 */
+	@SafeVarargs
+	protected static int firstIndexOf(List<MessagePart> parts, Class<? extends MessagePart>... types) {
+		for (int i = 0; i < parts.size(); i++) {
+			for (Class<? extends MessagePart> type : types) {
+				if (type.isInstance(parts.get(i))) {
+					return i;
+				}
+			}
+		}
+		return parts.size();
+	}
+
 	protected <P extends MessagePart> Stream<P> select(Class<P> type) {
 		return getParts().stream().filter(type::isInstance).map(type::cast);
 	}
