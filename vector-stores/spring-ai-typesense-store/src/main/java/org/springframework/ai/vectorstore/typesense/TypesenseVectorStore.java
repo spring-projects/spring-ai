@@ -16,6 +16,7 @@
 
 package org.springframework.ai.vectorstore.typesense;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +38,8 @@ import org.typesense.model.IndexAction;
 import org.typesense.model.MultiSearchCollectionParameters;
 import org.typesense.model.MultiSearchResult;
 import org.typesense.model.MultiSearchSearchesParameter;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
@@ -141,6 +144,9 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 	@Override
 	public void doAdd(List<Document> documents) {
 		Assert.notNull(documents, "Documents must not be null");
+		if (documents.isEmpty()) {
+			return;
+		}
 
 		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
 				this.batchingStrategy);
@@ -159,15 +165,53 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 		ImportDocumentsParameters importDocumentsParameters = new ImportDocumentsParameters();
 		importDocumentsParameters.action(IndexAction.UPSERT);
 
+		String importResponse;
 		try {
-			this.client.collections(this.collectionName).documents().import_(documentList, importDocumentsParameters);
-
-			if (logger.isInfoEnabled()) {
-				logger.info("Added " + documentList.size() + " documents");
-			}
+			importResponse = this.client.collections(this.collectionName)
+				.documents()
+				.import_(documentList, importDocumentsParameters);
 		}
 		catch (Exception e) {
 			logger.error("Failed to add documents", e);
+			throw new IllegalStateException("Failed to add documents", e);
+		}
+
+		List<String> importErrors = new ArrayList<>();
+		int importResultCount = 0;
+		try {
+			for (String line : importResponse.lines().filter(line -> !line.isBlank()).toList()) {
+				JsonNode result = JsonMapper.shared().readTree(line);
+				JsonNode success = result.get("success");
+				if (success == null || !success.isBoolean()) {
+					throw new IllegalStateException("Missing boolean success status in Typesense import response");
+				}
+				importResultCount++;
+				if (!success.asBoolean()) {
+					String error = result.path("error").asText();
+					importErrors.add(error.isBlank() ? "Unknown import error" : error);
+				}
+			}
+		}
+		catch (Exception e) {
+			logger.error("Failed to parse Typesense import response", e);
+			throw new IllegalStateException("Failed to parse Typesense import response", e);
+		}
+
+		if (importResultCount != documents.size()) {
+			String message = "Received " + importResultCount + " import results for " + documents.size() + " documents";
+			logger.error(message);
+			throw new IllegalStateException(message);
+		}
+
+		if (!importErrors.isEmpty()) {
+			String message = "Failed to import " + importErrors.size() + " of " + documents.size() + " documents: "
+					+ String.join("; ", importErrors);
+			logger.error(message);
+			throw new IllegalStateException(message);
+		}
+
+		if (logger.isInfoEnabled()) {
+			logger.info("Added " + documentList.size() + " documents");
 		}
 	}
 
