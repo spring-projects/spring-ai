@@ -16,6 +16,9 @@
 
 package org.springframework.ai.tool.toolsearch.index.lucene;
 
+import java.io.FilterReader;
+import java.io.IOException;
+import java.io.Reader;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -23,6 +26,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.LowerCaseFilter;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.tool.toolsearch.ToolReference;
@@ -30,6 +37,7 @@ import org.springframework.ai.tool.toolsearch.ToolSearchRequest;
 import org.springframework.ai.tool.toolsearch.ToolSearchResponse;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Unit tests for {@link LuceneToolIndex}.
@@ -74,6 +82,65 @@ class LuceneToolIndexTests {
 			assertThat(response.toolReferences()).isNotEmpty();
 			assertThat(response.toolReferences().get(0).toolName()).isEqualTo("getWeather");
 		}
+	}
+
+	@Test
+	void defaultAnalyzerDoesNotSplitSnakeCaseToolNames() throws Exception {
+		try (LuceneToolIndex searcher = new LuceneToolIndex()) {
+			searcher.indexTool(SESSION, ref("linear_create_issue", "Create a ticket"));
+
+			ToolSearchResponse response = search(searcher, "linear issue");
+
+			assertThat(response.toolReferences()).isEmpty();
+		}
+	}
+
+	@Test
+	void customAnalyzerSplitsSnakeCaseToolNames() throws Exception {
+		Analyzer analyzer = new Analyzer() {
+			@Override
+			protected Reader initReader(String fieldName, Reader reader) {
+				return new FilterReader(reader) {
+					@Override
+					public int read() throws IOException {
+						int c = super.read();
+						return (c == '_') ? ' ' : c;
+					}
+
+					@Override
+					public int read(char[] buffer, int offset, int length) throws IOException {
+						int count = super.read(buffer, offset, length);
+						for (int i = offset; i < offset + Math.max(count, 0); i++) {
+							if (buffer[i] == '_') {
+								buffer[i] = ' ';
+							}
+						}
+						return count;
+					}
+				};
+			}
+
+			@Override
+			protected TokenStreamComponents createComponents(String fieldName) {
+				Tokenizer tokenizer = new StandardTokenizer();
+				return new TokenStreamComponents(tokenizer, new LowerCaseFilter(tokenizer));
+			}
+		};
+		try (LuceneToolIndex searcher = new LuceneToolIndex(analyzer, 0.0f)) {
+			searcher.indexTool(SESSION, ref("linear_create_issue", "Create a ticket"));
+			searcher.indexTool(SESSION, ref("calculate_tax", "Computes tax obligations"));
+
+			ToolSearchResponse response = search(searcher, "linear issue");
+
+			assertThat(response.toolReferences()).isNotEmpty();
+			assertThat(response.toolReferences().get(0).toolName()).isEqualTo("linear_create_issue");
+		}
+	}
+
+	@Test
+	void nullAnalyzerIsRejected() {
+		assertThatThrownBy(() -> new LuceneToolIndex(null, 0.25f)).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("analyzer");
 	}
 
 	@Test
