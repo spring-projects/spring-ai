@@ -722,6 +722,38 @@ class JsonSchemaGeneratorTests {
 	}
 
 	@Test
+	void generateSchemaForTypeWithFieldNamedPropertiesDoesNotInsertAdditionalPropertiesIntoPropertiesMap() {
+		String schema = JsonSchemaGenerator.generateForType(WithFieldNamedProperties.class);
+		JsonNode jsonNode = JacksonUtils.getDefaultJsonMapper().readTree(schema);
+		assertThat(jsonNode.get("additionalProperties").asBoolean())
+			.as("root object schema should have additionalProperties: false")
+			.isFalse();
+		JsonNode propertiesMap = jsonNode.get("properties");
+		assertThat(propertiesMap.has("additionalProperties")).as("properties map must not contain additionalProperties")
+			.isFalse();
+		assertThat(propertiesMap.has("properties"))
+			.as("properties map should contain the 'properties' field definition")
+			.isTrue();
+	}
+
+	@Test
+	void generateSchemaForMethodWithParameterNamedPropertiesDoesNotInsertAdditionalPropertiesIntoPropertiesMap()
+			throws Exception {
+		Method method = TestMethods.class.getDeclaredMethod("methodWithPropertiesParam", String.class, Map.class);
+		String schema = JsonSchemaGenerator.generateForMethodInput(method);
+		JsonNode jsonNode = JacksonUtils.getDefaultJsonMapper().readTree(schema);
+		assertThat(jsonNode.get("additionalProperties").asBoolean())
+			.as("root object schema should have additionalProperties: false")
+			.isFalse();
+		JsonNode propertiesMap = jsonNode.get("properties");
+		assertThat(propertiesMap.has("additionalProperties")).as("properties map must not contain additionalProperties")
+			.isFalse();
+		assertThat(propertiesMap.has("properties"))
+			.as("properties map should contain the 'properties' parameter definition")
+			.isTrue();
+	}
+
+	@Test
 	void generateSchemaForEnum() {
 		String schema = JsonSchemaGenerator.generateForType(Month.class);
 		String expectedJsonSchema = """
@@ -986,6 +1018,9 @@ class JsonSchemaGeneratorTests {
 		public void simpleMethod(String name, int age) {
 		}
 
+		public void methodWithPropertiesParam(String title, Map<String, Object> properties) {
+		}
+
 		public void objectParamMethod(Object object) {
 		}
 
@@ -1118,6 +1153,10 @@ class JsonSchemaGeneratorTests {
 	}
 
 	record WithMapField(String name, Map<String, Integer> scores) {
+
+	}
+
+	record WithFieldNamedProperties(String title, Map<String, Object> properties) {
 
 	}
 
