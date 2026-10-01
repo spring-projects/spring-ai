@@ -74,6 +74,13 @@ public class GoogleGenAiToolCallingManager implements ToolCallingManager {
 
 		return toolDefinitions.stream().map(td -> {
 			ObjectNode jsonSchema = JsonSchemaConverter.fromJson(td.inputSchema());
+			if (jsonSchema.has("$defs")) {
+				// The OpenAPI subset cannot represent $defs/$ref. Keep the original JSON
+				// Schema untouched; GoogleGenAiChatModel sends such declarations through
+				// FunctionDeclaration.parametersJsonSchema, which the Gemini API accepts
+				// natively.
+				return td;
+			}
 			ObjectNode openApiSchema = JsonSchemaConverter.convertToOpenApiSchema(jsonSchema);
 			JsonSchemaGenerator.convertTypeValuesToUpperCase(openApiSchema);
 
