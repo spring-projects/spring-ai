@@ -121,6 +121,29 @@ public class OllamaChatModel implements ChatModel {
 
 	private final RetryTemplate retryTemplate;
 
+	/**
+	 * @deprecated since 1.0.0-M2 in favor of
+	 * {@link #OllamaChatModel(OllamaApi, OllamaChatOptions, ToolCallingManager, ObservationRegistry, ModelManagementOptions)}.
+	 */
+	@Deprecated(since = "1.0.0-M2", forRemoval = false)
+	public OllamaChatModel(OllamaApi ollamaApi, org.springframework.ai.ollama.api.OllamaOptions options,
+			ToolCallingManager toolCallingManager, ObservationRegistry observationRegistry,
+			ModelManagementOptions modelManagementOptions) {
+		this(ollamaApi, (OllamaChatOptions) options, toolCallingManager, observationRegistry, modelManagementOptions);
+	}
+
+	/**
+	 * @deprecated since 1.0.0-M2 in favor of
+	 * {@link #OllamaChatModel(OllamaApi, OllamaChatOptions, ToolCallingManager, ObservationRegistry, ModelManagementOptions, RetryTemplate)}.
+	 */
+	@Deprecated(since = "1.0.0-M2", forRemoval = false)
+	public OllamaChatModel(OllamaApi ollamaApi, org.springframework.ai.ollama.api.OllamaOptions options,
+			ToolCallingManager toolCallingManager, ObservationRegistry observationRegistry,
+			ModelManagementOptions modelManagementOptions, RetryTemplate retryTemplate) {
+		this(ollamaApi, (OllamaChatOptions) options, toolCallingManager, observationRegistry, modelManagementOptions,
+				retryTemplate);
+	}
+
 	public OllamaChatModel(OllamaApi ollamaApi, OllamaChatOptions options, ToolCallingManager toolCallingManager,
 			ObservationRegistry observationRegistry, ModelManagementOptions modelManagementOptions) {
 		this(ollamaApi, options, toolCallingManager, observationRegistry, modelManagementOptions,
@@ -519,6 +542,15 @@ public class OllamaChatModel implements ChatModel {
 
 		public Builder ollamaApi(OllamaApi ollamaApi) {
 			this.ollamaApi = ollamaApi;
+			return this;
+		}
+
+		/**
+		 * @deprecated since 1.0.0-M2 in favor of {@link #options(OllamaChatOptions)}.
+		 */
+		@Deprecated(since = "1.0.0-M2", forRemoval = false)
+		public Builder options(org.springframework.ai.ollama.api.OllamaOptions options) {
+			this.options = options;
 			return this;
 		}
 
