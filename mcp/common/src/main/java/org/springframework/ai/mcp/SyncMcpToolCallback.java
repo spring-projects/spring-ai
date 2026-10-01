@@ -124,7 +124,9 @@ public class SyncMcpToolCallback implements ToolCallback {
 
 		CallToolResult response;
 		try {
-			var mcpMeta = toolContext != null ? this.toolContextToMcpMetaConverter.convert(toolContext) : null;
+			var mcpMeta = toolContext != null
+					? this.toolContextToMcpMetaConverter.convert(toolContext, McpConnectionInfo.from(this.mcpClient))
+					: null;
 
 			// Use the original tool name, not the prefixed one from getToolDefinition
 			var request = CallToolRequest.builder(this.tool.name()).arguments(arguments).meta(mcpMeta).build();

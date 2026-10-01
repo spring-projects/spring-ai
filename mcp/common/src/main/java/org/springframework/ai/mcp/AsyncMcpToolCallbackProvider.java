@@ -185,11 +185,7 @@ public class AsyncMcpToolCallbackProvider implements ToolCallbackProvider, Appli
 	}
 
 	private static McpConnectionInfo connectionInfo(McpAsyncClient mcpClient) {
-		return McpConnectionInfo.builder()
-			.clientCapabilities(mcpClient.getClientCapabilities())
-			.clientInfo(mcpClient.getClientInfo())
-			.initializeResult(mcpClient.getCurrentInitializationResult())
-			.build();
+		return McpConnectionInfo.from(mcpClient);
 	}
 
 	/**
