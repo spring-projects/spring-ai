@@ -16,13 +16,16 @@
 
 package org.springframework.ai.model.observation;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import io.micrometer.common.KeyValue;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
+import io.micrometer.core.instrument.Timer;
 import io.micrometer.observation.Observation;
 
 import org.springframework.ai.chat.metadata.Usage;
@@ -38,14 +41,23 @@ import org.springframework.ai.observation.conventions.AiTokenType;
  */
 public final class ModelUsageMetricsGenerator {
 
-	private static final String DESCRIPTION = "Measures number of input and output tokens used";
+	private static final String DESCRIPTION = "Measures number of input tokens, output tokens or billable duration used";
 
 	private ModelUsageMetricsGenerator() {
 	}
 
 	public static void generate(Usage usage, Observation.Context context, MeterRegistry meterRegistry) {
 
-		if (usage.getPromptTokens() != null) {
+		if (Objects.nonNull(usage.getDuration())) {
+			Timer.builder(AiObservationMetricNames.OPERATION_DURATION.value())
+				.description(DESCRIPTION)
+				.tags(createTags(context))
+				.register(meterRegistry)
+				.record(Duration.ofSeconds(usage.getDuration()));
+			return;
+		}
+
+		if (Objects.nonNull(usage.getPromptTokens())) {
 			Counter.builder(AiObservationMetricNames.TOKEN_USAGE.value())
 				.tag(AiObservationMetricAttributes.TOKEN_TYPE.value(), AiTokenType.INPUT.value())
 				.description(DESCRIPTION)
@@ -54,7 +66,7 @@ public final class ModelUsageMetricsGenerator {
 				.increment(usage.getPromptTokens());
 		}
 
-		if (usage.getCompletionTokens() != null) {
+		if (Objects.nonNull(usage.getCompletionTokens())) {
 			Counter.builder(AiObservationMetricNames.TOKEN_USAGE.value())
 				.tag(AiObservationMetricAttributes.TOKEN_TYPE.value(), AiTokenType.OUTPUT.value())
 				.description(DESCRIPTION)
@@ -63,7 +75,7 @@ public final class ModelUsageMetricsGenerator {
 				.increment(usage.getCompletionTokens());
 		}
 
-		if (usage.getTotalTokens() != null) {
+		if (Objects.nonNull(usage.getTotalTokens())) {
 			Counter.builder(AiObservationMetricNames.TOKEN_USAGE.value())
 				.tag(AiObservationMetricAttributes.TOKEN_TYPE.value(), AiTokenType.TOTAL.value())
 				.description(DESCRIPTION)

@@ -91,4 +91,16 @@ public interface Usage {
 		return null;
 	}
 
+	/**
+	 * Returns the duration, in seconds, billed for the AI operation, for AI providers
+	 * that charge based on the duration of the operation (for example, audio
+	 * transcription) rather than on token usage.
+	 * @return the billed duration in seconds, or {@code null} if the provider bills based
+	 * on token usage instead of duration.
+	 * @since 2.0.2
+	 */
+	default @Nullable Long getDuration() {
+		return null;
+	}
+
 }
