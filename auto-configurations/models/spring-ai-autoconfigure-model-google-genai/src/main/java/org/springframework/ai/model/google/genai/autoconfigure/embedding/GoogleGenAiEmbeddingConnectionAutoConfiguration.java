@@ -22,6 +22,7 @@ import com.google.auth.oauth2.GoogleCredentials;
 import com.google.genai.Client;
 
 import org.springframework.ai.google.genai.embedding.GoogleGenAiEmbeddingConnectionDetails;
+import org.springframework.ai.model.google.genai.autoconfigure.chat.GoogleGenAiConnectionProperties;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -40,19 +41,30 @@ import org.springframework.util.StringUtils;
  */
 @AutoConfiguration
 @ConditionalOnClass({ Client.class, GoogleGenAiEmbeddingConnectionDetails.class })
-@EnableConfigurationProperties(GoogleGenAiEmbeddingConnectionProperties.class)
+@EnableConfigurationProperties({ GoogleGenAiEmbeddingConnectionProperties.class,
+		GoogleGenAiConnectionProperties.class })
 public class GoogleGenAiEmbeddingConnectionAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
 	public GoogleGenAiEmbeddingConnectionDetails googleGenAiEmbeddingConnectionDetails(
-			GoogleGenAiEmbeddingConnectionProperties connectionProperties) throws IOException {
+			GoogleGenAiEmbeddingConnectionProperties connectionProperties,
+			GoogleGenAiConnectionProperties commonProperties) throws IOException {
 
 		var connectionBuilder = GoogleGenAiEmbeddingConnectionDetails.builder();
 
-		if (StringUtils.hasText(connectionProperties.getApiKey())) {
+		String apiKey = connectionProperties.getApiKey();
+		// Preserve an explicitly configured embedding-specific Vertex AI connection.
+		if (!StringUtils.hasText(apiKey) && !connectionProperties.isVertexAi()
+				&& !StringUtils.hasText(connectionProperties.getProjectId())
+				&& !StringUtils.hasText(connectionProperties.getLocation())
+				&& connectionProperties.getCredentialsUri() == null) {
+			apiKey = commonProperties.getApiKey();
+		}
+
+		if (StringUtils.hasText(apiKey)) {
 			// Gemini Developer API mode
-			connectionBuilder.apiKey(connectionProperties.getApiKey());
+			connectionBuilder.apiKey(apiKey);
 		}
 		else {
 			// Vertex AI mode

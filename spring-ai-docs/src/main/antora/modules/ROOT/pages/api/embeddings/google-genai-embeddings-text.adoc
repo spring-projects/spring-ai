@@ -84,14 +84,17 @@ The prefix `spring.ai.google.genai.embedding` is used as the property prefix tha
 
 [NOTE]
 ====
-The connection properties are shared with the Google GenAI Chat module. If you're using both chat and embeddings, you only need to configure the connection once using either `spring.ai.google.genai` prefix (for chat) or `spring.ai.google.genai.embedding` prefix (for embeddings).
+For the Gemini Developer API, you can share an API key with the Google GenAI Chat module by setting `spring.ai.google.genai.api-key`.
+An embedding-specific key set through `spring.ai.google.genai.embedding.api-key` takes precedence over the shared key.
+The shared key is used only when no embedding-specific API key or Vertex AI connection settings are configured.
+For Vertex AI, configure the connection using the `spring.ai.google.genai.embedding` prefix; these settings do not fall back to the chat configuration.
 ====
 
 [cols="3,5,1", stripes=even]
 |====
 | Property | Description | Default
 
-| spring.ai.google.genai.embedding.api-key   | API key for Gemini Developer API. When provided, the client uses the Gemini Developer API instead of Vertex AI. |  -
+| spring.ai.google.genai.embedding.api-key   | API key for Gemini Developer API. When provided, the client uses the Gemini Developer API instead of Vertex AI. Falls back to `spring.ai.google.genai.api-key` when no embedding-specific Vertex AI connection settings are configured. |  -
 | spring.ai.google.genai.embedding.project-id   | Google Cloud Platform project ID (required for Vertex AI mode) |  -
 | spring.ai.google.genai.embedding.location   | Google Cloud region (required for Vertex AI mode) |  -
 | spring.ai.google.genai.embedding.credentials-uri   | URI to Google Cloud credentials. When provided it is used to create a `GoogleCredentials` instance for authentication. |  -
