@@ -17,6 +17,7 @@
 package org.springframework.ai.google.genai;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -40,6 +41,10 @@ import org.mockito.MockitoAnnotations;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.messages.part.OpaquePayload;
+import org.springframework.ai.chat.messages.part.ReasoningPart;
+import org.springframework.ai.chat.messages.part.TextPart;
+import org.springframework.ai.chat.messages.part.ToolCallPart;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -192,23 +197,21 @@ public class GoogleGenAiChatModelExtendedUsageTests {
 			.map(Generation::getOutput)
 			.toList();
 
-		assertThat(response).containsExactly(
-				AssistantMessage.builder()
-					.content("This is a thoughts")
-					.properties(Map.of("finishReason", new FinishReason(FinishReason.Known.STOP), "messageType",
-							MessageType.ASSISTANT, "candidateIndex", 0, "isThought", true, "thoughtSignatures",
-							List.of(thoughtSignature)))
-					.build(),
-				AssistantMessage.builder()
-					.content("")
-					.toolCalls(List.of(
-							new AssistantMessage.ToolCall("id_1", "function", "getCurrentWeather",
-									"{\"location\":\"Tokyo\",\"unit\":\"C\"}"),
-							new AssistantMessage.ToolCall("id_2", "function", "getCurrentWeather",
-									"{\"location\":\"London\",\"unit\":\"C\"}")))
-					.properties(Map.of("finishReason", new FinishReason(FinishReason.Known.STOP), "messageType",
-							MessageType.ASSISTANT, "candidateIndex", 0, "thoughtSignatures", List.of(thoughtSignature)))
-					.build());
+		// One generation per candidate; the signature stays on the call that carried it
+		assertThat(response).containsExactly(AssistantMessage.builder()
+			.part(ReasoningPart.of("This is a thoughts"))
+			.part(new ToolCallPart(
+					new AssistantMessage.ToolCall("id_1", "function", "getCurrentWeather",
+							"{\"location\":\"Tokyo\",\"unit\":\"C\"}"),
+					new OpaquePayload(GoogleGenAiChatModel.GOOGLE_PROVIDER,
+							GoogleGenAiChatModel.PAYLOAD_THOUGHT_SIGNATURE,
+							Base64.getEncoder().encodeToString(thoughtSignature)),
+					Map.of()))
+			.part(ToolCallPart.of(new AssistantMessage.ToolCall("id_2", "function", "getCurrentWeather",
+					"{\"location\":\"London\",\"unit\":\"C\"}")))
+			.properties(Map.of("finishReason", new FinishReason(FinishReason.Known.STOP), "messageType",
+					MessageType.ASSISTANT, "candidateIndex", 0, "thoughtSignatures", List.of(thoughtSignature)))
+			.build());
 	}
 
 	@Test
@@ -270,27 +273,17 @@ public class GoogleGenAiChatModelExtendedUsageTests {
 			.map(Generation::getOutput)
 			.toList();
 
-		assertThat(response).containsExactly(
-				AssistantMessage.builder()
-					.content("This is a thoughts")
-					.properties(Map.of("finishReason", new FinishReason(FinishReason.Known.STOP), "messageType",
-							MessageType.ASSISTANT, "candidateIndex", 0, "isThought", true))
-					.build(),
-				AssistantMessage.builder()
-					.content("")
-					.toolCalls(List.of(
-							new AssistantMessage.ToolCall("id_1", "function", "getCurrentWeather",
-									"{\"location\":\"Tokyo\",\"unit\":\"C\"}"),
-							new AssistantMessage.ToolCall("id_2", "function", "getCurrentWeather",
-									"{\"location\":\"London\",\"unit\":\"C\"}")))
-					.properties(Map.of("finishReason", new FinishReason(FinishReason.Known.STOP), "messageType",
-							MessageType.ASSISTANT, "candidateIndex", 0))
-					.build(),
-				AssistantMessage.builder()
-					.content("This is a final response")
-					.properties(Map.of("finishReason", new FinishReason(FinishReason.Known.STOP), "messageType",
-							MessageType.ASSISTANT, "candidateIndex", 0, "isThought", false))
-					.build());
+		assertThat(response).containsExactly(AssistantMessage.builder()
+			.part(ReasoningPart.of("This is a thoughts"))
+			.part(ToolCallPart.of(new AssistantMessage.ToolCall("id_1", "function", "getCurrentWeather",
+					"{\"location\":\"Tokyo\",\"unit\":\"C\"}")))
+			.part(ToolCallPart.of(new AssistantMessage.ToolCall("id_2", "function", "getCurrentWeather",
+					"{\"location\":\"London\",\"unit\":\"C\"}")))
+			.part(TextPart.of("This is a final response"))
+			.properties(Map.of("finishReason", new FinishReason(FinishReason.Known.STOP), "messageType",
+					MessageType.ASSISTANT, "candidateIndex", 0))
+			.build());
+		assertThat(response.get(0).getText()).isEqualTo("This is a final response");
 	}
 
 	@Test
@@ -330,17 +323,13 @@ public class GoogleGenAiChatModelExtendedUsageTests {
 			.map(Generation::getOutput)
 			.toList();
 
-		assertThat(response).containsExactly(
-				AssistantMessage.builder()
-					.content("This is a thoughts")
-					.properties(Map.of("finishReason", new FinishReason(FinishReason.Known.STOP), "messageType",
-							MessageType.ASSISTANT, "candidateIndex", 0, "isThought", true))
-					.build(),
-				AssistantMessage.builder()
-					.content("This is a final response")
-					.properties(Map.of("finishReason", new FinishReason(FinishReason.Known.STOP), "messageType",
-							MessageType.ASSISTANT, "candidateIndex", 0, "isThought", false))
-					.build());
+		assertThat(response).containsExactly(AssistantMessage.builder()
+			.part(ReasoningPart.of("This is a thoughts"))
+			.part(TextPart.of("This is a final response"))
+			.properties(Map.of("finishReason", new FinishReason(FinishReason.Known.STOP), "messageType",
+					MessageType.ASSISTANT, "candidateIndex", 0))
+			.build());
+		assertThat(response.get(0).getText()).isEqualTo("This is a final response");
 	}
 
 	@Test
@@ -402,12 +391,10 @@ public class GoogleGenAiChatModelExtendedUsageTests {
 			.toList();
 
 		assertThat(response).containsExactly(AssistantMessage.builder()
-			.content("")
-			.toolCalls(List.of(
-					new AssistantMessage.ToolCall("id_1", "function", "getCurrentWeather",
-							"{\"location\":\"Tokyo\",\"unit\":\"C\"}"),
-					new AssistantMessage.ToolCall("id_2", "function", "getCurrentWeather",
-							"{\"location\":\"London\",\"unit\":\"C\"}")))
+			.part(ToolCallPart.of(new AssistantMessage.ToolCall("id_1", "function", "getCurrentWeather",
+					"{\"location\":\"Tokyo\",\"unit\":\"C\"}")))
+			.part(ToolCallPart.of(new AssistantMessage.ToolCall("id_2", "function", "getCurrentWeather",
+					"{\"location\":\"London\",\"unit\":\"C\"}")))
 			.properties(Map.of("finishReason", new FinishReason(FinishReason.Known.STOP), "messageType",
 					MessageType.ASSISTANT, "candidateIndex", 0))
 			.build());
