@@ -90,7 +90,8 @@ class PgVectorSchemaValidator {
 		}
 	}
 
-	void validateTableSchema(String schemaName, String tableName, int dimensions) {
+	void validateTableSchema(String schemaName, String tableName, int dimensions, String contentFieldName,
+			String metadataFieldName, String embeddingFieldName) {
 
 		validateNames(schemaName, tableName);
 
@@ -105,9 +106,9 @@ class PgVectorSchemaValidator {
 
 			List<String> expectedColumns = new ArrayList<>();
 			expectedColumns.add("id");
-			expectedColumns.add("content");
-			expectedColumns.add("metadata");
-			expectedColumns.add("embedding");
+			expectedColumns.add(contentFieldName);
+			expectedColumns.add(metadataFieldName);
+			expectedColumns.add(embeddingFieldName);
 
 			// Query to check if the table exists with the required fields and types
 			// Include the schema name in the query to target the correct table
@@ -156,7 +157,7 @@ class PgVectorSchemaValidator {
 						AND NOT a.attisdropped
 					""";
 			Integer actualDimensions = this.jdbcTemplate.queryForObject(query, Integer.class, schemaName, tableName,
-					"embedding");
+					embeddingFieldName);
 			if (actualDimensions == null || actualDimensions != dimensions) {
 				throw new IllegalStateException("Actual vector dimensions is " + actualDimensions
 						+ ", required vector dimensions is " + dimensions);
