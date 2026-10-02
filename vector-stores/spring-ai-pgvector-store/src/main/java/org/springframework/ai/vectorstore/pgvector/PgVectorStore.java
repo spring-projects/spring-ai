@@ -176,10 +176,22 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 	public static final int MAX_DOCUMENT_BATCH_SIZE = 10_000;
 
+	/**
+	 * Default name of the content column.
+	 * @since 2.1.0
+	 */
 	public static final String DEFAULT_CONTENT_FIELD_NAME = "content";
 
+	/**
+	 * Default name of the metadata column.
+	 * @since 2.1.0
+	 */
 	public static final String DEFAULT_METADATA_FIELD_NAME = "metadata";
 
+	/**
+	 * Default name of the embedding column.
+	 * @since 2.1.0
+	 */
 	public static final String DEFAULT_EMBEDDING_FIELD_NAME = "embedding";
 
 	private static final Log logger = LogFactory.getLog(PgVectorStore.class);
@@ -195,7 +207,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 	private static final String UPSERT_SQL = "INSERT INTO %4$s (id, %1$s, %2$s, %3$s) VALUES (?, ?, ?::jsonb, ?) "
 			+ "ON CONFLICT (id) DO UPDATE SET %1$s = ? , %2$s = ?::jsonb , %3$s = ? ";
 
-	public final FilterExpressionConverter filterExpressionConverter = new PgVectorFilterExpressionConverter();
+	public final FilterExpressionConverter filterExpressionConverter;
 
 	private final String vectorTableName;
 
@@ -250,6 +262,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		this.metadataFieldName = validateFieldName(builder.metadataFieldName, "Metadata");
 		this.embeddingFieldName = validateFieldName(builder.embeddingFieldName, "Embedding");
 		this.documentRowMapper = new DocumentRowMapper(this.jsonMapper, this.contentFieldName, this.metadataFieldName);
+		this.filterExpressionConverter = new PgVectorFilterExpressionConverter(this.metadataFieldName);
 
 		String vectorTable = builder.vectorTableName;
 		this.vectorTableName = vectorTable.isEmpty() ? DEFAULT_TABLE_NAME : vectorTable.trim();
@@ -602,9 +615,9 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 	 * not guess can tell the two cases apart.
 	 * <p>
 	 * The size comes from the configured {@code dimensions} if set, otherwise from the
-	 * declared type of the table's {@code embedding} column, and only then from the
-	 * embedding model. Reading it from the table means a store that only upserts into an
-	 * existing table never has to contact the embedding model. A known size is cached.
+	 * declared type of the table's embedding column, and only then from the embedding
+	 * model. Reading it from the table means a store that only upserts into an existing
+	 * table never has to contact the embedding model. A known size is cached.
 	 * @return the known dimension, or -1
 	 */
 	private int vectorDimensions() {
@@ -624,7 +637,8 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 			return this.dimensions;
 		}
 		try {
-			int columnDimensions = this.schemaValidator.vectorColumnDimensions(this.schemaName, this.vectorTableName);
+			int columnDimensions = this.schemaValidator.vectorColumnDimensions(this.schemaName, this.vectorTableName,
+					this.embeddingFieldName);
 			if (columnDimensions > 0) {
 				return columnDimensions;
 			}
@@ -904,6 +918,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		 * pre-existing table whose columns do not match the defaults.
 		 * @param contentFieldName the content column name
 		 * @return this builder
+		 * @since 2.1.0
 		 */
 		public PgVectorStoreBuilder contentFieldName(String contentFieldName) {
 			this.contentFieldName = contentFieldName;
@@ -915,6 +930,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		 * {@value PgVectorStore#DEFAULT_METADATA_FIELD_NAME}.
 		 * @param metadataFieldName the metadata column name
 		 * @return this builder
+		 * @since 2.1.0
 		 */
 		public PgVectorStoreBuilder metadataFieldName(String metadataFieldName) {
 			this.metadataFieldName = metadataFieldName;
@@ -926,6 +942,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		 * {@value PgVectorStore#DEFAULT_EMBEDDING_FIELD_NAME}.
 		 * @param embeddingFieldName the embedding column name
 		 * @return this builder
+		 * @since 2.1.0
 		 */
 		public PgVectorStoreBuilder embeddingFieldName(String embeddingFieldName) {
 			this.embeddingFieldName = embeddingFieldName;

@@ -100,18 +100,20 @@ class PgVectorSchemaValidator {
 	}
 
 	/**
-	 * Returns the vector size the table's {@code embedding} column accepts, as declared
-	 * in its {@code vector(n)} type.
+	 * Returns the vector size the table's embedding column accepts, as declared in its
+	 * {@code vector(n)} type.
 	 * @param schemaName the schema of the vector table
 	 * @param tableName the vector table
+	 * @param embeddingFieldName the name of the embedding column
 	 * @return the declared size, or -1 when the table or column does not exist or the
 	 * column was declared without a size
 	 */
-	int vectorColumnDimensions(String schemaName, String tableName) {
-		// The store writes schema and table names unquoted, so Postgres folds them to
-		// lower case and that is how the catalog holds them.
+	int vectorColumnDimensions(String schemaName, String tableName, String embeddingFieldName) {
+		// The store writes schema, table and column names unquoted, so Postgres folds
+		// them to lower case and that is how the catalog holds them.
 		List<Integer> result = this.jdbcTemplate.queryForList(VECTOR_COLUMN_DIMENSIONS_QUERY, Integer.class,
-				schemaName.toLowerCase(Locale.ROOT), tableName.toLowerCase(Locale.ROOT), "embedding");
+				schemaName.toLowerCase(Locale.ROOT), tableName.toLowerCase(Locale.ROOT),
+				embeddingFieldName.toLowerCase(Locale.ROOT));
 		if (result.isEmpty() || result.get(0) == null || result.get(0) <= 0) {
 			return -1;
 		}
@@ -143,11 +145,12 @@ class PgVectorSchemaValidator {
 				logger.info("Validating PGVectorStore schema for table: " + tableName + " in schema: " + schemaName);
 			}
 
+			// Column names are written unquoted, so Postgres stores them in lower case.
 			List<String> expectedColumns = new ArrayList<>();
 			expectedColumns.add("id");
-			expectedColumns.add(contentFieldName);
-			expectedColumns.add(metadataFieldName);
-			expectedColumns.add(embeddingFieldName);
+			expectedColumns.add(contentFieldName.toLowerCase(Locale.ROOT));
+			expectedColumns.add(metadataFieldName.toLowerCase(Locale.ROOT));
+			expectedColumns.add(embeddingFieldName.toLowerCase(Locale.ROOT));
 
 			// Query to check if the table exists with the required fields and types
 			// Include the schema name in the query to target the correct table
@@ -180,7 +183,7 @@ class PgVectorSchemaValidator {
 
 			// Query the actual dimensions
 			Integer actualDimensions = this.jdbcTemplate.queryForObject(VECTOR_COLUMN_DIMENSIONS_QUERY, Integer.class,
-					schemaName, tableName, embeddingFieldName);
+					schemaName, tableName, embeddingFieldName.toLowerCase(Locale.ROOT));
 			if (actualDimensions == null || actualDimensions != dimensions) {
 				throw new IllegalStateException("Actual vector dimensions is " + actualDimensions
 						+ ", required vector dimensions is " + dimensions);
