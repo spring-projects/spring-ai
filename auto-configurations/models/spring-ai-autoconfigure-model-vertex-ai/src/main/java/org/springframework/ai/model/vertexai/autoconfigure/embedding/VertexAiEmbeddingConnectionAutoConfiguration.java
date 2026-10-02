@@ -18,12 +18,18 @@ package org.springframework.ai.model.vertexai.autoconfigure.embedding;
 
 import com.google.cloud.aiplatform.v1.PredictionServiceSettings;
 
+import org.springframework.ai.model.SpringAIModelProperties;
+import org.springframework.ai.model.SpringAIModels;
 import org.springframework.ai.vertexai.embedding.VertexAiEmbeddingConnectionDetails;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
+import org.springframework.boot.autoconfigure.condition.AnyNestedCondition;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Conditional;
+import org.springframework.context.annotation.ConfigurationCondition.ConfigurationPhase;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -38,6 +44,7 @@ import org.springframework.util.StringUtils;
  */
 @AutoConfiguration
 @ConditionalOnClass(PredictionServiceSettings.class)
+@Conditional(VertexAiEmbeddingConnectionAutoConfiguration.OnVertexAiEmbeddingModelCondition.class)
 @EnableConfigurationProperties(VertexAiEmbeddingConnectionProperties.class)
 public class VertexAiEmbeddingConnectionAutoConfiguration {
 
@@ -58,6 +65,32 @@ public class VertexAiEmbeddingConnectionAutoConfiguration {
 		}
 
 		return connectionBuilder.build();
+
+	}
+
+	/**
+	 * Active when either consuming embedding model auto-configuration is enabled: the
+	 * text embedding model or the multimodal embedding model. Mirrors the
+	 * {@code spring.ai.model.*} conditions of both so the connection backs off together
+	 * with its consumers (e.g. when every embedding model is set to {@code none}).
+	 */
+	static class OnVertexAiEmbeddingModelCondition extends AnyNestedCondition {
+
+		OnVertexAiEmbeddingModelCondition() {
+			super(ConfigurationPhase.REGISTER_BEAN);
+		}
+
+		@ConditionalOnProperty(name = SpringAIModelProperties.TEXT_EMBEDDING_MODEL,
+				havingValue = SpringAIModels.VERTEX_AI, matchIfMissing = true)
+		static class OnTextEmbeddingModel {
+
+		}
+
+		@ConditionalOnProperty(name = SpringAIModelProperties.MULTI_MODAL_EMBEDDING_MODEL,
+				havingValue = SpringAIModels.VERTEX_AI, matchIfMissing = true)
+		static class OnMultiModalEmbeddingModel {
+
+		}
 
 	}
 
