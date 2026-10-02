@@ -29,10 +29,12 @@ import java.util.stream.Stream;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.annotation.Tool;
+import org.springframework.ai.tool.execution.ToolCallResultConverter;
 import org.springframework.ai.tool.metadata.ToolMetadata;
 import org.springframework.ai.tool.support.ToolDefinitions;
 import org.springframework.ai.tool.support.ToolUtils;
@@ -48,6 +50,7 @@ import org.springframework.util.ReflectionUtils;
  *
  * @author Thomas Vitale
  * @author Christian Tzolov
+ * @author Jewoo Shin
  * @since 1.0.0
  */
 public final class MethodToolCallbackProvider implements ToolCallbackProvider {
@@ -56,11 +59,15 @@ public final class MethodToolCallbackProvider implements ToolCallbackProvider {
 
 	private final List<Object> toolObjects;
 
-	private MethodToolCallbackProvider(List<Object> toolObjects) {
+	private final @Nullable ToolCallResultConverter toolCallResultConverter;
+
+	private MethodToolCallbackProvider(List<Object> toolObjects,
+			@Nullable ToolCallResultConverter toolCallResultConverter) {
 		Assert.notNull(toolObjects, "toolObjects cannot be null");
 		Assert.noNullElements(toolObjects, "toolObjects cannot contain null elements");
 		assertToolAnnotatedMethodsPresent(toolObjects);
 		this.toolObjects = toolObjects;
+		this.toolCallResultConverter = toolCallResultConverter;
 		validateToolCallbacks(getToolCallbacks());
 	}
 
@@ -96,7 +103,8 @@ public final class MethodToolCallbackProvider implements ToolCallbackProvider {
 					.toolMetadata(ToolMetadata.from(toolMethod))
 					.toolMethod(toolMethod)
 					.toolObject(toolObject)
-					.toolCallResultConverter(ToolUtils.getToolCallResultConverter(toolMethod))
+					.toolCallResultConverter(
+							ToolUtils.getToolCallResultConverter(toolMethod, this.toolCallResultConverter))
 					.build())
 				.toArray(ToolCallback[]::new))
 			.flatMap(Stream::of)
@@ -144,6 +152,8 @@ public final class MethodToolCallbackProvider implements ToolCallbackProvider {
 
 		private List<Object> toolObjects = new ArrayList<>();
 
+		private @Nullable ToolCallResultConverter toolCallResultConverter;
+
 		private Builder() {
 		}
 
@@ -153,8 +163,28 @@ public final class MethodToolCallbackProvider implements ToolCallbackProvider {
 			return this;
 		}
 
+		/**
+		 * Set the default {@link ToolCallResultConverter} to apply when a tool method
+		 * leaves {@link Tool#resultConverter()} at its default value of
+		 * {@link org.springframework.ai.tool.execution.DefaultToolCallResultConverter}.
+		 * <p>
+		 * A {@link Tool} annotation that explicitly declares a {@code resultConverter}
+		 * other than {@code DefaultToolCallResultConverter} takes precedence over this
+		 * default. Because the annotation's default value is also
+		 * {@code DefaultToolCallResultConverter}, a tool that explicitly sets
+		 * {@code resultConverter = DefaultToolCallResultConverter.class} is
+		 * indistinguishable from the unset case and will therefore receive this default.
+		 * @param toolCallResultConverter the converter to use as the default
+		 * @return this builder
+		 * @since 2.0.0
+		 */
+		public Builder toolCallResultConverter(ToolCallResultConverter toolCallResultConverter) {
+			this.toolCallResultConverter = toolCallResultConverter;
+			return this;
+		}
+
 		public MethodToolCallbackProvider build() {
-			return new MethodToolCallbackProvider(this.toolObjects);
+			return new MethodToolCallbackProvider(this.toolObjects, this.toolCallResultConverter);
 		}
 
 	}
