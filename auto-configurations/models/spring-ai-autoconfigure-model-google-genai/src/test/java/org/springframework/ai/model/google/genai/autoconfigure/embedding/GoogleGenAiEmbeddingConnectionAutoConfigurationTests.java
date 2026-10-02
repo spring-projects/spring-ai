@@ -17,7 +17,6 @@
 package org.springframework.ai.model.google.genai.autoconfigure.embedding;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.google.genai.embedding.GoogleGenAiEmbeddingConnectionDetails;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -59,11 +58,13 @@ class GoogleGenAiEmbeddingConnectionAutoConfigurationTests {
 	}
 
 	@Test
-	@EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_PROJECT", matches = ".+")
 	void projectAndLocationFromSharedConnectionProperties() {
+		// The explicit credentials-uri keeps this offline-friendly: the GenAI SDK then
+		// skips Application Default Credentials resolution when building the client.
 		this.contextRunner
 			.withPropertyValues("spring.ai.google.genai.project-id=test-project",
-					"spring.ai.google.genai.location=us-central1")
+					"spring.ai.google.genai.location=us-central1",
+					"spring.ai.google.genai.credentials-uri=classpath:fake-credentials.json")
 			.run(context -> {
 				assertThat(context).hasSingleBean(GoogleGenAiEmbeddingConnectionDetails.class);
 				GoogleGenAiEmbeddingConnectionDetails details = context

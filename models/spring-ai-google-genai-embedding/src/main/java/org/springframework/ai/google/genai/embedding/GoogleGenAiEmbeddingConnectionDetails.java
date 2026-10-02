@@ -16,6 +16,7 @@
 
 package org.springframework.ai.google.genai.embedding;
 
+import com.google.auth.oauth2.GoogleCredentials;
 import com.google.genai.Client;
 import org.jspecify.annotations.Nullable;
 
@@ -130,6 +131,12 @@ public final class GoogleGenAiEmbeddingConnectionDetails {
 		 */
 		private @Nullable Client genAiClient;
 
+		/**
+		 * Google credentials to use for Vertex AI mode authentication. If provided, it is
+		 * passed to the underlying {@link Client.Builder}.
+		 */
+		private @Nullable GoogleCredentials credentials;
+
 		public Builder projectId(@Nullable String projectId) {
 			this.projectId = projectId;
 			return this;
@@ -147,6 +154,16 @@ public final class GoogleGenAiEmbeddingConnectionDetails {
 
 		public Builder genAiClient(@Nullable Client genAiClient) {
 			this.genAiClient = genAiClient;
+			return this;
+		}
+
+		/**
+		 * Sets the {@link GoogleCredentials} to use for Vertex AI mode authentication.
+		 * @param credentials the Google credentials
+		 * @return this builder
+		 */
+		public Builder credentials(@Nullable GoogleCredentials credentials) {
+			this.credentials = credentials;
 			return this;
 		}
 
@@ -173,6 +190,10 @@ public final class GoogleGenAiEmbeddingConnectionDetails {
 				}
 
 				clientBuilder.project(this.projectId).location(this.location).vertexAI(true);
+
+				if (this.credentials != null) {
+					clientBuilder.credentials(this.credentials);
+				}
 			}
 
 			Client builtClient = clientBuilder.build();

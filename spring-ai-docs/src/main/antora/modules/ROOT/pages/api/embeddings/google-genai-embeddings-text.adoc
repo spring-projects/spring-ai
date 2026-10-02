@@ -84,7 +84,7 @@ The prefix `spring.ai.google.genai.embedding` is used as the property prefix tha
 
 [NOTE]
 ====
-The connection properties are shared with the Google GenAI Chat module. If you're using both chat and embeddings, you only need to configure the connection once using the `spring.ai.google.genai` prefix. The `spring.ai.google.genai.embedding` properties act as embedding-specific overrides: when a property is not set there, its shared `spring.ai.google.genai` counterpart is used as a fallback.
+The connection properties are shared with the Google GenAI Chat module. If you're using both chat and embeddings, you only need to configure the connection once using the `spring.ai.google.genai` prefix. The `spring.ai.google.genai.embedding` properties act as embedding-specific overrides: when a property is not set there, its shared `spring.ai.google.genai` counterpart is used as a fallback. The one exception is `vertex-ai`: that flag combines both levels with OR semantics, so Vertex AI mode is enabled when either the embedding-specific or the shared flag is set to `true`.
 ====
 
 [cols="3,5,1", stripes=even]
@@ -95,6 +95,7 @@ The connection properties are shared with the Google GenAI Chat module. If you'r
 | spring.ai.google.genai.embedding.project-id   | Google Cloud Platform project ID (required for Vertex AI mode) |  -
 | spring.ai.google.genai.embedding.location   | Google Cloud region (required for Vertex AI mode) |  -
 | spring.ai.google.genai.embedding.credentials-uri   | URI to Google Cloud credentials. When provided it is used to create a `GoogleCredentials` instance for authentication. |  -
+| spring.ai.google.genai.embedding.vertex-ai   | Whether to use Vertex AI mode. Combines with the shared `spring.ai.google.genai.vertex-ai` flag using OR semantics: Vertex AI mode is used when either flag is `true`. | false
 
 |====
 
