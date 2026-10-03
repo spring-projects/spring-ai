@@ -17,6 +17,7 @@
 package org.springframework.ai.mcp.annotation.method.tool;
 
 import java.lang.reflect.Method;
+import java.util.Objects;
 
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
@@ -72,10 +73,9 @@ public abstract class AbstractSyncMcpToolMethodCallback<T, RC extends McpRequest
 	 */
 	protected CallToolResult createSyncErrorResult(Exception e) {
 		Throwable rootCause = findCauseUsingPlainJava(e);
-		return CallToolResult.builder()
-			.isError(true)
-			.addTextContent(e.getMessage() + System.lineSeparator() + rootCause.getMessage())
-			.build();
+		String text = (rootCause == e || Objects.equals(rootCause.getMessage(), e.getMessage())) ? e.getMessage()
+				: e.getMessage() + System.lineSeparator() + rootCause.getMessage();
+		return CallToolResult.builder().isError(true).addTextContent(text).build();
 	}
 
 	/**
