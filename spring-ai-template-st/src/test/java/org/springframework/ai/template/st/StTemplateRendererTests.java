@@ -17,6 +17,8 @@
 package org.springframework.ai.template.st;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
@@ -31,6 +33,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * Unit tests for {@link StTemplateRenderer}.
  *
  * @author Thomas Vitale
+ * @author Jewoo Shin
  */
 class StTemplateRendererTests {
 
@@ -203,13 +206,10 @@ class StTemplateRendererTests {
 
 	/**
 	 * Tests that StringTemplate list variables with separators are correctly handled.
-	 * Note: Uses NONE validation mode because the current implementation of
-	 * getInputVariables incorrectly treats template options like 'separator' as variables
-	 * to be resolved.
 	 */
 	@Test
 	void shouldHandleListVariables() {
-		StTemplateRenderer renderer = StTemplateRenderer.builder().validationMode(ValidationMode.NONE).build();
+		StTemplateRenderer renderer = StTemplateRenderer.builder().build();
 
 		Map<String, Object> variables = new HashMap<>();
 		variables.put("items", new String[] { "apple", "banana", "cherry" });
@@ -220,14 +220,11 @@ class StTemplateRendererTests {
 	}
 
 	/**
-	 * Tests rendering with StringTemplate options. Note: This uses NONE validation mode
-	 * because the current implementation of getInputVariables incorrectly treats template
-	 * options like 'separator' as variables to be resolved.
+	 * Tests rendering with StringTemplate options.
 	 */
 	@Test
 	void shouldRenderTemplateWithOptions() {
-		// Use NONE validation mode to bypass the issue with option detection
-		StTemplateRenderer renderer = StTemplateRenderer.builder().validationMode(ValidationMode.NONE).build();
+		StTemplateRenderer renderer = StTemplateRenderer.builder().build();
 
 		Map<String, Object> variables = new HashMap<>();
 		variables.put("fruits", new String[] { "apple", "banana", "cherry" });
@@ -243,6 +240,101 @@ class StTemplateRendererTests {
 		assertThat(result).contains("apple");
 		assertThat(result).contains("banana");
 		assertThat(result).contains("cherry");
+	}
+
+	@Test
+	void shouldNotRequireAnonymousSubtemplateFormalArgumentAsExternalVariable() {
+		StTemplateRenderer renderer = StTemplateRenderer.builder().build();
+		Map<String, Object> myMap = new LinkedHashMap<>();
+		myMap.put("a", 1);
+		myMap.put("b", 2);
+		myMap.put("c", 3);
+
+		String result = renderer.apply("{myMap:{k | key={k}, value={myMap.(k)}\n}}", Map.of("myMap", myMap));
+
+		assertThat(result).isEqualTo("key=a, value=1\nkey=b, value=2\nkey=c, value=3\n");
+	}
+
+	@Test
+	void shouldNotRequireAnonymousSubtemplateIndexArgumentsAsExternalVariables() {
+		StTemplateRenderer renderer = StTemplateRenderer.builder().build();
+		Map<String, Object> variables = new HashMap<>();
+		variables.put("items", List.of("a", "b"));
+
+		String result = renderer.apply("{items:{item | {i0}:{i}:{item}\n}}", variables);
+
+		assertThat(result).isEqualTo("0:1:a\n1:2:b\n");
+	}
+
+	@Test
+	void shouldRequireItInsideAnonymousSubtemplateWithFormalArgument() {
+		StTemplateRenderer renderer = StTemplateRenderer.builder().build();
+		Map<String, Object> variables = new HashMap<>();
+		variables.put("items", List.of("a"));
+
+		assertThatThrownBy(() -> renderer.apply("{items:{item | rootIt={it}, item={item}}}", variables))
+			.isInstanceOf(IllegalStateException.class)
+			.hasMessageContaining("Not all variables were replaced in the template. Missing variable names are: [it]");
+	}
+
+	@Test
+	void shouldResolveItFromOuterScopeInsideAnonymousSubtemplateWithFormalArgument() {
+		StTemplateRenderer renderer = StTemplateRenderer.builder().build();
+		Map<String, Object> variables = new HashMap<>();
+		variables.put("items", List.of("a", "b"));
+		variables.put("it", "outer");
+
+		String result = renderer.apply("{items:{item | rootIt={it}, item={item}\n}}", variables);
+
+		assertThat(result).isEqualTo("rootIt=outer, item=a\nrootIt=outer, item=b\n");
+	}
+
+	@Test
+	void shouldNotRequireMultipleAnonymousSubtemplateFormalArgumentsAsExternalVariables() {
+		StTemplateRenderer renderer = StTemplateRenderer.builder().build();
+		Map<String, Object> variables = new HashMap<>();
+		variables.put("names", List.of("name1", "name2"));
+		variables.put("phones", List.of("phone1", "phone2"));
+
+		String result = renderer.apply("{names,phones:{n,p | {n}={p}\n}}", variables);
+
+		assertThat(result).isEqualTo("name1=phone1\nname2=phone2\n");
+	}
+
+	@Test
+	void shouldKeepNestedAnonymousSubtemplateScopesSeparate() {
+		StTemplateRenderer renderer = StTemplateRenderer.builder().build();
+		Map<String, Object> item = new HashMap<>();
+		item.put("name", "item1");
+		item.put("values", List.of("a", "b"));
+
+		String result = renderer.apply("{items:{item | {item.values:{x | {item.name}:{x}\n}}}}",
+				Map.of("items", List.of(item)));
+
+		assertThat(result).isEqualTo("item1:a\nitem1:b\n");
+	}
+
+	@Test
+	void shouldRequireSameVariableNameOutsideAnonymousSubtemplateScope() {
+		StTemplateRenderer renderer = StTemplateRenderer.builder().build();
+		Map<String, Object> variables = new HashMap<>();
+		variables.put("myMap", Map.of("a", 1));
+
+		assertThatThrownBy(() -> renderer.apply("{myMap:{k | key={k}}}{k}", variables))
+			.isInstanceOf(IllegalStateException.class)
+			.hasMessageContaining("Not all variables were replaced in the template. Missing variable names are: [k]");
+	}
+
+	@Test
+	void shouldRequireMissingVariableInsideAnonymousSubtemplateBody() {
+		StTemplateRenderer renderer = StTemplateRenderer.builder().build();
+		Map<String, Object> variables = new HashMap<>();
+		variables.put("items", List.of("a"));
+
+		assertThatThrownBy(() -> renderer.apply("{items:{item | {missing}}}", variables))
+			.isInstanceOf(IllegalStateException.class)
+			.hasMessageContaining(
+					"Not all variables were replaced in the template. Missing variable names are: [missing]");
 	}
 
 	/**
