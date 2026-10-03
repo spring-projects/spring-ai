@@ -592,6 +592,27 @@ class StructuredOutputValidationAdvisorTests {
 	}
 
 	@Test
+	void testValidationWithNullJsonString() {
+		var chatClientRequest = createMockRequest();
+		var chatClientResponse = createResponse("null", new DefaultUsage(1, 2, 3));
+
+		var advisor = StructuredOutputValidationAdvisor.builder().outputType(Person.class).build();
+		int[] callCount = { 0 };
+		var terminalAdvisor = terminalAdvisor((request, chain) -> {
+			callCount[0]++;
+			return chatClientResponse;
+		});
+
+		var callChainAdvisor = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.of(advisor, terminalAdvisor))
+			.build();
+
+		var chainedChatClientResponse = callChainAdvisor.nextCall(chatClientRequest);
+		assertThat(callCount[0]).isOne();
+		assertThat(chainedChatClientResponse).isEqualTo(chatClientResponse);
+	}
+
+	@Test
 	void testValidationWithEmptyJsonString() {
 		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
 			.outputType(new TypeReference<Person>() {

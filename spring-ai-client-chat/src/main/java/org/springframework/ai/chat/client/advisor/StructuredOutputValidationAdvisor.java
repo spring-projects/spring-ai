@@ -201,6 +201,9 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 		}
 		try {
 			JsonNode instance = this.jsonMapper.readTree(json);
+			if (instance.isNull()) {
+				return SchemaValidation.passed();
+			}
 			List<Error> errors = this.jsonSchema.validate(instance);
 			if (errors.isEmpty()) {
 				return SchemaValidation.passed();
