@@ -121,6 +121,8 @@ Properties starting with `spring.ai.vectorstore.neo4j.*` are used to configure t
 |===
 |Property | Description | Default Value
 
+|`spring.ai.vectorstore.neo4j.search-strategy` | Query strategy: `vector-query` (procedure with post-filtering) or `search` (Cypher 25, requires Neo4j 2026.01+) | `vector-query`
+|`spring.ai.vectorstore.neo4j.filterable-metadata-fields` | List of logical metadata keys included in the vector index for `search`, for example `category,year`. Requires `search-strategy=search`. | Empty list
 |`spring.ai.vectorstore.neo4j.initialize-schema`| Whether to initialize the required schema | `false`
 |`spring.ai.vectorstore.neo4j.database-name` | The name of the Neo4j database to use | `neo4j`
 |`spring.ai.vectorstore.neo4j.index-name` | The name of the index to store the vectors | `spring-ai-document-index`
@@ -241,6 +243,102 @@ is converted into the proprietary Neo4j filter format:
 ----
 node.`metadata.author` IN ["john","jill"] AND node.`metadata.'article_type'` = "blog"
 ----
+
+=== In-index metadata filtering with SEARCH
+
+The default `vector-query` strategy retrieves the global `topK` approximate nearest neighbors and then applies metadata and similarity-threshold filters.
+It can therefore return fewer than `topK` documents even when more matching documents exist outside the candidate set.
+Increasing `topK` increases the candidate set but does not change this filtering order.
+
+On Neo4j 2026.01 or later, opt into the Cypher 25 `SEARCH` strategy to apply supported metadata predicates inside the vector index.
+The strategy explicitly uses `CYPHER 25`; it does not change the database's default Cypher version.
+The minimum Neo4j version for the default strategy remains 5.15.
+
+[source,yaml]
+----
+spring:
+  ai:
+    vectorstore:
+      neo4j:
+        search-strategy: search
+        filterable-metadata-fields:
+          - category
+          - year
+        index-name: spring-ai-filtered-index
+        initialize-schema: true
+----
+
+The equivalent builder configuration is:
+
+[source,java]
+----
+Neo4jVectorStore vectorStore = Neo4jVectorStore.builder(driver, embeddingModel)
+    .searchStrategy(Neo4jVectorStore.SearchStrategy.SEARCH)
+    .filterableMetadataFields(List.of("category", "year"))
+    .indexName("spring-ai-filtered-index")
+    .initializeSchema(true)
+    .build();
+vectorStore.afterPropertiesSet(); // Called automatically for Spring-managed beans.
+
+List<Document> results = vectorStore.similaritySearch(SearchRequest.builder()
+    .query("Java backends")
+    .topK(5)
+    .similarityThreshold(0.7)
+    .filterExpression("category == 'backend' && year >= 2020")
+    .build());
+----
+
+`topK` limits the approximate neighbors satisfying the in-index metadata predicate.
+The similarity threshold is applied to those candidates afterward.
+Without a metadata filter, `SEARCH` performs an unfiltered vector index search.
+Insufficient matching documents, the similarity threshold, or ANN behavior can still yield fewer than `topK` results.
+
+==== Supported predicates
+
+The Spring AI `SEARCH` strategy supports `==`, `>`, `>=`, `<`, and `<=` comparisons between a metadata key on the left and a scalar value on the right, combined with `AND` (or `&&`) and grouping.
+Values can be strings, finite primitive numbers, or booleans; booleans support equality only.
+Each metadata key may have one equality predicate, or at most one lower bound and one upper bound.
+For example, `year >= 2020 && year < 2025` is supported, while `year > 2020 && year >= 2021` and `year == 2022 && year > 2020` are rejected.
+
+`OR`, `!=`, `IN`, `NIN`, negation and null predicates are not supported by this strategy.
+`IN` remains unsupported by this integration even on newer Neo4j releases that support it.
+Unsupported expressions, unsupported value types and keys absent from `filterableMetadataFields` fail with an `IllegalArgumentException` before query embedding.
+There is no automatic fallback to post-filtering or full-scan similarity calculation.
+A custom `filterExpressionConverter` is supported only with `vector-query`.
+See the link:https://neo4j.com/docs/cypher-manual/current/clauses/search/[Neo4j SEARCH documentation] for database-level syntax and restrictions.
+
+==== Index configuration and existing indexes
+
+Use logical metadata keys such as `category` in `filterableMetadataFields`.
+Spring AI stores these as node properties such as `metadata.category` and adds them to the index's `WITH` clause when initializing the schema.
+An empty field list supports unfiltered `SEARCH` queries only.
+Configuring filterable fields with the default `vector-query` strategy is rejected.
+
+`CREATE INDEX IF NOT EXISTS` does not upgrade an existing index.
+With `initialize-schema=true`, the store checks that the resulting index has the configured single node label, embedding property, distance function, compatible dimensions, and all configured filtering properties.
+An incompatible index causes initialization to fail; it is not dropped or rebuilt automatically.
+Create a separate compatible index and select its name to opt in for an existing deployment.
+
+With `initialize-schema=false`, index creation and validation are the application's responsibility.
+For example, an externally managed three-dimensional cosine index can be created as follows:
+
+[source,cypher]
+----
+CYPHER 25
+CREATE VECTOR INDEX `spring-ai-filtered-index`
+FOR (n:Document) ON (n.embedding)
+WITH [n.`metadata.category`, n.`metadata.year`]
+OPTIONS {indexConfig: {
+  `vector.dimensions`: 3,
+  `vector.similarity_function`: 'cosine'
+}};
+----
+
+Set `embedding-dimension` to match the actual embedding model and index dimensions.
+The index must target the configured node label and embedding property, use the configured similarity function, and contain the filtering properties.
+Wait for the index to be `ONLINE` before querying it.
+Neo4j query errors for missing indexes or filtering properties are propagated; the store does not retry through the legacy strategy.
+Enabling `search` on an older server also propagates the server's unsupported-Cypher error.
 
 == Accessing the Native Client
 

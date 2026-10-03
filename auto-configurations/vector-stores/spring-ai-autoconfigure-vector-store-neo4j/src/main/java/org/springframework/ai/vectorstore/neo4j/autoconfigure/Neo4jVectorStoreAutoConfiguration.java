@@ -64,6 +64,8 @@ public class Neo4jVectorStoreAutoConfiguration {
 
 		Builder builder = Neo4jVectorStore.builder(driver, embeddingModel)
 			.initializeSchema(properties.isInitializeSchema())
+			.searchStrategy(properties.getSearchStrategy())
+			.filterableMetadataFields(properties.getFilterableMetadataFields())
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.customObservationConvention(customObservationConvention.getIfAvailable())
 			.batchingStrategy(batchingStrategy)
