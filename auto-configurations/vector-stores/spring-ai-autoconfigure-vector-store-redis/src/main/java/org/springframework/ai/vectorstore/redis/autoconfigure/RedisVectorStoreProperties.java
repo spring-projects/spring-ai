@@ -16,6 +16,9 @@
 
 package org.springframework.ai.vectorstore.redis.autoconfigure;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.springframework.ai.vectorstore.properties.CommonVectorStoreProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
@@ -30,6 +33,12 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty;
  * spring.ai.vectorstore.redis.index-name=my-index
  * spring.ai.vectorstore.redis.prefix=doc:
  * spring.ai.vectorstore.redis.initialize-schema=true
+ *
+ * # Metadata fields
+ * spring.ai.vectorstore.redis.metadata-fields[0].name=conversationId
+ * spring.ai.vectorstore.redis.metadata-fields[0].type=TAG
+ * spring.ai.vectorstore.redis.metadata-fields[1].name=year
+ * spring.ai.vectorstore.redis.metadata-fields[1].type=NUMERIC
  *
  * # HNSW algorithm configuration
  * spring.ai.vectorstore.redis.hnsw.m=32
@@ -64,6 +73,24 @@ public class RedisVectorStoreProperties extends CommonVectorStoreProperties {
 	 */
 	@NestedConfigurationProperty
 	private HnswProperties hnsw = new HnswProperties();
+
+	/**
+	 * Metadata fields to index alongside the embedding vector. Each entry specifies
+	 * a field name and its Redis search type (TAG, TEXT, or NUMERIC). When set, these
+	 * fields are registered on the index at schema-initialization time and can be used
+	 * in similarity-search filter expressions.
+	 *
+	 * <p>
+	 * Example:
+	 * </p>
+	 * <pre>
+	 * spring.ai.vectorstore.redis.metadata-fields[0].name=conversationId
+	 * spring.ai.vectorstore.redis.metadata-fields[0].type=TAG
+	 * spring.ai.vectorstore.redis.metadata-fields[1].name=year
+	 * spring.ai.vectorstore.redis.metadata-fields[1].type=NUMERIC
+	 * </pre>
+	 */
+	private List<MetadataFieldProperties> metadataFields = new ArrayList<>();
 
 	/**
 	 * Returns the index name.
@@ -111,6 +138,72 @@ public class RedisVectorStoreProperties extends CommonVectorStoreProperties {
 	 */
 	public final void setHnsw(final HnswProperties hnswProperties) {
 		this.hnsw = hnswProperties;
+	}
+
+	/**
+	 * Returns the metadata fields.
+	 * @return the metadata fields
+	 */
+	public final List<MetadataFieldProperties> getMetadataFields() {
+		return this.metadataFields;
+	}
+
+	/**
+	 * Sets the metadata fields.
+	 * @param fields the metadata fields
+	 */
+	public final void setMetadataFields(final List<MetadataFieldProperties> fields) {
+		this.metadataFields = fields;
+	}
+
+	/**
+	 * Configuration for a single Redis metadata field.
+	 */
+	public static final class MetadataFieldProperties {
+
+		/**
+		 * The name of the metadata field.
+		 */
+		private String name;
+
+		/**
+		 * The Redis field type: TAG (exact match), TEXT (full-text search), or NUMERIC
+		 * (range queries).
+		 */
+		private String type = "TAG";
+
+		/**
+		 * Returns the field name.
+		 * @return the field name
+		 */
+		public String getName() {
+			return this.name;
+		}
+
+		/**
+		 * Sets the field name.
+		 * @param fieldName the field name
+		 */
+		public void setName(final String fieldName) {
+			this.name = fieldName;
+		}
+
+		/**
+		 * Returns the field type.
+		 * @return the field type
+		 */
+		public String getType() {
+			return this.type;
+		}
+
+		/**
+		 * Sets the field type.
+		 * @param fieldType the field type (TAG, TEXT, or NUMERIC)
+		 */
+		public void setType(final String fieldType) {
+			this.type = fieldType;
+		}
+
 	}
 
 	/**
