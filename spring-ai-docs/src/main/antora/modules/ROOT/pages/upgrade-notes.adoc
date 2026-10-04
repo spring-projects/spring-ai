@@ -4,6 +4,15 @@
 [[upgrading-to-2-1-0]]
 == Upgrading to 2.1.0
 
+=== MCP Tool Context Metadata
+
+MCP tool callbacks no longer forward `ToolContext` entries to remote MCP servers by default.
+Previously, the default converter forwarded every non-null entry except the MCP exchange key.
+Applications using Spring Boot auto-configuration can provide a `ToolContextToMcpMetaConverter` bean that selects the intended keys.
+Applications that create MCP callbacks or callback providers directly can set the converter through their `toolContextToMcpMetaConverter(...)` builder method.
+To retain the previous pass-through behavior, explicitly select `ToolContextToMcpMetaConverter.defaultConverter()` through either configuration path, after reviewing the data present in your `ToolContext`.
+See xref:api/mcp/mcp-client-boot-starter-docs.adoc#_tool_context_to_mcp_meta_converter[Tool Context to MCP Meta Converter].
+
 === Message Parts
 
 ==== New: Ordered `MessagePart` Content on `AssistantMessage` and `UserMessage`

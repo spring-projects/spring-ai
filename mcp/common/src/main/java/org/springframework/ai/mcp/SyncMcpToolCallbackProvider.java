@@ -64,8 +64,7 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider, Applic
 	 */
 	@Deprecated
 	public SyncMcpToolCallbackProvider(McpToolFilter toolFilter, List<McpSyncClient> mcpClients) {
-		this(toolFilter, McpToolNamePrefixGenerator.noPrefix(), mcpClients,
-				ToolContextToMcpMetaConverter.defaultConverter());
+		this(toolFilter, McpToolNamePrefixGenerator.noPrefix(), mcpClients, ToolContextToMcpMetaConverter.noOp());
 	}
 
 	/**
@@ -107,8 +106,7 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider, Applic
 	@Deprecated
 	public SyncMcpToolCallbackProvider(McpToolFilter toolFilter, McpToolNamePrefixGenerator toolNamePrefixGenerator,
 			McpSyncClient... mcpClients) {
-		this(toolFilter, toolNamePrefixGenerator, List.of(mcpClients),
-				ToolContextToMcpMetaConverter.defaultConverter());
+		this(toolFilter, toolNamePrefixGenerator, List.of(mcpClients), ToolContextToMcpMetaConverter.noOp());
 	}
 
 	/**
@@ -222,8 +220,7 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider, Applic
 
 		private McpToolNamePrefixGenerator toolNamePrefixGenerator = new DefaultMcpToolNamePrefixGenerator();
 
-		private ToolContextToMcpMetaConverter toolContextToMcpMetaConverter = ToolContextToMcpMetaConverter
-			.defaultConverter();
+		private ToolContextToMcpMetaConverter toolContextToMcpMetaConverter = ToolContextToMcpMetaConverter.noOp();
 
 		/**
 		 * Sets MCP clients for tool discovery (replaces existing).
@@ -282,7 +279,7 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider, Applic
 
 		/**
 		 * Sets tool context to MCP metadata converter. Defaults to
-		 * {@link ToolContextToMcpMetaConverter#defaultConverter()}.
+		 * {@link ToolContextToMcpMetaConverter#noOp()}.
 		 * @param toolContextToMcpMetaConverter converts tool context to MCP metadata
 		 * @return this builder
 		 */

@@ -750,9 +750,10 @@ See xref:api/tools.adoc#combining-local-and-mcp-tools[Combining Local and MCP To
 === Tool Context to MCP Meta Converter
 
 The MCP Client Boot Starter supports customizable conversion of Spring AI's xref:api/tools.adoc#tool-context[ToolContext] to MCP tool-call metadata through the `ToolContextToMcpMetaConverter` interface.
-This feature allows you to pass additional contextual information (e.g. user id, secrets token) as metadata along with the LLM's generated call arguments.
+This feature lets you explicitly select contextual information to send to a remote MCP server as metadata along with the LLM's generated call arguments.
+Review the data selected by your converter, because the remote server receives it.
 
-For example you can pass the MCP `progressToken` to your link:https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/progress#progress-flow[MCP Progress Flow] in the tool context to track the progress of long-running operations:
+After configuring a converter to select `progressToken`, you can pass it through the tool context to track long-running operations with link:https://modelcontextprotocol.io/specification/2025-06-18/basic/utilities/progress#progress-flow[MCP Progress Flow]:
 
 [source,java]
 ----
@@ -765,14 +766,8 @@ String response = ChatClient.create(chatModel)
         .content();
 ----
 
-By default, if no custom converter bean is provided, the starter uses `ToolContextToMcpMetaConverter.defaultConverter()` which:
-
-* Filters out the MCP exchange key (`McpToolUtils.TOOL_CONTEXT_MCP_EXCHANGE_KEY`)
-* Filters out entries with null values
-* Passes through all other context entries as metadata
-
-
-
+By default, the starter uses `ToolContextToMcpMetaConverter.noOp()` and sends no `ToolContext` entries to remote MCP servers.
+To send a value such as `progressToken`, provide a converter bean that selects that key.
 
 You can customize this behavior by providing your own implementation:
 
@@ -787,21 +782,8 @@ public class CustomToolContextToMcpMetaConverter implements ToolContextToMcpMeta
             return Map.of();
         }
 
-        // Custom logic to convert tool context to MCP metadata
-        Map<String, Object> metadata = new HashMap<>();
-
-        // Example: Add custom prefix to all keys
-        for (Map.Entry<String, Object> entry : toolContext.getContext().entrySet()) {
-            if (entry.getValue() != null) {
-                metadata.put("app_" + entry.getKey(), entry.getValue());
-            }
-        }
-
-        // Example: Add additional metadata
-        metadata.put("timestamp", System.currentTimeMillis());
-        metadata.put("source", "spring-ai");
-
-        return metadata;
+        Object progressToken = toolContext.getContext().get("progressToken");
+        return progressToken != null ? Map.of("progressToken", progressToken) : Map.of();
     }
 }
 ----
@@ -810,10 +792,10 @@ public class CustomToolContextToMcpMetaConverter implements ToolContextToMcpMeta
 
 The framework provides built-in converters:
 
-* `ToolContextToMcpMetaConverter.defaultConverter()` - Filters out MCP exchange key and null values (used by default if no custom bean is provided)
-* `ToolContextToMcpMetaConverter.noOp()` - Returns an empty map, effectively disabling context-to-metadata conversion
+* `ToolContextToMcpMetaConverter.noOp()` - Returns an empty map (used by default if no custom bean is provided)
+* `ToolContextToMcpMetaConverter.defaultConverter()` - Forwards every non-null context entry except the MCP exchange key; use only when you intend to share all those entries with remote servers
 
-To disable context-to-metadata conversion entirely:
+To restore the previous pass-through behavior explicitly:
 
 [source,java]
 ----
@@ -822,13 +804,13 @@ public class McpConfiguration {
 
     @Bean
     public ToolContextToMcpMetaConverter toolContextToMcpMetaConverter() {
-        return ToolContextToMcpMetaConverter.noOp();
+        return ToolContextToMcpMetaConverter.defaultConverter();
     }
 }
 ----
 
 The converter is automatically detected and applied to both synchronous and asynchronous MCP tool callbacks through Spring's `ObjectProvider` mechanism.
-If no custom converter bean is provided, the default converter is used automatically.
+If no custom converter bean is provided, the no-op converter is used automatically.
 
 === Disable the MCP ToolCallback Auto-Configuration
 
