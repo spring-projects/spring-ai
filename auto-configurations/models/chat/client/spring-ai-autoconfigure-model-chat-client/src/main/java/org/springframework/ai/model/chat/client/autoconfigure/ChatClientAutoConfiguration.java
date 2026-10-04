@@ -44,10 +44,12 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Scope;
+import org.springframework.web.context.request.RequestAttributesThreadLocalAccessor;
 
 /**
  * {@link EnableAutoConfiguration Auto-configuration} for {@link ChatClient}.
@@ -126,6 +128,30 @@ public class ChatClientAutoConfiguration {
 			builder.defaultAdvisors(AdvisorParams.toolCallingAdvisorAutoRegister(false));
 		}
 		return chatClientBuilderConfigurer.configure(builder);
+	}
+
+	@Configuration(proxyBeanMethods = false)
+	@ConditionalOnClass(RequestAttributesThreadLocalAccessor.class)
+	@ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
+	static class RequestAttributesContextPropagationConfiguration {
+
+		/**
+		 * Registers Spring Framework's request attributes accessor with the global
+		 * Micrometer {@code ContextRegistry} for the lifetime of the application context,
+		 * so that the request attributes of the thread subscribing to a streaming call
+		 * survive the thread hop that the {@link ToolCallingAdvisor} tool call loop
+		 * performs.
+		 * <p>
+		 * The accessor is servlet specific, as it wraps {@code ServletRequestAttributes},
+		 * so it is only registered for servlet web applications. Spring Framework does
+		 * not register it itself, and the accessors contributed by Spring Security arrive
+		 * through the {@code ServiceLoader} mechanism.
+		 */
+		@Bean
+		RequestAttributesContextPropagationRegistrar requestAttributesContextPropagationRegistrar() {
+			return new RequestAttributesContextPropagationRegistrar();
+		}
+
 	}
 
 	@Configuration(proxyBeanMethods = false)

@@ -19,6 +19,7 @@ package org.springframework.ai.chat.client.advisor;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
+import io.micrometer.context.ContextSnapshot;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
 
@@ -267,12 +268,26 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 		}
 
 		return Flux.defer(() -> {
+			// Capture the registered ThreadLocal state of the thread subscribing to this
+			// stream, so it can be restored on the thread executing the tool calls
+			// further
+			// down. This has to happen here, inside the defer, to capture the state of
+			// the
+			// subscribing thread rather than the state of whichever thread assembles the
+			// Flux.
+			ContextSnapshot contextSnapshot = ToolCallContextPropagation.captureThreadLocals();
+
 			ChatClientRequest initializedRequest = this.doInitializeLoopStream(chatClientRequest, streamAdvisorChain);
+
 			// Subscription-local accumulator so usage is not shared across subscriptions.
 			UsageAccumulator usageAccumulator = new UsageAccumulator();
+
 			List<Message> initialInstructions = initializedRequest.prompt().getInstructions();
-			return this.internalStream(streamAdvisorChain, initializedRequest, toolCallingChatOptions,
-					initialInstructions, initialInstructions, usageAccumulator);
+
+			return this
+				.internalStream(streamAdvisorChain, initializedRequest, toolCallingChatOptions, initialInstructions,
+						initialInstructions, usageAccumulator)
+				.contextWrite(context -> contextSnapshot.updateContext(context));
 		});
 	}
 
@@ -359,10 +374,20 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 		// Execute tool calls on bounded elastic scheduler (tool execution is blocking)
 		Flux<ChatClientResponse> toolCallFlux = Flux.deferContextual(ctx -> {
 			ToolExecutionResult toolExecutionResult;
-			try {
-				ToolCallReactiveContextHolder.setContext(ctx);
-				toolExecutionResult = this.toolCallingManager.executeToolCalls(new Prompt(fullTurnHistory, optionsCopy),
-						chatResponse);
+
+			// This runs on a boundedElastic worker, where the ThreadLocal state captured
+			// when the stream was subscribed would otherwise be missing. The scope spans
+			// the whole tool execution: restore that state, run the tool, then clear the
+			// reactive context holder and close the scope.
+			try (ContextSnapshot.Scope ignored = ToolCallContextPropagation.restoreThreadLocals(ctx)) {
+				try {
+					ToolCallReactiveContextHolder.setContext(ctx);
+					toolExecutionResult = this.toolCallingManager
+						.executeToolCalls(new Prompt(fullTurnHistory, optionsCopy), chatResponse);
+				}
+				finally {
+					ToolCallReactiveContextHolder.clearContext();
+				}
 			}
 			catch (ToolCallLimitExceededException ex) {
 				// A configured tool call limit was hit. Return the breach as a single
@@ -377,9 +402,6 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 						.build())
 					.build();
 				return Flux.just(usageAccumulator.applyAccumulatedUsage(limitResponse));
-			}
-			finally {
-				ToolCallReactiveContextHolder.clearContext();
 			}
 
 			if (toolExecutionResult.returnDirect()) {
