@@ -17,6 +17,7 @@
 package org.springframework.ai.openai.responses;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -86,6 +87,77 @@ class ResponsesItemMapperTests {
 		assertThat(itemTypes(input.items())).containsExactly("message", "message");
 		assertThat(toJson(input.items().get(0))).contains("\"role\":\"developer\"").contains("Answer in English.");
 		assertThat(toJson(input.items().get(1))).contains("\"role\":\"user\"");
+	}
+
+	/**
+	 * Follow-up to the MessagePart migration: a user message built as media then text
+	 * must keep that order on the wire. Flattening to text-then-media would reverse it.
+	 */
+	@Test
+	void userMessagePartsAreEmittedInPartOrderWhenMediaComesFirst() {
+		var image = Media.builder()
+			.mimeType(MimeTypeUtils.IMAGE_PNG)
+			.data(URI.create("https://example.com/cat.png"))
+			.build();
+		var message = UserMessage.builder().part(MediaPart.of(image)).part(TextPart.of("What is this?")).build();
+
+		ResponseInputItem item = ResponsesItemMapper.toInput(List.of(message)).items().get(0);
+
+		assertThat(contentTypes(item)).containsExactly("input_image", "input_text");
+		assertThat(toJson(item)).contains("https://example.com/cat.png").contains("What is this?");
+	}
+
+	/**
+	 * Interleaved text and media must not be collapsed into one joined text followed by
+	 * every media item.
+	 */
+	@Test
+	void userMessagePartsPreserveInterleavedTextAndMediaOrder() {
+		var image = Media.builder()
+			.mimeType(MimeTypeUtils.IMAGE_PNG)
+			.data(URI.create("https://example.com/diagram.png"))
+			.build();
+		var message = UserMessage.builder()
+			.part(TextPart.of("Before the image."))
+			.part(MediaPart.of(image))
+			.part(TextPart.of("After the image."))
+			.build();
+
+		ResponseInputItem item = ResponsesItemMapper.toInput(List.of(message)).items().get(0);
+		String json = toJson(item);
+
+		assertThat(contentTypes(item)).containsExactly("input_text", "input_image", "input_text");
+		assertThat(json.indexOf("Before the image.")).isLessThan(json.indexOf("diagram.png"));
+		assertThat(json.indexOf("diagram.png")).isLessThan(json.indexOf("After the image."));
+	}
+
+	/**
+	 * Legacy builders still produce text then media, and that order must keep working.
+	 */
+	@Test
+	void legacyTextThenMediaUserMessageKeepsTextBeforeMedia() {
+		var message = UserMessage.builder()
+			.text("What is this?")
+			.media(List.of(Media.builder()
+				.mimeType(MimeTypeUtils.IMAGE_PNG)
+				.data(URI.create("https://example.com/cat.png"))
+				.build()))
+			.build();
+
+		assertThat(contentTypes(ResponsesItemMapper.toInput(List.of(message)).items().get(0)))
+			.containsExactly("input_text", "input_image");
+	}
+
+	@Test
+	void anUnhandledUserMessagePartTypeIsRejected() {
+		var message = UserMessage.builder()
+			.part(TextPart.of("Hi"))
+			.part(new UnknownPart(OpenAiResponsesMetadata.PROVIDER, "odd", "{}", null, Map.of()))
+			.build();
+
+		assertThatThrownBy(() -> ResponsesItemMapper.toInput(List.of(message)))
+			.isInstanceOf(IllegalStateException.class)
+			.hasMessageContaining("Unhandled message part type");
 	}
 
 	@Test
@@ -516,6 +588,21 @@ class ResponsesItemMapperTests {
 		assertThat(metadata.getId()).isEqualTo("resp_text_1");
 		assertThat(metadata.getModel()).isEqualTo("gpt-5-mini");
 		assertThat(metadata.<String>get(OpenAiResponsesMetadata.STATUS)).isEqualTo("completed");
+	}
+
+	private static List<String> contentTypes(ResponseInputItem item) {
+		try {
+			var content = ObjectMappers.jsonMapper().readTree(toJson(item)).path("content");
+			if (content.isTextual()) {
+				return List.of("input_text");
+			}
+			List<String> types = new ArrayList<>();
+			content.forEach(node -> types.add(node.path("type").asText()));
+			return types;
+		}
+		catch (Exception ex) {
+			throw new IllegalStateException(ex);
+		}
 	}
 
 	private static String filenameIn(String itemJson) {
