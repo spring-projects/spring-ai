@@ -146,7 +146,8 @@ class TypesenseFilterExpressionConverterTests {
 		assertThat(vectorExpr).isEqualTo("metadata.country: `BG`");
 	}
 
-	// Security tests - key injection prevention via character validation
+	// Key identifier validation — only alphanumeric, underscore, dot, and dash are
+	// allowed
 
 	@Test
 	void keyWithColonIsRejected() {
@@ -157,7 +158,7 @@ class TypesenseFilterExpressionConverterTests {
 	}
 
 	@Test
-	void keyWithOperatorInjectionIsRejected() {
+	void keyWithDisallowedCharactersIsRejected() {
 		assertThatThrownBy(() -> this.converter
 			.convertExpression(new Expression(EQ, new Key("country:BG && metadata.secret"), new Value("v"))))
 			.isInstanceOf(IllegalArgumentException.class)

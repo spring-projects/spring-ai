@@ -67,7 +67,7 @@ public class TypesenseFilterExpressionConverter extends AbstractFilterExpression
 		var identifier = (hasOuterQuotes(key.key())) ? removeOuterQuotes(key.key()) : key.key();
 		// Typesense field names are bare identifiers in filter_by syntax
 		// (field_name:value) with no escaping mechanism. Validate that the
-		// identifier contains only safe characters to prevent filter injection.
+		// identifier contains only safe characters (alphanumeric, underscore, dot, dash).
 		for (int i = 0; i < identifier.length(); i++) {
 			char c = identifier.charAt(i);
 			if (!Character.isLetterOrDigit(c) && c != '_' && c != '.' && c != '-') {
