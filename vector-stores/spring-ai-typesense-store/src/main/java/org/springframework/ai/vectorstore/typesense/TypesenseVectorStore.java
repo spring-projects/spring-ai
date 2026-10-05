@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -173,13 +174,21 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 
 	@Override
 	public void doDelete(List<String> idList) {
+		Assert.notNull(idList, "Document id list must not be null");
 		DeleteDocumentsParameters deleteDocumentsParameters = new DeleteDocumentsParameters();
-		// Typesense filter_by for the id field expects bare string values, not quoted
-		// literals — e.g. id: [id1,id2]. Typesense document IDs are restricted to
-		// URL-safe characters (no commas, brackets, or quotes), so raw string joining
-		// is safe here. The operator is `: ` (not `:=`) per the Typesense recommendation
-		// for multi-value id filters.
-		deleteDocumentsParameters.filterBy(DOC_ID_FIELD_NAME + ": [" + String.join(",", idList) + "]");
+		// Each ID is validated and joined into the id: [...] filter_by expression.
+		// The Typesense built-in id field only accepts bare (unquoted) values in that
+		// list form. Only characters explicitly known to be safe are permitted; see
+		// validateIdForFilter for the allowlist and its rationale. An ID that contains
+		// a character outside the allowlist — including leading or trailing whitespace —
+		// is rejected with IllegalArgumentException rather than silently trimmed or
+		// escaped, because the filter_by grammar is not fully documented and any
+		// character that looks harmless today may gain syntactic meaning in a future
+		// version.
+		String joinedIds = idList.stream()
+			.map(TypesenseVectorStore::validateIdForFilter)
+			.collect(Collectors.joining(","));
+		deleteDocumentsParameters.filterBy(DOC_ID_FIELD_NAME + ": [" + joinedIds + "]");
 
 		try {
 			int deletedDocs = (Integer) this.client.collections(this.collectionName)
@@ -194,6 +203,48 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 		catch (Exception e) {
 			logger.error("Failed to delete documents", e);
 		}
+	}
+
+	/**
+	 * Validates a document ID for safe use in a Typesense {@code filter_by} expression.
+	 * <p>
+	 * The built-in {@code id} field accepts bare (unquoted) values inside the
+	 * {@code id: [...]} list form. Although Typesense also supports backtick-quoted
+	 * string literals in filter expressions, an unbalanced backtick in an ID would
+	 * swallow the comma separators and alter the structure of the generated filter, so
+	 * backticks are not used here. Instead, only characters whose safety is
+	 * well-established are permitted: letters, digits, hyphen ({@code -}), underscore
+	 * ({@code _}), dot ({@code .}), colon ({@code :}), forward slash ({@code /}), and
+	 * at-sign ({@code @}).
+	 * <p>
+	 * Characters such as {@code !}, {@code =}, {@code <}, and {@code >} are rejected
+	 * conservatively because the full Typesense filter_by grammar is not publicly
+	 * documented, and a character that is harmless in the current version may gain
+	 * syntactic meaning in a future one. An ID containing any character outside the
+	 * allowlist — including any whitespace — is rejected with an
+	 * {@link IllegalArgumentException} (fail-closed) rather than silently trimmed or
+	 * escaped.
+	 * <p>
+	 * Accepted characters cover common ID formats: UUID ({@code 550e8400-e29b-41d4-…}),
+	 * URN ({@code urn:example:id}), path-like ({@code path/to/resource}), and email-style
+	 * ({@code user@domain}). Base64-encoded IDs that use {@code +} or {@code /} as
+	 * padding characters are not accepted; use a URL-safe base64 alphabet (replacing
+	 * {@code +} with {@code -} and {@code /} with {@code _}) instead.
+	 * @param id the document ID to validate
+	 * @return the ID unchanged if every character is in the allowlist
+	 * @throws IllegalArgumentException if {@code id} contains a character outside the
+	 * allowlist
+	 */
+	static String validateIdForFilter(String id) {
+		for (int i = 0; i < id.length(); i++) {
+			char c = id.charAt(i);
+			if (!Character.isLetterOrDigit(c) && c != '-' && c != '_' && c != '.' && c != ':' && c != '/' && c != '@') {
+				throw new IllegalArgumentException(
+						"Document ID contains a character that is not allowed in a Typesense filter expression: '" + c
+								+ "' in id: " + id);
+			}
+		}
+		return id;
 	}
 
 	@Override
