@@ -552,10 +552,11 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 			// The final chunk keeps an empty text, as it always had, so a streamed chunk
 			// never reports a null text and chunk texts can be joined as before.
-			AssistantMessage.Builder<?> messageBuilder = AssistantMessage.builder().content("");
+			AssistantMessage.Builder<?> messageBuilder = AssistantMessage.builder();
 			streamingState.getCompletedToolCalls()
 				.forEach((index, toolCall) -> messageBuilder
 					.part(StreamingParts.complete(ToolCallPart.of(toolCall), index)));
+			messageBuilder.part(TextPart.of(""));
 			Generation generation = new Generation(messageBuilder.build(), metadata);
 
 			// Combine input tokens from message_start with output tokens from
