@@ -16,12 +16,16 @@
 
 package org.springframework.ai.transformers;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.Test;
@@ -114,6 +118,29 @@ public class ResourceCacheServiceTests {
 		assertThat(cachedResource1).isNotEqualTo(new DefaultResourceLoader().getResource(originalResourceUri1));
 		assertThat(this.tempDir.listFiles()).hasSize(1);
 		assertThat(this.tempDir.listFiles()[0].listFiles()).hasSize(1);
+	}
+
+	@Test
+	public void closesTheOriginalResourceInputStream() throws Exception {
+		var cache = new ResourceCacheService(this.tempDir);
+		AtomicBoolean closed = new AtomicBoolean();
+		var resource = new UrlResource(new URI("https://example.com/model.onnx")) {
+			@Override
+			public InputStream getInputStream() {
+				return new ByteArrayInputStream("content".getBytes(StandardCharsets.UTF_8)) {
+					@Override
+					public void close() throws IOException {
+						closed.set(true);
+						super.close();
+					}
+				};
+			}
+		};
+
+		var cachedResource = cache.getCachedResource(resource);
+
+		assertThat(cachedResource.getContentAsString(StandardCharsets.UTF_8)).isEqualTo("content");
+		assertThat(closed).isTrue();
 	}
 
 	@Test
