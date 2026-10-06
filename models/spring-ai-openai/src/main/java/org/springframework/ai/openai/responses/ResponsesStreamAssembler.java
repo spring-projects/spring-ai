@@ -235,14 +235,15 @@ final class ResponsesStreamAssembler {
 				this.reasoning.isEmpty() ? null : this.reasoning.toString(),
 				this.refusal.isEmpty() ? null : this.refusal.toString());
 
-		// An empty text rather than no part at all, so that a consumer of the raw flux
-		// never meets a null text on a chunk.
-		AssistantMessage.Builder<?> terminal = AssistantMessage.builder().content("");
+		AssistantMessage.Builder<?> terminal = AssistantMessage.builder();
 		if (noItemEvents) {
 			// The stream delivered no output_item.done events, so no part was ever
 			// emitted. Carry the whole transcript here instead, one part per index.
 			terminal.parts(indexedParts(items));
 		}
+		// An empty text rather than no part at all, so that a consumer of the raw flux
+		// never meets a null text on a chunk.
+		terminal.part(TextPart.of(""));
 
 		return new ChatResponse(List.of(new Generation(terminal.build(), generationMetadata)),
 				ResponsesItemMapper.toResponseMetadata(response, ResponsesItemMapper.toUsage(response)));

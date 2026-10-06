@@ -26,6 +26,7 @@ import org.springframework.ai.chat.messages.part.MediaPart;
 import org.springframework.ai.chat.messages.part.OpaquePayload;
 import org.springframework.ai.chat.messages.part.TextPart;
 import org.springframework.ai.chat.messages.part.ToolResultPart;
+import org.springframework.ai.chat.messages.part.UnknownPart;
 import org.springframework.ai.content.Media;
 import org.springframework.util.MimeTypeUtils;
 
@@ -125,13 +126,19 @@ class ToolResponseMessagePartsTests {
 	}
 
 	@Test
-	void explicitPartsComeBeforeLegacyResponses() {
+	void legacyResponsesReplaceExplicitResults() {
 		ToolResponseMessage message = ToolResponseMessage.builder()
 			.responses(List.of(TIME))
 			.result(ToolResultPart.of(WEATHER))
 			.build();
 
-		assertThat(message.getResponses()).containsExactly(WEATHER, TIME);
+		assertThat(message.getResponses()).containsExactly(TIME);
+	}
+
+	@Test
+	void nullResponsesAreRejected() {
+		assertThatThrownBy(() -> ToolResponseMessage.builder().responses(null).build())
+			.isInstanceOf(IllegalArgumentException.class);
 	}
 
 	@Test
@@ -174,6 +181,35 @@ class ToolResponseMessagePartsTests {
 
 		assertThat(copy).isEqualTo(original).isNotSameAs(original);
 		assertThat(copy.getResults()).containsExactly(withMedia);
+	}
+
+	@Test
+	void mutateResponsesReplacesTheResultsInPlace() {
+		UnknownPart unknown = new UnknownPart("provider", "server_tool_result", "{}", null, Map.of());
+		ToolResponseMessage original = ToolResponseMessage.builder()
+			.result(ToolResultPart.of(WEATHER))
+			.result(ToolResultPart.of(TIME))
+			.parts(List.of(unknown))
+			.metadata(Map.of("k", "v"))
+			.build();
+
+		ToolResponseMessage updated = original.mutate().responses(List.of(TIME)).build();
+
+		assertThat(updated.getParts()).containsExactly(ToolResultPart.of(TIME), unknown);
+		assertThat(updated.getResponses()).containsExactly(TIME);
+		assertThat(updated.getMetadata()).containsEntry("k", "v");
+		assertThat(original.getResponses()).containsExactly(WEATHER, TIME);
+	}
+
+	@Test
+	void mutateWithEmptyResponsesClearsTheResults() {
+		ToolResponseMessage original = ToolResponseMessage.builder().responses(List.of(WEATHER, TIME)).build();
+
+		ToolResponseMessage updated = original.mutate().responses(List.of()).build();
+
+		assertThat(updated.getResults()).isEmpty();
+		assertThat(updated.getResponses()).isEmpty();
+		assertThat(updated.getText()).isEmpty();
 	}
 
 	@Test
