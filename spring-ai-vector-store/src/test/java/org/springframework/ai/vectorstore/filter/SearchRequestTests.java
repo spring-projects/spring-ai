@@ -138,6 +138,61 @@ public class SearchRequestTests {
 
 	}
 
+	@Test
+	public void filterExpressionWithDotAndBackslashIsEscaped() {
+		var request = SearchRequest.builder()
+			.query("Test")
+			.filterExpression("file_name == 'clean.code.pdf' && path == 'C:\\docs\\files'")
+			.build();
+
+		var expression = request.getFilterExpression();
+
+		assertThat(expression.toString()).contains("clean\\.code\\.pdf");
+		assertThat(expression.toString()).contains("C:\\\\docs\\\\files");
+	}
+
+	@Test
+	public void filterExpressionWithMultipleLiteralsIsEscapedIndependently() {
+		var request = SearchRequest.builder()
+			.query("Test")
+			.filterExpression("file_name == 'a.b.c' && author == 'me.you'")
+			.build();
+
+		var expression = request.getFilterExpression();
+
+		assertThat(expression.toString()).contains("a\\.b\\.c");
+		assertThat(expression.toString()).contains("me\\.you");
+	}
+
+	@Test
+	public void filterExpressionWithVariousFileExtensionsIsEscaped() {
+		var request = SearchRequest.builder()
+			.query("Test")
+			.filterExpression(
+					"file_name == 'summary.epub' || file_name == 'lecture_notes.md' || file_name == 'slides.pptx'")
+			.build();
+
+		String expression = request.getFilterExpression().toString();
+
+		assertThat(expression).contains("summary\\.epub");
+		assertThat(expression).contains("lecture_notes\\.md");
+		assertThat(expression).contains("slides\\.pptx");
+	}
+
+	@Test
+	public void filterExpressionWithInListIsEscaped() {
+		var request = SearchRequest.builder()
+			.query("Test")
+			.filterExpression("file_name IN ['a.pdf', 'b.txt', 'final.report.docx']")
+			.build();
+
+		String expression = request.getFilterExpression().toString();
+
+		assertThat(expression).contains("a\\.pdf");
+		assertThat(expression).contains("b\\.txt");
+		assertThat(expression).contains("final\\.report\\.docx");
+	}
+
 	private void checkDefaults(SearchRequest request) {
 		assertThat(request.getFilterExpression()).isNull();
 		assertThat(request.getSimilarityThreshold()).isEqualTo(SearchRequest.SIMILARITY_THRESHOLD_ACCEPT_ALL);
