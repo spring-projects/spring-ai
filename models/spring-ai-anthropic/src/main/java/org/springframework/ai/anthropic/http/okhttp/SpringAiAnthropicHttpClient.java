@@ -100,10 +100,14 @@ public final class SpringAiAnthropicHttpClient implements HttpClient {
 
 	private final boolean ownsDispatcherExecutor;
 
-	private SpringAiAnthropicHttpClient(OkHttpClient okHttpClient, Backend backend, boolean ownsDispatcherExecutor) {
+	private final Timeout clientOptionsTimeout;
+
+	private SpringAiAnthropicHttpClient(OkHttpClient okHttpClient, Backend backend, boolean ownsDispatcherExecutor,
+			Timeout clientOptionsTimeout) {
 		this.okHttpClient = okHttpClient;
 		this.backend = backend;
 		this.ownsDispatcherExecutor = ownsDispatcherExecutor;
+		this.clientOptionsTimeout = clientOptionsTimeout;
 	}
 
 	public static Builder builder() {
@@ -190,8 +194,12 @@ public final class SpringAiAnthropicHttpClient implements HttpClient {
 	private Call newCall(HttpRequest request, RequestOptions requestOptions) {
 		OkHttpClient.Builder clientBuilder = this.okHttpClient.newBuilder();
 
+		// The SDK copies ClientOptions.timeout into every call's RequestOptions, so a
+		// non-null value here does not imply a per-request timeout. Merging overlays only
+		// the dimensions the caller set, so an unchanged value means "nothing requested":
+		// keep the client's own timeouts rather than discarding them.
 		Timeout perCallTimeout = requestOptions.getTimeout();
-		if (perCallTimeout != null) {
+		if (perCallTimeout != null && !perCallTimeout.equals(this.clientOptionsTimeout)) {
 			clientBuilder.connectTimeout(perCallTimeout.connect())
 				.readTimeout(perCallTimeout.read())
 				.writeTimeout(perCallTimeout.write())
@@ -455,6 +463,13 @@ public final class SpringAiAnthropicHttpClient implements HttpClient {
 
 		private Timeout timeout = Timeout.builder().build();
 
+		/**
+		 * The timeout the SDK reports in {@code RequestOptions} for every call unless the
+		 * caller overrides it per request; used to tell a real per-request timeout apart
+		 * from the value merely inherited from {@code ClientOptions}.
+		 */
+		private Timeout clientOptionsTimeout = Timeout.builder().build();
+
 		private @Nullable Proxy proxy;
 
 		private @Nullable Backend backend;
@@ -491,6 +506,19 @@ public final class SpringAiAnthropicHttpClient implements HttpClient {
 
 		public Builder timeout(Duration timeout) {
 			return timeout(Timeout.builder().request(timeout).build());
+		}
+
+		/**
+		 * Declares the timeout carried by the surrounding {@code ClientOptions}, so a
+		 * per-request timeout can be told apart from the one the SDK inherits on every
+		 * call. Populated automatically when the auto-configuration creates the client.
+		 * @param clientOptionsTimeout the timeout set on {@code ClientOptions}
+		 * @return this builder
+		 * @since 2.1.0
+		 */
+		public Builder clientOptionsTimeout(Timeout clientOptionsTimeout) {
+			this.clientOptionsTimeout = clientOptionsTimeout;
+			return this;
 		}
 
 		public Builder proxy(@Nullable Proxy proxy) {
@@ -659,7 +687,8 @@ public final class SpringAiAnthropicHttpClient implements HttpClient {
 				new OkHttpConnectionPoolMetrics(okClient.connectionPool(), this.meterTags).bindTo(this.meterRegistry);
 			}
 
-			return new SpringAiAnthropicHttpClient(okClient, resolvedBackend, ownsDispatcherExecutor);
+			return new SpringAiAnthropicHttpClient(okClient, resolvedBackend, ownsDispatcherExecutor,
+					this.clientOptionsTimeout);
 		}
 
 		// Replicates OkHttp's default dispatcher so wrapping for context propagation

@@ -28,6 +28,7 @@ import com.anthropic.client.AnthropicClientAsync;
 import com.anthropic.client.AnthropicClientAsyncImpl;
 import com.anthropic.client.AnthropicClientImpl;
 import com.anthropic.core.ClientOptions;
+import com.anthropic.core.Timeout;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Tag;
 import io.micrometer.observation.ObservationRegistry;
@@ -304,9 +305,11 @@ public final class AnthropicSetup {
 
 		AnthropicBackend backend = buildBackend(resolvedBaseUrl, resolvedApiKey);
 
+		Timeout clientOptionsTimeout = Timeout.builder().request(resolvedTimeout).build();
+
 		ClientOptions.Builder optsBuilder = ClientOptions.builder()
 			.baseUrl(resolvedBaseUrl)
-			.timeout(resolvedTimeout)
+			.timeout(clientOptionsTimeout)
 			.maxRetries(resolvedMaxRetries)
 			.putHeader("User-Agent", DEFAULT_USER_AGENT);
 		if (customHeaders != null) {
@@ -316,6 +319,7 @@ public final class AnthropicSetup {
 		SpringAiAnthropicHttpClient.Builder rawHttpBuilder = SpringAiAnthropicHttpClient.builder()
 			.backend(backend)
 			.timeout(resolvedTimeout)
+			.clientOptionsTimeout(clientOptionsTimeout)
 			.proxy(proxy)
 			.observationRegistry(observationRegistry)
 			.meterRegistry(meterRegistry)
