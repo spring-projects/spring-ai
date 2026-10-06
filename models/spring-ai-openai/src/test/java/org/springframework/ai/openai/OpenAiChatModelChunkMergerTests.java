@@ -115,40 +115,68 @@ class OpenAiChatModelChunkMergerTests {
 		assertThat(toolCalls.get(1).function().orElseThrow().arguments()).contains("{\"b\": 2}");
 	}
 
-	@Test
-	void chunkToChatCompletionRequiresToolCallId() {
-		ChatCompletionChunk chunk = chunk(FinishReason.TOOL_CALLS,
+	@Test // gh-6762
+	void chunkToChatCompletionToleratesMissingToolCallIdAfterMerge() {
+		// After merging streaming chunks, some OpenAI-compatible providers (e.g. vLLM,
+		// DeepSeek) send empty-string id/name on continuation deltas. The merged chunk
+		// may therefore have an empty id or name, which must not abort the stream.
+		ChatCompletionChunk nullIdChunk = chunk(FinishReason.TOOL_CALLS,
 				toolCallDelta(0, null, "get_weather", "{\"city\":\"Seoul\"}"));
 		ChatCompletionChunk blankIdChunk = chunk(FinishReason.TOOL_CALLS,
 				toolCallDelta(0, " ", "get_weather", "{\"city\":\"Seoul\"}"));
 
-		assertThatIllegalStateException().isThrownBy(() -> OpenAiChatModel.ChunkMerger.chunkToChatCompletion(chunk))
-			.withMessage("Tool call id is missing");
-		assertThatIllegalStateException()
-			.isThrownBy(() -> OpenAiChatModel.ChunkMerger.chunkToChatCompletion(blankIdChunk))
-			.withMessage("Tool call id is missing");
+		ChatCompletion completionNullId = OpenAiChatModel.ChunkMerger.chunkToChatCompletion(nullIdChunk);
+		assertThat(completionNullId.choices().get(0).message().toolCalls()).isPresent();
+		assertThat(completionNullId.choices().get(0).message().toolCalls().get().get(0).function().orElseThrow().id())
+			.isEmpty();
+
+		ChatCompletion completionBlankId = OpenAiChatModel.ChunkMerger.chunkToChatCompletion(blankIdChunk);
+		assertThat(completionBlankId.choices().get(0).message().toolCalls()).isPresent();
+		assertThat(completionBlankId.choices().get(0).message().toolCalls().get().get(0).function().orElseThrow().id())
+			.isEmpty();
 	}
 
-	@Test
-	void chunkToChatCompletionRequiresToolCallFunction() {
-		ChatCompletionChunk chunk = chunk(FinishReason.TOOL_CALLS, toolCallDeltaWithoutFunction(0, "call_1"));
-
-		assertThatIllegalStateException().isThrownBy(() -> OpenAiChatModel.ChunkMerger.chunkToChatCompletion(chunk))
-			.withMessage("Tool call function is missing");
-	}
-
-	@Test
-	void chunkToChatCompletionRequiresToolCallFunctionName() {
-		ChatCompletionChunk chunk = chunk(FinishReason.TOOL_CALLS,
+	@Test // gh-6762
+	void chunkToChatCompletionToleratesMissingToolCallFunctionNameAfterMerge() {
+		// Same rationale as above: empty name on continuation delta must not abort
+		// stream.
+		ChatCompletionChunk nullNameChunk = chunk(FinishReason.TOOL_CALLS,
 				toolCallDelta(0, "call_1", null, "{\"city\":\"Seoul\"}"));
 		ChatCompletionChunk blankNameChunk = chunk(FinishReason.TOOL_CALLS,
 				toolCallDelta(0, "call_1", " ", "{\"city\":\"Seoul\"}"));
 
+		ChatCompletion completionNullName = OpenAiChatModel.ChunkMerger.chunkToChatCompletion(nullNameChunk);
+		assertThat(completionNullName.choices().get(0).message().toolCalls()).isPresent();
+		ChatCompletionMessageFunctionToolCall tcNullName = completionNullName.choices()
+			.get(0)
+			.message()
+			.toolCalls()
+			.orElseThrow()
+			.get(0)
+			.function()
+			.orElseThrow();
+		assertThat(tcNullName.function().name()).isEmpty();
+
+		ChatCompletion completionBlankName = OpenAiChatModel.ChunkMerger.chunkToChatCompletion(blankNameChunk);
+		assertThat(completionBlankName.choices().get(0).message().toolCalls()).isPresent();
+		ChatCompletionMessageFunctionToolCall tcBlankName = completionBlankName.choices()
+			.get(0)
+			.message()
+			.toolCalls()
+			.orElseThrow()
+			.get(0)
+			.function()
+			.orElseThrow();
+		assertThat(tcBlankName.function().name()).isEmpty();
+	}
+
+	@Test
+	void chunkToChatCompletionRequiresToolCallFunction() {
+		// The function field is genuinely unrecoverable — there is no fallback value.
+		ChatCompletionChunk chunk = chunk(FinishReason.TOOL_CALLS, toolCallDeltaWithoutFunction(0, "call_1"));
+
 		assertThatIllegalStateException().isThrownBy(() -> OpenAiChatModel.ChunkMerger.chunkToChatCompletion(chunk))
-			.withMessage("Tool call function name is missing");
-		assertThatIllegalStateException()
-			.isThrownBy(() -> OpenAiChatModel.ChunkMerger.chunkToChatCompletion(blankNameChunk))
-			.withMessage("Tool call function name is missing");
+			.withMessage("Tool call function is missing");
 	}
 
 	@Test
