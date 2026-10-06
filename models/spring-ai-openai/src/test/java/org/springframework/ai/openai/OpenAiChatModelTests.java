@@ -58,6 +58,7 @@ import com.openai.services.blocking.chat.ChatCompletionService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
@@ -476,6 +477,50 @@ class OpenAiChatModelTests {
 			.convert(Map.class);
 		assertThat(firstExtraContent).containsEntry("google", Map.of("thought_signature", "signature-1"));
 		assertThat(secondExtraContent).containsEntry("google", Map.of("thought_signature", "signature-2"));
+	}
+
+	@ParameterizedTest
+	@NullAndEmptySource
+	@ValueSource(strings = " ")
+	void createRequestRejectsToolCallsWithoutId(String id) {
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+		AssistantMessage assistantMessage = AssistantMessage.builder()
+			.content("")
+			.toolCalls(List.of(new AssistantMessage.ToolCall(id, "function", "get_weather", "{}")))
+			.build();
+		Prompt prompt = new Prompt(List.of(assistantMessage), options);
+
+		for (boolean stream : List.of(false, true)) {
+			assertThatThrownBy(() -> chatModel.createRequest(prompt, stream))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessage("Tool call id must not be null or blank");
+		}
+	}
+
+	@ParameterizedTest
+	@NullAndEmptySource
+	@ValueSource(strings = " ")
+	void streamRejectsToolCallsWithoutId(String id) {
+		ChatCompletionChunk chunk = streamingChunk(delta -> {
+			var toolCall = ChatCompletionChunk.Choice.Delta.ToolCall.builder()
+				.index(0)
+				.function(ChatCompletionChunk.Choice.Delta.ToolCall.Function.builder()
+					.name("get_weather")
+					.arguments("{}")
+					.build());
+			if (id != null) {
+				toolCall.id(id);
+			}
+			delta.addToolCall(toolCall.build());
+		}, ChatCompletionChunk.Choice.FinishReason.TOOL_CALLS);
+
+		assertThatThrownBy(() -> streamResponses(List.of(chunk)).blockLast()).isInstanceOf(IllegalStateException.class)
+			.hasMessage("Tool call id is missing");
 	}
 
 	@SuppressWarnings("unchecked")
