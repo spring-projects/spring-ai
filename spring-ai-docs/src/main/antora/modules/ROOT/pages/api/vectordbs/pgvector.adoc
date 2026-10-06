@@ -153,11 +153,18 @@ You can use the following properties in your Spring Boot configuration to custom
 |`spring.ai.vectorstore.pgvector.table-name` | Vector store table name | `vector_store`
 |`spring.ai.vectorstore.pgvector.schema-validation` | Enables schema and table name validation to ensure they are valid and existing objects. | false
 |`spring.ai.vectorstore.pgvector.max-document-batch-size` | Maximum number of documents to process in a single batch. | 10000
+|`spring.ai.vectorstore.pgvector.content-field-name` | Name of the column that stores the document text. | `content`
+|`spring.ai.vectorstore.pgvector.metadata-field-name` | Name of the column that stores the document metadata. | `metadata`
+|`spring.ai.vectorstore.pgvector.embedding-field-name` | Name of the column that stores the embedding vector. | `embedding`
 
 |===
 
 TIP: If you configure a custom schema and/or table name, consider enabling schema validation by setting `spring.ai.vectorstore.pgvector.schema-validation=true`. 
 This ensures the correctness of the names and reduces the risk of SQL injection attacks.
+
+TIP: To use an existing table whose columns have different names, set `content-field-name`, `metadata-field-name` and `embedding-field-name`.
+The `id` column name cannot be changed.
+Column names are not quoted, so PostgreSQL treats them as lowercase, and columns created with quoted mixed-case names are not supported.
 
 == Metadata filtering
 
@@ -238,6 +245,9 @@ public VectorStore vectorStore(JdbcTemplate jdbcTemplate, EmbeddingModel embeddi
         .schemaName("public")                // Optional: defaults to "public"
         .vectorTableName("vector_store")     // Optional: defaults to "vector_store"
         .maxDocumentBatchSize(10000)         // Optional: defaults to 10000
+        .contentFieldName("content")       // Optional: defaults to "content"
+        .metadataFieldName("metadata")     // Optional: defaults to "metadata"
+        .embeddingFieldName("embedding")   // Optional: defaults to "embedding"
         .build();
 }
 ----

@@ -30,6 +30,7 @@ import org.postgresql.util.PGobject;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.vectorstore.EmbeddedDocument;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionTextParser;
@@ -101,6 +102,128 @@ public class PgVectorStoreTests {
 
 		assertThatIllegalArgumentException().isThrownBy(vectorStore::afterPropertiesSet);
 		verify(jdbcTemplate, never()).execute(anyString());
+	}
+
+	@Test
+	void invalidContentFieldNameIsRejectedBeforeAnySqlReachesTheDatabase() {
+		var jdbcTemplate = mock(JdbcTemplate.class);
+		var embeddingModel = mock(EmbeddingModel.class);
+
+		assertThatIllegalArgumentException().isThrownBy(() -> PgVectorStore.builder(jdbcTemplate, embeddingModel)
+			.contentFieldName("content; DROP TABLE users;")
+			.build());
+	}
+
+	@Test
+	void customColumnNamesAreUsedInUpsertAndSimilaritySearchSql() {
+		var jdbcTemplate = mock(JdbcTemplate.class);
+		var embeddingModel = mock(EmbeddingModel.class);
+		when(embeddingModel.dimensions()).thenReturn(3);
+		when(embeddingModel.embed(anyString())).thenReturn(new float[] { 0.1f, 0.2f, 0.3f });
+		when(jdbcTemplate.query(anyString(), ArgumentMatchers.<RowMapper<Document>>any(), any(), any(), any(), any()))
+			.thenReturn(List.of());
+
+		var store = PgVectorStore.builder(jdbcTemplate, embeddingModel)
+			.contentFieldName("body")
+			.metadataFieldName("meta")
+			.embeddingFieldName("vec")
+			.build();
+
+		store.doAdd(List.of(new Document("foo")));
+
+		var upsertSqlCaptor = ArgumentCaptor.forClass(String.class);
+		verify(jdbcTemplate).batchUpdate(upsertSqlCaptor.capture(), any(BatchPreparedStatementSetter.class));
+		assertThat(upsertSqlCaptor.getValue()).contains("body", "meta", "vec").doesNotContain("content", "embedding");
+
+		store.doSimilaritySearch(SearchRequest.builder().query("hello").topK(5).similarityThresholdAll().build());
+
+		var searchSqlCaptor = ArgumentCaptor.forClass(String.class);
+		verify(jdbcTemplate).query(searchSqlCaptor.capture(), ArgumentMatchers.<RowMapper<Document>>any(), any(), any(),
+				any(), any());
+		assertThat(searchSqlCaptor.getValue()).contains("vec").doesNotContain("embedding <");
+	}
+
+	@Test
+	void customMetadataColumnNameIsUsedInFilteredSimilaritySearch() {
+		var jdbcTemplate = mock(JdbcTemplate.class);
+		var embeddingModel = mock(EmbeddingModel.class);
+		when(embeddingModel.embed(anyString())).thenReturn(new float[] { 0.1f, 0.2f, 0.3f });
+		when(jdbcTemplate.query(anyString(), ArgumentMatchers.<RowMapper<Document>>any(), any(), any(), any(), any()))
+			.thenReturn(List.of());
+
+		var store = PgVectorStore.builder(jdbcTemplate, embeddingModel).metadataFieldName("meta").build();
+
+		store.doSimilaritySearch(SearchRequest.builder()
+			.query("hello")
+			.topK(5)
+			.similarityThresholdAll()
+			.filterExpression("author == 'jane'")
+			.build());
+
+		var sqlCaptor = ArgumentCaptor.forClass(String.class);
+		verify(jdbcTemplate).query(sqlCaptor.capture(), ArgumentMatchers.<RowMapper<Document>>any(), any(), any(),
+				any(), any());
+		assertThat(sqlCaptor.getValue()).contains("meta::jsonb @@").doesNotContain("metadata");
+	}
+
+	@Test
+	void upsertReadsVectorSizeFromCustomEmbeddingColumn() {
+		var jdbcTemplate = mock(JdbcTemplate.class);
+		var embeddingModel = mock(EmbeddingModel.class);
+		when(jdbcTemplate.queryForList(anyString(), eq(Integer.class), any(), any(), any())).thenReturn(List.of(3));
+
+		var store = PgVectorStore.builder(jdbcTemplate, embeddingModel).embeddingFieldName("Vec").build();
+
+		store.doUpsert(List.of(new EmbeddedDocument(new Document("foo"), new float[] { 0.1f, 0.2f, 0.3f })));
+
+		verify(jdbcTemplate).queryForList(anyString(), eq(Integer.class), eq("public"), eq("vector_store"), eq("vec"));
+		verify(jdbcTemplate).batchUpdate(anyString(), any(BatchPreparedStatementSetter.class));
+		verify(embeddingModel, never()).dimensions();
+	}
+
+	@Test
+	void customMetadataColumnNameIsUsedInDeleteByFilter() {
+		var jdbcTemplate = mock(JdbcTemplate.class);
+		var embeddingModel = mock(EmbeddingModel.class);
+		var store = PgVectorStore.builder(jdbcTemplate, embeddingModel).metadataFieldName("meta").build();
+
+		store.doDelete(
+				new Filter.Expression(Filter.ExpressionType.EQ, new Filter.Key("author"), new Filter.Value("jane")));
+
+		var sqlCaptor = ArgumentCaptor.forClass(String.class);
+		verify(jdbcTemplate).update(sqlCaptor.capture());
+		assertThat(sqlCaptor.getValue()).contains("meta::jsonb @@").doesNotContain("metadata");
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void rowMapperUsesCustomContentAndMetadataColumnNames() throws Exception {
+		var jdbcTemplate = mock(JdbcTemplate.class);
+		var embeddingModel = mock(EmbeddingModel.class);
+		ArgumentCaptor<RowMapper<Document>> rowMapperCaptor = ArgumentCaptor.forClass(RowMapper.class);
+		when(jdbcTemplate.query(anyString(), rowMapperCaptor.capture(), any(), any(), any(), any()))
+			.thenReturn(List.of());
+
+		var store = PgVectorStore.builder(jdbcTemplate, embeddingModel)
+			.contentFieldName("body")
+			.metadataFieldName("meta")
+			.build();
+		store.doSimilaritySearch(SearchRequest.builder().query("hello").topK(5).similarityThresholdAll().build());
+
+		var pgMetadata = new PGobject();
+		pgMetadata.setType("json");
+		pgMetadata.setValue("{\"author\": \"jane\"}");
+
+		var resultSet = mock(ResultSet.class);
+		when(resultSet.getString("id")).thenReturn("doc-1");
+		when(resultSet.getString("body")).thenReturn("hello world");
+		when(resultSet.getObject("meta", PGobject.class)).thenReturn(pgMetadata);
+		when(resultSet.getFloat("distance")).thenReturn(0.42f);
+
+		Document document = rowMapperCaptor.getValue().mapRow(resultSet, 0);
+
+		assertThat(document.getText()).isEqualTo("hello world");
+		assertThat(document.getMetadata()).containsEntry("author", "jane");
 	}
 
 	@Test

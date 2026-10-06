@@ -69,10 +69,11 @@ public class PgVectorSchemaValidatorIT {
 					embedding vector(1024)
 				)
 				""");
-		assertThatNoException()
-			.isThrownBy(() -> this.schemaValidator.validateTableSchema("public", "vector_store", 1024));
+		assertThatNoException().isThrownBy(() -> this.schemaValidator.validateTableSchema("public", "vector_store",
+				1024, "content", "metadata", "embedding"));
 		assertThatIllegalStateException()
-			.isThrownBy(() -> this.schemaValidator.validateTableSchema("public", "vector_store", 2048))
+			.isThrownBy(() -> this.schemaValidator.validateTableSchema("public", "vector_store", 2048, "content",
+					"metadata", "embedding"))
 			.withMessageContaining("1024");
 
 	}
