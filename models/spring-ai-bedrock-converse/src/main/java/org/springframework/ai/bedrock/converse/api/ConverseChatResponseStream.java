@@ -16,7 +16,10 @@
 
 package org.springframework.ai.bedrock.converse.api;
 
+import java.io.ByteArrayOutputStream;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -33,13 +36,21 @@ import software.amazon.awssdk.services.bedrockruntime.model.ContentBlockDelta;
 import software.amazon.awssdk.services.bedrockruntime.model.ContentBlockDeltaEvent;
 import software.amazon.awssdk.services.bedrockruntime.model.ContentBlockStart;
 import software.amazon.awssdk.services.bedrockruntime.model.ContentBlockStartEvent;
+import software.amazon.awssdk.services.bedrockruntime.model.ContentBlockStopEvent;
 import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamMetadataEvent;
 import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamRequest;
 import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamResponseHandler;
 import software.amazon.awssdk.services.bedrockruntime.model.MessageStopEvent;
+import software.amazon.awssdk.services.bedrockruntime.model.ReasoningContentBlockDelta;
 import software.amazon.awssdk.services.bedrockruntime.model.TokenUsage;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.part.MessagePart;
+import org.springframework.ai.chat.messages.part.OpaquePayload;
+import org.springframework.ai.chat.messages.part.ReasoningPart;
+import org.springframework.ai.chat.messages.part.StreamingParts;
+import org.springframework.ai.chat.messages.part.TextPart;
+import org.springframework.ai.chat.messages.part.ToolCallPart;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
@@ -51,8 +62,18 @@ import org.springframework.util.Assert;
 /**
  * Sends a {@link ConverseStreamRequest} to Bedrock and returns {@link ChatResponse}
  * stream.
+ * <p>
+ * Every chunk carries one {@link MessagePart} stamped with the Converse content block
+ * index it belongs to (see {@link StreamingParts}), so that
+ * {@link org.springframework.ai.chat.model.MessageAggregator} can rebuild the parts of
+ * the response in block order. Text and reasoning text deltas are partial parts, and the
+ * signature that closes a reasoning block is a partial {@link ReasoningPart} with an
+ * empty text and the payload. Redacted reasoning is buffered and emitted as one complete
+ * part once its block stops. Tool use input is buffered too, and the complete tool calls
+ * are emitted on the final chunk, as before.
  *
  * @author Jared Rufer
+ * @author Dimitar Proynov
  * @since 1.1.0
  */
 public class ConverseChatResponseStream implements ConverseStreamResponseHandler.Visitor {
@@ -61,6 +82,13 @@ public class ConverseChatResponseStream implements ConverseStreamResponseHandler
 
 	public static final Sinks.EmitFailureHandler DEFAULT_EMIT_FAILURE_HANDLER = Sinks.EmitFailureHandler
 		.busyLooping(Duration.ofSeconds(10));
+
+	/**
+	 * Set on every reasoning delta: a block's signature, if any, only arrives after its
+	 * text, so an unsigned block can only be told apart from foreign reasoning this way.
+	 */
+	private static final Map<String, String> BEDROCK_ATTRIBUTES = Map.of(ConverseApiUtils.PROVIDER_ATTRIBUTE,
+			ConverseApiUtils.BEDROCK_PROVIDER);
 
 	private final AtomicReference<String> requestIdRef = new AtomicReference<>("Unknown");
 
@@ -75,6 +103,8 @@ public class ConverseChatResponseStream implements ConverseStreamResponseHandler
 	private final AtomicReference<String> stopReason = new AtomicReference<>();
 
 	private final Map<Integer, StreamingToolCallBuilder> toolUseMap = new ConcurrentHashMap<>();
+
+	private final Map<Integer, ByteArrayOutputStream> redactedContentMap = new ConcurrentHashMap<>();
 
 	private final Sinks.Many<ChatResponse> eventSink = Sinks.many().multicast().onBackpressureBuffer();
 
@@ -117,7 +147,44 @@ public class ConverseChatResponseStream implements ConverseStreamResponseHandler
 			toolCallBuilder.delta(event.delta().toolUse().input());
 		}
 		else if (ContentBlockDelta.Type.TEXT.equals(event.delta().type())) {
-			this.emitChatResponse(new Generation(AssistantMessage.builder().content(event.delta().text()).build()));
+			this.emitPart(StreamingParts.partial(TextPart.of(event.delta().text()), event.contentBlockIndex()));
+		}
+		else if (ContentBlockDelta.Type.REASONING_CONTENT.equals(event.delta().type())) {
+			this.acceptReasoningDelta(event.contentBlockIndex(), event.delta().reasoningContent());
+		}
+	}
+
+	/**
+	 * A reasoning delta carries either a piece of the reasoning text, the signature that
+	 * closes a signed block, or redacted content.
+	 */
+	private void acceptReasoningDelta(int index, ReasoningContentBlockDelta delta) {
+		if (delta.text() != null) {
+			this.emitPart(
+					StreamingParts.partial(new ReasoningPart(delta.text(), null, null, BEDROCK_ATTRIBUTES), index));
+		}
+		else if (delta.signature() != null) {
+			// An empty text so that a block streamed without any text delta still
+			// aggregates to a replayable part.
+			ReasoningPart signaturePart = new ReasoningPart("", null,
+					new OpaquePayload(ConverseApiUtils.BEDROCK_PROVIDER, ConverseApiUtils.PAYLOAD_SIGNATURE,
+							delta.signature()),
+					BEDROCK_ATTRIBUTES);
+			this.emitPart(StreamingParts.partial(signaturePart, index));
+		}
+		else if (delta.redactedContent() != null) {
+			// The aggregator replaces a payload rather than appending to it, so the bytes
+			// are buffered until the block stops.
+			this.redactedContentMap.computeIfAbsent(index, key -> new ByteArrayOutputStream())
+				.writeBytes(delta.redactedContent().asByteArray());
+		}
+	}
+
+	@Override
+	public void visitContentBlockStop(ContentBlockStopEvent event) {
+		ByteArrayOutputStream redactedContent = this.redactedContentMap.remove(event.contentBlockIndex());
+		if (redactedContent != null) {
+			this.emitPart(StreamingParts.complete(redactedReasoningPart(redactedContent), event.contentBlockIndex()));
 		}
 	}
 
@@ -137,20 +204,37 @@ public class ConverseChatResponseStream implements ConverseStreamResponseHandler
 			.finishReason(this.stopReason.get())
 			.build();
 
-		List<AssistantMessage.ToolCall> toolCalls = this.toolUseMap.entrySet()
+		// The complete tool calls, and any redacted reasoning whose block never stopped,
+		// as complete parts at their block index. The final chunk keeps an empty text, as
+		// it always had, so that a streamed chunk never reports a null text.
+		List<MessagePart> parts = new ArrayList<>();
+		this.redactedContentMap.entrySet()
 			.stream()
 			.sorted(Map.Entry.comparingByKey())
-			.map(Map.Entry::getValue)
-			.map(StreamingToolCallBuilder::build)
-			.toList();
+			.forEach(entry -> parts
+				.add(StreamingParts.complete(redactedReasoningPart(entry.getValue()), entry.getKey())));
+		this.redactedContentMap.clear();
+		this.toolUseMap.entrySet()
+			.stream()
+			.sorted(Map.Entry.comparingByKey())
+			.forEach(entry -> parts
+				.add(StreamingParts.complete(ToolCallPart.of(entry.getValue().build()), entry.getKey())));
+		// Appended rather than set through content(""), which would place the text
+		// before the tool calls.
+		parts.add(TextPart.of(""));
 
-		if (!toolCalls.isEmpty()) {
-			this.emitChatResponse(new Generation(AssistantMessage.builder().content("").toolCalls(toolCalls).build(),
-					generationMetadata));
-		}
-		else {
-			this.emitChatResponse(new Generation(AssistantMessage.builder().content("").build(), generationMetadata));
-		}
+		this.emitChatResponse(new Generation(AssistantMessage.builder().parts(parts).build(), generationMetadata));
+	}
+
+	private static ReasoningPart redactedReasoningPart(ByteArrayOutputStream redactedContent) {
+		return new ReasoningPart(null, null,
+				new OpaquePayload(ConverseApiUtils.BEDROCK_PROVIDER, ConverseApiUtils.PAYLOAD_REDACTED_CONTENT,
+						Base64.getEncoder().encodeToString(redactedContent.toByteArray())),
+				BEDROCK_ATTRIBUTES);
+	}
+
+	private void emitPart(MessagePart part) {
+		this.emitChatResponse(new Generation(AssistantMessage.builder().part(part).build()));
 	}
 
 	private void mergeNativeTokenUsage(TokenUsage tokenUsage) {

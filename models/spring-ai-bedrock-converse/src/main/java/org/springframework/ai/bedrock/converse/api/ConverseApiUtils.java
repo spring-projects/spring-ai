@@ -37,6 +37,41 @@ import software.amazon.awssdk.core.document.Document;
  */
 public final class ConverseApiUtils {
 
+	/**
+	 * The {@link org.springframework.ai.chat.messages.part.OpaquePayload#provider()} of
+	 * parts produced by the Bedrock Converse chat model.
+	 * @since 2.1.0
+	 */
+	public static final String BEDROCK_PROVIDER = "bedrock";
+
+	/**
+	 * The {@link org.springframework.ai.chat.messages.part.OpaquePayload#kind()} of a
+	 * signed reasoning block; the payload data is the signature of the reasoning text,
+	 * replayed unmodified.
+	 * @since 2.1.0
+	 */
+	public static final String PAYLOAD_SIGNATURE = "signature";
+
+	/**
+	 * The {@link org.springframework.ai.chat.messages.part.OpaquePayload#kind()} of a
+	 * redacted reasoning block, whose reasoning Bedrock withheld: the reasoning part has
+	 * no text and the payload data is the Base64 encoded redacted content, replayed
+	 * unmodified.
+	 * @since 2.1.0
+	 */
+	public static final String PAYLOAD_REDACTED_CONTENT = "redacted_content";
+
+	/**
+	 * The {@link org.springframework.ai.chat.messages.part.MessagePart#attributes()
+	 * attribute} naming the provider that produced a reasoning part. The Bedrock Converse
+	 * chat model sets it to {@link #BEDROCK_PROVIDER} on every reasoning part it
+	 * produces, so that reasoning Bedrock returned without a signature, which has no
+	 * payload to identify it, is still replayed to Bedrock and never mistaken for
+	 * reasoning produced by another provider.
+	 * @since 2.1.0
+	 */
+	public static final String PROVIDER_ATTRIBUTE = "provider";
+
 	private ConverseApiUtils() {
 	}
 
