@@ -25,6 +25,7 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
@@ -60,6 +61,8 @@ import software.amazon.awssdk.services.bedrockruntime.model.Message;
 import software.amazon.awssdk.services.bedrockruntime.model.OutputConfig;
 import software.amazon.awssdk.services.bedrockruntime.model.OutputFormat;
 import software.amazon.awssdk.services.bedrockruntime.model.OutputFormatStructure;
+import software.amazon.awssdk.services.bedrockruntime.model.ReasoningContentBlock;
+import software.amazon.awssdk.services.bedrockruntime.model.ReasoningTextBlock;
 import software.amazon.awssdk.services.bedrockruntime.model.S3Location;
 import software.amazon.awssdk.services.bedrockruntime.model.SystemContentBlock;
 import software.amazon.awssdk.services.bedrockruntime.model.TokenUsage;
@@ -85,6 +88,15 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.messages.part.MediaPart;
+import org.springframework.ai.chat.messages.part.MessagePart;
+import org.springframework.ai.chat.messages.part.OpaquePayload;
+import org.springframework.ai.chat.messages.part.ReasoningPart;
+import org.springframework.ai.chat.messages.part.StreamingParts;
+import org.springframework.ai.chat.messages.part.TextPart;
+import org.springframework.ai.chat.messages.part.ToolCallPart;
+import org.springframework.ai.chat.messages.part.ToolResultPart;
+import org.springframework.ai.chat.messages.part.UnknownPart;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
@@ -138,6 +150,7 @@ import org.springframework.web.client.RestClientException;
  * @author Thomas Vitale
  * @author Sebastien Deleuze
  * @author Jewoo Shin
+ * @author Dimitar Proynov
  * @since 1.0.0
  */
 public class BedrockProxyChatModel implements ChatModel {
@@ -302,22 +315,8 @@ public class BedrockProxyChatModel implements ChatModel {
 
 			if (message.getMessageType() == MessageType.USER) {
 				List<ContentBlock> contents = new ArrayList<>();
-				if (message instanceof UserMessage) {
-					var userMessage = (UserMessage) message;
-					// The Converse API rejects empty text content blocks, so only send
-					// the text when there is any. A user message may legitimately carry
-					// media only (gh-6695).
-					if (StringUtils.hasText(userMessage.getText())) {
-						contents.add(ContentBlock.fromText(userMessage.getText()));
-					}
-
-					if (!CollectionUtils.isEmpty(userMessage.getMedia())) {
-						List<ContentBlock> mediaContent = userMessage.getMedia()
-							.stream()
-							.map(this::mapMediaToContentBlock)
-							.toList();
-						contents.addAll(mediaContent);
-					}
+				if (message instanceof UserMessage userMessage) {
+					contents.addAll(toUserContentBlocks(userMessage));
 				}
 
 				// Apply cache point if this is the last user message
@@ -329,37 +328,10 @@ public class BedrockProxyChatModel implements ChatModel {
 				instructionMessages.add(Message.builder().content(contents).role(ConversationRole.USER).build());
 			}
 			else if (message.getMessageType() == MessageType.ASSISTANT) {
-				AssistantMessage assistantMessage = (AssistantMessage) message;
-				List<ContentBlock> contentBlocks = new ArrayList<>();
-				if (StringUtils.hasText(message.getText())) {
-					contentBlocks.add(ContentBlock.fromText(message.getText()));
-				}
-				// Replay the signed Bedrock reasoning blocks, unmodified, before the
-				// tool-use blocks. Bedrock validates that reasoning comes before its
-				// tool use when the matching tool result is sent back (gh-6413).
-				if (assistantMessage instanceof BedrockAssistantMessage bedrockAssistantMessage
-						&& bedrockAssistantMessage.hasReasoningContents()) {
-					for (BedrockReasoningContent reasoningContent : bedrockAssistantMessage.getReasoningContents()) {
-						contentBlocks.add(reasoningContent.toContentBlock());
-					}
-				}
-				if (!CollectionUtils.isEmpty(assistantMessage.getToolCalls())) {
-					for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
-
-						var argumentsDocument = ConverseApiUtils
-							.convertObjectToDocument(jsonHelper.fromJsonToMap(toolCall.arguments()));
-
-						contentBlocks.add(ContentBlock.fromToolUse(ToolUseBlock.builder()
-							.toolUseId(toolCall.id())
-							.name(toolCall.name())
-							.input(argumentsDocument)
-							.build()));
-
-					}
-				}
-
-				instructionMessages
-					.add(Message.builder().content(contentBlocks).role(ConversationRole.ASSISTANT).build());
+				instructionMessages.add(Message.builder()
+					.content(toAssistantContentBlocks((AssistantMessage) message))
+					.role(ConversationRole.ASSISTANT)
+					.build());
 			}
 			else if (message.getMessageType() == MessageType.TOOL) {
 				List<ContentBlock> contentBlocks = new ArrayList<>(
@@ -629,6 +601,190 @@ public class BedrockProxyChatModel implements ChatModel {
 	}
 
 	/**
+	 * Converts a user message to Converse content blocks in part order, so text and media
+	 * interleave as the message was built; a message built with {@code text(...)} and
+	 * {@code media(...)} keeps its text before its media. The Converse API rejects empty
+	 * text blocks, so a blank text part is skipped and a user message may carry media
+	 * only (gh-6695). Any other part has no user content block and is skipped.
+	 * @param userMessage the message to convert
+	 * @return the content blocks
+	 */
+	private List<ContentBlock> toUserContentBlocks(UserMessage userMessage) {
+		List<ContentBlock> contents = new ArrayList<>();
+		for (MessagePart part : userMessage.getParts()) {
+			if (part instanceof TextPart textPart) {
+				if (StringUtils.hasText(textPart.text())) {
+					contents.add(ContentBlock.fromText(textPart.text()));
+				}
+			}
+			else if (part instanceof MediaPart mediaPart) {
+				contents.add(mapMediaToContentBlock(mediaPart.media()));
+			}
+			else if (logger.isDebugEnabled()) {
+				logger.debug("Skipping user message part " + part.getClass().getSimpleName() + " on replay to Bedrock");
+			}
+		}
+		return contents;
+	}
+
+	/**
+	 * Converts an assistant message to Converse content blocks in part order. Bedrock
+	 * validates that a signed reasoning block is replayed, unmodified, before the tool
+	 * use it led to when the matching tool result is sent back (gh-6413), which the part
+	 * order preserves. Reasoning is replayed only when Bedrock produced it, as its
+	 * payload or {@link StreamingParts#PROVIDER_ATTRIBUTE} says: Bedrock rejects
+	 * reasoning it cannot verify, so reasoning produced by another provider is skipped,
+	 * and so are media and unknown parts.
+	 * @param assistantMessage the message to convert
+	 * @return the content blocks
+	 */
+	private List<ContentBlock> toAssistantContentBlocks(AssistantMessage assistantMessage) {
+		List<ContentBlock> contentBlocks = new ArrayList<>();
+		for (MessagePart part : assistantMessage.getParts()) {
+			if (part instanceof TextPart textPart) {
+				// A tool use turn ends with an empty text part, which has no block.
+				if (StringUtils.hasText(textPart.text())) {
+					contentBlocks.add(ContentBlock.fromText(textPart.text()));
+				}
+			}
+			else if (part instanceof ReasoningPart reasoningPart) {
+				ContentBlock reasoningBlock = toReasoningContentBlock(reasoningPart);
+				if (reasoningBlock != null) {
+					contentBlocks.add(reasoningBlock);
+				}
+				else if (logger.isDebugEnabled()) {
+					OpaquePayload payload = reasoningPart.payload();
+					logger.debug("Skipping reasoning part from provider "
+							+ (payload != null ? payload.provider() : "none") + " on replay to Bedrock");
+				}
+			}
+			else if (part instanceof ToolCallPart toolCallPart) {
+				AssistantMessage.ToolCall toolCall = toolCallPart.toolCall();
+				var argumentsDocument = ConverseApiUtils
+					.convertObjectToDocument(jsonHelper.fromJsonToMap(toolCall.arguments()));
+				contentBlocks.add(ContentBlock.fromToolUse(ToolUseBlock.builder()
+					.toolUseId(toolCall.id())
+					.name(toolCall.name())
+					.input(argumentsDocument)
+					.build()));
+			}
+			else if (part instanceof MediaPart || part instanceof UnknownPart) {
+				// This model produces neither on an assistant turn, so they come from
+				// another provider and are not replayed.
+				if (logger.isDebugEnabled()) {
+					logger.debug("Skipping assistant message part " + part.getClass().getSimpleName()
+							+ " on replay to Bedrock");
+				}
+			}
+			else if (part instanceof ToolResultPart) {
+				throw new IllegalArgumentException(
+						"Tool results belong in a tool response message, not in an assistant message");
+			}
+			else {
+				throw new IllegalStateException("Unhandled message part type " + part.getClass().getName());
+			}
+		}
+		return contentBlocks;
+	}
+
+	/**
+	 * Rebuilds the {@code reasoningContent} block a Bedrock reasoning part was mapped
+	 * from. The payload kind decides the union member: it says whether the payload data
+	 * is the signature of the reasoning text or the redacted content. A part without a
+	 * payload is reasoning Bedrock returned unsigned, and is replayed as such only when
+	 * its {@link StreamingParts#PROVIDER_ATTRIBUTE} says Bedrock produced it.
+	 * @param reasoningPart the part to convert
+	 * @return the content block, or {@code null} when the part was not produced by
+	 * Bedrock
+	 */
+	private static @Nullable ContentBlock toReasoningContentBlock(ReasoningPart reasoningPart) {
+		OpaquePayload payload = reasoningPart.payload();
+		if (payload == null) {
+			String text = reasoningPart.text();
+			if (!ConverseApiUtils.BEDROCK_PROVIDER
+				.equals(reasoningPart.attributes().get(StreamingParts.PROVIDER_ATTRIBUTE)) || text == null) {
+				return null;
+			}
+			return ContentBlock.fromReasoningContent(ReasoningContentBlock.builder()
+				.reasoningText(ReasoningTextBlock.builder().text(text).build())
+				.build());
+		}
+		if (!reasoningPart.replayableTo(ConverseApiUtils.BEDROCK_PROVIDER)) {
+			return null;
+		}
+		ReasoningContentBlock.Builder contentBlockBuilder = ReasoningContentBlock.builder();
+		if (ConverseApiUtils.PAYLOAD_REDACTED_CONTENT.equals(payload.kind())) {
+			contentBlockBuilder.redactedContent(SdkBytes.fromByteArray(Base64.getDecoder().decode(payload.data())));
+		}
+		else if (ConverseApiUtils.PAYLOAD_SIGNATURE.equals(payload.kind())) {
+			contentBlockBuilder.reasoningText(ReasoningTextBlock.builder()
+				.text(Objects.requireNonNullElse(reasoningPart.text(), ""))
+				.signature(payload.data())
+				.build());
+		}
+		else {
+			return null;
+		}
+		return ContentBlock.fromReasoningContent(contentBlockBuilder.build());
+	}
+
+	/**
+	 * Maps every content block of a Converse response message to one {@link MessagePart},
+	 * in block order: text becomes a {@link TextPart}, tool use a {@link ToolCallPart},
+	 * and reasoning a {@link ReasoningPart} marked with
+	 * {@link StreamingParts#PROVIDER_ATTRIBUTE} and, when signed or redacted, carrying
+	 * the Bedrock payload it is replayed from. Other block types are not modeled and are
+	 * skipped.
+	 * @param message the response message
+	 * @return the parts
+	 */
+	private static List<MessagePart> toAssistantParts(Message message) {
+		List<MessagePart> parts = new ArrayList<>();
+		for (ContentBlock content : message.content()) {
+			if (content.type() == ContentBlock.Type.TEXT) {
+				parts.add(TextPart.of(content.text()));
+			}
+			else if (content.type() == ContentBlock.Type.TOOL_USE) {
+				ToolUseBlock toolUse = content.toolUse();
+				// Serialize the tool input as JSON. Document.toString() is not a JSON
+				// serializer: it leaves control characters (e.g. newlines) unescaped,
+				// breaking strict JSON parsing of the arguments downstream.
+				String arguments = jsonHelper.toJson(ConverseApiUtils.convertDocumentToObject(toolUse.input()));
+				parts.add(ToolCallPart
+					.of(new AssistantMessage.ToolCall(toolUse.toolUseId(), "function", toolUse.name(), arguments)));
+			}
+			else if (content.type() == ContentBlock.Type.REASONING_CONTENT) {
+				parts.add(toReasoningPart(content.reasoningContent()));
+			}
+			else if (logger.isDebugEnabled()) {
+				logger.debug("Skipping Bedrock response content block of type " + content.type());
+			}
+		}
+		return parts;
+	}
+
+	private static ReasoningPart toReasoningPart(ReasoningContentBlock reasoningContent) {
+		Map<String, String> attributes = Map.of(StreamingParts.PROVIDER_ATTRIBUTE, ConverseApiUtils.BEDROCK_PROVIDER);
+		SdkBytes redactedContent = reasoningContent.redactedContent();
+		if (redactedContent != null) {
+			return new ReasoningPart(null, null,
+					new OpaquePayload(ConverseApiUtils.BEDROCK_PROVIDER, ConverseApiUtils.PAYLOAD_REDACTED_CONTENT,
+							Base64.getEncoder().encodeToString(redactedContent.asByteArray())),
+					attributes);
+		}
+		ReasoningTextBlock reasoningText = reasoningContent.reasoningText();
+		if (reasoningText != null) {
+			OpaquePayload payload = (reasoningText.signature() != null)
+					? new OpaquePayload(ConverseApiUtils.BEDROCK_PROVIDER, ConverseApiUtils.PAYLOAD_SIGNATURE,
+							reasoningText.signature())
+					: null;
+			return new ReasoningPart(reasoningText.text(), null, payload, attributes);
+		}
+		throw new IllegalStateException(
+				"Unexpected reasoningContent block: neither reasoningText nor redactedContent is set");
+	}
+
+	/**
 	 * Convert {@link ConverseResponse} to {@link ChatResponse} includes model output,
 	 * stopReason, usage, metrics etc.
 	 * https://docs.aws.amazon.com/bedrock/latest/APIReference/API_runtime_Converse.html#API_runtime_Converse_ResponseSyntax
@@ -641,86 +797,11 @@ public class BedrockProxyChatModel implements ChatModel {
 
 		Message message = response.output().message();
 
-		// Preserve Bedrock reasoning blocks (signed reasoning text or redacted content)
-		// so the tool-calling loop can replay them, unmodified, on the next request. See
-		// gh-6413.
-		List<BedrockReasoningContent> reasoningContents = message.content()
-			.stream()
-			.filter(content -> content.type() == ContentBlock.Type.REASONING_CONTENT)
-			.map(content -> BedrockReasoningContent.from(content.reasoningContent()))
-			.toList();
-
-		List<ContentBlock> toolUseContentBlocks = message.content()
-			.stream()
-			.filter(c -> c.type() == ContentBlock.Type.TOOL_USE)
-			.toList();
-		boolean hasToolUse = !CollectionUtils.isEmpty(toolUseContentBlocks);
-
-		// When the response carries reasoning but no tool use, surface the reasoning on
-		// the final-text assistant message without displacing the text returned by
-		// ChatResponse.getResult().
-		boolean attachReasoningToText = !hasToolUse && !CollectionUtils.isEmpty(reasoningContents);
-
-		List<Generation> generations = new ArrayList<>();
-		for (ContentBlock content : message.content()) {
-			if (content.type() == ContentBlock.Type.TOOL_USE || content.text() == null) {
-				continue;
-			}
-			AssistantMessage assistantMessage = (attachReasoningToText && generations.isEmpty())
-					? BedrockAssistantMessage.builder()
-						.content(content.text())
-						.properties(Map.of())
-						.reasoningContents(reasoningContents)
-						.build()
-					: AssistantMessage.builder().content(content.text()).properties(Map.of()).build();
-			generations.add(new Generation(assistantMessage,
+		List<Generation> allGenerations = new ArrayList<>();
+		List<MessagePart> parts = toAssistantParts(message);
+		if (!parts.isEmpty() || response.stopReasonAsString() != null) {
+			allGenerations.add(new Generation(AssistantMessage.builder().parts(parts).build(),
 					ChatGenerationMetadata.builder().finishReason(response.stopReasonAsString()).build()));
-		}
-
-		List<Generation> allGenerations = new ArrayList<>(generations);
-
-		if (response.stopReasonAsString() != null && generations.isEmpty()) {
-			AssistantMessage assistantMessage = attachReasoningToText ? BedrockAssistantMessage.builder()
-				.properties(Map.of())
-				.reasoningContents(reasoningContents)
-				.build() : AssistantMessage.builder().properties(Map.of()).build();
-			Generation generation = new Generation(assistantMessage,
-					ChatGenerationMetadata.builder().finishReason(response.stopReasonAsString()).build());
-			allGenerations.add(generation);
-		}
-
-		if (hasToolUse) {
-
-			List<AssistantMessage.ToolCall> toolCalls = new ArrayList<>();
-
-			for (ContentBlock toolUseContentBlock : toolUseContentBlocks) {
-
-				var functionCallId = toolUseContentBlock.toolUse().toolUseId();
-				var functionName = toolUseContentBlock.toolUse().name();
-				// Serialize the tool input as JSON. Document.toString() is not a JSON
-				// serializer: it leaves control characters (e.g. newlines) unescaped,
-				// breaking strict JSON parsing of the arguments downstream.
-				var functionArguments = jsonHelper
-					.toJson(ConverseApiUtils.convertDocumentToObject(toolUseContentBlock.toolUse().input()));
-
-				toolCalls
-					.add(new AssistantMessage.ToolCall(functionCallId, "function", functionName, functionArguments));
-			}
-
-			// Attach the signed reasoning to the same assistant turn as the tool calls so
-			// DefaultToolCallingManager carries it into the next request history
-			// (gh-6413).
-			AssistantMessage assistantMessage = CollectionUtils.isEmpty(reasoningContents)
-					? AssistantMessage.builder().content("").properties(Map.of()).toolCalls(toolCalls).build()
-					: BedrockAssistantMessage.builder()
-						.content("")
-						.properties(Map.of())
-						.toolCalls(toolCalls)
-						.reasoningContents(reasoningContents)
-						.build();
-			Generation toolCallGeneration = new Generation(assistantMessage,
-					ChatGenerationMetadata.builder().finishReason(response.stopReasonAsString()).build());
-			allGenerations.add(toolCallGeneration);
 		}
 
 		Integer promptTokens = response.usage().inputTokens();

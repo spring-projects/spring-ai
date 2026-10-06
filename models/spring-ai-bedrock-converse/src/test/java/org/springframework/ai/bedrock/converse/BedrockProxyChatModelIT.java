@@ -37,12 +37,17 @@ import reactor.core.publisher.Flux;
 
 import org.springframework.ai.bedrock.converse.api.BedrockCacheOptions;
 import org.springframework.ai.bedrock.converse.api.BedrockCacheStrategy;
+import org.springframework.ai.bedrock.converse.api.ConverseApiUtils;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.messages.part.MediaPart;
+import org.springframework.ai.chat.messages.part.ReasoningPart;
+import org.springframework.ai.chat.messages.part.StreamingParts;
+import org.springframework.ai.chat.messages.part.TextPart;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
@@ -114,6 +119,23 @@ class BedrockProxyChatModelIT {
 	}
 
 	@Test
+	void streamingWithTokenUsage() {
+		var promptOptions = BedrockChatOptions.builder().temperature(0.0).build();
+		BedrockChatOptions options = (BedrockChatOptions) this.chatModel.getOptions();
+		var mergedOptions = promptOptions.mutate().combineWith(options.mutate()).build();
+
+		var prompt = new Prompt("List two colors of the Polish flag. Be brief.", mergedOptions);
+		var streamingTokenUsage = this.chatModel.stream(prompt).blockLast().getMetadata().getUsage();
+
+		assertThat(streamingTokenUsage.getPromptTokens()).isGreaterThan(0);
+		assertThat(streamingTokenUsage.getCompletionTokens()).isGreaterThan(0);
+		assertThat(streamingTokenUsage.getTotalTokens()).isGreaterThan(0);
+		assertThat(streamingTokenUsage.getTotalTokens())
+			.isEqualTo(streamingTokenUsage.getPromptTokens() + streamingTokenUsage.getCompletionTokens());
+
+	}
+
+	@Test
 	@Disabled
 	void testMessageHistory() {
 		UserMessage userMessage = new UserMessage(
@@ -131,23 +153,6 @@ class BedrockProxyChatModelIT {
 		response = this.chatModel.call(promptWithMessageHistory);
 
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Blackbeard", "Bartholomew");
-	}
-
-	@Test
-	void streamingWithTokenUsage() {
-		var promptOptions = BedrockChatOptions.builder().temperature(0.0).build();
-		BedrockChatOptions options = (BedrockChatOptions) this.chatModel.getOptions();
-		var mergedOptions = promptOptions.mutate().combineWith(options.mutate()).build();
-
-		var prompt = new Prompt("List two colors of the Polish flag. Be brief.", mergedOptions);
-		var streamingTokenUsage = this.chatModel.stream(prompt).blockLast().getMetadata().getUsage();
-
-		assertThat(streamingTokenUsage.getPromptTokens()).isGreaterThan(0);
-		assertThat(streamingTokenUsage.getCompletionTokens()).isGreaterThan(0);
-		assertThat(streamingTokenUsage.getTotalTokens()).isGreaterThan(0);
-		assertThat(streamingTokenUsage.getTotalTokens())
-			.isEqualTo(streamingTokenUsage.getPromptTokens() + streamingTokenUsage.getCompletionTokens());
-
 	}
 
 	@Test
@@ -1017,6 +1022,135 @@ class BedrockProxyChatModelIT {
 		// Verify the response contains expected gpt-oss identification
 		assertThat(fullResponse.toLowerCase(Locale.ROOT)).as("gpt-oss model should identify itself")
 			.containsAnyOf("chatgpt", "gpt", "openai", "language model", "ai");
+	}
+
+	@Test
+	void reasoningIsReturnedAsSignedReasoningParts() {
+		ChatResponse response = this.chatModel
+			.call(new Prompt("Which number is larger: 9.11 or 9.8?", thinkingOptions()));
+
+		assertThat(response.getResults()).hasSize(1);
+		AssistantMessage output = response.getResult().getOutput();
+		assertThat(output.getReasoning()).isNotEmpty();
+		assertThat(output.getParts().get(0)).isInstanceOf(ReasoningPart.class);
+		assertThat(output.getReasoning()).allSatisfy(this::assertBedrockReasoning);
+		assertThat(output.getText()).contains("9.8");
+	}
+
+	@Test
+	void streamingReasoningAggregatesToSignedReasoningParts() {
+		AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
+		new MessageAggregator()
+			.aggregate(this.chatModel.stream(new Prompt("Which number is larger: 9.11 or 9.8?", thinkingOptions())),
+					aggregatedRef::set)
+			.collectList()
+			.block();
+
+		AssistantMessage aggregated = aggregatedRef.get().getResult().getOutput();
+		assertThat(aggregated.getReasoning()).isNotEmpty();
+		assertThat(aggregated.getParts().get(0)).isInstanceOf(ReasoningPart.class);
+		assertThat(aggregated.getReasoning()).allSatisfy(this::assertBedrockReasoning);
+		assertThat(aggregated.getText()).contains("9.8");
+	}
+
+	@Test
+	void streamFunctionCallWithReasoningReplaysTheReasoning() {
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
+
+		var promptOptions = thinkingOptions().mutate()
+			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.description("Get the weather in location. Return temperature in 36°F or 36°C format.")
+				.inputType(MockWeatherService.Request.class)
+				.build()))
+			.build();
+
+		var prompt = new Prompt(
+				"What's the weather like in San Francisco, Tokyo and Paris? Return the result in Celsius.",
+				promptOptions);
+
+		AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
+		new MessageAggregator().aggregate(this.chatModel.stream(prompt), aggregatedRef::set).collectList().block();
+
+		// Bedrock rejects the follow-up request unless the signed reasoning of the
+		// tool-use turn is replayed before its tool use.
+		assertThat(aggregatedRef.get().hasToolCalls()).isTrue();
+		assertThat(aggregatedRef.get().getResult().getOutput().getReasoning()).isNotEmpty()
+			.allSatisfy(this::assertBedrockReasoning);
+
+		while (aggregatedRef.get().hasToolCalls()) {
+			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, aggregatedRef.get());
+			prompt = new Prompt(toolExecutionResult.conversationHistory(), promptOptions);
+			aggregatedRef.set(null);
+			new MessageAggregator().aggregate(this.chatModel.stream(prompt), aggregatedRef::set).collectList().block();
+		}
+
+		assertThat(aggregatedRef.get().getResult().getOutput().getText()).contains("30", "10", "15");
+	}
+
+	@Test
+	void userMessagePartsInterleaveTextAndMedia() {
+		var userMessage = UserMessage.builder()
+			.part(TextPart.of("Here is a picture:"))
+			.part(MediaPart.of(new Media(MimeTypeUtils.IMAGE_PNG, new ClassPathResource("/test.png"))))
+			.part(TextPart.of("Explain what do you see on this picture?"))
+			.build();
+
+		var response = this.chatModel.call(new Prompt(List.of(userMessage)));
+
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("bananas", "apple", "bowl", "basket",
+				"fruit stand");
+	}
+
+	@Test
+	void gptOssFunctionCallReplaysTheUnsignedReasoning() {
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
+
+		var promptOptions = BedrockChatOptions.builder()
+			.model("openai.gpt-oss-120b-1:0")
+			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.description("Get the weather in location. Return temperature in 36°F or 36°C format.")
+				.inputType(MockWeatherService.Request.class)
+				.build()))
+			.build();
+
+		var prompt = new Prompt(
+				"What's the weather like in San Francisco, Tokyo and Paris? Return the result in Celsius.",
+				promptOptions);
+
+		ChatResponse response = this.chatModel.call(prompt);
+
+		// gpt-oss returns its reasoning without a signature; the follow-up request
+		// replays it unsigned, which Bedrock must accept.
+		assertThat(response.hasToolCalls()).isTrue();
+		assertThat(response.getResult().getOutput().getReasoning()).isNotEmpty().allSatisfy(reasoning -> {
+			assertThat(reasoning.payload()).isNull();
+			assertThat(reasoning.attributes()).containsEntry(StreamingParts.PROVIDER_ATTRIBUTE,
+					ConverseApiUtils.BEDROCK_PROVIDER);
+		});
+
+		while (response.hasToolCalls()) {
+			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, response);
+			prompt = new Prompt(toolExecutionResult.conversationHistory(), promptOptions);
+			response = this.chatModel.call(prompt);
+		}
+
+		assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
+	}
+
+	private static BedrockChatOptions thinkingOptions() {
+		return BedrockChatOptions.builder()
+			.model("us.anthropic.claude-haiku-4-5-20251001-v1:0")
+			.maxTokens(4096)
+			.requestParameters(Map.of("thinking", Map.of("type", "enabled", "budget_tokens", 1024)))
+			.build();
+	}
+
+	private void assertBedrockReasoning(ReasoningPart reasoning) {
+		assertThat(reasoning.payload()).isNotNull();
+		assertThat(reasoning.payload().provider()).isEqualTo(ConverseApiUtils.BEDROCK_PROVIDER);
+		assertThat(reasoning.payload().kind()).isIn(ConverseApiUtils.PAYLOAD_SIGNATURE,
+				ConverseApiUtils.PAYLOAD_REDACTED_CONTENT);
+		assertThat(reasoning.payload().data()).isNotEmpty();
 	}
 
 	record ActorsFilmsRecord(String actor, List<String> movies) {
