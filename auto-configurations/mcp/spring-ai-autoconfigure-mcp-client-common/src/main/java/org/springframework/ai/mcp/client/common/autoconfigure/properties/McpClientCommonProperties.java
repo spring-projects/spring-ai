@@ -184,12 +184,32 @@ public class McpClientCommonProperties {
 		 */
 		private boolean enabled = true;
 
+		/**
+		 * Time-to-live (TTL) for cached tool callbacks.
+		 * <p>
+		 * When set to a positive duration, the cached tools will be refreshed after the
+		 * specified duration has elapsed since the last cache update. This is useful when
+		 * working with stateless MCP servers that don't send tool change notifications.
+		 * <p>
+		 * By default, this is -1 second, meaning tools are cached indefinitely and only
+		 * refreshed when a tool change notification is received from the MCP server.
+		 */
+		private Duration cacheTtl = Duration.ofSeconds(-1);
+
 		public void setEnabled(boolean enabled) {
 			this.enabled = enabled;
 		}
 
 		public boolean isEnabled() {
 			return this.enabled;
+		}
+
+		public Duration getCacheTtl() {
+			return this.cacheTtl;
+		}
+
+		public void setCacheTtl(Duration cacheTtl) {
+			this.cacheTtl = cacheTtl;
 		}
 
 	}
