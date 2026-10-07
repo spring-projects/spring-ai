@@ -16,6 +16,8 @@
 
 package org.springframework.ai.model.chat.client.autoconfigure;
 
+import io.micrometer.context.ContextRegistry;
+import io.micrometer.context.ThreadLocalAccessor;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.client.ChatClient;
@@ -29,7 +31,9 @@ import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfigurat
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.boot.test.context.runner.WebApplicationContextRunner;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.web.context.request.RequestAttributesThreadLocalAccessor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -46,11 +50,118 @@ class ChatClientAutoConfigurationTests {
 		.withConfiguration(AutoConfigurations.of(ChatClientAutoConfiguration.class))
 		.withBean(ChatModel.class, () -> mock(ChatModel.class));
 
+	// The request attributes accessor is servlet specific, so its auto-configuration only
+	// applies to servlet web applications.
+	private final WebApplicationContextRunner webContextRunner = new WebApplicationContextRunner()
+		.withConfiguration(AutoConfigurations.of(ChatClientAutoConfiguration.class))
+		.withBean(ChatModel.class, () -> mock(ChatModel.class));
+
 	@Test
 	void autoConfigurationOrdersAfterToolCallingAutoConfiguration() {
 		AutoConfiguration autoConfiguration = ChatClientAutoConfiguration.class.getAnnotation(AutoConfiguration.class);
 
 		assertThat(autoConfiguration.after()).containsExactly(ToolCallingAutoConfiguration.class);
+	}
+
+	@Test
+	void requestAttributesAccessorIsRegisteredWithTheContextRegistry() {
+		ContextRegistry registry = ContextRegistry.getInstance();
+		ThreadLocalAccessor<?> previousAccessor = removeRequestAttributesAccessor(registry);
+
+		try {
+			this.webContextRunner.run(context -> {
+				assertThat(context).hasNotFailed();
+				assertThat(context.getBean(RequestAttributesContextPropagationRegistrar.class)).isNotNull();
+				assertThat(registry.getThreadLocalAccessors())
+					.as("the accessor has to be registered to make request attributes reach the tools")
+					.anyMatch(accessor -> RequestAttributesThreadLocalAccessor.KEY.equals(accessor.key()));
+			});
+		}
+		finally {
+			restoreRequestAttributesAccessor(registry, previousAccessor);
+		}
+	}
+
+	@Test
+	void requestAttributesAccessorIsRemovedWhenTheContextCloses() {
+		ContextRegistry registry = ContextRegistry.getInstance();
+		ThreadLocalAccessor<?> previousAccessor = removeRequestAttributesAccessor(registry);
+
+		try {
+			this.webContextRunner.run(context -> {
+				assertThat(context).hasNotFailed();
+				assertThat(registry.getThreadLocalAccessors())
+					.anyMatch(accessor -> RequestAttributesThreadLocalAccessor.KEY.equals(accessor.key()));
+			});
+
+			assertThat(registry.getThreadLocalAccessors())
+				.as("closing the context has to remove the accessor it registered")
+				.noneMatch(accessor -> RequestAttributesThreadLocalAccessor.KEY.equals(accessor.key()));
+		}
+		finally {
+			restoreRequestAttributesAccessor(registry, previousAccessor);
+		}
+	}
+
+	@Test
+	void preexistingAccessorIsNotOverriddenOrRemovedByTheAutoConfiguration() {
+		ContextRegistry registry = ContextRegistry.getInstance();
+		ThreadLocalAccessor<?> previousAccessor = removeRequestAttributesAccessor(registry);
+		RequestAttributesThreadLocalAccessor preexisting = new RequestAttributesThreadLocalAccessor();
+		registry.registerThreadLocalAccessor(preexisting);
+
+		try {
+			this.webContextRunner.run(context -> {
+				assertThat(context).hasNotFailed();
+				assertThat(registry.getThreadLocalAccessors())
+					.filteredOn(accessor -> RequestAttributesThreadLocalAccessor.KEY.equals(accessor.key()))
+					.containsExactly(preexisting);
+			});
+
+			assertThat(registry.getThreadLocalAccessors())
+				.filteredOn(accessor -> RequestAttributesThreadLocalAccessor.KEY.equals(accessor.key()))
+				.containsExactly(preexisting);
+		}
+		finally {
+			restoreRequestAttributesAccessor(registry, previousAccessor);
+		}
+	}
+
+	@Test
+	void requestAttributesAccessorIsNotRegisteredForNonServletApplication() {
+		ContextRegistry registry = ContextRegistry.getInstance();
+		ThreadLocalAccessor<?> previousAccessor = removeRequestAttributesAccessor(registry);
+
+		try {
+			this.contextRunner.run(context -> {
+				assertThat(context).hasNotFailed();
+				assertThat(context).doesNotHaveBean(RequestAttributesContextPropagationRegistrar.class);
+				assertThat(registry.getThreadLocalAccessors())
+					.as("the servlet specific accessor must not be registered outside a servlet application")
+					.noneMatch(accessor -> RequestAttributesThreadLocalAccessor.KEY.equals(accessor.key()));
+			});
+		}
+		finally {
+			restoreRequestAttributesAccessor(registry, previousAccessor);
+		}
+	}
+
+	private static ThreadLocalAccessor<?> removeRequestAttributesAccessor(ContextRegistry registry) {
+		ThreadLocalAccessor<?> previousAccessor = registry.getThreadLocalAccessors()
+			.stream()
+			.filter(accessor -> RequestAttributesThreadLocalAccessor.KEY.equals(accessor.key()))
+			.findFirst()
+			.orElse(null);
+		registry.removeThreadLocalAccessor(RequestAttributesThreadLocalAccessor.KEY);
+		return previousAccessor;
+	}
+
+	private static void restoreRequestAttributesAccessor(ContextRegistry registry,
+			ThreadLocalAccessor<?> previousAccessor) {
+		registry.removeThreadLocalAccessor(RequestAttributesThreadLocalAccessor.KEY);
+		if (previousAccessor != null) {
+			registry.registerThreadLocalAccessor(previousAccessor);
+		}
 	}
 
 	@Test

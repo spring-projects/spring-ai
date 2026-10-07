@@ -37,6 +37,14 @@
 			<optional>true</optional>
 		</dependency>
 
+		<!-- Optional: registers the Spring MVC request attributes accessor for the
+		     streaming tool call context propagation -->
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-web</artifactId>
+			<optional>true</optional>
+		</dependency>
+
 		<!-- Boot dependencies -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
