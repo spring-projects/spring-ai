@@ -770,13 +770,18 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		boolean thinkingEnabled = requestOptions.getThinking() != null
 				&& (requestOptions.getThinking().isEnabled() || requestOptions.getThinking().isAdaptive());
 
+		// Citation documents are attached once, to the first user message. Repeating
+		// them on every user turn would re-send the source material on each request
+		// and place it after any cache breakpoint set on the previous turn.
+		int firstUserIndex = firstIndexOf(nonSystemMessages, MessageType.USER);
+
 		// Process non-system messages
 		for (int i = 0; i < nonSystemMessages.size(); i++) {
 			org.springframework.ai.chat.messages.Message message = nonSystemMessages.get(i);
 
 			if (message.getMessageType() == MessageType.USER) {
 				UserMessage userMessage = (UserMessage) message;
-				boolean hasCitationDocs = !CollectionUtils.isEmpty(citationDocuments);
+				boolean hasCitationDocs = !CollectionUtils.isEmpty(citationDocuments) && i == firstUserIndex;
 				boolean hasMedia = userMessage.getParts().stream().anyMatch(MediaPart.class::isInstance);
 				// The CONVERSATION_HISTORY strategy caches up to the last user message
 				boolean applyCacheToUser = cacheResolver.isCachingEnabled()
@@ -792,10 +797,21 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 				if (hasCitationDocs || hasMedia || userCacheControl != null) {
 					List<ContentBlockParam> contentBlocks = new ArrayList<>();
 
-					// Prepend citation document blocks to the first user message
+					// Prepend citation documents to the first user message. The cache
+					// breakpoint goes on the last document to cover the whole set.
 					if (hasCitationDocs) {
-						for (AnthropicCitationDocument doc : Objects.requireNonNull(citationDocuments)) {
-							contentBlocks.add(ContentBlockParam.ofDocument(doc.toDocumentBlockParam()));
+						List<AnthropicCitationDocument> documents = Objects.requireNonNull(citationDocuments);
+						CacheControlEphemeral documentCacheControl = cacheResolver
+							.resolveCitationDocumentCacheControl();
+						for (int d = 0; d < documents.size(); d++) {
+							DocumentBlockParam.Builder documentBuilder = documents.get(d)
+								.toDocumentBlockParam()
+								.toBuilder();
+							if (documentCacheControl != null && d == documents.size() - 1) {
+								documentBuilder.cacheControl(documentCacheControl);
+								cacheResolver.useCacheBlock();
+							}
+							contentBlocks.add(ContentBlockParam.ofDocument(documentBuilder.build()));
 						}
 					}
 
@@ -1023,6 +1039,22 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		}
 
 		return builder.build();
+	}
+
+	/**
+	 * Finds the index of the first message of the given type.
+	 * @param messages the list of non-system messages
+	 * @param messageType the message type to look for
+	 * @return the index of the first message of that type, or {@code -1} if there is none
+	 */
+	private static int firstIndexOf(List<org.springframework.ai.chat.messages.Message> messages,
+			MessageType messageType) {
+		for (int i = 0; i < messages.size(); i++) {
+			if (messages.get(i).getMessageType() == messageType) {
+				return i;
+			}
+		}
+		return -1;
 	}
 
 	/**
