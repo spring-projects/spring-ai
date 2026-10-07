@@ -757,7 +757,7 @@ class JsonSchemaGeneratorTests {
 						  "type" : "object",
 						  "properties" : {
 						    "email" : {
-						      "type" : "string"
+						      "type" : ["string", "null"]
 						    },
 						    "id" : {
 						      "type" : "integer",

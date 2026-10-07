@@ -59,6 +59,7 @@ public abstract class AbstractSpringAiSchemaModule implements Module {
 	private void applyToConfigBuilder(SchemaGeneratorConfigPart<FieldScope> configPart) {
 		configPart.withDescriptionResolver(this::resolveDescription);
 		configPart.withRequiredCheck(this::checkRequired);
+		configPart.withNullableCheck(this::checkNullable);
 	}
 
 	/**
@@ -131,6 +132,27 @@ public abstract class AbstractSpringAiSchemaModule implements Module {
 		}
 
 		return this.requiredByDefault;
+	}
+
+	/**
+	 * Determines whether a member is nullable based on nullability annotations
+	 * ({@code @Nullable}) or Kotlin nullability, mirroring the nullability detection
+	 * performed in {@link #checkRequired}. When nullable, the generated schema types the
+	 * member to also admit {@code null} (for example {@code "type": ["string", "null"]}),
+	 * so that a nullable property has at least one valid serialization.
+	 */
+	private @Nullable Boolean checkNullable(MemberScope<?, ?> member) {
+		Nullness nullness;
+		if (member instanceof FieldScope fs) {
+			nullness = Nullness.forField(fs.getRawMember());
+		}
+		else if (member instanceof MethodScope ms) {
+			nullness = Nullness.forMethodReturnType(ms.getRawMember());
+		}
+		else {
+			return null;
+		}
+		return nullness == Nullness.NULLABLE ? Boolean.TRUE : null;
 	}
 
 	/**
