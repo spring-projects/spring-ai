@@ -28,6 +28,8 @@ public class BedrockCacheProperties {
 
 	private @Nullable BedrockCacheTtl ttl;
 
+	private boolean cacheToolResults;
+
 	public @Nullable BedrockCacheStrategy getStrategy() {
 		return this.strategy;
 	}
@@ -44,8 +46,20 @@ public class BedrockCacheProperties {
 		this.ttl = ttl;
 	}
 
+	public boolean isCacheToolResults() {
+		return this.cacheToolResults;
+	}
+
+	public void setCacheToolResults(boolean cacheToolResults) {
+		this.cacheToolResults = cacheToolResults;
+	}
+
 	public BedrockCacheOptions toOptions() {
-		return BedrockCacheOptions.builder().strategy(this.strategy).ttl(this.ttl).build();
+		return BedrockCacheOptions.builder()
+			.strategy(this.strategy)
+			.ttl(this.ttl)
+			.cacheToolResults(this.cacheToolResults)
+			.build();
 	}
 
 }

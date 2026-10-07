@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -39,6 +40,7 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.chat.prompt.PromptTemplate;
@@ -582,6 +584,30 @@ class GoogleGenAiChatModelIT {
 			.content();
 
 		assertThat(response).isNotEmpty();
+	}
+
+	@Test
+	void includeThoughtsReturnsReasoningPartsBesideTheAnswer() {
+		var options = GoogleGenAiChatOptions.builder()
+			.model(ChatModel.GEMINI_3_5_FLASH)
+			.thinkingBudget(1024)
+			.includeThoughts(true)
+			.build();
+		var prompt = new Prompt("How many r are there in the word strawberry? Answer with just the number.", options);
+
+		ChatResponse response = this.chatModel.call(prompt);
+
+		assertThat(response.getResults()).hasSize(1);
+		AssistantMessage output = response.getResult().getOutput();
+		assertThat(output.getReasoning()).isNotEmpty();
+		assertThat(output.getText()).contains("3");
+
+		AtomicReference<ChatResponse> aggregated = new AtomicReference<>();
+		new MessageAggregator().aggregate(this.chatModel.stream(prompt), aggregated::set).blockLast();
+
+		AssistantMessage streamed = aggregated.get().getResult().getOutput();
+		assertThat(streamed.getReasoning()).isNotEmpty();
+		assertThat(streamed.getText()).contains("3");
 	}
 
 	/**

@@ -135,7 +135,7 @@ public final class SyncMcpResourceMethodCallbackExample {
 				ReadResourceResult result = handler.apply(exchange, request);
 			}
 			catch (Exception e) {
-				e.printStackTrace();
+				throw new RuntimeException(e);
 			}
 		}
 	}
