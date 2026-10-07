@@ -32,8 +32,10 @@ import org.springframework.ai.vectorstore.filter.Filter.Expression;
 import org.springframework.ai.vectorstore.filter.Filter.Group;
 import org.springframework.ai.vectorstore.filter.Filter.Key;
 import org.springframework.ai.vectorstore.filter.Filter.Value;
+import org.springframework.ai.vectorstore.filter.FilterExpressionTextParser;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.AND;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.EQ;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.GTE;
@@ -44,6 +46,7 @@ import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.OR
 
 /**
  * @author Mick Semb Wever
+ * @author Ryu Jung Kyun
  * @since 1.0.0
  */
 class CassandraFilterExpressionConverterTests {
@@ -188,6 +191,78 @@ class CassandraFilterExpressionConverterTests {
 					new Expression(LTE, new Key("temperature"), new Value(20.13))));
 
 		assertThat(vectorExpr).isEqualTo("\"temperature\" >= -15.6 and \"temperature\" <= 20.13");
+	}
+
+	@Test
+	void testBigintWithParsedInteger() {
+		var column = new DefaultColumnMetadata(T, T, CqlIdentifier.fromInternal("count"), DataTypes.BIGINT, false);
+		var filter = new CassandraFilterExpressionConverter(List.of(column));
+		var expression = new FilterExpressionTextParser().parse("count == 42");
+
+		assertThat(filter.convertExpression(expression)).isEqualTo("\"count\" = 42");
+	}
+
+	@Test
+	void testBigintWithParsedLong() {
+		var column = new DefaultColumnMetadata(T, T, CqlIdentifier.fromInternal("count"), DataTypes.BIGINT, false);
+		var filter = new CassandraFilterExpressionConverter(List.of(column));
+		var expression = new FilterExpressionTextParser().parse("count == 2147483648");
+
+		assertThat(filter.convertExpression(expression)).isEqualTo("\"count\" = 2147483648");
+	}
+
+	@Test
+	void testBigintInWithParsedIntegersAndLongs() {
+		var column = new DefaultColumnMetadata(T, T, CqlIdentifier.fromInternal("count"), DataTypes.BIGINT, false);
+		var filter = new CassandraFilterExpressionConverter(List.of(column));
+		var expression = new FilterExpressionTextParser().parse("count IN [42, 2147483648]");
+
+		assertThat(filter.convertExpression(expression)).isEqualTo("\"count\" IN (42,2147483648)");
+	}
+
+	@Test
+	void testFloatWithParsedDouble() {
+		var column = new DefaultColumnMetadata(T, T, CqlIdentifier.fromInternal("rating"), DataTypes.FLOAT, false);
+		var filter = new CassandraFilterExpressionConverter(List.of(column));
+		var expression = new FilterExpressionTextParser().parse("rating >= 4.5");
+
+		assertThat(filter.convertExpression(expression)).isEqualTo("\"rating\" >= 4.5");
+	}
+
+	@Test
+	void testFloatInWithParsedDoubles() {
+		var column = new DefaultColumnMetadata(T, T, CqlIdentifier.fromInternal("rating"), DataTypes.FLOAT, false);
+		var filter = new CassandraFilterExpressionConverter(List.of(column));
+		var expression = new FilterExpressionTextParser().parse("rating IN [3.5, 4.5]");
+
+		assertThat(filter.convertExpression(expression)).isEqualTo("\"rating\" IN (3.5,4.5)");
+	}
+
+	@Test
+	void testSmallintRejectsOutOfRangeInteger() {
+		var filter = new CassandraFilterExpressionConverter(COLUMNS);
+		var expression = new FilterExpressionTextParser().parse("year == 65536");
+
+		assertThatIllegalArgumentException().isThrownBy(() -> filter.convertExpression(expression));
+	}
+
+	@Test
+	void testBigintRejectsFractionalValue() {
+		var column = new DefaultColumnMetadata(T, T, CqlIdentifier.fromInternal("count"), DataTypes.BIGINT, false);
+		var filter = new CassandraFilterExpressionConverter(List.of(column));
+		var expression = new FilterExpressionTextParser().parse("count == 4.5");
+
+		assertThatIllegalArgumentException().isThrownBy(() -> filter.convertExpression(expression));
+	}
+
+	@Test
+	void testFloatRejectsOutOfRangeDouble() {
+		var column = new DefaultColumnMetadata(T, T, CqlIdentifier.fromInternal("rating"), DataTypes.FLOAT, false);
+		var filter = new CassandraFilterExpressionConverter(List.of(column));
+		var expression = new Expression(EQ, new Key("rating"), new Value(Double.MAX_VALUE));
+
+		assertThatIllegalArgumentException().isThrownBy(() -> filter.convertExpression(expression))
+			.withMessageContaining("out of range");
 	}
 
 	@Test
