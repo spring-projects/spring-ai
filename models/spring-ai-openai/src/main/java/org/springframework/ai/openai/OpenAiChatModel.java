@@ -398,6 +398,25 @@ public final class OpenAiChatModel implements ChatModel {
 		Map<String, String> toolCallAdditionalProperties = extractToolCallAdditionalProperties(message);
 		ChatCompletionAudio audioOutput = audioOutput(message, request);
 
+		// Expose token logprobs under the "logprobs" metadata key when the provider
+		// returned them, so callers that set OpenAiChatOptions.logprobs(true) can
+		// read the values from the generation metadata.
+		choice.logprobs()
+			.ifPresent(logprobs -> logprobs.content()
+				.ifPresent(content -> generationMetadataBuilder.metadata("logprobs", content.stream()
+					.map(tokenLogprob -> {
+						Map<String, Object> entry = new LinkedHashMap<>();
+						entry.put("token", tokenLogprob.token());
+						entry.put("logprob", tokenLogprob.logprob());
+						tokenLogprob.bytes().ifPresent(bytes -> entry.put("bytes", bytes));
+						entry.put("topLogprobs", tokenLogprob.topLogprobs()
+							.stream()
+							.map(top -> Map.of("token", top.token(), "logprob", top.logprob()))
+							.toList());
+						return entry;
+					})
+					.toList())));
+
 		String textContent = message.content().orElse("");
 		List<Media> media = new ArrayList<>();
 		if (audioOutput != null) {
