@@ -54,6 +54,8 @@ public class QdrantVectorStoreUpsertIT extends AbstractVectorStoreUpsertTests {
 
 	private static final String COLLECTION_NAME = "test_collection_upsert";
 
+	private static final String CONFIGURED_COLLECTION_NAME = "test_collection_upsert_configured";
+
 	@Container
 	static QdrantContainer qdrantContainer = new QdrantContainer(QdrantImage.DEFAULT_IMAGE);
 
@@ -85,6 +87,33 @@ public class QdrantVectorStoreUpsertIT extends AbstractVectorStoreUpsertTests {
 	@Override
 	protected int embeddingDimensions() {
 		return EMBEDDING_DIMENSIONS;
+	}
+
+	@Override
+	protected VectorStore createStoreOverExistingSchema(VectorStore schemaOwner, EmbeddingModel embeddingModel) {
+		QdrantClient qdrantClient = schemaOwner.<QdrantClient>getNativeClient().orElseThrow();
+		return QdrantVectorStore.builder(qdrantClient, embeddingModel).collectionName(COLLECTION_NAME).build();
+	}
+
+	@Override
+	protected VectorStore createStoreWithConfiguredDimensions(VectorStore schemaOwner, EmbeddingModel embeddingModel,
+			int dimensions) {
+		QdrantClient qdrantClient = schemaOwner.<QdrantClient>getNativeClient().orElseThrow();
+		try {
+			if (qdrantClient.listCollectionsAsync().get().contains(CONFIGURED_COLLECTION_NAME)) {
+				qdrantClient.deleteCollectionAsync(CONFIGURED_COLLECTION_NAME).get();
+			}
+			QdrantVectorStore store = QdrantVectorStore.builder(qdrantClient, embeddingModel)
+				.collectionName(CONFIGURED_COLLECTION_NAME)
+				.dimensions(dimensions)
+				.initializeSchema(true)
+				.build();
+			store.afterPropertiesSet();
+			return store;
+		}
+		catch (Exception ex) {
+			throw new IllegalStateException(ex);
+		}
 	}
 
 	@SpringBootConfiguration

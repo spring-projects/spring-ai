@@ -47,6 +47,7 @@ import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -175,6 +176,24 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 	public static final int MAX_DOCUMENT_BATCH_SIZE = 10_000;
 
+	/**
+	 * Default name of the content column.
+	 * @since 2.1.0
+	 */
+	public static final String DEFAULT_CONTENT_FIELD_NAME = "content";
+
+	/**
+	 * Default name of the metadata column.
+	 * @since 2.1.0
+	 */
+	public static final String DEFAULT_METADATA_FIELD_NAME = "metadata";
+
+	/**
+	 * Default name of the embedding column.
+	 * @since 2.1.0
+	 */
+	public static final String DEFAULT_EMBEDDING_FIELD_NAME = "embedding";
+
 	private static final Log logger = LogFactory.getLog(PgVectorStore.class);
 
 	private static final Map<PgDistanceType, VectorStoreSimilarityMetric> SIMILARITY_TYPE_MAPPING = Map.of(
@@ -182,13 +201,13 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 			VectorStoreSimilarityMetric.EUCLIDEAN, PgDistanceType.NEGATIVE_INNER_PRODUCT,
 			VectorStoreSimilarityMetric.DOT);
 
-	// Replace-by-id write shared by add (doAdd) and upsert (doUpsert). The single
-	// %s is the fully-qualified table name. Kept in one place so the two write paths
-	// cannot drift.
-	private static final String UPSERT_SQL = "INSERT INTO %s (id, content, metadata, embedding) VALUES (?, ?, ?::jsonb, ?) "
-			+ "ON CONFLICT (id) DO UPDATE SET content = ? , metadata = ?::jsonb , embedding = ? ";
+	// Replace-by-id write shared by add (doAdd) and upsert (doUpsert). %1$s is the
+	// content column, %2$s the metadata column, %3$s the embedding column, %4$s the
+	// fully-qualified table name. Kept in one place so the two write paths cannot drift.
+	private static final String UPSERT_SQL = "INSERT INTO %4$s (id, %1$s, %2$s, %3$s) VALUES (?, ?, ?::jsonb, ?) "
+			+ "ON CONFLICT (id) DO UPDATE SET %1$s = ? , %2$s = ?::jsonb , %3$s = ? ";
 
-	public final FilterExpressionConverter filterExpressionConverter = new PgVectorFilterExpressionConverter();
+	public final FilterExpressionConverter filterExpressionConverter;
 
 	private final String vectorTableName;
 
@@ -220,6 +239,15 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 	private final int maxDocumentBatchSize;
 
+	private final String contentFieldName;
+
+	private final String metadataFieldName;
+
+	private final String embeddingFieldName;
+
+	// Cache for vectorDimensions(); only a known size is stored.
+	private volatile int resolvedVectorDimensions = INVALID_EMBEDDING_DIMENSION;
+
 	/**
 	 * @param builder {@link VectorStore.Builder} for pg vector store
 	 */
@@ -229,7 +257,12 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		Assert.notNull(builder.jdbcTemplate, "JdbcTemplate must not be null");
 
 		this.jsonMapper = JsonMapper.builder().addModules(JacksonUtils.instantiateAvailableModules()).build();
-		this.documentRowMapper = new DocumentRowMapper(this.jsonMapper);
+
+		this.contentFieldName = validateFieldName(builder.contentFieldName, "Content");
+		this.metadataFieldName = validateFieldName(builder.metadataFieldName, "Metadata");
+		this.embeddingFieldName = validateFieldName(builder.embeddingFieldName, "Embedding");
+		this.documentRowMapper = new DocumentRowMapper(this.jsonMapper, this.contentFieldName, this.metadataFieldName);
+		this.filterExpressionConverter = new PgVectorFilterExpressionConverter(this.metadataFieldName);
 
 		String vectorTable = builder.vectorTableName;
 		this.vectorTableName = vectorTable.isEmpty() ? DEFAULT_TABLE_NAME : vectorTable.trim();
@@ -259,6 +292,14 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		return this.distanceType;
 	}
 
+	private static String validateFieldName(String fieldName, String fieldLabel) {
+		if (!PgVectorSchemaValidator.isValidNameForDatabaseObject(fieldName)) {
+			throw new IllegalArgumentException(
+					fieldLabel + " column name should only contain alphanumeric characters and underscores");
+		}
+		return fieldName;
+	}
+
 	public static PgVectorStoreBuilder builder(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
 		return new PgVectorStoreBuilder(jdbcTemplate, embeddingModel);
 	}
@@ -281,7 +322,8 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 	}
 
 	private void insertOrUpdateBatch(List<Document> batch, List<Document> documents, List<float[]> embeddings) {
-		String sql = UPSERT_SQL.formatted(getFullyQualifiedTableName());
+		String sql = UPSERT_SQL.formatted(this.contentFieldName, this.metadataFieldName, this.embeddingFieldName,
+				getFullyQualifiedTableName());
 
 		this.jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
 
@@ -318,15 +360,9 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		// by the EmbeddedDocument constructor. Only runs when the dimension is actually
 		// known: guessing it would reject vectors the table would have accepted, so in
 		// that case the check is left to Postgres.
-		int expected = knownEmbeddingDimensions();
-		if (expected > 0) {
-			for (int i = 0; i < entries.size(); i++) {
-				int actual = entries.get(i).embedding().length;
-				if (actual != expected) {
-					throw new IllegalArgumentException("Embedding at index " + i + " has dimension " + actual
-							+ " but the store expects dimension " + expected);
-				}
-			}
+		int expected = vectorDimensions();
+		for (int i = 0; i < entries.size(); i++) {
+			checkDimensions("Embedding at index " + i, entries.get(i).embedding().length, expected);
 		}
 
 		List<List<EmbeddedDocument>> batchedEntries = batchEmbeddedDocuments(entries);
@@ -342,7 +378,8 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 	}
 
 	private void upsertBatch(List<EmbeddedDocument> batch) {
-		String sql = UPSERT_SQL.formatted(getFullyQualifiedTableName());
+		String sql = UPSERT_SQL.formatted(this.contentFieldName, this.metadataFieldName, this.embeddingFieldName,
+				getFullyQualifiedTableName());
 
 		this.jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
 
@@ -423,6 +460,16 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 	@Override
 	public List<Document> doSimilaritySearch(SearchRequest request) {
+		return searchByEmbedding(getQueryEmbedding(request.getQuery()), request);
+	}
+
+	@Override
+	protected List<Document> doSimilaritySearch(float[] queryEmbedding, SearchRequest request) {
+		checkDimensions("Query embedding", queryEmbedding.length, vectorDimensions());
+		return searchByEmbedding(new PGvector(queryEmbedding), request);
+	}
+
+	private List<Document> searchByEmbedding(PGvector queryEmbedding, SearchRequest request) {
 
 		String nativeFilterExpression = (request.getFilterExpression() != null)
 				? this.filterExpressionConverter.convertExpression(request.getFilterExpression()) : "";
@@ -435,18 +482,15 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 		double distance = 1 - request.getSimilarityThreshold();
 
-		PGvector queryEmbedding = getQueryEmbedding(request.getQuery());
-
 		return this.jdbcTemplate.query(
-				String.format(this.getDistanceType().similaritySearchSqlTemplate, getFullyQualifiedTableName(),
-						jsonPathFilter),
+				String.format(this.getDistanceType().similaritySearchSqlTemplate, this.embeddingFieldName,
+						getFullyQualifiedTableName(), jsonPathFilter),
 				this.documentRowMapper, queryEmbedding, queryEmbedding, distance, request.getTopK());
 	}
 
 	public List<Double> embeddingDistance(String query) {
-		return this.jdbcTemplate.query(
-				"SELECT embedding " + this.comparisonOperator() + " ? AS distance FROM " + getFullyQualifiedTableName(),
-				new RowMapper<>() {
+		return this.jdbcTemplate.query("SELECT " + this.embeddingFieldName + " " + this.comparisonOperator()
+				+ " ? AS distance FROM " + getFullyQualifiedTableName(), new RowMapper<>() {
 
 					@Override
 					public Double mapRow(ResultSet rs, int rowNum) throws SQLException {
@@ -511,17 +555,18 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		this.jdbcTemplate.execute(String.format("""
 				CREATE TABLE IF NOT EXISTS %s (
 					id %s PRIMARY KEY,
-					content text,
-					metadata json,
-					embedding vector(%d)
+					%s text,
+					%s json,
+					%s vector(%d)
 				)
-				""", this.getFullyQualifiedTableName(), this.getColumnTypeName(), this.embeddingDimensions()));
+				""", this.getFullyQualifiedTableName(), this.getColumnTypeName(), this.contentFieldName,
+				this.metadataFieldName, this.embeddingFieldName, this.embeddingDimensions()));
 
 		if (this.createIndexMethod != PgIndexType.NONE) {
 			this.jdbcTemplate.execute(String.format("""
-					CREATE INDEX IF NOT EXISTS %s ON %s USING %s (embedding %s)
+					CREATE INDEX IF NOT EXISTS %s ON %s USING %s (%s %s)
 					""", this.getVectorIndexName(), this.getFullyQualifiedTableName(), this.createIndexMethod,
-					this.getDistanceType().index));
+					this.embeddingFieldName, this.getDistanceType().index));
 		}
 
 		validateTableSchemaIfEnabled();
@@ -529,7 +574,8 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 	private void validateTableSchemaIfEnabled() {
 		if (this.schemaValidation) {
-			this.schemaValidator.validateTableSchema(this.getSchemaName(), this.getVectorTableName(), this.dimensions);
+			this.schemaValidator.validateTableSchema(this.getSchemaName(), this.getVectorTableName(), this.dimensions,
+					this.contentFieldName, this.metadataFieldName, this.embeddingFieldName);
 		}
 	}
 
@@ -564,14 +610,41 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 	}
 
 	/**
-	 * The embedding dimension when it is known, or -1 when it is not. Mirrors
-	 * {@link #embeddingDimensions()} without its fallback to a default, so a caller that
-	 * must not guess can tell the two cases apart.
+	 * The vector size the table accepts, or -1 when it cannot be determined. Unlike
+	 * {@link #embeddingDimensions()} it never guesses a default, so a caller that must
+	 * not guess can tell the two cases apart.
+	 * <p>
+	 * The size comes from the configured {@code dimensions} if set, otherwise from the
+	 * declared type of the table's embedding column, and only then from the embedding
+	 * model. Reading it from the table means a store that only upserts into an existing
+	 * table never has to contact the embedding model. A known size is cached.
 	 * @return the known dimension, or -1
 	 */
-	private int knownEmbeddingDimensions() {
+	private int vectorDimensions() {
+		int cached = this.resolvedVectorDimensions;
+		if (cached > 0) {
+			return cached;
+		}
+		int resolved = resolveVectorDimensions();
+		if (resolved > 0) {
+			this.resolvedVectorDimensions = resolved;
+		}
+		return resolved;
+	}
+
+	private int resolveVectorDimensions() {
 		if (this.dimensions > 0) {
 			return this.dimensions;
+		}
+		try {
+			int columnDimensions = this.schemaValidator.vectorColumnDimensions(this.schemaName, this.vectorTableName,
+					this.embeddingFieldName);
+			if (columnDimensions > 0) {
+				return columnDimensions;
+			}
+		}
+		catch (DataAccessException ex) {
+			logger.debug("Could not read the embedding dimensions from the vector table", ex);
 		}
 		try {
 			int modelDimensions = this.embeddingModel.dimensions();
@@ -582,7 +655,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		catch (Exception ex) {
 			logger.debug("Could not obtain the embedding dimensions from the embedding model", ex);
 		}
-		return -1;
+		return INVALID_EMBEDDING_DIMENSION;
 	}
 
 	int embeddingDimensions() {
@@ -609,7 +682,7 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 		return VectorStoreObservationContext.builder(VectorStoreProvider.PG_VECTOR.value(), operationName)
 			.collectionName(this.vectorTableName)
-			.dimensions(this.embeddingDimensions())
+			.dimensions(this.vectorDimensions())
 			.namespace(this.schemaName)
 			.similarityMetric(getSimilarityMetric());
 	}
@@ -675,17 +748,17 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		// The Sentence transformers are NOT normalized:
 		// https://github.com/UKPLab/sentence-transformers/issues/233
 		EUCLIDEAN_DISTANCE("<->", "vector_l2_ops",
-				"SELECT *, embedding <-> ? AS distance FROM %s WHERE embedding <-> ? < ? %s ORDER BY distance LIMIT ? "),
+				"SELECT *, %1$s <-> ? AS distance FROM %2$s WHERE %1$s <-> ? < ? %3$s ORDER BY distance LIMIT ? "),
 
 		// NOTE: works only if vectors are normalized to length 1 (like OpenAI
 		// embeddings), use inner product for best performance.
 		// The Sentence transformers are NOT normalized:
 		// https://github.com/UKPLab/sentence-transformers/issues/233
 		NEGATIVE_INNER_PRODUCT("<#>", "vector_ip_ops",
-				"SELECT *, (1 + (embedding <#> ?)) AS distance FROM %s WHERE (1 + (embedding <#> ?)) < ? %s ORDER BY distance LIMIT ? "),
+				"SELECT *, (1 + (%1$s <#> ?)) AS distance FROM %2$s WHERE (1 + (%1$s <#> ?)) < ? %3$s ORDER BY distance LIMIT ? "),
 
 		COSINE_DISTANCE("<=>", "vector_cosine_ops",
-				"SELECT *, embedding <=> ? AS distance FROM %s WHERE embedding <=> ? < ? %s ORDER BY distance LIMIT ? ");
+				"SELECT *, %1$s <=> ? AS distance FROM %2$s WHERE %1$s <=> ? < ? %3$s ORDER BY distance LIMIT ? ");
 
 		public final String operator;
 
@@ -703,29 +776,37 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 	private static class DocumentRowMapper implements RowMapper<Document> {
 
-		private static final String COLUMN_METADATA = "metadata";
-
 		private static final String COLUMN_ID = "id";
-
-		private static final String COLUMN_CONTENT = "content";
 
 		private static final String COLUMN_DISTANCE = "distance";
 
 		private final JsonMapper jsonMapper;
 
-		DocumentRowMapper(JsonMapper jsonMapper) {
+		private final String contentFieldName;
+
+		private final String metadataFieldName;
+
+		DocumentRowMapper(JsonMapper jsonMapper, String contentFieldName, String metadataFieldName) {
 			this.jsonMapper = jsonMapper;
+			this.contentFieldName = contentFieldName;
+			this.metadataFieldName = metadataFieldName;
 		}
 
 		@Override
 		public Document mapRow(ResultSet rs, int rowNum) throws SQLException {
 			String id = rs.getString(COLUMN_ID);
-			String content = rs.getString(COLUMN_CONTENT);
-			PGobject pgMetadata = rs.getObject(COLUMN_METADATA, PGobject.class);
+			String content = rs.getString(this.contentFieldName);
+			PGobject pgMetadata = rs.getObject(this.metadataFieldName, PGobject.class);
 			Float distance = rs.getFloat(COLUMN_DISTANCE);
 
 			Map<String, Object> metadata = toMap(pgMetadata);
-			metadata.put(DocumentMetadata.DISTANCE.value(), distance);
+			if (metadata.containsKey(DocumentMetadata.DISTANCE.value())) {
+				logger.warn("Skipping computed similarity distance for document " + id
+						+ " because its metadata already contains a '" + DocumentMetadata.DISTANCE.value() + "' key");
+			}
+			else {
+				metadata.put(DocumentMetadata.DISTANCE.value(), distance);
+			}
 
 			// @formatter:off
 			return Document.builder()
@@ -767,6 +848,12 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 		private boolean initializeSchema;
 
 		private int maxDocumentBatchSize = MAX_DOCUMENT_BATCH_SIZE;
+
+		private String contentFieldName = PgVectorStore.DEFAULT_CONTENT_FIELD_NAME;
+
+		private String metadataFieldName = PgVectorStore.DEFAULT_METADATA_FIELD_NAME;
+
+		private String embeddingFieldName = PgVectorStore.DEFAULT_EMBEDDING_FIELD_NAME;
 
 		private PgVectorStoreBuilder(JdbcTemplate jdbcTemplate, EmbeddingModel embeddingModel) {
 			super(embeddingModel);
@@ -821,6 +908,44 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 
 		public PgVectorStoreBuilder maxDocumentBatchSize(int maxDocumentBatchSize) {
 			this.maxDocumentBatchSize = maxDocumentBatchSize;
+			return this;
+		}
+
+		/**
+		 * Overrides the column name used for document content. Defaults to
+		 * {@value PgVectorStore#DEFAULT_CONTENT_FIELD_NAME}, so existing tables and
+		 * callers are unaffected unless this is set. Useful when pointing the store at a
+		 * pre-existing table whose columns do not match the defaults.
+		 * @param contentFieldName the content column name
+		 * @return this builder
+		 * @since 2.1.0
+		 */
+		public PgVectorStoreBuilder contentFieldName(String contentFieldName) {
+			this.contentFieldName = contentFieldName;
+			return this;
+		}
+
+		/**
+		 * Overrides the column name used for document metadata. Defaults to
+		 * {@value PgVectorStore#DEFAULT_METADATA_FIELD_NAME}.
+		 * @param metadataFieldName the metadata column name
+		 * @return this builder
+		 * @since 2.1.0
+		 */
+		public PgVectorStoreBuilder metadataFieldName(String metadataFieldName) {
+			this.metadataFieldName = metadataFieldName;
+			return this;
+		}
+
+		/**
+		 * Overrides the column name used for the vector embedding. Defaults to
+		 * {@value PgVectorStore#DEFAULT_EMBEDDING_FIELD_NAME}.
+		 * @param embeddingFieldName the embedding column name
+		 * @return this builder
+		 * @since 2.1.0
+		 */
+		public PgVectorStoreBuilder embeddingFieldName(String embeddingFieldName) {
+			this.embeddingFieldName = embeddingFieldName;
 			return this;
 		}
 

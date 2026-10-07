@@ -22,21 +22,27 @@ import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.MongoDBContainer;
 import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.chat.memory.repository.mongo.Conversation;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.boot.SpringBootConfiguration;
+import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
+import org.springframework.boot.data.mongodb.autoconfigure.DataMongoAutoConfiguration;
+import org.springframework.boot.mongodb.autoconfigure.MongoAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
-import org.springframework.context.annotation.Configuration;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.TestPropertySource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
+@Testcontainers
+@SpringBootTest(classes = MongoChatMemoryAutoConfigurationIT.TestConfiguration.class,
+		webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @TestPropertySource(properties = { "spring.ai.chat.memory.repository.mongo.create-indices=true" })
 class MongoChatMemoryAutoConfigurationIT {
 
@@ -47,8 +53,12 @@ class MongoChatMemoryAutoConfigurationIT {
 	private MongoTemplate mongoTemplate;
 
 	@Container
-	@ServiceConnection
 	static MongoDBContainer mongoDbContainer = new MongoDBContainer("mongo:8.0.6");
+
+	@DynamicPropertySource
+	static void mongoProperties(DynamicPropertyRegistry registry) {
+		registry.add("spring.mongodb.uri", mongoDbContainer::getReplicaSetUrl);
+	}
 
 	@Test
 	void allMethodsShouldExecute() {
@@ -77,8 +87,9 @@ class MongoChatMemoryAutoConfigurationIT {
 		assertThat(this.mongoTemplate.indexOps(Conversation.class).getIndexInfo().size()).isEqualTo(2);
 	}
 
-	@Configuration
-	@EnableAutoConfiguration
+	@SpringBootConfiguration
+	@ImportAutoConfiguration({ MongoAutoConfiguration.class, DataMongoAutoConfiguration.class,
+			MongoChatMemoryAutoConfiguration.class, MongoChatMemoryIndexCreatorAutoConfiguration.class })
 	static class TestConfiguration {
 
 	}

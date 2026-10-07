@@ -20,6 +20,8 @@ import java.time.Duration;
 import java.util.List;
 
 import com.openai.client.OpenAIClient;
+import com.openai.core.JsonField;
+import com.openai.core.JsonMissing;
 import com.openai.core.RequestOptions;
 import com.openai.models.embeddings.CreateEmbeddingResponse;
 import com.openai.models.embeddings.EmbeddingCreateParams;
@@ -31,6 +33,7 @@ import org.springframework.ai.openai.OpenAiEmbeddingModel;
 import org.springframework.ai.openai.OpenAiEmbeddingOptions;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
@@ -66,6 +69,56 @@ class OpenAiEmbeddingModelTests {
 		RequestOptions value = argumentCaptor.getValue();
 		assertThat(value.getTimeout()).isNotNull();
 		assertThat(value.getTimeout().request()).isEqualTo(expectedTimeout);
+	}
+
+	@Test
+	void indexFallsBackToPositionWhenProviderOmitsIt() {
+		com.openai.models.embeddings.Embedding e0 = mock(com.openai.models.embeddings.Embedding.class);
+		com.openai.models.embeddings.Embedding e1 = mock(com.openai.models.embeddings.Embedding.class);
+		when(e0.embedding()).thenReturn(List.of(1.0f, 2.0f));
+		when(e1.embedding()).thenReturn(List.of(3.0f, 4.0f));
+		// Gemini's OpenAI compatibility mode omits the redundant `index` field.
+		when(e0._index()).thenReturn(JsonMissing.of());
+		when(e1._index()).thenReturn(JsonField.of(1L));
+
+		OpenAIClient mockClient = mock(OpenAIClient.class, RETURNS_DEEP_STUBS);
+		CreateEmbeddingResponse mockResponse = mock(CreateEmbeddingResponse.class);
+		when(mockResponse.data()).thenReturn(List.of(e0, e1));
+		when(mockResponse.usage()).thenReturn(mock(CreateEmbeddingResponse.Usage.class));
+		when(mockClient.embeddings().create(any(EmbeddingCreateParams.class), any(RequestOptions.class)))
+			.thenReturn(mockResponse);
+
+		OpenAiEmbeddingModel model = OpenAiEmbeddingModel.builder().openAiClient(mockClient).build();
+
+		var response = model
+			.call(new EmbeddingRequest(List.of("One", "Two"), OpenAiEmbeddingOptions.builder().build()));
+		assertThat(response.getResults().get(0).getIndex()).isEqualTo(0);
+		assertThat(response.getResults().get(1)).isNotNull();
+		assertThat(response.getResults().get(1).getIndex()).isEqualTo(1);
+	}
+
+	@Test
+	void usageCountsBeyondIntRangeFailClearlyInsteadOfBareArithmeticException() {
+		OpenAIClient mockClient = mock(OpenAIClient.class, RETURNS_DEEP_STUBS);
+		// An out-of-range usage count means the upstream response can't be trusted, so
+		// it should fail clearly instead of propagating a bare
+		// ArithmeticException("integer overflow").
+		long promptTokens = Integer.MAX_VALUE + 1L;
+		CreateEmbeddingResponse response = CreateEmbeddingResponse.builder()
+			.data(List.of())
+			.model("test-model")
+			.usage(CreateEmbeddingResponse.Usage.builder().promptTokens(promptTokens).totalTokens(promptTokens).build())
+			.build();
+		when(mockClient.embeddings().create(any(EmbeddingCreateParams.class), any(RequestOptions.class)))
+			.thenReturn(response);
+
+		OpenAiEmbeddingModel model = OpenAiEmbeddingModel.builder().openAiClient(mockClient).build();
+		EmbeddingRequest request = new EmbeddingRequest(List.of("hi"), OpenAiEmbeddingOptions.builder().build());
+
+		assertThatThrownBy(() -> model.call(request)).isInstanceOf(IllegalStateException.class)
+			.hasMessageContaining("promptTokens")
+			.hasMessageContaining(String.valueOf(promptTokens))
+			.hasCauseInstanceOf(ArithmeticException.class);
 	}
 
 }

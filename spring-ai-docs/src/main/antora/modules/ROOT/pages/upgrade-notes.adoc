@@ -19,6 +19,8 @@ The constructors and the existing builder methods keep working and produce the p
 * `getMedia()` and `getToolCalls()` return unmodifiable lists; add media and tool calls through the builder instead of mutating the returned list.
 * `equals()` and `hashCode()` of both message types compare the parts, so media now takes part in equality; `Media` gained value equality over id, MIME type and data (the name is excluded because it defaults to a random value).
 * A message with parts but no text part has an empty text; `getText()` is `null` only for a message without any part.
+* On a builder that also holds parts, for example one returned by `mutate()`, the legacy setters replace the parts of their type in place instead of adding to them: `content(...)` the text parts, `toolCalls(...)` the tool call parts, `media(...)` the media parts and, on `ToolResponseMessage`, `responses(...)` the tool result parts.
+To keep the existing text parts and append a new one at the end of the parts, use `part(TextPart.of(...))` instead.
 
 ===== Deprecated
 
@@ -40,6 +42,140 @@ Reasoning deltas now carry their text in a `ReasoningPart`.
 A streamed chunk never has a `null` text, so `map(AssistantMessage::getText).collect(Collectors.joining())` keeps working.
 By default, tool calls are still buffered and arrive once as a complete call.
 Partial parts are not tool calls, so nothing executes on them, and `ChatClient` hides them either way.
+
+=== Anthropic
+
+==== Changed: Thinking Is Returned as `ReasoningPart`s of a Single Generation
+
+`AnthropicChatModel` maps every content block of a response to one `MessagePart`, in block order: thinking and redacted thinking become a `ReasoningPart` whose payload carries the signature or the redacted block data, and blocks Spring AI does not model yet (server tool use, server tool results, container upload) become an `UnknownPart` instead of being dropped.
+An assistant message is replayed to Anthropic in part order, so the signed thinking block stays in front of the tool call it justified, and server tool blocks go back as the JSON they arrived as; reasoning and `UnknownPart`s produced by another provider are not replayed.
+See xref:api/chat/anthropic-chat.adoc#_response_structure[Response Structure].
+
+===== Impact
+
+* A non-streaming response has a single `Generation`; the separate thinking and redacted thinking generations are gone.
+Read the reasoning from `getResult().getOutput().getReasoning()`.
+* The package-private `AnthropicChatModel.AnthropicAssistantMessage` is removed, together with the `anthropicThinkingContents` metadata entry.
+Messages restored from a chat memory written by an earlier version lose their thinking blocks on replay.
+* The `signature` and `data` metadata keys are no longer set on the non-streaming response.
+* A redacted thinking `ReasoningPart` has no text; its payload kind is `AnthropicChatModel.PAYLOAD_REDACTED_THINKING`.
+
+===== Deprecated
+
+The streamed chunks still carry the `thinking` (`AnthropicChatModel.THINKING_METADATA_KEY`), `thinkingText` (`AnthropicChatModel.THINKING_TEXT_METADATA_KEY`), `signature` and `data` metadata keys for one release; read the chunk's parts instead.
+
+=== Bedrock Converse
+
+==== `BedrockChatOptions.requestParameters` widened to `Map<String, Object>`
+
+`BedrockChatOptions.requestParameters` (and its Spring Boot property mirror `BedrockConverseProxyChatProperties.requestParameters`) has been widened from `Map<String, String>` to `Map<String, Object>`.
+This allows nested maps and lists as values, which is required for structured provider-specific fields such as Anthropic's `output_config` passed through Bedrock Converse's `additionalModelRequestFields`.
+
+===== Impact
+
+This is a source-level breaking change for callers that hold an explicitly typed `Map<String, String>` variable assigned to or read from this API.
+Inline map literals and callers already using `Map<String, Object>` (or `var`) are unaffected.
+
+===== Migration
+
+Change any explicitly typed `Map<String, String>` variable to `Map<String, Object>`:
+
+[source,java]
+----
+// Before
+Map<String, String> params = Map.of("anthropic_version", "bedrock-2023-05-31");
+BedrockChatOptions options = BedrockChatOptions.builder()
+    .requestParameters(params)
+    .build();
+
+// After
+Map<String, Object> params = Map.of("anthropic_version", "bedrock-2023-05-31");
+BedrockChatOptions options = BedrockChatOptions.builder()
+    .requestParameters(params)
+    .build();
+----
+
+Nested values are now supported:
+
+[source,java]
+----
+BedrockChatOptions options = BedrockChatOptions.builder()
+    .requestParameters(Map.of("output_config", Map.of("effort", "low")))
+    .build();
+----
+
+[source,yaml]
+----
+spring:
+  ai:
+    bedrock:
+      converse:
+        chat:
+          request-parameters:
+            output_config:
+              effort: low
+            anthropic_version: bedrock-2023-05-31
+----
+
+NOTE: Map keys bind literally — use the exact provider field name (e.g. `output_config`, not `output-config`).
+
+=== PgVector Store
+
+==== `distance` is a reserved metadata key in `PgVectorStore`
+
+`PgVectorStore` writes the computed similarity distance into each returned document's metadata under the key `distance` (via `DocumentMetadata.DISTANCE`).
+Previously, if a stored document already contained a `distance` key in its own metadata, it was silently overwritten with the computed value.
+This has been fixed: the stored value is now preserved and a warning is logged when the collision is detected.
+
+===== Impact
+
+If your documents store a field named `distance` for domain-specific data (e.g. a geographic distance), that value now survives a similarity search.
+A `WARN`-level log entry is emitted for each affected document:
+
+----
+Skipping computed similarity distance for document <id> because its metadata already contains a 'distance' key
+----
+
+The computed similarity score is still available via `Document.getScore()` regardless of whether the metadata key was written.
+
+===== Migration
+
+If you rely on reading the computed similarity distance from `document.getMetadata().get("distance")`, switch to `document.getScore()` instead, which is always populated and returns `1.0 - distance` (higher means more similar).
+If your documents use `distance` for domain-specific data, consider renaming that field to avoid the collision and the warning.
+
+
+[[upgrading-to-2-0-2]]
+== Upgrading to 2.0.2
+
+=== Neo4j Chat Memory Repository
+
+==== Stale indexes replaced with correct property indexes
+
+The indexes created by `Neo4jChatMemoryRepositoryConfig` were referencing the wrong node properties
+and were therefore always empty, causing every conversation lookup to fall back to a full label scan.
+
+===== Impact
+
+Existing deployments have two stale indexes that index properties no node carries:
+
+* `session_conversation_id_index` on `Session.conversationId` (the repository queries `Session.id`)
+* `message_index_index` on `Message.index` (the repository orders by `Message.idx`)
+
+Two new indexes with the correct properties are created on startup:
+
+* `session_id_index` on `Session.id`
+* `message_idx_index` on `Message.idx`
+
+===== Migration
+
+The stale indexes are harmless but waste space.
+Remove them manually after upgrading:
+
+[source,cypher]
+----
+DROP INDEX session_conversation_id_index IF EXISTS;
+DROP INDEX message_index_index IF EXISTS;
+----
 
 [[upgrading-to-2-0-1]]
 == Upgrading to 2.0.1

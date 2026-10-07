@@ -198,6 +198,7 @@ The `JSON_SCHEMA` type enables link:https://platform.openai.com/docs/guides/stru
 | spring.ai.openai.chat.tool-callbacks | Tool Callbacks to register with the ChatModel. | -
 | spring.ai.openai.chat.service-tier | Specifies the link:https://platform.openai.com/docs/api-reference/responses/create#responses_create-service_tier[processing type] used for serving the request. | -
 | spring.ai.openai.chat.extra-body | Additional parameters to include in the request. Accepts any key-value pairs that are flattened to the top level of the JSON request. Intended for use with OpenAI-compatible servers (vLLM, Ollama, etc.) that support parameters beyond the standard OpenAI API. The official OpenAI API rejects unknown parameters with a 400 error. See <<openai-compatible-servers>> for details. | -
+| spring.ai.openai.chat.replay-reasoning-content | Whether a previous assistant message's reasoning content is sent back as the `reasoning_content` property of the next request. OpenAI-compatible reasoning endpoints such as DeepSeek's thinking mode require the property and reject a request without it, while others such as Groq reject the property itself. Set to `false` for the latter. Defaults to replaying whenever present. | -
 |====
 
 [NOTE]
@@ -298,6 +299,30 @@ ChatResponse response = chatModel.call(
 ----
 
 TIP: In addition to the model specific https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-openai/src/main/java/org/springframework/ai/openai/OpenAiChatOptions.java[OpenAiChatOptions] you can use a portable link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/ChatOptions.java[ChatOptions] instance, created with link:https://github.com/spring-projects/spring-ai/blob/main/spring-ai-model/src/main/java/org/springframework/ai/chat/prompt/DefaultChatOptionsBuilder.java[ChatOptions#builder()].
+
+== Rate Limit Metadata
+
+OpenAI reports your current request and token budgets in https://developers.openai.com/api/docs/guides/rate-limits/#rate-limits-in-headers[rate limit response headers].
+Spring AI exposes them through the standard `ChatResponseMetadata#getRateLimit()` accessor, which returns an `OpenAiRateLimit` populated from those headers.
+
+[source,java]
+----
+ChatResponse response = chatModel.call(prompt);
+
+RateLimit rateLimit = response.getMetadata().getRateLimit();
+rateLimit.getRequestsLimit();      // overall request ceiling
+rateLimit.getRequestsRemaining();  // requests left in the current window
+rateLimit.getRequestsReset();      // time until the request window resets
+
+rateLimit.getTokensLimit();        // overall token ceiling
+rateLimit.getTokensRemaining();    // tokens left in the current window
+rateLimit.getTokensReset();        // time until the token window resets
+----
+
+If the response carries no rate-limit headers, `getRateLimit()` returns an `EmptyRateLimit` instance instead.
+
+NOTE: Rate-limit metadata is populated on `call(Prompt)` only.
+Reading it on `stream(Prompt)` would require the SDK's blocking streaming response, which would hold a worker thread for the whole stream, so `stream(Prompt)` reports an `EmptyRateLimit`.
 
 == Tool Calling
 
@@ -895,7 +920,8 @@ Spring AI maps this field from the JSON response to the `reasoningContent` key i
 
 Official OpenAI reasoning models hide the chain-of-thought content when using the Chat Completions API.
 They only expose `reasoning_tokens` count in usage statistics.
-To access actual reasoning text from official OpenAI models, you must use OpenAI's Responses API (a separate endpoint not currently supported by this client).
+To get reasoning summaries from official OpenAI models, use OpenAI's Responses API through xref:api/chat/openai-responses-chat.adoc[`OpenAiResponsesChatModel`].
+That endpoint is also the only one that supports reasoning together with tool calling on GPT-5.4 and later.
 
 **Fallback behavior:** When `reasoning_content` is not provided by the server (e.g., official OpenAI Chat Completions), the `reasoningContent` metadata field will be an empty string.
 ====
@@ -1021,6 +1047,33 @@ The availability of `reasoning_content` depends entirely on the inference server
 Not all OpenAI-compatible servers expose reasoning content, even when using reasoning-capable models.
 Always refer to your server's API documentation to understand what fields are available in responses.
 ====
+
+==== Replaying Reasoning Content in Multi-Turn Conversations
+
+When an assistant message that carries `reasoning_content` is included in a subsequent request, Spring AI replays that content as the `reasoning_content` property of the next request.
+Some OpenAI-compatible reasoning endpoints — such as DeepSeek's thinking mode — require this and return HTTP 400 if the property is absent.
+Other endpoints, such as Groq, reject the property outright.
+
+You can control this behavior with `spring.ai.openai.chat.replay-reasoning-content` (or `OpenAiChatOptions.replayReasoningContent`).
+When unset (the default), the content is replayed whenever it is present.
+Set to `false` to suppress the replay:
+
+[source,properties]
+----
+# Disable reasoning content replay (e.g. for Groq)
+spring.ai.openai.chat.replay-reasoning-content=false
+----
+
+Or per-request via options:
+
+[source,java]
+----
+OpenAiChatOptions options = OpenAiChatOptions.builder()
+    .replayReasoningContent(false)
+    .build();
+
+ChatResponse response = chatModel.call(new Prompt(messages, options));
+----
 
 === Tool Call Additional Properties for OpenAI-Compatible Providers
 

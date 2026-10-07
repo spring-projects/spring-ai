@@ -8,6 +8,7 @@
 **** xref:api/advisors-recursive.adoc[Recursive Advisors]
 
 ** xref:api/prompt.adoc[]
+** xref:api/usage-handling.adoc[Chat Response Metadata]
 ** xref:api/structured-output.adoc[Structured Output]
 *** xref:api/structured-output/validation.adoc[Schema Validation & Self-Correction]
 *** xref:api/structured-output/native.adoc[Provider-Native Structured Output]
@@ -31,6 +32,7 @@
 **** xref:api/chat/perplexity-chat.adoc[Perplexity AI]
 **** xref:api/chat/oci-genai-chat.adoc[OCI Generative AI]
 **** xref:api/chat/openai-chat.adoc[OpenAI]
+**** xref:api/chat/openai-responses-chat.adoc[OpenAI Responses API]
 
 *** xref:api/embeddings.adoc[Embedding Models]
 **** xref:api/bedrock.adoc[Amazon Bedrock]

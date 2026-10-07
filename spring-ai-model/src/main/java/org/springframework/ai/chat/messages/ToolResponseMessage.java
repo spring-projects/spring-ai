@@ -110,7 +110,8 @@ public class ToolResponseMessage extends AbstractMessage {
 	}
 
 	/**
-	 * A builder pre-populated with this message's parts and metadata.
+	 * A builder pre-populated with this message's parts and metadata. Calling
+	 * {@link Builder#responses(List)} on it replaces the result parts in place.
 	 * @return the builder
 	 * @since 2.1.0
 	 */
@@ -139,15 +140,18 @@ public class ToolResponseMessage extends AbstractMessage {
 	 * Builder for {@link ToolResponseMessage}.
 	 * <p>
 	 * Parts added through {@link #result(ToolResultPart)}, {@link #results(List)} and
-	 * {@link #parts(List)} keep their order and come first. The legacy
-	 * {@link #responses(List)} setter is materialized after them at {@link #build()}, one
-	 * text-only {@link ToolResultPart} per response.
+	 * {@link #parts(List)} keep their order. The legacy {@link #responses(List)} setter
+	 * replaces the {@link ToolResultPart}s at {@link #build()} with one text-only result
+	 * part per response: the new results take the place of the first result part, or are
+	 * appended when there is none.
 	 */
 	public static final class Builder {
 
 		private final List<MessagePart> explicitParts = new ArrayList<>();
 
 		private List<ToolResponse> responses = List.of();
+
+		private boolean responsesSet;
 
 		private Map<String, Object> metadata = Map.of();
 
@@ -194,6 +198,7 @@ public class ToolResponseMessage extends AbstractMessage {
 
 		public Builder responses(List<ToolResponse> responses) {
 			this.responses = responses;
+			this.responsesSet = true;
 			return this;
 		}
 
@@ -204,7 +209,9 @@ public class ToolResponseMessage extends AbstractMessage {
 
 		public ToolResponseMessage build() {
 			List<MessagePart> parts = new ArrayList<>(this.explicitParts);
-			parts.addAll(legacyParts(this.responses));
+			if (this.responsesSet) {
+				replace(parts, ToolResultPart.class, legacyParts(this.responses), parts.size());
+			}
 			return new ToolResponseMessage(this.metadata, parts);
 		}
 

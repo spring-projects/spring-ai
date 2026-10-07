@@ -103,6 +103,50 @@ public abstract class AbstractMessage implements Message {
 		return (textContent != null) ? List.of(TextPart.of(textContent)) : List.of();
 	}
 
+	/**
+	 * Removes every part of the given type and inserts the replacements where the first
+	 * one was, or at {@code fallbackIndex} when there was none. Builders use it so that a
+	 * setter such as {@code text(...)} on a {@code mutate()} builder replaces the
+	 * corresponding parts in place instead of adding to them.
+	 * @param parts the mutable parts to update
+	 * @param type the type of the parts to replace
+	 * @param replacements the parts to insert, possibly empty to only remove
+	 * @param fallbackIndex where to insert when {@code parts} has no part of the type
+	 * @since 2.1.0
+	 */
+	protected static void replace(List<MessagePart> parts, Class<? extends MessagePart> type,
+			List<? extends MessagePart> replacements, int fallbackIndex) {
+		int insertAt = -1;
+		for (int i = parts.size() - 1; i >= 0; i--) {
+			if (type.isInstance(parts.get(i))) {
+				parts.remove(i);
+				insertAt = i;
+			}
+		}
+		parts.addAll(insertAt >= 0 ? insertAt : Math.min(fallbackIndex, parts.size()), replacements);
+	}
+
+	/**
+	 * The index of the first part that is an instance of any of the given types, for use
+	 * as the {@code fallbackIndex} of {@link #replace}.
+	 * @param parts the parts to search
+	 * @param types the types to look for
+	 * @return the index of the first matching part, or the size of {@code parts} when
+	 * there is none
+	 * @since 2.1.0
+	 */
+	@SafeVarargs
+	protected static int firstIndexOf(List<MessagePart> parts, Class<? extends MessagePart>... types) {
+		for (int i = 0; i < parts.size(); i++) {
+			for (Class<? extends MessagePart> type : types) {
+				if (type.isInstance(parts.get(i))) {
+					return i;
+				}
+			}
+		}
+		return parts.size();
+	}
+
 	protected <P extends MessagePart> Stream<P> select(Class<P> type) {
 		return getParts().stream().filter(type::isInstance).map(type::cast);
 	}
