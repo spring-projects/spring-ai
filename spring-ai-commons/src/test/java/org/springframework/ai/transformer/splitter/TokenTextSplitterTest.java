@@ -19,6 +19,7 @@ package org.springframework.ai.transformer.splitter;
 import java.util.List;
 import java.util.Map;
 
+import com.knuddels.jtokkit.Encodings;
 import com.knuddels.jtokkit.api.EncodingType;
 import org.junit.jupiter.api.Test;
 
@@ -27,7 +28,6 @@ import org.springframework.ai.document.Document;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * @author Ricken Bazolo
@@ -48,9 +48,9 @@ public class TokenTextSplitterTest {
 				Map.of("key1", "value1", "key2", "value2"));
 		doc1.setContentFormatter(contentFormatter1);
 
-		String doc2Text = "The most oppressive thing about the labyrinth is that you are constantly "
-				+ "being forced to choose. It isn't the lack of an exit, but the abundance of exits that is so disorienting.";
-		var doc2 = new Document(doc2Text, Map.of("key2", "value22", "key3", "value3"));
+		var doc2 = new Document("The most oppressive thing about the labyrinth is that you are constantly "
+				+ "being forced to choose. It isn’t the lack of an exit, but the abundance of exits that is so disorienting.",
+				Map.of("key2", "value22", "key3", "value3"));
 		doc2.setContentFormatter(contentFormatter2);
 
 		var tokenTextSplitter = TokenTextSplitter.builder().build();
@@ -59,9 +59,12 @@ public class TokenTextSplitterTest {
 
 		assertThat(chunks.size()).isEqualTo(2);
 
+		// Doc 1
 		assertThat(chunks.get(0).getText())
 			.isEqualTo("In the end, writing arises when man realizes that memory is not enough.");
-		assertThat(chunks.get(1).getText()).isEqualTo(doc2Text);
+		// Doc 2
+		assertThat(chunks.get(1).getText()).isEqualTo(
+				"The most oppressive thing about the labyrinth is that you are constantly being forced to choose. It isn’t the lack of an exit, but the abundance of exits that is so disorienting.");
 
 		assertThat(chunks.get(0).getMetadata()).containsKeys("key1", "key2").doesNotContainKeys("key3");
 		assertThat(chunks.get(1).getMetadata()).containsKeys("key2", "key3").doesNotContainKeys("key1");
@@ -85,116 +88,181 @@ public class TokenTextSplitterTest {
 		doc2.setContentFormatter(contentFormatter2);
 
 		var tokenTextSplitter = TokenTextSplitter.builder()
-			.withChunkSize(20)
-			.withChunkOverlap(3)
-			.withMinChunkSizeChars(10)
-			.withMinChunkLengthToEmbed(5)
+			.withChunkSize(10)
+			.withMinChunkSizeChars(5)
+			.withMinChunkLengthToEmbed(3)
 			.withMaxNumChunks(50)
 			.withKeepSeparator(true)
 			.build();
 
 		var chunks = tokenTextSplitter.apply(List.of(doc1, doc2));
 
-		assertThat(chunks.size()).isGreaterThanOrEqualTo(6);
+		assertThat(chunks.size()).isEqualTo(6);
 
-		for (Document chunk : chunks) {
-			assertThat(chunk.getText()).isNotEmpty();
-			assertThat(chunk.getText().trim().length()).isGreaterThanOrEqualTo(5);
-		}
+		// Doc 1
+		assertThat(chunks.get(0).getText()).isEqualTo("In the end, writing arises when man realizes that");
+		assertThat(chunks.get(1).getText()).isEqualTo("memory is not enough.");
 
-		boolean foundDoc1Chunks = false;
-		boolean foundDoc2Chunks = false;
+		// Doc 2
+		assertThat(chunks.get(2).getText()).isEqualTo("The most oppressive thing about the labyrinth is that you");
+		assertThat(chunks.get(3).getText()).isEqualTo("are constantly being forced to choose.");
+		assertThat(chunks.get(4).getText()).isEqualTo("It isn't the lack of an exit, but");
+		assertThat(chunks.get(5).getText()).isEqualTo("the abundance of exits that is so disorienting");
 
-		for (Document chunk : chunks) {
-			Map<String, Object> metadata = chunk.getMetadata();
+		// Verify that the original metadata is copied to all chunks (including
+		// chunk-specific fields)
+		assertThat(chunks.get(0).getMetadata()).containsKeys("key1", "key2", "parent_document_id", "chunk_index",
+				"total_chunks");
+		assertThat(chunks.get(1).getMetadata()).containsKeys("key1", "key2", "parent_document_id", "chunk_index",
+				"total_chunks");
+		assertThat(chunks.get(2).getMetadata()).containsKeys("key2", "key3", "parent_document_id", "chunk_index",
+				"total_chunks");
+		assertThat(chunks.get(3).getMetadata()).containsKeys("key2", "key3", "parent_document_id", "chunk_index",
+				"total_chunks");
 
-			if (metadata.containsKey("key1") && !metadata.containsKey("key3")) {
-				assertThat(metadata).containsKeys("key1", "key2").doesNotContainKeys("key3");
-				foundDoc1Chunks = true;
-			}
-			else if (metadata.containsKey("key3") && !metadata.containsKey("key1")) {
-				assertThat(metadata).containsKeys("key2", "key3").doesNotContainKeys("key1");
-				foundDoc2Chunks = true;
-			}
-		}
+		// Verify chunk indices are correct
+		assertThat(chunks.get(0).getMetadata().get("chunk_index")).isEqualTo(0);
+		assertThat(chunks.get(1).getMetadata().get("chunk_index")).isEqualTo(1);
+		assertThat(chunks.get(2).getMetadata().get("chunk_index")).isEqualTo(0);
+		assertThat(chunks.get(3).getMetadata().get("chunk_index")).isEqualTo(1);
 
-		assertThat(foundDoc1Chunks).isTrue();
-		assertThat(foundDoc2Chunks).isTrue();
-
-		for (Document chunk : chunks) {
-			assertThat(chunk.getMetadata()).containsKeys("parent_document_id", "chunk_index", "total_chunks");
-		}
-
-		int doc1ChunkIndex = 0;
-		int doc2ChunkIndex = 0;
-		for (Document chunk : chunks) {
-			Map<String, Object> metadata = chunk.getMetadata();
-
-			if (metadata.containsKey("key1") && !metadata.containsKey("key3")) {
-				assertThat(metadata.get("chunk_index")).isEqualTo(doc1ChunkIndex);
-				doc1ChunkIndex++;
-			}
-			else if (metadata.containsKey("key3") && !metadata.containsKey("key1")) {
-				assertThat(metadata.get("chunk_index")).isEqualTo(doc2ChunkIndex);
-				doc2ChunkIndex++;
-			}
-		}
+		assertThat(chunks.get(0).getMetadata()).containsKeys("key1", "key2").doesNotContainKeys("key3");
+		assertThat(chunks.get(2).getMetadata()).containsKeys("key2", "key3").doesNotContainKeys("key1");
 	}
 
 	@Test
 	public void testChunkOverlapFunctionality() {
-		String longText = "This is the first sentence. This is the second sentence. "
-				+ "This is the third sentence. This is the fourth sentence. "
-				+ "This is the fifth sentence. This is the sixth sentence.";
-
-		var doc = new Document(longText);
-
-		var splitterWithOverlap = TokenTextSplitter.builder()
-			.withChunkSize(15)
-			.withChunkOverlap(5)
-			.withMinChunkSizeChars(10)
-			.withMinChunkLengthToEmbed(5)
-			.withKeepSeparator(false)
-			.build();
+		// Each word is one token, and a large minChunkSizeChars turns off the
+		// punctuation trim, so chunks are cut purely by token count
+		var doc = new Document("one two three four five six seven eight nine ten eleven twelve");
 
 		var splitterNoOverlap = TokenTextSplitter.builder()
-			.withChunkSize(15)
-			.withChunkOverlap(0)
-			.withMinChunkSizeChars(10)
-			.withMinChunkLengthToEmbed(5)
-			.withKeepSeparator(false)
+			.withChunkSize(5)
+			.withMinChunkSizeChars(1000)
+			.withMinChunkLengthToEmbed(0)
 			.build();
 
-		var chunksWithOverlap = splitterWithOverlap.apply(List.of(doc));
-		var chunksNoOverlap = splitterNoOverlap.apply(List.of(doc));
+		var splitterWithOverlap = TokenTextSplitter.builder()
+			.withChunkSize(5)
+			.withChunkOverlap(2)
+			.withMinChunkSizeChars(1000)
+			.withMinChunkLengthToEmbed(0)
+			.build();
 
-		assertThat(chunksWithOverlap.size()).isGreaterThan(1);
+		// Expect: chunks follow each other with no shared words
+		assertThat(splitterNoOverlap.apply(List.of(doc))).extracting(Document::getText)
+			.containsExactly("one two three four five", "six seven eight nine ten", "eleven twelve");
 
-		// overlap produces more chunks than no overlap since position advances less per step
-		assertThat(chunksWithOverlap.size()).isGreaterThanOrEqualTo(chunksNoOverlap.size());
+		// Expect: each chunk starts with the last two words of the chunk before it
+		// @formatter:off
+		// chunk 1: one two three [four five]
+		// chunk 2:               [four five] six [seven eight]
+		// chunk 3:                               [seven eight] nine [ten eleven]
+		// chunk 4:                                                  [ten eleven] twelve
+		// @formatter:on
+		assertThat(splitterWithOverlap.apply(List.of(doc))).extracting(Document::getText)
+			.containsExactly("one two three four five", "four five six seven eight", "seven eight nine ten eleven",
+					"ten eleven twelve");
+	}
 
-		// second chunk should contain content that also appeared at the end of the first chunk
-		if (chunksWithOverlap.size() >= 2) {
-			String firstChunk = chunksWithOverlap.get(0).getText();
-			String secondChunk = chunksWithOverlap.get(1).getText();
+	@Test
+	public void testChunkOverlapKeepsBoundaryTextWhole() {
+		var doc = new Document("The consumer kept failing in production. "
+				+ "The fix is to set the timeout to 30 seconds on the consumer. Then restart the service.");
+		String fact = "set the timeout to 30 seconds";
 
-			String[] firstWords = firstChunk.split("\\s+");
-			String lastWordOfFirst = firstWords[firstWords.length - 1];
+		var splitterNoOverlap = TokenTextSplitter.builder()
+			.withChunkSize(12)
+			.withMinChunkSizeChars(1000)
+			.withMinChunkLengthToEmbed(0)
+			.build();
 
-			assertThat(secondChunk).contains(lastWordOfFirst);
-		}
+		var splitterWithOverlap = TokenTextSplitter.builder()
+			.withChunkSize(12)
+			.withChunkOverlap(8)
+			.withMinChunkSizeChars(1000)
+			.withMinChunkLengthToEmbed(0)
+			.build();
+
+		// Expect: without overlap the chunk boundary falls inside the fact, so no chunk
+		// holds it whole ("... The fix is to set" | "the timeout to 30 seconds ...")
+		assertThat(splitterNoOverlap.apply(List.of(doc))).extracting(Document::getText)
+			.noneMatch(text -> text.contains(fact));
+
+		// Expect: with overlap at least one chunk holds the whole fact
+		assertThat(splitterWithOverlap.apply(List.of(doc))).extracting(Document::getText)
+			.anyMatch(text -> text.contains(fact));
+	}
+
+	@Test
+	public void testChunkOverlapKeepsRemainingTextWhenMaxNumChunksReached() {
+		var doc = new Document("one two three four five six seven eight nine ten eleven twelve");
+
+		var tokenTextSplitter = TokenTextSplitter.builder()
+			.withChunkSize(5)
+			.withChunkOverlap(2)
+			.withMaxNumChunks(2)
+			.withMinChunkSizeChars(1000)
+			.withMinChunkLengthToEmbed(0)
+			.build();
+
+		// Expect: after two chunks the limit is reached, and the rest of the text,
+		// starting with the overlap, is kept as one final chunk instead of dropped
+		assertThat(tokenTextSplitter.apply(List.of(doc))).extracting(Document::getText)
+			.containsExactly("one two three four five", "four five six seven eight",
+					"seven eight nine ten eleven twelve");
+	}
+
+	@Test
+	public void testDroppedChunksCountTowardMaxNumChunks() {
+		var tokenTextSplitter = TokenTextSplitter.builder()
+			.withChunkSize(2)
+			.withMinChunkSizeChars(1000)
+			.withMinChunkLengthToEmbed(15)
+			.withMaxNumChunks(3)
+			.build();
+
+		var chunks = tokenTextSplitter.apply(List.of(new Document("one two three four five six seven eight nine ten")));
+
+		// Expect: the first three two-word chunks are dropped as too short but still
+		// count toward the limit, so the rest of the text is kept as the final chunk
+		assertThat(chunks).extracting(Document::getText).containsExactly("seven eight nine ten");
+	}
+
+	@Test
+	@SuppressWarnings("removal")
+	public void testSubclassOverrideOfDoSplitIsStillCalled() {
+		var tokenTextSplitter = new TokenTextSplitter() {
+
+			@Override
+			protected List<String> doSplit(String text, int chunkSize) {
+				return List.of("custom split");
+			}
+
+		};
+
+		// Expect: the two-argument doSplit is still the method splitText calls, so
+		// existing overrides keep working
+		assertThat(tokenTextSplitter.apply(List.of(new Document("some text")))).extracting(Document::getText)
+			.containsExactly("custom split");
 	}
 
 	@Test
 	public void testChunkOverlapValidation() {
-		// chunkOverlap must be strictly less than chunkSize
-		assertThatThrownBy(() -> TokenTextSplitter.builder().withChunkSize(10).withChunkOverlap(15).build())
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("chunk overlap must be less than chunk size");
+		// chunkOverlap must be zero or more and strictly less than chunkSize
+		assertThatIllegalArgumentException()
+			.isThrownBy(() -> TokenTextSplitter.builder().withChunkSize(10).withChunkOverlap(15).build())
+			.withMessage("chunk overlap must be less than chunk size");
 
-		assertThatThrownBy(() -> TokenTextSplitter.builder().withChunkSize(10).withChunkOverlap(10).build())
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("chunk overlap must be less than chunk size");
+		assertThatIllegalArgumentException()
+			.isThrownBy(() -> TokenTextSplitter.builder().withChunkSize(10).withChunkOverlap(10).build())
+			.withMessage("chunk overlap must be less than chunk size");
+
+		assertThatIllegalArgumentException().isThrownBy(() -> TokenTextSplitter.builder().withChunkOverlap(-1).build())
+			.withMessage("chunk overlap must not be negative");
+
+		// The largest valid overlap builds fine
+		assertThat(TokenTextSplitter.builder().withChunkSize(10).withChunkOverlap(9).build()).isNotNull();
 	}
 
 	@Test
@@ -206,7 +274,7 @@ public class TokenTextSplitterTest {
 		var doc = new Document(text);
 
 		var tokenTextSplitter = TokenTextSplitter.builder()
-			.withChunkSize(20)
+			.withChunkSize(22)
 			.withChunkOverlap(3)
 			.withMinChunkSizeChars(20)
 			.withMinChunkLengthToEmbed(5)
@@ -215,21 +283,22 @@ public class TokenTextSplitterTest {
 
 		var chunks = tokenTextSplitter.apply(List.of(doc));
 
-		assertThat(chunks).isNotEmpty();
-
-		// boundary optimization should produce chunks ending at sentence boundaries
-		for (Document chunk : chunks) {
-			String chunkText = chunk.getText().trim();
-			if (chunkText.length() > 20) {
-				char lastChar = chunkText.charAt(chunkText.length() - 1);
-				assertThat(List.of('.', '!', '?', '\n')).contains(lastChar);
-			}
-		}
+		// Expect: the first 22 tokens end with "the text. Fifth sentence", so the first
+		// chunk is trimmed back to "the text.", and the next chunk starts with that
+		// chunk's last three tokens (" the text.")
+		assertThat(chunks).extracting(Document::getText)
+			.containsExactly(
+					"First sentence here. Second sentence follows immediately. Third sentence is next. Fourth sentence continues the text.",
+					"the text. Fifth sentence completes this test.");
 	}
 
 	@Test
 	public void testKeepSeparatorVariations() {
-		String textWithNewlines = "Line one content here.\nLine two content here.\nLine three content here.";
+		// The splitter replaces System.lineSeparator(), so use it to keep the test
+		// platform independent
+		String newline = System.lineSeparator();
+		String textWithNewlines = "Line one content here." + newline + "Line two content here." + newline
+				+ "Line three content here.";
 		var doc = new Document(textWithNewlines);
 
 		var splitterKeepSeparator = TokenTextSplitter.builder()
@@ -248,16 +317,10 @@ public class TokenTextSplitterTest {
 
 		var chunksWithoutSeparator = splitterNoSeparator.apply(List.of(doc));
 
-		assertThat(chunksWithSeparator).isNotEmpty();
-		assertThat(chunksWithoutSeparator).isNotEmpty();
-
-		if (chunksWithSeparator.size() == 1 && chunksWithoutSeparator.size() == 1) {
-			String withSeparatorText = chunksWithSeparator.get(0).getText();
-			String withoutSeparatorText = chunksWithoutSeparator.get(0).getText();
-
-			assertThat(withSeparatorText).contains("\n");
-			assertThat(withoutSeparatorText).doesNotContain("\n");
-		}
+		// Expect: the text fits in one chunk; line breaks are kept or replaced by spaces
+		assertThat(chunksWithSeparator).extracting(Document::getText).containsExactly(textWithNewlines);
+		assertThat(chunksWithoutSeparator).extracting(Document::getText)
+			.containsExactly("Line one content here. Line two content here. Line three content here.");
 	}
 
 	@Test
@@ -281,35 +344,16 @@ public class TokenTextSplitterTest {
 
 		var chunks = tokenTextSplitter.apply(List.of(doc));
 
-		assertThat(chunks.size()).isGreaterThan(1);
-
-		var encoding = com.knuddels.jtokkit.Encodings.newDefaultEncodingRegistry()
-			.getEncoding(com.knuddels.jtokkit.api.EncodingType.CL100K_BASE);
-
-		int minExpectedAdvance = (100 - 10) / 2;
-		int consecutiveSmallChunks = 0;
-		int maxConsecutiveSmallChunks = 0;
-
-		for (int i = 0; i < chunks.size() - 1; i++) {
-			String chunkText = chunks.get(i).getText();
-			int tokenCount = encoding.encode(chunkText).size();
-
-			if (tokenCount < minExpectedAdvance) {
-				consecutiveSmallChunks++;
-				maxConsecutiveSmallChunks = Math.max(maxConsecutiveSmallChunks, consecutiveSmallChunks);
-			}
-			else {
-				consecutiveSmallChunks = 0;
-			}
-
-			assertThat(tokenCount)
-				.as("Chunk %d should have at least %d tokens but has %d", i, minExpectedAdvance, tokenCount)
-				.isGreaterThanOrEqualTo(minExpectedAdvance);
+		// Expect: no trailing chunk only repeats text from the chunk before it, even
+		// though the text ends with whitespace after the last sentence
+		for (int i = 1; i < chunks.size(); i++) {
+			assertThat(chunks.get(i - 1).getText()).as("chunk %d only repeats chunk %d", i, i - 1)
+				.doesNotContain(chunks.get(i).getText());
 		}
 
-		assertThat(maxConsecutiveSmallChunks)
-			.as("Should not have multiple consecutive small chunks (found %d consecutive)", maxConsecutiveSmallChunks)
-			.isLessThanOrEqualTo(1);
+		// Expect: the last chunk ends with the last sentence, so nothing is lost
+		assertThat(chunks.get(chunks.size() - 1).getText()).endsWith(
+				"This is sentence number 99 and it contains some meaningful content to test the chunking behavior.");
 	}
 
 	@Test
@@ -333,16 +377,49 @@ public class TokenTextSplitterTest {
 
 		assertThat(chunks.size()).isGreaterThan(1);
 
-		var encoding = com.knuddels.jtokkit.Encodings.newDefaultEncodingRegistry()
-			.getEncoding(com.knuddels.jtokkit.api.EncodingType.CL100K_BASE);
+		// Expect: no chunk, including the last one, is larger than the chunk size,
+		// even though each chunk also repeats tokens from the one before it
+		var encoding = Encodings.newDefaultEncodingRegistry().getEncoding(EncodingType.CL100K_BASE);
+		for (int i = 0; i < chunks.size(); i++) {
+			assertThat(encoding.encode(chunks.get(i).getText()).size()).as("chunk %d token count", i)
+				.isLessThanOrEqualTo(80);
+		}
+	}
 
-		for (int i = 0; i < chunks.size() - 1; i++) {
-			int tokenCount = encoding.encode(chunks.get(i).getText()).size();
-			assertThat(tokenCount).as("Chunk %d token count should be reasonable", i).isBetween(40, 120);
+	@Test
+	public void testNoTextLostWithSparsePunctuation() {
+		// One early sentence end, then a long run with no punctuation, so the sentence
+		// trim makes the first chunk much shorter than the chunk size
+		StringBuilder text = new StringBuilder();
+		for (int i = 0; i < 70; i++) {
+			text.append("word").append(i).append(' ');
+		}
+		text.append(". ");
+		for (int i = 0; i < 1500; i++) {
+			text.append("tok").append(i).append(' ');
 		}
 
-		int lastChunkTokens = encoding.encode(chunks.get(chunks.size() - 1).getText()).size();
-		assertThat(lastChunkTokens).isGreaterThan(0);
+		for (int overlap : new int[] { 0, 50, 200 }) {
+			var splitter = TokenTextSplitter.builder().withChunkOverlap(overlap).build();
+			var chunks = splitter.apply(List.of(new Document(text.toString())));
+
+			// Expect: every part of the text is in at least one chunk
+			assertNoTextLost(text.toString(), chunks);
+		}
+	}
+
+	private static void assertNoTextLost(String text, List<Document> chunks) {
+		int coveredUpTo = 0;
+		int searchFrom = 0;
+		for (Document chunk : chunks) {
+			int start = text.indexOf(chunk.getText(), searchFrom);
+			assertThat(start).as("chunk not found in the original text: %s", chunk.getText()).isNotNegative();
+			assertThat(text.substring(coveredUpTo, Math.max(coveredUpTo, start))).as("text lost before chunk")
+				.isBlank();
+			coveredUpTo = Math.max(coveredUpTo, start + chunk.getText().length());
+			searchFrom = start + 1;
+		}
+		assertThat(text.substring(coveredUpTo)).as("text lost after the last chunk").isBlank();
 	}
 
 	@Test
@@ -365,7 +442,8 @@ public class TokenTextSplitterTest {
 
 	@Test
 	public void testLargeTextStillSplitsAtPunctuation() {
-		// Verify that punctuation-based splitting still works when text exceeds chunk size
+		// Verify that punctuation-based splitting still works when text exceeds chunk
+		// size
 		TokenTextSplitter splitter = TokenTextSplitter.builder()
 			.withKeepSeparator(true)
 			.withChunkSize(15)
@@ -382,6 +460,23 @@ public class TokenTextSplitterTest {
 
 		// Verify first chunk ends with punctuation
 		assertThat(splitted.get(0).getText()).endsWith(".");
+	}
+
+	@Test
+	public void testLastChunkIsNotSplitAtPunctuation() {
+		TokenTextSplitter splitter = TokenTextSplitter.builder()
+			.withChunkSize(10)
+			.withMinChunkSizeChars(5)
+			.withMinChunkLengthToEmbed(0)
+			.build();
+
+		var chunks = splitter
+			.apply(List.of(new Document("one two three four five six seven eight nine ten eleven. twelve thirteen")));
+
+		// Expect: the remaining text fits in one chunk, so it is kept whole instead of
+		// being cut after "eleven."
+		assertThat(chunks).extracting(Document::getText)
+			.containsExactly("one two three four five six seven eight nine ten", "eleven. twelve thirteen");
 	}
 
 	@Test
@@ -421,6 +516,25 @@ public class TokenTextSplitterTest {
 		assertThat(chunks.get(4).getText()).isEqualTo("The subclasses can override this method to achieve their own");
 		assertThat(chunks.get(5).getText()).isEqualTo("business logic。");
 		assertThat(chunks.get(6).getText()).isEqualTo("We just want to test it works or not？");
+	}
+
+	@Test
+	public void testChunkOverlapWithCustomPunctuationMarks() {
+		var doc = new Document("red green blue; one two. black white gray; three four. pink brown gold; five six.");
+
+		var tokenTextSplitter = TokenTextSplitter.builder()
+			.withChunkSize(10)
+			.withChunkOverlap(2)
+			.withMinChunkSizeChars(5)
+			.withMinChunkLengthToEmbed(0)
+			.withPunctuationMarks(List.of(';'))
+			.build();
+
+		// Expect: chunks are cut at the configured ';', never at '.', and each chunk
+		// starts with the last two tokens of the chunk before it (e.g. " blue;")
+		assertThat(tokenTextSplitter.apply(List.of(doc))).extracting(Document::getText)
+			.containsExactly("red green blue;", "blue; one two. black white gray;",
+					"gray; three four. pink brown gold;", "gold; five six.");
 	}
 
 	@Test
