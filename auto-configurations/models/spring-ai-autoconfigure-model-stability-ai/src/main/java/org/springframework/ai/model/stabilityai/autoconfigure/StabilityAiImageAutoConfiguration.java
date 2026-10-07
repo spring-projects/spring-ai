@@ -61,7 +61,10 @@ public class StabilityAiImageAutoConfiguration {
 		Assert.hasText(apiKey, "StabilityAI API key must be set");
 		Assert.hasText(baseUrl, "StabilityAI base URL must be set");
 
-		return new StabilityAiApi(apiKey, imageProperties.toOptions().getModel(), baseUrl,
+		String model = StringUtils.hasText(imageProperties.getModel()) ? imageProperties.getModel()
+				: StabilityAiApi.DEFAULT_IMAGE_MODEL;
+
+		return new StabilityAiApi(apiKey, model, baseUrl,
 				restClientBuilderProvider.getIfAvailable(RestClient::builder));
 	}
 

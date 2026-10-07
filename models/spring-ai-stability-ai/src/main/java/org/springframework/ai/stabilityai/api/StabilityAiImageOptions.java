@@ -53,9 +53,9 @@ public class StabilityAiImageOptions implements ImageOptions {
 	 * The engine/model to use in Stability AI The model is passed in the URL as a path
 	 * parameter
 	 *
-	 * The default value is stable-diffusion-v1-6
+	 * When not set, the model configured on the {@link StabilityAiApi} is used.
 	 */
-	private final String model;
+	private final @Nullable String model;
 
 	/**
 	 * Retrieves the width of the image to be generated, in pixels.
@@ -279,7 +279,7 @@ public class StabilityAiImageOptions implements ImageOptions {
 			@Nullable String clipGuidancePreset, @Nullable String sampler, @Nullable Long seed, @Nullable Integer steps,
 			@Nullable String stylePreset) {
 		this.n = n;
-		this.model = (model != null ? model : StabilityAiApi.DEFAULT_IMAGE_MODEL);
+		this.model = model;
 		this.width = width;
 		this.height = height;
 		this.responseFormat = responseFormat;
@@ -300,7 +300,8 @@ public class StabilityAiImageOptions implements ImageOptions {
 		return this.n;
 	}
 
-	public String getModel() {
+	@Override
+	public @Nullable String getModel() {
 		return this.model;
 	}
 
