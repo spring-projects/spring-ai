@@ -791,10 +791,10 @@ public final class OpenAiChatModel implements ChatModel {
 
 	private List<ChatCompletionMessageToolCall> messageToolCalls(AssistantMessage assistantMessage) {
 		Map<String, String> toolCallAdditionalProperties = toolCallAdditionalPropertiesFromMetadata(assistantMessage);
-		return assistantMessage.getToolCalls()
-			.stream()
-			.map(toolCall -> functionToolCall(toolCall, toolCallAdditionalProperties.get(toolCall.id())))
-			.toList();
+		return assistantMessage.getToolCalls().stream().map(toolCall -> {
+			Assert.hasText(toolCall.id(), "Tool call id must not be null or blank");
+			return functionToolCall(toolCall, toolCallAdditionalProperties.get(toolCall.id()));
+		}).toList();
 	}
 
 	/**
