@@ -27,6 +27,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -64,6 +65,32 @@ class OllamaChatModelTests {
 
 	@Mock
 	OllamaApi ollamaApi;
+
+	@Test
+	void streamShouldHandleResponseWithoutMessage() {
+		var apiResponse = new OllamaApi.ChatResponse("mistral", Instant.parse("2026-10-07T10:00:00Z"), null, // No
+																												// message.
+				"stop", true, 2000L, 100L, 8, 800L, 3, 1000L);
+
+		when(this.ollamaApi.streamingChat(any(OllamaApi.ChatRequest.class))).thenReturn(Flux.just(apiResponse));
+
+		var chatModel = OllamaChatModel.builder()
+			.ollamaApi(this.ollamaApi)
+			.options(OllamaChatOptions.builder().model(OllamaModel.MISTRAL).build())
+			.build();
+
+		var responses = chatModel.stream(new Prompt("Hello")).collectList().block(Duration.ofSeconds(5));
+
+		assertThat(responses).isNotNull().hasSize(1);
+
+		var response = responses.get(0);
+		assertThat(response.getResult().getOutput().getText()).isEmpty();
+		assertThat(response.getResult().getOutput().getToolCalls()).isEmpty();
+		assertThat(response.getMetadata().getModel()).isEqualTo("mistral");
+		assertThat(response.getMetadata().getUsage().getPromptTokens()).isEqualTo(8);
+		assertThat(response.getMetadata().getUsage().getCompletionTokens()).isEqualTo(3);
+		assertThat(response.getResult().getMetadata().getFinishReason()).isEqualTo("stop");
+	}
 
 	@Test
 	void buildOllamaChatModelWithConstructor() {

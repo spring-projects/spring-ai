@@ -322,7 +322,7 @@ public class OllamaChatModel implements ChatModel {
 						.toList();
 				}
 
-				String thinking = chunk.message().thinking();
+				String thinking = chunk.message() != null ? chunk.message().thinking() : null;
 				Map<String, Object> messageProperties = thinking != null ? Map.of(THINKING_METADATA_KEY, thinking)
 						: Map.of();
 				var assistantMessage = AssistantMessage.builder()
