@@ -109,6 +109,32 @@ An assistant message that still carries the key, for example one restored from a
 * The `thoughtSignatures` message metadata list is still written, and is used to replay the signatures of messages whose parts carry none, but the part payloads are the source of truth.
 
 
+=== OpenAI Chat Completions
+
+==== Changed: `OpenAiChatModel` Builds Its Messages from Message Parts
+
+`OpenAiChatModel` maps each choice of a Chat Completions response to ordered message parts: the `reasoning_content` (or `reasoning`) field of OpenAI-compatible servers becomes a `ReasoningPart`, the content a `TextPart`, each function tool call a `ToolCallPart`, and the audio output a `MediaPart`.
+The extra fields a server returns on a tool call, such as the Gemini thought signature in `extra_content`, are the `OpaquePayload` of that `ToolCallPart` (provider `OpenAiChatModel.CHAT_COMPLETIONS_PROVIDER`, kind `OpenAiChatModel.PAYLOAD_TOOL_CALL_ADDITIONAL_PROPERTIES`).
+An assistant message is replayed from its parts, and user message parts are sent in their order, so text and media can interleave.
+See xref:api/chat/openai-chat.adoc#message-parts[Message Parts].
+
+===== Impact
+
+* A tool-call-only choice no longer holds an empty `TextPart`; `getText()` still returns an empty string.
+* Reasoning parts without a payload are replayed as `reasoning_content`, including those produced by another chat model, such as the reasoning text `OpenAiResponsesChatModel` returns for a reasoning item without encrypted content (for example from `gpt-oss` behind a Responses-compatible server).
+Reasoning signed by another provider is not replayed, and neither is any reasoning of a message that holds some.
+Set `replayReasoningContent` to `false` for a server that rejects `reasoning_content`.
+* Streamed chunks carry indexed partial reasoning and text parts, as described in the streaming contract above.
+* Text a server streams alongside or after the tool call deltas of a turn is no longer cut to its first fragment.
+
+===== Deprecated
+
+The following message metadata keys are still written, and read on replay when the parts do not carry the value, for one release; read the parts instead.
+
+* `reasoningContent`: use `AssistantMessage.getReasoning()`.
+On a streamed chunk it holds the reasoning accumulated so far, not the delta.
+* `openai.tool_calls.additional_properties`: use the payload of the `ToolCallPart`.
+
 === Bedrock Converse
 
 ==== `BedrockChatOptions.requestParameters` widened to `Map<String, Object>`

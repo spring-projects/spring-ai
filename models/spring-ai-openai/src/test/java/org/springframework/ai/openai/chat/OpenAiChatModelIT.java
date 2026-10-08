@@ -45,6 +45,11 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.messages.part.MediaPart;
+import org.springframework.ai.chat.messages.part.MessagePart;
+import org.springframework.ai.chat.messages.part.StreamingParts;
+import org.springframework.ai.chat.messages.part.TextPart;
+import org.springframework.ai.chat.messages.part.ToolCallPart;
 import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.metadata.EmptyRateLimit;
 import org.springframework.ai.chat.metadata.EmptyUsage;
@@ -91,6 +96,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  *
  * @author Julien Dubois
  * @author Ilayaperumal Gopinathan
+ * @author Dimitar Proynov
  */
 @SpringBootTest(classes = OpenAiTestConfiguration.class)
 @EnabledIfEnvironmentVariable(named = "OPENAI_API_KEY", matches = ".+")
@@ -117,6 +123,126 @@ public class OpenAiChatModelIT {
 		ChatResponse response = this.chatModel.call(prompt);
 
 		assertThat((Object) response.getResult().getOutput().getMetadata().get("reasoningContent")).isNotNull();
+		// Official OpenAI Chat Completions does not return the reasoning text, so there
+		// is no reasoning part
+		assertThat(response.getResult().getOutput().getReasoning()).isEmpty();
+	}
+
+	@Test
+	void callReturnsASingleTextPart() {
+		ChatResponse response = this.chatModel.call(new Prompt("Tell me a joke about cats. Be brief."));
+
+		AssistantMessage message = response.getResult().getOutput();
+		assertThat(message.getParts()).hasSize(1);
+		assertThat(message.getParts().get(0)).isInstanceOf(TextPart.class);
+		assertThat(message.getText()).isNotBlank().isEqualTo(((TextPart) message.getParts().get(0)).text());
+	}
+
+	@Test
+	void toolCallTurnIsBuiltFromToolCallPartsAndReplayed() {
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
+		OpenAiChatOptions options = OpenAiChatOptions.builder()
+			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.description("Get the weather in location")
+				.inputType(MockWeatherService.Request.class)
+				.build()))
+			.build();
+		Prompt prompt = new Prompt(List
+			.of(new UserMessage("What's the weather like in San Francisco, Tokyo, and Paris? Answer in Celsius.")),
+				options);
+
+		ChatResponse response = this.chatModel.call(prompt);
+
+		AssistantMessage toolCallTurn = response.getResult().getOutput();
+		assertThat(toolCallTurn.hasToolCalls()).isTrue();
+		List<ToolCallPart> toolCallParts = toolCallTurn.getParts()
+			.stream()
+			.filter(ToolCallPart.class::isInstance)
+			.map(ToolCallPart.class::cast)
+			.toList();
+		assertThat(toolCallParts).hasSameSizeAs(toolCallTurn.getToolCalls());
+		assertThat(toolCallParts).allSatisfy(part -> {
+			assertThat(part.toolCall().id()).isNotBlank();
+			assertThat(part.toolCall().name()).isEqualTo("getCurrentWeather");
+		});
+		assertThat(toolCallTurn.getText()).isNotNull();
+
+		// The history rebuilt from the parts is accepted by the API
+		while (response.hasToolCalls()) {
+			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, response);
+			prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
+			response = this.chatModel.call(prompt);
+		}
+		assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
+	}
+
+	@Test
+	void streamingChunksCarryIndexedPartsThatAggregate() {
+		Flux<ChatResponse> flux = this.chatModel.stream(new Prompt("List the days of the week, one per line."));
+
+		AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
+		List<ChatResponse> responses = new MessageAggregator().aggregate(flux, aggregatedRef::set)
+			.collectList()
+			.block();
+
+		// Every chunk carries the completion id, and every part is indexed except the
+		// empty text of a chunk without content, which keeps getText() non-null
+		assertThat(responses).allSatisfy(chunk -> {
+			assertThat(chunk.getMetadata().getId()).isNotBlank();
+			if (chunk.getResult() != null) {
+				assertThat(chunk.getResult().getOutput().getText()).isNotNull();
+				for (MessagePart part : chunk.getResult().getOutput().getParts()) {
+					if (!TextPart.of("").equals(part)) {
+						assertThat(StreamingParts.partIndex(part)).isNotNull();
+						assertThat(StreamingParts.isPartial(part)).isTrue();
+					}
+				}
+			}
+		});
+		String streamedText = responses.stream()
+			.filter(chunk -> chunk.getResult() != null)
+			.map(chunk -> chunk.getResult().getOutput().getText())
+			.collect(Collectors.joining());
+
+		AssistantMessage aggregated = aggregatedRef.get().getResult().getOutput();
+		assertThat(aggregated.getParts()).hasSize(1);
+		assertThat(aggregated.getParts().get(0)).isEqualTo(TextPart.of(streamedText));
+		assertThat(aggregated.getText()).contains("Monday", "Sunday");
+	}
+
+	@Test
+	void streamingToolCallTurnAggregatesToCompleteToolCallParts() {
+		OpenAiChatOptions options = OpenAiChatOptions.builder()
+			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.description("Get the weather in location")
+				.inputType(MockWeatherService.Request.class)
+				.build()))
+			.build();
+		Prompt prompt = new Prompt(List.of(new UserMessage("What's the weather like in Paris? Answer in Celsius.")),
+				options);
+
+		AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
+		List<ChatResponse> responses = new MessageAggregator()
+			.aggregate(this.chatModel.stream(prompt), aggregatedRef::set)
+			.collectList()
+			.block();
+
+		// The tool calls stream once, complete, as before the parts model
+		List<MessagePart> streamedToolCallParts = responses.stream()
+			.filter(chunk -> chunk.getResult() != null)
+			.flatMap(chunk -> chunk.getResult().getOutput().getParts().stream())
+			.filter(ToolCallPart.class::isInstance)
+			.toList();
+		assertThat(streamedToolCallParts).isNotEmpty()
+			.allSatisfy(part -> assertThat(StreamingParts.isPartial(part)).isFalse());
+
+		AssistantMessage aggregated = aggregatedRef.get().getResult().getOutput();
+		assertThat(aggregated.hasToolCalls()).isTrue();
+		assertThat(aggregated.getToolCalls()).allSatisfy(toolCall -> {
+			assertThat(toolCall.name()).isEqualTo("getCurrentWeather");
+			assertThat(toolCall.arguments()).contains("Paris");
+		});
+		assertThat(aggregated.getParts()).allSatisfy(part -> assertThat(StreamingParts.partIndex(part)).isNull());
 	}
 
 	void roleTest() {
@@ -582,6 +708,23 @@ public class OpenAiChatModelIT {
 		assertThat(content).containsAnyOf("bananas", "apple", "bowl", "basket", "fruit stand");
 	}
 
+	@Test
+	void multiModalityInterleavedUserParts() {
+		var userMessage = UserMessage.builder()
+			.part(TextPart.of("Here is a picture:"))
+			.part(MediaPart.of(Media.builder()
+				.mimeType(MimeTypeUtils.IMAGE_PNG)
+				.data(URI.create("https://docs.spring.io/spring-ai/reference/_images/multimodal.test.png"))
+				.build()))
+			.part(TextPart.of("Explain what do you see on this picture?"))
+			.build();
+
+		ChatResponse response = this.chatModel
+			.call(new Prompt(List.of(userMessage), OpenAiChatOptions.builder().build()));
+		assertThat(response.getResult().getOutput().getText()).containsAnyOf("bananas", "apple", "bowl", "basket",
+				"fruit stand");
+	}
+
 	@ParameterizedTest(name = "{0} : {displayName} ")
 	@ValueSource(strings = { DEFAULT_CHAT_MODEL_AUDIO })
 	void multiModalityOutputAudio(String modelName) throws IOException {
@@ -597,6 +740,10 @@ public class OpenAiChatModelIT {
 
 		byte[] audio = response.getResult().getOutput().getMedia().get(0).getDataAsByteArray();
 		assertThat(audio).isNotEmpty();
+		// The audio is a media part after the text part holding the transcript
+		List<MessagePart> parts = response.getResult().getOutput().getParts();
+		assertThat(parts.get(0)).isInstanceOf(TextPart.class);
+		assertThat(parts.get(parts.size() - 1)).isInstanceOf(MediaPart.class);
 	}
 
 	@ParameterizedTest(name = "{0} : {displayName} ")
