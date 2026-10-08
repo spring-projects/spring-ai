@@ -17,11 +17,13 @@
 package org.springframework.ai.ollama;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.StringJoiner;
 
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
@@ -33,6 +35,11 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.messages.part.MessagePart;
+import org.springframework.ai.chat.messages.part.ReasoningPart;
+import org.springframework.ai.chat.messages.part.StreamingPartIndexer;
+import org.springframework.ai.chat.messages.part.TextPart;
+import org.springframework.ai.chat.messages.part.ToolCallPart;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
@@ -79,6 +86,7 @@ import org.springframework.util.StringUtils;
  * @author Ilayaperumal Gopinathan
  * @author Sun Yuhan
  * @author Sebastien Deleuze
+ * @author Dimitar Proynov
  * @since 1.0.0
  */
 public class OllamaChatModel implements ChatModel {
@@ -101,6 +109,13 @@ public class OllamaChatModel implements ChatModel {
 
 	private static final String METADATA_EVAL_DURATION = "eval-duration";
 
+	/**
+	 * Key of the thinking text in the message and generation metadata. Superseded by the
+	 * {@link ReasoningPart}s of the message, see {@link AssistantMessage#getReasoning()}.
+	 * Still written for backward compatibility, and read on replay for messages without a
+	 * reasoning part, such as ones stored by an earlier version.
+	 */
+	@Deprecated(since = "2.1.0", forRemoval = true)
 	private static final String THINKING_METADATA_KEY = "thinking";
 
 	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
@@ -238,23 +253,12 @@ public class OllamaChatModel implements ChatModel {
 
 				OllamaApi.Message responseMessage = ollamaResponse.message();
 
-				List<AssistantMessage.ToolCall> toolCalls = List.of();
-
-				if (responseMessage != null && responseMessage.toolCalls() != null) {
-					toolCalls = responseMessage.toolCalls()
-						.stream()
-						.map(toolCall -> new AssistantMessage.ToolCall(toolCall.id(), "function",
-								toolCall.function().name(), jsonHelper.toJson(toolCall.function().arguments())))
-						.toList();
-				}
-
 				String thinking = (responseMessage != null) ? responseMessage.thinking() : null;
 				Map<String, Object> messageProperties = thinking != null ? Map.of(THINKING_METADATA_KEY, thinking)
 						: Map.of();
 				var assistantMessage = AssistantMessage.builder()
-					.content((responseMessage != null) ? responseMessage.content() : "")
+					.parts(toMessageParts(ollamaResponse.message(), null))
 					.properties(messageProperties)
-					.toolCalls(toolCalls)
 					.build();
 
 				ChatGenerationMetadata generationMetadata = ChatGenerationMetadata.NULL;
@@ -311,30 +315,17 @@ public class OllamaChatModel implements ChatModel {
 
 			Flux<OllamaApi.ChatResponse> ollamaResponse = this.chatApi.streamingChat(request);
 
+			// One indexer per subscription: Ollama streams neither a response id nor a
+			// content block index, so the parts of this stream share one index sequence.
+			StreamingPartIndexer partIndexer = new StreamingPartIndexer();
+
 			Flux<ChatResponse> chatResponse = ollamaResponse.map(chunk -> {
-				// A streamed chunk does not always carry a message, for example when
-				// Ollama reports an error instead of a chat message.
-				OllamaApi.Message chunkMessage = chunk.message();
-
-				String content = (chunkMessage != null) ? chunkMessage.content() : "";
-
-				List<AssistantMessage.ToolCall> toolCalls = List.of();
-
-				if (chunkMessage != null && chunkMessage.toolCalls() != null) {
-					toolCalls = chunkMessage.toolCalls()
-						.stream()
-						.map(toolCall -> new AssistantMessage.ToolCall(toolCall.id(), "function",
-								toolCall.function().name(), jsonHelper.toJson(toolCall.function().arguments())))
-						.toList();
-				}
-
-				String thinking = (chunkMessage != null) ? chunkMessage.thinking() : null;
+				String thinking = (chunk.message() != null) ? chunk.message().thinking() : null;
 				Map<String, Object> messageProperties = thinking != null ? Map.of(THINKING_METADATA_KEY, thinking)
 						: Map.of();
 				var assistantMessage = AssistantMessage.builder()
-					.content(content)
+					.parts(toMessageParts(chunk.message(), partIndexer))
 					.properties(messageProperties)
-					.toolCalls(toolCalls)
 					.build();
 
 				ChatGenerationMetadata generationMetadata = ChatGenerationMetadata.NULL;
@@ -361,6 +352,82 @@ public class OllamaChatModel implements ChatModel {
 
 			return new MessageAggregator().aggregate(chatResponseFlux, observationContext::setResponse);
 		});
+	}
+
+	/**
+	 * Maps an Ollama message to ordered {@link MessagePart}s: the thinking as a
+	 * {@link ReasoningPart}, then the content as a {@link TextPart}, then each tool call
+	 * as a {@link ToolCallPart}. Ollama returns the three as separate fields of one
+	 * message, so this is the order in which a model produces them.
+	 * <p>
+	 * When {@code partIndexer} is not {@code null} the message is a streamed chunk and
+	 * its parts are stamped with their stream index: thinking and content deltas become
+	 * partial parts, tool calls, which Ollama streams whole, complete ones.
+	 * <p>
+	 * An empty thinking or content yields no part, so that the empty content Ollama
+	 * streams next to every thinking delta does not split the reasoning, and a tool-call
+	 * answer has no empty text part before its tool calls. A message without any part,
+	 * such as the final {@code done} chunk of a stream, keeps the empty text it always
+	 * had, so that its text is not {@code null}.
+	 */
+	private static List<MessagePart> toMessageParts(OllamaApi.@Nullable Message message,
+			@Nullable StreamingPartIndexer partIndexer) {
+		List<MessagePart> parts = new ArrayList<>();
+		if (message != null) {
+			// Only an empty value is skipped, not a blank one: a streamed delta is often
+			// a single whitespace or newline token that must be kept.
+			String thinking = message.thinking();
+			if (thinking != null && !thinking.isEmpty()) {
+				parts.add(ReasoningPart.of(thinking));
+			}
+			String content = message.content();
+			if (content != null && !content.isEmpty()) {
+				parts.add(TextPart.of(content));
+			}
+			List<ToolCall> toolCalls = message.toolCalls();
+			if (toolCalls != null) {
+				for (ToolCall toolCall : toolCalls) {
+					parts.add(ToolCallPart.of(new AssistantMessage.ToolCall(toolCall.id(), "function",
+							toolCall.function().name(), jsonHelper.toJson(toolCall.function().arguments()))));
+				}
+			}
+		}
+		if (partIndexer != null) {
+			parts.replaceAll(partIndexer::stamp);
+		}
+		if (parts.isEmpty()) {
+			parts.add(TextPart.of(""));
+		}
+		return parts;
+	}
+
+	/**
+	 * The thinking to send back with an assistant message, so that a thinking model sees
+	 * its earlier reasoning, for instance across the rounds of a tool-calling loop.
+	 * <p>
+	 * It is the text of the {@link ReasoningPart}s without a payload, one per line in
+	 * part order. A part with a payload is skipped: it is reasoning another provider
+	 * signed or encrypted for its own replay, which Ollama cannot use. A message without
+	 * any reasoning part, such as one stored by an earlier version, falls back to the
+	 * {@link #THINKING_METADATA_KEY} metadata entry.
+	 * @return the thinking, or {@code null} when there is none, so that the field is left
+	 * out of the request
+	 */
+	private static @Nullable String replayableThinking(AssistantMessage assistantMessage) {
+		List<ReasoningPart> reasoningParts = assistantMessage.getReasoning();
+		if (reasoningParts.isEmpty()) {
+			Object thinking = assistantMessage.getMetadata().get(THINKING_METADATA_KEY);
+			return (thinking instanceof String text && StringUtils.hasText(text)) ? text : null;
+		}
+		// Ollama has a single thinking field, so separate parts are joined with a line
+		// break, keeping reasoning that was interleaved with text from running together.
+		StringJoiner thinking = new StringJoiner("\n");
+		for (ReasoningPart part : reasoningParts) {
+			if (part.payload() == null && StringUtils.hasText(part.text())) {
+				thinking.add(part.text());
+			}
+		}
+		return (thinking.length() > 0) ? thinking.toString() : null;
 	}
 
 	private void verifyPromptChatOptions(Prompt prompt) {
@@ -406,6 +473,7 @@ public class OllamaChatModel implements ChatModel {
 				return List.of(OllamaApi.Message.builder(Role.ASSISTANT)
 					.content(assistantMessage.getText())
 					.toolCalls(toolCalls)
+					.thinking(replayableThinking(assistantMessage))
 					.build());
 			}
 			else if (message.getMessageType() == MessageType.TOOL) {

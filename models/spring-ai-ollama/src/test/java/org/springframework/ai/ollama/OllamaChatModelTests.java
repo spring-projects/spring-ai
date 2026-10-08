@@ -19,6 +19,8 @@ package org.springframework.ai.ollama;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 import io.micrometer.observation.ObservationRegistry;
 import okhttp3.mockwebserver.MockResponse;
@@ -27,20 +29,30 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.messages.part.MessagePart;
+import org.springframework.ai.chat.messages.part.OpaquePayload;
+import org.springframework.ai.chat.messages.part.ReasoningPart;
+import org.springframework.ai.chat.messages.part.StreamingParts;
+import org.springframework.ai.chat.messages.part.TextPart;
+import org.springframework.ai.chat.messages.part.ToolCallPart;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.ollama.api.OllamaApi;
+import org.springframework.ai.ollama.api.OllamaApi.Message.Role;
 import org.springframework.ai.ollama.api.OllamaChatOptions;
 import org.springframework.ai.ollama.api.OllamaModel;
 import org.springframework.ai.ollama.management.ModelManagementOptions;
@@ -52,6 +64,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
@@ -60,6 +74,7 @@ import static org.mockito.Mockito.when;
  * @author Alexandros Pappas
  * @author Thomas Vitale
  * @author Sebastien Deleuze
+ * @author Dimitar Proynov
  * @since 1.0.0
  */
 @ExtendWith(MockitoExtension.class)
@@ -468,6 +483,291 @@ class OllamaChatModelTests {
 		Prompt secondPrompt = new Prompt(
 				List.of(new UserMessage("Turn 1"), firstAssistantMessage, new UserMessage("Turn 2")));
 		chatModel.call(secondPrompt);
+
+		ArgumentCaptor<OllamaApi.ChatRequest> requests = ArgumentCaptor.forClass(OllamaApi.ChatRequest.class);
+		verify(this.ollamaApi, times(2)).chat(requests.capture());
+		OllamaApi.Message replayed = requests.getAllValues().get(1).messages().get(1);
+		assertThat(replayed.role()).isEqualTo(Role.ASSISTANT);
+		assertThat(replayed.content()).isEqualTo("First answer.");
+		assertThat(replayed.thinking()).isEqualTo(thinkingText);
+	}
+
+	@Test
+	void thinkingAndTextBecomeReasoningThenTextParts() {
+		when(this.ollamaApi.chat(any())).thenReturn(response(OllamaApi.Message.builder(Role.ASSISTANT)
+			.content("The answer is 42.")
+			.thinking("Let me think.")
+			.build(), true));
+
+		ChatResponse response = chatModel().call(new Prompt("What is the answer?"));
+		AssistantMessage message = response.getResult().getOutput();
+
+		assertThat(message.getParts()).containsExactly(ReasoningPart.of("Let me think."),
+				TextPart.of("The answer is 42."));
+		assertThat(message.getReasoning()).containsExactly(ReasoningPart.of("Let me think."));
+		assertThat(message.getText()).isEqualTo("The answer is 42.");
+		// The deprecated metadata key is still written on the message and the generation
+		assertThat(message.getMetadata()).containsEntry("thinking", "Let me think.");
+		assertThat(response.getResult().getMetadata().<String>get("thinking")).isEqualTo("Let me think.");
+	}
+
+	@Test
+	void answerWithoutThinkingIsASingleTextPart() {
+		when(this.ollamaApi.chat(any()))
+			.thenReturn(response(OllamaApi.Message.builder(Role.ASSISTANT).content("hello").build(), true));
+
+		AssistantMessage message = chatModel().call(new Prompt("hi")).getResult().getOutput();
+
+		assertThat(message.getParts()).containsExactly(TextPart.of("hello"));
+		assertThat(message.getReasoning()).isEmpty();
+		assertThat(message.getMetadata()).doesNotContainKey("thinking");
+	}
+
+	@Test
+	void toolCallAnswerHasToolCallPartsAndAnEmptyText() {
+		when(this.ollamaApi.chat(any())).thenReturn(response(OllamaApi.Message.builder(Role.ASSISTANT)
+			.content("")
+			.toolCalls(List.of(toolCall("call_1", "getWeather", "Seoul"), toolCall("call_2", "getWeather", "Sofia")))
+			.build(), true));
+
+		ChatResponse response = chatModel().call(new Prompt("Weather?"));
+		AssistantMessage message = response.getResult().getOutput();
+
+		assertThat(message.getParts()).containsExactly(
+				ToolCallPart
+					.of(new AssistantMessage.ToolCall("call_1", "function", "getWeather", "{\"city\":\"Seoul\"}")),
+				ToolCallPart
+					.of(new AssistantMessage.ToolCall("call_2", "function", "getWeather", "{\"city\":\"Sofia\"}")));
+		assertThat(message.getText()).isEmpty();
+		assertThat(response.hasToolCalls()).isTrue();
+	}
+
+	@Test
+	void thinkingBeforeToolCallIsKeptInOrder() {
+		when(this.ollamaApi.chat(any())).thenReturn(response(OllamaApi.Message.builder(Role.ASSISTANT)
+			.thinking("I need the weather tool.")
+			.toolCalls(List.of(toolCall("call_1", "getWeather", "Seoul")))
+			.build(), true));
+
+		AssistantMessage message = chatModel().call(new Prompt("Weather?")).getResult().getOutput();
+
+		assertThat(message.getParts()).hasSize(2);
+		assertThat(message.getParts().get(0)).isEqualTo(ReasoningPart.of("I need the weather tool."));
+		assertThat(message.getParts().get(1)).isInstanceOf(ToolCallPart.class);
+		assertThat(message.getText()).isEmpty();
+	}
+
+	@Test
+	void emptyAnswerKeepsAnEmptyTextPart() {
+		when(this.ollamaApi.chat(any()))
+			.thenReturn(response(OllamaApi.Message.builder(Role.ASSISTANT).content("").build(), true));
+
+		AssistantMessage message = chatModel().call(new Prompt("hi")).getResult().getOutput();
+
+		assertThat(message.getParts()).containsExactly(TextPart.of(""));
+		assertThat(message.getText()).isEmpty();
+	}
+
+	@Test
+	void streamingThinkingAndTextProduceIndexedParts() {
+		when(this.ollamaApi.streamingChat(any())).thenReturn(Flux.just(
+				response(OllamaApi.Message.builder(Role.ASSISTANT).content("").thinking("Think ").build(), false),
+				response(OllamaApi.Message.builder(Role.ASSISTANT).content("").thinking("first.").build(), false),
+				response(OllamaApi.Message.builder(Role.ASSISTANT).content("Hello").build(), false),
+				response(OllamaApi.Message.builder(Role.ASSISTANT).content("!").build(), false),
+				response(OllamaApi.Message.builder(Role.ASSISTANT).content("").build(), true)));
+
+		AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
+		List<ChatResponse> chunks = new MessageAggregator()
+			.aggregate(chatModel().stream(new Prompt("Say hi")), aggregatedRef::set)
+			.collectList()
+			.block();
+
+		assertThat(chunks).hasSize(5);
+		AssistantMessage first = chunks.get(0).getResult().getOutput();
+		assertThat(first.getParts()).containsExactly(StreamingParts.partial(ReasoningPart.of("Think "), 0));
+		assertThat(first.getText()).isEmpty();
+		assertThat(first.getMetadata()).containsEntry("thinking", "Think ");
+		assertThat(chunks.get(0).getResult().getMetadata().<String>get("thinking")).isEqualTo("Think ");
+		assertThat(chunks.get(1).getResult().getOutput().getParts())
+			.containsExactly(StreamingParts.partial(ReasoningPart.of("first."), 0));
+		AssistantMessage third = chunks.get(2).getResult().getOutput();
+		assertThat(third.getParts()).containsExactly(StreamingParts.partial(TextPart.of("Hello"), 1));
+		assertThat(third.getText()).isEqualTo("Hello");
+		assertThat(third.getMetadata()).doesNotContainKey("thinking");
+		assertThat(chunks.get(3).getResult().getOutput().getParts())
+			.containsExactly(StreamingParts.partial(TextPart.of("!"), 1));
+		// The final done chunk carries no content: an unindexed empty text, as before
+		assertThat(chunks.get(4).getResult().getOutput().getParts()).containsExactly(TextPart.of(""));
+
+		AssistantMessage aggregated = aggregatedRef.get().getResult().getOutput();
+		assertThat(aggregated.getParts()).containsExactly(ReasoningPart.of("Think first."), TextPart.of("Hello!"));
+		assertThat(aggregated.getText()).isEqualTo("Hello!");
+	}
+
+	@Test
+	void streamingKeepsWhitespaceOnlyThinkingDeltas() {
+		when(this.ollamaApi.streamingChat(any())).thenReturn(Flux.just(
+				response(OllamaApi.Message.builder(Role.ASSISTANT).content("").thinking("Step one.").build(), false),
+				response(OllamaApi.Message.builder(Role.ASSISTANT).content("").thinking("\n\n").build(), false),
+				response(OllamaApi.Message.builder(Role.ASSISTANT).content("").thinking("Step two.").build(), false),
+				response(OllamaApi.Message.builder(Role.ASSISTANT).content("Done").build(), true)));
+
+		AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
+		List<ChatResponse> chunks = new MessageAggregator()
+			.aggregate(chatModel().stream(new Prompt("Go")), aggregatedRef::set)
+			.collectList()
+			.block();
+
+		assertThat(chunks.get(1).getResult().getOutput().getParts())
+			.containsExactly(StreamingParts.partial(ReasoningPart.of("\n\n"), 0));
+		assertThat(aggregatedRef.get().getResult().getOutput().getParts())
+			.containsExactly(ReasoningPart.of("Step one.\n\nStep two."), TextPart.of("Done"));
+	}
+
+	@Test
+	void streamingToolCallChunkProducesCompleteToolCallPart() {
+		when(this.ollamaApi.streamingChat(any())).thenReturn(Flux.just(
+				response(OllamaApi.Message.builder(Role.ASSISTANT).content("").thinking("Need the tool.").build(),
+						false),
+				response(OllamaApi.Message.builder(Role.ASSISTANT)
+					.content("")
+					.toolCalls(List.of(toolCall("call_1", "getWeather", "Seoul")))
+					.build(), false),
+				response(OllamaApi.Message.builder(Role.ASSISTANT).content("").build(), true)));
+
+		AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
+		List<ChatResponse> chunks = new MessageAggregator()
+			.aggregate(chatModel().stream(new Prompt("Weather?")), aggregatedRef::set)
+			.collectList()
+			.block();
+
+		assertThat(chunks.get(0).hasToolCalls()).isFalse();
+		AssistantMessage second = chunks.get(1).getResult().getOutput();
+		assertThat(second.getParts()).hasSize(1);
+		MessagePart part = second.getParts().get(0);
+		assertThat(part).isInstanceOf(ToolCallPart.class);
+		assertThat(StreamingParts.isPartial(part)).isFalse();
+		assertThat(StreamingParts.partIndex(part)).isEqualTo(1);
+		assertThat(chunks.get(1).hasToolCalls()).isTrue();
+		assertThat(second.getText()).isEmpty();
+
+		AssistantMessage aggregated = aggregatedRef.get().getResult().getOutput();
+		assertThat(aggregated.getParts()).containsExactly(ReasoningPart.of("Need the tool."), ToolCallPart
+			.of(new AssistantMessage.ToolCall("call_1", "function", "getWeather", "{\"city\":\"Seoul\"}")));
+	}
+
+	@Test
+	void streamedReasoningIsReplayedAsThinking() {
+		when(this.ollamaApi.streamingChat(any())).thenReturn(Flux.just(
+				response(OllamaApi.Message.builder(Role.ASSISTANT).content("").thinking("17 x 23 ").build(), false),
+				response(OllamaApi.Message.builder(Role.ASSISTANT).content("").thinking("= 391.").build(), false),
+				response(OllamaApi.Message.builder(Role.ASSISTANT).content("391").build(), true)));
+
+		AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
+		new MessageAggregator().aggregate(chatModel().stream(new Prompt("Calculate 17 x 23")), aggregatedRef::set)
+			.blockLast();
+
+		OllamaApi.Message replayed = assistantRequestMessage(aggregatedRef.get().getResult().getOutput());
+
+		// The deprecated metadata entry only holds the last thinking delta: the parts win
+		assertThat(replayed.thinking()).isEqualTo("17 x 23 = 391.");
+		assertThat(replayed.content()).isEqualTo("391");
+	}
+
+	@Test
+	void reasoningPartIsReplayedAsThinking() {
+		AssistantMessage assistant = AssistantMessage.builder()
+			.part(ReasoningPart.of("17 x 23 = 391."))
+			.part(TextPart.of("391"))
+			.build();
+
+		OllamaApi.Message replayed = assistantRequestMessage(assistant);
+
+		assertThat(replayed.thinking()).isEqualTo("17 x 23 = 391.");
+		assertThat(replayed.content()).isEqualTo("391");
+	}
+
+	@Test
+	void reasoningPartsAreJoinedInOrderOnReplay() {
+		AssistantMessage assistant = AssistantMessage.builder()
+			.part(ReasoningPart.of("17 x 20 = 340."))
+			.part(new ReasoningPart("signed", null, new OpaquePayload("anthropic", "signature", "sig"), Map.of()))
+			.part(TextPart.of("Then the units."))
+			.part(ReasoningPart.of("340 + 51 = 391."))
+			.part(TextPart.of("391"))
+			.build();
+
+		assertThat(assistantRequestMessage(assistant).thinking()).isEqualTo("17 x 20 = 340.\n340 + 51 = 391.");
+	}
+
+	@Test
+	void legacyThinkingMetadataIsReplayedWhenThereIsNoReasoningPart() {
+		AssistantMessage assistant = AssistantMessage.builder()
+			.content("391")
+			.properties(Map.of("thinking", "17 x 23 = 391."))
+			.build();
+
+		assertThat(assistantRequestMessage(assistant).thinking()).isEqualTo("17 x 23 = 391.");
+	}
+
+	@Test
+	void foreignSignedReasoningIsNotReplayedAsThinking() {
+		AssistantMessage assistant = AssistantMessage.builder()
+			.part(new ReasoningPart("anthropic thoughts", null, new OpaquePayload("anthropic", "signature", "sig"),
+					Map.of()))
+			.part(TextPart.of("391"))
+			.properties(Map.of("thinking", "stale"))
+			.build();
+
+		assertThat(assistantRequestMessage(assistant).thinking()).isNull();
+	}
+
+	@Test
+	void plainAssistantMessageHasNoThinkingOnReplay() {
+		assertThat(assistantRequestMessage(new AssistantMessage("391")).thinking()).isNull();
+	}
+
+	@Test
+	void toolCallsAreReplayedFromToolCallParts() {
+		AssistantMessage assistant = AssistantMessage.builder()
+			.part(ReasoningPart.of("Need the tool."))
+			.part(ToolCallPart
+				.of(new AssistantMessage.ToolCall("call_1", "function", "getWeather", "{\"city\":\"Seoul\"}")))
+			.build();
+
+		OllamaApi.Message replayed = assistantRequestMessage(assistant);
+
+		assertThat(replayed.thinking()).isEqualTo("Need the tool.");
+		assertThat(replayed.content()).isEmpty();
+		assertThat(replayed.toolCalls()).containsExactly(toolCall("call_1", "getWeather", "Seoul"));
+	}
+
+	private OllamaChatModel chatModel() {
+		return OllamaChatModel.builder()
+			.ollamaApi(this.ollamaApi)
+			.options(OllamaChatOptions.builder().model("qwen3").build())
+			.build();
+	}
+
+	private OllamaApi.Message assistantRequestMessage(AssistantMessage assistant) {
+		Prompt prompt = new Prompt(List.<Message>of(new UserMessage("Calculate 17 x 23"), assistant),
+				OllamaChatOptions.builder().model("qwen3").build());
+		return chatModel().ollamaChatRequest(prompt, false)
+			.messages()
+			.stream()
+			.filter(m -> m.role() == Role.ASSISTANT)
+			.findFirst()
+			.orElseThrow();
+	}
+
+	private static OllamaApi.Message.ToolCall toolCall(String id, String name, String city) {
+		return new OllamaApi.Message.ToolCall(id, new OllamaApi.Message.ToolCallFunction(name, Map.of("city", city)));
+	}
+
+	private static OllamaApi.ChatResponse response(OllamaApi.Message message, boolean done) {
+		return new OllamaApi.ChatResponse("qwen3", Instant.now(), message, done ? "stop" : null, done, null, null,
+				done ? 10 : null, null, done ? 20 : null, null);
 	}
 
 }
