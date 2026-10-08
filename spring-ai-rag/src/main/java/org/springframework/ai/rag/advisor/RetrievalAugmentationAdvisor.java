@@ -31,6 +31,8 @@ import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.api.AdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.BaseAdvisor;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.Query;
@@ -54,6 +56,7 @@ import org.springframework.util.Assert;
  *
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Xuhan Zhuang
  * @since 1.0.0
  * @see <a href="http://export.arxiv.org/abs/2407.21059">arXiv:2407.21059</a>
  * @see <a href="https://export.arxiv.org/abs/2312.10997">arXiv:2312.10997</a>
@@ -108,10 +111,19 @@ public final class RetrievalAugmentationAdvisor implements BaseAdvisor {
 		Map<String, Object> context = new HashMap<>(chatClientRequest.context());
 
 		// 0. Create a query from the user text, parameters, and conversation history.
-		String text = chatClientRequest.prompt().getUserMessage().getText();
+		// The current user message is part of the prompt instructions, but it is the
+		// query itself rather than conversation history. It is matched by reference
+		// and not by equality, so that an earlier message repeating the same text
+		// stays in the history.
+		UserMessage userMessage = chatClientRequest.prompt().getUserMessage();
+		List<Message> history = chatClientRequest.prompt()
+			.getInstructions()
+			.stream()
+			.filter(message -> message != userMessage)
+			.toList();
 		Query originalQuery = Query.builder()
-			.text(Objects.requireNonNullElse(text, ""))
-			.history(chatClientRequest.prompt().getInstructions())
+			.text(Objects.requireNonNullElse(userMessage.getText(), ""))
+			.history(history)
 			.context(context)
 			.build();
 
