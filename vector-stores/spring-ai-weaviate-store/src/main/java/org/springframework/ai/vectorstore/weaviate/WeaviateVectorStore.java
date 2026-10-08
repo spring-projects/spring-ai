@@ -107,6 +107,12 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 
 	private static final String ADDITIONAL_VECTOR_FIELD_NAME = "vector";
 
+	/**
+	 * Number of documents looked up per query when deleting by filter. Matches the
+	 * default QUERY_MAXIMUM_RESULTS limit of a Weaviate server.
+	 */
+	private static final int DELETE_BY_FILTER_PAGE_SIZE = 10000;
+
 	private final WeaviateClient weaviateClient;
 
 	private final WeaviateVectorStoreOptions options;
@@ -300,19 +306,26 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 			SearchRequest searchRequest = SearchRequest.builder()
 				.query("") // empty query since we only want filter matches
 				.filterExpression(filterExpression)
-				.topK(10000) // large enough to get all matches
+				.topK(DELETE_BY_FILTER_PAGE_SIZE)
 				.similarityThresholdAll()
 				.build();
 
-			List<Document> matchingDocs = similaritySearch(searchRequest);
+			// A single query returns at most QUERY_MAXIMUM_RESULTS (10,000 by default)
+			// objects, so keep deleting until a page comes back short.
+			int deletedCount = 0;
+			List<Document> matchingDocs;
+			do {
+				matchingDocs = similaritySearch(searchRequest);
+				if (!matchingDocs.isEmpty()) {
+					delete(matchingDocs.stream().map(Document::getId).toList());
+					deletedCount += matchingDocs.size();
+				}
+			}
+			while (matchingDocs.size() >= DELETE_BY_FILTER_PAGE_SIZE);
 
-			if (!matchingDocs.isEmpty()) {
-				List<String> idsToDelete = matchingDocs.stream().map(Document::getId).toList();
-
-				delete(idsToDelete);
-
+			if (deletedCount > 0) {
 				if (logger.isDebugEnabled()) {
-					logger.debug("Deleted " + idsToDelete.size() + " documents matching filter expression");
+					logger.debug("Deleted " + deletedCount + " documents matching filter expression");
 				}
 			}
 			else {
