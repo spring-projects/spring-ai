@@ -73,7 +73,7 @@ import org.springframework.ai.chat.messages.part.MediaPart;
 import org.springframework.ai.chat.messages.part.MessagePart;
 import org.springframework.ai.chat.messages.part.OpaquePayload;
 import org.springframework.ai.chat.messages.part.ReasoningPart;
-import org.springframework.ai.chat.messages.part.StreamingParts;
+import org.springframework.ai.chat.messages.part.StreamingPartIndexer;
 import org.springframework.ai.chat.messages.part.TextPart;
 import org.springframework.ai.chat.messages.part.ToolCallPart;
 import org.springframework.ai.chat.messages.part.ToolResultPart;
@@ -648,7 +648,8 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 						.flatMap(candidate -> {
 							StreamingPartIndexer indexer = indexers.computeIfAbsent(candidate.index().orElse(0),
 									key -> new StreamingPartIndexer());
-							return responseCandidateToGeneration(candidate).stream().map(indexer::stamp);
+							return responseCandidateToGeneration(candidate).stream()
+								.map(generation -> stampParts(generation, indexer));
 						})
 						.toList();
 
@@ -1225,6 +1226,33 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		}
 	}
 
+	/**
+	 * Stamps the parts of a streamed generation with their stream index, see
+	 * {@link StreamingPartIndexer}. Gemini streams parts without a content block index,
+	 * and sends the thought signature on the final delta of a thought, which the
+	 * aggregator keeps when it concatenates the partial parts.
+	 * @param generation the generation of one candidate of a streamed chunk
+	 * @param indexer the indexer of that candidate
+	 * @return a generation with the parts stamped, or the generation unchanged when its
+	 * message is of an {@link AssistantMessage} subclass
+	 */
+	private static Generation stampParts(Generation generation, StreamingPartIndexer indexer) {
+		AssistantMessage output = generation.getOutput();
+		if (output.getClass() != AssistantMessage.class) {
+			// An override of responseCandidateToGeneration returned its own message type,
+			// which a rebuild would lose.
+			return generation;
+		}
+		AssistantMessage.Builder<?> builder = AssistantMessage.builder().properties(output.getMetadata());
+		if (output.getParts().isEmpty()) {
+			builder.content("");
+		}
+		for (MessagePart part : output.getParts()) {
+			builder.part(indexer.stamp(part));
+		}
+		return new Generation(builder.build(), generation.getMetadata());
+	}
+
 	public static final class Builder {
 
 		@Nullable private Client genAiClient;
@@ -1419,57 +1447,6 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		@Override
 		public String getName() {
 			return this.value;
-		}
-
-	}
-
-	/**
-	 * Gemini streams parts without a content block index, so this synthesizes one for the
-	 * {@link StreamingParts} contract. Consecutive parts of the same delta kind (answer
-	 * text, thought text) share an index and are stamped partial, so that
-	 * {@link MessageAggregator} concatenates them and keeps the last thought signature,
-	 * which Gemini sends on the final delta. Every other part is complete and gets an
-	 * index of its own.
-	 * <p>
-	 * An empty text part without a signature, such as the placeholder of a chunk without
-	 * content, carries nothing: it is left without an index and does not end the current
-	 * delta, so that a chunk holding only usage or safety ratings in the middle of a
-	 * thought does not split it in two. Not thread-safe: one instance serves one
-	 * candidate of one stream.
-	 */
-	private static final class StreamingPartIndexer {
-
-		private int index = -1;
-
-		private @Nullable Class<? extends MessagePart> lastDeltaKind;
-
-		Generation stamp(Generation generation) {
-			AssistantMessage output = generation.getOutput();
-			if (output.getClass() != AssistantMessage.class) {
-				// An override of responseCandidateToGeneration returned its own message
-				// type, which a rebuild would lose.
-				return generation;
-			}
-			AssistantMessage.Builder<?> builder = AssistantMessage.builder().properties(output.getMetadata());
-			if (output.getParts().isEmpty()) {
-				builder.content("");
-			}
-			for (MessagePart part : output.getParts()) {
-				builder.part(stamp(part));
-			}
-			return new Generation(builder.build(), generation.getMetadata());
-		}
-
-		private MessagePart stamp(MessagePart part) {
-			if (part instanceof TextPart textPart && textPart.text().isEmpty() && textPart.payload() == null) {
-				return part;
-			}
-			boolean delta = part instanceof TextPart || part instanceof ReasoningPart;
-			if (!delta || part.getClass() != this.lastDeltaKind) {
-				this.index++;
-			}
-			this.lastDeltaKind = delta ? part.getClass() : null;
-			return delta ? StreamingParts.partial(part, this.index) : StreamingParts.complete(part, this.index);
 		}
 
 	}

@@ -91,7 +91,7 @@ import org.springframework.ai.chat.messages.part.MediaPart;
 import org.springframework.ai.chat.messages.part.MessagePart;
 import org.springframework.ai.chat.messages.part.OpaquePayload;
 import org.springframework.ai.chat.messages.part.ReasoningPart;
-import org.springframework.ai.chat.messages.part.StreamingParts;
+import org.springframework.ai.chat.messages.part.StreamingPartIndexer;
 import org.springframework.ai.chat.messages.part.TextPart;
 import org.springframework.ai.chat.messages.part.ToolCallPart;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
@@ -495,7 +495,9 @@ public final class OpenAiChatModel implements ChatModel {
 			parts.add(MediaPart.of(audioMedia(audioOutput, request)));
 		}
 		if (partIndexer != null) {
-			parts.replaceAll(partIndexer::stamp);
+			// Media is not indexed: the aggregator does not carry unindexed media, which
+			// is how streamed media was handled before message parts.
+			parts.replaceAll(part -> (part instanceof MediaPart) ? part : partIndexer.stamp(part));
 		}
 		if (parts.isEmpty()) {
 			// A message without any part, such as a refusal or the role-only first
@@ -1593,85 +1595,15 @@ public final class OpenAiChatModel implements ChatModel {
 		}
 
 		/**
-		 * The part indexer of a response, shared by all its choices, see
-		 * {@link StreamingPartIndexer}.
+		 * The part indexer of a response, shared by all its choices. The aggregator
+		 * groups indexed parts by response id alone, so separate indices per choice would
+		 * make the parts of two choices ({@code n > 1}) overwrite each other at the same
+		 * index. With a shared instance, parts of different choices never share an index
+		 * unless they form a run of the same kind, in which case their deltas are
+		 * concatenated in arrival order and nothing is lost.
 		 */
 		StreamingPartIndexer partIndexer(String responseId) {
 			return this.partIndexerByResponseId.computeIfAbsent(responseId, key -> new StreamingPartIndexer());
-		}
-
-	}
-
-	/**
-	 * Assigns the {@link StreamingParts} index to the parts of a streamed response, so
-	 * that {@link MessageAggregator} can rebuild the complete parts from the chunks.
-	 * <p>
-	 * The aggregator merges streamed parts by index: a {@linkplain StreamingParts#partial
-	 * partial} part is appended to what was received earlier at the same index, and a
-	 * {@linkplain StreamingParts#complete complete} part replaces it. Providers that
-	 * stream content blocks, such as Anthropic, send that index with every delta. Chat
-	 * Completions does not: a chunk only carries a {@code reasoning_content} delta, a
-	 * {@code content} delta, or the tool calls that {@link ChunkMerger} has merged. This
-	 * class synthesizes the index from the order in which the parts arrive:
-	 * <ul>
-	 * <li>A reasoning delta or a text delta continues the current index when the previous
-	 * part was a delta of the same kind, and starts the next index otherwise. So a run of
-	 * reasoning deltas becomes one {@link ReasoningPart}, and a run of text deltas one
-	 * {@link TextPart}.</li>
-	 * <li>A tool call is already complete when it arrives, and gets the next index for
-	 * itself. It also ends the current run, so a text delta that follows it starts a new
-	 * text part.</li>
-	 * <li>Media is not indexed. The aggregator does not carry unindexed media, which is
-	 * how streamed media was handled before message parts.</li>
-	 * </ul>
-	 * For example, the deltas {@code reasoning("Think ")}, {@code reasoning("more.")},
-	 * {@code text("Hel")} and {@code text("lo")}, followed by one complete tool call, are
-	 * stamped as partial 0, partial 0, partial 1, partial 1 and complete 2. They
-	 * aggregate to a reasoning part {@code "Think more."}, a text part {@code "Hello"}
-	 * and the tool call, in that order.
-	 * <p>
-	 * One instance is used per response id, and it is shared by all the choices of that
-	 * response. The aggregator groups indexed parts by response id alone, so separate
-	 * indices per choice would make the parts of two choices ({@code n > 1}) overwrite
-	 * each other at the same index. With a shared instance, parts of different choices
-	 * never share an index unless they form a run of the same kind, in which case their
-	 * deltas are concatenated in arrival order and nothing is lost. The instance is
-	 * stateful and is not thread-safe; the chunks of a stream are processed one at a
-	 * time.
-	 */
-	private static final class StreamingPartIndexer {
-
-		/**
-		 * The index of the most recently stamped part, {@code -1} before the first one.
-		 */
-		private int index = -1;
-
-		/**
-		 * The type of the most recently stamped delta, {@link TextPart} or
-		 * {@link ReasoningPart}, or {@code null} when the most recent part was complete,
-		 * meaning no run is in progress.
-		 */
-		private @Nullable Class<? extends MessagePart> lastDeltaKind;
-
-		/**
-		 * Returns a copy of the part with its stream index set, and advances this
-		 * indexer. Call it once per part, in the order the parts appear in the response.
-		 * @param part the part of a streamed chunk, without an index
-		 * @return a {@link TextPart} or {@link ReasoningPart} stamped as partial, with
-		 * the index of the current run of deltas of its kind, or the next index when it
-		 * starts a new run; a {@link MediaPart} unchanged; any other part stamped as
-		 * complete, with the next index
-		 */
-		MessagePart stamp(MessagePart part) {
-			if (part instanceof MediaPart) {
-				return part;
-			}
-			boolean delta = part instanceof TextPart || part instanceof ReasoningPart;
-			if (!delta || part.getClass() != this.lastDeltaKind) {
-				this.index++;
-			}
-			this.lastDeltaKind = delta ? part.getClass() : null;
-			return delta ? StreamingParts.partial(part, this.index) : StreamingParts.complete(part, this.index);
 		}
 
 	}
