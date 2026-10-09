@@ -175,8 +175,10 @@ The prefix `spring.ai.openai.chat` is the property prefix that lets you configur
 | spring.ai.openai.chat.output-modalities | Output types that you would like the model to generate for this request. Most models are capable of generating text, which is the default.
 The `gpt-audio` model can also be used to generate audio. To request that this model generate both text and audio responses,
 you can use: `text`, `audio`. Not supported for streaming. | -
-| spring.ai.openai.chat.output-audio | Audio parameters for the audio generation. Required when audio output is requested with `output-modalities`: `audio`.
+| spring.ai.openai.chat.output-audio.voice | The voice used for the audio generation, such as `alloy`. Required when audio output is requested with `output-modalities`: `audio`.
+The value is sent as given, so the voices of an OpenAI-compatible provider can also be used.
 Requires the `gpt-audio` model and is not supported for streaming completions. | -
+| spring.ai.openai.chat.output-audio.format | The format of the generated audio, such as `wav` or `mp3`. Required when audio output is requested with `output-modalities`: `audio`. | -
 | spring.ai.openai.chat.presence-penalty | Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far, increasing the model's likelihood to talk about new topics. | -
 | spring.ai.openai.chat.response-format.type | Compatible with `GPT-4o`, `GPT-4o mini`, `GPT-4 Turbo` and all `GPT-3.5 Turbo` models newer than `gpt-3.5-turbo-1106`. The `JSON_OBJECT` type enables JSON mode, which guarantees the message the model generates is valid JSON.
 The `JSON_SCHEMA` type enables link:https://platform.openai.com/docs/guides/structured-outputs[Structured Outputs] which guarantees the model will match your supplied JSON schema. The JSON_SCHEMA type requires setting the `responseFormat.schema` property as well. | -
@@ -447,6 +449,19 @@ byte[] waveAudio = response.getResult().getOutput().getMedia().get(0).getDataAsB
 
 You have to specify an `audio` modality in the `OpenAiChatOptions` to generate audio output.
 The `AudioParameters` class provides the voice and audio format for the audio output.
+
+The `Voice` and `AudioResponseFormat` enums list the values OpenAI offers.
+The voice and format are sent as given, so an OpenAI-compatible provider's own voices can be used as well:
+
+[source,java]
+----
+OpenAiChatOptions.builder()
+    .outputModalities(List.of("text", "audio"))
+    .outputAudio(new AudioParameters("Chloe", "wav"))
+    .build();
+----
+
+The returned audio `Media` has the MIME type `audio/<format>`, or `application/octet-stream` when the format is not a valid MIME subtype.
 
 == Message Parts [[message-parts]]
 
