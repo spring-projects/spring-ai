@@ -1,0 +1,268 @@
+= Google GenAI Transcriptions
+
+Spring AI supports audio transcription with Google's https://ai.google.dev/gemini-api/docs/models/gemini-3.5-transcribe[Gemini Transcribe] models through the `GoogleGenAiTranscriptionModel`, an implementation of the portable `TranscriptionModel` interface.
+The audio is sent inline to a Gemini transcription model through the Google Gen AI SDK (`com.google.genai`), and the model replies with the transcription text.
+Both the Gemini Developer API and Vertex AI are supported.
+
+This implementation provides two authentication modes:
+
+- **Gemini Developer API**: Use an API key for quick prototyping and development
+- **Vertex AI**: Use Google Cloud credentials for production deployments with enterprise features
+
+== Prerequisites
+
+Choose one of the following authentication methods:
+
+=== Option 1: Gemini Developer API (API Key)
+
+- Obtain an API key from the https://aistudio.google.com/app/apikey[Google AI Studio]
+- Set the API key as an environment variable or in your application properties
+
+=== Option 2: Vertex AI (Google Cloud)
+
+- Install the link:https://cloud.google.com/sdk/docs/install[gcloud] CLI, appropriate for your OS.
+- Authenticate by running the following command.
+Replace `PROJECT_ID` with your Google Cloud project ID and `ACCOUNT` with your Google Cloud username.
+
+[source]
+----
+gcloud config set project <PROJECT_ID> &&
+gcloud auth application-default login <ACCOUNT>
+----
+
+Alternatively, point `spring.ai.google.genai.transcription.credentials-uri` at a service account JSON, together with `spring.ai.google.genai.transcription.project-id`.
+The default Vertex AI location is `global`.
+
+=== Add Repositories and BOM
+
+Spring AI artifacts are published in Maven Central and Spring Snapshot repositories.
+Refer to the xref:getting-started.adoc#artifact-repositories[Artifact Repositories] section to add these repositories to your build system.
+
+To help with dependency management, Spring AI provides a BOM (bill of materials) to ensure that a consistent version of Spring AI is used throughout the entire project. Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build system.
+
+== Auto-configuration
+
+[NOTE]
+====
+There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
+Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
+====
+
+Spring AI provides Spring Boot auto-configuration for the Google GenAI Transcription Model.
+To enable it add the following dependency to your project's Maven `pom.xml` file:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-model-google-genai-transcription</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file:
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-starter-model-google-genai-transcription'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+== Transcription Properties
+
+=== Connection Properties
+
+The prefix `spring.ai.google.genai.transcription` is used as the property prefix that lets you connect to the Gemini API.
+
+[cols="3,4,1", stripes=even]
+|====
+| Property | Description | Default
+
+| spring.ai.google.genai.transcription.api-key | API key for Gemini Developer API. When provided, the client uses the Gemini Developer API instead of Vertex AI. | -
+| spring.ai.google.genai.transcription.project-id | Google Cloud Platform project ID (required for Vertex AI mode). | -
+| spring.ai.google.genai.transcription.location | Google Cloud region (required for Vertex AI mode), e.g. `global`, `us`, `eu`. | global
+| spring.ai.google.genai.transcription.credentials-uri | URI to a Google Cloud credentials JSON. When provided, it is used to create a `GoogleCredentials` instance for authentication; when unset, Application Default Credentials (ADC) are used. | -
+| spring.ai.google.genai.transcription.vertex-ai | Explicitly enable Vertex AI mode. Useful when both an API key and Vertex AI configuration are present; otherwise the mode is determined automatically (API key wins). | false
+|====
+
+=== Enabling and Disabling Transcription Auto-Configuration
+
+Spring AI uses the configuration property `spring.ai.model.audio.transcription` to let you enable or disable the transcription model.
+
+To enable, `spring.ai.model.audio.transcription` set to `google-genai` (It is enabled by default).
+
+To disable, `spring.ai.model.audio.transcription` set to `none` (or any value which doesn't match `google-genai`).
+
+This configuration is useful to allow multiple different transcription providers.
+
+[source,application.properties]
+----
+spring.ai.model.audio.transcription=google-genai
+----
+
+=== Transcription Generation Properties
+
+The prefix `spring.ai.google.genai.transcription` is the property prefix that lets you configure the transcription model.
+
+[cols="3,4,1", stripes=even]
+|====
+| Property | Description | Default
+
+| spring.ai.google.genai.transcription.model | The Gemini transcription model to use (`gemini-3.5-transcribe` or `gemini-3.5-transcribe-live`). | gemini-3.5-transcribe
+| spring.ai.google.genai.transcription.prompt | Natural-language instruction guiding the transcription (e.g. formatting, vocabulary hints). | Transcribe the audio.
+| spring.ai.google.genai.transcription.language | BCP-47 language code of the audio (e.g. `en-US`), used as a hint in the transcription instruction. | -
+| spring.ai.google.genai.transcription.temperature | Sampling temperature to use for the transcription request. | -
+| spring.ai.google.genai.transcription.top-p | The maximum cumulative probability of tokens to consider when sampling (nucleus sampling). | -
+| spring.ai.google.genai.transcription.top-k | The maximum number of tokens to consider when sampling (top-k sampling). | -
+| spring.ai.google.genai.transcription.candidate-count | Number of transcription candidates to generate. | -
+| spring.ai.google.genai.transcription.max-output-tokens | The maximum number of tokens to generate in the transcription. | -
+| spring.ai.google.genai.transcription.stop-sequences | Sequences where the model stops generating the transcription. | -
+| spring.ai.google.genai.transcription.response-mime-type | The MIME type of the transcription response (e.g. `text/plain`). | -
+| spring.ai.google.genai.transcription.presence-penalty | Penalty applied to tokens based on their presence in the generated transcription. | -
+| spring.ai.google.genai.transcription.frequency-penalty | Penalty applied to tokens based on their frequency in the generated transcription. | -
+| spring.ai.google.genai.transcription.seed | Seed used for deterministic sampling. | -
+|====
+
+== Model Selection
+
+Two Gemini transcription models are available:
+
+* `gemini-3.5-transcribe` (the default) transcribes audio files through a standard `generateContent` request.
+* `gemini-3.5-transcribe-live` is designed for real-time (streaming) speech-to-text through the Gemini Live API.
+
+== Runtime Options
+
+The `GoogleGenAiAudioTranscriptionOptions` class provides the options to use when making a transcription.
+On start up, the options specified by the `spring.ai.google.genai.transcription` properties are used, but you can override these at runtime.
+
+For example:
+
+[source,java]
+----
+GoogleGenAiAudioTranscriptionOptions transcriptionOptions = GoogleGenAiAudioTranscriptionOptions.builder()
+    .model("gemini-3.5-transcribe")
+    .prompt("Transcribe this interview verbatim, including speaker labels.")
+    .language("en-US")
+    .temperature(0.1f)
+    .build();
+
+AudioTranscriptionPrompt transcriptionRequest = new AudioTranscriptionPrompt(audioFile, transcriptionOptions);
+AudioTranscriptionResponse response = transcriptionModel.call(transcriptionRequest);
+----
+
+== Sample Controller
+
+Create a new Spring Boot project and add the `spring-ai-starter-model-google-genai-transcription` to your dependencies.
+
+Add an `application.properties` file under `src/main/resources` to enable and configure the Google GenAI transcription model:
+
+=== Using Gemini Developer API (API Key)
+
+[source,application.properties]
+----
+spring.ai.google.genai.transcription.api-key=YOUR_API_KEY
+spring.ai.google.genai.transcription.model=gemini-3.5-transcribe
+spring.ai.google.genai.transcription.language=en-US
+----
+
+=== Using Vertex AI
+
+[source,application.properties]
+----
+spring.ai.google.genai.transcription.project-id=YOUR_PROJECT_ID
+spring.ai.google.genai.transcription.location=YOUR_PROJECT_LOCATION
+spring.ai.google.genai.transcription.model=gemini-3.5-transcribe
+----
+
+[source,java]
+----
+@RestController
+public class TranscriptionController {
+
+    private final GoogleGenAiTranscriptionModel transcriptionModel;
+
+    @Value("classpath:/speech/jfk.flac")
+    private Resource audioFile;
+
+    TranscriptionController(GoogleGenAiTranscriptionModel transcriptionModel) {
+        this.transcriptionModel = transcriptionModel;
+    }
+
+    @GetMapping("/ai/transcription")
+    public String transcribe() {
+        AudioTranscriptionPrompt prompt = new AudioTranscriptionPrompt(this.audioFile);
+        AudioTranscriptionResponse response = this.transcriptionModel.call(prompt);
+        return response.getResult().getOutput();
+    }
+}
+----
+
+== Manual Configuration
+
+Add the `spring-ai-google-genai-transcription` dependency to your project's Maven `pom.xml` file:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-google-genai-transcription</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file:
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-google-genai-transcription'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+Next, create a `GoogleGenAiTranscriptionModel`:
+
+=== Using API Key
+
+[source,java]
+----
+var connectionDetails = GoogleGenAiTranscriptionConnectionDetails.builder()
+    .apiKey(System.getenv("GOOGLE_API_KEY"))
+    .build();
+
+var options = GoogleGenAiAudioTranscriptionOptions.builder()
+    .model("gemini-3.5-transcribe")
+    .language("en-US")
+    .build();
+
+var transcriptionModel = new GoogleGenAiTranscriptionModel(connectionDetails, options);
+
+var audioFile = new FileSystemResource("/path/to/audio.wav");
+AudioTranscriptionResponse response = transcriptionModel
+    .call(new AudioTranscriptionPrompt(audioFile));
+System.out.println(response.getResult().getOutput());
+----
+
+=== Using Vertex AI
+
+[source,java]
+----
+var connectionDetails = GoogleGenAiTranscriptionConnectionDetails.builder()
+    .projectId(System.getenv("GOOGLE_CLOUD_PROJECT"))
+    .location(System.getenv("GOOGLE_CLOUD_LOCATION"))
+    .build();
+
+var options = GoogleGenAiAudioTranscriptionOptions.builder()
+    .model("gemini-3.5-transcribe")
+    .language("en-US")
+    .build();
+
+var transcriptionModel = new GoogleGenAiTranscriptionModel(connectionDetails, options);
+
+var audioFile = new FileSystemResource("/path/to/audio.wav");
+AudioTranscriptionResponse response = transcriptionModel
+    .call(new AudioTranscriptionPrompt(audioFile));
+System.out.println(response.getResult().getOutput());
+----
