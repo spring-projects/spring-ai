@@ -1,0 +1,307 @@
+= Google GenAI Text-to-Speech (TTS)
+
+Spring AI supports text to speech with Google https://ai.google.dev/gemini-api/docs/speech-generation[Gemini-TTS] models through the `GoogleGenAiTextToSpeechModel`, an implementation of the portable `TextToSpeechModel` interface.
+
+NOTE: Gemini-TTS is backed by the Google GenAI SDK (`com.google.genai`), the same client used by the Google GenAI chat, embedding and image models. Speech is generated through `generateContent` with the `AUDIO` response modality and a `speechConfig`, not through the legacy `google-cloud-texttospeech` library.
+
+== Prerequisites
+
+Choose one of the following authentication methods:
+
+=== Option 1: Gemini Developer API (API Key)
+
+- Obtain an API key from the https://aistudio.google.com/app/apikey[Google AI Studio]
+- Set the API key as an environment variable or in your application properties.
+No Google Cloud project is required.
+
+=== Option 2: Vertex AI (Google Cloud)
+
+- Install the link:https://cloud.google.com/sdk/docs/install[gcloud] CLI, appropriate for your OS.
+- Authenticate by running the following command.
+Replace `PROJECT_ID` with your Google Cloud project ID and `ACCOUNT` with your Google Cloud username.
+
+[source]
+----
+gcloud config set project <PROJECT_ID> &&
+gcloud auth application-default login <ACCOUNT>
+----
+
+- Alternatively, point `spring.ai.google.genai.tts.credentials-uri` at a service account JSON.
+
+== Auto-configuration
+
+[NOTE]
+====
+There has been a significant change in the Spring AI auto-configuration, starter modules' artifact names.
+Please refer to the https://docs.spring.io/spring-ai/reference/upgrade-notes.html[upgrade notes] for more information.
+====
+
+Spring AI provides Spring Boot auto-configuration for the Google GenAI Text To Speech Model.
+To enable it add the following dependency to your project's Maven `pom.xml` file:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-model-google-genai-tts</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file:
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-starter-model-google-genai-tts'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+== Text To Speech Properties
+
+=== Connection Properties
+
+The prefix `spring.ai.google.genai.tts` is used as the property prefix that lets you connect to the Gemini API.
+
+[cols="3,4,1", stripes=even]
+|====
+| Property | Description | Default
+
+| spring.ai.google.genai.tts.api-key | API key for the Gemini Developer API. When provided, the client uses the Gemini Developer API instead of Vertex AI. | -
+| spring.ai.google.genai.tts.project-id | The Google Cloud project ID (required for Vertex AI mode). | -
+| spring.ai.google.genai.tts.location   | The Vertex AI location. | global
+| spring.ai.google.genai.tts.credentials-uri | Resource URI to a Google Cloud credentials JSON. When unset, Application Default Credentials (ADC) are used. Only applies to Vertex AI. | -
+|====
+
+=== Enabling and Disabling Text To Speech Auto-Configuration
+
+Spring AI uses the configuration property `spring.ai.model.audio.speech` to let you enable or disable the tts model.
+
+To enable, `spring.ai.model.audio.speech` set to `google-genai` (It is enabled by default).
+
+To disable, `spring.ai.model.audio.speech` set to `none` (or any value which doesn't match `google-genai`).
+
+This configuration is useful to allow multiple different tts providers.
+
+[source,application.properties]
+----
+spring.ai.model.audio.speech=google-genai
+----
+
+=== Text To Speech generation Properties
+
+The prefix `spring.ai.google.genai.tts` is the property prefix that lets you configure the tts model. These properties map to the `speechConfig` field of a `GenerateContentConfig` requested with the `AUDIO` response modality.
+
+[cols="3,4,1", stripes=even]
+|====
+| Property | Description | Default
+
+| spring.ai.google.genai.tts.model | The Gemini-TTS model to use. One of `gemini-2.5-flash-tts`, `gemini-2.5-pro-tts`, `gemini-2.5-flash-lite-tts`. | gemini-2.5-flash-tts
+| spring.ai.google.genai.tts.voice-name | The name of the prebuilt voice to use for single-speaker synthesis (maps to `speechConfig.voiceConfig.prebuiltVoiceConfig.voiceName`), for example `Kore`, `Leda`, `Callirrhoe`. Mutually exclusive with `speaker-voice-configs`. | Kore
+| spring.ai.google.genai.tts.language-code | The language code (ISO 639-1) for the speech synthesis (maps to `speechConfig.languageCode`), for example `en`. | -
+| spring.ai.google.genai.tts.style-prompt | Optional natural-language styling instructions describing how the text should be spoken, for example "Say the following in a curious way". It is prepended to the text carried by the `TextToSpeechPrompt`. | -
+| spring.ai.google.genai.tts.speaker-voice-configs | List of speaker-to-voice mappings for multi-speaker synthesis (maps to `speechConfig.multiSpeakerVoiceConfig.speakerVoiceConfigs`). Exactly two entries must be provided, each pairing a `speaker` (matching the speaker label used in the text) with a `voice-name` (a prebuilt voice). Mutually exclusive with `voice-name`. | -
+| spring.ai.google.genai.tts.multi-speaker-turns | List of multi-speaker turns to synthesize, rendered as `Speaker: text` lines and used instead of the plain text passed in the `TextToSpeechPrompt`. Each entry pairs a `speaker` (matching a speaker from `speaker-voice-configs`) with the `text` to speak for that turn. | -
+| spring.ai.google.genai.tts.audio-encoding | The format of the audio byte stream. The Gemini-TTS models always produce 24 kHz, 16-bit, mono PCM audio; `PCM` returns the raw bytes and `LINEAR16` wraps them in a WAV header. One of `LINEAR16`, `PCM`. | LINEAR16
+|====
+
+NOTE: The Google GenAI SDK also supports voice cloning through `speechConfig.voiceConfig.replicatedVoiceConfig` (a voice sample plus a recorded consent). This is exposed programmatically via `GoogleGenAiAudioSpeechOptions.ReplicatedVoice` (see <<Runtime Options>>) and is not bindable through configuration properties.
+
+TIP: The Gemini-TTS models are steered with natural language only: there are no `speed`, `pitch` or volume parameters. Control tone, pace, accent and emotion through the text itself or the `style-prompt` option.
+
+== Model Selection
+
+Google offers different Gemini-TTS model generations with different capabilities:
+
+* `gemini-2.5-flash-tts` is low latency and cost-efficient, and supports both single- and multi-speaker synthesis. Ideal for real-time voice assistants and high-volume, everyday applications.
+* `gemini-2.5-pro-tts` offers high control for structured workflows such as podcast generation, audiobooks, and customer support.
+* `gemini-2.5-flash-lite-tts` is a low-latency, cost-efficient Preview model that supports single-speaker synthesis only.
+
+All Gemini-TTS models are controllable: natural-language styling instructions (either embedded in the text or set via `style-prompt`) can guide tone, pace, accent and emotional expression.
+
+== Runtime Options
+
+The `GoogleGenAiAudioSpeechOptions` class provides the options to use when making a tts.
+On start up, the options specified by the `spring.ai.google.genai.tts` properties are used, but you can override these at runtime.
+
+For example, single-speaker synthesis with a chosen voice and style prompt:
+
+[source,java]
+----
+GoogleGenAiAudioSpeechOptions ttsOptions = GoogleGenAiAudioSpeechOptions.builder()
+    .model("gemini-2.5-flash-tts")
+    .voiceName("Kore")
+    .languageCode("en")
+    .stylePrompt("Say the following in a curious way")
+    .build();
+
+TextToSpeechPrompt ttsRequest = new TextToSpeechPrompt(text, ttsOptions);
+TextToSpeechResponse response = ttsModel.call(ttsRequest);
+----
+
+Or multi-speaker synthesis, where the text names each speaker and `speakerVoiceConfigs` maps each speaker to a voice:
+
+[source,java]
+----
+GoogleGenAiAudioSpeechOptions ttsOptions = GoogleGenAiAudioSpeechOptions.builder()
+    .model("gemini-2.5-flash-tts")
+    .speakerVoiceConfigs(List.of(
+        new SpeakerVoiceConfig("Sam", "Kore"),
+        new SpeakerVoiceConfig("Bob", "Charon")))
+    .build();
+
+String text = """
+        Sam: How's it going today?
+        Bob: Not too bad, how about you?
+        """;
+
+TextToSpeechPrompt ttsRequest = new TextToSpeechPrompt(text, ttsOptions);
+TextToSpeechResponse response = ttsModel.call(ttsRequest);
+----
+
+Multi-speaker input can also be provided directly through `multiSpeakerTurns`, instead of relying on the model to parse speaker labels from plain text:
+
+[source,java]
+----
+GoogleGenAiAudioSpeechOptions ttsOptions = GoogleGenAiAudioSpeechOptions.builder()
+    .model("gemini-2.5-flash-tts")
+    .speakerVoiceConfigs(List.of(
+        new SpeakerVoiceConfig("Sam", "Kore"),
+        new SpeakerVoiceConfig("Bob", "Charon")))
+    .multiSpeakerTurns(List.of(
+        new MultiSpeakerTurn("Sam", "How's it going today?"),
+        new MultiSpeakerTurn("Bob", "Not too bad, how about you?")))
+    .build();
+
+TextToSpeechPrompt ttsRequest = new TextToSpeechPrompt("ignored, turns take precedence", ttsOptions);
+TextToSpeechResponse response = ttsModel.call(ttsRequest);
+----
+
+Voice cloning is supported through a replicated voice (a 24 kHz, 16-bit, mono WAV voice sample together with a recorded consent, or the signature of a previously verified consent):
+
+[source,java]
+----
+byte[] voiceSample = Files.readAllBytes(Path.of("voice-sample.wav"));
+byte[] consent = Files.readAllBytes(Path.of("consent.wav"));
+
+GoogleGenAiAudioSpeechOptions ttsOptions = GoogleGenAiAudioSpeechOptions.builder()
+    .model("gemini-2.5-flash-tts")
+    .replicatedVoice(new GoogleGenAiAudioSpeechOptions.ReplicatedVoice(
+        voiceSample, consent, "audio/wav", null))
+    .build();
+
+TextToSpeechPrompt ttsRequest = new TextToSpeechPrompt(text, ttsOptions);
+TextToSpeechResponse response = ttsModel.call(ttsRequest);
+----
+
+== Sample Controller
+
+Create a new Spring Boot project and add the `spring-ai-starter-model-google-genai-tts` to your dependencies.
+
+Add an `application.properties` file under `src/main/resources`:
+
+=== Using Gemini Developer API (API Key)
+
+[source,application.properties]
+----
+spring.ai.google.genai.tts.api-key=YOUR_API_KEY
+spring.ai.google.genai.tts.model=gemini-2.5-flash-tts
+spring.ai.google.genai.tts.voice-name=Kore
+----
+
+=== Using Vertex AI
+
+[source,application.properties]
+----
+spring.ai.google.genai.tts.project-id=YOUR_PROJECT_ID
+spring.ai.google.genai.tts.location=global
+spring.ai.google.genai.tts.model=gemini-2.5-flash-tts
+spring.ai.google.genai.tts.voice-name=Kore
+----
+
+[source,java]
+----
+@RestController
+public class TextToSpeechController {
+
+    private final GoogleGenAiTextToSpeechModel ttsModel;
+
+    TextToSpeechController(GoogleGenAiTextToSpeechModel ttsModel) {
+        this.ttsModel = ttsModel;
+    }
+
+    @GetMapping("/ai/tts")
+    public List<Speech> synthetize(String text) {
+        TextToSpeechPrompt ttsRequest = new TextToSpeechPrompt(text);
+        TextToSpeechResponse response = ttsModel.call(ttsRequest);
+        return response.getResults();
+    }
+}
+----
+
+== Manual Configuration
+
+Add the `spring-ai-google-genai-tts` dependency to your project's Maven `pom.xml` file:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-google-genai-tts</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file:
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-google-genai-tts'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+Next, create a `GoogleGenAiTextToSpeechModel`:
+
+=== Using API Key
+
+[source,java]
+----
+var connectionDetails = GoogleGenAiTextToSpeechConnectionDetails.builder()
+    .apiKey(System.getenv("GOOGLE_API_KEY"))
+    .build();
+
+var options = GoogleGenAiAudioSpeechOptions.builder()
+    .model("gemini-2.5-flash-tts")
+    .voiceName("Kore")
+    .build();
+
+var ttsModel = new GoogleGenAiTextToSpeechModel(connectionDetails, options);
+
+TextToSpeechResponse response = ttsModel
+    .call(new TextToSpeechPrompt("Hello from Spring AI and Gemini text to speech."));
+System.out.println(response.getResults());
+----
+
+=== Using Vertex AI
+
+[source,java]
+----
+var connectionDetails = GoogleGenAiTextToSpeechConnectionDetails.builder()
+    .projectId("YOUR_PROJECT_ID")
+    .location("global")
+    .build();
+
+var options = GoogleGenAiAudioSpeechOptions.builder()
+    .model("gemini-2.5-flash-tts")
+    .voiceName("Kore")
+    .build();
+
+var ttsModel = new GoogleGenAiTextToSpeechModel(connectionDetails, options);
+
+TextToSpeechResponse response = ttsModel
+    .call(new TextToSpeechPrompt("Hello from Spring AI and Gemini text to speech."));
+System.out.println(response.getResults());
+----
