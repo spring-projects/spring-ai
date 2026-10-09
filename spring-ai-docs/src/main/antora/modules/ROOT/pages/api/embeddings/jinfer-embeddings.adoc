@@ -1,0 +1,205 @@
+= Qxotic jinfer Embeddings
+
+https://qxotic.ai/jinfer[jinfer] is a pure-JVM inference engine from the https://qxotic.ai[Qxotic AI] project.
+It runs GGUF embedding and reranking models inside your application's JVM, without a separate inference server or external service.
+
+Spring AI applications use jinfer through two classes:
+
+* `JinferEmbeddingModel` implements Spring AI's `EmbeddingModel`.
+* `JinferDocumentPostProcessor` implements the RAG `DocumentPostProcessor` and reranks retrieved documents with a local reranker model. See <<reranking>>.
+
+NOTE: The jinfer Spring AI integration is an external module maintained by the Qxotic AI project, not part of the Spring AI repository.
+Its artifacts are published to Maven Central under the `com.qxotic` group.
+
+== Prerequisites
+
+The jinfer embedding model has the same requirements as the xref:api/chat/jinfer-chat.adoc#_prerequisites[jinfer chat model]:
+
+* Java 25 or later.
+* The JVM flags `--add-modules jdk.incubator.vector --enable-native-access=ALL-UNNAMED`.
+* Spring Boot 4.1 and Spring AI 2.0.
+
+Models are configured as a local `.gguf` path or as a xref:api/chat/jinfer-chat.adoc#_model_references[model reference], such as `Qwen/Qwen3-Embedding-0.6B-GGUF:Q8_0`.
+A model reference is downloaded on first use and cached.
+
+=== Supported Models
+
+[cols="3,2,3", stripes=even]
+|====
+| Model | Artifact | Notes
+| https://huggingface.co/Qwen/Qwen3-Embedding-0.6B-GGUF[Qwen3-Embedding] (0.6B, 4B, 8B) | `jinfer-qwen3` | Matryoshka-trained: the output dimension can be reduced per request.
+| https://huggingface.co/LiquidAI/LFM2.5-Embedding-350M-GGUF[LFM2.5-Embedding-350M] | `jinfer-lfm2` | Fixed output dimension.
+| https://huggingface.co/mradermacher/Qwen3-Reranker-0.6B-GGUF[Qwen3-Reranker] | `jinfer-qwen3` | Reranker. Scores are probabilities in `[0, 1]`.
+| https://huggingface.co/LiquidAI/LFM2.5-ColBERT-350M-GGUF[LFM2.5-ColBERT-350M] | `jinfer-lfm2` | Reranker. Scores are unbounded MaxSim sums.
+|====
+
+`jinfer-models-all` includes all model families.
+
+== Auto-configuration
+
+Add the jinfer Spring Boot starter and the model families you need.
+Import both BOMs as shown in the xref:api/chat/jinfer-chat.adoc#_auto_configuration[jinfer chat model] documentation.
+
+[tabs]
+======
+Maven::
++
+[source,xml]
+----
+<dependency>
+    <groupId>com.qxotic</groupId>
+    <artifactId>jinfer-spring-ai-spring-boot-starter</artifactId>
+</dependency>
+<dependency>
+    <groupId>com.qxotic</groupId>
+    <artifactId>jinfer-qwen3</artifactId>
+</dependency>
+----
+
+Gradle::
++
+[source,groovy]
+----
+dependencies {
+    implementation platform('org.springframework.ai:spring-ai-bom:2.0.1')
+    implementation platform('com.qxotic:jinfer-bom:0.3.1')
+    implementation 'com.qxotic:jinfer-spring-ai-spring-boot-starter'
+    implementation 'com.qxotic:jinfer-qwen3'
+}
+----
+======
+
+The optional `jam-native` and `jam-vector` runtime dependencies speed up inference.
+See xref:api/chat/jinfer-chat.adoc#_optional_matrix_multiplication_backends[Optional Matrix-Multiplication Backends].
+
+=== Embedding Properties
+
+[NOTE]
+====
+Unlike the chat model, the jinfer embedding model must be selected explicitly with `spring.ai.model.embedding=jinfer`.
+A configured `spring.ai.jinfer.embedding.model` alone does not enable it.
+====
+
+The prefix `spring.ai.jinfer.embedding` is the property prefix for the jinfer embedding model.
+
+[cols="3,6,1", stripes=even]
+|====
+| Property | Description | Default
+| spring.ai.model.embedding | Selects the embedding provider. Set it to `jinfer`. | -
+| spring.ai.jinfer.embedding.model | *Required.* A local GGUF path or a model reference, for example `Qwen/Qwen3-Embedding-0.6B-GGUF:Q8_0`. | -
+| spring.ai.jinfer.embedding.context-capacity | The batching window, and the maximum length of each embedded text, in tokens. A larger value fits more texts into one forward pass and accepts longer texts, but uses more memory. `0` uses the model's maximum context length. | `2048`
+|====
+
+[source,yaml]
+----
+spring:
+  ai:
+    model:
+      embedding: jinfer
+    jinfer:
+      embedding:
+        model: Qwen/Qwen3-Embedding-0.6B-GGUF:Q8_0
+        context-capacity: 2048
+----
+
+The chat and embedding models can be configured side by side.
+For example, a RAG application can run its chat model, embedding model and an in-memory `SimpleVectorStore` in a single JVM.
+
+== Runtime Options [[embedding-options]]
+
+`JinferEmbeddingModel` accepts the standard Spring AI `EmbeddingOptions`:
+
+* `dimensions` truncates the vectors to a smaller size and L2-normalizes them again. This works only for Matryoshka-trained models: Qwen3-Embedding accepts any size from 32 up to its native dimension. Models with a fixed output dimension reject this option instead of returning a truncated prefix.
+* `model` must be the loaded model, or unset. Each instance is bound to one GGUF file.
+
+[source,java]
+----
+EmbeddingResponse response = embeddingModel.call(
+    new EmbeddingRequest(List.of("Hello World", "World is big and salvation is near"),
+        EmbeddingOptions.builder().dimensions(256).build()));
+----
+
+`JinferEmbeddingModel` processes inputs in batches: one forward pass embeds many texts at once.
+Ingesting hundreds of RAG chunks therefore takes a handful of passes, not one pass per chunk.
+The token counts in the returned usage come from the model's real tokenizer, not an estimate.
+
+`JinferEmbeddingModel` records Spring AI's standard embedding model observations, using the `jinfer` provider name.
+
+== Reranking [[reranking]]
+
+A reranker scores each retrieved document by whether it actually answers the query, rather than by embedding similarity.
+`JinferDocumentPostProcessor` implements the RAG `DocumentPostProcessor` interface and runs a local reranker model.
+
+=== Reranking Properties
+
+The reranker bean is created when `spring.ai.jinfer.rerank.model` is set.
+
+[cols="3,6,1", stripes=even]
+|====
+| Property | Description | Default
+| spring.ai.jinfer.rerank.model | A local GGUF path or a model reference for a reranker, for example `mradermacher/Qwen3-Reranker-0.6B-GGUF:Q8_0`. Setting it creates the bean. | -
+| spring.ai.jinfer.rerank.context-capacity | The maximum length of the query and document together, in tokens. `0` uses the model's maximum context length. | `2048`
+| spring.ai.jinfer.rerank.instruction | The task instruction given to the reranker. When unset, the wording from the model card is used. | -
+| spring.ai.jinfer.rerank.top-k | Keeps only the `top-k` best documents. `0` keeps all of them. | `0`
+| spring.ai.jinfer.rerank.min-score | Drops documents that score below this value. Qwen3-Reranker scores are probabilities, where `0.5` means the model would answer "yes". LFM2.5-ColBERT scores are unbounded, so only use them to rank or for relative thresholds. | -
+|====
+
+=== Using the Reranker in a RAG Pipeline
+
+Add the auto-configured `DocumentPostProcessor` to a `RetrievalAugmentationAdvisor`:
+
+[source,java]
+----
+@Bean
+RetrievalAugmentationAdvisor ragAdvisor(VectorStore vectorStore, DocumentPostProcessor reranker) {
+    return RetrievalAugmentationAdvisor.builder()
+        .documentRetriever(VectorStoreDocumentRetriever.builder()
+            .vectorStore(vectorStore)
+            .topK(20)                       // retrieve generously ...
+            .build())
+        .documentPostProcessors(reranker)   // ... then let the reranker keep the best ones
+        .build();
+}
+----
+
+The returned documents are sorted best first.
+Each document's `getScore()` holds the reranker's relevance score, which replaces the similarity score from the vector store.
+Documents with equal scores keep their original order.
+All documents in one call share the processed query prefix, so the query is processed once rather than once per document.
+
+== Manual Configuration
+
+To use jinfer without Spring Boot auto-configuration, depend on `com.qxotic:jinfer-spring-ai` and the model families you need.
+For reranking, also add `org.springframework.ai:spring-ai-rag`.
+
+[source,java]
+----
+try (var embeddingModel = JinferEmbeddingModel.builder()
+            .model("Qwen/Qwen3-Embedding-0.6B-GGUF:Q8_0")   // or .modelPath(Path.of("embed.gguf"))
+            .contextCapacity(2048)
+            .build();
+     var reranker = JinferDocumentPostProcessor.builder()
+            .model("mradermacher/Qwen3-Reranker-0.6B-GGUF:Q8_0")
+            .topK(1)
+            .build()) {
+
+    float[] vector = embeddingModel.embed("How do I reset my password?");
+    System.out.println("Dimensions: " + vector.length);
+
+    List<Document> ranked = reranker.process(new Query("How do I reset my password?"), List.of(
+            new Document("Use the password reset link on the sign-in page."),
+            new Document("Standard shipping takes three business days.")));
+}
+----
+
+When you build the models yourself, your application owns them: use try-with-resources or close them at shutdown.
+
+Each instance processes requests one at a time.
+For parallel processing, build several instances: the operating system's page cache shares the memory-mapped weights between them.
+Alternatively, load the weights into an arena that your code manages, build with `model(loaded)`, and create additional pipelines with `fork()`.
+
+== Related Pages
+
+* xref:api/chat/jinfer-chat.adoc[Qxotic jinfer Chat]
+* xref:api/retrieval-augmented-generation.adoc[Retrieval Augmented Generation]
+* https://github.com/qxoticai/qxotic/tree/main/jinfer/jinfer-example-local-rag[Example: local RAG in a single JVM]

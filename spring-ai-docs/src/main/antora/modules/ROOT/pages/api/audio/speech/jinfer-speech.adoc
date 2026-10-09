@@ -1,0 +1,146 @@
+= Qxotic jinfer Text-to-Speech (TTS)
+
+== Introduction
+
+https://qxotic.ai/jinfer[jinfer] is a pure-JVM inference engine from the https://qxotic.ai[Qxotic AI] project.
+`JinferSpeechModel` implements Spring AI's `TextToSpeechModel` and `StreamingTextToSpeechModel` interfaces.
+It synthesizes speech locally from a GGUF model inside your application's JVM, without an API key or external service.
+
+NOTE: The jinfer Spring AI integration is an external module maintained by the Qxotic AI project, not part of the Spring AI repository.
+Its artifacts are published to Maven Central under the `com.qxotic` group.
+
+== Prerequisites
+
+* The same Java 25, JVM flag and Spring Boot requirements as the xref:api/chat/jinfer-chat.adoc#_prerequisites[jinfer chat model].
+* A speech model family on the classpath:
++
+[cols="3,2,3", stripes=even]
+|====
+| Model | Artifact | Companions
+| https://huggingface.co/remixerdec/Inflect-Nano-v2-GGUF[Inflect] (Nano, Micro) | `jinfer-inflect2` | `lexicon`, the pronunciation lexicon
+| https://huggingface.co/simonfxr/kokoro.cpp-GGUF[Kokoro] | `jinfer-kokoro` | `voice`, a voice file. Also requires `espeak-ng` on the `PATH`.
+|====
+
+== Auto-configuration
+
+Add the jinfer Spring Boot starter and a speech model family.
+Import both BOMs as shown in the xref:api/chat/jinfer-chat.adoc#_auto_configuration[jinfer chat model] documentation.
+
+[source,xml]
+----
+<dependency>
+    <groupId>com.qxotic</groupId>
+    <artifactId>jinfer-spring-ai-spring-boot-starter</artifactId>
+</dependency>
+<dependency>
+    <groupId>com.qxotic</groupId>
+    <artifactId>jinfer-inflect2</artifactId>
+</dependency>
+----
+
+or, for Gradle:
+
+[source,groovy]
+----
+dependencies {
+    implementation 'com.qxotic:jinfer-spring-ai-spring-boot-starter'
+    implementation 'com.qxotic:jinfer-inflect2'
+}
+----
+
+== Speech Properties
+
+The `JinferSpeechModel` bean is created when `spring.ai.jinfer.speech.model` is set.
+It does not use the `spring.ai.model.audio.speech` selection property.
+
+[cols="3,5,1", stripes=even]
+|====
+| Property | Description | Default
+| spring.ai.jinfer.speech.model | A local GGUF path or a xref:api/chat/jinfer-chat.adoc#_model_references[model reference] for a speech model. Setting it creates the bean. | -
+| spring.ai.jinfer.speech.companions.<capability> | An auxiliary file for the model, given as a path or a model reference: `lexicon` for Inflect, `voice` for Kokoro. | -
+| spring.ai.jinfer.speech.speed | A playback speed multiplier. When unset, the model's own pace is used. | -
+| spring.ai.jinfer.speech.max-input-chars | Rejects input text longer than this many characters before synthesis starts. Synthesis cost grows with the input length, so an unbounded limit would let one request tie up the CPU. `0` applies OpenAI's 4096-character limit. | `0`
+|====
+
+[source,yaml]
+----
+spring:
+  ai:
+    jinfer:
+      speech:
+        model: remixerdec/Inflect-Nano-v2-GGUF:Q8_0
+        companions:
+          lexicon: remixerdec/Inflect-Nano-v2-GGUF/lexicon.bin
+----
+
+== Runtime Options [[speech-options]]
+
+Requests use the portable `TextToSpeechOptions`.
+Of those options, `JinferSpeechModel` supports only `speed`.
+
+The `voice`, `model` and `format` options are rejected with an `UnsupportedOperationException`, rather than being silently ignored:
+
+* The voice is fixed by the loaded model. To use another voice, load a different model or voice companion.
+* Each instance is bound to the GGUF file it loaded.
+* The output format is fixed: `call` returns WAV, and `stream` returns raw PCM16.
+
+[source,java]
+----
+TextToSpeechResponse response = textToSpeechModel.call(new TextToSpeechPrompt(
+    "Hello from local Java inference.",
+    TextToSpeechOptions.builder().speed(1.1).build()));
+----
+
+== Output Format
+
+* `call` returns a complete WAV file.
+* `stream` emits successive chunks of headerless, little-endian PCM16 audio. Chunks are emitted in order, can contain silence, and do not necessarily line up with sentences. Cancelling the subscription stops the synthesis.
+
+Every response carries the playback parameters as integer metadata under the `JinferSpeechModel.SAMPLE_RATE` (Hz) and `JinferSpeechModel.CHANNELS` keys.
+
+[source,java]
+----
+byte[] wav = textToSpeechModel.call("Hello from local Java inference.");
+Files.write(Path.of("hello.wav"), wav);
+
+textToSpeechModel.stream(new TextToSpeechPrompt("Hello again."))
+    .doOnNext(response -> System.out.printf("%d PCM bytes at %s Hz%n",
+        response.getResult().getOutput().length,
+        response.getMetadata().get(JinferSpeechModel.SAMPLE_RATE)))
+    .blockLast();
+----
+
+In a WebFlux application, return the `Flux` from the handler.
+Only block at an imperative boundary, such as the standalone example above, and never on an event-loop thread.
+
+`JinferSpeechModel` is thread-safe. Concurrent requests use independent synthesis states and can run in parallel.
+
+== Manual Configuration
+
+Depend on `com.qxotic:jinfer-spring-ai` and a speech model family, then build the model:
+
+[source,java]
+----
+try (var speech = JinferSpeechModel.builder()
+        .model("remixerdec/Inflect-Nano-v2-GGUF:Q8_0")
+        .companion("lexicon", "remixerdec/Inflect-Nano-v2-GGUF/lexicon.bin")
+        .build()) {
+
+    Files.write(Path.of("hello.wav"), speech.call("Hello from local Java inference."));
+}
+----
+
+Kokoro takes its voice as a companion in the same way:
+
+[source,java]
+----
+try (var speech = JinferSpeechModel.builder()
+        .model("simonfxr/kokoro.cpp-GGUF:Q8_0")
+        .companion("voice", "simonfxr/kokoro.cpp-GGUF/voices/kokoro-voice-af_heart.gguf")
+        .build()) {
+
+    Files.write(Path.of("kokoro.wav"), speech.call("Hello from Kokoro."));
+}
+----
+
+`close()` blocks until in-flight syntheses have finished, then frees the model weights.

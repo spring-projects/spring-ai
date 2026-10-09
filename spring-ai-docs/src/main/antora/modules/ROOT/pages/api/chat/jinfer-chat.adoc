@@ -1,0 +1,568 @@
+= Qxotic jinfer Chat
+
+https://qxotic.ai/jinfer[jinfer] ("JVM inference") is a pure-JVM inference engine from the https://qxotic.ai[Qxotic AI] project.
+It runs GGUF models inside your application's JVM.
+It does not use a separate inference server, Docker container, Python runtime, ONNX runtime, or HTTP calls.
+Models are downloaded from Hugging Face the first time they are used and cached locally.
+After that, inference runs entirely on your machine.
+
+Spring AI applications use jinfer through the `JinferChatModel`, which implements Spring AI's `ChatModel` and `StreamingChatModel` interfaces.
+
+NOTE: The jinfer Spring AI integration is an external module maintained by the Qxotic AI project, not part of the Spring AI repository.
+Its artifacts are published to Maven Central under the `com.qxotic` group.
+See the https://github.com/qxoticai/qxotic/tree/main/jinfer/jinfer-spring-ai[jinfer Spring AI README] for the latest details.
+
+== Prerequisites
+
+* *Java 25 or later.* jinfer uses the Foreign Function & Memory API and the incubating Vector API.
+* *JVM flags.* Every JVM that runs jinfer needs the following options:
++
+[source,text]
+----
+--add-modules jdk.incubator.vector --enable-native-access=ALL-UNNAMED
+----
+* *Spring Boot 4.1 and Spring AI 2.0.* jinfer `0.3.1` is built and tested against Spring Boot `4.1.1` and Spring AI `2.0.1`.
+
+No API key or external service is required.
+
+=== Supported Model Families
+
+jinfer loads GGUF checkpoints. Each model architecture is a separate artifact, and `jinfer-models-all` bundles all of them.
+These artifacts contain the architecture code only, not model weights.
+
+[cols="3,3,2", stripes=even]
+|====
+| Family | Capabilities | Artifact
+| Google Gemma 4 | chat, vision (images and video), audio, speculative decoding (MTP) | `jinfer-gemma4`
+| Liquid AI LFM 2.5 | chat, vision, embeddings, reranking | `jinfer-lfm2`
+| Alibaba Qwen 3.5+ | chat, vision, speculative decoding (MTP) | `jinfer-qwen35`
+| Alibaba Qwen 3 | embeddings, reranking | `jinfer-qwen3`
+| OpenAI gpt-oss | chat | `jinfer-gptoss`
+| Meta Llama 3+, IBM Granite 4.1+, Mistral Ministral 3, Hugging Face SmolLM3, OpenBMB MiniCPM5 | chat | `jinfer-llama`
+| NVIDIA Nemotron-H | chat | `jinfer-nemotronh`
+| Poolside Laguna XS 2.1 | chat | `jinfer-laguna`
+| JetBrains Mellum 2 | chat | `jinfer-mellum`
+| inclusionAI Ling 3 | chat | `jinfer-bailingmoe3`
+|====
+
+The supported quantizations are `Q4_0`, `Q4_1`, `Q5_0`, `Q5_1`, `Q4_K`, `Q5_K`, `Q6_K`, `Q8_0`, `MXFP4`, `NVFP4`, `Q1_0`, `TQ1_0` and `TQ2_0`, plus the dense `F32`, `F16` and `BF16` formats.
+jinfer recommends `Q8_0` as a balance between quality and speed.
+
+=== Model References
+
+A model is configured either as a local `.gguf` path or as a model reference:
+
+[source,text]
+----
+[provider.com/]owner/repository[@revision][/path][:quant]
+----
+
+For example:
+
+* `LiquidAI/LFM2.5-1.2B-Instruct-GGUF:Q8_0` selects the `Q8_0` file from a Hugging Face repository.
+* `unsloth/gemma-4-E2B-it-GGUF/mmproj-F32.gguf` selects one specific file in a repository.
+* `modelscope.cn/Qwen/Qwen3-0.6B-GGUF:Q8_0` selects a file from another provider.
+
+A remote reference is resolved, and downloaded if it is not cached yet, when the application context starts.
+A typo in a model name therefore fails at startup, not on the first request.
+Downloaded models are cached in `~/Library/Caches/jinfer` (macOS), `~/.cache/jinfer` (Linux) or `%LOCALAPPDATA%\jinfer` (Windows).
+
+[cols="2,5", stripes=even]
+|====
+| Environment variable | Description
+| `JINFER_MODELS` | Overrides the model cache directory.
+| `JINFER_OFFLINE=1` | Only uses models that are already cached and never downloads.
+|====
+
+== Auto-configuration
+
+The jinfer Spring Boot starter provides auto-configuration for the chat, embedding, reranking, text-to-speech and transcription models.
+Import the Spring AI and jinfer BOMs, then add the starter and at least one model family:
+
+[tabs]
+======
+Maven::
++
+[source,xml]
+----
+<dependencyManagement>
+    <dependencies>
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-bom</artifactId>
+            <version>2.0.1</version>
+            <type>pom</type>
+            <scope>import</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.qxotic</groupId>
+            <artifactId>jinfer-bom</artifactId>
+            <version>0.3.1</version>
+            <type>pom</type>
+            <scope>import</scope>
+        </dependency>
+    </dependencies>
+</dependencyManagement>
+
+<dependencies>
+    <dependency>
+        <groupId>com.qxotic</groupId>
+        <artifactId>jinfer-spring-ai-spring-boot-starter</artifactId>
+    </dependency>
+    <!-- or a single family, e.g. jinfer-lfm2, jinfer-qwen35, jinfer-gemma4 -->
+    <dependency>
+        <groupId>com.qxotic</groupId>
+        <artifactId>jinfer-models-all</artifactId>
+    </dependency>
+</dependencies>
+----
+
+Gradle::
++
+[source,groovy]
+----
+dependencies {
+    implementation platform('org.springframework.ai:spring-ai-bom:2.0.1')
+    implementation platform('com.qxotic:jinfer-bom:0.3.1')
+    implementation 'com.qxotic:jinfer-spring-ai-spring-boot-starter'
+    implementation 'com.qxotic:jinfer-models-all'
+}
+----
+======
+
+The starter also brings in `spring-ai-client-chat`, `spring-ai-rag`, and the auto-configuration for `ChatClient.Builder`, tool calling and `ChatMemory`.
+
+TIP: For a Spring Boot project generated from https://start.spring.io[start.spring.io], select Java 25 and do not add a Spring AI model starter. jinfer is not listed there, so you add the dependencies above by hand.
+
+=== Optional Matrix-Multiplication Backends
+
+Two optional runtime artifacts speed up inference:
+
+* `jam-native` provides hand-tuned native SIMD kernels.
+* `jam-vector` provides a pure-Java implementation based on the Vector API.
+
+[source,xml]
+----
+<dependency>
+    <groupId>com.qxotic</groupId>
+    <artifactId>jam-native</artifactId>
+    <scope>runtime</scope>
+</dependency>
+<dependency>
+    <groupId>com.qxotic</groupId>
+    <artifactId>jam-vector</artifactId>
+    <scope>runtime</scope>
+</dependency>
+----
+
+When both are present, jinfer uses the native backend and falls back to the Vector API one.
+Without either, it uses its built-in kernels.
+
+=== JVM Options
+
+Pass the jinfer JVM flags to `spring-boot:run`.
+Also disable the optimized launch, which limits the JIT compiler and slows inference down noticeably:
+
+[source,xml]
+----
+<plugin>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-maven-plugin</artifactId>
+    <configuration>
+        <optimizedLaunch>false</optimizedLaunch>
+        <jvmArguments>--add-modules jdk.incubator.vector --enable-native-access=ALL-UNNAMED</jvmArguments>
+    </configuration>
+</plugin>
+----
+
+Pass the same flags to `java -jar`, to the `maven-surefire-plugin` `<argLine>` for tests, and to your IDE run configuration.
+
+=== Chat Properties
+
+[NOTE]
+====
+The chat auto-configuration is enabled in either of two cases:
+
+* `spring.ai.model.chat=jinfer` is set. A missing `spring.ai.jinfer.chat.model` is then reported as a startup error.
+* `spring.ai.model.chat` is not set at all, and `spring.ai.jinfer.chat.model` is set.
+
+To disable it, set `spring.ai.model.chat` to any other value, for example `none`.
+====
+
+The prefix `spring.ai.jinfer.chat` is the property prefix for the jinfer chat model.
+
+[cols="3,6,1", stripes=even]
+|====
+| Property | Description | Default
+| spring.ai.model.chat | Selects the chat provider. Set it to `jinfer`. | -
+| spring.ai.jinfer.chat.model | *Required.* A local GGUF path or a model reference, for example `LiquidAI/LFM2.5-1.2B-Instruct-GGUF:Q8_0`. URLs are rejected: download the file first and configure its local path. | -
+| spring.ai.jinfer.chat.companions.<capability> | An auxiliary file for a capability, given as a path or a model reference. Use `media` for a multimodal projector (`mmproj`) and `speculation` for a draft head. | -
+| spring.ai.jinfer.chat.context-capacity | The upper bound of the conversation context, in tokens. `0` uses the model's maximum context length. A value above the model's maximum fails at startup. | `4096` (or the model maximum, when smaller)
+| spring.ai.jinfer.chat.retained-sessions | The number of finished conversation states kept in memory. A follow-up request that extends one of them reuses its state instead of processing the whole history again. `0` keeps none. | `1`
+| spring.ai.jinfer.chat.prompt-cache | The path of a cached-prompt file (`.jkv`) to load read-only at startup. See <<prompt-caching>>. | -
+| spring.ai.jinfer.chat.temperature | The sampling temperature. `0` gives greedy decoding. | The model's recommendation
+| spring.ai.jinfer.chat.top-p | The nucleus sampling probability mass, in `(0, 1]`. | The model's recommendation
+| spring.ai.jinfer.chat.top-k | The top-k cutoff. `0` disables it. | The model's recommendation
+| spring.ai.jinfer.chat.min-p | The minimum token probability, relative to the most likely token, in `[0, 1]`. | The model's recommendation, otherwise `0.05`
+| spring.ai.jinfer.chat.max-tokens | The maximum number of completion tokens. When unset, only the context limits the reply. | -
+| spring.ai.jinfer.chat.seed | The sampling seed. Set it to make sampling reproducible. | A new random seed per request
+| spring.ai.jinfer.chat.thinking | Turns the model's reasoning on or off. Templates without reasoning ignore it. Models that always reason reject `false`. | `true`
+| spring.ai.jinfer.chat.max-reasoning-tokens | The maximum number of tokens spent on reasoning. `-1` removes the limit. | The model family's policy
+| spring.ai.jinfer.chat.reasoning-cutoff-message | The text inserted when the reasoning limit is reached, phrased as the model's own words. | A paragraph break
+| spring.ai.jinfer.chat.timeout | The wall-clock time limit for one generation, for example `30s`. | -
+| spring.ai.jinfer.chat.speculation-depth | The number of draft tokens per verification step for speculative decoding. `0` disables it. It has an effect only when a `speculation` companion is configured. | The engine default
+|====
+
+TIP: All sampling properties prefixed with `spring.ai.jinfer.chat` can be overridden at runtime by adding request-specific <<chat-options>> to the `Prompt` call.
+
+A minimal configuration looks like this:
+
+[source,yaml]
+----
+spring:
+  ai:
+    model:
+      chat: jinfer
+    jinfer:
+      chat:
+        model: LiquidAI/LFM2.5-1.2B-Instruct-GGUF:Q8_0
+        context-capacity: 8192
+        max-tokens: 512
+----
+
+Spring creates the `JinferChatModel` bean and closes it at application shutdown, which releases the model weights.
+
+== Runtime Options [[chat-options]]
+
+The `JinferChatOptions` class holds the generation options for a request.
+On startup, the options built from the `spring.ai.jinfer.chat` properties become the defaults.
+Options passed with a request override them.
+
+[cols="2,5", stripes=even]
+|====
+| Option | Description
+| `temperature`, `topP`, `topK`, `maxTokens`, `stopSequences` | The standard Spring AI `ChatOptions`.
+| `toolCallbacks`, `toolContext` | The standard Spring AI tool-calling options.
+| `seed` | The sampling seed.
+| `minP` | The min-p cutoff.
+| `thinking` | Turns reasoning on or off.
+| `maxReasoningTokens` | The maximum number of reasoning tokens. `-1` removes the limit.
+| `reasoningCutoffMessage` | The text inserted when the reasoning limit is reached.
+| `timeout` | The generation time limit.
+| `outputSchema` | A JSON schema the reply must conform to. jinfer enforces it while sampling tokens. See <<structured-output>>.
+| `grammar` | A raw https://github.com/ggml-org/llama.cpp/blob/master/grammars/README.md[GBNF grammar] the reply must conform to. It cannot be combined with `outputSchema`.
+|====
+
+[source,java]
+----
+ChatResponse response = chatModel.call(
+    new Prompt("Generate the names of 5 famous pirates.",
+        JinferChatOptions.builder()
+            .temperature(0.4)
+            .maxTokens(256)
+            .seed(42L)
+            .build()));
+----
+
+Some options are rejected instead of being silently ignored:
+
+* `frequencyPenalty` and `presencePenalty` are not supported.
+* A per-request `model` that differs from the loaded model fails. Each `JinferChatModel` instance is bound to one GGUF file.
+* Out-of-range sampling values fail with a message that names the option.
+
+== Tool Calling
+
+`JinferChatModel` supports tool calling, both blocking and streaming.
+The model requests tool calls, and Spring AI's `ToolCallingAdvisor` runs them and sends the results back.
+jinfer is verified against Spring AI's reusable tool-calling advisor test suite.
+
+[source,java]
+----
+class WeatherTools {
+
+    @Tool(description = "Get the current weather for a city")
+    String weather(@ToolParam(description = "City name, for example Paris") String city) {
+        return "18C, sunny in " + city;
+    }
+}
+
+String answer = ChatClient.create(chatModel)
+    .prompt("What's the weather in Paris?")
+    .tools(new WeatherTools())
+    .call()
+    .content();
+----
+
+jinfer also works with the xref:api/tools/tool-search-tool.adoc[Tool Search Tool] advisor.
+For that, configure the jinfer embedding model behind a `VectorStore`-based tool index.
+
+TIP: Small models vary a lot in how reliably they call tools.
+In multi-step tool loops, `LiquidAI/LFM2.5-8B-A1B-GGUF:Q8_0` (a mixture-of-experts model with about 1B active parameters) performs well.
+A temperature of `0.0` makes the loop more repeatable.
+
+For most applications, use `ChatClient` with the auto-registered `ToolCallingAdvisor`, as described in xref:api/tools.adoc[Tool Calling].
+To drive the loop yourself, see xref:api/tools/chatmodel-tool-calling.adoc[ChatModel Tool Calling].
+
+== Structured Output [[structured-output]]
+
+`JinferChatOptions` implements `StructuredOutputChatOptions`, so jinfer supports xref:api/structured-output/native.adoc[native structured output].
+jinfer compiles the JSON schema into a grammar and masks every token that would break it during sampling.
+As a result, the output always parses and always matches the schema, unless the token limit or a cancellation cuts the reply short.
+
+[source,java]
+----
+record Incident(String severity, String summary, boolean pageOnCall) {}
+
+Incident incident = ChatClient.create(chatModel)
+    .prompt("""
+        Extract this incident as a JSON object with severity (low, medium or high),
+        summary (one short sentence) and pageOnCall (a boolean).
+        Checkout has returned HTTP 503 for ten minutes. Page the on-call engineer.
+        """)
+    .call()
+    .entity(Incident.class, ChatClient.EntityParamSpec::useProviderStructuredOutput);
+----
+
+NOTE: jinfer does not repeat the schema in the prompt.
+With `useProviderStructuredOutput`, describe the task and the expected fields yourself.
+Without `useProviderStructuredOutput`, Spring AI's default `BeanOutputConverter` adds format instructions to the prompt instead, and the output is not grammar-constrained.
+
+To constrain the reply to an arbitrary shape instead of a JSON schema, pass a GBNF grammar:
+
+[source,java]
+----
+String grammar = """
+    root ::= "yes" | "no"
+    """;
+
+String answer = ChatClient.create(chatModel)
+    .prompt("Is Paris the capital of France? Answer yes or no.")
+    .options(JinferChatOptions.builder().grammar(grammar))
+    .call()
+    .content();
+----
+
+== Reasoning (Thinking)
+
+For models that reason before answering, such as Qwen 3.5, gpt-oss and Nemotron-H, jinfer keeps the reasoning separate from the answer:
+
+* In a blocking call, the reasoning text is stored in the `AssistantMessage` metadata under the `thinking` key. When the message is sent back as conversation history, the reasoning is included again.
+* In a stream, reasoning chunks are marked with the `isThought` metadata flag, so you can display them separately or drop them.
+* The native usage reports how many completion tokens were spent on reasoning. See <<usage-metadata>>.
+
+[source,java]
+----
+ChatResponse response = chatModel.call(new Prompt("How many r's are in strawberry?",
+    JinferChatOptions.builder().maxReasoningTokens(512).build()));
+
+AssistantMessage message = response.getResult().getOutput();
+String reasoning = (String) message.getMetadata().get("thinking");
+String answer = message.getText();
+----
+
+Use `thinking(false)` to turn reasoning off for templates that support it, and `maxReasoningTokens` to limit it for models that always reason.
+
+IMPORTANT: `ChatClient.stream().content()` returns the text of every chunk, including reasoning chunks.
+With a reasoning model, stream `chatResponse()` instead and skip the chunks marked `isThought`, or turn reasoning off.
+
+[source,java]
+----
+Flux<String> answerOnly = chatClient.prompt("How many r's are in strawberry?")
+    .stream()
+    .chatResponse()
+    .filter(r -> r.getResult() != null
+            && !Boolean.TRUE.equals(r.getResult().getOutput().getMetadata().get("isThought")))
+    .map(r -> r.getResult().getOutput().getText())
+    .filter(StringUtils::hasLength);
+----
+
+== Multimodal
+
+jinfer accepts images, audio and video through Spring AI's `Media` type, when the loaded model supports that input type.
+Following the llama.cpp `mmproj` convention, a multimodal model needs its projector configured as the `media` companion:
+
+[source,yaml]
+----
+spring:
+  ai:
+    jinfer:
+      chat:
+        model: LiquidAI/LFM2.5-VL-3B-GGUF:Q8_0
+        companions:
+          media: LiquidAI/LFM2.5-VL-3B-GGUF/mmproj-LFM2.5-VL-3B-Q8_0.gguf
+----
+
+[source,java]
+----
+String description = ChatClient.create(chatModel)
+    .prompt()
+    .user(u -> u.text("Describe this image in one sentence.")
+                .media(MimeTypeUtils.IMAGE_PNG, new ClassPathResource("/multimodal.test.png")))
+    .call()
+    .content();
+----
+
+Media is decoded locally and turned into model embeddings.
+jinfer never fetches media from the network during inference.
+Images are decoded with the platform image APIs.
+Audio is decoded to 16 kHz mono PCM with `javax.sound`, or with `ffmpeg` if you set `-Djinfer.audioDecoder=ffmpeg`.
+Video frames are sampled through `ffmpeg`. To change how frames are selected, declare a `VideoSampler` bean; the default samples frames uniformly.
+
+Gemma 4 supports image, audio and video input. LFM 2.5-VL and Qwen 3.5 support image input.
+
+== Prompt Caching [[prompt-caching]]
+
+jinfer reuses previously computed model state (the KV cache) in three ways:
+
+* *Shared prefixes.* `withCachedPrompt(messages, tools)` returns a view of the model with a fixed prefix, such as a long system prompt, tool definitions or few-shot examples. The prefix is processed once, and every request through the view starts from that saved state.
+* *Conversation reuse.* `spring.ai.jinfer.chat.retained-sessions` keeps finished conversations in memory, so a follow-up turn only processes the new messages.
+* *Persistent caches.* `saveCachedPrompts(path)` writes the defined prefixes to a `.jkv` file. Another process can load that file with `spring.ai.jinfer.chat.prompt-cache` (or `promptCache(path)` on the builder) and skip processing the prefix entirely.
+
+[source,java]
+----
+List<Message> instructions = List.of(new SystemMessage(
+    "You are a support assistant for AcmeCloud. Answer in one sentence."));
+
+JinferChatModel support = jinferChatModel.withCachedPrompt(instructions, List.of());
+support.call("How do I reset my password?"); // the instructions are already in the cache
+
+jinferChatModel.saveCachedPrompts(Path.of("personas.jkv"));
+----
+
+Caching never changes the output: a cached request produces exactly the same tokens as an uncached one.
+A view shares the lifetime of its base model, so close the base model, not the view.
+When the cache is used, the number of reused tokens is reported in `Usage.getCacheReadInputTokens()`.
+
+== Speculative Decoding
+
+Models that come with a draft head, such as Gemma 4 and Qwen 3.5, can use it for speculative decoding.
+Configure the draft head as the `speculation` companion:
+
+[source,yaml]
+----
+spring:
+  ai:
+    jinfer:
+      chat:
+        model: unsloth/gemma-4-E2B-it-GGUF:Q8_0
+        companions:
+          speculation: unsloth/gemma-4-E2B-it-GGUF/MTP/mtp-gemma-4-E2B-it-Q8_0.gguf
+----
+
+The speed-up depends on how well the draft head predicts the text, not on the model.
+jinfer measured Gemma 4 E2B on a 16-core CPU at about 2.0x for lists, 1.7x for code, and 0.9x for prose.
+Check the gain on your own workload. The native usage reports the drafted and accepted token counts.
+
+== Usage and Response Metadata [[usage-metadata]]
+
+The `ChatResponse` metadata contains:
+
+* `Usage.getPromptTokens()` and `getCompletionTokens()`, counted by the model's real tokenizer, not estimated.
+* `Usage.getCacheReadInputTokens()`, the number of prompt tokens restored from the cache. It is `null` for requests that did not use the cache.
+* `Usage.getNativeUsage()`, a `JinferChatModel.JinferUsage` record with the prompt and decode timings, the reasoning token count, the cache tier that served the prompt, and the speculative decoding counters.
+* The `prompt-eval-duration` and `eval-duration` metadata entries.
+* A finish reason of `stop`, `length`, `tool_calls` or `other`.
+
+== Observability
+
+`JinferChatModel` records Spring AI's standard chat model observations, using the `jinfer` provider name.
+The auto-configuration uses the application's `ObservationRegistry` and an optional `ChatModelObservationConvention` bean.
+See xref:observability/index.adoc[Observability].
+
+== Concurrency and Resources
+
+A `JinferChatModel` instance processes requests one at a time: concurrent requests wait in a fair queue.
+For parallel processing, load the weights yourself into an arena that your code manages (`Models.load(path, arena)`), and build the model with `model(loaded)`.
+Then create additional pipelines with `fork()`.
+Each fork costs only one extra context, not another copy of the weights.
+A model that loaded its own weights, which includes the auto-configured bean, cannot be forked.
+
+The model holds its weights in memory, up to `retained-sessions` conversation states, and a KV block cache of up to 2 GiB.
+Size the JVM host accordingly.
+`close()` blocks until in-flight requests have finished, then frees native memory.
+
+== Sample Controller
+
+https://start.spring.io/[Create] a new Spring Boot project with Java 25, add the dependencies described in <<Auto-configuration>>, and configure the model in `application.yaml` as shown in <<Chat Properties>>.
+
+[source,java]
+----
+@RestController
+class ChatController {
+
+    private final ChatClient chatClient;
+
+    ChatController(ChatClient.Builder builder) {
+        this.chatClient = builder.build();
+    }
+
+    @GetMapping("/ai/generate")
+    String generate(@RequestParam(defaultValue = "Tell me a joke") String message) {
+        return this.chatClient.prompt(message).call().content();
+    }
+
+    @GetMapping(value = "/ai/generateStream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    Flux<String> generateStream(@RequestParam(defaultValue = "Tell me a joke") String message) {
+        return this.chatClient.prompt(message).stream().content();
+    }
+}
+----
+
+== Manual Configuration
+
+To use jinfer without Spring Boot auto-configuration, replace the starter with the core integration and the `ChatClient` API:
+
+[tabs]
+======
+Maven::
++
+[source,xml]
+----
+<dependency>
+    <groupId>com.qxotic</groupId>
+    <artifactId>jinfer-spring-ai</artifactId>
+</dependency>
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-client-chat</artifactId>
+</dependency>
+----
+
+Gradle::
++
+[source,groovy]
+----
+dependencies {
+    implementation 'com.qxotic:jinfer-spring-ai'
+    implementation 'org.springframework.ai:spring-ai-client-chat'
+}
+----
+======
+
+Keep the BOMs and the model family dependencies described in <<Auto-configuration>>.
+
+[source,java]
+----
+try (var chatModel = JinferChatModel.builder()
+        .model("LiquidAI/LFM2.5-1.2B-Instruct-GGUF:Q8_0")   // or .modelPath(Path.of("model.gguf"))
+        .contextCapacity(8192)
+        .options(JinferChatOptions.builder().maxTokens(512).build())
+        .build()) {
+
+    ChatResponse response = chatModel.call(new Prompt("What is the capital of France?"));
+
+    // Or with streaming responses
+    Flux<ChatResponse> stream = chatModel.stream(new Prompt("Write a haiku about rivers."));
+}
+----
+
+When you build the model yourself, your application owns it: use try-with-resources or close it at shutdown.
+Configure companions with `companion(capability, ref)` or `companionPath(capability, path)`.
+
+== Related Pages
+
+* xref:api/embeddings/jinfer-embeddings.adoc[Qxotic jinfer Embeddings and Reranking]
+* xref:api/audio/speech/jinfer-speech.adoc[Qxotic jinfer Text-to-Speech]
+* xref:api/audio/transcriptions/jinfer-transcriptions.adoc[Qxotic jinfer Transcription]
+* https://github.com/qxoticai/qxotic/tree/main/jinfer/jinfer-example-local-rag[Example: local RAG in a single JVM]
+* https://github.com/qxoticai/qxotic/tree/main/jinfer/jinfer-example-judge-advisor[Example: a local grammar-constrained judge in a self-refine advisor]

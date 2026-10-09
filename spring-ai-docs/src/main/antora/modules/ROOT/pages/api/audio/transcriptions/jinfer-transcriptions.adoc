@@ -1,0 +1,107 @@
+= Qxotic jinfer Transcriptions
+
+https://qxotic.ai/jinfer[jinfer] is a pure-JVM inference engine from the https://qxotic.ai[Qxotic AI] project.
+`JinferTranscriptionModel` implements Spring AI's `TranscriptionModel`.
+It transcribes speech locally from a GGUF model inside your application's JVM, without an API key or external service.
+On a CPU, it transcribes faster than real time.
+
+NOTE: The jinfer Spring AI integration is an external module maintained by the Qxotic AI project, not part of the Spring AI repository.
+Its artifacts are published to Maven Central under the `com.qxotic` group.
+
+== Prerequisites
+
+* The same Java 25, JVM flag and Spring Boot requirements as the xref:api/chat/jinfer-chat.adoc#_prerequisites[jinfer chat model].
+* A transcription model family on the classpath. https://huggingface.co/nvidia/parakeet-tdt-0.6b-v3[NVIDIA Parakeet] models are provided by `jinfer-parakeet`.
+
+== Auto-configuration
+
+Add the jinfer Spring Boot starter and the Parakeet model family.
+Import both BOMs as shown in the xref:api/chat/jinfer-chat.adoc#_auto_configuration[jinfer chat model] documentation.
+
+[source,xml]
+----
+<dependency>
+    <groupId>com.qxotic</groupId>
+    <artifactId>jinfer-spring-ai-spring-boot-starter</artifactId>
+</dependency>
+<dependency>
+    <groupId>com.qxotic</groupId>
+    <artifactId>jinfer-parakeet</artifactId>
+</dependency>
+----
+
+or, for Gradle:
+
+[source,groovy]
+----
+dependencies {
+    implementation 'com.qxotic:jinfer-spring-ai-spring-boot-starter'
+    implementation 'com.qxotic:jinfer-parakeet'
+}
+----
+
+=== Transcription Properties
+
+The `JinferTranscriptionModel` bean is created when `spring.ai.jinfer.transcription.model` is set.
+It does not use the `spring.ai.model.audio.transcription` selection property.
+
+[cols="3,5,1", stripes=even]
+|====
+| Property | Description | Default
+| spring.ai.jinfer.transcription.model | A local GGUF path or a xref:api/chat/jinfer-chat.adoc#_model_references[model reference] for a transcription model. Setting it creates the bean. | -
+|====
+
+[source,yaml]
+----
+spring:
+  ai:
+    jinfer:
+      transcription:
+        model: mudler/parakeet-cpp-gguf/tdt-0.6b-v3-q8_0.gguf
+----
+
+== Runtime Options [[transcription-options]]
+
+`JinferTranscriptionModel` has no tunable options.
+A per-request `model` option is rejected with an `UnsupportedOperationException`, because each instance is bound to the GGUF file it loaded.
+
+== Audio Input
+
+The `Resource` passed to the model is decoded locally to 16 kHz mono audio.
+On a JVM, decoding uses `javax.sound`, which handles WAV, AIFF and AU.
+For other formats, install `ffmpeg` and set `-Djinfer.audioDecoder=ffmpeg`.
+
+[source,java]
+----
+String text = transcriptionModel.transcribe(new FileSystemResource("speech.wav"));
+----
+
+== Word Timings and Confidences
+
+The portable `call` method returns only the text.
+`JinferTranscriptionModel` also offers typed `transcribe(Path)` and `transcribe(byte[])` methods, plus `transcribe(Media.Audio)` for audio already decoded into jinfer's own `com.qxotic.jinfer.media.Media.Audio` type (16 kHz mono).
+They return jinfer's full `Transcription`, which includes per-token time spans and confidences, and can group the tokens into words with `words()`.
+
+[source,java]
+----
+Transcription transcription = jinferTranscriptionModel.transcribe(Path.of("speech.wav"));
+System.out.println(transcription.text());
+----
+
+`JinferTranscriptionModel` is thread-safe. Concurrent requests use independent states and can run in parallel.
+
+== Manual Configuration
+
+Depend on `com.qxotic:jinfer-spring-ai` and `com.qxotic:jinfer-parakeet`, then build the model:
+
+[source,java]
+----
+try (var transcriber = JinferTranscriptionModel.builder()
+        .model("mudler/parakeet-cpp-gguf/tdt-0.6b-v3-q8_0.gguf")   // or .modelPath(Path.of("parakeet.gguf"))
+        .build()) {
+
+    System.out.println(transcriber.transcribe(new FileSystemResource("speech.wav")));
+}
+----
+
+`close()` blocks until in-flight transcriptions have finished, then frees the model weights.
