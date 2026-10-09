@@ -32,6 +32,7 @@ import java.util.function.Consumer;
 
 import com.openai.client.OpenAIClient;
 import com.openai.client.OpenAIClientAsync;
+import com.openai.core.JsonField;
 import com.openai.core.JsonValue;
 import com.openai.core.RequestOptions;
 import com.openai.core.http.AsyncStreamResponse;
@@ -71,6 +72,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.EmptyRateLimit;
 import org.springframework.ai.chat.metadata.RateLimit;
+import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.model.MessageAggregator;
@@ -810,6 +812,46 @@ class OpenAiChatModelTests {
 
 		ChatResponseMetadata metadata = response.getMetadata();
 		assertThat((Object) metadata.get("created")).isEqualTo(1234567890L);
+	}
+
+	@Test
+	void usageDegradesToZeroWhenProviderOmitsCompletionTokens() {
+		// Databricks and other OpenAI-compatible providers send completion_tokens as null
+		givenChatCompletion(ChatCompletion.builder()
+			.id("test-id")
+			.created(1234567890L)
+			.model("test-model")
+			.usage(CompletionUsage.builder()
+				.promptTokens(10L)
+				.completionTokens(JsonField.<Long>ofNullable(null))
+				.totalTokens(25L)
+				.build())
+			.addChoice(ChatCompletion.Choice.builder()
+				.finishReason(ChatCompletion.Choice.FinishReason.STOP)
+				.index(0)
+				.logprobs(Optional.empty())
+				.message(ChatCompletionMessage.builder()
+					.content("hello")
+					.refusal(Optional.empty())
+					.role(JsonValue.from("assistant"))
+					.annotations(List.of())
+					.toolCalls(List.of())
+					.build())
+				.build())
+			.build());
+
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		ChatResponse response = chatModel.call(new Prompt("hi", options));
+
+		Usage usage = response.getMetadata().getUsage();
+		assertThat(usage.getPromptTokens()).isEqualTo(10);
+		assertThat(usage.getCompletionTokens()).isEqualTo(0);
 	}
 
 	@Test
