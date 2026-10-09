@@ -25,6 +25,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+import javax.sql.DataSource;
+
 import com.pgvector.PGvector;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -53,6 +55,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.SqlTypeValue;
 import org.springframework.jdbc.core.StatementCreatorUtils;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -537,6 +541,21 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 			return;
 		}
 
+		// Run the DDL in a transaction so it is committed even when the connection pool
+		// has auto-commit disabled.
+		DataSource dataSource = this.jdbcTemplate.getDataSource();
+		if (dataSource != null) {
+			new TransactionTemplate(new DataSourceTransactionManager(dataSource))
+				.executeWithoutResult(status -> createSchema());
+		}
+		else {
+			createSchema();
+		}
+
+		validateTableSchemaIfEnabled();
+	}
+
+	private void createSchema() {
 		// Enable the PGVector, JSONB and UUID support.
 		this.jdbcTemplate.execute("CREATE EXTENSION IF NOT EXISTS vector");
 		this.jdbcTemplate.execute("CREATE EXTENSION IF NOT EXISTS hstore");
@@ -568,8 +587,6 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 					""", this.getVectorIndexName(), this.getFullyQualifiedTableName(), this.createIndexMethod,
 					this.embeddingFieldName, this.getDistanceType().index));
 		}
-
-		validateTableSchemaIfEnabled();
 	}
 
 	private void validateTableSchemaIfEnabled() {
