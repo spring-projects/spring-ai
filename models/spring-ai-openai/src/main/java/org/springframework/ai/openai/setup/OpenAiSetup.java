@@ -31,6 +31,7 @@ import com.openai.client.OpenAIClientAsync;
 import com.openai.client.OpenAIClientAsyncImpl;
 import com.openai.client.OpenAIClientImpl;
 import com.openai.core.ClientOptions;
+import com.openai.core.Timeout;
 import com.openai.credential.Credential;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.observation.ObservationRegistry;
@@ -155,10 +156,13 @@ public final class OpenAiSetup {
 			@Nullable String calculatedApiKey, @Nullable Credential credential, ObservationRegistry observationRegistry,
 			@Nullable MeterRegistry meterRegistry, List<OpenAiHttpClientBuilderCustomizer> httpClientCustomizers) {
 
+		Timeout clientOptionsTimeout = Timeout.builder().request(timeout).build();
+
 		SpringAiOpenAiHttpClient.Builder httpBuilder = SpringAiOpenAiHttpClient.builder()
 			.observationRegistry(observationRegistry)
 			.meterRegistry(meterRegistry)
 			.timeout(timeout)
+			.clientOptionsTimeout(clientOptionsTimeout)
 			.proxy(proxy);
 
 		for (OpenAiHttpClientBuilderCustomizer customizer : httpClientCustomizers) {
@@ -171,7 +175,7 @@ public final class OpenAiSetup {
 			.httpClient(httpBuilder.build())
 			.baseUrl(calculatedBaseUrl)
 			.organization(organizationId)
-			.timeout(timeout)
+			.timeout(clientOptionsTimeout)
 			.maxRetries(maxRetries)
 			.putHeader("User-Agent", DEFAULT_USER_AGENT);
 
@@ -219,10 +223,13 @@ public final class OpenAiSetup {
 			ObservationRegistry observationRegistry, @Nullable MeterRegistry meterRegistry,
 			List<OpenAiHttpClientBuilderCustomizer> httpClientCustomizers) {
 
+		Timeout clientOptionsTimeout = Timeout.builder().request(timeout).build();
+
 		SpringAiOpenAiHttpClient.Builder httpBuilder = SpringAiOpenAiHttpClient.builder()
 			.observationRegistry(observationRegistry)
 			.meterRegistry(meterRegistry)
 			.timeout(timeout)
+			.clientOptionsTimeout(clientOptionsTimeout)
 			.proxy(proxy);
 
 		// No API Key defined, so remove the mandatory "Authorization" header.
@@ -240,7 +247,7 @@ public final class OpenAiSetup {
 			.apiKey(NO_AUTH_PLACEHOLDER_KEY)
 			.baseUrl(calculatedBaseUrl)
 			.organization(organizationId)
-			.timeout(timeout)
+			.timeout(clientOptionsTimeout)
 			.maxRetries(maxRetries)
 			.putHeader("User-Agent", DEFAULT_USER_AGENT);
 

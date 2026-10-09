@@ -18,9 +18,12 @@ package org.springframework.ai.anthropic.http.okhttp;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.anthropic.client.AnthropicClient;
+import com.anthropic.core.Timeout;
+import com.anthropic.errors.AnthropicIoException;
 import com.anthropic.models.messages.MessageCreateParams;
 import com.anthropic.models.messages.Model;
 import io.micrometer.observation.ObservationRegistry;
@@ -35,6 +38,7 @@ import org.springframework.ai.anthropic.AnthropicSetup;
 import org.springframework.ai.chat.prompt.Prompt;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Unit tests for {@link AnthropicHttpClientBuilderCustomizer}.
@@ -150,6 +154,42 @@ class AnthropicHttpClientBuilderCustomizerTests {
 			assertThat(request.getHeader("x-tenant-id"))
 				.as("customizer-registered interceptor must attach the tenant header")
 				.isEqualTo("acme");
+		}
+	}
+
+	@Test
+	void clientTimeoutSetByCustomizerIsNotDiscarded() throws Exception {
+		try (MockWebServer server = new MockWebServer()) {
+			// The server accepts the request, then delays its response past the 1s
+			// timeout. Bounded, so the test fails rather than hangs if the timeout is
+			// not honoured.
+			server.enqueue(new MockResponse().setResponseCode(200)
+				.setHeader("Content-Type", "application/json")
+				.setBody(MESSAGES_RESPONSE)
+				.setHeadersDelay(5, TimeUnit.SECONDS));
+			server.start();
+
+			AnthropicHttpClientBuilderCustomizer customizer = builder -> builder.timeout(Timeout.builder()
+				.connect(Duration.ofSeconds(1))
+				.read(Duration.ofSeconds(1))
+				.write(Duration.ofSeconds(1))
+				.request(Duration.ofSeconds(1))
+				.build());
+
+			// The ClientOptions timeout is deliberately far larger: the SDK
+			// copies it into every call's RequestOptions, and it must not clobber the
+			// customizer's value.
+			AnthropicClient client = AnthropicSetup.setupSyncClient(server.url("/").toString(), "api-key",
+					Duration.ofMinutes(10), 0, null, null, ObservationRegistry.NOOP, null, null, List.of(customizer));
+
+			assertThatThrownBy(() -> client.messages()
+				.create(MessageCreateParams.builder()
+					.model(Model.CLAUDE_HAIKU_4_5)
+					.maxTokens(10)
+					.addUserMessage("Hi")
+					.build()))
+				.as("the 1s timeout configured through the customizer must bound the call")
+				.isInstanceOf(AnthropicIoException.class);
 		}
 	}
 
