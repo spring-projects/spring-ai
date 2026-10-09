@@ -76,6 +76,25 @@ public class SyncMcpProgressMethodCallbackTests {
 	}
 
 	@Test
+	void testNumericProgressTokenWithParams() throws Exception {
+		ValidMethods bean = new ValidMethods();
+		Method method = ValidMethods.class.getMethod("handleProgressWithParams", Double.class, String.class,
+				String.class);
+		ProgressNotification notification = ProgressNotification.builder(42, 0.5).total(100.0).build();
+
+		Consumer<ProgressNotification> callback = SyncMcpProgressMethodCallback.builder()
+			.method(method)
+			.bean(bean)
+			.build();
+
+		callback.accept(notification);
+
+		assertThat(bean.lastProgress).isEqualTo(notification.progress());
+		assertThat(bean.lastProgressToken).isEqualTo("42");
+		assertThat(bean.lastTotal).isEqualTo(String.valueOf(notification.total()));
+	}
+
+	@Test
 	void testValidMethodWithPrimitiveDouble() throws Exception {
 		ValidMethods bean = new ValidMethods();
 		Method method = ValidMethods.class.getMethod("handleProgressWithPrimitiveDouble", double.class, String.class,
