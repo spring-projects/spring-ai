@@ -80,7 +80,25 @@ public class DefaultImageModelObservationConvention implements ImageModelObserva
 		keyValues = requestImageFormat(keyValues, context);
 		keyValues = requestImageSize(keyValues, context);
 		keyValues = requestImageStyle(keyValues, context);
+		// Error
+		keyValues = errorType(keyValues, context);
 		return keyValues;
+	}
+
+	/**
+	 * Add {@code error.type} when the operation ended with an error. Successful
+	 * operations carry no error type, as the OpenTelemetry conventions require.
+	 * @since 2.1.0
+	 */
+	protected KeyValues errorType(KeyValues keyValues, ImageModelObservationContext context) {
+		Throwable error = context.getError();
+		if (error == null) {
+			return keyValues;
+		}
+		Class<?> errorClass = error.getClass();
+		String canonicalName = errorClass.getCanonicalName();
+		return keyValues.and(ImageModelObservationDocumentation.HighCardinalityKeyNames.ERROR_TYPE.asString(),
+				canonicalName != null ? canonicalName : errorClass.getName());
 	}
 
 	// Request

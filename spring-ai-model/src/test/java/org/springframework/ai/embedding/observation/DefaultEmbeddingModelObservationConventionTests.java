@@ -29,6 +29,7 @@ import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.embedding.EmbeddingRequest;
 import org.springframework.ai.embedding.EmbeddingResponse;
 import org.springframework.ai.embedding.EmbeddingResponseMetadata;
+import org.springframework.ai.observation.conventions.AiObservationAttributes;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.ai.embedding.observation.EmbeddingModelObservationDocumentation.HighCardinalityKeyNames;
@@ -75,6 +76,39 @@ class DefaultEmbeddingModelObservationConventionTests {
 			.build();
 		assertThat(this.observationConvention.supportsContext(observationContext)).isTrue();
 		assertThat(this.observationConvention.supportsContext(new Observation.Context())).isFalse();
+	}
+
+	@Test
+	void shouldHaveErrorTypeOnTheSpanWhenErrorIsSet() {
+		EmbeddingModelObservationContext observationContext = EmbeddingModelObservationContext.builder()
+			.embeddingRequest(generateEmbeddingRequest(EmbeddingOptions.builder().model("mistral").build()))
+			.provider("superprovider")
+			.build();
+		observationContext.setError(new IllegalStateException("boom"));
+
+		assertThat(this.observationConvention.getHighCardinalityKeyValues(observationContext)).contains(KeyValue
+			.of(AiObservationAttributes.ERROR_TYPE.value(), IllegalStateException.class.getCanonicalName()));
+		assertThat(this.observationConvention.getLowCardinalityKeyValues(observationContext)
+			.stream()
+			.map(KeyValue::getKey)
+			.toList()).doesNotContain(AiObservationAttributes.ERROR_TYPE.value());
+	}
+
+	@Test
+	void shouldNotHaveErrorTypeWhenNoError() {
+		EmbeddingModelObservationContext observationContext = EmbeddingModelObservationContext.builder()
+			.embeddingRequest(generateEmbeddingRequest(EmbeddingOptions.builder().model("mistral").build()))
+			.provider("superprovider")
+			.build();
+
+		assertThat(this.observationConvention.getLowCardinalityKeyValues(observationContext)
+			.stream()
+			.map(KeyValue::getKey)
+			.toList()).doesNotContain(AiObservationAttributes.ERROR_TYPE.value());
+		assertThat(this.observationConvention.getHighCardinalityKeyValues(observationContext)
+			.stream()
+			.map(KeyValue::getKey)
+			.toList()).doesNotContain(AiObservationAttributes.ERROR_TYPE.value());
 	}
 
 	@Test
