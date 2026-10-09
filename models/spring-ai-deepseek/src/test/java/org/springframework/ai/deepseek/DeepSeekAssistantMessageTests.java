@@ -24,6 +24,9 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.part.ReasoningPart;
+import org.springframework.ai.chat.messages.part.TextPart;
+import org.springframework.ai.chat.messages.part.ToolCallPart;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 
@@ -35,7 +38,9 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
  *
  * @author Sun Yuhan
  * @author guan xu
+ * @author Dimitar Proynov
  */
+@SuppressWarnings("removal")
 class DeepSeekAssistantMessageTests {
 
 	@Test
@@ -122,27 +127,6 @@ class DeepSeekAssistantMessageTests {
 	}
 
 	@Test
-	@SuppressWarnings("deprecation")
-	public void testPrefixAssistantMessageFactoryMethod() {
-		String content = "Hello, world!";
-		DeepSeekAssistantMessage message = DeepSeekAssistantMessage.prefixAssistantMessage(content);
-
-		assertThat(message.getText()).isEqualTo(content);
-		assertThat(message.getReasoningContent()).isNull();
-	}
-
-	@Test
-	@SuppressWarnings("deprecation")
-	public void testPrefixAssistantMessageFactoryMethodWithReasoning() {
-		String content = "Hello, world!";
-		String reasoningContent = "This is my reasoning";
-		DeepSeekAssistantMessage message = DeepSeekAssistantMessage.prefixAssistantMessage(content, reasoningContent);
-
-		assertThat(message.getText()).isEqualTo(content);
-		assertThat(message.getReasoningContent()).isEqualTo(reasoningContent);
-	}
-
-	@Test
 	public void testSettersAndGetters() {
 		DeepSeekAssistantMessage message = new DeepSeekAssistantMessage.Builder().build();
 
@@ -203,6 +187,80 @@ class DeepSeekAssistantMessageTests {
 		assertThat(message.getMetadata()).containsAllEntriesOf(properties);
 		assertThat(message.getToolCalls()).isEqualTo(toolCalls);
 		assertThat(message.getMedia()).isEqualTo(media);
+	}
+
+	@Test
+	public void reasoningContentIsAReasoningPartBeforeTheText() {
+		DeepSeekAssistantMessage message = new DeepSeekAssistantMessage.Builder().content("Hello")
+			.toolCalls(List.of(new ToolCall("1", "function", "myFunction", "{}")))
+			.reasoningContent("This is my reasoning")
+			.build();
+
+		assertThat(message.getParts()).containsExactly(ReasoningPart.of("This is my reasoning"), TextPart.of("Hello"),
+				ToolCallPart.of(new ToolCall("1", "function", "myFunction", "{}")));
+		assertThat(message.getReasoning()).containsExactly(ReasoningPart.of("This is my reasoning"));
+	}
+
+	@Test
+	public void reasoningContentIsDerivedFromTheReasoningParts() {
+		DeepSeekAssistantMessage message = new DeepSeekAssistantMessage.Builder().part(ReasoningPart.of("Step one. "))
+			.part(TextPart.of("Checking."))
+			.part(ReasoningPart.of("Step two."))
+			.build();
+
+		assertThat(message.getReasoningContent()).isEqualTo("Step one. Step two.");
+	}
+
+	@Test
+	public void reasoningContentReplacesTheReasoningPartsInPlace() {
+		DeepSeekAssistantMessage original = new DeepSeekAssistantMessage.Builder().part(TextPart.of("Hello"))
+			.part(ReasoningPart.of("old"))
+			.build();
+
+		DeepSeekAssistantMessage mutated = original.mutate().reasoningContent("new").build();
+
+		assertThat(mutated.getParts()).containsExactly(TextPart.of("Hello"), ReasoningPart.of("new"));
+		assertThat(original.mutate().reasoningContent(null).build().getParts()).containsExactly(TextPart.of("Hello"));
+	}
+
+	@Test
+	public void prefixIsTheMetadataEntry() {
+		DeepSeekAssistantMessage message = new DeepSeekAssistantMessage.Builder().content("```python\n")
+			.prefix(true)
+			.build();
+
+		assertThat(message.getMetadata()).containsEntry(DeepSeekChatModel.PREFIX_METADATA_KEY, true);
+
+		message.setPrefix(false);
+
+		assertThat(message.getMetadata()).containsEntry(DeepSeekChatModel.PREFIX_METADATA_KEY, false);
+		assertThat(message.getPrefix()).isFalse();
+	}
+
+	@Test
+	public void prefixIsReadFromTheMetadataEntry() {
+		DeepSeekAssistantMessage message = new DeepSeekAssistantMessage.Builder().content("```python\n")
+			.properties(Map.of(DeepSeekChatModel.PREFIX_METADATA_KEY, true))
+			.build();
+
+		assertThat(message.getPrefix()).isTrue();
+	}
+
+	@Test
+	public void reasoningContentOverrideBecomesTheReasoningPartOfACopy() {
+		DeepSeekAssistantMessage original = new DeepSeekAssistantMessage.Builder().content("hello")
+			.reasoningContent("thoughts")
+			.build();
+		original.setReasoningContent("revised");
+
+		assertThat(original.getReasoningContent()).isEqualTo("revised");
+		// The parts are immutable
+		assertThat(original.getReasoning()).containsExactly(ReasoningPart.of("thoughts"));
+
+		DeepSeekAssistantMessage copy = (DeepSeekAssistantMessage) original.copy();
+
+		assertThat(copy.getParts()).containsExactly(ReasoningPart.of("revised"), TextPart.of("hello"));
+		assertThat(copy.getReasoningContent()).isEqualTo("revised");
 	}
 
 	@Test
