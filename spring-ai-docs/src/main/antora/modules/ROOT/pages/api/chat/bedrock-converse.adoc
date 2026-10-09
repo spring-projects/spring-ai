@@ -829,13 +829,13 @@ It is replayed to Bedrock without a signature.
 |====
 
 The provider and payload kinds are available as the `BEDROCK_PROVIDER`, `PAYLOAD_SIGNATURE` and `PAYLOAD_REDACTED_CONTENT` constants of `ConverseApiUtils`.
-Every reasoning part Bedrock returned also carries the `provider` attribute (`ConverseApiUtils.PROVIDER_ATTRIBUTE`) set to `bedrock`, which is how unsigned reasoning, having no payload, is recognized as Bedrock's own.
+Every reasoning part Bedrock returned also carries the `provider` attribute (`StreamingParts.PROVIDER_ATTRIBUTE`) set to `bedrock`, which is how unsigned reasoning, having no payload, is recognized as Bedrock's own.
 Other content block types, such as citations, are not mapped to parts yet.
 
 Reasoning is fully supported in streaming mode.
-Every streamed chunk carries one part stamped with the content block index it belongs to (see `StreamingParts`): reasoning deltas arrive as partial `ReasoningPart`s, the signature as a partial `ReasoningPart` with an empty text and the payload, and text deltas as partial `TextPart`s.
-Redacted reasoning arrives as one complete `ReasoningPart` once its block is done.
-The complete tool calls arrive in the final chunk of the response, exactly as before.
+Every delta chunk carries one part stamped with the content block index it belongs to (see `StreamingParts`): reasoning deltas arrive as partial `ReasoningPart`s and text deltas as partial `TextPart`s.
+The signature arrives as a partial `ReasoningPart` with an empty text and the payload once its block is done, and redacted reasoning as one complete `ReasoningPart`.
+The final chunk of the response carries the complete tool calls, along with any reasoning whose block never finished.
 `MessageAggregator` (used by `ChatClient` and the advisors) rebuilds the ordered parts from these chunks, so the aggregated message has the same shape as a non-streaming response.
 
 == Tool Calling

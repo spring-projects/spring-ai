@@ -114,7 +114,7 @@ class BedrockProxyChatModelTest {
 	private static final OpaquePayload REDACTED_PAYLOAD = new OpaquePayload(ConverseApiUtils.BEDROCK_PROVIDER,
 			ConverseApiUtils.PAYLOAD_REDACTED_CONTENT, Base64.getEncoder().encodeToString(REDACTED));
 
-	private static final Map<String, String> BEDROCK_ATTRIBUTES = Map.of(ConverseApiUtils.PROVIDER_ATTRIBUTE,
+	private static final Map<String, String> BEDROCK_ATTRIBUTES = Map.of(StreamingParts.PROVIDER_ATTRIBUTE,
 			ConverseApiUtils.BEDROCK_PROVIDER);
 
 	private static final ReasoningPart SIGNED_REASONING = new ReasoningPart(REASONING_TEXT, null, SIGNATURE_PAYLOAD,
@@ -749,8 +749,8 @@ class BedrockProxyChatModelTest {
 			.collectList()
 			.block();
 
-		// 3 reasoning deltas, 2 text deltas and the final chunk; the tool use input is
-		// buffered, as before parts
+		// 2 reasoning deltas, the signature on block stop, 2 text deltas and the final
+		// chunk; the tool use input is buffered until the final chunk
 		assertThat(chunks).hasSize(6);
 		assertThat(chunks).allSatisfy(chunk -> assertThat(chunk.getMetadata().getId()).isEqualTo("req-1"));
 		assertThat(chunks.get(0).getResult().getOutput().getParts())
@@ -796,6 +796,67 @@ class BedrockProxyChatModelTest {
 
 		assertThat(aggregatedRef.get().getResult().getOutput().getParts()).containsExactly(UNSIGNED_REASONING,
 				TextPart.of("15°C"));
+	}
+
+	@Test
+	void streamingSignatureSplitAcrossDeltasIsJoinedOnBlockStop() {
+		givenStream(reasoningDelta(0, "Think hard."), signatureDelta(0, "first-"), signatureDelta(0, "second"),
+				blockStop(0), textDelta(1, "15°C"), blockStop(1), messageStop(StopReason.END_TURN), usageMetadata());
+
+		AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
+		List<ChatResponse> chunks = new MessageAggregator()
+			.aggregate(newModel().stream(new Prompt("Weather?")), aggregatedRef::set)
+			.collectList()
+			.block();
+
+		// The reasoning delta, the joined signature, the text delta and the final chunk
+		assertThat(chunks).hasSize(4);
+		AssistantMessage aggregated = aggregatedRef.get().getResult().getOutput();
+		OpaquePayload joined = new OpaquePayload(ConverseApiUtils.BEDROCK_PROVIDER, ConverseApiUtils.PAYLOAD_SIGNATURE,
+				"first-second");
+		assertThat(aggregated.getParts())
+			.containsExactly(new ReasoningPart("Think hard.", null, joined, BEDROCK_ATTRIBUTES), TextPart.of("15°C"));
+
+		List<ContentBlock> content = replayedAssistantContent(aggregated);
+		assertThat(content.get(0).reasoningContent().reasoningText().text()).isEqualTo("Think hard.");
+		assertThat(content.get(0).reasoningContent().reasoningText().signature()).isEqualTo("first-second");
+	}
+
+	@Test
+	void streamingSignatureWithoutReasoningTextAggregatesToAReplayablePart() {
+		// A block with only a signature, as returned when the reasoning display is
+		// omitted
+		givenStream(signatureDelta(0, SIGNATURE), blockStop(0), textDelta(1, "15°C"), blockStop(1),
+				messageStop(StopReason.END_TURN), usageMetadata());
+
+		AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
+		new MessageAggregator().aggregate(newModel().stream(new Prompt("Weather?")), aggregatedRef::set)
+			.collectList()
+			.block();
+
+		AssistantMessage aggregated = aggregatedRef.get().getResult().getOutput();
+		assertThat(aggregated.getParts())
+			.containsExactly(new ReasoningPart("", null, SIGNATURE_PAYLOAD, BEDROCK_ATTRIBUTES), TextPart.of("15°C"));
+
+		List<ContentBlock> content = replayedAssistantContent(aggregated);
+		assertThat(content.get(0).reasoningContent().reasoningText().text()).isEmpty();
+		assertThat(content.get(0).reasoningContent().reasoningText().signature()).isEqualTo(SIGNATURE);
+	}
+
+	@Test
+	void streamingSignatureWithoutABlockStopIsFlushedOnTheFinalChunk() {
+		givenStream(reasoningDelta(0, "Think hard."), signatureDelta(0, SIGNATURE), messageStop(StopReason.END_TURN),
+				usageMetadata());
+
+		AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
+		List<ChatResponse> chunks = new MessageAggregator()
+			.aggregate(newModel().stream(new Prompt("Weather?")), aggregatedRef::set)
+			.collectList()
+			.block();
+
+		assertThat(chunks).hasSize(2);
+		assertThat(aggregatedRef.get().getResult().getOutput().getParts())
+			.containsExactly(new ReasoningPart("Think hard.", null, SIGNATURE_PAYLOAD, BEDROCK_ATTRIBUTES));
 	}
 
 	@Test

@@ -63,14 +63,15 @@ import org.springframework.util.Assert;
  * Sends a {@link ConverseStreamRequest} to Bedrock and returns {@link ChatResponse}
  * stream.
  * <p>
- * Every chunk carries one {@link MessagePart} stamped with the Converse content block
- * index it belongs to (see {@link StreamingParts}), so that
+ * Every delta chunk carries one {@link MessagePart} stamped with the Converse content
+ * block index it belongs to (see {@link StreamingParts}), so that
  * {@link org.springframework.ai.chat.model.MessageAggregator} can rebuild the parts of
- * the response in block order. Text and reasoning text deltas are partial parts, and the
- * signature that closes a reasoning block is a partial {@link ReasoningPart} with an
- * empty text and the payload. Redacted reasoning is buffered and emitted as one complete
- * part once its block stops. Tool use input is buffered too, and the complete tool calls
- * are emitted on the final chunk, as before.
+ * the response in block order. Text and reasoning text deltas are partial parts. The
+ * signature that closes a reasoning block is buffered and emitted once its block stops,
+ * as a partial {@link ReasoningPart} with an empty text and the payload; redacted
+ * reasoning is buffered too and emitted as one complete part. Tool use input is buffered
+ * until the end of the response, and the final chunk carries the complete tool calls, any
+ * reasoning whose block never stopped, and an empty text.
  *
  * @author Jared Rufer
  * @author Dimitar Proynov
@@ -87,7 +88,7 @@ public class ConverseChatResponseStream implements ConverseStreamResponseHandler
 	 * Set on every reasoning delta: a block's signature, if any, only arrives after its
 	 * text, so an unsigned block can only be told apart from foreign reasoning this way.
 	 */
-	private static final Map<String, String> BEDROCK_ATTRIBUTES = Map.of(ConverseApiUtils.PROVIDER_ATTRIBUTE,
+	private static final Map<String, String> BEDROCK_ATTRIBUTES = Map.of(StreamingParts.PROVIDER_ATTRIBUTE,
 			ConverseApiUtils.BEDROCK_PROVIDER);
 
 	private final AtomicReference<String> requestIdRef = new AtomicReference<>("Unknown");
@@ -103,6 +104,8 @@ public class ConverseChatResponseStream implements ConverseStreamResponseHandler
 	private final AtomicReference<String> stopReason = new AtomicReference<>();
 
 	private final Map<Integer, StreamingToolCallBuilder> toolUseMap = new ConcurrentHashMap<>();
+
+	private final Map<Integer, StringBuilder> signatureMap = new ConcurrentHashMap<>();
 
 	private final Map<Integer, ByteArrayOutputStream> redactedContentMap = new ConcurrentHashMap<>();
 
@@ -164,17 +167,13 @@ public class ConverseChatResponseStream implements ConverseStreamResponseHandler
 					StreamingParts.partial(new ReasoningPart(delta.text(), null, null, BEDROCK_ATTRIBUTES), index));
 		}
 		else if (delta.signature() != null) {
-			// An empty text so that a block streamed without any text delta still
-			// aggregates to a replayable part.
-			ReasoningPart signaturePart = new ReasoningPart("", null,
-					new OpaquePayload(ConverseApiUtils.BEDROCK_PROVIDER, ConverseApiUtils.PAYLOAD_SIGNATURE,
-							delta.signature()),
-					BEDROCK_ATTRIBUTES);
-			this.emitPart(StreamingParts.partial(signaturePart, index));
+			// The aggregator replaces a payload rather than appending to it, and Bedrock
+			// does not promise the signature arrives in one delta, so it is buffered
+			// until the block stops.
+			this.signatureMap.computeIfAbsent(index, key -> new StringBuilder()).append(delta.signature());
 		}
 		else if (delta.redactedContent() != null) {
-			// The aggregator replaces a payload rather than appending to it, so the bytes
-			// are buffered until the block stops.
+			// Buffered until the block stops, for the same reason.
 			this.redactedContentMap.computeIfAbsent(index, key -> new ByteArrayOutputStream())
 				.writeBytes(delta.redactedContent().asByteArray());
 		}
@@ -182,6 +181,10 @@ public class ConverseChatResponseStream implements ConverseStreamResponseHandler
 
 	@Override
 	public void visitContentBlockStop(ContentBlockStopEvent event) {
+		StringBuilder signature = this.signatureMap.remove(event.contentBlockIndex());
+		if (signature != null) {
+			this.emitPart(StreamingParts.partial(signatureReasoningPart(signature), event.contentBlockIndex()));
+		}
 		ByteArrayOutputStream redactedContent = this.redactedContentMap.remove(event.contentBlockIndex());
 		if (redactedContent != null) {
 			this.emitPart(StreamingParts.complete(redactedReasoningPart(redactedContent), event.contentBlockIndex()));
@@ -204,10 +207,16 @@ public class ConverseChatResponseStream implements ConverseStreamResponseHandler
 			.finishReason(this.stopReason.get())
 			.build();
 
-		// The complete tool calls, and any redacted reasoning whose block never stopped,
-		// as complete parts at their block index. The final chunk keeps an empty text, as
-		// it always had, so that a streamed chunk never reports a null text.
+		// Any signature or redacted reasoning whose block never stopped, and the complete
+		// tool calls, at their block index. The final chunk also carries an empty text,
+		// so that a streamed chunk never reports a null text.
 		List<MessagePart> parts = new ArrayList<>();
+		this.signatureMap.entrySet()
+			.stream()
+			.sorted(Map.Entry.comparingByKey())
+			.forEach(entry -> parts
+				.add(StreamingParts.partial(signatureReasoningPart(entry.getValue()), entry.getKey())));
+		this.signatureMap.clear();
 		this.redactedContentMap.entrySet()
 			.stream()
 			.sorted(Map.Entry.comparingByKey())
@@ -224,6 +233,16 @@ public class ConverseChatResponseStream implements ConverseStreamResponseHandler
 		parts.add(TextPart.of(""));
 
 		this.emitChatResponse(new Generation(AssistantMessage.builder().parts(parts).build(), generationMetadata));
+	}
+
+	/**
+	 * A partial part, so that the reasoning text already received for the block is kept,
+	 * with an empty text so that a block streamed without any text delta still aggregates
+	 * to a replayable part.
+	 */
+	private static ReasoningPart signatureReasoningPart(StringBuilder signature) {
+		return new ReasoningPart("", null, new OpaquePayload(ConverseApiUtils.BEDROCK_PROVIDER,
+				ConverseApiUtils.PAYLOAD_SIGNATURE, signature.toString()), BEDROCK_ATTRIBUTES);
 	}
 
 	private static ReasoningPart redactedReasoningPart(ByteArrayOutputStream redactedContent) {

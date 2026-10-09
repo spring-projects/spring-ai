@@ -124,7 +124,7 @@ See xref:api/chat/bedrock-converse.adoc#_reasoning[Reasoning].
 A response with several text blocks, or with text and tool use, used to produce one generation per text block plus one for the tool calls; read the joined text from `getResult().getOutput().getText()` and the tool calls from `getResult().getOutput().getToolCalls()`.
 * The package-private `BedrockAssistantMessage` and `BedrockReasoningContent` are removed.
 Read the reasoning from `getResult().getOutput().getReasoning()`.
-* Reasoning returned without a signature, for example by the OpenAI gpt-oss models, is replayed only when its `ReasoningPart` carries the `provider` attribute (`ConverseApiUtils.PROVIDER_ATTRIBUTE`) set to `bedrock`, so it is lost when the conversation history is stored or rebuilt without part attributes; unsigned reasoning produced by another provider is not replayed.
+* Reasoning returned without a signature, for example by the OpenAI gpt-oss models, is replayed only when its `ReasoningPart` carries the `provider` attribute (`StreamingParts.PROVIDER_ATTRIBUTE`) set to `bedrock`, so it is lost when the conversation history is stored or rebuilt without part attributes; unsigned reasoning produced by another provider is not replayed.
 * Streamed text deltas now carry their text in an indexed partial `TextPart`; `getText()` on each chunk returns the same delta as before.
 * Streams now emit additional chunks for reasoning deltas, the reasoning signature and redacted reasoning.
 They have an empty `getText()` and carry no tool calls, so code that counts chunks or treats every chunk as answer text sees them.

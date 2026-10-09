@@ -61,17 +61,6 @@ public final class ConverseApiUtils {
 	 */
 	public static final String PAYLOAD_REDACTED_CONTENT = "redacted_content";
 
-	/**
-	 * The {@link org.springframework.ai.chat.messages.part.MessagePart#attributes()
-	 * attribute} naming the provider that produced a reasoning part. The Bedrock Converse
-	 * chat model sets it to {@link #BEDROCK_PROVIDER} on every reasoning part it
-	 * produces, so that reasoning Bedrock returned without a signature, which has no
-	 * payload to identify it, is still replayed to Bedrock and never mistaken for
-	 * reasoning produced by another provider.
-	 * @since 2.1.0
-	 */
-	public static final String PROVIDER_ATTRIBUTE = "provider";
-
 	private ConverseApiUtils() {
 	}
 

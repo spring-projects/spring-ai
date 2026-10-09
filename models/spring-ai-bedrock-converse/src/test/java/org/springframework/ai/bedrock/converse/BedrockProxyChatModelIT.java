@@ -45,6 +45,7 @@ import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.messages.part.MediaPart;
 import org.springframework.ai.chat.messages.part.ReasoningPart;
+import org.springframework.ai.chat.messages.part.StreamingParts;
 import org.springframework.ai.chat.messages.part.TextPart;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -117,6 +118,23 @@ class BedrockProxyChatModelIT {
 	}
 
 	@Test
+	void streamingWithTokenUsage() {
+		var promptOptions = BedrockChatOptions.builder().temperature(0.0).build();
+		BedrockChatOptions options = (BedrockChatOptions) this.chatModel.getOptions();
+		var mergedOptions = promptOptions.mutate().combineWith(options.mutate()).build();
+
+		var prompt = new Prompt("List two colors of the Polish flag. Be brief.", mergedOptions);
+		var streamingTokenUsage = this.chatModel.stream(prompt).blockLast().getMetadata().getUsage();
+
+		assertThat(streamingTokenUsage.getPromptTokens()).isGreaterThan(0);
+		assertThat(streamingTokenUsage.getCompletionTokens()).isGreaterThan(0);
+		assertThat(streamingTokenUsage.getTotalTokens()).isGreaterThan(0);
+		assertThat(streamingTokenUsage.getTotalTokens())
+			.isEqualTo(streamingTokenUsage.getPromptTokens() + streamingTokenUsage.getCompletionTokens());
+
+	}
+
+	@Test
 	@Disabled
 	void testMessageHistory() {
 		UserMessage userMessage = new UserMessage(
@@ -134,23 +152,6 @@ class BedrockProxyChatModelIT {
 		response = this.chatModel.call(promptWithMessageHistory);
 
 		assertThat(response.getResult().getOutput().getText()).containsAnyOf("Blackbeard", "Bartholomew");
-	}
-
-	@Test
-	void streamingWithTokenUsage() {
-		var promptOptions = BedrockChatOptions.builder().temperature(0.0).build();
-		BedrockChatOptions options = (BedrockChatOptions) this.chatModel.getOptions();
-		var mergedOptions = promptOptions.mutate().combineWith(options.mutate()).build();
-
-		var prompt = new Prompt("List two colors of the Polish flag. Be brief.", mergedOptions);
-		var streamingTokenUsage = this.chatModel.stream(prompt).blockLast().getMetadata().getUsage();
-
-		assertThat(streamingTokenUsage.getPromptTokens()).isGreaterThan(0);
-		assertThat(streamingTokenUsage.getCompletionTokens()).isGreaterThan(0);
-		assertThat(streamingTokenUsage.getTotalTokens()).isGreaterThan(0);
-		assertThat(streamingTokenUsage.getTotalTokens())
-			.isEqualTo(streamingTokenUsage.getPromptTokens() + streamingTokenUsage.getCompletionTokens());
-
 	}
 
 	@Test
@@ -1069,7 +1070,7 @@ class BedrockProxyChatModelIT {
 		assertThat(response.hasToolCalls()).isTrue();
 		assertThat(response.getResult().getOutput().getReasoning()).isNotEmpty().allSatisfy(reasoning -> {
 			assertThat(reasoning.payload()).isNull();
-			assertThat(reasoning.attributes()).containsEntry(ConverseApiUtils.PROVIDER_ATTRIBUTE,
+			assertThat(reasoning.attributes()).containsEntry(StreamingParts.PROVIDER_ATTRIBUTE,
 					ConverseApiUtils.BEDROCK_PROVIDER);
 		});
 

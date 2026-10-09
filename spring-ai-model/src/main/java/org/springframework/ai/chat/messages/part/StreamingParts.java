@@ -41,8 +41,8 @@ import org.springframework.util.Assert;
  * response; the aggregator groups indexed parts by that id so that consecutive tool-call
  * rounds flowing through one stream do not merge into each other.</li>
  * </ul>
- * The two attributes are removed from the aggregated message, so they never take part in
- * message equality or persistence.
+ * The part index and partial attributes are removed from the aggregated message, so they
+ * never take part in message equality or persistence.
  *
  * @author Christian Tzolov
  * @since 2.1.0
@@ -54,6 +54,14 @@ public final class StreamingParts {
 
 	/** Attribute set to {@code true} on a streamed part that is a delta. */
 	public static final String PARTIAL_ATTRIBUTE = "partial";
+
+	/**
+	 * Attribute naming the provider that produced a part, matching
+	 * {@link OpaquePayload#provider()}. Unlike the streaming attributes it is kept on the
+	 * aggregated message, so that a chat model can recognize its own parts on replay,
+	 * such as reasoning returned without a payload.
+	 */
+	public static final String PROVIDER_ATTRIBUTE = "provider";
 
 	private StreamingParts() {
 	}
