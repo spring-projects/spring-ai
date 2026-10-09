@@ -51,6 +51,14 @@
 			<optional>true</optional>
 		</dependency>
 
+		<!-- Google GenAI Transcription -->
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-google-genai-transcription</artifactId>
+			<version>${project.parent.version}</version>
+			<optional>true</optional>
+		</dependency>
+
 		<!-- Spring AI auto configurations -->
 
 		<dependency>
@@ -86,6 +94,12 @@
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-autoconfigure-model-tts-observation</artifactId>
+			<version>${project.parent.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-autoconfigure-model-transcription-observation</artifactId>
 			<version>${project.parent.version}</version>
 		</dependency>
 
