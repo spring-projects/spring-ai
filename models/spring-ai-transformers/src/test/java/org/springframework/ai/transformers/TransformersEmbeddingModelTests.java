@@ -18,10 +18,13 @@ package org.springframework.ai.transformers;
 
 import java.text.DecimalFormat;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 import ai.djl.huggingface.tokenizers.HuggingFaceTokenizer;
+import ai.onnxruntime.OrtException;
 import ai.onnxruntime.OrtSession;
 import org.junit.jupiter.api.Test;
+import org.mockito.InOrder;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingResponse;
@@ -29,7 +32,10 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatNoException;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
@@ -117,6 +123,64 @@ public class TransformersEmbeddingModelTests {
 
 		verify(tokenizer).close();
 		verify(session).close();
+	}
+
+	@Test
+	void sessionOptionsCustomizerIsApplied() throws Exception {
+		AtomicReference<OrtSession.SessionOptions> customized = new AtomicReference<>();
+		try (TransformersEmbeddingModel embeddingModel = new TransformersEmbeddingModel()) {
+			embeddingModel.setSessionOptionsCustomizer(options -> {
+				options.setIntraOpNumThreads(1);
+				customized.set(options);
+			});
+			embeddingModel.afterPropertiesSet();
+
+			assertThat(customized.get()).isNotNull();
+			float[] embed = embeddingModel.embed("Hello world");
+			assertThat(embed).hasSize(384);
+			assertThat(DF.format(embed[0])).isEqualTo(DF.format(-0.19744634628295898));
+		}
+	}
+
+	@Test
+	void sessionOptionsCustomizerFailurePropagates() throws Exception {
+		try (TransformersEmbeddingModel embeddingModel = new TransformersEmbeddingModel()) {
+			embeddingModel.setSessionOptionsCustomizer(options -> {
+				throw new OrtException("customizer failed");
+			});
+
+			assertThatThrownBy(embeddingModel::afterPropertiesSet).isInstanceOf(OrtException.class)
+				.hasMessageContaining("customizer failed");
+			assertThat(ReflectionTestUtils.getField(embeddingModel, "sessionOptions")).isNull();
+		}
+	}
+
+	@Test
+	void closeReleasesSessionOptions() throws Exception {
+		TransformersEmbeddingModel embeddingModel = new TransformersEmbeddingModel();
+		OrtSession session = mock(OrtSession.class);
+		OrtSession.SessionOptions sessionOptions = mock(OrtSession.SessionOptions.class);
+		ReflectionTestUtils.setField(embeddingModel, "session", session);
+		ReflectionTestUtils.setField(embeddingModel, "sessionOptions", sessionOptions);
+
+		embeddingModel.close();
+
+		InOrder inOrder = inOrder(session, sessionOptions);
+		inOrder.verify(session).close();
+		inOrder.verify(sessionOptions).close();
+	}
+
+	@Test
+	void closeReleasesSessionOptionsWhenSessionCloseFails() throws Exception {
+		TransformersEmbeddingModel embeddingModel = new TransformersEmbeddingModel();
+		OrtSession session = mock(OrtSession.class);
+		OrtSession.SessionOptions sessionOptions = mock(OrtSession.SessionOptions.class);
+		doThrow(new OrtException("boom")).when(session).close();
+		ReflectionTestUtils.setField(embeddingModel, "session", session);
+		ReflectionTestUtils.setField(embeddingModel, "sessionOptions", sessionOptions);
+
+		assertThatThrownBy(embeddingModel::close).isInstanceOf(OrtException.class);
+		verify(sessionOptions).close();
 	}
 
 	@Test
