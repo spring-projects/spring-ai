@@ -79,16 +79,17 @@ public class DeepSeekStreamFunctionCallingHelper {
 	}
 
 	private ChatCompletionMessage merge(@Nullable ChatCompletionMessage previous, ChatCompletionMessage current) {
-		String content = (previous != null && previous.content() != null)
-				? previous.content() + (current.content() != null ? current.content() : "") : current.content();
+		String content = concat((previous != null) ? previous.content() : null, current.content());
 		Role role = current.role();
 		String name = (current.name() != null ? current.name() : (previous != null ? previous.name() : null));
 		String toolCallId = (current.toolCallId() != null ? current.toolCallId()
 				: (previous != null ? previous.toolCallId() : null));
 
 		Boolean prefix = (current.prefix() != null ? current.prefix() : (previous != null ? previous.prefix() : null));
-		String reasoningContent = (current.reasoningContent() != null ? current.reasoningContent()
-				: (previous != null ? previous.reasoningContent() : null));
+		// Reasoning streams in fragments like the content, so the fragments within a
+		// buffered tool call are concatenated as well instead of keeping the last one.
+		String reasoningContent = concat((previous != null) ? previous.reasoningContent() : null,
+				current.reasoningContent());
 
 		List<ToolCall> toolCalls = new ArrayList<>();
 		ToolCall lastPreviousTooCall = null;
@@ -119,6 +120,23 @@ public class DeepSeekStreamFunctionCallingHelper {
 			}
 		}
 		return new ChatCompletionMessage(content, role, name, toolCallId, toolCalls, prefix, reasoningContent);
+	}
+
+	/**
+	 * Appends a streamed text fragment to the text accumulated so far.
+	 * @param previous the text accumulated so far, or {@code null} when there is none
+	 * @param current the fragment of the current chunk, or {@code null} when it has none
+	 * @return the concatenation, or whichever is not {@code null}, or {@code null} when
+	 * both are
+	 */
+	private static @Nullable String concat(@Nullable String previous, @Nullable String current) {
+		if (previous == null) {
+			return current;
+		}
+		if (current == null) {
+			return previous;
+		}
+		return previous + current;
 	}
 
 	private ToolCall merge(@Nullable ToolCall previous, ToolCall current) {
