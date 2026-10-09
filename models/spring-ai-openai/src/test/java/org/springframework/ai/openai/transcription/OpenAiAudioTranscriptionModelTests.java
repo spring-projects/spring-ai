@@ -17,7 +17,10 @@
 package org.springframework.ai.openai.transcription;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -47,6 +50,7 @@ import com.openai.services.blocking.audio.TranscriptionService;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import reactor.core.Disposable;
+import reactor.core.publisher.Flux;
 
 import org.springframework.ai.audio.transcription.AudioTranscriptionPrompt;
 import org.springframework.ai.audio.transcription.AudioTranscriptionResponse;
@@ -55,11 +59,14 @@ import org.springframework.ai.openai.OpenAiAudioTranscriptionOptions;
 import org.springframework.ai.openai.metadata.OpenAiAudioTranscriptionResponseMetadata;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -752,6 +759,104 @@ class OpenAiAudioTranscriptionModelTests {
 		assertThat(chunks).isNotNull();
 		String text = String.join("", chunks);
 		assertThat(text).isEqualTo("Hello, streamed transcription result");
+	}
+
+	@Test
+	void streamOpensAudioOnlyOnSubscription() throws IOException {
+		Resource resource = mock(Resource.class);
+		when(resource.getInputStream()).thenAnswer(invocation -> new ByteArrayInputStream(new byte[] { 1 }));
+		OpenAIClientAsync client = createMockAsyncClient(asyncStreamResponse());
+		OpenAiAudioTranscriptionModel model = OpenAiAudioTranscriptionModel.builder()
+			.openAiClient(mock(OpenAIClient.class))
+			.openAiClientAsync(client)
+			.build();
+
+		Flux<AudioTranscriptionResponse> responses = model.stream(new AudioTranscriptionPrompt(resource));
+
+		verify(resource, never()).getInputStream();
+		assertThat(responses.collectList().block(Duration.ofSeconds(5))).isEmpty();
+		verify(resource).getInputStream();
+	}
+
+	@Test
+	void streamReopensAudioForEachSubscription() {
+		List<String> uploads = new ArrayList<>();
+		OpenAIClientAsync client = createMockAsyncClient(asyncStreamResponse());
+		when(client.audio()
+			.transcriptions()
+			.createStreaming(any(TranscriptionCreateParams.class), any(RequestOptions.class)))
+			.thenAnswer(invocation -> {
+				TranscriptionCreateParams params = invocation.getArgument(0);
+				try (var audio = params.file()) {
+					uploads.add(new String(audio.readAllBytes(), StandardCharsets.UTF_8));
+				}
+				return asyncStreamResponse(TranscriptionStreamEvent
+					.ofTranscriptTextDelta(TranscriptionTextDeltaEvent.builder().delta("transcript").build()));
+			});
+		OpenAiAudioTranscriptionModel model = OpenAiAudioTranscriptionModel.builder()
+			.openAiClient(mock(OpenAIClient.class))
+			.openAiClientAsync(client)
+			.build();
+		Flux<AudioTranscriptionResponse> responses = model
+			.stream(new AudioTranscriptionPrompt(new ByteArrayResource("audio".getBytes(StandardCharsets.UTF_8))));
+
+		assertThat(
+				responses.map(response -> response.getResult().getOutput()).collectList().block(Duration.ofSeconds(5)))
+			.containsExactly("transcript");
+		assertThat(
+				responses.map(response -> response.getResult().getOutput()).collectList().block(Duration.ofSeconds(5)))
+			.containsExactly("transcript");
+
+		assertThat(uploads).containsExactly("audio", "audio");
+	}
+
+	@Test
+	void streamReopensAudioWhenRetried() {
+		List<String> uploads = new ArrayList<>();
+		AsyncStreamResponse<TranscriptionStreamEvent> failedResponse = asyncStreamResponse();
+		failedResponse.onCompleteFuture().completeExceptionally(new IllegalStateException("transient failure"));
+		OpenAIClientAsync client = createMockAsyncClient(failedResponse);
+		when(client.audio()
+			.transcriptions()
+			.createStreaming(any(TranscriptionCreateParams.class), any(RequestOptions.class)))
+			.thenAnswer(invocation -> {
+				TranscriptionCreateParams params = invocation.getArgument(0);
+				try (var audio = params.file()) {
+					uploads.add(new String(audio.readAllBytes(), StandardCharsets.UTF_8));
+				}
+				return uploads.size() == 1 ? failedResponse : asyncStreamResponse(TranscriptionStreamEvent
+					.ofTranscriptTextDelta(TranscriptionTextDeltaEvent.builder().delta("transcript").build()));
+			});
+		OpenAiAudioTranscriptionModel model = OpenAiAudioTranscriptionModel.builder()
+			.openAiClient(mock(OpenAIClient.class))
+			.openAiClientAsync(client)
+			.build();
+		Flux<AudioTranscriptionResponse> responses = model
+			.stream(new AudioTranscriptionPrompt(new ByteArrayResource("audio".getBytes(StandardCharsets.UTF_8))));
+
+		assertThat(responses.retry(1)
+			.map(response -> response.getResult().getOutput())
+			.collectList()
+			.block(Duration.ofSeconds(5))).containsExactly("transcript");
+
+		assertThat(uploads).containsExactly("audio", "audio");
+	}
+
+	@Test
+	void streamReportsResourceFailureOnSubscription() throws IOException {
+		Resource resource = mock(Resource.class);
+		IOException failure = new IOException("audio unavailable");
+		when(resource.getInputStream()).thenThrow(failure);
+		OpenAiAudioTranscriptionModel model = OpenAiAudioTranscriptionModel.builder()
+			.openAiClient(mock(OpenAIClient.class))
+			.openAiClientAsync(mock(OpenAIClientAsync.class))
+			.build();
+
+		Flux<AudioTranscriptionResponse> responses = model.stream(new AudioTranscriptionPrompt(resource));
+
+		assertThatThrownBy(() -> responses.blockLast(Duration.ofSeconds(5)))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasCause(failure);
 	}
 
 	@Test
