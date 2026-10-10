@@ -72,6 +72,34 @@ public @interface McpTool {
 	Class<? extends MetaProvider> metaProvider() default DefaultMetaProvider.class;
 
 	/**
+	 * The {@code ui://} resource URI for the MCP App widget associated with this tool
+	 * (SEP-1865). When set, the tool's {@code _meta} will include {@code ui.resourceUri}
+	 * and the flat alias {@code ui/resourceUri}.
+	 *
+	 * <p>
+	 * Example: {@code "ui://my-server/dashboard.html"}
+	 */
+	String resourceUri() default "";
+
+	/**
+	 * Visibility of this tool per SEP-1865. Controls which consumers can see and invoke
+	 * the tool. Default is empty (no visibility constraint — tool is visible to LLM only,
+	 * same as {@link Visibility#MODEL}).
+	 *
+	 * <p>
+	 * On the wire, serialized as a JSON array: {@code ["model"]}, {@code ["app"]}, or
+	 * {@code ["model", "app"]}.
+	 */
+	Visibility[] visibility() default {};
+
+	/**
+	 * Content Security Policy for the MCP App iframe (SEP-1865). Declares which external
+	 * domains the widget is allowed to access. Only relevant when {@link #resourceUri()}
+	 * is set.
+	 */
+	McpCsp csp() default @McpCsp;
+
+	/**
 	 * Additional properties describing a Tool to clients.
 	 *
 	 * All properties in ToolAnnotations are hints. They are not guaranteed to provide a

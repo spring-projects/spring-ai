@@ -17,6 +17,7 @@
 package org.springframework.ai.mcp.annotation.adapter;
 
 import java.util.List;
+import java.util.Locale;
 
 import io.modelcontextprotocol.spec.McpSchema;
 
@@ -29,12 +30,48 @@ import org.springframework.ai.mcp.annotation.common.MetaUtils;
  * {@link McpSchema.ResourceTemplate} instances from annotation metadata, including URI,
  * name, description, MIME type, annotations, and optional {@code _meta} fields.
  *
+ * <p>
+ * Enforces SEP-1865 (MCP Apps) constraints: resources with a {@code ui://} URI must use
+ * the MIME type {@code text/html;profile=mcp-app}, and resources with that MIME type must
+ * use a {@code ui://} URI.
+ *
  * @author Christian Tzolov
  * @author Alexandros Pappas
  * @author Vadzim Shurmialiou
  * @author Craig Walls
  */
 public final class ResourceAdapter {
+
+	private static final String MCP_APP_MIME_TYPE = "text/html;profile=mcp-app";
+
+	private static final String UI_URI_SCHEME = "ui://";
+
+	private static void validateMcpAppResource(String uri, String mimeType) {
+		boolean uiUri = isUiUri(uri);
+		boolean mcpAppMimeType = isMcpAppMimeType(mimeType);
+		if (uiUri && !mcpAppMimeType) {
+			throw new IllegalArgumentException(
+					"Resource with ui:// URI must use MIME type 'text/html;profile=mcp-app', but got: " + mimeType);
+		}
+		if (mcpAppMimeType && !uiUri) {
+			throw new IllegalArgumentException(
+					"Resource with MIME type 'text/html;profile=mcp-app' must use a ui:// URI, but got: " + uri);
+		}
+	}
+
+	private static boolean isUiUri(String uri) {
+		// URI schemes are case-insensitive (RFC 3986)
+		return uri != null && uri.regionMatches(true, 0, UI_URI_SCHEME, 0, UI_URI_SCHEME.length());
+	}
+
+	private static boolean isMcpAppMimeType(String mimeType) {
+		if (mimeType == null) {
+			return false;
+		}
+		// MIME types are case-insensitive and allow whitespace around parameters
+		String normalized = mimeType.replace(" ", "").replace("\t", "").toLowerCase(Locale.ROOT);
+		return MCP_APP_MIME_TYPE.equals(normalized);
+	}
 
 	private ResourceAdapter() {
 	}
@@ -45,6 +82,8 @@ public final class ResourceAdapter {
 			name = "resource"; // Default name when not specified
 		}
 		var meta = MetaUtils.getMeta(mcpResourceAnnotation.metaProvider());
+
+		validateMcpAppResource(mcpResourceAnnotation.uri(), mcpResourceAnnotation.mimeType());
 
 		var resourceBuilder = McpSchema.Resource.builder(mcpResourceAnnotation.uri(), name)
 			.title(mcpResourceAnnotation.title())
@@ -74,6 +113,8 @@ public final class ResourceAdapter {
 			name = "resource"; // Default name when not specified
 		}
 		var meta = MetaUtils.getMeta(mcpResource.metaProvider());
+
+		validateMcpAppResource(mcpResource.uri(), mcpResource.mimeType());
 
 		return McpSchema.ResourceTemplate.builder(mcpResource.uri(), name)
 			.description(mcpResource.description())

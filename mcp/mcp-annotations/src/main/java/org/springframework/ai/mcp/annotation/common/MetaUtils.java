@@ -18,9 +18,15 @@ package org.springframework.ai.mcp.annotation.common;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
+import org.springframework.ai.mcp.annotation.McpCsp;
+import org.springframework.ai.mcp.annotation.Visibility;
 import org.springframework.ai.mcp.annotation.context.MetaProvider;
 
 /**
@@ -101,6 +107,109 @@ public final class MetaUtils {
 		catch (NoSuchMethodException ex) {
 			return metaProviderClass.getConstructor();
 		}
+	}
+
+	/**
+	 * Build the {@code _meta} map for an MCP App tool from SEP-1865 annotation fields.
+	 * <p>
+	 * Produces the wire format: <pre>
+	 * {
+	 *   "ui": { "resourceUri": "ui://...", "visibility": ["model"], "csp": {...} },
+	 *   "ui/resourceUri": "ui://..."
+	 * }
+	 * </pre>
+	 * @param resourceUri the {@code ui://} resource URI; if blank, returns {@code null}
+	 * @param visibility the visibility array from the annotation
+	 * @param csp the CSP annotation, or {@code null}
+	 * @return the {@code _meta} map, or {@code null} if no SEP-1865 fields are set
+	 */
+	public static Map<String, Object> buildUiMeta(String resourceUri, Visibility[] visibility, McpCsp csp) {
+		if (resourceUri == null || resourceUri.isBlank()) {
+			return null;
+		}
+
+		var uiMap = new LinkedHashMap<String, Object>();
+		uiMap.put("resourceUri", resourceUri);
+
+		if (visibility != null && visibility.length > 0) {
+			uiMap.put("visibility",
+					Arrays.stream(visibility).map(Visibility::getWireValue).collect(Collectors.toList()));
+		}
+
+		if (csp != null) {
+			var cspMap = new LinkedHashMap<String, Object>();
+			if (csp.connectDomains().length > 0) {
+				cspMap.put("connectDomains", List.of(csp.connectDomains()));
+			}
+			if (csp.resourceDomains().length > 0) {
+				cspMap.put("resourceDomains", List.of(csp.resourceDomains()));
+			}
+			if (csp.redirectDomains().length > 0) {
+				cspMap.put("redirectDomains", List.of(csp.redirectDomains()));
+			}
+			if (!cspMap.isEmpty()) {
+				uiMap.put("csp", cspMap);
+			}
+		}
+
+		var meta = new LinkedHashMap<String, Object>();
+		meta.put("ui", uiMap);
+		meta.put("ui/resourceUri", resourceUri);
+		return meta;
+	}
+
+	/**
+	 * Merge two metadata maps with provider-wins-on-conflict semantics.
+	 * <p>
+	 * Top-level keys from both maps are combined. For the {@code "ui"} key specifically,
+	 * the nested maps are deep-merged so annotation-derived fields (like
+	 * {@code visibility}) survive even when the provider also sets {@code "ui"}. Provider
+	 * values win for any key present in both.
+	 * @param providerMeta metadata from {@link MetaProvider}, may be {@code null}
+	 * @param annotationMeta metadata built from annotation fields, may be {@code null}
+	 * @return the merged map, or {@code null} if both inputs are {@code null}
+	 */
+	@SuppressWarnings("unchecked")
+	public static Map<String, Object> mergeMeta(Map<String, Object> providerMeta, Map<String, Object> annotationMeta) {
+		if (providerMeta == null && annotationMeta == null) {
+			return null;
+		}
+		if (providerMeta == null) {
+			return annotationMeta;
+		}
+		if (annotationMeta == null) {
+			return providerMeta;
+		}
+
+		var merged = new LinkedHashMap<String, Object>();
+		merged.putAll(annotationMeta);
+
+		for (var entry : providerMeta.entrySet()) {
+			String key = entry.getKey();
+			Object providerValue = entry.getValue();
+			Object existingValue = merged.get(key);
+
+			if ("ui".equals(key) && providerValue instanceof Map && existingValue instanceof Map) {
+				var deepMerged = new LinkedHashMap<String, Object>();
+				deepMerged.putAll((Map<String, Object>) existingValue);
+				deepMerged.putAll((Map<String, Object>) providerValue);
+				merged.put(key, deepMerged);
+			}
+			else {
+				merged.put(key, providerValue);
+			}
+		}
+
+		// Re-derive the flat "ui/resourceUri" alias from the merged nested value so the
+		// two never diverge when a MetaProvider overrides ui.resourceUri.
+		if (merged.containsKey("ui/resourceUri") && merged.get("ui") instanceof Map<?, ?> uiMap) {
+			Object mergedResourceUri = uiMap.get("resourceUri");
+			if (mergedResourceUri != null) {
+				merged.put("ui/resourceUri", mergedResourceUri);
+			}
+		}
+
+		return merged;
 	}
 
 }
