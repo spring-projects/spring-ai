@@ -167,7 +167,7 @@ public enum VectorStoreObservationDocumentation implements ObservationDocumentat
 		DB_VECTOR_QUERY_FILTER {
 			@Override
 			public String asString() {
-				return "db.vector.query.filter";
+				return VectorStoreObservationAttributes.DB_VECTOR_QUERY_FILTER.value();
 			}
 		},
 
