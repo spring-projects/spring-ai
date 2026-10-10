@@ -20,6 +20,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.openai.core.ObjectMappers;
 import com.openai.models.responses.Response;
@@ -135,6 +136,44 @@ class ResponsesItemMapperTests {
 
 		assertThat(json).contains("\"type\":\"input_file\"").contains("data:application/pdf;base64,AQID");
 		assertThat(filenameIn(json)).endsWith(".pdf");
+	}
+
+	@Test
+	void pdfUrlBecomesAnInputFileWithAFileUrl() throws Exception {
+		JsonNode file = mediaPartOf(Media.builder()
+			.mimeType(MimeTypeUtils.parseMimeType("application/pdf"))
+			.data(URI.create("https://example.com/report.pdf"))
+			.build());
+
+		assertThat(file.get("type").asText()).isEqualTo("input_file");
+		assertThat(file.get("file_url").asText()).isEqualTo("https://example.com/report.pdf");
+		assertThat(file.has("file_data")).isFalse();
+		assertThat(file.has("filename")).isFalse();
+	}
+
+	/**
+	 * Media.Builder#data(String) accepts bare base64 content, which is inline data and
+	 * not a link.
+	 */
+	@Test
+	void pdfAsBase64StringBecomesFileDataWithADataUri() throws Exception {
+		JsonNode file = mediaPartOf(
+				Media.builder().mimeType(MimeTypeUtils.parseMimeType("application/pdf")).data("AQID").build());
+
+		assertThat(file.get("file_data").asText()).isEqualTo("data:application/pdf;base64,AQID");
+		assertThat(file.get("filename").asText()).endsWith(".pdf");
+		assertThat(file.has("file_url")).isFalse();
+	}
+
+	@Test
+	void pdfAsDataUriStringIsSentUnchanged() throws Exception {
+		JsonNode file = mediaPartOf(Media.builder()
+			.mimeType(MimeTypeUtils.parseMimeType("application/pdf"))
+			.data("data:application/pdf;base64,AQID")
+			.build());
+
+		assertThat(file.get("file_data").asText()).isEqualTo("data:application/pdf;base64,AQID");
+		assertThat(file.has("file_url")).isFalse();
 	}
 
 	@Test
@@ -516,6 +555,17 @@ class ResponsesItemMapperTests {
 		assertThat(metadata.getId()).isEqualTo("resp_text_1");
 		assertThat(metadata.getModel()).isEqualTo("gpt-5-mini");
 		assertThat(metadata.<String>get(OpenAiResponsesMetadata.STATUS)).isEqualTo("completed");
+	}
+
+	/**
+	 * The content part a single media attachment maps to; part 0 is the message text.
+	 */
+	private static JsonNode mediaPartOf(Media media) throws Exception {
+		var message = UserMessage.builder().text("Look at this").media(List.of(media)).build();
+		return ObjectMappers.jsonMapper()
+			.readTree(toJson(ResponsesItemMapper.toInput(List.of(message)).items().get(0)))
+			.get("content")
+			.get(1);
 	}
 
 	private static String filenameIn(String itemJson) {
