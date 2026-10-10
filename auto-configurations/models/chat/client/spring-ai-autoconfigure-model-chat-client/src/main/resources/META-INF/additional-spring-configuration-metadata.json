@@ -47,6 +47,12 @@
       "type": "java.lang.String",
       "description": "The primary ModerationModel to autoconfigure. If not set, each ModerationModel auto-configuration is enabled by default.",
       "defaultValue": ""
+    },
+    {
+      "name": "spring.ai.model.ocr",
+      "type": "java.lang.String",
+      "description": "The primary OcrModel to autoconfigure. If not set, each OcrModel auto-configuration is enabled by default.",
+      "defaultValue": ""
     }
   ]
 }

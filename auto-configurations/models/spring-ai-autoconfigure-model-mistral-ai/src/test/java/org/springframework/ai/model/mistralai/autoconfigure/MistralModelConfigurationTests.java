@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.ai.mistralai.MistralAiChatModel;
 import org.springframework.ai.mistralai.MistralAiEmbeddingModel;
 import org.springframework.ai.mistralai.moderation.MistralAiModerationModel;
+import org.springframework.ai.mistralai.ocr.MistralOcrApi;
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -36,25 +37,30 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Ilayaperumal Gopinathan
  * @author Ricken Bazolo
  * @author Issam El-atif
+ * @author Nicolas Krier
  */
-public class MistralModelConfigurationTests {
+class MistralModelConfigurationTests {
 
-	private final ApplicationContextRunner chatContextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.mistralai.api-key=" + System.getenv("MISTRAL_AI_API_KEY"))
-		.withConfiguration(AutoConfigurations.of(MistralAiChatAutoConfiguration.class,
-				RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class,
-				ToolCallingAutoConfiguration.class, WebClientAutoConfiguration.class));
+	private final ApplicationContextRunner chatContextRunner = createApplicationContextRunner(
+			MistralAiChatAutoConfiguration.class, RestClientAutoConfiguration.class,
+			SpringAiRetryAutoConfiguration.class, ToolCallingAutoConfiguration.class, WebClientAutoConfiguration.class);
 
-	private final ApplicationContextRunner embeddingContextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.mistralai.api-key=" + System.getenv("MISTRAL_AI_API_KEY"))
-		.withConfiguration(AutoConfigurations.of(MistralAiEmbeddingAutoConfiguration.class,
-				RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class));
+	private final ApplicationContextRunner embeddingContextRunner = createApplicationContextRunner(
+			MistralAiEmbeddingAutoConfiguration.class, RestClientAutoConfiguration.class,
+			SpringAiRetryAutoConfiguration.class);
 
-	private final ApplicationContextRunner moderationContextRunner = new ApplicationContextRunner()
-		.withPropertyValues("spring.ai.mistralai.api-key=" + System.getenv("MISTRAL_AI_API_KEY"))
-		.withConfiguration(
-				AutoConfigurations.of(MistralAiModerationAutoConfiguration.class, RestClientAutoConfiguration.class,
-						SpringAiRetryAutoConfiguration.class, WebClientAutoConfiguration.class));
+	private final ApplicationContextRunner moderationContextRunner = createApplicationContextRunner(
+			MistralAiModerationAutoConfiguration.class, RestClientAutoConfiguration.class,
+			SpringAiRetryAutoConfiguration.class);
+
+	private final ApplicationContextRunner ocrContextRunner = createApplicationContextRunner(
+			MistralAiOcrAutoConfiguration.class, RestClientAutoConfiguration.class,
+			SpringAiRetryAutoConfiguration.class);
+
+	private static ApplicationContextRunner createApplicationContextRunner(Class<?>... autoConfigurationClasses) {
+		return new ApplicationContextRunner().withPropertyValues("spring.ai.mistralai.apiKey=FAKED_API_KEY")
+			.withConfiguration(AutoConfigurations.of(autoConfigurationClasses));
+	}
 
 	@Test
 	void chatModelActivation() {
@@ -129,6 +135,24 @@ public class MistralModelConfigurationTests {
 				assertThat(context.getBeansOfType(MistralAiEmbeddingModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(MistralAiChatModel.class)).isEmpty();
 			});
+	}
+
+	@Test
+	void ocrModelActivation() {
+		this.ocrContextRunner.run(context -> {
+			assertThat(context).hasNotFailed();
+			assertThat(context).hasSingleBean(MistralOcrApi.class);
+		});
+
+		this.ocrContextRunner.withPropertyValues("spring.ai.model.ocr=mistral").run(context -> {
+			assertThat(context).hasNotFailed();
+			assertThat(context).hasSingleBean(MistralOcrApi.class);
+		});
+
+		this.ocrContextRunner.withPropertyValues("spring.ai.model.ocr=none").run(context -> {
+			assertThat(context).hasNotFailed();
+			assertThat(context).doesNotHaveBean(MistralOcrApi.class);
+		});
 	}
 
 }
