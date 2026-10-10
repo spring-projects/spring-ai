@@ -19,6 +19,7 @@ package org.springframework.ai.chat.client.advisor;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiFunction;
 
 import io.micrometer.observation.ObservationRegistry;
@@ -34,6 +35,7 @@ import reactor.core.publisher.Flux;
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
+import org.springframework.ai.chat.client.advisor.api.AdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.BaseAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
@@ -215,6 +217,88 @@ public class ToolCallingAdvisorTests {
 
 		assertThat(results).isNotNull().hasSize(1);
 		verify(this.toolCallingManager, times(0)).executeToolCalls(any(), any());
+	}
+
+	@Test
+	void adviseCallPreservesAdvisorContextAcrossToolCallIterations() {
+		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder().toolCallingManager(this.toolCallingManager).build();
+
+		ChatClientRequest request = createMockRequest();
+
+		// Track how many times the context-setting advisor actually processes
+		AtomicInteger processingCount = new AtomicInteger(0);
+		ContextSettingAdvisor contextAdvisor = new ContextSettingAdvisor(processingCount);
+
+		// Terminal advisor that propagates request context to response
+		// (mimicking real ChatModelCallAdvisor behavior)
+		int[] callCount = { 0 };
+		CallAdvisor terminalAdvisor = new TerminalCallAdvisor((req, chain) -> {
+			callCount[0]++;
+			ChatClientResponse mockResponse = callCount[0] == 1 ? createMockResponse(true) : createMockResponse(false);
+			return ChatClientResponse.builder()
+				.chatResponse(mockResponse.chatResponse())
+				.context(req.context())
+				.build();
+		});
+
+		CallAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.<Advisor>of(advisor, contextAdvisor, terminalAdvisor))
+			.build();
+
+		when(this.toolCallingManager.executeToolCalls(any(Prompt.class), any(ChatResponse.class)))
+			.thenReturn(createToolExecutionResult(false));
+
+		advisor.adviseCall(request, realChain);
+
+		// The terminal advisor was called twice (two iterations of the tool call loop)
+		assertThat(callCount[0]).isEqualTo(2);
+
+		// The context-setting advisor should have processed only once, because on the
+		// second iteration the context key written in the first iteration is preserved,
+		// causing it to skip processing.
+		assertThat(processingCount.get()).isEqualTo(1);
+	}
+
+	@Test
+	void adviseStreamPreservesAdvisorContextAcrossToolCallIterations() {
+		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder().toolCallingManager(this.toolCallingManager).build();
+
+		ChatClientRequest request = createMockRequest();
+
+		// Track how many times the context-setting advisor actually processes
+		AtomicInteger processingCount = new AtomicInteger(0);
+		ContextSettingAdvisor contextAdvisor = new ContextSettingAdvisor(processingCount);
+
+		// Terminal advisor that propagates request context to response
+		// (mimicking real ChatModelStreamAdvisor behavior)
+		int[] callCount = { 0 };
+		TerminalStreamAdvisor terminalAdvisor = new TerminalStreamAdvisor((req, chain) -> {
+			callCount[0]++;
+			ChatClientResponse mockResponse = callCount[0] == 1 ? createMockResponse(true) : createMockResponse(false);
+			return Flux.just(ChatClientResponse.builder()
+				.chatResponse(mockResponse.chatResponse())
+				.context(req.context())
+				.build());
+		});
+
+		StreamAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.<Advisor>of(advisor, contextAdvisor, terminalAdvisor))
+			.build();
+
+		when(this.toolCallingManager.executeToolCalls(any(Prompt.class), any(ChatResponse.class)))
+			.thenReturn(createToolExecutionResult(false));
+
+		List<ChatClientResponse> results = advisor.adviseStream(request, realChain).collectList().block();
+
+		assertThat(results).isNotNull();
+
+		// The terminal advisor was called twice (two iterations of the tool call loop)
+		assertThat(callCount[0]).isEqualTo(2);
+
+		// The context-setting advisor should have processed only once, because on the
+		// second iteration the context key written in the first iteration is preserved,
+		// causing it to skip processing.
+		assertThat(processingCount.get()).isEqualTo(1);
 	}
 
 	@Test
@@ -1537,6 +1621,42 @@ public class ToolCallingAdvisorTests {
 			.thenAnswer(invocation -> ChatClientResponse.builder().chatResponse(chatResponse).context(Map.of()));
 
 		return response;
+	}
+
+	/**
+	 * A BaseAdvisor that sets a context key on first processing and skips if the key
+	 * already exists. Used to verify that context is preserved across tool call loop
+	 * iterations.
+	 */
+	private static class ContextSettingAdvisor implements BaseAdvisor {
+
+		private static final String CONTEXT_KEY = "context-set";
+
+		private final AtomicInteger processingCount;
+
+		ContextSettingAdvisor(AtomicInteger processingCount) {
+			this.processingCount = processingCount;
+		}
+
+		@Override
+		public int getOrder() {
+			return 0;
+		}
+
+		@Override
+		public ChatClientRequest before(ChatClientRequest chatClientRequest, AdvisorChain advisorChain) {
+			if (chatClientRequest.context().containsKey(CONTEXT_KEY)) {
+				return chatClientRequest;
+			}
+			this.processingCount.incrementAndGet();
+			return chatClientRequest.mutate().context(CONTEXT_KEY, true).build();
+		}
+
+		@Override
+		public ChatClientResponse after(ChatClientResponse chatClientResponse, AdvisorChain advisorChain) {
+			return chatClientResponse;
+		}
+
 	}
 
 	private static class TerminalCallAdvisor implements CallAdvisor {
