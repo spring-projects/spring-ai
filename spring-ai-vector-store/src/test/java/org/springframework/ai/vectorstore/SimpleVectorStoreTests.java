@@ -129,7 +129,7 @@ class SimpleVectorStoreTests {
 		Filter.Expression condition = builder.eq("testKey", 1).build();
 
 		this.vectorStore.delete(condition);
-		assertThat(this.vectorStore.store.isEmpty());
+		assertThat(this.vectorStore.store).isEmpty();
 	}
 
 	@Test
