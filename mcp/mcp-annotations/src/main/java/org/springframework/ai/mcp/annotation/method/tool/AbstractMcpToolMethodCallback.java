@@ -25,6 +25,8 @@ import java.util.Objects;
 import java.util.stream.Stream;
 
 import io.modelcontextprotocol.common.McpTransportContext;
+import io.modelcontextprotocol.json.McpJsonMapper;
+import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import org.jspecify.annotations.Nullable;
@@ -50,7 +52,7 @@ import org.springframework.ai.util.JsonHelper;
  */
 public abstract class AbstractMcpToolMethodCallback<T, RC extends McpRequestContextTypes<?>> {
 
-	private static final JsonHelper jsonHelper = new JsonHelper();
+	private JsonHelper jsonHelper = new JsonHelper();
 
 	protected final Method toolMethod;
 
@@ -153,12 +155,27 @@ public abstract class AbstractMcpToolMethodCallback<T, RC extends McpRequestCont
 		}
 
 		if (type instanceof Class<?>) {
-			return jsonHelper.convertToTypedObject(value, (Class<?>) type);
+			return this.jsonHelper.convertToTypedObject(value, (Class<?>) type);
 		}
 
 		// For generic types, use the fromJson method that accepts Type
-		String json = jsonHelper.toJson(value, true);
-		return jsonHelper.fromJson(json, type);
+		String json = this.jsonHelper.toJson(value, true);
+		return this.jsonHelper.fromJson(json, type);
+	}
+
+	protected JsonHelper getJsonHelper() {
+		return this.jsonHelper;
+	}
+
+	/**
+	 * Configure the JSON mapper used to convert annotated tool arguments and results.
+	 * @param jsonMapper the JSON mapper
+	 * @since 2.0.1
+	 */
+	public void setJsonMapper(McpJsonMapper jsonMapper) {
+		if (jsonMapper instanceof JacksonMcpJsonMapper jacksonJsonMapper) {
+			this.jsonHelper = new JsonHelper(jacksonJsonMapper.getJsonMapper());
+		}
 	}
 
 	/**
@@ -177,12 +194,12 @@ public abstract class AbstractMcpToolMethodCallback<T, RC extends McpRequestCont
 		Type returnType = this.toolMethod.getGenericReturnType();
 
 		if (this.returnMode == ReturnMode.VOID || returnType == Void.TYPE || returnType == void.class) {
-			return CallToolResult.builder().addTextContent(jsonHelper.toJson("Done")).build();
+			return CallToolResult.builder().addTextContent(this.jsonHelper.toJson("Done")).build();
 		}
 
 		if (this.returnMode == ReturnMode.STRUCTURED) {
-			String jsonOutput = jsonHelper.toJson(result);
-			Object structuredOutput = jsonHelper.fromJson(jsonOutput, Object.class);
+			String jsonOutput = this.jsonHelper.toJson(result);
+			Object structuredOutput = this.jsonHelper.fromJson(jsonOutput, Object.class);
 			return CallToolResult.builder().structuredContent(structuredOutput).build();
 		}
 
@@ -198,7 +215,7 @@ public abstract class AbstractMcpToolMethodCallback<T, RC extends McpRequestCont
 		}
 
 		// For other types, serialize to JSON
-		return CallToolResult.builder().addTextContent(jsonHelper.toJson(result)).build();
+		return CallToolResult.builder().addTextContent(this.jsonHelper.toJson(result)).build();
 	}
 
 	/**
