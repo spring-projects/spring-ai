@@ -96,9 +96,12 @@ public class StabilityAiImageModel implements ImageModel {
 		StabilityAiApi.GenerateImageRequest generateImageRequest = getGenerateImageRequest(imagePrompt,
 				requestImageOptions);
 
-		// Make the request
-		StabilityAiApi.GenerateImageResponse generateImageResponse = this.stabilityAiApi
-			.generateImage(generateImageRequest);
+		// Make the request, falling back to the model configured on the API when no
+		// model was set on the default or runtime options
+		String model = requestImageOptions.getModel();
+		StabilityAiApi.GenerateImageResponse generateImageResponse = (model != null)
+				? this.stabilityAiApi.generateImage(model, generateImageRequest)
+				: this.stabilityAiApi.generateImage(generateImageRequest);
 
 		// Convert to org.springframework.ai.model derived ImageResponse data type
 		return convertResponse(generateImageResponse);

@@ -93,9 +93,21 @@ public class StabilityAiApi {
 	}
 
 	public GenerateImageResponse generateImage(GenerateImageRequest request) {
+		return generateImage(this.model, request);
+	}
+
+	/**
+	 * Generate images with the given model, overriding the model configured on this API.
+	 * @param model the StabilityAI model (engine) to use
+	 * @param request the image generation request
+	 * @return the image generation response
+	 * @since 2.1.0
+	 */
+	public GenerateImageResponse generateImage(String model, GenerateImageRequest request) {
+		Assert.hasText(model, "The model can not be null or empty.");
 		Assert.notNull(request, "The request body can not be null.");
 		return Objects.requireNonNull(this.restClient.post()
-			.uri("/generation/{model}/text-to-image", this.model)
+			.uri("/generation/{model}/text-to-image", model)
 			.body(request)
 			.retrieve()
 			.body(GenerateImageResponse.class), "received a response without a body");
