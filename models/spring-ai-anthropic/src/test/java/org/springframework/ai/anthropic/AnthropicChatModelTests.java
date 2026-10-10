@@ -61,6 +61,8 @@ import com.anthropic.services.blocking.MessageService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -254,6 +256,54 @@ class AnthropicChatModelTests {
 		ChatResponse response = this.chatModel.call(new Prompt("Test"));
 
 		assertThat(response.getResult().getMetadata().getFinishReason()).isEqualTo("max_tokens");
+	}
+
+	@ParameterizedTest
+	@CsvSource({ "end_turn, 3", "refusal, 0" })
+	@SuppressWarnings("unchecked")
+	void emptyContentPreservesFinishReasonAndMetadata(String stopReason, long outputTokens) throws Exception {
+		Message message = ObjectMappers.jsonMapper().readValue("""
+				{
+				"id": "msg_empty",
+				"type": "message",
+				"role": "assistant",
+				"model": "claude-sonnet-4-5",
+				"content": [],
+				"stop_reason": "%s",
+				"stop_sequence": null,
+				"usage": {
+				"input_tokens": 412,
+				"output_tokens": %d,
+				"cache_read_input_tokens": 120,
+				"cache_creation_input_tokens": 80
+				}
+				}
+				""".formatted(stopReason, outputTokens), Message.class);
+		HttpResponseFor<Message> rawResponse = mock(HttpResponseFor.class);
+		given(rawResponse.parse()).willReturn(message);
+		given(rawResponse.headers()).willReturn(Headers.builder()
+			.put("anthropic-ratelimit-requests-limit", "100")
+			.put("anthropic-ratelimit-requests-remaining", "99")
+			.build());
+		given(this.messageServiceWithRawResponse.create(any(MessageCreateParams.class), any(RequestOptions.class)))
+			.willReturn(rawResponse);
+
+		ChatResponse response = this.chatModel.call(new Prompt("Hello"));
+
+		assertThat(response.getResults()).hasSize(1);
+		assertThat(response.getResult().getOutput().getText()).isEmpty();
+		assertThat(response.getResult().getOutput().getToolCalls()).isEmpty();
+		assertThat(response.getResult().getMetadata().getFinishReason()).isEqualTo(stopReason);
+		ChatResponseMetadata metadata = response.getMetadata();
+		assertThat(metadata.getId()).isEqualTo("msg_empty");
+		assertThat(metadata.getModel()).isEqualTo("claude-sonnet-4-5");
+		assertThat(metadata.getUsage().getPromptTokens()).isEqualTo(412);
+		assertThat(metadata.getUsage().getCompletionTokens()).isEqualTo(Math.toIntExact(outputTokens));
+		assertThat(metadata.getUsage().getCacheReadInputTokens()).isEqualTo(120L);
+		assertThat(metadata.getUsage().getCacheWriteInputTokens()).isEqualTo(80L);
+		assertThat(metadata.getRateLimit().getRequestsLimit()).isEqualTo(100L);
+		assertThat(metadata.getRateLimit().getRequestsRemaining()).isEqualTo(99L);
+		assertThat(metadata.<Message>get("anthropic-response")).isSameAs(message);
 	}
 
 	@Test
