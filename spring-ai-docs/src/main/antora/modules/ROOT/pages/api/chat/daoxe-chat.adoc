@@ -1,0 +1,180 @@
+= DaoXE Chat
+
+https://daoxe.com/[DaoXE] is a multi-model API gateway that exposes an **OpenAI-compatible** Chat Completions endpoint at `https://daoxe.com/v1`.
+
+Spring AI integrates with DaoXE by reusing the existing xref:api/chat/openai-chat.adoc[OpenAI] client: set the base URL to DaoXE, supply your DaoXE API key, and select an **account-available** model ID.
+
+DaoXE is multi-protocol on the platform (including Anthropic Messages). This page covers the OpenAI-compatible path only. Model IDs are account-scoped — discover them with authenticated `GET /v1/models` or the DaoXE dashboard. DaoXE is not available in mainland China.
+
+== Prerequisites
+
+* **Create an API Key**:
+Visit https://daoxe.com/[daoxe.com] and create an API key in your dashboard.
+Set `spring.ai.openai.api-key` to that value (or use `DAOXE_API_KEY` via env as shown below).
+
+* **Set the DaoXE base URL**:
+Set `spring.ai.openai.base-url` to `+https://daoxe.com/v1+`.
+
+* **Select a model**:
+Set `spring.ai.openai.chat.model` (or `spring.ai.openai.chat.options.model`) to an exact model ID available to your DaoXE account.
+Do not hardcode a static public catalog — availability can change per account.
+
+You can set these configuration properties in your `application.properties` file:
+
+[source,properties]
+----
+spring.ai.openai.api-key=<your-daoxe-api-key>
+spring.ai.openai.base-url=https://daoxe.com/v1
+spring.ai.openai.chat.options.model=<your-account-model-id>
+----
+
+For enhanced security when handling API keys, use environment variables:
+
+[source,yaml]
+----
+# application.yml
+spring:
+  ai:
+    openai:
+      api-key: ${DAOXE_API_KEY}
+      base-url: https://daoxe.com/v1
+      chat:
+        options:
+          model: ${DAOXE_MODEL}
+----
+
+[source,bash]
+----
+export DAOXE_API_KEY=<your-daoxe-api-key>
+export DAOXE_MODEL=<your-account-model-id>
+----
+
+=== Add Repositories and BOM
+
+Spring AI artifacts are published in Maven Central and Spring Snapshot repositories.
+Refer to the xref:getting-started.adoc#artifact-repositories[Artifact Repositories] section to add these repositories to your build system.
+
+To help with dependency management, Spring AI provides a BOM (bill of materials). Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section.
+
+== Auto-configuration
+
+Spring AI provides Spring Boot auto-configuration for the OpenAI Chat Client.
+To enable it, add the following dependency to your project's Maven `pom.xml` or Gradle `build.gradle` build file:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-model-openai</artifactId>
+</dependency>
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+=== Connection Properties
+
+The prefix `spring.ai.openai` is used as the property prefix for OpenAI-compatible connections, including DaoXE.
+
+[cols="3,5,1"]
+|===
+| Property | Description | Default
+
+| spring.ai.openai.base-url
+| The URL to connect to. For DaoXE set to `+https://daoxe.com/v1+`.
+| -
+
+| spring.ai.openai.api-key
+| Your DaoXE API key.
+| -
+|===
+
+=== Chat Properties
+
+The prefix `spring.ai.openai.chat` configures the chat model implementation.
+
+[cols="3,5,1"]
+|===
+| Property | Description | Default
+
+| spring.ai.openai.chat.options.model
+| Exact DaoXE account model ID.
+| -
+
+| spring.ai.openai.chat.base-url
+| Optional override of `spring.ai.openai.base-url` for chat only. Use `+https://daoxe.com/v1+`.
+| -
+
+| spring.ai.openai.chat.api-key
+| Optional override of `spring.ai.openai.api-key` for chat only.
+| -
+|===
+
+NOTE: You can override the common `spring.ai.openai.base-url` and `spring.ai.openai.api-key` for the ChatModel implementation.
+The `spring.ai.openai.chat.base-url` and `spring.ai.openai.chat.api-key` properties, if set, take precedence over the common properties.
+
+All other `spring.ai.openai.chat.*=` OpenAI chat options apply as documented in xref:api/chat/openai-chat.adoc[OpenAI Chat].
+
+== Sample Controller
+
+link:https://start.spring.io/[Create] a new Spring Boot project and add the `spring-ai-starter-model-openai` dependency.
+
+Add an `application.properties` file under `src/main/resources`:
+
+[source,properties]
+----
+spring.ai.openai.api-key=${DAOXE_API_KEY}
+spring.ai.openai.base-url=https://daoxe.com/v1
+spring.ai.openai.chat.options.model=<your-account-model-id>
+----
+
+This creates an `OpenAiChatModel` implementation that you can inject into your classes:
+
+[source,java]
+----
+@RestController
+public class ChatController {
+
+    private final OpenAiChatModel chatModel;
+
+    @Autowired
+    public ChatController(OpenAiChatModel chatModel) {
+        this.chatModel = chatModel;
+    }
+
+    @GetMapping("/ai/generate")
+    public Map<String,String> generate(@RequestParam(value = "message", defaultValue = "Tell me a joke") String message) {
+        return Map.of("generation", this.chatModel.call(message));
+    }
+}
+----
+
+== Manual Configuration
+
+Add the `spring-ai-openai` dependency, then create an `OpenAiChatModel` instance:
+
+[source,java]
+----
+var openAiApi = OpenAiApi.builder()
+        .baseUrl("https://daoxe.com/v1")
+        .apiKey(System.getenv("DAOXE_API_KEY"))
+        .build();
+
+var openAiChatOptions = OpenAiChatOptions.builder()
+        .model("<your-account-model-id>")
+        .temperature(0.4)
+        .maxTokens(200)
+        .build();
+
+var chatModel = OpenAiChatModel.builder()
+        .openAiApi(openAiApi)
+        .defaultOptions(openAiChatOptions)
+        .build();
+
+ChatResponse response = chatModel.call(
+    new Prompt("Generate the names of 5 famous pirates."));
+----
+
+== Additional resources
+
+* Client setup notes and multi-protocol examples: https://github.com/seven7763/DaoXE-AI
+* Disclosure: this documentation page was contributed by a DaoXE affiliate.
