@@ -222,6 +222,8 @@ public class DefaultMcpSyncRequestContextTests {
 		ElicitFormRequest capturedRequest = captor.getValue();
 		assertThat(capturedRequest.message()).isEqualTo("Test message");
 		assertThat(capturedRequest.requestedSchema()).isNotNull();
+		assertThat(capturedRequest.meta()).isNullOrEmpty();
+		assertThat(capturedRequest.progressToken()).isNull();
 	}
 
 	@Test
@@ -258,6 +260,46 @@ public class DefaultMcpSyncRequestContextTests {
 		verify(this.exchange).createElicitation(captor.capture());
 
 		ElicitRequest capturedRequest = captor.getValue();
+		assertThat(capturedRequest.meta()).containsEntry("key", "value");
+	}
+
+	@Test
+	public void testElicitationWithProgressToken() {
+		ClientCapabilities capabilities = mock(ClientCapabilities.class);
+		ClientCapabilities.Elicitation elicitation = mock(ClientCapabilities.Elicitation.class);
+		when(capabilities.elicitation()).thenReturn(elicitation);
+		when(this.exchange.getClientCapabilities()).thenReturn(capabilities);
+
+		CallToolRequest requestWithToken = CallToolRequest.builder()
+			.name("test-tool")
+			.arguments(Map.of())
+			.progressToken("token-123")
+			.build();
+		McpSyncRequestContext contextWithToken = DefaultMcpSyncRequestContext.builder()
+			.request(requestWithToken)
+			.exchange(this.exchange)
+			.build();
+
+		Map<String, Object> contentMap = Map.of("name", "John", "age", 30);
+		ElicitResult expectedResult = mock(ElicitResult.class);
+		when(expectedResult.action()).thenReturn(ElicitResult.Action.ACCEPT);
+		when(expectedResult.content()).thenReturn(contentMap);
+		when(expectedResult.meta()).thenReturn(null);
+		when(this.exchange.createElicitation(any(ElicitRequest.class))).thenReturn(expectedResult);
+
+		Map<String, Object> requestMeta = Map.of("key", "value");
+		StructuredElicitResult<Map<String, Object>> result = contextWithToken.elicit(
+				e -> e.message("Test message").meta(requestMeta),
+				new ParameterizedTypeReference<Map<String, Object>>() {
+				});
+
+		assertThat(result).isNotNull();
+
+		ArgumentCaptor<ElicitRequest> captor = ArgumentCaptor.forClass(ElicitRequest.class);
+		verify(this.exchange).createElicitation(captor.capture());
+
+		ElicitRequest capturedRequest = captor.getValue();
+		assertThat(capturedRequest.progressToken()).isEqualTo("token-123");
 		assertThat(capturedRequest.meta()).containsEntry("key", "value");
 	}
 
