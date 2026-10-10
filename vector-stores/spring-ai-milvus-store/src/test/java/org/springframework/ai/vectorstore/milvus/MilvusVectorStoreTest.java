@@ -25,6 +25,7 @@ import io.milvus.grpc.MutationResult;
 import io.milvus.grpc.SearchResultData;
 import io.milvus.grpc.SearchResults;
 import io.milvus.param.R;
+import io.milvus.param.R.Status;
 import io.milvus.param.dml.DeleteParam;
 import io.milvus.param.dml.InsertParam;
 import io.milvus.param.dml.SearchParam;
@@ -46,6 +47,7 @@ import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.vectorstore.SearchRequest;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockConstruction;
@@ -314,6 +316,35 @@ class MilvusVectorStoreTest {
 		assertThat(captor.getValue().getExpr()).isEqualTo(
 				"doc_id in [\"plain-id\",\"x' || doc_id != 'x\",\"with\\\"dquote\",\"back\\\\slash\\nnewline\"]");
 		assertThat(captor.getValue().getPartitionName()).isEmpty();
+	}
+
+	@Test
+	void shouldRejectFailedStatusWhenAddingDocuments() {
+		when(this.embeddingModel.embed(any(), any(), any())).thenReturn(List.of(new float[] { 1.0f, 2.0f, 3.0f }));
+		@SuppressWarnings("unchecked")
+		R<MutationResult> failed = mock(R.class);
+		when(failed.getException()).thenReturn(null);
+		when(failed.getStatus()).thenReturn(Status.UnexpectedError.getCode());
+		when(failed.getMessage()).thenReturn("insert rejected");
+		when(this.milvusClient.insert(any(InsertParam.class))).thenReturn(failed);
+
+		assertThatThrownBy(() -> this.vectorStore.doAdd(List.of(new Document("doc"))))
+			.isInstanceOf(IllegalStateException.class)
+			.hasMessageContaining("Failed to insert")
+			.hasMessageContaining("insert rejected");
+	}
+
+	@Test
+	void shouldRejectFailedStatusWhenDeletingByIdList() {
+		@SuppressWarnings("unchecked")
+		R<MutationResult> failed = mock(R.class);
+		when(failed.getStatus()).thenReturn(Status.UnexpectedError.getCode());
+		when(failed.getMessage()).thenReturn("delete rejected");
+		when(this.milvusClient.delete(any(DeleteParam.class))).thenReturn(failed);
+
+		assertThatThrownBy(() -> this.vectorStore.doDelete(List.of("doc-1"))).isInstanceOf(IllegalStateException.class)
+			.hasMessageContaining("Failed to delete documents")
+			.hasMessageContaining("delete rejected");
 	}
 
 	private SearchParam performSimilaritySearch(MockedStatic<EmbeddingUtils> mockedEmbeddingUtils,
