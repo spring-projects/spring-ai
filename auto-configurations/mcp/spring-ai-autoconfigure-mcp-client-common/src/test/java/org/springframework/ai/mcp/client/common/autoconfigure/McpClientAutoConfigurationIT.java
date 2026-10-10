@@ -18,10 +18,11 @@ package org.springframework.ai.mcp.client.common.autoconfigure;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Function;
 
 import io.modelcontextprotocol.client.McpAsyncClient;
-import io.modelcontextprotocol.client.McpClient;
+import io.modelcontextprotocol.client.McpClient.SyncSpec;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.json.TypeRef;
 import io.modelcontextprotocol.spec.McpClientTransport;
@@ -30,17 +31,20 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import reactor.core.publisher.Mono;
 
+import org.springframework.ai.mcp.annotation.spring.McpClient;
 import org.springframework.ai.mcp.client.common.autoconfigure.annotations.McpClientAnnotationScannerAutoConfiguration;
 import org.springframework.ai.mcp.client.common.autoconfigure.configurer.McpSyncClientConfigurer;
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpClientCommonProperties;
 import org.springframework.ai.mcp.customizer.McpClientCustomizer;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Integration tests for MCP (Model Context Protocol) client auto-configuration.
@@ -137,12 +141,115 @@ public class McpClientAutoConfigurationIT {
 	}
 
 	@Test
+	void injectsNamedSyncClientsByMcpClientQualifier() {
+		this.contextRunner.withUserConfiguration(QualifiedSyncClientsConfiguration.class)
+			.withPropertyValues("spring.ai.mcp.client.initialized=false",
+					"spring.ai.mcp.client.streamable-http.connections.alpha.url=http://localhost:8080",
+					"spring.ai.mcp.client.streamable-http.connections.beta.url=http://localhost:8081")
+			.run(context -> {
+				QualifiedSyncClients qualifiedClients = context.getBean(QualifiedSyncClients.class);
+				List<McpSyncClient> clients = context.getBean("mcpSyncClients", List.class);
+				McpClientAutoConfiguration.CloseableMcpSyncClients closeableClients = context
+					.getBean(McpClientAutoConfiguration.CloseableMcpSyncClients.class);
+
+				assertThat(qualifiedClients.alpha())
+					.isSameAs(context.getBean("mcpSyncClient_alpha", McpSyncClient.class));
+				assertThat(qualifiedClients.beta())
+					.isSameAs(context.getBean("mcpSyncClient_beta", McpSyncClient.class));
+				assertThat(qualifiedClients.allClients()).isSameAs(clients);
+				assertThat(qualifiedClients.unqualifiedClient()).isEmpty();
+				assertThat(closeableClients.clients()).isSameAs(clients);
+				assertThat(clients).hasSize(3).contains(qualifiedClients.alpha(), qualifiedClients.beta());
+				assertThat(clients).extracting(client -> client.getClientInfo().title())
+					.containsExactlyInAnyOrder("alpha", "beta", "gamma");
+				assertThat(qualifiedClients.alpha().getClientInfo().title()).isEqualTo("alpha");
+				assertThat(qualifiedClients.beta().getClientInfo().title()).isEqualTo("beta");
+			});
+	}
+
+	@Test
+	void injectsNamedAsyncClientsByMcpClientQualifier() {
+		this.contextRunner.withUserConfiguration(QualifiedAsyncClientsConfiguration.class)
+			.withPropertyValues("spring.ai.mcp.client.type=ASYNC", "spring.ai.mcp.client.initialized=false",
+					"spring.ai.mcp.client.streamable-http.connections.alpha.url=http://localhost:8080",
+					"spring.ai.mcp.client.streamable-http.connections.beta.url=http://localhost:8081")
+			.run(context -> {
+				QualifiedAsyncClients qualifiedClients = context.getBean(QualifiedAsyncClients.class);
+				List<McpAsyncClient> clients = context.getBean("mcpAsyncClients", List.class);
+
+				assertThat(qualifiedClients.alpha())
+					.isSameAs(context.getBean("mcpAsyncClient_alpha", McpAsyncClient.class));
+				assertThat(qualifiedClients.beta())
+					.isSameAs(context.getBean("mcpAsyncClient_beta", McpAsyncClient.class));
+				assertThat(clients).containsExactlyInAnyOrder(qualifiedClients.alpha(), qualifiedClients.beta());
+				assertThat(qualifiedClients.alpha().getClientInfo().name()).endsWith(" - alpha");
+				assertThat(qualifiedClients.beta().getClientInfo().name()).endsWith(" - beta");
+			});
+	}
+
+	@Test
+	void injectsUserDefinedIndividualClientByMcpClientQualifier() {
+		this.contextRunner.withUserConfiguration(UserDefinedClientConfiguration.class)
+			.withPropertyValues("spring.ai.mcp.client.initialized=false")
+			.run(context -> {
+				UserDefinedClientHolder holder = context.getBean(UserDefinedClientHolder.class);
+				assertThat(holder.client()).isSameAs(context.getBean("manualClient", McpSyncClient.class));
+			});
+	}
+
+	@Test
+	void userDefinedIndividualClientIsPreferredToGeneratedNonDefaultCandidate() {
+		this.contextRunner.withUserConfiguration(UserDefinedQualifiedClientConfiguration.class)
+			.withPropertyValues("spring.ai.mcp.client.initialized=false",
+					"spring.ai.mcp.client.streamable-http.connections.alpha.url=http://localhost:8080")
+			.run(context -> {
+				UserDefinedClientHolder holder = context.getBean(UserDefinedClientHolder.class);
+				assertThat(holder.client()).isSameAs(context.getBean("userDefinedAlphaClient", McpSyncClient.class));
+				assertThat(holder.client()).isNotSameAs(context.getBean("mcpSyncClient_alpha", McpSyncClient.class));
+			});
+	}
+
+	@Test
+	void duplicateConnectionNameOnlyFailsWhenSelectiveClientIsRequested() {
+		this.contextRunner.withUserConfiguration(DuplicateNamedTransportsConfiguration.class)
+			.withPropertyValues("spring.ai.mcp.client.initialized=false",
+					"spring.ai.mcp.client.streamable-http.connections.alpha.url=http://localhost:8080")
+			.run(context -> {
+				List<McpSyncClient> clients = context.getBean("mcpSyncClients", List.class);
+				assertThat(clients).hasSize(2);
+				assertThatThrownBy(() -> context.getBean("mcpSyncClient_alpha", McpSyncClient.class))
+					.hasRootCauseInstanceOf(IllegalStateException.class)
+					.hasRootCauseMessage("Multiple transports found for MCP connection 'alpha'");
+			});
+	}
+
+	@Test
+	void configuredNameWithoutMatchingTransportOnlyFailsWhenSelectiveClientIsRequested() {
+		this.contextRunner.withUserConfiguration(TestTransportConfiguration.class)
+			.withPropertyValues("spring.ai.mcp.client.initialized=false",
+					"spring.ai.mcp.client.streamable-http.connections.stale.url=http://localhost:8080")
+			.run(context -> {
+				List<McpSyncClient> clients = context.getBean("mcpSyncClients", List.class);
+				assertThat(clients).hasSize(1);
+				assertThat(clients.get(0).getClientInfo().title()).isEqualTo("test");
+				assertThat(context).doesNotHaveBean("mcpSyncClient_test");
+				assertThatThrownBy(() -> context.getBean("mcpSyncClient_stale", McpSyncClient.class))
+					.hasRootCauseInstanceOf(IllegalStateException.class)
+					.hasRootCauseMessage("No transport found for MCP connection 'stale'");
+			});
+	}
+
+	@Test
 	void disabledConfiguration() {
-		this.contextRunner.withPropertyValues("spring.ai.mcp.client.enabled=false").run(context -> {
-			assertThat(context).doesNotHaveBean(McpSyncClient.class);
-			assertThat(context).doesNotHaveBean(McpAsyncClient.class);
-			assertThat(context).doesNotHaveBean(ToolCallback.class);
-		});
+		this.contextRunner
+			.withPropertyValues("spring.ai.mcp.client.enabled=false",
+					"spring.ai.mcp.client.streamable-http.connections.alpha.url=http://localhost:8080")
+			.run(context -> {
+				assertThat(context).doesNotHaveBean(McpSyncClient.class);
+				assertThat(context).doesNotHaveBean(McpAsyncClient.class);
+				assertThat(context).doesNotHaveBean(ToolCallback.class);
+				assertThat(context).doesNotHaveBean("mcpSyncClient_alpha");
+			});
 	}
 
 	/**
@@ -160,8 +267,11 @@ public class McpClientAutoConfigurationIT {
 			.withPropertyValues("spring.ai.mcp.client.initialized=false")
 			.run(context -> {
 				List<NamedClientMcpTransport> transports = context.getBean("customTransports", List.class);
+				List<McpSyncClient> clients = context.getBean("mcpSyncClients", List.class);
 				assertThat(transports).hasSize(1);
 				assertThat(transports.get(0).transport()).isInstanceOf(CustomClientTransport.class);
+				assertThat(clients).hasSize(1);
+				assertThat(context).doesNotHaveBean("mcpSyncClient_custom");
 			});
 	}
 
@@ -245,22 +355,104 @@ public class McpClientAutoConfigurationIT {
 				.hasSingleBean(McpClientAutoConfiguration.CloseableMcpSyncClients.class));
 	}
 
+	private static McpClientTransport mockTransport() {
+		McpClientTransport mockTransport = Mockito.mock(McpClientTransport.class);
+		Mockito.when(mockTransport.protocolVersions()).thenReturn(List.of("2024-11-05"));
+		Mockito.when(mockTransport.connect(Mockito.any())).thenReturn(Mono.never());
+		Mockito.when(mockTransport.sendMessage(Mockito.any())).thenReturn(Mono.never());
+		return mockTransport;
+	}
+
 	@Configuration
 	static class TestTransportConfiguration {
 
 		@Bean
 		List<NamedClientMcpTransport> testTransports() {
-			// Create a properly configured mock that handles default interface methods
-			McpClientTransport mockTransport = Mockito.mock(McpClientTransport.class);
-			// Configure the mock to return proper protocol versions for the default
-			// interface method
-			Mockito.when(mockTransport.protocolVersions()).thenReturn(List.of("2024-11-05"));
-			// Configure the mock to return a never-completing Mono to simulate pending
-			// connection
-			Mockito.when(mockTransport.connect(Mockito.any())).thenReturn(Mono.never());
-			// Configure the mock to return a never-completing Mono for sendMessage
-			Mockito.when(mockTransport.sendMessage(Mockito.any())).thenReturn(Mono.never());
-			return List.of(new NamedClientMcpTransport("test", mockTransport));
+			return List.of(new NamedClientMcpTransport("test", mockTransport()));
+		}
+
+	}
+
+	@Configuration
+	static class QualifiedSyncClientsConfiguration {
+
+		@Bean
+		List<NamedClientMcpTransport> qualifiedSyncTransports() {
+			return List.of(new NamedClientMcpTransport("alpha", mockTransport()),
+					new NamedClientMcpTransport("beta", mockTransport()),
+					new NamedClientMcpTransport("gamma", mockTransport()));
+		}
+
+		@Bean
+		QualifiedSyncClients qualifiedSyncClients(@McpClient("alpha") McpSyncClient alpha,
+				@Qualifier("beta") McpSyncClient beta, List<McpSyncClient> allClients,
+				Optional<McpSyncClient> unqualifiedClient) {
+			return new QualifiedSyncClients(alpha, beta, allClients, unqualifiedClient);
+		}
+
+	}
+
+	@Configuration
+	static class QualifiedAsyncClientsConfiguration {
+
+		@Bean
+		List<NamedClientMcpTransport> qualifiedAsyncTransports() {
+			return List.of(new NamedClientMcpTransport("alpha", mockTransport()),
+					new NamedClientMcpTransport("beta", mockTransport()));
+		}
+
+		@Bean
+		QualifiedAsyncClients qualifiedAsyncClients(@McpClient("alpha") McpAsyncClient alpha,
+				@McpClient("beta") McpAsyncClient beta) {
+			return new QualifiedAsyncClients(alpha, beta);
+		}
+
+	}
+
+	@Configuration
+	static class DuplicateNamedTransportsConfiguration {
+
+		@Bean
+		List<NamedClientMcpTransport> duplicateNamedTransports() {
+			return List.of(new NamedClientMcpTransport("alpha", mockTransport()),
+					new NamedClientMcpTransport("alpha", mockTransport()));
+		}
+
+	}
+
+	@Configuration
+	static class UserDefinedClientConfiguration {
+
+		@Bean
+		@McpClient("manual")
+		McpSyncClient manualClient() {
+			return Mockito.mock(McpSyncClient.class);
+		}
+
+		@Bean
+		UserDefinedClientHolder userDefinedClientHolder(@McpClient("manual") McpSyncClient client) {
+			return new UserDefinedClientHolder(client);
+		}
+
+	}
+
+	@Configuration
+	static class UserDefinedQualifiedClientConfiguration {
+
+		@Bean
+		List<NamedClientMcpTransport> alphaTransport() {
+			return List.of(new NamedClientMcpTransport("alpha", mockTransport()));
+		}
+
+		@Bean
+		@McpClient("alpha")
+		McpSyncClient userDefinedAlphaClient() {
+			return Mockito.mock(McpSyncClient.class);
+		}
+
+		@Bean
+		UserDefinedClientHolder userDefinedClientHolder(@McpClient("alpha") McpSyncClient client) {
+			return new UserDefinedClientHolder(client);
 		}
 
 	}
@@ -279,7 +471,7 @@ public class McpClientAutoConfigurationIT {
 	static class CustomizerConfiguration {
 
 		@Bean
-		McpClientCustomizer<McpClient.SyncSpec> testCustomizer() {
+		McpClientCustomizer<SyncSpec> testCustomizer() {
 			return (name, spec) -> {
 				/* no-op */ };
 		}
@@ -314,6 +506,16 @@ public class McpClientAutoConfigurationIT {
 			return Mono.empty(); // Test implementation
 		}
 
+	}
+
+	record QualifiedSyncClients(McpSyncClient alpha, McpSyncClient beta, List<McpSyncClient> allClients,
+			Optional<McpSyncClient> unqualifiedClient) {
+	}
+
+	record QualifiedAsyncClients(McpAsyncClient alpha, McpAsyncClient beta) {
+	}
+
+	record UserDefinedClientHolder(McpSyncClient client) {
 	}
 
 }
