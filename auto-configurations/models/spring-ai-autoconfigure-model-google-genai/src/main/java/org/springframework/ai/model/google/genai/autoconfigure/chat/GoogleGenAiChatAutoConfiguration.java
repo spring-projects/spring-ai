@@ -40,7 +40,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Conditional;
 import org.springframework.core.retry.RetryTemplate;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
@@ -146,12 +145,9 @@ public class GoogleGenAiChatAutoConfiguration {
 	@Bean
 	@ConditionalOnBean(GoogleGenAiChatModel.class)
 	@ConditionalOnMissingBean
-	@Conditional(CachedContentServiceCondition.class)
 	@ConditionalOnProperty(prefix = "spring.ai.google.genai.chat", name = "enable-cached-content", havingValue = "true",
 			matchIfMissing = true)
 	public @Nullable GoogleGenAiCachedContentService googleGenAiCachedContentService(GoogleGenAiChatModel chatModel) {
-		// Extract the cached content service from the chat model
-		// The CachedContentServiceCondition ensures this is not null
 		return chatModel.getCachedContentService();
 	}
 
