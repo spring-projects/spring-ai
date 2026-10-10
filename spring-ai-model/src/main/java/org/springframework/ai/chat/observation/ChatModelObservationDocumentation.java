@@ -214,6 +214,17 @@ public enum ChatModelObservationDocumentation implements ObservationDocumentatio
 			}
 		},
 
+		/**
+		 * The time elapsed from when the request was made until the first response chunk
+		 * was received, in seconds.
+		 */
+		RESPONSE_TIME_TO_FIRST_CHUNK {
+			@Override
+			public String asString() {
+				return AiObservationAttributes.RESPONSE_TIME_TO_FIRST_CHUNK.value();
+			}
+		},
+
 		// Usage
 
 		/**

@@ -115,6 +115,11 @@ public enum AiObservationAttributes {
 	 * The name of the model that generated the response.
 	 */
 	RESPONSE_MODEL("gen_ai.response.model"),
+	/**
+	 * The time elapsed from when the request was made until the first response chunk
+	 * was received, in seconds.
+	 */
+	RESPONSE_TIME_TO_FIRST_CHUNK("gen_ai.response.time_to_first_chunk"),
 
 	// GenAI Usage
 

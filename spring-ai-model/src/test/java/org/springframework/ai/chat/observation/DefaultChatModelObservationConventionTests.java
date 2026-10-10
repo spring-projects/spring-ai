@@ -192,6 +192,21 @@ class DefaultChatModelObservationConventionTests {
 	}
 
 	@Test
+	void shouldHaveResponseTimeToFirstChunkWhenRecorded() {
+		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
+			.prompt(generatePrompt(ChatOptions.builder().model("mistral").build()))
+			.provider("superprovider")
+			.streaming(true)
+			.build();
+		observationContext.recordTimeToFirstChunk();
+
+		assertThat(this.observationConvention.getHighCardinalityKeyValues(observationContext)).anySatisfy(keyValue -> {
+			assertThat(keyValue.getKey()).isEqualTo(HighCardinalityKeyNames.RESPONSE_TIME_TO_FIRST_CHUNK.asString());
+			assertThat(Double.parseDouble(keyValue.getValue())).isGreaterThanOrEqualTo(0.0);
+		});
+	}
+
+	@Test
 	void shouldHaveKeyValuesWhenCacheTokensDefined() {
 		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 			.prompt(generatePrompt(ChatOptions.builder().model("mistral").build()))
