@@ -19,6 +19,7 @@ package org.springframework.ai.chat.client.advisor;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
@@ -57,6 +58,10 @@ public class SafeGuardAdvisor implements CallAdvisor, StreamAdvisor {
 
 	private final int order;
 
+	private final boolean wholeWordMatch;
+
+	private final List<Pattern> wordPatterns;
+
 	static final String DEFAULT_FAILURE_RESPONSE = "I'm unable to respond to that due to sensitive content. Could we rephrase or discuss something else?";
 
 	public SafeGuardAdvisor(List<String> sensitiveWords) {
@@ -64,11 +69,19 @@ public class SafeGuardAdvisor implements CallAdvisor, StreamAdvisor {
 	}
 
 	public SafeGuardAdvisor(List<String> sensitiveWords, String failureResponse, int order) {
+		this(sensitiveWords, failureResponse, order, false);
+	}
+
+	private SafeGuardAdvisor(List<String> sensitiveWords, String failureResponse, int order, boolean wholeWordMatch) {
 		Assert.notNull(sensitiveWords, "Sensitive words must not be null!");
 		Assert.notNull(failureResponse, "Failure response must not be null!");
 		this.sensitiveWords = sensitiveWords;
 		this.failureResponse = failureResponse;
 		this.order = order;
+		this.wholeWordMatch = wholeWordMatch;
+		this.wordPatterns = wholeWordMatch ? sensitiveWords.stream()
+			.map(w -> Pattern.compile("\\b" + Pattern.quote(w.toLowerCase(Locale.ROOT)) + "\\b"))
+			.toList() : List.of();
 	}
 
 	public static Builder builder() {
@@ -108,11 +121,14 @@ public class SafeGuardAdvisor implements CallAdvisor, StreamAdvisor {
 	}
 
 	private boolean containsSensitiveWord(ChatClientRequest chatClientRequest) {
-		return !CollectionUtils.isEmpty(this.sensitiveWords) && this.sensitiveWords.stream()
-			.anyMatch(w -> chatClientRequest.prompt()
-				.getContents()
-				.toLowerCase(Locale.ROOT)
-				.contains(w.toLowerCase(Locale.ROOT)));
+		if (CollectionUtils.isEmpty(this.sensitiveWords)) {
+			return false;
+		}
+		String contents = chatClientRequest.prompt().getContents().toLowerCase(Locale.ROOT);
+		if (this.wholeWordMatch) {
+			return this.wordPatterns.stream().anyMatch(pattern -> pattern.matcher(contents).find());
+		}
+		return this.sensitiveWords.stream().anyMatch(w -> contents.contains(w.toLowerCase(Locale.ROOT)));
 	}
 
 	@Override
@@ -127,6 +143,8 @@ public class SafeGuardAdvisor implements CallAdvisor, StreamAdvisor {
 		private String failureResponse = DEFAULT_FAILURE_RESPONSE;
 
 		private int order = DEFAULT_ORDER;
+
+		private boolean wholeWordMatch = false;
 
 		private Builder() {
 		}
@@ -146,9 +164,20 @@ public class SafeGuardAdvisor implements CallAdvisor, StreamAdvisor {
 			return this;
 		}
 
+		/**
+		 * Match sensitive words only as whole words instead of substrings. Disabled by
+		 * default, preserving the existing substring matching.
+		 * @param wholeWordMatch whether to require whole-word matches
+		 * @return the builder instance
+		 */
+		public Builder wholeWordMatch(boolean wholeWordMatch) {
+			this.wholeWordMatch = wholeWordMatch;
+			return this;
+		}
+
 		public SafeGuardAdvisor build() {
 			Assert.state(this.sensitiveWords != null, "Sensitive words must not be null!");
-			return new SafeGuardAdvisor(this.sensitiveWords, this.failureResponse, this.order);
+			return new SafeGuardAdvisor(this.sensitiveWords, this.failureResponse, this.order, this.wholeWordMatch);
 		}
 
 	}
