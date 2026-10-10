@@ -98,6 +98,7 @@ import org.springframework.ai.google.genai.common.GoogleGenAiSafetySetting;
 import org.springframework.ai.google.genai.common.GoogleGenAiThinkingLevel;
 import org.springframework.ai.google.genai.metadata.GoogleGenAiUsage;
 import org.springframework.ai.google.genai.schema.GoogleGenAiToolCallingManager;
+import org.springframework.ai.google.genai.schema.JsonSchemaConverter;
 import org.springframework.ai.model.ChatModelDescription;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.retry.RetryUtils;
@@ -945,13 +946,22 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		List<Tool> tools = new ArrayList<>();
 		List<ToolDefinition> toolDefinitions = this.toolCallingManager.resolveToolDefinitions(requestOptions);
 		if (!CollectionUtils.isEmpty(toolDefinitions)) {
-			final List<FunctionDeclaration> functionDeclarations = toolDefinitions.stream()
-				.map(toolDefinition -> FunctionDeclaration.builder()
+			final List<FunctionDeclaration> functionDeclarations = toolDefinitions.stream().map(toolDefinition -> {
+				FunctionDeclaration.Builder builder = FunctionDeclaration.builder()
 					.name(toolDefinition.name())
-					.description(toolDefinition.description())
-					.parameters(jsonToSchema(toolDefinition.inputSchema()))
-					.build())
-				.toList();
+					.description(toolDefinition.description());
+				if (JsonSchemaConverter.fromJson(toolDefinition.inputSchema()).has("$defs")) {
+					// The declaration kept its original JSON Schema because the OpenAPI
+					// subset cannot represent $defs/$ref. The Gemini API accepts it
+					// natively via parametersJsonSchema, which is mutually exclusive
+					// with parameters on a FunctionDeclaration.
+					builder.parametersJsonSchema(this.jsonMapper.readValue(toolDefinition.inputSchema(), Map.class));
+				}
+				else {
+					builder.parameters(jsonToSchema(toolDefinition.inputSchema()));
+				}
+				return builder.build();
+			}).toList();
 			tools.add(Tool.builder().functionDeclarations(functionDeclarations).build());
 		}
 
