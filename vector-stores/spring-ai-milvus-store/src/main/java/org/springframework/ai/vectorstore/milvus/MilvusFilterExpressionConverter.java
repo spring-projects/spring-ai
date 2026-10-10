@@ -16,6 +16,9 @@
 
 package org.springframework.ai.vectorstore.milvus;
 
+import java.util.Collection;
+import java.util.Set;
+
 import org.springframework.ai.vectorstore.filter.Filter.Expression;
 import org.springframework.ai.vectorstore.filter.Filter.Group;
 import org.springframework.ai.vectorstore.filter.Filter.Key;
@@ -35,13 +38,21 @@ public class MilvusFilterExpressionConverter extends AbstractFilterExpressionCon
 
 	private final String metadataFieldName;
 
+	private final Set<String> scalarMetadataFieldNames;
+
 	public MilvusFilterExpressionConverter() {
 		this(MilvusVectorStore.METADATA_FIELD_NAME);
 	}
 
 	public MilvusFilterExpressionConverter(String metadataFieldName) {
+		this(metadataFieldName, Set.of());
+	}
+
+	MilvusFilterExpressionConverter(String metadataFieldName, Collection<String> scalarMetadataFieldNames) {
 		Assert.hasText(metadataFieldName, "Metadata field name must not be empty");
+		Assert.notNull(scalarMetadataFieldNames, "Scalar metadata field names must not be null");
 		this.metadataFieldName = metadataFieldName;
+		this.scalarMetadataFieldNames = Set.copyOf(scalarMetadataFieldNames);
 	}
 
 	@Override
@@ -81,6 +92,10 @@ public class MilvusFilterExpressionConverter extends AbstractFilterExpressionCon
 	@Override
 	protected void doKey(Key key, StringBuilder context) {
 		var identifier = key.key();
+		if (this.scalarMetadataFieldNames.contains(identifier)) {
+			context.append(identifier);
+			return;
+		}
 		context.append(this.metadataFieldName).append("[");
 		emitJsonValue(identifier, context);
 		context.append("]");
