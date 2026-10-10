@@ -18,10 +18,11 @@ package org.springframework.ai.vectorstore.filter;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.antlr.v4.runtime.ANTLRErrorStrategy;
 import org.antlr.v4.runtime.BailErrorStrategy;
@@ -109,6 +110,8 @@ public class FilterExpressionTextParser {
 
 	private static final String WHERE_PREFIX = "WHERE";
 
+	private static final Pattern WHERE_PREFIX_PATTERN = Pattern.compile("^\\s*where\\b", Pattern.CASE_INSENSITIVE);
+
 	private final DescriptiveErrorListener errorListener;
 
 	private final ANTLRErrorStrategy errorHandler;
@@ -128,8 +131,16 @@ public class FilterExpressionTextParser {
 
 		Assert.hasText(textFilterExpression, "Expression should not be empty!");
 
-		// Prefix the expression with the compulsory WHERE keyword.
-		if (!textFilterExpression.toUpperCase(Locale.ROOT).startsWith(WHERE_PREFIX)) {
+		// Prefix the expression with the compulsory WHERE keyword, unless the
+		// expression already starts with the standalone WHERE keyword. A prefix
+		// match alone is not enough, as an identifier such as 'whereabouts' also
+		// starts with the WHERE letters. An existing keyword is normalized to the
+		// uppercase spelling, as the grammar only accepts 'WHERE' and 'where'.
+		Matcher whereMatcher = WHERE_PREFIX_PATTERN.matcher(textFilterExpression);
+		if (whereMatcher.find()) {
+			textFilterExpression = WHERE_PREFIX + textFilterExpression.substring(whereMatcher.end());
+		}
+		else {
 			textFilterExpression = String.format("%s %s", WHERE_PREFIX, textFilterExpression);
 		}
 
