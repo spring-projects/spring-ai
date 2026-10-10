@@ -16,6 +16,8 @@
 
 package org.springframework.ai.model.bedrock.titan.autoconfigure;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.bedrock.titan.BedrockTitanEmbeddingModel.InputType;
 import org.springframework.ai.bedrock.titan.api.TitanEmbeddingBedrockApi.TitanEmbeddingModel;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -42,6 +44,18 @@ public class BedrockTitanEmbeddingProperties {
 	 */
 	private InputType inputType = InputType.IMAGE;
 
+	/**
+	 * Titan Text Embeddings V2 dimensions. Only applicable for
+	 * {@link TitanEmbeddingModel#TITAN_EMBED_TEXT_V2}.
+	 */
+	private @Nullable Integer dimensions;
+
+	/**
+	 * Titan Text Embeddings V2 normalization. Only applicable for
+	 * {@link TitanEmbeddingModel#TITAN_EMBED_TEXT_V2}.
+	 */
+	private @Nullable Boolean normalize;
+
 	public String getModel() {
 		return this.model;
 	}
@@ -56,6 +70,22 @@ public class BedrockTitanEmbeddingProperties {
 
 	public void setInputType(InputType inputType) {
 		this.inputType = inputType;
+	}
+
+	public @Nullable Integer getDimensions() {
+		return this.dimensions;
+	}
+
+	public void setDimensions(Integer dimensions) {
+		this.dimensions = dimensions;
+	}
+
+	public @Nullable Boolean getNormalize() {
+		return this.normalize;
+	}
+
+	public void setNormalize(Boolean normalize) {
+		this.normalize = normalize;
 	}
 
 }
