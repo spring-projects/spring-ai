@@ -20,6 +20,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import io.modelcontextprotocol.server.McpSyncServerExchange;
+import io.modelcontextprotocol.spec.McpSchema.ClientCapabilities;
+import io.modelcontextprotocol.spec.McpSchema.Implementation;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -34,6 +36,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author Christian Tzolov
  * @author YunKui Lu
+ * @author Dimitar Proynov
  */
 @ExtendWith(MockitoExtension.class)
 class ToolContextToMcpMetaConverterTest {
@@ -275,6 +278,67 @@ class ToolContextToMcpMetaConverterTest {
 		assertThat(result).containsEntry("key_with_underscore", "value3");
 		assertThat(result).containsEntry("key with spaces", "value4");
 		assertThat(result).containsEntry("key@with#special$chars", "value5");
+	}
+
+	@Test
+	void defaultConverterIgnoresConnectionInfoAndBehavesLikeSingleArgConvert() {
+		ToolContextToMcpMetaConverter converter = ToolContextToMcpMetaConverter.defaultConverter();
+		Map<String, Object> contextMap = new HashMap<>();
+		contextMap.put("key1", "value1");
+		ToolContext toolContext = new ToolContext(contextMap);
+		McpConnectionInfo connectionInfo = connectionInfo("trusted-server");
+
+		Map<String, Object> result = converter.convert(toolContext, connectionInfo);
+
+		assertThat(result).isEqualTo(converter.convert(toolContext));
+	}
+
+	@Test
+	void legacySingleArgImplementationStillWorksThroughTwoArgOverload() {
+		// A converter written against the pre-2.0.2 single-arg contract must keep
+		// working unmodified when invoked through the new connection-aware overload.
+		ToolContextToMcpMetaConverter legacyConverter = toolContext -> Map.of("legacy", "value");
+
+		Map<String, Object> result = legacyConverter.convert(new ToolContext(Map.of()), connectionInfo("any-server"));
+
+		assertThat(result).containsEntry("legacy", "value");
+	}
+
+	@Test
+	void customConverterCanScopeMetadataByDestinationServer() {
+		// The whole point of the connection-aware overload: a converter can forward
+		// sensitive ToolContext entries only to the server(s) that should see them,
+		// instead of every registered MCP server getting the same metadata.
+		ToolContextToMcpMetaConverter scopedConverter = new ToolContextToMcpMetaConverter() {
+			@Override
+			public Map<String, Object> convert(ToolContext toolContext) {
+				return convert(toolContext, null);
+			}
+
+			@Override
+			public Map<String, Object> convert(ToolContext toolContext, McpConnectionInfo connectionInfo) {
+				if (connectionInfo == null || !"trusted-server".equals(connectionInfo.clientInfo().name())) {
+					return Map.of();
+				}
+				return toolContext.getContext();
+			}
+		};
+		ToolContext toolContext = new ToolContext(Map.of("sessionJwt", "secret-token"));
+
+		Map<String, Object> forwardedToTrustedServer = scopedConverter.convert(toolContext,
+				connectionInfo("trusted-server"));
+		Map<String, Object> forwardedToUntrustedServer = scopedConverter.convert(toolContext,
+				connectionInfo("untrusted-server"));
+
+		assertThat(forwardedToTrustedServer).containsEntry("sessionJwt", "secret-token");
+		assertThat(forwardedToUntrustedServer).isEmpty();
+	}
+
+	private static McpConnectionInfo connectionInfo(String clientName) {
+		return McpConnectionInfo.builder()
+			.clientCapabilities(new ClientCapabilities(null, null, null, null))
+			.clientInfo(Implementation.builder(clientName, "1.0.0").build())
+			.build();
 	}
 
 	@Test
