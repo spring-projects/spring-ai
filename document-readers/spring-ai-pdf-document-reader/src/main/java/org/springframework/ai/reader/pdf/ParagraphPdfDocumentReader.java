@@ -17,6 +17,8 @@
 package org.springframework.ai.reader.pdf;
 
 import java.awt.Rectangle;
+import java.io.Closeable;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -51,7 +53,7 @@ import org.springframework.util.StringUtils;
  * @author Heonwoo Kim
  * @author Vinay Reddy Kalluri
  */
-public class ParagraphPdfDocumentReader implements DocumentReader {
+public class ParagraphPdfDocumentReader implements DocumentReader, Closeable {
 
 	// Constants for metadata keys
 	private static final String METADATA_START_PAGE = "page_number";
@@ -125,6 +127,11 @@ public class ParagraphPdfDocumentReader implements DocumentReader {
 		catch (Exception e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	@Override
+	public void close() throws IOException {
+		this.document.close();
 	}
 
 	/**
