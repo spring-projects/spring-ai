@@ -69,7 +69,9 @@ A per-request `model` option is rejected with an `UnsupportedOperationException`
 
 The `Resource` passed to the model is decoded locally to 16 kHz mono audio.
 On a JVM, decoding uses `javax.sound`, which handles WAV, AIFF and AU.
-For other formats, install `ffmpeg` and set `-Djinfer.audioDecoder=ffmpeg`.
+Other formats, such as MP3, M4A or OGG, automatically fall back to `ffmpeg`, which must be on the `PATH`.
+To always use one decoder, set `-Djinfer.audioDecoder=ffmpeg` or `-Djinfer.audioDecoder=javasound`.
+Audio is limited to 60 minutes by default. Raise the limit with `-Djinfer.codecs.maxAudioMinutes`.
 
 [source,java]
 ----

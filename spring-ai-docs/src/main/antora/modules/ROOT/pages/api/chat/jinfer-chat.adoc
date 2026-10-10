@@ -405,7 +405,7 @@ String description = ChatClient.create(chatModel)
 Media is decoded locally and turned into model embeddings.
 jinfer never fetches media from the network during inference.
 Images are decoded with the platform image APIs.
-Audio is decoded to 16 kHz mono PCM with `javax.sound`, or with `ffmpeg` if you set `-Djinfer.audioDecoder=ffmpeg`.
+Audio is decoded to 16 kHz mono PCM with `javax.sound`, which falls back to `ffmpeg` (on the `PATH`) for formats it cannot read, such as MP3.
 Video frames are sampled through `ffmpeg`. To change how frames are selected, declare a `VideoSampler` bean; the default samples frames uniformly.
 
 Gemma 4 supports image, audio and video input. LFM 2.5-VL and Qwen 3.5 support image input.
