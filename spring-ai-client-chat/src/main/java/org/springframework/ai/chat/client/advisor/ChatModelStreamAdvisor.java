@@ -55,7 +55,7 @@ public final class ChatModelStreamAdvisor implements StreamAdvisor {
 				.chatResponse(chatResponse)
 				.context(Map.copyOf(chatClientRequest.context()))
 				.build())
-			.publishOn(Schedulers.boundedElastic()); // TODO add option to disable
+			.subscribeOn(Schedulers.boundedElastic()); // TODO add option to disable
 	}
 
 	@Override
