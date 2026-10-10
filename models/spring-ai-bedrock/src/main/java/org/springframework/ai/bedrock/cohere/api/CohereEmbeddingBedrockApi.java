@@ -23,6 +23,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.jspecify.annotations.Nullable;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import tools.jackson.databind.json.JsonMapper;
@@ -43,6 +44,8 @@ import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi.Coher
  */
 public class CohereEmbeddingBedrockApi
 		extends AbstractBedrockApi<CohereEmbeddingRequest, CohereEmbeddingResponse, CohereEmbeddingResponse> {
+
+	private static final String INPUT_TOKEN_COUNT_HEADER = "x-amzn-bedrock-input-token-count";
 
 	/**
 	 * Create a new CohereEmbeddingBedrockApi instance using the default credentials
@@ -117,6 +120,22 @@ public class CohereEmbeddingBedrockApi
 	@Override
 	public CohereEmbeddingResponse embedding(CohereEmbeddingRequest request) {
 		return this.internalInvocation(request, CohereEmbeddingResponse.class);
+	}
+
+	/**
+	 * Creates an embedding response for the given request, including the input token
+	 * count extracted from the Bedrock HTTP response headers.
+	 * @param request The embedding request.
+	 * @return The embedding model response containing both the embedding result and the
+	 * input token count.
+	 */
+	public CohereEmbeddingModelResponse embeddingForModel(CohereEmbeddingRequest request) {
+		var bedrockResponse = this.internalInvocationForModel(request, CohereEmbeddingResponse.class);
+		Integer inputTokenCount = bedrockResponse.httpResponse()
+			.firstMatchingHeader(INPUT_TOKEN_COUNT_HEADER)
+			.map(Integer::parseInt)
+			.orElse(null);
+		return new CohereEmbeddingModelResponse(bedrockResponse.result(), inputTokenCount);
 	}
 
 	/**
@@ -241,6 +260,16 @@ public class CohereEmbeddingBedrockApi
 			// For future use: Currently bedrock doesn't return invocationMetrics for the
 			// cohere embedding model.
 			@JsonProperty("amazon-bedrock-invocationMetrics") AmazonBedrockInvocationMetrics amazonBedrockInvocationMetrics) {
+	}
+
+	/**
+	 * Wraps the Cohere embedding response with the input token count extracted from the
+	 * Bedrock HTTP response headers.
+	 *
+	 * @param response The Cohere embedding response.
+	 * @param inputTokenCount The input token count, or null if not available.
+	 */
+	public record CohereEmbeddingModelResponse(CohereEmbeddingResponse response, @Nullable Integer inputTokenCount) {
 	}
 
 }
