@@ -27,6 +27,7 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * @author Sebastien Deleuze
+ * @author Jewoo Shin
  */
 public class AbstractOpenAiProperties {
 
@@ -136,6 +137,10 @@ public class AbstractOpenAiProperties {
 
 	public void setCredential(@Nullable Credential credential) {
 		this.credential = credential;
+	}
+
+	public boolean hasCredential() {
+		return this.credential != null;
 	}
 
 	public @Nullable String getModel() {
