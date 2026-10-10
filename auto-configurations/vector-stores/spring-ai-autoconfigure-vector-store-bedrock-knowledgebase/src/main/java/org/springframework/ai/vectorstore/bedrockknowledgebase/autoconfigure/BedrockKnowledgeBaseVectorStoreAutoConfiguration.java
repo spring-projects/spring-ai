@@ -18,6 +18,7 @@ package org.springframework.ai.vectorstore.bedrockknowledgebase.autoconfigure;
 
 import java.util.Objects;
 
+import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.bedrockagentruntime.BedrockAgentRuntimeClient;
 import software.amazon.awssdk.services.bedrockagentruntime.BedrockAgentRuntimeClientBuilder;
@@ -86,16 +87,19 @@ public class BedrockKnowledgeBaseVectorStoreAutoConfiguration {
 	 * Creates a BedrockAgentRuntimeClient using default AWS credentials. This bean is
 	 * only created if no other BedrockAgentRuntimeClient is defined.
 	 * @param properties the configuration properties
+	 * @param credentialsProvider AWS credentials provider bean
 	 * @return the BedrockAgentRuntimeClient
 	 */
 	@Bean
 	@ConditionalOnMissingBean
-	BedrockAgentRuntimeClient bedrockAgentRuntimeClient(BedrockKnowledgeBaseVectorStoreProperties properties) {
+	BedrockAgentRuntimeClient bedrockAgentRuntimeClient(BedrockKnowledgeBaseVectorStoreProperties properties,
+			AwsCredentialsProvider credentialsProvider) {
 		BedrockAgentRuntimeClientBuilder builder = BedrockAgentRuntimeClient.builder();
 
 		if (StringUtils.hasText(properties.getRegion())) {
 			builder.region(Region.of(properties.getRegion()));
 		}
+		builder.credentialsProvider(credentialsProvider);
 
 		return builder.build();
 	}
