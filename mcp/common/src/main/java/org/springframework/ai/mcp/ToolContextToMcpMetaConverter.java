@@ -43,6 +43,12 @@ public interface ToolContextToMcpMetaConverter {
 	 */
 	Map<String, Object> convert(ToolContext toolContext);
 
+	/**
+	 * Create a converter that forwards all non-null context entries except the MCP
+	 * exchange. This converter must be selected explicitly; callbacks use {@link #noOp()}
+	 * by default.
+	 * @return a pass-through converter
+	 */
 	static ToolContextToMcpMetaConverter defaultConverter() {
 
 		return toolContext -> {
@@ -60,7 +66,7 @@ public interface ToolContextToMcpMetaConverter {
 	}
 
 	/**
-	 * Static factory method to create a no-op converter that returns an empty map.
+	 * Create the default no-op converter that returns an empty map.
 	 * @return a no-op converter
 	 */
 	static ToolContextToMcpMetaConverter noOp() {

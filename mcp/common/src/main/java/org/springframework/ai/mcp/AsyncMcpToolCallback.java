@@ -70,7 +70,7 @@ public class AsyncMcpToolCallback implements ToolCallback {
 	@Deprecated
 	public AsyncMcpToolCallback(McpAsyncClient mcpClient, Tool tool) {
 		this(mcpClient, tool, McpToolUtils.prefixedToolName(mcpClient.getClientInfo().name(),
-				mcpClient.getClientInfo().title(), tool.name()), ToolContextToMcpMetaConverter.defaultConverter());
+				mcpClient.getClientInfo().title(), tool.name()), ToolContextToMcpMetaConverter.noOp());
 	}
 
 	/**
@@ -177,8 +177,7 @@ public class AsyncMcpToolCallback implements ToolCallback {
 
 		private @Nullable String prefixedToolName;
 
-		private ToolContextToMcpMetaConverter toolContextToMcpMetaConverter = ToolContextToMcpMetaConverter
-			.defaultConverter();
+		private ToolContextToMcpMetaConverter toolContextToMcpMetaConverter = ToolContextToMcpMetaConverter.noOp();
 
 		/**
 		 * Sets the MCP client for tool execution.
@@ -215,7 +214,7 @@ public class AsyncMcpToolCallback implements ToolCallback {
 		/**
 		 * Sets the converter for tool context to MCP metadata transformation.
 		 * <p>
-		 * Defaults to {@link ToolContextToMcpMetaConverter#defaultConverter()}.
+		 * Defaults to {@link ToolContextToMcpMetaConverter#noOp()}.
 		 * @param toolContextToMcpMetaConverter the converter
 		 * @return this builder
 		 */

@@ -28,6 +28,7 @@ import io.modelcontextprotocol.spec.McpSchema.Implementation;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -38,6 +39,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -115,6 +117,27 @@ class SyncMcpToolCallbackTests {
 		String response = callback.call("{\"param\":\"value\"}", new ToolContext(Map.of("foo", "bar")));
 
 		assertThat(response).isNotNull();
+		ArgumentCaptor<CallToolRequest> request = ArgumentCaptor.forClass(CallToolRequest.class);
+		verify(this.mcpClient).callTool(request.capture());
+		assertThat(request.getValue().meta()).containsEntry("foo", "bar");
+	}
+
+	@Test
+	void callShouldNotForwardToolContextByDefault() {
+		when(this.tool.name()).thenReturn("testTool");
+		when(this.mcpClient.callTool(any(CallToolRequest.class)))
+			.thenReturn(CallToolResult.builder().addTextContent("ok").build());
+		SyncMcpToolCallback callback = SyncMcpToolCallback.builder()
+			.mcpClient(this.mcpClient)
+			.tool(this.tool)
+			.prefixedToolName("testTool")
+			.build();
+
+		callback.call("{}", new ToolContext(Map.of("tenantId", "private")));
+
+		ArgumentCaptor<CallToolRequest> request = ArgumentCaptor.forClass(CallToolRequest.class);
+		verify(this.mcpClient).callTool(request.capture());
+		assertThat(request.getValue().meta()).isEmpty();
 	}
 
 	@Test
