@@ -496,4 +496,63 @@ public class AsyncStatelessMcpResourceProviderTests {
 		}).verifyComplete();
 	}
 
+	@Test
+	void testResourceTitleIsPropagated() {
+		class TitledResource {
+
+			@McpResource(uri = "test://titled", name = "titled-resource", title = "My Resource Title",
+					description = "A titled resource")
+			public Mono<String> titledResource() {
+				return Mono.just("content");
+			}
+
+		}
+
+		List<AsyncResourceSpecification> resourceSpecs = new AsyncStatelessMcpResourceProvider(
+				List.of(new TitledResource()))
+			.getResourceSpecifications();
+
+		assertThat(resourceSpecs).hasSize(1);
+		assertThat(resourceSpecs.get(0).resource().title()).isEqualTo("My Resource Title");
+	}
+
+	@Test
+	void testResourceTemplateTitleIsPropagated() {
+		class TitledResourceTemplate {
+
+			@McpResource(uri = "test://titled/{id}", name = "titled-template", title = "My Template Title",
+					description = "A titled resource template")
+			public Mono<String> titledTemplate(String id) {
+				return Mono.just("content");
+			}
+
+		}
+
+		List<AsyncResourceTemplateSpecification> templateSpecs = new AsyncStatelessMcpResourceProvider(
+				List.of(new TitledResourceTemplate()))
+			.getResourceTemplateSpecifications();
+
+		assertThat(templateSpecs).hasSize(1);
+		assertThat(templateSpecs.get(0).resourceTemplate().title()).isEqualTo("My Template Title");
+	}
+
+	@Test
+	void testResourceTitleIsAbsentWhenNotSet() {
+		class UntitledResource {
+
+			@McpResource(uri = "test://untitled", name = "untitled-resource", description = "No title")
+			public Mono<String> untitledResource() {
+				return Mono.just("content");
+			}
+
+		}
+
+		List<AsyncResourceSpecification> resourceSpecs = new AsyncStatelessMcpResourceProvider(
+				List.of(new UntitledResource()))
+			.getResourceSpecifications();
+
+		assertThat(resourceSpecs).hasSize(1);
+		assertThat(resourceSpecs.get(0).resource().title()).isNull();
+	}
+
 }
