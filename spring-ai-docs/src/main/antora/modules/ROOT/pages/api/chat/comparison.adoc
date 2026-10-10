@@ -30,5 +30,6 @@ This table compares various Chat Models supported by Spring AI, detailing their 
 | xref::api/chat/openai-chat.adoc[OpenAI]  a| In: text, image, audio
 Out: text, audio ^a| image::yes.svg[width=16] ^a| image::yes.svg[width=16] ^a| image::yes.svg[width=16] ^a| image::yes.svg[width=16] ^a| image::yes.svg[width=16] ^a| image::no.svg[width=12] ^a| image::yes.svg[width=16]
 | xref::api/chat/perplexity-chat.adoc[Perplexity (OpenAI-proxy)]  | text ^a| image::no.svg[width=12] ^a| image::yes.svg[width=16] ^a| image::yes.svg[width=16] ^a| image::yes.svg[width=16] ^a| image::no.svg[width=12] ^a| image::no.svg[width=12] ^a| image::yes.svg[width=16]
+| xref::api/chat/jinfer-chat.adoc[Qxotic jinfer]  | text, image, audio, video (model-dependent) ^a| image::yes.svg[width=16] ^a| image::yes.svg[width=16] ^a| image::no.svg[width=12] ^a| image::yes.svg[width=16] ^a| image::yes.svg[width=16] ^a| image::yes.svg[width=16] ^a| image::no.svg[width=12]
 | xref::api/chat/bedrock-converse.adoc[Amazon Bedrock Converse] | text, image, video, docs (pdf, html, md, docx ...) ^a| image::yes.svg[width=16] ^a| image::yes.svg[width=16] ^a| image::yes.svg[width=16] ^a| image::yes.svg[width=16] ^a| image::no.svg[width=12] ^a| image::no.svg[width=12] ^a| image::no.svg[width=12]
 |====

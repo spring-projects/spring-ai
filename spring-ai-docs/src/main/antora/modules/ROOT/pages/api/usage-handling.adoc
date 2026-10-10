@@ -220,6 +220,7 @@ The following table shows prompt cache metrics availability by provider:
 |DeepSeek |No |No
 |Mistral |No |No
 |Ollama |No |No
+|Qxotic jinfer |Yes |No
 |===
 
 NOTE: For detailed provider-specific cache metrics (such as per-modality cache breakdowns in Gemini), use `getNativeUsage()` to access the provider's native usage object.

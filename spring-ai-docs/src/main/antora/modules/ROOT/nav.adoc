@@ -32,6 +32,7 @@
 **** xref:api/chat/perplexity-chat.adoc[Perplexity AI]
 **** xref:api/chat/oci-genai-chat.adoc[OCI Generative AI]
 **** xref:api/chat/openai-chat.adoc[OpenAI]
+**** xref:api/chat/jinfer-chat.adoc[Qxotic jinfer]
 
 *** xref:api/embeddings.adoc[Embedding Models]
 **** xref:api/bedrock.adoc[Amazon Bedrock]
@@ -45,6 +46,7 @@
 **** xref:api/embeddings/onnx.adoc[(ONNX) Transformers]
 **** xref:api/embeddings/openai-embeddings.adoc[OpenAI]
 **** xref:api/embeddings/postgresml-embeddings.adoc[PostgresML]
+**** xref:api/embeddings/jinfer-embeddings.adoc[Qxotic jinfer]
 **** VertexAI
 ***** xref:api/embeddings/vertexai-embeddings-text.adoc[Text Embedding]
 ***** xref:api/embeddings/vertexai-embeddings-multimodal.adoc[Multimodal Embedding]
@@ -59,9 +61,11 @@
 **** xref:api/audio/transcriptions.adoc[]
 ***** xref:api/audio/transcriptions/azure-openai-transcriptions.adoc[Azure OpenAI]
 ***** xref:api/audio/transcriptions/openai-transcriptions.adoc[OpenAI]
+***** xref:api/audio/transcriptions/jinfer-transcriptions.adoc[Qxotic jinfer]
 **** xref:api/audio/speech.adoc[]
 ***** xref:api/audio/speech/openai-speech.adoc[OpenAI]
 ***** xref:api/audio/speech/elevenlabs-speech.adoc[ElevenLabs]
+***** xref:api/audio/speech/jinfer-speech.adoc[Qxotic jinfer]
 
 *** xref:api/moderation.adoc[Moderation Models]
 **** xref:api/moderation/openai-moderation.adoc[OpenAI]
