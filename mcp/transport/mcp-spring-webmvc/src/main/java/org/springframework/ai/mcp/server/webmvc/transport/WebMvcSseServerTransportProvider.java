@@ -84,6 +84,7 @@ import org.springframework.web.util.UriComponentsBuilder;
  *
  * @author Christian Tzolov
  * @author Alexandros Pappas
+ * @author Taewoong Kim
  * @see McpServerTransportProvider
  * @see RouterFunction
  * @deprecated The SSE transport has been deprecated in the 2025-03-26 version of the
@@ -397,27 +398,28 @@ public final class WebMvcSseServerTransportProvider implements McpServerTranspor
 		}
 
 		if (request.param(SESSION_ID).isEmpty()) {
-			return ServerResponse.badRequest()
-				.body(McpError.builder(McpSchema.ErrorCodes.METHOD_NOT_FOUND)
-					.message("Session ID missing in message endpoint")
-					.build());
+			return WebMvcJsonRpcErrorResponse.create(this.jsonMapper, HttpStatus.BAD_REQUEST, null,
+					McpError.builder(McpSchema.ErrorCodes.METHOD_NOT_FOUND)
+						.message("Session ID missing in message endpoint")
+						.build());
 		}
 
 		String sessionId = request.param(SESSION_ID).get();
 		McpServerSession session = this.sessions.get(sessionId);
 
 		if (session == null) {
-			return ServerResponse.status(HttpStatus.NOT_FOUND)
-				.body(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
-					.message("Session not found: " + sessionId)
-					.build());
+			return WebMvcJsonRpcErrorResponse.create(this.jsonMapper, HttpStatus.NOT_FOUND, null,
+					McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
+						.message("Session not found: " + sessionId)
+						.build());
 		}
 
+		McpSchema.@Nullable JSONRPCMessage message = null;
 		try {
 			final McpTransportContext transportContext = this.contextExtractor.extract(request);
 
 			String body = request.body(String.class);
-			McpSchema.JSONRPCMessage message = McpSchema.deserializeJsonRpcMessage(this.jsonMapper, body);
+			message = McpSchema.deserializeJsonRpcMessage(this.jsonMapper, body);
 
 			// Process the message through the session's handle method
 			session.handle(message).contextWrite(ctx -> ctx.put(McpTransportContext.KEY, transportContext)).block(); // Block
@@ -431,17 +433,19 @@ public final class WebMvcSseServerTransportProvider implements McpServerTranspor
 			if (logger.isErrorEnabled()) {
 				logger.error("Failed to deserialize message: " + e.getMessage());
 			}
-			return ServerResponse.badRequest()
-				.body(McpError.builder(McpSchema.ErrorCodes.INVALID_REQUEST).message("Invalid message format").build());
+			return WebMvcJsonRpcErrorResponse.create(this.jsonMapper, HttpStatus.BAD_REQUEST,
+					WebMvcJsonRpcErrorResponse.requestId(message),
+					McpError.builder(McpSchema.ErrorCodes.INVALID_REQUEST).message("Invalid message format").build());
 		}
 		catch (Exception e) {
 			if (logger.isErrorEnabled()) {
 				logger.error("Error handling message: " + e.getMessage());
 			}
-			return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
-				.body(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
-					.message("Internal server error. Check server logs for details.")
-					.build());
+			return WebMvcJsonRpcErrorResponse.create(this.jsonMapper, HttpStatus.INTERNAL_SERVER_ERROR,
+					WebMvcJsonRpcErrorResponse.requestId(message),
+					McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
+						.message("Internal server error. Check server logs for details.")
+						.build());
 		}
 	}
 

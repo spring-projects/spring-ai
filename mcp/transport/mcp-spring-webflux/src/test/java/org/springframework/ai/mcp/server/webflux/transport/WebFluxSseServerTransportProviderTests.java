@@ -19,6 +19,7 @@ package org.springframework.ai.mcp.server.webflux.transport;
 import java.util.Map;
 
 import io.modelcontextprotocol.spec.McpServerSession;
+import net.javacrumbs.jsonunit.assertj.JsonAssertions;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 
@@ -36,6 +37,7 @@ import static org.mockito.Mockito.when;
  * Unit tests for {@link WebFluxSseServerTransportProvider}.
  *
  * @author Dimitar Proynov
+ * @author Taewoong Kim
  */
 class WebFluxSseServerTransportProviderTests {
 
@@ -66,9 +68,22 @@ class WebFluxSseServerTransportProviderTests {
 			.exchange()
 			.expectStatus()
 			.isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR)
+			.expectHeader()
+			.contentType(MediaType.APPLICATION_JSON)
 			.expectBody(String.class)
-			.value(body -> assertThat(body).contains("Internal server error. Check server logs for details.")
-				.doesNotContain(sensitiveDetail));
+			.value(body -> {
+				JsonAssertions.assertThatJson(body).isEqualTo("""
+						{
+							"jsonrpc": "2.0",
+							"id": "1",
+							"error": {
+								"code": -32603,
+								"message": "Internal server error. Check server logs for details."
+							}
+						}
+						""");
+				assertThat(body).doesNotContain(sensitiveDetail);
+			});
 	}
 
 }
