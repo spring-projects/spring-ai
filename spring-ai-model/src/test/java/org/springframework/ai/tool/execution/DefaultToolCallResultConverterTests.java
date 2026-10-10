@@ -64,6 +64,18 @@ class DefaultToolCallResultConverterTests {
 	}
 
 	@Test
+	void convertStringWithJsonNumberPrefixShouldReturnJson() {
+		String result = this.converter.convert("22 console logs uploaded", String.class);
+		assertThat(result).isEqualTo("\"22 console logs uploaded\"");
+	}
+
+	@Test
+	void convertStringWithJsonBooleanPrefixShouldReturnJson() {
+		String result = this.converter.convert("true story", String.class);
+		assertThat(result).isEqualTo("\"true story\"");
+	}
+
+	@Test
 	void convertNullReturnValueShouldReturnNullJson() {
 		String result = this.converter.convert(null, String.class);
 		assertThat(result).isEqualTo("null");
