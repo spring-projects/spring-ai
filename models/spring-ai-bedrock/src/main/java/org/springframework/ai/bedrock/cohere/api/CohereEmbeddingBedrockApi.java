@@ -25,11 +25,14 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import software.amazon.awssdk.auth.credentials.AwsCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeAsyncClient;
+import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
 import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.bedrock.api.AbstractBedrockApi;
 import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi.CohereEmbeddingRequest;
 import org.springframework.ai.bedrock.cohere.api.CohereEmbeddingBedrockApi.CohereEmbeddingResponse;
+import org.springframework.ai.util.JacksonUtils;
 
 /**
  * Cohere Embedding API. <a href=
@@ -80,6 +83,58 @@ public class CohereEmbeddingBedrockApi
 	 */
 	public CohereEmbeddingBedrockApi(String modelId, String region, Duration timeout) {
 		super(modelId, region, timeout);
+	}
+
+	/**
+	 * Create a new CohereEmbeddingBedrockApi instance using the provided Bedrock runtime
+	 * clients and default object mapper.
+	 * @param modelId The model id to use. See the {@link CohereEmbeddingModel} for the
+	 * supported models.
+	 * @param bedrockRuntimeClient The Bedrock runtime client to use for non-streaming
+	 * invocations.
+	 * @param bedrockRuntimeAsyncClient The Bedrock runtime async client to use for
+	 * streaming invocations.
+	 * @param region The AWS region to use.
+	 */
+	public CohereEmbeddingBedrockApi(String modelId, BedrockRuntimeClient bedrockRuntimeClient,
+			BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient, String region) {
+		super(modelId, bedrockRuntimeClient, bedrockRuntimeAsyncClient, region, JacksonUtils.getDefaultJsonMapper());
+	}
+
+	/**
+	 * Create a new CohereEmbeddingBedrockApi instance using the provided Bedrock runtime
+	 * clients.
+	 * @param modelId The model id to use. See the {@link CohereEmbeddingModel} for the
+	 * supported models.
+	 * @param bedrockRuntimeClient The Bedrock runtime client to use for non-streaming
+	 * invocations.
+	 * @param bedrockRuntimeAsyncClient The Bedrock runtime async client to use for
+	 * streaming invocations.
+	 * @param region The AWS region to use.
+	 * @param jsonMapper The JSON mapper to use for JSON serialization and
+	 * deserialization.
+	 */
+	public CohereEmbeddingBedrockApi(String modelId, BedrockRuntimeClient bedrockRuntimeClient,
+			BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient, String region, JsonMapper jsonMapper) {
+		super(modelId, bedrockRuntimeClient, bedrockRuntimeAsyncClient, region, jsonMapper);
+	}
+
+	/**
+	 * Create a new CohereEmbeddingBedrockApi instance using the provided Bedrock runtime
+	 * clients.
+	 * @param modelId The model id to use. See the {@link CohereEmbeddingModel} for the
+	 * supported models.
+	 * @param bedrockRuntimeClient The Bedrock runtime client to use for non-streaming
+	 * invocations.
+	 * @param bedrockRuntimeAsyncClient The Bedrock runtime async client to use for
+	 * streaming invocations.
+	 * @param region The AWS region to use.
+	 * @param jsonMapper The JSON mapper to use for JSON serialization and
+	 * deserialization.
+	 */
+	public CohereEmbeddingBedrockApi(String modelId, BedrockRuntimeClient bedrockRuntimeClient,
+			BedrockRuntimeAsyncClient bedrockRuntimeAsyncClient, Region region, JsonMapper jsonMapper) {
+		super(modelId, bedrockRuntimeClient, bedrockRuntimeAsyncClient, region, jsonMapper);
 	}
 
 	/**
