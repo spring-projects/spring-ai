@@ -71,29 +71,9 @@ public class RedisChatMemoryRepositoryAutoConfiguration {
 	}
 
 	@Bean
-	@ConditionalOnMissingBean
-	public RedisClient jedisClient(RedisChatMemoryRepositoryProperties properties) {
-		if (StringUtils.hasText(properties.getUsername()) || StringUtils.hasText(properties.getPassword())) {
-			DefaultJedisClientConfig.Builder configBuilder = DefaultJedisClientConfig.builder();
-			if (StringUtils.hasText(properties.getUsername())) {
-				configBuilder.user(properties.getUsername());
-			}
-			if (StringUtils.hasText(properties.getPassword())) {
-				configBuilder.password(properties.getPassword());
-			}
-			JedisClientConfig clientConfig = configBuilder.build();
-			return RedisClient.builder()
-				.hostAndPort(properties.getHost(), properties.getPort())
-				.clientConfig(clientConfig)
-				.build();
-		}
-		return RedisClient.builder().hostAndPort(properties.getHost(), properties.getPort()).build();
-	}
-
-	@Bean
 	@ConditionalOnMissingBean({ RedisChatMemoryRepository.class, ChatMemory.class, ChatMemoryRepository.class })
-	public RedisChatMemoryRepository redisChatMemoryRepository(RedisClient jedisClient,
-			RedisChatMemoryRepositoryProperties properties) {
+	public RedisChatMemoryRepository redisChatMemoryRepository(RedisChatMemoryRepositoryProperties properties) {
+		RedisClient jedisClient = jedisClient(properties);
 		RedisChatMemoryRepository.Builder builder = RedisChatMemoryRepository.builder().jedisClient(jedisClient);
 
 		// Apply configuration if provided
@@ -126,6 +106,24 @@ public class RedisChatMemoryRepositoryAutoConfiguration {
 		}
 
 		return builder.build();
+	}
+
+	private RedisClient jedisClient(RedisChatMemoryRepositoryProperties properties) {
+		if (StringUtils.hasText(properties.getUsername()) || StringUtils.hasText(properties.getPassword())) {
+			DefaultJedisClientConfig.Builder configBuilder = DefaultJedisClientConfig.builder();
+			if (StringUtils.hasText(properties.getUsername())) {
+				configBuilder.user(properties.getUsername());
+			}
+			if (StringUtils.hasText(properties.getPassword())) {
+				configBuilder.password(properties.getPassword());
+			}
+			JedisClientConfig clientConfig = configBuilder.build();
+			return RedisClient.builder()
+				.hostAndPort(properties.getHost(), properties.getPort())
+				.clientConfig(clientConfig)
+				.build();
+		}
+		return RedisClient.builder().hostAndPort(properties.getHost(), properties.getPort()).build();
 	}
 
 }
