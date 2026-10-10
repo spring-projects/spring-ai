@@ -1,0 +1,162 @@
+= WaveSpeed AI Image Generation
+
+Spring AI supports the https://wavespeed.ai[WaveSpeed AI] image generation models, such as ByteDance Seedream.
+
+The WaveSpeed API is asynchronous: submitting a generation request creates a prediction that is polled until it reaches a terminal status, then the generated images are returned as URLs.
+
+== Prerequisites
+
+You will need to create an API key with WaveSpeed AI to access their models.
+Create an account at https://wavespeed.ai[wavespeed.ai] and generate an API key on the dashboard.
+
+The Spring AI project defines a configuration property named `spring.ai.wavespeed.api-key` that you should set to the value of the API key obtained from WaveSpeed AI.
+
+You can set this configuration property in your `application.properties` file:
+
+[source,properties]
+----
+spring.ai.wavespeed.api-key=<your-wavespeed-api-key>
+----
+
+For enhanced security when handling sensitive information like API keys, you can use Spring Expression Language (SpEL) to reference a custom environment variable:
+
+[source,yaml]
+----
+# In application.yml
+spring:
+  ai:
+    wavespeed:
+      api-key: ${WAVESPEED_API_KEY}
+----
+
+[source,bash]
+----
+# In your environment or .env file
+export WAVESPEED_API_KEY=<your-wavespeed-api-key>
+----
+
+== Auto-configuration
+
+Spring AI provides Spring Boot auto-configuration for the WaveSpeed AI image generation client.
+To enable it add the following dependency to your project's Maven `pom.xml` file:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-model-wavespeed</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-starter-model-wavespeed'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+=== Image Generation Properties
+
+The prefix `spring.ai.wavespeed` is used as the property prefix that lets you connect to WaveSpeed AI.
+
+[cols="3,5,1"]
+|====
+| Property | Description | Default
+
+| spring.ai.wavespeed.base-url      | The URL to connect to | `+https://api.wavespeed.ai+`
+| spring.ai.wavespeed.api-key       | The API key           |  -
+| spring.ai.wavespeed.poll-interval | The interval between two prediction result polls | 1s
+| spring.ai.wavespeed.timeout       | The maximum time to wait for a prediction to complete | 600s
+|====
+
+[NOTE]
+====
+Enabling and disabling of the image auto-configurations are now configured via top level properties with the prefix `spring.ai.model.image`.
+
+To enable, spring.ai.model.image=wavespeed (It is enabled by default)
+
+To disable, spring.ai.model.image=none (or any value which doesn't match wavespeed)
+
+This change is done to allow configuration of multiple models.
+====
+
+The prefix `spring.ai.wavespeed.image` is the property prefix that lets you configure the `ImageModel` implementation for WaveSpeed AI.
+
+[cols="3,5,2"]
+|====
+| Property | Description | Default
+
+| spring.ai.wavespeed.image.base-url | Optionally overrides `spring.ai.wavespeed.base-url` to provide a specific URL | -
+| spring.ai.wavespeed.image.api-key  | Optionally overrides `spring.ai.wavespeed.api-key` to provide a specific API key | -
+| spring.ai.wavespeed.image.model    | The model to use for image generation. The model is passed in the URL as a path parameter. | `bytedance/seedream-v5.0-pro`
+| spring.ai.wavespeed.image.size     | The size of the generated image as `{width}*{height}`, for example `1024*1024`. Takes precedence over width and height. | -
+| spring.ai.wavespeed.image.width    | The width of the generated image, in pixels. Used together with height when size is not set. | -
+| spring.ai.wavespeed.image.height   | The height of the generated image, in pixels. Used together with width when size is not set. | -
+| spring.ai.wavespeed.image.seed     | The random seed used for generation, or -1 for a random seed. | -
+|====
+
+== Runtime Options [[image-options]]
+
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-wavespeed/src/main/java/org/springframework/ai/wavespeed/api/WaveSpeedImageOptions.java[WaveSpeedImageOptions] provides the model configuration, such as the model to use, the size and the seed.
+
+On start-up, the default options can be configured with the `WaveSpeedImageModel(WaveSpeedApi, WaveSpeedImageOptions)` constructor or the `spring.ai.wavespeed.image.*` properties.
+
+At run-time you can override the default options by adding new, request specific, options to the `ImagePrompt` call.
+For example to override the WaveSpeed AI specific options such as the size and the model:
+
+[source,java]
+----
+ImageResponse response = imageModel.call(
+        new ImagePrompt("A light cream colored mini golden doodle",
+        WaveSpeedImageOptions.builder()
+                .model("bytedance/seedream-v5.0-pro")
+                .size("2048*2048")
+                .seed(42)
+                .build()));
+
+String imageUrl = response.getResult().getOutput().getUrl();
+----
+
+== Manual Configuration
+
+Add the `spring-ai-wavespeed` dependency to your project's Maven `pom.xml` file:
+
+[source, xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-wavespeed</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file.
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-wavespeed'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+Next, create a `WaveSpeedImageModel`:
+
+[source,java]
+----
+WaveSpeedApi waveSpeedApi = new WaveSpeedApi(System.getenv("WAVESPEED_API_KEY"));
+
+ImageModel imageModel = new WaveSpeedImageModel(waveSpeedApi,
+        WaveSpeedImageOptions.builder()
+                .model("bytedance/seedream-v5.0-pro")
+                .size("1024*1024")
+                .build());
+
+ImageResponse response = imageModel.call(new ImagePrompt("A light cream colored mini golden doodle"));
+
+String imageUrl = response.getResult().getOutput().getUrl();
+----
