@@ -99,7 +99,9 @@ class CharacterFactory {
 
 	private char getCharacterFromTextPosition(final TextPosition textPosition) {
 		String string = textPosition.getUnicode();
-		char character = !string.isEmpty() ? string.charAt(0) : '\0';
+		// Glyphs without a unicode mapping have an empty string. Use a space so they
+		// leave the line unchanged instead of writing a null character into the text.
+		char character = !string.isEmpty() ? string.charAt(0) : ' ';
 		return character;
 	}
 
