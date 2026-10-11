@@ -23,6 +23,8 @@ import io.micrometer.tracing.Tracer;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import org.springframework.ai.audio.transcription.observation.TranscriptionModelObservationContext;
+import org.springframework.ai.audio.tts.observation.TextToSpeechModelObservationContext;
 import org.springframework.ai.chat.client.advisor.observation.AdvisorObservationContext;
 import org.springframework.ai.chat.client.observation.ChatClientObservationContext;
 import org.springframework.ai.chat.model.ChatModel;
@@ -113,6 +115,7 @@ public class ChatObservationAutoConfiguration {
 		ErrorLoggingObservationHandler errorLoggingObservationHandler(Tracer tracer) {
 			return new ErrorLoggingObservationHandler(tracer,
 					List.of(EmbeddingModelObservationContext.class, ImageModelObservationContext.class,
+							TextToSpeechModelObservationContext.class, TranscriptionModelObservationContext.class,
 							ChatModelObservationContext.class, ChatClientObservationContext.class,
 							AdvisorObservationContext.class));
 		}

@@ -23,6 +23,10 @@ import io.micrometer.tracing.Tracer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import org.springframework.ai.audio.transcription.AudioTranscriptionPrompt;
+import org.springframework.ai.audio.transcription.observation.TranscriptionModelObservationContext;
+import org.springframework.ai.audio.tts.TextToSpeechPrompt;
+import org.springframework.ai.audio.tts.observation.TextToSpeechModelObservationContext;
 import org.springframework.ai.chat.client.observation.ChatClientObservationContext;
 import org.springframework.ai.chat.observation.ChatModelCompletionObservationHandler;
 import org.springframework.ai.chat.observation.ChatModelMeterObservationHandler;
@@ -37,6 +41,7 @@ import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.ByteArrayResource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -188,6 +193,23 @@ class ChatObservationAutoConfigurationTests {
 				.doesNotHaveBean(ChatModelCompletionObservationHandler.class)
 				.doesNotHaveBean(TracingAwareLoggingObservationHandler.class)
 				.hasSingleBean(ErrorLoggingObservationHandler.class));
+	}
+
+	@Test
+	void errorLoggingHandlerCoversTheAudioModelContexts() {
+		this.contextRunner.withUserConfiguration(TracerConfiguration.class)
+			.withPropertyValues("spring.ai.chat.observations.include-error-logging=true")
+			.run(context -> {
+				var handler = context.getBean(ErrorLoggingObservationHandler.class);
+				assertThat(handler.supportsContext(TextToSpeechModelObservationContext.builder()
+					.prompt(new TextToSpeechPrompt("Welcome"))
+					.provider("superprovider")
+					.build())).isTrue();
+				assertThat(handler.supportsContext(TranscriptionModelObservationContext.builder()
+					.prompt(new AudioTranscriptionPrompt(new ByteArrayResource(new byte[] { 1 })))
+					.provider("superprovider")
+					.build())).isTrue();
+			});
 	}
 
 	@Test
