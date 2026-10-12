@@ -490,7 +490,7 @@ this.vectorStore.upsert(List.of(new EmbeddedDocument(document, vector)));
 ----
 
 `upsert` is opt-in per store: the default implementation throws `UnsupportedOperationException`, so a store supports it only once it has been implemented.
-It is available on pgvector, Redis, Elasticsearch, and Qdrant, with more stores to follow.
+It is available on pgvector, Redis, Elasticsearch, OpenSearch, and Qdrant, with more stores to follow.
 `EmbeddedDocument` rejects a vector that is empty or holds `NaN` or an infinity, which is worth knowing when the vectors come from a pipeline you do not control: a `NaN` would otherwise corrupt distance maths rather than fail.
 When a store knows its index dimension, it checks every vector in the batch against it before writing anything, so a wrong-sized vector fails fast and cannot partially write.
 The store works out that dimension from a `dimensions` value you configured, or otherwise reads it from the existing index, table, or collection, and asks the embedding model only as a last resort.
@@ -632,7 +632,7 @@ A query vector from a different model is not rejected when its width happens to 
 What is checked for you: the vector must not be empty or contain `NaN` or infinity, and its width must match the store's dimension when the store knows it.
 
 Searching with a query embedding is opt-in per store, like `upsert`: the default implementation throws `UnsupportedOperationException`.
-It is available on pgvector, Redis, Elasticsearch, and Qdrant.
+It is available on pgvector, Redis, Elasticsearch, OpenSearch, and Qdrant.
 
 === Separation of Read and Write Operations
 

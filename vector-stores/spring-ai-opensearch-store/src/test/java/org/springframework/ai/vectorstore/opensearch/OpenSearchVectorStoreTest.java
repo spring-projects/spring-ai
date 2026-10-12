@@ -42,6 +42,7 @@ import org.opensearch.client.opensearch.core.search.TotalHitsRelation;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
 import org.springframework.ai.embedding.EmbeddingModel;
+import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.opensearch.OpenSearchVectorStore.OpenSearchDocument;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -49,6 +50,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -257,6 +259,60 @@ class OpenSearchVectorStoreTest {
 		assertThat(result.getMetadata()).containsEntry("priority", 1);
 		assertThat(result.getMetadata()).containsKey(DocumentMetadata.DISTANCE.value());
 		assertThat(result.getScore()).isEqualTo(0.95);
+	}
+
+	private SearchResponse<OpenSearchDocument> singleHitSearchResponse() {
+		OpenSearchDocument openSearchDocument = new OpenSearchDocument("doc-1", "Spring AI is great",
+				Map.of("author", "tester", "priority", 1), new float[] { 0.1f, 0.2f, 0.3f });
+
+		Hit<OpenSearchDocument> hit = Hit.<OpenSearchDocument>builder()
+			.id("doc-1")
+			.index("spring-ai-document-index")
+			.score(0.95)
+			.source(openSearchDocument)
+			.build();
+
+		HitsMetadata<OpenSearchDocument> hitsMetadata = HitsMetadata.<OpenSearchDocument>builder()
+			.hits(List.of(hit))
+			.total(TotalHits.of(t -> t.value(1).relation(TotalHitsRelation.Eq)))
+			.build();
+
+		return new SearchResponse.Builder<OpenSearchDocument>().hits(hitsMetadata)
+			.took(1)
+			.timedOut(false)
+			.shards(ShardStatistics.of(s -> s.total(1).successful(1).failed(0)))
+			.build();
+	}
+
+	@Test
+	@DisplayName("similaritySearch(float[], SearchRequest) searches without embedding the query text")
+	void shouldSearchWithCallerSuppliedQueryEmbeddingWithoutEmbeddingModel() throws IOException {
+		when(this.mockOpenSearchClient.search(any(org.opensearch.client.opensearch.core.SearchRequest.class),
+				eq(OpenSearchDocument.class)))
+			.thenReturn(singleHitSearchResponse());
+
+		OpenSearchVectorStore vectorStore = createVectorStore(true);
+		float[] queryEmbedding = new float[] { 0.1f, 0.2f, 0.3f };
+
+		List<Document> results = vectorStore.similaritySearch(queryEmbedding,
+				SearchRequest.builder().topK(1).similarityThreshold(0.5).build());
+
+		assertThat(results).hasSize(1);
+		assertThat(results.get(0).getId()).isEqualTo("doc-1");
+		verify(this.mockEmbeddingModel, never()).embed(any(String.class));
+	}
+
+	@Test
+	@DisplayName("similaritySearch(float[], SearchRequest) rejects a wrong-width query embedding")
+	void shouldRejectWrongWidthQueryEmbedding() {
+		OpenSearchVectorStore vectorStore = createVectorStore(true);
+
+		assertThatThrownBy(
+				() -> vectorStore.similaritySearch(new float[] { 0.1f, 0.2f }, SearchRequest.builder().topK(1).build()))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("Query embedding has dimension 2")
+			.hasMessageContaining("expects dimension 3");
+		verify(this.mockEmbeddingModel, never()).embed(any(String.class));
 	}
 
 }

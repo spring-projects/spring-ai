@@ -150,6 +150,7 @@ import org.springframework.util.Assert;
  * @author inpink
  * @author Sanghun Lee
  * @author chabinhwang
+ * @author lejuho
  * @since 1.0.0
  */
 public class OpenSearchVectorStore extends AbstractObservationVectorStore implements InitializingBean {
@@ -306,6 +307,34 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 		Assert.notNull(searchRequest, "The search request must not be null.");
 		return similaritySearch(this.embeddingModel.embed(searchRequest.getQuery()), searchRequest.getTopK(),
 				searchRequest.getSimilarityThreshold(), searchRequest.getFilterExpression());
+	}
+
+	@Override
+	protected List<Document> doSimilaritySearch(float[] queryEmbedding, SearchRequest searchRequest) {
+		Assert.notNull(searchRequest, "The search request must not be null.");
+		checkDimensions("Query embedding", queryEmbedding.length, vectorDimensions());
+		return similaritySearch(queryEmbedding, searchRequest.getTopK(), searchRequest.getSimilarityThreshold(),
+				searchRequest.getFilterExpression());
+	}
+
+	/**
+	 * Resolve the vector width used to validate a caller-supplied query embedding. Prefer
+	 * the embedding model's reported size: the builder {@code dimensions} value defaults
+	 * to 1536 for approximate-kNN mapping creation and may not match the live index.
+	 * Return a non-positive value when unknown so {@link #checkDimensions} skips the
+	 * check.
+	 */
+	private int vectorDimensions() {
+		try {
+			int modelDimensions = this.embeddingModel.dimensions();
+			if (modelDimensions > 0) {
+				return modelDimensions;
+			}
+		}
+		catch (Exception ex) {
+			// Leave the check to OpenSearch when the model cannot report a size.
+		}
+		return -1;
 	}
 
 	public List<Document> similaritySearch(float[] embedding, int topK, double similarityThreshold,
