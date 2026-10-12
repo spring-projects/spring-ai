@@ -702,7 +702,7 @@ public class BedrockProxyChatModel implements ChatModel {
 		if (payload == null) {
 			String text = reasoningPart.text();
 			if (!ConverseApiUtils.BEDROCK_PROVIDER
-				.equals(reasoningPart.attributes().get(StreamingParts.PROVIDER_ATTRIBUTE)) || text == null) {
+				.equals(reasoningPart.attributes().get(MessagePart.PROVIDER_ATTRIBUTE)) || text == null) {
 				return null;
 			}
 			return ContentBlock.fromReasoningContent(ReasoningContentBlock.builder()
@@ -764,7 +764,7 @@ public class BedrockProxyChatModel implements ChatModel {
 	}
 
 	private static ReasoningPart toReasoningPart(ReasoningContentBlock reasoningContent) {
-		Map<String, String> attributes = Map.of(StreamingParts.PROVIDER_ATTRIBUTE, ConverseApiUtils.BEDROCK_PROVIDER);
+		Map<String, String> attributes = Map.of(MessagePart.PROVIDER_ATTRIBUTE, ConverseApiUtils.BEDROCK_PROVIDER);
 		SdkBytes redactedContent = reasoningContent.redactedContent();
 		if (redactedContent != null) {
 			return new ReasoningPart(null, null,

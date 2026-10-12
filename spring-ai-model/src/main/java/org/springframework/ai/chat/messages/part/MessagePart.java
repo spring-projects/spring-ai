@@ -50,6 +50,14 @@ public sealed interface MessagePart
 		permits MediaPart, ReasoningPart, TextPart, ToolCallPart, ToolResultPart, UnknownPart {
 
 	/**
+	 * Attribute naming the provider that produced a part, matching
+	 * {@link OpaquePayload#provider()}. Unlike the streaming attributes it is kept on the
+	 * aggregated message, so that a chat model can recognize its own parts on replay,
+	 * such as reasoning returned without a payload.
+	 */
+	String PROVIDER_ATTRIBUTE = "provider";
+
+	/**
 	 * Provider-owned data that must be replayed verbatim to the same provider, such as a
 	 * thinking signature or encrypted reasoning, or {@code null} when the part carries
 	 * none.
