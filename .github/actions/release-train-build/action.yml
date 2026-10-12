@@ -4,4 +4,4 @@ runs:
   steps:
     - name: Build Release
       shell: bash
-      run: ./mvnw --batch-mode -ntp -PreleaseTrain --settings release-train-settings.xml -DaltDeploymentRepository="release-train::file://$(pwd)/deployment-repository" -Dmaven.test.skip deploy
+      run: ./mvnw --batch-mode -ntp -PreleaseTrain --settings release-train-settings.xml -DaltDeploymentRepository="release-train::file://$(pwd)/deployment-repository" -Dmaven.test.skip -Ddevelocity.cache.remote.enabled=false deploy
