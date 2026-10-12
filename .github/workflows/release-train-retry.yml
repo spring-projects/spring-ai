@@ -22,8 +22,8 @@ jobs:
     name: "Trigger Retry"
     runs-on: "ubuntu-latest"
     steps:
-    - name: "Trigger Retry"
-      id: "trigger-retry"
+    - name: "Retry"
+      id: "retry"
       env:
         GH_TOKEN: "${{ secrets.RELEASE_TRAIN_PARTICIPANT_GITHUB_TOKEN }}"
       run: |-
