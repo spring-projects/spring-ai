@@ -114,7 +114,7 @@ class BedrockProxyChatModelTest {
 	private static final OpaquePayload REDACTED_PAYLOAD = new OpaquePayload(ConverseApiUtils.BEDROCK_PROVIDER,
 			ConverseApiUtils.PAYLOAD_REDACTED_CONTENT, Base64.getEncoder().encodeToString(REDACTED));
 
-	private static final Map<String, String> BEDROCK_ATTRIBUTES = Map.of(StreamingParts.PROVIDER_ATTRIBUTE,
+	private static final Map<String, String> BEDROCK_ATTRIBUTES = Map.of(MessagePart.PROVIDER_ATTRIBUTE,
 			ConverseApiUtils.BEDROCK_PROVIDER);
 
 	private static final ReasoningPart SIGNED_REASONING = new ReasoningPart(REASONING_TEXT, null, SIGNATURE_PAYLOAD,

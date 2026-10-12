@@ -45,8 +45,8 @@ import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.messages.part.MediaPart;
+import org.springframework.ai.chat.messages.part.MessagePart;
 import org.springframework.ai.chat.messages.part.ReasoningPart;
-import org.springframework.ai.chat.messages.part.StreamingParts;
 import org.springframework.ai.chat.messages.part.TextPart;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -1124,7 +1124,7 @@ class BedrockProxyChatModelIT {
 		assertThat(response.hasToolCalls()).isTrue();
 		assertThat(response.getResult().getOutput().getReasoning()).isNotEmpty().allSatisfy(reasoning -> {
 			assertThat(reasoning.payload()).isNull();
-			assertThat(reasoning.attributes()).containsEntry(StreamingParts.PROVIDER_ATTRIBUTE,
+			assertThat(reasoning.attributes()).containsEntry(MessagePart.PROVIDER_ATTRIBUTE,
 					ConverseApiUtils.BEDROCK_PROVIDER);
 		});
 
