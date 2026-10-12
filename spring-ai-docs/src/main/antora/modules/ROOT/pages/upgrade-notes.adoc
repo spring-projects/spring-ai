@@ -208,6 +208,29 @@ spring:
 
 NOTE: Map keys bind literally — use the exact provider field name (e.g. `output_config`, not `output-config`).
 
+=== Mistral AI
+
+==== Changed: `MistralAiChatModel` Builds Its Messages from Message Parts
+
+`MistralAiChatModel` maps every content chunk of a response to one `MessagePart`, in chunk order: thinking becomes a `ReasoningPart`, text a `TextPart`, and a citation reference or an image chunk an `UnknownPart`; the tool calls follow as `ToolCallPart`s.
+An assistant message that carries Mistral reasoning or other Mistral chunks is replayed as content chunks in part order, so a reasoning model gets its thinking back, as Mistral recommends.
+The parts of a `UserMessage` with media are sent in their order, so text and images can interleave.
+See xref:api/chat/mistralai-chat.adoc#_reasoning_content[Reasoning Content].
+
+===== Impact
+
+* `getText()` joins the text chunks of a response without a separator; it used to join them with the platform line separator, which split the text around a citation.
+* Streamed chunks now always carry the response id and model in their `ChatResponseMetadata`; chunks without usage report an empty usage.
+* Reasoning is replayed only when its `ReasoningPart` carries the `provider` attribute (`MessagePart.PROVIDER_ATTRIBUTE`) set to `mistral_ai`, so it is lost when the conversation history is stored or rebuilt without part attributes.
+* An assistant message without reasoning parts, such as one built by an earlier version, has the thinking under the `thinking_content` metadata key replayed as a thinking chunk; earlier versions never sent the thinking back.
+* A `UserMessage` with media no longer sends an empty text chunk when it has no text.
+* `MistralAiApi.ChatCompletionMessage.ThinkChunk` gains a `signature` component; code that deconstructs it with a record pattern must add the component.
+
+===== Deprecated
+
+* `MistralAiChatModel.THINKING_CONTENT_METADATA`: read the reasoning from `getResult().getOutput().getReasoning()`.
+The metadata entry is still written, and read on replay only from an assistant message without reasoning parts.
+
 === PgVector Store
 
 ==== `distance` is a reserved metadata key in `PgVectorStore`
