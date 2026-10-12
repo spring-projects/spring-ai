@@ -41,8 +41,8 @@ import org.springframework.util.Assert;
  * response; the aggregator groups indexed parts by that id so that consecutive tool-call
  * rounds flowing through one stream do not merge into each other.</li>
  * </ul>
- * The two attributes are removed from the aggregated message, so they never take part in
- * message equality or persistence.
+ * The part index and partial attributes are removed from the aggregated message, so they
+ * never take part in message equality or persistence.
  *
  * @author Christian Tzolov
  * @since 2.1.0

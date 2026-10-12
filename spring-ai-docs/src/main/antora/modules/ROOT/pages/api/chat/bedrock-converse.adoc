@@ -822,6 +822,55 @@ AWS Bedrock pricing for prompt caching (approximate, varies by model):
 // Savings: (10,250 - 3,550) / 10,250 = 65% cost reduction
 ----
 
+== Reasoning
+
+When extended thinking is enabled, a response is a single `Generation` whose message holds one `MessagePart` per Converse content block, in the order Bedrock returned them: typically a `ReasoningPart`, then a `TextPart` and any `ToolCallPart`s.
+`getResult()` therefore returns the reasoning, the text and the tool calls together.
+
+[source,java]
+----
+var options = BedrockChatOptions.builder()
+    .model("us.anthropic.claude-haiku-4-5-20251001-v1:0")
+    .maxTokens(4096)
+    .requestParameters(Map.of("thinking", Map.of("type", "enabled", "budget_tokens", 1024)))
+    .build();
+
+ChatResponse response = chatModel.call(new Prompt("Which number is larger: 9.11 or 9.8?", options));
+AssistantMessage message = response.getResult().getOutput();
+
+for (ReasoningPart reasoning : message.getReasoning()) {
+    if (reasoning.text() != null) {
+        // Redacted reasoning has no text, only the opaque payload to replay
+        System.out.println("Reasoning: " + reasoning.text());
+    }
+}
+System.out.println("Answer: " + message.getText());
+----
+
+[cols="2,3,3", stripes=even]
+|====
+| Part | Payload | Description
+
+| **`ReasoningPart`** | `OpaquePayload("bedrock", "signature", ...)` | Signed reasoning in `text()`.
+The payload is the signature, which must be replayed unchanged.
+| **`ReasoningPart` (redacted)** | `OpaquePayload("bedrock", "redacted_content", ...)` | Reasoning Bedrock withheld, identified by the `ConverseApiUtils.PAYLOAD_REDACTED_CONTENT` payload kind.
+`text()` is `null` and the payload data is the Base64 encoded redacted content.
+| **`ReasoningPart` (unsigned)** | _(none)_ | Reasoning returned without a signature, for example by the OpenAI gpt-oss models.
+It is replayed to Bedrock without a signature.
+| **`TextPart`** | _(none)_ | The answer text, also available joined through `getText()`.
+| **`ToolCallPart`** | _(none)_ | A tool call, also available through `getToolCalls()`.
+|====
+
+The provider and payload kinds are available as the `BEDROCK_PROVIDER`, `PAYLOAD_SIGNATURE` and `PAYLOAD_REDACTED_CONTENT` constants of `ConverseApiUtils`.
+Every reasoning part Bedrock returned also carries the `provider` attribute (`StreamingParts.PROVIDER_ATTRIBUTE`) set to `bedrock`, which is how unsigned reasoning, having no payload, is recognized as Bedrock's own.
+Other content block types, such as citations, are not mapped to parts yet.
+
+Reasoning is fully supported in streaming mode.
+Every delta chunk carries one part stamped with the content block index it belongs to (see `StreamingParts`): reasoning deltas arrive as partial `ReasoningPart`s and text deltas as partial `TextPart`s.
+The signature arrives as a partial `ReasoningPart` with an empty text and the payload once its block is done, and redacted reasoning as one complete `ReasoningPart`.
+The final chunk of the response carries the complete tool calls, along with any reasoning whose block never finished.
+`MessageAggregator` (used by `ChatClient` and the advisors) rebuilds the ordered parts from these chunks, so the aggregated message has the same shape as a non-streaming response.
+
 == Tool Calling
 
 `BedrockProxyChatModel` supports tool calling. The model can request tool execution but does not run tools itself — Spring AI handles execution.
@@ -830,11 +879,15 @@ For most applications, use `ChatClient` with the auto-registered `ToolCallingAdv
 
 === Reasoning with Tool Calls
 
-When extended thinking is enabled and the model decides to call a tool, the signed reasoning blocks from that response are automatically preserved and replayed in the follow-up request alongside the tool results.
+When extended thinking is enabled and the model decides to call a tool, the signed reasoning parts from that response are automatically preserved and replayed in the follow-up request alongside the tool results.
 Amazon Bedrock requires those reasoning blocks to be present in the replay — omitting them causes an API error.
+An assistant message is replayed in part order, so the signed reasoning stays in front of the tool call it led to.
 
 No special configuration is needed.
-Spring AI handles the replay transparently whether you use the auto-managed tool loop (`ChatClient` with `ToolCallingAdvisor`) or drive the loop manually via `ToolCallingManager`.
+Spring AI handles the replay transparently whether you use the auto-managed tool loop (`ChatClient` with `ToolCallingAdvisor`) or drive the loop manually via `ToolCallingManager`, in both synchronous and streaming mode.
+Any `AssistantMessage` holding Bedrock reasoning parts replays correctly, including one restored from a chat memory that preserves message parts.
+Reasoning produced by another provider is not replayed, because Bedrock rejects reasoning it cannot verify.
+Unsigned reasoning is replayed only when its `provider` attribute says Bedrock produced it, so it is lost when the conversation history is stored or rebuilt without part attributes.
 
 == Structured Output [[structured-output]]
 
@@ -917,6 +970,20 @@ Currently, Bedrock Converse supports the `base64` encoded images of `image/jpeg`
 
 Spring AI's `Message` interface supports multimodal AI models by introducing the `Media` type.
 It contains data and information about media attachments in messages, using Spring's `org.springframework.util.MimeType` and a `java.lang.Object` for the raw media data.
+
+The parts of a `UserMessage` are sent in their order, one content block each.
+A message built with `text(...)` and `media(...)` sends its text before its media.
+To place media before or between text (Amazon Nova recommends placing media before the instructions), build the message from parts:
+
+[source,java]
+----
+var userMessage = UserMessage.builder()
+    .part(MediaPart.of(new Media(MimeTypeUtils.IMAGE_PNG, imageResource)))
+    .part(TextPart.of("Explain what do you see on this picture?"))
+    .build();
+----
+
+Blank text parts are not sent, because the Converse API rejects empty text blocks.
 
 Below is a simple code example, demonstrating the combination of user text with an image.
 
