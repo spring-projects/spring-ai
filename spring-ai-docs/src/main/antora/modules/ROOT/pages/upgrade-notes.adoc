@@ -137,6 +137,24 @@ On a streamed chunk it holds the reasoning accumulated so far, not the delta.
 
 === Bedrock Converse
 
+==== Changed: A Response Is a Single Generation of Ordered `MessagePart`s
+
+`BedrockProxyChatModel` maps every content block of a response to one `MessagePart`, in block order: text becomes a `TextPart`, tool use a `ToolCallPart`, and signed or redacted reasoning a `ReasoningPart` whose payload carries the signature or the Base64 encoded redacted content.
+An assistant message is replayed to Bedrock in part order, and the parts of a `UserMessage` are sent in their order, so text and media can interleave.
+Streamed responses now carry the reasoning they previously dropped, so a streaming tool loop with extended thinking replays its reasoning too.
+See xref:api/chat/bedrock-converse.adoc#_reasoning[Reasoning].
+
+===== Impact
+
+* A non-streaming response has a single `Generation`.
+A response with several text blocks, or with text and tool use, used to produce one generation per text block plus one for the tool calls; read the joined text from `getResult().getOutput().getText()` and the tool calls from `getResult().getOutput().getToolCalls()`.
+* The package-private `BedrockAssistantMessage` and `BedrockReasoningContent` are removed.
+Read the reasoning from `getResult().getOutput().getReasoning()`.
+* Reasoning returned without a signature, for example by the OpenAI gpt-oss models, is replayed only when its `ReasoningPart` carries the `provider` attribute (`StreamingParts.PROVIDER_ATTRIBUTE`) set to `bedrock`, so it is lost when the conversation history is stored or rebuilt without part attributes; unsigned reasoning produced by another provider is not replayed.
+* Streamed text deltas now carry their text in an indexed partial `TextPart`; `getText()` on each chunk returns the same delta as before.
+* Streams now emit additional chunks for reasoning deltas, the reasoning signature and redacted reasoning.
+They have an empty `getText()` and carry no tool calls, so code that counts chunks or treats every chunk as answer text sees them.
+
 ==== `BedrockChatOptions.requestParameters` widened to `Map<String, Object>`
 
 `BedrockChatOptions.requestParameters` (and its Spring Boot property mirror `BedrockConverseProxyChatProperties.requestParameters`) has been widened from `Map<String, String>` to `Map<String, Object>`.
