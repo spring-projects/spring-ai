@@ -41,9 +41,8 @@ class GoogleGenAiTextToSpeechConnectionAutoConfigurationTests {
 	@Test
 	void connectionDetailsCreatedWithProjectAndCredentials() {
 		this.contextRunner
-			.withPropertyValues("spring.ai.google.genai.tts.project-id=test-project",
-					"spring.ai.google.genai.tts.location=eu",
-					"spring.ai.google.genai.tts.credentials-uri=classpath:fake-credentials.json")
+			.withPropertyValues("spring.ai.google.genai.project-id=test-project", "spring.ai.google.genai.location=eu",
+					"spring.ai.google.genai.credentials-uri=classpath:fake-credentials.json")
 			.run(context -> {
 				GoogleGenAiTextToSpeechConnectionDetails details = context
 					.getBean(GoogleGenAiTextToSpeechConnectionDetails.class);
@@ -55,7 +54,7 @@ class GoogleGenAiTextToSpeechConnectionAutoConfigurationTests {
 
 	@Test
 	void connectionDetailsCreatedWithApiKey() {
-		this.contextRunner.withPropertyValues("spring.ai.google.genai.tts.api-key=test-api-key").run(context -> {
+		this.contextRunner.withPropertyValues("spring.ai.google.genai.api-key=test-api-key").run(context -> {
 			assertThat(context).hasNotFailed();
 			GoogleGenAiTextToSpeechConnectionDetails details = context
 				.getBean(GoogleGenAiTextToSpeechConnectionDetails.class);
@@ -68,8 +67,7 @@ class GoogleGenAiTextToSpeechConnectionAutoConfigurationTests {
 
 	@Test
 	void missingProjectIdFailsContext() {
-		this.contextRunner
-			.withPropertyValues("spring.ai.google.genai.tts.credentials-uri=classpath:fake-credentials.json")
+		this.contextRunner.withPropertyValues("spring.ai.google.genai.credentials-uri=classpath:fake-credentials.json")
 			.run(context -> {
 				assertThat(context).hasFailed();
 				assertThat(context.getStartupFailure()).rootCause()

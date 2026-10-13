@@ -42,9 +42,8 @@ class GoogleGenAiTextToSpeechPropertiesTests {
 	@Test
 	void connectionPropertiesBinding() {
 		this.contextRunner
-			.withPropertyValues("spring.ai.google.genai.tts.project-id=test-project",
-					"spring.ai.google.genai.tts.location=eu",
-					"spring.ai.google.genai.tts.credentials-uri=classpath:fake-credentials.json")
+			.withPropertyValues("spring.ai.google.genai.project-id=test-project", "spring.ai.google.genai.location=eu",
+					"spring.ai.google.genai.credentials-uri=classpath:fake-credentials.json")
 			.run(context -> {
 				GoogleGenAiTextToSpeechConnectionProperties props = context
 					.getBean(GoogleGenAiTextToSpeechConnectionProperties.class);

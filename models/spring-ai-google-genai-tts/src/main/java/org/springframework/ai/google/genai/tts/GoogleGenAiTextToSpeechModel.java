@@ -144,7 +144,9 @@ public class GoogleGenAiTextToSpeechModel implements TextToSpeechModel {
 							: toWav(pcmAudio);
 
 				final TextToSpeechResponseMetadata metadata = new TextToSpeechResponseMetadata();
-				metadata.setUsage(new DefaultUsage(text.length(), audioContent.length));
+				response.usageMetadata()
+					.ifPresent(usage -> metadata.setUsage(new DefaultUsage(usage.promptTokenCount().orElse(0),
+							usage.candidatesTokenCount().orElse(0))));
 
 				final TextToSpeechResponse textToSpeechResponse = new TextToSpeechResponse(
 						List.of(new Speech(audioContent)), metadata);
@@ -160,6 +162,11 @@ public class GoogleGenAiTextToSpeechModel implements TextToSpeechModel {
 		this.observationConvention = observationConvention;
 	}
 
+	/**
+	 * The Google GenAI SDK returns the full audio blob in a single response; true chunked
+	 * streaming is not supported by the Gemini-TTS API. This method wraps {@link #call}
+	 * in a single-element {@link Flux} for interface compatibility.
+	 */
 	@Override
 	public Flux<TextToSpeechResponse> stream(TextToSpeechPrompt prompt) {
 		return Flux.just(call(prompt));

@@ -26,7 +26,7 @@ gcloud config set project <PROJECT_ID> &&
 gcloud auth application-default login <ACCOUNT>
 ----
 
-- Alternatively, point `spring.ai.google.genai.tts.credentials-uri` at a service account JSON.
+- Alternatively, point `spring.ai.google.genai.credentials-uri` at a service account JSON.
 
 == Auto-configuration
 
@@ -62,16 +62,16 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 
 === Connection Properties
 
-The prefix `spring.ai.google.genai.tts` is used as the property prefix that lets you connect to the Gemini API.
+The prefix `spring.ai.google.genai` is used as the property prefix that lets you connect to the Gemini API.
 
 [cols="3,4,1", stripes=even]
 |====
 | Property | Description | Default
 
-| spring.ai.google.genai.tts.api-key | API key for the Gemini Developer API. When provided, the client uses the Gemini Developer API instead of Vertex AI. | -
-| spring.ai.google.genai.tts.project-id | The Google Cloud project ID (required for Vertex AI mode). | -
-| spring.ai.google.genai.tts.location   | The Vertex AI location. | global
-| spring.ai.google.genai.tts.credentials-uri | Resource URI to a Google Cloud credentials JSON. When unset, Application Default Credentials (ADC) are used. Only applies to Vertex AI. | -
+| spring.ai.google.genai.api-key | API key for the Gemini Developer API. When provided, the client uses the Gemini Developer API instead of Vertex AI. | -
+| spring.ai.google.genai.project-id | The Google Cloud project ID (required for Vertex AI mode). | -
+| spring.ai.google.genai.location   | The Vertex AI location. | global
+| spring.ai.google.genai.credentials-uri | Resource URI to a Google Cloud credentials JSON. When unset, Application Default Credentials (ADC) are used. Only applies to Vertex AI. | -
 |====
 
 === Enabling and Disabling Text To Speech Auto-Configuration
@@ -205,7 +205,7 @@ Add an `application.properties` file under `src/main/resources`:
 
 [source,application.properties]
 ----
-spring.ai.google.genai.tts.api-key=YOUR_API_KEY
+spring.ai.google.genai.api-key=YOUR_API_KEY
 spring.ai.google.genai.tts.model=gemini-2.5-flash-tts
 spring.ai.google.genai.tts.voice-name=Kore
 ----
@@ -214,8 +214,8 @@ spring.ai.google.genai.tts.voice-name=Kore
 
 [source,application.properties]
 ----
-spring.ai.google.genai.tts.project-id=YOUR_PROJECT_ID
-spring.ai.google.genai.tts.location=global
+spring.ai.google.genai.project-id=YOUR_PROJECT_ID
+spring.ai.google.genai.location=global
 spring.ai.google.genai.tts.model=gemini-2.5-flash-tts
 spring.ai.google.genai.tts.voice-name=Kore
 ----

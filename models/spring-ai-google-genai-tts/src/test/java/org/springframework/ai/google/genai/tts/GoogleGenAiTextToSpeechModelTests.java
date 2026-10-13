@@ -25,6 +25,7 @@ import com.google.genai.types.Candidate;
 import com.google.genai.types.Content;
 import com.google.genai.types.GenerateContentConfig;
 import com.google.genai.types.GenerateContentResponse;
+import com.google.genai.types.GenerateContentResponseUsageMetadata;
 import com.google.genai.types.Part;
 import com.google.genai.types.SpeechConfig;
 import org.junit.jupiter.api.BeforeEach;
@@ -259,7 +260,7 @@ class GoogleGenAiTextToSpeechModelTests {
 	}
 
 	@Test
-	void usageReflectsInputTextAndOutputAudioSize() {
+	void usageFallsBackToZeroWhenApiReturnsNoUsageMetadata() {
 		GoogleGenAiAudioSpeechOptions options = GoogleGenAiAudioSpeechOptions.builder()
 			.model("gemini-2.5-flash-tts")
 			.voiceName("Kore")
@@ -268,10 +269,40 @@ class GoogleGenAiTextToSpeechModelTests {
 
 		TextToSpeechResponse response = model.call(new TextToSpeechPrompt("Hello world", options));
 
-		int outputLength = 44 + AUDIO.length; // WAV header + PCM
-		assertThat(response.getMetadata().getUsage().getPromptTokens()).isEqualTo("Hello world".length());
-		assertThat(response.getMetadata().getUsage().getCompletionTokens()).isEqualTo(outputLength);
-		assertThat(response.getMetadata().getUsage().getTotalTokens()).isEqualTo("Hello world".length() + outputLength);
+		// Mock response has no usageMetadata; falls back to EmptyUsage (all zeros).
+		assertThat(response.getMetadata().getUsage().getPromptTokens()).isEqualTo(0);
+		assertThat(response.getMetadata().getUsage().getCompletionTokens()).isEqualTo(0);
+		assertThat(response.getMetadata().getUsage().getTotalTokens()).isEqualTo(0);
+	}
+
+	@Test
+	void usageReflectsRealTokenCountsWhenApiReturnsUsageMetadata() {
+		GenerateContentResponse responseWithUsage = GenerateContentResponse.builder()
+			.candidates(List.of(Candidate.builder()
+				.content(Content.builder()
+					.parts(Part.builder().inlineData(Blob.builder().data(AUDIO).mimeType("audio/L16").build()).build())
+					.build())
+				.build()))
+			.usageMetadata(GenerateContentResponseUsageMetadata.builder()
+				.promptTokenCount(5)
+				.candidatesTokenCount(120)
+				.totalTokenCount(125)
+				.build())
+			.build();
+		when(this.models.generateContent(anyString(), any(Content.class), any(GenerateContentConfig.class)))
+			.thenReturn(responseWithUsage);
+
+		GoogleGenAiAudioSpeechOptions options = GoogleGenAiAudioSpeechOptions.builder()
+			.model("gemini-2.5-flash-tts")
+			.voiceName("Kore")
+			.build();
+		GoogleGenAiTextToSpeechModel model = new GoogleGenAiTextToSpeechModel(this.connectionDetails, options);
+
+		TextToSpeechResponse response = model.call(new TextToSpeechPrompt("Hello world", options));
+
+		assertThat(response.getMetadata().getUsage().getPromptTokens()).isEqualTo(5);
+		assertThat(response.getMetadata().getUsage().getCompletionTokens()).isEqualTo(120);
+		assertThat(response.getMetadata().getUsage().getTotalTokens()).isEqualTo(125);
 	}
 
 	@Test

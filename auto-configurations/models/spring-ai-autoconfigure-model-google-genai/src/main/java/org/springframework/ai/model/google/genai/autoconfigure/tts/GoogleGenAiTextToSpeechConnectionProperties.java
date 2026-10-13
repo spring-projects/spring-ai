@@ -35,7 +35,7 @@ import org.springframework.core.io.Resource;
 @ConfigurationProperties(GoogleGenAiTextToSpeechConnectionProperties.CONFIG_PREFIX)
 public class GoogleGenAiTextToSpeechConnectionProperties {
 
-	public static final String CONFIG_PREFIX = "spring.ai.google.genai.tts";
+	public static final String CONFIG_PREFIX = "spring.ai.google.genai";
 
 	/**
 	 * The API key for the Gemini Developer API. When set, the Gemini Developer API is

@@ -42,7 +42,7 @@ class GoogleGenAiTextToSpeechAutoConfigurationIT {
 	@EnabledIfEnvironmentVariable(named = "GOOGLE_CLOUD_PROJECT", matches = ".+")
 	void speechWithGeminiTts() {
 		ApplicationContextRunner contextRunner = new ApplicationContextRunner()
-			.withPropertyValues("spring.ai.google.genai.tts.project-id=" + System.getenv("GOOGLE_CLOUD_PROJECT"),
+			.withPropertyValues("spring.ai.google.genai.project-id=" + System.getenv("GOOGLE_CLOUD_PROJECT"),
 					"spring.ai.google.genai.tts.model=gemini-2.5-flash-tts",
 					"spring.ai.google.genai.tts.voice-name=Kore", "spring.ai.google.genai.tts.language-code=en-us")
 			.withConfiguration(AutoConfigurations.of(GoogleGenAiTextToSpeechAutoConfiguration.class,
