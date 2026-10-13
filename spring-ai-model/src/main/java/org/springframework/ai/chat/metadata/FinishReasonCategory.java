@@ -43,8 +43,8 @@ public enum FinishReasonCategory {
 
 	/**
 	 * Output stopped because a length or token limit was hit. Corresponds to
-	 * {@code length}, {@code max_tokens}, {@code MAX_TOKENS}, and
-	 * {@code context_window_exceeded}.
+	 * {@code length}, {@code max_tokens}, {@code MAX_TOKENS},
+	 * {@code context_window_exceeded}, and {@code model_context_window_exceeded}.
 	 */
 	TRUNCATED,
 
@@ -97,7 +97,7 @@ public enum FinishReasonCategory {
 			case "stop", "end_turn", "stop_sequence" -> COMPLETED;
 
 			// Truncated - hit token/length limits
-			case "length", "max_tokens", "context_window_exceeded" -> TRUNCATED;
+			case "length", "max_tokens", "context_window_exceeded", "model_context_window_exceeded" -> TRUNCATED;
 
 			// Tool call - the raw reason itself reports a tool invocation
 			case "tool_calls", "tool_call", "tool_use" -> TOOL_CALL;

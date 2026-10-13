@@ -50,7 +50,9 @@ public class FinishReasonCategoryTests {
 			// Anthropic/Gemini/Bedrock
 			"max_tokens, TRUNCATED", "MAX_TOKENS, TRUNCATED",
 			// Context window
-			"context_window_exceeded, TRUNCATED" })
+			"context_window_exceeded, TRUNCATED",
+			// Anthropic context window
+			"model_context_window_exceeded, TRUNCATED" })
 	void shouldCategorizeTruncatedReasons(String rawReason, FinishReasonCategory expected) {
 		assertThat(FinishReasonCategory.categorize(rawReason)).isEqualTo(expected);
 	}
