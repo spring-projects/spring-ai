@@ -23,9 +23,11 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.vectorstore.filter.Filter.Expression;
+import org.springframework.ai.vectorstore.filter.Filter.Group;
 import org.springframework.ai.vectorstore.filter.Filter.Key;
 import org.springframework.ai.vectorstore.filter.Filter.Value;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
+import org.springframework.ai.vectorstore.filter.FilterExpressionTextParser;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -144,6 +146,58 @@ class TypesenseFilterExpressionConverterTests {
 
 		vectorExpr = this.converter.convertExpression(new Expression(EQ, new Key("\"country\""), new Value("BG")));
 		assertThat(vectorExpr).isEqualTo("metadata.country: `BG`");
+	}
+
+	// Groups must keep their boundaries, as Typesense evaluates && and || with equal
+	// precedence, left to right
+
+	@Test
+	void groupAsRightOperandIsParenthesized() {
+		// tenant == 'A' && (category == 'a' || category == 'b')
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(AND, new Expression(EQ, new Key("tenant"), new Value("A")),
+					new Group(new Expression(OR, new Expression(EQ, new Key("category"), new Value("a")),
+							new Expression(EQ, new Key("category"), new Value("b"))))));
+		assertThat(vectorExpr).isEqualTo("metadata.tenant: `A` && (metadata.category: `a` || metadata.category: `b`)");
+	}
+
+	@Test
+	void groupAsLeftOperandIsParenthesized() {
+		String vectorExpr = this.converter.convertExpression(new Expression(AND,
+				new Group(new Expression(OR, new Expression(EQ, new Key("country"), new Value("BG")),
+						new Expression(EQ, new Key("country"), new Value("NL")))),
+				new Expression(EQ, new Key("isOpen"), new Value(true))));
+		assertThat(vectorExpr).isEqualTo("(metadata.country: `BG` || metadata.country: `NL`) && metadata.isOpen: true");
+	}
+
+	@Test
+	void groupsAsBothOperandsAreParenthesized() {
+		String vectorExpr = this.converter.convertExpression(new Expression(AND,
+				new Group(new Expression(OR, new Expression(EQ, new Key("tenant"), new Value("A")),
+						new Expression(EQ, new Key("tenant"), new Value("B")))),
+				new Group(new Expression(OR, new Expression(EQ, new Key("category"), new Value("a")),
+						new Expression(EQ, new Key("category"), new Value("b"))))));
+		assertThat(vectorExpr).isEqualTo(
+				"(metadata.tenant: `A` || metadata.tenant: `B`) && (metadata.category: `a` || metadata.category: `b`)");
+	}
+
+	@Test
+	void nestedGroupsAreParenthesized() {
+		// tenant == 'A' && (isPublic == true || (owner == 'u1' && category == 'a'))
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(AND, new Expression(EQ, new Key("tenant"), new Value("A")),
+					new Group(new Expression(OR, new Expression(EQ, new Key("isPublic"), new Value(true)),
+							new Group(new Expression(AND, new Expression(EQ, new Key("owner"), new Value("u1")),
+									new Expression(EQ, new Key("category"), new Value("a"))))))));
+		assertThat(vectorExpr).isEqualTo(
+				"metadata.tenant: `A` && (metadata.isPublic: true || (metadata.owner: `u1` && metadata.category: `a`))");
+	}
+
+	@Test
+	void textParsedGroupIsParenthesized() {
+		String vectorExpr = this.converter.convertExpression(
+				new FilterExpressionTextParser().parse("tenant == 'A' && (category == 'a' || category == 'b')"));
+		assertThat(vectorExpr).isEqualTo("metadata.tenant: `A` && (metadata.category: `a` || metadata.category: `b`)");
 	}
 
 	// Key identifier validation — only alphanumeric, underscore, dot, and dash are

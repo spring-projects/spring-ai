@@ -452,6 +452,62 @@ public class TypesenseVectorStoreIT extends BaseVectorStoreTests {
 	}
 
 	@Test
+	void searchWithGroupAsRightOperandKeepsTenantConstraint() {
+		// Typesense evaluates && and || with equal precedence, left to right. Unless the
+		// group is parenthesized, tenant == 'A' && (category == 'a' || category == 'b')
+		// reduces to category == 'b' || (tenant == 'A' && category == 'a') and leaks
+		// tenant B documents.
+		this.contextRunner.run(context -> {
+			TypesenseVectorStore vectorStore = context.getBean(TypesenseVectorStore.class);
+
+			vectorStore.dropCollection();
+			vectorStore.createCollection();
+
+			var tenantA = new Document("Content A", Map.of("tenant", "A", "category", "a"));
+			var tenantAOther = new Document("Content A other", Map.of("tenant", "A", "category", "b"));
+			var tenantB = new Document("Content B", Map.of("tenant", "B", "category", "b"));
+
+			vectorStore.add(List.of(tenantA, tenantAOther, tenantB));
+
+			List<Document> results = vectorStore.similaritySearch(SearchRequest.builder()
+				.query("Content")
+				.topK(5)
+				.similarityThresholdAll()
+				.filterExpression("tenant == 'A' && (category == 'a' || category == 'b')")
+				.build());
+
+			assertThat(results).extracting(Document::getId)
+				.containsExactlyInAnyOrder(tenantA.getId(), tenantAOther.getId());
+
+			vectorStore.dropCollection();
+		});
+	}
+
+	@Test
+	void deleteWithGroupAsRightOperandKeepsTenantConstraint() {
+		this.contextRunner.run(context -> {
+			TypesenseVectorStore vectorStore = context.getBean(TypesenseVectorStore.class);
+
+			vectorStore.dropCollection();
+			vectorStore.createCollection();
+
+			var tenantA = new Document("Content A", Map.of("tenant", "A", "category", "a"));
+			var tenantB = new Document("Content B", Map.of("tenant", "B", "category", "b"));
+
+			vectorStore.add(List.of(tenantA, tenantB));
+
+			vectorStore.delete("tenant == 'A' && (category == 'a' || category == 'b')");
+
+			List<Document> remaining = vectorStore
+				.similaritySearch(SearchRequest.builder().query("Content").topK(5).similarityThresholdAll().build());
+
+			assertThat(remaining).extracting(Document::getId).containsExactly(tenantB.getId());
+
+			vectorStore.dropCollection();
+		});
+	}
+
+	@Test
 	void deleteByIdListDeletesOnlySpecifiedDocuments() {
 		// Verifies that delete-by-id-list correctly removes only the specified documents
 		// using the id: [id1,id2] bare-value filter_by format that Typesense requires
