@@ -151,6 +151,19 @@ class ResponsesItemMapperTests {
 		assertThat(file.has("filename")).isFalse();
 	}
 
+	@Test
+	void pdfUrlStringBecomesAnInputFileWithAFileUrl() throws Exception {
+		JsonNode file = mediaPartOf(Media.builder()
+			.mimeType(MimeTypeUtils.parseMimeType("application/pdf"))
+			.data("https://example.com/report.pdf")
+			.build());
+
+		assertThat(file.get("type").asText()).isEqualTo("input_file");
+		assertThat(file.get("file_url").asText()).isEqualTo("https://example.com/report.pdf");
+		assertThat(file.has("file_data")).isFalse();
+		assertThat(file.has("filename")).isFalse();
+	}
+
 	/**
 	 * Media.Builder#data(String) accepts bare base64 content, which is inline data and
 	 * not a link.
