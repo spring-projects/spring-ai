@@ -192,8 +192,8 @@ final class ResponsesItemMapper {
 
 	/**
 	 * One content entry per user part, in part order, so text and media interleave the
-	 * way the message was built. Legacy messages have text first, then media. A text-only
-	 * message keeps the simple string content path.
+	 * way the message was built. A text-only message keeps the simple string content
+	 * path. Parts the Responses API cannot take are skipped.
 	 */
 	private static ResponseInputItem userItem(UserMessage message) {
 		List<MessagePart> messageParts = message.getParts();
@@ -211,7 +211,8 @@ final class ResponsesItemMapper {
 		List<ResponseInputContent> parts = new ArrayList<>();
 		for (MessagePart part : messageParts) {
 			if (part instanceof TextPart textPart) {
-				if (StringUtils.hasText(textPart.text())) {
+				// Keep whitespace-only text, as the text-only path does via getText()
+				if (StringUtils.hasLength(textPart.text())) {
 					parts.add(ResponseInputContent
 						.ofInputText(ResponseInputText.builder().text(textPart.text()).build()));
 				}
@@ -219,11 +220,14 @@ final class ResponsesItemMapper {
 			else if (part instanceof MediaPart mediaPart) {
 				parts.add(inputContent(mediaPart.media()));
 			}
-			else {
-				// Match assistantItems: a part type added later cannot be dropped
-				// silently.
-				throw new IllegalStateException("Unhandled message part type: " + part.getClass().getName());
+			else if (logger.isDebugEnabled()) {
+				logger.debug("Skipping user message part " + part.getClass().getSimpleName()
+						+ " that the Responses API cannot take");
 			}
+		}
+		if (parts.isEmpty()) {
+			return ResponseInputItem
+				.ofEasyInputMessage(EasyInputMessage.builder().role(EasyInputMessage.Role.USER).content("").build());
 		}
 		return ResponseInputItem.ofEasyInputMessage(EasyInputMessage.builder()
 			.role(EasyInputMessage.Role.USER)

@@ -150,15 +150,57 @@ class ResponsesItemMapperTests {
 	}
 
 	@Test
-	void anUnhandledUserMessagePartTypeIsRejected() {
+	void mediaOnlyUserMessageBecomesSingleInputImagePart() {
+		var message = UserMessage.builder()
+			.part(MediaPart.of(Media.builder()
+				.mimeType(MimeTypeUtils.IMAGE_PNG)
+				.data(URI.create("https://example.com/cat.png"))
+				.build()))
+			.build();
+
+		ResponseInputItem item = ResponsesItemMapper.toInput(List.of(message)).items().get(0);
+
+		assertThat(contentTypes(item)).containsExactly("input_image");
+		assertThat(toJson(item)).contains("https://example.com/cat.png");
+	}
+
+	/**
+	 * Whitespace-only text is kept next to media, as the text-only path keeps it.
+	 */
+	@Test
+	void whitespaceOnlyTextPartIsKeptNextToMedia() {
+		var message = UserMessage.builder()
+			.part(TextPart.of(" "))
+			.part(MediaPart.of(Media.builder()
+				.mimeType(MimeTypeUtils.IMAGE_PNG)
+				.data(URI.create("https://example.com/cat.png"))
+				.build()))
+			.build();
+
+		assertThat(contentTypes(ResponsesItemMapper.toInput(List.of(message)).items().get(0)))
+			.containsExactly("input_text", "input_image");
+	}
+
+	/**
+	 * Parts the Responses API cannot take are skipped, like Anthropic does, so that
+	 * persisted conversations holding them still replay.
+	 */
+	@Test
+	void unsupportedUserMessagePartsAreSkipped() {
+		var image = Media.builder()
+			.mimeType(MimeTypeUtils.IMAGE_PNG)
+			.data(URI.create("https://example.com/cat.png"))
+			.build();
 		var message = UserMessage.builder()
 			.part(TextPart.of("Hi"))
 			.part(new UnknownPart(OpenAiResponsesMetadata.PROVIDER, "odd", "{}", null, Map.of()))
+			.part(MediaPart.of(image))
 			.build();
 
-		assertThatThrownBy(() -> ResponsesItemMapper.toInput(List.of(message)))
-			.isInstanceOf(IllegalStateException.class)
-			.hasMessageContaining("Unhandled message part type");
+		ResponseInputItem item = ResponsesItemMapper.toInput(List.of(message)).items().get(0);
+
+		assertThat(contentTypes(item)).containsExactly("input_text", "input_image");
+		assertThat(toJson(item)).doesNotContain("odd");
 	}
 
 	@Test
