@@ -85,6 +85,16 @@ public class ChatGenerationMetadataTests {
 	}
 
 	@Test
+	void shouldKeepAnthropicContextWindowReasonUnchanged() {
+		ChatGenerationMetadata metadata = ChatGenerationMetadata.builder()
+			.finishReason("model_context_window_exceeded")
+			.build();
+
+		assertThat(metadata.getFinishReason()).isEqualTo("model_context_window_exceeded");
+		assertThat(metadata.getFinishReasonCategory()).isEqualTo(FinishReasonCategory.TRUNCATED);
+	}
+
+	@Test
 	void shouldPreserveOriginalFinishReasonString() {
 		ChatGenerationMetadata metadata = ChatGenerationMetadata.builder().finishReason("END_TURN").build();
 
