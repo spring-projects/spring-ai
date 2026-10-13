@@ -134,6 +134,7 @@ import org.springframework.util.StringUtils;
  * no use for, and generated media, for which no input item exists.
  *
  * @author Dimitar Proynov
+ * @author Raviteja Daggupati
  * @since 2.1.0
  */
 final class ResponsesItemMapper {
@@ -222,8 +223,38 @@ final class ResponsesItemMapper {
 			throw new IllegalArgumentException(
 					"Audio input is not supported by the OpenAI Responses API. Use OpenAiChatModel for audio input.");
 		}
+		String url = httpUrl(media);
+		if (url != null) {
+			// file_data only accepts inline content; a link has to go in file_url instead
+			return ResponseInputContent.ofInputFile(ResponseInputFile.builder().fileUrl(url).build());
+		}
 		return ResponseInputContent
-			.ofInputFile(ResponseInputFile.builder().fileData(urlOrDataUri(media)).filename(filename(media)).build());
+			.ofInputFile(ResponseInputFile.builder().fileData(fileData(media)).filename(filename(media)).build());
+	}
+
+	/**
+	 * The media's http or https link, or {@code null} when it carries inline content.
+	 */
+	private static @Nullable String httpUrl(Media media) {
+		Object data = media.getData();
+		if (data instanceof URI || data instanceof String) {
+			String value = data.toString();
+			String lowerCase = value.toLowerCase(Locale.ROOT);
+			if (lowerCase.startsWith("http://") || lowerCase.startsWith("https://")) {
+				return value;
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * Inline file content as a data URI. {@code Media.Builder#data(String)} accepts bare
+	 * base64 content as well as a data URI, so the former is prefixed here. A colon
+	 * cannot occur in base64, so a value containing one is passed through unchanged.
+	 */
+	private static String fileData(Media media) {
+		String data = urlOrDataUri(media);
+		return (data.indexOf(':') < 0) ? "data:" + media.getMimeType() + ";base64," + data : data;
 	}
 
 	/**
