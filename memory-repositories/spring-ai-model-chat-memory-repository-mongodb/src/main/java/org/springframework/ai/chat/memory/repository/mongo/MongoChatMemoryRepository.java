@@ -17,6 +17,7 @@
 package org.springframework.ai.chat.memory.repository.mongo;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -40,6 +41,7 @@ import org.springframework.util.Assert;
  * An implementation of {@link ChatMemoryRepository} for MongoDB.
  *
  * @author Lukasz Jernas
+ * @author kezhenxu94
  * @since 1.1.0
  */
 public final class MongoChatMemoryRepository implements ChatMemoryRepository {
@@ -61,27 +63,27 @@ public final class MongoChatMemoryRepository implements ChatMemoryRepository {
 	public List<Message> findByConversationId(String conversationId) {
 		var messages = this.mongoTemplate.query(Conversation.class)
 			.matching(Query.query(Criteria.where("conversationId").is(conversationId))
-				.with(Sort.by("timestamp").ascending()));
+				.with(Sort.by("timestamp").ascending().and(Sort.by("sequenceId").ascending())));
 		return messages.stream().map(MongoChatMemoryRepository::mapMessage).filter(Objects::nonNull).toList();
 	}
 
 	@Override
 	public void saveAll(String conversationId, List<Message> messages) {
-		List<Message> persistableMessages = messages.stream()
-			.filter(m -> !(m instanceof ToolResponseMessage)
-					&& !(m instanceof AssistantMessage am && am.hasToolCalls()))
-			.toList();
-		if (logger.isWarnEnabled() && persistableMessages.size() < messages.size()) {
-			logger.warn(
-					"MongoChatMemoryRepository does not support tool call messages. Some messages were filtered out for conversation: "
-							+ conversationId);
-		}
 		deleteByConversationId(conversationId);
-		var conversations = persistableMessages.stream()
-			.map(message -> new Conversation(conversationId,
-					new Conversation.Message(message.getText(), message.getMessageType().name(), message.getMetadata()),
-					Instant.now()))
-			.toList();
+		// A single timestamp is used for the whole batch: BSON dates only have
+		// millisecond precision, so the sequence identifier is what orders the messages
+		// within a conversation.
+		var timestamp = Instant.now();
+		var conversations = new ArrayList<Conversation>(messages.size());
+		for (int i = 0; i < messages.size(); i++) {
+			Message message = messages.get(i);
+			var toolCalls = message instanceof AssistantMessage assistantMessage ? assistantMessage.getToolCalls()
+					: List.<AssistantMessage.ToolCall>of();
+			var toolResponses = message instanceof ToolResponseMessage toolResponseMessage
+					? toolResponseMessage.getResponses() : List.<ToolResponseMessage.ToolResponse>of();
+			conversations.add(new Conversation(conversationId, new Conversation.Message(message.getText(),
+					message.getMessageType().name(), message.getMetadata(), toolCalls, toolResponses), timestamp, i));
+		}
 		this.mongoTemplate.insert(conversations, Conversation.class);
 	}
 
@@ -91,20 +93,41 @@ public final class MongoChatMemoryRepository implements ChatMemoryRepository {
 	}
 
 	public static @Nullable Message mapMessage(Conversation conversation) {
-		final String content = Objects.requireNonNullElse(conversation.message().content(), "");
-		return switch (conversation.message().type()) {
-			case "USER" -> UserMessage.builder().text(content).metadata(conversation.message().metadata()).build();
-			case "ASSISTANT" ->
-				AssistantMessage.builder().content(content).properties(conversation.message().metadata()).build();
-			case "SYSTEM" -> SystemMessage.builder().text(content).metadata(conversation.message().metadata()).build();
-			// this implementation doesn't support tool calls message persistence, so
-			// TOOL rows are filtered out by the caller
-			case "TOOL" -> null;
+		final Conversation.Message message = conversation.message();
+		// USER and SYSTEM messages require non-null text content.
+		final String content = Objects.requireNonNullElse(message.content(), "");
+		return switch (message.type()) {
+			case "USER" -> UserMessage.builder().text(content).metadata(message.metadata()).build();
+			case "ASSISTANT" -> AssistantMessage.builder()
+				// Assistant messages carrying only tool calls have no text content, and
+				// null is preserved so that they round-trip unchanged.
+				.content(message.content())
+				.properties(message.metadata())
+				.toolCalls(Objects.requireNonNullElse(message.toolCalls(), List.of()))
+				.build();
+			case "SYSTEM" -> SystemMessage.builder().text(content).metadata(message.metadata()).build();
+			case "TOOL" -> {
+				var toolResponses = message.toolResponses();
+				if (toolResponses == null) {
+					// Documents written before tool call persistence was supported
+					// have no tool response field at all. They would be read back
+					// as empty stubs, so they are skipped to avoid polluting the
+					// LLM conversation context. A tool message that was genuinely
+					// saved without responses stores an empty array instead, and is
+					// preserved.
+					if (logger.isWarnEnabled()) {
+						logger.warn("Skipping tool message without tool responses for conversation: "
+								+ conversation.conversationId());
+					}
+					yield null;
+				}
+				yield ToolResponseMessage.builder().responses(toolResponses).metadata(message.metadata()).build();
+			}
 			default -> {
 				if (logger.isWarnEnabled()) {
-					logger.warn("Unsupported message type: " + conversation.message().type());
+					logger.warn("Unsupported message type: " + message.type());
 				}
-				throw new IllegalStateException("Unsupported message type: " + conversation.message().type());
+				throw new IllegalStateException("Unsupported message type: " + message.type());
 			}
 		};
 	}
