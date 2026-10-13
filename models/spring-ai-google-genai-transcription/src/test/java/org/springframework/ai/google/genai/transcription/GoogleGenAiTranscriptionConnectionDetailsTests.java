@@ -67,6 +67,7 @@ class GoogleGenAiTranscriptionConnectionDetailsTests {
 		GoogleGenAiTranscriptionConnectionDetails connectionDetails = GoogleGenAiTranscriptionConnectionDetails
 			.builder()
 			.projectId("test-project")
+			.credentials(mock(com.google.auth.oauth2.GoogleCredentials.class))
 			.build();
 
 		assertThat(connectionDetails.getGenAiClient()).isNotNull();
@@ -78,6 +79,7 @@ class GoogleGenAiTranscriptionConnectionDetailsTests {
 			.builder()
 			.projectId("test-project")
 			.location("us-central1")
+			.credentials(mock(com.google.auth.oauth2.GoogleCredentials.class))
 			.build();
 
 		assertThat(connectionDetails.getGenAiClient()).isNotNull();
