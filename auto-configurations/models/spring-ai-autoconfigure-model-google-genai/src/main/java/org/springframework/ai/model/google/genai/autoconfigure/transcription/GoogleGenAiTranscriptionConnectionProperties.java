@@ -30,7 +30,7 @@ import org.springframework.core.io.Resource;
  * Credentials or an explicit service account via {@code credentials-uri}).
  *
  * @author Olivier Le Quellec
- * @since 2.0.1
+ * @since 2.1.0
  */
 @ConfigurationProperties(GoogleGenAiTranscriptionConnectionProperties.CONFIG_PREFIX)
 public class GoogleGenAiTranscriptionConnectionProperties {

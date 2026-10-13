@@ -36,7 +36,7 @@ import org.springframework.util.StringUtils;
  * Auto-configuration for the Google GenAI Transcription connection.
  *
  * @author Olivier Le Quellec
- * @since 2.0.1
+ * @since 2.1.0
  */
 @AutoConfiguration
 @ConditionalOnClass({ Client.class, GoogleGenAiTranscriptionConnectionDetails.class })

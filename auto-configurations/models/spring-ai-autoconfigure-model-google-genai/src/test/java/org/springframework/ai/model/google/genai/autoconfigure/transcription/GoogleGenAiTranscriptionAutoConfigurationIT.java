@@ -46,7 +46,7 @@ class GoogleGenAiTranscriptionAutoConfigurationIT {
 		ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 			.withPropertyValues(
 					"spring.ai.google.genai.transcription.project-id=" + System.getenv("GOOGLE_CLOUD_PROJECT"),
-					"spring.ai.google.genai.transcription.model=gemini-2.5-flash-tts",
+					"spring.ai.google.genai.transcription.model=gemini-2.5-flash",
 					"spring.ai.google.genai.transcription.language-codes=en-US")
 			.withConfiguration(AutoConfigurations.of(GoogleGenAiTranscriptionAutoConfiguration.class,
 					GoogleGenAiTranscriptionConnectionAutoConfiguration.class, SpringAiRetryAutoConfiguration.class));

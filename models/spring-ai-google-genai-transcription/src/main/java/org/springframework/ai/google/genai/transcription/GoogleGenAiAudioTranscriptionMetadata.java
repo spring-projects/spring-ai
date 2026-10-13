@@ -26,7 +26,7 @@ import org.springframework.ai.chat.metadata.Usage;
  * transcription API.
  *
  * @author Olivier Le Quellec
- * @since 2.0.1
+ * @since 2.1.0
  */
 public class GoogleGenAiAudioTranscriptionMetadata extends AudioTranscriptionResponseMetadata {
 

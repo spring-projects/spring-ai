@@ -32,7 +32,7 @@ import org.springframework.util.StringUtils;
  * or for Vertex AI (project, location and Google credentials authentication).
  *
  * @author Olivier Le Quellec
- * @since 2.0.1
+ * @since 2.1.0
  */
 public final class GoogleGenAiTranscriptionConnectionDetails {
 

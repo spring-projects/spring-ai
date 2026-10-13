@@ -28,7 +28,7 @@ import org.springframework.ai.audio.transcription.AudioTranscriptionOptions;
  * Gemini transcription model through the {@code com.google.genai} SDK.
  *
  * @author Olivier Le Quellec
- * @since 2.0.1
+ * @since 2.1.0
  */
 public class GoogleGenAiAudioTranscriptionOptions implements AudioTranscriptionOptions {
 

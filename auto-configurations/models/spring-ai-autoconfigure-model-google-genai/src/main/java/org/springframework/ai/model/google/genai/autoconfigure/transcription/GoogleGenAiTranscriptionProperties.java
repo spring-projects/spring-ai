@@ -27,7 +27,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * Configuration properties for Google GenAI (Gemini) Transcription.
  *
  * @author Olivier Le Quellec
- * @since 2.0.1
+ * @since 2.1.0
  */
 @ConfigurationProperties(GoogleGenAiTranscriptionProperties.CONFIG_PREFIX)
 public class GoogleGenAiTranscriptionProperties {

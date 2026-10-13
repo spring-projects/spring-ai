@@ -56,7 +56,7 @@ import org.springframework.util.StringUtils;
  * replies with the transcription text.
  *
  * @author Olivier Le Quellec
- * @since 2.0.1
+ * @since 2.1.0
  */
 public class GoogleGenAiTranscriptionModel implements TranscriptionModel {
 

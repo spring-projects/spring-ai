@@ -37,7 +37,7 @@ import org.springframework.core.retry.RetryTemplate;
  * Auto-configuration for Google GenAI Transcription.
  *
  * @author Olivier Le Quellec
- * @since 2.0.1
+ * @since 2.1.0
  */
 @AutoConfiguration(after = GoogleGenAiTranscriptionConnectionAutoConfiguration.class)
 @ConditionalOnClass(GoogleGenAiTranscriptionModel.class)
