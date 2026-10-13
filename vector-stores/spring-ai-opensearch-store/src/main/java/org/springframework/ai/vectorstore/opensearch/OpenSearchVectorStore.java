@@ -31,15 +31,19 @@ import org.opensearch.client.json.JsonData;
 import org.opensearch.client.json.JsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.SortOrder;
+import org.opensearch.client.opensearch._types.mapping.Property;
 import org.opensearch.client.opensearch._types.mapping.TypeMapping;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.BulkResponse;
 import org.opensearch.client.opensearch.core.DeleteByQueryRequest;
 import org.opensearch.client.opensearch.core.DeleteByQueryResponse;
+import org.opensearch.client.opensearch.core.bulk.BulkResponseItem;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.indices.CreateIndexRequest;
 import org.opensearch.client.opensearch.indices.CreateIndexResponse;
+import org.opensearch.client.opensearch.indices.GetMappingResponse;
+import org.opensearch.client.opensearch.indices.get_mapping.IndexMappingRecord;
 import org.opensearch.client.transport.endpoints.BooleanResponse;
 
 import org.springframework.ai.document.Document;
@@ -49,6 +53,7 @@ import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
+import org.springframework.ai.vectorstore.EmbeddedDocument;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
@@ -160,6 +165,8 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 
 	public static final String DEFAULT_INDEX_NAME = "spring-ai-document-index";
 
+	private static final int DEFAULT_DIMENSIONS = 1536;
+
 	public static final String DEFAULT_MAPPING_EMBEDDING_TYPE_KNN_VECTOR_DIMENSION = """
 			{
 				"properties":{
@@ -188,6 +195,9 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 	private final int dimensions;
 
 	private final boolean manageDocumentIds;
+
+	// Cache for vectorDimensions(); only a known size is stored.
+	private volatile int resolvedVectorDimensions = -1;
 
 	/**
 	 * Creates a new OpenSearchVectorStore using the builder pattern.
@@ -245,6 +255,47 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 			}
 		}
 		bulkRequest(bulkRequestBuilder.build());
+	}
+
+	@Override
+	protected boolean supportsUpsert() {
+		return true;
+	}
+
+	@Override
+	protected void doUpsert(List<EmbeddedDocument> entries) {
+		// Replace-by-id needs the document id to be the OpenSearch _id, which is not the
+		// case when OpenSearch generates the ids itself.
+		if (!this.manageDocumentIds) {
+			throw new UnsupportedOperationException(
+					"upsert replaces documents by id, which requires manageDocumentIds(true)");
+		}
+
+		// Whole-batch dimension pre-check before any write, so a mismatched vector fails
+		// fast and cannot partially write. Non-empty and finiteness are already enforced
+		// by the EmbeddedDocument constructor.
+		int expected = vectorDimensions();
+		for (int i = 0; i < entries.size(); i++) {
+			checkDimensions("Embedding at index " + i, entries.get(i).embedding().length, expected);
+		}
+
+		BulkRequest.Builder bulkRequestBuilder = new BulkRequest.Builder();
+		for (EmbeddedDocument entry : entries) {
+			// Pair positionally: the document and its embedding come from the same entry.
+			Document document = entry.document();
+			OpenSearchDocument openSearchDocument = new OpenSearchDocument(document.getId(),
+					Objects.requireNonNullElse(document.getText(), ""), document.getMetadata(), entry.embedding());
+			bulkRequestBuilder.operations(op -> op
+				.index(idx -> idx.index(this.index).id(openSearchDocument.id()).document(openSearchDocument)));
+		}
+		BulkResponse response = bulkRequest(bulkRequestBuilder.build());
+		if (response.errors()) {
+			for (BulkResponseItem item : response.items()) {
+				if (item.error() != null) {
+					throw new IllegalStateException(item.error().reason());
+				}
+			}
+		}
 	}
 
 	@Override
@@ -306,6 +357,18 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 		Assert.notNull(searchRequest, "The search request must not be null.");
 		return similaritySearch(this.embeddingModel.embed(searchRequest.getQuery()), searchRequest.getTopK(),
 				searchRequest.getSimilarityThreshold(), searchRequest.getFilterExpression());
+	}
+
+	@Override
+	protected boolean supportsQueryEmbeddingSearch() {
+		return true;
+	}
+
+	@Override
+	protected List<Document> doSimilaritySearch(float[] queryEmbedding, SearchRequest searchRequest) {
+		checkDimensions("Query embedding", queryEmbedding.length, vectorDimensions());
+		return similaritySearch(queryEmbedding, searchRequest.getTopK(), searchRequest.getSimilarityThreshold(),
+				searchRequest.getFilterExpression());
 	}
 
 	public List<Document> similaritySearch(float[] embedding, int topK, double similarityThreshold,
@@ -442,9 +505,11 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 		 * k-NN Method Definitions</a>
 		 */
 		if (this.initializeSchema && !exists(this.index)) {
+			boolean defaultMapping = this.mappingJson.equals(DEFAULT_MAPPING_EMBEDDING_TYPE_KNN_VECTOR_DIMENSION);
+			int createdDimensions;
 			String finalMappingJson;
-			if (this.useApproximateKnn
-					&& this.mappingJson.equals(DEFAULT_MAPPING_EMBEDDING_TYPE_KNN_VECTOR_DIMENSION)) {
+			if (this.useApproximateKnn && defaultMapping) {
+				createdDimensions = (this.dimensions > 0) ? this.dimensions : DEFAULT_DIMENSIONS;
 				// Generate approximate k-NN mapping with HNSW method
 				finalMappingJson = """
 						{
@@ -460,23 +525,94 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 								}
 							}
 						}
-						""".formatted(this.dimensions > 0 ? this.dimensions : this.embeddingModel.dimensions(),
-						this.similarityFunction);
+						""".formatted(createdDimensions, this.similarityFunction);
 			}
 			else {
-				// Use provided mapping or default exact k-NN mapping
-				finalMappingJson = String.format(this.mappingJson, this.embeddingModel.dimensions());
+				// Use provided mapping or default exact k-NN mapping. The embedding model
+				// is
+				// asked only when no size is configured, because the index is being
+				// created.
+				createdDimensions = (this.dimensions > 0) ? this.dimensions : this.embeddingModel.dimensions();
+				finalMappingJson = String.format(this.mappingJson, createdDimensions);
 			}
 			createIndexMapping(this.index, finalMappingJson);
+			// A custom mapping need not use the size it was formatted with, so its size
+			// is
+			// read back from the index when it is first needed.
+			if (defaultMapping) {
+				this.resolvedVectorDimensions = createdDimensions;
+			}
 		}
 	}
 
 	@Override
 	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
-		return VectorStoreObservationContext.builder(VectorStoreProvider.OPENSEARCH.value(), operationName)
+		VectorStoreObservationContext.Builder builder = VectorStoreObservationContext
+			.builder(VectorStoreProvider.OPENSEARCH.value(), operationName)
 			.collectionName(this.index)
-			.dimensions(this.embeddingModel.dimensions())
 			.similarityMetric(getSimilarityFunction());
+		int vectorDimensions = vectorDimensions();
+		if (vectorDimensions > 0) {
+			builder.dimensions(vectorDimensions);
+		}
+		return builder;
+	}
+
+	/**
+	 * The vector size the index accepts, or -1 when it is not known.
+	 * <p>
+	 * A size set with {@link Builder#dimensions(int)} wins, and so does the size of an
+	 * index this store created with the built-in mapping. Otherwise the size is read from
+	 * the {@code dimension} of the embedding field in the existing index mapping. The
+	 * embedding model is never asked, because its width says nothing about the width of
+	 * an index that already exists. Reading it from the mapping means a store that only
+	 * upserts into an existing index never has to contact the embedding model. When the
+	 * size cannot be read it stays unknown and reading it is tried again on the next
+	 * call. Only a known size is cached, so a store has to be rebuilt after the index is
+	 * recreated with a different size.
+	 * @return the known dimension, or -1
+	 */
+	private int vectorDimensions() {
+		if (this.dimensions > 0) {
+			return this.dimensions;
+		}
+		int cached = this.resolvedVectorDimensions;
+		if (cached > 0) {
+			return cached;
+		}
+		int resolved = resolveVectorDimensions();
+		if (resolved > 0) {
+			this.resolvedVectorDimensions = resolved;
+		}
+		return resolved;
+	}
+
+	private int resolveVectorDimensions() {
+		try {
+			int mappingDimensions = mappingVectorDimensions();
+			if (mappingDimensions > 0) {
+				return mappingDimensions;
+			}
+		}
+		catch (Exception ex) {
+			logger.debug("Could not read the vector size of index " + this.index, ex);
+		}
+		return -1;
+	}
+
+	private int mappingVectorDimensions() throws IOException {
+		GetMappingResponse response = this.openSearchClient.indices().getMapping(m -> m.index(this.index));
+		// The response is keyed by concrete index name, which differs from the configured
+		// name when that name is an alias.
+		IndexMappingRecord record = response.get(this.index);
+		if (record == null && response.result().size() == 1) {
+			record = response.result().values().iterator().next();
+		}
+		if (record == null || record.mappings() == null) {
+			return -1;
+		}
+		Property property = record.mappings().properties().get("embedding");
+		return (property != null && property.isKnnVector()) ? property.knnVector().dimension() : -1;
 	}
 
 	private String getSimilarityFunction() {
@@ -527,7 +663,7 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 
 		private boolean useApproximateKnn = false;
 
-		private int dimensions = 1536;
+		private int dimensions = 0;
 
 		private boolean manageDocumentIds = true;
 
@@ -622,9 +758,11 @@ public class OpenSearchVectorStore extends AbstractObservationVectorStore implem
 		}
 
 		/**
-		 * Sets the number of dimensions for the vector embeddings. This is used when
-		 * creating the index mapping for approximate k-NN. If not set, defaults to 1536
-		 * or uses the embedding model's dimensions.
+		 * Sets the number of dimensions for the vector embeddings. It is the size used
+		 * when this store creates the index, and the size that {@code upsert} and vector
+		 * search check vectors against. If not set, a new index gets 1536 for approximate
+		 * k-NN and the embedding model's size otherwise, and the size of an existing
+		 * index is read from its mapping.
 		 * @param dimensions The number of dimensions
 		 * @return The builder instance
 		 * @throws IllegalArgumentException if dimensions is less than or equal to 0
