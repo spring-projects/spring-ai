@@ -57,6 +57,18 @@ The `@McpTool` annotation supports the following attributes:
 |`DefaultMetaProvider.class`
 |Class implementing `MetaProvider` that supplies data for the `_meta` field in the tool declaration.
 
+|`resourceUri`
+|`""`
+|The `ui://` URI of the MCP App UI resource that renders this tool's results (SEP-1865).
+When set, the tool `_meta` contains `ui.resourceUri` and the flat `ui/resourceUri` alias.
+See <<mcp-apps>>.
+
+|`visibility`
+|`{}`
+|Who can see and call the tool (SEP-1865): `Visibility.MODEL`, `Visibility.APP`, or both.
+Emitted as `_meta.ui.visibility`, also when `resourceUri` is not set.
+When empty, it is omitted and hosts apply the spec default `["model", "app"]`.
+
 |===
 
 ==== Tool Annotations (Hints)
@@ -252,6 +264,29 @@ The `@McpResource` annotation provides access to resources via URI templates.
 |`@McpAnnotations(...)`
 |Client annotations for audience, priority, and last-modified metadata.
 
+|`csp`
+|`@McpCsp`
+|Content Security Policy of an MCP App UI resource (SEP-1865), emitted as `_meta.ui.csp`.
+Only the non-empty `McpCsp` fields are emitted, and `csp` is omitted when all of them are empty.
+See <<mcp-apps>>.
+
+|`permissions`
+|`{}`
+|Sandbox permissions requested by an MCP App UI resource (SEP-1865): `McpPermission.CAMERA`, `MICROPHONE`, `GEOLOCATION` or `CLIPBOARD_WRITE`.
+Emitted as `_meta.ui.permissions`, each permission mapped to an empty object (for example `{"camera": {}}`).
+Omitted when no permission is requested.
+
+|`domain`
+|`""`
+|Dedicated sandbox origin for the MCP App UI resource view (SEP-1865), emitted verbatim as `_meta.ui.domain`.
+The format is host-dependent.
+Omitted when blank.
+
+|`prefersBorder`
+|`PrefersBorder.UNSET`
+|Whether the host should draw a visible border and background around the MCP App UI resource view (SEP-1865).
+`TRUE` and `FALSE` are emitted as `_meta.ui.prefersBorder` `true` and `false`, while `UNSET` omits it so the host decides.
+
 |===
 
 The nested `McpAnnotations` for resources supports:
@@ -336,6 +371,152 @@ public ReadResourceResult getData(
     )).build();
 }
 ----
+
+[[mcp-apps]]
+=== MCP Apps (SEP-1865)
+
+MCP Apps is an MCP extension that lets a server deliver an interactive user interface, which the host renders in a sandboxed iframe.
+A tool links to a UI resource with a `ui://` URI through its `_meta`, and the UI resource provides the HTML together with its security and display metadata.
+See the link:https://modelcontextprotocol.io/extensions/apps[MCP Apps documentation] and the link:https://github.com/modelcontextprotocol/ext-apps/blob/main/specification/2026-01-26/apps.mdx[MCP Apps specification] for details.
+
+==== Basic Usage
+
+[source,java]
+----
+@Component
+public class WeatherApp {
+
+    @McpTool(name = "show-weather", description = "Show the weather dashboard for a city",
+            resourceUri = "ui://weather/dashboard.html")
+    public McpAppResult showWeather(
+            @McpToolParam(description = "City name", required = true) String city) {
+        return McpAppResult.of("Weather dashboard for " + city, loadForecast(city));
+    }
+
+    @McpTool(name = "refresh-weather", description = "Refresh the dashboard data",
+            visibility = Visibility.APP)
+    public McpAppResult refreshWeather(
+            @McpToolParam(description = "City name", required = true) String city) {
+        return new McpAppResult(null, loadForecast(city));
+    }
+
+    @McpResource(uri = "ui://weather/dashboard.html",
+            mimeType = "text/html;profile=mcp-app",
+            csp = @McpCsp(connectDomains = "https://api.openweathermap.org"),
+            permissions = McpPermission.GEOLOCATION,
+            prefersBorder = PrefersBorder.TRUE)
+    public String dashboard() {
+        return loadHtml("dashboard.html");
+    }
+}
+----
+
+The `show-weather` tool declaration carries the following `_meta`:
+
+[source,json]
+----
+{
+  "ui": {
+    "resourceUri": "ui://weather/dashboard.html"
+  },
+  "ui/resourceUri": "ui://weather/dashboard.html"
+}
+----
+
+The app-only `refresh-weather` tool is called from the existing weather app and declares no UI resource, so its `_meta` carries only the visibility:
+
+[source,json]
+----
+{
+  "ui": {
+    "visibility": ["app"]
+  }
+}
+----
+
+The `ui://weather/dashboard.html` resource carries the following `_meta`, both on its `resources/list` entry and on the content item returned by `resources/read`:
+
+[source,json]
+----
+{
+  "ui": {
+    "csp": {
+      "connectDomains": ["https://api.openweathermap.org"]
+    },
+    "permissions": {
+      "geolocation": {}
+    },
+    "prefersBorder": true
+  }
+}
+----
+
+==== Content Security Policy
+
+The `McpCsp` annotation used by the `csp` attribute of `@McpResource` declares which external origins the UI may access.
+Hosts build the iframe's Content Security Policy from these declarations and, per the specification, must not allow undeclared origins.
+Origins include the scheme, for example `+https://api.example.com+`.
+
+[cols="1,1,3"]
+|===
+|Attribute |Default |Description
+
+|`connectDomains`
+|`{}`
+|Origins the UI can make network requests to (fetch, XHR, WebSocket).
+Maps to the CSP `connect-src` directive.
+
+|`resourceDomains`
+|`{}`
+|Origins the UI can load static assets from (scripts, images, stylesheets, fonts, media).
+Wildcard subdomains such as `+https://*.example.com+` are allowed.
+
+|`frameDomains`
+|`{}`
+|Origins the UI can embed as nested frames.
+Maps to the CSP `frame-src` directive.
+
+|`baseUriDomains`
+|`{}`
+|Origins allowed as the document base URI.
+Maps to the CSP `base-uri` directive.
+
+|===
+
+==== Returning Results to the UI
+
+A tool method can return `McpAppResult` to provide both model-facing text and structured content for the UI.
+The `text` is sent as a text item in the tool result `content`, and the `structuredContent` map is sent as the tool result `structuredContent`.
+Either of them may be `null`, but not both.
+No output schema is generated for an `McpAppResult` return type, even when `generateOutputSchema` is `true`.
+
+[source,java]
+----
+// Text for the model and data for the UI
+McpAppResult.of("Sunny, 21°C in Berlin", Map.of("city", "Berlin", "temperature", 21));
+
+// Data for the UI only
+new McpAppResult(null, Map.of("city", "Berlin", "temperature", 21));
+----
+
+==== Behavior Notes
+
+* The specification requires a UI resource to use a `ui://` URI and the MIME type `text/html;profile=mcp-app`, and states that the `ui://` prefix will be reserved for MCP Apps.
+Spring AI does not validate this pairing, so declare both on every UI resource.
+Using `text/html;profile=mcp-app` only for `ui://` resources is also recommended, although the specification does not require it.
+* When `visibility` is omitted, hosts apply the spec default `["model", "app"]`.
+Hosts must not list a tool without `Visibility.MODEL` to the model, and must reject app calls to a tool without `Visibility.APP`.
+* The UI resource `_meta` is set on the listed resource (or resource template) and on the `resources/read` content items.
+It is attached to the read contents automatically only when the method returns `String` or `List<String>`.
+A method that returns `ResourceContents`, `List<ResourceContents>` or `ReadResourceResult` must set `_meta.ui` on its contents itself.
+* On both `@McpTool` and `@McpResource`, the `_meta` supplied by a `metaProvider` is merged with the `_meta` derived from the annotation attributes, and the `metaProvider` wins on conflict.
+Within `ui`, a key supplied by the `metaProvider` replaces the annotation's value for that key as a whole, while the other `ui` keys are kept.
+For example, a `ui.permissions` supplied by a resource's `metaProvider` replaces all permissions declared on the annotation, and the annotation's `csp` and `prefersBorder` are still emitted.
+On a tool, a `ui.resourceUri` supplied by the `metaProvider` overrides the `resourceUri` attribute, and if that attribute is set, the flat `ui/resourceUri` alias derived from it is updated to the same value.
+* The format and validation rules of `domain` are host-dependent, so consult the host documentation.
+The value is not validated and is emitted verbatim.
+* The flat `ui/resourceUri` key is deprecated by the specification in favor of `ui.resourceUri`.
+It is still emitted for compatibility.
 
 === @McpPrompt
 

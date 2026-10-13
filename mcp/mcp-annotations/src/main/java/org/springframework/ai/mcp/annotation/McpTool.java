@@ -72,6 +72,37 @@ public @interface McpTool {
 	Class<? extends MetaProvider> metaProvider() default DefaultMetaProvider.class;
 
 	/**
+	 * The {@code ui://} resource URI for the MCP App widget associated with this tool
+	 * (SEP-1865). When set, the tool's {@code _meta} will include {@code ui.resourceUri}
+	 * and the flat alias {@code ui/resourceUri}. It is independent of
+	 * {@link #visibility()}.
+	 *
+	 * <p>
+	 * Example: {@code "ui://my-server/dashboard.html"}
+	 */
+	String resourceUri() default "";
+
+	/**
+	 * Visibility of this tool per SEP-1865, emitted as {@code _meta.ui.visibility}.
+	 * Controls which consumers can see and invoke the tool.
+	 *
+	 * <p>
+	 * Empty (the default) omits {@code visibility}, and hosts then apply the spec default
+	 * {@code ["model", "app"]}. It is emitted even when {@link #resourceUri()} is empty,
+	 * because an app-only tool ({@code {Visibility.APP}}) that is called from an existing
+	 * MCP App does not need a UI resource of its own.
+	 *
+	 * <p>
+	 * Hosts MUST NOT list tools lacking {@link Visibility#MODEL} to the agent, and MUST
+	 * reject app calls to tools lacking {@link Visibility#APP}.
+	 *
+	 * <p>
+	 * On the wire, serialized as a JSON array: {@code ["model"]}, {@code ["app"]}, or
+	 * {@code ["model", "app"]}.
+	 */
+	Visibility[] visibility() default {};
+
+	/**
 	 * Additional properties describing a Tool to clients.
 	 *
 	 * All properties in ToolAnnotations are hints. They are not guaranteed to provide a
