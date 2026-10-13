@@ -18,6 +18,7 @@ package org.springframework.ai.chat.memory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -222,6 +223,59 @@ public class MessageWindowChatMemoryTests {
 		assertThat(result).hasSize(limit);
 		assertThat(result).containsExactly(new SystemMessage("System instruction"), new UserMessage("Message 2"),
 				new AssistantMessage("Response 2"));
+	}
+
+	@Test
+	void repeatedSystemMessageIsNotAddedAgain() {
+		String conversationId = UUID.randomUUID().toString();
+		this.chatMemory.add(conversationId, List.of(new SystemMessage("System instruction"), new UserMessage("Hello")));
+		this.chatMemory.add(conversationId, List.of(new SystemMessage("System instruction"), new UserMessage("Hello")));
+
+		assertThat(this.chatMemory.get(conversationId)).containsExactly(new SystemMessage("System instruction"),
+				new UserMessage("Hello"), new UserMessage("Hello"));
+	}
+
+	@Test
+	void repeatedSystemMessageDoesNotEvictLatestTurn() {
+		MessageWindowChatMemory customChatMemory = MessageWindowChatMemory.builder().maxMessages(3).build();
+		String conversationId = UUID.randomUUID().toString();
+		customChatMemory.add(conversationId, List.of(new SystemMessage("System instruction"),
+				new UserMessage("Message 1"), new AssistantMessage("Response 1")));
+		customChatMemory.add(conversationId, List.of(new SystemMessage("System instruction"),
+				new UserMessage("Message 2"), new AssistantMessage("Response 2")));
+
+		assertThat(customChatMemory.get(conversationId)).containsExactly(new SystemMessage("System instruction"),
+				new UserMessage("Message 2"), new AssistantMessage("Response 2"));
+	}
+
+	@Test
+	void newSystemMessagesReplaceOldOnesEvenWhenOneIsUnchanged() {
+		String conversationId = UUID.randomUUID().toString();
+		this.chatMemory.add(conversationId, List.of(new SystemMessage("System instruction 1"),
+				new UserMessage("Message 1"), new AssistantMessage("Response 1")));
+		this.chatMemory.add(conversationId, List.of(new SystemMessage("System instruction 1"),
+				new SystemMessage("System instruction 2"), new UserMessage("Message 2")));
+
+		assertThat(this.chatMemory.get(conversationId)).containsExactly(new UserMessage("Message 1"),
+				new AssistantMessage("Response 1"), new SystemMessage("System instruction 1"),
+				new SystemMessage("System instruction 2"), new UserMessage("Message 2"));
+	}
+
+	@Test
+	void systemMessageWithChangedMetadataReplacesOldOne() {
+		String conversationId = UUID.randomUUID().toString();
+		SystemMessage oldSystemMessage = SystemMessage.builder()
+			.text("System instruction")
+			.metadata(Map.of("version", "v1"))
+			.build();
+		SystemMessage newSystemMessage = SystemMessage.builder()
+			.text("System instruction")
+			.metadata(Map.of("version", "v2"))
+			.build();
+		this.chatMemory.add(conversationId, oldSystemMessage);
+		this.chatMemory.add(conversationId, newSystemMessage);
+
+		assertThat(this.chatMemory.get(conversationId)).containsExactly(newSystemMessage);
 	}
 
 	@Test
