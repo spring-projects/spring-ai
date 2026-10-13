@@ -55,7 +55,7 @@ import org.springframework.util.Assert;
  * matched based on their content or metadata.
  *
  * @author pj991207
- * @since 2.0.2
+ * @since 2.1.0
  * @see <a href="https://cormack.uwaterloo.ca/cormack/cormacksigir09-rrf.pdf">Reciprocal
  * Rank Fusion outperforms Condorcet and individual Rank Learning Methods</a>
  */
@@ -149,7 +149,7 @@ public class ReciprocalRankFusionDocumentJoiner implements DocumentJoiner {
 			// The ranks are accumulated in a fixed order so that the resulting score does
 			// not depend on the iteration order of the map of documents to join.
 			for (int rank : this.ranks.stream().sorted().toList()) {
-				score += 1.0 / (rankConstant + rank);
+				score += 1.0 / ((double) rankConstant + rank);
 			}
 			return score;
 		}

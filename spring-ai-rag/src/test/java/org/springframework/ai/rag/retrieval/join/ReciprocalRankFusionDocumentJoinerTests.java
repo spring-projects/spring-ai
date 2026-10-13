@@ -201,6 +201,18 @@ class ReciprocalRankFusionDocumentJoinerTests {
 	}
 
 	@Test
+	void whenRankConstantIsMaxIntegerThenScoresRemainPositive() {
+		DocumentJoiner documentJoiner = new ReciprocalRankFusionDocumentJoiner(Integer.MAX_VALUE);
+		var documentsForQuery = Map.of(new Query("query1"), List.of(List.of(document("b"), document("a"))));
+
+		List<Document> result = documentJoiner.join(documentsForQuery);
+
+		assertThat(result).extracting(Document::getId).containsExactly("b", "a");
+		assertThat(scoreOf(result, "b")).isEqualTo(1.0 / 2147483648L);
+		assertThat(scoreOf(result, "a")).isEqualTo(1.0 / 2147483649L);
+	}
+
+	@Test
 	void shouldNotModifyTheInputDocuments() {
 		DocumentJoiner documentJoiner = new ReciprocalRankFusionDocumentJoiner();
 		var original = Document.builder().id("a").text("Content a").score(0.42).build();
