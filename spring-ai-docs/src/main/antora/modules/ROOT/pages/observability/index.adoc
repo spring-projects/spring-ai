@@ -272,14 +272,14 @@ WARNING: If you enable logging of the image prompt data, there's a risk of expos
 All vector store implementations in Spring AI are instrumented to provide metrics and distributed tracing data through Micrometer.
 
 The `db.vector.client.operation` observations are recorded when interacting with the Vector Store. 
-They measure the time spent on the `query`, `add` and `remove` operations and propagate the related tracing information.
+They measure the time spent on the `query`, `add`, `upsert` and `delete` operations and propagate the related tracing information.
 
 .Low Cardinality Keys
 [cols="a,a", stripes=even]
 |===
 |Name | Description
 
-|`db.operation.name` | The name of the operation or command being executed. One of `add`, `delete`, or `query`.
+|`db.operation.name` | The name of the operation or command being executed. One of `add`, `upsert`, `delete`, or `query`.
 |`db.system` | The database management system (DBMS) product as identified by the client instrumentation. One of `pg_vector`, `azure`, `cassandra`, `chroma`, `elasticsearch`, `milvus`, `neo4j`, `opensearch`, `qdrant`, `redis`, `typesense`, `weaviate`, `pinecone`, `oracle`, `mongodb`, `gemfire`, `simple`.
 |`spring.ai.kind` | The kind of framework API in Spring AI: `vector_store`.
 |===
@@ -440,7 +440,7 @@ The following shows how base metric names expand to Prometheus time series.
 |`db_vector_client_operation_seconds_sum`
 |Timer
 |seconds
-|Total time spent in vector store operations (add/delete/query)
+|Total time spent in vector store operations (add/upsert/delete/query)
 
 |`db_vector_client_operation_seconds_count`
 |Counter
@@ -463,7 +463,7 @@ The following shows how base metric names expand to Prometheus time series.
 [cols="2,3", options="header", stripes=even]
 |===
 |Label | Meaning
-|`db_operation_name` | Operation type (`add`, `delete`, `query`)
+|`db_operation_name` | Operation type (`add`, `upsert`, `delete`, `query`)
 |`db_system` | Vector DB/provider (`redis`, `chroma`, `pgvector`, …)
 |`spring_ai_kind` | `vector_store`
 |===

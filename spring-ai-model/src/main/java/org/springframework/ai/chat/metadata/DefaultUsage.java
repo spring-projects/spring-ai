@@ -18,11 +18,13 @@ package org.springframework.ai.chat.metadata;
 
 import java.util.Objects;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.databind.annotation.JsonSerialize;
 
 /**
  * Default implementation of the {@link Usage} interface.
@@ -121,14 +123,16 @@ public class DefaultUsage implements Usage {
 	 * This constructor is used for JSON deserialization and handles both the new format
 	 * with completionTokens and the legacy format with generationTokens.
 	 * @param promptTokens the number of tokens in the prompt
-	 * @param completionTokens the number of tokens in the completion (new format)
+	 * @param completionTokens the number of tokens in the completion (new format); the
+	 * legacy {@code generationTokens} property is accepted as an alias when
+	 * {@code completionTokens} is not present
 	 * @param totalTokens the total number of tokens
 	 * @param nativeUsage the native usage object
 	 * @return a new DefaultUsage instance
 	 */
 	@JsonCreator
 	public static DefaultUsage fromJson(@JsonProperty("promptTokens") Integer promptTokens,
-			@JsonProperty("completionTokens") Integer completionTokens,
+			@JsonProperty("completionTokens") @JsonAlias("generationTokens") Integer completionTokens,
 			@JsonProperty("totalTokens") Integer totalTokens, @JsonProperty("nativeUsage") Object nativeUsage,
 			@JsonProperty("cacheReadInputTokens") @Nullable Long cacheReadInputTokens,
 			@JsonProperty("cacheWriteInputTokens") @Nullable Long cacheWriteInputTokens) {
@@ -157,6 +161,7 @@ public class DefaultUsage implements Usage {
 	@Override
 	@JsonProperty("nativeUsage")
 	@JsonInclude(JsonInclude.Include.NON_NULL)
+	@JsonSerialize(using = NativeUsageSerializer.class)
 	public @Nullable Object getNativeUsage() {
 		return this.nativeUsage;
 	}

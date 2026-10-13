@@ -25,7 +25,7 @@ import java.util.List;
 
 import com.anthropic.client.AnthropicClient;
 import com.anthropic.core.http.HttpResponse;
-import com.anthropic.models.beta.files.FileMetadata;
+import com.anthropic.models.beta.files.BetaFileMetadata;
 import com.anthropic.models.messages.BashCodeExecutionOutputBlock;
 import com.anthropic.models.messages.BashCodeExecutionToolResultBlock;
 import com.anthropic.models.messages.CodeExecutionOutputBlock;
@@ -127,7 +127,7 @@ public final class AnthropicSkillsResponseHelper {
 		List<Path> savedPaths = new ArrayList<>();
 
 		for (String fileId : fileIds) {
-			FileMetadata metadata = client.beta().files().retrieveMetadata(fileId);
+			BetaFileMetadata metadata = client.beta().files().retrieveMetadata(fileId);
 			try (HttpResponse httpResponse = client.beta().files().download(fileId)) {
 				byte[] content = httpResponse.body().readAllBytes();
 				Path filePath = resolveSafeChildPath(targetDir, metadata.filename(), fileId);

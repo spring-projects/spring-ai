@@ -18,6 +18,7 @@ package org.springframework.ai.vectorstore.redis.autoconfigure;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import com.redis.testcontainers.RedisStackContainer;
 import io.micrometer.observation.tck.TestObservationRegistry;
@@ -31,6 +32,7 @@ import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.test.vectorstore.ObservationTestUtil;
 import org.springframework.ai.transformers.TransformersEmbeddingModel;
 import org.springframework.ai.util.ResourceUtils;
+import org.springframework.ai.vectorstore.EmbeddedDocument;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
@@ -42,6 +44,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
 /**
  * @author Julien Ruaux
@@ -154,6 +157,22 @@ class RedisVectorStoreAutoConfigurationIT {
 					.filterExpression("conversationId == 'conversation-1'")
 					.build());
 				assertThat(results).extracting(Document::getId).contains(document.getId());
+			});
+	}
+
+	@Test
+	void dimensionsPropertyReachesTheStore() {
+		// The test embedding model produces 384-dimension vectors, so an expected size of
+		// 7 can only come from the property.
+		this.contextRunner
+			.withPropertyValues("spring.ai.vectorstore.redis.index-name=dimensions-from-property",
+					"spring.ai.vectorstore.redis.prefix=dimensions:", "spring.ai.vectorstore.redis.dimensions=7")
+			.run(context -> {
+				VectorStore vectorStore = context.getBean(VectorStore.class);
+				EmbeddedDocument wrongSize = new EmbeddedDocument(
+						new Document(UUID.randomUUID().toString(), "wrong size", Map.of()), new float[8]);
+				assertThatIllegalArgumentException().isThrownBy(() -> vectorStore.upsert(List.of(wrongSize)))
+					.withMessageContaining("expects dimension 7");
 			});
 	}
 

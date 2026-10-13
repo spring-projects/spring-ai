@@ -25,8 +25,10 @@ import java.util.concurrent.ExecutionException;
 import java.util.stream.IntStream;
 
 import io.qdrant.client.QdrantClient;
+import io.qdrant.client.grpc.Collections.CollectionInfo;
 import io.qdrant.client.grpc.Collections.Distance;
 import io.qdrant.client.grpc.Collections.VectorParams;
+import io.qdrant.client.grpc.Collections.VectorsConfig;
 import io.qdrant.client.grpc.Common.Filter;
 import io.qdrant.client.grpc.Common.PointId;
 import io.qdrant.client.grpc.JsonWithInt.Value;
@@ -43,6 +45,7 @@ import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
+import org.springframework.ai.vectorstore.EmbeddedDocument;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
@@ -114,7 +117,8 @@ import org.springframework.util.Assert;
  * </p>
  * <ul>
  * <li>Running Qdrant instance accessible via gRPC</li>
- * <li>Collection with vector size matching the embedding model dimensions</li>
+ * <li>Collection with vector size matching the embedding model dimensions, or the
+ * {@link Builder#dimensions(int) configured dimensions}</li>
  * </ul>
  *
  * @author Anush Shetty
@@ -144,6 +148,11 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 
 	private final boolean initializeSchema;
 
+	private final int dimensions;
+
+	// Cache for vectorDimensions(); only a known size is stored.
+	private volatile int resolvedVectorDimensions = -1;
+
 	/**
 	 * Protected constructor for creating a QdrantVectorStore instance using the builder
 	 * pattern.
@@ -161,6 +170,7 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 		this.collectionName = builder.collectionName;
 		this.initializeSchema = builder.initializeSchema;
 		this.contentFieldName = builder.contentFieldName;
+		this.dimensions = builder.dimensions;
 	}
 
 	/**
@@ -198,6 +208,42 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 		}
 		catch (InterruptedException | ExecutionException | IllegalArgumentException e) {
 			throw new RuntimeException(e);
+		}
+	}
+
+	@Override
+	protected void doUpsert(List<EmbeddedDocument> entries) {
+		// Whole-batch dimension pre-check before any write, so a mismatched vector fails
+		// fast and cannot partially write. Non-empty and finiteness are already enforced
+		// by the EmbeddedDocument constructor. Only runs when the dimension is actually
+		// known; otherwise the check is left to Qdrant.
+		int expected = vectorDimensions();
+		for (int i = 0; i < entries.size(); i++) {
+			checkDimensions("Embedding at index " + i, entries.get(i).embedding().length, expected);
+		}
+
+		try {
+			List<PointStruct> points = IntStream.range(0, entries.size()).mapToObj(i -> {
+				// Pair positionally: the document and its embedding come from the same
+				// entry, so there is no indexOf lookup to slip.
+				EmbeddedDocument entry = entries.get(i);
+				Document document = entry.document();
+				return PointStruct.newBuilder()
+					.setId(io.qdrant.client.PointIdFactory.id(UUID.fromString(document.getId())))
+					.setVectors(io.qdrant.client.VectorsFactory.vectors(entry.embedding()))
+					.putAllPayload(toPayload(document))
+					.build();
+			}).toList();
+
+			this.qdrantClient.upsertAsync(this.collectionName, points).get();
+		}
+		catch (InterruptedException e) {
+			// Restore the flag so a caller that interrupted us can still see it.
+			Thread.currentThread().interrupt();
+			throw new IllegalStateException("Upsert was interrupted", e);
+		}
+		catch (ExecutionException e) {
+			throw new IllegalStateException("Could not upsert documents", e);
 		}
 	}
 
@@ -251,12 +297,20 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 	 */
 	@Override
 	public List<Document> doSimilaritySearch(SearchRequest request) {
+		return searchByEmbedding(this.embeddingModel.embed(request.getQuery()), request);
+	}
+
+	@Override
+	protected List<Document> doSimilaritySearch(float[] queryEmbedding, SearchRequest request) {
+		checkDimensions("Query embedding", queryEmbedding.length, vectorDimensions());
+		return searchByEmbedding(queryEmbedding, request);
+	}
+
+	private List<Document> searchByEmbedding(float[] queryEmbedding, SearchRequest request) {
 		try {
 			Filter filter = (request.getFilterExpression() != null)
 					? this.filterExpressionConverter.convertExpression(request.getFilterExpression())
 					: Filter.getDefaultInstance();
-
-			float[] queryEmbedding = this.embeddingModel.embed(request.getQuery());
 
 			var searchPoints = SearchPoints.newBuilder()
 				.setCollectionName(this.collectionName)
@@ -324,12 +378,64 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 
 		// Create the collection if it does not exist.
 		if (!isCollectionExists()) {
-			var vectorParams = VectorParams.newBuilder()
-				.setDistance(Distance.Cosine)
-				.setSize(this.embeddingModel.dimensions())
-				.build();
+			int size = (this.dimensions > 0) ? this.dimensions : this.embeddingModel.dimensions();
+			var vectorParams = VectorParams.newBuilder().setDistance(Distance.Cosine).setSize(size).build();
 			this.qdrantClient.createCollectionAsync(this.collectionName, vectorParams).get();
 		}
+	}
+
+	/**
+	 * The vector size the collection accepts, or -1 when it cannot be determined.
+	 * <p>
+	 * The size comes from the {@link Builder#dimensions(int) configured dimensions} if
+	 * set, otherwise from the existing collection, and only then from the embedding
+	 * model. Reading it from the collection means a store that only upserts into an
+	 * existing collection never has to contact the embedding model. A known size is
+	 * cached.
+	 * @return the known dimension, or -1
+	 */
+	private int vectorDimensions() {
+		int cached = this.resolvedVectorDimensions;
+		if (cached > 0) {
+			return cached;
+		}
+		int resolved = resolveVectorDimensions();
+		if (resolved > 0) {
+			this.resolvedVectorDimensions = resolved;
+		}
+		return resolved;
+	}
+
+	private int resolveVectorDimensions() {
+		if (this.dimensions > 0) {
+			return this.dimensions;
+		}
+		try {
+			CollectionInfo info = this.qdrantClient.getCollectionInfoAsync(this.collectionName).get();
+			VectorsConfig vectorsConfig = info.getConfig().getParams().getVectorsConfig();
+			// This store writes a single unnamed vector, so only that shape has a size to
+			// read. A collection with named vectors is left to Qdrant to validate.
+			if (vectorsConfig.hasParams() && vectorsConfig.getParams().getSize() > 0) {
+				return Math.toIntExact(vectorsConfig.getParams().getSize());
+			}
+		}
+		catch (InterruptedException ex) {
+			Thread.currentThread().interrupt();
+			return -1;
+		}
+		catch (Exception ex) {
+			logger.debug("Could not read the vector size of collection " + this.collectionName, ex);
+		}
+		try {
+			int modelDimensions = this.embeddingModel.dimensions();
+			if (modelDimensions > 0) {
+				return modelDimensions;
+			}
+		}
+		catch (Exception ex) {
+			logger.debug("Could not obtain the embedding dimensions from the embedding model", ex);
+		}
+		return -1;
 	}
 
 	private boolean isCollectionExists() {
@@ -345,7 +451,7 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
 
 		return VectorStoreObservationContext.builder(VectorStoreProvider.QDRANT.value(), operationName)
-			.dimensions(this.embeddingModel.dimensions())
+			.dimensions(vectorDimensions())
 			.collectionName(this.collectionName);
 
 	}
@@ -372,6 +478,8 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 		private String contentFieldName = DEFAULT_CONTENT_FIELD_NAME;
 
 		private boolean initializeSchema = false;
+
+		private int dimensions = -1;
 
 		/**
 		 * Creates a new builder instance with the required QdrantClient and
@@ -418,6 +526,23 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 		 */
 		public Builder initializeSchema(boolean initializeSchema) {
 			this.initializeSchema = initializeSchema;
+			return this;
+		}
+
+		/**
+		 * Configures the vector size of the collection. When set, it sizes the collection
+		 * the store creates and is the size {@code upsert} checks vectors against. When
+		 * not set, the store reads the size from the existing collection, and falls back
+		 * to asking the embedding model. Set it for an application that only upserts
+		 * pre-computed vectors, so the store never has to contact the embedding model.
+		 * @param dimensions the vector size; must be positive
+		 * @return this builder instance
+		 * @throws IllegalArgumentException if dimensions is not positive
+		 * @since 2.1.0
+		 */
+		public Builder dimensions(int dimensions) {
+			Assert.isTrue(dimensions > 0, "dimensions must be positive");
+			this.dimensions = dimensions;
 			return this;
 		}
 

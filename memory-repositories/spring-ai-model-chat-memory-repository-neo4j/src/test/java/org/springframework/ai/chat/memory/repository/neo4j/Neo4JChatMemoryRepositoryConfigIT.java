@@ -16,6 +16,9 @@
 
 package org.springframework.ai.chat.memory.repository.neo4j;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
 
@@ -29,6 +32,7 @@ import org.neo4j.driver.Driver;
 import org.neo4j.driver.GraphDatabase;
 import org.neo4j.driver.Result;
 import org.neo4j.driver.Session;
+import org.neo4j.driver.Value;
 import org.testcontainers.containers.Neo4jContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -40,6 +44,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * Integration tests for {@link Neo4jChatMemoryRepositoryConfig}.
  *
  * @author Soby Chacko
+ * @author chabinhwang
  */
 @Testcontainers
 class Neo4JChatMemoryRepositoryConfigIT {
@@ -64,26 +69,22 @@ class Neo4JChatMemoryRepositoryConfigIT {
 	@Test
 	void shouldCreateRequiredIndexes() {
 		// Given
-		Neo4jChatMemoryRepositoryConfig config = Neo4jChatMemoryRepositoryConfig.builder().withDriver(driver).build();
+		Neo4jChatMemoryRepositoryConfig.builder().withDriver(driver).build();
 		// When
+		Map<String, List<String>> indexedProperties = new HashMap<>();
 		try (Session session = driver.session()) {
 			Result result = session.run("SHOW INDEXES");
-			boolean sessionIndexFound = false;
-			boolean messageIndexFound = false;
 			while (result.hasNext()) {
 				var record = result.next();
-				String name = record.get("name").asString();
-				if ("session_conversation_id_index".equals(name)) {
-					sessionIndexFound = true;
-				}
-				if ("message_index_index".equals(name)) {
-					messageIndexFound = true;
-				}
+				Value properties = record.get("properties");
+				indexedProperties.put(record.get("name").asString(),
+						properties.isNull() ? List.of() : properties.asList(Value::asString));
 			}
-			// Then
-			assertThat(sessionIndexFound).isTrue();
-			assertThat(messageIndexFound).isTrue();
 		}
+		// Then the indexes cover the properties the repository queries: Session nodes are
+		// matched by id, Message nodes are ordered by idx.
+		assertThat(indexedProperties).containsEntry("session_id_index", List.of("id"))
+			.containsEntry("message_idx_index", List.of("idx"));
 	}
 
 	@Test

@@ -24,6 +24,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.testcontainers.containers.MongoDBContainer;
 import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -38,11 +39,12 @@ import org.springframework.boot.autoconfigure.ImportAutoConfiguration;
 import org.springframework.boot.data.mongodb.autoconfigure.DataMongoAutoConfiguration;
 import org.springframework.boot.mongodb.autoconfigure.MongoAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -51,6 +53,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author Łukasz Jernaś
  */
+@Testcontainers
 @SpringBootTest(classes = MongoChatMemoryRepositoryIT.TestConfiguration.class)
 public class MongoChatMemoryRepositoryIT {
 
@@ -61,8 +64,12 @@ public class MongoChatMemoryRepositoryIT {
 	private MongoTemplate mongoTemplate;
 
 	@Container
-	@ServiceConnection
 	static MongoDBContainer mongoDbContainer = new MongoDBContainer("mongo:8.0.6");
+
+	@DynamicPropertySource
+	static void mongoProperties(DynamicPropertyRegistry registry) {
+		registry.add("spring.mongodb.uri", mongoDbContainer::getReplicaSetUrl);
+	}
 
 	@Test
 	void correctChatMemoryRepositoryInstance() {

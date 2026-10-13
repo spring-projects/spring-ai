@@ -280,20 +280,55 @@ public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 	}
 
 	private DefaultUsage getDefaultUsage(CreateEmbeddingResponse.Usage nativeUsage) {
-		return new DefaultUsage(Math.toIntExact(nativeUsage.promptTokens()), 0,
-				Math.toIntExact(nativeUsage.totalTokens()), nativeUsage);
+		return new DefaultUsage(toIntTokenCount("promptTokens", nativeUsage.promptTokens()), 0,
+				toIntTokenCount("totalTokens", nativeUsage.totalTokens()), nativeUsage);
+	}
+
+	/**
+	 * Narrows a server-supplied token count to an {@code int}. Usage counts come from the
+	 * deserialised upstream response, so an out-of-range value means the response is not
+	 * trustworthy; fail clearly with the offending field and value rather than either
+	 * silently truncating the count (which would corrupt downstream cost/usage tracking
+	 * with a plausible-looking but wrong number) or letting a bare
+	 * {@link ArithmeticException} propagate.
+	 * @param fieldName the name of the usage field being converted, for diagnostics
+	 * @param value the upstream token count
+	 * @return the value narrowed to an {@code int}
+	 * @throws IllegalStateException if {@code value} is outside the {@code int} range
+	 */
+	private static int toIntTokenCount(String fieldName, long value) {
+		try {
+			return Math.toIntExact(value);
+		}
+		catch (ArithmeticException ex) {
+			throw new IllegalStateException(
+					"OpenAI-compatible provider returned an out-of-range " + fieldName + " value: " + value, ex);
+		}
 	}
 
 	private List<Embedding> generateEmbeddingList(List<com.openai.models.embeddings.Embedding> nativeData) {
 		List<Embedding> data = new ArrayList<>();
-		for (com.openai.models.embeddings.Embedding nativeDatum : nativeData) {
+		for (int i = 0; i < nativeData.size(); i++) {
+			com.openai.models.embeddings.Embedding nativeDatum = nativeData.get(i);
 			List<Float> nativeDatumEmbedding = nativeDatum.embedding();
-			long nativeIndex = nativeDatum.index();
+			long nativeIndex = resolveIndex(nativeDatum, i);
 			Embedding embedding = new Embedding(EmbeddingUtils.toPrimitive(nativeDatumEmbedding),
 					Math.toIntExact(nativeIndex));
 			data.add(embedding);
 		}
 		return data;
+	}
+
+	/**
+	 * Resolve the embedding index, falling back to the position within the response list
+	 * when the provider omits the (redundant) {@code index} field. Some OpenAI-compatible
+	 * endpoints - for example Google Gemini's OpenAI compatibility mode - do not include
+	 * it, which makes {@link com.openai.models.embeddings.Embedding#index()} throw. The
+	 * OpenAI API guarantees the index correlates with the position of the input.
+	 */
+	private long resolveIndex(com.openai.models.embeddings.Embedding nativeDatum, int position) {
+		com.openai.core.JsonField<Long> indexField = nativeDatum._index();
+		return indexField.asKnown().orElse((long) position);
 	}
 
 	/**

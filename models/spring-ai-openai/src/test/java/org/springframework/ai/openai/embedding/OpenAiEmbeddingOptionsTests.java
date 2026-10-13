@@ -81,6 +81,18 @@ class OpenAiEmbeddingOptionsTests {
 	}
 
 	@Test
+	void customHeadersArePropagatedToEmbeddingCreateParams() {
+		OpenAiEmbeddingOptions options = OpenAiEmbeddingOptions.builder()
+			.model("text-embedding-3-small")
+			.customHeaders(Map.of("x-budget-id", "BUDGET_123"))
+			.build();
+
+		EmbeddingCreateParams params = options.toOpenAiCreateParams(List.of("test input"));
+
+		assertThat(params._additionalHeaders().values("x-budget-id")).containsExactly("BUDGET_123");
+	}
+
+	@Test
 	void testOptionsBuilderMergeCustomHeaders() {
 		OpenAiEmbeddingOptions defaultOptions = OpenAiEmbeddingOptions.builder()
 			.customHeaders(Map.of("default-header", "default-value"))
