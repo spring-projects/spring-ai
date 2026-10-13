@@ -124,6 +124,39 @@ class ElasticsearchVectorStoreDateFilterIT {
 	}
 
 	@Test
+	void greaterThanWithIsoDateString() {
+		withStore(store -> {
+			FilterExpressionBuilder b = new FilterExpressionBuilder();
+			List<Document> results = store.similaritySearch(
+					request().filterExpression(b.gt("activationDate", "2024-01-08T00:00:00Z").build()).build());
+
+			assertThat(ids(results)).containsExactly("jan9");
+		});
+	}
+
+	@Test
+	void lessThanWithIsoDateString() {
+		withStore(store -> {
+			FilterExpressionBuilder b = new FilterExpressionBuilder();
+			List<Document> results = store.similaritySearch(
+					request().filterExpression(b.lt("activationDate", "2024-01-08T00:00:00Z").build()).build());
+
+			assertThat(ids(results)).containsExactly("jan7");
+		});
+	}
+
+	@Test
+	void lessThanOrEqualWithIsoDateString() {
+		withStore(store -> {
+			FilterExpressionBuilder b = new FilterExpressionBuilder();
+			List<Document> results = store.similaritySearch(
+					request().filterExpression(b.lte("activationDate", "2024-01-08T00:00:00Z").build()).build());
+
+			assertThat(ids(results)).containsExactlyInAnyOrder("jan7", "jan8");
+		});
+	}
+
+	@Test
 	void inWithIsoDateStrings() {
 		withStore(store -> {
 			List<Document> results = store.similaritySearch(
