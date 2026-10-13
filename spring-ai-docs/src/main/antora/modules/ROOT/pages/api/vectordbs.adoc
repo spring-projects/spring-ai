@@ -632,7 +632,7 @@ A query vector from a different model is not rejected when its width happens to 
 What is checked for you: the vector must not be empty or contain `NaN` or infinity, and its width must match the store's dimension when the store knows it.
 
 Searching with a query embedding is opt-in per store, like `upsert`: the default implementation throws `UnsupportedOperationException`.
-It is available on pgvector, Redis, Elasticsearch, and Qdrant.
+It is available on pgvector, Redis, Elasticsearch, Qdrant, and Chroma.
 
 === Separation of Read and Write Operations
 
