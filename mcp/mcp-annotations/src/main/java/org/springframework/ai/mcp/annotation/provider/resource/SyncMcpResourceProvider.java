@@ -65,7 +65,7 @@ public class SyncMcpResourceProvider {
 					var name = getName(mcpResourceMethod, resourceAnnotation);
 					var description = resourceAnnotation.description();
 					var mimeType = resourceAnnotation.mimeType();
-					var meta = MetaUtils.getMeta(resourceAnnotation.metaProvider());
+					var meta = MetaUtils.getResourceMeta(resourceAnnotation);
 
 					var mcpResource = McpSchema.Resource.builder(uri, name)
 						.description(description)
@@ -108,7 +108,7 @@ public class SyncMcpResourceProvider {
 					var name = getName(mcpResourceMethod, resourceAnnotation);
 					var description = resourceAnnotation.description();
 					var mimeType = resourceAnnotation.mimeType();
-					var meta = MetaUtils.getMeta(resourceAnnotation.metaProvider());
+					var meta = MetaUtils.getResourceMeta(resourceAnnotation);
 
 					var mcpResourceTemplate = McpSchema.ResourceTemplate.builder(uri, name)
 						.description(description)
