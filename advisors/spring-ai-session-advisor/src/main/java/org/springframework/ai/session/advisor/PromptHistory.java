@@ -125,16 +125,16 @@ record PromptHistory(List<Message> system, List<Message> conversation) {
 
 		// Every system message first, in order, each text once: a stored system prompt
 		// the request also sends goes once. Texts are never merged or rewritten, so the
-		// system prompt stays byte-stable for prompt caching
+		// prompt stays byte-stable for prompt caching. A blank one, the tool-calling
+		// loop's stand-in for a request without a system prompt, is not sent at all
 		Set<String> seenSystemTexts = new HashSet<>();
 		List<Message> systemMessages = prompt.stream()
 			.filter(SystemMessage.class::isInstance)
-			.filter(message -> seenSystemTexts.add(Objects.requireNonNullElse(message.getText(), "")))
+			.filter(message -> message.getText() != null && !message.getText().isBlank())
+			.filter(message -> seenSystemTexts.add(message.getText()))
 			.toList();
-		if (!systemMessages.isEmpty()) {
-			prompt.removeIf(SystemMessage.class::isInstance);
-			prompt.addAll(0, systemMessages);
-		}
+		prompt.removeIf(SystemMessage.class::isInstance);
+		prompt.addAll(0, systemMessages);
 		return prompt;
 	}
 
@@ -155,6 +155,12 @@ record PromptHistory(List<Message> system, List<Message> conversation) {
 	 * {@code k}, compared by {@link #sameContent}.
 	 */
 	private static int overlap(List<Message> history, List<Message> request) {
+		// Only a tool-calling round re-sends the turn so far, and it carries more than a
+		// user message; a request that is one user message is new, even when the user
+		// repeats what the log ends with
+		if (request.size() < 2) {
+			return 0;
+		}
 		for (int k = Math.min(history.size(), request.size()); k > 0; k--) {
 			int offset = history.size() - k;
 			int i = 0;

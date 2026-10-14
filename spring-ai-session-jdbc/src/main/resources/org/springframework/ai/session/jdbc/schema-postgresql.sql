@@ -42,3 +42,7 @@ CREATE TABLE IF NOT EXISTS AI_SESSION_EVENT (
 
 CREATE INDEX IF NOT EXISTS idx_ai_session_event_session_seq
     ON AI_SESSION_EVENT (session_id, seq);
+
+-- The newest compaction boundary of a session, on every read of the active view
+CREATE INDEX IF NOT EXISTS idx_ai_session_event_session_type_seq
+    ON AI_SESSION_EVENT (session_id, event_type, seq);

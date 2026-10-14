@@ -184,4 +184,16 @@ class CompactionBoundaryTests extends CompactionTestSupport {
 				"<STATUS>", "u2");
 	}
 
+	@Test
+	void idNamedTwiceIsPlacedOnce() {
+		SessionEvent sys = system("sys");
+		SessionEvent u1 = user("u1");
+		SessionEvent u2 = user("u2");
+
+		List<SessionEvent> view = CompactionBoundary
+			.project(List.of(sys, u1, u2, boundary(List.of(sys), List.of(), List.of(sys, u2))));
+
+		assertThat(texts(view)).containsExactly("sys", "u2");
+	}
+
 }

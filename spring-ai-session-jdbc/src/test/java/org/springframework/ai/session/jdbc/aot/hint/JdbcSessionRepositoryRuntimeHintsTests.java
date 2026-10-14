@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
+import org.springframework.ai.session.support.SessionEventCodec;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
 import org.springframework.aot.hint.predicate.RuntimeHintsPredicates;
@@ -62,6 +63,13 @@ class JdbcSessionRepositoryRuntimeHintsTests {
 		assertThat(
 				RuntimeHintsPredicates.resource().forResource("org/springframework/ai/session/jdbc/" + schemaFileName))
 			.accepts(this.hints);
+	}
+
+	@Test
+	void messageBodyHasReflectionHints() {
+		this.registrar.registerHints(this.hints, getClass().getClassLoader());
+
+		assertThat(RuntimeHintsPredicates.reflection().onType(SessionEventCodec.MessageBody.class)).accepts(this.hints);
 	}
 
 }

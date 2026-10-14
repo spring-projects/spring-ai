@@ -16,9 +16,7 @@
 
 package org.springframework.ai.session;
 
-import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -40,8 +38,6 @@ import org.springframework.util.Assert;
 public final class EventType {
 
 	private static final Pattern NAME = Pattern.compile("[A-Z][A-Z0-9_.]*");
-
-	private static final Map<String, EventType> TYPES = new ConcurrentHashMap<>();
 
 	/**
 	 * A conversation message; the event carries a
@@ -74,7 +70,7 @@ public final class EventType {
 		Assert.hasText(name, "name must not be null or empty");
 		Assert.isTrue(NAME.matcher(name).matches(),
 				() -> "Event type name '" + name + "' must match " + NAME.pattern());
-		return TYPES.computeIfAbsent(name, EventType::new);
+		return new EventType(name);
 	}
 
 	/** The name, as stores keep it and as JSON carries it. */

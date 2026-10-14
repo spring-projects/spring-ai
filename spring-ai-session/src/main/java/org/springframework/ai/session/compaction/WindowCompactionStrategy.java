@@ -110,11 +110,13 @@ public final class WindowCompactionStrategy implements CompactionStrategy {
 		if (turns.isEmpty()) {
 			return CompactionResult.unchanged();
 		}
+		// In view order: the system prompt, the preamble, then the summary a plain
+		// window carries forward, where a summarizing pass places the new one
 		List<SessionEvent> pinned = new ArrayList<>(pinnedSystem);
+		pinned.addAll(preamble);
 		if (this.summarizer == null) {
 			pinned.addAll(priorSummary);
 		}
-		pinned.addAll(preamble);
 
 		// 4. The cut, on a turn start, keeping the newest turn
 		int rawCut = rawCut(turns, pinned, tokens);

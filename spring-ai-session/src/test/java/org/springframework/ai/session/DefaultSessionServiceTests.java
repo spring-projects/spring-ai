@@ -26,7 +26,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -245,21 +247,11 @@ class DefaultSessionServiceTests {
 	}
 
 	@Test
-	void withoutResolverSessionHasOnlyRequestsMetadata() {
+	void sessionHasOnlyRequestsMetadata() {
 		Session session = this.service.create(CreateSessionRequest.builder().build());
 
 		assertThat(session.metadata()).isEmpty();
 		assertThat(SessionAttributes.principalName(session)).isNull();
-	}
-
-	// --- Session tree ---
-
-	private Session root() {
-		return this.service.create(CreateSessionRequest.builder()
-			.metadata(SessionAttributes.PRINCIPAL_NAME, "alice")
-			.metadata("tenant", "acme")
-			.timeToLive(Duration.ofHours(3))
-			.build());
 	}
 
 	@Test
@@ -388,27 +380,6 @@ class DefaultSessionServiceTests {
 	}
 
 	@Test
-	void compactWithPreloadedSessionProducesSameResultAsSessionIdOverload() {
-		Session session = this.service
-			.create(CreateSessionRequest.builder().metadata(SessionAttributes.PRINCIPAL_NAME, "user-1").build());
-
-		for (int i = 1; i <= 5; i++) {
-			this.service.appendMessage(session.id(), new UserMessage("msg-" + i));
-		}
-
-		// Session-object overload skips the internal findById() round-trip but must
-		// produce an identical result to the sessionId overload.
-		CompactionResult result = this.service.compact(session.id(), req -> true,
-				WindowCompactionStrategy.builder().lastEvents(2).build());
-
-		assertThat(result.coveredEventCount()).isEqualTo(3);
-		assertThat(result.preservedEvents()).hasSize(2);
-
-		List<SessionEvent> active = this.service.getEvents(session.id(), EventFilter.active());
-		assertThat(active).extracting(e -> e.getMessage().getText()).containsExactly("msg-4", "msg-5");
-	}
-
-	@Test
 	void getEventsWithFilterAppliesFilter() {
 		Session session = this.service
 			.create(CreateSessionRequest.builder().metadata(SessionAttributes.PRINCIPAL_NAME, "user-1").build());
@@ -424,52 +395,83 @@ class DefaultSessionServiceTests {
 	}
 
 	@Test
-	void concurrentCompactionOnlyAppliesOnce() throws InterruptedException {
-		Session session = this.service
-			.create(CreateSessionRequest.builder().metadata(SessionAttributes.PRINCIPAL_NAME, "user-1").build());
+	void compactionOvertakenByAppendIsNotApplied() {
+		// An append between the version read and the write: the version check rejects
+		// the boundary, the log is unchanged, and the next pass sees the new event
+		InMemorySessionRepository store = InMemorySessionRepository.builder().build();
+		AtomicBoolean appendOnRead = new AtomicBoolean();
+		SessionService service = DefaultSessionService.builder().sessionRepository(new SessionRepository() {
+			@Override
+			public Session save(Session session) {
+				return store.save(session);
+			}
 
-		for (int i = 1; i <= 5; i++) {
-			this.service.appendMessage(session.id(), new UserMessage("msg-" + i));
-		}
+			@Override
+			public boolean saveIfAbsent(Session session) {
+				return store.saveIfAbsent(session);
+			}
 
-		// Two threads race to compact the same session to a window of 2.
-		// The CAS in appendEvents guarantees that only the first boundary lands;
-		// the second detects a version mismatch and skips silently.
-		CountDownLatch ready = new CountDownLatch(2);
-		CountDownLatch go = new CountDownLatch(1);
-		CompactionResult[] results = new CompactionResult[2];
+			@Override
+			public @Nullable Session findById(String sessionId) {
+				return store.findById(sessionId);
+			}
 
-		ExecutorService executor = Executors.newFixedThreadPool(2);
-		for (int i = 0; i < 2; i++) {
-			int idx = i;
-			executor.submit(() -> {
-				ready.countDown();
-				try {
-					go.await();
+			@Override
+			public List<Session> findByIndex(String name, String value) {
+				return store.findByIndex(name, value);
+			}
+
+			@Override
+			public void delete(String sessionId) {
+				store.delete(sessionId);
+			}
+
+			@Override
+			public int deleteExpiredSessions(Instant before) {
+				return store.deleteExpiredSessions(before);
+			}
+
+			@Override
+			public void appendEvent(SessionEvent event) {
+				store.appendEvent(event);
+			}
+
+			@Override
+			public boolean appendEvents(String sessionId, List<SessionEvent> events, long expectedVersion) {
+				return store.appendEvents(sessionId, events, expectedVersion);
+			}
+
+			@Override
+			public long getEventVersion(String sessionId) {
+				return store.getEventVersion(sessionId);
+			}
+
+			@Override
+			public List<SessionEvent> findEvents(String sessionId, EventFilter filter) {
+				List<SessionEvent> events = store.findEvents(sessionId, filter);
+				if (appendOnRead.compareAndSet(true, false)) {
+					store.appendEvent(
+							SessionEvent.builder().sessionId(sessionId).message(new UserMessage("late")).build());
 				}
-				catch (InterruptedException e) {
-					Thread.currentThread().interrupt();
-				}
-				results[idx] = this.service.compact(session.id(), req -> true,
-						WindowCompactionStrategy.builder().lastEvents(2).build());
-			});
+				return events;
+			}
+		}).build();
+		Session session = service.create(CreateSessionRequest.builder().build());
+		for (int i = 1; i <= 4; i++) {
+			service.appendMessage(session.id(), new UserMessage("msg-" + i));
 		}
+		CompactionStrategy window = WindowCompactionStrategy.builder().lastEvents(2).build();
 
-		ready.await();
-		go.countDown();
-		executor.shutdown();
-		assertThat(executor.awaitTermination(5, TimeUnit.SECONDS)).isTrue();
+		appendOnRead.set(true);
+		CompactionResult overtaken = service.compact(session.id(), req -> true, window);
+		CompactionResult applied = service.compact(session.id(), req -> true, window);
 
-		// Exactly one compaction must have covered 3 events; the other is a no-op.
-		int totalCovered = results[0].coveredEventCount() + results[1].coveredEventCount();
-		assertThat(totalCovered).isEqualTo(3);
-
-		// The surviving active window must be exactly the last 2 messages, and exactly
-		// one boundary was appended.
-		List<SessionEvent> active = this.service.getEvents(session.id(), EventFilter.active());
-		assertThat(active).extracting(e -> e.getMessage().getText()).containsExactly("msg-4", "msg-5");
-		assertThat(this.service.getEvents(session.id()).stream().filter(e -> e.getType() == EventType.COMPACTION))
+		assertThat(overtaken.isUnchanged()).isTrue();
+		assertThat(applied.coveredEventCount()).isEqualTo(3);
+		assertThat(service.getEvents(session.id()).stream().filter(e -> EventType.COMPACTION.equals(e.getType())))
 			.hasSize(1);
+		assertThat(service.getActiveMessages(session.id())).extracting(Message::getText)
+			.containsExactly("msg-4", "late");
 	}
 
 	// --- deleteExpiredSessions ---
@@ -508,7 +510,5 @@ class DefaultSessionServiceTests {
 	void deleteExpiredSessionsReturnsZeroWhenNoSessions() {
 		assertThat(this.service.deleteExpiredSessions(Instant.now())).isZero();
 	}
-
-	// --- Usage ---
 
 }

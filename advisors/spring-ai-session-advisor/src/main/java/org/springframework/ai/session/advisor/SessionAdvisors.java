@@ -45,6 +45,10 @@ import org.springframework.util.Assert;
  * chatClient.prompt().user("Hi").advisors(SessionAdvisors.session(sessionId)).call().content();
  * </pre>
  * <p>
+ * The memory advisor is a {@code MemoryAdvisor}, so the tool-calling loop the
+ * {@code ChatClient} registers runs with its own history off: each round's prompt is
+ * rebuilt from the session.
+ * <p>
  * The advisors can still be built one by one, for an order of your own.
  *
  * @author Christian Tzolov

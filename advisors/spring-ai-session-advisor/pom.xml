@@ -26,6 +26,10 @@
 			<artifactId>spring-ai-client-chat</artifactId>
 			<version>${project.parent.version}</version>
 		</dependency>
+		<dependency>
+			<groupId>io.micrometer</groupId>
+			<artifactId>context-propagation</artifactId>
+		</dependency>
 
 		<!-- Test -->
 		<dependency>

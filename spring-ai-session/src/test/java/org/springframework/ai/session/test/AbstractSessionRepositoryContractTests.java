@@ -787,12 +787,6 @@ public abstract class AbstractSessionRepositoryContractTests {
 		}
 	}
 
-	/** Appends a user message with an explicit timestamp. */
-	protected void appendAt(String sessionId, Instant timestamp, String text) {
-		this.repository
-			.appendEvent(SessionEvent.builder().sessionId(sessionId).timestamp(timestamp).message(user(text)).build());
-	}
-
 	/** The texts of the message events matching the filter, in the order returned. */
 	protected List<String> texts(String sessionId, EventFilter filter) {
 		return this.repository.findEvents(sessionId, filter)
@@ -863,7 +857,7 @@ public abstract class AbstractSessionRepositoryContractTests {
 	 */
 	protected static List<String> labels(List<SessionEvent> events) {
 		return events.stream().map(e -> {
-			if (e.getType() == EventType.COMPACTION) {
+			if (EventType.COMPACTION.equals(e.getType())) {
 				return "⊥";
 			}
 			if (!e.hasMessage()) {
@@ -896,11 +890,6 @@ public abstract class AbstractSessionRepositoryContractTests {
 		return ids;
 	}
 
-	/** The id of the single event with the given label. */
-	protected static String idOf(List<SessionEvent> events, String label) {
-		return ids(events, label).iterator().next();
-	}
-
 	protected static Message user(String text) {
 		return new UserMessage(text);
 	}
@@ -925,6 +914,40 @@ public abstract class AbstractSessionRepositoryContractTests {
 		return ToolResponseMessage.builder()
 			.responses(List.of(new ToolResponseMessage.ToolResponse(callId, toolName, data)))
 			.build();
+	}
+
+	@Test
+	void findByIndexIsCaseSensitive() {
+		String alice = "alice-" + UUID.randomUUID();
+		Session lower = newSession(alice);
+		Session upper = newSession(alice.toUpperCase());
+
+		assertThat(this.repository.findByIndex(SessionAttributes.PRINCIPAL_NAME, alice)).extracting(Session::id)
+			.containsExactly(lower.id());
+		assertThat(this.repository.findByIndex(SessionAttributes.PRINCIPAL_NAME, alice.toUpperCase()))
+			.extracting(Session::id)
+			.containsExactly(upper.id());
+	}
+
+	@Test
+	void eventKeepsItsIdTimestampAndMetadataThroughStore() {
+		Session session = newSession("user-round-trip");
+		Instant at = Instant.parse("2026-03-01T10:15:30.123456Z");
+		this.repository.appendEvent(SessionEvent.builder()
+			.id("event-" + session.id())
+			.sessionId(session.id())
+			.timestamp(at)
+			.message(user("hello"))
+			.metadata("model", "m-1")
+			.metadata("latencyMs", 230)
+			.build());
+
+		SessionEvent stored = this.repository.findEvents(session.id(), EventFilter.all()).get(0);
+
+		assertThat(stored.getId()).isEqualTo("event-" + session.id());
+		assertThat(stored.getTimestamp()).isEqualTo(at);
+		assertThat(stored.getMetadata()).containsEntry("model", "m-1").containsEntry("latencyMs", 230);
+		assertThat(stored.isSynthetic()).isFalse();
 	}
 
 }

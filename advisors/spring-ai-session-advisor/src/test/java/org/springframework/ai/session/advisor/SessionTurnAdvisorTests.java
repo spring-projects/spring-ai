@@ -418,6 +418,51 @@ class SessionTurnAdvisorTests {
 		assertThat(condition.getAsBoolean()).isTrue();
 	}
 
+	@Test
+	void streamedCallCarriesCallersContextToSessionCalls() throws InterruptedException {
+		ThreadLocal<String> caller = new ThreadLocal<>();
+		ContextRegistry.getInstance()
+			.registerThreadLocalAccessor("test.caller", caller::get, caller::set, caller::remove);
+		AtomicReference<String> seenByCompaction = new AtomicReference<>();
+		AtomicReference<String> seenByMemory = new AtomicReference<>();
+		CountDownLatch compacted = new CountDownLatch(1);
+		CompactionStrategy recording = request -> {
+			seenByCompaction.set(caller.get());
+			compacted.countDown();
+			return CompactionResult.unchanged();
+		};
+		ChatClient client = ChatClient.builder(this.model)
+			.defaultAdvisors(
+					SessionTurnAdvisor.builder(this.sessionService)
+						.compactionTrigger(request -> true)
+						.compactionStrategy(recording)
+						.build(),
+					ToolCallingAdvisor.builder().build(),
+					SessionMemoryAdvisor.builder(this.sessionService).messageFilter(message -> {
+						seenByMemory.set(caller.get());
+						return true;
+					}).build())
+			.build();
+		this.model.thenAnswer("Hi!");
+		try {
+			caller.set("alice");
+			client.prompt()
+				.user("Hello")
+				.advisors(a -> a.param(SessionMemoryAdvisor.SESSION_ID_CONTEXT_KEY, this.sessionId))
+				.stream()
+				.content()
+				.blockLast();
+
+			assertThat(compacted.await(5, TimeUnit.SECONDS)).isTrue();
+			assertThat(seenByMemory).hasValue("alice");
+			assertThat(seenByCompaction).hasValue("alice");
+		}
+		finally {
+			caller.remove();
+			ContextRegistry.getInstance().removeThreadLocalAccessor("test.caller");
+		}
+	}
+
 	record City(String city) {
 	}
 

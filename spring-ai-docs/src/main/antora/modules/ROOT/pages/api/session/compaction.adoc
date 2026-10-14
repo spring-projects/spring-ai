@@ -19,7 +19,7 @@ CompactionResult result = sessionService.compact(sessionId,
 
 result.isUnchanged();           // nothing left the view, nothing was written
 result.coveredEvents();         // the events that left the view; they stay in the log
-result.pinnedEvents();          // kept first in the view: the system prompt, a prior summary, a preamble
+result.pinnedEvents();          // kept first in the view: the system prompt, a preamble, a prior summary
 result.preservedEvents();       // the recent events kept verbatim
 result.summary();               // the summary turn, as messages; empty for a plain window
 result.tokensEstimatedSaved();  // an estimate, net of the summary
@@ -190,14 +190,14 @@ CompactionStrategy strategy = WindowCompactionStrategy.builder()
         .systemPrompt("...")                        // optional: the summarizing call's system prompt
         .shadowPrompt("Fasse unser Gespräch zusammen.")  // optional: the user message that opens the summary turn
         .eventFormatter(event -> ...)               // optional: how an event is rendered in the prompt
-        .onSummarizationFailure(request -> ...)     // optional: called on a null or blank reply
+        .onSummarizationFailure(request -> ...)     // optional: called on a failed call or a blank reply
         .build())
     .build();
 ----
 
 WARNING: Give the summarizer a plain `ChatClient`, not one with the session advisors among its default advisors: the summarizing call carries no session id, so the memory advisor would reject it.
 
-A null or blank reply is logged at `WARN`, the failure callback is called, and the view is unchanged.
+A failed model call or a null or blank reply is logged at `WARN`, the failure callback is called, and the view is unchanged.
 An exception from the model call propagates out of `SessionService.compact`; the `SessionTurnAdvisor` catches and logs it, so the user's call still succeeds.
 
 `EventText.of(event)` is the one-line rendering of an event that the token estimates and the default prompt use: `User: ...`, `Assistant: ...`, `Assistant [tool calls: name(args)]`, `Tool [responses: name -> data]`.

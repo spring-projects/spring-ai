@@ -18,7 +18,9 @@ package org.springframework.ai.session.compaction;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import org.springframework.ai.chat.messages.Message;
@@ -66,6 +68,13 @@ public record CompactionResult(List<SessionEvent> coveredEvents, List<SessionEve
 		Assert.notNull(summary, "summary must not be null");
 		Assert.notNull(strategy, "strategy must not be null");
 		Assert.isTrue(summary.isEmpty() || !coveredEvents.isEmpty(), "a summary needs covered events to stand in for");
+		Set<String> ids = new HashSet<>();
+		for (List<SessionEvent> list : List.of(coveredEvents, pinnedEvents, preservedEvents)) {
+			for (SessionEvent event : list) {
+				Assert.isTrue(ids.add(event.getId()),
+						() -> "Event '" + event.getId() + "' is covered, pinned or preserved, not two of them");
+			}
+		}
 		coveredEvents = List.copyOf(coveredEvents);
 		pinnedEvents = List.copyOf(pinnedEvents);
 		preservedEvents = List.copyOf(preservedEvents);

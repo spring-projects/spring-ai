@@ -118,6 +118,12 @@
 			</dependency>
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-session</artifactId>
+				<version>${project.version}</version>
+				<type>test-jar</type>
+			</dependency>
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-session-jdbc</artifactId>
 				<version>${project.version}</version>
 			</dependency>

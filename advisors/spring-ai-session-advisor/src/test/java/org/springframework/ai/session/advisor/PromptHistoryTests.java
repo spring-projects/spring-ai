@@ -211,4 +211,18 @@ class PromptHistoryTests {
 			.build();
 	}
 
+	@Test
+	void blankSystemMessageIsNotSent() {
+		// The tool-calling loop sends the request's system message with each round, a
+		// blank one when the request has none
+		assertThat(prompt(history(U1, A1), new SystemMessage(""), U2)).containsExactly("Weather in Lisbon?", "Sunny.",
+				"And Porto?");
+	}
+
+	@Test
+	void userMessageRepeatingLogIsNotTakenForOverlap() {
+		// Only a tool-calling round re-sends what the log ends with
+		assertThat(prompt(history(U1), U1)).containsExactly("Weather in Lisbon?", "Weather in Lisbon?");
+	}
+
 }

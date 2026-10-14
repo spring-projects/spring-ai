@@ -131,10 +131,6 @@ class JdbcSessionRepositoryTests {
 	}
 
 	// -------------------------------------------------------------------------
-	// Event append and retrieval
-	// -------------------------------------------------------------------------
-
-	// -------------------------------------------------------------------------
 	// Message type round-trips
 	// -------------------------------------------------------------------------
 
@@ -355,11 +351,6 @@ class JdbcSessionRepositoryTests {
 			.id(UUID.randomUUID().toString())
 			.metadata(SessionAttributes.PRINCIPAL_NAME, principal)
 			.build();
-	}
-
-	private void appendEntry(String sessionId, int n) {
-		this.repository
-			.appendEvent(SessionEvent.builder().sessionId(sessionId).message(new UserMessage("entry " + n)).build());
 	}
 
 	// -------------------------------------------------------------------------

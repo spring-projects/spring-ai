@@ -20,13 +20,15 @@ import javax.sql.DataSource;
 
 import org.jspecify.annotations.Nullable;
 
+import org.springframework.ai.session.support.SessionEventCodec;
 import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
 
 /**
- * The runtime hints of the JDBC session repository: the schema scripts, and the
- * {@link DataSource} the dialect is detected from.
+ * The runtime hints of the JDBC session repository: the schema scripts, the
+ * {@link DataSource} the dialect is detected from, and the persisted shape of a message
+ * event.
  *
  * @author Christian Tzolov
  * @since 2.1.0
@@ -37,6 +39,10 @@ class JdbcSessionRepositoryRuntimeHints implements RuntimeHintsRegistrar {
 	public void registerHints(RuntimeHints hints, @Nullable ClassLoader classLoader) {
 		hints.reflection()
 			.registerType(DataSource.class, hint -> hint.withMembers(MemberCategory.INVOKE_DECLARED_METHODS));
+		// The JSON payload of a message event
+		hints.reflection()
+			.registerType(SessionEventCodec.MessageBody.class, hint -> hint
+				.withMembers(MemberCategory.INVOKE_DECLARED_CONSTRUCTORS, MemberCategory.INVOKE_DECLARED_METHODS));
 		hints.resources().registerPattern("org/springframework/ai/session/jdbc/schema-*.sql");
 	}
 

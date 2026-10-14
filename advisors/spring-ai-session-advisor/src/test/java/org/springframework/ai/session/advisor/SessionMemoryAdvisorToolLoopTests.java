@@ -73,9 +73,8 @@ class SessionMemoryAdvisorToolLoopTests {
 
 		assertThat(this.model.prompts()).hasSize(4).allSatisfy(SessionMemoryAdvisorToolLoopTests::assertNoDuplicates);
 		// The loop adds the request's system message to each later round, a blank one
-		// when
-		// the request has none
-		assertThat(ScriptedChatModel.describe(this.model.prompts().get(3))).containsExactly("", "Weather in Lisbon?",
+		// when the request has none, which is not sent
+		assertThat(ScriptedChatModel.describe(this.model.prompts().get(3))).containsExactly("Weather in Lisbon?",
 				"call:c1", "result:c1", "Lisbon: sunny.", "And Porto?", "call:c2", "result:c2");
 	}
 

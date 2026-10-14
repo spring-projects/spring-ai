@@ -21,7 +21,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Supplier;
 
+import io.micrometer.context.ContextSnapshot;
+import io.micrometer.context.ContextSnapshotFactory;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -82,6 +85,9 @@ public final class SessionMemoryAdvisor implements BaseAdvisor, MemoryAdvisor {
 
 	private static final Logger logger = LoggerFactory.getLogger(SessionMemoryAdvisor.class);
 
+	/** Carries the caller's thread-local context to the session calls of a stream. */
+	private static final ContextSnapshotFactory CONTEXT_SNAPSHOTS = ContextSnapshotFactory.builder().build();
+
 	/**
 	 * Context key of the session a request runs on;
 	 * {@link org.springframework.ai.chat.memory.ChatMemory#CONVERSATION_ID}, the key of
@@ -106,7 +112,7 @@ public final class SessionMemoryAdvisor implements BaseAdvisor, MemoryAdvisor {
 	 * {@link EventFilter#merge(EventFilter)}). Set with {@code .advisors(a ->
 	 * a.param(SessionMemoryAdvisor.EVENT_FILTER_CONTEXT_KEY, EventFilter.lastN(10)))}.
 	 */
-	public static final String EVENT_FILTER_CONTEXT_KEY = "chat_memory_event_filter_id";
+	public static final String EVENT_FILTER_CONTEXT_KEY = "chat_memory_event_filter";
 
 	/**
 	 * Context key the advisor sets on the request it forwards, and so on the response:
@@ -166,10 +172,10 @@ public final class SessionMemoryAdvisor implements BaseAdvisor, MemoryAdvisor {
 		// only
 		EventFilter eventFilter = resolveEventFilter(request.context()).merge(EventFilter.active());
 		List<SessionEvent> events = this.sessionService.getEvents(sessionId, eventFilter);
-		// A lastN window may leave the system prompt, which is configuration, outside the
-		// events read: look it up on its own
+		// A lastN window, or a messageTypes filter without SYSTEM, may leave the system
+		// prompt, which is configuration, outside the events read: look it up on its own
 		SessionEvent systemPrompt = PromptHistory.latestStoredSystemPrompt(events);
-		if (systemPrompt == null && !(eventFilter.window() instanceof EventFilter.Window.All)) {
+		if (systemPrompt == null && !canReturnSystemPrompt(eventFilter)) {
 			systemPrompt = latestStoredSystemPrompt(sessionId);
 		}
 
@@ -225,9 +231,16 @@ public final class SessionMemoryAdvisor implements BaseAdvisor, MemoryAdvisor {
 		return named;
 	}
 
+	/** Whether a read with the filter returns every stored system message of the view. */
+	private static boolean canReturnSystemPrompt(EventFilter filter) {
+		Set<MessageType> types = filter.messageTypes();
+		return filter.window() instanceof EventFilter.Window.All
+				&& (types == null || types.isEmpty() || types.contains(MessageType.SYSTEM));
+	}
+
 	/**
 	 * Reads the latest stored (non-synthetic, active) system message of the session with
-	 * one pushed-down query, for a read whose window may not contain it.
+	 * one pushed-down query, for a read whose filter may not return it.
 	 */
 	private @Nullable SessionEvent latestStoredSystemPrompt(String sessionId) {
 		EventFilter latestSystem = EventFilter.builder()
@@ -242,16 +255,25 @@ public final class SessionMemoryAdvisor implements BaseAdvisor, MemoryAdvisor {
 
 	@Override
 	public Flux<ChatClientResponse> adviseStream(ChatClientRequest request, StreamAdvisorChain chain) {
-		return Mono.just(request)
-			.publishOn(this.scheduler)
-			.map(r -> this.before(r, chain))
-			.flatMapMany(chain::nextStream)
-			// Re-pin to the scheduler so that the after() callback (which performs
-			// synchronous session writes) always runs on the configured scheduler rather
-			// than the LLM streaming thread.
-			.publishOn(this.scheduler)
-			.transform(flux -> new ChatClientMessageAggregator().aggregateChatClientResponse(flux,
-					r -> this.after(r, chain)));
+		// The session reads and writes run on the scheduler, never on the model's thread,
+		// with the caller's thread-local context (the security context, the current
+		// observation) restored around them
+		return Flux.defer(() -> {
+			ContextSnapshot context = CONTEXT_SNAPSHOTS.captureAll();
+			return Mono.just(request)
+				.publishOn(this.scheduler)
+				.map(r -> withContext(context, () -> this.before(r, chain)))
+				.flatMapMany(chain::nextStream)
+				.publishOn(this.scheduler)
+				.transform(flux -> new ChatClientMessageAggregator().aggregateChatClientResponse(flux,
+						r -> withContext(context, () -> this.after(r, chain))));
+		});
+	}
+
+	private static <T> T withContext(ContextSnapshot context, Supplier<T> action) {
+		try (ContextSnapshot.Scope ignored = context.setThreadLocals()) {
+			return action.get();
+		}
 	}
 
 	/**
@@ -322,6 +344,7 @@ public final class SessionMemoryAdvisor implements BaseAdvisor, MemoryAdvisor {
 		}
 
 		public Builder scheduler(Scheduler scheduler) {
+			Assert.notNull(scheduler, "scheduler must not be null");
 			this.scheduler = scheduler;
 			return this;
 		}

@@ -77,8 +77,10 @@ One compaction per session runs at a time from one advisor, and a compaction tha
 Compaction is best-effort: a failure is logged and the reply returned.
 
 NOTE: The memory advisor's default order puts it inside the `ToolCallingAdvisor`'s loop, so it runs once per round.
-That is deliberate: from round 2 on, the prompt starts with the turn so far, which the loaded history ends with, so only the history before the overlap is prepended, and only each round's trailing message and the model's reply are stored.
+That is deliberate: each round's prompt is rebuilt from the session, and only each round's trailing message and the model's reply are stored.
+`SessionMemoryAdvisor` is a `MemoryAdvisor`, so the loop the `ChatClient` registers itself runs with its own history off and sends only the system prompt and the last tool result; a loop configured with its history on sends the turn so far, which the loaded history ends with, and only the history before the overlap is prepended.
 Messages are compared by content, not by identity, so the check also holds when the repository does not keep message metadata.
+A blank system message, the loop's stand-in for a request without one, is not sent.
 
 [[session-chat-client-keys]]
 == Context keys
@@ -99,7 +101,7 @@ Omitting it throws `IllegalStateException`: a shared default session would silen
 Set the agent attributes once with `.defaultAdvisors(a -> a.param(SESSION_METADATA_CONTEXT_KEY, Map.of(SessionAttributes.AGENT_NAME, "support")))`; a request that passes its own map replaces that default as a whole.
 
 | `SessionMemoryAdvisor.EVENT_FILTER_CONTEXT_KEY`
-| `"chat_memory_event_filter_id"`
+| `"chat_memory_event_filter"`
 | A per-request `EventFilter` merged over the advisor's.
 
 | `SessionMemoryAdvisor.REQUEST_EVENT_ID_CONTEXT_KEY`

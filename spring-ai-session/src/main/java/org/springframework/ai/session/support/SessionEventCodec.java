@@ -112,7 +112,7 @@ public final class SessionEventCodec {
 		Assert.notNull(encoded, "encoded must not be null");
 		SessionEvent.Builder builder = SessionEvent.builder().type(encoded.type());
 		MessageType messageType = encoded.messageType();
-		if (!encoded.type().canCarryMessage() || (encoded.type() != EventType.MESSAGE && messageType == null)) {
+		if (!encoded.type().canCarryMessage() || (!EventType.MESSAGE.equals(encoded.type()) && messageType == null)) {
 			return builder.payload(fromJsonMap(encoded.payload()));
 		}
 		Assert.notNull(messageType, "messageType must not be null for a MESSAGE event");

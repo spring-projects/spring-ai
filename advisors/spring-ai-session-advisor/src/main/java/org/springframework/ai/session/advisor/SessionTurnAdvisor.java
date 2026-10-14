@@ -23,6 +23,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
+import io.micrometer.context.ContextSnapshot;
 import io.micrometer.context.ContextSnapshotFactory;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -153,18 +154,27 @@ public final class SessionTurnAdvisor implements CallAdvisor, StreamAdvisor {
 		Assert.notNull(request, "request must not be null");
 		Assert.notNull(chain, "chain must not be null");
 		String sessionId = SessionContexts.sessionId(request.context());
-		return Mono.just(request).publishOn(this.scheduler).flatMapMany(r -> {
-			SessionContexts.findOrCreate(this.sessionService, sessionId, r.context());
-			// A returnDirect result or a breached limit ends the stream on a chunk of its
-			// own
-			AtomicReference<@Nullable ChatResponse> unanswered = new AtomicReference<>();
-			// Back on the scheduler, so the session writes never run on the model's
-			// thread
-			return chain.nextStream(r).doOnNext(response -> {
-				if (endsWithoutModel(response.chatResponse())) {
-					unanswered.set(response.chatResponse());
-				}
-			}).publishOn(this.scheduler).doOnComplete(() -> complete(sessionId, unanswered.get()));
+		// The session calls run on the scheduler, never on the model's thread, with the
+		// caller's thread-local context (the security context, the current observation)
+		// restored around them and around the subscription of the rest of the chain
+		return Flux.defer(() -> {
+			ContextSnapshot context = CONTEXT_SNAPSHOTS.captureAll();
+			return Mono.just(request).publishOn(this.scheduler).flatMapMany(r -> {
+				// A returnDirect result or a breached limit ends the stream on a chunk
+				// of its own
+				AtomicReference<@Nullable ChatResponse> unanswered = new AtomicReference<>();
+				Flux<ChatClientResponse> rest = chain.nextStream(r).doOnNext(response -> {
+					if (endsWithoutModel(response.chatResponse())) {
+						unanswered.set(response.chatResponse());
+					}
+				}).publishOn(this.scheduler).doOnComplete(context.wrap(() -> complete(sessionId, unanswered.get())));
+				return Flux.from(subscriber -> {
+					try (ContextSnapshot.Scope ignored = context.setThreadLocals()) {
+						SessionContexts.findOrCreate(this.sessionService, sessionId, r.context());
+						rest.subscribe(subscriber);
+					}
+				});
+			});
 		});
 	}
 

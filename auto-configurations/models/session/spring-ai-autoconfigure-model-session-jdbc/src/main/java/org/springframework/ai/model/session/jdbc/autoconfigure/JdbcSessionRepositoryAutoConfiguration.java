@@ -21,18 +21,19 @@ import javax.sql.DataSource;
 import org.springframework.ai.session.SessionRepository;
 import org.springframework.ai.session.jdbc.JdbcSessionRepository;
 import org.springframework.ai.session.jdbc.JdbcSessionRepositoryDialect;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnSingleCandidate;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
 import org.springframework.boot.jdbc.init.DatabaseInitializationProperties;
 import org.springframework.boot.sql.autoconfigure.init.OnDatabaseInitializationCondition;
 import org.springframework.boot.sql.init.dependency.DependsOnDatabaseInitialization;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.transaction.PlatformTransactionManager;
 
 /**
  * Auto-configuration of the {@link JdbcSessionRepository} on the single
@@ -42,7 +43,9 @@ import org.springframework.jdbc.core.JdbcTemplate;
  * @author Christian Tzolov
  * @since 2.1.0
  */
-@AutoConfiguration(after = DataSourceAutoConfiguration.class)
+@AutoConfiguration(afterName = { "org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration",
+		"org.springframework.boot.jdbc.autoconfigure.JdbcTemplateAutoConfiguration",
+		"org.springframework.boot.jdbc.autoconfigure.DataSourceTransactionManagerAutoConfiguration" })
 // DatabaseInitializationProperties (spring-boot-jdbc, an optional dependency) is the base
 // class of JdbcSessionRepositoryProperties and must be present too.
 @ConditionalOnClass({ JdbcSessionRepository.class, DataSource.class, JdbcTemplate.class,
@@ -54,13 +57,23 @@ public class JdbcSessionRepositoryAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean(SessionRepository.class)
 	@DependsOnDatabaseInitialization
-	JdbcSessionRepository jdbcSessionRepository(DataSource dataSource, JdbcSessionRepositoryProperties properties) {
-		JdbcSessionRepositoryDialect dialect = JdbcSessionRepositoryDialect.from(dataSource);
-		return JdbcSessionRepository.builder()
+	JdbcSessionRepository jdbcSessionRepository(DataSource dataSource, JdbcSessionRepositoryProperties properties,
+			ObjectProvider<JdbcTemplate> jdbcTemplate, ObjectProvider<PlatformTransactionManager> transactionManager) {
+		// Boot's JdbcTemplate carries spring.jdbc.template.*, and the application's
+		// transaction manager keeps the session writes in its transactions
+		JdbcSessionRepository.Builder builder = JdbcSessionRepository.builder()
 			.dataSource(dataSource)
-			.dialect(dialect)
-			.indexedAttributes(properties.getIndexedAttributes())
-			.build();
+			.dialect(JdbcSessionRepositoryDialect.from(dataSource))
+			.indexedAttributes(properties.getIndexedAttributes());
+		JdbcTemplate template = jdbcTemplate.getIfUnique();
+		if (template != null) {
+			builder.jdbcTemplate(template);
+		}
+		PlatformTransactionManager manager = transactionManager.getIfUnique();
+		if (manager != null) {
+			builder.transactionManager(manager);
+		}
+		return builder.build();
 	}
 
 	@Bean

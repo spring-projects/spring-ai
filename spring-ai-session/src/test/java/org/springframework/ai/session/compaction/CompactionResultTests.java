@@ -81,4 +81,13 @@ class CompactionResultTests extends CompactionTestSupport {
 			.isInstanceOf(UnsupportedOperationException.class);
 	}
 
+	@Test
+	void eventIsCoveredPinnedOrPreservedNotTwo() {
+		SessionEvent u1 = user("u1");
+
+		assertThatThrownBy(() -> new CompactionResult(List.of(u1), List.of(u1), List.of(), List.of(), 0, "test"))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("not two of them");
+	}
+
 }

@@ -189,7 +189,7 @@ final class DialectScenarios {
 	 */
 	private static List<String> labels(List<SessionEvent> events) {
 		return events.stream().map(e -> {
-			if (e.getType() == EventType.COMPACTION) {
+			if (EventType.COMPACTION.equals(e.getType())) {
 				return "⊥";
 			}
 			if (!e.isSynthetic()) {

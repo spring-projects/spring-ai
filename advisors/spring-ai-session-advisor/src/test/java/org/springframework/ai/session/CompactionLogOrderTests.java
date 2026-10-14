@@ -102,7 +102,7 @@ class CompactionLogOrderTests {
 		assertThat(newest.strategy()).isEqualTo("window");
 		assertThat(newest.coveredEventCount()).isEqualTo(8); // sys-1, Σ?, Σ:summary 2,
 																// u6, a6, u7, a7, sys-2
-		assertThat(log.stream().filter(e -> e.getType() == EventType.COMPACTION)).hasSize(3);
+		assertThat(log.stream().filter(e -> EventType.COMPACTION.equals(e.getType()))).hasSize(3);
 
 		// Pass 4: the pinned system message, now first in view order, is still the one
 		// kept
@@ -140,7 +140,7 @@ class CompactionLogOrderTests {
 	 */
 	private static List<String> labels(List<SessionEvent> events) {
 		return events.stream().map(e -> {
-			if (e.getType() == EventType.COMPACTION) {
+			if (EventType.COMPACTION.equals(e.getType())) {
 				return "⊥";
 			}
 			if (!e.isSynthetic()) {

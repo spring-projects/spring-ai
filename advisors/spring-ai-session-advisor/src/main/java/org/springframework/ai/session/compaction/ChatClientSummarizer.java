@@ -38,9 +38,9 @@ import org.springframework.util.Assert;
  * builds on its predecessors, and the first {@link Builder#overlapSize overlapSize}
  * preserved events are quoted for continuity. The summary comes back as a turn of two
  * messages, a user "shadow prompt" and the assistant summary, so the model keeps seeing a
- * user/assistant alternation. A null or blank reply declines: it is logged, the
- * {@link Builder#onSummarizationFailure failure callback} is called, and the view stays
- * as it is.
+ * user/assistant alternation. A failed model call or a null or blank reply declines: it
+ * is logged, the {@link Builder#onSummarizationFailure failure callback} is called, and
+ * the view stays as it is.
  *
  * @author Christian Tzolov
  * @since 2.1.0
@@ -100,16 +100,27 @@ public final class ChatClientSummarizer implements CompactionSummarizer {
 		List<SessionEvent> overlap = request.preserved()
 			.subList(0, Math.min(this.overlapSize, request.preserved().size()));
 		String userPrompt = prompt(request.priorSummary(), request.covered(), overlap);
-		String summary = this.chatClient.prompt().system(this.systemPrompt).user(userPrompt).call().content();
+		String summary;
+		try {
+			summary = this.chatClient.prompt().system(this.systemPrompt).user(userPrompt).call().content();
+		}
+		catch (RuntimeException ex) {
+			logger.warn("The summary call failed for session '{}'; the view is unchanged", request.session().id(), ex);
+			return declined(request);
+		}
 		if (summary == null || summary.isBlank()) {
 			logger.warn("The model returned a null or blank summary for session '{}'; the view is unchanged",
 					request.session().id());
-			if (this.onSummarizationFailure != null) {
-				this.onSummarizationFailure.accept(request);
-			}
-			return List.of();
+			return declined(request);
 		}
 		return List.of(new UserMessage(this.shadowPrompt), new AssistantMessage(summary));
+	}
+
+	private List<Message> declined(SummaryRequest request) {
+		if (this.onSummarizationFailure != null) {
+			this.onSummarizationFailure.accept(request);
+		}
+		return List.of();
 	}
 
 	/**
@@ -193,8 +204,8 @@ public final class ChatClientSummarizer implements CompactionSummarizer {
 		}
 
 		/**
-		 * Called with the request when the model returns a null or blank summary, after
-		 * the warning is logged.
+		 * Called with the request when the model call fails or returns a null or blank
+		 * summary, after the warning is logged.
 		 */
 		public Builder onSummarizationFailure(Consumer<SummaryRequest> onSummarizationFailure) {
 			Assert.notNull(onSummarizationFailure, "onSummarizationFailure must not be null");

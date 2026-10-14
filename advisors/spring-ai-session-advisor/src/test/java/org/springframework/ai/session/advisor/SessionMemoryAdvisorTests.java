@@ -1042,6 +1042,25 @@ class SessionMemoryAdvisorTests {
 
 	// --- Spring Boot configuration ---
 
+	@Test
+	void storedSystemPromptSurvivesMessageTypesFilter() {
+		this.sessionService.appendMessage(this.sessionId, new SystemMessage("Answer in French."));
+		this.sessionService.appendMessage(this.sessionId, new UserMessage("Hello"));
+		this.sessionService.appendMessage(this.sessionId, new AssistantMessage("Bonjour !"));
+		SessionMemoryAdvisor filtered = SessionMemoryAdvisor.builder(this.sessionService)
+			.eventFilter(EventFilter.builder().messageTypes(Set.of(MessageType.USER, MessageType.ASSISTANT)).build())
+			.build();
+		ChatClientRequest request = ChatClientRequest.builder()
+			.prompt(new Prompt(List.of(new UserMessage("Again?"))))
+			.context(Map.of(SessionMemoryAdvisor.SESSION_ID_CONTEXT_KEY, this.sessionId))
+			.build();
+
+		List<Message> instructions = filtered.before(request, mock(AdvisorChain.class)).prompt().getInstructions();
+
+		assertThat(instructions).extracting(Message::getText)
+			.containsExactly("Answer in French.", "Hello", "Bonjour !", "Again?");
+	}
+
 	@SpringBootConfiguration
 	static class TestConfig {
 

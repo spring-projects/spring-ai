@@ -35,8 +35,8 @@ class EventTypeTests {
 		EventType progress = EventType.of("MY_APP.PROGRESS");
 
 		assertThat(progress.name()).isEqualTo("MY_APP.PROGRESS");
-		assertThat(EventType.of("MY_APP.PROGRESS")).isSameAs(progress).isEqualTo(progress);
-		assertThat(EventType.of("MESSAGE")).isSameAs(EventType.MESSAGE);
+		assertThat(EventType.of("MY_APP.PROGRESS")).isEqualTo(progress).hasSameHashCodeAs(progress);
+		assertThat(EventType.of("MESSAGE")).isEqualTo(EventType.MESSAGE);
 		assertThat(new java.util.HashSet<>(java.util.List.of(EventType.COMPACTION, EventType.of("COMPACTION"))))
 			.hasSize(1);
 		assertThat(progress).hasToString("MY_APP.PROGRESS");
@@ -75,7 +75,7 @@ class EventTypeTests {
 		tools.jackson.databind.json.JsonMapper mapper = tools.jackson.databind.json.JsonMapper.builder().build();
 
 		assertThat(mapper.writeValueAsString(EventType.of("MY_APP.PROGRESS"))).isEqualTo("\"MY_APP.PROGRESS\"");
-		assertThat(mapper.readValue("\"STATUS\"", EventType.class)).isSameAs(EventType.of("STATUS"));
+		assertThat(mapper.readValue("\"STATUS\"", EventType.class)).isEqualTo(EventType.of("STATUS"));
 		assertThat(mapper.writeValueAsString(java.util.Map.of("type", EventType.MESSAGE)))
 			.isEqualTo("{\"type\":\"MESSAGE\"}");
 	}

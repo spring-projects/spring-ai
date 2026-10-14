@@ -158,7 +158,7 @@ public final class SessionEvent {
 	 * participant said.
 	 */
 	public boolean isSynthetic() {
-		return (boolean) this.metadata.getOrDefault(METADATA_SYNTHETIC, false);
+		return Boolean.parseBoolean(String.valueOf(this.metadata.get(METADATA_SYNTHETIC)));
 	}
 
 	/**
@@ -170,7 +170,7 @@ public final class SessionEvent {
 	 * starts a turn.
 	 */
 	public boolean isTurnStart() {
-		return this.type == EventType.MESSAGE && this.message != null
+		return EventType.MESSAGE.equals(this.type) && this.message != null
 				&& this.message.getMessageType() == MessageType.USER;
 	}
 
@@ -295,7 +295,7 @@ public final class SessionEvent {
 			Assert.hasText(this.sessionId, "sessionId must not be null or empty");
 			Assert.notNull(this.timestamp, "timestamp must not be null");
 			EventType resolvedType = (this.type != null) ? this.type : EventType.MESSAGE;
-			if (resolvedType == EventType.MESSAGE) {
+			if (EventType.MESSAGE.equals(resolvedType)) {
 				Assert.notNull(this.message, "message must not be null for a MESSAGE event");
 			}
 			else if (!resolvedType.canCarryMessage()) {

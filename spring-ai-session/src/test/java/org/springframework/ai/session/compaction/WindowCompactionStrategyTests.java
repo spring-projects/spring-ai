@@ -274,6 +274,29 @@ class WindowCompactionStrategyTests extends CompactionTestSupport {
 			assertThat(result.tokensEstimatedSaved()).isGreaterThan(0);
 		}
 
+		@Test
+		void supersededSystemMessageInsideKeptWindowIsCovered() {
+			List<SessionEvent> view = List.of(user("u1"), assistant("a1"), user("u2"), system("v1"), assistant("a2"),
+					system("v2"), assistant("a3"));
+
+			CompactionResult result = lastEvents(3).compact(request(view));
+
+			assertThat(kept(result)).containsExactly("v2", "u2", "a2", "a3");
+			assertThat(covered(result)).containsExactly("u1", "a1", "v1");
+		}
+
+		@Test
+		void preambleIsPinnedBeforePriorSummary() {
+			// In view order, where a summarizing pass places the new summary
+			List<SessionEvent> view = events(List.of(assistant("welcome")), summaryTurn("old"), turn("u1", "a1"),
+					turn("u2", "a2"));
+
+			CompactionResult result = lastEvents(2).compact(request(view));
+
+			assertThat(kept(result)).containsExactly("welcome", SHADOW, "old", "u2", "a2");
+			assertThat(covered(result)).containsExactly("u1", "a1");
+		}
+
 	}
 
 	@Nested
@@ -626,6 +649,36 @@ class WindowCompactionStrategyTests extends CompactionTestSupport {
 			int summaryTokens = result.summary().stream().mapToInt(m -> EventText.of(m).length()).sum();
 			assertThat(summaryTokens).isPositive();
 			assertThat(result.tokensEstimatedSaved()).isEqualTo(coveredTokens - summaryTokens);
+		}
+
+		@Test
+		void summaryStandsInWithTurnWindow() {
+			WindowCompactionStrategy strategy = WindowCompactionStrategy.builder()
+				.lastTurns(1)
+				.summarizer(request -> List.of(new UserMessage(SHADOW), new AssistantMessage(SUMMARY)))
+				.build();
+
+			CompactionResult result = strategy
+				.compact(request(events(turn("u1", "a1"), turn("u2", "a2"), turn("u3", "a3"))));
+
+			assertThat(kept(result)).containsExactly(SHADOW, SUMMARY, "u3", "a3");
+			assertThat(covered(result)).containsExactly("u1", "a1", "u2", "a2");
+		}
+
+		@Test
+		void summaryStandsInWithTokenBudget() {
+			// Each turn is 21 tokens; the budget keeps one, the summary stands in for the
+			// other
+			WindowCompactionStrategy strategy = WindowCompactionStrategy.builder()
+				.tokenBudget(25)
+				.tokenCountEstimator(CHAR_ESTIMATOR)
+				.summarizer(request -> List.of(new UserMessage(SHADOW), new AssistantMessage(SUMMARY)))
+				.build();
+
+			CompactionResult result = strategy.compact(request(events(turn("u1", "a1"), turn("u2", "a2"))));
+
+			assertThat(kept(result)).containsExactly(SHADOW, SUMMARY, "u2", "a2");
+			assertThat(covered(result)).containsExactly("u1", "a1");
 		}
 
 	}

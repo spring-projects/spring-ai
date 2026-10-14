@@ -26,6 +26,6 @@ package org.springframework.ai.session.compaction;
 public interface CompactionTrigger {
 
 	/** Whether the view should be compacted now. */
-	boolean shouldCompact(CompactionRequest context);
+	boolean shouldCompact(CompactionRequest request);
 
 }

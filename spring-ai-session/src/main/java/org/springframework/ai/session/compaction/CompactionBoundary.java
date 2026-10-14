@@ -112,7 +112,7 @@ public record CompactionBoundary(String id, List<String> pinnedEventIds, List<St
 	 */
 	public static CompactionBoundary from(SessionEvent event) {
 		Assert.notNull(event, "event must not be null");
-		Assert.isTrue(event.getType() == EventType.COMPACTION,
+		Assert.isTrue(EventType.COMPACTION.equals(event.getType()),
 				() -> "Event '" + event.getId() + "' is a " + event.getType() + " event, not a COMPACTION event");
 		Map<String, Object> payload = event.getPayload();
 		return new CompactionBoundary(event.getId(), ids(payload.get(PAYLOAD_PINNED)),
@@ -133,7 +133,7 @@ public record CompactionBoundary(String id, List<String> pinnedEventIds, List<St
 
 	private static int newestBoundaryIndex(List<SessionEvent> log) {
 		for (int i = log.size() - 1; i >= 0; i--) {
-			if (log.get(i).getType() == EventType.COMPACTION) {
+			if (EventType.COMPACTION.equals(log.get(i).getType())) {
 				return i;
 			}
 		}
@@ -163,29 +163,22 @@ public record CompactionBoundary(String id, List<String> pinnedEventIds, List<St
 		for (SessionEvent event : log) {
 			byId.putIfAbsent(event.getId(), event);
 		}
-		Set<String> summaryIds = new HashSet<>(boundary.summaryEventIds());
+		// An id the boundary names twice, or names and also appended after it, is placed
+		// once
+		Set<String> placed = new HashSet<>();
 		List<SessionEvent> view = new ArrayList<>();
-		for (String id : boundary.pinnedEventIds()) {
-			SessionEvent event = byId.get(id);
-			if (event != null) {
-				view.add(event);
-			}
-		}
-		for (String id : boundary.summaryEventIds()) {
-			SessionEvent event = byId.get(id);
-			if (event != null) {
-				view.add(event);
-			}
-		}
-		for (String id : boundary.preservedEventIds()) {
-			SessionEvent event = byId.get(id);
-			if (event != null) {
-				view.add(event);
+		for (List<String> ids : List.of(boundary.pinnedEventIds(), boundary.summaryEventIds(),
+				boundary.preservedEventIds())) {
+			for (String id : ids) {
+				SessionEvent event = byId.get(id);
+				if (event != null && placed.add(id)) {
+					view.add(event);
+				}
 			}
 		}
 		for (int i = boundaryIndex + 1; i < log.size(); i++) {
 			SessionEvent event = log.get(i);
-			if (!summaryIds.contains(event.getId())) {
+			if (placed.add(event.getId())) {
 				view.add(event);
 			}
 		}

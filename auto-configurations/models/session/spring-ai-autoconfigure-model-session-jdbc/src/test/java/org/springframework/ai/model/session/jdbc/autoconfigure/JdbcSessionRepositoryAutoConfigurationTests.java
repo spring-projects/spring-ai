@@ -16,12 +16,15 @@
 
 package org.springframework.ai.model.session.jdbc.autoconfigure;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 import javax.sql.DataSource;
 
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.model.session.autoconfigure.SessionServiceAutoConfiguration;
 import org.springframework.ai.session.InMemorySessionRepository;
+import org.springframework.ai.session.Session;
 import org.springframework.ai.session.SessionRepository;
 import org.springframework.ai.session.SessionService;
 import org.springframework.ai.session.jdbc.JdbcSessionRepository;
@@ -32,9 +35,17 @@ import org.springframework.boot.jdbc.init.DatabaseInitializationProperties;
 import org.springframework.boot.sql.init.DatabaseInitializationMode;
 import org.springframework.boot.test.context.FilteredClassLoader;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.TransactionDefinition;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mockingDetails;
+import static org.mockito.Mockito.spy;
 
 /**
  * Tests for {@link JdbcSessionRepositoryAutoConfiguration}.
@@ -96,6 +107,17 @@ class JdbcSessionRepositoryAutoConfigurationTests {
 	}
 
 	@Test
+	void usesApplicationsJdbcTemplateAndTransactionManager() {
+		this.contextRunner.withUserConfiguration(ApplicationJdbcConfiguration.class).run(context -> {
+			SessionRepository repository = context.getBean(SessionRepository.class);
+			repository.save(Session.builder().id("s-1").build());
+
+			assertThat(context.getBean(ApplicationJdbcConfiguration.class).transactions).hasPositiveValue();
+			assertThat(mockingDetails(context.getBean(JdbcTemplate.class)).getInvocations()).isNotEmpty();
+		});
+	}
+
+	@Test
 	void backsOffWithoutDataSource() {
 		new ApplicationContextRunner()
 			.withConfiguration(AutoConfigurations.of(JdbcSessionRepositoryAutoConfiguration.class,
@@ -140,6 +162,29 @@ class JdbcSessionRepositoryAutoConfigurationTests {
 		assertThat(props.getInitializeSchema()).isEqualTo(DatabaseInitializationMode.EMBEDDED);
 		assertThat(props.getDefaultSchemaLocation())
 			.isEqualTo("classpath:org/springframework/ai/session/jdbc/schema-@@platform@@.sql");
+	}
+
+	@Configuration(proxyBeanMethods = false)
+	static class ApplicationJdbcConfiguration {
+
+		final AtomicInteger transactions = new AtomicInteger();
+
+		@Bean
+		JdbcTemplate jdbcTemplate(DataSource dataSource) {
+			return spy(new JdbcTemplate(dataSource));
+		}
+
+		@Bean
+		PlatformTransactionManager transactionManager(DataSource dataSource) {
+			return new DataSourceTransactionManager(dataSource) {
+				@Override
+				protected void doBegin(Object transaction, TransactionDefinition definition) {
+					ApplicationJdbcConfiguration.this.transactions.incrementAndGet();
+					super.doBegin(transaction, definition);
+				}
+			};
+		}
+
 	}
 
 }

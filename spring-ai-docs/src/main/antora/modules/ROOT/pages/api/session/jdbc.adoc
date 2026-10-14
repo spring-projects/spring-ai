@@ -106,6 +106,10 @@ A read with the view flag selects the session's newest `COMPACTION` row, fetches
 *Windows.*
 A `lastN` window is `ORDER BY seq DESC LIMIT ?`.
 When the window lands mid-turn, one bounded extra query fetches the rows between the nearest preceding user message and the window, served by the `(session_id, seq)` index, so the window keeps turns whole.
+The newest boundary of a session, read before every view, is served by the `(session_id, event_type, seq)` index.
+
+*Keys compare byte for byte.*
+On MySQL and MariaDB the id and index columns use the `utf8mb4_bin` collation, so `findByIndex` and the id lookups are case-sensitive, as on the other databases.
 
 *Indexed attributes.*
 On every save the repository copies the metadata entries whose keys are configured as indexed, always including `SessionAttributes.PRINCIPAL_NAME`, into `AI_SESSION_INDEX`, one row per attribute, on the first 512 characters of the value.

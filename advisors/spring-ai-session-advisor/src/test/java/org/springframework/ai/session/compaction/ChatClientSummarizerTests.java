@@ -161,6 +161,18 @@ class ChatClientSummarizerTests extends CompactionTestSupport {
 	}
 
 	@Test
+	void failedModelCallDeclinesAndCallsFailureCallback() {
+		AtomicReference<SummaryRequest> failed = new AtomicReference<>();
+		ChatClientSummarizer summarizer = summarizer().onSummarizationFailure(failed::set).build();
+		SummaryRequest request = summaryRequest(List.of(), userMessages(3), List.of());
+		this.reply.set(null);
+		given(this.chatClient.prompt().system(anyString())).willThrow(new IllegalStateException("model down"));
+
+		assertThat(summarizer.summarize(request)).isEmpty();
+		assertThat(failed.get()).isSameAs(request);
+	}
+
+	@Test
 	void failureCallbackIsNotCalledOnSuccess() {
 		AtomicReference<SummaryRequest> failed = new AtomicReference<>();
 
@@ -193,7 +205,6 @@ class ChatClientSummarizerTests extends CompactionTestSupport {
 		assertThat(this.userPrompt.get()).contains("User: msg-1", "User: msg-3", "User: msg-4", "User: msg-5")
 			.doesNotContain("msg-6");
 		assertThat(result.tokensEstimatedSaved()).isNotNegative();
-		assertThat(assistant("x")).isNotNull();
 	}
 
 }

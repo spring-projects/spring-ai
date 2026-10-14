@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.messages.MessageType;
+import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.session.DefaultSessionService;
 import org.springframework.ai.session.InMemorySessionRepository;
@@ -32,6 +33,7 @@ import org.springframework.ai.session.MessageFilter;
 import org.springframework.ai.session.SessionService;
 import org.springframework.ai.session.compaction.WindowCompactionStrategy;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -131,6 +133,29 @@ class SessionAdvisorsTests {
 
 	private String say(ChatClient client, String text) {
 		return client.prompt().user(text).advisors(SessionAdvisors.session(this.sessionId)).call().content();
+	}
+
+	@Test
+	void autoRegisteredLoopRunsToolCallsThroughSession() {
+		ToolCallback weather = FunctionToolCallback.builder("get_weather", (City city) -> "Sunny in " + city.city())
+			.description("The weather in a city")
+			.inputType(City.class)
+			.build();
+		ChatClient client = client(SessionAdvisors.builder(this.sessionService).build(), weather);
+		this.model.thenCall("c1", "Lisbon").thenAnswer("Sunny.").thenAnswer("Fine.");
+
+		say(client, "Weather in Lisbon?");
+		say(client, "And you?");
+
+		// The loop runs with its own history off: each round's prompt is rebuilt from the
+		// session, without a blank system message
+		assertThat(ScriptedChatModel.describe(new Prompt(this.sessionService.getActiveMessages(this.sessionId))))
+			.containsExactly("Weather in Lisbon?", "call:c1", "result:c1", "Sunny.", "And you?", "Fine.");
+		assertThat(this.model.prompts()).hasSize(3)
+			.allSatisfy(prompt -> assertThat(prompt.getInstructions())
+				.noneMatch(message -> message instanceof SystemMessage && message.getText().isBlank()));
+		assertThat(ScriptedChatModel.describe(this.model.prompts().get(2))).containsExactly("Weather in Lisbon?",
+				"call:c1", "result:c1", "Sunny.", "And you?");
 	}
 
 	record City(String city) {
