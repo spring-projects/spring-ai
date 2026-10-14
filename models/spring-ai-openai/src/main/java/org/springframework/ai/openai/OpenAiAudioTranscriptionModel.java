@@ -155,7 +155,6 @@ public final class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 			.build();
 
 		Resource audioResource = transcriptionPrompt.getInstructions();
-		TranscriptionCreateParams params = buildParams(mergedOptions, audioResource);
 		if (logger.isTraceEnabled()) {
 			logger.trace("OpenAiAudioTranscriptionModel stream with model: " + mergedOptions.getModel());
 		}
@@ -163,6 +162,8 @@ public final class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 		RequestOptions requestOptions = this.buildRequestOptions(mergedOptions);
 
 		Flux<TranscriptionStreamEvent> chunks = Flux.create(sink -> {
+			// Each subscription needs a fresh input stream for the audio upload.
+			TranscriptionCreateParams params = buildParams(mergedOptions, audioResource);
 			AsyncStreamResponse<TranscriptionStreamEvent> response = this.openAiClientAsync.audio()
 				.transcriptions()
 				.createStreaming(params, requestOptions);
