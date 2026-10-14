@@ -70,7 +70,6 @@ import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.content.Media;
 import org.springframework.core.io.ByteArrayResource;
-import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
 import org.springframework.util.MimeTypeUtils;
 import org.springframework.util.StringUtils;
@@ -191,9 +190,18 @@ final class ResponsesItemMapper {
 			.ofEasyInputMessage(EasyInputMessage.builder().role(EasyInputMessage.Role.DEVELOPER).content(text).build());
 	}
 
+	/**
+	 * One content entry per user part, in part order, so text and media interleave the
+	 * way the message was built. A text-only message keeps the simple string content
+	 * path. Parts the Responses API cannot take are skipped.
+	 */
 	private static ResponseInputItem userItem(UserMessage message) {
-		String text = message.getText();
-		if (CollectionUtils.isEmpty(message.getMedia())) {
+		List<MessagePart> messageParts = message.getParts();
+		// Plain text stays on the simple string path. Anything else - media, or a part
+		// type this mapper does not model - goes through the ordered walk below.
+		boolean textOnly = messageParts.stream().allMatch(TextPart.class::isInstance);
+		if (textOnly) {
+			String text = message.getText();
 			return ResponseInputItem.ofEasyInputMessage(EasyInputMessage.builder()
 				.role(EasyInputMessage.Role.USER)
 				.content(text != null ? text : "")
@@ -201,10 +209,26 @@ final class ResponsesItemMapper {
 		}
 
 		List<ResponseInputContent> parts = new ArrayList<>();
-		if (StringUtils.hasText(text)) {
-			parts.add(ResponseInputContent.ofInputText(ResponseInputText.builder().text(text).build()));
+		for (MessagePart part : messageParts) {
+			if (part instanceof TextPart textPart) {
+				// Keep whitespace-only text, as the text-only path does via getText()
+				if (StringUtils.hasLength(textPart.text())) {
+					parts.add(ResponseInputContent
+						.ofInputText(ResponseInputText.builder().text(textPart.text()).build()));
+				}
+			}
+			else if (part instanceof MediaPart mediaPart) {
+				parts.add(inputContent(mediaPart.media()));
+			}
+			else if (logger.isDebugEnabled()) {
+				logger.debug("Skipping user message part " + part.getClass().getSimpleName()
+						+ " that the Responses API cannot take");
+			}
 		}
-		message.getMedia().forEach(media -> parts.add(inputContent(media)));
+		if (parts.isEmpty()) {
+			return ResponseInputItem
+				.ofEasyInputMessage(EasyInputMessage.builder().role(EasyInputMessage.Role.USER).content("").build());
+		}
 		return ResponseInputItem.ofEasyInputMessage(EasyInputMessage.builder()
 			.role(EasyInputMessage.Role.USER)
 			.contentOfResponseInputMessageContentList(parts)
