@@ -20,10 +20,13 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import org.springframework.ai.util.JsonHelper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -122,6 +125,16 @@ class OllamaApiHelperTests {
 	}
 
 	@Test
+	void isStreamingDoneWhenDoneReasonIsNullShouldReturnFalse() {
+		OllamaApi.ChatResponse response = new OllamaApi.ChatResponse("model", Instant.now(), null, null, true, null,
+				null, null, null, null, null);
+
+		boolean result = OllamaApiHelper.isStreamingDone(response);
+
+		assertThat(result).isFalse();
+	}
+
+	@Test
 	void mergeWhenBothResponsesHaveValuesShouldMergeCorrectly() {
 		Instant previousCreatedAt = Instant.now().minusSeconds(10);
 		OllamaApi.Message previousMessage = OllamaApi.Message.builder(OllamaApi.Message.Role.ASSISTANT)
@@ -165,6 +178,83 @@ class OllamaApiHelperTests {
 		assertThat(result.promptEvalDuration()).isEqualTo(600L);
 		assertThat(result.evalCount()).isEqualTo(15);
 		assertThat(result.evalDuration()).isEqualTo(300L);
+	}
+
+	@Test
+	void chatResponseWithoutMessageShouldDeserializeToNullMessage() {
+		OllamaApi.ChatResponse response = new JsonHelper().fromJson("""
+				{"error": "unsupported image"}
+				""", OllamaApi.ChatResponse.class);
+
+		assertThat(response.message()).isNull();
+	}
+
+	@Test
+	void mergeWhenCurrentChunkHasNoMessageShouldKeepPreviousToolCall() {
+		OllamaApi.Message.ToolCall toolCall = new OllamaApi.Message.ToolCall("tool-call-1",
+				new OllamaApi.Message.ToolCallFunction("getWeather", Map.of("city", "Amsterdam")));
+		OllamaApi.Message previousMessage = OllamaApi.Message.builder(OllamaApi.Message.Role.ASSISTANT)
+			.toolCalls(List.of(toolCall))
+			.build();
+		OllamaApi.ChatResponse previous = new OllamaApi.ChatResponse("model", Instant.now(), previousMessage, null,
+				false, null, null, null, null, null, null);
+		OllamaApi.ChatResponse current = new OllamaApi.ChatResponse(null, null, null, null, null, null, null, null,
+				null, null, null);
+
+		OllamaApi.ChatResponse result = OllamaApiHelper.merge(previous, current);
+
+		assertThat(result.message()).isNotNull();
+		assertThat(result.message().toolCalls()).containsExactly(toolCall);
+	}
+
+	@Test
+	void mergeWhenPreviousChunkHasNoMessageShouldKeepCurrentMessage() {
+		OllamaApi.Message currentMessage = OllamaApi.Message.builder(OllamaApi.Message.Role.ASSISTANT)
+			.content("Hello")
+			.build();
+		OllamaApi.ChatResponse previous = new OllamaApi.ChatResponse(null, null, null, null, null, null, null, null,
+				null, null, null);
+		OllamaApi.ChatResponse current = new OllamaApi.ChatResponse("model", Instant.now(), currentMessage, "stop",
+				true, null, null, null, null, null, null);
+
+		OllamaApi.ChatResponse result = OllamaApiHelper.merge(previous, current);
+
+		assertThat(result.message()).isNotNull();
+		assertThat(result.message().content()).isEqualTo("Hello");
+	}
+
+	@Test
+	void mergeWhenNoChunkHasAMessageShouldReturnNullMessage() {
+		OllamaApi.ChatResponse previous = new OllamaApi.ChatResponse(null, null, null, null, null, null, null, null,
+				null, null, null);
+		OllamaApi.ChatResponse current = new OllamaApi.ChatResponse(null, null, null, "stop", true, null, null, null,
+				null, null, null);
+
+		OllamaApi.ChatResponse result = OllamaApiHelper.merge(previous, current);
+
+		assertThat(result.message()).isNull();
+		assertThat(result.doneReason()).isEqualTo("stop");
+		assertThat(result.done()).isTrue();
+	}
+
+	@Test
+	void mergeShouldKeepAccumulatingAroundAChunkWithoutMessage() {
+		OllamaApi.ChatResponse first = new OllamaApi.ChatResponse("model", Instant.now(),
+				OllamaApi.Message.builder(OllamaApi.Message.Role.ASSISTANT).content("Hel").build(), null, false, null,
+				null, 3, null, 5, null);
+		OllamaApi.ChatResponse withoutMessage = new OllamaApi.ChatResponse(null, null, null, null, null, null, null,
+				null, null, null, null);
+		OllamaApi.ChatResponse last = new OllamaApi.ChatResponse("model", Instant.now(),
+				OllamaApi.Message.builder(OllamaApi.Message.Role.ASSISTANT).content("lo").build(), "stop", true, null,
+				null, 4, null, 10, null);
+
+		OllamaApi.ChatResponse result = OllamaApiHelper.merge(OllamaApiHelper.merge(first, withoutMessage), last);
+
+		assertThat(result.message()).isNotNull();
+		assertThat(result.message().content()).isEqualTo("Hello");
+		assertThat(result.promptEvalCount()).isEqualTo(7);
+		assertThat(result.evalCount()).isEqualTo(15);
+		assertThat(result.doneReason()).isEqualTo("stop");
 	}
 
 	@Test

@@ -79,6 +79,9 @@ public class PgVectorStoreAutoConfiguration {
 			.customObservationConvention(customObservationConvention.getIfAvailable())
 			.batchingStrategy(batchingStrategy)
 			.maxDocumentBatchSize(properties.getMaxDocumentBatchSize())
+			.contentFieldName(properties.getContentFieldName())
+			.metadataFieldName(properties.getMetadataFieldName())
+			.embeddingFieldName(properties.getEmbeddingFieldName())
 			.build();
 	}
 

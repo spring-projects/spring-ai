@@ -1,0 +1,28 @@
+{
+  "id": "resp_no_details_1",
+  "object": "response",
+  "created_at": 1757000600,
+  "status": "completed",
+  "model": "some-openai-compatible-model",
+  "output": [
+    {
+      "type": "message",
+      "id": "msg_5",
+      "role": "assistant",
+      "status": "completed",
+      "content": [
+        { "type": "output_text", "text": "Hello.", "annotations": [] }
+      ]
+    }
+  ],
+  "usage": {
+    "input_tokens": 120,
+    "output_tokens": 40,
+    "total_tokens": 160
+  },
+  "parallel_tool_calls": true,
+  "tool_choice": "auto",
+  "tools": [],
+  "temperature": 1.0,
+  "top_p": 1.0
+}

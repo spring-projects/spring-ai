@@ -1488,13 +1488,31 @@ public class MistralAiApi {
 
 		}
 
+		/**
+		 * The reasoning of a reasoning model.
+		 *
+		 * @param thinking the reasoning content
+		 * @param closed whether the thinking is closed, only used for prefixing
+		 * @param signature the opaque signature Mistral may attach to reasoning, to be
+		 * sent back unchanged when the reasoning is replayed in a later turn, since 2.1.0
+		 */
 		@JsonInclude(Include.NON_NULL)
 		public record ThinkChunk(
 		// @formatter:off
 				@JsonProperty("thinking") List<ThinkingContentChunk> thinking,
-				@JsonProperty("closed") @Nullable Boolean closed
+				@JsonProperty("closed") @Nullable Boolean closed,
+				@JsonProperty("signature") @Nullable String signature
 				// @formatter:on
 		) implements ContentChunk {
+
+			/**
+			 * Create a thinking chunk without a signature.
+			 * @param thinking the reasoning content
+			 * @param closed whether the thinking is closed, only used for prefixing
+			 */
+			public ThinkChunk(List<ThinkingContentChunk> thinking, @Nullable Boolean closed) {
+				this(thinking, closed, null);
+			}
 
 		}
 

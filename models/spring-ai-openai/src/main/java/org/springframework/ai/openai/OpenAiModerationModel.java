@@ -40,6 +40,7 @@ import org.springframework.ai.moderation.ModerationResult;
 import org.springframework.ai.openai.http.okhttp.OpenAiHttpClientBuilderCustomizer;
 import org.springframework.ai.openai.setup.OpenAiSetup;
 import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 
 /**
  * OpenAI SDK Moderation Model implementation.
@@ -72,9 +73,9 @@ public final class OpenAiModerationModel implements ModerationModel {
 						this.options.getCredential(), this.options.getMicrosoftDeploymentName(),
 						this.options.getMicrosoftFoundryServiceVersion(), this.options.getOrganizationId(),
 						this.options.isMicrosoftFoundry(), this.options.isGitHubModels(), this.options.getModel(),
-						this.options.getTimeout(), this.options.getMaxRetries(), this.options.getProxy(),
-						this.options.getCustomHeaders(), ObservationRegistry.NOOP, null,
-						builder.httpClientCustomizers));
+						Objects.requireNonNullElse(this.options.getTimeout(), AbstractOpenAiOptions.DEFAULT_TIMEOUT),
+						this.options.getMaxRetries(), this.options.getProxy(), this.options.getCustomHeaders(),
+						ObservationRegistry.NOOP, null, builder.httpClientCustomizers));
 	}
 
 	public static Builder builder() {
@@ -107,6 +108,10 @@ public final class OpenAiModerationModel implements ModerationModel {
 		}
 		Assert.notNull(model, "Model must not be null");
 		builder.model(com.openai.models.moderations.ModerationModel.of(model));
+
+		if (!CollectionUtils.isEmpty(options.getCustomHeaders())) {
+			options.getCustomHeaders().forEach(builder::putAdditionalHeader);
+		}
 
 		ModerationCreateParams params = builder.build();
 

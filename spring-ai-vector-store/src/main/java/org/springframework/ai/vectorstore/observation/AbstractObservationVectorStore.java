@@ -25,9 +25,11 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.BatchingStrategy;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
+import org.springframework.ai.vectorstore.EmbeddedDocument;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.Filter;
+import org.springframework.util.Assert;
 
 /**
  * Abstract base class for {@link VectorStore} implementations that provides observation
@@ -82,6 +84,29 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 			.observation(this.customObservationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 					this.observationRegistry)
 			.observe(() -> this.doAdd(documents));
+	}
+
+	/**
+	 * Like {@link #add(List)}, this path accepts text documents only, but for a different
+	 * reason: {@code add} is restricted because it invokes the text embedding model,
+	 * while {@code upsert} never embeds and is restricted because no store can persist a
+	 * row that carries no text. A document whose text is empty is fine, which is how a
+	 * row points at content held outside the store.
+	 */
+	@Override
+	public void upsert(List<EmbeddedDocument> entries) {
+		if (entries.isEmpty()) {
+			return;
+		}
+		validateNonTextDocuments(entries.stream().map(EmbeddedDocument::document).toList());
+		VectorStoreObservationContext observationContext = this
+			.createObservationContextBuilder(VectorStoreObservationContext.Operation.UPSERT.value())
+			.build();
+
+		VectorStoreObservationDocumentation.AI_VECTOR_STORE
+			.observation(this.customObservationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
+					this.observationRegistry)
+			.observe(() -> this.doUpsert(entries));
 	}
 
 	private void validateNonTextDocuments(List<Document> documents) {
@@ -142,11 +167,54 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 			});
 	}
 
+	@Override
+	// Micrometer Observation#observe returns the value of the Supplier, which is never
+	// null
+	@SuppressWarnings("DataFlowIssue")
+	public List<Document> similaritySearch(float[] queryEmbedding, SearchRequest request) {
+		Assert.notNull(queryEmbedding, "queryEmbedding must not be null");
+		Assert.notNull(request, "request must not be null");
+		// The same rules as for an upserted vector: a caller-supplied vector is not
+		// produced by a trusted model, and a NaN would corrupt the distance maths rather
+		// than fail.
+		Assert.isTrue(queryEmbedding.length > 0, "queryEmbedding must not be empty");
+		for (float value : queryEmbedding) {
+			Assert.isTrue(Float.isFinite(value), () -> "queryEmbedding must contain only finite values; found "
+					+ (Float.isNaN(value) ? "NaN" : "Infinity"));
+		}
+
+		// Record the request without its query text: the search ignores it, so a trace
+		// showing it would describe a search that did not happen.
+		VectorStoreObservationContext searchObservationContext = this
+			.createObservationContextBuilder(VectorStoreObservationContext.Operation.QUERY.value())
+			.queryRequest(SearchRequest.from(request).query("").build())
+			.build();
+
+		return VectorStoreObservationDocumentation.AI_VECTOR_STORE
+			.observation(this.customObservationConvention, DEFAULT_OBSERVATION_CONVENTION,
+					() -> searchObservationContext, this.observationRegistry)
+			.observe(() -> {
+				var documents = this.doSimilaritySearch(queryEmbedding, request);
+				searchObservationContext.setQueryResponse(documents);
+				return documents;
+			});
+	}
+
 	/**
 	 * Perform the actual add operation.
 	 * @param documents the documents to add
 	 */
 	public abstract void doAdd(List<Document> documents);
+
+	/**
+	 * Template method for concrete implementations to provide upsert logic using
+	 * caller-supplied embeddings. The default implementation throws, so stores opt in
+	 * independently.
+	 * @param entries the documents and their pre-computed embeddings to upsert
+	 */
+	protected void doUpsert(List<EmbeddedDocument> entries) {
+		throw new UnsupportedOperationException(getName() + " does not support upsert");
+	}
 
 	/**
 	 * Perform the actual delete operation.
@@ -172,6 +240,38 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 	 * @return the list of documents that match the query request conditions
 	 */
 	public abstract List<Document> doSimilaritySearch(SearchRequest request);
+
+	/**
+	 * Template method for concrete implementations to search with a caller-supplied query
+	 * embedding. The query embedding has already been checked to be non-empty and finite.
+	 * The default implementation throws, so stores opt in independently.
+	 * @param queryEmbedding the query embedding
+	 * @param request the search request; its query text is ignored
+	 * @return the list of documents that match the query request conditions
+	 */
+	protected List<Document> doSimilaritySearch(float[] queryEmbedding, SearchRequest request) {
+		throw new UnsupportedOperationException(
+				getName() + " does not support similarity search with a query embedding");
+	}
+
+	/**
+	 * Checks a caller-supplied vector's length against the length the store accepts, for
+	 * use by {@code doUpsert} and the query-embedding {@code doSimilaritySearch} before
+	 * they touch the database.
+	 * @param description what the vector is, for the error message, such as
+	 * {@code "Query embedding"}
+	 * @param actual the vector's length
+	 * @param expected the length the store accepts, or zero or less when it is unknown,
+	 * in which case nothing is checked
+	 * @throws IllegalArgumentException if the length is known and differs
+	 * @since 2.1.0
+	 */
+	protected static void checkDimensions(String description, int actual, int expected) {
+		if (expected > 0 && actual != expected) {
+			throw new IllegalArgumentException(
+					description + " has dimension " + actual + " but the store expects dimension " + expected);
+		}
+	}
 
 	/**
 	 * Create a new {@link VectorStoreObservationContext.Builder} instance.

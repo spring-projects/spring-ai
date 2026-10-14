@@ -309,6 +309,15 @@ Three OAuth 2.0 flows are available for obtaining tokens:
 
 TIP: Use authorization code flow when you have user-level permissions and all MCP requests occur within user context. Use client credentials for machine-to-machine communication. Use hybrid flow when using Spring Boot properties for MCP client configuration, as tool discovery happens at startup without a user present.
 
+[WARNING]
+====
+These flows attach a per-request token to each outgoing HTTP request, but they do not give each user their own MCP protocol session.
+Autoconfigured MCP clients are application-scoped singletons, and a stateful transport keeps its `Mcp-Session-Id` for the lifetime of the client bean, so all users of that bean share one MCP session.
+Do not rely on the MCP session to isolate users, and make sure the MCP servers you call do not either.
+
+See xref:api/mcp/mcp-client-boot-starter-docs.adoc#client-scope-and-session-boundaries[Client Scope and Session Boundaries] for the full implications and for how to obtain per-user protocol isolation.
+====
+
 === Common Setup
 
 For all flows, activate Spring Security's OAuth2 client support in your `application.properties`:
@@ -518,6 +527,8 @@ var chatResponse = chatClient.prompt("Prompt the LLM to do the thing")
 
 * Spring WebFlux servers are not supported.
 * Spring AI autoconfiguration initializes MCP clients at app start, requiring workarounds for user-based authentication.
+* Per-request tokens do not create per-user MCP protocol sessions, because the session belongs to the shared client bean.
+Applications needing per-user protocol isolation must manage client lifecycles themselves.
 * Unlike the server module, the client implementation supports the SSE transport with both `HttpClient` and `WebClient`.
 
 ====

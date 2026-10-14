@@ -17,6 +17,7 @@
 package org.springframework.ai.reader;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
 import java.nio.charset.Charset;
@@ -84,9 +85,9 @@ public class TextReader implements DocumentReader {
 
 	@Override
 	public List<Document> get() {
-		try {
+		try (InputStream inputStream = this.resource.getInputStream()) {
 
-			String document = StreamUtils.copyToString(this.resource.getInputStream(), this.charset);
+			String document = StreamUtils.copyToString(inputStream, this.charset);
 
 			// Inject source information as a metadata.
 			this.customMetadata.put(CHARSET_METADATA, this.charset.name());

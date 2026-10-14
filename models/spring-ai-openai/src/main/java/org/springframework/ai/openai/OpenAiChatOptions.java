@@ -109,9 +109,10 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 	private final boolean isGitHubModels;
 
 	/**
-	 * Request timeout for OpenAI client.
+	 * Request timeout for OpenAI client. When {@code null}, the timeout configured on the
+	 * OpenAI client is used.
 	 */
-	private final Duration timeout;
+	private final @Nullable Duration timeout;
 
 	/**
 	 * Maximum number of retries for OpenAI client.
@@ -181,6 +182,15 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 	private final @Nullable String promptCacheKey;
 
 	/**
+	 * Whether to send a previous assistant message's reasoning content back as the
+	 * {@code reasoning_content} property of the next request. When {@code null}, the
+	 * content is replayed whenever it is present, which OpenAI-compatible reasoning
+	 * endpoints such as DeepSeek's thinking mode require. Set to {@code false} for
+	 * endpoints that reject the property, such as Groq.
+	 */
+	private final @Nullable Boolean replayReasoningContent;
+
+	/**
 	 * Extra parameters that are not part of the standard OpenAI API. These parameters are
 	 * passed as additional body properties to support OpenAI-compatible providers like
 	 * vLLM, Ollama, Groq, etc. that support custom parameters such as top_k,
@@ -207,7 +217,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 			@Nullable String user, @Nullable Boolean parallelToolCalls, @Nullable Boolean store,
 			@Nullable Boolean strict, @Nullable Map<String, String> metadata, @Nullable String reasoningEffort,
 			@Nullable String verbosity, @Nullable String serviceTier, @Nullable String promptCacheKey,
-			@Nullable Map<String, Object> extraBody) {
+			@Nullable Boolean replayReasoningContent, @Nullable Map<String, Object> extraBody) {
 		this.baseUrl = baseUrl;
 		this.apiKey = apiKey;
 		this.credential = credential;
@@ -217,7 +227,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 		this.organizationId = organizationId;
 		this.isMicrosoftFoundry = (isMicrosoftFoundry != null ? isMicrosoftFoundry : false);
 		this.isGitHubModels = (isGitHubModels != null ? isGitHubModels : false);
-		this.timeout = (timeout != null ? timeout : AbstractOpenAiOptions.DEFAULT_TIMEOUT);
+		this.timeout = timeout;
 		this.maxRetries = (maxRetries != null ? maxRetries : AbstractOpenAiOptions.DEFAULT_MAX_RETRIES);
 		this.proxy = proxy;
 		this.customHeaders = (customHeaders != null ? Map.copyOf(customHeaders) : null);
@@ -252,6 +262,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 		this.verbosity = verbosity;
 		this.serviceTier = serviceTier;
 		this.promptCacheKey = promptCacheKey;
+		this.replayReasoningContent = replayReasoningContent;
 		this.extraBody = (extraBody != null ? Map.copyOf(extraBody) : null);
 	}
 
@@ -303,7 +314,11 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 		return this.isGitHubModels;
 	}
 
-	public Duration getTimeout() {
+	/**
+	 * Return the request timeout, or {@code null} to inherit the timeout configured on
+	 * the OpenAI client.
+	 */
+	public @Nullable Duration getTimeout() {
 		return this.timeout;
 	}
 
@@ -521,6 +536,17 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 		return this.promptCacheKey;
 	}
 
+	/**
+	 * Gets whether a previous assistant message's reasoning content is sent back as the
+	 * {@code reasoning_content} property of the next request.
+	 * @return {@code false} if the reasoning content is never replayed, {@code null} if
+	 * it is replayed whenever present
+	 * @since 2.0.2
+	 */
+	public @Nullable Boolean getReplayReasoningContent() {
+		return this.replayReasoningContent;
+	}
+
 	public @Nullable Map<String, Object> getExtraBody() {
 		return this.extraBody;
 	}
@@ -598,6 +624,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 			.verbosity(this.verbosity)
 			.serviceTier(this.serviceTier)
 			.promptCacheKey(this.promptCacheKey)
+			.replayReasoningContent(this.replayReasoningContent)
 			.extraBody(this.extraBody);
 	}
 
@@ -631,6 +658,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 				&& Objects.equals(this.verbosity, options.verbosity)
 				&& Objects.equals(this.serviceTier, options.serviceTier)
 				&& Objects.equals(this.promptCacheKey, options.promptCacheKey)
+				&& Objects.equals(this.replayReasoningContent, options.replayReasoningContent)
 				&& Objects.equals(this.extraBody, options.extraBody)
 				&& Objects.equals(this.toolCallbacks, options.toolCallbacks)
 				&& Objects.equals(this.toolContext, options.toolContext);
@@ -642,8 +670,8 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 				this.maxTokens, this.maxCompletionTokens, this.n, this.outputModalities, this.outputAudio,
 				this.presencePenalty, this.responseFormat, this.streamOptions, this.seed, this.stop, this.temperature,
 				this.topP, this.toolChoice, this.user, this.parallelToolCalls, this.store, this.strict, this.metadata,
-				this.reasoningEffort, this.verbosity, this.serviceTier, this.promptCacheKey, this.extraBody,
-				this.toolCallbacks, this.toolContext);
+				this.reasoningEffort, this.verbosity, this.serviceTier, this.promptCacheKey,
+				this.replayReasoningContent, this.extraBody, this.toolCallbacks, this.toolContext);
 	}
 
 	public record AudioParameters(@Nullable Voice voice, @Nullable AudioResponseFormat format) {
@@ -808,6 +836,8 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 		protected @Nullable Boolean store;
 
 		protected @Nullable Boolean strict;
+
+		protected @Nullable Boolean replayReasoningContent;
 
 		protected @Nullable Map<String, String> metadata;
 
@@ -1001,6 +1031,21 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 			return self();
 		}
 
+		/**
+		 * Sets whether a previous assistant message's reasoning content is sent back as
+		 * the {@code reasoning_content} property of the next request. Defaults to
+		 * replaying it whenever present, which OpenAI-compatible reasoning endpoints such
+		 * as DeepSeek's thinking mode require. Set to {@code false} for endpoints that
+		 * reject the property, such as Groq.
+		 * @param replayReasoningContent whether to replay the reasoning content
+		 * @return this builder
+		 * @since 2.0.2
+		 */
+		public B replayReasoningContent(@Nullable Boolean replayReasoningContent) {
+			this.replayReasoningContent = replayReasoningContent;
+			return self();
+		}
+
 		public B store(@Nullable Boolean store) {
 			this.store = store;
 			return self();
@@ -1148,6 +1193,9 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 				if (that.strict != null) {
 					this.strict = that.strict;
 				}
+				if (that.replayReasoningContent != null) {
+					this.replayReasoningContent = that.replayReasoningContent;
+				}
 				if (that.metadata != null) {
 					if (this.metadata == null) {
 						this.metadata = new HashMap<>(that.metadata);
@@ -1216,7 +1264,7 @@ public class OpenAiChatOptions implements ToolCallingChatOptions, StructuredOutp
 					this.topLogprobs, this.maxCompletionTokens, this.n, this.outputModalities, this.outputAudio,
 					this.responseFormat, this.streamOptions, this.seed, this.toolChoice, this.user,
 					this.parallelToolCalls, this.store, this.strict, this.metadata, this.reasoningEffort,
-					this.verbosity, this.serviceTier, this.promptCacheKey, this.extraBody);
+					this.verbosity, this.serviceTier, this.promptCacheKey, this.replayReasoningContent, this.extraBody);
 		}
 
 	}
