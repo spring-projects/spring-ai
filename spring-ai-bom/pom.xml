@@ -571,19 +571,11 @@
 				<version>${project.version}</version>
 			</dependency>
 
-			<!-- Spring AI Text-to-Speech model observation autoconfiguration -->
+			<!-- Spring AI Audio (text-to-speech, transcription) model observation autoconfiguration -->
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-autoconfigure-model-tts-observation</artifactId>
-				<version>${project.version}</version>
-			</dependency>
-
-			<!-- Spring AI Transcription model observation autoconfiguration -->
-
-			<dependency>
-				<groupId>org.springframework.ai</groupId>
-				<artifactId>spring-ai-autoconfigure-model-transcription-observation</artifactId>
+				<artifactId>spring-ai-autoconfigure-model-audio-observation</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 

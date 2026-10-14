@@ -20,7 +20,7 @@ import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
-import org.springframework.ai.audio.transcription.observation.AudioTranscriptionModelObservationConvention;
+import org.springframework.ai.audio.transcription.observation.TranscriptionModelObservationConvention;
 import org.springframework.ai.google.genai.transcription.GoogleGenAiTranscriptionModel;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -50,14 +50,13 @@ class GoogleGenAiTranscriptionAutoConfigurationTests {
 
 	@Test
 	void appliesCustomObservationConventionWhenProvided() {
-		AudioTranscriptionModelObservationConvention customConvention = Mockito
-			.mock(AudioTranscriptionModelObservationConvention.class);
+		TranscriptionModelObservationConvention customConvention = Mockito
+			.mock(TranscriptionModelObservationConvention.class);
 
-		this.contextRunner.withBean(AudioTranscriptionModelObservationConvention.class, () -> customConvention)
+		this.contextRunner.withBean(TranscriptionModelObservationConvention.class, () -> customConvention)
 			.run(context -> {
 				assertThat(context.getBeansOfType(GoogleGenAiTranscriptionModel.class)).hasSize(1);
-				assertThat(context.getBean(AudioTranscriptionModelObservationConvention.class))
-					.isSameAs(customConvention);
+				assertThat(context.getBean(TranscriptionModelObservationConvention.class)).isSameAs(customConvention);
 			});
 	}
 

@@ -102,17 +102,17 @@ public enum AiObservationAttributes {
 	REQUEST_IMAGE_STYLE("gen_ai.request.image.style"),
 
 	/**
-	 * The voice used to generate the speech audio.
+	 * The voice to synthesize speech with.
 	 */
-	REQUEST_TTS_VOICE("gen_ai.request.tts.voice"),
+	REQUEST_AUDIO_VOICE("gen_ai.request.audio.voice"),
 	/**
-	 * The output format of the generated speech audio.
+	 * The format in which the synthesized audio is returned.
 	 */
-	REQUEST_TTS_FORMAT("gen_ai.request.tts.format"),
+	REQUEST_AUDIO_RESPONSE_FORMAT("gen_ai.request.audio.response_format"),
 	/**
-	 * The speed of the generated speech audio.
+	 * The speed of the synthesized speech.
 	 */
-	REQUEST_TTS_SPEED("gen_ai.request.tts.speed"),
+	REQUEST_AUDIO_SPEED("gen_ai.request.audio.speed"),
 
 	// GenAI Response
 

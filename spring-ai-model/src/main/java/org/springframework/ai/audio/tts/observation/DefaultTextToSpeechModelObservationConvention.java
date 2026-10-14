@@ -26,6 +26,7 @@ import org.springframework.util.StringUtils;
  * Default conventions to populate observations for text-to-speech model operations.
  *
  * @author Olivier Le Quellec
+ * @author Christian Tzolov
  * @since 2.0.2
  */
 public class DefaultTextToSpeechModelObservationConvention implements TextToSpeechModelObservationConvention {
@@ -76,40 +77,47 @@ public class DefaultTextToSpeechModelObservationConvention implements TextToSpee
 	@Override
 	public KeyValues getHighCardinalityKeyValues(TextToSpeechModelObservationContext context) {
 		var keyValues = KeyValues.empty();
-		// Request
-		keyValues = requestTtsVoice(keyValues, context);
-		keyValues = requestTtsFormat(keyValues, context);
-		keyValues = requestTtsSpeed(keyValues, context);
+		keyValues = requestAudioVoice(keyValues, context);
+		keyValues = requestAudioResponseFormat(keyValues, context);
+		keyValues = requestAudioSpeed(keyValues, context);
+		keyValues = requestStream(keyValues, context);
 		return keyValues;
 	}
 
-	// Request
+	protected KeyValues requestStream(KeyValues keyValues, TextToSpeechModelObservationContext context) {
+		if (context.isStreaming()) {
+			return keyValues.and(
+					TextToSpeechModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_STREAM.asString(),
+					String.valueOf(true));
+		}
+		return keyValues;
+	}
 
-	protected KeyValues requestTtsVoice(KeyValues keyValues, TextToSpeechModelObservationContext context) {
+	protected KeyValues requestAudioVoice(KeyValues keyValues, TextToSpeechModelObservationContext context) {
 		TextToSpeechOptions options = context.getRequest().getOptions();
 		if (options != null && StringUtils.hasText(options.getVoice())) {
 			return keyValues.and(
-					TextToSpeechModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_TTS_VOICE.asString(),
+					TextToSpeechModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_AUDIO_VOICE.asString(),
 					options.getVoice());
 		}
 		return keyValues;
 	}
 
-	protected KeyValues requestTtsFormat(KeyValues keyValues, TextToSpeechModelObservationContext context) {
+	protected KeyValues requestAudioResponseFormat(KeyValues keyValues, TextToSpeechModelObservationContext context) {
 		TextToSpeechOptions options = context.getRequest().getOptions();
 		if (options != null && StringUtils.hasText(options.getFormat())) {
-			return keyValues.and(
-					TextToSpeechModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_TTS_FORMAT.asString(),
-					options.getFormat());
+			return keyValues
+				.and(TextToSpeechModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_AUDIO_RESPONSE_FORMAT
+					.asString(), options.getFormat());
 		}
 		return keyValues;
 	}
 
-	protected KeyValues requestTtsSpeed(KeyValues keyValues, TextToSpeechModelObservationContext context) {
+	protected KeyValues requestAudioSpeed(KeyValues keyValues, TextToSpeechModelObservationContext context) {
 		TextToSpeechOptions options = context.getRequest().getOptions();
 		if (options != null && options.getSpeed() != null) {
 			return keyValues.and(
-					TextToSpeechModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_TTS_SPEED.asString(),
+					TextToSpeechModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_AUDIO_SPEED.asString(),
 					String.valueOf(options.getSpeed()));
 		}
 		return keyValues;

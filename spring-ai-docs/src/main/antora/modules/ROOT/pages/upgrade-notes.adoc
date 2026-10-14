@@ -259,6 +259,12 @@ If your documents use `distance` for domain-specific data, consider renaming tha
 [[upgrading-to-2-0-2]]
 == Upgrading to 2.0.2
 
+=== Observations for Text-to-Speech and Transcription Models
+
+The OpenAI text-to-speech and transcription models, the ElevenLabs text-to-speech model and the Stability AI image model now report observations when an `ObservationRegistry` is available (`gen_ai.client.operation` with `gen_ai.operation.name` set to `text_to_speech`, `transcription` or `image`).
+Applications with a registry will see new metric series and spans for those calls.
+The content logging handlers are off by default; see xref:observability/index.adoc[Observability].
+
 === Neo4j Chat Memory Repository
 
 ==== Stale indexes replaced with correct property indexes

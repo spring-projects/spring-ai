@@ -106,8 +106,7 @@ class TextToSpeechModelMeterObservationHandlerTests {
 
 	private TextToSpeechModelObservationContext generateObservationContext() {
 		return TextToSpeechModelObservationContext.builder()
-			.textToSpeechPrompt(
-					generateTextToSpeechPrompt(TextToSpeechOptions.builder().model("gemini-2.5-flash-tts").build()))
+			.prompt(generateTextToSpeechPrompt(TextToSpeechOptions.builder().model("gemini-2.5-flash-tts").build()))
 			.provider("superprovider")
 			.build();
 	}

@@ -114,7 +114,7 @@ public class GoogleGenAiTextToSpeechModel implements TextToSpeechModel {
 		final TextToSpeechPrompt textToSpeechPrompt = buildTextToSpeechPrompt(prompt);
 
 		final TextToSpeechModelObservationContext observationContext = TextToSpeechModelObservationContext.builder()
-			.textToSpeechPrompt(textToSpeechPrompt)
+			.prompt(textToSpeechPrompt)
 			.provider(AiProvider.GOOGLE_GENAI_AI.value())
 			.build();
 

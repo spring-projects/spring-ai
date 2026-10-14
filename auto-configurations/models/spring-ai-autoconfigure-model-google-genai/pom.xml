@@ -93,13 +93,7 @@
 
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-autoconfigure-model-tts-observation</artifactId>
-			<version>${project.parent.version}</version>
-		</dependency>
-
-		<dependency>
-			<groupId>org.springframework.ai</groupId>
-			<artifactId>spring-ai-autoconfigure-model-transcription-observation</artifactId>
+			<artifactId>spring-ai-autoconfigure-model-audio-observation</artifactId>
 			<version>${project.parent.version}</version>
 		</dependency>
 

@@ -25,13 +25,13 @@ import io.micrometer.observation.ObservationHandler;
 import org.springframework.ai.model.observation.ModelUsageMetricsGenerator;
 
 /**
- * Handler for generating metrics from audio transcription model observations.
+ * Handler for generating metrics from transcription model observations.
  *
  * @author Olivier Le Quellec
  * @since 2.0.2
  */
 public class TranscriptionModelMeterObservationHandler
-		implements ObservationHandler<AudioTranscriptionModelObservationContext> {
+		implements ObservationHandler<TranscriptionModelObservationContext> {
 
 	private final MeterRegistry meterRegistry;
 
@@ -40,7 +40,7 @@ public class TranscriptionModelMeterObservationHandler
 	}
 
 	@Override
-	public void onStop(AudioTranscriptionModelObservationContext context) {
+	public void onStop(TranscriptionModelObservationContext context) {
 		if (Objects.nonNull(context.getResponse())) {
 			ModelUsageMetricsGenerator.generate(context.getResponse().getMetadata().getUsage(), context,
 					this.meterRegistry);
@@ -49,7 +49,7 @@ public class TranscriptionModelMeterObservationHandler
 
 	@Override
 	public boolean supportsContext(Observation.Context context) {
-		return context instanceof AudioTranscriptionModelObservationContext;
+		return context instanceof TranscriptionModelObservationContext;
 	}
 
 }

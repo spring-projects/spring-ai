@@ -36,10 +36,10 @@ import org.springframework.ai.audio.transcription.AudioTranscriptionOptions;
 import org.springframework.ai.audio.transcription.AudioTranscriptionPrompt;
 import org.springframework.ai.audio.transcription.AudioTranscriptionResponse;
 import org.springframework.ai.audio.transcription.TranscriptionModel;
-import org.springframework.ai.audio.transcription.observation.AudioTranscriptionModelObservationContext;
-import org.springframework.ai.audio.transcription.observation.AudioTranscriptionModelObservationConvention;
-import org.springframework.ai.audio.transcription.observation.AudioTranscriptionModelObservationDocumentation;
-import org.springframework.ai.audio.transcription.observation.DefaultAudioTranscriptionModelObservationConvention;
+import org.springframework.ai.audio.transcription.observation.DefaultTranscriptionModelObservationConvention;
+import org.springframework.ai.audio.transcription.observation.TranscriptionModelObservationContext;
+import org.springframework.ai.audio.transcription.observation.TranscriptionModelObservationConvention;
+import org.springframework.ai.audio.transcription.observation.TranscriptionModelObservationDocumentation;
 import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.observation.conventions.AiProvider;
@@ -60,7 +60,7 @@ import org.springframework.util.StringUtils;
  */
 public class GoogleGenAiTranscriptionModel implements TranscriptionModel {
 
-	private static final AudioTranscriptionModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultAudioTranscriptionModelObservationConvention();
+	private static final TranscriptionModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultTranscriptionModelObservationConvention();
 
 	private static final String DEFAULT_AUDIO_MIME_TYPE = "audio/wav";
 
@@ -74,7 +74,7 @@ public class GoogleGenAiTranscriptionModel implements TranscriptionModel {
 
 	private final ObservationRegistry observationRegistry;
 
-	private AudioTranscriptionModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
+	private TranscriptionModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
 	private final Client genAiClient;
 
@@ -115,13 +115,12 @@ public class GoogleGenAiTranscriptionModel implements TranscriptionModel {
 	public AudioTranscriptionResponse call(AudioTranscriptionPrompt prompt) {
 		final AudioTranscriptionPrompt transcriptionPrompt = buildTranscriptionPrompt(prompt);
 
-		final AudioTranscriptionModelObservationContext observationContext = AudioTranscriptionModelObservationContext
-			.builder()
-			.transcriptionPrompt(transcriptionPrompt)
+		final TranscriptionModelObservationContext observationContext = TranscriptionModelObservationContext.builder()
+			.prompt(transcriptionPrompt)
 			.provider(AiProvider.GOOGLE_GENAI_AI.value())
 			.build();
 
-		return AudioTranscriptionModelObservationDocumentation.AUDIO_TRANSCRIPTION_MODEL_OPERATION
+		return TranscriptionModelObservationDocumentation.TRANSCRIPTION_MODEL_OPERATION
 			.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 					this.observationRegistry)
 			.observe(() -> {
@@ -157,7 +156,7 @@ public class GoogleGenAiTranscriptionModel implements TranscriptionModel {
 			});
 	}
 
-	public void setObservationConvention(@Nullable AudioTranscriptionModelObservationConvention observationConvention) {
+	public void setObservationConvention(@Nullable TranscriptionModelObservationConvention observationConvention) {
 		Assert.notNull(observationConvention, "observationConvention cannot be null");
 		this.observationConvention = observationConvention;
 	}

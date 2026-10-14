@@ -23,6 +23,7 @@ import io.micrometer.observation.ObservationConvention;
  * Interface for an {@link ObservationConvention} for text-to-speech model exchanges.
  *
  * @author Olivier Le Quellec
+ * @author Christian Tzolov
  * @since 2.0.2
  */
 public interface TextToSpeechModelObservationConvention

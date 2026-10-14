@@ -21,6 +21,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.openai.client.OpenAIClient;
 import com.openai.client.OpenAIClientAsync;
@@ -34,7 +35,9 @@ import com.openai.models.audio.transcriptions.TranscriptionCreateResponse;
 import com.openai.models.audio.transcriptions.TranscriptionDiarized;
 import com.openai.models.audio.transcriptions.TranscriptionStreamEvent;
 import com.openai.models.audio.transcriptions.TranscriptionVerbose;
+import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
+import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
@@ -45,6 +48,11 @@ import org.springframework.ai.audio.transcription.AudioTranscriptionPrompt;
 import org.springframework.ai.audio.transcription.AudioTranscriptionResponse;
 import org.springframework.ai.audio.transcription.AudioTranscriptionResponseMetadata;
 import org.springframework.ai.audio.transcription.TranscriptionModel;
+import org.springframework.ai.audio.transcription.observation.DefaultTranscriptionModelObservationConvention;
+import org.springframework.ai.audio.transcription.observation.TranscriptionModelObservationContext;
+import org.springframework.ai.audio.transcription.observation.TranscriptionModelObservationConvention;
+import org.springframework.ai.audio.transcription.observation.TranscriptionModelObservationDocumentation;
+import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.openai.http.okhttp.OpenAiHttpClientBuilderCustomizer;
 import org.springframework.ai.openai.metadata.OpenAiAudioTranscriptionResponseMetadata;
 import org.springframework.ai.openai.setup.OpenAiSetup;
@@ -68,11 +76,17 @@ public final class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 
 	private static final Log logger = LogFactory.getLog(OpenAiAudioTranscriptionModel.class);
 
+	private static final TranscriptionModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultTranscriptionModelObservationConvention();
+
 	private final OpenAIClient openAiClient;
 
 	private final OpenAIClientAsync openAiClientAsync;
 
 	private final OpenAiAudioTranscriptionOptions options;
+
+	private final ObservationRegistry observationRegistry;
+
+	private TranscriptionModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
 	/**
 	 * Creates a new builder for {@link OpenAiAudioTranscriptionModel}.
@@ -91,10 +105,21 @@ public final class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 	}
 
 	private OpenAiAudioTranscriptionModel(OpenAIClient openAiClient, OpenAIClientAsync openAiClientAsync,
-			OpenAiAudioTranscriptionOptions options) {
+			OpenAiAudioTranscriptionOptions options, ObservationRegistry observationRegistry) {
 		this.openAiClient = openAiClient;
 		this.openAiClientAsync = openAiClientAsync;
 		this.options = options;
+		this.observationRegistry = observationRegistry;
+	}
+
+	/**
+	 * Use the provided convention for reporting observation data.
+	 * @param observationConvention the provided convention
+	 * @since 2.0.2
+	 */
+	public void setObservationConvention(TranscriptionModelObservationConvention observationConvention) {
+		Assert.notNull(observationConvention, "observationConvention cannot be null");
+		this.observationConvention = observationConvention;
 	}
 
 	/**
@@ -121,9 +146,28 @@ public final class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 
 		RequestOptions requestOptions = this.buildRequestOptions(mergedOptions);
 
-		TranscriptionCreateResponse response = this.openAiClient.audio()
-			.transcriptions()
-			.create(params, requestOptions);
+		var observationContext = TranscriptionModelObservationContext.builder()
+			.prompt(new AudioTranscriptionPrompt(audioResource, mergedOptions))
+			.provider(AiProvider.OPENAI.value())
+			.build();
+
+		return Objects.requireNonNull(
+				TranscriptionModelObservationDocumentation.TRANSCRIPTION_MODEL_OPERATION
+					.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
+							this.observationRegistry)
+					.observe(() -> {
+						TranscriptionCreateResponse response = this.openAiClient.audio()
+							.transcriptions()
+							.create(params, requestOptions);
+						AudioTranscriptionResponse transcriptionResponse = toTranscriptionResponse(mergedOptions,
+								response);
+						observationContext.setResponse(transcriptionResponse);
+						return transcriptionResponse;
+					}));
+	}
+
+	private AudioTranscriptionResponse toTranscriptionResponse(OpenAiAudioTranscriptionOptions mergedOptions,
+			TranscriptionCreateResponse response) {
 		DiarizedJsonMisclassificationRecovery.Recovered recovered = toRecoverDiarizedJson(mergedOptions, response);
 		if (recovered != null) {
 			AudioTranscription transcript = new AudioTranscription(recovered.text());
@@ -162,26 +206,75 @@ public final class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 
 		RequestOptions requestOptions = this.buildRequestOptions(mergedOptions);
 
-		Flux<TranscriptionStreamEvent> chunks = Flux.create(sink -> {
-			AsyncStreamResponse<TranscriptionStreamEvent> response = this.openAiClientAsync.audio()
-				.transcriptions()
-				.createStreaming(params, requestOptions);
-			sink.onDispose(response::close);
-			response.subscribe(sink::next).onCompleteFuture().whenComplete((unused, throwable) -> {
-				if (throwable != null) {
-					sink.error(throwable);
-				}
-				else {
-					sink.complete();
-				}
-			});
-		});
+		return Flux.deferContextual(contextView -> {
+			var observationContext = TranscriptionModelObservationContext.builder()
+				.prompt(new AudioTranscriptionPrompt(audioResource, mergedOptions))
+				.provider(AiProvider.OPENAI.value())
+				.streaming(true)
+				.build();
+			Observation observation = TranscriptionModelObservationDocumentation.TRANSCRIPTION_MODEL_OPERATION
+				.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
+						this.observationRegistry);
+			Observation parentObservation = contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null);
+			observation.parentObservation(parentObservation);
+			// Start under the parent observation's scope, as OpenAiChatModel does, so a
+			// tracing handler takes the parent span from it and not from the thread.
+			try (Observation.Scope ignored = parentObservation != null ? parentObservation.openScope()
+					: Observation.Scope.NOOP) {
+				observation.start();
+			}
 
-		return chunks.map(event -> {
-			String text = extractStreamEventText(event);
-			AudioTranscription transcript = new AudioTranscription(text);
-			return new AudioTranscriptionResponse(transcript, new AudioTranscriptionResponseMetadata());
+			Flux<TranscriptionStreamEvent> chunks = Flux.create(sink -> {
+				AsyncStreamResponse<TranscriptionStreamEvent> response = this.openAiClientAsync.audio()
+					.transcriptions()
+					.createStreaming(params, requestOptions);
+				sink.onDispose(response::close);
+				response.subscribe(sink::next).onCompleteFuture().whenComplete((unused, throwable) -> {
+					if (throwable != null) {
+						sink.error(throwable);
+					}
+					else {
+						sink.complete();
+					}
+				});
+			});
+
+			// The whole transcript is collected for the handlers: from the deltas, or
+			// from the segments when a stream has no deltas. A diarized stream carries
+			// both with the same text, so counting both would double it.
+			StringBuilder deltas = new StringBuilder();
+			StringBuilder segments = new StringBuilder();
+			Flux<AudioTranscriptionResponse> responses = chunks.map(event -> {
+				String text = extractStreamEventText(event);
+				(event.isTranscriptTextDelta() ? deltas : segments).append(text);
+				return new AudioTranscriptionResponse(new AudioTranscription(text),
+						new AudioTranscriptionResponseMetadata());
+			})
+				.doOnComplete(() -> observationContext.setResponse(new AudioTranscriptionResponse(
+						new AudioTranscription(deltas.isEmpty() ? segments.toString() : deltas.toString()),
+						new AudioTranscriptionResponseMetadata())));
+			return observed(responses, observation);
 		});
+	}
+
+	/**
+	 * Ends the observation with the stream: on completion, error or cancel, before the
+	 * terminal signal reaches the subscriber (unlike {@code doFinally}), so a caller that
+	 * blocks on the stream finds the observation stopped. Stopped once, whichever comes
+	 * first.
+	 */
+	private static <T> Flux<T> observed(Flux<T> stream, Observation observation) {
+		AtomicBoolean stopped = new AtomicBoolean();
+		Runnable stop = () -> {
+			if (stopped.compareAndSet(false, true)) {
+				observation.stop();
+			}
+		};
+		return stream.doOnError(observation::error)
+			.doOnError(ex -> stop.run())
+			.doOnComplete(stop)
+			.doOnCancel(stop)
+			.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
 	}
 
 	private TranscriptionCreateParams buildParams(OpenAiAudioTranscriptionOptions options, Resource audioResource) {
@@ -314,6 +407,8 @@ public final class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 
 		private @Nullable OpenAiAudioTranscriptionOptions options;
 
+		private @Nullable ObservationRegistry observationRegistry;
+
 		private List<OpenAiHttpClientBuilderCustomizer> httpClientCustomizers = new ArrayList<>();
 
 		private Builder() {
@@ -323,6 +418,19 @@ public final class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 			this.openAiClient = model.openAiClient;
 			this.openAiClientAsync = model.openAiClientAsync;
 			this.options = model.options;
+			this.observationRegistry = model.observationRegistry;
+		}
+
+		/**
+		 * Sets the observation registry the model reports its calls to. Defaults to
+		 * {@link ObservationRegistry#NOOP}: no observations.
+		 * @param observationRegistry the observation registry
+		 * @return this builder
+		 * @since 2.0.2
+		 */
+		public Builder observationRegistry(@Nullable ObservationRegistry observationRegistry) {
+			this.observationRegistry = observationRegistry;
+			return this;
 		}
 
 		/**
@@ -405,7 +513,8 @@ public final class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 							options.getMaxRetries(), options.getProxy(), options.getCustomHeaders(),
 							ObservationRegistry.NOOP, null, this.httpClientCustomizers));
 
-			return new OpenAiAudioTranscriptionModel(openAiClient, openAiClientAsync, options);
+			return new OpenAiAudioTranscriptionModel(openAiClient, openAiClientAsync, options,
+					Objects.requireNonNullElse(this.observationRegistry, ObservationRegistry.NOOP));
 		}
 
 	}

@@ -226,7 +226,8 @@ Use the metric name `gen_ai.client.token.usage` that is provided by the `Embeddi
 
 == Image Model
 
-NOTE: Observability features are currently supported only for `ImageModel` implementations from the following AI model providers: OpenAI. Additional AI model providers will be supported in a future release.
+NOTE: Observability features are currently supported only for `ImageModel` implementations from the following AI model providers: OpenAI, Stability AI.
+Additional AI model providers will be supported in a future release.
 
 The `gen_ai.client.operation` observations are recorded on image model method calls.
 They measure the time spent on method completion and propagate the related tracing information.
@@ -266,6 +267,98 @@ Spring AI supports logging image prompt data, useful for troubleshooting scenari
 |===
 
 WARNING: If you enable logging of the image prompt data, there's a risk of exposing sensitive or private information. Please, be careful!
+
+== Text-to-Speech Model
+
+NOTE: Observability features are currently supported only for `TextToSpeechModel` implementations from the following AI model providers: OpenAI, ElevenLabs, Google GenAI.
+
+The `gen_ai.client.operation` observations are recorded on text-to-speech model method calls, `call` and `stream` alike (a streamed call is one observation, from the subscription to the end of the stream).
+They measure the time spent on method completion and propagate the related tracing information.
+
+IMPORTANT: The `gen_ai.client.token.usage` metrics measures number of input and output tokens used by a single model call.
+
+.Low Cardinality Keys
+[cols="a,a", stripes=even]
+|===
+|Name | Description
+
+|`gen_ai.operation.name`| The name of the operation being performed: `text_to_speech`.
+|`gen_ai.system`| The model provider as identified by the client instrumentation.
+|`gen_ai.request.model`| The name of the model a request is being made to.
+|===
+
+.High Cardinality Keys
+[cols="a,a", stripes=even]
+|===
+|Name | Description
+
+|`gen_ai.request.audio.voice` | The voice to synthesize speech with.
+|`gen_ai.request.audio.response_format` | The format in which the synthesized audio is returned.
+|`gen_ai.request.audio.speed` | The speed of the synthesized speech.
+|`gen_ai.request.stream` | Whether the request was made in streaming mode. Only present when `true`.
+|===
+
+=== Text-to-Speech Text Data
+
+The text given to the model may contain sensitive information, so it is not exported by default.
+The audio that comes back is never exported.
+
+Spring AI supports logging the text, useful for troubleshooting scenarios.
+When tracing is available, the logs will include trace information for better correlation.
+
+[cols="6,3,1", stripes=even]
+|===
+| Property | Description | Default
+
+| `spring.ai.audio.speech.observations.log-text` | Log the text given to the text-to-speech model. `true` or `false` | `false`
+|===
+
+WARNING: If you enable logging of the text-to-speech text, there's a risk of exposing sensitive or private information. Please, be careful!
+
+== Transcription Model
+
+NOTE: Observability features are currently supported only for `TranscriptionModel` implementations from the following AI model providers: OpenAI, Google GenAI.
+
+The `gen_ai.client.operation` observations are recorded on transcription model method calls, `call` and `stream` alike.
+They measure the time spent on method completion and propagate the related tracing information.
+
+IMPORTANT: The `gen_ai.client.token.usage` metrics measures number of input and output tokens used by a single model call.
+
+.Low Cardinality Keys
+[cols="a,a", stripes=even]
+|===
+|Name | Description
+
+|`gen_ai.operation.name`| The name of the operation being performed: `transcription`.
+|`gen_ai.system`| The model provider as identified by the client instrumentation.
+|`gen_ai.request.model`| The name of the model a request is being made to.
+|===
+
+.High Cardinality Keys
+[cols="a,a", stripes=even]
+|===
+|Name | Description
+
+|`gen_ai.request.stream` | Whether the request was made in streaming mode. Only present when `true`.
+|===
+
+The audio given to the model is never described (its name would be a path on the caller's machine), and it is never read by an observation handler, since it may be a stream the model consumes once.
+
+=== Transcript Data
+
+The transcript a transcription model returns is personal data as a rule, so it is not exported by default.
+
+Spring AI supports logging the transcript, useful for troubleshooting scenarios.
+When tracing is available, the logs will include trace information for better correlation.
+
+[cols="6,3,1", stripes=even]
+|===
+| Property | Description | Default
+
+| `spring.ai.audio.transcription.observations.log-transcript` | Log the transcript returned by the transcription model. `true` or `false` | `false`
+|===
+
+WARNING: If you enable logging of the transcript, there's a risk of exposing sensitive or private information. Please, be careful!
 
 == Vector Stores
 

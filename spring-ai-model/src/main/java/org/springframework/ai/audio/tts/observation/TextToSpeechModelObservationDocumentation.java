@@ -26,6 +26,7 @@ import org.springframework.ai.observation.conventions.AiObservationAttributes;
 /**
  * Documented conventions for text-to-speech model observations.
  *
+ * @author Christian Tzolov
  * @author Olivier Le Quellec
  * @since 2.0.2
  */
@@ -91,35 +92,43 @@ public enum TextToSpeechModelObservationDocumentation implements ObservationDocu
 	 */
 	public enum HighCardinalityKeyNames implements KeyName {
 
-		// Request
-
 		/**
-		 * The voice used to generate the speech audio.
+		 * The voice to synthesize speech with.
 		 */
-		REQUEST_TTS_VOICE {
+		REQUEST_AUDIO_VOICE {
 			@Override
 			public String asString() {
-				return AiObservationAttributes.REQUEST_TTS_VOICE.value();
+				return AiObservationAttributes.REQUEST_AUDIO_VOICE.value();
 			}
 		},
 
 		/**
-		 * The output format of the generated speech audio.
+		 * The format in which the synthesized audio is returned.
 		 */
-		REQUEST_TTS_FORMAT {
+		REQUEST_AUDIO_RESPONSE_FORMAT {
 			@Override
 			public String asString() {
-				return AiObservationAttributes.REQUEST_TTS_FORMAT.value();
+				return AiObservationAttributes.REQUEST_AUDIO_RESPONSE_FORMAT.value();
 			}
 		},
 
 		/**
-		 * The speed of the generated speech audio.
+		 * The speed of the synthesized speech.
 		 */
-		REQUEST_TTS_SPEED {
+		REQUEST_AUDIO_SPEED {
 			@Override
 			public String asString() {
-				return AiObservationAttributes.REQUEST_TTS_SPEED.value();
+				return AiObservationAttributes.REQUEST_AUDIO_SPEED.value();
+			}
+		},
+
+		/**
+		 * Whether the request was made in streaming mode.
+		 */
+		REQUEST_STREAM {
+			@Override
+			public String asString() {
+				return AiObservationAttributes.REQUEST_STREAM.value();
 			}
 		}
 

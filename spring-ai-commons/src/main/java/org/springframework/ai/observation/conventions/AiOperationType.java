@@ -65,7 +65,7 @@ public enum AiOperationType {
 	TEXT_TO_SPEECH("text_to_speech"),
 
 	/**
-	 * AI operation type for transcription.
+	 * AI operation type for audio transcription.
 	 */
 	TRANSCRIPTION("transcription");
 

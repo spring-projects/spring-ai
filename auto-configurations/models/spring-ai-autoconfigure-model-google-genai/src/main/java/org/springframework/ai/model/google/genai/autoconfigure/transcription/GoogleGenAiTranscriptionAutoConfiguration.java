@@ -18,7 +18,7 @@ package org.springframework.ai.model.google.genai.autoconfigure.transcription;
 
 import io.micrometer.observation.ObservationRegistry;
 
-import org.springframework.ai.audio.transcription.observation.AudioTranscriptionModelObservationConvention;
+import org.springframework.ai.audio.transcription.observation.TranscriptionModelObservationConvention;
 import org.springframework.ai.google.genai.transcription.GoogleGenAiTranscriptionConnectionDetails;
 import org.springframework.ai.google.genai.transcription.GoogleGenAiTranscriptionModel;
 import org.springframework.ai.model.SpringAIModelProperties;
@@ -52,7 +52,7 @@ public class GoogleGenAiTranscriptionAutoConfiguration {
 			GoogleGenAiTranscriptionConnectionDetails connectionDetails,
 			GoogleGenAiTranscriptionProperties transcriptionProperties, ObjectProvider<RetryTemplate> retryTemplate,
 			ObjectProvider<ObservationRegistry> observationRegistry,
-			ObjectProvider<AudioTranscriptionModelObservationConvention> observationConvention) {
+			ObjectProvider<TranscriptionModelObservationConvention> observationConvention) {
 
 		final GoogleGenAiTranscriptionModel transcriptionModel = GoogleGenAiTranscriptionModel.builder()
 			.connectionDetails(connectionDetails)

@@ -25,8 +25,8 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.audio.transcription.AudioTranscriptionPrompt;
 import org.springframework.ai.audio.transcription.AudioTranscriptionResponse;
-import org.springframework.ai.audio.transcription.observation.AudioTranscriptionModelObservationDocumentation;
-import org.springframework.ai.audio.transcription.observation.DefaultAudioTranscriptionModelObservationConvention;
+import org.springframework.ai.audio.transcription.observation.DefaultTranscriptionModelObservationConvention;
+import org.springframework.ai.audio.transcription.observation.TranscriptionModelObservationDocumentation;
 import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.retry.RetryUtils;
@@ -80,18 +80,18 @@ class GoogleGenAiTranscriptionModelObservationIT {
 
 		TestObservationRegistryAssert.assertThat(this.observationRegistry)
 			.doesNotHaveAnyRemainingCurrentObservation()
-			.hasObservationWithNameEqualTo(DefaultAudioTranscriptionModelObservationConvention.DEFAULT_NAME)
+			.hasObservationWithNameEqualTo(DefaultTranscriptionModelObservationConvention.DEFAULT_NAME)
 			.that()
 			.hasContextualNameEqualTo("%s %s".formatted(AiOperationType.TRANSCRIPTION.value(),
 					GoogleGenAiAudioTranscriptionOptions.DEFAULT_MODEL_NAME))
 			.hasLowCardinalityKeyValue(
-					AudioTranscriptionModelObservationDocumentation.LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(),
+					TranscriptionModelObservationDocumentation.LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(),
 					AiOperationType.TRANSCRIPTION.value())
 			.hasLowCardinalityKeyValue(
-					AudioTranscriptionModelObservationDocumentation.LowCardinalityKeyNames.AI_PROVIDER.asString(),
+					TranscriptionModelObservationDocumentation.LowCardinalityKeyNames.AI_PROVIDER.asString(),
 					AiProvider.GOOGLE_GENAI_AI.value())
 			.hasLowCardinalityKeyValue(
-					AudioTranscriptionModelObservationDocumentation.LowCardinalityKeyNames.REQUEST_MODEL.asString(),
+					TranscriptionModelObservationDocumentation.LowCardinalityKeyNames.REQUEST_MODEL.asString(),
 					GoogleGenAiAudioTranscriptionOptions.DEFAULT_MODEL_NAME)
 			.hasBeenStarted()
 			.hasBeenStopped();

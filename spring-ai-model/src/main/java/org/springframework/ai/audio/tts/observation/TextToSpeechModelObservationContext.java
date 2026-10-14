@@ -28,19 +28,31 @@ import org.springframework.util.Assert;
 /**
  * Context used to store metadata for text-to-speech model exchanges.
  *
+ * @author Christian Tzolov
  * @author Olivier Le Quellec
  * @since 2.0.2
  */
 public class TextToSpeechModelObservationContext
 		extends ModelObservationContext<TextToSpeechPrompt, TextToSpeechResponse> {
 
-	TextToSpeechModelObservationContext(TextToSpeechPrompt textToSpeechPrompt, String provider) {
-		super(textToSpeechPrompt,
+	private final boolean streaming;
+
+	TextToSpeechModelObservationContext(TextToSpeechPrompt prompt, String provider, boolean streaming) {
+		super(prompt,
 				AiOperationMetadata.builder()
 					.operationType(AiOperationType.TEXT_TO_SPEECH.value())
 					.provider(provider)
 					.build());
-		Assert.notNull(textToSpeechPrompt.getOptions(), "text to speech options cannot be null");
+		this.streaming = streaming;
+	}
+
+	/**
+	 * Whether the request was made in streaming mode.
+	 * @return {@code true} for a {@code stream()} call, {@code false} for a
+	 * {@code call()}
+	 */
+	public boolean isStreaming() {
+		return this.streaming;
 	}
 
 	public static Builder builder() {
@@ -53,15 +65,17 @@ public class TextToSpeechModelObservationContext
 
 	public static final class Builder {
 
-		private @Nullable TextToSpeechPrompt textToSpeechPrompt;
+		private @Nullable TextToSpeechPrompt prompt;
 
 		private @Nullable String provider;
+
+		private boolean streaming;
 
 		private Builder() {
 		}
 
-		public Builder textToSpeechPrompt(TextToSpeechPrompt textToSpeechPrompt) {
-			this.textToSpeechPrompt = textToSpeechPrompt;
+		public Builder prompt(TextToSpeechPrompt prompt) {
+			this.prompt = prompt;
 			return this;
 		}
 
@@ -70,10 +84,20 @@ public class TextToSpeechModelObservationContext
 			return this;
 		}
 
+		/**
+		 * Marks the request as made in streaming mode. Defaults to {@code false}.
+		 * @param streaming whether the request is a {@code stream()} call
+		 * @return this builder
+		 */
+		public Builder streaming(boolean streaming) {
+			this.streaming = streaming;
+			return this;
+		}
+
 		public TextToSpeechModelObservationContext build() {
-			Assert.notNull(this.textToSpeechPrompt, "textToSpeechPrompt cannot be null");
+			Assert.notNull(this.prompt, "prompt cannot be null");
 			Assert.hasText(this.provider, "provider cannot be null or empty");
-			return new TextToSpeechModelObservationContext(this.textToSpeechPrompt, this.provider);
+			return new TextToSpeechModelObservationContext(this.prompt, this.provider, this.streaming);
 		}
 
 	}

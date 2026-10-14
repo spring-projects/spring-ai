@@ -31,7 +31,7 @@ import org.springframework.ai.audio.transcription.AudioTranscriptionOptions;
 import org.springframework.ai.audio.transcription.AudioTranscriptionPrompt;
 import org.springframework.ai.audio.transcription.AudioTranscriptionResponse;
 import org.springframework.ai.audio.transcription.AudioTranscriptionResponseMetadata;
-import org.springframework.ai.audio.transcription.observation.AudioTranscriptionModelObservationDocumentation.LowCardinalityKeyNames;
+import org.springframework.ai.audio.transcription.observation.TranscriptionModelObservationDocumentation.LowCardinalityKeyNames;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.observation.conventions.AiObservationMetricAttributes;
 import org.springframework.ai.observation.conventions.AiObservationMetricNames;
@@ -64,7 +64,7 @@ class TranscriptionModelMeterObservationHandlerTests {
 	void shouldCreateAllMetersDuringAnObservation() {
 		var observationContext = generateObservationContext();
 		var observation = Observation
-			.createNotStarted(new DefaultAudioTranscriptionModelObservationConvention(), () -> observationContext,
+			.createNotStarted(new DefaultTranscriptionModelObservationConvention(), () -> observationContext,
 					this.observationRegistry)
 			.start();
 
@@ -95,7 +95,7 @@ class TranscriptionModelMeterObservationHandlerTests {
 	void shouldNotCreateMetersWhenResponseIsNull() {
 		var observationContext = generateObservationContext();
 		var observation = Observation
-			.createNotStarted(new DefaultAudioTranscriptionModelObservationConvention(), () -> observationContext,
+			.createNotStarted(new DefaultTranscriptionModelObservationConvention(), () -> observationContext,
 					this.observationRegistry)
 			.start();
 
@@ -105,9 +105,9 @@ class TranscriptionModelMeterObservationHandlerTests {
 		assertThat(this.meterRegistry.find(AiObservationMetricNames.OPERATION_DURATION.value()).meters()).isEmpty();
 	}
 
-	private AudioTranscriptionModelObservationContext generateObservationContext() {
-		return AudioTranscriptionModelObservationContext.builder()
-			.transcriptionPrompt(generateTranscriptionPrompt(new TestOptions("gemini-2.5-flash-tts")))
+	private TranscriptionModelObservationContext generateObservationContext() {
+		return TranscriptionModelObservationContext.builder()
+			.prompt(generateTranscriptionPrompt(new TestOptions("gemini-2.5-flash-tts")))
 			.provider("superprovider")
 			.build();
 	}
