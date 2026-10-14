@@ -17,6 +17,8 @@
 package org.springframework.ai.vectorstore.elasticsearch;
 
 import java.net.URISyntaxException;
+import java.time.Instant;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -113,6 +115,18 @@ class ElasticsearchVectorStoreDateFilterIT {
 	}
 
 	@Test
+	void equalsWithJavaDate() {
+		withStore(store -> {
+			FilterExpressionBuilder b = new FilterExpressionBuilder();
+			List<Document> results = store.similaritySearch(request()
+				.filterExpression(b.eq("activationDate", Date.from(Instant.parse("2024-01-08T00:00:00Z"))).build())
+				.build());
+
+			assertThat(ids(results)).containsExactly("jan8");
+		});
+	}
+
+	@Test
 	void greaterThanOrEqualWithIsoDateString() {
 		withStore(store -> {
 			FilterExpressionBuilder b = new FilterExpressionBuilder();
@@ -157,6 +171,21 @@ class ElasticsearchVectorStoreDateFilterIT {
 	}
 
 	@Test
+	void closedRangeKeepsInclusiveBoundaries() {
+		withStore(store -> {
+			FilterExpressionBuilder b = new FilterExpressionBuilder();
+			List<Document> results = store.similaritySearch(
+					request()
+						.filterExpression(b.and(b.gte("activationDate", "2024-01-07T14:29:12Z"),
+								b.lte("activationDate", "2024-01-08T00:00:00Z"))
+							.build())
+						.build());
+
+			assertThat(ids(results)).containsExactlyInAnyOrder("jan7", "jan8");
+		});
+	}
+
+	@Test
 	void inWithIsoDateStrings() {
 		withStore(store -> {
 			List<Document> results = store.similaritySearch(
@@ -164,6 +193,32 @@ class ElasticsearchVectorStoreDateFilterIT {
 						.build());
 
 			assertThat(ids(results)).containsExactlyInAnyOrder("jan7", "jan9");
+		});
+	}
+
+	@Test
+	void inWithMixedJavaDateAndIsoDateString() {
+		withStore(store -> {
+			FilterExpressionBuilder b = new FilterExpressionBuilder();
+			List<Document> results = store.similaritySearch(
+					request()
+						.filterExpression(b.in("activationDate", Date.from(Instant.parse("2024-01-07T14:29:12Z")),
+								"2024-01-09T08:15:30Z")
+							.build())
+						.build());
+
+			assertThat(ids(results)).containsExactlyInAnyOrder("jan7", "jan9");
+		});
+	}
+
+	@Test
+	void notInWithIsoDateStrings() {
+		withStore(store -> {
+			List<Document> results = store.similaritySearch(
+					request().filterExpression("activationDate nin ['2024-01-07T14:29:12Z', '2024-01-09T08:15:30Z']")
+						.build());
+
+			assertThat(ids(results)).containsExactly("jan8");
 		});
 	}
 
