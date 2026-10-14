@@ -34,14 +34,17 @@ import org.springframework.ai.vectorstore.EmbeddedDocument;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionTextParser;
+import org.springframework.dao.DataAccessResourceFailureException;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -179,6 +182,92 @@ public class PgVectorStoreTests {
 		verify(jdbcTemplate).queryForList(anyString(), eq(Integer.class), eq("public"), eq("vector_store"), eq("vec"));
 		verify(jdbcTemplate).batchUpdate(anyString(), any(BatchPreparedStatementSetter.class));
 		verify(embeddingModel, never()).dimensions();
+	}
+
+	@Test
+	void failedSchemaReadLeavesTheSizeUnknownAndIsRetried() {
+		var jdbcTemplate = mock(JdbcTemplate.class);
+		var embeddingModel = mock(EmbeddingModel.class);
+		when(jdbcTemplate.queryForList(anyString(), eq(Integer.class), any(), any(), any()))
+			.thenThrow(new DataAccessResourceFailureException("connection lost"))
+			.thenReturn(List.of(4));
+		when(jdbcTemplate.query(anyString(), ArgumentMatchers.<RowMapper<Document>>any(), any(), any(), any(), any()))
+			.thenReturn(List.of());
+		var store = PgVectorStore.builder(jdbcTemplate, embeddingModel).build();
+		var request = SearchRequest.builder().query("hello").topK(5).similarityThresholdAll().build();
+
+		// The lookup fails, so the size is unknown and the check is left to Postgres
+		// instead of being made against a guess from the model
+		assertThatNoException().isThrownBy(() -> store.doSimilaritySearch(new float[] { 0.1f, 0.2f, 0.3f }, request));
+
+		// Once the table can be read again the real size applies
+		assertThatIllegalArgumentException()
+			.isThrownBy(() -> store.doSimilaritySearch(new float[] { 0.1f, 0.2f, 0.3f }, request))
+			.withMessageContaining("dimension 3")
+			.withMessageContaining("dimension 4");
+		verify(embeddingModel, never()).dimensions();
+	}
+
+	@Test
+	void columnWithoutDeclaredSizeIsNotCheckedAgainstTheModel() {
+		var jdbcTemplate = mock(JdbcTemplate.class);
+		var embeddingModel = mock(EmbeddingModel.class);
+		when(embeddingModel.dimensions()).thenReturn(3);
+		// atttypmod is -1 for a column declared as plain vector
+		when(jdbcTemplate.queryForList(anyString(), eq(Integer.class), any(), any(), any())).thenReturn(List.of(-1));
+		var store = PgVectorStore.builder(jdbcTemplate, embeddingModel).build();
+
+		store.doUpsert(List.of(new EmbeddedDocument(new Document("foo"), new float[] { 0.1f, 0.2f, 0.3f, 0.4f })));
+		store.doUpsert(List.of(new EmbeddedDocument(new Document("bar"), new float[] { 0.1f, 0.2f, 0.3f, 0.4f })));
+
+		verify(jdbcTemplate, times(2)).batchUpdate(anyString(), any(BatchPreparedStatementSetter.class));
+		// Known to be unconstrained after the first lookup, so it is not read again
+		verify(jdbcTemplate, times(1)).queryForList(anyString(), eq(Integer.class), any(), any(), any());
+		verify(embeddingModel, never()).dimensions();
+	}
+
+	@Test
+	void missingTableLeavesTheSizeUnknownInsteadOfAskingTheModel() {
+		var jdbcTemplate = mock(JdbcTemplate.class);
+		var embeddingModel = mock(EmbeddingModel.class);
+		when(jdbcTemplate.queryForList(anyString(), eq(Integer.class), any(), any(), any())).thenReturn(List.of());
+		var store = PgVectorStore.builder(jdbcTemplate, embeddingModel).build();
+
+		store.doUpsert(List.of(new EmbeddedDocument(new Document("foo"), new float[] { 0.1f, 0.2f, 0.3f })));
+
+		verify(jdbcTemplate).batchUpdate(anyString(), any(BatchPreparedStatementSetter.class));
+		verify(embeddingModel, never()).dimensions();
+	}
+
+	@Test
+	void initializingOverAnExistingTableDoesNotAskTheModel() {
+		var jdbcTemplate = mock(JdbcTemplate.class);
+		var embeddingModel = mock(EmbeddingModel.class);
+		when(jdbcTemplate.queryForObject(anyString(), eq(Integer.class), any(), any())).thenReturn(1);
+		var store = PgVectorStore.builder(jdbcTemplate, embeddingModel).initializeSchema(true).build();
+
+		store.afterPropertiesSet();
+
+		verify(jdbcTemplate, never()).execute(contains("CREATE TABLE"));
+		verify(embeddingModel, never()).dimensions();
+	}
+
+	@Test
+	void initializingCreatesTheTableWithTheModelSizeAndThenChecksAgainstIt() {
+		var jdbcTemplate = mock(JdbcTemplate.class);
+		var embeddingModel = mock(EmbeddingModel.class);
+		when(embeddingModel.dimensions()).thenReturn(3);
+		when(jdbcTemplate.queryForObject(anyString(), eq(Integer.class), any(), any()))
+			.thenThrow(new DataAccessResourceFailureException("no such table"));
+		var store = PgVectorStore.builder(jdbcTemplate, embeddingModel).initializeSchema(true).build();
+
+		store.afterPropertiesSet();
+
+		verify(jdbcTemplate).execute(contains("vector(3)"));
+		// The table was just created with this size, so there is nothing to read back
+		assertThatIllegalArgumentException().isThrownBy(
+				() -> store.doUpsert(List.of(new EmbeddedDocument(new Document("foo"), new float[] { 0.1f, 0.2f }))));
+		verify(jdbcTemplate, never()).queryForList(anyString(), eq(Integer.class), any(), any(), any());
 	}
 
 	@Test

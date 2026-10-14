@@ -16,11 +16,15 @@
 
 package org.springframework.ai.vectorstore.qdrant;
 
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.function.Consumer;
 
 import io.qdrant.client.QdrantClient;
 import io.qdrant.client.QdrantGrpcClient;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.qdrant.QdrantContainer;
@@ -32,6 +36,8 @@ import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Upsert verification for {@link QdrantVectorStore}, running the shared
@@ -114,6 +120,30 @@ public class QdrantVectorStoreUpsertIT extends AbstractVectorStoreUpsertTests {
 		catch (Exception ex) {
 			throw new IllegalStateException(ex);
 		}
+	}
+
+	@Test
+	void initializingOverAnExistingCollectionWithoutEmbeddingModel() {
+		executeTest(vectorStore -> {
+			QdrantClient qdrantClient = vectorStore.<QdrantClient>getNativeClient().orElseThrow();
+			CallCountingEmbeddingModel embeddingModel = new CallCountingEmbeddingModel(EMBEDDING_DIMENSIONS);
+
+			// The shared store has already created the collection.
+			QdrantVectorStore store = QdrantVectorStore.builder(qdrantClient, embeddingModel)
+				.collectionName(COLLECTION_NAME)
+				.initializeSchema(true)
+				.build();
+			try {
+				store.afterPropertiesSet();
+			}
+			catch (Exception ex) {
+				throw new IllegalStateException(ex);
+			}
+
+			store.upsert(List.of(embeddedDocument(UUID.randomUUID().toString(), "existing", Map.of("tag", "e"))));
+			assertWrongDimensionRejected(store);
+			assertThat(embeddingModel.calls()).isZero();
+		});
 	}
 
 	@SpringBootConfiguration

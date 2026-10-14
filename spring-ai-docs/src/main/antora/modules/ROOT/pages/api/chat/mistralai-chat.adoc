@@ -282,14 +282,17 @@ ChatResponse response = chatModel.call(
 
 === Reasoning Content
 
-Mistral reasoning models expose their internal chain of thought and references.
-Spring AI maps these from the API responses to the message metadata.
+Mistral returns the content of an answer as an ordered list of chunks: the thinking of a reasoning model, the text, and the references of citations.
+Spring AI maps each chunk to one `MessagePart` of the `AssistantMessage`, in chunk order:
 
-You can access the following metadata keys from the `AssistantMessage`:
+* A thinking chunk becomes a `ReasoningPart`, readable through `getReasoning()`.
+Its `provider` attribute (`MessagePart.PROVIDER_ATTRIBUTE`) is set to `mistral_ai`, and a signature Mistral attaches to the thinking is kept in its payload.
+* A text chunk becomes a `TextPart`, and `getText()` joins them.
+* A citation reference or an image chunk becomes an `UnknownPart` that holds the chunk as JSON, so it is replayed in place.
+References within the thinking are not kept in the `ReasoningPart`; read them from the `reference_thinking_content` metadata.
+* The tool calls, which Mistral returns in a separate field, become `ToolCallPart`s that follow the content.
 
-* `reference_content`: The unique keys linking model responses to their source documents for traceability and citations.
-* `thinking_content`: The step-by-step reasoning process the model used to arrive at its final answer (accessible only for reasoning models).
-* `reference_thinking_content`: The unique keys linking the model's reasoning steps to their source documents for traceability and citations (possibly accessible only for reasoning models).
+When streaming, the thinking and text deltas are aggregated by the `MessageAggregator` into one part per run of deltas.
 
 [source,java]
 ----
@@ -297,13 +300,23 @@ ChatResponse response = chatModel.call(new Prompt("Solve this complex math probl
 
 AssistantMessage message = response.getResult().getOutput();
 
-// Access the thinking content from metadata
-String thinking = (String) message.getMetadata().get(MistralAiChatModel.THINKING_CONTENT_METADATA);
-if (thinking != null && !thinking.isEmpty()) {
+for (ReasoningPart reasoning : message.getReasoning()) {
     System.out.println("Model's thinking process:");
-    System.out.println(thinking);
+    System.out.println(reasoning.text());
 }
 ----
+
+Mistral recommends sending the thinking of a reasoning model back with the rest of the conversation.
+An assistant message is therefore replayed as content chunks in part order, its reasoning as thinking chunks, so the reasoning survives between the rounds of a tool-calling loop.
+Only reasoning that Mistral produced is replayed, as told by its `provider` attribute: it is lost when the conversation history is stored or rebuilt without its message parts, and reasoning produced by another provider is not sent.
+An assistant message without reasoning parts, such as one built by an earlier version, falls back to the thinking under the `thinking_content` metadata key, which is replayed as a thinking chunk before the text.
+An assistant message without reasoning or other Mistral chunks is sent as its text, as before.
+
+The following metadata keys are also available on the `AssistantMessage`:
+
+* `reference_content`: The unique keys linking model responses to their source documents for traceability and citations.
+* `reference_thinking_content`: The unique keys linking the model's reasoning steps to their source documents for traceability and citations (possibly accessible only for reasoning models).
+* `thinking_content`: The thinking text, deprecated in favor of `getReasoning()`.
 
 == Multimodal
 

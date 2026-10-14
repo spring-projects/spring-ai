@@ -117,7 +117,7 @@ public class OpenAiAudioTranscriptionModelIT {
 			.getMetadata();
 		assertThat(metadata.getDuration()).isPositive();
 		assertThat(metadata.getLanguage()).isNotBlank();
-		assertThat(metadata.getUsage()).isNotNull();
+		assertThat(metadata.getNativeUsage()).isNotNull();
 		assertThat(metadata.getSegments()).isNotEmpty();
 		assertThat(metadata.getWords()).isNotEmpty();
 	}
@@ -146,7 +146,7 @@ public class OpenAiAudioTranscriptionModelIT {
 			.getMetadata();
 		assertThat(metadata.getDuration()).isNull();
 		assertThat(metadata.getSegments()).isNotEmpty();
-		assertThat(metadata.getUsage()).isNotNull();
+		assertThat(metadata.getNativeUsage()).isNotNull();
 	}
 
 	@Test

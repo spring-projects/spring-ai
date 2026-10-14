@@ -424,17 +424,23 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 	}
 
 	/**
-	 * The vector size the index accepts, or -1 when it cannot be determined.
+	 * The vector size the index accepts, or -1 when it is not known.
 	 * <p>
-	 * When this store created the index, that is the configured
-	 * {@link ElasticsearchVectorStoreOptions#getDimensions() dimensions}. Otherwise the
-	 * size is read from the {@code dims} of the embedding field in the existing index
-	 * mapping, and only then taken from the embedding model. Reading it from the mapping
-	 * means a store that only upserts into an existing index never has to contact the
-	 * embedding model. A known size is cached.
+	 * A size set with {@link ElasticsearchVectorStoreOptions#setDimensions(int)} wins,
+	 * and so does the size of an index this store created. Otherwise the size is read
+	 * from the {@code dims} of the embedding field in the existing index mapping. The
+	 * embedding model is never asked, because its width says nothing about the width of
+	 * an index that already exists. Reading it from the mapping means a store that only
+	 * upserts into an existing index never has to contact the embedding model. When the
+	 * size cannot be read it stays unknown and reading it is tried again on the next
+	 * call. Only a known size is cached, so a store has to be rebuilt after the index is
+	 * recreated with a different size.
 	 * @return the known dimension, or -1
 	 */
 	private int vectorDimensions() {
+		if (this.options.isDimensionsConfigured()) {
+			return this.options.getDimensions();
+		}
 		int cached = this.resolvedVectorDimensions;
 		if (cached > 0) {
 			return cached;
@@ -455,15 +461,6 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 		}
 		catch (Exception ex) {
 			logger.debug("Could not read the vector size of index " + this.options.getIndexName(), ex);
-		}
-		try {
-			int modelDimensions = this.embeddingModel.dimensions();
-			if (modelDimensions > 0) {
-				return modelDimensions;
-			}
-		}
-		catch (Exception ex) {
-			logger.debug("Could not obtain the embedding dimensions from the embedding model", ex);
 		}
 		return -1;
 	}
@@ -492,10 +489,15 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 
 	@Override
 	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
-		return VectorStoreObservationContext.builder(VectorStoreProvider.ELASTICSEARCH.value(), operationName)
+		VectorStoreObservationContext.Builder builder = VectorStoreObservationContext
+			.builder(VectorStoreProvider.ELASTICSEARCH.value(), operationName)
 			.collectionName(this.options.getIndexName())
-			.dimensions(vectorDimensions())
 			.similarityMetric(getSimilarityMetric());
+		int vectorDimensions = vectorDimensions();
+		if (vectorDimensions > 0) {
+			builder.dimensions(vectorDimensions);
+		}
+		return builder;
 	}
 
 	private String getSimilarityMetric() {

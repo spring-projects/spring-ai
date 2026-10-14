@@ -150,7 +150,7 @@ See xref:api/chat/bedrock-converse.adoc#_reasoning[Reasoning].
 A response with several text blocks, or with text and tool use, used to produce one generation per text block plus one for the tool calls; read the joined text from `getResult().getOutput().getText()` and the tool calls from `getResult().getOutput().getToolCalls()`.
 * The package-private `BedrockAssistantMessage` and `BedrockReasoningContent` are removed.
 Read the reasoning from `getResult().getOutput().getReasoning()`.
-* Reasoning returned without a signature, for example by the OpenAI gpt-oss models, is replayed only when its `ReasoningPart` carries the `provider` attribute (`StreamingParts.PROVIDER_ATTRIBUTE`) set to `bedrock`, so it is lost when the conversation history is stored or rebuilt without part attributes; unsigned reasoning produced by another provider is not replayed.
+* Reasoning returned without a signature, for example by the OpenAI gpt-oss models, is replayed only when its `ReasoningPart` carries the `provider` attribute (`MessagePart.PROVIDER_ATTRIBUTE`) set to `bedrock`, so it is lost when the conversation history is stored or rebuilt without part attributes; unsigned reasoning produced by another provider is not replayed.
 * Streamed text deltas now carry their text in an indexed partial `TextPart`; `getText()` on each chunk returns the same delta as before.
 * Streams now emit additional chunks for reasoning deltas, the reasoning signature and redacted reasoning.
 They have an empty `getText()` and carry no tool calls, so code that counts chunks or treats every chunk as answer text sees them.
@@ -208,6 +208,29 @@ spring:
 
 NOTE: Map keys bind literally — use the exact provider field name (e.g. `output_config`, not `output-config`).
 
+=== Mistral AI
+
+==== Changed: `MistralAiChatModel` Builds Its Messages from Message Parts
+
+`MistralAiChatModel` maps every content chunk of a response to one `MessagePart`, in chunk order: thinking becomes a `ReasoningPart`, text a `TextPart`, and a citation reference or an image chunk an `UnknownPart`; the tool calls follow as `ToolCallPart`s.
+An assistant message that carries Mistral reasoning or other Mistral chunks is replayed as content chunks in part order, so a reasoning model gets its thinking back, as Mistral recommends.
+The parts of a `UserMessage` with media are sent in their order, so text and images can interleave.
+See xref:api/chat/mistralai-chat.adoc#_reasoning_content[Reasoning Content].
+
+===== Impact
+
+* `getText()` joins the text chunks of a response without a separator; it used to join them with the platform line separator, which split the text around a citation.
+* Streamed chunks now always carry the response id and model in their `ChatResponseMetadata`; chunks without usage report an empty usage.
+* Reasoning is replayed only when its `ReasoningPart` carries the `provider` attribute (`MessagePart.PROVIDER_ATTRIBUTE`) set to `mistral_ai`, so it is lost when the conversation history is stored or rebuilt without part attributes.
+* An assistant message without reasoning parts, such as one built by an earlier version, has the thinking under the `thinking_content` metadata key replayed as a thinking chunk; earlier versions never sent the thinking back.
+* A `UserMessage` with media no longer sends an empty text chunk when it has no text.
+* `MistralAiApi.ChatCompletionMessage.ThinkChunk` gains a `signature` component; code that deconstructs it with a record pattern must add the component.
+
+===== Deprecated
+
+* `MistralAiChatModel.THINKING_CONTENT_METADATA`: read the reasoning from `getResult().getOutput().getReasoning()`.
+The metadata entry is still written, and read on replay only from an assistant message without reasoning parts.
+
 === PgVector Store
 
 ==== `distance` is a reserved metadata key in `PgVectorStore`
@@ -235,6 +258,12 @@ If your documents use `distance` for domain-specific data, consider renaming tha
 
 [[upgrading-to-2-0-2]]
 == Upgrading to 2.0.2
+
+=== Observations for Text-to-Speech and Transcription Models
+
+The OpenAI text-to-speech and transcription models, the ElevenLabs text-to-speech model and the Stability AI image model now report observations when an `ObservationRegistry` is available (`gen_ai.client.operation` with `gen_ai.operation.name` set to `text_to_speech`, `transcription` or `image`).
+Applications with a registry will see new metric series and spans for those calls.
+The content logging handlers are off by default; see xref:observability/index.adoc[Observability].
 
 === Neo4j Chat Memory Repository
 
