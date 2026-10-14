@@ -30,6 +30,10 @@ sessionService.compact(sessionId, request -> true, strategy);
 
 With `ChatClient`, the xref:api/session/chat-client.adoc[`SessionTurnAdvisor`] calls `compact` once the call has returned, so an application rarely calls it itself.
 
+image::session/session-compaction-classes.svg[The compaction types, width=900, align="center"]
+
+image::session/session-compaction-sequence.svg[A compaction pass, end to end, width=800, align="center"]
+
 == Triggers
 
 A `CompactionTrigger` is a functional interface that decides on a `CompactionRequest`: the session, its active view and the view's turn count.
@@ -86,6 +90,8 @@ WindowCompactionStrategy.builder()
 === One pass
 
 Whatever the window, a pass does the same thing:
+
+image::session/session-compaction-activity.svg[How the window strategy chooses the cut, width=420, align="center"]
 
 . The latest stored system message is pinned at the front of the view and never summarized.
 Every earlier stored system message is superseded and leaves the view with a pass that cuts, wherever it sits, even inside the kept window.

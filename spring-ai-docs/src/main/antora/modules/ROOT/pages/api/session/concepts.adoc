@@ -3,6 +3,8 @@
 
 Four concepts describe how a conversation is stored and read: the session, its events, the turns they form, and the view of the log the model sees.
 
+image::session/session-core-classes.svg[The core session types, width=800, align="center"]
+
 [[session-concepts-session]]
 == Session
 
@@ -179,11 +181,7 @@ What changes over time is the *view*, the part of the log that is sent to the mo
 A compaction appends a `COMPACTION` boundary event that names, by id, the events the view starts with: the pinned events (the latest stored system message and, for a plain window, the earlier summary), the summary events that stand in for what was covered, and the preserved recent events.
 Everything appended after the boundary is in the view too; everything else before it is *covered*.
 
-----
-in the view   ──(a boundary is appended that does not name it)──▶  covered
-     │                                                                │
-     └────────────(the session is deleted or expired)─────────────────┘──▶  gone
-----
+image::session/session-event-lifecycle.svg[The lifecycle of an event, width=500, align="center"]
 
 * *In the view:* part of the context window.
 * *Covered:* the newest boundary does not name it: an old turn, a stored system message superseded by a newer one, or a summary that a newer summary replaces.
@@ -201,6 +199,9 @@ Read runtime state from the log, with `eventTypes` and without the view.
 == SessionService
 
 `SessionService` is the API an application and the advisors use; `DefaultSessionService` implements it on top of a `SessionRepository`.
+A session from creation to cleanup, driven by any integration, your own loop or the `ChatClient` advisors:
+
+image::session/session-lifecycle-sequence.svg[A session from creation to cleanup, width=800, align="center"]
 
 [source,java]
 ----

@@ -64,6 +64,8 @@ An empty set means every type.
 
 The criteria apply first, the view before them, and the window last, to the events that matched.
 
+image::session/session-event-filter-activity.svg[How a read is answered, width=600, align="center"]
+
 [[session-event-filter-turns]]
 == Windows keep turns whole
 

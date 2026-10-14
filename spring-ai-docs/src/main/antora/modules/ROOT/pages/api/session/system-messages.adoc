@@ -69,6 +69,8 @@ Whatever builds the prompt sent to the model owns these steps:
 . *Compact* after a turn when the trigger fires.
 
 `SessionMemoryAdvisor` implements all of these for `ChatClient`.
+
+image::session/session-prompt-assembly-activity.svg[How the memory advisor builds the prompt, width=700, align="center"]
 The system prompt comes from `defaultSystem` or `.system(...)` and is never persisted; of the stored system messages the advisor sends only the latest one, puts every `SystemMessage` first, sends exact duplicates once, and inside a tool loop prepends only the history the round's prompt does not carry yet.
 
 [source,java]

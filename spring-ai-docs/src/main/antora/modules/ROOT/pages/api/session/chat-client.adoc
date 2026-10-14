@@ -14,6 +14,8 @@ Both live in `spring-ai-session-advisor`, with the `ChatClientSummarizer`; the c
 
 == What the advisors do
 
+image::session/session-chat-client-sequence.svg[A ChatClient call through the session advisors, width=900, align="center"]
+
 On every model call the memory advisor:
 
 . Resolves the session id from `SESSION_ID_CONTEXT_KEY`, which must be present on every request, and creates the session if it does not exist.
@@ -29,6 +31,8 @@ On every `ChatClient` call the turn advisor finds or creates the session; once t
 == Setup
 
 `SessionAdvisors` builds both advisors at their default order around the tool-calling loop that the `ChatClient` registers itself: the turn advisor outside it (`Ordered.HIGHEST_PRECEDENCE + 200`) and the memory advisor inside it (`HIGHEST_PRECEDENCE + 1000`).
+
+image::session/session-advisors-classes.svg[The session advisors, width=900, align="center"]
 
 [source,java]
 ----

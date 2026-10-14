@@ -96,6 +96,9 @@ Checking first, rather than relying on a unique-constraint violation, keeps a re
 *Optimistic concurrency.*
 The `event_version` column of `AI_SESSION` advances on every append of a new event and every successful `appendEvents`.
 `appendEvents` claims the version with `UPDATE … WHERE event_version = ?` before inserting, so two concurrent compactions cannot both land a boundary.
+An `appendEvent` bumps the version first too, under the same row lock, so a compaction never misses an event that is being appended: the event's `seq` is assigned only once the compaction has committed, and it enters the view as appended since.
+
+image::session/session-jdbc-append-sequence.svg[A compaction and a concurrent append, width=800, align="center"]
 
 *The active view.*
 A read with the view flag selects the session's newest `COMPACTION` row, fetches in one query the rows it names plus every row from the boundary on, ordered by `seq`, and lets `EventFilter.apply` put them in view order, filter and window them.
