@@ -47,6 +47,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.Disposable;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Hooks;
 import reactor.core.scheduler.Scheduler;
 import reactor.core.scheduler.Schedulers;
@@ -64,6 +65,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -465,6 +467,50 @@ class OpenAiAudioSpeechModelTests {
 		finally {
 			Hooks.resetOnErrorDropped();
 		}
+	}
+
+	@Test
+	void testCancellationDoesNotAffectResubscriptionToSameStream() throws Exception {
+		AudioService audioService = mock(AudioService.class);
+		SpeechService speechService = mock(SpeechService.class);
+
+		CountDownLatch firstCreateStarted = new CountDownLatch(1);
+		CountDownLatch neverReleased = new CountDownLatch(1);
+		AtomicBoolean firstCreateInterrupted = new AtomicBoolean(false);
+		AtomicInteger createCount = new AtomicInteger();
+
+		when(this.mockClient.audio()).thenReturn(audioService);
+		when(audioService.speech()).thenReturn(speechService);
+		when(speechService.create(any(SpeechCreateParams.class), any(RequestOptions.class))).thenAnswer(invocation -> {
+			if (createCount.getAndIncrement() == 0) {
+				firstCreateStarted.countDown();
+				try {
+					neverReleased.await(5, TimeUnit.SECONDS);
+					throw new IllegalStateException("Test did not interrupt the blocked create() call in time");
+				}
+				catch (InterruptedException e) {
+					Thread.currentThread().interrupt();
+					firstCreateInterrupted.set(true);
+					throw new OpenAIIoException("Interrupted",
+							new InterruptedIOException("Interrupted while connecting"));
+				}
+			}
+			throw new OpenAIIoException("Second connection reset", new IOException("Second connection reset"));
+		});
+
+		OpenAiAudioSpeechModel model = OpenAiAudioSpeechModel.builder().openAiClient(this.mockClient).build();
+		TextToSpeechPrompt prompt = new TextToSpeechPrompt("Testing a reused stream after cancellation");
+		Flux<TextToSpeechResponse> stream = model.stream(prompt);
+
+		Disposable firstSubscription = stream.subscribe();
+		assertThat(firstCreateStarted.await(5, TimeUnit.SECONDS)).isTrue();
+		firstSubscription.dispose();
+		Awaitility.await().atMost(Duration.ofSeconds(5)).untilTrue(firstCreateInterrupted);
+
+		assertThatThrownBy(() -> stream.collectList().block(Duration.ofSeconds(5)))
+			.isInstanceOf(OpenAIIoException.class)
+			.hasMessageContaining("Second connection reset");
+		verify(speechService, times(2)).create(any(SpeechCreateParams.class), any(RequestOptions.class));
 	}
 
 	@Test
