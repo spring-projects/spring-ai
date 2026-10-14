@@ -50,7 +50,7 @@ class DefaultToolCallingManagerDecisionsTests {
 	private final ToolCallingManager manager = ToolCallingManager.builder().build();
 
 	@Test
-	void aCallThatNeedsConfirmationPausesTheBatchBeforeAnythingRuns() {
+	void callThatNeedsConfirmationPausesTheBatchBeforeAnythingRuns() {
 		ChatResponse reply = reply(toolCall("c1", "weather"), toolCall("c2", "book_flight"));
 
 		assertThatThrownBy(() -> this.manager.executeToolCalls(prompt(), reply)).isInstanceOfSatisfying(
@@ -68,7 +68,7 @@ class DefaultToolCallingManagerDecisionsTests {
 	}
 
 	@Test
-	void anAllowedCallRuns() {
+	void allowedCallRuns() {
 		ToolExecutionResult result = this.manager.executeToolCalls(prompt(), reply(toolCall("c1", "book_flight")),
 				ToolCallDecisions.of(ToolCallDecision.allow("c1")));
 
@@ -80,7 +80,7 @@ class DefaultToolCallingManagerDecisionsTests {
 	}
 
 	@Test
-	void aDeniedCallAnswersWithItsMessageWithoutRunning() {
+	void deniedCallAnswersWithItsMessageWithoutRunning() {
 		ToolExecutionResult result = this.manager.executeToolCalls(prompt(), reply(toolCall("c1", "book_flight")),
 				ToolCallDecisions.of(ToolCallDecision.deny("c1", "Too expensive.")));
 
@@ -90,7 +90,7 @@ class DefaultToolCallingManagerDecisionsTests {
 	}
 
 	@Test
-	void everyCallOfTheReplyNeedsADecision() {
+	void everyCallOfTheReplyNeedsDecision() {
 		ChatResponse reply = reply(toolCall("c1", "book_flight"), toolCall("c2", "weather"));
 
 		// The ungated call too: the policy is not re-evaluated when a batch resumes
@@ -107,7 +107,7 @@ class DefaultToolCallingManagerDecisionsTests {
 	}
 
 	@Test
-	void aDecisionMustBeAboutACallOfTheReply() {
+	void decisionMustBeAboutCallOfTheReply() {
 		assertThatThrownBy(() -> this.manager.executeToolCalls(prompt(), reply(toolCall("c1", "book_flight")),
 				ToolCallDecisions.of(ToolCallDecision.allow("other"))))
 			.isInstanceOf(IllegalArgumentException.class)
@@ -116,7 +116,7 @@ class DefaultToolCallingManagerDecisionsTests {
 	}
 
 	@Test
-	void anAllowedCallWhoseToolThePromptDoesNotCarryIsRefused() {
+	void allowedCallWhoseToolThePromptDoesNotCarryIsRefused() {
 		// The resolver would find the tool by name; a decision does not reach that far
 		ToolCallingManager resolving = resolving();
 		Prompt withoutTools = new Prompt(List.of(new UserMessage("Book VX205")),
@@ -135,7 +135,7 @@ class DefaultToolCallingManagerDecisionsTests {
 	}
 
 	@Test
-	void aGatedToolFoundThroughTheResolverPausesToo() {
+	void gatedToolFoundThroughTheResolverPausesToo() {
 		Prompt withoutTools = new Prompt(List.of(new UserMessage("Book VX205")),
 				ToolCallingChatOptions.builder().build());
 
@@ -158,7 +158,7 @@ class DefaultToolCallingManagerDecisionsTests {
 	}
 
 	@Test
-	void aPolicyOnTheManagerNamesTheToolsToConfirm() {
+	void policyOnTheManagerNamesTheToolsToConfirm() {
 		ToolCallingManager naming = ToolCallingManager.builder()
 			.toolCallConfirmationPolicy(ToolCallConfirmationPolicy.forTools("weather"))
 			.build();
@@ -175,34 +175,38 @@ class DefaultToolCallingManagerDecisionsTests {
 	}
 
 	@Test
-	void aCallWithoutAnIdGetsOneToBeDecidedOn() {
-		// Some providers give tool calls no id; the decisions name the calls by id
-		ChatResponse reply = reply(toolCall(null, "book_flight"));
+	void toolCallKeysAreIdsOrPositions() {
+		// An id names its call; a missing, shared or position-like id falls back to the
+		// call's position
+		AssistantMessage message = message(toolCall("c1", "book_flight"), toolCall(null, "weather"),
+				toolCall("", "weather"), toolCall("c2", "weather"), toolCall("c2", "weather"),
+				toolCall("#9", "weather"));
+
+		assertThat(ToolCallDecisions.toolCallKeys(message)).containsExactly("c1", "#1", "#2", "#3", "#4", "#5");
+	}
+
+	@Test
+	void callWithoutIdIsDecidedOnByPosition() {
+		// Some providers give tool calls no id; the call is named by its position, and
+		// the reply stays as the model gave it
+		ChatResponse reply = reply(toolCall("c1", "weather"), toolCall(null, "book_flight"));
 
 		ToolCallConfirmationRequiredException paused = (ToolCallConfirmationRequiredException) catchThrowable(
 				() -> this.manager.executeToolCalls(prompt(), reply));
 
 		assertThat(paused).isNotNull();
-		String id = paused.getToolCallIds().get(0);
-		assertThat(id).isNotBlank();
-		assertThat(paused.getToolCallsMessage().getToolCalls()).extracting(AssistantMessage.ToolCall::id)
-			.containsExactly(id);
+		assertThat(paused.getToolCallIds()).containsExactly("#1");
 
-		// The reply the loop returns carries that message, so the decision can name the
-		// id
-		ToolExecutionResult result = this.manager.executeToolCalls(prompt(), reply(paused.getToolCallsMessage()),
-				ToolCallDecisions.of(ToolCallDecision.allow(id)));
-		assertThat(responses(result)).containsExactly(id + "=\"booked\"");
-
-		// The model's own copy, without ids, cannot be decided on
-		assertThatThrownBy(
-				() -> this.manager.executeToolCalls(prompt(), reply, ToolCallDecisions.of(ToolCallDecision.allow(id))))
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("needs an id of its own");
+		ToolExecutionResult result = this.manager.executeToolCalls(prompt(), reply,
+				ToolCallDecisions.of(ToolCallDecision.allow("c1"), ToolCallDecision.allow("#1")));
+		assertThat(this.ran).containsExactly("weather", "book_flight");
+		// The results carry the calls' own ids, as the model gave them
+		assertThat(responses(result)).containsExactly("c1=\"sunny\"", "null=\"booked\"");
+		assertThat(result.conversationHistory().get(1)).isSameAs(reply.getResult().getOutput());
 	}
 
 	@Test
-	void callsSharingAnIdGetIdsOfTheirOwn() {
+	void callsSharingIdAreDecidedOnByPosition() {
 		// One decision would otherwise apply to both calls
 		ChatResponse reply = reply(toolCall("c1", "book_flight"), toolCall("c1", "weather"));
 
@@ -210,29 +214,22 @@ class DefaultToolCallingManagerDecisionsTests {
 				() -> this.manager.executeToolCalls(prompt(), reply));
 
 		assertThat(paused).isNotNull();
-		List<String> ids = paused.getToolCallsMessage()
-			.getToolCalls()
-			.stream()
-			.map(AssistantMessage.ToolCall::id)
-			.toList();
-		assertThat(ids).doesNotHaveDuplicates().startsWith("c1");
-		assertThat(paused.getToolCallIds()).containsExactly("c1");
+		assertThat(paused.getToolCallIds()).containsExactly("#0");
 
-		ToolExecutionResult result = this.manager.executeToolCalls(prompt(), reply(paused.getToolCallsMessage()),
-				ToolCallDecisions.of(ToolCallDecision.deny("c1"), ToolCallDecision.allow(ids.get(1))));
+		ToolExecutionResult result = this.manager.executeToolCalls(prompt(), reply,
+				ToolCallDecisions.of(ToolCallDecision.deny("#0"), ToolCallDecision.allow("#1")));
 		assertThat(this.ran).containsExactly("weather");
-		assertThat(responses(result)).containsExactly("c1=" + ToolCallDecision.DEFAULT_DENY_MESSAGE,
-				ids.get(1) + "=\"sunny\"");
+		assertThat(responses(result)).containsExactly("c1=" + ToolCallDecision.DEFAULT_DENY_MESSAGE, "c1=\"sunny\"");
 
-		// The model's copy, with the shared id, cannot be decided on
+		// The shared id names no single call
 		assertThatThrownBy(() -> this.manager.executeToolCalls(prompt(), reply,
 				ToolCallDecisions.of(ToolCallDecision.allow("c1"))))
 			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("needs an id of its own");
+			.hasMessageContaining("No tool call has the key 'c1'");
 	}
 
 	@Test
-	void aPromptEndingWithTheReplyHoldsItOnceInTheHistory() {
+	void promptEndingWithTheReplyHoldsItOnceInTheHistory() {
 		// An application that holds the whole conversation passes it as the prompt
 		AssistantMessage paused = message(toolCall("c1", "book_flight"));
 		UserMessage question = new UserMessage("Book VX205");
@@ -246,7 +243,7 @@ class DefaultToolCallingManagerDecisionsTests {
 	}
 
 	@Test
-	void aDenyMessageIsNeverBlank() {
+	void denyMessageIsNeverBlank() {
 		assertThatThrownBy(() -> ToolCallDecision.deny("c1", " ")).isInstanceOf(IllegalArgumentException.class);
 		assertThat(ToolCallDecision.deny("c1").denyMessage()).isEqualTo(ToolCallDecision.DEFAULT_DENY_MESSAGE);
 	}

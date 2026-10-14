@@ -20,6 +20,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 import org.junit.jupiter.api.Test;
@@ -37,6 +38,9 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.messages.part.OpaquePayload;
+import org.springframework.ai.chat.messages.part.StreamingParts;
+import org.springframework.ai.chat.messages.part.ToolCallPart;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -72,7 +76,7 @@ class ToolCallingAdvisorDecisionsTests {
 	private final ToolCallingManager toolCallingManager = ToolCallingManager.builder().build();
 
 	@Test
-	void aCallThatNeedsConfirmationPausesTheLoop() {
+	void callThatNeedsConfirmationPausesTheLoop() {
 		this.model.thenCall(call("c1", "book_flight"));
 
 		ChatResponse reply = client().prompt().user("Book VX205").call().chatResponse();
@@ -96,7 +100,7 @@ class ToolCallingAdvisorDecisionsTests {
 	}
 
 	@Test
-	void aPolicyOnTheManagerNamesTheToolsToConfirm() {
+	void policyOnTheManagerNamesTheToolsToConfirm() {
 		this.model.thenCall(call("c1", "weather"));
 		ChatClient client = client(ToolCallingAdvisor.builder()
 			.toolCallingManager(ToolCallingManager.builder()
@@ -111,7 +115,7 @@ class ToolCallingAdvisorDecisionsTests {
 	}
 
 	@Test
-	void aToolAnnotatedToNeedConfirmationPausesTheLoop() {
+	void toolAnnotatedToNeedConfirmationPausesTheLoop() {
 		this.model.thenCall(call("c1", "cancelBooking"));
 		ChatClient client = ChatClient.builder(this.model)
 			.defaultAdvisors(ToolCallingAdvisor.builder().build())
@@ -124,7 +128,7 @@ class ToolCallingAdvisorDecisionsTests {
 	}
 
 	@Test
-	void aStreamedReplyPausesOnALastChunkWithTheToolCalls() {
+	void streamedReplyPausesOnLastChunkWithTheToolCalls() {
 		this.model.thenCall(call("c1", "book_flight"));
 		List<ChatClientResponse> seenAfter = new ArrayList<>();
 		BaseAdvisor outsideTheLoop = new BaseAdvisor() {
@@ -169,20 +173,45 @@ class ToolCallingAdvisorDecisionsTests {
 	}
 
 	@Test
-	void aReplyWithoutToolCallIdsPausesWithMadeUpOnes() {
-		// Some providers give tool calls no id; the decisions name the calls by id
-		this.model.thenCall(call(null, "book_flight")).thenAnswer("Booked.");
+	void streamedPauseKeepsTheToolCallPayloads() {
+		// The last chunk carries the manager's tool call parts with their payloads, and
+		// the message metadata: Gemini keeps its thought signatures in both. The model
+		// streams an indexed part, as streaming models do, so the aggregation keeps it.
+		OpaquePayload signature = new OpaquePayload("google", "thought_signature", "c2lnbmF0dXJl");
+		ToolCallPart toolCall = new ToolCallPart(new AssistantMessage.ToolCall("c1", "function", "book_flight", "{}"),
+				signature, Map.of());
+		AssistantMessage paused = AssistantMessage.builder()
+			.parts(List.of(StreamingParts.complete(toolCall, 0)))
+			.properties(Map.of("thoughtSignatures", List.of("c2lnbmF0dXJl")))
+			.build();
+		this.model.thenCall(paused);
+
+		List<ChatResponse> chunks = client().prompt().user("Book VX205").stream().chatResponse().collectList().block();
+
+		ChatResponse last = chunks.get(chunks.size() - 1);
+		assertThat(ToolCallDecisions.awaitingDecision(last)).containsExactly("c1");
+		AssistantMessage output = last.getResult().getOutput();
+		assertThat(output.getParts()).singleElement()
+			.isInstanceOfSatisfying(ToolCallPart.class, part -> assertThat(part.payload()).isEqualTo(signature));
+		assertThat(output.getMetadata()).containsKey("thoughtSignatures");
+	}
+
+	@Test
+	void replyWithoutToolCallIdsPausesWithPositionKeys() {
+		// Some providers give tool calls no id; the call is named by its position, and
+		// the
+		// paused reply is the model's, untouched
+		AssistantMessage paused = call(null, "book_flight");
+		this.model.thenCall(paused).thenAnswer("Booked.");
 		ChatClient client = client();
 		UserMessage question = new UserMessage("Book VX205");
 
 		ChatResponse reply = client.prompt().messages(question).call().chatResponse();
-		String id = ToolCallDecisions.awaitingDecision(reply).get(0);
-		assertThat(id).isNotBlank();
-		assertThat(reply.getResult().getOutput().getToolCalls()).extracting(AssistantMessage.ToolCall::id)
-			.containsExactly(id);
+		assertThat(ToolCallDecisions.awaitingDecision(reply)).containsExactly("#0");
+		assertThat(reply.getResult().getOutput()).isSameAs(paused);
 
 		ToolExecutionResult result = this.toolCallingManager.executeToolCalls(prompt(question), reply,
-				ToolCallDecisions.of(ToolCallDecision.allow(id)));
+				ToolCallDecisions.of(ToolCallDecision.allow("#0")));
 		String answer = client.prompt().messages(result.conversationHistory()).call().content();
 
 		assertThat(answer).isEqualTo("Booked.");
@@ -190,7 +219,7 @@ class ToolCallingAdvisorDecisionsTests {
 	}
 
 	@Test
-	void theApplicationResumesWithTheToolResults() {
+	void applicationResumesWithTheToolResults() {
 		// Pause, run the allowed call through the manager, send the conversation on
 		AssistantMessage paused = call("c1", "book_flight");
 		this.model.thenCall(paused).thenAnswer("Booked.");
@@ -211,7 +240,7 @@ class ToolCallingAdvisorDecisionsTests {
 	}
 
 	@Test
-	void aDeniedCallAnswersTheModelWithItsMessageWithoutRunning() {
+	void deniedCallAnswersTheModelWithItsMessageWithoutRunning() {
 		AssistantMessage paused = call("c1", "book_flight");
 		this.model.thenAnswer("Understood.");
 		UserMessage question = new UserMessage("Book VX205");
@@ -225,7 +254,7 @@ class ToolCallingAdvisorDecisionsTests {
 	}
 
 	@Test
-	void aStreamedResumptionStreamsTheAnswer() {
+	void streamedResumptionStreamsTheAnswer() {
 		AssistantMessage paused = call("c1", "book_flight");
 		this.model.thenAnswer("Booked.");
 		UserMessage question = new UserMessage("Book VX205");
@@ -240,7 +269,7 @@ class ToolCallingAdvisorDecisionsTests {
 	}
 
 	@Test
-	void aMemoryAdvisorOutsideTheLoopStoresAValidConversation() {
+	void memoryAdvisorOutsideTheLoopStoresValidConversation() {
 		// The pause stores the reply with the tool calls; the resumption's tool results
 		// follow it in memory, as the model requires
 		AssistantMessage paused = call("c1", "book_flight");
@@ -276,7 +305,7 @@ class ToolCallingAdvisorDecisionsTests {
 	}
 
 	@Test
-	void aStreamedPauseWithMemoryOutsideTheLoopStoresAValidConversation() {
+	void streamedPauseWithMemoryOutsideTheLoopStoresValidConversation() {
 		// The memory advisor aggregates the stream before it stores the reply: the reply
 		// it stores holds the paused tool calls, the resumption's tool results follow
 		AssistantMessage paused = call("c1", "book_flight");
@@ -318,7 +347,7 @@ class ToolCallingAdvisorDecisionsTests {
 	}
 
 	@Test
-	void aMemoryAdvisorInsideTheLoopStoresAValidConversationToo() {
+	void memoryAdvisorInsideTheLoopStoresValidConversationToo() {
 		// Memory inside the loop sees every round: the loop forwards only the newest
 		// message and memory supplies the rest, on the resumption as well
 		AssistantMessage paused = call("c1", "book_flight");

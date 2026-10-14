@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
-import java.util.UUID;
 
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
@@ -282,17 +281,16 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 
 		// Before any call runs: a call that needs a person's confirmation pauses the
 		// whole batch, unless the decisions cover it
+		// Decisions name the calls by key: the id, or the position when there is none
+		List<String> toolCallKeys = ToolCallDecisions.toolCallKeys(assistantMessage);
 		if (decisions == null) {
-			// The decisions name the calls by id, so a reply that pauses gets one per
-			// call
-			AssistantMessage withIds = withToolCallIds(assistantMessage);
-			List<String> awaiting = this.awaitingConfirmation(withIds, toolCallbacks);
+			List<String> awaiting = this.getAwaitingConfirmationIds(assistantMessage, toolCallKeys, toolCallbacks);
 			if (!awaiting.isEmpty()) {
-				throw new ToolCallConfirmationRequiredException(awaiting, withIds);
+				throw new ToolCallConfirmationRequiredException(awaiting);
 			}
 		}
 		else {
-			checkDecisions(decisions, assistantMessage, toolCallbacks);
+			checkDecisions(decisions, assistantMessage, toolCallKeys, toolCallbacks);
 		}
 
 		List<ToolResponseMessage.ToolResponse> toolResponses = new ArrayList<>();
@@ -303,11 +301,13 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 		Map<String, Integer> toolCallCounts = ToolCallLimits.countPriorToolCalls(prompt.getInstructions());
 		int totalToolCallCount = toolCallCounts.values().stream().mapToInt(Integer::intValue).sum();
 
-		for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
+		List<AssistantMessage.ToolCall> toolCalls = assistantMessage.getToolCalls();
+		for (int i = 0; i < toolCalls.size(); i++) {
 
+			AssistantMessage.ToolCall toolCall = toolCalls.get(i);
 			String toolName = toolCall.name();
 
-			ToolCallDecision decision = (decisions != null) ? decisions.decisionOn(toolCall.id()) : null;
+			ToolCallDecision decision = (decisions != null) ? decisions.decisionOn(toolCallKeys.get(i)) : null;
 			if (decision != null && !decision.allowed()) {
 				// A denied call does not run; the model receives the decision's message
 				toolResponses
@@ -419,43 +419,20 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 	}
 
 	/**
-	 * The message with an id of its own on every tool call: the model's, or a made-up one
-	 * for a call the model gave none or one it gave another call too, since decisions
-	 * name the calls by id.
-	 */
-	private static AssistantMessage withToolCallIds(AssistantMessage assistantMessage) {
-		if (hasDistinctToolCallIds(assistantMessage)) {
-			return assistantMessage;
-		}
-		Set<String> seen = new HashSet<>();
-		List<AssistantMessage.ToolCall> toolCalls = assistantMessage.getToolCalls()
-			.stream()
-			.map(toolCall -> (StringUtils.hasText(toolCall.id()) && seen.add(toolCall.id())) ? toolCall
-					: new AssistantMessage.ToolCall("call_" + UUID.randomUUID(), toolCall.type(), toolCall.name(),
-							toolCall.arguments()))
-			.toList();
-		return assistantMessage.mutate().toolCalls(toolCalls).build();
-	}
-
-	/** Whether every tool call has an id, and no two calls share one. */
-	private static boolean hasDistinctToolCallIds(AssistantMessage assistantMessage) {
-		List<AssistantMessage.ToolCall> toolCalls = assistantMessage.getToolCalls();
-		return toolCalls.stream().allMatch(toolCall -> StringUtils.hasText(toolCall.id()))
-				&& toolCalls.stream().map(AssistantMessage.ToolCall::id).distinct().count() == toolCalls.size();
-	}
-
-	/**
-	 * The ids of the calls that need a person's confirmation before they run, in the
+	 * The keys of the calls that need a person's confirmation before they run, in the
 	 * order the model asked for them. The policy sees the metadata of the tool the call
 	 * would run with, or {@code null} when the manager has none for it.
 	 */
-	private List<String> awaitingConfirmation(AssistantMessage assistantMessage, List<ToolCallback> toolCallbacks) {
+	private List<String> getAwaitingConfirmationIds(AssistantMessage assistantMessage, List<String> toolCallKeys,
+			List<ToolCallback> toolCallbacks) {
+		List<AssistantMessage.ToolCall> toolCalls = assistantMessage.getToolCalls();
 		List<String> awaiting = new ArrayList<>();
-		for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
+		for (int i = 0; i < toolCalls.size(); i++) {
+			AssistantMessage.ToolCall toolCall = toolCalls.get(i);
 			ToolCallback toolCallback = this.resolveToolCallback(toolCallbacks, toolCall.name());
 			ToolMetadata toolMetadata = (toolCallback != null) ? toolCallback.getToolMetadata() : null;
 			if (this.toolCallConfirmationPolicy.requiresConfirmation(toolCall, toolMetadata)) {
-				awaiting.add(toolCall.id());
+				awaiting.add(toolCallKeys.get(i));
 			}
 		}
 		return awaiting;
@@ -467,24 +444,23 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 	 * carries, never with one resolved by name.
 	 */
 	private static void checkDecisions(ToolCallDecisions decisions, AssistantMessage assistantMessage,
-			List<ToolCallback> toolCallbacks) {
-		Assert.isTrue(hasDistinctToolCallIds(assistantMessage),
-				"Every tool call of the reply needs an id of its own to be decided on; resume with the reply the loop returned");
-		Set<String> ids = new LinkedHashSet<>();
-		assistantMessage.getToolCalls().forEach(toolCall -> ids.add(toolCall.id()));
+			List<String> toolCallKeys, List<ToolCallback> toolCallbacks) {
+		Set<String> assistantToolCallIds = new LinkedHashSet<>(toolCallKeys);
 		for (ToolCallDecision decision : decisions.decisions()) {
-			Assert.isTrue(ids.contains(decision.toolCallId()),
-					() -> "No tool call has the id '" + decision.toolCallId() + "'; the reply's calls: " + ids);
+			Assert.isTrue(assistantToolCallIds.contains(decision.toolCallId()), () -> "No tool call has the key '"
+					+ decision.toolCallId() + "'; the reply's tool call keys: " + assistantToolCallIds);
 		}
-		Set<String> missing = new LinkedHashSet<>(ids);
+		Set<String> missing = new LinkedHashSet<>(assistantToolCallIds);
 		decisions.decisions().forEach(decision -> missing.remove(decision.toolCallId()));
 		Assert.isTrue(missing.isEmpty(), () -> "Every tool call of the reply needs a decision; missing: " + missing);
-		for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
-			ToolCallDecision decision = decisions.decisionOn(toolCall.id());
+		List<AssistantMessage.ToolCall> toolCalls = assistantMessage.getToolCalls();
+		for (int i = 0; i < toolCalls.size(); i++) {
+			AssistantMessage.ToolCall toolCall = toolCalls.get(i);
+			ToolCallDecision decision = decisions.decisionOn(toolCallKeys.get(i));
 			if (decision != null && decision.allowed() && findToolCallback(toolCallbacks, toolCall.name()) == null) {
 				throw new IllegalArgumentException(
 						"The prompt does not carry the tool '" + toolCall.name() + "' of the allowed call '"
-								+ toolCall.id() + "'; an allowed call runs only with a tool of the prompt");
+								+ toolCallKeys.get(i) + "'; an allowed call runs only with a tool of the prompt");
 			}
 		}
 	}

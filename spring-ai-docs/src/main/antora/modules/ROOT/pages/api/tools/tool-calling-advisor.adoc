@@ -377,8 +377,8 @@ NOTE: If the model requests multiple tool calls in a single iteration, `returnDi
 == Pausing for Confirmation
 
 When the `ToolCallingManager` reports that a tool call needs a person's confirmation, by throwing `ToolCallConfirmationRequiredException`, `ToolCallingAdvisor` stops the loop without running any call of the reply.
-It returns the reply to the caller, with the ids of the calls that wait for a decision under `ToolCallDecisions.AWAITING_DECISION_METADATA_KEY` in the response metadata.
-When streaming, a last chunk carries the tool calls and the ids, and keeps the reply's finish reason.
+It returns the reply to the caller, with the keys of the calls that wait for a decision under `ToolCallDecisions.AWAITING_DECISION_METADATA_KEY` in the response metadata.
+When streaming, a last chunk carries the tool calls and the keys, and keeps the reply's finish reason.
 
 The advisor keeps no state while the loop is paused.
 The application runs the decisions through the `ToolCallingManager` and sends the tool results as its next request, which starts a new loop.

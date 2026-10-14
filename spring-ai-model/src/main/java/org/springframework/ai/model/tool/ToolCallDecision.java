@@ -24,7 +24,8 @@ import org.springframework.util.Assert;
  * A caller's decision on one tool call that waits for confirmation: allow it to run, or
  * deny it with a message that the model receives as the call's result.
  *
- * @param toolCallId the id of the tool call the decision is about
+ * @param toolCallId the key of the tool call the decision is about: its id, or its
+ * position key when it has no id of its own (see {@link ToolCallDecisions#toolCallKeys})
  * @param allowed whether the call may run
  * @param message for a denied call, the result the model receives; {@code null} for the
  * {@linkplain #DEFAULT_DENY_MESSAGE default}, never blank

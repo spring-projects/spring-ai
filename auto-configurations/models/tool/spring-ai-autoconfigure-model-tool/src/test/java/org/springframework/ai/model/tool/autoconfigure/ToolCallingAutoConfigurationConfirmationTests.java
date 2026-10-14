@@ -96,7 +96,7 @@ class ToolCallingAutoConfigurationConfirmationTests {
 	}
 
 	@Test
-	void aPolicyBeanCannotUngateAMarkedTool() {
+	void policyBeanCannotUngateMarkedTool() {
 		this.contextRunner.withUserConfiguration(NonePolicyConfig.class).run(context -> {
 			ToolCallingManager manager = context.getBean(ToolCallingManager.class);
 
@@ -105,7 +105,7 @@ class ToolCallingAutoConfigurationConfirmationTests {
 	}
 
 	@Test
-	void disablingStopsHonoringTheMetadataWithAWarning(CapturedOutput output) {
+	void disablingStopsHonoringTheMetadataWithWarning(CapturedOutput output) {
 		this.contextRunner.withUserConfiguration(PolicyBeansConfig.class)
 			.withPropertyValues("spring.ai.tools.confirmation.enabled=false",
 					"spring.ai.tools.confirmation.tools=cancelBooking")
