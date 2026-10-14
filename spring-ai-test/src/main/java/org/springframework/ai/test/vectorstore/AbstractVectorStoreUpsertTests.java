@@ -22,6 +22,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -43,6 +47,7 @@ import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.awaitility.Awaitility.await;
 
 /**
@@ -338,6 +343,145 @@ public abstract class AbstractVectorStoreUpsertTests {
 		});
 	}
 
+	@Test
+	protected void replaceChangesTheStoredVector() {
+		Assumptions.assumeTrue(embeddingDimensions() >= 2, "needs at least two dimensions for two distinct rows");
+		executeTest(vectorStore -> {
+			String replacedId = UUID.randomUUID().toString();
+			String otherId = UUID.randomUUID().toString();
+			// The other row leans a little towards axis 1, the replaced row first points
+			// away from it. Querying along axis 1 therefore ranks the other row first,
+			// until the replaced row is moved onto axis 1.
+			vectorStore.upsert(List.of(
+					new EmbeddedDocument(new Document(replacedId, "before", Map.of("tag", "v1")), pointingAt(0)),
+					new EmbeddedDocument(new Document(otherId, "other", Map.of("tag", "o")), leaningTowards(1, 0.5f))));
+			SearchRequest request = SearchRequest.builder().topK(2).similarityThresholdAll().build();
+			await().atMost(5, TimeUnit.SECONDS).pollInterval(Duration.ofMillis(500)).untilAsserted(() -> {
+				List<Document> results = vectorStore.similaritySearch(pointingAt(1), request);
+				assertThat(results).extracting(Document::getId).containsExactly(otherId, replacedId);
+			});
+
+			vectorStore.upsert(List
+				.of(new EmbeddedDocument(new Document(replacedId, "after", Map.of("tag", "v2")), pointingAt(1))));
+
+			await().atMost(5, TimeUnit.SECONDS).pollInterval(Duration.ofMillis(500)).untilAsserted(() -> {
+				List<Document> results = vectorStore.similaritySearch(pointingAt(1), request);
+				assertThat(results).extracting(Document::getId).containsExactly(replacedId, otherId);
+				assertThat(results.get(0).getText()).isEqualTo("after");
+			});
+		});
+	}
+
+	@Test
+	protected void pairingKeepsEachVectorWithItsDocument() {
+		executeTest(vectorStore -> {
+			List<EmbeddedDocument> entries = new ArrayList<>();
+			for (int i = 0; i < MULTI_BATCH_ENTRY_COUNT; i++) {
+				entries.add(new EmbeddedDocument(
+						new Document(UUID.randomUUID().toString(), "content-" + i, Map.of("tag", "tag-" + i)),
+						distinctVector(i)));
+			}
+			vectorStore.upsert(entries);
+
+			// A row queried with its own vector has to come back first, which only holds
+			// if that vector was written with that row.
+			// A few candidates are asked for, since some stores search approximately and
+			// can miss with a single one.
+			SearchRequest request = SearchRequest.builder().topK(3).similarityThresholdAll().build();
+			for (EmbeddedDocument entry : entries) {
+				await().atMost(5, TimeUnit.SECONDS).pollInterval(Duration.ofMillis(500)).untilAsserted(() -> {
+					List<Document> results = vectorStore.similaritySearch(entry.embedding(), request);
+					assertThat(results).isNotEmpty();
+					assertThat(results.get(0).getId()).isEqualTo(entry.document().getId());
+				});
+			}
+		});
+	}
+
+	@Test
+	protected void emptyBatchDoesNothing() {
+		executeTest(vectorStore -> assertThatNoException().isThrownBy(() -> vectorStore.upsert(List.of())));
+	}
+
+	@Test
+	protected void searchWithQueryEmbeddingAppliesSimilarityThreshold() {
+		Assumptions.assumeTrue(embeddingDimensions() >= 2, "needs at least two dimensions for two distinct rows");
+		executeTest(vectorStore -> {
+			String nearId = UUID.randomUUID().toString();
+			String farId = UUID.randomUUID().toString();
+			vectorStore
+				.upsert(List.of(new EmbeddedDocument(new Document(nearId, "near", Map.of("tag", "n")), pointingAt(0)),
+						new EmbeddedDocument(new Document(farId, "far", Map.of("tag", "f")), pointingAt(1))));
+
+			// Same query, first admitting every row and then only close ones
+			await().atMost(5, TimeUnit.SECONDS).pollInterval(Duration.ofMillis(500)).untilAsserted(() -> {
+				assertThat(vectorStore.similaritySearch(pointingAt(0),
+						SearchRequest.builder().topK(3).similarityThresholdAll().build()))
+					.extracting(Document::getId)
+					.containsExactly(nearId, farId);
+				assertThat(vectorStore.similaritySearch(pointingAt(0),
+						SearchRequest.builder().topK(3).similarityThreshold(0.9).build()))
+					.extracting(Document::getId)
+					.containsExactly(nearId);
+			});
+		});
+	}
+
+	@Test
+	protected void coldStartSearchWithoutEmbeddingModel() {
+		executeTest(vectorStore -> {
+			String id = UUID.randomUUID().toString();
+			vectorStore
+				.upsert(List.of(new EmbeddedDocument(new Document(id, "cold", Map.of("tag", "c")), pointingAt(0))));
+
+			CallCountingEmbeddingModel embeddingModel = new CallCountingEmbeddingModel(embeddingDimensions());
+			VectorStore searcher = createStoreOverExistingSchema(vectorStore, embeddingModel);
+			Assumptions.assumeTrue(searcher != null, "store does not support building over an existing schema");
+
+			// This store has never written anything, so its first call is the search
+			await().atMost(5, TimeUnit.SECONDS).pollInterval(Duration.ofMillis(500)).untilAsserted(() -> {
+				List<Document> results = searcher.similaritySearch(pointingAt(0),
+						SearchRequest.builder().topK(3).similarityThresholdAll().build());
+				assertThat(results).extracting(Document::getId).containsExactly(id);
+			});
+			assertWrongDimensionRejected(searcher);
+			assertThat(embeddingModel.calls()).as("embedding model calls during a cold-start search").isZero();
+		});
+	}
+
+	@Test
+	protected void concurrentFirstUseResolvesTheSizeOnce() throws Exception {
+		int threads = 8;
+		executeTest(vectorStore -> {
+			CallCountingEmbeddingModel embeddingModel = new CallCountingEmbeddingModel(embeddingDimensions());
+			VectorStore writer = createStoreOverExistingSchema(vectorStore, embeddingModel);
+			Assumptions.assumeTrue(writer != null, "store does not support building over an existing schema");
+
+			ExecutorService executor = Executors.newFixedThreadPool(threads);
+			try {
+				CountDownLatch start = new CountDownLatch(1);
+				List<Future<?>> futures = new ArrayList<>();
+				for (int i = 0; i < threads; i++) {
+					String id = UUID.randomUUID().toString();
+					futures.add(executor.submit(() -> {
+						start.await();
+						writer.upsert(List.of(embeddedDocument(id, "concurrent", Map.of("tag", "c"))));
+						return null;
+					}));
+				}
+				start.countDown();
+				for (Future<?> future : futures) {
+					assertThatNoException().isThrownBy(() -> future.get(30, TimeUnit.SECONDS));
+				}
+			}
+			finally {
+				executor.shutdownNow();
+			}
+			assertWrongDimensionRejected(writer);
+			assertThat(embeddingModel.calls()).as("embedding model calls during concurrent first use").isZero();
+		});
+	}
+
 	/**
 	 * Assert that the store's own pre-write check rejects a wrong-sized vector. Only that
 	 * check throws {@link IllegalArgumentException}; a database rejecting the vector
@@ -413,6 +557,33 @@ public abstract class AbstractVectorStoreUpsertTests {
 		float[] vector = new float[embeddingDimensions()];
 		for (int i = 0; i < vector.length; i++) {
 			vector[i] = (i == axis) ? 1.0f : 0.1f;
+		}
+		return vector;
+	}
+
+	/**
+	 * A vector that leans a little towards one axis, so it is closer to a query along
+	 * that axis than a vector pointing along another one, but not as close as one
+	 * pointing along it.
+	 */
+	private float[] leaningTowards(int axis, float weight) {
+		float[] vector = new float[embeddingDimensions()];
+		for (int i = 0; i < vector.length; i++) {
+			vector[i] = (i == axis) ? weight : 0.1f;
+		}
+		return vector;
+	}
+
+	/**
+	 * A vector for the given index that differs in direction from the vector of every
+	 * other index below {@link #MULTI_BATCH_ENTRY_COUNT}. The components run from
+	 * negative to positive, so the vectors are spread apart far enough for stores that
+	 * search approximately or quantize vectors to still tell them apart.
+	 */
+	private float[] distinctVector(int index) {
+		float[] vector = new float[embeddingDimensions()];
+		for (int i = 0; i < vector.length; i++) {
+			vector[i] = (((index * 7 + i * 13) % 23) - 11) * 0.09f;
 		}
 		return vector;
 	}

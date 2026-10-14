@@ -95,6 +95,9 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 	 */
 	@Override
 	public void upsert(List<EmbeddedDocument> entries) {
+		if (entries.isEmpty()) {
+			return;
+		}
 		validateNonTextDocuments(entries.stream().map(EmbeddedDocument::document).toList());
 		VectorStoreObservationContext observationContext = this
 			.createObservationContextBuilder(VectorStoreObservationContext.Operation.UPSERT.value())

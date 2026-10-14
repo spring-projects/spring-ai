@@ -18,6 +18,8 @@ package org.springframework.ai.vectorstore.elasticsearch;
 
 import java.net.URISyntaxException;
 import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.function.Consumer;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
@@ -27,6 +29,7 @@ import co.elastic.clients.transport.rest5_client.Rest5ClientTransport;
 import co.elastic.clients.transport.rest5_client.low_level.Rest5Client;
 import org.apache.hc.core5.http.HttpHost;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -37,10 +40,14 @@ import tools.jackson.databind.json.JsonMapper;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.test.vectorstore.AbstractVectorStoreUpsertTests;
 import org.springframework.ai.test.vectorstore.FixedDimensionEmbeddingModel;
+import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Upsert verification for {@link ElasticsearchVectorStore}, running the shared
@@ -117,6 +124,76 @@ public class ElasticsearchVectorStoreUpsertIT extends AbstractVectorStoreUpsertT
 			.build();
 		store.afterPropertiesSet();
 		return store;
+	}
+
+	@Test
+	void configuredDimensionsApplyWhenTheMappingCannotBeRead() {
+		executeTest(vectorStore -> {
+			CallCountingEmbeddingModel embeddingModel = new CallCountingEmbeddingModel(EMBEDDING_DIMENSIONS - 1);
+			ElasticsearchVectorStoreOptions options = new ElasticsearchVectorStoreOptions();
+			options.setIndexName("upsert-missing-index");
+			options.setDimensions(EMBEDDING_DIMENSIONS);
+			// The index does not exist, so there is no mapping to read.
+			ElasticsearchVectorStore store = ElasticsearchVectorStore.builder(restClient(vectorStore), embeddingModel)
+				.options(options)
+				.build();
+
+			// Checked against the configured size, not against the model's narrower one
+			assertWrongDimensionRejected(store);
+			assertThat(embeddingModel.calls()).isZero();
+		});
+	}
+
+	@Test
+	void unreadableMappingLeavesTheSizeUnknownAndIsReadAgainLater() {
+		executeTest(vectorStore -> {
+			CallCountingEmbeddingModel embeddingModel = new CallCountingEmbeddingModel(EMBEDDING_DIMENSIONS + 3);
+			ElasticsearchVectorStoreOptions options = new ElasticsearchVectorStoreOptions();
+			options.setIndexName("upsert-late-index");
+			ElasticsearchVectorStore store = ElasticsearchVectorStore.builder(restClient(vectorStore), embeddingModel)
+				.options(options)
+				.build();
+			float[] tooShort = new float[EMBEDDING_DIMENSIONS - 1];
+			tooShort[0] = 1f;
+			SearchRequest request = SearchRequest.builder().query("ignored").topK(1).similarityThresholdAll().build();
+
+			// There is no mapping yet, so the size is unknown. The search fails in
+			// Elasticsearch, and the model must not have stood in for the index.
+			assertThatThrownBy(() -> store.similaritySearch(tooShort, request))
+				.isNotInstanceOf(IllegalArgumentException.class);
+
+			ElasticsearchVectorStoreOptions created = new ElasticsearchVectorStoreOptions();
+			created.setIndexName("upsert-late-index");
+			created.setDimensions(EMBEDDING_DIMENSIONS);
+			ElasticsearchVectorStore.builder(restClient(vectorStore), new FixedDimensionEmbeddingModel(1))
+				.options(created)
+				.initializeSchema(true)
+				.build()
+				.afterPropertiesSet();
+
+			// Now that the index exists its real size is read and applies
+			assertThatThrownBy(() -> store.similaritySearch(tooShort, request))
+				.isInstanceOf(IllegalArgumentException.class)
+				.hasMessageContaining("dimension " + (EMBEDDING_DIMENSIONS - 1))
+				.hasMessageContaining("dimension " + EMBEDDING_DIMENSIONS);
+			assertThat(embeddingModel.calls()).isZero();
+		});
+	}
+
+	@Test
+	void initializingOverAnExistingIndexWithoutEmbeddingModel() {
+		executeTest(vectorStore -> {
+			CallCountingEmbeddingModel embeddingModel = new CallCountingEmbeddingModel(EMBEDDING_DIMENSIONS + 3);
+			// The shared store has already created the default index.
+			ElasticsearchVectorStore store = ElasticsearchVectorStore.builder(restClient(vectorStore), embeddingModel)
+				.initializeSchema(true)
+				.build();
+			store.afterPropertiesSet();
+
+			store.upsert(List.of(embeddedDocument(UUID.randomUUID().toString(), "existing", Map.of("tag", "e"))));
+			assertWrongDimensionRejected(store);
+			assertThat(embeddingModel.calls()).isZero();
+		});
 	}
 
 	// Reuse the schema owner's connection rather than opening one the test would have to
