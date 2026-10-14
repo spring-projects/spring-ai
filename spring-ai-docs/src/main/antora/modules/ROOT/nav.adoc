@@ -79,6 +79,7 @@
 // ** xref:api/generic-model.adoc[]
 
 ** xref:api/chat-memory.adoc[Chat Memory]
+** xref:api/session.adoc[Session Memory]
 
 ** xref:api/tools.adoc[Tool Calling]
 *** xref:api/tools/tool-calling-advisor.adoc[ToolCallingAdvisor]
