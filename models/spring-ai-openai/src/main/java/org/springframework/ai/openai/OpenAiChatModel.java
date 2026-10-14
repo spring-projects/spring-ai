@@ -158,7 +158,7 @@ import org.springframework.util.StringUtils;
  * @author Raphael Vullriede
  * @author Dimitar Proynov
  */
-public final class OpenAiChatModel implements ChatModel {
+public final class OpenAiChatModel implements ChatModel, AutoCloseable {
 
 	/**
 	 * The {@link OpaquePayload#provider() provider} of the payloads this model produces.
@@ -209,6 +209,12 @@ public final class OpenAiChatModel implements ChatModel {
 
 	private final OpenAIClientAsync openAiClientAsync;
 
+	private final boolean ownsClient;
+
+	private final boolean ownsClientAsync;
+
+	private final AtomicBoolean closed = new AtomicBoolean();
+
 	private final OpenAiChatOptions options;
 
 	private final ObservationRegistry observationRegistry;
@@ -226,12 +232,59 @@ public final class OpenAiChatModel implements ChatModel {
 	}
 
 	private OpenAiChatModel(OpenAIClient openAiClient, OpenAIClientAsync openAiClientAsync, OpenAiChatOptions options,
-			ObservationRegistry observationRegistry, ToolCallingManager toolCallingManager) {
+			ObservationRegistry observationRegistry, ToolCallingManager toolCallingManager, boolean ownsClient,
+			boolean ownsClientAsync) {
 		this.openAiClient = openAiClient;
 		this.openAiClientAsync = openAiClientAsync;
+		this.ownsClient = ownsClient;
+		this.ownsClientAsync = ownsClientAsync;
 		this.options = options;
 		this.observationRegistry = observationRegistry;
 		this.toolCallingManager = toolCallingManager;
+	}
+
+	/**
+	 * Closes the OpenAI clients created by this model's builder. Clients supplied through
+	 * {@link Builder#openAiClient(OpenAIClient)} or
+	 * {@link Builder#openAiClientAsync(OpenAIClientAsync)} remain the caller's
+	 * responsibility to close.
+	 * <p>
+	 * Both owned clients are closed even if one fails. If both fail, the second exception
+	 * is suppressed on the first. Repeated calls have no effect, including after a
+	 * failure.
+	 * @throws RuntimeException if closing an owned client fails
+	 * @since 2.1.0
+	 */
+	@Override
+	public void close() {
+		if (!this.closed.compareAndSet(false, true)) {
+			return;
+		}
+		RuntimeException failure = null;
+		if (this.ownsClient) {
+			try {
+				this.openAiClient.close();
+			}
+			catch (RuntimeException ex) {
+				failure = ex;
+			}
+		}
+		if (this.ownsClientAsync) {
+			try {
+				this.openAiClientAsync.close();
+			}
+			catch (RuntimeException ex) {
+				if (failure == null) {
+					failure = ex;
+				}
+				else if (failure != ex) {
+					failure.addSuppressed(ex);
+				}
+			}
+		}
+		if (failure != null) {
+			throw failure;
+		}
 	}
 
 	/**
@@ -2051,6 +2104,9 @@ public final class OpenAiChatModel implements ChatModel {
 			ObservationRegistry resolvedObservationRegistry = Objects.requireNonNullElse(this.observationRegistry,
 					ObservationRegistry.NOOP);
 
+			boolean ownsClient = this.openAiClient == null;
+			boolean ownsClientAsync = this.openAiClientAsync == null;
+
 			OpenAIClient resolvedClient = Objects.requireNonNullElseGet(this.openAiClient,
 					() -> OpenAiSetup.setupSyncClient(resolvedOptions.getBaseUrl(), resolvedOptions.getApiKey(),
 							resolvedOptions.getCredential(), resolvedOptions.getMicrosoftDeploymentName(),
@@ -2079,7 +2135,7 @@ public final class OpenAiChatModel implements ChatModel {
 					ToolCallingManager.builder().observationRegistry(resolvedObservationRegistry).build());
 
 			return new OpenAiChatModel(resolvedClient, resolvedClientAsync, resolvedOptions,
-					resolvedObservationRegistry, resolvedToolCallingManager);
+					resolvedObservationRegistry, resolvedToolCallingManager, ownsClient, ownsClientAsync);
 		}
 
 	}
