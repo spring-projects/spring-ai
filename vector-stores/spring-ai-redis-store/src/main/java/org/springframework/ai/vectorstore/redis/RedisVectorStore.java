@@ -421,7 +421,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 		int expected = vectorDimensions();
 		if (expected <= 0) {
 			throw new IllegalStateException("Could not determine the vector size of index " + this.indexName
-					+ ". Configure dimensions on the store, or create the index before upserting.");
+					+ ". Configure dimensions on the store, or make sure the index exists and can be read.");
 		}
 		for (int i = 0; i < entries.size(); i++) {
 			checkDimensions("Embedding at index " + i, entries.get(i).embedding().length, expected);
@@ -781,17 +781,22 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 			return;
 		}
 
+		// The embedding model is only consulted here, when the index has to be created.
+		int createdDimensions = (this.dimensions > 0) ? this.dimensions : this.embeddingModel.dimensions();
 		String response = this.jedisClient.ftCreate(this.indexName,
-				FTCreateParams.createParams().on(IndexDataType.JSON).addPrefix(this.prefix), schemaFields());
+				FTCreateParams.createParams().on(IndexDataType.JSON).addPrefix(this.prefix),
+				schemaFields(createdDimensions));
 		if (!RESPONSE_OK.test(response)) {
 			String message = MessageFormat.format("Could not create index: {0}", response);
 			throw new RuntimeException(message);
 		}
+		// The index was just created with this size, so there is nothing to read back.
+		this.resolvedVectorDimensions = createdDimensions;
 	}
 
-	private Iterable<SchemaField> schemaFields() {
+	private Iterable<SchemaField> schemaFields(int vectorDimensions) {
 		Map<String, Object> vectorAttrs = new HashMap<>();
-		vectorAttrs.put("DIM", (this.dimensions > 0) ? this.dimensions : this.embeddingModel.dimensions());
+		vectorAttrs.put("DIM", vectorDimensions);
 		vectorAttrs.put("DISTANCE_METRIC", this.distanceMetric.getRedisName());
 		vectorAttrs.put("TYPE", VECTOR_TYPE_FLOAT32);
 
@@ -856,12 +861,16 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 	}
 
 	/**
-	 * The vector size the index accepts, or -1 when it cannot be determined.
+	 * The vector size the index accepts, or -1 when it is not known.
 	 * <p>
 	 * The size comes from the {@link Builder#dimensions(int) configured dimensions} if
-	 * set, otherwise from the existing index definition, and only then from the embedding
-	 * model. Reading it from the index means a store that only upserts into an existing
-	 * index never has to contact the embedding model. A known size is cached.
+	 * set, otherwise from the existing index definition or the index this store just
+	 * created. The embedding model is never asked, because its width says nothing about
+	 * the width of an index that already exists. Reading it from the index means a store
+	 * that only upserts into an existing index never has to contact the embedding model.
+	 * When the size cannot be read it stays unknown and reading it is tried again on the
+	 * next call. Only a known size is cached, so a store has to be rebuilt after the
+	 * index is recreated with a different size.
 	 * @return the known dimension, or -1
 	 */
 	private int vectorDimensions() {
@@ -888,15 +897,6 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 		}
 		catch (Exception ex) {
 			logger.debug("Could not read the vector size of index " + this.indexName, ex);
-		}
-		try {
-			int modelDimensions = this.embeddingModel.dimensions();
-			if (modelDimensions > 0) {
-				return modelDimensions;
-			}
-		}
-		catch (Exception ex) {
-			logger.debug("Could not obtain the embedding dimensions from the embedding model", ex);
 		}
 		return -1;
 	}
@@ -945,11 +945,16 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 			case IP -> VectorStoreSimilarityMetric.DOT;
 		};
 
-		return VectorStoreObservationContext.builder(VectorStoreProvider.REDIS.value(), operationName)
+		VectorStoreObservationContext.Builder builder = VectorStoreObservationContext
+			.builder(VectorStoreProvider.REDIS.value(), operationName)
 			.collectionName(this.indexName)
-			.dimensions(vectorDimensions())
 			.fieldName(this.embeddingFieldName)
 			.similarityMetric(similarityMetric.value());
+		int vectorDimensions = vectorDimensions();
+		if (vectorDimensions > 0) {
+			builder.dimensions(vectorDimensions);
+		}
+		return builder;
 	}
 
 	@Override

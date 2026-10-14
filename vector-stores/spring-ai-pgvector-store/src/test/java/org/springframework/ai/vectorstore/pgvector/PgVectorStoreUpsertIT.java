@@ -140,6 +140,52 @@ public class PgVectorStoreUpsertIT extends AbstractVectorStoreUpsertTests {
 		});
 	}
 
+	@Test
+	void initializingOverAnExistingTableWithoutEmbeddingModel() {
+		executeTest(vectorStore -> {
+			JdbcTemplate jdbcTemplate = vectorStore.<JdbcTemplate>getNativeClient().orElseThrow();
+			CallCountingEmbeddingModel embeddingModel = new CallCountingEmbeddingModel(EMBEDDING_DIMENSIONS);
+
+			// The shared store has already created the default table, with the default
+			// settings an application would start up with.
+			PgVectorStore store = PgVectorStore.builder(jdbcTemplate, embeddingModel).initializeSchema(true).build();
+			store.afterPropertiesSet();
+
+			store.upsert(List.of(embeddedDocument(UUID.randomUUID().toString(), "existing", Map.of("tag", "e"))));
+			assertWrongDimensionRejected(store);
+			assertThat(embeddingModel.calls()).isZero();
+		});
+	}
+
+	@Test
+	void columnWithoutDeclaredSizeAcceptsAnyVectorSize() {
+		executeTest(vectorStore -> {
+			JdbcTemplate jdbcTemplate = vectorStore.<JdbcTemplate>getNativeClient().orElseThrow();
+			jdbcTemplate.execute("DROP TABLE IF EXISTS upsert_unconstrained");
+			jdbcTemplate.execute("""
+					CREATE TABLE upsert_unconstrained (
+						id uuid PRIMARY KEY,
+						content text,
+						metadata json,
+						embedding vector
+					)
+					""");
+
+			// The model reports a different size than the vectors written, which must
+			// not matter for a column that accepts any size.
+			CallCountingEmbeddingModel embeddingModel = new CallCountingEmbeddingModel(EMBEDDING_DIMENSIONS + 3);
+			PgVectorStore store = PgVectorStore.builder(jdbcTemplate, embeddingModel)
+				.vectorTableName("upsert_unconstrained")
+				.build();
+
+			store.upsert(List.of(embeddedDocument(UUID.randomUUID().toString(), "unconstrained", Map.of("tag", "u"))));
+
+			assertThat(jdbcTemplate.queryForObject("SELECT count(*) FROM upsert_unconstrained", Integer.class))
+				.isEqualTo(1);
+			assertThat(embeddingModel.calls()).isZero();
+		});
+	}
+
 	@SpringBootConfiguration
 	@EnableAutoConfiguration(exclude = DataSourceAutoConfiguration.class)
 	public static class TestApplication {
