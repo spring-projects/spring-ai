@@ -1,0 +1,21 @@
+@startuml session-event-filter-activity
+skinparam shadowing false
+start
+if (activeView?) then (yes)
+  :Project the view from the newest boundary:
+  pinned, summary, preserved, then everything appended since;
+else (no)
+  :The whole log, in insertion order;
+endif
+:Keep the events that match the criteria:
+eventTypes, messageTypes, excludeSynthetic;
+if (window == last(n)?) then (yes)
+  :Take the newest n matches;
+  if (the oldest one is a turn start?\nor no turn start precedes it) then (no)
+    :Extend back to the nearest preceding
+    turn start among the matches;
+  endif
+endif
+:The result, oldest first;
+stop
+@enduml

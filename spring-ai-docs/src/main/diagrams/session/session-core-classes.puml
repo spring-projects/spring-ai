@@ -1,0 +1,93 @@
+@startuml session-core-classes
+!pragma layout smetana
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+hide empty members
+
+interface SessionService {
+  +create(request): Session
+  +findById(id): Session
+  +findByIndex(name, value): List<Session>
+  +appendEvent(event)
+  +appendMessage(id, message)
+  +getEvents(id, filter): List<SessionEvent>
+  +getMessages(id): List<Message>
+  +getActiveMessages(id): List<Message>
+  +compact(id, trigger, strategy): CompactionResult
+  +delete(id)
+  +deleteExpiredSessions(before): int
+}
+class DefaultSessionService {
+  +builder()
+}
+interface SessionRepository {
+  +save(session): Session
+  +saveIfAbsent(session): boolean
+  +findById(id): Session
+  +findByIndex(name, value): List<Session>
+  +delete(id)
+  +deleteExpiredSessions(before): int
+  +appendEvent(event)
+  +appendEvents(id, events, expectedVersion): boolean
+  +getEventVersion(id): long
+  +findEvents(id, filter): List<SessionEvent>
+}
+class InMemorySessionRepository
+class JdbcSessionRepository
+
+class Session {
+  id
+  createdAt
+  expiresAt
+  metadata: Map
+}
+class SessionEvent {
+  id
+  sessionId
+  timestamp
+  type: EventType
+  message: Message
+  payload: Map
+  metadata: Map
+  +hasMessage(): boolean
+  +isSynthetic(): boolean
+  +isTurnStart(): boolean
+}
+class EventType {
+  name
+  {static} MESSAGE
+  {static} COMPACTION
+  {static} +of(name): EventType
+  +canCarryMessage(): boolean
+}
+class EventFilter <<record>> {
+  activeView
+  messageTypes
+  eventTypes
+  excludeSynthetic
+  window: Window
+  {static} +all()
+  {static} +active()
+  {static} +lastN(n)
+  +merge(other): EventFilter
+  +apply(events): List<SessionEvent>
+}
+class CompactionBoundary <<record>> {
+  pinnedEventIds
+  summaryEventIds
+  preservedEventIds
+  {static} +project(log): List<SessionEvent>
+}
+
+SessionService <|.. DefaultSessionService
+DefaultSessionService --> SessionRepository : persists through
+SessionRepository <|.. InMemorySessionRepository
+SessionRepository <|.. JdbcSessionRepository
+SessionService ..> Session : creates, finds
+SessionService ..> SessionEvent : appends, reads
+SessionService ..> EventFilter : reads with
+SessionEvent "*" --> "1" Session : belongs to (by sessionId)
+SessionEvent --> EventType
+EventFilter ..> CompactionBoundary : projects the view with
+@enduml

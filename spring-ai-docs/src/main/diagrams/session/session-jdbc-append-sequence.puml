@@ -1,0 +1,29 @@
+@startuml session-jdbc-append-sequence
+skinparam shadowing false
+autonumber
+participant "compact()" as C
+participant "appendEvent()" as A
+participant "JdbcSessionRepository" as Repo
+database "AI_SESSION\nAI_SESSION_EVENT" as DB
+
+C -> Repo: appendEvents(id, [boundary, summary], expectedVersion)
+Repo -> DB: UPDATE AI_SESSION SET event_version = event_version + 1\nWHERE id = ? AND event_version = ?
+note right: claims the version and locks the session row
+A -> Repo: appendEvent(event)
+Repo -> DB: UPDATE AI_SESSION SET event_version = event_version + 1 WHERE id = ?
+note right: blocks on the row lock until the compaction commits
+DB --> Repo: 1 row (the version matched)
+Repo -> DB: SELECT id FROM AI_SESSION_EVENT WHERE id IN (...)
+DB --> Repo: none taken
+Repo -> DB: INSERT the boundary and the summary rows
+Repo --> C: true (committed)
+DB --> Repo: 1 row (lock acquired)
+Repo -> DB: SELECT session_id FROM AI_SESSION_EVENT WHERE id = ?
+alt the id is new
+  Repo -> DB: INSERT the event (seq after the boundary: appended since)
+  Repo --> A: done
+else a replay of the same session
+  Repo -> DB: UPDATE event_version = event_version - 1
+  Repo --> A: no-op
+end
+@enduml

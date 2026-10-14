@@ -1,0 +1,25 @@
+@startuml session-prompt-assembly-activity
+skinparam shadowing false
+|ChatClient|
+start
+:The request: the system prompt from
+defaultSystem / .system, the user message;
+|SessionMemoryAdvisor|
+:Read the active view
+(the per-request filter merged over the advisor's);
+:Take the latest stored system message, if any;
+:System messages first: the stored one, then the request's,
+exact duplicates once;
+:Prepend the history the request does not carry yet
+(from round 2 of a tool loop on, the prompt holds the turn so far);
+:Drop a tool call left without its results,
+and a result that answers no call;
+:Store the request's user message (MessageFilter)
+or its tool results (always);
+|Model|
+:call(prompt);
+|SessionMemoryAdvisor|
+:Store the reply (MessageFilter; a reply with tool calls always);
+:Name the stored event ids on the context;
+stop
+@enduml

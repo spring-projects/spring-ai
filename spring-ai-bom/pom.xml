@@ -110,6 +110,29 @@
 				<version>${project.version}</version>
 			</dependency>
 
+			<!-- Spring AI Session -->
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-session</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-session</artifactId>
+				<version>${project.version}</version>
+				<type>test-jar</type>
+			</dependency>
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-session-jdbc</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-session-advisor</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
 			<!-- Spring AI Tool Search Advisor -->
 
 			<dependency>
@@ -497,6 +520,18 @@
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-autoconfigure-tool-search-advisor</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<!-- Spring AI Session auto-configurations -->
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-autoconfigure-model-session</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-autoconfigure-model-session-jdbc</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
@@ -1141,6 +1176,13 @@
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-starter-model-chat-memory-repository-redis</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<!-- Spring AI Spring Boot starter for Session -->
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-model-session-jdbc</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
