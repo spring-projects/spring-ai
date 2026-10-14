@@ -343,6 +343,27 @@ class GoogleGenAiChatModelMessagePartsTests {
 	}
 
 	@Test
+	void toolResultsAreSentAsFunctionResponses() {
+		// A tool result is usually JSON, but a denied tool call or a tool error answers
+		// with plain text; text is passed on under "result", like a JSON value that is
+		// not an object
+		ToolResponseMessage toolResults = ToolResponseMessage.builder()
+			.responses(List.of(new ToolResponseMessage.ToolResponse("c1", "getWeather", "{\"temp\":15}"),
+					new ToolResponseMessage.ToolResponse("c2", "getWeather", "\"sunny\""),
+					new ToolResponseMessage.ToolResponse("c3", "bookFlight", "The user declined this booking."),
+					new ToolResponseMessage.ToolResponse("c4", "bookFlight", "42 seats left, none booked"),
+					new ToolResponseMessage.ToolResponse("c5", "bookFlight", "")))
+			.build();
+
+		List<Part> parts = this.chatModel.messageToGeminiParts(toolResults);
+
+		assertThat(parts).extracting(part -> part.functionResponse().orElseThrow().response().orElseThrow())
+			.containsExactly(Map.of("temp", 15), Map.of("result", "sunny"),
+					Map.of("result", "The user declined this booking."), Map.of("result", "42 seats left, none booked"),
+					Map.of("result", ""));
+	}
+
+	@Test
 	void toolResultPartOnAssistantMessageIsRejected() {
 		AssistantMessage assistant = AssistantMessage.builder()
 			.part(ToolResultPart.of(new ToolResponseMessage.ToolResponse("call_1", "getWeather", "{}")))

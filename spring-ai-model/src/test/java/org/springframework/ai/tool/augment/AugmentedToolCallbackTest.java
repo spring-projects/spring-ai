@@ -32,11 +32,13 @@ import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.ai.tool.metadata.ToolMetadata;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -169,6 +171,34 @@ class AugmentedToolCallbackTest {
 
 			assertThrows(IllegalArgumentException.class,
 					() -> new AugmentedToolCallback<>(mockDelegate, EmptyRecord.class, consumer, false));
+		}
+
+	}
+
+	@Nested
+	@DisplayName("Tool Metadata Tests")
+	class ToolMetadataTests {
+
+		@Test
+		@DisplayName("Should keep the delegate's tool metadata")
+		void shouldKeepTheDelegatesToolMetadata() {
+			// A tool that needs confirmation must keep needing it once its arguments are
+			// augmented
+			ToolMetadata metadata = ToolMetadata.builder().returnDirect(true).requiresConfirmation(true).build();
+			when(mockDelegate.getToolDefinition()).thenReturn(mockToolDefinition);
+			when(mockDelegate.getToolMetadata()).thenReturn(metadata);
+			when(mockToolDefinition.name()).thenReturn("testTool");
+			when(mockToolDefinition.description()).thenReturn("Test tool description");
+			when(mockToolDefinition.inputSchema()).thenReturn("""
+					{"type": "object", "properties": {}}
+					""");
+
+			AugmentedToolCallback<SimpleArguments> callback = new AugmentedToolCallback<>(mockDelegate,
+					SimpleArguments.class, null, false);
+
+			assertSame(metadata, callback.getToolMetadata());
+			assertTrue(callback.getToolMetadata().requiresConfirmation());
+			assertTrue(callback.getToolMetadata().returnDirect());
 		}
 
 	}
