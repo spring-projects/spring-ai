@@ -24,15 +24,15 @@ import org.springframework.ai.tokenizer.TokenCountEstimator;
 import org.springframework.util.Assert;
 
 /**
- * Triggers compaction when the estimated token count of the session's events reaches a
- * threshold. Token count is measured on {@link EventText} with a configurable
- * {@link TokenCountEstimator}, defaulting to {@link JTokkitTokenCountEstimator}: the same
- * measure a {@link CompactionWindow#tokenBudget token budget} uses, so the threshold and
- * the budget are expressed in the same units and can be calibrated against each other.
+ * Fires when the estimated tokens of the view reach a threshold: the latest stored system
+ * message, the summaries and the conversation, measured on {@link EventText} with a
+ * {@link TokenCountEstimator}, JTokkit by default. A {@link CompactionWindow#tokenBudget
+ * token budget} uses the same measure, so the threshold and the budget are in the same
+ * units.
  *
+ * @see CompactionWindow#tokenBudget(int)
  * @author Christian Tzolov
  * @since 2.1.0
- * @see CompactionWindow#tokenBudget(int)
  */
 public final class TokenCountTrigger implements CompactionTrigger {
 
@@ -41,11 +41,8 @@ public final class TokenCountTrigger implements CompactionTrigger {
 	private final TokenCountEstimator tokenCountEstimator;
 
 	/**
-	 * Creates a trigger with the given threshold and token count estimator.
-	 * @param threshold minimum total token count that triggers compaction. Must be
-	 * positive.
-	 * @param tokenCountEstimator estimator used to measure each event's token cost. Must
-	 * not be {@code null}.
+	 * @param threshold the estimated token count at which compaction fires; positive
+	 * @param tokenCountEstimator the estimator applied to {@link EventText}
 	 */
 	private TokenCountTrigger(int threshold, TokenCountEstimator tokenCountEstimator) {
 		Assert.isTrue(threshold > 0, "threshold must be greater than 0");

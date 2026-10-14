@@ -23,8 +23,9 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.jdbc.init.DatabaseInitializationProperties;
 
 /**
- * Configuration properties for the JDBC-backed
- * {@link org.springframework.ai.session.jdbc.JdbcSessionRepository}.
+ * The properties of the JDBC session repository, under {@code
+ * spring.ai.session.repository.jdbc}: Spring Boot's schema initialization settings and
+ * the indexed attributes.
  *
  * @author Christian Tzolov
  * @since 2.1.0
@@ -37,8 +38,8 @@ public class JdbcSessionRepositoryProperties extends DatabaseInitializationPrope
 	private static final String DEFAULT_SCHEMA_LOCATION = "classpath:org/springframework/ai/session/jdbc/schema-@@platform@@.sql";
 
 	/**
-	 * Metadata keys to index in {@code AI_SESSION_INDEX} besides the principal name, so
-	 * that {@code findByIndex} can answer for them.
+	 * The metadata keys indexed in {@code AI_SESSION_INDEX} besides the principal name,
+	 * so that {@code findByIndex} answers for them.
 	 */
 	private Set<String> indexedAttributes = new LinkedHashSet<>();
 

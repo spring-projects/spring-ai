@@ -27,11 +27,11 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import org.springframework.util.Assert;
 
 /**
- * What a {@link SessionEvent} records. An event type is its name: the well-known types
- * are constants here, and an application or an agent runtime defines its own with
+ * What a {@link SessionEvent} records. A type is its name: the well-known types are
+ * constants here, and an application or an agent runtime defines its own with
  * {@link #of(String)}; every store keeps the name, and a filter by type works for any of
  * them. Only a {@link #MESSAGE} event takes part in prompt assembly and compaction, and
- * only the types that {@link #canCarryMessage() carry a message} wrap a Spring AI
+ * only a type that {@link #canCarryMessage() carries a message} wraps a Spring AI
  * message.
  *
  * @author Christian Tzolov
@@ -44,15 +44,15 @@ public final class EventType {
 	private static final Map<String, EventType> TYPES = new ConcurrentHashMap<>();
 
 	/**
-	 * A chat message; the event carries a
+	 * A conversation message; the event carries a
 	 * {@link org.springframework.ai.chat.messages.Message}.
 	 */
 	public static final EventType MESSAGE = of("MESSAGE");
 
 	/**
 	 * A compaction boundary: the payload names, by id, the events that make up the active
-	 * view from here on (see
-	 * {@link org.springframework.ai.session.compaction.CompactionBoundary}).
+	 * view from here on; see
+	 * {@link org.springframework.ai.session.compaction.CompactionBoundary}.
 	 */
 	public static final EventType COMPACTION = of("COMPACTION");
 
@@ -84,9 +84,8 @@ public final class EventType {
 	}
 
 	/**
-	 * Returns {@code true} when an event of this kind carries a Spring AI message: a
-	 * {@link #MESSAGE} event does. Only a {@code MESSAGE} event takes part in prompt
-	 * assembly and compaction.
+	 * Whether an event of this type carries a Spring AI message: a {@link #MESSAGE} event
+	 * does.
 	 */
 	public boolean canCarryMessage() {
 		return MESSAGE_BEARING.contains(this);

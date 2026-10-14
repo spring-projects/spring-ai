@@ -104,11 +104,10 @@ public record EventFilter(@Nullable Set<MessageType> messageTypes, @Nullable Set
 	}
 
 	/**
-	 * Returns a filter combining this (base) filter with {@code other}, where every
-	 * criterion set on {@code other} takes precedence: a configured filter with a
-	 * per-request one over it. The {@code excludeSynthetic} and {@code activeView} flags
-	 * are OR-ed (either side can only narrow the result), and the window of {@code other}
-	 * replaces this filter's window unless it is {@link Window#ALL}.
+	 * Combines this filter with {@code other}, a configured filter with a per-request one
+	 * over it: the types of {@code other} replace this filter's, its window too unless it
+	 * is {@link Window#ALL}, and the {@code excludeSynthetic} and {@code activeView}
+	 * flags are OR-ed, so either side can narrow the result.
 	 */
 	public EventFilter merge(EventFilter other) {
 		Assert.notNull(other, "other must not be null");
@@ -121,9 +120,8 @@ public record EventFilter(@Nullable Set<MessageType> messageTypes, @Nullable Set
 	}
 
 	/**
-	 * Returns {@code true} if the event passes the per-event criteria: the event and
-	 * message types and the synthetic flag. The view and the window apply at the
-	 * collection level.
+	 * Whether the event passes the per-event criteria: the event and message types and
+	 * the synthetic flag. The view and the window apply to the collection.
 	 */
 	public boolean matches(SessionEvent event) {
 		if (this.excludeSynthetic && event.isSynthetic()) {
@@ -151,14 +149,13 @@ public record EventFilter(@Nullable Set<MessageType> messageTypes, @Nullable Set
 	}
 
 	/**
-	 * Applies the window to an already filtered per-session log, oldest first, keeping
+	 * Applies the window to the filtered events of one session, oldest first, keeping
 	 * turns whole: a {@link Window.Last} window whose first event is not a
 	 * {@linkplain SessionEvent#isTurnStart() turn start} is extended back to the nearest
-	 * turn start before it. The extension is skipped when no turn start precedes the
-	 * window (a preamble of stored system messages, or a {@link #messageTypes()} filter
-	 * that excludes {@code USER}) and when the filter admits no {@link EventType#MESSAGE}
-	 * events; the plain window is returned then. This is the reference implementation of
-	 * the {@link SessionRepository#findEvents} window contract.
+	 * turn start before it. The plain window is returned when no turn start precedes it:
+	 * a preamble before the first turn, a {@link #messageTypes()} filter that hides user
+	 * messages, or a filter that admits no {@link EventType#MESSAGE} event. The reference
+	 * implementation of the {@link SessionRepository#findEvents} window.
 	 * @param matched the filtered events of one session, oldest first
 	 * @return the windowed events, a copy
 	 */
@@ -206,10 +203,7 @@ public record EventFilter(@Nullable Set<MessageType> messageTypes, @Nullable Set
 
 	}
 
-	/**
-	 * Builder for {@link EventFilter}. Every setting defaults to unset, producing a
-	 * filter equivalent to {@link EventFilter#all()} when none is called.
-	 */
+	/** Builds an {@link EventFilter}; nothing set is {@link EventFilter#all()}. */
 	public static final class Builder {
 
 		private @Nullable Set<MessageType> messageTypes;
@@ -244,28 +238,26 @@ public record EventFilter(@Nullable Set<MessageType> messageTypes, @Nullable Set
 		}
 
 		/**
-		 * Only include events carrying a message whose
-		 * {@link SessionEvent#getMessageType()} is in this set. An event without a
-		 * message never matches.
+		 * Keeps only the events whose message is of one of these types; an event without
+		 * a message never matches. Unset, or an empty set, keeps every type.
 		 */
 		public Builder messageTypes(@Nullable Set<MessageType> messageTypes) {
 			this.messageTypes = messageTypes;
 			return this;
 		}
 
-		/** When {@code true}, synthetic events (compaction summaries) are excluded. */
+		/** When {@code true}, the synthetic events a compaction wrote are left out. */
 		public Builder excludeSynthetic(boolean excludeSynthetic) {
 			this.excludeSynthetic = excludeSynthetic;
 			return this;
 		}
 
 		/**
-		 * When {@code true}, the filter applies to the active view of the log as defined
-		 * by its newest compaction boundary (see
-		 * {@link CompactionBoundary#project(List)}): the pinned events, the summary, the
-		 * preserved events and everything appended since, in that order. The events
-		 * compaction covered are left out. Leave {@code false} (the default) to read the
-		 * full history.
+		 * When {@code true}, the filter applies to the active view the newest compaction
+		 * boundary defines, the pinned events, the summary, the preserved events and
+		 * everything appended since, in that order (see
+		 * {@link CompactionBoundary#project(List)}), instead of to the whole log;
+		 * {@code false} by default.
 		 */
 		public Builder activeView(boolean activeView) {
 			this.activeView = activeView;
@@ -280,8 +272,8 @@ public record EventFilter(@Nullable Set<MessageType> messageTypes, @Nullable Set
 		}
 
 		/**
-		 * Return at most the last {@code n} matching events, extended to the start of
-		 * their turn: {@link Window#last(int)}. {@code null} clears the window.
+		 * Keeps the newest {@code n} matching events, extended to the start of their
+		 * turn: {@link Window#last(int)}. {@code null} clears the window.
 		 */
 		public Builder lastN(@Nullable Integer lastN) {
 			return window(lastN != null ? Window.last(lastN) : Window.ALL);

@@ -20,15 +20,11 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * The well-known metadata attributes of a {@link Session}, and the accessors that read
- * them.
- *
- * <p>
- * A session has no owner field. Who it belongs to is the {@link #PRINCIPAL_NAME}
- * attribute, in the shape of Spring Session's principal-name index: the store indexes it
- * ({@link SessionRepository#findByIndex}), the application sets it, and an authorization
- * layer decides what the caller may see. {@link #AGENT_NAME}, {@link #AGENT_VERSION} and
- * {@link #AGENT_MODEL} label the agent a session runs, set at creation from the request's
- * metadata, for listings and a UI.
+ * them. A session has no owner field: who it belongs to is the {@link #PRINCIPAL_NAME}
+ * attribute, in the shape of Spring Session's principal-name index, which every store
+ * indexes ({@link SessionRepository#findByIndex}) and an authorization layer decides on.
+ * {@link #AGENT_NAME}, {@link #AGENT_VERSION} and {@link #AGENT_MODEL} label the agent a
+ * session runs, set at creation, for listings and a UI.
  *
  * @author Christian Tzolov
  * @since 2.1.0
@@ -53,10 +49,7 @@ public final class SessionAttributes {
 	private SessionAttributes() {
 	}
 
-	/**
-	 * Returns the principal name stored in the session's metadata, or {@code null} when
-	 * the session has none.
-	 */
+	/** The principal name of a session, or {@code null} when it has none. */
 	public static @Nullable String principalName(Session session) {
 		return text(session, PRINCIPAL_NAME);
 	}
@@ -66,10 +59,7 @@ public final class SessionAttributes {
 		return text(session, AGENT_NAME);
 	}
 
-	/**
-	 * The version of the agent definition a session runs, or {@code null} when none was
-	 * set.
-	 */
+	/** The agent version of a session, or {@code null} when none was set. */
 	public static @Nullable String agentVersion(Session session) {
 		return text(session, AGENT_VERSION);
 	}

@@ -23,54 +23,43 @@ import javax.sql.DataSource;
 import org.springframework.jdbc.support.JdbcUtils;
 
 /**
- * Abstraction for database-specific SQL used by {@link JdbcSessionRepository}.
+ * The SQL that differs between databases, for {@link JdbcSessionRepository}: the upsert
+ * and the insert-if-absent of a session. Every other statement is shared and lives in the
+ * repository. {@link #from(DataSource)} detects the dialect from the database metadata.
  *
- * <p>
- * Each method returns a parameterised SQL string compatible with
- * {@link org.springframework.jdbc.core.JdbcTemplate}. Implementations cover only the SQL
- * surface that differs across databases (upsert syntax, boolean literals, keyword
- * search). Generic queries shared by all dialects live directly in
- * {@link JdbcSessionRepository}.
- *
- * @author Christian Tzolov
- * @since 2.1.0
  * @see PostgresJdbcSessionRepositoryDialect
  * @see H2JdbcSessionRepositoryDialect
  * @see MysqlJdbcSessionRepositoryDialect
+ * @author Christian Tzolov
+ * @since 2.1.0
  */
 public interface JdbcSessionRepositoryDialect {
 
 	/**
-	 * Upsert a row in {@code AI_SESSION}. The statement must insert a new row or update
-	 * an existing one. On update only {@code expires_at} and {@code metadata} are
-	 * refreshed — {@code created_at} keeps its original value and {@code event_version}
-	 * must <em>not</em> be modified.
-	 *
-	 * <p>
-	 * Parameters (in order): {@code id}, {@code created_at}, {@code expires_at},
-	 * {@code metadata}.
+	 * Inserts a row into {@code AI_SESSION} or updates the existing one, refreshing only
+	 * {@code expires_at} and {@code metadata}: {@code created_at} keeps its value and
+	 * {@code event_version} is never touched. Parameters, in order: {@code id}, {@code
+	 * created_at}, {@code expires_at}, {@code metadata}.
 	 */
 	String getUpsertSessionSql();
 
 	/**
-	 * Inserts a row into {@code AI_SESSION} only if its {@code id} does not exist yet.
-	 * Same four parameters as {@link #getUpsertSessionSql()}. Must update one row on
-	 * insert and either update zero rows or fail with a duplicate-key error when the id
-	 * exists. The default is a plain {@code INSERT} (duplicate key error); dialects whose
-	 * failed statements abort the enclosing transaction (PostgreSQL) should use a
-	 * conflict-ignoring form instead.
+	 * Inserts a row into {@code AI_SESSION} only if its id does not exist, with the same
+	 * four parameters as {@link #getUpsertSessionSql()}: one row updated on insert, zero
+	 * rows or a duplicate-key error when the id exists. The default is a plain {@code
+	 * INSERT}; a database whose failed statement aborts the enclosing transaction,
+	 * PostgreSQL, uses a conflict-ignoring form.
 	 */
 	default String getInsertSessionIfAbsentSql() {
 		return "INSERT INTO AI_SESSION (id, created_at, expires_at, metadata) VALUES (?, ?, ?, ?)";
 	}
 
 	/**
-	 * Detects the dialect from the database product name reported by the
-	 * {@link DataSource}'s metadata. Supports PostgreSQL, H2, MySQL and MariaDB.
-	 * @throws IllegalStateException if the product name cannot be determined or the
-	 * database is not supported; configure the dialect explicitly with
-	 * {@link JdbcSessionRepository.Builder#dialect(JdbcSessionRepositoryDialect)} instead
-	 * of relying on detection
+	 * The dialect of the database the data source connects to, from its product name:
+	 * PostgreSQL, H2, MySQL or MariaDB.
+	 * @throws IllegalStateException if the product name cannot be read or the database is
+	 * not supported; set the dialect with
+	 * {@link JdbcSessionRepository.Builder#dialect(JdbcSessionRepositoryDialect)} then
 	 */
 	static JdbcSessionRepositoryDialect from(DataSource dataSource) {
 		String productName;

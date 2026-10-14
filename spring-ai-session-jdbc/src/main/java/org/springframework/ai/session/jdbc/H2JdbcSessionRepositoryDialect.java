@@ -17,12 +17,9 @@
 package org.springframework.ai.session.jdbc;
 
 /**
- * {@link JdbcSessionRepositoryDialect} for H2 (development and testing).
- *
- * <p>
- * The upsert uses a standard {@code MERGE ... USING} statement so that, like the other
- * dialects, an update leaves {@code created_at} unchanged (H2's shorter
- * {@code MERGE ... KEY} form would overwrite every column).
+ * The dialect of H2. The upsert is a standard {@code MERGE ... USING}, so that an update
+ * leaves {@code created_at} alone as the other dialects do; H2's shorter {@code MERGE ...
+ * KEY} would overwrite every column.
  *
  * @author Christian Tzolov
  * @since 2.1.0

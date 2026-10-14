@@ -17,7 +17,7 @@
 package org.springframework.ai.session.jdbc;
 
 /**
- * {@link JdbcSessionRepositoryDialect} for MySQL and MariaDB.
+ * The dialect of MySQL and MariaDB.
  *
  * @author Christian Tzolov
  * @since 2.1.0

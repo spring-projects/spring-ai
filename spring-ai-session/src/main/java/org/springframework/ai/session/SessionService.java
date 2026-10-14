@@ -27,7 +27,9 @@ import org.springframework.ai.session.compaction.CompactionStrategy;
 import org.springframework.ai.session.compaction.CompactionTrigger;
 
 /**
- * Primary API for managing the full lifecycle of {@link Session} objects.
+ * The sessions of an application and their conversations: creating and finding sessions,
+ * appending and reading their events, compacting them. {@link DefaultSessionService}
+ * implements it on a {@link SessionRepository}.
  *
  * @author Christian Tzolov
  * @since 2.1.0
@@ -37,19 +39,18 @@ public interface SessionService {
 	// Sessions
 
 	/**
-	 * Creates a new session. Uses {@link CreateSessionRequest#id()} when set, otherwise a
-	 * random UUID.
-	 * @throws SessionAlreadyExistsException if a session with the requested id already
-	 * exists
+	 * Creates a session with the request's id, a random UUID when it has none, its time
+	 * to live and its metadata.
+	 * @throws SessionAlreadyExistsException if a session with the requested id exists
 	 */
 	Session create(CreateSessionRequest request);
 
 	@Nullable Session findById(String sessionId);
 
 	/**
-	 * Returns the sessions whose metadata holds {@code value} under {@code name}; see
-	 * {@link SessionRepository#findByIndex}. The sessions of a principal are
-	 * {@code findByIndex(SessionAttributes.PRINCIPAL_NAME, name)}.
+	 * The sessions whose metadata holds {@code value} under {@code name}, oldest first;
+	 * see {@link SessionRepository#findByIndex}. The sessions of a principal are {@code
+	 * findByIndex(SessionAttributes.PRINCIPAL_NAME, name)}.
 	 */
 	List<Session> findByIndex(String name, String value);
 
@@ -57,66 +58,51 @@ public interface SessionService {
 	void delete(String sessionId);
 
 	/**
-	 * Deletes all sessions whose {@code expiresAt} is before {@code before}. Delegates to
-	 * {@link SessionRepository#deleteExpiredSessions(Instant)}, which does not delete a
-	 * session whose TTL was extended concurrently. Returns the number of sessions
-	 * deleted.
-	 * <p>
-	 * This method does not schedule itself — call it from a {@code @Scheduled} method, a
-	 * Quartz job, or any other scheduler: <pre>{@code
-	 * &#64;Scheduled(fixedRate = 3_600_000) // every hour
-	 * void sweepExpiredSessions() {
-	 *     sessionService.deleteExpiredSessions(Instant.now());
-	 * }
-	 * }</pre>
+	 * Deletes every session that expired before the given instant, with its events, and
+	 * returns how many. Nothing calls this on its own: call it from a scheduler, every
+	 * hour for example.
 	 */
 	int deleteExpiredSessions(Instant before);
 
 	// Events
 
 	/**
-	 * Appends a {@link SessionEvent} to the session identified by
-	 * {@link SessionEvent#getSessionId()}.
+	 * Appends an event to the session named by {@link SessionEvent#getSessionId()}.
 	 * @throws IllegalArgumentException if the event wraps a
 	 * {@link org.springframework.ai.chat.messages.SystemMessage} and the service does not
-	 * allow storing system messages (the default for {@link DefaultSessionService}; see
-	 * {@link DefaultSessionService.Builder#allowSystemMessages(boolean)})
+	 * allow storing system messages; see
+	 * {@link DefaultSessionService.Builder#allowSystemMessages(boolean)}
 	 */
 	void appendEvent(SessionEvent event);
 
 	/**
-	 * Convenience shorthand: wraps the message in a {@link SessionEvent} and appends it.
-	 * Subject to the same system-message rule as {@link #appendEvent(SessionEvent)}.
+	 * Wraps the message in a {@link SessionEvent} and appends it; see
+	 * {@link #appendEvent(SessionEvent)}.
 	 */
 	default void appendMessage(String sessionId, Message message) {
 		appendEvent(SessionEvent.builder().sessionId(sessionId).message(message).build());
 	}
 
-	/** Returns events matching the given filter, in chronological order. */
+	/** The events the filter selects, oldest first; see {@link EventFilter}. */
 	List<SessionEvent> getEvents(String sessionId, EventFilter filter);
 
-	/** Returns all events for the session, in chronological order. */
+	/** Every event of the log, oldest first. */
 	default List<SessionEvent> getEvents(String sessionId) {
 		return getEvents(sessionId, EventFilter.all());
 	}
 
 	/**
-	 * Convenience: returns the messages of <em>all</em> events as a flat {@link Message}
-	 * list, including the events a compaction covered and any synthetic summaries. This
-	 * is the full recorded history, not a prompt: after compaction it contains both the
-	 * verbatim covered turns and their summary. Events that are not messages (a
-	 * compaction boundary and the like) are skipped. Use
-	 * {@link #getActiveMessages(String)} for the context window to send to an LLM.
+	 * The messages of the whole log, the events a compaction covered and the summaries
+	 * included: the full history, not a prompt. Use {@link #getActiveMessages(String)}
+	 * for the prompt.
 	 */
 	default List<Message> getMessages(String sessionId) {
 		return getEvents(sessionId).stream().filter(SessionEvent::hasMessage).map(SessionEvent::getMessage).toList();
 	}
 
 	/**
-	 * Convenience: returns the messages of the <em>active</em> context window — the
-	 * events a compaction covered are excluded, synthetic summaries are included — as a
-	 * flat {@link Message} list, suitable for passing directly to an LLM. Equivalent to
-	 * {@code getEvents(sessionId, EventFilter.active())} mapped to messages.
+	 * The messages of the active view, the context window to send to the model: {@code
+	 * getEvents(sessionId, EventFilter.active())} as messages.
 	 */
 	default List<Message> getActiveMessages(String sessionId) {
 		return getEvents(sessionId, EventFilter.active()).stream().map(SessionEvent::getMessage).toList();
@@ -125,21 +111,15 @@ public interface SessionService {
 	// Compaction
 
 	/**
-	 * Evaluates the trigger and, if it fires, compacts the session's active view using
-	 * the given strategy. Reads the view once, builds a
-	 * {@link org.springframework.ai.session.compaction.CompactionRequest}, checks the
-	 * trigger, and — only if the trigger fires — runs the strategy and records its
-	 * decision by appending a {@link EventType#COMPACTION} boundary event followed by the
-	 * summary events. The log is never changed: the events the compaction covers stay
-	 * where they are and leave the active view, which is projected from the newest
-	 * boundary. No-ops (trigger does not fire, or the strategy covers nothing) skip the
-	 * repository write entirely.
-	 * <p>
-	 * Pass {@code (req) -> true} as the trigger to compact unconditionally.
-	 * @return the compaction result;
+	 * Evaluates the trigger on the active view and, when it fires, runs the strategy and
+	 * records its result: one {@link EventType#COMPACTION} boundary event followed by the
+	 * summary events, in one version-checked append. The log is never changed; the
+	 * boundary defines the view from then on. Pass {@code request -> true} to compact
+	 * unconditionally.
+	 * @return the result;
 	 * {@link org.springframework.ai.session.compaction.CompactionResult#isUnchanged()}
-	 * when the trigger did not fire, the strategy covered nothing, or a concurrent writer
-	 * changed the log first
+	 * when nothing was written: the trigger did not fire, the strategy covered nothing,
+	 * or a concurrent writer changed the log first
 	 */
 	CompactionResult compact(String sessionId, CompactionTrigger trigger, CompactionStrategy strategy);
 

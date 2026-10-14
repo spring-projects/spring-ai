@@ -21,6 +21,9 @@ import java.time.Duration;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 /**
+ * The properties of the auto-configured
+ * {@link org.springframework.ai.session.SessionService}, under {@code spring.ai.session}.
+ *
  * @author Christian Tzolov
  * @since 2.1.0
  */
@@ -29,14 +32,12 @@ public class SessionServiceProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.session";
 
-	/**
-	 * Default time-to-live of sessions created by the service.
-	 */
+	/** The time to live of a session created without one. */
 	private Duration timeToLive = Duration.ofDays(60);
 
 	/**
-	 * Whether system messages may be stored in a session. Disabled by default: system
-	 * prompts are configuration and are best supplied on every request.
+	 * Whether a system message may be stored in a session; disabled by default, as a
+	 * system prompt is configuration, best supplied on every request.
 	 */
 	private boolean allowSystemMessages = false;
 

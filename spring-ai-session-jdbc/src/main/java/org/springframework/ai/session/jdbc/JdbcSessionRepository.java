@@ -55,77 +55,31 @@ import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.Assert;
 
 /**
- * JDBC-backed implementation of {@link SessionRepository}.
- *
- * <h2>Schema</h2>
+ * The {@link SessionRepository} on a relational database: {@code AI_SESSION} (id, expiry,
+ * metadata JSON, event version), {@code AI_SESSION_INDEX} (the indexed metadata
+ * attributes, one row per attribute) and {@code AI_SESSION_EVENT} (the log, ordered by a
+ * database-assigned {@code seq}). The schema scripts are under {@code
+ * classpath:org/springframework/ai/session/jdbc/}.
  * <p>
- * Three tables are required:
- * <ul>
- * <li>{@code AI_SESSION} — session metadata (id, TTL, metadata JSON, event_version)</li>
- * <li>{@code AI_SESSION_INDEX} — the indexed metadata attributes of each session, one row
- * per attribute name (FK → AI_SESSION)</li>
- * <li>{@code AI_SESSION_EVENT} — append-only event log (FK → AI_SESSION)</li>
- * </ul>
- * SQL DDL scripts for supported databases are bundled under
- * {@code classpath:org/springframework/ai/session/jdbc/}.
- *
- * <h2>Indexed attributes</h2>
+ * On every save the metadata entries whose keys are
+ * {@linkplain Builder#indexedAttributes(Set) indexed}, the principal by default, are
+ * copied into {@code AI_SESSION_INDEX}, on the first {@value #MAX_INDEXED_VALUE_LENGTH}
+ * characters of the value, and {@link #findByIndex} is one query over that table. An
+ * event is stored in the four columns {@link SessionEventCodec} defines: the event type,
+ * the message type, the message text, its own column so a store can search it, and a JSON
+ * payload.
  * <p>
- * The repository has no notion of ownership. On every save it copies the metadata entries
- * whose keys are {@linkplain Builder#indexedAttributes(Set) configured as indexed} (by
- * default the principal, {@link #DEFAULT_INDEXED_ATTRIBUTES}) into
- * {@code AI_SESSION_INDEX}, and {@link #findByIndex} is one query over that table. A
- * value is indexed on its first {@value #MAX_INDEXED_VALUE_LENGTH} characters.
- *
- * <h2>Event serialization</h2>
- * <p>
- * Each {@link SessionEvent} is stored across four columns:
- * <ul>
- * <li>{@code event_type} — the {@link org.springframework.ai.session.EventType} name</li>
- * <li>{@code message_type} — the {@link MessageType} name of an event that carries a
- * message, else {@code NULL}</li>
- * <li>{@code message_content} — the plain text of that message
- * ({@code message.getText()}), kept as its own column so a store can search it</li>
- * <li>{@code payload} — JSON: the ordered message parts and metadata of a message event,
- * or the {@link SessionEvent#getPayload() payload} of any other event</li>
- * </ul>
- * The columns are the persisted shape defined by {@link SessionEventCodec}.
- *
- * <h2>Optimistic concurrency (CAS)</h2>
- * <p>
- * The {@code event_version} column in {@code AI_SESSION} is incremented atomically on
- * every {@link #appendEvent} call that appends a new event (a replay leaves it unchanged)
- * and on every successful {@link #appendEvents} call. {@code appendEvents} issues a
- * conditional {@code UPDATE … WHERE event_version = ?} first; if zero rows are updated
- * nothing is inserted and {@code false} is returned.
- *
- * <h2>Active view</h2>
- * <p>
- * The log is append-only. A compaction appends a {@code COMPACTION} boundary row whose
- * payload names the view by event id, so a read with {@link EventFilter#activeView()}
- * fetches the newest boundary, then one query for the rows it names plus every row from
- * the boundary on, and lets {@link EventFilter#apply(List)} order and window them.
- *
- * <h2>Idempotent append</h2>
- * <p>
- * {@link #appendEvent} looks the event id up under the session row lock before inserting.
- * An id already stored for the same session is a retried append and a no-op (the version
- * is not incremented); an id used by another session is rejected. Checking first, rather
- * than relying on a unique-constraint violation of the {@code AI_SESSION_EVENT.id}
- * primary key, keeps a replay from marking a caller's surrounding transaction
- * rollback-only (or, on PostgreSQL, aborting it).
- *
- * <h2>Event ordering</h2>
- * <p>
- * Events are ordered by a database-assigned monotonic {@code seq} column, which reflects
- * insertion order (the logical conversation order) rather than wall-clock
- * {@code timestamp}. The active view has its own order (pinned, summary, preserved, then
- * the rest), which the boundary defines and the filter applies in memory.
- *
- * <h2>Thread safety</h2>
- * <p>
- * All mutating operations are wrapped in a {@link TransactionTemplate}. The class is
- * thread-safe as long as the underlying {@link DataSource} is.
+ * The {@code event_version} column of {@code AI_SESSION} advances on every
+ * {@link #appendEvent} that appends a new event and on every successful
+ * {@link #appendEvents}, which claims the version with
+ * {@code UPDATE … WHERE event_version = ?} before inserting. {@link #appendEvent} looks
+ * the event id up under that row lock before inserting, so a replay is a no-op without a
+ * duplicate-key error, which would mark a caller's surrounding transaction rollback-only,
+ * or abort it on PostgreSQL. A read of the {@link EventFilter#activeView() active view}
+ * selects the newest {@code COMPACTION} row, fetches the rows it names plus every row
+ * from it on, and lets {@link EventFilter#apply(List)} order, filter and window them.
+ * Every mutation runs in a {@link TransactionTemplate}; the class is thread-safe as the
+ * {@link DataSource} is.
  *
  * @author Christian Tzolov
  * @since 2.1.0
@@ -577,9 +531,7 @@ public final class JdbcSessionRepository implements SessionRepository {
 		return messageType != null ? messageType.name() : null;
 	}
 
-	/**
-	 * Inserts the supplied events using a JDBC batch operation.
-	 */
+	/** Inserts the events in one JDBC batch. */
 	private void batchInsertEvents(List<SessionEvent> events) {
 		if (events.isEmpty()) {
 			return;
@@ -679,11 +631,9 @@ public final class JdbcSessionRepository implements SessionRepository {
 	// -------------------------------------------------------------------------
 
 	/**
-	 * Builder for {@link JdbcSessionRepository}.
-	 *
-	 * <p>
-	 * Minimum required: either {@link #dataSource(DataSource)} or
-	 * {@link #jdbcTemplate(JdbcTemplate)}. All other fields default to sensible values.
+	 * Builds a {@link JdbcSessionRepository} on a {@link #dataSource(DataSource)
+	 * DataSource} or a {@link #jdbcTemplate(JdbcTemplate) JdbcTemplate}; everything else
+	 * has a default.
 	 */
 	public static final class Builder {
 
@@ -703,10 +653,9 @@ public final class JdbcSessionRepository implements SessionRepository {
 		}
 
 		/**
-		 * The metadata keys to index in {@code AI_SESSION_INDEX}, so that
-		 * {@link #findByIndex} can answer for them. The
-		 * {@link #DEFAULT_INDEXED_ATTRIBUTES} (the principal) are always indexed; add a
-		 * tenant key or the like.
+		 * The metadata keys indexed in {@code AI_SESSION_INDEX}, so that
+		 * {@link #findByIndex} answers for them; the {@link #DEFAULT_INDEXED_ATTRIBUTES},
+		 * the principal, are always indexed.
 		 */
 		public Builder indexedAttributes(Set<String> indexedAttributes) {
 			Assert.notNull(indexedAttributes, "indexedAttributes must not be null");
@@ -716,36 +665,36 @@ public final class JdbcSessionRepository implements SessionRepository {
 			return this;
 		}
 
-		/** Sets the {@link DataSource}. */
+		/** The data source; the dialect is detected from it unless set. */
 		public Builder dataSource(DataSource dataSource) {
 			this.dataSource = dataSource;
 			return this;
 		}
 
-		/** Sets a pre-configured {@link JdbcTemplate}. */
+		/** A configured {@link JdbcTemplate}, instead of one on the data source. */
 		public Builder jdbcTemplate(JdbcTemplate jdbcTemplate) {
 			this.jdbcTemplate = jdbcTemplate;
 			return this;
 		}
 
 		/**
-		 * Overrides the auto-detected SQL dialect. When omitted,
-		 * {@link JdbcSessionRepositoryDialect#from(DataSource)} is used.
+		 * The SQL dialect; detected with
+		 * {@link JdbcSessionRepositoryDialect#from(DataSource)} by default.
 		 */
 		public Builder dialect(JdbcSessionRepositoryDialect dialect) {
 			this.dialect = dialect;
 			return this;
 		}
 
-		/** Overrides the transaction manager. */
+		/** The transaction manager; one on the data source by default. */
 		public Builder transactionManager(PlatformTransactionManager transactionManager) {
 			this.transactionManager = transactionManager;
 			return this;
 		}
 
 		/**
-		 * Overrides the {@link JsonMapper} used for metadata and payload serialization.
-		 * Defaults to {@code JsonMapper.builder().build()}.
+		 * The mapper of the metadata and payload JSON; {@code
+		 * JsonMapper.builder().build()} by default.
 		 */
 		public Builder jsonMapper(JsonMapper jsonMapper) {
 			this.jsonMapper = jsonMapper;

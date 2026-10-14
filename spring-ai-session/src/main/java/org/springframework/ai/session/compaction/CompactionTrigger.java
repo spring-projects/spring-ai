@@ -17,7 +17,7 @@
 package org.springframework.ai.session.compaction;
 
 /**
- * Determines whether a session's event history should be compacted.
+ * Decides whether a session's active view is compacted.
  *
  * @author Christian Tzolov
  * @since 2.1.0
@@ -25,9 +25,7 @@ package org.springframework.ai.session.compaction;
 @FunctionalInterface
 public interface CompactionTrigger {
 
-	/**
-	 * Returns {@code true} if compaction should be triggered for the given session.
-	 */
+	/** Whether the view should be compacted now. */
 	boolean shouldCompact(CompactionRequest context);
 
 }

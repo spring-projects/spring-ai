@@ -22,8 +22,7 @@ import java.util.List;
 import org.springframework.util.Assert;
 
 /**
- * A {@link CompactionTrigger} that fires when <em>any</em> of its composed triggers fires
- * (OR semantics).
+ * Fires when any of its triggers fires.
  *
  * @author Christian Tzolov
  * @since 2.1.0
@@ -37,9 +36,7 @@ public final class CompositeCompactionTrigger implements CompactionTrigger {
 		this.triggers = List.copyOf(triggers);
 	}
 
-	/**
-	 * Creates a composite trigger that fires if any of the given triggers fires.
-	 */
+	/** A trigger that fires when any of the given triggers fires. */
 	public static CompositeCompactionTrigger anyOf(CompactionTrigger... triggers) {
 		Assert.notEmpty(triggers, "triggers must not be empty");
 		return new CompositeCompactionTrigger(Arrays.asList(triggers));

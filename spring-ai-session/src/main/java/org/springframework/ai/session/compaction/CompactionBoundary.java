@@ -30,40 +30,33 @@ import org.springframework.ai.session.SessionEvent;
 import org.springframework.util.Assert;
 
 /**
- * The record of one compaction: a {@link EventType#COMPACTION} event's payload, typed.
- *
+ * The record of one compaction: the payload of a {@link EventType#COMPACTION} event,
+ * typed. A compaction never changes the events already in the log; it appends one
+ * boundary event and, right after it, the synthetic summary events. The boundary names,
+ * by id, the events that make up the active view from then on: the
+ * {@link #pinnedEventIds() pinned} events kept out of order at the front, such as the
+ * latest stored system message; the {@link #summaryEventIds() summary} events appended
+ * after the boundary, or none for a plain window; the {@link #preservedEventIds()
+ * preserved} recent conversation, in log order. Every other event that was in the view is
+ * covered: it stays in the log, readable through {@code EventFilter.all()}, and is no
+ * longer part of the prompt.
  * <p>
- * Compaction never changes the events already in the log. It appends one boundary event
- * and, right after it, the synthetic summary events. The boundary names, by id, the
- * events that make up the active view from then on:
- * <ul>
- * <li>{@link #pinnedEventIds()} — events kept out of order at the front, such as the
- * latest stored system message;</li>
- * <li>{@link #summaryEventIds()} — the summary events appended after the boundary (a
- * shadow prompt and a summary, or none for a plain window);</li>
- * <li>{@link #preservedEventIds()} — the recent conversation kept verbatim, in log
- * order.</li>
- * </ul>
- * Every other event that was in the view before the compaction is <em>covered</em>: it
- * stays in the log, readable through {@code EventFilter.all()} and the recall tools, but
- * is no longer part of the prompt. {@link #project(List)} builds the view from a log:
- * pinned, then summary, then preserved, then everything appended after the summary. The
- * newest boundary wins; a later compaction covers the previous summary and starts a new
- * view.
- *
- * <p>
- * The id lists make a boundary self-contained: a view can be rebuilt from the log alone,
- * whatever earlier compactions did, and an older boundary can still be read to see what
- * the model was told at that time.
+ * {@link #project(List)} builds the view from a log: pinned, then summary, then
+ * preserved, then everything appended after the summary. The newest boundary wins, so a
+ * later compaction covers the previous summary and starts a new view, and the id lists
+ * make a boundary self-contained: a view is rebuilt from the log alone, whatever earlier
+ * compactions did, and an older boundary still shows what the model was told at the time.
  *
  * @param id the id of the boundary event
- * @param pinnedEventIds ids of the events kept at the front of the view, in view order
- * @param summaryEventIds ids of the summary events appended after the boundary, in order
- * @param preservedEventIds ids of the events kept verbatim, in log order
+ * @param pinnedEventIds the ids of the events kept at the front of the view, in view
+ * order
+ * @param summaryEventIds the ids of the summary events appended after the boundary, in
+ * order
+ * @param preservedEventIds the ids of the events kept verbatim, in log order
  * @param coveredEventCount how many events left the view
  * @param tokensEstimatedSaved the estimated tokens removed from the prompt, net of the
  * summary
- * @param strategy the name of the strategy that produced the compaction
+ * @param strategy the name of the strategy that compacted
  * @author Christian Tzolov
  * @since 2.1.0
  */
@@ -129,8 +122,7 @@ public record CompactionBoundary(String id, List<String> pinnedEventIds, List<St
 	}
 
 	/**
-	 * Returns the newest boundary in a log, or {@code null} when the log was never
-	 * compacted.
+	 * The newest boundary of a log, or {@code null} when the log was never compacted.
 	 * @param log the events of one session, oldest first
 	 */
 	public static @Nullable CompactionBoundary newest(List<SessionEvent> log) {
@@ -149,15 +141,15 @@ public record CompactionBoundary(String id, List<String> pinnedEventIds, List<St
 	}
 
 	/**
-	 * Builds the active view of a log from its newest boundary: the pinned events, then
-	 * the summary events, then the preserved events, then every event appended after the
-	 * summary. The boundary event itself is not part of the view. A log without a
-	 * boundary is its own view. This is the reference implementation of the view every
+	 * The active view of a log, from its newest boundary: the pinned events, then the
+	 * summary events, then the preserved events, then every event appended after the
+	 * summary; a log without a boundary is its own view, and the boundary event is never
+	 * in it. The reference implementation of the view every
 	 * {@link org.springframework.ai.session.SessionRepository} returns for
 	 * {@link org.springframework.ai.session.EventFilter#active()}; a store may compute
 	 * the same thing in a query.
-	 * @param log the events of one session, oldest first; it may be the whole log or any
-	 * superset of the view that includes the newest boundary
+	 * @param log the events of one session, oldest first: the whole log, or any superset
+	 * of the view that includes the newest boundary
 	 * @return the view, never the input list itself
 	 */
 	public static List<SessionEvent> project(List<SessionEvent> log) {

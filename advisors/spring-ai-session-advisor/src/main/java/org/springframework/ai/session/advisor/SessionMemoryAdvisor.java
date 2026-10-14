@@ -51,43 +51,29 @@ import org.springframework.core.Ordered;
 import org.springframework.util.Assert;
 
 /**
- * A {@link BaseAdvisor} that manages conversation history using the
- * {@link SessionService}.
- *
- * <p>
- * On each interaction:
+ * Keeps a {@code ChatClient} conversation in a session, on each model call:
  * <ol>
- * <li>Retrieves the session's event history and prepends it to the prompt messages. Of
- * the system messages stored in the session only the latest one is used (it is the system
- * prompt); all system messages are moved to the front, and exact-text duplicates are sent
- * only once.</li>
- * <li>Appends the current user message to the session, if accepted by the configured
- * {@link MessageFilter}; inside a tool loop, the trailing tool results, always.</li>
- * <li>After the model responds, appends the assistant message(s) to the session; messages
- * rejected by the configured {@link MessageFilter} are skipped, except a reply with tool
- * calls, which is always stored. By default, empty assistant messages (blank text, no
- * tool calls, and no media) are filtered out.</li>
- * <li>Names the events it stored on the request and response context
+ * <li>Reads the session's active view and prepends it to the prompt. Of the system
+ * messages stored in the session only the latest one is used, the system prompt; system
+ * messages go first, and an exact duplicate is sent once.</li>
+ * <li>Stores the request's user message, if the {@link MessageFilter} accepts it; inside
+ * a tool loop the trailing tool results, always.</li>
+ * <li>After the model responds, stores the reply, if the filter accepts it; a reply with
+ * tool calls, always. By default an empty assistant message, no text, no tool calls, no
+ * media, is not stored.</li>
+ * <li>Names the stored events on the request and response context
  * ({@link #REQUEST_EVENT_ID_CONTEXT_KEY}, {@link #RESPONSE_EVENT_IDS_CONTEXT_KEY}), so a
  * caller can correlate what it sent and received with the log.</li>
  * </ol>
- *
+ * The session comes from {@link #SESSION_ID_CONTEXT_KEY}, required on every request:
+ * omitting it throws {@link IllegalStateException}, so sessions are never shared by
+ * accident. The turn around the model calls, the session's creation and compaction once
+ * the call has returned, is the {@link SessionTurnAdvisor}'s: register both.
  * <p>
- * The turn around those model calls (the session's creation, and compaction once the call
- * has returned) is the {@link SessionTurnAdvisor}'s: register both.
- *
- * <p>
- * The session is identified by the {@link #SESSION_ID_CONTEXT_KEY} value in the advisor
- * context. The key must be present on every request; omitting it throws
- * {@link IllegalStateException} to prevent accidental cross-user session sharing.
- *
- * <p>
- * By default it runs inside the tool-calling loop (order
- * {@code HIGHEST_PRECEDENCE + 1000}), once per round: from the second round on, the
- * loop's prompt carries the turn so far, and only the history before it is prepended. A
- * tool call or tool result left without its counterpart is kept out of the prompt, and
- * tool calls and results are always stored. See the ChatClient integration docs for each
- * of these.
+ * By default the advisor runs inside the tool-calling loop (order {@code
+ * HIGHEST_PRECEDENCE + 1000}), once per round: from the second round on the loop's prompt
+ * carries the turn so far, and only the history before it is prepended. A tool call or
+ * tool result left without its counterpart is kept out of the prompt.
  *
  * @author Christian Tzolov
  * @since 2.1.0
@@ -97,10 +83,10 @@ public final class SessionMemoryAdvisor implements BaseAdvisor, MemoryAdvisor {
 	private static final Logger logger = LoggerFactory.getLogger(SessionMemoryAdvisor.class);
 
 	/**
-	 * Context key used to pass the session ID into the advisor per-request. Equals
-	 * {@link org.springframework.ai.chat.memory.ChatMemory#CONVERSATION_ID} so that this
-	 * advisor uses the same context key as the rest of Spring AI's memory API. Set via:
-	 * {@code .advisors(a -> a.param(SessionMemoryAdvisor.SESSION_ID_CONTEXT_KEY, "my-session-id"))}
+	 * Context key of the session a request runs on;
+	 * {@link org.springframework.ai.chat.memory.ChatMemory#CONVERSATION_ID}, the key of
+	 * Spring AI's memory API. Set with {@code .advisors(a ->
+	 * a.param(SessionMemoryAdvisor.SESSION_ID_CONTEXT_KEY, sessionId))}.
 	 */
 	public static final String SESSION_ID_CONTEXT_KEY = ChatMemory.CONVERSATION_ID;
 
@@ -116,10 +102,9 @@ public final class SessionMemoryAdvisor implements BaseAdvisor, MemoryAdvisor {
 	public static final String SESSION_METADATA_CONTEXT_KEY = "chat_memory_session_metadata";
 
 	/**
-	 * Context key for a per-request {@link EventFilter} that is merged over the advisor's
-	 * configured filter (see {@link EventFilter#merge(EventFilter)}). The value must be
-	 * an {@code EventFilter}. Set via:
-	 * {@code .advisors(a -> a.param(SessionMemoryAdvisor.EVENT_FILTER_CONTEXT_KEY, EventFilter.lastN(10)))}
+	 * Context key of a per-request {@link EventFilter}, merged over the advisor's (see
+	 * {@link EventFilter#merge(EventFilter)}). Set with {@code .advisors(a ->
+	 * a.param(SessionMemoryAdvisor.EVENT_FILTER_CONTEXT_KEY, EventFilter.lastN(10)))}.
 	 */
 	public static final String EVENT_FILTER_CONTEXT_KEY = "chat_memory_event_filter_id";
 
@@ -133,9 +118,9 @@ public final class SessionMemoryAdvisor implements BaseAdvisor, MemoryAdvisor {
 
 	/**
 	 * Context key the advisor sets on the response: the ids of the events that store the
-	 * reply's assistant messages, in reply order, as a {@code List<String>}; empty when
-	 * none was stored. Inside a tool loop it is the current round's. A streamed reply's
-	 * chunks do not carry it; subscribe to the session for the stored events instead.
+	 * reply's assistant messages, in reply order, a {@code List<String>}; empty when none
+	 * was stored. Inside a tool loop it is the current round's. A streamed reply's chunks
+	 * do not carry it.
 	 */
 	public static final String RESPONSE_EVENT_IDS_CONTEXT_KEY = "chat_memory_response_event_ids";
 
@@ -342,11 +327,10 @@ public final class SessionMemoryAdvisor implements BaseAdvisor, MemoryAdvisor {
 		}
 
 		/**
-		 * Filter applied when loading the session's event history to inject into the
-		 * prompt: the active view (always), all of it or its newest
-		 * {@link EventFilter#lastN(int) N events}, optionally only some
-		 * {@link EventFilter#messageTypes() message types} or without synthetic events.
-		 * Defaults to {@link EventFilter#all()}.
+		 * The filter of the history read into the prompt: always the active view, all of
+		 * it or its newest {@link EventFilter#lastN(int) N events}, optionally only some
+		 * {@link EventFilter#messageTypes() message types} or without synthetic events;
+		 * {@link EventFilter#all()} by default.
 		 */
 		public Builder eventFilter(EventFilter eventFilter) {
 			Assert.notNull(eventFilter, "eventFilter must not be null");
@@ -355,21 +339,14 @@ public final class SessionMemoryAdvisor implements BaseAdvisor, MemoryAdvisor {
 		}
 
 		/**
-		 * Filter applied before appending messages to session memory — both the current
-		 * user message persisted in {@code before()} and the assistant message(s)
-		 * persisted in {@code after()}. Messages the filter rejects are not persisted and
-		 * therefore never replayed on later requests. Tool calls and tool results are
-		 * always stored, whatever the filter says: to keep them out of the prompt, use an
-		 * {@link EventFilter}'s {@code messageTypes} on read. The outgoing prompt is
-		 * unaffected. Defaults to {@link MessageFilter#skipEmptyMessages()}.
-		 * <p>
-		 * Note: replacing the default removes the empty-assistant-message protection (see
-		 * issue #19 — some models reject empty messages replayed as history). Compose
-		 * instead of replacing when you still want it: <pre>{@code
-		 * SessionMemoryAdvisor.builder(sessionService)
-		 *     .messageFilter(myFilter.and(MessageFilter.skipEmptyMessages()))
-		 *     .build();
-		 * }</pre>
+		 * The filter of what is stored: the request's user message and the reply's
+		 * assistant messages; a rejected message is never stored and so never replayed,
+		 * while the outgoing prompt is unaffected. Tool calls and tool results are always
+		 * stored; keep them out of the prompt with the {@link EventFilter}'s {@code
+		 * messageTypes} instead. {@link MessageFilter#skipEmptyMessages()} by default:
+		 * some models reject an empty assistant message replayed as history, so compose a
+		 * filter of your own with it rather than replacing it, {@code
+		 * myFilter.and(MessageFilter.skipEmptyMessages())}.
 		 */
 		public Builder messageFilter(MessageFilter messageFilter) {
 			Assert.notNull(messageFilter, "messageFilter must not be null");

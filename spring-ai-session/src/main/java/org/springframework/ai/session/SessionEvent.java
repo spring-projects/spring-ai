@@ -30,57 +30,34 @@ import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.util.Assert;
 
 /**
- * An atomic unit in a session's event log.
- *
+ * An entry of a session's log. An event has an {@link EventType}: a
+ * {@link EventType#MESSAGE} event wraps a Spring AI {@link Message} and adds what the
+ * message intentionally lacks, identity, ordering and the session it belongs to; every
+ * other type records runtime state, a compaction or an application's own event, in
+ * {@link #getPayload()} instead of a message, and {@link #getMessage()} throws for it.
+ * Message events are the conversation: they alone take part in prompt assembly and
+ * compaction.
  * <p>
- * Every event has an {@link EventType}. A {@link EventType#MESSAGE} event is a <em>thin
- * wrapper</em> around a Spring AI {@link Message}: the existing {@code UserMessage},
- * {@code AssistantMessage}, {@code SystemMessage} and {@code ToolResponseMessage} classes
- * carry the content, and the event adds only what {@code Message} intentionally lacks:
- * identity, ordering and session-level provenance. Message events are the conversation;
- * they alone take part in prompt assembly and compaction. An event is never changed once
- * appended: compaction records what left the active view in a
- * {@link EventType#COMPACTION} event of its own, and a covered event stays in the log,
- * readable through {@link EventFilter#all()}.
- *
- * <p>
- * Every other event type records runtime state in the same log (a compaction, an
- * application's own events) and carries its data in {@link #getPayload()} instead of a
- * message. {@link #getMessage()} throws for such an event; test with
- * {@link #hasMessage()} first when the type is not known.
- *
- * <p>
- * For a message event, the wrapped {@code Message} refines the type via its
- * {@link MessageType}:
- * <ul>
- * <li>{@code UserMessage} → user input</li>
- * <li>{@code AssistantMessage} (no tool calls) → agent response</li>
- * <li>{@code AssistantMessage} (with tool calls) → tool invocation</li>
- * <li>{@code ToolResponseMessage} → tool output</li>
- * <li>{@code UserMessage} + {@link #isSynthetic()} → synthetic shadow prompt that opens a
- * summary turn</li>
- * <li>{@code AssistantMessage} + {@link #isSynthetic()} → compaction summary text that
- * closes a summary turn</li>
- * </ul>
- *
- * <p>
- * Events are immutable once created (append-only log semantics). Use {@link #builder()}
- * to construct instances.
+ * An event is never changed once appended. A compaction records what left the active view
+ * in a {@link EventType#COMPACTION} event of its own, and a covered event stays in the
+ * log, readable through {@link EventFilter#all()}. A {@link #isSynthetic() synthetic}
+ * event is one a compaction wrote: the user message that opens a summary turn and the
+ * assistant message that closes it.
  *
  * @author Christian Tzolov
  * @since 2.1.0
  */
 public final class SessionEvent {
 
-	/** Metadata key for the {@code synthetic} flag (value: {@link Boolean}). */
+	/** Metadata key of the synthetic flag, a {@link Boolean}. */
 	public static final String METADATA_SYNTHETIC = "synthetic";
 
-	/** Metadata key identifying which compaction strategy produced a synthetic event. */
+	/** Metadata key naming the strategy that wrote a synthetic event. */
 	public static final String METADATA_COMPACTION_SOURCE = "compactionSource";
 
 	/**
-	 * Metadata key on a synthetic summary event: the id of the
-	 * {@link EventType#COMPACTION} boundary event the summary belongs to.
+	 * Metadata key of a synthetic event: the id of the {@link EventType#COMPACTION}
+	 * boundary it belongs to.
 	 */
 	public static final String METADATA_COMPACTION_ID = "compactionId";
 
@@ -109,39 +86,37 @@ public final class SessionEvent {
 		this.metadata = Map.copyOf(metadata);
 	}
 
-	/** Unique identity per event. {@code Message} has none. */
+	/** The identity of the event, unique across sessions. */
 	public String getId() {
 		return this.id;
 	}
 
-	/** Session ownership and isolation. */
+	/** The session the event belongs to. */
 	public String getSessionId() {
 		return this.sessionId;
 	}
 
-	/** Chronological ordering within the session. */
+	/** When the event was recorded. A log is ordered by insertion, not by this. */
 	public Instant getTimestamp() {
 		return this.timestamp;
 	}
 
-	/** What this event records; {@link EventType#MESSAGE} for a conversation message. */
+	/** What the event records; {@link EventType#MESSAGE} for a conversation message. */
 	public EventType getType() {
 		return this.type;
 	}
 
 	/**
-	 * Returns {@code true} when this event carries a message, so that
-	 * {@link #getMessage()} can be called: always for a {@link EventType#MESSAGE} event
-	 * (see {@link EventType#canCarryMessage()}).
+	 * Whether the event carries a message, so that {@link #getMessage()} can be called: a
+	 * {@link EventType#MESSAGE} event does; see {@link EventType#canCarryMessage()}.
 	 */
 	public boolean hasMessage() {
 		return this.message != null;
 	}
 
 	/**
-	 * The wrapped Spring AI message of a {@link EventType#MESSAGE} event — no duplication
-	 * of content.
-	 * @throws IllegalStateException if this event carries no message; see
+	 * The wrapped Spring AI message.
+	 * @throws IllegalStateException if the event carries no message; see
 	 * {@link #hasMessage()}
 	 */
 	public Message getMessage() {
@@ -153,26 +128,25 @@ public final class SessionEvent {
 	}
 
 	/**
-	 * The data of an event that is not a message: for example the ids a
-	 * {@link EventType#COMPACTION} boundary names. Values must be JSON-serializable, as
-	 * the payload is persisted as JSON. Empty for a message event.
+	 * The data of an event that is not a message, the ids a {@link EventType#COMPACTION}
+	 * boundary names for example; empty for a message event. Values must be
+	 * JSON-serializable.
 	 */
 	public Map<String, Object> getPayload() {
 		return this.payload;
 	}
 
 	/**
-	 * Session-level flags: {@link #METADATA_SYNTHETIC},
-	 * {@link #METADATA_COMPACTION_SOURCE}, etc.
+	 * Framework flags such as {@link #METADATA_SYNTHETIC} and
+	 * {@link #METADATA_COMPACTION_SOURCE}, and whatever the application adds.
 	 */
 	public Map<String, Object> getMetadata() {
 		return this.metadata;
 	}
 
 	/**
-	 * Convenience accessor — delegates to the wrapped message. No need to unwrap for
-	 * common type-switch operations.
-	 * @throws IllegalStateException if this event carries no message; see
+	 * The type of the wrapped message.
+	 * @throws IllegalStateException if the event carries no message; see
 	 * {@link #hasMessage()}
 	 */
 	public MessageType getMessageType() {
@@ -180,20 +154,20 @@ public final class SessionEvent {
 	}
 
 	/**
-	 * Returns {@code true} for events generated by the framework (e.g. compaction
-	 * summaries), not by a real user/agent turn.
+	 * Whether a compaction wrote this event, a summary rather than something a
+	 * participant said.
 	 */
 	public boolean isSynthetic() {
 		return (boolean) this.metadata.getOrDefault(METADATA_SYNTHETIC, false);
 	}
 
 	/**
-	 * Returns {@code true} if this event starts a turn: a {@link MessageType#USER}
-	 * message event. A turn is a user message plus everything up to the next user message
-	 * (assistant replies, tool calls and their results), so it is the unit no read or
-	 * compaction cut may split. A synthetic shadow prompt is a USER event too, so a
-	 * summary turn starts at its shadow prompt and is never separated from its summary.
-	 * An event that is not a {@link EventType#MESSAGE} never starts a turn.
+	 * Whether the event starts a turn: a {@link MessageType#USER} message event. A turn
+	 * is a user message plus everything up to the next one, the assistant replies, the
+	 * tool calls and their results, so it is the unit no read or compaction cut may
+	 * split. A synthetic shadow prompt is a user message too, so a summary turn is never
+	 * separated from its summary. An event that is not a {@link EventType#MESSAGE} never
+	 * starts a turn.
 	 */
 	public boolean isTurnStart() {
 		return this.type == EventType.MESSAGE && this.message != null
@@ -201,9 +175,8 @@ public final class SessionEvent {
 	}
 
 	/**
-	 * Returns {@code true} for assistant messages that include tool invocations.
-	 * Delegates to {@link AssistantMessage#hasToolCalls()} — no separate event type
-	 * needed. {@code false} for an event that is not a message.
+	 * Whether the event is an assistant message with tool calls; {@code false} for an
+	 * event without a message.
 	 */
 	public boolean hasToolCalls() {
 		return this.message instanceof AssistantMessage am && am.hasToolCalls();
@@ -226,20 +199,16 @@ public final class SessionEvent {
 		return Objects.hash(this.id, this.sessionId);
 	}
 
-	/** Returns a new {@link Builder} for constructing a {@code SessionEvent}. */
+	/** Returns a new {@link Builder}. */
 	public static Builder builder() {
 		return new Builder();
 	}
 
 	/**
-	 * Builder for {@link SessionEvent}.
-	 *
-	 * <p>
-	 * Defaults: {@code id} is auto-generated (random UUID), {@code timestamp} is
-	 * {@link Instant#now()}, {@code metadata} and {@code payload} are empty.
-	 * {@code sessionId} is required. The {@code type} defaults to
-	 * {@link EventType#MESSAGE}, which requires a {@code message}; any other type must
-	 * not carry one.
+	 * Builds a {@link SessionEvent}. The id is a random UUID, the timestamp
+	 * {@link Instant#now()}, the payload and the metadata empty, unless set; the session
+	 * id is required. The type is {@link EventType#MESSAGE} when a message is set, which
+	 * that type requires and no other type allows.
 	 */
 	public static final class Builder {
 
@@ -260,26 +229,27 @@ public final class SessionEvent {
 		private Builder() {
 		}
 
-		/** Overrides the auto-generated event ID. */
+		/** The event id; a random UUID by default. */
 		public Builder id(String id) {
 			this.id = id;
 			return this;
 		}
 
-		/** The session this event belongs to. Required. */
+		/** The session the event belongs to; required. */
 		public Builder sessionId(String sessionId) {
 			this.sessionId = sessionId;
 			return this;
 		}
 
-		/** Overrides the default timestamp ({@link Instant#now()}). */
+		/** When the event was recorded; {@link Instant#now()} by default. */
 		public Builder timestamp(Instant timestamp) {
 			this.timestamp = timestamp;
 			return this;
 		}
 
 		/**
-		 * The kind of event. Defaults to {@link EventType#MESSAGE} when a message is set.
+		 * What the event records; {@link EventType#MESSAGE} by default when a message is
+		 * set.
 		 */
 		public Builder type(EventType type) {
 			this.type = type;
@@ -287,39 +257,39 @@ public final class SessionEvent {
 		}
 
 		/**
-		 * The Spring AI message wrapped by this event. Required for a
-		 * {@link EventType#MESSAGE} event, not allowed for any other type.
+		 * The message a {@link EventType#MESSAGE} event wraps; required for that type,
+		 * not allowed for any other.
 		 */
 		public Builder message(Message message) {
 			this.message = message;
 			return this;
 		}
 
-		/** Replaces the entire payload map of an event that is not a message. */
+		/** Replaces the payload of an event that is not a message. */
 		public Builder payload(Map<String, Object> payload) {
 			this.payload = new HashMap<>(payload);
 			return this;
 		}
 
-		/** Adds a single payload entry. */
+		/** Adds one payload entry. */
 		public Builder payload(String key, Object value) {
 			this.payload.put(key, value);
 			return this;
 		}
 
-		/** Replaces the entire metadata map. */
+		/** Replaces the metadata. */
 		public Builder metadata(Map<String, Object> metadata) {
 			this.metadata = new HashMap<>(metadata);
 			return this;
 		}
 
-		/** Adds a single metadata entry. */
+		/** Adds one metadata entry. */
 		public Builder metadata(String key, Object value) {
 			this.metadata.put(key, value);
 			return this;
 		}
 
-		/** Builds the {@link SessionEvent}, validating required fields. */
+		/** Builds the event, checking that the type and the message agree. */
 		public SessionEvent build() {
 			Assert.hasText(this.id, "id must not be null or empty");
 			Assert.hasText(this.sessionId, "sessionId must not be null or empty");

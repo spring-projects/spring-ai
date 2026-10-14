@@ -77,25 +77,22 @@ public record CompactionResult(List<SessionEvent> coveredEvents, List<SessionEve
 		return UNCHANGED;
 	}
 
-	/**
-	 * Returns {@code true} when no event leaves the view, so there is nothing to record.
-	 */
+	/** Whether no event leaves the view, so there is nothing to record. */
 	public boolean isUnchanged() {
 		return this.coveredEvents.isEmpty();
 	}
 
-	/** Returns the number of events that leave the view. */
+	/** The number of events that leave the view. */
 	public int coveredEventCount() {
 		return this.coveredEvents.size();
 	}
 
 	/**
-	 * Records this result as the events
-	 * {@link org.springframework.ai.session.SessionService#compact} appends: a
-	 * {@link org.springframework.ai.session.EventType#COMPACTION} boundary event first,
-	 * then one synthetic event per summary message, all sharing one timestamp. The
-	 * boundary names the pinned, summary and preserved events by id, so the active view
-	 * is rebuilt from the log alone (see {@link CompactionBoundary#project(List)}).
+	 * The events {@link org.springframework.ai.session.SessionService#compact} appends
+	 * for this result: the {@link org.springframework.ai.session.EventType#COMPACTION}
+	 * boundary, then one synthetic event per summary message, all with one timestamp. The
+	 * boundary names the pinned, summary and preserved events by id, so the view is
+	 * rebuilt from the log alone; see {@link CompactionBoundary#project(List)}.
 	 * @param sessionId the session the events belong to
 	 * @return the events to append, in order; empty for an unchanged result
 	 */

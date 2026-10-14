@@ -17,15 +17,12 @@
 package org.springframework.ai.session.compaction;
 
 /**
- * Strategy for compacting a session's active view to manage context window size.
- *
- * <p>
- * A strategy is policy, not storage: given the active view it decides which events leave
- * the view (covered), which stay at the front (pinned), which recent events are kept
- * verbatim (preserved), and what summary stands in for the covered ones. It never writes.
+ * Decides what leaves a session's active view. A strategy is policy, not storage: given
+ * the view it says which events leave it (covered), which stay at its front (pinned),
+ * which recent events are kept verbatim (preserved), and what summary stands in for the
+ * covered ones; it never writes.
  * {@link org.springframework.ai.session.SessionService#compact} records the decision by
- * appending a {@link CompactionBoundary} event and the summary events; the log itself is
- * never changed.
+ * appending a {@link CompactionBoundary} event and the summary events.
  *
  * @author Christian Tzolov
  * @since 2.1.0
@@ -34,8 +31,8 @@ package org.springframework.ai.session.compaction;
 public interface CompactionStrategy {
 
 	/**
-	 * Decides how to compact the given view.
-	 * @param request the session, its active view and counts
+	 * Decides how to compact the view.
+	 * @param request the session, its active view and the view's turn count
 	 * @return the decision; {@link CompactionResult#unchanged()} when nothing should
 	 * leave the view
 	 */

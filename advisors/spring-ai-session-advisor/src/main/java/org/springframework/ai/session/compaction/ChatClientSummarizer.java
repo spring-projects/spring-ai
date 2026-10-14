@@ -38,10 +38,7 @@ import org.springframework.util.Assert;
  * builds on its predecessors, and the first {@link Builder#overlapSize overlapSize}
  * preserved events are quoted for continuity. The summary comes back as a turn of two
  * messages, a user "shadow prompt" and the assistant summary, so the model keeps seeing a
- * user/assistant alternation.
- *
- * <p>
- * A null or blank reply declines the summary: it is logged, the
+ * user/assistant alternation. A null or blank reply declines: it is logged, the
  * {@link Builder#onSummarizationFailure failure callback} is called, and the view stays
  * as it is.
  *

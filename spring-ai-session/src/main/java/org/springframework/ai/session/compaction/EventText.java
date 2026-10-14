@@ -24,17 +24,12 @@ import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.session.SessionEvent;
 
 /**
- * One line of text for an event or a message: what compaction counts tokens on and what a
- * summarizer puts in its prompt.
- * <ul>
- * <li>A plain user, assistant or system message renders as {@code "Role: text"}.</li>
- * <li>An {@link AssistantMessage} with tool calls renders as
- * {@code "Assistant [tool calls: name(args), ...]"}, after its text when it has one.</li>
- * <li>A {@link ToolResponseMessage} renders as
- * {@code "Tool [responses: name -> data, ...]"}.</li>
- * <li>An event that is not a message is not sent to the model and renders as an empty
- * string.</li>
- * </ul>
+ * One line of text for an event or a message: what compaction counts tokens on, and what
+ * a summarizer puts in its prompt. A plain user, assistant or system message renders as
+ * {@code "Role: text"}; an {@link AssistantMessage} with tool calls as {@code "Assistant
+ * [tool calls: name(args), ...]"}, after its text when it has one; a
+ * {@link ToolResponseMessage} as {@code "Tool [responses: name -> data, ...]"}; an event
+ * without a message as an empty string, since it is not sent to the model.
  *
  * @author Christian Tzolov
  * @since 2.1.0

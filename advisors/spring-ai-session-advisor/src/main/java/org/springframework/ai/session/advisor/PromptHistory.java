@@ -38,18 +38,14 @@ import org.springframework.ai.session.SessionEvent;
 
 /**
  * The history a {@link SessionMemoryAdvisor} sends with a model call, and how it becomes
- * the prompt, in two stages:
- * <ol>
- * <li>{@link #of}: which history to send, from the session's active view: the system
- * prompt stored in the session, if any, then the synthetic system messages (summaries of
- * older versions or custom compaction strategies), and every other message as the
- * conversation.</li>
- * <li>{@link #prompt}: the prompt, valid whatever the history: only the part of the
- * history the request does not already carry is prepended (a tool-calling loop re-sends
- * the turn so far each round), a tool call or tool result left without its counterpart is
- * dropped, and the system messages go first, each text once.</li>
- * </ol>
- * Pure functions over messages: nothing here reads or writes the session.
+ * the prompt, in two stages: {@link #of} picks the history from the session's active
+ * view, the stored system prompt if any, the synthetic system messages a custom strategy
+ * may write, and every other message as the conversation; {@link #prompt} makes the
+ * prompt valid whatever the history, prepending only the part the request does not
+ * already carry (a tool-calling loop re-sends the turn so far each round), dropping a
+ * tool call or tool result left without its counterpart, and putting the system messages
+ * first, each text once. Pure functions over messages: nothing here reads or writes the
+ * session.
  *
  * @param system the system messages of the history, in log order
  * @param conversation the other messages of the history, in log order
@@ -67,12 +63,12 @@ record PromptHistory(List<Message> system, List<Message> conversation) {
 	}
 
 	/**
-	 * The history to send from the events of the active view. A {@code ChatClient} that
+	 * The history to send, from the events of the active view. A {@code ChatClient} that
 	 * sends its system prompt with each request stores none, so {@code systemPrompt} is
 	 * {@code null} and only synthetic summaries come from the log.
 	 * @param events the events read, oldest first
-	 * @param systemPrompt the system prompt stored in the session (the latest stored
-	 * system message, an opt-in), wherever it was found; {@code null} when there is none
+	 * @param systemPrompt the system prompt stored in the session, the latest stored
+	 * system message, wherever it was found; {@code null} when there is none
 	 */
 	static PromptHistory of(List<SessionEvent> events, @Nullable Message systemPrompt) {
 		List<Message> system = new ArrayList<>();

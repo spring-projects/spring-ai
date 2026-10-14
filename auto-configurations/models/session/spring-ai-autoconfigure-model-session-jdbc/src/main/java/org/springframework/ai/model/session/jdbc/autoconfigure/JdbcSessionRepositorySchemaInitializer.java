@@ -24,7 +24,7 @@ import org.springframework.boot.jdbc.DatabaseDriver;
 import org.springframework.boot.jdbc.init.PropertiesBasedDataSourceScriptDatabaseInitializer;
 
 /**
- * Performs database initialization for the JDBC Session Repository.
+ * Runs the schema script of the JDBC session repository; MariaDB uses the MySQL script.
  *
  * @author Christian Tzolov
  * @since 2.1.0

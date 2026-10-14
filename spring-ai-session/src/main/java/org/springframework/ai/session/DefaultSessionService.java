@@ -33,7 +33,7 @@ import org.springframework.ai.session.compaction.CompactionTrigger;
 import org.springframework.util.Assert;
 
 /**
- * Default implementation of {@link SessionService} backed by a {@link SessionRepository}.
+ * The {@link SessionService} on a {@link SessionRepository}.
  *
  * @author Christian Tzolov
  * @since 2.1.0
@@ -195,6 +195,7 @@ public final class DefaultSessionService implements SessionService {
 
 		private boolean allowSystemMessages = false;
 
+		/** The store; required. */
 		public Builder sessionRepository(SessionRepository sessionRepository) {
 			Assert.notNull(sessionRepository, "sessionRepository must not be null");
 			this.sessionRepository = sessionRepository;
@@ -203,26 +204,29 @@ public final class DefaultSessionService implements SessionService {
 
 		/**
 		 * Whether {@link #appendEvent(SessionEvent)} may store a
-		 * {@link org.springframework.ai.chat.messages.SystemMessage}. Defaults to
-		 * {@code false}: system prompts are configuration, best supplied on every request
-		 * rather than stored in the session, so storing one is rejected with an
-		 * {@link IllegalArgumentException} that explains how to enable it. Set to
-		 * {@code true} to store system messages anyway. The latest stored system message
-		 * is then the system prompt; see
-		 * {@link org.springframework.ai.session.compaction.CompactionStrategy}
-		 * implementations.
+		 * {@link org.springframework.ai.chat.messages.SystemMessage}; {@code false} by
+		 * default. A system prompt is configuration, best supplied on every request, so
+		 * storing one is rejected with an {@link IllegalArgumentException} that says how
+		 * to enable it. When enabled, the latest stored system message is the session's
+		 * system prompt, which compaction pins; see
+		 * {@link org.springframework.ai.session.compaction.WindowCompactionStrategy}.
 		 */
 		public Builder allowSystemMessages(boolean allowSystemMessages) {
 			this.allowSystemMessages = allowSystemMessages;
 			return this;
 		}
 
+		/** The time to live of a session created without one; 60 days by default. */
 		public Builder defaultTimeToLive(Duration defaultTimeToLive) {
 			Assert.notNull(defaultTimeToLive, "defaultTimeToLive must not be null");
 			this.defaultTimeToLive = defaultTimeToLive;
 			return this;
 		}
 
+		/**
+		 * Builds the service.
+		 * @throws IllegalStateException if no repository was set
+		 */
 		public DefaultSessionService build() {
 			if (this.sessionRepository == null) {
 				throw new IllegalStateException("sessionRepository must be set");

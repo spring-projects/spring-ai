@@ -33,37 +33,32 @@ import org.springframework.util.Assert;
 
 /**
  * Keeps the recent conversation in the view and covers the rest: the one compaction
- * strategy, configured by a {@link CompactionWindow} (the last events, the last turns or
- * a token budget) and, optionally, a {@link CompactionSummarizer} that condenses what
+ * strategy, configured by a {@link CompactionWindow}, the last events, the last turns or
+ * a token budget, and optionally a {@link CompactionSummarizer} that condenses what
  * leaves the view into a summary turn.
- *
- * <h2>One pass</h2>
+ * <p>
+ * One pass, whatever the window:
  * <ol>
- * <li>The latest stored system message (the system prompt: "latest wins") is pinned at
- * the front of the view, whatever the cut, and never summarized. Every earlier stored
- * system message is superseded and leaves the view with a pass that cuts, wherever it
- * sits.</li>
- * <li>The events before the first turn (a pre-seeded preamble) are pinned too: they are
+ * <li>The latest stored system message, the system prompt, is pinned at the front of the
+ * view and never summarized; every earlier stored system message is superseded and leaves
+ * the view with a pass that cuts, wherever it sits.</li>
+ * <li>The events before the first turn, a pre-seeded preamble, are pinned too: they are
  * not a turn and are never cut.</li>
- * <li>Without a summarizer the summary a previous pass left is pinned and carried
- * forward; with one it is handed to the summarizer as the prior summary and covered by
- * the new one.</li>
- * <li>The window rule gives the raw cut among the turns; the cut is moved forward to the
- * next turn start, so a turn is never split, and back to the newest turn when it would
- * cover everything, so the newest turn stays even when it alone exceeds the window.</li>
- * <li>The turns before the cut leave the view (covered), the rest stay (preserved). With
- * a summarizer, the summary turn stands in for the covered events; a summarizer that
- * returns nothing leaves the view unchanged.</li>
+ * <li>Without a summarizer, the summary a previous pass left is pinned and carried
+ * forward; with one, it is handed to the summarizer as the prior summary and covered by
+ * the new summary.</li>
+ * <li>The window gives the raw cut among the turns. The cut moves forward to the next
+ * turn start, so a turn is never split, and back to the newest turn when it would cover
+ * everything, so the newest turn stays even when it alone exceeds the window.</li>
+ * <li>The turns before the cut leave the view, the rest stay. With a summarizer, the
+ * summary turn stands in for the covered events; a summarizer that returns nothing leaves
+ * the view unchanged.</li>
  * </ol>
  * Pinned events use no slot of an event or turn window and come off a token budget first.
- * The log is never changed: {@link org.springframework.ai.session.SessionService#compact}
- * records the decision as an appended boundary, and the view from then on is the pinned
- * events, the summary and the preserved events.
- *
- * <h2>No-op</h2>
- * <p>
- * Nothing is written when the turns fit the window, when the view has no turn (no user
- * message, so no turn start to cut at), or when the summarizer declines.
+ * Nothing is written when the turns fit the window, when the view has no turn to cut at,
+ * or when the summarizer declines. The log is never changed:
+ * {@link org.springframework.ai.session.SessionService#compact} records the result as an
+ * appended boundary.
  *
  * @author Christian Tzolov
  * @since 2.1.0

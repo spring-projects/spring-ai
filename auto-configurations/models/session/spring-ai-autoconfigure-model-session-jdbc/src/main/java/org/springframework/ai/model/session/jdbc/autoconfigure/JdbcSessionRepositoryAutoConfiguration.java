@@ -35,11 +35,9 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
- * Auto-configuration for {@link JdbcSessionRepository}.
- *
- * <p>
- * Active when a single {@link DataSource} candidate is available. Backs off when the
- * application declares its own {@link SessionRepository} bean of any type.
+ * Auto-configuration of the {@link JdbcSessionRepository} on the single
+ * {@link DataSource} bean, and of the schema initialization. Backs off when the
+ * application declares a {@link SessionRepository} of its own, of any type.
  *
  * @author Christian Tzolov
  * @since 2.1.0

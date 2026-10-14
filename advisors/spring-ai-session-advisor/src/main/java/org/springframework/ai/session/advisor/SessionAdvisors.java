@@ -33,20 +33,18 @@ import org.springframework.util.Assert;
 
 /**
  * The session advisors of a {@code ChatClient}, configured together: the
- * {@link SessionTurnAdvisor} (the turn, compaction), the {@link SessionMemoryAdvisor}
- * (the history, the messages, the usage). Each sits at its default order around the
- * tool-calling loop, which the {@code ChatClient} registers itself:
- *
+ * {@link SessionTurnAdvisor} (the session, compaction) and the
+ * {@link SessionMemoryAdvisor} (the history, the messages), each at its default order
+ * around the tool-calling loop the {@code ChatClient} registers itself:
  * <pre class="code">
  * ChatClient chatClient = ChatClient.builder(chatModel)
  *     .defaultAdvisors(SessionAdvisors.builder(sessionService)
  *         .compaction(new TurnCountTrigger(20), WindowCompactionStrategy.builder().lastTurns(10).build())
  *         .build())
  *     .build();
- *
  * chatClient.prompt().user("Hi").advisors(SessionAdvisors.session(sessionId)).call().content();
  * </pre>
- *
+ * <p>
  * The advisors can still be built one by one, for an order of your own.
  *
  * @author Christian Tzolov
@@ -116,9 +114,9 @@ public final class SessionAdvisors {
 		}
 
 		/**
-		 * Customizes the {@link SessionMemoryAdvisor}: its filters, event id generators
-		 * and usage recording. Customizers run in the order they are added, after the
-		 * shared settings, so they can override them.
+		 * Customizes the {@link SessionMemoryAdvisor}, its filters for example.
+		 * Customizers run in the order they are added, after the shared settings, so they
+		 * can override them.
 		 */
 		public Builder memory(Consumer<SessionMemoryAdvisor.Builder> memory) {
 			Assert.notNull(memory, "memory must not be null");

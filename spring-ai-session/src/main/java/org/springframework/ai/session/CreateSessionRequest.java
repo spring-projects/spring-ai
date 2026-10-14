@@ -23,11 +23,9 @@ import java.util.Map;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Parameters for creating a new {@link Session}.
- *
- * <p>
- * Scope attributes such as {@link SessionAttributes#PRINCIPAL_NAME} go into the
- * {@link #metadata()}.
+ * What {@link SessionService#create} needs: an id, a time to live and metadata, each
+ * optional. The owner goes into the metadata, under
+ * {@link SessionAttributes#PRINCIPAL_NAME}.
  *
  * @author Christian Tzolov
  * @since 2.1.0
@@ -46,10 +44,7 @@ public final class CreateSessionRequest {
 		this.metadata = Map.copyOf(metadata);
 	}
 
-	/**
-	 * Returns the requested session ID, or {@code null} if the service should generate
-	 * one.
-	 */
+	/** The requested session id, or {@code null} for one the service generates. */
 	@Nullable public String id() {
 		return this.id;
 	}
@@ -74,9 +69,7 @@ public final class CreateSessionRequest {
 
 		private Map<String, Object> metadata = new HashMap<>();
 
-		/**
-		 * Sets an explicit session ID. If omitted, the service generates a UUID.
-		 */
+		/** The session id; a random UUID when unset. */
 		public Builder id(@Nullable String id) {
 			this.id = id;
 			return this;

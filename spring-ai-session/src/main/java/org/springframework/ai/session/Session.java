@@ -26,19 +26,13 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.util.Assert;
 
 /**
- * Immutable metadata container for a single, continuous conversation between a user and
- * an agent. Holds only identity, lifecycle ({@link #expiresAt()}) and {@link #metadata()
- * metadata} — the event log is stored separately in {@link SessionRepository} and
- * retrieved on demand via {@link SessionService}.
- *
+ * One continuous conversation between a user and an agent: its identity, its expiry and
+ * its {@link #metadata() metadata}. An immutable value; the events are stored separately
+ * in the {@link SessionRepository} and read through the {@link SessionService}.
  * <p>
- * A session has no owner field. Who it belongs to is an attribute in its
- * {@link #metadata()}, under a well-known key such as
- * {@link SessionAttributes#PRINCIPAL_NAME}, put there by the application and looked up
- * through {@link SessionRepository#findByIndex}.
- *
- * <p>
- * Mutations return new instances; the original is never modified.
+ * A session has no owner field. Who it belongs to is an attribute of its metadata, under
+ * a well-known key such as {@link SessionAttributes#PRINCIPAL_NAME}, set by the
+ * application and looked up with {@link SessionRepository#findByIndex}.
  *
  * @author Christian Tzolov
  * @since 2.1.0
@@ -60,30 +54,28 @@ public final class Session {
 		this.metadata = Map.copyOf(metadata);
 	}
 
-	/** Unique identifier for this session. */
+	/** The session's identifier. */
 	public String id() {
 		return this.id;
 	}
 
-	/** When this session was created. */
+	/** When the session was created. */
 	public Instant createdAt() {
 		return this.createdAt;
 	}
 
 	/**
-	 * When this session expires (TTL-based lifecycle). {@code null} means no expiry.
-	 * Sessions created through {@link SessionService#create(CreateSessionRequest)} always
-	 * have an expiry (the request's or the service's default time-to-live); {@code null}
-	 * only occurs for sessions built directly with {@code expiresAt(null)}.
+	 * When the session expires, or {@code null} for never. A session the service creates
+	 * always has an expiry, the request's time to live or the service's default; {@code
+	 * null} only for a session built directly with {@code expiresAt(null)}.
 	 */
 	@Nullable public Instant expiresAt() {
 		return this.expiresAt;
 	}
 
 	/**
-	 * Arbitrary metadata: the scope and agent attributes ({@link SessionAttributes}, read
-	 * back with {@link SessionAttributes#agentName(Session)}), tags, and whatever the
-	 * application adds.
+	 * The metadata: the owner and agent attributes ({@link SessionAttributes}), tags, and
+	 * whatever the application adds.
 	 */
 	public Map<String, Object> metadata() {
 		return this.metadata;
@@ -122,10 +114,7 @@ public final class Session {
 			return this;
 		}
 
-		/**
-		 * Adds every entry of the map, keeping the ones already set; like the request
-		 * builder.
-		 */
+		/** Adds every entry of the map, keeping the ones already set. */
 		public Builder metadata(Map<String, Object> metadata) {
 			this.metadata.putAll(metadata);
 			return this;

@@ -332,8 +332,8 @@ public final class SessionTurnAdvisor implements CallAdvisor, StreamAdvisor {
 		}
 
 		/**
-		 * Keep it outside the tool-calling advisor (a lower value than its order);
-		 * defaults to {@link #DEFAULT_ORDER}.
+		 * The order; {@link #DEFAULT_ORDER} by default. Keep it before the tool-calling
+		 * advisor, so the loop runs inside the turn.
 		 */
 		public Builder order(int order) {
 			this.order = order;
@@ -365,16 +365,13 @@ public final class SessionTurnAdvisor implements CallAdvisor, StreamAdvisor {
 		}
 
 		/**
-		 * Whether compaction runs after the call returns, on the {@link #scheduler},
-		 * rather than before it: a summarizing strategy then adds no model call to the
-		 * reply's latency. For a {@code call()} it runs with the caller's thread-local
-		 * context (the security context, the current observation), captured through
-		 * Micrometer's context propagation; a {@code stream()} ends on the scheduler,
-		 * which has none to carry. This advisor runs one compaction per session at a
-		 * time; across advisors, the compare-and-swap keeps only one. A new turn that
-		 * writes to the session while it runs makes it skip, and it is retried after that
-		 * turn. With an immediate scheduler it runs before the call returns after all.
-		 * Defaults to {@code false}.
+		 * Whether compaction runs after the call returns, on the {@link #scheduler}, so a
+		 * summarizing strategy adds no model call to the reply's latency; {@code false}
+		 * by default. A {@code call()} runs it with the caller's thread-local context,
+		 * the security context for example, captured with Micrometer's context
+		 * propagation; a {@code stream()} ends on the scheduler already. One compaction
+		 * per session runs at a time from this advisor; a new turn that writes to the
+		 * session meanwhile makes it skip, and it is retried after that turn.
 		 */
 		public Builder asyncCompaction(boolean asyncCompaction) {
 			this.asyncCompaction = asyncCompaction;

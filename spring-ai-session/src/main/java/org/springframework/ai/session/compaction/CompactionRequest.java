@@ -23,21 +23,17 @@ import org.springframework.ai.session.SessionEvent;
 import org.springframework.util.Assert;
 
 /**
- * Contextual information provided to {@link CompactionTrigger} and
- * {@link CompactionStrategy} when evaluating whether compaction is needed.
+ * What a {@link CompactionTrigger} and a {@link CompactionStrategy} decide on.
  *
- * @param session the session being evaluated for compaction
- * @param events the session's current list of events, ordered from oldest to newest
- * @param currentTurnCount total number of turns in the session (a turn is a user message
- * plus all subsequent events up to the next user message)
+ * @param session the session
+ * @param events its active view, oldest first
+ * @param currentTurnCount the turns in the view: its non-synthetic user messages
  * @author Christian Tzolov
  * @since 2.1.0
  */
 public record CompactionRequest(Session session, List<SessionEvent> events, int currentTurnCount) {
 
-	/**
-	 * Creates a {@code CompactionRequest} from the given session and its event list.
-	 */
+	/** A request for the session and its view, counting the turns. */
 	public static CompactionRequest of(Session session, List<SessionEvent> events) {
 		Assert.notNull(session, "session must not be null");
 		Assert.notNull(events, "events must not be null");

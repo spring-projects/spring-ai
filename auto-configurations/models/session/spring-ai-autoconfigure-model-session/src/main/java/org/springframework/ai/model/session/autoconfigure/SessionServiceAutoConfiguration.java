@@ -28,19 +28,11 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean;
 
 /**
- * Auto-configuration for {@link DefaultSessionService}.
- *
- * <p>
- * Creates a {@link SessionService} bean, a {@link DefaultSessionService} wrapped by every
- * {@link SessionServiceDecorator} bean in order, whenever a single (or primary)
- * {@link SessionRepository} bean is present in the application context and no
- * {@link SessionService} bean has been declared by the application. This applies
- * regardless of which {@link SessionRepository} implementation is in use — in-memory,
- * JDBC, Redis, etc.
- *
- * <p>
- * The auto-configuration is ordered after the JDBC repository auto-configuration so that
- * the repository bean is guaranteed to be available when this configuration runs.
+ * Auto-configuration of the {@link SessionService}: a {@link DefaultSessionService} on
+ * the single {@link SessionRepository} bean, whatever its implementation, wrapped by
+ * every {@link SessionServiceDecorator} bean in order. Backs off when the application
+ * declares a {@code SessionService} of its own. Ordered after the JDBC repository
+ * auto-configuration, so that the repository bean exists by then.
  *
  * @author Christian Tzolov
  * @since 2.1.0

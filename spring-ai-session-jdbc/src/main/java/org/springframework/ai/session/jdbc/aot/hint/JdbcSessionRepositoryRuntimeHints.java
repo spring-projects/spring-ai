@@ -25,8 +25,8 @@ import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
 
 /**
- * A {@link RuntimeHintsRegistrar} for the JDBC session repository: the schema scripts and
- * the {@link DataSource} the dialect is detected from.
+ * The runtime hints of the JDBC session repository: the schema scripts, and the
+ * {@link DataSource} the dialect is detected from.
  *
  * @author Christian Tzolov
  * @since 2.1.0

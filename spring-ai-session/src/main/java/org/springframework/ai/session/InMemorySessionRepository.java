@@ -30,13 +30,9 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.util.Assert;
 
 /**
- * Thread-safe, in-memory implementation of {@link SessionRepository}. Suitable for
- * development and testing. Not suitable for production use as state is lost on
- * application restart and not shared across instances.
- *
- * <p>
- * Session metadata and event log are stored together in a private {@code SessionData}
- * record. All mutations are performed atomically via {@link ConcurrentHashMap#compute}.
+ * A thread-safe {@link SessionRepository} in memory, for tests and demos: the sessions
+ * are lost on restart and not shared across instances. A session and its log are kept
+ * together, and every mutation is one {@link ConcurrentHashMap#compute}.
  *
  * @author Christian Tzolov
  * @since 2.1.0
@@ -48,10 +44,7 @@ public final class InMemorySessionRepository implements SessionRepository {
 	private InMemorySessionRepository() {
 	}
 
-	/**
-	 * Returns a new {@link Builder} for {@code InMemorySessionRepository}.
-	 * @return a new builder
-	 */
+	/** Returns a new {@link Builder}. */
 	public static Builder builder() {
 		return new Builder();
 	}
@@ -202,18 +195,13 @@ public final class InMemorySessionRepository implements SessionRepository {
 
 	}
 
-	/**
-	 * Builder for {@link InMemorySessionRepository}.
-	 */
+	/** Builds an {@link InMemorySessionRepository}. */
 	public static final class Builder {
 
 		private Builder() {
 		}
 
-		/**
-		 * Builds the {@link InMemorySessionRepository} instance.
-		 * @return a new {@code InMemorySessionRepository}
-		 */
+		/** Builds the repository. */
 		public InMemorySessionRepository build() {
 			return new InMemorySessionRepository();
 		}

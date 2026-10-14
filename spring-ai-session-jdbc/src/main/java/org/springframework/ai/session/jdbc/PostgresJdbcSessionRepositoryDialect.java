@@ -17,7 +17,7 @@
 package org.springframework.ai.session.jdbc;
 
 /**
- * {@link JdbcSessionRepositoryDialect} for PostgreSQL.
+ * The dialect of PostgreSQL.
  *
  * @author Christian Tzolov
  * @since 2.1.0

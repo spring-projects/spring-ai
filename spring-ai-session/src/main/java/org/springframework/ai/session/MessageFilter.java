@@ -26,22 +26,15 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
 /**
- * Decides which {@link Message}s get appended (persisted) to session memory.
- *
- * <p>
- * This is the write-side counterpart of {@link EventFilter}: an {@code EventFilter}
- * selects which <em>stored</em> events are loaded into the next prompt, while a
- * {@code MessageFilter} decides whether a message is stored at all. A message rejected by
- * this filter is never persisted and therefore never replayed on later requests.
- * {@code SessionMemoryAdvisor} stores tool calls and tool results whatever the filter
- * says, since either half alone is unusable; hide them on read with an
+ * Decides which messages are stored in a session: the write-side counterpart of
+ * {@link EventFilter}, which selects the stored events a prompt reads. A message the
+ * filter rejects is never stored and so never replayed; the outgoing prompt is
+ * unaffected. {@code SessionMemoryAdvisor} stores tool calls and tool results whatever
+ * the filter says, since either half alone is unusable; hide them on read with an
  * {@link EventFilter}'s {@code messageTypes} instead.
- *
  * <p>
- * Filters can consider the message type as well as the message content, and compose via
- * {@link #and(MessageFilter)}, {@link #or(MessageFilter)} and {@link #negate()}:
- *
- * <pre>{@code
+ * Filters compose with {@link #and(MessageFilter)}, {@link #or(MessageFilter)} and
+ * {@link #negate()}: <pre>{@code
  * MessageFilter filter = MessageFilter.byMessageType(MessageType.USER, MessageType.ASSISTANT)
  *     .and(MessageFilter.skipEmptyMessages());
  * }</pre>
@@ -53,48 +46,41 @@ import org.springframework.util.CollectionUtils;
 public interface MessageFilter {
 
 	/**
-	 * Returns {@code true} if the given message should be appended to session memory.
-	 * @param message the message about to be persisted
+	 * Whether the message is stored.
+	 * @param message the message about to be stored
 	 */
 	boolean shouldPersist(Message message);
 
 	/**
-	 * Returns a composed filter that persists a message only if both this filter and
-	 * {@code other} accept it.
+	 * A filter that stores a message only if both this filter and {@code other} accept
+	 * it.
 	 */
 	default MessageFilter and(MessageFilter other) {
 		Assert.notNull(other, "other must not be null");
 		return message -> this.shouldPersist(message) && other.shouldPersist(message);
 	}
 
-	/**
-	 * Returns a composed filter that persists a message if either this filter or
-	 * {@code other} accepts it.
-	 */
+	/** A filter that stores a message if this filter or {@code other} accepts it. */
 	default MessageFilter or(MessageFilter other) {
 		Assert.notNull(other, "other must not be null");
 		return message -> this.shouldPersist(message) || other.shouldPersist(message);
 	}
 
-	/** Returns a filter that represents the logical negation of this filter. */
+	/** A filter that stores what this filter rejects, and the other way round. */
 	default MessageFilter negate() {
 		return message -> !this.shouldPersist(message);
 	}
 
-	/** Returns a filter that persists every message (no filtering). */
+	/** A filter that stores every message. */
 	static MessageFilter all() {
 		return message -> true;
 	}
 
 	/**
-	 * Skips {@link AssistantMessage}s that carry no content — blank or {@code null} text,
-	 * no tool calls, and no media. Some models emit such empty frames (e.g. AWS Bedrock
-	 * Converse produces an empty {@code end_turn} frame after a tool-call sequence) and
-	 * reject them when replayed as history on the next request. All other message types
-	 * are persisted unconditionally.
-	 *
-	 * <p>
-	 * This is the default filter of {@code SessionMemoryAdvisor}.
+	 * A filter that skips an {@link AssistantMessage} with no content, no text, no tool
+	 * calls and no media, and stores every other message; the default of {@code
+	 * SessionMemoryAdvisor}. Some models emit such an empty frame after a tool-call
+	 * sequence and reject it when it is replayed as history.
 	 */
 	static MessageFilter skipEmptyMessages() {
 		return message -> !(message instanceof AssistantMessage am && (am.getText() == null || am.getText().isBlank())
@@ -102,9 +88,8 @@ public interface MessageFilter {
 	}
 
 	/**
-	 * Persists only messages whose {@link Message#getMessageType()} is among the given
-	 * types.
-	 * @param types the message types to persist; must not be empty
+	 * A filter that stores only the messages of the given types.
+	 * @param types the message types to store; at least one
 	 */
 	static MessageFilter byMessageType(MessageType... types) {
 		Assert.notEmpty(types, "types must not be empty");
@@ -113,9 +98,9 @@ public interface MessageFilter {
 	}
 
 	/**
-	 * Persists only messages whose text contains the given keyword (case-insensitive
-	 * substring match). Messages with {@code null} text are rejected.
-	 * @param keyword the search term; must not be blank
+	 * A filter that stores only the messages whose text contains the keyword,
+	 * case-insensitively; a message without text is rejected.
+	 * @param keyword the text to look for; not blank
 	 */
 	static MessageFilter containsText(String keyword) {
 		Assert.hasText(keyword, "keyword must not be blank");

@@ -19,12 +19,11 @@ package org.springframework.ai.model.session.autoconfigure;
 import org.springframework.ai.session.SessionService;
 
 /**
- * Wraps the auto-configured {@link SessionService} in another one. Every
- * {@code SessionServiceDecorator} bean is applied, in bean order, to the service
- * {@link SessionServiceAutoConfiguration} creates, so a cross-cutting concern such as
- * authorization is added explicitly rather than by post-processing every
- * {@code SessionService} bean. A {@code SessionService} bean the application defines
- * itself is left alone; wrap it in the bean method if needed.
+ * Wraps the auto-configured {@link SessionService} in another one. Every bean of this
+ * type is applied, in bean order, to the service {@link SessionServiceAutoConfiguration}
+ * creates, so a cross-cutting concern such as authorization is added explicitly rather
+ * than by post-processing every {@code SessionService} bean. A {@code SessionService} the
+ * application defines itself is left alone.
  *
  * @author Christian Tzolov
  * @since 2.1.0

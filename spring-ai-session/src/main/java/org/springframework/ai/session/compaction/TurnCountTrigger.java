@@ -19,30 +19,22 @@ package org.springframework.ai.session.compaction;
 import org.springframework.util.Assert;
 
 /**
- * Triggers compaction when the session exceeds a maximum number of <em>turns</em>.
+ * Fires when the view holds more than a number of turns: a user message and everything up
+ * to the next one. Counting turns rather than events follows the shape of the
+ * conversation, and never fires in the middle of a tool-calling exchange. Pair it with a
+ * {@link CompactionWindow#lastTurns turn window}, so the threshold and the window count
+ * the same thing.
  *
- * <p>
- * A <strong>turn</strong> is defined as one user message plus all subsequent events
- * (assistant replies, tool calls, tool results) up to the next user message. Counting
- * turns is more semantically meaningful than counting raw messages because it represents
- * complete user↔agent exchanges and ensures compaction never fires in the middle of a
- * multi-step tool interaction.
- *
- * <p>
- * Pair with a {@link CompactionWindow#lastTurns turn window} to keep the threshold and
- * the compaction unit consistent.
- *
+ * @see CompactionWindow#lastTurns(int)
  * @author Christian Tzolov
  * @since 2.1.0
- * @see CompactionWindow#lastTurns(int)
  */
 public final class TurnCountTrigger implements CompactionTrigger {
 
 	private final int maxTurns;
 
 	/**
-	 * @param maxTurns maximum number of turns before compaction is triggered. Must be
-	 * positive.
+	 * @param maxTurns the number of turns the view may hold before compaction; positive
 	 */
 	public TurnCountTrigger(int maxTurns) {
 		Assert.isTrue(maxTurns > 0, "maxTurns must be greater than 0");
