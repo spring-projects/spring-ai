@@ -32,6 +32,7 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.observation.conventions.AiOperationType;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -57,6 +58,16 @@ class ChatClientObservationContextTests {
 			.build();
 
 		assertThat(observationContext).isNotNull();
+	}
+
+	@Test
+	void whenGetOperationMetadataThenOperationTypeIsAllowedBySemanticConventions() {
+		var observationContext = ChatClientObservationContext.builder()
+			.request(ChatClientRequest.builder().prompt(new Prompt()).build())
+			.build();
+
+		assertThat(observationContext.getOperationMetadata().operationType())
+			.isEqualTo(AiOperationType.INVOKE_WORKFLOW.value());
 	}
 
 	@Test
