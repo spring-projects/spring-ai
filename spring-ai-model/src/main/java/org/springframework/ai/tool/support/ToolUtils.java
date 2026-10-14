@@ -88,6 +88,12 @@ public final class ToolUtils {
 		return tool != null && tool.returnDirect();
 	}
 
+	public static boolean getToolRequiresConfirmation(Method method) {
+		Assert.notNull(method, "method cannot be null");
+		var tool = AnnotatedElementUtils.findMergedAnnotation(method, Tool.class);
+		return tool != null && tool.requiresConfirmation();
+	}
+
 	public static ToolCallResultConverter getToolCallResultConverter(Method method) {
 		Assert.notNull(method, "method cannot be null");
 		var tool = AnnotatedElementUtils.findMergedAnnotation(method, Tool.class);

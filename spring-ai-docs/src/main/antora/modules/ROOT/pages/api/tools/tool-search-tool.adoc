@@ -476,5 +476,6 @@ spring.ai.chat.client.tool-search-advisor.session-id-key-name=tenantId
 
 * xref:api/tools.adoc#scaling-to-hundreds-of-tools[Tool Calling: Scaling to Hundreds of Tools] — conceptual overview
 * xref:api/tools/tool-calling-advisor.adoc[ToolCallingAdvisor] — the base class and inherited builder options
+* xref:api/tools/tool-call-confirmation.adoc#tool-search[Tool Call Confirmation: Tool Search Tool] — pausing on disclosed tools that need a person's confirmation
 * link:https://spring.io/blog/2025/12/11/spring-ai-tool-search-tools-tzolov[Smart Tool Selection: 34–64% Token Savings] (Dec 2025) — benchmarks and methodology
 * xref:guides/dynamic-tool-search.adoc[Dynamic Tool Discovery guide] — worked example

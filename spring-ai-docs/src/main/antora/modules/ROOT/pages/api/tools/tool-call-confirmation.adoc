@@ -1,0 +1,362 @@
+[[ToolCallConfirmation]]
+= Tool Call Confirmation
+
+Some tools should not run just because the model asked for them.
+Booking a flight, deleting a file or sending an email are actions a person may want to approve first.
+Spring AI lets you mark such tools as needing confirmation.
+When the model calls one, the tool-calling loop _pauses_: no tool call of that reply runs, and the reply goes back to your application with the calls that wait for a decision.
+Your application shows them to a person, runs the reply's calls as the person decided, and continues the conversation with the results.
+
+The loop keeps nothing while it waits.
+The pause is an ordinary response, and the resumption is an ordinary request.
+This keeps the feature stateless on the framework side and lets it survive restarts, as long as your application keeps the conversation.
+
+NOTE: Tool call confirmation is available since Spring AI 2.1.0.
+
+[[how-it-works]]
+== How It Works
+
+The confirmation check lives in the `ToolCallingManager`, the component that executes tool calls.
+Every caller of the manager gets it, including the `ToolCallingAdvisor` loop, custom loops and xref:api/tools.adoc#user-controlled-tool-execution[user-controlled execution].
+
+. The model replies with one or more tool calls.
+. Before any call of the reply runs, the manager asks its `ToolCallConfirmationPolicy` which calls need confirmation.
+. If any does, the manager throws `ToolCallConfirmationRequiredException`, and nothing of the reply runs.
+. `ToolCallingAdvisor` catches the exception and returns the reply to the caller, listing the ids of the calls that wait for a decision in the response metadata.
+. Your application collects one `ToolCallDecision` per tool call of the reply: allow it, or deny it with a message.
+. Your application runs the reply's calls with those decisions through `ToolCallingManager.executeToolCalls(prompt, reply, decisions)`.
+Allowed calls run, and a denied call answers the model with the decision's message instead of running.
+. Your application sends the tool results to the model as its next request, and the conversation continues.
+
+[[marking-tools]]
+== Marking Tools That Need Confirmation
+
+With the default policy, a tool needs confirmation when its metadata says so.
+For a `@Tool` method, set `requiresConfirmation`:
+
+[source,java]
+----
+class BookingTools {
+
+    @Tool(description = "Book a flight", requiresConfirmation = true)
+    String bookFlight(String flightNumber) {
+        return bookingService.book(flightNumber);
+    }
+
+    @Tool(description = "Get the status of a flight")
+    String flightStatus(String flightNumber) {
+        return bookingService.status(flightNumber);
+    }
+
+}
+----
+
+For a programmatic tool, set it on the `ToolMetadata`:
+
+[source,java]
+----
+ToolCallback bookFlight = FunctionToolCallback.builder("bookFlight", bookingService::book)
+    .description("Book a flight")
+    .inputType(BookingRequest.class)
+    .toolMetadata(ToolMetadata.builder().requiresConfirmation(true).build())
+    .build();
+----
+
+Calls of `flightStatus` run as usual.
+A reply that asks for both `flightStatus` and `bookFlight` pauses as a whole, so that the person decides on the reply before any of it runs.
+
+[[confirmation-policy]]
+== Confirmation Policy
+
+The `ToolCallConfirmationPolicy` decides which calls need confirmation.
+It sees the tool call, with its name and arguments, and the metadata of the tool the call would run with.
+
+[cols="1,3"]
+|===
+| Policy | Calls that need confirmation
+
+| `ToolCallConfirmationPolicy.fromToolMetadata()`
+| Calls of tools marked `requiresConfirmation`. This is the default.
+
+| `ToolCallConfirmationPolicy.forTools("bookFlight", "cancelBooking")`
+| Calls of the named tools, whatever their metadata says.
+Useful for tools you do not own, such as MCP tools.
+
+| `ToolCallConfirmationPolicy.none()`
+| No calls.
+
+| `policy.or(other)`
+| Calls that either policy names.
+|===
+
+Since the policy is a functional interface, it can also look at the arguments:
+
+[source,java]
+----
+ToolCallConfirmationPolicy expensiveTransfers = (toolCall, toolMetadata) ->
+        toolCall.name().equals("transferMoney") && amountOf(toolCall.arguments()) > 1_000;
+----
+
+Configure the policy on the `ToolCallingManager`, and pass that manager to the tool-calling advisor:
+
+[source,java]
+----
+ToolCallingManager toolCallingManager = ToolCallingManager.builder()
+    .toolCallConfirmationPolicy(ToolCallConfirmationPolicy.fromToolMetadata()
+        .or(ToolCallConfirmationPolicy.forTools("deleteFile")))
+    .build();
+
+ChatClient chatClient = ChatClient.builder(chatModel)
+    .defaultAdvisors(ToolCallingAdvisor.builder().toolCallingManager(toolCallingManager).build())
+    .defaultTools(new BookingTools())
+    .build();
+----
+
+Use the same manager to run the decisions when you resume.
+
+[[spring-boot]]
+=== Spring Boot
+
+The auto-configured `ToolCallingManager` honors the `requiresConfirmation` flag by default.
+The `ChatClient` and the Tool Search Tool auto-configurations use that manager, and so can your application when it resumes, by injecting it.
+
+Name further tools with a property, for example tools you cannot annotate, such as MCP tools:
+
+[source,properties]
+----
+spring.ai.tools.confirmation.tools=deleteFile,transferMoney
+----
+
+Use the names the model sees, including any prefix, since a name that matches no tool has no effect.
+
+For rules that look at the call itself, declare `ToolCallConfirmationPolicy` beans:
+
+[source,java]
+----
+@Bean
+ToolCallConfirmationPolicy largeTransfers() {
+    return (toolCall, toolMetadata) -> toolCall.name().equals("transferMoney")
+            && amountOf(toolCall.arguments()) > 1_000;
+}
+----
+
+The auto-configuration combines the flag, the property and every policy bean with `or`: a call needs confirmation when any of them says so.
+A property or a bean can therefore only add calls that need confirmation, never remove them.
+The one way to stop honoring the `requiresConfirmation` flag is to disable it explicitly, which logs a warning at startup:
+
+[source,properties]
+----
+spring.ai.tools.confirmation.enabled=false
+----
+
+Do that only where nobody can confirm, such as tests or batch jobs.
+The listed tools and the policy beans still apply.
+
+[cols="5,4,1", stripes=even]
+|====
+| Property | Description | Default
+| `spring.ai.tools.confirmation.enabled` | Whether calls of tools marked `requiresConfirmation` need a person's confirmation. | `true`
+| `spring.ai.tools.confirmation.tools` | Names of tools whose calls need confirmation, whatever their metadata says. | —
+|====
+
+To take full control of the policy, declare your own `ToolCallingManager` bean, which replaces the auto-configured one.
+
+[[pausing]]
+== Recognizing a Paused Reply
+
+A paused reply is a regular `ChatResponse` whose assistant message holds the tool calls.
+`ToolCallDecisions.awaitingDecision(response)` returns the ids of the calls that wait for a decision, and an empty list for any other response.
+
+[source,java]
+----
+ChatResponse reply = chatClient.prompt()
+    .user("Book flight VX205 for tomorrow")
+    .call()
+    .chatResponse();
+
+List<String> awaiting = ToolCallDecisions.awaitingDecision(reply);
+if (!awaiting.isEmpty()) {
+    List<AssistantMessage.ToolCall> toolCalls = reply.getResult().getOutput().getToolCalls();
+    // Show the calls, with their names and arguments, to the person
+}
+----
+
+IMPORTANT: Read the reply with `chatResponse()` or `chatClientResponse()`.
+`content()` returns the paused reply's text, which is often empty, and gives no sign that the loop paused.
+A streamed `content()` simply ends.
+
+The ids name the calls that need confirmation.
+The decisions must still cover _every_ call of the reply, see xref:#decisions[Decisions].
+
+When streaming, the reply's text streams as usual, and a last chunk carries the tool calls and the awaiting ids.
+Check the last chunk, since an aggregated response does not carry the ids:
+
+[source,java]
+----
+List<ChatResponse> chunks = chatClient.prompt()
+    .user("Book flight VX205 for tomorrow")
+    .stream()
+    .chatResponse()
+    .collectList()
+    .block();
+
+ChatResponse last = chunks.get(chunks.size() - 1);
+List<String> awaiting = ToolCallDecisions.awaitingDecision(last);
+----
+
+The last chunk keeps the reply's finish reason, so advisors outside the loop see the end of the turn as usual.
+
+TIP: Some model providers return tool calls without ids, or give two calls the same id.
+Decisions name calls by id, so the manager gives such calls ids of their own, and the paused reply your application receives carries them.
+Keep and resume with that reply, not with a copy taken from the model's raw response.
+
+[[decisions]]
+== Decisions
+
+`ToolCallDecisions` holds one `ToolCallDecision` per tool call of the paused reply:
+
+[source,java]
+----
+ToolCallDecisions decisions = ToolCallDecisions.of(
+        ToolCallDecision.allow("call_1"),
+        ToolCallDecision.deny("call_2"),
+        ToolCallDecision.deny("call_3", "The user wants an aisle seat, ask again."));
+----
+
+* `allow(id)` lets the call run.
+* `deny(id)` answers the model with `ToolCallDecision.DEFAULT_DENY_MESSAGE` as the call's result.
+* `deny(id, message)` answers the model with your message, so it can react, for example by asking the user a question.
+
+The manager enforces three rules before anything runs, and throws `IllegalArgumentException` when one is broken:
+
+* *Every call of the reply needs a decision*, including calls the policy did not flag.
+The policy is not consulted again on resumption, so a call cannot slip through because the tools or the policy changed in between.
+* *A decision must name a call of the reply.*
+* *An allowed call runs only with a tool the prompt carries.*
+The resumption never falls back to resolving a tool by name.
+
+[[resuming]]
+== Resuming the Conversation
+
+Run the decisions through the manager with the prompt the model answered, carrying the tools, and the paused reply.
+The result's conversation history ends with the reply and a `ToolResponseMessage` holding one result per call, in the order the model asked for them.
+
+How you continue depends on who keeps the conversation.
+
+[[resuming-application-conversation]]
+=== Your Application Keeps the Conversation
+
+Pass the conversation as the prompt and send the whole history on:
+
+[source,java]
+----
+ToolCallingChatOptions options = ToolCallingChatOptions.builder()
+    .toolCallbacks(ToolCallbacks.from(new BookingTools()))
+    .build();
+
+// The conversation the model answered with the paused reply
+Prompt prompt = new Prompt(conversation, options);
+
+ToolExecutionResult result = toolCallingManager.executeToolCalls(prompt, reply, decisions);
+
+String answer = chatClient.prompt()
+    .messages(result.conversationHistory())
+    .call()
+    .content();
+----
+
+The prompt may end with the paused reply itself, the history then holds it once.
+
+[[resuming-chat-memory]]
+=== A Chat Memory Advisor Keeps the Conversation
+
+The memory already holds the user message and the paused reply.
+Send only the tool results, which are the last message of the history:
+
+[source,java]
+----
+ToolExecutionResult result = toolCallingManager.executeToolCalls(
+        new Prompt(List.of(), options), reply, decisions);
+
+List<Message> history = result.conversationHistory();
+
+String answer = chatClient.prompt()
+    .messages(history.get(history.size() - 1))
+    .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, conversationId))
+    .call()
+    .content();
+----
+
+This works with the memory advisor xref:api/tools.adoc#outside-the-loop[outside the loop] (the default) and xref:api/tools.adoc#inside-the-loop[inside the loop].
+In both cases the memory ends up with the user message, the reply with the tool calls, the tool results and the final answer, which is the order model providers expect.
+
+NOTE: With the memory advisor inside the loop, the memory stores the model's reply as it came, before the manager gives ids to calls that lack one.
+For a provider that returns tool calls without ids, the stored reply then has no ids, while the tool results carry the generated ones.
+Providers that return no ids also ignore them on the way back, so the conversation still works, but the stored reply and the results do not match by id.
+Keep the memory advisor outside the loop when you need them to match.
+
+[[return-direct]]
+=== Return Direct
+
+When every call of the reply was allowed and every called tool has `returnDirect = true`, `result.returnDirect()` is `true`.
+The tool results are then the answer, and the model does not need to see them.
+Use `ToolExecutionResult.buildGenerations(result)` to turn them into generations for the caller.
+A denied call always sends the results back to the model.
+
+[[limits]]
+=== Tool Call Limits
+
+xref:api/tools.adoc#tool-call-limits[Tool call limits] apply to the allowed calls.
+On resumption the manager counts the calls of the current turn that it finds in the prompt, so a prompt without the turn's earlier rounds counts fewer calls.
+When a limit is exceeded, the manager throws `ToolCallLimitExceededException` to your application, since there is no loop to turn it into a reply.
+
+[[security]]
+== Security Considerations
+
+The manager runs the tool calls of the reply you give it, with their arguments.
+*Read the paused reply from storage the end user cannot change*: your own conversation store, a chat memory, or a session log.
+Never take it from a client request.
+A client that can edit the reply can run any tool with any arguments, and approve the call itself.
+
+The framework does not:
+
+* *Authenticate the approver.*
+Checking that the person who decides may approve the call is your application's job.
+* *Prevent replays.*
+Running the same decisions twice runs the tools twice.
+Make the resumption idempotent, or record that a pause was resolved.
+* *Sanitize deny messages.*
+A deny message goes to the model as a tool result.
+Treat it as model input from whoever provides the decision.
+
+[[abandoned-pauses]]
+== Abandoned Pauses
+
+If the person never decides, a chat memory holds a reply with tool calls but no tool results.
+Most model providers reject such a conversation on the next request.
+Before you accept new input for a conversation with a pending pause, resolve the pause, for example by denying all its calls with a message such as "The user moved on.".
+
+[[tool-search]]
+== Tool Search Tool
+
+Tool call confirmation works with the xref:api/tools/tool-search-tool.adoc[Tool Search Tool].
+Tools the search discloses carry their metadata, so a disclosed tool marked `requiresConfirmation` pauses the loop like any other.
+Resume with a prompt that carries your full tool set, the same one you configured on the `ChatClient`.
+
+The loop returns only the paused reply, not the search rounds before it.
+With the memory advisor xref:api/tools.adoc#inside-the-loop[inside the loop], the memory keeps those rounds, and the disclosed tools are offered again after the resumption.
+Otherwise the model sees only the search tool again and searches anew if it needs another tool.
+
+[[custom-tool-calling-managers]]
+== Custom Tool Calling Managers
+
+`ToolCallingManager.executeToolCalls(Prompt, ChatResponse, ToolCallDecisions)` is a default method that throws `UnsupportedOperationException`.
+A custom manager that delegates to `DefaultToolCallingManager` should delegate this method too, as `GoogleGenAiToolCallingManager` does.
+
+[[see-also]]
+== See Also
+
+* xref:api/tools.adoc#user-controlled-tool-execution[Tool Calling: User-Controlled Tool Execution] — driving the whole loop yourself
+* xref:api/tools/tool-calling-advisor.adoc[ToolCallingAdvisor] — the loop that pauses
+* xref:api/tools.adoc#memory-and-the-tool-loop[Tool Calling: Memory and the Tool Loop] — memory advisor placement
+* xref:api/tools/tool-search-tool.adoc[Tool Search Tool] — progressive tool disclosure

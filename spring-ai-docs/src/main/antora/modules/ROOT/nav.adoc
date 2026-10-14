@@ -83,6 +83,7 @@
 ** xref:api/tools.adoc[Tool Calling]
 *** xref:api/tools/tool-calling-advisor.adoc[ToolCallingAdvisor]
 *** xref:api/tools/tool-search-tool.adoc[Tool Search Tool]
+*** xref:api/tools/tool-call-confirmation.adoc[Tool Call Confirmation]
 *** xref:api/tools/chatmodel-tool-calling.adoc[ChatModel Tool Calling]
 
 ** xref:api/mcp/mcp-overview.adoc[Model Context Protocol (MCP)]

@@ -19,17 +19,20 @@ package org.springframework.ai.model.tool;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -44,6 +47,7 @@ import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
 import org.springframework.ai.tool.execution.ToolExecutionException;
 import org.springframework.ai.tool.execution.ToolExecutionExceptionProcessor;
+import org.springframework.ai.tool.metadata.ToolMetadata;
 import org.springframework.ai.tool.observation.DefaultToolCallingObservationConvention;
 import org.springframework.ai.tool.observation.ToolCallingObservationContext;
 import org.springframework.ai.tool.observation.ToolCallingObservationConvention;
@@ -122,6 +126,9 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 	 */
 	private final boolean resolutionFallbackEnabled;
 
+	/** Which tool calls need a person's confirmation before they run. */
+	private final ToolCallConfirmationPolicy toolCallConfirmationPolicy;
+
 	private ToolCallingObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
 	public DefaultToolCallingManager(ObservationRegistry observationRegistry, ToolCallbackResolver toolCallbackResolver,
@@ -152,16 +159,37 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 	DefaultToolCallingManager(ObservationRegistry observationRegistry, ToolCallbackResolver toolCallbackResolver,
 			ToolExecutionExceptionProcessor toolExecutionExceptionProcessor, ToolCallLimits toolCallLimits,
 			boolean resolutionFallbackEnabled) {
+		this(observationRegistry, toolCallbackResolver, toolExecutionExceptionProcessor, toolCallLimits,
+				resolutionFallbackEnabled, ToolCallConfirmationPolicy.fromToolMetadata());
+	}
+
+	/**
+	 * Create a {@link DefaultToolCallingManager}.
+	 * @param observationRegistry the observation registry
+	 * @param toolCallbackResolver the resolver consulted for name-based tool resolution
+	 * @param toolExecutionExceptionProcessor the processor for tool execution exceptions
+	 * @param toolCallLimits the limits applied to tool calls within a turn
+	 * @param resolutionFallbackEnabled whether tools that are not part of the request's
+	 * tool callbacks may be resolved and executed via the {@code toolCallbackResolver}
+	 * @param toolCallConfirmationPolicy which tool calls need a person's confirmation
+	 * before they run; see {@link ToolCallDecisions}
+	 * @since 2.1.0
+	 */
+	DefaultToolCallingManager(ObservationRegistry observationRegistry, ToolCallbackResolver toolCallbackResolver,
+			ToolExecutionExceptionProcessor toolExecutionExceptionProcessor, ToolCallLimits toolCallLimits,
+			boolean resolutionFallbackEnabled, ToolCallConfirmationPolicy toolCallConfirmationPolicy) {
 		Assert.notNull(observationRegistry, "observationRegistry cannot be null");
 		Assert.notNull(toolCallbackResolver, "toolCallbackResolver cannot be null");
 		Assert.notNull(toolExecutionExceptionProcessor, "toolCallExceptionConverter cannot be null");
 		Assert.notNull(toolCallLimits, "toolCallLimits cannot be null");
+		Assert.notNull(toolCallConfirmationPolicy, "toolCallConfirmationPolicy cannot be null");
 
 		this.observationRegistry = observationRegistry;
 		this.toolCallbackResolver = toolCallbackResolver;
 		this.toolExecutionExceptionProcessor = toolExecutionExceptionProcessor;
 		this.toolCallLimits = toolCallLimits;
 		this.resolutionFallbackEnabled = resolutionFallbackEnabled;
+		this.toolCallConfirmationPolicy = toolCallConfirmationPolicy;
 	}
 
 	@Override
@@ -176,6 +204,17 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 
 	@Override
 	public ToolExecutionResult executeToolCalls(Prompt prompt, ChatResponse chatResponse) {
+		return this.doExecuteToolCalls(prompt, chatResponse, null);
+	}
+
+	@Override
+	public ToolExecutionResult executeToolCalls(Prompt prompt, ChatResponse chatResponse, ToolCallDecisions decisions) {
+		Assert.notNull(decisions, "decisions cannot be null");
+		return this.doExecuteToolCalls(prompt, chatResponse, decisions);
+	}
+
+	private ToolExecutionResult doExecuteToolCalls(Prompt prompt, ChatResponse chatResponse,
+			@Nullable ToolCallDecisions decisions) {
 		Assert.notNull(prompt, "prompt cannot be null");
 		Assert.notNull(chatResponse, "chatResponse cannot be null");
 
@@ -192,10 +231,16 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 
 		ToolContext toolContext = buildToolContext(prompt, assistantMessage);
 
-		InternalToolExecutionResult internalToolExecutionResult = executeToolCall(prompt, assistantMessage,
-				toolContext);
+		InternalToolExecutionResult internalToolExecutionResult = executeToolCall(prompt, assistantMessage, toolContext,
+				decisions);
 
-		List<Message> conversationHistory = buildConversationHistoryAfterToolExecution(prompt.getInstructions(),
+		// A resumed batch may come with the conversation up to and including the reply;
+		// the history then holds the reply once
+		List<Message> previousMessages = prompt.getInstructions();
+		if (endsWith(previousMessages, assistantMessage)) {
+			previousMessages = previousMessages.subList(0, previousMessages.size() - 1);
+		}
+		List<Message> conversationHistory = buildConversationHistoryAfterToolExecution(previousMessages,
 				assistantMessage, internalToolExecutionResult.toolResponseMessage());
 
 		return ToolExecutionResult.builder()
@@ -216,10 +261,18 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 	}
 
 	/**
+	 * Whether the messages end with a reply holding the same tool calls as the message.
+	 */
+	private static boolean endsWith(List<Message> messages, AssistantMessage assistantMessage) {
+		return !messages.isEmpty() && messages.get(messages.size() - 1) instanceof AssistantMessage last
+				&& last.getToolCalls().equals(assistantMessage.getToolCalls());
+	}
+
+	/**
 	 * Execute the tool call and return the response message.
 	 */
 	private InternalToolExecutionResult executeToolCall(Prompt prompt, AssistantMessage assistantMessage,
-			ToolContext toolContext) {
+			ToolContext toolContext, @Nullable ToolCallDecisions decisions) {
 		List<ToolCallback> toolCallbacks = List.of();
 		if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
 			if (!CollectionUtils.isEmpty(toolCallingChatOptions.getToolCallbacks())) {
@@ -227,20 +280,45 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 			}
 		}
 
+		// Before any call runs: a call that needs a person's confirmation pauses the
+		// whole batch, unless the decisions cover it
+		if (decisions == null) {
+			// The decisions name the calls by id, so a reply that pauses gets one per
+			// call
+			AssistantMessage withIds = withToolCallIds(assistantMessage);
+			List<String> awaiting = this.awaitingConfirmation(withIds, toolCallbacks);
+			if (!awaiting.isEmpty()) {
+				throw new ToolCallConfirmationRequiredException(awaiting, withIds);
+			}
+		}
+		else {
+			checkDecisions(decisions, assistantMessage, toolCallbacks);
+		}
+
 		List<ToolResponseMessage.ToolResponse> toolResponses = new ArrayList<>();
 
 		Boolean returnDirect = null;
+		boolean denied = false;
 
 		Map<String, Integer> toolCallCounts = ToolCallLimits.countPriorToolCalls(prompt.getInstructions());
 		int totalToolCallCount = toolCallCounts.values().stream().mapToInt(Integer::intValue).sum();
 
 		for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
 
+			String toolName = toolCall.name();
+
+			ToolCallDecision decision = (decisions != null) ? decisions.decisionOn(toolCall.id()) : null;
+			if (decision != null && !decision.allowed()) {
+				// A denied call does not run; the model receives the decision's message
+				toolResponses
+					.add(new ToolResponseMessage.ToolResponse(toolCall.id(), toolName, decision.denyMessage()));
+				denied = true;
+				continue;
+			}
+
 			if (logger.isDebugEnabled()) {
 				logger.debug("Executing tool call: " + toolCall.name());
 			}
-
-			String toolName = toolCall.name();
 
 			totalToolCallCount++;
 			int toolCallCount = toolCallCounts.merge(toolName, 1, Integer::sum);
@@ -283,10 +361,7 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 				finalToolInputArguments = toolInputArguments;
 			}
 
-			ToolCallback toolCallback = toolCallbacks.stream()
-				.filter(tool -> toolName.equals(tool.getToolDefinition().name()))
-				.findFirst()
-				.orElseGet(() -> this.resolutionFallbackEnabled ? this.toolCallbackResolver.resolve(toolName) : null);
+			ToolCallback toolCallback = this.resolveToolCallback(toolCallbacks, toolName);
 
 			if (toolCallback == null) {
 				if (logger.isWarnEnabled()) {
@@ -338,8 +413,99 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 					toolCallResult != null ? toolCallResult : ""));
 		}
 
+		// Straight back to the caller only when every call ran and asked for it
 		return new InternalToolExecutionResult(ToolResponseMessage.builder().responses(toolResponses).build(),
-				Objects.requireNonNullElse(returnDirect, false));
+				Objects.requireNonNullElse(returnDirect, false) && !denied);
+	}
+
+	/**
+	 * The message with an id of its own on every tool call: the model's, or a made-up one
+	 * for a call the model gave none or one it gave another call too, since decisions
+	 * name the calls by id.
+	 */
+	private static AssistantMessage withToolCallIds(AssistantMessage assistantMessage) {
+		if (hasDistinctToolCallIds(assistantMessage)) {
+			return assistantMessage;
+		}
+		Set<String> seen = new HashSet<>();
+		List<AssistantMessage.ToolCall> toolCalls = assistantMessage.getToolCalls()
+			.stream()
+			.map(toolCall -> (StringUtils.hasText(toolCall.id()) && seen.add(toolCall.id())) ? toolCall
+					: new AssistantMessage.ToolCall("call_" + UUID.randomUUID(), toolCall.type(), toolCall.name(),
+							toolCall.arguments()))
+			.toList();
+		return assistantMessage.mutate().toolCalls(toolCalls).build();
+	}
+
+	/** Whether every tool call has an id, and no two calls share one. */
+	private static boolean hasDistinctToolCallIds(AssistantMessage assistantMessage) {
+		List<AssistantMessage.ToolCall> toolCalls = assistantMessage.getToolCalls();
+		return toolCalls.stream().allMatch(toolCall -> StringUtils.hasText(toolCall.id()))
+				&& toolCalls.stream().map(AssistantMessage.ToolCall::id).distinct().count() == toolCalls.size();
+	}
+
+	/**
+	 * The ids of the calls that need a person's confirmation before they run, in the
+	 * order the model asked for them. The policy sees the metadata of the tool the call
+	 * would run with, or {@code null} when the manager has none for it.
+	 */
+	private List<String> awaitingConfirmation(AssistantMessage assistantMessage, List<ToolCallback> toolCallbacks) {
+		List<String> awaiting = new ArrayList<>();
+		for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
+			ToolCallback toolCallback = this.resolveToolCallback(toolCallbacks, toolCall.name());
+			ToolMetadata toolMetadata = (toolCallback != null) ? toolCallback.getToolMetadata() : null;
+			if (this.toolCallConfirmationPolicy.requiresConfirmation(toolCall, toolMetadata)) {
+				awaiting.add(toolCall.id());
+			}
+		}
+		return awaiting;
+	}
+
+	/**
+	 * Every call of the reply needs a decision, so the policy is never re-evaluated when
+	 * a paused batch resumes, and an allowed call runs only with a tool the prompt
+	 * carries, never with one resolved by name.
+	 */
+	private static void checkDecisions(ToolCallDecisions decisions, AssistantMessage assistantMessage,
+			List<ToolCallback> toolCallbacks) {
+		Assert.isTrue(hasDistinctToolCallIds(assistantMessage),
+				"Every tool call of the reply needs an id of its own to be decided on; resume with the reply the loop returned");
+		Set<String> ids = new LinkedHashSet<>();
+		assistantMessage.getToolCalls().forEach(toolCall -> ids.add(toolCall.id()));
+		for (ToolCallDecision decision : decisions.decisions()) {
+			Assert.isTrue(ids.contains(decision.toolCallId()),
+					() -> "No tool call has the id '" + decision.toolCallId() + "'; the reply's calls: " + ids);
+		}
+		Set<String> missing = new LinkedHashSet<>(ids);
+		decisions.decisions().forEach(decision -> missing.remove(decision.toolCallId()));
+		Assert.isTrue(missing.isEmpty(), () -> "Every tool call of the reply needs a decision; missing: " + missing);
+		for (AssistantMessage.ToolCall toolCall : assistantMessage.getToolCalls()) {
+			ToolCallDecision decision = decisions.decisionOn(toolCall.id());
+			if (decision != null && decision.allowed() && findToolCallback(toolCallbacks, toolCall.name()) == null) {
+				throw new IllegalArgumentException(
+						"The prompt does not carry the tool '" + toolCall.name() + "' of the allowed call '"
+								+ toolCall.id() + "'; an allowed call runs only with a tool of the prompt");
+			}
+		}
+	}
+
+	/**
+	 * The prompt's callback for the tool or, when the fallback is enabled, the
+	 * resolver's.
+	 */
+	private @Nullable ToolCallback resolveToolCallback(List<ToolCallback> toolCallbacks, String toolName) {
+		ToolCallback toolCallback = findToolCallback(toolCallbacks, toolName);
+		if (toolCallback == null && this.resolutionFallbackEnabled) {
+			return this.toolCallbackResolver.resolve(toolName);
+		}
+		return toolCallback;
+	}
+
+	private static @Nullable ToolCallback findToolCallback(List<ToolCallback> toolCallbacks, String toolName) {
+		return toolCallbacks.stream()
+			.filter(tool -> toolName.equals(tool.getToolDefinition().name()))
+			.findFirst()
+			.orElse(null);
 	}
 
 	private List<Message> buildConversationHistoryAfterToolExecution(List<Message> previousMessages,
@@ -380,6 +546,8 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 		private ToolCallLimitBehavior onLimitExceeded = ToolCallLimitBehavior.THROW;
 
 		private boolean resolutionFallbackEnabled = DEFAULT_RESOLUTION_FALLBACK_ENABLED;
+
+		private ToolCallConfirmationPolicy toolCallConfirmationPolicy = ToolCallConfirmationPolicy.fromToolMetadata();
 
 		private Builder() {
 		}
@@ -495,11 +663,28 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 			return this;
 		}
 
+		/**
+		 * Which tool calls need a person's confirmation before they run. The manager
+		 * refuses to run such a call without a decision for it, by throwing
+		 * {@link ToolCallConfirmationRequiredException} before any call of the batch
+		 * runs; see {@link ToolCallDecisions}. Defaults to
+		 * {@link ToolCallConfirmationPolicy#fromToolMetadata()}: the calls of tools
+		 * marked {@code requiresConfirmation}.
+		 * @param toolCallConfirmationPolicy the policy
+		 * @since 2.1.0
+		 */
+		public Builder toolCallConfirmationPolicy(ToolCallConfirmationPolicy toolCallConfirmationPolicy) {
+			Assert.notNull(toolCallConfirmationPolicy, "toolCallConfirmationPolicy cannot be null");
+			this.toolCallConfirmationPolicy = toolCallConfirmationPolicy;
+			return this;
+		}
+
 		public DefaultToolCallingManager build() {
 			ToolCallLimits toolCallLimits = new ToolCallLimits(this.defaultMaxCallsPerTool, this.maxCallsPerTool,
 					this.toolsExcludedFromLimit, this.maxTotalToolCalls, this.onLimitExceeded);
 			return new DefaultToolCallingManager(this.observationRegistry, this.toolCallbackResolver,
-					this.toolExecutionExceptionProcessor, toolCallLimits, this.resolutionFallbackEnabled);
+					this.toolExecutionExceptionProcessor, toolCallLimits, this.resolutionFallbackEnabled,
+					this.toolCallConfirmationPolicy);
 		}
 
 	}

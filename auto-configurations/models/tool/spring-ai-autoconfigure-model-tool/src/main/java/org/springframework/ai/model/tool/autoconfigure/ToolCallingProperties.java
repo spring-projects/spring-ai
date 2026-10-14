@@ -24,6 +24,7 @@ import java.util.Map;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.model.tool.DefaultToolCallingManager;
+import org.springframework.ai.model.tool.ToolCallConfirmationPolicy;
 import org.springframework.ai.model.tool.ToolCallLimitBehavior;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
@@ -45,6 +46,8 @@ public class ToolCallingProperties {
 
 	private final Limits limits = new Limits();
 
+	private final Confirmation confirmation = new Confirmation();
+
 	public Observations getObservations() {
 		return this.observations;
 	}
@@ -55,6 +58,10 @@ public class ToolCallingProperties {
 
 	public Resolution getResolution() {
 		return this.resolution;
+	}
+
+	public Confirmation getConfirmation() {
+		return this.confirmation;
 	}
 
 	/**
@@ -199,6 +206,50 @@ public class ToolCallingProperties {
 				this.enabled = enabled;
 			}
 
+		}
+
+	}
+
+	/**
+	 * Which tool calls need a person's confirmation before they run. The tool-calling
+	 * loop pauses on such a call; see
+	 * {@link org.springframework.ai.model.tool.ToolCallDecisions}. Every
+	 * {@link ToolCallConfirmationPolicy} bean adds to these settings: a call needs
+	 * confirmation when any of them says so.
+	 *
+	 * @since 2.1.0
+	 */
+	public static class Confirmation {
+
+		/**
+		 * Whether calls of tools marked {@code requiresConfirmation} need a person's
+		 * confirmation. Disable only where nobody can confirm, such as tests or batch
+		 * jobs: those tools then run as soon as the model calls them. The tools listed in
+		 * {@code tools} and the {@code ToolCallConfirmationPolicy} beans still apply.
+		 */
+		private boolean enabled = true;
+
+		/**
+		 * Names of tools whose calls need a person's confirmation, whatever their
+		 * metadata says. Use it for tools you cannot annotate, such as MCP tools, with
+		 * the names the model sees (including any prefix).
+		 */
+		private List<String> tools = new ArrayList<>();
+
+		public boolean isEnabled() {
+			return this.enabled;
+		}
+
+		public void setEnabled(boolean enabled) {
+			this.enabled = enabled;
+		}
+
+		public List<String> getTools() {
+			return this.tools;
+		}
+
+		public void setTools(List<String> tools) {
+			this.tools = tools;
 		}
 
 	}

@@ -16,6 +16,7 @@
 
 package org.springframework.ai.chat.client.advisor;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -31,10 +32,14 @@ import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.ToolAdvisor;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.tool.ToolCallConfirmationRequiredException;
+import org.springframework.ai.model.tool.ToolCallDecisions;
 import org.springframework.ai.model.tool.ToolCallLimitExceededException;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
@@ -57,6 +62,21 @@ import org.springframework.util.Assert;
  * {@link org.springframework.ai.model.tool.ToolCallingChatOptions} (e.g. for models that
  * don't support tool calling), this advisor passes the request through to the next
  * advisor without modification.
+ * <p>
+ * <b>Tool calls that need confirmation.</b> When the model asks for a tool call that the
+ * {@link ToolCallingManager}'s
+ * {@link org.springframework.ai.model.tool.ToolCallConfirmationPolicy} says needs a
+ * person's confirmation (by default, a tool marked {@code requiresConfirmation}), the
+ * manager throws {@link ToolCallConfirmationRequiredException} and the loop
+ * <em>pauses</em>: none of the reply's tool calls run, and the reply goes back to the
+ * caller, listing the ids of the calls that wait for a decision
+ * ({@link ToolCallDecisions#awaitingDecision}). A streamed reply pauses on a last chunk
+ * with the tool calls and the ids. The loop keeps nothing. To resume, the application
+ * runs the calls with the decisions through
+ * {@link ToolCallingManager#executeToolCalls(Prompt, ChatResponse, ToolCallDecisions)}
+ * and sends the conversation, with the paused reply and the tool results, as its next
+ * request. A memory advisor outside the loop then stores the tool results like any other
+ * message.
  *
  * @author Christian Tzolov
  * @author Jewoo Shin
@@ -192,6 +212,13 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 						.build();
 					break;
 				}
+				catch (ToolCallConfirmationRequiredException ex) {
+					// A call that needs a person's confirmation pauses the loop: none of
+					// the reply's calls ran, the reply goes back to the caller with the
+					// ids that wait for a decision.
+					chatClientResponse = paused(chatClientResponse, chatResponse, ex);
+					break;
+				}
 
 				fullTurnHistory = toolExecutionResult.conversationHistory();
 
@@ -243,6 +270,14 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 		return chatClientRequest;
 	}
 
+	/**
+	 * Hook method called before each call in the tool call loop. Subclasses can override
+	 * to customize pre-call behavior, e.g. to add per-round tool callbacks to the
+	 * options.
+	 * @param chatClientRequest the request about to be processed
+	 * @param callAdvisorChain the call advisor chain
+	 * @return the potentially modified request
+	 */
 	protected ChatClientRequest doBeforeCall(ChatClientRequest chatClientRequest, CallAdvisorChain callAdvisorChain) {
 		return chatClientRequest;
 	}
@@ -321,7 +356,8 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 					previousAccumulatedResponse))
 			.concatWith(Flux.defer(() -> this.handleToolCallRecursion(aggregatedResponseRef.get(), finalRequest,
 					fullTurnHistory, streamAdvisorChain, originalRequest, optionsCopy, usageAccumulator)))
-			.filter(ccr -> !this.toolExecutionEligibilityChecker.isToolCallResponse(ccr.chatResponse()));
+			.filter(ccr -> !this.toolExecutionEligibilityChecker.isToolCallResponse(ccr.chatResponse())
+					|| ToolCallDecisions.isAwaitingDecision(ccr.chatResponse()));
 	}
 
 	/**
@@ -354,6 +390,7 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 		}
 
 		Assert.notNull(chatResponse, "redundant check that should never fail, but here to help NullAway");
+
 		final ChatClientResponse finalAggregatedResponse = aggregatedResponse;
 
 		// Execute tool calls on bounded elastic scheduler (tool execution is blocking)
@@ -377,6 +414,14 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 						.build())
 					.build();
 				return Flux.just(usageAccumulator.applyAccumulatedUsage(limitResponse));
+			}
+			catch (ToolCallConfirmationRequiredException ex) {
+				// A call that needs a person's confirmation pauses the loop. The reply's
+				// text was streamed already; a last chunk carries its tool calls and the
+				// ids that wait for a decision.
+				ChatClientResponse pausedResponse = pausedChunk(finalAggregatedResponse, chatResponse, ex);
+				return this.doFinalizeLoopStream(Flux.just(usageAccumulator.applyAccumulatedUsage(pausedResponse)),
+						streamAdvisorChain);
 			}
 			finally {
 				ToolCallReactiveContextHolder.clearContext();
@@ -471,6 +516,58 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 		}
 
 		return toolExecutionResult.conversationHistory();
+	}
+
+	// -------------------------------------------------------------------------
+	// Tool calls that need confirmation: pause
+	// -------------------------------------------------------------------------
+
+	/**
+	 * The last chunk of a paused streamed reply: its tool calls and the ids that wait for
+	 * a decision. The chunk keeps the reply's generation metadata, so its finish reason
+	 * still marks the end of the round for the advisors outside the loop.
+	 */
+	private static ChatClientResponse pausedChunk(ChatClientResponse aggregated, ChatResponse chatResponse,
+			ToolCallConfirmationRequiredException ex) {
+		AssistantMessage toolCallsOnly = AssistantMessage.builder()
+			.content("")
+			.toolCalls(ex.getToolCallsMessage().getToolCalls())
+			.build();
+		ChatResponse chunk = ChatResponse.builder()
+			.from(chatResponse)
+			.generations(List.of(new Generation(toolCallsOnly, toolCallGeneration(chatResponse).getMetadata())))
+			.metadata(ToolCallDecisions.AWAITING_DECISION_METADATA_KEY, ex.getToolCallIds())
+			.build();
+		return aggregated.mutate().chatResponse(chunk).build();
+	}
+
+	/**
+	 * The paused reply, with the ids of the tool calls that wait for a decision. Its tool
+	 * calls are the manager's copy, every one of them with an id.
+	 */
+	private static ChatClientResponse paused(ChatClientResponse response, ChatResponse chatResponse,
+			ToolCallConfirmationRequiredException ex) {
+		List<Generation> generations = new ArrayList<>(chatResponse.getResults());
+		int index = generations.indexOf(toolCallGeneration(chatResponse));
+		generations.set(index, new Generation(ex.getToolCallsMessage(), generations.get(index).getMetadata()));
+		return response.mutate()
+			.chatResponse(ChatResponse.builder()
+				.from(chatResponse)
+				.generations(generations)
+				.metadata(ToolCallDecisions.AWAITING_DECISION_METADATA_KEY, ex.getToolCallIds())
+				.build())
+			.build();
+	}
+
+	/**
+	 * The generation whose tool calls the manager looked at: the first with tool calls.
+	 */
+	private static Generation toolCallGeneration(ChatResponse chatResponse) {
+		return chatResponse.getResults()
+			.stream()
+			.filter(generation -> generation.getOutput().hasToolCalls())
+			.findFirst()
+			.orElseThrow(() -> new IllegalStateException("No tool call requested by the chat model"));
 	}
 
 	/**
