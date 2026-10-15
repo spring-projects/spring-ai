@@ -35,6 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Geng Rong
  * @author guan xu
  */
+@SuppressWarnings("removal")
 public class DeepSeekChatCompletionRequestTests {
 
 	@Test

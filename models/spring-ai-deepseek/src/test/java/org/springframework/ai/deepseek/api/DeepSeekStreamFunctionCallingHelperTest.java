@@ -127,6 +127,49 @@ class DeepSeekStreamFunctionCallingHelperTest {
 	}
 
 	@Test
+	void mergeShouldConcatenateReasoningContentAcrossChunks() {
+		// Given: reasoning streamed inside a buffered tool-call window
+		ChatCompletionMessage previousMsg = new ChatCompletionMessage(null, Role.ASSISTANT, null, null, null, null,
+				"Think ");
+		ChatCompletionMessage currentMsg = new ChatCompletionMessage(null, Role.ASSISTANT, null, null, null, null,
+				"first.");
+		ChatCompletionChunk previous = new ChatCompletionChunk("id",
+				List.of(new ChatCompletionChunk.ChunkChoice(null, 0, previousMsg, null)), 123L, "model", null, null,
+				null, null);
+		ChatCompletionChunk current = new ChatCompletionChunk("id",
+				List.of(new ChatCompletionChunk.ChunkChoice(null, 0, currentMsg, null)), 123L, "model", null, null,
+				null, null);
+
+		// When
+		ChatCompletionChunk result = this.helper.merge(previous, current);
+
+		// Then
+		assertThat(result.choices().get(0).delta().reasoningContent()).isEqualTo("Think first.");
+	}
+
+	@Test
+	void mergeShouldKeepPreviousReasoningContentWhenCurrentHasNone() {
+		// Given
+		ChatCompletionMessage previousMsg = new ChatCompletionMessage(null, Role.ASSISTANT, null, null, null, null,
+				"Think first.");
+		ChatCompletionMessage currentMsg = new ChatCompletionMessage("Hello", Role.ASSISTANT, null, null, null, null,
+				null);
+		ChatCompletionChunk previous = new ChatCompletionChunk("id",
+				List.of(new ChatCompletionChunk.ChunkChoice(null, 0, previousMsg, null)), 123L, "model", null, null,
+				null, null);
+		ChatCompletionChunk current = new ChatCompletionChunk("id",
+				List.of(new ChatCompletionChunk.ChunkChoice(null, 0, currentMsg, null)), 123L, "model", null, null,
+				null, null);
+
+		// When
+		ChatCompletionChunk result = this.helper.merge(previous, current);
+
+		// Then
+		assertThat(result.choices().get(0).delta().reasoningContent()).isEqualTo("Think first.");
+		assertThat(result.choices().get(0).delta().content()).isEqualTo("Hello");
+	}
+
+	@Test
 	void mergeWithSingleToolCallShouldWork() {
 		// Given
 		ToolCall toolCall = new ToolCall("call_1", "function", new ChatCompletionFunction("func1", "{}"));
