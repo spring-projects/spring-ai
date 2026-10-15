@@ -205,7 +205,7 @@ class JdbcSessionRepositoryTests {
 	}
 
 	@Test
-	void indexedValuesMatchOnTheirFirstFiveHundredAndTwelveCharacters() {
+	void indexedValuesLongerThanTheIndexedPrefixAreStillMatchedWhole() {
 		String prefix = "p-" + UUID.randomUUID() + "-";
 		String value = prefix + "x".repeat(JdbcSessionRepository.MAX_INDEXED_VALUE_LENGTH);
 		Session session = this.repository.save(Session.builder()
@@ -213,17 +213,21 @@ class JdbcSessionRepositoryTests {
 			.metadata("tenant", "irrelevant")
 			.metadata(SessionAttributes.PRINCIPAL_NAME, value)
 			.build());
+		// Shares the indexed prefix, differs after it
+		Session other = this.repository.save(Session.builder()
+			.id(UUID.randomUUID().toString())
+			.metadata(SessionAttributes.PRINCIPAL_NAME, value + "tail")
+			.build());
 
 		assertThat(this.repository.findByIndex(SessionAttributes.PRINCIPAL_NAME, value)).extracting(Session::id)
 			.containsExactly(session.id());
-		assertThat(this.repository.findByIndex(SessionAttributes.PRINCIPAL_NAME,
-				value.substring(0, JdbcSessionRepository.MAX_INDEXED_VALUE_LENGTH)))
-			.extracting(Session::id)
-			.containsExactly(session.id());
-		// A value that differs only after the indexed prefix is not told apart
 		assertThat(this.repository.findByIndex(SessionAttributes.PRINCIPAL_NAME, value + "tail"))
 			.extracting(Session::id)
-			.containsExactly(session.id());
+			.containsExactly(other.id());
+		// The prefix alone is a different value
+		assertThat(this.repository.findByIndex(SessionAttributes.PRINCIPAL_NAME,
+				value.substring(0, JdbcSessionRepository.MAX_INDEXED_VALUE_LENGTH)))
+			.isEmpty();
 		// The stored metadata keeps the full value
 		assertThat(SessionAttributes.principalName(this.repository.findById(session.id()))).isEqualTo(value);
 	}

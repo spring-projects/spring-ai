@@ -64,10 +64,10 @@ import org.springframework.util.Assert;
  * On every save the metadata entries whose keys are
  * {@linkplain Builder#indexedAttributes(Set) indexed}, the principal by default, are
  * copied into {@code AI_SESSION_INDEX}, on the first {@value #MAX_INDEXED_VALUE_LENGTH}
- * characters of the value, and {@link #findByIndex} is one query over that table. An
- * event is stored in the four columns {@link SessionEventCodec} defines: the event type,
- * the message type, the message text, its own column so a store can search it, and a JSON
- * payload.
+ * characters of the value, and {@link #findByIndex} is one query over that table, with
+ * the whole value checked on the sessions it returns. An event is stored in the four
+ * columns {@link SessionEventCodec} defines: the event type, the message type, the
+ * message text, its own column so a store can search it, and a JSON payload.
  * <p>
  * The {@code event_version} column of {@code AI_SESSION} advances on every
  * {@link #appendEvent} that appends a new event and on every successful
@@ -163,7 +163,13 @@ public final class JdbcSessionRepository implements SessionRepository {
 
 	private final Set<String> indexedAttributes;
 
-	/** The number of leading characters of a metadata value that are indexed. */
+	/**
+	 * The number of leading characters of a metadata value the index row holds: with four
+	 * bytes per character on MySQL, the {@code (attr_name, attr_value)} index stays under
+	 * InnoDB's key limit. The row is a prefix index: {@link #findByIndex} compares the
+	 * whole value on the sessions the query returns, so two values that share their first
+	 * {@value #MAX_INDEXED_VALUE_LENGTH} characters are told apart.
+	 */
 	public static final int MAX_INDEXED_VALUE_LENGTH = 512;
 
 	/** The metadata keys every repository indexes: the principal. */
@@ -231,7 +237,13 @@ public final class JdbcSessionRepository implements SessionRepository {
 	}
 
 	private static String indexValue(String value) {
-		return (value.length() > MAX_INDEXED_VALUE_LENGTH) ? value.substring(0, MAX_INDEXED_VALUE_LENGTH) : value;
+		if (value.length() <= MAX_INDEXED_VALUE_LENGTH) {
+			return value;
+		}
+		// Never cut a surrogate pair in two: a lone surrogate is not text to the database
+		int cut = Character.isHighSurrogate(value.charAt(MAX_INDEXED_VALUE_LENGTH - 1)) ? MAX_INDEXED_VALUE_LENGTH - 1
+				: MAX_INDEXED_VALUE_LENGTH;
+		return value.substring(0, cut);
 	}
 
 	@Override
@@ -245,7 +257,12 @@ public final class JdbcSessionRepository implements SessionRepository {
 	public List<Session> findByIndex(String name, String value) {
 		Assert.hasText(name, "name must not be null or empty");
 		Assert.notNull(value, "value must not be null");
-		return this.jdbcTemplate.query(SELECT_SESSIONS_BY_INDEX, new SessionRowMapper(), name, indexValue(value));
+		// The index row holds a prefix of the value, so a hit is a candidate, and the
+		// metadata the query loads anyway settles it
+		return this.jdbcTemplate.query(SELECT_SESSIONS_BY_INDEX, new SessionRowMapper(), name, indexValue(value))
+			.stream()
+			.filter(session -> value.equals(String.valueOf(session.metadata().get(name))))
+			.toList();
 	}
 
 	@Override
