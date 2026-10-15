@@ -700,13 +700,13 @@ final class ResponsesItemMapper {
 
 	/**
 	 * The MIME type of a generated image, from the {@code output_format} the item echoes
-	 * back. The SDK does not type that field, so it is read from the item's additional
-	 * properties; PNG is both the API default and the fallback for a format this method
-	 * does not know.
+	 * back. PNG is both the API default and the fallback for a format this method does
+	 * not know.
 	 */
 	private static MimeType imageMimeType(ResponseOutputItem.ImageGenerationCall call) {
-		JsonValue outputFormat = call._additionalProperties().get("output_format");
-		String format = outputFormat != null ? fields(outputFormat).asString().orElse("") : "";
+		String format = call.outputFormat()
+			.map(ResponseOutputItem.ImageGenerationCall.OutputFormat::asString)
+			.orElse("");
 		return switch (format) {
 			case "jpeg", "jpg" -> MimeTypeUtils.IMAGE_JPEG;
 			case "webp" -> IMAGE_WEBP;
