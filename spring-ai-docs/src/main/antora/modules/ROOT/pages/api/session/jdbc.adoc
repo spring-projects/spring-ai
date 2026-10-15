@@ -122,6 +122,7 @@ On every save the repository copies the metadata entries whose keys are configur
 The starter, `spring-ai-starter-model-session-jdbc`, brings the two auto-configurations with Spring Boot's JDBC starter.
 `JdbcSessionRepositoryAutoConfiguration` creates a `JdbcSessionRepository` when a single `DataSource` bean is present, and `SessionServiceAutoConfiguration` a `DefaultSessionService` on top of the single `SessionRepository` bean, whatever its implementation.
 Both use `@ConditionalOnMissingBean`: declare your own bean of either type and the auto-configuration backs off.
+The repository runs its writes in the application's single `PlatformTransactionManager` when that manager is on the same `DataSource`, JDBC or JPA, or a JTA one; with any other manager, one for a message broker or a document store for example, it uses a `DataSourceTransactionManager` of its own.
 A `SessionServiceDecorator` bean wraps the auto-configured service, for a cross-cutting concern such as authorization, without post-processing every `SessionService` bean.
 
 [cols="2,1,3"]

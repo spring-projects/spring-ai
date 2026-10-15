@@ -20,11 +20,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.sql.DataSource;
 
+import jakarta.persistence.EntityManagerFactory;
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.model.session.autoconfigure.SessionServiceAutoConfiguration;
 import org.springframework.ai.session.InMemorySessionRepository;
 import org.springframework.ai.session.Session;
+import org.springframework.ai.session.SessionEvent;
 import org.springframework.ai.session.SessionRepository;
 import org.springframework.ai.session.SessionService;
 import org.springframework.ai.session.jdbc.JdbcSessionRepository;
@@ -40,10 +43,15 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
+import org.springframework.orm.jpa.JpaTransactionManager;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.TransactionDefinition;
+import org.springframework.transaction.jta.JtaTransactionManager;
+import org.springframework.transaction.support.AbstractPlatformTransactionManager;
+import org.springframework.transaction.support.DefaultTransactionStatus;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.mockingDetails;
 import static org.mockito.Mockito.spy;
 
@@ -118,6 +126,41 @@ class JdbcSessionRepositoryAutoConfigurationTests {
 	}
 
 	@Test
+	void ignoresTransactionManagerOfAnotherResource() {
+		// A manager for a broker or a document store would open transactions the JDBC
+		// statements never join; the repository must fall back to its own
+		this.contextRunner.withUserConfiguration(ForeignTransactionManagerConfiguration.class).run(context -> {
+			SessionRepository repository = context.getBean(SessionRepository.class);
+			repository.save(Session.builder().id("s-2").build());
+			repository.appendEvent(SessionEvent.builder().sessionId("s-2").message(new UserMessage("hi")).build());
+
+			assertThat(repository.findById("s-2")).isNotNull();
+			assertThat(repository.getEventVersion("s-2")).isEqualTo(1L);
+			assertThat(context.getBean(ForeignTransactionManagerConfiguration.class).transactions).hasValue(0);
+		});
+	}
+
+	@Test
+	void managersOnTheDataSourceAreAccepted() {
+		DataSource dataSource = new DriverManagerDataSource("jdbc:h2:mem:managed;DB_CLOSE_DELAY=-1");
+		DataSource another = new DriverManagerDataSource("jdbc:h2:mem:another;DB_CLOSE_DELAY=-1");
+		JpaTransactionManager jpaOnIt = new JpaTransactionManager(mock(EntityManagerFactory.class));
+		jpaOnIt.setDataSource(dataSource);
+		JpaTransactionManager jpaOnAnother = new JpaTransactionManager(mock(EntityManagerFactory.class));
+		jpaOnAnother.setDataSource(another);
+
+		assertThat(JdbcSessionRepositoryAutoConfiguration
+			.managesDataSource(new DataSourceTransactionManager(dataSource), dataSource)).isTrue();
+		assertThat(JdbcSessionRepositoryAutoConfiguration.managesDataSource(jpaOnIt, dataSource)).isTrue();
+		assertThat(JdbcSessionRepositoryAutoConfiguration.managesDataSource(new JtaTransactionManager(), dataSource))
+			.isTrue();
+		assertThat(JdbcSessionRepositoryAutoConfiguration.managesDataSource(new DataSourceTransactionManager(another),
+				dataSource))
+			.isFalse();
+		assertThat(JdbcSessionRepositoryAutoConfiguration.managesDataSource(jpaOnAnother, dataSource)).isFalse();
+	}
+
+	@Test
 	void backsOffWithoutDataSource() {
 		new ApplicationContextRunner()
 			.withConfiguration(AutoConfigurations.of(JdbcSessionRepositoryAutoConfiguration.class,
@@ -162,6 +205,36 @@ class JdbcSessionRepositoryAutoConfigurationTests {
 		assertThat(props.getInitializeSchema()).isEqualTo(DatabaseInitializationMode.EMBEDDED);
 		assertThat(props.getDefaultSchemaLocation())
 			.isEqualTo("classpath:org/springframework/ai/session/jdbc/schema-@@platform@@.sql");
+	}
+
+	@Configuration(proxyBeanMethods = false)
+	static class ForeignTransactionManagerConfiguration {
+
+		final AtomicInteger transactions = new AtomicInteger();
+
+		@Bean
+		PlatformTransactionManager transactionManager() {
+			return new AbstractPlatformTransactionManager() {
+				@Override
+				protected Object doGetTransaction() {
+					return new Object();
+				}
+
+				@Override
+				protected void doBegin(Object transaction, TransactionDefinition definition) {
+					ForeignTransactionManagerConfiguration.this.transactions.incrementAndGet();
+				}
+
+				@Override
+				protected void doCommit(DefaultTransactionStatus status) {
+				}
+
+				@Override
+				protected void doRollback(DefaultTransactionStatus status) {
+				}
+			};
+		}
+
 	}
 
 	@Configuration(proxyBeanMethods = false)
