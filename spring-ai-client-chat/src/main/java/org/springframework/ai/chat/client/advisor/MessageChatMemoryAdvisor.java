@@ -18,7 +18,9 @@ package org.springframework.ai.chat.client.advisor;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
+import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
@@ -32,6 +34,7 @@ import org.springframework.ai.chat.client.advisor.api.BaseAdvisor;
 import org.springframework.ai.chat.client.advisor.api.BaseChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
 import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.util.Assert;
@@ -42,6 +45,7 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  * @author Mark Pollack
  * @author Thomas Vitale
+ * @author Jewoo Shin
  * @since 1.0.0
  */
 public final class MessageChatMemoryAdvisor implements BaseChatMemoryAdvisor {
@@ -140,11 +144,49 @@ public final class MessageChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 			assistantMessages = chatClientResponse.chatResponse()
 				.getResults()
 				.stream()
-				.map(g -> (Message) g.getOutput())
+				.map(g -> sanitizeForMemory(g.getOutput()))
+				.filter(Objects::nonNull)
 				.toList();
 		}
 		this.chatMemory.add(this.getConversationId(chatClientResponse.context()), assistantMessages);
 		return chatClientResponse;
+	}
+
+	/**
+	 * Strip the tool-call round-trip from an assistant message before it is persisted as
+	 * cross-turn history.
+	 * <p>
+	 * The pairing of {@code AssistantMessage(tool_calls=[...])} with its following
+	 * {@link org.springframework.ai.chat.messages.ToolResponseMessage} is intra-turn
+	 * structure managed by the tool-calling loop, not long-term conversation history.
+	 * When {@code stream()} is combined with
+	 * {@code ToolCallingAdvisor.streamToolCallResponses(true)} the
+	 * {@link org.springframework.ai.chat.model.MessageAggregator} folds the tool-call
+	 * round and the recursive text round into a single
+	 * {@code AssistantMessage(text + tool_calls)}; persisting that orphan (there is no
+	 * following tool response in memory) makes the next turn's replay fail on
+	 * OpenAI-compatible backends with HTTP 400
+	 * ({@code "An assistant message with 'tool_calls' must be followed by tool messages"}).
+	 * Keep the assistant's text and drop the {@code tool_calls}; if the frame was a pure
+	 * intermediate tool call with no text, drop it entirely.
+	 * @param assistantMessage the assistant message about to be persisted
+	 * @return the message to persist, or {@code null} if it should be dropped
+	 * @see <a href=
+	 * "https://github.com/spring-projects/spring-ai/issues/6340">spring-ai#6340</a>
+	 */
+	private static @Nullable Message sanitizeForMemory(AssistantMessage assistantMessage) {
+		if (!assistantMessage.hasToolCalls()) {
+			return assistantMessage;
+		}
+		String text = assistantMessage.getText();
+		if (text == null || text.isEmpty()) {
+			return null;
+		}
+		return AssistantMessage.builder()
+			.content(text)
+			.properties(assistantMessage.getMetadata())
+			.media(assistantMessage.getMedia())
+			.build();
 	}
 
 	@Override
