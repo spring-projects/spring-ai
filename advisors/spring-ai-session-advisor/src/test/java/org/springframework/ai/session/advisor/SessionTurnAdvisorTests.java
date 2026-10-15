@@ -243,7 +243,7 @@ class SessionTurnAdvisorTests {
 	}
 
 	@Test
-	void asyncCompactionThatNewTurnOvertakesRunsAgainAfterIt() throws Exception {
+	void asyncCompactionThatNewTurnOvertakesKeepsThatTurnInView() throws Exception {
 		this.sessionService.create(CreateSessionRequest.builder().id(this.sessionId).build());
 		this.sessionService.appendMessage(this.sessionId, new UserMessage("Earlier question"));
 		this.sessionService.appendMessage(this.sessionId, new AssistantMessage("Earlier answer"));
@@ -258,12 +258,14 @@ class SessionTurnAdvisorTests {
 		assertThat(held.started.await(5, TimeUnit.SECONDS)).isTrue();
 
 		// A second turn writes while the first compaction runs: no second compaction
-		// starts, and the running one, overtaken, writes nothing
+		// starts, and the running one, overtaken, lands rebased onto the new turn, which
+		// stays in the view verbatim
 		say(client, "Still there?", "Yes.");
 		held.release.countDown();
 		await(() -> !turn.isCompacting(this.sessionId));
 		assertThat(held.calls).hasValue(1);
-		assertThat(this.sessionService.getActiveMessages(this.sessionId)).hasSize(6);
+		assertThat(ScriptedChatModel.describe(new Prompt(this.sessionService.getActiveMessages(this.sessionId))))
+			.containsExactly("Hello", "Hi!", "Still there?", "Yes.");
 
 		// The next turn's compaction lands
 		say(client, "Bye", "Bye!");

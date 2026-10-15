@@ -115,12 +115,14 @@ public interface SessionService {
 	 * Evaluates the trigger on the active view and, when it fires, runs the strategy and
 	 * records its result: one {@link EventType#COMPACTION} boundary event followed by the
 	 * summary events, in one version-checked append. The log is never changed; the
-	 * boundary defines the view from then on. Pass {@code request -> true} to compact
-	 * unconditionally.
-	 * @return the result;
+	 * boundary defines the view from then on. An append that lands in between does not
+	 * waste the summary: the new events join the view verbatim and the write is retried,
+	 * a bounded number of times. Pass {@code request -> true} to compact unconditionally.
+	 * @return the result as written, the events appended meanwhile added to its preserved
+	 * tail;
 	 * {@link org.springframework.ai.session.compaction.CompactionResult#isUnchanged()}
 	 * when nothing was written: the trigger did not fire, the strategy covered nothing,
-	 * or a concurrent writer changed the log first
+	 * another compaction landed first, or appends kept overtaking the write
 	 */
 	CompactionResult compact(String sessionId, CompactionTrigger trigger, CompactionStrategy strategy);
 

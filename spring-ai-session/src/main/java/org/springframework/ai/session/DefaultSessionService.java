@@ -18,7 +18,11 @@ package org.springframework.ai.session;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 
 import org.jspecify.annotations.Nullable;
@@ -41,6 +45,18 @@ import org.springframework.util.Assert;
 public final class DefaultSessionService implements SessionService {
 
 	private static final Logger logger = LoggerFactory.getLogger(DefaultSessionService.class);
+
+	/**
+	 * How many times a compaction that a concurrent append overtook is rebased onto the
+	 * new events and written again before it is given up.
+	 */
+	static final int MAX_REBASES = 2;
+
+	/** The newest compaction boundary of a session. */
+	private static final EventFilter NEWEST_BOUNDARY = EventFilter.builder()
+		.eventTypes(Set.of(EventType.COMPACTION))
+		.lastN(1)
+		.build();
 
 	private final Duration defaultTimeToLive;
 
@@ -151,15 +167,15 @@ public final class DefaultSessionService implements SessionService {
 
 		Session session = requireSession(sessionId);
 
-		// Read version BEFORE events so the version we pass to the CAS write is
-		// guaranteed to be ≤ the version of the events we subsequently read. If another
-		// writer (append or compaction) changes the log between our read and our write,
-		// the CAS will detect the version mismatch and return false — we skip silently,
-		// as the concurrent writer already handled the session.
+		// The version is read before the boundary and the view, so the version passed to
+		// the version-checked write is at most the one the view was read at, and the
+		// boundary read says which view that was: a write that fails on the version
+		// then tells an append apart from another compaction.
 		long version = this.sessionRepository.getEventVersion(session.id());
+		String boundary = newestBoundaryId(session.id());
 
-		// Operate on the active view only — the events an earlier compaction covered are
-		// retained for Recall Storage and must not be re-processed (or re-summarized).
+		// The active view only: the events an earlier compaction covered are kept for
+		// recall and are not summarized again.
 		List<SessionEvent> view = this.sessionRepository.findEvents(session.id(), EventFilter.active());
 
 		CompactionRequest request = CompactionRequest.of(session, view);
@@ -175,12 +191,55 @@ public final class DefaultSessionService implements SessionService {
 
 		// Record the decision as an appended boundary followed by its summary events. The
 		// log is never changed: the boundary names, by id, what the view is from now on.
-		List<SessionEvent> appended = result.toEvents(session.id());
-		if (!this.sessionRepository.appendEvents(session.id(), appended, version)) {
-			// CAS rejected — a concurrent writer already changed the log; skip silently.
-			return CompactionResult.unchanged();
+		Set<String> seen = new HashSet<>();
+		view.forEach(event -> seen.add(event.getId()));
+		for (int rebases = 0;; rebases++) {
+			if (this.sessionRepository.appendEvents(session.id(), result.toEvents(session.id()), version)) {
+				return result;
+			}
+			// A concurrent writer changed the log. Another compaction's boundary makes
+			// this result stale, its view is gone. An append does not: the summary still
+			// stands in for what it covered, and the events appended since join the
+			// preserved tail verbatim, so the result is rebased onto them and written
+			// again, without a second summary. Bounded, so a busy session cannot hold
+			// the compaction up for long.
+			if (rebases == MAX_REBASES) {
+				logger.debug("Compaction of session [{}] overtaken {} times; giving up until the next pass",
+						session.id(), rebases + 1);
+				return CompactionResult.unchanged();
+			}
+			version = this.sessionRepository.getEventVersion(session.id());
+			if (!Objects.equals(boundary, newestBoundaryId(session.id()))) {
+				return CompactionResult.unchanged();
+			}
+			List<SessionEvent> since = new ArrayList<>();
+			for (SessionEvent event : this.sessionRepository.findEvents(session.id(), EventFilter.active())) {
+				if (seen.add(event.getId())) {
+					since.add(event);
+				}
+			}
+			result = rebase(result, since);
 		}
-		return result;
+	}
+
+	private @Nullable String newestBoundaryId(String sessionId) {
+		List<SessionEvent> boundaries = this.sessionRepository.findEvents(sessionId, NEWEST_BOUNDARY);
+		return boundaries.isEmpty() ? null : boundaries.get(boundaries.size() - 1).getId();
+	}
+
+	/**
+	 * The result with the events appended since its view was read preserved after its
+	 * tail. A stored system message among them is preserved like the rest, not pinned:
+	 * the next compaction pins it and covers the one before.
+	 */
+	private static CompactionResult rebase(CompactionResult result, List<SessionEvent> since) {
+		if (since.isEmpty()) {
+			return result;
+		}
+		List<SessionEvent> preserved = new ArrayList<>(result.preservedEvents());
+		preserved.addAll(since);
+		return new CompactionResult(result.coveredEvents(), result.pinnedEvents(), preserved, result.summary(),
+				result.tokensEstimatedSaved(), result.strategy());
 	}
 
 	public static Builder builder() {

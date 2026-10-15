@@ -280,9 +280,11 @@ The default id is a random UUID, so this only matters when a caller supplies its
 === Optimistic concurrency
 
 `SessionRepository.getEventVersion(sessionId)` is a counter that advances on every append of a new event and on every successful `appendEvents` call.
-`DefaultSessionService.compact` reads it before fetching the view, builds the boundary and the summary events from the strategy's result, and passes the version to `appendEvents(sessionId, events, expectedVersion)`.
-When another writer changed the log in between, the compare-and-swap returns `false` and the compaction is skipped; it runs again after the next turn.
-Of two concurrent compactions only the first lands, and a compaction that a new append overtakes never covers what the model was about to see.
+`DefaultSessionService.compact` reads it, then the newest boundary, then the view, builds the boundary and the summary events from the strategy's result, and passes the version to `appendEvents(sessionId, events, expectedVersion)`.
+When another writer changed the log in between, the compare-and-swap returns `false`.
+If a newer boundary landed, this result is dropped: it stands on a view that is gone.
+If it was an append, the result is rebased: the events appended since the view was read join the preserved tail verbatim, the same summary stands, and the write is retried, twice at most.
+So an append does not waste the summary, a compaction never covers what the model was about to see, and only a session that keeps overtaking the write makes it stand down until the next pass.
 
 === Ordering
 

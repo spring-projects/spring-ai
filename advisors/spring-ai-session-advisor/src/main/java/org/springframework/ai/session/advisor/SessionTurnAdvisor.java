@@ -71,8 +71,8 @@ import org.springframework.util.Assert;
  * it on the scheduler with {@link Builder#asyncCompaction(boolean)}. Compaction is
  * best-effort: a failure is logged and the reply returned, and it is retried after the
  * next turn. It appends a boundary with an optimistic compare-and-swap, so of two
- * concurrent compactions only the first lands, and a compaction that a new turn's writes
- * overtake is skipped and retried.</li>
+ * concurrent compactions only the first lands; a compaction that a new turn's writes
+ * overtake keeps them in the view and lands with the same summary.</li>
  * </ol>
  *
  * @author Christian Tzolov
@@ -384,7 +384,9 @@ public final class SessionTurnAdvisor implements CallAdvisor, StreamAdvisor {
 		 * the security context for example, captured with Micrometer's context
 		 * propagation; a {@code stream()} ends on the scheduler already. One compaction
 		 * per session runs at a time from this advisor; a new turn that writes to the
-		 * session meanwhile makes it skip, and it is retried after that turn.
+		 * session meanwhile stays in the view, the compaction lands rebased onto its
+		 * events with the same summary. Only another compaction's boundary, or turns that
+		 * keep overtaking it, make it stand down until the next turn.
 		 */
 		public Builder asyncCompaction(boolean asyncCompaction) {
 			this.asyncCompaction = asyncCompaction;
