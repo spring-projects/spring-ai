@@ -1706,6 +1706,10 @@ Spring AI emits Micrometer observations at two layers for every Anthropic call:
 For both `call(...)` and `stream(...)`, the `okhttp.requests` observation is nested under the `gen_ai.client.operation` observation, so the `traceparent` sent to Anthropic carries the caller's trace.
 The one exception is streaming with your own async client set through `AnthropicChatModel.builder().anthropicClientAsync(...)`: Spring AI keeps using that client, but its HTTP observations are not nested under the chat-model observation.
 
+The Anthropic Java SDK can also emit its own OpenTelemetry spans.
+Spring AI turns them off in the clients it builds, because the observations above already cover every request.
+A client that you build yourself and pass to `AnthropicChatModel.builder()` keeps whatever SDK tracing settings you gave it.
+
 In a Spring Boot application with `spring-boot-starter-actuator` and a tracing bridge (`micrometer-tracing-bridge-otel` or `micrometer-tracing-bridge-brave`), both layers are wired automatically — no opt-in required.
 For non-Boot applications, pass an `ObservationRegistry` to `AnthropicChatModel.builder()`:
 
