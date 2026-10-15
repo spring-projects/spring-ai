@@ -34,9 +34,15 @@ import io.micrometer.tracing.handler.TracingObservationHandler;
 import io.micrometer.tracing.otel.bridge.OtelCurrentTraceContext;
 import io.micrometer.tracing.otel.bridge.OtelPropagator;
 import io.micrometer.tracing.otel.bridge.OtelTracer;
+import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.trace.propagation.W3CTraceContextPropagator;
+import io.opentelemetry.context.Context;
 import io.opentelemetry.context.propagation.ContextPropagators;
+import io.opentelemetry.sdk.OpenTelemetrySdk;
+import io.opentelemetry.sdk.trace.ReadWriteSpan;
+import io.opentelemetry.sdk.trace.ReadableSpan;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
+import io.opentelemetry.sdk.trace.SpanProcessor;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import org.junit.jupiter.api.AfterEach;
@@ -182,6 +188,69 @@ class AnthropicChatModelStreamingHttpTests {
 		assertThat(this.server.takeRequest().getHeader("traceparent"))
 			.matches("00-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}")
 			.startsWith("00-%s-%s-".formatted(chatSpan.traceId(), httpSpan.spanId()));
+	}
+
+	@Test
+	void sdkTracingStaysOffWhenGlobalOpenTelemetryIsRegistered() throws Exception {
+		// An OpenTelemetry Java agent registers a global instance like this one. The SDK
+		// would then add its own spans and trace headers on top of Spring AI's.
+		List<String> spanScopes = new CopyOnWriteArrayList<>();
+		SdkTracerProvider tracerProvider = SdkTracerProvider.builder().addSpanProcessor(new SpanProcessor() {
+
+			@Override
+			public void onStart(Context parentContext, ReadWriteSpan span) {
+				spanScopes.add(span.getInstrumentationScopeInfo().getName());
+			}
+
+			@Override
+			public boolean isStartRequired() {
+				return true;
+			}
+
+			@Override
+			public void onEnd(ReadableSpan span) {
+			}
+
+			@Override
+			public boolean isEndRequired() {
+				return false;
+			}
+
+		}).build();
+		ContextPropagators propagators = ContextPropagators.create(W3CTraceContextPropagator.getInstance());
+		GlobalOpenTelemetry.resetForTest();
+		GlobalOpenTelemetry
+			.set(OpenTelemetrySdk.builder().setTracerProvider(tracerProvider).setPropagators(propagators).build());
+		try {
+			io.opentelemetry.api.trace.Tracer otelTracer = tracerProvider.get("spring-ai");
+			OtelTracer tracer = new OtelTracer(otelTracer, new OtelCurrentTraceContext(), event -> {
+			});
+			ObservationRegistry tracingRegistry = ObservationRegistry.create();
+			tracingRegistry.observationConfig()
+				.observationHandler(new FirstMatchingCompositeObservationHandler(
+						new PropagatingSenderTracingObservationHandler<>(tracer,
+								new OtelPropagator(propagators, otelTracer)),
+						new DefaultTracingObservationHandler(tracer)));
+			AnthropicChatModel model = AnthropicChatModel.builder()
+				.options(this.chatModel.getOptions())
+				.observationRegistry(tracingRegistry)
+				.build();
+			this.server.enqueue(new MockResponse().setResponseCode(500));
+			this.server.enqueue(streamResponse());
+
+			model.stream(new Prompt("hi")).collectList().block();
+
+			assertThat(this.server.getRequestCount()).isEqualTo(2);
+			for (int attempt = 0; attempt < 2; attempt++) {
+				assertThat(this.server.takeRequest().getHeaders().values("traceparent")).singleElement()
+					.asString()
+					.matches("00-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}");
+			}
+			assertThat(spanScopes).isNotEmpty().containsOnly("spring-ai");
+		}
+		finally {
+			GlobalOpenTelemetry.resetForTest();
+		}
 	}
 
 	@Test
