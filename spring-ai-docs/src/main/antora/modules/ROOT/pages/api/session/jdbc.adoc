@@ -176,15 +176,14 @@ A `lastN` window keeps turns whole, as xref:api/session/event-filter.adoc#sessio
 Existing events never move, change or disappear; `CompactionBoundary.project(log)` is the reference projection.
 * *`findByMetadata` is the one scoped lookup*: every store indexes `SessionAttributes.PRINCIPAL_NAME`.
 
-The `spring-ai-session` test-jar ships `AbstractSessionRepositoryContractTests`, the suite the in-memory, H2, PostgreSQL, MySQL and MariaDB repositories run.
+`spring-ai-test` ships `AbstractSessionRepositoryContractTests`, the suite the in-memory, H2, PostgreSQL, MySQL and MariaDB repositories run.
 Extend it and return your repository:
 
 [source,xml]
 ----
 <dependency>
     <groupId>org.springframework.ai</groupId>
-    <artifactId>spring-ai-session</artifactId>
-    <type>test-jar</type>
+    <artifactId>spring-ai-test</artifactId>
     <scope>test</scope>
 </dependency>
 ----

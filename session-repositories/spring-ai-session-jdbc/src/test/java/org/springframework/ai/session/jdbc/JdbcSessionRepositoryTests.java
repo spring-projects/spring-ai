@@ -44,7 +44,7 @@ import org.springframework.ai.session.SessionEvent;
 import org.springframework.ai.session.SessionRepository;
 import org.springframework.ai.session.SessionService;
 import org.springframework.ai.session.compaction.WindowCompactionStrategy;
-import org.springframework.ai.session.test.AbstractSessionRepositoryContractTests;
+import org.springframework.ai.test.session.AbstractSessionRepositoryContractTests;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
 import org.springframework.boot.jdbc.autoconfigure.JdbcTemplateAutoConfiguration;
