@@ -116,7 +116,7 @@ class DefaultSessionServiceTests {
 
 	@Test
 	void createAppliesDefaultTimeToLiveWhenRequestHasNone() {
-		// Builder default is 60 days.
+		// The service's default is 60 days
 		Instant before = Instant.now();
 		Session session = this.service
 			.create(CreateSessionRequest.builder().metadata(SessionAttributes.PRINCIPAL_NAME, "user-1").build());

@@ -24,7 +24,7 @@ It is an immutable value that holds only metadata; the events are stored separat
 | `expiresAt`
 | When the session expires.
 A session the service creates always has one: the request's `timeToLive`, or the service's default of 60 days.
-`null` only for a `Session` built directly with `expiresAt(null)`.
+A `Session` built directly has none, so it never expires, unless its builder sets one.
 
 | `metadata`
 | Arbitrary metadata: the owner, the agent attributes, tags, and whatever the application adds.

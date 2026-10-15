@@ -16,6 +16,7 @@
 
 package org.springframework.ai.session.test;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
@@ -274,6 +275,20 @@ public abstract class AbstractSessionRepositoryContractTests {
 		assertThat(this.repository.findById(extended)).isNotNull();
 		assertThat(this.repository.findById(noTtl)).isNotNull();
 		assertThat(texts(extended, EventFilter.all())).containsExactly("kept");
+	}
+
+	@Test
+	void sessionWithoutExpiryReadsBackWithoutOneAndIsNeverSweptAway() {
+		Session session = this.repository.save(principalSession(UUID.randomUUID().toString(), "user-forever"));
+
+		Session found = this.repository.findById(session.id());
+		assertThat(found).isNotNull();
+		assertThat(found.expiresAt()).isNull();
+
+		this.repository.deleteExpiredSessions(Instant.now().plus(Duration.ofDays(365 * 100)));
+		found = this.repository.findById(session.id());
+		assertThat(found).isNotNull();
+		assertThat(found.expiresAt()).isNull();
 	}
 
 	// --- Append ---

@@ -583,17 +583,15 @@ public final class JdbcSessionRepository implements SessionRepository {
 
 		@Override
 		public Session mapRow(ResultSet rs, int rowNum) throws SQLException {
-			Instant expiresAt = fromUtc(rs, "expires_at");
 			Map<String, Object> metadata = new HashMap<>(
 					JdbcSessionRepository.this.codec.fromJsonMap(rs.getString("metadata")));
-			Session.Builder builder = Session.builder()
+			// A NULL expires_at is a session that never expires and reads back as such
+			return Session.builder()
 				.id(rs.getString("id"))
 				.createdAt(Objects.requireNonNull(fromUtc(rs, "created_at")))
-				.metadata(metadata);
-			if (expiresAt != null) {
-				builder.expiresAt(expiresAt);
-			}
-			return builder.build();
+				.expiresAt(fromUtc(rs, "expires_at"))
+				.metadata(metadata)
+				.build();
 		}
 
 	}
