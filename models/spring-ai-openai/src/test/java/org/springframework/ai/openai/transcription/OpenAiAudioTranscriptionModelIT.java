@@ -124,14 +124,6 @@ public class OpenAiAudioTranscriptionModelIT {
 
 	@Test
 	void transcribeWithDiarizedFormatExposesSpeakerSegments() {
-		// The OpenAI Java SDK (4.42.0) misclassifies diarized_json
-		// responses as a plain Transcription instead of TranscriptionDiarized, because
-		// the real API response omits the "duration" field the SDK treats as required
-		// (see https://github.com/openai/openai-java/issues/802). Spring AI works
-		// around this (DiarizedJsonMisclassificationRecovery, enabled by default) by
-		// recovering the clean text, speaker segments and usage from the raw JSON
-		// payload the SDK would otherwise surface as-is. Duration itself stays
-		// unavailable since the API never sends it for this format.
 		OpenAiAudioTranscriptionOptions options = OpenAiAudioTranscriptionOptions.builder()
 			.model(AudioModel.GPT_4O_TRANSCRIBE_DIARIZE.asString())
 			.responseFormat(AudioResponseFormat.DIARIZED_JSON)
@@ -144,17 +136,20 @@ public class OpenAiAudioTranscriptionModelIT {
 		assertThat(response.getResult().getOutput()).doesNotStartWith("{");
 		OpenAiAudioTranscriptionResponseMetadata metadata = (OpenAiAudioTranscriptionResponseMetadata) response
 			.getMetadata();
-		assertThat(metadata.getDuration()).isNull();
+		// The diarized_json format returns duration as of SDK 4.80.0.
+		assertThat(metadata.getDuration()).isPositive();
 		assertThat(metadata.getSegments()).isNotEmpty();
 		assertThat(metadata.getNativeUsage()).isNotNull();
 	}
 
 	@Test
 	void transcribeWithDiarizedFormatAndWorkaroundDisabledReturnsRawJson() {
-		// With the workaround explicitly turned off, the SDK's broken raw-JSON
-		// fallback text passes through unchanged.
-		// TODO: remove after the https://github.com/openai/openai-java/issues/802 is
-		// fixed.
+		// With the workaround explicitly turned off, the SDK-native deserialization path
+		// is used. Since OpenAI SDK 4.80.0 classifies diarized_json responses correctly
+		// via validity-score deserialization (isDiarized() == true), the workaround is
+		// not triggered regardless; disabling it therefore has no observable effect and
+		// the response is clean transcript text, not a raw JSON blob.
+		// TODO: remove after https://github.com/openai/openai-java/issues/802 is fixed.
 		OpenAiAudioTranscriptionOptions options = OpenAiAudioTranscriptionOptions.builder()
 			.model(AudioModel.GPT_4O_TRANSCRIBE_DIARIZE.asString())
 			.responseFormat(AudioResponseFormat.DIARIZED_JSON)
@@ -164,7 +159,8 @@ public class OpenAiAudioTranscriptionModelIT {
 		AudioTranscriptionPrompt prompt = new AudioTranscriptionPrompt(new ClassPathResource("/speech.flac"), options);
 		AudioTranscriptionResponse response = this.transcriptionModel.call(prompt);
 
-		assertThat(response.getResult().getOutput()).startsWith("{");
+		assertThat(response.getResult().getOutput()).isNotBlank();
+		assertThat(response.getResult().getOutput()).doesNotStartWith("{");
 	}
 
 	@Test

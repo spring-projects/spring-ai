@@ -33,6 +33,7 @@ import com.openai.models.audio.transcriptions.Transcription;
 import com.openai.models.audio.transcriptions.TranscriptionCreateParams;
 import com.openai.models.audio.transcriptions.TranscriptionCreateResponse;
 import com.openai.models.audio.transcriptions.TranscriptionDiarized;
+import com.openai.models.audio.transcriptions.TranscriptionDiarizedSegment;
 import com.openai.models.audio.transcriptions.TranscriptionStreamEvent;
 import com.openai.models.audio.transcriptions.TranscriptionVerbose;
 import io.micrometer.observation.Observation;
@@ -357,8 +358,14 @@ public final class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 		}
 		if (response.isDiarized()) {
 			TranscriptionDiarized diarized = response.asDiarized();
-			return new OpenAiAudioTranscriptionResponseMetadata(diarized.duration(), null,
-					diarized.usage().orElse(null), diarized.segments(), null);
+			// The real API does not return duration for diarized_json; use the raw field
+			// accessor to avoid the required-field check on the typed duration() method.
+			Double duration = diarized._duration().asKnown().orElse(null);
+			// Similarly, use the raw accessor for segments to guard against an absent or
+			// null field without triggering getRequired()'s exception.
+			List<TranscriptionDiarizedSegment> segments = diarized._segments().asKnown().orElse(null);
+			return new OpenAiAudioTranscriptionResponseMetadata(duration, null, diarized.usage().orElse(null), segments,
+					null);
 		}
 		if (response.isTranscription()) {
 			Transcription transcription = response.asTranscription();
