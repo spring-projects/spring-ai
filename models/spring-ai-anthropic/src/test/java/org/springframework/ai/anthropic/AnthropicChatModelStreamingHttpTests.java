@@ -43,6 +43,8 @@ import io.opentelemetry.sdk.trace.ReadWriteSpan;
 import io.opentelemetry.sdk.trace.ReadableSpan;
 import io.opentelemetry.sdk.trace.SdkTracerProvider;
 import io.opentelemetry.sdk.trace.SpanProcessor;
+import io.opentelemetry.sdk.trace.export.SimpleSpanProcessor;
+import io.opentelemetry.sdk.trace.export.SpanExporter;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import org.junit.jupiter.api.AfterEach;
@@ -150,7 +152,12 @@ class AnthropicChatModelStreamingHttpTests {
 	@Test
 	void streamRequestCarriesTraceparentOfChatSpan() throws Exception {
 		ContextPropagators propagators = ContextPropagators.create(W3CTraceContextPropagator.getInstance());
-		io.opentelemetry.api.trace.Tracer otelTracer = SdkTracerProvider.builder().build().get("test");
+		// Without a span processor, the SDK hands out a no-op tracer whose spans are
+		// all invalid.
+		io.opentelemetry.api.trace.Tracer otelTracer = SdkTracerProvider.builder()
+			.addSpanProcessor(SimpleSpanProcessor.create(SpanExporter.composite()))
+			.build()
+			.get("test");
 		OtelTracer tracer = new OtelTracer(otelTracer, new OtelCurrentTraceContext(), event -> {
 		});
 		List<Observation.Context> contexts = new CopyOnWriteArrayList<>();
