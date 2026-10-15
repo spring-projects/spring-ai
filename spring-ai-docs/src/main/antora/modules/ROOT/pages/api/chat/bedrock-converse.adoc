@@ -870,6 +870,7 @@ Other content block types, such as citations, are not mapped to parts yet.
 Reasoning is fully supported in streaming mode.
 Every delta chunk carries one part stamped with the content block index it belongs to (see `StreamingParts`): reasoning deltas arrive as partial `ReasoningPart`s and text deltas as partial `TextPart`s.
 The signature arrives as a partial `ReasoningPart` with an empty text and the payload once its block is done, and redacted reasoning as one complete `ReasoningPart`.
+A tool use is announced when its block starts and each of its input deltas follows, as partial `ToolCallPart`s that are not tool calls (see xref:api/tools.adoc#streaming-tool-call-arguments[Streaming Tool Call Arguments]).
 The final chunk of the response carries the complete tool calls, along with any reasoning whose block never finished.
 `MessageAggregator` (used by `ChatClient` and the advisors) rebuilds the ordered parts from these chunks, so the aggregated message has the same shape as a non-streaming response.
 

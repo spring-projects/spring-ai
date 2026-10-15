@@ -464,9 +464,10 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		}
 
 		// -- Event: content_block_start --
-		// Starts tracking a tool use block, emits redacted thinking as a complete part,
-		// starts tracking any block type not modeled as a part, and accumulates web
-		// search results for the final response metadata.
+		// Starts tracking a tool use block and announces it as a partial tool call part,
+		// emits redacted thinking as a complete part, starts tracking any block type not
+		// modeled as a part, and accumulates web search results for the final response
+		// metadata.
 		if (event.contentBlockStart().isPresent()) {
 			var startEvent = event.contentBlockStart().get();
 			var contentBlock = startEvent.contentBlock();
@@ -474,6 +475,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			if (contentBlock.isToolUse()) {
 				var toolUseBlock = contentBlock.asToolUse();
 				streamingState.startToolUse(index, toolUseBlock.id(), toolUseBlock.name());
+				return toolCallDeltaChunk(streamingState, index, "");
 			}
 			else if (contentBlock.isRedactedThinking()) {
 				RedactedThinkingBlock redactedBlock = contentBlock.asRedactedThinking();
@@ -503,9 +505,9 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		}
 
 		// -- Event: content_block_delta --
-		// Text, thinking and signature deltas are emitted as indexed partial parts; tool
-		// argument deltas are accumulated for the complete call and citations for the
-		// final response metadata.
+		// Text, thinking, signature and tool argument deltas are emitted as indexed
+		// partial parts; tool arguments are also accumulated for the complete call, and
+		// citations for the final response metadata.
 		if (event.contentBlockDelta().isPresent()) {
 			var deltaEvent = event.contentBlockDelta().get();
 			var delta = deltaEvent.delta();
@@ -517,8 +519,9 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			}
 
 			if (delta.isInputJson()) {
-				streamingState.appendInputJson(index, delta.asInputJson().partialJson());
-				return null;
+				String partialJson = delta.asInputJson().partialJson();
+				streamingState.appendInputJson(index, partialJson);
+				return toolCallDeltaChunk(streamingState, index, partialJson);
 			}
 
 			if (delta.isThinking()) {
@@ -617,6 +620,18 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		});
 
 		return messageDeltaResponse.orElse(null);
+	}
+
+	/**
+	 * Builds the chunk of a tool-call argument delta, see {@link StreamingParts}, or
+	 * returns {@code null} when the block at the index is not a tool use, such as a
+	 * server tool use whose input also streams as deltas.
+	 */
+	private static @Nullable ChatResponse toolCallDeltaChunk(StreamingState streamingState, int index,
+			String argumentsDelta) {
+		ToolCall delta = streamingState.toolCallDelta(index, argumentsDelta);
+		return (delta != null)
+				? partChunk(streamingState, StreamingParts.partial(ToolCallPart.of(delta), index), Map.of()) : null;
 	}
 
 	/**
@@ -1270,6 +1285,11 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 					logger.debug("Skipping reasoning part from provider "
 							+ (payload != null ? payload.provider() : "none") + " on replay to Anthropic");
 				}
+			}
+			else if (part instanceof ToolCallPart && StreamingParts.isPartial(part)) {
+				// A tool-call argument delta of a stream, not a tool call
+				// (see StreamingParts)
+				continue;
 			}
 			else if (part instanceof ToolCallPart toolCallPart) {
 				ToolCall toolCall = toolCallPart.toolCall();
@@ -1968,6 +1988,22 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			if (unknownBlock != null) {
 				unknownBlock.input.append(partialJson);
 			}
+		}
+
+		/**
+		 * The argument delta of the tool use block at the given index, carrying the id
+		 * and name of the call.
+		 * @param index the content block index
+		 * @param argumentsDelta the arguments fragment
+		 * @return the delta, or {@code null} if no tool use with an id and a name is
+		 * tracked there, as {@link #finishToolUse(int)} would not complete it
+		 */
+		@Nullable ToolCall toolCallDelta(int index, String argumentsDelta) {
+			InFlightToolUse toolUse = this.inFlightToolUses.get(index);
+			if (toolUse == null || toolUse.id.isEmpty() || toolUse.name.isEmpty()) {
+				return null;
+			}
+			return new ToolCall(toolUse.id, "function", toolUse.name, argumentsDelta);
 		}
 
 		/**

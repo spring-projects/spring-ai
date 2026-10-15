@@ -19,6 +19,7 @@ package org.springframework.ai.chat.client.advisor;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiFunction;
 
 import io.micrometer.observation.ObservationRegistry;
@@ -44,11 +45,16 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.messages.part.MessagePart;
+import org.springframework.ai.chat.messages.part.StreamingParts;
+import org.springframework.ai.chat.messages.part.TextPart;
+import org.springframework.ai.chat.messages.part.ToolCallPart;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.tool.ToolCallLimitExceededException;
@@ -604,6 +610,51 @@ public class ToolCallingAdvisorTests {
 		assertThat(results).isNotNull().hasSize(1);
 		assertThat(callCount[0]).isEqualTo(2);
 		verify(this.toolCallingManager, times(1)).executeToolCalls(any(Prompt.class), any(ChatResponse.class));
+	}
+
+	@Test
+	void streamedToolCallDeltasReachTheCallerAndOnlyTheCompleteCallIsExecuted() {
+		ToolCallingAdvisor advisor = ToolCallingAdvisor.builder().toolCallingManager(this.toolCallingManager).build();
+
+		AssistantMessage.ToolCall complete = new AssistantMessage.ToolCall("tool-call-1", "function", "testTool",
+				"{\"city\":\"Paris\"}");
+		ChatClientResponse announced = partChunk("round-1", StreamingParts
+			.partial(ToolCallPart.of(new AssistantMessage.ToolCall("tool-call-1", "function", "testTool", "")), 0));
+		ChatClientResponse argumentsDelta = partChunk("round-1", StreamingParts.partial(ToolCallPart.of(complete), 0));
+		ChatClientResponse completeCall = partChunk("round-1", StreamingParts.complete(ToolCallPart.of(complete), 0));
+		ChatClientResponse answer = partChunk("round-2", StreamingParts.partial(TextPart.of("Sunny."), 0));
+
+		int[] callCount = { 0 };
+		TerminalStreamAdvisor terminalAdvisor = new TerminalStreamAdvisor((req, chain) -> {
+			callCount[0]++;
+			return (callCount[0] == 1) ? Flux.just(announced, argumentsDelta, completeCall) : Flux.just(answer);
+		});
+		StreamAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.<Advisor>of(advisor, terminalAdvisor))
+			.build();
+		when(this.toolCallingManager.executeToolCalls(any(Prompt.class), any(ChatResponse.class)))
+			.thenReturn(createToolExecutionResult(false));
+
+		List<ChatClientResponse> results = advisor.adviseStream(createMockRequest(), realChain).collectList().block();
+
+		// The deltas reach the caller, the chunk of the complete call is filtered out
+		assertThat(results).isNotNull()
+			.extracting(ChatClientResponse::chatResponse)
+			.containsExactly(announced.chatResponse(), argumentsDelta.chatResponse(), answer.chatResponse());
+
+		// Only the complete call is executed
+		ArgumentCaptor<ChatResponse> executed = ArgumentCaptor.forClass(ChatResponse.class);
+		verify(this.toolCallingManager, times(1)).executeToolCalls(any(Prompt.class), executed.capture());
+		assertThat(executed.getValue().getResult().getOutput().getToolCalls()).containsExactly(complete);
+
+		// What an outer chat memory advisor aggregates: the answer, without a tool call
+		// left unanswered by a tool response
+		AtomicReference<ChatResponse> aggregated = new AtomicReference<>();
+		new MessageAggregator()
+			.aggregate(Flux.fromIterable(results).mapNotNull(ChatClientResponse::chatResponse), aggregated::set)
+			.blockLast();
+		assertThat(aggregated.get().getResult().getOutput().hasToolCalls()).isFalse();
+		assertThat(aggregated.get().getResult().getOutput().getText()).isEqualTo("Sunny.");
 	}
 
 	@Test
@@ -1475,6 +1526,13 @@ public class ToolCallingAdvisorTests {
 			.metadata(metadata)
 			.build();
 
+		return ChatClientResponse.builder().chatResponse(chatResponse).build();
+	}
+
+	private static ChatClientResponse partChunk(String responseId, MessagePart part) {
+		ChatResponse chatResponse = new ChatResponse(
+				List.of(new Generation(AssistantMessage.builder().part(part).build())),
+				ChatResponseMetadata.builder().id(responseId).build());
 		return ChatClientResponse.builder().chatResponse(chatResponse).build();
 	}
 

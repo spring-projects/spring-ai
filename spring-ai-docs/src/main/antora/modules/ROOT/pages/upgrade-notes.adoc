@@ -40,8 +40,14 @@ Reasoning deltas now carry their text in a `ReasoningPart`.
 ===== Impact
 
 A streamed chunk never has a `null` text, so `map(AssistantMessage::getText).collect(Collectors.joining())` keeps working.
-By default, tool calls are still buffered and arrive once as a complete call.
-Partial parts are not tool calls, so nothing executes on them, and `ChatClient` hides them either way.
+The chat models whose API streams tool call arguments (Anthropic, OpenAI Chat Completions and Responses, Bedrock Converse, DeepSeek) emit each argument delta as a chunk holding a partial `ToolCallPart`, before the complete call arrives once, as before.
+A partial `ToolCallPart` is not a tool call: `getToolCalls()` and `hasToolCalls()` skip it, so nothing executes on it, and `MessageAggregator` skips it, so chat memory never persists it.
+`ChatClient` passes these chunks through so that a UI can show the call in progress; `.stream().content()` is unaffected, as they carry no text.
+See xref:api/tools.adoc#streaming-tool-call-arguments[Streaming Tool Call Arguments].
+
+In 2.1.0-M1 and 2.1.0-RC1, `MessageAggregator` appended the arguments of partial `ToolCallPart`s to their call.
+It now skips them, so a custom chat model that streams a tool call only as partial `ToolCallPart`s aggregates to a message without that tool call.
+Such a chat model must also emit the complete `ToolCallPart`, at the same index as its deltas, as the built-in chat models do.
 
 === Anthropic
 
@@ -182,6 +188,20 @@ Message prefix = AssistantMessage.builder()
 ----
 
 Add the reasoning content of a prefix message as a `ReasoningPart`, for example with `AssistantMessage.builder().part(ReasoningPart.of(...))`.
+
+==== Changed: `DeepSeekChatModel` Streams Through `DeepSeekApi.chatCompletionStreamRaw`
+
+`DeepSeekChatModel` streams through the new `DeepSeekApi.chatCompletionStreamRaw`, which returns the chunks as the server sends them, so that it can stream the tool call argument deltas.
+`DeepSeekApi.chatCompletionStream` still merges the chunks of a tool call, and is no longer used by `DeepSeekChatModel`.
+
+===== Impact
+
+A `DeepSeekApi` subclass that overrides `chatCompletionStream` is no longer called by `DeepSeekChatModel`.
+A test mock that only stubs `chatCompletionStream` returns `null` from `chatCompletionStreamRaw`, and streaming then fails with a `NullPointerException`.
+
+===== Migration
+
+Override or stub `chatCompletionStreamRaw` instead of `chatCompletionStream`.
 
 === Bedrock Converse
 

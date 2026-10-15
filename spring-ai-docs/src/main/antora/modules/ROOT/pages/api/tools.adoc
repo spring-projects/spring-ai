@@ -243,6 +243,37 @@ Both blocking (`.call()`) and streaming (`.stream()`) modes are fully supported.
 
 For the full `ToolCallingAdvisor` builder API, hook methods, and configuration options, see xref:api/tools/tool-calling-advisor.adoc[ToolCallingAdvisor].
 
+[[streaming-tool-call-arguments]]
+=== Streaming Tool Call Arguments
+
+When streaming, the chat models whose API streams tool call arguments (Anthropic, OpenAI Chat Completions and Responses, Amazon Bedrock Converse, DeepSeek) also stream them to the caller, so that a UI can show which tool the model is calling, and its arguments, while the model is still writing them.
+Each argument delta arrives as a chunk holding a `ToolCallPart` marked partial (see `StreamingParts`), with the id and name of the call and only the new arguments fragment.
+The first delta of a call may already carry arguments, or none yet.
+Joined, the fragments of a call are its arguments, while a single fragment is usually not valid JSON.
+The complete tool call can still differ slightly: Bedrock, for instance, completes a call without arguments to `{}`.
+A call whose id and name arrive on separate deltas, as some OpenAI-compatible servers send them, streams no deltas from OpenAI Chat Completions or DeepSeek, and only its complete tool call arrives.
+
+A partial `ToolCallPart` is not a tool call: `AssistantMessage.getToolCalls()` and `hasToolCalls()` skip it, so `ToolCallingManager` never executes it, and `MessageAggregator` does not aggregate it, so a memory advisor never persists it.
+The chat model emits the complete tool call later in the same response, and `ToolCallingAdvisor` executes it and keeps that chunk out of the stream as before.
+
+[source,java]
+----
+chatClient.prompt("Write a hello world script to hello.py")
+    .tools(new FileTools())
+    .stream()
+    .chatResponse()
+    .subscribe(response -> response.getResults().forEach(generation -> {
+        for (MessagePart part : generation.getOutput().getParts()) {
+            if (part instanceof ToolCallPart toolCallPart && StreamingParts.isPartial(part)) {
+                ToolCall delta = toolCallPart.toolCall();
+                ui.showToolCallProgress(delta.id(), delta.name(), delta.arguments());
+            }
+        }
+    }));
+----
+
+`.stream().content()` is not affected: the argument delta chunks carry no text.
+
 [[memory-and-the-tool-loop]]
 == Memory and the Tool Loop
 

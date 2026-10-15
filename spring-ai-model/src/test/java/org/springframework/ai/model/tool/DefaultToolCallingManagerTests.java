@@ -31,6 +31,8 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage.ToolResponse;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.messages.part.StreamingParts;
+import org.springframework.ai.chat.messages.part.ToolCallPart;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.model.ToolContext;
@@ -139,6 +141,26 @@ class DefaultToolCallingManagerTests {
 		DefaultToolCallingManager defaultToolExecutor = DefaultToolCallingManager.builder().build();
 		assertThatThrownBy(() -> defaultToolExecutor.executeToolCalls(mock(Prompt.class),
 				ChatResponse.builder().generations(List.of()).build()))
+			.isInstanceOf(IllegalStateException.class)
+			.hasMessage("No tool call requested by the chat model");
+	}
+
+	@Test
+	void whenOnlyStreamedToolCallDeltasInChatResponseThenThrow() {
+		ToolCallback toolCallback = new TestToolCallback("toolA");
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder()
+			.toolCallbackResolver(new StaticToolCallbackResolver(List.of(toolCallback)))
+			.build();
+		Prompt prompt = new Prompt(new UserMessage("Hello"),
+				ToolCallingChatOptions.builder().toolCallbacks(toolCallback).build());
+		ChatResponse chatResponse = ChatResponse.builder()
+			.generations(List.of(new Generation(AssistantMessage.builder()
+				.part(StreamingParts
+					.partial(ToolCallPart.of(new AssistantMessage.ToolCall("toolA", "function", "toolA", "{}")), 0))
+				.build())))
+			.build();
+
+		assertThatThrownBy(() -> toolCallingManager.executeToolCalls(prompt, chatResponse))
 			.isInstanceOf(IllegalStateException.class)
 			.hasMessage("No tool call requested by the chat model");
 	}
