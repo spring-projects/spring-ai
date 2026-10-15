@@ -59,7 +59,7 @@ public interface SessionService {
 	void delete(String sessionId);
 
 	/**
-	 * Deletes every session that expired before the given instant, with its events, and
+	 * Deletes every session that expired before the given instant, with their events, and
 	 * returns how many. Nothing calls this on its own: call it from a scheduler, every
 	 * hour for example.
 	 */

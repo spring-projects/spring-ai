@@ -266,7 +266,7 @@ See xref:api/session/compaction.adoc[Compaction].
 There is no tombstone.
 
 | `deleteExpiredSessions(before)`
-| Deletes every session that expired before the instant, with its events, and returns the count.
+| Deletes every session that expired before the instant, with their events, and returns the count.
 Sessions are not swept automatically: call it from a scheduler.
 |===
 

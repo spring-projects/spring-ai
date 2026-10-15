@@ -69,7 +69,7 @@ public interface SessionRepository {
 	void delete(String sessionId);
 
 	/**
-	 * Deletes every session that expired before the given instant, with its events, in
+	 * Deletes every session that expired before the given instant, with their events, in
 	 * one atomic step per session, so a session whose expiry was extended concurrently
 	 * ({@link #save}) is kept.
 	 * @param before the expiry cut-off
