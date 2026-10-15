@@ -85,7 +85,11 @@ public final class SessionMemoryAdvisor implements BaseAdvisor, MemoryAdvisor {
 
 	private static final Logger logger = LoggerFactory.getLogger(SessionMemoryAdvisor.class);
 
-	/** Carries the caller's thread-local context to the session calls of a stream. */
+	/**
+	 * Carries the caller's context to the session calls of a stream: the thread locals of
+	 * a blocking caller, the Reactor context of a reactive one, the latter winning where
+	 * both hold a key.
+	 */
 	private static final ContextSnapshotFactory CONTEXT_SNAPSHOTS = ContextSnapshotFactory.builder().build();
 
 	/**
@@ -256,10 +260,11 @@ public final class SessionMemoryAdvisor implements BaseAdvisor, MemoryAdvisor {
 	@Override
 	public Flux<ChatClientResponse> adviseStream(ChatClientRequest request, StreamAdvisorChain chain) {
 		// The session reads and writes run on the scheduler, never on the model's thread,
-		// with the caller's thread-local context (the security context, the current
-		// observation) restored around them
-		return Flux.defer(() -> {
-			ContextSnapshot context = CONTEXT_SNAPSHOTS.captureAll();
+		// with the caller's context (the security context, the current observation)
+		// restored around them: the thread locals of a blocking caller, and what a
+		// reactive caller, under WebFlux for example, carries in the Reactor context
+		return Flux.deferContextual(contextView -> {
+			ContextSnapshot context = CONTEXT_SNAPSHOTS.captureAll(contextView);
 			return Mono.just(request)
 				.publishOn(this.scheduler)
 				.map(r -> withContext(context, () -> this.before(r, chain)))

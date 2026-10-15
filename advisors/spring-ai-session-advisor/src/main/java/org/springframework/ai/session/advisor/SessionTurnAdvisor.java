@@ -92,8 +92,9 @@ public final class SessionTurnAdvisor implements CallAdvisor, StreamAdvisor {
 	private static final Logger logger = LoggerFactory.getLogger(SessionTurnAdvisor.class);
 
 	/**
-	 * Carries the caller's thread-local context, such as the security context, to an
-	 * async compaction.
+	 * Carries the caller's context, such as the security context, to the session calls of
+	 * a stream and to an async compaction: the thread locals of a blocking caller, the
+	 * Reactor context of a reactive one, the latter winning where both hold a key.
 	 */
 	private static final ContextSnapshotFactory CONTEXT_SNAPSHOTS = ContextSnapshotFactory.builder().build();
 
@@ -155,10 +156,12 @@ public final class SessionTurnAdvisor implements CallAdvisor, StreamAdvisor {
 		Assert.notNull(chain, "chain must not be null");
 		String sessionId = SessionContexts.sessionId(request.context());
 		// The session calls run on the scheduler, never on the model's thread, with the
-		// caller's thread-local context (the security context, the current observation)
-		// restored around them and around the subscription of the rest of the chain
-		return Flux.defer(() -> {
-			ContextSnapshot context = CONTEXT_SNAPSHOTS.captureAll();
+		// caller's context (the security context, the current observation) restored
+		// around them and around the subscription of the rest of the chain: the thread
+		// locals of a blocking caller, and what a reactive caller carries in the Reactor
+		// context
+		return Flux.deferContextual(contextView -> {
+			ContextSnapshot context = CONTEXT_SNAPSHOTS.captureAll(contextView);
 			return Mono.just(request).publishOn(this.scheduler).flatMapMany(r -> {
 				// A returnDirect result or a breached limit ends the stream on a chunk
 				// of its own
