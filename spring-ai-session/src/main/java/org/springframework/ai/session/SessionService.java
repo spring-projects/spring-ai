@@ -48,17 +48,18 @@ public interface SessionService {
 	@Nullable Session findById(String sessionId);
 
 	/**
-	 * The sessions whose metadata holds {@code value} under {@code name}, oldest first;
-	 * see {@link SessionRepository#findByIndex}. The sessions of a principal are {@code
-	 * findByIndex(SessionAttributes.PRINCIPAL_NAME, name)}.
+	 * The sessions whose metadata holds {@code value} under {@code name}, oldest first,
+	 * for the keys the store indexes; see {@link SessionRepository#findByMetadata}. The
+	 * sessions of a principal are {@code findByMetadata(SessionAttributes.PRINCIPAL_NAME,
+	 * name)}.
 	 */
-	List<Session> findByIndex(String name, String value);
+	List<Session> findByMetadata(String name, String value);
 
 	/** Deletes the session and its events. */
 	void delete(String sessionId);
 
 	/**
-	 * Deletes every session that expired before the given instant, with its events, and
+	 * Deletes every session that expired before the given instant, with their events, and
 	 * returns how many. Nothing calls this on its own: call it from a scheduler, every
 	 * hour for example.
 	 */
@@ -114,12 +115,14 @@ public interface SessionService {
 	 * Evaluates the trigger on the active view and, when it fires, runs the strategy and
 	 * records its result: one {@link EventType#COMPACTION} boundary event followed by the
 	 * summary events, in one version-checked append. The log is never changed; the
-	 * boundary defines the view from then on. Pass {@code request -> true} to compact
-	 * unconditionally.
-	 * @return the result;
+	 * boundary defines the view from then on. An append that lands in between does not
+	 * waste the summary: the new events join the view verbatim and the write is retried,
+	 * a bounded number of times. Pass {@code request -> true} to compact unconditionally.
+	 * @return the result as written, the events appended meanwhile added to its preserved
+	 * tail;
 	 * {@link org.springframework.ai.session.compaction.CompactionResult#isUnchanged()}
 	 * when nothing was written: the trigger did not fire, the strategy covered nothing,
-	 * or a concurrent writer changed the log first
+	 * another compaction landed first, or appends kept overtaking the write
 	 */
 	CompactionResult compact(String sessionId, CompactionTrigger trigger, CompactionStrategy strategy);
 

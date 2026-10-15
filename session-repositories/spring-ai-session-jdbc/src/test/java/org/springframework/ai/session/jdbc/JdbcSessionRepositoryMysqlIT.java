@@ -26,7 +26,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.mysql.MySQLContainer;
 
 import org.springframework.ai.session.SessionRepository;
-import org.springframework.ai.session.test.AbstractSessionRepositoryContractTests;
+import org.springframework.ai.test.session.AbstractSessionRepositoryContractTests;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;

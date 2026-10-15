@@ -39,7 +39,7 @@ public class JdbcSessionRepositoryProperties extends DatabaseInitializationPrope
 
 	/**
 	 * The metadata keys indexed in {@code AI_SESSION_INDEX} besides the principal name,
-	 * so that {@code findByIndex} answers for them.
+	 * so that {@code findByMetadata} answers for them.
 	 */
 	private Set<String> indexedAttributes = new LinkedHashSet<>();
 

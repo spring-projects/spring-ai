@@ -243,7 +243,7 @@ class SessionTurnAdvisorTests {
 	}
 
 	@Test
-	void asyncCompactionThatNewTurnOvertakesRunsAgainAfterIt() throws Exception {
+	void asyncCompactionThatNewTurnOvertakesKeepsThatTurnInView() throws Exception {
 		this.sessionService.create(CreateSessionRequest.builder().id(this.sessionId).build());
 		this.sessionService.appendMessage(this.sessionId, new UserMessage("Earlier question"));
 		this.sessionService.appendMessage(this.sessionId, new AssistantMessage("Earlier answer"));
@@ -258,12 +258,14 @@ class SessionTurnAdvisorTests {
 		assertThat(held.started.await(5, TimeUnit.SECONDS)).isTrue();
 
 		// A second turn writes while the first compaction runs: no second compaction
-		// starts, and the running one, overtaken, writes nothing
+		// starts, and the running one, overtaken, lands rebased onto the new turn, which
+		// stays in the view verbatim
 		say(client, "Still there?", "Yes.");
 		held.release.countDown();
 		await(() -> !turn.isCompacting(this.sessionId));
 		assertThat(held.calls).hasValue(1);
-		assertThat(this.sessionService.getActiveMessages(this.sessionId)).hasSize(6);
+		assertThat(ScriptedChatModel.describe(new Prompt(this.sessionService.getActiveMessages(this.sessionId))))
+			.containsExactly("Hello", "Hi!", "Still there?", "Yes.");
 
 		// The next turn's compaction lands
 		say(client, "Bye", "Bye!");
@@ -456,6 +458,54 @@ class SessionTurnAdvisorTests {
 			assertThat(compacted.await(5, TimeUnit.SECONDS)).isTrue();
 			assertThat(seenByMemory).hasValue("alice");
 			assertThat(seenByCompaction).hasValue("alice");
+		}
+		finally {
+			caller.remove();
+			ContextRegistry.getInstance().removeThreadLocalAccessor("test.caller");
+		}
+	}
+
+	@Test
+	void streamedCallCarriesReactorContextToSessionCalls() throws InterruptedException {
+		// A reactive caller, under WebFlux for example, has no thread locals: its
+		// security context travels in the Reactor context
+		ThreadLocal<String> caller = new ThreadLocal<>();
+		ContextRegistry.getInstance()
+			.registerThreadLocalAccessor("test.caller", caller::get, caller::set, caller::remove);
+		AtomicReference<String> seenByCompaction = new AtomicReference<>();
+		AtomicReference<String> seenByMemory = new AtomicReference<>();
+		CountDownLatch compacted = new CountDownLatch(1);
+		CompactionStrategy recording = request -> {
+			seenByCompaction.set(caller.get());
+			compacted.countDown();
+			return CompactionResult.unchanged();
+		};
+		ChatClient client = ChatClient.builder(this.model)
+			.defaultAdvisors(
+					SessionTurnAdvisor.builder(this.sessionService)
+						.compactionTrigger(request -> true)
+						.compactionStrategy(recording)
+						.build(),
+					ToolCallingAdvisor.builder().build(),
+					SessionMemoryAdvisor.builder(this.sessionService).messageFilter(message -> {
+						seenByMemory.set(caller.get());
+						return true;
+					}).build())
+			.build();
+		this.model.thenAnswer("Hi!");
+		try {
+			client.prompt()
+				.user("Hello")
+				.advisors(a -> a.param(SessionMemoryAdvisor.SESSION_ID_CONTEXT_KEY, this.sessionId))
+				.stream()
+				.content()
+				.contextWrite(context -> context.put("test.caller", "bob"))
+				.blockLast();
+
+			assertThat(compacted.await(5, TimeUnit.SECONDS)).isTrue();
+			assertThat(seenByMemory).hasValue("bob");
+			assertThat(seenByCompaction).hasValue("bob");
+			assertThat(caller.get()).isNull();
 		}
 		finally {
 			caller.remove();

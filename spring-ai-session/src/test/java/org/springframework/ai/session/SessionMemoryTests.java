@@ -64,7 +64,7 @@ class SessionMemoryTests {
 	}
 
 	@Test
-	void findByIndexReturnsAllSessionsOfPrincipal() {
+	void findByMetadataReturnsAllSessionsOfPrincipal() {
 		this.sessionService
 			.create(CreateSessionRequest.builder().metadata(SessionAttributes.PRINCIPAL_NAME, "bob").build());
 		this.sessionService
@@ -72,7 +72,7 @@ class SessionMemoryTests {
 		this.sessionService
 			.create(CreateSessionRequest.builder().metadata(SessionAttributes.PRINCIPAL_NAME, "carol").build());
 
-		List<Session> bobSessions = this.sessionService.findByIndex(SessionAttributes.PRINCIPAL_NAME, "bob");
+		List<Session> bobSessions = this.sessionService.findByMetadata(SessionAttributes.PRINCIPAL_NAME, "bob");
 		assertThat(bobSessions).hasSizeGreaterThanOrEqualTo(2);
 		assertThat(bobSessions).allMatch(s -> "bob".equals(SessionAttributes.principalName(s)));
 	}

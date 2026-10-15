@@ -44,7 +44,7 @@ import org.springframework.ai.session.SessionEvent;
 import org.springframework.ai.session.SessionRepository;
 import org.springframework.ai.session.SessionService;
 import org.springframework.ai.session.compaction.WindowCompactionStrategy;
-import org.springframework.ai.session.test.AbstractSessionRepositoryContractTests;
+import org.springframework.ai.test.session.AbstractSessionRepositoryContractTests;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
 import org.springframework.boot.jdbc.autoconfigure.JdbcTemplateAutoConfiguration;
@@ -195,17 +195,18 @@ class JdbcSessionRepositoryTests {
 			.build());
 
 		// Both repositories read the same table: what matters is who wrote the row
-		assertThat(tenantAware.findByIndex("tenant", tenant)).extracting(Session::id).containsExactly(indexed.id());
-		assertThat(this.repository.findByIndex("tenant", tenant)).extracting(Session::id).containsExactly(indexed.id());
-		assertThat(this.repository.findByIndex(SessionAttributes.PRINCIPAL_NAME, "alice")).extracting(Session::id)
+		assertThat(tenantAware.findByMetadata("tenant", tenant)).extracting(Session::id).containsExactly(indexed.id());
+		assertThat(this.repository.findByMetadata("tenant", tenant)).extracting(Session::id)
+			.containsExactly(indexed.id());
+		assertThat(this.repository.findByMetadata(SessionAttributes.PRINCIPAL_NAME, "alice")).extracting(Session::id)
 			.contains(indexed.id(), notIndexed.id());
 		// Re-saving with the tenant-aware repository indexes the missing attribute
 		tenantAware.save(notIndexed);
-		assertThat(tenantAware.findByIndex("tenant", tenant)).hasSize(2);
+		assertThat(tenantAware.findByMetadata("tenant", tenant)).hasSize(2);
 	}
 
 	@Test
-	void indexedValuesMatchOnTheirFirstFiveHundredAndTwelveCharacters() {
+	void indexedValuesLongerThanTheIndexedPrefixAreStillMatchedWhole() {
 		String prefix = "p-" + UUID.randomUUID() + "-";
 		String value = prefix + "x".repeat(JdbcSessionRepository.MAX_INDEXED_VALUE_LENGTH);
 		Session session = this.repository.save(Session.builder()
@@ -213,17 +214,21 @@ class JdbcSessionRepositoryTests {
 			.metadata("tenant", "irrelevant")
 			.metadata(SessionAttributes.PRINCIPAL_NAME, value)
 			.build());
+		// Shares the indexed prefix, differs after it
+		Session other = this.repository.save(Session.builder()
+			.id(UUID.randomUUID().toString())
+			.metadata(SessionAttributes.PRINCIPAL_NAME, value + "tail")
+			.build());
 
-		assertThat(this.repository.findByIndex(SessionAttributes.PRINCIPAL_NAME, value)).extracting(Session::id)
+		assertThat(this.repository.findByMetadata(SessionAttributes.PRINCIPAL_NAME, value)).extracting(Session::id)
 			.containsExactly(session.id());
-		assertThat(this.repository.findByIndex(SessionAttributes.PRINCIPAL_NAME,
+		assertThat(this.repository.findByMetadata(SessionAttributes.PRINCIPAL_NAME, value + "tail"))
+			.extracting(Session::id)
+			.containsExactly(other.id());
+		// The prefix alone is a different value
+		assertThat(this.repository.findByMetadata(SessionAttributes.PRINCIPAL_NAME,
 				value.substring(0, JdbcSessionRepository.MAX_INDEXED_VALUE_LENGTH)))
-			.extracting(Session::id)
-			.containsExactly(session.id());
-		// A value that differs only after the indexed prefix is not told apart
-		assertThat(this.repository.findByIndex(SessionAttributes.PRINCIPAL_NAME, value + "tail"))
-			.extracting(Session::id)
-			.containsExactly(session.id());
+			.isEmpty();
 		// The stored metadata keeps the full value
 		assertThat(SessionAttributes.principalName(this.repository.findById(session.id()))).isEqualTo(value);
 	}

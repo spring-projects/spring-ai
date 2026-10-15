@@ -172,7 +172,7 @@ class JdbcSessionRepositoryMysqlAutoConfigurationIT {
 	}
 
 	@Test
-	void findByIndex() {
+	void findByMetadata() {
 		this.contextRunner.run(context -> {
 			var repo = context.getBean(JdbcSessionRepository.class);
 			String userId = "user-mysql-multi-" + UUID.randomUUID();
@@ -185,7 +185,7 @@ class JdbcSessionRepositoryMysqlAutoConfigurationIT {
 				.metadata(SessionAttributes.PRINCIPAL_NAME, userId)
 				.build());
 
-			assertThat(repo.findByIndex(SessionAttributes.PRINCIPAL_NAME, userId)).hasSize(2);
+			assertThat(repo.findByMetadata(SessionAttributes.PRINCIPAL_NAME, userId)).hasSize(2);
 		});
 	}
 

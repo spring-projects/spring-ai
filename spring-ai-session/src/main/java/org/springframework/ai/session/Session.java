@@ -16,7 +16,6 @@
 
 package org.springframework.ai.session;
 
-import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
@@ -32,7 +31,7 @@ import org.springframework.util.Assert;
  * <p>
  * A session has no owner field. Who it belongs to is an attribute of its metadata, under
  * a well-known key such as {@link SessionAttributes#PRINCIPAL_NAME}, set by the
- * application and looked up with {@link SessionRepository#findByIndex}.
+ * application and looked up with {@link SessionRepository#findByMetadata}.
  *
  * @author Christian Tzolov
  * @since 2.1.0
@@ -66,8 +65,8 @@ public final class Session {
 
 	/**
 	 * When the session expires, or {@code null} for never. A session the service creates
-	 * always has an expiry, the request's time to live or the service's default; {@code
-	 * null} only for a session built directly with {@code expiresAt(null)}.
+	 * always has an expiry, the request's time to live or the service's default; a
+	 * session built directly has none unless {@link Builder#expiresAt} sets one.
 	 */
 	@Nullable public Instant expiresAt() {
 		return this.expiresAt;
@@ -91,7 +90,7 @@ public final class Session {
 
 		private Instant createdAt = Instant.now();
 
-		@Nullable private Instant expiresAt = Instant.now().plus(Duration.ofDays(60));
+		@Nullable private Instant expiresAt;
 
 		private Map<String, Object> metadata = new HashMap<>();
 
@@ -106,8 +105,9 @@ public final class Session {
 		}
 
 		/**
-		 * Sets the expiry. Defaults to 60 days from now; pass {@code null} for a session
-		 * that never expires.
+		 * Sets the expiry, or {@code null} for a session that never expires, the default.
+		 * The time to live is the service's policy, see
+		 * {@link DefaultSessionService.Builder#defaultTimeToLive}; a session is a value.
 		 */
 		public Builder expiresAt(@Nullable Instant expiresAt) {
 			this.expiresAt = expiresAt;

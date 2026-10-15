@@ -51,10 +51,10 @@ class SessionTests {
 	}
 
 	@Test
-	void builderDefaultsToSixtyDayExpiryAndRequiresId() {
+	void builderDefaultsToNoExpiryAndRequiresId() {
 		Session session = Session.builder().id("s").build();
 
-		assertThat(session.expiresAt()).isAfter(Instant.now().plusSeconds(59 * 24 * 3600L));
+		assertThat(session.expiresAt()).isNull();
 		assertThat(session.metadata()).isEmpty();
 		assertThatIllegalArgumentException().isThrownBy(() -> Session.builder().build());
 	}

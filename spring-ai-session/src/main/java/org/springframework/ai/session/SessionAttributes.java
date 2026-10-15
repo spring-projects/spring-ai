@@ -22,9 +22,9 @@ import org.jspecify.annotations.Nullable;
  * The well-known metadata attributes of a {@link Session}, and the accessors that read
  * them. A session has no owner field: who it belongs to is the {@link #PRINCIPAL_NAME}
  * attribute, in the shape of Spring Session's principal-name index, which every store
- * indexes ({@link SessionRepository#findByIndex}) and an authorization layer decides on.
- * {@link #AGENT_NAME}, {@link #AGENT_VERSION} and {@link #AGENT_MODEL} label the agent a
- * session runs, set at creation, for listings and a UI.
+ * indexes ({@link SessionRepository#findByMetadata}) and an authorization layer decides
+ * on. {@link #AGENT_NAME}, {@link #AGENT_VERSION} and {@link #AGENT_MODEL} label the
+ * agent a session runs, set at creation, for listings and a UI.
  *
  * @author Christian Tzolov
  * @since 2.1.0

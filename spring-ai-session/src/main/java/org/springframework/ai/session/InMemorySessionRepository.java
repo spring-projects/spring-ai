@@ -82,7 +82,7 @@ public final class InMemorySessionRepository implements SessionRepository {
 	}
 
 	@Override
-	public List<Session> findByIndex(String name, String value) {
+	public List<Session> findByMetadata(String name, String value) {
 		Assert.hasText(name, "name must not be null or empty");
 		Assert.notNull(value, "value must not be null");
 		return this.store.values()

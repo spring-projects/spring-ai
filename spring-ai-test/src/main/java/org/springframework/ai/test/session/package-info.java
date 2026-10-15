@@ -15,10 +15,10 @@
  */
 
 /**
- * Contract test kit for {@link org.springframework.ai.session.SessionRepository}
- * implementations.
+ * The contract tests of a {@link org.springframework.ai.session.SessionRepository}
+ * implementation.
  */
 @NullMarked
-package org.springframework.ai.session.test;
+package org.springframework.ai.test.session;
 
 import org.jspecify.annotations.NullMarked;

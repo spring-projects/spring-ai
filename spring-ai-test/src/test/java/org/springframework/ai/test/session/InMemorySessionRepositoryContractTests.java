@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.session.test;
+package org.springframework.ai.test.session;
 
 import org.springframework.ai.session.InMemorySessionRepository;
 import org.springframework.ai.session.SessionRepository;

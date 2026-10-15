@@ -74,8 +74,8 @@ ChatClient chatClient = ChatClient.builder(chatModel)
 ----
 
 The compaction trigger and strategy are set together: setting only one makes `build()` throw.
-With `asyncCompaction(true)` the compaction runs on the advisor's `Scheduler` after the reply is returned, so a summarizing strategy adds no model call to the reply's latency; the caller's thread-local context, the security context for example, goes with it.
-One compaction per session runs at a time from one advisor, and a compaction that a new turn's writes overtake is skipped and retried after that turn.
+With `asyncCompaction(true)` the compaction runs on the advisor's `Scheduler` after the reply is returned, so a summarizing strategy adds no model call to the reply's latency; the caller's context, the security context for example, goes with it: the thread locals of a blocking caller, or what a reactive caller carries in the Reactor context.
+One compaction per session runs at a time from one advisor; a compaction that a new turn's writes overtake keeps them in the view and lands with the same summary, and only another compaction's boundary, or turns that keep overtaking it, make it stand down until the next turn.
 Compaction is best-effort: a failure is logged and the reply returned.
 
 NOTE: The memory advisor's default order puts it inside the `ToolCallingAdvisor`'s loop, so it runs once per round.

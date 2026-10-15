@@ -26,7 +26,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
@@ -116,7 +116,7 @@ class DefaultSessionServiceTests {
 
 	@Test
 	void createAppliesDefaultTimeToLiveWhenRequestHasNone() {
-		// Builder default is 60 days.
+		// The service's default is 60 days
 		Instant before = Instant.now();
 		Session session = this.service
 			.create(CreateSessionRequest.builder().metadata(SessionAttributes.PRINCIPAL_NAME, "user-1").build());
@@ -255,13 +255,13 @@ class DefaultSessionServiceTests {
 	}
 
 	@Test
-	void findByIndexReturnsSessionsOfPrincipal() {
+	void findByMetadataReturnsSessionsOfPrincipal() {
 		this.service.create(CreateSessionRequest.builder().metadata(SessionAttributes.PRINCIPAL_NAME, "alice").build());
 		this.service.create(CreateSessionRequest.builder().metadata(SessionAttributes.PRINCIPAL_NAME, "alice").build());
 		this.service.create(CreateSessionRequest.builder().metadata(SessionAttributes.PRINCIPAL_NAME, "bob").build());
 
-		assertThat(this.service.findByIndex(SessionAttributes.PRINCIPAL_NAME, "alice")).hasSize(2);
-		assertThat(this.service.findByIndex(SessionAttributes.PRINCIPAL_NAME, "bob")).hasSize(1);
+		assertThat(this.service.findByMetadata(SessionAttributes.PRINCIPAL_NAME, "alice")).hasSize(2);
+		assertThat(this.service.findByMetadata(SessionAttributes.PRINCIPAL_NAME, "bob")).hasSize(1);
 	}
 
 	@Test
@@ -395,83 +395,107 @@ class DefaultSessionServiceTests {
 	}
 
 	@Test
-	void compactionOvertakenByAppendIsNotApplied() {
+	void compactionOvertakenByAppendIsRebasedOntoIt() {
 		// An append between the version read and the write: the version check rejects
-		// the boundary, the log is unchanged, and the next pass sees the new event
+		// the boundary; the result is rebased, the new event preserved after the tail,
+		// and written with the same summary
 		InMemorySessionRepository store = InMemorySessionRepository.builder().build();
-		AtomicBoolean appendOnRead = new AtomicBoolean();
-		SessionService service = DefaultSessionService.builder().sessionRepository(new SessionRepository() {
-			@Override
-			public Session save(Session session) {
-				return store.save(session);
-			}
-
-			@Override
-			public boolean saveIfAbsent(Session session) {
-				return store.saveIfAbsent(session);
-			}
-
-			@Override
-			public @Nullable Session findById(String sessionId) {
-				return store.findById(sessionId);
-			}
-
-			@Override
-			public List<Session> findByIndex(String name, String value) {
-				return store.findByIndex(name, value);
-			}
-
-			@Override
-			public void delete(String sessionId) {
-				store.delete(sessionId);
-			}
-
-			@Override
-			public int deleteExpiredSessions(Instant before) {
-				return store.deleteExpiredSessions(before);
-			}
-
-			@Override
-			public void appendEvent(SessionEvent event) {
-				store.appendEvent(event);
-			}
-
-			@Override
-			public boolean appendEvents(String sessionId, List<SessionEvent> events, long expectedVersion) {
-				return store.appendEvents(sessionId, events, expectedVersion);
-			}
-
-			@Override
-			public long getEventVersion(String sessionId) {
-				return store.getEventVersion(sessionId);
-			}
-
-			@Override
-			public List<SessionEvent> findEvents(String sessionId, EventFilter filter) {
-				List<SessionEvent> events = store.findEvents(sessionId, filter);
-				if (appendOnRead.compareAndSet(true, false)) {
-					store.appendEvent(
-							SessionEvent.builder().sessionId(sessionId).message(new UserMessage("late")).build());
-				}
-				return events;
-			}
-		}).build();
+		ReadHookRepository repository = new ReadHookRepository(store);
+		SessionService service = DefaultSessionService.builder().sessionRepository(repository).build();
 		Session session = service.create(CreateSessionRequest.builder().build());
 		for (int i = 1; i <= 4; i++) {
 			service.appendMessage(session.id(), new UserMessage("msg-" + i));
 		}
 		CompactionStrategy window = WindowCompactionStrategy.builder().lastEvents(2).build();
+		repository.onceOnViewRead(() -> store
+			.appendEvent(SessionEvent.builder().sessionId(session.id()).message(new UserMessage("late")).build()));
 
-		appendOnRead.set(true);
-		CompactionResult overtaken = service.compact(session.id(), req -> true, window);
-		CompactionResult applied = service.compact(session.id(), req -> true, window);
+		CompactionResult result = service.compact(session.id(), req -> true, window);
 
-		assertThat(overtaken.isUnchanged()).isTrue();
-		assertThat(applied.coveredEventCount()).isEqualTo(3);
-		assertThat(service.getEvents(session.id()).stream().filter(e -> EventType.COMPACTION.equals(e.getType())))
-			.hasSize(1);
+		// The first view read, then the one the rebase does
+		assertThat(repository.viewReads).hasValue(2);
+		assertThat(result.coveredEventCount()).isEqualTo(2);
+		assertThat(result.preservedEvents()).extracting(SessionEvent::getMessage)
+			.extracting(Message::getText)
+			.containsExactly("msg-3", "msg-4", "late");
+		assertThat(boundaries(service, session.id())).hasSize(1);
 		assertThat(service.getActiveMessages(session.id())).extracting(Message::getText)
-			.containsExactly("msg-4", "late");
+			.containsExactly("msg-3", "msg-4", "late");
+	}
+
+	@Test
+	void compactionOvertakenByAnotherCompactionIsDropped() {
+		// The other boundary's view replaced the one this result stands on
+		InMemorySessionRepository store = InMemorySessionRepository.builder().build();
+		ReadHookRepository repository = new ReadHookRepository(store);
+		SessionService service = DefaultSessionService.builder().sessionRepository(repository).build();
+		SessionService other = DefaultSessionService.builder().sessionRepository(store).build();
+		Session session = service.create(CreateSessionRequest.builder().build());
+		for (int i = 1; i <= 4; i++) {
+			service.appendMessage(session.id(), new UserMessage("msg-" + i));
+		}
+		CompactionStrategy window = WindowCompactionStrategy.builder().lastEvents(2).build();
+		CompactionStrategy wider = WindowCompactionStrategy.builder().lastEvents(3).build();
+		repository.onceOnViewRead(() -> other.compact(session.id(), req -> true, wider));
+
+		CompactionResult result = service.compact(session.id(), req -> true, window);
+
+		assertThat(result.isUnchanged()).isTrue();
+		assertThat(boundaries(service, session.id())).hasSize(1);
+		assertThat(service.getActiveMessages(session.id())).extracting(Message::getText)
+			.containsExactly("msg-2", "msg-3", "msg-4");
+	}
+
+	@Test
+	void compactionWhoseViewAlreadyStandsOnTheOtherBoundaryLandsOnTopOfIt() {
+		// The other boundary lands after the version read but before the boundary and
+		// view reads: the view is the other's, the version check fails, and the result,
+		// a compaction of that view, lands as the newer boundary
+		InMemorySessionRepository store = InMemorySessionRepository.builder().build();
+		ReadHookRepository repository = new ReadHookRepository(store);
+		SessionService service = DefaultSessionService.builder().sessionRepository(repository).build();
+		SessionService other = DefaultSessionService.builder().sessionRepository(store).build();
+		Session session = service.create(CreateSessionRequest.builder().build());
+		for (int i = 1; i <= 4; i++) {
+			service.appendMessage(session.id(), new UserMessage("msg-" + i));
+		}
+		CompactionStrategy window = WindowCompactionStrategy.builder().lastEvents(2).build();
+		CompactionStrategy wider = WindowCompactionStrategy.builder().lastEvents(3).build();
+		repository.onceOnVersionRead(() -> other.compact(session.id(), req -> true, wider));
+
+		CompactionResult result = service.compact(session.id(), req -> true, window);
+
+		assertThat(result.coveredEventCount()).isEqualTo(1);
+		assertThat(boundaries(service, session.id())).hasSize(2);
+		assertThat(service.getActiveMessages(session.id())).extracting(Message::getText)
+			.containsExactly("msg-3", "msg-4");
+	}
+
+	@Test
+	void compactionRebasesAreBounded() {
+		// An append on every read of the view: the compaction gives up after the last
+		// rebase, with nothing written, and runs again on the next pass
+		InMemorySessionRepository store = InMemorySessionRepository.builder().build();
+		ReadHookRepository repository = new ReadHookRepository(store);
+		SessionService service = DefaultSessionService.builder().sessionRepository(repository).build();
+		Session session = service.create(CreateSessionRequest.builder().build());
+		for (int i = 1; i <= 4; i++) {
+			service.appendMessage(session.id(), new UserMessage("msg-" + i));
+		}
+		CompactionStrategy window = WindowCompactionStrategy.builder().lastEvents(2).build();
+		repository.onEveryViewRead(() -> store
+			.appendEvent(SessionEvent.builder().sessionId(session.id()).message(new UserMessage("late")).build()));
+
+		CompactionResult result = service.compact(session.id(), req -> true, window);
+
+		assertThat(result.isUnchanged()).isTrue();
+		assertThat(boundaries(service, session.id())).isEmpty();
+		assertThat(repository.viewReads).hasValue(1 + DefaultSessionService.MAX_REBASES);
+		assertThat(service.getEvents(session.id())).hasSize(4 + 1 + DefaultSessionService.MAX_REBASES);
+	}
+
+	private static List<SessionEvent> boundaries(SessionService service, String sessionId) {
+		return service.getEvents(sessionId).stream().filter(e -> EventType.COMPACTION.equals(e.getType())).toList();
 	}
 
 	// --- deleteExpiredSessions ---
@@ -509,6 +533,109 @@ class DefaultSessionServiceTests {
 	@Test
 	void deleteExpiredSessionsReturnsZeroWhenNoSessions() {
 		assertThat(this.service.deleteExpiredSessions(Instant.now())).isZero();
+	}
+
+	/**
+	 * A store on which a hook runs after every read of the active view, like a writer
+	 * that slips in between the read and the write.
+	 */
+	static final class ReadHookRepository implements SessionRepository {
+
+		final AtomicInteger viewReads = new AtomicInteger();
+
+		private final SessionRepository store;
+
+		private @Nullable Runnable hook;
+
+		private boolean once;
+
+		private @Nullable Runnable onVersionRead;
+
+		ReadHookRepository(SessionRepository store) {
+			this.store = store;
+		}
+
+		void onceOnViewRead(Runnable hook) {
+			this.hook = hook;
+			this.once = true;
+		}
+
+		void onEveryViewRead(Runnable hook) {
+			this.hook = hook;
+			this.once = false;
+		}
+
+		void onceOnVersionRead(Runnable hook) {
+			this.onVersionRead = hook;
+		}
+
+		@Override
+		public List<SessionEvent> findEvents(String sessionId, EventFilter filter) {
+			List<SessionEvent> events = this.store.findEvents(sessionId, filter);
+			if (filter.activeView()) {
+				this.viewReads.incrementAndGet();
+				Runnable pending = this.hook;
+				if (pending != null) {
+					if (this.once) {
+						this.hook = null;
+					}
+					pending.run();
+				}
+			}
+			return events;
+		}
+
+		@Override
+		public Session save(Session session) {
+			return this.store.save(session);
+		}
+
+		@Override
+		public boolean saveIfAbsent(Session session) {
+			return this.store.saveIfAbsent(session);
+		}
+
+		@Override
+		public @Nullable Session findById(String sessionId) {
+			return this.store.findById(sessionId);
+		}
+
+		@Override
+		public List<Session> findByMetadata(String name, String value) {
+			return this.store.findByMetadata(name, value);
+		}
+
+		@Override
+		public void delete(String sessionId) {
+			this.store.delete(sessionId);
+		}
+
+		@Override
+		public int deleteExpiredSessions(Instant before) {
+			return this.store.deleteExpiredSessions(before);
+		}
+
+		@Override
+		public void appendEvent(SessionEvent event) {
+			this.store.appendEvent(event);
+		}
+
+		@Override
+		public boolean appendEvents(String sessionId, List<SessionEvent> events, long expectedVersion) {
+			return this.store.appendEvents(sessionId, events, expectedVersion);
+		}
+
+		@Override
+		public long getEventVersion(String sessionId) {
+			long version = this.store.getEventVersion(sessionId);
+			Runnable pending = this.onVersionRead;
+			if (pending != null) {
+				this.onVersionRead = null;
+				pending.run();
+			}
+			return version;
+		}
+
 	}
 
 }

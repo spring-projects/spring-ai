@@ -54,6 +54,14 @@ class EventTypeTests {
 	}
 
 	@Test
+	void nameIsAtMostSixtyFourCharacters() {
+		String longest = "A".repeat(EventType.MAX_NAME_LENGTH);
+		assertThat(EventType.of(longest).name()).isEqualTo(longest);
+		assertThatIllegalArgumentException().isThrownBy(() -> EventType.of(longest + "A"))
+			.withMessageContaining("longer than " + EventType.MAX_NAME_LENGTH);
+	}
+
+	@Test
 	void customTypeIsStoredAndFilteredLikeAnyOther() {
 		SessionService service = DefaultSessionService.builder()
 			.sessionRepository(InMemorySessionRepository.builder().build())

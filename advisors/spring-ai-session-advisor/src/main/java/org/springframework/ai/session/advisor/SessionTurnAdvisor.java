@@ -71,8 +71,8 @@ import org.springframework.util.Assert;
  * it on the scheduler with {@link Builder#asyncCompaction(boolean)}. Compaction is
  * best-effort: a failure is logged and the reply returned, and it is retried after the
  * next turn. It appends a boundary with an optimistic compare-and-swap, so of two
- * concurrent compactions only the first lands, and a compaction that a new turn's writes
- * overtake is skipped and retried.</li>
+ * concurrent compactions only the first lands; a compaction that a new turn's writes
+ * overtake keeps them in the view and lands with the same summary.</li>
  * </ol>
  *
  * @author Christian Tzolov
@@ -92,8 +92,9 @@ public final class SessionTurnAdvisor implements CallAdvisor, StreamAdvisor {
 	private static final Logger logger = LoggerFactory.getLogger(SessionTurnAdvisor.class);
 
 	/**
-	 * Carries the caller's thread-local context, such as the security context, to an
-	 * async compaction.
+	 * Carries the caller's context, such as the security context, to the session calls of
+	 * a stream and to an async compaction: the thread locals of a blocking caller, the
+	 * Reactor context of a reactive one, the latter winning where both hold a key.
 	 */
 	private static final ContextSnapshotFactory CONTEXT_SNAPSHOTS = ContextSnapshotFactory.builder().build();
 
@@ -155,10 +156,12 @@ public final class SessionTurnAdvisor implements CallAdvisor, StreamAdvisor {
 		Assert.notNull(chain, "chain must not be null");
 		String sessionId = SessionContexts.sessionId(request.context());
 		// The session calls run on the scheduler, never on the model's thread, with the
-		// caller's thread-local context (the security context, the current observation)
-		// restored around them and around the subscription of the rest of the chain
-		return Flux.defer(() -> {
-			ContextSnapshot context = CONTEXT_SNAPSHOTS.captureAll();
+		// caller's context (the security context, the current observation) restored
+		// around them and around the subscription of the rest of the chain: the thread
+		// locals of a blocking caller, and what a reactive caller carries in the Reactor
+		// context
+		return Flux.deferContextual(contextView -> {
+			ContextSnapshot context = CONTEXT_SNAPSHOTS.captureAll(contextView);
 			return Mono.just(request).publishOn(this.scheduler).flatMapMany(r -> {
 				// A returnDirect result or a breached limit ends the stream on a chunk
 				// of its own
@@ -381,7 +384,9 @@ public final class SessionTurnAdvisor implements CallAdvisor, StreamAdvisor {
 		 * the security context for example, captured with Micrometer's context
 		 * propagation; a {@code stream()} ends on the scheduler already. One compaction
 		 * per session runs at a time from this advisor; a new turn that writes to the
-		 * session meanwhile makes it skip, and it is retried after that turn.
+		 * session meanwhile stays in the view, the compaction lands rebased onto its
+		 * events with the same summary. Only another compaction's boundary, or turns that
+		 * keep overtaking it, make it stand down until the next turn.
 		 */
 		public Builder asyncCompaction(boolean asyncCompaction) {
 			this.asyncCompaction = asyncCompaction;

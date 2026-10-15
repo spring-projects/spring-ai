@@ -14,13 +14,16 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.session.test;
+package org.springframework.ai.test.session;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -103,9 +106,8 @@ public abstract class AbstractSessionRepositoryContractTests {
 	void saveAndFindByIdRoundTrip() {
 		Session session = newSession("user-1");
 
-		Session found = this.repository.findById(session.id());
+		Session found = findSession(session.id());
 
-		assertThat(found).isNotNull();
 		assertThat(found.id()).isEqualTo(session.id());
 		assertThat(SessionAttributes.principalName(found)).isEqualTo("user-1");
 	}
@@ -116,7 +118,7 @@ public abstract class AbstractSessionRepositoryContractTests {
 	}
 
 	@Test
-	void findByIndexReturnsSessionsWithThatAttributeValue() {
+	void findByMetadataReturnsSessionsWithThatAttributeValue() {
 		String alice = "alice-" + UUID.randomUUID();
 		String bob = "bob-" + UUID.randomUUID();
 		Instant t0 = Instant.parse("2026-02-01T00:00:00Z");
@@ -133,21 +135,43 @@ public abstract class AbstractSessionRepositoryContractTests {
 			.build());
 		newSession(bob);
 
-		assertThat(this.repository.findByIndex(SessionAttributes.PRINCIPAL_NAME, alice)).extracting(Session::id)
+		assertThat(this.repository.findByMetadata(SessionAttributes.PRINCIPAL_NAME, alice)).extracting(Session::id)
 			.containsExactly(first.id(), second.id());
-		assertThat(this.repository.findByIndex(SessionAttributes.PRINCIPAL_NAME, bob)).hasSize(1);
-		assertThat(this.repository.findByIndex(SessionAttributes.PRINCIPAL_NAME, "nobody-" + UUID.randomUUID()))
+		assertThat(this.repository.findByMetadata(SessionAttributes.PRINCIPAL_NAME, bob)).hasSize(1);
+		assertThat(this.repository.findByMetadata(SessionAttributes.PRINCIPAL_NAME, "nobody-" + UUID.randomUUID()))
 			.isEmpty();
-		assertThat(this.repository.findByIndex("no-such-attribute", alice)).isEmpty();
+		assertThat(this.repository.findByMetadata("no-such-attribute", alice)).isEmpty();
 	}
 
 	@Test
-	void findByIndexComparesValueAsString() {
+	void findByMetadataComparesValueAsString() {
 		String id = UUID.randomUUID().toString();
 		this.repository.save(Session.builder().id(id).metadata(SessionAttributes.PRINCIPAL_NAME, 4242L).build());
 
-		assertThat(this.repository.findByIndex(SessionAttributes.PRINCIPAL_NAME, "4242")).extracting(Session::id)
+		assertThat(this.repository.findByMetadata(SessionAttributes.PRINCIPAL_NAME, "4242")).extracting(Session::id)
 			.containsExactly(id);
+	}
+
+	@Test
+	void longValuesSharingAPrefixAreToldApart() {
+		// A store may index a prefix of the value; the match is on the whole of it
+		String value = "p-" + UUID.randomUUID() + "-" + "x".repeat(600);
+		Session shorter = newSession(value);
+		Session longer = newSession(value + "tail");
+		// A pair of chars that is one character, right where a 512-char prefix would cut
+		String emoji = "e-" + UUID.randomUUID() + "-";
+		emoji = emoji + "a".repeat(511 - emoji.length()) + "\uD83D\uDE00";
+		Session cutInside = newSession(emoji + "tail");
+
+		assertThat(this.repository.findByMetadata(SessionAttributes.PRINCIPAL_NAME, value)).extracting(Session::id)
+			.containsExactly(shorter.id());
+		assertThat(this.repository.findByMetadata(SessionAttributes.PRINCIPAL_NAME, value + "tail"))
+			.extracting(Session::id)
+			.containsExactly(longer.id());
+		assertThat(this.repository.findByMetadata(SessionAttributes.PRINCIPAL_NAME, emoji + "tail"))
+			.extracting(Session::id)
+			.containsExactly(cutInside.id());
+		assertThat(this.repository.findByMetadata(SessionAttributes.PRINCIPAL_NAME, emoji)).isEmpty();
 	}
 
 	@Test
@@ -155,9 +179,8 @@ public abstract class AbstractSessionRepositoryContractTests {
 		String id = UUID.randomUUID().toString();
 		this.repository.save(Session.builder().id(id).metadata(Map.of("agent", "support")).build());
 
-		assertThat(this.repository.findById(id)).isNotNull();
-		assertThat(SessionAttributes.principalName(this.repository.findById(id))).isNull();
-		assertThat(this.repository.findByIndex(SessionAttributes.PRINCIPAL_NAME, "")).isEmpty();
+		assertThat(SessionAttributes.principalName(findSession(id))).isNull();
+		assertThat(this.repository.findByMetadata(SessionAttributes.PRINCIPAL_NAME, "")).isEmpty();
 	}
 
 	@Test
@@ -167,8 +190,8 @@ public abstract class AbstractSessionRepositoryContractTests {
 		assertThat(this.repository.saveIfAbsent(principalSession(id, "alice"))).isTrue();
 		assertThat(this.repository.saveIfAbsent(principalSession(id, "mallory"))).isFalse();
 
-		assertThat(SessionAttributes.principalName(this.repository.findById(id))).isEqualTo("alice");
-		assertThat(this.repository.findByIndex(SessionAttributes.PRINCIPAL_NAME, "mallory")).extracting(Session::id)
+		assertThat(SessionAttributes.principalName(findSession(id))).isEqualTo("alice");
+		assertThat(this.repository.findByMetadata(SessionAttributes.PRINCIPAL_NAME, "mallory")).extracting(Session::id)
 			.doesNotContain(id);
 	}
 
@@ -220,15 +243,15 @@ public abstract class AbstractSessionRepositoryContractTests {
 			.build());
 
 		assertThat(updated.createdAt()).isEqualTo(created);
-		Session found = this.repository.findById(id);
+		Session found = findSession(id);
 		assertThat(found.createdAt()).isEqualTo(created);
 		assertThat(SessionAttributes.principalName(found)).isEqualTo("user-2");
 		assertThat(found.metadata()).containsEntry("key", "value");
 		assertThat(texts(id, EventFilter.all())).containsExactly("kept");
 		// The index follows the metadata
-		assertThat(this.repository.findByIndex(SessionAttributes.PRINCIPAL_NAME, "user-1")).extracting(Session::id)
+		assertThat(this.repository.findByMetadata(SessionAttributes.PRINCIPAL_NAME, "user-1")).extracting(Session::id)
 			.doesNotContain(id);
-		assertThat(this.repository.findByIndex(SessionAttributes.PRINCIPAL_NAME, "user-2")).extracting(Session::id)
+		assertThat(this.repository.findByMetadata(SessionAttributes.PRINCIPAL_NAME, "user-2")).extracting(Session::id)
 			.contains(id);
 	}
 
@@ -241,7 +264,7 @@ public abstract class AbstractSessionRepositoryContractTests {
 
 		assertThat(this.repository.findById(session.id())).isNull();
 		assertThat(this.repository.findEvents(session.id(), EventFilter.all())).isEmpty();
-		assertThat(this.repository.findByIndex(SessionAttributes.PRINCIPAL_NAME, "user-4")).extracting(Session::id)
+		assertThat(this.repository.findByMetadata(SessionAttributes.PRINCIPAL_NAME, "user-4")).extracting(Session::id)
 			.doesNotContain(session.id());
 	}
 
@@ -274,6 +297,16 @@ public abstract class AbstractSessionRepositoryContractTests {
 		assertThat(this.repository.findById(extended)).isNotNull();
 		assertThat(this.repository.findById(noTtl)).isNotNull();
 		assertThat(texts(extended, EventFilter.all())).containsExactly("kept");
+	}
+
+	@Test
+	void sessionWithoutExpiryReadsBackWithoutOneAndIsNeverSweptAway() {
+		Session session = this.repository.save(principalSession(UUID.randomUUID().toString(), "user-forever"));
+
+		assertThat(findSession(session.id()).expiresAt()).isNull();
+
+		this.repository.deleteExpiredSessions(Instant.now().plus(Duration.ofDays(365 * 100)));
+		assertThat(findSession(session.id()).expiresAt()).isNull();
 	}
 
 	// --- Append ---
@@ -763,7 +796,7 @@ public abstract class AbstractSessionRepositoryContractTests {
 		assertThat(stored.get(0).getType()).isEqualTo(progress);
 		assertThat(stored.get(0).hasMessage()).isFalse();
 		assertThat(stored.get(0).getPayload()).containsEntry("note", "halfway");
-		assertThat(((Number) stored.get(0).getPayload().get("step")).intValue()).isEqualTo(2);
+		assertThat(((Number) Objects.requireNonNull(stored.get(0).getPayload().get("step"))).intValue()).isEqualTo(2);
 		// Never part of the conversation
 		assertThat(this.repository.findEvents(session.id(), EventFilter.active())).hasSize(1);
 	}
@@ -782,7 +815,7 @@ public abstract class AbstractSessionRepositoryContractTests {
 			assertThat(this.repository.findEvents(id, EventFilter.all())).singleElement()
 				.satisfies(event -> assertThat(event.getId()).hasSize(255));
 		}
-		assertThat(this.repository.findByIndex(SessionAttributes.PRINCIPAL_NAME, "user-ids")).hasSize(2);
+		assertThat(this.repository.findByMetadata(SessionAttributes.PRINCIPAL_NAME, "user-ids")).hasSize(2);
 	}
 
 	@Test
@@ -812,6 +845,13 @@ public abstract class AbstractSessionRepositoryContractTests {
 	/** Saves a new session with a random id for the given principal. */
 	protected Session newSession(String principalName) {
 		return this.repository.save(principalSession(UUID.randomUUID().toString(), principalName));
+	}
+
+	/** The session with the given id, which must exist. */
+	protected Session findSession(String id) {
+		Session found = this.repository.findById(id);
+		assertThat(found).as("session %s", id).isNotNull();
+		return Objects.requireNonNull(found);
 	}
 
 	/** A session with the given id whose metadata names the principal. */
@@ -956,14 +996,14 @@ public abstract class AbstractSessionRepositoryContractTests {
 	}
 
 	@Test
-	void findByIndexIsCaseSensitive() {
+	void findByMetadataIsCaseSensitive() {
 		String alice = "alice-" + UUID.randomUUID();
 		Session lower = newSession(alice);
-		Session upper = newSession(alice.toUpperCase());
+		Session upper = newSession(alice.toUpperCase(Locale.ROOT));
 
-		assertThat(this.repository.findByIndex(SessionAttributes.PRINCIPAL_NAME, alice)).extracting(Session::id)
+		assertThat(this.repository.findByMetadata(SessionAttributes.PRINCIPAL_NAME, alice)).extracting(Session::id)
 			.containsExactly(lower.id());
-		assertThat(this.repository.findByIndex(SessionAttributes.PRINCIPAL_NAME, alice.toUpperCase()))
+		assertThat(this.repository.findByMetadata(SessionAttributes.PRINCIPAL_NAME, alice.toUpperCase(Locale.ROOT)))
 			.extracting(Session::id)
 			.containsExactly(upper.id());
 	}

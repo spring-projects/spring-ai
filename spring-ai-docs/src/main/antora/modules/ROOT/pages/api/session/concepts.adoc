@@ -24,14 +24,14 @@ It is an immutable value that holds only metadata; the events are stored separat
 | `expiresAt`
 | When the session expires.
 A session the service creates always has one: the request's `timeToLive`, or the service's default of 60 days.
-`null` only for a `Session` built directly with `expiresAt(null)`.
+A `Session` built directly has none, so it never expires, unless its builder sets one.
 
 | `metadata`
 | Arbitrary metadata: the owner, the agent attributes, tags, and whatever the application adds.
 |===
 
 A session has no owner field.
-Who it belongs to is an attribute of its metadata, in the shape of Spring Session's principal-name index: every store indexes `SessionAttributes.PRINCIPAL_NAME`, so `findByIndex(SessionAttributes.PRINCIPAL_NAME, "alice")` lists a user's sessions.
+Who it belongs to is an attribute of its metadata, in the shape of Spring Session's principal-name index: every store indexes `SessionAttributes.PRINCIPAL_NAME`, so `findByMetadata(SessionAttributes.PRINCIPAL_NAME, "alice")` lists a user's sessions.
 `SessionAttributes.AGENT_NAME`, `AGENT_VERSION` and `AGENT_MODEL` label the agent a session runs, for listings and a UI; `SessionAttributes.agentName(session)` reads them back.
 
 [source,java]
@@ -112,7 +112,7 @@ SessionEvent progress = SessionEvent.builder()
 
 `EventType` is open: a type is its name.
 The well-known types are `MESSAGE`, a conversation message, and `COMPACTION`, a compaction boundary whose payload is a `CompactionBoundary`.
-An application defines its own with `EventType.of("MY_APP.PROGRESS")`: upper case, digits, underscores and dots.
+An application defines its own with `EventType.of("MY_APP.PROGRESS")`: upper case, digits, underscores and dots, at most 64 characters.
 Every store keeps the name and a filter by type works for any of them; only `MESSAGE` events take part in prompt assembly and compaction.
 
 `EventType.canCarryMessage()` says whether an event of the type holds a message.
@@ -244,7 +244,7 @@ Throws `SessionAlreadyExistsException` for a taken id.
 | `findById(id)`
 | The session, or `null`.
 
-| `findByIndex(name, value)`
+| `findByMetadata(name, value)`
 | The sessions whose metadata holds the value under an indexed key, oldest first.
 
 | `appendEvent(event)`, `appendMessage(id, message)`
@@ -266,7 +266,7 @@ See xref:api/session/compaction.adoc[Compaction].
 There is no tombstone.
 
 | `deleteExpiredSessions(before)`
-| Deletes every session that expired before the instant, with its events, and returns the count.
+| Deletes every session that expired before the instant, with their events, and returns the count.
 Sessions are not swept automatically: call it from a scheduler.
 |===
 
@@ -280,9 +280,11 @@ The default id is a random UUID, so this only matters when a caller supplies its
 === Optimistic concurrency
 
 `SessionRepository.getEventVersion(sessionId)` is a counter that advances on every append of a new event and on every successful `appendEvents` call.
-`DefaultSessionService.compact` reads it before fetching the view, builds the boundary and the summary events from the strategy's result, and passes the version to `appendEvents(sessionId, events, expectedVersion)`.
-When another writer changed the log in between, the compare-and-swap returns `false` and the compaction is skipped; it runs again after the next turn.
-Of two concurrent compactions only the first lands, and a compaction that a new append overtakes never covers what the model was about to see.
+`DefaultSessionService.compact` reads it, then the newest boundary, then the view, builds the boundary and the summary events from the strategy's result, and passes the version to `appendEvents(sessionId, events, expectedVersion)`.
+When another writer changed the log in between, the compare-and-swap returns `false`.
+If a newer boundary landed, this result is dropped: it stands on a view that is gone.
+If it was an append, the result is rebased: the events appended since the view was read join the preserved tail verbatim, the same summary stands, and the write is retried, twice at most.
+So an append does not waste the summary, a compaction never covers what the model was about to see, and only a session that keeps overtaking the write makes it stand down until the next pass.
 
 === Ordering
 
