@@ -357,6 +357,11 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 	}
 
 	@Override
+	protected boolean supportsUpsert() {
+		return true;
+	}
+
+	@Override
 	protected void doUpsert(List<EmbeddedDocument> entries) {
 		// Whole-batch dimension pre-check before any write, so a mismatched vector fails
 		// fast and cannot partially write. Non-empty and finiteness are already enforced
@@ -464,6 +469,11 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 	@Override
 	public List<Document> doSimilaritySearch(SearchRequest request) {
 		return searchByEmbedding(getQueryEmbedding(request.getQuery()), request);
+	}
+
+	@Override
+	protected boolean supportsQueryEmbeddingSearch() {
+		return true;
 	}
 
 	@Override

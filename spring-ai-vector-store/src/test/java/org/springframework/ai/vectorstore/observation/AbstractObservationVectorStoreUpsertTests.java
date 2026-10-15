@@ -158,6 +158,11 @@ class AbstractObservationVectorStoreUpsertTests {
 		}
 
 		@Override
+		protected boolean supportsUpsert() {
+			return true;
+		}
+
+		@Override
 		protected void doUpsert(List<EmbeddedDocument> entries) {
 			this.captured.set(entries);
 		}
