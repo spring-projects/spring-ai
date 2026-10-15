@@ -153,6 +153,28 @@ public abstract class AbstractSessionRepositoryContractTests {
 	}
 
 	@Test
+	void longValuesSharingAPrefixAreToldApart() {
+		// A store may index a prefix of the value; the match is on the whole of it
+		String value = "p-" + UUID.randomUUID() + "-" + "x".repeat(600);
+		Session shorter = newSession(value);
+		Session longer = newSession(value + "tail");
+		// A pair of chars that is one character, right where a 512-char prefix would cut
+		String emoji = "e-" + UUID.randomUUID() + "-";
+		emoji = emoji + "a".repeat(511 - emoji.length()) + "\uD83D\uDE00";
+		Session cutInside = newSession(emoji + "tail");
+
+		assertThat(this.repository.findByMetadata(SessionAttributes.PRINCIPAL_NAME, value)).extracting(Session::id)
+			.containsExactly(shorter.id());
+		assertThat(this.repository.findByMetadata(SessionAttributes.PRINCIPAL_NAME, value + "tail"))
+			.extracting(Session::id)
+			.containsExactly(longer.id());
+		assertThat(this.repository.findByMetadata(SessionAttributes.PRINCIPAL_NAME, emoji + "tail"))
+			.extracting(Session::id)
+			.containsExactly(cutInside.id());
+		assertThat(this.repository.findByMetadata(SessionAttributes.PRINCIPAL_NAME, emoji)).isEmpty();
+	}
+
+	@Test
 	void sessionWithoutAttributeIsNotIndexed() {
 		String id = UUID.randomUUID().toString();
 		this.repository.save(Session.builder().id(id).metadata(Map.of("agent", "support")).build());
