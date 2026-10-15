@@ -28,7 +28,8 @@ CREATE TABLE IF NOT EXISTS AI_SESSION_EVENT (
     id              VARCHAR(255)  COLLATE utf8mb4_bin NOT NULL PRIMARY KEY,
     session_id      VARCHAR(255)  COLLATE utf8mb4_bin NOT NULL,
     timestamp       DATETIME(6)   NOT NULL,
-    event_type      VARCHAR(32)   NOT NULL DEFAULT 'MESSAGE',
+    -- Sized for EventType.MAX_NAME_LENGTH
+    event_type      VARCHAR(64)   NOT NULL DEFAULT 'MESSAGE',
     -- NULL for an event that is not a message
     message_type    VARCHAR(20),
     message_content LONGTEXT,

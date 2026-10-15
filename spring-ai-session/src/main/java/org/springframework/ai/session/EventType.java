@@ -37,6 +37,9 @@ import org.springframework.util.Assert;
  */
 public final class EventType {
 
+	/** The longest name; a store sizes its column for it. */
+	public static final int MAX_NAME_LENGTH = 64;
+
 	private static final Pattern NAME = Pattern.compile("[A-Z][A-Z0-9_.]*");
 
 	/**
@@ -62,7 +65,8 @@ public final class EventType {
 
 	/**
 	 * The event type with the given name: a well-known one, or an application's own. A
-	 * name is upper case, digits, underscores and dots, like {@code MY_APP.PROGRESS}.
+	 * name is upper case, digits, underscores and dots, like {@code MY_APP.PROGRESS}, of
+	 * at most {@value #MAX_NAME_LENGTH} characters.
 	 * @throws IllegalArgumentException if the name is not of that form
 	 */
 	@JsonCreator
@@ -70,6 +74,8 @@ public final class EventType {
 		Assert.hasText(name, "name must not be null or empty");
 		Assert.isTrue(NAME.matcher(name).matches(),
 				() -> "Event type name '" + name + "' must match " + NAME.pattern());
+		Assert.isTrue(name.length() <= MAX_NAME_LENGTH,
+				() -> "Event type name '" + name + "' is longer than " + MAX_NAME_LENGTH + " characters");
 		return new EventType(name);
 	}
 

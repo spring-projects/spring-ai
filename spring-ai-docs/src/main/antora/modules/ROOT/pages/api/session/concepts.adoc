@@ -112,7 +112,7 @@ SessionEvent progress = SessionEvent.builder()
 
 `EventType` is open: a type is its name.
 The well-known types are `MESSAGE`, a conversation message, and `COMPACTION`, a compaction boundary whose payload is a `CompactionBoundary`.
-An application defines its own with `EventType.of("MY_APP.PROGRESS")`: upper case, digits, underscores and dots.
+An application defines its own with `EventType.of("MY_APP.PROGRESS")`: upper case, digits, underscores and dots, at most 64 characters.
 Every store keeps the name and a filter by type works for any of them; only `MESSAGE` events take part in prompt assembly and compaction.
 
 `EventType.canCarryMessage()` says whether an event of the type holds a message.
