@@ -8,7 +8,7 @@ hide empty members
 interface SessionService {
   +create(request): Session
   +findById(id): Session
-  +findByIndex(name, value): List<Session>
+  +findByMetadata(name, value): List<Session>
   +appendEvent(event)
   +appendMessage(id, message)
   +getEvents(id, filter): List<SessionEvent>
@@ -25,7 +25,7 @@ interface SessionRepository {
   +save(session): Session
   +saveIfAbsent(session): boolean
   +findById(id): Session
-  +findByIndex(name, value): List<Session>
+  +findByMetadata(name, value): List<Session>
   +delete(id)
   +deleteExpiredSessions(before): int
   +appendEvent(event)

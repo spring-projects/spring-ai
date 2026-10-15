@@ -63,7 +63,7 @@ public interface SessionRepository {
 	 * @param name the metadata key
 	 * @param value the value, compared as a string
 	 */
-	List<Session> findByIndex(String name, String value);
+	List<Session> findByMetadata(String name, String value);
 
 	/** Deletes the session and its events. */
 	void delete(String sessionId);

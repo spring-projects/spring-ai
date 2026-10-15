@@ -48,11 +48,12 @@ public interface SessionService {
 	@Nullable Session findById(String sessionId);
 
 	/**
-	 * The sessions whose metadata holds {@code value} under {@code name}, oldest first;
-	 * see {@link SessionRepository#findByIndex}. The sessions of a principal are {@code
-	 * findByIndex(SessionAttributes.PRINCIPAL_NAME, name)}.
+	 * The sessions whose metadata holds {@code value} under {@code name}, oldest first,
+	 * for the keys the store indexes; see {@link SessionRepository#findByMetadata}. The
+	 * sessions of a principal are {@code findByMetadata(SessionAttributes.PRINCIPAL_NAME,
+	 * name)}.
 	 */
-	List<Session> findByIndex(String name, String value);
+	List<Session> findByMetadata(String name, String value);
 
 	/** Deletes the session and its events. */
 	void delete(String sessionId);

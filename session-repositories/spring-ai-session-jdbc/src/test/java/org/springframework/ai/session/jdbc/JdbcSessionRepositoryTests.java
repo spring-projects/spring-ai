@@ -195,13 +195,14 @@ class JdbcSessionRepositoryTests {
 			.build());
 
 		// Both repositories read the same table: what matters is who wrote the row
-		assertThat(tenantAware.findByIndex("tenant", tenant)).extracting(Session::id).containsExactly(indexed.id());
-		assertThat(this.repository.findByIndex("tenant", tenant)).extracting(Session::id).containsExactly(indexed.id());
-		assertThat(this.repository.findByIndex(SessionAttributes.PRINCIPAL_NAME, "alice")).extracting(Session::id)
+		assertThat(tenantAware.findByMetadata("tenant", tenant)).extracting(Session::id).containsExactly(indexed.id());
+		assertThat(this.repository.findByMetadata("tenant", tenant)).extracting(Session::id)
+			.containsExactly(indexed.id());
+		assertThat(this.repository.findByMetadata(SessionAttributes.PRINCIPAL_NAME, "alice")).extracting(Session::id)
 			.contains(indexed.id(), notIndexed.id());
 		// Re-saving with the tenant-aware repository indexes the missing attribute
 		tenantAware.save(notIndexed);
-		assertThat(tenantAware.findByIndex("tenant", tenant)).hasSize(2);
+		assertThat(tenantAware.findByMetadata("tenant", tenant)).hasSize(2);
 	}
 
 	@Test
@@ -219,13 +220,13 @@ class JdbcSessionRepositoryTests {
 			.metadata(SessionAttributes.PRINCIPAL_NAME, value + "tail")
 			.build());
 
-		assertThat(this.repository.findByIndex(SessionAttributes.PRINCIPAL_NAME, value)).extracting(Session::id)
+		assertThat(this.repository.findByMetadata(SessionAttributes.PRINCIPAL_NAME, value)).extracting(Session::id)
 			.containsExactly(session.id());
-		assertThat(this.repository.findByIndex(SessionAttributes.PRINCIPAL_NAME, value + "tail"))
+		assertThat(this.repository.findByMetadata(SessionAttributes.PRINCIPAL_NAME, value + "tail"))
 			.extracting(Session::id)
 			.containsExactly(other.id());
 		// The prefix alone is a different value
-		assertThat(this.repository.findByIndex(SessionAttributes.PRINCIPAL_NAME,
+		assertThat(this.repository.findByMetadata(SessionAttributes.PRINCIPAL_NAME,
 				value.substring(0, JdbcSessionRepository.MAX_INDEXED_VALUE_LENGTH)))
 			.isEmpty();
 		// The stored metadata keeps the full value

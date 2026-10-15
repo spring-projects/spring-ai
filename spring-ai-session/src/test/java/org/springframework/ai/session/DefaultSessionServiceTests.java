@@ -255,13 +255,13 @@ class DefaultSessionServiceTests {
 	}
 
 	@Test
-	void findByIndexReturnsSessionsOfPrincipal() {
+	void findByMetadataReturnsSessionsOfPrincipal() {
 		this.service.create(CreateSessionRequest.builder().metadata(SessionAttributes.PRINCIPAL_NAME, "alice").build());
 		this.service.create(CreateSessionRequest.builder().metadata(SessionAttributes.PRINCIPAL_NAME, "alice").build());
 		this.service.create(CreateSessionRequest.builder().metadata(SessionAttributes.PRINCIPAL_NAME, "bob").build());
 
-		assertThat(this.service.findByIndex(SessionAttributes.PRINCIPAL_NAME, "alice")).hasSize(2);
-		assertThat(this.service.findByIndex(SessionAttributes.PRINCIPAL_NAME, "bob")).hasSize(1);
+		assertThat(this.service.findByMetadata(SessionAttributes.PRINCIPAL_NAME, "alice")).hasSize(2);
+		assertThat(this.service.findByMetadata(SessionAttributes.PRINCIPAL_NAME, "bob")).hasSize(1);
 	}
 
 	@Test
@@ -417,8 +417,8 @@ class DefaultSessionServiceTests {
 			}
 
 			@Override
-			public List<Session> findByIndex(String name, String value) {
-				return store.findByIndex(name, value);
+			public List<Session> findByMetadata(String name, String value) {
+				return store.findByMetadata(name, value);
 			}
 
 			@Override

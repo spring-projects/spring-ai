@@ -109,11 +109,11 @@ When the window lands mid-turn, one bounded extra query fetches the rows between
 The newest boundary of a session, read before every view, is served by the `(session_id, event_type, seq)` index.
 
 *Keys compare byte for byte.*
-On MySQL and MariaDB the id and index columns use the `utf8mb4_bin` collation, so `findByIndex` and the id lookups are case-sensitive, as on the other databases.
+On MySQL and MariaDB the id and index columns use the `utf8mb4_bin` collation, so `findByMetadata` and the id lookups are case-sensitive, as on the other databases.
 
 *Indexed attributes.*
 On every save the repository copies the metadata entries whose keys are configured as indexed, always including `SessionAttributes.PRINCIPAL_NAME`, into `AI_SESSION_INDEX`, one row per attribute, on the first 512 characters of the value; the whole value is then compared on the sessions the query returns, so the row is a prefix index, not the match.
-`findByIndex(name, value)` is one query over that table and an exact match on what it returns.
+`findByMetadata(name, value)` is one query over that table and an exact match on what it returns.
 
 *The `synthetic` column* is stored on its own, not only in the metadata JSON, so `excludeSynthetic` is a SQL predicate rather than an in-process scan.
 
@@ -155,7 +155,7 @@ A `SessionServiceDecorator` bean wraps the auto-configured service, for a cross-
 
 | `spring.ai.session.repository.jdbc.indexed-attributes`
 | empty
-| The metadata keys indexed besides the principal name, so `findByIndex` answers for them.
+| The metadata keys indexed besides the principal name, so `findByMetadata` answers for them.
 |===
 
 [[session-jdbc-custom]]
@@ -174,7 +174,7 @@ A `lastN` window keeps turns whole, as xref:api/session/event-filter.adoc#sessio
 * *Compaction is an append.*
 `appendEvents(sessionId, events, expectedVersion)` appends the boundary and its summary events in one version-checked write and returns `false` on a stale version.
 Existing events never move, change or disappear; `CompactionBoundary.project(log)` is the reference projection.
-* *`findByIndex` is the one scoped lookup*: every store indexes `SessionAttributes.PRINCIPAL_NAME`.
+* *`findByMetadata` is the one scoped lookup*: every store indexes `SessionAttributes.PRINCIPAL_NAME`.
 
 The `spring-ai-session` test-jar ships `AbstractSessionRepositoryContractTests`, the suite the in-memory, H2, PostgreSQL, MySQL and MariaDB repositories run.
 Extend it and return your repository:

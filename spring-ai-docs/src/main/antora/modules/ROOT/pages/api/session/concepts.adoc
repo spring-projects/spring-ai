@@ -31,7 +31,7 @@ A `Session` built directly has none, so it never expires, unless its builder set
 |===
 
 A session has no owner field.
-Who it belongs to is an attribute of its metadata, in the shape of Spring Session's principal-name index: every store indexes `SessionAttributes.PRINCIPAL_NAME`, so `findByIndex(SessionAttributes.PRINCIPAL_NAME, "alice")` lists a user's sessions.
+Who it belongs to is an attribute of its metadata, in the shape of Spring Session's principal-name index: every store indexes `SessionAttributes.PRINCIPAL_NAME`, so `findByMetadata(SessionAttributes.PRINCIPAL_NAME, "alice")` lists a user's sessions.
 `SessionAttributes.AGENT_NAME`, `AGENT_VERSION` and `AGENT_MODEL` label the agent a session runs, for listings and a UI; `SessionAttributes.agentName(session)` reads them back.
 
 [source,java]
@@ -244,7 +244,7 @@ Throws `SessionAlreadyExistsException` for a taken id.
 | `findById(id)`
 | The session, or `null`.
 
-| `findByIndex(name, value)`
+| `findByMetadata(name, value)`
 | The sessions whose metadata holds the value under an indexed key, oldest first.
 
 | `appendEvent(event)`, `appendMessage(id, message)`

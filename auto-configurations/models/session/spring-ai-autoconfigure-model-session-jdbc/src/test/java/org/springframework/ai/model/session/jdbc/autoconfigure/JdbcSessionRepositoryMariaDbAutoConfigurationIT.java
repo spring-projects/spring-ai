@@ -66,7 +66,8 @@ class JdbcSessionRepositoryMariaDbAutoConfigurationIT {
 			repository
 				.appendEvent(SessionEvent.builder().sessionId(sessionId).message(new UserMessage("Hello")).build());
 
-			assertThat(repository.findByIndex(SessionAttributes.PRINCIPAL_NAME, "user-mariadb")).extracting(Session::id)
+			assertThat(repository.findByMetadata(SessionAttributes.PRINCIPAL_NAME, "user-mariadb"))
+				.extracting(Session::id)
 				.containsExactly(sessionId);
 			assertThat(repository.findEvents(sessionId, EventFilter.all())).singleElement()
 				.satisfies(event -> assertThat(event.getMessage().getText()).isEqualTo("Hello"));

@@ -31,7 +31,7 @@ import org.springframework.util.Assert;
  * <p>
  * A session has no owner field. Who it belongs to is an attribute of its metadata, under
  * a well-known key such as {@link SessionAttributes#PRINCIPAL_NAME}, set by the
- * application and looked up with {@link SessionRepository#findByIndex}.
+ * application and looked up with {@link SessionRepository#findByMetadata}.
  *
  * @author Christian Tzolov
  * @since 2.1.0
