@@ -1695,6 +1695,26 @@ AnthropicChatModel chatModel = AnthropicChatModel.builder()
     .build();
 ----
 
+=== Anthropic server-side spans
+
+The Claude API can also export its own spans for each request, such as `anthropic.messages.create`, to your observability platform.
+Because Spring AI sends a `traceparent` header with every request, these spans join your application's trace, under the `okhttp.requests` span of that request.
+This needs no code or Spring AI configuration; you set it up on the Anthropic side.
+
+. In the Claude Console, an organization admin adds a telemetry destination: the OTLP/HTTP endpoint of your observability platform and its credentials.
+The destination must cover the workspace of the API key that your application uses.
+See https://platform.claude.com/docs/en/manage-claude/opentelemetry/api[Use OpenTelemetry with the Claude API] for the steps.
+. Export your application's traces to the same observability platform, so that it can show both sides as one trace.
+. To find the Anthropic spans, filter on `service.name` = `claude-platform`.
+
+Keep in mind:
+
+* The Claude API follows the sampled flag in `traceparent`: when your application doesn't sample a request, the API doesn't emit spans for it either.
+Spring Boot samples 10% of requests by default, which you can change with `management.tracing.sampling.probability`.
+* The Claude API reads only the W3C `traceparent` header, which is Spring Boot's default.
+If you use B3 propagation, add W3C as well, for example with `management.tracing.propagation.type=w3c,b3`.
+* Claude Platform on AWS doesn't read `traceparent` yet, so the spans of requests sent to it always start their own trace.
+
 === Connection-pool metrics (opt-in)
 
 Spring AI can additionally bind OkHttp connection-pool gauges (`okhttp.pool.connection.count` with `state=active|idle` and `client.kind=sync|async`) to the application's `MeterRegistry`.
