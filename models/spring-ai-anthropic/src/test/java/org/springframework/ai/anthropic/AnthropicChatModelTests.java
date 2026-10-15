@@ -21,7 +21,11 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
@@ -64,6 +68,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
+import org.reactivestreams.Subscription;
+import reactor.core.Disposable;
+import reactor.core.publisher.BaseSubscriber;
+import reactor.core.publisher.SignalType;
 
 import org.springframework.ai.anthropic.metadata.AnthropicRateLimit;
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -86,6 +94,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -107,19 +116,10 @@ class AnthropicChatModelTests {
 	private AnthropicClient anthropicClient;
 
 	@Mock
-	private AnthropicClientAsync anthropicClientAsync;
-
-	@Mock
 	private MessageService messageService;
 
 	@Mock
 	private MessageService.WithRawResponse messageServiceWithRawResponse;
-
-	@Mock
-	private MessageServiceAsync messageServiceAsync;
-
-	@Mock
-	private MessageServiceAsync.WithRawResponse messageServiceAsyncWithRawResponse;
 
 	private AnthropicChatModel chatModel;
 
@@ -140,7 +140,6 @@ class AnthropicChatModelTests {
 
 		this.chatModel = AnthropicChatModel.builder()
 			.anthropicClient(this.anthropicClient)
-			.anthropicClientAsync(this.anthropicClientAsync)
 			.options(AnthropicChatOptions.builder()
 				.model(Model.CLAUDE_SONNET_4_5)
 				.maxTokens(1024)
@@ -363,11 +362,9 @@ class AnthropicChatModelTests {
 		given(rawResponse.parse()).willReturn(streamResponse);
 		given(rawResponse.headers()).willReturn(Headers.builder().build());
 
-		given(this.anthropicClientAsync.messages()).willReturn(this.messageServiceAsync);
-		given(this.messageServiceAsync.withRawResponse()).willReturn(this.messageServiceAsyncWithRawResponse);
-		given(this.messageServiceAsyncWithRawResponse.createStreaming(any(MessageCreateParams.class),
+		given(this.messageServiceWithRawResponse.createStreaming(any(MessageCreateParams.class),
 				any(RequestOptions.class)))
-			.willReturn(CompletableFuture.completedFuture(rawResponse));
+			.willReturn(rawResponse);
 		Message finalResponse = createMockMessage("Done.", StopReason.END_TURN);
 		given(this.messageService.create(any(MessageCreateParams.class))).willReturn(finalResponse);
 
@@ -407,11 +404,9 @@ class AnthropicChatModelTests {
 		given(rawResponse.parse()).willReturn(streamResponse);
 		given(rawResponse.headers()).willReturn(Headers.builder().build());
 
-		given(this.anthropicClientAsync.messages()).willReturn(this.messageServiceAsync);
-		given(this.messageServiceAsync.withRawResponse()).willReturn(this.messageServiceAsyncWithRawResponse);
-		given(this.messageServiceAsyncWithRawResponse.createStreaming(any(MessageCreateParams.class),
+		given(this.messageServiceWithRawResponse.createStreaming(any(MessageCreateParams.class),
 				any(RequestOptions.class)))
-			.willReturn(CompletableFuture.completedFuture(rawResponse));
+			.willReturn(rawResponse);
 
 		List<ChatResponse> responses = this.chatModel.stream(new Prompt("Think about it.")).collectList().block();
 
@@ -430,7 +425,6 @@ class AnthropicChatModelTests {
 	void cacheOptionsIsMergedFromRuntimePrompt() {
 		AnthropicChatModel model = AnthropicChatModel.builder()
 			.anthropicClient(this.anthropicClient)
-			.anthropicClientAsync(this.anthropicClientAsync)
 			.options(AnthropicChatOptions.builder().model("default-model").maxTokens(1000).build())
 			.build();
 
@@ -911,6 +905,49 @@ class AnthropicChatModelTests {
 
 	@Test
 	@SuppressWarnings("unchecked")
+	void streamingReadsEventsOnBoundedElasticWhenDemandComesFromAnotherThread() throws Exception {
+		// The stream is a blocking read, so it must stay on boundedElastic workers even
+		// when the subscriber asks for more from its own thread, such as an event loop.
+		Set<String> readingThreads = ConcurrentHashMap.newKeySet();
+		List<RawMessageStreamEvent> events = List.of(messageStartEvent(), thinkingStartEvent(), thinkingDeltaEvent("a"),
+				thinkingDeltaEvent("b"), thinkingDeltaEvent("c"), thinkingDeltaEvent("d"));
+		StreamResponse<RawMessageStreamEvent> streamResponse = mock(StreamResponse.class);
+		given(streamResponse.stream())
+			.willReturn(events.stream().peek(event -> readingThreads.add(Thread.currentThread().getName())));
+
+		HttpResponseFor<StreamResponse<RawMessageStreamEvent>> rawResponse = mock(HttpResponseFor.class);
+		given(rawResponse.parse()).willReturn(streamResponse);
+		given(rawResponse.headers()).willReturn(Headers.builder().build());
+		given(this.messageServiceWithRawResponse.createStreaming(any(MessageCreateParams.class),
+				any(RequestOptions.class)))
+			.willReturn(rawResponse);
+
+		CountDownLatch done = new CountDownLatch(1);
+		this.chatModel.stream(new Prompt("test")).subscribe(new BaseSubscriber<>() {
+
+			@Override
+			protected void hookOnSubscribe(Subscription subscription) {
+				request(1);
+			}
+
+			@Override
+			protected void hookOnNext(ChatResponse value) {
+				new Thread(() -> request(1), "consumer").start();
+			}
+
+			@Override
+			protected void hookFinally(SignalType type) {
+				done.countDown();
+			}
+
+		});
+
+		assertThat(done.await(5, TimeUnit.SECONDS)).isTrue();
+		assertThat(readingThreads).isNotEmpty().allSatisfy(name -> assertThat(name).startsWith("boundedElastic-"));
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
 	void streamingClosesStreamResponse() {
 		StreamResponse<RawMessageStreamEvent> streamResponse = mock(StreamResponse.class);
 		given(streamResponse.stream()).willReturn(Stream.empty());
@@ -919,11 +956,9 @@ class AnthropicChatModelTests {
 		given(rawResponse.parse()).willReturn(streamResponse);
 		given(rawResponse.headers()).willReturn(Headers.builder().build());
 
-		given(this.anthropicClientAsync.messages()).willReturn(this.messageServiceAsync);
-		given(this.messageServiceAsync.withRawResponse()).willReturn(this.messageServiceAsyncWithRawResponse);
-		given(this.messageServiceAsyncWithRawResponse.createStreaming(any(MessageCreateParams.class),
+		given(this.messageServiceWithRawResponse.createStreaming(any(MessageCreateParams.class),
 				any(RequestOptions.class)))
-			.willReturn(CompletableFuture.completedFuture(rawResponse));
+			.willReturn(rawResponse);
 
 		this.chatModel.stream(new Prompt("test")).collectList().block();
 
@@ -931,6 +966,70 @@ class AnthropicChatModelTests {
 		// close() runs in the doFinally callback on the boundedElastic worker, which
 		// can lag block() returning, so allow a short window.
 		verify(streamResponse, timeout(1000)).close();
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void streamingClosesResponseThatArrivesAfterCancel() throws Exception {
+		HttpResponseFor<StreamResponse<RawMessageStreamEvent>> rawResponse = mock(HttpResponseFor.class);
+		CountDownLatch requestSent = new CountDownLatch(1);
+		CountDownLatch cancelled = new CountDownLatch(1);
+		given(this.messageServiceWithRawResponse.createStreaming(any(MessageCreateParams.class),
+				any(RequestOptions.class)))
+			.willAnswer(invocation -> {
+				requestSent.countDown();
+				// Like a blocking socket read, waiting for the response ignores the
+				// interrupt that the cancel sends to the worker.
+				while (true) {
+					try {
+						cancelled.await();
+						return rawResponse;
+					}
+					catch (InterruptedException ex) {
+						// keep waiting
+					}
+				}
+			});
+
+		Disposable subscription = this.chatModel.stream(new Prompt("test")).subscribe();
+		assertThat(requestSent.await(5, TimeUnit.SECONDS)).isTrue();
+		subscription.dispose();
+		cancelled.countDown();
+
+		verify(rawResponse, timeout(1000)).close();
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void streamingUsesAsyncClientWhenOneIsSet() {
+		StreamResponse<RawMessageStreamEvent> streamResponse = mock(StreamResponse.class);
+		given(streamResponse.stream()).willReturn(Stream.empty());
+		HttpResponseFor<StreamResponse<RawMessageStreamEvent>> rawResponse = mock(HttpResponseFor.class);
+		given(rawResponse.parse()).willReturn(streamResponse);
+		given(rawResponse.headers()).willReturn(Headers.builder().build());
+
+		AnthropicClientAsync anthropicClientAsync = mock(AnthropicClientAsync.class);
+		MessageServiceAsync messageServiceAsync = mock(MessageServiceAsync.class);
+		MessageServiceAsync.WithRawResponse messageServiceAsyncWithRawResponse = mock(
+				MessageServiceAsync.WithRawResponse.class);
+		given(anthropicClientAsync.messages()).willReturn(messageServiceAsync);
+		given(messageServiceAsync.withRawResponse()).willReturn(messageServiceAsyncWithRawResponse);
+		given(messageServiceAsyncWithRawResponse.createStreaming(any(MessageCreateParams.class),
+				any(RequestOptions.class)))
+			.willReturn(CompletableFuture.completedFuture(rawResponse));
+
+		AnthropicChatModel model = AnthropicChatModel.builder()
+			.anthropicClient(this.anthropicClient)
+			.anthropicClientAsync(anthropicClientAsync)
+			.options(AnthropicChatOptions.builder().model(Model.CLAUDE_SONNET_4_5).maxTokens(1024).build())
+			.build();
+
+		model.stream(new Prompt("test")).collectList().block();
+
+		verify(messageServiceAsyncWithRawResponse).createStreaming(any(MessageCreateParams.class),
+				any(RequestOptions.class));
+		verify(this.messageServiceWithRawResponse, never()).createStreaming(any(MessageCreateParams.class),
+				any(RequestOptions.class));
 	}
 
 	@Test
@@ -973,11 +1072,9 @@ class AnthropicChatModelTests {
 		given(rawResponse.parse()).willReturn(streamResponse);
 		given(rawResponse.headers()).willReturn(rateLimitHeaders);
 
-		given(this.anthropicClientAsync.messages()).willReturn(this.messageServiceAsync);
-		given(this.messageServiceAsync.withRawResponse()).willReturn(this.messageServiceAsyncWithRawResponse);
-		given(this.messageServiceAsyncWithRawResponse.createStreaming(any(MessageCreateParams.class),
+		given(this.messageServiceWithRawResponse.createStreaming(any(MessageCreateParams.class),
 				any(RequestOptions.class)))
-			.willReturn(CompletableFuture.completedFuture(rawResponse));
+			.willReturn(rawResponse);
 
 		List<ChatResponse> responses = this.chatModel.stream(new Prompt("test")).collectList().block();
 

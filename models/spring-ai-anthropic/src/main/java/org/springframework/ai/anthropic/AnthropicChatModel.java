@@ -25,12 +25,14 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.anthropic.client.AnthropicClient;
 import com.anthropic.client.AnthropicClientAsync;
 import com.anthropic.core.JsonValue;
 import com.anthropic.core.RequestOptions;
+import com.anthropic.core.http.HttpResponse;
 import com.anthropic.core.http.HttpResponseFor;
 import com.anthropic.core.http.StreamResponse;
 import com.anthropic.models.messages.Base64ImageSource;
@@ -129,10 +131,8 @@ import org.springframework.util.MimeType;
  * metadata, and request parameters), and an {@code okhttp.requests} span per outbound
  * HTTP attempt (with HTTP method, URI, status code, and {@code traceparent} propagation).
  * Optional OkHttp connection-pool gauges are bound to the
- * {@link io.micrometer.core.instrument.MeterRegistry} when supplied. For synchronous
- * calls the HTTP span nests under the chat-model span; for streaming calls the HTTP span
- * fires but is not parented under the chat-model span due to an SDK-internal thread
- * boundary — see {@link #stream(org.springframework.ai.chat.prompt.Prompt)}.
+ * {@link io.micrometer.core.instrument.MeterRegistry} when supplied. For both synchronous
+ * and streaming calls the HTTP span nests under the chat-model span.
  *
  * @author Christian Tzolov
  * @author luocongqiu
@@ -199,6 +199,8 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 	private final AnthropicClientAsync anthropicClientAsync;
 
+	private final boolean streamWithAsyncClient;
+
 	private final AnthropicChatOptions options;
 
 	private final ObservationRegistry observationRegistry;
@@ -247,6 +249,8 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 						this.options.getCustomHeaders(), this.observationRegistry, this.meterRegistry,
 						this.dispatcherExecutor, httpClientCustomizers));
 
+		// An async client supplied by the user keeps being used for streaming, as before.
+		this.streamWithAsyncClient = anthropicClientAsync != null;
 		this.anthropicClientAsync = Objects.requireNonNullElseGet(anthropicClientAsync,
 				() -> AnthropicSetup.setupAsyncClient(this.options.getBaseUrl(), this.options.getApiKey(),
 						this.options.getTimeout(), this.options.getMaxRetries(), this.options.getProxy(),
@@ -292,16 +296,6 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 	/**
 	 * Streams the chat completion as a {@link Flux} of {@link ChatResponse} events.
-	 *
-	 * <p>
-	 * <b>Observability note.</b> The outbound HTTP attempt is observed as
-	 * {@code okhttp.requests} with timer + {@code traceparent}, but for streaming calls
-	 * the HTTP span is not parented under the chat-model's
-	 * {@code gen_ai.client.operation} span. The SDK's async path internally schedules the
-	 * HTTP call on {@code ForkJoinPool.commonPool()} before Spring AI's HTTP client runs,
-	 * which drops the calling thread's observation context. Filter by
-	 * {@code okhttp.requests} + host {@code api.anthropic.com} and correlate by trace ID
-	 * or timestamp if you need to join the spans in your tracing UI.
 	 * @param prompt the prompt
 	 * @return a {@link Flux} of streamed {@link ChatResponse} events
 	 */
@@ -359,17 +353,20 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 			// Use the raw streaming response so rate-limit headers (available once at
 			// stream start) can be captured. The SDK exposes this as a blocking
-			// StreamResponse, so events are pulled on a boundedElastic worker.
-			Flux<ChatResponse> chatResponseFlux = Mono
-				.fromFuture(() -> this.anthropicClientAsync.messages()
-					.withRawResponse()
-					.createStreaming(request, requestOptionsFor(prompt)))
+			// StreamResponse, so its events are pulled on a boundedElastic worker.
+			// If the subscriber cancels while the stream is still opening, an error
+			// caused by the cancel is not reported, and a response that arrives
+			// afterwards is closed (see PendingResponse).
+			PendingResponse pendingResponse = new PendingResponse();
+			Flux<ChatResponse> chatResponseFlux = openStream(request, prompt, observation, pendingResponse)
+				.doOnCancel(pendingResponse::cancel)
+				.onErrorResume(e -> pendingResponse.isCancelled(), e -> Mono.empty())
 				.flatMapMany(rawResponse -> {
 					streamingState.setRateLimit(AnthropicRateLimit.from(rawResponse.headers()));
 					StreamResponse<RawMessageStreamEvent> streamResponse = rawResponse.parse();
 					return Flux.fromStream(streamResponse.stream())
-						.doFinally(signal -> streamResponse.close())
-						.subscribeOn(Schedulers.boundedElastic());
+						.subscribeOn(Schedulers.boundedElastic())
+						.doFinally(signal -> streamResponse.close());
 				})
 				.<ChatResponse>handle((event, sink) -> {
 					ChatResponse chatResponse = convertStreamEventToChatResponse(event, previousChatResponse,
@@ -390,6 +387,33 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			// Aggregate streaming responses and handle tool execution on final response
 			return new MessageAggregator().aggregate(flux, observationContext::setResponse);
 		});
+	}
+
+	/**
+	 * Opens a streaming request while the chat observation is the current one, so the
+	 * HTTP observation and the {@code traceparent} header it writes become its children.
+	 * This uses the sync client on purpose. The sync client sends the request on the
+	 * calling thread, while the async client hands it to another thread inside the SDK,
+	 * where the current observation is lost. Both return the same blocking
+	 * {@link StreamResponse}, so the async client would add nothing else here.
+	 * <p>
+	 * An async client set on the builder is still used, so existing setups keep working,
+	 * but then the HTTP observation is not a child of the chat observation.
+	 */
+	private Mono<HttpResponseFor<StreamResponse<RawMessageStreamEvent>>> openStream(MessageCreateParams request,
+			Prompt prompt, Observation observation, PendingResponse pendingResponse) {
+		if (this.streamWithAsyncClient) {
+			return Mono.fromFuture(() -> this.anthropicClientAsync.messages()
+				.withRawResponse()
+				.createStreaming(request, requestOptionsFor(prompt)));
+		}
+		return Mono.fromCallable(() -> {
+			try (Observation.Scope ignored = observation.openScope()) {
+				return pendingResponse.opened(this.anthropicClient.messages()
+					.withRawResponse()
+					.createStreaming(request, requestOptionsFor(prompt)));
+			}
+		}).subscribeOn(Schedulers.boundedElastic());
 	}
 
 	/**
@@ -1678,6 +1702,40 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	}
 
 	/**
+	 * Closes the response of a stream that is still being opened if the subscriber
+	 * cancels first. Reactor drops a value that arrives after a cancel, so without this
+	 * nobody would close the response. Whichever of {@link #opened} and {@link #cancel}
+	 * runs second sees the other one and closes the response.
+	 */
+	private static final class PendingResponse {
+
+		private final AtomicBoolean cancelled = new AtomicBoolean();
+
+		private final AtomicReference<@Nullable HttpResponse> response = new AtomicReference<>();
+
+		<T extends HttpResponse> T opened(T response) {
+			this.response.set(response);
+			if (this.cancelled.get()) {
+				response.close();
+			}
+			return response;
+		}
+
+		void cancel() {
+			this.cancelled.set(true);
+			HttpResponse response = this.response.get();
+			if (response != null) {
+				response.close();
+			}
+		}
+
+		boolean isCancelled() {
+			return this.cancelled.get();
+		}
+
+	}
+
+	/**
 	 * Holds state accumulated during streaming for building complete responses. This
 	 * includes message metadata (ID, model, input tokens) and tool call accumulation
 	 * state for streaming tool calling support.
@@ -1886,6 +1944,11 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 		/**
 		 * Sets the asynchronous Anthropic client.
+		 * <p>
+		 * When set, streaming requests are sent with this client, but their HTTP
+		 * observations are then not children of the chat observation, so they don't join
+		 * the caller's trace. Configure only {@link #anthropicClient(AnthropicClient)} to
+		 * keep streaming requests in the caller's trace.
 		 * @param anthropicClientAsync the asynchronous client
 		 * @return this builder
 		 */
