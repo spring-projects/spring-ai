@@ -212,6 +212,11 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 	}
 
 	@Override
+	protected boolean supportsUpsert() {
+		return true;
+	}
+
+	@Override
 	protected void doUpsert(List<EmbeddedDocument> entries) {
 		// Whole-batch dimension pre-check before any write, so a mismatched vector fails
 		// fast and cannot partially write. Non-empty and finiteness are already enforced
@@ -298,6 +303,11 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 	@Override
 	public List<Document> doSimilaritySearch(SearchRequest request) {
 		return searchByEmbedding(this.embeddingModel.embed(request.getQuery()), request);
+	}
+
+	@Override
+	protected boolean supportsQueryEmbeddingSearch() {
+		return true;
 	}
 
 	@Override

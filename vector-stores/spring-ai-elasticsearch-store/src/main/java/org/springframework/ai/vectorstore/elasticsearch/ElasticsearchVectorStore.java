@@ -218,6 +218,11 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 	}
 
 	@Override
+	protected boolean supportsUpsert() {
+		return true;
+	}
+
+	@Override
 	protected void doUpsert(List<EmbeddedDocument> entries) {
 		// Whole-batch dimension pre-check before any write, so a mismatched vector fails
 		// fast and cannot partially write. The authoritative dimension is the index
@@ -294,6 +299,11 @@ public class ElasticsearchVectorStore extends AbstractObservationVectorStore imp
 	public List<Document> doSimilaritySearch(SearchRequest searchRequest) {
 		Assert.notNull(searchRequest, "The search request must not be null.");
 		return searchByEmbedding(this.embeddingModel.embed(searchRequest.getQuery()), searchRequest);
+	}
+
+	@Override
+	protected boolean supportsQueryEmbeddingSearch() {
+		return true;
 	}
 
 	@Override

@@ -98,6 +98,11 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 		if (entries.isEmpty()) {
 			return;
 		}
+		// Fail before building the observation context, which in many stores asks the
+		// embedding model for its dimensions.
+		if (!supportsUpsert()) {
+			throw new UnsupportedOperationException(getName() + " does not support upsert");
+		}
 		validateNonTextDocuments(entries.stream().map(EmbeddedDocument::document).toList());
 		VectorStoreObservationContext observationContext = this
 			.createObservationContextBuilder(VectorStoreObservationContext.Operation.UPSERT.value())
@@ -174,6 +179,10 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 	public List<Document> similaritySearch(float[] queryEmbedding, SearchRequest request) {
 		Assert.notNull(queryEmbedding, "queryEmbedding must not be null");
 		Assert.notNull(request, "request must not be null");
+		if (!supportsQueryEmbeddingSearch()) {
+			throw new UnsupportedOperationException(
+					getName() + " does not support similarity search with a query embedding");
+		}
 		// The same rules as for an upserted vector: a caller-supplied vector is not
 		// produced by a trusted model, and a NaN would corrupt the distance maths rather
 		// than fail.
@@ -209,11 +218,23 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 	/**
 	 * Template method for concrete implementations to provide upsert logic using
 	 * caller-supplied embeddings. The default implementation throws, so stores opt in
-	 * independently.
+	 * independently. A store that implements it must also override
+	 * {@link #supportsUpsert()}.
 	 * @param entries the documents and their pre-computed embeddings to upsert
 	 */
 	protected void doUpsert(List<EmbeddedDocument> entries) {
 		throw new UnsupportedOperationException(getName() + " does not support upsert");
+	}
+
+	/**
+	 * Tells whether this store implements {@link #doUpsert(List)}. Without it,
+	 * {@link #upsert(List)} fails before building the observation context, so a store
+	 * without upsert never calls the embedding model.
+	 * @return {@code true} if this store supports upsert; {@code false} by default
+	 * @since 2.1.0
+	 */
+	protected boolean supportsUpsert() {
+		return false;
 	}
 
 	/**
@@ -244,7 +265,8 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 	/**
 	 * Template method for concrete implementations to search with a caller-supplied query
 	 * embedding. The query embedding has already been checked to be non-empty and finite.
-	 * The default implementation throws, so stores opt in independently.
+	 * The default implementation throws, so stores opt in independently. A store that
+	 * implements it must also override {@link #supportsQueryEmbeddingSearch()}.
 	 * @param queryEmbedding the query embedding
 	 * @param request the search request; its query text is ignored
 	 * @return the list of documents that match the query request conditions
@@ -252,6 +274,19 @@ public abstract class AbstractObservationVectorStore implements VectorStore {
 	protected List<Document> doSimilaritySearch(float[] queryEmbedding, SearchRequest request) {
 		throw new UnsupportedOperationException(
 				getName() + " does not support similarity search with a query embedding");
+	}
+
+	/**
+	 * Tells whether this store implements
+	 * {@link #doSimilaritySearch(float[], SearchRequest)}. Without it,
+	 * {@link #similaritySearch(float[], SearchRequest)} fails before building the
+	 * observation context, so a store without it never calls the embedding model.
+	 * @return {@code true} if this store supports search with a query embedding;
+	 * {@code false} by default
+	 * @since 2.1.0
+	 */
+	protected boolean supportsQueryEmbeddingSearch() {
+		return false;
 	}
 
 	/**
