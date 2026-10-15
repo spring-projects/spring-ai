@@ -29,6 +29,7 @@ import org.springframework.aot.hint.predicate.RuntimeHintsPredicates;
 import org.springframework.core.io.support.SpringFactoriesLoader;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 
 /**
  * Tests for {@link JdbcSessionRepositoryRuntimeHints}.
@@ -63,6 +64,11 @@ class JdbcSessionRepositoryRuntimeHintsTests {
 		assertThat(
 				RuntimeHintsPredicates.resource().forResource("org/springframework/ai/session/jdbc/" + schemaFileName))
 			.accepts(this.hints);
+	}
+
+	@Test
+	void registersWithoutClassLoader() {
+		assertThatNoException().isThrownBy(() -> this.registrar.registerHints(this.hints, null));
 	}
 
 	@Test

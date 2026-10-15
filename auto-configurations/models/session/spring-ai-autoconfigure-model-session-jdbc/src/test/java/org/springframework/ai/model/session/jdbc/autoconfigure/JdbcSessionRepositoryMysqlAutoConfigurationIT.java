@@ -20,6 +20,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.messages.UserMessage;
@@ -64,6 +65,25 @@ class JdbcSessionRepositoryMysqlAutoConfigurationIT {
 			assertThat(initializer.initializeDatabase()).isTrue();
 			assertThat(context.getBean(JdbcSessionRepository.class).findById("missing")).isNull();
 		});
+	}
+
+	@Test
+	void schemaInitializerResolvesPlatformScript() {
+		this.contextRunner.run(context -> assertThat(context.getBean(JdbcSessionRepositorySchemaInitializer.class))
+			.extracting("settings.schemaLocations")
+			.asInstanceOf(InstanceOfAssertFactories.LIST)
+			.containsOnly("classpath:org/springframework/ai/session/jdbc/schema-mysql.sql"));
+	}
+
+	@Test
+	void embeddedModeLeavesRealDatabaseAlone() {
+		this.contextRunner
+			.withPropertyValues(JdbcSessionRepositoryProperties.CONFIG_PREFIX + ".initialize-schema=embedded")
+			.run(context -> {
+				assertThat(context).hasSingleBean(JdbcSessionRepositorySchemaInitializer.class);
+				assertThat(context.getBean(JdbcSessionRepositorySchemaInitializer.class).initializeDatabase())
+					.isFalse();
+			});
 	}
 
 	@Test

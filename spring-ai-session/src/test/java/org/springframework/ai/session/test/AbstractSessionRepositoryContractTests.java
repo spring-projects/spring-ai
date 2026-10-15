@@ -768,6 +768,45 @@ public abstract class AbstractSessionRepositoryContractTests {
 		assertThat(this.repository.findEvents(session.id(), EventFilter.active())).hasSize(1);
 	}
 
+	@Test
+	void idsAtColumnLimitAndWithSpecialCharactersRoundTrip() {
+		String longId = "s".repeat(255);
+		String oddId = "test-with:complex@chars#123/" + UUID.randomUUID();
+		for (String id : List.of(longId, oddId)) {
+			this.repository.save(principalSession(id, "user-ids"));
+			String eventId = ("e-" + id + "-".repeat(255)).substring(0, 255);
+			this.repository
+				.appendEvent(SessionEvent.builder().id(eventId).sessionId(id).message(user("hi " + id)).build());
+
+			assertThat(this.repository.findById(id)).isNotNull();
+			assertThat(this.repository.findEvents(id, EventFilter.all())).singleElement()
+				.satisfies(event -> assertThat(event.getId()).hasSize(255));
+		}
+		assertThat(this.repository.findByIndex(SessionAttributes.PRINCIPAL_NAME, "user-ids")).hasSize(2);
+	}
+
+	@Test
+	void largeLogKeepsAppendOrderAndWindows() {
+		Session session = newSession("user-large");
+		for (int i = 0; i < 100; i++) {
+			append(session.id(), user("m-" + i));
+		}
+		List<SessionEvent> batch = new ArrayList<>();
+		for (int i = 100; i < 150; i++) {
+			batch.add(event(session.id(), user("m-" + i)));
+		}
+		assertThat(this.repository.appendEvents(session.id(), batch, 100)).isTrue();
+
+		List<String> texts = texts(session.id(), EventFilter.all());
+		assertThat(texts).hasSize(150);
+		for (int i = 0; i < 150; i++) {
+			assertThat(texts.get(i)).isEqualTo("m-" + i);
+		}
+		assertThat(texts(session.id(), EventFilter.lastN(7))).containsExactly("m-143", "m-144", "m-145", "m-146",
+				"m-147", "m-148", "m-149");
+		assertThat(this.repository.getEventVersion(session.id())).isEqualTo(101);
+	}
+
 	// --- Helpers ---
 
 	/** Saves a new session with a random id for the given principal. */
