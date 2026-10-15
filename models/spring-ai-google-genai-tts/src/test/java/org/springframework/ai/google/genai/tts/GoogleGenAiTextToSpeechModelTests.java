@@ -32,6 +32,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import org.springframework.ai.audio.tts.TextToSpeechOptions;
 import org.springframework.ai.audio.tts.TextToSpeechPrompt;
 import org.springframework.ai.audio.tts.TextToSpeechResponse;
 import org.springframework.ai.google.genai.tts.GoogleGenAiAudioSpeechOptions.SpeakerVoiceConfig;
@@ -234,6 +235,36 @@ class GoogleGenAiTextToSpeechModelTests {
 			.orElseThrow()
 			.voiceName()).hasValue("Leda");
 		assertThat(modelCaptor.getValue()).isEqualTo("gemini-2.5-flash-tts");
+	}
+
+	@Test
+	void portableRuntimeOptionsKeepGoogleSpecificDefaults() {
+		GoogleGenAiAudioSpeechOptions defaults = GoogleGenAiAudioSpeechOptions.builder()
+			.model("gemini-2.5-flash-tts")
+			.voiceName("Kore")
+			.languageCode("de")
+			.stylePrompt("Say cheerfully")
+			.audioEncoding(GoogleGenAiAudioSpeechOptions.AudioEncoding.PCM)
+			.build();
+		GoogleGenAiTextToSpeechModel model = new GoogleGenAiTextToSpeechModel(this.connectionDetails, defaults);
+
+		TextToSpeechOptions runtime = TextToSpeechOptions.builder().voice("Leda").build();
+		TextToSpeechResponse response = model.call(new TextToSpeechPrompt("Hi", runtime));
+
+		// the default PCM encoding returns the raw audio without a WAV header
+		assertThat(response.getResult().getOutput()).isEqualTo(AUDIO);
+
+		ArgumentCaptor<String> modelCaptor = ArgumentCaptor.forClass(String.class);
+		ArgumentCaptor<Content> contentCaptor = ArgumentCaptor.forClass(Content.class);
+		ArgumentCaptor<GenerateContentConfig> configCaptor = ArgumentCaptor.forClass(GenerateContentConfig.class);
+		verify(this.models).generateContent(modelCaptor.capture(), contentCaptor.capture(), configCaptor.capture());
+
+		assertThat(modelCaptor.getValue()).isEqualTo("gemini-2.5-flash-tts");
+		assertThat(contentCaptor.getValue().parts().orElseThrow().get(0).text()).hasValue("Say cheerfully: Hi");
+		SpeechConfig speechConfig = configCaptor.getValue().speechConfig().orElseThrow();
+		assertThat(speechConfig.languageCode()).hasValue("de");
+		assertThat(speechConfig.voiceConfig().orElseThrow().prebuiltVoiceConfig().orElseThrow().voiceName())
+			.hasValue("Leda");
 	}
 
 	@Test
