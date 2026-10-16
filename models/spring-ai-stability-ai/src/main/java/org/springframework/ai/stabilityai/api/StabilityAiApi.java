@@ -34,7 +34,7 @@ import org.springframework.web.client.RestClient;
 /**
  * Represents the StabilityAI API.
  *
- * @author chuuminggg
+ * @author Minju Kim
  */
 public class StabilityAiApi {
 

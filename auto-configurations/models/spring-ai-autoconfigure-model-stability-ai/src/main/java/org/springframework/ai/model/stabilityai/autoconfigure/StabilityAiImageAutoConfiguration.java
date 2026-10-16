@@ -41,7 +41,7 @@ import org.springframework.web.client.RestClient;
  * @author Christian Tzolov
  * @author Ilayaperumal Gopinathan
  * @author Sebastien Deleuze
- * @author chuuminggg
+ * @author Minju Kim
  * @since 0.8.0
  */
 @AutoConfiguration

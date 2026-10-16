@@ -36,7 +36,7 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 /**
  * Tests for the model resolution of {@link StabilityAiImageModel}.
  *
- * @author chuuminggg
+ * @author Minju Kim
  */
 class StabilityAiImageModelTests {
 

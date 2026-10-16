@@ -43,7 +43,7 @@ import org.springframework.util.Assert;
  * StabilityAiImageModel is a class that implements the ImageModel interface. It provides
  * a client for calling the StabilityAI image generation API.
  *
- * @author chuuminggg
+ * @author Minju Kim
  */
 public class StabilityAiImageModel implements ImageModel {
 

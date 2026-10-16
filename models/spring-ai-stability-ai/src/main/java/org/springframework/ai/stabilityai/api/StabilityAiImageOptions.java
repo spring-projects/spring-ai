@@ -28,7 +28,7 @@ import org.springframework.ai.stabilityai.StyleEnum;
  * additional stability AI specific image options.
  *
  * @author Sebastien Deleuze
- * @author chuuminggg
+ * @author Minju Kim
  */
 public class StabilityAiImageOptions implements ImageOptions {
 

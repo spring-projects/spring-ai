@@ -28,7 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Christian Tzolov
  * @author Sebastien Deleuze
- * @author chuuminggg
+ * @author Minju Kim
  * @since 0.8.0
  */
 public class StabilityAiImagePropertiesTests {

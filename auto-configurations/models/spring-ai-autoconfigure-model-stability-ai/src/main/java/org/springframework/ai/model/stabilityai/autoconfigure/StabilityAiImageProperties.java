@@ -30,7 +30,7 @@ import org.springframework.util.StringUtils;
  * @author Mark Pollack
  * @author Christian Tzolov
  * @author Sebastien Deleuze
- * @author chuuminggg
+ * @author Minju Kim
  * @since 0.8.0
  */
 @ConfigurationProperties(StabilityAiImageProperties.CONFIG_PREFIX)
