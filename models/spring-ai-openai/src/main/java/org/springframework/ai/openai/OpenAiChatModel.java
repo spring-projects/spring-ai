@@ -885,9 +885,19 @@ public final class OpenAiChatModel implements ChatModel {
 		return ChatCompletionContentPart.ofFile(ChatCompletionContentPart.File.builder()
 			.file(ChatCompletionContentPart.File.FileObject.builder()
 				.filename(media.getName())
-				.fileData(fromMediaData(media.getMimeType(), media.getData()))
+				.fileData(fileData(media))
 				.build())
 			.build());
+	}
+
+	/**
+	 * Inline file content as a data URI. {@code Media.Builder#data(String)} accepts bare
+	 * base64 content as well as a data URI, so the former is prefixed here. A colon
+	 * cannot occur in base64, so a value containing one is passed through unchanged.
+	 */
+	private String fileData(Media media) {
+		String data = fromMediaData(media.getMimeType(), media.getData());
+		return (data.indexOf(':') < 0) ? "data:" + media.getMimeType() + ";base64," + data : data;
 	}
 
 	private static ChatCompletionContentPart textContentPart(String text) {
