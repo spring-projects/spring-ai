@@ -304,6 +304,22 @@ If you rely on reading the computed similarity distance from `document.getMetada
 If your documents use `distance` for domain-specific data, consider renaming that field to avoid the collision and the warning.
 
 
+=== Chat Memory
+
+==== Deprecated: `ChatMemory` in Favor of Session Memory
+
+The `ChatMemory` API (`ChatMemory`, `MessageWindowChatMemory`, `ChatMemoryRepository`, `InMemoryChatMemoryRepository`), the `MessageChatMemoryAdvisor`, the JDBC, Cassandra, Neo4j, MongoDB and Redis chat memory repositories and their auto-configurations are deprecated for removal in 3.0.0.
+xref:api/session.adoc[Session memory] replaces them; xref:api/chat-memory.adoc#chat-memory-migration[Migrating to Session Memory] maps one onto the other.
+Session stores for Cassandra, Neo4j, MongoDB and Redis, and session dialects for HSQLDB, Oracle, SQL Server and SQLite, are planned before 3.0.0, when the deprecated modules are removed.
+
+===== Impact
+
+Nothing changes at runtime: the deprecated types keep working until 3.0.0.
+
+* The conversation key moves to `MemoryAdvisor.CONVERSATION_ID`, with the same value as `ChatMemory.CONVERSATION_ID`, so requests reach both the chat memory and the session advisors.
+* `getConversationId(context)` moves from `BaseChatMemoryAdvisor` up to `MemoryAdvisor`; `BaseChatMemoryAdvisor` inherits it, so its implementations need no change.
+* `VectorStoreChatMemoryAdvisor` is not deprecated.
+
 [[upgrading-to-2-0-2]]
 == Upgrading to 2.0.2
 
@@ -725,7 +741,7 @@ var chatMemoryAdvisor = MessageChatMemoryAdvisor.builder(chatMemory)
     .build();
 ----
 
-TIP: The https://github.com/spring-ai-community/spring-ai-session[spring-ai-session] community project provides a session-aware memory implementation that fully supports tool-call messages and can be safely used inside the tool-call loop with any backend. It is planned to replace `ChatMemory` in Spring AI 2.1. See the https://spring-ai-community.github.io/spring-ai-session/latest-snapshot/[spring-ai-session documentation] for details.
+TIP: Since 2.1.0, xref:api/session.adoc[session memory] replaces `ChatMemory`: it keeps tool-call messages, runs inside the tool loop by default, and builds each prompt from a turn-aware view of the conversation. See xref:api/chat-memory.adoc#chat-memory-migration[Migrating to Session Memory].
 
 [[tool-calling-1x-to-2x]]
 === Tool Calling

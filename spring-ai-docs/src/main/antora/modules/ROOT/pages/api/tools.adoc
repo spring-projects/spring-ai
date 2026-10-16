@@ -246,6 +246,9 @@ For the full `ToolCallingAdvisor` builder API, hook methods, and configuration o
 [[memory-and-the-tool-loop]]
 == Memory and the Tool Loop
 
+NOTE: `MessageChatMemoryAdvisor` and the `ChatMemory` API are deprecated since 2.1.0, for removal in 3.0.0, in favor of xref:api/session.adoc[session memory]; see xref:api/chat-memory.adoc#chat-memory-migration[Migrating to Session Memory].
+The session memory advisor sits inside the loop by default; see xref:api/session/chat-client.adoc[ChatClient Integration].
+
 Where you place `MessageChatMemoryAdvisor` relative to `ToolCallingAdvisor` (default order `HIGHEST_PRECEDENCE + 300`) determines how much conversation context the memory store captures.
 
 [[outside-the-loop]]

@@ -109,7 +109,7 @@ A blank system message, the loop's stand-in for a request without one, is not se
 | Key | Value | Purpose
 
 | `SessionMemoryAdvisor.SESSION_ID_CONTEXT_KEY`
-| `"chat_memory_conversation_id"`, equal to `ChatMemory.CONVERSATION_ID`
+| `"chat_memory_conversation_id"`, equal to `MemoryAdvisor.CONVERSATION_ID`
 | The session a call runs on.
 `SessionAdvisors.session(id)` sets it.
 Omitting it throws `IllegalStateException`: a shared default session would silently merge the history of different users.
