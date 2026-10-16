@@ -221,6 +221,20 @@ is converted into the proprietary Chroma format
 ```
 
 
+== Upsert support
+
+`ChromaVectorStore` implements `upsert(List<EmbeddedDocument>)`, so you can write documents together with embeddings you computed elsewhere instead of having the store embed them.
+Writing the same id again replaces the existing document, so a re-run with stable ids does not create duplicates.
+Chroma fixes the vector size of a new collection from the first embedding it sees, whether written or used as a search query.
+The store reads that size from the collection, so it can check vector sizes only after that first write or search.
+Make sure the first vector sent to an empty collection has the right size, because Chroma keeps it and rejects other sizes afterwards.
+See xref:api/vectordbs.adoc#writing-precomputed-embeddings[Writing User-Supplied Embeddings] for details.
+
+Chroma cannot replace a document's metadata in a single write.
+The store first reads the keys already stored for each id, then removes the ones the new metadata leaves out as part of the write.
+If two writers upsert the same id at the same time, the last write wins for the text and the embedding, but a metadata key added by the other writer can remain.
+Upserts of different ids are not affected.
+
 == Manual Configuration
 
 If you prefer to configure the Chroma Vector Store manually, you can do so by creating a `ChromaVectorStore` bean in your Spring Boot application.

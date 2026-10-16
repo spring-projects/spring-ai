@@ -490,7 +490,7 @@ this.vectorStore.upsert(List.of(new EmbeddedDocument(document, vector)));
 ----
 
 `upsert` is opt-in per store: the default implementation throws `UnsupportedOperationException`, so a store supports it only once it has been implemented.
-It is available on pgvector, Redis, Elasticsearch, Qdrant, and OpenSearch, with more stores to follow.
+It is available on pgvector, Redis, Elasticsearch, Qdrant, OpenSearch, and Chroma, with more stores to follow.
 A custom store that extends `AbstractObservationVectorStore` opts in by implementing `doUpsert` and overriding `supportsUpsert()` to return `true`; for search with a query embedding, the pair is `doSimilaritySearch(float[], SearchRequest)` and `supportsQueryEmbeddingSearch()`.
 `EmbeddedDocument` rejects a vector that is empty or holds `NaN` or an infinity, which is worth knowing when the vectors come from a pipeline you do not control: a `NaN` would otherwise corrupt distance maths rather than fail.
 Some stores normalize vectors for cosine similarity, Redis and Qdrant among them, so what a store keeps may differ in length from what you wrote while pointing the same way.
@@ -639,7 +639,7 @@ A query vector from a different embedding space is not rejected when its width h
 What is checked for you: the vector must not be empty or contain `NaN` or infinity, and its width must match the store's dimension when the store knows it.
 
 Searching with a query embedding is opt-in per store, like `upsert`: the default implementation throws `UnsupportedOperationException`.
-It is available on pgvector, Redis, Elasticsearch, Qdrant, and OpenSearch.
+It is available on pgvector, Redis, Elasticsearch, Qdrant, OpenSearch, and Chroma.
 
 === Separation of Read and Write Operations
 
