@@ -37,6 +37,7 @@ import org.springframework.ai.chat.messages.part.UnknownPart;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.EmptyRateLimit;
 import org.springframework.ai.chat.metadata.RateLimit;
+import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.content.Media;
 import org.springframework.util.MimeTypeUtils;
 
@@ -320,6 +321,52 @@ class MessageAggregatorTests {
 		assertThat(usage.getNativeUsage()).containsEntry("totalTokens", 3);
 	}
 
+	@Test
+	void providerNativeUsageSurvivesAggregation() {
+		Map<String, Integer> nativeUsage = Map.of("prompt_tokens", 4, "completion_tokens", 5, "total_tokens", 9);
+
+		Usage usage = new TestUsage(4, 5, nativeUsage, null, null);
+
+		AtomicReference<ChatResponse> aggregated = new AtomicReference<>();
+		new MessageAggregator()
+			.aggregate(Flux.just(chunk("Hello", new EmptyRateLimit()), chunkWithUsage(" world", usage)),
+					aggregated::set)
+			.blockLast();
+
+		assertThat(aggregated.get().getMetadata().getUsage().getNativeUsage()).isSameAs(nativeUsage);
+	}
+
+	@Test
+	void promptCacheTokensSurviveAggregation() {
+		Usage usage = new TestUsage(4, 5, null, 2L, 8L);
+
+		AtomicReference<ChatResponse> aggregated = new AtomicReference<>();
+		new MessageAggregator()
+			.aggregate(Flux.just(chunk("Hello", new EmptyRateLimit()), chunkWithUsage(" world", usage)),
+					aggregated::set)
+			.blockLast();
+
+		Usage aggregatedUsage = aggregated.get().getMetadata().getUsage();
+		assertThat(aggregatedUsage.getCacheReadInputTokens()).isEqualTo(2L);
+		assertThat(aggregatedUsage.getCacheWriteInputTokens()).isEqualTo(8L);
+	}
+
+	@Test
+	void aggregatedUsageWithoutProviderNativeDataStillSynthesizesTokenMap() {
+		AtomicReference<ChatResponse> aggregated = new AtomicReference<>();
+		new MessageAggregator().aggregate(Flux.just(chunk("Hello", new EmptyRateLimit()),
+				chunkWithUsage(" world", new TestUsage(4, 5, null, null, null))), aggregated::set)
+			.blockLast();
+
+		Map<String, Integer> nativeUsage = (Map<String, Integer>) aggregated.get()
+			.getMetadata()
+			.getUsage()
+			.getNativeUsage();
+		assertThat(nativeUsage).containsEntry("promptTokens", 4)
+			.containsEntry("completionTokens", 5)
+			.containsEntry("totalTokens", 9);
+	}
+
 	private static AssistantMessage aggregate(Flux<ChatResponse> responses) {
 		AtomicReference<ChatResponse> aggregated = new AtomicReference<>();
 		new MessageAggregator().aggregate(responses, aggregated::set).blockLast();
@@ -331,9 +378,62 @@ class MessageAggregatorTests {
 		return new ChatResponse(List.of(new Generation(AssistantMessage.builder().part(part).build())), metadata);
 	}
 
+	private static ChatResponse chunkWithUsage(String text, Usage usage) {
+		ChatResponseMetadata metadata = ChatResponseMetadata.builder().usage(usage).build();
+		return new ChatResponse(List.of(new Generation(new AssistantMessage(text))), metadata);
+	}
+
 	private static ChatResponse chunk(String text, RateLimit rateLimit) {
 		ChatResponseMetadata metadata = ChatResponseMetadata.builder().rateLimit(rateLimit).build();
 		return new ChatResponse(List.of(new Generation(new AssistantMessage(text))), metadata);
+	}
+
+	private static final class TestUsage implements Usage {
+
+		private final Integer promptTokens;
+
+		private final Integer completionTokens;
+
+		private final Object nativeUsage;
+
+		private final Long cacheReadInputTokens;
+
+		private final Long cacheWriteInputTokens;
+
+		private TestUsage(Integer promptTokens, Integer completionTokens, Object nativeUsage, Long cacheReadInputTokens,
+				Long cacheWriteInputTokens) {
+			this.promptTokens = promptTokens;
+			this.completionTokens = completionTokens;
+			this.nativeUsage = nativeUsage;
+			this.cacheReadInputTokens = cacheReadInputTokens;
+			this.cacheWriteInputTokens = cacheWriteInputTokens;
+		}
+
+		@Override
+		public Integer getPromptTokens() {
+			return this.promptTokens;
+		}
+
+		@Override
+		public Integer getCompletionTokens() {
+			return this.completionTokens;
+		}
+
+		@Override
+		public Object getNativeUsage() {
+			return this.nativeUsage;
+		}
+
+		@Override
+		public Long getCacheReadInputTokens() {
+			return this.cacheReadInputTokens;
+		}
+
+		@Override
+		public Long getCacheWriteInputTokens() {
+			return this.cacheWriteInputTokens;
+		}
+
 	}
 
 	private static final class TestRateLimit implements RateLimit {
