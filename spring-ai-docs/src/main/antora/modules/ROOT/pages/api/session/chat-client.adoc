@@ -2,7 +2,8 @@
 = ChatClient Integration
 
 `SessionAdvisors` wires a session into a `ChatClient`, so application code never loads or appends history by hand.
-It builds two advisors, one for each place a `ChatClient` call has:
+The `ChatClient` is one harness on the session, stateless by itself: the advisors read the view and append events, the session keeps the state.
+`SessionAdvisors` builds two advisors, one for each place a `ChatClient` call has:
 
 * `SessionMemoryAdvisor` works on each model call, inside the tool-calling loop.
 It loads the active view into the prompt and stores the request's user message or tool results and the model's reply.
