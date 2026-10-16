@@ -12,6 +12,11 @@ A compaction never changes the log: it appends a boundary that defines the view 
 * *A repository SPI.*
 `SessionRepository` has an in-memory implementation for tests and a JDBC one for production; a store of your own passes the same contract tests.
 
+The session is the state; what runs on it is not.
+A `ChatClient` with the session advisors is one such runtime, a harness: it reads the view, calls the model, appends what happened, and keeps nothing of its own, so a turn can be run by any instance, and the next turn by another one.
+Another harness, a loop of your own for example, runs on the same session through the same `SessionService`.
+The follow-ups build on this split: the session will carry its status, the turn that runs, the one that waits for a decision, and every harness will read and set it the same way.
+
 [[session-modules]]
 == Modules
 
@@ -21,12 +26,12 @@ A compaction never changes the log: it appends a boundary that defines the view 
 
 | Session
 | `spring-ai-session`
-| The core: `Session`, `SessionEvent`, `SessionService`, `SessionRepository` with `InMemorySessionRepository`, `EventFilter` and compaction.
+| The core: `Session`, `SessionEvent`, `SessionService`, `SessionRepository` with `InMemorySessionRepository`, `EventFilter` and compaction, the `ChatModelSummarizer` included.
 No dependency on `ChatClient`.
 
 | Session Advisor
 | `spring-ai-session-advisor`
-| The `ChatClient` integration: `SessionMemoryAdvisor`, `SessionTurnAdvisor`, `SessionAdvisors` and the `ChatClientSummarizer`.
+| The `ChatClient` integration: `SessionMemoryAdvisor`, `SessionTurnAdvisor` and `SessionAdvisors`.
 
 | JDBC Session
 | `spring-ai-session-jdbc`

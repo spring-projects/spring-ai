@@ -45,6 +45,7 @@ import org.springframework.ai.session.compaction.WindowCompactionStrategy;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 
 /**
  * Tests for {@link DefaultSessionService}.
@@ -149,6 +150,61 @@ class DefaultSessionServiceTests {
 			.build());
 
 		assertThat(session.expiresAt()).isBefore(before.plus(Duration.ofHours(1)));
+	}
+
+	@Test
+	void findOrCreateCreatesOnceAndThenReturnsTheStoredSession() {
+		CreateSessionRequest request = CreateSessionRequest.builder()
+			.id("known-id")
+			.metadata(SessionAttributes.PRINCIPAL_NAME, "alice")
+			.build();
+
+		Session created = this.service.findOrCreate(request);
+		Session found = this.service
+			.findOrCreate(CreateSessionRequest.builder().id("known-id").metadata("ignored", true).build());
+
+		assertThat(created.id()).isEqualTo("known-id");
+		assertThat(SessionAttributes.principalName(created)).isEqualTo("alice");
+		assertThat(found.createdAt()).isEqualTo(created.createdAt());
+		assertThat(found.metadata()).doesNotContainKey("ignored");
+		assertThatIllegalArgumentException()
+			.isThrownBy(() -> this.service.findOrCreate(CreateSessionRequest.builder().build()));
+		assertThatIllegalArgumentException()
+			.isThrownBy(() -> this.service.findOrCreate(CreateSessionRequest.builder().id(" ").build()));
+	}
+
+	@Test
+	void findOrCreateThatLosesTheRaceReturnsTheWinnersSession() {
+		// Not found on the first lookup, created by a concurrent caller right after
+		InMemorySessionRepository store = InMemorySessionRepository.builder().build();
+		ReadHookRepository repository = new ReadHookRepository(store);
+		SessionService service = DefaultSessionService.builder().sessionRepository(repository).build();
+		store.saveIfAbsent(
+				Session.builder().id("contended").metadata(SessionAttributes.PRINCIPAL_NAME, "alice").build());
+		repository.missOnceOnFindById();
+
+		Session session = service.findOrCreate(CreateSessionRequest.builder()
+			.id("contended")
+			.metadata(SessionAttributes.PRINCIPAL_NAME, "bob")
+			.build());
+
+		assertThat(SessionAttributes.principalName(session)).isEqualTo("alice");
+		assertThat(SessionAttributes.principalName(store.findById("contended"))).isEqualTo("alice");
+	}
+
+	@Test
+	void findOrCreateDoesNotTakeAnotherCreateFailureForALostRace() {
+		SessionRepository readOnly = new ReadHookRepository(InMemorySessionRepository.builder().build()) {
+			@Override
+			public boolean saveIfAbsent(Session session) {
+				throw new IllegalStateException("Store is read-only");
+			}
+		};
+		SessionService service = DefaultSessionService.builder().sessionRepository(readOnly).build();
+
+		assertThatIllegalStateException()
+			.isThrownBy(() -> service.findOrCreate(CreateSessionRequest.builder().id("s").build()))
+			.withMessage("Store is read-only");
 	}
 
 	@Test
@@ -539,7 +595,7 @@ class DefaultSessionServiceTests {
 	 * A store on which a hook runs after every read of the active view, like a writer
 	 * that slips in between the read and the write.
 	 */
-	static final class ReadHookRepository implements SessionRepository {
+	static class ReadHookRepository implements SessionRepository {
 
 		final AtomicInteger viewReads = new AtomicInteger();
 
@@ -550,6 +606,8 @@ class DefaultSessionServiceTests {
 		private boolean once;
 
 		private @Nullable Runnable onVersionRead;
+
+		private boolean missOnceOnFindById;
 
 		ReadHookRepository(SessionRepository store) {
 			this.store = store;
@@ -567,6 +625,11 @@ class DefaultSessionServiceTests {
 
 		void onceOnVersionRead(Runnable hook) {
 			this.onVersionRead = hook;
+		}
+
+		/** The next {@code findById} misses, like a session created right after it. */
+		void missOnceOnFindById() {
+			this.missOnceOnFindById = true;
 		}
 
 		@Override
@@ -597,6 +660,10 @@ class DefaultSessionServiceTests {
 
 		@Override
 		public @Nullable Session findById(String sessionId) {
+			if (this.missOnceOnFindById) {
+				this.missOnceOnFindById = false;
+				return null;
+			}
 			return this.store.findById(sessionId);
 		}
 

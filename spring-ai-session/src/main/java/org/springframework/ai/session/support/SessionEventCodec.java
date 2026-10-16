@@ -16,7 +16,6 @@
 
 package org.springframework.ai.session.support;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -41,9 +40,9 @@ import org.springframework.ai.session.SessionEvent;
 import org.springframework.util.Assert;
 
 /**
- * The persisted shape of a {@link SessionEvent}, shared by every
- * {@link org.springframework.ai.session.SessionRepository} that stores events as columns
- * or fields rather than as Java objects.
+ * Encodes a {@link SessionEvent} into its persisted shape, an {@link EncodedEvent}, and
+ * back. Shared by every {@link org.springframework.ai.session.SessionRepository} that
+ * stores events as columns or fields rather than as Java objects.
  *
  * <p>
  * An event is stored as four fields: its {@link EventType}, the {@link MessageType} and
@@ -121,15 +120,13 @@ public final class SessionEventCodec {
 	}
 
 	/**
-	 * Serializes a value (typically a metadata map) to JSON.
-	 * @param value the value, or {@code null}
-	 * @return the JSON text, or {@code null} for a {@code null} value
+	 * Serializes a value, typically a metadata map, to JSON.
+	 * @param value the value
+	 * @return the JSON text
 	 * @throws IllegalStateException if the value cannot be serialized
 	 */
-	public @Nullable String toJson(@Nullable Object value) {
-		if (value == null) {
-			return null;
-		}
+	public String toJson(Object value) {
+		Assert.notNull(value, "value must not be null");
 		try {
 			return this.jsonMapper.writeValueAsString(value);
 		}
@@ -141,11 +138,12 @@ public final class SessionEventCodec {
 	/**
 	 * Parses a JSON object into a map. Blank input yields an empty map; input that cannot
 	 * be parsed is logged and yields an empty map, so a damaged row still loads.
-	 * @param json the JSON text, or {@code null}
-	 * @return the map, never {@code null}
+	 * @param json the JSON text
+	 * @return the map
 	 */
-	public Map<String, Object> fromJsonMap(@Nullable String json) {
-		if (json == null || json.isBlank()) {
+	public Map<String, Object> fromJsonMap(String json) {
+		Assert.notNull(json, "json must not be null");
+		if (json.isBlank()) {
 			return Map.of();
 		}
 		try {
@@ -153,7 +151,7 @@ public final class SessionEventCodec {
 		}
 		catch (JacksonException ex) {
 			logger.warn("Failed to deserialize JSON object; returning empty map", ex);
-			return new HashMap<>();
+			return Map.of();
 		}
 	}
 
@@ -195,8 +193,8 @@ public final class SessionEventCodec {
 		}
 	}
 
-	private MessageBody parseMessageBody(@Nullable String json) {
-		if (json == null || json.isBlank()) {
+	private MessageBody parseMessageBody(String json) {
+		if (json.isBlank()) {
 			return new MessageBody(List.of(), Map.of());
 		}
 		try {
@@ -239,10 +237,12 @@ public final class SessionEventCodec {
 	 * {@code null} when it carries none
 	 * @param text the text of that message, or {@code null} when there is none
 	 * @param payload the JSON payload: the {@link MessageBody} of an event that carries a
-	 * message, or the {@link SessionEvent#getPayload() payload} of any other event
+	 * message, or the {@link SessionEvent#getPayload() payload} of any other event; never
+	 * {@code null}: an event always has a payload, so a store need not allow for a
+	 * missing one
 	 */
 	public record EncodedEvent(EventType type, @Nullable MessageType messageType, @Nullable String text,
-			@Nullable String payload) {
+			String payload) {
 	}
 
 	/**

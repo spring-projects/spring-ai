@@ -21,33 +21,39 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Answers;
 
-import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.session.Session;
 import org.springframework.ai.session.SessionEvent;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
 /**
- * Tests for {@link ChatClientSummarizer}. The model call is mocked, and the prompts it
+ * Tests for {@link ChatModelSummarizer}. The model call is mocked, and the prompts it
  * receives are captured.
  *
  * @author Christian Tzolov
  */
-class ChatClientSummarizerTests extends CompactionTestSupport {
+class ChatModelSummarizerTests extends CompactionTestSupport {
 
 	private static final String SUMMARY = "Summary: the user asked about Java and got answers.";
 
-	private static final String SHADOW = ChatClientSummarizer.DEFAULT_SHADOW_PROMPT;
+	private static final String SHADOW = ChatModelSummarizer.DEFAULT_SHADOW_PROMPT;
 
-	private ChatClient chatClient;
+	private ChatModel chatModel;
+
+	private final AtomicReference<ChatOptions> options = new AtomicReference<>();
 
 	private final AtomicReference<String> systemPrompt = new AtomicReference<>();
 
@@ -57,23 +63,20 @@ class ChatClientSummarizerTests extends CompactionTestSupport {
 
 	@BeforeEach
 	void setUp() {
-		this.chatClient = mock(ChatClient.class, Answers.RETURNS_DEEP_STUBS);
-		ChatClient.ChatClientRequestSpec afterUser = mock(ChatClient.ChatClientRequestSpec.class,
-				Answers.RETURNS_DEEP_STUBS);
-		given(afterUser.call().content()).willAnswer(invocation -> this.reply.get());
-		given(this.chatClient.prompt().system(anyString())).willAnswer(invocation -> {
-			this.systemPrompt.set(invocation.getArgument(0));
-			ChatClient.ChatClientRequestSpec afterSystem = mock(ChatClient.ChatClientRequestSpec.class);
-			given(afterSystem.user(anyString())).willAnswer(call -> {
-				this.userPrompt.set(call.getArgument(0));
-				return afterUser;
-			});
-			return afterSystem;
+		this.chatModel = mock(ChatModel.class);
+		given(this.chatModel.call(any(Prompt.class))).willAnswer(invocation -> {
+			Prompt prompt = invocation.getArgument(0);
+			this.options.set(prompt.getOptions());
+			this.systemPrompt.set(prompt.getSystemMessage().getText());
+			this.userPrompt.set(prompt.getUserMessage().getText());
+			String text = this.reply.get();
+			return (text != null) ? new ChatResponse(List.of(new Generation(new AssistantMessage(text))))
+					: new ChatResponse(List.of());
 		});
 	}
 
-	private ChatClientSummarizer.Builder summarizer() {
-		return ChatClientSummarizer.builder(this.chatClient);
+	private ChatModelSummarizer.Builder summarizer() {
+		return ChatModelSummarizer.builder(this.chatModel);
 	}
 
 	private static SummaryRequest summaryRequest(List<SessionEvent> priorSummary, List<SessionEvent> covered,
@@ -90,6 +93,17 @@ class ChatClientSummarizerTests extends CompactionTestSupport {
 			.containsExactly(MessageType.USER, MessageType.ASSISTANT);
 		assertThat(summary).extracting(Message::getText).containsExactly(SHADOW, SUMMARY);
 		assertThat(this.systemPrompt.get()).contains("conversation summarizer");
+		assertThat(this.options.get()).isNull();
+	}
+
+	@Test
+	void chatOptionsGoWithTheCall() {
+		summarizer().chatOptions(ChatOptions.builder().model("small-model").build())
+			.build()
+			.summarize(summaryRequest(List.of(), userMessages(3), List.of()));
+
+		assertThat(this.options.get()).isNotNull();
+		assertThat(this.options.get().getModel()).isEqualTo("small-model");
 	}
 
 	@Test
@@ -147,7 +161,7 @@ class ChatClientSummarizerTests extends CompactionTestSupport {
 	@Test
 	void nullOrBlankReplyDeclinesAndCallsFailureCallback() {
 		AtomicReference<SummaryRequest> failed = new AtomicReference<>();
-		ChatClientSummarizer summarizer = summarizer().onSummarizationFailure(failed::set).build();
+		ChatModelSummarizer summarizer = summarizer().onSummarizationFailure(failed::set).build();
 		SummaryRequest request = summaryRequest(List.of(), userMessages(3), List.of());
 
 		this.reply.set(null);
@@ -158,15 +172,23 @@ class ChatClientSummarizerTests extends CompactionTestSupport {
 		this.reply.set("   ");
 		assertThat(summarizer.summarize(request)).isEmpty();
 		assertThat(failed.get()).isSameAs(request);
+
+		// A reply without text, tool calls only
+		failed.set(null);
+		given(this.chatModel.call(any(Prompt.class)))
+			.willReturn(new ChatResponse(List.of(new Generation(AssistantMessage.builder()
+				.toolCalls(List.of(new AssistantMessage.ToolCall("c1", "function", "summarize", "{}")))
+				.build()))));
+		assertThat(summarizer.summarize(request)).isEmpty();
+		assertThat(failed.get()).isSameAs(request);
 	}
 
 	@Test
 	void failedModelCallDeclinesAndCallsFailureCallback() {
 		AtomicReference<SummaryRequest> failed = new AtomicReference<>();
-		ChatClientSummarizer summarizer = summarizer().onSummarizationFailure(failed::set).build();
+		ChatModelSummarizer summarizer = summarizer().onSummarizationFailure(failed::set).build();
 		SummaryRequest request = summaryRequest(List.of(), userMessages(3), List.of());
-		this.reply.set(null);
-		given(this.chatClient.prompt().system(anyString())).willThrow(new IllegalStateException("model down"));
+		given(this.chatModel.call(any(Prompt.class))).willThrow(new IllegalStateException("model down"));
 
 		assertThat(summarizer.summarize(request)).isEmpty();
 		assertThat(failed.get()).isSameAs(request);
@@ -185,9 +207,10 @@ class ChatClientSummarizerTests extends CompactionTestSupport {
 
 	@Test
 	void builderRejectsBadArguments() {
-		assertThatIllegalArgumentException().isThrownBy(() -> ChatClientSummarizer.builder(null));
+		assertThatIllegalArgumentException().isThrownBy(() -> ChatModelSummarizer.builder(null));
 		assertThatIllegalArgumentException().isThrownBy(() -> summarizer().overlapSize(-1));
 		assertThatIllegalArgumentException().isThrownBy(() -> summarizer().shadowPrompt(" "));
+		assertThatIllegalArgumentException().isThrownBy(() -> summarizer().chatOptions(null));
 		assertThatIllegalArgumentException().isThrownBy(() -> summarizer().build().summarize(null));
 	}
 

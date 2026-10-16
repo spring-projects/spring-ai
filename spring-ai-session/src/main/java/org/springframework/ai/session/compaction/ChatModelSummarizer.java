@@ -24,16 +24,20 @@ import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
+import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.prompt.ChatOptions;
+import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.session.SessionEvent;
 import org.springframework.util.Assert;
 
 /**
- * A {@link CompactionSummarizer} that asks a {@link ChatClient} for a rolling summary of
+ * A {@link CompactionSummarizer} that asks a {@link ChatModel} for a rolling summary of
  * the covered conversation: the prior summary is fed back as context, so each summary
  * builds on its predecessors, and the first {@link Builder#overlapSize overlapSize}
  * preserved events are quoted for continuity. The summary comes back as a turn of two
@@ -45,9 +49,9 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  * @since 2.1.0
  */
-public final class ChatClientSummarizer implements CompactionSummarizer {
+public final class ChatModelSummarizer implements CompactionSummarizer {
 
-	private static final Logger logger = LoggerFactory.getLogger(ChatClientSummarizer.class);
+	private static final Logger logger = LoggerFactory.getLogger(ChatModelSummarizer.class);
 
 	/** Default number of preserved events quoted in the prompt for continuity. */
 	public static final int DEFAULT_OVERLAP_SIZE = 2;
@@ -69,7 +73,9 @@ public final class ChatClientSummarizer implements CompactionSummarizer {
 			- If a prior summary is provided, incorporate it naturally — do not repeat it verbatim.
 			""";
 
-	private final ChatClient chatClient;
+	private final ChatModel chatModel;
+
+	@Nullable private final ChatOptions chatOptions;
 
 	private final int overlapSize;
 
@@ -81,8 +87,9 @@ public final class ChatClientSummarizer implements CompactionSummarizer {
 
 	@Nullable private final Consumer<SummaryRequest> onSummarizationFailure;
 
-	private ChatClientSummarizer(Builder builder) {
-		this.chatClient = builder.chatClient;
+	private ChatModelSummarizer(Builder builder) {
+		this.chatModel = builder.chatModel;
+		this.chatOptions = builder.chatOptions;
 		this.overlapSize = builder.overlapSize;
 		this.systemPrompt = builder.systemPrompt;
 		this.shadowPrompt = builder.shadowPrompt;
@@ -90,8 +97,8 @@ public final class ChatClientSummarizer implements CompactionSummarizer {
 		this.onSummarizationFailure = builder.onSummarizationFailure;
 	}
 
-	public static Builder builder(ChatClient chatClient) {
-		return new Builder(chatClient);
+	public static Builder builder(ChatModel chatModel) {
+		return new Builder(chatModel);
 	}
 
 	@Override
@@ -102,7 +109,9 @@ public final class ChatClientSummarizer implements CompactionSummarizer {
 		String userPrompt = prompt(request.priorSummary(), request.covered(), overlap);
 		String summary;
 		try {
-			summary = this.chatClient.prompt().system(this.systemPrompt).user(userPrompt).call().content();
+			List<Message> messages = List.of(new SystemMessage(this.systemPrompt), new UserMessage(userPrompt));
+			Generation result = this.chatModel.call(new Prompt(messages, this.chatOptions)).getResult();
+			summary = (result != null) ? result.getOutput().getText() : null;
 		}
 		catch (RuntimeException ex) {
 			logger.warn("The summary call failed for session '{}'; the view is unchanged", request.session().id(), ex);
@@ -148,7 +157,9 @@ public final class ChatClientSummarizer implements CompactionSummarizer {
 
 	public static final class Builder {
 
-		private final ChatClient chatClient;
+		private final ChatModel chatModel;
+
+		@Nullable private ChatOptions chatOptions;
 
 		private int overlapSize = DEFAULT_OVERLAP_SIZE;
 
@@ -160,9 +171,19 @@ public final class ChatClientSummarizer implements CompactionSummarizer {
 
 		@Nullable private Consumer<SummaryRequest> onSummarizationFailure;
 
-		private Builder(ChatClient chatClient) {
-			Assert.notNull(chatClient, "chatClient must not be null");
-			this.chatClient = chatClient;
+		private Builder(ChatModel chatModel) {
+			Assert.notNull(chatModel, "chatModel must not be null");
+			this.chatModel = chatModel;
+		}
+
+		/**
+		 * The options of the summarizing call, a smaller model for example; none by
+		 * default.
+		 */
+		public Builder chatOptions(ChatOptions chatOptions) {
+			Assert.notNull(chatOptions, "chatOptions must not be null");
+			this.chatOptions = chatOptions;
+			return this;
 		}
 
 		/**
@@ -213,8 +234,8 @@ public final class ChatClientSummarizer implements CompactionSummarizer {
 			return this;
 		}
 
-		public ChatClientSummarizer build() {
-			return new ChatClientSummarizer(this);
+		public ChatModelSummarizer build() {
+			return new ChatModelSummarizer(this);
 		}
 
 	}

@@ -24,14 +24,15 @@ import java.util.Objects;
 import java.util.TimeZone;
 import java.util.UUID;
 
-import org.mockito.Answers;
-
-import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.session.CreateSessionRequest;
 import org.springframework.ai.session.DefaultSessionService;
 import org.springframework.ai.session.EventFilter;
@@ -40,14 +41,14 @@ import org.springframework.ai.session.Session;
 import org.springframework.ai.session.SessionAttributes;
 import org.springframework.ai.session.SessionEvent;
 import org.springframework.ai.session.SessionService;
-import org.springframework.ai.session.compaction.ChatClientSummarizer;
+import org.springframework.ai.session.compaction.ChatModelSummarizer;
 import org.springframework.ai.session.compaction.WindowCompactionStrategy;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
@@ -112,12 +113,11 @@ final class DialectScenarios {
 	 * the newest boundary pins the latest stored system message first.
 	 */
 	static void repeatedSummarizationOnlyAppendsAndProjectsView(JdbcSessionRepository repository) {
-		ChatClient chatClient = mock(ChatClient.class, Answers.RETURNS_DEEP_STUBS);
-		given(chatClient.prompt().system(anyString()).user(anyString()).call().content()).willReturn("summary 1",
-				"summary 2", "summary 3");
+		ChatModel chatModel = mock(ChatModel.class);
+		given(chatModel.call(any(Prompt.class))).willReturn(reply("summary 1"), reply("summary 2"), reply("summary 3"));
 		WindowCompactionStrategy strategy = WindowCompactionStrategy.builder()
 			.lastEvents(4)
-			.summarizer(ChatClientSummarizer.builder(chatClient).build())
+			.summarizer(ChatModelSummarizer.builder(chatModel).build())
 			.build();
 		SessionService service = DefaultSessionService.builder()
 			.sessionRepository(repository)
@@ -205,6 +205,10 @@ final class DialectScenarios {
 
 	private static List<String> texts(JdbcSessionRepository repository, String sessionId, EventFilter filter) {
 		return repository.findEvents(sessionId, filter).stream().map(e -> e.getMessage().getText()).toList();
+	}
+
+	private static ChatResponse reply(String text) {
+		return new ChatResponse(List.of(new Generation(new AssistantMessage(text))));
 	}
 
 }

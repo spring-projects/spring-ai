@@ -70,8 +70,12 @@ import org.springframework.util.Assert;
  * </ol>
  * The session comes from {@link #SESSION_ID_CONTEXT_KEY}, required on every request:
  * omitting it throws {@link IllegalStateException}, so sessions are never shared by
- * accident. The turn around the model calls, the session's creation and compaction once
- * the call has returned, is the {@link SessionTurnAdvisor}'s: register both.
+ * accident.
+ * <p>
+ * On its own the advisor keeps the history and nothing more: no compaction, and the tool
+ * results of a loop that ends without a model round, a {@code returnDirect} tool, are not
+ * stored. What happens once per turn, around the whole tool-calling loop, is the
+ * {@link SessionTurnAdvisor}'s; {@link SessionAdvisors} builds the two together.
  * <p>
  * By default the advisor runs inside the tool-calling loop (order {@code
  * HIGHEST_PRECEDENCE + 1000}), once per round: from the second round on the loop's prompt
@@ -169,7 +173,7 @@ public final class SessionMemoryAdvisor implements BaseAdvisor, MemoryAdvisor {
 		// session. Whether the caller may use it is not decided here: an authorizing
 		// SessionService (see the security module) checks every read and append.
 		String sessionId = SessionContexts.sessionId(request.context());
-		SessionContexts.findOrCreate(this.sessionService, sessionId, request.context());
+		this.sessionService.findOrCreate(SessionContexts.createRequest(sessionId, request.context()));
 
 		// 2. Read the history: always the active view, whatever the configured or
 		// per-request filter says; the events a compaction covered live on for search

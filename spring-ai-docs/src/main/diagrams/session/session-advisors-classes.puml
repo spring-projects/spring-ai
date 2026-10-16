@@ -38,10 +38,6 @@ class SessionMemoryAdvisor {
   +after(response, chain)
   {static} +builder(sessionService)
 }
-class ChatClientSummarizer {
-  {static} +builder(chatClient)
-  +summarize(request): List<Message>
-}
 interface SessionService
 interface MessageFilter <<functional>> {
   +shouldPersist(message): boolean
@@ -49,7 +45,6 @@ interface MessageFilter <<functional>> {
 class EventFilter
 interface CompactionTrigger
 interface CompactionStrategy
-interface CompactionSummarizer
 
 CallAdvisor <|.. SessionTurnAdvisor
 StreamAdvisor <|.. SessionTurnAdvisor
@@ -63,5 +58,4 @@ SessionTurnAdvisor --> "0..1" CompactionStrategy
 SessionMemoryAdvisor --> SessionService
 SessionMemoryAdvisor --> EventFilter : reads with
 SessionMemoryAdvisor --> MessageFilter : stores through
-CompactionSummarizer <|.. ChatClientSummarizer
 @enduml

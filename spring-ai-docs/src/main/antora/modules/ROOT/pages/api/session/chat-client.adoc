@@ -1,16 +1,33 @@
 [[session-chat-client]]
 = ChatClient Integration
 
-Two advisors wire a session into a `ChatClient`, so application code never loads or appends history by hand.
+`SessionAdvisors` wires a session into a `ChatClient`, so application code never loads or appends history by hand.
+The `ChatClient` is one harness on the session, stateless by itself: the advisors read the view and append events, the session keeps the state.
+`SessionAdvisors` builds two advisors, one for each place a `ChatClient` call has:
 
-* `SessionMemoryAdvisor` works on each model call.
+* `SessionMemoryAdvisor` works on each model call, inside the tool-calling loop.
 It loads the active view into the prompt and stores the request's user message or tool results and the model's reply.
-* `SessionTurnAdvisor` works on each `ChatClient` call.
+* `SessionTurnAdvisor` works on each `ChatClient` call, outside the loop, so it sees the call's final response however the loop ended.
+A call is one xref:api/session/concepts.adoc#session-concepts-turn[turn] of the session: the user message, the tool rounds and the reply.
 It creates the session on first use, stores the results of a tool loop that ended without a model round, and compacts the session once the call has returned.
 
-The memory advisor runs inside the tool-calling loop, once per round; the turn advisor runs outside it, so it sees the call's final response however the loop ended.
-The memory advisor works on its own; the turn advisor is needed for compaction.
-Both live in `spring-ai-session-advisor`, with the `ChatClientSummarizer`; the core module has no dependency on `ChatClient`.
+What each gives on its own:
+
+[cols="1,3"]
+|===
+| Registered | You get
+
+| Both, through `SessionAdvisors`
+| The session: history, compaction, and the results of a loop that ended without a model round.
+
+| `SessionMemoryAdvisor` alone
+| The history, without compaction; a `returnDirect` tool's results are not stored.
+
+| `SessionTurnAdvisor` alone
+| Nothing of the conversation: it stores no messages.
+|===
+
+Both live in `spring-ai-session-advisor`; the core module has no dependency on `ChatClient`.
 
 image::session/spring-ai-session-advisors.png[The session advisors around the tool-calling loop, width=900, align="center"]
 
