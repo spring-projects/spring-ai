@@ -26,6 +26,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -668,9 +669,9 @@ public final class OpenAiChatModel implements ChatModel {
 
 	private DefaultUsage getDefaultUsage(CompletionUsage usage) {
 		Long cacheRead = usage.promptTokensDetails().flatMap(details -> details.cachedTokens()).orElse(null);
-		return new DefaultUsage(toIntTokenCount("promptTokens", usage.promptTokens()),
-				toIntTokenCount("completionTokens", usage.completionTokens()),
-				toIntTokenCount("totalTokens", usage.totalTokens()), usage, cacheRead, null);
+		return new DefaultUsage(toIntTokenCount("promptTokens", usage::promptTokens),
+				toIntTokenCount("completionTokens", usage::completionTokens),
+				toIntTokenCount("totalTokens", usage::totalTokens), usage, cacheRead, null);
 	}
 
 	/**
@@ -680,18 +681,32 @@ public final class OpenAiChatModel implements ChatModel {
 	 * silently truncating the count (which would corrupt downstream cost/usage tracking
 	 * with a plausible-looking but wrong number) or letting a bare
 	 * {@link ArithmeticException} propagate.
+	 * <p>
+	 * The count is supplied lazily because these accessors are required fields of the
+	 * OpenAI SDK and throw as soon as the value is absent, which OpenAI-compatible
+	 * providers (e.g. Databricks) do on intermediate streaming chunks. A missing count
+	 * degrades to {@code 0} so that a single absent field does not abort the response.
 	 * @param fieldName the name of the usage field being converted, for diagnostics
-	 * @param value the upstream token count
-	 * @return the value narrowed to an {@code int}
-	 * @throws IllegalStateException if {@code value} is outside the {@code int} range
+	 * @param value supplies the upstream token count
+	 * @return the value narrowed to an {@code int}, or {@code 0} if the provider omitted
+	 * it
+	 * @throws IllegalStateException if the supplied value is outside the {@code int}
+	 * range
 	 */
-	private static int toIntTokenCount(String fieldName, long value) {
+	private static int toIntTokenCount(String fieldName, Supplier<Long> value) {
+		long count;
 		try {
-			return Math.toIntExact(value);
+			count = value.get();
+		}
+		catch (OpenAIInvalidDataException ex) {
+			return 0;
+		}
+		try {
+			return Math.toIntExact(count);
 		}
 		catch (ArithmeticException ex) {
 			throw new IllegalStateException(
-					"OpenAI-compatible provider returned an out-of-range " + fieldName + " value: " + value, ex);
+					"OpenAI-compatible provider returned an out-of-range " + fieldName + " value: " + count, ex);
 		}
 	}
 
