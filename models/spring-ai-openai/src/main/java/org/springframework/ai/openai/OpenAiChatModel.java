@@ -37,9 +37,7 @@ import com.openai.client.OpenAIClientAsync;
 import com.openai.core.JsonValue;
 import com.openai.core.ObjectMappers;
 import com.openai.core.RequestOptions;
-import com.openai.core.http.AsyncStreamResponse;
 import com.openai.core.http.HttpResponseFor;
-import com.openai.core.http.StreamResponse;
 import com.openai.errors.OpenAIInvalidDataException;
 import com.openai.models.FunctionDefinition;
 import com.openai.models.FunctionParameters;
@@ -81,7 +79,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
-import reactor.core.scheduler.Schedulers;
+import reactor.core.scheduler.Scheduler;
 import tools.jackson.databind.JsonNode;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -119,6 +117,7 @@ import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.openai.http.okhttp.OpenAiHttpClientBuilderCustomizer;
 import org.springframework.ai.openai.metadata.OpenAiRateLimit;
 import org.springframework.ai.openai.setup.OpenAiSetup;
+import org.springframework.ai.openai.setup.OpenAiStreams;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.util.JacksonUtils;
 import org.springframework.core.io.ByteArrayResource;
@@ -215,6 +214,8 @@ public final class OpenAiChatModel implements ChatModel {
 	 */
 	private final @Nullable OpenAIClientAsync openAiClientAsync;
 
+	private final Scheduler streamScheduler;
+
 	private final OpenAiChatOptions options;
 
 	private final ObservationRegistry observationRegistry;
@@ -232,9 +233,11 @@ public final class OpenAiChatModel implements ChatModel {
 	}
 
 	private OpenAiChatModel(OpenAIClient openAiClient, @Nullable OpenAIClientAsync openAiClientAsync,
-			OpenAiChatOptions options, ObservationRegistry observationRegistry, ToolCallingManager toolCallingManager) {
+			Scheduler streamScheduler, OpenAiChatOptions options, ObservationRegistry observationRegistry,
+			ToolCallingManager toolCallingManager) {
 		this.openAiClient = openAiClient;
 		this.openAiClientAsync = openAiClientAsync;
+		this.streamScheduler = streamScheduler;
 		this.options = options;
 		this.observationRegistry = observationRegistry;
 		this.toolCallingManager = toolCallingManager;
@@ -389,48 +392,23 @@ public final class OpenAiChatModel implements ChatModel {
 	}
 
 	/**
-	 * Streams the chunks of a chat completion, sending the request while the chat
-	 * observation is the current one, so the HTTP observation and the {@code traceparent}
-	 * header it writes become its children. This uses the sync client on purpose. The
-	 * sync client sends the request on the calling thread, while the async client hands
-	 * it to another thread inside the SDK, where the current observation is lost. The
-	 * async client also blocks a thread of its own to read the stream, so reading it on a
-	 * {@link Schedulers#boundedElastic()} worker instead holds no extra thread.
-	 * <p>
-	 * An async client set on the builder is still used, so existing setups keep working,
-	 * but then the HTTP observation is not a child of the chat observation.
+	 * Streams the chunks of a chat completion with the sync client, sending the request
+	 * while the chat observation is the current one, so the HTTP observation and the
+	 * {@code traceparent} header it writes become its children. An async client set on
+	 * the builder is still used, so existing setups keep working, but then the HTTP
+	 * observation is not a child of the chat observation, as the async client sends the
+	 * request from another thread inside the SDK.
 	 */
 	private Flux<ChatCompletionChunk> streamChunks(ChatCompletionCreateParams request, RequestOptions requestOptions,
 			Observation observation) {
 		OpenAIClientAsync clientAsync = this.openAiClientAsync;
 		if (clientAsync != null) {
-			return Flux.<ChatCompletionChunk>create(sink -> {
-				AsyncStreamResponse<ChatCompletionChunk> response = clientAsync.chat()
-					.completions()
-					.createStreaming(request, requestOptions);
-				sink.onDispose(response::close);
-				response.subscribe(sink::next).onCompleteFuture().whenComplete((unused, throwable) -> {
-					if (throwable != null) {
-						sink.error(throwable);
-					}
-					else {
-						sink.complete();
-					}
-				});
-			});
+			return OpenAiStreams
+				.streamAsync(() -> clientAsync.chat().completions().createStreaming(request, requestOptions));
 		}
-		// If the subscriber cancels while the stream is still opening, a response that
-		// arrives afterwards is closed, and an error caused by the cancel is not
-		// reported.
-		AtomicBoolean cancelled = new AtomicBoolean();
-		return Flux.<ChatCompletionChunk, StreamResponse<ChatCompletionChunk>>using(() -> {
-			try (Observation.Scope ignored = observation.openScope()) {
-				return this.openAiClient.chat().completions().createStreaming(request, requestOptions);
-			}
-		}, response -> Flux.fromStream(response.stream()), StreamResponse::close)
-			.subscribeOn(Schedulers.boundedElastic())
-			.doOnCancel(() -> cancelled.set(true))
-			.onErrorResume(e -> cancelled.get(), e -> Flux.empty());
+		return OpenAiStreams.stream(
+				() -> this.openAiClient.chat().completions().createStreaming(request, requestOptions), observation,
+				this.streamScheduler);
 	}
 
 	/**
@@ -461,8 +439,8 @@ public final class OpenAiChatModel implements ChatModel {
 			.map(choice -> buildGeneration(choice, streamedChoiceMetadata(id, choice, streamAccumulator), request,
 					streamAccumulator.partIndexer(id)))
 			.toList();
-		// Reading the rate limit here would mean the raw streaming call, whose
-		// blocking StreamResponse would hold a worker for the whole stream.
+		// The rate-limit headers of a stream are not read, so a streamed response
+		// reports an empty rate limit.
 		return new ChatResponse(generations,
 				chatResponseMetadataFrom(chatCompletion, currentUsage(chatCompletion), new EmptyRateLimit()));
 	}
@@ -1975,6 +1953,8 @@ public final class OpenAiChatModel implements ChatModel {
 
 		private @Nullable OpenAIClientAsync openAiClientAsync;
 
+		private @Nullable Scheduler streamScheduler;
+
 		private @Nullable OpenAiChatOptions options;
 
 		private @Nullable ToolCallingManager toolCallingManager;
@@ -2010,6 +1990,23 @@ public final class OpenAiChatModel implements ChatModel {
 		 */
 		public Builder openAiClientAsync(OpenAIClientAsync openAiClientAsync) {
 			this.openAiClientAsync = openAiClientAsync;
+			return this;
+		}
+
+		/**
+		 * Sets the {@link Scheduler} that {@link OpenAiChatModel#stream(Prompt)} sends
+		 * its requests and reads their responses on, unless an async client is set. Each
+		 * open stream holds one of its threads for the whole stream. Defaults to a
+		 * dedicated pool sized like Reactor's shared {@code Schedulers.boundedElastic()};
+		 * override to size it for the expected number of concurrent streams, or to share
+		 * a scheduler across components.
+		 * @param streamScheduler the scheduler to use, or {@code null} to restore the
+		 * default
+		 * @return this builder
+		 * @since 2.1.0
+		 */
+		public Builder streamScheduler(@Nullable Scheduler streamScheduler) {
+			this.streamScheduler = streamScheduler;
 			return this;
 		}
 
@@ -2102,8 +2099,9 @@ public final class OpenAiChatModel implements ChatModel {
 			ToolCallingManager resolvedToolCallingManager = Objects.requireNonNullElse(this.toolCallingManager,
 					ToolCallingManager.builder().observationRegistry(resolvedObservationRegistry).build());
 
-			return new OpenAiChatModel(resolvedClient, this.openAiClientAsync, resolvedOptions,
-					resolvedObservationRegistry, resolvedToolCallingManager);
+			return new OpenAiChatModel(resolvedClient, this.openAiClientAsync,
+					Objects.requireNonNullElseGet(this.streamScheduler, OpenAiStreams::defaultScheduler),
+					resolvedOptions, resolvedObservationRegistry, resolvedToolCallingManager);
 		}
 
 	}

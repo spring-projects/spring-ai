@@ -27,8 +27,6 @@ import com.openai.client.OpenAIClient;
 import com.openai.client.OpenAIClientAsync;
 import com.openai.core.MultipartField;
 import com.openai.core.RequestOptions;
-import com.openai.core.http.AsyncStreamResponse;
-import com.openai.core.http.StreamResponse;
 import com.openai.models.audio.AudioResponseFormat;
 import com.openai.models.audio.transcriptions.Transcription;
 import com.openai.models.audio.transcriptions.TranscriptionCreateParams;
@@ -44,7 +42,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
-import reactor.core.scheduler.Schedulers;
+import reactor.core.scheduler.Scheduler;
 
 import org.springframework.ai.audio.transcription.AudioTranscription;
 import org.springframework.ai.audio.transcription.AudioTranscriptionPrompt;
@@ -59,6 +57,7 @@ import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.openai.http.okhttp.OpenAiHttpClientBuilderCustomizer;
 import org.springframework.ai.openai.metadata.OpenAiAudioTranscriptionResponseMetadata;
 import org.springframework.ai.openai.setup.OpenAiSetup;
+import org.springframework.ai.openai.setup.OpenAiStreams;
 import org.springframework.core.io.Resource;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
@@ -89,6 +88,8 @@ public final class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 	 */
 	private final @Nullable OpenAIClientAsync openAiClientAsync;
 
+	private final Scheduler streamScheduler;
+
 	private final OpenAiAudioTranscriptionOptions options;
 
 	private final ObservationRegistry observationRegistry;
@@ -112,9 +113,11 @@ public final class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 	}
 
 	private OpenAiAudioTranscriptionModel(OpenAIClient openAiClient, @Nullable OpenAIClientAsync openAiClientAsync,
-			OpenAiAudioTranscriptionOptions options, ObservationRegistry observationRegistry) {
+			Scheduler streamScheduler, OpenAiAudioTranscriptionOptions options,
+			ObservationRegistry observationRegistry) {
 		this.openAiClient = openAiClient;
 		this.openAiClientAsync = openAiClientAsync;
+		this.streamScheduler = streamScheduler;
 		this.options = options;
 		this.observationRegistry = observationRegistry;
 	}
@@ -252,45 +255,22 @@ public final class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 	}
 
 	/**
-	 * Streams the events of a transcription, sending the request while the transcription
-	 * observation is the current one, so the HTTP observation and the {@code traceparent}
-	 * header it writes become its children. This uses the sync client on purpose, as
-	 * {@code OpenAiChatModel} does: the async client hands the request to another thread
-	 * inside the SDK, where the current observation is lost. An async client set on the
-	 * builder is still used, but then the HTTP observation is not a child of the
-	 * transcription observation.
+	 * Streams the events of a transcription with the sync client, as
+	 * {@code OpenAiChatModel} does, so the HTTP observation and the {@code traceparent}
+	 * header it writes become children of the transcription observation. An async client
+	 * set on the builder is still used, but then the HTTP observation is not a child of
+	 * the transcription observation.
 	 */
 	private Flux<TranscriptionStreamEvent> streamEvents(TranscriptionCreateParams params, RequestOptions requestOptions,
 			Observation observation) {
 		OpenAIClientAsync clientAsync = this.openAiClientAsync;
 		if (clientAsync != null) {
-			return Flux.create(sink -> {
-				AsyncStreamResponse<TranscriptionStreamEvent> response = clientAsync.audio()
-					.transcriptions()
-					.createStreaming(params, requestOptions);
-				sink.onDispose(response::close);
-				response.subscribe(sink::next).onCompleteFuture().whenComplete((unused, throwable) -> {
-					if (throwable != null) {
-						sink.error(throwable);
-					}
-					else {
-						sink.complete();
-					}
-				});
-			});
+			return OpenAiStreams
+				.streamAsync(() -> clientAsync.audio().transcriptions().createStreaming(params, requestOptions));
 		}
-		// If the subscriber cancels while the stream is still opening, a response that
-		// arrives afterwards is closed, and an error caused by the cancel is not
-		// reported.
-		AtomicBoolean cancelled = new AtomicBoolean();
-		return Flux.<TranscriptionStreamEvent, StreamResponse<TranscriptionStreamEvent>>using(() -> {
-			try (Observation.Scope ignored = observation.openScope()) {
-				return this.openAiClient.audio().transcriptions().createStreaming(params, requestOptions);
-			}
-		}, response -> Flux.fromStream(response.stream()), StreamResponse::close)
-			.subscribeOn(Schedulers.boundedElastic())
-			.doOnCancel(() -> cancelled.set(true))
-			.onErrorResume(e -> cancelled.get(), e -> Flux.empty());
+		return OpenAiStreams.stream(
+				() -> this.openAiClient.audio().transcriptions().createStreaming(params, requestOptions), observation,
+				this.streamScheduler);
 	}
 
 	/**
@@ -447,6 +427,8 @@ public final class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 
 		private @Nullable OpenAIClientAsync openAiClientAsync;
 
+		private @Nullable Scheduler streamScheduler;
+
 		private @Nullable OpenAiAudioTranscriptionOptions options;
 
 		private @Nullable ObservationRegistry observationRegistry;
@@ -459,6 +441,7 @@ public final class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 		private Builder(OpenAiAudioTranscriptionModel model) {
 			this.openAiClient = model.openAiClient;
 			this.openAiClientAsync = model.openAiClientAsync;
+			this.streamScheduler = model.streamScheduler;
 			this.options = model.options;
 			this.observationRegistry = model.observationRegistry;
 		}
@@ -498,6 +481,24 @@ public final class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 		 */
 		public Builder openAiClientAsync(OpenAIClientAsync openAiClientAsync) {
 			this.openAiClientAsync = openAiClientAsync;
+			return this;
+		}
+
+		/**
+		 * Sets the {@link Scheduler} that
+		 * {@link OpenAiAudioTranscriptionModel#stream(AudioTranscriptionPrompt)} sends
+		 * its requests and reads their responses on, unless an async client is set. Each
+		 * open stream holds one of its threads for the whole stream. Defaults to a
+		 * dedicated pool sized like Reactor's shared {@code Schedulers.boundedElastic()};
+		 * override to size it for the expected number of concurrent streams, or to share
+		 * a scheduler across components.
+		 * @param streamScheduler the scheduler to use, or {@code null} to restore the
+		 * default
+		 * @return this builder
+		 * @since 2.1.0
+		 */
+		public Builder streamScheduler(@Nullable Scheduler streamScheduler) {
+			this.streamScheduler = streamScheduler;
 			return this;
 		}
 
@@ -543,6 +544,7 @@ public final class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 		public OpenAiAudioTranscriptionModel build() {
 			var options = Objects.requireNonNullElseGet(this.options,
 					() -> OpenAiAudioTranscriptionOptions.builder().build());
+			var observationRegistry = Objects.requireNonNullElse(this.observationRegistry, ObservationRegistry.NOOP);
 
 			var openAiClient = Objects.requireNonNullElseGet(this.openAiClient,
 					() -> OpenAiSetup.setupSyncClient(options.getBaseUrl(), options.getApiKey(),
@@ -551,10 +553,11 @@ public final class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 							options.isMicrosoftFoundry(), options.isGitHubModels(), options.getModel(),
 							Objects.requireNonNullElse(options.getTimeout(), AbstractOpenAiOptions.DEFAULT_TIMEOUT),
 							options.getMaxRetries(), options.getProxy(), options.getCustomHeaders(),
-							ObservationRegistry.NOOP, null, this.httpClientCustomizers));
+							observationRegistry, null, this.httpClientCustomizers));
 
-			return new OpenAiAudioTranscriptionModel(openAiClient, this.openAiClientAsync, options,
-					Objects.requireNonNullElse(this.observationRegistry, ObservationRegistry.NOOP));
+			return new OpenAiAudioTranscriptionModel(openAiClient, this.openAiClientAsync,
+					Objects.requireNonNullElseGet(this.streamScheduler, OpenAiStreams::defaultScheduler), options,
+					observationRegistry);
 		}
 
 	}

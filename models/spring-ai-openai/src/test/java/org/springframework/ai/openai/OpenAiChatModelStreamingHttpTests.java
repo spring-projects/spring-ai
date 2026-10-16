@@ -22,6 +22,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
 import com.openai.client.OpenAIClient;
@@ -55,8 +56,11 @@ import okhttp3.mockwebserver.MockWebServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.stubbing.Answer;
 import reactor.core.Disposable;
 import reactor.core.publisher.Hooks;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
 
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
@@ -81,6 +85,8 @@ import static org.mockito.Mockito.mock;
 class OpenAiChatModelStreamingHttpTests {
 
 	private static final String HTTP_OBSERVATION_NAME = "okhttp.requests";
+
+	private static final Duration TIMEOUT = Duration.ofSeconds(5);
 
 	private static final String COMPLETION_RESPONSE = """
 			{"id":"chatcmpl-1","object":"chat.completion","created":1700000000,"model":"gpt-4o-mini",\
@@ -225,68 +231,61 @@ class OpenAiChatModelStreamingHttpTests {
 	}
 
 	@Test
-	void streamCancelledWhileOpeningIsNotReportedAsAnError() throws Exception {
-		// The response headers arrive long after the subscriber cancels, so the cancel
-		// lands while the stream is still being opened.
-		this.server.enqueue(streamResponse().setHeadersDelay(2, TimeUnit.SECONDS));
+	void streamSendsTheRequestOnTheStreamScheduler() {
+		Scheduler scheduler = Schedulers.newSingle("chat-stream");
+		try {
+			AtomicReference<String> requestThread = new AtomicReference<>();
+			AtomicBoolean closed = new AtomicBoolean();
+			OpenAiChatModel model = OpenAiChatModel.builder().openAiClient(mockClient(invocation -> {
+				requestThread.set(Thread.currentThread().getName());
+				return emptyStreamResponse(closed);
+			})).streamScheduler(scheduler).options(OpenAiChatOptions.builder().model("gpt-4o-mini").build()).build();
+
+			model.stream(new Prompt("hi")).blockLast(TIMEOUT);
+
+			assertThat(requestThread.get()).startsWith("chat-stream");
+			assertThat(closed).isTrue();
+		}
+		finally {
+			scheduler.dispose();
+		}
+	}
+
+	@Test
+	void streamCancelledWhileSendingClosesTheResponseOnceItArrives() throws Exception {
+		CountDownLatch requestSent = new CountDownLatch(1);
+		CountDownLatch replyAllowed = new CountDownLatch(1);
+		AtomicBoolean interrupted = new AtomicBoolean();
+		AtomicBoolean closed = new AtomicBoolean();
+		OpenAiChatModel model = OpenAiChatModel.builder().openAiClient(mockClient(invocation -> {
+			requestSent.countDown();
+			try {
+				if (!replyAllowed.await(TIMEOUT.toSeconds(), TimeUnit.SECONDS)) {
+					throw new IllegalStateException("No reply");
+				}
+			}
+			catch (InterruptedException ex) {
+				interrupted.set(true);
+				throw ex;
+			}
+			return emptyStreamResponse(closed);
+		})).options(OpenAiChatOptions.builder().model("gpt-4o-mini").build()).build();
 		List<Throwable> errors = new CopyOnWriteArrayList<>();
 		Hooks.onErrorDropped(errors::add);
 		try {
-			Disposable subscription = this.chatModel.stream(new Prompt("hi")).subscribe(response -> {
+			Disposable subscription = model.stream(new Prompt("hi")).subscribe(response -> {
 			}, errors::add);
-			Thread.sleep(200);
+			assertThat(requestSent.await(TIMEOUT.toSeconds(), TimeUnit.SECONDS)).isTrue();
 			subscription.dispose();
-			Thread.sleep(500);
+			replyAllowed.countDown();
 
+			await().atMost(TIMEOUT).untilTrue(closed);
+			assertThat(interrupted).isFalse();
 			assertThat(errors).isEmpty();
 		}
 		finally {
 			Hooks.resetOnErrorDropped();
 		}
-	}
-
-	@Test
-	@SuppressWarnings("unchecked")
-	void streamOpenedAfterCancelIsClosed() throws Exception {
-		CountDownLatch requestSent = new CountDownLatch(1);
-		CountDownLatch replyAllowed = new CountDownLatch(1);
-		AtomicBoolean closed = new AtomicBoolean();
-		OpenAIClient openAiClient = mock(OpenAIClient.class);
-		ChatService chatService = mock(ChatService.class);
-		ChatCompletionService completionService = mock(ChatCompletionService.class);
-		given(openAiClient.chat()).willReturn(chatService);
-		given(chatService.completions()).willReturn(completionService);
-		given(completionService.createStreaming(any(ChatCompletionCreateParams.class), any(RequestOptions.class)))
-			.willAnswer(invocation -> {
-				requestSent.countDown();
-				// The cancel may interrupt this thread: keep waiting, as a request that
-				// is already on the wire would.
-				awaitIgnoringInterrupts(replyAllowed);
-				return new StreamResponse<ChatCompletionChunk>() {
-
-					@Override
-					public Stream<ChatCompletionChunk> stream() {
-						return Stream.empty();
-					}
-
-					@Override
-					public void close() {
-						closed.set(true);
-					}
-
-				};
-			});
-		OpenAiChatModel model = OpenAiChatModel.builder()
-			.openAiClient(openAiClient)
-			.options(OpenAiChatOptions.builder().model("gpt-4o-mini").build())
-			.build();
-
-		Disposable subscription = model.stream(new Prompt("hi")).subscribe();
-		assertThat(requestSent.await(5, TimeUnit.SECONDS)).isTrue();
-		subscription.dispose();
-		replyAllowed.countDown();
-
-		await().atMost(Duration.ofSeconds(5)).untilTrue(closed);
 	}
 
 	private OpenAiChatModel chatModel(ObservationRegistry observationRegistry) {
@@ -308,20 +307,32 @@ class OpenAiChatModelStreamingHttpTests {
 					"parent observation '%s'".formatted(DefaultChatModelObservationConvention.DEFAULT_NAME));
 	}
 
-	private static void awaitIgnoringInterrupts(CountDownLatch latch) {
-		boolean interrupted = false;
-		while (true) {
-			try {
-				latch.await();
-				break;
+	@SuppressWarnings("unchecked")
+	private static OpenAIClient mockClient(Answer<StreamResponse<ChatCompletionChunk>> createStreaming) {
+		OpenAIClient openAiClient = mock(OpenAIClient.class);
+		ChatService chatService = mock(ChatService.class);
+		ChatCompletionService completionService = mock(ChatCompletionService.class);
+		given(openAiClient.chat()).willReturn(chatService);
+		given(chatService.completions()).willReturn(completionService);
+		given(completionService.createStreaming(any(ChatCompletionCreateParams.class), any(RequestOptions.class)))
+			.willAnswer(createStreaming);
+		return openAiClient;
+	}
+
+	private static StreamResponse<ChatCompletionChunk> emptyStreamResponse(AtomicBoolean closed) {
+		return new StreamResponse<>() {
+
+			@Override
+			public Stream<ChatCompletionChunk> stream() {
+				return Stream.empty();
 			}
-			catch (InterruptedException ex) {
-				interrupted = true;
+
+			@Override
+			public void close() {
+				closed.set(true);
 			}
-		}
-		if (interrupted) {
-			Thread.currentThread().interrupt();
-		}
+
+		};
 	}
 
 	private static TraceContext spanOf(List<Observation.Context> contexts, String observationName) {

@@ -16,14 +16,23 @@
 
 package org.springframework.ai.openai.responses;
 
+import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Stream;
 
+import com.openai.client.OpenAIClient;
 import com.openai.core.ObjectMappers;
+import com.openai.core.RequestOptions;
+import com.openai.core.http.StreamResponse;
 import com.openai.errors.BadRequestException;
 import com.openai.models.responses.Response;
 import com.openai.models.responses.ResponseCompletedEvent;
+import com.openai.models.responses.ResponseCreateParams;
 import com.openai.models.responses.ResponseStreamEvent;
 import com.openai.models.responses.ResponseTextDeltaEvent;
+import com.openai.services.blocking.ResponseService;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistryAssert;
 import okhttp3.mockwebserver.MockResponse;
@@ -31,6 +40,8 @@ import okhttp3.mockwebserver.MockWebServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
 
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
@@ -38,6 +49,9 @@ import org.springframework.ai.chat.prompt.Prompt;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.mock;
 
 /**
  * Tests the HTTP side of {@link OpenAiResponsesChatModel} streaming against a fake OpenAI
@@ -102,6 +116,48 @@ class OpenAiResponsesChatModelStreamingHttpTests {
 			.hasParentObservationContextMatching(
 					context -> DefaultChatModelObservationConvention.DEFAULT_NAME.equals(context.getName()),
 					"parent observation '%s'".formatted(DefaultChatModelObservationConvention.DEFAULT_NAME));
+	}
+
+	@Test
+	void streamSendsTheRequestOnTheStreamSchedulerAndClosesTheResponse() {
+		Scheduler scheduler = Schedulers.newSingle("responses-stream");
+		try {
+			AtomicReference<String> requestThread = new AtomicReference<>();
+			AtomicBoolean closed = new AtomicBoolean();
+			OpenAIClient openAiClient = mock(OpenAIClient.class);
+			ResponseService responseService = mock(ResponseService.class);
+			given(openAiClient.responses()).willReturn(responseService);
+			given(responseService.createStreaming(any(ResponseCreateParams.class), any(RequestOptions.class)))
+				.willAnswer(invocation -> {
+					requestThread.set(Thread.currentThread().getName());
+					return new StreamResponse<ResponseStreamEvent>() {
+
+						@Override
+						public Stream<ResponseStreamEvent> stream() {
+							return Stream.empty();
+						}
+
+						@Override
+						public void close() {
+							closed.set(true);
+						}
+
+					};
+				});
+			OpenAiResponsesChatModel model = OpenAiResponsesChatModel.builder()
+				.openAiClient(openAiClient)
+				.streamScheduler(scheduler)
+				.options(OpenAiResponsesChatOptions.builder().model("gpt-5-mini").build())
+				.build();
+
+			model.stream(new Prompt("hi")).blockLast(Duration.ofSeconds(5));
+
+			assertThat(requestThread.get()).startsWith("responses-stream");
+			assertThat(closed).isTrue();
+		}
+		finally {
+			scheduler.dispose();
+		}
 	}
 
 	@Test
