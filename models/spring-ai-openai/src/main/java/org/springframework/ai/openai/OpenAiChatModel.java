@@ -34,6 +34,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.openai.client.OpenAIClient;
 import com.openai.client.OpenAIClientAsync;
+import com.openai.core.JsonField;
 import com.openai.core.JsonValue;
 import com.openai.core.ObjectMappers;
 import com.openai.core.RequestOptions;
@@ -157,6 +158,7 @@ import org.springframework.util.StringUtils;
  * @author guan xu
  * @author Raphael Vullriede
  * @author Dimitar Proynov
+ * @author Minju Kim
  */
 public final class OpenAiChatModel implements ChatModel {
 
@@ -668,9 +670,12 @@ public final class OpenAiChatModel implements ChatModel {
 
 	private DefaultUsage getDefaultUsage(CompletionUsage usage) {
 		Long cacheRead = usage.promptTokensDetails().flatMap(details -> details.cachedTokens()).orElse(null);
-		return new DefaultUsage(toIntTokenCount("promptTokens", usage.promptTokens()),
-				toIntTokenCount("completionTokens", usage.completionTokens()),
-				toIntTokenCount("totalTokens", usage.totalTokens()), usage, cacheRead, null);
+		// Read the token counts through the raw fields rather than the typed accessors:
+		// they are required fields that throw when absent, and an OpenAI-compatible
+		// backend may omit them, for instance on streaming chunks.
+		return new DefaultUsage(toIntTokenCount("promptTokens", usage._promptTokens()),
+				toIntTokenCount("completionTokens", usage._completionTokens()),
+				toIntTokenCount("totalTokens", usage._totalTokens()), usage, cacheRead, null);
 	}
 
 	/**
@@ -681,11 +686,16 @@ public final class OpenAiChatModel implements ChatModel {
 	 * with a plausible-looking but wrong number) or letting a bare
 	 * {@link ArithmeticException} propagate.
 	 * @param fieldName the name of the usage field being converted, for diagnostics
-	 * @param value the upstream token count
-	 * @return the value narrowed to an {@code int}
-	 * @throws IllegalStateException if {@code value} is outside the {@code int} range
+	 * @param field the upstream token count field
+	 * @return the value narrowed to an {@code int}, or {@code null} if the field is
+	 * absent
+	 * @throws IllegalStateException if the value is outside the {@code int} range
 	 */
-	private static int toIntTokenCount(String fieldName, long value) {
+	private static @Nullable Integer toIntTokenCount(String fieldName, JsonField<Long> field) {
+		Long value = field.asNumber().map(Number::longValue).orElse(null);
+		if (value == null) {
+			return null;
+		}
 		try {
 			return Math.toIntExact(value);
 		}
