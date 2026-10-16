@@ -39,7 +39,6 @@ import org.springframework.ai.chat.client.advisor.api.AdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.BaseAdvisor;
 import org.springframework.ai.chat.client.advisor.api.MemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
-import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
@@ -98,11 +97,11 @@ public final class SessionMemoryAdvisor implements BaseAdvisor, MemoryAdvisor {
 
 	/**
 	 * Context key of the session a request runs on;
-	 * {@link org.springframework.ai.chat.memory.ChatMemory#CONVERSATION_ID}, the key of
-	 * Spring AI's memory API. Set with {@code .advisors(a ->
+	 * {@link MemoryAdvisor#CONVERSATION_ID}, the conversation key of every memory
+	 * advisor. Set with {@code .advisors(a ->
 	 * a.param(SessionMemoryAdvisor.SESSION_ID_CONTEXT_KEY, sessionId))}.
 	 */
-	public static final String SESSION_ID_CONTEXT_KEY = ChatMemory.CONVERSATION_ID;
+	public static final String SESSION_ID_CONTEXT_KEY = MemoryAdvisor.CONVERSATION_ID;
 
 	/**
 	 * Context key for the metadata of a session the advisor creates on first use. The

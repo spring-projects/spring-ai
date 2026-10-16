@@ -648,7 +648,7 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 
 		/**
 		 * Sets whether internal conversation history is enabled. If false, you need a
-		 * ChatMemory Advisor registered next in the chain.
+		 * memory advisor, a {@code MemoryAdvisor}, registered next in the chain.
 		 * @param conversationHistoryEnabled true to enable, false to disable
 		 * @return this Builder instance for method chaining
 		 */
@@ -658,8 +658,8 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 		}
 
 		/**
-		 * Disables internal conversation history. You need a ChatMemory Advisor
-		 * registered next in the chain.
+		 * Disables internal conversation history. You need a memory advisor, a
+		 * {@code MemoryAdvisor}, registered next in the chain.
 		 * @return this Builder instance for method chaining
 		 */
 		public T disableInternalConversationHistory() {
