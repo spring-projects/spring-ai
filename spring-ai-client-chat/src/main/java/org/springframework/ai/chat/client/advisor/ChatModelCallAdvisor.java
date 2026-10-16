@@ -36,7 +36,7 @@ import org.springframework.util.StringUtils;
  *
  * @author Thomas Vitale
  * @author Christian Tzolov
- * @author chuuminggg
+ * @author Minju Kim
  * @since 1.0.0
  */
 public final class ChatModelCallAdvisor implements CallAdvisor {

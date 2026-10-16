@@ -32,7 +32,7 @@ import org.springframework.util.Assert;
  * A {@link StreamAdvisor} that uses a {@link ChatModel} to generate a streaming response.
  *
  * @author Thomas Vitale
- * @author chuuminggg
+ * @author Minju Kim
  * @since 1.0.0
  */
 public final class ChatModelStreamAdvisor implements StreamAdvisor {

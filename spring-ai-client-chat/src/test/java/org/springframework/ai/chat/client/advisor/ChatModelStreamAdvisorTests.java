@@ -40,7 +40,7 @@ import static org.mockito.Mockito.when;
  * Unit tests for {@link ChatModelStreamAdvisor}.
  *
  * @author Thomas Vitale
- * @author chuuminggg
+ * @author Minju Kim
  */
 class ChatModelStreamAdvisorTests {
 

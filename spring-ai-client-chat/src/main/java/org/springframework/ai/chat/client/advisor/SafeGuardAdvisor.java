@@ -44,7 +44,7 @@ import org.springframework.util.CollectionUtils;
  * @author Ilayaperumal Gopinathan
  * @author Thomas Vitale
  * @author Dimitar Proynov
- * @author chuuminggg
+ * @author Minju Kim
  * @since 1.0.0
  */
 public class SafeGuardAdvisor implements CallAdvisor, StreamAdvisor {

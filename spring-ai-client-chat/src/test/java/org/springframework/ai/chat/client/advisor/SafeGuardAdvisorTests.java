@@ -42,7 +42,7 @@ import static org.mockito.Mockito.when;
  * Unit tests for {@link SafeGuardAdvisor}.
  *
  * @author Dimitar Proynov
- * @author chuuminggg
+ * @author Minju Kim
  */
 @ExtendWith(MockitoExtension.class)
 public class SafeGuardAdvisorTests {
