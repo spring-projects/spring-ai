@@ -134,6 +134,7 @@ import org.springframework.util.StringUtils;
  *
  * @author Dimitar Proynov
  * @author Raviteja Daggupati
+ * @author Minju Kim
  * @since 2.1.0
  */
 final class ResponsesItemMapper {
@@ -776,16 +777,23 @@ final class ResponsesItemMapper {
 			var details = usage._inputTokensDetails().asKnown().orElse(null);
 			Long cacheRead = (details != null) ? optionalLong(details._cachedTokens()) : null;
 			Long cacheWrite = (details != null) ? optionalLong(details._cacheWriteTokens()) : null;
+			// The token counts are required fields too, so a missing one is left null
+			// for DefaultUsage to default (and to derive the total from the others).
 			// Reasoning tokens are only reachable through the native usage object: the
 			// portable Usage type has no field for them.
-			return new DefaultUsage(toIntTokenCount("inputTokens", usage.inputTokens()),
-					toIntTokenCount("outputTokens", usage.outputTokens()),
-					toIntTokenCount("totalTokens", usage.totalTokens()), usage, cacheRead, cacheWrite);
+			return new DefaultUsage(optionalTokenCount("inputTokens", usage._inputTokens()),
+					optionalTokenCount("outputTokens", usage._outputTokens()),
+					optionalTokenCount("totalTokens", usage._totalTokens()), usage, cacheRead, cacheWrite);
 		}).orElseGet(EmptyUsage::new);
 	}
 
 	private static @Nullable Long optionalLong(JsonField<Long> field) {
 		return field.asNumber().map(Number::longValue).orElse(null);
+	}
+
+	private static @Nullable Integer optionalTokenCount(String fieldName, JsonField<Long> field) {
+		Long value = optionalLong(field);
+		return (value != null) ? toIntTokenCount(fieldName, value) : null;
 	}
 
 	static ChatResponseMetadata toResponseMetadata(Response response, Usage usage) {

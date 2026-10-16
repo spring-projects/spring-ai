@@ -53,6 +53,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * @author Dimitar Proynov
+ * @author Minju Kim
  */
 class ResponsesItemMapperTests {
 
@@ -649,6 +650,26 @@ class ResponsesItemMapperTests {
 	}
 
 	/**
+	 * The token counts are required fields of the usage object, so the SDK's typed
+	 * accessors for them throw when they are absent. An OpenAI-compatible backend may
+	 * leave one out, and that must cost the turn that count, not the turn.
+	 */
+	@ParameterizedTest
+	@CsvSource({ "input_tokens, 0, 40, 160", "output_tokens, 120, 0, 160", "total_tokens, 120, 40, 160" })
+	void usageWithoutATokenCountReportsTheOthersRatherThanFailing(String jsonField, int promptTokens,
+			int completionTokens, int totalTokens) {
+		Response response = fixtureWithoutUsage("reasoning-with-function-call.json", jsonField);
+
+		var usage = ResponsesItemMapper.toUsage(response);
+
+		assertThat(usage.getPromptTokens()).isEqualTo(promptTokens);
+		assertThat(usage.getCompletionTokens()).isEqualTo(completionTokens);
+		assertThat(usage.getTotalTokens()).isEqualTo(totalTokens);
+		assertThat(usage.getCacheReadInputTokens()).isEqualTo(20);
+		assertThat(usage.getNativeUsage()).isNotNull();
+	}
+
+	/**
 	 * Usage counts come from the upstream response, so one outside the {@code int} range
 	 * means the response cannot be trusted. It has to fail naming the field and the
 	 * value, rather than with a bare {@code ArithmeticException("integer overflow")} or a
@@ -727,6 +748,17 @@ class ResponsesItemMapperTests {
 		try {
 			ObjectNode json = (ObjectNode) ObjectMappers.jsonMapper().readTree(ResponsesTestFixtures.json(name));
 			((ObjectNode) json.path("usage")).put(usageField, value);
+			return ObjectMappers.jsonMapper().treeToValue(json, Response.class);
+		}
+		catch (Exception ex) {
+			throw new IllegalStateException(ex);
+		}
+	}
+
+	private static Response fixtureWithoutUsage(String name, String usageField) {
+		try {
+			ObjectNode json = (ObjectNode) ObjectMappers.jsonMapper().readTree(ResponsesTestFixtures.json(name));
+			((ObjectNode) json.path("usage")).remove(usageField);
 			return ObjectMappers.jsonMapper().treeToValue(json, Response.class);
 		}
 		catch (Exception ex) {
