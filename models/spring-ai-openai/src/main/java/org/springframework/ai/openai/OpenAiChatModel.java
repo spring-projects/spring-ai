@@ -157,6 +157,7 @@ import org.springframework.util.StringUtils;
  * @author guan xu
  * @author Raphael Vullriede
  * @author Dimitar Proynov
+ * @author Zhao Hongming
  */
 public final class OpenAiChatModel implements ChatModel {
 
@@ -668,9 +669,10 @@ public final class OpenAiChatModel implements ChatModel {
 
 	private DefaultUsage getDefaultUsage(CompletionUsage usage) {
 		Long cacheRead = usage.promptTokensDetails().flatMap(details -> details.cachedTokens()).orElse(null);
+		Long cacheWrite = usage.promptTokensDetails().flatMap(details -> details.cacheWriteTokens()).orElse(null);
 		return new DefaultUsage(toIntTokenCount("promptTokens", usage.promptTokens()),
 				toIntTokenCount("completionTokens", usage.completionTokens()),
-				toIntTokenCount("totalTokens", usage.totalTokens()), usage, cacheRead, null);
+				toIntTokenCount("totalTokens", usage.totalTokens()), usage, cacheRead, cacheWrite);
 	}
 
 	/**
