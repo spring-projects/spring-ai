@@ -73,6 +73,22 @@ class JdbcSessionRepositoryAutoConfigurationTests {
 	}
 
 	@Test
+	void orderingPutsTheBeanConditionsAfterTheDefinitionsTheyLookFor() {
+		// Listed in the wrong order on purpose: the @AutoConfiguration ordering, not the
+		// listing, must put the data source before the repository and the repository
+		// before the service, or their bean conditions see nothing
+		new ApplicationContextRunner()
+			.withPropertyValues("spring.datasource.url=jdbc:h2:mem:sessionordering;DB_CLOSE_DELAY=-1")
+			.withConfiguration(AutoConfigurations.of(SessionServiceAutoConfiguration.class,
+					JdbcSessionRepositoryAutoConfiguration.class, JdbcTemplateAutoConfiguration.class,
+					DataSourceAutoConfiguration.class))
+			.run(context -> {
+				assertThat(context).hasSingleBean(JdbcSessionRepository.class);
+				assertThat(context).hasSingleBean(SessionService.class);
+			});
+	}
+
+	@Test
 	void sessionServiceBeanIsCreated() {
 		this.contextRunner.run(context -> assertThat(context).hasSingleBean(SessionService.class));
 	}

@@ -43,13 +43,16 @@ import org.springframework.util.ClassUtils;
  * Auto-configuration of the {@link JdbcSessionRepository} on the single
  * {@link DataSource} bean, and of the schema initialization. Backs off when the
  * application declares a {@link SessionRepository} of its own, of any type.
+ * <p>
+ * Ordered after Boot's data source auto-configuration: a bean condition sees only the
+ * definitions registered before it, so the {@code DataSource} must be defined by then.
+ * The {@code JdbcTemplate} and the transaction manager are looked up when the repository
+ * bean is created, after every definition exists, and need no ordering.
  *
  * @author Christian Tzolov
  * @since 2.1.0
  */
-@AutoConfiguration(afterName = { "org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration",
-		"org.springframework.boot.jdbc.autoconfigure.JdbcTemplateAutoConfiguration",
-		"org.springframework.boot.jdbc.autoconfigure.DataSourceTransactionManagerAutoConfiguration" })
+@AutoConfiguration(afterName = "org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration")
 // DatabaseInitializationProperties (spring-boot-jdbc, an optional dependency) is the base
 // class of JdbcSessionRepositoryProperties and must be present too.
 @ConditionalOnClass({ JdbcSessionRepository.class, DataSource.class, JdbcTemplate.class,
