@@ -135,6 +135,18 @@ The following message metadata keys are still written, and read on replay when t
 On a streamed chunk it holds the reasoning accumulated so far, not the delta.
 * `openai.tool_calls.additional_properties`: use the payload of the `ToolCallPart`.
 
+==== Changed: Streaming Requests Stay in the Caller's Trace
+
+`OpenAiChatModel`, `OpenAiResponsesChatModel` and `OpenAiAudioTranscriptionModel` now stream with the sync OpenAI client, so the `okhttp.requests` observation of a streaming request is nested under the model's observation, and the `traceparent` sent to OpenAI carries the caller's trace.
+The async client handed the request to `ForkJoinPool.commonPool()`, where the current observation was lost.
+
+===== Impact
+
+* A streaming error reaches the subscriber as the SDK exception, for example `BadRequestException`, instead of a `CompletionException` wrapping it.
+* The builders no longer create an async client, and the auto-configuration no longer creates one.
+An async client set with `openAiClientAsync(...)` is still used for streaming, but its HTTP observations are not nested under the model's observation.
+* Streamed responses are read on a `Schedulers.boundedElastic()` worker for the duration of the stream, instead of on a thread of the SDK's own pool.
+
 === DeepSeek
 
 ==== Changed: `DeepSeekChatModel` Builds Its Messages from Message Parts

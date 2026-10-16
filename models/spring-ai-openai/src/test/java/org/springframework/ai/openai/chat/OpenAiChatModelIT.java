@@ -22,13 +22,13 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import com.openai.errors.BadRequestException;
 import com.openai.models.ReasoningEffort;
 import org.assertj.core.data.Percentage;
 import org.junit.jupiter.api.Test;
@@ -759,7 +759,7 @@ public class OpenAiChatModelIT {
 						.outputAudio(new AudioParameters(Voice.ALLOY, AudioResponseFormat.WAV))
 						.build()))
 			.collectList()
-			.block()).isInstanceOf(CompletionException.class)
+			.block()).isInstanceOf(BadRequestException.class)
 			.hasMessageContaining(
 					"audio.format' does not support 'wav' when stream=true. Supported values are: 'pcm16");
 	}
