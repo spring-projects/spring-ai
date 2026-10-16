@@ -185,6 +185,8 @@ public final class OpenAiChatModel implements ChatModel {
 	 */
 	private static final String REASONING_CONTENT = "reasoningContent";
 
+	private static final String REASONING_CONTENT_DELTA = "reasoningContentDelta";
+
 	/**
 	 * Message metadata key holding a map from tool call id to the JSON string of the
 	 * extra fields of that tool call. Superseded by the
@@ -447,7 +449,8 @@ public final class OpenAiChatModel implements ChatModel {
 				"finishReason", choice.finishReason().value(), //
 				"refusal", message.refusal().orElse(""), //
 				"annotations", message.annotations().orElseGet(List::of), //
-				REASONING_CONTENT, accumulatedReasoning //
+				REASONING_CONTENT, accumulatedReasoning, //
+				REASONING_CONTENT_DELTA, getReasoningContent(choice) //
 		);
 	}
 
