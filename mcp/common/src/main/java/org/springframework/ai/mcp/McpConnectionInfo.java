@@ -16,6 +16,8 @@
 
 package org.springframework.ai.mcp;
 
+import io.modelcontextprotocol.client.McpAsyncClient;
+import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.spec.McpSchema;
 import org.jspecify.annotations.Nullable;
 
@@ -29,6 +31,7 @@ import org.springframework.util.Assert;
  * @param initializeResult the MCP server initialization result
  * @author Ilayaperumal Gopinathan
  * @author Christian Tzolov
+ * @author Dimitar Proynov
  */
 public record McpConnectionInfo(// @formatter:off
 	McpSchema.ClientCapabilities clientCapabilities,
@@ -41,6 +44,30 @@ public record McpConnectionInfo(// @formatter:off
 	 */
 	public static Builder builder() {
 		return new Builder();
+	}
+
+	/**
+	 * Creates the connection info describing the given synchronous MCP client.
+	 * @param mcpClient the MCP client to describe
+	 * @return the connection info for {@code mcpClient}
+	 */
+	public static McpConnectionInfo from(McpSyncClient mcpClient) {
+		return builder().clientCapabilities(mcpClient.getClientCapabilities())
+			.clientInfo(mcpClient.getClientInfo())
+			.initializeResult(mcpClient.getCurrentInitializationResult())
+			.build();
+	}
+
+	/**
+	 * Creates the connection info describing the given asynchronous MCP client.
+	 * @param mcpClient the MCP client to describe
+	 * @return the connection info for {@code mcpClient}
+	 */
+	public static McpConnectionInfo from(McpAsyncClient mcpClient) {
+		return builder().clientCapabilities(mcpClient.getClientCapabilities())
+			.clientInfo(mcpClient.getClientInfo())
+			.initializeResult(mcpClient.getCurrentInitializationResult())
+			.build();
 	}
 
 	/**
