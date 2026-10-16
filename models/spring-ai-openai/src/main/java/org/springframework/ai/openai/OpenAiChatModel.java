@@ -158,7 +158,7 @@ import org.springframework.util.StringUtils;
  * @author guan xu
  * @author Raphael Vullriede
  * @author Dimitar Proynov
- * @author chuuminggg
+ * @author Minju Kim
  */
 public final class OpenAiChatModel implements ChatModel {
 

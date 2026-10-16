@@ -97,7 +97,7 @@ import static org.mockito.Mockito.when;
  * @author Jewoo Shin
  * @author Dimitar Proynov
  * @author Raphael Vullriede
- * @author chuuminggg
+ * @author Minju Kim
  */
 @ExtendWith(MockitoExtension.class)
 class OpenAiChatModelTests {
