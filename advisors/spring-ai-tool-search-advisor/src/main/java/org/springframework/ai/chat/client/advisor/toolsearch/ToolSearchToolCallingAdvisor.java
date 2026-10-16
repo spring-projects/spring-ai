@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Predicate;
 
 import org.jspecify.annotations.Nullable;
 
@@ -56,7 +57,6 @@ import org.springframework.ai.util.JsonHelper;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.DefaultResourceLoader;
 import org.springframework.util.Assert;
-import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 /**
@@ -91,6 +91,8 @@ public class ToolSearchToolCallingAdvisor extends ToolCallingAdvisor {
 	 */
 	private final ToolIndex toolIndex;
 
+	private final Predicate<ToolCallback> alwaysDeclaredToolPredicate;
+
 	/**
 	 * The Tool Search system message suffix augment to be added to the prompt during
 	 * initialization.
@@ -120,9 +122,20 @@ public class ToolSearchToolCallingAdvisor extends ToolCallingAdvisor {
 			ToolExecutionEligibilityChecker toolExecutionEligibilityChecker, ToolIndex toolIndex,
 			String systemMessageSuffix, boolean referenceToolNameAccumulation, @Nullable Integer maxResults,
 			boolean conversationHistoryEnabled, String sessionIdKeyName, ToolIndexEvictionStrategy evictionStrategy) {
+		this(toolCallingManager, advisorOrder, toolExecutionEligibilityChecker, toolIndex, toolCallback -> false,
+				systemMessageSuffix, referenceToolNameAccumulation, maxResults, conversationHistoryEnabled,
+				sessionIdKeyName, evictionStrategy);
+	}
+
+	protected ToolSearchToolCallingAdvisor(ToolCallingManager toolCallingManager, int advisorOrder,
+			ToolExecutionEligibilityChecker toolExecutionEligibilityChecker, ToolIndex toolIndex,
+			Predicate<ToolCallback> alwaysDeclaredToolPredicate, String systemMessageSuffix,
+			boolean referenceToolNameAccumulation, @Nullable Integer maxResults, boolean conversationHistoryEnabled,
+			String sessionIdKeyName, ToolIndexEvictionStrategy evictionStrategy) {
 
 		super(toolCallingManager, toolExecutionEligibilityChecker, advisorOrder, conversationHistoryEnabled);
 		this.toolIndex = toolIndex;
+		this.alwaysDeclaredToolPredicate = alwaysDeclaredToolPredicate;
 		this.systemMessageSuffix = systemMessageSuffix;
 		this.referenceToolNameAccumulation = referenceToolNameAccumulation;
 		this.sessionIdKeyName = sessionIdKeyName;
@@ -192,7 +205,8 @@ public class ToolSearchToolCallingAdvisor extends ToolCallingAdvisor {
 	 */
 	@SuppressWarnings("null")
 	private ChatClientRequest initializeSession(ChatClientRequest chatClientRequest) {
-		ToolCallingChatOptions toolOptions = (ToolCallingChatOptions) chatClientRequest.prompt().getOptions();
+		ToolCallingChatOptions toolOptions = Objects
+			.requireNonNull((ToolCallingChatOptions) chatClientRequest.prompt().getOptions());
 
 		String sessionId = this.getSessionId(chatClientRequest.context());
 
@@ -202,9 +216,15 @@ public class ToolSearchToolCallingAdvisor extends ToolCallingAdvisor {
 		// validation of tool options happens in the tool calling advisor, so we can
 		// assume that if tool options are present, they are valid and contain either tool
 		// callbacks or tool names to search for.
-		List<ToolReference> toolReferences = this.toolCallingManager
-			.resolveToolDefinitions(Objects.requireNonNull(toolOptions))
+		List<ToolCallback> toolCallbacks = Objects.requireNonNullElse(toolOptions.getToolCallbacks(), List.of());
+		Set<String> alwaysDeclaredToolNames = new HashSet<>();
+		toolCallbacks.stream()
+			.filter(this.alwaysDeclaredToolPredicate)
+			.forEach(toolCallback -> alwaysDeclaredToolNames.add(toolCallback.getToolDefinition().name()));
+
+		List<ToolReference> toolReferences = this.toolCallingManager.resolveToolDefinitions(toolOptions)
 			.stream()
+			.filter(toolDefinition -> !alwaysDeclaredToolNames.contains(toolDefinition.name()))
 			.map(toolDef -> ToolReference.builder().toolName(toolDef.name()).summary(toolDef.description()).build())
 			.toList();
 
@@ -221,10 +241,7 @@ public class ToolSearchToolCallingAdvisor extends ToolCallingAdvisor {
 		});
 
 		ConcurrentHashMap<String, ToolCallback> cachedResolvedToolCallbacks = new ConcurrentHashMap<>();
-		if (!CollectionUtils.isEmpty(toolOptions.getToolCallbacks())) {
-			toolOptions.getToolCallbacks()
-				.forEach(tc -> cachedResolvedToolCallbacks.putIfAbsent(tc.getToolDefinition().name(), tc));
-		}
+		toolCallbacks.forEach(tc -> cachedResolvedToolCallbacks.putIfAbsent(tc.getToolDefinition().name(), tc));
 
 		chatClientRequest.context().put(CACHED_TOOL_CALLBACKS_KEY, cachedResolvedToolCallbacks);
 		chatClientRequest.context().put(ToolSearchTool.TOOL_SEARCH_TOOL_SESSION_ID_KEY, sessionId);
@@ -252,6 +269,10 @@ public class ToolSearchToolCallingAdvisor extends ToolCallingAdvisor {
 			.get(CACHED_TOOL_CALLBACKS_KEY);
 
 		if (cachedToolCallbacks != null) {
+			cachedToolCallbacks.values()
+				.stream()
+				.filter(this.alwaysDeclaredToolPredicate)
+				.forEach(selectedToolCallbacks::add);
 			this.extractToolNameReferences(chatClientRequest.prompt().getInstructions()).forEach(toolName -> {
 				if (cachedToolCallbacks.containsKey(toolName)) {
 					selectedToolCallbacks.add(cachedToolCallbacks.get(toolName));
@@ -320,7 +341,7 @@ public class ToolSearchToolCallingAdvisor extends ToolCallingAdvisor {
 			.toList();
 	}
 
-	private String getSessionId(Map<String, @Nullable Object> context) {
+	private String getSessionId(Map<String, Object> context) {
 		Assert.notNull(context, "context cannot be null");
 		Assert.noNullElements(context.keySet().toArray(), "context cannot contain null keys");
 		Assert.notNull(context.get(this.sessionIdKeyName),
@@ -380,6 +401,8 @@ public class ToolSearchToolCallingAdvisor extends ToolCallingAdvisor {
 
 		private boolean referenceToolNameAccumulation = true;
 
+		private Predicate<ToolCallback> alwaysDeclaredToolPredicate = toolCallback -> false;
+
 		@Nullable private Integer maxResults;
 
 		private String sessionIdKeyName = ChatMemory.CONVERSATION_ID;
@@ -408,6 +431,19 @@ public class ToolSearchToolCallingAdvisor extends ToolCallingAdvisor {
 		public T toolIndex(ToolIndex toolIndex) {
 			Assert.notNull(toolIndex, "toolIndex cannot be null");
 			this.toolIndex = toolIndex;
+			return self();
+		}
+
+		/**
+		 * Sets the predicate used to select tool callbacks that remain declared on every
+		 * model call and are excluded from the tool index.
+		 * @param predicate the predicate that selects always-declared tool callbacks
+		 * @return this Builder instance for method chaining
+		 * @since 2.1.0
+		 */
+		public T alwaysDeclared(Predicate<ToolCallback> predicate) {
+			Assert.notNull(predicate, "predicate cannot be null");
+			this.alwaysDeclaredToolPredicate = predicate;
 			return self();
 		}
 
@@ -485,7 +521,7 @@ public class ToolSearchToolCallingAdvisor extends ToolCallingAdvisor {
 
 			Assert.notNull(this.toolIndex, "toolIndex is required");
 			return new ToolSearchToolCallingAdvisor(getToolCallingManager(), getAdvisorOrder(),
-					getToolExecutionEligibilityChecker(), this.toolIndex,
+					getToolExecutionEligibilityChecker(), this.toolIndex, this.alwaysDeclaredToolPredicate,
 					Objects.requireNonNull(this.systemMessageSuffix), this.referenceToolNameAccumulation,
 					this.maxResults, this.isConversationHistoryEnabled(), this.sessionIdKeyName, this.evictionStrategy);
 		}
@@ -501,6 +537,7 @@ public class ToolSearchToolCallingAdvisor extends ToolCallingAdvisor {
 			copy.toolIndex = this.toolIndex;
 			copy.systemMessageSuffix = this.systemMessageSuffix;
 			copy.referenceToolNameAccumulation = this.referenceToolNameAccumulation;
+			copy.alwaysDeclaredToolPredicate = this.alwaysDeclaredToolPredicate;
 			copy.maxResults = this.maxResults;
 			copy.sessionIdKeyName = this.sessionIdKeyName;
 			copy.evictionStrategy = this.evictionStrategy;
