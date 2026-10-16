@@ -19,7 +19,6 @@ package org.springframework.ai.model.openai.autoconfigure;
 import java.util.List;
 
 import com.openai.client.OpenAIClient;
-import com.openai.client.OpenAIClientAsync;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.observation.ObservationRegistry;
 import org.jspecify.annotations.Nullable;
@@ -77,12 +76,10 @@ public class OpenAiChatAutoConfiguration {
 		OpenAIClient openAIClient = this.openAiClient(resolvedProperties, observationRegistry, meterRegistryToUse,
 				customizers);
 
-		OpenAIClientAsync openAIClientAsync = this.openAiClientAsync(resolvedProperties, observationRegistry,
-				meterRegistryToUse, customizers);
-
+		// No async client: streaming uses the sync client, which keeps its HTTP
+		// observations in the caller's trace.
 		var chatModel = OpenAiChatModel.builder()
 			.openAiClient(openAIClient)
-			.openAiClientAsync(openAIClientAsync)
 			.options(chatProperties.toOptions())
 			.toolCallingManager(toolCallingManager)
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
@@ -99,19 +96,6 @@ public class OpenAiChatAutoConfiguration {
 			List<OpenAiHttpClientBuilderCustomizer> httpClientCustomizers) {
 
 		return OpenAiSetup.setupSyncClient(commonProperties.getBaseUrl(), commonProperties.getApiKey(),
-				commonProperties.getCredential(), commonProperties.getMicrosoftDeploymentName(),
-				commonProperties.getMicrosoftFoundryServiceVersion(), commonProperties.getOrganizationId(),
-				commonProperties.isMicrosoftFoundry(), commonProperties.isGitHubModels(), commonProperties.getModel(),
-				commonProperties.getTimeout(), commonProperties.getMaxRetries(), commonProperties.getProxy(),
-				commonProperties.getCustomHeaders(), observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP),
-				meterRegistry, httpClientCustomizers);
-	}
-
-	private OpenAIClientAsync openAiClientAsync(ResolvedConnectionProperties commonProperties,
-			ObjectProvider<ObservationRegistry> observationRegistry, @Nullable MeterRegistry meterRegistry,
-			List<OpenAiHttpClientBuilderCustomizer> httpClientCustomizers) {
-
-		return OpenAiSetup.setupAsyncClient(commonProperties.getBaseUrl(), commonProperties.getApiKey(),
 				commonProperties.getCredential(), commonProperties.getMicrosoftDeploymentName(),
 				commonProperties.getMicrosoftFoundryServiceVersion(), commonProperties.getOrganizationId(),
 				commonProperties.isMicrosoftFoundry(), commonProperties.isGitHubModels(), commonProperties.getModel(),

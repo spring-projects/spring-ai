@@ -135,6 +135,25 @@ The following message metadata keys are still written, and read on replay when t
 On a streamed chunk it holds the reasoning accumulated so far, not the delta.
 * `openai.tool_calls.additional_properties`: use the payload of the `ToolCallPart`.
 
+==== Changed: Streaming Requests Stay in the Caller's Trace
+
+`OpenAiChatModel`, `OpenAiResponsesChatModel` and `OpenAiAudioTranscriptionModel` now stream with the sync OpenAI client, so the `okhttp.requests` observation of a streaming request is nested under the model's observation, and the `traceparent` sent to OpenAI carries the caller's trace.
+The async client handed the request to `ForkJoinPool.commonPool()`, where the current observation was lost.
+
+===== Impact
+
+* The builders no longer create an async client, and the auto-configuration no longer creates one.
+An async client set with `openAiClientAsync(...)` is still used for streaming, as before, but its HTTP observations are not nested under the model's observation.
+* With the sync client, a streaming error reaches the subscriber as the SDK exception, for example `BadRequestException`, instead of a `CompletionException` wrapping it.
+With an async client set, it is still a `CompletionException`.
+* Streams are sent and read on a dedicated scheduler, a bounded-elastic pool with 10 threads per CPU core by default, instead of on threads of the SDK's unbounded pool.
+Each open stream holds one of its threads, and when all of them are busy a new stream waits for the thread it is given.
+Set a scheduler sized for the expected number of concurrent streams with the new `streamScheduler(...)` builder method.
+See xref:api/chat/openai-chat.adoc[OpenAI Chat] for details.
+* Cancelling a stream closes its response right away, also before the first event arrives.
+A request that is still being sent is no longer interrupted: its response is closed as soon as it arrives.
+* An `OpenAiAudioTranscriptionModel` built with the builder now records the HTTP observations of its own client in the builder's `ObservationRegistry`, as the chat models already did.
+
 === DeepSeek
 
 ==== Changed: `DeepSeekChatModel` Builds Its Messages from Message Parts
