@@ -64,6 +64,18 @@ class AbstractObservationVectorStoreUpsertTests {
 	}
 
 	@Test
+	void emptyBatchDoesNothing() {
+		AtomicReference<List<EmbeddedDocument>> captured = new AtomicReference<>();
+		TestObservationRegistry registry = TestObservationRegistry.create();
+		TestVectorStore store = new TestVectorStore(registry, captured);
+
+		store.upsert(List.of());
+
+		assertThat(captured.get()).isNull();
+		TestObservationRegistryAssert.assertThat(registry).doesNotHaveAnyObservation();
+	}
+
+	@Test
 	void upsertEmitsUpsertObservation() {
 		TestObservationRegistry registry = TestObservationRegistry.create();
 		TestVectorStore store = new TestVectorStore(registry, new AtomicReference<>());
@@ -143,6 +155,11 @@ class AbstractObservationVectorStoreUpsertTests {
 		private TestVectorStore(TestObservationRegistry registry, AtomicReference<List<EmbeddedDocument>> captured) {
 			super(new TestVectorStoreBuilder(registry));
 			this.captured = captured;
+		}
+
+		@Override
+		protected boolean supportsUpsert() {
+			return true;
 		}
 
 		@Override

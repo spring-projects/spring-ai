@@ -88,7 +88,7 @@ public class ConverseChatResponseStream implements ConverseStreamResponseHandler
 	 * Set on every reasoning delta: a block's signature, if any, only arrives after its
 	 * text, so an unsigned block can only be told apart from foreign reasoning this way.
 	 */
-	private static final Map<String, String> BEDROCK_ATTRIBUTES = Map.of(StreamingParts.PROVIDER_ATTRIBUTE,
+	private static final Map<String, String> BEDROCK_ATTRIBUTES = Map.of(MessagePart.PROVIDER_ATTRIBUTE,
 			ConverseApiUtils.BEDROCK_PROVIDER);
 
 	private final AtomicReference<String> requestIdRef = new AtomicReference<>("Unknown");

@@ -26,6 +26,8 @@ import javax.sql.DataSource;
 import com.zaxxer.hikari.HikariDataSource;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.containers.wait.strategy.WaitAllStrategy;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -69,7 +71,10 @@ public class PgVectorStoreUpsertIT extends AbstractVectorStoreUpsertTests {
 	@SuppressWarnings("resource")
 	static PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>(PgVectorImage.DEFAULT_IMAGE)
 		.withUsername("postgres")
-		.withPassword("postgres");
+		.withPassword("postgres")
+		.waitingFor(new WaitAllStrategy()
+			.withStrategy(Wait.forLogMessage(".*database system is ready to accept connections.*\\s", 2))
+			.withStrategy(Wait.forListeningPort()));
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(TestApplication.class);
@@ -131,6 +136,52 @@ public class PgVectorStoreUpsertIT extends AbstractVectorStoreUpsertTests {
 
 			writer.upsert(List.of(embeddedDocument(UUID.randomUUID().toString(), "mixed case", Map.of("tag", "m"))));
 			assertWrongDimensionRejected(writer);
+			assertThat(embeddingModel.calls()).isZero();
+		});
+	}
+
+	@Test
+	void initializingOverAnExistingTableWithoutEmbeddingModel() {
+		executeTest(vectorStore -> {
+			JdbcTemplate jdbcTemplate = vectorStore.<JdbcTemplate>getNativeClient().orElseThrow();
+			CallCountingEmbeddingModel embeddingModel = new CallCountingEmbeddingModel(EMBEDDING_DIMENSIONS);
+
+			// The shared store has already created the default table, with the default
+			// settings an application would start up with.
+			PgVectorStore store = PgVectorStore.builder(jdbcTemplate, embeddingModel).initializeSchema(true).build();
+			store.afterPropertiesSet();
+
+			store.upsert(List.of(embeddedDocument(UUID.randomUUID().toString(), "existing", Map.of("tag", "e"))));
+			assertWrongDimensionRejected(store);
+			assertThat(embeddingModel.calls()).isZero();
+		});
+	}
+
+	@Test
+	void columnWithoutDeclaredSizeAcceptsAnyVectorSize() {
+		executeTest(vectorStore -> {
+			JdbcTemplate jdbcTemplate = vectorStore.<JdbcTemplate>getNativeClient().orElseThrow();
+			jdbcTemplate.execute("DROP TABLE IF EXISTS upsert_unconstrained");
+			jdbcTemplate.execute("""
+					CREATE TABLE upsert_unconstrained (
+						id uuid PRIMARY KEY,
+						content text,
+						metadata json,
+						embedding vector
+					)
+					""");
+
+			// The model reports a different size than the vectors written, which must
+			// not matter for a column that accepts any size.
+			CallCountingEmbeddingModel embeddingModel = new CallCountingEmbeddingModel(EMBEDDING_DIMENSIONS + 3);
+			PgVectorStore store = PgVectorStore.builder(jdbcTemplate, embeddingModel)
+				.vectorTableName("upsert_unconstrained")
+				.build();
+
+			store.upsert(List.of(embeddedDocument(UUID.randomUUID().toString(), "unconstrained", Map.of("tag", "u"))));
+
+			assertThat(jdbcTemplate.queryForObject("SELECT count(*) FROM upsert_unconstrained", Integer.class))
+				.isEqualTo(1);
 			assertThat(embeddingModel.calls()).isZero();
 		});
 	}

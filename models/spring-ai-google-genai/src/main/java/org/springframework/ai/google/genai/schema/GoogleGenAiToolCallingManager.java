@@ -22,6 +22,7 @@ import tools.jackson.databind.node.ObjectNode;
 
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.tool.ToolCallDecisions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionResult;
@@ -94,6 +95,20 @@ public class GoogleGenAiToolCallingManager implements ToolCallingManager {
 	@Override
 	public ToolExecutionResult executeToolCalls(Prompt prompt, ChatResponse chatResponse) {
 		return this.delegateToolCallingManager.executeToolCalls(prompt, chatResponse);
+	}
+
+	/**
+	 * Executes tool calls as a person decided, by delegating to the underlying tool
+	 * calling manager.
+	 * @param prompt the original prompt that triggered the tool calls
+	 * @param chatResponse the chat response containing the tool calls to execute
+	 * @param decisions one decision per tool call
+	 * @return the result of executing the tool calls
+	 * @since 2.1.0
+	 */
+	@Override
+	public ToolExecutionResult executeToolCalls(Prompt prompt, ChatResponse chatResponse, ToolCallDecisions decisions) {
+		return this.delegateToolCallingManager.executeToolCalls(prompt, chatResponse, decisions);
 	}
 
 }

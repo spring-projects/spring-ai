@@ -45,6 +45,9 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.messages.part.MessagePart;
+import org.springframework.ai.chat.messages.part.ReasoningPart;
+import org.springframework.ai.chat.messages.part.UnknownPart;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
@@ -58,6 +61,7 @@ import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.ListOutputConverter;
 import org.springframework.ai.converter.MapOutputConverter;
 import org.springframework.ai.mistralai.api.MistralAiApi;
+import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ResponseFormat;
 import org.springframework.ai.model.tool.DefaultToolCallingManager;
 import org.springframework.ai.model.tool.ToolCallingManager;
@@ -82,10 +86,12 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Alexandros Pappas
  * @author Thomas Vitale
  * @author Nicolas Krier
+ * @author Dimitar Proynov
  * @since 0.8.1
  */
 @SpringBootTest(classes = MistralAiTestConfiguration.class)
 @EnabledIfEnvironmentVariable(named = "MISTRAL_AI_API_KEY", matches = ".+")
+@SuppressWarnings("removal")
 class MistralAiChatModelIT {
 
 	private static final JsonHelper jsonHelper = new JsonHelper();
@@ -203,6 +209,9 @@ class MistralAiChatModelIT {
 		var output = generation.getOutput();
 		assertThat(output.getText()).contains("Nihon Hidankyo");
 		assertThat(output.getMetadata()).containsEntry(MistralAiChatModel.REFERENCE_CONTENT_METADATA, List.of(0));
+		// The citation is kept in place among the text parts
+		assertThat(output.getParts()).anySatisfy(part -> assertThat(part).isInstanceOfSatisfying(UnknownPart.class,
+				unknownPart -> assertThat(unknownPart.kind()).isEqualTo("reference")));
 	}
 
 	@ThinkingModelSource
@@ -220,6 +229,7 @@ class MistralAiChatModelIT {
 		assertThat(thinkingContent).asString().isNotEmpty();
 		assertThat(outputMetadata).doesNotContainKey(MistralAiChatModel.REFERENCE_CONTENT_METADATA);
 		assertThat(outputMetadata).doesNotContainKey(MistralAiChatModel.REFERENCE_THINKING_CONTENT_METADATA);
+		assertMistralReasoningFirst(output);
 	}
 
 	@ThinkingModelSource
@@ -227,7 +237,8 @@ class MistralAiChatModelIT {
 	void thinkingStream(MistralAiApi.ChatModel chatModel) {
 		var prompt = createThinkingPrompt(chatModel);
 
-		var assistantMessages = this.chatModel.stream(prompt)
+		AtomicReference<ChatResponse> aggregated = new AtomicReference<>();
+		var assistantMessages = new MessageAggregator().aggregate(this.chatModel.stream(prompt), aggregated::set)
 			.collectList()
 			.blockOptional()
 			.stream()
@@ -250,6 +261,68 @@ class MistralAiChatModelIT {
 
 		assertThat(hasMetadata(assistantMessages, MistralAiChatModel.REFERENCE_CONTENT_METADATA)).isFalse();
 		assertThat(hasMetadata(assistantMessages, MistralAiChatModel.REFERENCE_THINKING_CONTENT_METADATA)).isFalse();
+
+		// The streamed thinking deltas aggregate to reasoning parts before the answer
+		AssistantMessage output = aggregated.get().getResult().getOutput();
+		assertThat(output.getText()).contains("Jupiter");
+		assertMistralReasoningFirst(output);
+	}
+
+	@ThinkingModelSource
+	@ParameterizedTest
+	void thinkingFunctionCallReplaysTheReasoning(MistralAiApi.ChatModel chatModel) {
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
+		var options = thinkingFunctionCallOptions(chatModel);
+		Prompt prompt = new Prompt(
+				List.of(new UserMessage(
+						"What's the weather like in San Francisco, Tokyo, and Paris? Response should be in Celsius.")),
+				options);
+
+		ChatResponse response = this.chatModel.call(prompt);
+		assertThat(response.hasToolCalls()).isTrue();
+		AssistantMessage toolCallTurn = response.getResult().getOutput();
+
+		ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, response);
+		prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
+		assertReasoningIsReplayed(prompt, toolCallTurn);
+		response = this.chatModel.call(prompt);
+
+		while (response.hasToolCalls()) {
+			toolExecutionResult = toolCallingManager.executeToolCalls(prompt, response);
+			prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
+			response = this.chatModel.call(prompt);
+		}
+
+		assertThat(response.getResult().getOutput().getText()).contains("30", "10", "15");
+	}
+
+	@ThinkingModelSource
+	@ParameterizedTest
+	void thinkingStreamFunctionCallReplaysTheReasoning(MistralAiApi.ChatModel chatModel) {
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
+		var options = thinkingFunctionCallOptions(chatModel);
+		Prompt prompt = new Prompt(
+				List.of(new UserMessage(
+						"What's the weather like in San Francisco, Tokyo, and Paris? Response should be in Celsius.")),
+				options);
+
+		AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
+		new MessageAggregator().aggregate(this.chatModel.stream(prompt), aggregatedRef::set).blockLast();
+		assertThat(aggregatedRef.get().hasToolCalls()).isTrue();
+		AssistantMessage toolCallTurn = aggregatedRef.get().getResult().getOutput();
+
+		ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, aggregatedRef.get());
+		prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
+		assertReasoningIsReplayed(prompt, toolCallTurn);
+		new MessageAggregator().aggregate(this.chatModel.stream(prompt), aggregatedRef::set).blockLast();
+
+		while (aggregatedRef.get().hasToolCalls()) {
+			toolExecutionResult = toolCallingManager.executeToolCalls(prompt, aggregatedRef.get());
+			prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
+			new MessageAggregator().aggregate(this.chatModel.stream(prompt), aggregatedRef::set).blockLast();
+		}
+
+		assertThat(aggregatedRef.get().getResult().getOutput().getText()).contains("30", "10", "15");
 	}
 
 	@Test
@@ -633,6 +706,42 @@ class MistralAiChatModelIT {
 		assertThat(actorsFilms).isNotNull();
 		assertThat(actorsFilms.actor()).isEqualTo("Tom Hanks");
 		assertThat(actorsFilms.movies()).hasSize(5);
+	}
+
+	private static MistralAiChatOptions thinkingFunctionCallOptions(MistralAiApi.ChatModel chatModel) {
+		return MistralAiChatOptions.builder()
+			.model(ThinkingModelUtils.provideChatModelValue(chatModel))
+			.reasoningEffort(ThinkingModelUtils.provideReasoningEffort(chatModel))
+			.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.description("Get the weather in location")
+				.inputType(MockWeatherService.Request.class)
+				.build())
+			.build();
+	}
+
+	private static void assertMistralReasoningFirst(AssistantMessage output) {
+		assertThat(output.getReasoning()).isNotEmpty().allSatisfy(reasoning -> {
+			assertThat(reasoning.text()).isNotEmpty();
+			assertThat(reasoning.attributes()).containsEntry(MessagePart.PROVIDER_ATTRIBUTE,
+					MistralAiApi.PROVIDER_NAME);
+		});
+		assertThat(output.getParts().get(0)).isInstanceOf(ReasoningPart.class);
+	}
+
+	/**
+	 * The model may skip thinking on a tool-call turn; when it did think, the request
+	 * sent for the next round must carry that thinking back as a thinking chunk.
+	 */
+	private void assertReasoningIsReplayed(Prompt prompt, AssistantMessage toolCallTurn) {
+		if (toolCallTurn.getReasoning().isEmpty()) {
+			return;
+		}
+		List<ChatCompletionMessage> messages = ((MistralAiChatModel) this.chatModel).createRequest(prompt, false)
+			.messages();
+		assertThat(messages).filteredOn(message -> message.role() == ChatCompletionMessage.Role.ASSISTANT)
+			.first()
+			.satisfies(message -> assertThat(message.content()).isInstanceOfSatisfying(List.class,
+					chunks -> assertThat(chunks).hasAtLeastOneElementOfType(ChatCompletionMessage.ThinkChunk.class)));
 	}
 
 	private static boolean hasMetadata(List<AssistantMessage> assistantMessages, String metadataKey) {

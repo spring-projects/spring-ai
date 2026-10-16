@@ -101,6 +101,8 @@ The `@Tool` annotation supports:
 * `name` — the tool name. Defaults to the method name. Must be unique within the tool set provided to a model.
 * `description` — what the tool does and when to use it. Strongly recommended; without it the model has no guidance on when to call the tool.
 * `returnDirect` — return the result directly to the caller instead of feeding it back to the model. See xref:#return-direct[Return Direct].
+* `requiresConfirmation` — pause the tool-calling loop before a call of the tool runs, so that a person can allow or deny it.
+See xref:api/tools/tool-call-confirmation.adoc[Tool Call Confirmation].
 * `resultConverter` — the `ToolCallResultConverter` to use. See xref:#result-conversion[Result Conversion].
 
 NOTE: For AOT compilation (GraalVM native image), the class containing the `@Tool` methods must be a Spring bean (e.g. `@Component`). Otherwise, annotate it with `@RegisterReflection(memberCategories = MemberCategory.INVOKE_DECLARED_METHODS)`.
@@ -490,6 +492,7 @@ The `removeExtraArgumentsAfterProcessing` option (default `true`) controls wheth
 The auto-registered loop covers most cases, but some scenarios genuinely need you to own each iteration:
 
 * Gating tool execution on an external approval step.
+For a person approving individual tool calls, xref:api/tools/tool-call-confirmation.adoc[Tool Call Confirmation] keeps the loop and only pauses it.
 * Forwarding intermediate progress to an SSE or WebSocket endpoint.
 * Applying conditional logic between turns.
 * Stopping the loop based on a side-channel signal.

@@ -60,6 +60,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
+import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.annotation.JsonDeserialize;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -303,7 +304,7 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 				.map(response -> Part.builder()
 					.functionResponse(FunctionResponse.builder()
 						.name(response.name())
-						.response(parseJsonToMap(response.responseData()))
+						.response(toolResultToMap(response.responseData()))
 						.build())
 					.build())
 				.toList();
@@ -504,6 +505,35 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		else {
 			throw new IllegalArgumentException("Unsupported media data type: " + data.getClass());
 		}
+	}
+
+	/**
+	 * The function response Gemini expects for a tool result. A tool result is usually
+	 * JSON, but it can be plain text, such as the message of a denied tool call or of a
+	 * tool error: text that is not JSON is passed on under the {@code "result"} key, like
+	 * a JSON value that is not an object.
+	 */
+	@SuppressWarnings("unchecked")
+	private Map<String, Object> toolResultToMap(@Nullable String toolResult) {
+		if (!StringUtils.hasText(toolResult)) {
+			return Map.of("result", "");
+		}
+		Object parsed;
+		try {
+			// The whole result must be JSON, not only its beginning
+			parsed = this.jsonMapper.readerFor(Object.class)
+				.with(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
+				.readValue(toolResult);
+		}
+		catch (Exception ex) {
+			return Map.of("result", toolResult);
+		}
+		if (parsed instanceof Map<?, ?> map) {
+			return (Map<String, Object>) map;
+		}
+		Map<String, Object> wrapper = new HashMap<>();
+		wrapper.put("result", parsed);
+		return wrapper;
 	}
 
 	// Helper methods for JSON/Map conversion

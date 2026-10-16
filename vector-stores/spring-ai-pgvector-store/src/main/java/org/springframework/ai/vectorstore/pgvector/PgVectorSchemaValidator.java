@@ -60,6 +60,17 @@ class PgVectorSchemaValidator {
 				AND NOT a.attisdropped
 			""";
 
+	/**
+	 * Result of {@link #vectorColumnDimensions} for a column declared as plain
+	 * {@code vector}, which accepts any size.
+	 */
+	static final int UNCONSTRAINED_VECTOR_COLUMN = 0;
+
+	/**
+	 * Result of {@link #vectorColumnDimensions} when the table or column does not exist.
+	 */
+	static final int NO_VECTOR_COLUMN = -1;
+
 	private final JdbcTemplate jdbcTemplate;
 
 	PgVectorSchemaValidator(JdbcTemplate jdbcTemplate) {
@@ -102,11 +113,17 @@ class PgVectorSchemaValidator {
 	/**
 	 * Returns the vector size the table's embedding column accepts, as declared in its
 	 * {@code vector(n)} type.
+	 * <p>
+	 * A failed lookup is not reported as "no column": the {@link DataAccessException}
+	 * propagates, so a caller can tell an absent or unconstrained column from a lookup
+	 * that did not work.
 	 * @param schemaName the schema of the vector table
 	 * @param tableName the vector table
 	 * @param embeddingFieldName the name of the embedding column
-	 * @return the declared size, or -1 when the table or column does not exist or the
-	 * column was declared without a size
+	 * @return the declared size, {@link #UNCONSTRAINED_VECTOR_COLUMN} when the column was
+	 * declared without a size, or {@link #NO_VECTOR_COLUMN} when the table or column does
+	 * not exist
+	 * @throws DataAccessException if the lookup itself fails
 	 */
 	int vectorColumnDimensions(String schemaName, String tableName, String embeddingFieldName) {
 		// The store writes schema, table and column names unquoted, so Postgres folds
@@ -114,10 +131,10 @@ class PgVectorSchemaValidator {
 		List<Integer> result = this.jdbcTemplate.queryForList(VECTOR_COLUMN_DIMENSIONS_QUERY, Integer.class,
 				schemaName.toLowerCase(Locale.ROOT), tableName.toLowerCase(Locale.ROOT),
 				embeddingFieldName.toLowerCase(Locale.ROOT));
-		if (result.isEmpty() || result.get(0) == null || result.get(0) <= 0) {
-			return -1;
+		if (result.isEmpty() || result.get(0) == null) {
+			return NO_VECTOR_COLUMN;
 		}
-		return result.get(0);
+		return (result.get(0) > 0) ? result.get(0) : UNCONSTRAINED_VECTOR_COLUMN;
 	}
 
 	void validateNames(String schemaName, String tableName) {

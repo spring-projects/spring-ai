@@ -212,6 +212,11 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 	}
 
 	@Override
+	protected boolean supportsUpsert() {
+		return true;
+	}
+
+	@Override
 	protected void doUpsert(List<EmbeddedDocument> entries) {
 		// Whole-batch dimension pre-check before any write, so a mismatched vector fails
 		// fast and cannot partially write. Non-empty and finiteness are already enforced
@@ -301,6 +306,11 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 	}
 
 	@Override
+	protected boolean supportsQueryEmbeddingSearch() {
+		return true;
+	}
+
+	@Override
 	protected List<Document> doSimilaritySearch(float[] queryEmbedding, SearchRequest request) {
 		checkDimensions("Query embedding", queryEmbedding.length, vectorDimensions());
 		return searchByEmbedding(queryEmbedding, request);
@@ -381,17 +391,24 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 			int size = (this.dimensions > 0) ? this.dimensions : this.embeddingModel.dimensions();
 			var vectorParams = VectorParams.newBuilder().setDistance(Distance.Cosine).setSize(size).build();
 			this.qdrantClient.createCollectionAsync(this.collectionName, vectorParams).get();
+			// The collection was just created with this size, so there is nothing to read
+			// back.
+			this.resolvedVectorDimensions = size;
 		}
 	}
 
 	/**
-	 * The vector size the collection accepts, or -1 when it cannot be determined.
+	 * The vector size the collection accepts, or -1 when it is not known.
 	 * <p>
 	 * The size comes from the {@link Builder#dimensions(int) configured dimensions} if
-	 * set, otherwise from the existing collection, and only then from the embedding
-	 * model. Reading it from the collection means a store that only upserts into an
-	 * existing collection never has to contact the embedding model. A known size is
-	 * cached.
+	 * set, otherwise from the existing collection or the collection this store just
+	 * created. The embedding model is never asked, because its width says nothing about
+	 * the width of a collection that already exists. Reading it from the collection means
+	 * a store that only upserts into an existing collection never has to contact the
+	 * embedding model. When the size cannot be read, or the collection uses named
+	 * vectors, it is not checked here and Qdrant decides, and reading it is tried again
+	 * on the next call. Only a known size is cached, so a store has to be rebuilt after
+	 * the collection is recreated with a different size.
 	 * @return the known dimension, or -1
 	 */
 	private int vectorDimensions() {
@@ -426,15 +443,6 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 		catch (Exception ex) {
 			logger.debug("Could not read the vector size of collection " + this.collectionName, ex);
 		}
-		try {
-			int modelDimensions = this.embeddingModel.dimensions();
-			if (modelDimensions > 0) {
-				return modelDimensions;
-			}
-		}
-		catch (Exception ex) {
-			logger.debug("Could not obtain the embedding dimensions from the embedding model", ex);
-		}
 		return -1;
 	}
 
@@ -450,10 +458,14 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 	@Override
 	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
 
-		return VectorStoreObservationContext.builder(VectorStoreProvider.QDRANT.value(), operationName)
-			.dimensions(vectorDimensions())
+		VectorStoreObservationContext.Builder builder = VectorStoreObservationContext
+			.builder(VectorStoreProvider.QDRANT.value(), operationName)
 			.collectionName(this.collectionName);
-
+		int vectorDimensions = vectorDimensions();
+		if (vectorDimensions > 0) {
+			builder.dimensions(vectorDimensions);
+		}
+		return builder;
 	}
 
 	@Override

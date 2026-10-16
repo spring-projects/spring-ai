@@ -212,6 +212,11 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 	}
 
 	@Override
+	protected boolean supportsQueryEmbeddingSearch() {
+		return true;
+	}
+
+	@Override
 	protected List<Document> doSimilaritySearch(float[] queryEmbedding, SearchRequest request) {
 		Assert.notNull(request, "The search request must not be null.");
 		checkDimensions("Query embedding", queryEmbedding.length, vectorDimensions());

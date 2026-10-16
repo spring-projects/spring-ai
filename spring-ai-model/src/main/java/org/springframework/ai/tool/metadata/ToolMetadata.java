@@ -37,6 +37,19 @@ public interface ToolMetadata {
 	}
 
 	/**
+	 * Whether a call of the tool needs a person's confirmation before it runs.
+	 * {@link org.springframework.ai.model.tool.DefaultToolCallingManager} refuses to run
+	 * such a call without a decision, and the tool-calling loop pauses on it; see
+	 * {@link org.springframework.ai.model.tool.ToolCallDecisions}. A custom
+	 * {@link org.springframework.ai.model.tool.ToolCallingManager} has to check it
+	 * itself.
+	 * @since 2.1.0
+	 */
+	default boolean requiresConfirmation() {
+		return false;
+	}
+
+	/**
 	 * Create a default {@link ToolMetadata} builder.
 	 */
 	static DefaultToolMetadata.Builder builder() {
@@ -48,7 +61,10 @@ public interface ToolMetadata {
 	 */
 	static ToolMetadata from(Method method) {
 		Assert.notNull(method, "method cannot be null");
-		return DefaultToolMetadata.builder().returnDirect(ToolUtils.getToolReturnDirect(method)).build();
+		return DefaultToolMetadata.builder()
+			.returnDirect(ToolUtils.getToolReturnDirect(method))
+			.requiresConfirmation(ToolUtils.getToolRequiresConfirmation(method))
+			.build();
 	}
 
 }

@@ -1,0 +1,11 @@
+@startuml session-event-lifecycle
+!pragma layout smetana
+skinparam shadowing false
+hide empty description
+[*] --> InView : appendEvent
+InView --> Covered : a boundary is appended\nthat does not name it
+InView --> [*] : the session is deleted or expired
+Covered --> [*] : the session is deleted or expired
+InView : sent to the model (EventFilter.active)
+Covered : kept in the log (EventFilter.all),\nnot sent to the model
+@enduml

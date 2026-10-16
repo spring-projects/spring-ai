@@ -16,12 +16,14 @@
 
 package org.springframework.ai.mistralai;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import io.micrometer.observation.Observation;
@@ -36,9 +38,19 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.messages.part.MediaPart;
+import org.springframework.ai.chat.messages.part.MessagePart;
+import org.springframework.ai.chat.messages.part.OpaquePayload;
+import org.springframework.ai.chat.messages.part.ReasoningPart;
+import org.springframework.ai.chat.messages.part.StreamingPartIndexer;
+import org.springframework.ai.chat.messages.part.TextPart;
+import org.springframework.ai.chat.messages.part.ToolCallPart;
+import org.springframework.ai.chat.messages.part.ToolResultPart;
+import org.springframework.ai.chat.messages.part.UnknownPart;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
+import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -56,6 +68,12 @@ import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletion.Choice;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionChunk;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.ChatCompletionFunction;
+import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.ContentChunk;
+import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.ImageUrlChunk;
+import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.ReferenceChunk;
+import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.TextChunk;
+import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.ThinkChunk;
+import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.ThinkingContentChunk;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionMessage.ToolCall;
 import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest;
 import org.springframework.ai.model.ModelOptionsUtils;
@@ -63,14 +81,28 @@ import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.support.UsageCalculator;
 import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.ai.util.JsonHelper;
 import org.springframework.core.retry.RetryTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
+import org.springframework.util.StringUtils;
 
 /**
  * Represents a Mistral AI Chat Model.
+ * <p>
+ * The assistant message of each choice is built from ordered {@link MessagePart}s that
+ * follow the content chunks Mistral returns: a text chunk, or a plain string content,
+ * becomes a {@link TextPart}, a thinking chunk a {@link ReasoningPart}, and any other
+ * chunk, such as the reference of a citation, an {@link UnknownPart} that holds it
+ * verbatim. Tool calls are a separate field of a Mistral message, so their
+ * {@link ToolCallPart}s always follow the content.
+ * <p>
+ * An assistant message that carries Mistral reasoning or other Mistral chunks is replayed
+ * as content chunks in part order, so a reasoning model gets its earlier thinking back
+ * next to the answer it led to, as Mistral recommends. Any other assistant message is
+ * sent as its text, as before.
  *
  * @author Ricken Bazolo
  * @author Christian Tzolov
@@ -82,6 +114,7 @@ import org.springframework.util.MimeType;
  * @author Nicolas Krier
  * @author Jason Smith
  * @author Sebastien Deleuze
+ * @author Dimitar Proynov
  * @since 1.0.0
  */
 public class MistralAiChatModel implements ChatModel {
@@ -94,9 +127,30 @@ public class MistralAiChatModel implements ChatModel {
 
 	public static final String REFERENCE_THINKING_CONTENT_METADATA = "reference_thinking_content";
 
+	/**
+	 * Key of the thinking text in the message metadata. Superseded by the
+	 * {@link ReasoningPart}s of the message, see {@link AssistantMessage#getReasoning()}.
+	 * Still written for backward compatibility, and read on replay only from an assistant
+	 * message without reasoning parts, such as one built by an earlier version. Unlike
+	 * the text of a {@link ReasoningPart}, it joins the text chunks of the thinking with
+	 * a line separator.
+	 * @deprecated since 2.1.0 in favor of {@link AssistantMessage#getReasoning()}
+	 */
+	@Deprecated(since = "2.1.0", forRemoval = true)
 	public static final String THINKING_CONTENT_METADATA = "thinking_content";
 
-	private final Log logger = LogFactory.getLog(getClass());
+	/**
+	 * The {@link OpaquePayload#kind() kind} of the payload that holds the signature of a
+	 * thinking chunk.
+	 * @since 2.1.0
+	 */
+	public static final String SIGNATURE_PAYLOAD_KIND = "signature";
+
+	private static final String PROVIDER = MistralAiApi.PROVIDER_NAME;
+
+	private static final JsonHelper jsonHelper = new JsonHelper();
+
+	private static final Log logger = LogFactory.getLog(MistralAiChatModel.class);
 
 	/**
 	 * The default options used for the chat completion requests.
@@ -202,7 +256,7 @@ public class MistralAiChatModel implements ChatModel {
 					var role = choice.message().role() != null ? choice.message().role().name() : "";
 					var metadata = buildMetadata(choice, chatCompletion.id(), role);
 
-					return buildGeneration(choice, metadata);
+					return buildGeneration(choice, metadata, null);
 				}).toList();
 
 				ChatCompletion completion = Objects.requireNonNull(completionEntity.getBody());
@@ -256,42 +310,40 @@ public class MistralAiChatModel implements ChatModel {
 			// The rest of the chunks with same ID share the same role.
 			ConcurrentHashMap<String, String> roleMap = new ConcurrentHashMap<>();
 
+			// Mistral streams content chunks without an index, so the parts of each
+			// choice of this stream get one synthesized index sequence.
+			ConcurrentHashMap<Integer, StreamingPartIndexer> partIndexers = new ConcurrentHashMap<>();
+
 			// Convert the ChatCompletionChunk into a ChatCompletion to be able to reuse
 			// the function call handling logic.
-			// @formatter:off
-			Flux<ChatResponse> chatResponse = completionChunks.map(this::toChatCompletion)
-				.map(chatCompletion -> {
-					try {
-						@SuppressWarnings("null")
-						String id = chatCompletion.id();
+			Flux<ChatResponse> chatResponse = completionChunks.map(this::toChatCompletion).map(chatCompletion -> {
+				try {
+					String id = chatCompletion.id();
 
-				// @formatter:off
-							List<Generation> generations = chatCompletion.choices().stream().map(choice -> {
-								if (choice.message().role() != null) {
-									roleMap.putIfAbsent(id, choice.message().role().name());
-								}
-
-								var role = roleMap.getOrDefault(id, "");
-								var metadata = buildMetadata(choice, chatCompletion.id(), role);
-
-								return buildGeneration(choice, metadata);
-							}).toList();
-							// @formatter:on
-
-						if (chatCompletion.usage() != null) {
-							DefaultUsage usage = getDefaultUsage(chatCompletion.usage());
-							Usage cumulativeUsage = UsageCalculator.getCumulativeUsage(usage, previousChatResponse);
-							return new ChatResponse(generations, from(chatCompletion, cumulativeUsage));
+					List<Generation> generations = chatCompletion.choices().stream().map(choice -> {
+						if (choice.message().role() != null) {
+							roleMap.putIfAbsent(id, choice.message().role().name());
 						}
-						else {
-							return new ChatResponse(generations);
-						}
-					}
-					catch (Exception e) {
-						logger.error("Error processing chat completion", e);
-						return new ChatResponse(List.of());
-					}
-				});
+
+						var role = roleMap.getOrDefault(id, "");
+						var metadata = buildMetadata(choice, chatCompletion.id(), role);
+						var partIndexer = partIndexers.computeIfAbsent(Objects.requireNonNullElse(choice.index(), 0),
+								index -> new StreamingPartIndexer());
+
+						return buildGeneration(choice, metadata, partIndexer);
+					}).toList();
+
+					// Every chunk carries the response id, which MessageAggregator groups
+					// the streamed parts by.
+					Usage usage = (chatCompletion.usage() != null) ? UsageCalculator.getCumulativeUsage(
+							getDefaultUsage(chatCompletion.usage()), previousChatResponse) : new EmptyUsage();
+					return new ChatResponse(generations, from(chatCompletion, usage));
+				}
+				catch (Exception e) {
+					logger.error("Error processing chat completion", e);
+					return new ChatResponse(List.of());
+				}
+			});
 
 			// @formatter:off
 			Flux<ChatResponse> chatResponseFlux = chatResponse.flatMap(response ->
@@ -334,17 +386,16 @@ public class MistralAiChatModel implements ChatModel {
 		return Map.copyOf(metadata);
 	}
 
-	private Generation buildGeneration(Choice choice, Map<String, Object> metadata) {
-		var toolCalls = Optional.ofNullable(choice.message().toolCalls())
-			.stream()
-			.flatMap(List::stream)
-			.map(this::mapToolCall)
-			.toList();
-		var content = choice.message().extractTextContent();
+	/**
+	 * Builds the generation of one choice. When {@code partIndexer} is not {@code null}
+	 * the choice is a streamed chunk, and its parts are stamped with their stream index,
+	 * see {@link StreamingPartIndexer}.
+	 */
+	private Generation buildGeneration(Choice choice, Map<String, Object> metadata,
+			@Nullable StreamingPartIndexer partIndexer) {
 		var assistantMessage = AssistantMessage.builder()
-			.content(content)
+			.parts(toMessageParts(choice.message(), partIndexer))
 			.properties(metadata)
-			.toolCalls(toolCalls)
 			.build();
 		var finishReason = choice.finishReason() != null ? choice.finishReason().name() : "";
 		var generationMetadata = ChatGenerationMetadata.builder().finishReason(finishReason).build();
@@ -352,7 +403,91 @@ public class MistralAiChatModel implements ChatModel {
 		return new Generation(assistantMessage, generationMetadata);
 	}
 
-	private AssistantMessage.ToolCall mapToolCall(ToolCall toolCall) {
+	/**
+	 * Maps a Mistral message to ordered {@link MessagePart}s: one part per content chunk,
+	 * in chunk order, then one {@link ToolCallPart} per tool call.
+	 * <p>
+	 * An empty text yields no part, so that a tool-call answer has no empty text part
+	 * before its tool calls. A message without any part, such as the role-only first
+	 * chunk of a stream, keeps an empty text, so that its text is not {@code null}.
+	 */
+	private static List<MessagePart> toMessageParts(ChatCompletionMessage message,
+			@Nullable StreamingPartIndexer partIndexer) {
+		List<MessagePart> parts = new ArrayList<>();
+		Object content = message.content();
+		if (content instanceof String text) {
+			// hasLength, not hasText: a streamed delta is often a single whitespace or
+			// newline token that must be kept.
+			if (StringUtils.hasLength(text)) {
+				parts.add(TextPart.of(text));
+			}
+		}
+		else if (content instanceof List<?> chunks) {
+			for (Object chunk : chunks) {
+				MessagePart part = toMessagePart(chunk);
+				if (part != null) {
+					parts.add(part);
+				}
+			}
+		}
+		if (message.toolCalls() != null) {
+			for (ToolCall toolCall : message.toolCalls()) {
+				parts.add(ToolCallPart.of(mapToolCall(toolCall)));
+			}
+		}
+		if (partIndexer != null) {
+			parts.replaceAll(partIndexer::stamp);
+		}
+		if (parts.isEmpty()) {
+			parts.add(TextPart.of(""));
+		}
+		return parts;
+	}
+
+	private static @Nullable MessagePart toMessagePart(Object chunk) {
+		if (chunk instanceof TextChunk textChunk) {
+			return StringUtils.hasLength(textChunk.text()) ? TextPart.of(textChunk.text()) : null;
+		}
+		if (chunk instanceof ThinkChunk thinkChunk) {
+			return toReasoningPart(thinkChunk);
+		}
+		if (chunk instanceof ReferenceChunk) {
+			return new UnknownPart(PROVIDER, "reference", jsonHelper.toJson(chunk), null, Map.of());
+		}
+		if (chunk instanceof ImageUrlChunk) {
+			return new UnknownPart(PROVIDER, "image_url", jsonHelper.toJson(chunk), null, Map.of());
+		}
+		throw new IllegalStateException("Unhandled content chunk type: " + chunk.getClass().getName());
+	}
+
+	/**
+	 * Maps a thinking chunk to a {@link ReasoningPart} with the text of the chunk, the
+	 * signature, if any, as its {@link #SIGNATURE_PAYLOAD_KIND} payload, and a
+	 * {@link MessagePart#PROVIDER_ATTRIBUTE provider} attribute, so that reasoning
+	 * Mistral returned without a signature can be told apart from reasoning produced by
+	 * another provider on replay. References within the thinking are not part of the
+	 * text; they remain available under {@link #REFERENCE_THINKING_CONTENT_METADATA}.
+	 * @return the part, or {@code null} for a chunk with neither text nor signature, such
+	 * as the closing thinking chunk of a stream
+	 */
+	private static @Nullable ReasoningPart toReasoningPart(ThinkChunk thinkChunk) {
+		String text = Optional.of(thinkChunk.thinking())
+			.stream()
+			.flatMap(List::stream)
+			.filter(TextChunk.class::isInstance)
+			.map(TextChunk.class::cast)
+			.map(TextChunk::text)
+			.collect(Collectors.joining());
+		String signature = thinkChunk.signature();
+		OpaquePayload payload = StringUtils.hasLength(signature)
+				? new OpaquePayload(PROVIDER, SIGNATURE_PAYLOAD_KIND, signature) : null;
+		if (text.isEmpty() && payload == null) {
+			return null;
+		}
+		return new ReasoningPart(text, null, payload, Map.of(MessagePart.PROVIDER_ATTRIBUTE, PROVIDER));
+	}
+
+	private static AssistantMessage.ToolCall mapToolCall(ToolCall toolCall) {
 		return new AssistantMessage.ToolCall(toolCall.id(), "function", toolCall.function().name(),
 				toolCall.function().arguments());
 	}
@@ -452,11 +587,109 @@ public class MistralAiChatModel implements ChatModel {
 			if (!CollectionUtils.isEmpty(assistantMessage.getToolCalls())) {
 				toolCalls = assistantMessage.getToolCalls().stream().map(this::mapToolCall).toList();
 			}
-			String content = assistantMessage.getText();
-			return new ChatCompletionMessage(content, ChatCompletionMessage.Role.ASSISTANT, null, toolCalls, null);
+			return new ChatCompletionMessage(assistantContent(assistantMessage), ChatCompletionMessage.Role.ASSISTANT,
+					null, toolCalls, null);
 		}
 		else {
 			throw new IllegalArgumentException("Unsupported assistant message class: " + message.getClass().getName());
+		}
+	}
+
+	/**
+	 * The content to send back for an assistant message: its parts as content chunks, in
+	 * part order, when it carries a chunk other than text, else its text as before.
+	 * <p>
+	 * A {@link ReasoningPart} is replayed as a thinking chunk only when Mistral produced
+	 * it, as told by its provider attribute, and its signature, if any, goes back with
+	 * it. Mistral recommends replaying the thinking of its reasoning models, while
+	 * reasoning from another provider is meaningless to it. A message without reasoning
+	 * parts, such as one built by an earlier version, falls back to the thinking under
+	 * {@link #THINKING_CONTENT_METADATA}, replayed first as Mistral returns it. An
+	 * {@link UnknownPart} is replayed verbatim when it holds a Mistral chunk. Tool calls
+	 * are sent in their own field, and media, which no Mistral chat model generates, is
+	 * skipped.
+	 */
+	private static @Nullable Object assistantContent(AssistantMessage assistantMessage) {
+		List<ContentChunk> chunks = new ArrayList<>();
+		boolean textOnly = true;
+		ThinkChunk legacyThinkChunk = legacyThinkChunk(assistantMessage);
+		if (legacyThinkChunk != null) {
+			chunks.add(legacyThinkChunk);
+			textOnly = false;
+		}
+		for (MessagePart part : assistantMessage.getParts()) {
+			if (part instanceof TextPart textPart) {
+				if (!textPart.text().isEmpty()) {
+					chunks.add(new TextChunk(textPart.text()));
+				}
+			}
+			else if (part instanceof ReasoningPart reasoningPart) {
+				ThinkChunk thinkChunk = toThinkChunk(reasoningPart);
+				if (thinkChunk != null) {
+					chunks.add(thinkChunk);
+					textOnly = false;
+				}
+			}
+			else if (part instanceof UnknownPart unknownPart) {
+				ContentChunk contentChunk = toContentChunk(unknownPart);
+				if (contentChunk != null) {
+					chunks.add(contentChunk);
+					textOnly = false;
+				}
+			}
+			else if (part instanceof ToolResultPart) {
+				// Reachable from application code, as AssistantMessage.Builder.part() is
+				// public
+				throw new IllegalArgumentException(
+						"Tool results belong in a tool response message, not an assistant message");
+			}
+			else if (part instanceof MediaPart) {
+				logger.debug("Not replaying media on an assistant message");
+			}
+			else if (!(part instanceof ToolCallPart)) {
+				throw new IllegalStateException("Unhandled message part type: " + part.getClass().getName());
+			}
+		}
+		return textOnly ? assistantMessage.getText() : chunks;
+	}
+
+	@SuppressWarnings("removal")
+	private static @Nullable ThinkChunk legacyThinkChunk(AssistantMessage assistantMessage) {
+		if (!assistantMessage.getReasoning().isEmpty()
+				|| !(assistantMessage.getMetadata().get(THINKING_CONTENT_METADATA) instanceof String thinking)
+				|| thinking.isEmpty()) {
+			return null;
+		}
+		return new ThinkChunk(List.of(new TextChunk(thinking)), null);
+	}
+
+	private static @Nullable ThinkChunk toThinkChunk(ReasoningPart part) {
+		OpaquePayload payload = part.payload();
+		if (!PROVIDER.equals(part.attributes().get(MessagePart.PROVIDER_ATTRIBUTE)) || !part.replayableTo(PROVIDER)) {
+			logger.debug("Not replaying reasoning that Mistral did not produce");
+			return null;
+		}
+		String text = Objects.requireNonNullElse(part.text(), "");
+		String signature = (payload != null && SIGNATURE_PAYLOAD_KIND.equals(payload.kind())) ? payload.data() : null;
+		if (text.isEmpty() && signature == null) {
+			return null;
+		}
+		List<ThinkingContentChunk> thinking = text.isEmpty() ? List.of() : List.of(new TextChunk(text));
+		return new ThinkChunk(thinking, null, signature);
+	}
+
+	private static @Nullable ContentChunk toContentChunk(UnknownPart part) {
+		if (!PROVIDER.equals(part.provider())) {
+			logger.debug("Not replaying an unknown part of kind " + part.kind() + " produced by " + part.provider());
+			return null;
+		}
+		try {
+			return jsonHelper.fromJson(part.rawJson(), ContentChunk.class);
+		}
+		catch (RuntimeException ex) {
+			// Better a turn missing one chunk than a failed turn
+			logger.warn("Could not replay the Mistral content chunk of kind " + part.kind() + "; dropping it", ex);
+			return null;
 		}
 	}
 
@@ -471,12 +704,23 @@ public class MistralAiChatModel implements ChatModel {
 		Assert.state(content != null, "content must not be null");
 
 		if (message instanceof UserMessage userMessage && !CollectionUtils.isEmpty(userMessage.getMedia())) {
-			// @formatter:off
-			var contentChunks = Stream.<ChatCompletionMessage.ContentChunk>concat(
-				Stream.of(new ChatCompletionMessage.TextChunk(content)),
-				this.mapToImageUrlChunks(userMessage)
-			).toList();
-			// @formatter:on
+			// One chunk per part, in part order, so that text and images interleave as
+			// the message was built. Messages built with text(...) and media(...) keep
+			// sending the text first.
+			List<ContentChunk> contentChunks = new ArrayList<>();
+			for (MessagePart part : userMessage.getParts()) {
+				if (part instanceof TextPart textPart) {
+					if (!textPart.text().isEmpty()) {
+						contentChunks.add(new TextChunk(textPart.text()));
+					}
+				}
+				else if (part instanceof MediaPart mediaPart) {
+					contentChunks.add(this.mapToImageUrlChunk(mediaPart.media()));
+				}
+				else {
+					logger.debug("Skipping a user message part of type " + part.getClass().getSimpleName());
+				}
+			}
 
 			return new ChatCompletionMessage(contentChunks, ChatCompletionMessage.Role.USER);
 		}
@@ -490,12 +734,8 @@ public class MistralAiChatModel implements ChatModel {
 		return new ToolCall(toolCall.id(), toolCall.type(), function, null);
 	}
 
-	private Stream<ChatCompletionMessage.ImageUrlChunk> mapToImageUrlChunks(UserMessage userMessage) {
-		return userMessage.getMedia().stream().map(this::mapToImageUrlChunk);
-	}
-
-	private ChatCompletionMessage.ImageUrlChunk mapToImageUrlChunk(Media media) {
-		return new ChatCompletionMessage.ImageUrlChunk(this.fromMediaData(media.getMimeType(), media.getData()));
+	private ImageUrlChunk mapToImageUrlChunk(Media media) {
+		return new ImageUrlChunk(this.fromMediaData(media.getMimeType(), media.getData()));
 	}
 
 	private ChatCompletionMessage.ImageUrlChunk.ImageUrl fromMediaData(MimeType mimeType, Object mediaData) {

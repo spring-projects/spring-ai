@@ -110,6 +110,23 @@
 				<version>${project.version}</version>
 			</dependency>
 
+			<!-- Spring AI Session -->
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-session</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-session-jdbc</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-session-advisor</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
 			<!-- Spring AI Tool Search Advisor -->
 
 			<dependency>
@@ -280,6 +297,18 @@
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-google-genai-image</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-google-genai-tts</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-google-genai-transcription</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
@@ -488,6 +517,18 @@
 				<version>${project.version}</version>
 			</dependency>
 
+			<!-- Spring AI Session auto-configurations -->
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-autoconfigure-model-session</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-autoconfigure-model-session-jdbc</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
 			<!-- Spring AI Chat memory autoconfiguration -->
 
 			<dependency>
@@ -556,6 +597,14 @@
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-autoconfigure-model-image-observation</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<!-- Spring AI Audio (text-to-speech, transcription) model observation autoconfiguration -->
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-autoconfigure-model-audio-observation</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
@@ -1029,6 +1078,18 @@
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-model-google-genai-tts</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-model-google-genai-transcription</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-starter-model-deepseek</artifactId>
 				<version>${project.version}</version>
 			</dependency>
@@ -1109,6 +1170,13 @@
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-starter-model-chat-memory-repository-redis</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<!-- Spring AI Spring Boot starter for Session -->
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-model-session-jdbc</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 

@@ -17,9 +17,11 @@
 package org.springframework.ai.openai.responses;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.openai.core.ObjectMappers;
 import com.openai.models.responses.Response;
@@ -88,6 +90,119 @@ class ResponsesItemMapperTests {
 		assertThat(toJson(input.items().get(1))).contains("\"role\":\"user\"");
 	}
 
+	/**
+	 * Follow-up to the MessagePart migration: a user message built as media then text
+	 * must keep that order on the wire. Flattening to text-then-media would reverse it.
+	 */
+	@Test
+	void userMessagePartsAreEmittedInPartOrderWhenMediaComesFirst() {
+		var image = Media.builder()
+			.mimeType(MimeTypeUtils.IMAGE_PNG)
+			.data(URI.create("https://example.com/cat.png"))
+			.build();
+		var message = UserMessage.builder().part(MediaPart.of(image)).part(TextPart.of("What is this?")).build();
+
+		ResponseInputItem item = ResponsesItemMapper.toInput(List.of(message)).items().get(0);
+
+		assertThat(contentTypes(item)).containsExactly("input_image", "input_text");
+		assertThat(toJson(item)).contains("https://example.com/cat.png").contains("What is this?");
+	}
+
+	/**
+	 * Interleaved text and media must not be collapsed into one joined text followed by
+	 * every media item.
+	 */
+	@Test
+	void userMessagePartsPreserveInterleavedTextAndMediaOrder() {
+		var image = Media.builder()
+			.mimeType(MimeTypeUtils.IMAGE_PNG)
+			.data(URI.create("https://example.com/diagram.png"))
+			.build();
+		var message = UserMessage.builder()
+			.part(TextPart.of("Before the image."))
+			.part(MediaPart.of(image))
+			.part(TextPart.of("After the image."))
+			.build();
+
+		ResponseInputItem item = ResponsesItemMapper.toInput(List.of(message)).items().get(0);
+		String json = toJson(item);
+
+		assertThat(contentTypes(item)).containsExactly("input_text", "input_image", "input_text");
+		assertThat(json.indexOf("Before the image.")).isLessThan(json.indexOf("diagram.png"));
+		assertThat(json.indexOf("diagram.png")).isLessThan(json.indexOf("After the image."));
+	}
+
+	/**
+	 * Legacy builders still produce text then media, and that order must keep working.
+	 */
+	@Test
+	void legacyTextThenMediaUserMessageKeepsTextBeforeMedia() {
+		var message = UserMessage.builder()
+			.text("What is this?")
+			.media(List.of(Media.builder()
+				.mimeType(MimeTypeUtils.IMAGE_PNG)
+				.data(URI.create("https://example.com/cat.png"))
+				.build()))
+			.build();
+
+		assertThat(contentTypes(ResponsesItemMapper.toInput(List.of(message)).items().get(0)))
+			.containsExactly("input_text", "input_image");
+	}
+
+	@Test
+	void mediaOnlyUserMessageBecomesSingleInputImagePart() {
+		var message = UserMessage.builder()
+			.part(MediaPart.of(Media.builder()
+				.mimeType(MimeTypeUtils.IMAGE_PNG)
+				.data(URI.create("https://example.com/cat.png"))
+				.build()))
+			.build();
+
+		ResponseInputItem item = ResponsesItemMapper.toInput(List.of(message)).items().get(0);
+
+		assertThat(contentTypes(item)).containsExactly("input_image");
+		assertThat(toJson(item)).contains("https://example.com/cat.png");
+	}
+
+	/**
+	 * Whitespace-only text is kept next to media, as the text-only path keeps it.
+	 */
+	@Test
+	void whitespaceOnlyTextPartIsKeptNextToMedia() {
+		var message = UserMessage.builder()
+			.part(TextPart.of(" "))
+			.part(MediaPart.of(Media.builder()
+				.mimeType(MimeTypeUtils.IMAGE_PNG)
+				.data(URI.create("https://example.com/cat.png"))
+				.build()))
+			.build();
+
+		assertThat(contentTypes(ResponsesItemMapper.toInput(List.of(message)).items().get(0)))
+			.containsExactly("input_text", "input_image");
+	}
+
+	/**
+	 * Parts the Responses API cannot take are skipped, like Anthropic does, so that
+	 * persisted conversations holding them still replay.
+	 */
+	@Test
+	void unsupportedUserMessagePartsAreSkipped() {
+		var image = Media.builder()
+			.mimeType(MimeTypeUtils.IMAGE_PNG)
+			.data(URI.create("https://example.com/cat.png"))
+			.build();
+		var message = UserMessage.builder()
+			.part(TextPart.of("Hi"))
+			.part(new UnknownPart(OpenAiResponsesMetadata.PROVIDER, "odd", "{}", null, Map.of()))
+			.part(MediaPart.of(image))
+			.build();
+
+		ResponseInputItem item = ResponsesItemMapper.toInput(List.of(message)).items().get(0);
+
+		assertThat(contentTypes(item)).containsExactly("input_text", "input_image");
+		assertThat(toJson(item)).doesNotContain("odd");
+	}
+
 	@Test
 	void userMessageWithImageUrlBecomesInputImagePart() {
 		var message = UserMessage.builder()
@@ -135,6 +250,57 @@ class ResponsesItemMapperTests {
 
 		assertThat(json).contains("\"type\":\"input_file\"").contains("data:application/pdf;base64,AQID");
 		assertThat(filenameIn(json)).endsWith(".pdf");
+	}
+
+	@Test
+	void pdfUrlBecomesAnInputFileWithAFileUrl() throws Exception {
+		JsonNode file = mediaPartOf(Media.builder()
+			.mimeType(MimeTypeUtils.parseMimeType("application/pdf"))
+			.data(URI.create("https://example.com/report.pdf"))
+			.build());
+
+		assertThat(file.get("type").asText()).isEqualTo("input_file");
+		assertThat(file.get("file_url").asText()).isEqualTo("https://example.com/report.pdf");
+		assertThat(file.has("file_data")).isFalse();
+		assertThat(file.has("filename")).isFalse();
+	}
+
+	@Test
+	void pdfUrlStringBecomesAnInputFileWithAFileUrl() throws Exception {
+		JsonNode file = mediaPartOf(Media.builder()
+			.mimeType(MimeTypeUtils.parseMimeType("application/pdf"))
+			.data("https://example.com/report.pdf")
+			.build());
+
+		assertThat(file.get("type").asText()).isEqualTo("input_file");
+		assertThat(file.get("file_url").asText()).isEqualTo("https://example.com/report.pdf");
+		assertThat(file.has("file_data")).isFalse();
+		assertThat(file.has("filename")).isFalse();
+	}
+
+	/**
+	 * Media.Builder#data(String) accepts bare base64 content, which is inline data and
+	 * not a link.
+	 */
+	@Test
+	void pdfAsBase64StringBecomesFileDataWithADataUri() throws Exception {
+		JsonNode file = mediaPartOf(
+				Media.builder().mimeType(MimeTypeUtils.parseMimeType("application/pdf")).data("AQID").build());
+
+		assertThat(file.get("file_data").asText()).isEqualTo("data:application/pdf;base64,AQID");
+		assertThat(file.get("filename").asText()).endsWith(".pdf");
+		assertThat(file.has("file_url")).isFalse();
+	}
+
+	@Test
+	void pdfAsDataUriStringIsSentUnchanged() throws Exception {
+		JsonNode file = mediaPartOf(Media.builder()
+			.mimeType(MimeTypeUtils.parseMimeType("application/pdf"))
+			.data("data:application/pdf;base64,AQID")
+			.build());
+
+		assertThat(file.get("file_data").asText()).isEqualTo("data:application/pdf;base64,AQID");
+		assertThat(file.has("file_url")).isFalse();
 	}
 
 	@Test
@@ -516,6 +682,32 @@ class ResponsesItemMapperTests {
 		assertThat(metadata.getId()).isEqualTo("resp_text_1");
 		assertThat(metadata.getModel()).isEqualTo("gpt-5-mini");
 		assertThat(metadata.<String>get(OpenAiResponsesMetadata.STATUS)).isEqualTo("completed");
+	}
+
+	/**
+	 * The content part a single media attachment maps to; part 0 is the message text.
+	 */
+	private static JsonNode mediaPartOf(Media media) throws Exception {
+		var message = UserMessage.builder().text("Look at this").media(List.of(media)).build();
+		return ObjectMappers.jsonMapper()
+			.readTree(toJson(ResponsesItemMapper.toInput(List.of(message)).items().get(0)))
+			.get("content")
+			.get(1);
+	}
+
+	private static List<String> contentTypes(ResponseInputItem item) {
+		try {
+			var content = ObjectMappers.jsonMapper().readTree(toJson(item)).path("content");
+			if (content.isTextual()) {
+				return List.of("input_text");
+			}
+			List<String> types = new ArrayList<>();
+			content.forEach(node -> types.add(node.path("type").asText()));
+			return types;
+		}
+		catch (Exception ex) {
+			throw new IllegalStateException(ex);
+		}
 	}
 
 	private static String filenameIn(String itemJson) {

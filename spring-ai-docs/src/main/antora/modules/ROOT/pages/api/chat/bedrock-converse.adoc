@@ -862,7 +862,7 @@ It is replayed to Bedrock without a signature.
 |====
 
 The provider and payload kinds are available as the `BEDROCK_PROVIDER`, `PAYLOAD_SIGNATURE` and `PAYLOAD_REDACTED_CONTENT` constants of `ConverseApiUtils`.
-Every reasoning part Bedrock returned also carries the `provider` attribute (`StreamingParts.PROVIDER_ATTRIBUTE`) set to `bedrock`, which is how unsigned reasoning, having no payload, is recognized as Bedrock's own.
+Every reasoning part Bedrock returned also carries the `provider` attribute (`MessagePart.PROVIDER_ATTRIBUTE`) set to `bedrock`, which is how unsigned reasoning, having no payload, is recognized as Bedrock's own.
 Other content block types, such as citations, are not mapped to parts yet.
 
 Reasoning is fully supported in streaming mode.

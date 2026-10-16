@@ -55,14 +55,6 @@ public final class StreamingParts {
 	/** Attribute set to {@code true} on a streamed part that is a delta. */
 	public static final String PARTIAL_ATTRIBUTE = "partial";
 
-	/**
-	 * Attribute naming the provider that produced a part, matching
-	 * {@link OpaquePayload#provider()}. Unlike the streaming attributes it is kept on the
-	 * aggregated message, so that a chat model can recognize its own parts on replay,
-	 * such as reasoning returned without a payload.
-	 */
-	public static final String PROVIDER_ATTRIBUTE = "provider";
-
 	private StreamingParts() {
 	}
 

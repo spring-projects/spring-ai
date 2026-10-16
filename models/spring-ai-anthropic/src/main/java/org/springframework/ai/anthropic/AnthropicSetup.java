@@ -308,6 +308,9 @@ public final class AnthropicSetup {
 			.baseUrl(resolvedBaseUrl)
 			.timeout(resolvedTimeout)
 			.maxRetries(resolvedMaxRetries)
+			// Spring AI observes each request with Micrometer, which also sends the
+			// traceparent header, so the SDK's own OpenTelemetry spans stay off.
+			.openTelemetry(false)
 			.putHeader("User-Agent", DEFAULT_USER_AGENT);
 		if (customHeaders != null) {
 			customHeaders.forEach(optsBuilder::putHeader);
