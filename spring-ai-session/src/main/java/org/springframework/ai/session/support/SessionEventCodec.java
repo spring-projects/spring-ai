@@ -41,9 +41,9 @@ import org.springframework.ai.session.SessionEvent;
 import org.springframework.util.Assert;
 
 /**
- * The persisted shape of a {@link SessionEvent}, shared by every
- * {@link org.springframework.ai.session.SessionRepository} that stores events as columns
- * or fields rather than as Java objects.
+ * Encodes a {@link SessionEvent} into its persisted shape, an {@link EncodedEvent}, and
+ * back. Shared by every {@link org.springframework.ai.session.SessionRepository} that
+ * stores events as columns or fields rather than as Java objects.
  *
  * <p>
  * An event is stored as four fields: its {@link EventType}, the {@link MessageType} and
