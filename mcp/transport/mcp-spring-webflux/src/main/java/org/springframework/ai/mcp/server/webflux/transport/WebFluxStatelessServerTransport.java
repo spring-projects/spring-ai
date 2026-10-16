@@ -47,6 +47,7 @@ import org.springframework.web.reactive.function.server.ServerResponse;
  * Implementation of a WebFlux based {@link McpStatelessServerTransport}.
  *
  * @author Dariusz Jędrzejczyk
+ * @author Taewoong Kim
  */
 public final class WebFluxStatelessServerTransport implements McpStatelessServerTransport {
 
@@ -155,10 +156,11 @@ public final class WebFluxStatelessServerTransport implements McpStatelessServer
 								if (logger.isErrorEnabled()) {
 									logger.error("Failed to serialize response: " + e.getMessage());
 								}
-								return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
-									.bodyValue(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
-										.message("Failed to serialize response")
-										.build());
+								return WebFluxJsonRpcErrorResponse.create(this.jsonMapper,
+										HttpStatus.INTERNAL_SERVER_ERROR, jsonrpcRequest.id(),
+										McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
+											.message("Failed to serialize response")
+											.build());
 							}
 						});
 				}
@@ -168,20 +170,20 @@ public final class WebFluxStatelessServerTransport implements McpStatelessServer
 						.then(ServerResponse.accepted().build());
 				}
 				else {
-					return ServerResponse.badRequest()
-						.bodyValue(McpError.builder(McpSchema.ErrorCodes.INVALID_REQUEST)
-							.message("The server accepts either requests or notifications")
-							.build());
+					return WebFluxJsonRpcErrorResponse.create(this.jsonMapper, HttpStatus.BAD_REQUEST, null,
+							McpError.builder(McpSchema.ErrorCodes.INVALID_REQUEST)
+								.message("The server accepts either requests or notifications")
+								.build());
 				}
 			}
 			catch (IllegalArgumentException | IOException e) {
 				if (logger.isErrorEnabled()) {
 					logger.error("Failed to deserialize message: " + e.getMessage());
 				}
-				return ServerResponse.badRequest()
-					.bodyValue(McpError.builder(McpSchema.ErrorCodes.INVALID_REQUEST)
-						.message("Invalid message format")
-						.build());
+				return WebFluxJsonRpcErrorResponse.create(this.jsonMapper, HttpStatus.BAD_REQUEST, null,
+						McpError.builder(McpSchema.ErrorCodes.INVALID_REQUEST)
+							.message("Invalid message format")
+							.build());
 			}
 		}).contextWrite(ctx -> ctx.put(McpTransportContext.KEY, transportContext));
 	}
