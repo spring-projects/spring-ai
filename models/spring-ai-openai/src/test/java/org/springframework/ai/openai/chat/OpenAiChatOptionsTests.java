@@ -24,6 +24,8 @@ import java.util.Map;
 
 import com.openai.models.chat.completions.ChatCompletionAudioParam;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
@@ -701,8 +703,8 @@ public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatO
 		Locale defaultLocale = Locale.getDefault();
 		try {
 			// Under the Turkish locale, "SHIMMER".toLowerCase() yields "shımmer" (dotless
-			// 'ı'), which is not a valid OpenAI audio voice. Protocol enum values must be
-			// converted using a fixed locale so the wire value stays "shimmer".
+			// 'ı'), which is not a valid OpenAI audio voice. The constants carry their
+			// wire value, which must not depend on the default locale.
 			Locale.setDefault(Locale.forLanguageTag("tr-TR"));
 			OpenAiChatOptions.AudioParameters audioParameters = new OpenAiChatOptions.AudioParameters(
 					OpenAiChatOptions.AudioParameters.Voice.SHIMMER,
@@ -714,6 +716,56 @@ public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatO
 		finally {
 			Locale.setDefault(defaultLocale);
 		}
+	}
+
+	@Test
+	void audioParametersFromConstantsUseOpenAiValues() {
+		OpenAiChatOptions.AudioParameters audioParameters = new OpenAiChatOptions.AudioParameters(
+				OpenAiChatOptions.AudioParameters.Voice.MARIN,
+				OpenAiChatOptions.AudioParameters.AudioResponseFormat.PCM16);
+
+		assertThat(audioParameters.voice()).isEqualTo("marin");
+		assertThat(audioParameters.format()).isEqualTo("pcm16");
+		assertThat(audioParameters).isEqualTo(new OpenAiChatOptions.AudioParameters("marin", "pcm16"));
+	}
+
+	@Test
+	void audioParametersKeepCustomVoiceAndFormatAsGiven() {
+		// OpenAI-compatible providers offer their own voices, whose names can be
+		// case-sensitive, so the values must not be normalized.
+		OpenAiChatOptions.AudioParameters audioParameters = new OpenAiChatOptions.AudioParameters("Chloe", "Ogg_Opus");
+
+		ChatCompletionAudioParam audioParam = audioParameters.toChatCompletionAudioParam();
+
+		assertThat(audioParam.voice().asString()).isEqualTo("Chloe");
+		assertThat(audioParam.format().asString()).isEqualTo("Ogg_Opus");
+	}
+
+	@ParameterizedTest
+	@EnumSource(OpenAiChatOptions.AudioParameters.Voice.class)
+	void voiceConstantsUseTheirLowercaseNameAsValue(OpenAiChatOptions.AudioParameters.Voice voice) {
+		assertThat(voice.getValue()).isEqualTo(voice.name().toLowerCase(Locale.ROOT));
+	}
+
+	@ParameterizedTest
+	@EnumSource(OpenAiChatOptions.AudioParameters.AudioResponseFormat.class)
+	void audioResponseFormatConstantsUseTheirLowercaseNameAsValue(
+			OpenAiChatOptions.AudioParameters.AudioResponseFormat format) {
+		assertThat(format.getValue()).isEqualTo(format.name().toLowerCase(Locale.ROOT));
+	}
+
+	@Test
+	void audioParametersCombineWithRuntimeCustomVoice() {
+		OpenAiChatOptions defaults = OpenAiChatOptions.builder()
+			.outputAudio(new OpenAiChatOptions.AudioParameters(OpenAiChatOptions.AudioParameters.Voice.ALLOY,
+					OpenAiChatOptions.AudioParameters.AudioResponseFormat.WAV))
+			.build();
+
+		OpenAiChatOptions merged = defaults.mutate()
+			.combineWith(OpenAiChatOptions.builder().outputAudio(new OpenAiChatOptions.AudioParameters("Chloe", "wav")))
+			.build();
+
+		assertThat(merged.getOutputAudio()).isEqualTo(new OpenAiChatOptions.AudioParameters("Chloe", "wav"));
 	}
 
 }

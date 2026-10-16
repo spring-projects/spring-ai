@@ -562,13 +562,26 @@ public final class OpenAiChatModel implements ChatModel {
 	}
 
 	private static Media audioMedia(ChatCompletionAudio audioOutput, ChatCompletionCreateParams request) {
-		String mimeType = "audio/" + request.audio().orElseThrow().format().value().name().toLowerCase(Locale.ROOT);
 		byte[] audioData = Base64.getDecoder().decode(audioOutput.data());
 		return Media.builder()
-			.mimeType(MimeTypeUtils.parseMimeType(mimeType))
+			.mimeType(audioMimeType(request.audio().orElseThrow().format().asString()))
 			.data(new ByteArrayResource(audioData))
 			.id(audioOutput.id())
 			.build();
+	}
+
+	/**
+	 * Return the MIME type of audio generated in the given format. The format is sent to
+	 * the model as given, so it may not be a valid MIME subtype, in which case the audio
+	 * is returned as {@code application/octet-stream} rather than failing the response.
+	 */
+	private static org.springframework.util.MimeType audioMimeType(String format) {
+		try {
+			return MimeTypeUtils.parseMimeType("audio/" + format);
+		}
+		catch (IllegalArgumentException ex) {
+			return MimeTypeUtils.APPLICATION_OCTET_STREAM;
+		}
 	}
 
 	/**

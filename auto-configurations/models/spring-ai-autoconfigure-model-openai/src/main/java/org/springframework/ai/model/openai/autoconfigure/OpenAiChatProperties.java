@@ -62,7 +62,7 @@ public class OpenAiChatProperties extends AbstractOpenAiProperties {
 
 	private @Nullable List<String> outputModalities;
 
-	private @Nullable AudioParameters outputAudio;
+	private final OutputAudio outputAudio = new OutputAudio();
 
 	private @Nullable Double presencePenalty;
 
@@ -172,12 +172,8 @@ public class OpenAiChatProperties extends AbstractOpenAiProperties {
 		this.outputModalities = outputModalities;
 	}
 
-	public @Nullable AudioParameters getOutputAudio() {
+	public OutputAudio getOutputAudio() {
 		return this.outputAudio;
-	}
-
-	public void setOutputAudio(@Nullable AudioParameters outputAudio) {
-		this.outputAudio = outputAudio;
 	}
 
 	public @Nullable Double getPresencePenalty() {
@@ -352,7 +348,7 @@ public class OpenAiChatProperties extends AbstractOpenAiProperties {
 			.maxCompletionTokens(this.maxCompletionTokens)
 			.n(this.n)
 			.outputModalities(this.outputModalities)
-			.outputAudio(this.outputAudio)
+			.outputAudio(this.outputAudio.toAudioParameters())
 			.presencePenalty(this.presencePenalty)
 			.responseFormat(this.responseFormat)
 			.streamOptions(this.streamOptions)
@@ -635,12 +631,8 @@ public class OpenAiChatProperties extends AbstractOpenAiProperties {
 
 		@DeprecatedConfigurationProperty(replacement = "spring.ai.openai.chat.output-audio")
 		@Deprecated(since = "2.0.0", forRemoval = true)
-		public @Nullable AudioParameters getOutputAudio() {
+		public OutputAudio getOutputAudio() {
 			return OpenAiChatProperties.this.getOutputAudio();
-		}
-
-		public void setOutputAudio(@Nullable AudioParameters outputAudio) {
-			OpenAiChatProperties.this.setOutputAudio(outputAudio);
 		}
 
 		@DeprecatedConfigurationProperty(replacement = "spring.ai.openai.chat.presence-penalty")
@@ -821,6 +813,50 @@ public class OpenAiChatProperties extends AbstractOpenAiProperties {
 
 		public void setExtraBody(@Nullable Map<String, Object> extraBody) {
 			OpenAiChatProperties.this.setExtraBody(extraBody);
+		}
+
+	}
+
+	/**
+	 * Parameters for audio output, required when {@code audio} is one of the output
+	 * modalities.
+	 *
+	 * @since 2.1.0
+	 */
+	public static class OutputAudio {
+
+		/**
+		 * The voice the model uses to respond, such as alloy. Sent as given, so the
+		 * voices of an OpenAI-compatible provider can be used.
+		 */
+		private @Nullable String voice;
+
+		/**
+		 * The output audio format, such as wav. Sent as given.
+		 */
+		private @Nullable String format;
+
+		public @Nullable String getVoice() {
+			return this.voice;
+		}
+
+		public void setVoice(@Nullable String voice) {
+			this.voice = voice;
+		}
+
+		public @Nullable String getFormat() {
+			return this.format;
+		}
+
+		public void setFormat(@Nullable String format) {
+			this.format = format;
+		}
+
+		@Nullable AudioParameters toAudioParameters() {
+			if (this.voice == null && this.format == null) {
+				return null;
+			}
+			return new AudioParameters(this.voice, this.format);
 		}
 
 	}
