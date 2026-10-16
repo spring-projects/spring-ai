@@ -144,7 +144,7 @@ public final class SessionTurnAdvisor implements CallAdvisor, StreamAdvisor {
 		Assert.notNull(request, "request must not be null");
 		Assert.notNull(chain, "chain must not be null");
 		String sessionId = SessionContexts.sessionId(request.context());
-		SessionContexts.findOrCreate(this.sessionService, sessionId, request.context());
+		this.sessionService.findOrCreate(SessionContexts.createRequest(sessionId, request.context()));
 		ChatClientResponse response = chain.nextCall(request);
 		complete(sessionId, response.chatResponse());
 		return response;
@@ -173,7 +173,7 @@ public final class SessionTurnAdvisor implements CallAdvisor, StreamAdvisor {
 				}).publishOn(this.scheduler).doOnComplete(context.wrap(() -> complete(sessionId, unanswered.get())));
 				return Flux.from(subscriber -> {
 					try (ContextSnapshot.Scope ignored = context.setThreadLocals()) {
-						SessionContexts.findOrCreate(this.sessionService, sessionId, r.context());
+						this.sessionService.findOrCreate(SessionContexts.createRequest(sessionId, r.context()));
 						rest.subscribe(subscriber);
 					}
 				});

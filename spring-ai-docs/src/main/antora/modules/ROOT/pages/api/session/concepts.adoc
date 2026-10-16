@@ -241,6 +241,10 @@ int removed = sessionService.deleteExpiredSessions(Instant.now());
 | Creates a session with the request's id, time to live and metadata.
 Throws `SessionAlreadyExistsException` for a taken id.
 
+| `findOrCreate(CreateSessionRequest)`
+| The session with the request's id, created from the request when there is none.
+Safe under concurrent first use: the stored session wins.
+
 | `findById(id)`
 | The session, or `null`.
 

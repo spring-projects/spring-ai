@@ -25,6 +25,7 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.session.compaction.CompactionResult;
 import org.springframework.ai.session.compaction.CompactionStrategy;
 import org.springframework.ai.session.compaction.CompactionTrigger;
+import org.springframework.util.Assert;
 
 /**
  * The sessions of an application and their conversations: creating and finding sessions,
@@ -44,6 +45,34 @@ public interface SessionService {
 	 * @throws SessionAlreadyExistsException if a session with the requested id exists
 	 */
 	Session create(CreateSessionRequest request);
+
+	/**
+	 * The session with the request's id, created from the request when there is none.
+	 * Safe under concurrent first use: when another caller creates it first, the stored
+	 * session is returned, not this request's. The default finds, creates, and on a
+	 * {@link SessionAlreadyExistsException} finds again, through this service's own
+	 * {@link #findById} and {@link #create}.
+	 * @throws IllegalArgumentException if the request has no id, null or blank
+	 */
+	default Session findOrCreate(CreateSessionRequest request) {
+		Assert.notNull(request, "request must not be null");
+		String sessionId = request.id();
+		Assert.hasText(sessionId, "request must have an id");
+		Session session = findById(sessionId);
+		if (session != null) {
+			return session;
+		}
+		try {
+			return create(request);
+		}
+		catch (SessionAlreadyExistsException ex) {
+			Session existing = findById(sessionId);
+			if (existing == null) {
+				throw ex;
+			}
+			return existing;
+		}
+	}
 
 	@Nullable Session findById(String sessionId);
 

@@ -22,14 +22,11 @@ import java.util.Map;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.session.CreateSessionRequest;
-import org.springframework.ai.session.Session;
-import org.springframework.ai.session.SessionAlreadyExistsException;
 import org.springframework.ai.session.SessionAttributes;
-import org.springframework.ai.session.SessionService;
 
 /**
  * What the session advisors read from the advisor context: the session id, and the
- * session to create on first use.
+ * request that creates the session on first use.
  *
  * @author Christian Tzolov
  * @since 2.1.0
@@ -54,31 +51,12 @@ final class SessionContexts {
 	}
 
 	/**
-	 * Returns the session, creating it on first use with the metadata from
-	 * {@link SessionMemoryAdvisor#SESSION_METADATA_CONTEXT_KEY}, such as the agent
-	 * attributes ({@link SessionAttributes#AGENT_NAME}). {@code SessionService.create}
-	 * inserts atomically, so if a concurrent request for the same new session id created
-	 * it first, this request's create is rejected and the <em>stored</em> session is
-	 * re-read instead.
+	 * The request the advisors pass to {@code SessionService.findOrCreate}: the id, and
+	 * the metadata from {@link SessionMemoryAdvisor#SESSION_METADATA_CONTEXT_KEY}, such
+	 * as the agent attributes ({@link SessionAttributes#AGENT_NAME}).
 	 */
-	static Session findOrCreate(SessionService sessionService, String sessionId,
-			Map<String, @Nullable Object> context) {
-		Session session = sessionService.findById(sessionId);
-		if (session != null) {
-			return session;
-		}
-		try {
-			return sessionService
-				.create(CreateSessionRequest.builder().id(sessionId).metadata(sessionMetadata(context)).build());
-		}
-		catch (SessionAlreadyExistsException ex) {
-			// A concurrent request created it first: use the stored session
-			Session existing = sessionService.findById(sessionId);
-			if (existing == null) {
-				throw ex;
-			}
-			return existing;
-		}
+	static CreateSessionRequest createRequest(String sessionId, Map<String, @Nullable Object> context) {
+		return CreateSessionRequest.builder().id(sessionId).metadata(sessionMetadata(context)).build();
 	}
 
 	private static Map<String, Object> sessionMetadata(Map<String, @Nullable Object> context) {

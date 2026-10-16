@@ -20,7 +20,7 @@ package org.springframework.ai.session;
  * Thrown by {@link SessionService#create} when a session with the requested id exists;
  * the existing session is left untouched. Two callers that create the same id
  * concurrently get one session and one of these, so the second can read what the first
- * created.
+ * created; {@link SessionService#findOrCreate} does.
  *
  * @author Christian Tzolov
  * @since 2.1.0

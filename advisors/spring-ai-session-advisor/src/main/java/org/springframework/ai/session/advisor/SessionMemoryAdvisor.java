@@ -169,7 +169,7 @@ public final class SessionMemoryAdvisor implements BaseAdvisor, MemoryAdvisor {
 		// session. Whether the caller may use it is not decided here: an authorizing
 		// SessionService (see the security module) checks every read and append.
 		String sessionId = SessionContexts.sessionId(request.context());
-		SessionContexts.findOrCreate(this.sessionService, sessionId, request.context());
+		this.sessionService.findOrCreate(SessionContexts.createRequest(sessionId, request.context()));
 
 		// 2. Read the history: always the active view, whatever the configured or
 		// per-request filter says; the events a compaction covered live on for search
