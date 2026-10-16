@@ -18,7 +18,6 @@ package org.springframework.ai.chat.client.advisor;
 
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
 import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
@@ -45,6 +44,7 @@ import org.springframework.util.CollectionUtils;
  * @author Ilayaperumal Gopinathan
  * @author Thomas Vitale
  * @author Dimitar Proynov
+ * @author Minju Kim
  * @since 1.0.0
  */
 public class SafeGuardAdvisor implements CallAdvisor, StreamAdvisor {
@@ -103,7 +103,7 @@ public class SafeGuardAdvisor implements CallAdvisor, StreamAdvisor {
 			.chatResponse(ChatResponse.builder()
 				.generations(List.of(new Generation(new AssistantMessage(this.failureResponse))))
 				.build())
-			.context(Map.copyOf(chatClientRequest.context()))
+			.context(chatClientRequest.context())
 			.build();
 	}
 
