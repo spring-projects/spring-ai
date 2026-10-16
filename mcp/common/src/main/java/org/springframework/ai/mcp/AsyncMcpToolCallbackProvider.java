@@ -18,6 +18,7 @@ package org.springframework.ai.mcp;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -52,7 +53,9 @@ public class AsyncMcpToolCallbackProvider implements ToolCallbackProvider, Appli
 
 	private final ToolContextToMcpMetaConverter toolContextToMcpMetaConverter;
 
-	private volatile boolean invalidateCache = true;
+	private final AtomicLong cacheInvalidationGeneration = new AtomicLong();
+
+	private volatile long appliedInvalidationGeneration = -1;
 
 	private volatile List<ToolCallback> cachedToolCallbacks = List.of();
 
@@ -132,10 +135,12 @@ public class AsyncMcpToolCallbackProvider implements ToolCallbackProvider, Appli
 	@Override
 	public ToolCallback[] getToolCallbacks() {
 
-		if (this.invalidateCache) {
+		long currentGeneration = this.cacheInvalidationGeneration.get();
+		if (this.appliedInvalidationGeneration != currentGeneration) {
 			this.lock.lock();
 			try {
-				if (this.invalidateCache) {
+				currentGeneration = this.cacheInvalidationGeneration.get();
+				if (this.appliedInvalidationGeneration != currentGeneration) {
 					List<ToolCallback> toolCallbackList = new ArrayList<>();
 
 					for (McpAsyncClient mcpClient : this.mcpClients) {
@@ -161,7 +166,7 @@ public class AsyncMcpToolCallbackProvider implements ToolCallbackProvider, Appli
 
 					this.validateToolCallbacks(this.cachedToolCallbacks);
 
-					this.invalidateCache = false;
+					this.appliedInvalidationGeneration = currentGeneration;
 				}
 			}
 			finally {
@@ -176,7 +181,7 @@ public class AsyncMcpToolCallbackProvider implements ToolCallbackProvider, Appli
 	 * Invalidates the cached tool callbacks, forcing re-discovery on next request.
 	 */
 	public void invalidateCache() {
-		this.invalidateCache = true;
+		this.cacheInvalidationGeneration.incrementAndGet();
 	}
 
 	@Override
