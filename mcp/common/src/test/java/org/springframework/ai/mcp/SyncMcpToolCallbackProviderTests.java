@@ -21,12 +21,14 @@ import java.util.List;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.spec.McpSchema.ClientCapabilities;
 import io.modelcontextprotocol.spec.McpSchema.Implementation;
+import io.modelcontextprotocol.spec.McpSchema.JsonSchema;
 import io.modelcontextprotocol.spec.McpSchema.ListToolsResult;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.stubbing.Answer;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -153,6 +155,37 @@ class SyncMcpToolCallbackProviderTests {
 		var callbacks = provider.getToolCallbacks();
 
 		assertThat(callbacks).hasSize(2);
+	}
+
+	@Test
+	void sameNameToolsKeepTheirNamesAfterCacheInvalidation() {
+		// Like a real MCP client, every discovery returns new but equal Tool instances
+		Answer<ListToolsResult> listTools = invocation -> {
+			Tool tool = Tool.builder()
+				.name("search")
+				.inputSchema(new JsonSchema("object", null, null, null, null, null))
+				.build();
+			return new ListToolsResult(List.of(tool), null);
+		};
+		McpSyncClient mcpClient1 = mock(McpSyncClient.class);
+		when(mcpClient1.listTools()).thenAnswer(listTools);
+		when(mcpClient1.getClientInfo()).thenReturn(Implementation.builder("FirstClient", "1.0.0").build());
+		when(mcpClient1.getClientCapabilities()).thenReturn(new ClientCapabilities(null, null, null, null));
+		McpSyncClient mcpClient2 = mock(McpSyncClient.class);
+		when(mcpClient2.listTools()).thenAnswer(listTools);
+		when(mcpClient2.getClientInfo()).thenReturn(Implementation.builder("SecondClient", "1.0.0").build());
+		when(mcpClient2.getClientCapabilities()).thenReturn(new ClientCapabilities(null, null, null, null));
+		SyncMcpToolCallbackProvider provider = SyncMcpToolCallbackProvider.builder()
+			.mcpClients(mcpClient1, mcpClient2)
+			.build();
+
+		assertThat(provider.getToolCallbacks()).extracting(callback -> callback.getToolDefinition().name())
+			.containsExactly("search", "alt_1_search");
+
+		provider.invalidateCache();
+
+		assertThat(provider.getToolCallbacks()).extracting(callback -> callback.getToolDefinition().name())
+			.containsExactly("search", "alt_1_search");
 	}
 
 	@Test

@@ -16,6 +16,7 @@
 
 package org.springframework.ai.mcp;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -38,8 +39,10 @@ import org.jspecify.annotations.Nullable;
  *
  * <p>
  * For each unique combination of (client, server, tool), e.g. each connection, the tool
- * name is generated only once. If a tool name has already been used, a prefix with a
- * counter is added to make it unique (e.g., "alt_1_toolName", "alt_2_toolName", etc.).
+ * name is generated only once and the same name is returned on every subsequent call, for
+ * example when the tool callbacks are re-discovered. If a tool name has already been
+ * used, a prefix with a counter is added to make it unique (e.g., "alt_1_toolName",
+ * "alt_2_toolName", etc.).
  *
  * <p>
  * This implementation is thread-safe.
@@ -50,9 +53,10 @@ public class DefaultMcpToolNamePrefixGenerator implements McpToolNamePrefixGener
 
 	private static final Log logger = LogFactory.getLog(DefaultMcpToolNamePrefixGenerator.class);
 
-	// Idempotency tracking. For a given combination of (client, server, tool) we will
-	// generate a unique tool name only once.
-	private final Set<ConnectionId> existingConnections = ConcurrentHashMap.newKeySet();
+	// Idempotency tracking. For a given combination of (client, server, tool) we
+	// generate a unique tool name only once and return that same name on every
+	// subsequent call, for example when the tool callbacks are re-discovered.
+	private final Map<ConnectionId, String> existingConnections = new ConcurrentHashMap<>();
 
 	private final Set<String> allUsedToolNames = ConcurrentHashMap.newKeySet();
 
@@ -60,22 +64,23 @@ public class DefaultMcpToolNamePrefixGenerator implements McpToolNamePrefixGener
 
 	@Override
 	public String prefixedToolName(McpConnectionInfo mcpConnectionInfo, McpSchema.Tool tool) {
+		ConnectionId connectionId = new ConnectionId(mcpConnectionInfo.clientInfo(),
+				(mcpConnectionInfo.initializeResult() != null) ? mcpConnectionInfo.initializeResult().serverInfo()
+						: null,
+				tool);
+		return this.existingConnections.computeIfAbsent(connectionId, id -> uniqueToolName(tool));
+	}
 
+	private String uniqueToolName(McpSchema.Tool tool) {
 		String uniqueToolName = McpToolUtils.format(tool.name());
-
-		if (this.existingConnections
-			.add(new ConnectionId(mcpConnectionInfo.clientInfo(), (mcpConnectionInfo.initializeResult() != null)
-					? mcpConnectionInfo.initializeResult().serverInfo() : null, tool))) {
-			if (!this.allUsedToolNames.add(uniqueToolName)) {
-				uniqueToolName = "alt_" + this.counter.getAndIncrement() + "_" + uniqueToolName;
-				this.allUsedToolNames.add(uniqueToolName);
-				if (logger.isWarnEnabled()) {
-					logger.warn("Tool name '" + tool.name() + "' already exists. Using unique tool name '"
-							+ uniqueToolName + "'");
-				}
+		if (!this.allUsedToolNames.add(uniqueToolName)) {
+			uniqueToolName = "alt_" + this.counter.getAndIncrement() + "_" + uniqueToolName;
+			this.allUsedToolNames.add(uniqueToolName);
+			if (logger.isWarnEnabled()) {
+				logger.warn("Tool name '" + tool.name() + "' already exists. Using unique tool name '" + uniqueToolName
+						+ "'");
 			}
 		}
-
 		return uniqueToolName;
 	}
 
