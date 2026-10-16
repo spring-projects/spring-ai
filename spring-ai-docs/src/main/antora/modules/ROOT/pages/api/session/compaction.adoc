@@ -178,14 +178,15 @@ A `CompactionSummarizer` condenses the covered turns into a summary turn that st
 It is a functional interface that receives a `SummaryRequest`, the session, the prior summary to build on, the covered events and the preserved ones for continuity, and returns the messages of the summary turn.
 A summarizer that returns no messages declines: the view stays as it is and nothing is written, so a failed model call never loses history.
 
-`ChatClientSummarizer`, in the advisor module, asks a `ChatClient` for a rolling summary.
+`ChatModelSummarizer` asks a `ChatModel` for a rolling summary, with `ChatOptions` of its own if a smaller model should do it.
 The prior summary is fed back as context, so each summary builds on its predecessors, and the first `overlapSize` preserved events are quoted for continuity; stored system messages are never included.
 
 [source,java]
 ----
 CompactionStrategy strategy = WindowCompactionStrategy.builder()
     .lastTurns(10)
-    .summarizer(ChatClientSummarizer.builder(summarizingChatClient)
+    .summarizer(ChatModelSummarizer.builder(chatModel)
+        .chatOptions(ChatOptions.builder().model("small-model").build())  // optional: the summarizing call's options
         .overlapSize(2)                             // preserved events quoted for continuity; 2 by default
         .systemPrompt("...")                        // optional: the summarizing call's system prompt
         .shadowPrompt("Fasse unser Gespräch zusammen.")  // optional: the user message that opens the summary turn
@@ -195,7 +196,7 @@ CompactionStrategy strategy = WindowCompactionStrategy.builder()
     .build();
 ----
 
-WARNING: Give the summarizer a plain `ChatClient`, not one with the session advisors among its default advisors: the summarizing call carries no session id, so the memory advisor would reject it.
+The summarizing call goes to the `ChatModel` directly: no advisor sees it, and it is never stored as conversation.
 
 A failed model call or a null or blank reply is logged at `WARN`, the failure callback is called, and the view is unchanged.
 An exception from the model call propagates out of `SessionService.compact`; the `SessionTurnAdvisor` catches and logs it, so the user's call still succeeds.

@@ -10,7 +10,7 @@ It creates the session on first use, stores the results of a tool loop that ende
 
 The memory advisor runs inside the tool-calling loop, once per round; the turn advisor runs outside it, so it sees the call's final response however the loop ended.
 The memory advisor works on its own; the turn advisor is needed for compaction.
-Both live in `spring-ai-session-advisor`, with the `ChatClientSummarizer`; the core module has no dependency on `ChatClient`.
+Both live in `spring-ai-session-advisor`; the core module has no dependency on `ChatClient`.
 
 image::session/spring-ai-session-advisors.png[The session advisors around the tool-calling loop, width=900, align="center"]
 

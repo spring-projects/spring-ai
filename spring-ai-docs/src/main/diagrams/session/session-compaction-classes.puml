@@ -30,8 +30,8 @@ class CompactionWindow <<record>> {
 interface CompactionSummarizer <<functional>> {
   +summarize(request): List<Message>
 }
-class ChatClientSummarizer {
-  +builder(chatClient)
+class ChatModelSummarizer {
+  +builder(chatModel)
 }
 class SummaryRequest <<record>> {
   session
@@ -71,7 +71,7 @@ CompactionTrigger <|.. CompositeCompactionTrigger
 CompactionStrategy <|.. WindowCompactionStrategy
 WindowCompactionStrategy --> CompactionWindow
 WindowCompactionStrategy --> "0..1" CompactionSummarizer
-CompactionSummarizer <|.. ChatClientSummarizer
+CompactionSummarizer <|.. ChatModelSummarizer
 CompactionSummarizer ..> SummaryRequest
 CompactionTrigger ..> CompactionRequest
 CompactionStrategy ..> CompactionRequest

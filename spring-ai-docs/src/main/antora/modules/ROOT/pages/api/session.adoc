@@ -21,12 +21,12 @@ A compaction never changes the log: it appends a boundary that defines the view 
 
 | Session
 | `spring-ai-session`
-| The core: `Session`, `SessionEvent`, `SessionService`, `SessionRepository` with `InMemorySessionRepository`, `EventFilter` and compaction.
+| The core: `Session`, `SessionEvent`, `SessionService`, `SessionRepository` with `InMemorySessionRepository`, `EventFilter` and compaction, the `ChatModelSummarizer` included.
 No dependency on `ChatClient`.
 
 | Session Advisor
 | `spring-ai-session-advisor`
-| The `ChatClient` integration: `SessionMemoryAdvisor`, `SessionTurnAdvisor`, `SessionAdvisors` and the `ChatClientSummarizer`.
+| The `ChatClient` integration: `SessionMemoryAdvisor`, `SessionTurnAdvisor` and `SessionAdvisors`.
 
 | JDBC Session
 | `spring-ai-session-jdbc`

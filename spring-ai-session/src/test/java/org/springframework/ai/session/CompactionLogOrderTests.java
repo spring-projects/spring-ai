@@ -19,20 +19,22 @@ package org.springframework.ai.session;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
-import org.mockito.Answers;
 
-import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.session.compaction.ChatClientSummarizer;
+import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.session.compaction.ChatModelSummarizer;
 import org.springframework.ai.session.compaction.CompactionBoundary;
 import org.springframework.ai.session.compaction.WindowCompactionStrategy;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
@@ -53,12 +55,11 @@ class CompactionLogOrderTests {
 
 	@Test
 	void repeatedSummarizationOnlyAppendsAndNewestBoundaryWins() {
-		ChatClient chatClient = mock(ChatClient.class, Answers.RETURNS_DEEP_STUBS);
-		given(chatClient.prompt().system(anyString()).user(anyString()).call().content()).willReturn("summary 1",
-				"summary 2", "summary 3");
+		ChatModel chatModel = mock(ChatModel.class);
+		given(chatModel.call(any(Prompt.class))).willReturn(reply("summary 1"), reply("summary 2"), reply("summary 3"));
 		WindowCompactionStrategy strategy = WindowCompactionStrategy.builder()
 			.lastEvents(4)
-			.summarizer(ChatClientSummarizer.builder(chatClient).build())
+			.summarizer(ChatModelSummarizer.builder(chatModel).build())
 			.build();
 		String id = this.service
 			.create(CreateSessionRequest.builder().metadata(SessionAttributes.PRINCIPAL_NAME, "user-order").build())
@@ -107,7 +108,7 @@ class CompactionLogOrderTests {
 		// Pass 4: the pinned system message, now first in view order, is still the one
 		// kept
 		append(id, user("u10"), assistant("a10"), user("u11"), assistant("a11"), user("u12"), assistant("a12"));
-		given(chatClient.prompt().system(anyString()).user(anyString()).call().content()).willReturn("summary 4");
+		given(chatModel.call(any(Prompt.class))).willReturn(reply("summary 4"));
 		this.service.compact(id, request -> true, strategy);
 		assertThat(labels(this.service.getEvents(id, EventFilter.active()))).startsWith("sys-3", "Σ?", "Σ:summary 4");
 		assertThat(labels(this.service.getEvents(id, EventFilter.active()))).doesNotContain("sys-2", "sys-1");
@@ -160,6 +161,10 @@ class CompactionLogOrderTests {
 
 	private static Message system(String text) {
 		return new SystemMessage(text);
+	}
+
+	private static ChatResponse reply(String text) {
+		return new ChatResponse(List.of(new Generation(new AssistantMessage(text))));
 	}
 
 }
