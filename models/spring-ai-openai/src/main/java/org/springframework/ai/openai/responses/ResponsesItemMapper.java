@@ -134,7 +134,7 @@ import org.springframework.util.StringUtils;
  *
  * @author Dimitar Proynov
  * @author Raviteja Daggupati
- * @author chuuminggg
+ * @author Minju Kim
  * @since 2.1.0
  */
 final class ResponsesItemMapper {

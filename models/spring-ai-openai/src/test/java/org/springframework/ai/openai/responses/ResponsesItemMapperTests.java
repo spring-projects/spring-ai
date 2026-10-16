@@ -53,7 +53,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * @author Dimitar Proynov
- * @author chuuminggg
+ * @author Minju Kim
  */
 class ResponsesItemMapperTests {
 
