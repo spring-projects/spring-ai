@@ -162,9 +162,11 @@ public class RedisVectorStoreUpsertIT extends AbstractVectorStoreUpsertTests {
 				.builder(RedisClient.builder()
 					.hostAndPort(redisContainer.getHost(), redisContainer.getFirstMappedPort())
 					.build(), embeddingModel)
-				// Redis returns only the fields declared here, so both the suite's "tag"
-				// and the content_ref pointer have to be declared to survive a read.
-				.metadataFields(MetadataField.tag("tag"), MetadataField.tag(DocumentMetadata.CONTENT_REF.value()))
+				// Redis returns only the fields declared here, so the suite's "tag" and
+				// "removed" and the content_ref pointer have to be declared to survive a
+				// read.
+				.metadataFields(MetadataField.tag("tag"), MetadataField.tag("removed"),
+						MetadataField.tag(DocumentMetadata.CONTENT_REF.value()))
 				.initializeSchema(true)
 				.build();
 		}
