@@ -42,6 +42,22 @@ public interface ChatGenerationMetadata extends ResultMetadata {
 	 */
 	@Nullable String getFinishReason();
 
+	/**
+	 * Return the normalized category of {@link #getFinishReason()}.
+	 * <p>
+	 * The default implementation classifies only that raw string. It does not alter
+	 * {@link #getFinishReason()}, so a {@code null} reason stays {@code null} and is
+	 * reported as {@link FinishReasonCategory#UNKNOWN}. An unrecognized non-blank reason
+	 * is {@link FinishReasonCategory#OTHER}. Tool calls that a provider exposes
+	 * separately from the finish reason are not inferred.
+	 * @return the categorized finish reason, never {@code null}
+	 * @since 2.1.0
+	 * @see FinishReasonCategory#categorize(String)
+	 */
+	default FinishReasonCategory getFinishReasonCategory() {
+		return FinishReasonCategory.categorize(getFinishReason());
+	}
+
 	Set<String> getContentFilters();
 
 	<T> @Nullable T get(String key);
