@@ -38,7 +38,7 @@ import static org.mockito.Mockito.when;
 /**
  * Tests for how {@link ElevenLabsTextToSpeechModel} merges runtime and default options.
  *
- * @author chuuminggg
+ * @author Minju Kim
  */
 class ElevenLabsTextToSpeechModelOptionsTests {
 

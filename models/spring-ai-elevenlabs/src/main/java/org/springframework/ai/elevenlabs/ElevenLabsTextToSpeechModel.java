@@ -50,7 +50,7 @@ import org.springframework.util.MultiValueMap;
  *
  * @author Alexandros Pappas
  * @author Sebastien Deleuze
- * @author chuuminggg
+ * @author Minju Kim
  */
 public class ElevenLabsTextToSpeechModel implements TextToSpeechModel {
 
