@@ -135,7 +135,8 @@ public abstract class AbstractVectorStoreUpsertTests {
 		executeTest(vectorStore -> {
 			String id = UUID.randomUUID().toString();
 
-			vectorStore.upsert(List.of(embeddedDocument(id, "first version", Map.of("tag", "v1"))));
+			vectorStore.upsert(List.of(embeddedDocument(id, "first version", Map.of("tag", "v1", "removed", "old"))));
+			// The second version leaves out a key, which a replacement must drop.
 			vectorStore.upsert(List.of(embeddedDocument(id, "second version", Map.of("tag", "v2"))));
 
 			await().atMost(5, TimeUnit.SECONDS).pollInterval(Duration.ofMillis(500)).untilAsserted(() -> {
@@ -144,6 +145,7 @@ public abstract class AbstractVectorStoreUpsertTests {
 				assertThat(results.get(0).getId()).isEqualTo(id);
 				assertThat(results.get(0).getText()).isEqualTo("second version");
 				assertThat(normalizeValue(results.get(0).getMetadata().get("tag"))).isEqualTo("v2");
+				assertThat(results.get(0).getMetadata()).doesNotContainKey("removed");
 			});
 		});
 	}
