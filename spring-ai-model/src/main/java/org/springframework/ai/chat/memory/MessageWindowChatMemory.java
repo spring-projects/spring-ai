@@ -90,7 +90,10 @@ public final class MessageWindowChatMemory implements ChatMemory {
 			.filter(message -> !(hasNewSystemMessage && message instanceof SystemMessage))
 			.forEach(processedMessages::add);
 
-		processedMessages.addAll(newMessages);
+		newMessages.stream()
+			.filter(message -> hasNewSystemMessage || !(message instanceof SystemMessage)
+					|| !memoryMessagesSet.contains(message))
+			.forEach(processedMessages::add);
 
 		if (processedMessages.size() <= this.maxMessages) {
 			return processedMessages;
