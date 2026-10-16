@@ -408,7 +408,8 @@ public final class JdbcSessionRepository implements SessionRepository {
 		if (!boundaries.isEmpty()) {
 			Map<String, @Nullable Object> boundary = boundaries.get(0);
 			long boundarySeq = ((Number) Objects.requireNonNull(boundary.get("seq"))).longValue();
-			Map<String, Object> payload = this.codec.fromJsonMap((String) boundary.get("payload"));
+			Map<String, Object> payload = this.codec
+				.fromJsonMap(Objects.requireNonNull((String) boundary.get("payload"), "payload"));
 			List<String> named = new ArrayList<>();
 			for (String key : List.of(CompactionBoundary.PAYLOAD_PINNED, CompactionBoundary.PAYLOAD_SUMMARY,
 					CompactionBoundary.PAYLOAD_PRESERVED)) {

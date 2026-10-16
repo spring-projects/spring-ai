@@ -83,7 +83,8 @@ JdbcSessionRepository.builder()
 == Design notes
 
 *Event serialization.*
-An event is stored in four columns: `event_type`, `message_type` (the `MessageType` of an event that carries a message, else `NULL`), `message_content` (the plain text of that message, its own column so a store can search it) and `payload` (JSON).
+An event is stored in four columns: `event_type`, `message_type` (the `MessageType` of an event that carries a message, else `NULL`), `message_content` (the plain text of that message, its own column so a store can search it) and `payload` (JSON, never `NULL`).
+The `metadata` columns of a session and of an event are JSON and never `NULL` either; a table created from an earlier script, where they were nullable, needs the constraint added.
 For an event with a message the payload holds the message's ordered Spring AI `MessagePart`s and its metadata, serialized with the parts' own polymorphic JSON, so media, tool calls, tool results and provider-signed reasoning all survive a round trip.
 For any other event type it holds `SessionEvent.getPayload()`.
 `SessionEventCodec` defines this shape, so a store of your own can keep the same thing.

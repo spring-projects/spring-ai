@@ -2,7 +2,7 @@ CREATE TABLE IF NOT EXISTS AI_SESSION (
     id            VARCHAR(255)  NOT NULL PRIMARY KEY,
     created_at    TIMESTAMP     NOT NULL,
     expires_at    TIMESTAMP,
-    metadata      TEXT,
+    metadata      TEXT          NOT NULL,
     event_version BIGINT        NOT NULL DEFAULT 0
 );
 
@@ -34,9 +34,9 @@ CREATE TABLE IF NOT EXISTS AI_SESSION_EVENT (
     message_type    VARCHAR(20),
     message_content TEXT,
     -- Message parts and metadata, or the payload of an event that is not a message
-    payload         TEXT,
+    payload         TEXT          NOT NULL,
     synthetic       BOOLEAN       NOT NULL DEFAULT FALSE,
-    metadata        TEXT,
+    metadata        TEXT          NOT NULL,
     CONSTRAINT fk_ai_session_event_session
         FOREIGN KEY (session_id) REFERENCES AI_SESSION (id) ON DELETE CASCADE
 );

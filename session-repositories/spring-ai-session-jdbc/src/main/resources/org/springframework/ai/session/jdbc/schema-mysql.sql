@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS AI_SESSION (
     id            VARCHAR(255)  COLLATE utf8mb4_bin NOT NULL PRIMARY KEY,
     created_at    DATETIME(6)   NOT NULL,
     expires_at    DATETIME(6),
-    metadata      LONGTEXT,
+    metadata      LONGTEXT      NOT NULL,
     event_version BIGINT        NOT NULL DEFAULT 0,
     INDEX idx_ai_session_expires_at (expires_at)
 );
@@ -34,9 +34,9 @@ CREATE TABLE IF NOT EXISTS AI_SESSION_EVENT (
     message_type    VARCHAR(20),
     message_content LONGTEXT,
     -- Message parts and metadata, or the payload of an event that is not a message
-    payload         LONGTEXT,
+    payload         LONGTEXT      NOT NULL,
     synthetic       TINYINT(1)    NOT NULL DEFAULT 0,
-    metadata        LONGTEXT,
+    metadata        LONGTEXT      NOT NULL,
     UNIQUE KEY uq_ai_session_event_seq (seq),
     INDEX idx_ai_session_event_session_seq (session_id, seq),
     -- The newest compaction boundary of a session, on every read of the active view

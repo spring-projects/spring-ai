@@ -40,6 +40,7 @@ import org.springframework.ai.session.support.SessionEventCodec.EncodedEvent;
 import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
 /**
  * Round-trip tests for {@link SessionEventCodec}: every message part type, message
@@ -181,6 +182,18 @@ class SessionEventCodecTests {
 		assertThat(decoded.getType()).isEqualTo(EventType.of("USAGE"));
 		assertThat(decoded.hasMessage()).isFalse();
 		assertThat(decoded.getPayload()).containsEntry("promptTokens", 12).containsEntry("model", "claude-opus-5-5");
+	}
+
+	@Test
+	void jsonHelpersRejectNullAndForgiveBlankOrDamagedText() {
+		assertThat(this.codec.toJson(Map.of())).isEqualTo("{}");
+		assertThat(this.codec.toJson(Map.of("k", 1))).isEqualTo("{\"k\":1}");
+		assertThatIllegalArgumentException().isThrownBy(() -> this.codec.toJson(null));
+
+		assertThat(this.codec.fromJsonMap("{\"k\":1}")).containsEntry("k", 1);
+		assertThat(this.codec.fromJsonMap("")).isEmpty();
+		assertThat(this.codec.fromJsonMap("{not json")).isEmpty();
+		assertThatIllegalArgumentException().isThrownBy(() -> this.codec.fromJsonMap(null));
 	}
 
 }
