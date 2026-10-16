@@ -56,10 +56,13 @@ import org.springframework.core.Ordered;
 import org.springframework.util.Assert;
 
 /**
- * Runs each {@code ChatClient} call as one turn of the session: the counterpart of the
- * {@link SessionMemoryAdvisor}, which works on each model call. It sits outside the
+ * Runs each {@code ChatClient} call as one turn of the session. A turn is one user
+ * message and everything up to the next: the tool rounds and the reply, the unit the chat
+ * memory's turn-boundary eviction works with too. The advisor sits outside the
  * tool-calling loop (order {@link #DEFAULT_ORDER}), so it sees the request before the
- * first round and the turn's final response after the last one, however the loop ended.
+ * first round and the turn's final response after the last one, however the loop ended;
+ * what happens once per turn is its, what happens once per model round is the
+ * {@link SessionMemoryAdvisor}'s, inside the loop.
  * <ol>
  * <li>Finds the session or creates it on first use, with the metadata from
  * {@link SessionMemoryAdvisor#SESSION_METADATA_CONTEXT_KEY}, such as the agent
@@ -74,6 +77,9 @@ import org.springframework.util.Assert;
  * concurrent compactions only the first lands; a compaction that a new turn's writes
  * overtake keeps them in the view and lands with the same summary.</li>
  * </ol>
+ * On its own the advisor stores no conversation: it needs the memory advisor, and
+ * {@link SessionAdvisors} builds the two together at their orders. The memory advisor
+ * alone keeps the history, without compaction.
  *
  * @author Christian Tzolov
  * @since 2.1.0

@@ -162,6 +162,7 @@ See xref:api/session/system-messages.adoc[System Messages]
 == Turn
 
 A turn is the atomic unit of a conversation: one user message plus everything up to the next user message, that is, the assistant replies, the tool calls and the tool results.
+It is the unit xref:api/chat-memory.adoc[chat memory] evicts by too, and what one `ChatClient` call with its tool rounds amounts to; one model call within it is a round.
 
 ----
 Turn 1: [USER "What is Spring AI?"]  [ASSISTANT "Spring AI is..."]
