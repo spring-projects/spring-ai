@@ -27,6 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author Christian Tzolov
  */
+@SuppressWarnings("removal")
 class MemoryAdvisorTests {
 
 	@Test

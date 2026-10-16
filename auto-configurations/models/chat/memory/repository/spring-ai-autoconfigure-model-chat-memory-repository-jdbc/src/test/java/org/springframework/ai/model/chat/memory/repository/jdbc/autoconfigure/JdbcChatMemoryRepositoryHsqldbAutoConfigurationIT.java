@@ -53,6 +53,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @ImportAutoConfiguration({ org.springframework.ai.model.chat.memory.autoconfigure.ChatMemoryAutoConfiguration.class,
 		JdbcChatMemoryRepositoryAutoConfiguration.class, JdbcTemplateAutoConfiguration.class,
 		DataSourceAutoConfiguration.class })
+@SuppressWarnings("removal")
 public class JdbcChatMemoryRepositoryHsqldbAutoConfigurationIT {
 
 	@Autowired

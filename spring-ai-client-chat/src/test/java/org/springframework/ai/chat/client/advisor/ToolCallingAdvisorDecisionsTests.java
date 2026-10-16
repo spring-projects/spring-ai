@@ -67,6 +67,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author Christian Tzolov
  */
+@SuppressWarnings("removal")
 class ToolCallingAdvisorDecisionsTests {
 
 	private final ScriptedModel model = new ScriptedModel();

@@ -69,6 +69,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author Christian Tzolov
  */
+@SuppressWarnings("removal")
 public abstract class AbstractToolSearchToolCallingAdvisorIT {
 
 	protected abstract ChatModel getChatModel();

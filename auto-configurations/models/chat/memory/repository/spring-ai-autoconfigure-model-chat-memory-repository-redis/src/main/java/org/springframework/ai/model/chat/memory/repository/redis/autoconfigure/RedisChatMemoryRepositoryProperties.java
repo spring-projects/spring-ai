@@ -31,7 +31,13 @@ import org.springframework.ai.chat.memory.repository.redis.RedisChatMemoryConfig
  * @author Brian Sam-Bodden
  * @author guan xu
  * @since 2.0.1
+ * @deprecated since 2.1.0, for removal in 3.0.0, in favor of the session memory
+ * auto-configuration, {@code SessionServiceAutoConfiguration} in
+ * {@code spring-ai-autoconfigure-model-session}. There is no session store for Redis yet;
+ * one is planned before 3.0.0, when this module is removed.
  */
+@Deprecated(since = "2.1.0", forRemoval = true)
+@SuppressWarnings("removal")
 public class RedisChatMemoryRepositoryProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.chat.memory.repository.redis";

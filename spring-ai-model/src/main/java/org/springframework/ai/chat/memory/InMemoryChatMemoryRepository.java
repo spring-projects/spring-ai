@@ -29,7 +29,11 @@ import org.springframework.util.Assert;
  *
  * @author Thomas Vitale
  * @since 1.0.0
+ * @deprecated since 2.1.0, for removal in 3.0.0, in favor of
+ * {@code org.springframework.ai.session.SessionRepository} in {@code spring-ai-session}
  */
+@Deprecated(since = "2.1.0", forRemoval = true)
+@SuppressWarnings("removal")
 public final class InMemoryChatMemoryRepository implements ChatMemoryRepository {
 
 	Map<String, List<Message>> chatMemoryStore = new ConcurrentHashMap<>();

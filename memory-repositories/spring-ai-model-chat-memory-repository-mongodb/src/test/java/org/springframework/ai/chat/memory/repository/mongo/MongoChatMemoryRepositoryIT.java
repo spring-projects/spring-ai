@@ -55,6 +55,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @Testcontainers
 @SpringBootTest(classes = MongoChatMemoryRepositoryIT.TestConfiguration.class)
+@SuppressWarnings("removal")
 public class MongoChatMemoryRepositoryIT {
 
 	@Autowired

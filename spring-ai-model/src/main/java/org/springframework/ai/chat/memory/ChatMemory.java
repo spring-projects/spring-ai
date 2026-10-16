@@ -27,7 +27,11 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  * @author Thomas Vitale
  * @since 1.0.0
+ * @deprecated since 2.1.0, for removal in 3.0.0, in favor of session memory,
+ * {@code org.springframework.ai.session.SessionService} in {@code spring-ai-session}; the
+ * context key is {@code MemoryAdvisor.CONVERSATION_ID} in {@code spring-ai-client-chat}
  */
+@Deprecated(since = "2.1.0", forRemoval = true)
 public interface ChatMemory {
 
 	/**

@@ -26,6 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Enrico Rampazzo
  * @since 1.0.0
  */
+@SuppressWarnings("removal")
 class Neo4JChatMemoryRepositoryPropertiesTest {
 
 	@Test
