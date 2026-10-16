@@ -289,6 +289,50 @@ public class OracleVectorStoreIT extends BaseVectorStoreTests {
 			});
 	}
 
+	@Test
+	void shouldPreserveMetadataWhenRetrievedDocumentIsAddedAgain() {
+		this.contextRunner
+			.withPropertyValues("test.spring.ai.vectorstore.oracle.distanceType=COSINE",
+					"test.spring.ai.vectorstore.oracle.searchAccuracy=" + OracleVectorStore.DEFAULT_SEARCH_ACCURACY)
+			.run(context -> {
+				VectorStore vectorStore = context.getBean(VectorStore.class);
+
+				Document original = new Document(UUID.randomUUID().toString(), "Spring AI Oracle metadata round trip",
+						Map.of("conversationId", "conversation-123", "turn", 3, "confidence", 0.75));
+
+				vectorStore.add(List.of(original));
+
+				SearchRequest searchRequest = SearchRequest.builder()
+					.query("Spring AI Oracle metadata round trip")
+					.topK(1)
+					.similarityThresholdAll()
+					.build();
+
+				List<Document> firstResults = vectorStore.similaritySearch(searchRequest);
+
+				assertThat(firstResults).hasSize(1);
+
+				Document retrieved = firstResults.get(0);
+
+				assertThat(retrieved.getId()).isEqualTo(original.getId());
+				assertThat(retrieved.getMetadata()).containsEntry("conversationId", "conversation-123")
+					.containsEntry("turn", 3)
+					.containsEntry("confidence", 0.75);
+
+				// Re-add the document returned by OracleVectorStore.
+				vectorStore.add(List.of(retrieved));
+
+				List<Document> secondResults = vectorStore.similaritySearch(searchRequest);
+
+				assertThat(secondResults).hasSize(1);
+				assertThat(secondResults.get(0).getMetadata()).containsEntry("conversationId", "conversation-123")
+					.containsEntry("turn", 3)
+					.containsEntry("confidence", 0.75);
+
+				dropTable(context, ((OracleVectorStore) vectorStore).getTableName());
+			});
+	}
+
 	@ParameterizedTest(name = "{0} : {displayName} ")
 	@ValueSource(strings = { "COSINE", "DOT" })
 	public void searchWithThreshold(String distanceType) {
@@ -355,12 +399,10 @@ public class OracleVectorStoreIT extends BaseVectorStoreTests {
 						SearchRequest.builder().query("Content").topK(5).similarityThresholdAll().build());
 
 				assertThat(results).hasSize(2);
-				assertThat(results.stream()
-					.map(doc -> doc.getMetadata().get("type").toString().replace("\"", ""))
-					.collect(Collectors.toList())).containsExactlyInAnyOrder("A", "B");
-				assertThat(results.stream()
-					.map(doc -> Integer.parseInt(doc.getMetadata().get("priority").toString()))
-					.collect(Collectors.toList())).containsExactlyInAnyOrder(1, 1);
+				assertThat(results.stream().map(doc -> doc.getMetadata().get("type")).collect(Collectors.toList()))
+					.containsExactlyInAnyOrder("A", "B");
+				assertThat(results.stream().map(doc -> doc.getMetadata().get("priority")).collect(Collectors.toList()))
+					.containsExactlyInAnyOrder(1, 1);
 
 				dropTable(context, ((OracleVectorStore) vectorStore).getTableName());
 			});
