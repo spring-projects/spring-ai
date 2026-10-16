@@ -30,10 +30,13 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.ErrorCause;
 import org.opensearch.client.opensearch._types.ShardStatistics;
 import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.BulkResponse;
 import org.opensearch.client.opensearch.core.SearchResponse;
+import org.opensearch.client.opensearch.core.bulk.BulkResponseItem;
+import org.opensearch.client.opensearch.core.bulk.OperationType;
 import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.core.search.HitsMetadata;
 import org.opensearch.client.opensearch.core.search.TotalHits;
@@ -180,6 +183,34 @@ class OpenSearchVectorStoreTest {
 		// When & Then
 		assertThatThrownBy(() -> vectorStore.add(documents)).isInstanceOf(RuntimeException.class)
 			.hasMessageContaining("Embedding failed");
+	}
+
+	@Test
+	@DisplayName("Should fail when the bulk response reports a failed document")
+	void shouldFailWhenBulkResponseReportsFailedDocument() {
+		// Given
+		when(this.mockEmbeddingModel.embed(any(), any(), any()))
+			.thenReturn(List.of(new float[] { 0.1f, 0.2f, 0.3f }, new float[] { 0.4f, 0.5f, 0.6f }));
+		when(this.mockBulkResponse.errors()).thenReturn(true);
+		when(this.mockBulkResponse.items()).thenReturn(List.of(
+				BulkResponseItem.of(item -> item.operationType(OperationType.Index)
+					.index("spring-ai-document-index")
+					.id("doc1")
+					.status(201)),
+				BulkResponseItem.of(item -> item.operationType(OperationType.Index)
+					.index("spring-ai-document-index")
+					.id("doc2")
+					.status(400)
+					.error(ErrorCause.of(error -> error.type("mapper_parsing_exception")
+						.reason("failed to parse field [metadata.year]"))))));
+
+		OpenSearchVectorStore vectorStore = createVectorStore(true);
+		List<Document> documents = List.of(new Document("doc1", "content1", Map.of()),
+				new Document("doc2", "content2", Map.of("year", "not-a-number")));
+
+		// When & Then
+		assertThatThrownBy(() -> vectorStore.add(documents)).isInstanceOf(IllegalStateException.class)
+			.hasMessageContaining("failed to parse field [metadata.year]");
 	}
 
 	// Helper methods
