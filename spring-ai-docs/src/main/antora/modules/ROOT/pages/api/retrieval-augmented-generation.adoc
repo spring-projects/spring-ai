@@ -418,6 +418,53 @@ DocumentJoiner documentJoiner = new ConcatenationDocumentJoiner();
 List<Document> documents = documentJoiner.join(documentsForQuery);
 ----
 
+===== ReciprocalRankFusionDocumentJoiner
+
+A `ReciprocalRankFusionDocumentJoiner` combines documents retrieved based on multiple queries and from multiple data sources
+by merging them based on the rank each document has in each result list, instead of comparing the scores assigned by the
+retrieval strategy that produced it.
+Each list is expected to be sorted by decreasing relevance.
+Documents are aggregated by their id, and a document occurring in several lists accumulates a contribution of
+`1 / (rankConstant + rank)` for each list where it occurs, so that documents found by several queries or data sources are promoted.
+The result is a list of unique documents sorted by their fused score in descending order, using the document id to break ties.
+
+[source,java]
+----
+Map<Query, List<List<Document>>> documentsForQuery = ...
+DocumentJoiner documentJoiner = new ReciprocalRankFusionDocumentJoiner();
+List<Document> documents = documentJoiner.join(documentsForQuery);
+----
+
+The rank constant controls how much the documents at the top of each list are favoured over the documents below them.
+The lower the value, the more the top ranks matter.
+It defaults to `60` and can be customized.
+
+[source,java]
+----
+DocumentJoiner documentJoiner = new ReciprocalRankFusionDocumentJoiner(20);
+----
+
+This joiner is typically used together with a query expander, so that the same data source is queried several times and the
+resulting lists are fused.
+
+[source,java]
+----
+Advisor retrievalAugmentationAdvisor = RetrievalAugmentationAdvisor.builder()
+        .queryExpander(MultiQueryExpander.builder()
+                .chatClientBuilder(chatClientBuilder)
+                .build())
+        .documentRetriever(VectorStoreDocumentRetriever.builder()
+                .vectorStore(vectorStore)
+                .build())
+        .documentJoiner(new ReciprocalRankFusionDocumentJoiner())
+        .build();
+----
+
+NOTE: The score of the returned documents is a reciprocal rank fusion score and not a similarity score, so any threshold
+defined for the scores produced by a data source does not apply to it.
+Since documents are aggregated by their id, the lists to join must use consistent document ids, which is the case when the
+same data source is queried several times.
+
 === Post-Retrieval
 
 Post-Retrieval modules are responsible for processing the retrieved documents to achieve the best possible generation results.
