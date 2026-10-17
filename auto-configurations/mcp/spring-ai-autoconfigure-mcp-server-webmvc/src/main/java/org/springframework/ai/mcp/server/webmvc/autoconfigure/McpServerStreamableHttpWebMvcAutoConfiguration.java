@@ -38,6 +38,7 @@ import org.springframework.web.servlet.function.ServerResponse;
 /**
  * @author Christian Tzolov
  * @author Yanming Zhou
+ * @author Armen Petrosyan
  */
 // before: McpServerAutoConfiguration defines a low priority
 // McpServerTransportProviderBase bean and this conf should have priority
@@ -59,6 +60,8 @@ public class McpServerStreamableHttpWebMvcAutoConfiguration {
 			.mcpEndpoint(serverProperties.getMcpEndpoint())
 			.keepAliveInterval(serverProperties.getKeepAliveInterval())
 			.disallowDelete(serverProperties.isDisallowDelete())
+			.maxSessions(serverProperties.getMaxSessions())
+			.sessionIdleTimeout(serverProperties.getSessionIdleTimeout())
 			.build();
 	}
 
