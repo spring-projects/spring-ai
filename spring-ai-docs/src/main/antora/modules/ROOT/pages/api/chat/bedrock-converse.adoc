@@ -354,6 +354,20 @@ Prompt prompt = new Prompt(List.of(staticPrompt, dynamicContext, new UserMessage
 
 This produces a Bedrock `system` array of the form `[text(static), cachePoint, text(dynamic)]` so only the static prefix participates in the cache key.
 
+The same option can be configured through Spring Boot properties:
+
+[source,yaml]
+----
+spring:
+  ai:
+    bedrock:
+      converse:
+        chat:
+          cache-options:
+            strategy: SYSTEM_ONLY
+            multi-block-system-caching: true
+----
+
 NOTE: If only a single `SystemMessage` is present, the cache point is placed after that single block (same as the default behavior).
 The `multiBlockSystemCaching` option only changes placement when there are two or more system messages.
 
