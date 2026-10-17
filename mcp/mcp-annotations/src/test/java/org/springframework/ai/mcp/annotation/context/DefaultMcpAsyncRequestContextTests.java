@@ -180,6 +180,31 @@ public class DefaultMcpAsyncRequestContextTests {
 	}
 
 	@Test
+	public void testElicitationPreservesSchemaMetadata() {
+		ClientCapabilities capabilities = mock(ClientCapabilities.class);
+		ClientCapabilities.Elicitation elicitation = mock(ClientCapabilities.Elicitation.class);
+		when(capabilities.elicitation()).thenReturn(elicitation);
+		when(this.exchange.getClientCapabilities()).thenReturn(capabilities);
+
+		record Person(String name) {
+		}
+
+		ElicitResult expectedResult = mock(ElicitResult.class);
+		when(expectedResult.action()).thenReturn(ElicitResult.Action.ACCEPT);
+		when(expectedResult.content()).thenReturn(Map.of("name", "John"));
+		when(this.exchange.createElicitation(any(ElicitRequest.class))).thenReturn(Mono.just(expectedResult));
+
+		StepVerifier.create(this.context.elicit(Person.class)).expectNextCount(1).verifyComplete();
+
+		ArgumentCaptor<ElicitFormRequest> captor = ArgumentCaptor.forClass(ElicitFormRequest.class);
+		verify(this.exchange).createElicitation(captor.capture());
+
+		Map<String, Object> requestedSchema = captor.getValue().requestedSchema();
+		assertThat(requestedSchema).containsKeys("$schema", "type", "properties", "required");
+		assertThat(((Map<?, ?>) requestedSchema.get("properties")).containsKey("name")).isTrue();
+	}
+
+	@Test
 	public void testElicitationWithMetadata() {
 		ClientCapabilities capabilities = mock(ClientCapabilities.class);
 		ClientCapabilities.Elicitation elicitation = mock(ClientCapabilities.Elicitation.class);
