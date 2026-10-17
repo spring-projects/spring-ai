@@ -37,6 +37,7 @@ import org.springframework.util.Assert;
  *
  * @author Muthukumaran Navaneethakrishnan
  * @author Christian Tzolov
+ * @author Raviteja Daggupati
  */
 public class PgVectorFilterExpressionConverter extends AbstractFilterExpressionConverter {
 
@@ -55,18 +56,50 @@ public class PgVectorFilterExpressionConverter extends AbstractFilterExpressionC
 
 	@Override
 	protected void doExpression(Expression expression, StringBuilder context) {
-		Assert.state(expression.right() != null, "expression should have a right operand");
-		if (expression.type() == Filter.ExpressionType.IN) {
-			handleIn(expression, context);
+		// ISNULL and ISNOTNULL are unary: they carry no right operand, so the assertion
+		// the other types share cannot be hoisted above them.
+		if (expression.type() == Filter.ExpressionType.ISNULL) {
+			handleIsNull(expression, context);
 		}
-		else if (expression.type() == Filter.ExpressionType.NIN) {
-			handleNotIn(expression, context);
+		else if (expression.type() == Filter.ExpressionType.ISNOTNULL) {
+			handleIsNotNull(expression, context);
 		}
 		else {
-			this.convertOperand(expression.left(), context);
-			context.append(getOperationSymbol(expression));
-			this.convertOperand(expression.right(), context);
+			Assert.state(expression.right() != null, "expression should have a right operand");
+			if (expression.type() == Filter.ExpressionType.IN) {
+				handleIn(expression, context);
+			}
+			else if (expression.type() == Filter.ExpressionType.NIN) {
+				handleNotIn(expression, context);
+			}
+			else {
+				this.convertOperand(expression.left(), context);
+				context.append(getOperationSymbol(expression));
+				this.convertOperand(expression.right(), context);
+			}
 		}
+	}
+
+	// Null means absent from the metadata, or present holding a JSON null. Same
+	// missing-key semantics as SimpleVectorStoreFilterExpressionEvaluator.
+	//
+	// Grouped because JSONPath binds && tighter than ||. Ungrouped, an ISNULL on
+	// the left of an AND would swallow the other conjunct.
+	private void handleIsNull(Expression expression, StringBuilder context) {
+		context.append("(!exists(");
+		this.convertOperand(expression.left(), context);
+		context.append(") || ");
+		this.convertOperand(expression.left(), context);
+		context.append(" == null)");
+	}
+
+	// The exact complement: the key is present and its value is not JSON null.
+	private void handleIsNotNull(Expression expression, StringBuilder context) {
+		context.append("(exists(");
+		this.convertOperand(expression.left(), context);
+		context.append(") && ");
+		this.convertOperand(expression.left(), context);
+		context.append(" != null)");
 	}
 
 	private void handleIn(Expression expression, StringBuilder context) {

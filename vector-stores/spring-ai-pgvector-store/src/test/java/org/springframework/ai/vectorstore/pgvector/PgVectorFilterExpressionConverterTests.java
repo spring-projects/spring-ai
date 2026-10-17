@@ -26,6 +26,7 @@ import org.springframework.ai.vectorstore.filter.Filter.Expression;
 import org.springframework.ai.vectorstore.filter.Filter.Group;
 import org.springframework.ai.vectorstore.filter.Filter.Key;
 import org.springframework.ai.vectorstore.filter.Filter.Value;
+import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionTextParser;
 
@@ -35,6 +36,8 @@ import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.EQ
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.GT;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.GTE;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.IN;
+import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.ISNOTNULL;
+import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.ISNULL;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.LT;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.LTE;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.NE;
@@ -44,6 +47,7 @@ import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.OR
 /**
  * @author Muthukumaran Navaneethakrishnan
  * @author Christian Tzolov
+ * @author Raviteja Daggupati
  */
 public class PgVectorFilterExpressionConverterTests {
 
@@ -465,6 +469,74 @@ public class PgVectorFilterExpressionConverterTests {
 		assertThat(vectorExpr).contains("$.\"activationDate\"");
 		assertThat(vectorExpr).contains("2024-01-15T10:30:00.000Z");
 		assertThat(vectorExpr).contains("2024-02-20T14:45:00.000Z");
+	}
+
+	// Null checks. ISNULL and ISNOTNULL are unary, so the expression carries no right
+	// operand; a missing key counts as null, matching
+	// SimpleVectorStoreFilterExpressionEvaluator.
+
+	@Test
+	public void testIsNull() {
+		// summary IS NULL
+		String vectorExpr = this.converter.convertExpression(new Expression(ISNULL, new Key("summary"), null));
+		assertThat(vectorExpr).isEqualTo(sqlPredicate("(!exists($.\"summary\") || $.\"summary\" == null)"));
+	}
+
+	@Test
+	public void testIsNotNull() {
+		// summary IS NOT NULL
+		String vectorExpr = this.converter.convertExpression(new Expression(ISNOTNULL, new Key("summary"), null));
+		assertThat(vectorExpr).isEqualTo(sqlPredicate("(exists($.\"summary\") && $.\"summary\" != null)"));
+	}
+
+	@Test
+	public void testIsNullFromFilterExpressionBuilder() {
+		// The public builder path, which previously failed with "expression should have a
+		// right operand"
+		FilterExpressionBuilder b = new FilterExpressionBuilder();
+		assertThat(this.converter.convertExpression((Expression) b.isNull("summary").build()))
+			.isEqualTo(sqlPredicate("(!exists($.\"summary\") || $.\"summary\" == null)"));
+		assertThat(this.converter.convertExpression((Expression) b.isNotNull("summary").build()))
+			.isEqualTo(sqlPredicate("(exists($.\"summary\") && $.\"summary\" != null)"));
+	}
+
+	@Test
+	public void testIsNullCombinedWithAnd() {
+		// summary IS NULL AND year >= 2020
+		//
+		// The group around the ISNULL is what makes this correct: JSONPath binds && more
+		// tightly than ||, so an ungrouped disjunction would swallow the year comparison.
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(AND, new Expression(ISNULL, new Key("summary"), null),
+					new Expression(GTE, new Key("year"), new Value(2020))));
+		assertThat(vectorExpr)
+			.isEqualTo(sqlPredicate("(!exists($.\"summary\") || $.\"summary\" == null) && $.\"year\" >= 2020"));
+	}
+
+	@Test
+	public void testIsNotNullCombinedWithOr() {
+		// country == "BG" OR summary IS NOT NULL
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(OR, new Expression(EQ, new Key("country"), new Value("BG")),
+					new Expression(ISNOTNULL, new Key("summary"), null)));
+		assertThat(vectorExpr)
+			.isEqualTo(sqlPredicate("$.\"country\" == \"BG\" || (exists($.\"summary\") && $.\"summary\" != null)"));
+	}
+
+	@Test
+	public void testIsNullKeyIsEscaped() {
+		// The key is emitted twice, so both occurrences have to be escaped
+		String vectorExpr = this.converter.convertExpression(new Expression(ISNULL, new Key("key\"inject"), null));
+		assertThat(vectorExpr).isEqualTo(sqlPredicate("(!exists($.\"key\\\"inject\") || $.\"key\\\"inject\" == null)"));
+		assertThat(vectorExpr).doesNotContain("$.\"key\"inject\"");
+	}
+
+	@Test
+	public void testIsNullKeyWithSingleQuoteIsSqlEscaped() {
+		String vectorExpr = this.converter.convertExpression(new Expression(ISNULL, new Key("O'Brien"), null));
+		// Both occurrences are SQL-escaped inside the surrounding single-quoted literal
+		assertThat(vectorExpr).isEqualTo(sqlPredicate("(!exists($.\"O'Brien\") || $.\"O'Brien\" == null)"));
+		assertThat(vectorExpr).contains("O''Brien");
 	}
 
 }
