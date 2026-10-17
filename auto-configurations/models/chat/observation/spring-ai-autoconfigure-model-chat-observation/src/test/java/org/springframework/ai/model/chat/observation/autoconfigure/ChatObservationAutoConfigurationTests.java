@@ -29,6 +29,7 @@ import org.springframework.ai.audio.tts.TextToSpeechPrompt;
 import org.springframework.ai.audio.tts.observation.TextToSpeechModelObservationContext;
 import org.springframework.ai.chat.client.observation.ChatClientObservationContext;
 import org.springframework.ai.chat.observation.ChatModelCompletionObservationHandler;
+import org.springframework.ai.chat.observation.ChatModelCompletionSpanContentObservationHandler;
 import org.springframework.ai.chat.observation.ChatModelMeterObservationHandler;
 import org.springframework.ai.chat.observation.ChatModelObservationContext;
 import org.springframework.ai.chat.observation.ChatModelPromptContentObservationHandler;
@@ -51,6 +52,7 @@ import static org.mockito.Mockito.mock;
  *
  * @author Thomas Vitale
  * @author Jonatan Ivanov
+ * @author Jewoo Shin
  */
 @ExtendWith(OutputCaptureExtension.class)
 class ChatObservationAutoConfigurationTests {
@@ -137,6 +139,7 @@ class ChatObservationAutoConfigurationTests {
 			.withPropertyValues("spring.ai.chat.observations.log-completion=true")
 			.run(context -> assertThat(context).doesNotHaveBean(ChatModelPromptContentObservationHandler.class)
 				.hasSingleBean(ChatModelCompletionObservationHandler.class)
+				.doesNotHaveBean(ChatModelCompletionSpanContentObservationHandler.class)
 				.doesNotHaveBean(TracingAwareLoggingObservationHandler.class)
 				.doesNotHaveBean(ErrorLoggingObservationHandler.class));
 		assertThat(output).contains(
@@ -150,6 +153,7 @@ class ChatObservationAutoConfigurationTests {
 			.run(context -> assertThat(context).doesNotHaveBean(ChatModelPromptContentObservationHandler.class)
 				.doesNotHaveBean(ChatModelCompletionObservationHandler.class)
 				.hasSingleBean(TracingAwareLoggingObservationHandler.class)
+				.hasSingleBean(ChatModelCompletionSpanContentObservationHandler.class)
 				.doesNotHaveBean(ErrorLoggingObservationHandler.class));
 		assertThat(output).contains(
 				"You have enabled logging out the completion content with the risk of exposing sensitive or private information. Please, be careful!");
@@ -173,6 +177,45 @@ class ChatObservationAutoConfigurationTests {
 				.doesNotHaveBean(ChatModelCompletionObservationHandler.class)
 				.doesNotHaveBean(TracingAwareLoggingObservationHandler.class)
 				.doesNotHaveBean(ErrorLoggingObservationHandler.class));
+	}
+
+	@Test
+	void completionSpanContentHandlerEnabledNoTracer() {
+		this.contextRunner.withClassLoader(new FilteredClassLoader(Tracer.class))
+			.withPropertyValues("spring.ai.chat.observations.log-completion=true")
+			.run(context -> assertThat(context)
+				.doesNotHaveBean(ChatModelCompletionSpanContentObservationHandler.class));
+	}
+
+	@Test
+	void completionSpanContentHandlerEnabledWithTracer() {
+		this.contextRunner.withUserConfiguration(TracerConfiguration.class)
+			.withPropertyValues("spring.ai.chat.observations.log-completion=true")
+			.run(context -> assertThat(context).hasSingleBean(ChatModelCompletionSpanContentObservationHandler.class));
+	}
+
+	@Test
+	void completionSpanContentHandlerDisabledWithTracer() {
+		this.contextRunner.withUserConfiguration(TracerConfiguration.class)
+			.withPropertyValues("spring.ai.chat.observations.log-completion=false")
+			.run(context -> assertThat(context)
+				.doesNotHaveBean(ChatModelCompletionSpanContentObservationHandler.class));
+	}
+
+	@Test
+	void completionSpanContentHandlerDisabledByDefaultWithTracer() {
+		this.contextRunner.withUserConfiguration(TracerConfiguration.class)
+			.run(context -> assertThat(context)
+				.doesNotHaveBean(ChatModelCompletionSpanContentObservationHandler.class));
+	}
+
+	@Test
+	void customChatModelCompletionSpanContentObservationHandlerWithTracer() {
+		this.contextRunner.withUserConfiguration(TracerConfiguration.class)
+			.withUserConfiguration(CustomChatModelCompletionSpanContentObservationHandlerConfiguration.class)
+			.withPropertyValues("spring.ai.chat.observations.log-completion=true")
+			.run(context -> assertThat(context).hasSingleBean(ChatModelCompletionSpanContentObservationHandler.class)
+				.hasBean("customChatModelCompletionSpanContentObservationHandler"));
 	}
 
 	@Test
@@ -293,6 +336,7 @@ class ChatObservationAutoConfigurationTests {
 			.run(context -> assertThat(context).doesNotHaveBean(ChatModelPromptContentObservationHandler.class)
 				.hasSingleBean(ChatModelCompletionObservationHandler.class)
 				.hasBean("customChatModelCompletionObservationHandler")
+				.hasSingleBean(ChatModelCompletionSpanContentObservationHandler.class)
 				.doesNotHaveBean(TracingAwareLoggingObservationHandler.class)
 				.doesNotHaveBean(ErrorLoggingObservationHandler.class));
 	}
@@ -377,6 +421,16 @@ class ChatObservationAutoConfigurationTests {
 		@Bean
 		TracingAwareLoggingObservationHandler<ChatModelObservationContext> chatModelCompletionObservationHandler() {
 			return handlerInstance;
+		}
+
+	}
+
+	@Configuration(proxyBeanMethods = false)
+	static class CustomChatModelCompletionSpanContentObservationHandlerConfiguration {
+
+		@Bean
+		ChatModelCompletionSpanContentObservationHandler customChatModelCompletionSpanContentObservationHandler() {
+			return new ChatModelCompletionSpanContentObservationHandler();
 		}
 
 	}
