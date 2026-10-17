@@ -16,7 +16,7 @@
 
 package org.springframework.ai.chat.evaluation;
 
-import java.util.Collections;
+import java.util.Map;
 
 import org.jspecify.annotations.Nullable;
 
@@ -64,12 +64,15 @@ import org.springframework.util.Assert;
  * @author Mark Pollack
  * @author guan xu
  * @author Yanming Zhou
+ * @author Kuntal Maity
  * @see Evaluator
  * @see EvaluationRequest
  * @see EvaluationResponse
  * @since 1.0.0
  */
 public class FactCheckingEvaluator implements Evaluator {
+
+	public static final String LLM_RAW_RESPONSE_METADATA_KEY = "llm_raw_response";
 
 	private static final String DEFAULT_EVALUATION_PROMPT_TEXT = """
 				Evaluate whether or not the following claim is supported by the provided document.
@@ -126,7 +129,9 @@ public class FactCheckingEvaluator implements Evaluator {
 	 * @param evaluationRequest The request containing the response to be evaluated and
 	 * the supporting context
 	 * @return An EvaluationResponse indicating whether the claim is supported by the
-	 * document
+	 * document. The {@code feedback} field contains the raw LLM response text. The
+	 * {@code metadata} map contains the same value under the key
+	 * {@link #LLM_RAW_RESPONSE_METADATA_KEY}.
 	 */
 	@Override
 	public EvaluationResponse evaluate(EvaluationRequest evaluationRequest) {
@@ -139,9 +144,10 @@ public class FactCheckingEvaluator implements Evaluator {
 			.call()
 			.content();
 
-		String normalizedResponse = (evaluationResponse != null) ? evaluationResponse.strip() : "";
-		boolean passing = "yes".equalsIgnoreCase(normalizedResponse);
-		return new EvaluationResponse(passing, "", Collections.emptyMap());
+		String llmResponse = (evaluationResponse != null) ? evaluationResponse : "";
+		boolean passing = "yes".equalsIgnoreCase(llmResponse.strip());
+		return new EvaluationResponse(passing, llmResponse,
+				Map.of(LLM_RAW_RESPONSE_METADATA_KEY, (Object) llmResponse));
 	}
 
 	public static FactCheckingEvaluator.Builder builder(ChatClient.Builder chatClientBuilder) {
