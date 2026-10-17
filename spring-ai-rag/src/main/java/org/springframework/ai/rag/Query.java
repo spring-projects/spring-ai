@@ -28,9 +28,10 @@ import org.springframework.util.Assert;
  * Represents a query in the context of a Retrieval Augmented Generation (RAG) flow.
  *
  * @param text the text of the query
- * @param history the messages in the conversation history
+ * @param history the messages in the conversation history, excluding the current query
  * @param context the context of the query
  * @author Thomas Vitale
+ * @author Xuhan Zhuang
  * @since 1.0.0
  */
 public record Query(String text, List<Message> history, Map<String, Object> context) {

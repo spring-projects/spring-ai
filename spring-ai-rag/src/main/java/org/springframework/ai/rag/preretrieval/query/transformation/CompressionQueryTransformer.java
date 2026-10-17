@@ -37,9 +37,11 @@ import org.springframework.util.StringUtils;
  * into a standalone query that captures the essence of the conversation.
  * <p>
  * This transformer is useful when the conversation history is long and the follow-up
- * query is related to the conversation context.
+ * query is related to the conversation context. When the query carries no conversation
+ * history, it is returned unchanged.
  *
  * @author Thomas Vitale
+ * @author Xuhan Zhuang
  * @since 1.0.0
  */
 public class CompressionQueryTransformer implements QueryTransformer {
@@ -77,11 +79,17 @@ public class CompressionQueryTransformer implements QueryTransformer {
 	public Query transform(Query query) {
 		Assert.notNull(query, "query cannot be null");
 
+		String conversationHistory = formatConversationHistory(query.history());
+		if (!StringUtils.hasText(conversationHistory)) {
+			logger.debug("Conversation history is empty. Returning the input query unchanged.");
+			return query;
+		}
+
 		logger.debug("Compressing conversation history and follow-up query into a standalone query");
 
 		var compressedQueryText = this.chatClient.prompt()
 			.user(user -> user.text(this.promptTemplate.getTemplate())
-				.param("history", formatConversationHistory(query.history()))
+				.param("history", conversationHistory)
 				.param("query", query.text()))
 			.call()
 			.content();
@@ -95,10 +103,6 @@ public class CompressionQueryTransformer implements QueryTransformer {
 	}
 
 	private String formatConversationHistory(List<Message> history) {
-		if (history.isEmpty()) {
-			return "";
-		}
-
 		return history.stream()
 			.filter(message -> message.getMessageType().equals(MessageType.USER)
 					|| message.getMessageType().equals(MessageType.ASSISTANT))

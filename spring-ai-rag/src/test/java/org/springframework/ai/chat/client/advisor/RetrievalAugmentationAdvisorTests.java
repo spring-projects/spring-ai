@@ -23,7 +23,11 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.chat.memory.MessageWindowChatMemory;
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
@@ -32,11 +36,13 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.Query;
 import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
+import org.springframework.ai.rag.preretrieval.query.transformation.CompressionQueryTransformer;
 import org.springframework.ai.rag.preretrieval.query.transformation.QueryTransformer;
 import org.springframework.ai.rag.retrieval.search.DocumentRetriever;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -46,6 +52,7 @@ import static org.mockito.Mockito.when;
  *
  * @author Thomas Vitale
  * @author Sebastien Deleuze
+ * @author Xuhan Zhuang
  */
 class RetrievalAugmentationAdvisorTests {
 
@@ -107,6 +114,7 @@ class RetrievalAugmentationAdvisorTests {
 		var query = queryCaptor.getValue();
 		assertThat(query.text())
 			.isEqualTo("What would I get if I added a pinch of Moonstone to a dash of powdered Gold?");
+		assertThat(query.history()).extracting(Message::getText).containsExactly("You are a wizard!");
 
 		var prompt = promptCaptor.getValue();
 		assertThat(prompt.getContents()).containsIgnoringNewLines("""
@@ -128,6 +136,145 @@ class RetrievalAugmentationAdvisorTests {
 
 				Answer:
 				""");
+	}
+
+	@Test
+	void whenConversationHistoryThenQueryHistoryExcludesTheCurrentUserMessage() {
+		// Chat Model
+		var chatModel = mock(ChatModel.class);
+		when(chatModel.getOptions()).thenReturn(ChatOptions.builder().build());
+		given(chatModel.call(any(Prompt.class))).willReturn(ChatResponse.builder()
+			.generations(List.of(new Generation(new AssistantMessage("Felix Felicis"))))
+			.build());
+
+		// Document Retriever
+		var documentRetriever = Mockito.mock(DocumentRetriever.class);
+		var queryCaptor = ArgumentCaptor.forClass(Query.class);
+		given(documentRetriever.retrieve(queryCaptor.capture())).willReturn(List.of());
+
+		// Advisor
+		var advisor = RetrievalAugmentationAdvisor.builder().documentRetriever(documentRetriever).build();
+
+		// Chat Client
+		var chatClient = ChatClient.builder(chatModel).defaultAdvisors(advisor).build();
+
+		// Call
+		var previousUserMessage = new UserMessage("What is a Moonstone?");
+		var previousAssistantMessage = new AssistantMessage("A silvery-white gemstone.");
+		var currentUserMessage = new UserMessage("And a powdered Gold?");
+		chatClient.prompt()
+			.messages(previousUserMessage, previousAssistantMessage, currentUserMessage)
+			.call()
+			.chatResponse();
+
+		// Verify
+		var query = queryCaptor.getValue();
+		assertThat(query.text()).isEqualTo("And a powdered Gold?");
+		assertThat(query.history()).containsExactly(previousUserMessage, previousAssistantMessage);
+	}
+
+	@Test
+	void whenUserMessageIsRepeatedThenOnlyTheCurrentOneIsExcludedFromQueryHistory() {
+		// Chat Model
+		var chatModel = mock(ChatModel.class);
+		when(chatModel.getOptions()).thenReturn(ChatOptions.builder().build());
+		given(chatModel.call(any(Prompt.class))).willReturn(ChatResponse.builder()
+			.generations(List.of(new Generation(new AssistantMessage("Felix Felicis"))))
+			.build());
+
+		// Document Retriever
+		var documentRetriever = Mockito.mock(DocumentRetriever.class);
+		var queryCaptor = ArgumentCaptor.forClass(Query.class);
+		given(documentRetriever.retrieve(queryCaptor.capture())).willReturn(List.of());
+
+		// Advisor
+		var advisor = RetrievalAugmentationAdvisor.builder().documentRetriever(documentRetriever).build();
+
+		// Chat Client
+		var chatClient = ChatClient.builder(chatModel).defaultAdvisors(advisor).build();
+
+		// Call
+		var previousUserMessage = new UserMessage("Tell me more");
+		var previousAssistantMessage = new AssistantMessage("A silvery-white gemstone.");
+		var currentUserMessage = new UserMessage("Tell me more");
+		chatClient.prompt()
+			.messages(previousUserMessage, previousAssistantMessage, currentUserMessage)
+			.call()
+			.chatResponse();
+
+		// Verify
+		var query = queryCaptor.getValue();
+		assertThat(query.history()).containsExactly(previousUserMessage, previousAssistantMessage);
+	}
+
+	@Test
+	void whenChatMemoryAndCompressionThenOnlyFollowUpTurnsAreCompressed() {
+		// Chat Model, answering a compression prompt with the standalone query and any
+		// other prompt with the final answer.
+		var chatModel = mock(ChatModel.class);
+		when(chatModel.getOptions()).thenReturn(ChatOptions.builder().build());
+		var promptCaptor = ArgumentCaptor.forClass(Prompt.class);
+		given(chatModel.call(promptCaptor.capture())).willAnswer(invocation -> {
+			Prompt prompt = invocation.getArgument(0);
+			String answer = isCompressionPrompt(prompt) ? "Did Anacletus and Birba meet any cow?"
+					: "They met Fergus the cow.";
+			return ChatResponse.builder().generations(List.of(new Generation(new AssistantMessage(answer)))).build();
+		});
+
+		// Document Retriever
+		var documentRetriever = Mockito.mock(DocumentRetriever.class);
+		var queryCaptor = ArgumentCaptor.forClass(Query.class);
+		given(documentRetriever.retrieve(queryCaptor.capture()))
+			.willReturn(List.of(Document.builder().id("1").text("doc1").build()));
+
+		// Advisors
+		var memoryAdvisor = MessageChatMemoryAdvisor.builder(MessageWindowChatMemory.builder().build()).build();
+		var ragAdvisor = RetrievalAugmentationAdvisor.builder()
+			.documentRetriever(documentRetriever)
+			.queryTransformers(
+					CompressionQueryTransformer.builder().chatClientBuilder(ChatClient.builder(chatModel)).build())
+			.build();
+
+		// Chat Client
+		var chatClient = ChatClient.builder(chatModel).defaultAdvisors(memoryAdvisor, ragAdvisor).build();
+
+		// First turn: no conversation history yet, so nothing to compress.
+		chatClient.prompt()
+			.user("Where does the adventure of Anacletus and Birba take place?")
+			.advisors(advisors -> advisors.param(ChatMemory.CONVERSATION_ID, "007"))
+			.call()
+			.chatResponse();
+
+		assertThat(promptCaptor.getAllValues()).noneMatch(RetrievalAugmentationAdvisorTests::isCompressionPrompt);
+		assertThat(queryCaptor.getValue().text())
+			.isEqualTo("Where does the adventure of Anacletus and Birba take place?");
+		assertThat(queryCaptor.getValue().history()).isEmpty();
+
+		// Second turn: the previous turn is history, the current question is not.
+		chatClient.prompt()
+			.user("Did they meet any cow?")
+			.advisors(advisors -> advisors.param(ChatMemory.CONVERSATION_ID, "007"))
+			.call()
+			.chatResponse();
+
+		var compressionPrompts = promptCaptor.getAllValues()
+			.stream()
+			.filter(RetrievalAugmentationAdvisorTests::isCompressionPrompt)
+			.toList();
+		assertThat(compressionPrompts).hasSize(1);
+		assertThat(compressionPrompts.get(0).getContents()).containsIgnoringNewLines("""
+				Conversation history:
+				USER: Where does the adventure of Anacletus and Birba take place?
+				ASSISTANT: They met Fergus the cow.
+
+				Follow-up query:
+				Did they meet any cow?
+				""");
+		assertThat(queryCaptor.getValue().text()).isEqualTo("Did Anacletus and Birba meet any cow?");
+	}
+
+	private static boolean isCompressionPrompt(Prompt prompt) {
+		return prompt.getContents().contains("Standalone query:");
 	}
 
 }
