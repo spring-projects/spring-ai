@@ -16,6 +16,7 @@
 
 package org.springframework.ai.mcp.server.webmvc.autoconfigure;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -104,6 +105,40 @@ class McpServerStreamableHttpWebMvcAutoConfigurationIT {
 	}
 
 	@Test
+	void sessionLimitsDefaultConfiguration() {
+		this.contextRunner.run(context -> {
+			WebMvcStreamableServerTransportProvider provider = context
+				.getBean(WebMvcStreamableServerTransportProvider.class);
+			assertThat(provider).extracting("maxSessions").isEqualTo(100_000L);
+			assertThat(provider).extracting("sessionIdleTimeout").isNull();
+		});
+	}
+
+	@Test
+	void sessionLimitsConfiguration() {
+		this.contextRunner
+			.withPropertyValues("spring.ai.mcp.server.streamable-http.max-sessions=50",
+					"spring.ai.mcp.server.streamable-http.session-idle-timeout=PT10M")
+			.run(context -> {
+				WebMvcStreamableServerTransportProvider provider = context
+					.getBean(WebMvcStreamableServerTransportProvider.class);
+				assertThat(provider).extracting("maxSessions").isEqualTo(50L);
+				assertThat(provider).extracting("sessionIdleTimeout").isEqualTo(Duration.ofMinutes(10));
+			});
+	}
+
+	@Test
+	void sessionIdleTimeoutNotGreaterThanKeepAliveIntervalFails() {
+		this.contextRunner
+			.withPropertyValues("spring.ai.mcp.server.streamable-http.keep-alive-interval=PT30S",
+					"spring.ai.mcp.server.streamable-http.session-idle-timeout=PT30S")
+			.run(context -> assertThat(context).hasFailed()
+				.getFailure()
+				.rootCause()
+				.hasMessageContaining("sessionIdleTimeout must be greater than keepAliveInterval"));
+	}
+
+	@Test
 	void customJsonMapperIsUsed() {
 		JsonMapper customJsonMapper = new JsonMapper();
 		this.contextRunner.withBean("customJsonMapper", JsonMapper.class, () -> customJsonMapper).run(context -> {
@@ -172,11 +207,15 @@ class McpServerStreamableHttpWebMvcAutoConfigurationIT {
 		this.contextRunner
 			.withPropertyValues("spring.ai.mcp.server.streamable-http.mcp-endpoint=/custom-endpoint",
 					"spring.ai.mcp.server.streamable-http.keep-alive-interval=PT45S",
-					"spring.ai.mcp.server.streamable-http.disallow-delete=true")
+					"spring.ai.mcp.server.streamable-http.disallow-delete=true",
+					"spring.ai.mcp.server.streamable-http.max-sessions=50",
+					"spring.ai.mcp.server.streamable-http.session-idle-timeout=PT10M")
 			.run(context -> {
 				WebMvcStreamableServerTransportProvider provider = context
 					.getBean(WebMvcStreamableServerTransportProvider.class);
 				assertThat(provider).extracting("mcpEndpoint").isEqualTo("/custom-endpoint");
+				assertThat(provider).extracting("maxSessions").isEqualTo(50L);
+				assertThat(provider).extracting("sessionIdleTimeout").isEqualTo(Duration.ofMinutes(10));
 				// Verify beans are created successfully with all properties
 				assertThat(context).hasSingleBean(WebMvcStreamableServerTransportProvider.class);
 				assertThat(context).hasSingleBean(RouterFunction.class);
