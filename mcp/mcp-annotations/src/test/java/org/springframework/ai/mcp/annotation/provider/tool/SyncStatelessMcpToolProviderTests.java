@@ -22,6 +22,7 @@ import java.util.function.BiFunction;
 
 import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures.SyncToolSpecification;
+import io.modelcontextprotocol.server.McpSyncServerExchange;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
@@ -33,6 +34,7 @@ import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 
 import org.springframework.ai.mcp.annotation.McpTool;
+import org.springframework.ai.mcp.annotation.context.McpSyncRequestContext;
 import org.springframework.ai.util.JsonHelper;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -179,6 +181,48 @@ public class SyncStatelessMcpToolProviderTests {
 		assertThat(toolSpecs).hasSize(1);
 		assertThat(toolSpecs.get(0).tool().name()).isEqualTo("sync-tool");
 		assertThat(toolSpecs.get(0).tool().description()).isEqualTo("Synchronous tool");
+	}
+
+	@Test
+	void testGetToolSpecificationsFailsFastForSyncServerExchangeParameter() {
+		class InvalidStatelessTool {
+
+			@McpTool(name = "invalid-tool", description = "Tool requiring stateful exchange")
+			public String invalidTool(McpSyncServerExchange exchange) {
+				return "never";
+			}
+
+		}
+
+		SyncStatelessMcpToolProvider provider = new SyncStatelessMcpToolProvider(List.of(new InvalidStatelessTool()));
+
+		assertThatThrownBy(provider::getToolSpecifications).isInstanceOf(IllegalStateException.class)
+			.hasMessageContaining("invalidTool")
+			.hasMessageContaining("McpSyncServerExchange")
+			.hasMessageContaining("Stateless")
+			.hasMessageContaining("McpTransportContext")
+			.hasMessageContaining("stateful");
+	}
+
+	@Test
+	void testGetToolSpecificationsFailsFastForSyncRequestContextParameter() {
+		class InvalidStatelessTool {
+
+			@McpTool(name = "invalid-tool", description = "Tool requiring request context")
+			public String invalidTool(McpSyncRequestContext requestContext) {
+				return "never";
+			}
+
+		}
+
+		SyncStatelessMcpToolProvider provider = new SyncStatelessMcpToolProvider(List.of(new InvalidStatelessTool()));
+
+		assertThatThrownBy(provider::getToolSpecifications).isInstanceOf(IllegalStateException.class)
+			.hasMessageContaining("invalidTool")
+			.hasMessageContaining("McpSyncRequestContext")
+			.hasMessageContaining("Stateless")
+			.hasMessageContaining("McpTransportContext")
+			.hasMessageContaining("stateful");
 	}
 
 	@Test
