@@ -1,0 +1,204 @@
+/*
+ * Copyright 2023-2024 the original author or authors.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *      https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+= Spring AI Reference Documentation
+:doctype: book
+:toc: left
+:toclevels: 3
+:sectnums:
+:icons: font
+:source-highlighter: rouge
+:imagesdir: ../antora/modules/ROOT/images
+// Antora-specific macros are not resolved in standalone mode; define them as passthrough
+:page-pagination: ''
+// Suppress unresolved xref warnings from Antora-style cross-references
+:xrefstyle: short
+
+// ============================================================
+// Part I – Introduction
+// ============================================================
+include::../antora/modules/ROOT/pages/index.adoc[leveloffset=+1]
+include::../antora/modules/ROOT/pages/concepts.adoc[leveloffset=+1]
+
+// ============================================================
+// Part II – Getting Started
+// ============================================================
+include::../antora/modules/ROOT/pages/getting-started.adoc[leveloffset=+1]
+
+// ============================================================
+// Part III – Reference
+// ============================================================
+
+// -- ChatClient API --
+include::../antora/modules/ROOT/pages/api/chatclient.adoc[leveloffset=+1]
+
+// -- Advisors --
+include::../antora/modules/ROOT/pages/api/advisors.adoc[leveloffset=+2]
+include::../antora/modules/ROOT/pages/api/advisors-recursive.adoc[leveloffset=+3]
+
+// -- Prompt --
+include::../antora/modules/ROOT/pages/api/prompt.adoc[leveloffset=+1]
+
+// -- Structured Output --
+include::../antora/modules/ROOT/pages/api/structured-output-converter.adoc[leveloffset=+1]
+
+// -- Multimodality --
+include::../antora/modules/ROOT/pages/api/multimodality.adoc[leveloffset=+1]
+
+// -- Models Overview --
+include::../antora/modules/ROOT/pages/api/index.adoc[leveloffset=+1]
+
+// ---- Chat Models ----
+include::../antora/modules/ROOT/pages/api/chatmodel.adoc[leveloffset=+2]
+include::../antora/modules/ROOT/pages/api/chat/comparison.adoc[leveloffset=+3]
+include::../antora/modules/ROOT/pages/api/chat/bedrock-converse.adoc[leveloffset=+3]
+include::../antora/modules/ROOT/pages/api/chat/anthropic-chat.adoc[leveloffset=+3]
+include::../antora/modules/ROOT/pages/api/chat/azure-openai-chat.adoc[leveloffset=+3]
+include::../antora/modules/ROOT/pages/api/chat/deepseek-chat.adoc[leveloffset=+3]
+include::../antora/modules/ROOT/pages/api/chat/dmr-chat.adoc[leveloffset=+3]
+include::../antora/modules/ROOT/pages/api/chat/google-genai-chat.adoc[leveloffset=+3]
+include::../antora/modules/ROOT/pages/api/chat/google-vertexai.adoc[leveloffset=+3]
+include::../antora/modules/ROOT/pages/api/chat/vertexai-gemini-chat.adoc[leveloffset=+4]
+include::../antora/modules/ROOT/pages/api/chat/groq-chat.adoc[leveloffset=+3]
+include::../antora/modules/ROOT/pages/api/chat/huggingface.adoc[leveloffset=+3]
+include::../antora/modules/ROOT/pages/api/chat/mistralai-chat.adoc[leveloffset=+3]
+include::../antora/modules/ROOT/pages/api/chat/minimax-chat.adoc[leveloffset=+3]
+include::../antora/modules/ROOT/pages/api/chat/moonshot-chat.adoc[leveloffset=+3]
+include::../antora/modules/ROOT/pages/api/chat/nvidia-chat.adoc[leveloffset=+3]
+include::../antora/modules/ROOT/pages/api/chat/ollama-chat.adoc[leveloffset=+3]
+include::../antora/modules/ROOT/pages/api/chat/perplexity-chat.adoc[leveloffset=+3]
+include::../antora/modules/ROOT/pages/api/chat/oci-genai/cohere-chat.adoc[leveloffset=+3]
+include::../antora/modules/ROOT/pages/api/chat/openai-sdk-chat.adoc[leveloffset=+3]
+include::../antora/modules/ROOT/pages/api/chat/openai-chat.adoc[leveloffset=+3]
+include::../antora/modules/ROOT/pages/api/chat/qianfan-chat.adoc[leveloffset=+3]
+include::../antora/modules/ROOT/pages/api/chat/zhipuai-chat.adoc[leveloffset=+3]
+
+// ---- Embedding Models ----
+include::../antora/modules/ROOT/pages/api/embeddings.adoc[leveloffset=+2]
+include::../antora/modules/ROOT/pages/api/bedrock.adoc[leveloffset=+3]
+include::../antora/modules/ROOT/pages/api/embeddings/bedrock-cohere-embedding.adoc[leveloffset=+4]
+include::../antora/modules/ROOT/pages/api/embeddings/bedrock-titan-embedding.adoc[leveloffset=+4]
+include::../antora/modules/ROOT/pages/api/embeddings/azure-openai-embeddings.adoc[leveloffset=+3]
+include::../antora/modules/ROOT/pages/api/embeddings/google-genai-embeddings-text.adoc[leveloffset=+3]
+include::../antora/modules/ROOT/pages/api/embeddings/mistralai-embeddings.adoc[leveloffset=+3]
+include::../antora/modules/ROOT/pages/api/embeddings/minimax-embeddings.adoc[leveloffset=+3]
+include::../antora/modules/ROOT/pages/api/embeddings/oci-genai-embeddings.adoc[leveloffset=+3]
+include::../antora/modules/ROOT/pages/api/embeddings/ollama-embeddings.adoc[leveloffset=+3]
+include::../antora/modules/ROOT/pages/api/embeddings/onnx.adoc[leveloffset=+3]
+include::../antora/modules/ROOT/pages/api/embeddings/openai-sdk-embeddings.adoc[leveloffset=+3]
+include::../antora/modules/ROOT/pages/api/embeddings/openai-embeddings.adoc[leveloffset=+3]
+include::../antora/modules/ROOT/pages/api/embeddings/postgresml-embeddings.adoc[leveloffset=+3]
+include::../antora/modules/ROOT/pages/api/embeddings/qianfan-embeddings.adoc[leveloffset=+3]
+include::../antora/modules/ROOT/pages/api/embeddings/vertexai-embeddings-text.adoc[leveloffset=+3]
+include::../antora/modules/ROOT/pages/api/embeddings/vertexai-embeddings-multimodal.adoc[leveloffset=+3]
+include::../antora/modules/ROOT/pages/api/embeddings/zhipuai-embeddings.adoc[leveloffset=+3]
+
+// ---- Image Models ----
+include::../antora/modules/ROOT/pages/api/imageclient.adoc[leveloffset=+2]
+include::../antora/modules/ROOT/pages/api/image/azure-openai-image.adoc[leveloffset=+3]
+include::../antora/modules/ROOT/pages/api/image/openai-sdk-image.adoc[leveloffset=+3]
+include::../antora/modules/ROOT/pages/api/image/openai-image.adoc[leveloffset=+3]
+include::../antora/modules/ROOT/pages/api/image/stabilityai-image.adoc[leveloffset=+3]
+include::../antora/modules/ROOT/pages/api/image/zhipuai-image.adoc[leveloffset=+3]
+include::../antora/modules/ROOT/pages/api/image/qianfan-image.adoc[leveloffset=+3]
+
+// ---- Audio Models ----
+include::../antora/modules/ROOT/pages/api/audio/transcriptions.adoc[leveloffset=+2]
+include::../antora/modules/ROOT/pages/api/audio/transcriptions/azure-openai-transcriptions.adoc[leveloffset=+3]
+include::../antora/modules/ROOT/pages/api/audio/transcriptions/openai-transcriptions.adoc[leveloffset=+3]
+include::../antora/modules/ROOT/pages/api/audio/speech.adoc[leveloffset=+2]
+include::../antora/modules/ROOT/pages/api/audio/speech/openai-speech.adoc[leveloffset=+3]
+include::../antora/modules/ROOT/pages/api/audio/speech/elevenlabs-speech.adoc[leveloffset=+3]
+
+// ---- Moderation Models ----
+include::../antora/modules/ROOT/pages/api/moderation/openai-moderation.adoc[leveloffset=+2]
+include::../antora/modules/ROOT/pages/api/moderation/mistral-ai-moderation.adoc[leveloffset=+3]
+
+// -- Chat Memory --
+include::../antora/modules/ROOT/pages/api/chat-memory.adoc[leveloffset=+1]
+
+// -- Tool Calling --
+include::../antora/modules/ROOT/pages/api/tools.adoc[leveloffset=+1]
+
+// -- Model Context Protocol (MCP) --
+include::../antora/modules/ROOT/pages/api/mcp/mcp-overview.adoc[leveloffset=+1]
+include::../antora/modules/ROOT/pages/api/mcp/mcp-client-boot-starter-docs.adoc[leveloffset=+2]
+include::../antora/modules/ROOT/pages/api/mcp/mcp-server-boot-starter-docs.adoc[leveloffset=+2]
+include::../antora/modules/ROOT/pages/api/mcp/mcp-stdio-sse-server-boot-starter-docs.adoc[leveloffset=+3]
+include::../antora/modules/ROOT/pages/api/mcp/mcp-streamable-http-server-boot-starter-docs.adoc[leveloffset=+3]
+include::../antora/modules/ROOT/pages/api/mcp/mcp-stateless-server-boot-starter-docs.adoc[leveloffset=+3]
+include::../antora/modules/ROOT/pages/api/mcp/mcp-security.adoc[leveloffset=+2]
+include::../antora/modules/ROOT/pages/api/mcp/mcp-annotations-overview.adoc[leveloffset=+2]
+include::../antora/modules/ROOT/pages/api/mcp/mcp-annotations-client.adoc[leveloffset=+3]
+include::../antora/modules/ROOT/pages/api/mcp/mcp-annotations-server.adoc[leveloffset=+3]
+include::../antora/modules/ROOT/pages/api/mcp/mcp-annotations-special-params.adoc[leveloffset=+3]
+include::../antora/modules/ROOT/pages/api/mcp/mcp-annotations-examples.adoc[leveloffset=+3]
+
+// -- RAG --
+include::../antora/modules/ROOT/pages/api/retrieval-augmented-generation.adoc[leveloffset=+1]
+include::../antora/modules/ROOT/pages/api/etl-pipeline.adoc[leveloffset=+2]
+
+// -- Model Evaluation --
+include::../antora/modules/ROOT/pages/api/testing.adoc[leveloffset=+1]
+
+// -- Vector Stores --
+include::../antora/modules/ROOT/pages/api/vectordbs.adoc[leveloffset=+1]
+include::../antora/modules/ROOT/pages/api/vectordbs/azure.adoc[leveloffset=+2]
+include::../antora/modules/ROOT/pages/api/vectordbs/azure-cosmos-db.adoc[leveloffset=+2]
+include::../antora/modules/ROOT/pages/api/vectordbs/bedrock-knowledge-base.adoc[leveloffset=+2]
+include::../antora/modules/ROOT/pages/api/vectordbs/apache-cassandra.adoc[leveloffset=+2]
+include::../antora/modules/ROOT/pages/api/vectordbs/chroma.adoc[leveloffset=+2]
+include::../antora/modules/ROOT/pages/api/vectordbs/couchbase.adoc[leveloffset=+2]
+include::../antora/modules/ROOT/pages/api/vectordbs/elasticsearch.adoc[leveloffset=+2]
+include::../antora/modules/ROOT/pages/api/vectordbs/gemfire.adoc[leveloffset=+2]
+include::../antora/modules/ROOT/pages/api/vectordbs/mariadb.adoc[leveloffset=+2]
+include::../antora/modules/ROOT/pages/api/vectordbs/milvus.adoc[leveloffset=+2]
+include::../antora/modules/ROOT/pages/api/vectordbs/mongodb.adoc[leveloffset=+2]
+include::../antora/modules/ROOT/pages/api/vectordbs/neo4j.adoc[leveloffset=+2]
+include::../antora/modules/ROOT/pages/api/vectordbs/opensearch.adoc[leveloffset=+2]
+include::../antora/modules/ROOT/pages/api/vectordbs/oracle.adoc[leveloffset=+2]
+include::../antora/modules/ROOT/pages/api/vectordbs/pgvector.adoc[leveloffset=+2]
+include::../antora/modules/ROOT/pages/api/vectordbs/pinecone.adoc[leveloffset=+2]
+include::../antora/modules/ROOT/pages/api/vectordbs/qdrant.adoc[leveloffset=+2]
+include::../antora/modules/ROOT/pages/api/vectordbs/redis.adoc[leveloffset=+2]
+include::../antora/modules/ROOT/pages/api/vectordbs/hana.adoc[leveloffset=+2]
+include::../antora/modules/ROOT/pages/api/vectordbs/typesense.adoc[leveloffset=+2]
+include::../antora/modules/ROOT/pages/api/vectordbs/weaviate.adoc[leveloffset=+2]
+include::../antora/modules/ROOT/pages/api/vectordbs/s3-vector-store.adoc[leveloffset=+2]
+
+// -- Observability --
+include::../antora/modules/ROOT/pages/observability/index.adoc[leveloffset=+1]
+
+// -- Development-time Services --
+include::../antora/modules/ROOT/pages/api/docker-compose.adoc[leveloffset=+1]
+
+// -- Testing --
+include::../antora/modules/ROOT/pages/api/testcontainers.adoc[leveloffset=+1]
+
+// ============================================================
+// Part IV – Guides
+// ============================================================
+include::../antora/modules/ROOT/pages/guides/getting-started-mcp.adoc[leveloffset=+1]
+include::../antora/modules/ROOT/pages/guides/dynamic-tool-search.adoc[leveloffset=+1]
+include::../antora/modules/ROOT/pages/guides/llm-as-judge.adoc[leveloffset=+1]
+include::../antora/modules/ROOT/pages/api/chat/prompt-engineering-patterns.adoc[leveloffset=+1]
+include::../antora/modules/ROOT/pages/api/effective-agents.adoc[leveloffset=+1]
+include::../antora/modules/ROOT/pages/api/cloud-bindings.adoc[leveloffset=+1]
+
+// ============================================================
+// Part V – Upgrade Notes
+// ============================================================
+include::../antora/modules/ROOT/pages/upgrade-notes.adoc[leveloffset=+1]
+include::../antora/modules/ROOT/pages/api/tools-migration.adoc[leveloffset=+2]
