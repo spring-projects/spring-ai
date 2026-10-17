@@ -131,7 +131,7 @@ public final class RetrievalAugmentationAdvisor implements BaseAdvisor {
 			.toList()
 			.stream()
 			.map(CompletableFuture::join)
-			.collect(Collectors.toMap(Map.Entry::getKey, entry -> List.of(entry.getValue())));
+			.collect(Collectors.toMap(Map.Entry::getKey, entry -> List.of(entry.getValue()), (v1, v2) -> v2));
 
 		// 4. Combine documents retrieved based on multiple queries and from multiple data
 		// sources.
