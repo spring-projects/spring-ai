@@ -16,6 +16,7 @@
 
 package org.springframework.ai.mcp;
 
+import java.time.Duration;
 import java.util.List;
 
 import io.modelcontextprotocol.client.McpSyncClient;
@@ -31,6 +32,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -440,6 +443,124 @@ class SyncMcpToolCallbackProviderTests {
 		var callbacks = provider.getToolCallbacks();
 
 		assertThat(callbacks).hasSize(1);
+	}
+
+	@Test
+	void cacheShouldNotRefreshBeforeTtlExpires() {
+		var clientInfo = new Implementation("testClient", "1.0.0");
+		when(this.mcpClient.getClientInfo()).thenReturn(clientInfo);
+		var clientCapabilities = new ClientCapabilities(null, null, null, null);
+		when(this.mcpClient.getClientCapabilities()).thenReturn(clientCapabilities);
+
+		Tool tool1 = mock(Tool.class);
+		when(tool1.name()).thenReturn("tool1");
+
+		ListToolsResult listToolsResult = mock(ListToolsResult.class);
+		when(listToolsResult.tools()).thenReturn(List.of(tool1));
+		when(this.mcpClient.listTools()).thenReturn(listToolsResult);
+
+		// Use a long TTL to ensure it doesn't expire during the test
+		SyncMcpToolCallbackProvider provider = SyncMcpToolCallbackProvider.builder()
+			.mcpClients(this.mcpClient)
+			.cacheTtl(Duration.ofHours(1))
+			.build();
+
+		// First call - should fetch tools
+		provider.getToolCallbacks();
+		// Second call - should use cache (TTL not expired)
+		provider.getToolCallbacks();
+		// Third call - should use cache (TTL not expired)
+		provider.getToolCallbacks();
+
+		// listTools should only be called once since cache should not have expired
+		verify(this.mcpClient, times(1)).listTools();
+	}
+
+	@Test
+	void cacheWithNullTtlShouldNotExpire() {
+		var clientInfo = new Implementation("testClient", "1.0.0");
+		when(this.mcpClient.getClientInfo()).thenReturn(clientInfo);
+		var clientCapabilities = new ClientCapabilities(null, null, null, null);
+		when(this.mcpClient.getClientCapabilities()).thenReturn(clientCapabilities);
+
+		Tool tool1 = mock(Tool.class);
+		when(tool1.name()).thenReturn("tool1");
+
+		ListToolsResult listToolsResult = mock(ListToolsResult.class);
+		when(listToolsResult.tools()).thenReturn(List.of(tool1));
+		when(this.mcpClient.listTools()).thenReturn(listToolsResult);
+
+		// No cacheTtl set (null by default) - should cache indefinitely
+		SyncMcpToolCallbackProvider provider = SyncMcpToolCallbackProvider.builder().mcpClients(this.mcpClient).build();
+
+		// Multiple calls should all use the cache
+		provider.getToolCallbacks();
+		provider.getToolCallbacks();
+		provider.getToolCallbacks();
+
+		// listTools should only be called once
+		verify(this.mcpClient, times(1)).listTools();
+	}
+
+	@Test
+	void cacheWithZeroTtlShouldNotExpire() {
+		var clientInfo = new Implementation("testClient", "1.0.0");
+		when(this.mcpClient.getClientInfo()).thenReturn(clientInfo);
+		var clientCapabilities = new ClientCapabilities(null, null, null, null);
+		when(this.mcpClient.getClientCapabilities()).thenReturn(clientCapabilities);
+
+		Tool tool1 = mock(Tool.class);
+		when(tool1.name()).thenReturn("tool1");
+
+		ListToolsResult listToolsResult = mock(ListToolsResult.class);
+		when(listToolsResult.tools()).thenReturn(List.of(tool1));
+		when(this.mcpClient.listTools()).thenReturn(listToolsResult);
+
+		// Zero duration should be treated as infinite cache
+		SyncMcpToolCallbackProvider provider = SyncMcpToolCallbackProvider.builder()
+			.mcpClients(this.mcpClient)
+			.cacheTtl(Duration.ZERO)
+			.build();
+
+		// Multiple calls should all use the cache
+		provider.getToolCallbacks();
+		provider.getToolCallbacks();
+		provider.getToolCallbacks();
+
+		// listTools should only be called once
+		verify(this.mcpClient, times(1)).listTools();
+	}
+
+	@Test
+	void invalidateCacheShouldForceRefreshEvenWithTtl() {
+		var clientInfo = new Implementation("testClient", "1.0.0");
+		when(this.mcpClient.getClientInfo()).thenReturn(clientInfo);
+		var clientCapabilities = new ClientCapabilities(null, null, null, null);
+		when(this.mcpClient.getClientCapabilities()).thenReturn(clientCapabilities);
+
+		Tool tool1 = mock(Tool.class);
+		when(tool1.name()).thenReturn("tool1");
+
+		ListToolsResult listToolsResult = mock(ListToolsResult.class);
+		when(listToolsResult.tools()).thenReturn(List.of(tool1));
+		when(this.mcpClient.listTools()).thenReturn(listToolsResult);
+
+		// Long TTL
+		SyncMcpToolCallbackProvider provider = SyncMcpToolCallbackProvider.builder()
+			.mcpClients(this.mcpClient)
+			.cacheTtl(Duration.ofHours(1))
+			.build();
+
+		// First call - should fetch tools
+		provider.getToolCallbacks();
+		verify(this.mcpClient, times(1)).listTools();
+
+		// Invalidate cache explicitly
+		provider.invalidateCache();
+
+		// Second call - should refresh because cache was invalidated
+		provider.getToolCallbacks();
+		verify(this.mcpClient, times(2)).listTools();
 	}
 
 }
