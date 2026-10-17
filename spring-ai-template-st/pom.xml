@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-		 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
-		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<groupId>org.springframework.ai</groupId>
@@ -13,6 +13,8 @@
 	<name>Spring AI Template StringTemplate</name>
 	<description>StringTemplate implementation for Spring AI templating</description>
 	<url>https://github.com/spring-projects/spring-ai</url>
+
+
 
 	<dependencies>
 		<dependency>
@@ -27,11 +29,10 @@
 			<version>${ST4.version}</version>
 		</dependency>
 
-		<!-- ANTLR for token parsing -->
+		<!-- Logging -->
 		<dependency>
-			<groupId>org.antlr</groupId>
-			<artifactId>antlr4-runtime</artifactId>
-			<version>${antlr.version}</version>
+			<groupId>org.slf4j</groupId>
+			<artifactId>slf4j-api</artifactId>
 		</dependency>
 
 		<!-- test dependencies -->
@@ -41,4 +42,82 @@
 			<scope>test</scope>
 		</dependency>
 	</dependencies>
+
+	<build>
+		<plugins>
+			<!-- Move the antlr-runtime (ANTLR 3 !!!) to a location specific for this module to avoid conflicts. -->
+			<!-- Conflicts can occur when used in conjunction with a different libraries which need  -->
+			<!-- a different version of the antlr runtime -->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-shade-plugin</artifactId>
+				<version>3.6.2</version>
+				<configuration>
+					<createDependencyReducedPom>true</createDependencyReducedPom>
+					<useDependencyReducedPomInJar>true</useDependencyReducedPomInJar>
+					<filters>
+						<filter>
+							<artifact>org.antlr:ST4</artifact>
+							<excludes>
+								<exclude>META-INF/services/**</exclude>
+								<exclude>META-INF/MANIFEST.MF</exclude>
+								<exclude>META-INF/maven/**</exclude>
+							</excludes>
+						</filter>
+						<filter>
+							<artifact>org.antlr:antlr-runtime</artifact>
+							<excludes>
+								<exclude>META-INF/services/**</exclude>
+								<exclude>META-INF/MANIFEST.MF</exclude>
+								<exclude>META-INF/maven/**</exclude>
+							</excludes>
+						</filter>
+					</filters>
+					<relocations>
+						<relocation>
+							<pattern>org.stringtemplate.v4</pattern>
+							<shadedPattern>shaded.${project.groupId}.${project.artifactId}.library.org.stringtemplate.v4</shadedPattern>
+						</relocation>
+						<relocation>
+							<pattern>org.antlr</pattern>
+							<shadedPattern>shaded.${project.groupId}.${project.artifactId}.library.org.antlr</shadedPattern>
+						</relocation>
+					</relocations>
+					<artifactSet>
+						<includes>
+							<include>org.antlr:ST4</include>
+							<include>org.antlr:antlr-runtime</include>
+						</includes>
+					</artifactSet>
+				</configuration>
+
+				<executions>
+					<execution>
+						<id>inject-problematic-dependencies</id>
+						<phase>package</phase>
+						<goals>
+							<goal>shade</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-clean-plugin</artifactId>
+				<configuration>
+					<filesets>
+						<fileset>
+							<directory>${project.basedir}</directory>
+							<includes>
+								<!-- Cleaning the intermediate files from maven-shade-plugin. -->
+								<include>dependency-reduced-pom.xml</include>
+							</includes>
+						</fileset>
+					</filesets>
+				</configuration>
+			</plugin>
+
+		</plugins>
+	</build>
 </project>
