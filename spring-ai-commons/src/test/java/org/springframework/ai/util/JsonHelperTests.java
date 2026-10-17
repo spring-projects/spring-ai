@@ -175,6 +175,20 @@ class JsonHelperTests {
 	}
 
 	@Test
+	void fromEmptyStringToNull() {
+		// https://github.com/spring-projects/spring-ai/issues/3884
+		Assertions.assertThat(this.jsonHelper.convertToTypedObject("", Long.class)).isNull();
+		Assertions.assertThat(this.jsonHelper.convertToTypedObject("", Integer.class)).isNull();
+		Assertions.assertThat(this.jsonHelper.convertToTypedObject("   ", Double.class)).isNull();
+		Assertions.assertThat(this.jsonHelper.convertToTypedObject("", Boolean.class)).isNull();
+	}
+
+	@Test
+	void fromEmptyStringToString() {
+		Assertions.assertThat(this.jsonHelper.convertToTypedObject("", String.class)).isEqualTo("");
+	}
+
+	@Test
 	void fromObjectToString() {
 		var value = this.jsonHelper.convertToTypedObject("John", String.class);
 		Assertions.assertThat(value).isOfAnyClassIn(String.class);
