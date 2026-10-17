@@ -45,6 +45,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.image.ImageMessage;
 import org.springframework.ai.image.ImageOptions;
+import org.springframework.ai.image.ImageOptionsBuilder;
 import org.springframework.ai.image.ImagePrompt;
 import org.springframework.ai.image.ImageResponse;
 import org.springframework.ai.image.ImageResponseMetadata;
@@ -269,6 +270,34 @@ public class GoogleGenAiImageRetryTests {
 		ArgumentCaptor<String> modelNameCaptor = ArgumentCaptor.forClass(String.class);
 		verify(this.mockModels).generateContent(modelNameCaptor.capture(), anyList(), any(GenerateContentConfig.class));
 		assertThat(modelNameCaptor.getValue()).isEqualTo(GoogleGenAiImageModelName.GEMINI_3_PRO_IMAGE.getName());
+	}
+
+	@Test
+	public void googleGenAiImagePortableRequestOptionsKeepGoogleSpecificDefaults() {
+		GoogleGenAiImageConnectionDetails connectionDetails = GoogleGenAiImageConnectionDetails.builder()
+			.genAiClient(this.mockGenAiClient)
+			.build();
+
+		GoogleGenAiImageModel modelWithDefaults = new GoogleGenAiImageModel(connectionDetails,
+				GoogleGenAiImageOptions.builder().aspectRatio("16:9").seed(42).temperature(0.2f).build(),
+				this.retryTemplate);
+
+		GenerateContentResponse mockResponse = buildMockResponse();
+		given(this.mockModels.generateContent(anyString(), anyList(), any(GenerateContentConfig.class)))
+			.willReturn(mockResponse);
+
+		var portableOptions = ImageOptionsBuilder.builder().n(2).build();
+
+		modelWithDefaults.call(new ImagePrompt("A golden doodle", portableOptions));
+
+		ArgumentCaptor<GenerateContentConfig> configCaptor = ArgumentCaptor.forClass(GenerateContentConfig.class);
+		verify(this.mockModels).generateContent(anyString(), anyList(), configCaptor.capture());
+		GenerateContentConfig config = configCaptor.getValue();
+		assertThat(config.candidateCount()).contains(2);
+		assertThat(config.seed()).contains(42);
+		assertThat(config.temperature()).contains(0.2f);
+		assertThat(config.imageConfig())
+			.hasValueSatisfying(imageConfig -> assertThat(imageConfig.aspectRatio()).contains("16:9"));
 	}
 
 	// ======= call() method tests =======
