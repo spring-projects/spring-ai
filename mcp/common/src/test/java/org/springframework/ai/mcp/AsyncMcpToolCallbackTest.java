@@ -187,7 +187,7 @@ class AsyncMcpToolCallbackTest {
 	}
 
 	@Test
-	void callShouldIncludeToolContext() {
+	void callShouldNotForwardToolContextByDefault() {
 		when(this.tool.name()).thenReturn("testTool");
 		var callToolResult = McpSchema.CallToolResult.builder()
 			.addTextContent("Success with context")
@@ -195,8 +195,7 @@ class AsyncMcpToolCallbackTest {
 			.build();
 		when(this.mcpClient.callTool(any(McpSchema.CallToolRequest.class))).thenReturn(Mono.just(callToolResult));
 
-		ToolContext toolContext = mock(ToolContext.class);
-		when(toolContext.getContext()).thenReturn(Map.of("key", "value"));
+		ToolContext toolContext = new ToolContext(Map.of("key", "value"));
 
 		// Act
 		var callback = AsyncMcpToolCallback.builder()
@@ -210,11 +209,11 @@ class AsyncMcpToolCallbackTest {
 		// Assert
 		assertThat(result).contains("Success with context");
 
-		// Verify the context was included in the request
+		// Verify private context was not included in the remote request
 		ArgumentCaptor<McpSchema.CallToolRequest> requestCaptor = ArgumentCaptor
 			.forClass(McpSchema.CallToolRequest.class);
 		verify(this.mcpClient).callTool(requestCaptor.capture());
-		assertThat(requestCaptor.getValue().meta()).isNotNull();
+		assertThat(requestCaptor.getValue().meta()).isEmpty();
 	}
 
 	@Test
@@ -304,6 +303,9 @@ class AsyncMcpToolCallbackTest {
 
 		// Assert
 		verify(customConverter).convert(toolContext);
+		ArgumentCaptor<McpSchema.CallToolRequest> request = ArgumentCaptor.forClass(McpSchema.CallToolRequest.class);
+		verify(this.mcpClient).callTool(request.capture());
+		assertThat(request.getValue().meta()).containsEntry("custom", "meta");
 	}
 
 	@Test

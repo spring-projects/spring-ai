@@ -81,7 +81,7 @@ public class McpToolCallbackAutoConfiguration {
 			.toolNamePrefixGenerator(
 					mcpToolNamePrefixGenerator.getIfUnique(() -> McpToolNamePrefixGenerator.noPrefix()))
 			.toolContextToMcpMetaConverter(
-					toolContextToMcpMetaConverter.getIfUnique(() -> ToolContextToMcpMetaConverter.defaultConverter()))
+					toolContextToMcpMetaConverter.getIfUnique(() -> ToolContextToMcpMetaConverter.noOp()))
 			.build();
 	}
 
@@ -96,7 +96,7 @@ public class McpToolCallbackAutoConfiguration {
 			.toolFilter(asyncClientsToolFilter.getIfUnique(() -> (McpAsyncClient, tool) -> true))
 			.toolNamePrefixGenerator(toolNamePrefixGenerator.getIfUnique(() -> McpToolNamePrefixGenerator.noPrefix()))
 			.toolContextToMcpMetaConverter(
-					toolContextToMcpMetaConverter.getIfUnique(() -> ToolContextToMcpMetaConverter.defaultConverter()))
+					toolContextToMcpMetaConverter.getIfUnique(() -> ToolContextToMcpMetaConverter.noOp()))
 			.mcpClients(mcpClients)
 			.build();
 	}

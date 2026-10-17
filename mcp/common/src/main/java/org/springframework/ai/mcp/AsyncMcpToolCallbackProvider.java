@@ -66,8 +66,7 @@ public class AsyncMcpToolCallbackProvider implements ToolCallbackProvider, Appli
 	 */
 	@Deprecated
 	public AsyncMcpToolCallbackProvider(McpToolFilter toolFilter, List<McpAsyncClient> mcpClients) {
-		this(toolFilter, McpToolNamePrefixGenerator.noPrefix(), ToolContextToMcpMetaConverter.defaultConverter(),
-				mcpClients);
+		this(toolFilter, McpToolNamePrefixGenerator.noPrefix(), ToolContextToMcpMetaConverter.noOp(), mcpClients);
 	}
 
 	/**
@@ -240,8 +239,7 @@ public class AsyncMcpToolCallbackProvider implements ToolCallbackProvider, Appli
 
 		private McpToolNamePrefixGenerator toolNamePrefixGenerator = new DefaultMcpToolNamePrefixGenerator();
 
-		private ToolContextToMcpMetaConverter toolContextToMcpMetaConverter = ToolContextToMcpMetaConverter
-			.defaultConverter();
+		private ToolContextToMcpMetaConverter toolContextToMcpMetaConverter = ToolContextToMcpMetaConverter.noOp();
 
 		private Builder() {
 		}
