@@ -32,6 +32,7 @@ import org.springframework.ai.stabilityai.api.StabilityAiImageOptions;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -47,8 +48,8 @@ class StabilityAiImageModelObservationTests {
 	@Test
 	void observationForCall() {
 		StabilityAiApi api = mock(StabilityAiApi.class);
-		when(api.generateImage(any())).thenReturn(new StabilityAiApi.GenerateImageResponse("success",
-				List.of(new StabilityAiApi.GenerateImageResponse.Artifacts(7L, "aGVsbG8=", "SUCCESS"))));
+		when(api.generateImage(eq("stable-diffusion-v1-6"), any())).thenReturn(new StabilityAiApi.GenerateImageResponse(
+				"success", List.of(new StabilityAiApi.GenerateImageResponse.Artifacts(7L, "aGVsbG8=", "SUCCESS"))));
 		StabilityAiImageModel model = new StabilityAiImageModel(api,
 				StabilityAiImageOptions.builder().model("stable-diffusion-v1-6").width(512).height(512).build(),
 				this.observationRegistry);
