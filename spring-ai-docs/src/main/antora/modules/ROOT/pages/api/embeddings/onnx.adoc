@@ -192,6 +192,10 @@ embeddingModel.setResourceCacheDirectory("/tmp/onnx-zoo");
 // "ai.onnxruntime.OrtException: Supplied array is ragged, ..."
 embeddingModel.setTokenizerOptions(Map.of("padding", "true"));
 
+// (optional) Customize the ONNX Runtime session options, for example to limit
+// the number of threads used for inference (by default all cores are used).
+embeddingModel.setSessionOptionsCustomizer(options -> options.setIntraOpNumThreads(2));
+
 embeddingModel.afterPropertiesSet();
 
 List<List<Double>> embeddings = this.embeddingModel.embed(List.of("Hello world", "World is big"));
