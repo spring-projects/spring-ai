@@ -19,18 +19,13 @@ package org.springframework.ai.mcp.annotation.provider.tool;
 import java.lang.reflect.Method;
 import java.util.Comparator;
 import java.util.List;
-import java.util.function.BiFunction;
 import java.util.stream.Stream;
 
-import io.modelcontextprotocol.server.McpAsyncServerExchange;
 import io.modelcontextprotocol.server.McpServerFeatures.AsyncToolSpecification;
 import io.modelcontextprotocol.spec.McpSchema;
-import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
-import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.util.Utils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import reactor.core.publisher.Mono;
 
 import org.springframework.ai.mcp.annotation.McpTool;
 import org.springframework.ai.mcp.annotation.common.McpPredicates;
@@ -142,8 +137,8 @@ public class AsyncMcpToolProvider extends AbstractMcpToolProvider {
 							: ReactiveUtils.isReactiveReturnTypeOfVoid(mcpToolMethod) ? ReturnMode.VOID
 									: ReturnMode.TEXT;
 
-					BiFunction<McpAsyncServerExchange, CallToolRequest, Mono<CallToolResult>> methodCallback = new AsyncMcpToolMethodCallback(
-							returnMode, mcpToolMethod, toolObject);
+					var methodCallback = new AsyncMcpToolMethodCallback(returnMode, mcpToolMethod, toolObject);
+					methodCallback.setJsonMapper(this.getJsonMapper());
 
 					AsyncToolSpecification toolSpec = AsyncToolSpecification.builder()
 						.tool(tool)
