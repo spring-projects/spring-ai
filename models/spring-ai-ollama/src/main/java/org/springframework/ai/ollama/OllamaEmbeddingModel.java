@@ -183,6 +183,22 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 				.useMLock(ModelOptionsUtils.mergeOption(ro.getUseMLock(), options.getUseMLock()))
 				.numThread(ModelOptionsUtils.mergeOption(ro.getNumThread(), options.getNumThread()));
 		}
+		else {
+			builder.keepAlive(options.getKeepAlive())
+				.truncate(options.getTruncate())
+				.useNUMA(options.getUseNUMA())
+				.numCtx(options.getNumCtx())
+				.numBatch(options.getNumBatch())
+				.numGPU(options.getNumGPU())
+				.mainGPU(options.getMainGPU())
+				.lowVRAM(options.getLowVRAM())
+				.f16KV(options.getF16KV())
+				.logitsAll(options.getLogitsAll())
+				.vocabOnly(options.getVocabOnly())
+				.useMMap(options.getUseMMap())
+				.useMLock(options.getUseMLock())
+				.numThread(options.getNumThread());
+		}
 
 		return builder.build();
 	}
