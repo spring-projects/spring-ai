@@ -607,6 +607,43 @@ public class ToolSearchToolCallingAdvisorCallTests {
 	}
 
 	@Test
+	void alwaysDeclaredCallbacksStayAvailableAndAreNotIndexed() {
+		ToolCallback coreTool = mockCallback("coreTool");
+		ToolCallback searchableTool = mockCallback("searchableTool");
+		ToolDefinition coreToolDefinition = coreTool.getToolDefinition();
+		ToolDefinition searchableToolDefinition = searchableTool.getToolDefinition();
+		TestToolCallingChatOptions toolOptions = new TestToolCallingChatOptions();
+		toolOptions.setToolCallbacks(List.of(coreTool, searchableTool));
+
+		when(this.toolCallingManager.resolveToolDefinitions(any(ToolCallingChatOptions.class)))
+			.thenReturn(List.of(coreToolDefinition, searchableToolDefinition));
+
+		ToolSearchToolCallingAdvisor.Builder<?> builder = ToolSearchToolCallingAdvisor.builder()
+			.toolCallingManager(this.toolCallingManager)
+			.toolIndex(this.toolIndex)
+			.alwaysDeclared(toolCallback -> "coreTool".equals(toolCallback.getToolDefinition().name()));
+		ToolSearchToolCallingAdvisor advisor = ((ToolSearchToolCallingAdvisor.Builder<?>) builder.copy()).build();
+
+		ToolCallingChatOptions firstIteration = captureToolOptionsForPrompt(advisor, List.of(new UserMessage("test")),
+				toolOptions);
+		assertThat(firstIteration.getToolCallbacks()).extracting(cb -> cb.getToolDefinition().name())
+			.containsExactlyInAnyOrder("toolSearchTool", "coreTool");
+
+		ToolResponseMessage searchResponse = ToolResponseMessage.builder()
+			.responses(List.of(new ToolResponseMessage.ToolResponse("id1", "toolSearchTool", "[\"searchableTool\"]")))
+			.build();
+		ToolCallingChatOptions nextIteration = captureToolOptionsForPrompt(advisor,
+				List.of(new UserMessage("test"), searchResponse), toolOptions);
+		assertThat(nextIteration.getToolCallbacks()).extracting(cb -> cb.getToolDefinition().name())
+			.containsExactlyInAnyOrder("toolSearchTool", "coreTool", "searchableTool");
+
+		@SuppressWarnings("unchecked")
+		ArgumentCaptor<List<ToolReference>> indexedToolsCaptor = ArgumentCaptor.forClass(List.class);
+		verify(this.toolIndex).indexTools(anyString(), indexedToolsCaptor.capture());
+		assertThat(indexedToolsCaptor.getValue()).extracting(ToolReference::toolName).containsExactly("searchableTool");
+	}
+
+	@Test
 	void toolSearchToolUsesLlmMaxResultsOverAdvisorDefault() {
 		ToolSearchToolCallingAdvisor advisor = ToolSearchToolCallingAdvisor.builder()
 			.toolCallingManager(this.toolCallingManager)
