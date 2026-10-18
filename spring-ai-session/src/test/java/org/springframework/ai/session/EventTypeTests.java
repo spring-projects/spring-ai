@@ -42,7 +42,10 @@ class EventTypeTests {
 		assertThat(progress).hasToString("MY_APP.PROGRESS");
 		assertThat(progress.canCarryMessage()).isFalse();
 		assertThat(EventType.MESSAGE.canCarryMessage()).isTrue();
-		assertThat(EventType.of("STATUS").canCarryMessage()).isFalse();
+		assertThat(EventType.of("STATUS")).isEqualTo(EventType.STATUS);
+		assertThat(EventType.of("INTERRUPT")).isEqualTo(EventType.INTERRUPT);
+		assertThat(EventType.STATUS.canCarryMessage()).isFalse();
+		assertThat(EventType.INTERRUPT.canCarryMessage()).isFalse();
 	}
 
 	@Test
