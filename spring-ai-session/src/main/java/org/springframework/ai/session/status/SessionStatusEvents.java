@@ -24,7 +24,6 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.ai.session.EventFilter;
 import org.springframework.ai.session.EventType;
 import org.springframework.ai.session.SessionEvent;
-import org.springframework.ai.session.SessionService;
 import org.springframework.util.Assert;
 
 /**
@@ -34,9 +33,9 @@ import org.springframework.util.Assert;
  * a message; the status, the run id and the reason go in the payload under the
  * {@code PAYLOAD_*} keys.
  * <p>
- * {@link SessionService#status} reads the newest status event into a {@link TurnStatus}.
- * The events themselves stay in the log as the audit trail of the session's turns. They
- * are not part of the active view, which holds message events only, so they never reach a
+ * {@link TurnService#status} reads the newest status event into a {@link TurnStatus}. The
+ * events themselves stay in the log as the audit trail of the session's turns. They are
+ * not part of the active view, which holds message events only, so they never reach a
  * prompt and need no compaction rule.
  *
  * @author Christian Tzolov
@@ -68,7 +67,7 @@ public final class SessionStatusEvents {
 	public static final String PAYLOAD_REASON = "reason";
 
 	/**
-	 * Selects the newest status event of a session, the one {@link SessionService#status}
+	 * Selects the newest status event of a session, the one {@link TurnService#status}
 	 * reads: one indexed read, by session, event type and position.
 	 */
 	public static final EventFilter NEWEST_STATUS = EventFilter.builder()
@@ -90,8 +89,8 @@ public final class SessionStatusEvents {
 	/**
 	 * Creates the status event that starts a turn on the session under the run id.
 	 * @param expiresAt when the turn's lease runs out, after which another
-	 * {@link SessionService#startTurn startTurn} may take the session over; {@code null}
-	 * for a turn that never expires
+	 * {@link TurnService#start start} may take the session over; {@code null} for a turn
+	 * that never expires
 	 */
 	public static SessionEvent running(String sessionId, String runId, @Nullable Instant expiresAt) {
 		Assert.hasText(sessionId, "sessionId must not be null or empty");

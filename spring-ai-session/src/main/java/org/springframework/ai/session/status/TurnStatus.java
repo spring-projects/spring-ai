@@ -22,15 +22,14 @@ import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.session.EventType;
 import org.springframework.ai.session.SessionEvent;
-import org.springframework.ai.session.SessionService;
 import org.springframework.util.Assert;
 
 /**
  * The turn status of a session: whether a turn runs on it, under which run id, and why
  * the last one ended. It is read from the session's log, not stored on the session: the
  * newest {@link EventType#STATUS} event, typed, or {@link #idle()} for a session that has
- * none. {@link SessionService#status} returns it; {@link SessionService#startTurn},
- * {@link SessionService#endTurn} and {@link SessionService#interrupt} change it.
+ * none. {@link TurnService#status} returns it; {@link TurnService#start},
+ * {@link TurnService#end} and {@link TurnService#interrupt} change it.
  *
  * @param status whether a turn runs
  * @param runId the run id of the turn that runs, or of the last one that ended;
@@ -41,8 +40,8 @@ import org.springframework.util.Assert;
  * when no turn ran yet
  * @param eventId the id of the status event; {@code null} when no turn ran yet
  * @param expiresAt when the running turn's lease runs out, after which
- * {@link SessionService#startTurn(String, String, java.time.Duration) startTurn} may take
- * the session over; {@code null} for a turn without a lease, and while no turn runs
+ * {@link TurnService#start(String, String, java.time.Duration) start} may take the
+ * session over; {@code null} for a turn without a lease, and while no turn runs
  * @author Christian Tzolov
  * @since 2.1.0
  */
@@ -92,9 +91,8 @@ public record TurnStatus(SessionStatus status, @Nullable String runId, @Nullable
 
 	/**
 	 * Returns whether a turn runs on the session whose lease has run out at the given
-	 * instant, so that a
-	 * {@link SessionService#startTurn(String, String, java.time.Duration) startTurn}
-	 * would take the session over. A turn without a lease never expires.
+	 * instant, so that a {@link TurnService#start(String, String, java.time.Duration)
+	 * start} would take the session over. A turn without a lease never expires.
 	 * @param now the instant to judge the lease by
 	 */
 	public boolean isExpired(Instant now) {

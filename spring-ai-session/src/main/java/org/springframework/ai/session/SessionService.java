@@ -25,12 +25,14 @@ import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.session.compaction.CompactionResult;
 import org.springframework.ai.session.compaction.CompactionStrategy;
 import org.springframework.ai.session.compaction.CompactionTrigger;
+import org.springframework.ai.session.status.TurnService;
 import org.springframework.util.Assert;
 
 /**
  * The sessions of an application and their conversations: creating and finding sessions,
- * appending and reading their events, compacting them. {@link DefaultSessionService}
- * implements it on a {@link SessionRepository}.
+ * appending and reading their events, compacting them, and running turns on them through
+ * {@link #turns()}. {@link DefaultSessionService} implements it on a
+ * {@link SessionRepository}.
  *
  * @author Christian Tzolov
  * @since 2.1.0
@@ -122,6 +124,32 @@ public interface SessionService {
 	}
 
 	/**
+	 * Appends several events in order, atomically, but only if the log's version still
+	 * equals {@code expectedVersion}. Otherwise nothing is written and {@code false} is
+	 * returned: another writer appended in between. This is the compare-and-set of the
+	 * log, as {@link SessionRepository#appendEvents} defines it. Read
+	 * {@link #getEventVersion}, then read whatever the write depends on, then write; a
+	 * {@code false} means read again. The compaction and the turn status are recorded
+	 * this way.
+	 * @param sessionId the session
+	 * @param events the events to append, oldest first; must not be empty
+	 * @param expectedVersion the version read before the events were prepared
+	 * @return {@code true} when the events were appended, {@code false} when the log
+	 * moved on and nothing was written
+	 * @throws IllegalArgumentException if the session does not exist or the batch is
+	 * empty, and for a system message among the events as {@link #appendEvent} throws it
+	 */
+	boolean appendEvents(String sessionId, List<SessionEvent> events, long expectedVersion);
+
+	/**
+	 * Returns the version of the session's log. Every append advances it, so it tells
+	 * whether the log changed between two reads; {@code 0} for a session without events,
+	 * or one that does not exist. Read it before the events a version-checked
+	 * {@link #appendEvents} depends on.
+	 */
+	long getEventVersion(String sessionId);
+
+	/**
 	 * The messages of the whole log, the events a compaction covered and the summaries
 	 * included: the full history, not a prompt. Use {@link #getActiveMessages(String)}
 	 * for the prompt.
@@ -136,6 +164,22 @@ public interface SessionService {
 	 */
 	default List<Message> getActiveMessages(String sessionId) {
 		return getEvents(sessionId, EventFilter.active()).stream().map(SessionEvent::getMessage).toList();
+	}
+
+	// Turns
+
+	/**
+	 * Returns the turns of the sessions: the {@link TurnService} that starts, ends,
+	 * interrupts, parks and resumes a turn and reads its status, all on this service.
+	 * Every harness runs its turns through it, so a turn started on one instance can be
+	 * interrupted from another, and two harnesses never run one session at once. The
+	 * status is a projection of the log; the turn service keeps no state, so the returned
+	 * instance may be kept or taken again. <pre>{@code
+	 * TurnStatus turn = sessionService.turns().start(sessionId, runId, Duration.ofMinutes(30));
+	 * }</pre>
+	 */
+	default TurnService turns() {
+		return new TurnService(this);
 	}
 
 	// Compaction

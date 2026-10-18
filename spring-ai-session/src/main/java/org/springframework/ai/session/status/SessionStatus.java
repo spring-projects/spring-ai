@@ -17,7 +17,6 @@
 package org.springframework.ai.session.status;
 
 import org.springframework.ai.session.EventType;
-import org.springframework.ai.session.SessionService;
 
 /**
  * Whether a turn runs on a session. A {@link EventType#STATUS} event records it and
@@ -30,13 +29,13 @@ import org.springframework.ai.session.SessionService;
 public enum SessionStatus {
 
 	/**
-	 * No turn runs on the session. The next {@link SessionService#startTurn} starts one.
+	 * No turn runs on the session. The next {@link TurnService#start} starts one.
 	 */
 	IDLE,
 
 	/**
 	 * A turn runs on the session, under the run id the status names, until that run ends
-	 * it or an {@link SessionService#interrupt} does.
+	 * it or an {@link TurnService#interrupt} does.
 	 */
 	RUNNING
 

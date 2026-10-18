@@ -12,7 +12,7 @@
 	<artifactId>spring-ai-session</artifactId>
 	<packaging>jar</packaging>
 	<name>Spring AI Session</name>
-	<description>Spring AI session memory: an append-only conversation log with compaction</description>
+	<description>Spring AI session memory: an append-only conversation log with its turn status and compaction</description>
 	<url>https://github.com/spring-projects/spring-ai</url>
 
 	<dependencies>

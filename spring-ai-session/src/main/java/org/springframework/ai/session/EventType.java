@@ -66,8 +66,8 @@ public final class EventType {
 
 	/**
 	 * A request to stop the turn that runs on the session, recorded by
-	 * {@link SessionService#interrupt}. When a turn runs, a {@link #STATUS} event in the
-	 * same append ends it.
+	 * {@link org.springframework.ai.session.status.TurnService#interrupt}. When a turn
+	 * runs, a {@link #STATUS} event in the same append ends it.
 	 */
 	public static final EventType INTERRUPT = of("INTERRUPT");
 

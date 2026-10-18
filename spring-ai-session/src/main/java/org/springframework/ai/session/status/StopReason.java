@@ -17,7 +17,6 @@
 package org.springframework.ai.session.status;
 
 import org.springframework.ai.session.EventType;
-import org.springframework.ai.session.SessionService;
 
 /**
  * Why a turn ended. The {@link EventType#STATUS} event that ends the turn records it, and
@@ -35,9 +34,9 @@ public enum StopReason {
 	ERROR,
 
 	/**
-	 * An {@link SessionService#interrupt interrupt} ended the turn before it ran to its
-	 * end. The {@link EventType#INTERRUPT} event that asked for the stop sits right
-	 * before the {@code STATUS} event that records this reason.
+	 * An {@link TurnService#interrupt interrupt} ended the turn before it ran to its end.
+	 * The {@link EventType#INTERRUPT} event that asked for the stop sits right before the
+	 * {@code STATUS} event that records this reason.
 	 */
 	INTERRUPTED,
 
@@ -51,9 +50,9 @@ public enum StopReason {
 	/**
 	 * The turn's lease ran out and a new turn took the session over: the harness that
 	 * held it never ended it, after a crash for example, and
-	 * {@link SessionService#startTurn(String, String, java.time.Duration) startTurn}
-	 * found the lease passed. Written by {@code startTurn} in the same append as the new
-	 * turn's start. No {@link EventType#INTERRUPT} event goes with this reason either.
+	 * {@link TurnService#start(String, String, java.time.Duration) start} found the lease
+	 * passed. Written by {@code start} in the same append as the new turn's start. No
+	 * {@link EventType#INTERRUPT} event goes with this reason either.
 	 */
 	EXPIRED
 
