@@ -2,32 +2,44 @@
 = ChatClient Integration
 
 `SessionAdvisors` wires a session into a `ChatClient`, so application code never loads or appends history by hand.
-The `ChatClient` is one harness on the session, stateless by itself: the advisors read the view and append events, the session keeps the state.
-`SessionAdvisors` builds two advisors, one for each place a `ChatClient` call has:
+The `ChatClient` is one harness on the session, and it is stateless by itself.
+The advisors read the view and append events, and the session keeps the state.
+
+`SessionAdvisors` builds the advisors, one for each place a `ChatClient` call has:
 
 * `SessionMemoryAdvisor` works on each model call, inside the tool-calling loop.
-It loads the active view into the prompt and stores the request's user message or tool results and the model's reply.
+It loads the active view into the prompt.
+It stores the request's user message or tool results, and the model's reply.
 * `SessionTurnAdvisor` works on each `ChatClient` call, outside the loop, so it sees the call's final response however the loop ended.
 A call is one xref:api/session/concepts.adoc#session-concepts-turn[turn] of the session: the user message, the tool rounds and the reply.
-It creates the session on first use, stores the results of a tool loop that ended without a model round, and compacts the session once the call has returned.
+The advisor creates the session on first use.
+It starts and ends the turn in the session's xref:api/session/turn-status.adoc[status].
+It stores the results of a tool loop that ended without a model round.
+And it compacts the session once the call has returned.
+* `SessionInterruptAdvisor`, on request, works on each model call too, just inside the loop.
+It stops the loop after an interrupt.
 
-What each gives on its own:
+Here is what each gives on its own:
 
 [cols="1,3"]
 |===
 | Registered | You get
 
-| Both, through `SessionAdvisors`
-| The session: history, compaction, and the results of a loop that ended without a model round.
+| All of them, through `SessionAdvisors`
+| The session: history, the turn status, compaction, and the results of a loop that ended without a model round.
+With `interruptible(true)`, you also get a loop that stops after an interrupt.
 
 | `SessionMemoryAdvisor` alone
-| The history, without compaction; a `returnDirect` tool's results are not stored.
+| The history, without compaction or turn status.
+A `returnDirect` tool's results are not stored.
 
 | `SessionTurnAdvisor` alone
-| Nothing of the conversation: it stores no messages.
+| The turn status only.
+It stores no messages.
 |===
 
-Both live in `spring-ai-session-advisor`; the core module has no dependency on `ChatClient`.
+All three live in `spring-ai-session-advisor`.
+The core module has no dependency on `ChatClient`.
 
 image::session/spring-ai-session-advisors.png[The session advisors around the tool-calling loop, width=900, align="center"]
 
@@ -39,17 +51,34 @@ On every model call the memory advisor:
 
 . Resolves the session id from `SESSION_ID_CONTEXT_KEY`, which must be present on every request, and creates the session if it does not exist.
 A session the advisor creates gets the metadata of `SESSION_METADATA_CONTEXT_KEY`, such as the xref:api/session/concepts.adoc#session-concepts-session[agent attributes].
-. Reads the active view with the configured `eventFilter`, merged with a per-request one, and always within the view: the events a compaction covered never reach the prompt.
-. Builds the prompt: the latest stored system message, if any, and the request's system messages first, exact duplicates once; then the history the request does not carry yet; then the request's messages.
+. Reads the active view with the configured `eventFilter`, merged with a per-request one.
+The read always stays within the view, so the events a compaction covered never reach the prompt.
+. Builds the prompt.
+The latest stored system message, if any, and the request's system messages come first, exact duplicates once.
+Then comes the history the request does not carry yet.
+Then come the request's messages.
 From the second round of a tool loop on, the loop's prompt carries the turn so far, so only the history before it is prepended.
 . Stores the request's trailing user message, subject to the `MessageFilter`, or its tool results, always.
-. After the model responds, stores the reply, subject to the `MessageFilter`, except a reply with tool calls, which is always stored.
+. After the model responds, stores the reply, subject to the `MessageFilter`.
+A reply with tool calls is the exception: it is always stored.
 
-On every `ChatClient` call the turn advisor finds or creates the session; once the call has returned it stores the tool results of a loop that ended without a model round (a `returnDirect` tool, or a breached tool call limit) and runs the compaction trigger.
+On every `ChatClient` call the turn advisor:
+
+. Finds or creates the session.
+. Starts the turn, under the run id of `RUN_ID_CONTEXT_KEY` or a UUID of its own, and puts the effective id on the request it forwards.
+A session on which a turn runs is busy.
+The call fails with `TurnInProgressException`, and nothing is queued.
+. Once the call has returned, stores the tool results of a loop that ended without a model round (a `returnDirect` tool, or a breached tool call limit).
+. Ends the turn: with `END_TURN` when the call returned, with `ERROR` when it threw.
+A stream the client cancelled ends with `CANCELLED`.
+An interrupt that landed first stands, and the advisor leaves the status alone then.
+. Runs the compaction trigger.
 
 == Setup
 
-`SessionAdvisors` builds both advisors at their default order around the tool-calling loop that the `ChatClient` registers itself: the turn advisor outside it (`Ordered.HIGHEST_PRECEDENCE + 200`) and the memory advisor inside it (`HIGHEST_PRECEDENCE + 1000`).
+`SessionAdvisors` builds both advisors at their default order around the tool-calling loop that the `ChatClient` registers itself.
+The turn advisor sits outside the loop (`Ordered.HIGHEST_PRECEDENCE + 200`).
+The memory advisor sits inside it (`HIGHEST_PRECEDENCE + 1000`).
 
 image::session/session-advisors-classes.svg[The session advisors, width=900, align="center"]
 
@@ -59,8 +88,10 @@ ChatClient chatClient = ChatClient.builder(chatModel)
     .defaultAdvisors(SessionAdvisors.builder(sessionService)
         .compaction(new TurnCountTrigger(20), WindowCompactionStrategy.builder().lastTurns(10).build())
         .asyncCompaction(true)                                    // compact after the reply is returned
+        .turnTimeout(Duration.ofMinutes(30))                      // the lease on the turn; the default
+        .interruptible(true)                                      // stop the loop after an interrupt
         .memory(memory -> memory.eventFilter(EventFilter.lastN(50)))  // customize the memory advisor
-        .build())                                                 // a List<Advisor>: the turn, then the memory
+        .build())                                                 // a List<Advisor>: the turn, the memory, the interrupt
     .build();
 
 String answer = chatClient.prompt()
@@ -90,16 +121,88 @@ ChatClient chatClient = ChatClient.builder(chatModel)
     .build();
 ----
 
-The compaction trigger and strategy are set together: setting only one makes `build()` throw.
-With `asyncCompaction(true)` the compaction runs on the advisor's `Scheduler` after the reply is returned, so a summarizing strategy adds no model call to the reply's latency; the caller's context, the security context for example, goes with it: the thread locals of a blocking caller, or what a reactive caller carries in the Reactor context.
-One compaction per session runs at a time from one advisor; a compaction that a new turn's writes overtake keeps them in the view and lands with the same summary, and only another compaction's boundary, or turns that keep overtaking it, make it stand down until the next turn.
-Compaction is best-effort: a failure is logged and the reply returned.
+The compaction trigger and strategy are set together.
+Setting only one makes `build()` throw.
+
+With `asyncCompaction(true)` the compaction runs on the advisor's `Scheduler` after the reply is returned, so a summarizing strategy adds no model call to the reply's latency.
+The caller's context, the security context for example, goes with it: the thread locals of a blocking caller, or what a reactive caller carries in the Reactor context.
+One compaction per session runs at a time from one advisor.
+A compaction that a new turn's writes overtake keeps them in the view and lands with the same summary.
+Only another compaction's boundary, or turns that keep overtaking it, make it stand down until the next turn.
+Compaction is best-effort: a failure is logged and the reply is returned.
 
 NOTE: The memory advisor's default order puts it inside the `ToolCallingAdvisor`'s loop, so it runs once per round.
-That is deliberate: each round's prompt is rebuilt from the session, and only each round's trailing message and the model's reply are stored.
-`SessionMemoryAdvisor` is a `MemoryAdvisor`, so the loop the `ChatClient` registers itself runs with its own history off and sends only the system prompt and the last tool result; a loop configured with its history on sends the turn so far, which the loaded history ends with, and only the history before the overlap is prepended.
+That is deliberate.
+Each round's prompt is rebuilt from the session, and only each round's trailing message and the model's reply are stored.
+`SessionMemoryAdvisor` is a `MemoryAdvisor`, so the loop the `ChatClient` registers itself runs with its own history off and sends only the system prompt and the last tool result.
+A loop configured with its history on sends the turn so far, which the loaded history ends with, and only the history before the overlap is prepended.
 Messages are compared by content, not by identity, so the check also holds when the repository does not keep message metadata.
 A blank system message, the loop's stand-in for a request without one, is not sent.
+
+[[session-chat-client-status]]
+== Turn status and interrupts
+
+Every call runs as a turn of the session's xref:api/session/turn-status.adoc[status].
+The turn advisor starts it before the first round and ends it after the last.
+So while a call runs the session is `RUNNING` under the call's run id, and a second call on the same session fails with `TurnInProgressException` instead of interleaving its rounds with the first.
+Pass the run id of your own harness with `SessionAdvisors.session(sessionId, runId)`, which sets `RUN_ID_CONTEXT_KEY` next to the session id.
+Without one the advisor generates a UUID per call.
+Either way the forwarded request and the response carry the effective id.
+
+[source,java]
+----
+try {
+    String answer = chatClient.prompt()
+        .user("Hello")
+        .advisors(SessionAdvisors.session(sessionId, runId))   // or session(sessionId): a UUID per call
+        .call()
+        .content();
+}
+catch (TurnInProgressException ex) {
+    // a turn runs on the session under ex.getRunId(): fail, retry later, or interrupt it
+}
+----
+
+Every call takes a lease on the turn, thirty minutes by default, so a session survives a crash of the JVM that ran it.
+A call that finds the session `RUNNING` under a lease that ran out does not fail: it ends the dead turn with `EXPIRED` and runs, in the same append.
+Set `turnTimeout` on the builder well above the longest call the client makes, tool loop included, because a call that outlives its lease loses the turn to the next one; `turnTimeout(null)` turns the lease off, and then only an interrupt frees a session after a crash.
+
+To stop a running turn from anywhere, a UI's stop button or another instance, call `sessionService.turns().interrupt(sessionId, reason)`.
+The status moves to `IDLE` with `INTERRUPTED` at once.
+The turn advisor's own end of the turn, when the call returns, is then a no-op: the interrupt stands.
+
+The loop itself runs on unless the `SessionInterruptAdvisor` is registered, which `SessionAdvisors.builder(sessionService).interruptible(true)` does.
+It sits just inside the memory advisor (order `HIGHEST_PRECEDENCE + 1100`) and reads the status before every model round.
+When the turn no longer runs under the call's run id, it throws `TurnInterruptedException`.
+A `call()` throws it, and a `stream()` ends with it as the error signal.
+The rounds already run stay in the log, the tool results of the last one included: the memory advisor stores them with the round's request, before the check runs.
+The cost is one indexed read per round, which is why the advisor is opt-in.
+
+The check runs on every pass of the advisor chain through the advisor, the first one included, because the advisor cannot know which advisor loops around it.
+Any loop that runs around it is checked between its rounds: the tool-calling advisor, and a retrying advisor of your own ordered between `HIGHEST_PRECEDENCE + 300` and `+ 1000`, whose retries the memory advisor then records as well.
+A loop that runs inside it is not: the `StructuredOutputValidationAdvisor` at its default order, for example, retries straight against the model, and neither the check nor the session sees those retries.
+
+[source,java]
+----
+try {
+    chatClient.prompt().user("Research this").advisors(SessionAdvisors.session(sessionId)).call().content();
+}
+catch (TurnInterruptedException ex) {
+    // the turn was stopped between two rounds: ex.getStatus() is the status as read
+}
+----
+
+A stream the client cancelled ends the turn with `CANCELLED`, on the advisor's scheduler.
+A call that throws ends it with `ERROR`.
+Either way the next call on the session starts a turn.
+`CANCELLED` is not `INTERRUPTED`.
+Nobody asked the session to stop, so no `INTERRUPT` event is recorded, and the log tells a dropped connection from a stop button that calls `interrupt`.
+
+A tool call that needs a person's xref:api/tools/tool-call-confirmation.adoc[confirmation] pauses the loop, and the paused reply comes back as a normal response.
+The turn then ends with `END_TURN`, so the status cannot tell a turn that waits for a decision from one that finished.
+The paused reply is stored with its tool calls.
+Until the application resumes with the decisions nothing answers them, and the read guard keeps them out of the next prompt.
+A parked turn, with the question and the answer in the log, is the next follow-up.
 
 [[session-chat-client-keys]]
 == Context keys
@@ -110,27 +213,37 @@ A blank system message, the loop's stand-in for a request without one, is not se
 
 | `SessionMemoryAdvisor.SESSION_ID_CONTEXT_KEY`
 | `"chat_memory_conversation_id"`, equal to `MemoryAdvisor.CONVERSATION_ID`
-| The session a call runs on.
+| Names the session a call runs on.
 `SessionAdvisors.session(id)` sets it.
-Omitting it throws `IllegalStateException`: a shared default session would silently merge the history of different users.
+Omitting it throws `IllegalStateException`, because a shared default session would silently merge the history of different users.
 
 | `SessionMemoryAdvisor.SESSION_METADATA_CONTEXT_KEY`
 | `"chat_memory_session_metadata"`
-| A `Map<String, Object>` of metadata for a session the advisor creates on first use; ignored for an existing session.
-Set the agent attributes once with `.defaultAdvisors(a -> a.param(SESSION_METADATA_CONTEXT_KEY, Map.of(SessionAttributes.AGENT_NAME, "support")))`; a request that passes its own map replaces that default as a whole.
+| Carries a `Map<String, Object>` of metadata for a session the advisor creates on first use.
+It is ignored for an existing session.
+Set the agent attributes once with `.defaultAdvisors(a -> a.param(SESSION_METADATA_CONTEXT_KEY, Map.of(SessionAttributes.AGENT_NAME, "support")))`.
+A request that passes its own map replaces that default as a whole.
 
 | `SessionMemoryAdvisor.EVENT_FILTER_CONTEXT_KEY`
 | `"chat_memory_event_filter"`
-| A per-request `EventFilter` merged over the advisor's.
+| Carries a per-request `EventFilter` merged over the advisor's.
+
+| `SessionTurnAdvisor.RUN_ID_CONTEXT_KEY`
+| `"chat_memory_session_run_id"`
+| Names the run id the call's turn runs under.
+A harness passes its own with `SessionAdvisors.session(id, runId)`, or the turn advisor generates a UUID per call.
+The advisor sets it on the request it forwards, and so on the response, with the effective id.
 
 | `SessionMemoryAdvisor.REQUEST_EVENT_ID_CONTEXT_KEY`
 | `"chat_memory_request_event_id"`
-| Set by the advisor: the id of the event that stored the request's trailing user or tool message; absent when none was stored.
+| Set by the advisor.
+Holds the id of the event that stored the request's trailing user or tool message, and is absent when none was stored.
 Read it from the forwarded request or from `call().chatClientResponse().context()`.
 
 | `SessionMemoryAdvisor.RESPONSE_EVENT_IDS_CONTEXT_KEY`
 | `"chat_memory_response_event_ids"`
-| Set by the advisor on the response: the ids of the events that stored the reply's assistant messages, a `List<String>`, empty when none was stored.
+| Set by the advisor on the response.
+Holds the ids of the events that stored the reply's assistant messages, a `List<String>`, empty when none was stored.
 |===
 
 [[session-chat-client-filter]]
@@ -149,14 +262,17 @@ String answer = chatClient.prompt()
     .content();
 ----
 
-The request's filter is merged over the advisor's with `EventFilter.merge`: its types and window win, the flags are OR-ed, and the view is always merged in.
+The request's filter is merged over the advisor's with `EventFilter.merge`.
+Its types and window win, the flags are OR-ed, and the view is always merged in.
 See xref:api/session/event-filter.adoc[Event Filtering].
 
 [[session-chat-client-stored]]
 == What is stored
 
-While `EventFilter` controls which stored events are loaded into the prompt, `MessageFilter` controls which messages get stored at all.
-A message the filter rejects is never persisted; the outgoing prompt is unaffected.
+`EventFilter` controls which stored events are loaded into the prompt.
+`MessageFilter` controls which messages get stored at all.
+A message the filter rejects is never persisted.
+The outgoing prompt is unaffected.
 
 [cols="1,2,2"]
 |===
@@ -195,8 +311,8 @@ SessionMemoryAdvisor.builder(sessionService)
 | Stores every message.
 
 | `MessageFilter.skipEmptyMessages()`
-| Skips assistant messages with no text, no tool calls and no media; the default.
-Some models reject an empty assistant message replayed as history.
+| Skips assistant messages with no text, no tool calls and no media.
+This is the default, because some models reject an empty assistant message replayed as history.
 
 | `MessageFilter.byMessageType(types...)`
 | Stores only the listed message types.
@@ -208,8 +324,10 @@ Some models reject an empty assistant message replayed as history.
 `MessageFilter` is a functional interface, and filters compose with `and()`, `or()` and `negate()`.
 A custom filter replaces the default, so compose it with `skipEmptyMessages()` to keep that protection.
 
-Tool calls and tool results are always stored, whatever the filter says: either half alone makes a prompt every provider rejects.
-To keep tool traffic out of the prompt, hide it on read instead; the advisor then drops a tool call left without its results:
+Tool calls and tool results are always stored, whatever the filter says.
+Either half alone makes a prompt every provider rejects.
+To keep tool traffic out of the prompt, hide it on read instead.
+The advisor then drops a tool call left without its results:
 
 [source,java]
 ----
@@ -226,15 +344,19 @@ The advisors keep that from happening at both ends, without touching the log:
 * *Windows keep turns whole.*
 A `lastN` window is extended by the repository to the start of the turn it lands in, so a tool call is never read without its results.
 * *The read guard.*
-After loading the history, an assistant tool call whose calls are not all answered by the tool messages that directly follow it is dropped from the prompt, and so is a tool message that answers no preceding call.
+After loading the history, an assistant tool call whose calls are not all answered by the tool messages that directly follow it is dropped from the prompt.
+So is a tool message that answers no preceding call.
 The advisor logs a `WARN` naming the likely causes: a `messageTypes` filter hiding `TOOL` events, or a loop that failed mid-way.
 * *The write side.*
 Tool calls and tool results are always stored.
 A loop that ends without a model round after the calls stores no results of its own: a `returnDirect` tool, or a breached tool call limit.
-The `SessionTurnAdvisor` stores them then: the results that came back directly, or, for a breach, the results of the calls that ran, the breach for the call that broke the limit, and a note for the calls after it.
+The `SessionTurnAdvisor` stores them then.
+For a `returnDirect` tool, these are the results that came back directly.
+For a breach, these are the results of the calls that ran, the breach for the call that broke the limit, and a note for the calls after it.
 
 == Streaming and threads
 
-Both advisors run their session reads and writes on a `Scheduler`, `BaseAdvisor.DEFAULT_SCHEDULER` by default, for a `call()` and for a `stream()`.
-In a stream the aggregation of the reply and the compaction are published back onto the scheduler, so nothing runs on the model's streaming thread.
+The advisors run their session reads and writes on a `Scheduler`, `BaseAdvisor.DEFAULT_SCHEDULER` by default, for a `call()` and for a `stream()`.
+In a stream the aggregation of the reply, the end of the turn and the compaction are published back onto the scheduler, so nothing runs on the model's streaming thread.
+A cancel ends the turn on the scheduler too.
 Streamed chunks do not carry `RESPONSE_EVENT_IDS_CONTEXT_KEY`.

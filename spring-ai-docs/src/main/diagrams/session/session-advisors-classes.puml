@@ -14,19 +14,33 @@ package "org.springframework.ai.chat.client.advisor.api" {
 class SessionAdvisors {
   {static} +builder(sessionService)
   {static} +session(sessionId)
+  {static} +session(sessionId, runId)
 }
 class "SessionAdvisors.Builder" as SAB {
   +compaction(trigger, strategy)
   +asyncCompaction(boolean)
+  +interruptible(boolean)
   +scheduler(scheduler)
   +memory(customizer)
   +build(): List<Advisor>
 }
 class SessionTurnAdvisor {
   {static} DEFAULT_ORDER = HIGHEST_PRECEDENCE + 200
+  {static} RUN_ID_CONTEXT_KEY
   +adviseCall(request, chain)
   +adviseStream(request, chain)
   {static} +builder(sessionService)
+}
+class SessionInterruptAdvisor {
+  {static} DEFAULT_ORDER = HIGHEST_PRECEDENCE + 1100
+  +before(request, chain)
+  +after(response, chain)
+  {static} +builder(sessionService)
+}
+class TurnInterruptedException {
+  +getSessionId()
+  +getRunId()
+  +getStatus(): TurnStatus
 }
 class SessionMemoryAdvisor {
   {static} SESSION_ID_CONTEXT_KEY
@@ -48,11 +62,15 @@ interface CompactionStrategy
 
 CallAdvisor <|.. SessionTurnAdvisor
 StreamAdvisor <|.. SessionTurnAdvisor
+BaseAdvisor <|.. SessionInterruptAdvisor
 BaseAdvisor <|.. SessionMemoryAdvisor
 SessionAdvisors +-- SAB
 SAB ..> SessionTurnAdvisor : builds
+SAB ..> SessionInterruptAdvisor : builds\nwith interruptible(true)
 SAB ..> SessionMemoryAdvisor : builds
 SessionTurnAdvisor --> SessionService
+SessionInterruptAdvisor --> SessionService : reads the status
+SessionInterruptAdvisor ..> TurnInterruptedException : throws
 SessionTurnAdvisor --> "0..1" CompactionTrigger
 SessionTurnAdvisor --> "0..1" CompactionStrategy
 SessionMemoryAdvisor --> SessionService

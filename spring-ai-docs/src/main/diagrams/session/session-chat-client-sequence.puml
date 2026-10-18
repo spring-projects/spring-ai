@@ -4,14 +4,24 @@ autonumber
 participant "ChatClient" as Client
 participant "SessionTurnAdvisor\n(outside the loop)" as Turn
 participant "ToolCallingAdvisor" as Loop
+participant "SessionInterruptAdvisor\n(inside the loop, opt-in)" as Interrupt
 participant "SessionMemoryAdvisor\n(inside the loop)" as Memory
 participant SessionService as Svc
 participant ChatModel as Model
 
 Client -> Turn: adviseCall(request)
 Turn -> Svc: findById / create (first use)
-Turn -> Loop: nextCall(request)
+Turn -> Svc: turns().start(id, runId, timeout)
+note right: RUNNING under the run id;\na busy session throws\nTurnInProgressException
+Turn -> Loop: nextCall(request with the run id)
 loop every round, until a reply without tool calls
+  opt interruptible(true)
+    Loop -> Interrupt: before(request)
+    Interrupt -> Svc: status(id)
+    alt the turn no longer runs under the run id
+      Interrupt --> Loop: throws TurnInterruptedException
+    end
+  end
   Loop -> Memory: before(request)
   Memory -> Svc: getEvents(id, active view)
   Memory -> Memory: the prompt: system messages first,\nthe history the round does not carry, the request
@@ -26,6 +36,8 @@ Loop --> Turn: the final response
 opt the loop ended without a model round\n(returnDirect, breached tool call limit)
   Turn -> Svc: appendEvent(the tool results)
 end
+Turn -> Svc: turns().end(id, runId, END_TURN | ERROR)
+note right: the own-turn guard: an interrupt\nthat landed first stands
 opt the compaction trigger fires
   Turn -> Svc: compact(id, trigger, strategy)
   note right: now, or after the reply\nwith asyncCompaction

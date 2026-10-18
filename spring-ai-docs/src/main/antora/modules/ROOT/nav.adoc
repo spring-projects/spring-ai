@@ -84,6 +84,7 @@
 ** xref:api/chat-memory.adoc[Chat Memory]
 ** xref:api/session.adoc[Session Memory]
 *** xref:api/session/concepts.adoc[Concepts]
+*** xref:api/session/turn-status.adoc[Turn Status]
 *** xref:api/session/event-filter.adoc[Event Filtering]
 *** xref:api/session/compaction.adoc[Compaction]
 *** xref:api/session/system-messages.adoc[System Messages]

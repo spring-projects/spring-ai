@@ -1,7 +1,13 @@
 [[session-concepts]]
 = Session Concepts
 
-Four concepts describe how a conversation is stored and read: the session, its events, the turns they form, and the view of the log the model sees.
+Session memory is built on five closely related concepts.
+A *session* identifies one conversation.
+Its *events* are the log of what happened in it.
+The events group into *turns*, one per user message.
+The *status* says whether a turn is running right now, and why the last one ended.
+And the *active view* is the part of the log the model gets to see.
+This page takes them one at a time, and ends with the `SessionService` API that ties them together.
 
 image::session/session-core-classes.svg[The core session types, width=800, align="center"]
 
@@ -9,14 +15,16 @@ image::session/session-core-classes.svg[The core session types, width=800, align
 == Session
 
 A `Session` is the identity of one continuous conversation.
-It is an immutable value that holds only metadata; the events are stored separately and read on demand.
+It is an immutable value that holds only metadata.
+The events are not part of it: they are stored separately and read on demand, so a `Session` stays cheap to pass around no matter how long the conversation gets.
 
 [cols="1,3"]
 |===
 | Field | Description
 
 | `id`
-| The session's identifier: the request's, or a random UUID.
+| The session's identifier.
+It comes from the create request, or it is a random UUID.
 
 | `createdAt`
 | When the session was created.
@@ -24,15 +32,16 @@ It is an immutable value that holds only metadata; the events are stored separat
 | `expiresAt`
 | When the session expires.
 A session the service creates always has one: the request's `timeToLive`, or the service's default of 60 days.
-A `Session` built directly has none, so it never expires, unless its builder sets one.
+A `Session` built directly with its builder has none, and never expires, unless the builder sets one.
 
 | `metadata`
-| Arbitrary metadata: the owner, the agent attributes, tags, and whatever the application adds.
+| Arbitrary metadata: the owner, the agent attributes, tags, and whatever else the application wants to keep with the session.
 |===
 
-A session has no owner field.
-Who it belongs to is an attribute of its metadata, in the shape of Spring Session's principal-name index: every store indexes `SessionAttributes.PRINCIPAL_NAME`, so `findByMetadata(SessionAttributes.PRINCIPAL_NAME, "alice")` lists a user's sessions.
-`SessionAttributes.AGENT_NAME`, `AGENT_VERSION` and `AGENT_MODEL` label the agent a session runs, for listings and a UI; `SessionAttributes.agentName(session)` reads them back.
+Note that a session has no owner field.
+Who it belongs to is just an attribute of its metadata, stored the way Spring Session stores its principal-name index.
+Every store indexes `SessionAttributes.PRINCIPAL_NAME`, so `findByMetadata(SessionAttributes.PRINCIPAL_NAME, "alice")` lists the sessions of a user.
+The same goes for the agent a session runs: `SessionAttributes.AGENT_NAME`, `AGENT_VERSION` and `AGENT_MODEL` label it, for listings and a UI, and `SessionAttributes.agentName(session)` reads the name back.
 
 [source,java]
 ----
@@ -44,14 +53,16 @@ Session session = sessionService.create(CreateSessionRequest.builder()
     .build());
 ----
 
-A `create` for an id that is taken throws `SessionAlreadyExistsException`, and the existing session is left untouched: two callers that create the same id concurrently get one session and one exception, so the second can read what the first created.
+Creating a session whose id is already taken throws `SessionAlreadyExistsException` and leaves the existing session untouched.
+This is what makes concurrent first use safe: when two callers create the same id at the same time, one of them gets the session and the other gets the exception, and the second can simply read what the first created.
 
 [[session-concepts-event]]
 == SessionEvent
 
 A `SessionEvent` is an immutable value with an `EventType`.
-A `MESSAGE` event wraps a Spring AI `Message` and adds only what the message intentionally omits: identity, ownership, ordering and framework flags.
-Every other event type records runtime state in the same log and carries its data in a `payload` map instead of a message.
+Most events are `MESSAGE` events.
+A `MESSAGE` event wraps a Spring AI `Message` and adds only what the message intentionally leaves out: an identity, the session it belongs to, its position in the log, and a few framework flags.
+Every other event type records runtime state in the same log, a compaction boundary or a turn transition for example, and carries its data in a `payload` map instead of a message.
 
 [cols="1,3"]
 |===
@@ -59,7 +70,7 @@ Every other event type records runtime state in the same log and carries its dat
 
 | `id`
 | The event's identity, a random UUID by default.
-Event ids are unique across sessions.
+Event ids are unique across sessions, not only within one.
 
 | `sessionId`
 | The session the event belongs to.
@@ -68,21 +79,24 @@ Event ids are unique across sessions.
 | When the event was recorded, `Instant.now()` by default.
 
 | `type`
-| What the event records; `MESSAGE`, the default, for a conversation message.
+| What the event records.
+`MESSAGE`, the default, is a conversation message.
 
 | `message`
 | The Spring AI message of a `MESSAGE` event.
-`getMessage()` throws for an event without one; test with `hasMessage()` first.
+`getMessage()` throws for an event that has none, so test with `hasMessage()` first.
 
 | `payload`
-| The JSON-serializable data of an event that is not a message; empty for a message event.
+| The JSON-serializable data of an event that is not a message.
+Empty for a message event.
 
 | `metadata`
-| Framework flags such as `METADATA_SYNTHETIC`, `METADATA_COMPACTION_SOURCE` and `METADATA_COMPACTION_ID`, and whatever the application adds.
+| Framework flags such as `METADATA_SYNTHETIC`, `METADATA_COMPACTION_SOURCE` and `METADATA_COMPACTION_ID`, plus whatever the application adds.
 |===
 
-An event is appended once and never changed.
-Compaction does not flag or move it: it appends a `COMPACTION` event that defines the view from then on (see <<session-concepts-view>>).
+An event is appended once and never changed afterwards.
+Compaction does not flag it or move it either.
+It appends a `COMPACTION` event that defines the view from then on, as <<session-concepts-view>> explains.
 
 [source,java]
 ----
@@ -92,7 +106,7 @@ SessionEvent event = SessionEvent.builder()
     .message(new UserMessage("Hello"))
     .build();
 
-// With metadata and a deterministic timestamp
+// With metadata and a deterministic timestamp (useful for tests)
 SessionEvent custom = SessionEvent.builder()
     .sessionId(sessionId)
     .timestamp(Instant.parse("2026-06-01T12:00:00Z"))
@@ -110,10 +124,19 @@ SessionEvent progress = SessionEvent.builder()
 
 === Event types
 
-`EventType` is open: a type is its name.
-The well-known types are `MESSAGE`, a conversation message, and `COMPACTION`, a compaction boundary whose payload is a `CompactionBoundary`.
-An application defines its own with `EventType.of("MY_APP.PROGRESS")`: upper case, digits, underscores and dots, at most 64 characters.
-Every store keeps the name and a filter by type works for any of them; only `MESSAGE` events take part in prompt assembly and compaction.
+`EventType` is open: a type is nothing more than its name, and an application can define its own.
+Four types are well known:
+
+* `MESSAGE`, a conversation message.
+* `COMPACTION`, a compaction boundary.
+Its payload is a `CompactionBoundary`.
+* `STATUS`, a transition of the <<session-concepts-status,turn status>>.
+* `INTERRUPT`, a request to stop the turn that runs.
+
+Your own types are created with `EventType.of("MY_APP.PROGRESS")`.
+A name is upper case letters, digits, underscores and dots, at most 64 characters long.
+Every store keeps the name as it is, and a filter by type works for any of them.
+Only `MESSAGE` events take part in prompt assembly and compaction, though: the other types are runtime state, not conversation.
 
 `EventType.canCarryMessage()` says whether an event of the type holds a message.
 `SessionService.getMessages()` and `getActiveMessages()` skip the events that do not.
@@ -156,13 +179,16 @@ See xref:api/session/system-messages.adoc[System Messages]
 | As above; its text is fed to the next summary as the prior summary
 |===
 
-`SessionEvent.isSynthetic()` is `true` for the events a compaction wrote; `EventFilter.excludeSynthetic(true)` hides them from a read.
+The synthetic events are the ones a compaction wrote.
+`SessionEvent.isSynthetic()` is `true` for them, and `EventFilter.excludeSynthetic(true)` hides them from a read.
 
 [[session-concepts-turn]]
 == Turn
 
-A turn is the atomic unit of a conversation: one user message plus everything up to the next user message, that is, the assistant replies, the tool calls and the tool results.
-It is the unit xref:api/chat-memory.adoc[chat memory] evicts by too, and what one `ChatClient` call with its tool rounds amounts to; one model call within it is a round.
+A turn is the atomic unit of a conversation: one user message plus everything that follows it up to the next user message.
+That is the assistant replies, the tool calls and the tool results.
+It is the same unit xref:api/chat-memory.adoc[chat memory] evicts by, and it is what one `ChatClient` call with all of its tool rounds amounts to.
+One model call within a turn is a round.
 
 ----
 Turn 1: [USER "What is Spring AI?"]  [ASSISTANT "Spring AI is..."]
@@ -170,37 +196,61 @@ Turn 2: [USER "Can it use tools?"]   [ASSISTANT (tool call)]  [TOOL result]  [AS
 Turn 3: [USER "Show me an example"]  [ASSISTANT "Here is..."]
 ----
 
-Working with turns rather than message counts keeps a compaction from splitting a tool call and its result, or from covering a reply while keeping the question that prompted it.
-Reads follow the same rule: a `lastN` window is extended back to the start of the turn it lands in (`SessionEvent.isTurnStart()` marks the user messages), so a prompt built from a window never begins mid-turn either.
-`CompactionRequest.currentTurnCount()` counts the non-synthetic user messages, so the shadow prompt of a summary turn does not inflate the count a `TurnCountTrigger` sees.
+Working with turns rather than message counts is what keeps a compaction from splitting a tool call from its result, or from covering a reply while keeping the question that prompted it.
+Reads follow the same rule.
+A `lastN` window is extended back to the start of the turn it lands in, using the user messages `SessionEvent.isTurnStart()` marks, so a prompt built from a window never begins in the middle of a turn either.
+Turns are also what a `TurnCountTrigger` counts: `CompactionRequest.currentTurnCount()` counts the non-synthetic user messages, so the shadow prompt of a summary turn does not inflate the count.
+When a harness runs a turn through the session's status, the turn runs under the harness's run id; see <<session-concepts-status>>.
+
+[[session-concepts-status]]
+== Status
+
+Besides its messages, a session carries the status of its turns: whether a turn runs right now, under which run, and why the last one ended.
+Like the active view, the status is a projection of the log, not a column: `STATUS` and `INTERRUPT` events record the transitions, and the status is the newest `STATUS` event, or `IDLE` when there is none.
+Every harness reads and sets it through `TurnService`, which `sessionService.turns()` returns.
+So a turn started on one instance can be interrupted from another, a UI can show that an agent is busy, and two harnesses never run one session at once.
+xref:api/session/turn-status.adoc[Turn Status] has the methods and the lease that frees a session after a crash.
 
 [[session-concepts-view]]
 == The active view
 
-The log is append-only: an event is appended once and never edited, moved or flagged.
-What changes over time is the *view*, the part of the log that is sent to the model.
-A compaction appends a `COMPACTION` boundary event that names, by id, the events the view starts with: the pinned events (the latest stored system message and, for a plain window, the earlier summary), the summary events that stand in for what was covered, and the preserved recent events.
-Everything appended after the boundary is in the view too; everything else before it is *covered*.
+The log is append-only.
+An event is appended once and is never edited, moved or flagged afterwards.
+What changes over time is the *view*: the part of the log that is sent to the model.
+
+A compaction appends a `COMPACTION` boundary event that names, by id, the events the view starts with:
+
+* the pinned events, that is the latest stored system message and, for a plain window, the earlier summary;
+* the summary events that stand in for what was covered;
+* the preserved recent events.
+
+Everything appended after the boundary is in the view as well.
+Everything else before the boundary is *covered*.
 
 image::session/session-event-lifecycle.svg[The lifecycle of an event, width=500, align="center"]
 
+So an event is in one of three states:
+
 * *In the view:* part of the context window.
-* *Covered:* the newest boundary does not name it: an old turn, a stored system message superseded by a newer one, or a summary that a newer summary replaces.
+* *Covered:* the newest boundary does not name it.
+It is an old turn, a stored system message a newer one superseded, or a summary a newer summary replaced.
 A later boundary only ever names events from the view it compacted, so a covered event stays covered.
-It stays in the log, where `EventFilter.all()` still reads it.
+It is still in the log, and `EventFilter.all()` still reads it.
 * *Gone:* only when the whole session is deleted, with `delete` or `deleteExpiredSessions`.
-Compaction never deletes.
+Compaction never deletes anything.
 
 The view is a projection.
-A read with `EventFilter.active()` returns the events the newest boundary names, in its order, followed by everything appended since; `CompactionBoundary.project(log)` is the reference implementation.
-The view is the conversation: a boundary names message events, so an event of another type logged before it is not in the view, while one logged after it is.
-Read runtime state from the log, with `eventTypes` and without the view.
+A read with `EventFilter.active()` returns the events the newest boundary names, in the boundary's order, followed by everything appended since.
+`CompactionBoundary.project(log)` is the reference implementation.
+Keep in mind that the view is the conversation: a boundary names message events, so an event of another type logged before the boundary is not in the view, while one logged after it is.
+Read runtime state from the log directly, with `eventTypes` and without the view.
 
 [[session-concepts-service]]
 == SessionService
 
-`SessionService` is the API an application and the advisors use; `DefaultSessionService` implements it on top of a `SessionRepository`.
-A session from creation to cleanup, driven by any integration, your own loop or the `ChatClient` advisors:
+`SessionService` is the API an application and the advisors use.
+`DefaultSessionService` implements it on top of a `SessionRepository`.
+The diagram shows a session from creation to cleanup; any integration drives it the same way, your own loop as well as the `ChatClient` advisors.
 
 image::session/session-lifecycle-sequence.svg[A session from creation to cleanup, width=800, align="center"]
 
@@ -215,9 +265,12 @@ SessionService sessionService = DefaultSessionService.builder()
 // 1. Create
 Session session = sessionService.create(CreateSessionRequest.builder().build());
 
-// 2. Append events; the shorthand wraps a Message in a SessionEvent
+// 2. Run a turn: start it, append its events (the shorthand wraps a Message in a
+//    SessionEvent), end it
+TurnStatus turn = sessionService.turns().start(session.id(), null);
 sessionService.appendMessage(session.id(), new UserMessage("What is Spring AI?"));
 sessionService.appendMessage(session.id(), new AssistantMessage("Spring AI is..."));
+sessionService.turns().end(session.id(), turn.runId(), StopReason.END_TURN);
 
 // 3. The active view, as messages for a prompt
 List<Message> history = sessionService.getActiveMessages(session.id());
@@ -240,27 +293,35 @@ int removed = sessionService.deleteExpiredSessions(Instant.now());
 
 | `create(CreateSessionRequest)`
 | Creates a session with the request's id, time to live and metadata.
-Throws `SessionAlreadyExistsException` for a taken id.
+Throws `SessionAlreadyExistsException` when the id is taken.
 
 | `findOrCreate(CreateSessionRequest)`
-| The session with the request's id, created from the request when there is none.
+| Returns the session with the request's id, and creates it from the request when there is none.
 Safe under concurrent first use: the stored session wins.
 
 | `findById(id)`
-| The session, or `null`.
+| Returns the session, or `null`.
 
 | `findByMetadata(name, value)`
-| The sessions whose metadata holds the value under an indexed key, oldest first.
+| Returns the sessions whose metadata holds the value under an indexed key, oldest first.
 
 | `appendEvent(event)`, `appendMessage(id, message)`
 | Appends an event to the log.
 A `SystemMessage` is rejected unless `allowSystemMessages(true)` is set.
 
+| `appendEvents(id, events, expectedVersion)`, `getEventVersion(id)`
+| The version-checked append and the version it checks.
+Several events are written atomically, and only if the log is still at the version that was read.
+This is how the compaction and the turn status are recorded; see <<session-concepts-concurrency>>.
+
 | `getEvents(id, filter)`, `getEvents(id)`
-| The events a xref:api/session/event-filter.adoc[filter] selects, in log order; the whole log without one.
+| Returns the events a xref:api/session/event-filter.adoc[filter] selects, in log order, or the whole log without one.
 
 | `getMessages(id)`, `getActiveMessages(id)`
-| The messages of the whole log, or of the active view.
+| Returns the messages of the whole log, or of the active view.
+
+| `turns()`
+| Returns the `TurnService`: `status`, `start`, `end` and `interrupt`, all on this service; see <<session-concepts-status>>.
 
 | `compact(id, trigger, strategy)`
 | Evaluates the trigger on the active view and, when it fires, runs the strategy and records the result.
@@ -271,27 +332,46 @@ See xref:api/session/compaction.adoc[Compaction].
 There is no tombstone.
 
 | `deleteExpiredSessions(before)`
-| Deletes every session that expired before the instant, with their events, and returns the count.
+| Deletes every session that expired before the instant, with its events, and returns the count.
 Sessions are not swept automatically: call it from a scheduler.
 |===
 
 === Idempotent appends
 
-A retried `appendEvent` for an id that was already committed is a no-op, not an error or a duplicate, and does not advance the log's version.
+A retried `appendEvent` for an id that was already committed is a no-op.
+It is neither an error nor a duplicate, and it does not advance the log's version.
 `InMemorySessionRepository` checks the session's events for the id; `JdbcSessionRepository` looks it up before inserting.
 In the JDBC store the event id is the primary key of the whole event table, so reusing an id that belongs to another session throws `IllegalStateException` rather than being treated as a replay.
-The default id is a random UUID, so this only matters when a caller supplies its own ids.
+The default id is a random UUID, so none of this matters unless a caller supplies its own ids.
 
+[[session-concepts-concurrency]]
 === Optimistic concurrency
 
-`SessionRepository.getEventVersion(sessionId)` is a counter that advances on every append of a new event and on every successful `appendEvents` call.
-`DefaultSessionService.compact` reads it, then the newest boundary, then the view, builds the boundary and the summary events from the strategy's result, and passes the version to `appendEvents(sessionId, events, expectedVersion)`.
-When another writer changed the log in between, the compare-and-swap returns `false`.
-If a newer boundary landed, this result is dropped: it stands on a view that is gone.
-If it was an append, the result is rebased: the events appended since the view was read join the preserved tail verbatim, the same summary stands, and the write is retried, twice at most.
+The log has a version.
+`getEventVersion(sessionId)` is a counter that advances on every append of a new event and on every successful `appendEvents` call.
+`appendEvents(sessionId, events, expectedVersion)` writes several events atomically, but only if the log is still at that version.
+Both methods are on the `SessionRepository` and on the `SessionService`, so a harness can record state of its own the same way the service does.
+
+The compaction is the main user.
+`DefaultSessionService.compact` reads the version, then the newest boundary, then the view.
+It builds the boundary and the summary events from the strategy's result and passes the version to `appendEvents`.
+When another writer changed the log in between, the compare-and-swap returns `false`, and what happens next depends on who got there first:
+
+* If a newer boundary landed, this result is dropped.
+It stands on a view that is gone.
+* If it was an append, the result is rebased.
+The events appended since the view was read join the preserved tail verbatim, the same summary stands, and the write is retried, twice at most.
+
 So an append does not waste the summary, a compaction never covers what the model was about to see, and only a session that keeps overtaking the write makes it stand down until the next pass.
+
+The <<session-concepts-status,turn status>> is recorded the same way.
+`start` reads the version and the newest status, refuses when a turn runs, and appends the `STATUS` event against the version, so two harnesses cannot both start a turn.
+A write that an append overtook is re-read and retried, five times in all.
+A status event that lands between a compaction's reads and its write costs the compaction one rebase with nothing to rebase, since the view is message events only.
+The turn advisor ends the turn before it compacts, so on the common path the two never collide.
 
 === Ordering
 
 Events are returned in insertion order, not by wall-clock timestamp.
-The JDBC repository keeps a monotonic `seq` column for this, so the summary events a compaction writes, stamped with the compaction time, sit where the boundary places them.
+The JDBC repository keeps a monotonic `seq` column for this.
+That is why the summary events a compaction writes, stamped with the compaction time, still sit where the boundary places them.

@@ -1,0 +1,95 @@
+[[session-turn-status]]
+= Turn Status
+
+Besides its messages, a session carries the status of its turns: whether a turn is running right now, under which run, and why the last one ended.
+The point of keeping it on the session is that every harness reads and sets it the same way.
+A UI can show that an agent is busy, a stop button can interrupt it, and a second harness that tries to start a turn on a busy session is refused, whichever harness runs the turn.
+
+Like the xref:api/session/concepts.adoc#session-concepts-view[active view], the status is a projection of the log, not a column.
+A `STATUS` event records each transition, an `INTERRUPT` event records each request to stop, and the status is simply the newest `STATUS` event, or `IDLE` when there is none.
+No table, column or repository method is added for it, so every store that passes the repository contract supports it.
+The methods live on `TurnService`, which `sessionService.turns()` returns.
+It keeps no state of its own: every call is one or two reads and one version-checked append through the service, so a decorated service, an authorizing one for example, guards them like any other call.
+
+image::session/session-status-state.svg[The turn status of a session, width=700, align="center"]
+
+The run id is the harness's run: the token that owns the turn and ends it.
+The session treats it as opaque, it neither interprets nor checks it.
+One run may hold a turn in each of several sessions, and successive turns in one.
+The `ChatClient` harness takes it from the request context, or generates one per call.
+
+[source,java]
+----
+TurnStatus turn = sessionService.turns().start(sessionId, null, Duration.ofMinutes(30));   // RUNNING under a generated run id, for 30 minutes at most
+try {
+    // read the view, call the model, append what happened
+    sessionService.turns().end(sessionId, turn.runId(), StopReason.END_TURN);
+}
+catch (RuntimeException ex) {
+    sessionService.turns().end(sessionId, turn.runId(), StopReason.ERROR);
+    throw ex;
+}
+
+// From anywhere else, a UI's stop button for example
+sessionService.turns().interrupt(sessionId, "user pressed stop");
+----
+
+[[session-turn-status-methods]]
+== The methods
+
+[cols="1,3"]
+|===
+| Method | What it does
+
+| `status(id)`
+| Returns the `TurnStatus`: `IDLE` or `RUNNING`, the run id, the stop reason of the last turn, and when the status was recorded.
+This is one indexed read.
+A session no turn ever ran on reports `TurnStatus.idle()`.
+
+| `start(id, runId)`, `start(id, runId, timeout)`
+| Starts a turn under the run id, or under a random UUID when none is given, and returns the new status.
+The append is version-checked, so when two harnesses start a turn at the same time exactly one of them succeeds.
+The other gets a `TurnInProgressException` that names the run holding the turn.
+A turn is never queued behind another one.
+With a timeout the turn has a lease, see below; without one it runs until it is ended or interrupted.
+
+| `end(id, runId, stopReason)`
+| Ends the turn of the run id with `END_TURN`, `ERROR` or `CANCELLED`, the stop reasons a harness records itself.
+`INTERRUPTED` is written by `interrupt` and `EXPIRED` by `start`, never by `end`.
+The method is also the own-turn guard.
+When the session does not run under this run id, nothing is written and the status as it stands is returned: another writer, an interrupt for example, ended the turn first, and that stands.
+
+| `interrupt(id, reason)`
+| Records the request to stop.
+When a turn runs, the same append ends it with `INTERRUPTED`, so the request and the transition always land together.
+When no turn runs, only the request is recorded.
+|===
+
+[[session-turn-status-lease]]
+== The lease
+
+A harness can die between `start` and `end`: a JVM that is killed mid-call writes neither.
+Without a lease the session then stays `RUNNING` under a run that no longer exists, and every later `start` fails until someone calls `interrupt`.
+The lease is the harness's promise of how long its turn may take.
+`start(id, runId, timeout)` records it on the `RUNNING` event as the instant it runs out, so the policy travels with the turn and the session needs no configuration.
+A later `start` that finds a turn running past its lease does not throw.
+In one version-checked append it ends that turn with `EXPIRED` and starts the new one, and two harnesses that try at once resolve through the version: one wins, the other gets the usual `TurnInProgressException`.
+No `INTERRUPT` event is written, since nobody asked the session to stop.
+`TurnStatus.expiresAt()` and `isExpired(now)` let a UI tell a live turn from a dead one.
+
+The lease is a trade.
+A turn that outlives it loses the session: its `end` becomes a no-op, its appends still land, and the next call runs alongside it.
+So a harness sizes the lease for its slowest turn, not its usual one.
+The `ChatClient` turn advisor takes thirty minutes by default, well above any call with its tool loop, and `turnTimeout(null)` turns the lease off.
+
+[[session-turn-status-prompt]]
+== Opt-in and the prompt
+
+Status is opt-in by construction.
+A harness that never calls `start` leaves the session `IDLE` and appends freely, because an append never requires a running turn.
+The `ChatClient` advisors take part by default.
+Stopping the tool-calling loop after an interrupt is a separate opt-in, since it costs one read per round; see xref:api/session/chat-client.adoc#session-chat-client-status[ChatClient Integration].
+
+Status events never reach the prompt.
+The active view is message events only, so a compaction neither covers them nor needs a rule for them.
+They stay in the log, where `EventFilter.all()` or a filter by type reads them, as the audit trail of the session's turns.

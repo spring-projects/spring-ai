@@ -1,21 +1,36 @@
 [[Session]]
 = Session Memory
 
-Session memory keeps a conversation as an append-only log of events, and builds the prompt the model sees from a view of that log.
-Where xref:api/chat-memory.adoc[Chat Memory] stores a flat list of messages per conversation id, a session adds what an agent needs over a long conversation:
+Session memory keeps a conversation as an append-only log of events.
+The prompt the model sees is built from a view of that log, not from the log itself.
+xref:api/chat-memory.adoc[Chat Memory] stores a flat list of messages per conversation id.
+A session adds what an agent needs over a long conversation:
 
 * *Structured events.*
-Every message is a `SessionEvent` with an id, a timestamp, its session and metadata; other event types record what happened in the same log.
+Every message is a `SessionEvent` with an id, a timestamp, its session and metadata.
+Other event types record what happened in the same log.
 * *Turn-aware compaction.*
-Triggers decide when the history grew too large, and a strategy decides what leaves the view, always on a turn boundary, so the model never sees a tool call without its result or an answer without its question.
-A compaction never changes the log: it appends a boundary that defines the view from then on.
+Triggers decide when the history grew too large.
+A strategy decides what leaves the view, always on a turn boundary, so the model never sees a tool call without its result or an answer without its question.
+A compaction never changes the log.
+It appends a boundary that defines the view from then on.
 * *A repository SPI.*
-`SessionRepository` has an in-memory implementation for tests and a JDBC one for production; a store of your own passes the same contract tests.
+`SessionRepository` has an in-memory implementation for tests and a JDBC one for production.
+A store of your own passes the same contract tests.
 
-The session is the state; what runs on it is not.
-A `ChatClient` with the session advisors is one such runtime, a harness: it reads the view, calls the model, appends what happened, and keeps nothing of its own, so a turn can be run by any instance, and the next turn by another one.
+The session is the state.
+What runs on it is not.
+A `ChatClient` with the session advisors is one such runtime, a harness.
+It reads the view, calls the model, appends what happened, and keeps nothing of its own.
+This is what lets any instance run a turn, and another instance run the next one.
 Another harness, a loop of your own for example, runs on the same session through the same `SessionService`.
-The follow-ups build on this split: the session will carry its status, the turn that runs, the one that waits for a decision, and every harness will read and set it the same way.
+
+The session carries the status of its turns too: which run holds the turn, and why the last one ended.
+Every harness reads and sets it through the same `TurnService`, which `sessionService.turns()` returns: `status`, `start`, `end` and `interrupt`.
+So a turn started on one instance can be interrupted from another, and two harnesses never run one session at once.
+See xref:api/session/turn-status.adoc[Turn Status].
+A turn that stops for a person's decision, a tool call that needs confirmation, still ends like any other for now.
+A parked turn that holds the session until the decision arrives is the next follow-up.
 
 [[session-modules]]
 == Modules
@@ -26,24 +41,24 @@ The follow-ups build on this split: the session will carry its status, the turn 
 
 | Session
 | `spring-ai-session`
-| The core: `Session`, `SessionEvent`, `SessionService`, `SessionRepository` with `InMemorySessionRepository`, `EventFilter` and compaction, the `ChatModelSummarizer` included.
-No dependency on `ChatClient`.
+| Holds the core: `Session`, `SessionEvent`, `SessionService`, `SessionRepository` with `InMemorySessionRepository`, `EventFilter`, compaction with the `ChatModelSummarizer`, the `TurnService` with its status types.
+It has no dependency on `ChatClient`.
 
 | Session Advisor
 | `spring-ai-session-advisor`
-| The `ChatClient` integration: `SessionMemoryAdvisor`, `SessionTurnAdvisor` and `SessionAdvisors`.
+| Holds the `ChatClient` integration: `SessionMemoryAdvisor`, `SessionTurnAdvisor`, `SessionInterruptAdvisor` and `SessionAdvisors`.
 
 | JDBC Session
 | `spring-ai-session-jdbc`
-| `JdbcSessionRepository` for PostgreSQL, MySQL, MariaDB and H2, with the schema scripts.
+| Holds `JdbcSessionRepository` for PostgreSQL, MySQL, MariaDB and H2, with the schema scripts.
 
 | Auto-configuration
 | `spring-ai-autoconfigure-model-session`, `spring-ai-autoconfigure-model-session-jdbc`
-| The `SessionService` and `JdbcSessionRepository` beans and their properties.
+| Provides the `SessionService` and `JdbcSessionRepository` beans and their properties.
 
 | Starter
 | `spring-ai-starter-model-session-jdbc`
-| All of the above with Spring Boot's JDBC starter.
+| Brings all of the above with Spring Boot's JDBC starter.
 |===
 
 == Quick Start
@@ -58,10 +73,11 @@ Add the starter:
 </dependency>
 ----
 
-With a `DataSource` on the classpath, Spring Boot creates a `JdbcSessionRepository` and a `SessionService` bean, detects the SQL dialect from the database metadata, and initializes the schema of an embedded database.
+With a `DataSource` on the classpath, Spring Boot creates a `JdbcSessionRepository` and a `SessionService` bean.
+It detects the SQL dialect from the database metadata, and it initializes the schema of an embedded database.
 For PostgreSQL or MySQL in development, initialize the schema with `spring.ai.session.repository.jdbc.initialize-schema=always`.
 
-Wire the advisors into a `ChatClient` and pass a session id with every call:
+Then wire the advisors into a `ChatClient` and pass a session id with every call:
 
 [source,java]
 ----
@@ -82,7 +98,8 @@ String answer = chatClient.prompt()
 ----
 
 A session that does not exist yet is created on first use.
-The session id is required on every call: there is no fallback, because a shared default session would silently merge the history of different users.
+The session id is required on every call.
+There is no fallback, because a shared default session would silently merge the history of different users.
 
 Without Spring Boot, or in a test, build the service on the in-memory repository:
 
@@ -93,11 +110,13 @@ SessionService sessionService = DefaultSessionService.builder()
     .build();
 ----
 
-NOTE: `InMemorySessionRepository` is for tests and demos: sessions are lost on restart and not shared across instances.
+NOTE: `InMemorySessionRepository` is for tests and demos.
+Sessions are lost on restart and are not shared across instances.
 
 == Where to go next
 
 * xref:api/session/concepts.adoc[Concepts]: sessions, events, turns, the active view and the `SessionService` API.
+* xref:api/session/turn-status.adoc[Turn Status]: the turn service, the lease, interrupts.
 * xref:api/session/event-filter.adoc[Event Filtering]: what a read returns, and why a window keeps turns whole.
 * xref:api/session/compaction.adoc[Compaction]: triggers, the window strategy, summarization and how a pass is recorded.
 * xref:api/session/system-messages.adoc[System Messages]: why the system prompt is configuration, and the opt-in to store it.

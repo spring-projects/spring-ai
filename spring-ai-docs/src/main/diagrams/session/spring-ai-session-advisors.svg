@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="700" viewBox="0 0 1200 700" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <rect width="1200" height="700" fill="#ffffff"/>
+  <!-- advisor bands, outermost first -->
+  <rect x="30" y="20" width="1140" height="450" rx="16" fill="#dbe4ff" stroke="#4a9eed" stroke-width="1.5"/>
+  <text x="600" y="52" text-anchor="middle" font-size="21" font-weight="600" fill="#1e3a8a">SessionTurnAdvisor (+200): once per ChatClient call</text>
+  <rect x="170" y="90" width="830" height="330" rx="14" fill="#a5d8ff" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="585" y="120" text-anchor="middle" font-size="19" font-weight="600" fill="#1e3a8a">ToolCallingAdvisor (+300): loops until no tool calls</text>
+  <rect x="300" y="150" width="555" height="250" rx="12" fill="#ffffff" stroke="#4a9eed" stroke-width="1.5"/>
+  <text x="577" y="178" text-anchor="middle" font-size="17" font-weight="600" fill="#1e3a8a">SessionMemoryAdvisor (+1000): once per round</text>
+  <rect x="425" y="205" width="285" height="180" rx="12" fill="#e5dbff" stroke="#8b5cf6" stroke-width="1.5"/>
+  <text x="567" y="232" text-anchor="middle" font-size="17" font-weight="600" fill="#4c1d95"><tspan x="567" dy="0">SessionInterruptAdvisor (+1100)</tspan><tspan x="567" dy="20" font-size="15" font-weight="400">once per round, opt-in</tspan></text>
+  <!-- the call -->
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#f59e0b"/>
+    </marker>
+    <marker id="arrowBlue" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#2563eb"/>
+    </marker>
+    <marker id="arrowPurple" markerWidth="10" markerHeight="10" refX="9" refY="5" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#8b5cf6"/>
+    </marker>
+  </defs>
+  <line x1="10" y1="325" x2="1190" y2="325" stroke="#f59e0b" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <!-- the loop back -->
+  <path d="M 940 300 L 940 135 L 240 135 L 240 298" fill="none" stroke="#f59e0b" stroke-width="2.5" marker-end="url(#arrow)"/>
+  <!-- the before/after boxes -->
+  <g font-size="17" text-anchor="middle" fill="#1e3a8a">
+    <rect x="50" y="300" width="100" height="50" rx="10" fill="#ffffff" stroke="#2563eb" stroke-width="2"/><text x="100" y="331">before</text>
+    <rect x="190" y="300" width="100" height="50" rx="10" fill="#ffffff" stroke="#2563eb" stroke-width="2"/><text x="240" y="331">before</text>
+    <rect x="320" y="300" width="100" height="50" rx="10" fill="#ffffff" stroke="#2563eb" stroke-width="2"/><text x="370" y="331">before</text>
+    <rect x="458" y="300" width="100" height="50" rx="10" fill="#ffffff" stroke="#8b5cf6" stroke-width="2"/><text x="508" y="331" fill="#4c1d95">before</text>
+    <rect x="578" y="300" width="124" height="50" rx="10" fill="#fff3bf" stroke="#f59e0b" stroke-width="2"/><text x="640" y="333" font-size="21" fill="#b45309">LLM</text>
+    <rect x="720" y="300" width="100" height="50" rx="10" fill="#ffffff" stroke="#2563eb" stroke-width="2"/><text x="770" y="331">after</text>
+    <rect x="890" y="300" width="100" height="50" rx="10" fill="#ffffff" stroke="#2563eb" stroke-width="2"/><text x="940" y="331">after</text>
+    <rect x="1030" y="300" width="100" height="50" rx="10" fill="#ffffff" stroke="#2563eb" stroke-width="2"/><text x="1080" y="331">after</text>
+  </g>
+  <!-- what each step does -->
+  <g font-size="15" fill="#1e3a8a">
+    <text x="45" y="378"><tspan x="45" dy="0">find or create</tspan><tspan x="45" dy="18">the session,</tspan><tspan x="45" dy="18">start the turn</tspan></text>
+    <text x="306" y="378"><tspan x="306" dy="0">load the view,</tspan><tspan x="306" dy="18">build the prompt,</tspan><tspan x="306" dy="18">store the request</tspan></text>
+    <text x="452" y="378" fill="#4c1d95"><tspan x="452" dy="0">read the status;</tspan><tspan x="452" dy="18">throw if the turn</tspan><tspan x="452" dy="18">was stopped</tspan></text>
+    <text x="715" y="378"><tspan x="715" dy="0">store the reply</tspan><tspan x="715" dy="18">(tool calls always)</tspan></text>
+    <text x="1005" y="378"><tspan x="1005" dy="0">store loop-end results,</tspan><tspan x="1005" dy="18">end the turn,</tspan><tspan x="1005" dy="18">compact</tspan></text>
+  </g>
+  <!-- the service -->
+  <rect x="420" y="560" width="360" height="60" rx="12" fill="#c3fae8" stroke="#0d9488" stroke-width="2"/>
+  <text x="600" y="597" text-anchor="middle" font-size="19" font-weight="600" fill="#115e59">SessionService</text>
+  <g fill="none" stroke-width="1.5" stroke-dasharray="6 5">
+    <path d="M 100 470 L 100 605 L 418 605" stroke="#2563eb" marker-end="url(#arrowBlue)"/>
+    <path d="M 370 470 L 370 575 L 418 575" stroke="#2563eb" marker-end="url(#arrowBlue)"/>
+    <path d="M 508 470 L 508 558" stroke="#8b5cf6" marker-end="url(#arrowPurple)"/>
+    <path d="M 770 470 L 770 558" stroke="#2563eb" marker-end="url(#arrowBlue)"/>
+    <path d="M 1080 470 L 1080 590 L 782 590" stroke="#2563eb" marker-end="url(#arrowBlue)"/>
+  </g>
+  <text x="600" y="672" text-anchor="middle" font-size="19" fill="#c2410c">The turn advisor sees the whole call. The interrupt and memory advisors see every round.</text>
+</svg>

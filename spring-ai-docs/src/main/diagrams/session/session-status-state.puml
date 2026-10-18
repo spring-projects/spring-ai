@@ -1,0 +1,15 @@
+@startuml session-status-state
+!pragma layout smetana
+skinparam shadowing false
+hide empty description
+[*] --> IDLE : no STATUS event yet
+IDLE --> RUNNING : start(runId, timeout)\nappends STATUS(RUNNING, runId, expiresAt)
+RUNNING --> RUNNING : start(runId) after the lease ran out\nappends STATUS(IDLE, oldRunId, EXPIRED) + STATUS(RUNNING, runId)
+RUNNING --> IDLE : end(runId, END_TURN | ERROR | CANCELLED)\nappends STATUS(IDLE, runId, stopReason)
+RUNNING --> IDLE : interrupt(reason)\nappends INTERRUPT + STATUS(IDLE, runId, INTERRUPTED)
+IDLE --> IDLE : interrupt(reason)\nappends INTERRUPT only
+IDLE : the newest STATUS event, or none
+RUNNING : the run id owns the turn
+RUNNING : start by anyone throws TurnInProgressException\nuntil the lease, if any, ran out
+RUNNING : end by another run id is a no-op
+@enduml
