@@ -20,7 +20,9 @@ AI_SESSION_INDEX    the indexed metadata attributes: session_id, attr_name, attr
 AI_SESSION_EVENT    the event log, ordered by a database-assigned seq (FK → AI_SESSION, ON DELETE CASCADE)
 ----
 
-The log is append-only: a compaction appends a `COMPACTION` row that names the active view by event id, and never updates or deletes a row.
+The log is append-only.
+A compaction appends a `COMPACTION` row that names the active view by event id.
+It never updates or deletes a row.
 
 == Schema
 
@@ -44,10 +46,15 @@ Each supported database has a dialect, detected from the database metadata, and 
 | `org/springframework/ai/session/jdbc/schema-h2.sql`
 |===
 
-Another database is rejected at startup with an `IllegalStateException`; to use one, implement `JdbcSessionRepositoryDialect` and pass it to the builder.
+Any other database is rejected at startup with an `IllegalStateException`.
+To use one, implement `JdbcSessionRepositoryDialect` and pass it to the builder.
 
 With the auto-configuration, `initialize-schema` applies the script on startup.
-Otherwise use Spring Boot's SQL initialization, `spring.sql.init.schema-locations=classpath:org/springframework/ai/session/jdbc/schema-postgresql.sql`, or copy the script into your migration tool.
+Without it, you have two options:
+
+* use Spring Boot's SQL initialization, `spring.sql.init.schema-locations=classpath:org/springframework/ai/session/jdbc/schema-postgresql.sql`;
+* copy the script into your migration tool.
+
 The scripts are safe to re-run.
 
 == Manual bean setup
@@ -83,48 +90,75 @@ JdbcSessionRepository.builder()
 == Design notes
 
 *Event serialization.*
-An event is stored in four columns: `event_type`, `message_type` (the `MessageType` of an event that carries a message, else `NULL`), `message_content` (the plain text of that message, its own column so a store can search it) and `payload` (JSON, never `NULL`).
-The `metadata` columns of a session and of an event are JSON and never `NULL` either; a table created from an earlier script, where they were nullable, needs the constraint added.
-For an event with a message the payload holds the message's ordered Spring AI `MessagePart`s and its metadata, serialized with the parts' own polymorphic JSON, so media, tool calls, tool results and provider-signed reasoning all survive a round trip.
-For any other event type it holds `SessionEvent.getPayload()`.
+An event is stored in four columns:
+
+* `event_type`, the type of the event;
+* `message_type`, the `MessageType` of an event that carries a message, else `NULL`;
+* `message_content`, the plain text of that message, in a column of its own so a store can search it;
+* `payload`, JSON, never `NULL`.
+
+The `metadata` columns of a session and of an event are JSON and never `NULL` either.
+A table created from an earlier script, where they were nullable, needs the constraint added.
+For an event with a message the payload holds the message's ordered Spring AI `MessagePart`s and its metadata, serialized with the parts' own polymorphic JSON.
+That is why media, tool calls, tool results and provider-signed reasoning all survive a round trip.
+For any other event type the payload holds `SessionEvent.getPayload()`.
 `SessionEventCodec` defines this shape, so a store of your own can keep the same thing.
 
 *Idempotent append.*
 `appendEvent` looks the event id up under the session row lock before inserting.
-An id already stored for the same session is a retried append and a no-op; an id used by another session is rejected.
-Checking first, rather than relying on a unique-constraint violation, keeps a replay from marking a caller's surrounding transaction rollback-only, or aborting it on PostgreSQL.
+An id already stored for the same session is a retried append, and a no-op.
+An id used by another session is rejected.
+The lookup comes first on purpose, rather than relying on a unique-constraint violation.
+A violation would mark a caller's surrounding transaction rollback-only, or abort it on PostgreSQL, and a replay should do neither.
 
 *Optimistic concurrency.*
-The `event_version` column of `AI_SESSION` advances on every append of a new event and every successful `appendEvents`.
+The `event_version` column of `AI_SESSION` advances on every append of a new event and on every successful `appendEvents`.
 `appendEvents` claims the version with `UPDATE … WHERE event_version = ?` before inserting, so two concurrent compactions cannot both land a boundary.
-An `appendEvent` bumps the version first too, under the same row lock, so a compaction never misses an event that is being appended: the event's `seq` is assigned only once the compaction has committed, and it enters the view as appended since.
+An `appendEvent` bumps the version first too, under the same row lock.
+This is what keeps a compaction from missing an event that is being appended: the event's `seq` is assigned only once the compaction has committed, and the event enters the view as appended since.
 
 image::session/session-jdbc-append-sequence.svg[A compaction and a concurrent append, width=800, align="center"]
 
 *The active view.*
-A read with the view flag selects the session's newest `COMPACTION` row, fetches in one query the rows it names plus every row from the boundary on, ordered by `seq`, and lets `EventFilter.apply` put them in view order, filter and window them.
+A read with the view flag selects the session's newest `COMPACTION` row.
+It then fetches, in one query, the rows the boundary names plus every row from the boundary on, ordered by `seq`.
+`EventFilter.apply` puts them in view order, filters and windows them.
 
 *Windows.*
 A `lastN` window is `ORDER BY seq DESC LIMIT ?`.
-When the window lands mid-turn, one bounded extra query fetches the rows between the nearest preceding user message and the window, served by the `(session_id, seq)` index, so the window keeps turns whole.
-The newest boundary of a session, read before every view, is served by the `(session_id, event_type, seq)` index.
+When the window lands mid-turn, one bounded extra query fetches the rows between the nearest preceding user message and the window, so the window keeps turns whole.
+The `(session_id, seq)` index serves that query.
+The newest boundary of a session is read before every view, and the `(session_id, event_type, seq)` index serves it.
 
 *Keys compare byte for byte.*
-On MySQL and MariaDB the id and index columns use the `utf8mb4_bin` collation, so `findByMetadata` and the id lookups are case-sensitive, as on the other databases.
+On MySQL and MariaDB the id and index columns use the `utf8mb4_bin` collation.
+`findByMetadata` and the id lookups are therefore case-sensitive, as they are on the other databases.
 
 *Indexed attributes.*
-On every save the repository copies the metadata entries whose keys are configured as indexed, always including `SessionAttributes.PRINCIPAL_NAME`, into `AI_SESSION_INDEX`, one row per attribute, on the first 512 characters of the value; the whole value is then compared on the sessions the query returns, so the row is a prefix index, not the match.
+On every save the repository copies the metadata entries whose keys are configured as indexed into `AI_SESSION_INDEX`, one row per attribute.
+`SessionAttributes.PRINCIPAL_NAME` is always among them.
+The row holds the first 512 characters of the value, and the whole value is then compared on the sessions the query returns.
+The row is a prefix index, not the match.
 `findByMetadata(name, value)` is one query over that table and an exact match on what it returns.
 
-*The `synthetic` column* is stored on its own, not only in the metadata JSON, so `excludeSynthetic` is a SQL predicate rather than an in-process scan.
+*The `synthetic` column* is stored on its own, not only in the metadata JSON.
+That way `excludeSynthetic` is a SQL predicate rather than an in-process scan.
 
 == Auto-configuration
 
 The starter, `spring-ai-starter-model-session-jdbc`, brings the two auto-configurations with Spring Boot's JDBC starter.
-`JdbcSessionRepositoryAutoConfiguration` creates a `JdbcSessionRepository` when a single `DataSource` bean is present, and `SessionServiceAutoConfiguration` a `DefaultSessionService` on top of the single `SessionRepository` bean, whatever its implementation.
-Both use `@ConditionalOnMissingBean`: declare your own bean of either type and the auto-configuration backs off.
-The repository runs its writes in the application's single `PlatformTransactionManager` when that manager is on the same `DataSource`, JDBC or JPA, or a JTA one; with any other manager, one for a message broker or a document store for example, it uses a `DataSourceTransactionManager` of its own.
-A `SessionServiceDecorator` bean wraps the auto-configured service, for a cross-cutting concern such as authorization, without post-processing every `SessionService` bean.
+
+* `JdbcSessionRepositoryAutoConfiguration` creates a `JdbcSessionRepository` when a single `DataSource` bean is present.
+* `SessionServiceAutoConfiguration` creates a `DefaultSessionService` on top of the single `SessionRepository` bean, whatever its implementation.
+
+Both use `@ConditionalOnMissingBean`.
+Declare your own bean of either type and the auto-configuration backs off.
+
+The repository runs its writes in the application's single `PlatformTransactionManager` when that manager is on the same `DataSource`, JDBC or JPA, or when it is a JTA one.
+With any other manager, one for a message broker or a document store for example, it uses a `DataSourceTransactionManager` of its own.
+
+A `SessionServiceDecorator` bean wraps the auto-configured service.
+Use it for a cross-cutting concern such as authorization, without post-processing every `SessionService` bean.
 
 [cols="2,1,3"]
 |===
@@ -132,19 +166,21 @@ A `SessionServiceDecorator` bean wraps the auto-configured service, for a cross-
 
 | `spring.ai.session.time-to-live`
 | `60d`
-| The time to live of a session the service creates without one of its own; any `Duration`, such as `2h` or `30d`.
+| Sets the time to live of a session the service creates without one of its own.
+Any `Duration` works, such as `2h` or `30d`.
 
 | `spring.ai.session.allow-system-messages`
 | `false`
-| Whether a `SystemMessage` may be stored in a session; see xref:api/session/system-messages.adoc[System Messages].
+| Allows a `SystemMessage` to be stored in a session; see xref:api/session/system-messages.adoc[System Messages].
 
 | `spring.ai.session.repository.jdbc.initialize-schema`
 | `embedded`
-| When the schema script runs: `embedded` (an embedded database such as H2), `always` or `never`.
+| Says when the schema script runs: `embedded` (an embedded database such as H2), `always` or `never`.
 
 | `spring.ai.session.repository.jdbc.schema`
 | `classpath:org/springframework/ai/session/jdbc/schema-@@platform@@.sql`
-| The schema script; `@@platform@@` resolves to the detected database.
+| Names the schema script.
+`@@platform@@` resolves to the detected database.
 
 | `spring.ai.session.repository.jdbc.platform`
 | detected
@@ -152,18 +188,19 @@ A `SessionServiceDecorator` bean wraps the auto-configured service, for a cross-
 
 | `spring.ai.session.repository.jdbc.continue-on-error`
 | `true`
-| Whether to continue startup if the schema script fails.
+| Continues startup if the schema script fails.
 
 | `spring.ai.session.repository.jdbc.indexed-attributes`
 | empty
-| The metadata keys indexed besides the principal name, so `findByMetadata` answers for them.
+| Lists the metadata keys indexed besides the principal name, so `findByMetadata` answers for them.
 |===
 
 [[session-jdbc-custom]]
 == Implementing a repository
 
 A store implements `SessionRepository` under one rule: the backend owns selection, the core owns interpretation.
-Filtering and windowing are the backend's job, because their cost grows with the log; what a compaction means is decided in the core and handed to the backend as plain writes.
+Filtering and windowing are the backend's job, because their cost grows with the log.
+What a compaction means is decided in the core and handed to the backend as plain writes.
 
 * *Reads push the filter down.*
 `findEvents(sessionId, filter)` evaluates the types, the synthetic flag and the window in the query.
@@ -173,9 +210,11 @@ A `lastN` window keeps turns whole, as xref:api/session/event-filter.adoc#sessio
 * *Events have one persisted shape.*
 `SessionEventCodec` encodes an event into its type, message type, text and JSON payload, and decodes it back.
 * *Compaction is an append.*
-`appendEvents(sessionId, events, expectedVersion)` appends the boundary and its summary events in one version-checked write and returns `false` on a stale version.
-Existing events never move, change or disappear; `CompactionBoundary.project(log)` is the reference projection.
-* *`findByMetadata` is the one scoped lookup*: every store indexes `SessionAttributes.PRINCIPAL_NAME`.
+`appendEvents(sessionId, events, expectedVersion)` appends the boundary and its summary events in one version-checked write, and returns `false` on a stale version.
+Existing events never move, change or disappear.
+`CompactionBoundary.project(log)` is the reference projection.
+* *`findByMetadata` is the one scoped lookup.*
+Every store indexes `SessionAttributes.PRINCIPAL_NAME`.
 
 `spring-ai-test` ships `AbstractSessionRepositoryContractTests`, the suite the in-memory, H2, PostgreSQL, MySQL and MariaDB repositories run.
 Extend it and return your repository:
@@ -201,4 +240,10 @@ class MySessionRepositoryContractTests extends AbstractSessionRepositoryContract
 }
 ----
 
-It covers idempotent append, the version rules, `saveIfAbsent` under concurrent creates, expiry cleanup, every filter criterion and window, and every compaction rule: an atomic append under a stale version, rejected ids, and the view a boundary defines, across chained boundaries.
+The suite covers:
+
+* idempotent append and the version rules;
+* `saveIfAbsent` under concurrent creates;
+* expiry cleanup;
+* every filter criterion and window;
+* every compaction rule: an atomic append under a stale version, rejected ids, and the view a boundary defines, across chained boundaries.

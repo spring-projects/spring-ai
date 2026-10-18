@@ -1,8 +1,16 @@
 [[session-event-filter]]
 = Event Filtering
 
-`EventFilter` selects what `SessionService.getEvents(id, filter)` returns: the whole log or the active view, which event and message types, whether the synthetic summary events are included, and a window.
-It is a read-side filter: an event it excludes stays in the log and is only left out of the result.
+`EventFilter` selects what `SessionService.getEvents(id, filter)` returns.
+It decides four things:
+
+* whether the read covers the whole log or only the active view;
+* which event types and message types are included;
+* whether the synthetic summary events are included;
+* how many events, through a window.
+
+It is a read-side filter.
+An event the filter excludes stays in the log and is only left out of the result.
 
 == Shortcuts
 
@@ -39,7 +47,8 @@ EventFilter again = filter.toBuilder().lastN(10).build();
 
 | `activeView`
 | `boolean`
-| When `true`, the filter applies to the active view the newest compaction boundary defines, pinned events, summary and preserved events first, then everything appended since, instead of the whole log.
+| Applies the filter to the active view instead of the whole log when `true`.
+The view is what the newest compaction boundary defines: the pinned events, the summary and the preserved events first, then everything appended since.
 `EventFilter.active()` sets it.
 
 | `messageTypes`
@@ -56,22 +65,25 @@ An empty set means every type.
 
 | `excludeSynthetic`
 | `boolean`
-| When `true`, the synthetic events a compaction wrote are left out.
+| Leaves out the synthetic events a compaction wrote when `true`.
 
 | `window`
 | `EventFilter.Window`
-| `Window.ALL`, the default, or `Window.last(n)`, which the builder's `lastN(n)` sets; `n` must be positive.
+| Limits the result to the newest events.
+`Window.ALL` is the default; `Window.last(n)` is what the builder's `lastN(n)` sets, and `n` must be positive.
 |===
 
-The criteria apply first, the view before them, and the window last, to the events that matched.
+The order of evaluation matters.
+The view is applied first, then the criteria, and the window last, to the events that matched.
 
 image::session/session-event-filter-activity.svg[How a read is answered, width=600, align="center"]
 
 [[session-event-filter-turns]]
 == Windows keep turns whole
 
-A `lastN` window is a lower bound.
-When its oldest event is not a xref:api/session/concepts.adoc#session-concepts-turn[turn start], the window is extended back to the nearest turn start before it, so the result never begins with an assistant reply whose question was cut off, a tool result without its tool call, or a summary without its shadow prompt.
+A `lastN` window is a lower bound, not an exact count.
+When its oldest event is not a xref:api/session/concepts.adoc#session-concepts-turn[turn start], the window is extended back to the nearest turn start before it.
+This is what keeps a result from beginning with an assistant reply whose question was cut off, a tool result without its tool call, or a summary without its shadow prompt.
 A tool call is therefore never returned without its results, and a prompt built from the window is one every provider accepts.
 
 ----
@@ -80,15 +92,23 @@ lastN(2):     U2 A2[tool call] T2[result] A2'      extended from "T2 A2'" to the
 lastN(5):     U1 A1 U2 A2[tool call] T2[result] A2'
 ----
 
-The extension is bounded by one turn and skipped when it cannot apply: a window that lands in a preamble of events before the first turn, or a `messageTypes` filter that hides the user messages, returns the plain window.
+The extension is bounded by one turn, and it is skipped when it cannot apply:
+
+* a window that lands in a preamble of events before the first turn returns the plain window;
+* a `messageTypes` filter that hides the user messages returns the plain window too.
+
 A window larger than the log returns the log.
 
-`EventFilter.apply(events)` is the reference implementation of the whole read, for a log held as a list; the JDBC repository pushes the criteria and the window down to SQL and extends the window with one bounded extra query when it lands mid-turn.
+`EventFilter.apply(events)` is the reference implementation of the whole read, for a log held as a list.
+The JDBC repository pushes the criteria and the window down to SQL, and extends the window with one bounded extra query when it lands mid-turn.
 
 == Merging filters
 
-`EventFilter.merge(other)` combines two filters: the other filter's types and window replace this filter's, except that a `Window.ALL` leaves the window alone, and the two flags are OR-ed so either side can opt in.
-`SessionMemoryAdvisor` merges a xref:api/session/chat-client.adoc#session-chat-client-filter[per-request filter] over its own this way, and always merges in `EventFilter.active()` so the prompt never sees the events a compaction covered.
+`EventFilter.merge(other)` combines two filters into one.
+The other filter's types and window replace this filter's, with one exception: a `Window.ALL` on the other side leaves the window alone.
+The two flags are OR-ed, so either side can opt in.
+`SessionMemoryAdvisor` merges a xref:api/session/chat-client.adoc#session-chat-client-filter[per-request filter] over its own this way.
+It always merges in `EventFilter.active()` as well, so the prompt never sees the events a compaction covered.
 
 [source,java]
 ----
@@ -102,4 +122,5 @@ EventFilter view = EventFilter.lastN(50).merge(EventFilter.active());
 == What is stored
 
 `EventFilter` decides what a read returns.
-What is stored in the first place is decided on the write side: `MessageFilter` on the `SessionMemoryAdvisor` says which messages are persisted at all; see xref:api/session/chat-client.adoc#session-chat-client-stored[What is stored].
+What is stored in the first place is decided on the write side.
+`MessageFilter` on the `SessionMemoryAdvisor` says which messages are persisted at all; see xref:api/session/chat-client.adoc#session-chat-client-stored[What is stored].

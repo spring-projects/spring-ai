@@ -1,15 +1,20 @@
 [[session-compaction]]
 = Compaction
 
-As a conversation grows it exceeds the model's context window.
-Compaction reduces the active view to fit while keeping the conversation coherent.
-Two abstractions drive it: a *trigger* says when, a *strategy* says what leaves the view.
+A conversation grows with every turn, and at some point it no longer fits the model's context window.
+Compaction is how a session deals with that.
+It reduces the active view so that it fits again, while keeping the conversation coherent for the model.
+Two abstractions drive it.
+A *trigger* says when a compaction should happen.
+A *strategy* says what leaves the view when it does.
 
 == Entry point
 
-`SessionService.compact(id, trigger, strategy)` evaluates the trigger on the active view and runs the strategy only when it fires.
-The strategy's result is recorded as one `COMPACTION` boundary event followed by the summary events, in one version-checked append; when nothing should leave the view, nothing is written.
-The log is never modified: the boundary names the events that make up the view from then on.
+`SessionService.compact(id, trigger, strategy)` is the one method to call.
+It evaluates the trigger on the active view and runs the strategy only when the trigger fires.
+The strategy's result is then recorded as one `COMPACTION` boundary event followed by the summary events, in one version-checked append.
+When nothing should leave the view, nothing is written at all.
+The log itself is never modified: the boundary names the events that make up the view from then on.
 
 [source,java]
 ----
@@ -28,7 +33,8 @@ result.tokensEstimatedSaved();  // an estimate, net of the summary
 sessionService.compact(sessionId, request -> true, strategy);
 ----
 
-With `ChatClient`, the xref:api/session/chat-client.adoc[`SessionTurnAdvisor`] calls `compact` once the call has returned, unless the turn parked on a question, so an application rarely calls it itself.
+With `ChatClient` you rarely call it yourself.
+The xref:api/session/chat-client.adoc[`SessionTurnAdvisor`] calls `compact` once the call has returned, unless the turn parked on a question: nothing is compacted while the session waits.
 
 image::session/session-compaction-classes.svg[The compaction types, width=900, align="center"]
 
@@ -36,7 +42,8 @@ image::session/session-compaction-sequence.svg[A compaction pass, end to end, wi
 
 == Triggers
 
-A `CompactionTrigger` is a functional interface that decides on a `CompactionRequest`: the session, its active view and the view's turn count.
+A `CompactionTrigger` is a functional interface.
+It decides on a `CompactionRequest`, which carries the session, its active view and the view's turn count.
 
 [source,java]
 ----
@@ -51,12 +58,14 @@ TokenCountTrigger.builder().threshold(4000).tokenCountEstimator(myEstimator).bui
 CompositeCompactionTrigger.anyOf(new TurnCountTrigger(20), TokenCountTrigger.builder().threshold(4000).build());
 ----
 
-`TokenCountTrigger` counts what is sent to the model, the latest stored system message, the summaries and the conversation, with a `TokenCountEstimator` (JTokkit by default), the same measure a token budget uses, so a threshold and a budget are expressed in the same units.
+`TokenCountTrigger` counts what is actually sent to the model: the latest stored system message, the summaries and the conversation.
+It does so with a `TokenCountEstimator`, JTokkit by default.
+This is the same measure a token budget uses, so a threshold and a budget are expressed in the same units.
 
 == The window strategy
 
 `WindowCompactionStrategy` keeps the recent conversation in the view and covers the rest.
-A `CompactionWindow` says how much stays: the last events, the last turns, or what fits a token budget.
+How much stays is a `CompactionWindow`: the last events, the last turns, or whatever fits a token budget.
 
 [source,java]
 ----
@@ -75,16 +84,18 @@ WindowCompactionStrategy.builder()
 | Window | Keeps | Best for
 
 | `lastEvents(n)`
-| The last `n` conversation events
-| A predictable, cost-free window
+| Keeps the last `n` conversation events.
+| A predictable, cost-free window.
 
 | `lastTurns(n)`
-| The last `n` complete turns, so the window follows the conversation's shape: ten short turns and ten tool-heavy turns both count as ten
-| Turn-structured dialogues
+| Keeps the last `n` complete turns.
+The window follows the conversation's shape: ten short turns and ten tool-heavy turns both count as ten.
+| Turn-structured dialogues.
 
 | `tokenBudget(maxTokens)`
-| The newest events whose estimated tokens fit the budget, as a contiguous suffix, after the pinned events' tokens came off it
-| A hard context window limit
+| Keeps the newest events whose estimated tokens fit the budget, as a contiguous suffix.
+The pinned events' tokens come off the budget first.
+| A hard context window limit.
 |===
 
 === One pass
@@ -93,23 +104,29 @@ Whatever the window, a pass does the same thing:
 
 image::session/session-compaction-activity.svg[How the window strategy chooses the cut, width=420, align="center"]
 
-. The latest stored system message is pinned at the front of the view and never summarized.
-Every earlier stored system message is superseded and leaves the view with a pass that cuts, wherever it sits, even inside the kept window.
+. The latest stored system message is pinned at the front of the view and is never summarized.
+Every earlier stored system message is superseded.
+It leaves the view with a pass that cuts, wherever it sits, even inside the kept window.
 . The events before the first turn, a pre-seeded preamble, are pinned too.
-. Without a summarizer, the summary a previous pass left is pinned and carried forward; with one, it is handed to the summarizer as the prior summary and covered by the new summary.
+. What happens to the summary a previous pass left depends on whether a summarizer is configured.
+Without one, it is pinned and carried forward.
+With one, it is handed to the summarizer as the prior summary and covered by the new summary.
 . The window gives the raw cut among the turns.
-The cut moves forward to the next turn start, so a turn is never split, and back to the newest turn when it would cover everything, so the newest turn stays even when it alone exceeds the window.
-. The turns before the cut leave the view (covered), the rest stay (preserved).
+The cut moves forward to the next turn start, so a turn is never split.
+It moves back to the newest turn when it would cover everything, so the newest turn stays even when it alone exceeds the window.
+. The turns before the cut leave the view, they are covered.
+The rest stay, they are preserved.
 
-Pinned events use no slot of an event or turn window and come off a token budget first.
-Size a token budget so that the pinned events leave room for the conversation, or keep the system prompt out of the session.
+Pinned events use no slot of an event or turn window, and they come off a token budget first.
+So size a token budget such that the pinned events leave room for the conversation, or keep the system prompt out of the session altogether.
 
-Two guarantees follow, whatever the window:
+Two guarantees follow from this, whatever the window:
 
 * *The kept window starts at a turn.*
 A tool result or an assistant reply is never kept without the user message that started its turn.
 * *The newest turn is always kept.*
-When it alone exceeds the window, a long tool-calling loop for example, it stays anyway, so a compaction never covers the turn in progress.
+When it alone exceeds the window, a long tool-calling loop for example, it stays anyway.
+A compaction therefore never covers the turn in progress.
 When there is no turn to cut at, nothing is covered and no summarizer is called.
 
 ----
@@ -119,7 +136,7 @@ Kept                 [u1, a1, u2, a2a, a2b, | u3, a3]   moved to the next turn s
 
 === The tricky cases
 
-`S` is a stored system message, `U` and `A` are user and assistant messages, `Σ` a summary turn.
+In the table, `S` is a stored system message, `U` and `A` are user and assistant messages, and `Σ` is a summary turn.
 
 [cols="3,3,2,2,2"]
 |===
@@ -168,18 +185,29 @@ Kept                 [u1, a1, u2, a2a, a2b, | u3, a3]   moved to the next turn s
 | `Σold U1 A1 U2 A2`
 |===
 
-In the fourth case `S:v1` stays in the view until a cut covers it; the advisor uses only the latest stored system message anyway.
-In the sixth, the system prompt's tokens come off the budget first, leaving 34, so only the newest turn fits; without it both turns (42) would.
+Two of the cases deserve a word.
+In the fourth case `S:v1` stays in the view until a cut covers it.
+That is harmless, because the advisor uses only the latest stored system message anyway.
+In the sixth case the system prompt's tokens come off the budget first, which leaves 34, so only the newest turn fits.
+Without the system prompt both turns, 42 tokens, would fit.
 
 [[session-compaction-summarizer]]
 == Summarizing what leaves the view
 
-A `CompactionSummarizer` condenses the covered turns into a summary turn that stands in for them: a user "shadow prompt" and an assistant summary, so the model keeps seeing a user/assistant alternation.
-It is a functional interface that receives a `SummaryRequest`, the session, the prior summary to build on, the covered events and the preserved ones for continuity, and returns the messages of the summary turn.
-A summarizer that returns no messages declines: the view stays as it is and nothing is written, so a failed model call never loses history.
+A plain window simply drops the covered turns from the view.
+A `CompactionSummarizer` condenses them instead, into a summary turn that stands in for them.
+The summary turn is a user "shadow prompt" followed by an assistant summary, so the model keeps seeing a user/assistant alternation.
 
-`ChatModelSummarizer` asks a `ChatModel` for a rolling summary, with `ChatOptions` of its own if a smaller model should do it.
-The prior summary is fed back as context, so each summary builds on its predecessors, and the first `overlapSize` preserved events are quoted for continuity; stored system messages are never included.
+The summarizer is a functional interface.
+It receives a `SummaryRequest`, which carries the session, the prior summary to build on, the covered events, and the preserved events for continuity, and it returns the messages of the summary turn.
+A summarizer that returns no messages declines.
+The view then stays as it is and nothing is written, so a failed model call never loses history.
+
+`ChatModelSummarizer` asks a `ChatModel` for a rolling summary.
+It can have `ChatOptions` of its own, for example when a smaller model should do the summarizing.
+The prior summary is fed back as context, so each summary builds on its predecessors.
+The first `overlapSize` preserved events are quoted for continuity.
+Stored system messages are never included.
 
 [source,java]
 ----
@@ -196,10 +224,15 @@ CompactionStrategy strategy = WindowCompactionStrategy.builder()
     .build();
 ----
 
-The summarizing call goes to the `ChatModel` directly: no advisor sees it, and it is never stored as conversation.
+The summarizing call goes to the `ChatModel` directly.
+No advisor sees it, and it is never stored as conversation.
 
-A failed model call or a null or blank reply is logged at `WARN`, the failure callback is called, and the view is unchanged.
-An exception from the model call propagates out of `SessionService.compact`; the `SessionTurnAdvisor` catches and logs it, so the user's call still succeeds.
+What happens when the summarizing call goes wrong:
+
+* A failed model call, or a null or blank reply, is logged at `WARN`.
+The failure callback is called, and the view is unchanged.
+* An exception from the model call propagates out of `SessionService.compact`.
+The `SessionTurnAdvisor` catches and logs it, so the user's call still succeeds.
 
 `EventText.of(event)` is the one-line rendering of an event that the token estimates and the default prompt use: `User: ...`, `Assistant: ...`, `Assistant [tool calls: name(args)]`, `Tool [responses: name -> data]`.
 Tool calls and tool results therefore count their full rendering, not their `getText()`, which is `null` for both.
@@ -209,12 +242,15 @@ Tool calls and tool results therefore count their full rendering, not their `get
 
 A strategy answers one question: what should the view look like now?
 The store is asked another: what do I write?
-The answer has one shape, whatever the strategy: one `COMPACTION` event whose payload is a `CompactionBoundary`, followed by one synthetic `MESSAGE` event per summary message, appended with `appendEvents(sessionId, events, expectedVersion)`.
+The answer to the second question has one shape, whatever the strategy.
+It is one `COMPACTION` event whose payload is a `CompactionBoundary`, followed by one synthetic `MESSAGE` event per summary message, appended with `appendEvents(sessionId, events, expectedVersion)`.
 
 * *The view is named by id, not by position.*
-The boundary lists the ids of the pinned, summary and preserved events, in view order; a pinned system message stored before the first boundary is named again by every later one.
+The boundary lists the ids of the pinned, summary and preserved events, in view order.
+A pinned system message stored before the first boundary is named again by every later one.
 * *What is not named is covered.*
-The covered events are not listed; `coveredEventCount` and `tokensEstimatedSaved` are kept for reporting.
+The covered events are not listed.
+`coveredEventCount` and `tokensEstimatedSaved` are kept for reporting.
 * *The view is projected on every read.*
 `CompactionBoundary.project(log)` resolves the ids of the newest boundary against the log, then appends every event after the boundary.
 Neither the boundary itself nor an older boundary is in the view.
@@ -234,4 +270,5 @@ view after      Σnew U3 A3
 
 Every existing event keeps its position and its content.
 `Σold` stays in the log, so it still shows what the model was told before this pass.
-The new summary is placed in front of `U3` by the projection, not by the write: the write is a plain append, which keeps it cheap and keeps the log a faithful record.
+The new summary is placed in front of `U3` by the projection, not by the write.
+The write is a plain append, which keeps it cheap and keeps the log a faithful record.
