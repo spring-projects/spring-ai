@@ -356,6 +356,34 @@ class WebFluxSseClientTransportIT {
 	}
 
 	@Test
+	void testDataOnlySseMessage() throws InterruptedException {
+		CopyOnWriteArrayList<McpSchema.JSONRPCMessage> receivedMessages = new CopyOnWriteArrayList<>();
+		TestSseClientTransport localTransport = new TestSseClientTransport(this.webClientBuilder,
+				McpJsonMapperUtils.JSON_MAPPER, this.sseMessageEndpointValidator);
+
+		localTransport.connect(flux -> flux.doOnNext(receivedMessages::add)).block();
+
+		// Simulate receiving a message without an "event" field, which defaults to
+		// "message"
+		localTransport.simulateDataOnlyEvent("""
+				{
+					"jsonrpc": "2.0",
+					"id": "test-id",
+					"result": {"status": "success"}
+				}
+				""");
+
+		// Wait briefly for the event to be processed
+		Thread.sleep(200);
+
+		assertThat(receivedMessages).hasSize(1);
+		assertThat(receivedMessages.get(0)).isInstanceOf(McpSchema.JSONRPCResponse.class);
+		assertThat(((McpSchema.JSONRPCResponse) receivedMessages.get(0)).id()).isEqualTo("test-id");
+
+		localTransport.closeGracefully().block();
+	}
+
+	@Test
 	void testMessageEndpointValidation() throws InvalidSseMessageEndpointException {
 		var uriCaptor = ArgumentCaptor.forClass(URI.class);
 		verify(this.sseMessageEndpointValidator).validate(uriCaptor.capture(),
@@ -433,6 +461,11 @@ class WebFluxSseClientTransportIT {
 
 		public void simulateMessageEvent(String jsonMessage) {
 			this.events.tryEmitNext(ServerSentEvent.<String>builder().event("message").data(jsonMessage).build());
+			this.inboundMessageCount.incrementAndGet();
+		}
+
+		public void simulateDataOnlyEvent(String jsonMessage) {
+			this.events.tryEmitNext(ServerSentEvent.<String>builder().data(jsonMessage).build());
 			this.inboundMessageCount.incrementAndGet();
 		}
 
