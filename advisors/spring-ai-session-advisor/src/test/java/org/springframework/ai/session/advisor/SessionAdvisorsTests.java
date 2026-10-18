@@ -17,6 +17,7 @@
 package org.springframework.ai.session.advisor;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -34,8 +35,10 @@ import org.springframework.ai.session.SessionService;
 import org.springframework.ai.session.compaction.WindowCompactionStrategy;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
+import org.springframework.core.Ordered;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
 /**
  * {@link SessionAdvisors} with a {@link ChatClient} that registers its own tool-calling
@@ -62,6 +65,29 @@ class SessionAdvisorsTests {
 	}
 
 	@Test
+	void interruptibleAddsTheInterruptAdvisorInsideTheMemoryAdvisor() {
+		List<Advisor> advisors = SessionAdvisors.builder(this.sessionService).interruptible(true).build();
+
+		assertThat(advisors).hasExactlyElementsOfTypes(SessionTurnAdvisor.class, SessionMemoryAdvisor.class,
+				SessionInterruptAdvisor.class);
+		assertThat(advisors).extracting(Advisor::getOrder).isSorted();
+		assertThat(advisors.get(2).getOrder()).isEqualTo(SessionInterruptAdvisor.DEFAULT_ORDER);
+	}
+
+	@Test
+	void interruptAdvisorFollowsTheMemoryAdvisorsOrder() {
+		List<Advisor> advisors = SessionAdvisors.builder(this.sessionService)
+			.memory(memory -> memory.order(Ordered.HIGHEST_PRECEDENCE + 1500))
+			.interruptible(true)
+			.build();
+
+		// Just inside the memory advisor, wherever it was put, so a round's request is
+		// stored before the check throws
+		assertThat(advisors.get(1).getOrder()).isEqualTo(Ordered.HIGHEST_PRECEDENCE + 1500);
+		assertThat(advisors.get(2).getOrder()).isEqualTo(Ordered.HIGHEST_PRECEDENCE + 1600);
+	}
+
+	@Test
 	void callRunsTurnWithHistory() {
 		ChatClient client = client(SessionAdvisors.builder(this.sessionService).build());
 		this.model.thenAnswer("Hi!").thenAnswer("Fine.");
@@ -71,6 +97,29 @@ class SessionAdvisorsTests {
 
 		assertThat(ScriptedChatModel.describe(this.model.prompts().get(1))).containsExactly("Hello", "Hi!",
 				"How are you?");
+	}
+
+	@Test
+	void sessionWithRunIdSetsBothKeys() {
+		ChatClient client = client(SessionAdvisors.builder(this.sessionService).build());
+		this.model.thenAnswer("Hi!");
+
+		Map<String, Object> context = client.prompt()
+			.user("Hello")
+			.advisors(SessionAdvisors.session(this.sessionId, "run-7"))
+			.call()
+			.chatClientResponse()
+			.context();
+
+		assertThat(context).containsEntry(SessionMemoryAdvisor.SESSION_ID_CONTEXT_KEY, this.sessionId)
+			.containsEntry(SessionTurnAdvisor.RUN_ID_CONTEXT_KEY, "run-7");
+		assertThat(this.sessionService.turns().status(this.sessionId).runId()).isEqualTo("run-7");
+	}
+
+	@Test
+	void sessionWithoutRunIdRejectsAnEmptyOne() {
+		assertThatIllegalArgumentException().isThrownBy(() -> SessionAdvisors.session(this.sessionId, ""));
+		assertThatIllegalArgumentException().isThrownBy(() -> SessionAdvisors.session("", "run-7"));
 	}
 
 	@Test

@@ -18,22 +18,55 @@ package org.springframework.ai.session.advisor;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Supplier;
 
+import io.micrometer.context.ContextSnapshot;
+import io.micrometer.context.ContextSnapshotFactory;
 import org.jspecify.annotations.Nullable;
+import reactor.util.context.ContextView;
 
 import org.springframework.ai.session.CreateSessionRequest;
 import org.springframework.ai.session.SessionAttributes;
 
 /**
- * What the session advisors read from the advisor context: the session id, and the
- * request that creates the session on first use.
+ * What the session advisors share around a request: what they read from the advisor
+ * context, the session id, the run id and the request that creates the session on first
+ * use, and the caller's context they carry to the session calls of a stream.
  *
  * @author Christian Tzolov
  * @since 2.1.0
  */
 final class SessionContexts {
 
+	private static final ContextSnapshotFactory CONTEXT_SNAPSHOTS = ContextSnapshotFactory.builder().build();
+
 	private SessionContexts() {
+	}
+
+	/**
+	 * Captures the caller's context, to restore it around a session call that runs on the
+	 * scheduler instead of the caller's thread: the thread locals of a blocking caller,
+	 * the security context or the current observation for example, and the Reactor
+	 * context of a reactive caller, the latter winning where both hold a key.
+	 * @param contextView the Reactor context of the stream, or {@code null} outside one
+	 * @return the snapshot, to pass to {@link #withContext} or to wrap a callback with
+	 */
+	static ContextSnapshot snapshot(@Nullable ContextView contextView) {
+		return (contextView != null) ? CONTEXT_SNAPSHOTS.captureAll(contextView) : CONTEXT_SNAPSHOTS.captureAll();
+	}
+
+	/**
+	 * Runs the action with the snapshot's context set as thread locals, and clears them
+	 * again afterwards.
+	 * @param context the snapshot {@link #snapshot} captured
+	 * @param action the action, a session call as a rule
+	 * @param <T> the action's result type
+	 * @return the action's result
+	 */
+	static <T> T withContext(ContextSnapshot context, Supplier<T> action) {
+		try (ContextSnapshot.Scope ignored = context.setThreadLocals()) {
+			return action.get();
+		}
 	}
 
 	/**
@@ -48,6 +81,24 @@ final class SessionContexts {
 		}
 		throw new IllegalStateException("No session ID found in advisor context. Set SESSION_ID_CONTEXT_KEY on "
 				+ "every request: .advisors(a -> a.param(SessionMemoryAdvisor.SESSION_ID_CONTEXT_KEY, sessionId))");
+	}
+
+	/**
+	 * Returns the run id of the call from the advisor context, under
+	 * {@link SessionTurnAdvisor#RUN_ID_CONTEXT_KEY}, or {@code null} when the context has
+	 * none or a blank one.
+	 * @throws IllegalArgumentException if the value is not a string
+	 */
+	static @Nullable String runId(Map<String, @Nullable Object> context) {
+		Object value = context.get(SessionTurnAdvisor.RUN_ID_CONTEXT_KEY);
+		if (value == null) {
+			return null;
+		}
+		if (!(value instanceof String s)) {
+			throw new IllegalArgumentException("Advisor context value for '" + SessionTurnAdvisor.RUN_ID_CONTEXT_KEY
+					+ "' must be a String but was " + value.getClass().getName());
+		}
+		return s.isBlank() ? null : s;
 	}
 
 	/**

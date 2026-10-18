@@ -16,15 +16,18 @@
 
 package org.springframework.ai.session.advisor;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import io.micrometer.context.ContextSnapshot;
-import io.micrometer.context.ContextSnapshotFactory;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,6 +55,10 @@ import org.springframework.ai.session.SessionEvent;
 import org.springframework.ai.session.SessionService;
 import org.springframework.ai.session.compaction.CompactionStrategy;
 import org.springframework.ai.session.compaction.CompactionTrigger;
+import org.springframework.ai.session.status.StopReason;
+import org.springframework.ai.session.status.TurnInProgressException;
+import org.springframework.ai.session.status.TurnService;
+import org.springframework.ai.session.status.TurnStatus;
 import org.springframework.core.Ordered;
 import org.springframework.util.Assert;
 
@@ -67,8 +74,18 @@ import org.springframework.util.Assert;
  * <li>Finds the session or creates it on first use, with the metadata from
  * {@link SessionMemoryAdvisor#SESSION_METADATA_CONTEXT_KEY}, such as the agent
  * attributes.</li>
+ * <li>Starts the turn with {@link TurnService#start}, under the run id the caller passed
+ * in {@link #RUN_ID_CONTEXT_KEY} or under a new one. The forwarded request carries the
+ * effective run id, so the advisors inside the loop can read it. A session on which a
+ * turn already runs is busy: the call fails with {@link TurnInProgressException} and
+ * nothing is queued.</li>
  * <li>After a loop that ended on a {@code returnDirect} tool or a breached tool call
  * limit, stores the reply's tool results, which no model round stored.</li>
+ * <li>Ends the turn with {@link TurnService#end}: with {@link StopReason#END_TURN} when
+ * the call returned, with {@link StopReason#ERROR} when it threw. A stream the client
+ * cancelled ends with {@link StopReason#CANCELLED}, so the log tells a dropped connection
+ * from a stop the session was asked for. When an {@link TurnService#interrupt interrupt}
+ * ended the turn first, that end stands and the advisor leaves the status alone.</li>
  * <li>Compacts the session once the call has returned, if a
  * {@link Builder#compactionTrigger trigger} fires: before the reply is returned, or after
  * it on the scheduler with {@link Builder#asyncCompaction(boolean)}. Compaction is
@@ -79,7 +96,9 @@ import org.springframework.util.Assert;
  * </ol>
  * On its own the advisor stores no conversation: it needs the memory advisor, and
  * {@link SessionAdvisors} builds the two together at their orders. The memory advisor
- * alone keeps the history, without compaction.
+ * alone keeps the history, without compaction or turn status. Inside the loop the status
+ * is read only on request: the {@link SessionInterruptAdvisor} stops the loop at the
+ * first round after an interrupt.
  *
  * @author Christian Tzolov
  * @since 2.1.0
@@ -92,19 +111,32 @@ public final class SessionTurnAdvisor implements CallAdvisor, StreamAdvisor {
 	 */
 	public static final int DEFAULT_ORDER = Ordered.HIGHEST_PRECEDENCE + 200;
 
+	/**
+	 * Context key of the run id a call runs under: the token that owns the turn. A
+	 * harness passes its own run id,
+	 * {@code .advisors(a -> a.param(SessionTurnAdvisor.RUN_ID_CONTEXT_KEY, runId))}, or
+	 * the advisor generates a UUID per call. Either way the request the advisor forwards
+	 * carries the effective id, so the advisors inside the loop and the response context
+	 * have it. The session does not interpret it; see {@link TurnService#start}.
+	 */
+	public static final String RUN_ID_CONTEXT_KEY = "chat_memory_session_run_id";
+
+	/**
+	 * The lease a call takes on the session's turn unless
+	 * {@link Builder#turnTimeout(Duration)} says otherwise: thirty minutes, well above
+	 * any {@code ChatClient} call with its tool loop, so a lease that ran out means the
+	 * call's JVM is gone, not slow.
+	 */
+	public static final Duration DEFAULT_TURN_TIMEOUT = Duration.ofMinutes(30);
+
 	/** The result a tool call gets in the log when the loop ended before it ran. */
 	public static final String NOT_RUN_TOOL_RESULT = "The tool call did not run: the tool call limit was reached.";
 
 	private static final Logger logger = LoggerFactory.getLogger(SessionTurnAdvisor.class);
 
-	/**
-	 * Carries the caller's context, such as the security context, to the session calls of
-	 * a stream and to an async compaction: the thread locals of a blocking caller, the
-	 * Reactor context of a reactive one, the latter winning where both hold a key.
-	 */
-	private static final ContextSnapshotFactory CONTEXT_SNAPSHOTS = ContextSnapshotFactory.builder().build();
-
 	private final SessionService sessionService;
+
+	private final TurnService turns;
 
 	private final int order;
 
@@ -116,6 +148,8 @@ public final class SessionTurnAdvisor implements CallAdvisor, StreamAdvisor {
 
 	private final boolean asyncCompaction;
 
+	@Nullable private final Duration turnTimeout;
+
 	/**
 	 * The sessions an asynchronous compaction of this advisor runs on, so it runs once
 	 * each.
@@ -124,11 +158,13 @@ public final class SessionTurnAdvisor implements CallAdvisor, StreamAdvisor {
 
 	private SessionTurnAdvisor(Builder builder) {
 		this.sessionService = builder.sessionService;
+		this.turns = this.sessionService.turns();
 		this.order = builder.order;
 		this.scheduler = builder.scheduler;
 		this.compactionTrigger = builder.compactionTrigger;
 		this.compactionStrategy = builder.compactionStrategy;
 		this.asyncCompaction = builder.asyncCompaction;
+		this.turnTimeout = builder.turnTimeout;
 	}
 
 	public static Builder builder(SessionService sessionService) {
@@ -151,8 +187,19 @@ public final class SessionTurnAdvisor implements CallAdvisor, StreamAdvisor {
 		Assert.notNull(chain, "chain must not be null");
 		String sessionId = SessionContexts.sessionId(request.context());
 		this.sessionService.findOrCreate(SessionContexts.createRequest(sessionId, request.context()));
-		ChatClientResponse response = chain.nextCall(request);
-		complete(sessionId, response.chatResponse());
+		String runId = start(sessionId, request.context());
+		ChatClientResponse response;
+		boolean returned = false;
+		try {
+			response = chain.nextCall(withRunId(request, runId));
+			returned = true;
+		}
+		finally {
+			if (!returned) {
+				end(sessionId, runId, StopReason.ERROR);
+			}
+		}
+		complete(sessionId, runId, response.chatResponse());
 		return response;
 	}
 
@@ -162,37 +209,133 @@ public final class SessionTurnAdvisor implements CallAdvisor, StreamAdvisor {
 		Assert.notNull(chain, "chain must not be null");
 		String sessionId = SessionContexts.sessionId(request.context());
 		// The session calls run on the scheduler, never on the model's thread, with the
-		// caller's context (the security context, the current observation) restored
-		// around them and around the subscription of the rest of the chain: the thread
-		// locals of a blocking caller, and what a reactive caller carries in the Reactor
-		// context
+		// caller's context restored around them and around the subscription of the rest
+		// of the chain
 		return Flux.deferContextual(contextView -> {
-			ContextSnapshot context = CONTEXT_SNAPSHOTS.captureAll(contextView);
-			return Mono.just(request).publishOn(this.scheduler).flatMapMany(r -> {
-				// A returnDirect result or a breached limit ends the stream on a chunk
-				// of its own
-				AtomicReference<@Nullable ChatResponse> unanswered = new AtomicReference<>();
-				Flux<ChatClientResponse> rest = chain.nextStream(r).doOnNext(response -> {
-					if (endsWithoutModel(response.chatResponse())) {
-						unanswered.set(response.chatResponse());
+			ContextSnapshot context = SessionContexts.snapshot(contextView);
+			return Mono.just(request).publishOn(this.scheduler).flatMapMany(r -> Flux.from(subscriber -> {
+				context.wrap(() -> {
+					this.sessionService.findOrCreate(SessionContexts.createRequest(sessionId, r.context()));
+					String runId = start(sessionId, r.context());
+					// A returnDirect result or a breached limit ends the stream on a
+					// chunk of its own
+					AtomicReference<@Nullable ChatResponse> unanswered = new AtomicReference<>();
+					// The turn ends once, on the first of complete, error and cancel
+					AtomicBoolean ended = new AtomicBoolean();
+					Flux<ChatClientResponse> rounds;
+					try {
+						rounds = chain.nextStream(withRunId(r, runId));
 					}
-				}).publishOn(this.scheduler).doOnComplete(context.wrap(() -> complete(sessionId, unanswered.get())));
-				return Flux.from(subscriber -> {
-					try (ContextSnapshot.Scope ignored = context.setThreadLocals()) {
-						this.sessionService.findOrCreate(SessionContexts.createRequest(sessionId, r.context()));
-						rest.subscribe(subscriber);
+					catch (RuntimeException ex) {
+						// The rest of the chain failed before its stream existed, so no
+						// operator below sees the error: the turn ends here
+						end(sessionId, runId, StopReason.ERROR);
+						throw ex;
 					}
-				});
-			});
+					rounds.doOnNext(response -> {
+						if (endsWithoutModel(response.chatResponse())) {
+							unanswered.set(response.chatResponse());
+						}
+					}).publishOn(this.scheduler).doOnComplete(context.wrap(() -> {
+						if (ended.compareAndSet(false, true)) {
+							complete(sessionId, runId, unanswered.get());
+						}
+					})).doOnError(ex -> {
+						if (ended.compareAndSet(false, true)) {
+							context.wrap(() -> end(sessionId, runId, StopReason.ERROR)).run();
+						}
+					}).doOnCancel(() -> {
+						if (ended.compareAndSet(false, true)) {
+							endOnCancel(context.wrap(() -> end(sessionId, runId, StopReason.CANCELLED)));
+						}
+					}).subscribe(subscriber);
+				}).run();
+			}));
 		});
 	}
 
-	/** Stores the results of a loop that ended without a model round, then compacts. */
-	private void complete(String sessionId, @Nullable ChatResponse response) {
-		if (response != null && endsWithoutModel(response)) {
+	/**
+	 * Ends a cancelled turn on the scheduler, since a cancel may arrive on the model's
+	 * thread, through an operator downstream that has what it needs, and a blocking write
+	 * does not belong there. When the scheduler takes no more work, because it was
+	 * disposed at shutdown for example, the write runs on the cancelling thread instead:
+	 * one blocking write there is better than a turn left running.
+	 */
+	private void endOnCancel(Runnable end) {
+		try {
+			this.scheduler.schedule(end);
+		}
+		catch (RejectedExecutionException ex) {
+			logger.debug("The scheduler rejected the end of a cancelled turn; ending it on the cancelling thread");
+			end.run();
+		}
+	}
+
+	/**
+	 * Starts the turn under the run id of the context, or under a new one, and returns
+	 * the effective run id.
+	 * @throws TurnInProgressException if a turn runs on the session
+	 */
+	private String start(String sessionId, Map<String, @Nullable Object> context) {
+		TurnStatus started = this.turns.start(sessionId, SessionContexts.runId(context), this.turnTimeout);
+		return Objects.requireNonNull(started.runId(), "a running turn has a run id");
+	}
+
+	/**
+	 * Returns the request with the effective run id on its context, for the advisors
+	 * inside the loop.
+	 */
+	private static ChatClientRequest withRunId(ChatClientRequest request, String runId) {
+		return request.mutate().context(RUN_ID_CONTEXT_KEY, runId).build();
+	}
+
+	/**
+	 * Completes the turn: stores the tool results of a loop that ended without a model
+	 * round, ends the turn with {@link StopReason#END_TURN}, then compacts if the trigger
+	 * fires.
+	 */
+	private void complete(String sessionId, String runId, @Nullable ChatResponse response) {
+		if (response != null && endsWithoutModel(response) && ownsNewestTurn(sessionId, runId)) {
 			storeResults(sessionId, response);
 		}
+		end(sessionId, runId, StopReason.END_TURN);
 		compactIfTriggered(sessionId);
+	}
+
+	/**
+	 * Ends the turn with the reason. When another writer ended it first, an interrupt for
+	 * example, the service's own-turn guard writes nothing and that end stands; the
+	 * advisor logs it at debug. Best-effort: a failure is logged and the reply is still
+	 * returned, the bookkeeping does not lose it.
+	 */
+	private void end(String sessionId, String runId, StopReason stopReason) {
+		try {
+			TurnStatus status = this.turns.end(sessionId, runId, stopReason);
+			if (!runId.equals(status.runId()) || status.stopReason() != stopReason) {
+				logger.debug("The turn of session [{}] under run [{}] was ended by another writer; the status is {}",
+						sessionId, runId, status);
+			}
+		}
+		catch (RuntimeException ex) {
+			logger.warn("Could not end the turn of session [{}] under run [{}] with {}: {}", sessionId, runId,
+					stopReason, ex.getMessage());
+		}
+	}
+
+	/**
+	 * Whether the newest status event of the session names this run, running or ended: no
+	 * later turn started, so the newest reply in the log is this call's. A call that lost
+	 * the turn to a lease takeover, or whose session a later turn runs on, writes no
+	 * results, since the reply it would answer is the later turn's.
+	 */
+	private boolean ownsNewestTurn(String sessionId, String runId) {
+		TurnStatus newest = this.turns.status(sessionId);
+		if (runId.equals(newest.runId())) {
+			return true;
+		}
+		logger.debug("A later turn runs on session [{}] under run [{}]; run [{}] leaves its log alone", sessionId,
+				newest.runId(), runId);
+		return false;
 	}
 
 	/**
@@ -281,7 +424,7 @@ public final class SessionTurnAdvisor implements CallAdvisor, StreamAdvisor {
 			// The caller's thread-local context goes with it: an authorizing
 			// SessionService
 			// takes the caller from the security context, and tracing keeps its parent
-			Runnable task = CONTEXT_SNAPSHOTS.captureAll().wrap(() -> {
+			Runnable task = SessionContexts.snapshot(null).wrap(() -> {
 				try {
 					compact(sessionId, trigger, strategy);
 				}
@@ -345,6 +488,8 @@ public final class SessionTurnAdvisor implements CallAdvisor, StreamAdvisor {
 
 		private boolean asyncCompaction;
 
+		@Nullable private Duration turnTimeout = DEFAULT_TURN_TIMEOUT;
+
 		private Builder(SessionService sessionService) {
 			Assert.notNull(sessionService, "sessionService must not be null");
 			this.sessionService = sessionService;
@@ -396,6 +541,29 @@ public final class SessionTurnAdvisor implements CallAdvisor, StreamAdvisor {
 		 */
 		public Builder asyncCompaction(boolean asyncCompaction) {
 			this.asyncCompaction = asyncCompaction;
+			return this;
+		}
+
+		/**
+		 * How long a call may hold the session's turn before another call may take it
+		 * over; {@link #DEFAULT_TURN_TIMEOUT} by default, {@code null} for no lease.
+		 * <p>
+		 * The lease is what frees a session after a crash. A JVM that dies between the
+		 * start and the end of a turn leaves the session {@code RUNNING} under a run that
+		 * no longer exists; without a lease every later call fails with
+		 * {@link TurnInProgressException} until someone calls
+		 * {@link TurnService#interrupt}. With one, the first call after the lease ran out
+		 * ends the dead turn with {@link StopReason#EXPIRED} and runs. A call that
+		 * outlives its lease loses the turn the same way, so set it well above the
+		 * longest call the client makes, tool loop included; the HTTP timeouts of the
+		 * model client bound that in practice.
+		 * @param turnTimeout the lease, or {@code null} for a turn that never expires
+		 * @throws IllegalArgumentException if the timeout is zero or negative
+		 */
+		public Builder turnTimeout(@Nullable Duration turnTimeout) {
+			Assert.isTrue(turnTimeout == null || turnTimeout.compareTo(Duration.ZERO) > 0,
+					"turnTimeout must be positive");
+			this.turnTimeout = turnTimeout;
 			return this;
 		}
 

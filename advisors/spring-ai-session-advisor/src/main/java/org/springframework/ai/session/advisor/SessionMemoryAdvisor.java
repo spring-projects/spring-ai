@@ -21,10 +21,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.function.Supplier;
 
 import io.micrometer.context.ContextSnapshot;
-import io.micrometer.context.ContextSnapshotFactory;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -87,13 +85,6 @@ import org.springframework.util.Assert;
 public final class SessionMemoryAdvisor implements BaseAdvisor, MemoryAdvisor {
 
 	private static final Logger logger = LoggerFactory.getLogger(SessionMemoryAdvisor.class);
-
-	/**
-	 * Carries the caller's context to the session calls of a stream: the thread locals of
-	 * a blocking caller, the Reactor context of a reactive one, the latter winning where
-	 * both hold a key.
-	 */
-	private static final ContextSnapshotFactory CONTEXT_SNAPSHOTS = ContextSnapshotFactory.builder().build();
 
 	/**
 	 * Context key of the session a request runs on;
@@ -263,25 +254,17 @@ public final class SessionMemoryAdvisor implements BaseAdvisor, MemoryAdvisor {
 	@Override
 	public Flux<ChatClientResponse> adviseStream(ChatClientRequest request, StreamAdvisorChain chain) {
 		// The session reads and writes run on the scheduler, never on the model's thread,
-		// with the caller's context (the security context, the current observation)
-		// restored around them: the thread locals of a blocking caller, and what a
-		// reactive caller, under WebFlux for example, carries in the Reactor context
+		// with the caller's context restored around them
 		return Flux.deferContextual(contextView -> {
-			ContextSnapshot context = CONTEXT_SNAPSHOTS.captureAll(contextView);
+			ContextSnapshot context = SessionContexts.snapshot(contextView);
 			return Mono.just(request)
 				.publishOn(this.scheduler)
-				.map(r -> withContext(context, () -> this.before(r, chain)))
+				.map(r -> SessionContexts.withContext(context, () -> this.before(r, chain)))
 				.flatMapMany(chain::nextStream)
 				.publishOn(this.scheduler)
 				.transform(flux -> new ChatClientMessageAggregator().aggregateChatClientResponse(flux,
-						r -> withContext(context, () -> this.after(r, chain))));
+						r -> SessionContexts.withContext(context, () -> this.after(r, chain))));
 		});
-	}
-
-	private static <T> T withContext(ContextSnapshot context, Supplier<T> action) {
-		try (ContextSnapshot.Scope ignored = context.setThreadLocals()) {
-			return action.get();
-		}
 	}
 
 	/**

@@ -16,6 +16,8 @@
 
 package org.springframework.ai.session.advisor;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -27,10 +29,18 @@ import java.util.function.BooleanSupplier;
 
 import io.micrometer.context.ContextRegistry;
 import org.junit.jupiter.api.Test;
+import reactor.core.Disposable;
+import reactor.core.publisher.Flux;
+import reactor.core.scheduler.Scheduler;
+import reactor.core.scheduler.Schedulers;
 
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.ChatClientRequest;
+import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
+import org.springframework.ai.chat.client.advisor.api.StreamAdvisor;
+import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -40,14 +50,21 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.session.CreateSessionRequest;
 import org.springframework.ai.session.DefaultSessionService;
+import org.springframework.ai.session.EventType;
 import org.springframework.ai.session.InMemorySessionRepository;
 import org.springframework.ai.session.Session;
 import org.springframework.ai.session.SessionAttributes;
+import org.springframework.ai.session.SessionEvent;
 import org.springframework.ai.session.SessionService;
 import org.springframework.ai.session.compaction.CompactionRequest;
 import org.springframework.ai.session.compaction.CompactionResult;
 import org.springframework.ai.session.compaction.CompactionStrategy;
 import org.springframework.ai.session.compaction.WindowCompactionStrategy;
+import org.springframework.ai.session.status.SessionStatus;
+import org.springframework.ai.session.status.SessionStatusEvents;
+import org.springframework.ai.session.status.StopReason;
+import org.springframework.ai.session.status.TurnInProgressException;
+import org.springframework.ai.session.status.TurnStatus;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.ai.tool.metadata.ToolMetadata;
@@ -329,6 +346,315 @@ class SessionTurnAdvisorTests {
 		assertThat(SessionAttributes.agentVersion(session())).isEqualTo("2");
 	}
 
+	// --- Turn status ---
+
+	@Test
+	void callStartsAndEndsTheTurn() {
+		say(client(), "Hello", "Hi!");
+
+		TurnStatus status = this.sessionService.turns().status(this.sessionId);
+		assertThat(status.status()).isEqualTo(SessionStatus.IDLE);
+		assertThat(status.stopReason()).isEqualTo(StopReason.END_TURN);
+		List<SessionEvent> statuses = statusEvents();
+		assertThat(statuses).hasSize(2);
+		assertThat(SessionStatusEvents.status(statuses.get(0))).isEqualTo(SessionStatus.RUNNING);
+		assertThat(SessionStatusEvents.status(statuses.get(1))).isEqualTo(SessionStatus.IDLE);
+		assertThat(SessionStatusEvents.runId(statuses.get(0))).isNotBlank()
+			.isEqualTo(SessionStatusEvents.runId(statuses.get(1)))
+			.isEqualTo(status.runId());
+		// The turn brackets the conversation in the log, and stays out of the prompt
+		assertThat(this.sessionService.getEvents(this.sessionId)).extracting(SessionEvent::getType)
+			.containsExactly(EventType.STATUS, EventType.MESSAGE, EventType.MESSAGE, EventType.STATUS);
+		assertThat(this.sessionService.getActiveMessages(this.sessionId)).hasSize(2);
+	}
+
+	@Test
+	void turnIsStartedOncePerCallNotPerRound() {
+		this.model.thenCall("c1", "Lisbon").thenAnswer("Sunny.");
+
+		say(client(), "Weather in Lisbon?");
+
+		assertThat(this.model.prompts()).hasSize(2);
+		assertThat(statusEvents()).hasSize(2);
+	}
+
+	@Test
+	void failingCallEndsTheTurnWithError() {
+		this.model.then(prompt -> {
+			throw new IllegalStateException("model down");
+		});
+
+		assertThatThrownBy(() -> say(client(), "Hello")).isInstanceOf(IllegalStateException.class)
+			.hasMessage("model down");
+
+		TurnStatus status = this.sessionService.turns().status(this.sessionId);
+		assertThat(status.status()).isEqualTo(SessionStatus.IDLE);
+		assertThat(status.stopReason()).isEqualTo(StopReason.ERROR);
+		// The next call runs
+		assertThat(say(client(), "Hello again", "Hi!")).isEqualTo("Hi!");
+		assertThat(statusEvents()).hasSize(4);
+	}
+
+	@Test
+	void streamedCallStartsAndEndsTheTurn() {
+		this.model.thenAnswer("Hi!");
+
+		client().prompt()
+			.user("Hello")
+			.advisors(SessionAdvisors.session(this.sessionId))
+			.stream()
+			.content()
+			.blockLast();
+
+		assertThat(this.sessionService.turns().status(this.sessionId).stopReason()).isEqualTo(StopReason.END_TURN);
+		assertThat(statusEvents()).hasSize(2);
+	}
+
+	@Test
+	void failingStreamEndsTheTurnWithError() {
+		this.model.then(prompt -> {
+			throw new IllegalStateException("model down");
+		});
+
+		assertThatThrownBy(() -> client().prompt()
+			.user("Hello")
+			.advisors(SessionAdvisors.session(this.sessionId))
+			.stream()
+			.content()
+			.blockLast()).isInstanceOf(IllegalStateException.class).hasMessage("model down");
+
+		assertThat(this.sessionService.turns().status(this.sessionId).stopReason()).isEqualTo(StopReason.ERROR);
+		assertThat(statusEvents()).hasSize(2);
+	}
+
+	@Test
+	void cancelledStreamEndsTheTurnWithCancelled() throws InterruptedException {
+		ScriptedChatModel endless = new ScriptedChatModel() {
+			@Override
+			public Flux<ChatResponse> stream(Prompt prompt) {
+				return Flux.never();
+			}
+		};
+		ChatClient client = ChatClient.builder(endless)
+			.defaultAdvisors(SessionTurnAdvisor.builder(this.sessionService).build(),
+					SessionMemoryAdvisor.builder(this.sessionService).build())
+			.build();
+
+		Disposable subscription = client.prompt()
+			.user("Hello")
+			.advisors(SessionAdvisors.session(this.sessionId))
+			.stream()
+			.content()
+			.subscribe();
+		await(() -> this.sessionService.turns().status(this.sessionId).isRunning());
+		subscription.dispose();
+
+		await(() -> this.sessionService.turns().status(this.sessionId).stopReason() == StopReason.CANCELLED);
+		// No INTERRUPT event: nobody asked the session to stop
+		assertThat(statusEvents()).hasSize(2);
+		assertThat(interruptEvents()).isEmpty();
+	}
+
+	@Test
+	void cancelledStreamEndsTheTurnOnTheCancellingThreadWhenTheSchedulerIsGone() throws InterruptedException {
+		ScriptedChatModel endless = new ScriptedChatModel() {
+			@Override
+			public Flux<ChatResponse> stream(Prompt prompt) {
+				return Flux.never();
+			}
+		};
+		Scheduler scheduler = Schedulers.newSingle("turn-status");
+		ChatClient client = ChatClient.builder(endless)
+			.defaultAdvisors(SessionTurnAdvisor.builder(this.sessionService).scheduler(scheduler).build(),
+					SessionMemoryAdvisor.builder(this.sessionService).build())
+			.build();
+
+		Disposable subscription = client.prompt()
+			.user("Hello")
+			.advisors(SessionAdvisors.session(this.sessionId))
+			.stream()
+			.content()
+			.subscribe();
+		await(() -> this.sessionService.turns().status(this.sessionId).isRunning());
+		// The scheduler goes away while the stream is open, as at shutdown
+		scheduler.dispose();
+		subscription.dispose();
+
+		// Ended on the cancelling thread, since the scheduler took no more work
+		assertThat(this.sessionService.turns().status(this.sessionId).stopReason()).isEqualTo(StopReason.CANCELLED);
+		assertThat(statusEvents()).hasSize(2);
+	}
+
+	@Test
+	void runIdFromTheContextIsUsedAndForwarded() {
+		this.model.thenAnswer("Hi!");
+
+		ChatClientResponse response = client().prompt()
+			.user("Hello")
+			.advisors(SessionAdvisors.session(this.sessionId, "run-42"))
+			.call()
+			.chatClientResponse();
+
+		assertThat(response.context()).containsEntry(SessionTurnAdvisor.RUN_ID_CONTEXT_KEY, "run-42");
+		assertThat(statusEvents()).hasSize(2)
+			.allSatisfy(event -> assertThat(SessionStatusEvents.runId(event)).isEqualTo("run-42"));
+		assertThat(this.sessionService.turns().status(this.sessionId).runId()).isEqualTo("run-42");
+	}
+
+	@Test
+	void generatedRunIdIsForwarded() {
+		this.model.thenAnswer("Hi!");
+
+		ChatClientResponse response = client().prompt()
+			.user("Hello")
+			.advisors(SessionAdvisors.session(this.sessionId))
+			.call()
+			.chatClientResponse();
+
+		Object runId = response.context().get(SessionTurnAdvisor.RUN_ID_CONTEXT_KEY);
+		assertThat(runId).isInstanceOf(String.class);
+		assertThat(this.sessionService.turns().status(this.sessionId).runId()).isEqualTo(runId);
+	}
+
+	@Test
+	void callTakesTheDefaultLeaseOnTheTurn() {
+		Instant before = Instant.now();
+		say(client(), "Hello", "Hi!");
+
+		TurnStatus started = TurnStatus.from(statusEvents().get(0));
+		assertThat(started.expiresAt()).isNotNull()
+			.isBetween(before.plus(SessionTurnAdvisor.DEFAULT_TURN_TIMEOUT),
+					Instant.now().plus(SessionTurnAdvisor.DEFAULT_TURN_TIMEOUT));
+	}
+
+	@Test
+	void turnTimeoutNullTakesNoLease() {
+		ChatClient client = client(weather(), SessionTurnAdvisor.builder(this.sessionService).turnTimeout(null).build(),
+				ToolCallingAdvisor.builder().build());
+		say(client, "Hello", "Hi!");
+
+		assertThat(TurnStatus.from(statusEvents().get(0)).expiresAt()).isNull();
+	}
+
+	@Test
+	void callTakesOverATurnWhoseLeaseRanOut() {
+		// A call on another JVM died an hour ago between the start and the end of its
+		// turn
+		this.sessionService.create(CreateSessionRequest.builder().id(this.sessionId).build());
+		this.sessionService
+			.appendEvent(SessionStatusEvents.running(this.sessionId, "dead", Instant.now().minus(Duration.ofHours(1))));
+
+		assertThat(say(client(), "Hello", "Hi!")).isEqualTo("Hi!");
+
+		List<SessionEvent> statuses = statusEvents();
+		assertThat(statuses).hasSize(4);
+		assertThat(TurnStatus.from(statuses.get(1)).stopReason()).isEqualTo(StopReason.EXPIRED);
+		assertThat(SessionStatusEvents.runId(statuses.get(1))).isEqualTo("dead");
+		assertThat(this.sessionService.turns().status(this.sessionId).stopReason()).isEqualTo(StopReason.END_TURN);
+		assertThat(interruptEvents()).isEmpty();
+	}
+
+	@Test
+	void busySessionFailsTheCall() {
+		this.sessionService.create(CreateSessionRequest.builder().id(this.sessionId).build());
+		this.sessionService.turns().start(this.sessionId, "other");
+		this.model.thenAnswer("Hi!");
+
+		assertThatThrownBy(() -> say(client(), "Hello")).isInstanceOf(TurnInProgressException.class)
+			.satisfies(ex -> assertThat(((TurnInProgressException) ex).getRunId()).isEqualTo("other"));
+
+		// Nothing ran, nothing was stored, the other turn still runs
+		assertThat(this.model.prompts()).isEmpty();
+		assertThat(this.sessionService.getActiveMessages(this.sessionId)).isEmpty();
+		assertThat(this.sessionService.turns().status(this.sessionId).isRunning("other")).isTrue();
+	}
+
+	@Test
+	void interruptDuringTheTurnStandsWhenTheCallCompletes() {
+		// Without the interrupt advisor the loop runs on; the interrupt still wins the
+		// status, the advisor's own end of the turn is a no-op
+		ChatClient client = client(stopTool(), ToolCallingAdvisor.builder().build());
+		this.model.then(prompt -> calls(call("c1", "stop", "Lisbon"))).thenAnswer("Stopped.");
+
+		assertThat(say(client, "Stop")).isEqualTo("Stopped.");
+
+		TurnStatus status = this.sessionService.turns().status(this.sessionId);
+		assertThat(status.stopReason()).isEqualTo(StopReason.INTERRUPTED);
+		assertThat(statusEvents()).hasSize(2);
+		assertThat(this.sessionService.getEvents(this.sessionId))
+			.filteredOn(event -> EventType.INTERRUPT.equals(event.getType()))
+			.hasSize(1);
+		assertThat(this.model.prompts()).hasSize(2);
+	}
+
+	@Test
+	void interruptibleLoopStopsBeforeTheNextRound() {
+		ChatClient client = ChatClient.builder(this.model)
+			.defaultAdvisors(SessionAdvisors.builder(this.sessionService).interruptible(true).build())
+			.defaultToolCallbacks(stopTool())
+			.build();
+		this.model.then(prompt -> calls(call("c1", "stop", "Lisbon"))).thenAnswer("Stopped.");
+
+		assertThatThrownBy(() -> say(client, "Stop")).isInstanceOf(TurnInterruptedException.class).satisfies(ex -> {
+			TurnInterruptedException interrupted = (TurnInterruptedException) ex;
+			assertThat(interrupted.getSessionId()).isEqualTo(this.sessionId);
+			assertThat(interrupted.getRunId()).isEqualTo(this.sessionService.turns().status(this.sessionId).runId());
+			assertThat(interrupted.getStatus().stopReason()).isEqualTo(StopReason.INTERRUPTED);
+		});
+
+		// One model round: the second never ran, and the status the interrupt set stands
+		assertThat(this.model.prompts()).hasSize(1);
+		assertThat(this.sessionService.turns().status(this.sessionId).stopReason()).isEqualTo(StopReason.INTERRUPTED);
+		assertThat(statusEvents()).hasSize(2);
+		// The round that ran is whole in the log, the result of the stop tool included
+		assertThat(ScriptedChatModel.describe(new Prompt(this.sessionService.getActiveMessages(this.sessionId))))
+			.containsExactly("Stop", "call:c1", "result:c1");
+	}
+
+	@Test
+	void interruptibleStreamStopsBeforeTheNextRound() {
+		ChatClient client = ChatClient.builder(this.model)
+			.defaultAdvisors(SessionAdvisors.builder(this.sessionService).interruptible(true).build())
+			.defaultToolCallbacks(stopTool())
+			.build();
+		this.model.then(prompt -> calls(call("c1", "stop", "Lisbon"))).thenAnswer("Stopped.");
+
+		assertThatThrownBy(() -> client.prompt()
+			.user("Stop")
+			.advisors(SessionAdvisors.session(this.sessionId))
+			.stream()
+			.content()
+			.blockLast()).isInstanceOf(TurnInterruptedException.class);
+
+		assertThat(this.model.prompts()).hasSize(1);
+		assertThat(this.sessionService.turns().status(this.sessionId).stopReason()).isEqualTo(StopReason.INTERRUPTED);
+		assertThat(statusEvents()).hasSize(2);
+		assertThat(ScriptedChatModel.describe(new Prompt(this.sessionService.getActiveMessages(this.sessionId))))
+			.containsExactly("Stop", "call:c1", "result:c1");
+	}
+
+	/** A tool that interrupts the session, standing in for another thread. */
+	private ToolCallback stopTool() {
+		return FunctionToolCallback.builder("stop", (City city) -> {
+			this.sessionService.turns().interrupt(this.sessionId, "user pressed stop");
+			return "stopping in " + city.city();
+		}).description("Stops the turn").inputType(City.class).build();
+	}
+
+	private List<SessionEvent> statusEvents() {
+		return this.sessionService.getEvents(this.sessionId)
+			.stream()
+			.filter(event -> EventType.STATUS.equals(event.getType()))
+			.toList();
+	}
+
+	private List<SessionEvent> interruptEvents() {
+		return this.sessionService.getEvents(this.sessionId)
+			.stream()
+			.filter(event -> EventType.INTERRUPT.equals(event.getType()))
+			.toList();
+	}
+
 	// --- Tool calls that need confirmation ---
 
 	private ChatClient client() {
@@ -345,6 +671,46 @@ class SessionTurnAdvisorTests {
 			.defaultAdvisors(SessionMemoryAdvisor.builder(this.sessionService).build())
 			.defaultToolCallbacks(tool)
 			.build();
+	}
+
+	@Test
+	void streamThatFailsBeforeItStartsEndsTheTurnWithError() {
+		// A downstream advisor fails while the stream is assembled, before any operator
+		// of the turn advisor could see an error
+		StreamAdvisor broken = new StreamAdvisor() {
+
+			@Override
+			public Flux<ChatClientResponse> adviseStream(ChatClientRequest request, StreamAdvisorChain chain) {
+				throw new IllegalStateException("broken advisor");
+			}
+
+			@Override
+			public String getName() {
+				return "broken";
+			}
+
+			@Override
+			public int getOrder() {
+				return SessionTurnAdvisor.DEFAULT_ORDER + 50;
+			}
+
+		};
+		ChatClient client = ChatClient.builder(this.model)
+			.defaultAdvisors(SessionTurnAdvisor.builder(this.sessionService).build(), broken,
+					SessionMemoryAdvisor.builder(this.sessionService).build())
+			.build();
+
+		assertThatThrownBy(() -> client.prompt()
+			.user("Hello")
+			.advisors(SessionAdvisors.session(this.sessionId))
+			.stream()
+			.content()
+			.blockLast()).satisfiesAnyOf(ex -> assertThat(ex).hasMessageContaining("broken advisor"),
+					ex -> assertThat(ex).hasRootCauseMessage("broken advisor"));
+
+		TurnStatus status = this.sessionService.turns().status(this.sessionId);
+		assertThat(status.isRunning()).isFalse();
+		assertThat(status.stopReason()).isEqualTo(StopReason.ERROR);
 	}
 
 	/**
