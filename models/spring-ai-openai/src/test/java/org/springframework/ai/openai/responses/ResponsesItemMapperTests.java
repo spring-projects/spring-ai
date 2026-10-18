@@ -233,6 +233,34 @@ class ResponsesItemMapperTests {
 	}
 
 	/**
+	 * Media.Builder#data(String) accepts bare base64 content, which input_image only
+	 * accepts as a data URI.
+	 */
+	@Test
+	void imageAsBase64StringBecomesADataUri() throws Exception {
+		JsonNode image = mediaPartOf(Media.builder().mimeType(MimeTypeUtils.IMAGE_PNG).data("AQID").build());
+
+		assertThat(image.get("type").asText()).isEqualTo("input_image");
+		assertThat(image.get("image_url").asText()).isEqualTo("data:image/png;base64,AQID");
+	}
+
+	@Test
+	void imageAsDataUriStringIsSentUnchanged() throws Exception {
+		JsonNode image = mediaPartOf(
+				Media.builder().mimeType(MimeTypeUtils.IMAGE_PNG).data("data:image/png;base64,AQID").build());
+
+		assertThat(image.get("image_url").asText()).isEqualTo("data:image/png;base64,AQID");
+	}
+
+	@Test
+	void imageUrlStringIsSentUnchanged() throws Exception {
+		JsonNode image = mediaPartOf(
+				Media.builder().mimeType(MimeTypeUtils.IMAGE_PNG).data("https://example.com/cat.png").build());
+
+		assertThat(image.get("image_url").asText()).isEqualTo("https://example.com/cat.png");
+	}
+
+	/**
 	 * OpenAI infers the file type from the filename extension, and Media's generated
 	 * default name does not have one.
 	 */

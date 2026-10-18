@@ -253,7 +253,7 @@ final class ResponsesItemMapper {
 			return ResponseInputContent.ofInputFile(ResponseInputFile.builder().fileUrl(url).build());
 		}
 		return ResponseInputContent
-			.ofInputFile(ResponseInputFile.builder().fileData(fileData(media)).filename(filename(media)).build());
+			.ofInputFile(ResponseInputFile.builder().fileData(urlOrDataUri(media)).filename(filename(media)).build());
 	}
 
 	/**
@@ -269,16 +269,6 @@ final class ResponsesItemMapper {
 			}
 		}
 		return null;
-	}
-
-	/**
-	 * Inline file content as a data URI. {@code Media.Builder#data(String)} accepts bare
-	 * base64 content as well as a data URI, so the former is prefixed here. A colon
-	 * cannot occur in base64, so a value containing one is passed through unchanged.
-	 */
-	private static String fileData(Media media) {
-		String data = urlOrDataUri(media);
-		return (data.indexOf(':') < 0) ? "data:" + media.getMimeType() + ";base64," + data : data;
 	}
 
 	/**
@@ -303,8 +293,14 @@ final class ResponsesItemMapper {
 		}
 		// Media stores a URL as a URI, but its builder turns some of them into Strings on
 		// the way through, so both have to be accepted here.
-		if (data instanceof URI || data instanceof String) {
+		if (data instanceof URI) {
 			return data.toString();
+		}
+		// Media.Builder#data(String) accepts bare base64 content as well as a URL or a
+		// data URI, so the former is prefixed here. A colon cannot occur in base64, so a
+		// value containing one is passed through unchanged.
+		if (data instanceof String text) {
+			return (text.indexOf(':') < 0) ? "data:" + media.getMimeType() + ";base64," + text : text;
 		}
 		throw new IllegalArgumentException("Unsupported media data type: " + data.getClass().getSimpleName());
 	}
