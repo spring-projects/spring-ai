@@ -38,6 +38,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 
 /**
  * Chat {@link AutoConfiguration Auto-configuration} for OpenAI SDK.
@@ -53,6 +54,7 @@ import org.springframework.context.annotation.Bean;
  */
 @AutoConfiguration
 @EnableConfigurationProperties({ OpenAiCommonProperties.class, OpenAiChatProperties.class })
+@Import(OpenAiConnectionDetailsConfiguration.class)
 @ConditionalOnProperty(name = SpringAIModelProperties.CHAT_MODEL, havingValue = SpringAIModels.OPENAI,
 		matchIfMissing = true)
 public class OpenAiChatAutoConfiguration {
@@ -61,13 +63,15 @@ public class OpenAiChatAutoConfiguration {
 	@ConditionalOnMissingBean
 	@ConditionalOnProperty(name = OpenAiChatProperties.CONFIG_PREFIX + ".api", havingValue = "chat-completions",
 			matchIfMissing = true)
-	public OpenAiChatModel openAiChatModel(OpenAiCommonProperties commonProperties, OpenAiChatProperties chatProperties,
+	public OpenAiChatModel openAiChatModel(OpenAiConnectionDetails connectionDetails,
+			OpenAiCommonProperties commonProperties, OpenAiChatProperties chatProperties,
 			ToolCallingManager toolCallingManager, ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<MeterRegistry> meterRegistry,
 			ObjectProvider<ChatModelObservationConvention> observationConvention,
 			ObjectProvider<OpenAiHttpClientBuilderCustomizer> httpClientBuilderCustomizers) {
 
-		var resolvedProperties = OpenAiAutoConfigurationUtil.resolveCommonProperties(commonProperties, chatProperties);
+		var resolvedProperties = OpenAiAutoConfigurationUtil.resolveCommonProperties(connectionDetails,
+				commonProperties, chatProperties);
 
 		MeterRegistry meterRegistryToUse = resolvedProperties.isConnectionPoolMetricsEnabled()
 				? meterRegistry.getIfAvailable() : null;
