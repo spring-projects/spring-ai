@@ -17,6 +17,7 @@
 package org.springframework.ai.reader.pdf;
 
 import java.awt.Rectangle;
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -49,7 +50,7 @@ import org.springframework.util.StringUtils;
  * @author Fu Jian
  * @author Vinay Reddy Kalluri
  */
-public class PagePdfDocumentReader implements DocumentReader {
+public class PagePdfDocumentReader implements DocumentReader, Closeable {
 
 	public static final String METADATA_START_PAGE_NUMBER = "page_number";
 
@@ -169,6 +170,11 @@ public class PagePdfDocumentReader implements DocumentReader {
 		catch (IOException e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	@Override
+	public void close() throws IOException {
+		this.document.close();
 	}
 
 	private void handleSinglePage(PDPage page, int pageNumber, PDFLayoutTextStripperByArea pdfTextStripper,
