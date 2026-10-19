@@ -287,8 +287,21 @@ public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 			// return an empty usage rather than dereferencing null.
 			return new DefaultUsage(null, null, null, null);
 		}
-		return new DefaultUsage(toIntTokenCount("promptTokens", nativeUsage.promptTokens()), 0,
-				toIntTokenCount("totalTokens", nativeUsage.totalTokens()), nativeUsage);
+		// `promptTokens()` and `totalTokens()` are required accessors in openai-java:
+		// they
+		// throw OpenAIInvalidDataException when a provider reports usage with that count
+		// missing, so read each count through its raw JsonField instead and let an absent
+		// count stay absent. DefaultUsage reports a missing count as zero and derives a
+		// missing total from the other counts.
+		Integer promptTokens = nativeUsage._promptTokens()
+			.asKnown()
+			.map(tokens -> toIntTokenCount("promptTokens", tokens))
+			.orElse(null);
+		Integer totalTokens = nativeUsage._totalTokens()
+			.asKnown()
+			.map(tokens -> toIntTokenCount("totalTokens", tokens))
+			.orElse(null);
+		return new DefaultUsage(promptTokens, 0, totalTokens, nativeUsage);
 	}
 
 	/**
