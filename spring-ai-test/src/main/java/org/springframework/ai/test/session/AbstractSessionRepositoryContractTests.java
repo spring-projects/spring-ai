@@ -46,13 +46,26 @@ import org.springframework.ai.chat.messages.part.ReasoningPart;
 import org.springframework.ai.chat.messages.part.TextPart;
 import org.springframework.ai.chat.messages.part.ToolResultPart;
 import org.springframework.ai.content.Media;
+import org.springframework.ai.model.tool.ToolCallDecision;
+import org.springframework.ai.model.tool.ToolCallDecisions;
+import org.springframework.ai.session.DefaultSessionService;
 import org.springframework.ai.session.EventFilter;
 import org.springframework.ai.session.EventType;
 import org.springframework.ai.session.Session;
 import org.springframework.ai.session.SessionAttributes;
 import org.springframework.ai.session.SessionEvent;
 import org.springframework.ai.session.SessionRepository;
+import org.springframework.ai.session.SessionService;
 import org.springframework.ai.session.compaction.CompactionBoundary;
+import org.springframework.ai.session.question.Answer;
+import org.springframework.ai.session.question.ToolConfirmationQuestion;
+import org.springframework.ai.session.status.SessionStatus;
+import org.springframework.ai.session.status.SessionStatusEvents;
+import org.springframework.ai.session.status.StopReason;
+import org.springframework.ai.session.status.TurnInProgressException;
+import org.springframework.ai.session.status.TurnParkedException;
+import org.springframework.ai.session.status.TurnService;
+import org.springframework.ai.session.status.TurnStatus;
 import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -80,7 +93,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * contract of {@link SessionRepository#findEvents} (pushdown or
  * {@link EventFilter#apply(List)} must give the same result, including a {@code lastN}
  * window that keeps turns whole), cross-session reads, the atomic
- * {@link SessionRepository#appendEvents} and the active view a boundary defines.
+ * {@link SessionRepository#appendEvents} and the active view a boundary defines. They
+ * also run the {@link TurnService} on the store, since the turn status is read by event
+ * type and written with the version-checked append: start, end, interrupt, the takeover
+ * of an expired lease, a parked turn's question and answer, and concurrent starts.
  *
  * @author Christian Tzolov
  * @since 2.1.0
@@ -840,7 +856,163 @@ public abstract class AbstractSessionRepositoryContractTests {
 		assertThat(this.repository.getEventVersion(session.id())).isEqualTo(101);
 	}
 
+	// --- Turn status: the turn service on this store ---
+
+	@Test
+	void turnStartsEndsAndIsInterruptedThroughTheStore() {
+		TurnService turns = sessionService().turns();
+		String id = newSession("user-turns").id();
+
+		TurnStatus started = turns.start(id, "run-1", Duration.ofMinutes(30));
+		append(id, user("u1"), assistant("a1"));
+
+		TurnStatus running = turns.status(id);
+		assertThat(running.isRunning("run-1")).isTrue();
+		assertThat(running.eventId()).isEqualTo(started.eventId());
+		assertThat(running.expiresAt()).isEqualTo(started.expiresAt());
+		assertThatThrownBy(() -> turns.start(id, "run-2", null)).isInstanceOfSatisfying(TurnInProgressException.class,
+				ex -> assertThat(ex.getRunId()).isEqualTo("run-1"));
+
+		turns.end(id, "run-1", StopReason.END_TURN);
+		TurnStatus ended = turns.status(id);
+		assertThat(ended.status()).isEqualTo(SessionStatus.IDLE);
+		assertThat(ended.runId()).isEqualTo("run-1");
+		assertThat(ended.stopReason()).isEqualTo(StopReason.END_TURN);
+
+		turns.start(id, "run-2", null);
+		append(id, user("u2"));
+		assertThat(turns.interrupt(id, "user pressed stop").stopReason()).isEqualTo(StopReason.INTERRUPTED);
+		// The interrupted run's own end is a no-op: the interrupt stands
+		assertThat(turns.end(id, "run-2", StopReason.END_TURN).stopReason()).isEqualTo(StopReason.INTERRUPTED);
+		assertThat(turns.status(id).runId()).isEqualTo("run-2");
+		assertThat(
+				this.repository.findEvents(id, EventFilter.builder().eventTypes(Set.of(EventType.INTERRUPT)).build()))
+			.singleElement()
+			.satisfies(event -> assertThat(event.getPayload()).containsEntry(SessionStatusEvents.PAYLOAD_REASON,
+					"user pressed stop"));
+		// The status never reaches the view
+		assertThat(texts(id, EventFilter.active())).containsExactly("u1", "a1", "u2");
+	}
+
+	@Test
+	void turnWhoseLeaseRanOutIsTakenOverThroughTheStore() {
+		TurnService turns = sessionService().turns();
+		String id = newSession("user-lease").id();
+		// A run that died an hour ago without ending its turn
+		this.repository
+			.appendEvent(SessionStatusEvents.running(id, "run-dead", Instant.now().minus(Duration.ofHours(1))));
+		assertThat(turns.status(id).isExpired(Instant.now())).isTrue();
+
+		turns.start(id, "run-2", Duration.ofMinutes(30));
+
+		assertThat(turns.status(id).isRunning("run-2")).isTrue();
+		List<TurnStatus> transitions = this.repository
+			.findEvents(id, EventFilter.builder().eventTypes(Set.of(EventType.STATUS)).build())
+			.stream()
+			.map(TurnStatus::from)
+			.toList();
+		assertThat(transitions).extracting(TurnStatus::status)
+			.containsExactly(SessionStatus.RUNNING, SessionStatus.IDLE, SessionStatus.RUNNING);
+		assertThat(transitions.get(1).runId()).isEqualTo("run-dead");
+		assertThat(transitions.get(1).stopReason()).isEqualTo(StopReason.EXPIRED);
+		// The dead run's own end, should it come back, is a no-op
+		assertThat(turns.end(id, "run-dead", StopReason.END_TURN).isRunning("run-2")).isTrue();
+	}
+
+	@Test
+	void parkedTurnRoundTripsItsQuestionAndAnswerThroughTheStore() {
+		TurnService turns = sessionService().turns();
+		String id = newSession("user-parked").id();
+		turns.start(id, "run-1", Duration.ofMinutes(30));
+		append(id, user("Book flight VX205 and pay"));
+		AssistantMessage reply = AssistantMessage.builder()
+			.toolCalls(List.of(new AssistantMessage.ToolCall("c1", "function", "bookFlight", "{\"flight\":\"VX205\"}"),
+					new AssistantMessage.ToolCall("c2", "function", "pay", "{\"amount\":120.5,\"currency\":\"EUR\"}")))
+			.build();
+		SessionEvent replyEvent = event(id, reply);
+		this.repository.appendEvent(replyEvent);
+		ToolConfirmationQuestion asked = ToolConfirmationQuestion.of(replyEvent.getId(), reply, List.of("c1", "c2"));
+
+		assertThat(turns.park(id, "run-1", asked.toQuestion()).isParked()).isTrue();
+
+		assertThat(turns.status(id).isParked()).isTrue();
+		assertThatThrownBy(() -> turns.start(id, "run-2", null)).isInstanceOf(TurnParkedException.class);
+		SessionEvent pending = Objects.requireNonNull(turns.pendingQuestion(id));
+		assertThat(ToolConfirmationQuestion.from(pending)).isEqualTo(asked);
+
+		ToolCallDecisions decisions = ToolCallDecisions.of(ToolCallDecision.allow("c1"),
+				ToolCallDecision.deny("c2", "Too expensive"));
+		TurnStatus resumed = turns.resume(id, "run-1", ToolConfirmationQuestion.answer(decisions),
+				Duration.ofMinutes(30));
+
+		assertThat(resumed.isRunning("run-1")).isTrue();
+		assertThat(turns.status(id).isRunning("run-1")).isTrue();
+		assertThat(turns.pendingQuestion(id)).isNull();
+		Answer answer = Answer
+			.from(this.repository.findEvents(id, EventFilter.builder().eventTypes(Set.of(EventType.ANSWER)).build())
+				.get(0));
+		assertThat(answer.questionEventId()).isEqualTo(pending.getId());
+		assertThat(ToolConfirmationQuestion.decisions(answer)).isEqualTo(decisions);
+		// The same answer sent twice resumes once
+		assertThatThrownBy(() -> turns.resume(id, null, ToolConfirmationQuestion.answer(decisions)))
+			.isInstanceOf(TurnInProgressException.class);
+
+		turns.end(id, "run-1", StopReason.END_TURN);
+		assertThat(labels(this.repository.findEvents(id, EventFilter.all()))).containsExactly("RUNNING",
+				"Book flight VX205 and pay", "A[bookFlight]", "QUESTION", "IDLE", "ANSWER", "RUNNING", "IDLE");
+		assertThat(this.repository.findEvents(id, EventFilter.active())).hasSize(2);
+	}
+
+	@Test
+	void concurrentStartsOnOneSessionLeaveExactlyOneTurn() throws Exception {
+		TurnService turns = sessionService().turns();
+		String id = newSession("user-race").id();
+		int threads = 8;
+		ExecutorService executor = Executors.newFixedThreadPool(threads);
+		try {
+			CountDownLatch start = new CountDownLatch(1);
+			List<Future<Boolean>> results = new ArrayList<>();
+			for (int i = 0; i < threads; i++) {
+				String runId = "run-" + i;
+				results.add(executor.submit(() -> {
+					start.await();
+					try {
+						turns.start(id, runId, null);
+						return true;
+					}
+					catch (TurnInProgressException ex) {
+						return false;
+					}
+				}));
+			}
+			start.countDown();
+			int winners = 0;
+			for (Future<Boolean> result : results) {
+				if (result.get(30, TimeUnit.SECONDS)) {
+					winners++;
+				}
+			}
+			assertThat(winners).isEqualTo(1);
+			assertThat(turns.status(id).isRunning()).isTrue();
+			assertThat(
+					this.repository.findEvents(id, EventFilter.builder().eventTypes(Set.of(EventType.STATUS)).build()))
+				.hasSize(1);
+		}
+		finally {
+			executor.shutdownNow();
+		}
+	}
+
 	// --- Helpers ---
+
+	/**
+	 * Returns a session service on the repository under test, for the tests that run the
+	 * turn service on the store.
+	 * @return a new session service
+	 */
+	protected SessionService sessionService() {
+		return DefaultSessionService.builder().sessionRepository(this.repository).build();
+	}
 
 	/** Saves a new session with a random id for the given principal. */
 	protected Session newSession(String principalName) {

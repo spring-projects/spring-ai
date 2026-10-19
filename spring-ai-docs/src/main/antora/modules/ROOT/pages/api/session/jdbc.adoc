@@ -247,3 +247,4 @@ The suite covers:
 * expiry cleanup;
 * every filter criterion and window;
 * every compaction rule: an atomic append under a stale version, rejected ids, and the view a boundary defines, across chained boundaries.
+* the xref:api/session/turn-status.adoc[turn service] on the store: start, end and interrupt, the takeover of an expired lease, a parked turn's question and answer, and concurrent starts of which exactly one wins.
