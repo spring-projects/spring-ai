@@ -40,4 +40,6 @@ public final class SpringAIModelProperties {
 
 	public static final String MODERATION_MODEL = MODEL_PREFIX + ".moderation";
 
+	public static final String DECISION_MODEL = MODEL_PREFIX + ".decision";
+
 }

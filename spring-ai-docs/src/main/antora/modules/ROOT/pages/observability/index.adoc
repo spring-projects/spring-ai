@@ -360,6 +360,38 @@ When tracing is available, the logs will include trace information for better co
 
 WARNING: If you enable logging of the transcript, there's a risk of exposing sensitive or private information. Please, be careful!
 
+== Decision Model
+
+NOTE: Observability features are currently supported only for `DecisionModel` implementations from the following AI model providers: OpenAI.
+Additional AI model providers will be supported in a future release.
+
+The `gen_ai.client.operation` observations are recorded on decision model method calls, with the `decision` operation name.
+They measure the time spent on method completion and propagate the related tracing information.
+A request with several questions is one operation: its duration and token usage are recorded once.
+A decision request carries no generation parameters, so none are recorded.
+
+.Low Cardinality Keys
+[cols="a,a", stripes=even]
+|===
+|Name | Description
+
+|`gen_ai.operation.name`| The name of the operation being performed, always `decision`.
+|`gen_ai.system`| The model provider as identified by the client instrumentation.
+|`gen_ai.request.model`| The name of the model a request is being made to.
+|`gen_ai.response.model`| The name of the model that generated the response.
+|===
+
+.High Cardinality Keys
+[cols="a,a", stripes=even]
+|===
+|Name | Description
+
+|`gen_ai.response.id`| The unique identifier for the AI response.
+|`gen_ai.usage.input_tokens`| The number of tokens used in the model input.
+|`gen_ai.usage.output_tokens`| The number of tokens used in the model output.
+|`gen_ai.usage.total_tokens`| The total number of tokens used in the model exchange.
+|===
+
 == Vector Stores
 
 All vector store implementations in Spring AI are instrumented to provide metrics and distributed tracing data through Micrometer.

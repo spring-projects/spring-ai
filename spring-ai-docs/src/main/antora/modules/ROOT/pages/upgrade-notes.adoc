@@ -4,6 +4,16 @@
 [[upgrading-to-2-1-0]]
 == Upgrading to 2.1.0
 
+=== Decision Models
+
+==== New: `DecisionModel` API
+
+A new `DecisionModel` API, in `org.springframework.ai.decision`, answers typed yes/no, choice and score questions about a text, a set of fields or a conversation, and returns the probability of each outcome instead of generated text.
+It follows the shape of the other model APIs: a `DecisionPrompt` goes in, a `DecisionResponse` comes out, and `DecisionOptions` tune the call.
+The first implementation is `OpenAiDecisionModel`, backed by the OpenAI Decisions API and auto-configured by the OpenAI starter under `spring.ai.openai.decision`.
+Decision models are observed with the `decision` operation name, and the new `spring-ai-autoconfigure-model-decision-observation` module adds token usage metrics.
+See xref:api/decision.adoc[Decision Models].
+
 === Message Parts
 
 ==== New: Ordered `MessagePart` Content on `AssistantMessage` and `UserMessage`

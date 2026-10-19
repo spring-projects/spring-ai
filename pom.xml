@@ -58,6 +58,7 @@
 		<module>auto-configurations/models/chat/observation/spring-ai-autoconfigure-model-chat-observation</module>
 		<module>auto-configurations/models/embedding/observation/spring-ai-autoconfigure-model-embedding-observation</module>
 		<module>auto-configurations/models/image/observation/spring-ai-autoconfigure-model-image-observation</module>
+		<module>auto-configurations/models/decision/observation/spring-ai-autoconfigure-model-decision-observation</module>
 		<module>auto-configurations/models/audio/observation/spring-ai-autoconfigure-model-audio-observation</module>
 		<module>auto-configurations/models/session/spring-ai-autoconfigure-model-session</module>
 		<module>auto-configurations/models/session/spring-ai-autoconfigure-model-session-jdbc</module>

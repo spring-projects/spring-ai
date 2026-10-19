@@ -76,6 +76,8 @@
 *** xref:api/moderation.adoc[Moderation Models]
 **** xref:api/moderation/openai-moderation.adoc[OpenAI]
 **** xref:api/moderation/mistral-ai-moderation.adoc[Mistral AI]
+*** xref:api/decision.adoc[Decision Models]
+**** xref:api/decision/openai-decision.adoc[OpenAI]
 // ** xref:api/generic-model.adoc[]
 
 ** xref:api/chat-memory.adoc[Chat Memory]
