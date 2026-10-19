@@ -51,10 +51,35 @@ public class OpenSearchAiSearchFilterExpressionConverter extends AbstractFilterE
 			this.convertOperand(expression.right(), context);
 			context.append(")");
 		}
+		else if (expression.type() == Filter.ExpressionType.NE) {
+			// Negate the whole field clause: "field: NOT value" is not a valid query
+			// string.
+			context.append("NOT ");
+			this.convertOperand(expression.left(), context);
+			this.convertOperand(expression.right(), context);
+		}
+		else if (expression.type() == Filter.ExpressionType.OR) {
+			// Keep a negation inside its own operand, so that it does not exclude the
+			// matches of the other operand.
+			convertOrOperand(expression.left(), context);
+			context.append(" OR ");
+			convertOrOperand(expression.right(), context);
+		}
 		else {
 			this.convertOperand(expression.left(), context);
 			context.append(getOperationSymbol(expression));
 			this.convertOperand(expression.right(), context);
+		}
+	}
+
+	private void convertOrOperand(Filter.Operand operand, StringBuilder context) {
+		if (operand instanceof Filter.Group) {
+			this.convertOperand(operand, context);
+		}
+		else {
+			context.append("(");
+			this.convertOperand(operand, context);
+			context.append(")");
 		}
 	}
 
@@ -74,9 +99,7 @@ public class OpenSearchAiSearchFilterExpressionConverter extends AbstractFilterE
 	private String getOperationSymbol(Expression exp) {
 		return switch (exp.type()) {
 			case AND -> " AND ";
-			case OR -> " OR ";
 			case EQ, IN -> "";
-			case NE -> " NOT ";
 			case LT -> "<";
 			case LTE -> "<=";
 			case GT -> ">";
