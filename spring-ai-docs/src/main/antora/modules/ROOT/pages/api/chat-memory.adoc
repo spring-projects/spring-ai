@@ -2,7 +2,7 @@
 = Chat Memory
 
 WARNING: The `ChatMemory` API, its repositories, the `MessageChatMemoryAdvisor` and their auto-configurations are deprecated since 2.1.0 and will be removed in 3.0.0.
-Use xref:api/session.adoc[Session Memory] instead; <<chat-memory-migration>> maps one onto the other.
+Use the xref:api/session.adoc[Session] instead; <<chat-memory-migration>> maps one onto the other.
 Session stores for Cassandra, Neo4j, MongoDB and Redis, and session dialects for HSQLDB, Oracle, SQL Server and SQLite, are planned before 3.0.0, when the deprecated modules are removed.
 The `VectorStoreChatMemoryAdvisor` is not deprecated.
 
@@ -702,14 +702,14 @@ chatMemory.add(conversationId, response2.getResult().getOutput());
 ----
 
 [[chat-memory-migration]]
-== Migrating to Session Memory
+== Migrating to Session
 
-xref:api/session.adoc[Session memory] replaces the `ChatMemory` API.
+The xref:api/session.adoc[session] replaces the `ChatMemory` API.
 A session keeps the conversation as an append-only log of events, and the prompt is built from a view of it, so a window or a compaction never loses what was said and never splits a turn.
 
 [cols="1,2"]
 |===
-| Chat memory | Session memory
+| Chat memory | Session
 
 | `MessageChatMemoryAdvisor.builder(chatMemory)`
 | `SessionAdvisors.builder(sessionService)`, from `spring-ai-session-advisor`
@@ -757,4 +757,4 @@ chatClient.prompt()
 
 With `spring-ai-starter-model-session-jdbc` on the classpath, the `SessionService` is auto-configured on the application's `DataSource`.
 
-The two stores do not share their tables: conversations kept in `SPRING_AI_CHAT_MEMORY` are not read by the session memory.
+The two stores do not share their tables: conversations kept in `SPRING_AI_CHAT_MEMORY` are not read by the session store.

@@ -265,7 +265,7 @@ Only supported on Claude models.
 
 Cache growing conversation history for multi-turn chatbots and assistants:
 
-NOTE: `MessageChatMemoryAdvisor` and the `ChatMemory` API are deprecated since 2.1.0, for removal in 3.0.0, in favor of xref:api/session.adoc[session memory]; see xref:api/chat-memory.adoc#chat-memory-migration[Migrating to Session Memory].
+NOTE: `MessageChatMemoryAdvisor` and the `ChatMemory` API are deprecated since 2.1.0, for removal in 3.0.0, in favor of the xref:api/session.adoc[session]; see xref:api/chat-memory.adoc#chat-memory-migration[Migrating to Session].
 
 [source,java]
 ----

@@ -1,7 +1,7 @@
 [[session-concepts]]
 = Session Concepts
 
-Session memory is built on five closely related concepts.
+A session is built on five closely related concepts.
 A *session* identifies one conversation.
 Its *events* are the log of what happened in it.
 The events group into *turns*, one per user message.

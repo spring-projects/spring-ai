@@ -1,6 +1,6 @@
-# Session memory diagrams
+# Session diagrams
 
-PlantUML sources of the diagrams on the Session Memory reference pages.
+PlantUML sources of the diagrams on the Session reference pages.
 The rendered SVGs live in `antora/modules/ROOT/images/session/`; re-render them after a change with:
 
 ```

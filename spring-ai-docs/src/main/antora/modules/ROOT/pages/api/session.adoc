@@ -1,9 +1,9 @@
 [[Session]]
-= Session Memory
+= Session
 
-Session memory keeps a conversation as an append-only log of events.
+A session keeps a conversation as an append-only log of events.
 The prompt the model sees is built from a view of that log, not from the log itself.
-xref:api/chat-memory.adoc[Chat Memory] stores a flat list of messages per conversation id.
+xref:api/chat-memory.adoc[Chat Memory], which it succeeds, stores a flat list of messages per conversation id.
 A session adds what an agent needs over a long conversation:
 
 * *Structured events.*
