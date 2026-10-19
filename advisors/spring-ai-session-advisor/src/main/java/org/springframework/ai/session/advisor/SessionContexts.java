@@ -25,6 +25,7 @@ import io.micrometer.context.ContextSnapshotFactory;
 import org.jspecify.annotations.Nullable;
 import reactor.util.context.ContextView;
 
+import org.springframework.ai.model.tool.ToolCallDecisions;
 import org.springframework.ai.session.CreateSessionRequest;
 import org.springframework.ai.session.SessionAttributes;
 
@@ -99,6 +100,25 @@ final class SessionContexts {
 					+ "' must be a String but was " + value.getClass().getName());
 		}
 		return s.isBlank() ? null : s;
+	}
+
+	/**
+	 * Returns the caller's decisions on the tool calls a parked session waits on, from
+	 * {@link SessionTurnAdvisor#TOOL_CALL_DECISIONS_CONTEXT_KEY}, or {@code null} when
+	 * the context has none.
+	 * @throws IllegalArgumentException if the value is not a {@link ToolCallDecisions}
+	 */
+	static @Nullable ToolCallDecisions decisions(Map<String, @Nullable Object> context) {
+		Object value = context.get(SessionTurnAdvisor.TOOL_CALL_DECISIONS_CONTEXT_KEY);
+		if (value == null) {
+			return null;
+		}
+		if (!(value instanceof ToolCallDecisions decisions)) {
+			throw new IllegalArgumentException(
+					"Advisor context value for '" + SessionTurnAdvisor.TOOL_CALL_DECISIONS_CONTEXT_KEY
+							+ "' must be a ToolCallDecisions but was " + value.getClass().getName());
+		}
+		return decisions;
 	}
 
 	/**

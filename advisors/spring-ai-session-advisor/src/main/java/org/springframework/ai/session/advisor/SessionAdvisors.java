@@ -27,6 +27,8 @@ import reactor.core.scheduler.Scheduler;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.advisor.api.BaseAdvisor;
+import org.springframework.ai.model.tool.ToolCallDecisions;
+import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.session.SessionService;
 import org.springframework.ai.session.compaction.CompactionStrategy;
 import org.springframework.ai.session.compaction.CompactionTrigger;
@@ -46,6 +48,12 @@ import org.springframework.util.Assert;
  *         .build())
  *     .build();
  * chatClient.prompt().user("Hi").advisors(SessionAdvisors.session(sessionId)).call().content();
+ * </pre>
+ * <p>
+ * A call whose loop paused on a tool call that needs a person's confirmation leaves the
+ * session parked. The person's decisions resume it, without a user message:
+ * <pre class="code">
+ * chatClient.prompt().advisors(SessionAdvisors.decisions(sessionId, decisions)).call().content();
  * </pre>
  * <p>
  * The memory advisor is a {@code MemoryAdvisor}, so the tool-calling loop the
@@ -102,6 +110,29 @@ public final class SessionAdvisors {
 			.param(SessionTurnAdvisor.RUN_ID_CONTEXT_KEY, runId);
 	}
 
+	/**
+	 * Answers the tool calls the session parked on with the person's decisions:
+	 * {@code .advisors(SessionAdvisors.decisions(sessionId, decisions))}, with no user
+	 * message. Sets {@link SessionMemoryAdvisor#SESSION_ID_CONTEXT_KEY} and
+	 * {@link SessionTurnAdvisor#TOOL_CALL_DECISIONS_CONTEXT_KEY}. The turn advisor
+	 * resumes the session, runs the allowed calls, stores the results, and the model
+	 * continues where it paused; the call returns its next reply. One decision per tool
+	 * call of the paused reply, keyed as {@code ToolCallDecisions.toolCallKeys} names
+	 * them. To run the resumed turn under the run id it parked under, add
+	 * {@code a.param(SessionTurnAdvisor.RUN_ID_CONTEXT_KEY, runId)}.
+	 * @param sessionId the id of the parked session
+	 * @param decisions the decisions on the tool calls the session waits on
+	 * @return the advisor customizer to pass to {@code .advisors(...)}
+	 * @throws IllegalArgumentException if the session id is empty or the decisions are
+	 * null
+	 */
+	public static Consumer<ChatClient.AdvisorSpec> decisions(String sessionId, ToolCallDecisions decisions) {
+		Assert.hasText(sessionId, "sessionId must not be empty");
+		Assert.notNull(decisions, "decisions must not be null");
+		return advisors -> advisors.param(SessionMemoryAdvisor.SESSION_ID_CONTEXT_KEY, sessionId)
+			.param(SessionTurnAdvisor.TOOL_CALL_DECISIONS_CONTEXT_KEY, decisions);
+	}
+
 	public static final class Builder {
 
 		private final SessionService sessionService;
@@ -115,6 +146,8 @@ public final class SessionAdvisors {
 		private boolean asyncCompaction;
 
 		@Nullable private Duration turnTimeout = SessionTurnAdvisor.DEFAULT_TURN_TIMEOUT;
+
+		@Nullable private ToolCallingManager toolCallingManager;
 
 		private boolean interruptible;
 
@@ -164,6 +197,17 @@ public final class SessionAdvisors {
 		}
 
 		/**
+		 * The manager that runs the tool calls a person allowed when a parked session
+		 * resumes; see {@link SessionTurnAdvisor.Builder#toolCallingManager}. Pass the
+		 * one the tool-calling advisor uses.
+		 */
+		public Builder toolCallingManager(ToolCallingManager toolCallingManager) {
+			Assert.notNull(toolCallingManager, "toolCallingManager must not be null");
+			this.toolCallingManager = toolCallingManager;
+			return this;
+		}
+
+		/**
 		 * Whether the tool-calling loop stops after an {@link TurnService#interrupt
 		 * interrupt}; {@code false} by default. When {@code true} the
 		 * {@link SessionInterruptAdvisor} joins the advisors, inside the memory advisor:
@@ -201,6 +245,9 @@ public final class SessionAdvisors {
 				.turnTimeout(this.turnTimeout);
 			if (this.compactionTrigger != null && this.compactionStrategy != null) {
 				turn.compactionTrigger(this.compactionTrigger).compactionStrategy(this.compactionStrategy);
+			}
+			if (this.toolCallingManager != null) {
+				turn.toolCallingManager(this.toolCallingManager);
 			}
 
 			SessionMemoryAdvisor.Builder memory = SessionMemoryAdvisor.builder(this.sessionService)
