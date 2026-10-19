@@ -41,7 +41,7 @@ A parked turn that holds the session until the decision arrives is the next foll
 
 | Session
 | `spring-ai-session`
-| Holds the core: `Session`, `SessionEvent`, `SessionService`, `SessionRepository` with `InMemorySessionRepository`, `EventFilter`, compaction with the `ChatModelSummarizer`, the `TurnService` with its status types.
+| Holds the core: `Session`, `SessionEvent`, `SessionService`, `SessionRepository` with `InMemorySessionRepository`, `EventFilter`, compaction with the `ChatModelSummarizer`, the `TurnService` with its status types, and the `Question` and `Answer` of a parked turn.
 It has no dependency on `ChatClient`.
 
 | Session Advisor

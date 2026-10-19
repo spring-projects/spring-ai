@@ -46,6 +46,10 @@ class EventTypeTests {
 		assertThat(EventType.of("INTERRUPT")).isEqualTo(EventType.INTERRUPT);
 		assertThat(EventType.STATUS.canCarryMessage()).isFalse();
 		assertThat(EventType.INTERRUPT.canCarryMessage()).isFalse();
+		assertThat(EventType.of("QUESTION")).isEqualTo(EventType.QUESTION);
+		assertThat(EventType.of("ANSWER")).isEqualTo(EventType.ANSWER);
+		assertThat(EventType.QUESTION.canCarryMessage()).isFalse();
+		assertThat(EventType.ANSWER.canCarryMessage()).isFalse();
 	}
 
 	@Test

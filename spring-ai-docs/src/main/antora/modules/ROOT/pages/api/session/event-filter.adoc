@@ -50,7 +50,7 @@ An empty set means no restriction.
 | `eventTypes`
 | `Set<EventType>`
 | Keeps only the events of these types.
-This is how the runtime state is read: `STATUS` and `INTERRUPT` for the xref:api/session/turn-status.adoc[turn status], and an application's own types such as `EventType.of("MY_APP.PROGRESS")`.
+This is how the runtime state is read: `STATUS`, `INTERRUPT`, `QUESTION` and `ANSWER` for the xref:api/session/turn-status.adoc[turn status], and an application's own types such as `EventType.of("MY_APP.PROGRESS")`.
 An empty set means every type.
 `EventFilter.active()` sets `MESSAGE`.
 
