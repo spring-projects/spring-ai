@@ -59,6 +59,7 @@ import reactor.netty.DisposableServer;
 import reactor.netty.http.server.HttpServer;
 import tools.jackson.databind.json.JsonMapper;
 
+import org.springframework.ai.mcp.McpServerToolFilter;
 import org.springframework.ai.mcp.client.common.autoconfigure.McpClientAutoConfiguration;
 import org.springframework.ai.mcp.client.common.autoconfigure.McpToolCallbackAutoConfiguration;
 import org.springframework.ai.mcp.client.common.autoconfigure.annotations.McpClientAnnotationScannerAutoConfiguration;
@@ -270,6 +271,42 @@ public class StreamableWebClientWebFluxServerIT {
 					});
 
 				stopHttpServer(httpServer);
+			});
+	}
+
+	@Test
+	void toolFilterHidesToolsFromTheListingOnly() {
+		int serverPort = TestSocketUtils.findAvailableTcpPort();
+
+		this.serverContextRunner.withUserConfiguration(TestMcpServerConfiguration.class, ToolFilterConfiguration.class)
+			.withPropertyValues("spring.ai.mcp.server.streamable-http.mcp-endpoint=/mcp")
+			.run(serverContext -> {
+				assertThat(serverContext).hasSingleBean(McpServerToolFilter.class);
+
+				var httpServer = startHttpServer(serverContext, serverPort);
+				try {
+					this.clientApplicationContext.withUserConfiguration(TestMcpClientConfiguration.class)
+						.withPropertyValues(// @formatter:off
+								"spring.ai.mcp.client.streamable-http.connections.server1.url=http://localhost:" + serverPort,
+								"spring.ai.mcp.client.initialized=false") // @formatter:on
+						.run(clientContext -> {
+							McpSyncClient mcpClient = getMcpSyncClient(clientContext);
+							assertThat(mcpClient.initialize()).isNotNull();
+
+							// The filter hides the calculator tool from the listing
+							assertThat(mcpClient.listTools().tools()).extracting(Tool::name).containsExactly("tool1");
+
+							// Hiding only affects the listing: the tool stays callable
+							CallToolResult response = mcpClient.callTool(CallToolRequest.builder("calculator")
+								.arguments(Map.of("expression", "2 + 3"))
+								.build());
+							assertThat(response.isError()).isFalse();
+							assertThat(response.structuredContent()).isNotNull();
+						});
+				}
+				finally {
+					stopHttpServer(httpServer);
+				}
 			});
 	}
 
@@ -496,6 +533,15 @@ public class StreamableWebClientWebFluxServerIT {
 		final CountDownLatch progressLatch = new CountDownLatch(3);
 
 		final List<McpSchema.ProgressNotification> progressNotifications = new CopyOnWriteArrayList<>();
+
+	}
+
+	public static class ToolFilterConfiguration {
+
+		@Bean
+		McpServerToolFilter hideCalculator() {
+			return (transportContext, tool) -> !"calculator".equals(tool.name());
+		}
 
 	}
 

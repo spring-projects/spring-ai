@@ -496,6 +496,35 @@ public CompleteResult completeCode(String prefix) {
 }
 ----
 
+== Per-Caller Tool Filtering
+
+A tool can be advertised to one caller and hidden from another.
+Register one or more `McpServerToolFilter` beans to decide, per request, which tools appear in the `tools/list` result:
+
+[source,java]
+----
+@Bean
+McpServerToolFilter hideAdminToolsFromOtherTenants() {
+    return (transportContext, tool) -> {
+        String tenant = (String) transportContext.get("x-tenant-id");
+        return "acme".equals(tenant) || !tool.name().startsWith("admin-");
+    };
+}
+----
+
+Filters are consulted in `Ordered` order and combined with AND semantics, so a tool is advertised only when every filter accepts it.
+A filter that returns `false` omits the tool from the listing.
+Registering no filter advertises every tool.
+
+NOTE: Hiding a tool only removes it from `tools/list`.
+The tool stays reachable through `tools/call` when a caller asks for it by name, so a filter is not an authorization mechanism.
+Enforce permissions in the tool method itself, for example with `@PreAuthorize`.
+
+The `McpTransportContext` holds whatever the transport's context extractor exposes for the request, typically HTTP headers or a resolved principal.
+Transports that carry no per-request metadata, such as STDIO, pass an empty context, so a missing key should be treated as "no caller identity" rather than as an error.
+
+Filtering works for stateful and stateless servers in both `SYNC` and `ASYNC` modes.
+
 == Stateless vs Stateful Implementations
 
 === Unified Request Context (Recommended)
