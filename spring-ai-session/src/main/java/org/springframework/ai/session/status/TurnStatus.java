@@ -29,7 +29,8 @@ import org.springframework.util.Assert;
  * the last one ended. It is read from the session's log, not stored on the session: the
  * newest {@link EventType#STATUS} event, typed, or {@link #idle()} for a session that has
  * none. {@link TurnService#status} returns it; {@link TurnService#start},
- * {@link TurnService#end} and {@link TurnService#interrupt} change it.
+ * {@link TurnService#end}, {@link TurnService#interrupt}, {@link TurnService#park} and
+ * {@link TurnService#resume} change it.
  *
  * @param status whether a turn runs
  * @param runId the run id of the turn that runs, or of the last one that ended;
@@ -87,6 +88,16 @@ public record TurnStatus(SessionStatus status, @Nullable String runId, @Nullable
 	/** Returns whether a turn runs on the session under the given run id. */
 	public boolean isRunning(String runId) {
 		return isRunning() && runId.equals(this.runId);
+	}
+
+	/**
+	 * Returns whether the session is parked on a question: idle with
+	 * {@link StopReason#REQUIRES_ACTION}. The status says no more than that;
+	 * {@link TurnService#pendingQuestion} returns the question, which says what it is
+	 * about, and {@link TurnService#resume} answers it.
+	 */
+	public boolean isParked() {
+		return this.status == SessionStatus.IDLE && this.stopReason == StopReason.REQUIRES_ACTION;
 	}
 
 	/**

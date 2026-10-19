@@ -43,6 +43,7 @@ sessionService.turns().interrupt(sessionId, "user pressed stop");
 
 | `status(id)`
 | Returns the `TurnStatus`: `IDLE` or `RUNNING`, the run id, the stop reason of the last turn, and when the status was recorded.
+`isParked()` tells an idle session that waits on a question from one that is free.
 This is one indexed read.
 A session no turn ever ran on reports `TurnStatus.idle()`.
 

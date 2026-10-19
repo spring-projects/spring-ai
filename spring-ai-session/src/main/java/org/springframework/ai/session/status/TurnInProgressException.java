@@ -17,11 +17,11 @@
 package org.springframework.ai.session.status;
 
 /**
- * Thrown by {@link TurnService#start} when the session is busy: a turn already runs on
- * it, under the run id this exception carries. Nothing is written and nothing is queued;
- * the session keeps the turn it has. The caller decides what a busy session means for it:
- * fail the call, retry later, or {@link TurnService#interrupt interrupt} the running turn
- * and start again.
+ * Thrown by {@link TurnService#start} and {@link TurnService#resume} when the session is
+ * busy: a turn already runs on it, under the run id this exception carries. Nothing is
+ * written and nothing is queued; the session keeps the turn it has. The caller decides
+ * what a busy session means for it: fail the call, retry later, or
+ * {@link TurnService#interrupt interrupt} the running turn and start again.
  * <p>
  * Not thrown for anything else. A start that fails because concurrent appends kept
  * overtaking its write, while no turn was running, throws an

@@ -29,7 +29,9 @@ import org.springframework.ai.session.EventType;
 public enum SessionStatus {
 
 	/**
-	 * No turn runs on the session. The next {@link TurnService#start} starts one.
+	 * No turn runs on the session. The next {@link TurnService#start} starts one, unless
+	 * the session is parked on a question ({@link TurnStatus#isParked()}), which
+	 * {@link TurnService#resume} answers and starts the turn.
 	 */
 	IDLE,
 

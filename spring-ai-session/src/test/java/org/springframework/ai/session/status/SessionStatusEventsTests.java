@@ -156,6 +156,18 @@ class SessionStatusEventsTests {
 		assertThatIllegalArgumentException().isThrownBy(() -> SessionStatusEvents.running("s", ""));
 	}
 
+	@Test
+	void statusIsParkedOnlyWhenIdleWithRequiresAction() {
+		TurnStatus parked = TurnStatus.from(SessionStatusEvents.idle("s", "run-1", StopReason.REQUIRES_ACTION));
+
+		assertThat(parked.isParked()).isTrue();
+		assertThat(parked.isRunning()).isFalse();
+		assertThat(parked.stopReason()).isEqualTo(StopReason.REQUIRES_ACTION);
+		assertThat(TurnStatus.from(SessionStatusEvents.idle("s", "run-1", StopReason.END_TURN)).isParked()).isFalse();
+		assertThat(TurnStatus.from(SessionStatusEvents.running("s", "run-1")).isParked()).isFalse();
+		assertThat(TurnStatus.idle().isParked()).isFalse();
+	}
+
 	private static java.util.Map.Entry<String, Object> entry(String key, Object value) {
 		return java.util.Map.entry(key, value);
 	}

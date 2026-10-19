@@ -29,14 +29,16 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.ai.session.EventType;
 import org.springframework.ai.session.SessionEvent;
 import org.springframework.ai.session.SessionService;
+import org.springframework.ai.session.question.Question;
+import org.springframework.ai.session.question.QuestionEvents;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 /**
- * The turns of a session: starts, ends and interrupts them, and reads their status. Every
- * harness runs its turns through the same methods, so a turn started on one instance can
- * be interrupted from another, and two harnesses never run one session at once.
- * {@link SessionService#turns()} returns it.
+ * The turns of a session: starts, ends, interrupts, parks and resumes them, and reads
+ * their status. Every harness runs its turns through the same methods, so a turn started
+ * on one instance can be interrupted from another, and two harnesses never run one
+ * session at once. {@link SessionService#turns()} returns it.
  * <p>
  * The service keeps no state of its own. The status is a projection of the session's log,
  * the newest {@link EventType#STATUS} event, and every transition is a version-checked
@@ -129,6 +131,8 @@ public final class TurnService {
 	 * {@link TurnStatus#expiresAt()} set when a lease was given
 	 * @throws TurnInProgressException if a turn runs on the session and its lease, if
 	 * any, has not run out
+	 * @throws TurnParkedException if the session is parked on a question; {@link #resume}
+	 * answers it and starts the turn
 	 * @throws IllegalStateException if the write kept losing to other appends; the
 	 * session is left as it was and the call can be retried
 	 * @throws IllegalArgumentException if the session does not exist, or the timeout is
@@ -150,6 +154,10 @@ public final class TurnService {
 				// land together
 				events.add(SessionStatusEvents.idle(sessionId, runningRunId, StopReason.EXPIRED));
 			}
+			if (current.isParked()) {
+				// A new turn would leave the question open: the caller resumes instead
+				throw new TurnParkedException(sessionId);
+			}
 			Instant expiresAt = (timeout != null) ? now.plus(timeout) : null;
 			SessionEvent running = SessionStatusEvents.running(sessionId, requestRunId, expiresAt);
 			events.add(running);
@@ -168,8 +176,8 @@ public final class TurnService {
 	 * turn is over and reads the result to learn whether its own end was recorded:
 	 * <pre>{@code
 	 * TurnStatus ended = turns.end(sessionId, runId, StopReason.END_TURN);
-	 * if (ended.stopReason() != StopReason.END_TURN) {
-	 *     // another writer ended the turn first; ended.stopReason() says why
+	 * if (!runId.equals(ended.runId()) || ended.stopReason() != StopReason.END_TURN) {
+	 *     // another writer ended the turn first; ended says how it stands now
 	 * }
 	 * }</pre>
 	 * @param sessionId the session
@@ -209,6 +217,11 @@ public final class TurnService {
 	 * of the interrupt when it polls the status inside its loop, as the ChatClient's
 	 * interrupt advisor does before every model round, and its own {@link #end} is then a
 	 * no-op, because the interrupt stands.
+	 * <p>
+	 * A parked session has no turn to stop. The request is recorded and the pause stays
+	 * as it is: the question remains open, and the session resumes with an answer, not
+	 * with a start. A harness that wants the question closed resumes it with an answer
+	 * that says the person moved on, as the ChatClient does when new text arrives.
 	 * @param sessionId the session
 	 * @param reason why the turn is to stop, recorded with the request; may be
 	 * {@code null}
@@ -234,6 +247,116 @@ public final class TurnService {
 			}
 			return (idle != null) ? TurnStatus.from(idle) : current;
 		}, () -> "Session '" + sessionId + "' could not be interrupted: the log kept changing");
+	}
+
+	/**
+	 * Parks the turn on a question and returns the new status, {@code IDLE} with
+	 * {@link StopReason#REQUIRES_ACTION}. The turn stops to wait for an answer from
+	 * outside: a person's decision on a tool call, for example. Two events land in one
+	 * append: a {@link EventType#QUESTION} event with the question, and the status event
+	 * that ends the turn. The status says only that the session is parked; the question
+	 * says what it is about, the reply with the tool calls for example, in its payload. A
+	 * parked session is idle, so no lease runs while the answer takes its time;
+	 * {@link #resume} starts the turn again.
+	 * <p>
+	 * Keyed by the run id, like {@link #end}: when the turn no longer runs under it,
+	 * nothing is written and the status as it stands is returned, and
+	 * {@link TurnStatus#isParked()} tells whether the question was recorded.
+	 * @param sessionId the session
+	 * @param runId the run that holds the turn
+	 * @param question what the turn waits on
+	 * @return the status after the call: parked when this call parked the turn, otherwise
+	 * the status another writer left
+	 * @throws IllegalStateException if the write kept losing to other appends; the turn
+	 * still runs
+	 */
+	public TurnStatus park(String sessionId, String runId, Question question) {
+		Assert.hasText(sessionId, "sessionId must not be null or empty");
+		Assert.hasText(runId, "runId must not be null or empty");
+		Assert.notNull(question, "question must not be null");
+		return writeStatus(sessionId, (version, current) -> {
+			if (!current.isRunning(runId)) {
+				return current;
+			}
+			SessionEvent asked = QuestionEvents.ask(sessionId, question);
+			SessionEvent idle = SessionStatusEvents.idle(sessionId, runId, StopReason.REQUIRES_ACTION);
+			return this.sessionService.appendEvents(sessionId, List.of(asked, idle), version) ? TurnStatus.from(idle)
+					: null;
+		}, () -> "The turn of session '" + sessionId + "' under run '" + runId
+				+ "' could not be parked: the log kept changing");
+	}
+
+	/**
+	 * Returns the question the session waits on: the newest {@link EventType#QUESTION}
+	 * event that no {@link EventType#ANSWER} event points at, or {@code null} when every
+	 * question has its answer. Read it with {@link Question#from}. A parked session
+	 * ({@link TurnStatus#isParked()}) has one, and {@link #resume} answers it.
+	 */
+	public @Nullable SessionEvent pendingQuestion(String sessionId) {
+		Assert.hasText(sessionId, "sessionId must not be null or empty");
+		return QuestionEvents.pending(this.sessionService.getEvents(sessionId, QuestionEvents.QUESTIONS_AND_ANSWERS));
+	}
+
+	/**
+	 * Resumes a parked session with the answer to its question, without a lease; see
+	 * {@link #resume(String, String, Object, Duration)}.
+	 */
+	public TurnStatus resume(String sessionId, @Nullable String runId, @Nullable Object answer) {
+		return resume(sessionId, runId, answer, null);
+	}
+
+	/**
+	 * Resumes a parked session with the answer to its question and returns the new
+	 * status, {@code RUNNING} under the run id. Two events land in one append: an
+	 * {@link EventType#ANSWER} event that points at the pending question and carries the
+	 * answer, and the status event that starts the turn again. The run id and the lease
+	 * follow the rules of {@link #start(String, String, Duration)}: the caller's run id
+	 * or a fresh one, a lease or none. A run spans the pause when it passes the id it
+	 * parked under.
+	 * <p>
+	 * Only a parked session resumes. A session that runs a turn, because another resume
+	 * landed first, is busy: {@link TurnInProgressException}, whether or not that turn's
+	 * lease ran out, since the question already has its answer and there is nothing left
+	 * to resume; the next {@link #start(String, String, Duration)} takes an expired turn
+	 * over. A session that is idle for another reason, or parked without an open
+	 * question, cannot resume: {@link IllegalStateException}. Nothing is written in
+	 * either case, so the same answer sent twice resumes once, and the tools it allows
+	 * run once.
+	 * @param sessionId the session
+	 * @param runId the run the resumed turn runs under; {@code null} for a fresh one
+	 * @param answer the answer, stored as JSON; {@code null} for an acknowledgement
+	 * @param timeout the lease; {@code null} for a turn that never expires
+	 * @return the status after the call: {@code RUNNING} under the effective run id
+	 * @throws TurnInProgressException if a turn runs on the session
+	 * @throws IllegalStateException if the session is not parked or has no open question,
+	 * or if the write kept losing to other appends
+	 * @throws IllegalArgumentException if the timeout is zero or negative
+	 */
+	public TurnStatus resume(String sessionId, @Nullable String runId, @Nullable Object answer,
+			@Nullable Duration timeout) {
+		Assert.hasText(sessionId, "sessionId must not be null or empty");
+		Assert.isTrue(timeout == null || timeout.compareTo(Duration.ZERO) > 0, "timeout must be positive");
+		String requestRunId = StringUtils.hasText(runId) ? runId : UUID.randomUUID().toString();
+		return writeStatus(sessionId, (version, current) -> {
+			String runningRunId = current.runId();
+			if (current.isRunning() && runningRunId != null) {
+				throw new TurnInProgressException(sessionId, runningRunId);
+			}
+			if (!current.isParked()) {
+				throw new IllegalStateException("Session '" + sessionId + "' is not parked on a question; it is "
+						+ current.status() + (current.stopReason() != null ? " with " + current.stopReason() : ""));
+			}
+			SessionEvent pending = pendingQuestion(sessionId);
+			if (pending == null) {
+				throw new IllegalStateException(
+						"Session '" + sessionId + "' is parked but has no open question to answer");
+			}
+			Instant expiresAt = (timeout != null) ? Instant.now().plus(timeout) : null;
+			SessionEvent answered = QuestionEvents.answer(sessionId, pending.getId(), answer);
+			SessionEvent running = SessionStatusEvents.running(sessionId, requestRunId, expiresAt);
+			return this.sessionService.appendEvents(sessionId, List.of(answered, running), version)
+					? TurnStatus.from(running) : null;
+		}, () -> "Session '" + sessionId + "' could not be resumed: the log kept changing");
 	}
 
 	/**

@@ -34,6 +34,15 @@ public enum StopReason {
 	ERROR,
 
 	/**
+	 * The turn parked on a question and waits for an answer from outside: a person's
+	 * decision on a tool call, for example. The {@link EventType#QUESTION} event sits
+	 * right before the {@code STATUS} event that records this reason and says what the
+	 * turn waits on. Written by {@link TurnService#park}; {@link TurnService#resume}
+	 * starts the turn again with the answer.
+	 */
+	REQUIRES_ACTION,
+
+	/**
 	 * An {@link TurnService#interrupt interrupt} ended the turn before it ran to its end.
 	 * The {@link EventType#INTERRUPT} event that asked for the stop sits right before the
 	 * {@code STATUS} event that records this reason.
