@@ -409,17 +409,21 @@ public final class OpenAiChatModel implements ChatModel {
 	 */
 	private static Flux<ChatCompletion> mergeToolCallChunks(Flux<ChatCompletionChunk> chunks) {
 		AtomicBoolean isInsideTool = new AtomicBoolean(false);
-		return chunks.doOnNext(chunk -> {
-			if (ChunkMerger.hasToolCall(chunk)) {
-				isInsideTool.set(true);
-			}
-		}).bufferUntil(chunk -> {
-			if (isInsideTool.get() && ChunkMerger.toolCallsDone(chunk)) {
-				isInsideTool.set(false);
-				return true;
-			}
-			return !isInsideTool.get();
-		}).map(ChunkMerger::mergeChunks).map(ChunkMerger::chunkToChatCompletion);
+		return chunks.filter(chunk -> chunk.choices().stream().allMatch(choice -> !choice._delta().isMissing()))
+			.doOnNext(chunk -> {
+				if (ChunkMerger.hasToolCall(chunk)) {
+					isInsideTool.set(true);
+				}
+			})
+			.bufferUntil(chunk -> {
+				if (isInsideTool.get() && ChunkMerger.toolCallsDone(chunk)) {
+					isInsideTool.set(false);
+					return true;
+				}
+				return !isInsideTool.get();
+			})
+			.map(ChunkMerger::mergeChunks)
+			.map(ChunkMerger::chunkToChatCompletion);
 	}
 
 	private ChatResponse toStreamedChatResponse(ChatCompletion chatCompletion, ChatCompletionCreateParams request,
