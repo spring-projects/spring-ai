@@ -110,7 +110,10 @@ Properties starting with `spring.ai.vectorstore.opensearch.*` are used to config
 |`spring.ai.vectorstore.opensearch.initialize-schema`| Whether to initialize the required schema | `false`
 |`spring.ai.vectorstore.opensearch.similarity-function`| The similarity function to use (cosinesimil, l1, l2, linf, innerproduct) | `cosinesimil`
 |`spring.ai.vectorstore.opensearch.use-approximate-knn`| Whether to use approximate k-NN for faster searches. If true, uses HNSW-based approximate search. If false, uses exact brute-force k-NN. See link:https://opensearch.org/docs/latest/search-plugins/knn/approximate-knn/[Approximate k-NN] and link:https://opensearch.org/docs/latest/search-plugins/knn/knn-score-script/[Exact k-NN] | `false`
-|`spring.ai.vectorstore.opensearch.dimensions`| Number of dimensions for vector embeddings. Used when creating index mapping for approximate k-NN. If not set, uses the embedding model's dimensions. | `1536`
+|`spring.ai.vectorstore.opensearch.dimensions`| Vector size used for validation, built-in index mappings, and dimension placeholders in custom mappings.
+When unset, new built-in approximate mappings use 1536; exact mappings and custom-mapping placeholders use the embedding model's size.
+A hard-coded dimension in a custom mapping is preserved.
+For an existing index, an unset size is read from its mapping. | -
 |`spring.ai.vectorstore.opensearch.mapping-json`| Custom JSON mapping for the index. Overrides default mapping generation. | -
 |`spring.ai.vectorstore.opensearch.read-timeout`| Time to wait for response from the opposite endpoint. 0 - infinity. | -
 |`spring.ai.vectorstore.opensearch.connect-timeout`| Time to wait until connection established. 0 - infinity. | -
@@ -146,6 +149,13 @@ The following similarity functions are available:
 * `l1` - Manhattan distance between vectors.
 * `l2` - Euclidean distance between vectors.
 * `linf` - Chebyshev distance between vectors.
+
+== Upsert support
+
+`OpenSearchVectorStore` implements `upsert(List<EmbeddedDocument>)`, so you can write documents together with embeddings you computed elsewhere instead of having the store embed them.
+Writing the same id again replaces the existing document, so a re-run with stable ids does not create duplicates.
+Upsert needs `manageDocumentIds` to be `true`, the default, because with it off OpenSearch generates its own ids and cannot replace a document by id.
+See xref:api/vectordbs.adoc#writing-precomputed-embeddings[Writing User-Supplied Embeddings] for details.
 
 == Manual Configuration
 
@@ -195,7 +205,7 @@ public VectorStore vectorStore(OpenSearchClient openSearchClient, EmbeddingModel
         .index("custom-index")                // Optional: defaults to "spring-ai-document-index"
         .similarityFunction("l2")             // Optional: defaults to "cosinesimil"
         .useApproximateKnn(true)              // Optional: defaults to false (exact k-NN)
-        .dimensions(1536)                     // Optional: defaults to 1536 or embedding model's dimensions
+        .dimensions(1536)                     // Optional: explicit vector size, see the defaults above
         .initializeSchema(true)               // Optional: defaults to false
         .batchingStrategy(new TokenCountBatchingStrategy()) // Optional: defaults to TokenCountBatchingStrategy
         .build();
@@ -207,6 +217,14 @@ public EmbeddingModel embeddingModel() {
     return new OpenAiEmbeddingModel(OpenAiEmbeddingOptions.builder().apiKey(System.getenv("OPENAI_API_KEY")).build());
 }
 ----
+
+=== Custom Mappings
+
+A custom mapping, set with `mappingJson` or `spring.ai.vectorstore.opensearch.mapping-json`, is used only when the store creates the index; it does not change an existing index.
+A fixed size in the mapping, such as `"dimension": 4`, creates a field that accepts four-dimensional vectors.
+If you also configure `dimensions`, set it to the same value: it controls validation but does not rewrite a fixed size in the mapping.
+To have the store fill in the size, write `"dimension": %s`, which becomes the configured `dimensions`, or the embedding model's size when none is configured.
+To create the index without calling the embedding model, configure `dimensions` explicitly.
 
 == Metadata Filtering
 

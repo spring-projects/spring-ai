@@ -42,6 +42,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @since 1.0.0
  */
 @Testcontainers
+@SuppressWarnings("removal")
 class CassandraChatMemoryRepositoryAutoConfigurationIT {
 
 	static final DockerImageName DEFAULT_IMAGE_NAME = DockerImageName.parse("cassandra");

@@ -88,6 +88,20 @@ public final class ToolUtils {
 		return tool != null && tool.returnDirect();
 	}
 
+	/**
+	 * Whether calls of the {@code @Tool} method need a person's confirmation before they
+	 * run.
+	 * @param method the tool method
+	 * @return {@code true} when the method's {@code @Tool} sets
+	 * {@code requiresConfirmation}
+	 * @since 2.1.0
+	 */
+	public static boolean getToolRequiresConfirmation(Method method) {
+		Assert.notNull(method, "method cannot be null");
+		var tool = AnnotatedElementUtils.findMergedAnnotation(method, Tool.class);
+		return tool != null && tool.requiresConfirmation();
+	}
+
 	public static ToolCallResultConverter getToolCallResultConverter(Method method) {
 		Assert.notNull(method, "method cannot be null");
 		var tool = AnnotatedElementUtils.findMergedAnnotation(method, Tool.class);

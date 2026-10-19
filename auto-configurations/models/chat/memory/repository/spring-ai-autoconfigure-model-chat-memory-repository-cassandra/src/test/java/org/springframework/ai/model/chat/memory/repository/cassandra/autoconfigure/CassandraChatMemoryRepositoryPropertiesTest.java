@@ -29,6 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Jihoon Kim
  * @since 1.0.0
  */
+@SuppressWarnings("removal")
 class CassandraChatMemoryRepositoryPropertiesTest {
 
 	@Test

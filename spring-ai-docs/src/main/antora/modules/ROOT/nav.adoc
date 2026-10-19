@@ -79,10 +79,18 @@
 // ** xref:api/generic-model.adoc[]
 
 ** xref:api/chat-memory.adoc[Chat Memory]
+** xref:api/session.adoc[Session Memory]
+*** xref:api/session/concepts.adoc[Concepts]
+*** xref:api/session/event-filter.adoc[Event Filtering]
+*** xref:api/session/compaction.adoc[Compaction]
+*** xref:api/session/system-messages.adoc[System Messages]
+*** xref:api/session/chat-client.adoc[ChatClient Integration]
+*** xref:api/session/jdbc.adoc[JDBC Repository]
 
 ** xref:api/tools.adoc[Tool Calling]
 *** xref:api/tools/tool-calling-advisor.adoc[ToolCallingAdvisor]
 *** xref:api/tools/tool-search-tool.adoc[Tool Search Tool]
+*** xref:api/tools/tool-call-confirmation.adoc[Tool Call Confirmation]
 *** xref:api/tools/chatmodel-tool-calling.adoc[ChatModel Tool Calling]
 
 ** xref:api/mcp/mcp-overview.adoc[Model Context Protocol (MCP)]

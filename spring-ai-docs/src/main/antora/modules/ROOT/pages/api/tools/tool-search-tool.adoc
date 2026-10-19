@@ -118,7 +118,7 @@ ChatClient chatClient = ChatClient.builder(chatModel)
 
 // 4. Make a request — supply a session ID via the advisor context
 String answer = chatClient.prompt("Help me plan what to wear today in Amsterdam")
-    .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, "user-42-session"))
+    .advisors(a -> a.param(MemoryAdvisor.CONVERSATION_ID, "user-42-session"))
     .call()
     .content();
 ----
@@ -128,12 +128,12 @@ String answer = chatClient.prompt("Help me plan what to wear today in Amsterdam"
 
 `ToolSearchToolCallingAdvisor` indexes tools **per session**. The session ID determines which tool index a request sees — this enables multi-tenant and multi-conversation isolation.
 
-The caller must supply a session ID with every request. By default the advisor reads the session ID from the advisor context under the `ChatMemory.CONVERSATION_ID` key:
+The caller must supply a session ID with every request. By default the advisor reads the session ID from the advisor context under the `MemoryAdvisor.CONVERSATION_ID` key:
 
 [source,java]
 ----
 chatClient.prompt()
-    .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, "user-42-session"))
+    .advisors(a -> a.param(MemoryAdvisor.CONVERSATION_ID, "user-42-session"))
     .user("...")
     .call()
     .content();
@@ -149,7 +149,7 @@ var advisor = ToolSearchToolCallingAdvisor.builder()
     .build();
 ----
 
-NOTE: If memory advisors are configured with conversation IDs (the standard pattern with `MessageChatMemoryAdvisor`), the same key is already in the context — you get session scoping "for free" by virtue of the memory setup.
+NOTE: If memory advisors are configured with conversation IDs (the standard pattern with `SessionAdvisors`, or the deprecated `MessageChatMemoryAdvisor`), the same key is already in the context — you get session scoping "for free" by virtue of the memory setup.
 
 [[search-strategies]]
 == Search Strategies
@@ -246,7 +246,7 @@ The default index when no explicit `tool-index-type` is configured.
 
 | `sessionIdKeyName(String)`
 | Advisor context key used to look up the conversation/session ID.
-| `ChatMemory.CONVERSATION_ID`
+| `MemoryAdvisor.CONVERSATION_ID`
 
 | `evictionStrategy(ToolIndexEvictionStrategy)`
 | Determines when session tool indexes are freed. See xref:#index-eviction[Index Eviction].
@@ -476,5 +476,6 @@ spring.ai.chat.client.tool-search-advisor.session-id-key-name=tenantId
 
 * xref:api/tools.adoc#scaling-to-hundreds-of-tools[Tool Calling: Scaling to Hundreds of Tools] — conceptual overview
 * xref:api/tools/tool-calling-advisor.adoc[ToolCallingAdvisor] — the base class and inherited builder options
+* xref:api/tools/tool-call-confirmation.adoc#tool-search[Tool Call Confirmation: Tool Search Tool] — pausing on disclosed tools that need a person's confirmation
 * link:https://spring.io/blog/2025/12/11/spring-ai-tool-search-tools-tzolov[Smart Tool Selection: 34–64% Token Savings] (Dec 2025) — benchmarks and methodology
 * xref:guides/dynamic-tool-search.adoc[Dynamic Tool Discovery guide] — worked example

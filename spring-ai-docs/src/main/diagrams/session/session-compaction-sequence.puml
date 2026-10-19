@@ -1,0 +1,43 @@
+@startuml session-compaction-sequence
+skinparam shadowing false
+autonumber
+participant Caller
+participant "DefaultSessionService" as Svc
+participant SessionRepository as Repo
+participant CompactionTrigger as Trigger
+participant "WindowCompactionStrategy" as Strategy
+participant CompactionSummarizer as Summarizer
+
+Caller -> Svc: compact(id, trigger, strategy)
+Svc -> Repo: getEventVersion(id)
+Repo --> Svc: version
+Svc -> Repo: findEvents(id, EventFilter.active())
+Repo --> Svc: the view
+Svc -> Trigger: shouldCompact(CompactionRequest)
+alt the trigger does not fire
+  Trigger --> Svc: false
+  Svc --> Caller: CompactionResult.unchanged()
+else the trigger fires
+  Trigger --> Svc: true
+  Svc -> Strategy: compact(request)
+  Strategy -> Strategy: pin, cut on a turn start,\nkeep the newest turn
+  opt a summarizer is set
+    Strategy -> Summarizer: summarize(SummaryRequest)
+    Summarizer --> Strategy: the summary turn (empty = decline)
+  end
+  Strategy --> Svc: CompactionResult
+  alt nothing leaves the view
+    Svc --> Caller: unchanged, nothing written
+  else
+    Svc -> Svc: result.toEvents(id):\nthe COMPACTION boundary + the summary events
+    Svc -> Repo: appendEvents(id, events, version)
+    alt the version still matches
+      Repo --> Svc: true
+      Svc --> Caller: the result
+    else another writer changed the log
+      Repo --> Svc: false
+      Svc --> Caller: unchanged; retried after the next turn
+    end
+  end
+end
+@enduml

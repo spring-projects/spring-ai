@@ -39,6 +39,7 @@ import static org.mockito.Mockito.when;
  * @author Yanming Zhou
  * @author Xiaotong Fan
  */
+@SuppressWarnings("removal")
 public class JdbcChatMemoryRepositoryBuilderTests {
 
 	@Test

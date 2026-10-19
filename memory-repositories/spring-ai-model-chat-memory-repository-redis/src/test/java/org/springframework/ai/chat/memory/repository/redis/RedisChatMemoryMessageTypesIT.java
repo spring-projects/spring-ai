@@ -51,6 +51,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Yanming Zhou
  */
 @Testcontainers
+@SuppressWarnings("removal")
 class RedisChatMemoryMessageTypesIT {
 
 	@Container

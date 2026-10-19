@@ -32,6 +32,7 @@ import static org.mockito.Mockito.verify;
  *
  * @author chabinhwang
  */
+@SuppressWarnings("removal")
 class Neo4jChatMemoryRepositoryConfigTests {
 
 	@Test

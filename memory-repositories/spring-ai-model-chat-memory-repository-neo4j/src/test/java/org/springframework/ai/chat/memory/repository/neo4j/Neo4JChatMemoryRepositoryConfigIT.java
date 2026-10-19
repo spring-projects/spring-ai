@@ -47,6 +47,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * @author chabinhwang
  */
 @Testcontainers
+@SuppressWarnings("removal")
 class Neo4JChatMemoryRepositoryConfigIT {
 
 	@Container
