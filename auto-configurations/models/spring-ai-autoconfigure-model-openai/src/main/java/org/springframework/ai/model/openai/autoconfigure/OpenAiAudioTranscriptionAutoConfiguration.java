@@ -36,6 +36,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 
 /**
  * {@link AutoConfiguration Auto-configuration} for OpenAI SDK audio transcription.
@@ -54,17 +55,18 @@ import org.springframework.context.annotation.Bean;
 @ConditionalOnProperty(name = SpringAIModelProperties.AUDIO_TRANSCRIPTION_MODEL, havingValue = SpringAIModels.OPENAI,
 		matchIfMissing = true)
 @EnableConfigurationProperties({ OpenAiCommonProperties.class, OpenAiAudioTranscriptionProperties.class })
+@Import(OpenAiConnectionDetailsConfiguration.class)
 public class OpenAiAudioTranscriptionAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public OpenAiAudioTranscriptionModel openAiSdkAudioTranscriptionModel(OpenAiCommonProperties commonProperties,
-			OpenAiAudioTranscriptionProperties transcriptionProperties,
+	public OpenAiAudioTranscriptionModel openAiSdkAudioTranscriptionModel(OpenAiConnectionDetails connectionDetails,
+			OpenAiCommonProperties commonProperties, OpenAiAudioTranscriptionProperties transcriptionProperties,
 			ObjectProvider<ObservationRegistry> observationRegistry, ObjectProvider<MeterRegistry> meterRegistry,
 			ObjectProvider<TranscriptionModelObservationConvention> observationConvention,
 			ObjectProvider<OpenAiHttpClientBuilderCustomizer> httpClientBuilderCustomizers) {
-		var resolvedProperties = OpenAiAutoConfigurationUtil.resolveCommonProperties(commonProperties,
-				transcriptionProperties);
+		var resolvedProperties = OpenAiAutoConfigurationUtil.resolveCommonProperties(connectionDetails,
+				commonProperties, transcriptionProperties);
 		List<OpenAiHttpClientBuilderCustomizer> customizers = httpClientBuilderCustomizers.orderedStream().toList();
 		OpenAIClient client = openAiClient(resolvedProperties, observationRegistry, meterRegistry, customizers);
 		OpenAIClientAsync clientAsync = openAiClientAsync(resolvedProperties, observationRegistry, meterRegistry,
