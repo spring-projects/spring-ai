@@ -53,6 +53,7 @@ import org.springframework.ai.model.tool.ToolCallDecision;
 import org.springframework.ai.model.tool.ToolCallDecisions;
 import org.springframework.ai.model.tool.ToolCallLimitBehavior;
 import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.session.CreateSessionRequest;
 import org.springframework.ai.session.DefaultSessionService;
 import org.springframework.ai.session.EventType;
@@ -1097,6 +1098,58 @@ class SessionTurnAdvisorTests {
 		assertThat(answerEvents()).hasSize(1);
 		assertThat(ScriptedChatModel.describe(this.model.prompts().get(1))).containsExactly("Book a flight to Lisbon",
 				"call:c1", "result:c1", "Never mind.");
+	}
+
+	@Test
+	void allowedCallThatReturnsDirectlyEndsTheCallWithItsResult() {
+		ToolCallback direct = tool("bookFlight", "Booked ",
+				ToolMetadata.builder().requiresConfirmation(true).returnDirect(true).build());
+		ChatClient client = looped(direct);
+		this.model.then(prompt -> calls(call("c1", "bookFlight", "Lisbon")));
+		say(client, "Book a flight to Lisbon");
+
+		ChatClientResponse response = client.prompt()
+			.advisors(SessionAdvisors.decisions(this.sessionId, ToolCallDecisions.of(ToolCallDecision.allow("c1"))))
+			.call()
+			.chatClientResponse();
+
+		// The result is the response, and the model was not called again
+		Generation result = response.chatResponse().getResult();
+		assertThat(result.getOutput().getText()).isEqualTo("\"Booked Lisbon\"");
+		assertThat(result.getMetadata().getFinishReason()).isEqualTo(ToolExecutionResult.FINISH_REASON);
+		assertThat(response.context()).containsKey(SessionTurnAdvisor.RUN_ID_CONTEXT_KEY);
+		assertThat(this.ran).containsExactly("bookFlight");
+		assertThat(this.model.prompts()).hasSize(1);
+		// The turn ended, and the log holds the reply with its result
+		assertThat(this.sessionService.turns().status(this.sessionId).stopReason()).isEqualTo(StopReason.END_TURN);
+		assertThat(ScriptedChatModel.describe(new Prompt(this.sessionService.getActiveMessages(this.sessionId))))
+			.containsExactly("Book a flight to Lisbon", "call:c1", "result:c1");
+		assertThat(toolResults(new Prompt(this.sessionService.getActiveMessages(this.sessionId))))
+			.containsExactly("\"Booked Lisbon\"");
+	}
+
+	@Test
+	void streamedAllowedCallThatReturnsDirectlyEndsTheStreamWithItsResult() {
+		ToolCallback direct = tool("bookFlight", "Booked ",
+				ToolMetadata.builder().requiresConfirmation(true).returnDirect(true).build());
+		ChatClient client = looped(direct);
+		this.model.then(prompt -> calls(call("c1", "bookFlight", "Lisbon")));
+		say(client, "Book a flight to Lisbon");
+
+		List<ChatResponse> chunks = client.prompt()
+			.advisors(SessionAdvisors.decisions(this.sessionId, ToolCallDecisions.of(ToolCallDecision.allow("c1"))))
+			.stream()
+			.chatResponse()
+			.collectList()
+			.block();
+
+		assertThat(chunks).singleElement()
+			.satisfies(chunk -> assertThat(chunk.getResult().getOutput().getText()).isEqualTo("\"Booked Lisbon\""));
+		assertThat(this.ran).containsExactly("bookFlight");
+		assertThat(this.model.prompts()).hasSize(1);
+		assertThat(this.sessionService.turns().status(this.sessionId).stopReason()).isEqualTo(StopReason.END_TURN);
+		assertThat(toolResults(new Prompt(this.sessionService.getActiveMessages(this.sessionId))))
+			.containsExactly("\"Booked Lisbon\"");
 	}
 
 	@Test

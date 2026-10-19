@@ -111,15 +111,17 @@ import org.springframework.util.Assert;
  * records them as the answer, runs the allowed calls through the
  * {@link Builder#toolCallingManager tool calling manager} with the tools the request
  * carries, stores the results after the reply, and lets the model continue; it carries no
- * new user message. The decisions are checked before anything is written, with the rules
- * the manager applies: every call decided, every key known, every allowed call's tool in
- * the request. Decisions that fail a rule are rejected with
- * {@link IllegalArgumentException} and the question stays open. One that carries new text
- * instead moves on: every call is denied as {@link #ABANDONED_DENY_MESSAGE abandoned},
- * the results are stored, and the text runs in the resumed turn. Whenever a turn ends
- * without a result for the reply's calls, because the pause was lost to an interrupt or a
- * resumed turn failed, the calls are answered with {@link #UNANSWERED_TOOL_RESULT}, so
- * the log never keeps a tool call without its results.</li>
+ * new user message. When an allowed call's tool returns directly, its results are the
+ * call's response and the model is not called, as in a loop that never paused. The
+ * decisions are checked before anything is written, with the rules the manager applies:
+ * every call decided, every key known, every allowed call's tool in the request.
+ * Decisions that fail a rule are rejected with {@link IllegalArgumentException} and the
+ * question stays open. One that carries new text instead moves on: every call is denied
+ * as {@link #ABANDONED_DENY_MESSAGE abandoned}, the results are stored, and the text runs
+ * in the resumed turn. Whenever a turn ends without a result for the reply's calls,
+ * because the pause was lost to an interrupt or a resumed turn failed, the calls are
+ * answered with {@link #UNANSWERED_TOOL_RESULT}, so the log never keeps a tool call
+ * without its results.</li>
  * <li>Compacts the session once the call has returned, if a
  * {@link Builder#compactionTrigger trigger} fires: before the reply is returned, or after
  * it on the scheduler with {@link Builder#asyncCompaction(boolean)}. Compaction is
@@ -247,16 +249,19 @@ public final class SessionTurnAdvisor implements CallAdvisor, StreamAdvisor {
 		String sessionId = SessionContexts.sessionId(request.context());
 		checkRequest(sessionId, request);
 		this.sessionService.findOrCreate(SessionContexts.createRequest(sessionId, request.context()));
-		String runId = beginTurn(sessionId, request);
-		ChatClientResponse response;
-		boolean returned = false;
-		try {
-			response = chain.nextCall(withRunId(request, runId));
-			returned = true;
-		}
-		finally {
-			if (!returned) {
-				end(sessionId, runId, StopReason.ERROR);
+		Turn turn = beginTurn(sessionId, request);
+		String runId = turn.runId();
+		ChatClientResponse response = turn.direct(request);
+		if (response == null) {
+			boolean returned = false;
+			try {
+				response = chain.nextCall(withRunId(request, runId));
+				returned = true;
+			}
+			finally {
+				if (!returned) {
+					end(sessionId, runId, StopReason.ERROR);
+				}
 			}
 		}
 		complete(sessionId, runId, response.chatResponse());
@@ -277,7 +282,8 @@ public final class SessionTurnAdvisor implements CallAdvisor, StreamAdvisor {
 				context.wrap(() -> {
 					checkRequest(sessionId, r);
 					this.sessionService.findOrCreate(SessionContexts.createRequest(sessionId, r.context()));
-					String runId = beginTurn(sessionId, r);
+					Turn turn = beginTurn(sessionId, r);
+					String runId = turn.runId();
 					// A returnDirect result, a breached limit or a pause ends the stream
 					// on a chunk of its own: the one the turn completes with
 					AtomicReference<@Nullable ChatResponse> ending = new AtomicReference<>();
@@ -285,7 +291,8 @@ public final class SessionTurnAdvisor implements CallAdvisor, StreamAdvisor {
 					AtomicBoolean ended = new AtomicBoolean();
 					Flux<ChatClientResponse> rounds;
 					try {
-						rounds = chain.nextStream(withRunId(r, runId));
+						ChatClientResponse direct = turn.direct(r);
+						rounds = (direct != null) ? Flux.just(direct) : chain.nextStream(withRunId(r, runId));
 					}
 					catch (RuntimeException ex) {
 						// The rest of the chain failed before its stream existed, so no
@@ -338,18 +345,18 @@ public final class SessionTurnAdvisor implements CallAdvisor, StreamAdvisor {
 	 * the effective run id.
 	 * @throws TurnInProgressException if a turn runs on the session
 	 */
-	private String start(String sessionId, Map<String, @Nullable Object> context) {
+	private Turn start(String sessionId, Map<String, @Nullable Object> context) {
 		TurnStatus started = this.turns.start(sessionId, SessionContexts.runId(context), this.turnTimeout);
-		return Objects.requireNonNull(started.runId(), "a running turn has a run id");
+		return new Turn(Objects.requireNonNull(started.runId(), "a running turn has a run id"), null);
 	}
 
 	/**
-	 * Begins the call's turn and returns the effective run id: starts a turn, or resumes
-	 * a session parked on a tool confirmation. A request that carries the caller's
-	 * decisions ({@link #TOOL_CALL_DECISIONS_CONTEXT_KEY}) answers the question with
-	 * them. A request that carries new text instead moves on: the question is answered
-	 * with every call denied as {@link #ABANDONED_DENY_MESSAGE abandoned}, so the log
-	 * stays whole, and the text runs in the resumed turn.
+	 * Begins the call's turn and returns it, with the effective run id: starts a turn, or
+	 * resumes a session parked on a tool confirmation. A request that carries the
+	 * caller's decisions ({@link #TOOL_CALL_DECISIONS_CONTEXT_KEY}) answers the question
+	 * with them. A request that carries new text instead moves on: the question is
+	 * answered with every call denied as {@link #ABANDONED_DENY_MESSAGE abandoned}, so
+	 * the log stays whole, and the text runs in the resumed turn.
 	 * @throws TurnInProgressException if a turn runs on the session
 	 * @throws IllegalStateException if decisions arrive for a session that is not parked,
 	 * or if the session is parked on a question of another kind, which this advisor
@@ -357,7 +364,7 @@ public final class SessionTurnAdvisor implements CallAdvisor, StreamAdvisor {
 	 * @throws IllegalArgumentException if the decisions fail a rule of
 	 * {@link #checkDecisions}
 	 */
-	private String beginTurn(String sessionId, ChatClientRequest request) {
+	private Turn beginTurn(String sessionId, ChatClientRequest request) {
 		ToolCallDecisions decisions = SessionContexts.decisions(request.context());
 		if (decisions != null) {
 			return resume(sessionId, request, decisions);
@@ -395,13 +402,15 @@ public final class SessionTurnAdvisor implements CallAdvisor, StreamAdvisor {
 	 * parked session and a resume answers the question. So the open question is the one
 	 * check made here; whether the session may resume, the service decides under the
 	 * version, and a session another node resumed meanwhile fails there as busy.
-	 * @return the run id of the resumed turn
+	 * @return the resumed turn: its run id, and the response to return in place of the
+	 * chain's when an allowed call's tool returns directly, as a loop that was never
+	 * paused would; the model is not called then
 	 * @throws IllegalStateException if the session is not parked on a tool confirmation
 	 * @throws IllegalArgumentException if the decisions fail a rule of
 	 * {@link #checkDecisions}; nothing is written and the question stays open
 	 * @throws TurnInProgressException if a turn runs on the session
 	 */
-	private String resume(String sessionId, ChatClientRequest request, @Nullable ToolCallDecisions decisions) {
+	private Turn resume(String sessionId, ChatClientRequest request, @Nullable ToolCallDecisions decisions) {
 		SessionEvent pending = this.turns.pendingQuestion(sessionId);
 		if (pending == null) {
 			throw new IllegalStateException(
@@ -426,8 +435,15 @@ public final class SessionTurnAdvisor implements CallAdvisor, StreamAdvisor {
 				ToolConfirmationQuestion.answer(effective), this.turnTimeout);
 		String runId = Objects.requireNonNull(resumed.runId(), "a running turn has a run id");
 		try {
-			ToolResponseMessage results = run(sessionId, paused, effective, request.prompt().getOptions());
-			storeResults(sessionId, reply, results);
+			ToolExecutionResult result = run(sessionId, paused, effective, request.prompt().getOptions());
+			if (result.returnDirect()) {
+				// The results go back to the caller as the response, and the turn
+				// completes on them like a loop that ended on a returnDirect tool: the
+				// results are stored then
+				return new Turn(runId,
+						ChatResponse.builder().generations(ToolExecutionResult.buildGenerations(result)).build());
+			}
+			storeResults(sessionId, reply, results(result));
 		}
 		catch (RuntimeException ex) {
 			// The answer is recorded and the question is closed; the calls get a result
@@ -436,7 +452,7 @@ public final class SessionTurnAdvisor implements CallAdvisor, StreamAdvisor {
 			end(sessionId, runId, StopReason.ERROR);
 			throw ex;
 		}
-		return runId;
+		return new Turn(runId, null);
 	}
 
 	/**
@@ -476,16 +492,19 @@ public final class SessionTurnAdvisor implements CallAdvisor, StreamAdvisor {
 	}
 
 	/**
-	 * Runs the paused reply's calls as decided and returns their results, one per call,
-	 * in the order the model asked for them: the allowed calls run with the tools the
+	 * Runs the paused reply's calls as decided: the allowed calls run with the tools the
 	 * options carry, a denied call answers with the decision's message. The manager sees
 	 * the turn so far, so its tool call limits count the rounds before the pause.
 	 */
-	private ToolResponseMessage run(String sessionId, AssistantMessage paused, ToolCallDecisions decisions,
+	private ToolExecutionResult run(String sessionId, AssistantMessage paused, ToolCallDecisions decisions,
 			@Nullable ChatOptions options) {
 		ChatResponse reply = new ChatResponse(List.of(new Generation(paused)));
 		Prompt turnSoFar = new Prompt(this.sessionService.getActiveMessages(sessionId), options);
-		ToolExecutionResult result = this.toolCallingManager.executeToolCalls(turnSoFar, reply, decisions);
+		return this.toolCallingManager.executeToolCalls(turnSoFar, reply, decisions);
+	}
+
+	/** The results of the run, one per call, in the order the model asked for them. */
+	private static ToolResponseMessage results(ToolExecutionResult result) {
 		List<Message> history = result.conversationHistory();
 		if (history.isEmpty() || !(history.get(history.size() - 1) instanceof ToolResponseMessage results)) {
 			throw new IllegalStateException("The tool calling manager returned no results for the decided tool calls");
@@ -779,6 +798,25 @@ public final class SessionTurnAdvisor implements CallAdvisor, StreamAdvisor {
 			}
 		}
 		return null;
+	}
+
+	/**
+	 * The call's turn as begun: the run id it runs under and, when a resumed call's tool
+	 * returned directly, the response to return in place of the chain's.
+	 */
+	private record Turn(String runId, @Nullable ChatResponse directResponse) {
+
+		/** The direct response as the call's response, with the run id in its context. */
+		@Nullable ChatClientResponse direct(ChatClientRequest request) {
+			if (this.directResponse == null) {
+				return null;
+			}
+			return ChatClientResponse.builder()
+				.chatResponse(this.directResponse)
+				.context(withRunId(request, this.runId).context())
+				.build();
+		}
+
 	}
 
 	public static final class Builder {
