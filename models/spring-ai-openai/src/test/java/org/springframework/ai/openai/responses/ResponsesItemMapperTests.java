@@ -649,6 +649,32 @@ class ResponsesItemMapperTests {
 	}
 
 	/**
+	 * An OpenAI-compatible backend may omit individual token counts from the usage object.
+	 * Missing counts must be reported as zero; a missing {@code total_tokens} must be
+	 * derived from input and output rather than leaving the turn unserviceable.
+	 */
+	@Test
+	void usageWithoutTokenCountsReportsZeroRatherThanFailing() {
+		var usage = ResponsesItemMapper.toUsage(fixture("usage-without-token-counts.json"));
+
+		assertThat(usage.getPromptTokens()).isZero();
+		assertThat(usage.getCompletionTokens()).isZero();
+		assertThat(usage.getTotalTokens()).isZero();
+		assertThat(usage.getCacheReadInputTokens()).isNull();
+	}
+
+	@Test
+	void usageWithMissingTotalTokensDerivedFromInputAndOutput() {
+		Response response = fixtureWithoutUsageField("reasoning-with-function-call.json", "total_tokens");
+
+		var usage = ResponsesItemMapper.toUsage(response);
+
+		assertThat(usage.getPromptTokens()).isEqualTo(120);
+		assertThat(usage.getCompletionTokens()).isEqualTo(40);
+		assertThat(usage.getTotalTokens()).isEqualTo(160);
+	}
+
+	/**
 	 * Usage counts come from the upstream response, so one outside the {@code int} range
 	 * means the response cannot be trusted. It has to fail naming the field and the
 	 * value, rather than with a bare {@code ArithmeticException("integer overflow")} or a
@@ -727,6 +753,17 @@ class ResponsesItemMapperTests {
 		try {
 			ObjectNode json = (ObjectNode) ObjectMappers.jsonMapper().readTree(ResponsesTestFixtures.json(name));
 			((ObjectNode) json.path("usage")).put(usageField, value);
+			return ObjectMappers.jsonMapper().treeToValue(json, Response.class);
+		}
+		catch (Exception ex) {
+			throw new IllegalStateException(ex);
+		}
+	}
+
+	private static Response fixtureWithoutUsageField(String name, String usageField) {
+		try {
+			ObjectNode json = (ObjectNode) ObjectMappers.jsonMapper().readTree(ResponsesTestFixtures.json(name));
+			((ObjectNode) json.path("usage")).remove(usageField);
 			return ObjectMappers.jsonMapper().treeToValue(json, Response.class);
 		}
 		catch (Exception ex) {
