@@ -15,11 +15,13 @@ class SessionAdvisors {
   {static} +builder(sessionService)
   {static} +session(sessionId)
   {static} +session(sessionId, runId)
+  {static} +decisions(sessionId, decisions)
 }
 class "SessionAdvisors.Builder" as SAB {
   +compaction(trigger, strategy)
   +asyncCompaction(boolean)
   +interruptible(boolean)
+  +toolCallingManager(manager)
   +scheduler(scheduler)
   +memory(customizer)
   +build(): List<Advisor>
@@ -27,6 +29,8 @@ class "SessionAdvisors.Builder" as SAB {
 class SessionTurnAdvisor {
   {static} DEFAULT_ORDER = HIGHEST_PRECEDENCE + 200
   {static} RUN_ID_CONTEXT_KEY
+  {static} TOOL_CALL_DECISIONS_CONTEXT_KEY
+  {static} UNANSWERED_TOOL_RESULT
   +adviseCall(request, chain)
   +adviseStream(request, chain)
   {static} +builder(sessionService)
@@ -52,7 +56,18 @@ class SessionMemoryAdvisor {
   +after(response, chain)
   {static} +builder(sessionService)
 }
-interface SessionService
+interface SessionService {
+  +turns(): TurnService
+}
+class TurnService {
+  +status(id)
+  +start(id, runId, timeout)
+  +end(id, runId, stopReason)
+  +interrupt(id, reason)
+  +park(id, runId, question)
+  +pendingQuestion(id)
+  +resume(id, runId, answer, timeout)
+}
 interface MessageFilter <<functional>> {
   +shouldPersist(message): boolean
 }
@@ -69,11 +84,13 @@ SAB ..> SessionTurnAdvisor : builds
 SAB ..> SessionInterruptAdvisor : builds\nwith interruptible(true)
 SAB ..> SessionMemoryAdvisor : builds
 SessionTurnAdvisor --> SessionService
-SessionInterruptAdvisor --> SessionService : reads the status
+SessionTurnAdvisor --> TurnService : starts, ends, parks, resumes
+SessionInterruptAdvisor --> TurnService : reads the status
 SessionInterruptAdvisor ..> TurnInterruptedException : throws
 SessionTurnAdvisor --> "0..1" CompactionTrigger
 SessionTurnAdvisor --> "0..1" CompactionStrategy
 SessionMemoryAdvisor --> SessionService
+SessionService ..> TurnService : turns()
 SessionMemoryAdvisor --> EventFilter : reads with
 SessionMemoryAdvisor --> MessageFilter : stores through
 @enduml

@@ -26,11 +26,11 @@ This is what lets any instance run a turn, and another instance run the next one
 Another harness, a loop of your own for example, runs on the same session through the same `SessionService`.
 
 The session carries the status of its turns too: which run holds the turn, and why the last one ended.
-Every harness reads and sets it through the same `TurnService`, which `sessionService.turns()` returns: `status`, `start`, `end` and `interrupt`.
+Every harness reads and sets it through the same `TurnService`, which `sessionService.turns()` returns: `status`, `start`, `end`, `interrupt`, `park` and `resume`.
 So a turn started on one instance can be interrupted from another, and two harnesses never run one session at once.
+A turn can also stop to ask a person something, a tool call that needs confirmation for example, and go on later with the answer.
+The question and the answer are events in the log, and the session is parked in between.
 See xref:api/session/turn-status.adoc[Turn Status].
-A turn that stops for a person's decision, a tool call that needs confirmation, still ends like any other for now.
-A parked turn that holds the session until the decision arrives is the next follow-up.
 
 [[session-modules]]
 == Modules
@@ -116,7 +116,7 @@ Sessions are lost on restart and are not shared across instances.
 == Where to go next
 
 * xref:api/session/concepts.adoc[Concepts]: sessions, events, turns, the active view and the `SessionService` API.
-* xref:api/session/turn-status.adoc[Turn Status]: the turn service, the lease, interrupts.
+* xref:api/session/turn-status.adoc[Turn Status]: the turn service, the lease, interrupts, and how a turn parks on a question and resumes with the answer.
 * xref:api/session/event-filter.adoc[Event Filtering]: what a read returns, and why a window keeps turns whole.
 * xref:api/session/compaction.adoc[Compaction]: triggers, the window strategy, summarization and how a pass is recorded.
 * xref:api/session/system-messages.adoc[System Messages]: why the system prompt is configuration, and the opt-in to store it.

@@ -292,6 +292,8 @@ The prompt may end with the paused reply itself, the history then holds it once.
 
 NOTE: `MessageChatMemoryAdvisor` and the `ChatMemory` API are deprecated since 2.1.0, for removal in 3.0.0, in favor of xref:api/session.adoc[session memory]; see xref:api/chat-memory.adoc#chat-memory-migration[Migrating to Session Memory].
 
+With session memory the pause is recorded on the session and the decisions resume it, see xref:api/session/chat-client.adoc#session-chat-client-confirmation[Session memory: tool call confirmation]; the rest of this section is about `ChatMemory`.
+
 The memory already holds the user message and the paused reply.
 Send only the tool results, which are the last message of the history:
 

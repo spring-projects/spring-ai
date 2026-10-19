@@ -68,11 +68,13 @@ On every `ChatClient` call the turn advisor:
 . Starts the turn, under the run id of `RUN_ID_CONTEXT_KEY` or a UUID of its own, and puts the effective id on the request it forwards.
 A session on which a turn runs is busy.
 The call fails with `TurnInProgressException`, and nothing is queued.
+A session parked on a tool confirmation is resumed instead: with the decisions of `TOOL_CALL_DECISIONS_CONTEXT_KEY`, or with every call denied when the request brings new text; see <<session-chat-client-confirmation>>.
 . Once the call has returned, stores the tool results of a loop that ended without a model round (a `returnDirect` tool, or a breached tool call limit).
 . Ends the turn: with `END_TURN` when the call returned, with `ERROR` when it threw.
 A stream the client cancelled ends with `CANCELLED`.
 An interrupt that landed first stands, and the advisor leaves the status alone then.
-. Runs the compaction trigger.
+A loop that paused on a tool call that needs confirmation parks the turn instead, with `REQUIRES_ACTION` and the question in the log.
+. Runs the compaction trigger, unless the turn parked.
 
 == Setup
 
@@ -198,11 +200,59 @@ Either way the next call on the session starts a turn.
 `CANCELLED` is not `INTERRUPTED`.
 Nobody asked the session to stop, so no `INTERRUPT` event is recorded, and the log tells a dropped connection from a stop button that calls `interrupt`.
 
-A tool call that needs a person's xref:api/tools/tool-call-confirmation.adoc[confirmation] pauses the loop, and the paused reply comes back as a normal response.
-The turn then ends with `END_TURN`, so the status cannot tell a turn that waits for a decision from one that finished.
-The paused reply is stored with its tool calls.
-Until the application resumes with the decisions nothing answers them, and the read guard keeps them out of the next prompt.
-A parked turn, with the question and the answer in the log, is the next follow-up.
+[[session-chat-client-confirmation]]
+=== Tool call confirmation
+
+A tool call that needs a person's xref:api/tools/tool-call-confirmation.adoc[confirmation] pauses the loop, and the paused reply comes back as a normal response with the keys of the waiting calls in its metadata.
+The turn advisor then parks the turn instead of ending it.
+The status is `IDLE` with `REQUIRES_ACTION`, and a `QUESTION` event of kind `toolConfirmation` records the reply's calls: for each one its key, the tool name, the arguments, and whether it waits for a decision.
+The question also names the stored reply by event id, so a UI finds both; `ToolConfirmationQuestion.from(event)` reads it, and `ToolConfirmationQuestion.decisions(answer)` reads the decisions back from the `ANSWER` event.
+Nothing is compacted while the session waits, and no lease runs: the person may take days.
+A stream pauses the same way; the keys are on its last chunk, and the turn parks when the stream completes.
+
+The person's decisions resume the session.
+Send them with `SessionAdvisors.decisions(sessionId, decisions)` and no user message, from any instance:
+
+[source,java]
+----
+ChatResponse reply = chatClient.prompt()
+    .user("Book flight VX205")
+    .advisors(SessionAdvisors.session(sessionId))
+    .call()
+    .chatResponse();
+if (ToolCallDecisions.isAwaitingDecision(reply)) {
+    // show reply.getResult().getOutput().getToolCalls() to the person; the session is parked meanwhile
+}
+
+// Later, with the decisions, one per tool call of the reply
+String answer = chatClient.prompt()
+    .advisors(SessionAdvisors.decisions(sessionId, ToolCallDecisions.of(ToolCallDecision.allow("call_1"))))
+    .call()
+    .content();
+----
+
+The turn advisor records the decisions as the `ANSWER`, starts the turn again, runs the allowed calls through its tool calling manager with the tools the request carries, and stores the results after the paused reply.
+A denied call answers the model with the decision's message.
+The memory advisor then builds the prompt from the log, reply and results included, and the model continues where it paused.
+Pass the manager the tool-calling advisor uses with `toolCallingManager` on the builder, so the same limits apply; the calls of the rounds before the pause count toward them.
+The resumed turn runs under a new run id; to keep the one it parked under, add `a.param(SessionTurnAdvisor.RUN_ID_CONTEXT_KEY, runId)`.
+
+Decisions are checked before anything is written.
+The turn advisor applies the manager's rules first: every call of the reply needs a decision, every decision names a call, and an allowed call needs its tool among the request's tools.
+So when the tools of the paused call came with the request rather than from the client's defaults, pass them again with the decisions.
+Decisions that fail a rule are rejected with `IllegalArgumentException`, and the question stays open for the corrected ones.
+The session then refuses a resume of a session that is not parked, so the same decisions sent twice run the tools once, and two instances that resume at once leave one winner.
+Decisions with a new user message are rejected the same way: the text goes in the next call.
+An allowed call whose tool returns directly ends the call with its result, as in a loop that never paused; the model is not called.
+
+A call with new text on a parked session neither fails nor leaves the question open.
+The turn advisor answers it first, every call denied with `ABANDONED_DENY_MESSAGE`, stores those results, and runs the text in the resumed turn.
+So the log never keeps a tool call without its results, and the model learns that the person moved on.
+
+A turn can also end without a result for the reply's calls: an interrupt lands while the model pauses, so the question is never recorded, or the resumed turn fails before its results are stored.
+The turn advisor then answers every call with `UNANSWERED_TOOL_RESULT`, so the model learns that the call did not complete and the next prompt stays whole.
+A reply that is not the newest message in the log cannot be parked on at all, since its question could never be answered.
+The turn ends with `ERROR` and the call fails; the cause is a memory advisor registered outside the tool-calling loop.
 
 [[session-chat-client-keys]]
 == Context keys
@@ -233,6 +283,12 @@ A request that passes its own map replaces that default as a whole.
 | Names the run id the call's turn runs under.
 A harness passes its own with `SessionAdvisors.session(id, runId)`, or the turn advisor generates a UUID per call.
 The advisor sets it on the request it forwards, and so on the response, with the effective id.
+
+| `SessionTurnAdvisor.TOOL_CALL_DECISIONS_CONTEXT_KEY`
+| `"chat_memory_tool_call_decisions"`
+| Carries the `ToolCallDecisions` on the tool calls a parked session waits on.
+`SessionAdvisors.decisions(id, decisions)` sets it.
+The request resumes the session instead of starting a turn, and carries no user message; see <<session-chat-client-confirmation>>.
 
 | `SessionMemoryAdvisor.REQUEST_EVENT_ID_CONTEXT_KEY`
 | `"chat_memory_request_event_id"`

@@ -28,7 +28,7 @@ result.tokensEstimatedSaved();  // an estimate, net of the summary
 sessionService.compact(sessionId, request -> true, strategy);
 ----
 
-With `ChatClient`, the xref:api/session/chat-client.adoc[`SessionTurnAdvisor`] calls `compact` once the call has returned, so an application rarely calls it itself.
+With `ChatClient`, the xref:api/session/chat-client.adoc[`SessionTurnAdvisor`] calls `compact` once the call has returned, unless the turn parked on a question, so an application rarely calls it itself.
 
 image::session/session-compaction-classes.svg[The compaction types, width=900, align="center"]
 

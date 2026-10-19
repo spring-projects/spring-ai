@@ -17,6 +17,16 @@ interface SessionService {
   +compact(id, trigger, strategy): CompactionResult
   +delete(id)
   +deleteExpiredSessions(before): int
+  +turns(): TurnService
+}
+class TurnService {
+  +status(id): TurnStatus
+  +start(id, runId, timeout): TurnStatus
+  +end(id, runId, stopReason): TurnStatus
+  +interrupt(id, reason): TurnStatus
+  +park(id, runId, question): TurnStatus
+  +pendingQuestion(id): SessionEvent
+  +resume(id, runId, answer, timeout): TurnStatus
 }
 class DefaultSessionService {
   +builder()
@@ -81,6 +91,8 @@ class CompactionBoundary <<record>> {
 }
 
 SessionService <|.. DefaultSessionService
+SessionService ..> TurnService : turns()
+TurnService --> SessionService : reads and appends through
 DefaultSessionService --> SessionRepository : persists through
 SessionRepository <|.. InMemorySessionRepository
 SessionRepository <|.. JdbcSessionRepository

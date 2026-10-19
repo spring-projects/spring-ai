@@ -125,13 +125,17 @@ SessionEvent progress = SessionEvent.builder()
 === Event types
 
 `EventType` is open: a type is nothing more than its name, and an application can define its own.
-Four types are well known:
+Six types are well known:
 
 * `MESSAGE`, a conversation message.
 * `COMPACTION`, a compaction boundary.
 Its payload is a `CompactionBoundary`.
 * `STATUS`, a transition of the <<session-concepts-status,turn status>>.
 * `INTERRUPT`, a request to stop the turn that runs.
+* `QUESTION`, what a parked turn waits on.
+Its payload is a `Question`.
+* `ANSWER`, the answer a turn resumed with, pointing at its question by event id.
+Its payload is an `Answer`.
 
 Your own types are created with `EventType.of("MY_APP.PROGRESS")`.
 A name is upper case letters, digits, underscores and dots, at most 64 characters long.
@@ -205,11 +209,11 @@ When a harness runs a turn through the session's status, the turn runs under the
 [[session-concepts-status]]
 == Status
 
-Besides its messages, a session carries the status of its turns: whether a turn runs right now, under which run, and why the last one ended.
-Like the active view, the status is a projection of the log, not a column: `STATUS` and `INTERRUPT` events record the transitions, and the status is the newest `STATUS` event, or `IDLE` when there is none.
+Besides its messages, a session carries the status of its turns: whether a turn runs right now, under which run, why the last one ended, and what it waits on when it stopped to ask.
+Like the active view, the status is a projection of the log, not a column: `STATUS`, `INTERRUPT`, `QUESTION` and `ANSWER` events record the transitions, and the status is the newest `STATUS` event, or `IDLE` when there is none.
 Every harness reads and sets it through `TurnService`, which `sessionService.turns()` returns.
-So a turn started on one instance can be interrupted from another, a UI can show that an agent is busy, and two harnesses never run one session at once.
-xref:api/session/turn-status.adoc[Turn Status] has the methods and the lease that frees a session after a crash.
+So a turn started on one instance can be interrupted from another, a UI can show that an agent is busy or waits for a decision, and two harnesses never run one session at once.
+xref:api/session/turn-status.adoc[Turn Status] has the methods, the lease that frees a session after a crash, and how a turn parks on a question and resumes with the answer.
 
 [[session-concepts-view]]
 == The active view
@@ -321,7 +325,7 @@ This is how the compaction and the turn status are recorded; see <<session-conce
 | Returns the messages of the whole log, or of the active view.
 
 | `turns()`
-| Returns the `TurnService`: `status`, `start`, `end` and `interrupt`, all on this service; see <<session-concepts-status>>.
+| Returns the `TurnService`: `status`, `start`, `end`, `interrupt`, `park`, `pendingQuestion` and `resume`, all on this service; see <<session-concepts-status>>.
 
 | `compact(id, trigger, strategy)`
 | Evaluates the trigger on the active view and, when it fires, runs the strategy and records the result.
