@@ -127,7 +127,7 @@ public class GoogleGenAiCachedContentServiceTests {
 	}
 
 	@Test
-	void testUpdateCachedContent() {
+	void testUpdateCachedContent() throws InterruptedException {
 		// Create a cached content first
 		Content content = Content.builder().parts(Part.builder().text("Test content").build()).build();
 
@@ -145,6 +145,7 @@ public class GoogleGenAiCachedContentServiceTests {
 		Duration newTtl = Duration.ofHours(2);
 		CachedContentUpdateRequest updateRequest = CachedContentUpdateRequest.builder().ttl(newTtl).build();
 
+		Thread.sleep(0L, 1);
 		GoogleGenAiCachedContent updated = this.service.update(name, updateRequest);
 
 		// Verify

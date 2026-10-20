@@ -87,7 +87,7 @@ public class BedrockConverseUsageAggregationTests {
 		var result = this.chatModel.call(new Prompt("text"));
 
 		assertThat(result).isNotNull();
-		assertThat(result.getResult().getOutput().getText()).isSameAs("Response Content Block");
+		assertThat(result.getResult().getOutput().getText()).isEqualTo("Response Content Block");
 
 		assertThat(result.getMetadata().getUsage().getPromptTokens()).isEqualTo(16);
 		assertThat(result.getMetadata().getUsage().getCompletionTokens()).isEqualTo(14);
@@ -162,7 +162,7 @@ public class BedrockConverseUsageAggregationTests {
 
 		assertThat(result).isNotNull();
 		assertThat(result.getResult().getOutput().getText())
-			.isSameAs(converseResponseFinal.output().message().content().get(0).text());
+			.isEqualTo(converseResponseFinal.output().message().content().get(0).text());
 
 		assertThat(result.getMetadata().getUsage().getPromptTokens()).isEqualTo(540);
 		assertThat(result.getMetadata().getUsage().getCompletionTokens()).isEqualTo(106);
@@ -198,7 +198,7 @@ public class BedrockConverseUsageAggregationTests {
 		var result = this.chatModel.call(new Prompt("text"));
 
 		assertThat(result).isNotNull();
-		assertThat(result.getResult().getOutput().getText()).isSameAs("Response with cache metrics");
+		assertThat(result.getResult().getOutput().getText()).isEqualTo("Response with cache metrics");
 
 		// Verify standard usage metrics
 		assertThat(result.getMetadata().getUsage().getPromptTokens()).isEqualTo(100);

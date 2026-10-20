@@ -121,6 +121,10 @@ To format the code specifically:
 ```
 Note that this will not format the import order which is documented below.
 
+Code formatting is applied automatically by local builds.
+To disable it, add `-Dspring-javaformat.skip=true` to the build command.
+To check formatting without modifying files, like CI does, add `-P'!format-apply,format-check'` instead.
+
 ### Formatting
 
 Please carefully follow the whitespace and formatting conventions already present in the framework.

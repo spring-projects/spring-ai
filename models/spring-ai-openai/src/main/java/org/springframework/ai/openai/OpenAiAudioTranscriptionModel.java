@@ -223,6 +223,9 @@ public final class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 		if (!CollectionUtils.isEmpty(options.getKnownSpeakerReferences())) {
 			builder.knownSpeakerReferences(options.getKnownSpeakerReferences());
 		}
+		if (!CollectionUtils.isEmpty(options.getCustomHeaders())) {
+			options.getCustomHeaders().forEach(builder::putAdditionalHeader);
+		}
 		return builder.build();
 	}
 
@@ -390,15 +393,17 @@ public final class OpenAiAudioTranscriptionModel implements TranscriptionModel {
 							options.getCredential(), options.getMicrosoftDeploymentName(),
 							options.getMicrosoftFoundryServiceVersion(), options.getOrganizationId(),
 							options.isMicrosoftFoundry(), options.isGitHubModels(), options.getModel(),
-							options.getTimeout(), options.getMaxRetries(), options.getProxy(),
-							options.getCustomHeaders(), ObservationRegistry.NOOP, null, this.httpClientCustomizers));
+							Objects.requireNonNullElse(options.getTimeout(), AbstractOpenAiOptions.DEFAULT_TIMEOUT),
+							options.getMaxRetries(), options.getProxy(), options.getCustomHeaders(),
+							ObservationRegistry.NOOP, null, this.httpClientCustomizers));
 			var openAiClientAsync = Objects.requireNonNullElseGet(this.openAiClientAsync,
 					() -> OpenAiSetup.setupAsyncClient(options.getBaseUrl(), options.getApiKey(),
 							options.getCredential(), options.getMicrosoftDeploymentName(),
 							options.getMicrosoftFoundryServiceVersion(), options.getOrganizationId(),
 							options.isMicrosoftFoundry(), options.isGitHubModels(), options.getModel(),
-							options.getTimeout(), options.getMaxRetries(), options.getProxy(),
-							options.getCustomHeaders(), ObservationRegistry.NOOP, null, this.httpClientCustomizers));
+							Objects.requireNonNullElse(options.getTimeout(), AbstractOpenAiOptions.DEFAULT_TIMEOUT),
+							options.getMaxRetries(), options.getProxy(), options.getCustomHeaders(),
+							ObservationRegistry.NOOP, null, this.httpClientCustomizers));
 
 			return new OpenAiAudioTranscriptionModel(openAiClient, openAiClientAsync, options);
 		}

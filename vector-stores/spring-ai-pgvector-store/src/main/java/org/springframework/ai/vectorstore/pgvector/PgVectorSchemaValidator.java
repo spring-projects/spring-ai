@@ -18,6 +18,7 @@ package org.springframework.ai.vectorstore.pgvector;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import org.apache.commons.logging.Log;
@@ -39,6 +40,25 @@ import org.springframework.jdbc.core.JdbcTemplate;
 class PgVectorSchemaValidator {
 
 	private static final Log logger = LogFactory.getLog(PgVectorSchemaValidator.class);
+
+	// For a pgvector column, atttypmod holds the size declared in vector(n), or -1 when
+	// the column was declared as plain vector.
+	private static final String VECTOR_COLUMN_DIMENSIONS_QUERY = """
+			SELECT
+				a.atttypmod
+			FROM
+				pg_attribute a
+			JOIN
+				pg_class c ON a.attrelid = c.oid
+			JOIN
+				pg_namespace n ON c.relnamespace = n.oid
+			WHERE
+				n.nspname = ?
+				AND c.relname = ?
+				AND a.attname = ?
+				AND a.attnum > 0
+				AND NOT a.attisdropped
+			""";
 
 	private final JdbcTemplate jdbcTemplate;
 
@@ -79,6 +99,27 @@ class PgVectorSchemaValidator {
 		}
 	}
 
+	/**
+	 * Returns the vector size the table's embedding column accepts, as declared in its
+	 * {@code vector(n)} type.
+	 * @param schemaName the schema of the vector table
+	 * @param tableName the vector table
+	 * @param embeddingFieldName the name of the embedding column
+	 * @return the declared size, or -1 when the table or column does not exist or the
+	 * column was declared without a size
+	 */
+	int vectorColumnDimensions(String schemaName, String tableName, String embeddingFieldName) {
+		// The store writes schema, table and column names unquoted, so Postgres folds
+		// them to lower case and that is how the catalog holds them.
+		List<Integer> result = this.jdbcTemplate.queryForList(VECTOR_COLUMN_DIMENSIONS_QUERY, Integer.class,
+				schemaName.toLowerCase(Locale.ROOT), tableName.toLowerCase(Locale.ROOT),
+				embeddingFieldName.toLowerCase(Locale.ROOT));
+		if (result.isEmpty() || result.get(0) == null || result.get(0) <= 0) {
+			return -1;
+		}
+		return result.get(0);
+	}
+
 	void validateNames(String schemaName, String tableName) {
 		if (!isValidNameForDatabaseObject(schemaName)) {
 			throw new IllegalArgumentException(
@@ -90,7 +131,8 @@ class PgVectorSchemaValidator {
 		}
 	}
 
-	void validateTableSchema(String schemaName, String tableName, int dimensions) {
+	void validateTableSchema(String schemaName, String tableName, int dimensions, String contentFieldName,
+			String metadataFieldName, String embeddingFieldName) {
 
 		validateNames(schemaName, tableName);
 
@@ -103,11 +145,12 @@ class PgVectorSchemaValidator {
 				logger.info("Validating PGVectorStore schema for table: " + tableName + " in schema: " + schemaName);
 			}
 
+			// Column names are written unquoted, so Postgres stores them in lower case.
 			List<String> expectedColumns = new ArrayList<>();
 			expectedColumns.add("id");
-			expectedColumns.add("content");
-			expectedColumns.add("metadata");
-			expectedColumns.add("embedding");
+			expectedColumns.add(contentFieldName.toLowerCase(Locale.ROOT));
+			expectedColumns.add(metadataFieldName.toLowerCase(Locale.ROOT));
+			expectedColumns.add(embeddingFieldName.toLowerCase(Locale.ROOT));
 
 			// Query to check if the table exists with the required fields and types
 			// Include the schema name in the query to target the correct table
@@ -139,24 +182,8 @@ class PgVectorSchemaValidator {
 			}
 
 			// Query the actual dimensions
-			query = """
-					SELECT
-						a.atttypmod
-					FROM
-						pg_attribute a
-					JOIN
-						pg_class c ON a.attrelid = c.oid
-					JOIN
-						pg_namespace n ON c.relnamespace = n.oid
-					WHERE
-						n.nspname = ?
-						AND c.relname = ?
-						AND a.attname = ?
-						AND a.attnum > 0
-						AND NOT a.attisdropped
-					""";
-			Integer actualDimensions = this.jdbcTemplate.queryForObject(query, Integer.class, schemaName, tableName,
-					"embedding");
+			Integer actualDimensions = this.jdbcTemplate.queryForObject(VECTOR_COLUMN_DIMENSIONS_QUERY, Integer.class,
+					schemaName, tableName, embeddingFieldName.toLowerCase(Locale.ROOT));
 			if (actualDimensions == null || actualDimensions != dimensions) {
 				throw new IllegalStateException("Actual vector dimensions is " + actualDimensions
 						+ ", required vector dimensions is " + dimensions);

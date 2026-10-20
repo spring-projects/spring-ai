@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -49,6 +50,10 @@ import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.messages.part.MessagePart;
+import org.springframework.ai.chat.messages.part.ReasoningPart;
+import org.springframework.ai.chat.messages.part.StreamingParts;
+import org.springframework.ai.chat.messages.part.TextPart;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
@@ -498,6 +503,9 @@ class AnthropicChatModelIT {
 		var promptOptions = AnthropicChatOptions.builder()
 			.model(Model.CLAUDE_SONNET_4_5.asString())
 			.toolChoice(ToolChoice.ofTool(ToolChoiceTool.builder().name("getFunResponse").build()))
+			// A forced tool choice does not stop the model from also calling other tools
+			// in parallel; disable that so the forced tool is the only call.
+			.disableParallelToolUse(true)
 			.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 				.description(
 						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
@@ -591,24 +599,24 @@ class AnthropicChatModelIT {
 
 		ChatResponse response = this.chatModel.call(new Prompt(List.of(userMessage), promptOptions));
 
-		assertThat(response.getResults()).isNotEmpty();
-		assertThat(response.getResults().size()).isGreaterThanOrEqualTo(2);
-
-		for (Generation generation : response.getResults()) {
-			AssistantMessage message = generation.getOutput();
-			if (message.getText() != null && !message.getText().isBlank()) {
-				// Text block
-				assertThat(message.getText()).isNotBlank();
-			}
-			else if (message.getMetadata().containsKey("signature")) {
-				// Thinking block
-				assertThat(message.getMetadata().get("signature")).isNotNull();
-			}
-			else if (message.getMetadata().containsKey("data")) {
-				// Redacted thinking block
-				assertThat(message.getMetadata().get("data")).isNotNull();
-			}
+		// One generation whose message holds the blocks in order: reasoning, then text
+		assertThat(response.getResults()).hasSize(1);
+		AssistantMessage message = response.getResult().getOutput();
+		assertThat(message.getText()).isNotBlank();
+		assertThat(message.getReasoning()).isNotEmpty();
+		ReasoningPart reasoning = message.getReasoning().get(0);
+		assertThat(reasoning.payload()).isNotNull();
+		assertThat(reasoning.payload().provider()).isEqualTo("anthropic");
+		if (AnthropicChatModel.PAYLOAD_REDACTED_THINKING.equals(reasoning.payload().kind())) {
+			assertThat(reasoning.text()).isNull();
+			assertThat(reasoning.payload().data()).isNotNull();
 		}
+		else {
+			assertThat(reasoning.text()).isNotBlank();
+			assertThat(reasoning.payload().kind()).isEqualTo(AnthropicChatModel.PAYLOAD_SIGNATURE);
+		}
+		assertThat(message.getParts().get(0)).isInstanceOf(ReasoningPart.class);
+		assertThat(message.getMetadata()).doesNotContainKeys("signature", "data");
 	}
 
 	@Test
@@ -625,26 +633,110 @@ class AnthropicChatModelIT {
 
 		Flux<ChatResponse> responseFlux = this.chatModel.stream(new Prompt(List.of(userMessage), promptOptions));
 
-		List<ChatResponse> responses = responseFlux.collectList().block();
+		AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
+		List<ChatResponse> responses = new MessageAggregator().aggregate(responseFlux, aggregatedRef::set)
+			.collectList()
+			.block();
 
-		// Verify we got text content
+		// Verify we got text content. Whitespace-only deltas are real text and must be
+		// kept, otherwise the concatenation does not match the aggregated text.
 		String content = responses.stream()
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
 			.map(AssistantMessage::getText)
-			.filter(text -> text != null && !text.isBlank())
+			.filter(Objects::nonNull)
 			.collect(Collectors.joining());
 		assertThat(content).isNotBlank();
 
-		// Verify signature was captured in the stream
-		boolean hasSignature = responses.stream()
+		// Every chunk carries the response id and indexed parts; the only unindexed
+		// part is the empty legacy text of the final chunk, which keeps getText()
+		// non-null there
+		assertThat(responses).allSatisfy(chunk -> {
+			assertThat(chunk.getMetadata().getId()).isNotBlank();
+			for (MessagePart part : chunk.getResult().getOutput().getParts()) {
+				if (!TextPart.of("").equals(part)) {
+					assertThat(StreamingParts.partIndex(part)).isNotNull();
+				}
+			}
+		});
+
+		// The signature streams as a partial reasoning part with the payload...
+		boolean hasSignaturePart = responses.stream()
+			.map(ChatResponse::getResults)
+			.flatMap(List::stream)
+			.map(Generation::getOutput)
+			.flatMap(msg -> msg.getParts().stream())
+			.anyMatch(part -> part instanceof ReasoningPart reasoning && reasoning.payload() != null
+					&& "signature".equals(reasoning.payload().kind()));
+		assertThat(hasSignaturePart).as("Streaming should capture the thinking block signature").isTrue();
+
+		// ...and, for one release, still as the deprecated metadata key
+		boolean hasLegacySignatureKey = responses.stream()
 			.map(ChatResponse::getResults)
 			.flatMap(List::stream)
 			.map(Generation::getOutput)
 			.anyMatch(msg -> msg.getMetadata().containsKey("signature"));
+		assertThat(hasLegacySignatureKey).isTrue();
 
-		assertThat(hasSignature).as("Streaming should capture the thinking block signature").isTrue();
+		// The aggregated message has the complete signed reasoning followed by the text
+		AssistantMessage aggregated = aggregatedRef.get().getResult().getOutput();
+		assertThat(aggregated.getText()).isEqualTo(content);
+		assertThat(aggregated.getReasoning()).isNotEmpty();
+		assertThat(aggregated.getReasoning().get(0).payload()).isNotNull();
+		assertThat(aggregated.getParts().get(0)).isInstanceOf(ReasoningPart.class);
+		assertThat(aggregated.getParts()).allSatisfy(part -> assertThat(StreamingParts.partIndex(part)).isNull());
+	}
+
+	@Test
+	void thinkingWithStreamingToolCallsReplayTest() {
+		ToolCallingManager toolCallingManager = DefaultToolCallingManager.builder().build();
+
+		AnthropicChatOptions options = AnthropicChatOptions.builder()
+			.model(Model.CLAUDE_SONNET_4_5.asString())
+			.temperature(1.0) // temperature must be 1 when thinking is enabled
+			.maxTokens(16000)
+			.thinkingEnabled(2048L)
+			.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.description(
+						"Get the weather in location. Return temperature in 36°F or 36°C format. Use multi-turn if needed.")
+				.inputType(MockWeatherService.Request.class)
+				.build())
+			.build();
+
+		Prompt prompt = new Prompt(
+				List.of(new UserMessage("What's the weather like in Paris? Return the result in Celsius.")), options);
+
+		AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
+		new MessageAggregator().aggregate(this.chatModel.stream(prompt), aggregatedRef::set).collectList().block();
+
+		// The streamed tool-call turn must have rebuilt the signed reasoning before the
+		// tool call
+		AssistantMessage toolCallTurn = aggregatedRef.get().getResult().getOutput();
+		assertThat(toolCallTurn.hasToolCalls()).isTrue();
+		assertThat(toolCallTurn.getReasoning()).isNotEmpty();
+		assertThat(toolCallTurn.getReasoning().get(0).payload()).isNotNull();
+		assertThat(toolCallTurn.getParts().get(0)).isInstanceOf(ReasoningPart.class);
+
+		// Replaying that turn with the tool result must be accepted by the API
+		int rounds = 0;
+		while (aggregatedRef.get().hasToolCalls() && rounds++ < 3) {
+			ToolExecutionResult toolExecutionResult = toolCallingManager.executeToolCalls(prompt, aggregatedRef.get());
+			prompt = new Prompt(toolExecutionResult.conversationHistory(), options);
+			aggregatedRef.set(null);
+			new MessageAggregator().aggregate(this.chatModel.stream(prompt), aggregatedRef::set).collectList().block();
+		}
+
+		assertThat(aggregatedRef.get().hasToolCalls()).isFalse();
+		assertThat(aggregatedRef.get().getResult().getOutput().getText()).contains("15");
+
+		// And a follow-up turn that replays the whole history, including the signed
+		// reasoning
+		List<Message> history = new ArrayList<>(prompt.getInstructions());
+		history.add(aggregatedRef.get().getResult().getOutput());
+		history.add(new UserMessage("Thanks. Is that warmer or colder than 20 degrees?"));
+		ChatResponse followUp = this.chatModel.call(new Prompt(history, options));
+		assertThat(followUp.getResult().getOutput().getText()).isNotBlank();
 	}
 
 	@Test

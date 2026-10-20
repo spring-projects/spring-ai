@@ -1,0 +1,31 @@
+{
+  "id": "resp_incomplete_1",
+  "object": "response",
+  "created_at": 1757000300,
+  "status": "incomplete",
+  "incomplete_details": { "reason": "max_output_tokens" },
+  "model": "gpt-5-mini",
+  "output": [
+    {
+      "type": "message",
+      "id": "msg_3",
+      "role": "assistant",
+      "status": "incomplete",
+      "content": [
+        { "type": "output_text", "text": "Once upon a", "annotations": [] }
+      ]
+    }
+  ],
+  "usage": {
+    "input_tokens": 10,
+    "input_tokens_details": { "cached_tokens": 0, "cache_write_tokens": 0 },
+    "output_tokens": 16,
+    "output_tokens_details": { "reasoning_tokens": 0 },
+    "total_tokens": 26
+  },
+  "parallel_tool_calls": true,
+  "tool_choice": "auto",
+  "tools": [],
+  "temperature": 1.0,
+  "top_p": 1.0
+}

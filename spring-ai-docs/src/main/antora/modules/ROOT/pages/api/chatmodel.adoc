@@ -211,6 +211,53 @@ public class Generation implements ModelResult<AssistantMessage> {
 }
 ----
 
+[[message-parts]]
+=== Message Parts
+
+The content of an `AssistantMessage`, `UserMessage`, `ToolResponseMessage` is an ordered list of `MessagePart` entries, available through `getParts()`.
+A part is one of the following types, all in the `org.springframework.ai.chat.messages.part` package:
+
+[cols="2,5"]
+|===
+| Part | Content
+
+| `TextPart` | A run of text.
+| `ReasoningPart` | The model's reasoning: the text, an optional summary, a `redacted` flag, and a provider payload such as a signature that must be sent back unchanged.
+| `ToolCallPart` | A tool call, wrapping `AssistantMessage.ToolCall`; provider-specific extra fields live in its attributes.
+| `ToolResultPart` | A tool result with a list of content parts, used when tool results carry more than text.
+| `MediaPart` | An image, audio, video or document `Media`.
+| `UnknownPart` | A provider block that Spring AI does not model, kept as raw JSON so it can be replayed to the same provider.
+|===
+
+The familiar accessors are views over the parts, in part order: `getText()` joins the `TextPart` entries, `getMedia()` selects the `MediaPart` entries, and on `AssistantMessage` `getToolCalls()` selects the complete `ToolCallPart` entries and `getReasoning()` the `ReasoningPart` entries.
+A message with parts but no text part has an empty text.
+
+Messages built through the constructors or the `content(...)`, `text(...)`, `toolCalls(...)` and `media(...)` builder methods get their parts in the legacy order, text first, then tool calls, then media, so existing code keeps working unchanged.
+To control the order, add the parts directly:
+
+[source,java]
+----
+UserMessage question = UserMessage.builder()
+    .part(TextPart.of("What changed between these two charts?"))
+    .part(MediaPart.of(firstChart))
+    .part(MediaPart.of(secondChart))
+    .build();
+
+ChatResponse response = chatModel.call(new Prompt(question));
+AssistantMessage answer = response.getResult().getOutput();
+for (ReasoningPart reasoning : answer.getReasoning()) {
+    System.out.println("Reasoning: " + reasoning.text());
+}
+System.out.println(answer.getText());
+----
+
+A part can carry an `OpaquePayload` with a `provider`, a `kind` and opaque `data`, for example the Anthropic thinking signature or the Gemini thought signature.
+The chat model that produced a payload replays it unchanged in the next request, and other chat models skip it, so a conversation history can move between providers.
+The provider pages document the payloads and attributes each chat model produces.
+
+When streaming, each chunk carries its parts stamped with the index of the content block they belong to and a `partial` flag, see `StreamingParts`.
+`MessageAggregator`, used by `ChatClient` and the advisors, rebuilds the complete parts from the chunks and strips the streaming attributes, so the aggregated message equals the one a blocking call returns.
+
 == Available Implementations
 
 This diagram illustrates the unified interfaces, `ChatModel` and `StreamingChatModel`, are used for interacting with various AI chat models from different providers, allowing easy integration and switching between different AI services while maintaining a consistent API for the client application.

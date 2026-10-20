@@ -49,6 +49,7 @@ import org.springframework.ai.openai.http.okhttp.OpenAiHttpClientBuilderCustomiz
 import org.springframework.ai.openai.metadata.OpenAiAudioSpeechResponseMetadata;
 import org.springframework.ai.openai.setup.OpenAiSetup;
 import org.springframework.util.Assert;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 /**
@@ -91,9 +92,9 @@ public final class OpenAiAudioSpeechModel implements TextToSpeechModel {
 						this.options.getCredential(), this.options.getMicrosoftDeploymentName(),
 						this.options.getMicrosoftFoundryServiceVersion(), this.options.getOrganizationId(),
 						this.options.isMicrosoftFoundry(), this.options.isGitHubModels(), this.options.getModel(),
-						this.options.getTimeout(), this.options.getMaxRetries(), this.options.getProxy(),
-						this.options.getCustomHeaders(), ObservationRegistry.NOOP, null,
-						builder.httpClientCustomizers));
+						Objects.requireNonNullElse(this.options.getTimeout(), AbstractOpenAiOptions.DEFAULT_TIMEOUT),
+						this.options.getMaxRetries(), this.options.getProxy(), this.options.getCustomHeaders(),
+						ObservationRegistry.NOOP, null, builder.httpClientCustomizers));
 		this.streamScheduler = Objects.requireNonNullElse(builder.streamScheduler, DEFAULT_STREAM_SCHEDULER);
 	}
 
@@ -294,6 +295,10 @@ public final class OpenAiAudioSpeechModel implements TextToSpeechModel {
 
 		if (streaming) {
 			paramsBuilder.streamFormat(SpeechCreateParams.StreamFormat.AUDIO);
+		}
+
+		if (!CollectionUtils.isEmpty(mergedOptions.getCustomHeaders())) {
+			mergedOptions.getCustomHeaders().forEach(paramsBuilder::putAdditionalHeader);
 		}
 
 		return paramsBuilder.build();
