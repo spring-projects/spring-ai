@@ -20,6 +20,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.PrintStream;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -137,6 +138,20 @@ public class ParagraphPdfDocumentReaderTests {
 		new ParagraphPdfDocumentReader(resource, PdfDocumentReaderConfig.defaultConfig());
 
 		assertThat(closed).isTrue();
+	}
+
+	@Test
+	void shouldNotWriteToStdoutDuringInitialization() {
+		PrintStream originalOut = System.out;
+		ByteArrayOutputStream capturedOutput = new ByteArrayOutputStream();
+		System.setOut(new PrintStream(capturedOutput));
+		try {
+			new ParagraphPdfDocumentReader("classpath:/sample3.pdf", PdfDocumentReaderConfig.defaultConfig());
+		}
+		finally {
+			System.setOut(originalOut);
+		}
+		assertThat(capturedOutput.toString()).isEmpty();
 	}
 
 }
