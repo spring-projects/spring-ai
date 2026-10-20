@@ -36,7 +36,8 @@ class McpServerSseWebFluxAutoConfigurationIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(McpServerSseWebFluxAutoConfiguration.class,
-				McpServerAutoConfiguration.class, McpServerJsonMapperAutoConfiguration.class));
+				McpServerAutoConfiguration.class, McpServerJsonMapperAutoConfiguration.class))
+		.withPropertyValues("spring.ai.mcp.server.protocol=SSE");
 
 	@Test
 	void defaultConfiguration() {
