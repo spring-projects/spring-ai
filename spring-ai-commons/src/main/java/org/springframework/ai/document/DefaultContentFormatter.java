@@ -23,6 +23,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.springframework.util.Assert;
@@ -41,6 +43,12 @@ public final class DefaultContentFormatter implements ContentFormatter {
 	private static final String TEMPLATE_VALUE_PLACEHOLDER = "{value}";
 
 	private static final String TEMPLATE_KEY_PLACEHOLDER = "{key}";
+
+	private static final Pattern METADATA_PLACEHOLDERS = Pattern
+		.compile(Pattern.quote(TEMPLATE_KEY_PLACEHOLDER) + "|" + Pattern.quote(TEMPLATE_VALUE_PLACEHOLDER));
+
+	private static final Pattern TEXT_PLACEHOLDERS = Pattern.compile(
+			Pattern.quote(TEMPLATE_METADATA_STRING_PLACEHOLDER) + "|" + Pattern.quote(TEMPLATE_CONTENT_PLACEHOLDER));
 
 	private static final String DEFAULT_METADATA_TEMPLATE = String.format("%s: %s", TEMPLATE_KEY_PLACEHOLDER,
 			TEMPLATE_VALUE_PLACEHOLDER);
@@ -107,13 +115,15 @@ public final class DefaultContentFormatter implements ContentFormatter {
 
 		var metadataText = metadata.entrySet()
 			.stream()
-			.map(metadataEntry -> this.metadataTemplate.replace(TEMPLATE_KEY_PLACEHOLDER, metadataEntry.getKey())
-				.replace(TEMPLATE_VALUE_PLACEHOLDER, metadataEntry.getValue().toString()))
+			.map(metadataEntry -> METADATA_PLACEHOLDERS.matcher(this.metadataTemplate)
+				.replaceAll(match -> Matcher.quoteReplacement(match.group().equals(TEMPLATE_KEY_PLACEHOLDER)
+						? metadataEntry.getKey() : metadataEntry.getValue().toString())))
 			.collect(Collectors.joining(this.metadataSeparator));
 
 		var text = document.getText() != null ? document.getText() : "";
-		return this.textTemplate.replace(TEMPLATE_METADATA_STRING_PLACEHOLDER, metadataText)
-			.replace(TEMPLATE_CONTENT_PLACEHOLDER, text);
+		return TEXT_PLACEHOLDERS.matcher(this.textTemplate)
+			.replaceAll(match -> Matcher
+				.quoteReplacement(match.group().equals(TEMPLATE_METADATA_STRING_PLACEHOLDER) ? metadataText : text));
 	}
 
 	/**
