@@ -1,0 +1,137 @@
+= Building a Console Application with Spring AI
+
+This guide shows how to build a simple interactive command-line application using Spring AI.
+The application reads a question from the console, sends it to a chat model, and prints the response.
+
+This is a good first project for learning how to wire a `ChatClient` into a plain Spring Boot application without a web layer.
+
+== Prerequisites
+
+Before you begin, make sure you have the following.
+
+* Java 17 or later.
+* A configured API key for a supported chat model provider.
+
+== Create the Project
+
+Head over to https://start.spring.io[start.spring.io] and create a new project.
+
+Select the following options.
+
+* *Project*: Maven
+* *Language*: Java
+* *Spring Boot*: the latest stable release
+* *Packaging*: Jar
+
+Under *Dependencies*, add the chat model starter for your provider.
+For example, to use OpenAI, add the *OpenAI* dependency, which corresponds to the `spring-ai-starter-model-openai` artifact.
+
+Generate the project and open it in your IDE.
+
+== Add Your API Key
+
+Spring AI reads your provider credentials from configuration.
+Set the API key in `src/main/resources/application.properties`.
+
+[source,properties]
+----
+spring.ai.openai.api-key=${OPENAI_API_KEY}
+----
+
+Using an environment variable placeholder keeps the secret out of source control.
+Export the key in your shell before running the application.
+
+[source,shell]
+----
+export OPENAI_API_KEY=your-api-key-here
+----
+
+== Disable the Web Server
+
+A console application does not need an embedded web server.
+Set the web application type to `none` so the application runs as a plain command-line program and exits when finished.
+
+[source,properties]
+----
+spring.main.web-application-type=none
+----
+
+== Implement the Console Loop
+
+Spring Boot runs any `CommandLineRunner` bean after the application context starts.
+Use it to drive an interactive read-eval-print loop.
+
+Inject the autoconfigured `ChatClient.Builder` and build a `ChatClient` from it.
+
+[source,java]
+----
+package com.example.demo;
+
+import java.util.Scanner;
+
+import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Bean;
+
+@SpringBootApplication
+public class ConsoleApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(ConsoleApplication.class, args);
+    }
+
+    @Bean
+    public CommandLineRunner cli(ChatClient.Builder chatClientBuilder) {
+        return args -> {
+            ChatClient chatClient = chatClientBuilder.build();
+            try (Scanner scanner = new Scanner(System.in)) {
+                System.out.println("Ask me anything (type 'exit' to quit):");
+                while (true) {
+                    System.out.print("> ");
+                    String question = scanner.nextLine();
+                    if ("exit".equalsIgnoreCase(question)) {
+                        break;
+                    }
+                    String answer = chatClient.prompt()
+                        .user(question)
+                        .call()
+                        .content();
+                    System.out.println(answer);
+                }
+            }
+        };
+    }
+
+}
+----
+
+== Run the Application
+
+Start the application from the command line.
+
+[source,shell]
+----
+./mvnw spring-boot:run
+----
+
+When the prompt appears, type a question and press Enter.
+
+[source,text]
+----
+Ask me anything (type 'exit' to quit):
+> What is Spring AI?
+Spring AI is an application framework for AI engineering...
+> exit
+----
+
+Type `exit` to stop the application.
+
+== Next Steps
+
+From here you can extend the console application in several ways.
+
+* Add a xref:api/chat-memory.adoc[chat memory] advisor to keep conversation context across turns.
+* Use xref:api/structured-output-converter.adoc[structured output] to map responses onto Java objects.
+* Register xref:api/tools.adoc[tools] so the model can call your own methods.
