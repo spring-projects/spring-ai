@@ -57,6 +57,12 @@ public class McpServerProperties {
 	private boolean enabled = true;
 
 	/**
+	 * Enable/disable the conversion of Spring AI ToolCallbacks into MCP Tool
+	 * specifications. Defaults to true.
+	 */
+	private boolean toolCallbackConverter = true;
+
+	/**
 	 * Enable/disable the standard input/output (stdio) transport.
 	 * <p>
 	 * When enabled, the server will listen for incoming messages on the standard input
@@ -175,6 +181,14 @@ public class McpServerProperties {
 
 	public void setEnabled(boolean enabled) {
 		this.enabled = enabled;
+	}
+
+	public boolean isToolCallbackConverter() {
+		return this.toolCallbackConverter;
+	}
+
+	public void setToolCallbackConverter(boolean toolCallbackConverter) {
+		this.toolCallbackConverter = toolCallbackConverter;
 	}
 
 	public String getName() {
