@@ -18,6 +18,8 @@ package org.springframework.ai.util;
 
 import java.lang.reflect.Type;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -31,6 +33,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * Tests for the {@link JsonHelper} class.
  *
  * @author Sebastien Deleuze
+ * @author Oleksandr Klymenko
  */
 class JsonHelperTests {
 
@@ -280,6 +283,151 @@ class JsonHelperTests {
 		String input = "2026-04-19T07:12:00";
 		LocalDateTime result = (LocalDateTime) this.jsonHelper.convertToTypedObject(input, LocalDateTime.class);
 		assertThat(result.getYear()).isEqualTo(2026);
+	}
+
+	@Test
+	void shouldThrowExceptionWhenJsonMapperIsNull() {
+		assertThatThrownBy(() -> new JsonHelper(null)).isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("jsonMapper cannot be null");
+	}
+
+	@Test
+	void shouldThrowExceptionWhenJsonIsMalformed() {
+		var json = "{ value }";
+		assertThatThrownBy(() -> this.jsonHelper.fromJson(json, TestRecord.class))
+			.isInstanceOf(IllegalStateException.class)
+			.hasMessageContaining("Conversion from JSON to")
+			.hasMessageContaining("failed");
+	}
+
+	@Test
+	void shouldThrowExceptionWhenJsonIsMalformedWithType() {
+		var json = "{ value: }";
+		assertThatThrownBy(() -> this.jsonHelper.fromJson(json, (Type) TestRecord.class))
+			.isInstanceOf(IllegalStateException.class)
+			.hasMessageContaining("Conversion from JSON to")
+			.hasMessageContaining("failed");
+	}
+
+	@Test
+	void shouldThrowExceptionWhenJsonIsMalformedWithParameterizedTypeReference() {
+		var json = "[ 1, 2, }";
+		assertThatThrownBy(() -> this.jsonHelper.fromJson(json, new ParameterizedTypeReference<List<Integer>>() {
+		})).isInstanceOf(IllegalStateException.class)
+			.hasMessageContaining("Conversion from JSON to")
+			.hasMessageContaining("failed");
+	}
+
+	@Test
+	void fromJsonToListWithParameterizedTypeReference() {
+		var json = "[1, 2, 3]";
+		var list = this.jsonHelper.fromJson(json, new ParameterizedTypeReference<List<Integer>>() {
+		});
+		assertThat(list).containsExactly(1, 2, 3);
+	}
+
+	@Test
+	void fromJsonToMapWithParameterizedTypeReference() {
+		var json = """
+					{
+						"stringValue": "string",
+						"intValue": "1"
+					}
+				""";
+		var map = this.jsonHelper.fromJson(json, new ParameterizedTypeReference<Map<String, String>>() {
+		});
+		assertThat(map).containsEntry("stringValue", "string").containsEntry("intValue", "1");
+	}
+
+	@Test
+	void fromJsonToMap() {
+		var json = """
+					{
+						"name": "John",
+						"age": 30
+					}
+				""";
+		assertThat(this.jsonHelper.fromJsonToMap(json)).containsEntry("name", "John").containsEntry("age", 30);
+	}
+
+	@Test
+	void fromEmptyJsonObject() {
+		var object = this.jsonHelper.fromJson("{}", TestRecord.class);
+		assertThat(object).isNotNull();
+		assertThat(object.name).isNull();
+		assertThat(object.age).isNull();
+	}
+
+	@Test
+	void fromEmptyJsonArray() {
+		var list = this.jsonHelper.fromJson("[]", new ParameterizedTypeReference<List<String>>() {
+		});
+		assertThat(list).isEmpty();
+	}
+
+	@Test
+	void doesNotDoubleSerializeValidJsonStringWhenForwarding() {
+		var input = "[1,2,3]";
+		assertThat(this.jsonHelper.toJson(input, true)).isEqualTo(input);
+	}
+
+	@Test
+	void serializesValidJsonStringWhenNotForwarding() {
+		assertThat(this.jsonHelper.toJson("[1,2,3]")).isEqualTo("\"[1,2,3]\"");
+	}
+
+	@Test
+	void serializesNonJsonStringWhenForwarding() {
+		assertThat(this.jsonHelper.toJson("not json at all", true)).isEqualTo("\"not json at all\"");
+	}
+
+	@Test
+	void shouldThrowExceptionWhenValueIsNullInConvertToTypedObject() {
+		assertThatThrownBy(() -> this.jsonHelper.convertToTypedObject(null, String.class))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("value cannot be null");
+	}
+
+	@Test
+	void shouldThrowExceptionWhenTypeIsNullInConvertToTypedObject() {
+		assertThatThrownBy(() -> this.jsonHelper.convertToTypedObject("test", null))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("type cannot be null");
+	}
+
+	@Test
+	void fromObjectToPrimitiveInt() {
+		var value = this.jsonHelper.convertToTypedObject("1", int.class);
+		assertThat(value).isInstanceOf(Integer.class);
+		assertThat(value).isEqualTo(1);
+	}
+
+	@Test
+	void fromObjectToPrimitiveLong() {
+		var value = this.jsonHelper.convertToTypedObject("1", long.class);
+		assertThat(value).isInstanceOf(Long.class);
+		assertThat(value).isEqualTo(1L);
+	}
+
+	@Test
+	void fromObjectToPrimitiveBoolean() {
+		var value = this.jsonHelper.convertToTypedObject("true", boolean.class);
+		assertThat(value).isInstanceOf(Boolean.class);
+		assertThat(value).isEqualTo(true);
+	}
+
+	@Test
+	void shouldThrowExceptionWhenConversionFails() {
+		assertThatThrownBy(() -> this.jsonHelper.convertToTypedObject("not_a_number", Integer.class))
+			.isInstanceOf(IllegalStateException.class)
+			.hasMessageContaining("java.lang.Integer");
+	}
+
+	@Test
+	void convertToTypedObjectWithNonParsableJsonString() {
+		assertThatThrownBy(() -> this.jsonHelper.convertToTypedObject("not json at all", TestRecord.class))
+			.isInstanceOf(IllegalStateException.class)
+			.hasMessageContaining("Conversion from JSON to");
 	}
 
 	record TestRecord(String name, Integer age) {
