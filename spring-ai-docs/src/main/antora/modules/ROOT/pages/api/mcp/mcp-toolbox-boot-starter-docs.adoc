@@ -1,0 +1,46 @@
+= Google Cloud MCP Toolbox Boot Starter
+
+The `spring-ai-starter-mcp-toolbox` starter integrates https://github.com/googleapis/genai-toolbox[Google Cloud MCP Toolbox for Databases] (`com.google.cloud.mcp:mcp-toolbox-sdk-java`) with Spring Boot and Spring AI's `ToolCallbackProvider`.
+
+== Maven Dependency
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-mcp-toolbox</artifactId>
+</dependency>
+----
+
+== Configuration Properties
+
+|===
+| Property | Description | Default
+| `spring.ai.mcp.toolbox.enabled` | Enable MCP Toolbox auto-configuration | `true`
+| `spring.ai.mcp.toolbox.url` | Base URL of the MCP Toolbox Server | `http://localhost:5000`
+| `spring.ai.mcp.toolbox.api-key` | Optional API Key for the MCP Toolbox Server | -
+| `spring.ai.mcp.toolbox.toolsets` | Optional list of toolset names to load automatically | `[]`
+| `spring.ai.mcp.toolbox.tools` | Optional list of specific tool names to load automatically | `[]`
+|===
+
+== Usage with `ChatClient`
+
+[source,java]
+----
+@RestController
+public class DatabaseAssistantController {
+
+    private final ChatClient chatClient;
+
+    public DatabaseAssistantController(ChatClient.Builder builder, ToolCallbackProvider mcpToolboxProvider) {
+        this.chatClient = builder
+            .defaultToolCallbacks(mcpToolboxProvider)
+            .build();
+    }
+
+    @GetMapping("/ask")
+    public String ask(@RequestParam String question) {
+        return this.chatClient.prompt(question).call().content();
+    }
+}
+----
