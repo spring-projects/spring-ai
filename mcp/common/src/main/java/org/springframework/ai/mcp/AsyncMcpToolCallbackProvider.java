@@ -169,7 +169,7 @@ public class AsyncMcpToolCallbackProvider implements ToolCallbackProvider, Appli
 			}
 		}
 
-		return this.cachedToolCallbacks.toArray(new ToolCallback[0]);
+		return this.cachedToolCallbacks.toArray(ToolCallback[]::new);
 	}
 
 	/**
