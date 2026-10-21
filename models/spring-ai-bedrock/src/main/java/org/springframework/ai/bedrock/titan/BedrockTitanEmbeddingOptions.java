@@ -36,8 +36,19 @@ public class BedrockTitanEmbeddingOptions implements EmbeddingOptions {
 	 */
 	private final @Nullable InputType inputType;
 
-	protected BedrockTitanEmbeddingOptions(@Nullable InputType inputType) {
+	private final @Nullable Integer dimensions;
+
+	private final @Nullable Boolean normalize;
+
+	protected BedrockTitanEmbeddingOptions(@Nullable InputType inputType, @Nullable Integer dimensions,
+			@Nullable Boolean normalize) {
 		this.inputType = inputType;
+		this.dimensions = dimensions;
+		this.normalize = normalize;
+	}
+
+	protected BedrockTitanEmbeddingOptions(@Nullable InputType inputType) {
+		this(inputType, null, null);
 	}
 
 	public static BedrockTitanEmbeddingOptions.Builder builder() {
@@ -55,12 +66,20 @@ public class BedrockTitanEmbeddingOptions implements EmbeddingOptions {
 
 	@Override
 	public @Nullable Integer getDimensions() {
-		return null;
+		return this.dimensions;
+	}
+
+	public @Nullable Boolean getNormalize() {
+		return this.normalize;
 	}
 
 	public static final class Builder {
 
 		private @Nullable InputType inputType;
+
+		private @Nullable Integer dimensions;
+
+		private @Nullable Boolean normalize;
 
 		public Builder inputType(InputType inputType) {
 			Assert.notNull(inputType, "input type can not be null.");
@@ -69,8 +88,18 @@ public class BedrockTitanEmbeddingOptions implements EmbeddingOptions {
 			return this;
 		}
 
+		public Builder dimensions(@Nullable Integer dimensions) {
+			this.dimensions = dimensions;
+			return this;
+		}
+
+		public Builder normalize(@Nullable Boolean normalize) {
+			this.normalize = normalize;
+			return this;
+		}
+
 		public BedrockTitanEmbeddingOptions build() {
-			return new BedrockTitanEmbeddingOptions(this.inputType);
+			return new BedrockTitanEmbeddingOptions(this.inputType, this.dimensions, this.normalize);
 		}
 
 	}
