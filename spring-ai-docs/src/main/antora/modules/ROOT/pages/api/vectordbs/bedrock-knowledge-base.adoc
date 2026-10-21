@@ -89,6 +89,7 @@ You can use the following properties in your Spring Boot configuration to custom
 |`spring.ai.vectorstore.bedrock-knowledge-base.similarity-threshold` | Minimum similarity score (0.0 to 1.0) | 0.0
 |`spring.ai.vectorstore.bedrock-knowledge-base.search-type` | Search type: SEMANTIC or HYBRID | null (KB default)
 |`spring.ai.vectorstore.bedrock-knowledge-base.reranking-model-arn` | ARN of Bedrock reranking model | null (disabled)
+|`spring.ai.vectorstore.bedrock-knowledge-base.number-of-reranked-results` | Number of results returned after reranking (1 to 100) | null (service default)
 
 |===
 
@@ -116,7 +117,11 @@ You can improve search relevance by enabling a Bedrock reranking model:
 [source,properties]
 ----
 spring.ai.vectorstore.bedrock-knowledge-base.reranking-model-arn=arn:aws:bedrock:us-west-2::foundation-model/amazon.rerank-v1:0
+spring.ai.vectorstore.bedrock-knowledge-base.number-of-reranked-results=3
 ----
+
+The `number-of-reranked-results` property controls how many results the reranking model returns (1 to 100).
+It only takes effect when `reranking-model-arn` is set.
 
 Available reranking models:
 
