@@ -24,11 +24,16 @@ import org.springframework.ai.model.ModelResult;
  *
  * @author Alexandros Pappas
  * @author Sebastien Deleuze
+ * @author guan xu
  */
 public interface TextToSpeechModel extends Model<TextToSpeechPrompt, TextToSpeechResponse>, StreamingTextToSpeechModel {
 
 	default byte[] call(String text) {
-		TextToSpeechPrompt prompt = new TextToSpeechPrompt(text);
+		return this.call(text, TextToSpeechOptions.builder().build());
+	}
+
+	default byte[] call(String text, TextToSpeechOptions options) {
+		TextToSpeechPrompt prompt = new TextToSpeechPrompt(text, options);
 		ModelResult<byte[]> result = call(prompt).getResult();
 		if (result == null) {
 			return new byte[0];
