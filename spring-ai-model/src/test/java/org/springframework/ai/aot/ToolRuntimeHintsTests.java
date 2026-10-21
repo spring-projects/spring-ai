@@ -19,6 +19,7 @@ package org.springframework.ai.aot;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.tool.execution.DefaultToolCallResultConverter;
+import org.springframework.ai.tool.execution.TextToolCallResultConverter;
 import org.springframework.aot.hint.RuntimeHints;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -36,6 +37,7 @@ class ToolRuntimeHintsTests {
 		ToolRuntimeHints toolRuntimeHints = new ToolRuntimeHints();
 		toolRuntimeHints.registerHints(runtimeHints, null);
 		assertThat(runtimeHints).matches(reflection().onType(DefaultToolCallResultConverter.class));
+		assertThat(runtimeHints).matches(reflection().onType(TextToolCallResultConverter.class));
 	}
 
 	@Test
@@ -56,6 +58,7 @@ class ToolRuntimeHintsTests {
 		toolRuntimeHints.registerHints(runtimeHints, customClassLoader);
 
 		assertThat(runtimeHints).matches(reflection().onType(DefaultToolCallResultConverter.class));
+		assertThat(runtimeHints).matches(reflection().onType(TextToolCallResultConverter.class));
 	}
 
 	@Test
@@ -67,6 +70,7 @@ class ToolRuntimeHintsTests {
 		toolRuntimeHints.registerHints(runtimeHints, null);
 
 		assertThat(runtimeHints).matches(reflection().onType(DefaultToolCallResultConverter.class));
+		assertThat(runtimeHints).matches(reflection().onType(TextToolCallResultConverter.class));
 	}
 
 	@Test
