@@ -29,6 +29,7 @@ import io.modelcontextprotocol.util.Assert;
 import org.springframework.ai.mcp.annotation.McpResource;
 import org.springframework.ai.mcp.annotation.common.McpPredicates;
 import org.springframework.ai.mcp.annotation.common.MetaUtils;
+import org.springframework.ai.mcp.annotation.common.ResourceAnnotationsUtils;
 import org.springframework.ai.mcp.annotation.method.resource.SyncMcpResourceMethodCallback;
 
 /**
@@ -66,10 +67,12 @@ public class SyncMcpResourceProvider {
 					var description = resourceAnnotation.description();
 					var mimeType = resourceAnnotation.mimeType();
 					var meta = MetaUtils.getMeta(resourceAnnotation.metaProvider());
+					var annotations = ResourceAnnotationsUtils.toSchemaAnnotations(resourceAnnotation.annotations());
 
 					var mcpResource = McpSchema.Resource.builder(uri, name)
 						.description(description)
 						.mimeType(mimeType)
+						.annotations(annotations)
 						.meta(meta)
 						.build();
 
@@ -109,10 +112,12 @@ public class SyncMcpResourceProvider {
 					var description = resourceAnnotation.description();
 					var mimeType = resourceAnnotation.mimeType();
 					var meta = MetaUtils.getMeta(resourceAnnotation.metaProvider());
+					var annotations = ResourceAnnotationsUtils.toSchemaAnnotations(resourceAnnotation.annotations());
 
 					var mcpResourceTemplate = McpSchema.ResourceTemplate.builder(uri, name)
 						.description(description)
 						.mimeType(mimeType)
+						.annotations(annotations)
 						.meta(meta)
 						.build();
 
