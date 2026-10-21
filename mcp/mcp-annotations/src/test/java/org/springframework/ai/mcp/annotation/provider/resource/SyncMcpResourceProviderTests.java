@@ -531,6 +531,63 @@ public class SyncMcpResourceProviderTests {
 		assertThat(((TextResourceContents) content).text()).isEqualTo("No parameters needed");
 	}
 
+	@Test
+	void testResourceTitleIsPropagated() {
+		class TitledResource {
+
+			@McpResource(uri = "test://titled", name = "titled-resource", title = "My Resource Title",
+					description = "A titled resource")
+			public String titledResource() {
+				return "content";
+			}
+
+		}
+
+		List<SyncResourceSpecification> resourceSpecs = new SyncMcpResourceProvider(List.of(new TitledResource()))
+			.getResourceSpecifications();
+
+		assertThat(resourceSpecs).hasSize(1);
+		assertThat(resourceSpecs.get(0).resource().title()).isEqualTo("My Resource Title");
+	}
+
+	@Test
+	void testResourceTemplateTitleIsPropagated() {
+		class TitledResourceTemplate {
+
+			@McpResource(uri = "test://titled/{id}", name = "titled-template", title = "My Template Title",
+					description = "A titled resource template")
+			public String titledTemplate(String id) {
+				return "content";
+			}
+
+		}
+
+		List<SyncResourceTemplateSpecification> templateSpecs = new SyncMcpResourceProvider(
+				List.of(new TitledResourceTemplate()))
+			.getResourceTemplateSpecifications();
+
+		assertThat(templateSpecs).hasSize(1);
+		assertThat(templateSpecs.get(0).resourceTemplate().title()).isEqualTo("My Template Title");
+	}
+
+	@Test
+	void testResourceTitleIsAbsentWhenNotSet() {
+		class UntitledResource {
+
+			@McpResource(uri = "test://untitled", name = "untitled-resource", description = "No title")
+			public String untitledResource() {
+				return "content";
+			}
+
+		}
+
+		List<SyncResourceSpecification> resourceSpecs = new SyncMcpResourceProvider(List.of(new UntitledResource()))
+			.getResourceSpecifications();
+
+		assertThat(resourceSpecs).hasSize(1);
+		assertThat(resourceSpecs.get(0).resource().title()).isNull();
+	}
+
 	public static class ResourceMetaProvider implements MetaProvider {
 
 		@Override

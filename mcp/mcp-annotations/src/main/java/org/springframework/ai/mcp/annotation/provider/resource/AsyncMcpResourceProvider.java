@@ -30,6 +30,7 @@ import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.ReadResourceRequest;
 import io.modelcontextprotocol.spec.McpSchema.ReadResourceResult;
 import io.modelcontextprotocol.util.Assert;
+import io.modelcontextprotocol.util.Utils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import reactor.core.publisher.Mono;
@@ -89,11 +90,13 @@ public class AsyncMcpResourceProvider {
 					}
 
 					var name = getName(mcpResourceMethod, resourceAnnotation);
+					var title = resourceAnnotation.title();
 					var description = resourceAnnotation.description();
 					var mimeType = resourceAnnotation.mimeType();
 					var meta = MetaUtils.getMeta(resourceAnnotation.metaProvider());
 
 					var mcpResource = McpSchema.Resource.builder(uri, name)
+						.title(Utils.hasText(title) ? title : null)
 						.description(description)
 						.mimeType(mimeType)
 						.meta(meta)
@@ -142,11 +145,13 @@ public class AsyncMcpResourceProvider {
 					}
 
 					var name = getName(mcpResourceMethod, resourceAnnotation);
+					var title = resourceAnnotation.title();
 					var description = resourceAnnotation.description();
 					var mimeType = resourceAnnotation.mimeType();
 					var meta = MetaUtils.getMeta(resourceAnnotation.metaProvider());
 
 					var mcpResourceTemplate = McpSchema.ResourceTemplate.builder(uri, name)
+						.title(Utils.hasText(title) ? title : null)
 						.description(description)
 						.mimeType(mimeType)
 						.meta(meta)
