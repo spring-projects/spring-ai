@@ -18,10 +18,12 @@ package org.springframework.ai.mcp.annotation.method.tool;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.UndeclaredThrowableException;
+import java.util.List;
 
 import io.modelcontextprotocol.spec.McpError;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
+import io.modelcontextprotocol.spec.McpSchema.Content;
 import org.reactivestreams.Publisher;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -99,24 +101,30 @@ public abstract class AbstractAsyncMcpToolMethodCallback<T, RC extends McpReques
 			return monoResult.map(this::mapValueToCallToolResult).onErrorResume(this::toErrorResultOrPropagate);
 		}
 
-		// Handle Flux by taking the first element
+		// Handle Flux by collecting all elements
 		if (result instanceof Flux) {
 			Flux<?> fluxResult = (Flux<?>) result;
 
-			// Check if the Flux contains CallToolResult
+			// Check if the Flux contains CallToolResult — merge all emitted results'
+			// content into a single CallToolResult
 			if (ReactiveUtils.isReactiveReturnTypeOfCallToolResult(this.toolMethod)) {
-				return ((Flux<CallToolResult>) fluxResult).next().onErrorResume(this::toErrorResultOrPropagate);
+				return ((Flux<CallToolResult>) fluxResult).collectList()
+					.map(this::mergeCallToolResults)
+					.onErrorResume(this::toErrorResultOrPropagate);
 			}
 
-			// Handle Mono<Void> for VOID return type
+			// Handle Flux<Void> for VOID return type
 			if (ReactiveUtils.isReactiveReturnTypeOfVoid(this.toolMethod)) {
 				return fluxResult
 					.then(Mono.just(CallToolResult.builder().addTextContent(jsonHelper.toJson("Done")).build()))
 					.onErrorResume(this::toErrorResultOrPropagate);
 			}
 
-			// Handle other Flux types by taking the first element and mapping
-			return fluxResult.next().map(this::mapValueToCallToolResult).onErrorResume(this::toErrorResultOrPropagate);
+			// Handle other Flux types by mapping every emitted element to a
+			// CallToolResult and merging their content, instead of only the first
+			return fluxResult.collectList()
+				.map(items -> this.mergeCallToolResults(items.stream().map(this::mapValueToCallToolResult).toList()))
+				.onErrorResume(this::toErrorResultOrPropagate);
 		}
 
 		// Handle other Publisher types
@@ -153,6 +161,23 @@ public abstract class AbstractAsyncMcpToolMethodCallback<T, RC extends McpReques
 	 */
 	protected CallToolResult mapValueToCallToolResult(Object value) {
 		return convertValueToCallToolResult(value);
+	}
+
+	/**
+	 * Merges the content of multiple {@link CallToolResult}s emitted by a {@link Flux}
+	 * into a single result, so every emitted element reaches the caller instead of only
+	 * the first one.
+	 * @param results the per-element results to merge, in emission order
+	 * @return a single {@link CallToolResult} carrying every result's content
+	 */
+	private CallToolResult mergeCallToolResults(List<CallToolResult> results) {
+		CallToolResult.Builder builder = CallToolResult.builder();
+		for (CallToolResult result : results) {
+			for (Content content : result.content()) {
+				builder.addContent(content);
+			}
+		}
+		return builder.build();
 	}
 
 	/**
