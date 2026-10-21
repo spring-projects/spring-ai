@@ -105,4 +105,17 @@ class FactCheckingEvaluatorTests {
 		assertThat(result.isPass()).isFalse();
 	}
 
+	@Test
+	void whenCreatedWithChatClientBuilderThenEvaluatorIsCreated() {
+		FactCheckingEvaluator evaluator = new FactCheckingEvaluator(ChatClient.builder(mock(ChatModel.class)));
+
+		assertThat(evaluator).isNotNull();
+	}
+
+	@Test
+	void whenConstructorChatClientBuilderIsNullThenThrow() {
+		assertThatThrownBy(() -> new FactCheckingEvaluator(null)).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("chatClientBuilder cannot be null");
+	}
+
 }
