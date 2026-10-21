@@ -16,6 +16,9 @@
 
 package org.springframework.ai.chat.observation;
 
+import java.time.Duration;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.chat.model.ChatResponse;
@@ -35,6 +38,12 @@ public class ChatModelObservationContext extends ModelObservationContext<Prompt,
 
 	private final boolean streaming;
 
+	private final long requestStartNanos = System.nanoTime();
+
+	private final AtomicBoolean firstChunkReceived = new AtomicBoolean();
+
+	private volatile @Nullable Duration timeToFirstChunk;
+
 	ChatModelObservationContext(Prompt prompt, String provider, boolean streaming) {
 		super(prompt,
 				AiOperationMetadata.builder().operationType(AiOperationType.CHAT.value()).provider(provider).build());
@@ -43,6 +52,24 @@ public class ChatModelObservationContext extends ModelObservationContext<Prompt,
 
 	public boolean isStreaming() {
 		return this.streaming;
+	}
+
+	/**
+	 * Record the elapsed time from the creation of this context until the first response
+	 * chunk. Subsequent invocations have no effect.
+	 */
+	public void recordTimeToFirstChunk() {
+		if (this.streaming && this.firstChunkReceived.compareAndSet(false, true)) {
+			this.timeToFirstChunk = Duration.ofNanos(System.nanoTime() - this.requestStartNanos);
+		}
+	}
+
+	/**
+	 * Return the time elapsed until the first response chunk, if one was received.
+	 * @return the time to the first chunk, or {@code null}
+	 */
+	public @Nullable Duration getTimeToFirstChunk() {
+		return this.timeToFirstChunk;
 	}
 
 	public static Builder builder() {
