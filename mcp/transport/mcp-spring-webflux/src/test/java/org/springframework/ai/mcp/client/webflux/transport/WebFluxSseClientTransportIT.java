@@ -32,15 +32,15 @@ import io.modelcontextprotocol.spec.McpSchema.JSONRPCRequest;
 import io.modelcontextprotocol.util.McpJsonMapperUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.mockito.ArgumentCaptor;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
@@ -62,13 +62,13 @@ import static org.mockito.Mockito.verify;
  *
  * @author Christian Tzolov
  */
+@Testcontainers
 @Timeout(60)
 class WebFluxSseClientTransportIT {
 
 	private static final Log logger = LogFactory.getLog(WebFluxSseClientTransportIT.class);
 
-	static String host = "http://localhost:3001";
-
+	@Container
 	@SuppressWarnings("resource")
 	static GenericContainer<?> container = new GenericContainer<>("docker.io/node:lts-alpine3.23")
 		.withCommand("npx -y @modelcontextprotocol/server-everything@2025.12.18 sse")
@@ -82,20 +82,9 @@ class WebFluxSseClientTransportIT {
 
 	private SseMessageEndpointValidator sseMessageEndpointValidator = mock(SseMessageEndpointValidator.class);
 
-	@BeforeAll
-	static void startContainer() {
-		container.start();
-		int port = container.getMappedPort(3001);
-		host = "http://" + container.getHost() + ":" + port;
-	}
-
-	@AfterAll
-	static void cleanup() {
-		container.stop();
-	}
-
 	@BeforeEach
 	void setUp() {
+		String host = "http://" + container.getHost() + ":" + container.getMappedPort(3001);
 		this.webClientBuilder = WebClient.builder().baseUrl(host);
 		this.transport = new TestSseClientTransport(this.webClientBuilder, McpJsonMapperUtils.JSON_MAPPER,
 				this.sseMessageEndpointValidator);
@@ -360,6 +349,7 @@ class WebFluxSseClientTransportIT {
 		var uriCaptor = ArgumentCaptor.forClass(URI.class);
 		verify(this.sseMessageEndpointValidator).validate(uriCaptor.capture(),
 				matches("/message\\?sessionId=[a-z0-9-]+"));
+		String host = "http://" + container.getHost() + ":" + container.getMappedPort(3001);
 		assertThat(uriCaptor.getValue().toString()).matches(host + "/sse");
 	}
 
