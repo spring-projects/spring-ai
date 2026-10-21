@@ -35,6 +35,8 @@ import org.springframework.ai.tool.ToolCallback;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -65,6 +67,74 @@ class AsyncMcpToolCallbackProviderTests {
 		var callbacks = provider.getToolCallbacks();
 
 		assertThat(callbacks).isEmpty();
+	}
+
+	@Test
+	void getToolCallbacksShouldFailFastByDefault() {
+		when(this.mcpClient.listTools()).thenReturn(Mono.error(new IllegalStateException("Connection unavailable")));
+
+		AsyncMcpToolCallbackProvider provider = AsyncMcpToolCallbackProvider.builder()
+			.mcpClients(this.mcpClient)
+			.build();
+
+		assertThatThrownBy(provider::getToolCallbacks).isInstanceOf(IllegalStateException.class)
+			.hasMessage("Connection unavailable");
+	}
+
+	@Test
+	void getToolCallbacksShouldIsolateFailuresAndRetry() {
+		McpAsyncClient healthyClient = mock(McpAsyncClient.class);
+		McpAsyncClient unavailableClient = mock(McpAsyncClient.class);
+		Tool healthyTool = mock(Tool.class);
+		Tool recoveredTool = mock(Tool.class);
+		when(healthyTool.name()).thenReturn("healthy");
+		when(recoveredTool.name()).thenReturn("recovered");
+
+		ListToolsResult healthyResult = mock(ListToolsResult.class);
+		ListToolsResult recoveredResult = mock(ListToolsResult.class);
+		when(healthyResult.tools()).thenReturn(List.of(healthyTool));
+		when(recoveredResult.tools()).thenReturn(List.of(recoveredTool));
+		when(healthyClient.listTools()).thenReturn(Mono.just(healthyResult));
+		when(unavailableClient.listTools()).thenReturn(Mono.error(new IllegalStateException("Connection unavailable")),
+				Mono.just(recoveredResult));
+
+		when(healthyClient.getClientInfo()).thenReturn(Implementation.builder("healthy-client", "1.0.0").build());
+		when(unavailableClient.getClientInfo())
+			.thenReturn(Implementation.builder("unavailable-client", "1.0.0").build());
+		ClientCapabilities capabilities = new ClientCapabilities(null, null, null, null);
+		when(healthyClient.getClientCapabilities()).thenReturn(capabilities);
+		when(unavailableClient.getClientCapabilities()).thenReturn(capabilities);
+
+		AsyncMcpToolCallbackProvider provider = AsyncMcpToolCallbackProvider.builder()
+			.mcpClients(healthyClient, unavailableClient)
+			.failFast(false)
+			.build();
+
+		assertThat(provider.getToolCallbacks()).hasSize(1);
+		assertThat(provider.getToolCallbacks()).hasSize(2);
+		verify(healthyClient).listTools();
+		verify(unavailableClient, times(2)).listTools();
+	}
+
+	@Test
+	void getToolCallbacksShouldNotSuppressToolFilterFailures() {
+		Tool tool = mock(Tool.class);
+		ListToolsResult result = mock(ListToolsResult.class);
+		when(result.tools()).thenReturn(List.of(tool));
+		when(this.mcpClient.listTools()).thenReturn(Mono.just(result));
+		when(this.mcpClient.getClientInfo()).thenReturn(Implementation.builder("test-client", "1.0.0").build());
+		when(this.mcpClient.getClientCapabilities()).thenReturn(new ClientCapabilities(null, null, null, null));
+
+		AsyncMcpToolCallbackProvider provider = AsyncMcpToolCallbackProvider.builder()
+			.mcpClients(this.mcpClient)
+			.toolFilter((client, candidate) -> {
+				throw new IllegalStateException("Filter failure");
+			})
+			.failFast(false)
+			.build();
+
+		assertThatThrownBy(provider::getToolCallbacks).isInstanceOf(IllegalStateException.class)
+			.hasMessage("Filter failure");
 	}
 
 	@Test

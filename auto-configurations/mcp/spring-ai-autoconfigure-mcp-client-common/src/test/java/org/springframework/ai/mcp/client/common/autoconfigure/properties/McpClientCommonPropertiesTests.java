@@ -44,6 +44,7 @@ class McpClientCommonPropertiesTests {
 			assertThat(properties.getName()).isEqualTo("spring-ai-mcp-client");
 			assertThat(properties.getVersion()).isEqualTo("1.0.0");
 			assertThat(properties.isInitialized()).isTrue();
+			assertThat(properties.isFailFast()).isTrue();
 			assertThat(properties.getRequestTimeout()).isEqualTo(Duration.ofSeconds(20));
 			assertThat(properties.getType()).isEqualTo(McpClientCommonProperties.ClientType.SYNC);
 			assertThat(properties.isRootChangeNotification()).isTrue();
@@ -55,14 +56,15 @@ class McpClientCommonPropertiesTests {
 		this.contextRunner
 			.withPropertyValues("spring.ai.mcp.client.enabled=false", "spring.ai.mcp.client.name=custom-client",
 					"spring.ai.mcp.client.version=2.0.0", "spring.ai.mcp.client.initialized=false",
-					"spring.ai.mcp.client.request-timeout=30s", "spring.ai.mcp.client.type=ASYNC",
-					"spring.ai.mcp.client.root-change-notification=false")
+					"spring.ai.mcp.client.fail-fast=false", "spring.ai.mcp.client.request-timeout=30s",
+					"spring.ai.mcp.client.type=ASYNC", "spring.ai.mcp.client.root-change-notification=false")
 			.run(context -> {
 				McpClientCommonProperties properties = context.getBean(McpClientCommonProperties.class);
 				assertThat(properties.isEnabled()).isFalse();
 				assertThat(properties.getName()).isEqualTo("custom-client");
 				assertThat(properties.getVersion()).isEqualTo("2.0.0");
 				assertThat(properties.isInitialized()).isFalse();
+				assertThat(properties.isFailFast()).isFalse();
 				assertThat(properties.getRequestTimeout()).isEqualTo(Duration.ofSeconds(30));
 				assertThat(properties.getType()).isEqualTo(McpClientCommonProperties.ClientType.ASYNC);
 				assertThat(properties.isRootChangeNotification()).isFalse();
@@ -88,6 +90,10 @@ class McpClientCommonPropertiesTests {
 		// Test initialized property
 		properties.setInitialized(false);
 		assertThat(properties.isInitialized()).isFalse();
+
+		// Test failFast property
+		properties.setFailFast(false);
+		assertThat(properties.isFailFast()).isFalse();
 
 		// Test requestTimeout property
 		Duration timeout = Duration.ofMinutes(5);
