@@ -72,6 +72,27 @@ class ChatModelObservationContextTests {
 		assertThat(observationContext.isStreaming()).isFalse();
 	}
 
+	@Test
+	void whenConversationIdSetThenReturn() {
+		var observationContext = ChatModelObservationContext.builder()
+			.prompt(generatePrompt(ChatOptions.builder().model("supermodel").build()))
+			.provider("superprovider")
+			.conversationId("conversation-42")
+			.build();
+
+		assertThat(observationContext.getConversationId()).isEqualTo("conversation-42");
+	}
+
+	@Test
+	void whenConversationIdNotSetThenReturnNull() {
+		var observationContext = ChatModelObservationContext.builder()
+			.prompt(generatePrompt(ChatOptions.builder().model("supermodel").build()))
+			.provider("superprovider")
+			.build();
+
+		assertThat(observationContext.getConversationId()).isNull();
+	}
+
 	private Prompt generatePrompt(ChatOptions chatOptions) {
 		return new Prompt("hello", chatOptions);
 	}
