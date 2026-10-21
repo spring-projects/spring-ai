@@ -25,8 +25,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
+import io.micrometer.observation.tck.TestObservationRegistry;
+import io.micrometer.observation.tck.TestObservationRegistryAssert;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.CleanupMode;
@@ -37,6 +40,8 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionBuilder;
+import org.springframework.cglib.proxy.Enhancer;
+import org.springframework.cglib.proxy.MethodInterceptor;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.util.MimeType;
@@ -48,6 +53,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class SimpleVectorStoreTests {
@@ -334,6 +340,111 @@ class SimpleVectorStoreTests {
 
 		List<Document> results = this.vectorStore.similaritySearch("");
 		assertThat(results).hasSize(1);
+	}
+
+	@Test
+	void unsupportedUpsertFailsWithoutCallingTheEmbeddingModel() {
+		EmbeddingModel unavailableModel = mock(EmbeddingModel.class);
+		TestObservationRegistry observationRegistry = TestObservationRegistry.create();
+		SimpleVectorStore store = SimpleVectorStore.builder(unavailableModel)
+			.observationRegistry(observationRegistry)
+			.build();
+		List<EmbeddedDocument> entries = List
+			.of(new EmbeddedDocument(Document.builder().id("1").text("content").build(), new float[] { 1f, 2f, 3f }));
+
+		assertThatThrownBy(() -> store.upsert(entries)).isInstanceOf(UnsupportedOperationException.class)
+			.hasMessageContaining("does not support upsert");
+		verifyNoInteractions(unavailableModel);
+		TestObservationRegistryAssert.assertThat(observationRegistry).doesNotHaveAnyObservation();
+	}
+
+	@Test
+	void unsupportedQueryEmbeddingSearchFailsWithoutCallingTheEmbeddingModel() {
+		EmbeddingModel unavailableModel = mock(EmbeddingModel.class);
+		TestObservationRegistry observationRegistry = TestObservationRegistry.create();
+		SimpleVectorStore store = SimpleVectorStore.builder(unavailableModel)
+			.observationRegistry(observationRegistry)
+			.build();
+
+		assertThatThrownBy(() -> store.similaritySearch(new float[] { 1f, 2f, 3f }, SearchRequest.builder().build()))
+			.isInstanceOf(UnsupportedOperationException.class)
+			.hasMessageContaining("does not support similarity search with a query embedding");
+		verifyNoInteractions(unavailableModel);
+		TestObservationRegistryAssert.assertThat(observationRegistry).doesNotHaveAnyObservation();
+	}
+
+	@Test
+	void unsupportedQueryEmbeddingSearchChecksNullBeforeSupportAndSupportBeforeVectorValues() {
+		EmbeddingModel unavailableModel = mock(EmbeddingModel.class);
+		TestObservationRegistry observationRegistry = TestObservationRegistry.create();
+		SimpleVectorStore store = SimpleVectorStore.builder(unavailableModel)
+			.observationRegistry(observationRegistry)
+			.build();
+		SearchRequest request = SearchRequest.builder().build();
+
+		assertThatThrownBy(() -> store.similaritySearch(null, request)).isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("queryEmbedding must not be null");
+		assertThatThrownBy(() -> store.similaritySearch(new float[0], request))
+			.isInstanceOf(UnsupportedOperationException.class);
+		assertThatThrownBy(() -> store.similaritySearch(new float[] { Float.NaN }, request))
+			.isInstanceOf(UnsupportedOperationException.class);
+		verifyNoInteractions(unavailableModel);
+		TestObservationRegistryAssert.assertThat(observationRegistry).doesNotHaveAnyObservation();
+	}
+
+	@Test
+	void emptyUpsertDoesNothingOnUnsupportedStore() {
+		EmbeddingModel unavailableModel = mock(EmbeddingModel.class);
+		SimpleVectorStore store = SimpleVectorStore.builder(unavailableModel)
+			.observationRegistry(TestObservationRegistry.create())
+			.build();
+
+		assertDoesNotThrow(() -> store.upsert(List.of()));
+		verifyNoInteractions(unavailableModel);
+	}
+
+	@Test
+	void upsertReachesStoreThatOptsIn() {
+		AtomicReference<List<EmbeddedDocument>> received = new AtomicReference<>();
+		SimpleVectorStore store = new SimpleVectorStore(SimpleVectorStore.builder(this.mockEmbeddingModel)
+			.observationRegistry(TestObservationRegistry.create())) {
+
+			@Override
+			protected boolean supportsUpsert() {
+				return true;
+			}
+
+			@Override
+			protected void doUpsert(List<EmbeddedDocument> entries) {
+				received.set(entries);
+			}
+
+		};
+		List<EmbeddedDocument> entries = List
+			.of(new EmbeddedDocument(Document.builder().id("1").text("content").build(), new float[] { 1f, 2f, 3f }));
+
+		store.upsert(entries);
+
+		assertThat(received.get()).isEqualTo(entries);
+	}
+
+	@Test
+	void unsupportedCallsOnClassProxyFailWithoutCallingTheEmbeddingModel() {
+		EmbeddingModel unavailableModel = mock(EmbeddingModel.class);
+		Enhancer enhancer = new Enhancer();
+		enhancer.setSuperclass(SimpleVectorStore.class);
+		enhancer.setCallback((MethodInterceptor) (target, method, args, proxy) -> proxy.invokeSuper(target, args));
+		SimpleVectorStore store = (SimpleVectorStore) enhancer.create(
+				new Class<?>[] { SimpleVectorStore.SimpleVectorStoreBuilder.class },
+				new Object[] { SimpleVectorStore.builder(unavailableModel)
+					.observationRegistry(TestObservationRegistry.create()) });
+		List<EmbeddedDocument> entries = List
+			.of(new EmbeddedDocument(Document.builder().id("1").text("content").build(), new float[] { 1f, 2f, 3f }));
+
+		assertThatThrownBy(() -> store.upsert(entries)).isInstanceOf(UnsupportedOperationException.class);
+		assertThatThrownBy(() -> store.similaritySearch(new float[] { 1f, 2f, 3f }, SearchRequest.builder().build()))
+			.isInstanceOf(UnsupportedOperationException.class);
+		verifyNoInteractions(unavailableModel);
 	}
 
 }

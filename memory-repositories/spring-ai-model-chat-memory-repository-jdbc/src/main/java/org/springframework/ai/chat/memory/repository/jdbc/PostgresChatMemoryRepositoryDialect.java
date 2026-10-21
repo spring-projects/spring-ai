@@ -22,7 +22,11 @@ package org.springframework.ai.chat.memory.repository.jdbc;
  * @author Mark Pollack
  * @author Yanming Zhou
  * @since 1.0.0
+ * @deprecated since 2.1.0, for removal in 3.0.0, in favor of
+ * {@code PostgresJdbcSessionRepositoryDialect} in {@code spring-ai-session-jdbc}
  */
+@Deprecated(since = "2.1.0", forRemoval = true)
+@SuppressWarnings("removal")
 public class PostgresChatMemoryRepositoryDialect implements JdbcChatMemoryRepositoryDialect {
 
 	@Override

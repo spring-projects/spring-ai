@@ -226,22 +226,6 @@ public class UserMessage extends AbstractMessage implements MediaContent {
 			return new UserMessage(parts, this.metadata);
 		}
 
-		/**
-		 * Removes every part of the given type and inserts the replacements where the
-		 * first one was, or at {@code fallbackIndex} when there was none.
-		 */
-		private static void replace(List<MessagePart> parts, Class<? extends MessagePart> type,
-				List<MessagePart> replacements, int fallbackIndex) {
-			int insertAt = -1;
-			for (int i = parts.size() - 1; i >= 0; i--) {
-				if (type.isInstance(parts.get(i))) {
-					parts.remove(i);
-					insertAt = i;
-				}
-			}
-			parts.addAll(insertAt >= 0 ? insertAt : Math.min(fallbackIndex, parts.size()), replacements);
-		}
-
 	}
 
 }

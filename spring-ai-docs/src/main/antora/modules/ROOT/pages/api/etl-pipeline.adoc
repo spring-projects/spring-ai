@@ -756,6 +756,25 @@ class MyInternationalTextSplitter {
 }
 ----
 
+===== Chunk Overlap
+
+By default, consecutive chunks share no text.
+A sentence that falls on a chunk boundary is then split across two chunks, and neither chunk holds it whole.
+Set a chunk overlap to have each chunk start with the last tokens of the chunk before it:
+
+[source,java]
+----
+TokenTextSplitter splitter = TokenTextSplitter.builder()
+    .withChunkSize(800)
+    .withChunkOverlap(100)
+    .build();
+----
+
+With overlap, text near a boundary, such as "set the timeout to 30 seconds", appears whole in at least one chunk, so a search can find it.
+The overlap counts toward the chunk size, so chunks never grow larger than `chunkSize`.
+The shared tokens are stored and embedded once per chunk they appear in, which adds to storage and embedding cost.
+The overlap must be zero or more and less than `chunkSize`.
+
 ==== Configuration
 
 Use `TokenTextSplitter.builder()` to create instances. All constructors are deprecated in favor of the builder.
@@ -764,6 +783,7 @@ Use `TokenTextSplitter.builder()` to create instances. All constructors are depr
 
 * `encodingType`: The tokenizer encoding type to use (default: `CL100K_BASE`). Supported values include `CL100K_BASE`, `P50K_BASE`, and `O200K_BASE`.
 * `chunkSize`: The target size of each text chunk in tokens (default: 800).
+* `chunkOverlap`: The number of tokens each chunk repeats from the end of the chunk before it (default: 0, no overlap).
 * `minChunkSizeChars`: The minimum size of each text chunk in characters (default: 350).
 * `minChunkLengthToEmbed`: The minimum length of a chunk to be included (default: 5).
 * `maxNumChunks`: The maximum number of chunks to generate from a text (default: 10000).
@@ -782,6 +802,7 @@ The `TokenTextSplitter` processes text content as follows:
    c. If a break point is found, it truncates the chunk at that point.
    d. It trims the chunk and optionally removes newline characters based on the `keepSeparator` setting.
    e. If the resulting chunk is longer than `minChunkLengthToEmbed`, it's added to the output.
+   f. The next chunk starts where this one ended, or `chunkOverlap` tokens earlier when an overlap is set.
 4. This process continues until all tokens are processed or `maxNumChunks` is reached.
 5. Any remaining text is added as a final chunk if it's longer than `minChunkLengthToEmbed`.
 

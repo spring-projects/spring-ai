@@ -132,6 +132,7 @@ Properties starting with `spring.ai.vectorstore.redis.*` are used to configure t
 |`spring.ai.vectorstore.redis.initialize-schema`| Whether to initialize the required schema | `false`
 |`spring.ai.vectorstore.redis.index-name` | The name of the index to store the vectors | `spring-ai-index`
 |`spring.ai.vectorstore.redis.prefix` | The prefix for Redis keys | `embedding:`
+|`spring.ai.vectorstore.redis.dimensions` | The vector size of the index. Sizes an index created by `initialize-schema` and is the size `upsert` checks vectors against. If not set, it is read from the existing index, or taken from the `EmbeddingModel`. | -
 |`spring.ai.vectorstore.redis.distance-metric` | Distance metric for vector similarity (COSINE, L2, IP) | `COSINE`
 |`spring.ai.vectorstore.redis.vector-algorithm` | Vector indexing algorithm (HNSW, FLAT) | `HNSW`
 |`spring.ai.vectorstore.redis.hnsw-m` | HNSW: Number of maximum outgoing connections | `16`

@@ -29,9 +29,11 @@ import org.springframework.ai.audio.transcription.AudioTranscriptionResponseMeta
 /**
  * Audio transcription metadata implementation for OpenAI using the OpenAI Java SDK.
  * <p>
- * {@code duration}, {@code usage} and segment/word-level timestamps are only returned by
- * the OpenAI API for the {@code verbose_json} and {@code diarized_json}
- * {@code response_format} values; for other formats these accessors return {@code null}.
+ * {@code usage} and segment/word-level timestamps are only returned by the OpenAI API for
+ * the {@code verbose_json} and {@code diarized_json} {@code response_format} values; for
+ * other formats these accessors return {@code null}. {@code duration} is returned for
+ * {@code verbose_json} and may be returned for {@code diarized_json} depending on the
+ * model and SDK version.
  *
  * @author Christian Tzolov
  */
@@ -81,7 +83,7 @@ public class OpenAiAudioTranscriptionResponseMetadata extends AudioTranscription
 	 * {@link TranscriptionDiarized.Usage} for {@code diarized_json}, or
 	 * {@link Transcription.Usage} otherwise.
 	 */
-	public @Nullable Object getUsage() {
+	public @Nullable Object getNativeUsage() {
 		return this.usage;
 	}
 
@@ -109,7 +111,7 @@ public class OpenAiAudioTranscriptionResponseMetadata extends AudioTranscription
 	@Override
 	public String toString() {
 		return "{ @type: %1$s, duration: %2$s, language: %3$s, usage: %4$s, segments: %5$s, words: %6$s }"
-			.formatted(getClass().getName(), getDuration(), getLanguage(), getUsage(), getSegments(), getWords());
+			.formatted(getClass().getName(), getDuration(), getLanguage(), getNativeUsage(), getSegments(), getWords());
 	}
 
 }

@@ -65,6 +65,8 @@ public interface VectorStore extends DocumentWriter, VectorStoreRetriever {
 	 * same rows with no duplicates. This is in contrast to {@link #add(List)}, whose
 	 * behavior for a repeated id is left to the underlying provider.
 	 * <p>
+	 * An empty list does nothing.
+	 * <p>
 	 * If any entry fails, the operation throws. A backend may have written some entries
 	 * before failing, so callers should treat the batch outcome as unknown and retry the
 	 * whole batch, which replace-by-id makes safe.

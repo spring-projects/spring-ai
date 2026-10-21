@@ -22,7 +22,13 @@ import org.springframework.util.Assert;
 
 /**
  * Convenience interface for retrieving named attributes out of result maps.
+ *
+ * @deprecated since 2.1.0, for removal in 3.0.0, in favor of session memory:
+ * {@code org.springframework.ai.session.SessionRepository} in {@code spring-ai-session},
+ * with a JDBC store in {@code spring-ai-session-jdbc}. There is no session store for
+ * Neo4j yet; one is planned before 3.0.0, when this module is removed.
  */
+@Deprecated(since = "2.1.0", forRemoval = true)
 interface AttributeGetter {
 
 	/**

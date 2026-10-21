@@ -129,6 +129,14 @@ public class AssistantMessage extends AbstractMessage implements MediaContent {
 		return mutate().build();
 	}
 
+	/**
+	 * A builder pre-populated with this message's parts and metadata. Calling
+	 * {@link Builder#content(String)}, {@link Builder#toolCalls(List)} or
+	 * {@link Builder#media(List)} on it replaces the corresponding parts in place, so
+	 * rewriting the text keeps the reasoning and tool calls where they were and vice
+	 * versa.
+	 * @return the builder
+	 */
 	public Builder<?> mutate() {
 		return builder().parts(getParts()).properties(getMetadata());
 	}
@@ -151,11 +159,16 @@ public class AssistantMessage extends AbstractMessage implements MediaContent {
 	 * Builder for {@link AssistantMessage}.
 	 * <p>
 	 * Parts added through {@link #part(MessagePart)}, {@link #parts(List)} and
-	 * {@link #reasoning(ReasoningPart)} come first, in the order they were added. The
-	 * legacy setters ({@link #content(String)}, {@link #toolCalls(List)},
-	 * {@link #media(List)}) are stored and materialized after them at {@link #build()}
-	 * time in the legacy order (text, tool calls, media), so the setter call order does
-	 * not affect the result.
+	 * {@link #reasoning(ReasoningPart)} keep the order they were added in. The legacy
+	 * setters replace the parts of their type at {@link #build()} time:
+	 * {@link #content(String)} replaces the text parts, {@link #toolCalls(List)} the tool
+	 * call parts and {@link #media(List)} the media parts. The new parts take the place
+	 * of the first part of that type, or go where the legacy order has them when there is
+	 * none (text before tool calls and media, tool calls before media), and a
+	 * {@code null} content or an empty list removes the parts of that type. The setters
+	 * take effect at {@link #build()} time, so they also replace parts of their type
+	 * added after the setter was called. A builder without explicit parts therefore
+	 * produces the legacy order (text, tool calls, media) whatever the setter call order.
 	 *
 	 * @param <B> the concrete builder type, for subclass builders
 	 */
@@ -163,13 +176,32 @@ public class AssistantMessage extends AbstractMessage implements MediaContent {
 
 		protected final List<MessagePart> explicitParts = new ArrayList<>();
 
+		/**
+		 * The text set through {@link #content(String)}. A subclass builder must set it
+		 * through that method: on a builder that also holds parts, a value assigned to
+		 * the field directly is ignored.
+		 */
 		protected @Nullable String content;
 
 		protected Map<String, Object> properties = Map.of();
 
+		/**
+		 * The tool calls set through {@link #toolCalls(List)}. As for {@link #content}, a
+		 * subclass builder must set them through that method.
+		 */
 		protected List<ToolCall> toolCalls = List.of();
 
+		/**
+		 * The media set through {@link #media(List)}. As for {@link #content}, a subclass
+		 * builder must set them through that method.
+		 */
 		protected List<Media> media = List.of();
+
+		private boolean contentSet;
+
+		private boolean toolCallsSet;
+
+		private boolean mediaSet;
 
 		protected Builder() {
 		}
@@ -211,15 +243,35 @@ public class AssistantMessage extends AbstractMessage implements MediaContent {
 		}
 
 		/**
-		 * The parts this builder would put in the message: explicit parts first, then the
-		 * legacy text, tool calls and media in that order.
+		 * The parts this builder would put in the message: the explicit parts, with the
+		 * text, tool call and media parts replaced by the corresponding legacy setters
+		 * that were called. A setter whose part type is not among the explicit parts puts
+		 * its parts where the legacy order has them: the text before the first tool call
+		 * or media part, the tool calls before the first media part, the media at the
+		 * end.
 		 * @return the parts, in message order
 		 * @since 2.1.0
 		 */
 		protected List<MessagePart> buildParts() {
-			List<MessagePart> allParts = new ArrayList<>(this.explicitParts);
-			allParts.addAll(legacyParts(this.content, this.toolCalls, this.media));
-			return allParts;
+			if (this.explicitParts.isEmpty()) {
+				return legacyParts(this.content, this.toolCalls, this.media);
+			}
+			List<MessagePart> parts = new ArrayList<>(this.explicitParts);
+			if (this.contentSet) {
+				List<TextPart> textParts = (this.content != null) ? List.of(TextPart.of(this.content)) : List.of();
+				replace(parts, TextPart.class, textParts, firstIndexOf(parts, ToolCallPart.class, MediaPart.class));
+			}
+			if (this.toolCallsSet) {
+				Assert.notNull(this.toolCalls, "Tool calls must not be null");
+				List<ToolCallPart> toolCallParts = this.toolCalls.stream().map(ToolCallPart::of).toList();
+				replace(parts, ToolCallPart.class, toolCallParts, firstIndexOf(parts, MediaPart.class));
+			}
+			if (this.mediaSet) {
+				Assert.notNull(this.media, "Media must not be null");
+				List<MediaPart> mediaParts = this.media.stream().map(MediaPart::of).toList();
+				replace(parts, MediaPart.class, mediaParts, parts.size());
+			}
+			return parts;
 		}
 
 		/**
@@ -263,6 +315,7 @@ public class AssistantMessage extends AbstractMessage implements MediaContent {
 
 		public B content(@Nullable String content) {
 			this.content = content;
+			this.contentSet = true;
 			return self();
 		}
 
@@ -273,11 +326,13 @@ public class AssistantMessage extends AbstractMessage implements MediaContent {
 
 		public B toolCalls(List<ToolCall> toolCalls) {
 			this.toolCalls = toolCalls;
+			this.toolCallsSet = true;
 			return self();
 		}
 
 		public B media(List<Media> media) {
 			this.media = media;
+			this.mediaSet = true;
 			return self();
 		}
 

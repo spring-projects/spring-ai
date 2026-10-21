@@ -43,6 +43,22 @@
 			<optional>true</optional>
 		</dependency>
 
+		<!-- Google GenAI Text-to-Speech -->
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-google-genai-tts</artifactId>
+			<version>${project.parent.version}</version>
+			<optional>true</optional>
+		</dependency>
+
+		<!-- Google GenAI Transcription -->
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-google-genai-transcription</artifactId>
+			<version>${project.parent.version}</version>
+			<optional>true</optional>
+		</dependency>
+
 		<!-- Spring AI auto configurations -->
 
 		<dependency>
@@ -72,6 +88,12 @@
 		<dependency>
 			<groupId>org.springframework.ai</groupId>
 			<artifactId>spring-ai-autoconfigure-model-image-observation</artifactId>
+			<version>${project.parent.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework.ai</groupId>
+			<artifactId>spring-ai-autoconfigure-model-audio-observation</artifactId>
 			<version>${project.parent.version}</version>
 		</dependency>
 

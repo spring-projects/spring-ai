@@ -287,28 +287,41 @@ For finer control, configure the SDK client through a custom `AnthropicSetup`.
 
 Two changes affect anyone subscribed to the raw `Flux<ChatResponse>` stream (rather than letting `ChatClient` or `MessageAggregator` collapse it).
 
-The previous module bundled the text and signature of a thinking block into a single `Generation`. The SDK delivers them as separate events, and the new module forwards them that way: a `Generation` with `properties.signature` arrives after the thinking-text deltas, before any subsequent text deltas. `MessageAggregator` and `ChatClient`'s built-in aggregation absorb the extra chunk transparently.
+Every streamed chunk now carries one `MessagePart` stamped with the index of the content block it belongs to (`StreamingParts.partIndex`) and, for deltas, `StreamingParts.isPartial`.
+The SDK delivers thinking text and its signature as separate events, and the module forwards them that way: partial `ReasoningPart`s with the thinking text, then a partial `ReasoningPart` carrying only the signature payload, then the text deltas as partial `TextPart`s.
+`MessageAggregator` and `ChatClient`'s built-in aggregation merge the parts of each block and rebuild the message in block order.
 
-Thinking-text deltas now also include `properties.thinking = Boolean.TRUE`. The previous module emitted them as plain content, leaving callers no reliable way to distinguish thinking text from response text mid-stream.
-
-The full set of streaming metadata keys:
+The full set of streamed chunk shapes:
 
 [cols="1,2", options="header"]
 |===
-| Block | `Generation` carries
+| Block | Chunk message carries
 
 | Thinking text delta
-| `content = <thinking text>`, `properties.thinking = true` (new in M3)
+| partial `ReasoningPart(text)` at the block index; `getText()` is empty
 
 | Thinking signature delta
-| empty `content`, `properties.signature = <signature>`
+| partial `ReasoningPart` with empty text and `OpaquePayload("anthropic", "signature", ...)`
 
 | Redacted thinking block
-| empty `content`, `properties.data = <data>`
+| complete `ReasoningPart` without text and with `OpaquePayload("anthropic", "redacted_thinking", ...)`
+
+| Server tool use or result, container upload
+| complete `UnknownPart` holding the block JSON, emitted when the block stops
+
+| Text delta
+| partial `TextPart` at the block index; `getText()` returns the delta
+
+| Final chunk (`message_delta`)
+| complete `ToolCallPart`s at their block indices, finish reason and usage; `getText()` is empty
 
 | Sync thinking block (non-streaming)
-| `content = <thinking text>`, `properties.signature = <signature>` (single `Generation`)
+| one `Generation` whose message holds `ReasoningPart`, `TextPart` and `ToolCallPart` in block order
 |===
+
+For one release the thinking, signature and redacted chunks also carry the previous metadata keys `properties.thinking = true`, `properties.thinkingText`, `properties.signature` and `properties.data`.
+They are deprecated and will be removed; read the parts instead.
+The non-streaming response no longer emits one `Generation` per thinking block or the `signature` and `data` metadata keys.
 
 === Prompt caching changes
 

@@ -55,7 +55,11 @@ import org.springframework.util.Assert;
  * @author Mark Pollack
  * @author Yanming Zhou
  * @since 1.0.0
+ * @deprecated since 2.1.0, for removal in 3.0.0, in favor of
+ * {@code JdbcSessionRepository} in {@code spring-ai-session-jdbc}
  */
+@Deprecated(since = "2.1.0", forRemoval = true)
+@SuppressWarnings("removal")
 public final class JdbcChatMemoryRepository implements ChatMemoryRepository {
 
 	private static final Log logger = LogFactory.getLog(JdbcChatMemoryRepository.class);

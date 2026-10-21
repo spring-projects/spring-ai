@@ -186,7 +186,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 	/**
 	 * Use Google search Grounding feature
 	 */
-	private final Boolean googleSearchRetrieval;
+	private final @Nullable Boolean googleSearchRetrieval;
 
 	/**
 	 * Optional. When true, the API response will include server-side tool calls and
@@ -194,7 +194,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 	 * This allows clients to observe the server's tool invocations without executing them.
 	 * Only supported with MLDev (Google AI) API, not Vertex AI.
 	 */
-	private final Boolean includeServerSideToolInvocations;
+	private final @Nullable Boolean includeServerSideToolInvocations;
 
 	private final @Nullable List<GoogleGenAiSafetySetting> safetySettings;
 
@@ -240,8 +240,8 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 		this.useCachedContent = useCachedContent;
 		this.autoCacheThreshold = autoCacheThreshold;
 		this.autoCacheTtl = autoCacheTtl;
-		this.googleSearchRetrieval = Boolean.TRUE.equals(googleSearchRetrieval);
-		this.includeServerSideToolInvocations = Boolean.TRUE.equals(includeServerSideToolInvocations);
+		this.googleSearchRetrieval = googleSearchRetrieval;
+		this.includeServerSideToolInvocations = includeServerSideToolInvocations;
 		this.safetySettings = (safetySettings != null ? List.copyOf(safetySettings) : null);
 		this.labels = (labels != null ? Map.copyOf(labels) : null);
 		this.serviceTier = serviceTier;

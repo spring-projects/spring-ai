@@ -3,3 +3,7 @@ org.springframework.ai.model.google.genai.autoconfigure.embedding.GoogleGenAiEmb
 org.springframework.ai.model.google.genai.autoconfigure.embedding.GoogleGenAiTextEmbeddingAutoConfiguration
 org.springframework.ai.model.google.genai.autoconfigure.image.GoogleGenAiImageConnectionAutoConfiguration
 org.springframework.ai.model.google.genai.autoconfigure.image.GoogleGenAiImageAutoConfiguration
+org.springframework.ai.model.google.genai.autoconfigure.tts.GoogleGenAiTextToSpeechConnectionAutoConfiguration
+org.springframework.ai.model.google.genai.autoconfigure.tts.GoogleGenAiTextToSpeechAutoConfiguration
+org.springframework.ai.model.google.genai.autoconfigure.transcription.GoogleGenAiTranscriptionConnectionAutoConfiguration
+org.springframework.ai.model.google.genai.autoconfigure.transcription.GoogleGenAiTranscriptionAutoConfiguration

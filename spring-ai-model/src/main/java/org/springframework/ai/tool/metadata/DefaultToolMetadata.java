@@ -19,10 +19,23 @@ package org.springframework.ai.tool.metadata;
 /**
  * Default implementation of {@link ToolMetadata}.
  *
+ * @param returnDirect whether the tool result should be returned directly or passed back
+ * to the model
+ * @param requiresConfirmation whether a call of the tool needs a person's confirmation
+ * before it runs (since 2.1.0)
  * @author Thomas Vitale
  * @since 1.0.0
  */
-public record DefaultToolMetadata(boolean returnDirect) implements ToolMetadata {
+public record DefaultToolMetadata(boolean returnDirect, boolean requiresConfirmation) implements ToolMetadata {
+
+	/**
+	 * Create metadata for a tool that needs no confirmation.
+	 * @param returnDirect whether the tool result should be returned directly or passed
+	 * back to the model
+	 */
+	public DefaultToolMetadata(boolean returnDirect) {
+		this(returnDirect, false);
+	}
 
 	public static Builder builder() {
 		return new Builder();
@@ -32,6 +45,8 @@ public record DefaultToolMetadata(boolean returnDirect) implements ToolMetadata 
 
 		private boolean returnDirect = false;
 
+		private boolean requiresConfirmation = false;
+
 		private Builder() {
 		}
 
@@ -40,8 +55,20 @@ public record DefaultToolMetadata(boolean returnDirect) implements ToolMetadata 
 			return this;
 		}
 
+		/**
+		 * Whether a call of the tool needs a person's confirmation before it runs.
+		 * @param requiresConfirmation {@code true} to pause the tool-calling loop on a
+		 * call of the tool
+		 * @return this builder
+		 * @since 2.1.0
+		 */
+		public Builder requiresConfirmation(boolean requiresConfirmation) {
+			this.requiresConfirmation = requiresConfirmation;
+			return this;
+		}
+
 		public ToolMetadata build() {
-			return new DefaultToolMetadata(this.returnDirect);
+			return new DefaultToolMetadata(this.returnDirect, this.requiresConfirmation);
 		}
 
 	}

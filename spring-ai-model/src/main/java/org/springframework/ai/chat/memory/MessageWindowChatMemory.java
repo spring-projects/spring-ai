@@ -39,7 +39,12 @@ import org.springframework.util.Assert;
  * @author Thomas Vitale
  * @author Ilayaperumal Gopinathan
  * @since 1.0.0
+ * @deprecated since 2.1.0, for removal in 3.0.0, in favor of session memory,
+ * {@code org.springframework.ai.session.SessionService} in {@code spring-ai-session}; a
+ * turn-aware window is {@code EventFilter.lastN}, and compaction replaces eviction
  */
+@Deprecated(since = "2.1.0", forRemoval = true)
+@SuppressWarnings("removal")
 public final class MessageWindowChatMemory implements ChatMemory {
 
 	private static final int DEFAULT_MAX_MESSAGES = 20;

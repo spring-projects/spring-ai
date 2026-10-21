@@ -166,8 +166,8 @@ class AssistantMessageBackwardCompatibilityTests {
 			.build();
 
 		assertThat(message.getMarker()).isEqualTo("m");
-		assertThat(message.getParts()).containsExactly(TextPart.of("a"), TextPart.of("b"), ToolCallPart.of(TOOL_CALL));
-		assertThat(message.getText()).isEqualTo("ab");
+		assertThat(message.getParts()).containsExactly(TextPart.of("b"), ToolCallPart.of(TOOL_CALL));
+		assertThat(message.getText()).isEqualTo("b");
 	}
 
 	/**

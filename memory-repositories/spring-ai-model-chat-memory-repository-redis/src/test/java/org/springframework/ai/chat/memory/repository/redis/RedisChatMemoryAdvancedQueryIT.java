@@ -46,6 +46,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Soby Chacko
  */
 @Testcontainers
+@SuppressWarnings("removal")
 class RedisChatMemoryAdvancedQueryIT {
 
 	@Container

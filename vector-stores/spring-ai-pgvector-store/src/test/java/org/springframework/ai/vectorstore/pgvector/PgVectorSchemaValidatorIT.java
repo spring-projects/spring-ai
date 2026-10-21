@@ -17,6 +17,8 @@
 package org.springframework.ai.vectorstore.pgvector;
 
 import org.junit.jupiter.api.Test;
+import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.containers.wait.strategy.WaitAllStrategy;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.postgresql.PostgreSQLContainer;
@@ -45,7 +47,10 @@ public class PgVectorSchemaValidatorIT {
 	@Container
 	static PostgreSQLContainer postgresContainer = new PostgreSQLContainer(PgVectorImage.DEFAULT_IMAGE)
 		.withUsername("postgres")
-		.withPassword("postgres");
+		.withPassword("postgres")
+		.waitingFor(new WaitAllStrategy()
+			.withStrategy(Wait.forLogMessage(".*database system is ready to accept connections.*\\s", 2))
+			.withStrategy(Wait.forListeningPort()));
 
 	@Autowired
 	JdbcTemplate jdbcTemplate;
@@ -64,10 +69,11 @@ public class PgVectorSchemaValidatorIT {
 					embedding vector(1024)
 				)
 				""");
-		assertThatNoException()
-			.isThrownBy(() -> this.schemaValidator.validateTableSchema("public", "vector_store", 1024));
+		assertThatNoException().isThrownBy(() -> this.schemaValidator.validateTableSchema("public", "vector_store",
+				1024, "content", "metadata", "embedding"));
 		assertThatIllegalStateException()
-			.isThrownBy(() -> this.schemaValidator.validateTableSchema("public", "vector_store", 2048))
+			.isThrownBy(() -> this.schemaValidator.validateTableSchema("public", "vector_store", 2048, "content",
+					"metadata", "embedding"))
 			.withMessageContaining("1024");
 
 	}
