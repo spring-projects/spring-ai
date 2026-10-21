@@ -29,7 +29,10 @@ import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import org.springframework.ai.mcp.annotation.McpCsp;
+import org.springframework.ai.mcp.annotation.McpPermission;
 import org.springframework.ai.mcp.annotation.McpResource;
+import org.springframework.ai.mcp.annotation.PrefersBorder;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -493,6 +496,153 @@ public class AsyncMcpResourceProviderTests {
 			assertThat(content).isInstanceOf(TextResourceContents.class);
 			assertThat(((TextResourceContents) content).text()).isEqualTo("Sync method returning Mono content");
 		}).verifyComplete();
+	}
+
+	@Test
+	void testResourceCspIsEmittedOnListedResourceAndReadContent() {
+		class CspResource {
+
+			@McpResource(uri = "ui://test/csp.html", name = "csp-view", mimeType = "text/html;profile=mcp-app",
+					csp = @McpCsp(connectDomains = "https://api.example.com",
+							resourceDomains = { "https://cdn.example.com", "https://*.example.org" },
+							frameDomains = "https://embed.example.com", baseUriDomains = "https://static.example.com"))
+			public Mono<String> cspView() {
+				return Mono.just("<html></html>");
+			}
+
+		}
+
+		AsyncMcpResourceProvider provider = new AsyncMcpResourceProvider(List.of(new CspResource()));
+
+		List<AsyncResourceSpecification> resourceSpecs = provider.getResourceSpecifications();
+
+		assertThat(resourceSpecs).hasSize(1);
+		ResourceCspAssertions.assertFullCsp(resourceSpecs.get(0).resource().meta());
+
+		ReadResourceRequest request = ReadResourceRequest.builder("ui://test/csp.html").build();
+		ReadResourceResult result = resourceSpecs.get(0)
+			.readHandler()
+			.apply(mock(McpAsyncServerExchange.class), request)
+			.block();
+		assertThat(result.contents()).hasSize(1);
+		ResourceCspAssertions.assertFullCsp(result.contents().get(0).meta());
+	}
+
+	@Test
+	void testResourceCspIsEmittedOnUriTemplateResource() {
+		class CspTemplateResource {
+
+			@McpResource(uri = "ui://test/{id}/view.html", name = "csp-template-view",
+					mimeType = "text/html;profile=mcp-app",
+					csp = @McpCsp(connectDomains = "https://api.example.com",
+							resourceDomains = { "https://cdn.example.com", "https://*.example.org" },
+							frameDomains = "https://embed.example.com", baseUriDomains = "https://static.example.com"))
+			public Mono<String> cspTemplateView(String id) {
+				return Mono.just("<html>" + id + "</html>");
+			}
+
+		}
+
+		AsyncMcpResourceProvider provider = new AsyncMcpResourceProvider(List.of(new CspTemplateResource()));
+
+		List<AsyncResourceTemplateSpecification> templateSpecs = provider.getResourceTemplateSpecifications();
+
+		assertThat(templateSpecs).hasSize(1);
+		ResourceCspAssertions.assertFullCsp(templateSpecs.get(0).resourceTemplate().meta());
+
+		ReadResourceRequest request = ReadResourceRequest.builder("ui://test/42/view.html").build();
+		ReadResourceResult result = templateSpecs.get(0)
+			.readHandler()
+			.apply(mock(McpAsyncServerExchange.class), request)
+			.block();
+		assertThat(result.contents()).hasSize(1);
+		ResourceCspAssertions.assertFullCsp(result.contents().get(0).meta());
+	}
+
+	@Test
+	void testEmptyResourceCspIsOmitted() {
+		class EmptyCspResource {
+
+			@McpResource(uri = "ui://test/empty.html", name = "empty-csp-view", mimeType = "text/html;profile=mcp-app",
+					csp = @McpCsp)
+			public Mono<String> emptyCspView() {
+				return Mono.just("<html></html>");
+			}
+
+		}
+
+		AsyncMcpResourceProvider provider = new AsyncMcpResourceProvider(List.of(new EmptyCspResource()));
+
+		List<AsyncResourceSpecification> resourceSpecs = provider.getResourceSpecifications();
+
+		assertThat(resourceSpecs).hasSize(1);
+		assertThat(resourceSpecs.get(0).resource().meta()).isNull();
+
+		ReadResourceRequest request = ReadResourceRequest.builder("ui://test/empty.html").build();
+		ReadResourceResult result = resourceSpecs.get(0)
+			.readHandler()
+			.apply(mock(McpAsyncServerExchange.class), request)
+			.block();
+		assertThat(result.contents()).hasSize(1);
+		assertThat(result.contents().get(0).meta()).isNull();
+	}
+
+	@Test
+	void testResourceCspMergesWithMetaProvider() {
+		class MergedCspResource {
+
+			@McpResource(uri = "ui://test/merged.html", name = "merged-csp-view",
+					mimeType = "text/html;profile=mcp-app", csp = @McpCsp(connectDomains = "https://api.example.com"),
+					metaProvider = ResourceCspAssertions.UiPrefsMetaProvider.class)
+			public Mono<String> mergedCspView() {
+				return Mono.just("<html></html>");
+			}
+
+		}
+
+		AsyncMcpResourceProvider provider = new AsyncMcpResourceProvider(List.of(new MergedCspResource()));
+
+		List<AsyncResourceSpecification> resourceSpecs = provider.getResourceSpecifications();
+
+		assertThat(resourceSpecs).hasSize(1);
+		ResourceCspAssertions.assertMergedCsp(resourceSpecs.get(0).resource().meta());
+
+		ReadResourceRequest request = ReadResourceRequest.builder("ui://test/merged.html").build();
+		ReadResourceResult result = resourceSpecs.get(0)
+			.readHandler()
+			.apply(mock(McpAsyncServerExchange.class), request)
+			.block();
+		assertThat(result.contents()).hasSize(1);
+		ResourceCspAssertions.assertMergedCsp(result.contents().get(0).meta());
+	}
+
+	@Test
+	void testUiResourceFieldsOnListingAndReadContents() {
+		class UiFieldsResource {
+
+			@McpResource(uri = "ui://test/ui-fields.html", name = "ui-fields-view",
+					mimeType = "text/html;profile=mcp-app", permissions = McpPermission.MICROPHONE,
+					domain = "www-example-com.oaiusercontent.com", prefersBorder = PrefersBorder.FALSE)
+			public Mono<String> uiFieldsView() {
+				return Mono.just("<html></html>");
+			}
+
+		}
+
+		AsyncMcpResourceProvider provider = new AsyncMcpResourceProvider(List.of(new UiFieldsResource()));
+
+		List<AsyncResourceSpecification> resourceSpecs = provider.getResourceSpecifications();
+
+		assertThat(resourceSpecs).hasSize(1);
+		ResourceCspAssertions.assertUiResourceFields(resourceSpecs.get(0).resource().meta());
+
+		ReadResourceRequest request = ReadResourceRequest.builder("ui://test/ui-fields.html").build();
+		ReadResourceResult result = resourceSpecs.get(0)
+			.readHandler()
+			.apply(mock(McpAsyncServerExchange.class), request)
+			.block();
+		assertThat(result.contents()).hasSize(1);
+		ResourceCspAssertions.assertUiResourceFields(result.contents().get(0).meta());
 	}
 
 }

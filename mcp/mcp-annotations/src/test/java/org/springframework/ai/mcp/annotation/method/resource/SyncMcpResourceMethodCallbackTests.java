@@ -33,9 +33,13 @@ import io.modelcontextprotocol.spec.McpSchema.TextResourceContents;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 
+import org.springframework.ai.mcp.annotation.EmptyMcpCsp;
+import org.springframework.ai.mcp.annotation.McpCsp;
 import org.springframework.ai.mcp.annotation.McpMeta;
+import org.springframework.ai.mcp.annotation.McpPermission;
 import org.springframework.ai.mcp.annotation.McpProgressToken;
 import org.springframework.ai.mcp.annotation.McpResource;
+import org.springframework.ai.mcp.annotation.PrefersBorder;
 import org.springframework.ai.mcp.annotation.adapter.ResourceAdapter;
 import org.springframework.ai.mcp.annotation.context.DefaultMetaProvider;
 import org.springframework.ai.mcp.annotation.context.McpAsyncRequestContext;
@@ -116,6 +120,26 @@ public class SyncMcpResourceMethodCallbackTests {
 			@Override
 			public Class<? extends MetaProvider> metaProvider() {
 				return DefaultMetaProvider.class;
+			}
+
+			@Override
+			public McpCsp csp() {
+				return EmptyMcpCsp.INSTANCE;
+			}
+
+			@Override
+			public McpPermission[] permissions() {
+				return new McpPermission[0];
+			}
+
+			@Override
+			public String domain() {
+				return "";
+			}
+
+			@Override
+			public PrefersBorder prefersBorder() {
+				return PrefersBorder.UNSET;
 			}
 		};
 	}
@@ -421,6 +445,26 @@ public class SyncMcpResourceMethodCallbackTests {
 			@Override
 			public Class<? extends MetaProvider> metaProvider() {
 				return DefaultMetaProvider.class;
+			}
+
+			@Override
+			public McpCsp csp() {
+				return EmptyMcpCsp.INSTANCE;
+			}
+
+			@Override
+			public McpPermission[] permissions() {
+				return new McpPermission[0];
+			}
+
+			@Override
+			public String domain() {
+				return "";
+			}
+
+			@Override
+			public PrefersBorder prefersBorder() {
+				return PrefersBorder.UNSET;
 			}
 		};
 

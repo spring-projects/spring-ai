@@ -30,6 +30,17 @@ import org.springframework.ai.mcp.annotation.context.MetaProvider;
 /**
  * Marks a method as a MCP Resource.
  *
+ * <p>
+ * For MCP App UI resources (SEP-1865, {@code ui://} URIs) the {@link #csp()},
+ * {@link #permissions()}, {@link #domain()} and {@link #prefersBorder()} attributes
+ * declare the UI resource metadata: the Content Security Policy of the UI, the sandbox
+ * permissions it requests, the dedicated origin for the view and the visual boundary
+ * preference. Per the specification this metadata is read by hosts from the UI resource
+ * ({@code _meta.ui} of the {@code resources/read} content item; the current draft also
+ * reads it from the {@code resources/list} entry), not from the tool. It is attached to
+ * the read contents automatically only when the method returns {@code String} or
+ * {@code List<String>} (see {@link #csp()}).
+ *
  * @author Christian Tzolov
  * @author Alexandros Pappas
  * @author Vadzim Shurmialiou
@@ -80,6 +91,94 @@ public @interface McpResource {
 	 * @return the meta provider class to use for this resource
 	 */
 	Class<? extends MetaProvider> metaProvider() default DefaultMetaProvider.class;
+
+	/**
+	 * Content Security Policy for the MCP App UI resource (SEP-1865). Declares which
+	 * external origins the UI iframe is allowed to access. Hosts MUST NOT allow
+	 * undeclared origins, SHOULD warn users when the UI requires external domain access
+	 * and SHOULD log CSP configurations for security review. Opening links
+	 * ({@code ui/open-link}) is host-mediated and is not governed by the CSP.
+	 *
+	 * <p>
+	 * The CSP is emitted as {@code _meta.ui.csp} on the listed resource
+	 * ({@code resources/list}) and on the content items returned by
+	 * {@code resources/read}. Attached automatically to the read contents when the method
+	 * returns {@code String} or {@code List<String>}; if it returns
+	 * {@code ResourceContents} or {@code ReadResourceResult}, the method must set
+	 * {@code _meta.ui.csp} on the contents itself. Only non-empty fields are emitted, and
+	 * {@code csp} is omitted entirely when all fields are empty. It is merged with any
+	 * {@code _meta} supplied by {@link #metaProvider()}; on conflict the
+	 * {@code metaProvider} value wins (a {@code ui.csp} provided by the
+	 * {@code metaProvider} replaces this attribute's CSP as a whole). Only relevant for
+	 * {@code ui://} resources.
+	 * @return the CSP declaration; the default declares nothing
+	 */
+	McpCsp csp() default @McpCsp;
+
+	/**
+	 * Sandbox permissions requested by the MCP App UI resource (SEP-1865). Servers
+	 * declare which browser capabilities their UI needs. Hosts MAY honor these by setting
+	 * appropriate iframe {@code allow} attributes. Apps SHOULD NOT assume permissions are
+	 * granted; use JS feature detection as fallback.
+	 *
+	 * <p>
+	 * The permissions are emitted as {@code _meta.ui.permissions} on the listed resource
+	 * ({@code resources/list}) and on the content items returned by
+	 * {@code resources/read}, each requested permission mapped to an empty object, e.g.
+	 * {@code {"camera": {}, "clipboardWrite": {}}}. Duplicates are ignored, and
+	 * {@code permissions} is omitted when none is requested. As with {@link #csp()}, it
+	 * is attached automatically to the read contents only when the method returns
+	 * {@code String} or {@code List<String>}. A {@code ui.permissions} supplied by the
+	 * {@link #metaProvider()} replaces this attribute's permissions as a whole (the merge
+	 * is per {@code ui} key, not per permission). Only relevant for {@code ui://}
+	 * resources.
+	 * @return the requested sandbox permissions; the default requests none
+	 */
+	McpPermission[] permissions() default {};
+
+	/**
+	 * Dedicated origin for the MCP App UI resource view (SEP-1865). Optional domain for
+	 * the view's sandbox origin. Useful when views need stable, dedicated origins for
+	 * OAuth callbacks, CORS policies, or API key allowlists. If omitted, the host uses
+	 * the default sandbox origin (typically per-conversation).
+	 *
+	 * <p>
+	 * The format and validation rules for this field are host-dependent: consult the
+	 * host-specific documentation for the expected domain format. Common patterns include
+	 * hash-based subdomains (e.g. {@code a904794854a047f6.claudemcpcontent.com}) and
+	 * URL-derived subdomains (e.g. {@code www-example-com.oaiusercontent.com}). The value
+	 * is therefore not validated and is emitted verbatim.
+	 *
+	 * <p>
+	 * The domain is emitted as {@code _meta.ui.domain} on the listed resource
+	 * ({@code resources/list}) and on the content items returned by
+	 * {@code resources/read}, and is omitted when blank. As with {@link #csp()}, it is
+	 * attached automatically to the read contents only when the method returns
+	 * {@code String} or {@code List<String>}. A {@code ui.domain} supplied by the
+	 * {@link #metaProvider()} wins over this attribute. Only relevant for {@code ui://}
+	 * resources.
+	 * @return the dedicated sandbox origin; the default declares none
+	 */
+	String domain() default "";
+
+	/**
+	 * Visual boundary preference of the MCP App UI resource (SEP-1865): whether a visible
+	 * border and background is provided by the host. Specifying an explicit value for
+	 * this is recommended because hosts' defaults may vary.
+	 *
+	 * <p>
+	 * The preference is emitted as the boolean {@code _meta.ui.prefersBorder} on the
+	 * listed resource ({@code resources/list}) and on the content items returned by
+	 * {@code resources/read}: {@link PrefersBorder#TRUE} and {@link PrefersBorder#FALSE}
+	 * are emitted as {@code true} and {@code false}, while {@link PrefersBorder#UNSET}
+	 * omits the field so the host decides. As with {@link #csp()}, it is attached
+	 * automatically to the read contents only when the method returns {@code String} or
+	 * {@code List<String>}. A {@code ui.prefersBorder} supplied by the
+	 * {@link #metaProvider()} wins over this attribute. Only relevant for {@code ui://}
+	 * resources.
+	 * @return the visual boundary preference; the default leaves it to the host
+	 */
+	PrefersBorder prefersBorder() default PrefersBorder.UNSET;
 
 	@Retention(RetentionPolicy.RUNTIME)
 	@Target(ElementType.ANNOTATION_TYPE)
