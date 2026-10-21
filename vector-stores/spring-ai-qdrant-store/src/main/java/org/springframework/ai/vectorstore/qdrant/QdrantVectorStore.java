@@ -206,7 +206,11 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 
 			this.qdrantClient.upsertAsync(this.collectionName, points).get();
 		}
-		catch (InterruptedException | ExecutionException | IllegalArgumentException e) {
+		catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			throw new RuntimeException(e);
+		}
+		catch (ExecutionException | IllegalArgumentException e) {
 			throw new RuntimeException(e);
 		}
 	}
@@ -264,6 +268,10 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 				.toList();
 			this.qdrantClient.deleteAsync(this.collectionName, ids).get();
 		}
+		catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			throw new RuntimeException(e);
+		}
 		catch (Exception e) {
 			throw new RuntimeException(e);
 		}
@@ -285,6 +293,10 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 			}
 
 			logger.debug("Deleted documents matching filter expression");
+		}
+		catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			throw new IllegalStateException("Failed to delete documents by filter", e);
 		}
 		catch (Exception e) {
 			if (logger.isErrorEnabled()) {
@@ -336,7 +348,11 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 			return queryResponse.stream().map(this::toDocument).toList();
 
 		}
-		catch (InterruptedException | ExecutionException | IllegalArgumentException e) {
+		catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			throw new RuntimeException(e);
+		}
+		catch (ExecutionException | IllegalArgumentException e) {
 			throw new RuntimeException(e);
 		}
 	}
@@ -449,6 +465,10 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 	private boolean isCollectionExists() {
 		try {
 			return this.qdrantClient.listCollectionsAsync().get().stream().anyMatch(c -> c.equals(this.collectionName));
+		}
+		catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			throw new RuntimeException(e);
 		}
 		catch (Exception e) {
 			throw new RuntimeException(e);
