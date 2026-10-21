@@ -422,43 +422,6 @@ When you have a full SSE URL, split it into base URL and endpoint path:
 * Check the `sse-endpoint` starts with `/` and includes the full path and query parameters
 * Test the full URL directly in a browser or curl to confirm it's accessible
 
-=== Streamable Http Transport Properties
-
-Properties for Streamable Http transport are prefixed with `spring.ai.mcp.client.streamable-http`:
-
-[cols="3,4,3"]
-|===
-|Property |Description | Default Value
-
-|`connections`
-|Map of named Streamable Http connection configurations
-|-
-
-|`connections.[name].url`
-|Base URL endpoint for Streamable-Http communication with the MCP server
-|-
-
-|`connections.[name].endpoint`
-|the streamable-http endpoint (as url suffix) to use for the connection
-|`/mcp`
-|===
-
-Example configuration:
-[source,yaml]
-----
-spring:
-  ai:
-    mcp:
-      client:
-        streamable-http:
-          connections:
-            server1:
-              url: http://localhost:8080
-            server2:
-              url: http://otherserver:8081
-              endpoint: /custom-sse
-----
-
 == Features
 
 === Sync/Async Client Types
