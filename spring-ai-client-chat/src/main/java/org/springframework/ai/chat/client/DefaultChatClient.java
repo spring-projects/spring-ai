@@ -935,8 +935,8 @@ public class DefaultChatClient implements ChatClient {
 				.builder(this.chatModel, this.observationRegistry, this.chatClientObservationConvention,
 						this.advisorObservationConvention, this.toolCallingAdvisorBuilder)
 				.defaultTemplateRenderer(this.templateRenderer)
-				.defaultTools(this.toolCallbacks.toArray(new ToolCallback[0]))
-				.defaultTools((Object[]) this.toolCallbackProviders.toArray(new ToolCallbackProvider[0]))
+				.defaultTools(this.toolCallbacks.toArray(ToolCallback[]::new))
+				.defaultTools((Object[]) this.toolCallbackProviders.toArray(ToolCallbackProvider[]::new))
 				.defaultToolContext(this.toolContext);
 
 			if (!CollectionUtils.isEmpty(this.advisors)) {
@@ -947,7 +947,7 @@ public class DefaultChatClient implements ChatClient {
 				String text = this.userText;
 				builder.defaultUser(u -> u.text(text)
 					.params(this.userParams)
-					.media(this.media.toArray(new Media[0]))
+					.media(this.media.toArray(Media[]::new))
 					.metadata(this.userMetadata));
 			}
 

@@ -186,7 +186,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 					Field.builder().name(ADDITIONAL_VECTOR_FIELD_NAME).build())
 			.build());
 
-		return searchWeaviateFieldList.toArray(new Field[0]);
+		return searchWeaviateFieldList.toArray(Field[]::new);
 	}
 
 	@Override
@@ -205,7 +205,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 
 		Result<ObjectGetResponse[]> response = this.weaviateClient.batch()
 			.objectsBatcher()
-			.withObjects(weaviateObjects.toArray(new WeaviateObject[0]))
+			.withObjects(weaviateObjects.toArray(WeaviateObject[]::new))
 			.withConsistencyLevel(this.consistencyLevel.name())
 			.run();
 
@@ -276,7 +276,7 @@ public class WeaviateVectorStore extends AbstractObservationVectorStore {
 			.withWhere(WhereFilter.builder()
 				.path("id")
 				.operator(Operator.ContainsAny)
-				.valueString(documentIds.toArray(new String[0]))
+				.valueString(documentIds.toArray(String[]::new))
 				.build())
 			.run();
 
