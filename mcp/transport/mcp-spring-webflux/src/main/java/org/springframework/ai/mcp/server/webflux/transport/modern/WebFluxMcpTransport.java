@@ -80,7 +80,7 @@ import org.springframework.web.reactive.function.server.ServerResponse;
  * disagree with its body is rejected before dispatch.
  *
  * @author Dariusz Jędrzejczyk
- * @since 2.1.0
+ * @since 2.2.0
  */
 public final class WebFluxMcpTransport {
 
@@ -185,6 +185,10 @@ public final class WebFluxMcpTransport {
 			String message = ex.getMessage();
 			return ServerResponse.status(ex.getStatusCode()).bodyValue(message != null ? message : "");
 		}
+		if (!isJsonContentType(request)) {
+			return ServerResponse.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+				.bodyValue("Unsupported Media Type: Content-Type must be application/json");
+		}
 		if (request.headers().contentLength().orElse(-1) > this.maxRequestSize) {
 			return ServerResponse.status(HttpStatus.CONTENT_TOO_LARGE).build();
 		}
@@ -245,7 +249,7 @@ public final class WebFluxMcpTransport {
 		McpTransportResponse.Streaming streaming = (McpTransportResponse.Streaming) response;
 		return ServerResponse.ok()
 			.contentType(MediaType.TEXT_EVENT_STREAM)
-			.header(HttpHeaders.CACHE_CONTROL, "no-cache")
+			.header(HttpHeaders.CACHE_CONTROL, "no-cache, no-transform")
 			.header("X-Accel-Buffering", "no")
 			.body(BodyInserters.fromServerSentEvents(events(streaming.messages())));
 	}
@@ -374,6 +378,13 @@ public final class WebFluxMcpTransport {
 		return value;
 	}
 
+	private static boolean isJsonContentType(ServerRequest request) {
+		return request.headers()
+			.contentType()
+			.map(type -> type.isCompatibleWith(MediaType.APPLICATION_JSON) || type.getSubtype().endsWith("+json"))
+			.orElse(false);
+	}
+
 	private static HeaderAccessor headerAccessor(ServerRequest request) {
 		HttpHeaders headers = request.headers().asHttpHeaders();
 		return new HeaderAccessor() {
@@ -401,7 +412,7 @@ public final class WebFluxMcpTransport {
 	/**
 	 * Builder for {@link WebFluxMcpTransport}.
 	 *
-	 * @since 2.1.0
+	 * @since 2.2.0
 	 */
 	public static final class Builder {
 

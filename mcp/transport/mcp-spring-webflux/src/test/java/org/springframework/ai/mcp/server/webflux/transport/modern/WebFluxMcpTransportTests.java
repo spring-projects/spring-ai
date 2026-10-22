@@ -166,7 +166,7 @@ class WebFluxMcpTransportTests {
 			.expectHeader()
 			.contentTypeCompatibleWith(MediaType.TEXT_EVENT_STREAM)
 			.expectHeader()
-			.valueEquals(HttpHeaders.CACHE_CONTROL, "no-cache")
+			.valueEquals(HttpHeaders.CACHE_CONTROL, "no-cache, no-transform")
 			.expectHeader()
 			.valueEquals("X-Accel-Buffering", "no")
 			.expectBody(byte[].class)
@@ -594,6 +594,19 @@ class WebFluxMcpTransportTests {
 			.exchange()
 			.expectStatus()
 			.isEqualTo(HttpStatus.CONTENT_TOO_LARGE);
+	}
+
+	@Test
+	void nonJsonContentTypeIsUnsupportedMediaType() {
+		client().post()
+			.uri("/mcp")
+			.contentType(MediaType.TEXT_PLAIN)
+			.header("Mcp-Method", McpSchema.METHOD_TOOLS_LIST)
+			.header("MCP-Protocol-Version", VERSION)
+			.bodyValue(ModernRequests.request(1, McpSchema.METHOD_TOOLS_LIST, ModernRequests.params()))
+			.exchange()
+			.expectStatus()
+			.isEqualTo(HttpStatus.UNSUPPORTED_MEDIA_TYPE);
 	}
 
 	@Test
