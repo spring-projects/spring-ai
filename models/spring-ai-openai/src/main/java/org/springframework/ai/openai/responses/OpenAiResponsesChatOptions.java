@@ -40,7 +40,6 @@ import org.springframework.ai.model.NoopApiKey;
 import org.springframework.ai.model.tool.DefaultToolCallingChatOptions;
 import org.springframework.ai.model.tool.StructuredOutputChatOptions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
-import org.springframework.ai.openai.AbstractOpenAiOptions;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.ai.tool.ToolCallback;
@@ -95,7 +94,7 @@ public class OpenAiResponsesChatOptions implements ToolCallingChatOptions, Struc
 
 	private final @Nullable Duration timeout;
 
-	private final int maxRetries;
+	private final @Nullable Integer maxRetries;
 
 	private final @Nullable Proxy proxy;
 
@@ -153,7 +152,7 @@ public class OpenAiResponsesChatOptions implements ToolCallingChatOptions, Struc
 		this.organizationId = builder.organizationId;
 		this.isMicrosoftFoundry = builder.isMicrosoftFoundry != null ? builder.isMicrosoftFoundry : false;
 		this.timeout = builder.timeout;
-		this.maxRetries = builder.maxRetries != null ? builder.maxRetries : AbstractOpenAiOptions.DEFAULT_MAX_RETRIES;
+		this.maxRetries = builder.maxRetries;
 		this.proxy = builder.proxy;
 		this.customHeaders = builder.customHeaders != null ? Map.copyOf(builder.customHeaders) : null;
 		this.maxOutputTokens = builder.resolveMaxTokens();
@@ -232,7 +231,11 @@ public class OpenAiResponsesChatOptions implements ToolCallingChatOptions, Struc
 		return this.timeout;
 	}
 
-	public int getMaxRetries() {
+	/**
+	 * Return the maximum number of retries, or {@code null} to inherit the number of
+	 * retries configured on the OpenAI client.
+	 */
+	public @Nullable Integer getMaxRetries() {
 		return this.maxRetries;
 	}
 
