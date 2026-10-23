@@ -230,15 +230,16 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 
 		ToolContext toolContext = buildToolContext(prompt, assistantMessage);
 
-		InternalToolExecutionResult internalToolExecutionResult = executeToolCall(prompt, assistantMessage, toolContext,
-				decisions);
-
 		// A resumed batch may come with the conversation up to and including the reply;
-		// the history then holds the reply once
+		// the history then holds the reply once, also when a limit stops the batch
 		List<Message> previousMessages = prompt.getInstructions();
 		if (endsWith(previousMessages, assistantMessage)) {
 			previousMessages = previousMessages.subList(0, previousMessages.size() - 1);
 		}
+
+		InternalToolExecutionResult internalToolExecutionResult = executeToolCall(prompt, previousMessages,
+				assistantMessage, toolContext, decisions);
+
 		List<Message> conversationHistory = buildConversationHistoryAfterToolExecution(previousMessages,
 				assistantMessage, internalToolExecutionResult.toolResponseMessage());
 
@@ -270,8 +271,8 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 	/**
 	 * Execute the tool call and return the response message.
 	 */
-	private InternalToolExecutionResult executeToolCall(Prompt prompt, AssistantMessage assistantMessage,
-			ToolContext toolContext, @Nullable ToolCallDecisions decisions) {
+	private InternalToolExecutionResult executeToolCall(Prompt prompt, List<Message> previousMessages,
+			AssistantMessage assistantMessage, ToolContext toolContext, @Nullable ToolCallDecisions decisions) {
 		List<ToolCallback> toolCallbacks = List.of();
 		if (prompt.getOptions() instanceof ToolCallingChatOptions toolCallingChatOptions) {
 			if (!CollectionUtils.isEmpty(toolCallingChatOptions.getToolCallbacks())) {
@@ -332,7 +333,7 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 						.responses(toolResponses)
 						.build();
 					List<Message> partialConversationHistory = buildConversationHistoryAfterToolExecution(
-							prompt.getInstructions(), assistantMessage, partialToolResponseMessage);
+							previousMessages, assistantMessage, partialToolResponseMessage);
 					ToolExecutionResult partialToolExecutionResult = ToolExecutionResult.builder()
 						.conversationHistory(partialConversationHistory)
 						.returnDirect(Objects.requireNonNullElse(returnDirect, false))
