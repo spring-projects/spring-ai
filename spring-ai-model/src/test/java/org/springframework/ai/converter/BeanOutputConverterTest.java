@@ -27,6 +27,8 @@ import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.junit.jupiter.MockitoExtension;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.JsonNode;
@@ -135,6 +137,26 @@ class BeanOutputConverterTest {
 
 	@Nested
 	class ConverterTest {
+
+		@Test
+		void preserveThinkingTagsInJsonString() {
+			var converter = new BeanOutputConverter<>(TestClass.class);
+			var result = converter.convert("{\"someString\":\"<think>Keep this example</think>\"}");
+			assertThat(result.getSomeString()).isEqualTo("<think>Keep this example</think>");
+		}
+
+		@ParameterizedTest
+		@ValueSource(strings = { "<thinking>example</thinking>", "<think>example</think>",
+				"<reasoning>example</reasoning>", "```thinking\nexample\n```", "<!-- thinking: example -->",
+				"A quote: \"<think>example</think>\", a slash: \\, and a newline:\nnext", "<THINK>example</THINK>" })
+		void preserveThinkingContentInPlainAndWrappedJson(String value) {
+			var converter = new BeanOutputConverter<>(TestClass.class);
+			String json = "{\"someString\":" + JsonMapper.builder().build().writeValueAsString(value) + "}";
+			assertThat(converter.convert(json).getSomeString()).isEqualTo(value);
+			assertThat(converter.convert("```json\n" + json + "\n```").getSomeString()).isEqualTo(value);
+			assertThat(converter.convert("<think>outside</think>\n```json\n" + json + "\n```").getSomeString())
+				.isEqualTo(value);
+		}
 
 		@Test
 		void convertClassType() {
