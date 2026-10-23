@@ -102,7 +102,8 @@ public class SseWebClientWebFluxServerIT {
 
 		this.serverContextRunner.withUserConfiguration(TestMcpServerConfiguration.class)
 			.withPropertyValues(// @formatter:off
-			"spring.ai.mcp.server.sse-endpoint=/sse",
+			"spring.ai.mcp.server.protocol=SSE",
+					"spring.ai.mcp.server.sse-endpoint=/sse",
 					"spring.ai.mcp.server.base-url=http://localhost:" + serverPort,
 					"spring.ai.mcp.server.name=test-mcp-server",
 					"spring.ai.mcp.server.keep-alive-interval=1s",

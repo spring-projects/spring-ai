@@ -34,7 +34,8 @@ class McpServerSseWebFluxAutoConfigurationTests {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(McpServerSseWebFluxAutoConfiguration.class,
-				McpServerJsonMapperAutoConfiguration.class, TestConfiguration.class));
+				McpServerJsonMapperAutoConfiguration.class, TestConfiguration.class))
+		.withPropertyValues("spring.ai.mcp.server.protocol=SSE");
 
 	@Test
 	void shouldConfigureWebFluxTransportWithCustomJsonMapper() {
