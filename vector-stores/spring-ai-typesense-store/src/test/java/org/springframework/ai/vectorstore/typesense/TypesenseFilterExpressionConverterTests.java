@@ -48,7 +48,7 @@ class TypesenseFilterExpressionConverterTests {
 	@Test
 	void testEQ() {
 		String vectorExpr = this.converter.convertExpression(new Expression(EQ, new Key("country"), new Value("BG")));
-		assertThat(vectorExpr).isEqualTo("metadata.country: \"BG\"");
+		assertThat(vectorExpr).isEqualTo("metadata.country:= \"BG\"");
 	}
 
 	@Test
@@ -56,14 +56,14 @@ class TypesenseFilterExpressionConverterTests {
 		String vectorExpr = this.converter
 			.convertExpression(new Expression(AND, new Expression(EQ, new Key("genre"), new Value("drama")),
 					new Expression(GTE, new Key("year"), new Value(2020))));
-		assertThat(vectorExpr).isEqualTo("metadata.genre: \"drama\" && metadata.year: >= 2020");
+		assertThat(vectorExpr).isEqualTo("metadata.genre:= \"drama\" && metadata.year: >= 2020");
 	}
 
 	@Test
 	void testIn() {
 		String vectorExpr = this.converter.convertExpression(
 				new Expression(IN, new Key("genre"), new Value(List.of("comedy", "documentary", "drama"))));
-		assertThat(vectorExpr).isEqualTo("metadata.genre: [\"comedy\",\"documentary\",\"drama\"]");
+		assertThat(vectorExpr).isEqualTo("metadata.genre:= [\"comedy\",\"documentary\",\"drama\"]");
 	}
 
 	@Test
@@ -102,7 +102,7 @@ class TypesenseFilterExpressionConverterTests {
 		String vectorExpr = this.converter
 			.convertExpression(new Expression(OR, new Expression(EQ, new Key("country"), new Value("BG")),
 					new Expression(EQ, new Key("country"), new Value("NL"))));
-		assertThat(vectorExpr).isEqualTo("metadata.country: \"BG\" || metadata.country: \"NL\"");
+		assertThat(vectorExpr).isEqualTo("metadata.country:= \"BG\" || metadata.country:= \"NL\"");
 	}
 
 	@Test
@@ -110,7 +110,7 @@ class TypesenseFilterExpressionConverterTests {
 		String vectorExpr = this.converter
 			.convertExpression(new Expression(AND, new Expression(EQ, new Key("isOpen"), new Value(true)),
 					new Expression(GTE, new Key("year"), new Value(2020))));
-		assertThat(vectorExpr).isEqualTo("metadata.isOpen: true && metadata.year: >= 2020");
+		assertThat(vectorExpr).isEqualTo("metadata.isOpen:= true && metadata.year: >= 2020");
 	}
 
 	@Test
@@ -125,23 +125,23 @@ class TypesenseFilterExpressionConverterTests {
 	void testNestedFieldWithDots() {
 		String vectorExpr = this.converter
 			.convertExpression(new Expression(EQ, new Key("address.city"), new Value("Sofia")));
-		assertThat(vectorExpr).isEqualTo("metadata.address.city: \"Sofia\"");
+		assertThat(vectorExpr).isEqualTo("metadata.address.city:= \"Sofia\"");
 	}
 
 	@Test
 	void testHyphenInFieldName() {
 		String vectorExpr = this.converter
 			.convertExpression(new Expression(EQ, new Key("my-field"), new Value("test")));
-		assertThat(vectorExpr).isEqualTo("metadata.my-field: \"test\"");
+		assertThat(vectorExpr).isEqualTo("metadata.my-field:= \"test\"");
 	}
 
 	@Test
 	void testQuotedKeyStrippedAndValidated() {
 		String vectorExpr = this.converter.convertExpression(new Expression(EQ, new Key("'country'"), new Value("BG")));
-		assertThat(vectorExpr).isEqualTo("metadata.country: \"BG\"");
+		assertThat(vectorExpr).isEqualTo("metadata.country:= \"BG\"");
 
 		vectorExpr = this.converter.convertExpression(new Expression(EQ, new Key("\"country\""), new Value("BG")));
-		assertThat(vectorExpr).isEqualTo("metadata.country: \"BG\"");
+		assertThat(vectorExpr).isEqualTo("metadata.country:= \"BG\"");
 	}
 
 	// Security tests - key injection prevention via character validation
