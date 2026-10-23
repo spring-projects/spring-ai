@@ -771,21 +771,33 @@ final class ResponsesItemMapper {
 			// Read through the raw fields rather than the typed accessors, all the way up
 			// to the details object itself: every typed accessor here is a required field
 			// that throws when absent, and an OpenAI-compatible backend may omit the
-			// whole
-			// input_tokens_details object rather than just a token-details field of it.
+			// whole input_tokens_details object rather than just a token-details field of
+			// it. The three main token counts use the same raw-field approach: an
+			// OpenAI-compatible backend may omit any of them, and the typed accessors
+			// throw when a field is absent.
 			var details = usage._inputTokensDetails().asKnown().orElse(null);
 			Long cacheRead = (details != null) ? optionalLong(details._cachedTokens()) : null;
 			Long cacheWrite = (details != null) ? optionalLong(details._cacheWriteTokens()) : null;
+			long inputTokens = optionalLongOrZero(usage._inputTokens());
+			long outputTokens = optionalLongOrZero(usage._outputTokens());
+			// Derive total from input + output when the field is absent.
+			long totalTokens = optionalLong(usage._totalTokens()) != null ? optionalLong(usage._totalTokens())
+					: inputTokens + outputTokens;
 			// Reasoning tokens are only reachable through the native usage object: the
 			// portable Usage type has no field for them.
-			return new DefaultUsage(toIntTokenCount("inputTokens", usage.inputTokens()),
-					toIntTokenCount("outputTokens", usage.outputTokens()),
-					toIntTokenCount("totalTokens", usage.totalTokens()), usage, cacheRead, cacheWrite);
+			return new DefaultUsage(toIntTokenCount("inputTokens", inputTokens),
+					toIntTokenCount("outputTokens", outputTokens), toIntTokenCount("totalTokens", totalTokens), usage,
+					cacheRead, cacheWrite);
 		}).orElseGet(EmptyUsage::new);
 	}
 
 	private static @Nullable Long optionalLong(JsonField<Long> field) {
 		return field.asNumber().map(Number::longValue).orElse(null);
+	}
+
+	private static long optionalLongOrZero(JsonField<Long> field) {
+		Long value = optionalLong(field);
+		return value != null ? value : 0L;
 	}
 
 	static ChatResponseMetadata toResponseMetadata(Response response, Usage usage) {
