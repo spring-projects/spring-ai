@@ -49,11 +49,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <li>record a timer in the {@link MeterRegistry},</li>
  * <li>register OkHttp connection-pool gauges.</li>
  * </ul>
- * For synchronous calls the HTTP observation is also parented under the
- * {@code gen_ai.client.operation} chat-model observation. The streaming case verifies the
- * wiring still fires but does not assert the parent linkage — see the comment on
- * {@link #httpObservationFiresAndMetricsRecordedForStreamingCall()} for the SDK
- * limitation behind this.
+ * For both synchronous and streaming calls the HTTP observation is also parented under
+ * the {@code gen_ai.client.operation} chat-model observation.
  *
  * @author Soby Chacko
  */
@@ -91,24 +88,15 @@ public class OpenAiChatModelHttpObservabilityIT {
 		assertConnectionPoolGaugesBound();
 	}
 
-	/**
-	 * Asserts streaming wiring (observation, timer, pool gauges) but deliberately not the
-	 * parent-child linkage: the SDK's async path uses
-	 * {@code CompletableFuture.thenComposeAsync(...)} without an explicit executor,
-	 * jumping to {@code ForkJoinPool.commonPool()} before our HTTP client runs. The
-	 * calling thread's parent observation is gone by then, so the HTTP span is recorded
-	 * but unparented.
-	 */
 	@Test
-	void httpObservationFiresAndMetricsRecordedForStreamingCall() {
+	void httpObservationFiresAndIsParentedUnderChatObservationForStreamingCall() {
 		var options = OpenAiChatOptions.builder().model(TEST_MODEL).maxTokens(128).build();
 
 		Flux<ChatResponse> flux = this.chatModel.stream(new Prompt("Say hi in one word.", options));
 		List<ChatResponse> responses = flux.collectList().block();
 		assertThat(responses).isNotEmpty();
 
-		TestObservationRegistryAssert.assertThat(this.observationRegistry)
-			.hasObservationWithNameEqualTo(HTTP_OBSERVATION_NAME);
+		assertHttpObservationParentedUnderChatModel();
 		assertHttpTimerRecorded();
 		assertConnectionPoolGaugesBound();
 	}
