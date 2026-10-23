@@ -21,6 +21,7 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.vectorstore.filter.Filter.Expression;
+import org.springframework.ai.vectorstore.filter.Filter.Group;
 import org.springframework.ai.vectorstore.filter.Filter.Key;
 import org.springframework.ai.vectorstore.filter.Filter.Value;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
@@ -103,6 +104,17 @@ class TypesenseFilterExpressionConverterTests {
 			.convertExpression(new Expression(OR, new Expression(EQ, new Key("country"), new Value("BG")),
 					new Expression(EQ, new Key("country"), new Value("NL"))));
 		assertThat(vectorExpr).isEqualTo("metadata.country: \"BG\" || metadata.country: \"NL\"");
+	}
+
+	@Test
+	void testGroupAsRightOperand() {
+		// city == "Sofia" AND (year >= 2020 OR country == "BG")
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(AND, new Expression(EQ, new Key("city"), new Value("Sofia")),
+					new Group(new Expression(OR, new Expression(GTE, new Key("year"), new Value(2020)),
+							new Expression(EQ, new Key("country"), new Value("BG"))))));
+		assertThat(vectorExpr).isEqualTo(
+				"metadata.city: \"Sofia\" && (metadata.year: >= 2020 || metadata.country: \"BG\")");
 	}
 
 	@Test
