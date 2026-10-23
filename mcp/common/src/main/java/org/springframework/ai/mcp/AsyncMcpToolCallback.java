@@ -22,6 +22,7 @@ import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.spec.McpError;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
+import io.modelcontextprotocol.spec.McpSchema.Content;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -155,7 +156,8 @@ public class AsyncMcpToolCallback implements ToolCallback {
 			throw new ToolExecutionException(this.getToolDefinition(),
 					new IllegalStateException("Error calling tool: " + response.content()));
 		}
-		return jsonHelper.toJson(response.content());
+		// A typed array preserves the content type discriminator during serialization.
+		return jsonHelper.toJson(response.content().toArray(Content[]::new));
 	}
 
 	/**
