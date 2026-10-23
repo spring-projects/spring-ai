@@ -119,6 +119,12 @@ public class TransformersEmbeddingModel extends AbstractEmbeddingModel implement
 	private int gpuDeviceId = -1;
 
 	/**
+	 * Optional callback to customize the {@link OrtSession.SessionOptions} used to create
+	 * the ONNX runtime session, for example to limit the number of threads.
+	 */
+	private @Nullable SessionOptionsCustomizer sessionOptionsCustomizer;
+
+	/**
 	 * DJL, Huggingface tokenizer implementation of the {@link Tokenizer} interface that
 	 * converts sentences into token.
 	 */
@@ -135,6 +141,12 @@ public class TransformersEmbeddingModel extends AbstractEmbeddingModel implement
 	 */
 	@SuppressWarnings("NullAway.Init") // initialized in afterPropertiesSet()
 	private OrtSession session;
+
+	/**
+	 * Options used to create the {@link #session}. ONNX Runtime requires them to outlive
+	 * the session, so they are released in {@link #close()}.
+	 */
+	private OrtSession.@Nullable SessionOptions sessionOptions;
 
 	/**
 	 * Resource cache directory. Used to cache remote resources, such as the ONNX models,
@@ -201,6 +213,19 @@ public class TransformersEmbeddingModel extends AbstractEmbeddingModel implement
 		this.gpuDeviceId = gpuDeviceId;
 	}
 
+	/**
+	 * Set a callback to customize the {@link OrtSession.SessionOptions} before the ONNX
+	 * runtime session is created, for example to limit CPU usage with
+	 * {@code options -> options.setIntraOpNumThreads(2)}. The customizer is applied after
+	 * the GPU configuration from {@link #setGpuDeviceId(int)}.
+	 * @param sessionOptionsCustomizer the customizer, or {@code null} to use the default
+	 * options
+	 * @since 2.1.0
+	 */
+	public void setSessionOptionsCustomizer(@Nullable SessionOptionsCustomizer sessionOptionsCustomizer) {
+		this.sessionOptionsCustomizer = sessionOptionsCustomizer;
+	}
+
 	public void setTokenizerResource(Resource tokenizerResource) {
 		this.tokenizerResource = tokenizerResource;
 	}
@@ -232,14 +257,24 @@ public class TransformersEmbeddingModel extends AbstractEmbeddingModel implement
 		this.tokenizer = HuggingFaceTokenizer.newInstance(getCachedResource(this.tokenizerResource).getInputStream(),
 				this.tokenizerOptions);
 
-		try (var sessionOptions = new OrtSession.SessionOptions()) {
+		// The session options must stay open for the lifetime of the session.
+		var options = new OrtSession.SessionOptions();
+		try {
 			if (this.gpuDeviceId >= 0) {
-				sessionOptions.addCUDA(this.gpuDeviceId); // Run on a GPU or with another
-				// provider
+				options.addCUDA(this.gpuDeviceId); // Run on a GPU or with another
+													// provider
+			}
+			if (this.sessionOptionsCustomizer != null) {
+				this.sessionOptionsCustomizer.customize(options);
 			}
 			this.session = this.environment.createSession(getCachedResource(this.modelResource).getContentAsByteArray(),
-					sessionOptions);
+					options);
 		}
+		catch (Exception ex) {
+			options.close();
+			throw ex;
+		}
+		this.sessionOptions = options;
 
 		this.onnxModelInputs = this.session.getInputNames();
 		Set<String> onnxModelOutputs = this.session.getOutputNames();
@@ -254,10 +289,10 @@ public class TransformersEmbeddingModel extends AbstractEmbeddingModel implement
 	}
 
 	/**
-	 * Release the native ONNX runtime session and tokenizer acquired in
-	 * {@link #afterPropertiesSet()}. Spring registers this as the bean destroy method
-	 * automatically (inferred {@code close()} method), and the model can also be used
-	 * with try-with-resources.
+	 * Release the native ONNX runtime session, its session options and the tokenizer
+	 * acquired in {@link #afterPropertiesSet()}. Spring registers this as the bean
+	 * destroy method automatically (inferred {@code close()} method), and the model can
+	 * also be used with try-with-resources.
 	 */
 	@Override
 	public void close() throws OrtException {
@@ -267,8 +302,15 @@ public class TransformersEmbeddingModel extends AbstractEmbeddingModel implement
 			}
 		}
 		finally {
-			if (this.session != null) {
-				this.session.close();
+			try {
+				if (this.session != null) {
+					this.session.close();
+				}
+			}
+			finally {
+				if (this.sessionOptions != null) {
+					this.sessionOptions.close();
+				}
 			}
 		}
 	}
@@ -439,6 +481,24 @@ public class TransformersEmbeddingModel extends AbstractEmbeddingModel implement
 	public void setObservationConvention(EmbeddingModelObservationConvention observationConvention) {
 		Assert.notNull(observationConvention, "observationConvention cannot be null");
 		this.observationConvention = observationConvention;
+	}
+
+	/**
+	 * Callback to customize the {@link OrtSession.SessionOptions} used to create the ONNX
+	 * runtime session.
+	 *
+	 * @since 2.1.0
+	 */
+	@FunctionalInterface
+	public interface SessionOptionsCustomizer {
+
+		/**
+		 * Customize the given session options.
+		 * @param sessionOptions the session options to customize
+		 * @throws OrtException if the options cannot be applied
+		 */
+		void customize(OrtSession.SessionOptions sessionOptions) throws OrtException;
+
 	}
 
 }
