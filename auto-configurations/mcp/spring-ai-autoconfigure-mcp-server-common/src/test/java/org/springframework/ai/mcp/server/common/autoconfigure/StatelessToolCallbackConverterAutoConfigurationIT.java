@@ -18,6 +18,7 @@ package org.springframework.ai.mcp.server.common.autoconfigure;
 
 import java.util.List;
 import java.util.function.Function;
+import java.util.stream.IntStream;
 
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures.AsyncToolSpecification;
@@ -134,6 +135,28 @@ public class StatelessToolCallbackConverterAutoConfigurationIT {
 			// On duplicate key, keep the existing tool
 			assertThat(syncTools).hasSize(1);
 		});
+	}
+
+	@Test
+	void syncToolsPreserveProviderOrder() {
+		this.contextRunner.withUserConfiguration(TestOrderedToolCallbackProviderConfiguration.class).run(context -> {
+			@SuppressWarnings("unchecked")
+			List<SyncToolSpecification> syncTools = (List<SyncToolSpecification>) context.getBean("syncTools");
+			assertThat(syncTools.stream().map(tool -> tool.tool().name()).toList())
+				.containsExactlyElementsOf(expectedToolNames());
+		});
+	}
+
+	@Test
+	void asyncToolsPreserveProviderOrder() {
+		this.contextRunner.withPropertyValues("spring.ai.mcp.server.type=ASYNC")
+			.withUserConfiguration(TestOrderedToolCallbackProviderConfiguration.class)
+			.run(context -> {
+				@SuppressWarnings("unchecked")
+				List<AsyncToolSpecification> asyncTools = (List<AsyncToolSpecification>) context.getBean("asyncTools");
+				assertThat(asyncTools.stream().map(tool -> tool.tool().name()).toList())
+					.containsExactlyElementsOf(expectedToolNames());
+			});
 	}
 
 	@Test
@@ -267,6 +290,25 @@ public class StatelessToolCallbackConverterAutoConfigurationIT {
 				.inputType(String.class)
 				.build();
 			return List.of(regularToolCallback);
+		}
+
+	}
+
+	private static List<String> expectedToolNames() {
+		return IntStream.rangeClosed(1, 30).mapToObj(i -> "tool_%02d".formatted(i)).toList();
+	}
+
+	@Configuration
+	static class TestOrderedToolCallbackProviderConfiguration {
+
+		@Bean
+		ToolCallbackProvider orderedToolCallbackProvider() {
+			return () -> IntStream.rangeClosed(1, 30)
+				.mapToObj(i -> FunctionToolCallback.builder("tool_%02d".formatted(i), (String input) -> input)
+					.description("Tool " + i)
+					.inputType(String.class)
+					.build())
+				.toArray(ToolCallback[]::new);
 		}
 
 	}
