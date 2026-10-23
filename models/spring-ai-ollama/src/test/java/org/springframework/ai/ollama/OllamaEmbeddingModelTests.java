@@ -147,6 +147,30 @@ class OllamaEmbeddingModelTests {
 	}
 
 	@Test
+	void portableOptionsKeepOllamaSpecificDefaults() {
+		given(this.ollamaApi.embed(this.embeddingsRequestCaptor.capture()))
+			.willReturn(new EmbeddingsResponse("RUNTIME_MODEL", List.of(new float[] { 0.5f }), 5L, 2L, 1));
+
+		var embeddingModel = OllamaEmbeddingModel.builder()
+			.ollamaApi(this.ollamaApi)
+			.options(OllamaEmbeddingOptions.builder()
+				.model("DEFAULT_MODEL")
+				.keepAlive("30m")
+				.truncate(false)
+				.numCtx(8192)
+				.build())
+			.build();
+
+		embeddingModel.call(new EmbeddingRequest(List.of("Portable options test"),
+				EmbeddingOptions.builder().model("RUNTIME_MODEL").build()));
+
+		assertThat(this.embeddingsRequestCaptor.getValue().model()).isEqualTo("RUNTIME_MODEL");
+		assertThat(this.embeddingsRequestCaptor.getValue().keepAlive()).isEqualTo("30m");
+		assertThat(this.embeddingsRequestCaptor.getValue().truncate()).isFalse();
+		assertThat(this.embeddingsRequestCaptor.getValue().options()).isEqualTo(Map.of("num_ctx", 8192));
+	}
+
+	@Test
 	void embeddingWithMultipleLargeInputs() {
 		List<String> largeInputs = List.of(
 				"This is a very long text input that might be used for document embedding scenarios",
