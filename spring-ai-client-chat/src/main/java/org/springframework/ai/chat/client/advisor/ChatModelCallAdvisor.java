@@ -16,8 +16,6 @@
 
 package org.springframework.ai.chat.client.advisor;
 
-import java.util.Map;
-
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.chat.client.ChatClientAttributes;
@@ -38,6 +36,7 @@ import org.springframework.util.StringUtils;
  *
  * @author Thomas Vitale
  * @author Christian Tzolov
+ * @author Minju Kim
  * @since 1.0.0
  */
 public final class ChatModelCallAdvisor implements CallAdvisor {
@@ -59,7 +58,7 @@ public final class ChatModelCallAdvisor implements CallAdvisor {
 
 		return ChatClientResponse.builder()
 			.chatResponse(chatResponse)
-			.context(Map.copyOf(formattedChatClientRequest.context()))
+			.context(formattedChatClientRequest.context())
 			.build();
 	}
 
@@ -83,10 +82,7 @@ public final class ChatModelCallAdvisor implements CallAdvisor {
 			var augmentedOptions = structuredOutputChatOptions.mutate().outputSchema(outputSchema).build();
 			Prompt augmentedPrompt = chatClientRequest.prompt().mutate().chatOptions(augmentedOptions).build();
 
-			return ChatClientRequest.builder()
-				.prompt(augmentedPrompt)
-				.context(Map.copyOf(chatClientRequest.context()))
-				.build();
+			return ChatClientRequest.builder().prompt(augmentedPrompt).context(chatClientRequest.context()).build();
 		}
 
 		Prompt augmentedPrompt = chatClientRequest.prompt()
@@ -94,10 +90,7 @@ public final class ChatModelCallAdvisor implements CallAdvisor {
 				.text(userMessage.getText() + System.lineSeparator() + outputFormat)
 				.build());
 
-		return ChatClientRequest.builder()
-			.prompt(augmentedPrompt)
-			.context(Map.copyOf(chatClientRequest.context()))
-			.build();
+		return ChatClientRequest.builder().prompt(augmentedPrompt).context(chatClientRequest.context()).build();
 	}
 
 	@Override
