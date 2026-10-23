@@ -99,12 +99,13 @@ class ToolCallingAdvisorSpanHierarchyTests {
 			.toolCallingManager(toolCallingManager)
 			.build();
 
-		// The ToolCallingAdvisor's own span is stopped from a doFinally that wraps the
-		// whole (possibly recursive, boundedElastic-scheduled) tool-calling loop, so its
-		// name/tags - written by DefaultTracingObservationHandler#onStop - can still be
-		// in flight on a different thread by the time collectList().block() returns
-		// below. Registering this handler *before* the tracing handler makes it run
-		// *after* it on stop (ObservationHandler notifications fire in reverse
+		// The ToolCallingAdvisor's own span is stopped from a termination hook that
+		// wraps the whole (possibly recursive, boundedElastic-scheduled) tool-calling
+		// loop. The stop runs before the completion is forwarded, so its name/tags -
+		// written by DefaultTracingObservationHandler#onStop - are in place by the time
+		// collectList().block() returns below; the latch stays as a guard against that
+		// ordering changing. Registering this handler *before* the tracing handler makes
+		// it run *after* it on stop (ObservationHandler notifications fire in reverse
 		// registration order), so the latch only opens once the span is fully tagged.
 		CountDownLatch toolCallingAdvisorSpanStopped = new CountDownLatch(1);
 		registry.observationConfig().observationHandler(new ObservationHandler<Observation.Context>() {
@@ -165,11 +166,10 @@ class ToolCallingAdvisorSpanHierarchyTests {
 		}
 		outer.stop();
 
-		// block() completing only means the emitted elements were all signalled; the
-		// ToolCallingAdvisor's own observation.stop() (called from a doFinally around the
-		// boundedElastic-scheduled tool-call recursion) can still be finishing up on that
-		// other thread. Wait for it explicitly instead of racing tracer.getSpans()
-		// against it.
+		// block() returning means the terminal signal passed through the termination
+		// hook, so the ToolCallingAdvisor's own observation.stop() has already run. Wait
+		// on the latch anyway rather than racing tracer.getSpans() against a future
+		// ordering change.
 		assertThat(toolCallingAdvisorSpanStopped.await(1, TimeUnit.SECONDS))
 			.as("the ToolCallingAdvisor span must have been stopped (and tagged) by now")
 			.isTrue();
