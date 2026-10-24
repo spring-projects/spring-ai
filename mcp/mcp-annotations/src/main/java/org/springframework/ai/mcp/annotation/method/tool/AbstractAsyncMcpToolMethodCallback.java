@@ -181,11 +181,7 @@ public abstract class AbstractAsyncMcpToolMethodCallback<T, RC extends McpReques
 	 * @return A Mono<CallToolResult> representing the error
 	 */
 	protected Mono<CallToolResult> createAsyncErrorResult(Exception e) {
-		Throwable rootCause = findCauseUsingPlainJava(e);
-		return Mono.just(CallToolResult.builder()
-			.isError(true)
-			.addTextContent(e.getMessage() + System.lineSeparator() + rootCause.getMessage())
-			.build());
+		return Mono.just(CallToolResult.builder().isError(true).addTextContent(createErrorResultMessage(e)).build());
 	}
 
 	/**
