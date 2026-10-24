@@ -20,15 +20,14 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.antlr.runtime.Token;
-import org.antlr.runtime.TokenStream;
+import org.antlr.runtime.tree.CommonTree;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
 import org.stringtemplate.v4.ST;
 import org.stringtemplate.v4.STGroup;
 import org.stringtemplate.v4.compiler.Compiler;
-import org.stringtemplate.v4.compiler.STLexer;
+import org.stringtemplate.v4.compiler.STParser;
 
 import org.springframework.ai.template.TemplateRenderer;
 import org.springframework.ai.template.ValidationMode;
@@ -52,6 +51,7 @@ import org.springframework.util.Assert;
  *
  * @author Thomas Vitale
  * @author Sun Yuhan
+ * @author Jewoo Shin
  * @since 1.0.0
  */
 public class StTemplateRenderer implements TemplateRenderer {
@@ -59,6 +59,8 @@ public class StTemplateRenderer implements TemplateRenderer {
 	private static final Log logger = LogFactory.getLog(StTemplateRenderer.class);
 
 	private static final String VALIDATION_MESSAGE = "Not all variables were replaced in the template. Missing variable names are: %s.";
+
+	private static final Set<String> PREDEFINED_ANONYMOUS_SUBTEMPLATE_ARGUMENTS = Set.of("i", "i0");
 
 	private static final char DEFAULT_START_DELIMITER_TOKEN = '{';
 
@@ -149,50 +151,88 @@ public class StTemplateRenderer implements TemplateRenderer {
 	}
 
 	private Set<String> getInputVariables(ST st) {
-		TokenStream tokens = st.impl.tokens;
 		Set<String> inputVariables = new HashSet<>();
-		boolean isInsideList = false;
+		collectInputVariables(st.impl.ast, inputVariables, Set.of());
+		return inputVariables;
+	}
 
-		for (int i = 0; i < tokens.size(); i++) {
-			Token token = tokens.get(i);
+	private void collectInputVariables(CommonTree tree, Set<String> inputVariables, Set<String> localVariables) {
+		if (tree == null) {
+			return;
+		}
 
-			// Handle list variables with option (e.g., {items; separator=", "})
-			if (token.getType() == STLexer.LDELIM && i + 1 < tokens.size()
-					&& tokens.get(i + 1).getType() == STLexer.ID) {
-				if (i + 2 < tokens.size() && tokens.get(i + 2).getType() == STLexer.COLON) {
-					String text = tokens.get(i + 1).getText();
-					if (!Compiler.funcs.containsKey(text) || this.validateStFunctions) {
-						inputVariables.add(text);
-						isInsideList = true;
-					}
-				}
+		switch (tree.getType()) {
+			case STParser.ID -> addInputVariable(tree.getText(), inputVariables, localVariables);
+			case STParser.SUBTEMPLATE -> collectSubtemplateInputVariables(tree, inputVariables, localVariables);
+			case STParser.ARGS -> {
+				// Formal arguments are local to the anonymous subtemplate.
 			}
-			else if (token.getType() == STLexer.RDELIM) {
-				isInsideList = false;
-			}
-			// Handle regular variables - only add IDs that are at the start of an
-			// expression
-			else if (!isInsideList && token.getType() == STLexer.ID) {
-				// Check if this ID is a function call
-				boolean isFunctionCall = (i + 1 < tokens.size() && tokens.get(i + 1).getType() == STLexer.LPAREN);
+			case STParser.PROP -> collectChildInputVariables(tree, 0, inputVariables, localVariables);
+			case STParser.PROP_IND -> collectChildrenInputVariables(tree, inputVariables, localVariables);
+			case STParser.EXEC_FUNC, STParser.INCLUDE, STParser.INCLUDE_SUPER, STParser.INCLUDE_REGION,
+					STParser.INCLUDE_SUPER_REGION ->
+				collectChildrenInputVariables(tree, 1, inputVariables, localVariables);
+			case STParser.EQUALS -> collectChildrenInputVariables(tree, 1, inputVariables, localVariables);
+			case STParser.OPTIONS -> collectOptionsInputVariables(tree, inputVariables, localVariables);
+			default -> collectChildrenInputVariables(tree, inputVariables, localVariables);
+		}
+	}
 
-				// Check if this ID is at the beginning of an expression (not a property
-				// access)
-				boolean isAfterDot = (i > 0 && tokens.get(i - 1).getType() == STLexer.DOT);
+	private void collectSubtemplateInputVariables(CommonTree tree, Set<String> inputVariables,
+			Set<String> localVariables) {
+		Set<String> subtemplateLocalVariables = new HashSet<>(localVariables);
+		subtemplateLocalVariables.addAll(PREDEFINED_ANONYMOUS_SUBTEMPLATE_ARGUMENTS);
 
-				// Only add IDs that are:
-				// 1. Not function calls
-				// 2. Not property values (not preceded by a dot)
-				// 3. Either not built-in functions or we're validating functions
-				if (!isFunctionCall && !isAfterDot) {
-					String varName = token.getText();
-					if (!Compiler.funcs.containsKey(varName) || this.validateStFunctions) {
-						inputVariables.add(varName);
-					}
-				}
+		for (int i = 0; i < tree.getChildCount(); i++) {
+			CommonTree child = (CommonTree) tree.getChild(i);
+			if (child.getType() == STParser.ARGS && child.getChildCount() > 0) {
+				subtemplateLocalVariables.add(child.getChild(0).getText());
 			}
 		}
-		return inputVariables;
+
+		for (int i = 0; i < tree.getChildCount(); i++) {
+			CommonTree child = (CommonTree) tree.getChild(i);
+			if (child.getType() != STParser.ARGS) {
+				collectInputVariables(child, inputVariables, subtemplateLocalVariables);
+			}
+		}
+	}
+
+	private void collectOptionsInputVariables(CommonTree tree, Set<String> inputVariables, Set<String> localVariables) {
+		for (int i = 0; i < tree.getChildCount(); i++) {
+			CommonTree child = (CommonTree) tree.getChild(i);
+			if (child.getType() == STParser.EQUALS) {
+				collectInputVariables(child, inputVariables, localVariables);
+			}
+		}
+	}
+
+	private void collectChildrenInputVariables(CommonTree tree, Set<String> inputVariables,
+			Set<String> localVariables) {
+		collectChildrenInputVariables(tree, 0, inputVariables, localVariables);
+	}
+
+	private void collectChildrenInputVariables(CommonTree tree, int start, Set<String> inputVariables,
+			Set<String> localVariables) {
+		for (int i = start; i < tree.getChildCount(); i++) {
+			collectChildInputVariables(tree, i, inputVariables, localVariables);
+		}
+	}
+
+	private void collectChildInputVariables(CommonTree tree, int childIndex, Set<String> inputVariables,
+			Set<String> localVariables) {
+		if (childIndex < tree.getChildCount()) {
+			collectInputVariables((CommonTree) tree.getChild(childIndex), inputVariables, localVariables);
+		}
+	}
+
+	private void addInputVariable(String variableName, Set<String> inputVariables, Set<String> localVariables) {
+		if (localVariables.contains(variableName)) {
+			return;
+		}
+		if (!Compiler.funcs.containsKey(variableName) || this.validateStFunctions) {
+			inputVariables.add(variableName);
+		}
 	}
 
 	public static Builder builder() {
