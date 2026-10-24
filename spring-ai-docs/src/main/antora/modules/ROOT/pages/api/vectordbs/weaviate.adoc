@@ -158,6 +158,7 @@ public WeaviateClient weaviateClient() {
 public VectorStore vectorStore(WeaviateClient weaviateClient, EmbeddingModel embeddingModel) {
     return WeaviateVectorStore.builder(weaviateClient, embeddingModel)
         .options(options)                              // Optional: use custom options
+        .tenantName("TenantA")                        // Optional: for an existing multi-tenant collection
         .consistencyLevel(ConsistentLevel.QUORUM)      // Optional: defaults to ConsistentLevel.ONE
         .filterMetadataFields(List.of(                 // Optional: fields that can be used in filters
             MetadataField.text("country"),
@@ -265,9 +266,14 @@ You can use the following properties in your Spring Boot configuration to custom
 |`spring.ai.vectorstore.weaviate.object-class`|The class name for storing documents. |SpringAiWeaviate
 |`spring.ai.vectorstore.weaviate.content-field-name`|The field name for content|content
 |`spring.ai.vectorstore.weaviate.meta-field-prefix`|The field prefix for metadata|meta_
+|`spring.ai.vectorstore.weaviate.tenant-name`|The tenant name used to scope operations on an existing multi-tenant collection|-
 |`spring.ai.vectorstore.weaviate.consistency-level`|Desired tradeoff between consistency and speed|ConsistentLevel.ONE
 |`spring.ai.vectorstore.weaviate.filter-field`|Configures metadata fields that can be used in filters. Format: spring.ai.vectorstore.weaviate.filter-field.<field-name>=<field-type>|
 |===
+
+The tenant option scopes adding or upserting documents, deleting them by ID or filter, and similarity searches.
+The collection must have multi-tenancy enabled; tenant creation is controlled by its Weaviate configuration.
+When the tenant name is not configured, the vector store retains its existing non-tenant behavior.
 
 TIP: Object class names should start with an uppercase letter, and field names should start with a lowercase letter.
 See link:https://weaviate.io/developers/weaviate/concepts/data#data-object-concepts[data-object-concepts]

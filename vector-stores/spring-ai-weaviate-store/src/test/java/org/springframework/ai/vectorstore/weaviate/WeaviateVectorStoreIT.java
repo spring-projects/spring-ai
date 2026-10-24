@@ -27,6 +27,9 @@ import java.util.function.Consumer;
 
 import io.weaviate.client.Config;
 import io.weaviate.client.WeaviateClient;
+import io.weaviate.client.v1.misc.model.MultiTenancyConfig;
+import io.weaviate.client.v1.schema.model.Tenant;
+import io.weaviate.client.v1.schema.model.WeaviateClass;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -58,9 +61,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * @author Eddú Meléndez
  * @author Soby Chacko
  * @author Thomas Vitale
+ * @author Taewoong Kim
  */
 @Testcontainers
 public class WeaviateVectorStoreIT extends BaseVectorStoreTests {
+
+	private static final String MULTI_TENANT_CLASS = "SpringAiMultiTenant";
 
 	@Container
 	static WeaviateContainer weaviateContainer = new WeaviateContainer(WeaviateImage.DEFAULT_IMAGE)
@@ -244,6 +250,98 @@ public class WeaviateVectorStoreIT extends BaseVectorStoreTests {
 
 			vectorStore.delete(List.of(document.getId()));
 
+		});
+	}
+
+	@Test
+	void multiTenantOperationsAreIsolated() {
+		this.contextRunner.run(context -> {
+			WeaviateClient weaviateClient = context.getBean(WeaviateClient.class);
+			EmbeddingModel embeddingModel = context.getBean(EmbeddingModel.class);
+
+			weaviateClient.schema().classDeleter().withClassName(MULTI_TENANT_CLASS).run();
+			var createClassResult = weaviateClient.schema()
+				.classCreator()
+				.withClass(WeaviateClass.builder()
+					.className(MULTI_TENANT_CLASS)
+					.vectorizer("none")
+					.multiTenancyConfig(MultiTenancyConfig.builder().enabled(true).autoTenantCreation(false).build())
+					.build())
+				.run();
+			assertThat(createClassResult.hasErrors()).isFalse();
+
+			var createTenantsResult = weaviateClient.schema()
+				.tenantsCreator()
+				.withClassName(MULTI_TENANT_CLASS)
+				.withTenants(Tenant.builder().name("TenantA").build(), Tenant.builder().name("TenantB").build())
+				.run();
+			assertThat(createTenantsResult.hasErrors()).isFalse();
+
+			WeaviateVectorStoreOptions options = new WeaviateVectorStoreOptions();
+			options.setObjectClass(MULTI_TENANT_CLASS);
+			WeaviateVectorStore tenantAStore = WeaviateVectorStore.builder(weaviateClient, embeddingModel)
+				.options(options)
+				.tenantName("TenantA")
+				.filterMetadataFields(List.of(WeaviateVectorStore.MetadataField.text("country")))
+				.build();
+			WeaviateVectorStore tenantBStore = WeaviateVectorStore.builder(weaviateClient, embeddingModel)
+				.options(options)
+				.tenantName("TenantB")
+				.filterMetadataFields(List.of(WeaviateVectorStore.MetadataField.text("country")))
+				.build();
+
+			String sharedId = UUID.randomUUID().toString();
+			Document tenantADocument = new Document(sharedId, "Tenant A private Spring document",
+					Map.of("country", "KR"));
+			Document tenantBDocument = new Document(sharedId, "Tenant B private Weaviate document",
+					Map.of("country", "BG"));
+			Document updatedTenantADocument = new Document(sharedId, "Tenant A updated private Spring document",
+					Map.of("country", "KR"));
+
+			try {
+				tenantAStore.add(List.of(tenantADocument));
+				tenantBStore.add(List.of(tenantBDocument));
+
+				assertThat(tenantAStore.similaritySearch(SearchRequest.builder().query("private").topK(10).build()))
+					.singleElement()
+					.extracting(Document::getText)
+					.isEqualTo(tenantADocument.getText());
+				assertThat(tenantBStore.similaritySearch(SearchRequest.builder().query("private").topK(10).build()))
+					.singleElement()
+					.extracting(Document::getText)
+					.isEqualTo(tenantBDocument.getText());
+
+				tenantAStore.add(List.of(updatedTenantADocument));
+
+				assertThat(tenantAStore.similaritySearch(SearchRequest.builder().query("private").topK(10).build()))
+					.singleElement()
+					.extracting(Document::getText)
+					.isEqualTo(updatedTenantADocument.getText());
+				assertThat(tenantBStore.similaritySearch(SearchRequest.builder().query("private").topK(10).build()))
+					.singleElement()
+					.extracting(Document::getText)
+					.isEqualTo(tenantBDocument.getText());
+
+				tenantAStore.delete(List.of(sharedId));
+
+				assertThat(tenantAStore.similaritySearch(SearchRequest.builder().query("private").topK(10).build()))
+					.isEmpty();
+				assertThat(tenantBStore.similaritySearch(SearchRequest.builder().query("private").topK(10).build()))
+					.singleElement()
+					.extracting(Document::getText)
+					.isEqualTo(tenantBDocument.getText());
+
+				tenantAStore.add(List.of(tenantADocument));
+				tenantAStore.delete("country == 'KR'");
+
+				assertThat(tenantAStore.similaritySearch(SearchRequest.builder().query("private").topK(10).build()))
+					.isEmpty();
+				assertThat(tenantBStore.similaritySearch(SearchRequest.builder().query("private").topK(10).build()))
+					.hasSize(1);
+			}
+			finally {
+				weaviateClient.schema().classDeleter().withClassName(MULTI_TENANT_CLASS).run();
+			}
 		});
 	}
 
