@@ -68,7 +68,7 @@ public class TypesenseVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public TypesenseVectorStore vectorStore(Client typesenseClient, EmbeddingModel embeddingModel,
+	public TypesenseVectorStore typesenseVectorStore(Client typesenseClient, EmbeddingModel embeddingModel,
 			TypesenseVectorStoreProperties properties, ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
 			BatchingStrategy batchingStrategy) {
