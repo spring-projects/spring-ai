@@ -31,6 +31,7 @@ import software.amazon.awssdk.core.document.Document;
  * Helper class to convert from AWS SDK Document to Object and vice versa.
  *
  * @author Matej Nedic
+ * @author Taewoong Kim
  */
 public final class DocumentUtils {
 
@@ -121,7 +122,7 @@ public final class DocumentUtils {
 			List<Document> docs = document.asList();
 			List<Object> listMetadata = new ArrayList<>(docs.size());
 			for (Document item : docs) {
-				listMetadata.add(fromDocument(item));
+				listMetadata.add(fromDocumentToObject(item));
 			}
 			return listMetadata;
 		}
