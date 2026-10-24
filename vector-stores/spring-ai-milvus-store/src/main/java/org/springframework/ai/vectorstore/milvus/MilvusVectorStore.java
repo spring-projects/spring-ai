@@ -18,6 +18,7 @@ package org.springframework.ai.vectorstore.milvus;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -69,7 +70,6 @@ import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
 import org.springframework.ai.vectorstore.SearchRequest;
-import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
@@ -210,8 +210,10 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 
 	private final String embeddingFieldName;
 
+	private final List<MetadataField> metadataFields;
+
 	/**
-	 * @param builder {@link VectorStore.Builder} for chroma vector store
+	 * @param builder the builder for the Milvus vector store
 	 */
 	protected MilvusVectorStore(Builder builder) {
 		super(builder);
@@ -232,7 +234,10 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 		this.contentFieldName = builder.contentFieldName;
 		this.metadataFieldName = builder.metadataFieldName;
 		this.embeddingFieldName = builder.embeddingFieldName;
-		this.filterExpressionConverter = new MilvusFilterExpressionConverter(this.metadataFieldName);
+		this.metadataFields = List.copyOf(builder.metadataFields);
+		validateMetadataFields();
+		this.filterExpressionConverter = new MilvusFilterExpressionConverter(this.metadataFieldName,
+				this.metadataFields.stream().map(MetadataField::name).toList());
 	}
 
 	/**
@@ -252,6 +257,9 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 		List<String> docIdArray = new ArrayList<>();
 		List<String> contentArray = new ArrayList<>();
 		List<JsonObject> metadataArray = new ArrayList<>();
+		List<List<@Nullable Object>> metadataFieldArrays = this.metadataFields.stream()
+			.map(field -> new ArrayList<@Nullable Object>())
+			.collect(Collectors.toList());
 		List<List<Float>> embeddingArray = new ArrayList<>();
 
 		// TODO: Need to customize how we pass the embedding options
@@ -267,6 +275,11 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 			Gson gson = new Gson();
 			String jsonString = gson.toJson(document.getMetadata());
 			metadataArray.add(gson.fromJson(jsonString, JsonObject.class));
+			for (int j = 0; j < this.metadataFields.size(); j++) {
+				MetadataField metadataField = this.metadataFields.get(j);
+				metadataFieldArrays.get(j)
+					.add(toScalarMetadataFieldValue(metadataField, document.getMetadata().get(metadataField.name())));
+			}
 			embeddingArray.add(EmbeddingUtils.toList(embeddings.get(i)));
 		}
 
@@ -277,6 +290,9 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 		}
 		fields.add(new InsertParam.Field(this.contentFieldName, contentArray));
 		fields.add(new InsertParam.Field(this.metadataFieldName, metadataArray));
+		for (int i = 0; i < this.metadataFields.size(); i++) {
+			fields.add(new InsertParam.Field(this.metadataFields.get(i).name(), metadataFieldArrays.get(i)));
+		}
 		fields.add(new InsertParam.Field(this.embeddingFieldName, embeddingArray));
 
 		InsertParam.Builder insertParamBuilder = InsertParam.newBuilder()
@@ -481,7 +497,7 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 
 		if (!isDatabaseCollectionExists()) {
 			createCollection(this.databaseName, this.collectionName, this.idFieldName, this.isAutoId,
-					this.contentFieldName, this.metadataFieldName, this.embeddingFieldName);
+					this.contentFieldName, this.metadataFieldName, this.embeddingFieldName, this.metadataFields);
 			createIndex(this.databaseName, this.collectionName, this.embeddingFieldName, this.indexType,
 					this.metricType, this.indexParameters);
 		}
@@ -508,7 +524,8 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 	}
 
 	void createCollection(String databaseName, String collectionName, String idFieldName, boolean isAutoId,
-			String contentFieldName, String metadataFieldName, String embeddingFieldName) {
+			String contentFieldName, String metadataFieldName, String embeddingFieldName,
+			List<MetadataField> metadataFields) {
 		FieldType docIdFieldType = FieldType.newBuilder()
 			.withName(idFieldName)
 			.withDataType(DataType.VarChar)
@@ -531,18 +548,22 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 			.withDimension(this.embeddingDimensions())
 			.build();
 
+		CollectionSchemaParam.Builder schemaBuilder = CollectionSchemaParam.newBuilder()
+			.addFieldType(docIdFieldType)
+			.addFieldType(contentFieldType)
+			.addFieldType(metadataFieldType);
+
+		for (MetadataField metadataField : metadataFields) {
+			schemaBuilder.addFieldType(toMilvusFieldType(metadataField));
+		}
+
 		CreateCollectionParam createCollectionReq = CreateCollectionParam.newBuilder()
 			.withDatabaseName(databaseName)
 			.withCollectionName(collectionName)
 			.withDescription("Spring AI Vector Store")
 			.withConsistencyLevel(ConsistencyLevelEnum.STRONG)
 			.withShardsNum(2)
-			.withSchema(CollectionSchemaParam.newBuilder()
-				.addFieldType(docIdFieldType)
-				.addFieldType(contentFieldType)
-				.addFieldType(metadataFieldType)
-				.addFieldType(embeddingFieldType)
-				.build())
+			.withSchema(schemaBuilder.addFieldType(embeddingFieldType).build())
 			.build();
 
 		R<RpcStatus> collectionStatus = this.milvusClient.createCollection(createCollectionReq);
@@ -550,6 +571,102 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 			throw new RuntimeException("Failed to create collection", collectionStatus.getException());
 		}
 
+	}
+
+	private void validateMetadataFields() {
+		long uniqueFieldNames = this.metadataFields.stream().map(MetadataField::name).distinct().count();
+		Assert.isTrue(uniqueFieldNames == this.metadataFields.size(),
+				"Metadata fields must not contain duplicate names");
+		for (MetadataField metadataField : this.metadataFields) {
+			String name = metadataField.name();
+			Assert.isTrue(!name.equals(this.idFieldName), "Metadata field name must not match the ID field name");
+			Assert.isTrue(!name.equals(this.contentFieldName),
+					"Metadata field name must not match the content field name");
+			Assert.isTrue(!name.equals(this.metadataFieldName),
+					"Metadata field name must not match the metadata field name");
+			Assert.isTrue(!name.equals(this.embeddingFieldName),
+					"Metadata field name must not match the embedding field name");
+		}
+	}
+
+	private static FieldType toMilvusFieldType(MetadataField metadataField) {
+		FieldType.Builder fieldTypeBuilder = FieldType.newBuilder()
+			.withName(metadataField.name())
+			.withDataType(metadataField.fieldType())
+			.withNullable(true);
+
+		if (metadataField.fieldType() == DataType.VarChar) {
+			fieldTypeBuilder.withMaxLength(65535);
+		}
+
+		return fieldTypeBuilder.build();
+	}
+
+	private static @Nullable Object toScalarMetadataFieldValue(MetadataField metadataField, @Nullable Object value) {
+		if (value == null) {
+			return null;
+		}
+
+		return switch (metadataField.fieldType()) {
+			case Bool -> {
+				Assert.isInstanceOf(Boolean.class, value,
+						"Metadata field '%s' must be a Boolean".formatted(metadataField.name()));
+				yield value;
+			}
+			case Int8 -> toIntegerMetadataFieldValue(metadataField, value, Byte.MIN_VALUE, Byte.MAX_VALUE);
+			case Int16 -> toIntegerMetadataFieldValue(metadataField, value, Short.MIN_VALUE, Short.MAX_VALUE);
+			case Int32 -> toIntegerMetadataFieldValue(metadataField, value, Integer.MIN_VALUE, Integer.MAX_VALUE);
+			case Int64 -> toLongMetadataFieldValue(metadataField, value);
+			case Float -> {
+				Assert.isInstanceOf(Number.class, value,
+						"Metadata field '%s' must be a Number".formatted(metadataField.name()));
+				yield ((Number) value).floatValue();
+			}
+			case Double -> {
+				Assert.isInstanceOf(Number.class, value,
+						"Metadata field '%s' must be a Number".formatted(metadataField.name()));
+				yield ((Number) value).doubleValue();
+			}
+			case VarChar -> {
+				Assert.isInstanceOf(String.class, value,
+						"Metadata field '%s' must be a String".formatted(metadataField.name()));
+				yield value;
+			}
+			default ->
+				throw new IllegalArgumentException("Unsupported metadata field type: " + metadataField.fieldType());
+		};
+	}
+
+	private static Integer toIntegerMetadataFieldValue(MetadataField metadataField, Object value, int min, int max) {
+		Assert.isInstanceOf(Number.class, value,
+				"Metadata field '%s' must be a Number".formatted(metadataField.name()));
+		Number number = (Number) value;
+		Assert.isTrue(isIntegralNumber(number),
+				"Metadata field '%s' must be an integer value".formatted(metadataField.name()));
+		long longValue = number.longValue();
+		Assert.isTrue(longValue >= min && longValue <= max, "Metadata field '%s' value is out of range for %s"
+			.formatted(metadataField.name(), metadataField.fieldType()));
+		return (int) longValue;
+	}
+
+	private static Long toLongMetadataFieldValue(MetadataField metadataField, Object value) {
+		Assert.isInstanceOf(Number.class, value,
+				"Metadata field '%s' must be a Number".formatted(metadataField.name()));
+		Number number = (Number) value;
+		Assert.isTrue(isIntegralNumber(number),
+				"Metadata field '%s' must be an integer value".formatted(metadataField.name()));
+		return number.longValue();
+	}
+
+	private static boolean isIntegralNumber(Number number) {
+		return number instanceof Byte || number instanceof Short || number instanceof Integer || number instanceof Long;
+	}
+
+	private static boolean isSupportedScalarMetadataFieldType(DataType fieldType) {
+		return switch (fieldType) {
+			case Bool, Int8, Int16, Int32, Int64, Float, Double, VarChar -> true;
+			default -> false;
+		};
 	}
 
 	void createIndex(String databaseName, String collectionName, String embeddingFieldName, IndexType indexType,
@@ -642,6 +759,84 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 		return Optional.of(client);
 	}
 
+	/**
+	 * Defines a document metadata key that is also stored as a Milvus scalar field. The
+	 * full metadata map is still stored in the JSON metadata field. Supported field types
+	 * are {@link DataType#Bool}, {@link DataType#Int8}, {@link DataType#Int16},
+	 * {@link DataType#Int32}, {@link DataType#Int64}, {@link DataType#Float},
+	 * {@link DataType#Double}, and {@link DataType#VarChar}. Fields created by Spring AI
+	 * are nullable, so documents may omit the configured metadata key.
+	 *
+	 * @param name the document metadata key and Milvus field name
+	 * @param fieldType the Milvus scalar field type
+	 * @since 2.0.1
+	 */
+	public record MetadataField(String name, DataType fieldType) {
+
+		public MetadataField {
+			Assert.hasText(name, "Metadata field name must not be empty");
+			Assert.notNull(fieldType, "Metadata field type must not be null");
+			Assert.isTrue(isSupportedScalarMetadataFieldType(fieldType),
+					"Metadata field type '%s' is not supported".formatted(fieldType));
+		}
+
+		/**
+		 * Creates a VarChar metadata field.
+		 * @param name the metadata field name
+		 * @return a VarChar metadata field
+		 * @throws IllegalArgumentException if name is null or empty
+		 * @since 2.0.1
+		 */
+		public static MetadataField text(String name) {
+			return new MetadataField(name, DataType.VarChar);
+		}
+
+		/**
+		 * Creates a Boolean metadata field.
+		 * @param name the metadata field name
+		 * @return a Boolean metadata field
+		 * @throws IllegalArgumentException if name is null or empty
+		 * @since 2.0.1
+		 */
+		public static MetadataField bool(String name) {
+			return new MetadataField(name, DataType.Bool);
+		}
+
+		/**
+		 * Creates an Int32 metadata field.
+		 * @param name the metadata field name
+		 * @return an Int32 metadata field
+		 * @throws IllegalArgumentException if name is null or empty
+		 * @since 2.0.1
+		 */
+		public static MetadataField int32(String name) {
+			return new MetadataField(name, DataType.Int32);
+		}
+
+		/**
+		 * Creates an Int64 metadata field.
+		 * @param name the metadata field name
+		 * @return an Int64 metadata field
+		 * @throws IllegalArgumentException if name is null or empty
+		 * @since 2.0.1
+		 */
+		public static MetadataField int64(String name) {
+			return new MetadataField(name, DataType.Int64);
+		}
+
+		/**
+		 * Creates a Double metadata field.
+		 * @param name the metadata field name
+		 * @return a Double metadata field
+		 * @throws IllegalArgumentException if name is null or empty
+		 * @since 2.0.1
+		 */
+		public static MetadataField decimal(String name) {
+			return new MetadataField(name, DataType.Double);
+		}
+
+	}
+
 	public static class Builder extends AbstractVectorStoreBuilder<Builder> {
 
 		private final MilvusServiceClient milvusClient;
@@ -669,6 +864,8 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 		private String metadataFieldName = METADATA_FIELD_NAME;
 
 		private String embeddingFieldName = EMBEDDING_FIELD_NAME;
+
+		private List<MetadataField> metadataFields = List.of();
 
 		private boolean initializeSchema = false;
 
@@ -806,6 +1003,34 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 		 */
 		public Builder metadataFieldName(String metadataFieldName) {
 			this.metadataFieldName = metadataFieldName;
+			return this;
+		}
+
+		/**
+		 * Configures metadata keys to also be stored as Milvus scalar fields.
+		 * @param metadataFields metadata fields to store as Milvus scalar fields
+		 * @return this builder instance
+		 * @throws IllegalArgumentException if metadataFields is null or contains null
+		 * values
+		 * @since 2.0.1
+		 */
+		public Builder metadataFields(MetadataField... metadataFields) {
+			Assert.notNull(metadataFields, "Metadata fields must not be null");
+			return metadataFields(Arrays.asList(metadataFields));
+		}
+
+		/**
+		 * Configures metadata keys to also be stored as Milvus scalar fields.
+		 * @param metadataFields metadata fields to store as Milvus scalar fields
+		 * @return this builder instance
+		 * @throws IllegalArgumentException if metadataFields is null or contains null
+		 * values
+		 * @since 2.0.1
+		 */
+		public Builder metadataFields(List<MetadataField> metadataFields) {
+			Assert.notNull(metadataFields, "Metadata fields must not be null");
+			Assert.noNullElements(metadataFields, "Metadata fields must not contain null values");
+			this.metadataFields = List.copyOf(metadataFields);
 			return this;
 		}
 
