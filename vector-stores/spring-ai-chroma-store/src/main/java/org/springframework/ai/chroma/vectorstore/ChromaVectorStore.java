@@ -61,6 +61,7 @@ import org.springframework.util.CollectionUtils;
  * @author Thomas Vitale
  * @author Jonghoon Park
  * @author chabinhwang
+ * @author lejuho
  */
 public class ChromaVectorStore extends AbstractObservationVectorStore implements InitializingBean {
 
@@ -205,12 +206,42 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 
 	@Override
 	public List<Document> doSimilaritySearch(SearchRequest request) {
+		Assert.notNull(request, "The search request must not be null.");
+		Assert.notNull(request.getQuery(), "Query string must not be null");
+		return searchByEmbedding(this.embeddingModel.embed(request.getQuery()), request);
+	}
 
-		String query = request.getQuery();
-		Assert.notNull(query, "Query string must not be null");
+	@Override
+	protected boolean supportsQueryEmbeddingSearch() {
+		return true;
+	}
 
-		float[] embedding = this.embeddingModel.embed(query);
+	@Override
+	protected List<Document> doSimilaritySearch(float[] queryEmbedding, SearchRequest request) {
+		Assert.notNull(request, "The search request must not be null.");
+		checkDimensions("Query embedding", queryEmbedding.length, vectorDimensions());
+		return searchByEmbedding(queryEmbedding, request);
+	}
 
+	/**
+	 * Resolve the vector width used to validate a caller-supplied query embedding. Prefer
+	 * the embedding model's reported size. Return a non-positive value when unknown so
+	 * {@link #checkDimensions} skips the check.
+	 */
+	private int vectorDimensions() {
+		try {
+			int modelDimensions = this.embeddingModel.dimensions();
+			if (modelDimensions > 0) {
+				return modelDimensions;
+			}
+		}
+		catch (Exception ex) {
+			// Leave the check to Chroma when the model cannot report a size.
+		}
+		return -1;
+	}
+
+	private List<Document> searchByEmbedding(float[] embedding, SearchRequest request) {
 		Map<String, Object> where = (request.getFilterExpression() != null)
 				? jsonToMap(this.filterExpressionConverter.convertExpression(request.getFilterExpression())) : null;
 
@@ -226,10 +257,8 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 			if ((1 - distance) >= request.getSimilarityThreshold()) {
 				String id = chromaEmbedding.id();
 				String content = chromaEmbedding.document();
-				Map<String, Object> metadata = chromaEmbedding.metadata();
-				if (metadata == null) {
-					metadata = new HashMap<>();
-				}
+				Map<String, Object> metadata = chromaEmbedding.metadata() != null
+						? new HashMap<>(chromaEmbedding.metadata()) : new HashMap<>();
 
 				metadata.put(DocumentMetadata.DISTANCE.value(), distance);
 				Document document = Document.builder()
