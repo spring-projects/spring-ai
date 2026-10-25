@@ -624,7 +624,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 		// RediSearch does not order KNN results by distance on its own, so ask for it;
 		// otherwise the nearest match can come back anywhere in the list.
 		Query query = new Query(queryString).addParam(EMBEDDING_PARAM_NAME, RediSearchUtil.toByteArray(embedding))
-			.returnFields(getReturnFields().toArray(new String[0]))
+			.returnFields(getReturnFields().toArray(String[]::new))
 			.setSortBy(DISTANCE_FIELD_NAME, true)
 			.limit(0, request.getTopK())
 			.dialect(2);
@@ -1097,7 +1097,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 			// Look for framework AND integration in description, not necessarily as an
 			// exact phrase
 			Query redisQuery = new Query("@description:(framework integration)")
-				.returnFields(getReturnFields().toArray(new String[0]))
+				.returnFields(getReturnFields().toArray(String[]::new))
 				.limit(0, limit)
 				.dialect(2);
 
@@ -1109,7 +1109,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 		if ("is a framework for".equalsIgnoreCase(query) && "content".equalsIgnoreCase(textField)
 				&& !this.stopwords.isEmpty()) {
 			// Find documents containing "framework" if stopwords include common words
-			Query redisQuery = new Query("@content:framework").returnFields(getReturnFields().toArray(new String[0]))
+			Query redisQuery = new Query("@content:framework").returnFields(getReturnFields().toArray(String[]::new))
 				.limit(0, limit)
 				.dialect(2);
 
@@ -1191,7 +1191,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 		}
 
 		// Create and execute the query
-		Query redisQuery = new Query(finalQuery).returnFields(getReturnFields().toArray(new String[0]))
+		Query redisQuery = new Query(finalQuery).returnFields(getReturnFields().toArray(String[]::new))
 			.limit(0, limit)
 			.dialect(2);
 
@@ -1361,7 +1361,7 @@ public class RedisVectorStore extends AbstractObservationVectorStore implements 
 		// are the ones kept by the result limit.
 		Query query1 = new Query(queryString).addParam("radius", effectiveRadius)
 			.addParam(EMBEDDING_PARAM_NAME, RediSearchUtil.toByteArray(embedding))
-			.returnFields(getReturnFields().toArray(new String[0]))
+			.returnFields(getReturnFields().toArray(String[]::new))
 			.setSortBy(DISTANCE_FIELD_NAME, true)
 			.dialect(2);
 

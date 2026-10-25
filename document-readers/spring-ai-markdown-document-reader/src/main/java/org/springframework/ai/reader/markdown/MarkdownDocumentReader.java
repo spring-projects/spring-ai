@@ -99,7 +99,7 @@ public class MarkdownDocumentReader implements DocumentReader {
 	 * @param markdownResources the resources to read
 	 */
 	public MarkdownDocumentReader(List<Resource> markdownResources, MarkdownDocumentReaderConfig config) {
-		this.markdownResources = markdownResources.toArray(new Resource[0]);
+		this.markdownResources = markdownResources.toArray(Resource[]::new);
 		this.config = config;
 		this.parser = Parser.builder().build();
 	}
