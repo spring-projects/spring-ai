@@ -352,7 +352,9 @@ public final class OpenAiChatModel implements ChatModel {
 			Flux<ChatResponse> chatResponses = mergeToolCallChunks(streamChunks(request, requestOptions))
 				.map(chatCompletion -> toStreamedChatResponse(chatCompletion, request, streamAccumulator));
 
-			Flux<ChatResponse> observedResponses = chatResponses.doOnError(observation::error)
+			Flux<ChatResponse> observedResponses = chatResponses
+				.doOnNext(ignored -> observationContext.recordTimeToFirstChunk())
+				.doOnError(observation::error)
 				.doFinally(s -> observation.stop())
 				.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
 
