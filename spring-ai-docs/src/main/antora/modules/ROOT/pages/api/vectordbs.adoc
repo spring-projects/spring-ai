@@ -449,7 +449,7 @@ If you already have the vectors, write them as they are with `upsert` instead; s
 === Writing User-Supplied Embeddings
 
 `add` computes an embedding for every document inside the store, using the store's embedding model.
-Sometimes you already have the vectors and want to write them as-is: a provider's batch API computed them overnight at half price, another team owns the embedding pipeline, or you are migrating from a system that exports text and vectors together.
+Sometimes you already have the vectors and want to write them without embedding anything again: a provider's batch API computed them overnight at half price, another team owns the embedding pipeline, or you are migrating from a system that exports text and vectors together.
 For those cases the `VectorStore` interface offers `upsert`, which takes the document and its vector paired together in an `EmbeddedDocument` and never embeds anything itself:
 
 [source,java]
@@ -490,21 +490,27 @@ this.vectorStore.upsert(List.of(new EmbeddedDocument(document, vector)));
 ----
 
 `upsert` is opt-in per store: the default implementation throws `UnsupportedOperationException`, so a store supports it only once it has been implemented.
-It is available on pgvector, Redis, Elasticsearch, and Qdrant, with more stores to follow.
+It is available on pgvector, Redis, Elasticsearch, Qdrant, and OpenSearch, with more stores to follow.
+A custom store that extends `AbstractObservationVectorStore` opts in by implementing `doUpsert` and overriding `supportsUpsert()` to return `true`; for search with a query embedding, the pair is `doSimilaritySearch(float[], SearchRequest)` and `supportsQueryEmbeddingSearch()`.
 `EmbeddedDocument` rejects a vector that is empty or holds `NaN` or an infinity, which is worth knowing when the vectors come from a pipeline you do not control: a `NaN` would otherwise corrupt distance maths rather than fail.
+Some stores normalize vectors for cosine similarity, Redis and Qdrant among them, so what a store keeps may differ in length from what you wrote while pointing the same way.
+Searching is unaffected, but do not rely on reading the exact original vector back from the store's native client.
 When a store knows its index dimension, it checks every vector in the batch against it before writing anything, so a wrong-sized vector fails fast and cannot partially write.
-The store works out that dimension from a `dimensions` value you configured, or otherwise reads it from the existing index, table, or collection, and asks the embedding model only as a last resort.
-Elasticsearch is the one exception to the first step: its configured `dimensions` has a default, so it is trusted only when the store created the index itself.
+The store works out that dimension from a `dimensions` value you configured, or otherwise reads it from the existing index, table, or collection.
+It asks the embedding model for a width only when it has to create the index itself, and never to check vectors against an index that already exists, because the model's width says nothing about the width of an existing index.
 So an application that only upserts into an existing index, or that configures `dimensions`, never contacts the embedding model and does not need to be able to reach it.
-Where the dimension cannot be determined at all, the check is left to the database, which rejects the vector with its own error.
-Redis cannot do that: it stores a wrong-sized vector without complaint and never finds it again, so `RedisVectorStore` refuses the write instead.
+Where the dimension cannot be determined, for example because the index cannot be read right now, the check is left to the database, which rejects the vector with its own error.
+The store tries to read the dimension again on the next call.
+A pgvector column declared as a plain `vector`, without a size, accepts any width, so nothing is checked there either.
+Redis cannot leave the check to the database: it stores a wrong-sized vector without complaint and never finds it again, so `RedisVectorStore` refuses the write instead.
+Once the dimension is known, the store remembers it, so create a new store instance after you recreate an index with a different width.
 
 Because the vectors come from outside the store, lining them up with the index is yours to get right.
 Three things have to agree, and only the first is checked for you:
 
 Width:: Your embedding model decides the width, and the index has to be created with that same width, for example `dimensions(1024)` on the store builder or a pre-created index whose mapping says 1024.
 A mismatch fails on the first write.
-Vector space:: Nothing records which model produced a row, so vectors written by one model and searched with another come back plausible but meaningless, with no error anywhere.
+Vector space:: Nothing records which model produced a row, so vectors written by one model and searched with a model from a different embedding space come back plausible but meaningless, with no error anywhere.
 Writing the model name and version into metadata costs nothing and tells a later reader what a row actually holds.
 The query side:: `similaritySearch` with query text embeds the query with the store's own `EmbeddingModel`, so that model has to produce vectors in the same space and of the same width as the ones you upserted.
 To keep the store's model out of it, embed the query yourself with the same model and search with the vector; see <<searching-with-precomputed-embeddings,Searching with a User-Supplied Query Embedding>>.
@@ -627,12 +633,13 @@ The request supplies everything except the query: `topK`, the similarity thresho
 Its query text, if set, is ignored.
 The store's `EmbeddingModel` is never used, so an application that writes with `upsert` and searches this way does not need to be able to reach it.
 
-The query embedding has to come from the same model, with the same settings, as the vectors it is compared against.
-A query vector from a different model is not rejected when its width happens to match; the search simply returns results that look plausible and mean nothing.
+The query embedding has to come from a compatible encoder in the same embedding space as the vectors it is compared against.
+That is usually the same model, but some providers expect different settings for documents and for queries, such as a separate input type for each, so use the setting that is meant for queries.
+A query vector from a different embedding space is not rejected when its width happens to match; the search simply returns results that look plausible and mean nothing.
 What is checked for you: the vector must not be empty or contain `NaN` or infinity, and its width must match the store's dimension when the store knows it.
 
 Searching with a query embedding is opt-in per store, like `upsert`: the default implementation throws `UnsupportedOperationException`.
-It is available on pgvector, Redis, Elasticsearch, and Qdrant.
+It is available on pgvector, Redis, Elasticsearch, Qdrant, and OpenSearch.
 
 === Separation of Read and Write Operations
 

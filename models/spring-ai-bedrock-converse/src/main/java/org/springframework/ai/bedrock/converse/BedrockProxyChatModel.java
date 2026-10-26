@@ -92,7 +92,6 @@ import org.springframework.ai.chat.messages.part.MediaPart;
 import org.springframework.ai.chat.messages.part.MessagePart;
 import org.springframework.ai.chat.messages.part.OpaquePayload;
 import org.springframework.ai.chat.messages.part.ReasoningPart;
-import org.springframework.ai.chat.messages.part.StreamingParts;
 import org.springframework.ai.chat.messages.part.TextPart;
 import org.springframework.ai.chat.messages.part.ToolCallPart;
 import org.springframework.ai.chat.messages.part.ToolResultPart;
@@ -632,9 +631,9 @@ public class BedrockProxyChatModel implements ChatModel {
 	 * validates that a signed reasoning block is replayed, unmodified, before the tool
 	 * use it led to when the matching tool result is sent back (gh-6413), which the part
 	 * order preserves. Reasoning is replayed only when Bedrock produced it, as its
-	 * payload or {@link StreamingParts#PROVIDER_ATTRIBUTE} says: Bedrock rejects
-	 * reasoning it cannot verify, so reasoning produced by another provider is skipped,
-	 * and so are media and unknown parts.
+	 * payload or {@link MessagePart#PROVIDER_ATTRIBUTE} says: Bedrock rejects reasoning
+	 * it cannot verify, so reasoning produced by another provider is skipped, and so are
+	 * media and unknown parts.
 	 * @param assistantMessage the message to convert
 	 * @return the content blocks
 	 */
@@ -692,7 +691,7 @@ public class BedrockProxyChatModel implements ChatModel {
 	 * from. The payload kind decides the union member: it says whether the payload data
 	 * is the signature of the reasoning text or the redacted content. A part without a
 	 * payload is reasoning Bedrock returned unsigned, and is replayed as such only when
-	 * its {@link StreamingParts#PROVIDER_ATTRIBUTE} says Bedrock produced it.
+	 * its {@link MessagePart#PROVIDER_ATTRIBUTE} says Bedrock produced it.
 	 * @param reasoningPart the part to convert
 	 * @return the content block, or {@code null} when the part was not produced by
 	 * Bedrock
@@ -732,8 +731,8 @@ public class BedrockProxyChatModel implements ChatModel {
 	 * Maps every content block of a Converse response message to one {@link MessagePart},
 	 * in block order: text becomes a {@link TextPart}, tool use a {@link ToolCallPart},
 	 * and reasoning a {@link ReasoningPart} marked with
-	 * {@link StreamingParts#PROVIDER_ATTRIBUTE} and, when signed or redacted, carrying
-	 * the Bedrock payload it is replayed from. Other block types are not modeled and are
+	 * {@link MessagePart#PROVIDER_ATTRIBUTE} and, when signed or redacted, carrying the
+	 * Bedrock payload it is replayed from. Other block types are not modeled and are
 	 * skipped.
 	 * @param message the response message
 	 * @return the parts

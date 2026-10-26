@@ -38,6 +38,8 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.containers.wait.strategy.WaitAllStrategy;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -84,7 +86,10 @@ public class PgVectorStoreIT extends BaseVectorStoreTests {
 	@SuppressWarnings("resource")
 	static PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>(PgVectorImage.DEFAULT_IMAGE)
 		.withUsername("postgres")
-		.withPassword("postgres");
+		.withPassword("postgres")
+		.waitingFor(new WaitAllStrategy()
+			.withStrategy(Wait.forLogMessage(".*database system is ready to accept connections.*\\s", 2))
+			.withStrategy(Wait.forListeningPort()));
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withUserConfiguration(TestApplication.class)

@@ -48,6 +48,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author Christian Tzolov
  */
+// Exercises the ChatMemory advisor, deprecated since 2.1.0, until its removal
+@SuppressWarnings("removal")
 public abstract class AbstractToolCallingAdvisorIT {
 
 	/**

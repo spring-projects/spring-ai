@@ -280,6 +280,9 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 	// Cache for vectorDimensions(); only a known size is stored.
 	private volatile int resolvedVectorDimensions = INVALID_EMBEDDING_DIMENSION;
 
+	// Set once the embedding column is known to be declared without a size.
+	private volatile boolean unconstrainedVectorColumn;
+
 	/**
 	 * @param builder {@link VectorStore.Builder} for pg vector store
 	 */
@@ -383,6 +386,11 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 				return batch.size();
 			}
 		});
+	}
+
+	@Override
+	protected boolean supportsUpsert() {
+		return true;
 	}
 
 	@Override
@@ -496,6 +504,11 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 	}
 
 	@Override
+	protected boolean supportsQueryEmbeddingSearch() {
+		return true;
+	}
+
+	@Override
 	protected List<Document> doSimilaritySearch(float[] queryEmbedding, SearchRequest request) {
 		checkDimensions("Query embedding", queryEmbedding.length, vectorDimensions());
 		return searchByEmbedding(new PGvector(queryEmbedding), request);
@@ -584,15 +597,21 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 			this.jdbcTemplate.execute(String.format("DROP TABLE IF EXISTS %s", this.getFullyQualifiedTableName()));
 		}
 
-		this.jdbcTemplate.execute(String.format("""
-				CREATE TABLE IF NOT EXISTS %s (
-					id %s PRIMARY KEY,
-					%s text,
-					%s json,
-					%s vector(%d)
-				)
-				""", this.getFullyQualifiedTableName(), this.getColumnTypeName(), this.contentFieldName,
-				this.metadataFieldName, this.embeddingFieldName, this.embeddingDimensions()));
+		// An existing table already has a vector size, so the embedding model is only
+		// consulted when the table has to be created.
+		if (!this.schemaValidator.isTableExists(this.schemaName, this.vectorTableName)) {
+			int createdDimensions = this.embeddingDimensions();
+			this.jdbcTemplate.execute(String.format("""
+					CREATE TABLE IF NOT EXISTS %s (
+						id %s PRIMARY KEY,
+						%s text,
+						%s json,
+						%s vector(%d)
+					)
+					""", this.getFullyQualifiedTableName(), this.getColumnTypeName(), this.contentFieldName,
+					this.metadataFieldName, this.embeddingFieldName, createdDimensions));
+			this.resolvedVectorDimensions = createdDimensions;
+		}
 
 		if (this.createIndexMethod != PgIndexType.NONE) {
 			this.jdbcTemplate.execute(String.format("""
@@ -642,50 +661,45 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 	}
 
 	/**
-	 * The vector size the table accepts, or -1 when it cannot be determined. Unlike
-	 * {@link #embeddingDimensions()} it never guesses a default, so a caller that must
-	 * not guess can tell the two cases apart.
+	 * The vector size the table accepts, or -1 when it is not known. Unlike
+	 * {@link #embeddingDimensions()} it never guesses a default, and it never asks the
+	 * embedding model: a model's width says nothing about the width of a table that
+	 * already exists.
 	 * <p>
 	 * The size comes from the configured {@code dimensions} if set, otherwise from the
-	 * declared type of the table's embedding column, and only then from the embedding
-	 * model. Reading it from the table means a store that only upserts into an existing
-	 * table never has to contact the embedding model. A known size is cached.
+	 * declared type of the table's embedding column, or from the table this store just
+	 * created. Reading it from the table means a store that only upserts into an existing
+	 * table never has to contact the embedding model. A column declared as plain
+	 * {@code vector} accepts any size, and a failed lookup leaves the size unknown and is
+	 * tried again on the next call. In both cases the size is not checked here and
+	 * Postgres decides. Only a known size is cached, so a store has to be rebuilt after
+	 * the table is recreated with a different size.
 	 * @return the known dimension, or -1
 	 */
 	private int vectorDimensions() {
+		if (this.dimensions > 0) {
+			return this.dimensions;
+		}
 		int cached = this.resolvedVectorDimensions;
 		if (cached > 0) {
 			return cached;
 		}
-		int resolved = resolveVectorDimensions();
-		if (resolved > 0) {
-			this.resolvedVectorDimensions = resolved;
-		}
-		return resolved;
-	}
-
-	private int resolveVectorDimensions() {
-		if (this.dimensions > 0) {
-			return this.dimensions;
+		if (this.unconstrainedVectorColumn) {
+			return INVALID_EMBEDDING_DIMENSION;
 		}
 		try {
 			int columnDimensions = this.schemaValidator.vectorColumnDimensions(this.schemaName, this.vectorTableName,
 					this.embeddingFieldName);
 			if (columnDimensions > 0) {
+				this.resolvedVectorDimensions = columnDimensions;
 				return columnDimensions;
+			}
+			if (columnDimensions == PgVectorSchemaValidator.UNCONSTRAINED_VECTOR_COLUMN) {
+				this.unconstrainedVectorColumn = true;
 			}
 		}
 		catch (DataAccessException ex) {
 			logger.debug("Could not read the embedding dimensions from the vector table", ex);
-		}
-		try {
-			int modelDimensions = this.embeddingModel.dimensions();
-			if (modelDimensions > 0) {
-				return modelDimensions;
-			}
-		}
-		catch (Exception ex) {
-			logger.debug("Could not obtain the embedding dimensions from the embedding model", ex);
 		}
 		return INVALID_EMBEDDING_DIMENSION;
 	}
@@ -712,11 +726,16 @@ public class PgVectorStore extends AbstractObservationVectorStore implements Ini
 	@Override
 	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
 
-		return VectorStoreObservationContext.builder(VectorStoreProvider.PG_VECTOR.value(), operationName)
+		VectorStoreObservationContext.Builder builder = VectorStoreObservationContext
+			.builder(VectorStoreProvider.PG_VECTOR.value(), operationName)
 			.collectionName(this.vectorTableName)
-			.dimensions(this.vectorDimensions())
 			.namespace(this.schemaName)
 			.similarityMetric(getSimilarityMetric());
+		int vectorDimensions = this.vectorDimensions();
+		if (vectorDimensions > 0) {
+			builder.dimensions(vectorDimensions);
+		}
+		return builder;
 	}
 
 	private String getSimilarityMetric() {

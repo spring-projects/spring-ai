@@ -1,6 +1,11 @@
 [[ChatMemory]]
 = Chat Memory
 
+WARNING: The `ChatMemory` API, its repositories, the `MessageChatMemoryAdvisor` and their auto-configurations are deprecated since 2.1.0 and will be removed in 3.0.0.
+Use xref:api/session.adoc[Session Memory] instead; <<chat-memory-migration>> maps one onto the other.
+Session stores for Cassandra, Neo4j, MongoDB and Redis, and session dialects for HSQLDB, Oracle, SQL Server and SQLite, are planned before 3.0.0, when the deprecated modules are removed.
+The `VectorStoreChatMemoryAdvisor` is not deprecated.
+
 Large language models (LLMs) are stateless, meaning they do not retain information about previous interactions. This can be a limitation when you want to maintain context or state across multiple interactions. To address this, Spring AI provides chat memory features that allow you to store and retrieve information across multiple interactions with the LLM.
 
 The `ChatMemory` abstraction allows you to implement various types of memory to support different use cases. The underlying storage of the messages is handled by the `ChatMemoryRepository`, whose sole responsibility is to store and retrieve messages. It's up to the `ChatMemory` implementation to decide which messages to keep and when to remove them. Examples of strategies could include keeping the last N messages, keeping messages for a certain time period, or keeping messages up to a certain token limit.
@@ -695,3 +700,61 @@ chatMemory.add(conversationId, response2.getResult().getOutput());
 
 // The response will contain "James Bond"
 ----
+
+[[chat-memory-migration]]
+== Migrating to Session Memory
+
+xref:api/session.adoc[Session memory] replaces the `ChatMemory` API.
+A session keeps the conversation as an append-only log of events, and the prompt is built from a view of it, so a window or a compaction never loses what was said and never splits a turn.
+
+[cols="1,2"]
+|===
+| Chat memory | Session memory
+
+| `MessageChatMemoryAdvisor.builder(chatMemory)`
+| `SessionAdvisors.builder(sessionService)`, from `spring-ai-session-advisor`
+
+| `ChatMemory.CONVERSATION_ID`
+| `MemoryAdvisor.CONVERSATION_ID`, the same key, or `SessionAdvisors.session(conversationId)`
+
+| `MessageWindowChatMemory`, `maxMessages`
+| A window on the memory advisor, `EventFilter.lastN`, or a xref:api/session/compaction.adoc[compaction]
+
+| `chatMemory.get(id)`, `add(id, messages)`, `clear(id)`
+| `sessionService.getActiveMessages(id)`, `appendMessage(id, message)`, `delete(id)`; create the session first, `findOrCreate`
+
+| `ChatMemoryRepository`, `InMemoryChatMemoryRepository`
+| `SessionRepository`, `InMemorySessionRepository`
+
+| `JdbcChatMemoryRepository`, `spring-ai-starter-model-chat-memory-repository-jdbc`
+| `JdbcSessionRepository`, `spring-ai-starter-model-session-jdbc`: PostgreSQL, MySQL, MariaDB and H2
+
+| The Cassandra, Neo4j, MongoDB and Redis repositories; the HSQLDB, Oracle, SQL Server and SQLite dialects
+| No session counterpart yet; they are planned before 3.0.0, when these modules are removed.
+Until then, a store implements `SessionRepository` and checks itself with `AbstractSessionRepositoryContractTests` from `spring-ai-test`, and a dialect implements `JdbcSessionRepositoryDialect`.
+|===
+
+The context key stays the same, so a request that sets `ChatMemory.CONVERSATION_ID` reaches the session advisors unchanged:
+
+[source,java]
+----
+// Before
+ChatClient chatClient = ChatClient.builder(chatModel)
+    .defaultAdvisors(MessageChatMemoryAdvisor.builder(chatMemory).build())
+    .build();
+
+// After
+ChatClient chatClient = ChatClient.builder(chatModel)
+    .defaultAdvisors(SessionAdvisors.builder(sessionService).build())
+    .build();
+
+chatClient.prompt()
+    .user("Hello")
+    .advisors(SessionAdvisors.session(conversationId))
+    .call()
+    .content();
+----
+
+With `spring-ai-starter-model-session-jdbc` on the classpath, the `SessionService` is auto-configured on the application's `DataSource`.
+
+The two stores do not share their tables: conversations kept in `SPRING_AI_CHAT_MEMORY` are not read by the session memory.

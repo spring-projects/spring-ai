@@ -25,6 +25,7 @@ import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.chat.model.ChatModel;
+import org.springframework.ai.model.tool.ToolCallConfirmationPolicy;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
@@ -137,12 +138,15 @@ public class ToolCallingAutoConfiguration {
 	ToolCallingManager toolCallingManager(ToolCallbackResolver toolCallbackResolver,
 			ToolExecutionExceptionProcessor toolExecutionExceptionProcessor, ToolCallingProperties properties,
 			ObjectProvider<ObservationRegistry> observationRegistry,
-			ObjectProvider<ToolCallingObservationConvention> observationConvention) {
+			ObjectProvider<ToolCallingObservationConvention> observationConvention,
+			ObjectProvider<ToolCallConfirmationPolicy> confirmationPolicies) {
 		var builder = ToolCallingManager.builder()
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.toolCallbackResolver(toolCallbackResolver)
 			.toolExecutionExceptionProcessor(toolExecutionExceptionProcessor)
-			.resolutionFallbackEnabled(properties.getResolution().getFallback().isEnabled());
+			.resolutionFallbackEnabled(properties.getResolution().getFallback().isEnabled())
+			.toolCallConfirmationPolicy(
+					confirmationPolicy(properties.getConfirmation(), confirmationPolicies.orderedStream().toList()));
 
 		ToolCallingProperties.Limits limits = properties.getLimits();
 
@@ -194,6 +198,34 @@ public class ToolCallingAutoConfiguration {
 		logger.warn(
 				"You have enabled the inclusion of the tool call arguments and result in the observations, with the risk of exposing sensitive or private information. Please, be careful!");
 		return new ToolCallingContentObservationFilter();
+	}
+
+	/**
+	 * The policy the properties and the {@link ToolCallConfirmationPolicy} beans make
+	 * together. They are combined with {@link ToolCallConfirmationPolicy#or}, so that a
+	 * property or a bean can only add calls that need confirmation, never remove them.
+	 * The one way to stop honoring the tools' {@code requiresConfirmation} flag is the
+	 * explicit {@code spring.ai.tools.confirmation.enabled=false}.
+	 */
+	static ToolCallConfirmationPolicy confirmationPolicy(ToolCallingProperties.Confirmation confirmation,
+			List<ToolCallConfirmationPolicy> beans) {
+		ToolCallConfirmationPolicy policy;
+		if (confirmation.isEnabled()) {
+			policy = ToolCallConfirmationPolicy.fromToolMetadata();
+		}
+		else {
+			logger.warn("Tool call confirmation is disabled (" + ToolCallingProperties.CONFIG_PREFIX
+					+ ".confirmation.enabled=false): tools marked requiresConfirmation run as soon as the model "
+					+ "calls them, without a person's confirmation.");
+			policy = ToolCallConfirmationPolicy.none();
+		}
+		if (!confirmation.getTools().isEmpty()) {
+			policy = policy.or(ToolCallConfirmationPolicy.forTools(confirmation.getTools().toArray(String[]::new)));
+		}
+		for (ToolCallConfirmationPolicy bean : beans) {
+			policy = policy.or(bean);
+		}
+		return policy;
 	}
 
 	private static @Nullable Class<? extends RuntimeException> getClassOrNull(String className) {

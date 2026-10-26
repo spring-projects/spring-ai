@@ -31,7 +31,9 @@ import com.openai.core.http.HttpResponse;
 import com.openai.errors.OpenAIIoException;
 import com.openai.models.audio.speech.SpeechCreateParams;
 import com.openai.models.audio.speech.SpeechModel;
+import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
+import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
@@ -45,6 +47,11 @@ import org.springframework.ai.audio.tts.TextToSpeechModel;
 import org.springframework.ai.audio.tts.TextToSpeechOptions;
 import org.springframework.ai.audio.tts.TextToSpeechPrompt;
 import org.springframework.ai.audio.tts.TextToSpeechResponse;
+import org.springframework.ai.audio.tts.observation.DefaultTextToSpeechModelObservationConvention;
+import org.springframework.ai.audio.tts.observation.TextToSpeechModelObservationContext;
+import org.springframework.ai.audio.tts.observation.TextToSpeechModelObservationConvention;
+import org.springframework.ai.audio.tts.observation.TextToSpeechModelObservationDocumentation;
+import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.openai.http.okhttp.OpenAiHttpClientBuilderCustomizer;
 import org.springframework.ai.openai.metadata.OpenAiAudioSpeechResponseMetadata;
 import org.springframework.ai.openai.setup.OpenAiSetup;
@@ -79,11 +86,17 @@ public final class OpenAiAudioSpeechModel implements TextToSpeechModel {
 			Schedulers.DEFAULT_BOUNDED_ELASTIC_SIZE, Schedulers.DEFAULT_BOUNDED_ELASTIC_QUEUESIZE,
 			"openai-audio-speech");
 
+	private static final TextToSpeechModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultTextToSpeechModelObservationConvention();
+
 	private final OpenAIClient openAiClient;
 
 	private final OpenAiAudioSpeechOptions options;
 
 	private final Scheduler streamScheduler;
+
+	private final ObservationRegistry observationRegistry;
+
+	private TextToSpeechModelObservationConvention observationConvention = DEFAULT_OBSERVATION_CONVENTION;
 
 	private OpenAiAudioSpeechModel(Builder builder) {
 		this.options = Objects.requireNonNullElseGet(builder.options, () -> OpenAiAudioSpeechOptions.builder().build());
@@ -96,6 +109,17 @@ public final class OpenAiAudioSpeechModel implements TextToSpeechModel {
 						this.options.getMaxRetries(), this.options.getProxy(), this.options.getCustomHeaders(),
 						ObservationRegistry.NOOP, null, builder.httpClientCustomizers));
 		this.streamScheduler = Objects.requireNonNullElse(builder.streamScheduler, DEFAULT_STREAM_SCHEDULER);
+		this.observationRegistry = Objects.requireNonNullElse(builder.observationRegistry, ObservationRegistry.NOOP);
+	}
+
+	/**
+	 * Use the provided convention for reporting observation data.
+	 * @param observationConvention the provided convention
+	 * @since 2.0.2
+	 */
+	public void setObservationConvention(TextToSpeechModelObservationConvention observationConvention) {
+		Assert.notNull(observationConvention, "observationConvention cannot be null");
+		this.observationConvention = observationConvention;
 	}
 
 	/**
@@ -133,54 +157,111 @@ public final class OpenAiAudioSpeechModel implements TextToSpeechModel {
 
 		RequestOptions requestOptions = this.buildRequestOptions(mergedOptions);
 
-		HttpResponse httpResponse = this.openAiClient.audio().speech().create(params, requestOptions);
-		Headers headers = httpResponse.headers();
+		// The text the model gets (the options' input wins over the message), with the
+		// options as merged.
+		var observationContext = TextToSpeechModelObservationContext.builder()
+			.prompt(new TextToSpeechPrompt(inputText, mergedOptions))
+			.provider(AiProvider.OPENAI.value())
+			.build();
 
-		byte[] audioBytes;
-		try (InputStream inputStream = httpResponse.body()) {
-			audioBytes = inputStream.readAllBytes();
-		}
-		catch (IOException e) {
-			throw new RuntimeException("Failed to read audio speech response", e);
-		}
+		return Objects.requireNonNull(
+				TextToSpeechModelObservationDocumentation.TEXT_TO_SPEECH_MODEL_OPERATION
+					.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
+							this.observationRegistry)
+					.observe(() -> {
+						HttpResponse httpResponse = this.openAiClient.audio().speech().create(params, requestOptions);
+						Headers headers = httpResponse.headers();
 
-		if (audioBytes.length == 0) {
-			if (logger.isWarnEnabled()) {
-				logger.warn("No speech response returned for prompt: " + prompt);
-			}
-			return new TextToSpeechResponse(List.of(new Speech(new byte[0])));
-		}
+						byte[] audioBytes;
+						try (InputStream inputStream = httpResponse.body()) {
+							audioBytes = inputStream.readAllBytes();
+						}
+						catch (IOException e) {
+							throw new RuntimeException("Failed to read audio speech response", e);
+						}
 
-		Speech speech = new Speech(audioBytes);
-		OpenAiAudioSpeechResponseMetadata metadata = OpenAiAudioSpeechResponseMetadata.from(headers);
-
-		return new TextToSpeechResponse(List.of(speech), metadata);
+						TextToSpeechResponse response;
+						if (audioBytes.length == 0) {
+							if (logger.isWarnEnabled()) {
+								logger.warn("No speech response returned for prompt: " + prompt);
+							}
+							response = new TextToSpeechResponse(List.of(new Speech(new byte[0])));
+						}
+						else {
+							response = new TextToSpeechResponse(List.of(new Speech(audioBytes)),
+									OpenAiAudioSpeechResponseMetadata.from(headers));
+						}
+						observationContext.setResponse(response);
+						return response;
+					}));
 	}
 
 	@Override
 	public Flux<TextToSpeechResponse> stream(TextToSpeechPrompt prompt) {
 		Assert.notNull(prompt, "Prompt must not be null");
 
-		// Lets openSpeechStream/emitNextChunk tell a deliberate cancellation
-		// apart from a genuine I/O failure.
-		AtomicBoolean cancelled = new AtomicBoolean(false);
+		return Flux.deferContextual(contextView -> {
+			// Lets openSpeechStream/emitNextChunk tell a deliberate cancellation
+			// apart from a genuine I/O failure.
+			AtomicBoolean cancelled = new AtomicBoolean(false);
 
-		return Flux.<TextToSpeechResponse, SpeechStreamState>generate(() -> openSpeechStream(prompt, cancelled),
-				(state, sink) -> emitNextChunk(state, sink, cancelled), state -> {
-					if (state != null) {
-						state.close();
-					}
-				})
-			.subscribeOn(this.streamScheduler)
-			// After subscribeOn() so this runs before its worker is disposed -
-			// i.e. before the blocking call in progress gets interrupted -
-			// guaranteeing `cancelled` is already set when that's observed.
-			.doOnCancel(() -> cancelled.set(true));
+			OpenAiAudioSpeechOptions mergedOptions = mergeOptions(prompt);
+			String inputText = getInputText(prompt, mergedOptions);
+			var observationContext = TextToSpeechModelObservationContext.builder()
+				.prompt(new TextToSpeechPrompt(inputText, mergedOptions))
+				.provider(AiProvider.OPENAI.value())
+				.streaming(true)
+				.build();
+			Observation observation = TextToSpeechModelObservationDocumentation.TEXT_TO_SPEECH_MODEL_OPERATION
+				.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
+						this.observationRegistry);
+			Observation parentObservation = contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null);
+			observation.parentObservation(parentObservation);
+			// Start under the parent observation's scope, as OpenAiChatModel does, so a
+			// tracing handler takes the parent span from it and not from the thread.
+			try (Observation.Scope ignored = parentObservation != null ? parentObservation.openScope()
+					: Observation.Scope.NOOP) {
+				observation.start();
+			}
+
+			Flux<TextToSpeechResponse> chunks = Flux.<TextToSpeechResponse, SpeechStreamState>generate(
+					() -> openSpeechStream(mergedOptions, inputText, cancelled),
+					(state, sink) -> emitNextChunk(state, sink, cancelled), state -> {
+						if (state != null) {
+							state.close();
+						}
+					})
+				.subscribeOn(this.streamScheduler)
+				// After subscribeOn() so this runs before its worker is disposed -
+				// i.e. before the blocking call in progress gets interrupted -
+				// guaranteeing `cancelled` is already set when that's observed.
+				.doOnCancel(() -> cancelled.set(true));
+			return observed(chunks, observation);
+		});
 	}
 
-	private @Nullable SpeechStreamState openSpeechStream(TextToSpeechPrompt prompt, AtomicBoolean cancelled) {
-		OpenAiAudioSpeechOptions mergedOptions = mergeOptions(prompt);
-		String inputText = getInputText(prompt, mergedOptions);
+	/**
+	 * Ends the observation with the stream: on completion, error or cancel, before the
+	 * terminal signal reaches the subscriber (unlike {@code doFinally}), so a caller that
+	 * blocks on the stream finds the observation stopped. Stopped once, whichever comes
+	 * first.
+	 */
+	private static <T> Flux<T> observed(Flux<T> stream, Observation observation) {
+		AtomicBoolean stopped = new AtomicBoolean();
+		Runnable stop = () -> {
+			if (stopped.compareAndSet(false, true)) {
+				observation.stop();
+			}
+		};
+		return stream.doOnError(observation::error)
+			.doOnError(ex -> stop.run())
+			.doOnComplete(stop)
+			.doOnCancel(stop)
+			.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
+	}
+
+	private @Nullable SpeechStreamState openSpeechStream(OpenAiAudioSpeechOptions mergedOptions, String inputText,
+			AtomicBoolean cancelled) {
 		traceRequest("Streaming", mergedOptions);
 
 		SpeechCreateParams params = buildSpeechCreateParams(mergedOptions, inputText, true);
@@ -367,6 +448,8 @@ public final class OpenAiAudioSpeechModel implements TextToSpeechModel {
 
 		private @Nullable Scheduler streamScheduler;
 
+		private @Nullable ObservationRegistry observationRegistry;
+
 		private List<OpenAiHttpClientBuilderCustomizer> httpClientCustomizers = new ArrayList<>();
 
 		/**
@@ -384,6 +467,19 @@ public final class OpenAiAudioSpeechModel implements TextToSpeechModel {
 			this.openAiClient = model.openAiClient;
 			this.options = model.options;
 			this.streamScheduler = model.streamScheduler;
+			this.observationRegistry = model.observationRegistry;
+		}
+
+		/**
+		 * Sets the observation registry the model reports its calls to. Defaults to
+		 * {@link ObservationRegistry#NOOP}: no observations.
+		 * @param observationRegistry The observation registry to use
+		 * @return This builder
+		 * @since 2.0.2
+		 */
+		public Builder observationRegistry(@Nullable ObservationRegistry observationRegistry) {
+			this.observationRegistry = observationRegistry;
+			return this;
 		}
 
 		/**

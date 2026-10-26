@@ -22,6 +22,8 @@
 		<module>spring-ai-model</module>
 		<module>spring-ai-rag</module>
 		<module>spring-ai-retry</module>
+		<module>spring-ai-session</module>
+		<module>session-repositories/spring-ai-session-jdbc</module>
 		<module>spring-ai-spring-boot-docker-compose</module>
 		<module>spring-ai-spring-boot-testcontainers</module>
 		<module>spring-ai-template-st</module>
@@ -29,6 +31,7 @@
 		<module>spring-ai-tool-search-tool</module>
 		<module>spring-ai-vector-store</module>
 
+		<module>advisors/spring-ai-session-advisor</module>
 		<module>advisors/spring-ai-tool-search-advisor</module>
 		<module>advisors/spring-ai-vector-store-advisor</module>
 
@@ -55,6 +58,9 @@
 		<module>auto-configurations/models/chat/observation/spring-ai-autoconfigure-model-chat-observation</module>
 		<module>auto-configurations/models/embedding/observation/spring-ai-autoconfigure-model-embedding-observation</module>
 		<module>auto-configurations/models/image/observation/spring-ai-autoconfigure-model-image-observation</module>
+		<module>auto-configurations/models/audio/observation/spring-ai-autoconfigure-model-audio-observation</module>
+		<module>auto-configurations/models/session/spring-ai-autoconfigure-model-session</module>
+		<module>auto-configurations/models/session/spring-ai-autoconfigure-model-session-jdbc</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-anthropic</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-bedrock-ai</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-deepseek</module>
@@ -116,6 +122,8 @@
 		<module>models/spring-ai-google-genai</module>
 		<module>models/spring-ai-google-genai-embedding</module>
 		<module>models/spring-ai-google-genai-image</module>
+		<module>models/spring-ai-google-genai-tts</module>
+		<module>models/spring-ai-google-genai-transcription</module>
 		<module>models/spring-ai-mistral-ai</module>
 		<module>models/spring-ai-ollama</module>
 		<module>models/spring-ai-openai</module>
@@ -144,10 +152,13 @@
 		<module>starters/spring-ai-starter-model-google-genai</module>
 		<module>starters/spring-ai-starter-model-google-genai-embedding</module>
 		<module>starters/spring-ai-starter-model-google-genai-image</module>
+		<module>starters/spring-ai-starter-model-google-genai-tts</module>
+		<module>starters/spring-ai-starter-model-google-genai-transcription</module>
 		<module>starters/spring-ai-starter-model-mistral-ai</module>
 		<module>starters/spring-ai-starter-model-ollama</module>
 		<module>starters/spring-ai-starter-model-openai</module>
 		<module>starters/spring-ai-starter-model-postgresml-embedding</module>
+		<module>starters/spring-ai-starter-model-session-jdbc</module>
 		<module>starters/spring-ai-starter-model-stability-ai</module>
 		<module>starters/spring-ai-starter-model-transformers</module>
 		<module>starters/spring-ai-starter-model-vertex-ai-embedding</module>
@@ -242,31 +253,31 @@
 		<maven.compiler.target>${java.version}</maven.compiler.target>
 		<!-- The version (range) of the JDK we want to use to compile -->
 		<compiler.jdk.version>[17.0.19,)</compiler.jdk.version>
-		<kotlin.version>2.3.20</kotlin.version>
+		<kotlin.version>2.4.21</kotlin.version>
 		<kotlin.compiler.jvmTarget>${java.version}</kotlin.compiler.jvmTarget>
 		<kotlin.compiler.daemon>false</kotlin.compiler.daemon>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<project.build.outputTimestamp>2026-09-24T10:28:26Z</project.build.outputTimestamp>
+		<project.build.outputTimestamp>2026-10-23T09:09:51Z</project.build.outputTimestamp>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
 		<!-- Spring Boot -->
-		<spring-boot.version>4.2.0-SNAPSHOT</spring-boot.version>
+		<spring-boot.version>4.2.0-RC1</spring-boot.version>
 
 		<!-- MCP SDK -->
-		<mcp.sdk.version>2.0.0</mcp.sdk.version>
+		<mcp.sdk.version>2.1.0</mcp.sdk.version>
 
 		<!-- AI model SDKs -->
-		<anthropic-sdk.version>2.64.0</anthropic-sdk.version>
-		<openai-sdk.version>4.49.0</openai-sdk.version>
+		<anthropic-sdk.version>2.72.0</anthropic-sdk.version>
+		<openai-sdk.version>4.80.0</openai-sdk.version>
 		<!-- NOTE: keep awssdk and bedrockruntime versions aligned -->
-		<awssdk.version>2.51.2</awssdk.version>
-		<bedrockruntime.version>2.51.2</bedrockruntime.version>
+		<awssdk.version>2.55.14</awssdk.version>
+		<bedrockruntime.version>2.55.14</bedrockruntime.version>
 		<azure-core.version>1.57.1</azure-core.version>
 		<azure-identity.version>1.18.2</azure-identity.version>
 		<azure-json.version>1.5.1</azure-json.version>
 		<azure-search.version>11.7.6</azure-search.version>
 		<com.google.cloud.version>26.83.0</com.google.cloud.version>
-		<com.google.genai.version>1.65.0</com.google.genai.version>
+		<com.google.genai.version>1.73.0</com.google.genai.version>
 		<djl.version>0.36.0</djl.version>
 
 		<!-- Vector store clients -->

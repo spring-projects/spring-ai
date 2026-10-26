@@ -37,7 +37,7 @@ import org.springframework.ai.chat.client.advisor.DefaultAroundAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.BaseAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
-import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.chat.client.advisor.api.MemoryAdvisor;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.SystemMessage;
@@ -185,7 +185,7 @@ public class ToolSearchToolCallingAdvisorCallTests {
 
 		Prompt prompt = new Prompt(List.of(originalSystemMessage, userMessage), toolOptions);
 		Map<String, Object> augmentContext = new ConcurrentHashMap<>();
-		augmentContext.put(ChatMemory.CONVERSATION_ID, "test-session-id");
+		augmentContext.put(MemoryAdvisor.CONVERSATION_ID, "test-session-id");
 		ChatClientRequest request = ChatClientRequest.builder()
 			.prompt(prompt)
 			.build()
@@ -437,7 +437,7 @@ public class ToolSearchToolCallingAdvisorCallTests {
 		Prompt prompt = new Prompt(List.of(systemMessage, userMessage, assistantMessage, toolResponseMessage),
 				toolOptions);
 		Map<String, Object> extractContext = new ConcurrentHashMap<>();
-		extractContext.put(ChatMemory.CONVERSATION_ID, "test-session-id");
+		extractContext.put(MemoryAdvisor.CONVERSATION_ID, "test-session-id");
 		ChatClientRequest request = ChatClientRequest.builder()
 			.prompt(prompt)
 			.build()
@@ -564,7 +564,7 @@ public class ToolSearchToolCallingAdvisorCallTests {
 
 		Prompt prompt = new Prompt(List.of(userMessage, toolResponseMessage), toolOptions);
 		Map<String, Object> cachedContext = new ConcurrentHashMap<>();
-		cachedContext.put(ChatMemory.CONVERSATION_ID, "test-session-id");
+		cachedContext.put(MemoryAdvisor.CONVERSATION_ID, "test-session-id");
 		ChatClientRequest request = ChatClientRequest.builder()
 			.prompt(prompt)
 			.build()
@@ -783,7 +783,7 @@ public class ToolSearchToolCallingAdvisorCallTests {
 			List<Message> instructions, ToolCallingChatOptions toolOptions) {
 		Prompt prompt = new Prompt(instructions, toolOptions);
 		Map<String, Object> context = new ConcurrentHashMap<>();
-		context.put(ChatMemory.CONVERSATION_ID, "test-session-id");
+		context.put(MemoryAdvisor.CONVERSATION_ID, "test-session-id");
 		ChatClientRequest request = ChatClientRequest.builder()
 			.prompt(prompt)
 			.build()
@@ -855,7 +855,7 @@ public class ToolSearchToolCallingAdvisorCallTests {
 		Prompt prompt = new Prompt(instructions, options);
 
 		Map<String, Object> context = new ConcurrentHashMap<>();
-		context.put(ChatMemory.CONVERSATION_ID, conversationId);
+		context.put(MemoryAdvisor.CONVERSATION_ID, conversationId);
 
 		return ChatClientRequest.builder().prompt(prompt).build().mutate().context(context).build();
 	}

@@ -398,7 +398,7 @@ class OpenAiAudioTranscriptionModelTests {
 			.getMetadata();
 		assertThat(metadata.getDuration()).isEqualTo(1.5);
 		assertThat(metadata.getLanguage()).isEqualTo("en");
-		assertThat(metadata.getUsage()).isNotNull();
+		assertThat(metadata.getNativeUsage()).isNotNull();
 		assertThat(metadata.getSegments()).hasSize(1);
 		assertThat(metadata.getWords()).hasSize(1);
 	}
@@ -438,7 +438,7 @@ class OpenAiAudioTranscriptionModelTests {
 		OpenAiAudioTranscriptionResponseMetadata metadata = (OpenAiAudioTranscriptionResponseMetadata) response
 			.getMetadata();
 		assertThat(metadata.getDuration()).isEqualTo(1.5);
-		assertThat(metadata.getUsage()).isNotNull();
+		assertThat(metadata.getNativeUsage()).isNotNull();
 		assertThat(metadata.getSegments()).hasSize(1);
 	}
 
@@ -471,7 +471,7 @@ class OpenAiAudioTranscriptionModelTests {
 		OpenAiAudioTranscriptionResponseMetadata metadata = (OpenAiAudioTranscriptionResponseMetadata) response
 			.getMetadata();
 		assertThat(metadata.getSegments()).hasSize(1);
-		assertThat(metadata.getUsage()).isNotNull();
+		assertThat(metadata.getNativeUsage()).isNotNull();
 	}
 
 	@Test

@@ -26,7 +26,12 @@ import org.springframework.boot.jdbc.init.PropertiesBasedDataSourceScriptDatabas
  * @author Mark Pollack
  * @author Yanming Zhou
  * @since 1.0.0
+ * @deprecated since 2.1.0, for removal in 3.0.0, in favor of
+ * {@code JdbcSessionRepositorySchemaInitializer} in
+ * {@code spring-ai-autoconfigure-model-session-jdbc}
  */
+@Deprecated(since = "2.1.0", forRemoval = true)
+@SuppressWarnings("removal")
 class JdbcChatMemoryRepositorySchemaInitializer
 		extends PropertiesBasedDataSourceScriptDatabaseInitializer<JdbcChatMemoryRepositoryProperties> {
 

@@ -1,0 +1,61 @@
+@startuml session-advisors-classes
+!pragma layout smetana
+set namespaceSeparator none
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+hide empty members
+
+package "org.springframework.ai.chat.client.advisor.api" {
+  interface CallAdvisor
+  interface StreamAdvisor
+  interface BaseAdvisor
+}
+class SessionAdvisors {
+  {static} +builder(sessionService)
+  {static} +session(sessionId)
+}
+class "SessionAdvisors.Builder" as SAB {
+  +compaction(trigger, strategy)
+  +asyncCompaction(boolean)
+  +scheduler(scheduler)
+  +memory(customizer)
+  +build(): List<Advisor>
+}
+class SessionTurnAdvisor {
+  {static} DEFAULT_ORDER = HIGHEST_PRECEDENCE + 200
+  +adviseCall(request, chain)
+  +adviseStream(request, chain)
+  {static} +builder(sessionService)
+}
+class SessionMemoryAdvisor {
+  {static} SESSION_ID_CONTEXT_KEY
+  {static} SESSION_METADATA_CONTEXT_KEY
+  {static} EVENT_FILTER_CONTEXT_KEY
+  {static} REQUEST_EVENT_ID_CONTEXT_KEY
+  {static} RESPONSE_EVENT_IDS_CONTEXT_KEY
+  +before(request, chain)
+  +after(response, chain)
+  {static} +builder(sessionService)
+}
+interface SessionService
+interface MessageFilter <<functional>> {
+  +shouldPersist(message): boolean
+}
+class EventFilter
+interface CompactionTrigger
+interface CompactionStrategy
+
+CallAdvisor <|.. SessionTurnAdvisor
+StreamAdvisor <|.. SessionTurnAdvisor
+BaseAdvisor <|.. SessionMemoryAdvisor
+SessionAdvisors +-- SAB
+SAB ..> SessionTurnAdvisor : builds
+SAB ..> SessionMemoryAdvisor : builds
+SessionTurnAdvisor --> SessionService
+SessionTurnAdvisor --> "0..1" CompactionTrigger
+SessionTurnAdvisor --> "0..1" CompactionStrategy
+SessionMemoryAdvisor --> SessionService
+SessionMemoryAdvisor --> EventFilter : reads with
+SessionMemoryAdvisor --> MessageFilter : stores through
+@enduml

@@ -40,6 +40,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Linar Abzaltdinov
  * @author Yanming Zhou
  */
+@SuppressWarnings("removal")
 class JdbcChatMemoryRepositoryPostgresqlAutoConfigurationIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()

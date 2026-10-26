@@ -265,6 +265,8 @@ Only supported on Claude models.
 
 Cache growing conversation history for multi-turn chatbots and assistants:
 
+NOTE: `MessageChatMemoryAdvisor` and the `ChatMemory` API are deprecated since 2.1.0, for removal in 3.0.0, in favor of xref:api/session.adoc[session memory]; see xref:api/chat-memory.adoc#chat-memory-migration[Migrating to Session Memory].
+
 [source,java]
 ----
 // Cache conversation history with ChatClient and memory
@@ -275,7 +277,7 @@ ChatClient chatClient = ChatClient.builder(chatModel)
 
 String response = chatClient.prompt()
     .user("What career advice would you give me?")
-    .advisors(a -> a.param(ChatMemory.CONVERSATION_ID, conversationId))
+    .advisors(a -> a.param(MemoryAdvisor.CONVERSATION_ID, conversationId))
     .options(BedrockChatOptions.builder()
         .model("us.anthropic.claude-haiku-4-5-20251001-v1:0")
         .cacheOptions(BedrockCacheOptions.builder()
@@ -862,7 +864,7 @@ It is replayed to Bedrock without a signature.
 |====
 
 The provider and payload kinds are available as the `BEDROCK_PROVIDER`, `PAYLOAD_SIGNATURE` and `PAYLOAD_REDACTED_CONTENT` constants of `ConverseApiUtils`.
-Every reasoning part Bedrock returned also carries the `provider` attribute (`StreamingParts.PROVIDER_ATTRIBUTE`) set to `bedrock`, which is how unsigned reasoning, having no payload, is recognized as Bedrock's own.
+Every reasoning part Bedrock returned also carries the `provider` attribute (`MessagePart.PROVIDER_ATTRIBUTE`) set to `bedrock`, which is how unsigned reasoning, having no payload, is recognized as Bedrock's own.
 Other content block types, such as citations, are not mapped to parts yet.
 
 Reasoning is fully supported in streaming mode.

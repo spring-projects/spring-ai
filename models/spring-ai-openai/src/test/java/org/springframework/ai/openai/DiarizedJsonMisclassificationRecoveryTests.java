@@ -16,6 +16,10 @@
 
 package org.springframework.ai.openai;
 
+import java.util.List;
+import java.util.Map;
+
+import com.openai.core.JsonValue;
 import com.openai.models.audio.transcriptions.Transcription;
 import com.openai.models.audio.transcriptions.TranscriptionDiarizedSegment;
 import org.assertj.core.data.Offset;
@@ -109,6 +113,73 @@ class DiarizedJsonMisclassificationRecoveryTests {
 
 		assertThat(recovered).isNotNull();
 		assertThat(recovered.usage()).isNull();
+	}
+
+	// Shape-2 tests: SDK 4.80 tied-validity path — clean text in text(), diarized
+	// fields in _additionalProperties().
+
+	@Test
+	void shape2RecoverersTextAndSegmentsFromAdditionalProperties() {
+		List<Map<String, Object>> rawSegments = List.of(
+				Map.of("id", "seg_0", "speaker", "A", "start", 0.0, "end", 2.1, "text", "And so,"),
+				Map.of("id", "seg_1", "speaker", "A", "start", 2.8, "end", 10.3, "text", "ask not."));
+		Transcription candidate = Transcription.builder()
+			.text("And so, ask not.")
+			.putAdditionalProperty("segments", JsonValue.from(rawSegments))
+			.build();
+
+		DiarizedJsonMisclassificationRecovery.Recovered recovered = DiarizedJsonMisclassificationRecovery
+			.tryRecover(candidate);
+
+		assertThat(recovered).isNotNull();
+		assertThat(recovered.text()).isEqualTo("And so, ask not.");
+		assertThat(recovered.segments()).hasSize(2);
+		TranscriptionDiarizedSegment first = recovered.segments().get(0);
+		assertThat(first.id()).isEqualTo("seg_0");
+		assertThat(first.speaker()).isEqualTo("A");
+		assertThat((double) first.start()).isEqualTo(0.0, Offset.offset(0.001));
+		assertThat((double) first.end()).isEqualTo(2.1, Offset.offset(0.001));
+		assertThat(first.text()).isEqualTo("And so,");
+	}
+
+	@Test
+	void shape2RecoverersUsageFromAdditionalProperties() {
+		List<Map<String, Object>> rawSegments = List
+			.of(Map.of("id", "seg_0", "speaker", "A", "start", 0.0, "end", 5.0, "text", "Hello."));
+		Map<String, Object> rawUsage = Map.of("type", "tokens", "total_tokens", 100);
+		Transcription candidate = Transcription.builder()
+			.text("Hello.")
+			.putAdditionalProperty("segments", JsonValue.from(rawSegments))
+			.putAdditionalProperty("usage", JsonValue.from(rawUsage))
+			.build();
+
+		DiarizedJsonMisclassificationRecovery.Recovered recovered = DiarizedJsonMisclassificationRecovery
+			.tryRecover(candidate);
+
+		assertThat(recovered).isNotNull();
+		assertThat(recovered.usage()).isNotNull();
+		assertThat(recovered.usage()).containsEntry("total_tokens", 100);
+	}
+
+	@Test
+	void shape2ReturnsNullWhenNoSegmentsInAdditionalProperties() {
+		Transcription candidate = Transcription.builder().text("Hello world").build();
+
+		assertThat(DiarizedJsonMisclassificationRecovery.tryRecover(candidate)).isNull();
+	}
+
+	@Test
+	void shape2RecoverersEmptySegmentsList() {
+		Transcription candidate = Transcription.builder()
+			.text("Hello.")
+			.putAdditionalProperty("segments", JsonValue.from(List.of()))
+			.build();
+
+		DiarizedJsonMisclassificationRecovery.Recovered recovered = DiarizedJsonMisclassificationRecovery
+			.tryRecover(candidate);
+
+		assertThat(recovered).isNotNull();
+		assertThat(recovered.segments()).isEmpty();
 	}
 
 }

@@ -43,7 +43,11 @@ import org.springframework.util.Assert;
  * @author Mark Pollack
  * @author Thomas Vitale
  * @since 1.0.0
+ * @deprecated since 2.1.0, for removal in 3.0.0, in favor of {@code SessionAdvisors} and
+ * {@code SessionMemoryAdvisor} in {@code spring-ai-session-advisor}
  */
+@Deprecated(since = "2.1.0", forRemoval = true)
+@SuppressWarnings("removal")
 public final class MessageChatMemoryAdvisor implements BaseChatMemoryAdvisor {
 
 	private final ChatMemory chatMemory;

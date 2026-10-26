@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatModel;
@@ -51,6 +52,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 // @Disabled("the deepseek-chat model's Function Calling capability is unstable see:
 // https://api-docs.deepseek.com/guides/function_calling")
 @EnabledIfEnvironmentVariable(named = "DEEPSEEK_API_KEY", matches = ".+")
+@SuppressWarnings("removal")
 class DeepSeekChatModelFunctionCallingIT {
 
 	@Autowired
@@ -237,9 +239,11 @@ class DeepSeekChatModelFunctionCallingIT {
 		assertThat(response).isNotNull();
 		assertThat(response.getResult()).isNotNull();
 		assertThat(response.getResult().getOutput()).isNotNull();
-		assertThat(response.getResult().getOutput()).isInstanceOf(DeepSeekAssistantMessage.class);
-		DeepSeekAssistantMessage assistantMessage = (DeepSeekAssistantMessage) response.getResult().getOutput();
-		assertThat(assistantMessage.getReasoningContent()).isNotEmpty();
+		AssistantMessage assistantMessage = response.getResult().getOutput();
+		assertThat(assistantMessage.getReasoning()).isNotEmpty();
+		// Deprecated access path, still supported
+		assertThat(assistantMessage).isInstanceOfSatisfying(DeepSeekAssistantMessage.class,
+				deepSeek -> assertThat(deepSeek.getReasoningContent()).isNotEmpty());
 		assertThat(assistantMessage.getText()).isNotEmpty();
 		assertThat(assistantMessage.getText()).contains("30");
 	}

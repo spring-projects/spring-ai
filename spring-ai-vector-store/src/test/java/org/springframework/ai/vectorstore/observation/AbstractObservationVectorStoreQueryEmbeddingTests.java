@@ -173,6 +173,11 @@ class AbstractObservationVectorStoreQueryEmbeddingTests {
 		}
 
 		@Override
+		protected boolean supportsQueryEmbeddingSearch() {
+			return true;
+		}
+
+		@Override
 		protected List<Document> doSimilaritySearch(float[] queryEmbedding, SearchRequest request) {
 			this.captured.set(queryEmbedding);
 			return List.of();

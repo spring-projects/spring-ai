@@ -18,11 +18,10 @@ package org.springframework.ai.anthropic;
 
 import java.time.Duration;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
-import com.anthropic.client.AnthropicClientAsync;
+import com.anthropic.client.AnthropicClient;
 import com.anthropic.core.RequestOptions;
 import com.anthropic.core.http.Headers;
 import com.anthropic.core.http.HttpResponseFor;
@@ -30,7 +29,7 @@ import com.anthropic.core.http.StreamResponse;
 import com.anthropic.errors.AnthropicIoException;
 import com.anthropic.models.messages.MessageCreateParams;
 import com.anthropic.models.messages.RawMessageStreamEvent;
-import com.anthropic.services.async.MessageServiceAsync;
+import com.anthropic.services.blocking.MessageService;
 import okhttp3.mockwebserver.MockResponse;
 import okhttp3.mockwebserver.MockWebServer;
 import org.junit.jupiter.api.Test;
@@ -169,10 +168,9 @@ class AnthropicChatModelTimeoutTests {
 	@Test
 	@SuppressWarnings("unchecked")
 	void perRequestChatClientTimeoutIsForwardedOnTheStreamingPath() {
-		AnthropicClientAsync anthropicClientAsync = mock(AnthropicClientAsync.class);
-		MessageServiceAsync messageServiceAsync = mock(MessageServiceAsync.class);
-		MessageServiceAsync.WithRawResponse messageServiceAsyncWithRawResponse = mock(
-				MessageServiceAsync.WithRawResponse.class);
+		AnthropicClient anthropicClient = mock(AnthropicClient.class);
+		MessageService messageService = mock(MessageService.class);
+		MessageService.WithRawResponse messageServiceWithRawResponse = mock(MessageService.WithRawResponse.class);
 
 		StreamResponse<RawMessageStreamEvent> streamResponse = mock(StreamResponse.class);
 		given(streamResponse.stream()).willReturn(Stream.empty());
@@ -180,14 +178,13 @@ class AnthropicChatModelTimeoutTests {
 		given(rawResponse.parse()).willReturn(streamResponse);
 		given(rawResponse.headers()).willReturn(Headers.builder().build());
 
-		given(anthropicClientAsync.messages()).willReturn(messageServiceAsync);
-		given(messageServiceAsync.withRawResponse()).willReturn(messageServiceAsyncWithRawResponse);
-		given(messageServiceAsyncWithRawResponse.createStreaming(any(MessageCreateParams.class),
-				any(RequestOptions.class)))
-			.willReturn(CompletableFuture.completedFuture(rawResponse));
+		given(anthropicClient.messages()).willReturn(messageService);
+		given(messageService.withRawResponse()).willReturn(messageServiceWithRawResponse);
+		given(messageServiceWithRawResponse.createStreaming(any(MessageCreateParams.class), any(RequestOptions.class)))
+			.willReturn(rawResponse);
 
 		AnthropicChatModel chatModel = AnthropicChatModel.builder()
-			.anthropicClientAsync(anthropicClientAsync)
+			.anthropicClient(anthropicClient)
 			.options(AnthropicChatOptions.builder()
 				.model("claude-haiku-4-5-20251001")
 				.maxTokens(10)
@@ -202,7 +199,7 @@ class AnthropicChatModelTimeoutTests {
 		}).collectList().block();
 
 		ArgumentCaptor<RequestOptions> captor = ArgumentCaptor.forClass(RequestOptions.class);
-		verify(messageServiceAsyncWithRawResponse).createStreaming(any(MessageCreateParams.class), captor.capture());
+		verify(messageServiceWithRawResponse).createStreaming(any(MessageCreateParams.class), captor.capture());
 		assertThat(captor.getValue().getTimeout().request()).isEqualTo(Duration.ofSeconds(5));
 	}
 

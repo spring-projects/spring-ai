@@ -22,6 +22,7 @@ import com.openai.client.OpenAIClient;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.observation.ObservationRegistry;
 
+import org.springframework.ai.audio.tts.observation.TextToSpeechModelObservationConvention;
 import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.model.SpringAIModels;
 import org.springframework.ai.model.openai.autoconfigure.OpenAiAutoConfigurationUtil.ResolvedConnectionProperties;
@@ -57,6 +58,7 @@ public class OpenAiAudioSpeechAutoConfiguration {
 	public OpenAiAudioSpeechModel openAiSdkAudioSpeechModel(OpenAiCommonProperties commonProperties,
 			OpenAiAudioSpeechProperties speechProperties, ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<MeterRegistry> meterRegistry,
+			ObjectProvider<TextToSpeechModelObservationConvention> observationConvention,
 			ObjectProvider<OpenAiHttpClientBuilderCustomizer> httpClientBuilderCustomizers) {
 
 		var resolvedProperties = OpenAiAutoConfigurationUtil.resolveCommonProperties(commonProperties,
@@ -67,10 +69,15 @@ public class OpenAiAudioSpeechAutoConfiguration {
 		OpenAIClient openAIClient = this.openAiClient(resolvedProperties, observationRegistry, meterRegistry,
 				customizers);
 
-		return OpenAiAudioSpeechModel.builder()
+		var speechModel = OpenAiAudioSpeechModel.builder()
 			.openAiClient(openAIClient)
 			.options(speechProperties.toOptions())
+			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.build();
+
+		observationConvention.ifAvailable(speechModel::setObservationConvention);
+
+		return speechModel;
 	}
 
 	private OpenAIClient openAiClient(ResolvedConnectionProperties commonProperties,

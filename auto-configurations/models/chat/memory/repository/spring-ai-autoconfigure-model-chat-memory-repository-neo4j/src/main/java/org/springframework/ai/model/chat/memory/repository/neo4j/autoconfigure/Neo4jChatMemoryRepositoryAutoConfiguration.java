@@ -32,7 +32,13 @@ import org.springframework.context.annotation.Bean;
  *
  * @author Enrico Rampazzo
  * @since 1.0.0
+ * @deprecated since 2.1.0, for removal in 3.0.0, in favor of the session memory
+ * auto-configuration, {@code SessionServiceAutoConfiguration} in
+ * {@code spring-ai-autoconfigure-model-session}. There is no session store for Neo4j yet;
+ * one is planned before 3.0.0, when this module is removed.
  */
+@Deprecated(since = "2.1.0", forRemoval = true)
+@SuppressWarnings("removal")
 // Ordering is to make sure ChatMemoryRepository bean is neo4j one
 @AutoConfiguration(before = ChatMemoryAutoConfiguration.class)
 @ConditionalOnClass({ Neo4jChatMemoryRepository.class, Driver.class })

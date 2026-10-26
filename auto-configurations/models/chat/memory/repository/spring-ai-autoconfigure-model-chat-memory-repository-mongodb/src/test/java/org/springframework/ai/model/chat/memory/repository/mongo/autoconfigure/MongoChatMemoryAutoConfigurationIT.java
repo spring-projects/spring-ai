@@ -44,6 +44,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest(classes = MongoChatMemoryAutoConfigurationIT.TestConfiguration.class,
 		webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @TestPropertySource(properties = { "spring.ai.chat.memory.repository.mongo.create-indices=true" })
+@SuppressWarnings("removal")
 class MongoChatMemoryAutoConfigurationIT {
 
 	@Autowired

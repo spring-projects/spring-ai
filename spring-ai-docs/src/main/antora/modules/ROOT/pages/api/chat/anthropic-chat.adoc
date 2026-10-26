@@ -1703,6 +1703,13 @@ Spring AI emits Micrometer observations at two layers for every Anthropic call:
 * **Chat-model layer.** A `gen_ai.client.operation` observation wraps every call to `AnthropicChatModel.call(...)` or `.stream(...)`, carrying request parameters, response metadata, and token usage. See the xref:observability/index.adoc[observability reference] for the full set of tags and metrics.
 * **HTTP layer.** An `okhttp.requests` observation wraps every HTTP attempt to the Anthropic API, carrying HTTP method, URI, status code, and exception tags. Each request also propagates `traceparent` on the wire to any downstream services (AI gateways, OpenAI-compatible inference servers, proxies).
 
+For both `call(...)` and `stream(...)`, the `okhttp.requests` observation is nested under the `gen_ai.client.operation` observation, so the `traceparent` sent to Anthropic carries the caller's trace.
+The one exception is streaming with your own async client set through `AnthropicChatModel.builder().anthropicClientAsync(...)`: Spring AI keeps using that client, but its HTTP observations are not nested under the chat-model observation.
+
+The Anthropic Java SDK can also emit its own OpenTelemetry spans.
+Spring AI turns them off in the clients it builds, because the observations above already cover every request.
+A client that you build yourself and pass to `AnthropicChatModel.builder()` keeps whatever SDK tracing settings you gave it.
+
 In a Spring Boot application with `spring-boot-starter-actuator` and a tracing bridge (`micrometer-tracing-bridge-otel` or `micrometer-tracing-bridge-brave`), both layers are wired automatically — no opt-in required.
 For non-Boot applications, pass an `ObservationRegistry` to `AnthropicChatModel.builder()`:
 
@@ -1713,6 +1720,26 @@ AnthropicChatModel chatModel = AnthropicChatModel.builder()
     .observationRegistry(observationRegistry)
     .build();
 ----
+
+=== Anthropic server-side spans
+
+The Claude API can also export its own spans for each request, such as `anthropic.messages.create`, to your observability platform.
+Because Spring AI sends a `traceparent` header with every request, these spans join your application's trace, under the `okhttp.requests` span of that request.
+This needs no code or Spring AI configuration; you set it up on the Anthropic side.
+
+. In the Claude Console, an organization admin adds a telemetry destination: the OTLP/HTTP endpoint of your observability platform and its credentials.
+The destination must cover the workspace of the API key that your application uses.
+See https://platform.claude.com/docs/en/manage-claude/opentelemetry/api[Use OpenTelemetry with the Claude API] for the steps.
+. Export your application's traces to the same observability platform, so that it can show both sides as one trace.
+. To find the Anthropic spans, filter on `service.name` = `claude-platform`.
+
+Keep in mind:
+
+* The Claude API follows the sampled flag in `traceparent`: when your application doesn't sample a request, the API doesn't emit spans for it either.
+Spring Boot samples 10% of requests by default, which you can change with `management.tracing.sampling.probability`.
+* The Claude API reads only the W3C `traceparent` header, which is Spring Boot's default.
+If you use B3 propagation, add W3C as well, for example with `management.tracing.propagation.type=w3c,b3`.
+* Claude Platform on AWS doesn't read `traceparent` yet, so the spans of requests sent to it always start their own trace.
 
 === Connection-pool metrics (opt-in)
 
@@ -1750,23 +1777,9 @@ AnthropicChatModel chatModel = AnthropicChatModel.builder()
     .build();
 ----
 
-The same executor backs both the sync and async (streaming) clients.
+The same executor backs both the sync and async clients.
 When you supply your own executor, you own its lifecycle — Spring AI will never call `shutdown()` on it.
 When omitted, the internal executor is created and cleaned up automatically.
-
-[IMPORTANT]
-====
-**Streaming HTTP observations are not parented under the chat-model observation**
-
-For synchronous calls, the `okhttp.requests` span is correctly nested under the `gen_ai.client.operation` span — the full trace tree forms as expected.
-
-For streaming calls, the `okhttp.requests` span fires and is recorded in the registry, the timer is recorded in `MeterRegistry`, and `traceparent` is still propagated on the outbound request — but the span is **not** nested under the chat-model span.
-This is because the Anthropic SDK's async streaming implementation hops onto `ForkJoinPool.commonPool()` before invoking Spring AI's HTTP client, dropping the calling thread's observation context at that boundary.
-Spring AI cannot recover the context from within its HTTP-client wrapper.
-
-If you need to correlate streaming HTTP spans with their parent chat-model span in your tracing UI, filter by span name `okhttp.requests` with host `api.anthropic.com` and join to the corresponding `gen_ai.client.operation` span by trace ID or timestamp range.
-Built-in parent linkage for streaming is being pursued upstream in the Anthropic Java SDK.
-====
 
 == Logging
 

@@ -27,7 +27,7 @@ import reactor.core.scheduler.Scheduler;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.ChatClientRequest;
-import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.chat.client.advisor.api.MemoryAdvisor;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -156,7 +156,7 @@ class VectorStoreChatMemoryAdvisorTests {
 		VectorStore vectorStore = Mockito.mock(VectorStore.class);
 		VectorStoreChatMemoryAdvisor advisor = VectorStoreChatMemoryAdvisor.builder(vectorStore).build();
 
-		String result = advisor.getConversationId(Map.of(ChatMemory.CONVERSATION_ID, "session-42"));
+		String result = advisor.getConversationId(Map.of(MemoryAdvisor.CONVERSATION_ID, "session-42"));
 
 		assertThat(result).isEqualTo("session-42");
 	}
@@ -191,7 +191,7 @@ class VectorStoreChatMemoryAdvisorTests {
 
 		chatClient.prompt()
 			.user("test query")
-			.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, "test-session"))
+			.advisors(a -> a.param(MemoryAdvisor.CONVERSATION_ID, "test-session"))
 			.call()
 			.content();
 
@@ -230,7 +230,7 @@ class VectorStoreChatMemoryAdvisorTests {
 
 		chatClient.prompt()
 			.user("test query")
-			.advisors(a -> a.param(ChatMemory.CONVERSATION_ID, "test-session"))
+			.advisors(a -> a.param(MemoryAdvisor.CONVERSATION_ID, "test-session"))
 			.call()
 			.content();
 
@@ -259,7 +259,7 @@ class VectorStoreChatMemoryAdvisorTests {
 			given(vectorStore.similaritySearch(any(SearchRequest.class))).willReturn(List.of(doc));
 
 			ChatClientRequest request = ChatClientRequest.builder()
-				.context(ChatMemory.CONVERSATION_ID, "test-session")
+				.context(MemoryAdvisor.CONVERSATION_ID, "test-session")
 				.prompt(new Prompt(List.of(new SystemMessage("instructions"), new UserMessage("query"))))
 				.build();
 

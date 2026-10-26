@@ -34,6 +34,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  *
  * @author Thomas Vitale
  */
+@SuppressWarnings("removal")
 public class InMemoryChatMemoryRepositoryTests {
 
 	private final InMemoryChatMemoryRepository chatMemoryRepository = new InMemoryChatMemoryRepository();
