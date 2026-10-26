@@ -16,19 +16,22 @@
 
 package org.springframework.ai.vectorstore.pgvector;
 
+import java.util.List;
+
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 
-import java.util.List;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for {@link PgVectorStore} configurable distance type behavior.
@@ -38,15 +41,6 @@ class PgVectorStoreDistanceTypeTests {
 
 	private static final TestPgDistanceType CUSTOM_DISTANCE_TYPE = new TestPgDistanceType("CUSTOM", "<custom>",
 			"custom_ops", "SELECT * CUSTOM ?");
-
-	/**
-	 * Test implementation of {@link PgDistanceType}.
-	 */
-		private record TestPgDistanceType(String name, String operator, String index,
-										  String similaritySearchSqlTemplate) implements PgDistanceType {
-
-
-	}
 
 	@Test
 	void shouldUseCosineDistanceByDefault() {
@@ -106,6 +100,14 @@ class PgVectorStoreDistanceTypeTests {
 
 		// Verify that the custom distance operator is used in the SQL
 		assertThat(sql).contains("SELECT * CUSTOM ?").doesNotContain("<->", "<=>", "<#>");
+	}
+
+	/**
+	 * Test implementation of {@link PgDistanceType}.
+	 */
+	private record TestPgDistanceType(String name, String operator, String index,
+			String similaritySearchSqlTemplate) implements PgDistanceType {
+
 	}
 
 }

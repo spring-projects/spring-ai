@@ -37,7 +37,7 @@ public class PgVectorStoreProperties extends CommonVectorStoreProperties {
 
 	private PgIndexType indexType = PgIndexType.HNSW;
 
-	private String distanceType="COSINE_DISTANCE";
+	private String distanceType = "COSINE_DISTANCE";
 
 	private boolean removeExistingVectorStoreTable = false;
 
