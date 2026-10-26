@@ -19,7 +19,6 @@ package org.springframework.ai.vectorstore.pgvector.autoconfigure;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.vectorstore.pgvector.PgVectorStore;
-import org.springframework.ai.vectorstore.pgvector.PgVectorStore.PgDistanceType;
 import org.springframework.ai.vectorstore.pgvector.PgVectorStore.PgIndexType;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -33,7 +32,7 @@ public class PgVectorStorePropertiesTests {
 	public void defaultValues() {
 		var props = new PgVectorStoreProperties();
 		assertThat(props.getDimensions()).isEqualTo(PgVectorStore.INVALID_EMBEDDING_DIMENSION);
-		assertThat(props.getDistanceType()).isEqualTo(PgDistanceType.COSINE_DISTANCE);
+		assertThat(props.getDistanceType()).isEqualTo("COSINE_DISTANCE");
 		assertThat(props.getIndexType()).isEqualTo(PgIndexType.HNSW);
 		assertThat(props.isRemoveExistingVectorStoreTable()).isFalse();
 
@@ -51,7 +50,7 @@ public class PgVectorStorePropertiesTests {
 		var props = new PgVectorStoreProperties();
 
 		props.setDimensions(1536);
-		props.setDistanceType(PgDistanceType.EUCLIDEAN_DISTANCE);
+		props.setDistanceType("EUCLIDEAN_DISTANCE");
 		props.setIndexType(PgIndexType.IVFFLAT);
 		props.setRemoveExistingVectorStoreTable(true);
 
@@ -64,7 +63,7 @@ public class PgVectorStorePropertiesTests {
 		props.setEmbeddingFieldName("vec");
 
 		assertThat(props.getDimensions()).isEqualTo(1536);
-		assertThat(props.getDistanceType()).isEqualTo(PgDistanceType.EUCLIDEAN_DISTANCE);
+		assertThat(props.getDistanceType()).isEqualTo("EUCLIDEAN_DISTANCE");
 		assertThat(props.getIndexType()).isEqualTo(PgIndexType.IVFFLAT);
 		assertThat(props.isRemoveExistingVectorStoreTable()).isTrue();
 
