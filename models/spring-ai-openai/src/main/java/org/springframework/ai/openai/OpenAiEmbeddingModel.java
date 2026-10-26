@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Objects;
 
 import com.openai.client.OpenAIClient;
+import com.openai.core.JsonField;
 import com.openai.core.RequestOptions;
 import com.openai.models.embeddings.CreateEmbeddingResponse;
 import com.openai.models.embeddings.EmbeddingCreateParams;
@@ -275,13 +276,32 @@ public class OpenAiEmbeddingModel extends AbstractEmbeddingModel {
 		List<Embedding> data = generateEmbeddingList(response.data());
 		EmbeddingResponseMetadata metadata = new EmbeddingResponseMetadata();
 		metadata.setModel(response.model());
-		metadata.setUsage(getDefaultUsage(response.usage()));
+		metadata.setUsage(getDefaultUsage(response._usage()));
 		return new EmbeddingResponse(data, metadata);
 	}
 
-	private DefaultUsage getDefaultUsage(CreateEmbeddingResponse.Usage nativeUsage) {
-		return new DefaultUsage(toIntTokenCount("promptTokens", nativeUsage.promptTokens()), 0,
-				toIntTokenCount("totalTokens", nativeUsage.totalTokens()), nativeUsage);
+	private DefaultUsage getDefaultUsage(JsonField<CreateEmbeddingResponse.Usage> nativeUsageField) {
+		CreateEmbeddingResponse.Usage nativeUsage = nativeUsageField.asKnown().orElse(null);
+		if (nativeUsage == null) {
+			// Gemini's OpenAI-compatible embeddings responses may omit `usage` entirely;
+			// return an empty usage rather than dereferencing null.
+			return new DefaultUsage(null, null, null, null);
+		}
+		// `promptTokens()` and `totalTokens()` are required accessors in openai-java:
+		// they
+		// throw OpenAIInvalidDataException when a provider reports usage with that count
+		// missing, so read each count through its raw JsonField instead and let an absent
+		// count stay absent. DefaultUsage reports a missing count as zero and derives a
+		// missing total from the other counts.
+		Integer promptTokens = nativeUsage._promptTokens()
+			.asKnown()
+			.map(tokens -> toIntTokenCount("promptTokens", tokens))
+			.orElse(null);
+		Integer totalTokens = nativeUsage._totalTokens()
+			.asKnown()
+			.map(tokens -> toIntTokenCount("totalTokens", tokens))
+			.orElse(null);
+		return new DefaultUsage(promptTokens, 0, totalTokens, nativeUsage);
 	}
 
 	/**
