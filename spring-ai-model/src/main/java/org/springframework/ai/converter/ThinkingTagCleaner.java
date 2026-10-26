@@ -129,18 +129,18 @@ public class ThinkingTagCleaner implements ResponseTextCleaner {
 
 		private final List<Pattern> patterns = new ArrayList<>(DEFAULT_PATTERNS);
 
-		private boolean useDefaultPatterns = true;
-
 		private Builder() {
 		}
 
 		/**
-		 * Disable default patterns. Only custom patterns added via
-		 * {@link #addPattern(String)} or {@link #addPattern(Pattern)} will be used.
+		 * Disable the default patterns so that only custom patterns added via
+		 * {@link #addPattern(String)} or {@link #addPattern(Pattern)} are used.
+		 * <p>At least one custom pattern must be added afterwards, since a cleaner
+		 * cannot be built without any patterns.
 		 * @return this builder
 		 */
 		public Builder withoutDefaultPatterns() {
-			this.useDefaultPatterns = false;
+			this.patterns.clear();
 			return this;
 		}
 
@@ -151,10 +151,6 @@ public class ThinkingTagCleaner implements ResponseTextCleaner {
 		 */
 		public Builder addPattern(String patternString) {
 			Assert.hasText(patternString, "patternString cannot be empty");
-			if (!this.useDefaultPatterns) {
-				this.patterns.clear();
-				this.useDefaultPatterns = true; // Reset flag after first custom pattern
-			}
 			this.patterns.add(Pattern.compile(patternString, Pattern.CASE_INSENSITIVE));
 			return this;
 		}
@@ -166,10 +162,6 @@ public class ThinkingTagCleaner implements ResponseTextCleaner {
 		 */
 		public Builder addPattern(Pattern pattern) {
 			Assert.notNull(pattern, "pattern cannot be null");
-			if (!this.useDefaultPatterns) {
-				this.patterns.clear();
-				this.useDefaultPatterns = true; // Reset flag after first custom pattern
-			}
 			this.patterns.add(pattern);
 			return this;
 		}
