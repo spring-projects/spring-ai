@@ -161,12 +161,7 @@ public class BeanOutputConverter<T> implements StructuredOutputConverter<T> {
 	 * @return a composite text cleaner with default cleaning strategies
 	 */
 	private static ResponseTextCleaner createDefaultTextCleaner() {
-		return CompositeResponseTextCleaner.builder()
-			.addCleaner(new WhitespaceCleaner())
-			.addCleaner(new ThinkingTagCleaner())
-			.addCleaner(new MarkdownCodeBlockCleaner())
-			.addCleaner(new WhitespaceCleaner()) // Final trim after all cleanups
-			.build();
+		return ResponseTextCleaner.defaultCleaner();
 	}
 
 	/**
