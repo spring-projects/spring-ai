@@ -38,12 +38,14 @@ import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.messages.AbstractMessage;
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.part.MessagePart;
 import org.springframework.ai.chat.messages.part.ReasoningPart;
 import org.springframework.ai.chat.messages.part.StreamingParts;
 import org.springframework.ai.chat.messages.part.TextPart;
 import org.springframework.ai.chat.messages.part.ToolCallPart;
 import org.springframework.ai.chat.messages.part.UnknownPart;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.model.MessageAggregator;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -142,6 +144,81 @@ class ResponsesStreamAssemblerTests {
 
 		assertThat(chunks).singleElement()
 			.satisfies(chunk -> assertThat(reasoningContent(chunk)).isEqualTo("First thought\nSecond thought"));
+	}
+
+	/**
+	 * A new {@code summary_index} within the same item starts a new paragraph. The
+	 * separator rides on the first delta of the entry, so a consumer of the raw flux sees
+	 * it too, and the deltas after it within that entry carry none.
+	 */
+	@Test
+	void aNewSummaryEntryWithinAnItemStartsANewParagraph() {
+		this.assembler.apply(created("reasoning-with-summary-entries.json"));
+
+		this.assembler.apply(reasoningDelta("**Reading**", 0, 0));
+		List<ChatResponse> opening = this.assembler.apply(reasoningDelta("**Answering**", 0, 1));
+		List<ChatResponse> continuing = this.assembler.apply(reasoningDelta(" now", 0, 1));
+
+		assertThat(opening).singleElement().satisfies(chunk -> {
+			var part = (ReasoningPart) chunk.getResult().getOutput().getParts().get(0);
+			assertThat(part.summary()).isEqualTo("\n\n**Answering**");
+			assertThat(reasoningContent(chunk)).isEqualTo("**Reading**\n\n**Answering**");
+		});
+		assertThat(continuing).singleElement().satisfies(chunk -> {
+			var part = (ReasoningPart) chunk.getResult().getOutput().getParts().get(0);
+			assertThat(part.summary()).isEqualTo(" now");
+			assertThat(reasoningContent(chunk)).isEqualTo("**Reading**\n\n**Answering** now");
+		});
+	}
+
+	/**
+	 * Streamed delta by delta, every reasoning item aggregates to exactly the summary the
+	 * non-streaming path builds from the same response. The stream covers what a naive
+	 * separator gets wrong: an entry split over several deltas, a first entry that is
+	 * empty, an item whose only entry is empty, a trailing empty entry, and a
+	 * {@code summary_index} carried over from one item to the next. Empty deltas are sent
+	 * for every empty entry, and must open neither an entry nor an item.
+	 */
+	@Test
+	void streamedSummaryEntriesAggregateToTheSameSummaryAsTheCalledResponse() {
+		Response response = ResponsesTestFixtures.response("reasoning-with-summary-entries.json");
+		List<ResponseStreamEvent> events = List.of(created("reasoning-with-summary-entries.json"),
+				reasoningDelta("", 0, 0), reasoningDelta("**Reading the question**\nThe user wants ", 0, 1),
+				reasoningDelta("the temperature in Paris.", 0, 1),
+				reasoningDelta("**Checking the tool**\nThe tool reported 18 degrees.", 0, 2),
+				itemDone(response.output().get(0), 0), reasoningDelta("", 1, 0), itemDone(response.output().get(1), 1),
+				reasoningDelta("**Answering**\nReport the temperature.", 2, 0), reasoningDelta("**Wording**\n", 2, 1),
+				reasoningDelta("Keep it to one sentence.", 2, 1), reasoningDelta("", 2, 2),
+				itemDone(response.output().get(2), 2), textDelta("It is 18 degrees in Paris.", 3),
+				itemDone(response.output().get(3), 3), completed(response));
+
+		assertSameSummariesAsTheCalledResponse(aggregate(events), response);
+	}
+
+	/**
+	 * With no summary deltas at all, the summary comes from each completed item instead,
+	 * and is the same text.
+	 */
+	@Test
+	void summaryEntriesThatNeverStreamedComeFromTheCompletedItems() {
+		Response response = ResponsesTestFixtures.response("reasoning-with-summary-entries.json");
+		List<ResponseStreamEvent> events = List.of(created("reasoning-with-summary-entries.json"),
+				itemDone(response.output().get(0), 0), itemDone(response.output().get(1), 1),
+				itemDone(response.output().get(2), 2), itemDone(response.output().get(3), 3), completed(response));
+
+		assertSameSummariesAsTheCalledResponse(aggregate(events), response);
+	}
+
+	private static void assertSameSummariesAsTheCalledResponse(ChatResponse aggregated, Response response) {
+		Generation called = ResponsesItemMapper.toGeneration(response);
+		List<MessagePart> calledParts = called.getOutput().getParts();
+		List<MessagePart> streamedParts = aggregated.getResult().getOutput().getParts();
+		for (int index = 0; index < 3; index++) {
+			assertThat(((ReasoningPart) streamedParts.get(index)).summary())
+				.isEqualTo(((ReasoningPart) calledParts.get(index)).summary());
+		}
+		assertThat(reasoningContent(aggregated))
+			.isEqualTo(called.getMetadata().<String>get(OpenAiResponsesMetadata.REASONING_CONTENT));
 	}
 
 	/**
@@ -431,12 +508,16 @@ class ResponsesStreamAssemblerTests {
 	}
 
 	private static ResponseStreamEvent reasoningDelta(String delta, int outputIndex) {
+		return reasoningDelta(delta, outputIndex, 0);
+	}
+
+	private static ResponseStreamEvent reasoningDelta(String delta, int outputIndex, int summaryIndex) {
 		return ResponseStreamEvent.ofReasoningSummaryTextDelta(ResponseReasoningSummaryTextDeltaEvent.builder()
 			.delta(delta)
 			.itemId("rs_1")
 			.outputIndex(outputIndex)
 			.sequenceNumber(1)
-			.summaryIndex(0)
+			.summaryIndex(summaryIndex)
 			.build());
 	}
 

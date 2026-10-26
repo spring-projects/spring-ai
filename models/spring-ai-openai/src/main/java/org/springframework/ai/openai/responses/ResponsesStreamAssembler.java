@@ -78,6 +78,7 @@ import org.springframework.ai.chat.model.MessageAggregator;
  * SDK delivers whole items.
  *
  * @author Dimitar Proynov
+ * @author Raviteja Daggupati
  * @since 2.1.0
  */
 final class ResponsesStreamAssembler {
@@ -109,6 +110,13 @@ final class ResponsesStreamAssembler {
 	private int reasoningIndex = -1;
 
 	/**
+	 * The {@code summary_index} of the last summary delta, so that a delta opening the
+	 * next summary entry of the same item starts a new paragraph, the same way the
+	 * non-streaming path joins them.
+	 */
+	private int reasoningSummaryIndex = -1;
+
+	/**
 	 * Map one event to zero or more chunks.
 	 * @throws OpenAiResponsesException if the stream reports an error, or the run failed
 	 */
@@ -135,10 +143,28 @@ final class ResponsesStreamAssembler {
 		}
 		if (event.isReasoningSummaryTextDelta()) {
 			var delta = event.reasoningSummaryTextDelta().orElseThrow();
+			if (delta.delta().isEmpty()) {
+				// Nothing to show, and it must not count as the start of an entry or an
+				// item: the non-streaming path skips empty entries, so a separator here
+				// would put a paragraph break in the streamed summary that the called one
+				// does not have.
+				return List.of();
+			}
 			int index = index(delta.outputIndex());
 			this.streamedReasoningSummary.add(index);
-			appendReasoning(index, delta.delta());
-			MessagePart part = StreamingParts.partial(new ReasoningPart(null, delta.delta(), null, Map.of()), index);
+			int summaryIndex = Math.toIntExact(delta.summaryIndex());
+			// A further entry of the item already being accumulated starts a new
+			// paragraph. The first entry of an item gets nothing here: what separates two
+			// items is REASONING_ITEM_SEPARATOR, which appendReasoning adds. Checked
+			// before either index is updated below. The separator rides on the first
+			// delta of the entry, so that the aggregated part, the running total and a
+			// consumer of the raw flux all see the same text.
+			boolean newEntry = this.reasoningIndex == index && this.reasoningSummaryIndex != summaryIndex;
+			String text = newEntry ? ResponsesItemMapper.REASONING_SUMMARY_PART_SEPARATOR + delta.delta()
+					: delta.delta();
+			this.reasoningSummaryIndex = summaryIndex;
+			appendReasoning(index, text);
+			MessagePart part = StreamingParts.partial(new ReasoningPart(null, text, null, Map.of()), index);
 			return List.of(chunk(AssistantMessage.builder().part(part).build(),
 					ChatGenerationMetadata.builder()
 						.metadata(OpenAiResponsesMetadata.REASONING_CONTENT, this.reasoning.toString())
