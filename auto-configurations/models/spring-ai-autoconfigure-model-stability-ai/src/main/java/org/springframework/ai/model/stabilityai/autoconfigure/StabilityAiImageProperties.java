@@ -18,9 +18,11 @@ package org.springframework.ai.model.stabilityai.autoconfigure;
 
 import org.jspecify.annotations.Nullable;
 
+import org.springframework.ai.stabilityai.api.StabilityAiApi;
 import org.springframework.ai.stabilityai.api.StabilityAiImageOptions;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.DeprecatedConfigurationProperty;
+import org.springframework.util.StringUtils;
 
 /**
  * Configuration properties for Stability AI image model.
@@ -28,6 +30,7 @@ import org.springframework.boot.context.properties.DeprecatedConfigurationProper
  * @author Mark Pollack
  * @author Christian Tzolov
  * @author Sebastien Deleuze
+ * @author Minju Kim
  * @since 0.8.0
  */
 @ConfigurationProperties(StabilityAiImageProperties.CONFIG_PREFIX)
@@ -147,7 +150,7 @@ public class StabilityAiImageProperties extends StabilityAiParentProperties {
 
 	public StabilityAiImageOptions toOptions() {
 		return StabilityAiImageOptions.builder()
-			.model(this.model)
+			.model(StringUtils.hasText(this.model) ? this.model : StabilityAiApi.DEFAULT_IMAGE_MODEL)
 			.n(this.n)
 			.width(this.width)
 			.height(this.height)
