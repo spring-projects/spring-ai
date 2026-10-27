@@ -32,8 +32,10 @@ import java.util.stream.Stream;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.openai.azure.credential.AzureApiKeyCredential;
 import com.openai.client.OpenAIClient;
 import com.openai.client.OpenAIClientAsync;
+import com.openai.core.ClientOptions;
 import com.openai.core.JsonValue;
 import com.openai.core.ObjectMappers;
 import com.openai.core.RequestOptions;
@@ -276,6 +278,7 @@ public final class OpenAiChatModel implements ChatModel {
 	private ChatResponse internalCall(Prompt prompt) {
 		ChatCompletionCreateParams request = this.createRequest(prompt, false);
 		RequestOptions requestOptions = this.buildRequestOptions(prompt);
+		OpenAIClient client = this.resolveClient(prompt);
 
 		ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 			.prompt(prompt)
@@ -289,7 +292,7 @@ public final class OpenAiChatModel implements ChatModel {
 
 				// The raw response carries the x-ratelimit-* headers alongside the parsed
 				// body; the plain create(...) call discards them.
-				HttpResponseFor<ChatCompletion> rawResponse = this.openAiClient.chat()
+				HttpResponseFor<ChatCompletion> rawResponse = client.chat()
 					.completions()
 					.withRawResponse()
 					.create(request, requestOptions);
@@ -349,7 +352,8 @@ public final class OpenAiChatModel implements ChatModel {
 			Observation parentObservation = contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null);
 			Observation observation = startStreamObservation(observationContext, parentObservation);
 
-			Flux<ChatResponse> chatResponses = mergeToolCallChunks(streamChunks(request, requestOptions))
+			Flux<ChatResponse> chatResponses = mergeToolCallChunks(
+					streamChunks(this.resolveClientAsync(prompt), request, requestOptions))
 				.map(chatCompletion -> toStreamedChatResponse(chatCompletion, request, streamAccumulator));
 
 			Flux<ChatResponse> observedResponses = chatResponses.doOnError(observation::error)
@@ -385,9 +389,10 @@ public final class OpenAiChatModel implements ChatModel {
 	/**
 	 * Converts the SDK's {@link AsyncStreamResponse} of chunks to a {@link Flux}.
 	 */
-	private Flux<ChatCompletionChunk> streamChunks(ChatCompletionCreateParams request, RequestOptions requestOptions) {
+	private Flux<ChatCompletionChunk> streamChunks(OpenAIClientAsync client, ChatCompletionCreateParams request,
+			RequestOptions requestOptions) {
 		return Flux.<ChatCompletionChunk>create(sink -> {
-			AsyncStreamResponse<ChatCompletionChunk> response = this.openAiClientAsync.chat()
+			AsyncStreamResponse<ChatCompletionChunk> response = client.chat()
 				.completions()
 				.createStreaming(request, requestOptions);
 			sink.onDispose(response::close);
@@ -1305,6 +1310,65 @@ public final class OpenAiChatModel implements ChatModel {
 			requestOptionsBuilder.timeout(chatOptions.getTimeout());
 		}
 		return requestOptionsBuilder.build();
+	}
+
+	/**
+	 * Returns the client to send the prompt with: the one this model was built with, or a
+	 * copy of it using the base URL, API key and organization of the prompt options where
+	 * they differ from the ones of this model.
+	 */
+	private OpenAIClient resolveClient(Prompt prompt) {
+		if (!(prompt.getOptions() instanceof OpenAiChatOptions requestOptions)
+				|| !hasConnectionOverrides(requestOptions)) {
+			return this.openAiClient;
+		}
+		return this.openAiClient.withOptions(builder -> applyConnectionOverrides(builder, requestOptions));
+	}
+
+	/**
+	 * Asynchronous counterpart of {@link #resolveClient(Prompt)}.
+	 */
+	private OpenAIClientAsync resolveClientAsync(Prompt prompt) {
+		if (!(prompt.getOptions() instanceof OpenAiChatOptions requestOptions)
+				|| !hasConnectionOverrides(requestOptions)) {
+			return this.openAiClientAsync;
+		}
+		return this.openAiClientAsync.withOptions(builder -> applyConnectionOverrides(builder, requestOptions));
+	}
+
+	private boolean hasConnectionOverrides(OpenAiChatOptions requestOptions) {
+		return isOverridden(requestOptions.getBaseUrl(), this.options.getBaseUrl())
+				|| isOverridden(requestOptions.getApiKey(), this.options.getApiKey())
+				|| isOverridden(requestOptions.getOrganizationId(), this.options.getOrganizationId());
+	}
+
+	private void applyConnectionOverrides(ClientOptions.Builder builder, OpenAiChatOptions requestOptions) {
+		String baseUrl = requestOptions.getBaseUrl();
+		if (baseUrl != null && isOverridden(baseUrl, this.options.getBaseUrl())) {
+			builder.baseUrl(baseUrl);
+		}
+		String apiKey = requestOptions.getApiKey();
+		if (apiKey != null && isOverridden(apiKey, this.options.getApiKey())) {
+			Assert.hasText(apiKey, "An empty API key is not supported in the prompt options; "
+					+ "build a separate OpenAiChatModel to call a server without authentication");
+			OpenAiSetup.ModelProvider modelProvider = OpenAiSetup.detectModelProvider(
+					requestOptions.isMicrosoftFoundry(), requestOptions.isGitHubModels(), baseUrl,
+					requestOptions.getMicrosoftDeploymentName(), requestOptions.getMicrosoftFoundryServiceVersion());
+			if (modelProvider == OpenAiSetup.ModelProvider.MICROSOFT_FOUNDRY) {
+				builder.credential(AzureApiKeyCredential.create(apiKey));
+			}
+			else {
+				builder.apiKey(apiKey);
+			}
+		}
+		String organizationId = requestOptions.getOrganizationId();
+		if (organizationId != null && isOverridden(organizationId, this.options.getOrganizationId())) {
+			builder.organization(organizationId);
+		}
+	}
+
+	private static boolean isOverridden(@Nullable String value, @Nullable String defaultValue) {
+		return value != null && !value.equals(defaultValue);
 	}
 
 	private Map<String, String> toolCallAdditionalPropertiesFromMetadata(AssistantMessage assistantMessage) {
