@@ -180,6 +180,15 @@ public EmbeddingModel embeddingModel() {
 }
 ----
 
+== Upsert support
+
+`MariaDBVectorStore` implements `upsert(List<EmbeddedDocument>)`, so you can write documents together with embeddings you computed elsewhere instead of having the store embed them.
+Writing the same id again replaces the content, the metadata and the embedding of the existing row, so a re-run with stable ids does not create duplicates.
+The id column is a `UUID`, so ids must be UUIDs.
+The vector size is taken from the configured `dimensions` or read from the `VECTOR(n)` type of the existing embedding column, so the embedding model is not called.
+Concurrent writes to a table with a vector index can fail with a MariaDB deadlock error, even for different ids, so retry a write that fails this way.
+See xref:api/vectordbs.adoc#writing-precomputed-embeddings[Writing User-Supplied Embeddings] for details.
+
 == Metadata Filtering
 
 You can leverage the generic, portable xref:api/vectordbs.adoc#metadata-filters[metadata filters] with MariaDB Vector store.
