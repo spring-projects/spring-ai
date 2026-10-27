@@ -53,6 +53,15 @@ public class ElasticsearchAiSearchFilterExpressionConverter extends AbstractFilt
 			this.convertOperand(expression.right(), context);
 			context.append(")");
 		}
+		else if (expression.type() == Filter.ExpressionType.NE) {
+			Assert.state(expression.right() != null, "expression.right() must not be null");
+			// Elasticsearch's query_string syntax rejects "field: NOT value" (NOT
+			// between the colon and the value); NOT must negate the whole
+			// field:value clause, the same way it already does for NIN above.
+			context.append(getOperationSymbol(expression));
+			this.convertOperand(expression.left(), context);
+			this.convertOperand(expression.right(), context);
+		}
 		else if (expression.type() == Filter.ExpressionType.ISNULL) {
 			context.append("-");
 			this.convertOperand(expression.left(), context);
@@ -88,7 +97,7 @@ public class ElasticsearchAiSearchFilterExpressionConverter extends AbstractFilt
 			case AND -> " AND ";
 			case OR -> " OR ";
 			case EQ, IN -> "";
-			case NE -> " NOT ";
+			case NE -> "NOT ";
 			case LT -> "<";
 			case LTE -> "<=";
 			case GT -> ">";

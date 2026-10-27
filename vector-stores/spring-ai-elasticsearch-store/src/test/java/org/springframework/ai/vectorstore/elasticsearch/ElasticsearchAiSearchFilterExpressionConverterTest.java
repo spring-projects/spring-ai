@@ -92,7 +92,23 @@ class ElasticsearchAiSearchFilterExpressionConverterTest {
 								new Filter.Expression(EQ, new Filter.Key("country"), new Filter.Value("BG")),
 								new Filter.Expression(NE, new Filter.Key("city"), new Filter.Value("Sofia")))));
 		assertThat(vectorExpr)
-			.isEqualTo("metadata.year:>=2020 OR metadata.country:\"BG\" AND metadata.city: NOT \"Sofia\"");
+			.isEqualTo("metadata.year:>=2020 OR metadata.country:\"BG\" AND NOT metadata.city:\"Sofia\"");
+	}
+
+	@Test
+	public void testNeStandalone() {
+		// NOT must negate the whole field:value clause; "field: NOT value" is not
+		// valid Elasticsearch query_string syntax and the search request fails.
+		String vectorExpr = this.converter
+			.convertExpression(new Filter.Expression(NE, new Filter.Key("city"), new Filter.Value("Sofia")));
+		assertThat(vectorExpr).isEqualTo("NOT metadata.city:\"Sofia\"");
+	}
+
+	@Test
+	public void testNeWithDateValue() {
+		String vectorExpr = this.converter.convertExpression(
+				new Filter.Expression(NE, new Filter.Key("activationDate"), new Filter.Value(new Date(1704637752148L))));
+		assertThat(vectorExpr).isEqualTo("NOT metadata.activationDate:2024-01-07T14:29:12Z");
 	}
 
 	@Test
