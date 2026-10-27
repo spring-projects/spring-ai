@@ -320,6 +320,12 @@
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-jitllm</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-ollama</artifactId>
 				<version>${project.version}</version>
 			</dependency>
@@ -690,6 +696,12 @@
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-autoconfigure-model-jitllm</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-autoconfigure-model-ollama</artifactId>
 				<version>${project.version}</version>
 			</dependency>
@@ -1019,6 +1031,12 @@
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-starter-model-mistral-ai</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-model-jitllm</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
