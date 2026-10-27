@@ -103,7 +103,7 @@ public class ToolCallingAdvisor implements CallAdvisor, StreamAdvisor, ToolAdvis
 	private final ToolExecutionEligibilityChecker toolExecutionEligibilityChecker;
 
 	/**
-	 * Set the order close to {@link Ordered#LOWEST_PRECEDENCE} to ensure an advisor is
+	 * Set the order close to {@link Ordered#HIGHEST_PRECEDENCE} to ensure an advisor is
 	 * executed first in the chain (first for request processing, last for response
 	 * processing).
 	 * <p>
