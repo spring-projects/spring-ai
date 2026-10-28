@@ -30,6 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Unit tests for Google GenAI properties binding.
  *
  * @author Sebastien Deleuze
+ * @author hyeonZIP
  */
 public class GoogleGenAiPropertiesTests {
 
@@ -194,6 +195,22 @@ public class GoogleGenAiPropertiesTests {
 				assertThat(toolChoice.mode()).isEqualTo(ToolChoice.Mode.AUTO);
 				assertThat(toolChoice.allowedFunctionNames()).containsExactly("funcA", "funcB");
 			});
+	}
+
+	@Test
+	void videoFpsPropertiesBinding() {
+		this.contextRunner.withPropertyValues("spring.ai.google.genai.chat.video-fps=2.5").run(context -> {
+			GoogleGenAiChatProperties chatProperties = context.getBean(GoogleGenAiChatProperties.class);
+			assertThat(chatProperties.toOptions().getVideoFps()).isEqualTo(2.5);
+		});
+	}
+
+	@Test
+	void videoFpsNotSetByDefault() {
+		this.contextRunner.run(context -> {
+			GoogleGenAiChatProperties chatProperties = context.getBean(GoogleGenAiChatProperties.class);
+			assertThat(chatProperties.toOptions().getVideoFps()).isNull();
+		});
 	}
 
 	@Configuration
