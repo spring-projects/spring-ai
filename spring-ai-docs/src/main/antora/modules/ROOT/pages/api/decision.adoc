@@ -79,16 +79,17 @@ Questions keep the order they were added in, and the answers come back in the sa
 The input is the thing the questions are about.
 `DecisionInput` offers three kinds.
 
-* `DecisionInput.text(String)`: a text, optionally with attached images through `DecisionInput.text(String, List<Media>)`.
+* `DecisionInput.text(String)`: a text.
+For a text with images, or any other mix, `DecisionInput.content(MessagePart...)` takes the ordered content parts a chat message is made of, such as a `TextPart` followed by a `MediaPart`.
 * `DecisionInput.fields(Map)`: a structured input made of named fields, sent as a JSON object.
-Values can be strings, numbers, booleans, nulls, maps and lists, or a `Media` at the top level.
+Values can be strings, numbers, booleans, nulls, maps and lists, or, at the top level, a `MessagePart` or a list of parts, such as the text and image of an attachment.
 Use it when the input has a shape, such as a ticket with a subject, a body and a customer tier, so that the model sees each part for what it is.
 * `DecisionInput.conversation(List<Message>)`: a conversation, made of the same `Message` types a `ChatModel` takes.
 Use it to judge an exchange, for example whether the last assistant answer is correct, or whether the next user message should be answered at all.
 
-The `DecisionPrompt` builder has `text(...)`, `fields(...)` and `conversation(...)` shortcuts for each.
+The `DecisionPrompt` builder has `text(...)`, `content(...)`, `fields(...)` and `conversation(...)` shortcuts for each.
 
-Which input kinds and media a provider supports depends on the provider.
+Which input kinds and content parts a provider supports depends on the provider.
 
 == Answers
 

@@ -38,6 +38,9 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.messages.part.MediaPart;
+import org.springframework.ai.chat.messages.part.ReasoningPart;
+import org.springframework.ai.chat.messages.part.TextPart;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.decision.DecisionOptions;
 import org.springframework.ai.decision.DecisionPrompt;
@@ -230,16 +233,36 @@ class OpenAiDecisionModelTests {
 	}
 
 	@Test
-	void mapsTextWithImageAsMessageParts() {
+	void mapsTextOnlyContentAsString() {
+		stubResponse(yesNoResponse());
+
+		model().call(DecisionInput.content(TextPart.of("What is "), TextPart.of("this?")),
+				Map.of("cat", YesNoQuestion.of("A cat?")));
+
+		assertThat(sentParams().input().asString()).isEqualTo("What is this?");
+	}
+
+	@Test
+	void mapsContentPartsInOrder() {
 		stubResponse(yesNoResponse());
 		var image = Media.builder().mimeType(MimeTypeUtils.IMAGE_PNG).data(new byte[] { 1, 2, 3 }).build();
 
-		model().call(DecisionInput.text("What is this?", List.of(image)), Map.of("cat", YesNoQuestion.of("A cat?")));
+		model().call(DecisionInput.content(TextPart.of("What is this?"), MediaPart.of(image), TextPart.of("And why?")),
+				Map.of("cat", YesNoQuestion.of("A cat?")));
 
 		List<DecisionInputPart> parts = sentParts();
-		assertThat(parts).hasSize(2);
+		assertThat(parts).hasSize(3);
 		assertThat(parts.get(0).asInputText().text()).isEqualTo("What is this?");
 		assertThat(parts.get(1).asInputImage().imageUrl()).isEqualTo("data:image/png;base64,AQID");
+		assertThat(parts.get(2).asInputText().text()).isEqualTo("And why?");
+	}
+
+	@Test
+	void rejectsUnsupportedContentParts() {
+		assertThatThrownBy(() -> model().call(DecisionInput.content(TextPart.of("x"), ReasoningPart.of("hmm")),
+				Map.of("q", YesNoQuestion.of("?"))))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("ReasoningPart");
 	}
 
 	@Test
@@ -249,17 +272,22 @@ class OpenAiDecisionModelTests {
 		fields.put("subject", "Payouts late");
 		fields.put("attempts", 3);
 		fields.put("tags", List.of("billing", "urgent"));
-		fields.put("screenshot", Media.builder().mimeType(MimeTypeUtils.IMAGE_JPEG).data(new byte[] { 1 }).build());
+		var image = Media.builder().mimeType(MimeTypeUtils.IMAGE_JPEG).data(new byte[] { 1 }).build();
+		fields.put("screenshot", MediaPart.of(image));
+		fields.put("receipt", List.of(TextPart.of("Order 42"), MediaPart.of(image)));
 
 		model().call(DecisionInput.fields(fields), Map.of("urgent", YesNoQuestion.of("Urgent?")));
 
 		List<DecisionInputPart> parts = sentParts();
-		assertThat(parts).hasSize(5);
+		assertThat(parts).hasSize(8);
 		assertThat(parts.get(0).asInputText().text()).isEqualTo("subject: Payouts late");
 		assertThat(parts.get(1).asInputText().text()).isEqualTo("attempts: 3");
 		assertThat(parts.get(2).asInputText().text()).isEqualTo("tags: [\"billing\",\"urgent\"]");
 		assertThat(parts.get(3).asInputText().text()).isEqualTo("screenshot:");
 		assertThat(parts.get(4).asInputImage().imageUrl()).isEqualTo("data:image/jpeg;base64,AQ==");
+		assertThat(parts.get(5).asInputText().text()).isEqualTo("receipt:");
+		assertThat(parts.get(6).asInputText().text()).isEqualTo("Order 42");
+		assertThat(parts.get(7).asInputImage().imageUrl()).isEqualTo("data:image/jpeg;base64,AQ==");
 	}
 
 	@Test
@@ -267,16 +295,20 @@ class OpenAiDecisionModelTests {
 		stubResponse(yesNoResponse());
 		var image = Media.builder().mimeType(MimeTypeUtils.IMAGE_PNG).data(new byte[] { 1 }).build();
 		var messages = List.of(new SystemMessage("Be brief"), UserMessage.builder().text("Look").media(image).build(),
-				new AssistantMessage("A cat"));
+				new AssistantMessage("A cat"),
+				UserMessage.builder().part(MediaPart.of(image)).part(TextPart.of("And this one?")).build());
 
 		model().call(DecisionInput.conversation(messages), Map.of("ok", YesNoQuestion.of("Answered well?")));
 
 		List<DecisionInputPart> parts = sentParts();
-		assertThat(parts).hasSize(4);
+		assertThat(parts).hasSize(7);
 		assertThat(parts.get(0).asInputText().text()).isEqualTo("system: Be brief");
 		assertThat(parts.get(1).asInputText().text()).isEqualTo("user: Look");
 		assertThat(parts.get(2).asInputImage().imageUrl()).isEqualTo("data:image/png;base64,AQ==");
 		assertThat(parts.get(3).asInputText().text()).isEqualTo("assistant: A cat");
+		assertThat(parts.get(4).asInputText().text()).isEqualTo("user: ");
+		assertThat(parts.get(5).asInputImage().imageUrl()).isEqualTo("data:image/png;base64,AQ==");
+		assertThat(parts.get(6).asInputText().text()).isEqualTo("And this one?");
 	}
 
 	@Test
@@ -284,6 +316,7 @@ class OpenAiDecisionModelTests {
 		stubResponse(yesNoResponse());
 		var messages = List.of(new UserMessage("Weather in Paris?"), AssistantMessage.builder()
 			.content("Let me check.")
+			.reasoning(ReasoningPart.of("The user wants the weather."))
 			.toolCalls(
 					List.of(new AssistantMessage.ToolCall("call_1", "function", "get_weather", "{\"city\":\"Paris\"}")))
 			.build(),
@@ -304,12 +337,13 @@ class OpenAiDecisionModelTests {
 	void passesDataUrlsThroughAndRejectsHostedImageUrls() {
 		stubResponse(yesNoResponse());
 		var dataUrl = new Media(MimeTypeUtils.IMAGE_PNG, URI.create("data:image/png;base64,AQID"));
-		model().call(DecisionInput.text("x", List.of(dataUrl)), Map.of("q", YesNoQuestion.of("?")));
+		model().call(DecisionInput.content(TextPart.of("x"), MediaPart.of(dataUrl)),
+				Map.of("q", YesNoQuestion.of("?")));
 		assertThat(sentParts().get(1).asInputImage().imageUrl()).isEqualTo("data:image/png;base64,AQID");
 
 		var hosted = new Media(MimeTypeUtils.IMAGE_JPEG, URI.create("https://example.com/shot.jpg"));
-		assertThatThrownBy(
-				() -> model().call(DecisionInput.text("x", List.of(hosted)), Map.of("q", YesNoQuestion.of("?"))))
+		assertThatThrownBy(() -> model().call(DecisionInput.content(TextPart.of("x"), MediaPart.of(hosted)),
+				Map.of("q", YesNoQuestion.of("?"))))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("inline base64 images")
 			.hasMessageContaining("https://example.com/shot.jpg");
@@ -319,8 +353,8 @@ class OpenAiDecisionModelTests {
 	void rejectsNonImageMedia() {
 		var audio = Media.builder().mimeType(MimeTypeUtils.parseMimeType("audio/wav")).data(new byte[] { 1 }).build();
 
-		assertThatThrownBy(
-				() -> model().call(DecisionInput.text("x", List.of(audio)), Map.of("q", YesNoQuestion.of("?"))))
+		assertThatThrownBy(() -> model().call(DecisionInput.content(TextPart.of("x"), MediaPart.of(audio)),
+				Map.of("q", YesNoQuestion.of("?"))))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("Only images");
 	}

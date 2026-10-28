@@ -17,38 +17,51 @@
 package org.springframework.ai.decision.input;
 
 import java.util.List;
-import java.util.Objects;
+import java.util.stream.Collectors;
 
 import org.jspecify.annotations.Nullable;
 
-import org.springframework.ai.content.Media;
+import org.springframework.ai.chat.messages.part.MessagePart;
+import org.springframework.ai.chat.messages.part.TextPart;
 import org.springframework.util.Assert;
 
 /**
- * A {@link DecisionInput} made of a text and, optionally, attached media.
+ * A {@link DecisionInput} made of ordered content parts: typically a text, optionally
+ * followed by media such as images. The parts are the same {@link MessagePart} types a
+ * chat message carries, so content prepared for a
+ * {@link org.springframework.ai.chat.messages.UserMessage} can be judged as it is.
  *
  * @author Thomas Vitale
+ * @author Christian Tzolov
  * @since 2.1.0
  */
 public final class TextInput implements DecisionInput {
 
-	private final String text;
+	private final List<MessagePart> parts;
 
-	private final List<Media> media;
-
-	TextInput(String text, List<Media> media) {
-		Assert.hasText(text, "text cannot be null or empty");
-		Assert.notNull(media, "media cannot be null");
-		this.text = text;
-		this.media = List.copyOf(media);
+	TextInput(List<? extends MessagePart> parts) {
+		Assert.notEmpty(parts, "parts cannot be null or empty");
+		Assert.noNullElements(parts, "parts cannot contain null elements");
+		this.parts = List.copyOf(parts);
 	}
 
+	/**
+	 * The text of the input: its {@link TextPart}s joined, or an empty string when it has
+	 * none.
+	 */
 	public String getText() {
-		return this.text;
+		return this.parts.stream()
+			.filter(TextPart.class::isInstance)
+			.map(TextPart.class::cast)
+			.map(TextPart::text)
+			.collect(Collectors.joining());
 	}
 
-	public List<Media> getMedia() {
-		return this.media;
+	/**
+	 * The ordered content parts of the input.
+	 */
+	public List<MessagePart> getParts() {
+		return this.parts;
 	}
 
 	@Override
@@ -59,17 +72,17 @@ public final class TextInput implements DecisionInput {
 		if (!(o instanceof TextInput that)) {
 			return false;
 		}
-		return this.text.equals(that.text) && this.media.equals(that.media);
+		return this.parts.equals(that.parts);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(this.text, this.media);
+		return this.parts.hashCode();
 	}
 
 	@Override
 	public String toString() {
-		return "TextInput{text='" + this.text + "', media=" + this.media.size() + "}";
+		return "TextInput{text='" + getText() + "', parts=" + this.parts.size() + "}";
 	}
 
 }

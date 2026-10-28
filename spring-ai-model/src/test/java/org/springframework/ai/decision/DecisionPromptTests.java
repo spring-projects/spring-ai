@@ -24,6 +24,8 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.messages.part.MediaPart;
+import org.springframework.ai.chat.messages.part.TextPart;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.decision.input.DecisionInput;
 import org.springframework.ai.decision.input.TextInput;
@@ -91,20 +93,43 @@ class DecisionPromptTests {
 	@Test
 	void textInputRejectsBlankText() {
 		assertThatThrownBy(() -> DecisionInput.text(" ")).isInstanceOf(IllegalArgumentException.class);
-		var media = new Media(MimeTypeUtils.IMAGE_PNG, new ByteArrayResource(new byte[] { 1 }));
-		assertThat(DecisionInput.text("x", List.of(media)).getMedia()).containsExactly(media);
+		assertThat(DecisionInput.text("x").getParts()).containsExactly(TextPart.of("x"));
 	}
 
 	@Test
-	void fieldsInputAcceptsJsonLikeValuesAndTopLevelMedia() {
-		var media = new Media(MimeTypeUtils.IMAGE_PNG, new ByteArrayResource(new byte[] { 1 }));
+	void contentInputKeepsPartsInOrder() {
+		var image = MediaPart.of(new Media(MimeTypeUtils.IMAGE_PNG, new ByteArrayResource(new byte[] { 1 })));
+
+		var input = DecisionInput.content(TextPart.of("What is "), image, TextPart.of("this?"));
+
+		assertThat(input.getParts()).containsExactly(TextPart.of("What is "), image, TextPart.of("this?"));
+		assertThat(input.getText()).isEqualTo("What is this?");
+		assertThat(input)
+			.isEqualTo(DecisionInput.content(List.of(TextPart.of("What is "), image, TextPart.of("this?"))));
+		assertThat(DecisionInput.content(image).getText()).isEmpty();
+		assertThat(
+				DecisionPrompt.builder().content(image).question("q", YesNoQuestion.of("?")).build().getInstructions())
+			.isEqualTo(DecisionInput.content(List.of(image)));
+	}
+
+	@Test
+	void contentInputRejectsMissingParts() {
+		assertThatThrownBy(() -> DecisionInput.content(List.of())).isInstanceOf(IllegalArgumentException.class);
+		assertThatThrownBy(() -> DecisionInput.content(TextPart.of("x"), null))
+			.isInstanceOf(IllegalArgumentException.class);
+	}
+
+	@Test
+	void fieldsInputAcceptsJsonLikeValuesAndTopLevelParts() {
+		var image = MediaPart.of(new Media(MimeTypeUtils.IMAGE_PNG, new ByteArrayResource(new byte[] { 1 })));
 		Map<String, Object> fields = new HashMap<>();
 		fields.put("text", "hello");
 		fields.put("count", 3);
 		fields.put("flag", true);
 		fields.put("nothing", null);
 		fields.put("nested", Map.of("list", List.of(1, "two")));
-		fields.put("image", media);
+		fields.put("image", image);
+		fields.put("attachment", List.of(TextPart.of("The receipt"), image));
 
 		assertThat(DecisionInput.fields(fields).getFields()).containsAllEntriesOf(fields);
 	}
@@ -115,9 +140,18 @@ class DecisionPromptTests {
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("unsupported value type");
 		var media = new Media(MimeTypeUtils.IMAGE_PNG, new ByteArrayResource(new byte[] { 1 }));
-		assertThatThrownBy(() -> DecisionInput.fields(Map.of("nested", Map.of("image", media))))
+		assertThatThrownBy(() -> DecisionInput.fields(Map.of("image", media)))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("MediaPart");
+		assertThatThrownBy(() -> DecisionInput.fields(Map.of("nested", Map.of("image", MediaPart.of(media)))))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("top level");
+		assertThatThrownBy(() -> DecisionInput.fields(Map.of("nested", List.of(List.of(MediaPart.of(media))))))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("top level");
+		assertThatThrownBy(() -> DecisionInput.fields(Map.of("mixed", List.of("a", MediaPart.of(media)))))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("cannot hold other values");
 		assertThatThrownBy(() -> DecisionInput.fields(Map.of())).isInstanceOf(IllegalArgumentException.class);
 	}
 

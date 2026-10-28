@@ -23,15 +23,17 @@ import java.util.Map;
 
 import org.jspecify.annotations.Nullable;
 
-import org.springframework.ai.content.Media;
+import org.springframework.ai.chat.messages.part.MessagePart;
 import org.springframework.util.Assert;
 
 /**
  * A {@link DecisionInput} made of named fields, sent to the model as a JSON object. A
  * value can be a string, a number, a boolean, {@code null}, a map, a list, or, at the top
- * level only, a {@link Media}.
+ * level only, a {@link MessagePart} or a list of parts, such as the text and images of an
+ * attachment.
  *
  * @author Thomas Vitale
+ * @author Christian Tzolov
  * @since 2.1.0
  */
 public final class FieldsInput implements DecisionInput {
@@ -51,8 +53,8 @@ public final class FieldsInput implements DecisionInput {
 		if (value == null || value instanceof String || value instanceof Number || value instanceof Boolean) {
 			return;
 		}
-		if (value instanceof Media) {
-			Assert.isTrue(topLevel, () -> "field '" + name + "': media is only supported at the top level");
+		if (value instanceof MessagePart) {
+			Assert.isTrue(topLevel, () -> "field '" + name + "': content parts are only supported at the top level");
 			return;
 		}
 		if (value instanceof Map<?, ?> map) {
@@ -63,11 +65,28 @@ public final class FieldsInput implements DecisionInput {
 			return;
 		}
 		if (value instanceof List<?> list) {
+			if (list.stream().anyMatch(MessagePart.class::isInstance)) {
+				Assert.isTrue(topLevel,
+						() -> "field '" + name + "': content parts are only supported at the top level");
+				Assert.isTrue(list.stream().allMatch(MessagePart.class::isInstance),
+						() -> "field '" + name + "': a list of content parts cannot hold other values");
+				return;
+			}
 			list.forEach(nested -> validateValue(name, nested, false));
 			return;
 		}
 		throw new IllegalArgumentException("field '" + name + "': unsupported value type " + value.getClass().getName()
-				+ ", use strings, numbers, booleans, maps, lists or media");
+				+ ", use strings, numbers, booleans, maps, lists or content parts such as TextPart and MediaPart");
+	}
+
+	/**
+	 * Whether a field value is a list of content parts rather than a JSON array.
+	 * @param value the field value
+	 * @return whether the value is a non-empty list of {@link MessagePart}s
+	 */
+	public static boolean isPartList(@Nullable Object value) {
+		return value instanceof List<?> list && !list.isEmpty()
+				&& list.stream().allMatch(MessagePart.class::isInstance);
 	}
 
 	public Map<String, @Nullable Object> getFields() {

@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.openai.models.decisions.Decision;
 import com.openai.models.decisions.DecisionChoiceOption;
@@ -34,10 +35,13 @@ import com.openai.models.decisions.DecisionInputPart;
 import com.openai.models.decisions.DecisionInputText;
 import org.jspecify.annotations.Nullable;
 
-import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.AbstractMessage;
 import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.chat.messages.ToolResponseMessage;
-import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.messages.part.MediaPart;
+import org.springframework.ai.chat.messages.part.MessagePart;
+import org.springframework.ai.chat.messages.part.TextPart;
+import org.springframework.ai.chat.messages.part.ToolCallPart;
+import org.springframework.ai.chat.messages.part.ToolResultPart;
 import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.content.Media;
@@ -67,14 +71,17 @@ import org.springframework.util.StringUtils;
  * back to a {@link DecisionResponse}.
  *
  * <p>
- * A text input without media is sent as a string. Any other input becomes one user
- * message made of parts, in order: a text part per field, or a text part per message of a
- * conversation prefixed with its role, each followed by the image parts it carries. A
- * {@link YesNoQuestion} becomes a {@code predicate} question, with its criteria added to
- * the instructions since the API has no field for them; a {@link ChoiceQuestion} becomes
- * a {@code choice} question and a {@link ScoreQuestion} a {@code score} question.
+ * An input made of text only is sent as a string. Any other input becomes one user
+ * message made of parts, in order: the content parts of a {@link TextInput}; a text part
+ * per field, or the field name followed by its content parts; or, for a conversation, the
+ * parts of each message, prefixed with its role, with tool calls and results as extra
+ * lines and images as image parts where they appear. A {@link YesNoQuestion} becomes a
+ * {@code predicate} question, with its criteria added to the instructions since the API
+ * has no field for them; a {@link ChoiceQuestion} becomes a {@code choice} question and a
+ * {@link ScoreQuestion} a {@code score} question.
  *
  * @author Thomas Vitale
+ * @author Christian Tzolov
  * @since 2.1.0
  */
 final class OpenAiDecisionMapper {
@@ -87,19 +94,23 @@ final class OpenAiDecisionMapper {
 	// Request
 
 	static DecisionCreateParams.Input input(DecisionInput input) {
-		if (input instanceof TextInput textInput && textInput.getMedia().isEmpty()) {
+		if (input instanceof TextInput textInput
+				&& textInput.getParts().stream().allMatch(TextPart.class::isInstance)) {
 			return DecisionCreateParams.Input.ofString(textInput.getText());
 		}
 		List<DecisionInputPart> parts = new ArrayList<>();
 		if (input instanceof TextInput textInput) {
-			parts.add(text(textInput.getText()));
-			textInput.getMedia().forEach(media -> parts.add(image(media)));
+			textInput.getParts().forEach(part -> parts.add(part(part)));
 		}
 		else if (input instanceof FieldsInput fieldsInput) {
 			fieldsInput.getFields().forEach((name, value) -> {
-				if (value instanceof Media media) {
+				if (value instanceof MessagePart part) {
 					parts.add(text(name + ":"));
-					parts.add(image(media));
+					parts.add(part(part));
+				}
+				else if (FieldsInput.isPartList(value)) {
+					parts.add(text(name + ":"));
+					((List<?>) value).forEach(part -> parts.add(part((MessagePart) part)));
 				}
 				else {
 					parts.add(text(name + ": " + (value instanceof String string ? string : JSON.toJson(value))));
@@ -107,12 +118,7 @@ final class OpenAiDecisionMapper {
 			});
 		}
 		else if (input instanceof ConversationInput conversationInput) {
-			for (Message message : conversationInput.getMessages()) {
-				parts.add(text(message.getMessageType().getValue() + ": " + messageText(message)));
-				if (message instanceof UserMessage userMessage) {
-					userMessage.getMedia().forEach(media -> parts.add(image(media)));
-				}
-			}
+			conversationInput.getMessages().forEach(message -> parts.addAll(messageParts(message)));
 		}
 		else {
 			throw new IllegalArgumentException("Unsupported decision input: " + input.getClass().getName());
@@ -122,24 +128,80 @@ final class OpenAiDecisionMapper {
 	}
 
 	/**
-	 * The text of a message, with the tool calls an assistant message makes and the
-	 * results a tool message carries, one per line.
+	 * The parts of a message, in order: its text, the tool calls it makes and the results
+	 * it carries become lines of a text part prefixed with the role, and each image
+	 * becomes an image part where it appears. Reasoning and unknown parts are not sent.
 	 */
-	private static String messageText(Message message) {
+	private static List<DecisionInputPart> messageParts(Message message) {
+		String role = message.getMessageType().getValue();
+		List<DecisionInputPart> parts = new ArrayList<>();
 		List<String> lines = new ArrayList<>();
-		if (message instanceof ToolResponseMessage toolResponseMessage) {
-			toolResponseMessage.getResponses()
-				.forEach(response -> lines.add(response.name() + ": " + response.responseData()));
-			return String.join("\n", lines);
+		for (MessagePart part : parts(message)) {
+			if (part instanceof MediaPart mediaPart) {
+				flushLines(role, lines, parts);
+				parts.add(image(mediaPart.media()));
+			}
+			else {
+				String line = line(part);
+				if (line != null) {
+					lines.add(line);
+				}
+			}
 		}
-		if (StringUtils.hasText(message.getText())) {
-			lines.add(message.getText());
+		flushLines(role, lines, parts);
+		return parts;
+	}
+
+	private static List<MessagePart> parts(Message message) {
+		if (message instanceof AbstractMessage abstractMessage) {
+			return abstractMessage.getParts();
 		}
-		if (message instanceof AssistantMessage assistantMessage) {
-			assistantMessage.getToolCalls()
-				.forEach(toolCall -> lines.add("[calls " + toolCall.name() + " " + toolCall.arguments() + "]"));
+		return message.getText() != null ? List.of(TextPart.of(message.getText())) : List.of();
+	}
+
+	/**
+	 * Adds the pending lines as one text part. The first part of a message always goes
+	 * out, prefixed with the role, so that the model knows who speaks even when the
+	 * message starts with an image; later ones only when there is something to say.
+	 */
+	private static void flushLines(String role, List<String> lines, List<DecisionInputPart> parts) {
+		if (parts.isEmpty()) {
+			parts.add(text(role + ": " + String.join("\n", lines)));
 		}
-		return String.join("\n", lines);
+		else if (!lines.isEmpty()) {
+			parts.add(text(String.join("\n", lines)));
+		}
+		lines.clear();
+	}
+
+	private static @Nullable String line(MessagePart part) {
+		if (part instanceof TextPart textPart) {
+			return StringUtils.hasText(textPart.text()) ? textPart.text() : null;
+		}
+		if (part instanceof ToolCallPart toolCallPart) {
+			return "[calls " + toolCallPart.toolCall().name() + " " + toolCallPart.toolCall().arguments() + "]";
+		}
+		if (part instanceof ToolResultPart toolResultPart) {
+			String result = toolResultPart.content()
+				.stream()
+				.filter(TextPart.class::isInstance)
+				.map(TextPart.class::cast)
+				.map(TextPart::text)
+				.collect(Collectors.joining());
+			return toolResultPart.name() + ": " + result;
+		}
+		return null;
+	}
+
+	private static DecisionInputPart part(MessagePart part) {
+		if (part instanceof TextPart textPart) {
+			return text(textPart.text());
+		}
+		if (part instanceof MediaPart mediaPart) {
+			return image(mediaPart.media());
+		}
+		throw new IllegalArgumentException("Unsupported decision input part " + part.getClass().getSimpleName()
+				+ ": the OpenAI Decisions API accepts text and image parts");
 	}
 
 	private static DecisionInputPart text(String text) {

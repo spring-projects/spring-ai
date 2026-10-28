@@ -25,7 +25,7 @@ import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.content.Media;
+import org.springframework.ai.chat.messages.part.MessagePart;
 import org.springframework.ai.decision.input.DecisionInput;
 import org.springframework.ai.decision.question.DecisionQuestion;
 import org.springframework.ai.model.ModelRequest;
@@ -37,6 +37,7 @@ import org.springframework.util.Assert;
  * in, and the answers come back in the same order.
  *
  * @author Thomas Vitale
+ * @author Christian Tzolov
  * @since 2.1.0
  */
 public final class DecisionPrompt implements ModelRequest<DecisionInput> {
@@ -133,8 +134,12 @@ public final class DecisionPrompt implements ModelRequest<DecisionInput> {
 			return input(DecisionInput.text(text));
 		}
 
-		public Builder text(String text, List<Media> media) {
-			return input(DecisionInput.text(text, media));
+		public Builder content(List<? extends MessagePart> parts) {
+			return input(DecisionInput.content(parts));
+		}
+
+		public Builder content(MessagePart... parts) {
+			return input(DecisionInput.content(parts));
 		}
 
 		public Builder fields(Map<String, @Nullable Object> fields) {

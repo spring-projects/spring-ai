@@ -16,19 +16,23 @@
 
 package org.springframework.ai.decision.input;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.chat.messages.Message;
-import org.springframework.ai.content.Media;
+import org.springframework.ai.chat.messages.part.MessagePart;
+import org.springframework.ai.chat.messages.part.TextPart;
+import org.springframework.util.Assert;
 
 /**
- * The input a decision model decides about: a text, a set of named fields, or a
- * conversation.
+ * The input a decision model decides about: a text or other content, a set of named
+ * fields, or a conversation.
  *
  * @author Thomas Vitale
+ * @author Christian Tzolov
  * @since 2.1.0
  */
 public sealed interface DecisionInput permits TextInput, FieldsInput, ConversationInput {
@@ -37,19 +41,32 @@ public sealed interface DecisionInput permits TextInput, FieldsInput, Conversati
 	 * A text input.
 	 */
 	static TextInput text(String text) {
-		return new TextInput(text, List.of());
+		Assert.hasText(text, "text cannot be null or empty");
+		return new TextInput(List.of(TextPart.of(text)));
 	}
 
 	/**
-	 * A text input with attached media, such as images.
+	 * An input made of ordered content parts, such as a {@link TextPart} followed by the
+	 * {@link org.springframework.ai.chat.messages.part.MediaPart}s of the images it
+	 * refers to.
 	 */
-	static TextInput text(String text, List<Media> media) {
-		return new TextInput(text, media);
+	static TextInput content(List<? extends MessagePart> parts) {
+		return new TextInput(parts);
+	}
+
+	/**
+	 * An input made of ordered content parts, such as a {@link TextPart} followed by the
+	 * {@link org.springframework.ai.chat.messages.part.MediaPart}s of the images it
+	 * refers to.
+	 */
+	static TextInput content(MessagePart... parts) {
+		Assert.notNull(parts, "parts cannot be null");
+		return new TextInput(Arrays.asList(parts));
 	}
 
 	/**
 	 * A structured input made of named fields. Values can be strings, numbers, booleans,
-	 * nulls, maps, lists, or {@link Media} at the top level.
+	 * nulls, maps, lists, or, at the top level, a {@link MessagePart} or a list of them.
 	 */
 	static FieldsInput fields(Map<String, @Nullable Object> fields) {
 		return new FieldsInput(fields);

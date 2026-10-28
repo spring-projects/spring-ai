@@ -127,10 +127,11 @@ OpenAI recommends a fallback option such as `other` when the options don't cover
 | `ScoreQuestion` | `score` | Each level becomes a level with its label and description.
 |====
 
-A text input without media is sent as a string.
-Any other input is sent as one user message made of parts, in order: a text part per field, or a text part per message of a conversation prefixed with its role (tool calls and results as extra lines), each followed by the image parts it carries.
-The Decisions API accepts images only as inline base64 data URLs, not as hosted URLs, so give an image as bytes or as a `Resource` (for example `new Media(MimeTypeUtils.IMAGE_PNG, new ClassPathResource("photo.png"))`); a `Media` holding a hosted URL is rejected.
-Only images are supported as media.
+An input made of text only is sent as a string.
+Any other input is sent as one user message made of parts, in order: the content parts of a `DecisionInput.content(...)` input; a text part per field, or the field name followed by its content parts; or, for a conversation, the parts of each message prefixed with its role, with tool calls and results as extra lines and images as image parts where they appear.
+Reasoning parts are not sent.
+Only `TextPart` and `MediaPart` are supported as content parts, and only images as media.
+The Decisions API accepts images only as inline base64 data URLs, not as hosted URLs, so give an image as bytes or as a `Resource` (for example `MediaPart.of(new Media(MimeTypeUtils.IMAGE_PNG, new ClassPathResource("photo.png")))`); a `Media` holding a hosted URL is rejected.
 
 OpenAI can decline to answer one question while answering the others; such a question gets a `RefusalAnswer`.
 

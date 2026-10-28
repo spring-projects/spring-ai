@@ -25,6 +25,8 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.messages.part.MediaPart;
+import org.springframework.ai.chat.messages.part.TextPart;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.decision.DecisionPrompt;
 import org.springframework.ai.decision.DecisionResponse;
@@ -143,7 +145,8 @@ class OpenAiDecisionModelIT {
 	void imageInput() {
 		var image = new Media(MimeTypeUtils.IMAGE_PNG, new ClassPathResource("/test.png"));
 
-		var response = this.decisionModel.call(DecisionInput.text("Describe the picture", List.of(image)),
+		var response = this.decisionModel.call(
+				DecisionInput.content(TextPart.of("Describe the picture"), MediaPart.of(image)),
 				Map.of("fruit",
 						ChoiceQuestion.builder()
 							.text("What does the picture show?")
