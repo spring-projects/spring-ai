@@ -53,6 +53,7 @@ import com.google.genai.types.ThinkingConfig;
 import com.google.genai.types.ThinkingLevel;
 import com.google.genai.types.Tool;
 import com.google.genai.types.ToolConfig;
+import com.google.genai.types.VideoMetadata;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
@@ -165,6 +166,7 @@ import org.springframework.util.StringUtils;
  * @author Thomas Vitale
  * @author Sebastien Deleuze
  * @author Dimitar Proynov
+ * @author hyeonZIP
  * @since 0.8.1
  * @see GoogleGenAiChatOptions
  * @see ToolCallingManager
@@ -280,6 +282,10 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 	}
 
 	List<Part> messageToGeminiParts(Message message) {
+		return messageToGeminiParts(message, null);
+	}
+
+	List<Part> messageToGeminiParts(Message message, @Nullable Double videoFps) {
 
 		if (message instanceof SystemMessage systemMessage) {
 
@@ -292,7 +298,7 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			return parts;
 		}
 		else if (message instanceof UserMessage userMessage) {
-			return userMessageToGeminiParts(userMessage);
+			return userMessageToGeminiParts(userMessage, videoFps);
 		}
 		else if (message instanceof AssistantMessage assistantMessage) {
 			return assistantMessageToGeminiParts(assistantMessage);
@@ -320,15 +326,18 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 	 * {@code media()} builder methods has its parts in the order text then media, so its
 	 * wire order is unchanged. Google {@link UnknownPart}s are replayed verbatim; parts a
 	 * user message cannot carry to Gemini are skipped.
+	 * @param userMessage the user message to map
+	 * @param videoFps the frame rate at which video media is sampled, or {@code null} to
+	 * use the API default
 	 */
-	private List<Part> userMessageToGeminiParts(UserMessage userMessage) {
+	private List<Part> userMessageToGeminiParts(UserMessage userMessage, @Nullable Double videoFps) {
 		List<Part> parts = new ArrayList<>();
 		for (MessagePart part : userMessage.getParts()) {
 			if (part instanceof TextPart textPart) {
 				parts.add(Part.fromText(textPart.text()));
 			}
 			else if (part instanceof MediaPart mediaPart) {
-				parts.add(mediaToGeminiPart(mediaPart.media()));
+				parts.add(mediaToGeminiPart(mediaPart.media(), videoFps));
 			}
 			else if (part instanceof UnknownPart unknownPart) {
 				unknownPartToGeminiPart(unknownPart).ifPresent(parts::add);
@@ -505,6 +514,19 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		else {
 			throw new IllegalArgumentException("Unsupported media data type: " + data.getClass());
 		}
+	}
+
+	/**
+	 * Map a media to a Gemini part, attaching the video frame rate to video media when
+	 * one is set. Other media types are left unchanged, since the frame rate only applies
+	 * to video.
+	 */
+	private static Part mediaToGeminiPart(Media media, @Nullable Double videoFps) {
+		Part part = mediaToGeminiPart(media);
+		if (videoFps != null && "video".equals(media.getMimeType().getType())) {
+			return part.toBuilder().videoMetadata(VideoMetadata.builder().fps(videoFps).build()).build();
+		}
+		return part;
 	}
 
 	/**
@@ -1035,7 +1057,8 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 
 		// Handle system instruction
 		List<Content> systemContents = toGeminiContent(
-				prompt.getInstructions().stream().filter(m -> m.getMessageType() == MessageType.SYSTEM).toList());
+				prompt.getInstructions().stream().filter(m -> m.getMessageType() == MessageType.SYSTEM).toList(),
+				requestOptions.getVideoFps());
 
 		if (!CollectionUtils.isEmpty(systemContents)) {
 			Assert.isTrue(systemContents.size() <= 1, "Only one system message is allowed in the prompt");
@@ -1046,8 +1069,8 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 
 		// Create message contents
 		return new GeminiRequest(toGeminiContent(
-				prompt.getInstructions().stream().filter(m -> m.getMessageType() != MessageType.SYSTEM).toList()),
-				modelName, config);
+				prompt.getInstructions().stream().filter(m -> m.getMessageType() != MessageType.SYSTEM).toList(),
+				requestOptions.getVideoFps()), modelName, config);
 	}
 
 	// Helper methods for mapping safety settings enums
@@ -1170,12 +1193,12 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		}
 	}
 
-	private List<Content> toGeminiContent(List<Message> instructions) {
+	private List<Content> toGeminiContent(List<Message> instructions, @Nullable Double videoFps) {
 
 		List<Content> contents = instructions.stream()
 			.map(message -> Content.builder()
 				.role(toGeminiMessageType(message.getMessageType()).getValue())
-				.parts(messageToGeminiParts(message))
+				.parts(messageToGeminiParts(message, videoFps))
 				.build())
 			.toList();
 

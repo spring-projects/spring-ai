@@ -42,6 +42,7 @@ import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.function.FunctionToolCallback;
+import org.springframework.util.MimeType;
 import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -54,6 +55,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * @author Sebastien Deleuze
  * @author Dimitar Proynov
  * @author guan xu
+ * @author hyeonZIP
  */
 @ExtendWith(MockitoExtension.class)
 public class CreateGeminiRequestTests {
@@ -820,6 +822,61 @@ public class CreateGeminiRequestTests {
 		assertThat(request.config().serviceTier()).isPresent();
 		assertThat(request.config().serviceTier().get().toString()).isEqualTo("priority");
 
+	}
+
+	@Test
+	public void createRequestWithVideoFps() {
+		var userMessage = UserMessage.builder()
+			.text("Describe this video")
+			.media(List.of(Media.builder().mimeType(MimeType.valueOf("video/mp4")).data(new byte[] { 1, 2, 3 }).build(),
+					Media.builder()
+						.mimeType(MimeType.valueOf("video/mp4"))
+						.data(URI.create("gs://bucket/video.mp4"))
+						.build(),
+					Media.builder().mimeType(MimeTypeUtils.IMAGE_PNG).data(new byte[] { 4, 5, 6 }).build()))
+			.build();
+		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder().model("DEFAULT_MODEL").videoFps(5.0).build();
+		var client = GoogleGenAiChatModel.builder().genAiClient(this.genAiClient).build();
+
+		GeminiRequest request = client.createGeminiRequest(new Prompt(List.of(userMessage), options));
+
+		List<Part> parts = request.contents().get(0).parts().orElse(List.of());
+		assertThat(parts).hasSize(4);
+		assertThat(parts.get(0).videoMetadata()).isEmpty();
+
+		Part inlineVideo = parts.get(1);
+		assertThat(inlineVideo.inlineData()).isPresent();
+		assertThat(inlineVideo.inlineData().get().mimeType()).contains("video/mp4");
+		assertThat(inlineVideo.videoMetadata()).isPresent();
+		assertThat(inlineVideo.videoMetadata().get().fps()).contains(5.0);
+
+		Part uriVideo = parts.get(2);
+		assertThat(uriVideo.fileData()).isPresent();
+		assertThat(uriVideo.fileData().get().fileUri()).contains("gs://bucket/video.mp4");
+		assertThat(uriVideo.videoMetadata()).isPresent();
+		assertThat(uriVideo.videoMetadata().get().fps()).contains(5.0);
+
+		Part image = parts.get(3);
+		assertThat(image.inlineData()).isPresent();
+		assertThat(image.videoMetadata()).isEmpty();
+	}
+
+	@Test
+	public void createRequestWithoutVideoFpsLeavesVideoMetadataUnset() {
+		var userMessage = UserMessage.builder()
+			.text("Describe this video")
+			.media(List
+				.of(Media.builder().mimeType(MimeType.valueOf("video/mp4")).data(new byte[] { 1, 2, 3 }).build()))
+			.build();
+		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder().model("DEFAULT_MODEL").build();
+		var client = GoogleGenAiChatModel.builder().genAiClient(this.genAiClient).build();
+
+		GeminiRequest request = client.createGeminiRequest(new Prompt(List.of(userMessage), options));
+
+		List<Part> parts = request.contents().get(0).parts().orElse(List.of());
+		assertThat(parts).hasSize(2);
+		assertThat(parts.get(1).inlineData()).isPresent();
+		assertThat(parts.get(1).videoMetadata()).isEmpty();
 	}
 
 }
