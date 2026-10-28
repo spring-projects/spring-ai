@@ -30,8 +30,7 @@ class ChatResponseMetadataTests {
 	@Test
 	void metadataWithDefaultUsageIsEqual() {
 		// EmptyRateLimit and PromptMetadata.empty() compare by identity, so both are
-		// shared
-		// to show that the default usage alone no longer breaks equality
+		// shared to show that the default usage alone no longer breaks equality
 		RateLimit rateLimit = new EmptyRateLimit();
 		PromptMetadata promptMetadata = PromptMetadata.empty();
 		var metadata = ChatResponseMetadata.builder()

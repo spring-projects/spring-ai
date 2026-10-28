@@ -24,6 +24,7 @@ import org.jspecify.annotations.Nullable;
  * Default implementation of {@link DecisionOptions}.
  *
  * @author Thomas Vitale
+ * @author Christian Tzolov
  * @since 2.1.0
  */
 public class DefaultDecisionOptions implements DecisionOptions {
@@ -99,10 +100,17 @@ public class DefaultDecisionOptions implements DecisionOptions {
 			return self();
 		}
 
+		/**
+		 * {@inheritDoc}
+		 * <p>
+		 * A builder of another implementation is read through the options it builds, so a
+		 * model its {@code build()} fills in counts as set.
+		 */
 		@Override
 		public B combineWith(DecisionOptions.Builder<?> other) {
-			if (other instanceof Builder<?> that && that.model != null) {
-				this.model = that.model;
+			String otherModel = other instanceof Builder<?> that ? that.model : other.build().getModel();
+			if (otherModel != null) {
+				this.model = otherModel;
 			}
 			return self();
 		}

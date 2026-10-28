@@ -16,6 +16,7 @@
 
 package org.springframework.ai.decision;
 
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -24,6 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Unit tests for {@link DecisionOptions} and {@link DefaultDecisionOptions}.
  *
  * @author Thomas Vitale
+ * @author Christian Tzolov
  */
 class DecisionOptionsTests {
 
@@ -57,12 +59,54 @@ class DecisionOptionsTests {
 	}
 
 	@Test
+	void combineWithReadsAnotherImplementationThroughItsOptions() {
+		var defaults = DecisionOptions.builder().model("jev-1");
+
+		assertThat(defaults.clone().combineWith(new ForeignBuilder("jev-2")).build().getModel()).isEqualTo("jev-2");
+		assertThat(defaults.clone().combineWith(new ForeignBuilder(null)).build().getModel()).isEqualTo("jev-1");
+	}
+
+	@Test
 	void cloneIsIndependent() {
 		var builder = DecisionOptions.builder().model("jev-1");
 		var copy = builder.clone().model("jev-2");
 
 		assertThat(builder.build().getModel()).isEqualTo("jev-1");
 		assertThat(copy.build().getModel()).isEqualTo("jev-2");
+	}
+
+	/**
+	 * A builder that does not extend {@link DefaultDecisionOptions.Builder}.
+	 */
+	private static final class ForeignBuilder implements DecisionOptions.Builder<ForeignBuilder> {
+
+		private @Nullable String model;
+
+		ForeignBuilder(@Nullable String model) {
+			this.model = model;
+		}
+
+		@Override
+		public ForeignBuilder clone() {
+			return new ForeignBuilder(this.model);
+		}
+
+		@Override
+		public ForeignBuilder model(@Nullable String model) {
+			this.model = model;
+			return this;
+		}
+
+		@Override
+		public ForeignBuilder combineWith(DecisionOptions.Builder<?> other) {
+			return this;
+		}
+
+		@Override
+		public DecisionOptions build() {
+			return new DefaultDecisionOptions(this.model);
+		}
+
 	}
 
 }

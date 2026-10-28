@@ -54,7 +54,8 @@ public interface DecisionOptions extends ModelOptions {
 		DecisionOptions build();
 
 		/**
-		 * Override the values set so far with the non-null values of the given builder.
+		 * Override the values set so far with the non-null values of the given builder,
+		 * whichever implementation it is.
 		 */
 		B combineWith(DecisionOptions.Builder<?> other);
 
