@@ -74,6 +74,7 @@ import org.springframework.util.StringUtils;
  *
  * @author Thomas Vitale
  * @author Sebastien Deleuze
+ * @author Jewoo Shin
  * @since 1.0.0
  */
 public final class JsonSchemaGenerator {
@@ -110,6 +111,10 @@ public final class JsonSchemaGenerator {
 
 		if (KotlinDetector.isKotlinReflectPresent()) {
 			schemaGeneratorConfigBuilder.with(new KotlinModule());
+		}
+
+		if (JsonNullableSupport.isPresent()) {
+			schemaGeneratorConfigBuilder.with(new JsonNullableSchemaModule());
 		}
 
 		SchemaGeneratorConfig typeSchemaGeneratorConfig = schemaGeneratorConfigBuilder.build();
@@ -246,6 +251,10 @@ public final class JsonSchemaGenerator {
 		if (schemaAnnotation != null) {
 			return schemaAnnotation.requiredMode() == Schema.RequiredMode.REQUIRED
 					|| schemaAnnotation.requiredMode() == Schema.RequiredMode.AUTO || schemaAnnotation.required();
+		}
+
+		if (JsonNullableSupport.isJsonNullableType(parameter.getParameterizedType())) {
+			return false;
 		}
 
 		Nullness nullness = Nullness.forParameter(parameter);
