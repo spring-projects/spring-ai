@@ -31,6 +31,7 @@ import org.springframework.util.Assert;
  * one.
  *
  * @author Thomas Vitale
+ * @author Christian Tzolov
  * @since 2.1.0
  */
 public final class ScoreAnswer implements DecisionAnswer {
@@ -82,9 +83,41 @@ public final class ScoreAnswer implements DecisionAnswer {
 	}
 
 	/**
-	 * The level closest to the expected value.
+	 * The level the model finds most likely: the one with the highest probability, or,
+	 * when several share it, the one of them closest to the expected value. When the
+	 * provider doesn't report probabilities, or reports none above zero, it falls back to
+	 * {@link #getRoundedLevel()}.
+	 * <p>
+	 * This is the level to act on. It can differ from the rounded expected value: with
+	 * probabilities of {@code 0.5, 0, 0.5} over three levels the expected value is
+	 * {@code 1.0}, a level the model gave no probability at all, while the nearest level
+	 * is {@code 0}.
 	 */
 	public int getNearestLevel() {
+		int nearest = -1;
+		for (int level = 0; level < this.probabilities.size(); level++) {
+			double probability = this.probabilities.get(level);
+			if (probability <= 0) {
+				continue;
+			}
+			if (nearest < 0 || probability > this.probabilities.get(nearest)
+					|| (probability == this.probabilities.get(nearest)
+							&& Math.abs(level - this.value) < Math.abs(nearest - this.value))) {
+				nearest = level;
+			}
+		}
+		return nearest >= 0 ? nearest : getRoundedLevel();
+	}
+
+	/**
+	 * The expected value rounded to the closest level, halves rounding up: {@code 1.5}
+	 * gives {@code 2}. It reflects where the probability mass sits on average, which
+	 * suits ordered scales such as a sentiment or a severity, but it can land on a level
+	 * the model finds unlikely when the probabilities are split between distant levels;
+	 * use {@link #getNearestLevel()} for the level the model actually favors.
+	 * @since 2.1.0
+	 */
+	public int getRoundedLevel() {
 		return (int) Math.round(this.value);
 	}
 

@@ -101,7 +101,11 @@ Every answer carries what the model actually returned, so the application decide
 When the top two options are close, the model was torn, which is a good reason to ask a person.
 * A `ScoreAnswer` has the expected level as a value between `0` and `levels - 1`.
 It is not an integer: `1.5` means the model is split between the second and the third level.
-`getNearestLevel()` rounds it.
+`getNearestLevel()` is the level the model finds most likely, the one with the highest probability, and the level to act on.
+When several levels share the highest probability, it picks the one of them closest to the expected value.
+`getRoundedLevel()` rounds the expected value instead.
+The two can differ: with probabilities of `0.5, 0, 0.5` over three levels the expected value is `1.0` and rounds to the middle level, which the model gave no probability at all, while the nearest level is the first, being as close to `1.0` as the third and lower.
+When a provider reports no probabilities, or none above zero, `getNearestLevel()` falls back to rounding.
 
 Probabilities are what the model assigned to each outcome.
 They are not calibrated estimates of correctness, and they are not comparable across models or across differently worded questions.

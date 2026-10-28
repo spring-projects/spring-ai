@@ -117,10 +117,44 @@ class DecisionAnswerTests {
 
 		assertThat(answer.getValue()).isEqualTo(1.6);
 		assertThat(answer.getNearestLevel()).isEqualTo(2);
+		assertThat(answer.getRoundedLevel()).isEqualTo(2);
 		assertThat(answer.getProbabilities()).containsExactly(0.1, 0.2, 0.7);
 		assertThat(answer.getConfidence()).isEqualTo(0.8);
-		assertThat(ScoreAnswer.builder().value(0.4).build().getNearestLevel()).isZero();
 		assertThatThrownBy(() -> ScoreAnswer.builder().value(-1).build()).isInstanceOf(IllegalArgumentException.class);
+	}
+
+	@Test
+	void scoreAnswerNearestLevelIsTheMostLikelyOne() {
+		var split = ScoreAnswer.builder().value(1.0).probabilities(List.of(0.5, 0.0, 0.5)).build();
+		assertThat(split.getNearestLevel()).isZero();
+		assertThat(split.getRoundedLevel()).isEqualTo(1);
+
+		var skewed = ScoreAnswer.builder().value(0.7).probabilities(List.of(0.4, 0.5, 0.1)).build();
+		assertThat(skewed.getNearestLevel()).isEqualTo(1);
+		assertThat(skewed.getRoundedLevel()).isEqualTo(1);
+
+		var tail = ScoreAnswer.builder().value(1.2).probabilities(List.of(0.45, 0.1, 0.3, 0.15)).build();
+		assertThat(tail.getNearestLevel()).isZero();
+		assertThat(tail.getRoundedLevel()).isEqualTo(1);
+	}
+
+	@Test
+	void scoreAnswerBreaksTiesTowardsTheExpectedValue() {
+		assertThat(ScoreAnswer.builder().value(0.8).probabilities(List.of(0.4, 0.4, 0.2)).build().getNearestLevel())
+			.isEqualTo(1);
+		assertThat(ScoreAnswer.builder().value(0.3).probabilities(List.of(0.4, 0.4, 0.2)).build().getNearestLevel())
+			.isZero();
+		assertThat(ScoreAnswer.builder().value(1.0).probabilities(List.of(0.5, 0.0, 0.5)).build().getNearestLevel())
+			.isZero();
+	}
+
+	@Test
+	void scoreAnswerNearestLevelFallsBackToRoundingWithoutProbabilities() {
+		assertThat(ScoreAnswer.builder().value(0.4).build().getNearestLevel()).isZero();
+		assertThat(ScoreAnswer.builder().value(0.5).build().getNearestLevel()).isEqualTo(1);
+		assertThat(ScoreAnswer.builder().value(1.5).build().getRoundedLevel()).isEqualTo(2);
+		assertThat(ScoreAnswer.builder().value(1.8).probabilities(List.of(0.0, 0.0, 0.0)).build().getNearestLevel())
+			.isEqualTo(2);
 	}
 
 	@Test
