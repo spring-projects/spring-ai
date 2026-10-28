@@ -1,0 +1,182 @@
+[[decision-models]]
+= Decision Models
+
+A decision model answers typed questions about an input, instead of generating text.
+You give it a text, a set of fields or a conversation, and the questions you want answered about it.
+It returns one answer per question, with the probability the model assigned to each possible outcome.
+
+Decision models are a good fit when the application needs a verdict it can act on, not a message: routing a support ticket to a team, deciding whether a request is urgent, scoring the mood of a customer, checking whether a chat answer is grounded in the retrieved documents, or screening an input before it reaches a chat model.
+They are typically faster and cheaper than a chat model asked the same question, and their answers come with probabilities, so the application can set its own thresholds.
+
+The `DecisionModel` API follows the same shape as the other Spring AI model APIs: a `DecisionPrompt` goes in, a `DecisionResponse` comes out, and provider-specific `DecisionOptions` tune the call.
+
+image::decision/decision-request-classes.svg[The prompt, its input kinds and its question kinds, width=800, align="center"]
+
+== Questions
+
+A `DecisionPrompt` asks one or more named questions.
+There are three kinds of questions, and `DecisionQuestion` is sealed to them, as `DecisionAnswer` is to their answers and to `RefusalAnswer`, so code handling questions or answers can cover every kind.
+Every provider supports all three; a new kind of question is an addition to the API, not to a provider.
+
+[cols="2,4,3"]
+|====
+| Question | What it asks | Answer
+
+| `YesNoQuestion`
+| Whether something holds.
+Optional `whenYes` and `whenNo` criteria tell the model when to answer yes and when to answer no.
+| `YesNoAnswer`, with the probability of yes.
+
+| `ChoiceQuestion`
+| Which of the offered options applies.
+Each option has a name and, optionally, a description.
+| `ChoiceAnswer`, with the selected option, the probability of each option and the provider's confidence.
+
+| `ScoreQuestion`
+| Where the input sits on an ordered scale of levels, such as `low`, `medium`, `high`.
+Each level has a label and, optionally, a description.
+| `ScoreAnswer`, with the expected level as a value between `0` and `levels - 1`, the probability of each level and the provider's confidence.
+|====
+
+[source,java]
+----
+DecisionPrompt prompt = DecisionPrompt.builder()
+    .text("Help! My payouts are late again and nobody answers my emails.")
+    .question("urgent", YesNoQuestion.builder()
+        .text("Is this request urgent?")
+        .whenYes("Money or access is blocked")
+        .whenNo("The customer is asking a general question")
+        .build())
+    .question("team", ChoiceQuestion.builder()
+        .text("Which team should handle this request?")
+        .option("billing", "Invoices, charges, payouts and refunds")
+        .option("technical", "Bugs, outages and integrations")
+        .option("sales", "Quotes and new purchases")
+        .build())
+    .question("mood", ScoreQuestion.of("How is the customer's mood?", "calm", "annoyed", "angry"))
+    .build();
+
+DecisionResponse response = decisionModel.call(prompt);
+
+boolean urgent = response.getYesNo("urgent").isYes();
+String team = response.getChoice("team").getValue();
+double mood = response.getScore("mood").getValue();
+----
+
+For a single input and the default options, the shorter `call(String, Map)` and `call(DecisionInput, Map)` forms do the same.
+
+[source,java]
+----
+DecisionResponse response = decisionModel.call("Is anyone there? My card was charged twice!",
+        Map.of("urgent", YesNoQuestion.of("Is this request urgent?")));
+----
+
+Write questions around observable criteria, and keep one concern per question: a model answers "Is the customer asking for a refund?" more reliably than "Is this a billing issue that needs a refund and an apology?".
+Give the options of a choice distinct meanings, and consider a fallback option such as `other` when they can't cover every input.
+Define scale levels so that adjacent levels have distinct criteria.
+
+Questions keep the order they were added in, and the answers come back in the same order, so `response.getResults()` and `response.getAnswers()` line up with the prompt.
+A `Map.of(...)` has no order, so add the questions one by one to the builder, or pass an ordered map such as `LinkedHashMap`, when the order matters.
+
+== Inputs
+
+The input is the thing the questions are about.
+`DecisionInput` offers three kinds.
+
+* `DecisionInput.text(String)`: a text.
+For a text with images, or any other mix, `DecisionInput.content(MessagePart...)` takes the ordered content parts a chat message is made of, such as a `TextPart` followed by a `MediaPart`.
+* `DecisionInput.fields(Map)`: a structured input made of named fields.
+Values can be strings, numbers, booleans, nulls, maps and lists, or, at the top level, a `MessagePart` or a list of parts, such as the text and image of an attachment.
+Use it when the input has a shape, such as a ticket with a subject, a body and a customer tier, so that the model sees each part for what it is.
+The fields keep the order of the map, so use an ordered map such as `LinkedHashMap` when the order matters.
+How a provider lays the fields out for the model is up to the provider.
+* `DecisionInput.conversation(List<Message>)`: a conversation, made of the same `Message` types a `ChatModel` takes.
+Use it to judge an exchange, for example whether the last assistant answer is correct, or whether the next user message should be answered at all.
+
+The `DecisionPrompt` builder has `text(...)`, `content(...)`, `fields(...)` and `conversation(...)` shortcuts for each.
+
+[source,java]
+----
+Map<String, Object> ticket = new LinkedHashMap<>();
+ticket.put("subject", "Charged twice");
+ticket.put("body", "My card was charged twice for the same order.");
+ticket.put("tier", "enterprise");
+
+DecisionResponse refund = decisionModel.call(DecisionInput.fields(ticket),
+        Map.of("refund", YesNoQuestion.of("Is the customer asking for a refund?")));
+
+DecisionResponse answered = decisionModel.call(
+        DecisionInput.conversation(List.of(
+            new UserMessage("Can I get a refund after 30 days?"),
+            new AssistantMessage("Refunds are available within 14 days of purchase."))),
+        Map.of("answered", YesNoQuestion.of("Does the last assistant message answer the user's question?")));
+----
+
+Which input kinds and content parts a provider supports depends on the provider.
+
+== Answers
+
+image::decision/decision-response-classes.svg[The response, its metadata and its answer kinds, width=700, align="center"]
+
+Every answer carries what the model actually returned, so the application decides what to do with it.
+`getYesNo(name)`, `getChoice(name)` and `getScore(name)` return the typed answer to a question; `getAnswer(name, Class)` does the same for any answer type, and `hasAnswer(name)` tells whether the response has one.
+
+* A `YesNoAnswer` has the probability of yes.
+`isYes()` applies a `0.5` threshold; `isYes(double)` applies yours.
+* A `ChoiceAnswer` has the selected option and, when the provider reports them, the probability of each option: `getProbability()` for the selected one, `getProbability(option)` for any, and `getRankedOptions()` from the most to the least likely.
+When the top two options are close, the model was torn, which is a good reason to ask a person.
+* A `ScoreAnswer` has the expected level as `getValue()`, a value between `0` and `levels - 1`, and the probability of each level as `getProbabilities()`.
+The value is not an integer: `1.5` means the model is split between the second and the third level.
+`getNearestLevel()` is the level with the highest probability, and the level to act on; when several levels share it, the one closest to the expected value wins.
+`getRoundedLevel()` rounds the expected value instead.
+When a provider reports no probabilities, or none above zero, `getNearestLevel()` falls back to rounding.
+
+The two score accessors can disagree, which is why the nearest level is the one to act on.
+
+[source,java]
+----
+// probabilities 0.5, 0, 0.5 over the levels calm, annoyed, angry
+score.getValue();         // 1.0, the expected level
+score.getRoundedLevel();  // 1, annoyed, which the model gave no probability at all
+score.getNearestLevel();  // 0, calm, tied with angry for the highest probability and the lower of the two
+----
+
+Probabilities are what the model assigned to each outcome.
+They are not calibrated estimates of correctness, and they are not comparable across models or across differently worded questions.
+`ChoiceAnswer` and `ScoreAnswer` also carry `getConfidence()`: a value between `0` and `1` when the provider reports one, `null` otherwise.
+It is the provider's own estimate of how settled the answer is, and is distinct from the probabilities.
+
+A provider can decline to answer one question while answering the others.
+Such a question gets a `RefusalAnswer`; `response.isRefused(name)` tells, and the typed accessors throw an `IllegalStateException` for it.
+A refusal is not a request failure.
+
+`response.getMetadata()` carries the response id and the model that answered, when the provider reports them, and the token usage of the call as a `Usage`.
+
+== Options
+
+`DecisionOptions` carries the model name.
+Set it on the prompt to override the model's default for one call.
+
+[source,java]
+----
+DecisionPrompt prompt = DecisionPrompt.builder()
+    .text("...")
+    .question("urgent", YesNoQuestion.of("Is this request urgent?"))
+    .options(DecisionOptions.builder().model("gpt-6-luna").build())
+    .build();
+----
+
+Options are immutable.
+`mutate()` returns a builder initialized with their values, and `combineWith(...)` layers the non-null values of another builder on top.
+This is how a model combines its default options with the ones of a prompt, so a prompt only overrides what it sets.
+Provider implementations offer their own options class with more settings.
+See the provider pages.
+
+== Observability
+
+Decision models are observed like the other models, with the `gen_ai.client.operation` observation and the `decision` operation name.
+See xref:observability/index.adoc#_decision_model[Decision Model observability].
+
+== Available Implementations
+
+* xref:api/decision/openai-decision.adoc[OpenAI Decisions]

@@ -600,6 +600,14 @@
 				<version>${project.version}</version>
 			</dependency>
 
+			<!-- Spring AI Decision model observation autoconfiguration -->
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-autoconfigure-model-decision-observation</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
 			<!-- Spring AI Audio (text-to-speech, transcription) model observation autoconfiguration -->
 
 			<dependency>

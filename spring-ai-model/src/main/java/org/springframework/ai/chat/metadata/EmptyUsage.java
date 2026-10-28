@@ -18,11 +18,15 @@ package org.springframework.ai.chat.metadata;
 
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
+
 /**
- * A EmptyUsage implementation that returns zero for all property getters
+ * A EmptyUsage implementation that returns zero for all property getters. All instances
+ * of this class are equal to each other.
  *
  * @author John Blum
  * @author Ilayaperumal Gopinathan
+ * @author Christian Tzolov
  * @since 0.7.0
  */
 public class EmptyUsage implements Usage {
@@ -40,6 +44,16 @@ public class EmptyUsage implements Usage {
 	@Override
 	public Object getNativeUsage() {
 		return Map.of();
+	}
+
+	@Override
+	public boolean equals(@Nullable Object o) {
+		return o != null && getClass() == o.getClass();
+	}
+
+	@Override
+	public int hashCode() {
+		return EmptyUsage.class.hashCode();
 	}
 
 }
