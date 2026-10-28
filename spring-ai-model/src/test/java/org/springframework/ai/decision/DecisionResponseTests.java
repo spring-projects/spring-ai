@@ -23,6 +23,8 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.metadata.DefaultUsage;
+import org.springframework.ai.chat.metadata.EmptyUsage;
+import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.decision.answer.ChoiceAnswer;
 import org.springframework.ai.decision.answer.DecisionAnswer;
 import org.springframework.ai.decision.answer.RefusalAnswer;
@@ -40,6 +42,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * Unit tests for {@link DecisionResponse}.
  *
  * @author Thomas Vitale
+ * @author Christian Tzolov
  */
 class DecisionResponseTests {
 
@@ -60,7 +63,7 @@ class DecisionResponseTests {
 					.build())
 		.answer("mood", ScoreAnswer.builder().value(1.5).build())
 		.answer("secret", RefusalAnswer.builder().build())
-		.metadata(DecisionResponseMetadata.builder().id("dec_1").model("jev-1").usage(new DefaultUsage(10, 2)).build())
+		.metadata(metadata("dec_1", "jev-1", new DefaultUsage(10, 2)))
 		.build();
 
 	@Test
@@ -112,6 +115,58 @@ class DecisionResponseTests {
 		assertThat(response.getMetadata().getId()).isNull();
 		assertThat(response.getMetadata().getModel()).isNull();
 		assertThat(response.getMetadata().getUsage().getTotalTokens()).isZero();
+	}
+
+	@Test
+	void metadataEqualsOnIdModelAndUsage() {
+		var metadata = metadata("dec_1", "jev-1", new DefaultUsage(10, 2));
+
+		assertThat(metadata).isEqualTo(metadata("dec_1", "jev-1", new DefaultUsage(10, 2)))
+			.hasSameHashCodeAs(metadata("dec_1", "jev-1", new DefaultUsage(10, 2)));
+		assertThat(DecisionResponseMetadata.builder().build()).isEqualTo(DecisionResponseMetadata.builder().build())
+			.hasSameHashCodeAs(DecisionResponseMetadata.builder().build());
+		assertThat(metadata).isNotEqualTo(metadata("dec_2", "jev-1", new DefaultUsage(10, 2)));
+		assertThat(metadata).isNotEqualTo(metadata("dec_1", "jev-2", new DefaultUsage(10, 2)));
+		assertThat(metadata).isNotEqualTo(metadata("dec_1", "jev-1", new DefaultUsage(10, 3)));
+		assertThat(metadata).isNotEqualTo(metadata("dec_1", "jev-1", new EmptyUsage()));
+	}
+
+	@Test
+	void metadataEqualityIgnoresMapEntries() {
+		var metadata = DecisionResponseMetadata.builder().id("dec_1").build();
+		var same = DecisionResponseMetadata.builder().id("dec_1").build();
+		same.put("extra", "value");
+
+		assertThat(metadata).isEqualTo(same);
+	}
+
+	@Test
+	void metadataEqualityRequiresTheSameClass() {
+		var metadata = metadata("dec_1", "jev-1", new DefaultUsage(10, 2));
+		var subclass = new DecisionResponseMetadata("dec_1", "jev-1", new DefaultUsage(10, 2)) {
+		};
+
+		assertThat(metadata).isNotEqualTo(subclass);
+		assertThat(subclass).isNotEqualTo(metadata);
+	}
+
+	@Test
+	void responsesWithEqualAnswersAndMetadataAreEqual() {
+		var same = DecisionResponse.builder(this.prompt)
+			.answers(this.response.getAnswers())
+			.metadata(metadata("dec_1", "jev-1", new DefaultUsage(10, 2)))
+			.build();
+		var otherMetadata = DecisionResponse.builder(this.prompt)
+			.answers(this.response.getAnswers())
+			.metadata(metadata("dec_2", "jev-1", new DefaultUsage(10, 2)))
+			.build();
+
+		assertThat(this.response).isEqualTo(same).hasSameHashCodeAs(same);
+		assertThat(this.response).isNotEqualTo(otherMetadata);
+	}
+
+	private static DecisionResponseMetadata metadata(String id, String model, Usage usage) {
+		return DecisionResponseMetadata.builder().id(id).model(model).usage(usage).build();
 	}
 
 	@Nested

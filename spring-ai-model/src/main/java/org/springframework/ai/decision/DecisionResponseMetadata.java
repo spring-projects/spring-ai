@@ -16,6 +16,8 @@
 
 package org.springframework.ai.decision;
 
+import java.util.Objects;
+
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.chat.metadata.EmptyUsage;
@@ -25,9 +27,12 @@ import org.springframework.util.Assert;
 
 /**
  * Metadata associated with a {@link DecisionResponse}: the response id and the model that
- * answered, when the provider reports them, and the token usage.
+ * answered, when the provider reports them, and the token usage. Two instances of the
+ * same class are equal when these three match; the entries put into the metadata map are
+ * not compared.
  *
  * @author Thomas Vitale
+ * @author Christian Tzolov
  * @since 2.1.0
  */
 public class DecisionResponseMetadata extends MutableResponseMetadata {
@@ -69,6 +74,24 @@ public class DecisionResponseMetadata extends MutableResponseMetadata {
 
 	public Usage getUsage() {
 		return this.usage;
+	}
+
+	@Override
+	public boolean equals(@Nullable Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		DecisionResponseMetadata that = (DecisionResponseMetadata) o;
+		return Objects.equals(this.id, that.id) && Objects.equals(this.model, that.model)
+				&& this.usage.equals(that.usage);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(this.id, this.model, this.usage);
 	}
 
 	@Override
