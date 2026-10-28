@@ -28,8 +28,16 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * Unit tests for {@link YesNoQuestion}, {@link ChoiceQuestion} and {@link ScoreQuestion}.
  *
  * @author Thomas Vitale
+ * @author Christian Tzolov
  */
 class DecisionQuestionTests {
+
+	@Test
+	void questionKindsAreSealed() {
+		assertThat(DecisionQuestion.class.isSealed()).isTrue();
+		assertThat(DecisionQuestion.class.getPermittedSubclasses()).containsExactly(YesNoQuestion.class,
+				ChoiceQuestion.class, ScoreQuestion.class);
+	}
 
 	@Test
 	void yesNoQuestion() {

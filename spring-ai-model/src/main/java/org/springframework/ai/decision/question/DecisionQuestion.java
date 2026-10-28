@@ -19,12 +19,17 @@ package org.springframework.ai.decision.question;
 import org.springframework.ai.decision.DecisionModel;
 
 /**
- * A question a {@link DecisionModel} answers about an input.
+ * A question a {@link DecisionModel} answers about an input: a {@link YesNoQuestion}, a
+ * {@link ChoiceQuestion} or a {@link ScoreQuestion}. The interface is sealed, like
+ * {@link org.springframework.ai.decision.input.DecisionInput}, so that providers and
+ * applications can handle every kind of question exhaustively; a new kind is an addition
+ * to the API, not to a provider.
  *
  * @author Thomas Vitale
+ * @author Christian Tzolov
  * @since 2.1.0
  */
-public interface DecisionQuestion {
+public sealed interface DecisionQuestion permits YesNoQuestion, ChoiceQuestion, ScoreQuestion {
 
 	/**
 	 * The question text, which tells the model what to decide.

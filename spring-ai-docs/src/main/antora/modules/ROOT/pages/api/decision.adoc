@@ -13,7 +13,8 @@ The `DecisionModel` API follows the same shape as the other Spring AI model APIs
 == Questions
 
 A `DecisionPrompt` asks one or more named questions.
-There are three kinds of questions.
+There are three kinds of questions, and `DecisionQuestion` is sealed to them, as `DecisionAnswer` is to their answers and to `RefusalAnswer`, so code handling questions or answers can cover every kind.
+Every provider supports all three; a new kind of question is an addition to the API, not to a provider.
 
 [cols="2,4,3"]
 |====

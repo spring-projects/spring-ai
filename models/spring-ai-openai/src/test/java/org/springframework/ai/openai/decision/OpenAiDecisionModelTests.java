@@ -52,7 +52,6 @@ import org.springframework.ai.decision.answer.RefusalAnswer;
 import org.springframework.ai.decision.input.DecisionInput;
 import org.springframework.ai.decision.observation.DefaultDecisionModelObservationConvention;
 import org.springframework.ai.decision.question.ChoiceQuestion;
-import org.springframework.ai.decision.question.DecisionQuestion;
 import org.springframework.ai.decision.question.ScoreQuestion;
 import org.springframework.ai.decision.question.YesNoQuestion;
 import org.springframework.ai.observation.conventions.AiObservationAttributes;
@@ -364,14 +363,6 @@ class OpenAiDecisionModelTests {
 				Map.of("q", YesNoQuestion.of("?"))))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("Only images");
-	}
-
-	@Test
-	void rejectsUnknownQuestionTypes() {
-		DecisionQuestion custom = () -> "custom";
-
-		assertThatThrownBy(() -> model().call("x", Map.of("q", custom))).isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("Unsupported decision question 'q'");
 	}
 
 	@Test

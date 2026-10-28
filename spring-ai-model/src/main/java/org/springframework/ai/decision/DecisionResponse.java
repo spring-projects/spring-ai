@@ -225,8 +225,7 @@ public final class DecisionResponse implements ModelResponse<DecisionResult> {
 		 * Build the response, with the results in the order of the prompt's questions.
 		 * Fails when a question has no answer, an answer has no question, or an answer
 		 * doesn't match its question: a wrong type, a choice outside the offered options,
-		 * or a score outside the levels. A refusal is accepted for any question, and any
-		 * answer for a question type other than the built-in ones.
+		 * or a score outside the levels. A refusal is accepted for any question.
 		 */
 		public DecisionResponse build() {
 			for (String name : this.answers.keySet()) {

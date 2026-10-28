@@ -31,7 +31,6 @@ import org.springframework.ai.decision.answer.RefusalAnswer;
 import org.springframework.ai.decision.answer.ScoreAnswer;
 import org.springframework.ai.decision.answer.YesNoAnswer;
 import org.springframework.ai.decision.question.ChoiceQuestion;
-import org.springframework.ai.decision.question.DecisionQuestion;
 import org.springframework.ai.decision.question.ScoreQuestion;
 import org.springframework.ai.decision.question.YesNoQuestion;
 
@@ -222,18 +221,6 @@ class DecisionResponseTests {
 
 			assertThat(response.getResults()).hasSize(3);
 			assertThat(response.isRefused("team")).isTrue();
-		}
-
-		@Test
-		void acceptsAnyAnswerForCustomQuestionTypes() {
-			DecisionQuestion custom = () -> "custom";
-			DecisionAnswer customAnswer = new DecisionAnswer() {
-			};
-			var prompt = DecisionPrompt.builder().text("x").question("q", custom).build();
-
-			var response = DecisionResponse.builder(prompt).answer("q", customAnswer).build();
-
-			assertThat(response.getAnswer("q")).isSameAs(customAnswer);
 		}
 
 		@Test

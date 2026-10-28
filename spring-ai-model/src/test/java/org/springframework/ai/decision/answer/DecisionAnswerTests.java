@@ -30,8 +30,16 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * {@link RefusalAnswer}.
  *
  * @author Thomas Vitale
+ * @author Christian Tzolov
  */
 class DecisionAnswerTests {
+
+	@Test
+	void answerKindsAreSealed() {
+		assertThat(DecisionAnswer.class.isSealed()).isTrue();
+		assertThat(DecisionAnswer.class.getPermittedSubclasses()).containsExactly(YesNoAnswer.class, ChoiceAnswer.class,
+				ScoreAnswer.class, RefusalAnswer.class);
+	}
 
 	@Test
 	void yesNoAnswerAppliesThreshold() {

@@ -121,7 +121,8 @@ final class OpenAiDecisionMapper {
 			conversationInput.getMessages().forEach(message -> parts.addAll(messageParts(message)));
 		}
 		else {
-			throw new IllegalArgumentException("Unsupported decision input: " + input.getClass().getName());
+			// Unreachable while DecisionInput is sealed to the three kinds above.
+			throw new IllegalStateException("Unexpected decision input of type " + input.getClass().getName());
 		}
 		return DecisionCreateParams.Input
 			.ofDecisionInputMessages(List.of(DecisionInputMessage.builder().contentOfParts(parts).build()));
@@ -264,8 +265,9 @@ final class OpenAiDecisionMapper {
 			}
 			return DecisionCreateParams.Question.ofScore(builder.build());
 		}
-		throw new IllegalArgumentException("Unsupported decision question '" + name + "' of type "
-				+ question.getClass().getName() + ": OpenAI supports yes/no, choice and score questions");
+		// Unreachable while DecisionQuestion is sealed to the three kinds above.
+		throw new IllegalStateException(
+				"Unexpected decision question '" + name + "' of type " + question.getClass().getName());
 	}
 
 	/**
