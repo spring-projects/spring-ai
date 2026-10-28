@@ -285,11 +285,18 @@ final class OpenAiDecisionMapper {
 
 	// Response
 
-	static DecisionResponse response(DecisionPrompt prompt, Decision decision) {
+	/**
+	 * The response to the prompt, with the given request id, if any, as the id of its
+	 * metadata.
+	 */
+	static DecisionResponse response(DecisionPrompt prompt, Decision decision, @Nullable String requestId) {
 		List<String> names = List.copyOf(prompt.getQuestions().keySet());
 		DecisionResponse.Builder builder = DecisionResponse.builder(prompt)
-			.metadata(
-					DecisionResponseMetadata.builder().model(decision.model()).usage(usage(decision.usage())).build());
+			.metadata(DecisionResponseMetadata.builder()
+				.id(requestId)
+				.model(decision.model())
+				.usage(usage(decision.usage()))
+				.build());
 		List<Decision.Answer> answers = decision.answers();
 		for (int i = 0; i < answers.size(); i++) {
 			Decision.Answer answer = answers.get(i);

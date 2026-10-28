@@ -65,6 +65,7 @@ class OpenAiDecisionModelIT {
 				Map.of("spam", question));
 
 		assertThat(spam.getYesNo("spam").getProbability()).isGreaterThan(notSpam.getYesNo("spam").getProbability());
+		assertThat(spam.getMetadata().getId()).isNotBlank();
 		assertThat(spam.getMetadata().getModel()).isNotBlank();
 		assertThat(spam.getMetadata().getUsage().getTotalTokens()).isPositive();
 	}

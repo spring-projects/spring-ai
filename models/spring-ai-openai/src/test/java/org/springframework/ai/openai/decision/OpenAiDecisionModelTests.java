@@ -20,16 +20,19 @@ import java.net.URI;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import com.openai.client.OpenAIClient;
 import com.openai.core.JsonField;
 import com.openai.core.RequestOptions;
+import com.openai.core.http.HttpResponseFor;
 import com.openai.models.decisions.Decision;
 import com.openai.models.decisions.DecisionCreateParams;
 import com.openai.models.decisions.DecisionInputPart;
 import com.openai.services.blocking.DecisionService;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import io.micrometer.observation.tck.TestObservationRegistryAssert;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -78,11 +81,14 @@ class OpenAiDecisionModelTests {
 
 	private final DecisionService decisionService = mock(DecisionService.class);
 
+	private final DecisionService.WithRawResponse rawDecisionService = mock(DecisionService.WithRawResponse.class);
+
 	private final TestObservationRegistry observationRegistry = TestObservationRegistry.create();
 
 	@BeforeEach
 	void setUp() {
 		when(this.client.decisions()).thenReturn(this.decisionService);
+		when(this.decisionService.withRawResponse()).thenReturn(this.rawDecisionService);
 	}
 
 	@Test
@@ -201,6 +207,7 @@ class OpenAiDecisionModelTests {
 		assertThat(response.getScore("mood").getValue()).isEqualTo(1.6);
 		assertThat(response.getScore("mood").getProbabilities()).containsExactly(0.1, 0.2, 0.7);
 		assertThat(response.getScore("mood").getConfidence()).isEqualTo(0.75);
+		assertThat(response.getMetadata().getId()).isEqualTo("req_1");
 		assertThat(response.getMetadata().getModel()).isEqualTo("gpt-6-luna-2026");
 		assertThat(response.getMetadata().getUsage().getPromptTokens()).isEqualTo(12);
 		assertThat(response.getMetadata().getUsage().getCompletionTokens()).isEqualTo(3);
@@ -428,11 +435,34 @@ class OpenAiDecisionModelTests {
 			.hasLowCardinalityKeyValue(AiObservationAttributes.REQUEST_MODEL.value(),
 					OpenAiDecisionOptions.DEFAULT_DECISION_MODEL)
 			.hasLowCardinalityKeyValue(AiObservationAttributes.RESPONSE_MODEL.value(), "gpt-6-luna")
+			.hasHighCardinalityKeyValue(AiObservationAttributes.RESPONSE_ID.value(), "req_1")
 			.hasHighCardinalityKeyValue(AiObservationAttributes.USAGE_INPUT_TOKENS.value(), "1")
 			.hasHighCardinalityKeyValue(AiObservationAttributes.USAGE_OUTPUT_TOKENS.value(), "1")
 			.hasHighCardinalityKeyValue(AiObservationAttributes.USAGE_TOTAL_TOKENS.value(), "2")
 			.hasBeenStarted()
 			.hasBeenStopped();
+	}
+
+	@Test
+	void leavesResponseIdUnsetWithoutRequestIdHeader() {
+		stubResponse(yesNoResponse(), null);
+
+		DecisionResponse response = model().call("x", Map.of("q", YesNoQuestion.of("?")));
+
+		assertThat(response.getMetadata().getId()).isNull();
+		TestObservationRegistryAssert.assertThat(this.observationRegistry)
+			.hasObservationWithNameEqualTo(DefaultDecisionModelObservationConvention.DEFAULT_NAME)
+			.that()
+			.doesNotHaveHighCardinalityKeyValueWithKey(AiObservationAttributes.RESPONSE_ID.value());
+	}
+
+	@Test
+	void normalizesRequestIdHeader() {
+		stubResponse(yesNoResponse(), " req_2 ");
+		assertThat(model().call("x", Map.of("q", YesNoQuestion.of("?"))).getMetadata().getId()).isEqualTo("req_2");
+
+		stubResponse(yesNoResponse(), "  ");
+		assertThat(model().call("x", Map.of("q", YesNoQuestion.of("?"))).getMetadata().getId()).isNull();
 	}
 
 	@Test
@@ -466,13 +496,21 @@ class OpenAiDecisionModelTests {
 	}
 
 	private void stubResponse(Decision decision) {
-		when(this.decisionService.create(any(DecisionCreateParams.class), any(RequestOptions.class)))
-			.thenReturn(decision);
+		stubResponse(decision, "req_1");
+	}
+
+	@SuppressWarnings("unchecked")
+	private void stubResponse(Decision decision, @Nullable String requestId) {
+		HttpResponseFor<Decision> rawResponse = mock(HttpResponseFor.class);
+		when(rawResponse.parse()).thenReturn(decision);
+		when(rawResponse.requestId()).thenReturn(Optional.ofNullable(requestId));
+		when(this.rawDecisionService.create(any(DecisionCreateParams.class), any(RequestOptions.class)))
+			.thenReturn(rawResponse);
 	}
 
 	private DecisionCreateParams sentParams() {
 		ArgumentCaptor<DecisionCreateParams> captor = ArgumentCaptor.forClass(DecisionCreateParams.class);
-		verify(this.decisionService, atLeastOnce()).create(captor.capture(), any(RequestOptions.class));
+		verify(this.rawDecisionService, atLeastOnce()).create(captor.capture(), any(RequestOptions.class));
 		return captor.getValue();
 	}
 

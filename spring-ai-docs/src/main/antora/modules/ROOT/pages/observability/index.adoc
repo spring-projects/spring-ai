@@ -386,7 +386,7 @@ A decision request carries no generation parameters, so none are recorded.
 |===
 |Name | Description
 
-|`gen_ai.response.id`| The unique identifier for the AI response.
+|`gen_ai.response.id`| The unique identifier for the AI response, when the provider reports one.
 |`gen_ai.usage.input_tokens`| The number of tokens used in the model input.
 |`gen_ai.usage.output_tokens`| The number of tokens used in the model output.
 |`gen_ai.usage.total_tokens`| The total number of tokens used in the model exchange.

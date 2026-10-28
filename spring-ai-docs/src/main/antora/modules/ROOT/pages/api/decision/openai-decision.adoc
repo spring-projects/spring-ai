@@ -135,6 +135,9 @@ The Decisions API accepts images only as inline base64 data URLs, not as hosted 
 
 OpenAI can decline to answer one question while answering the others; such a question gets a `RefusalAnswer`.
 
+The Decisions API returns no id in the response body.
+On the OpenAI platform, the request id reported in the `x-request-id` header is recorded as the id of the response metadata, available through `response.getMetadata().getId()` and as the `gen_ai.response.id` observation key, since it is the identifier to quote to OpenAI about a decision.
+
 == Manual Configuration
 
 Add the `spring-ai-openai` dependency to your project's Maven `pom.xml` file:

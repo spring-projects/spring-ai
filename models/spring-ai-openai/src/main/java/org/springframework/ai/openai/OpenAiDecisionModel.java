@@ -22,6 +22,7 @@ import java.util.Objects;
 
 import com.openai.client.OpenAIClient;
 import com.openai.core.RequestOptions;
+import com.openai.core.http.HttpResponseFor;
 import com.openai.models.decisions.Decision;
 import com.openai.models.decisions.DecisionCreateParams;
 import io.micrometer.observation.ObservationRegistry;
@@ -41,12 +42,14 @@ import org.springframework.ai.openai.http.okhttp.OpenAiHttpClientBuilderCustomiz
 import org.springframework.ai.openai.setup.OpenAiSetup;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 /**
  * {@link DecisionModel} backed by the OpenAI Decisions API, through the official OpenAI
  * Java SDK.
  *
  * @author Thomas Vitale
+ * @author Christian Tzolov
  * @since 2.1.0
  * @see <a href=
  * "https://developers.openai.com/api/reference/resources/decisions/methods/create">OpenAI
@@ -121,11 +124,22 @@ public final class OpenAiDecisionModel implements DecisionModel {
 					.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 							this.observationRegistry)
 					.observe(() -> {
-						Decision decision = this.openAiClient.decisions().create(params, requestOptions);
-						DecisionResponse response = OpenAiDecisionMapper.response(prompt, decision);
+						// The Decisions API returns no id in the body: the decision is
+						// identified by the request id, which only the raw response
+						// keeps.
+						HttpResponseFor<Decision> rawResponse = this.openAiClient.decisions()
+							.withRawResponse()
+							.create(params, requestOptions);
+						Decision decision = rawResponse.parse();
+						DecisionResponse response = OpenAiDecisionMapper.response(prompt, decision,
+								requestId(rawResponse));
 						observationContext.setResponse(response);
 						return response;
 					}));
+	}
+
+	private static @Nullable String requestId(HttpResponseFor<Decision> rawResponse) {
+		return rawResponse.requestId().map(String::trim).filter(StringUtils::hasText).orElse(null);
 	}
 
 	private static DecisionCreateParams createParams(DecisionPrompt prompt, OpenAiDecisionOptions options) {
