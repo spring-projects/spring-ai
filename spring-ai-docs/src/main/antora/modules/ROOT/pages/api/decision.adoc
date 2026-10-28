@@ -76,6 +76,7 @@ Give the options of a choice distinct meanings, and consider a fallback option s
 Define scale levels so that adjacent levels have distinct criteria.
 
 Questions keep the order they were added in, and the answers come back in the same order, so `response.getResults()` and `response.getAnswers()` line up with the prompt.
+A `Map.of(...)` has no order, so add the questions one by one to the builder, or pass an ordered map such as `LinkedHashMap`, when the order matters.
 
 == Inputs
 
@@ -166,8 +167,10 @@ DecisionPrompt prompt = DecisionPrompt.builder()
 ----
 
 Options are immutable.
-`mutate()` returns a builder initialized with their values, and `combineWith(...)` layers the non-null values of another builder on top. This is how a model combines its default options with the ones of a prompt, so a prompt only overrides what it sets.
-Provider implementations offer their own options class with more settings. See the provider pages.
+`mutate()` returns a builder initialized with their values, and `combineWith(...)` layers the non-null values of another builder on top.
+This is how a model combines its default options with the ones of a prompt, so a prompt only overrides what it sets.
+Provider implementations offer their own options class with more settings.
+See the provider pages.
 
 == Observability
 

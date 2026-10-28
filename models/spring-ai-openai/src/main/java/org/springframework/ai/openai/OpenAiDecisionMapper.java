@@ -131,7 +131,8 @@ final class OpenAiDecisionMapper {
 	/**
 	 * The parts of a message, in order: its text, the tool calls it makes and the results
 	 * it carries become lines of a text part prefixed with the role, and each image
-	 * becomes an image part where it appears. Reasoning and unknown parts are not sent.
+	 * becomes an image part where it appears. Reasoning and unknown parts are not sent,
+	 * and a message with nothing else adds no part at all.
 	 */
 	private static List<DecisionInputPart> messageParts(Message message) {
 		String role = message.getMessageType().getValue();
@@ -149,7 +150,9 @@ final class OpenAiDecisionMapper {
 				}
 			}
 		}
-		flushLines(role, lines, parts);
+		if (!lines.isEmpty()) {
+			flushLines(role, lines, parts);
+		}
 		return parts;
 	}
 
@@ -189,7 +192,8 @@ final class OpenAiDecisionMapper {
 				.map(TextPart.class::cast)
 				.map(TextPart::text)
 				.collect(Collectors.joining());
-			return toolResultPart.name() + ": " + result;
+			String name = toolResultPart.name() != null ? toolResultPart.name() : toolResultPart.id();
+			return name != null ? name + ": " + result : result;
 		}
 		return null;
 	}

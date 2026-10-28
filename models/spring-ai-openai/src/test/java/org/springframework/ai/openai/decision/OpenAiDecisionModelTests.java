@@ -17,6 +17,7 @@
 package org.springframework.ai.openai.decision;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +45,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.messages.part.MediaPart;
 import org.springframework.ai.chat.messages.part.ReasoningPart;
 import org.springframework.ai.chat.messages.part.TextPart;
+import org.springframework.ai.chat.messages.part.ToolResultPart;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.decision.DecisionOptions;
 import org.springframework.ai.decision.DecisionPrompt;
@@ -59,6 +61,7 @@ import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.ai.observation.conventions.AiProvider;
 import org.springframework.ai.openai.OpenAiDecisionModel;
 import org.springframework.ai.openai.OpenAiDecisionOptions;
+import org.springframework.ai.openai.http.okhttp.OpenAiHttpClientBuilderCustomizer;
 import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -337,6 +340,41 @@ class OpenAiDecisionModelTests {
 			.containsExactly("user: Weather in Paris?",
 					"assistant: Let me check.\n[calls get_weather {\"city\":\"Paris\"}]", "tool: get_weather: rainy",
 					"assistant: It is rainy in Paris.");
+	}
+
+	@Test
+	void skipsMessagesWithNothingToSendAndNamesToolResultsByIdWithoutName() {
+		stubResponse(yesNoResponse());
+		var messages = List.of(new UserMessage("Weather in Paris?"),
+				AssistantMessage.builder().reasoning(ReasoningPart.of("Thinking only.")).build(),
+				ToolResponseMessage.builder()
+					.parts(List
+						.of(new ToolResultPart("call_1", null, List.of(TextPart.of("rainy")), false, null, Map.of())))
+					.build(),
+				ToolResponseMessage.builder()
+					.parts(List
+						.of(new ToolResultPart(null, null, List.of(TextPart.of("sunny")), false, null, Map.of())))
+					.build());
+
+		model().call(DecisionInput.conversation(messages), Map.of("ok", YesNoQuestion.of("Answered well?")));
+
+		assertThat(sentParts()).extracting(part -> part.asInputText().text())
+			.containsExactly("user: Weather in Paris?", "tool: call_1: rainy", "tool: sunny");
+	}
+
+	@Test
+	void mutateKeepsHttpClientCustomizers() {
+		List<String> applied = new ArrayList<>();
+		OpenAiHttpClientBuilderCustomizer customizer = builder -> applied.add("applied");
+		OpenAiDecisionModel model = OpenAiDecisionModel.builder()
+			.options(OpenAiDecisionOptions.builder().apiKey("test").build())
+			.httpClientBuilderCustomizer(customizer)
+			.build();
+		assertThat(applied).hasSize(1);
+
+		model.mutate().openAiClient(null).build();
+
+		assertThat(applied).hasSize(2);
 	}
 
 	@Test

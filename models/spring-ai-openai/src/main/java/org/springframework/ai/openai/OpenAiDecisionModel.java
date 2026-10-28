@@ -69,6 +69,8 @@ public final class OpenAiDecisionModel implements DecisionModel {
 
 	private final DecisionModelObservationConvention observationConvention;
 
+	private final List<OpenAiHttpClientBuilderCustomizer> httpClientCustomizers;
+
 	private OpenAiDecisionModel(Builder builder) {
 		OpenAiDecisionOptions options = Objects.requireNonNullElseGet(builder.options,
 				() -> OpenAiDecisionOptions.builder().build());
@@ -77,6 +79,7 @@ public final class OpenAiDecisionModel implements DecisionModel {
 		this.observationRegistry = Objects.requireNonNullElse(builder.observationRegistry, ObservationRegistry.NOOP);
 		this.observationConvention = Objects.requireNonNullElse(builder.observationConvention,
 				DEFAULT_OBSERVATION_CONVENTION);
+		this.httpClientCustomizers = List.copyOf(builder.httpClientCustomizers);
 		this.openAiClient = Objects.requireNonNullElseGet(builder.openAiClient,
 				() -> OpenAiSetup.setupSyncClient(this.options.getBaseUrl(), this.options.getApiKey(),
 						this.options.getCredential(), this.options.getMicrosoftDeploymentName(),
@@ -84,7 +87,7 @@ public final class OpenAiDecisionModel implements DecisionModel {
 						this.options.isMicrosoftFoundry(), this.options.isGitHubModels(), this.options.getModel(),
 						Objects.requireNonNullElse(this.options.getTimeout(), AbstractOpenAiOptions.DEFAULT_TIMEOUT),
 						this.options.getMaxRetries(), this.options.getProxy(), this.options.getCustomHeaders(),
-						this.observationRegistry, null, builder.httpClientCustomizers));
+						this.observationRegistry, null, this.httpClientCustomizers));
 	}
 
 	public static Builder builder() {
@@ -192,6 +195,7 @@ public final class OpenAiDecisionModel implements DecisionModel {
 			this.options = model.options;
 			this.observationRegistry = model.observationRegistry;
 			this.observationConvention = model.observationConvention;
+			this.httpClientCustomizers = new ArrayList<>(model.httpClientCustomizers);
 		}
 
 		public Builder openAiClient(@Nullable OpenAIClient openAiClient) {

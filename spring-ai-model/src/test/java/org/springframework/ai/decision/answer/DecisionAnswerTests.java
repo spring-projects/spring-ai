@@ -53,6 +53,17 @@ class DecisionAnswerTests {
 	}
 
 	@Test
+	void choiceAnswerRejectsNullProbability() {
+		Map<String, Double> probabilities = new LinkedHashMap<>();
+		probabilities.put("a", 0.5);
+		probabilities.put("b", null);
+
+		assertThatThrownBy(() -> ChoiceAnswer.builder().value("a").probabilities(probabilities).build())
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("'b'");
+	}
+
+	@Test
 	void probabilitiesMustBeBetweenZeroAndOne() {
 		assertThat(YesNoAnswer.builder().probability(0).build().getProbability()).isZero();
 		assertThat(YesNoAnswer.builder().probability(1).build().getProbability()).isEqualTo(1.0);

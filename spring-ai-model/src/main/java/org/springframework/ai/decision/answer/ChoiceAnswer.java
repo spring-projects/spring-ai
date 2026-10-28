@@ -35,6 +35,7 @@ import org.springframework.util.Assert;
  * provider's own estimate and is not a probability of correctness.
  *
  * @author Thomas Vitale
+ * @author Christian Tzolov
  * @since 2.1.0
  */
 public final class ChoiceAnswer implements DecisionAnswer {
@@ -51,6 +52,7 @@ public final class ChoiceAnswer implements DecisionAnswer {
 		this.value = value;
 		Map<String, Double> checked = new LinkedHashMap<>();
 		probabilities.forEach((option, probability) -> {
+			Assert.notNull(probability, () -> "the probability of '" + option + "' cannot be null");
 			Assert.isTrue(probability >= 0 && probability <= 1,
 					() -> "the probability of '" + option + "' must be between 0 and 1, but was " + probability);
 			checked.put(option, probability);

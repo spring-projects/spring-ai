@@ -112,7 +112,8 @@ System.out.println("mood: " + response.getScore("mood").getNearestLevel());
 
 The portable `DecisionOptions` work too, when only the model name needs to change.
 
-Besides `model` and `safetyIdentifier`, `OpenAiDecisionOptions` carries the connection settings of the other OpenAI models, so a single call can use another `baseUrl`, `apiKey`, `organizationId`, `timeout`, `maxRetries`, `proxy` or `customHeaders`.
+Besides `model` and `safetyIdentifier`, a prompt can override `timeout`, `customHeaders` and `deploymentName` for one call.
+The other `OpenAiDecisionOptions` settings, such as `baseUrl`, `apiKey`, `organizationId`, `maxRetries` and `proxy`, configure the client when the model is built and have no effect on a prompt.
 The `deploymentName`, Microsoft Foundry and GitHub Models settings are there for parity with the other OpenAI models; whether those platforms serve the Decisions API is for their documentation to say.
 
 == Request Mapping
