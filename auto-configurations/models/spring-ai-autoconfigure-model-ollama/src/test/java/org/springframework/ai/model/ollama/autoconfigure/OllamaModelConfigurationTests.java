@@ -19,6 +19,7 @@ package org.springframework.ai.model.ollama.autoconfigure;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.ollama.OllamaChatModel;
+import org.springframework.ai.ollama.OllamaDecisionModel;
 import org.springframework.ai.ollama.OllamaEmbeddingModel;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
@@ -78,6 +79,32 @@ public class OllamaModelConfigurationTests {
 			.run(context -> {
 				assertThat(context.getBeansOfType(OllamaEmbeddingProperties.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(OllamaEmbeddingModel.class)).isNotEmpty();
+			});
+	}
+
+	@Test
+	void decisionModelActivation() {
+		this.contextRunner.withConfiguration(BaseOllamaIT.ollamaAutoConfig(OllamaDecisionAutoConfiguration.class))
+			.run(context -> {
+				assertThat(context.getBeansOfType(OllamaDecisionProperties.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(OllamaDecisionModel.class)).isNotEmpty();
+			});
+
+		this.contextRunner.withConfiguration(BaseOllamaIT.ollamaAutoConfig(OllamaDecisionAutoConfiguration.class))
+			.withPropertyValues("spring.ai.model.decision=none")
+			.run(context -> {
+				assertThat(context.getBeansOfType(OllamaDecisionProperties.class)).isEmpty();
+				assertThat(context.getBeansOfType(OllamaDecisionModel.class)).isEmpty();
+			});
+
+		this.contextRunner
+			.withConfiguration(BaseOllamaIT.ollamaAutoConfig(OllamaChatAutoConfiguration.class,
+					OllamaDecisionAutoConfiguration.class))
+			.withPropertyValues("spring.ai.model.decision=ollama", "spring.ai.model.chat=none")
+			.run(context -> {
+				assertThat(context.getBeansOfType(OllamaDecisionProperties.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(OllamaDecisionModel.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(OllamaChatModel.class)).isEmpty();
 			});
 	}
 

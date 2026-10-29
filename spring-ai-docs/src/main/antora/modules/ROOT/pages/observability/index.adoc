@@ -362,9 +362,6 @@ WARNING: If you enable logging of the transcript, there's a risk of exposing sen
 
 == Decision Model
 
-NOTE: Observability features are currently supported only for `DecisionModel` implementations from the following AI model providers: OpenAI.
-Additional AI model providers will be supported in a future release.
-
 The `gen_ai.client.operation` observations are recorded on decision model method calls, with the `decision` operation name.
 They measure the time spent on method completion and propagate the related tracing information.
 A request with several questions is one operation: its duration and token usage are recorded once.
