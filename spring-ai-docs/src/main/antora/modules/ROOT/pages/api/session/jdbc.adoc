@@ -2,7 +2,7 @@
 = JDBC Repository
 
 `spring-ai-session-jdbc` stores sessions in a relational database.
-It supports PostgreSQL, MySQL, MariaDB, Microsoft SQL Server and H2 out of the box.
+It supports PostgreSQL, MySQL, MariaDB, Microsoft SQL Server, H2 and HSQLDB out of the box.
 
 [source,xml]
 ----
@@ -46,6 +46,10 @@ Each supported database has a dialect, detected from the database metadata, and 
 | H2
 | `H2JdbcSessionRepositoryDialect`
 | `org/springframework/ai/session/jdbc/schema-h2.sql`
+
+| HSQLDB
+| `HsqldbJdbcSessionRepositoryDialect`
+| `org/springframework/ai/session/jdbc/schema-hsqldb.sql`
 |===
 
 Another database is rejected at startup with an `IllegalStateException`; to use one, implement `JdbcSessionRepositoryDialect` and pass it to the builder.
@@ -184,7 +188,7 @@ A `lastN` window keeps turns whole, as xref:api/session/event-filter.adoc#sessio
 Existing events never move, change or disappear; `CompactionBoundary.project(log)` is the reference projection.
 * *`findByMetadata` is the one scoped lookup*: every store indexes `SessionAttributes.PRINCIPAL_NAME`.
 
-`spring-ai-test` ships `AbstractSessionRepositoryContractTests`, the suite the in-memory, H2, PostgreSQL, MySQL, MariaDB and SQL Server repositories run.
+`spring-ai-test` ships `AbstractSessionRepositoryContractTests`, the suite the in-memory, H2, HSQLDB, PostgreSQL, MySQL, MariaDB and SQL Server repositories run.
 Extend it and return your repository:
 
 [source,xml]

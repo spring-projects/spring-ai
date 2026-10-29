@@ -30,6 +30,7 @@ import org.springframework.jdbc.support.JdbcUtils;
  *
  * @see PostgresJdbcSessionRepositoryDialect
  * @see H2JdbcSessionRepositoryDialect
+ * @see HsqldbJdbcSessionRepositoryDialect
  * @see MysqlJdbcSessionRepositoryDialect
  * @see SqlServerJdbcSessionRepositoryDialect
  * @author Christian Tzolov
@@ -60,8 +61,8 @@ public interface JdbcSessionRepositoryDialect {
 	/**
 	 * The clause appended after a query's {@code ORDER BY} to keep at most as many rows
 	 * as its single parameter, bound last. The default, {@code LIMIT ?}, serves
-	 * PostgreSQL, H2, MySQL and MariaDB; a database without {@code LIMIT} returns its own
-	 * form, such as {@code OFFSET 0 ROWS FETCH NEXT ? ROWS ONLY}.
+	 * PostgreSQL, H2, HSQLDB, MySQL and MariaDB; a database without {@code LIMIT} returns
+	 * its own form, such as {@code OFFSET 0 ROWS FETCH NEXT ? ROWS ONLY}.
 	 */
 	default String getLimitClause() {
 		return "LIMIT ?";
@@ -69,7 +70,7 @@ public interface JdbcSessionRepositoryDialect {
 
 	/**
 	 * The dialect of the database the data source connects to, from its product name:
-	 * PostgreSQL, H2, MySQL, MariaDB or Microsoft SQL Server.
+	 * PostgreSQL, H2, HSQLDB, MySQL, MariaDB or Microsoft SQL Server.
 	 * @throws IllegalStateException if the product name cannot be read or the database is
 	 * not supported; set the dialect with
 	 * {@link JdbcSessionRepository.Builder#dialect(JdbcSessionRepositoryDialect)} then
@@ -92,10 +93,11 @@ public interface JdbcSessionRepositoryDialect {
 		return switch (productName) {
 			case "PostgreSQL" -> new PostgresJdbcSessionRepositoryDialect();
 			case "H2" -> new H2JdbcSessionRepositoryDialect();
+			case "HSQL Database Engine" -> new HsqldbJdbcSessionRepositoryDialect();
 			case "MySQL", "MariaDB" -> new MysqlJdbcSessionRepositoryDialect();
 			case "Microsoft SQL Server" -> new SqlServerJdbcSessionRepositoryDialect();
 			default -> throw new IllegalStateException("No JdbcSessionRepositoryDialect for database '" + productName
-					+ "'; supported: PostgreSQL, H2, MySQL, MariaDB, Microsoft SQL Server. "
+					+ "'; supported: PostgreSQL, H2, HSQLDB, MySQL, MariaDB, Microsoft SQL Server. "
 					+ "Implement JdbcSessionRepositoryDialect and set it "
 					+ "via JdbcSessionRepository.builder().dialect(...)");
 		};
