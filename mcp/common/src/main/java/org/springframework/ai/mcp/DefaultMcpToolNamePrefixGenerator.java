@@ -16,6 +16,7 @@
 
 package org.springframework.ai.mcp;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -51,8 +52,8 @@ public class DefaultMcpToolNamePrefixGenerator implements McpToolNamePrefixGener
 	private static final Log logger = LogFactory.getLog(DefaultMcpToolNamePrefixGenerator.class);
 
 	// Idempotency tracking. For a given combination of (client, server, tool) we will
-	// generate a unique tool name only once.
-	private final Set<ConnectionId> existingConnections = ConcurrentHashMap.newKeySet();
+	// generate a unique tool name only once and return the same name on later calls.
+	private final Map<ConnectionId, String> existingConnections = new ConcurrentHashMap<>();
 
 	private final Set<String> allUsedToolNames = ConcurrentHashMap.newKeySet();
 
@@ -60,22 +61,23 @@ public class DefaultMcpToolNamePrefixGenerator implements McpToolNamePrefixGener
 
 	@Override
 	public String prefixedToolName(McpConnectionInfo mcpConnectionInfo, McpSchema.Tool tool) {
+		var serverInfo = mcpConnectionInfo.initializeResult() != null
+				? mcpConnectionInfo.initializeResult().serverInfo() : null;
+		ConnectionId connectionId = new ConnectionId(mcpConnectionInfo.clientInfo(), serverInfo, tool);
 
+		return this.existingConnections.computeIfAbsent(connectionId, id -> uniqueToolName(tool));
+	}
+
+	private String uniqueToolName(McpSchema.Tool tool) {
 		String uniqueToolName = McpToolUtils.format(tool.name());
-
-		if (this.existingConnections
-			.add(new ConnectionId(mcpConnectionInfo.clientInfo(), (mcpConnectionInfo.initializeResult() != null)
-					? mcpConnectionInfo.initializeResult().serverInfo() : null, tool))) {
-			if (!this.allUsedToolNames.add(uniqueToolName)) {
-				uniqueToolName = "alt_" + this.counter.getAndIncrement() + "_" + uniqueToolName;
-				this.allUsedToolNames.add(uniqueToolName);
-				if (logger.isWarnEnabled()) {
-					logger.warn("Tool name '" + tool.name() + "' already exists. Using unique tool name '"
-							+ uniqueToolName + "'");
-				}
+		if (!this.allUsedToolNames.add(uniqueToolName)) {
+			uniqueToolName = "alt_" + this.counter.getAndIncrement() + "_" + uniqueToolName;
+			this.allUsedToolNames.add(uniqueToolName);
+			if (logger.isWarnEnabled()) {
+				logger.warn("Tool name '" + tool.name() + "' already exists. Using unique tool name '" + uniqueToolName
+						+ "'");
 			}
 		}
-
 		return uniqueToolName;
 	}
 
