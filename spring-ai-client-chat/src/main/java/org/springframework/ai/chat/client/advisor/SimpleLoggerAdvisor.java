@@ -48,9 +48,9 @@ public class SimpleLoggerAdvisor implements CallAdvisor, StreamAdvisor {
 
 	private static final Log logger = LogFactory.getLog(SimpleLoggerAdvisor.class);
 
-	private final Function<@Nullable ChatClientRequest, String> requestToString;
+	protected final Function<@Nullable ChatClientRequest, String> requestToString;
 
-	private final Function<@Nullable ChatResponse, String> responseToString;
+	protected final Function<@Nullable ChatResponse, String> responseToString;
 
 	private final int order;
 
