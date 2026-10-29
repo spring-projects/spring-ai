@@ -40,13 +40,14 @@ public class TypesenseFilterExpressionConverter extends AbstractFilterExpression
 		return switch (exp.type()) {
 			case AND -> " && ";
 			case OR -> " || ";
-			case EQ -> " "; // in typesense "EQ" operator looks like -> country:USA
+			// "country:USA" would be a token match, so use the exact match "country:=USA"
+			case EQ -> "= ";
 			case NE -> " != ";
 			case LT -> " < ";
 			case LTE -> " <= ";
 			case GT -> " > ";
 			case GTE -> " >= ";
-			case IN -> " "; // in typesense "IN" operator looks like -> country: [USA, UK]
+			case IN -> "= "; // "IN" looks like -> country:= [USA, UK]
 			case NIN -> " != "; // in typesense "NIN" operator looks like -> country:
 			// !=[USA, UK]
 			default -> throw new RuntimeException("Not supported expression type:" + exp.type());
