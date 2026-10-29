@@ -227,72 +227,130 @@ Methods that only need the raw fields can declare the modern request type (`Call
 
 === Runtime Changes and Subscriptions
 
-Each primitive is served by an SDK repository bean: `McpSyncToolRepository`, `McpSyncResourceRepository`, `McpSyncPromptRepository` and `McpSyncCompletionRepository`. Unless you define a bean of that type yourself, the auto-configuration registers an in-memory repository per primitive (`InMemorySyncToolRepository`, `InMemorySyncResourceRepository`, `InMemorySyncPromptRepository`, `InMemorySyncCompletionRepository`) and the `McpChangeFeed` that backs `subscriptions/listen`. Inject an in-memory repository to add or remove primitives at runtime; the matching list-changed notification is broadcast to listening clients. Call `InMemorySyncResourceRepository.resourceUpdated(uri)` to notify subscribers of a resource change.
+Each primitive is served by an SDK repository bean: `McpSyncToolRepository`, `McpSyncResourceRepository`, `McpSyncPromptRepository` and `McpSyncCompletionRepository`.
+A repository lists definitions and finds a definition together with its handler: `McpSyncTool`, `McpSyncPrompt` and `McpSyncResource` are the SDK's pairs of definition and handler, and the server validates the request and dispatches to the handler itself.
+Unless you define a bean of that type yourself, the auto-configuration registers an in-memory repository per primitive (`InMemorySyncToolRepository`, `InMemorySyncResourceRepository`, `InMemorySyncPromptRepository`, `InMemorySyncCompletionRepository`) and the `McpChangeFeed` that backs `subscriptions/listen`.
+Inject an in-memory repository to add or remove primitives at runtime; the matching list-changed notification is broadcast to listening clients.
+Call `InMemorySyncResourceRepository.resourceUpdated(uri)` to notify subscribers of a resource change.
 
-==== Visibility Filters
+==== The Primitive List Beans
 
-To restrict what each caller sees without writing a repository, define one or more `McpVisibilityFilter` beans.
-The auto-configuration applies them to the in-memory tool, resource and prompt repositories on every path: a hidden primitive is not listed, is not found by name, and a call, read or get for it answers `Unknown tool`, `Unknown resource` or `Unknown prompt` (`-32602`), as for a primitive that does not exist.
-A hidden resource is not served by a resource template that matches its URI either, and `completion/complete` rejects a reference to a hidden prompt or template as unknown.
-Resource subscriptions on `subscriptions/listen` are matched by the SDK without consulting the repository, so a hidden resource's update notifications still reach a client that subscribed to its URI.
-A filtered listing is always `cacheScope: private`.
-Several filter beans combine with AND.
-The filter beans are applied to the in-memory repositories only; a custom repository bean (see below) receives a filter through its constructor.
+The annotated methods and the `ToolCallback` beans do not reach the server directly.
+The auto-configuration publishes them as list beans of the SDK primitive types, and the in-memory repositories are built from those lists.
+The lists are the contract between the scanning side and the repository side: a repository you define yourself consumes the same lists, and a list bean you define yourself is merged into the in-memory repository.
 
-The filter receives the `McpRequestContext`, whose transport context carries the HTTP request headers by default (see <<Customizing the Server and the Transport>>).
-`McpTransportContexts.header(ctx, name)` reads one case-insensitively.
+[cols="2,3,3"]
+|===
+|Bean type |Produced from |Consumed by
+
+|`List<McpSyncTool>`
+|`@McpTool` methods (bean `modernTools`), `ToolCallback` and `ToolCallbackProvider` beans (bean `modernSyncTools`)
+|`InMemorySyncToolRepository`
+
+|`List<SyncResourceEntry>`
+|`@McpResource` methods with a plain URI (bean `modernResources`)
+|`InMemorySyncResourceRepository`
+
+|`List<SyncResourceTemplateEntry>`
+|`@McpResource` methods with a URI template (bean `modernResourceTemplates`)
+|`InMemorySyncResourceRepository`
+
+|`List<McpSyncPrompt>`
+|`@McpPrompt` methods (bean `modernPrompts`)
+|`InMemorySyncPromptRepository`
+
+|`List<SyncCompletionSpecification>`
+|`@McpComplete` methods (bean `modernCompletions`)
+|`InMemorySyncCompletionRepository`
+|===
+
+`SyncResourceEntry` and `SyncResourceTemplateEntry` pair a resource or template definition with its `McpSyncResource`, which carries no definition of its own; `SyncCompletionSpecification` pairs a `CompleteReference` with its handler.
+There can be several beans of each list type, so inject them as `ObjectProvider<List<McpSyncTool>>` and flatten, as the examples below do.
+The `ObjectProvider` also keeps the repository from being created before the annotation scanner has registered the annotated beans, which an eager `List<McpSyncTool>` parameter can cause.
+
+[source,java]
+----
+@Autowired InMemorySyncToolRepository tools;
+
+void addLater() {
+    tools.add(McpSyncTool.of(
+        Tool.builder("late", Map.of("type", "object")).description("Added at runtime").build(),
+        (ctx, request) -> McpSyncResponse.result(
+            CallToolResult.builder().addContent(TextContent.builder("late").build()).build())));
+}
+----
+
+==== Filtering per Caller
+
+To show each caller a different subset without giving up the annotated catalogue, define a repository bean of your own that builds the in-memory repository from the same list beans the auto-configuration would use, and wraps it.
+The auto-configured in-memory repository backs off because a `McpSyncToolRepository` bean exists.
+A wrapper that filters `list` and returns `null` from `find` hides a primitive completely: it is not listed, and a call, read or get for it answers `Unknown tool`, `Unknown resource` or `Unknown prompt` (`-32602`), as for a primitive that does not exist.
+The `McpRequestContext` the wrapper receives carries the HTTP request headers in its transport context by default (see <<Customizing the Server and the Transport>>); `McpTransportContexts.header(ctx, name)` reads one case-insensitively.
 
 [source,java]
 ----
 @Bean
-McpVisibilityFilter adminOnlyUnlessPublic() {
-    return McpVisibilityFilter.tools((ctx, tool) ->
-        "admin".equals(McpTransportContexts.header(ctx, "x-role"))
-            || (tool.meta() != null && "public".equals(tool.meta().get("visibility"))));
+McpSyncToolRepository toolRepository(ObjectProvider<List<McpSyncTool>> tools, McpChangeFeed changes) {
+    McpSyncToolRepository inMemory = InMemorySyncToolRepository.builder()
+        .tools(tools.stream().flatMap(List::stream).toList())
+        .changeBroadcaster(changes)
+        .build();
+    return new McpSyncToolRepository() {
+
+        @Override
+        public ToolsPage list(McpRequestContext ctx, String cursor) {
+            ToolsPage page = inMemory.list(ctx, cursor);
+            List<Tool> allowed = page.tools().stream().filter(tool -> allowed(ctx, tool)).toList();
+            return new ToolsPage(allowed, page.nextCursor(), page.ttlMs(), CacheScope.PRIVATE);
+        }
+
+        @Override
+        public McpSyncTool find(McpRequestContext ctx, String name) {
+            McpSyncTool tool = inMemory.find(ctx, name);
+            return tool != null && allowed(ctx, tool.definition()) ? tool : null;
+        }
+
+        private boolean allowed(McpRequestContext ctx, Tool tool) {
+            return "admin".equals(McpTransportContexts.header(ctx, "x-role")) || !tool.name().startsWith("admin_");
+        }
+    };
 }
 ----
 
-A definition's `_meta` is `null` unless something set it, hence the guard.
-
-`McpVisibilityFilter` has one default method per primitive (`tool`, `resource`, `resourceTemplate`, `prompt`), so a tenant rule written once covers all of them; the static factories `tools`, `resources`, `resourceTemplates` and `prompts` build a single-primitive filter from a lambda.
-The `_meta` of a definition is a convenient place for the attribute a filter reads; `@McpTool(metaProvider = ...)` fills it on annotated tools.
+The `ObjectProvider` matters: the `List<McpSyncTool>` beans come from the annotation scanner, and injecting the lists directly can create the repository before the scanner has run.
+A listing that depends on the caller must be returned with `cacheScope: private`, as above, so that a shared cache never serves one caller's view to another.
+A wrapper that filters a page after the repository has paged it can return a short page; filter before paging, or leave `spring.ai.mcp.server.modern.page-size` unset so that everything is served on one page.
+Resource subscriptions on `subscriptions/listen` are matched by the SDK without consulting the repository, so a hidden resource's update notifications still reach a client that subscribed to its URI.
 
 ==== Custom Repositories
 
-To serve a catalogue that is not a fixed list, for example one read from a database or a file system, extend `AbstractSyncToolRepository`, `AbstractSyncResourceRepository` or `AbstractSyncPromptRepository` instead of implementing the SDK interface from scratch.
-The base classes provide list paging with opaque cursors, the list cache scope, dispatch to the specification handlers, URI template matching for resources, visibility and the change broadcasts.
-You implement two hooks: `definitions(ctx)` returns the plain definitions for listing, and `lookup(ctx, key)` returns the specification, definition plus handler, for dispatch (resources add `templateDefinitions(ctx)` and `lookupTemplate(ctx, uriTemplate)`).
-Pass a `McpVisibilityFilter` to the constructor, or override `visible(ctx, definition)`, to restrict what a caller sees; override `listCacheScope(ctx)` to return `PRIVATE` when a listing is personalised for another reason.
-The list `ttlMs` always comes from `spring.ai.mcp.server.modern.list-ttl`.
-All hooks receive the `McpRequestContext`.
-Declaring the subclass as a bean replaces the in-memory repository for that primitive.
+To back a primitive with your own store (a database, a remote catalog, a tool gateway), implement the SDK repository interface and define it as a bean.
+The interfaces have two methods, `list` and `find`; the resource repository adds `listTemplates` and `supportsSubscribe`, and `find(ctx, uri)` serves listed resources and template matches alike.
+The in-memory repository for that primitive backs off and the primitive lists are no longer collected for it, so your repository is the single source of truth.
+Repositories for the other primitives are unaffected.
+The list `ttlMs` and `cacheScope` of a page left `null` come from `spring.ai.mcp.server.modern.list-ttl` and `list-cache-scope`.
 
 [source,java]
 ----
 @Component
-public class TenantToolRepository extends AbstractSyncToolRepository {
+public class CatalogToolRepository implements McpSyncToolRepository {
 
     private final ToolCatalog catalog;
 
-    public TenantToolRepository(ToolCatalog catalog, McpChangeFeed changeFeed,
-            ObjectProvider<McpVisibilityFilter> filters) {
-        super(changeFeed, 50, McpVisibilityFilter.allOf(filters.orderedStream().toList()));
+    public CatalogToolRepository(ToolCatalog catalog) {
         this.catalog = catalog;
     }
 
     @Override
-    protected List<Tool> definitions(McpRequestContext ctx) {
-        return catalog.toolsOf(tenant(ctx));           // definitions only, no handlers
+    public ToolsPage list(McpRequestContext ctx, String cursor) {
+        ToolCatalog.Page page = catalog.page(tenant(ctx), cursor, 100);
+        return new ToolsPage(page.tools(), page.nextCursor(), null, CacheScope.PRIVATE);
     }
 
     @Override
-    protected SyncToolSpecification lookup(McpRequestContext ctx, String name) {
-        return catalog.find(tenant(ctx), name);         // definition + handler, on call
-    }
-
-    @Override
-    protected CacheScope listCacheScope(McpRequestContext ctx) {
-        return CacheScope.PRIVATE;
+    public McpSyncTool find(McpRequestContext ctx, String name) {
+        ToolCatalog.Entry entry = catalog.find(tenant(ctx), name);   // definition + handler, on call
+        return entry != null ? McpSyncTool.of(entry.tool(), entry::call) : null;
     }
 
     private String tenant(McpRequestContext ctx) {
@@ -301,27 +359,7 @@ public class TenantToolRepository extends AbstractSyncToolRepository {
 }
 ----
 
-To back a primitive with your own store (a database, a remote catalog, a tool gateway), define a repository bean. The in-memory repository for that primitive backs off and the specification lists are no longer collected for it, so your repository is the single source of truth. Repositories for the other primitives are unaffected.
-
-[source,java]
-----
-@Bean
-McpSyncToolRepository toolRepository(ToolCatalog catalog) {
-    return new CatalogToolRepository(catalog); // implements list/find/call
-}
-----
-
-[source,java]
-----
-@Autowired InMemorySyncToolRepository tools;
-
-void addLater() {
-    tools.add(new SyncToolSpecification(
-        Tool.builder("late", Map.of("type", "object")).description("Added at runtime").build(),
-        (ctx, request) -> McpSyncResponse.result(
-            CallToolResult.builder().addContent(TextContent.builder("late").build()).build())));
-}
-----
+A `McpSyncTool`, `McpSyncPrompt` or `McpSyncResource` can also declare the client capabilities it cannot work without, with `of(definition, requiredCapabilities, handler)`; the server answers a client that did not declare them with `-32021` before the handler runs.
 
 === Customizing the Server and the Transport
 
