@@ -38,6 +38,7 @@ import org.springframework.util.Assert;
  * "https://redis.io/docs/latest/develop/ai/search-and-query/">search-and-query</a>)
  *
  * @author Julien Ruaux
+ * @author Amit Tiwari
  */
 public class RedisFilterExpressionConverter extends AbstractFilterExpressionConverter {
 
@@ -161,19 +162,20 @@ public class RedisFilterExpressionConverter extends AbstractFilterExpressionConv
 	}
 
 	/**
-	 * Escapes characters that have special meaning inside a RediSearch TAG query clause
-	 * ({@code @field:\{value\}}). The following characters are escaped with a backslash:
-	 * {@code $}, {@code \}, {@code |}, {@code {}, {@code }}, {@code (}, {@code )},
-	 * {@code [}, {@code ]}, {@code -}, and {@code '}.
+	 * Escapes a value for a RediSearch TAG query clause ({@code @field:\{value\}}). Every
+	 * character other than a letter, a digit or {@code _} is escaped with a backslash:
+	 * unescaped punctuation either breaks the query syntax (such as {@code @} or
+	 * {@code :}) or is treated as a separator, silently matching other tag values (such
+	 * as {@code .} or {@code /}).
 	 */
 	private String escapeTagValue(String value) {
 		StringBuilder sb = new StringBuilder(value.length());
 		for (int i = 0; i < value.length(); i++) {
 			char c = value.charAt(i);
-			switch (c) {
-				case '\\', '$', '|', '{', '}', '(', ')', '[', ']', '-', '\'' -> sb.append('\\').append(c);
-				default -> sb.append(c);
+			if (!Character.isLetterOrDigit(c) && c != '_') {
+				sb.append('\\');
 			}
+			sb.append(c);
 		}
 		return sb.toString();
 	}

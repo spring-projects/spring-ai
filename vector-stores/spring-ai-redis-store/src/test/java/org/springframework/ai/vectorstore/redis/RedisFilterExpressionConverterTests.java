@@ -20,6 +20,8 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import org.springframework.ai.vectorstore.filter.Filter.Expression;
 import org.springframework.ai.vectorstore.filter.Filter.Group;
@@ -140,7 +142,33 @@ class RedisFilterExpressionConverterTests {
 		String vectorExpr = converter(RedisVectorStore.MetadataField.tag("description"))
 			.convertExpression(new Expression(EQ, new Key("description"), new Value("test@value{with}special|chars")));
 
-		assertThat(vectorExpr).isEqualTo("@description:{test@value\\{with\\}special\\|chars}");
+		assertThat(vectorExpr).isEqualTo("@description:{test\\@value\\{with\\}special\\|chars}");
+	}
+
+	@ParameterizedTest
+	@ValueSource(strings = { ".", ",", ":", ";", "!", "@", "#", "%", "^", "&", "*", "+", "=", "~", "/", "<", ">", "\"",
+			"?", "`", " " })
+	void testTagValueWithPunctuationIsEscaped(String punctuation) {
+		String vectorExpr = converter(RedisVectorStore.MetadataField.tag("type"))
+			.convertExpression(new Expression(EQ, new Key("type"), new Value("ab" + punctuation + "cd")));
+
+		assertThat(vectorExpr).isEqualTo("@type:{ab\\" + punctuation + "cd}");
+	}
+
+	@Test
+	void testTagValueWithEmailAddress() {
+		String vectorExpr = converter(RedisVectorStore.MetadataField.tag("email"))
+			.convertExpression(new Expression(EQ, new Key("email"), new Value("user@example.com")));
+
+		assertThat(vectorExpr).isEqualTo("@email:{user\\@example\\.com}");
+	}
+
+	@Test
+	void testTagValueLettersDigitsAndUnderscoreAreNotEscaped() {
+		String vectorExpr = converter(RedisVectorStore.MetadataField.tag("type"))
+			.convertExpression(new Expression(EQ, new Key("type"), new Value("Größe_42")));
+
+		assertThat(vectorExpr).isEqualTo("@type:{Größe_42}");
 	}
 
 	@Test
@@ -148,7 +176,7 @@ class RedisFilterExpressionConverterTests {
 		String vectorExpr = converter(RedisVectorStore.MetadataField.tag("category")).convertExpression(
 				new Expression(EQ, new Key("category"), new Value("science} | @access_level:{restricted")));
 
-		assertThat(vectorExpr).isEqualTo("@category:{science\\} \\| @access_level:\\{restricted}");
+		assertThat(vectorExpr).isEqualTo("@category:{science\\}\\ \\|\\ \\@access_level\\:\\{restricted}");
 		assertThat(vectorExpr).doesNotContain("} | @");
 	}
 
@@ -157,7 +185,7 @@ class RedisFilterExpressionConverterTests {
 		String vectorExpr = converter(RedisVectorStore.MetadataField.tag("category")).convertExpression(new Expression(
 				IN, new Key("category"), new Value(List.of("science} | @access_level:{restricted", "normal"))));
 
-		assertThat(vectorExpr).isEqualTo("@category:{science\\} \\| @access_level:\\{restricted | normal}");
+		assertThat(vectorExpr).isEqualTo("@category:{science\\}\\ \\|\\ \\@access_level\\:\\{restricted | normal}");
 		assertThat(vectorExpr).doesNotContain("} | @");
 	}
 
