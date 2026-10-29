@@ -18,20 +18,28 @@ package org.springframework.ai.mcp.server.common.autoconfigure.annotations;
 
 import java.util.List;
 
+import io.modelcontextprotocol.json.McpJsonMapper;
+import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
+import io.modelcontextprotocol.modern.server.feature.McpSyncPrompt;
+import io.modelcontextprotocol.modern.server.feature.McpSyncTool;
+import org.jspecify.annotations.Nullable;
+import tools.jackson.databind.json.JsonMapper;
+
 import org.springframework.ai.mcp.annotation.McpComplete;
 import org.springframework.ai.mcp.annotation.McpPrompt;
 import org.springframework.ai.mcp.annotation.McpResource;
 import org.springframework.ai.mcp.annotation.McpTool;
 import org.springframework.ai.mcp.annotation.spring.SyncMcpAnnotationProviders;
 import org.springframework.ai.mcp.modern.SyncCompletionSpecification;
-import org.springframework.ai.mcp.modern.SyncPromptSpecification;
-import org.springframework.ai.mcp.modern.SyncResourceSpecification;
-import org.springframework.ai.mcp.modern.SyncResourceTemplateSpecification;
-import org.springframework.ai.mcp.modern.SyncToolSpecification;
+import org.springframework.ai.mcp.modern.SyncResourceEntry;
+import org.springframework.ai.mcp.modern.SyncResourceTemplateEntry;
+import org.springframework.ai.mcp.server.common.autoconfigure.McpServerJsonMapperAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerModernAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.ModernToolCallbackConverterAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerAnnotationScannerAutoConfiguration.ServerMcpAnnotatedBeans;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -40,61 +48,73 @@ import org.springframework.context.annotation.Conditional;
 
 /**
  * Turns beans with {@link McpTool}, {@link McpResource}, {@link McpPrompt} and
- * {@link McpComplete} methods into specifications for the 2026-07-28 ("modern") MCP
- * server.
+ * {@link McpComplete} methods into the tools, resources, prompts and completions of the
+ * 2026-07-28 ("modern") MCP server.
  * <p>
  * Active whenever the modern server and the annotation scanner are enabled. It is
  * independent of {@code spring.ai.mcp.server.tool-callback-converter}, which only governs
  * {@link ModernToolCallbackConverterAutoConfiguration}.
  *
  * @author Christian Tzolov
- * @since 2.2.0
+ * @since 2.1.0
  */
-@AutoConfiguration(after = McpServerAnnotationScannerAutoConfiguration.class)
+@AutoConfiguration(after = { McpServerAnnotationScannerAutoConfiguration.class,
+		McpServerJsonMapperAutoConfiguration.class })
 @ConditionalOnClass({ io.modelcontextprotocol.modern.server.McpServer.class, McpTool.class })
 @ConditionalOnProperty(prefix = McpServerAnnotationScannerProperties.CONFIG_PREFIX, name = "enabled",
 		havingValue = "true", matchIfMissing = true)
 @Conditional(McpServerModernAutoConfiguration.EnabledModernServerCondition.class)
 public class ModernServerSpecificationFactoryAutoConfiguration {
 
-	@Bean
-	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
-			matchIfMissing = true)
-	public List<SyncToolSpecification> modernToolSpecs(ServerMcpAnnotatedBeans beansWithMcpMethodAnnotations) {
-		return SyncMcpAnnotationProviders
-			.modernToolSpecifications(beansWithMcpMethodAnnotations.getBeansByAnnotation(McpTool.class));
+	// The server's mapper, so that tool schemas and MRTR input responses are handled
+	// the way the server serialises its messages. Absent in a context without the
+	// JSON mapper auto-configuration, in which case the SDK default is used.
+	private static @Nullable McpJsonMapper serverMapper(ObjectProvider<JsonMapper> jsonMapper) {
+		JsonMapper mapper = jsonMapper.getIfAvailable();
+		return mapper != null ? new JacksonMcpJsonMapper(mapper) : null;
 	}
 
 	@Bean
 	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
 			matchIfMissing = true)
-	public List<SyncResourceSpecification> modernResourceSpecs(ServerMcpAnnotatedBeans beansWithMcpMethodAnnotations) {
-		return SyncMcpAnnotationProviders
-			.modernResourceSpecifications(beansWithMcpMethodAnnotations.getBeansByAnnotation(McpResource.class));
+	public List<McpSyncTool> modernTools(ServerMcpAnnotatedBeans beansWithMcpMethodAnnotations,
+			@Qualifier("mcpServerJsonMapper") ObjectProvider<JsonMapper> jsonMapper) {
+		return SyncMcpAnnotationProviders.modernTools(beansWithMcpMethodAnnotations.getBeansByAnnotation(McpTool.class),
+				serverMapper(jsonMapper));
 	}
 
 	@Bean
 	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
 			matchIfMissing = true)
-	public List<SyncResourceTemplateSpecification> modernResourceTemplateSpecs(
-			ServerMcpAnnotatedBeans beansWithMcpMethodAnnotations) {
-		return SyncMcpAnnotationProviders.modernResourceTemplateSpecifications(
-				beansWithMcpMethodAnnotations.getBeansByAnnotation(McpResource.class));
+	public List<SyncResourceEntry> modernResources(ServerMcpAnnotatedBeans beansWithMcpMethodAnnotations,
+			@Qualifier("mcpServerJsonMapper") ObjectProvider<JsonMapper> jsonMapper) {
+		return SyncMcpAnnotationProviders.modernResources(
+				beansWithMcpMethodAnnotations.getBeansByAnnotation(McpResource.class), serverMapper(jsonMapper));
 	}
 
 	@Bean
 	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
 			matchIfMissing = true)
-	public List<SyncPromptSpecification> modernPromptSpecs(ServerMcpAnnotatedBeans beansWithMcpMethodAnnotations) {
-		return SyncMcpAnnotationProviders
-			.modernPromptSpecifications(beansWithMcpMethodAnnotations.getBeansByAnnotation(McpPrompt.class));
+	public List<SyncResourceTemplateEntry> modernResourceTemplates(
+			ServerMcpAnnotatedBeans beansWithMcpMethodAnnotations,
+			@Qualifier("mcpServerJsonMapper") ObjectProvider<JsonMapper> jsonMapper) {
+		return SyncMcpAnnotationProviders.modernResourceTemplates(
+				beansWithMcpMethodAnnotations.getBeansByAnnotation(McpResource.class), serverMapper(jsonMapper));
 	}
 
 	@Bean
 	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
 			matchIfMissing = true)
-	public List<SyncCompletionSpecification> modernCompletionSpecs(
-			ServerMcpAnnotatedBeans beansWithMcpMethodAnnotations) {
+	public List<McpSyncPrompt> modernPrompts(ServerMcpAnnotatedBeans beansWithMcpMethodAnnotations,
+			@Qualifier("mcpServerJsonMapper") ObjectProvider<JsonMapper> jsonMapper) {
+		return SyncMcpAnnotationProviders.modernPrompts(
+				beansWithMcpMethodAnnotations.getBeansByAnnotation(McpPrompt.class), serverMapper(jsonMapper));
+	}
+
+	@Bean
+	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
+			matchIfMissing = true)
+	public List<SyncCompletionSpecification> modernCompletions(ServerMcpAnnotatedBeans beansWithMcpMethodAnnotations) {
 		return SyncMcpAnnotationProviders
 			.modernCompleteSpecifications(beansWithMcpMethodAnnotations.getBeansByAnnotation(McpComplete.class));
 	}

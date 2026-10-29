@@ -32,7 +32,7 @@ import org.springframework.util.unit.DataSize;
  * {@code spring.ai.mcp.server.protocol=MODERN}.
  *
  * @author Christian Tzolov
- * @since 2.2.0
+ * @since 2.1.0
  */
 @ConfigurationProperties(McpServerModernProperties.CONFIG_PREFIX)
 public class McpServerModernProperties {
