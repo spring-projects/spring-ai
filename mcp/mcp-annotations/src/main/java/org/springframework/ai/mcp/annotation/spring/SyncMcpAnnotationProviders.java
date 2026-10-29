@@ -19,12 +19,16 @@ package org.springframework.ai.mcp.annotation.spring;
 import java.lang.reflect.Method;
 import java.util.List;
 
+import io.modelcontextprotocol.json.McpJsonMapper;
+import io.modelcontextprotocol.modern.server.feature.McpSyncPrompt;
+import io.modelcontextprotocol.modern.server.feature.McpSyncTool;
 import io.modelcontextprotocol.server.McpServerFeatures.SyncCompletionSpecification;
 import io.modelcontextprotocol.server.McpServerFeatures.SyncPromptSpecification;
 import io.modelcontextprotocol.server.McpServerFeatures.SyncResourceSpecification;
 import io.modelcontextprotocol.server.McpServerFeatures.SyncResourceTemplateSpecification;
 import io.modelcontextprotocol.server.McpServerFeatures.SyncToolSpecification;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.mcp.annotation.method.changed.prompt.SyncPromptListChangedSpecification;
 import org.springframework.ai.mcp.annotation.method.changed.resource.SyncResourceListChangedSpecification;
@@ -52,6 +56,8 @@ import org.springframework.ai.mcp.annotation.provider.sampling.SyncMcpSamplingPr
 import org.springframework.ai.mcp.annotation.provider.tool.SyncMcpToolProvider;
 import org.springframework.ai.mcp.annotation.provider.tool.SyncModernMcpToolProvider;
 import org.springframework.ai.mcp.annotation.provider.tool.SyncStatelessMcpToolProvider;
+import org.springframework.ai.mcp.modern.SyncResourceEntry;
+import org.springframework.ai.mcp.modern.SyncResourceTemplateEntry;
 
 /**
  * @author Christian Tzolov
@@ -117,15 +123,27 @@ public final class SyncMcpAnnotationProviders {
 
 	// MODERN (2026-07-28) SERVER
 	/**
-	 * @since 2.2.0
+	 * @since 2.1.0
 	 */
-	public static List<org.springframework.ai.mcp.modern.SyncToolSpecification> modernToolSpecifications(
-			List<Object> toolObjects) {
-		return new SpringAiSyncModernToolProvider(toolObjects).getToolSpecifications();
+	public static List<McpSyncTool> modernTools(List<Object> toolObjects) {
+		return modernTools(toolObjects, null);
 	}
 
 	/**
-	 * @since 2.2.0
+	 * @param jsonMapper the server's mapper, used for the tool schemas and for converting
+	 * MRTR input responses, or {@code null} for the SDK default
+	 * @since 2.1.0
+	 */
+	public static List<McpSyncTool> modernTools(List<Object> toolObjects, @Nullable McpJsonMapper jsonMapper) {
+		SpringAiSyncModernToolProvider provider = new SpringAiSyncModernToolProvider(toolObjects);
+		if (jsonMapper != null) {
+			provider.setJsonMapper(jsonMapper);
+		}
+		return provider.getTools();
+	}
+
+	/**
+	 * @since 2.1.0
 	 */
 	public static List<org.springframework.ai.mcp.modern.SyncCompletionSpecification> modernCompleteSpecifications(
 			List<Object> completeObjects) {
@@ -133,27 +151,59 @@ public final class SyncMcpAnnotationProviders {
 	}
 
 	/**
-	 * @since 2.2.0
+	 * @since 2.1.0
 	 */
-	public static List<org.springframework.ai.mcp.modern.SyncPromptSpecification> modernPromptSpecifications(
-			List<Object> promptObjects) {
-		return new SpringAiSyncModernPromptProvider(promptObjects).getModernPromptSpecifications();
+	public static List<McpSyncPrompt> modernPrompts(List<Object> promptObjects) {
+		return modernPrompts(promptObjects, null);
 	}
 
 	/**
-	 * @since 2.2.0
+	 * @param jsonMapper the server's mapper, used for converting MRTR input responses,
+	 * or {@code null} for the SDK default
+	 * @since 2.1.0
 	 */
-	public static List<org.springframework.ai.mcp.modern.SyncResourceSpecification> modernResourceSpecifications(
-			List<Object> resourceObjects) {
-		return new SpringAiSyncModernResourceProvider(resourceObjects).getModernResourceSpecifications();
+	public static List<McpSyncPrompt> modernPrompts(List<Object> promptObjects, @Nullable McpJsonMapper jsonMapper) {
+		SpringAiSyncModernPromptProvider provider = new SpringAiSyncModernPromptProvider(promptObjects);
+		provider.setJsonMapper(jsonMapper);
+		return provider.getPrompts();
 	}
 
 	/**
-	 * @since 2.2.0
+	 * @since 2.1.0
 	 */
-	public static List<org.springframework.ai.mcp.modern.SyncResourceTemplateSpecification> modernResourceTemplateSpecifications(
-			List<Object> resourceObjects) {
-		return new SpringAiSyncModernResourceProvider(resourceObjects).getModernResourceTemplateSpecifications();
+	public static List<SyncResourceEntry> modernResources(List<Object> resourceObjects) {
+		return modernResources(resourceObjects, null);
+	}
+
+	/**
+	 * @param jsonMapper the server's mapper, used for converting MRTR input responses,
+	 * or {@code null} for the SDK default
+	 * @since 2.1.0
+	 */
+	public static List<SyncResourceEntry> modernResources(List<Object> resourceObjects,
+			@Nullable McpJsonMapper jsonMapper) {
+		SpringAiSyncModernResourceProvider provider = new SpringAiSyncModernResourceProvider(resourceObjects);
+		provider.setJsonMapper(jsonMapper);
+		return provider.getResources();
+	}
+
+	/**
+	 * @since 2.1.0
+	 */
+	public static List<SyncResourceTemplateEntry> modernResourceTemplates(List<Object> resourceObjects) {
+		return modernResourceTemplates(resourceObjects, null);
+	}
+
+	/**
+	 * @param jsonMapper the server's mapper, used for converting MRTR input responses,
+	 * or {@code null} for the SDK default
+	 * @since 2.1.0
+	 */
+	public static List<SyncResourceTemplateEntry> modernResourceTemplates(List<Object> resourceObjects,
+			@Nullable McpJsonMapper jsonMapper) {
+		SpringAiSyncModernResourceProvider provider = new SpringAiSyncModernResourceProvider(resourceObjects);
+		provider.setJsonMapper(jsonMapper);
+		return provider.getResourceTemplates();
 	}
 
 	// LOGGING (CLIENT)

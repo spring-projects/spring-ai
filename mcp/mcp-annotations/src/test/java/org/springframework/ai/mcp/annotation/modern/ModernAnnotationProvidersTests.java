@@ -16,12 +16,16 @@
 
 package org.springframework.ai.mcp.annotation.modern;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.json.McpJsonDefaults;
+import io.modelcontextprotocol.json.McpJsonMapper;
+import io.modelcontextprotocol.json.TypeRef;
 import io.modelcontextprotocol.modern.JsonRpc.JSONRPCMessage;
 import io.modelcontextprotocol.modern.JsonRpc.JSONRPCNotification;
 import io.modelcontextprotocol.modern.JsonRpc.JSONRPCRequest;
@@ -50,6 +54,7 @@ import io.modelcontextprotocol.modern.McpSchema.TextResourceContents;
 import io.modelcontextprotocol.modern.server.McpServer;
 import io.modelcontextprotocol.modern.server.McpTransportResponse;
 import io.modelcontextprotocol.modern.server.feature.CompletionsFeature;
+import io.modelcontextprotocol.modern.server.feature.McpSyncTool;
 import io.modelcontextprotocol.modern.server.feature.PromptsFeature;
 import io.modelcontextprotocol.modern.server.feature.ResourcesFeature;
 import io.modelcontextprotocol.modern.server.feature.ToolsFeature;
@@ -74,8 +79,7 @@ import org.springframework.ai.mcp.modern.InMemorySyncCompletionRepository;
 import org.springframework.ai.mcp.modern.InMemorySyncPromptRepository;
 import org.springframework.ai.mcp.modern.InMemorySyncResourceRepository;
 import org.springframework.ai.mcp.modern.InMemorySyncToolRepository;
-import org.springframework.ai.mcp.modern.SyncResourceSpecification;
-import org.springframework.ai.mcp.modern.SyncToolSpecification;
+import org.springframework.ai.mcp.modern.SyncResourceEntry;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -104,15 +108,15 @@ class ModernAnnotationProvidersTests {
 		return McpServer.builder()
 			.serverInfo(Implementation.builder("test", "1").build())
 			.feature(ToolsFeature.ofSync(InMemorySyncToolRepository.builder()
-				.tools(SyncMcpAnnotationProviders.modernToolSpecifications(List.of(new Tools())))
+				.tools(SyncMcpAnnotationProviders.modernTools(List.of(new Tools())))
 				.build()))
 			.feature(ResourcesFeature.ofSync(InMemorySyncResourceRepository.builder()
-				.resources(SyncMcpAnnotationProviders.modernResourceSpecifications(List.of(new Resources())))
+				.resources(SyncMcpAnnotationProviders.modernResources(List.of(new Resources())))
 				.resourceTemplates(
-						SyncMcpAnnotationProviders.modernResourceTemplateSpecifications(List.of(new Resources())))
+						SyncMcpAnnotationProviders.modernResourceTemplates(List.of(new Resources())))
 				.build()))
 			.feature(PromptsFeature.ofSync(InMemorySyncPromptRepository.builder()
-				.prompts(SyncMcpAnnotationProviders.modernPromptSpecifications(List.of(new Prompts())))
+				.prompts(SyncMcpAnnotationProviders.modernPrompts(List.of(new Prompts())))
 				.build()))
 			.feature(CompletionsFeature.ofSync(InMemorySyncCompletionRepository.builder()
 				.completions(SyncMcpAnnotationProviders.modernCompleteSpecifications(List.of(new Completions())))
@@ -157,17 +161,17 @@ class ModernAnnotationProvidersTests {
 	@Test
 	@SuppressWarnings("unchecked")
 	void toolSchemaExcludesInfrastructureParameters() {
-		List<SyncToolSpecification> specs = SyncMcpAnnotationProviders.modernToolSpecifications(List.of(new Tools()));
-		SyncToolSpecification progress = specs.stream()
-			.filter(spec -> spec.tool().name().equals("progress"))
+		List<McpSyncTool> specs = SyncMcpAnnotationProviders.modernTools(List.of(new Tools()));
+		McpSyncTool progress = specs.stream()
+			.filter(spec -> spec.definition().name().equals("progress"))
 			.findFirst()
 			.orElseThrow();
-		Map<String, Object> properties = (Map<String, Object>) progress.tool().inputSchema().get("properties");
+		Map<String, Object> properties = (Map<String, Object>) progress.definition().inputSchema().get("properties");
 		assertThat(properties).containsOnlyKeys("steps");
 		assertThat(((SyncModernMcpToolMethodCallback) progress.handler()).isStreaming()).isTrue();
 
-		SyncToolSpecification greet = specs.stream()
-			.filter(spec -> spec.tool().name().equals("greet"))
+		McpSyncTool greet = specs.stream()
+			.filter(spec -> spec.definition().name().equals("greet"))
 			.findFirst()
 			.orElseThrow();
 		assertThat(((SyncModernMcpToolMethodCallback) greet.handler()).isStreaming()).isFalse();
@@ -246,6 +250,70 @@ class ModernAnnotationProvidersTests {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked")
+	void inputResponsesAreConvertedWithTheConfiguredMapper() {
+		AtomicInteger conversions = new AtomicInteger();
+		McpJsonMapper recording = new McpJsonMapper() {
+			private final McpJsonMapper delegate = McpJsonDefaults.getMapper();
+
+			@Override
+			public <T> T readValue(String content, Class<T> type) throws IOException {
+				return this.delegate.readValue(content, type);
+			}
+
+			@Override
+			public <T> T readValue(byte[] content, Class<T> type) throws IOException {
+				return this.delegate.readValue(content, type);
+			}
+
+			@Override
+			public <T> T readValue(String content, TypeRef<T> type) throws IOException {
+				return this.delegate.readValue(content, type);
+			}
+
+			@Override
+			public <T> T readValue(byte[] content, TypeRef<T> type) throws IOException {
+				return this.delegate.readValue(content, type);
+			}
+
+			@Override
+			public <T> T convertValue(Object fromValue, Class<T> type) {
+				conversions.incrementAndGet();
+				return this.delegate.convertValue(fromValue, type);
+			}
+
+			@Override
+			public <T> T convertValue(Object fromValue, TypeRef<T> type) {
+				conversions.incrementAndGet();
+				return this.delegate.convertValue(fromValue, type);
+			}
+
+			@Override
+			public String writeValueAsString(Object value) throws IOException {
+				return this.delegate.writeValueAsString(value);
+			}
+
+			@Override
+			public byte[] writeValueAsBytes(Object value) throws IOException {
+				return this.delegate.writeValueAsBytes(value);
+			}
+		};
+		McpServer server = McpServer.builder()
+			.serverInfo(Implementation.builder("test", "1").build())
+			.feature(ToolsFeature.ofSync(InMemorySyncToolRepository.builder()
+				.tools(SyncMcpAnnotationProviders.modernTools(List.of(new Tools()), recording))
+				.build()))
+			.build();
+
+		Map<String, Object> inputRequired = result(send(server, McpSchema.METHOD_TOOLS_CALL, params("name", "ask_name")));
+		assertThat(conversions).hasValue(0);
+		Map<String, Object> retry = params("name", "ask_name", "requestState", inputRequired.get("requestState"),
+				"inputResponses", Map.of("user", Map.of("action", "accept", "content", Map.of("name", "Ann"))));
+		assertThat(firstText(result(send(server, McpSchema.METHOD_TOOLS_CALL, retry)))).isEqualTo("Hi Ann state=asked");
+		assertThat(conversions).hasPositiveValue();
+	}
+
+	@Test
 	void modernRequestParameterIsInjected() {
 		Map<String, Object> result = result(send(server(), McpSchema.METHOD_TOOLS_CALL, params("name", "raw_request")));
 		assertThat(firstText(result)).isEqualTo("state=null");
@@ -302,11 +370,12 @@ class ModernAnnotationProvidersTests {
 		assertThat(plain.get("cacheScope")).isEqualTo("private");
 
 		SyncModernMcpResourceMethodCallback callback = (SyncModernMcpResourceMethodCallback) SyncMcpAnnotationProviders
-			.modernResourceSpecifications(List.of(new Resources()))
+			.modernResources(List.of(new Resources()))
 			.stream()
 			.filter(spec -> spec.resource().uri().equals("test://hinted"))
 			.findFirst()
 			.orElseThrow()
+			.handler()
 			.handler();
 		assertThat(callback.ttlMs()).isEqualTo(30000L);
 		assertThat(callback.cacheScope()).isEqualTo(CacheScope.PUBLIC);
@@ -328,13 +397,13 @@ class ModernAnnotationProvidersTests {
 	@Test
 	@SuppressWarnings("unchecked")
 	void resourceContextParameterStreamsProgressAndKeepsCacheHints() {
-		List<SyncResourceSpecification> specs = SyncMcpAnnotationProviders
-			.modernResourceSpecifications(List.of(new Resources()));
-		SyncResourceSpecification cached = specs.stream()
+		List<SyncResourceEntry> specs = SyncMcpAnnotationProviders
+			.modernResources(List.of(new Resources()));
+		SyncResourceEntry cached = specs.stream()
 			.filter(spec -> spec.resource().uri().equals("test://cached"))
 			.findFirst()
 			.orElseThrow();
-		assertThat(((SyncModernMcpResourceMethodCallback) cached.handler()).isStreaming()).isTrue();
+		assertThat(((SyncModernMcpResourceMethodCallback) cached.handler().handler()).isStreaming()).isTrue();
 
 		Map<String, Object> params = params("uri", "test://cached");
 		((Map<String, Object>) params.get("_meta")).put(MetaKeys.PROGRESS_TOKEN, "tok");
@@ -430,9 +499,9 @@ class ModernAnnotationProvidersTests {
 	@Test
 	void legacyContextParametersAreSkippedByProvidersAndRejectedByCallbacks() throws Exception {
 		// The providers skip session-bound methods, as the stateless providers do.
-		assertThat(SyncMcpAnnotationProviders.modernToolSpecifications(List.of(new LegacyTools()))).isEmpty();
-		assertThat(SyncMcpAnnotationProviders.modernResourceSpecifications(List.of(new LegacyResources()))).isEmpty();
-		assertThat(SyncMcpAnnotationProviders.modernPromptSpecifications(List.of(new LegacyPrompts()))).isEmpty();
+		assertThat(SyncMcpAnnotationProviders.modernTools(List.of(new LegacyTools()))).isEmpty();
+		assertThat(SyncMcpAnnotationProviders.modernResources(List.of(new LegacyResources()))).isEmpty();
+		assertThat(SyncMcpAnnotationProviders.modernPrompts(List.of(new LegacyPrompts()))).isEmpty();
 		assertThat(SyncMcpAnnotationProviders.modernCompleteSpecifications(List.of(new LegacyCompletions()))).isEmpty();
 
 		// Built directly, the callbacks explain what to use instead.

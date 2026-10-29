@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Set;
 
 import io.modelcontextprotocol.common.McpTransportContext;
+import io.modelcontextprotocol.json.McpJsonMapper;
 import io.modelcontextprotocol.modern.McpException;
 import io.modelcontextprotocol.modern.McpSchema.CacheScope;
 import io.modelcontextprotocol.modern.McpSchema.ReadResourceOutcome;
@@ -32,6 +33,7 @@ import io.modelcontextprotocol.modern.McpSchema.ReadResourceRequest;
 import io.modelcontextprotocol.modern.server.McpRequestContext;
 import io.modelcontextprotocol.modern.server.McpSyncNotifier;
 import io.modelcontextprotocol.modern.server.McpSyncResponse;
+import io.modelcontextprotocol.modern.server.feature.McpSyncResource;
 import io.modelcontextprotocol.spec.McpSchema.ReadResourceResult;
 import io.modelcontextprotocol.spec.McpSchema.ResourceContents;
 import org.jspecify.annotations.Nullable;
@@ -41,7 +43,6 @@ import org.springframework.ai.mcp.annotation.McpProgressToken;
 import org.springframework.ai.mcp.annotation.common.ModernMethodSupport;
 import org.springframework.ai.mcp.annotation.context.McpModernSyncRequestContext;
 import org.springframework.ai.mcp.modern.McpSchemaConverter;
-import org.springframework.ai.mcp.modern.SyncResourceSpecification;
 
 /**
  * Serves a {@code resources/read} of a 2026-07-28 ("modern") MCP server by invoking a
@@ -61,16 +62,18 @@ import org.springframework.ai.mcp.modern.SyncResourceSpecification;
  * through untouched and its own hints win.
  *
  * @author Christian Tzolov
- * @since 2.2.0
+ * @since 2.1.0
  */
 public final class SyncModernMcpResourceMethodCallback extends AbstractMcpResourceMethodCallback
-		implements SyncResourceSpecification.Handler {
+		implements McpSyncResource.Handler {
 
 	private final boolean streaming;
 
 	private final long ttlMs;
 
 	private final CacheScope cacheScope;
+
+	private final @Nullable McpJsonMapper jsonMapper;
 
 	private SyncModernMcpResourceMethodCallback(Builder builder) {
 		super(builder.method, builder.bean, builder.uri, builder.name, builder.description, builder.mimeType,
@@ -80,6 +83,7 @@ public final class SyncModernMcpResourceMethodCallback extends AbstractMcpResour
 			.anyMatch(ModernMethodSupport::isStreamingParameter);
 		this.ttlMs = builder.ttlMs;
 		this.cacheScope = builder.cacheScope;
+		this.jsonMapper = builder.jsonMapper;
 	}
 
 	/**
@@ -160,7 +164,7 @@ public final class SyncModernMcpResourceMethodCallback extends AbstractMcpResour
 		// The injected parameters are filled first so that the URI variable binding of
 		// the base class only sees the remaining slots.
 		ModernMethodSupport.injectContextArguments(args, parameters, context, request.inputResponses(),
-				request.requestState(), notifier);
+				request.requestState(), notifier, this.jsonMapper);
 		for (int i = 0; i < parameters.length; i++) {
 			Class<?> type = parameters[i].getType();
 			if (parameters[i].isAnnotationPresent(McpProgressToken.class)) {
@@ -272,8 +276,19 @@ public final class SyncModernMcpResourceMethodCallback extends AbstractMcpResour
 
 		private CacheScope cacheScope = CacheScope.PRIVATE;
 
+		private @Nullable McpJsonMapper jsonMapper;
+
 		private Builder() {
 			this.resultConverter = new DefaultMcpReadResourceResultConverter();
+		}
+
+		/**
+		 * Sets the mapper that {@code McpModernSyncRequestContext.inputResponse} converts
+		 * with, normally the server's. Unset, the SDK default is used.
+		 */
+		public Builder jsonMapper(@Nullable McpJsonMapper jsonMapper) {
+			this.jsonMapper = jsonMapper;
+			return this;
 		}
 
 		@Override

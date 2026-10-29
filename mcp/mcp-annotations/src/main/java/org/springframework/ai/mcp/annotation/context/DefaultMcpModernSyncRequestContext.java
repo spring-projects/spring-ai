@@ -40,7 +40,7 @@ import org.springframework.util.Assert;
  * MRTR fields of the request and, for streaming responses, the notifier.
  *
  * @author Christian Tzolov
- * @since 2.2.0
+ * @since 2.1.0
  */
 public final class DefaultMcpModernSyncRequestContext implements McpModernSyncRequestContext {
 

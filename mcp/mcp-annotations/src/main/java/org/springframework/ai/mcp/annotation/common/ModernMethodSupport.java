@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.function.Predicate;
 
 import io.modelcontextprotocol.common.McpTransportContext;
+import io.modelcontextprotocol.json.McpJsonMapper;
 import io.modelcontextprotocol.modern.McpException;
 import io.modelcontextprotocol.modern.McpSchema;
 import io.modelcontextprotocol.modern.McpSchema.ClientCapabilities;
@@ -55,7 +56,7 @@ import org.springframework.ai.mcp.modern.McpSchemaConverter;
  * rejected because there is no session to back them.
  *
  * @author Christian Tzolov
- * @since 2.2.0
+ * @since 2.1.0
  */
 public final class ModernMethodSupport {
 
@@ -123,7 +124,7 @@ public final class ModernMethodSupport {
 	 * @param ctx the request context carrying the client's declared capabilities
 	 * @param outcome the handler's result
 	 * @throws McpException {@code -32021 Missing required client capability}
-	 * @since 2.2.0
+	 * @since 2.1.0
 	 */
 	public static void checkClientCapabilities(McpRequestContext ctx, @Nullable Object outcome) {
 		if (!(outcome instanceof InputRequiredResult inputRequired) || inputRequired.inputRequests() == null) {
@@ -227,6 +228,21 @@ public final class ModernMethodSupport {
 	public static void injectContextArguments(Object[] args, Parameter[] parameters, McpRequestContext context,
 			@Nullable Map<String, Object> inputResponses, @Nullable String requestState,
 			@Nullable McpSyncNotifier notifier) {
+		injectContextArguments(args, parameters, context, inputResponses, requestState, notifier, null);
+	}
+
+	/**
+	 * Fills the modern context parameters and {@link McpTransportContext} into the
+	 * argument array, leaving every other slot untouched.
+	 * @param inputResponses the request's MRTR input responses, if any
+	 * @param requestState the request's unsealed MRTR state, if any
+	 * @param notifier the notifier of a streaming response, or null for a plain result
+	 * @param jsonMapper the mapper that {@code inputResponse(key, type)} converts with,
+	 * normally the server's, or null for the SDK default
+	 */
+	public static void injectContextArguments(Object[] args, Parameter[] parameters, McpRequestContext context,
+			@Nullable Map<String, Object> inputResponses, @Nullable String requestState,
+			@Nullable McpSyncNotifier notifier, @Nullable McpJsonMapper jsonMapper) {
 		McpModernSyncRequestContext modernContext = null;
 		for (int i = 0; i < parameters.length; i++) {
 			Class<?> type = parameters[i].getType();
@@ -237,6 +253,7 @@ public final class ModernMethodSupport {
 						.inputResponses(inputResponses)
 						.requestState(requestState)
 						.notifier(notifier)
+						.jsonMapper(jsonMapper)
 						.build();
 				}
 				args[i] = modernContext;

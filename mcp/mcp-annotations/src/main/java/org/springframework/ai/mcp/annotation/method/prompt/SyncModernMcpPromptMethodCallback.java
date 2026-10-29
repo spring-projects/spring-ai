@@ -24,12 +24,14 @@ import java.util.List;
 import java.util.Map;
 
 import io.modelcontextprotocol.common.McpTransportContext;
+import io.modelcontextprotocol.json.McpJsonMapper;
 import io.modelcontextprotocol.modern.McpException;
 import io.modelcontextprotocol.modern.McpSchema.GetPromptOutcome;
 import io.modelcontextprotocol.modern.McpSchema.GetPromptRequest;
 import io.modelcontextprotocol.modern.server.McpRequestContext;
 import io.modelcontextprotocol.modern.server.McpSyncNotifier;
 import io.modelcontextprotocol.modern.server.McpSyncResponse;
+import io.modelcontextprotocol.modern.server.feature.McpSyncPrompt;
 import io.modelcontextprotocol.spec.McpSchema.GetPromptResult;
 import io.modelcontextprotocol.spec.McpSchema.PromptMessage;
 import org.jspecify.annotations.Nullable;
@@ -37,7 +39,6 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.ai.mcp.annotation.common.ModernMethodSupport;
 import org.springframework.ai.mcp.annotation.context.McpModernSyncRequestContext;
 import org.springframework.ai.mcp.modern.McpSchemaConverter;
-import org.springframework.ai.mcp.modern.SyncPromptSpecification;
 
 /**
  * Serves a {@code prompts/get} of a 2026-07-28 ("modern") MCP server by invoking a method
@@ -53,17 +54,20 @@ import org.springframework.ai.mcp.modern.SyncPromptSpecification;
  * an {@code InputRequiredResult}) or any of the legacy return types, which are converted.
  *
  * @author Christian Tzolov
- * @since 2.2.0
+ * @since 2.1.0
  */
 public final class SyncModernMcpPromptMethodCallback extends AbstractMcpPromptMethodCallback
-		implements SyncPromptSpecification.Handler {
+		implements McpSyncPrompt.Handler {
 
 	private final boolean streaming;
+
+	private final @Nullable McpJsonMapper jsonMapper;
 
 	private SyncModernMcpPromptMethodCallback(Builder builder) {
 		super(builder.method, builder.bean, builder.prompt);
 		this.streaming = Arrays.stream(this.method.getParameterTypes())
 			.anyMatch(ModernMethodSupport::isStreamingParameter);
+		this.jsonMapper = builder.jsonMapper;
 	}
 
 	/**
@@ -97,7 +101,7 @@ public final class SyncModernMcpPromptMethodCallback extends AbstractMcpPromptMe
 			Parameter[] parameters = this.method.getParameters();
 			Object[] args = this.buildArgs(this.method, context, legacyRequest);
 			ModernMethodSupport.injectContextArguments(args, parameters, context, request.inputResponses(),
-					request.requestState(), notifier);
+					request.requestState(), notifier, this.jsonMapper);
 			for (int i = 0; i < parameters.length; i++) {
 				if (GetPromptRequest.class.isAssignableFrom(parameters[i].getType())) {
 					args[i] = request;
@@ -172,6 +176,17 @@ public final class SyncModernMcpPromptMethodCallback extends AbstractMcpPromptMe
 	 * Builder for {@link SyncModernMcpPromptMethodCallback} instances.
 	 */
 	public static final class Builder extends AbstractBuilder<Builder, SyncModernMcpPromptMethodCallback> {
+
+		private @Nullable McpJsonMapper jsonMapper;
+
+		/**
+		 * Sets the mapper that {@code McpModernSyncRequestContext.inputResponse} converts
+		 * with, normally the server's. Unset, the SDK default is used.
+		 */
+		public Builder jsonMapper(@Nullable McpJsonMapper jsonMapper) {
+			this.jsonMapper = jsonMapper;
+			return this;
+		}
 
 		@Override
 		public SyncModernMcpPromptMethodCallback build() {
