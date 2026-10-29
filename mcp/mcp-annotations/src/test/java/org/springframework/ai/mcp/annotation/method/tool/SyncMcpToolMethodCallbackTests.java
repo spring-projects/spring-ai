@@ -276,7 +276,7 @@ public class SyncMcpToolMethodCallbackTests {
 		assertThat(result.isError()).isTrue();
 		assertThat(result.content()).hasSize(1);
 		assertThat(result.content().get(0)).isInstanceOf(TextContent.class);
-		assertThat(((TextContent) result.content().get(0)).text()).contains("Tool execution failed: test");
+		assertThat(((TextContent) result.content().get(0)).text()).isEqualTo("Tool execution failed: test");
 	}
 
 	@Test

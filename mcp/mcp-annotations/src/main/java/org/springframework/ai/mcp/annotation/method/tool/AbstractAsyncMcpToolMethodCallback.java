@@ -18,6 +18,7 @@ package org.springframework.ai.mcp.annotation.method.tool;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.UndeclaredThrowableException;
+import java.util.Objects;
 
 import io.modelcontextprotocol.spec.McpError;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
@@ -182,10 +183,9 @@ public abstract class AbstractAsyncMcpToolMethodCallback<T, RC extends McpReques
 	 */
 	protected Mono<CallToolResult> createAsyncErrorResult(Exception e) {
 		Throwable rootCause = findCauseUsingPlainJava(e);
-		return Mono.just(CallToolResult.builder()
-			.isError(true)
-			.addTextContent(e.getMessage() + System.lineSeparator() + rootCause.getMessage())
-			.build());
+		String text = (rootCause == e || Objects.equals(rootCause.getMessage(), e.getMessage())) ? e.getMessage()
+				: e.getMessage() + System.lineSeparator() + rootCause.getMessage();
+		return Mono.just(CallToolResult.builder().isError(true).addTextContent(text).build());
 	}
 
 	/**
@@ -205,7 +205,7 @@ public abstract class AbstractAsyncMcpToolMethodCallback<T, RC extends McpReques
 	 * be injected. Subclasses must implement this method to specify which types are
 	 * considered exchange or context types.
 	 * @param paramType The parameter type to check
-	 * @return true if the parameter type is an exchange or context type, false otherwise
+	 * @return true if the parameter is an exchange or context type, false otherwise
 	 */
 	protected abstract boolean isExchangeOrContextType(Class<?> paramType);
 
