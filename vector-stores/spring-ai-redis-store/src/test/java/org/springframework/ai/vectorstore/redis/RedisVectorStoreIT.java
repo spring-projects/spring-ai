@@ -338,6 +338,39 @@ class RedisVectorStoreIT extends BaseVectorStoreTests {
 	}
 
 	@Test
+	void tagFilterWithPunctuationMatchesOnlyExactValue() {
+		this.contextRunner.run(context -> {
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+
+			var dotted = new Document("Release notes", Map.of("type", "v1.2"));
+			var spaced = new Document("Release notes", Map.of("type", "v1 2"));
+			var email = new Document("Release notes", Map.of("type", "user@example.com"));
+			vectorStore.add(List.of(dotted, spaced, email));
+
+			assertThat(vectorStore.similaritySearch(SearchRequest.builder()
+				.query("Release notes")
+				.topK(5)
+				.similarityThresholdAll()
+				.filterExpression("type == 'v1.2'")
+				.build())).extracting(Document::getId).containsExactly(dotted.getId());
+
+			assertThat(vectorStore.similaritySearch(SearchRequest.builder()
+				.query("Release notes")
+				.topK(5)
+				.similarityThresholdAll()
+				.filterExpression("type == 'user@example.com'")
+				.build())).extracting(Document::getId).containsExactly(email.getId());
+
+			vectorStore.delete("type == 'v1.2'");
+
+			assertThat(vectorStore.similaritySearch(
+					SearchRequest.builder().query("Release notes").topK(5).similarityThresholdAll().build()))
+				.extracting(Document::getId)
+				.containsExactlyInAnyOrder(spaced.getId(), email.getId());
+		});
+	}
+
+	@Test
 	void deleteByFilterShouldDeleteAll() {
 		this.contextRunner.run(context -> {
 			VectorStore vectorStore = context.getBean(VectorStore.class);
