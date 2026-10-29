@@ -91,7 +91,7 @@ public @interface McpResource {
 	 * returns a legacy type. A method that returns a modern {@code ReadResourceResult}
 	 * sets its own hints and this attribute is ignored. The legacy servers log a warning
 	 * and ignore it, because the legacy protocol has no cache hints.
-	 * @since 2.2.0
+	 * @since 2.1.0
 	 */
 	long ttlMs() default 0;
 
@@ -103,7 +103,7 @@ public @interface McpResource {
 	 * <p>
 	 * Only honoured by the 2026-07-28 ("modern") MCP server, under the same rules as
 	 * {@link #ttlMs()}.
-	 * @since 2.2.0
+	 * @since 2.1.0
 	 */
 	CacheScope cacheScope() default CacheScope.PRIVATE;
 

@@ -50,7 +50,7 @@ import org.springframework.ai.mcp.modern.SyncCompletionSpecification;
  * types, which are converted.
  *
  * @author Christian Tzolov
- * @since 2.2.0
+ * @since 2.1.0
  */
 public final class SyncModernMcpCompleteMethodCallback extends AbstractMcpCompleteMethodCallback
 		implements SyncCompletionSpecification.Handler {

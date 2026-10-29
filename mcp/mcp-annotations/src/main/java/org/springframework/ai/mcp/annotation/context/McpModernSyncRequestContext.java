@@ -39,7 +39,7 @@ import org.springframework.ai.mcp.annotation.context.McpRequestContextTypes.Prog
  * this parameter is always served as a streaming response.
  *
  * @author Christian Tzolov
- * @since 2.2.0
+ * @since 2.1.0
  */
 public interface McpModernSyncRequestContext {
 

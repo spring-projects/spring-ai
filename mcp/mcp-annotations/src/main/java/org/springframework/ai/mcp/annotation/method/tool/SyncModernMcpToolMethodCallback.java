@@ -24,12 +24,14 @@ import java.util.HashMap;
 import java.util.Map;
 
 import io.modelcontextprotocol.common.McpTransportContext;
+import io.modelcontextprotocol.json.McpJsonMapper;
 import io.modelcontextprotocol.modern.McpException;
 import io.modelcontextprotocol.modern.McpSchema.CallToolOutcome;
 import io.modelcontextprotocol.modern.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.modern.server.McpRequestContext;
 import io.modelcontextprotocol.modern.server.McpSyncNotifier;
 import io.modelcontextprotocol.modern.server.McpSyncResponse;
+import io.modelcontextprotocol.modern.server.feature.McpSyncTool;
 import io.modelcontextprotocol.spec.McpError;
 import org.jspecify.annotations.Nullable;
 
@@ -37,7 +39,6 @@ import org.springframework.ai.mcp.annotation.common.ModernMethodSupport;
 import org.springframework.ai.mcp.annotation.context.McpModernSyncRequestContext;
 import org.springframework.ai.mcp.annotation.context.McpSyncRequestContext;
 import org.springframework.ai.mcp.modern.McpSchemaConverter;
-import org.springframework.ai.mcp.modern.SyncToolSpecification;
 
 /**
  * Serves a {@code tools/call} of a 2026-07-28 ("modern") MCP server by invoking a method
@@ -53,21 +54,33 @@ import org.springframework.ai.mcp.modern.SyncToolSpecification;
  * {@code InputRequiredResult}) or any of the legacy return types, which are converted.
  *
  * @author Christian Tzolov
- * @since 2.2.0
+ * @since 2.1.0
  */
 public final class SyncModernMcpToolMethodCallback
 		extends AbstractSyncMcpToolMethodCallback<McpRequestContext, McpSyncRequestContext>
-		implements SyncToolSpecification.Handler {
+		implements McpSyncTool.Handler {
 
 	private final boolean streaming;
 
+	private final @Nullable McpJsonMapper jsonMapper;
+
 	public SyncModernMcpToolMethodCallback(ReturnMode returnMode, Method toolMethod, Object toolObject) {
+		this(returnMode, toolMethod, toolObject, null);
+	}
+
+	/**
+	 * @param jsonMapper the mapper that {@code McpModernSyncRequestContext.inputResponse}
+	 * converts with, normally the server's, or null for the SDK default
+	 */
+	public SyncModernMcpToolMethodCallback(ReturnMode returnMode, Method toolMethod, Object toolObject,
+			@Nullable McpJsonMapper jsonMapper) {
 		super(returnMode, toolMethod, toolObject);
 		for (Class<?> parameterType : toolMethod.getParameterTypes()) {
 			ModernMethodSupport.rejectLegacyContextParameter(parameterType, toolMethod);
 		}
 		this.streaming = Arrays.stream(toolMethod.getParameterTypes())
 			.anyMatch(SyncModernMcpToolMethodCallback::isStreamingParameter);
+		this.jsonMapper = jsonMapper;
 	}
 
 	/**
@@ -123,7 +136,7 @@ public final class SyncModernMcpToolMethodCallback
 			Parameter[] parameters = this.toolMethod.getParameters();
 			Object[] args = buildMethodArguments(context, toolArguments(request), McpSchemaConverter.toLegacy(request));
 			ModernMethodSupport.injectContextArguments(args, parameters, context, request.inputResponses(),
-					request.requestState(), notifier);
+					request.requestState(), notifier, this.jsonMapper);
 			for (int i = 0; i < parameters.length; i++) {
 				if (CallToolRequest.class.isAssignableFrom(parameters[i].getType())) {
 					args[i] = request;

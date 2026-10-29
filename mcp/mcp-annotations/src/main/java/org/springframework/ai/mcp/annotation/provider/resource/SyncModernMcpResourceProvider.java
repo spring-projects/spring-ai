@@ -21,10 +21,13 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Stream;
 
+import io.modelcontextprotocol.json.McpJsonMapper;
+import io.modelcontextprotocol.modern.server.feature.McpSyncResource;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.util.Assert;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.mcp.annotation.McpResource;
 import org.springframework.ai.mcp.annotation.common.McpPredicates;
@@ -32,16 +35,17 @@ import org.springframework.ai.mcp.annotation.common.MetaUtils;
 import org.springframework.ai.mcp.annotation.common.ModernMethodSupport;
 import org.springframework.ai.mcp.annotation.method.resource.SyncModernMcpResourceMethodCallback;
 import org.springframework.ai.mcp.modern.McpSchemaConverter;
-import org.springframework.ai.mcp.modern.SyncResourceSpecification;
-import org.springframework.ai.mcp.modern.SyncResourceTemplateSpecification;
+import org.springframework.ai.mcp.modern.SyncResourceEntry;
+import org.springframework.ai.mcp.modern.SyncResourceTemplateEntry;
 
 /**
- * Creates resource and resource template specifications for a 2026-07-28 ("modern") MCP
- * server from methods annotated with {@link McpResource}. Each method is served by a
- * {@link SyncModernMcpResourceMethodCallback}.
+ * Creates resource and resource template entries for a 2026-07-28 ("modern") MCP server
+ * from methods annotated with {@link McpResource}. Each method is served by a
+ * {@link SyncModernMcpResourceMethodCallback} wrapped in a {@link McpSyncResource} that
+ * requires no client capabilities.
  *
  * @author Christian Tzolov
- * @since 2.2.0
+ * @since 2.1.0
  */
 public class SyncModernMcpResourceProvider {
 
@@ -49,13 +53,23 @@ public class SyncModernMcpResourceProvider {
 
 	private final List<Object> resourceObjects;
 
+	private @Nullable McpJsonMapper jsonMapper;
+
 	public SyncModernMcpResourceProvider(List<Object> resourceObjects) {
 		Assert.notNull(resourceObjects, "resourceObjects cannot be null");
 		this.resourceObjects = resourceObjects;
 	}
 
-	public List<SyncResourceSpecification> getModernResourceSpecifications() {
-		List<SyncResourceSpecification> specifications = resourceMethods(false).map(entry -> {
+	/**
+	 * Sets the mapper the resource methods convert their MRTR input responses with,
+	 * normally the server's. Unset, the SDK default is used.
+	 */
+	public void setJsonMapper(@Nullable McpJsonMapper jsonMapper) {
+		this.jsonMapper = jsonMapper;
+	}
+
+	public List<SyncResourceEntry> getResources() {
+		List<SyncResourceEntry> resources = resourceMethods(false).map(entry -> {
 			McpResource annotation = this.doGetMcpResourceAnnotation(entry.method());
 			McpSchema.Resource resource = McpSchema.Resource.builder(annotation.uri(), name(entry.method(), annotation))
 				.description(annotation.description())
@@ -68,15 +82,16 @@ public class SyncModernMcpResourceProvider {
 				.ttlMs(annotation.ttlMs())
 				.cacheScope(annotation.cacheScope())
 				.resource(resource)
+				.jsonMapper(this.jsonMapper)
 				.build();
-			return new SyncResourceSpecification(McpSchemaConverter.toModern(resource), callback);
+			return SyncResourceEntry.of(McpSchemaConverter.toModern(resource), callback);
 		}).toList();
-		warnIfEmpty(specifications);
-		return specifications;
+		warnIfEmpty(resources);
+		return resources;
 	}
 
-	public List<SyncResourceTemplateSpecification> getModernResourceTemplateSpecifications() {
-		List<SyncResourceTemplateSpecification> specifications = resourceMethods(true).map(entry -> {
+	public List<SyncResourceTemplateEntry> getResourceTemplates() {
+		List<SyncResourceTemplateEntry> templates = resourceMethods(true).map(entry -> {
 			McpResource annotation = this.doGetMcpResourceAnnotation(entry.method());
 			McpSchema.ResourceTemplate template = McpSchema.ResourceTemplate
 				.builder(annotation.uri(), name(entry.method(), annotation))
@@ -90,11 +105,12 @@ public class SyncModernMcpResourceProvider {
 				.ttlMs(annotation.ttlMs())
 				.cacheScope(annotation.cacheScope())
 				.resource(template)
+				.jsonMapper(this.jsonMapper)
 				.build();
-			return new SyncResourceTemplateSpecification(McpSchemaConverter.toModern(template), callback);
+			return SyncResourceTemplateEntry.of(McpSchemaConverter.toModern(template), callback);
 		}).toList();
-		warnIfEmpty(specifications);
-		return specifications;
+		warnIfEmpty(templates);
+		return templates;
 	}
 
 	private Stream<ResourceMethod> resourceMethods(boolean templates) {

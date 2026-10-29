@@ -29,7 +29,7 @@ import org.springframework.ai.mcp.annotation.McpResource;
  * hints, which only the 2026-07-28 ("modern") MCP server can transmit.
  *
  * @author Christian Tzolov
- * @since 2.2.0
+ * @since 2.1.0
  */
 public final class McpResourceCacheHints {
 

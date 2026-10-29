@@ -24,6 +24,7 @@ import java.util.stream.Stream;
 import io.modelcontextprotocol.modern.McpSchema;
 import io.modelcontextprotocol.modern.McpSchema.CallToolOutcome;
 import io.modelcontextprotocol.modern.McpSchema.Tool;
+import io.modelcontextprotocol.modern.server.feature.McpSyncTool;
 import io.modelcontextprotocol.util.Utils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -35,15 +36,15 @@ import org.springframework.ai.mcp.annotation.common.ModernMethodSupport;
 import org.springframework.ai.mcp.annotation.method.tool.ReturnMode;
 import org.springframework.ai.mcp.annotation.method.tool.SyncModernMcpToolMethodCallback;
 import org.springframework.ai.mcp.annotation.method.tool.utils.McpJsonSchemaGenerator;
-import org.springframework.ai.mcp.modern.SyncToolSpecification;
 import org.springframework.util.ClassUtils;
 
 /**
- * Creates {@link SyncToolSpecification}s for a 2026-07-28 ("modern") MCP server from
- * methods annotated with {@link McpTool}.
+ * Creates {@link McpSyncTool}s for a 2026-07-28 ("modern") MCP server from methods
+ * annotated with {@link McpTool}. The tools declare no required client capabilities; a
+ * method that asks for input checks the client's capabilities at runtime instead.
  *
  * @author Christian Tzolov
- * @since 2.2.0
+ * @since 2.1.0
  */
 public class SyncModernMcpToolProvider extends AbstractMcpToolProvider {
 
@@ -53,26 +54,26 @@ public class SyncModernMcpToolProvider extends AbstractMcpToolProvider {
 		super(toolObjects);
 	}
 
-	public List<SyncToolSpecification> getToolSpecifications() {
-		List<SyncToolSpecification> toolSpecs = this.toolObjects.stream()
+	public List<McpSyncTool> getTools() {
+		List<McpSyncTool> tools = this.toolObjects.stream()
 			.map(toolObject -> Stream.of(this.doGetClassMethods(toolObject))
 				.filter(method -> method.isAnnotationPresent(McpTool.class))
 				.filter(McpPredicates.filterReactiveReturnTypeMethod())
 				// Doesn't support streamable http (stateful) arguments
 				.filter(ModernMethodSupport.filterLegacyContextMethods())
 				.sorted(Comparator.comparing(Method::getName))
-				.map(mcpToolMethod -> toSpecification(toolObject, mcpToolMethod))
+				.map(mcpToolMethod -> toTool(toolObject, mcpToolMethod))
 				.toList())
 			.flatMap(List::stream)
 			.toList();
 
-		if (toolSpecs.isEmpty() && logger.isWarnEnabled()) {
+		if (tools.isEmpty() && logger.isWarnEnabled()) {
 			logger.warn("No tool methods found in the provided tool objects: " + this.toolObjects);
 		}
-		return toolSpecs;
+		return tools;
 	}
 
-	private SyncToolSpecification toSpecification(Object toolObject, Method mcpToolMethod) {
+	private McpSyncTool toTool(Object toolObject, Method mcpToolMethod) {
 		var toolJavaAnnotation = this.doGetMcpToolAnnotation(mcpToolMethod);
 
 		String toolName = Utils.hasText(toolJavaAnnotation.name()) ? toolJavaAnnotation.name()
@@ -118,8 +119,8 @@ public class SyncModernMcpToolProvider extends AbstractMcpToolProvider {
 		ReturnMode returnMode = useStructuredOutput ? ReturnMode.STRUCTURED
 				: (methodReturnType == Void.TYPE || methodReturnType == void.class ? ReturnMode.VOID : ReturnMode.TEXT);
 
-		return new SyncToolSpecification(tool,
-				new SyncModernMcpToolMethodCallback(returnMode, mcpToolMethod, toolObject));
+		return McpSyncTool.of(tool,
+				new SyncModernMcpToolMethodCallback(returnMode, mcpToolMethod, toolObject, this.getJsonMapper()));
 	}
 
 	private static boolean isProtocolResultType(Class<?> type) {
