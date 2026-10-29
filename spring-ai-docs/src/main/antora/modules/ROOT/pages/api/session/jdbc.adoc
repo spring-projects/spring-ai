@@ -42,6 +42,10 @@ Each supported database has a dialect, detected from the database metadata, and 
 | H2
 | `H2JdbcSessionRepositoryDialect`
 | `org/springframework/ai/session/jdbc/schema-h2.sql`
+
+| HSQLDB
+| `HsqldbJdbcSessionRepositoryDialect`
+| `org/springframework/ai/session/jdbc/schema-hsqldb.sql`
 |===
 
 Another database is rejected at startup with an `IllegalStateException`; to use one, implement `JdbcSessionRepositoryDialect` and pass it to the builder.

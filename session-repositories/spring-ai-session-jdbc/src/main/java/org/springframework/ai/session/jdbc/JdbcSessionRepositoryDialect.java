@@ -29,6 +29,7 @@ import org.springframework.jdbc.support.JdbcUtils;
  *
  * @see PostgresJdbcSessionRepositoryDialect
  * @see H2JdbcSessionRepositoryDialect
+ * @see HsqldbJdbcSessionRepositoryDialect
  * @see MysqlJdbcSessionRepositoryDialect
  * @author Christian Tzolov
  * @since 2.1.0
@@ -56,7 +57,7 @@ public interface JdbcSessionRepositoryDialect {
 
 	/**
 	 * The dialect of the database the data source connects to, from its product name:
-	 * PostgreSQL, H2, MySQL or MariaDB.
+	 * PostgreSQL, H2, HSQLDB, MySQL or MariaDB.
 	 * @throws IllegalStateException if the product name cannot be read or the database is
 	 * not supported; set the dialect with
 	 * {@link JdbcSessionRepository.Builder#dialect(JdbcSessionRepositoryDialect)} then
@@ -79,9 +80,10 @@ public interface JdbcSessionRepositoryDialect {
 		return switch (productName) {
 			case "PostgreSQL" -> new PostgresJdbcSessionRepositoryDialect();
 			case "H2" -> new H2JdbcSessionRepositoryDialect();
+			case "HSQL Database Engine" -> new HsqldbJdbcSessionRepositoryDialect();
 			case "MySQL", "MariaDB" -> new MysqlJdbcSessionRepositoryDialect();
 			default -> throw new IllegalStateException("No JdbcSessionRepositoryDialect for database '" + productName
-					+ "'; supported: PostgreSQL, H2, MySQL, MariaDB. Implement JdbcSessionRepositoryDialect and set it "
+					+ "'; supported: PostgreSQL, H2, HSQLDB, MySQL, MariaDB. Implement JdbcSessionRepositoryDialect and set it "
 					+ "via JdbcSessionRepository.builder().dialect(...)");
 		};
 	}
