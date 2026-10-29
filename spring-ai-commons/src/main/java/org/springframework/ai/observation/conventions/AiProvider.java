@@ -85,6 +85,11 @@ public enum AiProvider {
 	STABILITY_AI("stability_ai"),
 
 	/**
+	 * AI system serving the System One protocol: TypeSafe Jev, Laya or Ollama.
+	 */
+	SYSTEMONE("systemone"),
+
+	/**
 	 * AI system provided by Vertex AI.
 	 */
 	VERTEX_AI("vertex_ai");

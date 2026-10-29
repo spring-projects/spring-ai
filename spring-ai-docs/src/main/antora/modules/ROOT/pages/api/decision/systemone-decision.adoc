@@ -1,0 +1,176 @@
+= System One Decisions
+
+== Introduction
+
+Spring AI supports the System One protocol through the xref:api/decision.adoc[`DecisionModel`] API.
+System One is the `POST /v1/systemone` protocol of https://www.typesafe.ai[TypeSafe]'s Jev decision models, which https://github.com/NandhaKishorM/laya[Laya] and https://ollama.com[Ollama] serve as well, so one implementation covers all three.
+
+`SystemOneDecisionModel` is built on the https://github.com/spring-ai-community/spring-ai-typesafe[TypeSafe Java SDK] and its `TypeSafeClient`.
+A decision model answers typed yes/no, choice and score questions about a text, a set of fields or a conversation, and returns the probability of each outcome.
+
+== Prerequisites
+
+. A System One server.
+Create a TypeSafe account and an API key at https://www.typesafe.ai[typesafe.ai], or run a local server: Ollama 0.35 or later with a decision model such as `nimble` or `tev1`, or Laya's `laya-serve`.
+. Add the `spring-ai-systemone` dependency to your project's build file.
+For more information, refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section.
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-systemone</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file:
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-systemone'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+A Spring Boot starter and auto-configuration for this model are not available yet.
+
+== Configuration
+
+The connection belongs to the `TypeSafeClient`: the base URL, the API key, the default model, the per-attempt timeout and the retry policy.
+The model takes the client, and optionally a model name and the provider name recorded in observations.
+
+[source,java]
+----
+TypeSafeClient client = TypeSafeClient.builder()
+    .apiKey(System.getenv("TYPESAFE_API_KEY"))
+    .defaultModel("jev-latest")
+    .timeout(Duration.ofSeconds(10))
+    .build();
+
+SystemOneDecisionModel decisionModel = SystemOneDecisionModel.builder(client).build();
+
+DecisionResponse response = decisionModel.call("WIN A FREE CRUISE!!! Click here now",
+        Map.of("spam", YesNoQuestion.of("Is this message spam?")));
+----
+
+`TypeSafeClient.builder().build()` without arguments reads the `TYPESAFE_API_KEY`, `TYPESAFE_BASE_URL` and `TYPESAFE_DEFAULT_MODEL` environment variables, which the official TypeSafe SDKs read too.
+
+[cols="2,5,2"]
+|====
+| Builder method | Description | Default
+
+| `options(SystemOneDecisionOptions)` | The default options. When they name no model, the client's default model is used. | the client's default model
+| `provider(String)` | The provider name recorded in observations, such as `ollama` or `laya` when the client points at one of them. | `systemone`
+| `observationRegistry(ObservationRegistry)` | The registry the calls are observed with. | `ObservationRegistry.NOOP`
+| `observationConvention(DecisionModelObservationConvention)` | The convention the observations follow. | the default convention
+|====
+
+== Backends
+
+The three backends speak the same protocol and differ in where the client points and in what the response leaves out.
+
+[cols="2,3,3,4"]
+|====
+| Backend | Client | Model | What differs
+
+| TypeSafe Jev
+| `baseUrl` `https://api.typesafe.ai` (the default), your API key
+| `jev-latest` (the default), or another `TypeSafeModels` constant
+| The reference. Reports a request id, used as the response id.
+
+| Ollama 0.35+
+| `baseUrl` `http://localhost:11434`, any non-empty API key such as `ollama`
+| A pulled model, such as `nimble` or `tev1`; Ollama has no `jev-latest`, so set `defaultModel(...)`
+| No request id. Rejects a yes/no question without text. Sensitive to the order of fields in a fields input. The model is loaded on the first call, so give that one a generous timeout.
+
+| Laya 0.3.7+
+| `baseUrl` of your `laya-serve`, such as `http://localhost:8002`, and its `LAYA_API_KEY` when set
+| Laya's checkpoint names, such as `english`; other names are routed automatically
+| No request id. Output tokens are always `0`. Serves one request at a time.
+|====
+
+The answers of the three backends differ, since the models differ.
+Thresholds tuned on one of them need checking against another.
+
+Set the provider name to tell them apart in observations:
+
+[source,java]
+----
+TypeSafeClient ollama = TypeSafeClient.builder()
+    .baseUrl("http://localhost:11434")
+    .apiKey("ollama")
+    .defaultModel("nimble")
+    .timeout(Duration.ofSeconds(60))
+    .retryPolicy(RetryPolicy.noRetry())
+    .build();
+
+SystemOneDecisionModel decisionModel = SystemOneDecisionModel.builder(ollama)
+    .provider("ollama")
+    .build();
+----
+
+== Runtime Options
+
+`SystemOneDecisionOptions` carries the model name, which is the only setting the protocol takes per request.
+Set it on the prompt to override the model's default for one call; the portable `DecisionOptions` work too.
+
+[source,java]
+----
+DecisionResponse response = decisionModel.call(DecisionPrompt.builder()
+    .text("Help! My payouts are late again and nobody answers my emails.")
+    .question("urgent", YesNoQuestion.of("Is this request urgent?"))
+    .options(SystemOneDecisionOptions.builder().model("jev-preview").build())
+    .build());
+----
+
+The timeout, the retry policy and the headers are settings of the `TypeSafeClient` and apply to every call.
+
+== Request Mapping
+
+Each question is sent as one entry of the request's `questions`, named after the question name.
+
+[cols="2,2,5"]
+|====
+| Spring AI question | System One question | Notes
+
+| `YesNoQuestion` | `noul` | `whenYes` and `whenNo`, when set, are sent as the `true` and `false` criteria.
+| `ChoiceQuestion` | `choice` | Each option becomes a criterion named after the option, with its description or `null`.
+| `ScoreQuestion` | `score` | Each level becomes a criterion: its label, or a `{"label", "description"}` object when it has a description.
+|====
+
+The input becomes the request `state`:
+
+* a `DecisionInput.text(...)` input: the text, as a string;
+* a `DecisionInput.fields(...)` input: a JSON object with the fields in the order of the map, with a `MessagePart` or a list of parts as its text;
+* a `DecisionInput.conversation(...)` input: `{"messages": [...]}` with one object per message, holding its `role`, its text as `content`, its tool calls as `tool_calls` with the arguments as a nested object when they are JSON, and its tool results as `tool_results`.
+
+System One decides about text.
+A `MediaPart` anywhere in the input is rejected, and in a conversation the reasoning and unknown parts of a message are not sent.
+
+Fields keep the order of the map they were given in, and an Ollama model can answer differently when the order changes, so build a fields input from an ordered map such as `LinkedHashMap`.
+
+== Response Mapping
+
+A `noul` answer becomes a `YesNoAnswer`, a `choice` answer a `ChoiceAnswer` with the probability of each option and the confidence, and a `score` answer a `ScoreAnswer` with the probability of each level and the confidence.
+The answers are validated against the prompt, so an answer for a question the prompt did not ask, or of the wrong kind, fails the call.
+An answer of a kind the SDK does not know fails the call too.
+
+The SDK reports a confidence of `0` when the server sends none, so a confidence of `0` may mean an absent one.
+
+The model that answered and the token usage come from the response body.
+When the server sends a request id, in the `x-typesafe-request-id` header, it is recorded as the id of the response metadata, available through `response.getMetadata().getId()` and as the `gen_ai.response.id` observation key.
+Ollama and Laya send none, so the id is `null` and the key is omitted.
+
+Failures surface as the SDK's `TypeSafeException` hierarchy, such as `TypeSafeBadRequestException` or `TypeSafeRateLimitException`, after the retries of the client's `RetryPolicy`.
+
+== Observability
+
+Calls are observed as `decision` operations, with the configured provider name as the `gen_ai.system` key.
+See xref:observability/index.adoc#_decision_model[Decision Model observability].
+
+== Example Code
+
+The `SystemOneDecisionModelIT` test runs against whatever server the `TYPESAFE_BASE_URL`, `TYPESAFE_API_KEY` and `TYPESAFE_DEFAULT_MODEL` variables point at, and shows the three question kinds and the fields and conversation inputs.
+You can refer to this test for more detailed usage examples.

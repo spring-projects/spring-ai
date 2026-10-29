@@ -362,7 +362,7 @@ WARNING: If you enable logging of the transcript, there's a risk of exposing sen
 
 == Decision Model
 
-NOTE: Observability features are currently supported only for `DecisionModel` implementations from the following AI model providers: OpenAI.
+NOTE: Observability features are currently supported only for `DecisionModel` implementations from the following AI model providers: OpenAI, System One (TypeSafe Jev, Laya and Ollama).
 Additional AI model providers will be supported in a future release.
 
 The `gen_ai.client.operation` observations are recorded on decision model method calls, with the `decision` operation name.
