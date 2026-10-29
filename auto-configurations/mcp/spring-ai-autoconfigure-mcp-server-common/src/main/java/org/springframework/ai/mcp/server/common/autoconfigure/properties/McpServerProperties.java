@@ -229,6 +229,16 @@ public class McpServerProperties {
 
 		private boolean resource = true;
 
+		/**
+		 * Enable/disable resource subscriptions.
+		 * <p>
+		 * When enabled, the server advertises the resources {@code subscribe} capability
+		 * and accepts {@code resources/subscribe} and {@code resources/unsubscribe}
+		 * requests, so clients receive {@code notifications/resources/updated}. Ignored
+		 * by stateless servers, which have no session to subscribe against.
+		 */
+		private boolean resourceSubscribe = false;
+
 		private boolean tool = true;
 
 		private boolean prompt = true;
@@ -241,6 +251,25 @@ public class McpServerProperties {
 
 		public void setResource(boolean resource) {
 			this.resource = resource;
+		}
+
+		/**
+		 * Whether resource subscriptions are enabled.
+		 * @return {@code true} if clients can subscribe to resource updates
+		 * @since 2.1.0
+		 */
+		public boolean isResourceSubscribe() {
+			return this.resourceSubscribe;
+		}
+
+		/**
+		 * Enable/disable resource subscriptions.
+		 * @param resourceSubscribe {@code true} to let clients subscribe to resource
+		 * updates
+		 * @since 2.1.0
+		 */
+		public void setResourceSubscribe(boolean resourceSubscribe) {
+			this.resourceSubscribe = resourceSubscribe;
 		}
 
 		public boolean isTool() {
