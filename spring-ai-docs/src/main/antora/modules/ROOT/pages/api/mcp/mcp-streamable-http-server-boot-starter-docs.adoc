@@ -99,6 +99,8 @@ All streamable-HTTP properties are prefixed with `spring.ai.mcp.server.streamabl
 |`mcp-endpoint` |Custom MCP endpoint path |`/mcp`
 |`keep-alive-interval` |Connection keep-alive interval |`null` (disabled)
 |`disallow-delete` |Disallow delete operations |`false`
+|`max-sessions` |Maximum number of concurrent sessions |`100000`
+|`session-idle-timeout` |Duration of inactivity after which a session is evicted |`null` (disabled)
 |===
 
 == Features and Capabilities
@@ -333,6 +335,27 @@ spring:
 ----
 
 NOTE: Currently, for streamable-http servers, the keep-alive mechanism is available only for the link:https://modelcontextprotocol.io/specification/2025-03-26/basic/transports#listening-for-messages-from-the-server[Listening for Messages from the Server (SSE)] connection.
+
+=== Session Limits
+
+By default, the server accepts up to 100,000 concurrent sessions and does not evict idle sessions.
+Set `session-idle-timeout` to close sessions that have had no client requests for the given duration, for example sessions of clients that went away without sending a `DELETE` request.
+Use `max-sessions` to limit the number of concurrent sessions; once the limit is reached, requests to initialize a new session are rejected.
+
+[source,yaml]
+----
+spring:
+  ai:
+    mcp:
+      server:
+        streamable-http:
+          max-sessions: 1000
+          session-idle-timeout: 30m
+----
+
+Only client requests count as activity, so a client that keeps its stream open without sending requests for that long is evicted as well.
+Enable keep-alive too if your clients can stay idle that long: their responses to the keep-alive pings count as activity.
+When keep-alive is enabled, `session-idle-timeout` must be greater than `keep-alive-interval`.
 
 
 == Usage Examples
