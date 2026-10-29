@@ -26,6 +26,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
@@ -60,6 +61,10 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
+import reactor.core.publisher.Operators;
+import reactor.core.scheduler.Schedulers;
+import reactor.util.context.Context;
 import tools.jackson.databind.DeserializationFeature;
 import tools.jackson.databind.annotation.JsonDeserialize;
 import tools.jackson.databind.json.JsonMapper;
@@ -664,14 +669,24 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			var request = createGeminiRequest(prompt);
 
 			try {
-				ResponseStream<GenerateContentResponse> responseStream = this.genAiClient.models
-					.generateContentStream(request.modelName, request.contents, request.config);
+				ResponseStreamResource resource = new ResponseStreamResource(
+						Context.of(contextView).put(ObservationThreadLocalAccessor.KEY, observation));
+				Flux<GenerateContentResponse> responses = Flux
+					.using(() -> resource,
+							streamResource -> openStream(request, observation, streamResource)
+								.flatMapMany(responseStream -> Flux.fromIterable(responseStream)
+									.subscribeOn(Schedulers.boundedElastic())),
+							ResponseStreamResource::close)
+					.cancelOn(Schedulers.boundedElastic())
+					// Mark cancellation before SDK cleanup is scheduled, since close can
+					// block.
+					.doOnCancel(resource::cancel);
 
 				// One indexer per candidate, so that the parts of a candidate keep a
 				// single
 				// index sequence across chunks.
 				Map<Integer, StreamingPartIndexer> indexers = new HashMap<>();
-				Flux<ChatResponse> chatResponseFlux = Flux.fromIterable(responseStream).concatMap(response -> {
+				Flux<ChatResponse> chatResponseFlux = responses.concatMap(response -> {
 					List<Generation> generations = response.candidates()
 						.orElse(List.of())
 						.stream()
@@ -710,6 +725,22 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			}
 
 		});
+	}
+
+	private Mono<ResponseStream<GenerateContentResponse>> openStream(GeminiRequest request, Observation observation,
+			ResponseStreamResource resource) {
+		return Mono.fromCallable(() -> {
+			try (Observation.Scope ignored = observation.openScope()) {
+				return resource.opened(this.genAiClient.models.generateContentStream(request.modelName,
+						request.contents, request.config));
+			}
+			catch (Exception ex) {
+				if (resource.isClosed()) {
+					return null;
+				}
+				throw new RuntimeException("Failed to generate content", ex);
+			}
+		}).subscribeOn(Schedulers.boundedElastic());
 	}
 
 	/**
@@ -1477,6 +1508,58 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 		@Override
 		public String getName() {
 			return this.value;
+		}
+
+	}
+
+	/**
+	 * Owns the SDK stream even if cancellation happens before the blocking call returns.
+	 * A stream arriving after cancellation is closed without starting its iterator.
+	 */
+	private static final class ResponseStreamResource {
+
+		private final Context context;
+
+		private final AtomicBoolean closed = new AtomicBoolean();
+
+		private final AtomicReference<@Nullable ResponseStream<GenerateContentResponse>> response = new AtomicReference<>();
+
+		ResponseStreamResource(Context context) {
+			this.context = context;
+		}
+
+		@Nullable ResponseStream<GenerateContentResponse> opened(ResponseStream<GenerateContentResponse> response) {
+			this.response.set(response);
+			if (this.closed.get()) {
+				try {
+					closeResponse();
+				}
+				catch (Exception ex) {
+					Operators.onErrorDropped(ex, this.context);
+				}
+				return null;
+			}
+			return response;
+		}
+
+		boolean isClosed() {
+			return this.closed.get();
+		}
+
+		void cancel() {
+			this.closed.set(true);
+		}
+
+		void close() {
+			this.closed.set(true);
+			closeResponse();
+		}
+
+		private void closeResponse() {
+			ResponseStream<GenerateContentResponse> response = this.response.getAndSet(null);
+			if (response != null) {
+				response.close();
+			}
 		}
 
 	}
