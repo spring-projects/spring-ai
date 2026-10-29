@@ -125,6 +125,38 @@ public class OpenAiAutoConfigurationUtilTests {
 		assertThat(resolved.getApiKey()).isNull();
 	}
 
+	@Test
+	void commonConnectionPoolMetricsEnabledUsedWhenModelUsesDefault() {
+		var common = new OpenAiCommonProperties();
+		common.setConnectionPoolMetricsEnabled(true);
+		var model = new OpenAiCommonProperties();
+
+		var resolved = OpenAiAutoConfigurationUtil.resolveCommonProperties(common, model);
+
+		assertThat(resolved.isConnectionPoolMetricsEnabled()).isTrue();
+	}
+
+	@Test
+	void modelConnectionPoolMetricsEnabledUsedWhenCommonUsesDefault() {
+		var common = new OpenAiCommonProperties();
+		var model = new OpenAiCommonProperties();
+		model.setConnectionPoolMetricsEnabled(true);
+
+		var resolved = OpenAiAutoConfigurationUtil.resolveCommonProperties(common, model);
+
+		assertThat(resolved.isConnectionPoolMetricsEnabled()).isTrue();
+	}
+
+	@Test
+	void connectionPoolMetricsDisabledWhenNeitherLevelEnablesIt() {
+		var common = new OpenAiCommonProperties();
+		var model = new OpenAiCommonProperties();
+
+		var resolved = OpenAiAutoConfigurationUtil.resolveCommonProperties(common, model);
+
+		assertThat(resolved.isConnectionPoolMetricsEnabled()).isFalse();
+	}
+
 	private static OpenAiCommonProperties properties(String apiKey) {
 		var props = new OpenAiCommonProperties();
 		props.setApiKey(apiKey);
