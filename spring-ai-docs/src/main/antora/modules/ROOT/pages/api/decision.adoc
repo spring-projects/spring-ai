@@ -187,3 +187,7 @@ See xref:observability/index.adoc#_decision_model[Decision Model observability].
 The `spring-ai-rag` module uses decision models to post-process retrieved documents.
 The xref:api/retrieval-augmented-generation.adoc#_decisiondocumentreranker[`DecisionDocumentReranker`] reorders them by asking whether each passage answers the query.
 The xref:api/retrieval-augmented-generation.adoc#_decisiondocumentfilter[`DecisionDocumentFilter`] screens them for prompt injection, contradictions and relevance before they reach the prompt.
+
+== Usage in Tool Search
+
+The xref:api/tools/tool-search-tool.adoc#decision-tool-index[`DecisionToolIndex`] uses a decision model to pick the tool that serves a request, and to report that none does.
