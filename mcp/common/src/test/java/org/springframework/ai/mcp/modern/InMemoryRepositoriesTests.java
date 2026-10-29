@@ -25,6 +25,7 @@ import io.modelcontextprotocol.modern.JsonRpc.JSONRPCRequest;
 import io.modelcontextprotocol.modern.JsonRpc.JSONRPCResponse;
 import io.modelcontextprotocol.modern.McpSchema;
 import io.modelcontextprotocol.modern.McpSchema.CallToolResult;
+import io.modelcontextprotocol.modern.McpSchema.ClientCapabilities;
 import io.modelcontextprotocol.modern.McpSchema.CompleteResult;
 import io.modelcontextprotocol.modern.McpSchema.GetPromptResult;
 import io.modelcontextprotocol.modern.McpSchema.Implementation;
@@ -44,6 +45,8 @@ import io.modelcontextprotocol.modern.server.McpSyncResponse;
 import io.modelcontextprotocol.modern.server.McpTransportResponse;
 import io.modelcontextprotocol.modern.server.feature.CompletionsFeature;
 import io.modelcontextprotocol.modern.server.feature.McpChangeFeed;
+import io.modelcontextprotocol.modern.server.feature.McpSyncPrompt;
+import io.modelcontextprotocol.modern.server.feature.McpSyncTool;
 import io.modelcontextprotocol.modern.server.feature.PromptsFeature;
 import io.modelcontextprotocol.modern.server.feature.ResourcesFeature;
 import io.modelcontextprotocol.modern.server.feature.ServerChange;
@@ -92,9 +95,12 @@ class InMemoryRepositoriesTests {
 		return (Map<String, Object>) jsonRpc.result();
 	}
 
-	private static SyncToolSpecification echoTool() {
-		Tool tool = Tool.builder("echo", EMPTY_SCHEMA).description("echo").build();
-		return new SyncToolSpecification(tool,
+	private static McpServer server(ToolsFeature feature) {
+		return McpServer.builder().serverInfo(Implementation.builder("test", "1").build()).feature(feature).build();
+	}
+
+	private static McpSyncTool echoTool() {
+		return McpSyncTool.of(Tool.builder("echo", EMPTY_SCHEMA).description("echo").build(),
 				(ctx, request) -> McpSyncResponse.result(CallToolResult.builder()
 					.addContent(TextContent.builder("echo:" + request.arguments().get("text")).build())
 					.build()));
@@ -104,10 +110,7 @@ class InMemoryRepositoriesTests {
 	@SuppressWarnings("unchecked")
 	void toolRepositoryListsAndCallsTools() {
 		InMemorySyncToolRepository repository = InMemorySyncToolRepository.builder().tool(echoTool()).build();
-		McpServer server = McpServer.builder()
-			.serverInfo(Implementation.builder("test", "1").build())
-			.feature(ToolsFeature.ofSync(repository))
-			.build();
+		McpServer server = server(ToolsFeature.ofSync(repository));
 
 		Map<String, Object> list = call(server, McpSchema.METHOD_TOOLS_LIST, params());
 		List<Map<String, Object>> tools = (List<Map<String, Object>>) list.get("tools");
@@ -124,6 +127,40 @@ class InMemoryRepositoriesTests {
 	}
 
 	@Test
+	void toolRequiringUndeclaredCapabilityIsRejectedBeforeTheHandlerRuns() {
+		McpSyncTool sampling = McpSyncTool.of(Tool.builder("sample", EMPTY_SCHEMA).build(),
+				ClientCapabilities.builder().sampling().build(), (ctx, request) -> {
+					throw new AssertionError("handler must not run");
+				});
+		McpServer server = server(ToolsFeature.ofSync(InMemorySyncToolRepository.builder().tool(sampling).build()));
+
+		Map<String, Object> rejected = call(server, McpSchema.METHOD_TOOLS_CALL, params("name", "sample"));
+		assertThat(rejected.get("code")).isEqualTo(McpSchema.ErrorCodes.MISSING_REQUIRED_CLIENT_CAPABILITY);
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void toolRepositoryPagesByName() {
+		InMemorySyncToolRepository.Builder builder = InMemorySyncToolRepository.builder().pageSize(2);
+		for (String name : List.of("c", "a", "b")) {
+			builder.tool(McpSyncTool.of(Tool.builder(name, EMPTY_SCHEMA).build(),
+					(ctx, request) -> McpSyncResponse.result(CallToolResult.builder().build())));
+		}
+		McpServer server = server(ToolsFeature.ofSync(builder.build()));
+
+		Map<String, Object> first = call(server, McpSchema.METHOD_TOOLS_LIST, params());
+		List<Map<String, Object>> tools = (List<Map<String, Object>>) first.get("tools");
+		assertThat(tools).extracting(tool -> tool.get("name")).containsExactly("a", "b");
+		assertThat(first.get("nextCursor")).isNotNull();
+
+		Map<String, Object> second = call(server, McpSchema.METHOD_TOOLS_LIST,
+				params("cursor", first.get("nextCursor")));
+		tools = (List<Map<String, Object>>) second.get("tools");
+		assertThat(tools).extracting(tool -> tool.get("name")).containsExactly("c");
+		assertThat(second.get("nextCursor")).isNull();
+	}
+
+	@Test
 	void toolRepositoryBroadcastsChanges() {
 		McpChangeFeed changes = new McpChangeFeed();
 		InMemorySyncToolRepository repository = InMemorySyncToolRepository.builder().changeBroadcaster(changes).build();
@@ -135,17 +172,14 @@ class InMemoryRepositoriesTests {
 			.expectNextMatches(change -> change instanceof ServerChange.ToolsListChanged)
 			.verifyComplete();
 
-		assertThat(repository.tools()).isEmpty();
+		assertThat(repository.list(null, null).tools()).isEmpty();
 		assertThat(repository.remove("echo")).isFalse();
 	}
 
 	@Test
 	void repositoriesRejectCursors() {
 		InMemorySyncToolRepository repository = InMemorySyncToolRepository.builder().tool(echoTool()).build();
-		McpServer server = McpServer.builder()
-			.serverInfo(Implementation.builder("test", "1").build())
-			.feature(ToolsFeature.ofSync(repository))
-			.build();
+		McpServer server = server(ToolsFeature.ofSync(repository));
 
 		Map<String, Object> stale = call(server, McpSchema.METHOD_TOOLS_LIST, params("cursor", "stale"));
 		assertThat(stale.get("code")).isEqualTo(McpSchema.ErrorCodes.INVALID_PARAMS);
@@ -162,16 +196,19 @@ class InMemoryRepositoriesTests {
 	@Test
 	@SuppressWarnings("unchecked")
 	void resourceRepositoryMatchesStaticAndTemplateUris() {
+		McpChangeFeed changes = new McpChangeFeed();
 		InMemorySyncResourceRepository repository = InMemorySyncResourceRepository.builder()
-			.resource(new SyncResourceSpecification(Resource.builder("test://static", "static").build(),
+			.resource(SyncResourceEntry.of(Resource.builder("test://static", "static").build(),
 					(ctx, request) -> McpSyncResponse.result(ReadResourceResult
 						.builder(List.of(TextResourceContents.builder(request.uri(), "static-content").build()))
 						.build())))
-			.resourceTemplate(new SyncResourceTemplateSpecification(
-					ResourceTemplate.builder("test://items/{id}", "items").build(),
-					(ctx, request) -> McpSyncResponse.result(ReadResourceResult
-						.builder(List.of(TextResourceContents.builder(request.uri(), "item:" + request.uri()).build()))
-						.build())))
+			.resourceTemplate(
+					SyncResourceTemplateEntry.of(ResourceTemplate.builder("test://items/{id}", "items").build(),
+							(ctx, request) -> McpSyncResponse.result(ReadResourceResult
+								.builder(List
+									.of(TextResourceContents.builder(request.uri(), "item:" + request.uri()).build()))
+								.build())))
+			.changeBroadcaster(changes)
 			.subscribeSupported(true)
 			.build();
 		McpServer server = McpServer.builder()
@@ -195,21 +232,27 @@ class InMemoryRepositoriesTests {
 		assertThat((List<?>) templates.get("resourceTemplates")).hasSize(1);
 		assertThat(repository.supportsSubscribe()).isTrue();
 
-		assertThatThrownBy(() -> repository.add(new SyncResourceTemplateSpecification(
-				ResourceTemplate.builder("test://items/{id}", "dup").build(), (ctx, request) -> null)))
+		assertThatThrownBy(() -> repository.add(SyncResourceTemplateEntry
+			.of(ResourceTemplate.builder("test://items/{id}", "dup").build(), (ctx, request) -> null)))
 			.isInstanceOf(IllegalArgumentException.class);
-		assertThat(repository.remove("test://items/{id}")).isTrue();
-		assertThat(repository.resourceTemplates()).isEmpty();
+
+		StepVerifier.create(changes.changes().take(2))
+			.then(() -> repository.resourceUpdated("test://static"))
+			.expectNextMatches(change -> change instanceof ServerChange.ResourceUpdated updated
+					&& updated.uri().equals("test://static"))
+			.then(() -> repository.remove("test://items/{id}"))
+			.expectNextMatches(change -> change instanceof ServerChange.ResourcesListChanged)
+			.verifyComplete();
+		assertThat(repository.listTemplates(null, null).resourceTemplates()).isEmpty();
 	}
 
 	@Test
 	@SuppressWarnings("unchecked")
 	void promptRepositoryGetsPrompts() {
 		InMemorySyncPromptRepository repository = InMemorySyncPromptRepository.builder()
-			.prompt(new SyncPromptSpecification(Prompt.builder("greet").build(),
+			.prompt(McpSyncPrompt.of(Prompt.builder("greet").build(),
 					(ctx, request) -> McpSyncResponse.result(GetPromptResult
-						.builder(
-								List.of(PromptMessage.builder(Role.USER, TextContent.builder("hello").build()).build()))
+						.builder(List.of(PromptMessage.builder(Role.USER, TextContent.builder("hello").build()).build()))
 						.build())))
 			.build();
 		McpServer server = McpServer.builder()

@@ -38,7 +38,7 @@ import org.springframework.util.Assert;
  * server without changes.
  *
  * @author Christian Tzolov
- * @since 2.2.0
+ * @since 2.1.0
  */
 public final class McpSchemaConverter {
 

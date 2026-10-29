@@ -42,7 +42,7 @@ import org.springframework.util.Assert;
  * {@link #headers(McpRequestContext)}.
  *
  * @author Christian Tzolov
- * @since 2.2.0
+ * @since 2.1.0
  */
 public final class McpTransportContexts {
 
@@ -116,9 +116,29 @@ public final class McpTransportContexts {
 	 * {@code null} when absent.
 	 */
 	public static @Nullable String header(McpTransportContext transportContext, String name) {
+		Assert.notNull(transportContext, "transportContext must not be null");
 		Assert.hasText(name, "name must not be empty");
-		List<String> values = headers(transportContext).get(name.toLowerCase(Locale.ROOT));
-		return values == null || values.isEmpty() ? null : values.get(0);
+		if (!(transportContext.get(HEADERS) instanceof Map<?, ?> stored)) {
+			return null;
+		}
+		// The default extractor stores lower-cased names, so the direct lookup is the
+		// common case; a custom extractor may have stored any casing.
+		Object value = stored.get(name.toLowerCase(Locale.ROOT));
+		if (value == null) {
+			for (Map.Entry<?, ?> entry : stored.entrySet()) {
+				if (entry.getKey() instanceof String headerName && headerName.equalsIgnoreCase(name)) {
+					value = entry.getValue();
+					break;
+				}
+			}
+		}
+		if (value instanceof String single) {
+			return single;
+		}
+		if (value instanceof List<?> values && !values.isEmpty()) {
+			return String.valueOf(values.get(0));
+		}
+		return null;
 	}
 
 	public static @Nullable String header(McpRequestContext ctx, String name) {

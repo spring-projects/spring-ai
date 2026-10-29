@@ -18,22 +18,19 @@
  * Support for MCP servers implementing the 2026-07-28 ("modern") specification revision,
  * built on the {@code io.modelcontextprotocol.modern} server API of the MCP Java SDK.
  * <p>
- * The modern SDK exposes primitives through repositories rather than specification lists.
- * This package bridges the two styles: the {@code Sync*Specification} records pair a
- * primitive definition with its handler, the {@code AbstractSync*Repository} classes turn
- * per-request definitions and specifications into an SDK repository (paging, list cache
- * scope, visibility, dispatch, template matching, change broadcasts), and the
- * {@code InMemorySync*Repository} classes are their map-backed implementations. A
- * {@link org.springframework.ai.mcp.modern.McpVisibilityFilter} restricts what each
- * caller sees, typically from the request headers that
- * {@link org.springframework.ai.mcp.modern.McpTransportContexts} exposes.
+ * The modern SDK serves each primitive from a repository that lists definitions and finds
+ * a definition with its handler ({@code McpSyncTool}, {@code McpSyncPrompt},
+ * {@code McpSyncResource}). The {@code InMemorySync*Repository} classes are map-backed
+ * repositories with runtime add and remove, change broadcasts and key-cursor paging.
+ * {@link org.springframework.ai.mcp.modern.SyncResourceEntry} and
+ * {@link org.springframework.ai.mcp.modern.SyncResourceTemplateEntry} pair a resource or
+ * template definition with its handler, which the SDK's {@code McpSyncResource} does not
+ * carry; {@link org.springframework.ai.mcp.modern.SyncCompletionSpecification} does the
+ * same for a completion reference.
  * {@link org.springframework.ai.mcp.modern.McpSchemaConverter} converts between the
  * legacy and modern schema types, which lets handlers written against the legacy types be
- * exposed on a modern server.
- * <p>
- * <strong>Internal note:</strong> the in-memory repositories and the converter are
- * candidates for contribution to the MCP Java SDK. Their shape mirrors the SDK naming so
- * that they can be replaced by SDK types without changes to user code.
+ * exposed on a modern server, and {@link org.springframework.ai.mcp.modern.McpTransportContexts}
+ * reads the request headers that the Spring transports put into the transport context.
  */
 @NullMarked
 package org.springframework.ai.mcp.modern;

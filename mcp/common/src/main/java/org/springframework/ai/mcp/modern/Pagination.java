@@ -19,7 +19,7 @@ package org.springframework.ai.mcp.modern;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
-import java.util.Comparator;
+import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
 
@@ -27,9 +27,10 @@ import io.modelcontextprotocol.modern.McpException;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Key-based cursor paging over a list of specifications. The cursor is the opaque,
- * URL-safe encoding of the last key on the previous page, so pages stay consistent when
- * entries are added or removed between requests.
+ * Key-based cursor paging over entries that are already in ascending key order, as the
+ * values of a sorted map are. The cursor is the opaque, URL-safe encoding of the last key
+ * on the previous page, so pages stay consistent when entries are added or removed
+ * between requests.
  *
  * @author Christian Tzolov
  */
@@ -41,32 +42,35 @@ final class Pagination {
 	}
 
 	/**
-	 * Sorts {@code specifications} by key and returns the page following {@code cursor}.
+	 * Returns the page of {@code entries} following {@code cursor}, with every entry
+	 * mapped through {@code item}, in a single pass.
+	 * @param entries the entries in ascending {@code key} order
 	 * @param pageSize {@code null} returns everything on one page and treats any cursor
 	 * as invalid
 	 * @throws McpException {@code -32602} when the cursor is not one this method produced
 	 */
-	static <S> Page<S> page(List<S> specifications, Function<S, String> key, @Nullable String cursor,
-			@Nullable Integer pageSize) {
-		if (pageSize == null) {
-			if (cursor != null) {
-				throw invalidCursor(cursor);
-			}
-			return new Page<>(List.copyOf(specifications), null);
+	static <S, D> Page<D> page(Collection<S> entries, Function<S, String> key, Function<S, D> item,
+			@Nullable String cursor, @Nullable Integer pageSize) {
+		if (pageSize == null && cursor != null) {
+			throw invalidCursor(cursor);
 		}
-		List<S> sorted = new ArrayList<>(specifications);
-		sorted.sort(Comparator.comparing(key));
-		int start = 0;
-		if (cursor != null) {
-			String lastKey = decode(cursor);
-			while (start < sorted.size() && key.apply(sorted.get(start)).compareTo(lastKey) <= 0) {
-				start++;
+		String after = cursor != null ? decode(cursor) : null;
+		List<D> items = new ArrayList<>(pageSize != null ? Math.min(pageSize, entries.size()) : entries.size());
+		String last = null;
+		boolean more = false;
+		for (S entry : entries) {
+			String entryKey = key.apply(entry);
+			if (after != null && entryKey.compareTo(after) <= 0) {
+				continue;
 			}
+			if (pageSize != null && items.size() == pageSize) {
+				more = true;
+				break;
+			}
+			items.add(item.apply(entry));
+			last = entryKey;
 		}
-		int end = Math.min(start + pageSize, sorted.size());
-		List<S> items = List.copyOf(sorted.subList(start, end));
-		String next = end < sorted.size() ? encode(key.apply(sorted.get(end - 1))) : null;
-		return new Page<>(items, next);
+		return new Page<>(List.copyOf(items), more && last != null ? encode(last) : null);
 	}
 
 	static String encode(String lastKey) {
@@ -92,7 +96,7 @@ final class Pagination {
 		return McpException.invalidParams("Invalid cursor: " + cursor);
 	}
 
-	record Page<S>(List<S> items, @Nullable String nextCursor) {
+	record Page<D>(List<D> items, @Nullable String nextCursor) {
 	}
 
 }

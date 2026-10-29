@@ -30,7 +30,7 @@ import org.springframework.util.Assert;
  * @param reference the prompt or resource reference the handler completes
  * @param handler the handler invoked for {@code completion/complete}
  * @author Christian Tzolov
- * @since 2.2.0
+ * @since 2.1.0
  */
 public record SyncCompletionSpecification(CompleteReference reference, Handler handler) {
 
