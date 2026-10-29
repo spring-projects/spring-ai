@@ -62,6 +62,7 @@ All common properties are prefixed with `spring.ai.mcp.server`:
 |`instructions` |Optional instructions for client interaction |`null`
 |`type` |Server type (SYNC/ASYNC) |`SYNC`
 |`capabilities.resource` |Enable/disable resource capabilities |`true`
+|`capabilities.resource-subscribe` |Let clients subscribe to resource updates (`resources/subscribe`) |`false`
 |`capabilities.tool` |Enable/disable tool capabilities |`true`
 |`capabilities.prompt` |Enable/disable prompt capabilities |`true`
 |`capabilities.completion` |Enable/disable completion capabilities |`true`
@@ -111,6 +112,10 @@ The MCP Server supports four main capability types that can be individually enab
 - **Completions** - Enable/disable completion capabilities with `spring.ai.mcp.server.capabilities.completion=true|false`
 
 All capabilities are enabled by default. Disabling a capability will prevent the server from registering and exposing the corresponding features to clients.
+
+Resource subscriptions are disabled by default.
+Set `spring.ai.mcp.server.capabilities.resource-subscribe=true` to let clients call `resources/subscribe` and receive `notifications/resources/updated` when the server calls `McpSyncServer.notifyResourcesUpdated(...)` (or the `McpAsyncServer` equivalent).
+Stateless servers ignore this property because they have no session to subscribe against.
 
 The MCP Server Boot Starter allows servers to expose tools, resources, and prompts to clients.
 It automatically converts custom capability handlers registered as Spring beans to sync/async specifications based on the server type:

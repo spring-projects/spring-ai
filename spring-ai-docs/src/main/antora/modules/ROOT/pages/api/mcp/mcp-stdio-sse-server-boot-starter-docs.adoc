@@ -82,6 +82,7 @@ All Common properties are prefixed with `spring.ai.mcp.server`:
 |`instructions` |Optional instructions to provide guidance to the client on how to interact with this server |`null`
 |`type` |Server type (SYNC/ASYNC) |`SYNC`
 |`capabilities.resource` |Enable/disable resource capabilities |`true`
+|`capabilities.resource-subscribe` |Let clients subscribe to resource updates (`resources/subscribe`) |`false`
 |`capabilities.tool` |Enable/disable tool capabilities |`true`
 |`capabilities.prompt` |Enable/disable prompt capabilities |`true`
 |`capabilities.completion` |Enable/disable completion capabilities |`true`
