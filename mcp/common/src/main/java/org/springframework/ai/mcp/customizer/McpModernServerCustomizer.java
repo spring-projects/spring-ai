@@ -25,7 +25,7 @@ import io.modelcontextprotocol.modern.server.McpServer;
  * state codec.
  *
  * @author Christian Tzolov
- * @since 2.2.0
+ * @since 2.1.0
  */
 @FunctionalInterface
 public interface McpModernServerCustomizer {

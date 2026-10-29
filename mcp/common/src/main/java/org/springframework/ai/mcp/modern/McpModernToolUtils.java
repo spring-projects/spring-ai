@@ -30,6 +30,7 @@ import io.modelcontextprotocol.modern.McpSchema.TextContent;
 import io.modelcontextprotocol.modern.McpSchema.Tool;
 import io.modelcontextprotocol.modern.server.McpRequestContext;
 import io.modelcontextprotocol.modern.server.McpSyncResponse;
+import io.modelcontextprotocol.modern.server.feature.McpSyncTool;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.chat.model.ToolContext;
@@ -48,7 +49,7 @@ import org.springframework.util.MimeType;
  * session-based exchange type.
  *
  * @author Christian Tzolov
- * @since 2.2.0
+ * @since 2.1.0
  */
 public final class McpModernToolUtils {
 
@@ -64,34 +65,33 @@ public final class McpModernToolUtils {
 	}
 
 	/**
-	 * Converts the given callbacks to modern tool specifications.
+	 * Converts the given callbacks to modern tools.
 	 * @param toolCallbacks the callbacks to expose
-	 * @return one specification per callback
+	 * @return one tool per callback
 	 */
-	public static List<SyncToolSpecification> toSyncToolSpecifications(List<ToolCallback> toolCallbacks) {
+	public static List<McpSyncTool> toSyncTools(List<ToolCallback> toolCallbacks) {
 		Assert.notNull(toolCallbacks, "toolCallbacks must not be null");
-		return toolCallbacks.stream().map(McpModernToolUtils::toSyncToolSpecification).toList();
+		return toolCallbacks.stream().map(McpModernToolUtils::toSyncTool).toList();
 	}
 
-	public static List<SyncToolSpecification> toSyncToolSpecifications(ToolCallback... toolCallbacks) {
-		return toSyncToolSpecifications(List.of(toolCallbacks));
+	public static List<McpSyncTool> toSyncTools(ToolCallback... toolCallbacks) {
+		return toSyncTools(List.of(toolCallbacks));
 	}
 
-	public static SyncToolSpecification toSyncToolSpecification(ToolCallback toolCallback) {
-		return toSyncToolSpecification(toolCallback, null);
+	public static McpSyncTool toSyncTool(ToolCallback toolCallback) {
+		return toSyncTool(toolCallback, null);
 	}
 
 	/**
-	 * Converts a Spring AI {@link ToolCallback} to a modern tool specification. The tool
-	 * definition is built from the callback's name, description and input schema. The
-	 * callback's text result becomes the tool's text content, or an image content when an
-	 * image MIME type is given.
+	 * Converts a Spring AI {@link ToolCallback} to a modern tool. The tool definition is
+	 * built from the callback's name, description and input schema. The callback's text
+	 * result becomes the tool's text content, or an image content when an image MIME type
+	 * is given.
 	 * @param toolCallback the callback to expose
 	 * @param mimeType the MIME type of the callback's output, or {@code null} for text
-	 * @return the tool specification
+	 * @return the tool
 	 */
-	public static SyncToolSpecification toSyncToolSpecification(ToolCallback toolCallback,
-			@Nullable MimeType mimeType) {
+	public static McpSyncTool toSyncTool(ToolCallback toolCallback, @Nullable MimeType mimeType) {
 		Assert.notNull(toolCallback, "toolCallback must not be null");
 		var definition = toolCallback.getToolDefinition();
 		Tool tool = Tool
@@ -99,7 +99,7 @@ public final class McpModernToolUtils {
 					definition.inputSchema())
 			.description(definition.description())
 			.build();
-		return new SyncToolSpecification(tool,
+		return McpSyncTool.of(tool,
 				(context, request) -> McpSyncResponse.result(call(toolCallback, mimeType, context, request)));
 	}
 

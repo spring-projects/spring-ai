@@ -24,27 +24,35 @@ import java.util.concurrent.ConcurrentSkipListMap;
 import io.modelcontextprotocol.modern.McpSchema.Tool;
 import io.modelcontextprotocol.modern.server.McpRequestContext;
 import io.modelcontextprotocol.modern.server.feature.McpChangeBroadcaster;
+import io.modelcontextprotocol.modern.server.feature.McpSyncTool;
+import io.modelcontextprotocol.modern.server.feature.McpSyncToolRepository;
+import io.modelcontextprotocol.modern.server.feature.ServerChange;
+import io.modelcontextprotocol.modern.server.feature.ToolsPage;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.util.Assert;
 
 /**
- * An {@link AbstractSyncToolRepository} that keeps {@link SyncToolSpecification}s in a
- * sorted, concurrent map. Tools can be added and removed at runtime; each change is
- * broadcast as {@code notifications/tools/list_changed} when a change broadcaster is
- * configured. Every caller sees every tool unless a {@link McpVisibilityFilter} is set,
- * in which case hidden tools are neither listed nor callable and listings are
- * {@code cacheScope: private}.
+ * A {@link McpSyncToolRepository} that keeps {@link McpSyncTool}s in a sorted, concurrent
+ * map. Tools can be added and removed at runtime; each change is broadcast as
+ * {@code notifications/tools/list_changed} when a change broadcaster is configured.
+ * Listings are paged by name with an opaque key cursor when a page size is set.
  *
  * @author Christian Tzolov
  * @since 2.1.0
  */
-public final class InMemorySyncToolRepository extends AbstractSyncToolRepository {
+public final class InMemorySyncToolRepository implements McpSyncToolRepository {
 
-	private final Map<String, SyncToolSpecification> tools = new ConcurrentSkipListMap<>();
+	private final Map<String, McpSyncTool> tools = new ConcurrentSkipListMap<>();
+
+	private final @Nullable McpChangeBroadcaster changeBroadcaster;
+
+	private final @Nullable Integer pageSize;
 
 	private InMemorySyncToolRepository(Builder builder) {
-		super(builder.changeBroadcaster, builder.pageSize, builder.visibility);
+		Assert.isTrue(builder.pageSize == null || builder.pageSize > 0, "pageSize must be positive");
+		this.changeBroadcaster = builder.changeBroadcaster;
+		this.pageSize = builder.pageSize;
 		builder.tools.forEach(this::put);
 	}
 
@@ -56,8 +64,8 @@ public final class InMemorySyncToolRepository extends AbstractSyncToolRepository
 	 * Adds a tool and notifies listening clients.
 	 * @throws IllegalArgumentException if a tool with the same name exists
 	 */
-	public void add(SyncToolSpecification specification) {
-		put(specification);
+	public void add(McpSyncTool tool) {
+		put(tool);
 		broadcastListChanged();
 	}
 
@@ -74,30 +82,29 @@ public final class InMemorySyncToolRepository extends AbstractSyncToolRepository
 		return removed;
 	}
 
-	/**
-	 * All tool definitions, sorted by name, regardless of any visibility filter.
-	 */
-	public List<Tool> tools() {
-		List<Tool> result = new ArrayList<>(this.tools.size());
-		this.tools.values().forEach(spec -> result.add(spec.tool()));
-		return List.copyOf(result);
+	@Override
+	public ToolsPage list(McpRequestContext ctx, @Nullable String cursor) {
+		Pagination.Page<Tool> page = Pagination.page(this.tools.values(), tool -> tool.definition().name(),
+				McpSyncTool::definition, cursor, this.pageSize);
+		return new ToolsPage(page.items(), page.nextCursor(), null, null);
 	}
 
 	@Override
-	protected @Nullable SyncToolSpecification lookup(McpRequestContext ctx, String name) {
+	public @Nullable McpSyncTool find(McpRequestContext ctx, String name) {
 		return this.tools.get(name);
 	}
 
-	@Override
-	protected List<Tool> definitions(McpRequestContext ctx) {
-		return tools();
+	private void put(McpSyncTool tool) {
+		Assert.notNull(tool, "tool must not be null");
+		String name = tool.definition().name();
+		if (this.tools.putIfAbsent(name, tool) != null) {
+			throw new IllegalArgumentException("Tool with name '" + name + "' already exists");
+		}
 	}
 
-	private void put(SyncToolSpecification specification) {
-		Assert.notNull(specification, "specification must not be null");
-		String name = specification.tool().name();
-		if (this.tools.putIfAbsent(name, specification) != null) {
-			throw new IllegalArgumentException("Tool with name '" + name + "' already exists");
+	private void broadcastListChanged() {
+		if (this.changeBroadcaster != null) {
+			this.changeBroadcaster.broadcast(new ServerChange.ToolsListChanged());
 		}
 	}
 
@@ -106,29 +113,31 @@ public final class InMemorySyncToolRepository extends AbstractSyncToolRepository
 	 */
 	public static final class Builder {
 
-		private final List<SyncToolSpecification> tools = new ArrayList<>();
+		private final List<McpSyncTool> tools = new ArrayList<>();
 
 		private @Nullable McpChangeBroadcaster changeBroadcaster;
 
 		private @Nullable Integer pageSize;
 
-		private @Nullable McpVisibilityFilter visibility;
-
 		private Builder() {
 		}
 
-		public Builder tool(SyncToolSpecification specification) {
-			Assert.notNull(specification, "specification must not be null");
-			this.tools.add(specification);
+		public Builder tool(McpSyncTool tool) {
+			Assert.notNull(tool, "tool must not be null");
+			this.tools.add(tool);
 			return this;
 		}
 
-		public Builder tools(List<SyncToolSpecification> specifications) {
-			Assert.notNull(specifications, "specifications must not be null");
-			this.tools.addAll(specifications);
+		public Builder tools(List<McpSyncTool> tools) {
+			Assert.notNull(tools, "tools must not be null");
+			this.tools.addAll(tools);
 			return this;
 		}
 
+		/**
+		 * Receives {@code tools/list_changed} broadcasts. Unset, changes are not
+		 * announced.
+		 */
 		public Builder changeBroadcaster(@Nullable McpChangeBroadcaster changeBroadcaster) {
 			this.changeBroadcaster = changeBroadcaster;
 			return this;
@@ -140,14 +149,6 @@ public final class InMemorySyncToolRepository extends AbstractSyncToolRepository
 		 */
 		public Builder pageSize(@Nullable Integer pageSize) {
 			this.pageSize = pageSize;
-			return this;
-		}
-
-		/**
-		 * Restricts what each caller sees. Unset, every caller sees every tool.
-		 */
-		public Builder visibility(@Nullable McpVisibilityFilter visibility) {
-			this.visibility = visibility;
 			return this;
 		}
 

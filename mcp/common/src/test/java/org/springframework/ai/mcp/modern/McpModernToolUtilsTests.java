@@ -71,7 +71,7 @@ class McpModernToolUtilsTests {
 			}
 		};
 		InMemorySyncToolRepository repository = InMemorySyncToolRepository.builder()
-			.tool(McpModernToolUtils.toSyncToolSpecification(callback))
+			.tool(McpModernToolUtils.toSyncTool(callback))
 			.build();
 		McpServer server = McpServer.builder()
 			.serverInfo(Implementation.builder("test", "1").build())
