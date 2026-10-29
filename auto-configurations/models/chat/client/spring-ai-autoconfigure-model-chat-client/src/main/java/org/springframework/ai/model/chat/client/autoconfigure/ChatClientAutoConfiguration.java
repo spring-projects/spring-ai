@@ -34,7 +34,6 @@ import org.springframework.ai.chat.client.observation.ChatClientPromptContentObs
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityChecker;
-import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.observation.TracingAwareLoggingObservationHandler;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -64,7 +63,7 @@ import org.springframework.context.annotation.Scope;
  * @author Jonatan Ivanov
  * @since 1.0.0
  */
-@AutoConfiguration(after = ToolCallingAutoConfiguration.class)
+@AutoConfiguration(afterName = "org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration")
 @ConditionalOnClass(ChatClient.class)
 @EnableConfigurationProperties(ChatClientBuilderProperties.class)
 @ConditionalOnProperty(prefix = ChatClientBuilderProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
