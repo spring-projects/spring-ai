@@ -152,7 +152,7 @@ class ResponsesStreamAssemblerTests {
 	 * it too, and the deltas after it within that entry carry none.
 	 */
 	@Test
-	void aNewSummaryEntryWithinAnItemStartsANewParagraph() {
+	void reasoningSummaryDeltasStartANewParagraphForEachEntryWithinAnItem() {
 		this.assembler.apply(created("reasoning-with-summary-entries.json"));
 
 		this.assembler.apply(reasoningDelta("**Reading**", 0, 0));
@@ -180,7 +180,7 @@ class ResponsesStreamAssemblerTests {
 	 * for every empty entry, and must open neither an entry nor an item.
 	 */
 	@Test
-	void streamedSummaryEntriesAggregateToTheSameSummaryAsTheCalledResponse() {
+	void streamedSummaryEntriesAggregateToTheSameSummaryAsTheNonStreamedResponse() {
 		Response response = ResponsesTestFixtures.response("reasoning-with-summary-entries.json");
 		List<ResponseStreamEvent> events = List.of(created("reasoning-with-summary-entries.json"),
 				reasoningDelta("", 0, 0), reasoningDelta("**Reading the question**\nThe user wants ", 0, 1),
@@ -192,7 +192,7 @@ class ResponsesStreamAssemblerTests {
 				itemDone(response.output().get(2), 2), textDelta("It is 18 degrees in Paris.", 3),
 				itemDone(response.output().get(3), 3), completed(response));
 
-		assertSameSummariesAsTheCalledResponse(aggregate(events), response);
+		assertSameSummariesAsTheNonStreamedResponse(aggregate(events), response);
 	}
 
 	/**
@@ -206,19 +206,19 @@ class ResponsesStreamAssemblerTests {
 				itemDone(response.output().get(0), 0), itemDone(response.output().get(1), 1),
 				itemDone(response.output().get(2), 2), itemDone(response.output().get(3), 3), completed(response));
 
-		assertSameSummariesAsTheCalledResponse(aggregate(events), response);
+		assertSameSummariesAsTheNonStreamedResponse(aggregate(events), response);
 	}
 
-	private static void assertSameSummariesAsTheCalledResponse(ChatResponse aggregated, Response response) {
-		Generation called = ResponsesItemMapper.toGeneration(response);
-		List<MessagePart> calledParts = called.getOutput().getParts();
+	private static void assertSameSummariesAsTheNonStreamedResponse(ChatResponse aggregated, Response response) {
+		Generation nonStreamed = ResponsesItemMapper.toGeneration(response);
+		List<MessagePart> nonStreamedParts = nonStreamed.getOutput().getParts();
 		List<MessagePart> streamedParts = aggregated.getResult().getOutput().getParts();
 		for (int index = 0; index < 3; index++) {
 			assertThat(((ReasoningPart) streamedParts.get(index)).summary())
-				.isEqualTo(((ReasoningPart) calledParts.get(index)).summary());
+				.isEqualTo(((ReasoningPart) nonStreamedParts.get(index)).summary());
 		}
 		assertThat(reasoningContent(aggregated))
-			.isEqualTo(called.getMetadata().<String>get(OpenAiResponsesMetadata.REASONING_CONTENT));
+			.isEqualTo(nonStreamed.getMetadata().<String>get(OpenAiResponsesMetadata.REASONING_CONTENT));
 	}
 
 	/**

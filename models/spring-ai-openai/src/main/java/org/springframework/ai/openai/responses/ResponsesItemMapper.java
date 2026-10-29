@@ -152,9 +152,9 @@ final class ResponsesItemMapper {
 	 * without a separator runs the last sentence of one into the heading of the next.
 	 * Shared with {@link ResponsesStreamAssembler}, which inserts it where the
 	 * {@code summary_index} of the deltas changes, so that a streamed summary and a
-	 * called one are the same text.
+	 * non-streamed one are the same text.
 	 */
-	static final String REASONING_SUMMARY_PART_SEPARATOR = "\n\n";
+	static final String REASONING_SUMMARY_ENTRY_SEPARATOR = "\n\n";
 
 	private static final MimeType IMAGE_WEBP = MimeType.valueOf("image/webp");
 
@@ -674,7 +674,7 @@ final class ResponsesItemMapper {
 	 */
 	private static @Nullable String summaryText(ResponseReasoningItem item) {
 		return join(item.summary().stream().map(ResponseReasoningItem.Summary::text).filter(StringUtils::hasLength),
-				REASONING_SUMMARY_PART_SEPARATOR);
+				REASONING_SUMMARY_ENTRY_SEPARATOR);
 	}
 
 	private static @Nullable String join(Stream<String> texts, String separator) {

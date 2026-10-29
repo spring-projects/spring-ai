@@ -146,21 +146,20 @@ final class ResponsesStreamAssembler {
 			if (delta.delta().isEmpty()) {
 				// Nothing to show, and it must not count as the start of an entry or an
 				// item: the non-streaming path skips empty entries, so a separator here
-				// would put a paragraph break in the streamed summary that the called one
-				// does not have.
+				// would put a paragraph break in the streamed summary that the
+				// non-streamed one does not have.
 				return List.of();
 			}
 			int index = index(delta.outputIndex());
 			this.streamedReasoningSummary.add(index);
 			int summaryIndex = Math.toIntExact(delta.summaryIndex());
-			// A further entry of the item already being accumulated starts a new
-			// paragraph. The first entry of an item gets nothing here: what separates two
-			// items is REASONING_ITEM_SEPARATOR, which appendReasoning adds. Checked
-			// before either index is updated below. The separator rides on the first
-			// delta of the entry, so that the aggregated part, the running total and a
-			// consumer of the raw flux all see the same text.
+			// When the summary moves on to its next entry
+			// (same output_index, new summary_index), put a blank line before it so
+			// each entry is its own paragraph. The blank line goes into this delta's
+			// text, so an app that prints deltas as they arrive shows the same text as
+			// the combined summary at the end.
 			boolean newEntry = this.reasoningIndex == index && this.reasoningSummaryIndex != summaryIndex;
-			String text = newEntry ? ResponsesItemMapper.REASONING_SUMMARY_PART_SEPARATOR + delta.delta()
+			String text = newEntry ? ResponsesItemMapper.REASONING_SUMMARY_ENTRY_SEPARATOR + delta.delta()
 					: delta.delta();
 			this.reasoningSummaryIndex = summaryIndex;
 			appendReasoning(index, text);
