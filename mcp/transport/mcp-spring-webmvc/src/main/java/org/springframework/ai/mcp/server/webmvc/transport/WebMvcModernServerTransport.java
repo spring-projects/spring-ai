@@ -83,7 +83,7 @@ import org.springframework.web.servlet.function.ServerResponse.SseBuilder;
  * whose headers disagree with its body is rejected before dispatch.
  *
  * @author Christian Tzolov
- * @since 2.2.0
+ * @since 2.1.0
  */
 public final class WebMvcModernServerTransport {
 

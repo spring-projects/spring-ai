@@ -33,6 +33,7 @@ import org.springframework.ai.mcp.annotation.McpMeta;
 import org.springframework.ai.mcp.annotation.McpProgressToken;
 import org.springframework.ai.mcp.annotation.McpPrompt;
 import org.springframework.ai.mcp.annotation.common.MetaUtils;
+import org.springframework.ai.mcp.annotation.common.ModernMethodSupport;
 import org.springframework.ai.mcp.annotation.context.McpAsyncRequestContext;
 import org.springframework.ai.mcp.annotation.context.McpSyncRequestContext;
 
@@ -105,6 +106,8 @@ public final class PromptAdapter {
 					|| McpSyncRequestContext.class.isAssignableFrom(parameter.getType())
 					|| McpAsyncRequestContext.class.isAssignableFrom(parameter.getType())
 					|| McpSchema.GetPromptRequest.class.isAssignableFrom(parameter.getType())
+					|| ModernMethodSupport.isInfrastructureParameter(parameter.getType(),
+							io.modelcontextprotocol.modern.McpSchema.GetPromptRequest.class)
 					|| java.util.Map.class.isAssignableFrom(parameter.getType())
 					|| McpMeta.class.isAssignableFrom(parameter.getType())
 					|| parameter.isAnnotationPresent(McpProgressToken.class)) {

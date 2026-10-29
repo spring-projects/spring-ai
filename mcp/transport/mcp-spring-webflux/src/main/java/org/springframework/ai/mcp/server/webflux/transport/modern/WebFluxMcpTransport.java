@@ -80,7 +80,7 @@ import org.springframework.web.reactive.function.server.ServerResponse;
  * disagree with its body is rejected before dispatch.
  *
  * @author Dariusz Jędrzejczyk
- * @since 2.2.0
+ * @since 2.1.0
  */
 public final class WebFluxMcpTransport {
 
@@ -412,7 +412,7 @@ public final class WebFluxMcpTransport {
 	/**
 	 * Builder for {@link WebFluxMcpTransport}.
 	 *
-	 * @since 2.2.0
+	 * @since 2.1.0
 	 */
 	public static final class Builder {
 

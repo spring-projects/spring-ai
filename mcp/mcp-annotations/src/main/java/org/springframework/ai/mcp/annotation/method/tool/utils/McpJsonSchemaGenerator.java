@@ -49,6 +49,7 @@ import tools.jackson.databind.node.ObjectNode;
 import org.springframework.ai.mcp.annotation.McpMeta;
 import org.springframework.ai.mcp.annotation.McpProgressToken;
 import org.springframework.ai.mcp.annotation.McpToolParam;
+import org.springframework.ai.mcp.annotation.common.ModernMethodSupport;
 import org.springframework.ai.mcp.annotation.context.McpAsyncRequestContext;
 import org.springframework.ai.mcp.annotation.context.McpSyncRequestContext;
 import org.springframework.ai.model.KotlinModule;
@@ -118,7 +119,8 @@ public final class McpJsonSchemaGenerator {
 	private static String internalGenerateFromMethodArguments(Method method) {
 		// Check if method has CallToolRequest parameter
 		boolean hasCallToolRequestParam = Arrays.stream(method.getParameterTypes())
-			.anyMatch(type -> CallToolRequest.class.isAssignableFrom(type));
+			.anyMatch(type -> CallToolRequest.class.isAssignableFrom(type)
+					|| io.modelcontextprotocol.modern.McpSchema.CallToolRequest.class.isAssignableFrom(type));
 
 		// If method has CallToolRequest, return minimal schema unless there are other
 		// non-infrastructure parameters alongside it.
@@ -130,7 +132,7 @@ public final class McpJsonSchemaGenerator {
 						&& !CallToolRequest.class.isAssignableFrom(type)
 						&& !McpSyncServerExchange.class.isAssignableFrom(type)
 						&& !McpAsyncServerExchange.class.isAssignableFrom(type)
-						&& !McpTransportContext.class.isAssignableFrom(type)
+						&& !McpTransportContext.class.isAssignableFrom(type) && !isModernInfrastructureType(type)
 						&& !param.isAnnotationPresent(McpProgressToken.class) && !McpMeta.class.isAssignableFrom(type);
 			});
 
@@ -173,7 +175,8 @@ public final class McpJsonSchemaGenerator {
 							|| ClassUtils.isAssignable(McpSyncServerExchange.class, parameterClass)
 							|| ClassUtils.isAssignable(McpAsyncServerExchange.class, parameterClass)
 							|| ClassUtils.isAssignable(McpTransportContext.class, parameterClass)
-							|| ClassUtils.isAssignable(CallToolRequest.class, parameterClass))) {
+							|| ClassUtils.isAssignable(CallToolRequest.class, parameterClass)
+							|| isModernInfrastructureType(parameterClass))) {
 				continue;
 			}
 
@@ -244,7 +247,18 @@ public final class McpJsonSchemaGenerator {
 	 * @return true if the method has a CallToolRequest parameter, false otherwise
 	 */
 	public static boolean hasCallToolRequestParameter(Method method) {
-		return Arrays.stream(method.getParameterTypes()).anyMatch(type -> CallToolRequest.class.isAssignableFrom(type));
+		return Arrays.stream(method.getParameterTypes())
+			.anyMatch(type -> CallToolRequest.class.isAssignableFrom(type)
+					|| io.modelcontextprotocol.modern.McpSchema.CallToolRequest.class.isAssignableFrom(type));
+	}
+
+	/**
+	 * Parameter types injected by the 2026-07-28 ("modern") server callbacks rather than
+	 * bound from the tool arguments.
+	 */
+	private static boolean isModernInfrastructureType(Class<?> type) {
+		return ModernMethodSupport.isInfrastructureParameter(type,
+				io.modelcontextprotocol.modern.McpSchema.CallToolRequest.class);
 	}
 
 	private static boolean isMethodParameterRequired(Method method, int index) {

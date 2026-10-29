@@ -37,16 +37,20 @@ import org.springframework.ai.mcp.annotation.provider.changed.prompt.SyncMcpProm
 import org.springframework.ai.mcp.annotation.provider.changed.resource.SyncMcpResourceListChangedProvider;
 import org.springframework.ai.mcp.annotation.provider.changed.tool.SyncMcpToolListChangedProvider;
 import org.springframework.ai.mcp.annotation.provider.complete.SyncMcpCompleteProvider;
+import org.springframework.ai.mcp.annotation.provider.complete.SyncModernMcpCompleteProvider;
 import org.springframework.ai.mcp.annotation.provider.complete.SyncStatelessMcpCompleteProvider;
 import org.springframework.ai.mcp.annotation.provider.elicitation.SyncMcpElicitationProvider;
 import org.springframework.ai.mcp.annotation.provider.logging.SyncMcpLoggingProvider;
 import org.springframework.ai.mcp.annotation.provider.progress.SyncMcpProgressProvider;
 import org.springframework.ai.mcp.annotation.provider.prompt.SyncMcpPromptProvider;
+import org.springframework.ai.mcp.annotation.provider.prompt.SyncModernMcpPromptProvider;
 import org.springframework.ai.mcp.annotation.provider.prompt.SyncStatelessMcpPromptProvider;
 import org.springframework.ai.mcp.annotation.provider.resource.SyncMcpResourceProvider;
+import org.springframework.ai.mcp.annotation.provider.resource.SyncModernMcpResourceProvider;
 import org.springframework.ai.mcp.annotation.provider.resource.SyncStatelessMcpResourceProvider;
 import org.springframework.ai.mcp.annotation.provider.sampling.SyncMcpSamplingProvider;
 import org.springframework.ai.mcp.annotation.provider.tool.SyncMcpToolProvider;
+import org.springframework.ai.mcp.annotation.provider.tool.SyncModernMcpToolProvider;
 import org.springframework.ai.mcp.annotation.provider.tool.SyncStatelessMcpToolProvider;
 
 /**
@@ -109,6 +113,47 @@ public final class SyncMcpAnnotationProviders {
 	public static List<McpStatelessServerFeatures.SyncResourceTemplateSpecification> statelessResourceTemplateSpecifications(
 			List<Object> resourceObjects) {
 		return new SpringAiSyncStatelessResourceProvider(resourceObjects).getResourceTemplateSpecifications();
+	}
+
+	// MODERN (2026-07-28) SERVER
+	/**
+	 * @since 2.2.0
+	 */
+	public static List<org.springframework.ai.mcp.modern.SyncToolSpecification> modernToolSpecifications(
+			List<Object> toolObjects) {
+		return new SpringAiSyncModernToolProvider(toolObjects).getToolSpecifications();
+	}
+
+	/**
+	 * @since 2.2.0
+	 */
+	public static List<org.springframework.ai.mcp.modern.SyncCompletionSpecification> modernCompleteSpecifications(
+			List<Object> completeObjects) {
+		return new SpringAiSyncModernCompleteProvider(completeObjects).getModernCompleteSpecifications();
+	}
+
+	/**
+	 * @since 2.2.0
+	 */
+	public static List<org.springframework.ai.mcp.modern.SyncPromptSpecification> modernPromptSpecifications(
+			List<Object> promptObjects) {
+		return new SpringAiSyncModernPromptProvider(promptObjects).getModernPromptSpecifications();
+	}
+
+	/**
+	 * @since 2.2.0
+	 */
+	public static List<org.springframework.ai.mcp.modern.SyncResourceSpecification> modernResourceSpecifications(
+			List<Object> resourceObjects) {
+		return new SpringAiSyncModernResourceProvider(resourceObjects).getModernResourceSpecifications();
+	}
+
+	/**
+	 * @since 2.2.0
+	 */
+	public static List<org.springframework.ai.mcp.modern.SyncResourceTemplateSpecification> modernResourceTemplateSpecifications(
+			List<Object> resourceObjects) {
+		return new SpringAiSyncModernResourceProvider(resourceObjects).getModernResourceTemplateSpecifications();
 	}
 
 	// LOGGING (CLIENT)
@@ -348,6 +393,59 @@ public final class SyncMcpAnnotationProviders {
 
 		private SpringAiSyncMcpPromptListChangedProvider(List<Object> promptListChangedObjects) {
 			super(promptListChangedObjects);
+		}
+
+		@Override
+		protected Method[] doGetClassMethods(Object bean) {
+			return AnnotationProviderUtil.beanMethods(bean);
+		}
+
+	}
+
+	// MODERN (2026-07-28) SERVER
+	private final static class SpringAiSyncModernToolProvider extends SyncModernMcpToolProvider {
+
+		private SpringAiSyncModernToolProvider(List<Object> toolObjects) {
+			super(toolObjects);
+		}
+
+		@Override
+		protected Method[] doGetClassMethods(Object bean) {
+			return AnnotationProviderUtil.beanMethods(bean);
+		}
+
+	}
+
+	private final static class SpringAiSyncModernCompleteProvider extends SyncModernMcpCompleteProvider {
+
+		private SpringAiSyncModernCompleteProvider(List<Object> completeObjects) {
+			super(completeObjects);
+		}
+
+		@Override
+		protected Method[] doGetClassMethods(Object bean) {
+			return AnnotationProviderUtil.beanMethods(bean);
+		}
+
+	}
+
+	private final static class SpringAiSyncModernPromptProvider extends SyncModernMcpPromptProvider {
+
+		private SpringAiSyncModernPromptProvider(List<Object> promptObjects) {
+			super(promptObjects);
+		}
+
+		@Override
+		protected Method[] doGetClassMethods(Object bean) {
+			return AnnotationProviderUtil.beanMethods(bean);
+		}
+
+	}
+
+	private final static class SpringAiSyncModernResourceProvider extends SyncModernMcpResourceProvider {
+
+		private SpringAiSyncModernResourceProvider(List<Object> resourceObjects) {
+			super(resourceObjects);
 		}
 
 		@Override
