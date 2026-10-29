@@ -164,14 +164,14 @@ public class RedisFilterExpressionConverter extends AbstractFilterExpressionConv
 	 * Escapes characters that have special meaning inside a RediSearch TAG query clause
 	 * ({@code @field:\{value\}}). The following characters are escaped with a backslash:
 	 * {@code $}, {@code \}, {@code |}, {@code {}, {@code }}, {@code (}, {@code )},
-	 * {@code [}, {@code ]}, {@code -}, and {@code '}.
+	 * {@code [}, {@code ]}, {@code -}, {@code '}, and {@code *}.
 	 */
 	private String escapeTagValue(String value) {
 		StringBuilder sb = new StringBuilder(value.length());
 		for (int i = 0; i < value.length(); i++) {
 			char c = value.charAt(i);
 			switch (c) {
-				case '\\', '$', '|', '{', '}', '(', ')', '[', ']', '-', '\'' -> sb.append('\\').append(c);
+				case '\\', '$', '|', '{', '}', '(', ')', '[', ']', '-', '\'', '*' -> sb.append('\\').append(c);
 				default -> sb.append(c);
 			}
 		}

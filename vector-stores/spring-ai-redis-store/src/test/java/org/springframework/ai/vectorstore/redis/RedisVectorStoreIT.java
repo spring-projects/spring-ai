@@ -361,6 +361,31 @@ class RedisVectorStoreIT extends BaseVectorStoreTests {
 	}
 
 	@Test
+	void tagFilterValueWithWildcardIsMatchedLiterally() {
+		this.contextRunner.run(context -> {
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+
+			var acme = new Document("Acme report", Map.of("country", "acme"));
+			var acmeCorp = new Document("Acme Corp report", Map.of("country", "acmecorp"));
+			vectorStore.add(List.of(acme, acmeCorp));
+
+			List<Document> results = vectorStore.similaritySearch(SearchRequest.builder()
+				.query("report")
+				.topK(5)
+				.similarityThresholdAll()
+				.filterExpression("country == 'acme*'")
+				.build());
+			assertThat(results).isEmpty();
+
+			vectorStore.delete("country == 'acme*'");
+
+			results = vectorStore
+				.similaritySearch(SearchRequest.builder().query("report").topK(5).similarityThresholdAll().build());
+			assertThat(results).extracting(Document::getId).containsExactlyInAnyOrder(acme.getId(), acmeCorp.getId());
+		});
+	}
+
+	@Test
 	void getNativeClientTest() {
 		this.contextRunner.run(context -> {
 			RedisVectorStore vectorStore = context.getBean(RedisVectorStore.class);

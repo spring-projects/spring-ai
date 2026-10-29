@@ -178,6 +178,14 @@ class RedisFilterExpressionConverterTests {
 	}
 
 	@Test
+	void testTagValueWithWildcard() {
+		String vectorExpr = converter(RedisVectorStore.MetadataField.tag("tenant"))
+			.convertExpression(new Expression(EQ, new Key("tenant"), new Value("acme*")));
+
+		assertThat(vectorExpr).isEqualTo("@tenant:{acme\\*}");
+	}
+
+	@Test
 	void testTextValueWithSpecialChars() {
 		String vectorExpr = converter(RedisVectorStore.MetadataField.text("description"))
 			.convertExpression(new Expression(EQ, new Key("description"), new Value("hello@world.com")));
