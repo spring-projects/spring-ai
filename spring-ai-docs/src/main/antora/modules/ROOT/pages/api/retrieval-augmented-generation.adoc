@@ -430,6 +430,174 @@ For example, it could rank documents based on their relevance to the query, remo
 
 For example, the xref:api/embeddings/jinfer-embeddings.adoc#reranking[Qxotic jinfer] integration provides `JinferDocumentPostProcessor`, which reranks the retrieved documents with a local reranker model.
 
+===== DecisionDocumentReranker
+
+The `DecisionDocumentReranker` reorders the retrieved documents with a xref:api/decision.adoc[decision model], asking one yes/no question about each document: could the passage answer the query?
+Vector search ranks by embedding proximity, which is a good way to find candidates and a poor way to order them.
+A passage can be about the right subject and still not contain the answer.
+Asking a direct question about each candidate is a different measurement, and it is the one the final ordering uses.
+
+[source,java]
+----
+DocumentPostProcessor reranker = DecisionDocumentReranker.builder(decisionModel)
+        .topK(5)
+        .build();
+----
+
+[cols="2,1,3", stripes=even]
+|====
+| Builder method | Default | Description
+
+| `question(YesNoQuestion)` | a relevance question | Replaces the question. Write it about `query` and `passage`, the two fields of the input.
+| `options(DecisionOptions)` | the model's defaults | Options sent with every prompt, such as the model to use.
+| `topK(int)` | keep all | How many documents to keep after reordering.
+| `minimumScore(double)` | `0.0` | Drops documents scoring below a bar. At zero this is purely a reordering.
+| `concurrency(int)` | `4` | How many documents are judged at once, across all requests that pass through this instance.
+| `virtualThreads(boolean)` | `false` | Runs the calls on virtual threads, keeping the concurrency limit. Needs JDK 21 or later.
+| `executor(Executor)` | a throttled executor | Runs the calls on an executor of your own. The concurrency limit then no longer applies.
+|====
+
+Each document is judged in its own call, with the query and the passage sent as the `query` and `passage` fields of the input.
+Reranking twenty candidates is twenty calls, four at a time by default.
+Screening with the `DecisionDocumentFilter` first keeps that number down, since only the survivors are ranked.
+
+The default question asks whether the passage could answer the query.
+Domain-specific rerankings often want something narrower, such as whether a candidate passage could be the precedent a legal query cites.
+
+[source,java]
+----
+DocumentPostProcessor reranker = DecisionDocumentReranker.builder(decisionModel)
+        .question(YesNoQuestion.builder()
+                .text("Could the `passage` be the precedent cited in the `query`? "
+                        + "Judge the holding and posture, not merely similar subject matter.")
+                .whenYes("The passage states the holding the query cites")
+                .whenNo("A different case, or the same case on a different point")
+                .build())
+        .build();
+----
+
+Each scored document carries its score in the `decision.rerank.score` metadata entry, so a later stage or a log can see why the order came out as it did.
+
+[source,java]
+----
+reranked.forEach(document -> System.out.printf("%.2f  %s%n",
+        document.getMetadata().get(DecisionDocumentReranker.SCORE_METADATA_KEY),
+        document.getId()));
+----
+
+A document whose call failed, or that the model refused to judge, is kept rather than dropped, because a failure is not evidence about relevance.
+It is not evidence of relevance either, so it is placed after every scored document and can never evict a known-good passage under `topK`.
+Such documents carry no score entry, so a later stage can tell "scored zero" from "never scored".
+Each run with failures logs one warning with the count, such as `Could not score 3 of 20 documents, keeping them unscored after the scored ones`.
+
+===== DecisionDocumentFilter
+
+The `DecisionDocumentFilter` triages the retrieved documents with a xref:api/decision.adoc[decision model] before they reach the prompt, asking four narrow questions about each one.
+
+[cols="2,3", stripes=even]
+|====
+| Question | Asks
+
+| `contains_prompt_injection` | Does the passage try to instruct the system that reads it?
+| `contradicts_query_premise` | Does the passage conflict with something the query assumes?
+| `is_relevant` | Does the passage address the subject at all?
+| `contains_answer_evidence` | Does the passage state something usable as an answer?
+|====
+
+Similarity search answers what is nearest, which is not the same as what the model should be allowed to read.
+A passage can be near the query and still contradict its premise, or carry text written to hijack whatever reads it.
+Those are different failures that call for different handling, so they are asked as separate questions rather than rolled into one relevance number.
+The prompt-injection check matters most.
+Retrieved text is untrusted input, and similarity search cannot tell an injection from an answer, since both are about the same subject.
+Excluding injected passages is cheap here and very hard to undo later.
+
+[source,java]
+----
+DocumentPostProcessor filter = DecisionDocumentFilter.builder(decisionModel).build();
+----
+
+[cols="2,1,3", stripes=even]
+|====
+| Builder method | Default | Description
+
+| `policy(Policy)` | the cookbook thresholds | The four thresholds, see below.
+| `options(DecisionOptions)` | the model's defaults | Options sent with every prompt, such as the model to use.
+| `failClosed(boolean)` | `false` | Withholds documents the model could not judge instead of passing them through.
+| `concurrency(int)` | `4` | How many documents are screened at once, across all requests that pass through this instance.
+| `virtualThreads(boolean)` | `false` | Runs the calls on virtual threads, keeping the concurrency limit. Needs JDK 21 or later.
+| `executor(Executor)` | a throttled executor | Runs the calls on an executor of your own. The concurrency limit then no longer applies.
+|====
+
+The thresholds are gathered in a `Policy` and applied in order.
+The first match wins, which puts safety ahead of usefulness.
+
+[cols="3,2", stripes=even]
+|====
+| Condition | Classification
+
+| `contains_prompt_injection` above 0.70 | Excluded
+| `contradicts_query_premise` above 0.70 | Conflicting, kept
+| `is_relevant` below 0.45 | Excluded
+| `contains_answer_evidence` above 0.55 | Included
+| Otherwise | Excluded
+|====
+
+Keeping the numbers in one record means changing policy is changing a constant, not rewording a question.
+The default thresholds come from the https://docs.typesafe.ai/cookbooks/classifying_rag_passages[TypeSafe passage-classification cookbook] and were tuned on Jev.
+Other providers may call for different numbers.
+
+[source,java]
+----
+DocumentPostProcessor filter = DecisionDocumentFilter.builder(decisionModel)
+        .policy(new DecisionDocumentFilter.Policy(0.70, 0.70, 0.45, 0.55))
+        .concurrency(8)
+        .build();
+----
+
+Contradicting passages are kept, not dropped.
+A passage that disagrees with the query's premise is usually the most useful thing retrieved, since it is what lets the answer say the premise is wrong.
+Each surviving document carries its classification, `INCLUDED` or `CONFLICTING`, in the `decision.classification` metadata entry.
+Group the two apart in your prompt template, so the answer can distinguish evidence that supports the question from evidence that undercuts it.
+
+[source,java]
+----
+for (Document document : filtered) {
+    String classification = (String) document.getMetadata()
+            .get(DecisionDocumentFilter.CLASSIFICATION_METADATA_KEY); // INCLUDED or CONFLICTING
+}
+----
+
+A document the model could not judge, because the call failed or the model refused, is passed through unclassified rather than dropped.
+A passage that could not be screened is not thereby dangerous, and silently shrinking the context on an unrelated failure is worse than passing it through.
+Failing open is never silent: each run with failures logs one warning with the count, such as `Could not screen 12 of 12 documents, passing them through unscreened`.
+With a wrong API key or an outage every document is passed through, and that warning is the only sign the injection screen did not run, so alert on it where the screen matters.
+Where the screen must hold even then, the `failClosed(true)` option withholds such documents instead, at the price of an empty context during an outage.
+
+The `classify(DecisionResponse)` method applies the thresholds to an already-judged response, so every branch of a policy can be unit-tested without a model.
+
+[source,java]
+----
+assertThat(filter.classify(response))
+        .isEqualTo(DecisionDocumentFilter.Classification.EXCLUDED);
+----
+
+===== Combining the Decision Post-Processors
+
+Screen first, then rank what survives.
+There is no point spending a call ordering a passage that is about to be thrown out, and an injection should never reach a ranking prompt in the first place.
+
+[source,java]
+----
+Advisor advisor = RetrievalAugmentationAdvisor.builder()
+        .documentRetriever(retriever)
+        .documentPostProcessors(
+                DecisionDocumentFilter.builder(decisionModel).build(),
+                DecisionDocumentReranker.builder(decisionModel).topK(5).build())
+        .build();
+----
+
+Both post-processors fail open, so a provider outage leaves the retriever's own order in place and the context unfiltered, with one warning from each.
+
 === Generation
 
 Generation modules are responsible for generating the final response based on the user query and retrieved documents.
