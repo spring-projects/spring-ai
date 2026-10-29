@@ -16,23 +16,50 @@
 
 package org.springframework.ai.ollama.aot;
 
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.RecordComponent;
+import java.lang.reflect.Type;
 import java.util.HashSet;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.springaicommunity.typesafe.JsonContent;
+import org.springaicommunity.typesafe.question.Choice;
+import org.springaicommunity.typesafe.question.Noul;
+import org.springaicommunity.typesafe.question.NoulCriteria;
+import org.springaicommunity.typesafe.question.Question;
+import org.springaicommunity.typesafe.question.QuestionType;
+import org.springaicommunity.typesafe.question.Score;
+import org.springaicommunity.typesafe.question.SystemOneRequest;
+import org.springaicommunity.typesafe.response.Answer;
+import org.springaicommunity.typesafe.response.AnswerType;
+import org.springaicommunity.typesafe.response.ChoiceAnswer;
+import org.springaicommunity.typesafe.response.NoulAnswer;
+import org.springaicommunity.typesafe.response.ScoreAnswer;
+import org.springaicommunity.typesafe.response.SystemOneResponse;
+import org.springaicommunity.typesafe.response.UnknownAnswer;
+import org.springaicommunity.typesafe.response.Usage;
+import tools.jackson.databind.ValueDeserializer;
+import tools.jackson.databind.annotation.JsonDeserialize;
 
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.ThinkOption;
 import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.TypeReference;
+import org.springframework.boot.test.context.FilteredClassLoader;
 
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.springframework.ai.aot.AiRuntimeHints.findJsonAnnotatedClassesInPackage;
 import static org.springframework.aot.hint.predicate.RuntimeHintsPredicates.reflection;
 
 class OllamaRuntimeHintsTests {
+
+	private static final String TYPESAFE_PACKAGE = "org.springaicommunity.typesafe.";
 
 	@Test
 	void registerHints() {
@@ -68,13 +95,70 @@ class OllamaRuntimeHintsTests {
 	}
 
 	@Test
+	void registerExactlyTheTypeSafeSdkTypesUsedByTheDecisionModel() throws Exception {
+		RuntimeHints runtimeHints = new RuntimeHints();
+		OllamaRuntimeHints ollamaRuntimeHints = new OllamaRuntimeHints();
+		ollamaRuntimeHints.registerHints(runtimeHints, null);
+
+		Set<String> registeredTypeSafeTypes = new HashSet<>();
+		runtimeHints.reflection()
+			.typeHints()
+			.map(typeHint -> typeHint.getType().getName())
+			.filter(name -> name.startsWith(TYPESAFE_PACKAGE))
+			.forEach(registeredTypeSafeTypes::add);
+
+		// The hints name the types as strings, so compare them with the types themselves
+		Set<Class<?>> expectedTypes = expectedTypeSafeTypes();
+		Assertions.assertThat(registeredTypeSafeTypes)
+			.containsExactlyInAnyOrderElementsOf(expectedTypes.stream().map(Class::getName).toList());
+		for (Class<?> type : expectedTypes) {
+			assertThatAllMemberCategoriesAreRegistered(runtimeHints, type);
+		}
+	}
+
+	@Test
+	void expectedTypeSafeSdkTypesCoverEveryTypeTheyReach() throws Exception {
+		Set<Class<?>> expectedTypes = expectedTypeSafeTypes();
+
+		// A question or answer kind added to the SDK must be registered too
+		Assertions.assertThat(expectedTypes)
+			.contains(Question.class.getPermittedSubclasses())
+			.contains(Answer.class.getPermittedSubclasses());
+
+		// And so must a type the SDK records start to hold
+		Set<Class<?>> reachedTypes = new HashSet<>();
+		for (Class<?> type : expectedTypes) {
+			if (type.isRecord()) {
+				for (RecordComponent component : type.getRecordComponents()) {
+					collectTypeSafeTypes(component.getGenericType(), reachedTypes);
+				}
+			}
+		}
+		Assertions.assertThat(expectedTypes).containsAll(reachedTypes);
+	}
+
+	@Test
+	void skipsTypeSafeSdkTypesWhenTheSdkIsExcluded() {
+		RuntimeHints runtimeHints = new RuntimeHints();
+		OllamaRuntimeHints ollamaRuntimeHints = new OllamaRuntimeHints();
+		var classLoaderWithoutSdk = new FilteredClassLoader("org.springaicommunity.typesafe");
+
+		assertThatCode(() -> ollamaRuntimeHints.registerHints(runtimeHints, classLoaderWithoutSdk))
+			.doesNotThrowAnyException();
+
+		Set<TypeReference> registeredTypes = new HashSet<>();
+		runtimeHints.reflection().typeHints().forEach(typeHint -> registeredTypes.add(typeHint.getType()));
+		assertThat(registeredTypes.contains(TypeReference.of(SystemOneRequest.class))).isFalse();
+		assertThat(registeredTypes.contains(TypeReference.of(OllamaApi.ChatRequest.class))).isTrue();
+	}
+
+	@Test
 	void registerHintsWithNullClassLoader() {
 		RuntimeHints runtimeHints = new RuntimeHints();
 		OllamaRuntimeHints ollamaRuntimeHints = new OllamaRuntimeHints();
 
 		// Should not throw exception with null ClassLoader
-		org.assertj.core.api.Assertions.assertThatCode(() -> ollamaRuntimeHints.registerHints(runtimeHints, null))
-			.doesNotThrowAnyException();
+		assertThatCode(() -> ollamaRuntimeHints.registerHints(runtimeHints, null)).doesNotThrowAnyException();
 	}
 
 	@Test
@@ -143,7 +227,9 @@ class OllamaRuntimeHintsTests {
 
 		// Ensure we don't register significantly more types than needed
 		// Allow for some additional utility types but prevent hint bloat
-		assertThat(registeredTypes.size()).isLessThanOrEqualTo(jsonAnnotatedClasses.size() + 15);
+		// The TypeSafe SDK types and its answer deserializer are registered on purpose
+		int typeSafeTypes = OllamaRuntimeHints.TYPESAFE_JSON_TYPES.size();
+		assertThat(registeredTypes.size()).isLessThanOrEqualTo(jsonAnnotatedClasses.size() + typeSafeTypes + 15);
 	}
 
 	@Test
@@ -192,8 +278,7 @@ class OllamaRuntimeHintsTests {
 		ClassLoader customClassLoader = Thread.currentThread().getContextClassLoader();
 
 		// Should work with custom class loader
-		org.assertj.core.api.Assertions
-			.assertThatCode(() -> ollamaRuntimeHints.registerHints(runtimeHints, customClassLoader))
+		assertThatCode(() -> ollamaRuntimeHints.registerHints(runtimeHints, customClassLoader))
 			.doesNotThrowAnyException();
 
 		// Verify hints are still registered properly
@@ -293,6 +378,37 @@ class OllamaRuntimeHintsTests {
 			.filter(typeRef -> typeRef.getName().toLowerCase(Locale.ROOT).contains("tool"))
 			.count();
 		assertThat(toolClassCount).isGreaterThan(0);
+	}
+
+	/**
+	 * The TypeSafe SDK types the decision model sends and receives as JSON, named by type
+	 * so that the compiler checks them.
+	 */
+	private static Set<Class<?>> expectedTypeSafeTypes() throws NoSuchMethodException {
+		// Package-private in the SDK, so reached through the annotation that uses it: the
+		// answers parameter of the constructor Jackson creates the response with
+		Class<?> answerDeserializer = SystemOneResponse.class
+			.getDeclaredConstructor(String.class, Map.class, Usage.class)
+			.getParameters()[1].getAnnotation(JsonDeserialize.class)
+			.contentUsing();
+		Assertions.assertThat(answerDeserializer).isNotEqualTo(ValueDeserializer.None.class);
+
+		return Set.of(SystemOneRequest.class, Question.class, QuestionType.class, Noul.class, NoulCriteria.class,
+				Choice.class, Score.class, JsonContent.class, SystemOneResponse.class, Answer.class, AnswerType.class,
+				answerDeserializer, NoulAnswer.class, ChoiceAnswer.class, ScoreAnswer.class, UnknownAnswer.class,
+				Usage.class);
+	}
+
+	private static void collectTypeSafeTypes(Type type, Set<Class<?>> collected) {
+		if (type instanceof Class<?> clazz && clazz.getName().startsWith(TYPESAFE_PACKAGE)) {
+			collected.add(clazz);
+		}
+		else if (type instanceof ParameterizedType parameterizedType) {
+			collectTypeSafeTypes(parameterizedType.getRawType(), collected);
+			for (Type argument : parameterizedType.getActualTypeArguments()) {
+				collectTypeSafeTypes(argument, collected);
+			}
+		}
 	}
 
 	private static void assertThatAllMemberCategoriesAreRegistered(RuntimeHints runtimeHints, Class<?> type) {

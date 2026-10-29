@@ -179,4 +179,5 @@ See xref:observability/index.adoc#_decision_model[Decision Model observability].
 
 == Available Implementations
 
+* xref:api/decision/ollama-decision.adoc[Ollama Decisions]
 * xref:api/decision/openai-decision.adoc[OpenAI Decisions]

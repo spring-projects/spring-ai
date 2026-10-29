@@ -270,6 +270,7 @@
 		<!-- AI model SDKs -->
 		<anthropic-sdk.version>2.72.0</anthropic-sdk.version>
 		<openai-sdk.version>4.80.0</openai-sdk.version>
+		<typesafe-java-sdk.version>0.4.0</typesafe-java-sdk.version>
 		<!-- NOTE: keep awssdk and bedrockruntime versions aligned -->
 		<awssdk.version>2.55.14</awssdk.version>
 		<bedrockruntime.version>2.55.14</bedrockruntime.version>

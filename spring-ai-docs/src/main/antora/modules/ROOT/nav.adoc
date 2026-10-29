@@ -77,6 +77,7 @@
 **** xref:api/moderation/openai-moderation.adoc[OpenAI]
 **** xref:api/moderation/mistral-ai-moderation.adoc[Mistral AI]
 *** xref:api/decision.adoc[Decision Models]
+**** xref:api/decision/ollama-decision.adoc[Ollama]
 **** xref:api/decision/openai-decision.adoc[OpenAI]
 // ** xref:api/generic-model.adoc[]
 
