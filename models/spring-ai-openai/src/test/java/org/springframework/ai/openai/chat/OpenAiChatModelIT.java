@@ -115,7 +115,7 @@ public class OpenAiChatModelIT {
 	@Test
 	void reasoningContentTest() {
 		var promptOptions = OpenAiChatOptions.builder()
-			.model("o3-mini")
+			.model("gpt-5-mini")
 			.reasoningEffort(ReasoningEffort.LOW.toString())
 			.build();
 
