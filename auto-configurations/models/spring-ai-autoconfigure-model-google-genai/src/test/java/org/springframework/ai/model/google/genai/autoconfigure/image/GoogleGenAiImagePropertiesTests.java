@@ -57,6 +57,7 @@ class GoogleGenAiImagePropertiesTests {
 					"spring.ai.google.genai.image.seed=42",
 					"spring.ai.google.genai.image.safety-filter-level=BLOCK_ONLY_HIGH",
 					"spring.ai.google.genai.image.person-generation=ALLOW_ADULT",
+					"spring.ai.google.genai.image.prominent-people=ALLOW_PROMINENT_PEOPLE",
 					"spring.ai.google.genai.image.output-mime-type=image/png",
 					"spring.ai.google.genai.image.output-compression-quality=80",
 					"spring.ai.google.genai.image.image-size=2K", "spring.ai.google.genai.image.labels.env=test",
@@ -73,6 +74,8 @@ class GoogleGenAiImagePropertiesTests {
 					.isEqualTo(GoogleGenAiImageOptions.SafetyFilterLevel.BLOCK_ONLY_HIGH);
 				assertThat(options.getPersonGeneration())
 					.isEqualTo(GoogleGenAiImageOptions.PersonGeneration.ALLOW_ADULT);
+				assertThat(options.getProminentPeople())
+					.isEqualTo(GoogleGenAiImageOptions.ProminentPeople.ALLOW_PROMINENT_PEOPLE);
 				assertThat(options.getOutputMimeType()).isEqualTo("image/png");
 				assertThat(options.getOutputCompressionQuality()).isEqualTo(80);
 				assertThat(options.getImageSize()).isEqualTo("2K");
@@ -132,6 +135,7 @@ class GoogleGenAiImagePropertiesTests {
 		props.setSeed(42);
 		props.setSafetyFilterLevel(GoogleGenAiImageOptions.SafetyFilterLevel.BLOCK_ONLY_HIGH);
 		props.setPersonGeneration(GoogleGenAiImageOptions.PersonGeneration.ALLOW_ADULT);
+		props.setProminentPeople(GoogleGenAiImageOptions.ProminentPeople.ALLOW_PROMINENT_PEOPLE);
 		props.setOutputMimeType("image/png");
 		props.setOutputCompressionQuality(80);
 		props.setImageSize("2K");
@@ -146,6 +150,8 @@ class GoogleGenAiImagePropertiesTests {
 		assertThat(props.getSeed()).isEqualTo(42);
 		assertThat(props.getSafetyFilterLevel()).isEqualTo(GoogleGenAiImageOptions.SafetyFilterLevel.BLOCK_ONLY_HIGH);
 		assertThat(props.getPersonGeneration()).isEqualTo(GoogleGenAiImageOptions.PersonGeneration.ALLOW_ADULT);
+		assertThat(props.getProminentPeople())
+			.isEqualTo(GoogleGenAiImageOptions.ProminentPeople.ALLOW_PROMINENT_PEOPLE);
 		assertThat(props.getOutputMimeType()).isEqualTo("image/png");
 		assertThat(props.getOutputCompressionQuality()).isEqualTo(80);
 		assertThat(props.getImageSize()).isEqualTo("2K");
