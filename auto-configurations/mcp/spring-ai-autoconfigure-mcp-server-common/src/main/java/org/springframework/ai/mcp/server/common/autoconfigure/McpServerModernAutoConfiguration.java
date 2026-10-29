@@ -23,22 +23,19 @@ import io.modelcontextprotocol.json.McpJsonDefaults;
 import io.modelcontextprotocol.json.McpJsonMapper;
 import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.modern.McpSchema.CacheScope;
-import io.modelcontextprotocol.modern.McpSchema.CompleteReference;
 import io.modelcontextprotocol.modern.McpSchema.Implementation;
-import io.modelcontextprotocol.modern.McpSchema.PromptReference;
-import io.modelcontextprotocol.modern.McpSchema.ResourceReference;
 import io.modelcontextprotocol.modern.server.HmacRequestStateCodec;
-import io.modelcontextprotocol.modern.server.McpRequestContext;
 import io.modelcontextprotocol.modern.server.McpServer;
 import io.modelcontextprotocol.modern.server.RequestStateCodec;
 import io.modelcontextprotocol.modern.server.feature.CompletionsFeature;
 import io.modelcontextprotocol.modern.server.feature.McpChangeFeed;
 import io.modelcontextprotocol.modern.server.feature.McpSyncCompletionRepository;
+import io.modelcontextprotocol.modern.server.feature.McpSyncPrompt;
 import io.modelcontextprotocol.modern.server.feature.McpSyncPromptRepository;
 import io.modelcontextprotocol.modern.server.feature.McpSyncResourceRepository;
+import io.modelcontextprotocol.modern.server.feature.McpSyncTool;
 import io.modelcontextprotocol.modern.server.feature.McpSyncToolRepository;
 import io.modelcontextprotocol.modern.server.feature.PromptsFeature;
-import io.modelcontextprotocol.modern.server.feature.ResourceTemplatesPage;
 import io.modelcontextprotocol.modern.server.feature.ResourcesFeature;
 import io.modelcontextprotocol.modern.server.feature.ToolsFeature;
 import io.modelcontextprotocol.modern.server.transport.StdioMcpTransport;
@@ -49,12 +46,9 @@ import org.springframework.ai.mcp.modern.InMemorySyncCompletionRepository;
 import org.springframework.ai.mcp.modern.InMemorySyncPromptRepository;
 import org.springframework.ai.mcp.modern.InMemorySyncResourceRepository;
 import org.springframework.ai.mcp.modern.InMemorySyncToolRepository;
-import org.springframework.ai.mcp.modern.McpVisibilityFilter;
 import org.springframework.ai.mcp.modern.SyncCompletionSpecification;
-import org.springframework.ai.mcp.modern.SyncPromptSpecification;
-import org.springframework.ai.mcp.modern.SyncResourceSpecification;
-import org.springframework.ai.mcp.modern.SyncResourceTemplateSpecification;
-import org.springframework.ai.mcp.modern.SyncToolSpecification;
+import org.springframework.ai.mcp.modern.SyncResourceEntry;
+import org.springframework.ai.mcp.modern.SyncResourceTemplateEntry;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerModernProperties;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
 import org.springframework.beans.factory.ObjectProvider;
@@ -79,22 +73,21 @@ import org.springframework.util.Assert;
  * {@link McpSyncResourceRepository}, {@link McpSyncPromptRepository} and
  * {@link McpSyncCompletionRepository}. A user-defined repository bean of that type takes
  * precedence; otherwise an in-memory repository is created and fed by every
- * {@code List<SyncToolSpecification>}, {@code List<SyncResourceSpecification>},
- * {@code List<SyncResourceTemplateSpecification>}, {@code List<SyncPromptSpecification>}
- * and {@code List<SyncCompletionSpecification>} bean, which is how annotated beans and
+ * {@code List<McpSyncTool>}, {@code List<SyncResourceEntry>},
+ * {@code List<SyncResourceTemplateEntry>}, {@code List<McpSyncPrompt>} and
+ * {@code List<SyncCompletionSpecification>} bean, which is how annotated beans and
  * {@code ToolCallback}s reach the server. The in-memory repositories are beans
  * themselves, so tools can be added or removed at runtime; changes are broadcast to
- * {@code subscriptions/listen} clients through the {@link McpChangeFeed} bean. Every
- * {@link McpVisibilityFilter} bean is applied to the in-memory repositories, so a caller
- * only sees, and can only reach, the primitives all filters allow; completions for a
- * hidden prompt or template are rejected as unknown. A user-defined repository bean
- * receives no filter automatically.
+ * {@code subscriptions/listen} clients through the {@link McpChangeFeed} bean. An
+ * application that wants to filter or decorate a repository per request defines its own
+ * repository bean, typically one that builds the in-memory repository from the same list
+ * beans and wraps it.
  * <p>
  * Only the synchronous API type is supported for now; {@code type=ASYNC} fails the
  * context at startup.
  *
  * @author Christian Tzolov
- * @since 2.2.0
+ * @since 2.1.0
  */
 @AutoConfiguration(after = McpServerJsonMapperAutoConfiguration.class)
 @ConditionalOnClass(McpServer.class)
@@ -123,69 +116,50 @@ public class McpServerModernAutoConfiguration {
 	@ConditionalOnMissingBean(McpSyncToolRepository.class)
 	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "capabilities.tool", havingValue = "true",
 			matchIfMissing = true)
-	public InMemorySyncToolRepository mcpModernToolRepository(ObjectProvider<List<SyncToolSpecification>> tools,
-			McpChangeFeed changeFeed, McpServerModernProperties modernProperties,
-			ObjectProvider<McpVisibilityFilter> visibilityFilters) {
-		List<SyncToolSpecification> specifications = tools.stream().flatMap(List::stream).toList();
-		logger.info("Registered modern tools: " + specifications.size());
-		InMemorySyncToolRepository.Builder builder = InMemorySyncToolRepository.builder()
-			.tools(specifications)
+	public InMemorySyncToolRepository mcpModernToolRepository(ObjectProvider<List<McpSyncTool>> tools,
+			McpChangeFeed changeFeed, McpServerModernProperties modernProperties) {
+		List<McpSyncTool> all = tools.stream().flatMap(List::stream).toList();
+		logger.info("Registered modern tools: " + all.size());
+		return InMemorySyncToolRepository.builder()
+			.tools(all)
 			.changeBroadcaster(changeFeed)
-			.pageSize(modernProperties.getPageSize());
-		List<McpVisibilityFilter> filters = visibilityFilters.orderedStream().toList();
-		if (!filters.isEmpty()) {
-			builder.visibility(McpVisibilityFilter.allOf(filters));
-		}
-		return builder.build();
+			.pageSize(modernProperties.getPageSize())
+			.build();
 	}
 
 	@Bean
 	@ConditionalOnMissingBean(McpSyncResourceRepository.class)
 	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "capabilities.resource",
 			havingValue = "true", matchIfMissing = true)
-	public InMemorySyncResourceRepository mcpModernResourceRepository(
-			ObjectProvider<List<SyncResourceSpecification>> resources,
-			ObjectProvider<List<SyncResourceTemplateSpecification>> resourceTemplates, McpChangeFeed changeFeed,
-			McpServerModernProperties modernProperties, ObjectProvider<McpVisibilityFilter> visibilityFilters) {
-		List<SyncResourceSpecification> resourceSpecifications = resources.stream().flatMap(List::stream).toList();
-		List<SyncResourceTemplateSpecification> templateSpecifications = resourceTemplates.stream()
-			.flatMap(List::stream)
-			.toList();
-		logger.info("Registered modern resources: " + resourceSpecifications.size() + ", resource templates: "
-				+ templateSpecifications.size());
-		InMemorySyncResourceRepository.Builder builder = InMemorySyncResourceRepository.builder()
-			.resources(resourceSpecifications)
-			.resourceTemplates(templateSpecifications)
+	public InMemorySyncResourceRepository mcpModernResourceRepository(ObjectProvider<List<SyncResourceEntry>> resources,
+			ObjectProvider<List<SyncResourceTemplateEntry>> resourceTemplates, McpChangeFeed changeFeed,
+			McpServerModernProperties modernProperties) {
+		List<SyncResourceEntry> allResources = resources.stream().flatMap(List::stream).toList();
+		List<SyncResourceTemplateEntry> allTemplates = resourceTemplates.stream().flatMap(List::stream).toList();
+		logger.info("Registered modern resources: " + allResources.size() + ", resource templates: "
+				+ allTemplates.size());
+		return InMemorySyncResourceRepository.builder()
+			.resources(allResources)
+			.resourceTemplates(allTemplates)
 			.changeBroadcaster(changeFeed)
 			.subscribeSupported(modernProperties.isResourceSubscribe())
-			.pageSize(modernProperties.getPageSize());
-		List<McpVisibilityFilter> filters = visibilityFilters.orderedStream().toList();
-		if (!filters.isEmpty()) {
-			builder.visibility(McpVisibilityFilter.allOf(filters));
-		}
-		return builder.build();
+			.pageSize(modernProperties.getPageSize())
+			.build();
 	}
 
 	@Bean
 	@ConditionalOnMissingBean(McpSyncPromptRepository.class)
 	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "capabilities.prompt",
 			havingValue = "true", matchIfMissing = true)
-	public InMemorySyncPromptRepository mcpModernPromptRepository(ObjectProvider<List<SyncPromptSpecification>> prompts,
-			McpChangeFeed changeFeed, McpServerModernProperties modernProperties,
-			ObjectProvider<McpVisibilityFilter> visibilityFilters) {
-		List<SyncPromptSpecification> specifications = prompts.stream().flatMap(List::stream).toList();
-		logger.info("Registered modern prompts: " + specifications.size());
-		InMemorySyncPromptRepository.Builder builder = InMemorySyncPromptRepository.builder()
-			.prompts(specifications)
+	public InMemorySyncPromptRepository mcpModernPromptRepository(ObjectProvider<List<McpSyncPrompt>> prompts,
+			McpChangeFeed changeFeed, McpServerModernProperties modernProperties) {
+		List<McpSyncPrompt> all = prompts.stream().flatMap(List::stream).toList();
+		logger.info("Registered modern prompts: " + all.size());
+		return InMemorySyncPromptRepository.builder()
+			.prompts(all)
 			.changeBroadcaster(changeFeed)
-			.pageSize(modernProperties.getPageSize());
-		// Without filter beans the repository stays unfiltered and its listings
-		// shareable.
-		List<McpVisibilityFilter> filters = visibilityFilters.orderedStream().toList();
-		if (!filters.isEmpty()) {
-			builder.visibility(McpVisibilityFilter.allOf(filters));
-		}
-		return builder.build();
+			.pageSize(modernProperties.getPageSize())
+			.build();
 	}
 
 	@Bean
@@ -193,46 +167,10 @@ public class McpServerModernAutoConfiguration {
 	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "capabilities.completion",
 			havingValue = "true", matchIfMissing = true)
 	public InMemorySyncCompletionRepository mcpModernCompletionRepository(
-			ObjectProvider<List<SyncCompletionSpecification>> completions,
-			ObjectProvider<McpVisibilityFilter> visibilityFilters, ObjectProvider<McpSyncPromptRepository> prompts,
-			ObjectProvider<McpSyncResourceRepository> resources) {
-		List<SyncCompletionSpecification> specifications = completions.stream().flatMap(List::stream).toList();
-		logger.info("Registered modern completions: " + specifications.size());
-		InMemorySyncCompletionRepository.Builder builder = InMemorySyncCompletionRepository.builder()
-			.completions(specifications);
-		if (visibilityFilters.orderedStream().findAny().isPresent()) {
-			// Completing a hidden prompt or template would reveal it, so a reference is
-			// served only when the owning repository still finds it for this caller.
-			builder.referenceGuard((ctx, reference) -> referenceVisible(ctx, reference, prompts, resources));
-		}
-		return builder.build();
-	}
-
-	private static boolean referenceVisible(McpRequestContext ctx, CompleteReference reference,
-			ObjectProvider<McpSyncPromptRepository> prompts, ObjectProvider<McpSyncResourceRepository> resources) {
-		if (reference instanceof PromptReference promptReference) {
-			McpSyncPromptRepository repository = prompts.getIfAvailable();
-			return repository == null || repository.find(ctx, promptReference.name()) != null;
-		}
-		if (reference instanceof ResourceReference resourceReference) {
-			McpSyncResourceRepository repository = resources.getIfAvailable();
-			if (repository == null) {
-				return true;
-			}
-			String cursor = null;
-			do {
-				ResourceTemplatesPage page = repository.listTemplates(ctx, cursor);
-				if (page.resourceTemplates()
-					.stream()
-					.anyMatch(template -> template.uriTemplate().equals(resourceReference.uri()))) {
-					return true;
-				}
-				cursor = page.nextCursor();
-			}
-			while (cursor != null);
-			return false;
-		}
-		return true;
+			ObjectProvider<List<SyncCompletionSpecification>> completions) {
+		List<SyncCompletionSpecification> all = completions.stream().flatMap(List::stream).toList();
+		logger.info("Registered modern completions: " + all.size());
+		return InMemorySyncCompletionRepository.builder().completions(all).build();
 	}
 
 	@Bean

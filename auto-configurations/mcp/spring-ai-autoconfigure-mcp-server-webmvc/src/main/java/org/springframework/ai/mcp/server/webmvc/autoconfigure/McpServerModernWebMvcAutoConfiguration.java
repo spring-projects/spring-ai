@@ -52,7 +52,7 @@ import org.springframework.web.servlet.function.ServerResponse;
  * {@link HeaderTransportContextExtractor} exposes the request headers.
  *
  * @author Christian Tzolov
- * @since 2.2.0
+ * @since 2.1.0
  */
 @AutoConfiguration(after = { McpServerModernAutoConfiguration.class, McpServerJsonMapperAutoConfiguration.class })
 @ConditionalOnClass({ McpServer.class, WebMvcModernServerTransport.class })

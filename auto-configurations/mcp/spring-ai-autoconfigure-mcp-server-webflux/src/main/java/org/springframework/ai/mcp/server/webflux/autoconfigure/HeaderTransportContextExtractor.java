@@ -31,7 +31,7 @@ import org.springframework.web.reactive.function.server.ServerRequest;
  * {@code McpTransportContextExtractor<ServerRequest>} bean to replace it.
  *
  * @author Christian Tzolov
- * @since 2.2.0
+ * @since 2.1.0
  */
 public final class HeaderTransportContextExtractor implements McpTransportContextExtractor<ServerRequest> {
 

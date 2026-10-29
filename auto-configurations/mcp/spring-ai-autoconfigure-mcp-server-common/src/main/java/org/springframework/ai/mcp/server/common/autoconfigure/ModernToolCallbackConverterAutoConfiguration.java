@@ -19,10 +19,10 @@ package org.springframework.ai.mcp.server.common.autoconfigure;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import io.modelcontextprotocol.modern.server.feature.McpSyncTool;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.mcp.modern.McpModernToolUtils;
-import org.springframework.ai.mcp.modern.SyncToolSpecification;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
@@ -40,7 +40,7 @@ import org.springframework.util.MimeType;
  * the 2026-07-28 ("modern") MCP server.
  *
  * @author Christian Tzolov
- * @since 2.2.0
+ * @since 2.1.0
  */
 @AutoConfiguration
 @ConditionalOnClass(io.modelcontextprotocol.modern.server.McpServer.class)
@@ -52,7 +52,7 @@ public class ModernToolCallbackConverterAutoConfiguration {
 	@Bean
 	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
 			matchIfMissing = true)
-	public List<SyncToolSpecification> modernSyncTools(ObjectProvider<List<ToolCallback>> toolCalls,
+	public List<McpSyncTool> modernSyncTools(ObjectProvider<List<ToolCallback>> toolCalls,
 			List<ToolCallback> toolCallbackList, ObjectProvider<List<ToolCallbackProvider>> tcbProviderList,
 			ObjectProvider<ToolCallbackProvider> tcbProviders, McpServerProperties serverProperties) {
 		List<ToolCallback> tools = ToolCallbackUtils.aggregateToolCallbacks(toolCalls, toolCallbackList,
@@ -63,7 +63,7 @@ public class ModernToolCallbackConverterAutoConfiguration {
 					(existing, replacement) -> existing))
 			.values()
 			.stream()
-			.map(tool -> McpModernToolUtils.toSyncToolSpecification(tool, mimeType(serverProperties, tool)))
+			.map(tool -> McpModernToolUtils.toSyncTool(tool, mimeType(serverProperties, tool)))
 			.toList();
 	}
 
