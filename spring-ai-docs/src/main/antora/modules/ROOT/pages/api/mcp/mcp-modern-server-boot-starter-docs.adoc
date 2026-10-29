@@ -1,0 +1,342 @@
+[[mcp-modern-server-boot-starter]]
+== MCP 2026-07-28 ("Modern") Servers
+
+The MCP server Boot starters can expose your tools, resources, prompts and completions through a server that implements the link:https://modelcontextprotocol.io/specification/2026-07-28[2026-07-28 MCP specification revision].
+This revision is a redesign of the protocol:
+
+* It is *stateless*. There is no initialize handshake and no session. Every request carries the protocol version and the client capabilities in its `_meta` block, and the client learns what the server offers through `server/discover`.
+* It is *POST only*. A request is answered with a JSON document, or with a short-lived `text/event-stream` when the handler pushes progress notifications before its result.
+* Server-initiated input (elicitation, sampling, roots) is a *multi round-trip request* (MRTR). A handler answers with an `InputRequiredResult`, and the client retries the same call with the collected `inputResponses` and the server's sealed `requestState`.
+* List-changed and resource-updated notifications are delivered over a dedicated `subscriptions/listen` stream.
+* Logging notifications, ping and in-call elicitation or sampling no longer exist.
+
+The modern server is selected with `spring.ai.mcp.server.protocol=MODERN` and is available for WebMVC, WebFlux and STDIO.
+The same annotated beans and `ToolCallback`s you use with the other protocols are served unchanged.
+
+NOTE: The modern server requires the MCP Java SDK `2.2.0` line or later, and only the synchronous API type (`spring.ai.mcp.server.type=SYNC`) is supported at the moment. Setting `type=ASYNC` together with `protocol=MODERN` fails the application at startup rather than starting without a server.
+
+=== WebMVC Server
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-mcp-server-webmvc</artifactId>
+</dependency>
+----
+
+[source,yaml]
+----
+spring:
+  ai:
+    mcp:
+      server:
+        protocol: MODERN
+        modern:
+          mcp-endpoint: /mcp
+----
+
+=== WebFlux Server
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-mcp-server-webflux</artifactId>
+</dependency>
+----
+
+[source,yaml]
+----
+spring:
+  ai:
+    mcp:
+      server:
+        protocol: MODERN
+----
+
+=== STDIO Server
+
+[source,yaml]
+----
+spring:
+  ai:
+    mcp:
+      server:
+        protocol: MODERN
+        stdio: true
+----
+
+== Configuration Properties
+
+The common properties (`spring.ai.mcp.server.name`, `version`, `instructions`, `type`, `capabilities.*`, `tool-callback-converter`, `tool-response-mime-type`) and the MCP annotation scanner properties apply as they do for the other protocols.
+
+`spring.ai.mcp.server.tool-callback-converter=false` stops `ToolCallback` beans from being exposed as MCP tools. It does not affect `@McpTool`, `@McpResource`, `@McpPrompt` or `@McpComplete` methods, which are controlled by the annotation scanner property `spring.ai.mcp.server.annotation-scanner.enabled`.
+The following properties are specific to the modern server.
+
+[cols="3,4,2"]
+|===
+|Property |Description |Default
+
+|`spring.ai.mcp.server.modern.mcp-endpoint`
+|The HTTP endpoint the server listens on (POST only).
+|`/mcp`
+
+|`spring.ai.mcp.server.modern.supported-versions`
+|The protocol versions accepted in `_meta` and advertised by `server/discover`.
+|`2026-07-28`
+
+|`spring.ai.mcp.server.modern.discover-ttl`
+|How long clients may cache the `server/discover` result. Zero disables caching.
+|`0`
+
+|`spring.ai.mcp.server.modern.discover-cache-scope`
+|Who may reuse a cached `server/discover` result: `PRIVATE` or `PUBLIC`.
+|`PRIVATE`
+
+|`spring.ai.mcp.server.modern.list-ttl`
+|How long clients may cache `tools/list`, `prompts/list`, `resources/list` and `resources/templates/list` results.
+|`0`
+
+|`spring.ai.mcp.server.modern.list-cache-scope`
+|Who may reuse cached list results.
+|`PRIVATE`
+
+|`spring.ai.mcp.server.modern.page-size`
+|Maximum number of entries per list page served by the in-memory repositories. Unset returns everything on one page.
+|unset
+
+|`spring.ai.mcp.server.modern.keep-alive-interval`
+|Interval between keep-alive comments on streaming responses. Zero disables keep-alives.
+|`30s`
+
+|`spring.ai.mcp.server.modern.max-request-size`
+|Maximum accepted request body size.
+|`16MB`
+
+|`spring.ai.mcp.server.modern.request-state-secret`
+|The secret used to seal the multi round-trip `requestState`. Set the same value on every instance behind a load balancer. When unset, a random per-instance key is used and retries must reach the same instance.
+|-
+
+|`spring.ai.mcp.server.modern.request-state-ttl`
+|How long a sealed `requestState` stays valid.
+|SDK default
+
+|`spring.ai.mcp.server.modern.subscriptions`
+|Whether `subscriptions/listen` is served.
+|`true`
+
+|`spring.ai.mcp.server.modern.resource-subscribe`
+|Whether the server advertises per-resource subscriptions (`resources.subscribe`).
+|`false`
+|===
+
+== Programming Model
+
+=== Tools, Resources, Prompts and Completions
+
+Beans with `@McpTool`, `@McpResource`, `@McpPrompt` and `@McpComplete` methods, as well as `ToolCallback` and `ToolCallbackProvider` beans, are exposed exactly as on the stateless server.
+Methods keep their return types. Results typed with the legacy `McpSchema` classes are converted to the modern schema on the way out, so one set of beans can serve both server generations.
+
+The conversion is a compatibility floor, not a ceiling. Every primitive also accepts the modern types directly, and those pass through untouched:
+
+[cols="1,2,2"]
+|===
+|Primitive |Modern parameters |Modern return types
+
+|`@McpTool`
+|`McpModernSyncRequestContext`, `McpRequestContext`, `McpSyncNotifier`, `CallToolRequest`
+|`CallToolOutcome` (`CallToolResult` or `InputRequiredResult`)
+
+|`@McpResource`
+|`McpModernSyncRequestContext`, `McpRequestContext`, `McpSyncNotifier`, `ReadResourceRequest`
+|`ReadResourceOutcome` (`ReadResourceResult` with `ttlMs` and `cacheScope`, or `InputRequiredResult`)
+
+|`@McpPrompt`
+|`McpModernSyncRequestContext`, `McpRequestContext`, `McpSyncNotifier`, `GetPromptRequest`
+|`GetPromptOutcome` (`GetPromptResult` or `InputRequiredResult`)
+
+|`@McpComplete`
+|`McpModernSyncRequestContext`, `McpRequestContext`, `CompleteRequest`
+|`CompleteResult`
+|===
+
+Use the modern types whenever a feature has no legacy equivalent: multi round-trip requests on any primitive, and per-response cache hints on resource reads.
+
+For resources whose cache hints are static, set them on the annotation instead. `ttlMs` (default `0`, not cacheable) and `cacheScope` (default `PRIVATE`) are applied to every legacy return value the callback converts. A method that returns a modern `ReadResourceResult` keeps the hints it built itself. On a legacy server these attributes are ignored with a warning at startup.
+
+[source,java]
+----
+@McpResource(uri = "catalog://products", ttlMs = 60_000, cacheScope = CacheScope.PUBLIC)
+public String products() {
+    return catalog.asJson();
+}
+----
+
+[source,java]
+----
+@McpResource(uri = "catalog://products", name = "products", description = "Product catalog")
+public ReadResourceResult products(String uri) {
+    return ReadResourceResult.builder(List.of(TextResourceContents.builder(uri, loadCatalog()).build()))
+        .ttlMs(60_000)
+        .cacheScope(CacheScope.PUBLIC)
+        .build();
+}
+----
+
+Bidirectional parameters of the session-based servers (`McpSyncServerExchange`, `McpSyncRequestContext`) are not available, as there is no session to call back on. Methods that declare them are skipped with a warning.
+
+=== Request Context and Progress
+
+A tool, resource or prompt method can declare a `McpModernSyncRequestContext` parameter. It gives access to the protocol version, the client capabilities and info, the request `_meta`, the transport context and the multi round-trip fields, and it reports progress.
+A method that declares this parameter (or a raw `McpSyncNotifier`) is served as a streaming response, so progress notifications reach the client before the result. Completion methods may declare the context too, but completions are plain results, so progress reported there is dropped.
+
+[source,java]
+----
+@McpTool(name = "index", description = "Indexes the given paths")
+public String index(McpModernSyncRequestContext ctx, @McpToolParam(description = "paths") List<String> paths) {
+    for (int i = 0; i < paths.size(); i++) {
+        ctx.progress((i + 1) * 100 / paths.size());
+        index(paths.get(i));
+    }
+    return "Indexed " + paths.size() + " paths";
+}
+----
+
+=== Multi Round-Trip Requests
+
+To ask the client for input, return an `InputRequiredResult` from a tool, resource or prompt method. The client retries the call with the answers, which the context exposes through `inputResponses()` and `inputResponse(key, type)`. The `requestState` you attach is sealed by the server and verified on retry, so it cannot be tampered with.
+
+[source,java]
+----
+@McpTool(name = "book", description = "Books a table")
+public CallToolOutcome book(McpModernSyncRequestContext ctx, @McpToolParam(description = "guests") int guests) {
+    var confirmation = ctx.inputResponse("confirm", Map.class);
+    if (confirmation.isEmpty()) {
+        return InputRequiredResult.builder()
+            .elicit("confirm", ElicitFormRequest.builder("Book a table for " + guests + "?",
+                    Map.of("type", "object", "properties", Map.of("ok", Map.of("type", "boolean")))).build())
+            .requestState("guests=" + guests)
+            .build();
+    }
+    return CallToolResult.builder().addContent(TextContent.builder("Booked").build()).build();
+}
+----
+
+Methods that only need the raw fields can declare the modern request type (`CallToolRequest`, `ReadResourceRequest` or `GetPromptRequest`) instead of the context.
+
+=== Runtime Changes and Subscriptions
+
+Each primitive is served by an SDK repository bean: `McpSyncToolRepository`, `McpSyncResourceRepository`, `McpSyncPromptRepository` and `McpSyncCompletionRepository`. Unless you define a bean of that type yourself, the auto-configuration registers an in-memory repository per primitive (`InMemorySyncToolRepository`, `InMemorySyncResourceRepository`, `InMemorySyncPromptRepository`, `InMemorySyncCompletionRepository`) and the `McpChangeFeed` that backs `subscriptions/listen`. Inject an in-memory repository to add or remove primitives at runtime; the matching list-changed notification is broadcast to listening clients. Call `InMemorySyncResourceRepository.resourceUpdated(uri)` to notify subscribers of a resource change.
+
+==== Visibility Filters
+
+To restrict what each caller sees without writing a repository, define one or more `McpVisibilityFilter` beans.
+The auto-configuration applies them to the in-memory tool, resource and prompt repositories on every path: a hidden primitive is not listed, is not found by name, and a call, read or get for it answers `Unknown tool`, `Unknown resource` or `Unknown prompt` (`-32602`), as for a primitive that does not exist.
+A hidden resource is not served by a resource template that matches its URI either, and `completion/complete` rejects a reference to a hidden prompt or template as unknown.
+Resource subscriptions on `subscriptions/listen` are matched by the SDK without consulting the repository, so a hidden resource's update notifications still reach a client that subscribed to its URI.
+A filtered listing is always `cacheScope: private`.
+Several filter beans combine with AND.
+The filter beans are applied to the in-memory repositories only; a custom repository bean (see below) receives a filter through its constructor.
+
+The filter receives the `McpRequestContext`, whose transport context carries the HTTP request headers by default (see <<Customizing the Server and the Transport>>).
+`McpTransportContexts.header(ctx, name)` reads one case-insensitively.
+
+[source,java]
+----
+@Bean
+McpVisibilityFilter adminOnlyUnlessPublic() {
+    return McpVisibilityFilter.tools((ctx, tool) ->
+        "admin".equals(McpTransportContexts.header(ctx, "x-role"))
+            || (tool.meta() != null && "public".equals(tool.meta().get("visibility"))));
+}
+----
+
+A definition's `_meta` is `null` unless something set it, hence the guard.
+
+`McpVisibilityFilter` has one default method per primitive (`tool`, `resource`, `resourceTemplate`, `prompt`), so a tenant rule written once covers all of them; the static factories `tools`, `resources`, `resourceTemplates` and `prompts` build a single-primitive filter from a lambda.
+The `_meta` of a definition is a convenient place for the attribute a filter reads; `@McpTool(metaProvider = ...)` fills it on annotated tools.
+
+==== Custom Repositories
+
+To serve a catalogue that is not a fixed list, for example one read from a database or a file system, extend `AbstractSyncToolRepository`, `AbstractSyncResourceRepository` or `AbstractSyncPromptRepository` instead of implementing the SDK interface from scratch.
+The base classes provide list paging with opaque cursors, the list cache scope, dispatch to the specification handlers, URI template matching for resources, visibility and the change broadcasts.
+You implement two hooks: `definitions(ctx)` returns the plain definitions for listing, and `lookup(ctx, key)` returns the specification, definition plus handler, for dispatch (resources add `templateDefinitions(ctx)` and `lookupTemplate(ctx, uriTemplate)`).
+Pass a `McpVisibilityFilter` to the constructor, or override `visible(ctx, definition)`, to restrict what a caller sees; override `listCacheScope(ctx)` to return `PRIVATE` when a listing is personalised for another reason.
+The list `ttlMs` always comes from `spring.ai.mcp.server.modern.list-ttl`.
+All hooks receive the `McpRequestContext`.
+Declaring the subclass as a bean replaces the in-memory repository for that primitive.
+
+[source,java]
+----
+@Component
+public class TenantToolRepository extends AbstractSyncToolRepository {
+
+    private final ToolCatalog catalog;
+
+    public TenantToolRepository(ToolCatalog catalog, McpChangeFeed changeFeed,
+            ObjectProvider<McpVisibilityFilter> filters) {
+        super(changeFeed, 50, McpVisibilityFilter.allOf(filters.orderedStream().toList()));
+        this.catalog = catalog;
+    }
+
+    @Override
+    protected List<Tool> definitions(McpRequestContext ctx) {
+        return catalog.toolsOf(tenant(ctx));           // definitions only, no handlers
+    }
+
+    @Override
+    protected SyncToolSpecification lookup(McpRequestContext ctx, String name) {
+        return catalog.find(tenant(ctx), name);         // definition + handler, on call
+    }
+
+    @Override
+    protected CacheScope listCacheScope(McpRequestContext ctx) {
+        return CacheScope.PRIVATE;
+    }
+
+    private String tenant(McpRequestContext ctx) {
+        return McpTransportContexts.header(ctx, "x-tenant");
+    }
+}
+----
+
+To back a primitive with your own store (a database, a remote catalog, a tool gateway), define a repository bean. The in-memory repository for that primitive backs off and the specification lists are no longer collected for it, so your repository is the single source of truth. Repositories for the other primitives are unaffected.
+
+[source,java]
+----
+@Bean
+McpSyncToolRepository toolRepository(ToolCatalog catalog) {
+    return new CatalogToolRepository(catalog); // implements list/find/call
+}
+----
+
+[source,java]
+----
+@Autowired InMemorySyncToolRepository tools;
+
+void addLater() {
+    tools.add(new SyncToolSpecification(
+        Tool.builder("late", Map.of("type", "object")).description("Added at runtime").build(),
+        (ctx, request) -> McpSyncResponse.result(
+            CallToolResult.builder().addContent(TextContent.builder("late").build()).build())));
+}
+----
+
+=== Customizing the Server and the Transport
+
+* A `McpModernServerCustomizer` bean receives the SDK `McpServer.Builder` before the server is built. Use it to add extension features or to replace the request state codec.
+* A `RequestStateCodec` bean replaces the HMAC codec configured from the properties.
+* A `ServerHttpHeaderValidator` bean validates `Origin` and `Host` on every request. The SDK's `DefaultServerTransportSecurityValidator` implements it.
+* By default the transport stores the HTTP request headers in the `McpTransportContext` handlers see, under `McpTransportContexts.HEADERS`, with lower-cased names and without the `Mcp-*` protocol headers; `Authorization` and `Cookie` are included, so register your own extractor if handlers must not see them.
+A `McpTransportContextExtractor<ServerRequest>` bean replaces that default and derives the context from the incoming request itself.
+* The transports are plain `WebMvcModernServerTransport` and `WebFluxMcpTransport` beans and can be built manually from a `McpRequestManager` when more control is needed.
+
+== Migration Notes
+
+Compared to the session-based servers:
+
+* `ctx.elicit(...)`, `ctx.sample(...)`, `ctx.roots()` and `ctx.ping()` have no direct equivalent. Elicitation, sampling and roots are multi round-trip requests; `ping` is gone. Logging is deprecated and per request: the client opts in with `_meta.logLevel` and the server may send `notifications/message` on that request's stream, which the modern context does not expose yet.
+* Progress requires a streaming response, which the modern context parameter enables automatically.
+* Clients must send the `Mcp-Method`, `MCP-Protocol-Version` and, for `tools/call`, `prompts/get` and `resources/read`, the `Mcp-Name` header consistent with the body. Requests that disagree are rejected with JSON-RPC error `-32020`.
+* `server/discover` replaces `initialize`; its caching hints and the list caching hints are controlled by the properties above.

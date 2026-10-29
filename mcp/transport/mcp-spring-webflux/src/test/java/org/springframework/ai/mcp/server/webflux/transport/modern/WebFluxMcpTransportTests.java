@@ -32,6 +32,7 @@ import io.modelcontextprotocol.modern.server.McpRequestContext;
 import io.modelcontextprotocol.modern.server.McpServer;
 import io.modelcontextprotocol.modern.server.McpSyncResponse;
 import io.modelcontextprotocol.modern.server.feature.McpChangeFeed;
+import io.modelcontextprotocol.modern.server.feature.McpSyncTool;
 import io.modelcontextprotocol.modern.server.feature.McpSyncToolRepository;
 import io.modelcontextprotocol.modern.server.feature.ServerChange;
 import io.modelcontextprotocol.modern.server.feature.ToolsFeature;
@@ -671,12 +672,12 @@ class WebFluxMcpTransportTests {
 		}
 
 		@Override
-		public Tool find(McpRequestContext ctx, String name) {
-			return TOOLS.get(name);
+		public McpSyncTool find(McpRequestContext ctx, String name) {
+			Tool tool = TOOLS.get(name);
+			return tool != null ? McpSyncTool.of(tool, this::call) : null;
 		}
 
-		@Override
-		public McpSyncResponse<CallToolOutcome> call(McpRequestContext ctx, CallToolRequest request) {
+		private McpSyncResponse<CallToolOutcome> call(McpRequestContext ctx, CallToolRequest request) {
 			return switch (request.name()) {
 				case "echo" ->
 					McpSyncResponse.result(ModernRequests.text(String.valueOf(request.arguments().get("text"))));

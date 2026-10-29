@@ -30,6 +30,7 @@ import io.modelcontextprotocol.modern.McpSchema.Tool;
 import io.modelcontextprotocol.modern.server.McpRequestContext;
 import io.modelcontextprotocol.modern.server.McpServer;
 import io.modelcontextprotocol.modern.server.McpSyncResponse;
+import io.modelcontextprotocol.modern.server.feature.McpSyncTool;
 import io.modelcontextprotocol.modern.server.feature.McpSyncToolRepository;
 import io.modelcontextprotocol.modern.server.feature.ServerChange;
 import io.modelcontextprotocol.modern.server.feature.ToolsFeature;
@@ -175,12 +176,12 @@ class WebFluxMcpTransportIT {
 		}
 
 		@Override
-		public Tool find(McpRequestContext ctx, String name) {
-			return ModernRequests.tool(name);
+		public McpSyncTool find(McpRequestContext ctx, String name) {
+			Tool tool = ModernRequests.tool(name);
+			return tool != null ? McpSyncTool.of(tool, this::call) : null;
 		}
 
-		@Override
-		public McpSyncResponse<CallToolOutcome> call(McpRequestContext ctx, CallToolRequest request) {
+		private McpSyncResponse<CallToolOutcome> call(McpRequestContext ctx, CallToolRequest request) {
 			if ("thread".equals(request.name())) {
 				return McpSyncResponse
 					.result(ModernRequests.text(Thread.currentThread().getName() + "|" + ctx.isBlocking()));

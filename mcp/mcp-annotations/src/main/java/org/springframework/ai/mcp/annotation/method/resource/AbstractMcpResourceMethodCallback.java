@@ -34,7 +34,9 @@ import io.modelcontextprotocol.util.McpUriTemplateManagerFactory;
 
 import org.springframework.ai.mcp.annotation.McpMeta;
 import org.springframework.ai.mcp.annotation.McpProgressToken;
+import org.springframework.ai.mcp.annotation.McpResource;
 import org.springframework.ai.mcp.annotation.common.McpPredicates;
+import org.springframework.ai.mcp.annotation.common.McpResourceCacheHints;
 import org.springframework.ai.mcp.annotation.context.DefaultMcpAsyncRequestContext;
 import org.springframework.ai.mcp.annotation.context.DefaultMcpSyncRequestContext;
 import org.springframework.ai.mcp.annotation.context.McpAsyncRequestContext;
@@ -597,7 +599,22 @@ public abstract class AbstractMcpResourceMethodCallback {
 		@SuppressWarnings("unchecked")
 		public T method(Method method) {
 			this.method = method;
+			if (method != null && !supportsCacheHints()) {
+				McpResource annotation = method.getAnnotation(McpResource.class);
+				if (annotation != null) {
+					McpResourceCacheHints.warnIfIgnored(method, annotation);
+				}
+			}
 			return (T) this;
+		}
+
+		/**
+		 * Whether the callback built by this builder transmits the {@code @McpResource}
+		 * {@code ttlMs}/{@code cacheScope} hints. Only the 2026-07-28 ("modern") callback
+		 * does; every other builder warns when the hints are set.
+		 */
+		protected boolean supportsCacheHints() {
+			return false;
 		}
 
 		/**

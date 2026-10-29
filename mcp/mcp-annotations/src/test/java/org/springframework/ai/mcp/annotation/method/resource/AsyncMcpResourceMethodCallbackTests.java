@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.function.BiFunction;
 
 import io.modelcontextprotocol.common.McpTransportContext;
+import io.modelcontextprotocol.modern.McpSchema.CacheScope;
 import io.modelcontextprotocol.server.McpAsyncServerExchange;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
 import io.modelcontextprotocol.spec.McpError;
@@ -120,6 +121,16 @@ public class AsyncMcpResourceMethodCallbackTests {
 			@Override
 			public Class<? extends MetaProvider> metaProvider() {
 				return DefaultMetaProvider.class;
+			}
+
+			@Override
+			public long ttlMs() {
+				return 0;
+			}
+
+			@Override
+			public CacheScope cacheScope() {
+				return CacheScope.PRIVATE;
 			}
 		};
 	}
@@ -464,6 +475,16 @@ public class AsyncMcpResourceMethodCallbackTests {
 			@Override
 			public Class<? extends MetaProvider> metaProvider() {
 				return DefaultMetaProvider.class;
+			}
+
+			@Override
+			public long ttlMs() {
+				return 0;
+			}
+
+			@Override
+			public CacheScope cacheScope() {
+				return CacheScope.PRIVATE;
 			}
 		};
 

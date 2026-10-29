@@ -252,6 +252,14 @@ The `@McpResource` annotation provides access to resources via URI templates.
 |`@McpAnnotations(...)`
 |Client annotations for audience, priority, and last-modified metadata.
 
+|`ttlMs`
+|`0`
+|How long, in milliseconds, clients may cache the read result. Only transmitted by the modern (`protocol=MODERN`) server; ignored with a warning otherwise.
+
+|`cacheScope`
+|`CacheScope.PRIVATE`
+|Whether a cached read result may be shared across authorization contexts (`PUBLIC`) or not (`PRIVATE`). Only transmitted by the modern server.
+
 |===
 
 The nested `McpAnnotations` for resources supports:
