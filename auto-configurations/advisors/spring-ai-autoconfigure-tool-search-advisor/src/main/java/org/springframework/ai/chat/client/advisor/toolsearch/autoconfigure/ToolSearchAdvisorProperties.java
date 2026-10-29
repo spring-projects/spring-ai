@@ -23,6 +23,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
 import org.springframework.ai.chat.client.advisor.api.MemoryAdvisor;
 import org.springframework.ai.tool.toolsearch.ToolIndex;
+import org.springframework.ai.tool.toolsearch.index.decision.DecisionToolIndex;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.util.Assert;
 
@@ -56,6 +57,8 @@ public class ToolSearchAdvisorProperties {
 	 * {@code org.apache.lucene:lucene-core} on the classpath.</li>
 	 * <li>{@code vector} — embedding-based semantic search; requires a
 	 * {@code VectorStore} bean and {@code spring-ai-vector-store} on the classpath.</li>
+	 * <li>{@code decision} — a decision model picks the tool and can report that none
+	 * applies; requires a {@code DecisionModel} bean.</li>
 	 * </ul>
 	 * When not set, {@code regex} is used as the default.
 	 */
@@ -98,6 +101,8 @@ public class ToolSearchAdvisorProperties {
 	private final Eviction eviction = new Eviction();
 
 	private final Lucene lucene = new Lucene();
+
+	private final Decision decision = new Decision();
 
 	public boolean isEnabled() {
 		return this.enabled;
@@ -165,6 +170,13 @@ public class ToolSearchAdvisorProperties {
 	}
 
 	/**
+	 * @since 2.1.0
+	 */
+	public Decision getDecision() {
+		return this.decision;
+	}
+
+	/**
 	 * Eviction strategy settings for the per-session tool-index cache.
 	 */
 	public static class Eviction {
@@ -219,6 +231,45 @@ public class ToolSearchAdvisorProperties {
 
 		public void setMinScoreThreshold(float minScoreThreshold) {
 			this.minScoreThreshold = minScoreThreshold;
+		}
+
+	}
+
+	/**
+	 * Settings specific to the decision-model-backed {@code ToolIndex}. Applies only when
+	 * a {@link DecisionToolIndex} bean is auto-configured.
+	 *
+	 * @since 2.1.0
+	 */
+	public static class Decision {
+
+		/**
+		 * How sure the model must be that some indexed tool serves the request before any
+		 * tool is returned. Raise it where calling the wrong tool is worse than calling
+		 * none.
+		 */
+		private double applicabilityThreshold = DecisionToolIndex.Builder.DEFAULT_APPLICABILITY_THRESHOLD;
+
+		/**
+		 * Lowest share of the selection distribution a tool needs to be returned. At
+		 * zero, every tool the model gives any probability is returned in ranked order.
+		 */
+		private double minimumRelevance = 0.0d;
+
+		public double getApplicabilityThreshold() {
+			return this.applicabilityThreshold;
+		}
+
+		public void setApplicabilityThreshold(double applicabilityThreshold) {
+			this.applicabilityThreshold = applicabilityThreshold;
+		}
+
+		public double getMinimumRelevance() {
+			return this.minimumRelevance;
+		}
+
+		public void setMinimumRelevance(double minimumRelevance) {
+			this.minimumRelevance = minimumRelevance;
 		}
 
 	}
