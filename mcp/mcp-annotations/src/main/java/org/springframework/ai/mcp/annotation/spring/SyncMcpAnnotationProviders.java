@@ -158,8 +158,8 @@ public final class SyncMcpAnnotationProviders {
 	}
 
 	/**
-	 * @param jsonMapper the server's mapper, used for converting MRTR input responses,
-	 * or {@code null} for the SDK default
+	 * @param jsonMapper the server's mapper, used for converting MRTR input responses, or
+	 * {@code null} for the SDK default
 	 * @since 2.1.0
 	 */
 	public static List<McpSyncPrompt> modernPrompts(List<Object> promptObjects, @Nullable McpJsonMapper jsonMapper) {
@@ -176,8 +176,8 @@ public final class SyncMcpAnnotationProviders {
 	}
 
 	/**
-	 * @param jsonMapper the server's mapper, used for converting MRTR input responses,
-	 * or {@code null} for the SDK default
+	 * @param jsonMapper the server's mapper, used for converting MRTR input responses, or
+	 * {@code null} for the SDK default
 	 * @since 2.1.0
 	 */
 	public static List<SyncResourceEntry> modernResources(List<Object> resourceObjects,
@@ -195,8 +195,8 @@ public final class SyncMcpAnnotationProviders {
 	}
 
 	/**
-	 * @param jsonMapper the server's mapper, used for converting MRTR input responses,
-	 * or {@code null} for the SDK default
+	 * @param jsonMapper the server's mapper, used for converting MRTR input responses, or
+	 * {@code null} for the SDK default
 	 * @since 2.1.0
 	 */
 	public static List<SyncResourceTemplateEntry> modernResourceTemplates(List<Object> resourceObjects,
