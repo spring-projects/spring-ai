@@ -16,6 +16,7 @@
 
 package org.springframework.ai.mcp.modern;
 
+import io.modelcontextprotocol.modern.McpSchema.ClientCapabilities;
 import io.modelcontextprotocol.modern.McpSchema.ResourceTemplate;
 import io.modelcontextprotocol.modern.server.feature.McpSyncResource;
 
@@ -39,9 +40,21 @@ public record SyncResourceTemplateEntry(ResourceTemplate resourceTemplate, McpSy
 
 	/**
 	 * Pairs a resource template with a handler that requires no client capabilities.
+	 * @since 2.1.0
 	 */
 	public static SyncResourceTemplateEntry of(ResourceTemplate resourceTemplate, McpSyncResource.Handler handler) {
 		return new SyncResourceTemplateEntry(resourceTemplate, McpSyncResource.of(handler));
+	}
+
+	/**
+	 * Pairs a resource template with a handler that only works with clients declaring
+	 * {@code requiredCapabilities}. A read from any other client is rejected with
+	 * {@code -32021} without running the handler.
+	 * @since 2.1.0
+	 */
+	public static SyncResourceTemplateEntry of(ResourceTemplate resourceTemplate,
+			ClientCapabilities requiredCapabilities, McpSyncResource.Handler handler) {
+		return new SyncResourceTemplateEntry(resourceTemplate, McpSyncResource.of(requiredCapabilities, handler));
 	}
 
 }

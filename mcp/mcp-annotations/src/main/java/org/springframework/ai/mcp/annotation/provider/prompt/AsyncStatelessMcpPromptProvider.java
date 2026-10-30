@@ -33,6 +33,7 @@ import reactor.core.publisher.Mono;
 import org.springframework.ai.mcp.annotation.McpPrompt;
 import org.springframework.ai.mcp.annotation.adapter.PromptAdapter;
 import org.springframework.ai.mcp.annotation.common.McpPredicates;
+import org.springframework.ai.mcp.annotation.common.McpRequiredCapabilities;
 import org.springframework.ai.mcp.annotation.method.prompt.AsyncStatelessMcpPromptMethodCallback;
 
 /**
@@ -74,6 +75,8 @@ public class AsyncStatelessMcpPromptProvider {
 				.sorted((m1, m2) -> m1.getName().compareTo(m2.getName()))
 				.map(mcpPromptMethod -> {
 					var promptAnnotation = mcpPromptMethod.getAnnotation(McpPrompt.class);
+					McpRequiredCapabilities.warnIfIgnored(mcpPromptMethod, "McpPrompt",
+							promptAnnotation.requiredCapabilities());
 					var mcpPrompt = PromptAdapter.asPrompt(promptAnnotation, mcpPromptMethod);
 
 					BiFunction<McpTransportContext, GetPromptRequest, Mono<GetPromptResult>> methodCallback = AsyncStatelessMcpPromptMethodCallback

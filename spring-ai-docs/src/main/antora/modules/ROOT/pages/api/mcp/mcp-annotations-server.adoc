@@ -61,6 +61,10 @@ The `@McpTool` annotation supports the following attributes:
 |`{}`
 |Optional `@McpIcon` entries (`src`, `mimeType`, `sizes`, `theme`) published in the tool definition.
 
+|`requiredCapabilities`
+|`{}`
+|`McpClientCapability` values (`ELICITATION_FORM`, `ELICITATION_URL`, `SAMPLING`, `ROOTS`) the tool cannot work without. The modern server refuses a request that does not declare them with `-32021` before the method runs; the legacy servers ignore the attribute with a warning.
+
 |===
 
 ==== Tool Annotations (Hints)
@@ -272,6 +276,10 @@ The `@McpResource` annotation provides access to resources via URI templates.
 |`-1`
 |Size of the resource content in bytes when known; `-1` leaves it unset.
 
+|`requiredCapabilities`
+|`{}`
+|`McpClientCapability` values (`ELICITATION_FORM`, `ELICITATION_URL`, `SAMPLING`, `ROOTS`) the resource cannot work without. The modern server refuses a request that does not declare them with `-32021` before the method runs; the legacy servers ignore the attribute with a warning.
+
 |===
 
 The nested `McpAnnotations` for resources supports:
@@ -386,6 +394,10 @@ The `@McpPrompt` annotation generates prompt messages for AI interactions.
 |`icons`
 |`{}`
 |Optional `@McpIcon` entries published in the prompt definition.
+
+|`requiredCapabilities`
+|`{}`
+|`McpClientCapability` values (`ELICITATION_FORM`, `ELICITATION_URL`, `SAMPLING`, `ROOTS`) the prompt cannot work without. The modern server refuses a request that does not declare them with `-32021` before the method runs; the legacy servers ignore the attribute with a warning.
 
 |===
 

@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.json.McpJsonMapper;
@@ -69,6 +70,9 @@ public final class SyncModernMcpResourceMethodCallback extends AbstractMcpResour
 		implements McpSyncResource.Handler {
 
 	private final boolean streaming;
+
+	// Set once the runtime capability check has warned about this method.
+	private final AtomicBoolean capabilityWarned = new AtomicBoolean();
 
 	private final long ttlMs;
 
@@ -136,7 +140,7 @@ public final class SyncModernMcpResourceMethodCallback extends AbstractMcpResour
 			this.method.setAccessible(true);
 			Object result = this.method.invoke(this.bean, args);
 			if (result instanceof ReadResourceOutcome outcome) {
-				ModernMethodSupport.checkClientCapabilities(context, outcome);
+				ModernMethodSupport.checkClientCapabilities(context, outcome, this.method, this.capabilityWarned);
 				return outcome;
 			}
 			io.modelcontextprotocol.modern.McpSchema.ReadResourceResult converted = McpSchemaConverter

@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.json.McpJsonMapper;
@@ -61,6 +62,9 @@ public final class SyncModernMcpPromptMethodCallback extends AbstractMcpPromptMe
 		implements McpSyncPrompt.Handler {
 
 	private final boolean streaming;
+
+	// Set once the runtime capability check has warned about this method.
+	private final AtomicBoolean capabilityWarned = new AtomicBoolean();
 
 	private final @Nullable McpJsonMapper jsonMapper;
 
@@ -111,7 +115,7 @@ public final class SyncModernMcpPromptMethodCallback extends AbstractMcpPromptMe
 			this.method.setAccessible(true);
 			Object result = this.method.invoke(this.bean, args);
 			if (result instanceof GetPromptOutcome outcome) {
-				ModernMethodSupport.checkClientCapabilities(context, outcome);
+				ModernMethodSupport.checkClientCapabilities(context, outcome, this.method, this.capabilityWarned);
 				return outcome;
 			}
 			return McpSchemaConverter.toModern(this.convertToGetPromptResult(result));

@@ -120,6 +120,27 @@ public @interface McpResource {
 	 */
 	CacheScope cacheScope() default CacheScope.PRIVATE;
 
+	/**
+	 * Client capabilities the resource cannot work without. A client whose request does
+	 * not declare all of them is answered with JSON-RPC error
+	 * {@code -32021 Missing required
+	 * client capability}, listing the missing ones, before the method runs.
+	 * <p>
+	 * Input the resource can do without is requested only when
+	 * {@code McpModernSyncRequestContext.clientCapabilities()} declares its capability,
+	 * and needs no entry here.
+	 * <p>
+	 * Only honoured by the 2026-07-28 ("modern") MCP server. The legacy servers ignore
+	 * it, because their request context checks the capabilities the client sent at
+	 * initialization.
+	 * <p>
+	 * {@code experimental} and extension capabilities cannot be required this way; a
+	 * method that depends on one is registered programmatically with
+	 * {@code ClientCapabilities}.
+	 * @since 2.1.0
+	 */
+	McpClientCapability[] requiredCapabilities() default {};
+
 	@Retention(RetentionPolicy.RUNTIME)
 	@Target(ElementType.ANNOTATION_TYPE)
 	public @interface McpAnnotations {

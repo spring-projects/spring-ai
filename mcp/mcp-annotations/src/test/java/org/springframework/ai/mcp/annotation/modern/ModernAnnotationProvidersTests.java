@@ -22,6 +22,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.json.McpJsonDefaults;
 import io.modelcontextprotocol.json.McpJsonMapper;
@@ -34,6 +37,7 @@ import io.modelcontextprotocol.modern.McpSchema;
 import io.modelcontextprotocol.modern.McpSchema.CacheScope;
 import io.modelcontextprotocol.modern.McpSchema.CallToolOutcome;
 import io.modelcontextprotocol.modern.McpSchema.CallToolRequest;
+import io.modelcontextprotocol.modern.McpSchema.ClientCapabilities;
 import io.modelcontextprotocol.modern.McpSchema.CompleteRequest;
 import io.modelcontextprotocol.modern.McpSchema.CompleteResult;
 import io.modelcontextprotocol.modern.McpSchema.CreateMessageRequest;
@@ -63,14 +67,17 @@ import io.modelcontextprotocol.spec.McpError;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.mcp.annotation.McpArg;
+import org.springframework.ai.mcp.annotation.McpClientCapability;
 import org.springframework.ai.mcp.annotation.McpComplete;
 import org.springframework.ai.mcp.annotation.McpIcon;
 import org.springframework.ai.mcp.annotation.McpPrompt;
 import org.springframework.ai.mcp.annotation.McpResource;
 import org.springframework.ai.mcp.annotation.McpTool;
 import org.springframework.ai.mcp.annotation.McpToolParam;
+import org.springframework.ai.mcp.annotation.common.ModernMethodSupport;
 import org.springframework.ai.mcp.annotation.context.McpModernSyncRequestContext;
 import org.springframework.ai.mcp.annotation.context.McpSyncRequestContext;
 import org.springframework.ai.mcp.annotation.method.resource.SyncModernMcpResourceMethodCallback;
@@ -108,10 +115,17 @@ class ModernAnnotationProvidersTests {
 	}
 
 	private static McpServer server() {
+		return server(new Tools());
+	}
+
+	/**
+	 * A server serving {@code toolBean}'s tools next to the shared resources and prompts.
+	 */
+	private static McpServer server(Object toolBean) {
 		return McpServer.builder()
 			.serverInfo(Implementation.builder("test", "1").build())
 			.feature(ToolsFeature.ofSync(InMemorySyncToolRepository.builder()
-				.tools(SyncMcpAnnotationProviders.modernTools(List.of(new Tools())))
+				.tools(SyncMcpAnnotationProviders.modernTools(List.of(toolBean)))
 				.build()))
 			.feature(ResourcesFeature.ofSync(InMemorySyncResourceRepository.builder()
 				.resources(SyncMcpAnnotationProviders.modernResources(List.of(new Resources())))
@@ -472,8 +486,7 @@ class ModernAnnotationProvidersTests {
 		((Map<String, Object>) params.get("_meta")).put(MetaKeys.CLIENT_CAPABILITIES, Map.of());
 		McpTransportResponse response = send(server(), McpSchema.METHOD_RESOURCES_READ, params);
 
-		// The handler declares the modern context, so the answer is a stream whose last
-		// message carries the error.
+		// The method runs and returns the input request, which the runtime check refuses.
 		JSONRPCResponse error = finalResponse(response);
 		assertThat(error.error()).isNotNull();
 		assertThat(error.error().code()).isEqualTo(McpSchema.ErrorCodes.MISSING_REQUIRED_CLIENT_CAPABILITY);
@@ -503,12 +516,104 @@ class ModernAnnotationProvidersTests {
 
 	@Test
 	@SuppressWarnings("unchecked")
+	void runtimeCapabilityCheckWarnsOncePerMethod() {
+		ListAppender<ILoggingEvent> appender = new ListAppender<>();
+		appender.start();
+		Logger logger = (Logger) LoggerFactory.getLogger(ModernMethodSupport.class);
+		logger.addAppender(appender);
+		try {
+			McpServer server = server();
+			for (int i = 0; i < 2; i++) {
+				Map<String, Object> params = params("name", "probe", "arguments", Map.of("kind", "sampling"));
+				((Map<String, Object>) params.get("_meta")).put(MetaKeys.CLIENT_CAPABILITIES, Map.of());
+				JSONRPCResponse error = finalResponse(send(server, McpSchema.METHOD_TOOLS_CALL, params));
+				assertThat(error.error().code()).isEqualTo(McpSchema.ErrorCodes.MISSING_REQUIRED_CLIENT_CAPABILITY);
+			}
+			// Both calls are refused; the hint about the attribute is logged once.
+			assertThat(appender.list).singleElement().satisfies(event -> {
+				assertThat(event.getLevel()).isEqualTo(ch.qos.logback.classic.Level.WARN);
+				assertThat(event.getFormattedMessage()).startsWith("Method probe in " + Tools.class.getName())
+					.contains("requested [SAMPLING]")
+					.contains("requiredCapabilities");
+			});
+		}
+		finally {
+			logger.detachAppender(appender);
+		}
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
 	void inputRequestsPassWhenTheClientDeclaresTheCapability() {
 		Map<String, Object> params = params("name", "probe", "arguments", Map.of("kind", "url-map"));
 		((Map<String, Object>) params.get("_meta")).put(MetaKeys.CLIENT_CAPABILITIES,
 				Map.of("elicitation", Map.of("url", Map.of())));
 		Map<String, Object> result = result(send(server(), McpSchema.METHOD_TOOLS_CALL, params));
 		assertThat(result.get("resultType")).isEqualTo("input_required");
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void requiredCapabilitiesRefuseTheCallBeforeTheMethodRuns() {
+		Gated bean = new Gated();
+		McpServer server = server(bean);
+		Map<String, Object> params = params("name", "gated_summary");
+		((Map<String, Object>) params.get("_meta")).put(MetaKeys.CLIENT_CAPABILITIES, Map.of());
+		McpTransportResponse response = send(server, McpSchema.METHOD_TOOLS_CALL, params);
+
+		// A plain error, not a stream: the notifier the method declares was never
+		// created.
+		assertThat(response).isInstanceOf(McpTransportResponse.Error.class);
+		JSONRPCResponse error = ((McpTransportResponse.Error) response).response();
+		assertThat(error.error().code()).isEqualTo(McpSchema.ErrorCodes.MISSING_REQUIRED_CLIENT_CAPABILITY);
+		Map<String, Object> data = McpJsonDefaults.getMapper().convertValue(error.error().data(), Map.class);
+		assertThat((Map<String, Object>) data.get("requiredCapabilities")).containsOnlyKeys("sampling");
+		assertThat(bean.calls).hasValue(0);
+
+		// A client that declares sampling reaches the method.
+		Map<String, Object> result = result(send(server, McpSchema.METHOD_TOOLS_CALL, params("name", "gated_summary")));
+		assertThat(result.get("resultType")).isEqualTo("input_required");
+		assertThat(bean.calls).hasValue(1);
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void requiredCapabilitiesErrorListsOnlyTheMissingOnes() {
+		Map<String, Object> params = params("name", "gated_both");
+		((Map<String, Object>) params.get("_meta")).put(MetaKeys.CLIENT_CAPABILITIES,
+				Map.of("elicitation", Map.of("form", Map.of())));
+		JSONRPCResponse error = finalResponse(send(server(new Gated()), McpSchema.METHOD_TOOLS_CALL, params));
+
+		assertThat(error.error().code()).isEqualTo(McpSchema.ErrorCodes.MISSING_REQUIRED_CLIENT_CAPABILITY);
+		Map<String, Object> data = McpJsonDefaults.getMapper().convertValue(error.error().data(), Map.class);
+		assertThat((Map<String, Object>) data.get("requiredCapabilities")).containsOnlyKeys("sampling");
+	}
+
+	@Test
+	void requiredCapabilitiesAreDeclaredOnEveryPrimitive() {
+		Gated bean = new Gated();
+		var tools = SyncMcpAnnotationProviders.modernTools(List.of(bean));
+		var both = tools.stream()
+			.filter(tool -> tool.definition().name().equals("gated_both"))
+			.findFirst()
+			.orElseThrow();
+		assertThat(both.requiredCapabilities().supportsElicitationForm()).isTrue();
+		assertThat(both.requiredCapabilities().supportsSampling()).isTrue();
+		assertThat(both.requiredCapabilities().supportsElicitationUrl()).isFalse();
+		assertThat(both.requiredCapabilities().supportsRoots()).isFalse();
+
+		assertThat(SyncMcpAnnotationProviders.modernPrompts(List.of(bean)).get(0).requiredCapabilities())
+			.satisfies(required -> assertThat(required.supportsElicitationForm()).isTrue());
+		assertThat(SyncMcpAnnotationProviders.modernResources(List.of(bean)).get(0).handler().requiredCapabilities())
+			.satisfies(required -> assertThat(required.supportsRoots()).isTrue());
+		assertThat(SyncMcpAnnotationProviders.modernResourceTemplates(List.of(bean))
+			.get(0)
+			.handler()
+			.requiredCapabilities()).satisfies(required -> assertThat(required.supportsElicitationUrl()).isTrue());
+
+		// Without the attribute nothing is required.
+		assertThat(SyncMcpAnnotationProviders.modernTools(List.of(new Tools())))
+			.allSatisfy(tool -> assertThat(tool.requiredCapabilities()).isEqualTo(ClientCapabilities.NONE));
 	}
 
 	@Test
@@ -744,6 +849,52 @@ class ModernAnnotationProvidersTests {
 		@McpResource(uri = "test://broken", name = "broken", description = "broken")
 		String readBroken() {
 			throw new IllegalStateException("broken");
+		}
+
+	}
+
+	@SuppressWarnings("unused")
+	static class Gated {
+
+		final AtomicInteger calls = new AtomicInteger();
+
+		@McpTool(name = "gated_summary", description = "Needs sampling",
+				requiredCapabilities = McpClientCapability.SAMPLING)
+		CallToolOutcome summary(McpSyncNotifier notifier) {
+			this.calls.incrementAndGet();
+			notifier.progress(1, 2.0, null);
+			return InputRequiredResult.builder()
+				.createMessage("k",
+						CreateMessageRequest
+							.builder(List.of(new SamplingMessage(Role.USER, TextContent.builder("m").build())), 10)
+							.build())
+				.build();
+		}
+
+		@McpTool(name = "gated_both", description = "Needs form elicitation and sampling",
+				requiredCapabilities = { McpClientCapability.ELICITATION_FORM, McpClientCapability.SAMPLING })
+		CallToolOutcome both() {
+			return McpSchema.CallToolResult.builder().addContent(TextContent.builder("ok").build()).build();
+		}
+
+		@McpPrompt(name = "gated_prompt", description = "Needs form elicitation",
+				requiredCapabilities = McpClientCapability.ELICITATION_FORM)
+		GetPromptOutcome prompt() {
+			return McpSchema.GetPromptResult.builder(List.of()).build();
+		}
+
+		@McpResource(uri = "test://required", name = "required", description = "Needs roots",
+				requiredCapabilities = McpClientCapability.ROOTS)
+		ReadResourceOutcome read(String uri) {
+			return ReadResourceResult.builder(List.of(TextResourceContents.builder(uri, "x").build())).build();
+		}
+
+		@McpResource(uri = "test://required/{id}", name = "required-item", description = "Needs URL elicitation",
+				requiredCapabilities = McpClientCapability.ELICITATION_URL)
+		ReadResourceOutcome readItem(String id) {
+			return ReadResourceResult
+				.builder(List.of(TextResourceContents.builder("test://required/" + id, id).build()))
+				.build();
 		}
 
 	}
