@@ -29,8 +29,9 @@
  * same for a completion reference.
  * {@link org.springframework.ai.mcp.modern.McpSchemaConverter} converts between the
  * legacy and modern schema types, which lets handlers written against the legacy types be
- * exposed on a modern server, and {@link org.springframework.ai.mcp.modern.McpTransportContexts}
- * reads the request headers that the Spring transports put into the transport context.
+ * exposed on a modern server, and
+ * {@link org.springframework.ai.mcp.modern.McpTransportContexts} reads the request
+ * headers that the Spring transports put into the transport context.
  */
 @NullMarked
 package org.springframework.ai.mcp.modern;

@@ -136,8 +136,8 @@ public class McpServerModernAutoConfiguration {
 			McpServerModernProperties modernProperties) {
 		List<SyncResourceEntry> allResources = resources.stream().flatMap(List::stream).toList();
 		List<SyncResourceTemplateEntry> allTemplates = resourceTemplates.stream().flatMap(List::stream).toList();
-		logger.info("Registered modern resources: " + allResources.size() + ", resource templates: "
-				+ allTemplates.size());
+		logger.info(
+				"Registered modern resources: " + allResources.size() + ", resource templates: " + allTemplates.size());
 		return InMemorySyncResourceRepository.builder()
 			.resources(allResources)
 			.resourceTemplates(allTemplates)

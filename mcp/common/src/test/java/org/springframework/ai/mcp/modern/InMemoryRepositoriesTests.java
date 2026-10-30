@@ -202,12 +202,11 @@ class InMemoryRepositoriesTests {
 					(ctx, request) -> McpSyncResponse.result(ReadResourceResult
 						.builder(List.of(TextResourceContents.builder(request.uri(), "static-content").build()))
 						.build())))
-			.resourceTemplate(
-					SyncResourceTemplateEntry.of(ResourceTemplate.builder("test://items/{id}", "items").build(),
-							(ctx, request) -> McpSyncResponse.result(ReadResourceResult
-								.builder(List
-									.of(TextResourceContents.builder(request.uri(), "item:" + request.uri()).build()))
-								.build())))
+			.resourceTemplate(SyncResourceTemplateEntry.of(
+					ResourceTemplate.builder("test://items/{id}", "items").build(),
+					(ctx, request) -> McpSyncResponse.result(ReadResourceResult
+						.builder(List.of(TextResourceContents.builder(request.uri(), "item:" + request.uri()).build()))
+						.build())))
 			.changeBroadcaster(changes)
 			.subscribeSupported(true)
 			.build();
@@ -252,7 +251,8 @@ class InMemoryRepositoriesTests {
 		InMemorySyncPromptRepository repository = InMemorySyncPromptRepository.builder()
 			.prompt(McpSyncPrompt.of(Prompt.builder("greet").build(),
 					(ctx, request) -> McpSyncResponse.result(GetPromptResult
-						.builder(List.of(PromptMessage.builder(Role.USER, TextContent.builder("hello").build()).build()))
+						.builder(
+								List.of(PromptMessage.builder(Role.USER, TextContent.builder("hello").build()).build()))
 						.build())))
 			.build();
 		McpServer server = McpServer.builder()

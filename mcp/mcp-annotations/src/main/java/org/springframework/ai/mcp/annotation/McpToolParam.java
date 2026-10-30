@@ -40,4 +40,14 @@ public @interface McpToolParam {
 	 */
 	String description() default "";
 
+	/**
+	 * Whether Streamable HTTP clients must also send this parameter as the
+	 * {@code Mcp-Param-<name>} header (the {@code x-mcp-header} schema keyword of the
+	 * 2026-07-28 revision). Only parameters whose schema type is string, integer or
+	 * boolean may be mirrored; other types are rejected at startup. Read on method
+	 * parameters only: on a field of a parameter type the flag has no effect.
+	 * @since 2.1.0
+	 */
+	boolean header() default false;
+
 }

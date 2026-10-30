@@ -340,7 +340,8 @@ class McpServerModernAutoConfigurationIT {
 				assertThat(context).hasNotFailed();
 				assertThat(context).doesNotHaveBean(ModernServerSpecificationFactoryAutoConfiguration.class);
 				assertThat(context).hasSingleBean(McpServer.class);
-				assertThat(context.getBean(InMemorySyncToolRepository.class).list(null, null).tools()).extracting(Tool::name)
+				assertThat(context.getBean(InMemorySyncToolRepository.class).list(null, null).tools())
+					.extracting(Tool::name)
 					.containsExactly("weather");
 			});
 	}

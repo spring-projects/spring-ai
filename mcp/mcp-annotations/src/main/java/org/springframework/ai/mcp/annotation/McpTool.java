@@ -72,6 +72,12 @@ public @interface McpTool {
 	Class<? extends MetaProvider> metaProvider() default DefaultMetaProvider.class;
 
 	/**
+	 * Optional icons for clients that render a catalogue.
+	 * @since 2.1.0
+	 */
+	McpIcon[] icons() default {};
+
+	/**
 	 * Additional properties describing a Tool to clients.
 	 *
 	 * All properties in ToolAnnotations are hints. They are not guaranteed to provide a

@@ -44,6 +44,7 @@ import io.modelcontextprotocol.util.Assert;
 import io.modelcontextprotocol.util.Utils;
 import io.swagger.v3.oas.annotations.media.Schema;
 import org.jspecify.annotations.Nullable;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.node.ObjectNode;
 
 import org.springframework.ai.mcp.annotation.McpMeta;
@@ -201,6 +202,16 @@ public final class McpJsonSchemaGenerator {
 			if (Utils.hasText(parameterDescription)) {
 				parameterNode.put("description", parameterDescription);
 			}
+			McpToolParam toolParam = parameter.getAnnotation(McpToolParam.class);
+			if (toolParam != null && toolParam.header()) {
+				if (!isHeaderMirrorable(parameterNode.get("type"))) {
+					throw new IllegalArgumentException(
+							"@McpToolParam(header = true) is only allowed on parameters whose schema type is "
+									+ "string, integer or boolean: " + parameterName + " of " + method.getName()
+									+ " is " + parameter.getType().getName());
+				}
+				parameterNode.put(X_MCP_HEADER, "Mcp-Param-" + parameterName);
+			}
 			properties.set(parameterName, parameterNode);
 		}
 
@@ -259,6 +270,30 @@ public final class McpJsonSchemaGenerator {
 	private static boolean isModernInfrastructureType(Class<?> type) {
 		return ModernMethodSupport.isInfrastructureParameter(type,
 				io.modelcontextprotocol.modern.McpSchema.CallToolRequest.class);
+	}
+
+	/**
+	 * Schema keyword of the 2026-07-28 revision that asks Streamable HTTP clients to
+	 * mirror a parameter into an HTTP header.
+	 */
+	private static final String X_MCP_HEADER = "x-mcp-header";
+
+	// Decided on the generated schema rather than the Java type, so that enums and other
+	// types that map to a plain string or integer qualify. A nullable type is an array.
+	private static boolean isHeaderMirrorable(@Nullable JsonNode type) {
+		if (type == null) {
+			return false;
+		}
+		if (type.isArray()) {
+			for (JsonNode candidate : type) {
+				if (isHeaderMirrorable(candidate)) {
+					return true;
+				}
+			}
+			return false;
+		}
+		String name = type.asString();
+		return "string".equals(name) || "integer".equals(name) || "boolean".equals(name);
 	}
 
 	private static boolean isMethodParameterRequired(Method method, int index) {
