@@ -35,7 +35,6 @@ import com.openai.models.decisions.DecisionInputPart;
 import com.openai.models.decisions.DecisionInputText;
 import org.jspecify.annotations.Nullable;
 
-import org.springframework.ai.chat.messages.AbstractMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.part.MediaPart;
 import org.springframework.ai.chat.messages.part.MessagePart;
@@ -138,7 +137,7 @@ final class OpenAiDecisionMapper {
 		String role = message.getMessageType().getValue();
 		List<DecisionInputPart> parts = new ArrayList<>();
 		List<String> lines = new ArrayList<>();
-		for (MessagePart part : parts(message)) {
+		for (MessagePart part : ConversationInput.parts(message)) {
 			if (part instanceof MediaPart mediaPart) {
 				flushLines(role, lines, parts);
 				parts.add(image(mediaPart.media()));
@@ -154,13 +153,6 @@ final class OpenAiDecisionMapper {
 			flushLines(role, lines, parts);
 		}
 		return parts;
-	}
-
-	private static List<MessagePart> parts(Message message) {
-		if (message instanceof AbstractMessage abstractMessage) {
-			return abstractMessage.getParts();
-		}
-		return message.getText() != null ? List.of(TextPart.of(message.getText())) : List.of();
 	}
 
 	/**

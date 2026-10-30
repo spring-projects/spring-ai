@@ -21,10 +21,11 @@ import java.util.Objects;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 /**
  * One level of a {@link ScoreQuestion}: a label and, optionally, a description that tells
- * the model when the level applies.
+ * the model when the level applies. A blank description counts as none.
  *
  * @author Thomas Vitale
  * @since 2.1.0
@@ -38,7 +39,7 @@ public final class ScoreLevel {
 	private ScoreLevel(String label, @Nullable String description) {
 		Assert.hasText(label, "label cannot be null or empty");
 		this.label = label;
-		this.description = description;
+		this.description = StringUtils.hasText(description) ? description : null;
 	}
 
 	public static Builder builder() {
@@ -50,7 +51,7 @@ public final class ScoreLevel {
 	}
 
 	/**
-	 * When the level applies, or {@code null} when not specified.
+	 * When the level applies, or {@code null} when not specified or blank.
 	 */
 	public @Nullable String getDescription() {
 		return this.description;
@@ -95,7 +96,7 @@ public final class ScoreLevel {
 		}
 
 		/**
-		 * When the level applies, or {@code null} when not specified.
+		 * When the level applies. A blank description counts as none.
 		 */
 		public Builder description(@Nullable String description) {
 			this.description = description;

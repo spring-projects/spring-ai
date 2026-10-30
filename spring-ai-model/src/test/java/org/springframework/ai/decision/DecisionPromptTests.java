@@ -20,13 +20,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.messages.part.MediaPart;
+import org.springframework.ai.chat.messages.part.ReasoningPart;
 import org.springframework.ai.chat.messages.part.TextPart;
 import org.springframework.ai.content.Media;
+import org.springframework.ai.decision.input.ConversationInput;
 import org.springframework.ai.decision.input.DecisionInput;
 import org.springframework.ai.decision.input.TextInput;
 import org.springframework.ai.decision.question.ChoiceQuestion;
@@ -161,6 +166,37 @@ class DecisionPromptTests {
 
 		assertThat(DecisionInput.conversation(messages).getMessages()).containsExactlyElementsOf(messages);
 		assertThatThrownBy(() -> DecisionInput.conversation(List.of())).isInstanceOf(IllegalArgumentException.class);
+	}
+
+	@Test
+	void conversationMessagePartsFallBackToTheText() {
+		var reasoning = ReasoningPart.of("Thinking.");
+		var assistant = AssistantMessage.builder().reasoning(reasoning).content("Hello").build();
+
+		assertThat(ConversationInput.parts(assistant)).isEqualTo(assistant.getParts());
+		assertThat(ConversationInput.parts(message("Hi"))).containsExactly(TextPart.of("Hi"));
+		assertThat(ConversationInput.parts(message(null))).isEmpty();
+	}
+
+	private static Message message(@Nullable String text) {
+		return new Message() {
+
+			@Override
+			public MessageType getMessageType() {
+				return MessageType.USER;
+			}
+
+			@Override
+			public @Nullable String getText() {
+				return text;
+			}
+
+			@Override
+			public Map<String, Object> getMetadata() {
+				return Map.of();
+			}
+
+		};
 	}
 
 }
