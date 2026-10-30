@@ -62,6 +62,22 @@ class DecisionQuestionTests {
 	}
 
 	@Test
+	void blankCriteriaAndDescriptionsCountAsNone() {
+		var yesNo = YesNoQuestion.builder().text("Is the message spam?").whenYes("").whenNo(" \t").build();
+		assertThat(yesNo.getWhenYes()).isNull();
+		assertThat(yesNo.getWhenNo()).isNull();
+		assertThat(yesNo).isEqualTo(YesNoQuestion.of("Is the message spam?"));
+
+		var choice = ChoiceQuestion.builder().text("Which team?").option("billing", "").option("sales", " ").build();
+		assertThat(choice.getOptions()).containsEntry("billing", null).containsEntry("sales", null);
+
+		assertThat(ScoreLevel.builder().label("low").description(" ").build().getDescription()).isNull();
+		assertThat(ScoreQuestion.builder().text("How urgent?").level("low", "").level("high").build().getLevels())
+			.extracting(ScoreLevel::getDescription)
+			.containsOnlyNulls();
+	}
+
+	@Test
 	void choiceQuestionKeepsOptionOrder() {
 		var question = ChoiceQuestion.builder()
 			.text("Which team?")

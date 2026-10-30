@@ -33,7 +33,6 @@ import org.springaicommunity.typesafe.response.NoulAnswer;
 import org.springaicommunity.typesafe.response.SystemOneResponse;
 import org.springaicommunity.typesafe.response.Usage;
 
-import org.springframework.ai.chat.messages.AbstractMessage;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.part.MediaPart;
 import org.springframework.ai.chat.messages.part.MessagePart;
@@ -59,6 +58,7 @@ import org.springframework.ai.decision.question.ScoreQuestion;
 import org.springframework.ai.decision.question.YesNoQuestion;
 import org.springframework.ai.util.JsonHelper;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 /**
  * Maps a {@link DecisionPrompt} to a System One request and the response back to a
@@ -69,10 +69,11 @@ import org.springframework.util.Assert;
  * field order, a conversation as {@code {"messages": [{"role", "content", ...}]}} with
  * tool calls and tool results as structured entries. System One decides about text, so
  * media is rejected. Reasoning and unknown parts of a conversation message are not sent,
- * since they are not the content under judgment; in a text or fields input they are
- * rejected. A {@link YesNoQuestion} becomes a {@code noul} with its criteria, a
- * {@link ChoiceQuestion} a {@code choice} and a {@link ScoreQuestion} a {@code score}
- * whose levels carry their description as a structured criterion.
+ * since they are not the content under judgment, and a message with nothing else is left
+ * out; in a text or fields input they are rejected. A {@link YesNoQuestion} becomes a
+ * {@code noul} with its criteria, a {@link ChoiceQuestion} a {@code choice} and a
+ * {@link ScoreQuestion} a {@code score} whose levels carry their description as a
+ * structured criterion.
  *
  * @author Christian Tzolov
  * @since 2.1.0
@@ -99,7 +100,12 @@ final class SystemOneDecisionMapper {
 		}
 		if (input instanceof ConversationInput conversationInput) {
 			List<Map<String, Object>> messages = new ArrayList<>();
-			conversationInput.getMessages().forEach(message -> messages.add(message(message)));
+			for (Message message : conversationInput.getMessages()) {
+				Map<String, Object> entry = message(message);
+				if (entry != null) {
+					messages.add(entry);
+				}
+			}
 			return JsonContent.object(MESSAGES_FIELD, messages);
 		}
 		// Unreachable while DecisionInput is sealed to the three kinds above.
@@ -141,14 +147,15 @@ final class SystemOneDecisionMapper {
 	/**
 	 * A message as a JSON object: its role, its text as {@code content}, its tool calls
 	 * and its tool results as structured entries. Reasoning and unknown parts are not
-	 * sent, media is rejected.
+	 * sent, media is rejected, and a message with nothing else to send, such as one that
+	 * only reasons or whose text is blank, is {@code null}.
 	 */
-	private static Map<String, Object> message(Message message) {
+	private static @Nullable Map<String, Object> message(Message message) {
 		String role = message.getMessageType().getValue();
 		StringBuilder content = new StringBuilder();
 		List<Map<String, @Nullable Object>> toolCalls = new ArrayList<>();
 		List<Map<String, @Nullable Object>> toolResults = new ArrayList<>();
-		for (MessagePart part : parts(message)) {
+		for (MessagePart part : ConversationInput.parts(message)) {
 			if (part instanceof TextPart textPart) {
 				content.append(textPart.text());
 			}
@@ -174,9 +181,13 @@ final class SystemOneDecisionMapper {
 				toolResults.add(result);
 			}
 		}
+		boolean hasContent = StringUtils.hasText(content);
+		if (!hasContent && toolCalls.isEmpty() && toolResults.isEmpty()) {
+			return null;
+		}
 		Map<String, Object> entry = new LinkedHashMap<>();
 		entry.put("role", role);
-		if (!content.isEmpty() || (toolCalls.isEmpty() && toolResults.isEmpty())) {
+		if (hasContent) {
 			entry.put("content", content.toString());
 		}
 		if (!toolCalls.isEmpty()) {
@@ -202,13 +213,6 @@ final class SystemOneDecisionMapper {
 		catch (RuntimeException ex) {
 			return arguments;
 		}
-	}
-
-	private static List<MessagePart> parts(Message message) {
-		if (message instanceof AbstractMessage abstractMessage) {
-			return abstractMessage.getParts();
-		}
-		return message.getText() != null ? List.of(TextPart.of(message.getText())) : List.of();
 	}
 
 	static Map<String, Question> questions(DecisionPrompt prompt) {

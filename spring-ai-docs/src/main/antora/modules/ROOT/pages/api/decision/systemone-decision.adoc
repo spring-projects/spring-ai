@@ -144,10 +144,11 @@ The input becomes the request `state`:
 
 * a `DecisionInput.text(...)` input: the text, as a string;
 * a `DecisionInput.fields(...)` input: a JSON object with the fields in the order of the map, with a `MessagePart` or a list of parts as its text;
-* a `DecisionInput.conversation(...)` input: `{"messages": [...]}` with one object per message, holding its `role`, its text as `content`, its tool calls as `tool_calls` with the arguments as a nested object when they are JSON, and its tool results as `tool_results`.
+* a `DecisionInput.conversation(...)` input: `{"messages": [...]}` with one object per message that has something to send, holding its `role`, its text as `content`, its tool calls as `tool_calls` with the arguments as a nested object when they are JSON, and its tool results as `tool_results`.
 
 System One decides about text.
 A `MediaPart` anywhere in the input is rejected, and in a conversation the reasoning and unknown parts of a message are not sent.
+A message with no text, tool call or tool result left, such as one that only carries reasoning, is left out of the conversation.
 
 Fields keep the order of the map they were given in, and an Ollama model can answer differently when the order changes, so build a fields input from an ordered map such as `LinkedHashMap`.
 

@@ -333,7 +333,9 @@ class SystemOneDecisionModelTests {
 	@Test
 	void sendsConversationEdgeCases() throws Exception {
 		stubResponse(yesNoResponse(0.5), null);
-		var messages = List.of(AssistantMessage.builder().reasoning(ReasoningPart.of("Thinking only.")).build(),
+		var messages = List.of(UserMessage.builder().text("Anything new?").build(),
+				AssistantMessage.builder().reasoning(ReasoningPart.of("Thinking only.")).build(),
+				AssistantMessage.builder().content(" \n").build(),
 				AssistantMessage.builder()
 					.toolCalls(List.of(new AssistantMessage.ToolCall("call_2", "function", "noop", "not json")))
 					.build(),
@@ -345,7 +347,7 @@ class SystemOneDecisionModelTests {
 
 		assertSent("""
 				{"state": {"messages": [
-				{"role": "assistant", "content": ""},
+				{"role": "user", "content": "Anything new?"},
 				{"role": "assistant", "tool_calls": [{"id": "call_2", "name": "noop", "arguments": "not json"}]},
 				{"role": "tool", "tool_results": [{"id": null, "name": null, "result": "boom", "error": true}]}]},
 				"model": "nimble", "questions": {"urgent": {"type": "noul", "instructions": "?"}}}""");
