@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test;
 import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerJsonMapperAutoConfiguration;
+import org.springframework.ai.mcp.server.webflux.transport.WebFluxSseServerTransportProvider;
 import org.springframework.ai.mcp.server.webflux.transport.WebFluxStreamableServerTransportProvider;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -43,6 +44,17 @@ class McpServerStreamableHttpWebFluxAutoConfigurationIT {
 			assertThat(context).hasSingleBean(WebFluxStreamableServerTransportProvider.class);
 			assertThat(context).hasSingleBean(RouterFunction.class);
 		});
+	}
+
+	@Test
+	void streamableIsTheDefaultProtocol() {
+		new ApplicationContextRunner()
+			.withConfiguration(AutoConfigurations.of(McpServerSseWebFluxAutoConfiguration.class,
+					McpServerStreamableHttpWebFluxAutoConfiguration.class, McpServerJsonMapperAutoConfiguration.class))
+			.run(context -> {
+				assertThat(context).hasSingleBean(WebFluxStreamableServerTransportProvider.class);
+				assertThat(context).doesNotHaveBean(WebFluxSseServerTransportProvider.class);
+			});
 	}
 
 	@Test

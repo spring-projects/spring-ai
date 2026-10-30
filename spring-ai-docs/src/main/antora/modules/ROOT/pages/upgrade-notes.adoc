@@ -330,6 +330,11 @@ Nothing changes at runtime: the deprecated types keep working until 3.0.0.
 * `getConversationId(context)` moves from `BaseChatMemoryAdvisor` up to `MemoryAdvisor`; `BaseChatMemoryAdvisor` inherits it, so its implementations need no change.
 * `VectorStoreChatMemoryAdvisor` is not deprecated.
 
+=== MCP Server Default Transport
+
+When `spring.ai.mcp.server.protocol` is not set, the server now activates the Streamable HTTP transport, matching the `STREAMABLE` property default introduced in 2.0.0. Previously, the deprecated SSE transport was activated in that case.
+To keep using SSE, set `spring.ai.mcp.server.protocol=SSE`.
+
 [[upgrading-to-2-0-2]]
 == Upgrading to 2.0.2
 
