@@ -25,7 +25,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -92,6 +91,7 @@ import org.springframework.ai.chat.messages.part.MessagePart;
 import org.springframework.ai.chat.messages.part.OpaquePayload;
 import org.springframework.ai.chat.messages.part.ReasoningPart;
 import org.springframework.ai.chat.messages.part.StreamingPartIndexer;
+import org.springframework.ai.chat.messages.part.StreamingParts;
 import org.springframework.ai.chat.messages.part.TextPart;
 import org.springframework.ai.chat.messages.part.ToolCallPart;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
@@ -349,8 +349,8 @@ public final class OpenAiChatModel implements ChatModel {
 			Observation parentObservation = contextView.getOrDefault(ObservationThreadLocalAccessor.KEY, null);
 			Observation observation = startStreamObservation(observationContext, parentObservation);
 
-			Flux<ChatResponse> chatResponses = mergeToolCallChunks(streamChunks(request, requestOptions))
-				.map(chatCompletion -> toStreamedChatResponse(chatCompletion, request, streamAccumulator));
+			Flux<ChatResponse> chatResponses = toStreamedChatResponses(streamChunks(request, requestOptions), request,
+					streamAccumulator);
 
 			Flux<ChatResponse> observedResponses = chatResponses.doOnError(observation::error)
 				.doFinally(s -> observation.stop())
@@ -403,23 +403,74 @@ public final class OpenAiChatModel implements ChatModel {
 	}
 
 	/**
-	 * Buffers the chunks that stream a tool call until the tool calls are done, so that
-	 * each tool call reaches the caller merged into a single chat completion. Any other
-	 * chunk is converted on its own.
+	 * Converts the streamed chunks to chat responses. The chunks that stream a tool call
+	 * are buffered until the tool calls are done, so that each tool call reaches the
+	 * caller merged into a single chat response, as a complete {@link ToolCallPart}. Each
+	 * of those chunks is also converted right away to a chat response holding its
+	 * argument deltas, see {@link #toolCallDeltaResponse}. Any other chunk is converted
+	 * on its own.
 	 */
-	private static Flux<ChatCompletion> mergeToolCallChunks(Flux<ChatCompletionChunk> chunks) {
-		AtomicBoolean isInsideTool = new AtomicBoolean(false);
-		return chunks.doOnNext(chunk -> {
-			if (ChunkMerger.hasToolCall(chunk)) {
-				isInsideTool.set(true);
+	private Flux<ChatResponse> toStreamedChatResponses(Flux<ChatCompletionChunk> chunks,
+			ChatCompletionCreateParams request, StreamAccumulator streamAccumulator) {
+		List<ChatCompletionChunk> toolCallChunks = new ArrayList<>();
+		return chunks.concatMapIterable(chunk -> {
+			if (toolCallChunks.isEmpty() && !ChunkMerger.hasToolCall(chunk)) {
+				return List
+					.of(toStreamedChatResponse(ChunkMerger.chunkToChatCompletion(chunk), request, streamAccumulator));
 			}
-		}).bufferUntil(chunk -> {
-			if (isInsideTool.get() && ChunkMerger.toolCallsDone(chunk)) {
-				isInsideTool.set(false);
-				return true;
+			toolCallChunks.add(chunk);
+			List<ChatResponse> responses = new ArrayList<>(2);
+			ChatResponse deltaResponse = toolCallDeltaResponse(chunk, streamAccumulator);
+			if (deltaResponse != null) {
+				responses.add(deltaResponse);
 			}
-			return !isInsideTool.get();
-		}).map(ChunkMerger::mergeChunks).map(ChunkMerger::chunkToChatCompletion);
+			if (ChunkMerger.toolCallsDone(chunk)) {
+				responses.add(mergeToolCallChunks(toolCallChunks, request, streamAccumulator));
+			}
+			return responses;
+		})
+			// A stream that ends inside a tool call, for instance on finish reason
+			// "length", still yields the merged tool call chunks.
+			.concatWith(Flux.defer(() -> toolCallChunks.isEmpty() ? Flux.empty()
+					: Flux.just(mergeToolCallChunks(toolCallChunks, request, streamAccumulator))));
+	}
+
+	private ChatResponse mergeToolCallChunks(List<ChatCompletionChunk> toolCallChunks,
+			ChatCompletionCreateParams request, StreamAccumulator streamAccumulator) {
+		ChatCompletion merged = ChunkMerger.chunkToChatCompletion(ChunkMerger.mergeChunks(toolCallChunks));
+		toolCallChunks.clear();
+		return toStreamedChatResponse(merged, request, streamAccumulator);
+	}
+
+	/**
+	 * Converts the tool-call deltas of a streamed chunk to a chat response holding them
+	 * as partial {@link ToolCallPart}s, see {@link StreamingParts}. Such a response has
+	 * no text and no tool call, the complete call follows once the tool calls are done.
+	 * @return the response, or {@code null} when the chunk carries no delta that can be
+	 * attributed to a call yet, see {@link StreamAccumulator#toolCallDelta}
+	 */
+	private static @Nullable ChatResponse toolCallDeltaResponse(ChatCompletionChunk chunk,
+			StreamAccumulator streamAccumulator) {
+		String id = chunk.id();
+		StreamingPartIndexer partIndexer = streamAccumulator.partIndexer(id);
+		List<Generation> generations = new ArrayList<>();
+		for (Choice choice : chunk.choices()) {
+			List<MessagePart> parts = new ArrayList<>();
+			for (ToolCall toolCall : choice.delta().toolCalls().orElse(List.of())) {
+				ToolCallPart delta = streamAccumulator.toolCallDelta(id, choice.index(), toolCall);
+				if (delta != null) {
+					parts.add(partIndexer.stampToolCallDelta(delta));
+				}
+			}
+			if (!parts.isEmpty()) {
+				generations.add(new Generation(AssistantMessage.builder()
+					.parts(parts)
+					.properties(Map.of("id", id, "index", choice.index()))
+					.build()));
+			}
+		}
+		return generations.isEmpty() ? null
+				: new ChatResponse(generations, ChatResponseMetadata.builder().id(id).build());
 	}
 
 	private ChatResponse toStreamedChatResponse(ChatCompletion chatCompletion, ChatCompletionCreateParams request,
@@ -940,8 +991,8 @@ public final class OpenAiChatModel implements ChatModel {
 	}
 
 	/**
-	 * The tool calls of an assistant message, one per {@link ToolCallPart}, in part
-	 * order.
+	 * The tool calls of an assistant message, one per complete {@link ToolCallPart}, in
+	 * part order.
 	 */
 	private List<ChatCompletionMessageToolCall> messageToolCalls(AssistantMessage assistantMessage) {
 		// Messages persisted before the parts model carry the extra tool call fields in
@@ -951,6 +1002,8 @@ public final class OpenAiChatModel implements ChatModel {
 		return assistantMessage.getParts()
 			.stream()
 			.filter(ToolCallPart.class::isInstance)
+			// A partial part is a tool-call argument delta of a stream, not a tool call
+			.filter(part -> !StreamingParts.isPartial(part))
 			.map(ToolCallPart.class::cast)
 			.map(part -> functionToolCall(part.toolCall(),
 					additionalPropertiesJson(part, legacyToolCallAdditionalProperties)))
@@ -1571,8 +1624,9 @@ public final class OpenAiChatModel implements ChatModel {
 
 	/**
 	 * The state of a streaming call that outlives a single chunk: the role, which only
-	 * the first chunk of a response carries, the reasoning fragments of each choice, and
-	 * the {@link StreamingPartIndexer} of each response. The fragments are accumulated so
+	 * the first chunk of a response carries, the reasoning fragments of each choice, the
+	 * {@link StreamingPartIndexer} of each response, and the id and name of each streamed
+	 * tool call, which only its first delta carries. The fragments are accumulated so
 	 * that the final response of the stream carries the full reasoning content, surviving
 	 * last-wins metadata aggregation (e.g. {@link MessageAggregator}).
 	 */
@@ -1583,6 +1637,8 @@ public final class OpenAiChatModel implements ChatModel {
 		private final Map<String, String> reasoningByChoice = new ConcurrentHashMap<>();
 
 		private final Map<String, StreamingPartIndexer> partIndexerByResponseId = new ConcurrentHashMap<>();
+
+		private final Map<String, AssistantMessage.ToolCall> toolCallByDeltaKey = new ConcurrentHashMap<>();
 
 		String role(String responseId, ChatCompletionMessage message) {
 			this.roleByResponseId.putIfAbsent(responseId, roleOf(message));
@@ -1604,6 +1660,48 @@ public final class OpenAiChatModel implements ChatModel {
 		 */
 		StreamingPartIndexer partIndexer(String responseId) {
 			return this.partIndexerByResponseId.computeIfAbsent(responseId, key -> new StreamingPartIndexer());
+		}
+
+		/**
+		 * The partial {@link ToolCallPart} of one streamed tool-call delta. The deltas of
+		 * one call share its {@code index}; the first one carries the id and name of the
+		 * call, which the part of every later delta repeats next to its own arguments
+		 * fragment.
+		 * @param responseId the id of the streamed response
+		 * @param choiceIndex the index of the choice the delta belongs to
+		 * @param delta the tool-call delta
+		 * @return the part, or {@code null} while the id and name of the call are not
+		 * known, for a later delta without arguments, or for a delta without an
+		 * {@code index}, which some OpenAI-compatible servers omit on a call sent in one
+		 * chunk
+		 */
+		@Nullable ToolCallPart toolCallDelta(String responseId, long choiceIndex, ToolCall delta) {
+			// The OpenAI API requires the index, and the SDK throws when index() reads a
+			// missing one, but some OpenAI-compatible servers omit it, such as the Gemini
+			// endpoint, which sends each tool call whole in one chunk. Such a call is
+			// merged without reading its index, and streaming no delta for it keeps the
+			// stream from failing.
+			Optional<Long> index = delta._index().asKnown();
+			if (index.isEmpty()) {
+				return null;
+			}
+			String key = responseId + ":" + choiceIndex + ":" + index.get();
+			String id = delta.id().orElse("");
+			String name = delta.function().flatMap(Function::name).orElse("");
+			String arguments = delta.function().flatMap(Function::arguments).orElse("");
+			if (StringUtils.hasText(id) && StringUtils.hasText(name)) {
+				// putIfAbsent: the merged call keeps the first id, should a server repeat
+				// a different one on later deltas.
+				this.toolCallByDeltaKey.putIfAbsent(key, new AssistantMessage.ToolCall(id, "function", name, ""));
+			}
+			else if (arguments.isEmpty()) {
+				return null;
+			}
+			AssistantMessage.ToolCall toolCall = this.toolCallByDeltaKey.get(key);
+			return (toolCall != null)
+					? ToolCallPart
+						.of(new AssistantMessage.ToolCall(toolCall.id(), toolCall.type(), toolCall.name(), arguments))
+					: null;
 		}
 
 	}

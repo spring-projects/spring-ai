@@ -227,14 +227,34 @@ public class OpenAiChatModelIT {
 			.collectList()
 			.block();
 
-		// The tool calls stream once, complete, as before the parts model
-		List<MessagePart> streamedToolCallParts = responses.stream()
+		// The argument deltas stream first, as partial parts that are not tool calls,
+		// then each tool call streams once, complete
+		List<ToolCallPart> streamedToolCallParts = responses.stream()
 			.filter(chunk -> chunk.getResult() != null)
 			.flatMap(chunk -> chunk.getResult().getOutput().getParts().stream())
 			.filter(ToolCallPart.class::isInstance)
+			.map(ToolCallPart.class::cast)
 			.toList();
-		assertThat(streamedToolCallParts).isNotEmpty()
-			.allSatisfy(part -> assertThat(StreamingParts.isPartial(part)).isFalse());
+		List<ToolCallPart> deltas = streamedToolCallParts.stream().filter(StreamingParts::isPartial).toList();
+		List<ToolCallPart> completeCalls = streamedToolCallParts.stream()
+			.filter(part -> !StreamingParts.isPartial(part))
+			.toList();
+		assertThat(deltas).isNotEmpty();
+		assertThat(completeCalls).isNotEmpty().allSatisfy(complete -> {
+			String joinedDeltas = deltas.stream()
+				.filter(delta -> delta.toolCall().id().equals(complete.toolCall().id()))
+				.map(delta -> delta.toolCall().arguments())
+				.collect(Collectors.joining());
+			assertThat(joinedDeltas).isEqualTo(complete.toolCall().arguments());
+		});
+		assertThat(responses)
+			.filteredOn(chunk -> chunk.getResult() != null && chunk.getResult()
+				.getOutput()
+				.getParts()
+				.stream()
+				.anyMatch(part -> part instanceof ToolCallPart && StreamingParts.isPartial(part)))
+			.isNotEmpty()
+			.allSatisfy(chunk -> assertThat(chunk.hasToolCalls()).isFalse());
 
 		AssistantMessage aggregated = aggregatedRef.get().getResult().getOutput();
 		assertThat(aggregated.hasToolCalls()).isTrue();

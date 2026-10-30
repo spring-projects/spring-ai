@@ -48,6 +48,19 @@ public class StreamingToolCallBuilder {
 		return this;
 	}
 
+	/**
+	 * The given arguments delta of the tool call being built.
+	 * @param argumentsDelta the arguments fragment
+	 * @return a tool call with the id and name of the call and only the given arguments,
+	 * or {@code null} while the id or name is not known
+	 */
+	AssistantMessage.@Nullable ToolCall argumentsDelta(String argumentsDelta) {
+		String id = this.id;
+		String name = this.name;
+		return (id != null && name != null) ? new AssistantMessage.ToolCall(id, "function", name, argumentsDelta)
+				: null;
+	}
+
 	public AssistantMessage.ToolCall build() {
 		Assert.state(this.id != null, "Tool call id must not be null");
 		Assert.state(this.name != null, "Tool call name must not be null");

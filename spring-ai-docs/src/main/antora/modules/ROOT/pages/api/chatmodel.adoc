@@ -257,6 +257,7 @@ The provider pages document the payloads and attributes each chat model produces
 
 When streaming, each chunk carries its parts stamped with the index of the content block they belong to and a `partial` flag, see `StreamingParts`.
 `MessageAggregator`, used by `ChatClient` and the advisors, rebuilds the complete parts from the chunks and strips the streaming attributes, so the aggregated message equals the one a blocking call returns.
+A partial `ToolCallPart` is a tool call argument delta, streamed for display only: it is not a tool call and the aggregator skips it, the complete call follows at the same index, see xref:api/tools.adoc#streaming-tool-call-arguments[Streaming Tool Call Arguments].
 
 == Available Implementations
 

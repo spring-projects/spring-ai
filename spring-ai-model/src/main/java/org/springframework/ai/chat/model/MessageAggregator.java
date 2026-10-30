@@ -51,7 +51,8 @@ import org.springframework.util.StringUtils;
  * single AssistantMessage. Job is performed in parallel to the chat response processing.
  * <p>
  * Parts stamped with a content block index (see {@link StreamingParts}) are merged per
- * index: deltas are appended, a complete part replaces the slot. Indexed parts are
+ * index: deltas are appended, a complete part replaces the slot. Tool-call argument
+ * deltas are skipped, only the complete tool call is aggregated. Indexed parts are
  * grouped by the response id carried in {@code ChatResponseMetadata}; groups keep the
  * order in which they were first seen and parts are ordered by index within a group. When
  * a chat model does not stamp a response id, a new group starts whenever the block index
@@ -133,6 +134,13 @@ public class MessageAggregator {
 				String responseId = (chatResponse.getMetadata() != null && chatResponse.getMetadata().getId() != null)
 						? chatResponse.getMetadata().getId() : "";
 				for (MessagePart part : outputMessage.getParts()) {
+					if (part instanceof ToolCallPart && StreamingParts.isPartial(part)) {
+						// A tool-call argument delta is only there for the consumers of
+						// the stream. The chat model sends the complete call at the same
+						// index, so a stream that never delivers it, for instance because
+						// an advisor filtered it out, does not aggregate to a tool call.
+						continue;
+					}
 					Integer index = StreamingParts.partIndex(part);
 					if (index != null) {
 						groupFor(indexedGroupsRef.get(), responseId, index, part).accept(index, part);
@@ -348,8 +356,9 @@ public class MessageAggregator {
 
 	/**
 	 * Accumulates the deltas of one content block without rebuilding the whole part per
-	 * delta. Text, summary and tool call arguments are appended in builders; the part is
-	 * materialized once in {@link #toPart()}.
+	 * delta. Text and summary are appended in builders; the part is materialized once in
+	 * {@link #toPart()}. Tool calls only arrive complete, the aggregator skips their
+	 * deltas.
 	 */
 	private static final class IndexedSlot {
 
@@ -364,14 +373,6 @@ public class MessageAggregator {
 		private boolean summaryPresent;
 
 		private @Nullable OpaquePayload payload;
-
-		private final StringBuilder arguments = new StringBuilder();
-
-		private String toolCallId = "";
-
-		private String toolCallType = "";
-
-		private String toolCallName = "";
 
 		private boolean complete;
 
@@ -400,22 +401,6 @@ public class MessageAggregator {
 					this.summaryPresent = true;
 				}
 			}
-			else if (incoming instanceof ToolCallPart delta) {
-				ToolCall toolCall = delta.toolCall();
-				if (StringUtils.hasText(toolCall.id())) {
-					this.toolCallId = toolCall.id();
-				}
-				if (StringUtils.hasText(toolCall.type())) {
-					this.toolCallType = toolCall.type();
-				}
-				if (StringUtils.hasText(toolCall.name())) {
-					this.toolCallName = toolCall.name();
-				}
-				String next = toolCall.arguments();
-				if (next != null) {
-					this.arguments.append(next);
-				}
-			}
 			if (incoming.payload() != null) {
 				this.payload = incoming.payload();
 			}
@@ -427,7 +412,6 @@ public class MessageAggregator {
 			this.payload = incoming.payload();
 			this.text.setLength(0);
 			this.summary.setLength(0);
-			this.arguments.setLength(0);
 			this.textPresent = false;
 			this.summaryPresent = false;
 			if (incoming instanceof TextPart delta) {
@@ -444,16 +428,6 @@ public class MessageAggregator {
 					this.summaryPresent = true;
 				}
 			}
-			else if (incoming instanceof ToolCallPart delta) {
-				ToolCall toolCall = delta.toolCall();
-				this.toolCallId = toolCall.id();
-				this.toolCallType = toolCall.type();
-				this.toolCallName = toolCall.name();
-				String args = toolCall.arguments();
-				if (args != null) {
-					this.arguments.append(args);
-				}
-			}
 		}
 
 		MessagePart toPart() {
@@ -467,11 +441,6 @@ public class MessageAggregator {
 			if (last instanceof ReasoningPart current) {
 				return new ReasoningPart(this.textPresent ? this.text.toString() : null,
 						this.summaryPresent ? this.summary.toString() : null, this.payload, current.attributes());
-			}
-			if (last instanceof ToolCallPart current) {
-				return new ToolCallPart(
-						new ToolCall(this.toolCallId, this.toolCallType, this.toolCallName, this.arguments.toString()),
-						this.payload, current.attributes());
 			}
 			return last;
 		}

@@ -58,6 +58,7 @@ import org.springframework.ai.chat.messages.part.MediaPart;
 import org.springframework.ai.chat.messages.part.MessagePart;
 import org.springframework.ai.chat.messages.part.OpaquePayload;
 import org.springframework.ai.chat.messages.part.ReasoningPart;
+import org.springframework.ai.chat.messages.part.StreamingParts;
 import org.springframework.ai.chat.messages.part.TextPart;
 import org.springframework.ai.chat.messages.part.ToolCallPart;
 import org.springframework.ai.chat.messages.part.ToolResultPart;
@@ -311,8 +312,9 @@ final class ResponsesItemMapper {
 
 	/**
 	 * The replay rule: one input item per part, in part order, rebuilt from what the part
-	 * carries. Dispatch is an {@code instanceof} chain ending in a throw, so a part type
-	 * added to the sealed hierarchy later cannot be dropped silently.
+	 * carries, except for the tool-call argument deltas of a stream. Dispatch is an
+	 * {@code instanceof} chain ending in a throw, so a part type added to the sealed
+	 * hierarchy later cannot be dropped silently.
 	 */
 	private static List<ResponseInputItem> assistantItems(AssistantMessage message) {
 		List<ResponseInputItem> items = new ArrayList<>();
@@ -326,6 +328,11 @@ final class ResponsesItemMapper {
 			}
 			else if (part instanceof ReasoningPart reasoningPart) {
 				reasoningItem(reasoningPart).ifPresent(items::add);
+			}
+			else if (part instanceof ToolCallPart && StreamingParts.isPartial(part)) {
+				// A tool-call argument delta of a stream, not a tool call
+				// (see StreamingParts)
+				continue;
 			}
 			else if (part instanceof ToolCallPart toolCallPart) {
 				items.add(functionCallItem(toolCallPart));

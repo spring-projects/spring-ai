@@ -417,6 +417,31 @@ class AnthropicChatModelTests {
 	}
 
 	@Test
+	void toolCallArgumentDeltaIsNotReplayed() {
+		Message mockResponse = createMockMessage("Done.", StopReason.END_TURN);
+		given(this.messageService.create(any(MessageCreateParams.class))).willReturn(mockResponse);
+
+		// An assistant message built from the parts of raw stream chunks
+		AssistantMessage history = AssistantMessage.builder()
+			.part(StreamingParts.partial(
+					ToolCallPart.of(new AssistantMessage.ToolCall("toolu_1", "function", "getWeather", "{\"city\":")),
+					0))
+			.part(StreamingParts.complete(
+					ToolCallPart
+						.of(new AssistantMessage.ToolCall("toolu_1", "function", "getWeather", "{\"city\":\"Paris\"}")),
+					0))
+			.build();
+		this.chatModel.call(new Prompt(List.of(new UserMessage("Weather?"), history, toolResult("toolu_1", "Sunny."),
+				new UserMessage("Thanks"))));
+
+		ArgumentCaptor<MessageCreateParams> captor = ArgumentCaptor.forClass(MessageCreateParams.class);
+		verify(this.messageService).create(captor.capture());
+		List<ContentBlockParam> blocks = assistantBlockParams(captor.getValue());
+		assertThat(blocks).hasSize(1);
+		assertThat(blocks.get(0).asToolUse().id()).isEqualTo("toolu_1");
+	}
+
+	@Test
 	void foreignReasoningPartIsNotReplayed() {
 		Message mockResponse = createMockMessage("Done.", StopReason.END_TURN);
 		given(this.messageService.create(any(MessageCreateParams.class))).willReturn(mockResponse);
@@ -579,7 +604,7 @@ class AnthropicChatModelTests {
 	}
 
 	@Test
-	void streamingToolUseCarriesOnlyTheCompleteCall() {
+	void streamingToolUseEmitsArgumentDeltasBeforeTheCompleteCall() {
 		givenStream(List.of(messageStartEvent(), textStartEvent(0), textDeltaEvent("Checking.", 0),
 				contentBlockStopEvent(0), toolUseStartEvent("toolu_123", "getCurrentWeather"),
 				inputJsonDeltaEvent("{\"location\":"), inputJsonDeltaEvent("\"Paris\"}"), contentBlockStopEvent(1),
@@ -591,17 +616,28 @@ class AnthropicChatModelTests {
 			.collectList()
 			.block();
 
-		// The text delta and the final chunk with the complete call, no argument-delta
-		// chunks
-		assertThat(chunks).hasSize(2);
+		// The text delta, the tool use announced with empty arguments, its two argument
+		// deltas, then the final chunk with the complete call
+		assertThat(chunks).hasSize(5);
 		assertThat(chunks.get(0).getResult().getOutput().getText()).isEqualTo("Checking.");
+		assertThat(chunks.subList(1, 4)).extracting(chunk -> chunk.getResult().getOutput().getParts())
+			.containsExactly(List.of(toolCallDelta("", 1)), List.of(toolCallDelta("{\"location\":", 1)),
+					List.of(toolCallDelta("\"Paris\"}", 1)));
+		assertThat(chunks.subList(0, 4)).allSatisfy(chunk -> {
+			assertThat(chunk.getMetadata().getId()).isEqualTo("msg_stream");
+			assertThat(chunk.hasToolCalls()).isFalse();
+		});
 		AssistantMessage.ToolCall complete = new AssistantMessage.ToolCall("toolu_123", "function", "getCurrentWeather",
 				"{\"location\":\"Paris\"}");
-		assertThat(chunks.get(1).getResult().getOutput().getToolCalls()).containsExactly(complete);
-		assertThat(chunks).allSatisfy(chunk -> assertThat(chunk.getResult().getOutput().getParts())
-			.noneMatch(part -> part instanceof ToolCallPart && StreamingParts.isPartial(part)));
+		assertThat(chunks.get(4).getResult().getOutput().getToolCalls()).containsExactly(complete);
 		assertThat(aggregatedResponse.get().getResult().getOutput().getParts())
 			.containsExactly(TextPart.of("Checking."), ToolCallPart.of(complete));
+	}
+
+	private static MessagePart toolCallDelta(String arguments, int index) {
+		return StreamingParts.partial(
+				ToolCallPart.of(new AssistantMessage.ToolCall("toolu_123", "function", "getCurrentWeather", arguments)),
+				index);
 	}
 
 	@Test
@@ -821,6 +857,9 @@ class AnthropicChatModelTests {
 		assertThat(StreamingParts.isPartial(serverToolUseChunkPart)).isFalse();
 		assertThat(StreamingParts.partIndex(serverToolUseChunkPart)).isZero();
 		assertThat(chunks).noneSatisfy(chunk -> assertThat(chunk.hasToolCalls()).isTrue());
+		// The server tool input deltas are not tool-call deltas
+		assertThat(chunks).allSatisfy(chunk -> assertThat(chunk.getResult().getOutput().getParts())
+			.noneMatch(ToolCallPart.class::isInstance));
 
 		AssistantMessage aggregated = aggregatedResponse.get().getResult().getOutput();
 		assertThat(aggregated.getParts()).hasSize(3);

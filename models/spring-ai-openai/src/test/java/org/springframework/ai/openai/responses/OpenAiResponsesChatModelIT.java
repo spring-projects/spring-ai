@@ -35,6 +35,8 @@ import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.messages.part.OpaquePayload;
 import org.springframework.ai.chat.messages.part.ReasoningPart;
+import org.springframework.ai.chat.messages.part.StreamingParts;
+import org.springframework.ai.chat.messages.part.ToolCallPart;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.MessageAggregator;
@@ -387,6 +389,56 @@ class OpenAiResponsesChatModelIT {
 		ChatResponse answered = this.chatModel.call(new Prompt(List.of(question, withCall, result), options));
 
 		assertThat(answered.getResult().getOutput().getText()).contains("18");
+	}
+
+	@Test
+	void streamingToolCallArgumentDeltasJoinToTheCompleteCall() {
+		var options = OpenAiResponsesChatOptions.builder()
+			.toolCallbacks(ToolCallbacks.from(new WeatherTools()))
+			.build();
+		Prompt prompt = new Prompt(
+				List.of(new UserMessage("What is the weather in Paris? Answer with the temperature in Celsius.")),
+				options);
+
+		AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
+		List<ChatResponse> responses = new MessageAggregator()
+			.aggregate(this.chatModel.stream(prompt), aggregatedRef::set)
+			.collectList()
+			.block();
+
+		// The argument deltas stream first, as partial parts that are not tool calls,
+		// then each tool call streams once, complete
+		List<ToolCallPart> streamedToolCallParts = responses.stream()
+			.filter(chunk -> chunk.getResult() != null)
+			.flatMap(chunk -> chunk.getResult().getOutput().getParts().stream())
+			.filter(ToolCallPart.class::isInstance)
+			.map(ToolCallPart.class::cast)
+			.toList();
+		List<ToolCallPart> deltas = streamedToolCallParts.stream().filter(StreamingParts::isPartial).toList();
+		List<ToolCallPart> completeCalls = streamedToolCallParts.stream()
+			.filter(part -> !StreamingParts.isPartial(part))
+			.toList();
+		assertThat(deltas).isNotEmpty();
+		assertThat(completeCalls).isNotEmpty().allSatisfy(complete -> {
+			String joinedDeltas = deltas.stream()
+				.filter(delta -> delta.toolCall().id().equals(complete.toolCall().id()))
+				.map(delta -> delta.toolCall().arguments())
+				.collect(Collectors.joining());
+			assertThat(joinedDeltas).isEqualTo(complete.toolCall().arguments());
+		});
+		assertThat(responses)
+			.filteredOn(chunk -> chunk.getResult() != null && chunk.getResult()
+				.getOutput()
+				.getParts()
+				.stream()
+				.anyMatch(part -> part instanceof ToolCallPart && StreamingParts.isPartial(part)))
+			.isNotEmpty()
+			.allSatisfy(chunk -> assertThat(chunk.hasToolCalls()).isFalse());
+
+		AssistantMessage aggregated = aggregatedRef.get().getResult().getOutput();
+		assertThat(aggregated.getToolCalls()).isNotEmpty()
+			.allSatisfy(toolCall -> assertThat(toolCall.arguments()).contains("Paris"));
+		assertThat(aggregated.getParts()).noneMatch(StreamingParts::isPartial);
 	}
 
 	/**
