@@ -67,11 +67,13 @@ public final class ModernMethodSupport {
 
 	/**
 	 * Whether a parameter of this type makes the invocation a streaming response, so that
-	 * notifications can be pushed before the result.
+	 * notifications can be pushed before the result. Only the SDK notifier does; the
+	 * response shape is the method's explicit choice, as it is for a handler written
+	 * against the SDK, and declaring {@link McpModernSyncRequestContext} alone leaves the
+	 * response a plain result.
 	 */
 	public static boolean isStreamingParameter(Class<?> parameterType) {
-		return McpModernSyncRequestContext.class.isAssignableFrom(parameterType)
-				|| McpSyncNotifier.class.isAssignableFrom(parameterType);
+		return McpSyncNotifier.class.isAssignableFrom(parameterType);
 	}
 
 	/**
@@ -79,7 +81,8 @@ public final class ModernMethodSupport {
 	 * callback rather than bound from the request.
 	 */
 	public static boolean isContextParameter(Class<?> parameterType) {
-		return isStreamingParameter(parameterType) || McpRequestContext.class.isAssignableFrom(parameterType);
+		return isStreamingParameter(parameterType) || McpModernSyncRequestContext.class.isAssignableFrom(parameterType)
+				|| McpRequestContext.class.isAssignableFrom(parameterType);
 	}
 
 	/**
@@ -252,7 +255,6 @@ public final class ModernMethodSupport {
 						.context(context)
 						.inputResponses(inputResponses)
 						.requestState(requestState)
-						.notifier(notifier)
 						.jsonMapper(jsonMapper)
 						.build();
 				}

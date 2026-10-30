@@ -186,22 +186,33 @@ public ReadResourceResult products(String uri) {
 
 Bidirectional parameters of the session-based servers (`McpSyncServerExchange`, `McpSyncRequestContext`) are not available, as there is no session to call back on. Methods that declare them are skipped with a warning.
 
-=== Request Context and Progress
+=== Request Context
 
-A tool, resource or prompt method can declare a `McpModernSyncRequestContext` parameter. It gives access to the protocol version, the client capabilities and info, the request `_meta`, the transport context and the multi round-trip fields, and it reports progress.
-A method that declares this parameter (or a raw `McpSyncNotifier`) is served as a streaming response, so progress notifications reach the client before the result. Completion methods may declare the context too, but completions are plain results, so progress reported there is dropped.
+A tool, resource, prompt or completion method can declare a `McpModernSyncRequestContext` parameter. It gives access to the protocol version, the client capabilities and info, the request `_meta`, the progress token, the transport context and the multi round-trip fields.
+Declaring it does not change the shape of the response: the method still answers with a plain JSON result.
+
+=== Progress and Streaming Responses
+
+On the modern protocol a handler chooses the shape of its response, a single result or a stream of notifications that ends with the result, and the server never turns one into the other.
+Annotated methods make the same choice through their signature: a tool, resource or prompt method that declares the SDK `McpSyncNotifier` parameter is served as a streaming response (`text/event-stream`), and the notifications it pushes reach the client before the result.
+A method without that parameter is a plain result, whatever else it declares.
+Completion methods are always plain results and cannot declare the notifier.
 
 [source,java]
 ----
 @McpTool(name = "index", description = "Indexes the given paths")
-public String index(McpModernSyncRequestContext ctx, @McpToolParam(description = "paths") List<String> paths) {
+public String index(McpSyncNotifier notifier, @McpToolParam(description = "paths") List<String> paths) {
     for (int i = 0; i < paths.size(); i++) {
-        ctx.progress((i + 1) * 100 / paths.size());
+        notifier.progress(i + 1, (double) paths.size(), paths.get(i));
         index(paths.get(i));
     }
     return "Indexed " + paths.size() + " paths";
 }
 ----
+
+NOTE: The shape is fixed by the signature, not by the request: a method that declares the notifier answers over `text/event-stream` on every call, as an SDK handler that returns `McpSyncResponse.streaming` does.
+A progress notification is delivered only when the request carried a `progressToken` in `_meta`; `McpModernSyncRequestContext.progressToken()` tells whether it did, and without one the stream carries the result alone.
+Declare the notifier only where the method reports progress.
 
 === Multi Round-Trip Requests
 
@@ -375,6 +386,6 @@ A `McpTransportContextExtractor<ServerRequest>` bean replaces that default and d
 Compared to the session-based servers:
 
 * `ctx.elicit(...)`, `ctx.sample(...)`, `ctx.roots()` and `ctx.ping()` have no direct equivalent. Elicitation, sampling and roots are multi round-trip requests; `ping` is gone. Logging is deprecated and per request: the client opts in with `_meta.logLevel` and the server may send `notifications/message` on that request's stream, which the modern context does not expose yet.
-* Progress requires a streaming response, which the modern context parameter enables automatically.
+* Progress requires a streaming response, which a method opts into by declaring `McpSyncNotifier`; `McpModernSyncRequestContext` carries the request data only.
 * Clients must send the `Mcp-Method`, `MCP-Protocol-Version` and, for `tools/call`, `prompts/get` and `resources/read`, the `Mcp-Name` header consistent with the body. Requests that disagree are rejected with JSON-RPC error `-32020`.
 * `server/discover` replaces `initialize`; its caching hints and the list caching hints are controlled by the properties above.

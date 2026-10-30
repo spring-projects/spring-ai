@@ -52,6 +52,7 @@ import io.modelcontextprotocol.modern.McpSchema.SamplingMessage;
 import io.modelcontextprotocol.modern.McpSchema.TextContent;
 import io.modelcontextprotocol.modern.McpSchema.TextResourceContents;
 import io.modelcontextprotocol.modern.server.McpServer;
+import io.modelcontextprotocol.modern.server.McpSyncNotifier;
 import io.modelcontextprotocol.modern.server.McpTransportResponse;
 import io.modelcontextprotocol.modern.server.feature.CompletionsFeature;
 import io.modelcontextprotocol.modern.server.feature.McpSyncTool;
@@ -112,8 +113,7 @@ class ModernAnnotationProvidersTests {
 				.build()))
 			.feature(ResourcesFeature.ofSync(InMemorySyncResourceRepository.builder()
 				.resources(SyncMcpAnnotationProviders.modernResources(List.of(new Resources())))
-				.resourceTemplates(
-						SyncMcpAnnotationProviders.modernResourceTemplates(List.of(new Resources())))
+				.resourceTemplates(SyncMcpAnnotationProviders.modernResourceTemplates(List.of(new Resources())))
 				.build()))
 			.feature(PromptsFeature.ofSync(InMemorySyncPromptRepository.builder()
 				.prompts(SyncMcpAnnotationProviders.modernPrompts(List.of(new Prompts())))
@@ -209,7 +209,7 @@ class ModernAnnotationProvidersTests {
 	}
 
 	@Test
-	void contextParameterMakesTheCallStreamingWithProgress() {
+	void notifierParameterMakesTheCallStreamingWithProgress() {
 		Map<String, Object> params = params("name", "progress", "arguments", Map.of("steps", 2));
 		((Map<String, Object>) params.get("_meta")).put(MetaKeys.PROGRESS_TOKEN, "tok");
 		McpTransportResponse response = send(server(), McpSchema.METHOD_TOOLS_CALL, params);
@@ -226,6 +226,29 @@ class ModernAnnotationProvidersTests {
 	}
 
 	@Test
+	void notifierMethodStreamsWithoutProgressToken() {
+		// The shape is fixed by the signature, not by the request: without a token the
+		// stream carries the result alone.
+		Map<String, Object> params = params("name", "progress", "arguments", Map.of("steps", 2));
+		McpTransportResponse response = send(server(), McpSchema.METHOD_TOOLS_CALL, params);
+
+		assertThat(response).isInstanceOf(McpTransportResponse.Streaming.class);
+		List<JSONRPCMessage> messages = ((McpTransportResponse.Streaming) response).messages().collectList().block();
+		assertThat(messages).hasSize(1);
+		assertThat(messages.get(0)).isInstanceOf(JSONRPCResponse.class);
+	}
+
+	@Test
+	void contextParameterAloneDoesNotStream() {
+		McpSyncTool askName = SyncMcpAnnotationProviders.modernTools(List.of(new Tools()))
+			.stream()
+			.filter(spec -> spec.definition().name().equals("ask_name"))
+			.findFirst()
+			.orElseThrow();
+		assertThat(((SyncModernMcpToolMethodCallback) askName.handler()).isStreaming()).isFalse();
+	}
+
+	@Test
 	@SuppressWarnings("unchecked")
 	void inputRequiredRoundTrip() {
 		McpServer server = server();
@@ -233,8 +256,9 @@ class ModernAnnotationProvidersTests {
 		((Map<String, Object>) params.get("_meta")).put(MetaKeys.PROGRESS_TOKEN, "tok");
 
 		McpTransportResponse first = send(server, McpSchema.METHOD_TOOLS_CALL, params);
-		List<JSONRPCMessage> messages = ((McpTransportResponse.Streaming) first).messages().collectList().block();
-		Map<String, Object> inputRequired = (Map<String, Object>) ((JSONRPCResponse) messages.get(0)).result();
+		// The context alone does not make the call a stream.
+		assertThat(first).isInstanceOf(McpTransportResponse.Result.class);
+		Map<String, Object> inputRequired = result(first);
 		assertThat(inputRequired.get("resultType")).isEqualTo("input_required");
 		assertThat((Map<String, Object>) inputRequired.get("inputRequests")).containsKey("user");
 		String sealedState = (String) inputRequired.get("requestState");
@@ -244,8 +268,8 @@ class ModernAnnotationProvidersTests {
 				Map.of("user", Map.of("action", "accept", "content", Map.of("name", "Ann"))));
 		((Map<String, Object>) retry.get("_meta")).put(MetaKeys.PROGRESS_TOKEN, "tok");
 		McpTransportResponse second = send(server, McpSchema.METHOD_TOOLS_CALL, retry);
-		messages = ((McpTransportResponse.Streaming) second).messages().collectList().block();
-		Map<String, Object> result = (Map<String, Object>) ((JSONRPCResponse) messages.get(0)).result();
+		assertThat(second).isInstanceOf(McpTransportResponse.Result.class);
+		Map<String, Object> result = result(second);
 		assertThat(firstText(result)).isEqualTo("Hi Ann state=asked");
 	}
 
@@ -305,7 +329,8 @@ class ModernAnnotationProvidersTests {
 				.build()))
 			.build();
 
-		Map<String, Object> inputRequired = result(send(server, McpSchema.METHOD_TOOLS_CALL, params("name", "ask_name")));
+		Map<String, Object> inputRequired = result(
+				send(server, McpSchema.METHOD_TOOLS_CALL, params("name", "ask_name")));
 		assertThat(conversions).hasValue(0);
 		Map<String, Object> retry = params("name", "ask_name", "requestState", inputRequired.get("requestState"),
 				"inputResponses", Map.of("user", Map.of("action", "accept", "content", Map.of("name", "Ann"))));
@@ -396,9 +421,8 @@ class ModernAnnotationProvidersTests {
 
 	@Test
 	@SuppressWarnings("unchecked")
-	void resourceContextParameterStreamsProgressAndKeepsCacheHints() {
-		List<SyncResourceEntry> specs = SyncMcpAnnotationProviders
-			.modernResources(List.of(new Resources()));
+	void resourceNotifierParameterStreamsProgressAndKeepsCacheHints() {
+		List<SyncResourceEntry> specs = SyncMcpAnnotationProviders.modernResources(List.of(new Resources()));
 		SyncResourceEntry cached = specs.stream()
 			.filter(spec -> spec.resource().uri().equals("test://cached"))
 			.findFirst()
@@ -552,9 +576,10 @@ class ModernAnnotationProvidersTests {
 		}
 
 		@McpTool(name = "progress", description = "Reports progress")
-		String progress(McpModernSyncRequestContext ctx, @McpToolParam(description = "steps") int steps) {
+		String progress(McpSyncNotifier notifier, McpModernSyncRequestContext ctx,
+				@McpToolParam(description = "steps") int steps) {
 			for (int i = 1; i <= steps; i++) {
-				ctx.progress(i * 100 / steps);
+				notifier.progress(i, (double) steps, null);
 			}
 			return "done:" + steps + ":" + ctx.protocolVersion();
 		}
@@ -640,8 +665,8 @@ class ModernAnnotationProvidersTests {
 
 		// The annotation hints are ignored because the method returns a modern result.
 		@McpResource(uri = "test://cached", name = "cached", description = "cached", ttlMs = 1)
-		ReadResourceResult readCached(McpModernSyncRequestContext ctx, String uri) {
-			ctx.progress(50);
+		ReadResourceResult readCached(McpSyncNotifier notifier, String uri) {
+			notifier.progress(50, 100.0, null);
 			return ReadResourceResult.builder(List.of(TextResourceContents.builder(uri, "cached-body").build()))
 				.ttlMs(5000)
 				.cacheScope(CacheScope.PUBLIC)
@@ -749,7 +774,6 @@ class ModernAnnotationProvidersTests {
 
 		@McpComplete(prompt = "confirm")
 		CompleteResult completeConfirm(McpModernSyncRequestContext ctx, CompleteRequest request) {
-			ctx.progress(10); // dropped: completions are not streamed
 			return new CompleteResult(
 					new CompleteResult.Completion(List.of(request.argument().value() + ":" + ctx.protocolVersion(),
 							request.argument().value() + ":" + request.argument().name())),

@@ -18,15 +18,12 @@ package org.springframework.ai.mcp.annotation.context;
 
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Consumer;
 
 import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.modern.McpSchema.ClientCapabilities;
 import io.modelcontextprotocol.modern.McpSchema.Implementation;
 import io.modelcontextprotocol.modern.server.McpRequestContext;
 import org.jspecify.annotations.Nullable;
-
-import org.springframework.ai.mcp.annotation.context.McpRequestContextTypes.ProgressSpec;
 
 /**
  * The request context injected into annotated methods served by a 2026-07-28 ("modern")
@@ -35,8 +32,10 @@ import org.springframework.ai.mcp.annotation.context.McpRequestContextTypes.Prog
  * with an {@code InputRequiredResult} and arrives on the retried call through
  * {@link #inputResponses()}.
  * <p>
- * Progress notifications are delivered on the response stream. A method that declares
- * this parameter is always served as a streaming response.
+ * This parameter does not change the shape of the response: a method that declares it
+ * alone answers with a plain result. To push progress notifications before the result,
+ * declare the SDK {@code McpSyncNotifier} as well; that parameter, and only that one,
+ * makes the method a streaming response.
  *
  * @author Christian Tzolov
  * @since 2.1.0
@@ -89,25 +88,5 @@ public interface McpModernSyncRequestContext {
 	 * @return the response, or empty if the client did not answer this request
 	 */
 	<T> Optional<T> inputResponse(String key, Class<T> type);
-
-	// --------------------------------------
-	// Progress
-	// --------------------------------------
-
-	/** Whether progress notifications reach the client for this call. */
-	boolean progressEnabled();
-
-	void progress(int percentage);
-
-	void progress(double progress, @Nullable Double total, @Nullable String message);
-
-	void progress(Consumer<ProgressSpec> progressSpec);
-
-	/**
-	 * Pushes a request-scoped notification on the response stream.
-	 * @param method the notification method
-	 * @param params the notification params
-	 */
-	void notify(String method, Object params);
 
 }

@@ -18,7 +18,6 @@ package org.springframework.ai.mcp.annotation.context;
 
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Consumer;
 
 import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.json.McpJsonDefaults;
@@ -27,32 +26,24 @@ import io.modelcontextprotocol.modern.McpSchema.ClientCapabilities;
 import io.modelcontextprotocol.modern.McpSchema.Implementation;
 import io.modelcontextprotocol.modern.server.InputResponses;
 import io.modelcontextprotocol.modern.server.McpRequestContext;
-import io.modelcontextprotocol.modern.server.McpSyncNotifier;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
 
-import org.springframework.ai.mcp.annotation.context.McpRequestContextTypes.ProgressSpec;
 import org.springframework.util.Assert;
 
 /**
- * Default {@link McpModernSyncRequestContext} built from the SDK request context, the
- * MRTR fields of the request and, for streaming responses, the notifier.
+ * Default {@link McpModernSyncRequestContext} built from the SDK request context and the
+ * MRTR fields of the request.
  *
  * @author Christian Tzolov
  * @since 2.1.0
  */
 public final class DefaultMcpModernSyncRequestContext implements McpModernSyncRequestContext {
 
-	private static final Log logger = LogFactory.getLog(DefaultMcpModernSyncRequestContext.class);
-
 	private final McpRequestContext context;
 
 	private final Map<String, Object> inputResponses;
 
 	private final @Nullable String requestState;
-
-	private final @Nullable McpSyncNotifier notifier;
 
 	private final McpJsonMapper jsonMapper;
 
@@ -61,7 +52,6 @@ public final class DefaultMcpModernSyncRequestContext implements McpModernSyncRe
 		this.context = builder.context;
 		this.inputResponses = builder.inputResponses != null ? builder.inputResponses : Map.of();
 		this.requestState = builder.requestState;
-		this.notifier = builder.notifier;
 		this.jsonMapper = builder.jsonMapper != null ? builder.jsonMapper : McpJsonDefaults.getMapper();
 	}
 
@@ -126,48 +116,6 @@ public final class DefaultMcpModernSyncRequestContext implements McpModernSyncRe
 		return InputResponses.get(this.inputResponses, key, type, this.jsonMapper);
 	}
 
-	@Override
-	public boolean progressEnabled() {
-		return this.notifier != null && this.context.progressToken() != null;
-	}
-
-	@Override
-	public void progress(int percentage) {
-		Assert.isTrue(percentage >= 0 && percentage <= 100, "Percentage must be between 0 and 100");
-		progress(percentage, 100.0, null);
-	}
-
-	@Override
-	public void progress(double progress, @Nullable Double total, @Nullable String message) {
-		if (this.notifier == null) {
-			if (logger.isDebugEnabled()) {
-				logger.debug("Progress notification dropped: the call is not served as a streaming response");
-			}
-			return;
-		}
-		this.notifier.progress(progress, total, message);
-	}
-
-	@Override
-	public void progress(Consumer<ProgressSpec> progressSpec) {
-		Assert.notNull(progressSpec, "progressSpec must not be null");
-		DefaultProgressSpec spec = new DefaultProgressSpec();
-		progressSpec.accept(spec);
-		progress(spec.progress, spec.total, spec.message);
-	}
-
-	@Override
-	public void notify(String method, Object params) {
-		Assert.hasText(method, "method must not be empty");
-		if (this.notifier == null) {
-			if (logger.isDebugEnabled()) {
-				logger.debug("Notification '" + method + "' dropped: the call is not served as a streaming response");
-			}
-			return;
-		}
-		this.notifier.notify(method, params);
-	}
-
 	/**
 	 * Builds a {@link DefaultMcpModernSyncRequestContext}.
 	 */
@@ -178,8 +126,6 @@ public final class DefaultMcpModernSyncRequestContext implements McpModernSyncRe
 		private @Nullable Map<String, Object> inputResponses;
 
 		private @Nullable String requestState;
-
-		private @Nullable McpSyncNotifier notifier;
 
 		private @Nullable McpJsonMapper jsonMapper;
 
@@ -198,11 +144,6 @@ public final class DefaultMcpModernSyncRequestContext implements McpModernSyncRe
 
 		public Builder requestState(@Nullable String requestState) {
 			this.requestState = requestState;
-			return this;
-		}
-
-		public Builder notifier(@Nullable McpSyncNotifier notifier) {
-			this.notifier = notifier;
 			return this;
 		}
 

@@ -47,8 +47,9 @@ import org.springframework.ai.mcp.modern.McpSchemaConverter;
  * Beyond the parameters the legacy callbacks support, a method may declare
  * {@link McpModernSyncRequestContext}, the SDK {@link McpRequestContext},
  * {@link McpSyncNotifier} or the modern {@link CallToolRequest} (which carries the MRTR
- * fields). A method that declares the modern context or the notifier is served as a
- * streaming response so that progress notifications can be pushed before the result.
+ * fields). A method that declares the notifier is served as a streaming response so that
+ * progress notifications can be pushed before the result; the context alone leaves the
+ * response a plain result.
  * <p>
  * The method may return a modern {@link CallToolOutcome} (a {@code CallToolResult} or an
  * {@code InputRequiredResult}) or any of the legacy return types, which are converted.
@@ -56,9 +57,8 @@ import org.springframework.ai.mcp.modern.McpSchemaConverter;
  * @author Christian Tzolov
  * @since 2.1.0
  */
-public final class SyncModernMcpToolMethodCallback
-		extends AbstractSyncMcpToolMethodCallback<McpRequestContext, McpSyncRequestContext>
-		implements McpSyncTool.Handler {
+public final class SyncModernMcpToolMethodCallback extends
+		AbstractSyncMcpToolMethodCallback<McpRequestContext, McpSyncRequestContext> implements McpSyncTool.Handler {
 
 	private final boolean streaming;
 
