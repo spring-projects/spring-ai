@@ -16,7 +16,11 @@
 
 package org.springframework.ai.mcp.server.webflux.transport;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.time.Duration;
+import java.time.Instant;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import io.modelcontextprotocol.spec.HttpHeaders;
@@ -30,6 +34,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.reactive.server.WebTestClient;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
@@ -40,6 +45,7 @@ import static org.mockito.Mockito.when;
  * Unit tests for {@link WebFluxStreamableServerTransportProvider}.
  *
  * @author Dimitar Proynov
+ * @author lejuho
  */
 class WebFluxStreamableServerTransportProviderTests {
 
@@ -161,6 +167,55 @@ class WebFluxStreamableServerTransportProviderTests {
 			.isEqualTo(HttpStatus.BAD_REQUEST)
 			.expectBody(String.class)
 			.value(body -> assertThat(body).contains("Session already initialized"));
+	}
+
+	@Test
+	void evictionSurvivesASessionDeletedMidSweep() throws Exception {
+		McpStreamableServerSession liveSession = mock(McpStreamableServerSession.class);
+		when(liveSession.getId()).thenReturn("live-session");
+		when(liveSession.closeGracefully()).thenReturn(Mono.empty());
+
+		McpSchema.InitializeResult initResult = McpSchema.InitializeResult
+			.builder("2024-11-05", McpSchema.ServerCapabilities.builder().build(),
+					McpSchema.Implementation.builder("test-server", "1.0.0").build())
+			.build();
+
+		// Idle timeout is long enough that the scheduler does not race this test; we
+		// invoke evictIdleSessions directly with a synthetic expired last-access entry.
+		WebFluxStreamableServerTransportProvider provider = WebFluxStreamableServerTransportProvider.builder()
+			.sessionIdleTimeout(Duration.ofHours(1))
+			.build();
+		provider.setSessionFactory(initializeRequest -> new McpStreamableServerSession.McpStreamableServerSessionInit(
+				liveSession, Mono.just(initResult)));
+
+		WebTestClient client = WebTestClient.bindToRouterFunction(provider.getRouterFunction()).build();
+		client.post()
+			.uri("/mcp")
+			.contentType(MediaType.APPLICATION_JSON)
+			.accept(MediaType.APPLICATION_JSON, MediaType.TEXT_EVENT_STREAM)
+			.bodyValue(INITIALIZE_REQUEST)
+			.exchange()
+			.expectStatus()
+			.isOk();
+
+		Field lastAccessField = WebFluxStreamableServerTransportProvider.class
+			.getDeclaredField("sessionLastAccessTimes");
+		lastAccessField.setAccessible(true);
+		@SuppressWarnings("unchecked")
+		Map<String, Instant> lastAccess = (Map<String, Instant>) lastAccessField.get(provider);
+		// Expired entry whose session a concurrent DELETE has already removed from
+		// `sessions`. Before the fix this NPEd inside closeGracefully().
+		lastAccess.put("deleted-mid-sweep", Instant.now().minus(Duration.ofHours(2)));
+		// Make the live session eligible for the same sweep so we also prove eviction
+		// continues past the orphaned entry.
+		lastAccess.put("live-session", Instant.now().minus(Duration.ofHours(2)));
+
+		Method evict = WebFluxStreamableServerTransportProvider.class.getDeclaredMethod("evictIdleSessions");
+		evict.setAccessible(true);
+
+		assertThatCode(() -> evict.invoke(provider)).doesNotThrowAnyException();
+		verify(liveSession).closeGracefully();
+		assertThat(lastAccess).doesNotContainKey("deleted-mid-sweep").doesNotContainKey("live-session");
 	}
 
 }
