@@ -1,0 +1,206 @@
+= Mistral AI Transcriptions
+
+Spring AI supports https://docs.mistral.ai/studio/audio/speech-to-text/overview[Mistral AI's Speech-to-Text API], powered by the Voxtral models.
+It transcribes audio files, optionally with segment timestamps, speaker diarization and context biasing, and can stream the transcription as it is produced.
+
+== Prerequisites
+
+You will need to create an API key with Mistral AI to access the Voxtral models.
+Create an account at https://auth.mistral.ai/ui/registration[Mistral AI registration page] and generate the key on the https://console.mistral.ai/api-keys/[API Keys page].
+The Spring AI project defines a configuration property named `spring.ai.mistralai.api-key` that you should set to the value of the API key obtained from Mistral AI.
+Exporting an environment variable is one way to set that configuration property:
+
+[source,shell]
+----
+export SPRING_AI_MISTRALAI_API_KEY=<INSERT KEY HERE>
+----
+
+== Auto-configuration
+
+Spring AI provides Spring Boot auto-configuration for the Mistral AI Transcription Model.
+To enable it add the following dependency to your project's Maven `pom.xml` file:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-model-mistral-ai</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file:
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-starter-model-mistral-ai'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+=== Transcription Properties
+
+==== Connection Properties
+
+The prefix `spring.ai.mistralai` is used as the property prefix that lets you connect to Mistral AI.
+
+[cols="3,5,1"]
+|====
+| Property | Description | Default
+| spring.ai.mistralai.base-url   | The URL to connect to |  https://api.mistral.ai
+| spring.ai.mistralai.api-key    | The API Key           |  -
+|====
+
+==== Configuration Properties
+
+[NOTE]
+====
+Enabling and disabling of the audio transcription auto-configurations are configured via top level properties with the prefix `spring.ai.model.audio.transcription`.
+
+To enable, spring.ai.model.audio.transcription=mistral (It is enabled by default)
+
+To disable, spring.ai.model.audio.transcription=none (or any value which doesn't match mistral)
+
+This change is done to allow configuration of multiple models.
+====
+
+The prefix `spring.ai.mistralai.audio.transcription` is used as the property prefix for configuring the Mistral AI transcription model.
+
+[cols="3,5,2"]
+|====
+| Property | Description | Default
+
+| spring.ai.model.audio.transcription | Enable the Mistral AI transcription model | mistral
+| spring.ai.mistralai.audio.transcription.base-url | The URL to connect to. Falls back to `spring.ai.mistralai.base-url`. | -
+| spring.ai.mistralai.audio.transcription.api-key | The API Key. Falls back to `spring.ai.mistralai.api-key`. | -
+| spring.ai.mistralai.audio.transcription.model | ID of the model to use. Available models include `voxtral-mini-latest`, `voxtral-mini-transcribe-3` and `voxtral-small-transcribe-3`. | voxtral-mini-latest
+| spring.ai.mistralai.audio.transcription.language | The language of the audio, as an ISO 639-1 code such as `en`. Providing the language can improve accuracy. When not set, the language is detected. | -
+| spring.ai.mistralai.audio.transcription.temperature | The sampling temperature. | -
+| spring.ai.mistralai.audio.transcription.timestamp-granularities | The granularities of the timestamps to include: `segment` or `word`. The current models support only `segment`. | -
+| spring.ai.mistralai.audio.transcription.diarize | Whether to identify the speaker of each segment. Requires `segment` timestamp granularity. When not set, the API default (no diarization) applies. | -
+| spring.ai.mistralai.audio.transcription.context-bias | Words or phrases, such as names or domain terms, to bias the transcription towards. | -
+|====
+
+NOTE: You can override the common `spring.ai.mistralai.base-url` and `spring.ai.mistralai.api-key` properties.
+The `spring.ai.mistralai.audio.transcription.base-url` and `spring.ai.mistralai.audio.transcription.api-key` properties, if set, take precedence over the common properties.
+This is useful if you want to use different Mistral AI accounts for different models.
+
+TIP: All properties prefixed with `spring.ai.mistralai.audio.transcription` can be overridden at runtime.
+
+== Runtime Options [[transcription-options]]
+
+The `MistralAiTranscriptionOptions` class provides the options to use when making a transcription.
+On start-up, the options specified by `spring.ai.mistralai.audio.transcription` are used, but you can override these at runtime.
+Options left unset at runtime keep the value configured on start-up, including the model.
+
+For example, to transcribe a conversation with the speaker of each segment:
+
+[source,java]
+----
+MistralAiTranscriptionOptions transcriptionOptions = MistralAiTranscriptionOptions.builder()
+    .model(MistralAiAudioApi.TranscriptionModel.VOXTRAL_MINI_TRANSCRIBE_3)
+    .language("en")
+    .timestampGranularities(List.of(TimestampGranularity.SEGMENT))
+    .diarize(true)
+    .contextBias(List.of("Northwind", "Quillara"))
+    .build();
+
+AudioTranscriptionPrompt transcriptionRequest = new AudioTranscriptionPrompt(audioFile, transcriptionOptions);
+AudioTranscriptionResponse response = mistralAiTranscriptionModel.call(transcriptionRequest);
+----
+
+=== Response Metadata
+
+`response.getMetadata()` is a `MistralAiTranscriptionResponseMetadata`, which exposes the following in addition to the transcribed text:
+
+* `getModel()`: the model that made the transcription.
+* `getLanguage()`: the language of the audio, when returned by the API.
+* `getSegments()`: the timestamped segments, each with its text, start and end in seconds, and, with diarization, its `speakerId` such as `speaker_1`.
+The list is empty unless `segment` timestamps were requested.
+* `getUsage()`: the token usage, with the native `MistralAiAudioApi.Usage`, which also carries the audio duration in seconds, as its native usage.
+
+[source,java]
+----
+var metadata = (MistralAiTranscriptionResponseMetadata) response.getMetadata();
+for (TranscriptionSegment segment : metadata.getSegments()) {
+    System.out.println(segment.speakerId() + " [" + segment.start() + "s]: " + segment.text());
+}
+----
+
+== Streaming
+
+`MistralAiTranscriptionModel` implements `stream()`, which returns the transcription as chunks of text while the model produces them:
+
+[source,java]
+----
+Flux<String> chunks = mistralAiTranscriptionModel.streamTranscribe(audioFile);
+----
+
+The audio is uploaded whole before the transcription starts, so streaming makes the first words arrive sooner but not the whole transcription.
+Each streamed `AudioTranscriptionResponse` carries one chunk of text.
+The observation of a streamed transcription reports the whole transcription and its usage.
+
+== Manual Configuration
+
+Add the `spring-ai-mistral-ai` dependency to your project's Maven `pom.xml` file:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-mistral-ai</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file:
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-mistral-ai'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+Next, create a `MistralAiTranscriptionModel`:
+
+[source,java]
+----
+var mistralAiAudioApi = MistralAiAudioApi.builder()
+    .apiKey(System.getenv("MISTRAL_AI_API_KEY"))
+    .build();
+
+var mistralAiTranscriptionModel = MistralAiTranscriptionModel.builder()
+    .mistralAiAudioApi(mistralAiAudioApi)
+    .options(MistralAiTranscriptionOptions.builder()
+        .model(MistralAiAudioApi.TranscriptionModel.VOXTRAL_MINI_TRANSCRIBE_3)
+        .build())
+    .build();
+
+var audioFile = new FileSystemResource("/path/to/your/resource/speech.flac");
+
+String text = mistralAiTranscriptionModel.transcribe(audioFile);
+----
+
+=== Low-level MistralAiAudioApi Client
+
+`MistralAiAudioApi` is a lightweight client for the Mistral AI audio transcription endpoint.
+Besides uploading the audio, it can transcribe a file from a URL or a file previously uploaded to the Mistral AI Files API:
+
+[source,java]
+----
+TranscriptionRequest request = TranscriptionRequest.builder()
+    .model(MistralAiAudioApi.TranscriptionModel.VOXTRAL_MINI_LATEST.getValue())
+    .fileUrl("https://example.com/speech.mp3")
+    .build();
+
+TranscriptionResponse response = mistralAiAudioApi.createTranscription(request).getBody();
+----
+
+Exactly one of `file`, `fileUrl` and `fileId` must be set.
+
+== Example Code
+
+* The link:https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-mistral-ai/src/test/java/org/springframework/ai/mistralai/transcription/MistralAiTranscriptionModelIT.java[MistralAiTranscriptionModelIT.java] test provides some general examples of how to use the library.

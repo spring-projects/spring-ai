@@ -268,6 +268,19 @@ NOTE: Map keys bind literally — use the exact provider field name (e.g. `outpu
 
 === Mistral AI
 
+==== New: `MistralAiTranscriptionModel`
+
+`MistralAiTranscriptionModel` implements the `TranscriptionModel` API on top of the Mistral AI Speech-to-Text API and the Voxtral models, backed by the new low-level `MistralAiAudioApi` client.
+It supports segment timestamps, speaker diarization and context biasing through `MistralAiTranscriptionOptions`, exposes the segments and usage through `MistralAiTranscriptionResponseMetadata`, and implements `stream()`.
+The Mistral AI starter auto-configures it under `spring.ai.mistralai.audio.transcription`, and transcriptions are observed with the `transcription` operation name.
+See xref:api/audio/transcriptions/mistral-ai-transcriptions.adoc[Mistral AI Transcriptions].
+
+===== Impact
+
+The transcription model is enabled by default, like the other Mistral AI models, so an application with the Mistral AI starter now gets a `MistralAiTranscriptionModel` bean, which needs the Mistral AI API key.
+An application that also uses another transcription starter, such as OpenAI, now has two `TranscriptionModel` beans, so injecting `TranscriptionModel` by type fails.
+Select one with `spring.ai.model.audio.transcription`, for example `spring.ai.model.audio.transcription=openai`, or set it to `none` to disable transcription models.
+
 ==== Changed: `MistralAiChatModel` Builds Its Messages from Message Parts
 
 `MistralAiChatModel` maps every content chunk of a response to one `MessagePart`, in chunk order: thinking becomes a `ReasoningPart`, text a `TextPart`, and a citation reference or an image chunk an `UnknownPart`; the tool calls follow as `ToolCallPart`s.
