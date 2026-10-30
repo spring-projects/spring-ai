@@ -193,6 +193,16 @@ Message prefix = AssistantMessage.builder()
 
 Add the reasoning content of a prefix message as a `ReasoningPart`, for example with `AssistantMessage.builder().part(ReasoningPart.of(...))`.
 
+=== OpenAI Service Connections
+
+==== New: `OpenAiConnectionDetails`
+
+The OpenAI auto-configurations now resolve the base URL and API key through a Spring Boot `ConnectionDetails` bean, `OpenAiConnectionDetails`.
+By default the bean is backed by the `spring.ai.openai.base-url` and `spring.ai.openai.api-key` properties, so existing configuration keeps working.
+Declaring your own `OpenAiConnectionDetails` bean supersedes those two properties, while the model-level overrides such as `spring.ai.openai.chat.base-url` and `spring.ai.openai.chat.api-key` still take precedence.
+This is the hook for pointing the OpenAI models at an OpenAI-compatible server running in a container, for example via Testcontainers or Docker Compose.
+See xref:api/chat/openai-chat.adoc#_connection_details[Connection Details].
+
 === Bedrock Converse
 
 ==== Changed: A Response Is a Single Generation of Ordered `MessagePart`s

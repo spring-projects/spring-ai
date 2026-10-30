@@ -35,6 +35,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 
 /**
  * Image {@link AutoConfiguration Auto-configuration} for OpenAI.
@@ -53,17 +54,19 @@ import org.springframework.context.annotation.Bean;
 @ConditionalOnProperty(name = SpringAIModelProperties.IMAGE_MODEL, havingValue = SpringAIModels.OPENAI,
 		matchIfMissing = true)
 @EnableConfigurationProperties({ OpenAiCommonProperties.class, OpenAiImageProperties.class })
+@Import(OpenAiConnectionDetailsConfiguration.class)
 public class OpenAiImageAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public OpenAiImageModel openAiImageModel(OpenAiCommonProperties commonProperties,
-			OpenAiImageProperties imageProperties, ObjectProvider<ObservationRegistry> observationRegistry,
-			ObjectProvider<MeterRegistry> meterRegistry,
+	public OpenAiImageModel openAiImageModel(OpenAiConnectionDetails connectionDetails,
+			OpenAiCommonProperties commonProperties, OpenAiImageProperties imageProperties,
+			ObjectProvider<ObservationRegistry> observationRegistry, ObjectProvider<MeterRegistry> meterRegistry,
 			ObjectProvider<ImageModelObservationConvention> observationConvention,
 			ObjectProvider<OpenAiHttpClientBuilderCustomizer> httpClientBuilderCustomizers) {
 
-		var resolvedProperties = OpenAiAutoConfigurationUtil.resolveCommonProperties(commonProperties, imageProperties);
+		var resolvedProperties = OpenAiAutoConfigurationUtil.resolveCommonProperties(connectionDetails,
+				commonProperties, imageProperties);
 
 		List<OpenAiHttpClientBuilderCustomizer> customizers = httpClientBuilderCustomizers.orderedStream().toList();
 
