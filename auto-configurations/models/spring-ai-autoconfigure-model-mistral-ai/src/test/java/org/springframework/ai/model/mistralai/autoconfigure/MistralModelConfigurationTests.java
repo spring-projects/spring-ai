@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.ai.mistralai.MistralAiChatModel;
 import org.springframework.ai.mistralai.MistralAiEmbeddingModel;
 import org.springframework.ai.mistralai.moderation.MistralAiModerationModel;
+import org.springframework.ai.mistralai.transcription.MistralAiTranscriptionModel;
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -54,6 +55,12 @@ public class MistralModelConfigurationTests {
 		.withPropertyValues("spring.ai.mistralai.api-key=" + System.getenv("MISTRAL_AI_API_KEY"))
 		.withConfiguration(
 				AutoConfigurations.of(MistralAiModerationAutoConfiguration.class, RestClientAutoConfiguration.class,
+						SpringAiRetryAutoConfiguration.class, WebClientAutoConfiguration.class));
+
+	private final ApplicationContextRunner transcriptionContextRunner = new ApplicationContextRunner()
+		.withPropertyValues("spring.ai.mistralai.api-key=" + System.getenv("MISTRAL_AI_API_KEY"))
+		.withConfiguration(
+				AutoConfigurations.of(MistralAiTranscriptionAutoConfiguration.class, RestClientAutoConfiguration.class,
 						SpringAiRetryAutoConfiguration.class, WebClientAutoConfiguration.class));
 
 	@Test
@@ -128,6 +135,28 @@ public class MistralModelConfigurationTests {
 				assertThat(context.getBeansOfType(MistralAiModerationModel.class)).isNotEmpty();
 				assertThat(context.getBeansOfType(MistralAiEmbeddingModel.class)).isEmpty();
 				assertThat(context.getBeansOfType(MistralAiChatModel.class)).isEmpty();
+			});
+	}
+
+	@Test
+	void transcriptionModelActivation() {
+		this.transcriptionContextRunner.run(context -> {
+			assertThat(context.getBeansOfType(MistralAiTranscriptionModel.class)).isNotEmpty();
+			assertThat(context.getBeansOfType(MistralAiTranscriptionProperties.class)).isNotEmpty();
+			assertThat(context.getBeansOfType(MistralAiChatModel.class)).isEmpty();
+			assertThat(context.getBeansOfType(MistralAiEmbeddingModel.class)).isEmpty();
+			assertThat(context.getBeansOfType(MistralAiModerationModel.class)).isEmpty();
+		});
+
+		this.transcriptionContextRunner.withPropertyValues("spring.ai.model.audio.transcription=none").run(context -> {
+			assertThat(context.getBeansOfType(MistralAiTranscriptionProperties.class)).isEmpty();
+			assertThat(context.getBeansOfType(MistralAiTranscriptionModel.class)).isEmpty();
+		});
+
+		this.transcriptionContextRunner.withPropertyValues("spring.ai.model.audio.transcription=mistral")
+			.run(context -> {
+				assertThat(context.getBeansOfType(MistralAiTranscriptionProperties.class)).isNotEmpty();
+				assertThat(context.getBeansOfType(MistralAiTranscriptionModel.class)).isNotEmpty();
 			});
 	}
 
