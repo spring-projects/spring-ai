@@ -322,7 +322,7 @@ rateLimit.getTokensReset();        // time until the token window resets
 If the response carries no rate-limit headers, `getRateLimit()` returns an `EmptyRateLimit` instance instead.
 
 NOTE: Rate-limit metadata is populated on `call(Prompt)` only.
-Reading it on `stream(Prompt)` would require the SDK's blocking streaming response, which would hold a worker thread for the whole stream, so `stream(Prompt)` reports an `EmptyRateLimit`.
+`stream(Prompt)` reports an `EmptyRateLimit`.
 
 == Tool Calling
 
@@ -763,6 +763,9 @@ Spring AI emits Micrometer observations at two layers for every OpenAI call:
 * **Chat-model layer.** A `gen_ai.client.operation` observation wraps every call to `OpenAiChatModel.call(...)` or `.stream(...)`, carrying request parameters, response metadata, and token usage. See the xref:observability/index.adoc[observability reference] for the full set of tags and metrics.
 * **HTTP layer.** An `okhttp.requests` observation wraps every HTTP attempt to the OpenAI API, carrying HTTP method, URI, status code, and exception tags. Each request also propagates `traceparent` on the wire to any downstream services (AI gateways, OpenAI-compatible inference servers, proxies).
 
+For both `call(...)` and `stream(...)`, the `okhttp.requests` observation is nested under the `gen_ai.client.operation` observation, so the `traceparent` sent to OpenAI carries the caller's trace.
+The one exception is streaming with your own async client set through `OpenAiChatModel.builder().openAiClientAsync(...)`: Spring AI keeps using that client, but its HTTP observations are not nested under the chat-model observation.
+
 In a Spring Boot application with `spring-boot-starter-actuator` and a tracing bridge (`micrometer-tracing-bridge-otel` or `micrometer-tracing-bridge-brave`), both layers are wired automatically — no opt-in required.
 For non-Boot applications, pass an `ObservationRegistry` to `OpenAiChatModel.builder()`:
 
@@ -797,36 +800,25 @@ OpenAiChatModel chatModel = OpenAiChatModel.builder()
     .build();
 ----
 
-=== HTTP dispatcher executor (advanced)
+=== Streaming scheduler (advanced)
 
-By default Spring AI manages the OkHttp dispatcher's executor — an unbounded pool of platform threads, replicating the SDK's stock behavior.
-For workloads with high HTTP concurrency, or to take advantage of Java 21+ virtual threads, you can supply your own `ExecutorService`:
+`stream(...)` sends its request and reads the response on a thread of a dedicated scheduler, shared by `OpenAiChatModel`, `OpenAiResponsesChatModel` and `OpenAiAudioTranscriptionModel`.
+It is a bounded-elastic pool sized like Reactor's shared `Schedulers.boundedElastic()`, with 10 threads per CPU core by default, so streams don't contend with other blocking work such as tool calls.
+Each open stream holds one of its threads until the stream ends.
+When all the threads are busy, a new stream waits until the thread it is given finishes its current stream, so size the scheduler for the number of concurrent streams you expect:
 
 [source,java]
 ----
 OpenAiChatModel chatModel = OpenAiChatModel.builder()
     .options(...)
-    .dispatcherExecutor(Executors.newVirtualThreadPerTaskExecutor())
+    .streamScheduler(Schedulers.newBoundedElastic(200, Integer.MAX_VALUE, "chat-stream"))
     .build();
 ----
 
-The same executor backs both the sync and async (streaming) clients.
-When you supply your own executor, you own its lifecycle — Spring AI will never call `shutdown()` on it.
-When omitted, the internal executor is created and cleaned up automatically.
+Don't block on a stream from a thread of the same scheduler, for example in a subscriber of another stream: once all its threads are busy, the two streams wait for each other.
 
-[IMPORTANT]
-====
-**Streaming HTTP observations are not parented under the chat-model observation**
-
-For synchronous calls, the `okhttp.requests` span is correctly nested under the `gen_ai.client.operation` span — the full trace tree forms as expected.
-
-For streaming calls, the `okhttp.requests` span fires and is recorded in the registry, the timer is recorded in `MeterRegistry`, and `traceparent` is still propagated on the outbound request — but the span is **not** nested under the chat-model span.
-This is because the OpenAI SDK's async streaming implementation hops onto `ForkJoinPool.commonPool()` before invoking Spring AI's HTTP client, dropping the calling thread's observation context at that boundary.
-Spring AI cannot recover the context from within its HTTP-client wrapper.
-
-If you need to correlate streaming HTTP spans with their parent chat-model span in your tracing UI, filter by span name `okhttp.requests` with host `api.openai.com` and join to the corresponding `gen_ai.client.operation` span by trace ID or timestamp range.
-Built-in parent linkage for streaming is being pursued upstream in the OpenAI Java SDK.
-====
+The OkHttp dispatcher executor, which an `OpenAiHttpClientBuilderCustomizer` can replace with `dispatcherExecutorService(...)`, only runs the requests of an async client.
+The clients that Spring AI creates send their requests on the calling thread, or on the streaming scheduler for `stream(...)`.
 
 include::partial$openai/openai-http-client-customization.adoc[]
 

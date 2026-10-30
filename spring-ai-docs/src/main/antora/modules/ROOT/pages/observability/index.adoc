@@ -78,11 +78,11 @@ They measure the time spent in the advisor (including the time spent on the inne
 
 [NOTE]
 ====
-Both the OpenAI and Anthropic chat models **do** emit HTTP-layer observations (chat-model layer + HTTP layer), with one limitation specific to OpenAI streaming calls.
+Both the OpenAI and Anthropic chat models **do** emit HTTP-layer observations (chat-model layer + HTTP layer).
 The HTTP-layer observation carries HTTP method, URI, status code, and propagates `traceparent` on the wire to downstream services (AI gateways, proxies, OpenAI-compatible inference servers).
 
-For synchronous calls, and for Anthropic streaming calls, the `okhttp.requests` span is correctly nested under the `gen_ai.client.operation` span.
-For OpenAI streaming calls, the HTTP span is recorded but is **not** parented under the chat-model span — the SDK's async streaming path hops onto `ForkJoinPool.commonPool()` before invoking Spring AI's HTTP client, dropping the calling thread's observation context at that boundary.
+For both synchronous and streaming calls, the `okhttp.requests` span is nested under the `gen_ai.client.operation` span.
+The exception is streaming with an async SDK client set on the chat model's builder: its HTTP span is recorded but is **not** parented under the chat-model span, because the SDK's async path hops onto `ForkJoinPool.commonPool()` before invoking Spring AI's HTTP client.
 
 See the xref:api/chat/openai-chat.adoc#_observability[OpenAI chat docs] and xref:api/chat/anthropic-chat.adoc#_observability[Anthropic chat docs] for details.
 ====
