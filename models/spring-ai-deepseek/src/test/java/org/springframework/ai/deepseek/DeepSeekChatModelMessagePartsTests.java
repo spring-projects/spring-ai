@@ -289,6 +289,22 @@ class DeepSeekChatModelMessagePartsTests {
 	// -- streaming --
 
 	@Test
+	void streamingPreservesContentWhenChunkIdIsMissing() {
+		givenStream(chunk(null, delta("Hello ", null), null),
+				chunk(null, delta("world", null), ChatCompletionFinishReason.STOP));
+
+		AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
+		List<ChatResponse> responses = new MessageAggregator()
+			.aggregate(chatModel().stream(new Prompt("Hi")), aggregatedRef::set)
+			.collectList()
+			.block();
+
+		assertThat(responses).hasSize(2);
+		assertThat(responses).allSatisfy(response -> assertThat(response.getMetadata().getId()).isEmpty());
+		assertThat(output(aggregatedRef.get()).getText()).isEqualTo("Hello world");
+	}
+
+	@Test
 	void streamingReasoningTextAndToolCallProduceIndexedParts() {
 		// DeepSeekApi merges the chunks of a tool call into one chunk
 		ChatCompletionMessage toolCallDelta = new ChatCompletionMessage(null, null, null, null, List
@@ -424,7 +440,12 @@ class DeepSeekChatModelMessagePartsTests {
 	}
 
 	private static ChatCompletionChunk chunk(ChatCompletionMessage delta, ChatCompletionFinishReason finishReason) {
-		return new ChatCompletionChunk("chatcmpl-123", List.of(new ChunkChoice(finishReason, 0, delta, null)),
+		return chunk("chatcmpl-123", delta, finishReason);
+	}
+
+	private static ChatCompletionChunk chunk(String id, ChatCompletionMessage delta,
+			ChatCompletionFinishReason finishReason) {
+		return new ChatCompletionChunk(id, List.of(new ChunkChoice(finishReason, 0, delta, null)),
 				1777799928L, "deepseek-v4-flash", null, "fp", "chat.completion.chunk", null);
 	}
 

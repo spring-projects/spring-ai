@@ -263,12 +263,12 @@ public class DeepSeekChatModel implements ChatModel {
 
 			Flux<ChatResponse> chatResponse = completionChunks.map(this::chunkToChatCompletion).map(chatCompletion -> {
 				try {
-					String id = chatCompletion.id();
+					String id = chatCompletion.id() != null ? chatCompletion.id() : "";
 
 					List<Generation> generations = chatCompletion.choices().stream().map(choice -> {
 						// @formatter:off
 						Map<String, Object> metadata = Map.of(
-								"id", chatCompletion.id(),
+								"id", id,
 								"role", streamAccumulator.role(id, choice.message()),
 								"finishReason", choice.finishReason() != null ? choice.finishReason().name() : ""
 						);
