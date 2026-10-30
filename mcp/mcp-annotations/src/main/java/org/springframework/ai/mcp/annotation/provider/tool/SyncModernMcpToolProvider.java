@@ -30,6 +30,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.springframework.ai.mcp.annotation.McpTool;
+import org.springframework.ai.mcp.annotation.common.IconUtils;
 import org.springframework.ai.mcp.annotation.common.McpPredicates;
 import org.springframework.ai.mcp.annotation.common.MetaUtils;
 import org.springframework.ai.mcp.annotation.common.ModernMethodSupport;
@@ -102,6 +103,7 @@ public class SyncModernMcpToolProvider extends AbstractMcpToolProvider {
 			title = toolName;
 		}
 		toolBuilder.title(title);
+		toolBuilder.icons(IconUtils.toModernIcons(toolJavaAnnotation.icons()));
 
 		// Output schema from the return type, unless it is void, a protocol result or a
 		// simple value.

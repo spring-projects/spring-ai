@@ -59,4 +59,10 @@ public @interface McpPrompt {
 	 */
 	Class<? extends MetaProvider> metaProvider() default DefaultMetaProvider.class;
 
+	/**
+	 * Optional icons for clients that render a catalogue.
+	 * @since 2.1.0
+	 */
+	McpIcon[] icons() default {};
+
 }

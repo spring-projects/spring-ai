@@ -83,6 +83,19 @@ public @interface McpResource {
 	Class<? extends MetaProvider> metaProvider() default DefaultMetaProvider.class;
 
 	/**
+	 * Optional icons for clients that render a catalogue.
+	 * @since 2.1.0
+	 */
+	McpIcon[] icons() default {};
+
+	/**
+	 * Optional size of the resource content in bytes, when known up front. {@code -1}
+	 * (the default) leaves it unset.
+	 * @since 2.1.0
+	 */
+	long size() default -1;
+
+	/**
 	 * How long, in milliseconds, a client may cache the result of reading this resource.
 	 * {@code 0} (the default) means the result must not be cached.
 	 * <p>

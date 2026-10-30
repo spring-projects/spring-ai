@@ -58,8 +58,8 @@ import org.springframework.context.annotation.Conditional;
  * @author Christian Tzolov
  * @since 2.1.0
  */
-@AutoConfiguration(after = { McpServerAnnotationScannerAutoConfiguration.class,
-		McpServerJsonMapperAutoConfiguration.class })
+@AutoConfiguration(
+		after = { McpServerAnnotationScannerAutoConfiguration.class, McpServerJsonMapperAutoConfiguration.class })
 @ConditionalOnClass({ io.modelcontextprotocol.modern.server.McpServer.class, McpTool.class })
 @ConditionalOnProperty(prefix = McpServerAnnotationScannerProperties.CONFIG_PREFIX, name = "enabled",
 		havingValue = "true", matchIfMissing = true)

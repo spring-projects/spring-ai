@@ -57,6 +57,10 @@ The `@McpTool` annotation supports the following attributes:
 |`DefaultMetaProvider.class`
 |Class implementing `MetaProvider` that supplies data for the `_meta` field in the tool declaration.
 
+|`icons`
+|`{}`
+|Optional `@McpIcon` entries (`src`, `mimeType`, `sizes`, `theme`) published in the tool definition.
+
 |===
 
 ==== Tool Annotations (Hints)
@@ -260,6 +264,14 @@ The `@McpResource` annotation provides access to resources via URI templates.
 |`CacheScope.PRIVATE`
 |Whether a cached read result may be shared across authorization contexts (`PUBLIC`) or not (`PRIVATE`). Only transmitted by the modern server.
 
+|`icons`
+|`{}`
+|Optional `@McpIcon` entries published in the resource definition.
+
+|`size`
+|`-1`
+|Size of the resource content in bytes when known; `-1` leaves it unset.
+
 |===
 
 The nested `McpAnnotations` for resources supports:
@@ -371,7 +383,16 @@ The `@McpPrompt` annotation generates prompt messages for AI interactions.
 |`DefaultMetaProvider.class`
 |Class implementing `MetaProvider` that supplies data for the `_meta` field.
 
+|`icons`
+|`{}`
+|Optional `@McpIcon` entries published in the prompt definition.
+
 |===
+
+`@McpArg` accepts `name`, `description`, `required` and, since 2.1.0, `title`, a display name for the argument.
+`@McpToolParam` accepts `description`, `required` and, since 2.1.0, `header`: when `true`, the parameter's schema carries `x-mcp-header: Mcp-Param-<name>` so Streamable HTTP clients also send it as that header (parameters whose schema type is `string`, `integer` or `boolean`, which includes enums; other types are rejected at startup).
+The keyword is defined by the 2026-07-28 revision, but the schema generator is shared, so legacy and stateless servers publish it too.
+Clients of earlier revisions ignore unknown keywords, and the type restriction applies at startup on every server kind.
 
 ==== Basic Usage
 

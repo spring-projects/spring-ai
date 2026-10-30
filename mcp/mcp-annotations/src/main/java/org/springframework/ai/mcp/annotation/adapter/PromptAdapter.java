@@ -32,10 +32,12 @@ import org.springframework.ai.mcp.annotation.McpArg;
 import org.springframework.ai.mcp.annotation.McpMeta;
 import org.springframework.ai.mcp.annotation.McpProgressToken;
 import org.springframework.ai.mcp.annotation.McpPrompt;
+import org.springframework.ai.mcp.annotation.common.IconUtils;
 import org.springframework.ai.mcp.annotation.common.MetaUtils;
 import org.springframework.ai.mcp.annotation.common.ModernMethodSupport;
 import org.springframework.ai.mcp.annotation.context.McpAsyncRequestContext;
 import org.springframework.ai.mcp.annotation.context.McpSyncRequestContext;
+import org.springframework.util.StringUtils;
 
 /**
  * Utility class for adapting between McpPrompt annotations and McpSchema.Prompt objects.
@@ -59,6 +61,7 @@ public final class PromptAdapter {
 		return McpSchema.Prompt.builder(mcpPrompt.name())
 			.title(mcpPrompt.title())
 			.description(mcpPrompt.description())
+			.icons(IconUtils.toIcons(mcpPrompt.icons()))
 			.meta(meta)
 			.build();
 	}
@@ -77,6 +80,7 @@ public final class PromptAdapter {
 			.title(mcpPrompt.title())
 			.description(mcpPrompt.description())
 			.arguments(arguments)
+			.icons(IconUtils.toIcons(mcpPrompt.icons()))
 			.meta(meta)
 			.build();
 	}
@@ -119,6 +123,7 @@ public final class PromptAdapter {
 			if (mcpArg != null) {
 				String name = !mcpArg.name().isEmpty() ? mcpArg.name() : parameter.getName();
 				arguments.add(McpSchema.PromptArgument.builder(name)
+					.title(StringUtils.hasText(mcpArg.title()) ? mcpArg.title() : null)
 					.description(mcpArg.description())
 					.required(mcpArg.required())
 					.build());
