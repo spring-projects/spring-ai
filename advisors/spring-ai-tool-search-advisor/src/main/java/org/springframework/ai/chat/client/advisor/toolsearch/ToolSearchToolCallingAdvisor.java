@@ -99,6 +99,8 @@ public class ToolSearchToolCallingAdvisor extends ToolCallingAdvisor {
 
 	/**
 	 * If enabled, accumulates all tool search tool responses to find tool references.
+	 * Discovered tools are also retained for the rest of the session, so they stay
+	 * available even when a later prompt no longer contains the tool search response.
 	 * <p>
 	 * If disabled, only the last tool search tool response is used to find tool
 	 * references.
@@ -113,6 +115,14 @@ public class ToolSearchToolCallingAdvisor extends ToolCallingAdvisor {
 	 * re-indexing can be skipped.
 	 */
 	private final ConcurrentHashMap<String, String> indexedSessionFingerprints = new ConcurrentHashMap<>();
+
+	/**
+	 * Tracks the tool names discovered by the tool search tool per session. A discovered
+	 * tool stays available in later iterations even when the prompt no longer carries the
+	 * tool search response, for example when a downstream memory advisor restores the
+	 * conversation after this advisor prepared the iteration.
+	 */
+	private final ConcurrentHashMap<String, Set<String>> discoveredToolNames = new ConcurrentHashMap<>();
 
 	private final ToolIndexEvictionStrategy evictionStrategy;
 
@@ -245,6 +255,7 @@ public class ToolSearchToolCallingAdvisor extends ToolCallingAdvisor {
 	private ChatClientRequest prepareIteration(ChatClientRequest chatClientRequest) {
 		ToolCallingChatOptions toolOptions = Objects
 			.requireNonNull((ToolCallingChatOptions) chatClientRequest.prompt().getOptions());
+		String sessionId = this.getSessionId(chatClientRequest.context());
 
 		Set<ToolCallback> selectedToolCallbacks = new HashSet<>(List.of(this.toolSearchToolCallback));
 
@@ -252,18 +263,29 @@ public class ToolSearchToolCallingAdvisor extends ToolCallingAdvisor {
 			.get(CACHED_TOOL_CALLBACKS_KEY);
 
 		if (cachedToolCallbacks != null) {
-			this.extractToolNameReferences(chatClientRequest.prompt().getInstructions()).forEach(toolName -> {
-				if (cachedToolCallbacks.containsKey(toolName)) {
-					selectedToolCallbacks.add(cachedToolCallbacks.get(toolName));
+			List<String> extractedToolNames = this
+				.extractToolNameReferences(chatClientRequest.prompt().getInstructions());
+			Set<String> toolNames;
+			if (this.referenceToolNameAccumulation) {
+				Set<String> discovered = this.discoveredToolNames.computeIfAbsent(sessionId,
+						id -> ConcurrentHashMap.newKeySet());
+				discovered.addAll(extractedToolNames);
+				toolNames = discovered;
+			}
+			else {
+				toolNames = new HashSet<>(extractedToolNames);
+			}
+			toolNames.forEach(toolName -> {
+				ToolCallback toolCallback = cachedToolCallbacks.get(toolName);
+				if (toolCallback != null) {
+					selectedToolCallbacks.add(toolCallback);
 				}
 			});
 		}
 
 		ToolCallingChatOptions toolOptionsCopy = ((ToolCallingChatOptions.Builder<?>) toolOptions.mutate())
 			.toolCallbacks(new ArrayList<>(selectedToolCallbacks))
-			.toolContext(ToolSearchTool.TOOL_SEARCH_TOOL_SESSION_ID_KEY,
-					Objects.requireNonNull(
-							chatClientRequest.context().get(ToolSearchTool.TOOL_SEARCH_TOOL_SESSION_ID_KEY)))
+			.toolContext(ToolSearchTool.TOOL_SEARCH_TOOL_SESSION_ID_KEY, sessionId)
 			.build();
 
 		return chatClientRequest.mutate()
@@ -285,6 +307,7 @@ public class ToolSearchToolCallingAdvisor extends ToolCallingAdvisor {
 	private void doEvict(String sessionId) {
 		this.toolIndex.clearIndex(sessionId);
 		this.indexedSessionFingerprints.remove(sessionId);
+		this.discoveredToolNames.remove(sessionId);
 		this.evictionStrategy.onRemoved(sessionId);
 	}
 
