@@ -170,6 +170,17 @@ public EmbeddingModel embeddingModel() {
 }
 ----
 
+== Upsert support
+
+`MongoDBAtlasVectorStore` implements `upsert(List<EmbeddedDocument>)`, so you can write documents together with embeddings you computed elsewhere instead of having the store embed them.
+Writing the same id again replaces the whole document, so the content, the metadata and the embedding are replaced and metadata keys you leave out are removed.
+The vector size is read from the vector field of the search index, so the embedding model is not called.
+Atlas stores a vector of the wrong size without complaint, but the search index then skips it, so the document can no longer be found.
+For that reason the store checks the size of every embedding before it writes, and refuses to write at all while it does not know the size because the index cannot be read.
+Once the size is known it is kept, so a later failure to read the index does not stop writes.
+Atlas updates the search index shortly after a write, so a document can take a moment to show up in a search.
+See xref:api/vectordbs.adoc#writing-precomputed-embeddings[Writing User-Supplied Embeddings] for details.
+
 == Metadata Filtering
 
 You can leverage the generic, portable xref:api/vectordbs.adoc#metadata-filters[metadata filters] with MongoDB Atlas as well.

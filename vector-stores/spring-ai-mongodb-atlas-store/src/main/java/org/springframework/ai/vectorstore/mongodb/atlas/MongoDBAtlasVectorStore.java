@@ -27,6 +27,7 @@ import com.mongodb.MongoCommandException;
 import com.mongodb.client.result.DeleteResult;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
@@ -35,6 +36,7 @@ import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.model.EmbeddingUtils;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
+import org.springframework.ai.vectorstore.EmbeddedDocument;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
@@ -152,6 +154,11 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 
 	private static final String INDEX_ALREADY_EXISTS_ERROR_CODE_NAME = "IndexAlreadyExists";
 
+	private static final int INVALID_EMBEDDING_DIMENSION = -1;
+
+	// The name of the vector in MongoDBDocument, before it is moved to the indexed path
+	private static final String EMBEDDING_FIELD_NAME = "embedding";
+
 	private final MongoTemplate mongoTemplate;
 
 	private final String collectionName;
@@ -167,6 +174,9 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 	private final MongoDBAtlasFilterExpressionConverter filterExpressionConverter;
 
 	private final boolean initializeSchema;
+
+	// Cache for vectorDimensions(); only a known size is stored.
+	private volatile int resolvedVectorDimensions = INVALID_EMBEDDING_DIMENSION;
 
 	protected MongoDBAtlasVectorStore(Builder builder) {
 		super(builder);
@@ -198,20 +208,96 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 	}
 
 	private void createSearchIndex() {
+		// Ask the model for the size only when the index is known to be missing. When the
+		// lookup fails the index may well exist, so the failure is not swallowed: startup
+		// fails instead of continuing without having ensured the index.
+		org.bson.Document index = findSearchIndex();
+		if (index != null) {
+			cacheDimensions(index);
+			return;
+		}
 		try {
 			this.mongoTemplate.executeCommand(createSearchIndexDefinition());
 		}
 		catch (UncategorizedMongoDbException e) {
 			Throwable cause = e.getCause();
-			if (cause instanceof MongoCommandException commandException) {
-				// Ignore any IndexAlreadyExists errors
-				if (INDEX_ALREADY_EXISTS_ERROR_CODE == commandException.getCode()
-						|| INDEX_ALREADY_EXISTS_ERROR_CODE_NAME.equals(commandException.getErrorCodeName())) {
-					return;
-				}
+			// Ignore any IndexAlreadyExists errors
+			if (!(cause instanceof MongoCommandException commandException)
+					|| !(INDEX_ALREADY_EXISTS_ERROR_CODE == commandException.getCode()
+							|| INDEX_ALREADY_EXISTS_ERROR_CODE_NAME.equals(commandException.getErrorCodeName()))) {
+				throw e;
 			}
-			throw e;
 		}
+		// Another process may have created the index first with a different size, so
+		// the size is read back instead of assumed.
+		vectorDimensions();
+	}
+
+	/**
+	 * Returns the definition of the vector search index, or {@code null} if there is
+	 * none. Atlas lists a missing collection and a missing index the same way, as no
+	 * result.
+	 */
+	private org.bson.@Nullable Document findSearchIndex() {
+		return this.mongoTemplate.getCollection(this.collectionName)
+			.aggregate(List
+				.of(new org.bson.Document("$listSearchIndexes", new org.bson.Document("name", this.vectorIndexName))))
+			.first();
+	}
+
+	/**
+	 * The size of the stored vectors, as declared by the search index for the vector
+	 * path.
+	 * <p>
+	 * It is read from the index definition, which Atlas lists as soon as the index is
+	 * created, even while it is still building. A failed read, a missing index or an
+	 * index without a vector field for the path leaves the size unknown, and the index is
+	 * read again on the next call. Only a known size is cached, so a store has to be
+	 * rebuilt after the index is recreated with a different size.
+	 * @return the known dimension, or -1
+	 */
+	private int vectorDimensions() {
+		int cached = this.resolvedVectorDimensions;
+		if (cached > 0) {
+			return cached;
+		}
+		try {
+			org.bson.Document index = findSearchIndex();
+			if (index != null) {
+				return cacheDimensions(index);
+			}
+		}
+		catch (RuntimeException ex) {
+			logger.debug("Could not read the vector dimensions from the search index", ex);
+		}
+		return INVALID_EMBEDDING_DIMENSION;
+	}
+
+	private int cacheDimensions(org.bson.Document index) {
+		int dimensions = vectorFieldDimensions(index);
+		if (dimensions > 0) {
+			this.resolvedVectorDimensions = dimensions;
+		}
+		return dimensions;
+	}
+
+	private int vectorFieldDimensions(org.bson.Document index) {
+		org.bson.Document definition = index.get("latestDefinition", org.bson.Document.class);
+		if (definition == null) {
+			return INVALID_EMBEDDING_DIMENSION;
+		}
+		List<?> fields = definition.get("fields", List.class);
+		if (fields == null) {
+			return INVALID_EMBEDDING_DIMENSION;
+		}
+		for (Object field : fields) {
+			if (field instanceof org.bson.Document fieldDefinition && "vector".equals(fieldDefinition.get("type"))
+					&& this.pathName.equals(fieldDefinition.get("path"))
+					&& fieldDefinition.get("numDimensions") instanceof Number numDimensions) {
+				return numDimensions.intValue();
+			}
+		}
+		return INVALID_EMBEDDING_DIMENSION;
 	}
 
 	/**
@@ -270,6 +356,20 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 		}
 	}
 
+	// A dotted path such as "vectors.embedding" names a field nested in a sub-document
+	private static void putAtPath(org.bson.Document document, String path, Object value) {
+		String[] names = path.split("\\.");
+		org.bson.Document current = document;
+		for (int i = 0; i < names.length - 1; i++) {
+			Object child = current.computeIfAbsent(names[i], name -> new org.bson.Document());
+			if (!(child instanceof org.bson.Document childDocument)) {
+				throw new IllegalStateException("The vector path " + path + " clashes with the field " + names[i]);
+			}
+			current = childDocument;
+		}
+		current.put(names[names.length - 1], value);
+	}
+
 	@Override
 	public void doDelete(List<String> idList) {
 		Query query = new Query(org.springframework.data.mongodb.core.query.Criteria.where(ID_FIELD_NAME).in(idList));
@@ -300,12 +400,69 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 	}
 
 	@Override
+	protected boolean supportsUpsert() {
+		return true;
+	}
+
+	@Override
+	protected void doUpsert(List<EmbeddedDocument> entries) {
+		// Atlas stores a vector of the wrong size without complaint and the index then
+		// skips it, so the document can never be found. Replacing an indexed document
+		// with such a vector even drops it from the index. So the whole batch is checked
+		// before anything is written, and nothing is written when the size is unknown.
+		int expected = vectorDimensions();
+		if (expected <= 0) {
+			throw new IllegalStateException(
+					"Could not determine the vector size of search index " + this.vectorIndexName + " on collection "
+							+ this.collectionName + ". Make sure the index exists and can be read.");
+		}
+		for (int i = 0; i < entries.size(); i++) {
+			checkDimensions("Embedding at index " + i, entries.get(i).embedding().length, expected);
+		}
+
+		// Saving a whole document with the same _id replaces it, so omitted metadata keys
+		// are dropped. The document is converted the way add does, then the vector is
+		// moved to the path the index covers: under any other name the replacement would
+		// remove the indexed field and the document could no longer be found.
+		for (EmbeddedDocument entry : entries) {
+			Document document = entry.document();
+			MongoDBDocument mdbDocument = new MongoDBDocument(document.getId(),
+					Objects.requireNonNullElse(document.getText(), ""), document.getMetadata(), entry.embedding());
+			org.bson.Document stored = new org.bson.Document();
+			this.mongoTemplate.getConverter().write(mdbDocument, stored);
+			putAtPath(stored, this.pathName, stored.remove(EMBEDDING_FIELD_NAME));
+			// Through the template, so its write concern applies as it does for add
+			this.mongoTemplate.save(stored, this.collectionName);
+		}
+	}
+
+	@Override
 	public List<Document> doSimilaritySearch(SearchRequest request) {
+		// Convert the filter first, so an invalid one fails before the model is called
+		String nativeFilterExpressions = nativeFilterExpression(request);
+		return searchByEmbedding(this.embeddingModel.embed(request.getQuery()), nativeFilterExpressions, request);
+	}
 
-		String nativeFilterExpressions = (request.getFilterExpression() != null)
+	@Override
+	protected boolean supportsQueryEmbeddingSearch() {
+		return true;
+	}
+
+	@Override
+	protected List<Document> doSimilaritySearch(float[] queryEmbedding, SearchRequest request) {
+		// Atlas rejects a query vector of the wrong size, but only once it runs the
+		// search; checking here gives the same error whenever the size is known.
+		checkDimensions("Query embedding", queryEmbedding.length, vectorDimensions());
+		return searchByEmbedding(queryEmbedding, nativeFilterExpression(request), request);
+	}
+
+	private String nativeFilterExpression(SearchRequest request) {
+		return (request.getFilterExpression() != null)
 				? this.filterExpressionConverter.convertExpression(request.getFilterExpression()) : "";
+	}
 
-		float[] queryEmbedding = this.embeddingModel.embed(request.getQuery());
+	private List<Document> searchByEmbedding(float[] queryEmbedding, String nativeFilterExpressions,
+			SearchRequest request) {
 		var vectorSearch = new VectorSearchAggregation(EmbeddingUtils.toList(queryEmbedding), this.pathName,
 				this.numCandidates, this.vectorIndexName, request.getTopK(), nativeFilterExpressions);
 
@@ -326,10 +483,15 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 	@Override
 	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
 
-		return VectorStoreObservationContext.builder(VectorStoreProvider.MONGODB.value(), operationName)
+		VectorStoreObservationContext.Builder builder = VectorStoreObservationContext
+			.builder(VectorStoreProvider.MONGODB.value(), operationName)
 			.collectionName(this.collectionName)
-			.dimensions(this.embeddingModel.dimensions())
 			.fieldName(this.pathName);
+		int dimensions = vectorDimensions();
+		if (dimensions > 0) {
+			builder.dimensions(dimensions);
+		}
+		return builder;
 	}
 
 	@Override
