@@ -41,6 +41,7 @@ import org.springframework.ai.chat.messages.part.ToolCallPart;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.EmptyRateLimit;
+import org.springframework.ai.chat.metadata.EmptyUsage;
 import org.springframework.ai.chat.metadata.PromptMetadata;
 import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.chat.metadata.Usage;
@@ -96,6 +97,15 @@ public class MessageAggregator {
 
 		AtomicReference<PromptMetadata> metadataPromptMetadataRef = new AtomicReference<>(PromptMetadata.empty());
 		AtomicReference<RateLimit> metadataRateLimitRef = new AtomicReference<>(new EmptyRateLimit());
+		// Provider-reported usage details on the chunk that carries real usage: the
+		// native usage
+		// object (OpenAI CompletionUsage, Anthropic Usage, ...) and the prompt-cache
+		// metrics. They are
+		// reused for the aggregated response so it does not collapse to plain token
+		// counts (gh-6996).
+		AtomicReference<@Nullable Object> metadataNativeUsageRef = new AtomicReference<>();
+		AtomicReference<@Nullable Long> metadataCacheReadTokensRef = new AtomicReference<>();
+		AtomicReference<@Nullable Long> metadataCacheWriteTokensRef = new AtomicReference<>();
 
 		AtomicReference<String> metadataIdRef = new AtomicReference<>("");
 		AtomicReference<String> metadataModelRef = new AtomicReference<>("");
@@ -113,6 +123,9 @@ public class MessageAggregator {
 			metadataUsagePromptTokensRef.set(0);
 			metadataUsageGenerationTokensRef.set(0);
 			metadataUsageTotalTokensRef.set(0);
+			metadataNativeUsageRef.set(null);
+			metadataCacheReadTokensRef.set(null);
+			metadataCacheWriteTokensRef.set(null);
 			metadataPromptMetadataRef.set(PromptMetadata.empty());
 			metadataRateLimitRef.set(new EmptyRateLimit());
 
@@ -156,12 +169,30 @@ public class MessageAggregator {
 			if (chatResponse.getMetadata() != null) {
 				if (chatResponse.getMetadata().getUsage() != null) {
 					Usage usage = chatResponse.getMetadata().getUsage();
-					metadataUsagePromptTokensRef.set(
-							usage.getPromptTokens() > 0 ? usage.getPromptTokens() : metadataUsagePromptTokensRef.get());
-					metadataUsageGenerationTokensRef.set(usage.getCompletionTokens() > 0 ? usage.getCompletionTokens()
-							: metadataUsageGenerationTokensRef.get());
-					metadataUsageTotalTokensRef
-						.set(usage.getTotalTokens() > 0 ? usage.getTotalTokens() : metadataUsageTotalTokensRef.get());
+					if (usage.getPromptTokens() != null) {
+						metadataUsagePromptTokensRef.set(usage.getPromptTokens() > 0 ? usage.getPromptTokens()
+								: metadataUsagePromptTokensRef.get());
+					}
+					if (usage.getCompletionTokens() != null) {
+						metadataUsageGenerationTokensRef.set(usage.getCompletionTokens() > 0
+								? usage.getCompletionTokens() : metadataUsageGenerationTokensRef.get());
+					}
+					if (usage.getTotalTokens() != null) {
+						metadataUsageTotalTokensRef.set(usage.getTotalTokens() > 0 ? usage.getTotalTokens()
+								: metadataUsageTotalTokensRef.get());
+					}
+					// Keep the provider details for the aggregated response so the usage
+					// does not
+					// collapse to bare token counts (gh-6996).
+					if (!(usage instanceof EmptyUsage) && usage.getNativeUsage() != null) {
+						metadataNativeUsageRef.set(usage.getNativeUsage());
+					}
+					if (usage.getCacheReadInputTokens() != null) {
+						metadataCacheReadTokensRef.set(usage.getCacheReadInputTokens());
+					}
+					if (usage.getCacheWriteInputTokens() != null) {
+						metadataCacheWriteTokensRef.set(usage.getCacheWriteInputTokens());
+					}
 				}
 				if (chatResponse.getMetadata().getPromptMetadata() != null
 						&& chatResponse.getMetadata().getPromptMetadata().iterator().hasNext()) {
@@ -188,7 +219,8 @@ public class MessageAggregator {
 		}).doOnComplete(() -> {
 
 			var usage = new DefaultUsage(metadataUsagePromptTokensRef.get(), metadataUsageGenerationTokensRef.get(),
-					metadataUsageTotalTokensRef.get());
+					metadataUsageTotalTokensRef.get(), metadataNativeUsageRef.get(), metadataCacheReadTokensRef.get(),
+					metadataCacheWriteTokensRef.get());
 
 			var chatResponseMetadata = ChatResponseMetadata.builder()
 				.id(metadataIdRef.get())
@@ -296,7 +328,13 @@ public class MessageAggregator {
 	 * @param completionTokens the completion tokens
 	 * @param totalTokens the total tokens
 	 */
-	public record DefaultUsage(Integer promptTokens, Integer completionTokens, Integer totalTokens) implements Usage {
+	public record DefaultUsage(Integer promptTokens, Integer completionTokens, Integer totalTokens,
+			@Nullable Object nativeUsage, @Nullable Long cacheReadInputTokens,
+			@Nullable Long cacheWriteInputTokens) implements Usage {
+
+		public DefaultUsage(Integer promptTokens, Integer completionTokens, Integer totalTokens) {
+			this(promptTokens, completionTokens, totalTokens, null, null, null);
+		}
 
 		@Override
 		public Integer getPromptTokens() {
@@ -315,11 +353,26 @@ public class MessageAggregator {
 
 		@Override
 		public Map<String, Integer> getNativeUsage() {
+			if (nativeUsage() instanceof Map<?, ?>) {
+				@SuppressWarnings("unchecked")
+				Map<String, Integer> preserved = (Map<String, Integer>) nativeUsage();
+				return preserved;
+			}
 			Map<String, Integer> usage = new HashMap<>();
 			usage.put("promptTokens", promptTokens());
 			usage.put("completionTokens", completionTokens());
 			usage.put("totalTokens", totalTokens());
 			return usage;
+		}
+
+		@Override
+		public @Nullable Long getCacheReadInputTokens() {
+			return cacheReadInputTokens();
+		}
+
+		@Override
+		public @Nullable Long getCacheWriteInputTokens() {
+			return cacheWriteInputTokens();
 		}
 
 	}
