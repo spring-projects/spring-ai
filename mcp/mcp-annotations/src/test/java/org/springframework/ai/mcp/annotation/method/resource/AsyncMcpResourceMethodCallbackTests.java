@@ -38,6 +38,7 @@ import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import org.springframework.ai.mcp.annotation.McpClientCapability;
 import org.springframework.ai.mcp.annotation.McpIcon;
 import org.springframework.ai.mcp.annotation.McpMeta;
 import org.springframework.ai.mcp.annotation.McpProgressToken;
@@ -132,6 +133,11 @@ public class AsyncMcpResourceMethodCallbackTests {
 			@Override
 			public CacheScope cacheScope() {
 				return CacheScope.PRIVATE;
+			}
+
+			@Override
+			public McpClientCapability[] requiredCapabilities() {
+				return new McpClientCapability[0];
 			}
 
 			@Override
@@ -496,6 +502,11 @@ public class AsyncMcpResourceMethodCallbackTests {
 			@Override
 			public CacheScope cacheScope() {
 				return CacheScope.PRIVATE;
+			}
+
+			@Override
+			public McpClientCapability[] requiredCapabilities() {
+				return new McpClientCapability[0];
 			}
 
 			@Override

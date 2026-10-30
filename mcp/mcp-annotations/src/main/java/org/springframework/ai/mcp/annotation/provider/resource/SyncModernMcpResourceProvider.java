@@ -43,7 +43,7 @@ import org.springframework.ai.mcp.modern.SyncResourceTemplateEntry;
  * Creates resource and resource template entries for a 2026-07-28 ("modern") MCP server
  * from methods annotated with {@link McpResource}. Each method is served by a
  * {@link SyncModernMcpResourceMethodCallback} wrapped in a {@link McpSyncResource} that
- * requires no client capabilities.
+ * requires the client capabilities listed in {@link McpResource#requiredCapabilities()}.
  *
  * @author Christian Tzolov
  * @since 2.1.0
@@ -87,7 +87,9 @@ public class SyncModernMcpResourceProvider {
 				.resource(resource)
 				.jsonMapper(this.jsonMapper)
 				.build();
-			return SyncResourceEntry.of(McpSchemaConverter.toModern(resource), callback);
+			return SyncResourceEntry.of(McpSchemaConverter.toModern(resource),
+					ModernMethodSupport.requiredCapabilities(entry.method(), annotation.requiredCapabilities()),
+					callback);
 		}).toList();
 		warnIfEmpty(resources);
 		return resources;
@@ -111,7 +113,9 @@ public class SyncModernMcpResourceProvider {
 				.resource(template)
 				.jsonMapper(this.jsonMapper)
 				.build();
-			return SyncResourceTemplateEntry.of(McpSchemaConverter.toModern(template), callback);
+			return SyncResourceTemplateEntry.of(McpSchemaConverter.toModern(template),
+					ModernMethodSupport.requiredCapabilities(entry.method(), annotation.requiredCapabilities()),
+					callback);
 		}).toList();
 		warnIfEmpty(templates);
 		return templates;

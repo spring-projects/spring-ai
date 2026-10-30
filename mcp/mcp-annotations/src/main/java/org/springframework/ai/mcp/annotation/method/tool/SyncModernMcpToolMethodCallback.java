@@ -22,6 +22,7 @@ import java.lang.reflect.UndeclaredThrowableException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.json.McpJsonMapper;
@@ -61,6 +62,9 @@ public final class SyncModernMcpToolMethodCallback extends
 		AbstractSyncMcpToolMethodCallback<McpRequestContext, McpSyncRequestContext> implements McpSyncTool.Handler {
 
 	private final boolean streaming;
+
+	// Set once the runtime capability check has warned about this method.
+	private final AtomicBoolean capabilityWarned = new AtomicBoolean();
 
 	private final @Nullable McpJsonMapper jsonMapper;
 
@@ -144,7 +148,7 @@ public final class SyncModernMcpToolMethodCallback extends
 			}
 			Object result = callMethod(args);
 			if (result instanceof CallToolOutcome outcome) {
-				ModernMethodSupport.checkClientCapabilities(context, outcome);
+				ModernMethodSupport.checkClientCapabilities(context, outcome, this.toolMethod, this.capabilityWarned);
 				return outcome;
 			}
 			return McpSchemaConverter.toModern(processResult(result));

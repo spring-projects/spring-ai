@@ -236,6 +236,31 @@ public CallToolOutcome book(McpModernSyncRequestContext ctx, @McpToolParam(descr
 
 Methods that only need the raw fields can declare the modern request type (`CallToolRequest`, `ReadResourceRequest` or `GetPromptRequest`) instead of the context.
 
+=== Required Client Capabilities
+
+A modern client declares its capabilities in every request, and a server may only ask for input whose capability the request declares.
+Declare the capabilities a method cannot work without in `requiredCapabilities` on `@McpTool`, `@McpResource` or `@McpPrompt`:
+
+[source,java]
+----
+@McpTool(name = "summarize", description = "Asks the client's model for a summary",
+        requiredCapabilities = McpClientCapability.SAMPLING)
+public CallToolOutcome summarize(McpModernSyncRequestContext ctx) {
+    ...
+}
+----
+
+The server checks the attribute before the method runs and answers a request that lacks any of the capabilities with JSON-RPC error `-32021 Missing required client capability`, listing the missing ones.
+The method does not run, and a method that declares `McpSyncNotifier` does not open a stream.
+
+Input the method can do without needs no entry; ask for it only when `ctx.clientCapabilities()` declares it, for example `supportsSampling()`, and fall back otherwise.
+
+A method that returns an `InputRequiredResult` asking for an undeclared capability is still answered with `-32021`, but only after it has run.
+The first time this happens for a method, a warning recommends the attribute.
+A method that declares `requiredCapabilities` but returns a type that cannot carry an `InputRequiredResult` is reported with a warning at startup.
+The attribute covers roots, sampling and form and URL elicitation; a method that depends on an `experimental` or extension capability is registered programmatically with the SDK `ClientCapabilities`.
+The legacy servers ignore the attribute with a warning, as they do for the resource cache hints.
+
 === Runtime Changes and Subscriptions
 
 Each primitive is served by an SDK repository bean: `McpSyncToolRepository`, `McpSyncResourceRepository`, `McpSyncPromptRepository` and `McpSyncCompletionRepository`.
@@ -370,7 +395,8 @@ public class CatalogToolRepository implements McpSyncToolRepository {
 }
 ----
 
-A `McpSyncTool`, `McpSyncPrompt` or `McpSyncResource` can also declare the client capabilities it cannot work without, with `of(definition, requiredCapabilities, handler)`; the server answers a client that did not declare them with `-32021` before the handler runs.
+A `McpSyncTool`, `McpSyncPrompt` or `McpSyncResource` can also declare the client capabilities it cannot work without, with `of(definition, requiredCapabilities, handler)`, the programmatic counterpart of the `requiredCapabilities` attribute; the server answers a client that did not declare them with `-32021` before the handler runs.
+For resources, `SyncResourceEntry.of(resource, requiredCapabilities, handler)` and `SyncResourceTemplateEntry.of(...)` do the same.
 
 === Customizing the Server and the Transport
 

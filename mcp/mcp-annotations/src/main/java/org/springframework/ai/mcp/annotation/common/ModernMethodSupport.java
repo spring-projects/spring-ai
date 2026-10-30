@@ -19,7 +19,11 @@ package org.springframework.ai.mcp.annotation.common;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 
 import io.modelcontextprotocol.common.McpTransportContext;
@@ -40,6 +44,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
 
+import org.springframework.ai.mcp.annotation.McpClientCapability;
 import org.springframework.ai.mcp.annotation.context.DefaultMcpModernSyncRequestContext;
 import org.springframework.ai.mcp.annotation.context.McpAsyncRequestContext;
 import org.springframework.ai.mcp.annotation.context.McpModernSyncRequestContext;
@@ -118,46 +123,77 @@ public final class ModernMethodSupport {
 	}
 
 	/**
+	 * Converts the {@code requiredCapabilities} attribute of a primitive annotation into
+	 * the SDK form that the server checks before the method runs. Warns when the method
+	 * declares capabilities but its return type cannot carry an
+	 * {@code InputRequiredResult}, the only way a modern method can use them.
+	 * @param method the annotated method
+	 * @param required the annotation's {@code requiredCapabilities}
+	 * @return the required capabilities, or {@link ClientCapabilities#NONE} when none are
+	 * declared
+	 * @since 2.1.0
+	 */
+	public static ClientCapabilities requiredCapabilities(Method method, McpClientCapability[] required) {
+		if (required.length == 0) {
+			return ClientCapabilities.NONE;
+		}
+		EnumSet<McpClientCapability> set = EnumSet.copyOf(Arrays.asList(required));
+		if (!method.getReturnType().isAssignableFrom(InputRequiredResult.class) && logger.isWarnEnabled()) {
+			logger.warn("Method " + method.getName() + " in " + method.getDeclaringClass().getName() + " requires "
+					+ set + " but returns " + method.getReturnType().getName()
+					+ ", which cannot carry an InputRequiredResult; return the primitive's outcome type to ask the"
+					+ " client for input");
+		}
+		return capabilities(set);
+	}
+
+	/**
 	 * Enforces the 2026-07-28 rule that a server must not request input the client did
 	 * not declare a capability for. When {@code outcome} is an
 	 * {@code InputRequiredResult}, every input request is checked against
-	 * {@code ctx.clientCapabilities()}; the first missing capability is reported as
-	 * JSON-RPC error {@code -32021} whose data names the capabilities the request needs.
-	 * Any other outcome passes through untouched.
+	 * {@code ctx.clientCapabilities()}; the missing capabilities are reported as JSON-RPC
+	 * error {@code -32021} whose data names them. Any other outcome passes through
+	 * untouched.
+	 * <p>
+	 * This is the safety net for a method that requests input without checking the
+	 * client's capabilities first. The first time it fires for a method, it logs a
+	 * warning recommending the {@code requiredCapabilities} attribute, which refuses the
+	 * call before the method runs.
 	 * @param ctx the request context carrying the client's declared capabilities
 	 * @param outcome the handler's result
+	 * @param method the method that produced the result
+	 * @param warned whether the warning has been logged for this method; owned by the
+	 * callback, so that nothing outlives it
 	 * @throws McpException {@code -32021 Missing required client capability}
 	 * @since 2.1.0
 	 */
-	public static void checkClientCapabilities(McpRequestContext ctx, @Nullable Object outcome) {
+	public static void checkClientCapabilities(McpRequestContext ctx, @Nullable Object outcome, Method method,
+			AtomicBoolean warned) {
 		if (!(outcome instanceof InputRequiredResult inputRequired) || inputRequired.inputRequests() == null) {
 			return;
 		}
 		ClientCapabilities declared = ctx.clientCapabilities();
-		boolean needsForm = false;
-		boolean needsUrl = false;
-		boolean needsSampling = false;
-		boolean needsRoots = false;
+		EnumSet<McpClientCapability> missing = EnumSet.noneOf(McpClientCapability.class);
 		for (InputRequest request : inputRequired.inputRequests().values()) {
 			switch (request.method()) {
 				case McpSchema.METHOD_ELICITATION_CREATE -> {
 					if (isUrlElicitation(request.params())) {
 						if (!declared.supportsElicitationUrl()) {
-							needsUrl = true;
+							missing.add(McpClientCapability.ELICITATION_URL);
 						}
 					}
 					else if (!declared.supportsElicitationForm()) {
-						needsForm = true;
+						missing.add(McpClientCapability.ELICITATION_FORM);
 					}
 				}
 				case McpSchema.METHOD_SAMPLING_CREATE_MESSAGE -> {
 					if (!declared.supportsSampling()) {
-						needsSampling = true;
+						missing.add(McpClientCapability.SAMPLING);
 					}
 				}
 				case McpSchema.METHOD_ROOTS_LIST -> {
 					if (!declared.supportsRoots()) {
-						needsRoots = true;
+						missing.add(McpClientCapability.ROOTS);
 					}
 				}
 				default -> {
@@ -165,22 +201,34 @@ public final class ModernMethodSupport {
 				}
 			}
 		}
-		if (!(needsForm || needsUrl || needsSampling || needsRoots)) {
+		if (missing.isEmpty()) {
 			return;
 		}
-		ClientCapabilities.Builder required = ClientCapabilities.builder();
-		if (needsForm || needsUrl) {
-			required.elicitation(
-					new ClientCapabilities.Elicitation(needsForm ? new ClientCapabilities.Elicitation.Form() : null,
-							needsUrl ? new ClientCapabilities.Elicitation.Url() : null));
+		if (warned.compareAndSet(false, true) && logger.isWarnEnabled()) {
+			logger.warn("Method " + method.getName() + " in " + method.getDeclaringClass().getName() + " requested "
+					+ missing + " from a client that did not declare it, after the method had run. Declare "
+					+ "requiredCapabilities on its annotation to refuse such calls up front, or check "
+					+ "clientCapabilities() before asking for optional input.");
 		}
-		if (needsSampling) {
-			required.sampling();
+		throw McpException.missingClientCapability(capabilities(missing));
+	}
+
+	private static ClientCapabilities capabilities(Set<McpClientCapability> capabilities) {
+		ClientCapabilities.Builder builder = ClientCapabilities.builder();
+		boolean form = capabilities.contains(McpClientCapability.ELICITATION_FORM);
+		boolean url = capabilities.contains(McpClientCapability.ELICITATION_URL);
+		if (form || url) {
+			builder
+				.elicitation(new ClientCapabilities.Elicitation(form ? new ClientCapabilities.Elicitation.Form() : null,
+						url ? new ClientCapabilities.Elicitation.Url() : null));
 		}
-		if (needsRoots) {
-			required.roots();
+		if (capabilities.contains(McpClientCapability.SAMPLING)) {
+			builder.sampling();
 		}
-		throw McpException.missingClientCapability(required.build());
+		if (capabilities.contains(McpClientCapability.ROOTS)) {
+			builder.roots();
+		}
+		return builder.build();
 	}
 
 	/**

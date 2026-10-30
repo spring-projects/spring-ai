@@ -36,6 +36,7 @@ import org.springframework.ai.mcp.annotation.McpMeta;
 import org.springframework.ai.mcp.annotation.McpProgressToken;
 import org.springframework.ai.mcp.annotation.McpResource;
 import org.springframework.ai.mcp.annotation.common.McpPredicates;
+import org.springframework.ai.mcp.annotation.common.McpRequiredCapabilities;
 import org.springframework.ai.mcp.annotation.common.McpResourceCacheHints;
 import org.springframework.ai.mcp.annotation.context.DefaultMcpAsyncRequestContext;
 import org.springframework.ai.mcp.annotation.context.DefaultMcpSyncRequestContext;
@@ -603,6 +604,7 @@ public abstract class AbstractMcpResourceMethodCallback {
 				McpResource annotation = method.getAnnotation(McpResource.class);
 				if (annotation != null) {
 					McpResourceCacheHints.warnIfIgnored(method, annotation);
+					McpRequiredCapabilities.warnIfIgnored(method, "McpResource", annotation.requiredCapabilities());
 				}
 			}
 			return (T) this;

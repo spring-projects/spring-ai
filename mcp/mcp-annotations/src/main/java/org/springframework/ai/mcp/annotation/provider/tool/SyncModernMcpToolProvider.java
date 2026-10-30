@@ -41,8 +41,9 @@ import org.springframework.util.ClassUtils;
 
 /**
  * Creates {@link McpSyncTool}s for a 2026-07-28 ("modern") MCP server from methods
- * annotated with {@link McpTool}. The tools declare no required client capabilities; a
- * method that asks for input checks the client's capabilities at runtime instead.
+ * annotated with {@link McpTool}. Each tool requires the client capabilities listed in
+ * {@link McpTool#requiredCapabilities()}, which the server checks before the method runs.
+ * Input requested beyond them is checked when the method returns it.
  *
  * @author Christian Tzolov
  * @since 2.1.0
@@ -122,6 +123,7 @@ public class SyncModernMcpToolProvider extends AbstractMcpToolProvider {
 				: (methodReturnType == Void.TYPE || methodReturnType == void.class ? ReturnMode.VOID : ReturnMode.TEXT);
 
 		return McpSyncTool.of(tool,
+				ModernMethodSupport.requiredCapabilities(mcpToolMethod, toolJavaAnnotation.requiredCapabilities()),
 				new SyncModernMcpToolMethodCallback(returnMode, mcpToolMethod, toolObject, this.getJsonMapper()));
 	}
 

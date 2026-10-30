@@ -38,7 +38,8 @@ import org.springframework.ai.mcp.modern.McpSchemaConverter;
 /**
  * Creates {@link McpSyncPrompt}s for a 2026-07-28 ("modern") MCP server from methods
  * annotated with {@link McpPrompt}. Each method is served by a
- * {@link SyncModernMcpPromptMethodCallback}.
+ * {@link SyncModernMcpPromptMethodCallback} and requires the client capabilities listed
+ * in {@link McpPrompt#requiredCapabilities()}.
  *
  * @author Christian Tzolov
  * @since 2.1.0
@@ -72,14 +73,17 @@ public class SyncModernMcpPromptProvider {
 				.filter(ModernMethodSupport.filterLegacyContextMethods())
 				.sorted(Comparator.comparing(Method::getName))
 				.map(method -> {
-					var prompt = PromptAdapter.asPrompt(method.getAnnotation(McpPrompt.class), method);
+					McpPrompt annotation = method.getAnnotation(McpPrompt.class);
+					var prompt = PromptAdapter.asPrompt(annotation, method);
 					SyncModernMcpPromptMethodCallback callback = SyncModernMcpPromptMethodCallback.builder()
 						.method(method)
 						.bean(bean)
 						.prompt(prompt)
 						.jsonMapper(this.jsonMapper)
 						.build();
-					return McpSyncPrompt.of(McpSchemaConverter.toModern(prompt), callback);
+					return McpSyncPrompt.of(McpSchemaConverter.toModern(prompt),
+							ModernMethodSupport.requiredCapabilities(method, annotation.requiredCapabilities()),
+							callback);
 				}))
 			.toList();
 
