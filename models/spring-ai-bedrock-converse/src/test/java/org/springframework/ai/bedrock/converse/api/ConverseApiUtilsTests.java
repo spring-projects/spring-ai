@@ -24,6 +24,7 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 import software.amazon.awssdk.core.document.Document;
+import software.amazon.awssdk.services.bedrockruntime.model.TokenUsage;
 
 import org.springframework.ai.util.JsonHelper;
 
@@ -44,6 +45,26 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 class ConverseApiUtilsTests {
 
 	private final JsonHelper jsonHelper = new JsonHelper();
+
+	@Test
+	void totalInputTokensIncludesCachedTokens() {
+		TokenUsage usage = TokenUsage.builder()
+			.inputTokens(50)
+			.outputTokens(20)
+			.totalTokens(1270)
+			.cacheReadInputTokens(1000)
+			.cacheWriteInputTokens(200)
+			.build();
+
+		assertThat(ConverseApiUtils.totalInputTokens(usage)).isEqualTo(50 + 1000 + 200);
+	}
+
+	@Test
+	void totalInputTokensTreatsAbsentCacheTokensAsZero() {
+		TokenUsage usage = TokenUsage.builder().inputTokens(50).outputTokens(20).totalTokens(70).build();
+
+		assertThat(ConverseApiUtils.totalInputTokens(usage)).isEqualTo(50);
+	}
 
 	@Test
 	void convertsScalarValues() {

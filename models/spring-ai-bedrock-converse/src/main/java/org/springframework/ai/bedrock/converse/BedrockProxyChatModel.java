@@ -803,7 +803,8 @@ public class BedrockProxyChatModel implements ChatModel {
 					ChatGenerationMetadata.builder().finishReason(response.stopReasonAsString()).build()));
 		}
 
-		Integer promptTokens = response.usage().inputTokens();
+		Integer inputTokens = response.usage().inputTokens();
+		Integer promptTokens = ConverseApiUtils.totalInputTokens(response.usage());
 		Integer generationTokens = response.usage().outputTokens();
 		int totalTokens = response.usage().totalTokens();
 		Integer cacheReadInputTokens = response.usage().cacheReadInputTokens();
@@ -821,6 +822,9 @@ public class BedrockProxyChatModel implements ChatModel {
 				TokenUsage previousTokenUsage = (TokenUsage) perviousChatResponse.getMetadata()
 					.getUsage()
 					.getNativeUsage();
+				if (previousTokenUsage.inputTokens() != null) {
+					inputTokens += previousTokenUsage.inputTokens();
+				}
 				if (cacheReadInputTokens == null) {
 					cacheReadInputTokens = previousTokenUsage.cacheReadInputTokens();
 				}
@@ -838,7 +842,7 @@ public class BedrockProxyChatModel implements ChatModel {
 
 		// Create native TokenUsage with cache metrics
 		TokenUsage nativeTokenUsage = TokenUsage.builder()
-			.inputTokens(promptTokens)
+			.inputTokens(inputTokens)
 			.outputTokens(generationTokens)
 			.totalTokens(totalTokens)
 			.cacheReadInputTokens(cacheReadInputTokens)

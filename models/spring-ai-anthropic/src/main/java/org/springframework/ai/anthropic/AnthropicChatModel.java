@@ -589,9 +589,10 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			long outputTokens = deltaEvent.usage().outputTokens();
 			Long cacheRead = deltaEvent.usage().cacheReadInputTokens().orElse(null);
 			Long cacheWrite = deltaEvent.usage().cacheCreationInputTokens().orElse(null);
-			Usage usage = new DefaultUsage(Integer.valueOf(Math.toIntExact(inputTokens)),
+			long promptTokens = promptTokens(inputTokens, cacheRead, cacheWrite);
+			Usage usage = new DefaultUsage(Integer.valueOf(Math.toIntExact(promptTokens)),
 					Integer.valueOf(Math.toIntExact(outputTokens)),
-					Integer.valueOf(Math.toIntExact(inputTokens + outputTokens)), deltaEvent.usage(), cacheRead,
+					Integer.valueOf(Math.toIntExact(promptTokens + outputTokens)), deltaEvent.usage(), cacheRead,
 					cacheWrite);
 
 			Usage accumulatedUsage = previousChatResponse != null
@@ -1414,9 +1415,25 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		long outputTokens = usage.outputTokens();
 		Long cacheRead = usage.cacheReadInputTokens().orElse(null);
 		Long cacheWrite = usage.cacheCreationInputTokens().orElse(null);
-		return new DefaultUsage(Integer.valueOf(Math.toIntExact(inputTokens)),
+		long promptTokens = promptTokens(inputTokens, cacheRead, cacheWrite);
+		return new DefaultUsage(Integer.valueOf(Math.toIntExact(promptTokens)),
 				Integer.valueOf(Math.toIntExact(outputTokens)),
-				Integer.valueOf(Math.toIntExact(inputTokens + outputTokens)), usage, cacheRead, cacheWrite);
+				Integer.valueOf(Math.toIntExact(promptTokens + outputTokens)), usage, cacheRead, cacheWrite);
+	}
+
+	/**
+	 * Anthropic reports {@code input_tokens} excluding the tokens read from or written to
+	 * the prompt cache, so the total input is the sum of the three.
+	 * @param inputTokens the uncached input tokens
+	 * @param cacheRead the tokens read from the cache, if reported
+	 * @param cacheWrite the tokens written to the cache, if reported
+	 * @return the total input tokens
+	 * @see <a href=
+	 * "https://docs.claude.com/en/docs/build-with-claude/prompt-caching#tracking-cache-performance">Tracking
+	 * cache performance</a>
+	 */
+	private static long promptTokens(long inputTokens, @Nullable Long cacheRead, @Nullable Long cacheWrite) {
+		return inputTokens + (cacheRead != null ? cacheRead : 0L) + (cacheWrite != null ? cacheWrite : 0L);
 	}
 
 	private @Nullable Citation convertTextCitation(TextCitation textCitation) {
