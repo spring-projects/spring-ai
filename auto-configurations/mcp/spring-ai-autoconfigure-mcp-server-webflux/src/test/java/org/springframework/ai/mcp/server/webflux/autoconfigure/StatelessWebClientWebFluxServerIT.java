@@ -47,6 +47,7 @@ import reactor.netty.http.server.HttpServer;
 import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.chat.model.ToolContext;
+import org.springframework.ai.mcp.McpServerToolFilter;
 import org.springframework.ai.mcp.McpToolUtils;
 import org.springframework.ai.mcp.client.common.autoconfigure.McpClientAutoConfiguration;
 import org.springframework.ai.mcp.client.common.autoconfigure.McpToolCallbackAutoConfiguration;
@@ -232,6 +233,43 @@ public class StatelessWebClientWebFluxServerIT {
 			});
 	}
 
+	@Test
+	void toolFilterHidesToolsFromTheListingOnly() {
+		int serverPort = TestSocketUtils.findAvailableTcpPort();
+
+		this.serverContextRunner.withUserConfiguration(TestMcpServerConfiguration.class, ToolFilterConfiguration.class)
+			.withPropertyValues("spring.ai.mcp.server.streamable-http.mcp-endpoint=/mcp")
+			.run(serverContext -> {
+				assertThat(serverContext).hasSingleBean(McpServerToolFilter.class);
+
+				var httpServer = startHttpServer(serverContext, serverPort);
+				try {
+					this.clientApplicationContext.withUserConfiguration(TestMcpClientConfiguration.class)
+						.withPropertyValues(// @formatter:off
+								"spring.ai.mcp.client.streamable-http.connections.server1.url=http://localhost:" + serverPort,
+								"spring.ai.mcp.client.initialized=false") // @formatter:on
+						.run(clientContext -> {
+							McpSyncClient mcpClient = getMcpSyncClient(clientContext);
+							assertThat(mcpClient.initialize()).isNotNull();
+
+							// The filter hides the calculator tool from the listing
+							assertThat(mcpClient.listTools().tools()).extracting(Tool::name)
+								.containsExactlyInAnyOrder("tool1", "toUpperCase");
+
+							// Hiding only affects the listing: the tool stays callable
+							CallToolResult response = mcpClient.callTool(McpSchema.CallToolRequest.builder("calculator")
+								.arguments(Map.of("expression", "2 + 3"))
+								.build());
+							assertThat(response.isError()).isFalse();
+							assertThat(response.structuredContent()).isNotNull();
+						});
+				}
+				finally {
+					stopHttpServer(httpServer);
+				}
+			});
+	}
+
 	// Helper methods to start and stop the HTTP server
 	private static DisposableServer startHttpServer(ApplicationContext serverContext, int port) {
 		WebFluxStatelessServerTransport mcpStatelessServerTransport = serverContext
@@ -399,6 +437,15 @@ public class StatelessWebClientWebFluxServerIT {
 		}
 
 		record ToUpperCaseRequest(String input) {
+		}
+
+	}
+
+	public static class ToolFilterConfiguration {
+
+		@Bean
+		McpServerToolFilter hideCalculator() {
+			return (transportContext, tool) -> !"calculator".equals(tool.name());
 		}
 
 	}
