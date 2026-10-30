@@ -40,6 +40,8 @@ import org.springframework.ai.google.genai.common.GoogleGenAiThinkingLevel;
 import org.springframework.ai.google.genai.tool.MockWeatherService;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
+import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.util.MimeTypeUtils;
@@ -156,6 +158,74 @@ public class CreateGeminiRequestTests {
 		assertThat(tool.functionDeclarations()).isPresent();
 		assertThat(tool.functionDeclarations().get()).hasSize(1);
 		assertThat(tool.functionDeclarations().get().get(0).name().orElse("")).isEqualTo(TOOL_FUNCTION_NAME);
+	}
+
+	@Test
+	public void createRequestSendsJsonSchemaForToolSchemasWithDefs() {
+		// Schemas with $defs/$ref cannot be converted to the OpenAPI subset. They are
+		// sent untouched via FunctionDeclaration.parametersJsonSchema, which the Gemini
+		// API accepts natively, while plain schemas keep using parameters(Schema).
+		String defsSchema = """
+				{
+				  "$defs": {
+				    "Address": {"type": "object", "properties": {"city": {"type": "string"}}}
+				  },
+				  "type": "object",
+				  "properties": {"home": {"$ref": "#/$defs/Address"}}
+				}
+				""";
+		String plainSchema = """
+				{"type": "object", "properties": {"query": {"type": "string"}}, "required": ["query"]}
+				""";
+
+		var client = GoogleGenAiChatModel.builder().genAiClient(this.genAiClient).build();
+
+		var requestPrompt = new Prompt("Test message content", GoogleGenAiChatOptions.builder()
+			.model("DEFAULT_MODEL")
+			.toolCallbacks(
+					List.of(defsToolCallback("defsTool", defsSchema), defsToolCallback("plainTool", plainSchema)))
+			.build());
+
+		var request = client.createGeminiRequest(requestPrompt);
+
+		assertThat(request.config().tools()).isPresent();
+		var declarations = request.config().tools().get().get(0).functionDeclarations().orElseThrow();
+
+		var defsDeclaration = declarations.stream()
+			.filter(declaration -> declaration.name().orElse("").equals("defsTool"))
+			.findFirst()
+			.orElseThrow();
+		assertThat(defsDeclaration.parametersJsonSchema()).isPresent();
+		assertThat(defsDeclaration.parameters()).isEmpty();
+
+		var plainDeclaration = declarations.stream()
+			.filter(declaration -> declaration.name().orElse("").equals("plainTool"))
+			.findFirst()
+			.orElseThrow();
+		assertThat(plainDeclaration.parameters()).isPresent();
+		assertThat(plainDeclaration.parametersJsonSchema()).isEmpty();
+	}
+
+	private static ToolCallback defsToolCallback(String name, String inputSchema) {
+		return new ToolCallback() {
+
+			private final ToolDefinition toolDefinition = DefaultToolDefinition.builder()
+				.name(name)
+				.description("description of " + name)
+				.inputSchema(inputSchema)
+				.build();
+
+			@Override
+			public ToolDefinition getToolDefinition() {
+				return this.toolDefinition;
+			}
+
+			@Override
+			public String call(String toolInput) {
+				return "Mission accomplished!";
+			}
+
+		};
 	}
 
 	@Test
