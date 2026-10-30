@@ -32,6 +32,7 @@ import org.springframework.ai.chat.observation.ChatModelCompletionObservationHan
 import org.springframework.ai.chat.observation.ChatModelMeterObservationHandler;
 import org.springframework.ai.chat.observation.ChatModelObservationContext;
 import org.springframework.ai.chat.observation.ChatModelPromptContentObservationHandler;
+import org.springframework.ai.chat.observation.ChatObservationContentObservationHandler;
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationContext;
 import org.springframework.ai.image.observation.ImageModelObservationContext;
 import org.springframework.ai.model.observation.ErrorLoggingObservationHandler;
@@ -40,6 +41,7 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -79,6 +81,17 @@ public class ChatObservationAutoConfiguration {
 	@ConditionalOnBean(MeterRegistry.class)
 	ChatModelMeterObservationHandler chatModelMeterObservationHandler(ObjectProvider<MeterRegistry> meterRegistry) {
 		return new ChatModelMeterObservationHandler(meterRegistry.getObject());
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	@ConditionalOnExpression("${spring.ai.chat.observations.include-prompt:false} or ${spring.ai.chat.observations.include-completion:false}")
+	ChatObservationContentObservationHandler chatObservationContentObservationHandler(
+			ChatObservationProperties properties) {
+
+		return new ChatObservationContentObservationHandler(properties.isIncludePrompt(),
+				properties.isIncludeCompletion(), properties.getMaxContentLength(), properties.getKeys().getPrompt(),
+				properties.getKeys().getCompletion());
 	}
 
 	@Configuration(proxyBeanMethods = false)
