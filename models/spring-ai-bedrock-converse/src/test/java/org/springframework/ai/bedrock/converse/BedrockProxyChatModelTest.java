@@ -18,22 +18,32 @@ package org.springframework.ai.bedrock.converse;
 
 import java.net.URL;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+import reactor.core.publisher.Flux;
+import software.amazon.awssdk.core.async.SdkPublisher;
 import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.regions.providers.DefaultAwsRegionProviderChain;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeAsyncClient;
 import software.amazon.awssdk.services.bedrockruntime.BedrockRuntimeClient;
 import software.amazon.awssdk.services.bedrockruntime.model.ContentBlock;
 import software.amazon.awssdk.services.bedrockruntime.model.ConverseRequest;
+import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamOutput;
+import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamRequest;
+import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamResponseHandler;
 import software.amazon.awssdk.services.bedrockruntime.model.Message;
+import software.amazon.awssdk.services.bedrockruntime.model.StopReason;
 import software.amazon.awssdk.services.bedrockruntime.model.SystemContentBlock;
+import software.amazon.awssdk.services.bedrockruntime.model.TokenUsage;
 import software.amazon.awssdk.services.bedrockruntime.model.Tool;
 
 import org.springframework.ai.bedrock.converse.api.BedrockCacheOptions;
@@ -42,6 +52,7 @@ import org.springframework.ai.bedrock.converse.api.BedrockCacheTtl;
 import org.springframework.ai.bedrock.converse.api.MediaFetcher;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.model.tool.ToolCallingManager;
@@ -51,6 +62,8 @@ import org.springframework.util.MimeType;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.when;
 
@@ -69,6 +82,40 @@ class BedrockProxyChatModelTest {
 	private BedrockProxyChatModel newModel() {
 		return new BedrockProxyChatModel(this.syncClient, this.asyncClient, BedrockChatOptions.builder().build(),
 				ObservationRegistry.NOOP, ToolCallingManager.builder().build());
+	}
+
+	@ParameterizedTest
+	@CsvSource(value = { "1000, 200, 1250", "null, null, 50", "1000, null, 1050", "null, 200, 250" },
+			nullValues = "null")
+	void streamingPromptTokensIncludeCachedTokens(Integer cacheRead, Integer cacheWrite, int expectedPromptTokens) {
+		TokenUsage tokenUsage = TokenUsage.builder()
+			.inputTokens(50)
+			.outputTokens(20)
+			.totalTokens(expectedPromptTokens + 20)
+			.cacheReadInputTokens(cacheRead)
+			.cacheWriteInputTokens(cacheWrite)
+			.build();
+		given(this.asyncClient.converseStream(any(ConverseStreamRequest.class),
+				any(ConverseStreamResponseHandler.class)))
+			.willAnswer(invocation -> {
+				ConverseStreamResponseHandler handler = invocation.getArgument(1);
+				handler.onEventStream(SdkPublisher
+					.adapt(Flux.just(ConverseStreamOutput.messageStopBuilder().stopReason(StopReason.END_TURN).build(),
+							ConverseStreamOutput.metadataBuilder().usage(tokenUsage).build())));
+				handler.complete();
+				return CompletableFuture.completedFuture(null);
+			});
+
+		ChatResponse response = newModel().stream(new Prompt("Weather in Paris?")).blockLast();
+
+		assertThat(response).isNotNull();
+		var usage = response.getMetadata().getUsage();
+		assertThat(usage.getPromptTokens()).isEqualTo(expectedPromptTokens);
+		assertThat(usage.getCompletionTokens()).isEqualTo(20);
+		assertThat(usage.getTotalTokens()).isEqualTo(expectedPromptTokens + 20);
+		assertThat(usage.getCacheReadInputTokens()).isEqualTo(cacheRead != null ? cacheRead.longValue() : null);
+		assertThat(usage.getCacheWriteInputTokens()).isEqualTo(cacheWrite != null ? cacheWrite.longValue() : null);
+		assertThat(((TokenUsage) usage.getNativeUsage()).inputTokens()).isEqualTo(50);
 	}
 
 	@Test

@@ -60,6 +60,7 @@ import com.anthropic.models.messages.ToolUseBlock;
 import com.anthropic.models.messages.Usage;
 import com.anthropic.services.async.MessageServiceAsync;
 import com.anthropic.services.blocking.MessageService;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -221,6 +222,39 @@ class AnthropicChatModelTests {
 		assertThat(response.getMetadata().getUsage().getPromptTokens()).isEqualTo(10);
 		assertThat(response.getMetadata().getUsage().getCompletionTokens()).isEqualTo(20);
 		assertThat(response.getMetadata().getUsage().getTotalTokens()).isEqualTo(30);
+	}
+
+	@Test
+	void inputUsageIncludesCachedTokens() {
+		Message mockResponse = createMockMessage("Test", StopReason.END_TURN);
+		given(mockResponse.usage().inputTokens()).willReturn(50L);
+		given(mockResponse.usage().cacheReadInputTokens()).willReturn(Optional.of(1000L));
+		given(mockResponse.usage().cacheCreationInputTokens()).willReturn(Optional.of(200L));
+		given(this.messageService.create(any(MessageCreateParams.class))).willReturn(mockResponse);
+
+		ChatResponse response = this.chatModel.call(new Prompt("Test"));
+
+		var usage = response.getMetadata().getUsage();
+		assertThat(usage.getPromptTokens()).isEqualTo(50 + 1000 + 200);
+		assertThat(usage.getCompletionTokens()).isEqualTo(20);
+		assertThat(usage.getTotalTokens()).isEqualTo(50 + 1000 + 200 + 20);
+		assertThat(usage.getCacheReadInputTokens()).isEqualTo(1000L);
+		assertThat(usage.getCacheWriteInputTokens()).isEqualTo(200L);
+	}
+
+	@Test
+	void streamingInputUsageIncludesCachedTokens() {
+		givenStream(List.of(messageStartEvent(), textStartEvent(0), textDeltaEvent("Hi", 0), contentBlockStopEvent(0),
+				messageDeltaEvent(StopReason.END_TURN, 1000L, 200L)));
+
+		List<ChatResponse> chunks = this.chatModel.stream(new Prompt("Test")).collectList().block();
+
+		var usage = chunks.get(chunks.size() - 1).getMetadata().getUsage();
+		assertThat(usage.getPromptTokens()).isEqualTo(10 + 1000 + 200);
+		assertThat(usage.getCompletionTokens()).isEqualTo(5);
+		assertThat(usage.getTotalTokens()).isEqualTo(10 + 1000 + 200 + 5);
+		assertThat(usage.getCacheReadInputTokens()).isEqualTo(1000L);
+		assertThat(usage.getCacheWriteInputTokens()).isEqualTo(200L);
 	}
 
 	@Test
@@ -799,6 +833,31 @@ class AnthropicChatModelTests {
 		return message;
 	}
 
+	@SuppressWarnings("unchecked")
+	private void givenStream(List<RawMessageStreamEvent> events) {
+		StreamResponse<RawMessageStreamEvent> streamResponse = mock(StreamResponse.class);
+		given(streamResponse.stream()).willReturn(events.stream());
+
+		HttpResponseFor<StreamResponse<RawMessageStreamEvent>> rawResponse = mock(HttpResponseFor.class);
+		given(rawResponse.parse()).willReturn(streamResponse);
+		given(rawResponse.headers()).willReturn(Headers.builder().build());
+
+		given(this.messageServiceWithRawResponse.createStreaming(any(MessageCreateParams.class),
+				any(RequestOptions.class)))
+			.willReturn(rawResponse);
+	}
+
+	private RawMessageStreamEvent textStartEvent(long index) {
+		TextBlock textBlock = mock(TextBlock.class);
+		return RawMessageStreamEvent
+			.ofContentBlockStart(RawContentBlockStartEvent.builder().contentBlock(textBlock).index(index).build());
+	}
+
+	private RawMessageStreamEvent textDeltaEvent(String text, long index) {
+		return RawMessageStreamEvent
+			.ofContentBlockDelta(RawContentBlockDeltaEvent.builder().textDelta(text).index(index).build());
+	}
+
 	private RawMessageStreamEvent messageStartEvent() {
 		Usage usage = mock(Usage.class);
 		given(usage.inputTokens()).willReturn(10L);
@@ -846,6 +905,11 @@ class AnthropicChatModelTests {
 	}
 
 	private RawMessageStreamEvent messageDeltaEvent(StopReason stopReason) {
+		return messageDeltaEvent(stopReason, null, null);
+	}
+
+	private RawMessageStreamEvent messageDeltaEvent(StopReason stopReason, @Nullable Long cacheRead,
+			@Nullable Long cacheWrite) {
 		return RawMessageStreamEvent.ofMessageDelta(RawMessageDeltaEvent.builder()
 			.delta(RawMessageDeltaEvent.Delta.builder()
 				.container(Optional.empty())
@@ -854,8 +918,8 @@ class AnthropicChatModelTests {
 				.stopSequence(Optional.empty())
 				.build())
 			.usage(MessageDeltaUsage.builder()
-				.cacheCreationInputTokens(Optional.empty())
-				.cacheReadInputTokens(Optional.empty())
+				.cacheCreationInputTokens(Optional.ofNullable(cacheWrite))
+				.cacheReadInputTokens(Optional.ofNullable(cacheRead))
 				.inputTokens(Optional.empty())
 				.outputTokens(5L)
 				.outputTokensDetails(Optional.empty())
