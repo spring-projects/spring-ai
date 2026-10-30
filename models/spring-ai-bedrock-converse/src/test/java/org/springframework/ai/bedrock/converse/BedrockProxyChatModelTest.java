@@ -18,6 +18,7 @@ package org.springframework.ai.bedrock.converse;
 
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
@@ -88,6 +89,7 @@ import org.springframework.ai.content.Media;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.util.MimeType;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -151,6 +153,14 @@ class BedrockProxyChatModelTest {
 			mocked.when(DefaultAwsRegionProviderChain::builder).thenReturn(this.awsRegionProviderBuilder);
 			BedrockProxyChatModel.builder().build();
 		}
+	}
+
+	@Test
+	void builderDefaultSocketTimeoutMatchesAutoConfiguration() {
+		// Same default as spring.ai.bedrock.aws.socket-timeout: a non-streaming Converse
+		// call receives no data until the whole response has been generated.
+		assertThat(ReflectionTestUtils.getField(BedrockProxyChatModel.builder(), "socketTimeout"))
+			.isEqualTo(Duration.ofSeconds(90));
 	}
 
 	@Test
