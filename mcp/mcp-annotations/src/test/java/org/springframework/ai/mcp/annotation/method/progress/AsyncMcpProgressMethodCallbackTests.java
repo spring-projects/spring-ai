@@ -93,6 +93,25 @@ public class AsyncMcpProgressMethodCallbackTests {
 	}
 
 	@Test
+	void testNumericProgressTokenWithParams() throws Exception {
+		ValidMethods bean = new ValidMethods();
+		Method method = ValidMethods.class.getMethod("handleProgressWithParams", Double.class, String.class,
+				String.class);
+		ProgressNotification notification = ProgressNotification.builder(42, 0.5).total(100.0).build();
+
+		Function<ProgressNotification, Mono<Void>> callback = AsyncMcpProgressMethodCallback.builder()
+			.method(method)
+			.bean(bean)
+			.build();
+
+		StepVerifier.create(callback.apply(notification)).verifyComplete();
+
+		assertThat(bean.lastProgress).isEqualTo(notification.progress());
+		assertThat(bean.lastProgressToken).isEqualTo("42");
+		assertThat(bean.lastTotal).isEqualTo(String.valueOf(notification.total()));
+	}
+
+	@Test
 	void testValidMethodWithParamsMono() throws Exception {
 		ValidMethods bean = new ValidMethods();
 		Method method = ValidMethods.class.getMethod("handleProgressWithParamsMono", Double.class, String.class,
