@@ -785,6 +785,30 @@ class BedrockProxyChatModelTest {
 	}
 
 	@Test
+	void streamingPromptTokensIncludeCachedTokens() {
+		givenStream(textDelta(0, "15°C"), blockStop(0), messageStop(StopReason.END_TURN),
+				ConverseStreamOutput.metadataBuilder()
+					.usage(TokenUsage.builder()
+						.inputTokens(50)
+						.outputTokens(20)
+						.totalTokens(1270)
+						.cacheReadInputTokens(1000)
+						.cacheWriteInputTokens(200)
+						.build())
+					.build());
+
+		List<ChatResponse> chunks = newModel().stream(new Prompt("Weather in Paris?")).collectList().block();
+
+		var usage = chunks.get(chunks.size() - 1).getMetadata().getUsage();
+		assertThat(usage.getPromptTokens()).isEqualTo(50 + 1000 + 200);
+		assertThat(usage.getCompletionTokens()).isEqualTo(20);
+		assertThat(usage.getTotalTokens()).isEqualTo(1270);
+		assertThat(usage.getCacheReadInputTokens()).isEqualTo(1000L);
+		assertThat(usage.getCacheWriteInputTokens()).isEqualTo(200L);
+		assertThat(((TokenUsage) usage.getNativeUsage()).inputTokens()).isEqualTo(50);
+	}
+
+	@Test
 	void streamingUnsignedReasoningAggregatesToAPartMarkedAsProducedByBedrock() {
 		givenStream(reasoningDelta(0, "The user wants "), reasoningDelta(0, "the weather in Paris."), blockStop(0),
 				textDelta(1, "15°C"), blockStop(1), messageStop(StopReason.END_TURN), usageMetadata());

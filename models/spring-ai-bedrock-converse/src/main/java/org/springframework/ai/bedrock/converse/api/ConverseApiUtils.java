@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 
 import org.jspecify.annotations.Nullable;
 import software.amazon.awssdk.core.document.Document;
+import software.amazon.awssdk.services.bedrockruntime.model.TokenUsage;
 
 /**
  * Amazon Bedrock Converse API utils.
@@ -62,6 +63,22 @@ public final class ConverseApiUtils {
 	public static final String PAYLOAD_REDACTED_CONTENT = "redacted_content";
 
 	private ConverseApiUtils() {
+	}
+
+	/**
+	 * Return the total input tokens of the given usage. Bedrock reports
+	 * {@code inputTokens} excluding the tokens read from or written to the prompt cache,
+	 * so the total input is the sum of the three.
+	 * @param usage the Bedrock token usage
+	 * @return the total input tokens
+	 * @see <a href=
+	 * "https://docs.aws.amazon.com/bedrock/latest/userguide/prompt-caching.html">Prompt
+	 * caching</a>
+	 */
+	public static int totalInputTokens(TokenUsage usage) {
+		Integer cacheRead = usage.cacheReadInputTokens();
+		Integer cacheWrite = usage.cacheWriteInputTokens();
+		return usage.inputTokens() + (cacheRead != null ? cacheRead : 0) + (cacheWrite != null ? cacheWrite : 0);
 	}
 
 	@SuppressWarnings("unchecked")

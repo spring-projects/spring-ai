@@ -198,7 +198,7 @@ public class ConverseChatResponseStream implements ConverseStreamResponseHandler
 
 	@Override
 	public void visitMetadata(ConverseStreamMetadataEvent event) {
-		this.promptTokens.addAndGet(event.usage().inputTokens());
+		this.promptTokens.addAndGet(ConverseApiUtils.totalInputTokens(event.usage()));
 		this.generationTokens.addAndGet(event.usage().outputTokens());
 		this.totalTokens.addAndGet(event.usage().totalTokens());
 		this.mergeNativeTokenUsage(event.usage());
