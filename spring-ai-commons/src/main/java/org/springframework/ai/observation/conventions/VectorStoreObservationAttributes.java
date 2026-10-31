@@ -55,7 +55,7 @@ public enum VectorStoreObservationAttributes {
 	/**
 	 * The database management system (DBMS) product as identified by the client instrumentation.
 	 */
-	DB_SYSTEM("db.system"),
+	DB_SYSTEM("db.system.name"),
 
 	// DB Search
 

@@ -330,6 +330,18 @@ Nothing changes at runtime: the deprecated types keep working until 3.0.0.
 * `getConversationId(context)` moves from `BaseChatMemoryAdvisor` up to `MemoryAdvisor`; `BaseChatMemoryAdvisor` inherits it, so its implementations need no change.
 * `VectorStoreChatMemoryAdvisor` is not deprecated.
 
+=== Vector Store Observations
+
+==== Changed: `db.system` Renamed to `db.system.name`
+
+Vector store observations now report the database system as `db.system.name` instead of `db.system`, which OpenTelemetry has deprecated.
+The values are unchanged.
+
+===== Impact
+
+Dashboards, alerts and queries that filter on `db.system` must switch to `db.system.name`.
+The `DB_SYSTEM` constants keep their names, so code that uses them needs no change.
+
 [[upgrading-to-2-0-2]]
 == Upgrading to 2.0.2
 
