@@ -50,6 +50,7 @@ import com.anthropic.models.messages.DocumentBlockParam;
 import com.anthropic.models.messages.ImageBlockParam;
 import com.anthropic.models.messages.Message;
 import com.anthropic.models.messages.MessageCreateParams;
+import com.anthropic.models.messages.MessageDeltaUsage;
 import com.anthropic.models.messages.RawMessageStreamEvent;
 import com.anthropic.models.messages.RedactedThinkingBlock;
 import com.anthropic.models.messages.RedactedThinkingBlockParam;
@@ -428,11 +429,11 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			@Nullable ChatResponse previousChatResponse, StreamingState streamingState) {
 
 		// -- Event: message_start --
-		// Captures message ID, model, and input tokens from the first event.
+		// Captures message ID, model, and input usage from the first event.
 		if (event.messageStart().isPresent()) {
 			var startEvent = event.messageStart().get();
 			var message = startEvent.message();
-			streamingState.setMessageInfo(message.id(), message.model().asString(), message.usage().inputTokens());
+			streamingState.setMessageInfo(message.id(), message.model().asString(), message.usage());
 			return null;
 		}
 
@@ -548,12 +549,12 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 					streamingState.getThinkingContents());
 			Generation generation = new Generation(assistantMessage, metadata);
 
-			// Combine input tokens from message_start with output tokens from
-			// message_delta
+			// Usage counts are cumulative. Retain input counts when a delta omits them.
+			streamingState.updateUsage(deltaEvent.usage());
 			long inputTokens = streamingState.getInputTokens();
 			long outputTokens = deltaEvent.usage().outputTokens();
-			Long cacheRead = deltaEvent.usage().cacheReadInputTokens().orElse(null);
-			Long cacheWrite = deltaEvent.usage().cacheCreationInputTokens().orElse(null);
+			Long cacheRead = streamingState.getCacheReadInputTokens();
+			Long cacheWrite = streamingState.getCacheCreationInputTokens();
 			long promptTokens = promptTokens(inputTokens, cacheRead, cacheWrite);
 			Usage usage = new DefaultUsage(Integer.valueOf(Math.toIntExact(promptTokens)),
 					Integer.valueOf(Math.toIntExact(outputTokens)),
@@ -1765,6 +1766,10 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 		private final AtomicReference<Long> inputTokens = new AtomicReference<>(0L);
 
+		private final AtomicReference<@Nullable Long> cacheReadInputTokens = new AtomicReference<>();
+
+		private final AtomicReference<@Nullable Long> cacheCreationInputTokens = new AtomicReference<>();
+
 		// Tool calling state - tracks the current tool being streamed
 		private final AtomicReference<String> currentToolId = new AtomicReference<>("");
 
@@ -1788,10 +1793,18 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 		private final AtomicReference<RateLimit> rateLimit = new AtomicReference<>(new EmptyRateLimit());
 
-		void setMessageInfo(String id, String modelName, long tokens) {
+		void setMessageInfo(String id, String modelName, com.anthropic.models.messages.Usage usage) {
 			this.messageId.set(id);
 			this.model.set(modelName);
-			this.inputTokens.set(tokens);
+			this.inputTokens.set(usage.inputTokens());
+			this.cacheReadInputTokens.set(usage.cacheReadInputTokens().orElse(null));
+			this.cacheCreationInputTokens.set(usage.cacheCreationInputTokens().orElse(null));
+		}
+
+		void updateUsage(MessageDeltaUsage usage) {
+			usage.inputTokens().ifPresent(this.inputTokens::set);
+			usage.cacheReadInputTokens().ifPresent(this.cacheReadInputTokens::set);
+			usage.cacheCreationInputTokens().ifPresent(this.cacheCreationInputTokens::set);
 		}
 
 		String getMessageId() {
@@ -1804,6 +1817,14 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 		long getInputTokens() {
 			return this.inputTokens.get();
+		}
+
+		@Nullable Long getCacheReadInputTokens() {
+			return this.cacheReadInputTokens.get();
+		}
+
+		@Nullable Long getCacheCreationInputTokens() {
+			return this.cacheCreationInputTokens.get();
 		}
 
 		void setRateLimit(RateLimit rateLimit) {
