@@ -322,6 +322,8 @@
 		<maven-checkstyle-plugin.version>3.6.0</maven-checkstyle-plugin.version>
 		<maven-checkstyle-plugin.failsOnError>true</maven-checkstyle-plugin.failsOnError>
 		<maven-checkstyle-plugin.failOnViolation>true</maven-checkstyle-plugin.failOnViolation>
+		<!-- 3.7.0 includes optional dependencies in bannedDependencies, breaking the auto-configuration-all-optional profile -->
+		<maven-enforcer-plugin.version>3.6.3</maven-enforcer-plugin.version>
 		<maven-gpg-plugin.version>3.2.8</maven-gpg-plugin.version>
 		<maven-site-plugin.version>4.0.0-M13</maven-site-plugin.version>
 		<puppycrawl-tools-checkstyle.version>9.3</puppycrawl-tools-checkstyle.version>
@@ -381,6 +383,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-enforcer-plugin</artifactId>
+				<version>${maven-enforcer-plugin.version}</version>
 				<executions>
 					<execution>
 						<id>maven-enforcer</id>
