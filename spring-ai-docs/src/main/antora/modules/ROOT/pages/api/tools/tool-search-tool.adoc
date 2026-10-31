@@ -226,24 +226,25 @@ The default index when no explicit `tool-index-type` is configured.
 [[decision-tool-index]]
 === `DecisionToolIndex` (Decision)
 
-Asks a xref:api/decision.adoc[decision model] which tool serves the request, rather than matching keywords or embeddings.
+Uses a xref:api/decision.adoc[decision model] to pick the tool that fits the request, instead of matching keywords or embeddings.
+Best when requests share few words with the tool descriptions, or when returning no tool is better than returning the wrong one.
 
-The interesting difference is being able to say no.
-A Lucene or vector index ranks whatever it holds and hands back a best match.
-Nothing in either mechanism can report that the query is about something the toolset does not do, since there is no position in an index that means "none of these".
-A choice question on its own has the same limit: choice probabilities are a distribution over the options and always sum to one, so something is always ranked first.
-This index therefore asks a second, independent question: does any of these tools serve the request at all?
-Below the applicability threshold the result is empty, and the model is told about no tools instead of a plausible wrong one.
+Keyword and vector indexes always return their closest matches, even when none of the tools can handle the request.
+`DecisionToolIndex` can return nothing.
+For each search, it asks the model two questions in a single call:
 
-Both questions ride in a single prompt, so a search costs one call regardless of how many tools are indexed.
+* Which tool best fits the request?
+* Does any of the tools fit the request at all?
+
+If the model's confidence in the second answer is below the applicability threshold, the search returns no tools.
 
 [source,java]
 ----
 @Bean
 ToolIndex decisionToolIndex(DecisionModel decisionModel) {
     return DecisionToolIndex.builder(decisionModel)
-            .applicabilityThreshold(0.5)   // how sure the model must be that some tool fits
-            .minimumRelevance(0.0)         // drop tools below this share of the selection
+            .applicabilityThreshold(0.5)   // how confident the model must be that some tool fits
+            .minimumRelevance(0.0)         // drop tools with a lower probability
             .build();
 }
 ----
@@ -252,23 +253,28 @@ ToolIndex decisionToolIndex(DecisionModel decisionModel) {
 |====
 | Builder method | Default | Description
 
-| `applicabilityThreshold(double)` | `0.5` | How sure the model must be that some tool fits before any is returned. Raise it where calling the wrong tool is worse than calling none.
-| `minimumRelevance(double)` | `0.0` | Drops tools below this share of the selection distribution. At zero, every tool the model gives any probability is returned in ranked order. A tool with no probability is never returned.
-| `options(DecisionOptions)` | the model's defaults | Options sent with every prompt, such as the model to use.
+| `applicabilityThreshold(double)` | `0.5` | How confident the model must be that at least one tool fits. Below this, no tools are returned. Raise it when calling the wrong tool is worse than calling none.
+| `minimumRelevance(double)` | `0.0` | Lowest probability a tool needs to be returned. At zero, every tool the model gave a probability above zero is returned.
+| `options(DecisionOptions)` | the model's defaults | Options sent with every call to the model, such as the model name.
 |====
 
-Each match carries the tool's share of the selection distribution as its `relevanceScore()`, ordered descending and limited by the request's `maxResults`, ten when the request does not say.
-A tool the model gave no probability is left out, so a clear-cut request can return fewer than `maxResults`.
-A request such as "bill Acme Corp for last month" finds `createInvoice` although it shares no word with the tool, and "what is the capital of Peru" returns no tool at all.
+Each returned tool has the probability the model gave it as its `relevanceScore()`.
+The tool the model picked comes first, and is returned unless its probability is below `minimumRelevance`.
+The other tools follow in order of probability, and only those with a probability above zero are returned.
+So a clear-cut request often returns fewer tools than `maxResults`, which defaults to ten.
 
-A `categoryFilter` on the request narrows the candidates before the question is asked, to tools whose name or summary contains it.
-The category is free text the model writes, so one that matches no tool is ignored rather than hiding every tool.
-A session holding exactly one tool skips the choice and asks only whether that tool applies, and the applicability probability is then the score.
-An unknown or empty session returns an empty result without a call, and a refusal from the model returns no tools.
+For example, "bill Acme Corp for last month" finds `createInvoice` even though it shares no word with the tool, and "what is the capital of Peru" returns no tools.
 
-Every indexed tool becomes an option on the choice, and the whole set is sent on each search.
-That is fine for the tens of tools a session realistically holds and wrong for thousands.
-Past a few hundred tools, put a cheap index in front and let the decision model choose among its shortlist.
+A few more things to know:
+
+* A `categoryFilter` on the request limits the search to tools whose name or description contains it, and is ignored when no tool matches.
+* When the session has only one tool, the model is asked only whether that tool fits, and that probability becomes its score.
+* An unknown or empty session returns no tools without calling the model.
+* If the model refuses to answer, no tools are returned.
+
+All the tools in the session are sent to the model on every search.
+This works well for tens of tools, but the prompt grows with each tool you add.
+For hundreds of tools, shortlist them first with a cheaper index, such as `VectorToolIndex`, and let `DecisionToolIndex` choose from the shortlist.
 
 [[configuration]]
 == Configuration
@@ -496,11 +502,11 @@ A custom `ToolIndex` bean declared by the application always takes precedence â€
 | `0.25`
 
 | `spring.ai.chat.client.tool-search-advisor.decision.applicability-threshold`
-| How sure the decision model must be that some tool fits before any is returned. Applies when `tool-index-type=decision`.
+| How confident the decision model must be that at least one tool fits before any tool is returned. Applies when `tool-index-type=decision`.
 | `0.5`
 
 | `spring.ai.chat.client.tool-search-advisor.decision.minimum-relevance`
-| Lowest share of the selection a tool needs to be returned. Applies when `tool-index-type=decision`.
+| Lowest probability a tool needs to be returned. Applies when `tool-index-type=decision`.
 | `0.0`
 |====
 
@@ -525,7 +531,7 @@ spring.ai.chat.client.tool-search-advisor.enabled=true
 spring.ai.chat.client.tool-search-advisor.tool-index-type=vector
 ----
 
-**Decision model that only returns a tool when it is sure one applies (requires a `DecisionModel` bean):**
+**Decision index that returns tools only when the model is confident one fits (requires a `DecisionModel` bean):**
 
 [source,properties]
 ----

@@ -236,25 +236,25 @@ public class ToolSearchAdvisorProperties {
 	}
 
 	/**
-	 * Settings specific to the decision-model-backed {@code ToolIndex}. Applies only when
-	 * a {@link DecisionToolIndex} bean is auto-configured.
+	 * Settings for the {@link DecisionToolIndex}. Used only when
+	 * {@code tool-index-type=decision}.
 	 *
 	 * @since 2.1.0
 	 */
 	public static class Decision {
 
 		/**
-		 * How sure the model must be that some indexed tool serves the request before any
-		 * tool is returned. Raise it where calling the wrong tool is worse than calling
-		 * none.
+		 * How confident the decision model must be that at least one tool fits the
+		 * request. Below this, no tools are returned. Raise it when calling the wrong
+		 * tool is worse than calling none.
 		 */
 		private double applicabilityThreshold = DecisionToolIndex.Builder.DEFAULT_APPLICABILITY_THRESHOLD;
 
 		/**
-		 * Lowest share of the selection distribution a tool needs to be returned. At
-		 * zero, every tool the model gives any probability is returned in ranked order.
+		 * Lowest probability a tool needs to be returned. At zero, every tool the model
+		 * gave a probability above zero is returned.
 		 */
-		private double minimumRelevance = 0.0d;
+		private double minimumRelevance = DecisionToolIndex.Builder.DEFAULT_MINIMUM_RELEVANCE;
 
 		public double getApplicabilityThreshold() {
 			return this.applicabilityThreshold;
