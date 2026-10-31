@@ -88,6 +88,7 @@ import org.jspecify.annotations.Nullable;
  * @author Soby Chacko
  * @author Ilayaperumal Gopinathan
  * @author Thomas Vitale
+ * @author Deepak Saxena
  * @since 2.0.0
  */
 public final class SpringAiOpenAiHttpClient implements HttpClient {
@@ -415,6 +416,10 @@ public final class SpringAiOpenAiHttpClient implements HttpClient {
 
 		private @Nullable ExecutorService dispatcherExecutorService;
 
+		private @Nullable Integer maxRequests;
+
+		private @Nullable Integer maxRequestsPerHost;
+
 		private @Nullable SSLSocketFactory sslSocketFactory;
 
 		private @Nullable X509TrustManager trustManager;
@@ -469,6 +474,29 @@ public final class SpringAiOpenAiHttpClient implements HttpClient {
 		 */
 		public Builder dispatcherExecutorService(@Nullable ExecutorService dispatcherExecutorService) {
 			this.dispatcherExecutorService = dispatcherExecutorService;
+			return this;
+		}
+
+		/**
+		 * Sets the maximum number of requests the OkHttp dispatcher executes
+		 * concurrently; further requests are queued. When null, OkHttp's default (64) is
+		 * used.
+		 * @since 2.1.0
+		 */
+		public Builder maxRequests(@Nullable Integer maxRequests) {
+			this.maxRequests = maxRequests;
+			return this;
+		}
+
+		/**
+		 * Sets the maximum number of requests the OkHttp dispatcher executes concurrently
+		 * against a single host; further requests to that host are queued. When null, it
+		 * defaults to the {@link #maxRequests(Integer) maxRequests} limit, since requests
+		 * usually all target the same OpenAI endpoint.
+		 * @since 2.1.0
+		 */
+		public Builder maxRequestsPerHost(@Nullable Integer maxRequestsPerHost) {
+			this.maxRequestsPerHost = maxRequestsPerHost;
 			return this;
 		}
 
@@ -589,9 +617,15 @@ public final class SpringAiOpenAiHttpClient implements HttpClient {
 			}
 
 			OkHttpClient okClient = okBuilder.build();
-			// Same-host traffic: raise per-host limit to overall request limit. Matches
-			// the SDK's tuning at the bottom of `OkHttpClient.Builder.build()`.
-			okClient.dispatcher().setMaxRequestsPerHost(okClient.dispatcher().getMaxRequests());
+			Dispatcher dispatcher = okClient.dispatcher();
+			if (this.maxRequests != null) {
+				dispatcher.setMaxRequests(this.maxRequests);
+			}
+			// Same-host traffic: unless set explicitly, raise per-host limit to overall
+			// request limit. Matches the SDK's tuning at the bottom of
+			// `OkHttpClient.Builder.build()`.
+			dispatcher.setMaxRequestsPerHost(
+					(this.maxRequestsPerHost != null) ? this.maxRequestsPerHost : dispatcher.getMaxRequests());
 
 			if (this.meterRegistry != null) {
 				new OkHttpConnectionPoolMetrics(okClient.connectionPool(), this.meterTags).bindTo(this.meterRegistry);
