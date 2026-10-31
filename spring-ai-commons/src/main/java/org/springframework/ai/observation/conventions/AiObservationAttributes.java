@@ -134,7 +134,7 @@ public enum AiObservationAttributes {
 	/**
 	 * The number of input tokens written to a provider-managed cache.
 	 */
-	USAGE_CACHE_WRITE_INPUT_TOKENS("gen_ai.usage.cache_creation.input_tokens"),
+	USAGE_CACHE_WRITE_INPUT_TOKENS("gen_ai.usage.cache_write.input_tokens"),
 	/**
 	 * The number of input tokens served from a provider-managed cache.
 	 */
