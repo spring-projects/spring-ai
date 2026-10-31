@@ -17,6 +17,7 @@
 package org.springframework.ai.mcp.annotation.common;
 
 import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
@@ -78,14 +79,17 @@ public final class McpPredicates {
 		};
 	}
 
+	private static boolean isBidirectionalParameterType(Class<?> paramType) {
+		return McpSyncRequestContext.class.isAssignableFrom(paramType)
+				|| McpAsyncRequestContext.class.isAssignableFrom(paramType)
+				|| McpSyncServerExchange.class.isAssignableFrom(paramType)
+				|| McpAsyncServerExchange.class.isAssignableFrom(paramType);
+	}
+
 	private static boolean hasBidirectionalParameters(Method method) {
 
 		for (Class<?> paramType : method.getParameterTypes()) {
-			if (McpSyncRequestContext.class.isAssignableFrom(paramType)
-					|| McpAsyncRequestContext.class.isAssignableFrom(paramType)
-					|| McpSyncServerExchange.class.isAssignableFrom(paramType)
-					|| McpAsyncServerExchange.class.isAssignableFrom(paramType)) {
-
+			if (isBidirectionalParameterType(paramType)) {
 				return true;
 			}
 		}
@@ -104,6 +108,24 @@ public final class McpPredicates {
 			}
 			return false;
 		};
+	}
+
+	public static void validateStatelessMethodDoesNotUseBidirectionalParameters(Method method, String methodType) {
+		String unsupportedParameters = Arrays.stream(method.getParameterTypes())
+			.filter(McpPredicates::isBidirectionalParameterType)
+			.map(Class::getSimpleName)
+			.distinct()
+			.sorted()
+			.reduce((left, right) -> left + ", " + right)
+			.orElse("");
+
+		if (!unsupportedParameters.isEmpty()) {
+			throw new IllegalStateException(
+					("Stateless %s method '%s.%s' cannot declare session-scoped parameter(s): %s. "
+							+ "Use McpTransportContext or switch to a stateful server.")
+						.formatted(methodType, method.getDeclaringClass().getSimpleName(), method.getName(),
+								unsupportedParameters));
+		}
 	}
 
 }
