@@ -21,6 +21,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -260,8 +261,13 @@ class DecisionToolIndexTests {
 		assertThat(response.toolReferences().get(0).relevanceScore()).isEqualTo(0.93d);
 		DecisionPrompt prompt = this.prompts.get(0);
 		assertThat(prompt.getQuestions().keySet()).containsExactly(DecisionToolIndex.APPLICABILITY_QUESTION);
-		assertThat(((FieldsInput) prompt.getInstructions()).getFields().keySet())
-			.containsExactly(DecisionToolIndex.REQUEST_FIELD, DecisionToolIndex.TOOL_FIELD);
+		Map<String, @Nullable Object> fields = ((FieldsInput) prompt.getInstructions()).getFields();
+		assertThat(fields.keySet()).containsExactly(DecisionToolIndex.REQUEST_FIELD, DecisionToolIndex.TOOL_FIELD);
+		// The tool is sent by name as well as by what it does, as in the catalogue.
+		assertThat(fields.get(DecisionToolIndex.TOOL_FIELD))
+			.isEqualTo(catalogueEntry("currentWeather", "Returns the current weather for a place"));
+		assertThat(((YesNoQuestion) prompt.getQuestions().get(DecisionToolIndex.APPLICABILITY_QUESTION)).getText())
+			.contains("`" + DecisionToolIndex.TOOL_FIELD + "`", "`" + DecisionToolIndex.REQUEST_FIELD + "`");
 	}
 
 	@Test
@@ -367,6 +373,14 @@ class DecisionToolIndexTests {
 		index.search(new ToolSearchRequest(SESSION, "weather", null, null));
 
 		assertThat(this.prompts.get(0).getOptions()).isEqualTo(options);
+	}
+
+	@Test
+	void rejectsAToolWithoutASummary() {
+		// The summary is what the model judges, and a null one would fail only on search.
+		assertThatThrownBy(() -> this.index.indexTool(SESSION, new ToolReference("broken", null, null)))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("summary");
 	}
 
 	@Test
