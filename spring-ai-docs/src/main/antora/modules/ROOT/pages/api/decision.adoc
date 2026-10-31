@@ -180,3 +180,7 @@ See xref:observability/index.adoc#_decision_model[Decision Model observability].
 == Available Implementations
 
 * xref:api/decision/openai-decision.adoc[OpenAI Decisions]
+
+== Usage in Tool Search
+
+The xref:api/tools/tool-search-tool.adoc#decision-tool-index[`DecisionToolIndex`] uses a decision model to pick the tool that serves a request, and to report that none does.
