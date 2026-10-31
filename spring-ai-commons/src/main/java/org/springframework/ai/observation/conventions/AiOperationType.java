@@ -43,7 +43,7 @@ public enum AiOperationType {
 	/**
 	 * AI operation type for embedding.
 	 */
-	EMBEDDING("embedding"),
+	EMBEDDING("embeddings"),
 
 	/**
 	 * AI operation type for tool execution.

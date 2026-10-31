@@ -330,6 +330,18 @@ Nothing changes at runtime: the deprecated types keep working until 3.0.0.
 * `getConversationId(context)` moves from `BaseChatMemoryAdvisor` up to `MemoryAdvisor`; `BaseChatMemoryAdvisor` inherits it, so its implementations need no change.
 * `VectorStoreChatMemoryAdvisor` is not deprecated.
 
+=== Observability
+
+==== Changed: Embedding Model Operation Name
+
+Embedding model observations now set `gen_ai.operation.name` to `embeddings` instead of `embedding`, the value defined by the OpenTelemetry GenAI semantic conventions.
+The contextual name of these observations, which is also the span name, changes accordingly from `embedding <model>` to `embeddings <model>`.
+
+===== Impact
+
+* Update queries, dashboards and alerts that match `gen_ai.operation.name=embedding` or spans named `embedding <model>`.
+* The `AiOperationType.EMBEDDING` constant keeps its name; only its value changes.
+
 [[upgrading-to-2-0-2]]
 == Upgrading to 2.0.2
 
