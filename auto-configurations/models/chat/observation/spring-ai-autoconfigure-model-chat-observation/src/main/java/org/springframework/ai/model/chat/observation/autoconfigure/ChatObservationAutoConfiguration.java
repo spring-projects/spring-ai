@@ -32,6 +32,7 @@ import org.springframework.ai.chat.observation.ChatModelCompletionObservationHan
 import org.springframework.ai.chat.observation.ChatModelMeterObservationHandler;
 import org.springframework.ai.chat.observation.ChatModelObservationContext;
 import org.springframework.ai.chat.observation.ChatModelPromptContentObservationHandler;
+import org.springframework.ai.chat.observation.ChatModelToolDefinitionsObservationFilter;
 import org.springframework.ai.embedding.observation.EmbeddingModelObservationContext;
 import org.springframework.ai.image.observation.ImageModelObservationContext;
 import org.springframework.ai.model.observation.ErrorLoggingObservationHandler;
@@ -79,6 +80,14 @@ public class ChatObservationAutoConfiguration {
 	@ConditionalOnBean(MeterRegistry.class)
 	ChatModelMeterObservationHandler chatModelMeterObservationHandler(ObjectProvider<MeterRegistry> meterRegistry) {
 		return new ChatModelMeterObservationHandler(meterRegistry.getObject());
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	@ConditionalOnProperty(prefix = ChatObservationProperties.CONFIG_PREFIX, name = "include-tool-definitions",
+			havingValue = "true")
+	ChatModelToolDefinitionsObservationFilter chatModelToolDefinitionsObservationFilter() {
+		return new ChatModelToolDefinitionsObservationFilter();
 	}
 
 	@Configuration(proxyBeanMethods = false)

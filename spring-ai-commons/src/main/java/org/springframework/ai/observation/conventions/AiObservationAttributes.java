@@ -75,6 +75,10 @@ public enum AiObservationAttributes {
 	 */
 	REQUEST_TOOL_NAMES("spring.ai.model.request.tool.names"),
 	/**
+	 * The definitions of the tools provided to the model in the request.
+	 */
+	REQUEST_TOOL_DEFINITIONS("gen_ai.tool.definitions"),
+	/**
 	 * The top_k sampling setting for the model request.
 	 */
 	REQUEST_TOP_K("gen_ai.request.top_k"),

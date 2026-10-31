@@ -124,10 +124,23 @@ IMPORTANT: The `gen_ai.client.token.usage` metrics measures number of input and 
 |`gen_ai.usage.output_tokens` | The number of tokens used in the model output (completion).
 |`gen_ai.usage.total_tokens` | The total number of tokens used in the model exchange.
 |`spring.ai.model.request.tool.names` | List of tool definitions provided to the model in the request.
+|`gen_ai.tool.definitions` | The definitions of the tools provided to the model in the request, as a JSON array following the https://github.com/open-telemetry/semantic-conventions-genai/blob/main/model/gen-ai/gen-ai-tool-definitions.json[OpenTelemetry tool definitions schema]. Only present when `spring.ai.chat.observations.include-tool-definitions` is `true`.
 |===
 
 NOTE: For measuring user tokens, the previous table lists the values present in an observation trace.
 Use the metric name `gen_ai.client.token.usage` that is provided by the `ChatModel`.
+
+=== Chat Tool Definitions
+
+The definitions of the tools provided to the model, with their names, descriptions and parameter schemas, can be large.
+For that reason, they are not exported by default.
+
+[cols="6,3,1", stripes=even]
+|====
+| Property | Description | Default
+
+| `spring.ai.chat.observations.include-tool-definitions` | Include the tool definitions in observations, as the `gen_ai.tool.definitions` attribute. `true` or `false` | `false`
+|====
 
 === Chat Prompt and Completion Data
 
