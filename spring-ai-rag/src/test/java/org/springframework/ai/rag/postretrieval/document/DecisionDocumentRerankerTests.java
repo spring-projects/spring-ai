@@ -17,6 +17,7 @@
 package org.springframework.ai.rag.postretrieval.document;
 
 import java.net.URI;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +35,7 @@ import org.junit.jupiter.api.condition.EnabledForJreRange;
 import org.junit.jupiter.api.condition.JRE;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import org.springframework.ai.chat.messages.part.MediaPart;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.decision.DecisionModel;
 import org.springframework.ai.decision.DecisionOptions;
@@ -230,19 +232,56 @@ class DecisionDocumentRerankerTests {
 	}
 
 	@Test
-	void aDocumentWithoutTextIsSentAsAnEmptyPassage() {
+	void aDocumentWithMediaIsSentAsAContentPart() {
 		List<DecisionPrompt> prompts = new CopyOnWriteArrayList<>();
 		DecisionModel recording = prompt -> {
 			prompts.add(prompt);
 			return yes(prompt, 0.5d);
 		};
+		Media media = Media.builder().mimeType(MimeTypeUtils.IMAGE_PNG).data(URI.create("http://image")).build();
 
-		DecisionDocumentReranker.builder(recording).build().process(this.query, List.of(mediaOnly("doc-1")));
+		DecisionDocumentReranker.builder(recording)
+			.build()
+			.process(this.query, List.of(Document.builder().id("doc-1").media(media).build()));
 
 		assertThat(prompts).singleElement()
 			.extracting(DecisionPrompt::getInstructions)
-			.isInstanceOfSatisfying(FieldsInput.class,
-					input -> assertThat(input.getFields()).containsEntry(DecisionDocumentReranker.PASSAGE_FIELD, ""));
+			.isInstanceOfSatisfying(FieldsInput.class, input -> assertThat(input.getFields())
+				.containsEntry(DecisionDocumentReranker.PASSAGE_FIELD, List.of(MediaPart.of(media))));
+	}
+
+	@Test
+	void aTimedOutBatchKeepsTheRemainingDocumentsUnscoredRatherThanHangingTheRequest(CapturedOutput output)
+			throws Exception {
+		CountDownLatch released = new CountDownLatch(1);
+		DecisionModel slowForSeven = prompt -> {
+			if (indexOf(prompt) == 7) {
+				try {
+					released.await(10, TimeUnit.SECONDS);
+				}
+				catch (InterruptedException ex) {
+					Thread.currentThread().interrupt();
+				}
+			}
+			return yes(prompt, indexOf(prompt) / 10.0d);
+		};
+		// A second is generous enough for the two fast calls to land on a cold pool even
+		// on a busy runner; the slow one still outlasts it by far.
+		try {
+			long start = System.nanoTime();
+			List<Document> reranked = DecisionDocumentReranker.builder(slowForSeven)
+				.timeout(Duration.ofSeconds(1))
+				.build()
+				.process(this.query, documents(1, 7, 9));
+
+			assertThat(Duration.ofNanos(System.nanoTime() - start)).isLessThan(Duration.ofSeconds(8));
+			assertThat(reranked).extracting(Document::getId).containsExactly("doc-9", "doc-1", "doc-7");
+			assertThat(reranked.get(2).getMetadata()).doesNotContainKey(DecisionDocumentReranker.SCORE_METADATA_KEY);
+			assertThat(output).contains("Could not score 1 of 3 documents").contains("timed out after 1000 ms");
+		}
+		finally {
+			released.countDown();
+		}
 	}
 
 	@Test
@@ -373,6 +412,9 @@ class DecisionDocumentRerankerTests {
 			.isInstanceOf(IllegalArgumentException.class);
 		assertThatThrownBy(() -> DecisionDocumentReranker.builder(model).concurrency(0))
 			.isInstanceOf(IllegalArgumentException.class);
+		assertThatThrownBy(() -> DecisionDocumentReranker.builder(model).timeout(Duration.ZERO))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("timeout");
 	}
 
 	private static DecisionModel scoring(DoubleFunction<Double> scoreForIndex) {
@@ -412,11 +454,6 @@ class DecisionDocumentRerankerTests {
 		catch (ReflectiveOperationException ex) {
 			throw new IllegalStateException(ex);
 		}
-	}
-
-	private static Document mediaOnly(String id) {
-		Media media = Media.builder().mimeType(MimeTypeUtils.IMAGE_PNG).data(URI.create("http://image")).build();
-		return Document.builder().id(id).media(media).build();
 	}
 
 	private static List<Document> documents(int... ids) {

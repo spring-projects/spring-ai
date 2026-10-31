@@ -16,6 +16,7 @@
 
 package org.springframework.ai.rag.postretrieval.document;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
@@ -37,25 +38,25 @@ import org.springframework.util.Assert;
 
 /**
  * Reorders retrieved documents by asking a {@link DecisionModel}, one document at a time,
- * whether each could actually answer the query.
+ * whether each one answers the query.
  *
  * <p>
- * Vector search ranks by embedding proximity, which is a good way to find candidates and
- * a poor way to order them: a passage can be about the right subject and still not
- * contain the answer. Asking a direct question about each candidate is a different
- * measurement, and it is the one the final ordering should use.
+ * Vector search ranks by embedding distance. That is a good way to find candidates and a
+ * poor way to order them, because a passage can be on the right subject and still not
+ * contain the answer. Asking the model directly whether each candidate answers the query
+ * measures something else, and that is what the final order should be based on.
  *
  * <p>
- * This is one call per document, since the pairs are independent. The calls are fanned
- * out concurrently; {@link Builder#concurrency(int)} or
- * {@link Builder#executor(Executor)} controls how widely.
+ * Each document is judged in its own call, because the query and passage pairs are
+ * independent. The calls run concurrently; {@link Builder#concurrency(int)} or
+ * {@link Builder#executor(Executor)} controls how many at once.
  *
  * <p>
  * Each scored document carries its score under {@link #SCORE_METADATA_KEY}, so a later
- * stage or a log can see why the order came out as it did. A document whose call failed,
- * or that the model refused to judge, is kept rather than dropped, because a failure is
- * not evidence about relevance. It is placed after every document this reranker actually
- * scored, so a failure can never evict a known-good passage under {@code topK}.
+ * stage or a log can see why the order came out this way. A document whose call failed or
+ * timed out, or that the model refused to judge, is kept rather than dropped, because a
+ * failure says nothing about relevance. It is placed after all the scored documents, so a
+ * failure can never push a known-good passage out under {@code topK}.
  *
  * <pre>{@code
  * RetrievalAugmentationAdvisor.builder()
@@ -101,15 +102,19 @@ public final class DecisionDocumentReranker implements DocumentPostProcessor {
 
 	private final double minimumScore;
 
+	private final Duration timeout;
+
 	private final Executor executor;
 
 	private DecisionDocumentReranker(DecisionModel decisionModel, YesNoQuestion question,
-			@Nullable DecisionOptions options, @Nullable Integer topK, double minimumScore, Executor executor) {
+			@Nullable DecisionOptions options, @Nullable Integer topK, double minimumScore, Duration timeout,
+			Executor executor) {
 		this.decisionModel = decisionModel;
 		this.question = question;
 		this.options = options;
 		this.topK = topK;
 		this.minimumScore = minimumScore;
+		this.timeout = timeout;
 		this.executor = executor;
 	}
 
@@ -122,30 +127,38 @@ public final class DecisionDocumentReranker implements DocumentPostProcessor {
 		}
 
 		List<DecisionFanOut.Outcome> outcomes = DecisionFanOut.judge(this.decisionModel, query, documents,
-				Map.of(QUESTION_NAME, this.question), this.options, this.executor);
+				Map.of(QUESTION_NAME, this.question), this.options, this.timeout, this.executor);
 
 		List<Scored> scored = new ArrayList<>(documents.size());
 		int unscored = 0;
 		DecisionFanOut.Outcome firstMiss = null;
+		String firstMissReason = null;
 		for (int i = 0; i < documents.size(); i++) {
 			DecisionFanOut.Outcome outcome = outcomes.get(i);
-			// A failed call says nothing about the document, so it is recorded as unknown
-			// rather than as zero, which would read as "judged irrelevant". A refusal
-			// counts the same: the model declined to judge, it did not judge against.
-			DecisionResponse response = outcome.response();
-			Double score = (response != null) ? response.getYesNo(QUESTION_NAME).getProbability() : null;
-			if (score == null) {
+			// A failed call says nothing about the document, so its score is recorded as
+			// unknown rather than zero, which would look like "judged irrelevant". A
+			// refusal counts the same way: the model declined to judge, it did not judge
+			// against.
+			String unanswered = outcome.unanswered(QUESTION_NAME);
+			Double score = null;
+			if (unanswered == null) {
+				DecisionResponse response = outcome.response();
+				Assert.state(response != null, "an answered outcome has a response");
+				score = response.getYesNo(QUESTION_NAME).getProbability();
+			}
+			else {
 				unscored++;
 				if (firstMiss == null) {
 					firstMiss = outcome;
+					firstMissReason = unanswered;
 				}
 			}
 			scored.add(new Scored(i, documents.get(i), score));
 		}
 		if (firstMiss != null) {
-			// Not silently: when every call fails this is the retriever's order again.
+			// Say so: when every call fails, the result is just the retriever's order.
 			logger.warn("Could not score {} of {} documents, keeping them unscored after the scored ones: {}", unscored,
-					documents.size(), firstMiss.reason());
+					documents.size(), firstMissReason);
 			if (firstMiss.failure() != null) {
 				logger.debug("The first decision call that failed", firstMiss.failure());
 			}
@@ -155,10 +168,10 @@ public final class DecisionDocumentReranker implements DocumentPostProcessor {
 			.filter(entry -> entry.score == null || entry.score >= this.minimumScore)
 			.toList();
 
-		// Scored documents first, in descending order; then the unscored ones, in the
-		// order they arrived in. An unscored document is kept, but it does not outrank
-		// one this reranker actually judged, so under topK it can never evict a
-		// known-good passage.
+		// Scored documents first, highest score first; then the unscored ones, in the
+		// order they arrived. An unscored document is kept, but it never outranks one
+		// the model actually judged, so under topK it can never push a known-good
+		// passage out.
 		List<Document> reordered = new ArrayList<>(kept.size());
 		kept.stream()
 			.filter(entry -> entry.score() != null)
@@ -183,14 +196,14 @@ public final class DecisionDocumentReranker implements DocumentPostProcessor {
 	private record Scored(int originalIndex, Document document, @Nullable Double score) {
 
 		/**
-		 * A copy carrying the score, rather than a write into the retriever's own
-		 * instance: a document dropped by {@code topK} must not be left wearing a score,
-		 * and a cached document reused across two runs must not keep the first run's.
+		 * Returns a copy with the score instead of writing into the retriever's own
+		 * document: a document dropped by {@code topK} must not keep a score, and a
+		 * cached document reused in a later run must not keep the earlier score.
 		 *
 		 * <p>
-		 * The map is rebuilt explicitly because {@link Document#mutate()} hands the
-		 * builder the <em>same</em> metadata map, so {@code metadata(key, value)} would
-		 * write straight back into the original document.
+		 * The metadata map is copied by hand because {@link Document#mutate()} gives the
+		 * builder the same map instance, so {@code metadata(key, value)} would write into
+		 * the original document.
 		 */
 		Document withScoreMetadata() {
 			Assert.state(this.score != null, "only scored documents carry a score");
@@ -211,6 +224,9 @@ public final class DecisionDocumentReranker implements DocumentPostProcessor {
 		/** How many documents are judged at once unless an executor is given. */
 		public static final int DEFAULT_CONCURRENCY = 4;
 
+		/** The timeout unless one is given. */
+		public static final Duration DEFAULT_TIMEOUT = DecisionFanOut.DEFAULT_TIMEOUT;
+
 		private final DecisionModel decisionModel;
 
 		private YesNoQuestion question = DEFAULT_QUESTION;
@@ -220,6 +236,8 @@ public final class DecisionDocumentReranker implements DocumentPostProcessor {
 		private @Nullable Integer topK;
 
 		private double minimumScore = 0.0d;
+
+		private Duration timeout = DEFAULT_TIMEOUT;
 
 		private int concurrency = DEFAULT_CONCURRENCY;
 
@@ -265,8 +283,8 @@ public final class DecisionDocumentReranker implements DocumentPostProcessor {
 		}
 
 		/**
-		 * Drops documents scoring below a bar. Left at zero, nothing is dropped and this
-		 * is purely a reordering. Unscored documents are never dropped by it.
+		 * Drops documents whose score is below this value. At zero nothing is dropped and
+		 * the reranker only reorders. Unscored documents are never dropped by it.
 		 * @param minimumScore the lowest score worth keeping, between 0 and 1
 		 * @return this builder
 		 */
@@ -277,10 +295,27 @@ public final class DecisionDocumentReranker implements DocumentPostProcessor {
 		}
 
 		/**
-		 * How many documents to judge at once. The limit belongs to this instance, so it
-		 * caps the calls in flight across all requests that pass through it, which is
-		 * what a provider rate limit needs. Ignored when an {@link #executor(Executor)
-		 * executor} is given, which then sets its own limit.
+		 * How long one request waits for all its documents to be judged, no matter how
+		 * many there are. Documents still unjudged when the time is up are kept unscored,
+		 * after the scored ones. Calls already running finish; calls still waiting in the
+		 * queue are skipped. If you supply your own {@link #executor(Executor) executor},
+		 * it must not block when a call is submitted, because that blocked time cannot be
+		 * cut short.
+		 * @param timeout the timeout, positive
+		 * @return this builder
+		 */
+		public Builder timeout(Duration timeout) {
+			Assert.notNull(timeout, "timeout must not be null");
+			Assert.isTrue(!timeout.isNegative() && !timeout.isZero(), "timeout must be positive");
+			this.timeout = timeout;
+			return this;
+		}
+
+		/**
+		 * How many documents to judge at the same time. The limit is per instance, so it
+		 * caps the calls in flight across all requests going through this reranker, which
+		 * is what a provider rate limit needs. Ignored when an {@link #executor(Executor)
+		 * executor} is given; the executor then sets its own limit.
 		 * @param concurrency the number of calls in flight together, at least 1
 		 * @return this builder
 		 */
@@ -319,7 +354,7 @@ public final class DecisionDocumentReranker implements DocumentPostProcessor {
 			Executor executor = (this.executor != null) ? this.executor
 					: DecisionFanOut.executor(this.concurrency, this.virtualThreads, "decision-rerank-");
 			return new DecisionDocumentReranker(this.decisionModel, this.question, this.options, this.topK,
-					this.minimumScore, executor);
+					this.minimumScore, this.timeout, executor);
 		}
 
 	}

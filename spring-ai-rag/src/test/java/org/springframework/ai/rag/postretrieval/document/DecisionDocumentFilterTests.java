@@ -17,21 +17,26 @@
 package org.springframework.ai.rag.postretrieval.document;
 
 import java.net.URI;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.function.IntFunction;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import org.springframework.ai.chat.messages.part.MediaPart;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.decision.DecisionModel;
 import org.springframework.ai.decision.DecisionOptions;
 import org.springframework.ai.decision.DecisionPrompt;
 import org.springframework.ai.decision.DecisionResponse;
 import org.springframework.ai.decision.answer.RefusalAnswer;
+import org.springframework.ai.decision.answer.ScoreAnswer;
 import org.springframework.ai.decision.answer.YesNoAnswer;
 import org.springframework.ai.decision.input.FieldsInput;
 import org.springframework.ai.document.Document;
@@ -129,7 +134,7 @@ class DecisionDocumentFilterTests {
 	}
 
 	@Test
-	void aRefusedQuestionPassesTheDocumentThroughRatherThanFailingTheRequest(CapturedOutput output) {
+	void aRefusedInjectionQuestionLeavesTheDocumentUnscreened(CapturedOutput output) {
 		DecisionModel model = prompt -> DecisionResponse.builder(prompt)
 			.answer(DecisionDocumentFilter.IS_RELEVANT, yes(0.9d))
 			.answer(DecisionDocumentFilter.CONTAINS_ANSWER_EVIDENCE, yes(0.9d))
@@ -141,7 +146,97 @@ class DecisionDocumentFilterTests {
 
 		assertThat(kept).extracting(Document::getId).containsExactly("doc-1");
 		assertThat(kept.get(0).getMetadata()).doesNotContainKey(DecisionDocumentFilter.CLASSIFICATION_METADATA_KEY);
-		assertThat(output).contains("refused 'contains_prompt_injection': policy");
+		assertThat(output).contains("Could not screen 1 of 1 documents, passing them through unscreened")
+			.contains("refused 'contains_prompt_injection': policy");
+	}
+
+	@Test
+	void aConclusiveInjectionAnswerWinsOverARefusalElsewhereInTheResponse() {
+		// Providers map refusals per answer, so one response can flag an injection and
+		// refuse an unrelated question. The injection answer must still exclude it.
+		DecisionModel model = prompt -> DecisionResponse.builder(prompt)
+			.answer(DecisionDocumentFilter.IS_RELEVANT, yes(0.9d))
+			.answer(DecisionDocumentFilter.CONTAINS_ANSWER_EVIDENCE, yes(0.9d))
+			.answer(DecisionDocumentFilter.CONTRADICTS_QUERY_PREMISE, RefusalAnswer.builder().reason("policy").build())
+			.answer(DecisionDocumentFilter.CONTAINS_PROMPT_INJECTION, yes(0.99d))
+			.build();
+
+		List<Document> kept = DecisionDocumentFilter.builder(model).build().process(this.query, documents(1));
+
+		assertThat(kept).isEmpty();
+	}
+
+	@Test
+	void aPassageClearedOfInjectionIsKeptWhenAnotherQuestionIsRefused(CapturedOutput output) {
+		// The reverse case: the screen ran and cleared the passage, so even failing
+		// closed must not withhold it over a refusal of a usefulness question.
+		DecisionModel model = prompt -> DecisionResponse.builder(prompt)
+			.answer(DecisionDocumentFilter.IS_RELEVANT, yes(0.9d))
+			.answer(DecisionDocumentFilter.CONTAINS_ANSWER_EVIDENCE, yes(0.9d))
+			.answer(DecisionDocumentFilter.CONTRADICTS_QUERY_PREMISE, RefusalAnswer.builder().reason("policy").build())
+			.answer(DecisionDocumentFilter.CONTAINS_PROMPT_INJECTION, yes(0.01d))
+			.build();
+
+		List<Document> kept = DecisionDocumentFilter.builder(model)
+			.failClosed(true)
+			.build()
+			.process(this.query, documents(1));
+
+		assertThat(kept).extracting(Document::getId).containsExactly("doc-1");
+		assertThat(kept.get(0).getMetadata()).doesNotContainKey(DecisionDocumentFilter.CLASSIFICATION_METADATA_KEY);
+		assertThat(output).doesNotContain("Could not screen")
+			.contains("Screened 1 of 1 documents for prompt injection but could not classify them")
+			.contains("refused 'contradicts_query_premise': policy");
+	}
+
+	@Test
+	void aConclusiveContradictionKeepsItsTagWhenALaterQuestionIsRefused(CapturedOutput output) {
+		// The policy is applied in order, so a refusal only matters once it is reached.
+		DecisionModel model = prompt -> DecisionResponse.builder(prompt)
+			.answer(DecisionDocumentFilter.IS_RELEVANT, RefusalAnswer.builder().reason("policy").build())
+			.answer(DecisionDocumentFilter.CONTAINS_ANSWER_EVIDENCE, yes(0.9d))
+			.answer(DecisionDocumentFilter.CONTRADICTS_QUERY_PREMISE, yes(0.9d))
+			.answer(DecisionDocumentFilter.CONTAINS_PROMPT_INJECTION, yes(0.0d))
+			.build();
+
+		List<Document> kept = DecisionDocumentFilter.builder(model).build().process(this.query, documents(1));
+
+		assertThat(kept).extracting(Document::getId).containsExactly("doc-1");
+		assertThat(kept.get(0).getMetadata()).containsEntry(DecisionDocumentFilter.CLASSIFICATION_METADATA_KEY,
+				"CONFLICTING");
+		assertThat(output).doesNotContain("could not classify");
+	}
+
+	@Test
+	void anOffTopicPassageIsExcludedEvenWhenTheEvidenceQuestionIsRefused() {
+		// A refusal must not make the model more lenient than any answer would have.
+		DecisionModel model = prompt -> DecisionResponse.builder(prompt)
+			.answer(DecisionDocumentFilter.IS_RELEVANT, yes(0.01d))
+			.answer(DecisionDocumentFilter.CONTAINS_ANSWER_EVIDENCE, RefusalAnswer.builder().reason("policy").build())
+			.answer(DecisionDocumentFilter.CONTRADICTS_QUERY_PREMISE, yes(0.0d))
+			.answer(DecisionDocumentFilter.CONTAINS_PROMPT_INJECTION, yes(0.0d))
+			.build();
+
+		List<Document> kept = DecisionDocumentFilter.builder(model).build().process(this.query, documents(1));
+
+		assertThat(kept).isEmpty();
+	}
+
+	@Test
+	void classifyRefusesAResponseMissingAnAnswerItNeeds() {
+		DecisionDocumentFilter filter = DecisionDocumentFilter.builder(prompt -> {
+			throw new AssertionError("classify() does not call the model");
+		}).build();
+		DecisionPrompt prompt = DecisionPrompt.builder().text("x").questions(DecisionDocumentFilter.QUESTIONS).build();
+		DecisionResponse refused = DecisionResponse.builder(prompt)
+			.answer(DecisionDocumentFilter.IS_RELEVANT, yes(0.9d))
+			.answer(DecisionDocumentFilter.CONTAINS_ANSWER_EVIDENCE, RefusalAnswer.builder().reason("policy").build())
+			.answer(DecisionDocumentFilter.CONTRADICTS_QUERY_PREMISE, yes(0.0d))
+			.answer(DecisionDocumentFilter.CONTAINS_PROMPT_INJECTION, yes(0.0d))
+			.build();
+
+		assertThatThrownBy(() -> filter.classify(refused)).isInstanceOf(IllegalStateException.class)
+			.hasMessageContaining("refused 'contains_answer_evidence': policy");
 	}
 
 	@Test
@@ -178,7 +273,35 @@ class DecisionDocumentFilterTests {
 
 		assertThat(kept).extracting(Document::getId).containsExactly("doc-1");
 		assertThat(kept.get(0).getMetadata()).doesNotContainKey(DecisionDocumentFilter.CLASSIFICATION_METADATA_KEY);
-		assertThat(output).contains("no answer to 'contains_answer_evidence'");
+		assertThat(output).contains("no answer to 'contains_prompt_injection'");
+	}
+
+	@Test
+	void aTimedOutCallLeavesTheDocumentUnscreenedRatherThanHangingTheRequest(CapturedOutput output) throws Exception {
+		CountDownLatch released = new CountDownLatch(1);
+		DecisionModel slow = prompt -> {
+			try {
+				released.await(5, TimeUnit.SECONDS);
+			}
+			catch (InterruptedException ex) {
+				Thread.currentThread().interrupt();
+			}
+			return response(prompt, new Answers(0.0d, 0.0d, 0.9d, 0.9d));
+		};
+		try {
+			List<Document> kept = DecisionDocumentFilter.builder(slow)
+				.timeout(Duration.ofMillis(200))
+				.build()
+				.process(this.query, documents(1, 7));
+
+			assertThat(kept).extracting(Document::getId).containsExactly("doc-1", "doc-7");
+			assertThat(kept).allSatisfy(document -> assertThat(document.getMetadata())
+				.doesNotContainKey(DecisionDocumentFilter.CLASSIFICATION_METADATA_KEY));
+			assertThat(output).contains("Could not screen 2 of 2 documents").contains("timed out after 200 ms");
+		}
+		finally {
+			released.countDown();
+		}
 	}
 
 	@Test
@@ -216,7 +339,9 @@ class DecisionDocumentFilterTests {
 	}
 
 	@Test
-	void aDocumentWithoutTextIsSentAsAnEmptyPassage() {
+	void aDocumentWithMediaIsSentAsAContentPart() {
+		// A Document holds either text or media. Media goes to the model as a part, not
+		// as an empty passage, so a multimodal model can screen an image.
 		List<DecisionPrompt> prompts = new CopyOnWriteArrayList<>();
 		DecisionModel recording = prompt -> {
 			prompts.add(prompt);
@@ -227,6 +352,26 @@ class DecisionDocumentFilterTests {
 		DecisionDocumentFilter.builder(recording)
 			.build()
 			.process(this.query, List.of(Document.builder().id("doc-1").media(media).build()));
+
+		assertThat(prompts).singleElement()
+			.extracting(DecisionPrompt::getInstructions)
+			.isInstanceOfSatisfying(FieldsInput.class, input -> assertThat(input.getFields())
+				.containsEntry(DecisionDocumentFilter.PASSAGE_FIELD, List.of(MediaPart.of(media))));
+	}
+
+	@Test
+	void aBlankDocumentIsSentAsAnEmptyPassage() {
+		// Blank text is still a passage: it is the model's to judge, not this filter's to
+		// drop or to report as a failure of the screen.
+		List<DecisionPrompt> prompts = new CopyOnWriteArrayList<>();
+		DecisionModel recording = prompt -> {
+			prompts.add(prompt);
+			return response(prompt, new Answers(0.0d, 0.0d, 0.9d, 0.9d));
+		};
+
+		DecisionDocumentFilter.builder(recording)
+			.build()
+			.process(this.query, List.of(Document.builder().id("doc-1").text("").build()));
 
 		assertThat(prompts).singleElement()
 			.extracting(DecisionPrompt::getInstructions)
@@ -241,6 +386,68 @@ class DecisionDocumentFilterTests {
 		};
 
 		assertThat(DecisionDocumentFilter.builder(never).build().process(this.query, List.of())).isEmpty();
+	}
+
+	@Test
+	void theTimeoutHoldsWithMoreDocumentsThanTheConcurrencyLimit(CapturedOutput output) throws Exception {
+		// The default executor queues what it cannot run, so submitting never blocks and
+		// the deadline covers the queued documents too. A throttle that blocked the
+		// submitting thread would make this test hang instead.
+		CountDownLatch released = new CountDownLatch(1);
+		DecisionModel hanging = prompt -> {
+			try {
+				released.await(5, TimeUnit.SECONDS);
+			}
+			catch (InterruptedException ex) {
+				Thread.currentThread().interrupt();
+			}
+			return response(prompt, new Answers(0.0d, 0.0d, 0.9d, 0.9d));
+		};
+		try {
+			long start = System.nanoTime();
+			List<Document> kept = DecisionDocumentFilter.builder(hanging)
+				.concurrency(2)
+				.timeout(Duration.ofMillis(200))
+				.build()
+				.process(this.query, documents(1, 2, 3, 4, 5, 6));
+
+			assertThat(Duration.ofNanos(System.nanoTime() - start)).isLessThan(Duration.ofSeconds(4));
+			assertThat(kept).hasSize(6);
+			assertThat(output).contains("Could not screen 6 of 6 documents").contains("timed out after 200 ms");
+		}
+		finally {
+			released.countDown();
+		}
+	}
+
+	@Test
+	void anAnswerOfTheWrongTypeLeavesTheDocumentUnscreenedRatherThanFailingTheRequest(CapturedOutput output) {
+		// DecisionResponse refuses to be built with it, which fails that one call; the
+		// request still goes through.
+		DecisionModel model = prompt -> DecisionResponse.builder(prompt)
+			.answer(DecisionDocumentFilter.IS_RELEVANT, yes(0.9d))
+			.answer(DecisionDocumentFilter.CONTAINS_ANSWER_EVIDENCE, yes(0.9d))
+			.answer(DecisionDocumentFilter.CONTRADICTS_QUERY_PREMISE, yes(0.0d))
+			.answer(DecisionDocumentFilter.CONTAINS_PROMPT_INJECTION, ScoreAnswer.builder().value(0.9d).build())
+			.build();
+
+		List<Document> kept = DecisionDocumentFilter.builder(model).build().process(this.query, documents(1));
+
+		assertThat(kept).extracting(Document::getId).containsExactly("doc-1");
+		assertThat(output).contains("Could not screen 1 of 1 documents")
+			.contains(
+					"the answer to question 'contains_prompt_injection' is a ScoreAnswer, but a YesNoAnswer was expected");
+	}
+
+	@Test
+	void rejectsANonPositiveTimeout() {
+		DecisionDocumentFilter.Builder builder = DecisionDocumentFilter.builder(prompt -> {
+			throw new AssertionError("must not be called");
+		});
+
+		assertThatThrownBy(() -> builder.timeout(Duration.ZERO)).isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("timeout");
+		assertThatThrownBy(() -> builder.timeout(Duration.ofSeconds(-1))).isInstanceOf(IllegalArgumentException.class);
 	}
 
 	@Test
