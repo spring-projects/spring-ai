@@ -81,7 +81,7 @@ public class AzureOpenAiEmbeddingModelObservationIT {
 			.doesNotHaveAnyRemainingCurrentObservation()
 			.hasObservationWithNameEqualTo(DefaultEmbeddingModelObservationConvention.DEFAULT_NAME)
 			.that()
-			.hasContextualNameEqualTo("embedding text-embedding-ada-002")
+			.hasContextualNameEqualTo("embeddings text-embedding-ada-002")
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(),
 					AiOperationType.EMBEDDING.value())
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_PROVIDER.asString(), AiProvider.OPENAI.value())
