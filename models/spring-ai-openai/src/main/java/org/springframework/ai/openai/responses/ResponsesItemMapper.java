@@ -146,6 +146,16 @@ final class ResponsesItemMapper {
 	 */
 	static final String REASONING_ITEM_SEPARATOR = "\n";
 
+	/**
+	 * What separates the summary entries of one {@code reasoning} item. Each entry is a
+	 * separate paragraph, usually opening with its own bold heading, so joining them
+	 * without a separator runs the last sentence of one into the heading of the next.
+	 * Shared with {@link ResponsesStreamAssembler}, which inserts it where the
+	 * {@code summary_index} of the deltas changes, so that a streamed summary and a
+	 * non-streamed one are the same text.
+	 */
+	static final String REASONING_SUMMARY_ENTRY_SEPARATOR = "\n\n";
+
 	private static final MimeType IMAGE_WEBP = MimeType.valueOf("image/webp");
 
 	private static final Log logger = LogFactory.getLog(ResponsesItemMapper.class);
@@ -614,7 +624,9 @@ final class ResponsesItemMapper {
 	 * reasoning text for display, the item id in the attributes.
 	 */
 	static ReasoningPart reasoningPart(ResponseReasoningItem item) {
-		String text = join(item.content().orElse(List.of()).stream().map(ResponseReasoningItem.Content::text));
+		// Joined with nothing: reasoning text streams as one run with no index to
+		// separate on, and both paths have to produce the same text.
+		String text = join(item.content().orElse(List.of()).stream().map(ResponseReasoningItem.Content::text), "");
 		String summary = summaryText(item);
 		Map<String, String> attributes = new LinkedHashMap<>();
 		attributes.put(OpenAiResponsesMetadata.ITEM_ID_ATTRIBUTE, item.id());
@@ -655,16 +667,19 @@ final class ResponsesItemMapper {
 	}
 
 	/**
-	 * The summary entries of one {@code reasoning} item, concatenated without a separator
-	 * the way their deltas arrive on the stream, or {@code null} when the item has none.
+	 * The summary entries of one {@code reasoning} item, one paragraph each, or
+	 * {@code null} when the item has none. An empty entry is skipped: it streams no
+	 * delta, so joining it would add a paragraph break the streamed summary does not
+	 * have.
 	 */
 	private static @Nullable String summaryText(ResponseReasoningItem item) {
-		return join(item.summary().stream().map(ResponseReasoningItem.Summary::text));
+		return join(item.summary().stream().map(ResponseReasoningItem.Summary::text).filter(StringUtils::hasLength),
+				REASONING_SUMMARY_ENTRY_SEPARATOR);
 	}
 
-	private static @Nullable String join(Stream<String> texts) {
+	private static @Nullable String join(Stream<String> texts, String separator) {
 		List<String> values = texts.toList();
-		return values.isEmpty() ? null : String.join("", values);
+		return values.isEmpty() ? null : String.join(separator, values);
 	}
 
 	/**
