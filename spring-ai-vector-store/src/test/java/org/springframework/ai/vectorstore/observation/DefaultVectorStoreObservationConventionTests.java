@@ -75,6 +75,15 @@ class DefaultVectorStoreObservationConventionTests {
 	}
 
 	@Test
+	void shouldUseSemanticConventionNameForDbSystem() {
+		VectorStoreObservationContext observationContext = VectorStoreObservationContext
+			.builder("my_database", VectorStoreObservationContext.Operation.QUERY)
+			.build();
+		assertThat(this.observationConvention.getLowCardinalityKeyValues(observationContext))
+			.contains(KeyValue.of("db.system.name", "my_database"));
+	}
+
+	@Test
 	void shouldHaveOptionalKeyValues() {
 		VectorStoreObservationContext observationContext = VectorStoreObservationContext
 			.builder("my-database", VectorStoreObservationContext.Operation.QUERY)
