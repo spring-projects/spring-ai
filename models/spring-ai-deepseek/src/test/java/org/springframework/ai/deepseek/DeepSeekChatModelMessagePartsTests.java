@@ -373,6 +373,24 @@ class DeepSeekChatModelMessagePartsTests {
 		assertThat(param.toolCalls().get(0).function().arguments()).isEqualTo("{\"city\":\"Seoul\"}");
 	}
 
+	@Test
+	void streamingWithoutChunkIdKeepsTheContent() {
+		ChatCompletionChunk first = new ChatCompletionChunk(null,
+				List.of(new ChunkChoice(null, 0, new ChatCompletionMessage("Hello ", Role.ASSISTANT), null)),
+				1777799928L, "deepseek-v4-flash", null, "fp", "chat.completion.chunk", null);
+		ChatCompletionChunk second = new ChatCompletionChunk(null,
+				List.of(new ChunkChoice(ChatCompletionFinishReason.STOP, 0, delta("world", null), null)), 1777799928L,
+				"deepseek-v4-flash", null, "fp", "chat.completion.chunk", null);
+		givenStream(first, second);
+
+		AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
+		new MessageAggregator().aggregate(chatModel().stream(new Prompt("Hi")), aggregatedRef::set).blockLast();
+
+		AssistantMessage aggregated = output(aggregatedRef.get());
+		assertThat(aggregated.getText()).isEqualTo("Hello world");
+		assertThat(aggregated.getMetadata()).containsEntry("role", "ASSISTANT");
+	}
+
 	// -- helpers --
 
 	private DeepSeekChatModel chatModel() {
