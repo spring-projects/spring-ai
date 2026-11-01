@@ -19,6 +19,8 @@ package org.springframework.ai.embedding;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,6 +33,7 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.document.MetadataMode;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -119,8 +122,7 @@ public class AbstractEmbeddingModelTests {
 		// Verify that the text sent for embedding includes metadata,
 		// not just the raw text from Document.getText()
 		String embeddingContent = model.getEmbeddingContent(doc);
-		assertThat(embeddingContent).contains("Getting Started");
-		assertThat(embeddingContent).contains("Some content");
+		assertThat(embeddingContent).contains("title: Getting Started");
 	}
 
 	@Test
@@ -134,6 +136,78 @@ public class AbstractEmbeddingModelTests {
 		// Without MetadataMode override, getEmbeddingContent returns raw text
 		String embeddingContent = model.getEmbeddingContent(doc);
 		assertThat(embeddingContent).isEqualTo("Some content");
+	}
+
+	@Test
+	public void testConcurrentBatchedEmbedWithMultipleBatches() {
+		EmbeddingModel model = new EmbeddingModel() {
+			@Override
+			public float[] embed(Document document) {
+				return new float[] { 1.0f };
+			}
+
+			@Override
+			public EmbeddingResponse call(EmbeddingRequest request) {
+				List<Embedding> embeddings = new ArrayList<>();
+				for (int i = 0; i < request.getInstructions().size(); i++) {
+					String text = request.getInstructions().get(i);
+					float val = Float.parseFloat(text);
+					embeddings.add(new Embedding(new float[] { val }, i));
+				}
+				return new EmbeddingResponse(embeddings);
+			}
+		};
+
+		BatchingStrategy batchingStrategy = docs -> List.of(docs.subList(0, 2), docs.subList(2, 4));
+
+		List<Document> docs = List.of(new Document("10.0"), new Document("20.0"), new Document("30.0"),
+				new Document("40.0"));
+
+		ExecutorService executor = Executors.newFixedThreadPool(2);
+		try {
+			List<float[]> embeddings = model.embed(docs, EmbeddingOptions.builder().build(), batchingStrategy,
+					executor);
+
+			assertThat(embeddings).hasSize(4);
+			assertThat(embeddings.get(0)).containsExactly(10.0f);
+			assertThat(embeddings.get(1)).containsExactly(20.0f);
+			assertThat(embeddings.get(2)).containsExactly(30.0f);
+			assertThat(embeddings.get(3)).containsExactly(40.0f);
+		}
+		finally {
+			executor.shutdown();
+		}
+	}
+
+	@Test
+	public void testConcurrentBatchedEmbedEmptyDocuments() {
+		EmbeddingModel model = createDummyEmbeddingModel(null);
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		try {
+			List<float[]> embeddings = model.embed(List.of(), EmbeddingOptions.builder().build(),
+					new TokenCountBatchingStrategy(), executor);
+			assertThat(embeddings).isEmpty();
+		}
+		finally {
+			executor.shutdown();
+		}
+	}
+
+	@Test
+	public void testConcurrentBatchedEmbedNullArguments() {
+		EmbeddingModel model = createDummyEmbeddingModel(null);
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		try {
+			assertThatThrownBy(() -> model.embed(null, null, new TokenCountBatchingStrategy(), executor))
+				.isInstanceOf(IllegalArgumentException.class);
+			assertThatThrownBy(() -> model.embed(List.of(), null, null, executor))
+				.isInstanceOf(IllegalArgumentException.class);
+			assertThatThrownBy(() -> model.embed(List.of(), null, new TokenCountBatchingStrategy(), null))
+				.isInstanceOf(IllegalArgumentException.class);
+		}
+		finally {
+			executor.shutdown();
+		}
 	}
 
 	private EmbeddingModel createDummyEmbeddingModel(MetadataMode metadataMode) {
