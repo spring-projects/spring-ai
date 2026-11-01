@@ -39,9 +39,27 @@ public class MongoDBAtlasFilterExpressionConverter extends AbstractFilterExpress
 		if (AND.equals(expression.type()) || OR.equals(expression.type())) {
 			doCompoundExpressionType(expression, context);
 		}
+		else if (Filter.ExpressionType.ISNULL.equals(expression.type())) {
+			doIsNullExpressionType(expression, context);
+		}
+		else if (Filter.ExpressionType.ISNOTNULL.equals(expression.type())) {
+			doIsNotNullExpressionType(expression, context);
+		}
 		else {
 			doSingleExpressionType(expression, context);
 		}
+	}
+
+	private void doIsNullExpressionType(Filter.Expression expression, StringBuilder context) {
+		context.append("{");
+		this.convertOperand(expression.left(), context);
+		context.append(":{$eq:null}}");
+	}
+
+	private void doIsNotNullExpressionType(Filter.Expression expression, StringBuilder context) {
+		context.append("{");
+		this.convertOperand(expression.left(), context);
+		context.append(":{$ne:null}}");
 	}
 
 	private void doCompoundExpressionType(Filter.Expression expression, StringBuilder context) {
@@ -78,6 +96,8 @@ public class MongoDBAtlasFilterExpressionConverter extends AbstractFilterExpress
 			case GTE -> "$gte";
 			case IN -> "$in";
 			case NIN -> "$nin";
+			case ISNULL -> "$eq";
+			case ISNOTNULL -> "$ne";
 			default -> throw new RuntimeException("Not supported expression type:" + exp.type());
 		};
 	}
