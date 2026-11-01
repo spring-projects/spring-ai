@@ -198,6 +198,13 @@ public final class SpringAiAnthropicHttpClient implements HttpClient {
 				.callTimeout(perCallTimeout.request());
 		}
 
+		// Set by the SDK for requests that must not follow redirects, such as the
+		// workload identity token exchange.
+		Boolean followRedirects = requestOptions.getFollowRedirects();
+		if (followRedirects != null) {
+			clientBuilder.followRedirects(followRedirects);
+		}
+
 		OkHttpClient client = clientBuilder.build();
 		return client.newCall(toRequestWithStainlessHeaders(request, client));
 	}

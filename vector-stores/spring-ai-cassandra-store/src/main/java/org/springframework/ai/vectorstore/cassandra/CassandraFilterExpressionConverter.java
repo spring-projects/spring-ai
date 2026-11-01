@@ -41,6 +41,7 @@ import org.springframework.util.Assert;
  * where clauses.
  *
  * @author Mick Semb Wever
+ * @author Ryu Jung Kyun
  * @since 1.0.0
  */
 class CassandraFilterExpressionConverter extends AbstractFilterExpressionConverter {
@@ -132,10 +133,17 @@ class CassandraFilterExpressionConverter extends AbstractFilterExpressionConvert
 			dataType = ((ListType) dataType).getElementType();
 		}
 
-		if (DataTypes.SMALLINT.equals(column.getType())) {
-			v = ((Number) v).shortValue();
+		var codec = CodecRegistry.DEFAULT.codecFor(dataType);
+		if (v instanceof Number number && !codec.accepts(v)
+				&& Number.class.isAssignableFrom(codec.getJavaType().getRawType())) {
+			// Use the codec's parser to reject invalid integer conversions.
+			if (DataTypes.FLOAT.equals(dataType) && Double.isFinite(number.doubleValue())) {
+				Preconditions.checkArgument(Math.abs(number.doubleValue()) <= Float.MAX_VALUE,
+						"Numeric filter value %s is out of range for column %s", number, column.getName());
+			}
+			v = codec.parse(number.toString());
 		}
-		context.append(CodecRegistry.DEFAULT.codecFor(dataType).format(v));
+		context.append(codec.format(v));
 	}
 
 	private Optional<ColumnMetadata> getColumn(String name) {

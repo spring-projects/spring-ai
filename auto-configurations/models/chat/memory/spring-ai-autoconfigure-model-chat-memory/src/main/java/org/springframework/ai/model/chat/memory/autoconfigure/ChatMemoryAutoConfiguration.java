@@ -30,7 +30,12 @@ import org.springframework.context.annotation.Bean;
  *
  * @author Thomas Vitale
  * @since 1.0.0
+ * @deprecated since 2.1.0, for removal in 3.0.0, in favor of the session memory
+ * auto-configuration, {@code SessionServiceAutoConfiguration} in
+ * {@code spring-ai-autoconfigure-model-session}
  */
+@Deprecated(since = "2.1.0", forRemoval = true)
+@SuppressWarnings("removal")
 @AutoConfiguration
 @ConditionalOnClass({ ChatMemory.class, ChatMemoryRepository.class })
 public class ChatMemoryAutoConfiguration {

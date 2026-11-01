@@ -428,6 +428,8 @@ A component for post-processing retrieved documents based on a query, addressing
 
 For example, it could rank documents based on their relevance to the query, remove irrelevant or redundant documents, or compress the content of each document to reduce noise and redundancy.
 
+For example, the xref:api/embeddings/jinfer-embeddings.adoc#reranking[Qxotic jinfer] integration provides `JinferDocumentPostProcessor`, which reranks the retrieved documents with a local reranker model.
+
 === Generation
 
 Generation modules are responsible for generating the final response based on the user query and retrieved documents.

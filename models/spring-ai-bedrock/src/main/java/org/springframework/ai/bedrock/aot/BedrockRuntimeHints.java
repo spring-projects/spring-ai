@@ -34,7 +34,6 @@ import org.springframework.aot.hint.TypeReference;
 import org.springframework.beans.factory.annotation.AnnotatedBeanDefinition;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.context.annotation.ClassPathScanningCandidateComponentProvider;
-import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.core.type.classreading.MetadataReader;
 import org.springframework.util.ClassUtils;
 
@@ -56,8 +55,6 @@ public class BedrockRuntimeHints implements RuntimeHintsRegistrar {
 	private final MemberCategory[] memberCategories = MemberCategory.values();
 
 	private final Collection<TypeReference> allClasses;
-
-	private final PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
 
 	BedrockRuntimeHints() {
 		this.allClasses = this.find(this.rootPackage);
@@ -103,13 +100,9 @@ public class BedrockRuntimeHints implements RuntimeHintsRegistrar {
 		}
 	}
 
-	private void registerResources(RuntimeHints hints) throws Exception {
-		for (var resource : this.resolver.getResources("classpath*:software/amazon/awssdk/**/*.interceptors")) {
-			hints.resources().registerResource(resource);
-		}
-		for (var resource : this.resolver.getResources("classpath*:software/amazon/awssdk/**/*.json")) {
-			hints.resources().registerResource(resource);
-		}
+	private void registerResources(RuntimeHints hints) {
+		hints.resources().registerPattern("software/amazon/awssdk/**/*.interceptors");
+		hints.resources().registerPattern("software/amazon/awssdk/**/*.json");
 	}
 
 	protected List<TypeReference> find(String packageName) {

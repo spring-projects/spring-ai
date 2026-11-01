@@ -453,7 +453,7 @@ public final class WebFluxSseServerTransportProvider implements McpServerTranspo
 					// return ServerResponse.ok().build();
 					return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
 						.bodyValue(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
-							.message(error.getMessage())
+							.message("Internal server error. Check server logs for details.")
 							.build());
 				});
 			}

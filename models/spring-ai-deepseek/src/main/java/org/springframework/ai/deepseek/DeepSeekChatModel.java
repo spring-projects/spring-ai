@@ -16,9 +16,12 @@
 
 package org.springframework.ai.deepseek;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
@@ -29,8 +32,14 @@ import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
+import org.springframework.ai.chat.messages.part.MessagePart;
+import org.springframework.ai.chat.messages.part.ReasoningPart;
+import org.springframework.ai.chat.messages.part.StreamingPartIndexer;
+import org.springframework.ai.chat.messages.part.TextPart;
+import org.springframework.ai.chat.messages.part.ToolCallPart;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
@@ -54,7 +63,6 @@ import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionMessage.Cha
 import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionMessage.ToolCall;
 import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionRequest;
 import org.springframework.ai.deepseek.api.common.DeepSeekConstants;
-import org.springframework.ai.model.ModelOptionsUtils;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.retry.RetryUtils;
 import org.springframework.ai.support.UsageCalculator;
@@ -63,16 +71,44 @@ import org.springframework.core.retry.RetryTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 
 /**
  * {@link ChatModel} and {@link StreamingChatModel} implementation for {@literal DeepSeek}
  * backed by {@link DeepSeekApi}.
+ * <p>
+ * The assistant message of each choice is built from ordered {@link MessagePart}s: the
+ * {@code reasoning_content} becomes a {@link ReasoningPart} without a payload, the
+ * {@code content} a {@link TextPart}, and each tool call a {@link ToolCallPart}. That is
+ * also the only order DeepSeek produces them in: an assistant message has one field per
+ * kind of content and no list of content blocks, and reasoning that is interleaved with
+ * tool calls spans several assistant messages, one per tool call round.
+ * <p>
+ * An assistant message is replayed as one message: the text parts are joined into the
+ * {@code content}, the reasoning parts into {@code reasoning_content}, unless another
+ * provider signed some of them, and the tool call parts become the {@code tool_calls}.
+ * DeepSeek documents that in thinking mode every assistant message of a request with
+ * tools must carry its {@code reasoning_content}, so the reasoning survives between the
+ * rounds. The last message of a prompt is sent as a chat prefix completion when it
+ * carries {@code true} under {@link #PREFIX_METADATA_KEY}.
  *
  * @author Geng Rong
  * @author Thomas Vitale
  * @author Sebastien Deleuze
+ * @author guan xu
+ * @author Dimitar Proynov
  */
 public class DeepSeekChatModel implements ChatModel {
+
+	/**
+	 * Message metadata key that marks an assistant message as the prefix the model
+	 * completes, see the DeepSeek chat prefix completion feature. An
+	 * {@link AssistantMessage} whose metadata holds {@code true} under this key is sent
+	 * with {@code prefix: true} when it is the last message of the prompt, and as a plain
+	 * turn otherwise.
+	 * @since 2.1.0
+	 */
+	public static final String PREFIX_METADATA_KEY = "deepseek.prefix";
 
 	private static final Log logger = LogFactory.getLog(DeepSeekChatModel.class);
 
@@ -173,7 +209,7 @@ public class DeepSeekChatModel implements ChatModel {
 							"index", choice.index(),
 							"finishReason", choice.finishReason() != null ? choice.finishReason().name() : "");
 					// @formatter:on
-					return buildGeneration(choice, metadata);
+					return buildGeneration(choice, metadata, null);
 				}).toList();
 
 				// Current usage
@@ -206,9 +242,7 @@ public class DeepSeekChatModel implements ChatModel {
 
 			Flux<DeepSeekApi.ChatCompletionChunk> completionChunks = this.deepSeekApi.chatCompletionStream(request);
 
-			// For chunked responses, only the first chunk contains the choice role.
-			// The rest of the chunks with same ID share the same role.
-			ConcurrentHashMap<String, String> roleMap = new ConcurrentHashMap<>();
+			StreamAccumulator streamAccumulator = new StreamAccumulator();
 
 			final ChatModelObservationContext observationContext = ChatModelObservationContext.builder()
 				.prompt(prompt)
@@ -227,38 +261,32 @@ public class DeepSeekChatModel implements ChatModel {
 				observation.start();
 			}
 
-			// @formatter:off
-			Flux<ChatResponse> chatResponse = completionChunks.map(this::chunkToChatCompletion)
-				.map(chatCompletion2 -> {
-					try {
-						String id = chatCompletion2.id();
+			Flux<ChatResponse> chatResponse = completionChunks.map(this::chunkToChatCompletion).map(chatCompletion -> {
+				try {
+					String id = chatCompletion.id();
 
-						List<Generation> generations = chatCompletion2.choices().stream().map(choice -> {
-							if (choice.message().role() != null) {
-								roleMap.putIfAbsent(id, choice.message().role().name());
-							}
+					List<Generation> generations = chatCompletion.choices().stream().map(choice -> {
+						// @formatter:off
+						Map<String, Object> metadata = Map.of(
+								"id", chatCompletion.id(),
+								"role", streamAccumulator.role(id, choice.message()),
+								"finishReason", choice.finishReason() != null ? choice.finishReason().name() : ""
+						);
+						// @formatter:on
+						return buildGeneration(choice, metadata, streamAccumulator.partIndexer(id));
+					}).toList();
+					DeepSeekApi.Usage usage = chatCompletion.usage();
+					Usage currentUsage = (usage != null) ? getDefaultUsage(usage) : new EmptyUsage();
+					Usage cumulativeUsage = UsageCalculator.getCumulativeUsage(currentUsage, previousChatResponse);
 
-				// @formatter:off
-								Map<String, Object> metadata = Map.of(
-										"id", chatCompletion2.id(),
-										"role", roleMap.getOrDefault(id, ""),
-										"finishReason", choice.finishReason() != null ? choice.finishReason().name() : ""
-								);
-  				// @formatter:on
-							return buildGeneration(choice, metadata);
-						}).toList();
-						DeepSeekApi.Usage usage = chatCompletion2.usage();
-						Usage currentUsage = (usage != null) ? getDefaultUsage(usage) : new EmptyUsage();
-						Usage cumulativeUsage = UsageCalculator.getCumulativeUsage(currentUsage, previousChatResponse);
+					return new ChatResponse(generations, from(chatCompletion, cumulativeUsage));
+				}
+				catch (Exception e) {
+					logger.error("Error processing chat completion", e);
+					return new ChatResponse(List.of());
+				}
 
-						return new ChatResponse(generations, from(chatCompletion2, cumulativeUsage));
-					}
-					catch (Exception e) {
-						logger.error("Error processing chat completion", e);
-						return new ChatResponse(List.of());
-					}
-
-				});
+			});
 
 			// @formatter:off
 			Flux<ChatResponse> flux = chatResponse
@@ -272,29 +300,98 @@ public class DeepSeekChatModel implements ChatModel {
 		});
 	}
 
-	private Generation buildGeneration(Choice choice, Map<String, Object> metadata) {
-		List<AssistantMessage.ToolCall> toolCalls = choice.message().toolCalls() == null ? List.of()
-				: choice.message()
-					.toolCalls()
-					.stream()
-					.map(toolCall -> new AssistantMessage.ToolCall(toolCall.id(), "function",
-							toolCall.function().name(), toolCall.function().arguments()))
-					.toList();
-
+	/**
+	 * Builds the generation of one choice. When {@code partIndexer} is not {@code null}
+	 * the choice is a streamed chunk, and its parts are stamped with their stream index,
+	 * see {@link StreamingPartIndexer}.
+	 */
+	@SuppressWarnings("removal")
+	private Generation buildGeneration(Choice choice, Map<String, Object> metadata,
+			@Nullable StreamingPartIndexer partIndexer) {
 		String finishReason = (choice.finishReason() != null ? choice.finishReason().name() : "");
 		var generationMetadataBuilder = ChatGenerationMetadata.builder().finishReason(finishReason);
 
-		String textContent = choice.message().content();
-		String reasoningContent = choice.message().reasoningContent();
-
-		DeepSeekAssistantMessage.Builder builder = new DeepSeekAssistantMessage.Builder();
-		DeepSeekAssistantMessage assistantMessage = builder.content(textContent)
-			.reasoningContent(reasoningContent)
+		// Still a DeepSeekAssistantMessage while that type is deprecated, so that
+		// existing casts keep working
+		AssistantMessage assistantMessage = DeepSeekAssistantMessage.builder()
+			.parts(assistantParts(choice.message(), partIndexer))
 			.properties(metadata)
-			.toolCalls(toolCalls)
 			.build();
 
 		return new Generation(assistantMessage, generationMetadataBuilder.build());
+	}
+
+	/**
+	 * The parts of the assistant message of one choice, in the order DeepSeek produces
+	 * them: reasoning, text, then tool calls.
+	 */
+	private static List<MessagePart> assistantParts(ChatCompletionMessage message,
+			@Nullable StreamingPartIndexer partIndexer) {
+		List<MessagePart> parts = new ArrayList<>();
+		// hasLength, not hasText: a streamed reasoning delta is often a single
+		// whitespace or newline token that must be kept.
+		String reasoning = message.reasoningContent();
+		if (StringUtils.hasLength(reasoning)) {
+			parts.add(ReasoningPart.of(reasoning));
+		}
+		// An empty content has no text part: a tool-call answer or a reasoning-only
+		// chunk carries none, and an empty text part between two reasoning deltas would
+		// split the reasoning in two.
+		String text = message.content();
+		if (StringUtils.hasLength(text)) {
+			parts.add(TextPart.of(text));
+		}
+		if (message.toolCalls() != null) {
+			for (ToolCall toolCall : message.toolCalls()) {
+				parts.add(ToolCallPart.of(new AssistantMessage.ToolCall(toolCall.id(), "function",
+						toolCall.function().name(), toolCall.function().arguments())));
+			}
+		}
+		if (partIndexer != null) {
+			parts.replaceAll(partIndexer::stamp);
+		}
+		if (parts.isEmpty()) {
+			// A message without any part, such as the role-only first chunk of a stream,
+			// keeps an empty text, so that getText() is not null and streamed chunk texts
+			// can be joined without a null check.
+			parts.add(TextPart.of(""));
+		}
+		return parts;
+	}
+
+	/**
+	 * The reasoning of an assistant message to send back as {@code reasoning_content},
+	 * joined from its reasoning parts, unless it was overridden through the deprecated
+	 * {@link DeepSeekAssistantMessage#setReasoningContent(String)}. DeepSeek reasoning
+	 * carries no payload, so a payload means another provider signed the reasoning: it is
+	 * only valid with that payload, which this API has no field for, so none of the
+	 * reasoning of such a message is replayed.
+	 */
+	@SuppressWarnings("removal")
+	private static @Nullable String reasoningContent(AssistantMessage assistantMessage) {
+		List<ReasoningPart> reasoningParts = assistantMessage.getReasoning();
+		String reasoning;
+		if (assistantMessage instanceof DeepSeekAssistantMessage deepSeekAssistantMessage
+				&& deepSeekAssistantMessage.isReasoningContentOverridden()) {
+			reasoning = deepSeekAssistantMessage.getReasoningContent();
+		}
+		else if (reasoningParts.stream().anyMatch(part -> part.payload() != null)) {
+			if (logger.isDebugEnabled()) {
+				logger.debug("Not replaying reasoning signed by another provider");
+			}
+			return null;
+		}
+		else {
+			reasoning = reasoningParts.stream()
+				.map(ReasoningPart::text)
+				.filter(Objects::nonNull)
+				.collect(Collectors.joining());
+		}
+		return StringUtils.hasLength(reasoning) ? reasoning : null;
+	}
+
+	private static boolean isPrefix(AssistantMessage assistantMessage) {
+		return Boolean.TRUE.equals(assistantMessage.getMetadata().get(PREFIX_METADATA_KEY));
 	}
 
 	private ChatResponseMetadata from(DeepSeekApi.ChatCompletion result, Usage usage) {
@@ -341,7 +438,11 @@ public class DeepSeekChatModel implements ChatModel {
 	 * Accessible for testing.
 	 */
 	ChatCompletionRequest createRequest(Prompt prompt, boolean stream) {
-		List<ChatCompletionMessage> chatCompletionMessages = prompt.getInstructions().stream().map(message -> {
+		List<Message> instructions = prompt.getInstructions();
+		// Only the last message of a prompt can be the prefix of a completion: a flagged
+		// message restored from chat memory earlier in the conversation is a plain turn.
+		Message lastMessage = instructions.isEmpty() ? null : instructions.get(instructions.size() - 1);
+		List<ChatCompletionMessage> chatCompletionMessages = instructions.stream().map(message -> {
 			if (message.getMessageType() == MessageType.USER || message.getMessageType() == MessageType.SYSTEM) {
 				String text = message.getText();
 				Assert.state(text != null, "text must not be null");
@@ -357,18 +458,12 @@ public class DeepSeekChatModel implements ChatModel {
 						return new ToolCall(toolCall.id(), toolCall.type(), function);
 					}).toList();
 				}
-				Boolean isPrefixAssistantMessage = null;
-				String reasoningContent = null;
-				if (message instanceof DeepSeekAssistantMessage deepSeekAssistantMessage) {
-					reasoningContent = deepSeekAssistantMessage.getReasoningContent();
-					if (Boolean.TRUE.equals(deepSeekAssistantMessage.getPrefix())) {
-						isPrefixAssistantMessage = true;
-					}
-				}
+				Boolean isPrefixAssistantMessage = (message == lastMessage && isPrefix(assistantMessage)) ? Boolean.TRUE
+						: null;
 				String text = assistantMessage.getText();
 				Assert.state(text != null, "text must not be null");
 				return List.of(new ChatCompletionMessage(text, ChatCompletionMessage.Role.ASSISTANT, null, null,
-						toolCalls, isPrefixAssistantMessage, reasoningContent));
+						toolCalls, isPrefixAssistantMessage, reasoningContent(assistantMessage)));
 			}
 			else if (message.getMessageType() == MessageType.TOOL) {
 				ToolResponseMessage toolMessage = (ToolResponseMessage) message;
@@ -386,34 +481,98 @@ public class DeepSeekChatModel implements ChatModel {
 			}
 		}).flatMap(List::stream).toList();
 
-		ChatCompletionRequest request = new ChatCompletionRequest(chatCompletionMessages, stream);
+		ChatCompletionRequest.Builder requestBuilder = ChatCompletionRequest.builder()
+			.messages(chatCompletionMessages)
+			.stream(stream);
 
 		DeepSeekChatOptions options = (DeepSeekChatOptions) prompt.getOptions();
 		Assert.state(options != null, "requestOptions must not be null");
-		request = new ChatCompletionRequest(request.messages(),
-				ModelOptionsUtils.mergeOption(options.getModel(), request.model()),
-				ModelOptionsUtils.mergeOption(options.getFrequencyPenalty(), request.frequencyPenalty()),
-				ModelOptionsUtils.mergeOption(options.getMaxTokens(), request.maxTokens()),
-				ModelOptionsUtils.mergeOption(options.getPresencePenalty(), request.presencePenalty()),
-				ModelOptionsUtils.mergeOption(options.getResponseFormat(), request.responseFormat()),
-				ModelOptionsUtils.mergeOption(options.getStop(), request.stop()), request.stream(),
-				ModelOptionsUtils.mergeOption(options.getTemperature(), request.temperature()),
-				ModelOptionsUtils.mergeOption(options.getTopP(), request.topP()),
-				ModelOptionsUtils.mergeOption(options.getLogprobs(), request.logprobs()),
-				ModelOptionsUtils.mergeOption(options.getTopLogprobs(), request.topLogprobs()),
-				ModelOptionsUtils.mergeOption(options.getTools(), request.tools()),
-				ModelOptionsUtils.mergeOption(options.getToolChoice(), request.toolChoice()));
+
+		validateThinkingParameters(options);
+
+		if (options.getModel() != null) {
+			requestBuilder.model(options.getModel());
+		}
+		if (options.getFrequencyPenalty() != null) {
+			requestBuilder.frequencyPenalty(options.getFrequencyPenalty());
+		}
+		if (options.getMaxTokens() != null) {
+			requestBuilder.maxTokens(options.getMaxTokens());
+		}
+		if (options.getPresencePenalty() != null) {
+			requestBuilder.presencePenalty(options.getPresencePenalty());
+		}
+		if (options.getResponseFormat() != null) {
+			requestBuilder.responseFormat(options.getResponseFormat());
+		}
+		if (options.getStop() != null) {
+			requestBuilder.stop(options.getStop());
+		}
+		if (options.getTemperature() != null) {
+			requestBuilder.temperature(options.getTemperature());
+		}
+		if (options.getTopP() != null) {
+			requestBuilder.topP(options.getTopP());
+		}
+		if (options.getLogprobs() != null) {
+			requestBuilder.logprobs(options.getLogprobs());
+		}
+		if (options.getTopLogprobs() != null) {
+			requestBuilder.topLogprobs(options.getTopLogprobs());
+		}
+		if (options.getTools() != null) {
+			requestBuilder.tools(options.getTools());
+		}
+		if (options.getToolChoice() != null) {
+			requestBuilder.toolChoice(options.getToolChoice());
+		}
+		if (options.getThinking() != null) {
+			requestBuilder.thinking(options.getThinking());
+		}
+		if (options.getReasoningEffort() != null) {
+			requestBuilder.reasoningEffort(options.getReasoningEffort());
+		}
 
 		// Add the tool definitions to the request's tools parameter.
 		List<ToolDefinition> toolDefinitions = this.toolCallingManager.resolveToolDefinitions(options);
 		if (!CollectionUtils.isEmpty(toolDefinitions)) {
-			request = new ChatCompletionRequest(request.messages(), request.model(), request.frequencyPenalty(),
-					request.maxTokens(), request.presencePenalty(), request.responseFormat(), request.stop(),
-					request.stream(), request.temperature(), request.topP(), request.logprobs(), request.topLogprobs(),
-					this.getFunctionTools(toolDefinitions), request.toolChoice());
+			requestBuilder.tools(this.getFunctionTools(toolDefinitions));
 		}
 
-		return request;
+		return requestBuilder.build();
+	}
+
+	/**
+	 * Thinking mode does not support the {@code temperature}, {@code top_p},
+	 * {@code presence_penalty}, or {@code frequency_penalty} parameters. For
+	 * compatibility with existing software, setting these parameters does not trigger an
+	 * error but also has no effect, so a warning is logged to alert callers that the
+	 * values will be silently ignored by the DeepSeek API.
+	 * @param options the chat options to validate
+	 */
+	private void validateThinkingParameters(DeepSeekChatOptions options) {
+		if (logger.isWarnEnabled()) {
+			ChatCompletionRequest.Thinking thinking = options.getThinking();
+			if (thinking == null || ChatCompletionRequest.Thinking.Type.ENABLED == thinking.type()) {
+				List<String> ignoredParameters = new ArrayList<>();
+				if (options.getTemperature() != null) {
+					ignoredParameters.add("temperature");
+				}
+				if (options.getTopP() != null) {
+					ignoredParameters.add("top_p");
+				}
+				if (options.getPresencePenalty() != null) {
+					ignoredParameters.add("presence_penalty");
+				}
+				if (options.getFrequencyPenalty() != null) {
+					ignoredParameters.add("frequency_penalty");
+				}
+				if (!ignoredParameters.isEmpty()) {
+					logger.warn("Thinking mode does not support the " + String.join(", ", ignoredParameters)
+							+ " parameter(s). Please note that, for compatibility with existing software, setting these parameters will not trigger an error but will also have no effect.");
+				}
+			}
+		}
 	}
 
 	private List<DeepSeekApi.FunctionTool> getFunctionTools(List<ToolDefinition> toolDefinitions) {
@@ -464,6 +623,30 @@ public class DeepSeekChatModel implements ChatModel {
 		}
 	}
 
+	/**
+	 * The state of one streamed response that spans its chunks: the role, which only the
+	 * first chunk of a completion carries, and the {@link StreamingPartIndexer} of each
+	 * completion.
+	 */
+	private static final class StreamAccumulator {
+
+		private final Map<String, String> roleById = new ConcurrentHashMap<>();
+
+		private final Map<String, StreamingPartIndexer> partIndexerById = new ConcurrentHashMap<>();
+
+		String role(String id, ChatCompletionMessage message) {
+			if (message.role() != null) {
+				this.roleById.putIfAbsent(id, message.role().name());
+			}
+			return this.roleById.getOrDefault(id, "");
+		}
+
+		StreamingPartIndexer partIndexer(String id) {
+			return this.partIndexerById.computeIfAbsent(id, key -> new StreamingPartIndexer());
+		}
+
+	}
+
 	public static final class Builder {
 
 		private @Nullable DeepSeekApi deepSeekApi;
@@ -512,11 +695,8 @@ public class DeepSeekChatModel implements ChatModel {
 
 		public DeepSeekChatModel build() {
 			Assert.state(this.deepSeekApi != null, "DeepSeekApi must not be null");
-			if (this.toolCallingManager != null) {
-				return new DeepSeekChatModel(this.deepSeekApi, this.options, this.toolCallingManager,
-						this.retryTemplate, this.observationRegistry);
-			}
-			return new DeepSeekChatModel(this.deepSeekApi, this.options, DEFAULT_TOOL_CALLING_MANAGER,
+			return new DeepSeekChatModel(this.deepSeekApi, this.options,
+					Objects.requireNonNullElse(this.toolCallingManager, DEFAULT_TOOL_CALLING_MANAGER),
 					this.retryTemplate, this.observationRegistry);
 		}
 

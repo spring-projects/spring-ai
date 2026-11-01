@@ -106,7 +106,9 @@ public class ChromaVectorStoreObservationIT {
 				.hasLowCardinalityKeyValue(LowCardinalityKeyNames.SPRING_AI_KIND.asString(),
 						SpringAiKind.VECTOR_STORE.value())
 				.doesNotHaveHighCardinalityKeyValueWithKey(HighCardinalityKeyNames.DB_VECTOR_QUERY_CONTENT.asString())
-				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_VECTOR_DIMENSION_COUNT.asString(), "1536")
+				// The collection is still empty when the first add starts, so Chroma has
+				// not fixed its size yet and the dimension is not reported.
+				.doesNotHaveHighCardinalityKeyValueWithKey(HighCardinalityKeyNames.DB_VECTOR_DIMENSION_COUNT.asString())
 				.hasHighCardinalityKeyValue(HighCardinalityKeyNames.DB_COLLECTION_NAME.asString(),
 						"TestCollection:" + ReflectionTestUtils.getField(vectorStore, "collectionId"))
 				.doesNotHaveHighCardinalityKeyValueWithKey(HighCardinalityKeyNames.DB_NAMESPACE.asString())

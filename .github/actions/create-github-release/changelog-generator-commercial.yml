@@ -1,0 +1,12 @@
+changelog:
+  issues:
+    generate_links: false
+contributors:
+  exclude:
+    names:
+      - "tzolov"
+      - "sdeleuze"
+      - "ilayaperumalg"
+      - "ericbottard"
+      - "sobychacko"
+      - "dimitarproynov"

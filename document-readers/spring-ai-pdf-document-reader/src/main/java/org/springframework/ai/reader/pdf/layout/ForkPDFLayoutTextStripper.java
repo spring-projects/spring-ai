@@ -28,6 +28,7 @@ import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.text.PDFTextStripper;
 import org.apache.pdfbox.text.TextPosition;
 import org.apache.pdfbox.text.TextPositionComparator;
+import org.apache.pdfbox.util.IterativeMergeSort;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -77,12 +78,7 @@ public class ForkPDFLayoutTextStripper extends PDFTextStripper {
 	protected void writePage() throws IOException {
 		List<List<TextPosition>> charactersByArticle = super.getCharactersByArticle();
 		for (List<TextPosition> textList : charactersByArticle) {
-			try {
-				this.sortTextPositionList(textList);
-			}
-			catch (IllegalArgumentException e) {
-				logger.error("Error sorting text positions", e);
-			}
+			sortTextPositionList(textList);
 			this.iterateThroughTextList(textList.iterator());
 		}
 		this.writeToOutputStream(this.getTextLineList());
@@ -97,13 +93,25 @@ public class ForkPDFLayoutTextStripper extends PDFTextStripper {
 		}
 	}
 
-	/*
-	 * In order to get rid of the warning: TextPositionComparator class should implement
-	 * Comparator<TextPosition> instead of Comparator
+	/**
+	 * Sorts the given text positions in reading order.
+	 * <p>
+	 * {@link TextPositionComparator} is not transitive (PDFBOX-5308), so
+	 * {@code List.sort} can reject it with an {@link IllegalArgumentException} after
+	 * having already reordered part of the list. When that happens, fall back to a merge
+	 * sort, which does not check the comparator contract, the same way
+	 * {@code PDFTextStripper} does.
+	 * @param textList the text positions to sort in place
 	 */
-	private void sortTextPositionList(final List<TextPosition> textList) {
+	static void sortTextPositionList(final List<TextPosition> textList) {
 		TextPositionComparator comparator = new TextPositionComparator();
-		textList.sort(comparator);
+		try {
+			textList.sort(comparator);
+		}
+		catch (IllegalArgumentException ex) {
+			logger.debug("Comparison contract violated while sorting text positions, falling back to merge sort", ex);
+			IterativeMergeSort.sort(textList, comparator);
+		}
 	}
 
 	private void writeLine(final List<TextPosition> textPositionList) {

@@ -25,7 +25,10 @@ import org.springframework.ai.chat.messages.Message;
  *
  * @author Thomas Vitale
  * @since 1.0.0
+ * @deprecated since 2.1.0, for removal in 3.0.0, in favor of
+ * {@code org.springframework.ai.session.SessionRepository} in {@code spring-ai-session}
  */
+@Deprecated(since = "2.1.0", forRemoval = true)
 public interface ChatMemoryRepository {
 
 	List<String> findConversationIds();

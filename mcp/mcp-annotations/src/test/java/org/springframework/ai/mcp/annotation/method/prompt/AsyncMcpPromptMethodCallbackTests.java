@@ -26,6 +26,7 @@ import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.server.McpAsyncServerExchange;
 import io.modelcontextprotocol.server.McpSyncServerExchange;
 import io.modelcontextprotocol.spec.McpError;
+import io.modelcontextprotocol.spec.McpSchema.ErrorCodes;
 import io.modelcontextprotocol.spec.McpSchema.GetPromptRequest;
 import io.modelcontextprotocol.spec.McpSchema.GetPromptResult;
 import io.modelcontextprotocol.spec.McpSchema.Prompt;
@@ -400,6 +401,26 @@ public class AsyncMcpPromptMethodCallbackTests {
 	}
 
 	@Test
+	public void testCallbackRejectsLossyIntegerConversion() throws Exception {
+		TestPromptProvider provider = new TestPromptProvider();
+		Method method = TestPromptProvider.class.getMethod("getMonoPromptWithIntegerArgument", int.class);
+		Prompt prompt = createTestPrompt("integer-argument", "A prompt with an integer argument");
+		BiFunction<McpAsyncServerExchange, GetPromptRequest, Mono<GetPromptResult>> callback = AsyncMcpPromptMethodCallback
+			.builder()
+			.method(method)
+			.bean(provider)
+			.prompt(prompt)
+			.build();
+		GetPromptRequest request = GetPromptRequest.builder("integer-argument").arguments(Map.of("value", 1.5)).build();
+
+		StepVerifier.create(callback.apply(mock(McpAsyncServerExchange.class), request)).expectErrorSatisfies(error -> {
+			assertThat(error).isInstanceOf(McpError.class);
+			assertThat(((McpError) error).getJsonRpcError().code()).isEqualTo(ErrorCodes.INVALID_PARAMS);
+		}).verify();
+		assertThat(provider.integerArgument).isNull();
+	}
+
+	@Test
 	public void testInvalidSyncExchangeParameter() throws Exception {
 		TestPromptProvider provider = new TestPromptProvider();
 		Method method = TestPromptProvider.class.getMethod("invalidSyncExchangeParameter", McpSyncServerExchange.class,
@@ -551,6 +572,8 @@ public class AsyncMcpPromptMethodCallbackTests {
 
 	private static class TestPromptProvider {
 
+		private Integer integerArgument;
+
 		@McpPrompt(name = "greeting", description = "A simple greeting prompt")
 		public GetPromptResult getPromptWithRequest(GetPromptRequest request) {
 			return GetPromptResult
@@ -586,6 +609,13 @@ public class AsyncMcpPromptMethodCallbackTests {
 						TextContent.builder("Hello " + name + ", you are " + age + " years old").build())))
 				.description("Individual arguments prompt")
 				.build();
+		}
+
+		@McpPrompt(name = "integer-argument", description = "A prompt with an integer argument")
+		public Mono<GetPromptResult> getMonoPromptWithIntegerArgument(
+				@McpArg(name = "value", description = "An integer value", required = true) int value) {
+			this.integerArgument = value;
+			return Mono.just(GetPromptResult.builder(List.of()).description("Integer argument prompt").build());
 		}
 
 		@McpPrompt(name = "mixed-args", description = "A prompt with mixed argument types")

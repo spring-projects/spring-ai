@@ -27,7 +27,12 @@ import org.springframework.jdbc.support.JdbcUtils;
 
 /**
  * Abstraction for database-specific SQL for chat memory repository.
+ *
+ * @deprecated since 2.1.0, for removal in 3.0.0, in favor of
+ * {@code JdbcSessionRepositoryDialect} in {@code spring-ai-session-jdbc}
  */
+@Deprecated(since = "2.1.0", forRemoval = true)
+@SuppressWarnings("removal")
 public interface JdbcChatMemoryRepositoryDialect {
 
 	Log logger = LogFactory.getLog(JdbcChatMemoryRepositoryDialect.class);

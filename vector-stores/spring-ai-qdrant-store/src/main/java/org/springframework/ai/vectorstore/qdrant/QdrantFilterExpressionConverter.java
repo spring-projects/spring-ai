@@ -95,11 +95,13 @@ class QdrantFilterExpressionConverter {
 			return io.qdrant.client.ConditionFactory.matchKeyword(identifier, valueStr);
 		}
 		else if (value.value() instanceof Number valueNum) {
-			long lValue = Long.parseLong(valueNum.toString());
-			return io.qdrant.client.ConditionFactory.match(identifier, lValue);
+			return buildNumberCondition(identifier, valueNum);
+		}
+		else if (value.value() instanceof Boolean valueBool) {
+			return io.qdrant.client.ConditionFactory.match(identifier, valueBool);
 		}
 
-		throw new IllegalArgumentException("Invalid value type for EQ. Can either be a string or Number");
+		throw new IllegalArgumentException("Invalid value type for EQ. Can either be a string, Number or Boolean");
 
 	}
 
@@ -111,13 +113,32 @@ class QdrantFilterExpressionConverter {
 				.build());
 		}
 		else if (value.value() instanceof Number valueNum) {
-			long lValue = Long.parseLong(valueNum.toString());
-			Condition condition = io.qdrant.client.ConditionFactory.match(identifier, lValue);
+			Condition condition = buildNumberCondition(identifier, valueNum);
+			return io.qdrant.client.ConditionFactory.filter(Filter.newBuilder().addMustNot(condition).build());
+		}
+		else if (value.value() instanceof Boolean valueBool) {
+			Condition condition = io.qdrant.client.ConditionFactory.match(identifier, valueBool);
 			return io.qdrant.client.ConditionFactory.filter(Filter.newBuilder().addMustNot(condition).build());
 		}
 
-		throw new IllegalArgumentException("Invalid value type for NEQ. Can either be a string or Number");
+		throw new IllegalArgumentException("Invalid value type for NEQ. Can either be a string, Number or Boolean");
 
+	}
+
+	// The Qdrant Java client has no exact match condition for non-integral numbers,
+	// so an exact match on a fractional value is expressed as an inclusive range.
+	private Condition buildNumberCondition(String identifier, Number valueNum) {
+		if (isIntegralNumber(valueNum)) {
+			return io.qdrant.client.ConditionFactory.match(identifier, valueNum.longValue());
+		}
+		double dValue = valueNum.doubleValue();
+		return io.qdrant.client.ConditionFactory.range(identifier,
+				Range.newBuilder().setGte(dValue).setLte(dValue).build());
+	}
+
+	private boolean isIntegralNumber(Number valueNum) {
+		return valueNum instanceof Integer || valueNum instanceof Long || valueNum instanceof Short
+				|| valueNum instanceof Byte;
 	}
 
 	protected Condition buildGtCondition(Key key, Value value) {
@@ -177,8 +198,9 @@ class QdrantFilterExpressionConverter {
 				// If the first value is a number, then all values should be numbers
 				List<Long> longValues = new ArrayList<>();
 				for (Object valueObj : valueList) {
-					Long longValue = Long.parseLong(valueObj.toString());
-					longValues.add(longValue);
+					Assert.state(valueObj instanceof Number valueNum && isIntegralNumber(valueNum),
+							"Unsupported value in IN value list. Only supports String or integral Number values");
+					longValues.add(((Number) valueObj).longValue());
 				}
 				return io.qdrant.client.ConditionFactory.matchValues(identifier, longValues);
 			}
@@ -208,8 +230,9 @@ class QdrantFilterExpressionConverter {
 				// If the first value is a number, then all values should be numbers
 				List<Long> longValues = new ArrayList<>();
 				for (Object valueObj : valueList) {
-					Long longValue = Long.parseLong(valueObj.toString());
-					longValues.add(longValue);
+					Assert.state(valueObj instanceof Number valueNum && isIntegralNumber(valueNum),
+							"Unsupported value in NIN value list. Only supports String or integral Number values");
+					longValues.add(((Number) valueObj).longValue());
 				}
 				return io.qdrant.client.ConditionFactory.matchExceptValues(identifier, longValues);
 			}

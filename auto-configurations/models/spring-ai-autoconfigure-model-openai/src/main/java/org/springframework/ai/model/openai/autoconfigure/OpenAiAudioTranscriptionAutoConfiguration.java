@@ -23,8 +23,10 @@ import com.openai.client.OpenAIClientAsync;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.observation.ObservationRegistry;
 
+import org.springframework.ai.audio.transcription.observation.TranscriptionModelObservationConvention;
 import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.model.SpringAIModels;
+import org.springframework.ai.model.openai.autoconfigure.OpenAiAutoConfigurationUtil.ResolvedConnectionProperties;
 import org.springframework.ai.openai.OpenAiAudioTranscriptionModel;
 import org.springframework.ai.openai.http.okhttp.OpenAiHttpClientBuilderCustomizer;
 import org.springframework.ai.openai.setup.OpenAiSetup;
@@ -59,6 +61,7 @@ public class OpenAiAudioTranscriptionAutoConfiguration {
 	public OpenAiAudioTranscriptionModel openAiSdkAudioTranscriptionModel(OpenAiCommonProperties commonProperties,
 			OpenAiAudioTranscriptionProperties transcriptionProperties,
 			ObjectProvider<ObservationRegistry> observationRegistry, ObjectProvider<MeterRegistry> meterRegistry,
+			ObjectProvider<TranscriptionModelObservationConvention> observationConvention,
 			ObjectProvider<OpenAiHttpClientBuilderCustomizer> httpClientBuilderCustomizers) {
 		var resolvedProperties = OpenAiAutoConfigurationUtil.resolveCommonProperties(commonProperties,
 				transcriptionProperties);
@@ -66,14 +69,19 @@ public class OpenAiAudioTranscriptionAutoConfiguration {
 		OpenAIClient client = openAiClient(resolvedProperties, observationRegistry, meterRegistry, customizers);
 		OpenAIClientAsync clientAsync = openAiClientAsync(resolvedProperties, observationRegistry, meterRegistry,
 				customizers);
-		return OpenAiAudioTranscriptionModel.builder()
+		var transcriptionModel = OpenAiAudioTranscriptionModel.builder()
 			.openAiClient(client)
 			.openAiClientAsync(clientAsync)
 			.options(transcriptionProperties.toOptions())
+			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.build();
+
+		observationConvention.ifAvailable(transcriptionModel::setObservationConvention);
+
+		return transcriptionModel;
 	}
 
-	private OpenAIClient openAiClient(OpenAiCommonProperties commonProperties,
+	private OpenAIClient openAiClient(ResolvedConnectionProperties commonProperties,
 			ObjectProvider<ObservationRegistry> observationRegistry, ObjectProvider<MeterRegistry> meterRegistry,
 			List<OpenAiHttpClientBuilderCustomizer> httpClientCustomizers) {
 
@@ -89,7 +97,7 @@ public class OpenAiAudioTranscriptionAutoConfiguration {
 				meterRegistryToUse, httpClientCustomizers);
 	}
 
-	private OpenAIClientAsync openAiClientAsync(OpenAiCommonProperties commonProperties,
+	private OpenAIClientAsync openAiClientAsync(ResolvedConnectionProperties commonProperties,
 			ObjectProvider<ObservationRegistry> observationRegistry, ObjectProvider<MeterRegistry> meterRegistry,
 			List<OpenAiHttpClientBuilderCustomizer> httpClientCustomizers) {
 

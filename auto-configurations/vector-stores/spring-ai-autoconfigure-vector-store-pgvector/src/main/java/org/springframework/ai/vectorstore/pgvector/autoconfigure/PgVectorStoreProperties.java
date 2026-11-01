@@ -53,6 +53,12 @@ public class PgVectorStoreProperties extends CommonVectorStoreProperties {
 
 	private int maxDocumentBatchSize = PgVectorStore.MAX_DOCUMENT_BATCH_SIZE;
 
+	private String contentFieldName = PgVectorStore.DEFAULT_CONTENT_FIELD_NAME;
+
+	private String metadataFieldName = PgVectorStore.DEFAULT_METADATA_FIELD_NAME;
+
+	private String embeddingFieldName = PgVectorStore.DEFAULT_EMBEDDING_FIELD_NAME;
+
 	public int getDimensions() {
 		return this.dimensions;
 	}
@@ -123,6 +129,30 @@ public class PgVectorStoreProperties extends CommonVectorStoreProperties {
 
 	public void setMaxDocumentBatchSize(int maxDocumentBatchSize) {
 		this.maxDocumentBatchSize = maxDocumentBatchSize;
+	}
+
+	public String getContentFieldName() {
+		return this.contentFieldName;
+	}
+
+	public void setContentFieldName(String contentFieldName) {
+		this.contentFieldName = contentFieldName;
+	}
+
+	public String getMetadataFieldName() {
+		return this.metadataFieldName;
+	}
+
+	public void setMetadataFieldName(String metadataFieldName) {
+		this.metadataFieldName = metadataFieldName;
+	}
+
+	public String getEmbeddingFieldName() {
+		return this.embeddingFieldName;
+	}
+
+	public void setEmbeddingFieldName(String embeddingFieldName) {
+		this.embeddingFieldName = embeddingFieldName;
 	}
 
 }

@@ -109,7 +109,7 @@ class RetrievalAugmentationAdvisorTests {
 			.isEqualTo("What would I get if I added a pinch of Moonstone to a dash of powdered Gold?");
 
 		var prompt = promptCaptor.getValue();
-		assertThat(prompt.getContents()).contains("""
+		assertThat(prompt.getContents()).containsIgnoringNewLines("""
 				Context information is below.
 
 				---------------------

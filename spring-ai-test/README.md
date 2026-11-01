@@ -6,6 +6,7 @@ The Spring AI Test module provides utilities and base classes for testing AI app
 
 - **BasicEvaluationTest**: A base test class for evaluating question-answer quality using AI models
 - **Vector Store Testing**: Utilities for testing vector store implementations
+- **Session Repository Testing**: `AbstractSessionRepositoryContractTests`, the contract every `SessionRepository` implementation must pass
 - **Audio Testing**: Utilities for testing audio-related functionality
 
 ## BasicEvaluationTest

@@ -32,6 +32,7 @@ class BedrockCacheOptionsTests {
 		BedrockCacheOptions options = BedrockCacheOptions.builder().build();
 		assertThat(options.getStrategy()).isEqualTo(BedrockCacheStrategy.NONE);
 		assertThat(options.isMultiBlockSystemCaching()).isFalse();
+		assertThat(options.isCacheToolResults()).isFalse();
 	}
 
 	@Test
@@ -53,6 +54,15 @@ class BedrockCacheOptionsTests {
 			.multiBlockSystemCaching(true)
 			.build();
 		assertThat(options.isMultiBlockSystemCaching()).isTrue();
+	}
+
+	@Test
+	void builderEnablesToolResultCaching() {
+		BedrockCacheOptions options = BedrockCacheOptions.builder()
+			.strategy(BedrockCacheStrategy.CONVERSATION_HISTORY)
+			.cacheToolResults(true)
+			.build();
+		assertThat(options.isCacheToolResults()).isTrue();
 	}
 
 }

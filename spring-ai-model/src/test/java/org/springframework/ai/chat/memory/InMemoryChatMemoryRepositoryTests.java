@@ -34,6 +34,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  *
  * @author Thomas Vitale
  */
+@SuppressWarnings("removal")
 public class InMemoryChatMemoryRepositoryTests {
 
 	private final InMemoryChatMemoryRepository chatMemoryRepository = new InMemoryChatMemoryRepository();
@@ -82,6 +83,18 @@ public class InMemoryChatMemoryRepositoryTests {
 		this.chatMemoryRepository.deleteByConversationId(conversationId);
 
 		assertThat(this.chatMemoryRepository.findByConversationId(conversationId)).isEmpty();
+	}
+
+	@Test
+	void saveMessagesCopiesCallerOwnedList() {
+		String conversationId = UUID.randomUUID().toString();
+		Message message = new UserMessage("Hello");
+		List<Message> messages = new ArrayList<>(List.of(message));
+
+		this.chatMemoryRepository.saveAll(conversationId, messages);
+		messages.clear();
+
+		assertThat(this.chatMemoryRepository.findByConversationId(conversationId)).containsExactly(message);
 	}
 
 	@Test

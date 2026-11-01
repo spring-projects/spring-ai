@@ -43,6 +43,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Integration test for SQL Server using Testcontainers, following the same structure as the PostgreSQL test.
  */
 @Testcontainers
+@SuppressWarnings("removal")
 class JdbcChatMemoryRepositorySqlServerAutoConfigurationIT {
 
 	static final DockerImageName DEFAULT_IMAGE_NAME = DockerImageName

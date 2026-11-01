@@ -64,6 +64,17 @@ public @interface Tool {
 	boolean returnDirect() default false;
 
 	/**
+	 * Whether a call of the tool needs a person's confirmation before it runs.
+	 * {@link org.springframework.ai.model.tool.DefaultToolCallingManager} refuses to run
+	 * such a call without a decision, and the tool-calling loop pauses on it; see
+	 * {@link org.springframework.ai.model.tool.ToolCallDecisions}. A custom
+	 * {@link org.springframework.ai.model.tool.ToolCallingManager} has to check it
+	 * itself.
+	 * @since 2.1.0
+	 */
+	boolean requiresConfirmation() default false;
+
+	/**
 	 * The class to use to convert the tool call result to a String.
 	 */
 	Class<? extends ToolCallResultConverter> resultConverter() default DefaultToolCallResultConverter.class;

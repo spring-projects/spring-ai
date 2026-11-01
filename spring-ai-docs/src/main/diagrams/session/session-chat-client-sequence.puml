@@ -1,0 +1,34 @@
+@startuml session-chat-client-sequence
+skinparam shadowing false
+autonumber
+participant "ChatClient" as Client
+participant "SessionTurnAdvisor\n(outside the loop)" as Turn
+participant "ToolCallingAdvisor" as Loop
+participant "SessionMemoryAdvisor\n(inside the loop)" as Memory
+participant SessionService as Svc
+participant ChatModel as Model
+
+Client -> Turn: adviseCall(request)
+Turn -> Svc: findById / create (first use)
+Turn -> Loop: nextCall(request)
+loop every round, until a reply without tool calls
+  Loop -> Memory: before(request)
+  Memory -> Svc: getEvents(id, active view)
+  Memory -> Memory: the prompt: system messages first,\nthe history the round does not carry, the request
+  Memory -> Svc: appendEvent(user message | tool results)
+  Memory -> Model: call(prompt)
+  Model --> Memory: reply
+  Memory -> Svc: appendEvent(reply)
+  Memory --> Loop: after(response)
+  Loop -> Loop: run the tool calls, if any
+end
+Loop --> Turn: the final response
+opt the loop ended without a model round\n(returnDirect, breached tool call limit)
+  Turn -> Svc: appendEvent(the tool results)
+end
+opt the compaction trigger fires
+  Turn -> Svc: compact(id, trigger, strategy)
+  note right: now, or after the reply\nwith asyncCompaction
+end
+Turn --> Client: the response
+@enduml

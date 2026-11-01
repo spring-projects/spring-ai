@@ -173,6 +173,43 @@ class MethodToolCallbackGenericTypesTest {
 		assertThat(result).isEqualTo("1 entries processed {foo=bar}");
 	}
 
+	@Test
+	void testObjectType() throws Exception {
+		// Create a test object with a method that takes an Object
+		TestGenericClass testObject = new TestGenericClass();
+		Method method = TestGenericClass.class.getMethod("processObject", Object.class);
+
+		// Create a tool definition
+		ToolDefinition toolDefinition = DefaultToolDefinition.builder()
+			.name("processObject")
+			.description("Process an object")
+			.inputSchema("{}")
+			.build();
+
+		// Create a MethodToolCallback
+		MethodToolCallback callback = MethodToolCallback.builder()
+			.toolDefinition(toolDefinition)
+			.toolMethod(method)
+			.toolObject(testObject)
+			.build();
+
+		// Create a JSON input with an object value
+		String toolInput = """
+				{
+					"value": {
+						"name": "spring-ai",
+						"version": 2
+					}
+				}
+				""";
+
+		// Call the tool
+		String result = callback.call(toolInput);
+
+		// Verify the result
+		assertThat(result).isEqualTo("\"Object processed: {name=spring-ai, version=2}\"");
+	}
+
 	/**
 	 * Test class with methods that use generic types.
 	 */
@@ -193,6 +230,10 @@ class MethodToolCallbackGenericTypesTest {
 		public String processStringListInToolContext(ToolContext toolContext) {
 			Map<String, Object> context = toolContext.getContext();
 			return context.size() + " entries processed " + context;
+		}
+
+		public String processObject(Object value) {
+			return "Object processed: " + value;
 		}
 
 	}

@@ -117,12 +117,15 @@ public class OpenAiAudioSpeechOptions extends AbstractOpenAiOptions implements T
 
 	private final Double speed;
 
+	private final @Nullable String instructions;
+
 	protected OpenAiAudioSpeechOptions(@Nullable String baseUrl, @Nullable String apiKey,
 			@Nullable Credential credential, @Nullable String model, @Nullable String microsoftDeploymentName,
 			@Nullable AzureOpenAIServiceVersion microsoftFoundryServiceVersion, @Nullable String organizationId,
 			@Nullable Boolean isMicrosoftFoundry, @Nullable Boolean isGitHubModels, @Nullable Duration timeout,
 			@Nullable Integer maxRetries, @Nullable Proxy proxy, @Nullable Map<String, String> customHeaders,
-			@Nullable String input, @Nullable String voice, @Nullable String responseFormat, @Nullable Double speed) {
+			@Nullable String input, @Nullable String voice, @Nullable String responseFormat, @Nullable Double speed,
+			@Nullable String instructions) {
 		super(baseUrl, apiKey, credential, model != null ? model : DEFAULT_SPEECH_MODEL, microsoftDeploymentName,
 				microsoftFoundryServiceVersion, organizationId, isMicrosoftFoundry, isGitHubModels, timeout, maxRetries,
 				proxy, customHeaders);
@@ -130,6 +133,7 @@ public class OpenAiAudioSpeechOptions extends AbstractOpenAiOptions implements T
 		this.voice = voice != null ? voice : DEFAULT_VOICE;
 		this.responseFormat = responseFormat != null ? responseFormat : DEFAULT_RESPONSE_FORMAT;
 		this.speed = speed != null ? speed : DEFAULT_SPEED;
+		this.instructions = instructions;
 	}
 
 	public static Builder builder() {
@@ -147,6 +151,10 @@ public class OpenAiAudioSpeechOptions extends AbstractOpenAiOptions implements T
 
 	public String getResponseFormat() {
 		return this.responseFormat;
+	}
+
+	public @Nullable String getInstructions() {
+		return this.instructions;
 	}
 
 	@Override
@@ -170,12 +178,12 @@ public class OpenAiAudioSpeechOptions extends AbstractOpenAiOptions implements T
 		OpenAiAudioSpeechOptions that = (OpenAiAudioSpeechOptions) o;
 		return Objects.equals(getModel(), that.getModel()) && Objects.equals(this.input, that.input)
 				&& Objects.equals(this.voice, that.voice) && Objects.equals(this.responseFormat, that.responseFormat)
-				&& Objects.equals(this.speed, that.speed);
+				&& Objects.equals(this.speed, that.speed) && Objects.equals(this.instructions, that.instructions);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(getModel(), this.input, this.voice, this.responseFormat, this.speed);
+		return Objects.hash(getModel(), this.input, this.voice, this.responseFormat, this.speed, this.instructions);
 	}
 
 	public static final class Builder extends AbstractBuilder<OpenAiAudioSpeechOptions, Builder> {
@@ -187,6 +195,8 @@ public class OpenAiAudioSpeechOptions extends AbstractOpenAiOptions implements T
 		private @Nullable String responseFormat;
 
 		private @Nullable Double speed;
+
+		private @Nullable String instructions;
 
 		private Builder() {
 		}
@@ -212,6 +222,7 @@ public class OpenAiAudioSpeechOptions extends AbstractOpenAiOptions implements T
 			this.voice = fromOptions.getVoice();
 			this.responseFormat = fromOptions.getResponseFormat();
 			this.speed = fromOptions.getSpeed();
+			this.instructions = fromOptions.getInstructions();
 			return this;
 		}
 
@@ -273,6 +284,9 @@ public class OpenAiAudioSpeechOptions extends AbstractOpenAiOptions implements T
 					this.input = castFrom.getInput();
 				}
 				this.responseFormat = castFrom.getResponseFormat();
+				if (castFrom.getInstructions() != null) {
+					this.instructions = castFrom.getInstructions();
+				}
 			}
 			return this;
 		}
@@ -307,12 +321,22 @@ public class OpenAiAudioSpeechOptions extends AbstractOpenAiOptions implements T
 			return this;
 		}
 
+		/**
+		 * Sets control instructions for the voice delivery (e.g. tone, pace). Only
+		 * supported by models such as {@code gpt-4o-mini-tts}; ignored by {@code tts-1}
+		 * and {@code tts-1-hd}.
+		 */
+		public Builder instructions(@Nullable String instructions) {
+			this.instructions = instructions;
+			return this;
+		}
+
 		@Override
 		public OpenAiAudioSpeechOptions build() {
 			return new OpenAiAudioSpeechOptions(this.baseUrl, this.apiKey, this.credential, this.model,
 					this.microsoftDeploymentName, this.microsoftFoundryServiceVersion, this.organizationId,
 					this.isMicrosoftFoundry, this.isGitHubModels, this.timeout, this.maxRetries, this.proxy,
-					this.customHeaders, this.input, this.voice, this.responseFormat, this.speed);
+					this.customHeaders, this.input, this.voice, this.responseFormat, this.speed, this.instructions);
 		}
 
 	}

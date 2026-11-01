@@ -67,6 +67,28 @@ public class FilterExpressionTextParserTests {
 	}
 
 	@Test
+	public void testIntegerLiterals() {
+		// Literals within the Integer range remain Integer
+		Expression exp = this.parser.parse("timestamp == " + Integer.MAX_VALUE);
+		assertThat(exp.right()).isEqualTo(new Value(Integer.MAX_VALUE));
+
+		// Literals beyond the Integer range fall back to Long
+		exp = this.parser.parse("timestamp == " + Long.MAX_VALUE);
+		assertThat(exp.right()).isEqualTo(new Value(Long.MAX_VALUE));
+
+		exp = this.parser.parse("timestamp == " + Long.MIN_VALUE);
+		assertThat(exp.right()).isEqualTo(new Value(Long.MIN_VALUE));
+
+		// The explicit 'L' suffix keeps producing Long values
+		exp = this.parser.parse("timestamp == 9223372036854775807L");
+		assertThat(exp.right()).isEqualTo(new Value(Long.MAX_VALUE));
+
+		// Large literals are supported inside IN lists
+		exp = this.parser.parse("id in [" + Long.MAX_VALUE + ", 1]");
+		assertThat(exp.right()).isEqualTo(new Value(List.of(Long.MAX_VALUE, 1)));
+	}
+
+	@Test
 	public void tesEqAndGte() {
 		// genre == "drama" AND year >= 2020
 		Expression exp = this.parser.parse("genre == 'drama' && year >= 2020");

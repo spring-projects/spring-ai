@@ -88,7 +88,7 @@ public class DeepSeekRetryTests {
 		var result = this.chatModel.call(new Prompt("text"));
 
 		assertThat(result).isNotNull();
-		assertThat(result.getResult().getOutput().getText()).isSameAs("Response");
+		assertThat(result.getResult().getOutput().getText()).isEqualTo("Response");
 		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(1);
 		assertThat(this.retryListener.onErrorRetryCount).isEqualTo(2);
 	}
@@ -116,7 +116,7 @@ public class DeepSeekRetryTests {
 		var result = this.chatModel.call(new Prompt("text"));
 
 		assertThat(result).isNotNull();
-		assertThat(result.getResult().getOutput().getText()).isSameAs("Response");
+		assertThat(result.getResult().getOutput().getText()).isEqualTo("Response");
 		assertThat(this.retryListener.onSuccessRetryCount).isEqualTo(1);
 		assertThat(this.retryListener.onErrorRetryCount).isEqualTo(2);
 	}

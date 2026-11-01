@@ -45,6 +45,7 @@ The same `.useProviderStructuredOutput()` call works regardless of which is wire
 * *Google GenAI*: Gemini 1.5 Pro and later models.
 * *Mistral AI*: Mistral Small and later models with JSON Schema support.
 * *Ollama*: models with JSON Schema support (model-specific; see <<_known_limitations,Known Limitations>>).
+* *Qxotic jinfer*: all chat models. The schema is compiled to a grammar and enforced during token sampling (see xref:api/chat/jinfer-chat.adoc#structured-output[jinfer Structured Output]).
 
 == Why It's Off by Default
 
@@ -151,4 +152,5 @@ Independently of `useProviderStructuredOutput()`, some AI models expose dedicate
 
 * xref:api/chat/openai-chat.adoc#_structured_outputs[OpenAI Structured Outputs] can ensure the model generates responses conforming strictly to your provided JSON Schema. Choose between `JSON_OBJECT` (valid JSON) or `JSON_SCHEMA` with a supplied schema (`spring.ai.openai.chat.response-format` option).
 * xref:api/chat/ollama-chat.adoc[Ollama] provides a `spring.ai.ollama.chat.format` option to specify the response format. Currently, the only accepted value is `json`.
+* xref:api/chat/jinfer-chat.adoc#structured-output[Qxotic jinfer] provides a `JinferChatOptions.grammar(...)` option that constrains the reply to an arbitrary https://github.com/ggml-org/llama.cpp/blob/master/grammars/README.md[GBNF grammar].
 * xref:api/chat/mistralai-chat.adoc[Mistral AI] provides a `spring.ai.mistralai.chat.response-format` option. Setting it to `{ "type": "json_object" }` enables JSON mode; setting it to `{ "type": "json_schema" }` with a supplied schema enables native structured output that matches your schema.

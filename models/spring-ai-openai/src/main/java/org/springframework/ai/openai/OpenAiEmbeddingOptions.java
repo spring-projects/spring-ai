@@ -32,6 +32,7 @@ import com.openai.models.embeddings.EmbeddingModel;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.embedding.EmbeddingOptions;
+import org.springframework.util.CollectionUtils;
 
 /**
  * Configuration information for the Embedding Model implementation using the OpenAI Java
@@ -145,6 +146,9 @@ public class OpenAiEmbeddingOptions extends AbstractOpenAiOptions implements Emb
 			builder.additionalBodyProperties(extraParams);
 		}
 
+		if (!CollectionUtils.isEmpty(this.getCustomHeaders())) {
+			this.getCustomHeaders().forEach(builder::putAdditionalHeader);
+		}
 		return builder.build();
 	}
 

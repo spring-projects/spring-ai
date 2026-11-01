@@ -168,7 +168,7 @@ public final class WebMvcStatelessServerTransport implements McpStatelessServerT
 					}
 					return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
 						.body(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
-							.message("Failed to handle request: " + e.getMessage())
+							.message("Failed to handle request. Check server logs for details.")
 							.build());
 				}
 			}
@@ -185,7 +185,7 @@ public final class WebMvcStatelessServerTransport implements McpStatelessServerT
 					}
 					return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
 						.body(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
-							.message("Failed to handle notification: " + e.getMessage())
+							.message("Failed to handle notification. Check server logs for details.")
 							.build());
 				}
 			}
@@ -209,7 +209,7 @@ public final class WebMvcStatelessServerTransport implements McpStatelessServerT
 			}
 			return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR)
 				.body(McpError.builder(McpSchema.ErrorCodes.INTERNAL_ERROR)
-					.message("Unexpected error: " + e.getMessage())
+					.message("Internal server error. Check server logs for details.")
 					.build());
 		}
 	}

@@ -37,12 +37,14 @@ import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
 import org.springframework.ai.util.JacksonUtils;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
+import org.springframework.ai.vectorstore.EmbeddedDocument;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -194,6 +196,9 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 
 	private final int maxDocumentBatchSize;
 
+	// Cache for vectorDimensions(); only a known size is stored.
+	private volatile int resolvedVectorDimensions = INVALID_EMBEDDING_DIMENSION;
+
 	/**
 	 * Protected constructor for creating a MariaDBVectorStore instance using the builder
 	 * pattern.
@@ -257,6 +262,28 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 
 		List<List<MariaDBDocument>> batchedDocuments = batchDocuments(documents, embeddings);
 		batchedDocuments.forEach(this::insertOrUpdateBatch);
+	}
+
+	@Override
+	protected boolean supportsUpsert() {
+		return true;
+	}
+
+	@Override
+	protected void doUpsert(List<EmbeddedDocument> entries) {
+		// Check the whole batch before writing, so a vector of the wrong size cannot
+		// leave a partial write behind. When the size is not known the check is left
+		// to MariaDB.
+		int expected = vectorDimensions();
+		for (int i = 0; i < entries.size(); i++) {
+			checkDimensions("Embedding at index " + i, entries.get(i).embedding().length, expected);
+		}
+
+		// ON DUPLICATE KEY UPDATE replaces the content, the whole metadata and the vector
+		// of an existing row in one statement, so omitted metadata keys are dropped.
+		List<Document> documents = entries.stream().map(EmbeddedDocument::document).toList();
+		List<float[]> embeddings = entries.stream().map(EmbeddedDocument::embedding).toList();
+		batchDocuments(documents, embeddings).forEach(this::insertOrUpdateBatch);
 	}
 
 	private List<List<MariaDBDocument>> batchDocuments(List<Document> documents, List<float[]> embeddings) {
@@ -347,10 +374,31 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 
 	@Override
 	public List<Document> doSimilaritySearch(SearchRequest request) {
+		// Convert the filter first, so an invalid one fails before the model is called
+		String nativeFilterExpression = nativeFilterExpression(request);
+		return searchByEmbedding(this.embeddingModel.embed(request.getQuery()), nativeFilterExpression, request);
+	}
 
-		String nativeFilterExpression = (request.getFilterExpression() != null)
+	@Override
+	protected boolean supportsQueryEmbeddingSearch() {
+		return true;
+	}
+
+	@Override
+	protected List<Document> doSimilaritySearch(float[] queryEmbedding, SearchRequest request) {
+		// MariaDB does not reject a query vector of the wrong size: the distance is NULL
+		// and the search finds nothing, so the size is checked here whenever it is known.
+		checkDimensions("Query embedding", queryEmbedding.length, vectorDimensions());
+		return searchByEmbedding(queryEmbedding, nativeFilterExpression(request), request);
+	}
+
+	private String nativeFilterExpression(SearchRequest request) {
+		return (request.getFilterExpression() != null)
 				? this.filterExpressionConverter.convertExpression(request.getFilterExpression()) : "";
-		float[] embedding = this.embeddingModel.embed(request.getQuery());
+	}
+
+	private List<Document> searchByEmbedding(float[] embedding, String nativeFilterExpression, SearchRequest request) {
+
 		String jsonPathFilter = "";
 
 		if (StringUtils.hasText(nativeFilterExpression)) {
@@ -389,8 +437,10 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 		}
 
 		if (this.schemaValidation) {
+			// The size only fills in the sample CREATE TABLE logged when validation
+			// fails, so the embedding model is not asked for it.
 			this.schemaValidator.validateTableSchema(this.schemaName, this.vectorTableName, this.idFieldName,
-					this.contentFieldName, this.metadataFieldName, this.embeddingFieldName, this.embeddingDimensions());
+					this.contentFieldName, this.metadataFieldName, this.embeddingFieldName, this.dimensions);
 		}
 
 		if (!this.initializeSchema) {
@@ -409,18 +459,25 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 			this.jdbcTemplate.execute(String.format("DROP TABLE IF EXISTS %s", this.getFullyQualifiedTableName()));
 		}
 
-		this.jdbcTemplate.execute(String.format("""
-				CREATE TABLE IF NOT EXISTS %s (
-					%s UUID NOT NULL DEFAULT uuid() PRIMARY KEY,
-					%s TEXT,
-					%s JSON,
-					%s VECTOR(%d) NOT NULL,
-					VECTOR INDEX %s_idx (%s)
-				) ENGINE=InnoDB
-				""", this.getFullyQualifiedTableName(), this.idFieldName, this.contentFieldName, this.metadataFieldName,
-				this.embeddingFieldName, this.embeddingDimensions(),
-				(this.vectorTableName + "_" + this.embeddingFieldName).replaceAll("[^\\n\\r\\t\\p{Print}]", ""),
-				this.embeddingFieldName));
+		// An existing table already has a vector size, so the embedding model is only
+		// consulted when the table has to be created.
+		if (!this.schemaValidator.tableExists(this.schemaName, this.vectorTableName)) {
+			int createdDimensions = this.embeddingDimensions();
+			this.jdbcTemplate.execute(String.format("""
+					CREATE TABLE IF NOT EXISTS %s (
+						%s UUID NOT NULL DEFAULT uuid() PRIMARY KEY,
+						%s TEXT,
+						%s JSON,
+						%s VECTOR(%d) NOT NULL,
+						VECTOR INDEX %s_idx (%s)
+					) ENGINE=InnoDB
+					""", this.getFullyQualifiedTableName(), this.idFieldName, this.contentFieldName,
+					this.metadataFieldName, this.embeddingFieldName, createdDimensions,
+					(this.vectorTableName + "_" + this.embeddingFieldName).replaceAll("[^\\n\\r\\t\\p{Print}]", ""),
+					this.embeddingFieldName));
+			// Not cached: another store may have created the table first with a
+			// different size, so the size is read back from the table on first use.
+		}
 	}
 
 	private String getFullyQualifiedTableName() {
@@ -428,6 +485,41 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 			return this.schemaName + "." + this.vectorTableName;
 		}
 		return this.vectorTableName;
+	}
+
+	/**
+	 * The vector size the table accepts, or -1 when it is not known. Unlike
+	 * {@link #embeddingDimensions()} it never guesses a default, and it never asks the
+	 * embedding model: a model's width says nothing about the width of a table that
+	 * already exists.
+	 * <p>
+	 * The size comes from the configured {@code dimensions} if set, otherwise from the
+	 * declared {@code VECTOR(n)} type of the table's embedding column, including a table
+	 * this store just created. A failed lookup leaves the size unknown and is tried again
+	 * on the next call. Only a known size is cached, so a store has to be rebuilt after
+	 * the table is recreated with a different size.
+	 * @return the known dimension, or -1
+	 */
+	private int vectorDimensions() {
+		if (this.dimensions > 0) {
+			return this.dimensions;
+		}
+		int cached = this.resolvedVectorDimensions;
+		if (cached > 0) {
+			return cached;
+		}
+		try {
+			int columnDimensions = this.schemaValidator.vectorColumnDimensions(this.schemaName, this.vectorTableName,
+					this.embeddingFieldName);
+			if (columnDimensions > 0) {
+				this.resolvedVectorDimensions = columnDimensions;
+				return columnDimensions;
+			}
+		}
+		catch (DataAccessException ex) {
+			logger.debug("Could not read the embedding dimensions from the vector table", ex);
+		}
+		return INVALID_EMBEDDING_DIMENSION;
 	}
 
 	int embeddingDimensions() {
@@ -455,10 +547,13 @@ public class MariaDBVectorStore extends AbstractObservationVectorStore implement
 		VectorStoreObservationContext.Builder builder = VectorStoreObservationContext
 			.builder(VectorStoreProvider.MARIADB.value(), operationName)
 			.collectionName(this.vectorTableName)
-			.dimensions(this.embeddingDimensions())
 			.similarityMetric(getSimilarityMetric());
 		if (this.schemaName != null) {
 			builder.namespace(this.schemaName);
+		}
+		int vectorDimensions = this.vectorDimensions();
+		if (vectorDimensions > 0) {
+			builder.dimensions(vectorDimensions);
 		}
 		return builder;
 	}

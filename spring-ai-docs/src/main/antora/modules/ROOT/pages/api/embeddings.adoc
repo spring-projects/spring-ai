@@ -176,6 +176,7 @@ Internally the various `EmbeddingModel` implementations use different low-level 
 * xref:api/embeddings/openai-embeddings.adoc[Spring AI OpenAI Embeddings]
 * xref:api/embeddings/ollama-embeddings.adoc[Spring AI Ollama Embeddings]
 * xref:api/embeddings/onnx.adoc[Spring AI Transformers (ONNX) Embeddings]
+* xref:api/embeddings/jinfer-embeddings.adoc[Qxotic jinfer Embeddings] (in-JVM local inference)
 * xref:api/embeddings/postgresml-embeddings.adoc[Spring AI PostgresML Embeddings]
 * xref:api/embeddings/bedrock-cohere-embedding.adoc[Spring AI Bedrock Cohere Embeddings]
 * xref:api/embeddings/bedrock-titan-embedding.adoc[Spring AI Bedrock Titan Embeddings]

@@ -42,7 +42,10 @@ import software.amazon.awssdk.services.bedrockruntime.model.StopReason;
 import software.amazon.awssdk.services.bedrockruntime.model.TokenUsage;
 import software.amazon.awssdk.services.bedrockruntime.model.ToolUseBlock;
 
+import org.springframework.ai.bedrock.converse.api.ConverseApiUtils;
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.part.OpaquePayload;
+import org.springframework.ai.chat.messages.part.ReasoningPart;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.tool.ToolCallingManager;
@@ -162,10 +165,11 @@ class BedrockProxyChatModelReasoningTests {
 		// The final text returned by getResult() must be unchanged.
 		assertThat(output.getText()).isEqualTo("The weather in Paris is 15°C.");
 		// The reasoning state must still be observable on the final assistant message.
-		assertThat(output).isInstanceOf(BedrockAssistantMessage.class);
-		BedrockReasoningContent reasoning = ((BedrockAssistantMessage) output).getReasoningContents().get(0);
-		assertThat(reasoning.getText()).isEqualTo(REASONING_TEXT);
-		assertThat(reasoning.getSignature()).isEqualTo(REASONING_SIGNATURE);
+		assertThat(output.getReasoning()).hasSize(1);
+		ReasoningPart reasoning = output.getReasoning().get(0);
+		assertThat(reasoning.text()).isEqualTo(REASONING_TEXT);
+		assertThat(reasoning.payload()).isEqualTo(new OpaquePayload(ConverseApiUtils.BEDROCK_PROVIDER,
+				ConverseApiUtils.PAYLOAD_SIGNATURE, REASONING_SIGNATURE));
 	}
 
 	@Test

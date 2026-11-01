@@ -36,6 +36,7 @@ import org.springframework.boot.context.properties.DeprecatedConfigurationProper
  * @deprecated Use {@link RedisChatMemoryRepositoryProperties} instead.
  */
 @Deprecated(since = "2.0.1", forRemoval = true)
+@SuppressWarnings("removal")
 public class RedisChatMemoryProperties {
 
 	public static final String CONFIG_PREFIX = "spring.ai.chat.memory.redis";
@@ -64,6 +65,26 @@ public class RedisChatMemoryProperties {
 
 	public void setPort(int port) {
 		this.delegate.setPort(port);
+	}
+
+	@DeprecatedConfigurationProperty(replacement = "spring.ai.chat.memory.repository.redis.username")
+	@Deprecated(since = "2.0.1", forRemoval = true)
+	public @Nullable String getUsername() {
+		return this.delegate.getUsername();
+	}
+
+	public void setUsername(@Nullable String username) {
+		this.delegate.setUsername(username);
+	}
+
+	@DeprecatedConfigurationProperty(replacement = "spring.ai.chat.memory.repository.redis.password")
+	@Deprecated(since = "2.0.1", forRemoval = true)
+	public @Nullable String getPassword() {
+		return this.delegate.getPassword();
+	}
+
+	public void setPassword(@Nullable String password) {
+		this.delegate.setPassword(password);
 	}
 
 	@DeprecatedConfigurationProperty(replacement = "spring.ai.chat.memory.repository.redis.index-name")

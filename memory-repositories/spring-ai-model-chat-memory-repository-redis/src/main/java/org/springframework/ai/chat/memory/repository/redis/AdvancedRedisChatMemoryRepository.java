@@ -41,11 +41,21 @@ import org.springframework.ai.chat.messages.MessageType;
  *
  * @author Brian Sam-Bodden
  * @since 2.0.0
+ * @deprecated since 2.1.0, for removal in 3.0.0, in favor of session memory:
+ * {@code org.springframework.ai.session.SessionRepository} in {@code spring-ai-session},
+ * with a JDBC store in {@code spring-ai-session-jdbc}. There is no session store for
+ * Redis yet; one is planned before 3.0.0, when this module is removed.
  */
+@Deprecated(since = "2.1.0", forRemoval = true)
+@SuppressWarnings("removal")
 public interface AdvancedRedisChatMemoryRepository extends ChatMemoryRepository {
 
 	/**
 	 * Find messages by content across all conversations.
+	 * <p>
+	 * NOTE: The content pattern is passed to Redis Search without escaping, so special
+	 * characters are interpreted as query syntax. Do not pass untrusted or end-user input
+	 * directly; validate or sanitize it first.
 	 * @param contentPattern The text pattern to search for in message content
 	 * @param limit Maximum number of results to return
 	 * @return List of messages matching the pattern
@@ -82,6 +92,12 @@ public interface AdvancedRedisChatMemoryRepository extends ChatMemoryRepository 
 
 	/**
 	 * Execute a custom query using Redis Search syntax.
+	 * <p>
+	 * NOTE: The query string is passed directly to the Redis Search engine without
+	 * escaping or conversation scoping, and can therefore match messages across all
+	 * conversations. It is intended for trusted, application-provided queries only. Do
+	 * not pass untrusted or end-user input to this method; construct queries from
+	 * validated inputs instead.
 	 * @param query The Redis Search query string
 	 * @param limit Maximum number of results to return
 	 * @return List of messages matching the query

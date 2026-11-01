@@ -25,6 +25,7 @@ import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.augment.ToolInputSchemaAugmenter.AugmentedArgumentType;
 import org.springframework.ai.tool.definition.ToolDefinition;
+import org.springframework.ai.tool.metadata.ToolMetadata;
 import org.springframework.ai.util.JsonHelper;
 import org.springframework.util.Assert;
 
@@ -100,6 +101,16 @@ public class AugmentedToolCallback<T extends Record> implements ToolCallback {
 	@Override
 	public ToolDefinition getToolDefinition() {
 		return this.augmentedToolDefinition;
+	}
+
+	/**
+	 * The delegate's metadata, so that augmenting the arguments keeps flags such as
+	 * {@link ToolMetadata#returnDirect()} and
+	 * {@link ToolMetadata#requiresConfirmation()}.
+	 */
+	@Override
+	public ToolMetadata getToolMetadata() {
+		return this.delegate.getToolMetadata();
 	}
 
 	@Override

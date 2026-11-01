@@ -38,6 +38,7 @@ public class QdrantVectorStorePropertiesTests {
 		assertThat(props.getPort()).isEqualTo(6334);
 		assertThat(props.isUseTls()).isFalse();
 		assertThat(props.getApiKey()).isNull();
+		assertThat(props.getDimensions()).isNull();
 	}
 
 	@Test
@@ -50,6 +51,7 @@ public class QdrantVectorStorePropertiesTests {
 		props.setPort(999);
 		props.setUseTls(true);
 		props.setApiKey("MY_API_KEY");
+		props.setDimensions(384);
 
 		assertThat(props.getCollectionName()).isEqualTo("MY_COLLECTION");
 		assertThat(props.getContentFieldName()).isEqualTo("MY_CONTENT_FIELD");
@@ -57,6 +59,7 @@ public class QdrantVectorStorePropertiesTests {
 		assertThat(props.getPort()).isEqualTo(999);
 		assertThat(props.isUseTls()).isTrue();
 		assertThat(props.getApiKey()).isEqualTo("MY_API_KEY");
+		assertThat(props.getDimensions()).isEqualTo(384);
 	}
 
 }

@@ -187,9 +187,14 @@ public abstract class AiRuntimeHints {
 		classes.addAll(Arrays.asList(clazz.getDeclaredClasses()));
 		classes.addAll(Arrays.asList(clazz.getClasses()));
 		for (var nestedClass : classes) {
-			findNestedClasses(nestedClass, indent);
+			// getClasses() includes inherited public nested classes, and some of those
+			// extend their own enclosing type (Jackson's JsonDeserializer.None and
+			// Converter.None), so only recurse into classes not seen before.
+			if (indent.add(nestedClass.getName())) {
+				findNestedClasses(nestedClass, indent);
+			}
 		}
-		indent.addAll(classes.stream().map(Class::getName).toList());
+
 	}
 
 }

@@ -65,7 +65,7 @@ class ChatModelCompletionObservationHandlerTests {
 			.provider("superprovider")
 			.build();
 		this.observationHandler.onStop(context);
-		assertThat(output).contains("""
+		assertThat(output).containsIgnoringNewLines("""
 				INFO  o.s.a.c.o.ChatModelCompletionObservationHandler -- Chat Model Completion:
 				[]
 				""");
@@ -79,7 +79,7 @@ class ChatModelCompletionObservationHandlerTests {
 			.build();
 		context.setResponse(new ChatResponse(List.of(new Generation(new AssistantMessage("")))));
 		this.observationHandler.onStop(context);
-		assertThat(output).contains("""
+		assertThat(output).containsIgnoringNewLines("""
 				INFO  o.s.a.c.o.ChatModelCompletionObservationHandler -- Chat Model Completion:
 				[]
 				""");
@@ -94,7 +94,7 @@ class ChatModelCompletionObservationHandlerTests {
 		context.setResponse(new ChatResponse(List.of(new Generation(new AssistantMessage("say please")),
 				new Generation(new AssistantMessage("seriously, say please")))));
 		this.observationHandler.onStop(context);
-		assertThat(output).contains("""
+		assertThat(output).containsIgnoringNewLines("""
 				INFO  o.s.a.c.o.ChatModelCompletionObservationHandler -- Chat Model Completion:
 				["say please", "seriously, say please"]
 				""");

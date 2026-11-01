@@ -36,6 +36,9 @@ public class ElasticsearchVectorStoreOptions {
 	 */
 	private int dimensions = 1536;
 
+	// Whether dimensions was set, as opposed to being the default of 1536.
+	private boolean dimensionsConfigured;
+
 	/**
 	 * The similarity function to use.
 	 */
@@ -60,6 +63,15 @@ public class ElasticsearchVectorStoreOptions {
 
 	public void setDimensions(int dims) {
 		this.dimensions = dims;
+		this.dimensionsConfigured = true;
+	}
+
+	/**
+	 * Whether {@link #setDimensions(int) dimensions} was set, as opposed to being the
+	 * default. Only a set value says anything about the size of an existing index.
+	 */
+	boolean isDimensionsConfigured() {
+		return this.dimensionsConfigured;
 	}
 
 	public SimilarityFunction getSimilarity() {

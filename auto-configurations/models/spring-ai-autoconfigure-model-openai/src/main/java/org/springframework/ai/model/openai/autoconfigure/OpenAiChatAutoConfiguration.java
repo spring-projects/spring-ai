@@ -27,6 +27,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.model.SpringAIModelProperties;
 import org.springframework.ai.model.SpringAIModels;
+import org.springframework.ai.model.openai.autoconfigure.OpenAiAutoConfigurationUtil.ResolvedConnectionProperties;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.openai.http.okhttp.OpenAiHttpClientBuilderCustomizer;
@@ -58,6 +59,8 @@ public class OpenAiChatAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
+	@ConditionalOnProperty(name = OpenAiChatProperties.CONFIG_PREFIX + ".api", havingValue = "chat-completions",
+			matchIfMissing = true)
 	public OpenAiChatModel openAiChatModel(OpenAiCommonProperties commonProperties, OpenAiChatProperties chatProperties,
 			ToolCallingManager toolCallingManager, ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<MeterRegistry> meterRegistry,
@@ -91,7 +94,7 @@ public class OpenAiChatAutoConfiguration {
 		return chatModel;
 	}
 
-	private OpenAIClient openAiClient(OpenAiCommonProperties commonProperties,
+	private OpenAIClient openAiClient(ResolvedConnectionProperties commonProperties,
 			ObjectProvider<ObservationRegistry> observationRegistry, @Nullable MeterRegistry meterRegistry,
 			List<OpenAiHttpClientBuilderCustomizer> httpClientCustomizers) {
 
@@ -104,7 +107,7 @@ public class OpenAiChatAutoConfiguration {
 				meterRegistry, httpClientCustomizers);
 	}
 
-	private OpenAIClientAsync openAiClientAsync(OpenAiCommonProperties commonProperties,
+	private OpenAIClientAsync openAiClientAsync(ResolvedConnectionProperties commonProperties,
 			ObjectProvider<ObservationRegistry> observationRegistry, @Nullable MeterRegistry meterRegistry,
 			List<OpenAiHttpClientBuilderCustomizer> httpClientCustomizers) {
 

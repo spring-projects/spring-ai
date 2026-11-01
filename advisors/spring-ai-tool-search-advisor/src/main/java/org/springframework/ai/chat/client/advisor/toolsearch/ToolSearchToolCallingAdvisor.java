@@ -34,8 +34,8 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
+import org.springframework.ai.chat.client.advisor.api.MemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
-import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
@@ -382,7 +382,7 @@ public class ToolSearchToolCallingAdvisor extends ToolCallingAdvisor {
 
 		@Nullable private Integer maxResults;
 
-		private String sessionIdKeyName = ChatMemory.CONVERSATION_ID;
+		private String sessionIdKeyName = MemoryAdvisor.CONVERSATION_ID;
 
 		private ToolIndexEvictionStrategy evictionStrategy = new LruEvictionStrategy(1000);
 

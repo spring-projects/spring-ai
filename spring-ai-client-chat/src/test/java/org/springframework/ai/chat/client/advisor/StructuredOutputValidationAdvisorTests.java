@@ -16,6 +16,7 @@
 
 package org.springframework.ai.chat.client.advisor;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiFunction;
 
@@ -222,6 +223,39 @@ class StructuredOutputValidationAdvisorTests {
 
 		assertThat(result).isEqualTo(validResponse);
 		assertThat(callCount[0]).isEqualTo(1);
+	}
+
+	@Test
+	void adviseCallReturnsToolCallResponseWithoutRepeatingTheRequest() {
+		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
+			.outputType(new TypeReference<Person>() {
+			})
+			.maxRepeatAttempts(3)
+			.build();
+
+		ChatClientRequest request = createMockRequest();
+		ChatClientResponse toolCallResponse = createToolCallResponse();
+
+		List<ChatClientRequest> modelRequests = new ArrayList<>();
+		CallAdvisor terminalAdvisor = terminalAdvisor((req, chain) -> {
+			modelRequests.add(req);
+			return toolCallResponse;
+		});
+
+		CallAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.of(advisor, terminalAdvisor))
+			.build();
+
+		ChatClientResponse result = realChain.nextCall(request);
+
+		// The tool call reaches the model exactly once and is handed back unchanged, so
+		// the tool calling advisor can execute it.
+		assertThat(modelRequests).containsExactly(request);
+		assertThat(result.chatResponse()).isNotNull();
+		assertThat(result.chatResponse().hasToolCalls()).isTrue();
+		assertThat(result.chatResponse().getResult().getOutput().getToolCalls())
+			.extracting(AssistantMessage.ToolCall::name)
+			.containsExactly("getPerson");
 	}
 
 	@Test
@@ -899,6 +933,15 @@ class StructuredOutputValidationAdvisorTests {
 		Generation generation = new Generation(assistantMessage);
 		ChatResponseMetadata metadata = ChatResponseMetadata.builder().usage(usage).build();
 		ChatResponse chatResponse = ChatResponse.builder().generations(List.of(generation)).metadata(metadata).build();
+		return ChatClientResponse.builder().chatResponse(chatResponse).build();
+	}
+
+	private ChatClientResponse createToolCallResponse() {
+		AssistantMessage assistantMessage = AssistantMessage.builder()
+			.content("")
+			.toolCalls(List.of(new AssistantMessage.ToolCall("call-1", "function", "getPerson", "{}")))
+			.build();
+		ChatResponse chatResponse = new ChatResponse(List.of(new Generation(assistantMessage)));
 		return ChatClientResponse.builder().chatResponse(chatResponse).build();
 	}
 

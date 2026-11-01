@@ -21,7 +21,7 @@ import java.time.Duration;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
-import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.chat.client.advisor.api.MemoryAdvisor;
 import org.springframework.ai.tool.toolsearch.ToolIndex;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.util.Assert;
@@ -70,9 +70,9 @@ public class ToolSearchAdvisorProperties {
 	/**
 	 * Key name in the advisor context map that carries the conversation/session ID. Must
 	 * match the key used by whatever provides it (e.g. a memory advisor). Defaults to
-	 * {@link ChatMemory#CONVERSATION_ID}.
+	 * {@link MemoryAdvisor#CONVERSATION_ID}.
 	 */
-	private String sessionIdKeyName = ChatMemory.CONVERSATION_ID;
+	private String sessionIdKeyName = MemoryAdvisor.CONVERSATION_ID;
 
 	/**
 	 * When {@code true} (default), tool references discovered across all tool-search tool

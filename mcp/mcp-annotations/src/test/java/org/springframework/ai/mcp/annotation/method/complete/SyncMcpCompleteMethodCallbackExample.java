@@ -144,7 +144,7 @@ public final class SyncMcpCompleteMethodCallbackExample {
 				CompleteResult result = handler.apply(exchange, request);
 			}
 			catch (Exception e) {
-				e.printStackTrace();
+				throw new RuntimeException(e);
 			}
 		}
 	}
@@ -175,7 +175,7 @@ public final class SyncMcpCompleteMethodCallbackExample {
 				CompleteResult result = handler.apply(exchange, request);
 			}
 			catch (Exception e) {
-				e.printStackTrace();
+				throw new RuntimeException(e);
 			}
 		}
 	}

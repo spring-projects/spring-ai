@@ -1,0 +1,39 @@
+{
+  "properties": [
+    {
+      "name": "spring.ai.tools.confirmation.enabled",
+      "type": "java.lang.Boolean",
+      "defaultValue": true
+    },
+    {
+      "name": "spring.ai.tools.limits.max-calls-per-tool-default",
+      "type": "java.lang.Integer",
+      "defaultValue": 40
+    },
+    {
+      "name": "spring.ai.tools.limits.max-total-tool-calls",
+      "type": "java.lang.Integer",
+      "defaultValue": 150
+    },
+    {
+      "name": "spring.ai.tools.limits.on-limit-exceeded",
+      "type": "org.springframework.ai.model.tool.ToolCallLimitBehavior",
+      "defaultValue": "throw"
+    },
+    {
+      "name": "spring.ai.tools.observations.include-content",
+      "type": "java.lang.Boolean",
+      "defaultValue": false
+    },
+    {
+      "name": "spring.ai.tools.resolution.fallback.enabled",
+      "type": "java.lang.Boolean",
+      "defaultValue": false
+    },
+    {
+      "name": "spring.ai.tools.throw-exception-on-error",
+      "type": "java.lang.Boolean",
+      "defaultValue": false
+    }
+  ]
+}

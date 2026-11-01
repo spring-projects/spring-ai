@@ -16,11 +16,17 @@
 
 package org.springframework.ai.google.genai;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import com.google.genai.Client;
 import com.google.genai.types.Candidate;
 import com.google.genai.types.Content;
+import com.google.genai.types.FinishReason;
+import com.google.genai.types.FunctionCall;
 import com.google.genai.types.GenerateContentResponse;
 import com.google.genai.types.GenerateContentResponseUsageMetadata;
 import com.google.genai.types.MediaModality;
@@ -32,15 +38,24 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.messages.part.OpaquePayload;
+import org.springframework.ai.chat.messages.part.ReasoningPart;
+import org.springframework.ai.chat.messages.part.TextPart;
+import org.springframework.ai.chat.messages.part.ToolCallPart;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.google.genai.metadata.GoogleGenAiModalityTokenCount;
 import org.springframework.ai.google.genai.metadata.GoogleGenAiTrafficType;
 import org.springframework.ai.google.genai.metadata.GoogleGenAiUsage;
+import org.springframework.ai.google.genai.tool.MockWeatherService;
 import org.springframework.ai.retry.RetryUtils;
+import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.core.retry.RetryTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -119,6 +134,300 @@ public class GoogleGenAiChatModelExtendedUsageTests {
 		assertThat(genAiUsage.getTotalTokens()).isEqualTo(175);
 		assertThat(genAiUsage.getThoughtsTokenCount()).isEqualTo(25); // Verify thinking
 																		// tokens
+	}
+
+	@Test
+	void testResponseWithThoughtsAndToolCalls() {
+		// Create mock response with thinking tokens
+		GenerateContentResponseUsageMetadata usageMetadata = GenerateContentResponseUsageMetadata.builder()
+			.promptTokenCount(100)
+			.candidatesTokenCount(50)
+			.totalTokenCount(175)
+			.thoughtsTokenCount(25) // Thinking tokens for thinking models
+			.build();
+
+		byte[] thoughtSignature = "thoughtSignature bla bla".getBytes(StandardCharsets.UTF_8);
+
+		Content responseContent = Content.builder()
+			.parts(Part.builder().text("This is a thoughts").thought(true).build(), Part.builder()
+				.functionCall(FunctionCall.builder().id("id_1").name("getCurrentWeather").args(new LinkedHashMap<>() {
+					{
+						put("location", "Tokyo");
+						put("unit", "C");
+					}
+				}).build())
+				.thoughtSignature(thoughtSignature)
+				.build(),
+					Part.builder()
+						.functionCall(
+								FunctionCall.builder().id("id_2").name("getCurrentWeather").args(new LinkedHashMap<>() {
+									{
+										put("location", "London");
+										put("unit", "C");
+									}
+								}).build())
+						.build())
+			.build();
+
+		Candidate candidate = Candidate.builder().content(responseContent).index(0).build();
+
+		GenerateContentResponse mockResponse = GenerateContentResponse.builder()
+			.candidates(List.of(candidate))
+			.usageMetadata(usageMetadata)
+			.modelVersion("gemini-2.0-flash-thinking-exp")
+			.build();
+
+		// Set the mock response
+		this.chatModel.setMockGenerateContentResponse(mockResponse);
+
+		UserMessage userMessage = new UserMessage("Tell me about thinking models");
+		var promptOptions = GoogleGenAiChatOptions.builder()
+			.includeThoughts(true)
+			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.description("Get the current weather in a given location")
+				.inputType(MockWeatherService.Request.class)
+				.build()))
+			.build();
+		Prompt prompt = new Prompt(List.of(userMessage), promptOptions);
+
+		// Execute chat call
+		List<AssistantMessage> response = this.chatModel.call(prompt)
+			.getResults()
+			.stream()
+			.map(Generation::getOutput)
+			.toList();
+
+		// One generation per candidate; the signature stays on the call that carried it
+		assertThat(response).containsExactly(AssistantMessage.builder()
+			.part(ReasoningPart.of("This is a thoughts"))
+			.part(new ToolCallPart(
+					new AssistantMessage.ToolCall("id_1", "function", "getCurrentWeather",
+							"{\"location\":\"Tokyo\",\"unit\":\"C\"}"),
+					new OpaquePayload(GoogleGenAiChatModel.GOOGLE_PROVIDER,
+							GoogleGenAiChatModel.PAYLOAD_THOUGHT_SIGNATURE,
+							Base64.getEncoder().encodeToString(thoughtSignature)),
+					Map.of()))
+			.part(ToolCallPart.of(new AssistantMessage.ToolCall("id_2", "function", "getCurrentWeather",
+					"{\"location\":\"London\",\"unit\":\"C\"}")))
+			.properties(Map.of("finishReason", new FinishReason(FinishReason.Known.STOP), "messageType",
+					MessageType.ASSISTANT, "candidateIndex", 0, "thoughtSignatures", List.of(thoughtSignature)))
+			.build());
+	}
+
+	@Test
+	void testResponseWithThoughtsToolCallsAndFinalResponse() {
+		// Create mock response with thinking tokens
+		GenerateContentResponseUsageMetadata usageMetadata = GenerateContentResponseUsageMetadata.builder()
+			.promptTokenCount(100)
+			.candidatesTokenCount(50)
+			.totalTokenCount(175)
+			.thoughtsTokenCount(25) // Thinking tokens for thinking models
+			.build();
+
+		Content responseContent = Content.builder()
+			.parts(Part.builder().text("This is a thoughts").thought(true).build(), Part.builder()
+				.functionCall(FunctionCall.builder().id("id_1").name("getCurrentWeather").args(new LinkedHashMap<>() {
+					{
+						put("location", "Tokyo");
+						put("unit", "C");
+					}
+				}).build())
+				.build(),
+					Part.builder()
+						.functionCall(
+								FunctionCall.builder().id("id_2").name("getCurrentWeather").args(new LinkedHashMap<>() {
+									{
+										put("location", "London");
+										put("unit", "C");
+									}
+								}).build())
+						.build(),
+					Part.builder().text("This is a final response").build())
+			.build();
+
+		Candidate candidate = Candidate.builder().content(responseContent).index(0).build();
+
+		GenerateContentResponse mockResponse = GenerateContentResponse.builder()
+			.candidates(List.of(candidate))
+			.usageMetadata(usageMetadata)
+			.modelVersion("gemini-2.0-flash-thinking-exp")
+			.build();
+
+		// Set the mock response
+		this.chatModel.setMockGenerateContentResponse(mockResponse);
+
+		UserMessage userMessage = new UserMessage("Tell me about thinking models");
+		var promptOptions = GoogleGenAiChatOptions.builder()
+			.includeThoughts(true)
+			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.description("Get the current weather in a given location")
+				.inputType(MockWeatherService.Request.class)
+				.build()))
+			.build();
+		Prompt prompt = new Prompt(List.of(userMessage), promptOptions);
+
+		// Execute chat call
+		List<AssistantMessage> response = this.chatModel.call(prompt)
+			.getResults()
+			.stream()
+			.map(Generation::getOutput)
+			.toList();
+
+		assertThat(response).containsExactly(AssistantMessage.builder()
+			.part(ReasoningPart.of("This is a thoughts"))
+			.part(ToolCallPart.of(new AssistantMessage.ToolCall("id_1", "function", "getCurrentWeather",
+					"{\"location\":\"Tokyo\",\"unit\":\"C\"}")))
+			.part(ToolCallPart.of(new AssistantMessage.ToolCall("id_2", "function", "getCurrentWeather",
+					"{\"location\":\"London\",\"unit\":\"C\"}")))
+			.part(TextPart.of("This is a final response"))
+			.properties(Map.of("finishReason", new FinishReason(FinishReason.Known.STOP), "messageType",
+					MessageType.ASSISTANT, "candidateIndex", 0))
+			.build());
+		assertThat(response.get(0).getText()).isEqualTo("This is a final response");
+	}
+
+	@Test
+	void testResponseWithThoughtsOnly() {
+		// Create mock response with thinking tokens
+		GenerateContentResponseUsageMetadata usageMetadata = GenerateContentResponseUsageMetadata.builder()
+			.promptTokenCount(100)
+			.candidatesTokenCount(50)
+			.totalTokenCount(175)
+			.thoughtsTokenCount(25) // Thinking tokens for thinking models
+			.build();
+
+		Content responseContent = Content.builder()
+			.parts(Part.builder().text("This is a thoughts").thought(true).build(),
+					Part.builder().text("This is a final response").build())
+			.build();
+
+		Candidate candidate = Candidate.builder().content(responseContent).index(0).build();
+
+		GenerateContentResponse mockResponse = GenerateContentResponse.builder()
+			.candidates(List.of(candidate))
+			.usageMetadata(usageMetadata)
+			.modelVersion("gemini-2.0-flash-thinking-exp")
+			.build();
+
+		// Set the mock response
+		this.chatModel.setMockGenerateContentResponse(mockResponse);
+
+		UserMessage userMessage = new UserMessage("Tell me about thinking models");
+		var promptOptions = GoogleGenAiChatOptions.builder().includeThoughts(true).build();
+		Prompt prompt = new Prompt(List.of(userMessage), promptOptions);
+
+		// Execute chat call
+		List<AssistantMessage> response = this.chatModel.call(prompt)
+			.getResults()
+			.stream()
+			.map(Generation::getOutput)
+			.toList();
+
+		assertThat(response).containsExactly(AssistantMessage.builder()
+			.part(ReasoningPart.of("This is a thoughts"))
+			.part(TextPart.of("This is a final response"))
+			.properties(Map.of("finishReason", new FinishReason(FinishReason.Known.STOP), "messageType",
+					MessageType.ASSISTANT, "candidateIndex", 0))
+			.build());
+		assertThat(response.get(0).getText()).isEqualTo("This is a final response");
+	}
+
+	@Test
+	void testResponseWithToolCallsOnly() {
+		// Create mock response with thinking tokens
+		GenerateContentResponseUsageMetadata usageMetadata = GenerateContentResponseUsageMetadata.builder()
+			.promptTokenCount(100)
+			.candidatesTokenCount(50)
+			.totalTokenCount(175)
+			.thoughtsTokenCount(25) // Thinking tokens for thinking models
+			.build();
+
+		Content responseContent = Content.builder()
+			.parts(Part.builder()
+				.functionCall(FunctionCall.builder().id("id_1").name("getCurrentWeather").args(new LinkedHashMap<>() {
+					{
+						put("location", "Tokyo");
+						put("unit", "C");
+					}
+				}).build())
+				.build(),
+					Part.builder()
+						.functionCall(
+								FunctionCall.builder().id("id_2").name("getCurrentWeather").args(new LinkedHashMap<>() {
+									{
+										put("location", "London");
+										put("unit", "C");
+									}
+								}).build())
+						.build())
+			.build();
+
+		Candidate candidate = Candidate.builder().content(responseContent).index(0).build();
+
+		GenerateContentResponse mockResponse = GenerateContentResponse.builder()
+			.candidates(List.of(candidate))
+			.usageMetadata(usageMetadata)
+			.modelVersion("gemini-2.0-flash-thinking-exp")
+			.build();
+
+		// Set the mock response
+		this.chatModel.setMockGenerateContentResponse(mockResponse);
+
+		UserMessage userMessage = new UserMessage("Tell me about thinking models");
+		var promptOptions = GoogleGenAiChatOptions.builder()
+			.includeThoughts(true)
+			.toolCallbacks(List.of(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.description("Get the current weather in a given location")
+				.inputType(MockWeatherService.Request.class)
+				.build()))
+			.build();
+		Prompt prompt = new Prompt(List.of(userMessage), promptOptions);
+
+		// Execute chat call
+		List<AssistantMessage> response = this.chatModel.call(prompt)
+			.getResults()
+			.stream()
+			.map(Generation::getOutput)
+			.toList();
+
+		assertThat(response).containsExactly(AssistantMessage.builder()
+			.part(ToolCallPart.of(new AssistantMessage.ToolCall("id_1", "function", "getCurrentWeather",
+					"{\"location\":\"Tokyo\",\"unit\":\"C\"}")))
+			.part(ToolCallPart.of(new AssistantMessage.ToolCall("id_2", "function", "getCurrentWeather",
+					"{\"location\":\"London\",\"unit\":\"C\"}")))
+			.properties(Map.of("finishReason", new FinishReason(FinishReason.Known.STOP), "messageType",
+					MessageType.ASSISTANT, "candidateIndex", 0))
+			.build());
+	}
+
+	@Test
+	void testAssistantMessageWithThoughtAndToolCallsRoundTrip() {
+		// Create AssistantMessage with both reasoning and tool calls
+		AssistantMessage message = AssistantMessage.builder()
+			.part(ReasoningPart.of("Let me check the weather"))
+			.toolCalls(List.of(new AssistantMessage.ToolCall("id_1", "function", "getCurrentWeather",
+					"{\"location\":\"Tokyo\",\"unit\":\"C\"}")))
+			.build();
+
+		// Convert to Gemini Parts
+		List<Part> parts = this.chatModel.messageToGeminiParts(message);
+
+		// Should have 2 parts: text with thought=true, and functionCall
+		assertThat(parts).hasSize(2);
+
+		// First part: text with thought
+		Part textPart = parts.get(0);
+		assertThat(textPart).isEqualTo(Part.builder().text("Let me check the weather").thought(true).build());
+
+		// Second part: functionCall
+		Part functionCallPart = parts.get(1);
+		assertThat(functionCallPart).isEqualTo(Part.builder()
+			.functionCall(FunctionCall.builder()
+				.id("id_1")
+				.name("getCurrentWeather")
+				.args(Map.of("location", "Tokyo", "unit", "C"))
+				.build())
+			.build());
 	}
 
 	@Test

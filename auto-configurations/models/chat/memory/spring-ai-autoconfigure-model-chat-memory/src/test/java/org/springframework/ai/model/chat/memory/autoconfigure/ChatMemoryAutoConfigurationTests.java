@@ -34,6 +34,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * @author Thomas Vitale
  */
+@SuppressWarnings("removal")
 class ChatMemoryAutoConfigurationTests {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()

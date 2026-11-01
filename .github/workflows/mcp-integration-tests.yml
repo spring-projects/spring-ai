@@ -7,11 +7,17 @@ on:
       - 'main'
       - '[0-9].[0-9].x'
   workflow_dispatch:
+    inputs:
+      runner:
+        description: 'Runner label to use (e.g. UBUNTU_SMALL, ubuntu-latest). Leave empty to use the default.'
+        required: false
+        default: ''
+        type: string
 
 jobs:
   mcp-it:
     name: MCP integration tests
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runner != '' && inputs.runner || (vars.COMMERCIAL && vars.UBUNTU_SMALL || 'ubuntu-latest') }}
     steps:
       - name: Checkout source code
         uses: actions/checkout@v6
@@ -25,7 +31,7 @@ jobs:
 
       - name: Setup Maven Build-Cache (~/.m2/build-cache)
         if: ${{ false }} # Disable until test flakiness has been resolved
-        uses: actions/cache@v5
+        uses: actions/cache@v4
         with:
           path: ~/.m2/build-cache
           # See pr-check.yml for an explanation of the key format

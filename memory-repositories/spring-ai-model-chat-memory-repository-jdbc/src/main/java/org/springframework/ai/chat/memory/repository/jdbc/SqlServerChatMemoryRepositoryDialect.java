@@ -22,7 +22,13 @@ package org.springframework.ai.chat.memory.repository.jdbc;
  * @author Mark Pollack
  * @author Yanming Zhou
  * @since 1.0.0
+ * @deprecated since 2.1.0, for removal in 3.0.0, in favor of
+ * {@code JdbcSessionRepository} in {@code spring-ai-session-jdbc}. There is no session
+ * dialect for SQL Server yet; one is planned before 3.0.0, and until then a dialect of
+ * your own implements {@code JdbcSessionRepositoryDialect}.
  */
+@Deprecated(since = "2.1.0", forRemoval = true)
+@SuppressWarnings("removal")
 public class SqlServerChatMemoryRepositoryDialect implements JdbcChatMemoryRepositoryDialect {
 
 	@Override

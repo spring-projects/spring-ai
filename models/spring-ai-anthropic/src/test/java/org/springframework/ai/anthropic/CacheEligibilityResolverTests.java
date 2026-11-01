@@ -255,4 +255,44 @@ class CacheEligibilityResolverTests {
 		assertThat(cc.ttl().get()).isEqualTo(CacheControlEphemeral.Ttl.TTL_1H);
 	}
 
+	@Test
+	void citationDocumentCacheControlRespectsStrategy() {
+		CacheEligibilityResolver none = CacheEligibilityResolver
+			.from(AnthropicCacheOptions.builder().strategy(AnthropicCacheStrategy.NONE).build());
+		assertThat(none.resolveCitationDocumentCacheControl()).isNull();
+
+		// TOOLS_ONLY must not cache documents: a document breakpoint would also cache
+		// the system prompt that precedes it.
+		CacheEligibilityResolver toolsOnly = CacheEligibilityResolver
+			.from(AnthropicCacheOptions.builder().strategy(AnthropicCacheStrategy.TOOLS_ONLY).build());
+		assertThat(toolsOnly.resolveCitationDocumentCacheControl()).isNull();
+
+		CacheEligibilityResolver systemOnly = CacheEligibilityResolver
+			.from(AnthropicCacheOptions.builder().strategy(AnthropicCacheStrategy.SYSTEM_ONLY).build());
+		assertThat(systemOnly.resolveCitationDocumentCacheControl()).isNotNull();
+
+		// Documents use the SYSTEM TTL
+		CacheEligibilityResolver sysAndTools = CacheEligibilityResolver.from(AnthropicCacheOptions.builder()
+			.strategy(AnthropicCacheStrategy.SYSTEM_AND_TOOLS)
+			.messageTypeTtl(MessageType.SYSTEM, AnthropicCacheTtl.ONE_HOUR)
+			.build());
+		CacheControlEphemeral cc = sysAndTools.resolveCitationDocumentCacheControl();
+		assertThat(cc).isNotNull();
+		assertThat(cc.ttl()).contains(CacheControlEphemeral.Ttl.TTL_1H);
+
+		CacheEligibilityResolver history = CacheEligibilityResolver
+			.from(AnthropicCacheOptions.builder().strategy(AnthropicCacheStrategy.CONVERSATION_HISTORY).build());
+		assertThat(history.resolveCitationDocumentCacheControl()).isNotNull();
+	}
+
+	@Test
+	void citationDocumentCacheControlRespectsBreakpointLimit() {
+		CacheEligibilityResolver resolver = CacheEligibilityResolver
+			.from(AnthropicCacheOptions.builder().strategy(AnthropicCacheStrategy.CONVERSATION_HISTORY).build());
+		for (int i = 0; i < 4; i++) {
+			resolver.useCacheBlock();
+		}
+		assertThat(resolver.resolveCitationDocumentCacheControl()).isNull();
+	}
+
 }

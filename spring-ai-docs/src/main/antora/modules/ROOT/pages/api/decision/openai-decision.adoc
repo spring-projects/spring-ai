@@ -1,0 +1,194 @@
+= OpenAI Decisions
+
+== Introduction
+
+Spring AI supports the https://developers.openai.com/api/reference/resources/decisions/methods/create[OpenAI Decisions API] through the xref:api/decision.adoc[`DecisionModel`] API.
+A decision model answers typed yes/no, choice and score questions about a text, a set of fields or a conversation, and returns the probability of each outcome.
+The Decisions API is a dedicated endpoint, separate from chat completions, and `gpt-6-luna` is the model Spring AI uses for it by default.
+
+== Prerequisites
+
+. Create an OpenAI account and obtain an API key.
+You can sign up at the https://platform.openai.com/signup[OpenAI signup page] and generate an API key on the https://platform.openai.com/account/api-keys[API Keys page].
+. Add the `spring-ai-openai` dependency to your project's build file.
+For more information, refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section.
+
+== Auto-configuration
+
+Spring AI provides Spring Boot auto-configuration for the OpenAI decision model.
+To enable it add the following dependency to your project's Maven `pom.xml` file:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-model-openai</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file:
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-starter-model-openai'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+== Decision Properties
+
+=== Connection Properties
+
+The prefix `spring.ai.openai` is used as the property prefix that lets you connect to OpenAI.
+
+[cols="3,5,1"]
+|====
+| Property | Description | Default
+| spring.ai.openai.base-url   | The URL to connect to |  https://api.openai.com
+| spring.ai.openai.api-key    | The API Key           |  -
+| spring.ai.openai.organization-id | Optionally you can specify which organization is used for an API request. |  -
+| spring.ai.openai.timeout | Request timeout for the OpenAI client. |  60 sec.
+| spring.ai.openai.max-retries | Maximum number of retries for the OpenAI client. |  3
+| spring.ai.openai.proxy | Proxy settings for the OpenAI client. |  -
+| spring.ai.openai.custom-headers | Custom HTTP headers to add to OpenAI client requests. |  empty
+| spring.ai.openai.connection-pool-metrics-enabled | Whether to enable connection pool metrics for the underlying OkHttp client. |  false
+|====
+
+=== Configuration Properties
+
+[NOTE]
+====
+The decision auto-configuration is enabled and disabled with the `spring.ai.model.decision` property.
+
+To enable, `spring.ai.model.decision=openai` (it is enabled by default).
+
+To disable, `spring.ai.model.decision=none` (or any value which doesn't match `openai`).
+====
+
+The prefix `spring.ai.openai.decision` is used as the property prefix for configuring the OpenAI decision model.
+
+[cols="3,5,2"]
+|====
+| Property | Description | Default
+| spring.ai.model.decision   | Enable the decision model |  openai
+| spring.ai.openai.decision.base-url   | The URL to connect to |  https://api.openai.com
+| spring.ai.openai.decision.api-key    | The API Key           |  -
+| spring.ai.openai.decision.organization-id | Optionally you can specify which organization is used for an API request. |  -
+| spring.ai.openai.decision.model  | ID of the model to use for decisions. | gpt-6-luna
+| spring.ai.openai.decision.safety-identifier | A stable identifier of the end user, sent to OpenAI to help detect abuse. | -
+|====
+
+NOTE: You can override the common `spring.ai.openai.base-url`, `spring.ai.openai.api-key` and `spring.ai.openai.organization-id` properties.
+The `spring.ai.openai.decision.base-url`, `spring.ai.openai.decision.api-key` and `spring.ai.openai.decision.organization-id` properties, if set, take precedence over the common properties.
+This is useful if you want to use different OpenAI accounts for different models and different model endpoints.
+
+TIP: All properties prefixed with `spring.ai.openai.decision` can be overridden at runtime.
+
+== Runtime Options
+
+The `OpenAiDecisionOptions` class provides the options to use when making a decision request.
+On start-up, the options specified by `spring.ai.openai.decision` are used, but you can override these at runtime through the prompt options.
+
+[source,java]
+----
+DecisionResponse response = openAiDecisionModel.call(DecisionPrompt.builder()
+    .text("Help! My payouts are late again and nobody answers my emails.")
+    .question("urgent", YesNoQuestion.of("Is this request urgent?"))
+    .question("team", ChoiceQuestion.of("Which team should handle it?", "billing", "technical", "sales"))
+    .question("mood", ScoreQuestion.of("How is the customer's mood?", "calm", "annoyed", "angry"))
+    .options(OpenAiDecisionOptions.builder()
+        .model("gpt-6-luna")
+        .safetyIdentifier("user-12345")
+        .build())
+    .build());
+
+boolean urgent = response.getYesNo("urgent").isYes();
+ChoiceAnswer team = response.getChoice("team");
+System.out.println(team.getValue() + " " + team.getProbabilities());
+System.out.println("mood: " + response.getScore("mood").getNearestLevel());
+----
+
+The portable `DecisionOptions` work too, when only the model name needs to change.
+
+Besides `model` and `safetyIdentifier`, a prompt can override `timeout`, `customHeaders` and `deploymentName` for one call.
+The other `OpenAiDecisionOptions` settings, such as `baseUrl`, `apiKey`, `organizationId`, `maxRetries` and `proxy`, configure the client when the model is built and have no effect on a prompt.
+The `deploymentName`, Microsoft Foundry and GitHub Models settings are there for parity with the other OpenAI models; whether those platforms serve the Decisions API is for their documentation to say.
+
+== Request Mapping
+
+Each question is sent as one entry of the request's `questions`, named after the question name.
+
+[cols="2,2,5"]
+|====
+| Spring AI question | OpenAI question type | Notes
+
+| `YesNoQuestion` | `predicate` | The API has no field for criteria, so `whenYes` and `whenNo`, when set, are added to the instructions as `Answer "yes" if: ...` and `Answer "no" if: ...` lines.
+| `ChoiceQuestion` | `choice` | Each option becomes a choice with its value and description.
+OpenAI recommends a fallback option such as `other` when the options don't cover every input.
+| `ScoreQuestion` | `score` | Each level becomes a level with its label and description.
+|====
+
+An input made of text only is sent as a string.
+Any other input is sent as one user message made of parts, in order:
+
+* a `DecisionInput.content(...)` input: its content parts;
+* a `DecisionInput.fields(...)` input: a text part per field, as `name: value`, with maps and lists as JSON; a field holding content parts becomes a `name:` text part followed by those parts;
+* a `DecisionInput.conversation(...)` input: the parts of each message prefixed with the message role, with tool calls and tool results as extra text lines and images as image parts where they appear.
+
+Reasoning parts are not sent.
+Only `TextPart` and `MediaPart` are supported as content parts, and only images as media.
+The Decisions API accepts images only as inline base64 data URLs, not as hosted URLs, so give an image as bytes or as a `Resource` (for example `MediaPart.of(new Media(MimeTypeUtils.IMAGE_PNG, new ClassPathResource("photo.png")))`); a `Media` holding a hosted URL is rejected.
+
+OpenAI can decline to answer one question while answering the others; such a question gets a `RefusalAnswer`.
+
+The model that answered and the token usage come from the response body; the usage includes the cached and cache-write input token counts.
+
+The Decisions API returns no id in the response body.
+On the OpenAI platform, the request id reported in the `x-request-id` header is recorded as the id of the response metadata, available through `response.getMetadata().getId()` and as the `gen_ai.response.id` observation key, since it is the identifier to quote to OpenAI about a decision.
+
+== Manual Configuration
+
+Add the `spring-ai-openai` dependency to your project's Maven `pom.xml` file:
+
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-openai</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file:
+
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-openai'
+}
+----
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+Next, create an `OpenAiDecisionModel`:
+
+[source,java]
+----
+OpenAiDecisionModel decisionModel = OpenAiDecisionModel.builder()
+    .options(OpenAiDecisionOptions.builder()
+        .apiKey(System.getenv("OPENAI_API_KEY"))
+        .model("gpt-6-luna")
+        .build())
+    .build();
+
+DecisionResponse response = decisionModel.call("WIN A FREE CRUISE!!! Click here now",
+        Map.of("spam", YesNoQuestion.of("Is this message spam?")));
+----
+
+include::partial$openai/openai-http-client-customization.adoc[]
+
+== Example Code
+
+The `OpenAiDecisionModelIT` test provides some general examples of how to use the library.
+You can refer to this test for more detailed usage examples.

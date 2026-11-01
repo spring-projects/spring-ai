@@ -55,4 +55,33 @@ public interface VectorStoreRetriever {
 		return this.similaritySearch(SearchRequest.builder().query(query).build());
 	}
 
+	/**
+	 * Retrieves documents by similarity to a query embedding the caller has already
+	 * computed, instead of embedding query text with the store's own embedding model.
+	 * <p>
+	 * This is the search-side counterpart of {@link VectorStore#upsert(List)}: an
+	 * application that produces its own embeddings can embed the query the same way and
+	 * search with the result, so the store's embedding model is never involved. The query
+	 * embedding must come from the same model, with the same settings, as the stored
+	 * embeddings; otherwise the results are meaningless even though no error is raised.
+	 * <p>
+	 * The request supplies the rest of the search: {@code topK}, the similarity threshold
+	 * and the filter expression. Its query text, if any, is ignored.
+	 * <p>
+	 * The default implementation throws {@link UnsupportedOperationException}; each store
+	 * opts in independently.
+	 * @param queryEmbedding the query embedding; must not be null or empty, and must
+	 * contain only finite values
+	 * @param request the search parameters; its query text is ignored
+	 * @return the documents most similar to the query embedding that match the request
+	 * conditions
+	 * @throws UnsupportedOperationException if the store does not support searching with
+	 * a query embedding
+	 * @since 2.1.0
+	 */
+	default List<Document> similaritySearch(float[] queryEmbedding, SearchRequest request) {
+		throw new UnsupportedOperationException(
+				getClass().getSimpleName() + " does not support similarity search with a query embedding");
+	}
+
 }

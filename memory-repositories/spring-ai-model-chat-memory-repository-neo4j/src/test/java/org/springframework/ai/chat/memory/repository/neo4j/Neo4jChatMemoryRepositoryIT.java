@@ -59,6 +59,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * @since 1.0.0
  */
 @Testcontainers
+@SuppressWarnings("removal")
 class Neo4jChatMemoryRepositoryIT {
 
 	static final DockerImageName DEFAULT_IMAGE_NAME = DockerImageName.parse("neo4j");

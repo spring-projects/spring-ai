@@ -25,6 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Jonathan Leijendekker
  */
+@SuppressWarnings("removal")
 class JdbcChatMemoryRepositoryPropertiesTests {
 
 	@Test

@@ -1,0 +1,63 @@
+<settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 https://maven.apache.org/xsd/settings-1.0.0.xsd">
+
+	<servers>
+		<server>
+			<id>release-train</id>
+			<username>${env.RELEASE_TRAIN_MAVEN_REPOSITORY_USERNAME}</username>
+			<password>${env.RELEASE_TRAIN_MAVEN_REPOSITORY_PASSWORD}</password>
+		</server>
+		<server>
+			<id>spring-enterprise-snapshot</id>
+			<username>${env.COMMERCIAL_ARTIFACTORY_USERNAME}</username>
+			<password>${env.COMMERCIAL_ARTIFACTORY_PASSWORD}</password>
+		</server>
+		<server>
+			<id>spring-enterprise-release</id>
+			<username>${env.COMMERCIAL_ARTIFACTORY_USERNAME}</username>
+			<password>${env.COMMERCIAL_ARTIFACTORY_PASSWORD}</password>
+		</server>
+	</servers>
+
+	<mirrors>
+		<mirror>
+			<!-- This redirects the spring-snapshot repo to the release-train repo -->
+			<id>release-train</id>
+			<mirrorOf>spring-snapshot</mirrorOf>
+			<url>${env.RELEASE_TRAIN_MAVEN_REPOSITORY_URL}</url>
+		</mirror>
+	</mirrors>
+
+	<profiles>
+		<profile>
+			<id>releaseTrain</id>
+			<repositories>
+				<repository>
+					<id>release-train</id>
+					<url>${env.RELEASE_TRAIN_MAVEN_REPOSITORY_URL}</url>
+					<releases>
+						<enabled>true</enabled>
+					</releases>
+					<snapshots>
+						<enabled>true</enabled>
+						<updatePolicy>always</updatePolicy>
+					</snapshots>
+				</repository>
+			</repositories>
+			<pluginRepositories>
+				<pluginRepository>
+					<id>release-train</id>
+					<url>${env.RELEASE_TRAIN_MAVEN_REPOSITORY_URL}</url>
+					<releases>
+						<enabled>true</enabled>
+					</releases>
+					<snapshots>
+						<enabled>true</enabled>
+						<updatePolicy>always</updatePolicy>
+					</snapshots>
+				</pluginRepository>
+			</pluginRepositories>
+		</profile>
+	</profiles>
+</settings>

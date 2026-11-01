@@ -55,6 +55,7 @@ import static org.mockito.Mockito.when;
  * @author Sebastien Deleuze
  */
 @ExtendWith(MockitoExtension.class)
+@SuppressWarnings("removal")
 public class ChatClientAdvisorTests {
 
 	@Mock

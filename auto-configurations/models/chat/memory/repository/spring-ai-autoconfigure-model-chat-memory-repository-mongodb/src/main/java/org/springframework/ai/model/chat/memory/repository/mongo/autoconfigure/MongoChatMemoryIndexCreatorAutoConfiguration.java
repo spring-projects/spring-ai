@@ -40,7 +40,13 @@ import org.springframework.data.mongodb.core.index.IndexOperations;
  * @author Łukasz Jernaś
  * @see MongoChatMemoryProperties
  * @since 1.1.0
+ * @deprecated since 2.1.0, for removal in 3.0.0, in favor of the session memory
+ * auto-configuration, {@code SessionServiceAutoConfiguration} in
+ * {@code spring-ai-autoconfigure-model-session}. There is no session store for MongoDB
+ * yet; one is planned before 3.0.0, when this module is removed.
  */
+@Deprecated(since = "2.1.0", forRemoval = true)
+@SuppressWarnings("removal")
 @AutoConfiguration
 @ConditionalOnProperty(value = "spring.ai.chat.memory.repository.mongo.create-indices", havingValue = "true")
 public class MongoChatMemoryIndexCreatorAutoConfiguration {

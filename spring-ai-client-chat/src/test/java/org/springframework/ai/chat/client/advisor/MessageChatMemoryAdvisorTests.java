@@ -45,6 +45,7 @@ import static org.mockito.Mockito.mock;
  * @author Mark Pollack
  * @author Thomas Vitale
  */
+@SuppressWarnings("removal")
 public class MessageChatMemoryAdvisorTests {
 
 	// -------------------------------------------------------------------------

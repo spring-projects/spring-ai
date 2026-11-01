@@ -1,0 +1,21 @@
+{
+  "id": "resp_image_jpeg_1",
+  "object": "response",
+  "created_at": 1757000500,
+  "status": "completed",
+  "model": "gpt-5-mini",
+  "output": [
+    {
+      "type": "image_generation_call",
+      "id": "ig_2",
+      "status": "completed",
+      "output_format": "jpeg",
+      "result": "AQID"
+    }
+  ],
+  "parallel_tool_calls": true,
+  "tool_choice": "auto",
+  "tools": [],
+  "temperature": 1.0,
+  "top_p": 1.0
+}

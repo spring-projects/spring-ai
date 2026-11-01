@@ -16,6 +16,10 @@
 
 package org.springframework.ai.chat.cache.semantic;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.Optional;
 
@@ -89,11 +93,12 @@ class SemanticCacheAdvisorTests {
 		verify(this.mockCache).get(queryCaptor.capture(), hashCaptor.capture());
 
 		assertThat(queryCaptor.getValue()).isEqualTo(userText);
-		assertThat(hashCaptor.getValue()).isNotNull().hasSize(8); // 8 hex chars
+		assertThat(hashCaptor.getValue()).isNotNull().hasSize(64); // 64 hex chars (32
+																	// bytes)
 
 		// Assert - verify cache.set was called with same parameters
 		verify(this.mockCache).set(eq(userText), eq(chatResponse), hashCaptor.capture());
-		assertThat(hashCaptor.getValue()).isNotNull().hasSize(8);
+		assertThat(hashCaptor.getValue()).isNotNull().hasSize(64);
 	}
 
 	@Test
@@ -224,8 +229,36 @@ class SemanticCacheAdvisorTests {
 		this.advisor.adviseCall(request, this.mockChain);
 
 		// Assert - empty system prompt should result in null context hash
-		verify(this.mockCache).get(eq(userText), (String) isNull());
+		verify(this.mockCache).get(eq(userText), isNull());
 		verify(this.mockCache).set(eq(userText), eq(chatResponse), (String) isNull());
+	}
+
+	@Test
+	void contextHashMatchesFullSha256Digest() throws NoSuchAlgorithmException {
+		String systemPromptText = "You are a helpful assistant.";
+		String userText = "What is AI?";
+
+		Prompt prompt = new Prompt(List.of(new SystemMessage(systemPromptText), new UserMessage(userText)));
+
+		ChatClientRequest request = ChatClientRequest.builder().prompt(prompt).build();
+
+		ChatResponse chatResponse = createMockChatResponse("AI is artificial intelligence.");
+		ChatClientResponse clientResponse = ChatClientResponse.builder().chatResponse(chatResponse).build();
+
+		when(this.mockCache.get(eq(userText), any(String.class))).thenReturn(Optional.empty());
+		when(this.mockChain.nextCall(request)).thenReturn(clientResponse);
+
+		this.advisor.adviseCall(request, this.mockChain);
+
+		ArgumentCaptor<String> hashCaptor = ArgumentCaptor.forClass(String.class);
+		verify(this.mockCache).get(eq(userText), hashCaptor.capture());
+
+		MessageDigest digest = MessageDigest.getInstance("SHA-256");
+		byte[] expectedHash = digest.digest(systemPromptText.getBytes(StandardCharsets.UTF_8));
+		String expectedHex = HexFormat.of().formatHex(expectedHash);
+
+		assertThat(hashCaptor.getValue()).isEqualTo(expectedHex);
+		assertThat(hashCaptor.getValue()).matches("^[0-9a-f]{64}$");
 	}
 
 	private ChatResponse createMockChatResponse(String text) {

@@ -35,6 +35,12 @@ public enum AiOperationType {
 	CHAT("chat"),
 
 	/**
+	 * AI operation type for decision-model inference, which answers typed questions
+	 * about an input.
+	 */
+	DECISION("decision"),
+
+	/**
 	 * AI operation type for embedding.
 	 */
 	EMBEDDING("embedding"),
@@ -57,7 +63,17 @@ public enum AiOperationType {
 	/**
 	 * AI operation type for text completion.
 	 */
-	TEXT_COMPLETION("text_completion");
+	TEXT_COMPLETION("text_completion"),
+
+	/**
+	 * AI operation type for text-to-speech.
+	 */
+	TEXT_TO_SPEECH("text_to_speech"),
+
+	/**
+	 * AI operation type for audio transcription.
+	 */
+	TRANSCRIPTION("transcription");
 
 	private final String value;
 

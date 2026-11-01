@@ -22,6 +22,9 @@ import java.util.List;
 import java.util.Map;
 
 import io.modelcontextprotocol.client.transport.HttpClientStreamableHttpTransport;
+import io.modelcontextprotocol.client.transport.customizer.DelegatingMcpAsyncHttpClientRequestCustomizer;
+import io.modelcontextprotocol.client.transport.customizer.McpAsyncHttpClientRequestCustomizer;
+import io.modelcontextprotocol.client.transport.customizer.McpSyncHttpClientRequestCustomizer;
 import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
 import tools.jackson.databind.json.JsonMapper;
 
@@ -52,6 +55,8 @@ import org.springframework.context.annotation.Bean;
  * connections
  * <li>Configures JsonMapper for JSON serialization/deserialization
  * <li>Supports multiple named server connections with different URLs
+ * <li>Applies all {@link McpSyncHttpClientRequestCustomizer} and
+ * {@link McpAsyncHttpClientRequestCustomizer} beans to every outbound request
  * <li>Applies {@link McpClientCustomizer<HttpClientStreamableHttpTransport.Builder>}
  * beans to each transport builder.
  * </ul>
@@ -75,14 +80,26 @@ public class StreamableHttpHttpClientTransportAutoConfiguration {
 	 * <li>A new HttpClient instance
 	 * <li>Server URL from properties
 	 * <li>JsonMapper for JSON processing
+	 * <li>All available {@link McpSyncHttpClientRequestCustomizer} and
+	 * {@link McpAsyncHttpClientRequestCustomizer} beans, composed into a single request
+	 * customizer
 	 * <li>All available
 	 * {@link McpClientCustomizer<HttpClientStreamableHttpTransport.Builder>} beans
 	 * applied with the connection name and transport builder
 	 * </ul>
+	 *
+	 * <p>
+	 * Request customizer beans are installed on the builder before the
+	 * {@link McpClientCustomizer} beans run, so a customizer that calls
+	 * {@code asyncHttpRequestCustomizer(...)} itself still takes precedence.
 	 * @param streamableProperties the Streamable HTTP client properties containing server
 	 * configurations
 	 * @param jsonMapperProvider the provider for JsonMapper or a new instance if not
 	 * available
+	 * @param syncRequestCustomizers provider for
+	 * {@link McpSyncHttpClientRequestCustomizer} beans
+	 * @param asyncRequestCustomizers provider for
+	 * {@link McpAsyncHttpClientRequestCustomizer} beans
 	 * @param transportCustomizers provider for
 	 * {@link McpClientCustomizer<HttpClientStreamableHttpTransport.Builder>} beans
 	 * @return list of named MCP transports
@@ -90,9 +107,14 @@ public class StreamableHttpHttpClientTransportAutoConfiguration {
 	@Bean
 	public List<NamedClientMcpTransport> streamableHttpHttpClientTransports(
 			McpStreamableHttpClientProperties streamableProperties, ObjectProvider<JsonMapper> jsonMapperProvider,
+			ObjectProvider<McpSyncHttpClientRequestCustomizer> syncRequestCustomizers,
+			ObjectProvider<McpAsyncHttpClientRequestCustomizer> asyncRequestCustomizers,
 			ObjectProvider<McpClientCustomizer<HttpClientStreamableHttpTransport.Builder>> transportCustomizers) {
 
 		JsonMapper jsonMapper = jsonMapperProvider.getIfAvailable(JsonMapper::shared);
+
+		List<McpAsyncHttpClientRequestCustomizer> requestCustomizers = requestCustomizers(syncRequestCustomizers,
+				asyncRequestCustomizers);
 
 		List<NamedClientMcpTransport> streamableHttpTransports = new ArrayList<>();
 
@@ -110,6 +132,11 @@ public class StreamableHttpHttpClientTransportAutoConfiguration {
 				.clientBuilder(HttpClient.newBuilder())
 				.jsonMapper(new JacksonMcpJsonMapper(jsonMapper));
 
+			if (!requestCustomizers.isEmpty()) {
+				transportBuilder
+					.asyncHttpRequestCustomizer(new DelegatingMcpAsyncHttpClientRequestCustomizer(requestCustomizers));
+			}
+
 			for (McpClientCustomizer<HttpClientStreamableHttpTransport.Builder> customizer : transportCustomizers) {
 				customizer.customize(name, transportBuilder);
 			}
@@ -120,6 +147,22 @@ public class StreamableHttpHttpClientTransportAutoConfiguration {
 		}
 
 		return streamableHttpTransports;
+	}
+
+	/**
+	 * Collects the request customizer beans into a single ordered list. Sync customizers
+	 * are applied before async ones; within each group {@code @Order} is honoured.
+	 */
+	private static List<McpAsyncHttpClientRequestCustomizer> requestCustomizers(
+			ObjectProvider<McpSyncHttpClientRequestCustomizer> syncRequestCustomizers,
+			ObjectProvider<McpAsyncHttpClientRequestCustomizer> asyncRequestCustomizers) {
+
+		List<McpAsyncHttpClientRequestCustomizer> requestCustomizers = new ArrayList<>();
+		syncRequestCustomizers.orderedStream()
+			.map(McpAsyncHttpClientRequestCustomizer::fromSync)
+			.forEach(requestCustomizers::add);
+		asyncRequestCustomizers.orderedStream().forEach(requestCustomizers::add);
+		return requestCustomizers;
 	}
 
 }

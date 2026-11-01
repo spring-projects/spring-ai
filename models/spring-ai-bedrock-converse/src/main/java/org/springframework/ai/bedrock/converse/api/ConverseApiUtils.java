@@ -19,10 +19,12 @@ package org.springframework.ai.bedrock.converse.api;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.jspecify.annotations.Nullable;
 import software.amazon.awssdk.core.document.Document;
 
 /**
@@ -34,6 +36,30 @@ import software.amazon.awssdk.core.document.Document;
  * @since 1.0.0
  */
 public final class ConverseApiUtils {
+
+	/**
+	 * The {@link org.springframework.ai.chat.messages.part.OpaquePayload#provider()} of
+	 * parts produced by the Bedrock Converse chat model.
+	 * @since 2.1.0
+	 */
+	public static final String BEDROCK_PROVIDER = "bedrock";
+
+	/**
+	 * The {@link org.springframework.ai.chat.messages.part.OpaquePayload#kind()} of a
+	 * signed reasoning block; the payload data is the signature of the reasoning text,
+	 * replayed unmodified.
+	 * @since 2.1.0
+	 */
+	public static final String PAYLOAD_SIGNATURE = "signature";
+
+	/**
+	 * The {@link org.springframework.ai.chat.messages.part.OpaquePayload#kind()} of a
+	 * redacted reasoning block, whose reasoning Bedrock withheld: the reasoning part has
+	 * no text and the payload data is the Base64 encoded redacted content, replayed
+	 * unmodified.
+	 * @since 2.1.0
+	 */
+	public static final String PAYLOAD_REDACTED_CONTENT = "redacted_content";
 
 	private ConverseApiUtils() {
 	}
@@ -103,6 +129,47 @@ public final class ConverseApiUtils {
 			.collect(Collectors.toMap(e -> e.getKey(), e -> convertObjectToDocument(e.getValue())));
 
 		return Document.fromMap(attr);
+	}
+
+	/**
+	 * Converts an AWS SDK {@link Document} into a plain Java object ({@link Map},
+	 * {@link List}, {@link String}, {@link Boolean}, {@link BigDecimal} or {@code null}).
+	 * <p>
+	 * This is the inverse of {@link #convertObjectToDocument(Object)}. It lets callers
+	 * serialize a document to JSON with a real JSON writer instead of relying on
+	 * {@link Document#toString()}, whose output is not valid JSON (for example, it does
+	 * not escape control characters such as newlines inside string values).
+	 * @param document the document to convert, may be {@code null}
+	 * @return the equivalent plain Java object, or {@code null} for a null document
+	 */
+	public static @Nullable Object convertDocumentToObject(@Nullable Document document) {
+		if (document == null || document.isNull()) {
+			return null;
+		}
+		else if (document.isString()) {
+			return document.asString();
+		}
+		else if (document.isBoolean()) {
+			return document.asBoolean();
+		}
+		else if (document.isNumber()) {
+			return document.asNumber().bigDecimalValue();
+		}
+		else if (document.isList()) {
+			return document.asList().stream().map(ConverseApiUtils::convertDocumentToObject).toList();
+		}
+		else if (document.isMap()) {
+			return convertDocumentToMap(document.asMap());
+		}
+		else {
+			throw new IllegalArgumentException("Unsupported document type: " + document.getClass().getSimpleName());
+		}
+	}
+
+	private static Map<String, Object> convertDocumentToMap(Map<String, Document> document) {
+		Map<String, Object> result = new LinkedHashMap<>();
+		document.forEach((key, value) -> result.put(key, convertDocumentToObject(value)));
+		return result;
 	}
 
 }

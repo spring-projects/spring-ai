@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -29,6 +30,9 @@ import tools.jackson.databind.json.JsonMapper;
 import org.springframework.ai.chroma.vectorstore.ChromaApi.AddEmbeddingsRequest;
 import org.springframework.ai.chroma.vectorstore.ChromaApi.DeleteEmbeddingsRequest;
 import org.springframework.ai.chroma.vectorstore.ChromaApi.Embedding;
+import org.springframework.ai.chroma.vectorstore.ChromaApi.GetEmbeddingResponse;
+import org.springframework.ai.chroma.vectorstore.ChromaApi.GetEmbeddingsRequest;
+import org.springframework.ai.chroma.vectorstore.ChromaApi.QueryRequest.Include;
 import org.springframework.ai.chroma.vectorstore.common.ChromaApiConstants;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
@@ -37,6 +41,7 @@ import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.util.JacksonUtils;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
+import org.springframework.ai.vectorstore.EmbeddedDocument;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.ai.vectorstore.filter.Filter;
@@ -81,6 +86,9 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 	private final JsonMapper jsonMapper;
 
 	private boolean initialized = false;
+
+	// Cache for vectorDimensions(); only a known size is stored.
+	private volatile int resolvedVectorDimensions = -1;
 
 	private static final Log logger = LogFactory.getLog(ChromaVectorStore.class);
 
@@ -171,6 +179,50 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 	}
 
 	@Override
+	protected boolean supportsUpsert() {
+		return true;
+	}
+
+	@Override
+	protected void doUpsert(List<EmbeddedDocument> entries) {
+		// Whole-batch dimension pre-check before any write, so a mismatched vector fails
+		// fast and cannot partially write. Non-empty and finiteness are already enforced
+		// by the EmbeddedDocument constructor.
+		int expected = vectorDimensions();
+		for (int i = 0; i < entries.size(); i++) {
+			checkDimensions("Embedding at index " + i, entries.get(i).embedding().length, expected);
+		}
+
+		List<String> ids = entries.stream().map(entry -> entry.document().getId()).toList();
+		// Chroma has no atomic replace, so the stored keys are read before the write. A
+		// concurrent upsert of the same id between the two can leave its added keys in
+		// place; this is documented rather than locked, as a JVM-local lock cannot
+		// coordinate writers in other processes.
+		Map<String, Set<String>> storedKeys = storedMetadataKeys(ids);
+
+		List<Map<String, Object>> metadatas = new ArrayList<>(entries.size());
+		List<String> contents = new ArrayList<>(entries.size());
+		List<float[]> embeddings = new ArrayList<>(entries.size());
+		for (EmbeddedDocument entry : entries) {
+			// Pair positionally: the document and its embedding come from the same entry.
+			Document document = entry.document();
+			// Chroma merges the metadata of an upsert into what is stored, and removes a
+			// key only when it is sent with a null value. Null out the stored keys that
+			// the new metadata leaves out, so the document is replaced in one write.
+			Map<String, Object> metadata = new HashMap<>(document.getMetadata());
+			for (String key : storedKeys.getOrDefault(document.getId(), Set.of())) {
+				metadata.putIfAbsent(key, null);
+			}
+			metadatas.add(metadata);
+			contents.add(document.getText());
+			embeddings.add(entry.embedding());
+		}
+
+		this.chromaApi.upsertEmbeddings(this.tenantName, this.databaseName, this.requireCollectionId(),
+				new AddEmbeddingsRequest(ids, embeddings, metadatas, contents));
+	}
+
+	@Override
 	public void doDelete(List<String> idList) {
 		Assert.notNull(idList, "Document id list must not be null");
 		this.chromaApi.deleteEmbeddings(this.tenantName, this.databaseName, this.requireCollectionId(),
@@ -209,8 +261,41 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 		String query = request.getQuery();
 		Assert.notNull(query, "Query string must not be null");
 
-		float[] embedding = this.embeddingModel.embed(query);
+		return search(this.embeddingModel.embed(query), request);
+	}
 
+	/**
+	 * The metadata keys stored for each of the given ids that already exist.
+	 */
+	private Map<String, Set<String>> storedMetadataKeys(List<String> ids) {
+		GetEmbeddingResponse response = this.chromaApi.getEmbeddings(this.tenantName, this.databaseName,
+				this.requireCollectionId(),
+				new GetEmbeddingsRequest(ids, null, ids.size(), 0, List.of(Include.METADATAS)));
+		Map<String, Set<String>> keys = new HashMap<>();
+		if (response == null || response.metadata() == null) {
+			return keys;
+		}
+		for (int i = 0; i < response.ids().size(); i++) {
+			Map<String, String> metadata = response.metadata().get(i);
+			if (metadata != null) {
+				keys.put(response.ids().get(i), metadata.keySet());
+			}
+		}
+		return keys;
+	}
+
+	@Override
+	protected boolean supportsQueryEmbeddingSearch() {
+		return true;
+	}
+
+	@Override
+	protected List<Document> doSimilaritySearch(float[] queryEmbedding, SearchRequest request) {
+		checkDimensions("Query embedding", queryEmbedding.length, vectorDimensions());
+		return search(queryEmbedding, request);
+	}
+
+	private List<Document> search(float[] embedding, SearchRequest request) {
 		Map<String, Object> where = (request.getFilterExpression() != null)
 				? jsonToMap(this.filterExpressionConverter.convertExpression(request.getFilterExpression())) : null;
 
@@ -252,9 +337,50 @@ public class ChromaVectorStore extends AbstractObservationVectorStore implements
 
 	@Override
 	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
-		return VectorStoreObservationContext.builder(VectorStoreProvider.CHROMA.value(), operationName)
-			.dimensions(this.embeddingModel.dimensions())
+		VectorStoreObservationContext.Builder builder = VectorStoreObservationContext
+			.builder(VectorStoreProvider.CHROMA.value(), operationName)
 			.collectionName(this.collectionName + ":" + this.requireCollectionId());
+		int vectorDimensions = vectorDimensions();
+		if (vectorDimensions > 0) {
+			builder.dimensions(vectorDimensions);
+		}
+		return builder;
+	}
+
+	/**
+	 * The vector size the collection accepts, or -1 when it is not known.
+	 * <p>
+	 * Chroma creates a collection without a size and fixes it from the first embedding
+	 * written, so the size is read from the collection. The embedding model is never
+	 * asked, because its width says nothing about the width of a collection that already
+	 * holds embeddings. Until something is written, or when the collection cannot be
+	 * read, the size stays unknown and reading it is tried again on the next call; Chroma
+	 * itself then rejects an embedding of the wrong size. Only a known size is cached, so
+	 * a store has to be rebuilt after the collection is recreated with a different size.
+	 * @return the known dimension, or -1
+	 */
+	private int vectorDimensions() {
+		int cached = this.resolvedVectorDimensions;
+		if (cached > 0) {
+			return cached;
+		}
+		int resolved = resolveVectorDimensions();
+		if (resolved > 0) {
+			this.resolvedVectorDimensions = resolved;
+		}
+		return resolved;
+	}
+
+	private int resolveVectorDimensions() {
+		try {
+			Integer dimension = this.chromaApi.getCollectionDimension(this.tenantName, this.databaseName,
+					this.collectionName);
+			return (dimension != null) ? dimension : -1;
+		}
+		catch (Exception ex) {
+			logger.debug("Could not read the vector size of collection " + this.collectionName, ex);
+			return -1;
+		}
 	}
 
 	private String requireCollectionId() {

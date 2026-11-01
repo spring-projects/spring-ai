@@ -28,7 +28,10 @@ import org.springframework.aot.hint.RuntimeHintsRegistrar;
  * A {@link RuntimeHintsRegistrar} for JDBC Chat Memory hints
  *
  * @author Jonathan Leijendekker
+ * @deprecated since 2.1.0, for removal in 3.0.0, in favor of
+ * {@code JdbcSessionRepositoryRuntimeHints} in {@code spring-ai-session-jdbc}
  */
+@Deprecated(since = "2.1.0", forRemoval = true)
 class JdbcChatMemoryRepositoryRuntimeHints implements RuntimeHintsRegistrar {
 
 	@Override

@@ -16,6 +16,9 @@
 
 package org.springframework.ai.model.elevenlabs.autoconfigure;
 
+import io.micrometer.observation.ObservationRegistry;
+
+import org.springframework.ai.audio.tts.observation.TextToSpeechModelObservationConvention;
 import org.springframework.ai.elevenlabs.ElevenLabsTextToSpeechModel;
 import org.springframework.ai.elevenlabs.api.ElevenLabsApi;
 import org.springframework.ai.model.SpringAIModelProperties;
@@ -66,13 +69,20 @@ public class ElevenLabsAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public ElevenLabsTextToSpeechModel elevenLabsSpeechModel(ElevenLabsApi elevenLabsApi,
-			ElevenLabsSpeechProperties speechProperties, ObjectProvider<RetryTemplate> retryTemplate) {
+			ElevenLabsSpeechProperties speechProperties, ObjectProvider<RetryTemplate> retryTemplate,
+			ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<TextToSpeechModelObservationConvention> observationConvention) {
 
-		return ElevenLabsTextToSpeechModel.builder()
+		var speechModel = ElevenLabsTextToSpeechModel.builder()
 			.elevenLabsApi(elevenLabsApi)
 			.options(speechProperties.toOptions())
 			.retryTemplate(retryTemplate.getIfUnique(() -> RetryUtils.DEFAULT_RETRY_TEMPLATE))
+			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.build();
+
+		observationConvention.ifAvailable(speechModel::setObservationConvention);
+
+		return speechModel;
 	}
 
 }

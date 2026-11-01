@@ -16,6 +16,8 @@
 
 package org.springframework.ai.model.chat.memory.repository.redis.autoconfigure;
 
+import redis.clients.jedis.DefaultJedisClientConfig;
+import redis.clients.jedis.JedisClientConfig;
 import redis.clients.jedis.RedisClient;
 
 import org.springframework.ai.chat.memory.ChatMemory;
@@ -39,7 +41,13 @@ import org.springframework.util.StringUtils;
  * @author Yanming Zhou
  * @author guan xu
  * @since 2.0.1
+ * @deprecated since 2.1.0, for removal in 3.0.0, in favor of the session memory
+ * auto-configuration, {@code SessionServiceAutoConfiguration} in
+ * {@code spring-ai-autoconfigure-model-session}. There is no session store for Redis yet;
+ * one is planned before 3.0.0, when this module is removed.
  */
+@Deprecated(since = "2.1.0", forRemoval = true)
+@SuppressWarnings("removal")
 @AutoConfiguration(before = ChatMemoryAutoConfiguration.class)
 @ConditionalOnClass({ RedisChatMemoryRepository.class, RedisClient.class })
 public class RedisChatMemoryRepositoryAutoConfiguration {
@@ -71,6 +79,20 @@ public class RedisChatMemoryRepositoryAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public RedisClient jedisClient(RedisChatMemoryRepositoryProperties properties) {
+		if (StringUtils.hasText(properties.getUsername()) || StringUtils.hasText(properties.getPassword())) {
+			DefaultJedisClientConfig.Builder configBuilder = DefaultJedisClientConfig.builder();
+			if (StringUtils.hasText(properties.getUsername())) {
+				configBuilder.user(properties.getUsername());
+			}
+			if (StringUtils.hasText(properties.getPassword())) {
+				configBuilder.password(properties.getPassword());
+			}
+			JedisClientConfig clientConfig = configBuilder.build();
+			return RedisClient.builder()
+				.hostAndPort(properties.getHost(), properties.getPort())
+				.clientConfig(clientConfig)
+				.build();
+		}
 		return RedisClient.builder().hostAndPort(properties.getHost(), properties.getPort()).build();
 	}
 

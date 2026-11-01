@@ -16,6 +16,8 @@
 
 package org.springframework.ai.model.openai.autoconfigure;
 
+import java.time.Duration;
+
 import org.springframework.util.StringUtils;
 
 public final class OpenAiAutoConfigurationUtil {
@@ -45,8 +47,12 @@ public final class OpenAiAutoConfigurationUtil {
 		resolved.setCredential(modelProperties.getCredential() != null ? modelProperties.getCredential()
 				: commonProperties.getCredential());
 
-		resolved.setTimeout(!modelProperties.getTimeout().equals(OpenAiCommonProperties.DEFAULT_TIMEOUT)
-				? modelProperties.getTimeout() : commonProperties.getTimeout());
+		// A null timeout means "not configured", so the model-level value only wins when
+		// it was actually set. The resolved value is always non-null: it is what the
+		// OpenAI client is built with.
+		Duration timeout = modelProperties.getTimeout() != null ? modelProperties.getTimeout()
+				: commonProperties.getTimeout();
+		resolved.setTimeout(timeout != null ? timeout : OpenAiCommonProperties.DEFAULT_TIMEOUT);
 
 		resolved.setModel(StringUtils.hasText(modelProperties.getModel()) ? modelProperties.getModel()
 				: commonProperties.getModel());
@@ -77,6 +83,16 @@ public final class OpenAiAutoConfigurationUtil {
 	}
 
 	public static class ResolvedConnectionProperties extends OpenAiCommonProperties {
+
+		/**
+		 * Unlike the properties it is resolved from, a resolved timeout is always
+		 * present: it is what the OpenAI client is built with.
+		 */
+		@Override
+		public Duration getTimeout() {
+			Duration timeout = super.getTimeout();
+			return timeout != null ? timeout : DEFAULT_TIMEOUT;
+		}
 
 	}
 

@@ -53,8 +53,7 @@ class ToolCallbackKotlinIT : BaseOllamaIT() {
 		.withPropertyValues(
 			"spring.ai.ollama.baseUrl=${getBaseUrl()}",
 			"spring.ai.ollama.chat.model=$MODEL_NAME",
-			"spring.ai.ollama.chat.temperature=0.5",
-			"spring.ai.ollama.chat.topK=10"
+			"spring.ai.ollama.chat.temperature=0.0"
 		)
 		.withConfiguration(ollamaAutoConfig(OllamaChatAutoConfiguration::class.java))
 		.withUserConfiguration(Config::class.java)
@@ -74,6 +73,7 @@ class ToolCallbackKotlinIT : BaseOllamaIT() {
 			val options = OllamaChatOptions.builder()
 				.model(MODEL_NAME)
 				.toolCallbacks(weatherInfo)
+				.temperature(0.0)
 				.build()
 
 			var prompt = Prompt(listOf(userMessage), options)
@@ -106,6 +106,7 @@ class ToolCallbackKotlinIT : BaseOllamaIT() {
 			val options = OllamaChatOptions.builder()
 				.model(MODEL_NAME)
 				.toolCallbacks(weatherInfo)
+				.temperature(0.0)
 				.build()
 
 			var prompt = Prompt(listOf(userMessage), options)
