@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test;
 import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerJsonMapperAutoConfiguration;
+import org.springframework.ai.mcp.server.webmvc.transport.WebMvcSseServerTransportProvider;
 import org.springframework.ai.mcp.server.webmvc.transport.WebMvcStreamableServerTransportProvider;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -43,6 +44,17 @@ class McpServerStreamableHttpWebMvcAutoConfigurationIT {
 			assertThat(context).hasSingleBean(WebMvcStreamableServerTransportProvider.class);
 			assertThat(context).hasSingleBean(RouterFunction.class);
 		});
+	}
+
+	@Test
+	void streamableIsTheDefaultProtocol() {
+		new ApplicationContextRunner()
+			.withConfiguration(AutoConfigurations.of(McpServerSseWebMvcAutoConfiguration.class,
+					McpServerStreamableHttpWebMvcAutoConfiguration.class, McpServerJsonMapperAutoConfiguration.class))
+			.run(context -> {
+				assertThat(context).hasSingleBean(WebMvcStreamableServerTransportProvider.class);
+				assertThat(context).doesNotHaveBean(WebMvcSseServerTransportProvider.class);
+			});
 	}
 
 	@Test

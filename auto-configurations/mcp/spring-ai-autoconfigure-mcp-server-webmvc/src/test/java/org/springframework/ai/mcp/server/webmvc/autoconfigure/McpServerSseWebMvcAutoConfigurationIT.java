@@ -40,7 +40,8 @@ class McpServerSseWebMvcAutoConfigurationIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(McpServerSseWebMvcAutoConfiguration.class,
-				McpServerAutoConfiguration.class, McpServerJsonMapperAutoConfiguration.class));
+				McpServerAutoConfiguration.class, McpServerJsonMapperAutoConfiguration.class))
+		.withPropertyValues("spring.ai.mcp.server.protocol=SSE");
 
 	@Test
 	void defaultConfiguration() {
@@ -113,6 +114,7 @@ class McpServerSseWebMvcAutoConfigurationIT {
 			}
 		}).withConfiguration(AutoConfigurations.of(McpServerSseWebMvcAutoConfiguration.class,
 				McpServerAutoConfiguration.class, McpServerJsonMapperAutoConfiguration.class))
+			.withPropertyValues("spring.ai.mcp.server.protocol=SSE")
 			.run(context -> {
 				var mcpSyncServer = context.getBean(McpSyncServer.class);
 				var field = ReflectionUtils.findField(McpSyncServer.class, "immediateExecution");

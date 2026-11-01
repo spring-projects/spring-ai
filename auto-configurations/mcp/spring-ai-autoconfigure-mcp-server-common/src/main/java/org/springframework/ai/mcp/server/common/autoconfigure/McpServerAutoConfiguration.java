@@ -347,13 +347,13 @@ public class McpServerAutoConfiguration {
 		}
 
 		@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "protocol", havingValue = "SSE",
-				matchIfMissing = true)
+				matchIfMissing = false)
 		static class SseEnabledCondition {
 
 		}
 
 		@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "protocol",
-				havingValue = "STREAMABLE", matchIfMissing = false)
+				havingValue = "STREAMABLE", matchIfMissing = true)
 		static class StreamableEnabledCondition {
 
 		}
@@ -373,7 +373,7 @@ public class McpServerAutoConfiguration {
 		}
 
 		@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "protocol", havingValue = "SSE",
-				matchIfMissing = true)
+				matchIfMissing = false)
 		static class SseEnabledCondition {
 
 		}
@@ -393,7 +393,7 @@ public class McpServerAutoConfiguration {
 		}
 
 		@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "protocol",
-				havingValue = "STREAMABLE", matchIfMissing = false)
+				havingValue = "STREAMABLE", matchIfMissing = true)
 		static class StreamableEnabledCondition {
 
 		}
