@@ -385,6 +385,25 @@ class GoogleGenAiChatModelMessagePartsTests {
 	}
 
 	@Test
+	void toolCallArgumentDeltaIsNotReplayed() {
+		// An assistant message built from the parts of raw stream chunks
+		AssistantMessage assistant = AssistantMessage.builder()
+			.part(StreamingParts.partial(
+					ToolCallPart.of(new AssistantMessage.ToolCall("call_1", "function", "getWeather", "{\"city\":")),
+					0))
+			.part(StreamingParts.complete(
+					ToolCallPart
+						.of(new AssistantMessage.ToolCall("call_1", "function", "getWeather", "{\"city\":\"Paris\"}")),
+					0))
+			.build();
+
+		List<Part> parts = this.chatModel.messageToGeminiParts(assistant);
+
+		assertThat(parts).hasSize(1);
+		assertThat(parts.get(0).functionCall().orElseThrow().args().orElseThrow()).containsEntry("city", "Paris");
+	}
+
+	@Test
 	void signaturesAreReplayedInTheRequestOfTheNextToolCallRound() {
 		AssistantMessage assistant = AssistantMessage.builder()
 			.part(new ToolCallPart(new AssistantMessage.ToolCall("", "function", "getWeather", "{\"city\":\"Paris\"}"),

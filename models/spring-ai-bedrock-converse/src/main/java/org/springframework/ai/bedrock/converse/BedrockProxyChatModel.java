@@ -92,6 +92,7 @@ import org.springframework.ai.chat.messages.part.MediaPart;
 import org.springframework.ai.chat.messages.part.MessagePart;
 import org.springframework.ai.chat.messages.part.OpaquePayload;
 import org.springframework.ai.chat.messages.part.ReasoningPart;
+import org.springframework.ai.chat.messages.part.StreamingParts;
 import org.springframework.ai.chat.messages.part.TextPart;
 import org.springframework.ai.chat.messages.part.ToolCallPart;
 import org.springframework.ai.chat.messages.part.ToolResultPart;
@@ -656,6 +657,11 @@ public class BedrockProxyChatModel implements ChatModel {
 					logger.debug("Skipping reasoning part from provider "
 							+ (payload != null ? payload.provider() : "none") + " on replay to Bedrock");
 				}
+			}
+			else if (part instanceof ToolCallPart && StreamingParts.isPartial(part)) {
+				// A tool-call argument delta of a stream, not a tool call
+				// (see StreamingParts)
+				continue;
 			}
 			else if (part instanceof ToolCallPart toolCallPart) {
 				AssistantMessage.ToolCall toolCall = toolCallPart.toolCall();
