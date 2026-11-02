@@ -239,6 +239,8 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 		MultiSearchCollectionParameters multiSearchCollectionParameters = new MultiSearchCollectionParameters();
 		multiSearchCollectionParameters.collection(this.collectionName);
 		multiSearchCollectionParameters.q("*");
+		// Typesense returns 10 hits per page unless asked for more
+		multiSearchCollectionParameters.perPage(request.getTopK());
 
 		Stream<Float> floatStream = IntStream.range(0, embedding.length).mapToObj(i -> embedding[i]);
 		// typesense uses only cosine similarity
