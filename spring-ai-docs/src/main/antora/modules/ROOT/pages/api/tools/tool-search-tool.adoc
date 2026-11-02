@@ -154,7 +154,7 @@ NOTE: If memory advisors are configured with conversation IDs (the standard patt
 [[search-strategies]]
 == Search Strategies
 
-The `ToolIndex` interface abstracts the search implementation. Three strategies are provided out of the box:
+The `ToolIndex` interface abstracts the search implementation. Four strategies are provided out of the box:
 
 [cols="1,2,3", options="header"]
 |====
@@ -171,6 +171,10 @@ The `ToolIndex` interface abstracts the search implementation. Three strategies 
 | **Regex**
 | `RegexToolIndex`
 | Tool name patterns (e.g. `get_*_data`); lightweight default with no dependencies
+
+| **Decision**
+| `DecisionToolIndex`
+| Picking the right tool from natural-language requests and declining when none applies; needs a `DecisionModel`
 |====
 
 [[vector-tool-index]]
@@ -218,6 +222,59 @@ ToolIndex regexToolIndex() {
 ----
 
 The default index when no explicit `tool-index-type` is configured.
+
+[[decision-tool-index]]
+=== `DecisionToolIndex` (Decision)
+
+Uses a xref:api/decision.adoc[decision model] to pick the tool that fits the request, instead of matching keywords or embeddings.
+Best when requests share few words with the tool descriptions, or when returning no tool is better than returning the wrong one.
+
+Keyword and vector indexes always return their closest matches, even when none of the tools can handle the request.
+`DecisionToolIndex` can return nothing.
+For each search, it asks the model two questions in a single call:
+
+* Which tool best fits the request?
+* Does any of the tools fit the request at all?
+
+If the model's confidence in the second answer is below the applicability threshold, the search returns no tools.
+
+[source,java]
+----
+@Bean
+ToolIndex decisionToolIndex(DecisionModel decisionModel) {
+    return DecisionToolIndex.builder(decisionModel)
+            .applicabilityThreshold(0.5)   // how confident the model must be that some tool fits
+            .minimumRelevance(0.0)         // drop tools with a lower probability
+            .build();
+}
+----
+
+[cols="2,1,3", stripes=even]
+|====
+| Builder method | Default | Description
+
+| `applicabilityThreshold(double)` | `0.5` | How confident the model must be that at least one tool fits. Below this, no tools are returned. Raise it when calling the wrong tool is worse than calling none.
+| `minimumRelevance(double)` | `0.0` | Lowest probability a tool needs to be returned. At zero, every tool the model gave a probability above zero is returned.
+| `options(DecisionOptions)` | the model's defaults | Options sent with every call to the model, such as the model name.
+|====
+
+Each returned tool has the probability the model gave it as its `relevanceScore()`.
+The tool the model picked comes first, and is returned unless its probability is below `minimumRelevance`.
+The other tools follow in order of probability, and only those with a probability above zero are returned.
+So a clear-cut request often returns fewer tools than `maxResults`, which defaults to ten.
+
+For example, "bill Acme Corp for last month" finds `createInvoice` even though it shares no word with the tool, and "what is the capital of Peru" returns no tools.
+
+A few more things to know:
+
+* A `categoryFilter` on the request limits the search to tools whose name or description contains it, and is ignored when no tool matches.
+* When the session has only one tool, the model is asked only whether that tool fits, and that probability becomes its score.
+* An unknown or empty session returns no tools without calling the model.
+* If the model refuses to answer, no tools are returned.
+
+All the tools in the session are sent to the model on every search.
+This works well for tens of tools, but the prompt grows with each tool you add.
+For hundreds of tools, shortlist them first with a cheaper index, such as `VectorToolIndex`, and let `DecisionToolIndex` choose from the shortlist.
 
 [[configuration]]
 == Configuration
@@ -389,6 +446,10 @@ Set `spring.ai.chat.client.tool-search-advisor.tool-index-type` to select the im
 | `vector`
 | `VectorToolIndex`
 | A `VectorStore` bean in the application context
+
+| `decision`
+| `DecisionToolIndex`
+| A `DecisionModel` bean in the application context
 |====
 
 A custom `ToolIndex` bean declared by the application always takes precedence â€” `@ConditionalOnMissingBean` skips the auto-configured one.
@@ -405,7 +466,7 @@ A custom `ToolIndex` bean declared by the application always takes precedence â€
 | `false`
 
 | `spring.ai.chat.client.tool-search-advisor.tool-index-type`
-| `ToolIndex` implementation: `regex`, `lucene`, or `vector`.
+| `ToolIndex` implementation: `regex`, `lucene`, `vector`, or `decision`.
 | `regex`
 
 | `spring.ai.chat.client.tool-search-advisor.max-results`
@@ -439,6 +500,14 @@ A custom `ToolIndex` bean declared by the application always takes precedence â€
 | `spring.ai.chat.client.tool-search-advisor.lucene.min-score-threshold`
 | Minimum Lucene score for a hit to be included. Applies when `tool-index-type=lucene`.
 | `0.25`
+
+| `spring.ai.chat.client.tool-search-advisor.decision.applicability-threshold`
+| How confident the decision model must be that at least one tool fits before any tool is returned. Applies when `tool-index-type=decision`.
+| `0.5`
+
+| `spring.ai.chat.client.tool-search-advisor.decision.minimum-relevance`
+| Lowest probability a tool needs to be returned. Applies when `tool-index-type=decision`.
+| `0.0`
 |====
 
 [[example-configurations]]
@@ -460,6 +529,15 @@ spring.ai.chat.client.tool-search-advisor.eviction.ttl=30m
 ----
 spring.ai.chat.client.tool-search-advisor.enabled=true
 spring.ai.chat.client.tool-search-advisor.tool-index-type=vector
+----
+
+**Decision index that returns tools only when the model is confident one fits (requires a `DecisionModel` bean):**
+
+[source,properties]
+----
+spring.ai.chat.client.tool-search-advisor.enabled=true
+spring.ai.chat.client.tool-search-advisor.tool-index-type=decision
+spring.ai.chat.client.tool-search-advisor.decision.applicability-threshold=0.7
 ----
 
 **Custom session-ID key for a multi-tenant deployment:**
