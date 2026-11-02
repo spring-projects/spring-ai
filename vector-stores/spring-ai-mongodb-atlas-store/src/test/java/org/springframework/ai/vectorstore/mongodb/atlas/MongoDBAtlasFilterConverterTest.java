@@ -32,6 +32,8 @@ import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.EQ
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.GT;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.GTE;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.IN;
+import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.ISNOTNULL;
+import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.ISNULL;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.LT;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.LTE;
 import static org.springframework.ai.vectorstore.filter.Filter.ExpressionType.NE;
@@ -316,6 +318,39 @@ public class MongoDBAtlasFilterConverterTest {
 		String vectorExpr = this.converter
 			.convertExpression(new Expression(EQ, new Key("key\\inject"), new Value("v")));
 		assertThat(vectorExpr).isEqualTo("{\"metadata.key\\\\inject\":{$eq:\"v\"}}");
+	}
+
+	@Test
+	public void testIsNull() {
+		// country IS NULL
+		String vectorExpr = this.converter.convertExpression(new Expression(ISNULL, new Key("country"), null));
+		assertThat(vectorExpr).isEqualTo("{\"metadata.country\":{$eq:null}}");
+	}
+
+	@Test
+	public void testIsNotNull() {
+		// country IS NOT NULL
+		String vectorExpr = this.converter.convertExpression(new Expression(ISNOTNULL, new Key("country"), null));
+		assertThat(vectorExpr).isEqualTo("{\"metadata.country\":{$ne:null}}");
+	}
+
+	@Test
+	public void testIsNullAndOtherCondition() {
+		// country IS NULL AND year >= 2020
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(AND, new Expression(ISNULL, new Key("country"), null),
+					new Expression(GTE, new Key("year"), new Value(2020))));
+		assertThat(vectorExpr).isEqualTo("{$and:[{\"metadata.country\":{$eq:null}},{\"metadata.year\":{$gte:2020}}]}");
+	}
+
+	@Test
+	public void testIsNotNullInGroup() {
+		// (country IS NOT NULL) OR city == \"Sofia\"
+		String vectorExpr = this.converter
+			.convertExpression(new Expression(OR, new Group(new Expression(ISNOTNULL, new Key("country"), null)),
+					new Expression(EQ, new Key("city"), new Value("Sofia"))));
+		assertThat(vectorExpr)
+			.isEqualTo("{$or:[{\"metadata.country\":{$ne:null}},{\"metadata.city\":{$eq:\"Sofia\"}}]}");
 	}
 
 }

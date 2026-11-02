@@ -63,7 +63,7 @@ import org.springframework.util.Assert;
  * <ul>
  * <li>Automatic schema initialization with configurable collection and index
  * creation</li>
- * <li>Support for cosine similarity search</li>
+ * <li>Support for cosine, dotProduct, and euclidean similarity search</li>
  * <li>Metadata filtering using MongoDB Atlas Search syntax</li>
  * <li>Configurable similarity thresholds for search results</li>
  * <li>Batch processing support with configurable batching strategies</li>
@@ -103,6 +103,7 @@ import org.springframework.util.Assert;
  *     .vectorIndexName("custom_vector_index")
  *     .pathName("custom_embedding")
  *     .numCandidates(500)
+ *     .similarityFunction(SimilarityFunction.DOT_PRODUCT)
  *     .metadataFieldsToFilter(List.of("category", "author"))
  *     .initializeSchema(true)
  *     .batchingStrategy(new TokenCountBatchingStrategy())
@@ -152,6 +153,25 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 
 	private static final String INDEX_ALREADY_EXISTS_ERROR_CODE_NAME = "IndexAlreadyExists";
 
+	/**
+	 * Similarity functions supported by MongoDB Atlas Vector Search.
+	 */
+	public enum SimilarityFunction {
+
+		COSINE("cosine"), EUCLIDEAN("euclidean"), DOT_PRODUCT("dotProduct");
+
+		private final String value;
+
+		SimilarityFunction(String value) {
+			this.value = value;
+		}
+
+		public String getValue() {
+			return this.value;
+		}
+
+	}
+
 	private final MongoTemplate mongoTemplate;
 
 	private final String collectionName;
@@ -168,6 +188,8 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 
 	private final boolean initializeSchema;
 
+	private final SimilarityFunction similarityFunction;
+
 	protected MongoDBAtlasVectorStore(Builder builder) {
 		super(builder);
 
@@ -181,6 +203,11 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 		this.metadataFieldsToFilter = builder.metadataFieldsToFilter;
 		this.filterExpressionConverter = builder.filterExpressionConverter;
 		this.initializeSchema = builder.initializeSchema;
+		this.similarityFunction = builder.similarityFunction;
+	}
+
+	public SimilarityFunction getSimilarityFunction() {
+		return this.similarityFunction;
 	}
 
 	@Override
@@ -223,7 +250,7 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 		vectorFields.add(new org.bson.Document().append("type", "vector")
 			.append("path", this.pathName)
 			.append("numDimensions", this.embeddingModel.dimensions())
-			.append("similarity", "cosine"));
+			.append("similarity", this.similarityFunction.getValue()));
 
 		vectorFields.addAll(this.metadataFieldsToFilter.stream()
 			.map(fieldName -> new org.bson.Document().append("type", "filter").append("path", "metadata." + fieldName))
@@ -365,6 +392,8 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 
 		private MongoDBAtlasFilterExpressionConverter filterExpressionConverter = new MongoDBAtlasFilterExpressionConverter();
 
+		private SimilarityFunction similarityFunction = SimilarityFunction.COSINE;
+
 		/**
 		 * @throws IllegalArgumentException if mongoTemplate is null
 		 */
@@ -454,6 +483,19 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 		public Builder filterExpressionConverter(MongoDBAtlasFilterExpressionConverter converter) {
 			Assert.notNull(converter, "filterExpressionConverter must not be null");
 			this.filterExpressionConverter = converter;
+			return this;
+		}
+
+		/**
+		 * Configures the similarity function for the Vector Search Index in Atlas.
+		 * Defaults to {@link SimilarityFunction#COSINE}.
+		 * @param similarityFunction the similarity function
+		 * @return the builder instance
+		 * @throws IllegalArgumentException if similarityFunction is null
+		 */
+		public Builder similarityFunction(SimilarityFunction similarityFunction) {
+			Assert.notNull(similarityFunction, "similarityFunction must not be null");
+			this.similarityFunction = similarityFunction;
 			return this;
 		}
 
