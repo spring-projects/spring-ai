@@ -18,6 +18,7 @@ package org.springframework.ai.deepseek;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.Test;
@@ -25,6 +26,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Flux;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.Message;
@@ -50,6 +53,8 @@ import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionMessage.Cha
 import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionMessage.Role;
 import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionMessage.ToolCall;
 import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionRequest;
+import org.springframework.ai.deepseek.api.common.DeepSeekConstants;
+import org.springframework.ai.util.JacksonUtils;
 import org.springframework.http.ResponseEntity;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -67,6 +72,11 @@ import static org.mockito.BDDMockito.given;
 @ExtendWith(MockitoExtension.class)
 @SuppressWarnings("removal")
 class DeepSeekChatModelMessagePartsTests {
+
+	private static final JsonMapper JSON_MAPPER = JacksonUtils.getDefaultJsonMapper();
+
+	private static final String THINKING_BLOCKS_JSON = "[{\"type\":\"thinking\",\"thinking\":\"\","
+			+ "\"signature\":\"sig-123\",\"extension\":{\"nested\":true}}]";
 
 	private static final AssistantMessage.ToolCall WEATHER_CALL = new AssistantMessage.ToolCall("call_1", "function",
 			"getWeather", "{\"city\":\"Seoul\"}");
@@ -117,6 +127,36 @@ class DeepSeekChatModelMessagePartsTests {
 
 		assertThat(message.getParts()).containsExactly(ToolCallPart.of(WEATHER_CALL));
 		assertThat(message.getText()).isEmpty();
+	}
+
+	@Test
+	void signedThinkingBlocksSurviveResponseParsingAndReplay() {
+		ChatCompletionMessage responseMessage = JSON_MAPPER.readValue("""
+				{
+				"content": "",
+				"role": "assistant",
+				"reasoning_content": "",
+				"tool_calls": [
+				{"id": "call_1", "type": "function", "function": {"name": "getWeather", "arguments": "{}"}}
+				],
+				"thinking_blocks": %s
+				}
+				""".formatted(THINKING_BLOCKS_JSON), ChatCompletionMessage.class);
+		givenCompletion(responseMessage);
+
+		AssistantMessage assistant = chatModel().call(new Prompt("Weather?")).getResult().getOutput();
+
+		assertThat(assistant.getReasoning()).hasSize(1);
+		ReasoningPart reasoning = assistant.getReasoning().get(0);
+		assertThat(reasoning.text()).isEmpty();
+		OpaquePayload payload = Objects.requireNonNull(reasoning.payload());
+		assertThat(payload.provider()).isEqualTo(DeepSeekConstants.PROVIDER_NAME);
+		assertThat(payload.kind()).isEqualTo("thinking_blocks");
+		assertThat(JSON_MAPPER.readTree(payload.data())).isEqualTo(JSON_MAPPER.readTree(THINKING_BLOCKS_JSON));
+
+		ChatCompletionMessage replayed = assistantParam(assistant);
+
+		assertThat(serializedThinkingBlocks(replayed)).isEqualTo(JSON_MAPPER.readTree(THINKING_BLOCKS_JSON));
 	}
 
 	@Test
@@ -181,6 +221,21 @@ class DeepSeekChatModelMessagePartsTests {
 
 		assertThat(param.reasoningContent()).isNull();
 		assertThat(param.content()).isEqualTo("100");
+	}
+
+	@Test
+	void unrelatedPayloadsAreNotReplayedAsThinkingBlocks() {
+		List<OpaquePayload> payloads = List.of(new OpaquePayload("anthropic", "thinking_blocks", THINKING_BLOCKS_JSON),
+				new OpaquePayload(DeepSeekConstants.PROVIDER_NAME, "signature", "sig-123"));
+		for (OpaquePayload payload : payloads) {
+			AssistantMessage assistant = AssistantMessage.builder()
+				.part(new ReasoningPart("reasoning", null, payload, Map.of()))
+				.build();
+
+			ChatCompletionMessage replayed = assistantParam(assistant);
+
+			assertThat(serializedThinkingBlocks(replayed)).as("%s/%s", payload.provider(), payload.kind()).isNull();
+		}
 	}
 
 	@Test
@@ -387,6 +442,52 @@ class DeepSeekChatModelMessagePartsTests {
 		assertThat(param.toolCalls().get(0).function().arguments()).isEqualTo("{\"city\":\"Seoul\"}");
 	}
 
+	@Test
+	void streamedThinkingBlocksAreAggregatedWithReasoningAndReplayed() {
+		ChatCompletionMessage toolCallDelta = JSON_MAPPER.readValue("""
+				{
+				"tool_calls": [
+				{"id": "call_1", "type": "function", "function": {"name": "getWeather", "arguments": "{}"}}
+				],
+				"thinking_blocks": %s
+				}
+				""".formatted(THINKING_BLOCKS_JSON), ChatCompletionMessage.class);
+		givenStream(chunk(delta(null, "Need "), null), chunk(delta(null, "the weather."), null),
+				chunk(toolCallDelta, ChatCompletionFinishReason.TOOL_CALLS));
+
+		AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
+		new MessageAggregator().aggregate(chatModel().stream(new Prompt("Weather?")), aggregatedRef::set).blockLast();
+
+		ChatCompletionMessage replayed = assistantParam(output(aggregatedRef.get()));
+
+		assertThat(replayed.reasoningContent()).isEqualTo("Need the weather.");
+		assertThat(serializedThinkingBlocks(replayed)).isEqualTo(JSON_MAPPER.readTree(THINKING_BLOCKS_JSON));
+	}
+
+	@Test
+	void streamedThinkingBlocksWithoutReasoningTextAreReplayed() {
+		ChatCompletionMessage toolCallDelta = JSON_MAPPER.readValue("""
+				{
+				"tool_calls": [
+				{"id": "call_1", "type": "function", "function": {"name": "getWeather", "arguments": "{}"}}
+				],
+				"thinking_blocks": %s
+				}
+				""".formatted(THINKING_BLOCKS_JSON), ChatCompletionMessage.class);
+		givenStream(chunk(toolCallDelta, ChatCompletionFinishReason.TOOL_CALLS));
+
+		AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
+		new MessageAggregator().aggregate(chatModel().stream(new Prompt("Weather?")), aggregatedRef::set).blockLast();
+
+		AssistantMessage aggregated = output(aggregatedRef.get());
+		assertThat(aggregated.getParts()).satisfiesExactly(part -> assertThat(part).isInstanceOf(ReasoningPart.class),
+				part -> assertThat(part).isInstanceOf(ToolCallPart.class));
+		ChatCompletionMessage replayed = assistantParam(aggregated);
+
+		assertThat(replayed.reasoningContent()).isNull();
+		assertThat(serializedThinkingBlocks(replayed)).isEqualTo(JSON_MAPPER.readTree(THINKING_BLOCKS_JSON));
+	}
+
 	// -- helpers --
 
 	private DeepSeekChatModel chatModel() {
@@ -427,6 +528,10 @@ class DeepSeekChatModelMessagePartsTests {
 				DeepSeekChatOptions.builder().model("deepseek-v4-flash").build());
 		List<ChatCompletionMessage> messages = chatModel().createRequest(prompt, false).messages();
 		return messages.get(messages.size() - 1);
+	}
+
+	private static JsonNode serializedThinkingBlocks(ChatCompletionMessage message) {
+		return JSON_MAPPER.readTree(JSON_MAPPER.writeValueAsString(message)).get("thinking_blocks");
 	}
 
 	private static AssistantMessage output(ChatResponse response) {

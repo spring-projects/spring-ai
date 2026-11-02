@@ -51,7 +51,9 @@ class DeepSeekApiStreamTests {
 			+ "\"finish_reason\":null}]}\n\n";
 
 	private static final String CHUNK_3 = "data: {\"id\":\"c1\",\"object\":\"chat.completion.chunk\",\"choices\":[{\"index\":0,"
-			+ "\"delta\":{\"content\":null},\"finish_reason\":\"tool_calls\"}]}\n\n";
+			+ "\"delta\":{\"content\":null,\"thinking_blocks\":[{\"type\":\"thinking\","
+			+ "\"thinking\":\"\",\"signature\":\"sig-123\",\"extension\":{\"nested\":true}}]},"
+			+ "\"finish_reason\":\"tool_calls\"}]}\n\n";
 
 	// A WebClient whose exchange function answers every request with the SSE body
 	private final DeepSeekApi api = DeepSeekApi.builder()
@@ -85,6 +87,8 @@ class DeepSeekApiStreamTests {
 		assertThat(delta.toolCalls().get(0).id()).isEqualTo("call_1");
 		assertThat(delta.toolCalls().get(0).function().arguments()).isEqualTo("{\"city\":\"Seoul\"}");
 		assertThat(delta.reasoningContent()).isEqualTo("Think first.");
+		assertThat(delta.thinkingBlocks().toString()).isEqualTo(
+				"[{\"type\":\"thinking\",\"thinking\":\"\",\"signature\":\"sig-123\",\"extension\":{\"nested\":true}}]");
 		assertThat(chunks.get(0).choices().get(0).finishReason())
 			.isEqualTo(DeepSeekApi.ChatCompletionFinishReason.TOOL_CALLS);
 	}
