@@ -24,16 +24,16 @@ import org.springframework.util.Assert;
 
 /**
  * A resource template together with the {@link McpSyncResource} that reads every URI
- * matching it. See {@link SyncResourceEntry} for why the pairing lives here.
+ * matching it. See {@link SyncResourceRegistration} for why the pairing lives here.
  *
  * @param resourceTemplate the definition returned by {@code resources/templates/list}
  * @param handler the handler for {@code resources/read} of any URI matching the template
  * @author Christian Tzolov
  * @since 2.1.0
  */
-public record SyncResourceTemplateEntry(ResourceTemplate resourceTemplate, McpSyncResource handler) {
+public record SyncResourceTemplateRegistration(ResourceTemplate resourceTemplate, McpSyncResource handler) {
 
-	public SyncResourceTemplateEntry {
+	public SyncResourceTemplateRegistration {
 		Assert.notNull(resourceTemplate, "resourceTemplate must not be null");
 		Assert.notNull(handler, "handler must not be null");
 	}
@@ -42,8 +42,9 @@ public record SyncResourceTemplateEntry(ResourceTemplate resourceTemplate, McpSy
 	 * Pairs a resource template with a handler that requires no client capabilities.
 	 * @since 2.1.0
 	 */
-	public static SyncResourceTemplateEntry of(ResourceTemplate resourceTemplate, McpSyncResource.Handler handler) {
-		return new SyncResourceTemplateEntry(resourceTemplate, McpSyncResource.of(handler));
+	public static SyncResourceTemplateRegistration of(ResourceTemplate resourceTemplate,
+			McpSyncResource.Handler handler) {
+		return new SyncResourceTemplateRegistration(resourceTemplate, McpSyncResource.of(handler));
 	}
 
 	/**
@@ -52,9 +53,10 @@ public record SyncResourceTemplateEntry(ResourceTemplate resourceTemplate, McpSy
 	 * {@code -32021} without running the handler.
 	 * @since 2.1.0
 	 */
-	public static SyncResourceTemplateEntry of(ResourceTemplate resourceTemplate,
+	public static SyncResourceTemplateRegistration of(ResourceTemplate resourceTemplate,
 			ClientCapabilities requiredCapabilities, McpSyncResource.Handler handler) {
-		return new SyncResourceTemplateEntry(resourceTemplate, McpSyncResource.of(requiredCapabilities, handler));
+		return new SyncResourceTemplateRegistration(resourceTemplate,
+				McpSyncResource.of(requiredCapabilities, handler));
 	}
 
 }

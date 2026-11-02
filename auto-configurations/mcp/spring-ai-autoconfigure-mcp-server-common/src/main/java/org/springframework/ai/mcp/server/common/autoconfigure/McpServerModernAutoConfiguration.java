@@ -46,9 +46,9 @@ import org.springframework.ai.mcp.modern.InMemorySyncCompletionRepository;
 import org.springframework.ai.mcp.modern.InMemorySyncPromptRepository;
 import org.springframework.ai.mcp.modern.InMemorySyncResourceRepository;
 import org.springframework.ai.mcp.modern.InMemorySyncToolRepository;
-import org.springframework.ai.mcp.modern.SyncCompletionSpecification;
-import org.springframework.ai.mcp.modern.SyncResourceEntry;
-import org.springframework.ai.mcp.modern.SyncResourceTemplateEntry;
+import org.springframework.ai.mcp.modern.SyncCompletionRegistration;
+import org.springframework.ai.mcp.modern.SyncResourceRegistration;
+import org.springframework.ai.mcp.modern.SyncResourceTemplateRegistration;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerModernProperties;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
 import org.springframework.beans.factory.ObjectProvider;
@@ -73,9 +73,9 @@ import org.springframework.util.Assert;
  * {@link McpSyncResourceRepository}, {@link McpSyncPromptRepository} and
  * {@link McpSyncCompletionRepository}. A user-defined repository bean of that type takes
  * precedence; otherwise an in-memory repository is created and fed by every
- * {@code List<McpSyncTool>}, {@code List<SyncResourceEntry>},
- * {@code List<SyncResourceTemplateEntry>}, {@code List<McpSyncPrompt>} and
- * {@code List<SyncCompletionSpecification>} bean, which is how annotated beans and
+ * {@code List<McpSyncTool>}, {@code List<SyncResourceRegistration>},
+ * {@code List<SyncResourceTemplateRegistration>}, {@code List<McpSyncPrompt>} and
+ * {@code List<SyncCompletionRegistration>} bean, which is how annotated beans and
  * {@code ToolCallback}s reach the server. The in-memory repositories are beans
  * themselves, so tools can be added or removed at runtime; changes are broadcast to
  * {@code subscriptions/listen} clients through the {@link McpChangeFeed} bean. An
@@ -131,11 +131,12 @@ public class McpServerModernAutoConfiguration {
 	@ConditionalOnMissingBean(McpSyncResourceRepository.class)
 	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "capabilities.resource",
 			havingValue = "true", matchIfMissing = true)
-	public InMemorySyncResourceRepository mcpModernResourceRepository(ObjectProvider<List<SyncResourceEntry>> resources,
-			ObjectProvider<List<SyncResourceTemplateEntry>> resourceTemplates, McpChangeFeed changeFeed,
+	public InMemorySyncResourceRepository mcpModernResourceRepository(
+			ObjectProvider<List<SyncResourceRegistration>> resources,
+			ObjectProvider<List<SyncResourceTemplateRegistration>> resourceTemplates, McpChangeFeed changeFeed,
 			McpServerModernProperties modernProperties) {
-		List<SyncResourceEntry> allResources = resources.stream().flatMap(List::stream).toList();
-		List<SyncResourceTemplateEntry> allTemplates = resourceTemplates.stream().flatMap(List::stream).toList();
+		List<SyncResourceRegistration> allResources = resources.stream().flatMap(List::stream).toList();
+		List<SyncResourceTemplateRegistration> allTemplates = resourceTemplates.stream().flatMap(List::stream).toList();
 		logger.info(
 				"Registered modern resources: " + allResources.size() + ", resource templates: " + allTemplates.size());
 		return InMemorySyncResourceRepository.builder()
@@ -167,8 +168,8 @@ public class McpServerModernAutoConfiguration {
 	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "capabilities.completion",
 			havingValue = "true", matchIfMissing = true)
 	public InMemorySyncCompletionRepository mcpModernCompletionRepository(
-			ObjectProvider<List<SyncCompletionSpecification>> completions) {
-		List<SyncCompletionSpecification> all = completions.stream().flatMap(List::stream).toList();
+			ObjectProvider<List<SyncCompletionRegistration>> completions) {
+		List<SyncCompletionRegistration> all = completions.stream().flatMap(List::stream).toList();
 		logger.info("Registered modern completions: " + all.size());
 		return InMemorySyncCompletionRepository.builder().completions(all).build();
 	}

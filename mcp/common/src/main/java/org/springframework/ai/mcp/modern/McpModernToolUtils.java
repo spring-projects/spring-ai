@@ -18,7 +18,6 @@ package org.springframework.ai.mcp.modern;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.modern.McpSchema.Annotations;
@@ -107,15 +106,15 @@ public final class McpModernToolUtils {
 	 * Retrieves the {@link McpRequestContext} of the current tool call from the
 	 * {@link ToolContext}, if the callback is being invoked by a modern MCP server.
 	 * @param toolContext the tool context passed to the callback
-	 * @return the request context, if present
+	 * @return the request context, or {@code null} when the callback is not being invoked
+	 * by a modern MCP server
 	 */
-	public static Optional<McpRequestContext> getMcpRequestContext(@Nullable ToolContext toolContext) {
+	public static @Nullable McpRequestContext getMcpRequestContext(@Nullable ToolContext toolContext) {
 		if (toolContext == null || toolContext.getContext() == null) {
-			return Optional.empty();
+			return null;
 		}
-		return Optional.ofNullable(toolContext.getContext().get(TOOL_CONTEXT_MCP_REQUEST_CONTEXT_KEY))
-			.filter(McpRequestContext.class::isInstance)
-			.map(McpRequestContext.class::cast);
+		return toolContext.getContext().get(TOOL_CONTEXT_MCP_REQUEST_CONTEXT_KEY) instanceof McpRequestContext ctx ? ctx
+				: null;
 	}
 
 	private static CallToolResult call(ToolCallback toolCallback, @Nullable MimeType mimeType,

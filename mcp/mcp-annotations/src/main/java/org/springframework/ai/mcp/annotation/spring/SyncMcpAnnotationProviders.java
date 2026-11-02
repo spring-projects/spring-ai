@@ -56,8 +56,9 @@ import org.springframework.ai.mcp.annotation.provider.sampling.SyncMcpSamplingPr
 import org.springframework.ai.mcp.annotation.provider.tool.SyncMcpToolProvider;
 import org.springframework.ai.mcp.annotation.provider.tool.SyncModernMcpToolProvider;
 import org.springframework.ai.mcp.annotation.provider.tool.SyncStatelessMcpToolProvider;
-import org.springframework.ai.mcp.modern.SyncResourceEntry;
-import org.springframework.ai.mcp.modern.SyncResourceTemplateEntry;
+import org.springframework.ai.mcp.modern.SyncCompletionRegistration;
+import org.springframework.ai.mcp.modern.SyncResourceRegistration;
+import org.springframework.ai.mcp.modern.SyncResourceTemplateRegistration;
 
 /**
  * @author Christian Tzolov
@@ -145,9 +146,8 @@ public final class SyncMcpAnnotationProviders {
 	/**
 	 * @since 2.1.0
 	 */
-	public static List<org.springframework.ai.mcp.modern.SyncCompletionSpecification> modernCompleteSpecifications(
-			List<Object> completeObjects) {
-		return new SpringAiSyncModernCompleteProvider(completeObjects).getModernCompleteSpecifications();
+	public static List<SyncCompletionRegistration> modernCompletions(List<Object> completeObjects) {
+		return new SpringAiSyncModernCompleteProvider(completeObjects).getModernCompletions();
 	}
 
 	/**
@@ -171,7 +171,7 @@ public final class SyncMcpAnnotationProviders {
 	/**
 	 * @since 2.1.0
 	 */
-	public static List<SyncResourceEntry> modernResources(List<Object> resourceObjects) {
+	public static List<SyncResourceRegistration> modernResources(List<Object> resourceObjects) {
 		return modernResources(resourceObjects, null);
 	}
 
@@ -180,7 +180,7 @@ public final class SyncMcpAnnotationProviders {
 	 * {@code null} for the SDK default
 	 * @since 2.1.0
 	 */
-	public static List<SyncResourceEntry> modernResources(List<Object> resourceObjects,
+	public static List<SyncResourceRegistration> modernResources(List<Object> resourceObjects,
 			@Nullable McpJsonMapper jsonMapper) {
 		SpringAiSyncModernResourceProvider provider = new SpringAiSyncModernResourceProvider(resourceObjects);
 		provider.setJsonMapper(jsonMapper);
@@ -190,7 +190,7 @@ public final class SyncMcpAnnotationProviders {
 	/**
 	 * @since 2.1.0
 	 */
-	public static List<SyncResourceTemplateEntry> modernResourceTemplates(List<Object> resourceObjects) {
+	public static List<SyncResourceTemplateRegistration> modernResourceTemplates(List<Object> resourceObjects) {
 		return modernResourceTemplates(resourceObjects, null);
 	}
 
@@ -199,7 +199,7 @@ public final class SyncMcpAnnotationProviders {
 	 * {@code null} for the SDK default
 	 * @since 2.1.0
 	 */
-	public static List<SyncResourceTemplateEntry> modernResourceTemplates(List<Object> resourceObjects,
+	public static List<SyncResourceTemplateRegistration> modernResourceTemplates(List<Object> resourceObjects,
 			@Nullable McpJsonMapper jsonMapper) {
 		SpringAiSyncModernResourceProvider provider = new SpringAiSyncModernResourceProvider(resourceObjects);
 		provider.setJsonMapper(jsonMapper);

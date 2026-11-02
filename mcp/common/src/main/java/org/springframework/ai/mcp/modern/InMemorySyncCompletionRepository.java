@@ -35,7 +35,7 @@ import org.springframework.util.Assert;
 
 /**
  * An in-memory {@link McpSyncCompletionRepository} that dispatches
- * {@code completion/complete} to the {@link SyncCompletionSpecification} registered for
+ * {@code completion/complete} to the {@link SyncCompletionRegistration} registered for
  * the request's prompt or resource reference.
  *
  * @author Christian Tzolov
@@ -43,7 +43,7 @@ import org.springframework.util.Assert;
  */
 public final class InMemorySyncCompletionRepository implements McpSyncCompletionRepository {
 
-	private final Map<String, SyncCompletionSpecification> completions = new ConcurrentHashMap<>();
+	private final Map<String, SyncCompletionRegistration> completions = new ConcurrentHashMap<>();
 
 	private InMemorySyncCompletionRepository(Builder builder) {
 		builder.completions.forEach(this::put);
@@ -53,8 +53,8 @@ public final class InMemorySyncCompletionRepository implements McpSyncCompletion
 		return new Builder();
 	}
 
-	public void add(SyncCompletionSpecification specification) {
-		put(specification);
+	public void add(SyncCompletionRegistration registration) {
+		put(registration);
 	}
 
 	public boolean remove(CompleteReference reference) {
@@ -64,17 +64,17 @@ public final class InMemorySyncCompletionRepository implements McpSyncCompletion
 
 	@Override
 	public CompleteResult complete(McpRequestContext ctx, CompleteRequest request) {
-		SyncCompletionSpecification spec = this.completions.get(key(request.ref()));
-		if (spec == null) {
+		SyncCompletionRegistration registration = this.completions.get(key(request.ref()));
+		if (registration == null) {
 			throw McpException.invalidParams("No completion handler for reference: " + describe(request.ref()));
 		}
-		return spec.handler().complete(ctx, request);
+		return registration.handler().complete(ctx, request);
 	}
 
-	private void put(SyncCompletionSpecification specification) {
-		Assert.notNull(specification, "specification must not be null");
-		String key = key(specification.reference());
-		if (this.completions.putIfAbsent(key, specification) != null) {
+	private void put(SyncCompletionRegistration registration) {
+		Assert.notNull(registration, "registration must not be null");
+		String key = key(registration.reference());
+		if (this.completions.putIfAbsent(key, registration) != null) {
 			throw new IllegalArgumentException("Completion for reference '" + key + "' already exists");
 		}
 	}
@@ -98,20 +98,20 @@ public final class InMemorySyncCompletionRepository implements McpSyncCompletion
 	 */
 	public static final class Builder {
 
-		private final List<SyncCompletionSpecification> completions = new ArrayList<>();
+		private final List<SyncCompletionRegistration> completions = new ArrayList<>();
 
 		private Builder() {
 		}
 
-		public Builder completion(SyncCompletionSpecification specification) {
-			Assert.notNull(specification, "specification must not be null");
-			this.completions.add(specification);
+		public Builder completion(SyncCompletionRegistration registration) {
+			Assert.notNull(registration, "registration must not be null");
+			this.completions.add(registration);
 			return this;
 		}
 
-		public Builder completions(List<SyncCompletionSpecification> specifications) {
-			Assert.notNull(specifications, "specifications must not be null");
-			this.completions.addAll(specifications);
+		public Builder completions(List<SyncCompletionRegistration> registrations) {
+			Assert.notNull(registrations, "registrations must not be null");
+			this.completions.addAll(registrations);
 			return this;
 		}
 

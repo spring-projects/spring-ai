@@ -32,9 +32,9 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  * @since 2.1.0
  */
-public record SyncCompletionSpecification(CompleteReference reference, Handler handler) {
+public record SyncCompletionRegistration(CompleteReference reference, Handler handler) {
 
-	public SyncCompletionSpecification {
+	public SyncCompletionRegistration {
 		Assert.notNull(reference, "reference must not be null");
 		Assert.notNull(handler, "handler must not be null");
 	}

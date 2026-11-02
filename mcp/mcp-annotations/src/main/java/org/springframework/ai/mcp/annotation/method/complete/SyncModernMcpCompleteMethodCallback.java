@@ -35,7 +35,7 @@ import org.springframework.ai.mcp.annotation.McpProgressToken;
 import org.springframework.ai.mcp.annotation.common.ModernMethodSupport;
 import org.springframework.ai.mcp.annotation.context.McpModernSyncRequestContext;
 import org.springframework.ai.mcp.modern.McpSchemaConverter;
-import org.springframework.ai.mcp.modern.SyncCompletionSpecification;
+import org.springframework.ai.mcp.modern.SyncCompletionRegistration;
 
 /**
  * Serves a {@code completion/complete} of a 2026-07-28 ("modern") MCP server by invoking
@@ -53,7 +53,7 @@ import org.springframework.ai.mcp.modern.SyncCompletionSpecification;
  * @since 2.1.0
  */
 public final class SyncModernMcpCompleteMethodCallback extends AbstractMcpCompleteMethodCallback
-		implements SyncCompletionSpecification.Handler {
+		implements SyncCompletionRegistration.Handler {
 
 	private SyncModernMcpCompleteMethodCallback(Builder builder) {
 		super(builder.method, builder.bean, builder.prompt, builder.uri, builder.uriTemplateManagerFactory);

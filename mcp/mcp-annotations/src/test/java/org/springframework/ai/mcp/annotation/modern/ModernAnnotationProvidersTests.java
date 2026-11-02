@@ -89,7 +89,7 @@ import org.springframework.ai.mcp.modern.InMemorySyncCompletionRepository;
 import org.springframework.ai.mcp.modern.InMemorySyncPromptRepository;
 import org.springframework.ai.mcp.modern.InMemorySyncResourceRepository;
 import org.springframework.ai.mcp.modern.InMemorySyncToolRepository;
-import org.springframework.ai.mcp.modern.SyncResourceEntry;
+import org.springframework.ai.mcp.modern.SyncResourceRegistration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -135,7 +135,7 @@ class ModernAnnotationProvidersTests {
 				.prompts(SyncMcpAnnotationProviders.modernPrompts(List.of(new Prompts())))
 				.build()))
 			.feature(CompletionsFeature.ofSync(InMemorySyncCompletionRepository.builder()
-				.completions(SyncMcpAnnotationProviders.modernCompleteSpecifications(List.of(new Completions())))
+				.completions(SyncMcpAnnotationProviders.modernCompletions(List.of(new Completions())))
 				.build()))
 			.build();
 	}
@@ -438,8 +438,8 @@ class ModernAnnotationProvidersTests {
 	@Test
 	@SuppressWarnings("unchecked")
 	void resourceNotifierParameterStreamsProgressAndKeepsCacheHints() {
-		List<SyncResourceEntry> specs = SyncMcpAnnotationProviders.modernResources(List.of(new Resources()));
-		SyncResourceEntry cached = specs.stream()
+		List<SyncResourceRegistration> specs = SyncMcpAnnotationProviders.modernResources(List.of(new Resources()));
+		SyncResourceRegistration cached = specs.stream()
 			.filter(spec -> spec.resource().uri().equals("test://cached"))
 			.findFirst()
 			.orElseThrow();
@@ -633,7 +633,7 @@ class ModernAnnotationProvidersTests {
 		assertThat(SyncMcpAnnotationProviders.modernTools(List.of(new LegacyTools()))).isEmpty();
 		assertThat(SyncMcpAnnotationProviders.modernResources(List.of(new LegacyResources()))).isEmpty();
 		assertThat(SyncMcpAnnotationProviders.modernPrompts(List.of(new LegacyPrompts()))).isEmpty();
-		assertThat(SyncMcpAnnotationProviders.modernCompleteSpecifications(List.of(new LegacyCompletions()))).isEmpty();
+		assertThat(SyncMcpAnnotationProviders.modernCompletions(List.of(new LegacyCompletions()))).isEmpty();
 
 		// Built directly, the callbacks explain what to use instead.
 		assertThatThrownBy(() -> new SyncModernMcpToolMethodCallback(ReturnMode.TEXT,
@@ -743,14 +743,14 @@ class ModernAnnotationProvidersTests {
 
 		@McpTool(name = "ask_name", description = "MRTR")
 		CallToolOutcome askName(McpModernSyncRequestContext ctx) {
-			var answer = ctx.inputResponse("user", Map.class);
-			if (answer.isEmpty()) {
+			Map<?, ?> answer = ctx.inputResponse("user", Map.class);
+			if (answer == null) {
 				return InputRequiredResult.builder()
 					.elicit("user", ElicitFormRequest.builder("Your name?", Map.of("type", "object")).build())
 					.requestState("asked")
 					.build();
 			}
-			Map<?, ?> content = (Map<?, ?>) answer.get().get("content");
+			Map<?, ?> content = (Map<?, ?>) answer.get("content");
 			return McpSchema.CallToolResult.builder()
 				.addContent(TextContent.builder("Hi " + content.get("name") + " state=" + ctx.requestState()).build())
 				.build();
@@ -832,7 +832,7 @@ class ModernAnnotationProvidersTests {
 
 		@McpResource(uri = "test://gated", name = "gated", description = "gated")
 		ReadResourceOutcome readGated(McpModernSyncRequestContext ctx, McpSchema.ReadResourceRequest request) {
-			if (ctx.inputResponse("pin", Map.class).isEmpty()) {
+			if (ctx.inputResponse("pin", Map.class) == null) {
 				return InputRequiredResult.builder()
 					.elicit("pin", ElicitFormRequest.builder("PIN?", Map.of("type", "object")).build())
 					.requestState("pin-asked")

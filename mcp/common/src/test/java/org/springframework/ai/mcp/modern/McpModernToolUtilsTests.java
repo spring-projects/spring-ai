@@ -90,10 +90,17 @@ class McpModernToolUtilsTests {
 		List<Map<String, Object>> content = (List<Map<String, Object>>) result.get("content");
 		assertThat(content.get(0).get("text")).isEqualTo("ok");
 
-		assertThat(McpModernToolUtils.getMcpRequestContext(seen.get())).isPresent()
-			.get()
-			.isInstanceOf(McpRequestContext.class);
+		assertThat(McpModernToolUtils.getMcpRequestContext(seen.get())).isInstanceOf(McpRequestContext.class);
 		assertThat(McpToolUtils.getMcpExchange(seen.get())).isEmpty();
+	}
+
+	@Test
+	void requestContextIsNullOutsideAModernServer() {
+		assertThat(McpModernToolUtils.getMcpRequestContext(null)).isNull();
+		assertThat(McpModernToolUtils.getMcpRequestContext(new ToolContext(Map.of()))).isNull();
+		assertThat(McpModernToolUtils.getMcpRequestContext(
+				new ToolContext(Map.of(McpModernToolUtils.TOOL_CONTEXT_MCP_REQUEST_CONTEXT_KEY, "not a context"))))
+			.isNull();
 	}
 
 }

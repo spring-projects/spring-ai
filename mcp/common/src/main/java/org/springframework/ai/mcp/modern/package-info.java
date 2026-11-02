@@ -22,14 +22,14 @@
  * a definition with its handler ({@code McpSyncTool}, {@code McpSyncPrompt},
  * {@code McpSyncResource}). The {@code InMemorySync*Repository} classes are map-backed
  * repositories with runtime add and remove, change broadcasts and key-cursor paging.
- * {@link org.springframework.ai.mcp.modern.SyncResourceEntry} and
- * {@link org.springframework.ai.mcp.modern.SyncResourceTemplateEntry} pair a resource or
- * template definition with its handler, which the SDK's {@code McpSyncResource} does not
- * carry; {@link org.springframework.ai.mcp.modern.SyncCompletionSpecification} does the
- * same for a completion reference.
- * {@link org.springframework.ai.mcp.modern.McpSchemaConverter} converts between the
- * legacy and modern schema types, which lets handlers written against the legacy types be
- * exposed on a modern server, and
+ * {@link org.springframework.ai.mcp.modern.SyncResourceRegistration} and
+ * {@link org.springframework.ai.mcp.modern.SyncResourceTemplateRegistration} pair a
+ * resource or template definition with its handler, which the SDK's
+ * {@code McpSyncResource} does not carry;
+ * {@link org.springframework.ai.mcp.modern.SyncCompletionRegistration} does the same for
+ * a completion reference. {@link org.springframework.ai.mcp.modern.McpSchemaConverter}
+ * converts between the legacy and modern schema types, which lets handlers written
+ * against the legacy types be exposed on a modern server, and
  * {@link org.springframework.ai.mcp.modern.McpTransportContexts} reads the request
  * headers that the Spring transports put into the transport context.
  */

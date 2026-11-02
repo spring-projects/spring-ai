@@ -36,12 +36,12 @@ import org.springframework.ai.mcp.annotation.common.MetaUtils;
 import org.springframework.ai.mcp.annotation.common.ModernMethodSupport;
 import org.springframework.ai.mcp.annotation.method.resource.SyncModernMcpResourceMethodCallback;
 import org.springframework.ai.mcp.modern.McpSchemaConverter;
-import org.springframework.ai.mcp.modern.SyncResourceEntry;
-import org.springframework.ai.mcp.modern.SyncResourceTemplateEntry;
+import org.springframework.ai.mcp.modern.SyncResourceRegistration;
+import org.springframework.ai.mcp.modern.SyncResourceTemplateRegistration;
 
 /**
- * Creates resource and resource template entries for a 2026-07-28 ("modern") MCP server
- * from methods annotated with {@link McpResource}. Each method is served by a
+ * Creates resource and resource template registrations for a 2026-07-28 ("modern") MCP
+ * server from methods annotated with {@link McpResource}. Each method is served by a
  * {@link SyncModernMcpResourceMethodCallback} wrapped in a {@link McpSyncResource} that
  * requires the client capabilities listed in {@link McpResource#requiredCapabilities()}.
  *
@@ -69,8 +69,8 @@ public class SyncModernMcpResourceProvider {
 		this.jsonMapper = jsonMapper;
 	}
 
-	public List<SyncResourceEntry> getResources() {
-		List<SyncResourceEntry> resources = resourceMethods(false).map(entry -> {
+	public List<SyncResourceRegistration> getResources() {
+		List<SyncResourceRegistration> resources = resourceMethods(false).map(entry -> {
 			McpResource annotation = this.doGetMcpResourceAnnotation(entry.method());
 			McpSchema.Resource resource = McpSchema.Resource.builder(annotation.uri(), name(entry.method(), annotation))
 				.description(annotation.description())
@@ -87,7 +87,7 @@ public class SyncModernMcpResourceProvider {
 				.resource(resource)
 				.jsonMapper(this.jsonMapper)
 				.build();
-			return SyncResourceEntry.of(McpSchemaConverter.toModern(resource),
+			return SyncResourceRegistration.of(McpSchemaConverter.toModern(resource),
 					ModernMethodSupport.requiredCapabilities(entry.method(), annotation.requiredCapabilities()),
 					callback);
 		}).toList();
@@ -95,8 +95,8 @@ public class SyncModernMcpResourceProvider {
 		return resources;
 	}
 
-	public List<SyncResourceTemplateEntry> getResourceTemplates() {
-		List<SyncResourceTemplateEntry> templates = resourceMethods(true).map(entry -> {
+	public List<SyncResourceTemplateRegistration> getResourceTemplates() {
+		List<SyncResourceTemplateRegistration> templates = resourceMethods(true).map(entry -> {
 			McpResource annotation = this.doGetMcpResourceAnnotation(entry.method());
 			McpSchema.ResourceTemplate template = McpSchema.ResourceTemplate
 				.builder(annotation.uri(), name(entry.method(), annotation))
@@ -113,7 +113,7 @@ public class SyncModernMcpResourceProvider {
 				.resource(template)
 				.jsonMapper(this.jsonMapper)
 				.build();
-			return SyncResourceTemplateEntry.of(McpSchemaConverter.toModern(template),
+			return SyncResourceTemplateRegistration.of(McpSchemaConverter.toModern(template),
 					ModernMethodSupport.requiredCapabilities(entry.method(), annotation.requiredCapabilities()),
 					callback);
 		}).toList();

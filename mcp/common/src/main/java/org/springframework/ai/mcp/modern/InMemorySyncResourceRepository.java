@@ -38,21 +38,21 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.util.Assert;
 
 /**
- * A {@link McpSyncResourceRepository} that keeps {@link SyncResourceEntry}s and
- * {@link SyncResourceTemplateEntry}s in sorted, concurrent maps. A {@code resources/read}
- * URI is served by the resource registered under it, or else by the first template
- * matching it in URI-template order. Resources and templates can be added and removed at
- * runtime; each change is broadcast as {@code notifications/resources/list_changed} when
- * a change broadcaster is configured, and {@link #resourceUpdated(String)} notifies
- * subscribers of a changed resource. Listings are paged with an opaque key cursor when a
- * page size is set.
+ * A {@link McpSyncResourceRepository} that keeps {@link SyncResourceRegistration}s and
+ * {@link SyncResourceTemplateRegistration}s in sorted, concurrent maps. A
+ * {@code resources/read} URI is served by the resource registered under it, or else by
+ * the first template matching it in URI-template order. Resources and templates can be
+ * added and removed at runtime; each change is broadcast as
+ * {@code notifications/resources/list_changed} when a change broadcaster is configured,
+ * and {@link #resourceUpdated(String)} notifies subscribers of a changed resource.
+ * Listings are paged with an opaque key cursor when a page size is set.
  *
  * @author Christian Tzolov
  * @since 2.1.0
  */
 public final class InMemorySyncResourceRepository implements McpSyncResourceRepository {
 
-	private final Map<String, SyncResourceEntry> resources = new ConcurrentSkipListMap<>();
+	private final Map<String, SyncResourceRegistration> resources = new ConcurrentSkipListMap<>();
 
 	private final Map<String, CompiledTemplate> templates = new ConcurrentSkipListMap<>();
 
@@ -82,8 +82,8 @@ public final class InMemorySyncResourceRepository implements McpSyncResourceRepo
 	 * Adds a resource and notifies listening clients.
 	 * @throws IllegalArgumentException if a resource with the same URI exists
 	 */
-	public void add(SyncResourceEntry entry) {
-		put(entry);
+	public void add(SyncResourceRegistration registration) {
+		put(registration);
 		broadcastListChanged();
 	}
 
@@ -92,8 +92,8 @@ public final class InMemorySyncResourceRepository implements McpSyncResourceRepo
 	 * @throws IllegalArgumentException if a template with the same URI template exists,
 	 * or the URI template is invalid
 	 */
-	public void add(SyncResourceTemplateEntry entry) {
-		put(entry);
+	public void add(SyncResourceTemplateRegistration registration) {
+		put(registration);
 		broadcastListChanged();
 	}
 
@@ -125,28 +125,29 @@ public final class InMemorySyncResourceRepository implements McpSyncResourceRepo
 
 	@Override
 	public ResourcesPage list(McpRequestContext ctx, @Nullable String cursor) {
-		Pagination.Page<Resource> page = Pagination.page(this.resources.values(), entry -> entry.resource().uri(),
-				SyncResourceEntry::resource, cursor, this.pageSize);
+		Pagination.Page<Resource> page = Pagination.page(this.resources.values(),
+				registration -> registration.resource().uri(), SyncResourceRegistration::resource, cursor,
+				this.pageSize);
 		return new ResourcesPage(page.items(), page.nextCursor(), null, null);
 	}
 
 	@Override
 	public ResourceTemplatesPage listTemplates(McpRequestContext ctx, @Nullable String cursor) {
 		Pagination.Page<ResourceTemplate> page = Pagination.page(this.templates.values(),
-				template -> template.entry().resourceTemplate().uriTemplate(),
-				template -> template.entry().resourceTemplate(), cursor, this.pageSize);
+				template -> template.registration().resourceTemplate().uriTemplate(),
+				template -> template.registration().resourceTemplate(), cursor, this.pageSize);
 		return new ResourceTemplatesPage(page.items(), page.nextCursor(), null, null);
 	}
 
 	@Override
 	public @Nullable McpSyncResource find(McpRequestContext ctx, String uri) {
-		SyncResourceEntry resource = this.resources.get(uri);
+		SyncResourceRegistration resource = this.resources.get(uri);
 		if (resource != null) {
 			return resource.handler();
 		}
 		for (CompiledTemplate template : this.templates.values()) {
 			if (template.matcher().matches(uri)) {
-				return template.entry().handler();
+				return template.registration().handler();
 			}
 		}
 		return null;
@@ -157,19 +158,20 @@ public final class InMemorySyncResourceRepository implements McpSyncResourceRepo
 		return this.subscribeSupported;
 	}
 
-	private void put(SyncResourceEntry entry) {
-		Assert.notNull(entry, "entry must not be null");
-		String uri = entry.resource().uri();
-		if (this.resources.putIfAbsent(uri, entry) != null) {
+	private void put(SyncResourceRegistration registration) {
+		Assert.notNull(registration, "registration must not be null");
+		String uri = registration.resource().uri();
+		if (this.resources.putIfAbsent(uri, registration) != null) {
 			throw new IllegalArgumentException("Resource with URI '" + uri + "' already exists");
 		}
 	}
 
-	private void put(SyncResourceTemplateEntry entry) {
-		Assert.notNull(entry, "entry must not be null");
-		String uriTemplate = entry.resourceTemplate().uriTemplate();
+	private void put(SyncResourceTemplateRegistration registration) {
+		Assert.notNull(registration, "registration must not be null");
+		String uriTemplate = registration.resourceTemplate().uriTemplate();
 		// Compiled eagerly so that an invalid template fails at registration time.
-		CompiledTemplate compiled = new CompiledTemplate(entry, this.uriTemplateManagerFactory.create(uriTemplate));
+		CompiledTemplate compiled = new CompiledTemplate(registration,
+				this.uriTemplateManagerFactory.create(uriTemplate));
 		if (this.templates.putIfAbsent(uriTemplate, compiled) != null) {
 			throw new IllegalArgumentException("Resource template with URI '" + uriTemplate + "' already exists");
 		}
@@ -181,7 +183,7 @@ public final class InMemorySyncResourceRepository implements McpSyncResourceRepo
 		}
 	}
 
-	private record CompiledTemplate(SyncResourceTemplateEntry entry, McpUriTemplateManager matcher) {
+	private record CompiledTemplate(SyncResourceTemplateRegistration registration, McpUriTemplateManager matcher) {
 	}
 
 	/**
@@ -189,9 +191,9 @@ public final class InMemorySyncResourceRepository implements McpSyncResourceRepo
 	 */
 	public static final class Builder {
 
-		private final List<SyncResourceEntry> resources = new ArrayList<>();
+		private final List<SyncResourceRegistration> resources = new ArrayList<>();
 
-		private final List<SyncResourceTemplateEntry> resourceTemplates = new ArrayList<>();
+		private final List<SyncResourceTemplateRegistration> resourceTemplates = new ArrayList<>();
 
 		private McpUriTemplateManagerFactory uriTemplateManagerFactory = new DefaultMcpUriTemplateManagerFactory();
 
@@ -204,27 +206,27 @@ public final class InMemorySyncResourceRepository implements McpSyncResourceRepo
 		private Builder() {
 		}
 
-		public Builder resource(SyncResourceEntry entry) {
-			Assert.notNull(entry, "entry must not be null");
-			this.resources.add(entry);
+		public Builder resource(SyncResourceRegistration registration) {
+			Assert.notNull(registration, "registration must not be null");
+			this.resources.add(registration);
 			return this;
 		}
 
-		public Builder resources(List<SyncResourceEntry> entries) {
-			Assert.notNull(entries, "entries must not be null");
-			this.resources.addAll(entries);
+		public Builder resources(List<SyncResourceRegistration> registrations) {
+			Assert.notNull(registrations, "registrations must not be null");
+			this.resources.addAll(registrations);
 			return this;
 		}
 
-		public Builder resourceTemplate(SyncResourceTemplateEntry entry) {
-			Assert.notNull(entry, "entry must not be null");
-			this.resourceTemplates.add(entry);
+		public Builder resourceTemplate(SyncResourceTemplateRegistration registration) {
+			Assert.notNull(registration, "registration must not be null");
+			this.resourceTemplates.add(registration);
 			return this;
 		}
 
-		public Builder resourceTemplates(List<SyncResourceTemplateEntry> entries) {
-			Assert.notNull(entries, "entries must not be null");
-			this.resourceTemplates.addAll(entries);
+		public Builder resourceTemplates(List<SyncResourceTemplateRegistration> registrations) {
+			Assert.notNull(registrations, "registrations must not be null");
+			this.resourceTemplates.addAll(registrations);
 			return this;
 		}
 
@@ -258,7 +260,7 @@ public final class InMemorySyncResourceRepository implements McpSyncResourceRepo
 		}
 
 		/**
-		 * Maximum number of entries per {@code resources/list} and
+		 * Maximum number of items per {@code resources/list} and
 		 * {@code resources/templates/list} page. Unset returns everything on one page.
 		 */
 		public Builder pageSize(@Nullable Integer pageSize) {

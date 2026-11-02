@@ -17,7 +17,6 @@
 package org.springframework.ai.mcp.annotation.context;
 
 import java.util.Map;
-import java.util.Optional;
 
 import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.json.McpJsonDefaults;
@@ -110,10 +109,10 @@ public final class DefaultMcpModernSyncRequestContext implements McpModernSyncRe
 	}
 
 	@Override
-	public <T> Optional<T> inputResponse(String key, Class<T> type) {
+	public <T> @Nullable T inputResponse(String key, Class<T> type) {
 		Assert.hasText(key, "key must not be empty");
 		Assert.notNull(type, "type must not be null");
-		return InputResponses.get(this.inputResponses, key, type, this.jsonMapper);
+		return InputResponses.get(this.inputResponses, key, type, this.jsonMapper).orElse(null);
 	}
 
 	/**

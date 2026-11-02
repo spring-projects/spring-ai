@@ -33,9 +33,9 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  * @since 2.1.0
  */
-public record SyncResourceEntry(Resource resource, McpSyncResource handler) {
+public record SyncResourceRegistration(Resource resource, McpSyncResource handler) {
 
-	public SyncResourceEntry {
+	public SyncResourceRegistration {
 		Assert.notNull(resource, "resource must not be null");
 		Assert.notNull(handler, "handler must not be null");
 	}
@@ -44,8 +44,8 @@ public record SyncResourceEntry(Resource resource, McpSyncResource handler) {
 	 * Pairs a resource with a handler that requires no client capabilities.
 	 * @since 2.1.0
 	 */
-	public static SyncResourceEntry of(Resource resource, McpSyncResource.Handler handler) {
-		return new SyncResourceEntry(resource, McpSyncResource.of(handler));
+	public static SyncResourceRegistration of(Resource resource, McpSyncResource.Handler handler) {
+		return new SyncResourceRegistration(resource, McpSyncResource.of(handler));
 	}
 
 	/**
@@ -54,9 +54,9 @@ public record SyncResourceEntry(Resource resource, McpSyncResource handler) {
 	 * {@code -32021} without running the handler.
 	 * @since 2.1.0
 	 */
-	public static SyncResourceEntry of(Resource resource, ClientCapabilities requiredCapabilities,
+	public static SyncResourceRegistration of(Resource resource, ClientCapabilities requiredCapabilities,
 			McpSyncResource.Handler handler) {
-		return new SyncResourceEntry(resource, McpSyncResource.of(requiredCapabilities, handler));
+		return new SyncResourceRegistration(resource, McpSyncResource.of(requiredCapabilities, handler));
 	}
 
 }

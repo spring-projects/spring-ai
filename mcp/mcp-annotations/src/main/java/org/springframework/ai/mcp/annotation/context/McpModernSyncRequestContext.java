@@ -17,7 +17,6 @@
 package org.springframework.ai.mcp.annotation.context;
 
 import java.util.Map;
-import java.util.Optional;
 
 import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.modern.McpSchema.ClientCapabilities;
@@ -85,8 +84,8 @@ public interface McpModernSyncRequestContext {
 	 * @param key the server-assigned key used in the input-required result
 	 * @param type the type to convert the response to
 	 * @param <T> the response type
-	 * @return the response, or empty if the client did not answer this request
+	 * @return the response, or {@code null} if the client did not answer this request
 	 */
-	<T> Optional<T> inputResponse(String key, Class<T> type);
+	<T> @Nullable T inputResponse(String key, Class<T> type);
 
 }

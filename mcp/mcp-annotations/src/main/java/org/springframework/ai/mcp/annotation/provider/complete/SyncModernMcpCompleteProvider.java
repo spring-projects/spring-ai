@@ -31,10 +31,10 @@ import org.springframework.ai.mcp.annotation.common.McpPredicates;
 import org.springframework.ai.mcp.annotation.common.ModernMethodSupport;
 import org.springframework.ai.mcp.annotation.method.complete.SyncModernMcpCompleteMethodCallback;
 import org.springframework.ai.mcp.modern.McpSchemaConverter;
-import org.springframework.ai.mcp.modern.SyncCompletionSpecification;
+import org.springframework.ai.mcp.modern.SyncCompletionRegistration;
 
 /**
- * Creates completion specifications for a 2026-07-28 ("modern") MCP server from methods
+ * Creates completion registrations for a 2026-07-28 ("modern") MCP server from methods
  * annotated with {@link McpComplete}. Each method is served by a
  * {@link SyncModernMcpCompleteMethodCallback}.
  *
@@ -52,8 +52,8 @@ public class SyncModernMcpCompleteProvider {
 		this.completeObjects = completeObjects;
 	}
 
-	public List<SyncCompletionSpecification> getModernCompleteSpecifications() {
-		List<SyncCompletionSpecification> specifications = this.completeObjects.stream()
+	public List<SyncCompletionRegistration> getModernCompletions() {
+		List<SyncCompletionRegistration> registrations = this.completeObjects.stream()
 			.flatMap(bean -> Stream.of(this.doGetClassMethods(bean))
 				.filter(method -> method.isAnnotationPresent(McpComplete.class))
 				.filter(McpPredicates.filterReactiveReturnTypeMethod())
@@ -67,14 +67,14 @@ public class SyncModernMcpCompleteProvider {
 						.bean(bean)
 						.complete(annotation)
 						.build();
-					return new SyncCompletionSpecification(McpSchemaConverter.toModern(reference), callback);
+					return new SyncCompletionRegistration(McpSchemaConverter.toModern(reference), callback);
 				}))
 			.toList();
 
-		if (specifications.isEmpty() && logger.isWarnEnabled()) {
+		if (registrations.isEmpty() && logger.isWarnEnabled()) {
 			logger.warn("No complete methods found in the provided complete objects: " + this.completeObjects);
 		}
-		return specifications;
+		return registrations;
 	}
 
 	protected Method[] doGetClassMethods(Object bean) {

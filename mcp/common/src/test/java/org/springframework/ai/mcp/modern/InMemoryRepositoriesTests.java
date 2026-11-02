@@ -198,11 +198,11 @@ class InMemoryRepositoriesTests {
 	void resourceRepositoryMatchesStaticAndTemplateUris() {
 		McpChangeFeed changes = new McpChangeFeed();
 		InMemorySyncResourceRepository repository = InMemorySyncResourceRepository.builder()
-			.resource(SyncResourceEntry.of(Resource.builder("test://static", "static").build(),
+			.resource(SyncResourceRegistration.of(Resource.builder("test://static", "static").build(),
 					(ctx, request) -> McpSyncResponse.result(ReadResourceResult
 						.builder(List.of(TextResourceContents.builder(request.uri(), "static-content").build()))
 						.build())))
-			.resourceTemplate(SyncResourceTemplateEntry.of(
+			.resourceTemplate(SyncResourceTemplateRegistration.of(
 					ResourceTemplate.builder("test://items/{id}", "items").build(),
 					(ctx, request) -> McpSyncResponse.result(ReadResourceResult
 						.builder(List.of(TextResourceContents.builder(request.uri(), "item:" + request.uri()).build()))
@@ -231,7 +231,7 @@ class InMemoryRepositoriesTests {
 		assertThat((List<?>) templates.get("resourceTemplates")).hasSize(1);
 		assertThat(repository.supportsSubscribe()).isTrue();
 
-		assertThatThrownBy(() -> repository.add(SyncResourceTemplateEntry
+		assertThatThrownBy(() -> repository.add(SyncResourceTemplateRegistration
 			.of(ResourceTemplate.builder("test://items/{id}", "dup").build(), (ctx, request) -> null)))
 			.isInstanceOf(IllegalArgumentException.class);
 
@@ -271,7 +271,7 @@ class InMemoryRepositoriesTests {
 	@SuppressWarnings("unchecked")
 	void completionRepositoryDispatchesByReference() {
 		InMemorySyncCompletionRepository repository = InMemorySyncCompletionRepository.builder()
-			.completion(new SyncCompletionSpecification(new PromptReference("greet"),
+			.completion(new SyncCompletionRegistration(new PromptReference("greet"),
 					(ctx, request) -> CompleteResult.of(new CompleteResult.Completion(List.of("a", "b")))))
 			.build();
 		McpServer server = McpServer.builder()
