@@ -25,6 +25,7 @@ import io.micrometer.context.ContextSnapshotFactory;
 import org.jspecify.annotations.Nullable;
 import reactor.util.context.ContextView;
 
+import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.model.tool.ToolCallDecisions;
 import org.springframework.ai.session.CreateSessionRequest;
 import org.springframework.ai.session.SessionAttributes;
@@ -119,6 +120,15 @@ final class SessionContexts {
 							+ "' must be a ToolCallDecisions but was " + value.getClass().getName());
 		}
 		return decisions;
+	}
+
+	/**
+	 * Returns the request with the effective run id on its context
+	 * ({@link SessionTurnAdvisor#RUN_ID_CONTEXT_KEY}), for the advisors inside the loop
+	 * and for the response.
+	 */
+	static ChatClientRequest withRunId(ChatClientRequest request, String runId) {
+		return request.mutate().context(SessionTurnAdvisor.RUN_ID_CONTEXT_KEY, runId).build();
 	}
 
 	/**
