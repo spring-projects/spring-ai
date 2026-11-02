@@ -962,6 +962,11 @@
 		</profile>
 		<profile>
 			<id>commercial</id>
+			<activation>
+				<property>
+					<name>env.COMMERCIAL_SNAPSHOT_REPO_URL</name>
+				</property>
+			</activation>
 			<repositories>
 				<repository>
 					<id>spring-enterprise-snapshot</id>
