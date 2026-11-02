@@ -72,7 +72,7 @@ public class OllamaEmbeddingModelObservationIT extends BaseOllamaIT {
 			.doesNotHaveAnyRemainingCurrentObservation()
 			.hasObservationWithNameEqualTo(DefaultEmbeddingModelObservationConvention.DEFAULT_NAME)
 			.that()
-			.hasContextualNameEqualTo("embedding " + OllamaModel.NOMIC_EMBED_TEXT.getName())
+			.hasContextualNameEqualTo("embeddings " + OllamaModel.NOMIC_EMBED_TEXT.getName())
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(),
 					AiOperationType.EMBEDDING.value())
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_PROVIDER.asString(), AiProvider.OLLAMA.value())

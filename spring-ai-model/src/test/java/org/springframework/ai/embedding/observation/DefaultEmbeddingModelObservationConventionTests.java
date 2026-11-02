@@ -55,7 +55,7 @@ class DefaultEmbeddingModelObservationConventionTests {
 			.embeddingRequest(generateEmbeddingRequest(EmbeddingOptions.builder().model("mistral").build()))
 			.provider("superprovider")
 			.build();
-		assertThat(this.observationConvention.getContextualName(observationContext)).isEqualTo("embedding mistral");
+		assertThat(this.observationConvention.getContextualName(observationContext)).isEqualTo("embeddings mistral");
 	}
 
 	@Test
@@ -64,7 +64,7 @@ class DefaultEmbeddingModelObservationConventionTests {
 			.embeddingRequest(generateEmbeddingRequest(EmbeddingOptions.builder().build()))
 			.provider("superprovider")
 			.build();
-		assertThat(this.observationConvention.getContextualName(observationContext)).isEqualTo("embedding");
+		assertThat(this.observationConvention.getContextualName(observationContext)).isEqualTo("embeddings");
 	}
 
 	@Test
@@ -84,7 +84,7 @@ class DefaultEmbeddingModelObservationConventionTests {
 			.provider("superprovider")
 			.build();
 		assertThat(this.observationConvention.getLowCardinalityKeyValues(observationContext)).contains(
-				KeyValue.of(LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(), "embedding"),
+				KeyValue.of(LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(), "embeddings"),
 				KeyValue.of(LowCardinalityKeyNames.AI_PROVIDER.asString(), "superprovider"),
 				KeyValue.of(LowCardinalityKeyNames.REQUEST_MODEL.asString(), "mistral"));
 	}

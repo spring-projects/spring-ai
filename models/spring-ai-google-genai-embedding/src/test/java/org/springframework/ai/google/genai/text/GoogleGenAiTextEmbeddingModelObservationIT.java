@@ -79,7 +79,7 @@ public class GoogleGenAiTextEmbeddingModelObservationIT {
 			.doesNotHaveAnyRemainingCurrentObservation()
 			.hasObservationWithNameEqualTo(DefaultEmbeddingModelObservationConvention.DEFAULT_NAME)
 			.that()
-			.hasContextualNameEqualTo("embedding " + GoogleGenAiTextEmbeddingModelName.TEXT_EMBEDDING_004.getName())
+			.hasContextualNameEqualTo("embeddings " + GoogleGenAiTextEmbeddingModelName.TEXT_EMBEDDING_004.getName())
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(),
 					AiOperationType.EMBEDDING.value())
 			.hasLowCardinalityKeyValue(LowCardinalityKeyNames.AI_PROVIDER.asString(),
