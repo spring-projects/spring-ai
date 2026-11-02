@@ -187,24 +187,24 @@ public final class DecisionToolIndex implements ToolIndex {
 		}
 		DecisionResponse response = select(toolSearchRequest, candidates);
 		if (response.isRefused(APPLICABILITY_QUESTION) || response.isRefused(SELECTION_QUESTION)) {
-			logger.debug("The decision model refused to pick a tool for '" + toolSearchRequest.query() + "'");
+			logRefusal("pick a tool", toolSearchRequest);
 			return List.of();
 		}
 		if (!applies(response.getYesNo(APPLICABILITY_QUESTION), toolSearchRequest)) {
 			return List.of();
 		}
-		ChoiceAnswer bestTool = response.getChoice(SELECTION_QUESTION);
+		ChoiceAnswer bestToolAnswer = response.getChoice(SELECTION_QUESTION);
 		Map<String, ToolReference> byName = new LinkedHashMap<>();
 		candidates.forEach(candidate -> byName.put(candidate.toolName(), candidate));
 		List<ToolReference> matches = new ArrayList<>();
 		int limit = limit(toolSearchRequest);
-		for (String name : ranking(bestTool)) {
+		for (String name : ranking(bestToolAnswer)) {
 			if (matches.size() >= limit) {
 				break;
 			}
 			ToolReference reference = byName.get(name);
 			if (reference != null) {
-				matches.add(scored(reference, probability(bestTool, name)));
+				matches.add(scored(reference, probability(bestToolAnswer, name)));
 			}
 		}
 		return matches;
@@ -254,15 +254,15 @@ public final class DecisionToolIndex implements ToolIndex {
 	 * probability, and only those with a probability above zero are kept. Without that
 	 * check, a search would fill up to {@code maxResults} with tools the model ruled out.
 	 */
-	private List<String> ranking(ChoiceAnswer bestTool) {
+	private List<String> ranking(ChoiceAnswer bestToolAnswer) {
 		List<String> ranking = new ArrayList<>();
-		Double chosenProbability = bestTool.getProbability();
+		Double chosenProbability = bestToolAnswer.getProbability();
 		if (chosenProbability == null || chosenProbability >= this.minimumRelevance) {
-			ranking.add(bestTool.getValue());
+			ranking.add(bestToolAnswer.getValue());
 		}
-		for (String name : bestTool.getRankedOptions()) {
-			double probability = probability(bestTool, name);
-			if (!name.equals(bestTool.getValue()) && probability > 0.0d && probability >= this.minimumRelevance) {
+		for (String name : bestToolAnswer.getRankedOptions()) {
+			double probability = probability(bestToolAnswer, name);
+			if (!name.equals(bestToolAnswer.getValue()) && probability > 0.0d && probability >= this.minimumRelevance) {
 				ranking.add(name);
 			}
 		}
@@ -279,7 +279,7 @@ public final class DecisionToolIndex implements ToolIndex {
 			.options(this.options)
 			.build());
 		if (response.isRefused(APPLICABILITY_QUESTION)) {
-			logger.debug("The decision model refused to judge the only tool for '" + toolSearchRequest.query() + "'");
+			logRefusal("judge the only tool", toolSearchRequest);
 			return List.of();
 		}
 		YesNoAnswer applicability = response.getYesNo(APPLICABILITY_QUESTION);
@@ -287,6 +287,18 @@ public final class DecisionToolIndex implements ToolIndex {
 			return List.of();
 		}
 		return List.of(scored(only, applicability.getProbability()));
+	}
+
+	/**
+	 * Logs a refusal at warn level, because it is rare and silently leaves the search
+	 * empty: a tool description written to make the model refuse would otherwise go
+	 * unnoticed. The query can carry user content, so it is logged only at debug level.
+	 */
+	private static void logRefusal(String task, ToolSearchRequest toolSearchRequest) {
+		logger.warn("The decision model refused to " + task + ", so the tool search returns no tools");
+		if (logger.isDebugEnabled()) {
+			logger.debug("Refused tool search query: '" + toolSearchRequest.query() + "'");
+		}
 	}
 
 	private List<ToolReference> candidates(ToolSearchRequest toolSearchRequest) {

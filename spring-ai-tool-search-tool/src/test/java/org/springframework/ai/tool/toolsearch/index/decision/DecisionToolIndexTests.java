@@ -352,6 +352,18 @@ class DecisionToolIndexTests {
 	}
 
 	@Test
+	void aRefusalToJudgeASingleToolReturnsNoTools() {
+		DecisionToolIndex single = DecisionToolIndex
+			.builder(prompt -> DecisionResponse.builder(prompt)
+				.answer(DecisionToolIndex.APPLICABILITY_QUESTION, RefusalAnswer.builder().reason("policy").build())
+				.build())
+			.build();
+		single.indexTool("solo", tool("currentWeather", "Returns the current weather for a place"));
+
+		assertThat(single.search(new ToolSearchRequest("solo", "anything", null, null)).toolReferences()).isEmpty();
+	}
+
+	@Test
 	void reindexingAToolKeepsItsPlaceAndUpdatesItsSummary() {
 		this.index.indexTool(SESSION, tool("sendEmail", "Sends an email, with attachments"));
 
