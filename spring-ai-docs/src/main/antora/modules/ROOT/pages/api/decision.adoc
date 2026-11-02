@@ -180,3 +180,4 @@ See xref:observability/index.adoc#_decision_model[Decision Model observability].
 == Available Implementations
 
 * xref:api/decision/openai-decision.adoc[OpenAI Decisions]
+* xref:api/decision/systemone-decision.adoc[System One Decisions], for TypeSafe Jev, Laya and Ollama

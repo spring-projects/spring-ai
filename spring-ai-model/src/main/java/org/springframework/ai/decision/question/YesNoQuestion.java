@@ -22,12 +22,13 @@ import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.decision.answer.YesNoAnswer;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 /**
  * A question with a yes or no answer, answered with the probability of "yes" as a
  * {@link YesNoAnswer}. The optional criteria describe when the answer is yes and when it
- * is no. Providers whose API has a place for them send them as such, the others add them
- * to the question text.
+ * is no; a blank criterion counts as none. Providers whose API has a place for them send
+ * them as such, the others add them to the question text.
  *
  * @author Thomas Vitale
  * @since 2.1.0
@@ -43,8 +44,8 @@ public final class YesNoQuestion implements DecisionQuestion {
 	private YesNoQuestion(String text, @Nullable String whenYes, @Nullable String whenNo) {
 		Assert.hasText(text, "text cannot be null or empty");
 		this.text = text;
-		this.whenYes = whenYes;
-		this.whenNo = whenNo;
+		this.whenYes = StringUtils.hasText(whenYes) ? whenYes : null;
+		this.whenNo = StringUtils.hasText(whenNo) ? whenNo : null;
 	}
 
 	/**
@@ -64,14 +65,14 @@ public final class YesNoQuestion implements DecisionQuestion {
 	}
 
 	/**
-	 * When the answer is yes, or {@code null} when not specified.
+	 * When the answer is yes, or {@code null} when not specified or blank.
 	 */
 	public @Nullable String getWhenYes() {
 		return this.whenYes;
 	}
 
 	/**
-	 * When the answer is no, or {@code null} when not specified.
+	 * When the answer is no, or {@code null} when not specified or blank.
 	 */
 	public @Nullable String getWhenNo() {
 		return this.whenNo;
@@ -119,7 +120,7 @@ public final class YesNoQuestion implements DecisionQuestion {
 		}
 
 		/**
-		 * Describe when the answer is yes.
+		 * Describe when the answer is yes. A blank description counts as none.
 		 */
 		public Builder whenYes(@Nullable String whenYes) {
 			this.whenYes = whenYes;
@@ -127,7 +128,7 @@ public final class YesNoQuestion implements DecisionQuestion {
 		}
 
 		/**
-		 * Describe when the answer is no.
+		 * Describe when the answer is no. A blank description counts as none.
 		 */
 		public Builder whenNo(@Nullable String whenNo) {
 			this.whenNo = whenNo;
