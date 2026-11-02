@@ -64,6 +64,45 @@ dependencies {
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
+[[excluding-the-typesafe-sdk]]
+=== Excluding the Decision Model Dependency
+
+The Ollama starter, like the `spring-ai-ollama` module, brings in the TypeSafe Java SDK, which the xref:api/decision/ollama-decision.adoc[Ollama decision model] uses.
+If your application doesn't use the decision model, you can exclude the SDK.
+The chat and embedding models keep working, and the decision model is not auto-configured:
+
+[tabs]
+======
+Maven::
++
+[source,xml]
+----
+<dependency>
+   <groupId>org.springframework.ai</groupId>
+   <artifactId>spring-ai-starter-model-ollama</artifactId>
+   <exclusions>
+      <exclusion>
+         <groupId>org.springaicommunity</groupId>
+         <artifactId>typesafe-java-sdk</artifactId>
+      </exclusion>
+   </exclusions>
+</dependency>
+----
+
+Gradle::
++
+[source,groovy]
+----
+dependencies {
+    implementation('org.springframework.ai:spring-ai-starter-model-ollama') {
+        exclude group: 'org.springaicommunity', module: 'typesafe-java-sdk'
+    }
+}
+----
+======
+
+TIP: To keep the SDK but not auto-configure the decision model, set `spring.ai.model.decision=none` instead.
+
 === Base Properties
 
 The prefix `spring.ai.ollama` is the property prefix to configure the connection to Ollama.

@@ -35,6 +35,12 @@
 		</dependency>
 
 		<dependency>
+			<groupId>org.springaicommunity</groupId>
+			<artifactId>typesafe-java-sdk</artifactId>
+			<version>${typesafe-java-sdk.version}</version>
+		</dependency>
+
+		<dependency>
 			<groupId>tools.jackson.core</groupId>
 			<artifactId>jackson-databind</artifactId>
 		</dependency>
