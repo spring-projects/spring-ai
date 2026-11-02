@@ -3,7 +3,7 @@
 
 WARNING: The `ChatMemory` API, its repositories, the `MessageChatMemoryAdvisor` and their auto-configurations are deprecated since 2.1.0 and will be removed in 3.0.0.
 Use xref:api/session.adoc[Session Memory] instead; <<chat-memory-migration>> maps one onto the other.
-Session stores for Cassandra, Neo4j, MongoDB and Redis, and session dialects for HSQLDB, Oracle, SQL Server and SQLite, are planned before 3.0.0, when the deprecated modules are removed.
+Session stores for Cassandra, Neo4j, MongoDB and Redis, and session dialects for HSQLDB, Oracle and SQLite, are planned before 3.0.0, when the deprecated modules are removed.
 The `VectorStoreChatMemoryAdvisor` is not deprecated.
 
 Large language models (LLMs) are stateless, meaning they do not retain information about previous interactions. This can be a limitation when you want to maintain context or state across multiple interactions. To address this, Spring AI provides chat memory features that allow you to store and retrieve information across multiple interactions with the LLM.
@@ -727,9 +727,9 @@ A session keeps the conversation as an append-only log of events, and the prompt
 | `SessionRepository`, `InMemorySessionRepository`
 
 | `JdbcChatMemoryRepository`, `spring-ai-starter-model-chat-memory-repository-jdbc`
-| `JdbcSessionRepository`, `spring-ai-starter-model-session-jdbc`: PostgreSQL, MySQL, MariaDB and H2
+| `JdbcSessionRepository`, `spring-ai-starter-model-session-jdbc`: PostgreSQL, MySQL, MariaDB, Microsoft SQL Server and H2
 
-| The Cassandra, Neo4j, MongoDB and Redis repositories; the HSQLDB, Oracle, SQL Server and SQLite dialects
+| The Cassandra, Neo4j, MongoDB and Redis repositories; the HSQLDB, Oracle and SQLite dialects
 | No session counterpart yet; they are planned before 3.0.0, when these modules are removed.
 Until then, a store implements `SessionRepository` and checks itself with `AbstractSessionRepositoryContractTests` from `spring-ai-test`, and a dialect implements `JdbcSessionRepositoryDialect`.
 |===

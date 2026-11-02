@@ -138,9 +138,10 @@ public final class JdbcSessionRepository implements SessionRepository {
 		"SELECT session_id FROM AI_SESSION_EVENT WHERE id = ?";
 
 	// The newest compaction boundary of a session, if any: it defines the active view.
+	// The dialect's limit clause, bound to 1, follows.
 	private static final String SELECT_NEWEST_BOUNDARY =
 		"SELECT e.seq, e.payload FROM AI_SESSION_EVENT e"
-		+ " WHERE e.session_id = ? AND e.event_type = ? ORDER BY e.seq DESC LIMIT 1";
+		+ " WHERE e.session_id = ? AND e.event_type = ? ORDER BY e.seq DESC ";
 
 	private static final String SELECT_EVENT_COLUMNS =
 		"SELECT e.id, e.session_id, e.timestamp, e.event_type, e.message_type, e.message_content,"
@@ -400,8 +401,8 @@ public final class JdbcSessionRepository implements SessionRepository {
 	 * boundary.
 	 */
 	private List<SessionEvent> findActiveView(String sessionId, EventFilter filter) {
-		List<Map<String, @Nullable Object>> boundaries = this.jdbcTemplate.queryForList(SELECT_NEWEST_BOUNDARY,
-				sessionId, EventType.COMPACTION.name());
+		List<Map<String, @Nullable Object>> boundaries = this.jdbcTemplate.queryForList(
+				SELECT_NEWEST_BOUNDARY + this.dialect.getLimitClause(), sessionId, EventType.COMPACTION.name(), 1);
 		StringBuilder sql = new StringBuilder(SELECT_EVENTS_BASE);
 		List<Object> params = new ArrayList<>();
 		params.add(sessionId);
@@ -433,8 +434,9 @@ public final class JdbcSessionRepository implements SessionRepository {
 
 	/**
 	 * Runs the filter as one query: the per-event criteria as {@code WHERE} clauses and a
-	 * last window as {@code ORDER BY seq DESC LIMIT n}, reversed back to log order and
-	 * extended to the start of its turn ({@link #extendToTurnStart}) with one more query.
+	 * last window as {@code ORDER BY seq DESC} plus the dialect's limit clause
+	 * ({@code LIMIT n} on most databases), reversed back to log order and extended to the
+	 * start of its turn ({@link #extendToTurnStart}) with one more query.
 	 */
 	private List<SessionEvent> findFiltered(String sessionId, EventFilter filter) {
 		StringBuilder sql = new StringBuilder(SELECT_EVENTS_BASE);
@@ -442,7 +444,7 @@ public final class JdbcSessionRepository implements SessionRepository {
 		params.add(sessionId);
 		appendCriteria(sql, params, filter, "e");
 		if (filter.window() instanceof EventFilter.Window.Last last) {
-			sql.append("ORDER BY e.seq DESC LIMIT ? ");
+			sql.append("ORDER BY e.seq DESC ").append(this.dialect.getLimitClause()).append(' ');
 			params.add(last.n());
 		}
 		else {
