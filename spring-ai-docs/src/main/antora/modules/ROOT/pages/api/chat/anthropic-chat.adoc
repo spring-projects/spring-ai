@@ -471,6 +471,7 @@ System.out.println(message.getText());       // the TextParts joined
 Thinking is fully supported in streaming mode.
 Every streamed chunk carries one part stamped with the content block index it belongs to (see `StreamingParts`): thinking deltas arrive as partial `ReasoningPart`s, the signature as a partial `ReasoningPart` carrying only the payload, and text deltas as partial `TextPart`s.
 A redacted thinking block, and any block Spring AI does not model yet (such as a server tool use or its result), arrives as one complete part once the block is done.
+A tool use is announced when its block starts and each of its input deltas follows, as partial `ToolCallPart`s that are not tool calls (see xref:api/tools.adoc#streaming-tool-call-arguments[Streaming Tool Call Arguments]).
 The complete tool calls arrive in the final chunk of the response, exactly as before.
 `MessageAggregator` (used by `ChatClient` and the advisors) rebuilds the ordered parts from these chunks.
 

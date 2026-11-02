@@ -477,7 +477,8 @@ An example is the reasoning text of an `OpenAiResponsesChatModel` turn whose rea
 If the server you target rejects that field, set `replayReasoningContent` to `false` (see <<replay-reasoning-content>>).
 
 When streaming, the reasoning and text deltas of each chunk are partial parts stamped with a synthesized index, so that `MessageAggregator` rebuilds one `ReasoningPart` and one `TextPart`.
-Tool calls are still buffered and arrive once, complete, in a single chunk.
+While a tool call streams, each of its argument deltas arrives right away as a partial `ToolCallPart`, which is only for display and is not a tool call (see xref:api/tools.adoc#streaming-tool-call-arguments[Streaming Tool Call Arguments]).
+Once the model has finished its tool calls, one more chunk carries them as complete `ToolCallPart`s, at the same index as their deltas, and only those are returned by `getToolCalls()`.
 
 == Structured Outputs
 

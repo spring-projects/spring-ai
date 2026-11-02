@@ -69,9 +69,11 @@ import org.springframework.util.Assert;
  * the response in block order. Text and reasoning text deltas are partial parts. The
  * signature that closes a reasoning block is buffered and emitted once its block stops,
  * as a partial {@link ReasoningPart} with an empty text and the payload; redacted
- * reasoning is buffered too and emitted as one complete part. Tool use input is buffered
- * until the end of the response, and the final chunk carries the complete tool calls, any
- * reasoning whose block never stopped, and an empty text.
+ * reasoning is buffered too and emitted as one complete part. A tool use is announced
+ * when its block starts, and each of its input deltas follows, as partial
+ * {@link ToolCallPart}s that are not tool calls yet. The input is also buffered until the
+ * end of the response, and the final chunk carries the complete tool calls, any reasoning
+ * whose block never stopped, and an empty text.
  *
  * @author Jared Rufer
  * @author Dimitar Proynov
@@ -136,9 +138,11 @@ public class ConverseChatResponseStream implements ConverseStreamResponseHandler
 	@Override
 	public void visitContentBlockStart(ContentBlockStartEvent event) {
 		if (ContentBlockStart.Type.TOOL_USE.equals(event.start().type())) {
-			this.toolUseMap.put(event.contentBlockIndex(),
-					new StreamingToolCallBuilder().id(event.start().toolUse().toolUseId())
-						.name(event.start().toolUse().name()));
+			StreamingToolCallBuilder toolCallBuilder = new StreamingToolCallBuilder()
+				.id(event.start().toolUse().toolUseId())
+				.name(event.start().toolUse().name());
+			this.toolUseMap.put(event.contentBlockIndex(), toolCallBuilder);
+			this.emitToolCallDelta(event.contentBlockIndex(), toolCallBuilder, "");
 		}
 	}
 
@@ -147,7 +151,11 @@ public class ConverseChatResponseStream implements ConverseStreamResponseHandler
 		StreamingToolCallBuilder toolCallBuilder = this.toolUseMap.get(event.contentBlockIndex());
 
 		if (toolCallBuilder != null) {
-			toolCallBuilder.delta(event.delta().toolUse().input());
+			String input = event.delta().toolUse().input();
+			toolCallBuilder.delta(input);
+			if (input != null) {
+				this.emitToolCallDelta(event.contentBlockIndex(), toolCallBuilder, input);
+			}
 		}
 		else if (ContentBlockDelta.Type.TEXT.equals(event.delta().type())) {
 			this.emitPart(StreamingParts.partial(TextPart.of(event.delta().text()), event.contentBlockIndex()));
@@ -250,6 +258,17 @@ public class ConverseChatResponseStream implements ConverseStreamResponseHandler
 				new OpaquePayload(ConverseApiUtils.BEDROCK_PROVIDER, ConverseApiUtils.PAYLOAD_REDACTED_CONTENT,
 						Base64.getEncoder().encodeToString(redactedContent.toByteArray())),
 				BEDROCK_ATTRIBUTES);
+	}
+
+	/**
+	 * Emits a tool-call argument delta, carrying the id and name of the call, as a
+	 * partial {@link ToolCallPart}, see {@link StreamingParts}.
+	 */
+	private void emitToolCallDelta(int index, StreamingToolCallBuilder toolCallBuilder, String argumentsDelta) {
+		AssistantMessage.ToolCall delta = toolCallBuilder.argumentsDelta(argumentsDelta);
+		if (delta != null) {
+			this.emitPart(StreamingParts.partial(ToolCallPart.of(delta), index));
+		}
 	}
 
 	private void emitPart(MessagePart part) {

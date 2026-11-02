@@ -25,8 +25,10 @@ import com.openai.models.responses.ResponseCompletedEvent;
 import com.openai.models.responses.ResponseCreatedEvent;
 import com.openai.models.responses.ResponseErrorEvent;
 import com.openai.models.responses.ResponseFailedEvent;
+import com.openai.models.responses.ResponseFunctionCallArgumentsDeltaEvent;
 import com.openai.models.responses.ResponseIncompleteEvent;
 import com.openai.models.responses.ResponseOutputItem;
+import com.openai.models.responses.ResponseOutputItemAddedEvent;
 import com.openai.models.responses.ResponseOutputItemDoneEvent;
 import com.openai.models.responses.ResponseReasoningSummaryTextDeltaEvent;
 import com.openai.models.responses.ResponseRefusalDeltaEvent;
@@ -38,6 +40,8 @@ import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.messages.AbstractMessage;
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
+import org.springframework.ai.chat.messages.part.MessagePart;
 import org.springframework.ai.chat.messages.part.ReasoningPart;
 import org.springframework.ai.chat.messages.part.StreamingParts;
 import org.springframework.ai.chat.messages.part.TextPart;
@@ -179,6 +183,31 @@ class ResponsesStreamAssemblerTests {
 			assertThat(message.getToolCalls()).singleElement()
 				.satisfies(toolCall -> assertThat(toolCall.name()).isEqualTo("getCurrentWeather"));
 		});
+	}
+
+	@Test
+	void functionCallArgumentsStreamAsPartialToolCallPartsBeforeTheCompleteCall() {
+		Response response = ResponsesTestFixtures.response("reasoning-with-function-call.json");
+		ResponseOutputItem completed = response.output().get(1);
+		ResponseOutputItem added = ResponseOutputItem
+			.ofFunctionCall(completed.asFunctionCall().toBuilder().arguments("").build());
+		this.assembler.apply(created("reasoning-with-function-call.json"));
+
+		List<ChatResponse> deltas = new ArrayList<>();
+		deltas.addAll(this.assembler.apply(itemAdded(added, 1)));
+		deltas.addAll(this.assembler.apply(functionCallArgumentsDelta("{\"location\":", 1)));
+		deltas.addAll(this.assembler.apply(functionCallArgumentsDelta("\"Paris\"}", 1)));
+
+		assertThat(deltas).extracting(chunk -> chunk.getResult().getOutput().getParts())
+			.containsExactly(List.of(toolCallDelta("", 1)), List.of(toolCallDelta("{\"location\":", 1)),
+					List.of(toolCallDelta("\"Paris\"}", 1)));
+		assertThat(deltas).allSatisfy(chunk -> {
+			assertThat(chunk.hasToolCalls()).isFalse();
+			assertThat(chunk.getMetadata().getId()).isEqualTo("resp_reasoning_tool_1");
+		});
+		assertThat(this.assembler.apply(itemDone(completed, 1))).singleElement()
+			.satisfies(chunk -> assertThat(chunk.getResult().getOutput().getToolCalls()).singleElement()
+				.satisfies(toolCall -> assertThat(toolCall.arguments()).isEqualTo("{\"location\":\"Paris\"}")));
 	}
 
 	/**
@@ -437,6 +466,25 @@ class ResponsesStreamAssemblerTests {
 			.outputIndex(outputIndex)
 			.sequenceNumber(1)
 			.summaryIndex(0)
+			.build());
+	}
+
+	private static MessagePart toolCallDelta(String arguments, int outputIndex) {
+		return StreamingParts.partial(
+				ToolCallPart.of(new ToolCall("call_abc123", "function", "getCurrentWeather", arguments)), outputIndex);
+	}
+
+	private static ResponseStreamEvent itemAdded(ResponseOutputItem item, int outputIndex) {
+		return ResponseStreamEvent.ofOutputItemAdded(
+				ResponseOutputItemAddedEvent.builder().item(item).outputIndex(outputIndex).sequenceNumber(1).build());
+	}
+
+	private static ResponseStreamEvent functionCallArgumentsDelta(String delta, int outputIndex) {
+		return ResponseStreamEvent.ofFunctionCallArgumentsDelta(ResponseFunctionCallArgumentsDeltaEvent.builder()
+			.delta(delta)
+			.itemId("fc_1")
+			.outputIndex(outputIndex)
+			.sequenceNumber(1)
 			.build());
 	}
 

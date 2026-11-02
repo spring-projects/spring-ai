@@ -40,6 +40,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.messages.part.MediaPart;
 import org.springframework.ai.chat.messages.part.OpaquePayload;
 import org.springframework.ai.chat.messages.part.ReasoningPart;
+import org.springframework.ai.chat.messages.part.StreamingParts;
 import org.springframework.ai.chat.messages.part.TextPart;
 import org.springframework.ai.chat.messages.part.ToolCallPart;
 import org.springframework.ai.chat.messages.part.ToolResultPart;
@@ -417,6 +418,28 @@ class ResponsesItemMapperTests {
 
 		assertThat(input.items()).hasSize(1);
 		assertThat(toJson(input.items().get(0))).contains("\"role\":\"assistant\"").contains("Hello");
+	}
+
+	/**
+	 * A tool-call argument delta of a stream is not a tool call, so a message built from
+	 * the parts of the chunks replays only the complete call.
+	 */
+	@Test
+	void toolCallArgumentDeltaIsNotReplayed() {
+		AssistantMessage assistant = AssistantMessage.builder()
+			.part(StreamingParts.partial(
+					ToolCallPart.of(new AssistantMessage.ToolCall("call_1", "function", "getWeather", "{\"city\":")),
+					0))
+			.part(StreamingParts.complete(
+					ToolCallPart
+						.of(new AssistantMessage.ToolCall("call_1", "function", "getWeather", "{\"city\":\"Paris\"}")),
+					0))
+			.build();
+
+		var input = ResponsesItemMapper.toInput(List.of(assistant));
+
+		assertThat(itemTypes(input.items())).containsExactly("function_call");
+		assertThat(toJson(input.items().get(0))).contains("call_1").contains("Paris");
 	}
 
 	/**
