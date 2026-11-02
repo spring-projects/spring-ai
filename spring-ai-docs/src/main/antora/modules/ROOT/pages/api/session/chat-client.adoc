@@ -195,10 +195,54 @@ catch (TurnInterruptedException ex) {
 ----
 
 A stream the client cancelled ends the turn with `CANCELLED`, on the advisor's scheduler.
-A call that throws ends it with `ERROR`.
-Either way the next call on the session starts a turn.
+A call that throws ends it with `ERROR`; when a tool threw after the reply was stored, the reply's calls get `UNANSWERED_TOOL_RESULT` first, so the log never keeps a call without its results.
 `CANCELLED` is not `INTERRUPTED`.
 Nobody asked the session to stop, so no `INTERRUPT` event is recorded, and the log tells a dropped connection from a stop button that calls `interrupt`.
+
+[[session-chat-client-resume]]
+=== Continuing a stopped turn
+
+A stopped turn is not over: the log ends in the tool results of the last round that ran, and the model never got to answer.
+The next call with a user message starts a new turn over that history, which is right when the person changes course.
+To pick the turn up where it stopped, send `SessionAdvisors.resume(sessionId)` with no user message instead:
+
+[source,java]
+----
+String answer = chatClient.prompt()
+    .advisors(SessionAdvisors.resume(sessionId))   // no .user(...)
+    .call()
+    .content();
+----
+
+The turn advisor starts the turn again under a new run, the memory advisor prepends the stored history, which ends in the tool results, and the model carries on as the loop would have after them.
+No user message is added, so the log keeps one turn: a compaction that cuts by turns keeps the rounds before the stop together with the rounds after it.
+
+[source,text]
+----
+STATUS    RUNNING                                   run-1
+MESSAGE   USER Compare the weather in Lisbon, Porto, Madrid and Valencia
+MESSAGE   ASSISTANT calls [checkWeather Lisbon]
+MESSAGE   TOOL [checkWeather -> ...]
+MESSAGE   ASSISTANT calls [checkWeather Porto]
+MESSAGE   TOOL [checkWeather -> ...]
+INTERRUPT user pressed stop
+STATUS    IDLE / INTERRUPTED                        run-1
+STATUS    RUNNING                                   run-2
+MESSAGE   ASSISTANT calls [checkWeather Madrid]
+MESSAGE   TOOL [checkWeather -> ...]
+MESSAGE   ASSISTANT | City | Temp | ...
+STATUS    IDLE / END_TURN                           run-2
+----
+
+What the continued turn does follows from the newest message of the active view, because a stop can land anywhere:
+
+* After a user message or tool results, the model runs a round over the stored history, as above.
+* After a reply whose tool calls got no results, which a crash between the stored reply and its results leaves, the calls are answered with `UNANSWERED_TOOL_RESULT` first, so the model learns they did not complete and the prompt stays whole.
+* After a reply without tool calls, the model had answered before the stop landed and there is nothing to run.
+The turn is settled: it starts and ends on that reply, which the call returns, and the status reads `END_TURN` instead of `INTERRUPTED`.
+
+The same call continues a turn that a dropped stream, an error or an expired lease ended, so it is the recovery path for a harness that died mid-turn too.
+A turn that ended with `END_TURN` has nothing to continue, `IllegalStateException`; a parked session is answered with `decisions`, `TurnParkedException`; and a resume that carries a user message is rejected, `IllegalArgumentException`, because text belongs in a new turn.
 
 [[session-chat-client-confirmation]]
 === Tool call confirmation

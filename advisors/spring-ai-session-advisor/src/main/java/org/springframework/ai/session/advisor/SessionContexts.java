@@ -132,6 +132,24 @@ final class SessionContexts {
 	}
 
 	/**
+	 * Returns whether the request continues the session's last turn, from
+	 * {@link SessionTurnAdvisor#RESUME_CONTEXT_KEY}: {@code true} when the context holds
+	 * {@code Boolean.TRUE} under it.
+	 * @throws IllegalArgumentException if the value is not a {@link Boolean}
+	 */
+	static boolean resume(Map<String, @Nullable Object> context) {
+		Object value = context.get(SessionTurnAdvisor.RESUME_CONTEXT_KEY);
+		if (value == null) {
+			return false;
+		}
+		if (!(value instanceof Boolean resume)) {
+			throw new IllegalArgumentException("Advisor context value for '" + SessionTurnAdvisor.RESUME_CONTEXT_KEY
+					+ "' must be a Boolean but was " + value.getClass().getName());
+		}
+		return resume;
+	}
+
+	/**
 	 * The request the advisors pass to {@code SessionService.findOrCreate}: the id, and
 	 * the metadata from {@link SessionMemoryAdvisor#SESSION_METADATA_CONTEXT_KEY}, such
 	 * as the agent attributes ({@link SessionAttributes#AGENT_NAME}).

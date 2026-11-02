@@ -25,7 +25,8 @@ import org.springframework.ai.chat.model.ChatResponse;
 /**
  * A call's turn as the {@link SessionTurnAdvisor} begins it: the run id it runs under
  * and, when the turn has its response before the chain runs, that response, returned in
- * place of the chain's: a resumed call whose allowed tool returned directly has one.
+ * place of the chain's. A resumed call whose allowed tool returned directly has one, and
+ * so has a continued turn whose model had already answered when it was stopped.
  *
  * @param runId the run the turn runs under
  * @param directResponse the response to return without running the chain; {@code null}

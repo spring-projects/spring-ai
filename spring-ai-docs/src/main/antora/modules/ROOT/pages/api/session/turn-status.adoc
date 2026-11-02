@@ -139,6 +139,22 @@ A question goes from the turn to the outside and waits for an answer.
 An interrupt goes from the outside into the turn and waits for nothing.
 An `interrupt` on a parked session records the request and leaves the pause as it is, since no turn runs.
 
+[[session-turn-status-continue]]
+== Continuing a stopped turn
+
+An interrupted turn stopped between two steps: the log ends in the tool results of the last round that ran, and the model never answered.
+The same is true of a turn a dropped stream cancelled, a turn that failed, and a turn whose harness died and whose lease ran out.
+A new user message would start a new turn over that history.
+That splits one piece of work in two for every reader that counts turns, a compaction that keeps the last N turns for example.
+
+To continue the stopped turn instead, a harness calls `start` and adds no user message.
+A turn begins with a user message only, so the log keeps one turn, and status events never count as a boundary.
+The new run's `RUNNING` event follows the stopped run's `IDLE` event, which says why it stopped.
+
+What the continued turn does follows from the log, and the harness decides.
+The `ChatClient` turn advisor runs a model round over the stored history when the log ends in a user message or in tool results, answers tool calls left without results first when a crash left the log on a reply, and settles the turn with no round when the model had answered before the stop landed, see xref:api/session/chat-client.adoc#session-chat-client-resume[Continuing a stopped turn].
+A harness of your own does the same from `sessionService.getActiveMessages(sessionId)`.
+
 [[session-turn-status-prompt]]
 == Opt-in and the prompt
 

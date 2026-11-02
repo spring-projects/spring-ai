@@ -21,9 +21,10 @@ import org.springframework.ai.chat.messages.UserMessage;
 
 /**
  * What a request asks of the {@link SessionTurnAdvisor}, read from its context: to start
- * a turn, or to answer the tool calls the session parked on
- * ({@link SessionTurnAdvisor#TOOL_CALL_DECISIONS_CONTEXT_KEY}). The latter carries no
- * user message: text belongs in a new turn.
+ * a turn, to answer the tool calls the session parked on
+ * ({@link SessionTurnAdvisor#TOOL_CALL_DECISIONS_CONTEXT_KEY}), or to continue the
+ * session's last turn ({@link SessionTurnAdvisor#RESUME_CONTEXT_KEY}). The two latter
+ * carry no user message, text belongs in a new turn, and exclude each other.
  *
  * @author Christian Tzolov
  * @since 2.1.0
@@ -34,22 +35,32 @@ enum TurnIntent {
 	START,
 
 	/** Answer the tool calls the session parked on with the request's decisions. */
-	DECISIONS;
+	DECISIONS,
+
+	/** Continue the session's last turn where it stopped. */
+	RESUME;
 
 	/**
 	 * Reads the intent of the request and checks it.
-	 * @throws IllegalArgumentException if the request carries decisions and a user
-	 * message
+	 * @throws IllegalArgumentException if the request carries both decisions and the
+	 * resume flag, or carries a user message with either
 	 */
 	static TurnIntent of(String sessionId, ChatClientRequest request) {
-		if (SessionContexts.decisions(request.context()) == null) {
+		boolean decisions = SessionContexts.decisions(request.context()) != null;
+		boolean resume = SessionContexts.resume(request.context());
+		if (decisions && resume) {
+			throw new IllegalArgumentException("A request on session '" + sessionId
+					+ "' either answers the tool calls the session parked on or continues its last turn, not both");
+		}
+		if (!decisions && !resume) {
 			return START;
 		}
 		if (request.prompt().getInstructions().stream().anyMatch(UserMessage.class::isInstance)) {
-			throw new IllegalArgumentException("A request that answers the tool calls of session '" + sessionId
+			throw new IllegalArgumentException("A request that "
+					+ (decisions ? "answers the tool calls" : "continues the last turn") + " of session '" + sessionId
 					+ "' carries no new user message; send the text in the next call");
 		}
-		return DECISIONS;
+		return decisions ? DECISIONS : RESUME;
 	}
 
 }

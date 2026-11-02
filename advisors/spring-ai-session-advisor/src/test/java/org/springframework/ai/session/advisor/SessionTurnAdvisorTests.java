@@ -73,6 +73,8 @@ import org.springframework.ai.session.status.SessionStatus;
 import org.springframework.ai.session.status.SessionStatusEvents;
 import org.springframework.ai.session.status.StopReason;
 import org.springframework.ai.session.status.TurnInProgressException;
+import org.springframework.ai.session.status.TurnParkedException;
+import org.springframework.ai.session.status.TurnService;
 import org.springframework.ai.session.status.TurnStatus;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
@@ -643,6 +645,191 @@ class SessionTurnAdvisorTests {
 		assertThat(statusEvents()).hasSize(2);
 		assertThat(ScriptedChatModel.describe(new Prompt(this.sessionService.getActiveMessages(this.sessionId))))
 			.containsExactly("Stop", "call:c1", "result:c1");
+	}
+
+	@Test
+	void resumeContinuesAnInterruptedLoopWithoutAUserMessage() {
+		ChatClient client = interruptible(stopTool());
+		this.model.then(prompt -> calls(call("c1", "stop", "Lisbon")));
+		assertThatThrownBy(() -> say(client, "Stop")).isInstanceOf(TurnInterruptedException.class);
+		String stoppedRun = this.sessionService.turns().status(this.sessionId).runId();
+
+		this.model.thenAnswer("Stopped in Lisbon.");
+		String answer = resume(client);
+
+		assertThat(answer).isEqualTo("Stopped in Lisbon.");
+		// The continued turn's prompt is the stored history, ending in the tool results
+		// of the round that ran: no user message was added
+		assertThat(this.model.prompts()).hasSize(2);
+		assertThat(ScriptedChatModel.describe(this.model.prompts().get(1))).containsExactly("Stop", "call:c1",
+				"result:c1");
+		// One turn in the log: one user message, the reply right after the results
+		assertThat(ScriptedChatModel.describe(new Prompt(this.sessionService.getActiveMessages(this.sessionId))))
+			.containsExactly("Stop", "call:c1", "result:c1", "Stopped in Lisbon.");
+		TurnStatus status = this.sessionService.turns().status(this.sessionId);
+		assertThat(status.stopReason()).isEqualTo(StopReason.END_TURN);
+		assertThat(status.runId()).isNotEqualTo(stoppedRun);
+		// RUNNING, IDLE/INTERRUPTED, RUNNING under the new run, IDLE/END_TURN
+		List<SessionEvent> statuses = statusEvents();
+		assertThat(statuses).hasSize(4);
+		assertThat(SessionStatusEvents.status(statuses.get(2))).isEqualTo(SessionStatus.RUNNING);
+		assertThat(SessionStatusEvents.runId(statuses.get(2))).isEqualTo(status.runId());
+	}
+
+	@Test
+	void resumeStreamsTheContinuedTurn() {
+		ChatClient client = interruptible(stopTool());
+		this.model.then(prompt -> calls(call("c1", "stop", "Lisbon")));
+		assertThatThrownBy(() -> say(client, "Stop")).isInstanceOf(TurnInterruptedException.class);
+		this.model.thenAnswer("Stopped in Lisbon.");
+
+		List<String> chunks = client.prompt()
+			.advisors(SessionAdvisors.resume(this.sessionId))
+			.stream()
+			.content()
+			.collectList()
+			.block();
+
+		assertThat(String.join("", chunks)).isEqualTo("Stopped in Lisbon.");
+		assertThat(this.sessionService.turns().status(this.sessionId).stopReason()).isEqualTo(StopReason.END_TURN);
+		assertThat(statusEvents()).hasSize(4);
+		assertThat(ScriptedChatModel.describe(new Prompt(this.sessionService.getActiveMessages(this.sessionId))))
+			.containsExactly("Stop", "call:c1", "result:c1", "Stopped in Lisbon.");
+	}
+
+	@Test
+	void resumeSettlesATurnThatAnsweredBeforeTheInterruptLanded() {
+		// Without the interrupt advisor the loop runs on past the interrupt and answers;
+		// the status still says INTERRUPTED, because that end stands
+		ChatClient client = client(stopTool(), ToolCallingAdvisor.builder().build());
+		this.model.then(prompt -> calls(call("c1", "stop", "Lisbon"))).thenAnswer("Stopped.");
+		assertThat(say(client, "Stop")).isEqualTo("Stopped.");
+		assertThat(this.sessionService.turns().status(this.sessionId).stopReason()).isEqualTo(StopReason.INTERRUPTED);
+		int events = this.sessionService.getEvents(this.sessionId).size();
+
+		String answer = resume(client);
+
+		// The stored reply comes back without a model round, and nothing is added to the
+		// conversation: only the continuation and its end
+		assertThat(answer).isEqualTo("Stopped.");
+		assertThat(this.model.prompts()).hasSize(2);
+		assertThat(this.sessionService.getEvents(this.sessionId)).hasSize(events + 2);
+		assertThat(ScriptedChatModel.describe(new Prompt(this.sessionService.getActiveMessages(this.sessionId))))
+			.containsExactly("Stop", "call:c1", "result:c1", "Stopped.");
+		TurnStatus status = this.sessionService.turns().status(this.sessionId);
+		assertThat(status.stopReason()).isEqualTo(StopReason.END_TURN);
+		List<SessionEvent> statuses = statusEvents();
+		assertThat(statuses).hasSize(4);
+		assertThat(SessionStatusEvents.status(statuses.get(2))).isEqualTo(SessionStatus.RUNNING);
+		// Settled is settled: a second resume finds nothing to continue
+		assertThatIllegalStateException().isThrownBy(() -> resume(client)).withMessageContaining("END_TURN");
+	}
+
+	@Test
+	void resumeAnswersCallsLeftWithoutResultsBeforeItContinues() {
+		// A crash between the stored reply and its results leaves the log ending in the
+		// calls; here the turn ended with an error the same way
+		this.sessionService.create(CreateSessionRequest.builder().id(this.sessionId).build());
+		TurnService turns = this.sessionService.turns();
+		turns.start(this.sessionId, "run-1");
+		this.sessionService.appendMessage(this.sessionId, new UserMessage("Weather in Lisbon?"));
+		this.sessionService.appendMessage(this.sessionId,
+				AssistantMessage.builder().content("").toolCalls(List.of(call("c1", "get_weather", "Lisbon"))).build());
+		turns.end(this.sessionId, "run-1", StopReason.ERROR);
+		this.model.thenAnswer("I could not get the weather.");
+
+		String answer = resume(client());
+
+		assertThat(answer).isEqualTo("I could not get the weather.");
+		// The calls got their result before the round ran, and the model saw it
+		assertThat(toolResults(this.model.prompts().get(0))).containsExactly(SessionTurnAdvisor.UNANSWERED_TOOL_RESULT);
+		assertThat(ScriptedChatModel.describe(new Prompt(this.sessionService.getActiveMessages(this.sessionId))))
+			.containsExactly("Weather in Lisbon?", "call:c1", "result:c1", "I could not get the weather.");
+		TurnStatus status = this.sessionService.turns().status(this.sessionId);
+		assertThat(status.stopReason()).isEqualTo(StopReason.END_TURN);
+		// RUNNING and IDLE/ERROR under run-1, then the continued turn under a new run
+		assertThat(statusEvents()).hasSize(4);
+		assertThat(SessionStatusEvents.runId(statusEvents().get(2))).isNotEqualTo("run-1");
+	}
+
+	@Test
+	void resumeRefusesNewTextDecisionsAndATurnThatAnswered() {
+		ChatClient client = client();
+		say(client, "Hello", "Hi!");
+
+		// A turn that answered has nothing to continue
+		assertThatIllegalStateException().isThrownBy(() -> resume(client)).withMessageContaining("END_TURN");
+		// New text goes in a new turn
+		assertThatIllegalArgumentException()
+			.isThrownBy(() -> client.prompt()
+				.user("And more")
+				.advisors(SessionAdvisors.resume(this.sessionId))
+				.call()
+				.content())
+			.withMessageContaining("no new user message");
+		// Decisions answer a question, a resume continues a turn, not both at once
+		assertThatIllegalArgumentException()
+			.isThrownBy(() -> client.prompt()
+				.advisors(SessionAdvisors.resume(this.sessionId))
+				.advisors(SessionAdvisors.decisions(this.sessionId, ToolCallDecisions.of(ToolCallDecision.allow("c1"))))
+				.call()
+				.content())
+			.withMessageContaining("not both");
+		// A session without a conversation has nothing to continue either
+		assertThatIllegalStateException()
+			.isThrownBy(() -> client.prompt().advisors(SessionAdvisors.resume("fresh")).call().content())
+			.withMessageContaining("no conversation");
+		assertThat(this.model.prompts()).hasSize(1);
+		assertThat(this.sessionService.turns().status(this.sessionId).stopReason()).isEqualTo(StopReason.END_TURN);
+	}
+
+	@Test
+	void resumeOfAParkedSessionIsRefused() {
+		ChatClient client = looped(gated("bookFlight"));
+		this.model.then(prompt -> calls(call("c1", "bookFlight", "Lisbon")));
+		say(client, "Book Lisbon");
+		assertThat(this.sessionService.turns().status(this.sessionId).isParked()).isTrue();
+
+		assertThatThrownBy(() -> resume(client)).isInstanceOf(TurnParkedException.class);
+
+		assertThat(this.sessionService.turns().status(this.sessionId).isParked()).isTrue();
+		assertThat(this.sessionService.turns().pendingQuestion(this.sessionId)).isNotNull();
+	}
+
+	@Test
+	void errorEndAnswersTheReplysCallsLeftWithoutResults() {
+		ToolCallback failing = FunctionToolCallback.builder("fail", (City city) -> {
+			throw new IllegalStateException("boom");
+		}).description("Fails").inputType(City.class).build();
+		ToolCallingManager throwing = ToolCallingManager.builder()
+			.toolExecutionExceptionProcessor(DefaultToolExecutionExceptionProcessor.builder().alwaysThrow(true).build())
+			.build();
+		ChatClient client = client(failing, ToolCallingAdvisor.builder().toolCallingManager(throwing).build());
+		this.model.then(prompt -> calls(call("c1", "fail", "Lisbon")));
+
+		assertThatThrownBy(() -> say(client, "Fail")).hasRootCauseMessage("boom");
+
+		assertThat(this.sessionService.turns().status(this.sessionId).stopReason()).isEqualTo(StopReason.ERROR);
+		// The reply's call has a result, so the next prompt is whole
+		assertThat(toolResults(new Prompt(this.sessionService.getActiveMessages(this.sessionId))))
+			.containsExactly(SessionTurnAdvisor.UNANSWERED_TOOL_RESULT);
+		assertThat(ScriptedChatModel.describe(new Prompt(this.sessionService.getActiveMessages(this.sessionId))))
+			.containsExactly("Fail", "call:c1", "result:c1");
+	}
+
+	/**
+	 * The session advisors with the interrupt check inside the loop, around the tools.
+	 */
+	private ChatClient interruptible(ToolCallback... tools) {
+		return ChatClient.builder(this.model)
+			.defaultAdvisors(SessionAdvisors.builder(this.sessionService).interruptible(true).build())
+			.defaultToolCallbacks(tools)
+			.build();
+	}
+
+	/** Continues the session's last turn, with no user message. */
+	private String resume(ChatClient client) {
+		return client.prompt().advisors(SessionAdvisors.resume(this.sessionId)).call().content();
 	}
 
 	/** A tool that interrupts the session, standing in for another thread. */

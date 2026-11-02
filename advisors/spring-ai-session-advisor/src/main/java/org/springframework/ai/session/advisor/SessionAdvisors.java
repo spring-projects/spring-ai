@@ -133,6 +133,32 @@ public final class SessionAdvisors {
 			.param(SessionTurnAdvisor.TOOL_CALL_DECISIONS_CONTEXT_KEY, decisions);
 	}
 
+	/**
+	 * Continues the session's last turn where it stopped:
+	 * {@code .advisors(SessionAdvisors.resume(sessionId))}, with no user message. Sets
+	 * {@link SessionMemoryAdvisor#SESSION_ID_CONTEXT_KEY} and
+	 * {@link SessionTurnAdvisor#RESUME_CONTEXT_KEY}. For a turn that an interrupt, a
+	 * dropped stream, an error or an expired lease ended before the model answered: the
+	 * turn advisor starts the turn again as the continuation of the stopped run, the
+	 * memory advisor prepends the stored history, which ends in the last round's tool
+	 * results, and the model carries on; the call returns its reply, and the log keeps
+	 * one turn with no user message added. When the model had already answered before the
+	 * stop landed, the call returns that reply and the turn is settled without a model
+	 * round. A turn that ended normally is not continued, {@code IllegalStateException};
+	 * a parked session takes {@link #decisions} instead, {@code TurnParkedException}; and
+	 * new text goes in a new turn, with {@link #session(String)}. To run the continued
+	 * turn under a run id of your own, add
+	 * {@code a.param(SessionTurnAdvisor.RUN_ID_CONTEXT_KEY, runId)}.
+	 * @param sessionId the id of the session whose last turn stopped
+	 * @return the advisor customizer to pass to {@code .advisors(...)}
+	 * @throws IllegalArgumentException if the session id is empty
+	 */
+	public static Consumer<ChatClient.AdvisorSpec> resume(String sessionId) {
+		Assert.hasText(sessionId, "sessionId must not be empty");
+		return advisors -> advisors.param(SessionMemoryAdvisor.SESSION_ID_CONTEXT_KEY, sessionId)
+			.param(SessionTurnAdvisor.RESUME_CONTEXT_KEY, Boolean.TRUE);
+	}
+
 	public static final class Builder {
 
 		private final SessionService sessionService;

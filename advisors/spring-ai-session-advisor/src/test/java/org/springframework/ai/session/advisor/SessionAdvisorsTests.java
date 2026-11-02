@@ -46,6 +46,7 @@ import org.springframework.core.Ordered;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * {@link SessionAdvisors} with a {@link ChatClient} that registers its own tool-calling
@@ -241,6 +242,37 @@ class SessionAdvisorsTests {
 		assertThat(this.sessionService.turns().status(this.sessionId).stopReason()).isEqualTo(StopReason.END_TURN);
 		assertThat(ScriptedChatModel.describe(new Prompt(this.sessionService.getActiveMessages(this.sessionId))))
 			.containsExactly("Book a flight to Lisbon", "call:c1", "result:c1", "Booked!");
+	}
+
+	@Test
+	void resumeContinuesAStoppedTurnThroughTheAutoRegisteredLoop() {
+		ToolCallback stop = FunctionToolCallback.builder("stop", (City city) -> {
+			this.sessionService.turns().interrupt(this.sessionId, "user pressed stop");
+			return "stopping in " + city.city();
+		}).description("Stops the turn").inputType(City.class).build();
+		ChatClient client = client(SessionAdvisors.builder(this.sessionService).interruptible(true).build(), stop);
+		this.model.then(prompt -> new ChatResponse(List.of(new Generation(AssistantMessage.builder()
+			.content("")
+			.toolCalls(List.of(new AssistantMessage.ToolCall("c1", "function", "stop", "{\"city\":\"Lisbon\"}")))
+			.build())))).thenAnswer("Stopped in Lisbon.");
+		assertThatThrownBy(() -> say(client, "Stop")).isInstanceOf(TurnInterruptedException.class);
+
+		Map<String, Object> context = client.prompt()
+			.advisors(SessionAdvisors.resume(this.sessionId))
+			.call()
+			.chatClientResponse()
+			.context();
+
+		assertThat(context).containsEntry(SessionMemoryAdvisor.SESSION_ID_CONTEXT_KEY, this.sessionId)
+			.containsEntry(SessionTurnAdvisor.RESUME_CONTEXT_KEY, Boolean.TRUE);
+		assertThat(this.sessionService.turns().status(this.sessionId).stopReason()).isEqualTo(StopReason.END_TURN);
+		assertThat(ScriptedChatModel.describe(new Prompt(this.sessionService.getActiveMessages(this.sessionId))))
+			.containsExactly("Stop", "call:c1", "result:c1", "Stopped in Lisbon.");
+	}
+
+	@Test
+	void resumeRejectsAnEmptySessionId() {
+		assertThatIllegalArgumentException().isThrownBy(() -> SessionAdvisors.resume(""));
 	}
 
 	@Test

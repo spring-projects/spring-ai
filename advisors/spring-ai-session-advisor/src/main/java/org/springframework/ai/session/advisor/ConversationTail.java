@@ -122,6 +122,10 @@ final class ConversationTail {
 		return Kind.REPLY;
 	}
 
+	Kind kind() {
+		return this.kind;
+	}
+
 	/** Whether the conversation ends with a reply whose tool calls have no results. */
 	boolean isOpenReply() {
 		return this.kind == Kind.OPEN_REPLY;
@@ -138,6 +142,11 @@ final class ConversationTail {
 		Assert.state(this.kind == Kind.OPEN_REPLY || this.kind == Kind.REPLY,
 				() -> "the conversation does not end with a reply but with " + this.kind);
 		return (AssistantMessage) event().getMessage();
+	}
+
+	/** The stored reply as a response: what a turn settled on it returns. */
+	ChatResponse replyAsResponse() {
+		return ChatResponse.builder().generations(List.of(new Generation(reply()))).build();
 	}
 
 	/**

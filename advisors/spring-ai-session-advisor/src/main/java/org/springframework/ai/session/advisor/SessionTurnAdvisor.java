@@ -78,8 +78,11 @@ import org.springframework.util.Assert;
  * <li>Ends the turn with {@link TurnService#end}: with {@link StopReason#END_TURN} when
  * the call returned, with {@link StopReason#ERROR} when it threw. A stream the client
  * cancelled ends with {@link StopReason#CANCELLED}, so the log tells a dropped connection
- * from a stop the session was asked for. When an {@link TurnService#interrupt interrupt}
- * ended the turn first, that end stands and the advisor leaves the status alone.</li>
+ * from a stop the session was asked for. A turn that fails or is cancelled while the
+ * reply's tool calls are still open, because a tool threw after the reply was stored,
+ * answers them with {@link #UNANSWERED_TOOL_RESULT} first, so the log never keeps a call
+ * without its results. When an {@link TurnService#interrupt interrupt} ended the turn
+ * first, that end stands and the advisor leaves the status alone.</li>
  * <li>Parks the turn instead when the loop paused on a tool call that needs a person's
  * confirmation: with {@link TurnService#park}, on a {@link ToolConfirmationQuestion}, the
  * shape every harness records for a tool confirmation, which lists the reply's calls,
@@ -102,6 +105,21 @@ import org.springframework.util.Assert;
  * because the pause was lost to an interrupt or a resumed turn failed, the calls are
  * answered with {@link #UNANSWERED_TOOL_RESULT}, so the log never keeps a tool call
  * without its results.</li>
+ * <li>Continues the session's last turn instead of starting one when the request asks for
+ * it with {@link #RESUME_CONTEXT_KEY} ({@link SessionAdvisors#resume}), and carries no
+ * new user message: a turn that an interrupt, a dropped stream, an error or an expired
+ * lease ended before the model answered. A new run starts the turn again with
+ * {@link TurnService#start}, and no user message is added, so the log keeps one turn: a
+ * turn begins with a user message only. What the continued turn does follows from the
+ * newest message of the active view. After a user message or tool results the model runs
+ * a round over the stored history, which the memory advisor prepends to the empty prompt,
+ * as the loop would have after the results. After a reply whose calls got no results,
+ * which a crash or a tool failure leaves, the calls are answered with
+ * {@link #UNANSWERED_TOOL_RESULT} first. After a reply without tool calls there is
+ * nothing to run: the model had answered before the stop landed, so the turn is settled,
+ * it starts and ends on that reply, which the call returns. A turn that ended with
+ * {@link StopReason#END_TURN} is not continued, {@link IllegalStateException}; a parked
+ * session is answered with decisions instead, {@link TurnParkedException}.</li>
  * <li>Compacts the session once the call has returned, if a
  * {@link Builder#compactionTrigger trigger} fires: before the reply is returned, or after
  * it on the scheduler with {@link Builder#asyncCompaction(boolean)}. Compaction is
@@ -144,6 +162,14 @@ public final class SessionTurnAdvisor implements CallAdvisor, StreamAdvisor {
 	 * user message.
 	 */
 	public static final String TOOL_CALL_DECISIONS_CONTEXT_KEY = "chat_memory_tool_call_decisions";
+
+	/**
+	 * Context key that asks the advisor to continue the session's last turn where it
+	 * stopped instead of starting one, set with {@link SessionAdvisors#resume}; the value
+	 * is {@code Boolean.TRUE}. The request carries no new user message: the turn carries
+	 * on over the stored history, see the class description.
+	 */
+	public static final String RESUME_CONTEXT_KEY = "chat_memory_resume_turn";
 
 	/**
 	 * The message a denied call answers the model with when the caller moved on from a
@@ -313,21 +339,25 @@ public final class SessionTurnAdvisor implements CallAdvisor, StreamAdvisor {
 
 	/**
 	 * Begins the call's turn as the request asks and returns it with the effective run
-	 * id: starts a turn, or answers the tool calls a parked session waits on. The intent
-	 * was read before the session was found or created, so a request the intent rejects
-	 * leaves no session behind. New text on a parked session moves on: the question is
-	 * answered with every call denied as {@link #ABANDONED_DENY_MESSAGE abandoned}, so
-	 * the log stays whole, and the text runs in the resumed turn.
+	 * id: starts a turn, answers the tool calls a parked session waits on, or continues
+	 * the session's last turn. The intent was read before the session was found or
+	 * created, so a request the intent rejects leaves no session behind. New text on a
+	 * parked session moves on: the question is answered with every call denied as
+	 * {@link #ABANDONED_DENY_MESSAGE abandoned}, so the log stays whole, and the text
+	 * runs in the resumed turn.
 	 * @throws TurnInProgressException if a turn runs on the session
+	 * @throws TurnParkedException if a resume finds the session parked; decisions answer
+	 * it
 	 * @throws IllegalStateException if decisions arrive for a session that is not parked,
-	 * or if the session is parked on a question of another kind, which this advisor
-	 * cannot answer
+	 * if the session is parked on a question of another kind, which this advisor cannot
+	 * answer, or if a resume finds nothing to continue
 	 * @throws IllegalArgumentException if the decisions fail a rule
 	 */
 	private Turn beginTurn(String sessionId, ChatClientRequest request, TurnIntent intent) {
 		return switch (intent) {
 			case DECISIONS ->
 				this.confirmations.resume(sessionId, request, SessionContexts.decisions(request.context()));
+			case RESUME -> continueStoppedTurn(sessionId, request);
 			case START -> {
 				try {
 					yield start(sessionId, request);
@@ -343,6 +373,52 @@ public final class SessionTurnAdvisor implements CallAdvisor, StreamAdvisor {
 	private Turn start(String sessionId, ChatClientRequest request) {
 		TurnStatus started = this.turns.start(sessionId, SessionContexts.runId(request.context()), this.turnTimeout);
 		return Turn.of(Objects.requireNonNull(started.runId(), "a running turn has a run id"));
+	}
+
+	/**
+	 * Continues the session's last turn, one that stopped short of its answer, as the
+	 * class description says: starts the turn again with {@link TurnService#start}, with
+	 * no user message, and decides from the {@link ConversationTail tail} of the
+	 * conversation what the turn does. After a user message or tool results the chain
+	 * runs a model round over the stored history. After an open reply its calls are
+	 * answered with {@link #UNANSWERED_TOOL_RESULT} first. After an answered reply the
+	 * turn is settled: the stored reply is the call's response, and the turn completes on
+	 * it with no model round.
+	 * @throws TurnInProgressException if a turn runs on the session
+	 * @throws TurnParkedException if the session is parked on a question
+	 * @throws IllegalStateException if the session's last turn ended with
+	 * {@link StopReason#END_TURN}, or the session holds no conversation to continue
+	 */
+	private Turn continueStoppedTurn(String sessionId, ChatClientRequest request) {
+		ConversationTail tail = ConversationTail.of(this.sessionService, sessionId);
+		if (tail.kind() == ConversationTail.Kind.EMPTY) {
+			throw new IllegalStateException("Session '" + sessionId
+					+ "' has no turn to continue: its log holds no conversation; start a turn with a user message");
+		}
+		TurnStatus last = this.turns.status(sessionId);
+		if (!last.isRunning() && last.stopReason() == StopReason.END_TURN) {
+			throw new IllegalStateException("Session '" + sessionId + "' has no turn to continue: its last turn '"
+					+ last.runId() + "' ended with " + StopReason.END_TURN + "; start a turn with a user message");
+		}
+		TurnStatus continued = this.turns.start(sessionId, SessionContexts.runId(request.context()), this.turnTimeout);
+		String runId = Objects.requireNonNull(continued.runId(), "a running turn has a run id");
+		// Read again now that the turn is this run's: the tail read before the start may
+		// predate a turn another harness ran meanwhile, and what the turn does follows
+		// from the log as it is
+		tail = ConversationTail.of(this.sessionService, sessionId);
+		return switch (tail.kind()) {
+			case OPEN_REPLY -> {
+				// A crash or a failed tool left the reply's calls without results:
+				// answered before the round, so the model learns they did not complete
+				// and the prompt stays whole
+				tail.answerUnresolved();
+				yield Turn.of(runId);
+			}
+			// The model answered before the stop landed: nothing to run, the turn is
+			// settled on the stored reply
+			case REPLY -> new Turn(runId, tail.replyAsResponse());
+			default -> Turn.of(runId);
+		};
 	}
 
 	/**
@@ -445,16 +521,20 @@ public final class SessionTurnAdvisor implements CallAdvisor, StreamAdvisor {
 	}
 
 	/**
-	 * Stores the results of a loop that ended without a model round, on a
-	 * {@code returnDirect} tool or a breached tool call limit: no round stored them, so
-	 * they are stored now, from the response, after the reply. A loop whose last round
-	 * was a model round left nothing open, and the log is not read. Only the call's own
-	 * reply is answered: a call that lost the turn to a lease takeover may find the later
-	 * turn's reply as the newest one, and leaves it to that turn. Best-effort: a failure
-	 * is logged.
+	 * Leaves no tool call of the newest reply without a result when the turn ends. A loop
+	 * that ended without a model round, on a {@code returnDirect} tool or a breached tool
+	 * call limit, stored no results for its last reply: they are stored now, from the
+	 * response. A failed or cancelled turn may have left the reply's calls open, because
+	 * a tool threw after the memory advisor stored the reply: they are answered with
+	 * {@link #UNANSWERED_TOOL_RESULT}. A completed loop whose last round was a model
+	 * round left nothing open, and the log is not read. Only the call's own reply is
+	 * answered: a call that lost the turn, to an interrupt and a later turn or to a lease
+	 * takeover, may find the later turn's reply as the newest one, and leaves it to that
+	 * turn. Best-effort: a failure is logged.
 	 */
 	private void makeWhole(String sessionId, String runId, Outcome outcome, @Nullable ChatResponse response) {
-		if (outcome != Outcome.COMPLETED || !endsWithoutModel(response)) {
+		boolean withoutModel = endsWithoutModel(response);
+		if (outcome == Outcome.COMPLETED && !withoutModel) {
 			return;
 		}
 		try {
@@ -462,12 +542,19 @@ public final class SessionTurnAdvisor implements CallAdvisor, StreamAdvisor {
 				return;
 			}
 			ConversationTail tail = ConversationTail.of(this.sessionService, sessionId);
-			if (tail.isOpenReply()) {
+			if (!tail.isOpenReply()) {
+				return;
+			}
+			if (withoutModel) {
 				tail.storeResults(Objects.requireNonNull(response));
+			}
+			else {
+				tail.answerUnresolved();
 			}
 		}
 		catch (RuntimeException ex) {
-			logger.warn("Could not store the tool results of session [{}]: {}", sessionId, ex.getMessage());
+			logger.warn("Could not check session [{}] for tool calls left without a result: {}", sessionId,
+					ex.getMessage());
 		}
 	}
 
