@@ -26,11 +26,12 @@ import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.decision.answer.ChoiceAnswer;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 /**
  * A question answered by picking one of the offered options, as a {@link ChoiceAnswer}.
  * Each option has a name and, optionally, a description that tells the model when the
- * option applies.
+ * option applies; a blank description counts as none.
  *
  * @author Thomas Vitale
  * @since 2.1.0
@@ -68,7 +69,7 @@ public final class ChoiceQuestion implements DecisionQuestion {
 
 	/**
 	 * The options, name to description, in the order they were declared. A description is
-	 * {@code null} when the option has none.
+	 * {@code null} when the option has none or a blank one.
 	 */
 	public Map<String, @Nullable String> getOptions() {
 		return this.options;
@@ -127,12 +128,12 @@ public final class ChoiceQuestion implements DecisionQuestion {
 		}
 
 		/**
-		 * Add an option with a description.
+		 * Add an option with a description. A blank description counts as none.
 		 */
 		public Builder option(String name, @Nullable String description) {
 			Assert.hasText(name, "option name cannot be null or empty");
 			Assert.isTrue(!this.options.containsKey(name), () -> "duplicate option '" + name + "'");
-			this.options.put(name, description);
+			this.options.put(name, StringUtils.hasText(description) ? description : null);
 			return this;
 		}
 

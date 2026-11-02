@@ -19,12 +19,14 @@ package org.springframework.ai.chat.messages;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.chat.messages.part.MediaPart;
 import org.springframework.ai.chat.messages.part.MessagePart;
 import org.springframework.ai.chat.messages.part.ReasoningPart;
+import org.springframework.ai.chat.messages.part.StreamingParts;
 import org.springframework.ai.chat.messages.part.TextPart;
 import org.springframework.ai.chat.messages.part.ToolCallPart;
 import org.springframework.ai.content.Media;
@@ -41,13 +43,13 @@ import org.springframework.util.Assert;
  * {@link AbstractMessage} so that {@link UserMessage} can carry the same kind of content.
  * The text, tool calls, media and reasoning accessors are views over that list:
  * {@link #getText()} joins the {@link TextPart}s, {@link #getToolCalls()} selects the
- * {@link ToolCallPart}s, {@link #getMedia()} selects the {@link MediaPart}s and
- * {@link #getReasoning()} selects the {@link ReasoningPart}s, in part order. Because
- * reasoning is a part like any other, a message preserves the exact interleaving some
- * providers stream between reasoning, tool calls, text and media (for example a reasoning
- * block immediately followed by the tool call it justified). Messages built through the
- * legacy constructor or builder setters get their parts in the legacy order: text, tool
- * calls, media.
+ * {@link ToolCallPart}s except streamed tool-call argument deltas, {@link #getMedia()}
+ * selects the {@link MediaPart}s and {@link #getReasoning()} selects the
+ * {@link ReasoningPart}s, in part order. Because reasoning is a part like any other, a
+ * message preserves the exact interleaving some providers stream between reasoning, tool
+ * calls, text and media (for example a reasoning block immediately followed by the tool
+ * call it justified). Messages built through the legacy constructor or builder setters
+ * get their parts in the legacy order: text, tool calls, media.
  *
  * @author Mark Pollack
  * @author Christian Tzolov
@@ -112,12 +114,27 @@ public class AssistantMessage extends AbstractMessage implements MediaContent {
 		return select(ReasoningPart.class).toList();
 	}
 
+	/**
+	 * The tool calls of this message, in part order. A streamed tool-call argument delta,
+	 * a {@link ToolCallPart} marked {@link StreamingParts#isPartial(MessagePart)
+	 * partial}, is not a tool call and is skipped.
+	 * @return an unmodifiable list of tool calls
+	 */
 	public List<ToolCall> getToolCalls() {
-		return select(ToolCallPart.class).map(ToolCallPart::toolCall).toList();
+		return completeToolCallParts().map(ToolCallPart::toolCall).toList();
 	}
 
+	/**
+	 * Whether this message holds a tool call. A streamed tool-call argument delta does
+	 * not count, see {@link #getToolCalls()}.
+	 * @return {@code true} if the message holds at least one tool call
+	 */
 	public boolean hasToolCalls() {
-		return getParts().stream().anyMatch(ToolCallPart.class::isInstance);
+		return completeToolCallParts().findAny().isPresent();
+	}
+
+	private Stream<ToolCallPart> completeToolCallParts() {
+		return select(ToolCallPart.class).filter(part -> !StreamingParts.isPartial(part));
 	}
 
 	@Override

@@ -362,7 +362,8 @@ When an assistant message is sent back, its parts are folded into a single DeepS
 * any other part is not sent.
 
 When streaming, the reasoning and text deltas of each chunk are partial parts stamped with a synthesized index, so that `MessageAggregator` rebuilds one `ReasoningPart` and one `TextPart`.
-Tool calls are buffered and arrive once, complete, in a single chunk.
+While a tool call streams, each of its argument deltas arrives right away as a partial `ToolCallPart`, which is only fit for display purposes and is not a tool call (see xref:api/tools.adoc#streaming-tool-call-arguments[Streaming Tool Call Arguments]).
+Once the model has finished its tool calls, one more chunk carries them as complete `ToolCallPart`s, at the same index as their deltas, and only those are returned by `getToolCalls()`.
 
 == Manual Configuration
 
@@ -438,6 +439,9 @@ ResponseEntity<ChatCompletion> response = deepSeekApi.chatCompletionEntity(
 Flux<ChatCompletionChunk> streamResponse = deepSeekApi.chatCompletionStream(
     new ChatCompletionRequest(List.of(chatCompletionMessage), DeepSeekApi.ChatModel.DEEPSEEK_V4_FLASH.getValue(), 0.7, true));
 ----
+
+`chatCompletionStream` merges the chunks of a streamed tool call into one chunk.
+`chatCompletionStreamRaw` returns the chunks as the server sends them, including every tool call argument delta.
 
 Follow the https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-deepseek/src/main/java/org/springframework/ai/deepseek/api/DeepSeekApi.java[DeepSeekApi.java]'s JavaDoc for further information.
 

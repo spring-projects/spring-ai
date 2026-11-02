@@ -75,6 +75,7 @@ import org.springframework.ai.chat.messages.part.MessagePart;
 import org.springframework.ai.chat.messages.part.OpaquePayload;
 import org.springframework.ai.chat.messages.part.ReasoningPart;
 import org.springframework.ai.chat.messages.part.StreamingPartIndexer;
+import org.springframework.ai.chat.messages.part.StreamingParts;
 import org.springframework.ai.chat.messages.part.TextPart;
 import org.springframework.ai.chat.messages.part.ToolCallPart;
 import org.springframework.ai.chat.messages.part.ToolResultPart;
@@ -375,6 +376,11 @@ public class GoogleGenAiChatModel implements ChatModel, DisposableBean {
 			}
 			else if (part instanceof ReasoningPart reasoningPart) {
 				reasoningToGeminiPart(reasoningPart).ifPresent(parts::add);
+			}
+			else if (part instanceof ToolCallPart && StreamingParts.isPartial(part)) {
+				// A tool-call argument delta of a stream, not a tool call
+				// (see StreamingParts)
+				continue;
 			}
 			else if (part instanceof ToolCallPart toolCallPart) {
 				Part.Builder builder = Part.builder().functionCall(toFunctionCall(toolCallPart.toolCall()));

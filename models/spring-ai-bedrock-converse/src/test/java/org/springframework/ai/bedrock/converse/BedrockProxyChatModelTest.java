@@ -27,6 +27,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
@@ -141,6 +143,40 @@ class BedrockProxyChatModelTest {
 	private BedrockProxyChatModel newModel() {
 		return new BedrockProxyChatModel(this.syncClient, this.asyncClient, BedrockChatOptions.builder().build(),
 				ObservationRegistry.NOOP, ToolCallingManager.builder().build());
+	}
+
+	@ParameterizedTest
+	@CsvSource(value = { "1000, 200, 1250", "null, null, 50", "1000, null, 1050", "null, 200, 250" },
+			nullValues = "null")
+	void streamingPromptTokensIncludeCachedTokens(Integer cacheRead, Integer cacheWrite, int expectedPromptTokens) {
+		TokenUsage tokenUsage = TokenUsage.builder()
+			.inputTokens(50)
+			.outputTokens(20)
+			.totalTokens(expectedPromptTokens + 20)
+			.cacheReadInputTokens(cacheRead)
+			.cacheWriteInputTokens(cacheWrite)
+			.build();
+		given(this.asyncClient.converseStream(any(ConverseStreamRequest.class),
+				any(ConverseStreamResponseHandler.class)))
+			.willAnswer(invocation -> {
+				ConverseStreamResponseHandler handler = invocation.getArgument(1);
+				handler.onEventStream(SdkPublisher
+					.adapt(Flux.just(ConverseStreamOutput.messageStopBuilder().stopReason(StopReason.END_TURN).build(),
+							ConverseStreamOutput.metadataBuilder().usage(tokenUsage).build())));
+				handler.complete();
+				return CompletableFuture.completedFuture(null);
+			});
+
+		ChatResponse response = newModel().stream(new Prompt("Weather in Paris?")).blockLast();
+
+		assertThat(response).isNotNull();
+		var usage = response.getMetadata().getUsage();
+		assertThat(usage.getPromptTokens()).isEqualTo(expectedPromptTokens);
+		assertThat(usage.getCompletionTokens()).isEqualTo(20);
+		assertThat(usage.getTotalTokens()).isEqualTo(expectedPromptTokens + 20);
+		assertThat(usage.getCacheReadInputTokens()).isEqualTo(cacheRead != null ? cacheRead.longValue() : null);
+		assertThat(usage.getCacheWriteInputTokens()).isEqualTo(cacheWrite != null ? cacheWrite.longValue() : null);
+		assertThat(((TokenUsage) usage.getNativeUsage()).inputTokens()).isEqualTo(50);
 	}
 
 	@Test
@@ -685,6 +721,23 @@ class BedrockProxyChatModelTest {
 	}
 
 	@Test
+	void toolCallArgumentDeltaIsNotReplayed() {
+		// An assistant message built from the parts of raw stream chunks; the delta's
+		// arguments are not valid JSON
+		AssistantMessage assistant = AssistantMessage.builder()
+			.part(StreamingParts.partial(ToolCallPart
+				.of(new AssistantMessage.ToolCall("tooluse_123", "function", "getCurrentWeather", "{\"location\":")),
+					0))
+			.part(StreamingParts.complete(ToolCallPart.of(WEATHER_CALL), 0))
+			.build();
+
+		List<ContentBlock> content = replayedAssistantContent(assistant);
+
+		assertThat(content).extracting(ContentBlock::type).containsExactly(ContentBlock.Type.TOOL_USE);
+		assertThat(content.get(0).toolUse().input().asMap().get("location").asString()).isEqualTo("Paris");
+	}
+
+	@Test
 	void unsignedReasoningProducedByBedrockIsReplayedWithoutSignature() {
 		AssistantMessage assistant = AssistantMessage.builder()
 			.part(UNSIGNED_REASONING)
@@ -731,7 +784,7 @@ class BedrockProxyChatModelTest {
 	// -------------------------------------------------------------------------
 
 	@Test
-	void streamingEmitsIndexedPartsAndBuffersToolUseUntilTheFinalChunk() {
+	void streamingEmitsIndexedPartsAndToolUseDeltasBeforeTheCompleteCall() {
 		givenStream(reasoningDelta(0, "Think "), reasoningDelta(0, "hard."), signatureDelta(0, SIGNATURE), blockStop(0),
 				textDelta(1, "Let me "), textDelta(1, "check."), blockStop(1),
 				ConverseStreamOutput.contentBlockStartBuilder()
@@ -749,9 +802,10 @@ class BedrockProxyChatModelTest {
 			.collectList()
 			.block();
 
-		// 2 reasoning deltas, the signature on block stop, 2 text deltas and the final
-		// chunk; the tool use input is buffered until the final chunk
-		assertThat(chunks).hasSize(6);
+		// 2 reasoning deltas, the signature on block stop, 2 text deltas, the tool use
+		// announced with empty arguments, its 2 input deltas and the final chunk with the
+		// complete call
+		assertThat(chunks).hasSize(9);
 		assertThat(chunks).allSatisfy(chunk -> assertThat(chunk.getMetadata().getId()).isEqualTo("req-1"));
 		assertThat(chunks.get(0).getResult().getOutput().getParts())
 			.containsExactly(StreamingParts.partial(new ReasoningPart("Think ", null, null, BEDROCK_ATTRIBUTES), 0));
@@ -761,15 +815,18 @@ class BedrockProxyChatModelTest {
 		assertThat(chunks.get(3).getResult().getOutput().getParts())
 			.containsExactly(StreamingParts.partial(TextPart.of("Let me "), 1));
 		assertThat(chunks.get(3).getResult().getOutput().getText()).isEqualTo("Let me ");
-		assertThat(chunks.subList(0, 5)).allSatisfy(chunk -> assertThat(chunk.hasToolCalls()).isFalse());
+		assertThat(chunks.subList(5, 8)).extracting(chunk -> chunk.getResult().getOutput().getParts())
+			.containsExactly(List.of(toolCallDelta("", 2)), List.of(toolCallDelta("{\"location\":", 2)),
+					List.of(toolCallDelta("\"Paris\"}", 2)));
+		assertThat(chunks.subList(0, 8)).allSatisfy(chunk -> assertThat(chunk.hasToolCalls()).isFalse());
 
-		AssistantMessage last = chunks.get(5).getResult().getOutput();
+		AssistantMessage last = chunks.get(8).getResult().getOutput();
 		assertThat(last.getToolCalls()).containsExactly(WEATHER_CALL);
 		MessagePart toolCallPart = last.getParts().get(0);
 		assertThat(StreamingParts.partIndex(toolCallPart)).isEqualTo(2);
 		assertThat(StreamingParts.isPartial(toolCallPart)).isFalse();
 		assertThat(last.getText()).isEmpty();
-		assertThat(chunks.get(5).getResult().getMetadata().getFinishReason()).isEqualTo("tool_use");
+		assertThat(chunks.get(8).getResult().getMetadata().getFinishReason()).isEqualTo("tool_use");
 
 		AssistantMessage aggregated = aggregatedRef.get().getResult().getOutput();
 		assertThat(aggregated.getParts()).containsExactly(
@@ -998,6 +1055,12 @@ class BedrockProxyChatModelTest {
 			.contentBlockIndex(index)
 			.delta(ContentBlockDelta.builder().toolUse(ToolUseBlockDelta.builder().input(input).build()).build())
 			.build();
+	}
+
+	private static MessagePart toolCallDelta(String arguments, int index) {
+		return StreamingParts.partial(ToolCallPart
+			.of(new AssistantMessage.ToolCall(WEATHER_CALL.id(), WEATHER_CALL.type(), WEATHER_CALL.name(), arguments)),
+				index);
 	}
 
 	private static ConverseStreamOutput blockStop(int index) {

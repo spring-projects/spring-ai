@@ -28,6 +28,7 @@ import java.util.function.Consumer;
 import com.openai.client.OpenAIClient;
 import com.openai.client.OpenAIClientAsync;
 import com.openai.core.JsonValue;
+import com.openai.core.ObjectMappers;
 import com.openai.core.RequestOptions;
 import com.openai.core.http.AsyncStreamResponse;
 import com.openai.core.http.Headers;
@@ -380,6 +381,26 @@ class OpenAiChatModelMessagePartsTests {
 		assertThat(param.toolCalls()).isEmpty();
 	}
 
+	@Test
+	void toolCallArgumentDeltaIsNotReplayed() {
+		// An assistant message built from the parts of raw stream chunks
+		AssistantMessage assistant = AssistantMessage.builder()
+			.part(StreamingParts.partial(
+					ToolCallPart.of(new AssistantMessage.ToolCall("call_1", "function", "getWeather", "{\"city\":")),
+					0))
+			.part(StreamingParts.complete(
+					ToolCallPart
+						.of(new AssistantMessage.ToolCall("call_1", "function", "getWeather", "{\"city\":\"Seoul\"}")),
+					0))
+			.build();
+
+		List<ChatCompletionMessageToolCall> toolCalls = assistantParam(chatModel("gpt-4o-mini"), assistant).toolCalls()
+			.orElseThrow();
+
+		assertThat(toolCalls).hasSize(1);
+		assertThat(toolCalls.get(0).asFunction().function().arguments()).isEqualTo("{\"city\":\"Seoul\"}");
+	}
+
 	// -- streaming --
 
 	@Test
@@ -415,8 +436,9 @@ class OpenAiChatModelMessagePartsTests {
 			.collectList()
 			.block();
 
-		// reasoning deltas, text deltas, then one merged tool-call chunk
-		assertThat(responses).hasSize(5);
+		// reasoning deltas, text deltas, tool-call argument deltas, then one merged
+		// tool-call chunk
+		assertThat(responses).hasSize(7);
 		assertThat(responses).allSatisfy(r -> assertThat(r.getMetadata().getId()).isEqualTo("chatcmpl-123"));
 		assertThat(responses.get(0).getResult().getOutput().getParts())
 			.containsExactly(StreamingParts.partial(ReasoningPart.of("Think "), 0));
@@ -426,11 +448,20 @@ class OpenAiChatModelMessagePartsTests {
 		assertThat(responses.get(2).getResult().getOutput().getParts())
 			.containsExactly(StreamingParts.partial(TextPart.of("Let me "), 1));
 		assertThat(responses.get(2).getResult().getOutput().getText()).isEqualTo("Let me ");
-		List<MessagePart> lastParts = responses.get(4).getResult().getOutput().getParts();
+		// The argument deltas carry the id and name of the call, and are not tool calls
+		assertThat(responses.get(4).getResult().getOutput().getParts()).containsExactly(StreamingParts.partial(
+				ToolCallPart.of(new AssistantMessage.ToolCall("call_1", "function", "getWeather", "{\"city\":")), 2));
+		assertThat(responses.get(5).getResult().getOutput().getParts()).containsExactly(StreamingParts.partial(
+				ToolCallPart.of(new AssistantMessage.ToolCall("call_1", "function", "getWeather", "\"Seoul\"}")), 2));
+		assertThat(responses.subList(4, 6)).allSatisfy(response -> {
+			assertThat(response.hasToolCalls()).isFalse();
+			assertThat(response.getResult().getOutput().getText()).isEmpty();
+		});
+		List<MessagePart> lastParts = responses.get(6).getResult().getOutput().getParts();
 		assertThat(lastParts).containsExactly(StreamingParts.complete(new ToolCallPart(
 				new AssistantMessage.ToolCall("call_1", "function", "getWeather", "{\"city\":\"Seoul\"}"),
 				EXTRA_CONTENT_PAYLOAD, Map.of()), 2));
-		assertThat(responses.get(4).hasToolCalls()).isTrue();
+		assertThat(responses.get(6).hasToolCalls()).isTrue();
 		// Legacy per-chunk cumulative metadata is still there
 		assertThat(responses.get(1).getResult().getOutput().getMetadata()).containsEntry("reasoningContent",
 				"Think first.");
@@ -593,9 +624,27 @@ class OpenAiChatModelMessagePartsTests {
 
 		List<ChatResponse> responses = streamResponses(chunks).collectList().block();
 
-		// Both choices are merged into one chunk, each with its complete tool call at an
-		// index of its own
-		ChatResponse merged = responses.get(0);
+		// The argument deltas of each choice stream first, at the index of their call
+		assertThat(responses.subList(0, 4)).extracting(response -> response.getResult().getOutput().getParts())
+			.containsExactly(
+					List.of(StreamingParts.partial(
+							ToolCallPart
+								.of(new AssistantMessage.ToolCall("call_a", "function", "getWeather", "{\"city\":")),
+							0)),
+					List.of(StreamingParts.partial(
+							ToolCallPart.of(new AssistantMessage.ToolCall("call_b", "function", "getTime", "{\"tz\":")),
+							1)),
+					List.of(StreamingParts.partial(
+							ToolCallPart
+								.of(new AssistantMessage.ToolCall("call_a", "function", "getWeather", "\"Paris\"}")),
+							0)),
+					List.of(StreamingParts.partial(
+							ToolCallPart.of(new AssistantMessage.ToolCall("call_b", "function", "getTime", "\"CET\"}")),
+							1)));
+
+		// Both choices are merged into one chunk, each with its complete tool call at the
+		// index of its deltas
+		ChatResponse merged = responses.get(4);
 		assertThat(merged.getResults()).hasSize(2);
 		assertThat(merged.getResults().get(0).getOutput().getParts())
 			.containsExactly(StreamingParts.complete(
@@ -625,6 +674,29 @@ class OpenAiChatModelMessagePartsTests {
 		assertThat(aggregated.getText()).isEqualTo("Let me check.");
 		assertThat(aggregated.getToolCalls()).extracting(AssistantMessage.ToolCall::arguments)
 			.containsExactly("{\"city\":\"Paris\"}");
+	}
+
+	@Test
+	void streamingToolCallWithoutIndexInOneChunkStreamsNoDeltaButTheCompleteCall() throws Exception {
+		// Some OpenAI-compatible servers omit the index of a tool call sent in one chunk
+		ChatCompletionChunk.Choice.Delta.ToolCall withoutIndex = ObjectMappers.jsonMapper()
+			.readValue(
+					"""
+							{"id":"call_1","type":"function","function":{"name":"getWeather","arguments":"{\\"city\\":\\"Paris\\"}"}}
+							""",
+					ChatCompletionChunk.Choice.Delta.ToolCall.class);
+		List<ChatCompletionChunk> chunks = List.of(streamingChunk(delta -> delta.toolCalls(List.of(withoutIndex)),
+				ChatCompletionChunk.Choice.FinishReason.TOOL_CALLS));
+
+		AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
+		List<ChatResponse> responses = new MessageAggregator().aggregate(streamResponses(chunks), aggregatedRef::set)
+			.collectList()
+			.block();
+
+		assertThat(responses).hasSize(1);
+		assertThat(responses.get(0).getResult().getOutput().getParts()).noneMatch(StreamingParts::isPartial);
+		assertThat(aggregatedRef.get().getResult().getOutput().getToolCalls())
+			.containsExactly(new AssistantMessage.ToolCall("call_1", "function", "getWeather", "{\"city\":\"Paris\"}"));
 	}
 
 	// -- helpers --

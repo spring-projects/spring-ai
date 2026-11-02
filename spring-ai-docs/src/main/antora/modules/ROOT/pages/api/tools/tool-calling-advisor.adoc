@@ -359,7 +359,8 @@ String response = chatClient.prompt()
     .content();
 ----
 
-`ToolCallObservingAdvisor` runs on every iteration; the main caller still receives only the final answer because `ToolCallingAdvisor` filters tool-call chunks out of its returned stream.
+`ToolCallObservingAdvisor` runs on every iteration; the main caller does not receive the tool-call chunks because `ToolCallingAdvisor` filters them out of its returned stream.
+A streaming caller still receives the tool call argument deltas, which are not tool calls (see xref:api/tools.adoc#streaming-tool-call-arguments[Streaming Tool Call Arguments]).
 
 [[return-direct]]
 == Return Direct

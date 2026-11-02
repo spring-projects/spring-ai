@@ -20,7 +20,10 @@ import java.util.List;
 
 import org.jspecify.annotations.Nullable;
 
+import org.springframework.ai.chat.messages.AbstractMessage;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.messages.part.MessagePart;
+import org.springframework.ai.chat.messages.part.TextPart;
 import org.springframework.util.Assert;
 
 /**
@@ -42,6 +45,21 @@ public final class ConversationInput implements DecisionInput {
 
 	public List<Message> getMessages() {
 		return this.messages;
+	}
+
+	/**
+	 * The parts of a message, in order, for a provider to map. A message that does not
+	 * keep parts has its text as a single text part, or no part when it has no text.
+	 * @param message the message
+	 * @return the parts of the message
+	 * @since 2.1.0
+	 */
+	public static List<MessagePart> parts(Message message) {
+		if (message instanceof AbstractMessage abstractMessage) {
+			return abstractMessage.getParts();
+		}
+		String text = message.getText();
+		return (text != null) ? List.of(TextPart.of(text)) : List.of();
 	}
 
 	@Override

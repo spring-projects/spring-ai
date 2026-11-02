@@ -38,6 +38,7 @@ import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.part.MessagePart;
 import org.springframework.ai.chat.messages.part.ReasoningPart;
 import org.springframework.ai.chat.messages.part.StreamingPartIndexer;
+import org.springframework.ai.chat.messages.part.StreamingParts;
 import org.springframework.ai.chat.messages.part.TextPart;
 import org.springframework.ai.chat.messages.part.ToolCallPart;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
@@ -62,6 +63,7 @@ import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionMessage;
 import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionMessage.ChatCompletionFunction;
 import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionMessage.ToolCall;
 import org.springframework.ai.deepseek.api.DeepSeekApi.ChatCompletionRequest;
+import org.springframework.ai.deepseek.api.DeepSeekStreamFunctionCallingHelper;
 import org.springframework.ai.deepseek.api.common.DeepSeekConstants;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.retry.RetryUtils;
@@ -91,6 +93,12 @@ import org.springframework.util.StringUtils;
  * tools must carry its {@code reasoning_content}, so the reasoning survives between the
  * rounds. The last message of a prompt is sent as a chat prefix completion when it
  * carries {@code true} under {@link #PREFIX_METADATA_KEY}.
+ * <p>
+ * When streaming, the reasoning and text deltas are partial parts stamped with a
+ * synthesized index. While a tool call streams, each of its argument deltas arrives right
+ * away as a partial {@link ToolCallPart}, which is not a tool call (see
+ * {@link StreamingParts}). Once the model has finished its tool calls, one more chunk
+ * carries them as complete {@link ToolCallPart}s, at the same index as their deltas.
  *
  * @author Geng Rong
  * @author Thomas Vitale
@@ -115,6 +123,8 @@ public class DeepSeekChatModel implements ChatModel {
 	private static final ChatModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultChatModelObservationConvention();
 
 	private static final ToolCallingManager DEFAULT_TOOL_CALLING_MANAGER = ToolCallingManager.builder().build();
+
+	private static final DeepSeekStreamFunctionCallingHelper CHUNK_MERGER = new DeepSeekStreamFunctionCallingHelper();
 
 	/**
 	 * The default options used for the chat completion requests.
@@ -240,7 +250,8 @@ public class DeepSeekChatModel implements ChatModel {
 		return Flux.deferContextual(contextView -> {
 			ChatCompletionRequest request = createRequest(prompt, true);
 
-			Flux<DeepSeekApi.ChatCompletionChunk> completionChunks = this.deepSeekApi.chatCompletionStream(request);
+			// The raw chunks, so that the tool call argument deltas can be streamed too
+			Flux<DeepSeekApi.ChatCompletionChunk> completionChunks = this.deepSeekApi.chatCompletionStreamRaw(request);
 
 			StreamAccumulator streamAccumulator = new StreamAccumulator();
 
@@ -261,32 +272,8 @@ public class DeepSeekChatModel implements ChatModel {
 				observation.start();
 			}
 
-			Flux<ChatResponse> chatResponse = completionChunks.map(this::chunkToChatCompletion).map(chatCompletion -> {
-				try {
-					String id = chatCompletion.id();
-
-					List<Generation> generations = chatCompletion.choices().stream().map(choice -> {
-						// @formatter:off
-						Map<String, Object> metadata = Map.of(
-								"id", chatCompletion.id(),
-								"role", streamAccumulator.role(id, choice.message()),
-								"finishReason", choice.finishReason() != null ? choice.finishReason().name() : ""
-						);
-						// @formatter:on
-						return buildGeneration(choice, metadata, streamAccumulator.partIndexer(id));
-					}).toList();
-					DeepSeekApi.Usage usage = chatCompletion.usage();
-					Usage currentUsage = (usage != null) ? getDefaultUsage(usage) : new EmptyUsage();
-					Usage cumulativeUsage = UsageCalculator.getCumulativeUsage(currentUsage, previousChatResponse);
-
-					return new ChatResponse(generations, from(chatCompletion, cumulativeUsage));
-				}
-				catch (Exception e) {
-					logger.error("Error processing chat completion", e);
-					return new ChatResponse(List.of());
-				}
-
-			});
+			Flux<ChatResponse> chatResponse = toStreamedChatResponses(completionChunks, streamAccumulator,
+					previousChatResponse);
 
 			// @formatter:off
 			Flux<ChatResponse> flux = chatResponse
@@ -298,6 +285,114 @@ public class DeepSeekChatModel implements ChatModel {
 			return new MessageAggregator().aggregate(flux, observationContext::setResponse);
 
 		});
+	}
+
+	/**
+	 * Converts the streamed chunks to chat responses. The chunks that stream a tool call
+	 * are buffered until the tool calls are done and merged, so that each tool call
+	 * reaches the caller once, as a complete {@link ToolCallPart}. Each of those chunks
+	 * is also converted right away to a chat response holding its argument deltas, see
+	 * {@link #toolCallDeltaResponse}. Any other chunk is converted on its own.
+	 */
+	private Flux<ChatResponse> toStreamedChatResponses(Flux<DeepSeekApi.ChatCompletionChunk> chunks,
+			StreamAccumulator streamAccumulator, @Nullable ChatResponse previousChatResponse) {
+		List<DeepSeekApi.ChatCompletionChunk> toolCallChunks = new ArrayList<>();
+		return chunks.concatMapIterable(chunk -> {
+			if (toolCallChunks.isEmpty() && !CHUNK_MERGER.isStreamingToolFunctionCall(chunk)) {
+				return List.of(toStreamedChatResponse(chunk, streamAccumulator, previousChatResponse));
+			}
+			toolCallChunks.add(chunk);
+			List<ChatResponse> responses = new ArrayList<>(2);
+			ChatResponse deltaResponse = toolCallDeltaResponse(chunk, streamAccumulator);
+			if (deltaResponse != null) {
+				responses.add(deltaResponse);
+			}
+			if (CHUNK_MERGER.isStreamingToolFunctionCallFinish(chunk)) {
+				responses.add(mergeToolCallChunks(toolCallChunks, streamAccumulator, previousChatResponse));
+			}
+			return responses;
+		})
+			// A stream that ends inside a tool call still yields the merged tool call
+			// chunks.
+			.concatWith(Flux.defer(() -> toolCallChunks.isEmpty() ? Flux.empty()
+					: Flux.just(mergeToolCallChunks(toolCallChunks, streamAccumulator, previousChatResponse))));
+	}
+
+	private ChatResponse mergeToolCallChunks(List<DeepSeekApi.ChatCompletionChunk> toolCallChunks,
+			StreamAccumulator streamAccumulator, @Nullable ChatResponse previousChatResponse) {
+		DeepSeekApi.ChatCompletionChunk merged = toolCallChunks.get(0);
+		for (int i = 1; i < toolCallChunks.size(); i++) {
+			merged = CHUNK_MERGER.merge(merged, toolCallChunks.get(i));
+		}
+		toolCallChunks.clear();
+		return toStreamedChatResponse(merged, streamAccumulator, previousChatResponse);
+	}
+
+	private ChatResponse toStreamedChatResponse(DeepSeekApi.ChatCompletionChunk chunk,
+			StreamAccumulator streamAccumulator, @Nullable ChatResponse previousChatResponse) {
+		ChatCompletion chatCompletion = chunkToChatCompletion(chunk);
+		try {
+			String id = chatCompletion.id();
+
+			List<Generation> generations = chatCompletion.choices().stream().map(choice -> {
+				// @formatter:off
+				Map<String, Object> metadata = Map.of(
+						"id", chatCompletion.id(),
+						"role", streamAccumulator.role(id, choice.message()),
+						"finishReason", choice.finishReason() != null ? choice.finishReason().name() : ""
+				);
+				// @formatter:on
+				return buildGeneration(choice, metadata, streamAccumulator.partIndexer(id));
+			}).toList();
+			DeepSeekApi.Usage usage = chatCompletion.usage();
+			Usage currentUsage = (usage != null) ? getDefaultUsage(usage) : new EmptyUsage();
+			Usage cumulativeUsage = UsageCalculator.getCumulativeUsage(currentUsage, previousChatResponse);
+
+			return new ChatResponse(generations, from(chatCompletion, cumulativeUsage));
+		}
+		catch (Exception e) {
+			logger.error("Error processing chat completion", e);
+			return new ChatResponse(List.of());
+		}
+	}
+
+	/**
+	 * Converts the tool-call deltas of a streamed chunk to a chat response holding them
+	 * as partial {@link ToolCallPart}s, see {@link StreamingParts}. Such a response has
+	 * no text and no tool call, the complete call follows once the tool calls are done.
+	 * @return the response, or {@code null} when the chunk carries no delta that can be
+	 * attributed to a call, see {@link StreamAccumulator#toolCallDelta}
+	 */
+	@SuppressWarnings("removal") // because of the use of DeepSeekAssistantMessage
+	private static @Nullable ChatResponse toolCallDeltaResponse(DeepSeekApi.ChatCompletionChunk chunk,
+			StreamAccumulator streamAccumulator) {
+		String id = chunk.id();
+		StreamingPartIndexer partIndexer = streamAccumulator.partIndexer(id);
+		List<Generation> generations = new ArrayList<>();
+		for (DeepSeekApi.ChatCompletionChunk.ChunkChoice choice : chunk.choices()) {
+			ChatCompletionMessage delta = choice.delta();
+			List<ToolCall> toolCalls = (delta != null) ? delta.toolCalls() : null;
+			if (delta == null || toolCalls == null) {
+				continue;
+			}
+			List<MessagePart> parts = new ArrayList<>();
+			for (ToolCall toolCall : toolCalls) {
+				ToolCallPart toolCallDelta = streamAccumulator.toolCallDelta(id, choice.index(), toolCall);
+				if (toolCallDelta != null) {
+					parts.add(partIndexer.stampToolCallDelta(toolCallDelta));
+				}
+			}
+			if (!parts.isEmpty()) {
+				// A DeepSeekAssistantMessage like every other chunk, so that existing
+				// casts keep working
+				generations.add(new Generation(DeepSeekAssistantMessage.builder()
+					.parts(parts)
+					.properties(Map.of("id", id, "role", streamAccumulator.role(id, delta), "finishReason", ""))
+					.build()));
+			}
+		}
+		return generations.isEmpty() ? null
+				: new ChatResponse(generations, ChatResponseMetadata.builder().id(id).build());
 	}
 
 	/**
@@ -625,14 +720,17 @@ public class DeepSeekChatModel implements ChatModel {
 
 	/**
 	 * The state of one streamed response that spans its chunks: the role, which only the
-	 * first chunk of a completion carries, and the {@link StreamingPartIndexer} of each
-	 * completion.
+	 * first chunk of a completion carries, the {@link StreamingPartIndexer} of each
+	 * completion, and the id and name of each streamed tool call, which only its first
+	 * delta carries.
 	 */
 	private static final class StreamAccumulator {
 
 		private final Map<String, String> roleById = new ConcurrentHashMap<>();
 
 		private final Map<String, StreamingPartIndexer> partIndexerById = new ConcurrentHashMap<>();
+
+		private final Map<String, AssistantMessage.ToolCall> toolCallByDeltaKey = new ConcurrentHashMap<>();
 
 		String role(String id, ChatCompletionMessage message) {
 			if (message.role() != null) {
@@ -643,6 +741,36 @@ public class DeepSeekChatModel implements ChatModel {
 
 		StreamingPartIndexer partIndexer(String id) {
 			return this.partIndexerById.computeIfAbsent(id, key -> new StreamingPartIndexer());
+		}
+
+		/**
+		 * The partial {@link ToolCallPart} of one streamed tool-call delta. A delta with
+		 * an id and a name starts a call. The later deltas of the call, all with its
+		 * {@code index} or, for a call started without one, all without an index, carry
+		 * an empty id, and their part repeats the id and name of the call next to their
+		 * own arguments fragment.
+		 * @param id the id of the streamed completion
+		 * @param choiceIndex the index of the choice the delta belongs to
+		 * @param delta the tool-call delta
+		 * @return the part, or {@code null} for a delta that continues no started call,
+		 * or that has no arguments to add
+		 */
+		@Nullable ToolCallPart toolCallDelta(String id, @Nullable Integer choiceIndex, ToolCall delta) {
+			String key = id + ":" + choiceIndex + ":" + Objects.toString(delta.index(), "");
+			ChatCompletionFunction function = delta.function();
+			String name = (function != null && function.name() != null) ? function.name() : "";
+			String arguments = (function != null && function.arguments() != null) ? function.arguments() : "";
+			if (StringUtils.hasText(delta.id()) && StringUtils.hasText(name)) {
+				this.toolCallByDeltaKey.put(key, new AssistantMessage.ToolCall(delta.id(), "function", name, ""));
+			}
+			else if (arguments.isEmpty()) {
+				return null;
+			}
+			AssistantMessage.ToolCall toolCall = this.toolCallByDeltaKey.get(key);
+			return (toolCall != null)
+					? ToolCallPart
+						.of(new AssistantMessage.ToolCall(toolCall.id(), toolCall.type(), toolCall.name(), arguments))
+					: null;
 		}
 
 	}
