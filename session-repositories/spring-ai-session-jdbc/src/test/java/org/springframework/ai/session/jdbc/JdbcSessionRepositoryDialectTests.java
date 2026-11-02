@@ -49,6 +49,29 @@ class JdbcSessionRepositoryDialectTests {
 			.isInstanceOf(MysqlJdbcSessionRepositoryDialect.class);
 		assertThat(JdbcSessionRepositoryDialect.from(dataSourceReporting("MariaDB")))
 			.isInstanceOf(MysqlJdbcSessionRepositoryDialect.class);
+		assertThat(JdbcSessionRepositoryDialect.from(dataSourceReporting("Microsoft SQL Server")))
+			.isInstanceOf(SqlServerJdbcSessionRepositoryDialect.class);
+	}
+
+	// -------------------------------------------------------------------------
+	// getLimitClause()
+	// -------------------------------------------------------------------------
+
+	@Test
+	void limitClauseDefaultsToLimit() {
+		assertThat(new PostgresJdbcSessionRepositoryDialect().getLimitClause()).isEqualTo("LIMIT ?");
+		assertThat(new H2JdbcSessionRepositoryDialect().getLimitClause()).isEqualTo("LIMIT ?");
+		assertThat(new MysqlJdbcSessionRepositoryDialect().getLimitClause()).isEqualTo("LIMIT ?");
+	}
+
+	@Test
+	void sqlServerLimitsRowsWithOffsetFetch() {
+		SqlServerJdbcSessionRepositoryDialect dialect = new SqlServerJdbcSessionRepositoryDialect();
+		assertThat(dialect.getLimitClause()).isEqualTo("OFFSET 0 ROWS FETCH NEXT ? ROWS ONLY");
+		// MERGE must end with a semicolon on SQL Server, and an update keeps created_at
+		assertThat(dialect.getUpsertSessionSql().strip()).startsWith("MERGE INTO AI_SESSION").endsWith(";");
+		assertThat(dialect.getUpsertSessionSql()).contains("SET expires_at = s.expires_at, metadata = s.metadata")
+			.doesNotContain("created_at = s.created_at");
 	}
 
 	@Test
