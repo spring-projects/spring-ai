@@ -62,9 +62,12 @@ import com.anthropic.models.messages.ToolUseBlock;
 import com.anthropic.models.messages.Usage;
 import com.anthropic.services.async.MessageServiceAsync;
 import com.anthropic.services.blocking.MessageService;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -243,6 +246,93 @@ class AnthropicChatModelTests {
 		assertThat(response.getMetadata().getUsage().getPromptTokens()).isEqualTo(10);
 		assertThat(response.getMetadata().getUsage().getCompletionTokens()).isEqualTo(20);
 		assertThat(response.getMetadata().getUsage().getTotalTokens()).isEqualTo(30);
+	}
+
+	@Test
+	void inputUsageIncludesCachedTokens() {
+		Message mockResponse = createMockMessage("Test", StopReason.END_TURN);
+		given(mockResponse.usage().inputTokens()).willReturn(50L);
+		given(mockResponse.usage().cacheReadInputTokens()).willReturn(Optional.of(1000L));
+		given(mockResponse.usage().cacheCreationInputTokens()).willReturn(Optional.of(200L));
+		given(this.messageService.create(any(MessageCreateParams.class))).willReturn(mockResponse);
+
+		ChatResponse response = this.chatModel.call(new Prompt("Test"));
+
+		var usage = response.getMetadata().getUsage();
+		assertThat(usage.getPromptTokens()).isEqualTo(50 + 1000 + 200);
+		assertThat(usage.getCompletionTokens()).isEqualTo(20);
+		assertThat(usage.getTotalTokens()).isEqualTo(50 + 1000 + 200 + 20);
+		assertThat(usage.getCacheReadInputTokens()).isEqualTo(1000L);
+		assertThat(usage.getCacheWriteInputTokens()).isEqualTo(200L);
+	}
+
+	@Test
+	void streamingInputUsageIncludesCachedTokens() {
+		givenStream(List.of(messageStartEvent(), textStartEvent(0), textDeltaEvent("Hi", 0), contentBlockStopEvent(0),
+				messageDeltaEvent(StopReason.END_TURN, 1000L, 200L)));
+
+		List<ChatResponse> chunks = this.chatModel.stream(new Prompt("Test")).collectList().block();
+
+		var usage = chunks.get(chunks.size() - 1).getMetadata().getUsage();
+		assertThat(usage.getPromptTokens()).isEqualTo(10 + 1000 + 200);
+		assertThat(usage.getCompletionTokens()).isEqualTo(5);
+		assertThat(usage.getTotalTokens()).isEqualTo(10 + 1000 + 200 + 5);
+		assertThat(usage.getCacheReadInputTokens()).isEqualTo(1000L);
+		assertThat(usage.getCacheWriteInputTokens()).isEqualTo(200L);
+	}
+
+	@ParameterizedTest
+	@CsvSource(value = { "1000, 200, 1250", "1000, null, 1050", "null, 200, 250", "null, null, 50", "0, 0, 50" },
+			nullValues = "null")
+	void streamingUsageRetainsCacheTokensFromMessageStart(@Nullable Long cacheRead, @Nullable Long cacheWrite,
+			int expectedPromptTokens) {
+		givenStream(List.of(messageStartEvent(50L, cacheRead, cacheWrite), messageDeltaEvent(StopReason.END_TURN)));
+
+		ChatResponse response = this.chatModel.stream(new Prompt("Test")).blockLast();
+
+		assertThat(response).isNotNull();
+		var usage = response.getMetadata().getUsage();
+		assertThat(usage.getPromptTokens()).isEqualTo(expectedPromptTokens);
+		assertThat(usage.getCompletionTokens()).isEqualTo(5);
+		assertThat(usage.getTotalTokens()).isEqualTo(expectedPromptTokens + 5);
+		assertThat(usage.getCacheReadInputTokens()).isEqualTo(cacheRead);
+		assertThat(usage.getCacheWriteInputTokens()).isEqualTo(cacheWrite);
+	}
+
+	@ParameterizedTest
+	@CsvSource(value = { "50, 1000, 200, 1250, 1000, 200", "70, 1500, 300, 1870, 1500, 300",
+			"70, null, null, 1270, 1000, 200", "null, 0, null, 250, 0, 200", "null, null, 0, 1050, 1000, 0",
+			"0, 0, 0, 0, 0, 0" }, nullValues = "null")
+	void streamingUsageReplacesPresentCumulativeCounts(@Nullable Long inputTokens, @Nullable Long cacheRead,
+			@Nullable Long cacheWrite, int expectedPromptTokens, long expectedCacheRead, long expectedCacheWrite) {
+		givenStream(List.of(messageStartEvent(50L, 1000L, 200L),
+				messageDeltaEvent(StopReason.END_TURN, inputTokens, cacheRead, cacheWrite)));
+
+		ChatResponse response = this.chatModel.stream(new Prompt("Test")).blockLast();
+
+		assertThat(response).isNotNull();
+		var usage = response.getMetadata().getUsage();
+		assertThat(usage.getPromptTokens()).isEqualTo(expectedPromptTokens);
+		assertThat(usage.getCompletionTokens()).isEqualTo(5);
+		assertThat(usage.getTotalTokens()).isEqualTo(expectedPromptTokens + 5);
+		assertThat(usage.getCacheReadInputTokens()).isEqualTo(expectedCacheRead);
+		assertThat(usage.getCacheWriteInputTokens()).isEqualTo(expectedCacheWrite);
+	}
+
+	@Test
+	void streamingUsageRetainsCountsFromPreviousDelta() {
+		givenStream(List.of(messageStartEvent(50L, 1000L, 200L), messageDeltaEvent(null, 70L, 1500L, 300L),
+				messageDeltaEvent(StopReason.END_TURN)));
+
+		ChatResponse response = this.chatModel.stream(new Prompt("Test")).blockLast();
+
+		assertThat(response).isNotNull();
+		var usage = response.getMetadata().getUsage();
+		assertThat(usage.getPromptTokens()).isEqualTo(1870);
+		assertThat(usage.getCompletionTokens()).isEqualTo(5);
+		assertThat(usage.getTotalTokens()).isEqualTo(1875);
+		assertThat(usage.getCacheReadInputTokens()).isEqualTo(1500L);
+		assertThat(usage.getCacheWriteInputTokens()).isEqualTo(300L);
 	}
 
 	@Test
@@ -1407,8 +1497,15 @@ class AnthropicChatModelTests {
 	}
 
 	private RawMessageStreamEvent messageStartEvent() {
+		return messageStartEvent(10L, null, null);
+	}
+
+	private RawMessageStreamEvent messageStartEvent(long inputTokens, @Nullable Long cacheRead,
+			@Nullable Long cacheWrite) {
 		Usage usage = mock(Usage.class);
-		given(usage.inputTokens()).willReturn(10L);
+		given(usage.inputTokens()).willReturn(inputTokens);
+		given(usage.cacheReadInputTokens()).willReturn(Optional.ofNullable(cacheRead));
+		given(usage.cacheCreationInputTokens()).willReturn(Optional.ofNullable(cacheWrite));
 
 		Message message = mock(Message.class);
 		given(message.id()).willReturn("msg_stream");
@@ -1475,17 +1572,27 @@ class AnthropicChatModelTests {
 	}
 
 	private RawMessageStreamEvent messageDeltaEvent(StopReason stopReason) {
+		return messageDeltaEvent(stopReason, null, null);
+	}
+
+	private RawMessageStreamEvent messageDeltaEvent(StopReason stopReason, @Nullable Long cacheRead,
+			@Nullable Long cacheWrite) {
+		return messageDeltaEvent(stopReason, null, cacheRead, cacheWrite);
+	}
+
+	private RawMessageStreamEvent messageDeltaEvent(@Nullable StopReason stopReason, @Nullable Long inputTokens,
+			@Nullable Long cacheRead, @Nullable Long cacheWrite) {
 		return RawMessageStreamEvent.ofMessageDelta(RawMessageDeltaEvent.builder()
 			.delta(RawMessageDeltaEvent.Delta.builder()
 				.container(Optional.empty())
 				.stopDetails(Optional.empty())
-				.stopReason(stopReason)
+				.stopReason(Optional.ofNullable(stopReason))
 				.stopSequence(Optional.empty())
 				.build())
 			.usage(MessageDeltaUsage.builder()
-				.cacheCreationInputTokens(Optional.empty())
-				.cacheReadInputTokens(Optional.empty())
-				.inputTokens(Optional.empty())
+				.cacheCreationInputTokens(Optional.ofNullable(cacheWrite))
+				.cacheReadInputTokens(Optional.ofNullable(cacheRead))
+				.inputTokens(Optional.ofNullable(inputTokens))
 				.outputTokens(5L)
 				.outputTokensDetails(Optional.empty())
 				.serverToolUse(Optional.empty())

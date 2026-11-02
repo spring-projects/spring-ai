@@ -809,11 +809,13 @@ public class BedrockProxyChatModel implements ChatModel {
 					ChatGenerationMetadata.builder().finishReason(response.stopReasonAsString()).build()));
 		}
 
-		Integer promptTokens = response.usage().inputTokens();
+		Integer inputTokens = response.usage().inputTokens();
 		Integer generationTokens = response.usage().outputTokens();
 		int totalTokens = response.usage().totalTokens();
 		Integer cacheReadInputTokens = response.usage().cacheReadInputTokens();
 		Integer cacheWriteInputTokens = response.usage().cacheWriteInputTokens();
+		Integer promptTokens = inputTokens + (cacheReadInputTokens != null ? cacheReadInputTokens : 0)
+				+ (cacheWriteInputTokens != null ? cacheWriteInputTokens : 0);
 
 		if (perviousChatResponse != null && perviousChatResponse.getMetadata() != null
 				&& perviousChatResponse.getMetadata().getUsage() != null) {
@@ -827,6 +829,9 @@ public class BedrockProxyChatModel implements ChatModel {
 				TokenUsage previousTokenUsage = (TokenUsage) perviousChatResponse.getMetadata()
 					.getUsage()
 					.getNativeUsage();
+				if (previousTokenUsage.inputTokens() != null) {
+					inputTokens += previousTokenUsage.inputTokens();
+				}
 				if (cacheReadInputTokens == null) {
 					cacheReadInputTokens = previousTokenUsage.cacheReadInputTokens();
 				}
@@ -844,7 +849,7 @@ public class BedrockProxyChatModel implements ChatModel {
 
 		// Create native TokenUsage with cache metrics
 		TokenUsage nativeTokenUsage = TokenUsage.builder()
-			.inputTokens(promptTokens)
+			.inputTokens(inputTokens)
 			.outputTokens(generationTokens)
 			.totalTokens(totalTokens)
 			.cacheReadInputTokens(cacheReadInputTokens)

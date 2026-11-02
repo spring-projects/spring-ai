@@ -350,6 +350,17 @@ Nothing changes at runtime: the deprecated types keep working until 3.0.0.
 * `getConversationId(context)` moves from `BaseChatMemoryAdvisor` up to `MemoryAdvisor`; `BaseChatMemoryAdvisor` inherits it, so its implementations need no change.
 * `VectorStoreChatMemoryAdvisor` is not deprecated.
 
+[[upgrading-to-2-0-3]]
+== Upgrading to 2.0.3
+
+=== Prompt Token Usage with Caching
+
+Anthropic and Bedrock Converse now include cache read and cache write tokens in `Usage.getPromptTokens()` and the `gen_ai.usage.input_tokens` observation attribute, for both synchronous and streaming responses.
+Previously, these values counted only uncached input tokens.
+Anthropic's `Usage.getTotalTokens()` also includes the cached input tokens; Bedrock's provider-reported total already includes them.
+The separate cache read and cache write usage fields remain available.
+If your application manually adds cache tokens to the prompt token count to compensate for the previous behavior, remove that adjustment to avoid counting them twice.
+
 [[upgrading-to-2-0-2]]
 == Upgrading to 2.0.2
 

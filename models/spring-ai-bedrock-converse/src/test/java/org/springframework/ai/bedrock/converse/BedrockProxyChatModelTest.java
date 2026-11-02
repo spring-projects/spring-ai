@@ -27,6 +27,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
@@ -141,6 +143,40 @@ class BedrockProxyChatModelTest {
 	private BedrockProxyChatModel newModel() {
 		return new BedrockProxyChatModel(this.syncClient, this.asyncClient, BedrockChatOptions.builder().build(),
 				ObservationRegistry.NOOP, ToolCallingManager.builder().build());
+	}
+
+	@ParameterizedTest
+	@CsvSource(value = { "1000, 200, 1250", "null, null, 50", "1000, null, 1050", "null, 200, 250" },
+			nullValues = "null")
+	void streamingPromptTokensIncludeCachedTokens(Integer cacheRead, Integer cacheWrite, int expectedPromptTokens) {
+		TokenUsage tokenUsage = TokenUsage.builder()
+			.inputTokens(50)
+			.outputTokens(20)
+			.totalTokens(expectedPromptTokens + 20)
+			.cacheReadInputTokens(cacheRead)
+			.cacheWriteInputTokens(cacheWrite)
+			.build();
+		given(this.asyncClient.converseStream(any(ConverseStreamRequest.class),
+				any(ConverseStreamResponseHandler.class)))
+			.willAnswer(invocation -> {
+				ConverseStreamResponseHandler handler = invocation.getArgument(1);
+				handler.onEventStream(SdkPublisher
+					.adapt(Flux.just(ConverseStreamOutput.messageStopBuilder().stopReason(StopReason.END_TURN).build(),
+							ConverseStreamOutput.metadataBuilder().usage(tokenUsage).build())));
+				handler.complete();
+				return CompletableFuture.completedFuture(null);
+			});
+
+		ChatResponse response = newModel().stream(new Prompt("Weather in Paris?")).blockLast();
+
+		assertThat(response).isNotNull();
+		var usage = response.getMetadata().getUsage();
+		assertThat(usage.getPromptTokens()).isEqualTo(expectedPromptTokens);
+		assertThat(usage.getCompletionTokens()).isEqualTo(20);
+		assertThat(usage.getTotalTokens()).isEqualTo(expectedPromptTokens + 20);
+		assertThat(usage.getCacheReadInputTokens()).isEqualTo(cacheRead != null ? cacheRead.longValue() : null);
+		assertThat(usage.getCacheWriteInputTokens()).isEqualTo(cacheWrite != null ? cacheWrite.longValue() : null);
+		assertThat(((TokenUsage) usage.getNativeUsage()).inputTokens()).isEqualTo(50);
 	}
 
 	@Test

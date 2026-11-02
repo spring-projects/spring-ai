@@ -53,6 +53,7 @@ import com.anthropic.models.messages.DocumentBlockParam;
 import com.anthropic.models.messages.ImageBlockParam;
 import com.anthropic.models.messages.Message;
 import com.anthropic.models.messages.MessageCreateParams;
+import com.anthropic.models.messages.MessageDeltaUsage;
 import com.anthropic.models.messages.RawMessageStreamEvent;
 import com.anthropic.models.messages.RedactedThinkingBlock;
 import com.anthropic.models.messages.RedactedThinkingBlockParam;
@@ -455,11 +456,11 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			@Nullable ChatResponse previousChatResponse, StreamingState streamingState) {
 
 		// -- Event: message_start --
-		// Captures message ID, model, and input tokens from the first event.
+		// Captures message ID, model, and input usage from the first event.
 		if (event.messageStart().isPresent()) {
 			var startEvent = event.messageStart().get();
 			var message = startEvent.message();
-			streamingState.setMessageInfo(message.id(), message.model().asString(), message.usage().inputTokens());
+			streamingState.setMessageInfo(message.id(), message.model().asString(), message.usage());
 			return null;
 		}
 
@@ -586,15 +587,16 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			messageBuilder.part(TextPart.of(""));
 			Generation generation = new Generation(messageBuilder.build(), metadata);
 
-			// Combine input tokens from message_start with output tokens from
-			// message_delta
+			// Usage counts are cumulative. Retain input counts when a delta omits them.
+			streamingState.updateUsage(deltaEvent.usage());
 			long inputTokens = streamingState.getInputTokens();
 			long outputTokens = deltaEvent.usage().outputTokens();
-			Long cacheRead = deltaEvent.usage().cacheReadInputTokens().orElse(null);
-			Long cacheWrite = deltaEvent.usage().cacheCreationInputTokens().orElse(null);
-			Usage usage = new DefaultUsage(Integer.valueOf(Math.toIntExact(inputTokens)),
+			Long cacheRead = streamingState.getCacheReadInputTokens();
+			Long cacheWrite = streamingState.getCacheCreationInputTokens();
+			long promptTokens = promptTokens(inputTokens, cacheRead, cacheWrite);
+			Usage usage = new DefaultUsage(Integer.valueOf(Math.toIntExact(promptTokens)),
 					Integer.valueOf(Math.toIntExact(outputTokens)),
-					Integer.valueOf(Math.toIntExact(inputTokens + outputTokens)), deltaEvent.usage(), cacheRead,
+					Integer.valueOf(Math.toIntExact(promptTokens + outputTokens)), deltaEvent.usage(), cacheRead,
 					cacheWrite);
 
 			Usage accumulatedUsage = previousChatResponse != null
@@ -1434,9 +1436,25 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		long outputTokens = usage.outputTokens();
 		Long cacheRead = usage.cacheReadInputTokens().orElse(null);
 		Long cacheWrite = usage.cacheCreationInputTokens().orElse(null);
-		return new DefaultUsage(Integer.valueOf(Math.toIntExact(inputTokens)),
+		long promptTokens = promptTokens(inputTokens, cacheRead, cacheWrite);
+		return new DefaultUsage(Integer.valueOf(Math.toIntExact(promptTokens)),
 				Integer.valueOf(Math.toIntExact(outputTokens)),
-				Integer.valueOf(Math.toIntExact(inputTokens + outputTokens)), usage, cacheRead, cacheWrite);
+				Integer.valueOf(Math.toIntExact(promptTokens + outputTokens)), usage, cacheRead, cacheWrite);
+	}
+
+	/**
+	 * Anthropic reports {@code input_tokens} excluding the tokens read from or written to
+	 * the prompt cache, so the total input is the sum of the three.
+	 * @param inputTokens the uncached input tokens
+	 * @param cacheRead the tokens read from the cache, if reported
+	 * @param cacheWrite the tokens written to the cache, if reported
+	 * @return the total input tokens
+	 * @see <a href=
+	 * "https://docs.claude.com/en/docs/build-with-claude/prompt-caching#tracking-cache-performance">Tracking
+	 * cache performance</a>
+	 */
+	private static long promptTokens(long inputTokens, @Nullable Long cacheRead, @Nullable Long cacheWrite) {
+		return inputTokens + (cacheRead != null ? cacheRead : 0L) + (cacheWrite != null ? cacheWrite : 0L);
 	}
 
 	private @Nullable Citation convertTextCitation(TextCitation textCitation) {
@@ -1911,6 +1929,10 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 		private final AtomicReference<Long> inputTokens = new AtomicReference<>(0L);
 
+		private final AtomicReference<@Nullable Long> cacheReadInputTokens = new AtomicReference<>();
+
+		private final AtomicReference<@Nullable Long> cacheCreationInputTokens = new AtomicReference<>();
+
 		// Tool use blocks being streamed, keyed by content block index
 		private final Map<Integer, InFlightToolUse> inFlightToolUses = new LinkedHashMap<>();
 
@@ -1927,10 +1949,18 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 		private final AtomicReference<RateLimit> rateLimit = new AtomicReference<>(new EmptyRateLimit());
 
-		void setMessageInfo(String id, String modelName, long tokens) {
+		void setMessageInfo(String id, String modelName, com.anthropic.models.messages.Usage usage) {
 			this.messageId.set(id);
 			this.model.set(modelName);
-			this.inputTokens.set(tokens);
+			this.inputTokens.set(usage.inputTokens());
+			this.cacheReadInputTokens.set(usage.cacheReadInputTokens().orElse(null));
+			this.cacheCreationInputTokens.set(usage.cacheCreationInputTokens().orElse(null));
+		}
+
+		void updateUsage(MessageDeltaUsage usage) {
+			usage.inputTokens().ifPresent(this.inputTokens::set);
+			usage.cacheReadInputTokens().ifPresent(this.cacheReadInputTokens::set);
+			usage.cacheCreationInputTokens().ifPresent(this.cacheCreationInputTokens::set);
 		}
 
 		String getMessageId() {
@@ -1943,6 +1973,14 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 		long getInputTokens() {
 			return this.inputTokens.get();
+		}
+
+		@Nullable Long getCacheReadInputTokens() {
+			return this.cacheReadInputTokens.get();
+		}
+
+		@Nullable Long getCacheCreationInputTokens() {
+			return this.cacheCreationInputTokens.get();
 		}
 
 		void setRateLimit(RateLimit rateLimit) {
