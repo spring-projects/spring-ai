@@ -17,12 +17,14 @@
 package org.springframework.ai.mcp.modern;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.modern.server.McpRequestContext;
@@ -35,11 +37,13 @@ import org.springframework.util.Assert;
  * it.
  * <p>
  * Unless an application registers its own {@code McpTransportContextExtractor}, the
- * WebMvc and WebFlux transports store the HTTP request headers under {@link #HEADERS}: a
- * map from lower-cased header name to its values, without the {@code Mcp-*} protocol
- * headers, which the request context exposes already. Repositories, visibility filters
- * and handlers read them through {@link #header(McpRequestContext, String)} and
- * {@link #headers(McpRequestContext)}.
+ * WebMvc and WebFlux transports store the HTTP request headers they are configured to
+ * keep under {@link #HEADERS}: a map from lower-cased header name to its values, without
+ * the {@code Mcp-*} protocol headers, which the request context exposes already. No
+ * header is kept unless it is named, so that credentials such as {@code Authorization} or
+ * {@code Cookie} do not reach handlers that have no use for them. Repositories,
+ * visibility filters and handlers read them through
+ * {@link #header(McpRequestContext, String)} and {@link #headers(McpRequestContext)}.
  *
  * @author Christian Tzolov
  * @since 2.1.0
@@ -58,8 +62,10 @@ public final class McpTransportContexts {
 	}
 
 	/**
-	 * Builds the default transport context from the request headers. Names are
-	 * lower-cased, {@code Mcp-*} headers are dropped.
+	 * Builds a transport context from every request header. Names are lower-cased,
+	 * {@code Mcp-*} headers are dropped. Meant for custom extractors: the auto-configured
+	 * ones store only the headers named in the configuration, see
+	 * {@link #fromHeaders(Collection, Function)}.
 	 * @param headers hands every header name with its values to the given consumer, the
 	 * shape of {@code HttpHeaders::forEach}
 	 */
@@ -78,6 +84,35 @@ public final class McpTransportContexts {
 			}
 		});
 		return McpTransportContext.create(Map.of(HEADERS, Map.copyOf(copy)));
+	}
+
+	/**
+	 * Builds a transport context from the named request headers only. Each name is looked
+	 * up as given, trimmed, and stored lower-cased; a name without a value is skipped.
+	 * Returns {@link McpTransportContext#EMPTY} when no name is given or none has a
+	 * value, so the context has the same shape whatever the configuration.
+	 * @param names the headers to store, matched case-insensitively by the lookup
+	 * @param lookup the values of one header, or {@code null} when the request has none,
+	 * the shape of {@code HttpHeaders::get}
+	 */
+	public static McpTransportContext fromHeaders(Collection<String> names,
+			Function<String, @Nullable List<String>> lookup) {
+		Assert.notNull(names, "names must not be null");
+		Assert.noNullElements(names, "names must not contain null");
+		Assert.notNull(lookup, "lookup must not be null");
+		Map<String, List<String>> copy = new LinkedHashMap<>();
+		for (String name : names) {
+			String trimmed = name.trim();
+			if (trimmed.isEmpty()) {
+				continue;
+			}
+			List<String> values = lookup.apply(trimmed);
+			if (values != null && !values.isEmpty()) {
+				copy.putIfAbsent(trimmed.toLowerCase(Locale.ROOT), List.copyOf(values));
+			}
+		}
+		return copy.isEmpty() ? McpTransportContext.EMPTY
+				: McpTransportContext.create(Map.of(HEADERS, Map.copyOf(copy)));
 	}
 
 	/**

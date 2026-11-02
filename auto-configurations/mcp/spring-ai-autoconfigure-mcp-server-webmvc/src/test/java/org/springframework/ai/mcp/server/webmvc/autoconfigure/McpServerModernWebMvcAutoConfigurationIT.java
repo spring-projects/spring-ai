@@ -76,7 +76,7 @@ class McpServerModernWebMvcAutoConfigurationIT {
 	}
 
 	@Test
-	void requestHeadersReachTheTransportContextByDefault() {
+	void noRequestHeaderReachesTheTransportContextByDefault() {
 		this.contextRunner.run(context -> {
 			Object extractor = ReflectionTestUtils.getField(context.getBean(WebMvcModernServerTransport.class),
 					"contextExtractor");
@@ -84,12 +84,30 @@ class McpServerModernWebMvcAutoConfigurationIT {
 
 			MockHttpServletRequest servletRequest = new MockHttpServletRequest("POST", "/mcp");
 			servletRequest.addHeader("X-Role", "admin");
-			servletRequest.addHeader("Mcp-Method", "tools/list");
 			McpTransportContext transportContext = ((HeaderTransportContextExtractor) extractor)
 				.extract(ServerRequest.create(servletRequest, List.of()));
-			assertThat(McpTransportContexts.header(transportContext, "x-role")).isEqualTo("admin");
-			assertThat(McpTransportContexts.headers(transportContext)).doesNotContainKey("mcp-method");
+			assertThat(transportContext).isSameAs(McpTransportContext.EMPTY);
+			assertThat(McpTransportContexts.headers(transportContext)).isEmpty();
 		});
+	}
+
+	@Test
+	void configuredRequestHeadersReachTheTransportContext() {
+		this.contextRunner.withPropertyValues("spring.ai.mcp.server.modern.context-headers=X-Role,x-tenant")
+			.run(context -> {
+				Object extractor = ReflectionTestUtils.getField(context.getBean(WebMvcModernServerTransport.class),
+						"contextExtractor");
+
+				MockHttpServletRequest servletRequest = new MockHttpServletRequest("POST", "/mcp");
+				servletRequest.addHeader("x-role", "admin");
+				servletRequest.addHeader("X-Tenant", "acme");
+				servletRequest.addHeader("Authorization", "Bearer t");
+				servletRequest.addHeader("Mcp-Method", "tools/list");
+				McpTransportContext transportContext = ((HeaderTransportContextExtractor) extractor)
+					.extract(ServerRequest.create(servletRequest, List.of()));
+				assertThat(McpTransportContexts.headers(transportContext)).containsOnlyKeys("x-role", "x-tenant");
+				assertThat(McpTransportContexts.header(transportContext, "X-Role")).isEqualTo("admin");
+			});
 	}
 
 	@Test

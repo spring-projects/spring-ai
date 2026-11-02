@@ -91,6 +91,14 @@ public class McpServerModernProperties {
 	private DataSize maxRequestSize = DataSize.ofMegabytes(16);
 
 	/**
+	 * Names of the HTTP request headers the transport copies into the transport context
+	 * that repositories and handlers see, matched case-insensitively. Empty, the default,
+	 * stores no header at all. Name only the headers handlers need; credentials such as
+	 * {@code Authorization} or {@code Cookie} should stay out.
+	 */
+	private List<String> contextHeaders = new ArrayList<>();
+
+	/**
 	 * Secret used to seal the multi round-trip {@code requestState}. Must be shared by
 	 * every instance behind a load balancer. When unset a random per-instance key is used
 	 * and retries must reach the same instance.
@@ -193,6 +201,14 @@ public class McpServerModernProperties {
 
 	public void setMaxRequestSize(DataSize maxRequestSize) {
 		this.maxRequestSize = maxRequestSize;
+	}
+
+	public List<String> getContextHeaders() {
+		return this.contextHeaders;
+	}
+
+	public void setContextHeaders(List<String> contextHeaders) {
+		this.contextHeaders = contextHeaders;
 	}
 
 	public @Nullable String getRequestStateSecret() {

@@ -16,18 +16,25 @@
 
 package org.springframework.ai.mcp.server.webflux.autoconfigure;
 
+import java.util.Collection;
+import java.util.List;
+
 import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.server.McpTransportContextExtractor;
 
 import org.springframework.ai.mcp.modern.McpTransportContexts;
+import org.springframework.util.Assert;
 import org.springframework.web.reactive.function.server.ServerRequest;
 
 /**
  * The default {@link McpTransportContextExtractor} of the auto-configured modern WebFlux
- * transport: stores the request headers under {@link McpTransportContexts#HEADERS},
- * lower-cased and without the {@code Mcp-*} protocol headers, so that repositories,
- * visibility filters and tool handlers can read them through
- * {@link McpTransportContexts}. Define a
+ * transport: stores the request headers named in
+ * {@code spring.ai.mcp.server.modern.context-headers} under
+ * {@link McpTransportContexts#HEADERS}, lower-cased and without the {@code Mcp-*}
+ * protocol headers, so that repositories, visibility filters and tool handlers can read
+ * them through {@link McpTransportContexts}. With no names configured the transport
+ * context is empty, so credentials such as {@code Authorization} or {@code Cookie} never
+ * reach a handler unless the application asks for them. Define a
  * {@code McpTransportContextExtractor<ServerRequest>} bean to replace it.
  *
  * @author Christian Tzolov
@@ -35,9 +42,21 @@ import org.springframework.web.reactive.function.server.ServerRequest;
  */
 public final class HeaderTransportContextExtractor implements McpTransportContextExtractor<ServerRequest> {
 
+	private final List<String> headerNames;
+
+	/**
+	 * Creates an extractor that keeps the given headers, matched case-insensitively.
+	 * @param headerNames the names of the headers to store; empty stores none
+	 */
+	public HeaderTransportContextExtractor(Collection<String> headerNames) {
+		Assert.notNull(headerNames, "headerNames must not be null");
+		Assert.noNullElements(headerNames, "headerNames must not contain null");
+		this.headerNames = List.copyOf(headerNames);
+	}
+
 	@Override
 	public McpTransportContext extract(ServerRequest request) {
-		return McpTransportContexts.fromHeaders(request.headers().asHttpHeaders()::forEach);
+		return McpTransportContexts.fromHeaders(this.headerNames, request.headers().asHttpHeaders()::get);
 	}
 
 }

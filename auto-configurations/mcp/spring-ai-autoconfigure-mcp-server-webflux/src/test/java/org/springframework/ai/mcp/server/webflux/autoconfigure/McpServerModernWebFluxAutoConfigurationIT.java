@@ -85,20 +85,36 @@ class McpServerModernWebFluxAutoConfigurationIT {
 	}
 
 	@Test
-	void requestHeadersReachTheTransportContextByDefault() {
+	void noRequestHeaderReachesTheTransportContextByDefault() {
 		this.contextRunner.run(context -> {
 			Object extractor = ReflectionTestUtils.getField(context.getBean(WebFluxMcpTransport.class),
 					"contextExtractor");
 			assertThat(extractor).isInstanceOf(HeaderTransportContextExtractor.class);
 
-			ServerRequest request = MockServerRequest.builder()
-				.header("X-Role", "admin")
-				.header("Mcp-Method", "tools/list")
-				.build();
+			ServerRequest request = MockServerRequest.builder().header("X-Role", "admin").build();
 			McpTransportContext transportContext = ((HeaderTransportContextExtractor) extractor).extract(request);
-			assertThat(McpTransportContexts.header(transportContext, "x-role")).isEqualTo("admin");
-			assertThat(McpTransportContexts.headers(transportContext)).doesNotContainKey("mcp-method");
+			assertThat(transportContext).isSameAs(McpTransportContext.EMPTY);
+			assertThat(McpTransportContexts.headers(transportContext)).isEmpty();
 		});
+	}
+
+	@Test
+	void configuredRequestHeadersReachTheTransportContext() {
+		this.contextRunner.withPropertyValues("spring.ai.mcp.server.modern.context-headers=X-Role,x-tenant")
+			.run(context -> {
+				Object extractor = ReflectionTestUtils.getField(context.getBean(WebFluxMcpTransport.class),
+						"contextExtractor");
+
+				ServerRequest request = MockServerRequest.builder()
+					.header("x-role", "admin")
+					.header("X-Tenant", "acme")
+					.header("Authorization", "Bearer t")
+					.header("Mcp-Method", "tools/list")
+					.build();
+				McpTransportContext transportContext = ((HeaderTransportContextExtractor) extractor).extract(request);
+				assertThat(McpTransportContexts.headers(transportContext)).containsOnlyKeys("x-role", "x-tenant");
+				assertThat(McpTransportContexts.header(transportContext, "X-Role")).isEqualTo("admin");
+			});
 	}
 
 	@Test

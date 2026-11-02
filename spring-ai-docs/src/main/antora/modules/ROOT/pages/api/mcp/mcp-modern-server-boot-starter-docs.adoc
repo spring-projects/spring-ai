@@ -114,6 +114,10 @@ The following properties are specific to the modern server.
 |Maximum accepted request body size.
 |`16MB`
 
+|`spring.ai.mcp.server.modern.context-headers`
+|Names of the HTTP request headers copied into the transport context that repositories and handlers see, matched case-insensitively. Empty stores no header.
+|empty
+
 |`spring.ai.mcp.server.modern.request-state-secret`
 |The secret used to seal the multi round-trip `requestState`. Set the same value on every instance behind a load balancer. When unset, a random per-instance key is used and retries must reach the same instance.
 |-
@@ -323,7 +327,9 @@ void addLater() {
 To show each caller a different subset without giving up the annotated catalogue, define a repository bean of your own that builds the in-memory repository from the same list beans the auto-configuration would use, and wraps it.
 The auto-configured in-memory repository backs off because a `McpSyncToolRepository` bean exists.
 A wrapper that filters `list` and returns `null` from `find` hides a primitive completely: it is not listed, and a call, read or get for it answers `Unknown tool`, `Unknown resource` or `Unknown prompt` (`-32602`), as for a primitive that does not exist.
-The `McpRequestContext` the wrapper receives carries the HTTP request headers in its transport context by default (see <<Customizing the Server and the Transport>>); `McpTransportContexts.header(ctx, name)` reads one case-insensitively.
+The `McpRequestContext` the wrapper receives carries the request headers named in `spring.ai.mcp.server.modern.context-headers` in its transport context (see <<Customizing the Server and the Transport>>); `McpTransportContexts.header(ctx, name)` reads one case-insensitively.
+The example below needs `spring.ai.mcp.server.modern.context-headers=X-Role`.
+A header is only as trustworthy as whatever sets it: a client can send any `X-Role` it likes, so a filter like this one belongs behind a gateway or a security filter that overwrites the header after authenticating the caller.
 
 [source,java]
 ----
@@ -405,8 +411,10 @@ For resources, `SyncResourceRegistration.of(resource, requiredCapabilities, hand
 * A `McpModernServerCustomizer` bean receives the SDK `McpServer.Builder` before the server is built. Use it to add extension features or to replace the request state codec.
 * A `RequestStateCodec` bean replaces the HMAC codec configured from the properties.
 * A `ServerHttpHeaderValidator` bean validates `Origin` and `Host` on every request. The SDK's `DefaultServerTransportSecurityValidator` implements it.
-* By default the transport stores the HTTP request headers in the `McpTransportContext` handlers see, under `McpTransportContexts.HEADERS`, with lower-cased names and without the `Mcp-*` protocol headers; `Authorization` and `Cookie` are included, so register your own extractor if handlers must not see them.
-A `McpTransportContextExtractor<ServerRequest>` bean replaces that default and derives the context from the incoming request itself.
+* The transport stores the HTTP request headers named in `spring.ai.mcp.server.modern.context-headers` in the `McpTransportContext` handlers see, under `McpTransportContexts.HEADERS`, with lower-cased names and without the `Mcp-*` protocol headers.
+Nothing is stored by default, so credentials such as `Authorization` or `Cookie` do not reach handlers, repositories or `ToolCallback`s unless the application names them.
+A `McpTransportContextExtractor<ServerRequest>` bean replaces that default and derives the context from the incoming request itself; that is the place to resolve the caller once, for example from `ServerRequest.principal()`, and store a principal instead of raw headers.
+To bind the sealed `requestState` to that principal too, define a `RequestStateCodec` bean built with `HmacRequestStateCodec.builder().principalExtractor(...)`; the auto-configured codec binds the state to the method and primitive only.
 * The transports are plain `WebMvcModernServerTransport` and `WebFluxMcpTransport` beans and can be built manually from a `McpRequestManager` when more control is needed.
 
 == Migration Notes

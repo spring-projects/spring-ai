@@ -16,13 +16,17 @@
 
 package org.springframework.ai.mcp.modern;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.function.Function;
 
 import io.modelcontextprotocol.common.McpTransportContext;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
 /**
  * @author Christian Tzolov
@@ -43,6 +47,31 @@ class McpTransportContextsTests {
 		assertThat(McpTransportContexts.header(context, "X-ROLE")).isEqualTo("admin");
 		assertThat(McpTransportContexts.header(context, "mcp-method")).isNull();
 		assertThat(McpTransportContexts.header(context, "missing")).isNull();
+	}
+
+	@Test
+	void onlyNamedHeadersAreStored() {
+		Map<String, List<String>> request = Map.of("x-role", List.of("admin"), "authorization", List.of("Bearer t"),
+				"mcp-session-id", List.of("s1"));
+		Function<String, List<String>> lookup = name -> request.get(name.toLowerCase(Locale.ROOT));
+
+		McpTransportContext context = McpTransportContexts
+			.fromHeaders(List.of(" X-Role ", "Mcp-Session-Id", "x-missing", ""), lookup);
+
+		assertThat(McpTransportContexts.headers(context)).containsOnlyKeys("x-role", "mcp-session-id");
+		assertThat(McpTransportContexts.header(context, "X-ROLE")).isEqualTo("admin");
+		assertThat(McpTransportContexts.header(context, "authorization")).isNull();
+	}
+
+	@Test
+	void namedHeadersWithoutAMatchGiveTheEmptyContext() {
+		Function<String, List<String>> lookup = name -> "x-role".equalsIgnoreCase(name) ? List.of("admin") : null;
+
+		assertThat(McpTransportContexts.fromHeaders(List.of(), lookup)).isSameAs(McpTransportContext.EMPTY);
+		assertThat(McpTransportContexts.fromHeaders(List.of("x-missing"), lookup)).isSameAs(McpTransportContext.EMPTY);
+		assertThatIllegalArgumentException()
+			.isThrownBy(() -> McpTransportContexts.fromHeaders(Arrays.asList("x-role", null), lookup))
+			.withMessageContaining("names must not contain null");
 	}
 
 	@Test
