@@ -47,9 +47,8 @@ import org.springframework.web.reactive.function.server.ServerRequest;
  * <p>
  * A {@link ServerHttpHeaderValidator} bean, when present, validates Origin and Host
  * headers. A {@code McpTransportContextExtractor<ServerRequest>} bean, when present,
- * derives the transport context from the request; otherwise
- * {@link HeaderTransportContextExtractor} stores the request headers named in
- * {@code spring.ai.mcp.server.modern.context-headers}, none by default.
+ * derives the transport context from the request; otherwise the transport context is
+ * empty.
  *
  * @author Christian Tzolov
  * @since 2.1.0
@@ -74,8 +73,7 @@ public class McpServerModernWebFluxAutoConfiguration {
 			.keepAliveInterval(modernProperties.effectiveKeepAliveInterval())
 			.maxRequestSize((int) Math.min(Integer.MAX_VALUE, modernProperties.getMaxRequestSize().toBytes()));
 		headerValidator.ifAvailable(builder::httpHeaderValidator);
-		builder.contextExtractor(contextExtractor
-			.getIfAvailable(() -> new HeaderTransportContextExtractor(modernProperties.getContextHeaders())));
+		contextExtractor.ifAvailable(builder::contextExtractor);
 		return builder.build();
 	}
 

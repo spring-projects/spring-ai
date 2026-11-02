@@ -21,10 +21,10 @@ import java.io.UncheckedIOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.json.McpJsonDefaults;
@@ -38,9 +38,11 @@ import io.modelcontextprotocol.modern.JsonRpc.JSONRPCResponse.JSONRPCError;
 import io.modelcontextprotocol.modern.McpSchema;
 import io.modelcontextprotocol.modern.McpSchema.ErrorCodes;
 import io.modelcontextprotocol.modern.McpSchema.MetaKeys;
+import io.modelcontextprotocol.modern.server.McpParamHeaders;
 import io.modelcontextprotocol.modern.server.McpRequestManager;
 import io.modelcontextprotocol.modern.server.McpServer;
 import io.modelcontextprotocol.modern.server.McpTransportResponse;
+import io.modelcontextprotocol.modern.server.transport.McpHeaderDecoder;
 import io.modelcontextprotocol.server.McpTransportContextExtractor;
 import io.modelcontextprotocol.server.transport.DefaultServerTransportSecurityValidator;
 import io.modelcontextprotocol.server.transport.HeaderAccessor;
@@ -59,6 +61,7 @@ import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.InvalidMediaTypeException;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.reactive.function.BodyExtractors;
@@ -185,7 +188,14 @@ public final class WebFluxMcpTransport {
 			String message = ex.getMessage();
 			return ServerResponse.status(ex.getStatusCode()).bodyValue(message != null ? message : "");
 		}
-		if (!isJsonContentType(request)) {
+		Optional<MediaType> contentType;
+		try {
+			contentType = request.headers().contentType();
+		}
+		catch (InvalidMediaTypeException ex) {
+			contentType = Optional.empty();
+		}
+		if (!isJsonContentType(contentType)) {
 			return ServerResponse.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
 				.bodyValue("Unsupported Media Type: Content-Type must be application/json");
 		}
@@ -194,7 +204,7 @@ public final class WebFluxMcpTransport {
 		}
 
 		McpTransportContext transportContext = this.contextExtractor.extract(request);
-		Charset charset = request.headers().contentType().map(MediaType::getCharset).orElse(StandardCharsets.UTF_8);
+		Charset charset = contentType.map(MediaType::getCharset).orElse(StandardCharsets.UTF_8);
 
 		// Bodies without a Content-Length are only capped while they are read.
 		return DataBufferUtils.join(request.body(BodyExtractors.toDataBuffers()), this.maxRequestSize)
@@ -234,9 +244,18 @@ public final class WebFluxMcpTransport {
 					new JSONRPCError(ErrorCodes.HEADER_MISMATCH, headerMismatch)));
 		}
 
+		McpTransportContext requestContext = transportContext;
+		if (McpSchema.METHOD_TOOLS_CALL.equals(jsonRpcRequest.method())) {
+			// The decoded Mcp-Param-* headers, which the SDK tools feature validates
+			// against
+			// the arguments. Added after the user's extractor ran, so this entry always
+			// wins.
+			requestContext = transportContext.putAll(Map.of(McpParamHeaders.TRANSPORT_CONTEXT_KEY,
+					McpHeaderDecoder.paramHeaders(headerAccessor(request))));
+		}
 		// Never handleBlocking: this thread may be an event loop, so sync user code has
 		// to run elsewhere.
-		return this.requestManager.handle(transportContext, jsonRpcRequest).flatMap(this::toServerResponse);
+		return this.requestManager.handle(requestContext, jsonRpcRequest).flatMap(this::toServerResponse);
 	}
 
 	private Mono<ServerResponse> toServerResponse(McpTransportResponse response) {
@@ -347,9 +366,11 @@ public final class WebFluxMcpTransport {
 		if (nameHeader == null) {
 			return "Missing required header: Mcp-Name";
 		}
-		String decoded = decodeMcpNameHeader(nameHeader);
+		// The SDK decoder, so that the Spring transports accept and reject exactly the
+		// values the SDK transports do.
+		String decoded = McpHeaderDecoder.decodeValue(nameHeader);
 		if (decoded == null) {
-			return "Mcp-Name header has a malformed Base64 value";
+			return "Mcp-Name header has a malformed value";
 		}
 		if (!expectedName.equals(decoded)) {
 			return "Mcp-Name header does not match request name/uri";
@@ -365,22 +386,8 @@ public final class WebFluxMcpTransport {
 		return null;
 	}
 
-	private static @Nullable String decodeMcpNameHeader(String value) {
-		if (value.startsWith("=?base64?") && value.endsWith("?=")) {
-			String base64 = value.substring("=?base64?".length(), value.length() - "?=".length());
-			try {
-				return new String(Base64.getDecoder().decode(base64), StandardCharsets.UTF_8);
-			}
-			catch (IllegalArgumentException ex) {
-				return null;
-			}
-		}
-		return value;
-	}
-
-	private static boolean isJsonContentType(ServerRequest request) {
-		return request.headers()
-			.contentType()
+	private static boolean isJsonContentType(Optional<MediaType> contentType) {
+		return contentType
 			.map(type -> type.isCompatibleWith(MediaType.APPLICATION_JSON) || type.getSubtype().endsWith("+json"))
 			.orElse(false);
 	}

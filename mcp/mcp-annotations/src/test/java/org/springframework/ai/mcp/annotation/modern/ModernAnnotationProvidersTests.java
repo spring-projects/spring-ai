@@ -685,7 +685,7 @@ class ModernAnnotationProvidersTests {
 		assertThat(tool.icons().get(0).theme()).isEqualTo("dark");
 		Map<String, Object> tenant = (Map<String, Object>) ((Map<String, Object>) tool.inputSchema().get("properties"))
 			.get("tenant");
-		assertThat(tenant.get("x-mcp-header")).isEqualTo("Mcp-Param-tenant");
+		assertThat(tenant.get("x-mcp-header")).isEqualTo("tenant");
 		var resource = SyncMcpAnnotationProviders.modernResources(List.of(bean)).get(0).resource();
 		assertThat(resource.size()).isEqualTo(42L);
 		assertThat(resource.icons()).hasSize(1);
@@ -715,7 +715,7 @@ class ModernAnnotationProvidersTests {
 			.inputSchema()
 			.get("properties")).get("level");
 		assertThat(level.get("type")).isEqualTo("string");
-		assertThat(level.get("x-mcp-header")).isEqualTo("Mcp-Param-level");
+		assertThat(level.get("x-mcp-header")).isEqualTo("level");
 
 		// header mirroring is restricted to string, integer and boolean schema types
 		assertThatThrownBy(() -> McpJsonSchemaGenerator

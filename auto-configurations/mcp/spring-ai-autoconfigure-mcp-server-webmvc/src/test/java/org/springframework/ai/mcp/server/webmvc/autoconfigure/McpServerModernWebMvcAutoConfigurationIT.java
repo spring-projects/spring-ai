@@ -23,7 +23,6 @@ import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.server.McpTransportContextExtractor;
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.mcp.modern.McpTransportContexts;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerJsonMapperAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerModernAutoConfiguration;
 import org.springframework.ai.mcp.server.webmvc.transport.WebMvcModernServerTransport;
@@ -76,42 +75,22 @@ class McpServerModernWebMvcAutoConfigurationIT {
 	}
 
 	@Test
-	void noRequestHeaderReachesTheTransportContextByDefault() {
+	@SuppressWarnings("unchecked")
+	void transportContextIsEmptyByDefault() {
 		this.contextRunner.run(context -> {
-			Object extractor = ReflectionTestUtils.getField(context.getBean(WebMvcModernServerTransport.class),
-					"contextExtractor");
-			assertThat(extractor).isInstanceOf(HeaderTransportContextExtractor.class);
+			McpTransportContextExtractor<ServerRequest> extractor = (McpTransportContextExtractor<ServerRequest>) ReflectionTestUtils
+				.getField(context.getBean(WebMvcModernServerTransport.class), "contextExtractor");
 
 			MockHttpServletRequest servletRequest = new MockHttpServletRequest("POST", "/mcp");
 			servletRequest.addHeader("X-Role", "admin");
-			McpTransportContext transportContext = ((HeaderTransportContextExtractor) extractor)
-				.extract(ServerRequest.create(servletRequest, List.of()));
-			assertThat(transportContext).isSameAs(McpTransportContext.EMPTY);
-			assertThat(McpTransportContexts.headers(transportContext)).isEmpty();
+			servletRequest.addHeader("Authorization", "Bearer t");
+			ServerRequest request = ServerRequest.create(servletRequest, List.of());
+			assertThat(extractor.extract(request)).isSameAs(McpTransportContext.EMPTY);
 		});
 	}
 
 	@Test
-	void configuredRequestHeadersReachTheTransportContext() {
-		this.contextRunner.withPropertyValues("spring.ai.mcp.server.modern.context-headers=X-Role,x-tenant")
-			.run(context -> {
-				Object extractor = ReflectionTestUtils.getField(context.getBean(WebMvcModernServerTransport.class),
-						"contextExtractor");
-
-				MockHttpServletRequest servletRequest = new MockHttpServletRequest("POST", "/mcp");
-				servletRequest.addHeader("x-role", "admin");
-				servletRequest.addHeader("X-Tenant", "acme");
-				servletRequest.addHeader("Authorization", "Bearer t");
-				servletRequest.addHeader("Mcp-Method", "tools/list");
-				McpTransportContext transportContext = ((HeaderTransportContextExtractor) extractor)
-					.extract(ServerRequest.create(servletRequest, List.of()));
-				assertThat(McpTransportContexts.headers(transportContext)).containsOnlyKeys("x-role", "x-tenant");
-				assertThat(McpTransportContexts.header(transportContext, "X-Role")).isEqualTo("admin");
-			});
-	}
-
-	@Test
-	void userExtractorReplacesTheDefault() {
+	void userExtractorFillsTheTransportContext() {
 		this.contextRunner.withUserConfiguration(ExtractorConfiguration.class)
 			.run(context -> assertThat(context.getBean(WebMvcModernServerTransport.class))
 				.extracting("contextExtractor")

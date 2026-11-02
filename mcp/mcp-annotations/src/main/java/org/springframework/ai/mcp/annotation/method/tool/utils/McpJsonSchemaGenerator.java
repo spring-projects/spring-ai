@@ -210,7 +210,7 @@ public final class McpJsonSchemaGenerator {
 									+ "string, integer or boolean: " + parameterName + " of " + method.getName()
 									+ " is " + parameter.getType().getName());
 				}
-				parameterNode.put(X_MCP_HEADER, "Mcp-Param-" + parameterName);
+				parameterNode.put(X_MCP_HEADER, parameterName);
 			}
 			properties.set(parameterName, parameterNode);
 		}

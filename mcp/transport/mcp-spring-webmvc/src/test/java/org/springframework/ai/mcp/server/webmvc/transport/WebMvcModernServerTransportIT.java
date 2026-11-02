@@ -43,6 +43,7 @@ import io.modelcontextprotocol.modern.McpSchema;
 import io.modelcontextprotocol.modern.McpSchema.CallToolOutcome;
 import io.modelcontextprotocol.modern.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.modern.McpSchema.CallToolResult;
+import io.modelcontextprotocol.modern.McpSchema.ErrorCodes;
 import io.modelcontextprotocol.modern.McpSchema.Implementation;
 import io.modelcontextprotocol.modern.McpSchema.MetaKeys;
 import io.modelcontextprotocol.modern.McpSchema.TextContent;
@@ -455,6 +456,48 @@ class WebMvcModernServerTransportIT {
 	}
 
 	@Test
+	void paramHeaderMustMatchTheArgument() throws Exception {
+		HttpResponse<String> mismatch = send(
+				post("tools/call", params("name", "tenant", "arguments", Map.of("tenant", "acme")))
+					.header("Mcp-Name", "tenant")
+					.header("Mcp-Param-Tenant", "other")
+					.build());
+		assertThat(mismatch.statusCode()).isEqualTo(400);
+		assertThat(errorCode(mismatch.body())).isEqualTo(ErrorCodes.HEADER_MISMATCH);
+
+		HttpResponse<String> match = send(
+				post("tools/call", params("name", "tenant", "arguments", Map.of("tenant", "acme")))
+					.header("Mcp-Name", "tenant")
+					.header("Mcp-Param-Tenant", "acme")
+					.build());
+		assertThat(match.statusCode()).isEqualTo(200);
+		assertThat(result(match.body())).containsKey("content");
+	}
+
+	@Test
+	void malformedMcpNameHeaderIsRejected() throws Exception {
+		HttpResponse<String> response = send(post("tools/call", params("name", "echo", "arguments", Map.of()))
+			.header("Mcp-Name", "=?base64?not*base64?=")
+			.build());
+
+		assertThat(response.statusCode()).isEqualTo(400);
+		assertThat(errorCode(response.body())).isEqualTo(ErrorCodes.HEADER_MISMATCH);
+		assertThat(response.body()).contains("Mcp-Name header has a malformed value");
+	}
+
+	@Test
+	void malformedContentTypeIsUnsupportedMediaType() throws Exception {
+		HttpResponse<String> response = send(HttpRequest.newBuilder()
+			.uri(URI.create("http://localhost:" + this.port + ENDPOINT))
+			.header("Content-Type", "application/json;charset=bogus")
+			.header("Mcp-Method", "tools/list")
+			.POST(HttpRequest.BodyPublishers.ofString("{}"))
+			.build());
+
+		assertThat(response.statusCode()).isEqualTo(415);
+	}
+
+	@Test
 	void nonJsonContentTypeIsUnsupportedMediaType() throws Exception {
 		HttpResponse<String> response = send(HttpRequest.newBuilder()
 			.uri(URI.create("http://localhost:" + this.port + ENDPOINT))
@@ -506,6 +549,12 @@ class WebMvcModernServerTransportIT {
 			for (String name : List.of("echo", "progress", "test_trigger_tool_change")) {
 				this.tools.put(name, Tool.builder(name, EMPTY_SCHEMA).description(name).build());
 			}
+			this.tools.put("tenant", Tool
+				.builder("tenant",
+						Map.of("type", "object", "properties",
+								Map.of("tenant", Map.of("type", "string", "x-mcp-header", "tenant"))))
+				.description("tenant")
+				.build());
 		}
 
 		@Override
@@ -522,6 +571,7 @@ class WebMvcModernServerTransportIT {
 		private McpSyncResponse<CallToolOutcome> call(McpRequestContext ctx, CallToolRequest request) {
 			return switch (request.name()) {
 				case "echo" -> McpSyncResponse.result(text("echo"));
+				case "tenant" -> McpSyncResponse.result(text(String.valueOf(request.arguments().get("tenant"))));
 				case "progress" -> McpSyncResponse.streaming(notifier -> {
 					notifier.progress(50, 100.0, null);
 					return text("progress done");

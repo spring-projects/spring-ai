@@ -59,6 +59,7 @@ import reactor.core.scheduler.Schedulers;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
+import org.springframework.http.InvalidMediaTypeException;
 import org.springframework.http.MediaType;
 import org.springframework.util.Assert;
 import org.springframework.util.MultiValueMap;
@@ -172,7 +173,13 @@ public final class WebMvcModernServerTransport {
 			String message = e.getMessage() != null ? e.getMessage() : "";
 			return ServerResponse.status(e.getStatusCode()).body(message);
 		}
-		String contentType = request.headers().contentType().map(MediaType::toString).orElse(null);
+		String contentType;
+		try {
+			contentType = request.headers().contentType().map(MediaType::toString).orElse(null);
+		}
+		catch (InvalidMediaTypeException ex) {
+			contentType = null;
+		}
 		if (!HttpServletRequestUtils.isJsonContentType(contentType)) {
 			return ServerResponse.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
 				.body("Unsupported Media Type: Content-Type must be application/json");
@@ -215,8 +222,8 @@ public final class WebMvcModernServerTransport {
 			}
 			catch (Exception e) {
 				logger.error("Failed to handle notification " + notification.method(), e);
-				return error(
-						JSONRPCResponse.error(null, new JSONRPCError(ErrorCodes.INTERNAL_ERROR, "Internal error")));
+				// A notification the server cannot accept must get an HTTP error status.
+				return ServerResponse.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
 			}
 			return ServerResponse.accepted().build();
 		}
@@ -232,13 +239,14 @@ public final class WebMvcModernServerTransport {
 					new JSONRPCError(ErrorCodes.HEADER_MISMATCH, headerMismatch)));
 		}
 
+		McpTransportContext requestContext = ModernTransportSupport.withParamHeaders(request, jsonRpcRequest,
+				transportContext);
 		boolean listen = ModernTransportSupport.isListen(jsonRpcRequest);
-		Mono<McpTransportResponse> resolved = listen ? this.requestManager.handle(transportContext, jsonRpcRequest)
-				: this.requestManager.handleBlocking(transportContext, jsonRpcRequest);
+		Mono<McpTransportResponse> resolved = listen ? this.requestManager.handle(requestContext, jsonRpcRequest)
+				: this.requestManager.handleBlocking(requestContext, jsonRpcRequest);
 		McpTransportResponse transportResponse;
 		try {
-			transportResponse = resolved.contextWrite(ctx -> ctx.put(McpTransportContext.KEY, transportContext))
-				.block();
+			transportResponse = resolved.contextWrite(ctx -> ctx.put(McpTransportContext.KEY, requestContext)).block();
 		}
 		catch (Exception e) {
 			logger.error("Failed to handle request " + jsonRpcRequest.method(), e);
@@ -253,8 +261,8 @@ public final class WebMvcModernServerTransport {
 			return error(error.response());
 		}
 		if (transportResponse instanceof McpTransportResponse.Streaming streaming) {
-			return listen ? streamOverAsyncContext(transportContext, streaming)
-					: streamOnContainerThread(transportContext, streaming);
+			return listen ? streamOverAsyncContext(requestContext, streaming)
+					: streamOnContainerThread(requestContext, streaming);
 		}
 		return error(JSONRPCResponse.error(jsonRpcRequest.id(),
 				new JSONRPCError(ErrorCodes.INTERNAL_ERROR, "Internal error")));

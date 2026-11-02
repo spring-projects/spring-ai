@@ -22,7 +22,6 @@ import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.server.McpTransportContextExtractor;
 import org.junit.jupiter.api.Test;
 
-import org.springframework.ai.mcp.modern.McpTransportContexts;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerJsonMapperAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerModernAutoConfiguration;
 import org.springframework.ai.mcp.server.webflux.transport.modern.WebFluxMcpTransport;
@@ -85,40 +84,22 @@ class McpServerModernWebFluxAutoConfigurationIT {
 	}
 
 	@Test
-	void noRequestHeaderReachesTheTransportContextByDefault() {
+	@SuppressWarnings("unchecked")
+	void transportContextIsEmptyByDefault() {
 		this.contextRunner.run(context -> {
-			Object extractor = ReflectionTestUtils.getField(context.getBean(WebFluxMcpTransport.class),
-					"contextExtractor");
-			assertThat(extractor).isInstanceOf(HeaderTransportContextExtractor.class);
+			McpTransportContextExtractor<ServerRequest> extractor = (McpTransportContextExtractor<ServerRequest>) ReflectionTestUtils
+				.getField(context.getBean(WebFluxMcpTransport.class), "contextExtractor");
 
-			ServerRequest request = MockServerRequest.builder().header("X-Role", "admin").build();
-			McpTransportContext transportContext = ((HeaderTransportContextExtractor) extractor).extract(request);
-			assertThat(transportContext).isSameAs(McpTransportContext.EMPTY);
-			assertThat(McpTransportContexts.headers(transportContext)).isEmpty();
+			ServerRequest request = MockServerRequest.builder()
+				.header("X-Role", "admin")
+				.header("Authorization", "Bearer t")
+				.build();
+			assertThat(extractor.extract(request)).isSameAs(McpTransportContext.EMPTY);
 		});
 	}
 
 	@Test
-	void configuredRequestHeadersReachTheTransportContext() {
-		this.contextRunner.withPropertyValues("spring.ai.mcp.server.modern.context-headers=X-Role,x-tenant")
-			.run(context -> {
-				Object extractor = ReflectionTestUtils.getField(context.getBean(WebFluxMcpTransport.class),
-						"contextExtractor");
-
-				ServerRequest request = MockServerRequest.builder()
-					.header("x-role", "admin")
-					.header("X-Tenant", "acme")
-					.header("Authorization", "Bearer t")
-					.header("Mcp-Method", "tools/list")
-					.build();
-				McpTransportContext transportContext = ((HeaderTransportContextExtractor) extractor).extract(request);
-				assertThat(McpTransportContexts.headers(transportContext)).containsOnlyKeys("x-role", "x-tenant");
-				assertThat(McpTransportContexts.header(transportContext, "X-Role")).isEqualTo("admin");
-			});
-	}
-
-	@Test
-	void userExtractorReplacesTheDefault() {
+	void userExtractorFillsTheTransportContext() {
 		this.contextRunner.withUserConfiguration(ExtractorConfiguration.class)
 			.run(context -> assertThat(context.getBean(WebFluxMcpTransport.class)).extracting("contextExtractor")
 				.isSameAs(context.getBean(McpTransportContextExtractor.class)));

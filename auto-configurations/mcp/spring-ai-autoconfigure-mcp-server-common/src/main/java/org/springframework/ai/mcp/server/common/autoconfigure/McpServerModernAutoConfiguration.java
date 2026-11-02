@@ -234,6 +234,9 @@ public class McpServerModernAutoConfiguration {
 		return new StdioMcpTransportLifecycle(stdioTransport);
 	}
 
+	/** The smallest HMAC-SHA256 key the auto-configuration accepts, in bytes. */
+	static final int MIN_REQUEST_STATE_SECRET_BYTES = 32;
+
 	/**
 	 * Builds the HMAC codec from the properties. Without a secret the SDK generates a
 	 * random per-process key (and warns), so {@code request-state-ttl} is honoured either
@@ -243,7 +246,11 @@ public class McpServerModernAutoConfiguration {
 		HmacRequestStateCodec.Builder codec = HmacRequestStateCodec.builder().jsonMapper(jsonMapper);
 		String secret = properties.getRequestStateSecret();
 		if (secret != null && !secret.isBlank()) {
-			codec.key(secret.getBytes(StandardCharsets.UTF_8));
+			byte[] key = secret.getBytes(StandardCharsets.UTF_8);
+			Assert.isTrue(key.length >= MIN_REQUEST_STATE_SECRET_BYTES,
+					() -> McpServerModernProperties.CONFIG_PREFIX + ".request-state-secret must be at least "
+							+ MIN_REQUEST_STATE_SECRET_BYTES + " bytes; it is " + key.length);
+			codec.key(key);
 		}
 		if (properties.getRequestStateTtl() != null) {
 			codec.ttl(properties.getRequestStateTtl());

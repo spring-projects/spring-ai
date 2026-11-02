@@ -68,6 +68,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
 /**
  * @author Christian Tzolov
@@ -174,7 +175,7 @@ class McpServerModernAutoConfigurationIT {
 			.withPropertyValues("spring.ai.mcp.server.name=modern-server", "spring.ai.mcp.server.version=2.0.0",
 					"spring.ai.mcp.server.instructions=Use me", "spring.ai.mcp.server.modern.discover-ttl=5s",
 					"spring.ai.mcp.server.modern.discover-cache-scope=PUBLIC",
-					"spring.ai.mcp.server.modern.request-state-secret=shared-secret",
+					"spring.ai.mcp.server.modern.request-state-secret=0123456789abcdef0123456789abcdef",
 					"spring.ai.mcp.server.modern.request-state-ttl=10m", "spring.ai.mcp.server.modern.list-ttl=2s")
 			.run(context -> {
 				Map<String, Object> discover = call(context.getBean(McpServer.class), McpSchema.METHOD_SERVER_DISCOVER,
@@ -347,6 +348,16 @@ class McpServerModernAutoConfigurationIT {
 	}
 
 	@Test
+	void shortRequestStateSecretIsRejected() {
+		McpServerModernProperties properties = new McpServerModernProperties();
+		properties.setRequestStateSecret("too-short");
+		assertThatIllegalArgumentException()
+			.isThrownBy(
+					() -> McpServerModernAutoConfiguration.requestStateCodec(properties, McpJsonDefaults.getMapper()))
+			.withMessageContaining("request-state-secret must be at least 32 bytes");
+	}
+
+	@Test
 	void requestStateTtlIsHonouredWithoutSecret() {
 		McpServerModernProperties properties = new McpServerModernProperties();
 		properties.setRequestStateTtl(Duration.ofMinutes(1));
@@ -354,7 +365,7 @@ class McpServerModernAutoConfigurationIT {
 				McpJsonDefaults.getMapper());
 		assertThat(codec).isInstanceOf(HmacRequestStateCodec.class).extracting("ttl").isEqualTo(Duration.ofMinutes(1));
 
-		properties.setRequestStateSecret("shared-secret");
+		properties.setRequestStateSecret("0123456789abcdef0123456789abcdef");
 		assertThat(McpServerModernAutoConfiguration.requestStateCodec(properties, McpJsonDefaults.getMapper()))
 			.extracting("ttl")
 			.isEqualTo(Duration.ofMinutes(1));

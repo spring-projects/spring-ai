@@ -18,13 +18,12 @@ package org.springframework.ai.mcp.server.webmvc.transport;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
-import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
+import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.json.McpJsonMapper;
 import io.modelcontextprotocol.modern.JsonRpc.JSONRPCMessage;
 import io.modelcontextprotocol.modern.JsonRpc.JSONRPCRequest;
@@ -32,6 +31,8 @@ import io.modelcontextprotocol.modern.JsonRpc.JSONRPCResponse;
 import io.modelcontextprotocol.modern.McpSchema;
 import io.modelcontextprotocol.modern.McpSchema.ErrorCodes;
 import io.modelcontextprotocol.modern.McpSchema.MetaKeys;
+import io.modelcontextprotocol.modern.server.McpParamHeaders;
+import io.modelcontextprotocol.modern.server.transport.McpHeaderDecoder;
 import io.modelcontextprotocol.server.transport.HeaderAccessor;
 import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
@@ -126,9 +127,11 @@ final class ModernTransportSupport {
 		if (nameHeader == null) {
 			return "Missing required header: " + MCP_NAME_HEADER;
 		}
-		String decoded = decodeMcpNameHeader(nameHeader);
+		// The SDK decoder, so that the Spring transports accept and reject exactly the
+		// values the SDK transports do.
+		String decoded = McpHeaderDecoder.decodeValue(nameHeader);
 		if (decoded == null) {
-			return MCP_NAME_HEADER + " header has a malformed Base64 value";
+			return MCP_NAME_HEADER + " header has a malformed value";
 		}
 		if (!expectedName.equals(decoded)) {
 			return MCP_NAME_HEADER + " header does not match request name/uri";
@@ -144,17 +147,18 @@ final class ModernTransportSupport {
 		return null;
 	}
 
-	static @Nullable String decodeMcpNameHeader(String value) {
-		if (value.startsWith("=?base64?") && value.endsWith("?=")) {
-			String base64 = value.substring("=?base64?".length(), value.length() - "?=".length());
-			try {
-				return new String(Base64.getDecoder().decode(base64), StandardCharsets.UTF_8);
-			}
-			catch (IllegalArgumentException ex) {
-				return null;
-			}
+	/**
+	 * Adds the decoded {@code Mcp-Param-*} headers of a {@code tools/call} request to the
+	 * transport context, under the key the SDK tools feature validates them from. Added
+	 * after the user's extractor ran, so this entry always wins.
+	 */
+	static McpTransportContext withParamHeaders(ServerRequest request, JSONRPCRequest jsonRpcRequest,
+			McpTransportContext transportContext) {
+		if (!McpSchema.METHOD_TOOLS_CALL.equals(jsonRpcRequest.method())) {
+			return transportContext;
 		}
-		return value;
+		return transportContext.putAll(
+				Map.of(McpParamHeaders.TRANSPORT_CONTEXT_KEY, McpHeaderDecoder.paramHeaders(headerAccessor(request))));
 	}
 
 	static HeaderAccessor headerAccessor(ServerRequest request) {

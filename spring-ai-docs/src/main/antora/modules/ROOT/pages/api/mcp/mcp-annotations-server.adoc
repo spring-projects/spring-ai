@@ -402,7 +402,7 @@ The `@McpPrompt` annotation generates prompt messages for AI interactions.
 |===
 
 `@McpArg` accepts `name`, `description`, `required` and, since 2.1.0, `title`, a display name for the argument.
-`@McpToolParam` accepts `description`, `required` and, since 2.1.0, `header`: when `true`, the parameter's schema carries `x-mcp-header: Mcp-Param-<name>` so Streamable HTTP clients also send it as that header (parameters whose schema type is `string`, `integer` or `boolean`, which includes enums; other types are rejected at startup).
+`@McpToolParam` accepts `description`, `required` and, since 2.1.0, `header`: when `true`, the parameter's schema carries `x-mcp-header: <name>` so Streamable HTTP clients also send it as the `Mcp-Param-<name>` header, which the modern transports hand to the SDK: a call that omits the header or whose header disagrees with the argument is rejected with `-32020`, so the header is mandatory for that tool (parameters whose schema type is `string`, `integer` or `boolean`, which includes enums; other types are rejected at startup).
 The keyword is defined by the 2026-07-28 revision, but the schema generator is shared, so legacy and stateless servers publish it too.
 Clients of earlier revisions ignore unknown keywords, and the type restriction applies at startup on every server kind.
 

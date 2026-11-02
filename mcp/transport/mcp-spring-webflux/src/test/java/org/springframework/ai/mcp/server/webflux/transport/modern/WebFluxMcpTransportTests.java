@@ -51,7 +51,11 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
+import org.springframework.http.server.reactive.HttpHandler;
+import org.springframework.mock.http.server.reactive.MockServerHttpRequest;
+import org.springframework.mock.http.server.reactive.MockServerHttpResponse;
 import org.springframework.test.web.reactive.server.WebTestClient;
+import org.springframework.web.reactive.function.server.RouterFunctions;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
@@ -404,7 +408,7 @@ class WebFluxMcpTransportTests {
 	@Test
 	void malformedBase64NameHeaderIsAHeaderMismatch() {
 		assertHeaderMismatch(post(client(), McpSchema.METHOD_TOOLS_CALL, ModernRequests.toolsCall(3, "echo", Map.of()))
-			.header("Mcp-Name", "=?base64?not*base64?="), 3, "Mcp-Name header has a malformed Base64 value");
+			.header("Mcp-Name", "=?base64?not*base64?="), 3, "Mcp-Name header has a malformed value");
 	}
 
 	@Test
@@ -598,6 +602,42 @@ class WebFluxMcpTransportTests {
 	}
 
 	@Test
+	void paramHeaderMustMatchTheArgument() {
+		callTool(client(), "tenant", Map.of("tenant", "acme")).header("Mcp-Param-Tenant", "other")
+			.exchange()
+			.expectStatus()
+			.isBadRequest()
+			.expectBody()
+			.jsonPath("$.error.code")
+			.isEqualTo(ErrorCodes.HEADER_MISMATCH);
+
+		callTool(client(), "tenant", Map.of("tenant", "acme")).header("Mcp-Param-Tenant", "acme")
+			.exchange()
+			.expectStatus()
+			.isOk()
+			.expectBody()
+			.jsonPath("$.result.content[0].text")
+			.isEqualTo("acme");
+	}
+
+	@Test
+	void malformedContentTypeIsUnsupportedMediaType() {
+		// A client-side HttpHeaders would refuse to parse the charset, so the handler is
+		// driven directly.
+		HttpHandler handler = RouterFunctions
+			.toHttpHandler(WebFluxMcpTransport.builder(this.server).build().getRouterFunction());
+		MockServerHttpRequest request = MockServerHttpRequest.post("/mcp")
+			.header("Content-Type", "application/json;charset=bogus")
+			.header("Mcp-Method", McpSchema.METHOD_TOOLS_LIST)
+			.body(Flux.just(DefaultDataBufferFactory.sharedInstance.wrap("{}".getBytes(StandardCharsets.UTF_8))));
+		MockServerHttpResponse response = new MockServerHttpResponse();
+
+		handler.handle(request, response).block();
+
+		assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNSUPPORTED_MEDIA_TYPE);
+	}
+
+	@Test
 	void nonJsonContentTypeIsUnsupportedMediaType() {
 		client().post()
 			.uri("/mcp")
@@ -662,9 +702,14 @@ class WebFluxMcpTransportTests {
 
 	private static final class TestTools implements McpSyncToolRepository {
 
-		private static final Map<String, Tool> TOOLS = Map.of("echo", ModernRequests.tool("echo"), "thread",
-				ModernRequests.tool("thread"), "context", ModernRequests.tool("context"), "progress",
-				ModernRequests.tool("progress"), "boom", ModernRequests.tool("boom"));
+		private static final Map<String, Tool> TOOLS = Map
+			.of("echo", ModernRequests.tool("echo"), "thread", ModernRequests.tool("thread"), "context",
+					ModernRequests.tool("context"), "progress", ModernRequests.tool("progress"), "boom",
+					ModernRequests.tool("boom"), "tenant", Tool
+						.builder("tenant",
+								Map.of("type", "object", "properties",
+										Map.of("tenant", Map.of("type", "string", "x-mcp-header", "tenant"))))
+						.build());
 
 		@Override
 		public ToolsPage list(McpRequestContext ctx, String cursor) {
@@ -681,6 +726,8 @@ class WebFluxMcpTransportTests {
 			return switch (request.name()) {
 				case "echo" ->
 					McpSyncResponse.result(ModernRequests.text(String.valueOf(request.arguments().get("text"))));
+				case "tenant" ->
+					McpSyncResponse.result(ModernRequests.text(String.valueOf(request.arguments().get("tenant"))));
 				case "thread" -> McpSyncResponse
 					.result(ModernRequests.text(Thread.currentThread().getName() + "|" + ctx.isBlocking()));
 				case "context" ->

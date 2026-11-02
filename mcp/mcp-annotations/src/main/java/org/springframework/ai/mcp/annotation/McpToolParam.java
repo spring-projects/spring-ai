@@ -42,10 +42,14 @@ public @interface McpToolParam {
 
 	/**
 	 * Whether Streamable HTTP clients must also send this parameter as the
-	 * {@code Mcp-Param-<name>} header (the {@code x-mcp-header} schema keyword of the
-	 * 2026-07-28 revision). Only parameters whose schema type is string, integer or
-	 * boolean may be mirrored; other types are rejected at startup. Read on method
-	 * parameters only: on a field of a parameter type the flag has no effect.
+	 * {@code Mcp-Param-<name>} header: the parameter's schema carries the
+	 * {@code x-mcp-header} keyword of the 2026-07-28 revision with the parameter name as
+	 * its value, and the modern transports hand the header to the SDK, which rejects a
+	 * call that omits the header or whose header and argument disagree with
+	 * {@code -32020}, so the header is mandatory for that tool. Only parameters whose
+	 * schema type is string, integer or boolean may be mirrored; other types are rejected
+	 * at startup. Read on method parameters only: on a field of a parameter type the flag
+	 * has no effect.
 	 * @since 2.1.0
 	 */
 	boolean header() default false;

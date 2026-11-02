@@ -36,14 +36,12 @@ import org.springframework.util.Assert;
  * The transport context convention of the modern Spring AI transports, and accessors for
  * it.
  * <p>
- * Unless an application registers its own {@code McpTransportContextExtractor}, the
- * WebMvc and WebFlux transports store the HTTP request headers they are configured to
- * keep under {@link #HEADERS}: a map from lower-cased header name to its values, without
- * the {@code Mcp-*} protocol headers, which the request context exposes already. No
- * header is kept unless it is named, so that credentials such as {@code Authorization} or
- * {@code Cookie} do not reach handlers that have no use for them. Repositories,
- * visibility filters and handlers read them through
- * {@link #header(McpRequestContext, String)} and {@link #headers(McpRequestContext)}.
+ * The auto-configured transports leave the transport context empty. An application's
+ * {@code McpTransportContextExtractor} may store request headers under {@link #HEADERS},
+ * a map from lower-cased header name to its values, for instance with
+ * {@link #fromHeaders(Collection, Function)}. Repositories, visibility filters and
+ * handlers read them through {@link #header(McpRequestContext, String)} and
+ * {@link #headers(McpRequestContext)}.
  *
  * @author Christian Tzolov
  * @since 2.1.0
@@ -63,9 +61,8 @@ public final class McpTransportContexts {
 
 	/**
 	 * Builds a transport context from every request header. Names are lower-cased,
-	 * {@code Mcp-*} headers are dropped. Meant for custom extractors: the auto-configured
-	 * ones store only the headers named in the configuration, see
-	 * {@link #fromHeaders(Collection, Function)}.
+	 * {@code Mcp-*} headers are dropped. Meant for an extractor that wants every header;
+	 * {@link #fromHeaders(Collection, Function)} copies named ones.
 	 * @param headers hands every header name with its values to the given consumer, the
 	 * shape of {@code HttpHeaders::forEach}
 	 */
