@@ -64,6 +64,7 @@ import org.springframework.util.CollectionUtils;
  * @author Austin Dase
  * @author Sebastien Deleuze
  * @author Seeun Kim
+ * @author Raphael Vullriede
  * @since 1.0.0
  * @see AnthropicChatModel
  * @see <a href="https://docs.anthropic.com/en/api/messages">Anthropic Messages API</a>
@@ -655,7 +656,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 				for (Map.Entry<String, Object> entry : schemaMap.entrySet()) {
 					// Strip JSON Schema meta-fields not supported by the Anthropic
 					// API
-					if ("$schema".equals(entry.getKey()) || "$defs".equals(entry.getKey())) {
+					if ("$schema".equals(entry.getKey())) {
 						continue;
 					}
 					schemaBuilder.putAdditionalProperty(entry.getKey(), JsonValue.from(entry.getValue()));
