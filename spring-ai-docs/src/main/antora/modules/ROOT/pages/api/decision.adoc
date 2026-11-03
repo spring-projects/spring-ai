@@ -5,7 +5,7 @@ A decision model answers typed questions about an input, instead of generating t
 You give it a text, a set of fields or a conversation, and the questions you want answered about it.
 It returns one answer per question, with the probability the model assigned to each possible outcome.
 
-Decision models are a good fit when the application needs a verdict it can act on, not a message: routing a support ticket to a team, deciding whether a request is urgent, scoring the mood of a customer, checking whether a chat answer is grounded in the retrieved documents, or screening an input before it reaches a chat model.
+Decision models are a good fit when the application needs a verdict it can act on, not a message: recognizing what a customer wants, deciding whether a request can be handled without an agent, estimating how likely a customer is to leave, checking whether a chat answer is grounded in the retrieved documents, or screening an input before it reaches a chat model.
 They are typically faster and cheaper than a chat model asked the same question, and their answers come with probabilities, so the application can set its own thresholds.
 
 The `DecisionModel` API follows the same shape as the other Spring AI model APIs: a `DecisionPrompt` goes in, a `DecisionResponse` comes out, and provider-specific `DecisionOptions` tune the call.
@@ -41,37 +41,37 @@ Each level has a label and, optionally, a description.
 [source,java]
 ----
 DecisionPrompt prompt = DecisionPrompt.builder()
-    .text("Help! My payouts are late again and nobody answers my emails.")
-    .question("urgent", YesNoQuestion.builder()
-        .text("Is this request urgent?")
-        .whenYes("Money or access is blocked")
-        .whenNo("The customer is asking a general question")
+    .text("I'm moving abroad next month. Can I put my weekly deliveries on hold until I'm settled, or do I need to cancel?")
+    .question("selfService", YesNoQuestion.builder()
+        .text("Can the customer do this on their own from the account page?")
+        .whenYes("The request is covered by a setting the customer can change")
+        .whenNo("Only an agent can make the change")
         .build())
-    .question("team", ChoiceQuestion.builder()
-        .text("Which team should handle this request?")
-        .option("billing", "Invoices, charges, payouts and refunds")
-        .option("technical", "Bugs, outages and integrations")
-        .option("sales", "Quotes and new purchases")
+    .question("intent", ChoiceQuestion.builder()
+        .text("What does the customer want to do?")
+        .option("modify", "Change the address, schedule or contents of upcoming deliveries")
+        .option("cancel", "Stop the subscription for good")
+        .option("learn", "Understand how the service works, without changing anything")
         .build())
-    .question("mood", ScoreQuestion.of("How is the customer's mood?", "calm", "annoyed", "angry"))
+    .question("churnRisk", ScoreQuestion.of("How likely is the customer to leave?", "unlikely", "possible", "likely"))
     .build();
 
 DecisionResponse response = decisionModel.call(prompt);
 
-boolean urgent = response.getYesNo("urgent").isYes();
-String team = response.getChoice("team").getValue();
-double mood = response.getScore("mood").getValue();
+boolean selfService = response.getYesNo("selfService").isYes();
+String intent = response.getChoice("intent").getValue();
+double churnRisk = response.getScore("churnRisk").getValue();
 ----
 
 For a single input and the default options, the shorter `call(String, Map)` and `call(DecisionInput, Map)` forms do the same.
 
 [source,java]
 ----
-DecisionResponse response = decisionModel.call("Is anyone there? My card was charged twice!",
-        Map.of("urgent", YesNoQuestion.of("Is this request urgent?")));
+DecisionResponse response = decisionModel.call("How do I change the delivery day to Saturdays?",
+        Map.of("selfService", YesNoQuestion.of("Can the customer do this on their own from the account page?")));
 ----
 
-Write questions around observable criteria, and keep one concern per question: a model answers "Is the customer asking for a refund?" more reliably than "Is this a billing issue that needs a refund and an apology?".
+Write questions around observable criteria, and keep one concern per question: a model answers "Does the customer want to pause their deliveries?" more reliably than "Is the customer moving and about to pause or cancel?".
 Give the options of a choice distinct meanings, and consider a fallback option such as `other` when they can't cover every input.
 Define scale levels so that adjacent levels have distinct criteria.
 
@@ -87,7 +87,7 @@ The input is the thing the questions are about.
 For a text with images, or any other mix, `DecisionInput.content(MessagePart...)` takes the ordered content parts a chat message is made of, such as a `TextPart` followed by a `MediaPart`.
 * `DecisionInput.fields(Map)`: a structured input made of named fields.
 Values can be strings, numbers, booleans, nulls, maps and lists, or, at the top level, a `MessagePart` or a list of parts, such as the text and image of an attachment.
-Use it when the input has a shape, such as a ticket with a subject, a body and a customer tier, so that the model sees each part for what it is.
+Use it when the input has a shape, such as a customer message along with the customer's plan and history, so that the model sees each part for what it is.
 The fields keep the order of the map, so use an ordered map such as `LinkedHashMap` when the order matters.
 How a provider lays the fields out for the model is up to the provider.
 * `DecisionInput.conversation(List<Message>)`: a conversation, made of the same `Message` types a `ChatModel` takes.
@@ -97,18 +97,18 @@ The `DecisionPrompt` builder has `text(...)`, `content(...)`, `fields(...)` and 
 
 [source,java]
 ----
-Map<String, Object> ticket = new LinkedHashMap<>();
-ticket.put("subject", "Charged twice");
-ticket.put("body", "My card was charged twice for the same order.");
-ticket.put("tier", "enterprise");
+Map<String, Object> request = new LinkedHashMap<>();
+request.put("message", "Your new menu isn't for me anymore.");
+request.put("plan", "family");
+request.put("months_subscribed", 26);
 
-DecisionResponse refund = decisionModel.call(DecisionInput.fields(ticket),
-        Map.of("refund", YesNoQuestion.of("Is the customer asking for a refund?")));
+DecisionResponse leaving = decisionModel.call(DecisionInput.fields(request),
+        Map.of("leaving", YesNoQuestion.of("Is a loyal customer about to leave?")));
 
 DecisionResponse answered = decisionModel.call(
         DecisionInput.conversation(List.of(
-            new UserMessage("Can I get a refund after 30 days?"),
-            new AssistantMessage("Refunds are available within 14 days of purchase."))),
+            new UserMessage("Can I skip next week's delivery?"),
+            new AssistantMessage("You can change your delivery address from the account page."))),
         Map.of("answered", YesNoQuestion.of("Does the last assistant message answer the user's question?")));
 ----
 
@@ -161,7 +161,7 @@ Set it on the prompt to override the model's default for one call.
 ----
 DecisionPrompt prompt = DecisionPrompt.builder()
     .text("...")
-    .question("urgent", YesNoQuestion.of("Is this request urgent?"))
+    .question("selfService", YesNoQuestion.of("Can the customer do this on their own from the account page?"))
     .options(DecisionOptions.builder().model("gpt-6-luna").build())
     .build();
 ----
@@ -179,6 +179,7 @@ See xref:observability/index.adoc#_decision_model[Decision Model observability].
 
 == Available Implementations
 
+* xref:api/decision/ollama-decision.adoc[Ollama Decisions]
 * xref:api/decision/openai-decision.adoc[OpenAI Decisions]
 * xref:api/decision/systemone-decision.adoc[System One Decisions], for TypeSafe Jev, Laya and Ollama
 
