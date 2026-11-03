@@ -31,7 +31,10 @@ import com.anthropic.models.messages.ThinkingConfigEnabled;
 import com.anthropic.models.messages.ThinkingConfigParam;
 import com.anthropic.models.messages.ToolChoice;
 import com.anthropic.models.messages.ToolChoiceAuto;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.anthropic.AnthropicChatOptions.Builder;
 import org.springframework.ai.model.tool.StructuredOutputChatOptions;
@@ -46,6 +49,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  *
  * @author Soby Chacko
  * @author Sebastien Deleuze
+ * @author Raphael Vullriede
  */
 class AnthropicChatOptionsTests extends AbstractChatOptionsTests<AnthropicChatOptions, Builder> {
 
@@ -246,6 +250,49 @@ class AnthropicChatOptionsTests extends AbstractChatOptionsTests<AnthropicChatOp
 		assertThat(roundTripped).contains("\"properties\"");
 		assertThat(roundTripped).contains("\"name\"");
 		assertThat(roundTripped).contains("\"required\"");
+	}
+
+	@Test
+	void testOutputSchemaKeepsDefinitionsUsedByReferences() {
+		String schema = """
+				{
+					"$defs": {
+						"Address": {
+							"type": "object",
+							"properties": {"street": {"type": "string"}},
+							"required": ["street"],
+							"additionalProperties": false
+						}
+					},
+					"type": "object",
+					"properties": {
+						"billingAddress": {"$ref": "#/$defs/Address"},
+						"shippingAddress": {"$ref": "#/$defs/Address"}
+					},
+					"required": ["billingAddress", "shippingAddress"],
+					"additionalProperties": false
+				}
+				""";
+
+		AnthropicChatOptions options = AnthropicChatOptions.builder().outputSchema(schema).build();
+
+		assertThat(sentSchema(options)).extractingByKey("$defs", InstanceOfAssertFactories.MAP)
+			.containsOnlyKeys("Address");
+	}
+
+	@Test
+	void testOutputSchemaDropsSchemaKeyword() {
+		String schema = """
+				{
+					"$schema": "https://json-schema.org/draft/2020-12/schema",
+					"type": "object",
+					"properties": {"name": {"type": "string"}}
+				}
+				""";
+
+		AnthropicChatOptions options = AnthropicChatOptions.builder().outputSchema(schema).build();
+
+		assertThat(sentSchema(options)).doesNotContainKey("$schema").containsKey("properties");
 	}
 
 	@Test
@@ -751,6 +798,11 @@ class AnthropicChatOptionsTests extends AbstractChatOptionsTests<AnthropicChatOp
 		assertThat(cloned.getCustomHeaders()).isNull();
 		assertThat(cloned.getCitationDocuments()).isNull();
 		assertThat(cloned.getHttpHeaders()).isNull();
+	}
+
+	private static Map<String, Object> sentSchema(AnthropicChatOptions options) {
+		return JsonMapper.shared().readValue(options.getOutputSchema(), new TypeReference<>() {
+		});
 	}
 
 }
