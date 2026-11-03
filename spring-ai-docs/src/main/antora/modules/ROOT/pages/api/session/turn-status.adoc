@@ -1,0 +1,169 @@
+[[session-turn-status]]
+= Turn Status
+
+Besides its messages, a session carries the status of its turns: whether a turn is running right now, under which run, why the last one ended, and what it waits on when it stopped to ask.
+The point of keeping it on the session is that every harness reads and sets it the same way.
+A UI can show that an agent is busy or waits for a decision, a stop button can interrupt it, and a second harness that tries to start a turn on a busy session is refused, whichever harness runs the turn.
+
+Like the xref:api/session/concepts.adoc#session-concepts-view[active view], the status is a projection of the log, not a column.
+A `STATUS` event records each transition.
+An `INTERRUPT` event records a request to stop that comes from outside the turn, a stop button for example.
+A `QUESTION` event records a stop the turn asks for itself, to wait for an answer, and an `ANSWER` event records what it went on with.
+The status is simply the newest `STATUS` event, or `IDLE` when there is none.
+No table, column or repository method is added for it, so every store that passes the repository contract supports it.
+The methods live on `TurnService`, which `sessionService.turns()` returns.
+It keeps no state of its own: every call is one or two reads and one version-checked append through the service, so a decorated service, an authorizing one for example, guards them like any other call.
+
+image::session/session-status-state.png[The turn status of a session, width=900, align="center"]
+
+The run id is the harness's run: the token that owns the turn and ends it.
+The session treats it as opaque, it neither interprets nor checks it.
+One run may hold a turn in each of several sessions, and successive turns in one.
+The `ChatClient` harness takes it from the request context, or generates one per call.
+
+[source,java]
+----
+TurnStatus turn = sessionService.turns().start(sessionId, null, Duration.ofMinutes(30));   // RUNNING under a generated run id, for 30 minutes at most
+try {
+    // read the view, call the model, append what happened
+    sessionService.turns().end(sessionId, turn.runId(), StopReason.END_TURN);
+}
+catch (RuntimeException ex) {
+    sessionService.turns().end(sessionId, turn.runId(), StopReason.ERROR);
+    throw ex;
+}
+
+// From anywhere else, a UI's stop button for example
+sessionService.turns().interrupt(sessionId, "user pressed stop");
+----
+
+[[session-turn-status-methods]]
+== The methods
+
+[cols="1,3"]
+|===
+| Method | What it does
+
+| `status(id)`
+| Returns the `TurnStatus`: `IDLE` or `RUNNING`, the run id, the stop reason of the last turn, and when the status was recorded.
+`isParked()` tells an idle session that waits on a question from one that is free.
+This is one indexed read.
+A session no turn ever ran on reports `TurnStatus.idle()`.
+
+| `start(id, runId)`, `start(id, runId, timeout)`
+| Starts a turn under the run id, or under a random UUID when none is given, and returns the new status.
+The append is version-checked, so when two harnesses start a turn at the same time exactly one of them succeeds.
+The other gets a `TurnInProgressException` that names the run holding the turn.
+A turn is never queued behind another one.
+A parked session is refused too, with `TurnParkedException`: a harness resumes it instead, see below.
+With a timeout the turn has a lease, see below; without one it runs until it is ended or interrupted.
+
+| `end(id, runId, stopReason)`
+| Ends the turn of the run id with `END_TURN`, `ERROR` or `CANCELLED`, the stop reasons a harness records itself.
+`INTERRUPTED` is written by `interrupt`, `EXPIRED` by `start` and `REQUIRES_ACTION` by `park`, never by `end`.
+The method is also the own-turn guard.
+When the session does not run under this run id, nothing is written and the status as it stands is returned: another writer, an interrupt for example, ended the turn first, and that stands.
+
+| `interrupt(id, reason)`
+| Records the request to stop.
+When a turn runs, the same append ends it with `INTERRUPTED`, so the request and the transition always land together.
+When no turn runs, only the request is recorded; a parked session stays parked.
+
+| `park(id, runId, question)`
+| Stops the turn of the run id to wait for an answer.
+One append records the `Question` as a `QUESTION` event and ends the turn with `REQUIRES_ACTION`.
+The status says only that the session is parked; the question says what it is about, the reply with the tool calls for example, in its payload.
+Like `end` it is keyed by the run id: when the turn no longer runs under it, nothing is written.
+
+| `pendingQuestion(id)`
+| Returns the newest `QUESTION` event that no `ANSWER` event points at, or `null`.
+`Question.from(event)` reads it.
+
+| `resume(id, runId, answer)`, `resume(id, runId, answer, timeout)`
+| Starts the turn of a parked session again with the answer to its question.
+One append records the `ANSWER` event, pointing at the question by event id, and the `RUNNING` status under the run id you pass, or under a random UUID, with a lease when a timeout is given.
+Only a parked session resumes: a running one is busy, `TurnInProgressException`, and one idle for another reason cannot resume, `IllegalStateException`.
+Nothing is written in either case.
+|===
+
+[[session-turn-status-lease]]
+== The lease
+
+A harness can die between `start` and `end`: a JVM that is killed mid-call writes neither.
+Without a lease the session then stays `RUNNING` under a run that no longer exists, and every later `start` fails until someone calls `interrupt`.
+The lease is the harness's promise of how long its turn may take.
+`start(id, runId, timeout)` records it on the `RUNNING` event as the instant it runs out, so the policy travels with the turn and the session needs no configuration.
+A later `start` that finds a turn running past its lease does not throw.
+In one version-checked append it ends that turn with `EXPIRED` and starts the new one, and two harnesses that try at once resolve through the version: one wins, the other gets the usual `TurnInProgressException`.
+No `INTERRUPT` event is written, since nobody asked the session to stop.
+`TurnStatus.expiresAt()` and `isExpired(now)` let a UI tell a live turn from a dead one.
+
+The lease is a trade.
+A turn that outlives it loses the session: its `end` becomes a no-op, its appends still land, and the next call runs alongside it.
+So a harness sizes the lease for its slowest turn, not its usual one.
+The `ChatClient` turn advisor takes thirty minutes by default, well above any call with its tool loop, and `turnTimeout(null)` turns the lease off.
+
+[[session-turn-status-questions]]
+== Parking on a question
+
+A turn can also stop to ask a person something and go on later with the answer.
+The first such question is a tool call that needs a person's confirmation.
+The turn parks: `park` records the question and ends the turn with `REQUIRES_ACTION`, and the session is idle.
+The status says no more than that; the question says what it is about, the reply with the tool calls for example.
+No lease runs while the person thinks, so the answer may take days.
+The answer resumes the turn: `resume` records it, pointing at the question, and starts the turn again, on any node and under the run id you pass or a fresh one.
+A run spans the pause when it resumes under the id it parked under, and the parked status event between the two `RUNNING` events keeps the two halves apart.
+
+[source,java]
+----
+// The turn stops to ask: one append, QUESTION + STATUS(IDLE, REQUIRES_ACTION)
+Question question = ToolConfirmationQuestion.of(replyEventId, reply, awaitingKeys).toQuestion();
+sessionService.turns().park(sessionId, runId, question);
+
+// Later, on any node, with the person's decisions: one append, ANSWER + STATUS(RUNNING)
+sessionService.turns().resume(sessionId, null, ToolConfirmationQuestion.answer(decisions), Duration.ofMinutes(30));
+----
+
+Only a parked session resumes, and a parked session only resumes.
+So the same answer sent twice resumes once and the tools it allows run once, two nodes that resume at once leave one winner, and a `start` on a parked session throws `TurnParkedException` instead of leaving the question open.
+A harness that gets it resumes, with the person's decision or with one that says the person moved on.
+A resumed turn that outlives its lease is taken over by the next `start`, not by a `resume`: the question has its answer, so there is nothing left to resume.
+A `Question` has a `kind`, so a reader knows how to show it and what answers it: `toolConfirmation` for a tool call, or a name of your own for a question of your own harness.
+Its payload and the answer are stored as JSON.
+The tool confirmation has a shape of its own, `ToolConfirmationQuestion`: the stored reply's event id and its calls, each with the key a decision names it by, the tool, the arguments and whether it waits.
+`of(replyEventId, reply, awaitingKeys)` builds it from a paused reply, `from(event)` reads it back, `answer(decisions)` is the value the answer stores and `decisions(answer)` reads it.
+Every harness that parks on a tool confirmation records this shape, so one UI serves them all.
+
+A question and an interrupt are different events because they point in different directions.
+A question goes from the turn to the outside and waits for an answer.
+An interrupt goes from the outside into the turn and waits for nothing.
+An `interrupt` on a parked session records the request and leaves the pause as it is, since no turn runs.
+
+[[session-turn-status-continue]]
+== Continuing a stopped turn
+
+An interrupted turn stopped between two steps: the log ends in the tool results of the last round that ran, and the model never answered.
+The same is true of a turn a dropped stream cancelled, a turn that failed, and a turn whose harness died and whose lease ran out.
+A new user message would start a new turn over that history.
+That splits one piece of work in two for every reader that counts turns, a compaction that keeps the last N turns for example.
+
+To continue the stopped turn instead, a harness calls `start` and adds no user message.
+A turn begins with a user message only, so the log keeps one turn, and status events never count as a boundary.
+The new run's `RUNNING` event follows the stopped run's `IDLE` event, which says why it stopped.
+
+What the continued turn does follows from the log, and the harness decides.
+The `ChatClient` turn advisor runs a model round over the stored history when the log ends in a user message or in tool results, answers tool calls left without results first when a crash left the log on a reply, and settles the turn with no round when the model had answered before the stop landed, see xref:api/session/chat-client.adoc#session-chat-client-resume[Continuing a stopped turn].
+A harness of your own does the same from `sessionService.getActiveMessages(sessionId)`.
+
+[[session-turn-status-prompt]]
+== Opt-in and the prompt
+
+Status is opt-in by construction.
+A harness that never calls `start` leaves the session `IDLE` and appends freely, because an append never requires a running turn.
+The `ChatClient` advisors take part by default.
+Stopping the tool-calling loop after an interrupt is a separate opt-in, since it costs one read per round; see xref:api/session/chat-client.adoc#session-chat-client-status[ChatClient Integration].
+
+Status, interrupt, question and answer events never reach the prompt.
+The active view is message events only, so a compaction neither covers them nor needs a rule for them.
+They stay in the log, where `EventFilter.all()` or a filter by type reads them, as the audit trail of the session's turns.
+The log then reads without opening a payload: a reply, a `QUESTION`, a `STATUS` parked, an `ANSWER`, a `STATUS` running, the tool results.

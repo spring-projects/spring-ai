@@ -1,8 +1,9 @@
 [[session-system-messages]]
 = System Messages
 
-A system message tells the model how to behave: its persona, rules, output format.
-A session treats it as *configuration* rather than as part of the conversation, and this page says which part of the work belongs to whom.
+A system message tells the model how to behave: its persona, its rules, the output format.
+A session treats it as *configuration*, not as part of the conversation.
+This page explains why, and it says which part of the work belongs to the library and which part belongs to your integration.
 
 In short:
 
@@ -11,9 +12,11 @@ Supply the system prompt on every request from your code, and keep per-session s
 The session then holds only the conversation.
 * *The library enforces this by default.*
 `DefaultSessionService` rejects a stored `SystemMessage` unless `allowSystemMessages` is enabled.
-If it is, *the latest stored system message wins*: it is the session's system prompt, and earlier ones are superseded and leave the view when a later compaction cuts.
+If it is enabled, *the latest stored system message wins*.
+It is the session's system prompt, and earlier ones are superseded and leave the view when a later compaction cuts.
 * *The integration* uses only the latest stored system message, puts system messages first, drops exact duplicates, and does not re-send the history inside a tool loop.
-`SessionMemoryAdvisor` does this for `ChatClient`; any other integration must do it itself.
+`SessionMemoryAdvisor` does this for `ChatClient`.
+Any other integration must do it itself.
 
 == Conversation or configuration?
 
@@ -24,35 +27,55 @@ That record is what a session stores, filters and compacts.
 A system message is usually written by someone else: the developer who deploys the agent.
 Several things mark it as configuration:
 
-* *A different author.* No participant says it; it comes from code or a template.
-* *A different lifecycle.* It is versioned and deployed with the application and applies to every session at once; conversation entries belong to one session and never change.
-* *No meaningful position.* "Always answer in French" means the same at turn 1 and at turn 50.
-* *The model APIs treat it as a separate input.* Anthropic's `system` parameter, Gemini's `system_instruction` and OpenAI's `instructions` sit outside the message list.
+* *A different author.*
+No participant says it.
+It comes from code or from a template.
+* *A different lifecycle.*
+It is versioned and deployed with the application, and it applies to every session at once.
+Conversation entries belong to one session and never change.
+* *No meaningful position.*
+"Always answer in French" means the same at turn 1 and at turn 50.
+* *The model APIs treat it as a separate input.*
+Anthropic's `system` parameter, Gemini's `system_instruction` and OpenAI's `instructions` all sit outside the message list.
 
-Storing configuration as conversation causes well-known problems in memory frameworks: the prompt goes stale after the application changes it, it is duplicated when it is also sent per request, it is trimmed or summarized away, and rewriting it inside the history breaks prompt caching.
-Most conversation-memory frameworks therefore re-send the system prompt on each request and keep it out of the stored history, and a session is designed for the same approach.
+Storing configuration as conversation causes well-known problems in memory frameworks:
+
+* The prompt goes stale after the application changes it.
+* It is duplicated when it is also sent per request.
+* It is trimmed or summarized away.
+* Rewriting it inside the history breaks prompt caching.
+
+Most conversation-memory frameworks therefore re-send the system prompt on each request and keep it out of the stored history.
+A session is designed for the same approach.
 
 Not every instruction is configuration, though.
 Some happen at a point in time, and their position matters: "the user just upgraded to premium", "you are now handed off to the billing agent".
-Those are conversation: send them as a user message, or as an event of the application's own, and let them be compacted with their turn.
+Those are conversation.
+Send them as a user message, or as an event of the application's own, and let them be compacted with their turn.
 
 == What the library does
 
 These rules hold for every integration, because `SessionService`, the repositories and the compaction strategies implement them.
 
 *It stores only what you append, and no system messages by default.*
-The library never creates or injects a system message: the log holds exactly the messages the integration passes to `appendEvent` or `appendMessage`.
+The library never creates or injects a system message.
+The log holds exactly the messages the integration passes to `appendEvent` or `appendMessage`.
 `DefaultSessionService` rejects an event that wraps a `SystemMessage` with an `IllegalArgumentException` that explains the alternatives.
 This catches a common mistake in custom integrations: appending the whole prompt, system prompt included, on every turn.
-Only `DefaultSessionService` enforces the rule; a custom `SessionService` or direct `SessionRepository` access is not checked.
+Only `DefaultSessionService` enforces the rule.
+A custom `SessionService` or direct `SessionRepository` access is not checked.
 
 *It returns the view, not the log.*
-`getActiveMessages(id)` and `getEvents(id, EventFilter.active())` return the view in log order until the first compaction; after one, the view starts with the pinned latest system message, then the summary, then the preserved and later events.
-Reads do not deduplicate system messages; that is left to the integration.
+`getActiveMessages(id)` and `getEvents(id, EventFilter.active())` return the view in log order until the first compaction.
+After one, the view starts with the pinned latest system message, then the summary, then the preserved and later events.
+Reads do not deduplicate system messages.
+That is left to the integration.
 
 *Compaction: the latest stored system message wins.*
-If system messages are stored, the latest one is the session's system prompt; storing a new one replaces the previous one, so it must carry the complete intended content.
-Compaction pins it first in the view, never covers or summarizes it, and gives it no slot of an event or turn window; a token budget subtracts its tokens, because it is sent with the conversation.
+If system messages are stored, the latest one is the session's system prompt.
+Storing a new one replaces the previous one, so it must carry the complete intended content.
+Compaction pins it first in the view, never covers or summarizes it, and gives it no slot of an event or turn window.
+A token budget does subtract its tokens, because it is sent with the conversation.
 Earlier ones are superseded: the next compaction that cuts covers them wherever they sit, even inside the kept window, and never summarizes them.
 At most one stored system message is ever active, so an integration that stores one per turn cannot grow the view.
 
@@ -60,10 +83,13 @@ At most one stored system message is ever active, so an integration that stores 
 
 Whatever builds the prompt sent to the model owns these steps:
 
-. *Supply the system prompt on every request*, from code or rendered from `Session.metadata`; do not append it to the session.
+. *Supply the system prompt on every request*, from code or rendered from `Session.metadata`.
+Do not append it to the session.
 . *Load only the active view*: `getActiveMessages(id)` or `getEvents(id, EventFilter.active())`.
-. *Use only the latest stored system message* from the loaded history, and put system messages first: many models reject or ignore a system message that is not at the start.
-. *Drop exact duplicates*, for example a stored system message that is also supplied with the request; do not merge or rewrite texts, so the prompt stays byte-stable for prompt caching.
+. *Use only the latest stored system message* from the loaded history, and put system messages first.
+Many models reject or ignore a system message that is not at the start.
+. *Drop exact duplicates*, for example a stored system message that is also supplied with the request.
+Do not merge or rewrite texts, so the prompt stays byte-stable for prompt caching.
 . *Persist only the conversation*: the user message, the model's reply, and the tool calls and results.
 . *In a tool-calling loop*, do not add the stored history to a prompt that already carries it.
 . *Compact* after a turn when the trigger fires.
@@ -71,7 +97,9 @@ Whatever builds the prompt sent to the model owns these steps:
 `SessionMemoryAdvisor` implements all of these for `ChatClient`.
 
 image::session/session-prompt-assembly-activity.svg[How the memory advisor builds the prompt, width=700, align="center"]
-The system prompt comes from `defaultSystem` or `.system(...)` and is never persisted; of the stored system messages the advisor sends only the latest one, puts every `SystemMessage` first, sends exact duplicates once, and inside a tool loop prepends only the history the round's prompt does not carry yet.
+The system prompt comes from `defaultSystem` or `.system(...)` and is never persisted.
+Of the stored system messages the advisor sends only the latest one.
+It puts every `SystemMessage` first, sends exact duplicates once, and inside a tool loop prepends only the history the round's prompt does not carry yet.
 
 [source,java]
 ----
@@ -90,11 +118,18 @@ String answer = chatClient.prompt()
     .content();
 ----
 
-An agent built on the session services directly, with its own loop or another framework, implements the steps itself: read `getEvents(id, EventFilter.active())`, take the latest non-synthetic `SYSTEM` event as the stored prompt if there is one, put the system messages first and deduplicate by text, append the conversation messages, call the model, and persist only the user message and the reply.
+An agent built on the session services directly, with its own loop or another framework, implements the steps itself:
+
+* Read `getEvents(id, EventFilter.active())`.
+* Take the latest non-synthetic `SYSTEM` event as the stored prompt, if there is one.
+* Put the system messages first and deduplicate by text.
+* Append the conversation messages and call the model.
+* Persist only the user message and the reply.
 
 == When storing a system message is acceptable
 
-Storing is supported for the cases where the instruction cannot come from code on each request, for example when a session is created by one service and continued by another that does not know its setup.
+Storing is supported for the cases where the instruction cannot come from code on each request.
+A typical one is a session that is created by one service and continued by another that does not know its setup.
 Enable it first, because it is disabled by default:
 
 [source,java]
@@ -105,8 +140,9 @@ SessionService sessionService = DefaultSessionService.builder()
     .build();
 ----
 
-or, with the auto-configuration, `spring.ai.session.allow-system-messages=true`.
-Then store the session's system prompt; it stays active and protected from compaction until a new one is stored:
+With the auto-configuration, set `spring.ai.session.allow-system-messages=true` instead.
+Then store the session's system prompt.
+It stays active and protected from compaction until a new one is stored:
 
 [source,java]
 ----
@@ -115,4 +151,8 @@ sessionService.appendMessage(session.id(), new SystemMessage("Answer in French."
 sessionService.appendMessage(session.id(), new SystemMessage("Answer in German."));
 ----
 
-Keep the trade-offs in mind: it does not change when your code changes, its tokens are sent on every request and count toward a token budget, and a custom loop must still pick the latest one, put it first and drop duplicates.
+Keep the trade-offs in mind:
+
+* It does not change when your code changes.
+* Its tokens are sent on every request and count toward a token budget.
+* A custom loop must still pick the latest one, put it first and drop duplicates.

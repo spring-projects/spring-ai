@@ -17,6 +17,7 @@
 package org.springframework.ai.session.support;
 
 import java.net.URI;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
@@ -36,6 +37,12 @@ import org.springframework.ai.chat.messages.part.ToolResultPart;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.session.EventType;
 import org.springframework.ai.session.SessionEvent;
+import org.springframework.ai.session.question.Answer;
+import org.springframework.ai.session.question.Question;
+import org.springframework.ai.session.question.QuestionEvents;
+import org.springframework.ai.session.status.SessionStatusEvents;
+import org.springframework.ai.session.status.StopReason;
+import org.springframework.ai.session.status.TurnStatus;
 import org.springframework.ai.session.support.SessionEventCodec.EncodedEvent;
 import org.springframework.util.MimeTypeUtils;
 
@@ -194,6 +201,66 @@ class SessionEventCodecTests {
 		assertThat(this.codec.fromJsonMap("")).isEmpty();
 		assertThat(this.codec.fromJsonMap("{not json")).isEmpty();
 		assertThatIllegalArgumentException().isThrownBy(() -> this.codec.fromJsonMap(null));
+	}
+
+	@Test
+	void statusEventsRoundTripWithTheirPayload() {
+		SessionEvent running = SessionStatusEvents.running("s", "run-1", Instant.parse("2026-06-01T12:30:00Z"));
+		SessionEvent idle = SessionStatusEvents.idle("s", "run-1", StopReason.INTERRUPTED);
+		SessionEvent interrupt = SessionStatusEvents.interrupt("s", "user pressed stop");
+
+		for (SessionEvent event : List.of(running, idle, interrupt)) {
+			EncodedEvent encoded = this.codec.encode(event);
+			assertThat(encoded.type()).isEqualTo(event.getType());
+			assertThat(encoded.messageType()).isNull();
+			assertThat(encoded.text()).isNull();
+			SessionEvent decoded = this.codec.decode(encoded)
+				.id(event.getId())
+				.sessionId("s")
+				.timestamp(event.getTimestamp())
+				.build();
+			assertThat(decoded.getType()).isEqualTo(event.getType());
+			assertThat(decoded.hasMessage()).isFalse();
+			assertThat(decoded.getPayload()).isEqualTo(event.getPayload());
+			if (EventType.STATUS.equals(event.getType())) {
+				assertThat(TurnStatus.from(decoded)).isEqualTo(TurnStatus.from(event));
+			}
+			else {
+				assertThat(SessionStatusEvents.reason(decoded)).isEqualTo("user pressed stop");
+			}
+		}
+	}
+
+	@Test
+	void questionAndAnswerEventsRoundTripWithNestedPayloads() {
+		// A tool confirmation's question and answer: lists of maps, as the ChatClient
+		// records them
+		Question question = new Question(Question.KIND_TOOL_CONFIRMATION,
+				Map.of("replyEventId", "reply-1", "toolCalls", List.of(Map.of("key", "c1", "name", "bookFlight",
+						"arguments", "{\"flight\":\"VX205\"}", "awaitingDecision", true))));
+		SessionEvent asked = QuestionEvents.ask("s", question);
+		SessionEvent answered = QuestionEvents.answer("s", asked.getId(),
+				List.of(Map.of("key", "c1", "allowed", false, "message", "Not today.")));
+
+		for (SessionEvent event : List.of(asked, answered)) {
+			EncodedEvent encoded = this.codec.encode(event);
+			assertThat(encoded.type()).isEqualTo(event.getType());
+			assertThat(encoded.messageType()).isNull();
+			assertThat(encoded.text()).isNull();
+			SessionEvent decoded = this.codec.decode(encoded)
+				.id(event.getId())
+				.sessionId("s")
+				.timestamp(event.getTimestamp())
+				.build();
+			assertThat(decoded.getType()).isEqualTo(event.getType());
+			assertThat(decoded.hasMessage()).isFalse();
+			assertThat(decoded.getPayload()).isEqualTo(event.getPayload());
+		}
+		assertThat(Question.from(this.codec.decode(this.codec.encode(asked)).sessionId("s").build()))
+			.isEqualTo(question);
+		Answer answer = Answer.from(this.codec.decode(this.codec.encode(answered)).sessionId("s").build());
+		assertThat(answer.questionEventId()).isEqualTo(asked.getId());
+		assertThat(answer.value()).isEqualTo(List.of(Map.of("key", "c1", "allowed", false, "message", "Not today.")));
 	}
 
 }

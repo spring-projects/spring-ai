@@ -43,6 +43,15 @@ import org.springframework.ai.model.tool.ToolCallDecisions;
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionResult;
+import org.springframework.ai.session.DefaultSessionService;
+import org.springframework.ai.session.InMemorySessionRepository;
+import org.springframework.ai.session.SessionEvent;
+import org.springframework.ai.session.SessionService;
+import org.springframework.ai.session.advisor.SessionAdvisors;
+import org.springframework.ai.session.advisor.SessionTurnAdvisor;
+import org.springframework.ai.session.question.ToolConfirmationQuestion;
+import org.springframework.ai.session.status.StopReason;
+import org.springframework.ai.session.status.TurnStatus;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
 import org.springframework.ai.tool.metadata.ToolMetadata;
@@ -59,6 +68,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  * the manager carries out the decisions, and the model answers with the tool results in a
  * second request. That second request is where a provider rejects a reply that lost
  * provider data on the way, such as a thought signature.
+ * <p>
+ * The session cases run the same round trips through the session advisors, on the service
+ * of {@link #getSessionService()}: the pause parks the session, the decisions resume it
+ * from a later call with no user message, and the model answers from the conversation the
+ * session rebuilds, where the reply and its results must pair up as the provider demands.
  * <p>
  * Subclasses must implement {@link #getChatModel()} to provide the ChatModel to test.
  *
@@ -82,6 +96,17 @@ public abstract class AbstractToolCallConfirmationIT {
 	 * @return the ChatModel to test
 	 */
 	protected abstract ChatModel getChatModel();
+
+	/**
+	 * Returns the session service the session cases run on. The default is a new service
+	 * on an in-memory repository; a subclass that tests a store returns a service on that
+	 * store instead, a JDBC repository on a database container for example. The cases
+	 * create a session of their own each, so a shared store serves them all.
+	 * @return the session service to test
+	 */
+	protected SessionService getSessionService() {
+		return DefaultSessionService.builder().sessionRepository(InMemorySessionRepository.builder().build()).build();
+	}
 
 	@BeforeEach
 	void resetBookings() {
@@ -202,6 +227,185 @@ public abstract class AbstractToolCallConfirmationIT {
 			.flatExtracting(message -> ((ToolResponseMessage) message).getResponses())
 			.extracting(ToolResponseMessage.ToolResponse::name)
 			.contains("getCurrentWeather", "bookFlight");
+	}
+
+	// --- Through a session ---
+
+	@Test
+	void sessionParksThePauseAndTheDecisionsResumeIt() {
+		SessionService sessionService = getSessionService();
+		ChatClient chatClient = sessionClient(sessionService, bookingTool());
+		String sessionId = "confirmation-" + System.nanoTime();
+
+		ChatResponse reply = Objects.requireNonNull(chatClient.prompt()
+			.user(BOOKING_REQUEST)
+			.advisors(SessionAdvisors.session(sessionId))
+			.call()
+			.chatResponse());
+
+		assertPaused(reply);
+		assertThat(this.bookings).isEmpty();
+		TurnStatus parked = sessionService.turns().status(sessionId);
+		assertThat(parked.isParked()).isTrue();
+		SessionEvent asked = Objects.requireNonNull(sessionService.turns().pendingQuestion(sessionId));
+		ToolConfirmationQuestion question = ToolConfirmationQuestion.from(asked);
+		assertThat(question.toolCalls()).extracting(ToolConfirmationQuestion.ToolCall::name).contains("bookFlight");
+
+		// Later, from a UI that read the question: the decisions, no user message
+		String answer = chatClient.prompt()
+			.advisors(SessionAdvisors.decisions(sessionId, decideAll(question, true)))
+			.call()
+			.content();
+
+		assertThat(this.bookings).containsExactly("VX205");
+		assertThat(answer).contains(CONFIRMATION_CODE);
+		assertThat(sessionService.turns().status(sessionId).stopReason()).isEqualTo(StopReason.END_TURN);
+		assertThat(sessionService.turns().pendingQuestion(sessionId)).isNull();
+		assertThat(toolResultNames(sessionService, sessionId)).containsExactly("bookFlight");
+	}
+
+	@Test
+	void sessionDeniedCallAnswersTheModelWithTheMessage() {
+		SessionService sessionService = getSessionService();
+		ChatClient chatClient = sessionClient(sessionService, bookingTool());
+		String sessionId = "confirmation-" + System.nanoTime();
+
+		ChatResponse reply = Objects.requireNonNull(chatClient.prompt()
+			.user(BOOKING_REQUEST)
+			.advisors(SessionAdvisors.session(sessionId))
+			.call()
+			.chatResponse());
+		assertPaused(reply);
+		ToolConfirmationQuestion question = ToolConfirmationQuestion
+			.from(Objects.requireNonNull(sessionService.turns().pendingQuestion(sessionId)));
+
+		String answer = chatClient.prompt()
+			.advisors(SessionAdvisors.decisions(sessionId, decideAll(question, false)))
+			.call()
+			.content();
+
+		assertThat(this.bookings).isEmpty();
+		assertThat(answer).isNotBlank().doesNotContain(CONFIRMATION_CODE);
+		assertThat(sessionService.turns().status(sessionId).stopReason()).isEqualTo(StopReason.END_TURN);
+		assertThat(toolResultNames(sessionService, sessionId)).containsExactly("bookFlight");
+	}
+
+	@Test
+	void sessionStreamedPauseResumesWithStreamedDecisions() {
+		SessionService sessionService = getSessionService();
+		ChatClient chatClient = sessionClient(sessionService, bookingTool());
+		String sessionId = "confirmation-" + System.nanoTime();
+
+		List<ChatResponse> chunks = chatClient.prompt()
+			.user(BOOKING_REQUEST)
+			.advisors(SessionAdvisors.session(sessionId))
+			.stream()
+			.chatResponse()
+			.collectList()
+			.block();
+		assertThat(chunks).isNotEmpty();
+		assertPaused(Objects.requireNonNull(chunks).get(chunks.size() - 1));
+		assertThat(sessionService.turns().status(sessionId).isParked()).isTrue();
+		ToolConfirmationQuestion question = ToolConfirmationQuestion
+			.from(Objects.requireNonNull(sessionService.turns().pendingQuestion(sessionId)));
+
+		List<String> answer = chatClient.prompt()
+			.advisors(SessionAdvisors.decisions(sessionId, decideAll(question, true)))
+			.stream()
+			.content()
+			.collectList()
+			.block();
+
+		assertThat(this.bookings).containsExactly("VX205");
+		assertThat(String.join("", Objects.requireNonNull(answer))).contains(CONFIRMATION_CODE);
+		assertThat(sessionService.turns().status(sessionId).stopReason()).isEqualTo(StopReason.END_TURN);
+	}
+
+	@Test
+	void sessionKeepsTheEarlierRoundsAcrossThePause() {
+		// The weather lookup runs in an earlier round, before the booking pauses; the
+		// session keeps every round, so the model resumes with it
+		SessionService sessionService = getSessionService();
+		ChatClient chatClient = sessionClient(sessionService, weatherTool(), bookingTool());
+		String sessionId = "confirmation-" + System.nanoTime();
+
+		ChatResponse reply = Objects.requireNonNull(chatClient.prompt()
+			.user("First check the current weather in Paris in Celsius. Then book flight VX205 for me. "
+					+ "Finally tell me the temperature and the confirmation code.")
+			.advisors(SessionAdvisors.session(sessionId))
+			.call()
+			.chatResponse());
+		assertPaused(reply);
+		assertThat(this.bookings).isEmpty();
+		ToolConfirmationQuestion question = ToolConfirmationQuestion
+			.from(Objects.requireNonNull(sessionService.turns().pendingQuestion(sessionId)));
+
+		String answer = chatClient.prompt()
+			.advisors(SessionAdvisors.decisions(sessionId, decideAll(question, true)))
+			.call()
+			.content();
+
+		assertThat(this.bookings).containsExactly("VX205");
+		assertThat(answer).contains(CONFIRMATION_CODE).contains("15");
+		assertThat(toolResultNames(sessionService, sessionId)).contains("getCurrentWeather", "bookFlight");
+	}
+
+	@Test
+	void sessionNewTextOnAParkedSessionMovesOn() {
+		SessionService sessionService = getSessionService();
+		ChatClient chatClient = sessionClient(sessionService, bookingTool());
+		String sessionId = "confirmation-" + System.nanoTime();
+
+		ChatResponse reply = Objects.requireNonNull(chatClient.prompt()
+			.user(BOOKING_REQUEST)
+			.advisors(SessionAdvisors.session(sessionId))
+			.call()
+			.chatResponse());
+		assertPaused(reply);
+
+		// The person moves on without deciding: the call is denied as abandoned, and the
+		// model answers the new text on a whole conversation
+		String answer = chatClient.prompt()
+			.user("Never mind the booking. Just tell me which flight I asked about.")
+			.advisors(SessionAdvisors.session(sessionId))
+			.call()
+			.content();
+
+		assertThat(this.bookings).isEmpty();
+		assertThat(answer).contains("VX205");
+		assertThat(sessionService.turns().status(sessionId).stopReason()).isEqualTo(StopReason.END_TURN);
+		assertThat(sessionService.turns().pendingQuestion(sessionId)).isNull();
+		assertThat(sessionService.getActiveMessages(sessionId)).filteredOn(ToolResponseMessage.class::isInstance)
+			.flatExtracting(message -> ((ToolResponseMessage) message).getResponses())
+			.extracting(ToolResponseMessage.ToolResponse::responseData)
+			.containsExactly(SessionTurnAdvisor.ABANDONED_DENY_MESSAGE);
+	}
+
+	/** A client with the session advisors around the tool-calling loop, and the tools. */
+	private ChatClient sessionClient(SessionService sessionService, ToolCallback... tools) {
+		return ChatClient.builder(getChatModel())
+			.defaultAdvisors(SessionAdvisors.builder(sessionService).build())
+			.defaultToolCallbacks(tools)
+			.build();
+	}
+
+	/** The names of the tool results stored in the session, in order. */
+	private static List<String> toolResultNames(SessionService sessionService, String sessionId) {
+		return sessionService.getActiveMessages(sessionId)
+			.stream()
+			.filter(ToolResponseMessage.class::isInstance)
+			.flatMap(message -> ((ToolResponseMessage) message).getResponses().stream())
+			.map(ToolResponseMessage.ToolResponse::name)
+			.toList();
+	}
+
+	/** A decision on every call the question lists, as a UI makes them. */
+	private static ToolCallDecisions decideAll(ToolConfirmationQuestion question, boolean allowed) {
+		return new ToolCallDecisions(question.toolCalls()
+			.stream()
+			.map(call -> allowed ? ToolCallDecision.allow(call.key())
+					: ToolCallDecision.deny(call.key(), "The user declined this booking."))
+			.toList());
 	}
 
 	/** The booking tool, marked to need a person's confirmation. */

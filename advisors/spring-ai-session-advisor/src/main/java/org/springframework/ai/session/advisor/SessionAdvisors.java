@@ -16,6 +16,7 @@
 
 package org.springframework.ai.session.advisor;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -26,23 +27,33 @@ import reactor.core.scheduler.Scheduler;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.client.advisor.api.BaseAdvisor;
+import org.springframework.ai.model.tool.ToolCallDecisions;
+import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.session.SessionService;
 import org.springframework.ai.session.compaction.CompactionStrategy;
 import org.springframework.ai.session.compaction.CompactionTrigger;
+import org.springframework.ai.session.status.TurnService;
 import org.springframework.util.Assert;
 
 /**
  * The session advisors of a {@code ChatClient}, configured together: the
- * {@link SessionTurnAdvisor} (the session, compaction) and the
+ * {@link SessionTurnAdvisor} (the session, the turn status, compaction) and the
  * {@link SessionMemoryAdvisor} (the history, the messages), each at its default order
- * around the tool-calling loop the {@code ChatClient} registers itself:
- * <pre class="code">
+ * around the tool-calling loop the {@code ChatClient} registers itself, and, when
+ * {@link Builder#interruptible(boolean) interruptible}, the
+ * {@link SessionInterruptAdvisor} inside the loop: <pre class="code">
  * ChatClient chatClient = ChatClient.builder(chatModel)
  *     .defaultAdvisors(SessionAdvisors.builder(sessionService)
  *         .compaction(new TurnCountTrigger(20), WindowCompactionStrategy.builder().lastTurns(10).build())
  *         .build())
  *     .build();
  * chatClient.prompt().user("Hi").advisors(SessionAdvisors.session(sessionId)).call().content();
+ * </pre>
+ * <p>
+ * A call whose loop paused on a tool call that needs a person's confirmation leaves the
+ * session parked. The person's decisions resume it, without a user message:
+ * <pre class="code">
+ * chatClient.prompt().advisors(SessionAdvisors.decisions(sessionId, decisions)).call().content();
  * </pre>
  * <p>
  * The memory advisor is a {@code MemoryAdvisor}, so the tool-calling loop the
@@ -64,12 +75,88 @@ public final class SessionAdvisors {
 	}
 
 	/**
-	 * The request runs on the session:
-	 * {@code .advisors(SessionAdvisors.session(sessionId))}.
+	 * Runs the request on the session:
+	 * {@code .advisors(SessionAdvisors.session(sessionId))}. Sets
+	 * {@link SessionMemoryAdvisor#SESSION_ID_CONTEXT_KEY}; the turn advisor generates a
+	 * run id of its own for the call.
+	 * @param sessionId the id of the session the request runs on
+	 * @return the advisor customizer to pass to {@code .advisors(...)}
+	 * @throws IllegalArgumentException if the session id is empty
 	 */
 	public static Consumer<ChatClient.AdvisorSpec> session(String sessionId) {
 		Assert.hasText(sessionId, "sessionId must not be empty");
 		return advisors -> advisors.param(SessionMemoryAdvisor.SESSION_ID_CONTEXT_KEY, sessionId);
+	}
+
+	/**
+	 * Runs the request on the session under the run id of your own harness:
+	 * {@code .advisors(SessionAdvisors.session(sessionId, runId))}. Sets
+	 * {@link SessionMemoryAdvisor#SESSION_ID_CONTEXT_KEY} and
+	 * {@link SessionTurnAdvisor#RUN_ID_CONTEXT_KEY}, the pair {@link TurnService#start}
+	 * takes.
+	 * <p>
+	 * Use it per request. A run id set as a default parameter of the client puts every
+	 * call under one run, which the status allows but rarely means what the caller wants.
+	 * Call {@link #session(String)} when there is no run id to pass.
+	 * @param sessionId the id of the session the request runs on
+	 * @param runId the run id the call's turn runs under
+	 * @return the advisor customizer to pass to {@code .advisors(...)}
+	 * @throws IllegalArgumentException if the session id or the run id is empty
+	 */
+	public static Consumer<ChatClient.AdvisorSpec> session(String sessionId, String runId) {
+		Assert.hasText(sessionId, "sessionId must not be empty");
+		Assert.hasText(runId, "runId must not be empty");
+		return advisors -> advisors.param(SessionMemoryAdvisor.SESSION_ID_CONTEXT_KEY, sessionId)
+			.param(SessionTurnAdvisor.RUN_ID_CONTEXT_KEY, runId);
+	}
+
+	/**
+	 * Answers the tool calls the session parked on with the person's decisions:
+	 * {@code .advisors(SessionAdvisors.decisions(sessionId, decisions))}, with no user
+	 * message. Sets {@link SessionMemoryAdvisor#SESSION_ID_CONTEXT_KEY} and
+	 * {@link SessionTurnAdvisor#TOOL_CALL_DECISIONS_CONTEXT_KEY}. The turn advisor
+	 * resumes the session, runs the allowed calls, stores the results, and the model
+	 * continues where it paused; the call returns its next reply. One decision per tool
+	 * call of the paused reply, keyed as {@code ToolCallDecisions.toolCallKeys} names
+	 * them. To run the resumed turn under the run id it parked under, add
+	 * {@code a.param(SessionTurnAdvisor.RUN_ID_CONTEXT_KEY, runId)}.
+	 * @param sessionId the id of the parked session
+	 * @param decisions the decisions on the tool calls the session waits on
+	 * @return the advisor customizer to pass to {@code .advisors(...)}
+	 * @throws IllegalArgumentException if the session id is empty or the decisions are
+	 * null
+	 */
+	public static Consumer<ChatClient.AdvisorSpec> decisions(String sessionId, ToolCallDecisions decisions) {
+		Assert.hasText(sessionId, "sessionId must not be empty");
+		Assert.notNull(decisions, "decisions must not be null");
+		return advisors -> advisors.param(SessionMemoryAdvisor.SESSION_ID_CONTEXT_KEY, sessionId)
+			.param(SessionTurnAdvisor.TOOL_CALL_DECISIONS_CONTEXT_KEY, decisions);
+	}
+
+	/**
+	 * Continues the session's last turn where it stopped:
+	 * {@code .advisors(SessionAdvisors.resume(sessionId))}, with no user message. Sets
+	 * {@link SessionMemoryAdvisor#SESSION_ID_CONTEXT_KEY} and
+	 * {@link SessionTurnAdvisor#RESUME_CONTEXT_KEY}. For a turn that an interrupt, a
+	 * dropped stream, an error or an expired lease ended before the model answered: the
+	 * turn advisor starts the turn again as the continuation of the stopped run, the
+	 * memory advisor prepends the stored history, which ends in the last round's tool
+	 * results, and the model carries on; the call returns its reply, and the log keeps
+	 * one turn with no user message added. When the model had already answered before the
+	 * stop landed, the call returns that reply and the turn is settled without a model
+	 * round. A turn that ended normally is not continued, {@code IllegalStateException};
+	 * a parked session takes {@link #decisions} instead, {@code TurnParkedException}; and
+	 * new text goes in a new turn, with {@link #session(String)}. To run the continued
+	 * turn under a run id of your own, add
+	 * {@code a.param(SessionTurnAdvisor.RUN_ID_CONTEXT_KEY, runId)}.
+	 * @param sessionId the id of the session whose last turn stopped
+	 * @return the advisor customizer to pass to {@code .advisors(...)}
+	 * @throws IllegalArgumentException if the session id is empty
+	 */
+	public static Consumer<ChatClient.AdvisorSpec> resume(String sessionId) {
+		Assert.hasText(sessionId, "sessionId must not be empty");
+		return advisors -> advisors.param(SessionMemoryAdvisor.SESSION_ID_CONTEXT_KEY, sessionId)
+			.param(SessionTurnAdvisor.RESUME_CONTEXT_KEY, Boolean.TRUE);
 	}
 
 	public static final class Builder {
@@ -83,6 +170,12 @@ public final class SessionAdvisors {
 		@Nullable private CompactionStrategy compactionStrategy;
 
 		private boolean asyncCompaction;
+
+		@Nullable private Duration turnTimeout = SessionTurnAdvisor.DEFAULT_TURN_TIMEOUT;
+
+		@Nullable private ToolCallingManager toolCallingManager;
+
+		private boolean interruptible;
 
 		private Consumer<SessionMemoryAdvisor.Builder> memory = memory -> {
 		};
@@ -118,6 +211,43 @@ public final class SessionAdvisors {
 		}
 
 		/**
+		 * How long a call may hold the session's turn before another call may take it
+		 * over; {@link SessionTurnAdvisor#DEFAULT_TURN_TIMEOUT} by default, {@code null}
+		 * for no lease. See {@link SessionTurnAdvisor.Builder#turnTimeout(Duration)}.
+		 */
+		public Builder turnTimeout(@Nullable Duration turnTimeout) {
+			Assert.isTrue(turnTimeout == null || turnTimeout.compareTo(Duration.ZERO) > 0,
+					"turnTimeout must be positive");
+			this.turnTimeout = turnTimeout;
+			return this;
+		}
+
+		/**
+		 * The manager that runs the tool calls a person allowed when a parked session
+		 * resumes; see {@link SessionTurnAdvisor.Builder#toolCallingManager}. Pass the
+		 * one the tool-calling advisor uses.
+		 */
+		public Builder toolCallingManager(ToolCallingManager toolCallingManager) {
+			Assert.notNull(toolCallingManager, "toolCallingManager must not be null");
+			this.toolCallingManager = toolCallingManager;
+			return this;
+		}
+
+		/**
+		 * Whether the tool-calling loop stops after an {@link TurnService#interrupt
+		 * interrupt}; {@code false} by default. When {@code true} the
+		 * {@link SessionInterruptAdvisor} joins the advisors, inside the memory advisor:
+		 * it reads the session's status before every model round, one indexed read each,
+		 * and ends the call with {@link TurnInterruptedException} when the turn no longer
+		 * runs. Without it an interrupt moves the status to idle at once, but the loop
+		 * runs on to its end.
+		 */
+		public Builder interruptible(boolean interruptible) {
+			this.interruptible = interruptible;
+			return this;
+		}
+
+		/**
 		 * Customizes the {@link SessionMemoryAdvisor}, its filters for example.
 		 * Customizers run in the order they are added, after the shared settings, so they
 		 * can override them.
@@ -128,24 +258,40 @@ public final class SessionAdvisors {
 			return this;
 		}
 
-		/** The advisors, in their order: the turn, then the memory. */
+		/**
+		 * The advisors, in their order: the turn, the memory, then the interrupt when
+		 * {@link #interruptible}.
+		 */
 		public List<Advisor> build() {
 			Scheduler scheduler = (this.scheduler != null) ? this.scheduler : BaseAdvisor.DEFAULT_SCHEDULER;
 
 			SessionTurnAdvisor.Builder turn = SessionTurnAdvisor.builder(this.sessionService)
 				.scheduler(scheduler)
-				.asyncCompaction(this.asyncCompaction);
+				.asyncCompaction(this.asyncCompaction)
+				.turnTimeout(this.turnTimeout);
 			if (this.compactionTrigger != null && this.compactionStrategy != null) {
 				turn.compactionTrigger(this.compactionTrigger).compactionStrategy(this.compactionStrategy);
+			}
+			if (this.toolCallingManager != null) {
+				turn.toolCallingManager(this.toolCallingManager);
 			}
 
 			SessionMemoryAdvisor.Builder memory = SessionMemoryAdvisor.builder(this.sessionService)
 				.scheduler(scheduler);
 			this.memory.accept(memory);
 
+			SessionMemoryAdvisor memoryAdvisor = memory.build();
 			List<Advisor> advisors = new ArrayList<>();
 			advisors.add(turn.build());
-			advisors.add(memory.build());
+			advisors.add(memoryAdvisor);
+			if (this.interruptible) {
+				// Just inside the memory advisor, wherever a customizer put it, so the
+				// round's request is stored before the check throws
+				advisors.add(SessionInterruptAdvisor.builder(this.sessionService)
+					.scheduler(scheduler)
+					.order(memoryAdvisor.getOrder() + 100)
+					.build());
+			}
 			return List.copyOf(advisors);
 		}
 

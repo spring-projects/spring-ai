@@ -136,6 +136,25 @@ public final class DefaultSessionService implements SessionService {
 
 	@Override
 	public void appendEvent(SessionEvent event) {
+		checkSystemMessage(event);
+		this.sessionRepository.appendEvent(event);
+	}
+
+	@Override
+	public boolean appendEvents(String sessionId, List<SessionEvent> events, long expectedVersion) {
+		Assert.hasText(sessionId, "sessionId must not be null or empty");
+		Assert.notEmpty(events, "events must not be null or empty");
+		events.forEach(this::checkSystemMessage);
+		return this.sessionRepository.appendEvents(sessionId, events, expectedVersion);
+	}
+
+	@Override
+	public long getEventVersion(String sessionId) {
+		Assert.hasText(sessionId, "sessionId must not be null or empty");
+		return this.sessionRepository.getEventVersion(sessionId);
+	}
+
+	private void checkSystemMessage(SessionEvent event) {
 		Assert.notNull(event, "event must not be null");
 		if (!this.allowSystemMessages && event.hasMessage() && event.getMessageType() == MessageType.SYSTEM) {
 			throw new IllegalArgumentException("Storing a SystemMessage in session '" + event.getSessionId()
@@ -145,7 +164,6 @@ public final class DefaultSessionService implements SessionService {
 					+ "DefaultSessionService.builder().allowSystemMessages(true) or set "
 					+ "spring.ai.session.allow-system-messages=true. See the \"System Messages\" reference page.");
 		}
-		append(event);
 	}
 
 	@Override
@@ -153,10 +171,6 @@ public final class DefaultSessionService implements SessionService {
 		Assert.hasText(sessionId, "sessionId must not be null or empty");
 		Assert.notNull(filter, "filter must not be null");
 		return this.sessionRepository.findEvents(sessionId, filter);
-	}
-
-	private void append(SessionEvent event) {
-		this.sessionRepository.appendEvent(event);
 	}
 
 	@Override

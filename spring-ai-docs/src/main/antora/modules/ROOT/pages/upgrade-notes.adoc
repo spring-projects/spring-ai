@@ -336,10 +336,10 @@ If your documents use `distance` for domain-specific data, consider renaming tha
 
 === Chat Memory
 
-==== Deprecated: `ChatMemory` in Favor of Session Memory
+==== Deprecated: `ChatMemory` in Favor of Session
 
 The `ChatMemory` API (`ChatMemory`, `MessageWindowChatMemory`, `ChatMemoryRepository`, `InMemoryChatMemoryRepository`), the `MessageChatMemoryAdvisor`, the JDBC, Cassandra, Neo4j, MongoDB and Redis chat memory repositories and their auto-configurations are deprecated for removal in 3.0.0.
-xref:api/session.adoc[Session memory] replaces them; xref:api/chat-memory.adoc#chat-memory-migration[Migrating to Session Memory] maps one onto the other.
+The xref:api/session.adoc[session] replaces them; xref:api/chat-memory.adoc#chat-memory-migration[Migrating to Session] maps one onto the other.
 Session stores for Cassandra, Neo4j, MongoDB and Redis, and session dialects for HSQLDB, Oracle, SQL Server and SQLite, are planned before 3.0.0, when the deprecated modules are removed.
 
 ===== Impact
@@ -782,7 +782,7 @@ var chatMemoryAdvisor = MessageChatMemoryAdvisor.builder(chatMemory)
     .build();
 ----
 
-TIP: Since 2.1.0, xref:api/session.adoc[session memory] replaces `ChatMemory`: it keeps tool-call messages, runs inside the tool loop by default, and builds each prompt from a turn-aware view of the conversation. See xref:api/chat-memory.adoc#chat-memory-migration[Migrating to Session Memory].
+TIP: Since 2.1.0, the xref:api/session.adoc[session] replaces `ChatMemory`: it keeps tool-call messages, runs inside the tool loop by default, and builds each prompt from a turn-aware view of the conversation. See xref:api/chat-memory.adoc#chat-memory-migration[Migrating to Session].
 
 [[tool-calling-1x-to-2x]]
 === Tool Calling

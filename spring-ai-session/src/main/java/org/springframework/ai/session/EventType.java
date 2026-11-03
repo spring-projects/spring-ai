@@ -55,6 +55,41 @@ public final class EventType {
 	 */
 	public static final EventType COMPACTION = of("COMPACTION");
 
+	/**
+	 * A turn status transition: a turn started on the session, or ended with a
+	 * {@link org.springframework.ai.session.status.StopReason}. The newest one is the
+	 * session's {@link org.springframework.ai.session.status.TurnStatus}.
+	 * {@link org.springframework.ai.session.status.SessionStatusEvents} builds and reads
+	 * these events.
+	 */
+	public static final EventType STATUS = of("STATUS");
+
+	/**
+	 * A request to stop the turn that runs on the session, recorded by
+	 * {@link org.springframework.ai.session.status.TurnService#interrupt}. When a turn
+	 * runs, a {@link #STATUS} event in the same append ends it.
+	 */
+	public static final EventType INTERRUPT = of("INTERRUPT");
+
+	/**
+	 * A question the turn parked on, waiting for an answer from outside: a person's
+	 * decision on a tool call, for example. Recorded by
+	 * {@link org.springframework.ai.session.status.TurnService#park} with the
+	 * {@link #STATUS} event that parks the turn; the newest one no {@link #ANSWER} points
+	 * at is what the session waits on.
+	 * {@link org.springframework.ai.session.question.QuestionEvents} builds these events
+	 * and {@link org.springframework.ai.session.question.Question} reads them.
+	 */
+	public static final EventType QUESTION = of("QUESTION");
+
+	/**
+	 * The answer to a {@link #QUESTION}, pointing at it by event id. Recorded by
+	 * {@link org.springframework.ai.session.status.TurnService#resume} with the
+	 * {@link #STATUS} event that starts the turn again.
+	 * {@link org.springframework.ai.session.question.Answer} reads it.
+	 */
+	public static final EventType ANSWER = of("ANSWER");
+
 	private static final Set<EventType> MESSAGE_BEARING = Set.of(MESSAGE);
 
 	private final String name;

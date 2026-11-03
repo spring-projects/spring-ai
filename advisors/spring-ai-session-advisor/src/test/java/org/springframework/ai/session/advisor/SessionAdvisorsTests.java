@@ -17,6 +17,7 @@
 package org.springframework.ai.session.advisor;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -24,18 +25,28 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.SystemMessage;
+import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.tool.ToolCallDecision;
+import org.springframework.ai.model.tool.ToolCallDecisions;
 import org.springframework.ai.session.DefaultSessionService;
 import org.springframework.ai.session.InMemorySessionRepository;
 import org.springframework.ai.session.MessageFilter;
 import org.springframework.ai.session.SessionService;
 import org.springframework.ai.session.compaction.WindowCompactionStrategy;
+import org.springframework.ai.session.status.StopReason;
 import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.function.FunctionToolCallback;
+import org.springframework.ai.tool.metadata.ToolMetadata;
+import org.springframework.core.Ordered;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * {@link SessionAdvisors} with a {@link ChatClient} that registers its own tool-calling
@@ -62,6 +73,29 @@ class SessionAdvisorsTests {
 	}
 
 	@Test
+	void interruptibleAddsTheInterruptAdvisorInsideTheMemoryAdvisor() {
+		List<Advisor> advisors = SessionAdvisors.builder(this.sessionService).interruptible(true).build();
+
+		assertThat(advisors).hasExactlyElementsOfTypes(SessionTurnAdvisor.class, SessionMemoryAdvisor.class,
+				SessionInterruptAdvisor.class);
+		assertThat(advisors).extracting(Advisor::getOrder).isSorted();
+		assertThat(advisors.get(2).getOrder()).isEqualTo(SessionInterruptAdvisor.DEFAULT_ORDER);
+	}
+
+	@Test
+	void interruptAdvisorFollowsTheMemoryAdvisorsOrder() {
+		List<Advisor> advisors = SessionAdvisors.builder(this.sessionService)
+			.memory(memory -> memory.order(Ordered.HIGHEST_PRECEDENCE + 1500))
+			.interruptible(true)
+			.build();
+
+		// Just inside the memory advisor, wherever it was put, so a round's request is
+		// stored before the check throws
+		assertThat(advisors.get(1).getOrder()).isEqualTo(Ordered.HIGHEST_PRECEDENCE + 1500);
+		assertThat(advisors.get(2).getOrder()).isEqualTo(Ordered.HIGHEST_PRECEDENCE + 1600);
+	}
+
+	@Test
 	void callRunsTurnWithHistory() {
 		ChatClient client = client(SessionAdvisors.builder(this.sessionService).build());
 		this.model.thenAnswer("Hi!").thenAnswer("Fine.");
@@ -71,6 +105,29 @@ class SessionAdvisorsTests {
 
 		assertThat(ScriptedChatModel.describe(this.model.prompts().get(1))).containsExactly("Hello", "Hi!",
 				"How are you?");
+	}
+
+	@Test
+	void sessionWithRunIdSetsBothKeys() {
+		ChatClient client = client(SessionAdvisors.builder(this.sessionService).build());
+		this.model.thenAnswer("Hi!");
+
+		Map<String, Object> context = client.prompt()
+			.user("Hello")
+			.advisors(SessionAdvisors.session(this.sessionId, "run-7"))
+			.call()
+			.chatClientResponse()
+			.context();
+
+		assertThat(context).containsEntry(SessionMemoryAdvisor.SESSION_ID_CONTEXT_KEY, this.sessionId)
+			.containsEntry(SessionTurnAdvisor.RUN_ID_CONTEXT_KEY, "run-7");
+		assertThat(this.sessionService.turns().status(this.sessionId).runId()).isEqualTo("run-7");
+	}
+
+	@Test
+	void sessionWithoutRunIdRejectsAnEmptyOne() {
+		assertThatIllegalArgumentException().isThrownBy(() -> SessionAdvisors.session(this.sessionId, ""));
+		assertThatIllegalArgumentException().isThrownBy(() -> SessionAdvisors.session("", "run-7"));
 	}
 
 	@Test
@@ -156,6 +213,73 @@ class SessionAdvisorsTests {
 				.noneMatch(message -> message instanceof SystemMessage && message.getText().isBlank()));
 		assertThat(ScriptedChatModel.describe(this.model.prompts().get(2))).containsExactly("Weather in Lisbon?",
 				"call:c1", "result:c1", "Sunny.", "And you?");
+	}
+
+	@Test
+	void decisionsResumeAParkedSessionThroughTheAutoRegisteredLoop() {
+		ToolCallback book = FunctionToolCallback.builder("bookFlight", (City city) -> "Booked " + city.city())
+			.description("Books a flight to a city")
+			.inputType(City.class)
+			.toolMetadata(ToolMetadata.builder().requiresConfirmation(true).build())
+			.build();
+		ChatClient client = client(SessionAdvisors.builder(this.sessionService).build(), book);
+		this.model.then(prompt -> new ChatResponse(List.of(new Generation(AssistantMessage.builder()
+			.content("")
+			.toolCalls(List.of(new AssistantMessage.ToolCall("c1", "function", "bookFlight", "{\"city\":\"Lisbon\"}")))
+			.build())))).thenAnswer("Booked!");
+		say(client, "Book a flight to Lisbon");
+		assertThat(this.sessionService.turns().status(this.sessionId).isParked()).isTrue();
+		ToolCallDecisions decisions = ToolCallDecisions.of(ToolCallDecision.allow("c1"));
+
+		Map<String, Object> context = client.prompt()
+			.advisors(SessionAdvisors.decisions(this.sessionId, decisions))
+			.call()
+			.chatClientResponse()
+			.context();
+
+		assertThat(context).containsEntry(SessionMemoryAdvisor.SESSION_ID_CONTEXT_KEY, this.sessionId)
+			.containsEntry(SessionTurnAdvisor.TOOL_CALL_DECISIONS_CONTEXT_KEY, decisions);
+		assertThat(this.sessionService.turns().status(this.sessionId).stopReason()).isEqualTo(StopReason.END_TURN);
+		assertThat(ScriptedChatModel.describe(new Prompt(this.sessionService.getActiveMessages(this.sessionId))))
+			.containsExactly("Book a flight to Lisbon", "call:c1", "result:c1", "Booked!");
+	}
+
+	@Test
+	void resumeContinuesAStoppedTurnThroughTheAutoRegisteredLoop() {
+		ToolCallback stop = FunctionToolCallback.builder("stop", (City city) -> {
+			this.sessionService.turns().interrupt(this.sessionId, "user pressed stop");
+			return "stopping in " + city.city();
+		}).description("Stops the turn").inputType(City.class).build();
+		ChatClient client = client(SessionAdvisors.builder(this.sessionService).interruptible(true).build(), stop);
+		this.model.then(prompt -> new ChatResponse(List.of(new Generation(AssistantMessage.builder()
+			.content("")
+			.toolCalls(List.of(new AssistantMessage.ToolCall("c1", "function", "stop", "{\"city\":\"Lisbon\"}")))
+			.build())))).thenAnswer("Stopped in Lisbon.");
+		assertThatThrownBy(() -> say(client, "Stop")).isInstanceOf(TurnInterruptedException.class);
+
+		Map<String, Object> context = client.prompt()
+			.advisors(SessionAdvisors.resume(this.sessionId))
+			.call()
+			.chatClientResponse()
+			.context();
+
+		assertThat(context).containsEntry(SessionMemoryAdvisor.SESSION_ID_CONTEXT_KEY, this.sessionId)
+			.containsEntry(SessionTurnAdvisor.RESUME_CONTEXT_KEY, Boolean.TRUE);
+		assertThat(this.sessionService.turns().status(this.sessionId).stopReason()).isEqualTo(StopReason.END_TURN);
+		assertThat(ScriptedChatModel.describe(new Prompt(this.sessionService.getActiveMessages(this.sessionId))))
+			.containsExactly("Stop", "call:c1", "result:c1", "Stopped in Lisbon.");
+	}
+
+	@Test
+	void resumeRejectsAnEmptySessionId() {
+		assertThatIllegalArgumentException().isThrownBy(() -> SessionAdvisors.resume(""));
+	}
+
+	@Test
+	void decisionsRejectAnEmptySessionIdOrNullDecisions() {
+		assertThatIllegalArgumentException()
+			.isThrownBy(() -> SessionAdvisors.decisions("", ToolCallDecisions.of(ToolCallDecision.allow("c1"))));
+		assertThatIllegalArgumentException().isThrownBy(() -> SessionAdvisors.decisions(this.sessionId, null));
 	}
 
 	record City(String city) {

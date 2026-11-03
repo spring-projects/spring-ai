@@ -12,7 +12,7 @@ This page is the reference for the builder API, configuration options, hook meth
 
 The default `ToolCallingAdvisor.DEFAULT_ORDER` is `Ordered.HIGHEST_PRECEDENCE + 300`. This is higher than the default `MessageChatMemoryAdvisor` order (`HIGHEST_PRECEDENCE + 200`), which places memory advisors **outside** the tool loop by default. See xref:api/tools.adoc#memory-and-the-tool-loop[Memory and the Tool Loop].
 
-NOTE: `MessageChatMemoryAdvisor` and the `ChatMemory` API are deprecated since 2.1.0, for removal in 3.0.0, in favor of xref:api/session.adoc[session memory]; see xref:api/chat-memory.adoc#chat-memory-migration[Migrating to Session Memory].
+NOTE: `MessageChatMemoryAdvisor` and the `ChatMemory` API are deprecated since 2.1.0, for removal in 3.0.0, in favor of the xref:api/session.adoc[session]; see xref:api/chat-memory.adoc#chat-memory-migration[Migrating to Session].
 
 [[builder]]
 == Builder
