@@ -1,0 +1,3 @@
+boolean defect = response.getYesNo("defect").isYes();
+String topic = response.getChoice("topic").getValue();
+int satisfaction = response.getScore("satisfaction").getNearestLevel();

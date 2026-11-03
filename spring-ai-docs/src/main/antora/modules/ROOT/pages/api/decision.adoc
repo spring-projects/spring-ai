@@ -1,194 +1,310 @@
 [[decision-models]]
 = Decision Models
 
-A decision model answers typed questions about an input, instead of generating text.
-You give it a text, a set of fields or a conversation, and the questions you want answered about it.
-It returns one answer per question, with the probability the model assigned to each possible outcome.
+Many decisions in an application have a small, known set of possible results: yes or no, one of a few categories, or a level on a scale.
+You could ask a chat model, but it answers with free text, and you must turn that text into a reliable yes or no yourself.
+A decision model is made for these decisions.
+You describe the possible results, and the model picks one and tells you how likely each result is.
 
-Decision models are a good fit when the application needs a verdict it can act on, not a message: recognizing what a customer wants, deciding whether a request can be handled without an agent, estimating how likely a customer is to leave, checking whether a chat answer is grounded in the retrieved documents, or screening an input before it reaches a chat model.
-They are typically faster and cheaper than a chat model asked the same question, and their answers come with probabilities, so the application can set its own thresholds.
+This makes decision models a good fit for classification, such as sorting customer messages by topic and sending each one to the right team.
+They also work well as guardrails, for example, to stop a prompt injection before it reaches a chat model, or to find a chat answer that the retrieved documents don't support.
+They also help with everyday business logic, such as finding out whether a customer reports a broken product, or how satisfied the customer is.
 
-The `DecisionModel` API follows the same shape as the other Spring AI model APIs: a `DecisionPrompt` goes in, a `DecisionResponse` comes out, and provider-specific `DecisionOptions` tune the call.
+A decision model is usually faster and cheaper than a chat model that you ask the same thing.
+It reports how likely each result is, so your application decides how sure the model must be before it acts on the answer.
+
+A decision model is still a machine learning model, not a rule engine: its answers are not deterministic, and they can be wrong.
+For each decision, think about what happens when the answer is wrong.
+When a mistake is expensive, let a person check the answer or use a safe default.
+
+== Quick Start
+
+Pick one of the <<available-implementations,available implementations>> and add its Spring Boot starter.
+The quickest way to try decision models is Ollama.
+It runs on your machine and needs no API key.
+Install Ollama 0.40.4 or later, start it, and add the Spring AI Ollama starter to your project:
+
+[tabs]
+======
+Maven::
++
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-model-ollama</artifactId>
+</dependency>
+----
+
+Gradle::
++
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-starter-model-ollama'
+}
+----
+======
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+Then pull `d1-omni:600m`, the default decision model of the Ollama integration:
+
+[source,shellscript]
+----
+ollama pull d1-omni:600m
+----
+
+Spring AI can also pull the model for you at startup, with `spring.ai.ollama.init.pull-model-strategy=when_missing`.
+See xref:api/decision/ollama-decision.adoc#auto-pulling-models[Auto-pulling Models] for the details.
+
+The starter creates a `DecisionModel` bean.
+Inject it, and ask it questions:
+
+[source,java]
+----
+@Service
+class SupportTriage {
+
+    private final DecisionModel decisionModel;
+
+    SupportTriage(DecisionModel decisionModel) {
+        this.decisionModel = decisionModel;
+    }
+
+    void triage() {
+        DecisionResponse response = decisionModel.call(DecisionPrompt.builder()
+include::partial$decision/example-questions.adoc[indent=12]
+            .build());
+
+include::partial$decision/example-answers.adoc[indent=8]
+    }
+
+}
+----
+
+The prompt asks three named questions about the customer message, one of each kind.
+The response has one answer for each question.
+The rest of this page explains each part, and the provider pages use the same example.
+
+== Asking Questions
+
+A `DecisionPrompt` holds the input, the questions to ask about it and, optionally, the settings of the call.
 
 image::decision/decision-request-classes.svg[The prompt, its input kinds and its question kinds, width=800, align="center"]
 
-== Questions
+When you have only a text and one or two questions, `call(String, Map)` is shorter, because you don't need to build a prompt:
 
-A `DecisionPrompt` asks one or more named questions.
-There are three kinds of questions, and `DecisionQuestion` is sealed to them, as `DecisionAnswer` is to their answers and to `RefusalAnswer`, so code handling questions or answers can cover every kind.
-Every provider supports all three; a new kind of question is an addition to the API, not to a provider.
+[source,java]
+----
+include::partial$decision/example-short-call.adoc[]
+----
+
+=== Questions
+
+There are three kinds of questions, and every provider supports all three.
 
 [cols="2,4,3"]
 |====
 | Question | What it asks | Answer
 
 | `YesNoQuestion`
-| Whether something holds.
-Optional `whenYes` and `whenNo` criteria tell the model when to answer yes and when to answer no.
+| Whether something is true.
+Optional `whenYes` and `whenNo` criteria say what counts as a yes and what counts as a no.
 | `YesNoAnswer`, with the probability of yes.
 
 | `ChoiceQuestion`
-| Which of the offered options applies.
+| Which of the offered options fits the input.
 Each option has a name and, optionally, a description.
-| `ChoiceAnswer`, with the selected option, the probability of each option and the provider's confidence.
+| `ChoiceAnswer`, with the selected option and, when the provider reports them, the probability of each option.
 
 | `ScoreQuestion`
-| Where the input sits on an ordered scale of levels, such as `low`, `medium`, `high`.
+| Which level of an ordered scale fits the input, such as `unhappy`, `neutral`, `happy`.
 Each level has a label and, optionally, a description.
-| `ScoreAnswer`, with the expected level as a value between `0` and `levels - 1`, the probability of each level and the provider's confidence.
+| `ScoreAnswer`, with the expected level and, when the provider reports them, the probability of each level.
 |====
 
-[source,java]
-----
-DecisionPrompt prompt = DecisionPrompt.builder()
-    .text("I'm moving abroad next month. Can I put my weekly deliveries on hold until I'm settled, or do I need to cancel?")
-    .question("selfService", YesNoQuestion.builder()
-        .text("Can the customer do this on their own from the account page?")
-        .whenYes("The request is covered by a setting the customer can change")
-        .whenNo("Only an agent can make the change")
-        .build())
-    .question("intent", ChoiceQuestion.builder()
-        .text("What does the customer want to do?")
-        .option("modify", "Change the address, schedule or contents of upcoming deliveries")
-        .option("cancel", "Stop the subscription for good")
-        .option("learn", "Understand how the service works, without changing anything")
-        .build())
-    .question("churnRisk", ScoreQuestion.of("How likely is the customer to leave?", "unlikely", "possible", "likely"))
-    .build();
+These tips help you get more reliable answers:
 
-DecisionResponse response = decisionModel.call(prompt);
+* Pick the kind of question from what your code does next.
+Use a `YesNoQuestion` when the code takes one of two paths, a `ChoiceQuestion` when it takes one of several, and a `ScoreQuestion` when it needs a level, such as a priority.
+* Add descriptions when a name alone can be read in more than one way.
+In the example, the `product` option alone could mean any question about a product, so its description says that it is about a problem with an item the customer received.
+The `whenYes` and `whenNo` criteria do the same for a yes/no question.
+* Send only what the decision needs.
+A short message, or a few relevant fields, gives clearer answers than a whole customer record or a long conversation.
+* Try your questions on real inputs before you rely on them, including inputs that are hard to decide.
+If the probabilities stay close to `0.5`, or are spread over several options, change the wording and try again.
 
-boolean selfService = response.getYesNo("selfService").isYes();
-String intent = response.getChoice("intent").getValue();
-double churnRisk = response.getScore("churnRisk").getValue();
-----
+The answers come back in the same order as the questions.
+`Map.of(...)` has no order, so when the order is important to you, add the questions one by one to the builder, or use a `LinkedHashMap`.
 
-For a single input and the default options, the shorter `call(String, Map)` and `call(DecisionInput, Map)` forms do the same.
+=== Inputs
 
-[source,java]
-----
-DecisionResponse response = decisionModel.call("How do I change the delivery day to Saturdays?",
-        Map.of("selfService", YesNoQuestion.of("Can the customer do this on their own from the account page?")));
-----
+The input is what the questions are about.
+`DecisionInput` offers three kinds of input, and the `DecisionPrompt` builder has a method for each of them.
 
-Write questions around observable criteria, and keep one concern per question: a model answers "Does the customer want to pause their deliveries?" more reliably than "Is the customer moving and about to pause or cancel?".
-Give the options of a choice distinct meanings, and consider a fallback option such as `other` when they can't cover every input.
-Define scale levels so that adjacent levels have distinct criteria.
+[cols="2,5"]
+|====
+| Input | Use it for
 
-Questions keep the order they were added in, and the answers come back in the same order, so `response.getResults()` and `response.getAnswers()` line up with the prompt.
-A `Map.of(...)` has no order, so add the questions one by one to the builder, or pass an ordered map such as `LinkedHashMap`, when the order matters.
+| `text(String)`
+| A plain text, such as a customer message.
+For a text with images, use `content(MessagePart...)`.
+It takes the same content parts as a chat message, such as a `TextPart` followed by a `MediaPart`.
 
-== Inputs
+| `fields(Map)`
+| An input made of named fields, such as a customer message together with numbers about the customer's orders.
+The model gets each value with its name, so it knows what each value means.
+Values can be strings, numbers, booleans, nulls, maps, and lists.
+A top-level field can also hold content parts, such as an image.
+Use a `LinkedHashMap` to keep the fields in order.
 
-The input is the thing the questions are about.
-`DecisionInput` offers three kinds.
+| `conversation(List<Message>)`
+| A conversation, made of the same `Message` types that a `ChatModel` takes.
+Use it to check an exchange, for example, whether the last assistant answer is correct.
+|====
 
-* `DecisionInput.text(String)`: a text.
-For a text with images, or any other mix, `DecisionInput.content(MessagePart...)` takes the ordered content parts a chat message is made of, such as a `TextPart` followed by a `MediaPart`.
-* `DecisionInput.fields(Map)`: a structured input made of named fields.
-Values can be strings, numbers, booleans, nulls, maps and lists, or, at the top level, a `MessagePart` or a list of parts, such as the text and image of an attachment.
-Use it when the input has a shape, such as a customer message along with the customer's plan and history, so that the model sees each part for what it is.
-The fields keep the order of the map, so use an ordered map such as `LinkedHashMap` when the order matters.
-How a provider lays the fields out for the model is up to the provider.
-* `DecisionInput.conversation(List<Message>)`: a conversation, made of the same `Message` types a `ChatModel` takes.
-Use it to judge an exchange, for example whether the last assistant answer is correct, or whether the next user message should be answered at all.
-
-The `DecisionPrompt` builder has `text(...)`, `content(...)`, `fields(...)` and `conversation(...)` shortcuts for each.
+For any kind of input, `call(DecisionInput, Map)` works like `call(String, Map)`:
 
 [source,java]
 ----
-Map<String, Object> request = new LinkedHashMap<>();
-request.put("message", "Your new menu isn't for me anymore.");
-request.put("plan", "family");
-request.put("months_subscribed", 26);
+Map<String, Object> customer = new LinkedHashMap<>();
+customer.put("message", "This is the third time my order arrives late.");
+customer.put("orders", 12);
+customer.put("late_deliveries", 3);
 
-DecisionResponse leaving = decisionModel.call(DecisionInput.fields(request),
-        Map.of("leaving", YesNoQuestion.of("Is a loyal customer about to leave?")));
+DecisionResponse repeated = decisionModel.call(DecisionInput.fields(customer),
+        Map.of("repeated", YesNoQuestion.of("Does the customer say that the problem happened before?")));
 
+// expected: no, because the assistant talks about the delivery date, not about returns
 DecisionResponse answered = decisionModel.call(
         DecisionInput.conversation(List.of(
-            new UserMessage("Can I skip next week's delivery?"),
-            new AssistantMessage("You can change your delivery address from the account page."))),
+            new UserMessage("Can I return the headphones?"),
+            new AssistantMessage("Your order will arrive on Friday."))),
         Map.of("answered", YesNoQuestion.of("Does the last assistant message answer the user's question?")));
 ----
 
-Which input kinds and content parts a provider supports depends on the provider.
+Not every provider supports every kind of input or content part, such as images.
+See the provider pages for details.
 
-== Answers
+=== Options
 
-image::decision/decision-response-classes.svg[The response, its metadata and its answer kinds, width=700, align="center"]
-
-Every answer carries what the model actually returned, so the application decides what to do with it.
-`getYesNo(name)`, `getChoice(name)` and `getScore(name)` return the typed answer to a question; `getAnswer(name, Class)` does the same for any answer type, and `hasAnswer(name)` tells whether the response has one.
-
-* A `YesNoAnswer` has the probability of yes.
-`isYes()` applies a `0.5` threshold; `isYes(double)` applies yours.
-* A `ChoiceAnswer` has the selected option and, when the provider reports them, the probability of each option: `getProbability()` for the selected one, `getProbability(option)` for any, and `getRankedOptions()` from the most to the least likely.
-When the top two options are close, the model was torn, which is a good reason to ask a person.
-* A `ScoreAnswer` has the expected level as `getValue()`, a value between `0` and `levels - 1`, and the probability of each level as `getProbabilities()`.
-The value is not an integer: `1.5` means the model is split between the second and the third level.
-`getNearestLevel()` is the level with the highest probability, and the level to act on; when several levels share it, the one closest to the expected value wins.
-`getRoundedLevel()` rounds the expected value instead.
-When a provider reports no probabilities, or none above zero, `getNearestLevel()` falls back to rounding.
-
-The two score accessors can disagree, which is why the nearest level is the one to act on.
-
-[source,java]
-----
-// probabilities 0.5, 0, 0.5 over the levels calm, annoyed, angry
-score.getValue();         // 1.0, the expected level
-score.getRoundedLevel();  // 1, annoyed, which the model gave no probability at all
-score.getNearestLevel();  // 0, calm, tied with angry for the highest probability and the lower of the two
-----
-
-Probabilities are what the model assigned to each outcome.
-They are not calibrated estimates of correctness, and they are not comparable across models or across differently worded questions.
-`ChoiceAnswer` and `ScoreAnswer` also carry `getConfidence()`: a value between `0` and `1` when the provider reports one, `null` otherwise.
-It is the provider's own estimate of how settled the answer is, and is distinct from the probabilities.
-
-A provider can decline to answer one question while answering the others.
-Such a question gets a `RefusalAnswer`; `response.isRefused(name)` tells, and the typed accessors throw an `IllegalStateException` for it.
-A refusal is not a request failure.
-
-`response.getMetadata()` carries the response id and the model that answered, when the provider reports them, and the token usage of the call as a `Usage`.
-
-== Options
-
-`DecisionOptions` carries the model name.
-Set it on the prompt to override the model's default for one call.
+`DecisionOptions` holds the settings of a call, such as the model to use.
+Set it on the prompt to change the model's default settings for one call.
+For example, with Ollama you can use a larger model for one call:
 
 [source,java]
 ----
 DecisionPrompt prompt = DecisionPrompt.builder()
-    .text("...")
-    .question("selfService", YesNoQuestion.of("Can the customer do this on their own from the account page?"))
-    .options(DecisionOptions.builder().model("gpt-6-luna").build())
+    .text("Where is my order? I ordered it two weeks ago.")
+    .question("topic", ChoiceQuestion.of("What is the message about?",
+            "delivery", "product", "account", "other"))
+    .options(DecisionOptions.builder().model("d1-omni:2b").build())
     .build();
 ----
 
-Options are immutable.
-`mutate()` returns a builder initialized with their values, and `combineWith(...)` layers the non-null values of another builder on top.
-This is how a model combines its default options with the ones of a prompt, so a prompt only overrides what it sets.
-Provider implementations offer their own options class with more settings.
-See the provider pages.
+The settings of the prompt change only what they set.
+The model's default settings apply to the rest.
+Each provider has its own options class with more settings, described on its page.
+
+== Reading Answers
+
+A `DecisionResponse` holds one answer for each question, and the metadata of the call.
+
+image::decision/decision-response-classes.svg[The response, its metadata and its answer kinds, width=700, align="center"]
+
+Get the answer to a question by its name, with the method for its kind: `getYesNo(name)`, `getChoice(name)` or `getScore(name)`.
+
+=== Yes/No Answers
+
+A `YesNoAnswer` has the probability of yes, as `getProbability()`.
+`isYes()` answers yes when that probability is at least `0.5`.
+With `isYes(double)`, you choose the threshold:
+
+[source,java]
+----
+// open a repair ticket automatically only when the model is very sure
+boolean defect = response.getYesNo("defect").isYes(0.9);
+----
+
+=== Choice Answers
+
+A `ChoiceAnswer` has the selected option, as `getValue()`.
+When the provider reports them, it also has the probability of each option:
+
+* `getProbability()` for the selected option;
+* `getProbability(option)` for any option;
+* `getRankedOptions()` for all the options, from the most to the least likely.
+
+If the selected option is only a little more likely than the second one, the message is not clear.
+In that case, a person may handle it better.
+
+=== Score Answers
+
+A `ScoreAnswer` has three ways to read the result:
+
+* `getNearestLevel()`: the position of the most likely level, starting at `0`.
+Use this one to act on.
+If two levels are equally likely, it returns the one closer to the expected level.
+* `getValue()`: the expected level, that is, the average level weighted by the probabilities.
+It is a decimal number between `0` and the number of levels minus one.
+For example, `1.5` means that the model is split between the second and the third level.
+* `getRoundedLevel()`: the expected level, rounded to the nearest level.
+
+When the provider reports them, `getProbabilities()` also has the probability of each level.
+Without them, `getNearestLevel()` returns the same level as `getRoundedLevel()`.
+
+The expected level can be a level that the model thinks is unlikely:
+
+[source,java]
+----
+// probabilities 0.5, 0, 0.5 over the levels unhappy, neutral, happy
+ScoreAnswer satisfaction = response.getScore("satisfaction");
+satisfaction.getNearestLevel();  // 0, unhappy: as likely as happy and as close to 1.0, so the first one wins
+satisfaction.getValue();         // 1.0, the average level weighted by the probabilities
+satisfaction.getRoundedLevel();  // 1, neutral, which has no probability at all
+----
+
+=== Probabilities and Confidence
+
+The probabilities are the values that the model gives to each possible result.
+They don't guarantee that the answer is correct.
+You also can't compare them across models, or across questions with different wording.
+Choose your thresholds by testing the model on real examples from your application, and test them again when you change the model.
+
+`ChoiceAnswer` and `ScoreAnswer` also have `getConfidence()`.
+It is the provider's own estimate, between `0` and `1`, of how sure it is about the whole answer.
+It is `null` when the provider doesn't report it.
+
+=== Refusals
+
+A provider can refuse to answer one question, and still answer the others.
+That question gets a `RefusalAnswer`, and `response.isRefused(name)` returns `true` for it.
+The methods for each kind, such as `getYesNo(name)`, throw an `IllegalStateException` for a refused question.
+A refusal doesn't make the call fail.
+
+=== Metadata
+
+`response.getMetadata()` has the token usage of the call.
+When the provider reports them, it also has the response id and the model that answered.
+
+== Available Implementations [[available-implementations]]
+
+* xref:api/decision/ollama-decision.adoc[Ollama Decision Models]
+* xref:api/decision/openai-decision.adoc[OpenAI Decision Models]
+* xref:api/decision/systemone-decision.adoc[System One Decision Models], for TypeSafe Jev, Laya, llmman, and Ollama
 
 == Observability
 
-Decision models are observed like the other models, with the `gen_ai.client.operation` observation and the `decision` operation name.
+Spring AI observes decision model calls in the same way as the calls of other models.
+It uses the `gen_ai.client.operation` observation, with the `decision` operation name.
 See xref:observability/index.adoc#_decision_model[Decision Model observability].
 
-== Available Implementations
+== Usage in Spring AI
 
-* xref:api/decision/ollama-decision.adoc[Ollama Decisions]
-* xref:api/decision/openai-decision.adoc[OpenAI Decisions]
-* xref:api/decision/systemone-decision.adoc[System One Decisions], for TypeSafe Jev, Laya and Ollama
+Other Spring AI features use decision models too.
 
-== Usage in RAG Pipelines
-
-The `spring-ai-rag` module uses decision models to post-process retrieved documents.
-The xref:api/retrieval-augmented-generation.adoc#_decisiondocumentreranker[`DecisionDocumentReranker`] reorders them by asking whether each passage answers the query.
-The xref:api/retrieval-augmented-generation.adoc#_decisiondocumentfilter[`DecisionDocumentFilter`] screens them for prompt injection, contradictions and relevance before they reach the prompt.
-
-== Usage in Tool Search
-
-The xref:api/tools/tool-search-tool.adoc#decision-tool-index[`DecisionToolIndex`] uses a decision model to pick the tool that serves a request, and to report that none does.
+* In xref:api/retrieval-augmented-generation.adoc[RAG pipelines], the xref:api/retrieval-augmented-generation.adoc#_decisiondocumentreranker[`DecisionDocumentReranker`] sorts the retrieved documents by asking whether each one answers the query.
+The xref:api/retrieval-augmented-generation.adoc#_decisiondocumentfilter[`DecisionDocumentFilter`] checks them for prompt injection, contradictions, and relevance before they reach the prompt.
+* In xref:api/tools/tool-search-tool.adoc[tool search], the xref:api/tools/tool-search-tool.adoc#decision-tool-index[`DecisionToolIndex`] picks the tool that can handle a request, or reports that no tool can.
