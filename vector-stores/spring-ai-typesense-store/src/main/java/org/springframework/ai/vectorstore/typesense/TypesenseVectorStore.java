@@ -16,6 +16,7 @@
 
 package org.springframework.ai.vectorstore.typesense;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -213,15 +214,23 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 		catch (Exception ex) {
 			throw new IllegalStateException("Failed to upsert documents into collection " + this.collectionName, ex);
 		}
-		checkImportResults(results);
+		checkImportResults(results, documentList.size());
 	}
 
 	/**
 	 * Typesense reports a rejected document in the import results, one JSON line per
-	 * document, rather than by failing the request.
+	 * document, rather than by failing the request. The client leaves out a document it
+	 * cannot serialize to JSON without failing, so fewer lines than documents means some
+	 * were not sent.
 	 */
-	private void checkImportResults(String results) {
+	private void checkImportResults(String results, int documentCount) {
 		String[] lines = results.split("\n");
+		long resultCount = Arrays.stream(lines).filter(line -> !line.isBlank()).count();
+		if (resultCount != documentCount) {
+			throw new IllegalStateException("Typesense returned " + resultCount + " import results for " + documentCount
+					+ " documents. The client leaves out documents it cannot serialize to JSON, "
+					+ "and the documents it sent may have been written.");
+		}
 		for (int i = 0; i < lines.length; i++) {
 			if (lines[i].isBlank()) {
 				continue;
@@ -400,7 +409,7 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 			if (logger.isWarnEnabled()) {
 				logger.warn(
 						"Failed to obtain the embedding dimensions from the embedding model and fall backs to default: "
-								+ this.embeddingDimension,
+								+ OPENAI_EMBEDDING_DIMENSION_SIZE,
 						e);
 			}
 		}

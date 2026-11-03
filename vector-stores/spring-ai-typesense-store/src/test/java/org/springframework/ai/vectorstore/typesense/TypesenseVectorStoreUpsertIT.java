@@ -18,6 +18,7 @@ package org.springframework.ai.vectorstore.typesense;
 
 import java.net.ConnectException;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -196,6 +197,27 @@ class TypesenseVectorStoreUpsertIT extends AbstractVectorStoreUpsertTests {
 			List<Document> results = vectorStore.similaritySearch(good.embedding(),
 					SearchRequest.builder().topK(10).similarityThresholdAll().build());
 			assertThat(results).extracting(Document::getId).containsExactly(goodId);
+		});
+	}
+
+	@Test
+	void anEntryTheClientCannotSerializeFailsTheUpsertAndTheOthersAreWritten() {
+		executeTest(vectorStore -> {
+			// The client serializes with a plain Jackson 2 mapper, which cannot write an
+			// Instant, and leaves the entry out of the request
+			String unserializableId = UUID.randomUUID().toString();
+			EmbeddedDocument unserializable = embeddedDocument(unserializableId, "unserializable",
+					Map.of("createdAt", Instant.now()));
+			String goodId = UUID.randomUUID().toString();
+			EmbeddedDocument good = embeddedDocument(goodId, "good", Map.of("tag", "g"));
+
+			assertThatIllegalStateException().isThrownBy(() -> vectorStore.upsert(List.of(unserializable, good)))
+				.withMessageContaining("returned 1 import results for 2 documents");
+
+			// A Typesense batch is not atomic: the entry that was sent was written
+			List<Document> results = vectorStore.similaritySearch(good.embedding(),
+					SearchRequest.builder().topK(10).similarityThresholdAll().build());
+			assertThat(results).extracting(Document::getId).contains(goodId).doesNotContain(unserializableId);
 		});
 	}
 
