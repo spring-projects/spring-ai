@@ -110,7 +110,7 @@ import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -173,41 +173,44 @@ class AnthropicChatModelTests {
 	}
 
 	@Test
-	void rejectsSamplingOptionsForBothRequestModes() {
-		List<ChatOptions> unsupportedOptions = List.of(AnthropicChatOptions.builder().temperature(0.0).build(),
-				AnthropicChatOptions.builder().temperature(1.0).build(),
+	void ignoresSamplingOptionsAndLogsWarning(CapturedOutput output) {
+		Message mockResponse = createMockMessage("Hello!", StopReason.END_TURN);
+		given(this.messageService.create(any(MessageCreateParams.class))).willReturn(mockResponse);
+		List<ChatOptions> samplingOptions = List.of(AnthropicChatOptions.builder().temperature(0.0).build(),
 				AnthropicChatOptions.builder().topP(1.0).build(), AnthropicChatOptions.builder().topK(1).build(),
 				ChatOptions.builder().temperature(1.0).build(), ChatOptions.builder().topP(1.0).build(),
 				ChatOptions.builder().topK(1).build());
-		for (ChatOptions options : unsupportedOptions) {
+		for (ChatOptions options : samplingOptions) {
 			Prompt prompt = new Prompt("Hello", options);
-			assertThatIllegalArgumentException().isThrownBy(() -> this.chatModel.call(prompt))
-				.withMessageContaining("Remove these sampling options");
-			assertThatIllegalArgumentException().isThrownBy(() -> this.chatModel.stream(prompt).collectList().block())
-				.withMessageContaining("Remove these sampling options");
+			assertThatNoException().isThrownBy(() -> this.chatModel.call(prompt));
+			assertThatNoException().isThrownBy(() -> this.chatModel.createRequest(prompt, true));
 		}
+		assertThat(output).contains("does not support temperature, topP or topK; ignoring temperature=0.0, topP=null")
+			.contains("ignoring temperature=null, topP=1.0, topK=null")
+			.contains("ignoring temperature=null, topP=null, topK=1");
 	}
 
 	@Test
-	void rejectsSamplingOptionsDuringModelConstruction() {
-		List<AnthropicChatOptions> unsupportedOptions = List.of(AnthropicChatOptions.builder().temperature(0.0).build(),
-				AnthropicChatOptions.builder().temperature(1.0).build(),
-				AnthropicChatOptions.builder().topP(1.0).build(), AnthropicChatOptions.builder().topK(1).build());
-		unsupportedOptions.forEach(options -> assertThatIllegalArgumentException()
-			.isThrownBy(() -> AnthropicChatModel.builder().options(options).build())
-			.withMessageContaining("Remove these sampling options"));
+	void ignoresSamplingOptionsDuringModelConstruction(CapturedOutput output) {
+		AnthropicChatOptions options = AnthropicChatOptions.builder().temperature(0.5).topP(0.9).topK(40).build();
+		assertThatNoException().isThrownBy(() -> AnthropicChatModel.builder().options(options).build());
+		assertThat(output).contains("ignoring temperature=0.5, topP=0.9, topK=40");
 	}
 
 	@Test
-	void rejectsPortableSamplingOverridesFromChatClient() {
+	void ignoresPortableSamplingOverridesFromChatClient(CapturedOutput output) {
+		Message mockResponse = createMockMessage("Hello!", StopReason.END_TURN);
+		given(this.messageService.create(any(MessageCreateParams.class))).willReturn(mockResponse);
 		ChatClient client = ChatClient.create(this.chatModel);
 		ChatOptions.Builder<?> options = ChatOptions.builder().temperature(1.0).topP(1.0).topK(1);
-		assertThatIllegalArgumentException()
-			.isThrownBy(() -> client.prompt("Hello").options(options).call().chatResponse())
-			.withMessageContaining("Remove these sampling options");
-		assertThatIllegalArgumentException()
-			.isThrownBy(() -> client.prompt("Hello").options(options).stream().content().collectList().block())
-			.withMessageContaining("Remove these sampling options");
+		assertThat(client.prompt("Hello").options(options).call().content()).isEqualTo("Hello!");
+		assertThat(output).contains("ignoring temperature=1.0, topP=1.0, topK=1");
+	}
+
+	@Test
+	void noWarningWithoutSamplingOptions(CapturedOutput output) {
+		this.chatModel.createRequest(new Prompt("Hello"), false);
+		assertThat(output).doesNotContain("does not support temperature, topP or topK");
 	}
 
 	@Test

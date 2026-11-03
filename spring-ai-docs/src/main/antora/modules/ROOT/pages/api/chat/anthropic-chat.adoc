@@ -61,9 +61,9 @@ Can be overridden per call via `AnthropicChatOptions.timeout()` set on a `ChatCl
 | `spring.ai.anthropic.custom-headers.*` | Custom HTTP headers to add to all Anthropic client requests | -
 | `spring.ai.anthropic.chat.model` | Model name | `claude-haiku-4-5`
 | `spring.ai.anthropic.chat.max-tokens` | Maximum tokens | `4096`
-| `spring.ai.anthropic.chat.temperature` | Deprecated and rejected during model construction; remove this property. | -
-| `spring.ai.anthropic.chat.top-p` | Deprecated and rejected during model construction; remove this property. | -
-| `spring.ai.anthropic.chat.top-k` | Deprecated and rejected during model construction; remove this property. | -
+| `spring.ai.anthropic.chat.temperature` | Deprecated and ignored with a `WARN` log; remove this property. | -
+| `spring.ai.anthropic.chat.top-p` | Deprecated and ignored with a `WARN` log; remove this property. | -
+| `spring.ai.anthropic.chat.top-k` | Deprecated and ignored with a `WARN` log; remove this property. | -
 | `spring.ai.anthropic.chat.cache-options.strategy` | Caching strategy to use | `NONE`
 | `spring.ai.anthropic.chat.cache-options.multi-block-system-caching` | Use separate blocks for each system message | `false`
 | `spring.ai.anthropic.chat.http-headers` | Per-request HTTP headers to pass to individual API calls. | -
@@ -186,9 +186,9 @@ ChatResponse response = chatModel.call(
 
 | model | Name of the Claude model to use. Models include: `claude-sonnet-4-20250514`, `claude-opus-4-20250514`, `claude-3-5-sonnet-20241022`, `claude-3-5-haiku-20241022`, etc. See https://docs.anthropic.com/en/docs/about-claude/models[Claude Models]. | `claude-sonnet-4-20250514`
 | maxTokens | The maximum number of tokens to generate in the response. | 4096
-| temperature | Deprecated; model defaults fail during construction and request overrides fail during request creation. | -
-| topP | Deprecated; model defaults fail during construction and request overrides fail during request creation. | -
-| topK | Deprecated; model defaults fail during construction and request overrides fail during request creation. | -
+| temperature | Deprecated and ignored with a `WARN` log; remove this option. | -
+| topP | Deprecated and ignored with a `WARN` log; remove this option. | -
+| topK | Deprecated and ignored with a `WARN` log; remove this option. | -
 | stopSequences | Custom sequences that will cause the model to stop generating. | -
 | apiKey | The API key for authentication. Auto-detects from `ANTHROPIC_API_KEY` environment variable if not set. | -
 | baseUrl | The base URL for the Anthropic API. | https://api.anthropic.com

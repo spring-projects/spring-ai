@@ -266,7 +266,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		else {
 			this.options = options;
 		}
-		validateSamplingOptions(this.options);
+		warnOnIgnoredSamplingOptions(this.options);
 
 		// Must precede the AnthropicSetup calls below so the HTTP client gets the user's
 		// registries and dispatcher.
@@ -724,9 +724,12 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 				: AnthropicChatOptions.builder().build();
 	}
 
-	private static void validateSamplingOptions(ChatOptions options) {
-		Assert.isTrue(options.getTemperature() == null && options.getTopP() == null && options.getTopK() == null,
-				"Anthropic API 2026-10-21 does not support temperature, topP or topK. Remove these sampling options.");
+	private static void warnOnIgnoredSamplingOptions(ChatOptions options) {
+		if ((options.getTemperature() != null || options.getTopP() != null || options.getTopK() != null)
+				&& logger.isWarnEnabled()) {
+			logger.warn("Anthropic API 2026-10-21 does not support temperature, topP or topK; ignoring temperature="
+					+ options.getTemperature() + ", topP=" + options.getTopP() + ", topK=" + options.getTopK());
+		}
 	}
 
 	private static RequestOptions requestOptionsFor(Prompt prompt) {
@@ -751,7 +754,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		MessageCreateParams.Builder builder = MessageCreateParams.builder();
 
 		if (prompt.getOptions() != null) {
-			validateSamplingOptions(prompt.getOptions());
+			warnOnIgnoredSamplingOptions(prompt.getOptions());
 		}
 		AnthropicChatOptions requestOptions = resolveAnthropicOptions(prompt);
 

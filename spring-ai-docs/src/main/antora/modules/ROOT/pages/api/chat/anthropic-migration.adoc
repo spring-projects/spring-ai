@@ -19,8 +19,8 @@ The upgrade does not require additional dependency version changes.
 Remove `temperature`, `topP` and `topK` from Java configuration and prompt options, including explicit default values.
 Remove the corresponding `spring.ai.anthropic.chat.temperature`, `spring.ai.anthropic.chat.top-p` and `spring.ai.anthropic.chat.top-k` properties, including their legacy `.options` aliases.
 The Java methods and Boot properties are retained and deprecated for compatibility.
-Model construction rejects non-null sampling defaults with an `IllegalArgumentException`, so invalid Boot configuration fails during bean creation.
-Request creation also rejects non-null sampling overrides instead of silently discarding them.
+Non-null sampling values, whether set as model defaults or as request overrides, are discarded and never sent to the API.
+A `WARN` message that lists the discarded values is logged when the model is constructed and for each request that carries them.
 Extended thinking no longer requires setting `temperature(1.0)`.
 
 API keys now use the `Authorization: Bearer` header instead of `X-Api-Key`.

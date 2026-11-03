@@ -43,15 +43,14 @@ class AnthropicPropertiesTests {
 	@ParameterizedTest
 	@ValueSource(strings = { "temperature=1.0", "top-p=1.0", "top-k=1", "options.temperature=1.0", "options.top-p=1.0",
 			"options.top-k=1" })
-	void configuredSamplingOptionsPreventStartup(String property) {
+	void configuredSamplingOptionsAreIgnored(String property) {
 		new ApplicationContextRunner()
 			.withPropertyValues("spring.ai.anthropic.api-key=test-key", "spring.ai.anthropic.chat." + property)
 			.withConfiguration(
 					AutoConfigurations.of(AnthropicChatAutoConfiguration.class, ToolCallingAutoConfiguration.class))
 			.run(context -> {
-				assertThat(context).hasFailed();
-				assertThat(context.getStartupFailure()).hasRootCauseInstanceOf(IllegalArgumentException.class)
-					.hasStackTraceContaining("Remove these sampling options");
+				assertThat(context).hasNotFailed();
+				assertThat(context).hasSingleBean(AnthropicChatModel.class);
 			});
 	}
 
