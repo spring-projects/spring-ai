@@ -54,18 +54,18 @@ class OllamaDecisionAutoConfigurationIT extends BaseOllamaIT {
 			OllamaDecisionModel decisionModel = context.getBean(OllamaDecisionModel.class);
 
 			DecisionResponse response = decisionModel.call(DecisionPrompt.builder()
-				.text("Four hungry halflings are complaining that they missed elevenses.")
-				.question("spell",
+				.text("Where is my order? I ordered it two weeks ago.")
+				.question("topic",
 						ChoiceQuestion.builder()
-							.text("Which spell fits the situation best?")
-							.option("light", "For when it is too dark to see")
-							.option("summon_snacks", "For when hungry halflings are complaining")
+							.text("What is the message about?")
+							.option("delivery", "Where an order is, or when it will arrive")
+							.option("product", "A problem with an item the customer received")
 							.build())
-				.question("danger", YesNoQuestion.of("Is anyone in mortal danger?"))
+				.question("defect", YesNoQuestion.of("Does the customer report a defect?"))
 				.build());
 
-			assertThat(response.getChoice("spell").getValue()).isEqualTo("summon_snacks");
-			assertThat(response.getYesNo("danger").getProbability()).isBetween(0.0, 1.0);
+			assertThat(response.getChoice("topic").getValue()).isEqualTo("delivery");
+			assertThat(response.getYesNo("defect").getProbability()).isBetween(0.0, 1.0);
 			assertThat(response.getMetadata().getModel()).isEqualTo(MODEL_NAME);
 		});
 	}
@@ -76,11 +76,11 @@ class OllamaDecisionAutoConfigurationIT extends BaseOllamaIT {
 			OllamaDecisionModel decisionModel = context.getBean(OllamaDecisionModel.class);
 
 			DecisionResponse response = decisionModel.call(DecisionPrompt.builder()
-				.text("A dwarf is about to answer a riddle with an axe.")
-				.question("axe", YesNoQuestion.of("Is the dwarf about to use an axe?"))
+				.text("My new headphones arrived yesterday, but the left side doesn't work. Can I get my money back?")
+				.question("defect", YesNoQuestion.of("Does the customer report a defect?"))
 				.build());
 
-			assertThat(response.getYesNo("axe").getProbability()).isBetween(0.0, 1.0);
+			assertThat(response.getYesNo("defect").getProbability()).isBetween(0.0, 1.0);
 		});
 	}
 

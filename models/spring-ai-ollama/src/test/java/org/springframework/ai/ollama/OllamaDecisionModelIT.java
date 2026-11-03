@@ -55,12 +55,12 @@ class OllamaDecisionModelIT extends BaseOllamaIT {
 
 	private static final String MODEL = OllamaModel.D1_OMNI_600M.id();
 
-	private static final ChoiceQuestion SPELL = ChoiceQuestion.builder()
-		.text("Which spell fits the situation best?")
-		.option("barrier", "For when a monster must be stopped from crossing")
-		.option("fireball", "For when a monster is weak to fire")
-		.option("light", "For when it is too dark to see")
-		.option("summon_snacks", "For when hungry halflings are complaining")
+	private static final ChoiceQuestion TOPIC = ChoiceQuestion.builder()
+		.text("What is the message about?")
+		.option("delivery", "Where an order is, or when it will arrive")
+		.option("product", "A problem with an item the customer received")
+		.option("account", "Login, address or payment details")
+		.option("other", "None of the above")
 		.build();
 
 	@Autowired
@@ -69,70 +69,60 @@ class OllamaDecisionModelIT extends BaseOllamaIT {
 	@Test
 	void answersAllQuestionKinds() {
 		DecisionResponse response = this.decisionModel.call(DecisionPrompt.builder()
-			.text("A wizard stands on a narrow bridge. A demon made of flame, immune to fire, is about to cross it.")
-			.question("spell", SPELL)
-			.question("danger",
+			.text("My new headphones arrived yesterday, but the left side doesn't work. Can I get my money back?")
+			.question("defect",
 					YesNoQuestion.builder()
-						.text("Is the wizard in mortal danger?")
-						.whenYes("Something wants to eat, burn or crush him")
-						.whenNo("The worst that can happen is running out of pipe-weed")
+						.text("Does the customer report a defect?")
+						.whenYes("Part of the item does not work as it should")
+						.whenNo("The item works, and the message is about something else")
 						.build())
-			.question("drama",
-					ScoreQuestion.builder()
-						.text("How dramatic is this moment?")
-						.level("mundane", "Like doing the dishes after second breakfast")
-						.level("tense")
-						.level("legendary")
-						.build())
+			.question("topic", TOPIC)
+			.question("satisfaction", ScoreQuestion.of("How satisfied is the customer?", "unhappy", "neutral", "happy"))
 			.build());
 
-		assertThat(response.getChoice("spell").getValue()).isEqualTo("barrier");
-		assertThat(response.getChoice("spell").getProbabilities()).containsOnlyKeys("barrier", "fireball", "light",
-				"summon_snacks");
-		assertThat(response.getChoice("spell").getConfidence()).isBetween(0.0, 1.0);
-		assertThat(response.getYesNo("danger").isYes()).isTrue();
-		assertThat(response.getScore("drama").getValue()).isBetween(0.0, 2.0);
-		assertThat(response.getScore("drama").getProbabilities()).hasSize(3);
-		assertThat(response.getScore("drama").getNearestLevel()).isBetween(0, 2);
+		assertThat(response.getAnswers().keySet()).containsExactly("defect", "topic", "satisfaction");
+		assertThat(response.getYesNo("defect").isYes()).isTrue();
+		assertThat(response.getChoice("topic").getValue()).isEqualTo("product");
+		assertThat(response.getChoice("topic").getProbabilities()).containsOnlyKeys("delivery", "product", "account",
+				"other");
+		assertThat(response.getChoice("topic").getConfidence()).isBetween(0.0, 1.0);
+		assertThat(response.getScore("satisfaction").getValue()).isBetween(0.0, 2.0);
+		assertThat(response.getScore("satisfaction").getProbabilities()).hasSize(3);
+		assertThat(response.getScore("satisfaction").getNearestLevel()).isLessThanOrEqualTo(1);
 		assertThat(response.getMetadata().getModel()).isEqualTo(MODEL);
 		assertThat(response.getMetadata().getUsage().getPromptTokens()).isPositive();
 	}
 
 	@ParameterizedTest
 	@CsvSource(delimiter = '|', textBlock = """
-			A wizard is in a pitch-black mine. It is too dark to see anything.    | light
-			Four hungry halflings are complaining that they missed elevenses.    | summon_snacks
+			Where is my order? I ordered it two weeks ago.                     | delivery
+			I can't log in to my account since I changed my password.          | account
 			""")
-	void picksTheSpellForTheSituation(String situation, String expectedSpell) {
-		DecisionResponse response = this.decisionModel.call(situation, Map.of("spell", SPELL));
+	void picksTheTopicOfTheMessage(String message, String expectedTopic) {
+		DecisionResponse response = this.decisionModel.call(message, Map.of("topic", TOPIC));
 
-		assertThat(response.getChoice("spell").getValue()).isEqualTo(expectedSpell);
+		assertThat(response.getChoice("topic").getValue()).isEqualTo(expectedTopic);
 	}
 
 	@Test
 	void decidesAboutFields() {
-		Map<String, Object> characterSheet = new LinkedHashMap<>();
-		characterSheet.put("name", "Grumbold Ironbeard");
-		characterSheet.put("race", "dwarf");
-		characterSheet.put("class", "barbarian");
-		characterSheet.put("intelligence", 6);
-		characterSheet.put("inventory", List.of("axe", "spare axe", "emergency axe", "a single cookie"));
+		Map<String, Object> customer = new LinkedHashMap<>();
+		customer.put("message", "This is the third time my order arrives late.");
+		customer.put("orders", 12);
+		customer.put("late_deliveries", 3);
 
-		DecisionResponse response = this.decisionModel.call(DecisionInput.fields(characterSheet), Map.of("axe",
-				YesNoQuestion.of("Is this character likely to solve the riddle at the door with an axe?")));
+		DecisionResponse response = this.decisionModel.call(DecisionInput.fields(customer),
+				Map.of("repeated", YesNoQuestion.of("Does the customer say that the problem happened before?")));
 
-		assertThat(response.getYesNo("axe").getProbability()).isBetween(0.0, 1.0);
+		assertThat(response.getYesNo("repeated").getProbability()).isBetween(0.0, 1.0);
 	}
 
 	@Test
 	void decidesAboutConversations() {
 		DecisionResponse response = this.decisionModel.call(
-				DecisionInput.conversation(List.of(
-						new UserMessage("Can I sneak past the sleeping dragon if I put on my ring of invisibility?"),
-						new AssistantMessage(
-								"Roll for stealth. The ring hides you, but the dragon can still smell you."))),
-				Map.of("answered",
-						YesNoQuestion.of("Does the dungeon master's last message answer the player's question?")));
+				DecisionInput.conversation(List.of(new UserMessage("Can I return the headphones?"),
+						new AssistantMessage("Your order will arrive on Friday."))),
+				Map.of("answered", YesNoQuestion.of("Does the last assistant message answer the user's question?")));
 
 		assertThat(response.getYesNo("answered").getProbability()).isBetween(0.0, 1.0);
 	}
@@ -140,8 +130,8 @@ class OllamaDecisionModelIT extends BaseOllamaIT {
 	@Test
 	void runtimeOptionsOverrideTheModel() {
 		DecisionResponse response = this.decisionModel.call(DecisionPrompt.builder()
-			.text("The wizard arrived precisely when he meant to, two hours after the party started.")
-			.question("late", YesNoQuestion.of("Is the wizard late?"))
+			.text("Where is my order? I ordered it two weeks ago.")
+			.question("topic", TOPIC)
 			.options(OllamaDecisionOptions.builder().model(MODEL).build())
 			.build());
 

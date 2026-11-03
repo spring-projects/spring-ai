@@ -56,162 +56,161 @@ class SystemOneDecisionMapperTests {
 
 	private static final JsonMapper jsonMapper = JsonMapper.builder().build();
 
-	private static final ScoreQuestion DANGER = ScoreQuestion.of("How dangerous is this place?", "tavern", "dungeon",
-			"dragon lair");
+	private static final ScoreQuestion SATISFACTION = ScoreQuestion.of("How satisfied is the customer?", "unhappy",
+			"neutral", "happy");
 
-	private static final DecisionPrompt DANGER_PROMPT = DecisionPrompt.builder()
-		.text("A cave that smells of sulphur and burnt knights.")
-		.question("danger", DANGER)
+	private static final DecisionPrompt SATISFACTION_PROMPT = DecisionPrompt.builder()
+		.text("This is the third time my order arrives late.")
+		.question("satisfaction", SATISFACTION)
 		.build();
 
 	@Test
 	void textInputBecomesStringState() {
 		JsonContent state = SystemOneDecisionMapper
-			.state(DecisionInput.text("The innkeeper swears the cellar is full of giant rats."));
+			.state(DecisionInput.text("Where is my order? I ordered it two weeks ago."));
 
-		JsonAssertions.assertThatJson(toJson(state))
-			.isEqualTo("\"The innkeeper swears the cellar is full of giant rats.\"");
+		JsonAssertions.assertThatJson(toJson(state)).isEqualTo("\"Where is my order? I ordered it two weeks ago.\"");
 	}
 
 	@Test
 	void textPartsAreJoined() {
-		JsonContent state = SystemOneDecisionMapper
-			.state(DecisionInput.content(TextPart.of("Knock three times, "), TextPart.of("then ask the door nicely.")));
+		JsonContent state = SystemOneDecisionMapper.state(DecisionInput.content(
+				TextPart.of("My new headphones arrived yesterday, "), TextPart.of("but the left side doesn't work.")));
 
-		JsonAssertions.assertThatJson(toJson(state)).isEqualTo("\"Knock three times, then ask the door nicely.\"");
+		JsonAssertions.assertThatJson(toJson(state))
+			.isEqualTo("\"My new headphones arrived yesterday, but the left side doesn't work.\"");
 	}
 
 	@Test
 	void fieldsInputBecomesObjectStateInFieldOrder() {
-		Map<String, Object> quest = new LinkedHashMap<>();
-		quest.put("title", "Rescue the bard from the goblins");
-		quest.put("reward_gold", 50);
-		quest.put("party", List.of("wizard", "dwarf", "two halflings"));
-		quest.put("map", List.of(TextPart.of("Head east, "), TextPart.of("then turn left at the troll.")));
-		quest.put("warning", TextPart.of("Do not feed the troll."));
-		quest.put("patron", null);
+		Map<String, Object> customer = new LinkedHashMap<>();
+		customer.put("message", "This is the third time my order arrives late.");
+		customer.put("orders", 12);
+		customer.put("items", List.of("headphones", "charger", "case"));
+		customer.put("note", List.of(TextPart.of("Prefers delivery "), TextPart.of("on Saturdays.")));
+		customer.put("status", TextPart.of("Order shipped."));
+		customer.put("coupon", null);
 
-		String json = toJson(SystemOneDecisionMapper.state(DecisionInput.fields(quest)));
+		String json = toJson(SystemOneDecisionMapper.state(DecisionInput.fields(customer)));
 
 		JsonAssertions.assertThatJson(json).isEqualTo("""
-				{"title": "Rescue the bard from the goblins", "reward_gold": 50,
-				"party": ["wizard", "dwarf", "two halflings"],
-				"map": "Head east, then turn left at the troll.", "warning": "Do not feed the troll.",
-				"patron": null}""");
-		assertThat(json.indexOf("title")).isLessThan(json.indexOf("reward_gold"));
-		assertThat(json.indexOf("reward_gold")).isLessThan(json.indexOf("patron"));
+				{"message": "This is the third time my order arrives late.", "orders": 12,
+				"items": ["headphones", "charger", "case"],
+				"note": "Prefers delivery on Saturdays.", "status": "Order shipped.",
+				"coupon": null}""");
+		assertThat(json.indexOf("message")).isLessThan(json.indexOf("orders"));
+		assertThat(json.indexOf("orders")).isLessThan(json.indexOf("coupon"));
 	}
 
 	@Test
 	void conversationInputBecomesMessagesStateWithToolCallsAndResults() {
-		var messages = List.of(new UserMessage("Is it safe to cross the old stone bridge?"), AssistantMessage.builder()
-			.content("Let me take a look.")
-			.reasoning(ReasoningPart.of("The player is about to do something reckless."))
+		var messages = List.of(new UserMessage("When will my order arrive?"), AssistantMessage.builder()
+			.content("Let me check.")
+			.reasoning(ReasoningPart.of("The user wants the delivery date."))
 			.toolCalls(List
-				.of(new AssistantMessage.ToolCall("call_1", "function", "inspect", "{\"place\":\"old stone bridge\"}")))
+				.of(new AssistantMessage.ToolCall("call_1", "function", "get_delivery_date", "{\"order\":\"A-1001\"}")))
 			.build(),
 				ToolResponseMessage.builder()
-					.responses(List.of(new ToolResponseMessage.ToolResponse("call_1", "inspect",
-							"A fire demon is standing in the middle of it")))
+					.responses(List.of(new ToolResponseMessage.ToolResponse("call_1", "get_delivery_date", "Friday")))
 					.build(),
-				new AssistantMessage("Not really. Take the long way round."));
+				new AssistantMessage("Your order will arrive on Friday."));
 
 		String json = toJson(SystemOneDecisionMapper.state(DecisionInput.conversation(messages)));
 
 		JsonAssertions.assertThatJson(json).isEqualTo("""
 				{"messages": [
-				{"role": "user", "content": "Is it safe to cross the old stone bridge?"},
-				{"role": "assistant", "content": "Let me take a look.",
-				"tool_calls": [{"id": "call_1", "name": "inspect", "arguments": {"place": "old stone bridge"}}]},
-				{"role": "tool", "tool_results": [{"id": "call_1", "name": "inspect",
-				"result": "A fire demon is standing in the middle of it"}]},
-				{"role": "assistant", "content": "Not really. Take the long way round."}]}""");
-		assertThat(json).doesNotContain("reckless");
+				{"role": "user", "content": "When will my order arrive?"},
+				{"role": "assistant", "content": "Let me check.",
+				"tool_calls": [{"id": "call_1", "name": "get_delivery_date", "arguments": {"order": "A-1001"}}]},
+				{"role": "tool", "tool_results": [{"id": "call_1", "name": "get_delivery_date", "result": "Friday"}]},
+				{"role": "assistant", "content": "Your order will arrive on Friday."}]}""");
+		assertThat(json).doesNotContain("delivery date.");
 	}
 
 	@Test
 	void toolCallArgumentsThatAreNotJsonObjectsAreSentAsIs() {
 		var messages = List.of(AssistantMessage.builder()
-			.toolCalls(List.of(new AssistantMessage.ToolCall("call_1", "function", "roll_dice", "2d6+3")))
+			.toolCalls(List.of(new AssistantMessage.ToolCall("call_1", "function", "track_package", "A-1001")))
 			.build());
 
 		String json = toJson(SystemOneDecisionMapper.state(DecisionInput.conversation(messages)));
 
 		JsonAssertions.assertThatJson(json).isEqualTo("""
 				{"messages": [{"role": "assistant",
-				"tool_calls": [{"id": "call_1", "name": "roll_dice", "arguments": "2d6+3"}]}]}""");
+				"tool_calls": [{"id": "call_1", "name": "track_package", "arguments": "A-1001"}]}]}""");
 	}
 
 	@Test
 	void questionsBecomeNoulChoiceAndScore() {
 		DecisionPrompt prompt = DecisionPrompt.builder()
-			.text("A treasure chest sits alone in an empty room.")
-			.question("mimic",
+			.text("My new headphones arrived yesterday, but the left side doesn't work.")
+			.question("defect",
 					YesNoQuestion.builder()
-						.text("Is the chest a mimic?")
-						.whenYes("It has teeth, or it just moved")
-						.whenNo("It is an honest piece of furniture")
+						.text("Does the customer report a defect?")
+						.whenYes("Part of the item does not work as it should")
+						.whenNo("The item works, and the message is about something else")
 						.build())
-			.question("trap", YesNoQuestion.of("Is the room trapped?"))
-			.question("spell",
+			.question("refund", YesNoQuestion.of("Does the customer ask for a refund?"))
+			.question("topic",
 					ChoiceQuestion.builder()
-						.text("Which spell should the wizard cast?")
-						.option("detect_magic", "Reveals magical auras")
-						.option("fireball")
+						.text("What is the message about?")
+						.option("delivery", "Where an order is, or when it will arrive")
+						.option("product")
 						.build())
-			.question("danger",
+			.question("satisfaction",
 					ScoreQuestion.builder()
-						.text("How dangerous is this place?")
-						.level("tavern", "The worst threat is the ale")
-						.level("dungeon")
-						.level("dragon lair")
+						.text("How satisfied is the customer?")
+						.level("unhappy", "The customer complains")
+						.level("neutral")
+						.level("happy")
 						.build())
 			.build();
 
 		String json = toJson(SystemOneDecisionMapper.questions(prompt));
 
 		JsonAssertions.assertThatJson(json).isEqualTo("""
-				{"mimic": {"type": "noul", "instructions": "Is the chest a mimic?",
-				"criteria": {"true": "It has teeth, or it just moved", "false": "It is an honest piece of furniture"}},
-				"trap": {"type": "noul", "instructions": "Is the room trapped?"},
-				"spell": {"type": "choice", "instructions": "Which spell should the wizard cast?",
-				"criteria": {"detect_magic": "Reveals magical auras", "fireball": null}},
-				"danger": {"type": "score", "instructions": "How dangerous is this place?",
-				"criteria": [{"label": "tavern", "description": "The worst threat is the ale"}, "dungeon",
-				"dragon lair"]}}""");
+				{"defect": {"type": "noul", "instructions": "Does the customer report a defect?",
+				"criteria": {"true": "Part of the item does not work as it should",
+				"false": "The item works, and the message is about something else"}},
+				"refund": {"type": "noul", "instructions": "Does the customer ask for a refund?"},
+				"topic": {"type": "choice", "instructions": "What is the message about?",
+				"criteria": {"delivery": "Where an order is, or when it will arrive", "product": null}},
+				"satisfaction": {"type": "score", "instructions": "How satisfied is the customer?",
+				"criteria": [{"label": "unhappy", "description": "The customer complains"}, "neutral",
+				"happy"]}}""");
 	}
 
 	@Test
 	void responseCarriesAnswersAndMetadata() {
 		DecisionPrompt prompt = DecisionPrompt.builder()
-			.text("A treasure chest sits alone in an empty room.")
-			.question("mimic", YesNoQuestion.of("Is the chest a mimic?"))
-			.question("spell",
+			.text("My new headphones arrived yesterday, but the left side doesn't work.")
+			.question("defect", YesNoQuestion.of("Does the customer report a defect?"))
+			.question("topic",
 					ChoiceQuestion.builder()
-						.text("Which spell should the wizard cast?")
-						.option("detect_magic")
-						.option("fireball")
+						.text("What is the message about?")
+						.option("product")
+						.option("delivery")
 						.build())
-			.question("danger", DANGER)
+			.question("satisfaction", SATISFACTION)
 			.build();
 		Map<String, org.springaicommunity.typesafe.response.Answer> answers = new LinkedHashMap<>();
-		answers.put("mimic", new NoulAnswer(0.95));
-		answers.put("spell", new ChoiceAnswer("detect_magic", Map.of("detect_magic", 0.75, "fireball", 0.25), 0.7));
-		answers.put("danger", new ScoreAnswer(0.8, Map.of(), Map.of(0, 0.3, 1, 0.6, 2, 0.1), 0.4));
+		answers.put("defect", new NoulAnswer(0.95));
+		answers.put("topic", new ChoiceAnswer("product", Map.of("product", 0.75, "delivery", 0.25), 0.7));
+		answers.put("satisfaction", new ScoreAnswer(0.8, Map.of(), Map.of(0, 0.3, 1, 0.6, 2, 0.1), 0.4));
 
 		DecisionResponse response = SystemOneDecisionMapper.response(prompt,
 				new SystemOneResponse(MODEL, answers, new Usage(20, 1), null));
 
-		assertThat(response.getYesNo("mimic").getProbability()).isEqualTo(0.95);
-		assertThat(response.getYesNo("mimic").isYes()).isTrue();
-		assertThat(response.getChoice("spell").getValue()).isEqualTo("detect_magic");
-		assertThat(response.getChoice("spell").getProbabilities()).containsEntry("detect_magic", 0.75)
-			.containsEntry("fireball", 0.25);
-		assertThat(response.getChoice("spell").getConfidence()).isEqualTo(0.7);
-		assertThat(response.getScore("danger").getValue()).isEqualTo(0.8);
-		assertThat(response.getScore("danger").getProbabilities()).containsExactly(0.3, 0.6, 0.1);
-		assertThat(response.getScore("danger").getNearestLevel()).isEqualTo(1);
-		assertThat(response.getScore("danger").getConfidence()).isEqualTo(0.4);
+		assertThat(response.getYesNo("defect").getProbability()).isEqualTo(0.95);
+		assertThat(response.getYesNo("defect").isYes()).isTrue();
+		assertThat(response.getChoice("topic").getValue()).isEqualTo("product");
+		assertThat(response.getChoice("topic").getProbabilities()).containsEntry("product", 0.75)
+			.containsEntry("delivery", 0.25);
+		assertThat(response.getChoice("topic").getConfidence()).isEqualTo(0.7);
+		assertThat(response.getScore("satisfaction").getValue()).isEqualTo(0.8);
+		assertThat(response.getScore("satisfaction").getProbabilities()).containsExactly(0.3, 0.6, 0.1);
+		assertThat(response.getScore("satisfaction").getNearestLevel()).isEqualTo(1);
+		assertThat(response.getScore("satisfaction").getConfidence()).isEqualTo(0.4);
 		assertThat(response.getMetadata().getId()).isNull();
 		assertThat(response.getMetadata().getModel()).isEqualTo(MODEL);
 		assertThat(response.getMetadata().getUsage().getPromptTokens()).isEqualTo(20);
@@ -221,10 +220,10 @@ class SystemOneDecisionMapperTests {
 
 	@Test
 	void scoreProbabilitiesArePaddedToTheQuestionLevels() {
-		DecisionResponse response = SystemOneDecisionMapper.response(DANGER_PROMPT, new SystemOneResponse(MODEL,
-				Map.of("danger", new ScoreAnswer(1.7, Map.of(), Map.of(0, 0.15, 2, 0.85), 0.5)), Usage.EMPTY));
+		DecisionResponse response = SystemOneDecisionMapper.response(SATISFACTION_PROMPT, new SystemOneResponse(MODEL,
+				Map.of("satisfaction", new ScoreAnswer(1.7, Map.of(), Map.of(0, 0.15, 2, 0.85), 0.5)), Usage.EMPTY));
 
-		assertThat(response.getScore("danger").getProbabilities()).containsExactly(0.15, 0.0, 0.85);
+		assertThat(response.getScore("satisfaction").getProbabilities()).containsExactly(0.15, 0.0, 0.85);
 	}
 
 	private static String toJson(Object value) {

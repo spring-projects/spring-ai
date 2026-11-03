@@ -100,8 +100,8 @@ class DefaultDecisionModelObservationConventionTests {
 
 	private static DecisionPrompt prompt(String model) {
 		return DecisionPrompt.builder()
-			.text("Help!")
-			.question("urgent", YesNoQuestion.of("Is it urgent?"))
+			.text("Where is my order?")
+			.question("defect", YesNoQuestion.of("Does the customer report a defect?"))
 			.options(model != null ? DecisionOptions.builder().model(model).build() : null)
 			.build();
 	}
@@ -112,7 +112,7 @@ class DefaultDecisionModelObservationConventionTests {
 
 	private static DecisionResponse response(DecisionPrompt prompt) {
 		return DecisionResponse.builder(prompt)
-			.answer("urgent", YesNoAnswer.builder().probability(0.9).build())
+			.answer("defect", YesNoAnswer.builder().probability(0.9).build())
 			.metadata(DecisionResponseMetadata.builder()
 				.id("dec_1")
 				.model("jev-1.13")
