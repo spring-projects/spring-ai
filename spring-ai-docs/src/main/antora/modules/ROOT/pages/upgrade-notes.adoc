@@ -12,12 +12,15 @@ A new `DecisionModel` API, in `org.springframework.ai.decision`, picks among a k
 It follows the shape of the other model APIs: a `DecisionPrompt` goes in, a `DecisionResponse` comes out, and `DecisionOptions` tune the call.
 Three implementations are available:
 
-* `OpenAiDecisionModel`, backed by the OpenAI Decisions API and auto-configured by the OpenAI starter under `spring.ai.openai.decision`. See xref:api/decision/openai-decision.adoc[OpenAI Decision Models];
+* `OpenAiDecisionModel`, backed by the OpenAI Decisions API and auto-configured by the OpenAI starter under `spring.ai.openai.decision`.
+See xref:api/decision/openai-decision.adoc[OpenAI Decision Models];
 * `OllamaDecisionModel`, backed by the Ollama `/v1/systemone` endpoint through the TypeSafe Java SDK and auto-configured by the Ollama starter under `spring.ai.ollama.decision`, with `d1-omni:600m` as the default model and `spring.ai.ollama.init.decision` to pull decision models at startup.
-Decision models are observed with the `decision` operation name, and the new `spring-ai-autoconfigure-model-decision-observation` module adds token usage metrics.
 See xref:api/decision/ollama-decision.adoc[Ollama Decision Models];
 * `SystemOneDecisionModel`, designed for the `/v1/systemone` endpoint through the TypeSafe Java SDK, and usable with TypeSafe Jev, Laya, llmman, Ollama, and other compatible inference services.
-See xref:api/decision/systemone-decision.adoc[SystemOne Decision Models].
+See xref:api/decision/systemone-decision.adoc[System One Decision Models].
+
+Decision models are observed with the `decision` operation name, and the new `spring-ai-autoconfigure-model-decision-observation` module adds token usage metrics.
+See xref:api/decision.adoc[Decision Models].
 
 === Message Parts
 

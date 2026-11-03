@@ -124,6 +124,9 @@ Each level has a label and, optionally, a description.
 | `ScoreAnswer`, with the expected level and, when the provider reports them, the probability of each level.
 |====
 
+`DecisionQuestion` and `DecisionAnswer` are sealed interfaces.
+A `switch` over a question or an answer can cover every kind, and the compiler checks that none is missing.
+
 These tips help you get more reliable answers:
 
 * Pick the kind of question from what your code does next.
@@ -204,8 +207,9 @@ DecisionPrompt prompt = DecisionPrompt.builder()
     .build();
 ----
 
-The settings of the prompt change only what they set.
-The model's default settings apply to the rest.
+Options are immutable.
+`mutate()` returns a builder that starts from their values, and `combineWith(...)` sets on a builder the values that another builder sets.
+This is how a model combines its default settings with the settings of the prompt: the settings of the prompt change only what they set, and the model's default settings apply to the rest.
 Each provider has its own options class with more settings, described on its page.
 
 == Reading Answers
@@ -215,6 +219,8 @@ A `DecisionResponse` holds one answer for each question, and the metadata of the
 image::decision/decision-response-classes.svg[The response, its metadata and its answer kinds, width=700, align="center"]
 
 Get the answer to a question by its name, with the method for its kind: `getYesNo(name)`, `getChoice(name)` or `getScore(name)`.
+`getAnswer(name, Class)` does the same for any kind of answer.
+`hasAnswer(name)` tells whether the response has an answer to a question, including a refusal.
 
 === Yes/No Answers
 
@@ -253,7 +259,7 @@ For example, `1.5` means that the model is split between the second and the thir
 * `getRoundedLevel()`: the expected level, rounded to the nearest level.
 
 When the provider reports them, `getProbabilities()` also has the probability of each level.
-Without them, `getNearestLevel()` returns the same level as `getRoundedLevel()`.
+Without them, or when none of them is above zero, `getNearestLevel()` returns the same level as `getRoundedLevel()`.
 
 The expected level can be a level that the model thinks is unlikely:
 

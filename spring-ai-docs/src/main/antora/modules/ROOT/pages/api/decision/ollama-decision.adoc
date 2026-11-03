@@ -178,7 +178,8 @@ Instead, download the models that you need in advance.
 | Fields input | Yes | The model can answer differently when the order of the fields changes, so use a `LinkedHashMap`.
 | Conversation input | Yes | Tool calls and tool results are sent, reasoning is not.
 | Probabilities | Yes | For all three kinds of questions.
-| Confidence | Yes | For choice and score answers. A confidence of `0` can mean that the server reported none.
+| Confidence | Yes | For choice and score answers.
+A confidence of `0` can mean that the server reported none.
 | Refusals | No |
 | Response id | No | `response.getMetadata().getId()` is `null`.
 |====

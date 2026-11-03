@@ -11,7 +11,8 @@ https://github.com/NandhaKishorM/laya[Laya], https://llmmanorg.github.io/[llmman
 
 . A System One server, for example:
 * TypeSafe: create an account and an API key at https://www.typesafe.ai[typesafe.ai];
-* Ollama 0.35 or later, with a decision model such as `d1-omni:600m`. We recommend Ollama 0.40.4 or later;
+* Ollama 0.35 or later, with a decision model such as `d1-omni:600m`.
+We recommend Ollama 0.40.4 or later;
 * Laya, with `laya-serve`;
 * llmman 0.1.497 or later, with `llmman serve`.
 . The `spring-ai-systemone` dependency in your project, as described in <<manual-configuration>>.
@@ -69,7 +70,10 @@ The official TypeSafe SDKs read the same variables.
 |====
 | Builder method | Description | Default
 
-| `options(SystemOneDecisionOptions)` | The default options. When they set no model, the default model of the client is used. | the default model of the client
+| `options(SystemOneDecisionOptions)`
+| The default options.
+When they set no model, the default model of the client is used.
+| the default model of the client
 | `provider(String)` | The provider name for observations, such as `ollama`, `laya` or `llmman` when the client points at one of them. | `systemone`
 | `observationRegistry(ObservationRegistry)` | The registry that observes the calls. | `ObservationRegistry.NOOP`
 | `observationConvention(DecisionModelObservationConvention)` | The convention that the observations follow. | the default convention
@@ -112,7 +116,8 @@ It serves one request at a time.
 | `baseUrl` `http://127.0.0.1:17434` (the default of `llmman serve`), and one of its `LLMMAN_API_KEYS` when set, or else any API key that is not empty, such as `llmman`
 | A local GGUF model, such as `gemma4`.
 llmman has no `jev-latest`, so set `defaultModel(...)`.
-| Output tokens are always `0`.
+| No request id.
+Output tokens are always `0`.
 |====
 
 TIP: For Ollama, the xref:api/decision/ollama-decision.adoc[`OllamaDecisionModel`] uses the same protocol, and adds Spring Boot auto-configuration and the pulling of models.
@@ -168,9 +173,11 @@ The timeout, the retry policy and the headers are settings of the `TypeSafeClien
 | Fields input | Yes | Use a `LinkedHashMap` to keep the fields in order.
 | Conversation input | Yes | Tool calls and tool results are sent, reasoning is not.
 | Probabilities | Yes | For all three kinds of questions.
-| Confidence | Yes | For choice and score answers. A confidence of `0` can mean that the server reported none.
+| Confidence | Yes | For choice and score answers.
+A confidence of `0` can mean that the server reported none.
 | Refusals | No |
-| Response id | Depends on the backend | Only TypeSafe Jev reports one. See <<backends>>.
+| Response id | Depends on the backend | Only TypeSafe Jev reports one.
+See <<backends>>.
 |====
 
 [[request-mapping]]
@@ -217,7 +224,7 @@ The SDK reports a confidence of `0` when the server sends none, so a confidence 
 The model that answered and the token usage come from the response body.
 When the server sends a request id in the `x-typesafe-request-id` header, Spring AI records it as the id of the response.
 You get it from `response.getMetadata().getId()` and from the `gen_ai.response.id` observation key.
-Ollama and Laya send no request id, so the id is `null`, and the observation has no such key.
+Ollama, Laya and llmman send no request id, so the id is `null`, and the observation has no such key.
 
 Errors come as exceptions of the `TypeSafeException` hierarchy of the SDK, such as `TypeSafeBadRequestException` or `TypeSafeRateLimitException`.
 They come after the retries of the `RetryPolicy` of the client.

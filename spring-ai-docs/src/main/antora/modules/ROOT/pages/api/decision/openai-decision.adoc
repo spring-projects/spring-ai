@@ -125,7 +125,8 @@ Check the documentation of those platforms to see whether they offer the Decisio
 | Feature | Supported | Notes
 
 | Text input | Yes |
-| Text with images | Yes | Only images, and only as inline data, not as hosted URLs. See <<request-mapping>>.
+| Text with images | Yes | Only images, and only as inline data, not as hosted URLs.
+See <<request-mapping>>.
 | Fields input | Yes |
 | Conversation input | Yes | Tool calls and tool results are sent as text, reasoning is not.
 | Probabilities | Yes | For all three kinds of questions.
