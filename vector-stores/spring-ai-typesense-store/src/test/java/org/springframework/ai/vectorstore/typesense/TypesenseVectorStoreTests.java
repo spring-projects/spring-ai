@@ -189,6 +189,18 @@ class TypesenseVectorStoreTests {
 	}
 
 	@Test
+	void fewerImportResultsThanDocumentsFailTheUpsert() throws Exception {
+		when(this.collection.retrieve()).thenReturn(schema(field("embedding", 4)));
+		// The client leaves out a document it cannot serialize, so Typesense only
+		// reports on the others
+		when(this.documents.import_(any(java.util.Collection.class), any(ImportDocumentsParameters.class)))
+			.thenReturn("{\"success\":true}");
+
+		assertThatIllegalStateException().isThrownBy(() -> store().upsert(List.of(entry("a", 4), entry("b", 4))))
+			.withMessageContaining("returned 1 import results for 2 documents");
+	}
+
+	@Test
 	void anUpsertThatTypesenseAcceptsSucceeds() throws Exception {
 		when(this.collection.retrieve()).thenReturn(schema(field("embedding", 4)));
 		when(this.documents.import_(any(java.util.Collection.class), any(ImportDocumentsParameters.class)))

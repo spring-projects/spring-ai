@@ -37,9 +37,11 @@ public class TypesenseVectorStoreProperties extends CommonVectorStoreProperties 
 	private String collectionName = TypesenseVectorStore.DEFAULT_COLLECTION_NAME;
 
 	/**
-	 * The dimension of the vectors to be stored in the Typesense collection.
+	 * The dimension of the vectors to be stored in the Typesense collection. When not
+	 * set, it is read from the collection schema or, for a new collection, from the
+	 * embedding model, falling back to 1536 if the model cannot report it.
 	 */
-	private int embeddingDimension = TypesenseVectorStore.OPENAI_EMBEDDING_DIMENSION_SIZE;
+	private int embeddingDimension = TypesenseVectorStore.INVALID_EMBEDDING_DIMENSION;
 
 	public String getCollectionName() {
 		return this.collectionName;
