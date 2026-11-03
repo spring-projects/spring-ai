@@ -105,6 +105,10 @@ public class DefaultChatModelObservationConvention implements ChatModelObservati
 		keyValues = requestTools(keyValues, context);
 		keyValues = requestTopK(keyValues, context);
 		keyValues = requestTopP(keyValues, context);
+		keyValues = requestOutputType(keyValues, context);
+		keyValues = requestReasoningLevel(keyValues, context);
+		keyValues = requestSeed(keyValues, context);
+		keyValues = requestChoiceCount(keyValues, context);
 		// Response
 		keyValues = responseFinishReasons(keyValues, context);
 		keyValues = responseId(keyValues, context);
@@ -212,6 +216,45 @@ public class DefaultChatModelObservationConvention implements ChatModelObservati
 		if (options != null && options.getTopP() != null) {
 			return keyValues.and(ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_TOP_P.asString(),
 					String.valueOf(options.getTopP()));
+		}
+		return keyValues;
+	}
+
+	protected KeyValues requestOutputType(KeyValues keyValues, ChatModelObservationContext context) {
+		ChatOptions options = context.getRequest().getOptions();
+		if (options != null && StringUtils.hasText(options.getOutputType())) {
+			return keyValues.and(
+					ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_OUTPUT_TYPE.asString(),
+					options.getOutputType());
+		}
+		return keyValues;
+	}
+
+	protected KeyValues requestReasoningLevel(KeyValues keyValues, ChatModelObservationContext context) {
+		ChatOptions options = context.getRequest().getOptions();
+		if (options != null && StringUtils.hasText(options.getReasoningLevel())) {
+			return keyValues.and(
+					ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_REASONING_LEVEL.asString(),
+					options.getReasoningLevel());
+		}
+		return keyValues;
+	}
+
+	protected KeyValues requestSeed(KeyValues keyValues, ChatModelObservationContext context) {
+		ChatOptions options = context.getRequest().getOptions();
+		if (options != null && options.getSeed() != null) {
+			return keyValues.and(ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_SEED.asString(),
+					String.valueOf(options.getSeed()));
+		}
+		return keyValues;
+	}
+
+	protected KeyValues requestChoiceCount(KeyValues keyValues, ChatModelObservationContext context) {
+		ChatOptions options = context.getRequest().getOptions();
+		if (options != null && options.getChoiceCount() != null) {
+			return keyValues.and(
+					ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_CHOICE_COUNT.asString(),
+					String.valueOf(options.getChoiceCount()));
 		}
 		return keyValues;
 	}
