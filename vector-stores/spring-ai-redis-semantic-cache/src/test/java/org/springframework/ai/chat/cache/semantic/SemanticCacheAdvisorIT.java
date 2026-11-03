@@ -991,9 +991,8 @@ class SemanticCacheAdvisorIT {
 
 			var openAiChatOptions = OpenAiChatOptions.builder()
 				.apiKey(System.getenv("OPENAI_API_KEY"))
-				.model("gpt-3.5-turbo")
-				.temperature(0.4)
-				.maxTokens(200)
+				.model("gpt-5-mini")
+				.maxCompletionTokens(2000)
 				.build();
 			return OpenAiChatModel.builder()
 				.options(openAiChatOptions)
