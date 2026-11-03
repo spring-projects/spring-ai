@@ -45,6 +45,7 @@ import org.springframework.context.annotation.Bean;
  * @author Eddú Meléndez
  * @author Soby Chacko
  * @author Jonghoon Park
+ * @author Taewoong Kim
  */
 @AutoConfiguration
 @ConditionalOnClass({ EmbeddingModel.class, WeaviateVectorStore.class })
@@ -87,6 +88,7 @@ public class WeaviateVectorStoreAutoConfiguration {
 			BatchingStrategy batchingStrategy) {
 		return WeaviateVectorStore.builder(weaviateClient, embeddingModel)
 			.options(mappingPropertiesToOptions(properties))
+			.tenantName(properties.getTenantName())
 			.filterMetadataFields(properties.getFilterField()
 				.entrySet()
 				.stream()
