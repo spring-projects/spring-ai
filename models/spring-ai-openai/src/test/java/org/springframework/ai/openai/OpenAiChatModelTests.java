@@ -71,6 +71,7 @@ import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.EmptyRateLimit;
 import org.springframework.ai.chat.metadata.RateLimit;
+import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.model.MessageAggregator;
@@ -95,6 +96,7 @@ import static org.mockito.Mockito.when;
  * @author Jewoo Shin
  * @author Dimitar Proynov
  * @author Raphael Vullriede
+ * @author Zhao Hongming
  */
 @ExtendWith(MockitoExtension.class)
 class OpenAiChatModelTests {
@@ -810,6 +812,92 @@ class OpenAiChatModelTests {
 
 		ChatResponseMetadata metadata = response.getMetadata();
 		assertThat((Object) metadata.get("created")).isEqualTo(1234567890L);
+	}
+
+	@Test
+	void usageMapsPromptCacheReadAndWriteTokens() {
+		givenChatCompletion(ChatCompletion.builder()
+			.id("test-id")
+			.created(1777799928)
+			.model("test-model")
+			.usage(CompletionUsage.builder()
+				.promptTokens(2300)
+				.completionTokens(20)
+				.totalTokens(2320)
+				.promptTokensDetails(
+						CompletionUsage.PromptTokensDetails.builder().cachedTokens(0).cacheWriteTokens(2242).build())
+				.build())
+			.addChoice(ChatCompletion.Choice.builder()
+				.finishReason(ChatCompletion.Choice.FinishReason.STOP)
+				.index(0)
+				.logprobs(Optional.empty())
+				.message(ChatCompletionMessage.builder()
+					.content("hello")
+					.refusal(Optional.empty())
+					.role(JsonValue.from("assistant"))
+					.annotations(List.of())
+					.toolCalls(List.of())
+					.build())
+				.build())
+			.build());
+
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		ChatResponse response = chatModel.call(new Prompt("hi", options));
+
+		Usage usage = response.getMetadata().getUsage();
+		assertThat(usage.getPromptTokens()).isEqualTo(2300);
+		assertThat(usage.getCacheReadInputTokens()).isEqualTo(0L);
+		assertThat(usage.getCacheWriteInputTokens()).isEqualTo(2242L);
+	}
+
+	@Test
+	void usageLeavesCacheWriteTokensNullWhenNotReported() {
+		givenChatCompletion(chatCompletion("test-model", "hello"));
+
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		ChatResponse response = chatModel.call(new Prompt("hi", options));
+
+		assertThat(response.getMetadata().getUsage().getCacheWriteInputTokens()).isNull();
+	}
+
+	@Test
+	void streamedUsageMapsPromptCacheReadAndWriteTokens() {
+		ChatCompletionChunk usageChunk = ChatCompletionChunk.builder()
+			.id("chatcmpl-123")
+			.created(1777799928L)
+			.model("deepseek-reasoner")
+			.choices(List.of())
+			.usage(CompletionUsage.builder()
+				.promptTokens(2300)
+				.completionTokens(20)
+				.totalTokens(2320)
+				.promptTokensDetails(
+						CompletionUsage.PromptTokensDetails.builder().cachedTokens(2240).cacheWriteTokens(60).build())
+				.build())
+			.build();
+		List<ChatCompletionChunk> chunks = List.of(streamingChunk(delta -> delta.content("hello"), null),
+				streamingChunk(delta -> {
+				}, ChatCompletionChunk.Choice.FinishReason.STOP), usageChunk);
+
+		ChatResponse response = streamResponses(chunks).blockLast();
+
+		assertThat(response).isNotNull();
+		Usage usage = response.getMetadata().getUsage();
+		assertThat(usage.getPromptTokens()).isEqualTo(2300);
+		assertThat(usage.getCacheReadInputTokens()).isEqualTo(2240L);
+		assertThat(usage.getCacheWriteInputTokens()).isEqualTo(60L);
 	}
 
 	@Test
