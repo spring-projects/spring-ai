@@ -86,21 +86,21 @@ class DecisionAnswerTests {
 	@Test
 	void choiceAnswerExposesProbabilitiesAndConfidence() {
 		var answer = ChoiceAnswer.builder()
-			.value("technical")
-			.probabilities(Map.of("billing", 0.2, "technical", 0.8))
+			.value("product")
+			.probabilities(Map.of("delivery", 0.2, "product", 0.8))
 			.confidence(0.9)
 			.build();
 
-		assertThat(answer.getValue()).isEqualTo("technical");
+		assertThat(answer.getValue()).isEqualTo("product");
 		assertThat(answer.getProbability()).isEqualTo(0.8);
-		assertThat(answer.getProbability("billing")).isEqualTo(0.2);
+		assertThat(answer.getProbability("delivery")).isEqualTo(0.2);
 		assertThat(answer.getProbability("unknown")).isNull();
 		assertThat(answer.getConfidence()).isEqualTo(0.9);
 	}
 
 	@Test
 	void choiceAnswerWithoutProbabilities() {
-		var answer = ChoiceAnswer.builder().value("technical").build();
+		var answer = ChoiceAnswer.builder().value("product").build();
 
 		assertThat(answer.getProbabilities()).isEmpty();
 		assertThat(answer.getProbability()).isNull();
@@ -111,12 +111,12 @@ class DecisionAnswerTests {
 	@Test
 	void choiceAnswerRanksOptionsByProbability() {
 		Map<String, Double> probabilities = new LinkedHashMap<>();
-		probabilities.put("sales", 0.1);
-		probabilities.put("billing", 0.3);
-		probabilities.put("technical", 0.6);
+		probabilities.put("account", 0.1);
+		probabilities.put("delivery", 0.3);
+		probabilities.put("product", 0.6);
 
-		assertThat(ChoiceAnswer.builder().value("technical").probabilities(probabilities).build().getRankedOptions())
-			.containsExactly("technical", "billing", "sales");
+		assertThat(ChoiceAnswer.builder().value("product").probabilities(probabilities).build().getRankedOptions())
+			.containsExactly("product", "delivery", "account");
 	}
 
 	@Test
