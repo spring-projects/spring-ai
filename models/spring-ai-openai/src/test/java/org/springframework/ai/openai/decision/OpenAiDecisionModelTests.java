@@ -132,83 +132,86 @@ class OpenAiDecisionModelTests {
 	@Test
 	void mapsTextInputAndQuestions() {
 		stubResponse(Decision.builder()
-			.addAnswer(Decision.Answer.Predicate.builder().name("urgent").probability(0.9).build())
+			.addAnswer(Decision.Answer.Predicate.builder().name("defect").probability(0.9).build())
 			.addAnswer(Decision.Answer.Choice.builder()
-				.name("team")
-				.choice("technical")
+				.name("topic")
+				.choice("product")
 				.confidence(0.8)
-				.addProbability(Decision.Answer.Choice.Probability.builder().value("billing").probability(0.3).build())
-				.addProbability(
-						Decision.Answer.Choice.Probability.builder().value("technical").probability(0.7).build())
+				.addProbability(Decision.Answer.Choice.Probability.builder().value("delivery").probability(0.3).build())
+				.addProbability(Decision.Answer.Choice.Probability.builder().value("product").probability(0.7).build())
 				.build())
 			.addAnswer(Decision.Answer.Score.builder()
-				.name("mood")
+				.name("satisfaction")
 				.score(1.6)
 				.confidence(0.75)
 				.addProbability(
-						Decision.Answer.Score.Probability.builder().label("calm").value(0L).probability(0.1).build())
+						Decision.Answer.Score.Probability.builder().label("unhappy").value(0L).probability(0.1).build())
 				.addProbability(
-						Decision.Answer.Score.Probability.builder().label("angry").value(2L).probability(0.7).build())
+						Decision.Answer.Score.Probability.builder().label("happy").value(2L).probability(0.7).build())
 				.addProbability(
-						Decision.Answer.Score.Probability.builder().label("annoyed").value(1L).probability(0.2).build())
+						Decision.Answer.Score.Probability.builder().label("neutral").value(1L).probability(0.2).build())
 				.build())
 			.model("gpt-6-luna-2026")
 			.usage(usage(12, 3))
 			.build());
 
 		DecisionResponse response = model().call(DecisionPrompt.builder()
-			.text("Help! My payouts are late")
-			.question("urgent",
-					YesNoQuestion.builder().text("Is it urgent?").whenYes("Money is blocked").whenNo("Idle").build())
-			.question("team",
-					ChoiceQuestion.builder()
-						.text("Which team?")
-						.option("billing", "Payments")
-						.option("technical")
+			.text("Where is my order? I ordered it two weeks ago.")
+			.question("defect",
+					YesNoQuestion.builder()
+						.text("Does the customer report a defect?")
+						.whenYes("Part of the item does not work")
+						.whenNo("The item works")
 						.build())
-			.question("mood",
+			.question("topic",
+					ChoiceQuestion.builder()
+						.text("What is the message about?")
+						.option("delivery", "Where an order is")
+						.option("product")
+						.build())
+			.question("satisfaction",
 					ScoreQuestion.builder()
-						.text("Mood?")
-						.level("calm")
-						.level("annoyed", "Mildly")
-						.level("angry")
+						.text("How satisfied is the customer?")
+						.level("unhappy")
+						.level("neutral", "Neither happy nor unhappy")
+						.level("happy")
 						.build())
 			.build());
 
 		DecisionCreateParams params = sentParams();
 		assertThat(params.model()).isEqualTo(OpenAiDecisionOptions.DEFAULT_DECISION_MODEL);
-		assertThat(params.input().asString()).isEqualTo("Help! My payouts are late");
+		assertThat(params.input().asString()).isEqualTo("Where is my order? I ordered it two weeks ago.");
 		assertThat(params.safetyIdentifier()).isEmpty();
 		assertThat(params.questions()).hasSize(3);
 
 		var predicate = params.questions().get(0).asPredicate();
-		assertThat(predicate.name()).contains("urgent");
-		assertThat(predicate.instructions())
-			.isEqualTo("Is it urgent?\nAnswer \"yes\" if: Money is blocked\nAnswer \"no\" if: Idle");
+		assertThat(predicate.name()).contains("defect");
+		assertThat(predicate.instructions()).isEqualTo(
+				"Does the customer report a defect?\nAnswer \"yes\" if: Part of the item does not work\nAnswer \"no\" if: The item works");
 
 		var choice = params.questions().get(1).asChoice();
-		assertThat(choice.name()).contains("team");
-		assertThat(choice.instructions()).isEqualTo("Which team?");
+		assertThat(choice.name()).contains("topic");
+		assertThat(choice.instructions()).isEqualTo("What is the message about?");
 		assertThat(choice.choices()).hasSize(2);
-		assertThat(choice.choices().get(0).value().asString()).isEqualTo("billing");
-		assertThat(choice.choices().get(0).description()).contains("Payments");
-		assertThat(choice.choices().get(1).value().asString()).isEqualTo("technical");
+		assertThat(choice.choices().get(0).value().asString()).isEqualTo("delivery");
+		assertThat(choice.choices().get(0).description()).contains("Where an order is");
+		assertThat(choice.choices().get(1).value().asString()).isEqualTo("product");
 		assertThat(choice.choices().get(1).description()).isEmpty();
 
 		var score = params.questions().get(2).asScore();
-		assertThat(score.name()).contains("mood");
+		assertThat(score.name()).contains("satisfaction");
 		assertThat(score.levels()).extracting(DecisionCreateParams.Question.Score.Level::label)
-			.containsExactly("calm", "annoyed", "angry");
-		assertThat(score.levels().get(1).description()).contains("Mildly");
+			.containsExactly("unhappy", "neutral", "happy");
+		assertThat(score.levels().get(1).description()).contains("Neither happy nor unhappy");
 
-		assertThat(response.getYesNo("urgent").getProbability()).isEqualTo(0.9);
-		assertThat(response.getChoice("team").getValue()).isEqualTo("technical");
-		assertThat(response.getChoice("team").getProbabilities()).containsEntry("billing", 0.3)
-			.containsEntry("technical", 0.7);
-		assertThat(response.getChoice("team").getConfidence()).isEqualTo(0.8);
-		assertThat(response.getScore("mood").getValue()).isEqualTo(1.6);
-		assertThat(response.getScore("mood").getProbabilities()).containsExactly(0.1, 0.2, 0.7);
-		assertThat(response.getScore("mood").getConfidence()).isEqualTo(0.75);
+		assertThat(response.getYesNo("defect").getProbability()).isEqualTo(0.9);
+		assertThat(response.getChoice("topic").getValue()).isEqualTo("product");
+		assertThat(response.getChoice("topic").getProbabilities()).containsEntry("delivery", 0.3)
+			.containsEntry("product", 0.7);
+		assertThat(response.getChoice("topic").getConfidence()).isEqualTo(0.8);
+		assertThat(response.getScore("satisfaction").getValue()).isEqualTo(1.6);
+		assertThat(response.getScore("satisfaction").getProbabilities()).containsExactly(0.1, 0.2, 0.7);
+		assertThat(response.getScore("satisfaction").getConfidence()).isEqualTo(0.75);
 		assertThat(response.getMetadata().getId()).isEqualTo("req_1");
 		assertThat(response.getMetadata().getModel()).isEqualTo("gpt-6-luna-2026");
 		assertThat(response.getMetadata().getUsage().getPromptTokens()).isEqualTo(12);
@@ -230,13 +233,13 @@ class OpenAiDecisionModelTests {
 
 		DecisionResponse response = model().call(DecisionPrompt.builder()
 			.text("text")
-			.question("spam", YesNoQuestion.of("Spam?"))
+			.question("defect", YesNoQuestion.of("Does the customer report a defect?"))
 			.question("secret", YesNoQuestion.of("Secret?"))
 			.build());
 
 		assertThat(response.getResults()).hasSize(2);
-		assertThat(response.getAnswers().keySet()).containsExactly("spam", "secret");
-		assertThat(response.getYesNo("spam").isYes()).isFalse();
+		assertThat(response.getAnswers().keySet()).containsExactly("defect", "secret");
+		assertThat(response.getYesNo("defect").isYes()).isFalse();
 		assertThat(response.isRefused("secret")).isTrue();
 		assertThat(response.getAnswer("secret", RefusalAnswer.class)).isEqualTo(RefusalAnswer.builder().build());
 	}
@@ -278,20 +281,21 @@ class OpenAiDecisionModelTests {
 	void mapsFieldsAsLabeledParts() {
 		stubResponse(yesNoResponse());
 		Map<String, Object> fields = new LinkedHashMap<>();
-		fields.put("subject", "Payouts late");
+		fields.put("subject", "Late delivery");
 		fields.put("attempts", 3);
-		fields.put("tags", List.of("billing", "urgent"));
+		fields.put("tags", List.of("delivery", "late"));
 		var image = Media.builder().mimeType(MimeTypeUtils.IMAGE_JPEG).data(new byte[] { 1 }).build();
 		fields.put("screenshot", MediaPart.of(image));
 		fields.put("receipt", List.of(TextPart.of("Order 42"), MediaPart.of(image)));
 
-		model().call(DecisionInput.fields(fields), Map.of("urgent", YesNoQuestion.of("Urgent?")));
+		model().call(DecisionInput.fields(fields),
+				Map.of("defect", YesNoQuestion.of("Does the customer report a defect?")));
 
 		List<DecisionInputPart> parts = sentParts();
 		assertThat(parts).hasSize(8);
-		assertThat(parts.get(0).asInputText().text()).isEqualTo("subject: Payouts late");
+		assertThat(parts.get(0).asInputText().text()).isEqualTo("subject: Late delivery");
 		assertThat(parts.get(1).asInputText().text()).isEqualTo("attempts: 3");
-		assertThat(parts.get(2).asInputText().text()).isEqualTo("tags: [\"billing\",\"urgent\"]");
+		assertThat(parts.get(2).asInputText().text()).isEqualTo("tags: [\"delivery\",\"late\"]");
 		assertThat(parts.get(3).asInputText().text()).isEqualTo("screenshot:");
 		assertThat(parts.get(4).asInputImage().imageUrl()).isEqualTo("data:image/jpeg;base64,AQ==");
 		assertThat(parts.get(5).asInputText().text()).isEqualTo("receipt:");
@@ -323,43 +327,43 @@ class OpenAiDecisionModelTests {
 	@Test
 	void mapsToolCallsAndResultsAsLines() {
 		stubResponse(yesNoResponse());
-		var messages = List.of(new UserMessage("Weather in Paris?"), AssistantMessage.builder()
+		var messages = List.of(new UserMessage("When will my order arrive?"), AssistantMessage.builder()
 			.content("Let me check.")
-			.reasoning(ReasoningPart.of("The user wants the weather."))
-			.toolCalls(
-					List.of(new AssistantMessage.ToolCall("call_1", "function", "get_weather", "{\"city\":\"Paris\"}")))
+			.reasoning(ReasoningPart.of("The user wants the delivery date."))
+			.toolCalls(List
+				.of(new AssistantMessage.ToolCall("call_1", "function", "get_delivery_date", "{\"order\":\"A-1001\"}")))
 			.build(),
 				ToolResponseMessage.builder()
-					.responses(List.of(new ToolResponseMessage.ToolResponse("call_1", "get_weather", "rainy")))
+					.responses(List.of(new ToolResponseMessage.ToolResponse("call_1", "get_delivery_date", "Friday")))
 					.build(),
-				new AssistantMessage("It is rainy in Paris."));
+				new AssistantMessage("Your order will arrive on Friday."));
 
 		model().call(DecisionInput.conversation(messages), Map.of("ok", YesNoQuestion.of("Answered well?")));
 
 		assertThat(sentParts()).extracting(part -> part.asInputText().text())
-			.containsExactly("user: Weather in Paris?",
-					"assistant: Let me check.\n[calls get_weather {\"city\":\"Paris\"}]", "tool: get_weather: rainy",
-					"assistant: It is rainy in Paris.");
+			.containsExactly("user: When will my order arrive?",
+					"assistant: Let me check.\n[calls get_delivery_date {\"order\":\"A-1001\"}]",
+					"tool: get_delivery_date: Friday", "assistant: Your order will arrive on Friday.");
 	}
 
 	@Test
 	void skipsMessagesWithNothingToSendAndNamesToolResultsByIdWithoutName() {
 		stubResponse(yesNoResponse());
-		var messages = List.of(new UserMessage("Weather in Paris?"),
+		var messages = List.of(new UserMessage("When will my order arrive?"),
 				AssistantMessage.builder().reasoning(ReasoningPart.of("Thinking only.")).build(),
 				ToolResponseMessage.builder()
 					.parts(List
-						.of(new ToolResultPart("call_1", null, List.of(TextPart.of("rainy")), false, null, Map.of())))
+						.of(new ToolResultPart("call_1", null, List.of(TextPart.of("Friday")), false, null, Map.of())))
 					.build(),
 				ToolResponseMessage.builder()
 					.parts(List
-						.of(new ToolResultPart(null, null, List.of(TextPart.of("sunny")), false, null, Map.of())))
+						.of(new ToolResultPart(null, null, List.of(TextPart.of("Monday")), false, null, Map.of())))
 					.build());
 
 		model().call(DecisionInput.conversation(messages), Map.of("ok", YesNoQuestion.of("Answered well?")));
 
 		assertThat(sentParts()).extracting(part -> part.asInputText().text())
-			.containsExactly("user: Weather in Paris?", "tool: call_1: rainy", "tool: sunny");
+			.containsExactly("user: When will my order arrive?", "tool: call_1: Friday", "tool: Monday");
 	}
 
 	@Test
@@ -432,8 +436,8 @@ class OpenAiDecisionModelTests {
 	void rejectsResponseNotMatchingTheQuestions() {
 		stubResponse(Decision.builder()
 			.addAnswer(Decision.Answer.Choice.builder()
-				.name("team")
-				.choice("sales")
+				.name("topic")
+				.choice("account")
 				.confidence(0.5)
 				.probabilities(List.of())
 				.build())
@@ -441,10 +445,10 @@ class OpenAiDecisionModelTests {
 			.usage(usage(1, 1))
 			.build());
 
-		assertThatThrownBy(
-				() -> model().call("x", Map.of("team", ChoiceQuestion.of("Which team?", "billing", "technical"))))
+		assertThatThrownBy(() -> model().call("x",
+				Map.of("topic", ChoiceQuestion.of("What is the message about?", "delivery", "product"))))
 			.isInstanceOf(IllegalStateException.class)
-			.hasMessageContaining("'sales'");
+			.hasMessageContaining("'account'");
 	}
 
 	@Test
