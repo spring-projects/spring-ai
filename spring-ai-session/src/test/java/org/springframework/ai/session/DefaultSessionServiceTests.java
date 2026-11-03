@@ -62,6 +62,57 @@ class DefaultSessionServiceTests {
 	}
 
 	@Test
+	void versionCheckedAppendLandsOnTheVersionItRead() {
+		Session session = this.service.create(CreateSessionRequest.builder().build());
+		assertThat(this.service.getEventVersion(session.id())).isZero();
+		this.service.appendMessage(session.id(), new UserMessage("hello"));
+		long version = this.service.getEventVersion(session.id());
+		assertThat(version).isEqualTo(1);
+
+		boolean appended = this.service.appendEvents(session.id(),
+				List.of(event(session.id(), "a"), event(session.id(), "b")), version);
+
+		assertThat(appended).isTrue();
+		assertThat(this.service.getEventVersion(session.id())).isEqualTo(version + 1);
+		assertThat(this.service.getMessages(session.id())).extracting(Message::getText)
+			.containsExactly("hello", "a", "b");
+	}
+
+	@Test
+	void versionCheckedAppendWritesNothingWhenTheLogMoved() {
+		Session session = this.service.create(CreateSessionRequest.builder().build());
+		long version = this.service.getEventVersion(session.id());
+		this.service.appendMessage(session.id(), new UserMessage("in between"));
+
+		boolean appended = this.service.appendEvents(session.id(), List.of(event(session.id(), "late")), version);
+
+		assertThat(appended).isFalse();
+		assertThat(this.service.getMessages(session.id())).extracting(Message::getText).containsExactly("in between");
+	}
+
+	@Test
+	void versionCheckedAppendRejectsSystemMessagesAndEmptyBatches() {
+		Session session = this.service.create(CreateSessionRequest.builder().build());
+		long version = this.service.getEventVersion(session.id());
+		SessionEvent system = SessionEvent.builder()
+			.sessionId(session.id())
+			.message(new SystemMessage("Answer in French."))
+			.build();
+
+		assertThatIllegalArgumentException()
+			.isThrownBy(() -> this.service.appendEvents(session.id(), List.of(system), version))
+			.withMessageContaining("allowSystemMessages(true)");
+		assertThatIllegalArgumentException()
+			.isThrownBy(() -> this.service.appendEvents(session.id(), List.of(), version));
+		assertThat(this.service.getEvents(session.id())).isEmpty();
+		assertThat(this.service.getEventVersion("missing")).isZero();
+	}
+
+	private static SessionEvent event(String sessionId, String text) {
+		return SessionEvent.builder().sessionId(sessionId).message(new AssistantMessage(text)).build();
+	}
+
+	@Test
 	void storingSystemMessageIsRejectedByDefault() {
 		Session session = this.service
 			.create(CreateSessionRequest.builder().metadata(SessionAttributes.PRINCIPAL_NAME, "user-1").build());
