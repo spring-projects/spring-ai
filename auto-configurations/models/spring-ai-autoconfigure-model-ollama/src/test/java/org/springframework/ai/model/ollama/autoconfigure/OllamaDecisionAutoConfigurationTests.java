@@ -90,17 +90,17 @@ class OllamaDecisionAutoConfigurationTests {
 			.andExpect(method(HttpMethod.POST))
 			.andExpect(header(HttpHeaders.AUTHORIZATION, "Bearer ollama"))
 			.andRespond(withSuccess("""
-					{"model": "d1-omni:600m", "answers": {"mimic": {"type": "noul", "noul": 0.97}},
+					{"model": "d1-omni:600m", "answers": {"defect": {"type": "noul", "noul": 0.97}},
 					"usage": {"input_tokens": 20, "output_tokens": 0}}""", MediaType.APPLICATION_JSON));
 
 		this.contextRunner.withPropertyValues("spring.ai.ollama.base-url=http://ollama.test:11434")
 			.withBean(RestClient.Builder.class, () -> restClientBuilder)
 			.run(context -> {
 				DecisionResponse response = context.getBean(OllamaDecisionModel.class)
-					.call("The treasure chest just licked its lips.",
-							Map.of("mimic", YesNoQuestion.of("Is the chest a mimic?")));
+					.call("My new headphones arrived yesterday, but the left side doesn't work. Can I get my money back?",
+							Map.of("defect", YesNoQuestion.of("Does the customer report a defect?")));
 
-				assertThat(response.getYesNo("mimic").isYes()).isTrue();
+				assertThat(response.getYesNo("defect").isYes()).isTrue();
 				server.verify();
 			});
 	}
