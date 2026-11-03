@@ -35,10 +35,10 @@ import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaModel;
 import org.springframework.ai.ollama.api.common.OllamaApiConstants;
 import org.springframework.ai.ollama.decision.OllamaDecisionOptions;
-import org.springframework.ai.ollama.decision.SystemOneDecisionMapper;
 import org.springframework.ai.ollama.management.ModelManagementOptions;
 import org.springframework.ai.ollama.management.OllamaModelManager;
 import org.springframework.ai.ollama.management.PullModelStrategy;
+import org.springframework.ai.systemone.SystemOneDecisionMapper;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
@@ -46,6 +46,7 @@ import org.springframework.util.StringUtils;
  * A {@link DecisionModel} implementation for Ollama.
  *
  * @author Thomas Vitale
+ * @author Christian Tzolov
  * @since 2.1.0
  */
 public class OllamaDecisionModel implements DecisionModel {

@@ -59,7 +59,7 @@ dependencies {
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
 The starter brings in the TypeSafe Java SDK that the decision model needs.
-Applications that don't use the decision model can xref:api/chat/ollama-chat.adoc#excluding-the-typesafe-sdk[exclude it].
+Applications that don't use the decision model can turn off its auto-configuration with `spring.ai.model.decision=none`, as described in <<decision-properties>>.
 
 === Base Properties
 
@@ -86,6 +86,7 @@ Here are the properties for initializing the Ollama integration and xref:auto-pu
 | spring.ai.ollama.init.decision.additional-models | Additional models to initialize besides the ones configured via default properties. | `[]`
 |====
 
+[[decision-properties]]
 === Decision Properties
 
 [NOTE]

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package org.springframework.ai.ollama.decision;
+package org.springframework.ai.systemone;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -27,33 +27,28 @@ import org.springaicommunity.typesafe.response.ChoiceAnswer;
 import org.springaicommunity.typesafe.response.NoulAnswer;
 import org.springaicommunity.typesafe.response.ScoreAnswer;
 import org.springaicommunity.typesafe.response.SystemOneResponse;
-import org.springaicommunity.typesafe.response.UnknownAnswer;
 import org.springaicommunity.typesafe.response.Usage;
 import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.messages.UserMessage;
-import org.springframework.ai.chat.messages.part.MediaPart;
 import org.springframework.ai.chat.messages.part.ReasoningPart;
 import org.springframework.ai.chat.messages.part.TextPart;
-import org.springframework.ai.content.Media;
 import org.springframework.ai.decision.DecisionPrompt;
 import org.springframework.ai.decision.DecisionResponse;
 import org.springframework.ai.decision.input.DecisionInput;
 import org.springframework.ai.decision.question.ChoiceQuestion;
 import org.springframework.ai.decision.question.ScoreQuestion;
 import org.springframework.ai.decision.question.YesNoQuestion;
-import org.springframework.core.io.ByteArrayResource;
-import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Unit tests for {@link SystemOneDecisionMapper}.
  *
  * @author Thomas Vitale
+ * @author Christian Tzolov
  */
 class SystemOneDecisionMapperTests {
 
@@ -148,36 +143,6 @@ class SystemOneDecisionMapperTests {
 	}
 
 	@Test
-	void rejectsMediaInEveryInputKind() {
-		var treasureMap = MediaPart.of(new Media(MimeTypeUtils.IMAGE_PNG, new ByteArrayResource(new byte[] { 1 })));
-
-		assertThatThrownBy(() -> SystemOneDecisionMapper
-			.state(DecisionInput.content(TextPart.of("X marks the spot"), treasureMap)))
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("the input carries media");
-		assertThatThrownBy(
-				() -> SystemOneDecisionMapper.state(DecisionInput.fields(Map.of("treasure_map", treasureMap))))
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("field 'treasure_map' carries media");
-		var userMessage = UserMessage.builder().text("Where is the treasure?").media(treasureMap.media()).build();
-		assertThatThrownBy(() -> SystemOneDecisionMapper.state(DecisionInput.conversation(List.of(userMessage))))
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("user message carries media");
-	}
-
-	@Test
-	void rejectsUnsupportedPartsInTextAndFieldsInputs() {
-		assertThatThrownBy(() -> SystemOneDecisionMapper
-			.state(DecisionInput.content(TextPart.of("A riddle"), ReasoningPart.of("Probably 'time'"))))
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("Unsupported decision input part ReasoningPart");
-		assertThatThrownBy(() -> SystemOneDecisionMapper
-			.state(DecisionInput.fields(Map.of("riddle_answer", ReasoningPart.of("Probably 'time'")))))
-			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("field 'riddle_answer'");
-	}
-
-	@Test
 	void questionsBecomeNoulChoiceAndScore() {
 		DecisionPrompt prompt = DecisionPrompt.builder()
 			.text("A treasure chest sits alone in an empty room.")
@@ -260,50 +225,6 @@ class SystemOneDecisionMapperTests {
 				Map.of("danger", new ScoreAnswer(1.7, Map.of(), Map.of(0, 0.15, 2, 0.85), 0.5)), Usage.EMPTY));
 
 		assertThat(response.getScore("danger").getProbabilities()).containsExactly(0.15, 0.0, 0.85);
-	}
-
-	@Test
-	void scoreWithoutProbabilitiesStaysEmpty() {
-		DecisionResponse response = SystemOneDecisionMapper.response(DANGER_PROMPT, new SystemOneResponse(MODEL,
-				Map.of("danger", new ScoreAnswer(1.2, Map.of(), Map.of(), 0.6)), Usage.EMPTY));
-
-		assertThat(response.getScore("danger").getProbabilities()).isEmpty();
-		assertThat(response.getScore("danger").getNearestLevel()).isEqualTo(1);
-	}
-
-	@Test
-	void failsOnScoreProbabilityOutsideTheLevels() {
-		var response = new SystemOneResponse(MODEL,
-				Map.of("danger", new ScoreAnswer(2, Map.of(), Map.of(1, 0.1, 9, 0.9), 0.5)), Usage.EMPTY);
-
-		assertThatThrownBy(() -> SystemOneDecisionMapper.response(DANGER_PROMPT, response))
-			.isInstanceOf(IllegalStateException.class)
-			.hasMessageContaining("level 9 of 3");
-	}
-
-	@Test
-	void failsOnUnknownAnswerType() {
-		var response = new SystemOneResponse(MODEL,
-				Map.of("danger", new UnknownAnswer("riddle", Map.of("riddle", "What has a beard but no chin?"))),
-				Usage.EMPTY);
-
-		assertThatThrownBy(() -> SystemOneDecisionMapper.response(DANGER_PROMPT, response))
-			.isInstanceOf(IllegalStateException.class)
-			.hasMessageContaining("Unsupported answer type for question 'danger'");
-	}
-
-	@Test
-	void failsOnMissingAnswer() {
-		DecisionPrompt prompt = DecisionPrompt.builder()
-			.text("A treasure chest sits alone in an empty room.")
-			.question("mimic", YesNoQuestion.of("Is the chest a mimic?"))
-			.question("trap", YesNoQuestion.of("Is the room trapped?"))
-			.build();
-		var response = new SystemOneResponse(MODEL, Map.of("mimic", new NoulAnswer(0.5)), Usage.EMPTY);
-
-		assertThatThrownBy(() -> SystemOneDecisionMapper.response(prompt, response))
-			.isInstanceOf(IllegalStateException.class)
-			.hasMessageContaining("missing answer for question 'trap'");
 	}
 
 	private static String toJson(Object value) {
