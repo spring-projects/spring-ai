@@ -61,6 +61,19 @@ Such a chat model must also emit the complete `ToolCallPart`, at the same index 
 
 === Anthropic
 
+==== Changed: Anthropic Java SDK 3.x
+
+The Anthropic module now uses Java SDK `3.4.0` and API version `2026-10-21`.
+Remove `temperature`, `topP` and `topK` from model defaults and request options, including explicit default values.
+Remove `spring.ai.anthropic.chat.temperature`, `spring.ai.anthropic.chat.top-p` and `spring.ai.anthropic.chat.top-k`, including their legacy `.options` aliases.
+The retained Java methods and Boot properties are deprecated since `2.1.0`; the legacy aliases remain deprecated since `2.0.0`.
+Invalid sampling defaults throw `IllegalArgumentException` during model construction, causing Boot bean creation to fail.
+Request overrides are rejected during request creation.
+
+API keys now use `Authorization: Bearer` instead of `X-Api-Key`.
+Update proxies, interceptors and header allowlists that depend on the previous header.
+See xref:api/chat/anthropic-migration.adoc#anthropic-sdk-3[Anthropic Java SDK 3.x migration] for details.
+
 ==== Changed: Thinking Is Returned as `ReasoningPart`s of a Single Generation
 
 `AnthropicChatModel` maps every content block of a response to one `MessagePart`, in block order: thinking and redacted thinking become a `ReasoningPart` whose payload carries the signature or the redacted block data, and blocks Spring AI does not model yet (server tool use, server tool results, container upload) become an `UnknownPart` instead of being dropped.
@@ -2601,7 +2614,7 @@ If you want to maintain the previous behavior, explicitly set the temperature in
 # Example for OpenAI
 spring.ai.openai.chat.temperature=0.7
 
-# Example for Anthropic
+# Anthropic before Spring AI 2.1.0 only; remove this property when upgrading to 2.1.0.
 spring.ai.anthropic.chat.temperature=0.7
 
 # Example for Azure OpenAI

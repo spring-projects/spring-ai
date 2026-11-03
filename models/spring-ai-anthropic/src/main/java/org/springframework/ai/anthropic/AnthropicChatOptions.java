@@ -19,6 +19,7 @@ package org.springframework.ai.anthropic;
 import java.net.Proxy;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -319,7 +320,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 	/**
 	 * @deprecated Anthropic API 2026-10-21 rejects sampling options.
 	 */
-	@Deprecated(since = "2.0.0", forRemoval = true)
+	@Deprecated(since = "2.1.0", forRemoval = true)
 	@Override
 	public @Nullable Double getTemperature() {
 		return this.temperature;
@@ -328,7 +329,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 	/**
 	 * @deprecated Anthropic API 2026-10-21 rejects sampling options.
 	 */
-	@Deprecated(since = "2.0.0", forRemoval = true)
+	@Deprecated(since = "2.1.0", forRemoval = true)
 	@Override
 	public @Nullable Double getTopP() {
 		return this.topP;
@@ -337,7 +338,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 	/**
 	 * @deprecated Anthropic API 2026-10-21 rejects sampling options.
 	 */
-	@Deprecated(since = "2.0.0", forRemoval = true)
+	@Deprecated(since = "2.1.0", forRemoval = true)
 	@Override
 	public @Nullable Integer getTopK() {
 		return this.topK;
@@ -424,10 +425,8 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 		}
 		return this.outputConfig.format().map(format -> {
 			Map<String, JsonValue> schemaProps = format.schema()._additionalProperties();
-			Map<String, Object> nativeMap = new LinkedHashMap<>();
-			for (Map.Entry<String, JsonValue> entry : schemaProps.entrySet()) {
-				nativeMap.put(entry.getKey(), convertJsonValueToNative(entry.getValue()));
-			}
+			Map<String, @Nullable Object> nativeMap = new LinkedHashMap<>();
+			schemaProps.forEach((key, value) -> nativeMap.put(key, convertJsonValueToNative(value)));
 			return JSON_MAPPER.writeValueAsString(nativeMap);
 		}).orElse(null);
 	}
@@ -467,15 +466,13 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 
 			@Override
 			public Object visitArray(List<? extends JsonValue> values) {
-				return values.stream().map(v -> convertJsonValueToNative(v)).toList();
+				return values.stream().map(AnthropicChatOptions::convertJsonValueToNative).toList();
 			}
 
 			@Override
 			public Object visitObject(Map<String, ? extends JsonValue> values) {
-				Map<String, Object> result = new LinkedHashMap<>();
-				for (Map.Entry<String, ? extends JsonValue> entry : values.entrySet()) {
-					result.put(entry.getKey(), convertJsonValueToNative(entry.getValue()));
-				}
+				Map<String, @Nullable Object> result = new LinkedHashMap<>();
+				values.forEach((key, value) -> result.put(key, convertJsonValueToNative(value)));
 				return result;
 			}
 		});
@@ -623,30 +620,27 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 		private @Nullable AnthropicServiceTier serviceTier;
 
 		/**
-		 * @since 2.0.0
 		 * @deprecated Anthropic API 2026-10-21 rejects sampling options.
 		 */
-		@Deprecated(since = "2.0.0", forRemoval = true)
+		@Deprecated(since = "2.1.0", forRemoval = true)
 		@Override
 		public B temperature(@Nullable Double temperature) {
 			return super.temperature(temperature);
 		}
 
 		/**
-		 * @since 2.0.0
 		 * @deprecated Anthropic API 2026-10-21 rejects sampling options.
 		 */
-		@Deprecated(since = "2.0.0", forRemoval = true)
+		@Deprecated(since = "2.1.0", forRemoval = true)
 		@Override
 		public B topP(@Nullable Double topP) {
 			return super.topP(topP);
 		}
 
 		/**
-		 * @since 2.0.0
 		 * @deprecated Anthropic API 2026-10-21 rejects sampling options.
 		 */
-		@Deprecated(since = "2.0.0", forRemoval = true)
+		@Deprecated(since = "2.1.0", forRemoval = true)
 		@Override
 		public B topK(@Nullable Integer topK) {
 			return super.topK(topK);
@@ -655,9 +649,8 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 		@Override
 		public B outputSchema(@Nullable String outputSchema) {
 			if (outputSchema != null) {
-				Map<String, Object> schemaMap = JSON_MAPPER.readValue(outputSchema,
-						new TypeReference<Map<String, Object>>() {
-						});
+				Map<String, Object> schemaMap = JSON_MAPPER.readValue(outputSchema, new TypeReference<>() {
+				});
 				JsonOutputFormat.Schema.Builder schemaBuilder = JsonOutputFormat.Schema.builder();
 				for (Map.Entry<String, Object> entry : schemaMap.entrySet()) {
 					// Strip JSON Schema meta-fields not supported by the Anthropic
@@ -794,7 +787,7 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 			if (this.citationDocuments == null) {
 				this.citationDocuments = new ArrayList<>();
 			}
-			this.citationDocuments.addAll(java.util.Arrays.asList(citationDocuments));
+			this.citationDocuments.addAll(Arrays.asList(citationDocuments));
 			return self();
 		}
 

@@ -79,6 +79,7 @@ import reactor.core.publisher.BaseSubscriber;
 import reactor.core.publisher.SignalType;
 
 import org.springframework.ai.anthropic.metadata.AnthropicRateLimit;
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.SystemMessage;
@@ -96,6 +97,7 @@ import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.MessageAggregator;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.model.tool.ToolCallingManager;
@@ -185,12 +187,24 @@ class AnthropicChatModelTests {
 	}
 
 	@Test
-	void rejectsSamplingOptionsFromModelDefaults() {
-		AnthropicChatModel model = AnthropicChatModel.builder()
-			.anthropicClient(this.anthropicClient)
-			.options(AnthropicChatOptions.builder().temperature(0.7).build())
-			.build();
-		assertThatIllegalArgumentException().isThrownBy(() -> model.call(new Prompt("Hello")))
+	void rejectsSamplingOptionsDuringModelConstruction() {
+		List<AnthropicChatOptions> unsupportedOptions = List.of(AnthropicChatOptions.builder().temperature(0.0).build(),
+				AnthropicChatOptions.builder().temperature(1.0).build(),
+				AnthropicChatOptions.builder().topP(1.0).build(), AnthropicChatOptions.builder().topK(1).build());
+		unsupportedOptions.forEach(options -> assertThatIllegalArgumentException()
+			.isThrownBy(() -> AnthropicChatModel.builder().options(options).build())
+			.withMessageContaining("Remove these sampling options"));
+	}
+
+	@Test
+	void rejectsPortableSamplingOverridesFromChatClient() {
+		ChatClient client = ChatClient.create(this.chatModel);
+		ChatOptions.Builder<?> options = ChatOptions.builder().temperature(1.0).topP(1.0).topK(1);
+		assertThatIllegalArgumentException()
+			.isThrownBy(() -> client.prompt("Hello").options(options).call().chatResponse())
+			.withMessageContaining("Remove these sampling options");
+		assertThatIllegalArgumentException()
+			.isThrownBy(() -> client.prompt("Hello").options(options).stream().content().collectList().block())
 			.withMessageContaining("Remove these sampling options");
 	}
 

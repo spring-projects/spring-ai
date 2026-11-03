@@ -116,34 +116,34 @@ public class AnthropicChatProperties {
 	}
 
 	@DeprecatedConfigurationProperty(reason = "Anthropic API 2026-10-21 rejects sampling options")
-	@Deprecated(since = "2.0.0", forRemoval = true)
+	@Deprecated(since = "2.1.0", forRemoval = true)
 	public @Nullable Double getTemperature() {
 		return this.temperature;
 	}
 
-	@Deprecated(since = "2.0.0", forRemoval = true)
+	@Deprecated(since = "2.1.0", forRemoval = true)
 	public void setTemperature(@Nullable Double temperature) {
 		this.temperature = temperature;
 	}
 
 	@DeprecatedConfigurationProperty(reason = "Anthropic API 2026-10-21 rejects sampling options")
-	@Deprecated(since = "2.0.0", forRemoval = true)
+	@Deprecated(since = "2.1.0", forRemoval = true)
 	public @Nullable Double getTopP() {
 		return this.topP;
 	}
 
-	@Deprecated(since = "2.0.0", forRemoval = true)
+	@Deprecated(since = "2.1.0", forRemoval = true)
 	public void setTopP(@Nullable Double topP) {
 		this.topP = topP;
 	}
 
 	@DeprecatedConfigurationProperty(reason = "Anthropic API 2026-10-21 rejects sampling options")
-	@Deprecated(since = "2.0.0", forRemoval = true)
+	@Deprecated(since = "2.1.0", forRemoval = true)
 	public @Nullable Integer getTopK() {
 		return this.topK;
 	}
 
-	@Deprecated(since = "2.0.0", forRemoval = true)
+	@Deprecated(since = "2.1.0", forRemoval = true)
 	public void setTopK(@Nullable Integer topK) {
 		this.topK = topK;
 	}

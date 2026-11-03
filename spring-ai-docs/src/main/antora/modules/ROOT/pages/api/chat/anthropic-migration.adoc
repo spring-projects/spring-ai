@@ -10,6 +10,7 @@ The `ChatClient` API is unchanged.
 `ChatModel.call(Prompt)` and `ChatModel.stream(Prompt)` keep their signatures.
 `AnthropicChatOptions` keeps all existing fields, adding new ones for skills, web search, service tier, inference geo, and structured output.
 
+[[anthropic-sdk-3]]
 == Anthropic Java SDK 3.x
 
 Spring AI now uses Anthropic Java SDK `3.4.0` with API version `2026-10-21`.
@@ -17,7 +18,9 @@ The upgrade does not require additional dependency version changes.
 
 Remove `temperature`, `topP` and `topK` from Java configuration and prompt options, including explicit default values.
 Remove the corresponding `spring.ai.anthropic.chat.temperature`, `spring.ai.anthropic.chat.top-p` and `spring.ai.anthropic.chat.top-k` properties, including their legacy `.options` aliases.
-The Java methods and Boot properties are retained and deprecated for compatibility, but request creation rejects non-null sampling values with an `IllegalArgumentException` instead of silently discarding them.
+The Java methods and Boot properties are retained and deprecated for compatibility.
+Model construction rejects non-null sampling defaults with an `IllegalArgumentException`, so invalid Boot configuration fails during bean creation.
+Request creation also rejects non-null sampling overrides instead of silently discarding them.
 Extended thinking no longer requires setting `temperature(1.0)`.
 
 API keys now use the `Authorization: Bearer` header instead of `X-Api-Key`.

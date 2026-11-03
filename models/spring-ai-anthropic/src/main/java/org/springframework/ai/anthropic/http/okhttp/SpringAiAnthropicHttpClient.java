@@ -184,20 +184,15 @@ public final class SpringAiAnthropicHttpClient implements HttpClient {
 	private Call newCall(HttpRequest request, RequestOptions requestOptions) {
 		OkHttpClient.Builder clientBuilder = this.okHttpClient.newBuilder();
 
-		Timeout perCallTimeout = requestOptions.timeout().orElse(null);
-		if (perCallTimeout != null) {
-			clientBuilder.connectTimeout(perCallTimeout.connect())
+		requestOptions.timeout()
+			.ifPresent(perCallTimeout -> clientBuilder.connectTimeout(perCallTimeout.connect())
 				.readTimeout(perCallTimeout.read())
 				.writeTimeout(perCallTimeout.write())
-				.callTimeout(perCallTimeout.request());
-		}
+				.callTimeout(perCallTimeout.request()));
 
 		// Set by the SDK for requests that must not follow redirects, such as the
 		// workload identity token exchange.
-		Boolean followRedirects = requestOptions.followRedirects().orElse(null);
-		if (followRedirects != null) {
-			clientBuilder.followRedirects(followRedirects);
-		}
+		requestOptions.followRedirects().ifPresent(clientBuilder::followRedirects);
 
 		OkHttpClient client = clientBuilder.build();
 		return client.newCall(toRequestWithStainlessHeaders(request, client));
@@ -264,25 +259,11 @@ public final class SpringAiAnthropicHttpClient implements HttpClient {
 	}
 
 	private HttpRequest resolveUrl(HttpRequest request) {
-		return request.toBuilder().baseUrl(computeBaseAndPath(request)).build();
-	}
-
-	private String computeBaseAndPath(HttpRequest request) {
-		String base = request.baseUrl();
-		HttpUrl.Builder builder = HttpUrl.get(base).newBuilder();
-		for (String segment : request.pathSegments()) {
-			builder.addPathSegment(segment);
-		}
-		for (String key : request.queryParams().keys()) {
-			for (String value : request.queryParams().values(key)) {
-				builder.addQueryParameter(key, value);
-			}
-		}
-		return builder.toString();
+		return request.toBuilder().baseUrl(toUrl(request)).build();
 	}
 
 	private static String toUrl(HttpRequest request) {
-		HttpUrl.Builder builder = HttpUrl.get(Objects.requireNonNull(request.baseUrl())).newBuilder();
+		HttpUrl.Builder builder = HttpUrl.get(request.baseUrl()).newBuilder();
 		for (String segment : request.pathSegments()) {
 			builder.addPathSegment(segment);
 		}
