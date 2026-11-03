@@ -19,8 +19,11 @@ package org.springframework.ai.model.anthropic.autoconfigure;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import org.springframework.ai.anthropic.AnthropicChatModel;
+import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -28,6 +31,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
 /**
  * Unit Tests for {@link AnthropicChatProperties} and
@@ -37,6 +41,19 @@ import static org.assertj.core.api.Assertions.assertThat;
  * @author Sebastien Deleuze
  */
 class AnthropicPropertiesTests {
+
+	@ParameterizedTest
+	@ValueSource(strings = { "temperature=1.0", "top-p=1.0", "top-k=1", "options.temperature=1.0", "options.top-p=1.0",
+			"options.top-k=1" })
+	void configuredSamplingOptionsAreRejected(String property) {
+		new ApplicationContextRunner()
+			.withPropertyValues("spring.ai.anthropic.api-key=test-key", "spring.ai.anthropic.chat." + property)
+			.withConfiguration(
+					AutoConfigurations.of(AnthropicChatAutoConfiguration.class, ToolCallingAutoConfiguration.class))
+			.run(context -> assertThatIllegalArgumentException()
+				.isThrownBy(() -> context.getBean(AnthropicChatModel.class).call(new Prompt("Hello")))
+				.withMessageContaining("Remove these sampling options"));
+	}
 
 	@Test
 	void connectionProperties() {

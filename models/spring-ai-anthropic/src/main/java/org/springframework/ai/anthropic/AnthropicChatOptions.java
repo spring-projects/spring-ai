@@ -48,9 +48,8 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
 /**
- * Chat options for {@link AnthropicChatModel}. Supports model selection, sampling
- * parameters (temperature, topP, topK), output control (maxTokens, stopSequences), and
- * tool calling configuration.
+ * Chat options for {@link AnthropicChatModel}. Supports model selection, output control
+ * (maxTokens, stopSequences) and tool calling configuration.
  *
  * <p>
  * Options can be set as defaults during model construction or overridden per-request via
@@ -317,16 +316,28 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 		return this.stopSequences;
 	}
 
+	/**
+	 * @deprecated Anthropic API 2026-10-21 rejects sampling options.
+	 */
+	@Deprecated(since = "2.0.0", forRemoval = true)
 	@Override
 	public @Nullable Double getTemperature() {
 		return this.temperature;
 	}
 
+	/**
+	 * @deprecated Anthropic API 2026-10-21 rejects sampling options.
+	 */
+	@Deprecated(since = "2.0.0", forRemoval = true)
 	@Override
 	public @Nullable Double getTopP() {
 		return this.topP;
 	}
 
+	/**
+	 * @deprecated Anthropic API 2026-10-21 rejects sampling options.
+	 */
+	@Deprecated(since = "2.0.0", forRemoval = true)
 	@Override
 	public @Nullable Integer getTopK() {
 		return this.topK;
@@ -610,6 +621,36 @@ public class AnthropicChatOptions implements ToolCallingChatOptions, StructuredO
 		private @Nullable AnthropicWebSearchTool webSearchTool;
 
 		private @Nullable AnthropicServiceTier serviceTier;
+
+		/**
+		 * @since 2.0.0
+		 * @deprecated Anthropic API 2026-10-21 rejects sampling options.
+		 */
+		@Deprecated(since = "2.0.0", forRemoval = true)
+		@Override
+		public B temperature(@Nullable Double temperature) {
+			return super.temperature(temperature);
+		}
+
+		/**
+		 * @since 2.0.0
+		 * @deprecated Anthropic API 2026-10-21 rejects sampling options.
+		 */
+		@Deprecated(since = "2.0.0", forRemoval = true)
+		@Override
+		public B topP(@Nullable Double topP) {
+			return super.topP(topP);
+		}
+
+		/**
+		 * @since 2.0.0
+		 * @deprecated Anthropic API 2026-10-21 rejects sampling options.
+		 */
+		@Deprecated(since = "2.0.0", forRemoval = true)
+		@Override
+		public B topK(@Nullable Integer topK) {
+			return super.topK(topK);
+		}
 
 		@Override
 		public B outputSchema(@Nullable String outputSchema) {

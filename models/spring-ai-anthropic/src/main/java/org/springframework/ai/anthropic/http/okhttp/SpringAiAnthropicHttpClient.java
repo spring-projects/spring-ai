@@ -126,10 +126,7 @@ public final class SpringAiAnthropicHttpClient implements HttpClient {
 			throw new AnthropicIoException("Request failed", e);
 		}
 		finally {
-			HttpRequestBody body = preparedRequest.body();
-			if (body != null) {
-				body.close();
-			}
+			preparedRequest.body().ifPresent(HttpRequestBody::close);
 		}
 	}
 
@@ -155,10 +152,7 @@ public final class SpringAiAnthropicHttpClient implements HttpClient {
 			if (error instanceof CancellationException) {
 				call.cancel();
 			}
-			HttpRequestBody body = preparedRequest.body();
-			if (body != null) {
-				body.close();
-			}
+			preparedRequest.body().ifPresent(HttpRequestBody::close);
 		});
 
 		return future;
@@ -190,7 +184,7 @@ public final class SpringAiAnthropicHttpClient implements HttpClient {
 	private Call newCall(HttpRequest request, RequestOptions requestOptions) {
 		OkHttpClient.Builder clientBuilder = this.okHttpClient.newBuilder();
 
-		Timeout perCallTimeout = requestOptions.getTimeout();
+		Timeout perCallTimeout = requestOptions.timeout().orElse(null);
 		if (perCallTimeout != null) {
 			clientBuilder.connectTimeout(perCallTimeout.connect())
 				.readTimeout(perCallTimeout.read())
@@ -200,7 +194,7 @@ public final class SpringAiAnthropicHttpClient implements HttpClient {
 
 		// Set by the SDK for requests that must not follow redirects, such as the
 		// workload identity token exchange.
-		Boolean followRedirects = requestOptions.getFollowRedirects();
+		Boolean followRedirects = requestOptions.followRedirects().orElse(null);
 		if (followRedirects != null) {
 			clientBuilder.followRedirects(followRedirects);
 		}
@@ -212,14 +206,13 @@ public final class SpringAiAnthropicHttpClient implements HttpClient {
 	// URL is expected to be fully resolved by `prepareRequest()`; read directly from
 	// baseUrl.
 	private static Request toRequestWithStainlessHeaders(HttpRequest request, OkHttpClient client) {
-		RequestBody body = toOkHttpRequestBody(request.body());
+		RequestBody body = toOkHttpRequestBody(request.body().orElse(null));
 		if (body == null && requiresBody(request.method())) {
 			body = RequestBody.create("", null);
 		}
 
 		String baseUrl = request.baseUrl();
-		Request.Builder builder = new Request.Builder().url(baseUrl != null ? baseUrl : "")
-			.method(request.method().name(), body);
+		Request.Builder builder = new Request.Builder().url(baseUrl).method(request.method().name(), body);
 
 		Headers headers = request.headers();
 		for (String name : headers.names()) {
@@ -242,7 +235,7 @@ public final class SpringAiAnthropicHttpClient implements HttpClient {
 
 	// URL is computed from scratch; client may be null (proxy-authenticator path).
 	private static Request toRequestComputeUrl(HttpRequest request, @Nullable OkHttpClient client) {
-		RequestBody body = toOkHttpRequestBody(request.body());
+		RequestBody body = toOkHttpRequestBody(request.body().orElse(null));
 		if (body == null && requiresBody(request.method())) {
 			body = RequestBody.create("", null);
 		}
@@ -275,7 +268,7 @@ public final class SpringAiAnthropicHttpClient implements HttpClient {
 	}
 
 	private String computeBaseAndPath(HttpRequest request) {
-		String base = request.baseUrl() != null ? request.baseUrl() : this.backend.baseUrl();
+		String base = request.baseUrl();
 		HttpUrl.Builder builder = HttpUrl.get(base).newBuilder();
 		for (String segment : request.pathSegments()) {
 			builder.addPathSegment(segment);

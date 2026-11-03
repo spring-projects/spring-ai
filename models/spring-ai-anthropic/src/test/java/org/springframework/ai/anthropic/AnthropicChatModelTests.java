@@ -108,6 +108,7 @@ import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -165,12 +166,32 @@ class AnthropicChatModelTests {
 
 		this.chatModel = AnthropicChatModel.builder()
 			.anthropicClient(this.anthropicClient)
-			.options(AnthropicChatOptions.builder()
-				.model(Model.CLAUDE_SONNET_4_5)
-				.maxTokens(1024)
-				.temperature(0.7)
-				.build())
+			.options(AnthropicChatOptions.builder().model(Model.CLAUDE_SONNET_4_5).maxTokens(1024).build())
 			.build();
+	}
+
+	@Test
+	void rejectsSamplingOptionsForBothRequestModes() {
+		List<AnthropicChatOptions> unsupportedOptions = List.of(AnthropicChatOptions.builder().temperature(0.0).build(),
+				AnthropicChatOptions.builder().temperature(1.0).build(),
+				AnthropicChatOptions.builder().topP(1.0).build(), AnthropicChatOptions.builder().topK(1).build());
+		for (AnthropicChatOptions options : unsupportedOptions) {
+			Prompt prompt = new Prompt("Hello", options);
+			assertThatIllegalArgumentException().isThrownBy(() -> this.chatModel.call(prompt))
+				.withMessageContaining("Remove these sampling options");
+			assertThatIllegalArgumentException().isThrownBy(() -> this.chatModel.stream(prompt).collectList().block())
+				.withMessageContaining("Remove these sampling options");
+		}
+	}
+
+	@Test
+	void rejectsSamplingOptionsFromModelDefaults() {
+		AnthropicChatModel model = AnthropicChatModel.builder()
+			.anthropicClient(this.anthropicClient)
+			.options(AnthropicChatOptions.builder().temperature(0.7).build())
+			.build();
+		assertThatIllegalArgumentException().isThrownBy(() -> model.call(new Prompt("Hello")))
+			.withMessageContaining("Remove these sampling options");
 	}
 
 	@Test
@@ -219,7 +240,6 @@ class AnthropicChatModelTests {
 		AnthropicChatOptions runtimeOptions = AnthropicChatOptions.builder()
 			.model("claude-3-opus-20240229")
 			.maxTokens(2048)
-			.temperature(0.3)
 			.build();
 
 		ChatResponse response = this.chatModel.call(new Prompt("Test", runtimeOptions));
@@ -547,8 +567,8 @@ class AnthropicChatModelTests {
 		verify(this.messageService).create(captor.capture());
 		MessageParam assistant = captor.getValue().messages().get(1);
 		assertThat(assistant.role()).isEqualTo(MessageParam.Role.ASSISTANT);
-		assertThat(assistant.content().isBlockParams()).isTrue();
-		List<ContentBlockParam> blocks = assistant.content().asBlockParams();
+		assertThat(assistant.content().isContentBlockParams()).isTrue();
+		List<ContentBlockParam> blocks = assistant.content().asContentBlockParams();
 		assertThat(blocks).hasSize(1);
 		assertThat(blocks.get(0).isText()).isTrue();
 		assertThat(blocks.get(0).asText().text()).isEqualTo("Earlier answer.");
@@ -1013,7 +1033,7 @@ class AnthropicChatModelTests {
 
 		ArgumentCaptor<MessageCreateParams> captor = ArgumentCaptor.forClass(MessageCreateParams.class);
 		verify(this.messageService).create(captor.capture());
-		List<ContentBlockParam> blocks = captor.getValue().messages().get(0).content().asBlockParams();
+		List<ContentBlockParam> blocks = captor.getValue().messages().get(0).content().asContentBlockParams();
 		assertThat(blocks).hasSize(3);
 		assertThat(blocks.get(0).asText().text()).isEqualTo("Look at ");
 		assertThat(blocks.get(1).isImage()).isTrue();
@@ -1042,7 +1062,7 @@ class AnthropicChatModelTests {
 
 		ArgumentCaptor<MessageCreateParams> captor = ArgumentCaptor.forClass(MessageCreateParams.class);
 		verify(this.messageService).create(captor.capture());
-		List<ContentBlockParam> blocks = captor.getValue().messages().get(0).content().asBlockParams();
+		List<ContentBlockParam> blocks = captor.getValue().messages().get(0).content().asContentBlockParams();
 		// The empty text part is skipped; only the last text block carries the
 		// breakpoint,
 		// even though the same TextPart instance appears twice
@@ -1064,11 +1084,11 @@ class AnthropicChatModelTests {
 
 		ArgumentCaptor<MessageCreateParams> captor = ArgumentCaptor.forClass(MessageCreateParams.class);
 		verify(this.messageService).create(captor.capture());
-		List<ContentBlockParam> legacyBlocks = captor.getValue().messages().get(0).content().asBlockParams();
+		List<ContentBlockParam> legacyBlocks = captor.getValue().messages().get(0).content().asContentBlockParams();
 		assertThat(legacyBlocks).hasSize(2);
 		assertThat(legacyBlocks.get(0).asText().text()).isEqualTo("describe");
 		assertThat(legacyBlocks.get(1).isImage()).isTrue();
-		List<ContentBlockParam> mediaOnlyBlocks = captor.getValue().messages().get(2).content().asBlockParams();
+		List<ContentBlockParam> mediaOnlyBlocks = captor.getValue().messages().get(2).content().asContentBlockParams();
 		assertThat(mediaOnlyBlocks).hasSize(1);
 		assertThat(mediaOnlyBlocks.get(0).isImage()).isTrue();
 		// A text-only message is still sent as a plain string
@@ -1325,8 +1345,8 @@ class AnthropicChatModelTests {
 
 	private static List<ContentBlockParam> assistantBlockParams(MessageCreateParams request) {
 		for (MessageParam message : request.messages()) {
-			if (message.role() == MessageParam.Role.ASSISTANT && message.content().isBlockParams()) {
-				return message.content().asBlockParams();
+			if (message.role() == MessageParam.Role.ASSISTANT && message.content().isContentBlockParams()) {
+				return message.content().asContentBlockParams();
 			}
 		}
 		return List.of();
@@ -1335,8 +1355,8 @@ class AnthropicChatModelTests {
 	private static List<ToolResultBlockParam> toolResultBlocks(MessageCreateParams request) {
 		List<ToolResultBlockParam> blocks = new java.util.ArrayList<>();
 		for (MessageParam message : request.messages()) {
-			if (message.content().isBlockParams()) {
-				for (ContentBlockParam block : message.content().asBlockParams()) {
+			if (message.content().isContentBlockParams()) {
+				for (ContentBlockParam block : message.content().asContentBlockParams()) {
 					if (block.isToolResult()) {
 						blocks.add(block.asToolResult());
 					}
@@ -1852,16 +1872,16 @@ class AnthropicChatModelTests {
 		List<MessageParam> messages = captor.getValue().messages();
 		assertThat(messages).hasSize(3);
 
-		List<ContentBlockParam> firstUserBlocks = messages.get(0).content().blockParams().orElseThrow();
+		List<ContentBlockParam> firstUserBlocks = messages.get(0).content().contentBlockParams().orElseThrow();
 		assertThat(firstUserBlocks).hasSize(2);
 		assertThat(firstUserBlocks.get(0).isDocument()).isTrue();
 		assertThat(firstUserBlocks.get(1).asText().text()).isEqualTo("First question");
 
 		assertThat(messages.get(2).content().string()).contains("Second question");
-		assertThat(messages.get(2).content().blockParams()).isEmpty();
+		assertThat(messages.get(2).content().contentBlockParams()).isEmpty();
 
 		long documentBlocks = messages.stream()
-			.flatMap(message -> message.content().blockParams().stream().flatMap(List::stream))
+			.flatMap(message -> message.content().contentBlockParams().stream().flatMap(List::stream))
 			.filter(ContentBlockParam::isDocument)
 			.count();
 		assertThat(documentBlocks).isEqualTo(1);
@@ -1887,7 +1907,7 @@ class AnthropicChatModelTests {
 
 		MessageCreateParams request = this.chatModel.createRequest(new Prompt("Question", options), false);
 
-		List<ContentBlockParam> blocks = request.messages().get(0).content().blockParams().orElseThrow();
+		List<ContentBlockParam> blocks = request.messages().get(0).content().contentBlockParams().orElseThrow();
 		assertThat(blocks).hasSize(3);
 		assertThat(blocks.get(0).asDocument().cacheControl()).isEmpty();
 		assertThat(blocks.get(1).asDocument().cacheControl()).isPresent();
@@ -1908,7 +1928,7 @@ class AnthropicChatModelTests {
 
 		MessageCreateParams request = this.chatModel.createRequest(new Prompt("Question", options), false);
 
-		List<ContentBlockParam> blocks = request.messages().get(0).content().blockParams().orElseThrow();
+		List<ContentBlockParam> blocks = request.messages().get(0).content().contentBlockParams().orElseThrow();
 		assertThat(blocks).hasSize(2);
 		assertThat(blocks.get(0).asDocument().cacheControl()).isPresent();
 		assertThat(blocks.get(1).asText().cacheControl()).isPresent();
@@ -1939,7 +1959,11 @@ class AnthropicChatModelTests {
 
 		assertThat(request.system().orElseThrow().asTextBlockParams().get(0).cacheControl()).isPresent();
 
-		List<ContentBlockParam> firstUserBlocks = request.messages().get(0).content().blockParams().orElseThrow();
+		List<ContentBlockParam> firstUserBlocks = request.messages()
+			.get(0)
+			.content()
+			.contentBlockParams()
+			.orElseThrow();
 		assertThat(firstUserBlocks.get(0).asDocument().cacheControl()).isPresent();
 		assertThat(firstUserBlocks.get(1).asText().cacheControl()).isPresent();
 
@@ -1959,7 +1983,7 @@ class AnthropicChatModelTests {
 
 		MessageCreateParams request = this.chatModel.createRequest(new Prompt("Question", options), false);
 
-		List<ContentBlockParam> blocks = request.messages().get(0).content().blockParams().orElseThrow();
+		List<ContentBlockParam> blocks = request.messages().get(0).content().contentBlockParams().orElseThrow();
 		return blocks.get(0).asDocument().cacheControl().isPresent();
 	}
 

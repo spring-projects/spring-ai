@@ -743,6 +743,10 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		MessageCreateParams.Builder builder = MessageCreateParams.builder();
 
 		AnthropicChatOptions requestOptions = resolveAnthropicOptions(prompt);
+		Assert.isTrue(
+				requestOptions.getTemperature() == null && requestOptions.getTopP() == null
+						&& requestOptions.getTopK() == null,
+				"Anthropic API 2026-10-21 does not support temperature, topP or topK. Remove these sampling options.");
 
 		// Set required fields
 		builder.model(requestOptions.getModel()).maxTokens(requestOptions.getMaxTokens());
@@ -888,7 +892,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 						}
 					}
 
-					builder.addUserMessageOfBlockParams(contentBlocks);
+					builder.addUserMessageOfContentBlockParams(contentBlocks);
 				}
 				else {
 					String text = message.getText();
@@ -919,7 +923,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 						}
 					}
 					else {
-						builder.addAssistantMessageOfBlockParams(blocks);
+						builder.addAssistantMessageOfContentBlockParams(blocks);
 					}
 				}
 			}
@@ -953,20 +957,11 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 				if (toolCacheControl != null) {
 					cacheResolver.useCacheBlock();
 				}
-				builder.addUserMessageOfBlockParams(toolResultBlocks);
+				builder.addUserMessageOfContentBlockParams(toolResultBlocks);
 			}
 		}
 
 		// Set optional parameters
-		if (requestOptions.getTemperature() != null) {
-			builder.temperature(requestOptions.getTemperature());
-		}
-		if (requestOptions.getTopP() != null) {
-			builder.topP(requestOptions.getTopP());
-		}
-		if (requestOptions.getTopK() != null) {
-			builder.topK(requestOptions.getTopK().longValue());
-		}
 		if (requestOptions.getStopSequences() != null && !requestOptions.getStopSequences().isEmpty()) {
 			builder.stopSequences(requestOptions.getStopSequences());
 		}
