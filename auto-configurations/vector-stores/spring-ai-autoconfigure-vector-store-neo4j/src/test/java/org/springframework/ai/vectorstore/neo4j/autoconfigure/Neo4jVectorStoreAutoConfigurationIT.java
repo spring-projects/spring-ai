@@ -21,6 +21,7 @@ import java.util.Map;
 
 import io.micrometer.observation.tck.TestObservationRegistry;
 import org.junit.jupiter.api.Test;
+import org.neo4j.driver.Driver;
 import org.testcontainers.containers.Neo4jContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -112,6 +113,31 @@ public class Neo4jVectorStoreAutoConfigurationIT {
 
 				results = vectorStore.similaritySearch(SearchRequest.builder().query("Spring").topK(1).build());
 				assertThat(results).isEmpty();
+			});
+	}
+
+	@Test
+	void sizeIsTakenFromTheEmbeddingModelWhenNotConfigured() {
+		this.contextRunner
+			.withPropertyValues("spring.ai.vectorstore.neo4j.label=ModelSizedDocument",
+					"spring.ai.vectorstore.neo4j.constraint-name=ModelSizedDocument_unique_idx",
+					"spring.ai.vectorstore.neo4j.index-name=modelSizedIndex")
+			.run(context -> {
+				assertThat(context.getBean(Neo4jVectorStoreProperties.class).getEmbeddingDimension()).isNull();
+
+				// The index is created with the size of the model (384 for the
+				// transformers model)
+				var dimensions = context.getBean(Driver.class)
+					.executableQuery("""
+							SHOW VECTOR INDEXES YIELD name, options WHERE name = 'modelSizedIndex'
+							RETURN options['indexConfig']['vector.dimensions'] AS dimensions""")
+					.execute()
+					.records()
+					.get(0)
+					.get("dimensions")
+					.asInt();
+				assertThat(dimensions).isEqualTo(context.getBean(EmbeddingModel.class).dimensions());
+				assertThat(dimensions).isEqualTo(384);
 			});
 	}
 
