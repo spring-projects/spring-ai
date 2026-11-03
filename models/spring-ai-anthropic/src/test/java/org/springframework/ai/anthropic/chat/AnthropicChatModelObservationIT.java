@@ -73,8 +73,6 @@ public class AnthropicChatModelObservationIT {
 			.model(TEST_MODEL)
 			.maxTokens(2048)
 			.stopSequences(List.of("this-is-the-end"))
-			.temperature(0.7)
-			.topK(1)
 			.build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);
@@ -95,8 +93,6 @@ public class AnthropicChatModelObservationIT {
 			.model(TEST_MODEL)
 			.maxTokens(2048)
 			.stopSequences(List.of("this-is-the-end"))
-			.temperature(0.7)
-			.topK(1)
 			.build();
 
 		Prompt prompt = new Prompt("Why does a raven look like a desk?", options);

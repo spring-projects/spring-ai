@@ -61,9 +61,9 @@ Can be overridden per call via `AnthropicChatOptions.timeout()` set on a `ChatCl
 | `spring.ai.anthropic.custom-headers.*` | Custom HTTP headers to add to all Anthropic client requests | -
 | `spring.ai.anthropic.chat.model` | Model name | `claude-haiku-4-5`
 | `spring.ai.anthropic.chat.max-tokens` | Maximum tokens | `4096`
-| `spring.ai.anthropic.chat.temperature` | Sampling temperature | -
-| `spring.ai.anthropic.chat.top-p` | Top-p sampling | -
-| `spring.ai.anthropic.chat.top-k` | Top-k sampling | -
+| `spring.ai.anthropic.chat.temperature` | Deprecated and rejected during model construction; remove this property. | -
+| `spring.ai.anthropic.chat.top-p` | Deprecated and rejected during model construction; remove this property. | -
+| `spring.ai.anthropic.chat.top-k` | Deprecated and rejected during model construction; remove this property. | -
 | `spring.ai.anthropic.chat.cache-options.strategy` | Caching strategy to use | `NONE`
 | `spring.ai.anthropic.chat.cache-options.multi-block-system-caching` | Use separate blocks for each system message | `false`
 | `spring.ai.anthropic.chat.http-headers` | Per-request HTTP headers to pass to individual API calls. | -
@@ -159,12 +159,12 @@ Flux<ChatResponse> stream = chatModel.stream(
 
 == Runtime Options [[chat-options]]
 
-The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-anthropic/src/main/java/org/springframework/ai/anthropic/AnthropicChatOptions.java[AnthropicChatOptions.java] class provides model configurations such as the model to use, temperature, max tokens, etc.
+The https://github.com/spring-projects/spring-ai/blob/main/models/spring-ai-anthropic/src/main/java/org/springframework/ai/anthropic/AnthropicChatOptions.java[AnthropicChatOptions.java] class provides model configurations such as the model to use, max tokens and stop sequences.
 
 On start-up, configure default options with the `AnthropicChatModel.builder().defaultOptions(options).build()` constructor.
 
 At run-time, you can override the default options by adding new, request-specific options to the `Prompt` call.
-For example, to override the default model and temperature for a specific request:
+For example, to override the default model and maximum token count for a specific request:
 
 [source,java]
 ----
@@ -173,7 +173,7 @@ ChatResponse response = chatModel.call(
         "Generate the names of 5 famous pirates.",
         AnthropicChatOptions.builder()
             .model("claude-sonnet-4-20250514")
-            .temperature(0.4)
+            .maxTokens(2048)
         .build()
     ));
 ----
@@ -186,9 +186,9 @@ ChatResponse response = chatModel.call(
 
 | model | Name of the Claude model to use. Models include: `claude-sonnet-4-20250514`, `claude-opus-4-20250514`, `claude-3-5-sonnet-20241022`, `claude-3-5-haiku-20241022`, etc. See https://docs.anthropic.com/en/docs/about-claude/models[Claude Models]. | `claude-sonnet-4-20250514`
 | maxTokens | The maximum number of tokens to generate in the response. | 4096
-| temperature | Controls randomness in the response. Higher values make output more random, lower values make it more deterministic. Range: 0.0-1.0 | 1.0
-| topP | Nucleus sampling parameter. The model considers tokens with top_p probability mass. *Supported on Claude Opus 4.6 and earlier models only. Deprecated by Anthropic for models released after Claude Opus 4.6 (e.g. `claude-opus-4-7`); values `< 0.99` are rejected with HTTP 400, and values `>= 0.99` are accepted as a backward-compatibility no-op (no actual filtering applied).* | -
-| topK | Only sample from the top K options for each token. *Supported on Claude Opus 4.6 and earlier models only. Deprecated by Anthropic for models released after Claude Opus 4.6 (e.g. `claude-opus-4-7`); any value is rejected with HTTP 400 on those models.* | -
+| temperature | Deprecated; model defaults fail during construction and request overrides fail during request creation. | -
+| topP | Deprecated; model defaults fail during construction and request overrides fail during request creation. | -
+| topK | Deprecated; model defaults fail during construction and request overrides fail during request creation. | -
 | stopSequences | Custom sequences that will cause the model to stop generating. | -
 | apiKey | The API key for authentication. Auto-detects from `ANTHROPIC_API_KEY` environment variable if not set. | -
 | baseUrl | The base URL for the Anthropic API. | https://api.anthropic.com
@@ -345,10 +345,8 @@ API request structure is the same across all supported models, but output behavi
 
 === Thinking Configuration
 
-To enable thinking, configure the following:
-
-1. **Set a thinking budget**: The `budgetTokens` must be >= 1024 and less than `maxTokens`.
-2. **Set temperature to 1.0**: Required when thinking is enabled.
+To enable thinking, set a thinking budget.
+The `budgetTokens` must be >= 1024 and less than `maxTokens`.
 
 === Convenience Builder Methods
 
@@ -359,7 +357,6 @@ To enable thinking, configure the following:
 // Enable thinking with a specific token budget
 var options = AnthropicChatOptions.builder()
     .model("claude-sonnet-4-20250514")
-    .temperature(1.0)
     .maxTokens(16000)
     .thinkingEnabled(10000L)    // budget must be >= 1024 and < maxTokens
     .build();
@@ -405,7 +402,6 @@ import com.anthropic.models.messages.ThinkingConfigAdaptive;
 // Enabled thinking with summarized display
 var options = AnthropicChatOptions.builder()
     .model("claude-sonnet-4-20250514")
-    .temperature(1.0)
     .maxTokens(16000)
     .thinkingEnabled(10000L, ThinkingConfigEnabled.Display.SUMMARIZED)
     .build();
@@ -413,7 +409,6 @@ var options = AnthropicChatOptions.builder()
 // Enabled thinking with omitted display
 var options = AnthropicChatOptions.builder()
     .model("claude-sonnet-4-20250514")
-    .temperature(1.0)
     .maxTokens(16000)
     .thinkingEnabled(10000L, ThinkingConfigEnabled.Display.OMITTED)
     .build();
@@ -421,7 +416,6 @@ var options = AnthropicChatOptions.builder()
 // Adaptive thinking with summarized display
 var options = AnthropicChatOptions.builder()
     .model("claude-sonnet-4-20250514")
-    .temperature(1.0)
     .maxTokens(16000)
     .thinkingAdaptive(ThinkingConfigAdaptive.Display.SUMMARIZED)
     .build();
@@ -435,7 +429,6 @@ NOTE: The display setting does not affect the quality of the final answer — Cl
 ----
 var options = AnthropicChatOptions.builder()
     .model("claude-sonnet-4-20250514")
-    .temperature(1.0)
     .maxTokens(16000)
     .thinkingEnabled(10000L)
     .build();
@@ -479,7 +472,6 @@ The complete tool calls arrive in the final chunk of the response, exactly as be
 ----
 var options = AnthropicChatOptions.builder()
     .model("claude-sonnet-4-20250514")
-    .temperature(1.0)
     .maxTokens(16000)
     .thinkingEnabled(10000L)
     .build();
