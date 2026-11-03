@@ -29,7 +29,10 @@ import org.springframework.util.Assert;
 
 /**
  * The sessions of an application and their conversations: creating and finding sessions,
- * appending and reading their events, compacting them. {@link DefaultSessionService}
+ * appending and reading their events, compacting them. {@link #appendEvent} appends one
+ * event. {@link #appendEvents(String, List, long)} appends a batch only if the log has
+ * not changed since the caller read its version. Compaction writes this way, and so can
+ * any other code that builds events from the log. {@link DefaultSessionService}
  * implements it on a {@link SessionRepository}.
  *
  * @author Christian Tzolov
@@ -113,6 +116,41 @@ public interface SessionService {
 		appendEvent(SessionEvent.builder().sessionId(sessionId).message(message).build());
 	}
 
+	/**
+	 * Appends one or more events in order, atomically, only if the log's version still
+	 * equals {@code expectedVersion}. Otherwise nothing is written and {@code false} is
+	 * returned: another writer appended in between. On success the version advances once,
+	 * whatever the number of events. This is the compare-and-set of the log, as
+	 * {@link SessionRepository#appendEvents} defines it.
+	 * <p>
+	 * Read {@link #getEventVersion}, then read what the new events depend on, then call
+	 * this method. On {@code false}, read again and rebuild the events. Compaction writes
+	 * its boundary and summaries this way.
+	 * @param sessionId the session whose log is appended to; every event must belong to
+	 * it
+	 * @param events the events to append, oldest first; at least one, with ids that are
+	 * new to the log
+	 * @param expectedVersion the version read before the events were prepared
+	 * @return {@code true} when the events were appended, {@code false} when the log
+	 * moved on and nothing was written
+	 * @throws IllegalArgumentException if the session does not exist, the batch is empty,
+	 * an event belongs to another session, an id is already in the log or appears twice,
+	 * or an event holds a system message that {@link #appendEvent} would reject. The
+	 * system message check runs before the version check. The other checks may run only
+	 * when the version matches, so a stale version can return {@code false} for a batch
+	 * that would otherwise throw.
+	 */
+	boolean appendEvents(String sessionId, List<SessionEvent> events, long expectedVersion);
+
+	/**
+	 * The version of the session's log. It advances on every append of a new event and
+	 * once per successful {@link #appendEvents}. An {@link #appendEvent} of an id the log
+	 * already holds is a no-op and does not advance it. {@code 0} for a session without
+	 * events, or one that does not exist. Read it before the events that a
+	 * version-checked {@link #appendEvents} depends on.
+	 */
+	long getEventVersion(String sessionId);
+
 	/** The events the filter selects, oldest first; see {@link EventFilter}. */
 	List<SessionEvent> getEvents(String sessionId, EventFilter filter);
 
@@ -143,10 +181,11 @@ public interface SessionService {
 	/**
 	 * Evaluates the trigger on the active view and, when it fires, runs the strategy and
 	 * records its result: one {@link EventType#COMPACTION} boundary event followed by the
-	 * summary events, in one version-checked append. The log is never changed; the
-	 * boundary defines the view from then on. An append that lands in between does not
-	 * waste the summary: the new events join the view verbatim and the write is retried,
-	 * a bounded number of times. Pass {@code request -> true} to compact unconditionally.
+	 * summary events, in one version-checked {@link #appendEvents}. The log is never
+	 * changed; the boundary defines the view from then on. An append that lands in
+	 * between does not waste the summary: the new events join the view verbatim and the
+	 * write is retried, a bounded number of times. Pass {@code request -> true} to
+	 * compact unconditionally.
 	 * @return the result as written, the events appended meanwhile added to its preserved
 	 * tail;
 	 * {@link org.springframework.ai.session.compaction.CompactionResult#isUnchanged()}
