@@ -42,6 +42,7 @@ import static org.mockito.Mockito.when;
  * Unit tests for {@link SafeGuardAdvisor}.
  *
  * @author Dimitar Proynov
+ * @author Minju Kim
  */
 @ExtendWith(MockitoExtension.class)
 public class SafeGuardAdvisorTests {
@@ -95,6 +96,22 @@ public class SafeGuardAdvisorTests {
 		assertThat(response.chatResponse().getResult().getOutput().getText())
 			.isEqualTo(SafeGuardAdvisor.DEFAULT_FAILURE_RESPONSE);
 		verify(this.callAdvisorChain, never()).nextCall(request);
+	}
+
+	@Test
+	void whenSensitiveWordMatchesAndContextHasNullValueThenReturnFailureResponse() {
+		SafeGuardAdvisor advisor = new SafeGuardAdvisor(List.of("dangerous"));
+		ChatClientRequest request = ChatClientRequest.builder()
+			.prompt(new Prompt(List.of(new UserMessage("Tell me something dangerous"))))
+			.context("tenantId", null)
+			.build();
+
+		ChatClientResponse response = advisor.adviseCall(request, this.callAdvisorChain);
+
+		assertThat(response.chatResponse()).isNotNull();
+		assertThat(response.chatResponse().getResult().getOutput().getText())
+			.isEqualTo(SafeGuardAdvisor.DEFAULT_FAILURE_RESPONSE);
+		assertThat(response.context()).containsEntry("tenantId", null);
 	}
 
 	@Test
