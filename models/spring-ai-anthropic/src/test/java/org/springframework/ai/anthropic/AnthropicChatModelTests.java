@@ -174,10 +174,12 @@ class AnthropicChatModelTests {
 
 	@Test
 	void rejectsSamplingOptionsForBothRequestModes() {
-		List<AnthropicChatOptions> unsupportedOptions = List.of(AnthropicChatOptions.builder().temperature(0.0).build(),
+		List<ChatOptions> unsupportedOptions = List.of(AnthropicChatOptions.builder().temperature(0.0).build(),
 				AnthropicChatOptions.builder().temperature(1.0).build(),
-				AnthropicChatOptions.builder().topP(1.0).build(), AnthropicChatOptions.builder().topK(1).build());
-		for (AnthropicChatOptions options : unsupportedOptions) {
+				AnthropicChatOptions.builder().topP(1.0).build(), AnthropicChatOptions.builder().topK(1).build(),
+				ChatOptions.builder().temperature(1.0).build(), ChatOptions.builder().topP(1.0).build(),
+				ChatOptions.builder().topK(1).build());
+		for (ChatOptions options : unsupportedOptions) {
 			Prompt prompt = new Prompt("Hello", options);
 			assertThatIllegalArgumentException().isThrownBy(() -> this.chatModel.call(prompt))
 				.withMessageContaining("Remove these sampling options");

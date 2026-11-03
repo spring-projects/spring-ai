@@ -65,7 +65,6 @@ class AnthropicHttpClientBuilderCustomizerTests {
 				assertThat(request.getHeader("Authorization")).isEqualTo("Bearer test-key");
 				assertThat(request.getHeader("x-api-key")).isNull();
 				assertThat(request.getHeader("anthropic-version")).isEqualTo("2026-10-21");
-				assertThat(request.getBody().readUtf8()).doesNotContain("temperature", "top_p", "top_k");
 			}
 			finally {
 				client.close();

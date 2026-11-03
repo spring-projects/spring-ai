@@ -724,7 +724,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 				: AnthropicChatOptions.builder().build();
 	}
 
-	private static void validateSamplingOptions(AnthropicChatOptions options) {
+	private static void validateSamplingOptions(ChatOptions options) {
 		Assert.isTrue(options.getTemperature() == null && options.getTopP() == null && options.getTopK() == null,
 				"Anthropic API 2026-10-21 does not support temperature, topP or topK. Remove these sampling options.");
 	}
@@ -750,8 +750,10 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 		MessageCreateParams.Builder builder = MessageCreateParams.builder();
 
+		if (prompt.getOptions() != null) {
+			validateSamplingOptions(prompt.getOptions());
+		}
 		AnthropicChatOptions requestOptions = resolveAnthropicOptions(prompt);
-		validateSamplingOptions(requestOptions);
 
 		// Set required fields
 		builder.model(requestOptions.getModel()).maxTokens(requestOptions.getMaxTokens());
