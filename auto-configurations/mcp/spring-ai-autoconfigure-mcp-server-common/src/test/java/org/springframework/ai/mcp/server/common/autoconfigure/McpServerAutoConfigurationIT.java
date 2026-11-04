@@ -96,6 +96,8 @@ public class McpServerAutoConfigurationIT {
 			assertThat(properties.getCapabilities().isResource()).isTrue();
 			assertThat(properties.getCapabilities().isPrompt()).isTrue();
 			assertThat(properties.getCapabilities().isCompletion()).isTrue();
+			assertThat(properties.getCapabilities().isResourceSubscribe()).isFalse();
+			assertThat(context.getBean(McpSyncServer.class).getServerCapabilities().resources().subscribe()).isFalse();
 
 			McpServerChangeNotificationProperties changeNotificationProperties = context
 				.getBean(McpServerChangeNotificationProperties.class);
@@ -309,6 +311,33 @@ public class McpServerAutoConfigurationIT {
 				// Verify the server is configured with the disabled capabilities
 				McpSyncServer server = context.getBean(McpSyncServer.class);
 				assertThat(server).isNotNull();
+			});
+	}
+
+	@Test
+	void syncResourceSubscribeConfiguration() {
+		this.contextRunner.withPropertyValues("spring.ai.mcp.server.capabilities.resource-subscribe=true")
+			.run(context -> {
+				McpServerProperties properties = context.getBean(McpServerProperties.class);
+				assertThat(properties.getCapabilities().isResourceSubscribe()).isTrue();
+
+				McpSchema.ServerCapabilities capabilities = context.getBean(McpSyncServer.class)
+					.getServerCapabilities();
+				assertThat(capabilities.resources().subscribe()).isTrue();
+				assertThat(capabilities.resources().listChanged()).isTrue();
+			});
+	}
+
+	@Test
+	void asyncResourceSubscribeConfiguration() {
+		this.contextRunner
+			.withPropertyValues("spring.ai.mcp.server.type=ASYNC",
+					"spring.ai.mcp.server.capabilities.resource-subscribe=true")
+			.run(context -> {
+				McpSchema.ServerCapabilities capabilities = context.getBean(McpAsyncServer.class)
+					.getServerCapabilities();
+				assertThat(capabilities.resources().subscribe()).isTrue();
+				assertThat(capabilities.resources().listChanged()).isTrue();
 			});
 	}
 
