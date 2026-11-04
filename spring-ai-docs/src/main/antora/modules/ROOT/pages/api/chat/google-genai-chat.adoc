@@ -127,6 +127,7 @@ The prefix `spring.ai.google.genai.chat` is the property prefix that lets you co
 | spring.ai.google.genai.chat.auto-cache-ttl | Time-to-live (Duration) for auto-cached content in ISO-8601 format (e.g., `PT1H` for 1 hour). Used when auto-caching is enabled. | PT1H
 | spring.ai.google.genai.chat.enable-cached-content | Enable the `GoogleGenAiCachedContentService` bean for managing cached content. | true
 | spring.ai.google.genai.chat.service-tier | The service tier to use for the request. Valid values: `STANDARD`, `PRIORITY`, `FLEX`. | -
+| spring.ai.google.genai.chat.video-fps | The frame rate, in frames per second, at which video media is sampled. Must be greater than 0. Only applies to media with a `video/*` MIME type. See <<video-fps>>. | - (API default of 1 frame per second)
 | spring.ai.google.genai.chat.tool-choice.mode | Controls how the model selects functions when tools are provided. Valid values: `AUTO` (model decides), `ANY` (always calls a function), `VALIDATED` (function call or natural language), `NONE` (no function calls). See <<tool-choice>>. | -
 | spring.ai.google.genai.chat.tool-choice.allowed-function-names | Comma-separated list of function names the model may call. Only applied when `tool-choice.mode` is `ANY` or `VALIDATED`; ignored for other modes. | -
 
@@ -670,6 +671,26 @@ ChatResponse response = chatModel.call(new Prompt(List.of(this.userMessage)));
 
 The parts of a `UserMessage` are sent to Gemini in their order, so text and media can interleave when the message is built from parts, for example `UserMessage.builder().part(TextPart.of("Look at ")).part(MediaPart.of(image)).part(TextPart.of("this.")).build()`.
 A message built with `text(...)` and `media(...)` keeps the order text then media.
+
+[[video-fps]]
+==== Video Frame Rate
+
+By default, Gemini samples video at 1 frame per second.
+Use the `videoFps` option to sample video media at a different rate, for example a higher rate to follow fast motion or a lower rate to reduce token usage on long videos.
+The value applies to every media with a `video/*` MIME type in the request and is ignored for other media types.
+
+[source,java]
+----
+var userMessage = UserMessage.builder()
+			.text("Describe what happens in this video.")
+			.media(List.of(new Media(new MimeType("video", "mp4"), videoData)))
+			.build();
+
+ChatResponse response = chatModel.call(new Prompt(List.of(userMessage),
+		GoogleGenAiChatOptions.builder().videoFps(5.0).build()));
+----
+
+The same can be configured for all requests with the `spring.ai.google.genai.chat.video-fps` property.
 
 === PDF
 

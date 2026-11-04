@@ -30,11 +30,13 @@ import org.springframework.ai.google.genai.common.GoogleGenAiThinkingLevel;
 import org.springframework.ai.test.options.AbstractChatOptionsTests;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
 /**
  * Test for GoogleGenAiChatOptions
  *
  * @author Dan Dobrin
+ * @author hyeonZIP
  */
 public class GoogleGenAiChatOptionsTest extends AbstractChatOptionsTests<GoogleGenAiChatOptions, Builder> {
 
@@ -282,6 +284,53 @@ public class GoogleGenAiChatOptionsTest extends AbstractChatOptionsTests<GoogleG
 		assertThat(options1).isEqualTo(options2);
 		assertThat(options1.hashCode()).isEqualTo(options2.hashCode());
 		assertThat(options1).isNotEqualTo(options3);
+	}
+
+	@Test
+	public void testVideoFpsWithBuilder() {
+		GoogleGenAiChatOptions options = GoogleGenAiChatOptions.builder().model("test-model").videoFps(2.5).build();
+
+		assertThat(options.getVideoFps()).isEqualTo(2.5);
+		assertThat(options.mutate().build().getVideoFps()).isEqualTo(2.5);
+	}
+
+	@Test
+	public void testVideoFpsNotSetByDefault() {
+		assertThat(GoogleGenAiChatOptions.builder().build().getVideoFps()).isNull();
+	}
+
+	@Test
+	public void testVideoFpsMustBePositive() {
+		assertThatIllegalArgumentException().isThrownBy(() -> GoogleGenAiChatOptions.builder().videoFps(0.0))
+			.withMessageContaining("videoFps");
+		assertThatIllegalArgumentException().isThrownBy(() -> GoogleGenAiChatOptions.builder().videoFps(-1.0))
+			.withMessageContaining("videoFps");
+	}
+
+	@Test
+	public void testEqualsAndHashCodeWithVideoFps() {
+		GoogleGenAiChatOptions options1 = GoogleGenAiChatOptions.builder().model("test-model").videoFps(2.0).build();
+		GoogleGenAiChatOptions options2 = GoogleGenAiChatOptions.builder().model("test-model").videoFps(2.0).build();
+		GoogleGenAiChatOptions options3 = GoogleGenAiChatOptions.builder().model("test-model").videoFps(5.0).build();
+
+		assertThat(options1).isEqualTo(options2);
+		assertThat(options1.hashCode()).isEqualTo(options2.hashCode());
+		assertThat(options1).isNotEqualTo(options3);
+	}
+
+	@Test
+	public void testCombineWithVideoFps() {
+		GoogleGenAiChatOptions defaults = GoogleGenAiChatOptions.builder().videoFps(2.0).build();
+
+		GoogleGenAiChatOptions kept = defaults.mutate()
+			.combineWith(GoogleGenAiChatOptions.builder().temperature(0.2).build().mutate())
+			.build();
+		GoogleGenAiChatOptions overridden = defaults.mutate()
+			.combineWith(GoogleGenAiChatOptions.builder().videoFps(10.0).build().mutate())
+			.build();
+
+		assertThat(kept.getVideoFps()).isEqualTo(2.0);
+		assertThat(overridden.getVideoFps()).isEqualTo(10.0);
 	}
 
 	@Test
