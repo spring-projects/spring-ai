@@ -161,6 +161,47 @@ class McpServerModernAutoConfigurationIT {
 	}
 
 	@Test
+	@SuppressWarnings("unchecked")
+	void annotatedPrimitivesAreRegisteredWhenRepositoriesAreInjectedEarly() {
+		// Here we register EarlyRepositoryConsumerConfiguration before
+		// AnnotatedBeanConfiguration, which forces early creation of the in-memory
+		// repositories, before annotation scanning picks up the tools, resources, prompts
+		// and completions.
+		// This test ensures that annotated handlers are picked up regardless of ordering.
+		this.contextRunner
+			.withUserConfiguration(EarlyRepositoryConsumerConfiguration.class, AnnotatedBeanConfiguration.class)
+			.run(context -> {
+				assertThat(context).hasNotFailed();
+				RepositoryConsumer consumer = context.getBean(RepositoryConsumer.class);
+
+				InMemorySyncToolRepository tools = context.getBean(InMemorySyncToolRepository.class);
+				assertThat(consumer.tools()).isSameAs(tools);
+				assertThat(tools.list(null, null).tools()).extracting(McpSchema.Tool::name)
+					.containsExactly("admin_reset", "greet");
+
+				InMemorySyncResourceRepository resources = context.getBean(InMemorySyncResourceRepository.class);
+				assertThat(consumer.resources()).isSameAs(resources);
+				assertThat(resources.list(null, null).resources()).extracting(McpSchema.Resource::uri)
+					.containsExactly("test://doc");
+				assertThat(resources.listTemplates(null, null).resourceTemplates())
+					.extracting(McpSchema.ResourceTemplate::uriTemplate)
+					.containsExactly("test://docs/{id}");
+
+				InMemorySyncPromptRepository prompts = context.getBean(InMemorySyncPromptRepository.class);
+				assertThat(consumer.prompts()).isSameAs(prompts);
+				assertThat(prompts.list(null, null).prompts()).extracting(McpSchema.Prompt::name).containsExactly("p");
+
+				// The completion repository cannot be listed: complete via the server.
+				assertThat(consumer.completions()).isSameAs(context.getBean(InMemorySyncCompletionRepository.class));
+				Map<String, Object> result = call(context.getBean(McpServer.class),
+						McpSchema.METHOD_COMPLETION_COMPLETE, params("ref", Map.of("type", "ref/prompt", "name", "p"),
+								"argument", Map.of("name", "topic", "value", "x")));
+				Map<String, Object> completion = (Map<String, Object>) result.get("completion");
+				assertThat((List<String>) completion.get("values")).containsExactly("x1");
+			});
+	}
+
+	@Test
 	void customizerIsApplied() {
 		this.contextRunner.withUserConfiguration(CustomizerConfiguration.class).run(context -> {
 			Map<String, Object> discover = call(context.getBean(McpServer.class), McpSchema.METHOD_SERVER_DISCOVER,
@@ -415,6 +456,39 @@ class McpServerModernAutoConfigurationIT {
 	}
 
 	@Configuration
+	static class EarlyRepositoryConsumerConfiguration {
+
+		/**
+		 * This bean forces the creation of the in-memory repositories. When this
+		 * configuration is registered before {@link AnnotatedBeanConfiguration}, it is
+		 * instantiated before the {@link AnnotatedBean}, so annotation scanning in a bean
+		 * post-processor would happen after the repositories are created. We still want
+		 * the tools, resources, prompts and completions to show up.
+		 */
+		@Bean
+		RepositoryConsumer repositoryConsumer(InMemorySyncToolRepository tools,
+				InMemorySyncResourceRepository resources, InMemorySyncPromptRepository prompts,
+				InMemorySyncCompletionRepository completions) {
+			return new RepositoryConsumer(tools, resources, prompts, completions);
+		}
+
+	}
+
+	@Configuration
+	static class AnnotatedBeanConfiguration {
+
+		@Bean
+		AnnotatedBean annotatedBean() {
+			return new AnnotatedBean();
+		}
+
+	}
+
+	record RepositoryConsumer(InMemorySyncToolRepository tools, InMemorySyncResourceRepository resources,
+			InMemorySyncPromptRepository prompts, InMemorySyncCompletionRepository completions) {
+	}
+
+	@Configuration
 	static class CustomizerConfiguration {
 
 		@Bean
@@ -508,6 +582,11 @@ class McpServerModernAutoConfigurationIT {
 		@McpResource(uri = "test://doc", name = "doc")
 		public String doc() {
 			return "doc";
+		}
+
+		@McpResource(uri = "test://docs/{id}", name = "docs")
+		public String docById(String id) {
+			return "doc " + id;
 		}
 
 		@McpPrompt(name = "p", description = "p")
