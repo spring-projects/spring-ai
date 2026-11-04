@@ -19,6 +19,7 @@ package org.springframework.ai.model.stabilityai.autoconfigure;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.stabilityai.StabilityAiImageModel;
+import org.springframework.ai.stabilityai.api.StabilityAiApi;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
@@ -27,6 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * @author Christian Tzolov
  * @author Sebastien Deleuze
+ * @author Minju Kim
  * @since 0.8.0
  */
 public class StabilityAiImagePropertiesTests {
@@ -70,6 +72,18 @@ public class StabilityAiImagePropertiesTests {
 				assertThat(chatProperties.toOptions().getSeed()).isEqualTo(0L);
 				assertThat(chatProperties.toOptions().getSteps()).isEqualTo(30);
 				assertThat(chatProperties.toOptions().getStylePreset()).isEqualTo("neon-punk");
+			});
+	}
+
+	@Test
+	void defaultModelIsUsedWhenNoModelIsConfigured() {
+		new ApplicationContextRunner()
+			.withPropertyValues("spring.ai.stabilityai.image.api-key=API_KEY",
+					"spring.ai.stabilityai.image.base-url=ENDPOINT")
+			.withConfiguration(AutoConfigurations.of(StabilityAiImageAutoConfiguration.class))
+			.run(context -> {
+				var imageModel = context.getBean(StabilityAiImageModel.class);
+				assertThat(imageModel.getOptions().getModel()).isEqualTo(StabilityAiApi.DEFAULT_IMAGE_MODEL);
 			});
 	}
 
