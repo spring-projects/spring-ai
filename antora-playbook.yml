@@ -13,8 +13,8 @@ content:
   - url: https://github.com/spring-projects/spring-ai
     # Refname matching:
     # https://docs.antora.org/antora/latest/playbook/content-refname-matching/
-    branches: ['main', '2.0.x', '2.0.2-docs-fix']
-    tags: ['v({1..9}).+({0..9}).+({0..9})?(-{RC,M}+({0..9}))', '!v2.0.({0..9})']
+    branches: ['main', '2.0.x', '2.0.2-docs-fix', '2.1.0-RC1-docs-fix']
+    tags: ['v({1..9}).+({0..9}).+({0..9})?(-{RC,M}+({0..9}))', '!v2.0.({0..9})', '!v2.1.0-RC1']
     start_path: spring-ai-docs/src/main/antora
 asciidoc:
   attributes:
