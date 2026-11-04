@@ -799,7 +799,7 @@ The `TokenTextSplitter` processes text content as follows:
 3. For each chunk:
    a. It decodes the chunk back into text.
    b. *Only if the total token count exceeds the chunk size*, it attempts to find a suitable break point (using the configured `punctuationMarks`) after the `minChunkSizeChars`.
-   c. If a break point is found, it truncates the chunk at that point.
+   c. If a break point is found, it truncates the chunk at that point. When the break point falls inside a token, the chunk keeps the rest of that token.
    d. It trims the chunk and optionally removes newline characters based on the `keepSeparator` setting.
    e. If the resulting chunk is longer than `minChunkLengthToEmbed`, it's added to the output.
    f. The next chunk starts where this one ended, or `chunkOverlap` tokens earlier when an overlap is set.
