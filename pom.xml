@@ -312,8 +312,11 @@
 		<maven-checkstyle-plugin.failsOnError>true</maven-checkstyle-plugin.failsOnError>
 		<maven-checkstyle-plugin.failOnViolation>true</maven-checkstyle-plugin.failOnViolation>
 		<maven-enforcer-plugin.version>3.6.3</maven-enforcer-plugin.version>
+		<maven-failsafe-plugin.version>3.6.1</maven-failsafe-plugin.version>
 		<maven-gpg-plugin.version>3.2.8</maven-gpg-plugin.version>
+		<maven-javadoc-plugin.version>3.12.0</maven-javadoc-plugin.version>
 		<maven-site-plugin.version>4.0.0-M13</maven-site-plugin.version>
+		<maven-source-plugin.version>3.4.0</maven-source-plugin.version>
 		<puppycrawl-tools-checkstyle.version>9.3</puppycrawl-tools-checkstyle.version>
 		<spring-javaformat-checkstyle.version>0.0.47</spring-javaformat-checkstyle.version>
 		<spring-javaformat-maven-plugin.version>0.0.47</spring-javaformat-maven-plugin.version>
@@ -328,6 +331,21 @@
 	<build>
 		<pluginManagement>
 			<plugins>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-failsafe-plugin</artifactId>
+					<version>${maven-failsafe-plugin.version}</version>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-javadoc-plugin</artifactId>
+					<version>${maven-javadoc-plugin.version}</version>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-source-plugin</artifactId>
+					<version>${maven-source-plugin.version}</version>
+				</plugin>
 				<plugin>
 					<groupId>org.jetbrains.kotlin</groupId>
 					<artifactId>kotlin-maven-plugin</artifactId>
