@@ -26,7 +26,10 @@ import java.util.Map;
 
 import javax.imageio.ImageIO;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.util.JsonHelper;
 import org.springframework.util.MimeType;
@@ -38,6 +41,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Unit tests for {@link DefaultToolCallResultConverter}.
  *
  * @author Thomas Vitale
+ * @author Jewoo Shin
  */
 class DefaultToolCallResultConverterTests {
 
@@ -142,6 +146,20 @@ class DefaultToolCallResultConverterTests {
 	}
 
 	@Test
+	void convertWithCustomJsonMapperShouldOmitNullFields() {
+		JsonMapper nonNullMapper = JsonMapper.builder()
+			.changeDefaultPropertyInclusion(
+					incl -> JsonInclude.Value.construct(JsonInclude.Include.NON_NULL, JsonInclude.Include.NON_NULL))
+			.build();
+		DefaultToolCallResultConverter customConverter = new DefaultToolCallResultConverter(nonNullMapper);
+
+		String result = customConverter.convert(new NullablePair("present", null), NullablePair.class);
+
+		assertThat(result).contains("\"left\"").contains("\"present\"");
+		assertThat(result).doesNotContain("\"right\"");
+	}
+
+	@Test
 	void convertSpecialCharactersInStringsShouldEscapeJson() {
 		String specialChars = "Test with \"quotes\", newlines\n, tabs\t, and backslashes\\";
 		String result = this.converter.convert(specialChars, String.class);
@@ -157,6 +175,9 @@ class DefaultToolCallResultConverterTests {
 	}
 
 	record Base64Wrapper(MimeType mimeType, String data) {
+	}
+
+	record NullablePair(@Nullable String left, @Nullable String right) {
 	}
 
 	static class TestObject {
