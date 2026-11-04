@@ -147,7 +147,8 @@ public abstract class AbstractMcpProgressMethodCallback {
 		else {
 			// Three parameters (Double, String, String)
 			args[0] = notification.progress();
-			args[1] = notification.progressToken();
+			Object progressToken = notification.progressToken();
+			args[1] = progressToken != null ? progressToken.toString() : null;
 			args[2] = notification.total() != null ? String.valueOf(notification.total()) : null;
 		}
 
