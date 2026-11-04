@@ -67,7 +67,6 @@ import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.Resource;
 import org.springframework.util.Assert;
-import org.springframework.util.CollectionUtils;
 import org.springframework.util.MimeType;
 import org.springframework.util.StringUtils;
 
@@ -939,22 +938,25 @@ public class DefaultChatClient implements ChatClient {
 				.defaultTools((Object[]) this.toolCallbackProviders.toArray(new ToolCallbackProvider[0]))
 				.defaultToolContext(this.toolContext);
 
-			if (!CollectionUtils.isEmpty(this.advisors)) {
-				builder.defaultAdvisors(a -> a.advisors(this.advisors).params(this.advisorParams));
-			}
+			// Advisor params, user params, media and metadata are copied even without
+			// advisors or text: they may come from defaults set on their own
+			builder.defaultAdvisors(a -> a.advisors(this.advisors).params(this.advisorParams));
 
-			if (StringUtils.hasText(this.userText)) {
-				String text = this.userText;
-				builder.defaultUser(u -> u.text(text)
-					.params(this.userParams)
-					.media(this.media.toArray(new Media[0]))
-					.metadata(this.userMetadata));
-			}
+			String userText = this.userText;
+			builder.defaultUser(u -> {
+				if (StringUtils.hasText(userText)) {
+					u.text(userText);
+				}
+				u.params(this.userParams).media(this.media.toArray(new Media[0])).metadata(this.userMetadata);
+			});
 
-			if (StringUtils.hasText(this.systemText)) {
-				String text = this.systemText;
-				builder.defaultSystem(s -> s.text(text).params(this.systemParams).metadata(this.systemMetadata));
-			}
+			String systemText = this.systemText;
+			builder.defaultSystem(s -> {
+				if (StringUtils.hasText(systemText)) {
+					s.text(systemText);
+				}
+				s.params(this.systemParams).metadata(this.systemMetadata);
+			});
 
 			if (this.optionsCustomizer != null) {
 				builder.defaultOptions(this.optionsCustomizer);
