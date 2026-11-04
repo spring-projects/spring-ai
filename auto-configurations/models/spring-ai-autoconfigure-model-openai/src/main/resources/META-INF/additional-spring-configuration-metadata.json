@@ -1,11 +1,6 @@
 {
   "groups": [
 	{
-	  "name": "spring.ai.openai.chat.output-audio",
-	  "type": "org.springframework.ai.openai.OpenAiChatOptions$AudioParameters",
-	  "sourceType": "org.springframework.ai.openai.OpenAiChatOptions"
-	},
-	{
 	  "name": "spring.ai.openai.responses.response-format",
 	  "type": "org.springframework.ai.openai.OpenAiChatModel$ResponseFormat",
 	  "sourceType": "org.springframework.ai.model.openai.autoconfigure.OpenAiResponsesChatProperties"
@@ -13,14 +8,18 @@
   ],
   "properties": [
 	{
-	  "name": "spring.ai.openai.chat.output-audio.voice",
-	  "type": "org.springframework.ai.openai.OpenAiChatOptions$AudioParameters$Voice",
-	  "sourceType": "org.springframework.ai.openai.OpenAiChatOptions$AudioParameters"
+	  "name": "spring.ai.openai.chat.options.output-audio.voice",
+	  "type": "java.lang.String",
+	  "deprecation": {
+		"replacement": "spring.ai.openai.chat.output-audio.voice"
+	  }
 	},
 	{
-	  "name": "spring.ai.openai.chat.output-audio.format",
-	  "type": "org.springframework.ai.openai.OpenAiChatOptions$AudioParameters$AudioResponseFormat",
-	  "sourceType": "org.springframework.ai.openai.OpenAiChatOptions$AudioParameters"
+	  "name": "spring.ai.openai.chat.options.output-audio.format",
+	  "type": "java.lang.String",
+	  "deprecation": {
+		"replacement": "spring.ai.openai.chat.output-audio.format"
+	  }
 	},
 	{
 	  "name": "spring.ai.openai.responses.max-output-tokens",
@@ -106,6 +105,41 @@
 	}
   ],
   "hints": [
+	{
+	  "name": "spring.ai.openai.chat.output-audio.voice",
+	  "values": [
+		{ "value": "alloy" },
+		{ "value": "ash" },
+		{ "value": "ballad" },
+		{ "value": "coral" },
+		{ "value": "echo" },
+		{ "value": "fable" },
+		{ "value": "onyx" },
+		{ "value": "nova" },
+		{ "value": "sage" },
+		{ "value": "shimmer" },
+		{ "value": "verse" },
+		{ "value": "marin" },
+		{ "value": "cedar" }
+	  ],
+	  "providers": [
+		{ "name": "any" }
+	  ]
+	},
+	{
+	  "name": "spring.ai.openai.chat.output-audio.format",
+	  "values": [
+		{ "value": "mp3" },
+		{ "value": "flac" },
+		{ "value": "opus" },
+		{ "value": "pcm16" },
+		{ "value": "wav" },
+		{ "value": "aac" }
+	  ],
+	  "providers": [
+		{ "name": "any" }
+	  ]
+	},
 	{
 	  "name": "spring.ai.openai.responses.reasoning-effort",
 	  "values": [
