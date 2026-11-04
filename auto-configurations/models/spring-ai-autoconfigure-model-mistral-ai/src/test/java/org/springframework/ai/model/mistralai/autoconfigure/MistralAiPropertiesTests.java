@@ -17,8 +17,11 @@
 package org.springframework.ai.model.mistralai.autoconfigure;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import org.springframework.ai.mistralai.api.MistralAiApi;
+import org.springframework.ai.mistralai.api.MistralAiApi.ChatCompletionRequest.ReasoningEffort;
 import org.springframework.ai.model.tool.autoconfigure.ToolCallingAutoConfiguration;
 import org.springframework.ai.retry.autoconfigure.SpringAiRetryAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -102,6 +105,24 @@ public class MistralAiPropertiesTests {
 				assertThat(function.getName()).isEqualTo("myFunction1");
 				assertThat(function.getDescription()).isEqualTo("function description");
 				assertThat(function.getParameters()).isNotEmpty();
+			});
+	}
+
+	@ParameterizedTest
+	@CsvSource({ "none, NONE", "low, LOW", "medium, MEDIUM", "high, HIGH" })
+	void chatReasoningEffortProperty(String value, ReasoningEffort expected) {
+
+		new ApplicationContextRunner()
+			.withPropertyValues("spring.ai.mistralai.api-key=API_KEY", "spring.ai.mistralai.chat.model=mistral-large-4",
+					"spring.ai.mistralai.chat.reasoning-effort=" + value)
+			.withConfiguration(AutoConfigurations.of(MistralAiChatAutoConfiguration.class,
+					RestClientAutoConfiguration.class, SpringAiRetryAutoConfiguration.class,
+					ToolCallingAutoConfiguration.class, WebClientAutoConfiguration.class))
+			.run(context -> {
+				var chatProperties = context.getBean(MistralAiChatProperties.class);
+
+				assertThat(chatProperties.getReasoningEffort()).isEqualTo(expected);
+				assertThat(chatProperties.toOptions().getReasoningEffort()).isEqualTo(expected);
 			});
 	}
 
