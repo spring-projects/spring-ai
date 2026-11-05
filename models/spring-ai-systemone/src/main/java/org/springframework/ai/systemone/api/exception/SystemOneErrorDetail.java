@@ -23,7 +23,8 @@ import java.util.StringJoiner;
 
 import org.jspecify.annotations.Nullable;
 import tools.jackson.databind.JsonNode;
-import tools.jackson.databind.json.JsonMapper;
+
+import org.springframework.ai.util.JacksonUtils;
 
 /**
  * The parsed {@code detail} of a System One error response.
@@ -63,8 +64,6 @@ import tools.jackson.databind.json.JsonMapper;
 public record SystemOneErrorDetail(@Nullable String errorType, @Nullable String message,
 		List<ValidationError> validationErrors) {
 
-	private static final JsonMapper JSON_MAPPER = JsonMapper.builder().build();
-
 	public SystemOneErrorDetail {
 		validationErrors = validationErrors == null ? List.of() : List.copyOf(validationErrors);
 	}
@@ -80,7 +79,7 @@ public record SystemOneErrorDetail(@Nullable String errorType, @Nullable String 
 			return null;
 		}
 		try {
-			return parse(JSON_MAPPER.readTree(body));
+			return parse(JacksonUtils.getDefaultJsonMapper().readTree(body));
 		}
 		catch (RuntimeException ex) {
 			// A body that is not JSON at all - a proxy error page, say - or a detail

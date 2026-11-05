@@ -26,10 +26,10 @@ import org.springframework.ai.systemone.api.question.SystemOneRequest;
 import org.springframework.ai.systemone.api.response.ListModelsResponse;
 import org.springframework.ai.systemone.api.response.SystemOneResponse;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
-import org.springframework.web.client.ResponseErrorHandler;
 import org.springframework.web.client.RestClient;
 
 /**
@@ -70,7 +70,8 @@ public class SystemOneApi {
 	 * @param responseErrorHandler the handler mapping error responses onto exceptions
 	 */
 	public SystemOneApi(String baseUrl, Supplier<String> apiKey, HttpHeaders headers, String systemOnePath,
-			String modelsPath, RestClient.Builder restClientBuilder, ResponseErrorHandler responseErrorHandler) {
+			String modelsPath, RestClient.Builder restClientBuilder,
+			RestClient.ResponseSpec.ErrorHandler responseErrorHandler) {
 
 		Assert.hasText(baseUrl, "baseUrl must not be empty");
 		Assert.notNull(apiKey, "apiKey must not be null");
@@ -98,7 +99,7 @@ public class SystemOneApi {
 			// not ride alongside the key. Re-read per request so a rotated key takes
 			// effect.
 			.defaultRequest(request -> request.headers(h -> h.setBearerAuth(apiKey.get())))
-			.defaultStatusHandler(responseErrorHandler)
+			.defaultStatusHandler(HttpStatusCode::isError, responseErrorHandler)
 			.build();
 	}
 
@@ -168,7 +169,7 @@ public class SystemOneApi {
 
 		private RestClient.Builder restClientBuilder = RestClient.builder();
 
-		private ResponseErrorHandler responseErrorHandler = new SystemOneResponseErrorHandler();
+		private RestClient.ResponseSpec.ErrorHandler responseErrorHandler = new SystemOneResponseErrorHandler();
 
 		private Builder() {
 		}
@@ -214,7 +215,7 @@ public class SystemOneApi {
 			return this;
 		}
 
-		public Builder responseErrorHandler(ResponseErrorHandler responseErrorHandler) {
+		public Builder responseErrorHandler(RestClient.ResponseSpec.ErrorHandler responseErrorHandler) {
 			Assert.notNull(responseErrorHandler, "responseErrorHandler must not be null");
 			this.responseErrorHandler = responseErrorHandler;
 			return this;

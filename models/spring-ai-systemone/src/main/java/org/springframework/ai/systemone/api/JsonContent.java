@@ -26,6 +26,7 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import org.jspecify.annotations.Nullable;
 import tools.jackson.databind.json.JsonMapper;
 
+import org.springframework.ai.util.JacksonUtils;
 import org.springframework.util.Assert;
 
 /**
@@ -62,12 +63,6 @@ public record JsonContent(@JsonValue @Nullable Object value) {
 
 	/** Shared instance representing an explicit JSON {@code null}. */
 	public static final JsonContent NULL = new JsonContent(null);
-
-	/**
-	 * Used only by {@link #toDisplayString()}. Deliberately plain: rendering for a human
-	 * or a log should not depend on how the application configured its own mapper.
-	 */
-	private static final JsonMapper DISPLAY_MAPPER = JsonMapper.builder().build();
 
 	/**
 	 * Wraps an arbitrary value. Also the Jackson entry point when reading a
@@ -201,7 +196,7 @@ public record JsonContent(@JsonValue @Nullable Object value) {
 			return text;
 		}
 		try {
-			return DISPLAY_MAPPER.writeValueAsString(this.value);
+			return JacksonUtils.getDefaultJsonMapper().writeValueAsString(this.value);
 		}
 		catch (RuntimeException ex) {
 			return String.valueOf(this.value);
