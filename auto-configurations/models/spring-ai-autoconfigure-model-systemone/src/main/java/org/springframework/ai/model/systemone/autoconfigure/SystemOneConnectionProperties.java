@@ -24,7 +24,6 @@ import org.springframework.ai.systemone.api.SystemOneApiConstants;
 import org.springframework.ai.systemone.api.SystemOneRetryUtils;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.core.retry.RetryPolicy;
-import org.springframework.util.Assert;
 
 /**
  * Connection properties of the System One client: where the server is, how to
@@ -151,16 +150,13 @@ public class SystemOneConnectionProperties {
 		 * property
 		 */
 		public RetryPolicy toRetryPolicy() {
-			String prefix = CONFIG_PREFIX + ".retry.";
-			Assert.state(this.maxRetries >= 0, () -> prefix + "max-retries must not be negative");
-			Assert.state(!this.initialBackoff.isNegative(), () -> prefix + "initial-backoff must not be negative");
-			Assert.state(!this.maxBackoff.isNegative() && !this.maxBackoff.isZero(),
-					() -> prefix + "max-backoff must be positive");
-			Assert.state(this.maxBackoff.compareTo(this.initialBackoff) >= 0,
-					() -> prefix + "max-backoff must be at least " + prefix + "initial-backoff");
-			Assert.state(!this.timeout.isNegative() && !this.timeout.isZero(),
-					() -> prefix + "timeout must be positive");
-			return SystemOneRetryUtils.retryPolicy(this.maxRetries, this.initialBackoff, this.maxBackoff, this.timeout);
+			try {
+				return SystemOneRetryUtils.retryPolicy(this.maxRetries, this.initialBackoff, this.maxBackoff,
+						this.timeout);
+			}
+			catch (IllegalArgumentException ex) {
+				throw new IllegalStateException(CONFIG_PREFIX + ".retry: " + ex.getMessage());
+			}
 		}
 
 	}

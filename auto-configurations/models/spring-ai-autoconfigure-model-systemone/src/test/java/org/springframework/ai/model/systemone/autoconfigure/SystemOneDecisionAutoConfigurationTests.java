@@ -232,22 +232,25 @@ class SystemOneDecisionAutoConfigurationTests {
 	}
 
 	@Test
-	void rejectsRetrySettingsThatCannotWorkNamingTheProperty() {
+	void rejectsRetrySettingsThatCannotWorkNamingThePrefix() {
 		SystemOneConnectionProperties.Retry retry = new SystemOneConnectionProperties.Retry();
 		retry.setMaxBackoff(Duration.ZERO);
 		assertThatIllegalStateException().isThrownBy(retry::toRetryPolicy)
-			.withMessageContaining("spring.ai.systemone.retry.max-backoff");
+			.withMessageContaining("spring.ai.systemone.retry")
+			.withMessageContaining("maxBackoff");
 
 		retry.setMaxBackoff(Duration.ofSeconds(1));
 		retry.setInitialBackoff(Duration.ofSeconds(10));
 		assertThatIllegalStateException().isThrownBy(retry::toRetryPolicy)
-			.withMessageContaining("spring.ai.systemone.retry.max-backoff")
-			.withMessageContaining("spring.ai.systemone.retry.initial-backoff");
+			.withMessageContaining("spring.ai.systemone.retry")
+			.withMessageContaining("maxBackoff")
+			.withMessageContaining("initialBackoff");
 
 		this.contextRunner.withPropertyValues("spring.ai.systemone.retry.timeout=0s").run(context -> {
 			assertThat(context).hasFailed();
 			assertThat(context.getStartupFailure()).rootCause()
-				.hasMessageContaining("spring.ai.systemone.retry.timeout");
+				.hasMessageContaining("spring.ai.systemone.retry")
+				.hasMessageContaining("timeout");
 		});
 	}
 
