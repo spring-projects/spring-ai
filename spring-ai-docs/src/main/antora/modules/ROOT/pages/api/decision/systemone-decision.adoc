@@ -313,9 +313,115 @@ When the server sends a request id in the `x-typesafe-request-id` header, Spring
 You get it from `response.getMetadata().getId()` and from the `gen_ai.response.id` observation key.
 Ollama, Laya and llmman send no request id, so the id is `null`, and the observation has no such key.
 
-Errors come as exceptions of the `SystemOneException` hierarchy, such as `SystemOneBadRequestException` or `SystemOneRateLimitException`.
+Errors come as exceptions of the `SystemOneException` hierarchy, such as `SystemOneBadRequestException` or `SystemOneRateLimitException`, listed in <<low-level-api>>.
 They come after the retries of the `RetryTemplate` of the client, which retries connection failures, request timeouts, rate limits and server errors twice by default, and waits as long as the server asks on a rate limit.
 See `SystemOneRetryUtils` for the default policy, and for the predicate and the wrapper that a policy of your own should use.
+
+[[low-level-api]]
+== Low-level SystemOneClient
+
+`SystemOneClient` is the client of the `/v1/systemone` protocol that the decision model is built on.
+With the starter it is a regular bean, and `SystemOneDecisionModel` is the recommended way to use it.
+Reach for the client itself to list the models of a server, or to send a request of the protocol as it is.
+
+=== Builder
+
+[cols="2,5,2"]
+|====
+| Builder method | Description | Default
+
+| `apiKey(String)` | The API key, sent as a bearer token.
+Required, unless `systemOneApi` supplies the transport. | -
+| `apiKey(Supplier<String>)` | Consulted on every request, so a rotated key takes effect without rebuilding the client. | -
+| `baseUrl(String)` | The API root. | `+https://api.typesafe.ai+`
+| `defaultModel(String)` | The model applied to a request that names none. | `jev-latest`
+| `timeout(Duration)` | The read timeout of the transport the client builds.
+Not applied when you supply the transport. | `10s`
+| `retryTemplate(RetryTemplate)` | How transient failures are retried.
+See `SystemOneRetryUtils` for the default policy and for the pieces of a policy of your own. | `SystemOneRetryUtils.defaultRetryTemplate()`
+| `headers(HttpHeaders)` | Headers sent on every request.
+Calling it twice sends both sets.
+`Authorization`, `Content-Type` and `Accept` are set by the client after yours. | none
+| `restClientBuilder(RestClient.Builder)` | The builder to derive the HTTP client from.
+It is cloned, not changed, so you keep control of interceptors and observability. | the client builds its own
+| `systemOneApi(SystemOneApi)` | A fully assembled transport, in place of every other transport setting. | -
+|====
+
+The client is immutable and safe to share between threads.
+
+=== Sending a Request
+
+The `systemOne` methods take the state as text, a map, a list or a `JsonContent`, with the questions as a map.
+A request built with `SystemOneRequest.builder()` can also name the model for one call:
+
+[source,java]
+----
+SystemOneResponse response = client.systemOne(SystemOneRequest.builder()
+    .state(JsonContent.object("message", "Help! My payouts have been failing for 3 days."))
+    .model("jev-preview")
+    .question("is_urgent", Noul.of("Does this convey urgency?"))
+    .question("department", Choice.builder()
+        .instructions("Which team should handle this?")
+        .option("billing", "Payments, invoicing, refunds")
+        .option("technical", "Bugs, outages, integrations")
+        .build())
+    .build());
+----
+
+The server reads the state, the questions and the criteria in the order they are sent, and a different order can change an answer.
+`Map.of(...)` has no order, so build content with more than one key with `JsonContent.object(...)`, with the `question(...)` calls of the builder, or with a `LinkedHashMap`.
+
+=== Reading the Answers
+
+[source,java]
+----
+double urgency = response.noulValue("is_urgent");
+String department = response.choiceValue("department");
+
+ChoiceAnswer choice = response.choice("department");
+choice.confidence();
+choice.probabilityOf("billing");
+choice.optionsAbove(0.1); // the options above the threshold, the likeliest first
+
+response.usage().inputTokens();
+response.requestId(); // quote it when you report a problem
+----
+
+Asking for an answer of another kind throws `SystemOneAnswerTypeException`, and asking for a name the response does not carry throws `SystemOneMissingAnswerException`.
+Both say which name you asked for and what the response has.
+
+=== Listing the Models
+
+[source,java]
+----
+for (ModelMetadata model : client.listModels()) {
+    System.out.printf("%s: %s (%s)%n", model.name(), model.description(), model.releaseDate());
+}
+----
+
+The aliases of the hosted service are in `SystemOneModel`.
+A response reports the model it resolved an alias to, so a request for `jev-latest` comes back with a pinned version.
+
+=== Errors
+
+Every failure of the client is a `SystemOneException`, thrown after the retries.
+
+[cols="3,5"]
+|====
+| Exception | When
+
+| `SystemOneApiException` | An HTTP error response.
+It carries the `status()`, the raw `body()`, the `requestId()` and the parsed `errorDetail()`.
+| `SystemOneBadRequestException`, `SystemOneAuthenticationException`, `SystemOnePermissionDeniedException`, `SystemOneNotFoundException`, `SystemOneUnprocessableEntityException` | A 400, 401, 403, 404 or 422 response.
+| `SystemOneRateLimitException` | A 429 response.
+`retryAfter()` carries the wait the server asks for, which the default retry policy honours.
+| `SystemOneInternalServerException` | A 5xx response.
+`SystemOneOverloadedException` is the non-standard 529 of the hosted service.
+| `SystemOneApiConnectionException` | No HTTP response at all.
+`SystemOneApiTimeoutException` when the attempt timed out.
+| `SystemOneApiResponseValidationException` | A successful response that misses what the client needs, such as an empty body or no answers.
+| `SystemOneAnswerTypeException`, `SystemOneMissingAnswerException` | Raised on the client when you read an answer of another kind, or one the response does not carry.
+|====
 
 == Observability
 

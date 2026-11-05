@@ -134,6 +134,8 @@ Use a `YesNoQuestion` when the code takes one of two paths, a `ChoiceQuestion` w
 * Add descriptions when a name alone can be read in more than one way.
 In the example, the `product` option alone could mean any question about a product, so its description says that it is about a problem with an item the customer received.
 The `whenYes` and `whenNo` criteria do the same for a yes/no question.
+* Ask several narrow questions rather than one broad one.
+The providers answer every question of a call against the same input, so a third question costs far less than a third call, and each answer keeps its own threshold.
 * Send only what the decision needs.
 A short message, or a few relevant fields, gives clearer answers than a whole customer record or a long conversation.
 * Try your questions on real inputs before you rely on them, including inputs that are hard to decide.
@@ -245,6 +247,9 @@ When the provider reports them, it also has the probability of each option:
 
 If the selected option is only a little more likely than the second one, the message is not clear.
 In that case, a person may handle it better.
+
+A `ChoiceAnswer` always names an option, even when none of them fits.
+When "none of these" is a real outcome, ask it as a `YesNoQuestion` next to the choice.
 
 === Score Answers
 
