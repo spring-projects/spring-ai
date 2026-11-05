@@ -728,6 +728,12 @@
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-autoconfigure-model-systemone</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-autoconfigure-model-transformers</artifactId>
 				<version>${project.version}</version>
 			</dependency>
@@ -1057,6 +1063,12 @@
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-starter-model-stability-ai</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-model-systemone</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 

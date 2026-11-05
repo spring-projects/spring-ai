@@ -72,23 +72,27 @@ public final class SystemOneRetryUtils {
 	 */
 	public static final Set<Integer> RETRYABLE_STATUSES = Set.of(408, 429);
 
+	/** The default number of retries after the initial attempt. */
+	public static final int DEFAULT_MAX_RETRIES = 2;
+
+	/** The default first wait, doubled on each further retry. */
+	public static final Duration DEFAULT_INITIAL_BACKOFF = Duration.ofMillis(500);
+
+	/** The default upper bound on a single wait. */
+	public static final Duration DEFAULT_MAX_BACKOFF = Duration.ofSeconds(5);
+
+	/** The default time since the first attempt after which no further attempt starts. */
+	public static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(30);
+
 	/**
-	 * The default policy: two retries, exponential backoff from 500ms doubling up to 5s
-	 * with jitter, no further attempt once 30 seconds have passed since the first, and
-	 * the server stated wait on a rate limit. With two retries the waits are 500ms and
-	 * 1s; the 5s cap only matters for a policy with more. The 30 seconds are measured
-	 * from the first attempt, so an attempt already running when they pass still
-	 * completes.
+	 * The default policy, built by {@link #retryPolicy} from the defaults above: two
+	 * retries, waiting 500ms and then 1s with jitter, no further attempt once 30 seconds
+	 * have passed since the first, and the server stated wait on a rate limit. The 5s cap
+	 * only matters for a policy with more retries. The 30 seconds are measured from the
+	 * first attempt, so an attempt already running when they pass still completes.
 	 */
-	public static final RetryPolicy DEFAULT_RETRY_POLICY = honouringRetryAfter(RetryPolicy.builder()
-		.maxRetries(2)
-		.delay(Duration.ofMillis(500))
-		.multiplier(2.0d)
-		.maxDelay(Duration.ofSeconds(5))
-		.jitter(Duration.ofMillis(100))
-		.timeout(Duration.ofSeconds(30))
-		.predicate(SystemOneRetryUtils::isTransient)
-		.build());
+	public static final RetryPolicy DEFAULT_RETRY_POLICY = retryPolicy(DEFAULT_MAX_RETRIES, DEFAULT_INITIAL_BACKOFF,
+			DEFAULT_MAX_BACKOFF, DEFAULT_TIMEOUT);
 
 	/**
 	 * A policy that fails on the first error.
@@ -102,13 +106,56 @@ public final class SystemOneRetryUtils {
 	}
 
 	/**
+	 * A policy with the System One classification and the server stated wait on a rate
+	 * limit: exponential waits doubling from the first up to the cap, with a fifth of the
+	 * first wait of jitter up to 100ms, and no further attempt once the timeout has
+	 * passed since the first.
+	 * @param maxRetries retries after the initial attempt; {@code 0} disables retrying
+	 * @param initialBackoff the first wait
+	 * @param maxBackoff the upper bound on a single wait, at least the first
+	 * @param timeout the time since the first attempt after which no further attempt
+	 * starts
+	 * @return the policy
+	 */
+	public static RetryPolicy retryPolicy(int maxRetries, Duration initialBackoff, Duration maxBackoff,
+			Duration timeout) {
+		Assert.isTrue(maxRetries >= 0, "maxRetries must not be negative");
+		Assert.notNull(initialBackoff, "initialBackoff must not be null");
+		Assert.notNull(maxBackoff, "maxBackoff must not be null");
+		Assert.notNull(timeout, "timeout must not be null");
+		Assert.isTrue(!initialBackoff.isNegative(), "initialBackoff must not be negative");
+		Assert.isTrue(maxBackoff.compareTo(initialBackoff) >= 0 && !maxBackoff.isZero(),
+				"maxBackoff must be positive and at least initialBackoff");
+		Assert.isTrue(!timeout.isNegative() && !timeout.isZero(), "timeout must be positive");
+		return honouringRetryAfter(RetryPolicy.builder()
+			.maxRetries(maxRetries)
+			.delay(initialBackoff)
+			.multiplier(2.0d)
+			.maxDelay(maxBackoff)
+			.jitter(Duration.ofMillis(Math.min(100, initialBackoff.toMillis() / 5)))
+			.timeout(timeout)
+			.predicate(SystemOneRetryUtils::isTransient)
+			.build());
+	}
+
+	/**
 	 * A new template over {@link #DEFAULT_RETRY_POLICY} that logs each retry at warn
 	 * level, used by the client when none is configured. A new instance each time, since
 	 * a template is mutable.
 	 * @return the template
 	 */
 	public static RetryTemplate defaultRetryTemplate() {
-		RetryTemplate template = new RetryTemplate(DEFAULT_RETRY_POLICY);
+		return retryTemplate(DEFAULT_RETRY_POLICY);
+	}
+
+	/**
+	 * A new template over the given policy that logs each retry at warn level.
+	 * @param policy the policy
+	 * @return the template
+	 */
+	public static RetryTemplate retryTemplate(RetryPolicy policy) {
+		Assert.notNull(policy, "policy must not be null");
+		RetryTemplate template = new RetryTemplate(policy);
 		template.setRetryListener(new RetryListener() {
 
 			@Override
