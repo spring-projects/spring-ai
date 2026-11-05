@@ -37,7 +37,7 @@ import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaModel;
 import org.springframework.ai.ollama.decision.OllamaDecisionOptions;
 import org.springframework.ai.systemone.api.SystemOneClient;
-import org.springframework.ai.systemone.api.SystemOneRetryPolicy;
+import org.springframework.ai.systemone.api.SystemOneRetryUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -155,7 +155,7 @@ class OllamaDecisionModelIT extends BaseOllamaIT {
 				.baseUrl(getOllamaBaseUrl())
 				.apiKey("ollama")
 				.timeout(Duration.ofMinutes(2))
-				.retryPolicy(SystemOneRetryPolicy.noRetry())
+				.retryTemplate(SystemOneRetryUtils.noRetryTemplate())
 				.build();
 		}
 

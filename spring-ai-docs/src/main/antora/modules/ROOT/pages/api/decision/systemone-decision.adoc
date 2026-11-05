@@ -47,7 +47,7 @@ dependencies {
 
 TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
 
-The `SystemOneClient` holds the connection settings: the base URL, the API key, the default model, the timeout of each attempt and the retry policy.
+The `SystemOneClient` holds the connection settings: the base URL, the API key, the default model, the timeout of the transport it builds and the retry policy.
 The model takes the client and, optionally, the default options and the provider name for observations.
 
 [source,java]
@@ -134,7 +134,7 @@ SystemOneClient ollama = SystemOneClient.builder()
     .apiKey("ollama")
     .defaultModel("d1-omni:600m")
     .timeout(Duration.ofSeconds(60))
-    .retryPolicy(SystemOneRetryPolicy.noRetry())
+    .retryTemplate(SystemOneRetryUtils.noRetryTemplate())
     .build();
 
 SystemOneDecisionModel decisionModel = SystemOneDecisionModel.builder(ollama)
@@ -227,7 +227,8 @@ You get it from `response.getMetadata().getId()` and from the `gen_ai.response.i
 Ollama, Laya and llmman send no request id, so the id is `null`, and the observation has no such key.
 
 Errors come as exceptions of the `SystemOneException` hierarchy, such as `SystemOneBadRequestException` or `SystemOneRateLimitException`.
-They come after the retries of the `SystemOneRetryPolicy` of the client.
+They come after the retries of the `RetryTemplate` of the client, which retries connection failures, request timeouts, rate limits and server errors twice by default, and waits as long as the server asks on a rate limit.
+See `SystemOneRetryUtils` for the default policy, and for the predicate and the wrapper that a policy of your own should use.
 
 == Observability
 

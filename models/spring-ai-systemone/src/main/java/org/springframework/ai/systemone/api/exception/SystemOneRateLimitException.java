@@ -24,8 +24,8 @@ import org.springframework.http.HttpHeaders;
 
 /**
  * Raised on HTTP 429. The account has exceeded its rate limit; back off and retry. The
- * server may state how long to wait, in which case {@link #retryAfter()} carries it and
- * the client's retry policy honours it in place of its own backoff.
+ * server may state how long to wait, in which case {@link #retryAfter()} carries it and a
+ * policy wrapped by {@code SystemOneRetryUtils.honouringRetryAfter} waits that long.
  *
  * @author Christian Tzolov
  * @since 2.1.0

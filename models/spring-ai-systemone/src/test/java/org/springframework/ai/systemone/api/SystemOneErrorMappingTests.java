@@ -32,6 +32,7 @@ import org.springframework.ai.systemone.api.exception.SystemOnePermissionDeniedE
 import org.springframework.ai.systemone.api.exception.SystemOneRateLimitException;
 import org.springframework.ai.systemone.api.exception.SystemOneUnprocessableEntityException;
 import org.springframework.ai.systemone.api.question.Noul;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.client.response.MockRestResponseCreators;
@@ -232,7 +233,7 @@ class SystemOneErrorMappingTests {
 		SystemOneClient client = SystemOneClient.builder()
 			.systemOneApi(api)
 			.defaultModel(SystemOneModel.LATEST.id())
-			.retryPolicy(SystemOneRetryPolicy.noRetry())
+			.retryTemplate(SystemOneRetryUtils.noRetryTemplate())
 			.build();
 		this.mock.server()
 			.expect(requestTo(MockSystemOneServer.SYSTEM_ONE_URL))
@@ -257,7 +258,7 @@ class SystemOneErrorMappingTests {
 			.andRespond(MockSystemOneServer.errorResponse(429, "{\"error\":\"rate limited\"}", headers));
 
 		assertThatExceptionOfType(SystemOneRateLimitException.class)
-			.isThrownBy(() -> evaluate(SystemOneRetryPolicy.noRetry()))
+			.isThrownBy(() -> evaluate(SystemOneRetryUtils.noRetryTemplate()))
 			.satisfies(ex -> {
 				assertThat(ex.retryAfterMs()).isEqualTo(1500L);
 				assertThat(ex.retryAfter()).hasMillis(1500);
@@ -274,7 +275,7 @@ class SystemOneErrorMappingTests {
 			.andRespond(MockSystemOneServer.errorResponse(429, "rate limited", headers));
 
 		assertThatExceptionOfType(SystemOneRateLimitException.class)
-			.isThrownBy(() -> evaluate(SystemOneRetryPolicy.noRetry()))
+			.isThrownBy(() -> evaluate(SystemOneRetryUtils.noRetryTemplate()))
 			.satisfies(ex -> assertThat(ex.retryAfterMs()).isEqualTo(2000L));
 	}
 
@@ -288,7 +289,7 @@ class SystemOneErrorMappingTests {
 			.andRespond(MockSystemOneServer.errorResponse(429, "rate limited", headers));
 
 		assertThatExceptionOfType(SystemOneRateLimitException.class)
-			.isThrownBy(() -> evaluate(SystemOneRetryPolicy.noRetry()))
+			.isThrownBy(() -> evaluate(SystemOneRetryUtils.noRetryTemplate()))
 			.satisfies(ex -> assertThat(ex.retryAfterMs()).isNull());
 	}
 
@@ -325,15 +326,16 @@ class SystemOneErrorMappingTests {
 			.expect(requestTo(MockSystemOneServer.SYSTEM_ONE_URL))
 			.andRespond(MockSystemOneServer.errorResponse(status, "{\"error\":\"boom\"}"));
 
-		return org.assertj.core.api.Assertions.assertThatThrownBy(() -> evaluate(SystemOneRetryPolicy.noRetry()));
+		return org.assertj.core.api.Assertions
+			.assertThatThrownBy(() -> evaluate(SystemOneRetryUtils.noRetryTemplate()));
 	}
 
 	private void evaluate() {
-		evaluate(SystemOneRetryPolicy.noRetry());
+		evaluate(SystemOneRetryUtils.noRetryTemplate());
 	}
 
-	private void evaluate(SystemOneRetryPolicy retryPolicy) {
-		this.mock.client(retryPolicy).systemOne("anything", Map.of("probe", Noul.of("Is this a probe?")));
+	private void evaluate(RetryTemplate retryTemplate) {
+		this.mock.client(retryTemplate).systemOne("anything", Map.of("probe", Noul.of("Is this a probe?")));
 	}
 
 }
