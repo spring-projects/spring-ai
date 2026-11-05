@@ -20,10 +20,12 @@ import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.spec.McpSchema;
 import tools.jackson.databind.json.JsonMapper;
 
+import org.springframework.ai.mcp.customizer.McpServerCustomizer;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerStatelessAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerStdioDisabledCondition;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerStreamableHttpProperties;
 import org.springframework.ai.mcp.server.webmvc.transport.WebMvcStatelessServerTransport;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -48,13 +50,14 @@ public class McpServerStatelessWebMvcAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public WebMvcStatelessServerTransport webMvcStatelessServerTransport(
-			@Qualifier("mcpServerJsonMapper") JsonMapper jsonMapper,
-			McpServerStreamableHttpProperties serverProperties) {
+			@Qualifier("mcpServerJsonMapper") JsonMapper jsonMapper, McpServerStreamableHttpProperties serverProperties,
+			ObjectProvider<McpServerCustomizer<WebMvcStatelessServerTransport.Builder>> customizers) {
 
-		return WebMvcStatelessServerTransport.builder()
+		WebMvcStatelessServerTransport.Builder builder = WebMvcStatelessServerTransport.builder()
 			.jsonMapper(new JacksonMcpJsonMapper(jsonMapper))
-			.messageEndpoint(serverProperties.getMcpEndpoint())
-			.build();
+			.messageEndpoint(serverProperties.getMcpEndpoint());
+		customizers.orderedStream().forEach(customizer -> customizer.customize(builder));
+		return builder.build();
 	}
 
 	// Router function for stateless http transport used by Spring WebFlux to start an
