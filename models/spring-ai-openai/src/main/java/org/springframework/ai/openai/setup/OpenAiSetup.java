@@ -39,6 +39,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
 
+import org.springframework.ai.openai.AbstractOpenAiOptions;
 import org.springframework.ai.openai.http.okhttp.OpenAiHttpClientBuilderCustomizer;
 import org.springframework.ai.openai.http.okhttp.SpringAiOpenAiHttpClient;
 
@@ -97,11 +98,13 @@ public final class OpenAiSetup {
 	public static OpenAIClient setupSyncClient(@Nullable String baseUrl, @Nullable String apiKey,
 			@Nullable Credential credential, @Nullable String azureDeploymentName,
 			@Nullable AzureOpenAIServiceVersion azureOpenAiServiceVersion, @Nullable String organizationId,
-			boolean isAzure, boolean isGitHubModels, @Nullable String modelName, Duration timeout, int maxRetries,
-			@Nullable Proxy proxy, @Nullable Map<String, String> customHeaders, ObservationRegistry observationRegistry,
-			@Nullable MeterRegistry meterRegistry, List<OpenAiHttpClientBuilderCustomizer> httpClientCustomizers) {
+			boolean isAzure, boolean isGitHubModels, @Nullable String modelName, Duration timeout,
+			@Nullable Integer maxRetries, @Nullable Proxy proxy, @Nullable Map<String, String> customHeaders,
+			ObservationRegistry observationRegistry, @Nullable MeterRegistry meterRegistry,
+			List<OpenAiHttpClientBuilderCustomizer> httpClientCustomizers) {
 
 		baseUrl = detectBaseUrlFromEnv(baseUrl);
+		maxRetries = maxRetries != null ? maxRetries : AbstractOpenAiOptions.DEFAULT_MAX_RETRIES;
 		var modelProvider = detectModelProvider(isAzure, isGitHubModels, baseUrl, azureDeploymentName,
 				azureOpenAiServiceVersion);
 
@@ -124,11 +127,13 @@ public final class OpenAiSetup {
 	public static OpenAIClientAsync setupAsyncClient(@Nullable String baseUrl, @Nullable String apiKey,
 			@Nullable Credential credential, @Nullable String azureDeploymentName,
 			@Nullable AzureOpenAIServiceVersion azureOpenAiServiceVersion, @Nullable String organizationId,
-			boolean isAzure, boolean isGitHubModels, @Nullable String modelName, Duration timeout, int maxRetries,
-			@Nullable Proxy proxy, @Nullable Map<String, String> customHeaders, ObservationRegistry observationRegistry,
-			@Nullable MeterRegistry meterRegistry, List<OpenAiHttpClientBuilderCustomizer> httpClientCustomizers) {
+			boolean isAzure, boolean isGitHubModels, @Nullable String modelName, Duration timeout,
+			@Nullable Integer maxRetries, @Nullable Proxy proxy, @Nullable Map<String, String> customHeaders,
+			ObservationRegistry observationRegistry, @Nullable MeterRegistry meterRegistry,
+			List<OpenAiHttpClientBuilderCustomizer> httpClientCustomizers) {
 
 		baseUrl = detectBaseUrlFromEnv(baseUrl);
+		maxRetries = maxRetries != null ? maxRetries : AbstractOpenAiOptions.DEFAULT_MAX_RETRIES;
 		var modelProvider = detectModelProvider(isAzure, isGitHubModels, baseUrl, azureDeploymentName,
 				azureOpenAiServiceVersion);
 

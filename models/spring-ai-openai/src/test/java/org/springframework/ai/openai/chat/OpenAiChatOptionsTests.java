@@ -516,6 +516,21 @@ public class OpenAiChatOptionsTests extends AbstractChatOptionsTests<OpenAiChatO
 	}
 
 	@Test
+	void testMaxRetriesIsNullWhenUnset() {
+		assertThat(OpenAiChatOptions.builder().build().getMaxRetries()).isNull();
+	}
+
+	@Test
+	void testCombineWithKeepsMaxRetriesWhenOverrideLeavesItUnset() {
+		OpenAiChatOptions base = OpenAiChatOptions.builder().maxRetries(5).build();
+
+		OpenAiChatOptions merged = base.mutate().combineWith(OpenAiChatOptions.builder().model("override")).build();
+
+		assertThat(merged.getMaxRetries()).isEqualTo(5);
+		assertThat(merged.getModel()).isEqualTo("override");
+	}
+
+	@Test
 	void testCombineWith() {
 		OpenAiChatOptions base = OpenAiChatOptions.builder()
 			.model("base-model")
