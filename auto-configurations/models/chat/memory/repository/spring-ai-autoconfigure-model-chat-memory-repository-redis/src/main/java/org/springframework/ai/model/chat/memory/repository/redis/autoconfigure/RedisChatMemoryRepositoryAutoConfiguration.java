@@ -20,7 +20,6 @@ import redis.clients.jedis.DefaultJedisClientConfig;
 import redis.clients.jedis.JedisClientConfig;
 import redis.clients.jedis.RedisClient;
 
-import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.ChatMemoryRepository;
 import org.springframework.ai.chat.memory.repository.redis.RedisChatMemoryRepository;
 import org.springframework.ai.model.chat.memory.autoconfigure.ChatMemoryAutoConfiguration;
@@ -97,7 +96,7 @@ public class RedisChatMemoryRepositoryAutoConfiguration {
 	}
 
 	@Bean
-	@ConditionalOnMissingBean({ RedisChatMemoryRepository.class, ChatMemory.class, ChatMemoryRepository.class })
+	@ConditionalOnMissingBean(ChatMemoryRepository.class)
 	public RedisChatMemoryRepository redisChatMemoryRepository(RedisClient jedisClient,
 			RedisChatMemoryRepositoryProperties properties) {
 		RedisChatMemoryRepository.Builder builder = RedisChatMemoryRepository.builder().jedisClient(jedisClient);
