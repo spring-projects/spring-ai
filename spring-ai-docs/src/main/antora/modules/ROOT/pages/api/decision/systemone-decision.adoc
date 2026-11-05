@@ -15,12 +15,97 @@ https://github.com/NandhaKishorM/laya[Laya], https://llmmanorg.github.io/[llmman
 We recommend Ollama 0.40.4 or later;
 * Laya, with `laya-serve`;
 * llmman 0.1.497 or later, with `llmman serve`.
-. The `spring-ai-systemone` dependency in your project, as described in <<manual-configuration>>.
+. The `spring-ai-starter-model-systemone` dependency, as described in <<auto-configuration>>, or the `spring-ai-systemone` dependency for a <<manual-configuration,manual configuration>>.
+
+[[auto-configuration]]
+== Auto-configuration
+
+Spring AI provides Spring Boot auto-configuration for the System One decision model.
+To enable it, add the following dependency to your Maven `pom.xml` or Gradle `build.gradle` build files:
+
+[tabs]
+======
+Maven::
++
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-model-systemone</artifactId>
+</dependency>
+----
+
+Gradle::
++
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-starter-model-systemone'
+}
+----
+======
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+The auto-configuration creates a `SystemOneClient` and a `SystemOneDecisionModel` over it.
+Both are regular beans: inject the client to call `listModels()`, and define your own bean of either type to replace the auto-configured one.
+
+If your application doesn't use the decision model, turn off its auto-configuration with `spring.ai.model.decision=none`, as described in <<decision-properties>>.
+
+=== Connection Properties
+
+The prefix `spring.ai.systemone` is the property prefix to configure the connection to the System One server.
+
+[cols="3,5,2"]
+|====
+| Property | Description | Default
+| spring.ai.systemone.api-key | The API key. Required. | -
+| spring.ai.systemone.base-url | The API root. Point it at Laya, llmman or another server of the protocol. | `+https://api.typesafe.ai+`
+| spring.ai.systemone.timeout | The read timeout of each attempt.
+Unset, the `spring.http.client` settings of your application apply, or `10s` when the client builds its own transport. | -
+| spring.ai.systemone.retry.max-retries | Retries after the initial attempt. `0` disables retrying. | `2`
+| spring.ai.systemone.retry.initial-backoff | The first wait, doubled on each further retry. | `500ms`
+| spring.ai.systemone.retry.max-backoff | The upper bound on a single wait. | `5s`
+| spring.ai.systemone.retry.timeout | No further attempt is started once this much time has passed since the first. | `30s`
+|====
+
+The client sends its requests through the `RestClient.Builder` of your application when there is one, so the `spring.http.client` settings, such as proxies and SSL bundles, apply.
+When you set `spring.ai.systemone.timeout`, it is applied on top of them.
+Retries cover connection failures, request timeouts, rate limits and server errors, and wait as long as the server asks on a rate limit.
+The `spring.ai.retry` properties of the other models do not apply to this client.
+
+[[decision-properties]]
+=== Decision Properties
+
+[NOTE]
+====
+The `spring.ai.model.decision` property enables and disables the decision auto-configuration.
+
+To enable it, set `spring.ai.model.decision=systemone` (this is the default).
+
+To disable it, set `spring.ai.model.decision=none`, or any value other than `systemone`.
+====
+
+The prefix `spring.ai.systemone.decision` is the property prefix to configure the System One decision model.
+
+[cols="3,5,2"]
+|====
+| Property | Description | Default
+| spring.ai.model.decision | Enables the System One decision model. | `systemone`
+| spring.ai.systemone.decision.model | The model name or alias.
+Ollama, Laya and llmman have no `jev-latest`, so set it when you point at one of them. | `jev-latest`
+| spring.ai.systemone.decision.provider | The provider name recorded in observations, such as `laya` or `llmman`. | `systemone`
+|====
+
+NOTE: When the Ollama or OpenAI starter is on the classpath too, each auto-configures its own decision model by default.
+Select one with `spring.ai.model.decision`, or qualify the injection point.
+
+TIP: You can change the model for one call, with the <<decision-options>> of the `DecisionPrompt`.
 
 [[manual-configuration]]
 == Manual Configuration
 
-Spring Boot auto-configuration is not available for this model yet, so you configure the `SystemOneDecisionModel` yourself.
+Without the starter, configure the `SystemOneDecisionModel` yourself.
 Add the `spring-ai-systemone` dependency to your Maven `pom.xml` or Gradle `build.gradle` build files:
 
 [tabs]

@@ -54,7 +54,7 @@ class SystemOneRetryTests {
 	private static final String OK_BODY = """
 			{"model":"jev-1.13.0","answers":{"probe":{"type":"noul","noul":0.5}},"usage":{}}""";
 
-	private static final RetryTemplate FAST = new RetryTemplate(RetryPolicy.builder()
+	private static final RetryTemplate FAST = SystemOneRetryUtils.retryTemplate(RetryPolicy.builder()
 		.maxRetries(2)
 		.delay(Duration.ofMillis(1))
 		.predicate(SystemOneRetryUtils::isTransient)
