@@ -59,11 +59,13 @@ The prefix `spring.ai.systemone` is the property prefix to configure the connect
 [cols="3,5,2"]
 |====
 | Property | Description | Default
-| spring.ai.systemone.api-key | The API key. Required. | -
+| spring.ai.systemone.api-key | The API key.
+Required. | -
 | spring.ai.systemone.base-url | The API root. Point it at Laya, llmman or another server of the protocol. | `+https://api.typesafe.ai+`
 | spring.ai.systemone.timeout | The read timeout of each attempt.
 Unset, the `spring.http.client` settings of your application apply, or `10s` when the client builds its own transport. | -
-| spring.ai.systemone.retry.max-retries | Retries after the initial attempt. `0` disables retrying. | `2`
+| spring.ai.systemone.retry.max-retries | Retries after the initial attempt.
+`0` disables retrying. | `2`
 | spring.ai.systemone.retry.initial-backoff | The first wait, doubled on each further retry. | `500ms`
 | spring.ai.systemone.retry.max-backoff | The upper bound on a single wait. | `5s`
 | spring.ai.systemone.retry.timeout | No further attempt is started once this much time has passed since the first. | `30s`

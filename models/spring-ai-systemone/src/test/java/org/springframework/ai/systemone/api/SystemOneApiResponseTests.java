@@ -208,6 +208,20 @@ class SystemOneApiResponseTests {
 	}
 
 	@Test
+	void keepsANullAnswerAsAnUnknownOne() {
+		// Jackson never hands a JSON null to the deserializer, so it must come from the
+		// null-value hook: an unknown answer, not a null entry that fails far from here.
+		SystemOneResponse response = evaluate("""
+				{"model":"jev-1.13.0","answers":{"urgent":null},"usage":{}}""");
+
+		Answer answer = response.answer("urgent");
+		assertThat(answer).isInstanceOf(UnknownAnswer.class);
+		UnknownAnswer unknown = (UnknownAnswer) answer;
+		assertThat(unknown.typeName()).isNull();
+		assertThat(unknown.raw()).isEmpty();
+	}
+
+	@Test
 	void keepsAnUnknownAnswerThatCarriesANullField() {
 		// The forward-compatibility case: a primitive the client does not model, with a
 		// null field in it. Map.copyOf used to throw here and fail the whole call.

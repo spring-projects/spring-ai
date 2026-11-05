@@ -59,6 +59,16 @@ class AnswerDeserializer extends ValueDeserializer<Answer> {
 		};
 	}
 
+	/**
+	 * A JSON {@code null} where an answer object was expected. Jackson does not call
+	 * {@link #deserialize} for it, so without this the answer would be a {@code null} map
+	 * entry that passes every guard and fails far from the response.
+	 */
+	@Override
+	public UnknownAnswer getNullValue(DeserializationContext context) {
+		return new UnknownAnswer(null, Map.of());
+	}
+
 	private UnknownAnswer toUnknown(@Nullable String typeName, JsonNode node, DeserializationContext context) {
 		Map<String, Object> raw = context.readTreeAsValue(node,
 				context.getTypeFactory().constructMapType(LinkedHashMap.class, String.class, Object.class));
