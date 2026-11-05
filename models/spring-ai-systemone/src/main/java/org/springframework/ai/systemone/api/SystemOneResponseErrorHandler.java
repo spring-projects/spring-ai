@@ -17,7 +17,6 @@
 package org.springframework.ai.systemone.api;
 
 import java.io.IOException;
-import java.net.URI;
 import java.nio.charset.StandardCharsets;
 
 import org.jspecify.annotations.Nullable;
@@ -33,12 +32,12 @@ import org.springframework.ai.systemone.api.exception.SystemOnePermissionDeniedE
 import org.springframework.ai.systemone.api.exception.SystemOneRateLimitException;
 import org.springframework.ai.systemone.api.exception.SystemOneUnprocessableEntityException;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.client.ClientHttpResponse;
 import org.springframework.util.StreamUtils;
 import org.springframework.util.StringUtils;
-import org.springframework.web.client.ResponseErrorHandler;
+import org.springframework.web.client.RestClient;
 
 /**
  * Turns a System One error response into the matching {@link SystemOneApiException}
@@ -56,22 +55,21 @@ import org.springframework.web.client.ResponseErrorHandler;
  * {@link SystemOneErrorDetail} so that the exception message states what the server said
  * rather than the raw JSON.
  *
+ * <p>
+ * Registered by {@link SystemOneApi} for every error status, through
+ * {@code RestClient.Builder#defaultStatusHandler(Predicate, ErrorHandler)}.
+ *
  * @author Christian Tzolov
  * @since 2.1.0
  */
-public class SystemOneResponseErrorHandler implements ResponseErrorHandler {
+public class SystemOneResponseErrorHandler implements RestClient.ResponseSpec.ErrorHandler {
 
 	@Override
-	public boolean hasError(ClientHttpResponse response) throws IOException {
-		return response.getStatusCode().isError();
-	}
-
-	@Override
-	public void handleError(URI url, HttpMethod method, ClientHttpResponse response) throws IOException {
+	public void handle(HttpRequest request, ClientHttpResponse response) throws IOException {
 		int status = response.getStatusCode().value();
 		HttpHeaders headers = response.getHeaders();
 		String body = readBody(response);
-		String endpoint = "%s %s".formatted(method.name(), url);
+		String endpoint = "%s %s".formatted(request.getMethod().name(), request.getURI());
 
 		throw toException(status, body, headers, endpoint);
 	}
