@@ -16,6 +16,7 @@
 
 package org.springframework.ai.openai.http.okhttp;
 
+import okhttp3.Dispatcher;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
@@ -26,11 +27,13 @@ import okhttp3.mockwebserver.SocketPolicy;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
 /**
  * Tests for {@link SpringAiOpenAiHttpClient} connection handling.
  *
  * @author Siarhei Dudzin
+ * @author Deepak Saxena
  */
 class SpringAiOpenAiHttpClientTests {
 
@@ -80,6 +83,47 @@ class SpringAiOpenAiHttpClientTests {
 				assertThat(second.code()).isEqualTo(200);
 			}
 		}
+	}
+
+	@Test
+	void dispatcherLimitsDefaultToOkHttpMaxRequestsForAllHosts() {
+		Dispatcher dispatcher = SpringAiOpenAiHttpClient.builder().build().getOkHttpClient().dispatcher();
+
+		assertThat(dispatcher.getMaxRequests()).isEqualTo(64);
+		assertThat(dispatcher.getMaxRequestsPerHost()).isEqualTo(64);
+	}
+
+	@Test
+	void maxRequestsAlsoAppliesPerHostWhenPerHostLimitIsNotSet() {
+		Dispatcher dispatcher = SpringAiOpenAiHttpClient.builder()
+			.maxRequests(200)
+			.build()
+			.getOkHttpClient()
+			.dispatcher();
+
+		assertThat(dispatcher.getMaxRequests()).isEqualTo(200);
+		assertThat(dispatcher.getMaxRequestsPerHost()).isEqualTo(200);
+	}
+
+	@Test
+	void maxRequestsPerHostCanBeSetIndependently() {
+		Dispatcher dispatcher = SpringAiOpenAiHttpClient.builder()
+			.maxRequests(200)
+			.maxRequestsPerHost(20)
+			.build()
+			.getOkHttpClient()
+			.dispatcher();
+
+		assertThat(dispatcher.getMaxRequests()).isEqualTo(200);
+		assertThat(dispatcher.getMaxRequestsPerHost()).isEqualTo(20);
+	}
+
+	@Test
+	void nonPositiveDispatcherLimitsAreRejected() {
+		assertThatIllegalArgumentException()
+			.isThrownBy(() -> SpringAiOpenAiHttpClient.builder().maxRequests(0).build());
+		assertThatIllegalArgumentException()
+			.isThrownBy(() -> SpringAiOpenAiHttpClient.builder().maxRequestsPerHost(0).build());
 	}
 
 	private static Request newPost(String url) {
