@@ -299,7 +299,7 @@ When the provider reports them, it also has the response id and the model that a
 
 * xref:api/decision/ollama-decision.adoc[Ollama Decision Models]
 * xref:api/decision/openai-decision.adoc[OpenAI Decision Models]
-* xref:api/decision/systemone-decision.adoc[System One Decision Models], for TypeSafe Jev, Laya, llmman, and Ollama
+* xref:api/decision/systemone-decision.adoc[System One Decision Models], for TypeSafe, Laya, llmman, and Ollama
 
 == Observability
 

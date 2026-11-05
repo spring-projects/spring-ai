@@ -23,7 +23,7 @@ import org.springframework.ai.decision.DefaultDecisionOptions;
 /**
  * Options for a {@link SystemOneDecisionModel}: the model name. The connection, that is
  * the base URL, the API key, the timeout and the retry policy, belongs to the
- * {@code TypeSafeClient} the model is built with, since the System One protocol takes
+ * {@code SystemOneClient} the model is built with, since the System One protocol takes
  * nothing else per request.
  *
  * @author Christian Tzolov

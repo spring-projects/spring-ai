@@ -23,15 +23,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.jspecify.annotations.Nullable;
-import org.springaicommunity.typesafe.JsonContent;
-import org.springaicommunity.typesafe.question.Choice;
-import org.springaicommunity.typesafe.question.Noul;
-import org.springaicommunity.typesafe.question.Question;
-import org.springaicommunity.typesafe.question.Score;
-import org.springaicommunity.typesafe.response.Answer;
-import org.springaicommunity.typesafe.response.NoulAnswer;
-import org.springaicommunity.typesafe.response.SystemOneResponse;
-import org.springaicommunity.typesafe.response.Usage;
 
 import org.springframework.ai.chat.messages.Message;
 import org.springframework.ai.chat.messages.part.MediaPart;
@@ -56,6 +47,15 @@ import org.springframework.ai.decision.question.DecisionQuestion;
 import org.springframework.ai.decision.question.ScoreLevel;
 import org.springframework.ai.decision.question.ScoreQuestion;
 import org.springframework.ai.decision.question.YesNoQuestion;
+import org.springframework.ai.systemone.api.JsonContent;
+import org.springframework.ai.systemone.api.question.Choice;
+import org.springframework.ai.systemone.api.question.Noul;
+import org.springframework.ai.systemone.api.question.Question;
+import org.springframework.ai.systemone.api.question.Score;
+import org.springframework.ai.systemone.api.response.Answer;
+import org.springframework.ai.systemone.api.response.NoulAnswer;
+import org.springframework.ai.systemone.api.response.SystemOneResponse;
+import org.springframework.ai.systemone.api.response.Usage;
 import org.springframework.ai.util.JsonHelper;
 import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
@@ -76,8 +76,9 @@ import org.springframework.util.StringUtils;
  * structured criterion.
  *
  * <p>
- * Shared by the decision models that talk to a System One endpoint through the TypeSafe
- * SDK, such as {@link SystemOneDecisionModel} and the Ollama decision model.
+ * Shared by the decision models that talk to a System One endpoint through the
+ * {@link SystemOneClient}, such as {@link SystemOneDecisionModel} and the Ollama decision
+ * model.
  *
  * @author Christian Tzolov
  * @author Thomas Vitale
@@ -309,7 +310,7 @@ public final class SystemOneDecisionMapper {
 	 * The number of levels the reported probabilities imply, for an answer the prompt has
 	 * no question for.
 	 */
-	private static int reportedLevels(org.springaicommunity.typesafe.response.ScoreAnswer score) {
+	private static int reportedLevels(org.springframework.ai.systemone.api.response.ScoreAnswer score) {
 		return score.probabilities().keySet().stream().mapToInt(level -> level + 1).max().orElse(0);
 	}
 
@@ -318,21 +319,22 @@ public final class SystemOneDecisionMapper {
 	}
 
 	/**
-	 * The answer as the Spring AI type matching its kind. The SDK reports a confidence of
-	 * {@code 0} when the server sends none, so a zero confidence may mean an absent one.
+	 * The answer as the Spring AI type matching its kind. The client reports a confidence
+	 * of {@code 0} when the server sends none, so a zero confidence may mean an absent
+	 * one.
 	 */
 	private static DecisionAnswer answer(String name, Answer answer, @Nullable DecisionQuestion question) {
 		if (answer instanceof NoulAnswer noul) {
 			return YesNoAnswer.builder().probability(noul.value()).build();
 		}
-		if (answer instanceof org.springaicommunity.typesafe.response.ChoiceAnswer choice) {
+		if (answer instanceof org.springframework.ai.systemone.api.response.ChoiceAnswer choice) {
 			return ChoiceAnswer.builder()
 				.value(choice.value())
 				.probabilities(choice.probabilities())
 				.confidence(choice.confidence())
 				.build();
 		}
-		if (answer instanceof org.springaicommunity.typesafe.response.ScoreAnswer score) {
+		if (answer instanceof org.springframework.ai.systemone.api.response.ScoreAnswer score) {
 			int levels = question instanceof ScoreQuestion scoreQuestion ? scoreQuestion.getLevels().size()
 					: Math.max(score.maxLevel() + 1, reportedLevels(score));
 			// An empty report stays empty, as the ScoreAnswer contract promises.

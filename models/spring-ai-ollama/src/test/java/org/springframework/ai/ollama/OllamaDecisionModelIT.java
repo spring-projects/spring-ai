@@ -24,8 +24,6 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.springaicommunity.typesafe.RetryPolicy;
-import org.springaicommunity.typesafe.TypeSafeClient;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -38,6 +36,8 @@ import org.springframework.ai.decision.question.YesNoQuestion;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaModel;
 import org.springframework.ai.ollama.decision.OllamaDecisionOptions;
+import org.springframework.ai.systemone.api.SystemOneClient;
+import org.springframework.ai.systemone.api.SystemOneRetryPolicy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -147,20 +147,20 @@ class OllamaDecisionModelIT extends BaseOllamaIT {
 		}
 
 		@Bean
-		public TypeSafeClient systemOneClient(OllamaApi ollamaApi) {
+		public SystemOneClient systemOneClient(OllamaApi ollamaApi) {
 			// Depends on ollamaApi so that the server is started before its URL is read.
 			// A local Ollama ignores the API key, but the SDK requires one. A generous
 			// timeout and no retries, since the first call loads the model.
-			return TypeSafeClient.builder()
+			return SystemOneClient.builder()
 				.baseUrl(getOllamaBaseUrl())
 				.apiKey("ollama")
 				.timeout(Duration.ofMinutes(2))
-				.retryPolicy(RetryPolicy.noRetry())
+				.retryPolicy(SystemOneRetryPolicy.noRetry())
 				.build();
 		}
 
 		@Bean
-		public OllamaDecisionModel ollamaDecisionModel(OllamaApi ollamaApi, TypeSafeClient systemOneClient) {
+		public OllamaDecisionModel ollamaDecisionModel(OllamaApi ollamaApi, SystemOneClient systemOneClient) {
 			return OllamaDecisionModel.builder()
 				.ollamaApi(ollamaApi)
 				.systemOneClient(systemOneClient)
