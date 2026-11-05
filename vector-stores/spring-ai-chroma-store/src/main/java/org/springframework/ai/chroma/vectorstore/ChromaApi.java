@@ -119,6 +119,21 @@ public class ChromaApi {
 		return result;
 	}
 
+	/**
+	 * Check the liveness of the Chroma server through its heartbeat endpoint.
+	 * @return the server's nanosecond heartbeat, or {@code null} when the server returns
+	 * no heartbeat
+	 */
+	public @Nullable Long heartbeat() {
+
+		Heartbeat heartbeat = this.restClient.get()
+			.uri("/api/v2/heartbeat")
+			.headers(this::httpHeaders)
+			.retrieve()
+			.body(Heartbeat.class);
+		return (heartbeat != null) ? heartbeat.nanosecondHeartbeat() : null;
+	}
+
 	public void createTenant(String tenantName) {
 
 		this.restClient.post()
@@ -366,6 +381,16 @@ public class ChromaApi {
 
 		// If no pattern matches, return an empty string
 		return "";
+	}
+
+	/**
+	 * Chroma server heartbeat.
+	 *
+	 * @param nanosecondHeartbeat The server's heartbeat, in nanoseconds since the epoch.
+	 */
+	@JsonInclude(JsonInclude.Include.NON_NULL)
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	public record Heartbeat(@JsonProperty("nanosecond heartbeat") @Nullable Long nanosecondHeartbeat) {
 	}
 
 	/**
