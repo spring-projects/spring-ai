@@ -86,6 +86,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Integration tests for {@link AnthropicChatModel}.
  *
  * @author Soby Chacko
+ * @author Raphael Vullriede
  */
 @SpringBootTest(classes = AnthropicTestConfiguration.class)
 @EnabledIfEnvironmentVariable(named = "ANTHROPIC_API_KEY", matches = ".+")
@@ -990,6 +991,45 @@ class AnthropicChatModelIT {
 										// expected fields
 		assertThat(text).contains("name");
 		assertThat(text).contains("capital");
+	}
+
+	@Test
+	void structuredOutputWithJsonSchemaDefinitions() {
+		String schema = """
+				{
+					"$defs": {
+						"City": {
+							"type": "object",
+							"properties": {
+								"name": {"type": "string"},
+								"country": {"type": "string"}
+							},
+							"required": ["name", "country"],
+							"additionalProperties": false
+						}
+					},
+					"type": "object",
+					"properties": {
+						"origin": {"$ref": "#/$defs/City"},
+						"destination": {"$ref": "#/$defs/City"}
+					},
+					"required": ["origin", "destination"],
+					"additionalProperties": false
+				}
+				""";
+
+		AnthropicChatOptions options = AnthropicChatOptions.builder()
+			.model(Model.CLAUDE_SONNET_4_6)
+			.outputSchema(schema)
+			.build();
+
+		ChatResponse response = this.chatModel
+			.call(new Prompt("Describe a flight from Paris to Tokyo. Respond in JSON.", options));
+
+		assertThat(response).isNotNull();
+		String text = response.getResult().getOutput().getText();
+		assertThat(text).contains("origin");
+		assertThat(text).contains("destination");
 	}
 
 	@Test
