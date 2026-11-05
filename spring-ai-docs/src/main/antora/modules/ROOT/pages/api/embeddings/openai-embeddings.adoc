@@ -91,20 +91,11 @@ TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Man
 
 ==== Retry Properties
 
-The prefix `spring.ai.retry` is used as the property prefix that lets you configure the retry mechanism for the OpenAI Embedding model.
+The OpenAI embedding model is built on the https://github.com/openai/openai-java[OpenAI Java SDK], which handles retries itself.
+The generic `spring.ai.retry.*` properties do not apply to it.
 
-[cols="3,5,1", stripes=even]
-|====
-| Property | Description | Default
-
-| spring.ai.retry.max-attempts   | Maximum number of retry attempts. |  10
-| spring.ai.retry.backoff.initial-interval | Initial sleep duration for the exponential backoff policy. |  2 sec.
-| spring.ai.retry.backoff.multiplier | Backoff interval multiplier. |  5
-| spring.ai.retry.backoff.max-interval | Maximum backoff duration. |  3 min.
-| spring.ai.retry.on-client-errors | If false, throw a NonTransientAiException, and do not attempt retry for `4xx` client error codes | false
-| spring.ai.retry.exclude-on-http-codes | List of HTTP status codes that should not trigger a retry (e.g. to throw NonTransientAiException). | empty
-| spring.ai.retry.on-http-codes | List of HTTP status codes that should trigger a retry (e.g. to throw TransientAiException). | empty
-|====
+Use the `spring.ai.openai.max-retries` property (default: `3`) to configure the maximum number of retries performed by the SDK.
+Set it to `0` to disable retries.
 
 ==== Connection Properties
 
