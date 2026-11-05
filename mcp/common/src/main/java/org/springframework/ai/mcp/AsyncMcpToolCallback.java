@@ -108,6 +108,7 @@ public class AsyncMcpToolCallback implements ToolCallback {
 	 * Returns the annotations the MCP server declared for this tool, such as
 	 * {@code readOnlyHint} or {@code destructiveHint}.
 	 * @return the tool annotations, or {@code null} if the server declared none
+	 * @since 2.1.0
 	 */
 	public @Nullable ToolAnnotations getToolAnnotations() {
 		return this.tool.annotations();
