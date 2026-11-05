@@ -46,7 +46,7 @@ import io.modelcontextprotocol.modern.server.transport.StdioMcpTransport;
 import org.jspecify.annotations.Nullable;
 import tools.jackson.databind.json.JsonMapper;
 
-import org.springframework.ai.mcp.customizer.McpModernServerCustomizer;
+import org.springframework.ai.mcp.customizer.McpServerCustomizer;
 import org.springframework.ai.mcp.modern.AsyncResourceRegistration;
 import org.springframework.ai.mcp.modern.AsyncResourceTemplateRegistration;
 import org.springframework.ai.mcp.modern.InMemoryAsyncPromptRepository;
@@ -250,8 +250,8 @@ public class McpServerModernAutoConfiguration {
 			ObjectProvider<McpAsyncResourceRepository> asyncResourceRepository,
 			ObjectProvider<McpSyncPromptRepository> promptRepository,
 			ObjectProvider<McpAsyncPromptRepository> asyncPromptRepository, McpChangeFeed changeFeed,
-			ObjectProvider<RequestStateCodec> requestStateCodec, ObjectProvider<McpModernServerCustomizer> customizers,
-			ListableBeanFactory beanFactory) {
+			ObjectProvider<RequestStateCodec> requestStateCodec,
+			ObjectProvider<McpServerCustomizer<McpServer.Builder>> customizers, ListableBeanFactory beanFactory) {
 
 		McpJsonMapper mcpJsonMapper = new JacksonMcpJsonMapper(jsonMapper);
 		long listTtlMs = modernProperties.getListTtl().toMillis();

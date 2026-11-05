@@ -22,6 +22,7 @@ import io.modelcontextprotocol.server.McpTransportContextExtractor;
 import io.modelcontextprotocol.server.transport.ServerHttpHeaderValidator;
 import tools.jackson.databind.json.JsonMapper;
 
+import org.springframework.ai.mcp.customizer.McpServerCustomizer;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerJsonMapperAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerModernAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerStdioDisabledCondition;
@@ -48,7 +49,8 @@ import org.springframework.web.reactive.function.server.ServerRequest;
  * A {@link ServerHttpHeaderValidator} bean, when present, validates Origin and Host
  * headers. A {@code McpTransportContextExtractor<ServerRequest>} bean, when present,
  * derives the transport context from the request; otherwise the transport context is
- * empty.
+ * empty. Every {@code McpServerCustomizer<WebFluxMcpTransport.Builder>} bean is applied,
+ * in order, to the transport builder.
  *
  * @author Christian Tzolov
  * @since 2.1.0
@@ -66,7 +68,8 @@ public class McpServerModernWebFluxAutoConfiguration {
 	public WebFluxMcpTransport webFluxMcpTransport(McpServer mcpServer,
 			@Qualifier("mcpServerJsonMapper") JsonMapper jsonMapper, McpServerModernProperties modernProperties,
 			ObjectProvider<ServerHttpHeaderValidator> headerValidator,
-			ObjectProvider<McpTransportContextExtractor<ServerRequest>> contextExtractor) {
+			ObjectProvider<McpTransportContextExtractor<ServerRequest>> contextExtractor,
+			ObjectProvider<McpServerCustomizer<WebFluxMcpTransport.Builder>> customizers) {
 		WebFluxMcpTransport.Builder builder = WebFluxMcpTransport.builder(mcpServer)
 			.jsonMapper(new JacksonMcpJsonMapper(jsonMapper))
 			.endpoint(modernProperties.getMcpEndpoint())
@@ -74,6 +77,7 @@ public class McpServerModernWebFluxAutoConfiguration {
 			.maxRequestSize((int) Math.min(Integer.MAX_VALUE, modernProperties.getMaxRequestSize().toBytes()));
 		headerValidator.ifAvailable(builder::httpHeaderValidator);
 		contextExtractor.ifAvailable(builder::contextExtractor);
+		customizers.orderedStream().forEach(customizer -> customizer.customize(builder));
 		return builder.build();
 	}
 

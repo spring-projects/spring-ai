@@ -28,6 +28,7 @@ import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.json.TypeRef;
 import io.modelcontextprotocol.server.McpAsyncServer;
 import io.modelcontextprotocol.server.McpAsyncServerExchange;
+import io.modelcontextprotocol.server.McpServer;
 import io.modelcontextprotocol.server.McpServerFeatures;
 import io.modelcontextprotocol.server.McpServerFeatures.AsyncCompletionSpecification;
 import io.modelcontextprotocol.server.McpServerFeatures.AsyncPromptSpecification;
@@ -55,6 +56,8 @@ import org.springframework.ai.mcp.annotation.McpPrompt;
 import org.springframework.ai.mcp.annotation.McpResource;
 import org.springframework.ai.mcp.annotation.McpTool;
 import org.springframework.ai.mcp.annotation.McpToolParam;
+import org.springframework.ai.mcp.customizer.McpAsyncServerCustomizer;
+import org.springframework.ai.mcp.customizer.McpServerCustomizer;
 import org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerAnnotationScannerAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerSpecificationFactoryAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerChangeNotificationProperties;
@@ -63,8 +66,10 @@ import org.springframework.ai.tool.ToolCallback;
 import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.boot.test.context.runner.WebApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -122,6 +127,37 @@ public class McpServerAutoConfigurationIT {
 				assertThat(properties.getInstructions()).isEqualTo("My MCP Server");
 				assertThat(properties.getType()).isEqualTo(McpServerProperties.ApiType.ASYNC);
 				assertThat(properties.getRequestTimeout().getSeconds()).isEqualTo(30);
+			});
+	}
+
+	@Test
+	void multipleSyncServerCustomizersInvokedInOrder() {
+		this.contextRunner.withUserConfiguration(OrderedSyncServerCustomizersConfiguration.class).run(context -> {
+			assertThat(context).hasSingleBean(McpSyncServer.class);
+			assertThat(context.getBean("customizerInvocations", List.class)).containsExactly("first", "second");
+		});
+	}
+
+	@Test
+	void syncServerCustomizerOverridesServletCustomizer() {
+		new WebApplicationContextRunner()
+			.withConfiguration(AutoConfigurations.of(McpServerAutoConfiguration.class,
+					McpServerJsonMapperAutoConfiguration.class, ToolCallbackConverterAutoConfiguration.class))
+			.withUserConfiguration(DisableImmediateExecutionConfiguration.class)
+			.run(context -> {
+				assertThat(context).hasBean("servletMcpSyncServerCustomizer");
+				McpSyncServer server = context.getBean(McpSyncServer.class);
+				assertThat(ReflectionTestUtils.getField(server, "immediateExecution")).isEqualTo(false);
+			});
+	}
+
+	@Test
+	void multipleAsyncServerCustomizersInvokedInOrder() {
+		this.contextRunner.withPropertyValues("spring.ai.mcp.server.type=ASYNC")
+			.withUserConfiguration(OrderedAsyncServerCustomizersConfiguration.class)
+			.run(context -> {
+				assertThat(context).hasSingleBean(McpAsyncServer.class);
+				assertThat(context.getBean("customizerInvocations", List.class)).containsExactly("first", "second");
 			});
 	}
 
@@ -579,6 +615,63 @@ public class McpServerAutoConfigurationIT {
 			return (exchange, roots) -> {
 				// Test implementation
 			};
+		}
+
+	}
+
+	@Configuration
+	static class OrderedSyncServerCustomizersConfiguration {
+
+		@Bean
+		List<String> customizerInvocations() {
+			return new CopyOnWriteArrayList<>();
+		}
+
+		// Declared before "first" so that only @Order can make it run last.
+		@Bean
+		@Order(2)
+		McpServerCustomizer<McpServer.SyncSpecification<?>> secondCustomizer(List<String> customizerInvocations) {
+			return serverBuilder -> customizerInvocations.add("second");
+		}
+
+		@Bean
+		@Order(1)
+		McpServerCustomizer<McpServer.SyncSpecification<?>> firstCustomizer(List<String> customizerInvocations) {
+			return serverBuilder -> customizerInvocations.add("first");
+		}
+
+	}
+
+	@Configuration
+	static class DisableImmediateExecutionConfiguration {
+
+		// Deliberately unordered: it must still run after the servlet customizer.
+		@Bean
+		McpServerCustomizer<McpServer.SyncSpecification<?>> disableImmediateExecution() {
+			return serverBuilder -> serverBuilder.immediateExecution(false);
+		}
+
+	}
+
+	@Configuration
+	static class OrderedAsyncServerCustomizersConfiguration {
+
+		@Bean
+		List<String> customizerInvocations() {
+			return new CopyOnWriteArrayList<>();
+		}
+
+		// Declared before "first" so that only @Order can make it run last.
+		@Bean
+		@Order(2)
+		McpAsyncServerCustomizer secondCustomizer(List<String> customizerInvocations) {
+			return serverBuilder -> customizerInvocations.add("second");
+		}
+
+		@Bean
+		@Order(1)
+		McpAsyncServerCustomizer firstCustomizer(List<String> customizerInvocations) {
+			return serverBuilder -> customizerInvocations.add("first");
 		}
 
 	}
