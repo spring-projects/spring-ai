@@ -33,7 +33,7 @@ import org.springframework.ai.decision.question.ChoiceQuestion;
 import org.springframework.ai.decision.question.ScoreQuestion;
 import org.springframework.ai.decision.question.YesNoQuestion;
 import org.springframework.ai.systemone.api.SystemOneClient;
-import org.springframework.ai.systemone.api.SystemOneRetryPolicy;
+import org.springframework.ai.systemone.api.SystemOneRetryUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -56,7 +56,7 @@ class SystemOneDecisionModelIT {
 		SystemOneClient.Builder builder = SystemOneClient.builder()
 			.apiKey(System.getenv("SYSTEMONE_API_KEY"))
 			.timeout(Duration.ofMinutes(2))
-			.retryPolicy(SystemOneRetryPolicy.noRetry());
+			.retryTemplate(SystemOneRetryUtils.noRetryTemplate());
 		String baseUrl = System.getenv("SYSTEMONE_BASE_URL");
 		if (baseUrl != null) {
 			builder.baseUrl(baseUrl);

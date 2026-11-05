@@ -46,7 +46,7 @@ import org.springframework.ai.decision.question.YesNoQuestion;
 import org.springframework.ai.observation.conventions.AiObservationAttributes;
 import org.springframework.ai.observation.conventions.AiOperationType;
 import org.springframework.ai.systemone.api.SystemOneClient;
-import org.springframework.ai.systemone.api.SystemOneRetryPolicy;
+import org.springframework.ai.systemone.api.SystemOneRetryUtils;
 import org.springframework.ai.systemone.api.exception.SystemOneBadRequestException;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpMethod;
@@ -86,7 +86,7 @@ class SystemOneDecisionModelTests {
 		.baseUrl(BASE_URL)
 		.apiKey("key")
 		.defaultModel("d1-omni:600m")
-		.retryPolicy(SystemOneRetryPolicy.noRetry())
+		.retryTemplate(SystemOneRetryUtils.noRetryTemplate())
 		.restClientBuilder(this.restClientBuilder)
 		.build();
 

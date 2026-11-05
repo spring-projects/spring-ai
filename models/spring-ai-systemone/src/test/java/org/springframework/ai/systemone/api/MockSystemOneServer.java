@@ -17,6 +17,7 @@
 package org.springframework.ai.systemone.api;
 
 import org.springframework.ai.systemone.api.exception.SystemOneApiException;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
@@ -66,8 +67,8 @@ final class MockSystemOneServer {
 		return clientBuilder().build();
 	}
 
-	SystemOneClient client(SystemOneRetryPolicy retryPolicy) {
-		return clientBuilder().retryPolicy(retryPolicy).build();
+	SystemOneClient client(RetryTemplate retryTemplate) {
+		return clientBuilder().retryTemplate(retryTemplate).build();
 	}
 
 	SystemOneClient.Builder clientBuilder() {

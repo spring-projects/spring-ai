@@ -23,8 +23,6 @@ import java.util.Map;
 import java.util.function.Supplier;
 
 import org.jspecify.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.springframework.ai.systemone.api.exception.SystemOneApiConnectionException;
 import org.springframework.ai.systemone.api.exception.SystemOneApiException;
@@ -36,6 +34,9 @@ import org.springframework.ai.systemone.api.question.SystemOneRequest;
 import org.springframework.ai.systemone.api.response.ListModelsResponse;
 import org.springframework.ai.systemone.api.response.ModelMetadata;
 import org.springframework.ai.systemone.api.response.SystemOneResponse;
+import org.springframework.core.retry.RetryException;
+import org.springframework.core.retry.RetryTemplate;
+import org.springframework.core.retry.Retryable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
@@ -79,65 +80,28 @@ import org.springframework.web.client.UnknownContentTypeException;
  */
 public class SystemOneClient {
 
-	private static final Logger logger = LoggerFactory.getLogger(SystemOneClient.class);
-
 	private static final SystemOneResponseErrorHandler ERROR_HANDLER = new SystemOneResponseErrorHandler();
 
 	private final SystemOneApi systemOneApi;
 
 	private final String defaultModel;
 
-	private final SystemOneRetryPolicy retryPolicy;
-
-	private final @Nullable Duration perAttemptTimeout;
-
-	/**
-	 * Creates a client over an API instance whose per-attempt timeout is not known. The
-	 * retry budget then bounds only the waits between attempts, not the final attempt.
-	 * @param systemOneApi the transport layer
-	 * @param defaultModel the model applied to a request that does not name one
-	 * @param retryPolicy how transient failures are handled
-	 */
-	public SystemOneClient(SystemOneApi systemOneApi, String defaultModel, SystemOneRetryPolicy retryPolicy) {
-		this(systemOneApi, defaultModel, retryPolicy, null);
-	}
+	private final RetryTemplate retryTemplate;
 
 	/**
 	 * Creates a client over an API instance.
 	 * @param systemOneApi the transport layer
 	 * @param defaultModel the model applied to a request that does not name one
-	 * @param retryPolicy how transient failures are handled
-	 * @param perAttemptTimeout the HTTP timeout of a single attempt. It is counted
-	 * against {@link SystemOneRetryPolicy#totalTimeout()} before another attempt is
-	 * started, so the budget bounds the whole call rather than just the waits;
-	 * {@code null} when unknown
+	 * @param retryTemplate how transient failures are retried; see
+	 * {@link SystemOneRetryUtils}
 	 */
-	public SystemOneClient(SystemOneApi systemOneApi, String defaultModel, SystemOneRetryPolicy retryPolicy,
-			@Nullable Duration perAttemptTimeout) {
+	public SystemOneClient(SystemOneApi systemOneApi, String defaultModel, RetryTemplate retryTemplate) {
 		Assert.notNull(systemOneApi, "systemOneApi must not be null");
 		Assert.hasText(defaultModel, "defaultModel must not be empty");
-		Assert.notNull(retryPolicy, "retryPolicy must not be null");
+		Assert.notNull(retryTemplate, "retryTemplate must not be null");
 		this.systemOneApi = systemOneApi;
 		this.defaultModel = defaultModel;
-		this.retryPolicy = retryPolicy;
-		this.perAttemptTimeout = perAttemptTimeout;
-		warnWhenNoRetryCanFit(retryPolicy, perAttemptTimeout);
-	}
-
-	/**
-	 * A retry is only started when the budget can still absorb a whole attempt, so a
-	 * per-attempt timeout at or above the budget means nothing is ever retried, not even
-	 * an instant 429. That is a configuration mistake worth saying out loud once, rather
-	 * than a debug line per call.
-	 */
-	private static void warnWhenNoRetryCanFit(SystemOneRetryPolicy retryPolicy, @Nullable Duration perAttemptTimeout) {
-		Duration budget = retryPolicy.totalTimeout();
-		if (retryPolicy.maxRetries() > 0 && budget != null && perAttemptTimeout != null
-				&& perAttemptTimeout.compareTo(budget) >= 0) {
-			logger.warn("The per-attempt timeout ({}) is not below the retry budget ({}), so no retry can ever "
-					+ "fit in it and failures will not be retried. Raise SystemOneRetryPolicy.totalTimeout, or lower the "
-					+ "timeout.", perAttemptTimeout, budget);
-		}
+		this.retryTemplate = retryTemplate;
 	}
 
 	/**
@@ -237,106 +201,67 @@ public class SystemOneClient {
 	}
 
 	/**
-	 * The HTTP timeout of a single attempt, as declared to this client. It is what
-	 * {@link SystemOneRetryPolicy#totalTimeout()} counts the next attempt against;
-	 * {@code null} when nothing was declared and the transport's own default applies.
-	 * @return the per-attempt timeout, or {@code null}
-	 */
-	public @Nullable Duration timeout() {
-		return this.perAttemptTimeout;
-	}
-
-	/**
-	 * @return the retry policy in force
-	 */
-	public SystemOneRetryPolicy retryPolicy() {
-		return this.retryPolicy;
-	}
-
-	/**
-	 * Runs one call, translating transport failures and repeating the attempt while the
-	 * retry policy says a repeat is worthwhile and the budget allows it.
+	 * Runs one call through the retry template, translating transport failures into the
+	 * typed exceptions first so that the template can classify them.
 	 */
 	private <T> T execute(String endpoint, Supplier<T> call) {
-		long startedAt = System.nanoTime();
-		int attempt = 0;
-		SystemOneException lastFailure;
-
-		while (true) {
-			attempt++;
-			try {
-				return call.get();
-			}
-			catch (SystemOneException ex) {
-				lastFailure = ex;
-			}
-			catch (ResourceAccessException ex) {
-				lastFailure = toConnectionException(endpoint, ex);
-			}
-			// The two below are body-decoding failures on a response that did arrive.
-			// They used to escape as raw Spring exceptions, bypassing the typed contract
-			// and the retry policy. Neither is retryable: the server answered, just not
-			// with the JSON this client understands.
-			catch (UnknownContentTypeException ex) {
-				HttpHeaders headers = ex.getResponseHeaders() != null ? ex.getResponseHeaders() : new HttpHeaders();
-				lastFailure = new SystemOneApiResponseValidationException(
-						"System One %s returned %s where JSON was expected".formatted(endpoint, ex.getContentType()),
-						ex.getStatusCode().value(), ex.getResponseBodyAsString(), headers, endpoint, null);
-			}
-			// An error status that reached here as a Spring exception came through a
-			// transport assembled elsewhere, without the error handler. Map it the same
-			// way, so the typed hierarchy and the retry policy see the status.
-			catch (RestClientResponseException ex) {
-				HttpHeaders headers = ex.getResponseHeaders() != null ? ex.getResponseHeaders() : new HttpHeaders();
-				lastFailure = ERROR_HANDLER.toException(ex.getStatusCode().value(), ex.getResponseBodyAsString(),
-						headers, endpoint);
-			}
-			catch (RestClientException ex) {
-				lastFailure = new SystemOneException(
-						"System One %s response could not be read: %s".formatted(endpoint, ex.getMessage()), ex);
-			}
-
-			if (attempt > this.retryPolicy.maxRetries() || !this.retryPolicy.isRetryable(lastFailure)) {
-				throw lastFailure;
-			}
-
-			Duration backoff = this.retryPolicy.backoffFor(attempt, lastFailure);
-			if (exceedsBudget(startedAt, backoff)) {
-				logger.debug(
-						"System One {} giving up after attempt {}: the retry budget cannot absorb another {}ms wait",
-						endpoint, attempt, backoff.toMillis());
-				throw lastFailure;
-			}
-
-			logger.debug("System One {} attempt {} failed ({}), retrying in {}ms", endpoint, attempt,
-					lastFailure.getMessage(), backoff.toMillis());
-			sleep(backoff, lastFailure);
-		}
-	}
-
-	private boolean exceedsBudget(long startedAt, Duration backoff) {
-		Duration budget = this.retryPolicy.totalTimeout();
-		if (budget == null) {
-			return false;
-		}
-		Duration elapsed = Duration.ofNanos(System.nanoTime() - startedAt);
-		// Count the next attempt's own timeout, not only the wait before it. Otherwise
-		// the last attempt can overshoot the budget by a whole HTTP timeout, and "30s
-		// budget" would really mean "up to 30s plus one more request".
-		Duration nextAttempt = this.perAttemptTimeout == null ? Duration.ZERO : this.perAttemptTimeout;
-		return elapsed.plus(backoff).plus(nextAttempt).compareTo(budget) >= 0;
-	}
-
-	private void sleep(Duration backoff, SystemOneException lastFailure) {
-		if (backoff.isZero() || backoff.isNegative()) {
-			return;
-		}
 		try {
-			Thread.sleep(backoff.toMillis());
+			return this.retryTemplate.execute(new Retryable<T>() {
+
+				@Override
+				public T execute() {
+					return attempt(endpoint, call);
+				}
+
+				@Override
+				public String getName() {
+					return "System One " + endpoint;
+				}
+
+			});
 		}
-		catch (InterruptedException ex) {
-			Thread.currentThread().interrupt();
-			throw lastFailure;
+		catch (RetryException ex) {
+			// The cause is the last typed failure; earlier ones are its suppressed
+			// exceptions.
+			Throwable cause = ex.getCause();
+			if (cause instanceof RuntimeException runtime) {
+				throw runtime;
+			}
+			if (cause instanceof Error error) {
+				throw error;
+			}
+			throw new IllegalStateException("Unexpected failure of System One " + endpoint, cause);
+		}
+	}
+
+	private <T> T attempt(String endpoint, Supplier<T> call) {
+		try {
+			return call.get();
+		}
+		catch (ResourceAccessException ex) {
+			throw toConnectionException(endpoint, ex);
+		}
+		// The two below are body-decoding failures on a response that did arrive. They
+		// used to escape as raw Spring exceptions, bypassing the typed contract and the
+		// retry policy. Neither is retryable: the server answered, just not with the
+		// JSON this client understands.
+		catch (UnknownContentTypeException ex) {
+			HttpHeaders headers = ex.getResponseHeaders() != null ? ex.getResponseHeaders() : new HttpHeaders();
+			throw new SystemOneApiResponseValidationException(
+					"System One %s returned %s where JSON was expected".formatted(endpoint, ex.getContentType()),
+					ex.getStatusCode().value(), ex.getResponseBodyAsString(), headers, endpoint, null);
+		}
+		// An error status that reached here as a Spring exception came through a
+		// transport assembled elsewhere, without the error handler. Map it the same way,
+		// so the typed hierarchy and the retry policy see the status.
+		catch (RestClientResponseException ex) {
+			HttpHeaders headers = ex.getResponseHeaders() != null ? ex.getResponseHeaders() : new HttpHeaders();
+			throw ERROR_HANDLER.toException(ex.getStatusCode().value(), ex.getResponseBodyAsString(), headers,
+					endpoint);
+		}
+		catch (RestClientException ex) {
+			throw new SystemOneException(
+					"System One %s response could not be read: %s".formatted(endpoint, ex.getMessage()), ex);
 		}
 	}
 
@@ -370,7 +295,7 @@ public class SystemOneClient {
 		/** {@code null} until declared; see {@link #timeout(Duration)}. */
 		private @Nullable Duration timeout;
 
-		private SystemOneRetryPolicy retryPolicy = SystemOneRetryPolicy.defaults();
+		private RetryTemplate retryTemplate = SystemOneRetryUtils.defaultRetryTemplate();
 
 		private HttpHeaders headers = new HttpHeaders();
 
@@ -411,15 +336,11 @@ public class SystemOneClient {
 		}
 
 		/**
-		 * Sets the per operation HTTP timeout;
-		 * {@link SystemOneApiConstants#DEFAULT_TIMEOUT} when the client builds its own
-		 * transport and none is set. Not applied to the transport when
-		 * {@link #restClientBuilder(RestClient.Builder)} or
-		 * {@link #systemOneApi(SystemOneApi)} supplies it, since that transport then owns
-		 * its own timeouts — but it is still counted against
-		 * {@link SystemOneRetryPolicy#totalTimeout()} before each retry, so declare the
-		 * transport's real timeout here. Left undeclared with a transport of your own,
-		 * the timeout is unknown and the budget bounds only the waits between attempts.
+		 * Sets the read timeout of the transport the client builds;
+		 * {@link SystemOneApiConstants#DEFAULT_TIMEOUT} when none is set. Not applied
+		 * when {@link #restClientBuilder(RestClient.Builder)} or
+		 * {@link #systemOneApi(SystemOneApi)} supplies the transport, since that
+		 * transport then owns its own timeouts.
 		 * @param timeout the timeout
 		 * @return this builder
 		 */
@@ -429,9 +350,16 @@ public class SystemOneClient {
 			return this;
 		}
 
-		public Builder retryPolicy(SystemOneRetryPolicy retryPolicy) {
-			Assert.notNull(retryPolicy, "retryPolicy must not be null");
-			this.retryPolicy = retryPolicy;
+		/**
+		 * Sets how transient failures are retried. The default is
+		 * {@link SystemOneRetryUtils#defaultRetryTemplate()}; a policy of your own should
+		 * classify with {@link SystemOneRetryUtils#isTransient(Throwable)}.
+		 * @param retryTemplate the template
+		 * @return this builder
+		 */
+		public Builder retryTemplate(RetryTemplate retryTemplate) {
+			Assert.notNull(retryTemplate, "retryTemplate must not be null");
+			this.retryTemplate = retryTemplate;
 			return this;
 		}
 
@@ -478,7 +406,7 @@ public class SystemOneClient {
 			String model = (this.defaultModel != null) ? this.defaultModel : SystemOneApiConstants.DEFAULT_MODEL;
 
 			if (this.systemOneApi != null) {
-				return new SystemOneClient(this.systemOneApi, model, this.retryPolicy, this.timeout);
+				return new SystemOneClient(this.systemOneApi, model, this.retryTemplate);
 			}
 
 			Supplier<String> key = this.apiKey;
@@ -486,15 +414,13 @@ public class SystemOneClient {
 
 			String url = (this.baseUrl != null) ? this.baseUrl : SystemOneApiConstants.DEFAULT_BASE_URL;
 
-			// Only a transport built here is known to use the default timeout. Assuming
-			// it for a caller's own transport would count ten seconds that may not exist
-			// against the retry budget, and silently disable retries under a tighter one.
-			Duration perAttemptTimeout = this.timeout;
+			// Only a transport built here gets the timeout; a caller's own transport owns
+			// its timeouts.
 			RestClient.Builder transport = this.restClientBuilder;
 			if (transport == null) {
-				perAttemptTimeout = (this.timeout != null) ? this.timeout : SystemOneApiConstants.DEFAULT_TIMEOUT;
 				JdkClientHttpRequestFactory requestFactory = new JdkClientHttpRequestFactory();
-				requestFactory.setReadTimeout(perAttemptTimeout);
+				requestFactory
+					.setReadTimeout((this.timeout != null) ? this.timeout : SystemOneApiConstants.DEFAULT_TIMEOUT);
 				transport = RestClient.builder().requestFactory(requestFactory);
 			}
 
@@ -509,7 +435,7 @@ public class SystemOneClient {
 				.restClientBuilder(transport)
 				.build();
 
-			return new SystemOneClient(api, model, this.retryPolicy, perAttemptTimeout);
+			return new SystemOneClient(api, model, this.retryTemplate);
 		}
 
 	}

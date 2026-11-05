@@ -202,7 +202,7 @@ class SystemOneApiResponseTests {
 					{"model":"jev-1.13.0","answers":{},"usage":{}}"""));
 
 		assertThatExceptionOfType(SystemOneApiResponseValidationException.class)
-			.isThrownBy(() -> this.mock.client(SystemOneRetryPolicy.noRetry())
+			.isThrownBy(() -> this.mock.client(SystemOneRetryUtils.noRetryTemplate())
 				.systemOne("anything", Map.of("probe", Noul.of("Is this a probe?"))))
 			.satisfies(ex -> assertThat(ex.fieldPath()).isEqualTo("answers"));
 	}

@@ -125,7 +125,7 @@ class SystemOneLiveApiIT {
 		SystemOneClient badKey = SystemOneClient.builder()
 			.apiKey("sk-not-a-real-key")
 			.defaultModel(SystemOneModel.LATEST.id())
-			.retryPolicy(SystemOneRetryPolicy.noRetry())
+			.retryTemplate(SystemOneRetryUtils.noRetryTemplate())
 			.build();
 
 		assertThatExceptionOfType(SystemOneAuthenticationException.class)

@@ -22,22 +22,30 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 import org.springframework.ai.systemone.api.exception.SystemOneApiConnectionException;
+import org.springframework.ai.systemone.api.exception.SystemOneApiException;
+import org.springframework.ai.systemone.api.exception.SystemOneApiResponseValidationException;
+import org.springframework.ai.systemone.api.exception.SystemOneApiTimeoutException;
 import org.springframework.ai.systemone.api.exception.SystemOneAuthenticationException;
+import org.springframework.ai.systemone.api.exception.SystemOneBadRequestException;
 import org.springframework.ai.systemone.api.exception.SystemOneInternalServerException;
 import org.springframework.ai.systemone.api.exception.SystemOneRateLimitException;
 import org.springframework.ai.systemone.api.exception.SystemOneUnprocessableEntityException;
 import org.springframework.ai.systemone.api.question.Noul;
 import org.springframework.ai.systemone.api.response.SystemOneResponse;
+import org.springframework.core.retry.RetryPolicy;
+import org.springframework.core.retry.RetryTemplate;
 import org.springframework.http.HttpHeaders;
 import org.springframework.test.web.client.ExpectedCount;
+import org.springframework.util.backoff.BackOffExecution;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 
 /**
- * Retry behaviour. Backoffs are shrunk to near zero so the suite stays fast; what is
- * under test is which failures are repeated and how often, not how long the waits are.
+ * Retry behaviour. The waits are shrunk to a millisecond so the suite stays fast; what is
+ * under test is which failures are repeated, how often, and that the server stated wait
+ * wins, since the loop itself belongs to the Spring Framework {@link RetryTemplate}.
  *
  * @author Christian Tzolov
  */
@@ -46,12 +54,11 @@ class SystemOneRetryTests {
 	private static final String OK_BODY = """
 			{"model":"jev-1.13.0","answers":{"probe":{"type":"noul","noul":0.5}},"usage":{}}""";
 
-	private static final SystemOneRetryPolicy FAST = SystemOneRetryPolicy.builder()
+	private static final RetryTemplate FAST = new RetryTemplate(RetryPolicy.builder()
 		.maxRetries(2)
-		.initialBackoff(Duration.ofMillis(1))
-		.maxBackoff(Duration.ofMillis(2))
-		.jitter(0.0d)
-		.build();
+		.delay(Duration.ofMillis(1))
+		.predicate(SystemOneRetryUtils::isTransient)
+		.build());
 
 	private final MockSystemOneServer mock = MockSystemOneServer.create();
 
@@ -109,9 +116,37 @@ class SystemOneRetryTests {
 	void doesNotRetryAValidationFailure() {
 		this.mock.server()
 			.expect(ExpectedCount.once(), requestTo(MockSystemOneServer.SYSTEM_ONE_URL))
-			.andRespond(MockSystemOneServer.errorResponse(422, "malformed question"));
+			.andRespond(MockSystemOneServer.errorResponse(422, "{\"detail\":\"questions required\"}"));
 
 		assertThatExceptionOfType(SystemOneUnprocessableEntityException.class).isThrownBy(() -> evaluate(FAST));
+
+		this.mock.server().verify();
+	}
+
+	@Test
+	void noRetryTemplateFailsOnTheFirstAttempt() {
+		this.mock.server()
+			.expect(ExpectedCount.once(), requestTo(MockSystemOneServer.SYSTEM_ONE_URL))
+			.andRespond(MockSystemOneServer.errorResponse(500, "boom"));
+
+		assertThatExceptionOfType(SystemOneInternalServerException.class)
+			.isThrownBy(() -> evaluate(SystemOneRetryUtils.noRetryTemplate()));
+
+		this.mock.server().verify();
+	}
+
+	@Test
+	void theDefaultTemplateRetriesAServerError() {
+		// The default waits are real, so one short-lived server error is enough to show
+		// the default template retries and comes back with the answer.
+		this.mock.server()
+			.expect(requestTo(MockSystemOneServer.SYSTEM_ONE_URL))
+			.andRespond(MockSystemOneServer.errorResponse(503, "warming up"));
+		this.mock.server()
+			.expect(requestTo(MockSystemOneServer.SYSTEM_ONE_URL))
+			.andRespond(MockSystemOneServer.jsonResponse(OK_BODY));
+
+		assertThat(evaluate(SystemOneRetryUtils.defaultRetryTemplate()).noulValue("probe")).isEqualTo(0.5);
 
 		this.mock.server().verify();
 	}
@@ -128,137 +163,69 @@ class SystemOneRetryTests {
 			.expect(requestTo(MockSystemOneServer.SYSTEM_ONE_URL))
 			.andRespond(MockSystemOneServer.jsonResponse(OK_BODY));
 
+		RetryTemplate honouring = new RetryTemplate(SystemOneRetryUtils.honouringRetryAfter(FAST.getRetryPolicy()));
 		long startedAt = System.nanoTime();
-		assertThat(evaluate(FAST).noulValue("probe")).isEqualTo(0.5);
+		assertThat(evaluate(honouring).noulValue("probe")).isEqualTo(0.5);
 		Duration elapsed = Duration.ofNanos(System.nanoTime() - startedAt);
 
-		// The policy's own backoff is 1ms; the server asked for 40ms and that wins.
+		// The policy's own wait is 1ms; the server asked for 40ms and that wins.
 		assertThat(elapsed).isGreaterThanOrEqualTo(Duration.ofMillis(35));
 		this.mock.server().verify();
 	}
 
 	@Test
-	void givesUpWhenTheNextWaitWouldExhaustTheBudget() {
+	void theServerStatedWaitAppliesToTheFailureThatCarriedItOnly() {
 		HttpHeaders headers = new HttpHeaders();
-		headers.add(SystemOneRateLimitException.RETRY_AFTER_MS_HEADER, "60000");
+		RetryPolicy policy = SystemOneRetryUtils.honouringRetryAfter(FAST.getRetryPolicy());
+		BackOffExecution backOff = policy.getBackOff().start();
 
-		this.mock.server()
-			.expect(ExpectedCount.once(), requestTo(MockSystemOneServer.SYSTEM_ONE_URL))
-			.andRespond(MockSystemOneServer.errorResponse(429, "rate limited", headers));
+		assertThat(policy.shouldRetry(new SystemOneRateLimitException("429", 429, null, headers, "POST /", 40L)))
+			.isTrue();
+		assertThat(backOff.nextBackOff()).isEqualTo(40L);
 
-		SystemOneRetryPolicy tightBudget = SystemOneRetryPolicy.builder()
-			.maxRetries(5)
-			.initialBackoff(Duration.ofMillis(1))
-			.totalTimeout(Duration.ofSeconds(1))
-			.build();
+		// The next failure states no wait, so the policy's own 1ms applies again.
+		assertThat(policy.shouldRetry(new SystemOneInternalServerException("500", 500, null, headers, "POST /")))
+			.isTrue();
+		assertThat(backOff.nextBackOff()).isLessThan(40L);
 
-		assertThatExceptionOfType(SystemOneRateLimitException.class).isThrownBy(() -> evaluate(tightBudget));
-
-		this.mock.server().verify();
+		// And a permanent failure is still not retried.
+		assertThat(policy.shouldRetry(new SystemOneAuthenticationException("401", 401, null, headers, "POST /")))
+			.isFalse();
 	}
 
 	@Test
-	void noRetryPolicyFailsOnTheFirstAttempt() {
-		this.mock.server()
-			.expect(ExpectedCount.once(), requestTo(MockSystemOneServer.SYSTEM_ONE_URL))
-			.andRespond(MockSystemOneServer.errorResponse(500, "boom"));
+	void classifiesConnectionFailuresAndRetryableStatusesAsTransient() {
+		HttpHeaders headers = new HttpHeaders();
 
-		assertThatExceptionOfType(SystemOneInternalServerException.class)
-			.isThrownBy(() -> evaluate(SystemOneRetryPolicy.noRetry()));
-
-		this.mock.server().verify();
+		assertThat(SystemOneRetryUtils.isTransient(new SystemOneApiConnectionException("down", null))).isTrue();
+		assertThat(SystemOneRetryUtils.isTransient(new SystemOneApiTimeoutException("slow", null, null))).isTrue();
+		assertThat(SystemOneRetryUtils.isTransient(new SystemOneApiException("408", 408, null, headers, "POST /")))
+			.isTrue();
+		assertThat(SystemOneRetryUtils
+			.isTransient(new SystemOneRateLimitException("429", 429, null, headers, "POST /", null))).isTrue();
+		assertThat(SystemOneRetryUtils
+			.isTransient(new SystemOneInternalServerException("500", 500, null, headers, "POST /"))).isTrue();
+		assertThat(SystemOneRetryUtils.isTransient(new SystemOneApiException("529", 529, null, headers, "POST /")))
+			.isTrue();
 	}
 
 	@Test
-	void backoffGrowsExponentiallyAndIsCapped() {
-		SystemOneRetryPolicy policy = SystemOneRetryPolicy.builder()
-			.initialBackoff(Duration.ofMillis(500))
-			.maxBackoff(Duration.ofSeconds(5))
-			.jitter(0.0d)
-			.build();
-		RuntimeException failure = new SystemOneApiConnectionException("boom", null);
+	void classifiesClientErrorsAndBadResponsesAsPermanent() {
+		HttpHeaders headers = new HttpHeaders();
 
-		assertThat(policy.backoffFor(1, failure)).hasMillis(500);
-		assertThat(policy.backoffFor(2, failure)).hasMillis(1000);
-		assertThat(policy.backoffFor(3, failure)).hasMillis(2000);
-		assertThat(policy.backoffFor(10, failure)).hasMillis(5000);
+		assertThat(SystemOneRetryUtils
+			.isTransient(new SystemOneAuthenticationException("401", 401, null, headers, "POST /"))).isFalse();
+		assertThat(
+				SystemOneRetryUtils.isTransient(new SystemOneBadRequestException("400", 400, null, headers, "POST /")))
+			.isFalse();
+		assertThat(SystemOneRetryUtils
+			.isTransient(new SystemOneApiResponseValidationException("no body", 200, null, headers, "POST /", null)))
+			.isFalse();
+		assertThat(SystemOneRetryUtils.isTransient(new IllegalStateException("unrelated"))).isFalse();
 	}
 
-	@Test
-	void jitterOnlySubtracts() {
-		SystemOneRetryPolicy policy = SystemOneRetryPolicy.builder()
-			.initialBackoff(Duration.ofMillis(1000))
-			.maxBackoff(Duration.ofMillis(1000))
-			.jitter(0.25d)
-			.build();
-		RuntimeException failure = new SystemOneApiConnectionException("boom", null);
-
-		for (int i = 0; i < 50; i++) {
-			assertThat(policy.backoffFor(1, failure)).isBetween(Duration.ofMillis(750), Duration.ofMillis(1000));
-		}
-	}
-
-	@Test
-	void countsTheNextAttemptsTimeoutAgainstTheBudget() {
-		// elapsed (~0) + backoff (1ms) is well inside a 5s budget, but a 4.999s
-		// per-attempt timeout means the next attempt could not finish inside it. Give up
-		// now rather than overshoot the budget by a whole request.
-		this.mock.server()
-			.expect(ExpectedCount.once(), requestTo(MockSystemOneServer.SYSTEM_ONE_URL))
-			.andRespond(MockSystemOneServer.errorResponse(500, "boom"));
-
-		SystemOneRetryPolicy policy = SystemOneRetryPolicy.builder()
-			.maxRetries(5)
-			.initialBackoff(Duration.ofMillis(1))
-			.jitter(0.0d)
-			.totalTimeout(Duration.ofSeconds(5))
-			.build();
-		SystemOneClient client = this.mock.clientBuilder()
-			.retryPolicy(policy)
-			.timeout(Duration.ofMillis(4_999))
-			.build();
-
-		assertThatExceptionOfType(SystemOneInternalServerException.class)
-			.isThrownBy(() -> client.systemOne("anything", Map.of("probe", Noul.of("Is this a probe?"))));
-
-		this.mock.server().verify();
-	}
-
-	@Test
-	void doesNotAssumeATimeoutForATransportItDidNotBuild() {
-		// The transport is the caller's and no timeout was declared, so nothing is known
-		// about how long an attempt may take. Assuming the 10s default would exceed this
-		// 5s budget and refuse a retry that, after an instant 429, plainly fits.
-		this.mock.server()
-			.expect(requestTo(MockSystemOneServer.SYSTEM_ONE_URL))
-			.andRespond(MockSystemOneServer.errorResponse(429, "rate limited"));
-		this.mock.server()
-			.expect(requestTo(MockSystemOneServer.SYSTEM_ONE_URL))
-			.andRespond(MockSystemOneServer.jsonResponse(OK_BODY));
-
-		SystemOneRetryPolicy policy = SystemOneRetryPolicy.builder()
-			.maxRetries(2)
-			.initialBackoff(Duration.ofMillis(1))
-			.jitter(0.0d)
-			.totalTimeout(Duration.ofSeconds(5))
-			.build();
-		SystemOneClient client = this.mock.clientBuilder().retryPolicy(policy).build();
-
-		assertThat(client.timeout()).isNull();
-		assertThat(client.systemOne("anything", Map.of("probe", Noul.of("Is this a probe?"))).noulValue("probe"))
-			.isEqualTo(0.5);
-		this.mock.server().verify();
-	}
-
-	@Test
-	void usesTheDefaultTimeoutForATransportItBuilds() {
-		SystemOneClient client = SystemOneClient.builder().apiKey("test-api-key").build();
-
-		assertThat(client.timeout()).isEqualTo(SystemOneApiConstants.DEFAULT_TIMEOUT);
-	}
-
-	private SystemOneResponse evaluate(SystemOneRetryPolicy retryPolicy) {
-		return this.mock.client(retryPolicy).systemOne("anything", Map.of("probe", Noul.of("Is this a probe?")));
+	private SystemOneResponse evaluate(RetryTemplate retryTemplate) {
+		return this.mock.client(retryTemplate).systemOne("anything", Map.of("probe", Noul.of("Is this a probe?")));
 	}
 
 }
