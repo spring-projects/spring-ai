@@ -34,6 +34,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
  * @author Christian Tzolov
  * @author Yanming Zhou
  * @author Siarhei Dudzin
+ * @author Minju Kim
  * @since 1.0.0
  */
 class PgVectorSchemaValidator {
@@ -138,28 +139,31 @@ class PgVectorSchemaValidator {
 				throw new IllegalStateException("Missing fields " + expectedColumns);
 			}
 
-			// Query the actual dimensions
-			query = """
-					SELECT
-						a.atttypmod
-					FROM
-						pg_attribute a
-					JOIN
-						pg_class c ON a.attrelid = c.oid
-					JOIN
-						pg_namespace n ON c.relnamespace = n.oid
-					WHERE
-						n.nspname = ?
-						AND c.relname = ?
-						AND a.attname = ?
-						AND a.attnum > 0
-						AND NOT a.attisdropped
-					""";
-			Integer actualDimensions = this.jdbcTemplate.queryForObject(query, Integer.class, schemaName, tableName,
-					"embedding");
-			if (actualDimensions == null || actualDimensions != dimensions) {
-				throw new IllegalStateException("Actual vector dimensions is " + actualDimensions
-						+ ", required vector dimensions is " + dimensions);
+			// Without configured dimensions there is no required size to compare the
+			// table against.
+			if (dimensions > 0) {
+				query = """
+						SELECT
+							a.atttypmod
+						FROM
+							pg_attribute a
+						JOIN
+							pg_class c ON a.attrelid = c.oid
+						JOIN
+							pg_namespace n ON c.relnamespace = n.oid
+						WHERE
+							n.nspname = ?
+							AND c.relname = ?
+							AND a.attname = ?
+							AND a.attnum > 0
+							AND NOT a.attisdropped
+						""";
+				Integer actualDimensions = this.jdbcTemplate.queryForObject(query, Integer.class, schemaName, tableName,
+						"embedding");
+				if (actualDimensions == null || actualDimensions != dimensions) {
+					throw new IllegalStateException("Actual vector dimensions is " + actualDimensions
+							+ ", required vector dimensions is " + dimensions);
+				}
 			}
 		}
 		catch (DataAccessException | IllegalStateException e) {
