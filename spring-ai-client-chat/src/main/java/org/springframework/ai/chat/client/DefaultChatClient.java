@@ -59,6 +59,7 @@ import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.converter.BeanOutputConverter;
 import org.springframework.ai.converter.StructuredOutputConverter;
+import org.springframework.ai.model.observation.ObservationTermination;
 import org.springframework.ai.support.ToolCallbacks;
 import org.springframework.ai.template.TemplateRenderer;
 import org.springframework.ai.template.st.StTemplateRenderer;
@@ -724,12 +725,11 @@ public class DefaultChatClient implements ChatClient {
 				// @formatter:off
 				// Apply the advisor chain that terminates with the ChatModelStreamAdvisor.
 				Flux<ChatClientResponse> chatClientResponse = this.advisorChain.nextStream(chatClientRequest)
-						.doOnError(observation::error)
-						.doFinally(s -> observation.stop())
 						.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
 				// @formatter:on
-				return CHAT_CLIENT_MESSAGE_AGGREGATOR.aggregateChatClientResponse(chatClientResponse,
-						observationContext::setResponse);
+				return CHAT_CLIENT_MESSAGE_AGGREGATOR
+					.aggregateChatClientResponse(chatClientResponse, observationContext::setResponse)
+					.transform(ObservationTermination.stopOnTermination(observation));
 			});
 		}
 

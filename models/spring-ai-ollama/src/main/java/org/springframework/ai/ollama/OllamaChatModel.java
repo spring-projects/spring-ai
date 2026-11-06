@@ -52,6 +52,7 @@ import org.springframework.ai.chat.observation.ChatModelObservationConvention;
 import org.springframework.ai.chat.observation.ChatModelObservationDocumentation;
 import org.springframework.ai.chat.observation.DefaultChatModelObservationConvention;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.observation.ObservationTermination;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.ollama.api.OllamaApi;
 import org.springframework.ai.ollama.api.OllamaApi.ChatRequest;
@@ -346,11 +347,10 @@ public class OllamaChatModel implements ChatModel {
 			});
 
 			Flux<ChatResponse> chatResponseFlux = chatResponse.flatMap(response -> Flux.just(response))
-				.doOnError(observation::error)
-				.doFinally(s -> observation.stop())
 				.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));
 
-			return new MessageAggregator().aggregate(chatResponseFlux, observationContext::setResponse);
+			return new MessageAggregator().aggregate(chatResponseFlux, observationContext::setResponse)
+				.transform(ObservationTermination.stopOnTermination(observation));
 		});
 	}
 
