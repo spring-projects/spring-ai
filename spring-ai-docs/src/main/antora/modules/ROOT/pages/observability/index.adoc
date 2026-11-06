@@ -108,9 +108,13 @@ IMPORTANT: The `gen_ai.client.token.usage` metrics measures number of input and 
 |===
 |Name | Description
 
+|`gen_ai.output.type` | The expected format of the model output (e.g. 'text', 'json').
+|`gen_ai.request.choice.count` | The requested number of completions or choices to generate.
 |`gen_ai.request.frequency_penalty` | The frequency penalty setting for the model request.
 |`gen_ai.request.max_tokens` | The maximum number of tokens the model generates for a request.
 |`gen_ai.request.presence_penalty` | The presence penalty setting for the model request.
+|`gen_ai.request.reasoning.level` | The reasoning effort or level setting for the model request.
+|`gen_ai.request.seed` | The seed setting for the model request.
 |`gen_ai.request.stop_sequences` | List of sequences that the model will use to stop generating further tokens.
 |`gen_ai.request.stream` | Whether the request was made in streaming mode. Only present when `true`.
 |`gen_ai.request.temperature` | The temperature setting for the model request.

@@ -42,13 +42,31 @@ public class DefaultStructuredOutputChatOptions extends DefaultChatOptions imple
 			@Nullable Integer maxTokens, @Nullable Double presencePenalty, @Nullable List<String> stopSequences,
 			@Nullable Double temperature, @Nullable Integer topK, @Nullable Double topP,
 			@Nullable String outputSchema) {
-		super(model, frequencyPenalty, maxTokens, presencePenalty, stopSequences, temperature, topK, topP);
+		this(model, frequencyPenalty, maxTokens, presencePenalty, stopSequences, temperature, topK, topP, null, null,
+				null, null, outputSchema);
+	}
+
+	protected DefaultStructuredOutputChatOptions(@Nullable String model, @Nullable Double frequencyPenalty,
+			@Nullable Integer maxTokens, @Nullable Double presencePenalty, @Nullable List<String> stopSequences,
+			@Nullable Double temperature, @Nullable Integer topK, @Nullable Double topP, @Nullable String outputType,
+			@Nullable String reasoningLevel, @Nullable Integer seed, @Nullable Integer choiceCount,
+			@Nullable String outputSchema) {
+		super(model, frequencyPenalty, maxTokens, presencePenalty, stopSequences, temperature, topK, topP, outputType,
+				reasoningLevel, seed, choiceCount);
 		this.outputSchema = outputSchema;
 	}
 
 	@Override
 	public @Nullable String getOutputSchema() {
 		return this.outputSchema;
+	}
+
+	@Override
+	public @Nullable String getOutputType() {
+		if (super.getOutputType() != null) {
+			return super.getOutputType();
+		}
+		return (this.outputSchema != null) ? "json" : null;
 	}
 
 	@Override
@@ -62,6 +80,10 @@ public class DefaultStructuredOutputChatOptions extends DefaultChatOptions imple
 			.temperature(this.getTemperature())
 			.topK(this.getTopK())
 			.topP(this.getTopP())
+			.outputType(this.getOutputType())
+			.reasoningLevel(this.getReasoningLevel())
+			.seed(this.getSeed())
+			.choiceCount(this.getChoiceCount())
 			.outputSchema(this.getOutputSchema());
 	}
 
@@ -106,8 +128,8 @@ public class DefaultStructuredOutputChatOptions extends DefaultChatOptions imple
 		@Override
 		public StructuredOutputChatOptions build() {
 			return new DefaultStructuredOutputChatOptions(this.model, this.frequencyPenalty, this.maxTokens,
-					this.presencePenalty, this.stopSequences, this.temperature, this.topK, this.topP,
-					this.outputSchema);
+					this.presencePenalty, this.stopSequences, this.temperature, this.topK, this.topP, this.outputType,
+					this.reasoningLevel, this.seed, this.choiceCount, this.outputSchema);
 		}
 
 		@Override

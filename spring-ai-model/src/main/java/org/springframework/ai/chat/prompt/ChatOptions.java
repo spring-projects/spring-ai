@@ -77,6 +77,42 @@ public interface ChatOptions extends ModelOptions {
 	@Nullable Double getTopP();
 
 	/**
+	 * Returns the expected output content type (e.g. "text", "json").
+	 * @return the output content type
+	 * @since 2.1.0
+	 */
+	default @Nullable String getOutputType() {
+		return null;
+	}
+
+	/**
+	 * Returns the reasoning effort or level setting for the model request.
+	 * @return the reasoning level
+	 * @since 2.1.0
+	 */
+	default @Nullable String getReasoningLevel() {
+		return null;
+	}
+
+	/**
+	 * Returns the seed setting for the model request.
+	 * @return the seed
+	 * @since 2.1.0
+	 */
+	default @Nullable Integer getSeed() {
+		return null;
+	}
+
+	/**
+	 * Returns the requested number of completions or choices to generate.
+	 * @return the choice count
+	 * @since 2.1.0
+	 */
+	default @Nullable Integer getChoiceCount() {
+		return null;
+	}
+
+	/**
 	 * Returns a new {@link Builder} initialized with the values of this
 	 * {@link ChatOptions}.
 	 *
@@ -155,6 +191,50 @@ public interface ChatOptions extends ModelOptions {
 		 * @return the builder.
 		 */
 		B topP(@Nullable Double topP);
+
+		/**
+		 * Builds with the output content type.
+		 * @param outputType the expected output content type
+		 * @return the builder
+		 * @since 2.1.0
+		 */
+		@SuppressWarnings("unchecked")
+		default B outputType(@Nullable String outputType) {
+			return (B) this;
+		}
+
+		/**
+		 * Builds with the reasoning level.
+		 * @param reasoningLevel the reasoning level
+		 * @return the builder
+		 * @since 2.1.0
+		 */
+		@SuppressWarnings("unchecked")
+		default B reasoningLevel(@Nullable String reasoningLevel) {
+			return (B) this;
+		}
+
+		/**
+		 * Builds with the seed.
+		 * @param seed the seed
+		 * @return the builder
+		 * @since 2.1.0
+		 */
+		@SuppressWarnings("unchecked")
+		default B seed(@Nullable Integer seed) {
+			return (B) this;
+		}
+
+		/**
+		 * Builds with the choice count.
+		 * @param choiceCount the number of completions to generate
+		 * @return the builder
+		 * @since 2.1.0
+		 */
+		@SuppressWarnings("unchecked")
+		default B choiceCount(@Nullable Integer choiceCount) {
+			return (B) this;
+		}
 
 		/**
 		 * Build the {@link ChatOptions}.
