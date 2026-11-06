@@ -310,7 +310,7 @@ On the generation metadata, read with `response.getResult().getMetadata()`:
 | `openai.responses.hosted_tool_calls` | Server-executed tool calls, as `{type, id, status}` entries
 | `refusal` | The model's refusal text, or an empty string
 | `annotations` | Citations attached to the generated text
-| `reasoningContent` | The reasoning summaries, one line per reasoning item
+| `reasoningContent` | The reasoning summaries: a line break between reasoning items, and a blank line between the summary entries of one item
 |====
 
 `reasoningContent` is a flattened view, published under the key `OpenAiChatModel` and DeepSeek use.
