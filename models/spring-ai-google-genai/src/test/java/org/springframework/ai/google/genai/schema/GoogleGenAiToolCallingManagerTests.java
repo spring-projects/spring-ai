@@ -104,6 +104,50 @@ class GoogleGenAiToolCallingManagerTests {
 			});
 	}
 
+	@Test
+	void resolveToolDefinitionsKeepsOriginalJsonSchemaForSchemasWithDefs() {
+		// The OpenAPI subset cannot represent $defs/$ref. Such schemas used to fail
+		// hard in convertToOpenApiSchema; they must pass through untouched instead.
+		String jsonSchema = """
+				{
+				  "$defs": {
+				    "Address": {
+				      "type": "object",
+				      "properties": {"city": {"type": "string"}}
+				    }
+				  },
+				  "type": "object",
+				  "properties": {"home": {"$ref": "#/$defs/Address"}}
+				}
+				""";
+		ToolCallback toolCallback = new SchemaToolCallback("defsTool", jsonSchema);
+		ToolCallingManager delegate = DefaultToolCallingManager.builder().build();
+		GoogleGenAiToolCallingManager manager = new GoogleGenAiToolCallingManager(delegate);
+
+		List<ToolDefinition> resolved = manager
+			.resolveToolDefinitions(ToolCallingChatOptions.builder().toolCallbacks(List.of(toolCallback)).build());
+
+		assertThat(resolved).hasSize(1);
+		assertThat(resolved.get(0).inputSchema()).isEqualTo(jsonSchema);
+	}
+
+	@Test
+	void resolveToolDefinitionsStillConvertsSchemasWithoutDefs() {
+		ToolCallback toolCallback = new SchemaToolCallback("plainTool", """
+				{"type": "object", "properties": {"query": {"type": "string"}}}
+				""");
+		ToolCallingManager delegate = DefaultToolCallingManager.builder().build();
+		GoogleGenAiToolCallingManager manager = new GoogleGenAiToolCallingManager(delegate);
+
+		List<ToolDefinition> resolved = manager
+			.resolveToolDefinitions(ToolCallingChatOptions.builder().toolCallbacks(List.of(toolCallback)).build());
+
+		assertThat(resolved).hasSize(1);
+		// Normal conversion still applies: type values are upper-cased for the OpenAPI
+		// subset.
+		assertThat(resolved.get(0).inputSchema()).contains("STRING");
+	}
+
 	private static ChatResponse chatResponseRequestingTool(String toolName) {
 		return ChatResponse.builder()
 			.generations(List.of(new Generation(AssistantMessage.builder()
@@ -120,6 +164,26 @@ class GoogleGenAiToolCallingManagerTests {
 
 		TestToolCallback(String name) {
 			this.toolDefinition = DefaultToolDefinition.builder().name(name).inputSchema("{}").build();
+		}
+
+		@Override
+		public ToolDefinition getToolDefinition() {
+			return this.toolDefinition;
+		}
+
+		@Override
+		public String call(String toolInput) {
+			return "Mission accomplished!";
+		}
+
+	}
+
+	static class SchemaToolCallback implements ToolCallback {
+
+		private final ToolDefinition toolDefinition;
+
+		SchemaToolCallback(String name, String inputSchema) {
+			this.toolDefinition = DefaultToolDefinition.builder().name(name).inputSchema(inputSchema).build();
 		}
 
 		@Override
