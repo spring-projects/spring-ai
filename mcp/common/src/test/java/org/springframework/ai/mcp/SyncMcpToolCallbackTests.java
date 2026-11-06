@@ -24,6 +24,7 @@ import io.modelcontextprotocol.spec.McpError;
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
+import io.modelcontextprotocol.spec.McpSchema.ClientCapabilities;
 import io.modelcontextprotocol.spec.McpSchema.Implementation;
 import io.modelcontextprotocol.spec.McpSchema.Tool;
 import org.junit.jupiter.api.Test;
@@ -104,6 +105,8 @@ class SyncMcpToolCallbackTests {
 		when(this.tool.name()).thenReturn("testTool");
 		CallToolResult callResult = mock(CallToolResult.class);
 		when(this.mcpClient.callTool(any(CallToolRequest.class))).thenReturn(callResult);
+		when(this.mcpClient.getClientCapabilities()).thenReturn(new ClientCapabilities(null, null, null, null));
+		when(this.mcpClient.getClientInfo()).thenReturn(Implementation.builder("testClient", "1.0.0").build());
 
 		SyncMcpToolCallback callback = SyncMcpToolCallback.builder()
 			.mcpClient(this.mcpClient)
