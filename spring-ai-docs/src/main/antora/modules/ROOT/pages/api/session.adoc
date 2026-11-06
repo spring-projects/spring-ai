@@ -35,7 +35,7 @@ No dependency on `ChatClient`.
 
 | JDBC Session
 | `spring-ai-session-jdbc`
-| `JdbcSessionRepository` for PostgreSQL, MySQL, MariaDB and H2, with the schema scripts.
+| `JdbcSessionRepository` for PostgreSQL, MySQL, MariaDB, Microsoft SQL Server and H2, with the schema scripts.
 
 | Auto-configuration
 | `spring-ai-autoconfigure-model-session`, `spring-ai-autoconfigure-model-session-jdbc`
