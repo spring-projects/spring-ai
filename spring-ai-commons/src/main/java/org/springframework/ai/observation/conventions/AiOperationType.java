@@ -35,6 +35,12 @@ public enum AiOperationType {
 	CHAT("chat"),
 
 	/**
+	 * AI operation type for decision-model inference, which answers typed questions
+	 * about an input.
+	 */
+	DECISION("decision"),
+
+	/**
 	 * AI operation type for embedding.
 	 */
 	EMBEDDING("embedding"),

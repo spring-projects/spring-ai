@@ -53,6 +53,7 @@ import com.anthropic.models.messages.DocumentBlockParam;
 import com.anthropic.models.messages.ImageBlockParam;
 import com.anthropic.models.messages.Message;
 import com.anthropic.models.messages.MessageCreateParams;
+import com.anthropic.models.messages.MessageDeltaUsage;
 import com.anthropic.models.messages.RawMessageStreamEvent;
 import com.anthropic.models.messages.RedactedThinkingBlock;
 import com.anthropic.models.messages.RedactedThinkingBlockParam;
@@ -84,6 +85,8 @@ import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.anthropic.http.okhttp.AnthropicHttpClientBuilderCustomizer;
 import org.springframework.ai.anthropic.metadata.AnthropicRateLimit;
@@ -263,6 +266,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		else {
 			this.options = options;
 		}
+		warnOnIgnoredSamplingOptions(this.options);
 
 		// Must precede the AnthropicSetup calls below so the HTTP client gets the user's
 		// registries and dispatcher.
@@ -455,18 +459,19 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			@Nullable ChatResponse previousChatResponse, StreamingState streamingState) {
 
 		// -- Event: message_start --
-		// Captures message ID, model, and input tokens from the first event.
+		// Captures message ID, model, and input usage from the first event.
 		if (event.messageStart().isPresent()) {
 			var startEvent = event.messageStart().get();
 			var message = startEvent.message();
-			streamingState.setMessageInfo(message.id(), message.model().asString(), message.usage().inputTokens());
+			streamingState.setMessageInfo(message.id(), message.model().asString(), message.usage());
 			return null;
 		}
 
 		// -- Event: content_block_start --
-		// Starts tracking a tool use block, emits redacted thinking as a complete part,
-		// starts tracking any block type not modeled as a part, and accumulates web
-		// search results for the final response metadata.
+		// Starts tracking a tool use block and announces it as a partial tool call part,
+		// emits redacted thinking as a complete part, starts tracking any block type not
+		// modeled as a part, and accumulates web search results for the final response
+		// metadata.
 		if (event.contentBlockStart().isPresent()) {
 			var startEvent = event.contentBlockStart().get();
 			var contentBlock = startEvent.contentBlock();
@@ -474,6 +479,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			if (contentBlock.isToolUse()) {
 				var toolUseBlock = contentBlock.asToolUse();
 				streamingState.startToolUse(index, toolUseBlock.id(), toolUseBlock.name());
+				return toolCallDeltaChunk(streamingState, index, "");
 			}
 			else if (contentBlock.isRedactedThinking()) {
 				RedactedThinkingBlock redactedBlock = contentBlock.asRedactedThinking();
@@ -503,9 +509,9 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		}
 
 		// -- Event: content_block_delta --
-		// Text, thinking and signature deltas are emitted as indexed partial parts; tool
-		// argument deltas are accumulated for the complete call and citations for the
-		// final response metadata.
+		// Text, thinking, signature and tool argument deltas are emitted as indexed
+		// partial parts; tool arguments are also accumulated for the complete call, and
+		// citations for the final response metadata.
 		if (event.contentBlockDelta().isPresent()) {
 			var deltaEvent = event.contentBlockDelta().get();
 			var delta = deltaEvent.delta();
@@ -517,8 +523,9 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			}
 
 			if (delta.isInputJson()) {
-				streamingState.appendInputJson(index, delta.asInputJson().partialJson());
-				return null;
+				String partialJson = delta.asInputJson().partialJson();
+				streamingState.appendInputJson(index, partialJson);
+				return toolCallDeltaChunk(streamingState, index, partialJson);
 			}
 
 			if (delta.isThinking()) {
@@ -583,15 +590,16 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			messageBuilder.part(TextPart.of(""));
 			Generation generation = new Generation(messageBuilder.build(), metadata);
 
-			// Combine input tokens from message_start with output tokens from
-			// message_delta
+			// Usage counts are cumulative. Retain input counts when a delta omits them.
+			streamingState.updateUsage(deltaEvent.usage());
 			long inputTokens = streamingState.getInputTokens();
 			long outputTokens = deltaEvent.usage().outputTokens();
-			Long cacheRead = deltaEvent.usage().cacheReadInputTokens().orElse(null);
-			Long cacheWrite = deltaEvent.usage().cacheCreationInputTokens().orElse(null);
-			Usage usage = new DefaultUsage(Integer.valueOf(Math.toIntExact(inputTokens)),
+			Long cacheRead = streamingState.getCacheReadInputTokens();
+			Long cacheWrite = streamingState.getCacheCreationInputTokens();
+			long promptTokens = promptTokens(inputTokens, cacheRead, cacheWrite);
+			Usage usage = new DefaultUsage(Integer.valueOf(Math.toIntExact(promptTokens)),
 					Integer.valueOf(Math.toIntExact(outputTokens)),
-					Integer.valueOf(Math.toIntExact(inputTokens + outputTokens)), deltaEvent.usage(), cacheRead,
+					Integer.valueOf(Math.toIntExact(promptTokens + outputTokens)), deltaEvent.usage(), cacheRead,
 					cacheWrite);
 
 			Usage accumulatedUsage = previousChatResponse != null
@@ -617,6 +625,18 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		});
 
 		return messageDeltaResponse.orElse(null);
+	}
+
+	/**
+	 * Builds the chunk of a tool-call argument delta, see {@link StreamingParts}, or
+	 * returns {@code null} when the block at the index is not a tool use, such as a
+	 * server tool use whose input also streams as deltas.
+	 */
+	private static @Nullable ChatResponse toolCallDeltaChunk(StreamingState streamingState, int index,
+			String argumentsDelta) {
+		ToolCall delta = streamingState.toolCallDelta(index, argumentsDelta);
+		return (delta != null)
+				? partChunk(streamingState, StreamingParts.partial(ToolCallPart.of(delta), index), Map.of()) : null;
 	}
 
 	/**
@@ -704,6 +724,14 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 				: AnthropicChatOptions.builder().build();
 	}
 
+	private static void warnOnIgnoredSamplingOptions(ChatOptions options) {
+		if ((options.getTemperature() != null || options.getTopP() != null || options.getTopK() != null)
+				&& logger.isWarnEnabled()) {
+			logger.warn("Anthropic API 2026-10-21 does not support temperature, topP or topK; ignoring temperature="
+					+ options.getTemperature() + ", topP=" + options.getTopP() + ", topK=" + options.getTopK());
+		}
+	}
+
 	private static RequestOptions requestOptionsFor(Prompt prompt) {
 		// Carry the resolved timeout as per-call RequestOptions; the SDK only honors a
 		// timeout supplied here, so otherwise AnthropicChatOptions#getTimeout() is
@@ -725,6 +753,9 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 		MessageCreateParams.Builder builder = MessageCreateParams.builder();
 
+		if (prompt.getOptions() != null) {
+			warnOnIgnoredSamplingOptions(prompt.getOptions());
+		}
 		AnthropicChatOptions requestOptions = resolveAnthropicOptions(prompt);
 
 		// Set required fields
@@ -871,7 +902,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 						}
 					}
 
-					builder.addUserMessageOfBlockParams(contentBlocks);
+					builder.addUserMessageOfContentBlockParams(contentBlocks);
 				}
 				else {
 					String text = message.getText();
@@ -902,7 +933,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 						}
 					}
 					else {
-						builder.addAssistantMessageOfBlockParams(blocks);
+						builder.addAssistantMessageOfContentBlockParams(blocks);
 					}
 				}
 			}
@@ -936,20 +967,11 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 				if (toolCacheControl != null) {
 					cacheResolver.useCacheBlock();
 				}
-				builder.addUserMessageOfBlockParams(toolResultBlocks);
+				builder.addUserMessageOfContentBlockParams(toolResultBlocks);
 			}
 		}
 
 		// Set optional parameters
-		if (requestOptions.getTemperature() != null) {
-			builder.temperature(requestOptions.getTemperature());
-		}
-		if (requestOptions.getTopP() != null) {
-			builder.topP(requestOptions.getTopP());
-		}
-		if (requestOptions.getTopK() != null) {
-			builder.topK(requestOptions.getTopK().longValue());
-		}
 		if (requestOptions.getStopSequences() != null && !requestOptions.getStopSequences().isEmpty()) {
 			builder.stopSequences(requestOptions.getStopSequences());
 		}
@@ -1271,6 +1293,11 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 							+ (payload != null ? payload.provider() : "none") + " on replay to Anthropic");
 				}
 			}
+			else if (part instanceof ToolCallPart && StreamingParts.isPartial(part)) {
+				// A tool-call argument delta of a stream, not a tool call
+				// (see StreamingParts)
+				continue;
+			}
 			else if (part instanceof ToolCallPart toolCallPart) {
 				ToolCall toolCall = toolCallPart.toolCall();
 				blocks.add(ContentBlockParam.ofToolUse(ToolUseBlockParam.builder()
@@ -1414,9 +1441,25 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		long outputTokens = usage.outputTokens();
 		Long cacheRead = usage.cacheReadInputTokens().orElse(null);
 		Long cacheWrite = usage.cacheCreationInputTokens().orElse(null);
-		return new DefaultUsage(Integer.valueOf(Math.toIntExact(inputTokens)),
+		long promptTokens = promptTokens(inputTokens, cacheRead, cacheWrite);
+		return new DefaultUsage(Integer.valueOf(Math.toIntExact(promptTokens)),
 				Integer.valueOf(Math.toIntExact(outputTokens)),
-				Integer.valueOf(Math.toIntExact(inputTokens + outputTokens)), usage, cacheRead, cacheWrite);
+				Integer.valueOf(Math.toIntExact(promptTokens + outputTokens)), usage, cacheRead, cacheWrite);
+	}
+
+	/**
+	 * Anthropic reports {@code input_tokens} excluding the tokens read from or written to
+	 * the prompt cache, so the total input is the sum of the three.
+	 * @param inputTokens the uncached input tokens
+	 * @param cacheRead the tokens read from the cache, if reported
+	 * @param cacheWrite the tokens written to the cache, if reported
+	 * @return the total input tokens
+	 * @see <a href=
+	 * "https://docs.claude.com/en/docs/build-with-claude/prompt-caching#tracking-cache-performance">Tracking
+	 * cache performance</a>
+	 */
+	private static long promptTokens(long inputTokens, @Nullable Long cacheRead, @Nullable Long cacheWrite) {
+		return inputTokens + (cacheRead != null ? cacheRead : 0L) + (cacheWrite != null ? cacheWrite : 0L);
 	}
 
 	private @Nullable Citation convertTextCitation(TextCitation textCitation) {
@@ -1492,7 +1535,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	 */
 	private static String toJsonString(@Nullable Object nativeValue) {
 		try {
-			var jsonMapper = tools.jackson.databind.json.JsonMapper.builder().build();
+			var jsonMapper = JsonMapper.builder().build();
 			return jsonMapper.writeValueAsString(nativeValue);
 		}
 		catch (Exception e) {
@@ -1508,7 +1551,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	 */
 	private static @Nullable Object parseJson(String json) {
 		try {
-			var jsonMapper = tools.jackson.databind.json.JsonMapper.builder().build();
+			var jsonMapper = JsonMapper.builder().build();
 			return jsonMapper.readValue(json, Object.class);
 		}
 		catch (Exception e) {
@@ -1554,15 +1597,13 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 			@Override
 			public Object visitArray(List<? extends JsonValue> values) {
-				return values.stream().map(v -> convertJsonValueToNative(v)).toList();
+				return values.stream().map(AnthropicChatModel::convertJsonValueToNative).toList();
 			}
 
 			@Override
-			public Object visitObject(java.util.Map<String, ? extends JsonValue> values) {
-				java.util.Map<String, Object> result = new java.util.LinkedHashMap<>();
-				for (java.util.Map.Entry<String, ? extends JsonValue> entry : values.entrySet()) {
-					result.put(entry.getKey(), convertJsonValueToNative(entry.getValue()));
-				}
+			public Object visitObject(Map<String, ? extends JsonValue> values) {
+				Map<String, @Nullable Object> result = new LinkedHashMap<>();
+				values.forEach((key, value) -> result.put(key, convertJsonValueToNative(value)));
 				return result;
 			}
 		});
@@ -1581,13 +1622,10 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		ToolUseBlockParam.Input.Builder inputBuilder = ToolUseBlockParam.Input.builder();
 		if (argumentsJson != null && !argumentsJson.isEmpty()) {
 			try {
-				var jsonMapper = tools.jackson.databind.json.JsonMapper.builder().build();
-				java.util.Map<String, Object> arguments = jsonMapper.readValue(argumentsJson,
-						new tools.jackson.core.type.TypeReference<java.util.Map<String, Object>>() {
-						});
-				for (java.util.Map.Entry<String, Object> entry : arguments.entrySet()) {
-					inputBuilder.putAdditionalProperty(entry.getKey(), JsonValue.from(entry.getValue()));
-				}
+				var jsonMapper = JsonMapper.builder().build();
+				Map<String, Object> arguments = jsonMapper.readValue(argumentsJson, new TypeReference<>() {
+				});
+				arguments.forEach((key, value) -> inputBuilder.putAdditionalProperty(key, JsonValue.from(value)));
 			}
 			catch (Exception e) {
 				if (logger.isWarnEnabled()) {
@@ -1611,23 +1649,19 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	 * @return the Anthropic SDK Tool
 	 * @throws RuntimeException if the JSON schema cannot be parsed
 	 */
-	@SuppressWarnings("unchecked")
 	private Tool toAnthropicTool(ToolDefinition toolDefinition) {
 		try {
 			// Parse the JSON schema string into a Map
-			var jsonMapper = tools.jackson.databind.json.JsonMapper.builder().build();
-			java.util.Map<String, Object> schemaMap = jsonMapper.readValue(toolDefinition.inputSchema(),
-					new tools.jackson.core.type.TypeReference<java.util.Map<String, Object>>() {
-					});
+			var jsonMapper = JsonMapper.builder().build();
+			Map<String, Object> schemaMap = jsonMapper.readValue(toolDefinition.inputSchema(), new TypeReference<>() {
+			});
 
 			// Build properties via putAdditionalProperty (SDK requires structured input)
 			Tool.InputSchema.Properties.Builder propertiesBuilder = Tool.InputSchema.Properties.builder();
 			Object propertiesObj = schemaMap.get("properties");
-			if (propertiesObj instanceof java.util.Map) {
-				java.util.Map<String, Object> properties = (java.util.Map<String, Object>) propertiesObj;
-				for (java.util.Map.Entry<String, Object> entry : properties.entrySet()) {
-					propertiesBuilder.putAdditionalProperty(entry.getKey(), JsonValue.from(entry.getValue()));
-				}
+			if (propertiesObj instanceof Map<?, ?> properties) {
+				properties.forEach(
+						(key, value) -> propertiesBuilder.putAdditionalProperty((String) key, JsonValue.from(value)));
 			}
 
 			Tool.InputSchema.Builder inputSchemaBuilder = Tool.InputSchema.builder()
@@ -1635,11 +1669,8 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 			// Add required fields if present
 			Object requiredObj = schemaMap.get("required");
-			if (requiredObj instanceof java.util.List) {
-				java.util.List<String> required = (java.util.List<String>) requiredObj;
-				for (String req : required) {
-					inputSchemaBuilder.addRequired(req);
-				}
+			if (requiredObj instanceof List<?> required) {
+				required.forEach(field -> inputSchemaBuilder.addRequired((String) field));
 			}
 
 			return Tool.builder()
@@ -1885,11 +1916,15 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	 */
 	private static class StreamingState {
 
-		private final AtomicReference<String> messageId = new AtomicReference<>();
+		private final AtomicReference<@Nullable String> messageId = new AtomicReference<>();
 
-		private final AtomicReference<String> model = new AtomicReference<>();
+		private final AtomicReference<@Nullable String> model = new AtomicReference<>();
 
 		private final AtomicReference<Long> inputTokens = new AtomicReference<>(0L);
+
+		private final AtomicReference<@Nullable Long> cacheReadInputTokens = new AtomicReference<>();
+
+		private final AtomicReference<@Nullable Long> cacheCreationInputTokens = new AtomicReference<>();
 
 		// Tool use blocks being streamed, keyed by content block index
 		private final Map<Integer, InFlightToolUse> inFlightToolUses = new LinkedHashMap<>();
@@ -1907,10 +1942,18 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 		private final AtomicReference<RateLimit> rateLimit = new AtomicReference<>(new EmptyRateLimit());
 
-		void setMessageInfo(String id, String modelName, long tokens) {
+		void setMessageInfo(String id, String modelName, com.anthropic.models.messages.Usage usage) {
 			this.messageId.set(id);
 			this.model.set(modelName);
-			this.inputTokens.set(tokens);
+			this.inputTokens.set(usage.inputTokens());
+			this.cacheReadInputTokens.set(usage.cacheReadInputTokens().orElse(null));
+			this.cacheCreationInputTokens.set(usage.cacheCreationInputTokens().orElse(null));
+		}
+
+		void updateUsage(MessageDeltaUsage usage) {
+			usage.inputTokens().ifPresent(this.inputTokens::set);
+			usage.cacheReadInputTokens().ifPresent(this.cacheReadInputTokens::set);
+			usage.cacheCreationInputTokens().ifPresent(this.cacheCreationInputTokens::set);
 		}
 
 		String getMessageId() {
@@ -1923,6 +1966,14 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 		long getInputTokens() {
 			return this.inputTokens.get();
+		}
+
+		@Nullable Long getCacheReadInputTokens() {
+			return this.cacheReadInputTokens.get();
+		}
+
+		@Nullable Long getCacheCreationInputTokens() {
+			return this.cacheCreationInputTokens.get();
 		}
 
 		void setRateLimit(RateLimit rateLimit) {
@@ -1968,6 +2019,22 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			if (unknownBlock != null) {
 				unknownBlock.input.append(partialJson);
 			}
+		}
+
+		/**
+		 * The argument delta of the tool use block at the given index, carrying the id
+		 * and name of the call.
+		 * @param index the content block index
+		 * @param argumentsDelta the arguments fragment
+		 * @return the delta, or {@code null} if no tool use with an id and a name is
+		 * tracked there, as {@link #finishToolUse(int)} would not complete it
+		 */
+		@Nullable ToolCall toolCallDelta(int index, String argumentsDelta) {
+			InFlightToolUse toolUse = this.inFlightToolUses.get(index);
+			if (toolUse == null || toolUse.id.isEmpty() || toolUse.name.isEmpty()) {
+				return null;
+			}
+			return new ToolCall(toolUse.id, "function", toolUse.name, argumentsDelta);
 		}
 
 		/**

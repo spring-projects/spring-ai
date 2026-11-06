@@ -1,0 +1,259 @@
+= Ollama Decision Models
+
+With https://ollama.com/[Ollama], you can run decision models on your own machine and use them through the xref:api/decision.adoc[Decision Models] API.
+A decision model picks one result from a known set of possible results, such as yes or no, one of a few categories, or a level on a scale, and tells you how likely each result is.
+
+`OllamaDecisionModel` uses the Ollama https://docs.ollama.com/capabilities/decision[decision] endpoint, `/v1/systemone`, through the https://github.com/spring-ai-community/spring-ai-typesafe[TypeSafe Java SDK].
+This endpoint is separate from chat, and only models with the `decision` capability can use it.
+
+== Prerequisites
+
+You need access to an Ollama instance, for example:
+
+* link:https://ollama.com/download[Download and install Ollama] on your machine.
+* xref:api/testcontainers.adoc[Run Ollama with Testcontainers].
+
+The decision endpoint needs a recent version of Ollama.
+We recommend Ollama 0.40.4 or later.
+
+Pull the decision model that you want to use from the Ollama model library:
+
+[source,shellscript]
+----
+ollama pull d1-omni:600m
+----
+
+To check that a model supports decisions, run `ollama show <model-name>`: its capabilities include `decision`.
+
+Spring AI can also pull the model for you at startup, as described in <<auto-pulling-models>>.
+
+== Auto-configuration
+
+Spring AI provides Spring Boot auto-configuration for the Ollama decision model.
+To enable it, add the following dependency to your Maven `pom.xml` or Gradle `build.gradle` build files:
+
+[tabs]
+======
+Maven::
++
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-starter-model-ollama</artifactId>
+</dependency>
+----
+
+Gradle::
++
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-starter-model-ollama'
+}
+----
+======
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+The starter includes the TypeSafe Java SDK that the decision model needs.
+If your application doesn't use the decision model, turn off its auto-configuration with `spring.ai.model.decision=none`, as described in <<decision-properties>>.
+
+=== Connection Properties
+
+The prefix `spring.ai.ollama` is the property prefix to configure the connection to Ollama.
+
+[cols="3,6,1"]
+|====
+| Property | Description | Default
+| spring.ai.ollama.base-url | The base URL of the Ollama server. | `+http://localhost:11434+`
+|====
+
+The decision model sends its requests to the same Ollama server as the chat and embedding models.
+Ollama needs no API key, so the auto-configuration gives the TypeSafe SDK a placeholder key.
+The `TYPESAFE_API_KEY` and `TYPESAFE_BASE_URL` environment variables of the SDK are not used.
+
+The following properties configure the Ollama initialization and the <<auto-pulling-models,automatic pulling of models>>.
+
+[cols="3,6,1"]
+|====
+| Property | Description | Default
+| spring.ai.ollama.init.pull-model-strategy | Whether to pull models at startup, and how. | `never`
+| spring.ai.ollama.init.timeout | How long to wait for a model to be pulled. | `5m`
+| spring.ai.ollama.init.max-retries | The maximum number of retries for pulling a model. | `0`
+| spring.ai.ollama.init.decision.include | Whether to include decision models in the initialization. | `true`
+| spring.ai.ollama.init.decision.additional-models | More decision models to pull, besides the one set with `spring.ai.ollama.decision.model`. | `[]`
+|====
+
+[[decision-properties]]
+=== Decision Properties
+
+[NOTE]
+====
+The `spring.ai.model.decision` property enables and disables the decision auto-configuration.
+
+To enable it, set `spring.ai.model.decision=ollama` (this is the default).
+
+To disable it, set `spring.ai.model.decision=none`, or any value other than `ollama`.
+====
+
+The prefix `spring.ai.ollama.decision` is the property prefix to configure the Ollama decision model.
+
+[cols="3,6,1"]
+|====
+| Property | Description | Default
+| spring.ai.model.decision | Enables the Ollama decision model. | `ollama`
+| spring.ai.ollama.decision.model | The name of the decision model to use. | `d1-omni:600m`
+|====
+
+TIP: You can change the `spring.ai.ollama.decision.model` property for one call, with the <<decision-options>> of the `DecisionPrompt`.
+
+== Runtime Options [[decision-options]]
+
+`OllamaDecisionOptions` holds the settings of a decision call.
+At startup, the model uses the settings of the `spring.ai.ollama.decision` properties.
+You can change them for one call by setting options on the prompt:
+
+[source,java]
+----
+DecisionResponse response = ollamaDecisionModel.call(DecisionPrompt.builder()
+include::partial$decision/example-questions.adoc[indent=4]
+    .options(OllamaDecisionOptions.builder()
+        .model("d1-omni:2b")
+        .build())
+    .build());
+
+include::partial$decision/example-answers.adoc[]
+----
+
+The model name is the only setting, so the portable `DecisionOptions` work too.
+
+TIP: Small decision models, such as `d1-omni:600m`, depend a lot on the descriptions of the options.
+Describe each option by the situation it covers, as the `topic` options do.
+
+[[auto-pulling-models]]
+== Auto-pulling Models
+
+Spring AI can pull models automatically when they are not available in your Ollama instance.
+The strategies, the timeout and the maximum number of retries are the same as for the xref:api/chat/ollama-chat.adoc#auto-pulling-models[chat models].
+
+You can pull more decision models at startup, for example models that you choose at runtime:
+
+[source,yaml]
+----
+spring:
+  ai:
+    ollama:
+      init:
+        pull-model-strategy: when_missing
+        decision:
+          additional-models:
+            - d1-omni:2b
+----
+
+To apply the pulling strategy only to other types of models, exclude decision models from the initialization:
+
+[source,yaml]
+----
+spring:
+  ai:
+    ollama:
+      init:
+        pull-model-strategy: always
+        decision:
+          include: false
+----
+
+CAUTION: Downloading a model can take a long time, so we don't recommend automatic pulling in production.
+Instead, download the models that you need in advance.
+
+== Supported Features
+
+[cols="3,2,5"]
+|====
+| Feature | Supported | Notes
+
+| Text input | Yes |
+| Text with images | No | Ollama decides about text only, so an image in the input makes the call fail.
+| Fields input | Yes | The model can answer differently when the order of the fields changes, so use a `LinkedHashMap`.
+| Conversation input | Yes | Tool calls and tool results are sent, reasoning is not.
+| Probabilities | Yes | For all three kinds of questions.
+| Confidence | Yes | For choice and score answers.
+A confidence of `0` can mean that the server reported none.
+| Refusals | No |
+| Response id | No | `response.getMetadata().getId()` is `null`.
+|====
+
+== Request and Response Mapping
+
+Ollama serves the System One protocol, and `OllamaDecisionModel` maps requests and responses in the same way as the System One integration.
+See xref:api/decision/systemone-decision.adoc#request-mapping[Request Mapping] and xref:api/decision/systemone-decision.adoc#response-mapping[Response Mapping] on the System One page.
+
+== Observability
+
+Spring AI observes the calls as `decision` operations, with `ollama` as the `gen_ai.system` key.
+See xref:observability/index.adoc#_decision_model[Decision Model observability].
+
+include::partial$decision/sample-controller.adoc[]
+
+== Manual Configuration
+
+If you don't use Spring Boot, you can configure the `OllamaDecisionModel` yourself.
+Add the `spring-ai-ollama` dependency to your Maven `pom.xml` or Gradle `build.gradle` build files:
+
+[tabs]
+======
+Maven::
++
+[source,xml]
+----
+<dependency>
+    <groupId>org.springframework.ai</groupId>
+    <artifactId>spring-ai-ollama</artifactId>
+</dependency>
+----
+
+Gradle::
++
+[source,groovy]
+----
+dependencies {
+    implementation 'org.springframework.ai:spring-ai-ollama'
+}
+----
+======
+
+TIP: Refer to the xref:getting-started.adoc#dependency-management[Dependency Management] section to add the Spring AI BOM to your build file.
+
+The model needs two clients for the same Ollama server:
+
+* an `OllamaApi`, to pull models;
+* a `TypeSafeClient`, to send the decisions.
+
+Ollama needs no API key, but the `TypeSafeClient` requires one, so give it any value that is not empty.
+
+[source,java]
+----
+OllamaApi ollamaApi = OllamaApi.builder().build();
+
+TypeSafeClient systemOneClient = TypeSafeClient.builder()
+    .baseUrl("http://localhost:11434")
+    .apiKey("ollama")
+    .build();
+
+OllamaDecisionModel decisionModel = OllamaDecisionModel.builder()
+    .ollamaApi(ollamaApi)
+    .systemOneClient(systemOneClient)
+    .decisionOptions(OllamaDecisionOptions.builder()
+        .model("d1-omni:600m")
+        .build())
+    .build();
+
+include::partial$decision/example-short-call.adoc[]
+----
+
+When the options set no model, the model uses `d1-omni:600m`.
+
+== Example Code
+
+The `OllamaDecisionModelIT` test has more examples of how to use the Ollama decision model.

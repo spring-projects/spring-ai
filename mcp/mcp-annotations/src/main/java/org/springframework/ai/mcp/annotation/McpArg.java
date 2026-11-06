@@ -43,6 +43,12 @@ public @interface McpArg {
 	String description() default "";
 
 	/**
+	 * Optional human-readable title of the argument, for display.
+	 * @since 2.1.0
+	 */
+	String title() default "";
+
+	/**
 	 * True if this argument is required. false if this argument is optional.
 	 */
 	boolean required() default false;

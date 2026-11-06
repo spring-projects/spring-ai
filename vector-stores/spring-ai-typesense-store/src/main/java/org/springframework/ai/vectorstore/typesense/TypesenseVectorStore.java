@@ -16,6 +16,7 @@
 
 package org.springframework.ai.vectorstore.typesense;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +29,8 @@ import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
 import org.typesense.api.Client;
 import org.typesense.api.FieldTypes;
+import org.typesense.api.exceptions.ObjectAlreadyExists;
+import org.typesense.api.exceptions.ObjectNotFound;
 import org.typesense.model.CollectionResponse;
 import org.typesense.model.CollectionSchema;
 import org.typesense.model.DeleteDocumentsParameters;
@@ -36,7 +39,9 @@ import org.typesense.model.ImportDocumentsParameters;
 import org.typesense.model.IndexAction;
 import org.typesense.model.MultiSearchCollectionParameters;
 import org.typesense.model.MultiSearchResult;
+import org.typesense.model.MultiSearchResultItem;
 import org.typesense.model.MultiSearchSearchesParameter;
+import tools.jackson.databind.JsonNode;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
@@ -44,7 +49,9 @@ import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.observation.conventions.VectorStoreSimilarityMetric;
+import org.springframework.ai.util.JacksonUtils;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
+import org.springframework.ai.vectorstore.EmbeddedDocument;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.filter.FilterExpressionConverter;
@@ -108,6 +115,9 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 
 	private final int embeddingDimension;
 
+	// Cache for vectorDimensions(); only a known size is stored.
+	private volatile int resolvedVectorDimensions = INVALID_EMBEDDING_DIMENSION;
+
 	/**
 	 * Protected constructor for creating a TypesenseVectorStore instance using the
 	 * builder pattern. This constructor initializes the vector store with the configured
@@ -145,16 +155,9 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
 				this.batchingStrategy);
 
-		List<HashMap<String, Object>> documentList = IntStream.range(0, documents.size()).mapToObj(i -> {
-			Document document = documents.get(i);
-			HashMap<String, Object> typesenseDoc = new HashMap<>();
-			typesenseDoc.put(DOC_ID_FIELD_NAME, document.getId());
-			typesenseDoc.put(CONTENT_FIELD_NAME, document.getText());
-			typesenseDoc.put(METADATA_FIELD_NAME, document.getMetadata());
-			typesenseDoc.put(EMBEDDING_FIELD_NAME, embeddings.get(i));
-
-			return typesenseDoc;
-		}).toList();
+		List<HashMap<String, Object>> documentList = IntStream.range(0, documents.size())
+			.mapToObj(i -> toTypesenseDocument(documents.get(i), embeddings.get(i)))
+			.toList();
 
 		ImportDocumentsParameters importDocumentsParameters = new ImportDocumentsParameters();
 		importDocumentsParameters.action(IndexAction.UPSERT);
@@ -168,6 +171,75 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 		}
 		catch (Exception e) {
 			logger.error("Failed to add documents", e);
+		}
+	}
+
+	private static HashMap<String, Object> toTypesenseDocument(Document document, float[] embedding) {
+		HashMap<String, Object> typesenseDoc = new HashMap<>();
+		typesenseDoc.put(DOC_ID_FIELD_NAME, document.getId());
+		typesenseDoc.put(CONTENT_FIELD_NAME, document.getText());
+		typesenseDoc.put(METADATA_FIELD_NAME, document.getMetadata());
+		typesenseDoc.put(EMBEDDING_FIELD_NAME, embedding);
+		return typesenseDoc;
+	}
+
+	@Override
+	protected boolean supportsUpsert() {
+		return true;
+	}
+
+	@Override
+	protected void doUpsert(List<EmbeddedDocument> entries) {
+		// Typesense writes a batch document by document, so the whole batch is checked
+		// before anything is written. When the size is not known the check is left to
+		// Typesense, which rejects a vector of the wrong size.
+		int expected = vectorDimensions();
+		for (int i = 0; i < entries.size(); i++) {
+			checkDimensions("Embedding at index " + i, entries.get(i).embedding().length, expected);
+		}
+
+		// The upsert action replaces a whole document with the same id, so omitted
+		// metadata keys are dropped.
+		List<HashMap<String, Object>> documentList = entries.stream()
+			.map(entry -> toTypesenseDocument(entry.document(), entry.embedding()))
+			.toList();
+		ImportDocumentsParameters importDocumentsParameters = new ImportDocumentsParameters();
+		importDocumentsParameters.action(IndexAction.UPSERT);
+		String results;
+		try {
+			results = this.client.collections(this.collectionName)
+				.documents()
+				.import_(documentList, importDocumentsParameters);
+		}
+		catch (Exception ex) {
+			throw new IllegalStateException("Failed to upsert documents into collection " + this.collectionName, ex);
+		}
+		checkImportResults(results, documentList.size());
+	}
+
+	/**
+	 * Typesense reports a rejected document in the import results, one JSON line per
+	 * document, rather than by failing the request. The client leaves out a document it
+	 * cannot serialize to JSON without failing, so fewer lines than documents means some
+	 * were not sent.
+	 */
+	private void checkImportResults(String results, int documentCount) {
+		String[] lines = results.split("\n");
+		long resultCount = Arrays.stream(lines).filter(line -> !line.isBlank()).count();
+		if (resultCount != documentCount) {
+			throw new IllegalStateException("Typesense returned " + resultCount + " import results for " + documentCount
+					+ " documents. The client leaves out documents it cannot serialize to JSON, "
+					+ "and the documents it sent may have been written.");
+		}
+		for (int i = 0; i < lines.length; i++) {
+			if (lines[i].isBlank()) {
+				continue;
+			}
+			JsonNode result = JacksonUtils.getDefaultJsonMapper().readTree(lines[i]);
+			if (!result.path("success").asBoolean(false)) {
+				throw new IllegalStateException("Typesense rejected the document at index " + i + ": "
+						+ result.path("error").asString("no error given"));
+			}
 		}
 	}
 
@@ -227,18 +299,49 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 	public List<Document> doSimilaritySearch(SearchRequest request) {
 		Assert.notNull(request.getQuery(), "Query string must not be null");
 
+		// Convert the filter first, so an invalid one fails before the model is called
+		String nativeFilterExpressions = nativeFilterExpression(request);
+
+		float[] embedding = this.embeddingModel.embed(request.getQuery());
+
+		try {
+			return searchByEmbedding(embedding, nativeFilterExpressions, request);
+		}
+		catch (RuntimeException ex) {
+			logger.error("Failed to search documents", ex);
+			return List.of();
+		}
+	}
+
+	@Override
+	protected boolean supportsQueryEmbeddingSearch() {
+		return true;
+	}
+
+	@Override
+	protected List<Document> doSimilaritySearch(float[] queryEmbedding, SearchRequest request) {
+		// Typesense rejects a query vector of the wrong size; checking here gives the
+		// same error before the request whenever the size is known.
+		checkDimensions("Query embedding", queryEmbedding.length, vectorDimensions());
+		return searchByEmbedding(queryEmbedding, nativeFilterExpression(request), request);
+	}
+
+	private String nativeFilterExpression(SearchRequest request) {
 		String nativeFilterExpressions = (request.getFilterExpression() != null)
 				? this.filterExpressionConverter.convertExpression(request.getFilterExpression()) : "";
 
 		if (logger.isInfoEnabled()) {
 			logger.info("Filter expression: " + nativeFilterExpressions);
 		}
+		return nativeFilterExpressions;
+	}
 
-		float[] embedding = this.embeddingModel.embed(request.getQuery());
-
+	private List<Document> searchByEmbedding(float[] embedding, String nativeFilterExpressions, SearchRequest request) {
 		MultiSearchCollectionParameters multiSearchCollectionParameters = new MultiSearchCollectionParameters();
 		multiSearchCollectionParameters.collection(this.collectionName);
 		multiSearchCollectionParameters.q("*");
+		// Typesense returns 10 hits per page unless asked for more
+		multiSearchCollectionParameters.perPage(request.getTopK());
 
 		Stream<Float> floatStream = IntStream.range(0, embedding.length).mapToObj(i -> embedding[i]);
 		// typesense uses only cosine similarity
@@ -252,38 +355,44 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 		MultiSearchSearchesParameter multiSearchesParameter = new MultiSearchSearchesParameter()
 			.addSearchesItem(multiSearchCollectionParameters);
 
+		MultiSearchResult result;
 		try {
-			MultiSearchResult result = this.client.multiSearch.perform(multiSearchesParameter,
-					Map.of("query_by", EMBEDDING_FIELD_NAME));
-
-			List<Document> documents = result.getResults()
-				.stream()
-				.flatMap(searchResult -> searchResult.getHits().stream().map(hit -> {
-					Map<String, Object> rawDocument = hit.getDocument();
-					String docId = (String) rawDocument.get(DOC_ID_FIELD_NAME);
-					Assert.state(docId != null, "document id must not be null");
-					String content = (String) rawDocument.getOrDefault(CONTENT_FIELD_NAME, "");
-					Map<String, Object> metadata = rawDocument.get(METADATA_FIELD_NAME) instanceof Map
-							? (Map<String, Object>) rawDocument.get(METADATA_FIELD_NAME) : Map.of();
-					metadata.put(DocumentMetadata.DISTANCE.value(), hit.getVectorDistance());
-					return Document.builder()
-						.id(docId)
-						.text(content)
-						.metadata(metadata)
-						.score(1.0 - hit.getVectorDistance())
-						.build();
-				}))
-				.toList();
-
-			if (logger.isInfoEnabled()) {
-				logger.info("Found " + documents.size() + " documents");
+			result = this.client.multiSearch.perform(multiSearchesParameter, Map.of("query_by", EMBEDDING_FIELD_NAME));
+		}
+		catch (Exception ex) {
+			throw new IllegalStateException("Failed to search collection " + this.collectionName, ex);
+		}
+		// Typesense reports a rejected search, such as a query vector of the wrong size,
+		// in the result instead of failing the request
+		for (MultiSearchResultItem searchResult : result.getResults()) {
+			if (searchResult.getError() != null) {
+				throw new IllegalStateException("Typesense rejected the search: " + searchResult.getError());
 			}
-			return documents;
 		}
-		catch (Exception e) {
-			logger.error("Failed to search documents", e);
-			return List.of();
+
+		List<Document> documents = result.getResults()
+			.stream()
+			.flatMap(searchResult -> searchResult.getHits().stream().map(hit -> {
+				Map<String, Object> rawDocument = hit.getDocument();
+				String docId = (String) rawDocument.get(DOC_ID_FIELD_NAME);
+				Assert.state(docId != null, "document id must not be null");
+				String content = (String) rawDocument.getOrDefault(CONTENT_FIELD_NAME, "");
+				Map<String, Object> metadata = rawDocument.get(METADATA_FIELD_NAME) instanceof Map
+						? (Map<String, Object>) rawDocument.get(METADATA_FIELD_NAME) : Map.of();
+				metadata.put(DocumentMetadata.DISTANCE.value(), hit.getVectorDistance());
+				return Document.builder()
+					.id(docId)
+					.text(content)
+					.metadata(metadata)
+					.score(1.0 - hit.getVectorDistance())
+					.build();
+			}))
+			.toList();
+
+		if (logger.isInfoEnabled()) {
+			logger.info("Found " + documents.size() + " documents");
 		}
+		return documents;
 	}
 
 	int embeddingDimensions() {
@@ -300,7 +409,7 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 			if (logger.isWarnEnabled()) {
 				logger.warn(
 						"Failed to obtain the embedding dimensions from the embedding model and fall backs to default: "
-								+ this.embeddingDimension,
+								+ OPENAI_EMBEDDING_DIMENSION_SIZE,
 						e);
 			}
 		}
@@ -328,11 +437,21 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 	}
 
 	void createCollection() {
-		if (this.hasCollection()) {
+		// Ask the model for the size only when the collection is known to be missing.
+		// Any other lookup failure fails startup, since the collection may well exist.
+		try {
+			cacheDimensions(this.client.collections(this.collectionName).retrieve());
 			if (logger.isInfoEnabled()) {
 				logger.info("Collection " + this.collectionName + " already exists");
 			}
 			return;
+		}
+		catch (ObjectNotFound ex) {
+			// Missing, so it is created below
+		}
+		catch (Exception ex) {
+			throw new IllegalStateException("Could not check whether collection " + this.collectionName + " exists",
+					ex);
 		}
 
 		CollectionSchema collectionSchema = new CollectionSchema();
@@ -353,11 +472,56 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 				logger.info("Collection " + this.collectionName + " created");
 			}
 		}
-		catch (Exception e) {
-			if (logger.isErrorEnabled()) {
-				logger.error("Failed to create collection " + this.collectionName, e);
+		catch (ObjectAlreadyExists ex) {
+			// Another process created it first
+		}
+		catch (Exception ex) {
+			throw new IllegalStateException("Failed to create collection " + this.collectionName, ex);
+		}
+		// Another process may have created the collection first with a different size,
+		// so the size is read back instead of assumed.
+		vectorDimensions();
+	}
+
+	/**
+	 * The size of the stored vectors.
+	 * <p>
+	 * The size comes from the configured {@code embeddingDimension} if set, otherwise
+	 * from the {@code num_dim} of the embedding field in the collection schema, including
+	 * a collection this store just created. A failed lookup leaves the size unknown and
+	 * is tried again on the next call. Only a known size is cached, so a store has to be
+	 * rebuilt after the collection is recreated with a different size.
+	 * @return the known dimension, or -1
+	 */
+	private int vectorDimensions() {
+		if (this.embeddingDimension > 0) {
+			return this.embeddingDimension;
+		}
+		int cached = this.resolvedVectorDimensions;
+		if (cached > 0) {
+			return cached;
+		}
+		try {
+			return cacheDimensions(this.client.collections(this.collectionName).retrieve());
+		}
+		catch (Exception ex) {
+			logger.debug("Could not read the vector dimensions from the collection schema", ex);
+		}
+		return INVALID_EMBEDDING_DIMENSION;
+	}
+
+	private int cacheDimensions(CollectionResponse collection) {
+		List<Field> fields = collection.getFields();
+		if (fields != null) {
+			for (Field field : fields) {
+				Integer numDim = field.getNumDim();
+				if (EMBEDDING_FIELD_NAME.equals(field.getName()) && numDim != null && numDim > 0) {
+					this.resolvedVectorDimensions = numDim;
+					return numDim;
+				}
 			}
 		}
+		return INVALID_EMBEDDING_DIMENSION;
 	}
 
 	void dropCollection() {
@@ -397,11 +561,16 @@ public class TypesenseVectorStore extends AbstractObservationVectorStore impleme
 	@Override
 	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
 
-		return VectorStoreObservationContext.builder(VectorStoreProvider.TYPESENSE.value(), operationName)
-			.dimensions(this.embeddingModel.dimensions())
+		VectorStoreObservationContext.Builder builder = VectorStoreObservationContext
+			.builder(VectorStoreProvider.TYPESENSE.value(), operationName)
 			.collectionName(this.collectionName)
 			.fieldName(EMBEDDING_FIELD_NAME)
 			.similarityMetric(VectorStoreSimilarityMetric.COSINE.value());
+		int dimensions = vectorDimensions();
+		if (dimensions > 0) {
+			builder.dimensions(dimensions);
+		}
+		return builder;
 	}
 
 	@Override

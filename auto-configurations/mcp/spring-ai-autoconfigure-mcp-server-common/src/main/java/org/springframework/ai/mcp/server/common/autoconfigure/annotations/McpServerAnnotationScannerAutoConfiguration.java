@@ -17,6 +17,10 @@
 package org.springframework.ai.mcp.server.common.autoconfigure.annotations;
 
 import java.lang.annotation.Annotation;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.jspecify.annotations.Nullable;
@@ -26,11 +30,14 @@ import org.springframework.ai.mcp.annotation.McpPrompt;
 import org.springframework.ai.mcp.annotation.McpResource;
 import org.springframework.ai.mcp.annotation.McpTool;
 import org.springframework.ai.mcp.annotation.spring.scan.AbstractAnnotatedMethodBeanFactoryInitializationAotProcessor;
-import org.springframework.ai.mcp.annotation.spring.scan.AbstractAnnotatedMethodBeanPostProcessor;
-import org.springframework.ai.mcp.annotation.spring.scan.AbstractMcpAnnotatedBeans;
+import org.springframework.aop.framework.autoproxy.AutoProxyUtils;
 import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
+import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
+import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
@@ -38,10 +45,14 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ImportRuntimeHints;
+import org.springframework.core.annotation.AnnotationUtils;
+import org.springframework.util.Assert;
+import org.springframework.util.ReflectionUtils;
 
 /**
  * @author Christian Tzolov
  * @author Josh Long
+ * @author Daniel Garnier-Moiroux
  */
 @AutoConfiguration
 @ConditionalOnClass(McpTool.class)
@@ -57,14 +68,7 @@ public class McpServerAnnotationScannerAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public ServerMcpAnnotatedBeans serverAnnotatedBeanRegistry() {
-		return new ServerMcpAnnotatedBeans();
-	}
-
-	@Bean
-	@ConditionalOnMissingBean
-	public static ServerAnnotatedMethodBeanPostProcessor serverAnnotatedMethodBeanPostProcessor(
-			ServerMcpAnnotatedBeans serverMcpAnnotatedBeans, McpServerAnnotationScannerProperties properties) {
-		return new ServerAnnotatedMethodBeanPostProcessor(serverMcpAnnotatedBeans, SERVER_MCP_ANNOTATIONS);
+		return new ServerMcpAnnotatedBeans(SERVER_MCP_ANNOTATIONS);
 	}
 
 	@Bean
@@ -72,7 +76,89 @@ public class McpServerAnnotationScannerAutoConfiguration {
 		return new ServerAnnotatedBeanFactoryInitializationAotProcessor(SERVER_MCP_ANNOTATIONS);
 	}
 
-	public static class ServerMcpAnnotatedBeans extends AbstractMcpAnnotatedBeans {
+	/**
+	 * Finds the beans with MCP server annotated methods (tools, resources, prompts). All
+	 * beans in the application context are scanned to find annotated methods.
+	 * <p>
+	 * Annotations are scanned once all bean definitions are available and before the
+	 * beans are created. This avoids lifecycle issues: beans containing MCP handlers are
+	 * known before MCP-specific beans (e.g. {@code McpSyncToolRepository}) are created.
+	 * We can therefore create them ahead of time.
+	 * <p>
+	 * This is inspired from {@code ClientMcpSyncHandlersRegistry} on the client-side. It
+	 * is simpler as it does not deal with cyclic dependencies. If an {@link McpTool}
+	 * needs to interact with an {@code McpSyncToolRepository}, use
+	 * {@code ObjectProvider<McpSyncToolRepository>} in your tool definition to inject the
+	 * repository.
+	 */
+	public static class ServerMcpAnnotatedBeans implements BeanFactoryPostProcessor {
+
+		private final Set<Class<? extends Annotation>> targetAnnotations;
+
+		private final Map<Class<? extends Annotation>, Set<String>> beanNamesByAnnotation = new LinkedHashMap<>();
+
+		private @Nullable ConfigurableListableBeanFactory beanFactory;
+
+		/**
+		 * Create an instance looking for methods annotated with any of the given
+		 * annotations.
+		 * @param targetAnnotations the method annotations to look for
+		 * @since 2.1.0
+		 */
+		public ServerMcpAnnotatedBeans(Set<Class<? extends Annotation>> targetAnnotations) {
+			Assert.notEmpty(targetAnnotations, "Target annotations must not be empty");
+			this.targetAnnotations = targetAnnotations;
+		}
+
+		@Override
+		public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException {
+			this.beanFactory = beanFactory;
+			for (String beanName : beanFactory.getBeanDefinitionNames()) {
+				BeanDefinition beanDefinition = beanFactory.getBeanDefinition(beanName);
+				if (!beanDefinition.isSingleton() || beanDefinition.isAbstract()) {
+					continue;
+				}
+				Class<?> beanClass = AutoProxyUtils.determineTargetClass(beanFactory, beanName);
+				if (beanClass == null) {
+					// If we cannot determine the bean class, we cannot scan it before
+					// it is really resolved. This is very likely an infrastructure-level
+					// bean, not a "service" type, skip it entirely.
+					continue;
+				}
+				for (Class<? extends Annotation> annotationType : scan(beanClass)) {
+					this.beanNamesByAnnotation.computeIfAbsent(annotationType, k -> new LinkedHashSet<>())
+						.add(beanName);
+				}
+			}
+		}
+
+		/**
+		 * Return the beans that have at least one method annotated with the given
+		 * annotation, creating them if they do not exist yet.
+		 * @param annotationType the method annotation
+		 * @return the annotated beans, in bean definition order
+		 */
+		public List<Object> getBeansByAnnotation(Class<? extends Annotation> annotationType) {
+			Set<String> beanNames = this.beanNamesByAnnotation.get(annotationType);
+			if (beanNames == null) {
+				return List.of();
+			}
+			ConfigurableListableBeanFactory beanFactory = this.beanFactory;
+			Assert.state(beanFactory != null, "The bean factory has not been post-processed yet");
+			return beanNames.stream().map(beanFactory::getBean).toList();
+		}
+
+		private Set<Class<? extends Annotation>> scan(Class<?> beanType) {
+			Set<Class<? extends Annotation>> foundAnnotations = new LinkedHashSet<>();
+			ReflectionUtils.doWithMethods(beanType, method -> {
+				for (Class<? extends Annotation> annotationType : this.targetAnnotations) {
+					if (AnnotationUtils.findAnnotation(method, annotationType) != null) {
+						foundAnnotations.add(annotationType);
+					}
+				}
+			});
+			return foundAnnotations;
+		}
 
 	}
 
@@ -82,15 +168,6 @@ public class McpServerAnnotationScannerAutoConfiguration {
 		public ServerAnnotatedBeanFactoryInitializationAotProcessor(
 				Set<Class<? extends Annotation>> targetAnnotations) {
 			super(targetAnnotations);
-		}
-
-	}
-
-	public static class ServerAnnotatedMethodBeanPostProcessor extends AbstractAnnotatedMethodBeanPostProcessor {
-
-		public ServerAnnotatedMethodBeanPostProcessor(ServerMcpAnnotatedBeans serverMcpAnnotatedBeans,
-				Set<Class<? extends Annotation>> targetAnnotations) {
-			super(serverMcpAnnotatedBeans, targetAnnotations);
 		}
 
 	}

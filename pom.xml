@@ -58,6 +58,7 @@
 		<module>auto-configurations/models/chat/observation/spring-ai-autoconfigure-model-chat-observation</module>
 		<module>auto-configurations/models/embedding/observation/spring-ai-autoconfigure-model-embedding-observation</module>
 		<module>auto-configurations/models/image/observation/spring-ai-autoconfigure-model-image-observation</module>
+		<module>auto-configurations/models/decision/observation/spring-ai-autoconfigure-model-decision-observation</module>
 		<module>auto-configurations/models/audio/observation/spring-ai-autoconfigure-model-audio-observation</module>
 		<module>auto-configurations/models/session/spring-ai-autoconfigure-model-session</module>
 		<module>auto-configurations/models/session/spring-ai-autoconfigure-model-session-jdbc</module>
@@ -129,6 +130,7 @@
 		<module>models/spring-ai-openai</module>
 		<module>models/spring-ai-postgresml</module>
 		<module>models/spring-ai-stability-ai</module>
+		<module>models/spring-ai-systemone</module>
 		<module>models/spring-ai-transformers</module>
 		<module>models/spring-ai-vertex-ai-embedding</module>
 
@@ -257,18 +259,19 @@
 		<kotlin.compiler.jvmTarget>${java.version}</kotlin.compiler.jvmTarget>
 		<kotlin.compiler.daemon>false</kotlin.compiler.daemon>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<project.build.outputTimestamp>2026-10-23T09:09:51Z</project.build.outputTimestamp>
+		<project.build.outputTimestamp>1980-02-01T00:00:00Z</project.build.outputTimestamp>
 		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
 		<!-- Spring Boot -->
-		<spring-boot.version>4.2.0-RC1</spring-boot.version>
+		<spring-boot.version>4.2.0-RC2</spring-boot.version>
 
 		<!-- MCP SDK -->
-		<mcp.sdk.version>2.1.0</mcp.sdk.version>
+		<mcp.sdk.version>2.2.0-M2</mcp.sdk.version>
 
 		<!-- AI model SDKs -->
-		<anthropic-sdk.version>2.72.0</anthropic-sdk.version>
+		<anthropic-sdk.version>3.4.0</anthropic-sdk.version>
 		<openai-sdk.version>4.80.0</openai-sdk.version>
+		<typesafe-java-sdk.version>0.4.0</typesafe-java-sdk.version>
 		<!-- NOTE: keep awssdk and bedrockruntime versions aligned -->
 		<awssdk.version>2.55.14</awssdk.version>
 		<bedrockruntime.version>2.55.14</bedrockruntime.version>
@@ -321,6 +324,8 @@
 		<maven-checkstyle-plugin.version>3.6.0</maven-checkstyle-plugin.version>
 		<maven-checkstyle-plugin.failsOnError>true</maven-checkstyle-plugin.failsOnError>
 		<maven-checkstyle-plugin.failOnViolation>true</maven-checkstyle-plugin.failOnViolation>
+		<!-- 3.7.0 includes optional dependencies in bannedDependencies, breaking the auto-configuration-all-optional profile -->
+		<maven-enforcer-plugin.version>3.6.3</maven-enforcer-plugin.version>
 		<maven-gpg-plugin.version>3.2.8</maven-gpg-plugin.version>
 		<maven-site-plugin.version>4.0.0-M13</maven-site-plugin.version>
 		<puppycrawl-tools-checkstyle.version>9.3</puppycrawl-tools-checkstyle.version>
@@ -380,6 +385,7 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-enforcer-plugin</artifactId>
+				<version>${maven-enforcer-plugin.version}</version>
 				<executions>
 					<execution>
 						<id>maven-enforcer</id>
@@ -958,6 +964,11 @@
 		</profile>
 		<profile>
 			<id>commercial</id>
+			<activation>
+				<property>
+					<name>env.COMMERCIAL_SNAPSHOT_REPO_URL</name>
+				</property>
+			</activation>
 			<repositories>
 				<repository>
 					<id>spring-enterprise-snapshot</id>

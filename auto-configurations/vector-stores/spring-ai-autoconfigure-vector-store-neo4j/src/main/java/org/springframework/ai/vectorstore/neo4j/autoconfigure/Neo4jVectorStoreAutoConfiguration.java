@@ -67,8 +67,6 @@ public class Neo4jVectorStoreAutoConfiguration {
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP))
 			.customObservationConvention(customObservationConvention.getIfAvailable())
 			.batchingStrategy(batchingStrategy)
-			.embeddingDimension(properties.getEmbeddingDimension() != null ? properties.getEmbeddingDimension()
-					: embeddingModel.dimensions())
 			.distanceType(properties.getDistanceType())
 			.label(properties.getLabel())
 			.embeddingProperty(properties.getEmbeddingProperty())
@@ -78,6 +76,11 @@ public class Neo4jVectorStoreAutoConfiguration {
 			.textProperty(properties.getTextProperty());
 		if (properties.getDatabaseName() != null) {
 			builder.databaseName(properties.getDatabaseName());
+		}
+		// When not set, the size is read from the vector index or, for a new index,
+		// from the embedding model
+		if (properties.getEmbeddingDimension() != null) {
+			builder.embeddingDimension(properties.getEmbeddingDimension());
 		}
 		return builder.build();
 	}

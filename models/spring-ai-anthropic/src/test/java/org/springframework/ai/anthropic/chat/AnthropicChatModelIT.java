@@ -54,6 +54,7 @@ import org.springframework.ai.chat.messages.part.MessagePart;
 import org.springframework.ai.chat.messages.part.ReasoningPart;
 import org.springframework.ai.chat.messages.part.StreamingParts;
 import org.springframework.ai.chat.messages.part.TextPart;
+import org.springframework.ai.chat.messages.part.ToolCallPart;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
@@ -363,6 +364,59 @@ class AnthropicChatModelIT {
 	}
 
 	@Test
+	void streamingToolCallArgumentDeltasJoinToTheCompleteCall() {
+		AnthropicChatOptions options = AnthropicChatOptions.builder()
+			.model(Model.CLAUDE_HAIKU_5_5.asString())
+			.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
+				.description("Get the weather in location. Return temperature in 36°F or 36°C format.")
+				.inputType(MockWeatherService.Request.class)
+				.build())
+			.build();
+		Prompt prompt = new Prompt(
+				List.of(new UserMessage("What's the weather like in Paris? Return the result in Celsius.")), options);
+
+		AtomicReference<ChatResponse> aggregatedRef = new AtomicReference<>();
+		List<ChatResponse> responses = new MessageAggregator()
+			.aggregate(this.chatModel.stream(prompt), aggregatedRef::set)
+			.collectList()
+			.block();
+
+		// The argument deltas stream first, as partial parts that are not tool calls,
+		// then each tool call streams once, complete
+		List<ToolCallPart> streamedToolCallParts = responses.stream()
+			.filter(chunk -> chunk.getResult() != null)
+			.flatMap(chunk -> chunk.getResult().getOutput().getParts().stream())
+			.filter(ToolCallPart.class::isInstance)
+			.map(ToolCallPart.class::cast)
+			.toList();
+		List<ToolCallPart> deltas = streamedToolCallParts.stream().filter(StreamingParts::isPartial).toList();
+		List<ToolCallPart> completeCalls = streamedToolCallParts.stream()
+			.filter(part -> !StreamingParts.isPartial(part))
+			.toList();
+		assertThat(deltas).isNotEmpty();
+		assertThat(completeCalls).isNotEmpty().allSatisfy(complete -> {
+			String joinedDeltas = deltas.stream()
+				.filter(delta -> delta.toolCall().id().equals(complete.toolCall().id()))
+				.map(delta -> delta.toolCall().arguments())
+				.collect(Collectors.joining());
+			assertThat(joinedDeltas).isEqualTo(complete.toolCall().arguments());
+		});
+		assertThat(responses)
+			.filteredOn(chunk -> chunk.getResult() != null && chunk.getResult()
+				.getOutput()
+				.getParts()
+				.stream()
+				.anyMatch(part -> part instanceof ToolCallPart && StreamingParts.isPartial(part)))
+			.isNotEmpty()
+			.allSatisfy(chunk -> assertThat(chunk.hasToolCalls()).isFalse());
+
+		AssistantMessage aggregated = aggregatedRef.get().getResult().getOutput();
+		assertThat(aggregated.getToolCalls()).isNotEmpty()
+			.allSatisfy(toolCall -> assertThat(toolCall.arguments()).contains("Paris"));
+		assertThat(aggregated.getParts()).noneMatch(StreamingParts::isPartial);
+	}
+
+	@Test
 	void streamFunctionCallUsageTest() {
 		ToolCallback weatherToolCallback = FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
 			.description(
@@ -592,7 +646,6 @@ class AnthropicChatModelIT {
 
 		var promptOptions = AnthropicChatOptions.builder()
 			.model(Model.CLAUDE_SONNET_4_5.asString())
-			.temperature(1.0) // temperature must be 1 when thinking is enabled
 			.maxTokens(16000)
 			.thinkingEnabled(10000L)
 			.build();
@@ -626,7 +679,6 @@ class AnthropicChatModelIT {
 
 		var promptOptions = AnthropicChatOptions.builder()
 			.model(Model.CLAUDE_SONNET_4_5.asString())
-			.temperature(1.0) // temperature must be 1 when thinking is enabled
 			.maxTokens(16000)
 			.thinkingEnabled(10000L)
 			.build();
@@ -694,7 +746,6 @@ class AnthropicChatModelIT {
 
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
 			.model(Model.CLAUDE_SONNET_4_5.asString())
-			.temperature(1.0) // temperature must be 1 when thinking is enabled
 			.maxTokens(16000)
 			.thinkingEnabled(2048L)
 			.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
@@ -754,7 +805,6 @@ class AnthropicChatModelIT {
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
 			.model(Model.CLAUDE_SONNET_4_5.asString())
 			.maxTokens(2048)
-			.temperature(0.0)
 			.citationDocuments(document)
 			.build();
 
@@ -801,7 +851,6 @@ class AnthropicChatModelIT {
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
 			.model(Model.CLAUDE_SONNET_4_5.asString())
 			.maxTokens(1024)
-			.temperature(0.0)
 			.citationDocuments(parisDoc, eiffelDoc)
 			.build();
 
@@ -848,7 +897,6 @@ class AnthropicChatModelIT {
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
 			.model(Model.CLAUDE_SONNET_4_5.asString())
 			.maxTokens(1024)
-			.temperature(0.0)
 			.citationDocuments(document)
 			.build();
 
@@ -888,7 +936,6 @@ class AnthropicChatModelIT {
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
 			.model(Model.CLAUDE_SONNET_4_5.asString())
 			.maxTokens(1024)
-			.temperature(0.0)
 			.citationDocuments(document)
 			.build();
 

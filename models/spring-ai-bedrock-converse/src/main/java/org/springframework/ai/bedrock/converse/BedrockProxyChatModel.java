@@ -92,6 +92,7 @@ import org.springframework.ai.chat.messages.part.MediaPart;
 import org.springframework.ai.chat.messages.part.MessagePart;
 import org.springframework.ai.chat.messages.part.OpaquePayload;
 import org.springframework.ai.chat.messages.part.ReasoningPart;
+import org.springframework.ai.chat.messages.part.StreamingParts;
 import org.springframework.ai.chat.messages.part.TextPart;
 import org.springframework.ai.chat.messages.part.ToolCallPart;
 import org.springframework.ai.chat.messages.part.ToolResultPart;
@@ -657,6 +658,11 @@ public class BedrockProxyChatModel implements ChatModel {
 							+ (payload != null ? payload.provider() : "none") + " on replay to Bedrock");
 				}
 			}
+			else if (part instanceof ToolCallPart && StreamingParts.isPartial(part)) {
+				// A tool-call argument delta of a stream, not a tool call
+				// (see StreamingParts)
+				continue;
+			}
 			else if (part instanceof ToolCallPart toolCallPart) {
 				AssistantMessage.ToolCall toolCall = toolCallPart.toolCall();
 				var argumentsDocument = ConverseApiUtils
@@ -803,11 +809,13 @@ public class BedrockProxyChatModel implements ChatModel {
 					ChatGenerationMetadata.builder().finishReason(response.stopReasonAsString()).build()));
 		}
 
-		Integer promptTokens = response.usage().inputTokens();
+		Integer inputTokens = response.usage().inputTokens();
 		Integer generationTokens = response.usage().outputTokens();
 		int totalTokens = response.usage().totalTokens();
 		Integer cacheReadInputTokens = response.usage().cacheReadInputTokens();
 		Integer cacheWriteInputTokens = response.usage().cacheWriteInputTokens();
+		Integer promptTokens = inputTokens + (cacheReadInputTokens != null ? cacheReadInputTokens : 0)
+				+ (cacheWriteInputTokens != null ? cacheWriteInputTokens : 0);
 
 		if (perviousChatResponse != null && perviousChatResponse.getMetadata() != null
 				&& perviousChatResponse.getMetadata().getUsage() != null) {
@@ -821,6 +829,9 @@ public class BedrockProxyChatModel implements ChatModel {
 				TokenUsage previousTokenUsage = (TokenUsage) perviousChatResponse.getMetadata()
 					.getUsage()
 					.getNativeUsage();
+				if (previousTokenUsage.inputTokens() != null) {
+					inputTokens += previousTokenUsage.inputTokens();
+				}
 				if (cacheReadInputTokens == null) {
 					cacheReadInputTokens = previousTokenUsage.cacheReadInputTokens();
 				}
@@ -838,7 +849,7 @@ public class BedrockProxyChatModel implements ChatModel {
 
 		// Create native TokenUsage with cache metrics
 		TokenUsage nativeTokenUsage = TokenUsage.builder()
-			.inputTokens(promptTokens)
+			.inputTokens(inputTokens)
 			.outputTokens(generationTokens)
 			.totalTokens(totalTokens)
 			.cacheReadInputTokens(cacheReadInputTokens)

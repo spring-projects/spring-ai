@@ -124,7 +124,7 @@ Properties starting with `spring.ai.vectorstore.neo4j.*` are used to configure t
 |`spring.ai.vectorstore.neo4j.initialize-schema`| Whether to initialize the required schema | `false`
 |`spring.ai.vectorstore.neo4j.database-name` | The name of the Neo4j database to use | `neo4j`
 |`spring.ai.vectorstore.neo4j.index-name` | The name of the index to store the vectors | `spring-ai-document-index`
-|`spring.ai.vectorstore.neo4j.embedding-dimension` | The number of dimensions in the vector | `1536`
+|`spring.ai.vectorstore.neo4j.embedding-dimension` | The number of dimensions in the vector. When not set, it is read from the vector index or, for a new index, from the embedding model. | -
 |`spring.ai.vectorstore.neo4j.distance-type` | The distance function to use | `cosine`
 |`spring.ai.vectorstore.neo4j.label` | The label used for document nodes | `Document`
 |`spring.ai.vectorstore.neo4j.embedding-property` | The property name used to store embeddings | `embedding`
@@ -179,7 +179,7 @@ public VectorStore vectorStore(Driver driver, EmbeddingModel embeddingModel) {
     return Neo4jVectorStore.builder(driver, embeddingModel)
         .databaseName("neo4j")                // Optional: defaults to "neo4j"
         .distanceType(Neo4jDistanceType.COSINE) // Optional: defaults to COSINE
-        .embeddingDimension(1536)                      // Optional: defaults to 1536
+        .embeddingDimension(1536)              // Optional: read from the index or the embedding model
         .label("Document")                     // Optional: defaults to "Document"
         .embeddingProperty("embedding")        // Optional: defaults to "embedding"
         .indexName("custom-index")             // Optional: defaults to "spring-ai-document-index"
@@ -194,6 +194,16 @@ public EmbeddingModel embeddingModel() {
     return new OpenAiEmbeddingModel(OpenAiEmbeddingOptions.builder().apiKey(System.getenv("OPENAI_API_KEY")).build());
 }
 ----
+
+== Upsert support
+
+`Neo4jVectorStore` implements `upsert(List<EmbeddedDocument>)`, so you can write documents together with embeddings you computed elsewhere instead of having the store embed them.
+Writing the same id again replaces the text, the embedding and the metadata, and metadata keys you leave out are removed.
+Other properties, labels and relationships of the node are kept.
+The vector size is taken from the configured `embeddingDimension` or read from the `vector.dimensions` option of the vector index, so the embedding model is not called.
+Neo4j stores a vector of the wrong size without complaint and leaves the node out of the index, so the store checks the whole batch before writing anything and refuses the upsert when it cannot read the index.
+A batch is written in one transaction.
+See xref:api/vectordbs.adoc#writing-precomputed-embeddings[Writing User-Supplied Embeddings] for details.
 
 == Metadata Filtering
 

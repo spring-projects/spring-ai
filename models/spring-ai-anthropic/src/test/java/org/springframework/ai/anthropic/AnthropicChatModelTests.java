@@ -62,9 +62,12 @@ import com.anthropic.models.messages.ToolUseBlock;
 import com.anthropic.models.messages.Usage;
 import com.anthropic.services.async.MessageServiceAsync;
 import com.anthropic.services.blocking.MessageService;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -76,6 +79,7 @@ import reactor.core.publisher.BaseSubscriber;
 import reactor.core.publisher.SignalType;
 
 import org.springframework.ai.anthropic.metadata.AnthropicRateLimit;
+import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.chat.messages.SystemMessage;
@@ -93,6 +97,7 @@ import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.MessageAggregator;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
 import org.springframework.ai.model.tool.ToolCallingManager;
@@ -105,6 +110,7 @@ import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.util.MimeTypeUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
@@ -162,12 +168,49 @@ class AnthropicChatModelTests {
 
 		this.chatModel = AnthropicChatModel.builder()
 			.anthropicClient(this.anthropicClient)
-			.options(AnthropicChatOptions.builder()
-				.model(Model.CLAUDE_SONNET_4_5)
-				.maxTokens(1024)
-				.temperature(0.7)
-				.build())
+			.options(AnthropicChatOptions.builder().model(Model.CLAUDE_SONNET_4_5).maxTokens(1024).build())
 			.build();
+	}
+
+	@Test
+	void ignoresSamplingOptionsAndLogsWarning(CapturedOutput output) {
+		Message mockResponse = createMockMessage("Hello!", StopReason.END_TURN);
+		given(this.messageService.create(any(MessageCreateParams.class))).willReturn(mockResponse);
+		List<ChatOptions> samplingOptions = List.of(AnthropicChatOptions.builder().temperature(0.0).build(),
+				AnthropicChatOptions.builder().topP(1.0).build(), AnthropicChatOptions.builder().topK(1).build(),
+				ChatOptions.builder().temperature(1.0).build(), ChatOptions.builder().topP(1.0).build(),
+				ChatOptions.builder().topK(1).build());
+		for (ChatOptions options : samplingOptions) {
+			Prompt prompt = new Prompt("Hello", options);
+			assertThatNoException().isThrownBy(() -> this.chatModel.call(prompt));
+			assertThatNoException().isThrownBy(() -> this.chatModel.createRequest(prompt, true));
+		}
+		assertThat(output).contains("does not support temperature, topP or topK; ignoring temperature=0.0, topP=null")
+			.contains("ignoring temperature=null, topP=1.0, topK=null")
+			.contains("ignoring temperature=null, topP=null, topK=1");
+	}
+
+	@Test
+	void ignoresSamplingOptionsDuringModelConstruction(CapturedOutput output) {
+		AnthropicChatOptions options = AnthropicChatOptions.builder().temperature(0.5).topP(0.9).topK(40).build();
+		assertThatNoException().isThrownBy(() -> AnthropicChatModel.builder().options(options).build());
+		assertThat(output).contains("ignoring temperature=0.5, topP=0.9, topK=40");
+	}
+
+	@Test
+	void ignoresPortableSamplingOverridesFromChatClient(CapturedOutput output) {
+		Message mockResponse = createMockMessage("Hello!", StopReason.END_TURN);
+		given(this.messageService.create(any(MessageCreateParams.class))).willReturn(mockResponse);
+		ChatClient client = ChatClient.create(this.chatModel);
+		ChatOptions.Builder<?> options = ChatOptions.builder().temperature(1.0).topP(1.0).topK(1);
+		assertThat(client.prompt("Hello").options(options).call().content()).isEqualTo("Hello!");
+		assertThat(output).contains("ignoring temperature=1.0, topP=1.0, topK=1");
+	}
+
+	@Test
+	void noWarningWithoutSamplingOptions(CapturedOutput output) {
+		this.chatModel.createRequest(new Prompt("Hello"), false);
+		assertThat(output).doesNotContain("does not support temperature, topP or topK");
 	}
 
 	@Test
@@ -216,7 +259,6 @@ class AnthropicChatModelTests {
 		AnthropicChatOptions runtimeOptions = AnthropicChatOptions.builder()
 			.model("claude-3-opus-20240229")
 			.maxTokens(2048)
-			.temperature(0.3)
 			.build();
 
 		ChatResponse response = this.chatModel.call(new Prompt("Test", runtimeOptions));
@@ -243,6 +285,93 @@ class AnthropicChatModelTests {
 		assertThat(response.getMetadata().getUsage().getPromptTokens()).isEqualTo(10);
 		assertThat(response.getMetadata().getUsage().getCompletionTokens()).isEqualTo(20);
 		assertThat(response.getMetadata().getUsage().getTotalTokens()).isEqualTo(30);
+	}
+
+	@Test
+	void inputUsageIncludesCachedTokens() {
+		Message mockResponse = createMockMessage("Test", StopReason.END_TURN);
+		given(mockResponse.usage().inputTokens()).willReturn(50L);
+		given(mockResponse.usage().cacheReadInputTokens()).willReturn(Optional.of(1000L));
+		given(mockResponse.usage().cacheCreationInputTokens()).willReturn(Optional.of(200L));
+		given(this.messageService.create(any(MessageCreateParams.class))).willReturn(mockResponse);
+
+		ChatResponse response = this.chatModel.call(new Prompt("Test"));
+
+		var usage = response.getMetadata().getUsage();
+		assertThat(usage.getPromptTokens()).isEqualTo(50 + 1000 + 200);
+		assertThat(usage.getCompletionTokens()).isEqualTo(20);
+		assertThat(usage.getTotalTokens()).isEqualTo(50 + 1000 + 200 + 20);
+		assertThat(usage.getCacheReadInputTokens()).isEqualTo(1000L);
+		assertThat(usage.getCacheWriteInputTokens()).isEqualTo(200L);
+	}
+
+	@Test
+	void streamingInputUsageIncludesCachedTokens() {
+		givenStream(List.of(messageStartEvent(), textStartEvent(0), textDeltaEvent("Hi", 0), contentBlockStopEvent(0),
+				messageDeltaEvent(StopReason.END_TURN, 1000L, 200L)));
+
+		List<ChatResponse> chunks = this.chatModel.stream(new Prompt("Test")).collectList().block();
+
+		var usage = chunks.get(chunks.size() - 1).getMetadata().getUsage();
+		assertThat(usage.getPromptTokens()).isEqualTo(10 + 1000 + 200);
+		assertThat(usage.getCompletionTokens()).isEqualTo(5);
+		assertThat(usage.getTotalTokens()).isEqualTo(10 + 1000 + 200 + 5);
+		assertThat(usage.getCacheReadInputTokens()).isEqualTo(1000L);
+		assertThat(usage.getCacheWriteInputTokens()).isEqualTo(200L);
+	}
+
+	@ParameterizedTest
+	@CsvSource(value = { "1000, 200, 1250", "1000, null, 1050", "null, 200, 250", "null, null, 50", "0, 0, 50" },
+			nullValues = "null")
+	void streamingUsageRetainsCacheTokensFromMessageStart(@Nullable Long cacheRead, @Nullable Long cacheWrite,
+			int expectedPromptTokens) {
+		givenStream(List.of(messageStartEvent(50L, cacheRead, cacheWrite), messageDeltaEvent(StopReason.END_TURN)));
+
+		ChatResponse response = this.chatModel.stream(new Prompt("Test")).blockLast();
+
+		assertThat(response).isNotNull();
+		var usage = response.getMetadata().getUsage();
+		assertThat(usage.getPromptTokens()).isEqualTo(expectedPromptTokens);
+		assertThat(usage.getCompletionTokens()).isEqualTo(5);
+		assertThat(usage.getTotalTokens()).isEqualTo(expectedPromptTokens + 5);
+		assertThat(usage.getCacheReadInputTokens()).isEqualTo(cacheRead);
+		assertThat(usage.getCacheWriteInputTokens()).isEqualTo(cacheWrite);
+	}
+
+	@ParameterizedTest
+	@CsvSource(value = { "50, 1000, 200, 1250, 1000, 200", "70, 1500, 300, 1870, 1500, 300",
+			"70, null, null, 1270, 1000, 200", "null, 0, null, 250, 0, 200", "null, null, 0, 1050, 1000, 0",
+			"0, 0, 0, 0, 0, 0" }, nullValues = "null")
+	void streamingUsageReplacesPresentCumulativeCounts(@Nullable Long inputTokens, @Nullable Long cacheRead,
+			@Nullable Long cacheWrite, int expectedPromptTokens, long expectedCacheRead, long expectedCacheWrite) {
+		givenStream(List.of(messageStartEvent(50L, 1000L, 200L),
+				messageDeltaEvent(StopReason.END_TURN, inputTokens, cacheRead, cacheWrite)));
+
+		ChatResponse response = this.chatModel.stream(new Prompt("Test")).blockLast();
+
+		assertThat(response).isNotNull();
+		var usage = response.getMetadata().getUsage();
+		assertThat(usage.getPromptTokens()).isEqualTo(expectedPromptTokens);
+		assertThat(usage.getCompletionTokens()).isEqualTo(5);
+		assertThat(usage.getTotalTokens()).isEqualTo(expectedPromptTokens + 5);
+		assertThat(usage.getCacheReadInputTokens()).isEqualTo(expectedCacheRead);
+		assertThat(usage.getCacheWriteInputTokens()).isEqualTo(expectedCacheWrite);
+	}
+
+	@Test
+	void streamingUsageRetainsCountsFromPreviousDelta() {
+		givenStream(List.of(messageStartEvent(50L, 1000L, 200L), messageDeltaEvent(null, 70L, 1500L, 300L),
+				messageDeltaEvent(StopReason.END_TURN)));
+
+		ChatResponse response = this.chatModel.stream(new Prompt("Test")).blockLast();
+
+		assertThat(response).isNotNull();
+		var usage = response.getMetadata().getUsage();
+		assertThat(usage.getPromptTokens()).isEqualTo(1870);
+		assertThat(usage.getCompletionTokens()).isEqualTo(5);
+		assertThat(usage.getTotalTokens()).isEqualTo(1875);
+		assertThat(usage.getCacheReadInputTokens()).isEqualTo(1500L);
+		assertThat(usage.getCacheWriteInputTokens()).isEqualTo(300L);
 	}
 
 	@Test
@@ -417,6 +546,31 @@ class AnthropicChatModelTests {
 	}
 
 	@Test
+	void toolCallArgumentDeltaIsNotReplayed() {
+		Message mockResponse = createMockMessage("Done.", StopReason.END_TURN);
+		given(this.messageService.create(any(MessageCreateParams.class))).willReturn(mockResponse);
+
+		// An assistant message built from the parts of raw stream chunks
+		AssistantMessage history = AssistantMessage.builder()
+			.part(StreamingParts.partial(
+					ToolCallPart.of(new AssistantMessage.ToolCall("toolu_1", "function", "getWeather", "{\"city\":")),
+					0))
+			.part(StreamingParts.complete(
+					ToolCallPart
+						.of(new AssistantMessage.ToolCall("toolu_1", "function", "getWeather", "{\"city\":\"Paris\"}")),
+					0))
+			.build();
+		this.chatModel.call(new Prompt(List.of(new UserMessage("Weather?"), history, toolResult("toolu_1", "Sunny."),
+				new UserMessage("Thanks"))));
+
+		ArgumentCaptor<MessageCreateParams> captor = ArgumentCaptor.forClass(MessageCreateParams.class);
+		verify(this.messageService).create(captor.capture());
+		List<ContentBlockParam> blocks = assistantBlockParams(captor.getValue());
+		assertThat(blocks).hasSize(1);
+		assertThat(blocks.get(0).asToolUse().id()).isEqualTo("toolu_1");
+	}
+
+	@Test
 	void foreignReasoningPartIsNotReplayed() {
 		Message mockResponse = createMockMessage("Done.", StopReason.END_TURN);
 		given(this.messageService.create(any(MessageCreateParams.class))).willReturn(mockResponse);
@@ -432,8 +586,8 @@ class AnthropicChatModelTests {
 		verify(this.messageService).create(captor.capture());
 		MessageParam assistant = captor.getValue().messages().get(1);
 		assertThat(assistant.role()).isEqualTo(MessageParam.Role.ASSISTANT);
-		assertThat(assistant.content().isBlockParams()).isTrue();
-		List<ContentBlockParam> blocks = assistant.content().asBlockParams();
+		assertThat(assistant.content().isContentBlockParams()).isTrue();
+		List<ContentBlockParam> blocks = assistant.content().asContentBlockParams();
 		assertThat(blocks).hasSize(1);
 		assertThat(blocks.get(0).isText()).isTrue();
 		assertThat(blocks.get(0).asText().text()).isEqualTo("Earlier answer.");
@@ -579,7 +733,7 @@ class AnthropicChatModelTests {
 	}
 
 	@Test
-	void streamingToolUseCarriesOnlyTheCompleteCall() {
+	void streamingToolUseEmitsArgumentDeltasBeforeTheCompleteCall() {
 		givenStream(List.of(messageStartEvent(), textStartEvent(0), textDeltaEvent("Checking.", 0),
 				contentBlockStopEvent(0), toolUseStartEvent("toolu_123", "getCurrentWeather"),
 				inputJsonDeltaEvent("{\"location\":"), inputJsonDeltaEvent("\"Paris\"}"), contentBlockStopEvent(1),
@@ -591,17 +745,28 @@ class AnthropicChatModelTests {
 			.collectList()
 			.block();
 
-		// The text delta and the final chunk with the complete call, no argument-delta
-		// chunks
-		assertThat(chunks).hasSize(2);
+		// The text delta, the tool use announced with empty arguments, its two argument
+		// deltas, then the final chunk with the complete call
+		assertThat(chunks).hasSize(5);
 		assertThat(chunks.get(0).getResult().getOutput().getText()).isEqualTo("Checking.");
+		assertThat(chunks.subList(1, 4)).extracting(chunk -> chunk.getResult().getOutput().getParts())
+			.containsExactly(List.of(toolCallDelta("", 1)), List.of(toolCallDelta("{\"location\":", 1)),
+					List.of(toolCallDelta("\"Paris\"}", 1)));
+		assertThat(chunks.subList(0, 4)).allSatisfy(chunk -> {
+			assertThat(chunk.getMetadata().getId()).isEqualTo("msg_stream");
+			assertThat(chunk.hasToolCalls()).isFalse();
+		});
 		AssistantMessage.ToolCall complete = new AssistantMessage.ToolCall("toolu_123", "function", "getCurrentWeather",
 				"{\"location\":\"Paris\"}");
-		assertThat(chunks.get(1).getResult().getOutput().getToolCalls()).containsExactly(complete);
-		assertThat(chunks).allSatisfy(chunk -> assertThat(chunk.getResult().getOutput().getParts())
-			.noneMatch(part -> part instanceof ToolCallPart && StreamingParts.isPartial(part)));
+		assertThat(chunks.get(4).getResult().getOutput().getToolCalls()).containsExactly(complete);
 		assertThat(aggregatedResponse.get().getResult().getOutput().getParts())
 			.containsExactly(TextPart.of("Checking."), ToolCallPart.of(complete));
+	}
+
+	private static MessagePart toolCallDelta(String arguments, int index) {
+		return StreamingParts.partial(
+				ToolCallPart.of(new AssistantMessage.ToolCall("toolu_123", "function", "getCurrentWeather", arguments)),
+				index);
 	}
 
 	@Test
@@ -821,6 +986,9 @@ class AnthropicChatModelTests {
 		assertThat(StreamingParts.isPartial(serverToolUseChunkPart)).isFalse();
 		assertThat(StreamingParts.partIndex(serverToolUseChunkPart)).isZero();
 		assertThat(chunks).noneSatisfy(chunk -> assertThat(chunk.hasToolCalls()).isTrue());
+		// The server tool input deltas are not tool-call deltas
+		assertThat(chunks).allSatisfy(chunk -> assertThat(chunk.getResult().getOutput().getParts())
+			.noneMatch(ToolCallPart.class::isInstance));
 
 		AssistantMessage aggregated = aggregatedResponse.get().getResult().getOutput();
 		assertThat(aggregated.getParts()).hasSize(3);
@@ -884,7 +1052,7 @@ class AnthropicChatModelTests {
 
 		ArgumentCaptor<MessageCreateParams> captor = ArgumentCaptor.forClass(MessageCreateParams.class);
 		verify(this.messageService).create(captor.capture());
-		List<ContentBlockParam> blocks = captor.getValue().messages().get(0).content().asBlockParams();
+		List<ContentBlockParam> blocks = captor.getValue().messages().get(0).content().asContentBlockParams();
 		assertThat(blocks).hasSize(3);
 		assertThat(blocks.get(0).asText().text()).isEqualTo("Look at ");
 		assertThat(blocks.get(1).isImage()).isTrue();
@@ -913,7 +1081,7 @@ class AnthropicChatModelTests {
 
 		ArgumentCaptor<MessageCreateParams> captor = ArgumentCaptor.forClass(MessageCreateParams.class);
 		verify(this.messageService).create(captor.capture());
-		List<ContentBlockParam> blocks = captor.getValue().messages().get(0).content().asBlockParams();
+		List<ContentBlockParam> blocks = captor.getValue().messages().get(0).content().asContentBlockParams();
 		// The empty text part is skipped; only the last text block carries the
 		// breakpoint,
 		// even though the same TextPart instance appears twice
@@ -935,11 +1103,11 @@ class AnthropicChatModelTests {
 
 		ArgumentCaptor<MessageCreateParams> captor = ArgumentCaptor.forClass(MessageCreateParams.class);
 		verify(this.messageService).create(captor.capture());
-		List<ContentBlockParam> legacyBlocks = captor.getValue().messages().get(0).content().asBlockParams();
+		List<ContentBlockParam> legacyBlocks = captor.getValue().messages().get(0).content().asContentBlockParams();
 		assertThat(legacyBlocks).hasSize(2);
 		assertThat(legacyBlocks.get(0).asText().text()).isEqualTo("describe");
 		assertThat(legacyBlocks.get(1).isImage()).isTrue();
-		List<ContentBlockParam> mediaOnlyBlocks = captor.getValue().messages().get(2).content().asBlockParams();
+		List<ContentBlockParam> mediaOnlyBlocks = captor.getValue().messages().get(2).content().asContentBlockParams();
 		assertThat(mediaOnlyBlocks).hasSize(1);
 		assertThat(mediaOnlyBlocks.get(0).isImage()).isTrue();
 		// A text-only message is still sent as a plain string
@@ -1196,8 +1364,8 @@ class AnthropicChatModelTests {
 
 	private static List<ContentBlockParam> assistantBlockParams(MessageCreateParams request) {
 		for (MessageParam message : request.messages()) {
-			if (message.role() == MessageParam.Role.ASSISTANT && message.content().isBlockParams()) {
-				return message.content().asBlockParams();
+			if (message.role() == MessageParam.Role.ASSISTANT && message.content().isContentBlockParams()) {
+				return message.content().asContentBlockParams();
 			}
 		}
 		return List.of();
@@ -1206,8 +1374,8 @@ class AnthropicChatModelTests {
 	private static List<ToolResultBlockParam> toolResultBlocks(MessageCreateParams request) {
 		List<ToolResultBlockParam> blocks = new java.util.ArrayList<>();
 		for (MessageParam message : request.messages()) {
-			if (message.content().isBlockParams()) {
-				for (ContentBlockParam block : message.content().asBlockParams()) {
+			if (message.content().isContentBlockParams()) {
+				for (ContentBlockParam block : message.content().asContentBlockParams()) {
 					if (block.isToolResult()) {
 						blocks.add(block.asToolResult());
 					}
@@ -1368,8 +1536,15 @@ class AnthropicChatModelTests {
 	}
 
 	private RawMessageStreamEvent messageStartEvent() {
+		return messageStartEvent(10L, null, null);
+	}
+
+	private RawMessageStreamEvent messageStartEvent(long inputTokens, @Nullable Long cacheRead,
+			@Nullable Long cacheWrite) {
 		Usage usage = mock(Usage.class);
-		given(usage.inputTokens()).willReturn(10L);
+		given(usage.inputTokens()).willReturn(inputTokens);
+		given(usage.cacheReadInputTokens()).willReturn(Optional.ofNullable(cacheRead));
+		given(usage.cacheCreationInputTokens()).willReturn(Optional.ofNullable(cacheWrite));
 
 		Message message = mock(Message.class);
 		given(message.id()).willReturn("msg_stream");
@@ -1436,17 +1611,27 @@ class AnthropicChatModelTests {
 	}
 
 	private RawMessageStreamEvent messageDeltaEvent(StopReason stopReason) {
+		return messageDeltaEvent(stopReason, null, null);
+	}
+
+	private RawMessageStreamEvent messageDeltaEvent(StopReason stopReason, @Nullable Long cacheRead,
+			@Nullable Long cacheWrite) {
+		return messageDeltaEvent(stopReason, null, cacheRead, cacheWrite);
+	}
+
+	private RawMessageStreamEvent messageDeltaEvent(@Nullable StopReason stopReason, @Nullable Long inputTokens,
+			@Nullable Long cacheRead, @Nullable Long cacheWrite) {
 		return RawMessageStreamEvent.ofMessageDelta(RawMessageDeltaEvent.builder()
 			.delta(RawMessageDeltaEvent.Delta.builder()
 				.container(Optional.empty())
 				.stopDetails(Optional.empty())
-				.stopReason(stopReason)
+				.stopReason(Optional.ofNullable(stopReason))
 				.stopSequence(Optional.empty())
 				.build())
 			.usage(MessageDeltaUsage.builder()
-				.cacheCreationInputTokens(Optional.empty())
-				.cacheReadInputTokens(Optional.empty())
-				.inputTokens(Optional.empty())
+				.cacheCreationInputTokens(Optional.ofNullable(cacheWrite))
+				.cacheReadInputTokens(Optional.ofNullable(cacheRead))
+				.inputTokens(Optional.ofNullable(inputTokens))
 				.outputTokens(5L)
 				.outputTokensDetails(Optional.empty())
 				.serverToolUse(Optional.empty())
@@ -1706,16 +1891,16 @@ class AnthropicChatModelTests {
 		List<MessageParam> messages = captor.getValue().messages();
 		assertThat(messages).hasSize(3);
 
-		List<ContentBlockParam> firstUserBlocks = messages.get(0).content().blockParams().orElseThrow();
+		List<ContentBlockParam> firstUserBlocks = messages.get(0).content().contentBlockParams().orElseThrow();
 		assertThat(firstUserBlocks).hasSize(2);
 		assertThat(firstUserBlocks.get(0).isDocument()).isTrue();
 		assertThat(firstUserBlocks.get(1).asText().text()).isEqualTo("First question");
 
 		assertThat(messages.get(2).content().string()).contains("Second question");
-		assertThat(messages.get(2).content().blockParams()).isEmpty();
+		assertThat(messages.get(2).content().contentBlockParams()).isEmpty();
 
 		long documentBlocks = messages.stream()
-			.flatMap(message -> message.content().blockParams().stream().flatMap(List::stream))
+			.flatMap(message -> message.content().contentBlockParams().stream().flatMap(List::stream))
 			.filter(ContentBlockParam::isDocument)
 			.count();
 		assertThat(documentBlocks).isEqualTo(1);
@@ -1741,7 +1926,7 @@ class AnthropicChatModelTests {
 
 		MessageCreateParams request = this.chatModel.createRequest(new Prompt("Question", options), false);
 
-		List<ContentBlockParam> blocks = request.messages().get(0).content().blockParams().orElseThrow();
+		List<ContentBlockParam> blocks = request.messages().get(0).content().contentBlockParams().orElseThrow();
 		assertThat(blocks).hasSize(3);
 		assertThat(blocks.get(0).asDocument().cacheControl()).isEmpty();
 		assertThat(blocks.get(1).asDocument().cacheControl()).isPresent();
@@ -1762,7 +1947,7 @@ class AnthropicChatModelTests {
 
 		MessageCreateParams request = this.chatModel.createRequest(new Prompt("Question", options), false);
 
-		List<ContentBlockParam> blocks = request.messages().get(0).content().blockParams().orElseThrow();
+		List<ContentBlockParam> blocks = request.messages().get(0).content().contentBlockParams().orElseThrow();
 		assertThat(blocks).hasSize(2);
 		assertThat(blocks.get(0).asDocument().cacheControl()).isPresent();
 		assertThat(blocks.get(1).asText().cacheControl()).isPresent();
@@ -1793,7 +1978,11 @@ class AnthropicChatModelTests {
 
 		assertThat(request.system().orElseThrow().asTextBlockParams().get(0).cacheControl()).isPresent();
 
-		List<ContentBlockParam> firstUserBlocks = request.messages().get(0).content().blockParams().orElseThrow();
+		List<ContentBlockParam> firstUserBlocks = request.messages()
+			.get(0)
+			.content()
+			.contentBlockParams()
+			.orElseThrow();
 		assertThat(firstUserBlocks.get(0).asDocument().cacheControl()).isPresent();
 		assertThat(firstUserBlocks.get(1).asText().cacheControl()).isPresent();
 
@@ -1813,7 +2002,7 @@ class AnthropicChatModelTests {
 
 		MessageCreateParams request = this.chatModel.createRequest(new Prompt("Question", options), false);
 
-		List<ContentBlockParam> blocks = request.messages().get(0).content().blockParams().orElseThrow();
+		List<ContentBlockParam> blocks = request.messages().get(0).content().contentBlockParams().orElseThrow();
 		return blocks.get(0).asDocument().cacheControl().isPresent();
 	}
 

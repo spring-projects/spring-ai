@@ -33,7 +33,9 @@ import org.apache.commons.logging.LogFactory;
 import reactor.core.publisher.Mono;
 
 import org.springframework.ai.mcp.annotation.McpTool;
+import org.springframework.ai.mcp.annotation.common.IconUtils;
 import org.springframework.ai.mcp.annotation.common.McpPredicates;
+import org.springframework.ai.mcp.annotation.common.McpRequiredCapabilities;
 import org.springframework.ai.mcp.annotation.common.MetaUtils;
 import org.springframework.ai.mcp.annotation.method.tool.AsyncStatelessMcpToolMethodCallback;
 import org.springframework.ai.mcp.annotation.method.tool.ReactiveUtils;
@@ -80,6 +82,8 @@ public class AsyncStatelessMcpToolProvider extends AbstractMcpToolProvider {
 				.map(mcpToolMethod -> {
 
 					var toolJavaAnnotation = doGetMcpToolAnnotation(mcpToolMethod);
+					McpRequiredCapabilities.warnIfIgnored(mcpToolMethod, "McpTool",
+							toolJavaAnnotation.requiredCapabilities());
 
 					String toolName = Utils.hasText(toolJavaAnnotation.name()) ? toolJavaAnnotation.name()
 							: mcpToolMethod.getName();
@@ -122,6 +126,7 @@ public class AsyncStatelessMcpToolProvider extends AbstractMcpToolProvider {
 						title = toolName;
 					}
 					toolBuilder.title(title);
+					toolBuilder.icons(IconUtils.toIcons(toolJavaAnnotation.icons()));
 
 					// Generate Output Schema from the method return type.
 					// Output schema is not generated for primitive types, void,

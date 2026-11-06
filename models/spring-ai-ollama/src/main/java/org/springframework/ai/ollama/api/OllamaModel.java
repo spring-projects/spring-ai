@@ -201,7 +201,19 @@ public enum OllamaModel implements ChatModelDescription {
 	 * features a 32k context window. It offers a high embedding dimension of up to 4096,
 	 * which supports user-defined output dimensions ranging from 32 to 4096.
 	 */
-	QWEN3_EMBED_8B("qwen3-embedding:8b");
+	QWEN3_EMBED_8B("qwen3-embedding:8b"),
+
+	/**
+	 * A small decision model with 600M parameters, answering yes/no, choice and score
+	 * questions about text, images, and audio.
+	 */
+	D1_OMNI_600M("d1-omni:600m"),
+
+	/**
+	 * A decision model with 2B parameters, answering yes/no, choice and score questions
+	 * about text, images, and audio.
+	 */
+	D1_OMNI_2B("d1-omni:2b");
 
 	private final String id;
 

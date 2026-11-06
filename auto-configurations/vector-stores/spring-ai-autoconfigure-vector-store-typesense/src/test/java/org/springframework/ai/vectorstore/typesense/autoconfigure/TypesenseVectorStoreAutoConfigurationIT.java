@@ -24,6 +24,8 @@ import org.junit.jupiter.api.Test;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.typesense.TypesenseContainer;
+import org.typesense.api.Client;
+import org.typesense.model.Field;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
@@ -107,6 +109,38 @@ public class TypesenseVectorStoreAutoConfigurationIT {
 
 				results = vectorStore.similaritySearch(SearchRequest.builder().query("Spring").topK(1).build());
 				assertThat(results).hasSize(0);
+			});
+	}
+
+	@Test
+	public void sizeIsTakenFromTheEmbeddingModelWhenNotConfigured() {
+		this.contextRunner
+			.withPropertyValues("spring.ai.vectorstore.typesense.collection-name=modelSizedCollection",
+					"spring.ai.vectorstore.typesense.initialize-schema=true",
+					"spring.ai.vectorstore.typesense.client.api-key=" + typesense.getApiKey(),
+					"spring.ai.vectorstore.typesense.client.protocol=http",
+					"spring.ai.vectorstore.typesense.client.host=" + typesense.getHost(),
+					"spring.ai.vectorstore.typesense.client.port=" + typesense.getHttpPort())
+			.run(context -> {
+				assertThat(context.getBean(TypesenseVectorStoreProperties.class).getEmbeddingDimension())
+					.isEqualTo(TypesenseVectorStore.INVALID_EMBEDDING_DIMENSION);
+
+				// The collection is created with the size of the model, not 1536
+				Field embedding = context.getBean(Client.class)
+					.collections("modelSizedCollection")
+					.retrieve()
+					.getFields()
+					.stream()
+					.filter(field -> TypesenseVectorStore.EMBEDDING_FIELD_NAME.equals(field.getName()))
+					.findFirst()
+					.orElseThrow();
+				assertThat(embedding.getNumDim()).isEqualTo(384);
+
+				VectorStore vectorStore = context.getBean(VectorStore.class);
+				vectorStore.add(this.documents);
+				List<Document> results = vectorStore
+					.similaritySearch(SearchRequest.builder().query("Spring").topK(1).build());
+				assertThat(results).extracting(Document::getId).containsExactly(this.documents.get(0).getId());
 			});
 	}
 

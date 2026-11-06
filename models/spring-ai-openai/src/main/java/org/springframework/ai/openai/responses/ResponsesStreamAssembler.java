@@ -17,21 +17,25 @@
 package org.springframework.ai.openai.responses;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import com.openai.models.responses.Response;
+import com.openai.models.responses.ResponseFunctionToolCall;
 import com.openai.models.responses.ResponseOutputItem;
 import com.openai.models.responses.ResponseStreamEvent;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
+import org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
 import org.springframework.ai.chat.messages.part.MessagePart;
 import org.springframework.ai.chat.messages.part.ReasoningPart;
 import org.springframework.ai.chat.messages.part.StreamingParts;
 import org.springframework.ai.chat.messages.part.TextPart;
+import org.springframework.ai.chat.messages.part.ToolCallPart;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -52,12 +56,16 @@ import org.springframework.ai.chat.model.MessageAggregator;
  * <ul>
  * <li>Text, reasoning text and reasoning summary deltas are stamped
  * {@link StreamingParts#partial partial}, so the aggregator appends them.
+ * <li>A function call is announced when its item is added, and each of its arguments
+ * deltas follows, as partial {@link ToolCallPart}s carrying the call id and name. They
+ * are not tool calls and the aggregator skips them: the complete call is emitted when its
+ * item completes.
  * <li>When an item completes, the part it maps to is emitted for its index. A part whose
  * content already arrived as deltas is emitted <em>partial and emptied</em>: it
  * contributes the encrypted reasoning payload and the item attributes to the aggregated
- * part without repeating the text a consumer of the raw flux has already seen. A part
- * nothing streamed for - a function call, a hosted tool item, generated media - is
- * emitted {@link StreamingParts#complete complete}.
+ * part without repeating the text a consumer of the raw flux has already seen. Any other
+ * part - a function call, a hosted tool item, generated media - is emitted
+ * {@link StreamingParts#complete complete}.
  * <li>Every chunk carries the response id on its {@link ChatResponseMetadata}. The
  * aggregator groups indexed parts by it, which is what keeps the parts of consecutive
  * tool-calling rounds flowing through one flux from merging into each other.
@@ -98,6 +106,12 @@ final class ResponsesStreamAssembler {
 	private final Set<Integer> streamedReasoningText = new HashSet<>();
 
 	private final Set<Integer> streamedReasoningSummary = new HashSet<>();
+
+	/**
+	 * The function calls whose arguments are streaming, by output index, holding the call
+	 * id and name the arguments deltas do not repeat.
+	 */
+	private final Map<Integer, ToolCall> streamingFunctionCalls = new HashMap<>();
 
 	private @Nullable String responseId;
 
@@ -144,6 +158,27 @@ final class ResponsesStreamAssembler {
 						.metadata(OpenAiResponsesMetadata.REASONING_CONTENT, this.reasoning.toString())
 						.build()));
 		}
+		if (event.isOutputItemAdded()) {
+			var added = event.outputItemAdded().orElseThrow();
+			if (added.item().isFunctionCall()) {
+				ResponseFunctionToolCall call = added.item().asFunctionCall();
+				int index = index(added.outputIndex());
+				ToolCall toolCall = new ToolCall(call.callId(), "function", call.name(), "");
+				this.streamingFunctionCalls.put(index, toolCall);
+				return List.of(chunk(StreamingParts.partial(ToolCallPart.of(toolCall), index)));
+			}
+			return List.of();
+		}
+		if (event.isFunctionCallArgumentsDelta()) {
+			var delta = event.functionCallArgumentsDelta().orElseThrow();
+			int index = index(delta.outputIndex());
+			ToolCall toolCall = this.streamingFunctionCalls.get(index);
+			if (toolCall == null) {
+				return List.of();
+			}
+			ToolCall argumentsDelta = new ToolCall(toolCall.id(), toolCall.type(), toolCall.name(), delta.delta());
+			return List.of(chunk(StreamingParts.partial(ToolCallPart.of(argumentsDelta), index)));
+		}
 		if (event.isRefusalDelta()) {
 			this.refusal.append(event.refusalDelta().orElseThrow().delta());
 			// No refusal part type, so the running total on the generation metadata is
@@ -160,6 +195,7 @@ final class ResponsesStreamAssembler {
 		if (event.isOutputItemDone()) {
 			var done = event.outputItemDone().orElseThrow();
 			this.outputItems.add(done.item());
+			this.streamingFunctionCalls.remove(index(done.outputIndex()));
 			return List.of(chunk(indexedPart(done.item(), index(done.outputIndex()))));
 		}
 		if (event.isCompleted()) {

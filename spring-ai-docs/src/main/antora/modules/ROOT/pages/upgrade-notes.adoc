@@ -4,6 +4,24 @@
 [[upgrading-to-2-1-0]]
 == Upgrading to 2.1.0
 
+=== Decision Models
+
+==== New: `DecisionModel` API
+
+A new `DecisionModel` API, in `org.springframework.ai.decision`, picks among a known set of outcomes, such as yes or no, one of several categories or a level on a scale, and reports how likely each outcome is.
+It follows the shape of the other model APIs: a `DecisionPrompt` goes in, a `DecisionResponse` comes out, and `DecisionOptions` tune the call.
+Three implementations are available:
+
+* `OpenAiDecisionModel`, backed by the OpenAI Decisions API and auto-configured by the OpenAI starter under `spring.ai.openai.decision`.
+See xref:api/decision/openai-decision.adoc[OpenAI Decision Models];
+* `OllamaDecisionModel`, backed by the Ollama `/v1/systemone` endpoint through the TypeSafe Java SDK and auto-configured by the Ollama starter under `spring.ai.ollama.decision`, with `d1-omni:600m` as the default model and `spring.ai.ollama.init.decision` to pull decision models at startup.
+See xref:api/decision/ollama-decision.adoc[Ollama Decision Models];
+* `SystemOneDecisionModel`, designed for the `/v1/systemone` endpoint through the TypeSafe Java SDK, and usable with TypeSafe Jev, Laya, llmman, Ollama, and other compatible inference services.
+See xref:api/decision/systemone-decision.adoc[System One Decision Models].
+
+Decision models are observed with the `decision` operation name, and the new `spring-ai-autoconfigure-model-decision-observation` module adds token usage metrics.
+See xref:api/decision.adoc[Decision Models].
+
 === Message Parts
 
 ==== New: Ordered `MessagePart` Content on `AssistantMessage` and `UserMessage`
@@ -40,10 +58,28 @@ Reasoning deltas now carry their text in a `ReasoningPart`.
 ===== Impact
 
 A streamed chunk never has a `null` text, so `map(AssistantMessage::getText).collect(Collectors.joining())` keeps working.
-By default, tool calls are still buffered and arrive once as a complete call.
-Partial parts are not tool calls, so nothing executes on them, and `ChatClient` hides them either way.
+The chat models whose API streams tool call arguments (Anthropic, OpenAI Chat Completions and Responses, Bedrock Converse, DeepSeek) emit each argument delta as a chunk holding a partial `ToolCallPart`, before the complete call arrives once, as before.
+A partial `ToolCallPart` is not a tool call: `getToolCalls()` and `hasToolCalls()` skip it, so nothing executes on it, and `MessageAggregator` skips it, so chat memory never persists it.
+`ChatClient` passes these chunks through so that a UI can show the call in progress; `.stream().content()` is unaffected, as they carry no text.
+See xref:api/tools.adoc#streaming-tool-call-arguments[Streaming Tool Call Arguments].
+
+In 2.1.0-M1 and 2.1.0-RC1, `MessageAggregator` appended the arguments of partial `ToolCallPart`s to their call.
+It now skips them, so a custom chat model that streams a tool call only as partial `ToolCallPart`s aggregates to a message without that tool call.
+Such a chat model must also emit the complete `ToolCallPart`, at the same index as its deltas, as the built-in chat models do.
 
 === Anthropic
+
+==== Changed: Anthropic Java SDK 3.x
+
+The Anthropic module now uses Java SDK `3.4.0` and API version `2026-10-21`.
+Remove `temperature`, `topP` and `topK` from model defaults and request options, including explicit default values.
+Remove `spring.ai.anthropic.chat.temperature`, `spring.ai.anthropic.chat.top-p` and `spring.ai.anthropic.chat.top-k`, including their legacy `.options` aliases.
+The retained Java methods and Boot properties are deprecated since `2.1.0`; the legacy aliases remain deprecated since `2.0.0`.
+Sampling values in model defaults and request options are discarded and a `WARN` message is logged.
+
+API keys now use `Authorization: Bearer` instead of `X-Api-Key`.
+Update proxies, interceptors and header allowlists that depend on the previous header.
+See xref:api/chat/anthropic-migration.adoc#anthropic-sdk-3[Anthropic Java SDK 3.x migration] for details.
 
 ==== Changed: Thinking Is Returned as `ReasoningPart`s of a Single Generation
 
@@ -183,6 +219,30 @@ Message prefix = AssistantMessage.builder()
 
 Add the reasoning content of a prefix message as a `ReasoningPart`, for example with `AssistantMessage.builder().part(ReasoningPart.of(...))`.
 
+==== Changed: `DeepSeekChatModel` Streams Through `DeepSeekApi.chatCompletionStreamRaw`
+
+`DeepSeekChatModel` streams through the new `DeepSeekApi.chatCompletionStreamRaw`, which returns the chunks as the server sends them, so that it can stream the tool call argument deltas.
+`DeepSeekApi.chatCompletionStream` still merges the chunks of a tool call, and is no longer used by `DeepSeekChatModel`.
+
+===== Impact
+
+A `DeepSeekApi` subclass that overrides `chatCompletionStream` is no longer called by `DeepSeekChatModel`.
+A test mock that only stubs `chatCompletionStream` returns `null` from `chatCompletionStreamRaw`, and streaming then fails with a `NullPointerException`.
+
+===== Migration
+
+Override or stub `chatCompletionStreamRaw` instead of `chatCompletionStream`.
+
+=== OpenAI Service Connections
+
+==== New: `OpenAiConnectionDetails`
+
+The OpenAI auto-configurations now resolve the base URL and API key through a Spring Boot `ConnectionDetails` bean, `OpenAiConnectionDetails`.
+By default the bean is backed by the `spring.ai.openai.base-url` and `spring.ai.openai.api-key` properties, so existing configuration keeps working.
+Declaring your own `OpenAiConnectionDetails` bean supersedes those two properties, while the model-level overrides such as `spring.ai.openai.chat.base-url` and `spring.ai.openai.chat.api-key` still take precedence.
+This is the hook for pointing the OpenAI models at an OpenAI-compatible server running in a container, for example via Testcontainers or Docker Compose.
+See xref:api/chat/openai-chat.adoc#_connection_details[Connection Details].
+
 === Bedrock Converse
 
 ==== Changed: A Response Is a Single Generation of Ordered `MessagePart`s
@@ -319,6 +379,17 @@ Nothing changes at runtime: the deprecated types keep working until 3.0.0.
 * The conversation key moves to `MemoryAdvisor.CONVERSATION_ID`, with the same value as `ChatMemory.CONVERSATION_ID`, so requests reach both the chat memory and the session advisors.
 * `getConversationId(context)` moves from `BaseChatMemoryAdvisor` up to `MemoryAdvisor`; `BaseChatMemoryAdvisor` inherits it, so its implementations need no change.
 * `VectorStoreChatMemoryAdvisor` is not deprecated.
+
+[[upgrading-to-2-0-3]]
+== Upgrading to 2.0.3
+
+=== Prompt Token Usage with Caching
+
+Anthropic and Bedrock Converse now include cache read and cache write tokens in `Usage.getPromptTokens()` and the `gen_ai.usage.input_tokens` observation attribute, for both synchronous and streaming responses.
+Previously, these values counted only uncached input tokens.
+Anthropic's `Usage.getTotalTokens()` also includes the cached input tokens; Bedrock's provider-reported total already includes them.
+The separate cache read and cache write usage fields remain available.
+If your application manually adds cache tokens to the prompt token count to compensate for the previous behavior, remove that adjustment to avoid counting them twice.
 
 [[upgrading-to-2-0-2]]
 == Upgrading to 2.0.2
@@ -2560,7 +2631,7 @@ If you want to maintain the previous behavior, explicitly set the temperature in
 # Example for OpenAI
 spring.ai.openai.chat.temperature=0.7
 
-# Example for Anthropic
+# Anthropic before Spring AI 2.1.0 only; remove this property when upgrading to 2.1.0.
 spring.ai.anthropic.chat.temperature=0.7
 
 # Example for Azure OpenAI
