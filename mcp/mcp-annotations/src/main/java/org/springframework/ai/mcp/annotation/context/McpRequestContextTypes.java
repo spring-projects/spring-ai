@@ -110,7 +110,7 @@ public interface McpRequestContextTypes<ET> {
 				.stream()
 				.map(t -> TextContent.builder(t).build())
 				.toList()
-				.toArray(new TextContent[0]));
+				.toArray(TextContent[]::new));
 		}
 
 		SamplingSpec message(SamplingMessage... message);

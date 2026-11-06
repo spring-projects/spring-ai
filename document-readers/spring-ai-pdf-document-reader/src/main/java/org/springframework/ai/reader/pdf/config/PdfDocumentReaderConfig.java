@@ -58,7 +58,7 @@ public final class PdfDocumentReaderConfig {
 		this.pageTopMargin = builder.pageTopMargin;
 		this.pageExtractedTextFormatter = builder.pageExtractedTextFormatter;
 		this.reversedParagraphPosition = builder.reversedParagraphPosition;
-		this.pageRanges = builder.pageRanges.toArray(new int[0][]);
+		this.pageRanges = builder.pageRanges.toArray(int[][]::new);
 	}
 
 	/**

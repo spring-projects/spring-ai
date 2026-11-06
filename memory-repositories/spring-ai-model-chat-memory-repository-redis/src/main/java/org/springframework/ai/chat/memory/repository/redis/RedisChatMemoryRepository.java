@@ -443,7 +443,7 @@ public final class RedisChatMemoryRepository implements ChatMemoryRepository, Ad
 					.prefix(this.config.getKeyPrefix());
 
 				String response = this.jedisClient.ftCreate(this.config.getIndexName(), indexParams,
-						schemaFields.toArray(new SchemaField[0]));
+						schemaFields.toArray(SchemaField[]::new));
 
 				if (!response.equals("OK")) {
 					throw new IllegalStateException("Failed to create index: " + response);

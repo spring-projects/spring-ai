@@ -107,13 +107,13 @@ class DefaultAroundAdvisorChainTests {
 
 		List<CallAdvisor> advisors = List.of(mockAdvisor1, mockAdvisor2);
 		CallAdvisorChain chain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP).pushAll(advisors).build();
-		assertThat(chain.getCallAdvisors()).containsExactlyInAnyOrder(advisors.toArray(new CallAdvisor[0]));
+		assertThat(chain.getCallAdvisors()).containsExactlyInAnyOrder(advisors.toArray(CallAdvisor[]::new));
 
 		chain.nextCall(ChatClientRequest.builder().prompt(new Prompt("Hello")).build());
-		assertThat(chain.getCallAdvisors()).containsExactlyInAnyOrder(advisors.toArray(new CallAdvisor[0]));
+		assertThat(chain.getCallAdvisors()).containsExactlyInAnyOrder(advisors.toArray(CallAdvisor[]::new));
 
 		chain.nextCall(ChatClientRequest.builder().prompt(new Prompt("Hello")).build());
-		assertThat(chain.getCallAdvisors()).containsExactlyInAnyOrder(advisors.toArray(new CallAdvisor[0]));
+		assertThat(chain.getCallAdvisors()).containsExactlyInAnyOrder(advisors.toArray(CallAdvisor[]::new));
 	}
 
 	@Test
@@ -129,13 +129,13 @@ class DefaultAroundAdvisorChainTests {
 		StreamAdvisorChain chain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
 			.pushAll(advisors)
 			.build();
-		assertThat(chain.getStreamAdvisors()).containsExactlyInAnyOrder(advisors.toArray(new StreamAdvisor[0]));
+		assertThat(chain.getStreamAdvisors()).containsExactlyInAnyOrder(advisors.toArray(StreamAdvisor[]::new));
 
 		chain.nextStream(ChatClientRequest.builder().prompt(new Prompt("Hello")).build()).blockLast();
-		assertThat(chain.getStreamAdvisors()).containsExactlyInAnyOrder(advisors.toArray(new StreamAdvisor[0]));
+		assertThat(chain.getStreamAdvisors()).containsExactlyInAnyOrder(advisors.toArray(StreamAdvisor[]::new));
 
 		chain.nextStream(ChatClientRequest.builder().prompt(new Prompt("Hello")).build()).blockLast();
-		assertThat(chain.getStreamAdvisors()).containsExactlyInAnyOrder(advisors.toArray(new StreamAdvisor[0]));
+		assertThat(chain.getStreamAdvisors()).containsExactlyInAnyOrder(advisors.toArray(StreamAdvisor[]::new));
 	}
 
 	@Test
