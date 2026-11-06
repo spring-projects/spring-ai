@@ -19,10 +19,12 @@ package org.springframework.ai.vectorstore.pgvector;
 import java.sql.ResultSet;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
 import org.postgresql.util.PGobject;
@@ -41,6 +43,7 @@ import org.springframework.jdbc.core.RowMapper;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -56,6 +59,7 @@ import static org.mockito.Mockito.when;
 /**
  * @author Muthukumaran Navaneethakrishnan
  * @author Soby Chacko
+ * @author Minju Kim
  */
 public class PgVectorStoreTests {
 
@@ -270,6 +274,36 @@ public class PgVectorStoreTests {
 		verify(jdbcTemplate, never()).queryForList(anyString(), eq(Integer.class), any(), any(), any());
 	}
 
+	@ParameterizedTest(name = "initializeSchema={0}")
+	@ValueSource(booleans = { false, true })
+	void schemaValidationWithoutConfiguredDimensionsAcceptsTheExistingTable(boolean initializeSchema) {
+		var jdbcTemplate = mock(JdbcTemplate.class);
+		var embeddingModel = mock(EmbeddingModel.class);
+		mockExistingVectorTable(jdbcTemplate, 1536);
+		var store = PgVectorStore.builder(jdbcTemplate, embeddingModel)
+			.initializeSchema(initializeSchema)
+			.vectorTableValidationsEnabled(true)
+			.build();
+
+		// No size was configured, so the size of the existing column is not checked
+		assertThatNoException().isThrownBy(store::afterPropertiesSet);
+		verify(embeddingModel, never()).dimensions();
+	}
+
+	@Test
+	void schemaValidationRejectsConfiguredDimensionsThatDoNotMatchTheTable() {
+		var jdbcTemplate = mock(JdbcTemplate.class);
+		var embeddingModel = mock(EmbeddingModel.class);
+		mockExistingVectorTable(jdbcTemplate, 1536);
+		var store = PgVectorStore.builder(jdbcTemplate, embeddingModel)
+			.dimensions(768)
+			.vectorTableValidationsEnabled(true)
+			.build();
+
+		assertThatIllegalStateException().isThrownBy(store::afterPropertiesSet)
+			.withMessageContaining("Actual vector dimensions is 1536, required vector dimensions is 768");
+	}
+
 	@Test
 	void customMetadataColumnNameIsUsedInDeleteByFilter() {
 		var jdbcTemplate = mock(JdbcTemplate.class);
@@ -474,6 +508,16 @@ public class PgVectorStoreTests {
 		Document document = rowMapperCaptor.getValue().mapRow(resultSet, 0);
 
 		assertThat(document.getMetadata()).containsEntry(DocumentMetadata.DISTANCE.value(), 0.42f);
+	}
+
+	private static void mockExistingVectorTable(JdbcTemplate jdbcTemplate, int dimensions) {
+		when(jdbcTemplate.queryForObject(contains("information_schema.tables"), eq(Integer.class), any(), any()))
+			.thenReturn(1);
+		when(jdbcTemplate.queryForList(contains("information_schema.columns"), any(Object[].class)))
+			.thenReturn(List.of(Map.of("column_name", "id"), Map.of("column_name", "content"),
+					Map.of("column_name", "metadata"), Map.of("column_name", "embedding")));
+		when(jdbcTemplate.queryForObject(contains("atttypmod"), eq(Integer.class), any(), any(), any()))
+			.thenReturn(dimensions);
 	}
 
 }
