@@ -157,6 +157,7 @@ import org.springframework.util.StringUtils;
  * @author guan xu
  * @author Raphael Vullriede
  * @author Dimitar Proynov
+ * @author Minju Kim
  */
 public final class OpenAiChatModel implements ChatModel {
 
@@ -1744,18 +1745,18 @@ public final class OpenAiChatModel implements ChatModel {
 		}
 
 		private static Delta mergeDeltas(Delta left, Delta right) {
-			// Deltas of the same logical tool call share the required 'index' field.
-			// Some OpenAI-compatible providers (e.g. DeepSeek) send an empty-string id
-			// on continuation deltas instead of omitting it, so id presence cannot be
-			// used to detect the start of a new tool call.
 			var tcs = Stream.of(left.toolCalls(), right.toolCalls()).flatMap(Optional::stream).reduce((tcs1, tcs2) -> {
 				if (tcs2.isEmpty()) {
 					return tcs1;
 				}
-				Map<Long, ToolCall> mergedByIndex = new LinkedHashMap<>();
-				tcs1.forEach(tc -> mergedByIndex.merge(tc.index(), tc, ChunkMerger::mergeToolCalls));
-				tcs2.forEach(tc -> mergedByIndex.merge(tc.index(), tc, ChunkMerger::mergeToolCalls));
-				return List.copyOf(mergedByIndex.values());
+				Map<Object, ToolCall> mergedByKey = new LinkedHashMap<>();
+				Object previousKey = null;
+				for (ToolCall tc : Stream.concat(tcs1.stream(), tcs2.stream()).toList()) {
+					Object key = toolCallKey(tc, previousKey);
+					mergedByKey.merge(key, tc, ChunkMerger::mergeToolCalls);
+					previousKey = key;
+				}
+				return List.copyOf(mergedByKey.values());
 			}).orElse(List.of());
 
 			Delta.Builder deltaBuilder = left.toBuilder().toolCalls(tcs);
@@ -1773,6 +1774,26 @@ public final class OpenAiChatModel implements ChatModel {
 							JsonValue.from(stringProperty(left, reasoningKey).orElse("") + rightFragment)));
 			}
 			return deltaBuilder.build();
+		}
+
+		/**
+		 * Return the key that groups the deltas of one logical tool call. Deltas of the
+		 * same tool call share the 'index' field. Some OpenAI-compatible providers (e.g.
+		 * DeepSeek) send an empty-string id on continuation deltas instead of omitting
+		 * it, so id presence cannot be used to detect the start of a new tool call when
+		 * an index is present. Others (e.g. Gemini) omit the index and send each tool
+		 * call whole: without an index, a delta with an id starts a new tool call and a
+		 * delta without one continues the previous tool call.
+		 */
+		private static Object toolCallKey(ToolCall toolCall, @Nullable Object previousKey) {
+			Optional<Long> index = toolCall._index().asKnown();
+			if (index.isPresent()) {
+				return index.get();
+			}
+			if (previousKey == null || toolCall.id().filter(StringUtils::hasText).isPresent()) {
+				return new Object();
+			}
+			return previousKey;
 		}
 
 		private static Optional<String> stringProperty(Delta delta, String key) {
