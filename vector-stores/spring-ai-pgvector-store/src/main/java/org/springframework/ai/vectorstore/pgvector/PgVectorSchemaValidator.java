@@ -35,6 +35,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
  * @author Christian Tzolov
  * @author Yanming Zhou
  * @author Siarhei Dudzin
+ * @author Minju Kim
  * @since 1.0.0
  */
 class PgVectorSchemaValidator {
@@ -198,12 +199,15 @@ class PgVectorSchemaValidator {
 				throw new IllegalStateException("Missing fields " + expectedColumns);
 			}
 
-			// Query the actual dimensions
-			Integer actualDimensions = this.jdbcTemplate.queryForObject(VECTOR_COLUMN_DIMENSIONS_QUERY, Integer.class,
-					schemaName, tableName, embeddingFieldName.toLowerCase(Locale.ROOT));
-			if (actualDimensions == null || actualDimensions != dimensions) {
-				throw new IllegalStateException("Actual vector dimensions is " + actualDimensions
-						+ ", required vector dimensions is " + dimensions);
+			// A store built without dimensions takes its vector size from the table, so
+			// there is no required size to compare against.
+			if (dimensions > 0) {
+				Integer actualDimensions = this.jdbcTemplate.queryForObject(VECTOR_COLUMN_DIMENSIONS_QUERY,
+						Integer.class, schemaName, tableName, embeddingFieldName.toLowerCase(Locale.ROOT));
+				if (actualDimensions == null || actualDimensions != dimensions) {
+					throw new IllegalStateException("Actual vector dimensions is " + actualDimensions
+							+ ", required vector dimensions is " + dimensions);
+				}
 			}
 		}
 		catch (DataAccessException | IllegalStateException e) {
