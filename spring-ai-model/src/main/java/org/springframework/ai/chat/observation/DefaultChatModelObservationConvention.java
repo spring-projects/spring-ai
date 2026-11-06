@@ -113,7 +113,25 @@ public class DefaultChatModelObservationConvention implements ChatModelObservati
 		keyValues = usageInputTokens(keyValues, context);
 		keyValues = usageOutputTokens(keyValues, context);
 		keyValues = usageTotalTokens(keyValues, context);
+		// Error
+		keyValues = errorType(keyValues, context);
 		return keyValues;
+	}
+
+	/**
+	 * Add {@code error.type} when the operation ended with an error. Successful
+	 * operations carry no error type, as the OpenTelemetry conventions require.
+	 * @since 2.1.0
+	 */
+	protected KeyValues errorType(KeyValues keyValues, ChatModelObservationContext context) {
+		Throwable error = context.getError();
+		if (error == null) {
+			return keyValues;
+		}
+		Class<?> errorClass = error.getClass();
+		String canonicalName = errorClass.getCanonicalName();
+		return keyValues.and(ChatModelObservationDocumentation.HighCardinalityKeyNames.ERROR_TYPE.asString(),
+				canonicalName != null ? canonicalName : errorClass.getName());
 	}
 
 	// Request
