@@ -35,6 +35,8 @@ import io.qdrant.client.grpc.JsonWithInt.Value;
 import io.qdrant.client.grpc.Points.PointStruct;
 import io.qdrant.client.grpc.Points.ScoredPoint;
 import io.qdrant.client.grpc.Points.SearchPoints;
+import io.qdrant.client.grpc.Points.UpdateResult;
+import io.qdrant.client.grpc.Points.UpdateStatus;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -204,7 +206,8 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 					.build();
 			}).toList();
 
-			this.qdrantClient.upsertAsync(this.collectionName, points).get();
+			UpdateResult response = this.qdrantClient.upsertAsync(this.collectionName, points).get();
+			requireCompleted(response, "add documents");
 		}
 		catch (InterruptedException | ExecutionException | IllegalArgumentException e) {
 			throw new RuntimeException(e);
@@ -240,7 +243,8 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 					.build();
 			}).toList();
 
-			this.qdrantClient.upsertAsync(this.collectionName, points).get();
+			UpdateResult response = this.qdrantClient.upsertAsync(this.collectionName, points).get();
+			requireCompleted(response, "upsert documents");
 		}
 		catch (InterruptedException e) {
 			// Restore the flag so a caller that interrupted us can still see it.
@@ -262,7 +266,11 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 			List<PointId> ids = documentIds.stream()
 				.map(id -> io.qdrant.client.PointIdFactory.id(UUID.fromString(id)))
 				.toList();
-			this.qdrantClient.deleteAsync(this.collectionName, ids).get();
+			UpdateResult response = this.qdrantClient.deleteAsync(this.collectionName, ids).get();
+			requireCompleted(response, "delete documents by id");
+		}
+		catch (IllegalStateException e) {
+			throw e;
 		}
 		catch (Exception e) {
 			throw new RuntimeException(e);
@@ -276,15 +284,13 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 		try {
 			Filter filter = this.filterExpressionConverter.convertExpression(filterExpression);
 
-			io.qdrant.client.grpc.Points.UpdateResult response = this.qdrantClient
-				.deleteAsync(this.collectionName, filter)
-				.get();
-
-			if (response.getStatus() != io.qdrant.client.grpc.Points.UpdateStatus.Completed) {
-				throw new IllegalStateException("Failed to delete documents by filter: " + response.getStatus());
-			}
+			UpdateResult response = this.qdrantClient.deleteAsync(this.collectionName, filter).get();
+			requireCompleted(response, "delete documents by filter");
 
 			logger.debug("Deleted documents matching filter expression");
+		}
+		catch (IllegalStateException e) {
+			throw e;
 		}
 		catch (Exception e) {
 			if (logger.isErrorEnabled()) {
@@ -367,6 +373,13 @@ public class QdrantVectorStore extends AbstractObservationVectorStore implements
 	 * @param document The document containing metadata.
 	 * @return The metadata as a Protobuf Struct.
 	 */
+
+	private static void requireCompleted(UpdateResult response, String action) {
+		if (response.getStatus() != UpdateStatus.Completed) {
+			throw new IllegalStateException("Failed to " + action + ": " + response.getStatus());
+		}
+	}
+
 	private Map<String, Value> toPayload(Document document) {
 		try {
 			var payload = QdrantValueFactory.toValueMap(document.getMetadata());
