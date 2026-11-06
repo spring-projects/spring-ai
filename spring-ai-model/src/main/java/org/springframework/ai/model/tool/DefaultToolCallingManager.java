@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
@@ -46,6 +47,7 @@ import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.execution.DefaultToolExecutionExceptionProcessor;
 import org.springframework.ai.tool.execution.ToolExecutionException;
 import org.springframework.ai.tool.execution.ToolExecutionExceptionProcessor;
+import org.springframework.ai.tool.execution.ToolInputException;
 import org.springframework.ai.tool.metadata.ToolMetadata;
 import org.springframework.ai.tool.observation.DefaultToolCallingObservationConvention;
 import org.springframework.ai.tool.observation.ToolCallingObservationContext;
@@ -296,6 +298,7 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 		List<ToolResponseMessage.ToolResponse> toolResponses = new ArrayList<>();
 
 		Boolean returnDirect = null;
+		AtomicBoolean inputFailure = new AtomicBoolean();
 		boolean denied = false;
 
 		Map<String, Integer> toolCallCounts = ToolCallLimits.countPriorToolCalls(prompt.getInstructions());
@@ -404,6 +407,9 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 					}
 					catch (ToolExecutionException ex) {
 						toolResult = this.toolExecutionExceptionProcessor.process(ex);
+						if (ex instanceof ToolInputException) {
+							inputFailure.set(true);
+						}
 					}
 					observationContext.setToolCallResult(toolResult);
 					return toolResult;
@@ -413,9 +419,10 @@ public final class DefaultToolCallingManager implements ToolCallingManager {
 					toolCallResult != null ? toolCallResult : ""));
 		}
 
-		// Straight back to the caller only when every call ran and asked for it
+		// Input-error feedback must reach the model even when every tool requests direct
+		// return.
 		return new InternalToolExecutionResult(ToolResponseMessage.builder().responses(toolResponses).build(),
-				Objects.requireNonNullElse(returnDirect, false) && !denied);
+				Objects.requireNonNullElse(returnDirect, false) && !denied && !inputFailure.get());
 	}
 
 	/**

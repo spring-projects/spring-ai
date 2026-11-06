@@ -34,6 +34,7 @@ import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.execution.DefaultToolCallResultConverter;
 import org.springframework.ai.tool.execution.ToolCallResultConverter;
 import org.springframework.ai.tool.execution.ToolExecutionException;
+import org.springframework.ai.tool.execution.ToolInputException;
 import org.springframework.ai.tool.metadata.ToolMetadata;
 import org.springframework.ai.util.JsonHelper;
 import org.springframework.core.ParameterizedTypeReference;
@@ -107,7 +108,10 @@ public final class MethodToolCallback implements ToolCallback {
 		this.validateToolContextSupport(toolContext);
 
 		Map<String, Object> toolArguments = this.extractToolArguments(toolInput);
-		Assert.state(toolArguments != null, "toolArguments must not be null");
+		if (toolArguments == null) {
+			throw new ToolInputException(this.toolDefinition,
+					new IllegalArgumentException("Tool input must be a JSON object"));
+		}
 
 		Object[] methodArguments = this.buildMethodArguments(toolArguments, toolContext);
 
@@ -139,7 +143,7 @@ public final class MethodToolCallback implements ToolCallback {
 		catch (Exception ex) {
 			logger.warn("Conversion from JSON failed", ex);
 			Throwable cause = (ex.getCause() instanceof JacksonException) ? ex.getCause() : ex;
-			throw new ToolExecutionException(this.getToolDefinition(), cause);
+			throw new ToolInputException(this.getToolDefinition(), cause);
 		}
 	}
 
@@ -151,6 +155,10 @@ public final class MethodToolCallback implements ToolCallback {
 				return toolContext;
 			}
 			Object rawArgument = toolInputArguments.get(parameter.getName());
+			if (rawArgument == null && parameter.getType().isPrimitive()) {
+				throw new ToolInputException(this.toolDefinition, new IllegalArgumentException(
+						"Missing non-null value for primitive parameter: " + parameter.getName()));
+			}
 			return buildTypedArgument(rawArgument, parameter.getParameterizedType());
 		}).toArray();
 	}
@@ -171,7 +179,7 @@ public final class MethodToolCallback implements ToolCallback {
 		catch (Exception ex) {
 			logger.warn("Conversion from JSON failed", ex);
 			Throwable cause = (ex.getCause() instanceof JacksonException) ? ex.getCause() : ex;
-			throw new ToolExecutionException(this.getToolDefinition(), cause);
+			throw new ToolInputException(this.getToolDefinition(), cause);
 		}
 	}
 
