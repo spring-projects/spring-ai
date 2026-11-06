@@ -105,12 +105,12 @@ final class DefaultChatClientUtils {
 			builder = builder.combineWith(inputRequest.getOptionsCustomizer());
 		}
 
-		if (builder instanceof ToolCallingChatOptions.Builder<?> tbuilder) {
+		List<ToolCallback> toolCallbacks = new ArrayList<>(inputRequest.getToolCallbacks());
+		for (var provider : inputRequest.getToolCallbackProviders()) {
+			toolCallbacks.addAll(java.util.List.of(provider.getToolCallbacks()));
+		}
 
-			List<ToolCallback> toolCallbacks = new ArrayList<>(inputRequest.getToolCallbacks());
-			for (var provider : inputRequest.getToolCallbackProviders()) {
-				toolCallbacks.addAll(java.util.List.of(provider.getToolCallbacks()));
-			}
+		if (builder instanceof ToolCallingChatOptions.Builder<?> tbuilder) {
 
 			if (!toolCallbacks.isEmpty()) {
 				ToolCallingChatOptions.validateToolCallbacks(toolCallbacks);
@@ -121,6 +121,14 @@ final class DefaultChatClientUtils {
 				tbuilder.toolContext(inputRequest.getToolContext());
 			}
 
+		}
+		else if (!toolCallbacks.isEmpty() || !inputRequest.getToolContext().isEmpty()) {
+			// Tools were declared explicitly but the options cannot carry them: fail
+			// instead of silently sending a request without them.
+			throw new IllegalStateException("Tool callbacks or tool context were declared on the ChatClient request, "
+					+ "but the default options of " + inputRequest.getChatModel().getClass().getName()
+					+ " do not support tool calling. Make ChatModel#getOptions() return ToolCallingChatOptions, "
+					+ "or remove the tool declarations.");
 		}
 
 		ChatOptions processedChatOptions = builder.build();

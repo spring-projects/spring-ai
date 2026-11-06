@@ -31,6 +31,7 @@ import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.template.TemplateRenderer;
 import org.springframework.ai.template.st.StTemplateRenderer;
 import org.springframework.ai.tool.ToolCallback;
+import org.springframework.ai.tool.ToolCallbackProvider;
 import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.metadata.ToolMetadata;
@@ -333,6 +334,80 @@ class DefaultChatClientUtilsTests {
 		ToolCallingChatOptions resultOptions = (ToolCallingChatOptions) result.prompt().getOptions();
 		assertThat(resultOptions).isNotNull();
 		assertThat(resultOptions.getToolContext()).containsAllEntriesOf(toolContext1);
+	}
+
+	@Test
+	void whenToolCallbacksAreProvidedAndModelOptionsDoNotSupportToolsThenThrows() {
+		ChatModel chatModel = mock(ChatModel.class);
+		when(chatModel.getOptions()).thenReturn(ChatOptions.builder().build());
+		DefaultChatClient.DefaultChatClientRequestSpec inputRequest = (DefaultChatClient.DefaultChatClientRequestSpec) ChatClient
+			.create(chatModel)
+			.prompt()
+			.tools(new TestToolCallback("tool1"));
+
+		assertThatThrownBy(() -> DefaultChatClientUtils.toChatClientRequest(inputRequest))
+			.isInstanceOf(IllegalStateException.class)
+			.hasMessageContaining("do not support tool calling");
+	}
+
+	@Test
+	void whenDefaultToolCallbacksAreProvidedAndModelOptionsDoNotSupportToolsThenThrows() {
+		ChatModel chatModel = mock(ChatModel.class);
+		when(chatModel.getOptions()).thenReturn(ChatOptions.builder().build());
+		DefaultChatClient.DefaultChatClientRequestSpec inputRequest = (DefaultChatClient.DefaultChatClientRequestSpec) ChatClient
+			.builder(chatModel)
+			.defaultToolCallbacks(new TestToolCallback("tool1"))
+			.build()
+			.prompt();
+
+		assertThatThrownBy(() -> DefaultChatClientUtils.toChatClientRequest(inputRequest))
+			.isInstanceOf(IllegalStateException.class)
+			.hasMessageContaining("do not support tool calling");
+	}
+
+	@Test
+	void whenToolCallbackProviderIsProvidedAndModelOptionsDoNotSupportToolsThenThrows() {
+		ChatModel chatModel = mock(ChatModel.class);
+		when(chatModel.getOptions()).thenReturn(ChatOptions.builder().build());
+		ToolCallbackProvider provider = ToolCallbackProvider.from(new TestToolCallback("tool1"));
+		DefaultChatClient.DefaultChatClientRequestSpec inputRequest = (DefaultChatClient.DefaultChatClientRequestSpec) ChatClient
+			.create(chatModel)
+			.prompt()
+			.toolCallbacks(provider);
+
+		assertThatThrownBy(() -> DefaultChatClientUtils.toChatClientRequest(inputRequest))
+			.isInstanceOf(IllegalStateException.class)
+			.hasMessageContaining("do not support tool calling");
+	}
+
+	@Test
+	void whenToolContextIsProvidedAndModelOptionsDoNotSupportToolsThenThrows() {
+		ChatModel chatModel = mock(ChatModel.class);
+		when(chatModel.getOptions()).thenReturn(ChatOptions.builder().build());
+		DefaultChatClient.DefaultChatClientRequestSpec inputRequest = (DefaultChatClient.DefaultChatClientRequestSpec) ChatClient
+			.create(chatModel)
+			.prompt()
+			.toolContext(Map.of("key", "value"));
+
+		assertThatThrownBy(() -> DefaultChatClientUtils.toChatClientRequest(inputRequest))
+			.isInstanceOf(IllegalStateException.class)
+			.hasMessageContaining("do not support tool calling");
+	}
+
+	@Test
+	void whenToolCallbackProviderIsEmptyAndModelOptionsDoNotSupportToolsThenNoError() {
+		ChatModel chatModel = mock(ChatModel.class);
+		when(chatModel.getOptions()).thenReturn(ChatOptions.builder().build());
+		ToolCallbackProvider provider = ToolCallbackProvider.from(List.of());
+		DefaultChatClient.DefaultChatClientRequestSpec inputRequest = (DefaultChatClient.DefaultChatClientRequestSpec) ChatClient
+			.create(chatModel)
+			.prompt()
+			.user("Hello")
+			.toolCallbacks(provider);
+
+		ChatClientRequest result = DefaultChatClientUtils.toChatClientRequest(inputRequest);
+
+		assertThat(result.prompt().getOptions()).isNotInstanceOf(ToolCallingChatOptions.class);
 	}
 
 	@Test
