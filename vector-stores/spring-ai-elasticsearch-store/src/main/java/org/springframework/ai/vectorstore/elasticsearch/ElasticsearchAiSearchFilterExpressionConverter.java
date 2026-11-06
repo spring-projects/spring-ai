@@ -124,7 +124,8 @@ public class ElasticsearchAiSearchFilterExpressionConverter extends AbstractFilt
 	@Override
 	protected void doSingleValue(Object value, StringBuilder context) {
 		if (value instanceof Date date) {
-			context.append(this.dateFormat.format(date.toInstant()));
+			// ':' and '-' in ISO-8601 dates are reserved in Lucene query string syntax
+			emitLuceneString(this.dateFormat.format(date.toInstant()), context);
 		}
 		else if (value instanceof String text) {
 			context.append("\"");
