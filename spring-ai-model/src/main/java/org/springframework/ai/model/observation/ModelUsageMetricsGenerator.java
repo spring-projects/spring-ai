@@ -18,6 +18,7 @@ package org.springframework.ai.model.observation;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import io.micrometer.common.KeyValue;
 import io.micrometer.core.instrument.Counter;
@@ -45,7 +46,7 @@ public final class ModelUsageMetricsGenerator {
 
 	public static void generate(Usage usage, Observation.Context context, MeterRegistry meterRegistry) {
 
-		if (usage.getPromptTokens() != null) {
+		if (Objects.nonNull(usage.getPromptTokens())) {
 			Counter.builder(AiObservationMetricNames.TOKEN_USAGE.value())
 				.tag(AiObservationMetricAttributes.TOKEN_TYPE.value(), AiTokenType.INPUT.value())
 				.description(DESCRIPTION)
@@ -54,7 +55,7 @@ public final class ModelUsageMetricsGenerator {
 				.increment(usage.getPromptTokens());
 		}
 
-		if (usage.getCompletionTokens() != null) {
+		if (Objects.nonNull(usage.getCompletionTokens())) {
 			Counter.builder(AiObservationMetricNames.TOKEN_USAGE.value())
 				.tag(AiObservationMetricAttributes.TOKEN_TYPE.value(), AiTokenType.OUTPUT.value())
 				.description(DESCRIPTION)
@@ -63,7 +64,7 @@ public final class ModelUsageMetricsGenerator {
 				.increment(usage.getCompletionTokens());
 		}
 
-		if (usage.getTotalTokens() != null) {
+		if (Objects.nonNull(usage.getTotalTokens())) {
 			Counter.builder(AiObservationMetricNames.TOKEN_USAGE.value())
 				.tag(AiObservationMetricAttributes.TOKEN_TYPE.value(), AiTokenType.TOTAL.value())
 				.description(DESCRIPTION)
