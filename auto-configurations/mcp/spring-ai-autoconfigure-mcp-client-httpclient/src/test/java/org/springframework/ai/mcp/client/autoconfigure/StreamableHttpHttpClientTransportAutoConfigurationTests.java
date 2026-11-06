@@ -31,6 +31,9 @@ import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Mono;
 import tools.jackson.databind.json.JsonMapper;
 
+import org.springframework.ai.mcp.SyncMcpToolCallbackProvider;
+import org.springframework.ai.mcp.client.common.autoconfigure.McpClientAutoConfiguration;
+import org.springframework.ai.mcp.client.common.autoconfigure.McpToolCallbackAutoConfiguration;
 import org.springframework.ai.mcp.client.common.autoconfigure.NamedClientMcpTransport;
 import org.springframework.ai.mcp.client.httpclient.autoconfigure.StreamableHttpHttpClientTransportAutoConfiguration;
 import org.springframework.ai.mcp.customizer.McpClientCustomizer;
@@ -66,6 +69,19 @@ public class StreamableHttpHttpClientTransportAutoConfigurationTests {
 					List.class);
 			assertThat(transports).isEmpty();
 		});
+	}
+
+	@Test
+	void unavailableConnectionCanDegradeGracefully() {
+		new ApplicationContextRunner()
+			.withConfiguration(AutoConfigurations.of(McpClientAutoConfiguration.class,
+					McpToolCallbackAutoConfiguration.class, StreamableHttpHttpClientTransportAutoConfiguration.class))
+			.withPropertyValues("spring.ai.mcp.client.fail-fast=false", "spring.ai.mcp.client.request-timeout=1s",
+					"spring.ai.mcp.client.streamable-http.connections.unavailable.url=http://localhost:1")
+			.run(context -> {
+				assertThat(context).hasNotFailed();
+				assertThat(context.getBean(SyncMcpToolCallbackProvider.class).getToolCallbacks()).isEmpty();
+			});
 	}
 
 	@Test

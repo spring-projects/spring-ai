@@ -31,6 +31,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -59,6 +61,72 @@ class SyncMcpToolCallbackProviderTests {
 		var callbacks = provider.getToolCallbacks();
 
 		assertThat(callbacks).isEmpty();
+	}
+
+	@Test
+	void getToolCallbacksShouldFailFastByDefault() {
+		when(this.mcpClient.listTools()).thenThrow(new IllegalStateException("Connection unavailable"));
+
+		SyncMcpToolCallbackProvider provider = SyncMcpToolCallbackProvider.builder().mcpClients(this.mcpClient).build();
+
+		assertThatThrownBy(provider::getToolCallbacks).isInstanceOf(IllegalStateException.class)
+			.hasMessage("Connection unavailable");
+	}
+
+	@Test
+	void getToolCallbacksShouldIsolateFailuresAndRetry() {
+		McpSyncClient healthyClient = mock(McpSyncClient.class);
+		McpSyncClient unavailableClient = mock(McpSyncClient.class);
+		Tool healthyTool = mock(Tool.class);
+		Tool recoveredTool = mock(Tool.class);
+		when(healthyTool.name()).thenReturn("healthy");
+		when(recoveredTool.name()).thenReturn("recovered");
+
+		ListToolsResult healthyResult = mock(ListToolsResult.class);
+		ListToolsResult recoveredResult = mock(ListToolsResult.class);
+		when(healthyResult.tools()).thenReturn(List.of(healthyTool));
+		when(recoveredResult.tools()).thenReturn(List.of(recoveredTool));
+		when(healthyClient.listTools()).thenReturn(healthyResult);
+		when(unavailableClient.listTools()).thenThrow(new IllegalStateException("Connection unavailable"))
+			.thenReturn(recoveredResult);
+
+		when(healthyClient.getClientInfo()).thenReturn(Implementation.builder("healthy-client", "1.0.0").build());
+		when(unavailableClient.getClientInfo())
+			.thenReturn(Implementation.builder("unavailable-client", "1.0.0").build());
+		ClientCapabilities capabilities = new ClientCapabilities(null, null, null, null);
+		when(healthyClient.getClientCapabilities()).thenReturn(capabilities);
+		when(unavailableClient.getClientCapabilities()).thenReturn(capabilities);
+
+		SyncMcpToolCallbackProvider provider = SyncMcpToolCallbackProvider.builder()
+			.mcpClients(healthyClient, unavailableClient)
+			.failFast(false)
+			.build();
+
+		assertThat(provider.getToolCallbacks()).hasSize(1);
+		assertThat(provider.getToolCallbacks()).hasSize(2);
+		verify(healthyClient).listTools();
+		verify(unavailableClient, times(2)).listTools();
+	}
+
+	@Test
+	void getToolCallbacksShouldNotSuppressToolFilterFailures() {
+		Tool tool = mock(Tool.class);
+		ListToolsResult result = mock(ListToolsResult.class);
+		when(result.tools()).thenReturn(List.of(tool));
+		when(this.mcpClient.listTools()).thenReturn(result);
+		when(this.mcpClient.getClientInfo()).thenReturn(Implementation.builder("test-client", "1.0.0").build());
+		when(this.mcpClient.getClientCapabilities()).thenReturn(new ClientCapabilities(null, null, null, null));
+
+		SyncMcpToolCallbackProvider provider = SyncMcpToolCallbackProvider.builder()
+			.mcpClients(this.mcpClient)
+			.toolFilter((client, candidate) -> {
+				throw new IllegalStateException("Filter failure");
+			})
+			.failFast(false)
+			.build();
+
+		assertThatThrownBy(provider::getToolCallbacks).isInstanceOf(IllegalStateException.class)
+			.hasMessage("Filter failure");
 	}
 
 	@Test

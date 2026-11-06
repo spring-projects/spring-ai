@@ -23,6 +23,8 @@ import io.modelcontextprotocol.client.McpAsyncClient;
 import io.modelcontextprotocol.client.McpClient;
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.spec.McpSchema;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import org.springframework.ai.mcp.annotation.spring.ClientMcpAsyncHandlersRegistry;
 import org.springframework.ai.mcp.annotation.spring.ClientMcpSyncHandlersRegistry;
@@ -59,6 +61,8 @@ import org.springframework.util.CollectionUtils;
  * <li>{@code spring.ai.mcp.client.request-timeout} - Request timeout duration
  * <li>{@code spring.ai.mcp.client.initialized} - Whether to initialize clients on
  * creation
+ * <li>{@code spring.ai.mcp.client.fail-fast} - Whether client initialization and tool
+ * discovery failures should be fatal (default: true)
  * </ul>
  *
  * <p>
@@ -101,6 +105,8 @@ import org.springframework.util.CollectionUtils;
 @ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "enabled", havingValue = "true",
 		matchIfMissing = true)
 public class McpClientAutoConfiguration {
+
+	private static final Log logger = LogFactory.getLog(McpClientAutoConfiguration.class);
 
 	/**
 	 * Create a dynamic client name based on the client name and the name of the server
@@ -187,7 +193,16 @@ public class McpClientAutoConfiguration {
 				var client = customizedSpec.build();
 
 				if (commonProperties.isInitialized()) {
-					client.initialize();
+					try {
+						client.initialize();
+					}
+					catch (RuntimeException ex) {
+						if (commonProperties.isFailFast()) {
+							throw ex;
+						}
+						logger.warn("Failed to initialize MCP client for connection '" + namedTransport.name()
+								+ "'. The client will be retried on demand", ex);
+					}
 				}
 
 				mcpSyncClients.add(client);
@@ -278,7 +293,16 @@ public class McpClientAutoConfiguration {
 				var client = customizedSpec.build();
 
 				if (commonProperties.isInitialized()) {
-					client.initialize().block();
+					try {
+						client.initialize().block();
+					}
+					catch (RuntimeException ex) {
+						if (commonProperties.isFailFast()) {
+							throw ex;
+						}
+						logger.warn("Failed to initialize MCP client for connection '" + namedTransport.name()
+								+ "'. The client will be retried on demand", ex);
+					}
 				}
 
 				mcpAsyncClients.add(client);
