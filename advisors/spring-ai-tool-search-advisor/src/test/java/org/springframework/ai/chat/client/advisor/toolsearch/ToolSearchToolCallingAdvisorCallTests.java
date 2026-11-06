@@ -82,6 +82,8 @@ public class ToolSearchToolCallingAdvisorCallTests {
 	@Mock
 	private ToolIndex toolIndex;
 
+	private static final String DECORATED_TOOL_NAME = "decoratedToolSearchTool";
+
 	@Test
 	void whenToolIndexIsNullThenThrow() {
 		assertThatThrownBy(() -> ToolSearchToolCallingAdvisor.builder().build())
@@ -607,6 +609,61 @@ public class ToolSearchToolCallingAdvisorCallTests {
 	}
 
 	@Test
+	void overriddenToolSearchToolCallbackIsBoundAndDrivesReferenceExtraction() {
+		DecoratingAdvisor advisor = new DecoratingAdvisor(this.toolCallingManager, this.toolIndex);
+
+		ToolCallback weatherTool = mock(ToolCallback.class);
+		ToolDefinition weatherToolDefinition = DefaultToolDefinition.builder()
+			.name("weatherTool")
+			.description("Gets weather")
+			.inputSchema("{}")
+			.build();
+		when(weatherTool.getToolDefinition()).thenReturn(weatherToolDefinition);
+
+		TestToolCallingChatOptions toolOptions = new TestToolCallingChatOptions();
+		toolOptions.setToolCallbacks(List.of(weatherTool));
+
+		when(this.toolCallingManager.resolveToolDefinitions(any(ToolCallingChatOptions.class)))
+			.thenReturn(List.of(weatherToolDefinition));
+
+		// The search response carries the decorated tool's name, not the built-in one.
+		ToolResponseMessage toolResponseMessage = ToolResponseMessage.builder()
+			.responses(List.of(new ToolResponseMessage.ToolResponse("id1", DECORATED_TOOL_NAME, "[\"weatherTool\"]")))
+			.build();
+
+		Map<String, Object> context = new ConcurrentHashMap<>();
+		context.put(ChatMemory.CONVERSATION_ID, "test-session-id");
+		ChatClientRequest request = ChatClientRequest.builder()
+			.prompt(new Prompt(List.of(new UserMessage("test"), toolResponseMessage), toolOptions))
+			.build()
+			.mutate()
+			.context(context)
+			.build();
+
+		ChatClientRequest[] capturedRequest = new ChatClientRequest[1];
+		CallAdvisor capturingAdvisor = new TerminalCallAdvisor((req, chain) -> {
+			capturedRequest[0] = req;
+			return createMockResponse(false);
+		});
+		CallAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.of(advisor, capturingAdvisor))
+			.build();
+
+		advisor.adviseCall(request, realChain);
+
+		assertThat(capturedRequest[0]).isNotNull();
+		ToolCallingChatOptions capturedOptions = (ToolCallingChatOptions) capturedRequest[0].prompt().getOptions();
+
+		// The bound search tool is the override rather than the built-in callback, and
+		// reference extraction matched the override's name, so the searched tool was
+		// bound
+		// too. Matching against the built-in name would have found no search response.
+		assertThat(capturedOptions.getToolCallbacks()).contains(advisor.decorated);
+		assertThat(capturedOptions.getToolCallbacks()).extracting(cb -> cb.getToolDefinition().name())
+			.containsExactlyInAnyOrder(DECORATED_TOOL_NAME, "weatherTool");
+	}
+
+	@Test
 	void toolSearchToolUsesLlmMaxResultsOverAdvisorDefault() {
 		ToolSearchToolCallingAdvisor advisor = ToolSearchToolCallingAdvisor.builder()
 			.toolCallingManager(this.toolCallingManager)
@@ -889,6 +946,47 @@ public class ToolSearchToolCallingAdvisorCallTests {
 
 	private ChatClientResponse createMockResponse(boolean hasToolCalls) {
 		return createMockResponse(hasToolCalls, new ConcurrentHashMap<>());
+	}
+
+	/**
+	 * Wraps the built-in search tool the way an application that renders tool calls
+	 * would, renaming it so the two places the advisor reads the callback can be told
+	 * apart.
+	 */
+	private static final class DecoratingAdvisor extends ToolSearchToolCallingAdvisor {
+
+		private final ToolCallback decorated;
+
+		private DecoratingAdvisor(ToolCallingManager toolCallingManager, ToolIndex toolIndex) {
+			super(toolCallingManager, DEFAULT_ORDER, DEFAULT_TOOL_EXECUTION_ELIGIBILITY_CHECKER, toolIndex,
+					"\n\nTool search suffix", true, null, true, ChatMemory.CONVERSATION_ID,
+					new LruEvictionStrategy(10));
+			this.decorated = new RenamedToolCallback(super.toolSearchToolCallback());
+		}
+
+		@Override
+		protected ToolCallback toolSearchToolCallback() {
+			return this.decorated;
+		}
+
+	}
+
+	private record RenamedToolCallback(ToolCallback delegate) implements ToolCallback {
+
+		@Override
+		public ToolDefinition getToolDefinition() {
+			return DefaultToolDefinition.builder()
+				.name(DECORATED_TOOL_NAME)
+				.description(this.delegate.getToolDefinition().description())
+				.inputSchema(this.delegate.getToolDefinition().inputSchema())
+				.build();
+		}
+
+		@Override
+		public String call(String toolInput) {
+			return this.delegate.call(toolInput);
+		}
+
 	}
 
 	private static class TerminalCallAdvisor implements CallAdvisor {
