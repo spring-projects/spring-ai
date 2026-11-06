@@ -45,6 +45,12 @@ public class ChatObservationProperties {
 	 */
 	private boolean includeErrorLogging = false;
 
+	/**
+	 * Whether to include the definitions of the tools provided to the model in the
+	 * observations.
+	 */
+	private boolean includeToolDefinitions = false;
+
 	public boolean isLogCompletion() {
 		return this.logCompletion;
 	}
@@ -67,6 +73,14 @@ public class ChatObservationProperties {
 
 	public void setIncludeErrorLogging(boolean includeErrorLogging) {
 		this.includeErrorLogging = includeErrorLogging;
+	}
+
+	public boolean isIncludeToolDefinitions() {
+		return this.includeToolDefinitions;
+	}
+
+	public void setIncludeToolDefinitions(boolean includeToolDefinitions) {
+		this.includeToolDefinitions = includeToolDefinitions;
 	}
 
 }
