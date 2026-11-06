@@ -18,7 +18,6 @@ package org.springframework.ai.mcp.server.common.autoconfigure;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 
@@ -49,8 +48,7 @@ import io.modelcontextprotocol.spec.McpStreamableServerTransportProvider;
 import reactor.core.publisher.Mono;
 import tools.jackson.databind.json.JsonMapper;
 
-import org.springframework.ai.mcp.customizer.McpAsyncServerCustomizer;
-import org.springframework.ai.mcp.customizer.McpSyncServerCustomizer;
+import org.springframework.ai.mcp.customizer.McpServerCustomizer;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerChangeNotificationProperties;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
 import org.springframework.beans.factory.ObjectProvider;
@@ -66,6 +64,8 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplicat
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.core.log.LogAccessor;
 import org.springframework.util.CollectionUtils;
 
@@ -113,7 +113,7 @@ public class McpServerAutoConfiguration {
 			ObjectProvider<List<SyncPromptSpecification>> prompts,
 			ObjectProvider<List<SyncCompletionSpecification>> completions,
 			ObjectProvider<BiConsumer<McpSyncServerExchange, List<McpSchema.Root>>> rootsChangeConsumers,
-			Optional<McpSyncServerCustomizer> mcpSyncServerCustomizer) {
+			ObjectProvider<McpServerCustomizer<SyncSpecification<?>>> customizers) {
 
 		McpSchema.Implementation serverInfo = Implementation
 			.builder(serverProperties.getName(), serverProperties.getVersion())
@@ -211,16 +211,21 @@ public class McpServerAutoConfiguration {
 		serverBuilder.instructions(serverProperties.getInstructions());
 
 		serverBuilder.requestTimeout(serverProperties.getRequestTimeout());
-		mcpSyncServerCustomizer.ifPresent(customizer -> customizer.customize(serverBuilder));
+		customizers.orderedStream().forEach(customizer -> customizer.customize(serverBuilder));
 
 		return serverBuilder.build();
 	}
 
+	/**
+	 * Enables immediate execution of sync handlers in servlet applications. Ordered first
+	 * so that user-defined customizers run after it and can override the setting.
+	 */
 	@Bean
+	@Order(Ordered.HIGHEST_PRECEDENCE)
 	@ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
 	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
 			matchIfMissing = true)
-	McpSyncServerCustomizer servletMcpSyncServerCustomizer() {
+	McpServerCustomizer<SyncSpecification<?>> servletMcpSyncServerCustomizer() {
 		return serverBuilder -> serverBuilder.immediateExecution(true);
 	}
 
@@ -235,7 +240,7 @@ public class McpServerAutoConfiguration {
 			ObjectProvider<List<AsyncPromptSpecification>> prompts,
 			ObjectProvider<List<AsyncCompletionSpecification>> completions,
 			ObjectProvider<BiConsumer<McpAsyncServerExchange, List<McpSchema.Root>>> rootsChangeConsumer,
-			Optional<McpAsyncServerCustomizer> asyncServerCustomizer) {
+			ObjectProvider<McpServerCustomizer<AsyncSpecification<?>>> customizers) {
 
 		McpSchema.Implementation serverInfo = Implementation
 			.builder(serverProperties.getName(), serverProperties.getVersion())
@@ -335,7 +340,7 @@ public class McpServerAutoConfiguration {
 		serverBuilder.instructions(serverProperties.getInstructions());
 
 		serverBuilder.requestTimeout(serverProperties.getRequestTimeout());
-		asyncServerCustomizer.ifPresent(customizer -> customizer.customize(serverBuilder));
+		customizers.orderedStream().forEach(customizer -> customizer.customize(serverBuilder));
 
 		return serverBuilder.build();
 	}

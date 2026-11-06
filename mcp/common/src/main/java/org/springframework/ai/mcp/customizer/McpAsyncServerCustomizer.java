@@ -24,9 +24,13 @@ import io.modelcontextprotocol.server.McpServer;
  * @author Daniel Garnier-Moiroux
  * @since 1.1.3
  * @see McpServer.AsyncSpecification
+ * @deprecated in favor of {@code McpServerCustomizer<McpServer.AsyncSpecification<?>>},
+ * see {@link McpServerCustomizer}
  */
-public interface McpAsyncServerCustomizer {
+@Deprecated(since = "2.1.0", forRemoval = true)
+public interface McpAsyncServerCustomizer extends McpServerCustomizer<McpServer.AsyncSpecification<?>> {
 
+	@Override
 	void customize(McpServer.AsyncSpecification<?> serverBuilder);
 
 }

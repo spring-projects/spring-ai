@@ -413,7 +413,10 @@ For resources, `SyncResourceRegistration.of(resource, requiredCapabilities, hand
 
 === Customizing the Server and the Transport
 
-* A `McpModernServerCustomizer` bean receives the SDK `McpServer.Builder` before the server is built. Use it to add extension features or to replace the request state codec.
+* A `McpServer.Builder` can be customized before the server is built with a `McpServerCustomizer<McpServer.Builder>`.
+  Use it to add extension features or to replace the request state codec.
+* Transport builders can be customized using `McpServerCustomizer<WebMvcModernServerTransport.Builder>` and `McpServerCustomizer<WebFluxMcpTransport.Builder>`.
+* All matching customizer beans are applied, ordered by `@Order` or `Ordered`.
 * A `RequestStateCodec` bean replaces the HMAC codec configured from the properties.
 * A `ServerHttpHeaderValidator` bean validates `Origin` and `Host` on every request. The SDK's `DefaultServerTransportSecurityValidator` implements it.
 * The `McpTransportContext` that handlers, repositories and `ToolCallback`s see is empty by default: no request header, cookie or credential reaches them unless the application puts it there.

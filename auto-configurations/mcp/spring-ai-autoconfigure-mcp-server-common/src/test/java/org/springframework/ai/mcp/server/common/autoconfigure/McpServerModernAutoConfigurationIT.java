@@ -20,6 +20,7 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Function;
 
 import io.modelcontextprotocol.common.McpTransportContext;
@@ -47,7 +48,7 @@ import org.springframework.ai.mcp.annotation.McpPrompt;
 import org.springframework.ai.mcp.annotation.McpResource;
 import org.springframework.ai.mcp.annotation.McpTool;
 import org.springframework.ai.mcp.annotation.McpToolParam;
-import org.springframework.ai.mcp.customizer.McpModernServerCustomizer;
+import org.springframework.ai.mcp.customizer.McpServerCustomizer;
 import org.springframework.ai.mcp.modern.InMemorySyncCompletionRepository;
 import org.springframework.ai.mcp.modern.InMemorySyncPromptRepository;
 import org.springframework.ai.mcp.modern.InMemorySyncResourceRepository;
@@ -66,6 +67,7 @@ import org.springframework.boot.test.context.FilteredClassLoader;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
@@ -166,6 +168,16 @@ class McpServerModernAutoConfigurationIT {
 			Map<String, Object> discover = call(context.getBean(McpServer.class), McpSchema.METHOD_SERVER_DISCOVER,
 					params());
 			assertThat(discover.get("instructions")).isEqualTo("customized");
+		});
+	}
+
+	@Test
+	void multipleCustomizersAreAppliedInOrder() {
+		this.contextRunner.withUserConfiguration(OrderedCustomizersConfiguration.class).run(context -> {
+			assertThat(context.getBean("customizerInvocations", List.class)).containsExactly("first", "second");
+			Map<String, Object> discover = call(context.getBean(McpServer.class), McpSchema.METHOD_SERVER_DISCOVER,
+					params());
+			assertThat(discover.get("instructions")).isEqualTo("second");
 		});
 	}
 
@@ -418,8 +430,37 @@ class McpServerModernAutoConfigurationIT {
 	static class CustomizerConfiguration {
 
 		@Bean
-		McpModernServerCustomizer customizer() {
+		McpServerCustomizer<McpServer.Builder> customizer() {
 			return builder -> builder.instructions("customized");
+		}
+
+	}
+
+	@Configuration(proxyBeanMethods = false)
+	static class OrderedCustomizersConfiguration {
+
+		@Bean
+		List<String> customizerInvocations() {
+			return new CopyOnWriteArrayList<>();
+		}
+
+		// Declared before "first" so that only @Order can make it run last.
+		@Bean
+		@Order(2)
+		McpServerCustomizer<McpServer.Builder> secondCustomizer(List<String> customizerInvocations) {
+			return builder -> {
+				customizerInvocations.add("second");
+				builder.instructions("second");
+			};
+		}
+
+		@Bean
+		@Order(1)
+		McpServerCustomizer<McpServer.Builder> firstCustomizer(List<String> customizerInvocations) {
+			return builder -> {
+				customizerInvocations.add("first");
+				builder.instructions("first");
+			};
 		}
 
 	}
