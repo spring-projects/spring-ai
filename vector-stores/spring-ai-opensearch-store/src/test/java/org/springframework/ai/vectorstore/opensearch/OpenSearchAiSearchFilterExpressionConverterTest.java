@@ -78,7 +78,32 @@ class OpenSearchAiSearchFilterExpressionConverterTest {
 						new Filter.Expression(AND,
 								new Filter.Expression(EQ, new Filter.Key("country"), new Filter.Value("BG")),
 								new Filter.Expression(NE, new Filter.Key("city"), new Filter.Value("Sofia")))));
-		assertThat(vectorExpr).isEqualTo("metadata.year:>=2020 OR metadata.country:BG AND metadata.city: NOT Sofia");
+		assertThat(vectorExpr).isEqualTo("(metadata.year:>=2020) OR (metadata.country:BG AND NOT metadata.city:Sofia)");
+	}
+
+	@Test
+	public void testNeNegatesTheFieldClause() {
+		// city != "Sofia"
+		String vectorExpr = this.converter
+			.convertExpression(new Filter.Expression(NE, new Filter.Key("city"), new Filter.Value("Sofia")));
+		assertThat(vectorExpr).isEqualTo("NOT metadata.city:Sofia");
+	}
+
+	@Test
+	public void testNeWithNumber() {
+		// year != 2020
+		String vectorExpr = this.converter
+			.convertExpression(new Filter.Expression(NE, new Filter.Key("year"), new Filter.Value(2020)));
+		assertThat(vectorExpr).isEqualTo("NOT metadata.year:2020");
+	}
+
+	@Test
+	public void testOrKeepsNegationInItsOperand() {
+		// country == "BG" OR city != "Sofia"
+		String vectorExpr = this.converter.convertExpression(
+				new Filter.Expression(OR, new Filter.Expression(EQ, new Filter.Key("country"), new Filter.Value("BG")),
+						new Filter.Expression(NE, new Filter.Key("city"), new Filter.Value("Sofia"))));
+		assertThat(vectorExpr).isEqualTo("(metadata.country:BG) OR (NOT metadata.city:Sofia)");
 	}
 
 	@Test
@@ -89,7 +114,7 @@ class OpenSearchAiSearchFilterExpressionConverterTest {
 						new Filter.Expression(EQ, new Filter.Key("country"), new Filter.Value("BG")))),
 				new Filter.Expression(NIN, new Filter.Key("city"), new Filter.Value(List.of("Sofia", "Plovdiv")))));
 		assertThat(vectorExpr)
-			.isEqualTo("(metadata.year:>=2020 OR metadata.country:BG) AND NOT metadata.city:(Sofia OR Plovdiv)");
+			.isEqualTo("((metadata.year:>=2020) OR (metadata.country:BG)) AND NOT metadata.city:(Sofia OR Plovdiv)");
 	}
 
 	@Test
@@ -190,7 +215,7 @@ class OpenSearchAiSearchFilterExpressionConverterTest {
 				new Filter.Expression(NE, new Filter.Key("fieldC"), new Filter.Value("inactive"))));
 
 		assertThat(vectorExpr).isEqualTo(
-				"((metadata.fieldA:>=100 AND metadata.fieldB:X1) OR (metadata.fieldA:>=50 AND metadata.fieldB:Y2)) AND metadata.fieldC: NOT inactive");
+				"((metadata.fieldA:>=100 AND metadata.fieldB:X1) OR (metadata.fieldA:>=50 AND metadata.fieldB:Y2)) AND NOT metadata.fieldC:inactive");
 	}
 
 	@Test
@@ -220,7 +245,7 @@ class OpenSearchAiSearchFilterExpressionConverterTest {
 		// description != ""
 		String vectorExpr = this.converter
 			.convertExpression(new Filter.Expression(NE, new Filter.Key("description"), new Filter.Value("")));
-		assertThat(vectorExpr).isEqualTo("metadata.description: NOT ");
+		assertThat(vectorExpr).isEqualTo("NOT metadata.description:");
 	}
 
 	@Test
