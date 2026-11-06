@@ -22,8 +22,9 @@ package org.springframework.ai.observation.conventions;
  *
  * @author Thomas Vitale
  * @since 1.0.0
- * @see <a href="https://opentelemetry.io/docs/specs/semconv/gen-ai">OpenTelemetry
- * Semantic Conventions for Generative AI</a>.
+ * @see <a href=
+ * "https://github.com/open-telemetry/semantic-conventions-genai">OpenTelemetry Semantic
+ * Conventions for Generative AI</a>.
  */
 public enum AiObservationAttributes {
 
@@ -36,9 +37,9 @@ public enum AiObservationAttributes {
 	 */
 	AI_OPERATION_TYPE("gen_ai.operation.name"),
 	/**
-	 * The model provider as identified by the client instrumentation.
+	 * The Generative AI provider as identified by the client instrumentation.
 	 */
-	AI_PROVIDER("gen_ai.system"),
+	AI_PROVIDER("gen_ai.provider.name"),
 
 	// GenAI Request
 
