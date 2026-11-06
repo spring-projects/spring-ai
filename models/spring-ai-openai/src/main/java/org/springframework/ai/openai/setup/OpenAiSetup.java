@@ -21,6 +21,7 @@ import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
 
 import com.openai.azure.AzureOpenAIServiceVersion;
@@ -41,6 +42,7 @@ import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.openai.http.okhttp.OpenAiHttpClientBuilderCustomizer;
 import org.springframework.ai.openai.http.okhttp.SpringAiOpenAiHttpClient;
+import org.springframework.core.task.SimpleAsyncTaskExecutor;
 
 /**
  * Helps configure the OpenAI Java SDK, depending on the platform used. This code is
@@ -71,6 +73,16 @@ public final class OpenAiSetup {
 	 * from the {@code Authorization} header before any request leaves the JVM.
 	 */
 	private static final String NO_AUTH_PLACEHOLDER_KEY = "no-auth-placeholder";
+
+	/**
+	 * Runs the stream handlers of every client. The OpenAI Java SDK wraps any
+	 * {@link java.util.concurrent.ExecutorService}, including its own default, in a
+	 * wrapper that stays strongly reachable after the client is discarded, so this must
+	 * remain a plain {@link Executor}. The SDK doesn't shut down a plain executor when a
+	 * client is closed, and this one holds no threads between streams.
+	 */
+	private static final Executor STREAM_HANDLER_EXECUTOR = new SimpleAsyncTaskExecutor(
+			"openai-stream-handler-thread-");
 
 	private static final Log logger = LogFactory.getLog(OpenAiSetup.class);
 
@@ -169,6 +181,7 @@ public final class OpenAiSetup {
 
 		ClientOptions.Builder clientOptions = ClientOptions.builder()
 			.httpClient(httpBuilder.build())
+			.streamHandlerExecutor(STREAM_HANDLER_EXECUTOR)
 			.baseUrl(calculatedBaseUrl)
 			.organization(organizationId)
 			.timeout(timeout)
@@ -237,6 +250,7 @@ public final class OpenAiSetup {
 
 		ClientOptions.Builder clientOptions = ClientOptions.builder()
 			.httpClient(httpBuilder.build())
+			.streamHandlerExecutor(STREAM_HANDLER_EXECUTOR)
 			.apiKey(NO_AUTH_PLACEHOLDER_KEY)
 			.baseUrl(calculatedBaseUrl)
 			.organization(organizationId)
