@@ -102,9 +102,8 @@ public class MistralAiChatOptions implements ToolCallingChatOptions, StructuredO
 	private final @Nullable List<String> stop;
 
 	/**
-	 * Controls the reasoning effort level for adjustable reasoning models.
-	 * {@link ReasoningEffort#HIGH} enables comprehensive reasoning traces,
-	 * {@link ReasoningEffort#NONE} disables reasoning effort.
+	 * Controls the reasoning effort level for adjustable reasoning models. The accepted
+	 * levels depend on the model, see {@link ReasoningEffort}.
 	 */
 	private final @Nullable ReasoningEffort reasoningEffort;
 

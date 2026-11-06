@@ -785,18 +785,27 @@ public class MistralAiApi {
 
 		/**
 		 * <p>
-		 * Controls the reasoning effort level for adjustable reasoning models.
-		 * {@link ReasoningEffort#HIGH} enables comprehensive reasoning traces,
-		 * {@link ReasoningEffort#NONE} disables reasoning effort.
+		 * Controls the reasoning effort level for adjustable reasoning models. The
+		 * accepted levels depend on the model: Mistral Small 4 and Mistral Medium 3.5
+		 * accept {@link ReasoningEffort#HIGH} and {@link ReasoningEffort#NONE}, while
+		 * Mistral Large 4 accepts {@link ReasoningEffort#LOW},
+		 * {@link ReasoningEffort#MEDIUM} and {@link ReasoningEffort#HIGH}.
 		 * </p>
+		 *
+		 * @see <a href="https://docs.mistral.ai/studio/conversations/reasoning">Mistral
+		 * AI Reasoning</a>
 		 */
 		public enum ReasoningEffort {
 
 			// @formatter:off
-			@JsonProperty("high")
-			HIGH,
 			@JsonProperty("none")
-			NONE
+			NONE,
+			@JsonProperty("low")
+			LOW,
+			@JsonProperty("medium")
+			MEDIUM,
+			@JsonProperty("high")
+			HIGH
 			// @formatter:on
 
 		}

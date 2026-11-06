@@ -144,7 +144,7 @@ The prefix `spring.ai.mistralai.chat` is the property prefix that lets you confi
 | spring.ai.mistralai.chat.stop | Stop generation if this token is detected. Or if one of these tokens is detected when providing an array. | -
 | spring.ai.mistralai.chat.top-p | An alternative to sampling with temperature, called nucleus sampling, where the model considers the results of the tokens with top_p probability mass. So 0.1 means only the tokens comprising the top 10% probability mass are considered. We generally recommend altering this or `temperature` but not both. | -
 | spring.ai.mistralai.chat.response-format | An object specifying the format that the model must output. Setting to `{ "type": "json_object" }` enables JSON mode, which guarantees the message the model generates is valid JSON. Setting to `{ "type": "json_schema" }` with a supplied schema enables native structured outputs, which guarantees the model will match your supplied JSON schema. See the <<structured-output>> section for more details.| -
-| spring.ai.mistralai.chat.reasoning-effort | Controls the reasoning effort level for adjustable reasoning models. Valid values include `high` or `none`. | -
+| spring.ai.mistralai.chat.reasoning-effort | Controls the reasoning effort level for adjustable reasoning models. Valid values are `none`, `low`, `medium` and `high`; the accepted levels depend on the selected model (see <<reasoning-effort>>). | -
 | spring.ai.mistralai.chat.tools | A list of tools the model may call. Currently, only functions are supported as a tool. Use this to provide a list of functions the model may generate JSON inputs for. | -
 | spring.ai.mistralai.chat.tool-choice | Controls which (if any) function is called by the model. `none` means the model will not call a function and instead generates a message. `auto` means the model can pick between generating a message or calling a function. Specifying a particular function via `{"type: "function", "function": {"name": "my_function"}}` forces the model to call that function. `none` is the default when no functions are present. `auto` is the default if functions are present. | -
 | spring.ai.mistralai.chat.tool-callbacks | Tool Callbacks to register with the ChatModel. | -
@@ -261,13 +261,20 @@ For more information about structured outputs, see the xref:api/structured-outpu
 
 Mistral offers two approaches to reasoning:
 
-* Adjustable: Available on Mistral Small 4 and Mistral Medium 3.5 via the `reasoning_effort` parameter. Enables the model to think to varying degrees.
+* Adjustable: Available on Mistral Small 4, Mistral Medium 3.5 and Mistral Large 4 via the `reasoning_effort` parameter. Enables the model to think to varying degrees.
 * Native: Available for the Magistral model family. These models always generate reasoning traces and are purpose-built for deep reasoning tasks.
 
-=== Reasoning Effort
+=== Reasoning Effort [[reasoning-effort]]
 
 You can configure the reasoning effort using the `reasoningEffort` property in `MistralAiChatOptions`.
 This allows you to adjust the amount of computational effort the model spends on reasoning before generating a response.
+
+The accepted levels depend on the model:
+
+* Mistral Small 4 and Mistral Medium 3.5 accept `HIGH` and `NONE`.
+* Mistral Large 4 accepts `LOW`, `MEDIUM` and `HIGH`, and does not accept `NONE`.
+
+See the https://docs.mistral.ai/studio/conversations/reasoning[Mistral reasoning documentation] for the levels each model supports.
 
 [source,java]
 ----
