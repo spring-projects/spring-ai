@@ -26,9 +26,6 @@ import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
-import org.springaicommunity.typesafe.RetryPolicy;
-import org.springaicommunity.typesafe.TypeSafeClient;
-import org.springaicommunity.typesafe.exception.TypeSafeBadRequestException;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
@@ -48,6 +45,9 @@ import org.springframework.ai.decision.question.ScoreQuestion;
 import org.springframework.ai.decision.question.YesNoQuestion;
 import org.springframework.ai.observation.conventions.AiObservationAttributes;
 import org.springframework.ai.observation.conventions.AiOperationType;
+import org.springframework.ai.systemone.api.SystemOneClient;
+import org.springframework.ai.systemone.api.SystemOneRetryUtils;
+import org.springframework.ai.systemone.api.exception.SystemOneBadRequestException;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
@@ -66,7 +66,7 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 
 /**
  * Unit tests for {@link SystemOneDecisionModel}, against a mocked System One server so
- * that the request the SDK sends and the answers it parses are both covered.
+ * that the request the client sends and the answers it parses are both covered.
  *
  * @author Christian Tzolov
  */
@@ -82,11 +82,11 @@ class SystemOneDecisionModelTests {
 
 	private final TestObservationRegistry observationRegistry = TestObservationRegistry.create();
 
-	private final TypeSafeClient client = TypeSafeClient.builder()
+	private final SystemOneClient client = SystemOneClient.builder()
 		.baseUrl(BASE_URL)
 		.apiKey("key")
 		.defaultModel("d1-omni:600m")
-		.retryPolicy(RetryPolicy.noRetry())
+		.retryTemplate(SystemOneRetryUtils.noRetryTemplate())
 		.restClientBuilder(this.restClientBuilder)
 		.build();
 
@@ -395,7 +395,7 @@ class SystemOneDecisionModelTests {
 			.andRespond(withBadRequest().contentType(MediaType.APPLICATION_JSON).body("{\"error\": \"nope\"}"));
 
 		assertThatThrownBy(() -> model().call("x", Map.of("defect", YesNoQuestion.of("?"))))
-			.isInstanceOf(TypeSafeBadRequestException.class)
+			.isInstanceOf(SystemOneBadRequestException.class)
 			.hasMessageContaining("nope");
 		TestObservationRegistryAssert.assertThat(this.observationRegistry)
 			.hasObservationWithNameEqualTo(DefaultDecisionModelObservationConvention.DEFAULT_NAME)

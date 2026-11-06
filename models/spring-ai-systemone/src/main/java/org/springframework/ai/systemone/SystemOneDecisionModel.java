@@ -22,9 +22,6 @@ import io.micrometer.observation.ObservationRegistry;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
-import org.springaicommunity.typesafe.TypeSafeClient;
-import org.springaicommunity.typesafe.question.SystemOneRequest;
-import org.springaicommunity.typesafe.response.SystemOneResponse;
 
 import org.springframework.ai.decision.DecisionModel;
 import org.springframework.ai.decision.DecisionPrompt;
@@ -34,17 +31,21 @@ import org.springframework.ai.decision.observation.DecisionModelObservationConve
 import org.springframework.ai.decision.observation.DecisionModelObservationDocumentation;
 import org.springframework.ai.decision.observation.DefaultDecisionModelObservationConvention;
 import org.springframework.ai.observation.conventions.AiProvider;
+import org.springframework.ai.systemone.api.SystemOneClient;
+import org.springframework.ai.systemone.api.question.SystemOneRequest;
+import org.springframework.ai.systemone.api.response.SystemOneResponse;
 import org.springframework.util.Assert;
 
 /**
- * A {@link DecisionModel} backed by a System One server through the TypeSafe Java SDK:
- * TypeSafe Jev, Laya or Ollama, since all three serve the same {@code /v1/systemone}
- * protocol. A {@code YesNoQuestion} is asked as a {@code noul}, a {@code ChoiceQuestion}
- * as a {@code choice} and a {@code ScoreQuestion} as a {@code score}, and the answers
- * come back with the probabilities and confidence the server reports.
+ * A {@link DecisionModel} backed by any server of the {@code /v1/systemone} protocol,
+ * such as the hosted System One service, Laya or Ollama, through the
+ * {@link SystemOneClient}. A {@code YesNoQuestion} is asked as a {@code noul}, a
+ * {@code ChoiceQuestion} as a {@code choice} and a {@code ScoreQuestion} as a
+ * {@code score}, and the answers come back with the probabilities and confidence the
+ * server reports.
  *
  * <p>
- * The connection belongs to the {@link TypeSafeClient}. The model takes the model name,
+ * The connection belongs to the {@link SystemOneClient}. The model takes the model name,
  * defaulting to the client's default model, and the provider name recorded in
  * observations, which is {@code systemone} unless the client points at a particular
  * server.
@@ -63,7 +64,7 @@ public final class SystemOneDecisionModel implements DecisionModel {
 
 	private static final DecisionModelObservationConvention DEFAULT_OBSERVATION_CONVENTION = new DefaultDecisionModelObservationConvention();
 
-	private final TypeSafeClient typeSafeClient;
+	private final SystemOneClient systemOneClient;
 
 	private final SystemOneDecisionOptions options;
 
@@ -73,18 +74,18 @@ public final class SystemOneDecisionModel implements DecisionModel {
 
 	private final DecisionModelObservationConvention observationConvention;
 
-	private SystemOneDecisionModel(TypeSafeClient typeSafeClient, SystemOneDecisionOptions options, String provider,
+	private SystemOneDecisionModel(SystemOneClient systemOneClient, SystemOneDecisionOptions options, String provider,
 			ObservationRegistry observationRegistry, DecisionModelObservationConvention observationConvention) {
 		Assert.hasText(options.getModel(), "options must name a model");
-		this.typeSafeClient = typeSafeClient;
+		this.systemOneClient = systemOneClient;
 		this.options = options;
 		this.provider = provider;
 		this.observationRegistry = observationRegistry;
 		this.observationConvention = observationConvention;
 	}
 
-	public static Builder builder(TypeSafeClient typeSafeClient) {
-		return new Builder(typeSafeClient);
+	public static Builder builder(SystemOneClient systemOneClient) {
+		return new Builder(systemOneClient);
 	}
 
 	@Override
@@ -121,7 +122,7 @@ public final class SystemOneDecisionModel implements DecisionModel {
 					.observation(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION, () -> observationContext,
 							this.observationRegistry)
 					.observe(() -> {
-						SystemOneResponse response = this.typeSafeClient.systemOne(request);
+						SystemOneResponse response = this.systemOneClient.systemOne(request);
 						DecisionResponse decisionResponse = SystemOneDecisionMapper.response(prompt, response);
 						observationContext.setResponse(decisionResponse);
 						return decisionResponse;
@@ -148,7 +149,7 @@ public final class SystemOneDecisionModel implements DecisionModel {
 
 	public static final class Builder {
 
-		private final TypeSafeClient typeSafeClient;
+		private final SystemOneClient systemOneClient;
 
 		private @Nullable SystemOneDecisionOptions options;
 
@@ -158,13 +159,13 @@ public final class SystemOneDecisionModel implements DecisionModel {
 
 		private @Nullable DecisionModelObservationConvention observationConvention;
 
-		private Builder(TypeSafeClient typeSafeClient) {
-			Assert.notNull(typeSafeClient, "typeSafeClient cannot be null");
-			this.typeSafeClient = typeSafeClient;
+		private Builder(SystemOneClient systemOneClient) {
+			Assert.notNull(systemOneClient, "systemOneClient cannot be null");
+			this.systemOneClient = systemOneClient;
 		}
 
 		private Builder(SystemOneDecisionModel model) {
-			this.typeSafeClient = model.typeSafeClient;
+			this.systemOneClient = model.systemOneClient;
 			this.options = model.options;
 			this.provider = model.provider;
 			this.observationRegistry = model.observationRegistry;
@@ -204,9 +205,9 @@ public final class SystemOneDecisionModel implements DecisionModel {
 			SystemOneDecisionOptions options = Objects.requireNonNullElseGet(this.options,
 					() -> SystemOneDecisionOptions.builder().build());
 			if (options.getModel() == null) {
-				options = options.mutate().model(this.typeSafeClient.defaultModel()).build();
+				options = options.mutate().model(this.systemOneClient.defaultModel()).build();
 			}
-			return new SystemOneDecisionModel(this.typeSafeClient, options, this.provider,
+			return new SystemOneDecisionModel(this.systemOneClient, options, this.provider,
 					Objects.requireNonNullElse(this.observationRegistry, ObservationRegistry.NOOP),
 					Objects.requireNonNullElse(this.observationConvention, DEFAULT_OBSERVATION_CONVENTION));
 		}

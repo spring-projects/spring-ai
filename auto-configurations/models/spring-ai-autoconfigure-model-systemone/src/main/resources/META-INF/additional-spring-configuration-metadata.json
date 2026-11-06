@@ -1,0 +1,49 @@
+{
+  "properties": [
+    {
+      "name": "spring.ai.systemone.base-url",
+      "type": "java.lang.String",
+      "defaultValue": "https://api.typesafe.ai"
+    },
+    {
+      "name": "spring.ai.systemone.retry.max-retries",
+      "type": "java.lang.Integer",
+      "defaultValue": 2
+    },
+    {
+      "name": "spring.ai.systemone.retry.initial-backoff",
+      "type": "java.time.Duration",
+      "defaultValue": "500ms"
+    },
+    {
+      "name": "spring.ai.systemone.retry.max-backoff",
+      "type": "java.time.Duration",
+      "defaultValue": "5s"
+    },
+    {
+      "name": "spring.ai.systemone.retry.timeout",
+      "type": "java.time.Duration",
+      "defaultValue": "30s"
+    },
+    {
+      "name": "spring.ai.systemone.decision.model",
+      "type": "java.lang.String",
+      "defaultValue": "jev-latest"
+    },
+    {
+      "name": "spring.ai.systemone.decision.provider",
+      "type": "java.lang.String",
+      "defaultValue": "systemone"
+    }
+  ],
+  "hints": [
+    {
+      "name": "spring.ai.systemone.decision.model",
+      "values": [
+        { "value": "jev-latest", "description": "Alias tracking the current flagship release of the hosted service." },
+        { "value": "jev-preview", "description": "Alias tracking the current preview release of the hosted service." }
+      ],
+      "providers": [ { "name": "any" } ]
+    }
+  ]
+}
