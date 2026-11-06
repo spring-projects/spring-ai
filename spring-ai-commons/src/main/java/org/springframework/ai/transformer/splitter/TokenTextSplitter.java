@@ -16,6 +16,8 @@
 
 package org.springframework.ai.transformer.splitter;
 
+import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -216,11 +218,15 @@ public class TokenTextSplitter extends TextSplitter {
 			// Apply sentence boundary optimization, but only while more text remains than
 			// fits in this chunk, so the last chunk is never cut at punctuation
 			String optimizedText = (chunkEnd < tokens.size()) ? optimizeChunkBoundary(chunkText) : chunkText;
-			int optimizedTokenCount = getEncodedTokens(optimizedText).size();
 
-			// Use optimized chunk
-			String finalChunkText = optimizedText;
-			int finalChunkTokenCount = optimizedTokenCount;
+			// Count the tokens of this chunk that hold the optimized text, rather than
+			// encoding that text again, which can give a different count. A cut can fall
+			// inside a token, such as after the "." of ".js", so the chunk then keeps the
+			// rest of that token, and the next chunk starts right after it
+			int finalChunkTokenCount = (optimizedText.length() < chunkText.length())
+					? countTokensCovering(chunkTokens, optimizedText) : chunkTokens.size();
+			String finalChunkText = (finalChunkTokenCount < chunkTokens.size())
+					? decodeTokens(chunkTokens.subList(0, finalChunkTokenCount)) : chunkText;
 
 			// Advance past this chunk, stepping back chunkOverlap tokens so the next
 			// chunk repeats them, but always move forward by at least one token
@@ -287,6 +293,38 @@ public class TokenTextSplitter extends TextSplitter {
 			maxLastPunctuation = Math.max(maxLastPunctuation, lastPunctuation);
 		}
 		return maxLastPunctuation;
+	}
+
+	/**
+	 * Returns the fewest leading tokens whose decoded text starts with the given text.
+	 * Comparing the text, not only its length, keeps a character that is split across
+	 * tokens whole, because a prefix that ends inside it decodes to U+FFFD instead.
+	 */
+	private int countTokensCovering(List<Integer> tokens, String text) {
+		// Decode each token to bytes once, then decode prefixes of those bytes the same
+		// way Encoding.decode does
+		ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+		int[] tokenEnds = new int[tokens.size()];
+		var token = new IntArrayList(1);
+		for (int i = 0; i < tokens.size(); i++) {
+			token.clear();
+			token.add(tokens.get(i));
+			bytes.writeBytes(this.encoding.decodeBytes(token));
+			tokenEnds[i] = bytes.size();
+		}
+		byte[] decoded = bytes.toByteArray();
+		int low = 1;
+		int high = tokens.size();
+		while (low < high) {
+			int mid = (low + high) >>> 1;
+			if (!new String(decoded, 0, tokenEnds[mid - 1], StandardCharsets.UTF_8).startsWith(text)) {
+				low = mid + 1;
+			}
+			else {
+				high = mid;
+			}
+		}
+		return low;
 	}
 
 	private List<Integer> getEncodedTokens(String text) {
