@@ -219,6 +219,23 @@ class DefaultChatClientTests {
 	}
 
 	@Test
+	void testMutateKeepsParamsWithoutAdvisorsOrText() {
+		ChatClient originalChatClient = new DefaultChatClientBuilder(mockChatModel())
+			.defaultAdvisors(a -> a.param("advisorParam", "advisor value"))
+			.defaultUser(u -> u.param("userParam", "user value").metadata("userMetadata", "user data"))
+			.defaultSystem(s -> s.param("sysParam", "system value").metadata("sysMetadata", "system data"))
+			.build();
+
+		var mutateSpec = (DefaultChatClient.DefaultChatClientRequestSpec) originalChatClient.mutate().build().prompt();
+
+		assertThat(mutateSpec.getAdvisorParams()).containsEntry("advisorParam", "advisor value");
+		assertThat(mutateSpec.getUserParams()).containsEntry("userParam", "user value");
+		assertThat(mutateSpec.getUserMetadata()).containsEntry("userMetadata", "user data");
+		assertThat(mutateSpec.getSystemParams()).containsEntry("sysParam", "system value");
+		assertThat(mutateSpec.getSystemMetadata()).containsEntry("sysMetadata", "system data");
+	}
+
+	@Test
 	void toolCallingAdvisorBuilderPreservedAfterMutate() {
 		var manager = mock(ToolCallingManager.class);
 		var advisorBuilder = ToolCallingAdvisor.builder().toolCallingManager(manager);
