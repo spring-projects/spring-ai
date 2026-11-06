@@ -30,8 +30,79 @@ import static org.assertj.core.api.Assertions.assertThat;
  * key.
  *
  * @author Ilayaperumal Gopinathan
+ * @author Thomas Vitale
  */
 public class OpenAiAutoConfigurationUtilTests {
+
+	@Test
+	void connectionDetailsUsedWhenModelBaseUrlAndApiKeyAreNotSet() {
+		var common = properties("common-key");
+		common.setBaseUrl("http://common");
+		var details = details("http://details:1234/v1", "details-key");
+
+		var resolved = OpenAiAutoConfigurationUtil.resolveCommonProperties(details, common, properties(null));
+
+		assertThat(resolved.getBaseUrl()).isEqualTo("http://details:1234/v1");
+		assertThat(resolved.getApiKey()).isEqualTo("details-key");
+	}
+
+	@Test
+	void modelBaseUrlAndApiKeyTakePrecedenceOverConnectionDetails() {
+		var model = properties("model-key");
+		model.setBaseUrl("http://model");
+		var details = details("http://details:1234/v1", "details-key");
+
+		var resolved = OpenAiAutoConfigurationUtil.resolveCommonProperties(details, properties(null), model);
+
+		assertThat(resolved.getBaseUrl()).isEqualTo("http://model");
+		assertThat(resolved.getApiKey()).isEqualTo("model-key");
+	}
+
+	@Test
+	void emptyModelApiKeyIsPreservedOverConnectionDetailsApiKey() {
+		var details = details("http://details:1234/v1", "details-key");
+
+		var resolved = OpenAiAutoConfigurationUtil.resolveCommonProperties(details, properties(null), properties(""));
+
+		assertThat(resolved.getApiKey()).as("empty model apiKey must be preserved as the no-auth signal").isEmpty();
+	}
+
+	@Test
+	void emptyConnectionDetailsApiKeyFlowsThroughWhenModelApiKeyIsNull() {
+		var details = details("http://details:1234/v1", "");
+
+		var resolved = OpenAiAutoConfigurationUtil.resolveCommonProperties(details, properties("common-key"),
+				properties(null));
+
+		assertThat(resolved.getApiKey()).isEmpty();
+	}
+
+	@Test
+	void twoArgumentOverloadIsBackedByCommonProperties() {
+		var common = properties("common-key");
+		common.setBaseUrl("http://common");
+
+		var resolved = OpenAiAutoConfigurationUtil.resolveCommonProperties(common, properties(null));
+
+		assertThat(resolved.getBaseUrl()).isEqualTo("http://common");
+		assertThat(resolved.getApiKey()).isEqualTo("common-key");
+	}
+
+	private static OpenAiConnectionDetails details(String baseUrl, String apiKey) {
+		return new OpenAiConnectionDetails() {
+
+			@Override
+			public String getBaseUrl() {
+				return baseUrl;
+			}
+
+			@Override
+			public String getApiKey() {
+				return apiKey;
+			}
+
+		};
+	}
 
 	@Test
 	void modelTimeoutTakesPrecedenceOverCommonTimeout() {

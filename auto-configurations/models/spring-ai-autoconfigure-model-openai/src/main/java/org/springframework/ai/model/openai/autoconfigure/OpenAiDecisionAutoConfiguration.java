@@ -35,6 +35,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 
 /**
  * Decision {@link AutoConfiguration Auto-configuration} for OpenAI SDK.
@@ -44,20 +45,21 @@ import org.springframework.context.annotation.Bean;
  */
 @AutoConfiguration
 @EnableConfigurationProperties({ OpenAiCommonProperties.class, OpenAiDecisionProperties.class })
+@Import(OpenAiConnectionDetailsConfiguration.class)
 @ConditionalOnProperty(name = SpringAIModelProperties.DECISION_MODEL, havingValue = SpringAIModels.OPENAI,
 		matchIfMissing = true)
 public class OpenAiDecisionAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public OpenAiDecisionModel openAiDecisionModel(OpenAiCommonProperties commonProperties,
-			OpenAiDecisionProperties decisionProperties, ObjectProvider<ObservationRegistry> observationRegistry,
-			ObjectProvider<MeterRegistry> meterRegistry,
+	public OpenAiDecisionModel openAiDecisionModel(OpenAiConnectionDetails connectionDetails,
+			OpenAiCommonProperties commonProperties, OpenAiDecisionProperties decisionProperties,
+			ObjectProvider<ObservationRegistry> observationRegistry, ObjectProvider<MeterRegistry> meterRegistry,
 			ObjectProvider<DecisionModelObservationConvention> observationConvention,
 			ObjectProvider<OpenAiHttpClientBuilderCustomizer> httpClientBuilderCustomizers) {
 
-		var resolvedProperties = OpenAiAutoConfigurationUtil.resolveCommonProperties(commonProperties,
-				decisionProperties);
+		var resolvedProperties = OpenAiAutoConfigurationUtil.resolveCommonProperties(connectionDetails,
+				commonProperties, decisionProperties);
 
 		List<OpenAiHttpClientBuilderCustomizer> customizers = httpClientBuilderCustomizers.orderedStream().toList();
 
