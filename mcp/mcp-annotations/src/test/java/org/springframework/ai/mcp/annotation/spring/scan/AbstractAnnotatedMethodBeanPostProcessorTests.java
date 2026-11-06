@@ -48,6 +48,7 @@ import static org.mockito.Mockito.verify;
  * Unit Tests for {@link AbstractAnnotatedMethodBeanPostProcessor}.
  *
  * @author Sun Yuhan
+ * @author luojie
  */
 @ExtendWith(MockitoExtension.class)
 class AbstractAnnotatedMethodBeanPostProcessorTests {
@@ -143,6 +144,30 @@ class AbstractAnnotatedMethodBeanPostProcessorTests {
 		assertTrue(capturedAnnotations.contains(TestAnnotation.class));
 	}
 
+	@Test
+	void scansEachBeanTypeOnlyOnce() {
+		CountingBeanPostProcessor countingProcessor = new CountingBeanPostProcessor(this.registry,
+				this.targetAnnotations);
+
+		countingProcessor.postProcessAfterInitialization(new AnnotatedBean(), "firstBean");
+		countingProcessor.postProcessAfterInitialization(new AnnotatedBean(), "secondBean");
+
+		assertEquals(1, countingProcessor.scanCount);
+		verify(this.registry, times(2)).addMcpAnnotatedBean(any(), any());
+	}
+
+	@Test
+	void scansNonAnnotatedBeanTypeOnlyOnce() {
+		CountingBeanPostProcessor countingProcessor = new CountingBeanPostProcessor(this.registry,
+				this.targetAnnotations);
+
+		countingProcessor.postProcessAfterInitialization(new NoAnnotationBean(), "firstBean");
+		countingProcessor.postProcessAfterInitialization(new NoAnnotationBean(), "secondBean");
+
+		assertEquals(1, countingProcessor.scanCount);
+		verify(this.registry, never()).addMcpAnnotatedBean(any(), any());
+	}
+
 	@Retention(RetentionPolicy.RUNTIME)
 	@Target(ElementType.METHOD)
 	@interface TestAnnotation {
@@ -171,6 +196,23 @@ class AbstractAnnotatedMethodBeanPostProcessorTests {
 		}
 
 		void methodWithoutAnnotation() {
+		}
+
+	}
+
+	static class CountingBeanPostProcessor extends AbstractAnnotatedMethodBeanPostProcessor {
+
+		private int scanCount;
+
+		CountingBeanPostProcessor(AbstractMcpAnnotatedBeans registry,
+				Set<Class<? extends Annotation>> targetAnnotations) {
+			super(registry, targetAnnotations);
+		}
+
+		@Override
+		protected Set<Class<? extends Annotation>> scan(Class<?> beanClass) {
+			this.scanCount++;
+			return super.scan(beanClass);
 		}
 
 	}
