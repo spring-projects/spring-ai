@@ -23,7 +23,8 @@
  * <p>
  * DDL scripts for each supported database are available on the classpath at
  * {@code org/springframework/ai/session/jdbc/schema-{db}.sql} (e.g.
- * {@code schema-postgresql.sql}, {@code schema-h2.sql}, {@code schema-mysql.sql}).
+ * {@code schema-postgresql.sql}, {@code schema-h2.sql}, {@code schema-hsqldb.sql},
+ * {@code schema-mysql.sql}).
  */
 @org.jspecify.annotations.NullMarked
 package org.springframework.ai.session.jdbc;

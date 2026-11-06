@@ -45,6 +45,8 @@ class JdbcSessionRepositoryDialectTests {
 			.isInstanceOf(PostgresJdbcSessionRepositoryDialect.class);
 		assertThat(JdbcSessionRepositoryDialect.from(dataSourceReporting("H2")))
 			.isInstanceOf(H2JdbcSessionRepositoryDialect.class);
+		assertThat(JdbcSessionRepositoryDialect.from(dataSourceReporting("HSQL Database Engine")))
+			.isInstanceOf(HsqldbJdbcSessionRepositoryDialect.class);
 		assertThat(JdbcSessionRepositoryDialect.from(dataSourceReporting("MySQL")))
 			.isInstanceOf(MysqlJdbcSessionRepositoryDialect.class);
 		assertThat(JdbcSessionRepositoryDialect.from(dataSourceReporting("MariaDB")))
