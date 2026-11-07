@@ -68,6 +68,15 @@ public interface Usage {
 	@Nullable Object getNativeUsage();
 
 	/**
+	 * Returns the output tokens used for reasoning, when reported by the provider.
+	 * @return the reasoning output token count, or {@code null} when unavailable
+	 * @since 2.1.0
+	 */
+	default @Nullable Long getReasoningOutputTokens() {
+		return null;
+	}
+
+	/**
 	 * Returns the number of input tokens read from the prompt cache, if the provider
 	 * supports prompt caching. Cached tokens are tokens that were previously processed
 	 * and stored by the provider, reducing cost and latency for repeated prompt prefixes.

@@ -653,6 +653,7 @@ class ResponsesItemMapperTests {
 		assertThat(usage.getCompletionTokens()).isEqualTo(40);
 		assertThat(usage.getTotalTokens()).isEqualTo(160);
 		assertThat(usage.getCacheReadInputTokens()).isEqualTo(20);
+		assertThat(usage.getReasoningOutputTokens()).isEqualTo(32);
 		assertThat(usage.getNativeUsage()).isNotNull();
 	}
 
@@ -669,6 +670,7 @@ class ResponsesItemMapperTests {
 		assertThat(usage.getPromptTokens()).isEqualTo(120);
 		assertThat(usage.getTotalTokens()).isEqualTo(160);
 		assertThat(usage.getCacheReadInputTokens()).isNull();
+		assertThat(usage.getReasoningOutputTokens()).isNull();
 	}
 
 	/**

@@ -37,6 +37,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 public class DefaultUsageTests {
 
 	@Test
+	void reasoningTokensSurviveSerializationAndRemainOptional() {
+		DefaultUsage usage = new DefaultUsage(10, 20, 30, null, null, null, 7L);
+		String json = JsonMapper.shared().writeValueAsString(usage);
+		assertThat(json).contains("\"reasoningOutputTokens\":7");
+		assertThat(JsonMapper.shared().readValue(json, DefaultUsage.class)).isEqualTo(usage);
+		assertThat(new DefaultUsage(10, 20).getReasoningOutputTokens()).isNull();
+		assertThat(
+				JsonMapper.shared().readValue("{\"promptTokens\":10}", DefaultUsage.class).getReasoningOutputTokens())
+			.isNull();
+		assertThat(new DefaultUsage(10, 20, 30, null, null, null, 0L)).isNotEqualTo(usage);
+	}
+
+	@Test
 	void testSerializationWithAllFields() throws Exception {
 		DefaultUsage usage = new DefaultUsage(Integer.valueOf(100), Integer.valueOf(50), Integer.valueOf(150));
 		String json = JsonMapper.shared().writeValueAsString(usage);

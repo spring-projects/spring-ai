@@ -122,6 +122,7 @@ IMPORTANT: The `gen_ai.client.token.usage` metrics measures number of input and 
 |`gen_ai.usage.cache_read.input_tokens` | The number of input tokens served from a provider-managed cache.
 |`gen_ai.usage.input_tokens` | The number of tokens used in the model input (prompt).
 |`gen_ai.usage.output_tokens` | The number of tokens used in the model output (completion).
+|`gen_ai.usage.reasoning.output_tokens` | The number of output tokens used for reasoning, when reported by the provider.
 |`gen_ai.usage.total_tokens` | The total number of tokens used in the model exchange.
 |`spring.ai.model.request.tool.names` | List of tool definitions provided to the model in the request.
 |===
