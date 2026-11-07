@@ -43,7 +43,8 @@ public final class ToolInputSchemaAugmenter {
 	/**
 	 * Extracts the tool argument types from a record class annotated with
 	 * {@link ToolParam}. It retrieves the field names, types, descriptions, and required
-	 * status from the record components.
+	 * status from the record components. Components are required by default and have no
+	 * description unless specified with {@link ToolParam}.
 	 * @param recordClass The record class to extract argument types from.
 	 * @return A list of {@link AugmentedArgumentType} representing the tool input
 	 * argument types.
@@ -64,8 +65,7 @@ public final class ToolInputSchemaAugmenter {
 				}
 
 				return new AugmentedArgumentType(c.getName(), c.getGenericType(),
-						toolParam != null ? toolParam.description() : "no description",
-						toolParam != null ? toolParam.required() : false);
+						toolParam != null ? toolParam.description() : "", toolParam == null || toolParam.required());
 			}).toList();
 
 		}
