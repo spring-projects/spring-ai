@@ -125,7 +125,7 @@ public class SyncModernMcpResourceProvider {
 		return this.resourceObjects.stream()
 			.flatMap(bean -> Stream.of(this.doGetClassMethods(bean))
 				.filter(method -> method.isAnnotationPresent(McpResource.class))
-				.filter(McpPredicates.filterReactiveReturnTypeMethod())
+				.filter(ModernMethodSupport.filterAsyncReturnTypeMethods())
 				.filter(ModernMethodSupport.filterLegacyContextMethods())
 				.filter(method -> McpPredicates
 					.isUriTemplate(this.doGetMcpResourceAnnotation(method).uri()) == templates)

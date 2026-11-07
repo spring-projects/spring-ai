@@ -52,7 +52,11 @@ final class ModernCompletionJoin {
 
 	static final String SYNC_PROMPTS = "McpSyncPrompt";
 
+	static final String ASYNC_PROMPTS = "McpAsyncPrompt";
+
 	static final String SYNC_TEMPLATES = "SyncResourceTemplateRegistration";
+
+	static final String ASYNC_TEMPLATES = "AsyncResourceTemplateRegistration";
 
 	private ModernCompletionJoin() {
 	}

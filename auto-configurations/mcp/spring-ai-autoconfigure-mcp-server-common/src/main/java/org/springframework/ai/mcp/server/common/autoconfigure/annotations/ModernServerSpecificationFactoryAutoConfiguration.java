@@ -20,6 +20,8 @@ import java.util.List;
 
 import io.modelcontextprotocol.json.McpJsonMapper;
 import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
+import io.modelcontextprotocol.modern.server.feature.McpAsyncPrompt;
+import io.modelcontextprotocol.modern.server.feature.McpAsyncTool;
 import io.modelcontextprotocol.modern.server.feature.McpSyncPrompt;
 import io.modelcontextprotocol.modern.server.feature.McpSyncTool;
 import org.jspecify.annotations.Nullable;
@@ -29,7 +31,10 @@ import org.springframework.ai.mcp.annotation.McpComplete;
 import org.springframework.ai.mcp.annotation.McpPrompt;
 import org.springframework.ai.mcp.annotation.McpResource;
 import org.springframework.ai.mcp.annotation.McpTool;
+import org.springframework.ai.mcp.annotation.spring.AsyncMcpAnnotationProviders;
 import org.springframework.ai.mcp.annotation.spring.SyncMcpAnnotationProviders;
+import org.springframework.ai.mcp.modern.AsyncResourceRegistration;
+import org.springframework.ai.mcp.modern.AsyncResourceTemplateRegistration;
 import org.springframework.ai.mcp.modern.SyncResourceRegistration;
 import org.springframework.ai.mcp.modern.SyncResourceTemplateRegistration;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerJsonMapperAutoConfiguration;
@@ -53,7 +58,9 @@ import org.springframework.context.annotation.Conditional;
  * <p>
  * Active whenever the modern server and the annotation scanner are enabled. It is
  * independent of {@code spring.ai.mcp.server.tool-callback-converter}, which only governs
- * {@link ModernToolCallbackConverterAutoConfiguration}.
+ * {@link ModernToolCallbackConverterAutoConfiguration}. The
+ * {@code spring.ai.mcp.server.type} property picks the sync ({@code McpSyncTool}, ...) or
+ * async ({@code McpAsyncTool}, ...) list beans.
  *
  * @author Christian Tzolov
  * @since 2.1.0
@@ -109,6 +116,41 @@ public class ModernServerSpecificationFactoryAutoConfiguration {
 	public List<McpSyncPrompt> modernPrompts(ServerMcpAnnotatedBeans beansWithMcpMethodAnnotations,
 			@Qualifier("mcpServerJsonMapper") ObjectProvider<JsonMapper> jsonMapper) {
 		return SyncMcpAnnotationProviders.modernPrompts(
+				beansWithMcpMethodAnnotations.getBeansByAnnotation(McpPrompt.class),
+				beansWithMcpMethodAnnotations.getBeansByAnnotation(McpComplete.class), serverMapper(jsonMapper));
+	}
+
+	@Bean
+	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
+	public List<McpAsyncTool> modernAsyncTools(ServerMcpAnnotatedBeans beansWithMcpMethodAnnotations,
+			@Qualifier("mcpServerJsonMapper") ObjectProvider<JsonMapper> jsonMapper) {
+		return AsyncMcpAnnotationProviders
+			.modernTools(beansWithMcpMethodAnnotations.getBeansByAnnotation(McpTool.class), serverMapper(jsonMapper));
+	}
+
+	@Bean
+	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
+	public List<AsyncResourceRegistration> modernAsyncResources(ServerMcpAnnotatedBeans beansWithMcpMethodAnnotations,
+			@Qualifier("mcpServerJsonMapper") ObjectProvider<JsonMapper> jsonMapper) {
+		return AsyncMcpAnnotationProviders.modernResources(
+				beansWithMcpMethodAnnotations.getBeansByAnnotation(McpResource.class), serverMapper(jsonMapper));
+	}
+
+	@Bean
+	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
+	public List<AsyncResourceTemplateRegistration> modernAsyncResourceTemplates(
+			ServerMcpAnnotatedBeans beansWithMcpMethodAnnotations,
+			@Qualifier("mcpServerJsonMapper") ObjectProvider<JsonMapper> jsonMapper) {
+		return AsyncMcpAnnotationProviders.modernResourceTemplates(
+				beansWithMcpMethodAnnotations.getBeansByAnnotation(McpResource.class),
+				beansWithMcpMethodAnnotations.getBeansByAnnotation(McpComplete.class), serverMapper(jsonMapper));
+	}
+
+	@Bean
+	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
+	public List<McpAsyncPrompt> modernAsyncPrompts(ServerMcpAnnotatedBeans beansWithMcpMethodAnnotations,
+			@Qualifier("mcpServerJsonMapper") ObjectProvider<JsonMapper> jsonMapper) {
+		return AsyncMcpAnnotationProviders.modernPrompts(
 				beansWithMcpMethodAnnotations.getBeansByAnnotation(McpPrompt.class),
 				beansWithMcpMethodAnnotations.getBeansByAnnotation(McpComplete.class), serverMapper(jsonMapper));
 	}

@@ -20,6 +20,8 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import ch.qos.logback.classic.Logger;
@@ -78,6 +80,7 @@ import org.springframework.ai.mcp.annotation.McpResource;
 import org.springframework.ai.mcp.annotation.McpTool;
 import org.springframework.ai.mcp.annotation.McpToolParam;
 import org.springframework.ai.mcp.annotation.common.ModernMethodSupport;
+import org.springframework.ai.mcp.annotation.context.McpModernRequestContext;
 import org.springframework.ai.mcp.annotation.context.McpModernSyncRequestContext;
 import org.springframework.ai.mcp.annotation.context.McpSyncRequestContext;
 import org.springframework.ai.mcp.annotation.method.resource.SyncModernMcpResourceMethodCallback;
@@ -353,6 +356,12 @@ class ModernAnnotationProvidersTests {
 	}
 
 	@Test
+	void sharedContextTypeIsInjectedIntoSyncMethods() {
+		Map<String, Object> result = result(send(server(), McpSchema.METHOD_TOOLS_CALL, params("name", "shared_ctx")));
+		assertThat(firstText(result)).isEqualTo("v=" + McpSchema.LATEST_PROTOCOL_VERSION);
+	}
+
+	@Test
 	void modernRequestParameterIsInjected() {
 		Map<String, Object> result = result(send(server(), McpSchema.METHOD_TOOLS_CALL, params("name", "raw_request")));
 		assertThat(firstText(result)).isEqualTo("state=null");
@@ -429,6 +438,22 @@ class ModernAnnotationProvidersTests {
 		assertThat(SyncMcpAnnotationProviders.modernResourceTemplates(List.of(new SkippedTargets()),
 				List.of(new SkippedTargetCompletions()), null))
 			.isEmpty();
+	}
+
+	@Test
+	void asynchronousReturnTypesAreSkippedOnTheSyncServer() {
+		// A future would be serialised as a value, not awaited, so the sync server
+		// skips it with a warning, as it skips a Mono.
+		assertThat(SyncMcpAnnotationProviders.modernTools(List.of(new FutureMethods()))).isEmpty();
+		assertThat(SyncMcpAnnotationProviders.modernPrompts(List.of(new FutureMethods()))).isEmpty();
+		assertThat(SyncMcpAnnotationProviders.modernResources(List.of(new FutureMethods()))).isEmpty();
+	}
+
+	@Test
+	void outputSchemaOfATypeVariableComesFromItsBound() {
+		List<McpSyncTool> tools = SyncMcpAnnotationProviders.modernTools(List.of(new BoundedTools<Point>()));
+		assertThat(tools).singleElement()
+			.satisfies(tool -> assertThat(tool.definition().outputSchema()).containsKey("properties"));
 	}
 
 	@Test
@@ -685,12 +710,12 @@ class ModernAnnotationProvidersTests {
 		assertThatThrownBy(() -> new SyncModernMcpToolMethodCallback(ReturnMode.TEXT,
 				LegacyTools.class.getDeclaredMethod("legacy", McpSyncRequestContext.class), new LegacyTools()))
 			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("McpModernSyncRequestContext");
+			.hasMessageContaining("McpModernRequestContext");
 		assertThatThrownBy(() -> SyncModernMcpResourceMethodCallback.builder()
 			.method(LegacyResources.class.getDeclaredMethod("read", McpSyncRequestContext.class))
 			.bean(new LegacyResources())
 			.uri("test://legacy")
-			.build()).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("McpModernSyncRequestContext");
+			.build()).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("McpModernRequestContext");
 	}
 
 	@Test
@@ -843,6 +868,11 @@ class ModernAnnotationProvidersTests {
 		@McpTool(name = "raw_request", description = "Sees the modern request")
 		String rawRequest(CallToolRequest request) {
 			return "state=" + request.requestState();
+		}
+
+		@McpTool(name = "shared_ctx", description = "Declares the paradigm-neutral context")
+		String sharedContext(McpModernRequestContext ctx) {
+			return "v=" + ctx.protocolVersion();
 		}
 
 	}
@@ -1122,6 +1152,39 @@ class ModernAnnotationProvidersTests {
 			return List.of(value);
 		}
 
+	}
+
+	@SuppressWarnings("unused")
+	static class FutureMethods {
+
+		@McpTool(name = "future_tool", description = "d", generateOutputSchema = true)
+		CompletableFuture<Point> futureTool() {
+			return CompletableFuture.completedFuture(new Point(1, 2));
+		}
+
+		@McpPrompt(name = "stage_prompt", description = "d")
+		CompletionStage<String> stagePrompt() {
+			return CompletableFuture.completedFuture("value");
+		}
+
+		@McpResource(uri = "test://future", name = "future", description = "d")
+		CompletableFuture<String> futureResource() {
+			return CompletableFuture.completedFuture("value");
+		}
+
+	}
+
+	@SuppressWarnings("unused")
+	static class BoundedTools<T extends Point> {
+
+		@McpTool(name = "bounded", description = "d", generateOutputSchema = true)
+		T bounded() {
+			return null;
+		}
+
+	}
+
+	record Point(int x, int y) {
 	}
 
 }

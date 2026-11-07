@@ -671,6 +671,8 @@ public class SyncTools {
 }
 ----
 
+NOTE: On the modern server (`spring.ai.mcp.server.protocol=MODERN`), the synchronous providers also filter out methods that return a `CompletableFuture` or `CompletionStage`, which they cannot wait for.
+
 ==== Asynchronous Servers
 
 Asynchronous servers (configured with `spring.ai.mcp.server.type=ASYNC`) use asynchronous providers that:
@@ -705,6 +707,11 @@ public class AsyncTools {
     }
 }
 ----
+
+NOTE: The modern server (`spring.ai.mcp.server.protocol=MODERN`) with `type=ASYNC` is the exception: it serves non-reactive methods as well, and its streaming parameter is the SDK `McpAsyncNotifier`.
+A non-reactive method runs on Reactor's `boundedElastic` scheduler, or on the calling thread when the transport serves the request blocking, as the WebMVC transport does.
+A method that declares the notifier of the other programming model is skipped with a warning.
+See xref:api/mcp/mcp-modern-server-boot-starter-docs.adoc#mcp-modern-server-boot-starter[MCP 2026-07-28 ("Modern") Servers].
 
 === Stateful vs Stateless Filtering
 

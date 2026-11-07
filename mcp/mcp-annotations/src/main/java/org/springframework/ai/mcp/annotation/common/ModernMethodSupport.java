@@ -35,6 +35,7 @@ import io.modelcontextprotocol.modern.McpSchema.ElicitUrlRequest;
 import io.modelcontextprotocol.modern.McpSchema.ErrorCodes;
 import io.modelcontextprotocol.modern.McpSchema.InputRequest;
 import io.modelcontextprotocol.modern.McpSchema.InputRequiredResult;
+import io.modelcontextprotocol.modern.server.McpAsyncNotifier;
 import io.modelcontextprotocol.modern.server.McpRequestContext;
 import io.modelcontextprotocol.modern.server.McpSyncNotifier;
 import io.modelcontextprotocol.server.McpAsyncServerExchange;
@@ -47,6 +48,7 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.ai.mcp.annotation.McpClientCapability;
 import org.springframework.ai.mcp.annotation.context.DefaultMcpModernSyncRequestContext;
 import org.springframework.ai.mcp.annotation.context.McpAsyncRequestContext;
+import org.springframework.ai.mcp.annotation.context.McpModernRequestContext;
 import org.springframework.ai.mcp.annotation.context.McpModernSyncRequestContext;
 import org.springframework.ai.mcp.annotation.context.McpSyncRequestContext;
 import org.springframework.ai.mcp.modern.McpSchemaConverter;
@@ -55,10 +57,11 @@ import org.springframework.ai.mcp.modern.McpSchemaConverter;
  * Parameter handling shared by the method callbacks of a 2026-07-28 ("modern") MCP
  * server.
  * <p>
- * A modern method may declare {@link McpModernSyncRequestContext}, the SDK
- * {@link McpRequestContext}, {@link McpSyncNotifier} and {@link McpTransportContext} next
- * to the primitive's own parameters. The legacy exchange and request context types are
- * rejected because there is no session to back them.
+ * A modern method may declare {@link McpModernRequestContext} (or its sync alias
+ * {@link McpModernSyncRequestContext}), the SDK {@link McpRequestContext},
+ * {@link McpSyncNotifier} (sync) or {@link McpAsyncNotifier} (async) and
+ * {@link McpTransportContext} next to the primitive's own parameters. The legacy exchange
+ * and request context types are rejected because there is no session to back them.
  *
  * @author Christian Tzolov
  * @since 2.1.0
@@ -82,11 +85,28 @@ public final class ModernMethodSupport {
 	}
 
 	/**
+	 * The asynchronous counterpart of {@link #isStreamingParameter(Class)}: only the SDK
+	 * {@link McpAsyncNotifier} makes an async method a streaming response.
+	 * @since 2.1.0
+	 */
+	public static boolean isAsyncStreamingParameter(Class<?> parameterType) {
+		return McpAsyncNotifier.class.isAssignableFrom(parameterType);
+	}
+
+	/**
+	 * Whether a parameter of this type is either notifier.
+	 * @since 2.1.0
+	 */
+	public static boolean isNotifierParameter(Class<?> parameterType) {
+		return isStreamingParameter(parameterType) || isAsyncStreamingParameter(parameterType);
+	}
+
+	/**
 	 * Whether a parameter of this type is a modern context parameter, injected by the
 	 * callback rather than bound from the request.
 	 */
 	public static boolean isContextParameter(Class<?> parameterType) {
-		return isStreamingParameter(parameterType) || McpModernSyncRequestContext.class.isAssignableFrom(parameterType)
+		return isNotifierParameter(parameterType) || McpModernRequestContext.class.isAssignableFrom(parameterType)
 				|| McpRequestContext.class.isAssignableFrom(parameterType);
 	}
 
@@ -117,8 +137,26 @@ public final class ModernMethodSupport {
 		if (McpSyncRequestContext.class.isAssignableFrom(parameterType)
 				|| McpAsyncRequestContext.class.isAssignableFrom(parameterType)) {
 			throw new IllegalArgumentException("Modern (2026-07-28) methods must not declare parameter of type "
-					+ parameterType.getName() + "; use McpModernSyncRequestContext instead. Method: " + method.getName()
+					+ parameterType.getName() + "; use McpModernRequestContext instead. Method: " + method.getName()
 					+ " in " + method.getDeclaringClass().getName());
+		}
+	}
+
+	/**
+	 * Rejects the notifier of the other programming model: a sync method may only declare
+	 * {@link McpSyncNotifier}, an async method only {@link McpAsyncNotifier}.
+	 * @param supportedNotifier the notifier type the callback injects
+	 * @throws IllegalArgumentException if the type is the other notifier
+	 * @since 2.1.0
+	 */
+	public static void rejectUnsupportedNotifierParameter(Class<?> parameterType, Method method,
+			Class<?> supportedNotifier) {
+		if (isNotifierParameter(parameterType) && !supportedNotifier.isAssignableFrom(parameterType)) {
+			throw new IllegalArgumentException(
+					"Modern (2026-07-28) " + (McpSyncNotifier.class.equals(supportedNotifier) ? "sync" : "async")
+							+ " methods must not declare parameter of type " + parameterType.getName() + "; use "
+							+ supportedNotifier.getSimpleName() + " instead. Method: " + method.getName() + " in "
+							+ method.getDeclaringClass().getName());
 		}
 	}
 
@@ -138,9 +176,10 @@ public final class ModernMethodSupport {
 			return ClientCapabilities.NONE;
 		}
 		EnumSet<McpClientCapability> set = EnumSet.copyOf(Arrays.asList(required));
-		if (!method.getReturnType().isAssignableFrom(InputRequiredResult.class) && logger.isWarnEnabled()) {
+		Class<?> outcomeType = ModernReactiveSupport.outcomeClass(method);
+		if (outcomeType != null && !outcomeType.isAssignableFrom(InputRequiredResult.class) && logger.isWarnEnabled()) {
 			logger.warn("Method " + method.getName() + " in " + method.getDeclaringClass().getName() + " requires "
-					+ set + " but returns " + method.getReturnType().getName()
+					+ set + " but returns " + method.getGenericReturnType().getTypeName()
 					+ ", which cannot carry an InputRequiredResult; return the primitive's outcome type to ask the"
 					+ " client for input");
 		}
@@ -253,10 +292,43 @@ public final class ModernMethodSupport {
 	 * that one unconverted method does not prevent the application from starting.
 	 */
 	public static Predicate<Method> filterLegacyContextMethods() {
+		return filterLegacyContextMethods(McpSyncNotifier.class);
+	}
+
+	/**
+	 * As {@link #filterLegacyContextMethods()}, also skipping methods that declare the
+	 * notifier of the other programming model.
+	 * @param supportedNotifier the notifier type the provider's callbacks inject
+	 * @since 2.1.0
+	 */
+	/**
+	 * Skips, with a warning, a method with an asynchronous return type, which a
+	 * synchronous modern server cannot wait for: {@code Mono}, {@code Flux}, any other
+	 * {@code Publisher}, a {@code CompletionStage}, or any other type that Spring's
+	 * {@code ReactiveAdapterRegistry} adapts. {@code spring.ai.mcp.server.type=ASYNC}
+	 * serves such methods.
+	 */
+	public static Predicate<Method> filterAsyncReturnTypeMethods() {
+		return method -> {
+			if (!ModernReactiveSupport.isReactive(method)) {
+				return true;
+			}
+			if (logger.isWarnEnabled()) {
+				logger.warn("Skipping method on the synchronous 2026-07-28 (modern) server: " + method.getName()
+						+ " in " + method.getDeclaringClass().getName() + " returns "
+						+ method.getReturnType().getSimpleName()
+						+ "; set spring.ai.mcp.server.type=ASYNC to serve asynchronous return types");
+			}
+			return false;
+		};
+	}
+
+	public static Predicate<Method> filterLegacyContextMethods(Class<?> supportedNotifier) {
 		return method -> {
 			for (Class<?> type : method.getParameterTypes()) {
 				try {
 					rejectLegacyContextParameter(type, method);
+					rejectUnsupportedNotifierParameter(type, method, supportedNotifier);
 				}
 				catch (IllegalArgumentException e) {
 					if (logger.isWarnEnabled()) {
@@ -294,10 +366,30 @@ public final class ModernMethodSupport {
 	public static void injectContextArguments(Object[] args, Parameter[] parameters, McpRequestContext context,
 			@Nullable Map<String, Object> inputResponses, @Nullable String requestState,
 			@Nullable McpSyncNotifier notifier, @Nullable McpJsonMapper jsonMapper) {
+		injectContextArguments(args, parameters, context, inputResponses, requestState, notifier, null, jsonMapper);
+	}
+
+	/**
+	 * Fills the modern context parameters and {@link McpTransportContext} into the
+	 * argument array, leaving every other slot untouched. A sync callback passes its
+	 * {@link McpSyncNotifier}, an async callback its {@link McpAsyncNotifier}; the other
+	 * one is {@code null}.
+	 * @param inputResponses the request's MRTR input responses, if any
+	 * @param requestState the request's unsealed MRTR state, if any
+	 * @param notifier the sync notifier of a streaming response, or null
+	 * @param asyncNotifier the async notifier of a streaming response, or null
+	 * @param jsonMapper the mapper that {@code inputResponse(key, type)} converts with,
+	 * normally the server's, or null for the SDK default
+	 * @since 2.1.0
+	 */
+	public static void injectContextArguments(Object[] args, Parameter[] parameters, McpRequestContext context,
+			@Nullable Map<String, Object> inputResponses, @Nullable String requestState,
+			@Nullable McpSyncNotifier notifier, @Nullable McpAsyncNotifier asyncNotifier,
+			@Nullable McpJsonMapper jsonMapper) {
 		McpModernSyncRequestContext modernContext = null;
 		for (int i = 0; i < parameters.length; i++) {
 			Class<?> type = parameters[i].getType();
-			if (McpModernSyncRequestContext.class.isAssignableFrom(type)) {
+			if (McpModernRequestContext.class.isAssignableFrom(type)) {
 				if (modernContext == null) {
 					modernContext = DefaultMcpModernSyncRequestContext.builder()
 						.context(context)
@@ -310,6 +402,9 @@ public final class ModernMethodSupport {
 			}
 			else if (McpSyncNotifier.class.isAssignableFrom(type)) {
 				args[i] = notifier;
+			}
+			else if (McpAsyncNotifier.class.isAssignableFrom(type)) {
+				args[i] = asyncNotifier;
 			}
 			else if (McpRequestContext.class.isAssignableFrom(type)) {
 				args[i] = context;

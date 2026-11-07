@@ -17,18 +17,13 @@
 package org.springframework.ai.mcp.annotation.provider.complete;
 
 import java.lang.reflect.Method;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Stream;
 
 import io.modelcontextprotocol.modern.server.feature.McpSyncCompletionHandler;
 import io.modelcontextprotocol.util.Assert;
 
 import org.springframework.ai.mcp.annotation.McpComplete;
-import org.springframework.ai.mcp.annotation.adapter.CompleteAdapter;
-import org.springframework.ai.mcp.annotation.common.McpPredicates;
 import org.springframework.ai.mcp.annotation.common.ModernMethodSupport;
 import org.springframework.ai.mcp.annotation.method.complete.SyncModernMcpCompleteMethodCallback;
 
@@ -73,40 +68,15 @@ public class SyncModernMcpCompleteProvider {
 	}
 
 	private Map<String, McpSyncCompletionHandler> completions(boolean prompts) {
-		Map<String, Method> methods = new LinkedHashMap<>();
-		Map<String, McpSyncCompletionHandler> completions = new LinkedHashMap<>();
-		for (Object bean : this.completeObjects) {
-			Stream.of(this.doGetClassMethods(bean))
-				.filter(method -> method.isAnnotationPresent(McpComplete.class))
-				.filter(McpPredicates.filterReactiveReturnTypeMethod())
-				.filter(ModernMethodSupport.filterLegacyContextMethods())
-				.sorted(Comparator.comparing(Method::getName))
-				.forEach(method -> {
-					McpComplete annotation = method.getAnnotation(McpComplete.class);
-					CompleteAdapter.asCompleteReference(annotation, method);
-					String key = prompts ? annotation.prompt() : annotation.uri();
-					if (key.isEmpty()) {
-						return;
-					}
-					Method existing = methods.putIfAbsent(key, method);
-					if (existing != null) {
-						throw new IllegalArgumentException("Both " + describe(existing) + " and " + describe(method)
-								+ " complete the " + (prompts ? "prompt '" : "resource template '") + key
-								+ "'; one method completes every argument of a prompt or template");
-					}
-					completions.put(key,
-							SyncModernMcpCompleteMethodCallback.builder()
-								.method(method)
-								.bean(bean)
-								.complete(annotation)
-								.build());
-				});
-		}
-		return completions;
-	}
-
-	private static String describe(Method method) {
-		return method.getDeclaringClass().getName() + "." + method.getName();
+		return ModernCompleteMethods.collect(this.completeObjects, this::doGetClassMethods,
+				ModernMethodSupport.filterAsyncReturnTypeMethods()
+					.and(ModernMethodSupport.filterLegacyContextMethods()),
+				prompts,
+				(bean, method) -> SyncModernMcpCompleteMethodCallback.builder()
+					.method(method)
+					.bean(bean)
+					.complete(method.getAnnotation(McpComplete.class))
+					.build());
 	}
 
 	protected Method[] doGetClassMethods(Object bean) {

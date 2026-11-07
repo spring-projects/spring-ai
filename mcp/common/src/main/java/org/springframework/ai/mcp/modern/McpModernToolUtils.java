@@ -27,8 +27,10 @@ import io.modelcontextprotocol.modern.McpSchema.ImageContent;
 import io.modelcontextprotocol.modern.McpSchema.Role;
 import io.modelcontextprotocol.modern.McpSchema.TextContent;
 import io.modelcontextprotocol.modern.McpSchema.Tool;
+import io.modelcontextprotocol.modern.server.McpAsyncResponse;
 import io.modelcontextprotocol.modern.server.McpRequestContext;
 import io.modelcontextprotocol.modern.server.McpSyncResponse;
+import io.modelcontextprotocol.modern.server.feature.McpAsyncTool;
 import io.modelcontextprotocol.modern.server.feature.McpSyncTool;
 import org.jspecify.annotations.Nullable;
 
@@ -46,6 +48,10 @@ import org.springframework.util.MimeType;
  * the {@link ToolContext} under the {@link #TOOL_CONTEXT_MCP_REQUEST_CONTEXT_KEY} key. It
  * deliberately does not reuse the legacy exchange key, whose accessor casts to the
  * session-based exchange type.
+ * <p>
+ * A {@link ToolCallback} blocks, so the asynchronous tools run it through
+ * {@link McpModernAsyncUtils#fromBlocking}: on the calling thread when the request is
+ * served blocking, on {@code boundedElastic} otherwise.
  *
  * @author Christian Tzolov
  * @since 2.1.0
@@ -92,14 +98,48 @@ public final class McpModernToolUtils {
 	 */
 	public static McpSyncTool toSyncTool(ToolCallback toolCallback, @Nullable MimeType mimeType) {
 		Assert.notNull(toolCallback, "toolCallback must not be null");
-		var definition = toolCallback.getToolDefinition();
-		Tool tool = Tool
-			.builder(definition.name(), new JacksonMcpJsonMapper(JacksonUtils.getDefaultJsonMapper()),
-					definition.inputSchema())
-			.description(definition.description())
-			.build();
-		return McpSyncTool.of(tool,
+		return McpSyncTool.of(definition(toolCallback),
 				(context, request) -> McpSyncResponse.result(call(toolCallback, mimeType, context, request)));
+	}
+
+	/**
+	 * Converts the given callbacks to asynchronous modern tools.
+	 * @param toolCallbacks the callbacks to expose
+	 * @return one tool per callback
+	 * @since 2.1.0
+	 */
+	public static List<McpAsyncTool> toAsyncTools(List<ToolCallback> toolCallbacks) {
+		Assert.notNull(toolCallbacks, "toolCallbacks must not be null");
+		return toolCallbacks.stream().map(McpModernToolUtils::toAsyncTool).toList();
+	}
+
+	/**
+	 * @since 2.1.0
+	 */
+	public static List<McpAsyncTool> toAsyncTools(ToolCallback... toolCallbacks) {
+		return toAsyncTools(List.of(toolCallbacks));
+	}
+
+	/**
+	 * @since 2.1.0
+	 */
+	public static McpAsyncTool toAsyncTool(ToolCallback toolCallback) {
+		return toAsyncTool(toolCallback, null);
+	}
+
+	/**
+	 * Converts a Spring AI {@link ToolCallback} to an asynchronous modern tool, the twin
+	 * of {@link #toSyncTool(ToolCallback, MimeType)}. The callback blocks, so it runs
+	 * through {@link McpModernAsyncUtils#fromBlocking}.
+	 * @param toolCallback the callback to expose
+	 * @param mimeType the MIME type of the callback's output, or {@code null} for text
+	 * @return the tool
+	 * @since 2.1.0
+	 */
+	public static McpAsyncTool toAsyncTool(ToolCallback toolCallback, @Nullable MimeType mimeType) {
+		Assert.notNull(toolCallback, "toolCallback must not be null");
+		return McpAsyncTool.of(definition(toolCallback), (context, request) -> McpModernAsyncUtils.fromBlocking(context,
+				() -> McpAsyncResponse.result(call(toolCallback, mimeType, context, request))));
 	}
 
 	/**
@@ -115,6 +155,15 @@ public final class McpModernToolUtils {
 		}
 		return toolContext.getContext().get(TOOL_CONTEXT_MCP_REQUEST_CONTEXT_KEY) instanceof McpRequestContext ctx ? ctx
 				: null;
+	}
+
+	private static Tool definition(ToolCallback toolCallback) {
+		var definition = toolCallback.getToolDefinition();
+		return Tool
+			.builder(definition.name(), new JacksonMcpJsonMapper(JacksonUtils.getDefaultJsonMapper()),
+					definition.inputSchema())
+			.description(definition.description())
+			.build();
 	}
 
 	private static CallToolResult call(ToolCallback toolCallback, @Nullable MimeType mimeType,

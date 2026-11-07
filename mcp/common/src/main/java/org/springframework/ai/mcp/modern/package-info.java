@@ -20,16 +20,19 @@
  * <p>
  * The modern SDK serves each primitive from a repository that lists definitions and finds
  * a definition with its handler ({@code McpSyncTool}, {@code McpSyncPrompt},
- * {@code McpSyncResource}). The {@code InMemorySync*Repository} classes are map-backed
- * repositories with runtime add and remove, change broadcasts and key-cursor paging.
- * {@link org.springframework.ai.mcp.modern.SyncResourceRegistration} and
+ * {@code McpSyncResource}, or their {@code McpAsync*} twins). The
+ * {@code InMemorySync*Repository} and {@code InMemoryAsync*Repository} classes are
+ * map-backed repositories with runtime add and remove, change broadcasts and key-cursor
+ * paging. {@link org.springframework.ai.mcp.modern.SyncResourceRegistration} and
  * {@link org.springframework.ai.mcp.modern.SyncResourceTemplateRegistration} pair a
  * resource or template definition with its handler, which the SDK's
- * {@code McpSyncResource} does not carry. Completions travel with their prompt or
- * template, through the SDK's {@code withCompletionHandler}.
- * {@link org.springframework.ai.mcp.modern.McpSchemaConverter} converts between the
- * legacy and modern schema types, which lets handlers written against the legacy types be
- * exposed on a modern server, and
+ * {@code McpSyncResource} does not carry, and the {@code Async*Registration} records are
+ * their asynchronous twins. Completions travel with their prompt or template, through the
+ * SDK's {@code withCompletionHandler}.
+ * {@link org.springframework.ai.mcp.modern.McpModernAsyncUtils} runs blocking code inside
+ * asynchronous handlers. {@link org.springframework.ai.mcp.modern.McpSchemaConverter}
+ * converts between the legacy and modern schema types, which lets handlers written
+ * against the legacy types be exposed on a modern server, and
  * {@link org.springframework.ai.mcp.modern.McpTransportContexts} reads the request
  * headers that the Spring transports put into the transport context.
  */

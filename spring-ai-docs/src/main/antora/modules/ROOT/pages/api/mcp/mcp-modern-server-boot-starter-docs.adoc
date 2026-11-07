@@ -13,7 +13,8 @@ This revision is a redesign of the protocol:
 The modern server is selected with `spring.ai.mcp.server.protocol=MODERN` and is available for WebMVC, WebFlux and STDIO.
 The same annotated beans and `ToolCallback`s you use with the other protocols are served unchanged.
 
-NOTE: The modern server requires the MCP Java SDK `2.2.0` line or later, and only the synchronous API type (`spring.ai.mcp.server.type=SYNC`) is supported at the moment. Setting `type=ASYNC` together with `protocol=MODERN` fails the application at startup rather than starting without a server.
+NOTE: The modern server requires the MCP Java SDK `2.2.0` line or later.
+Both API types are supported: `spring.ai.mcp.server.type=SYNC` (the default) serves blocking handler methods, `type=ASYNC` serves reactive ones, see <<The Asynchronous API Type>>.
 
 === WebMVC Server
 
@@ -70,6 +71,7 @@ spring:
 == Configuration Properties
 
 The common properties (`spring.ai.mcp.server.name`, `version`, `instructions`, `type`, `capabilities.*`, `tool-callback-converter`, `tool-response-mime-type`) and the MCP annotation scanner properties apply as they do for the other protocols.
+`spring.ai.mcp.server.type` picks the programming model: `SYNC` (the default) registers the `McpSync*` primitives and in-memory repositories, `ASYNC` their `McpAsync*` twins.
 
 `spring.ai.mcp.server.tool-callback-converter=false` stops `ToolCallback` beans from being exposed as MCP tools. It does not affect `@McpTool`, `@McpResource`, `@McpPrompt` or `@McpComplete` methods, which are controlled by the annotation scanner property `spring.ai.mcp.server.annotation-scanner.enabled`.
 The following properties are specific to the modern server.
@@ -145,21 +147,23 @@ The conversion is a compatibility floor, not a ceiling. Every primitive also acc
 |Primitive |Modern parameters |Modern return types
 
 |`@McpTool`
-|`McpModernSyncRequestContext`, `McpRequestContext`, `McpSyncNotifier`, `CallToolRequest`
+|`McpModernRequestContext`, `McpRequestContext`, `McpSyncNotifier`, `CallToolRequest`
 |`CallToolOutcome` (`CallToolResult` or `InputRequiredResult`)
 
 |`@McpResource`
-|`McpModernSyncRequestContext`, `McpRequestContext`, `McpSyncNotifier`, `ReadResourceRequest`
+|`McpModernRequestContext`, `McpRequestContext`, `McpSyncNotifier`, `ReadResourceRequest`
 |`ReadResourceOutcome` (`ReadResourceResult` with `ttlMs` and `cacheScope`, or `InputRequiredResult`)
 
 |`@McpPrompt`
-|`McpModernSyncRequestContext`, `McpRequestContext`, `McpSyncNotifier`, `GetPromptRequest`
+|`McpModernRequestContext`, `McpRequestContext`, `McpSyncNotifier`, `GetPromptRequest`
 |`GetPromptOutcome` (`GetPromptResult` or `InputRequiredResult`)
 
 |`@McpComplete`
-|`McpModernSyncRequestContext`, `McpRequestContext`, `CompleteRequest`
+|`McpModernRequestContext`, `McpRequestContext`, `CompleteRequest`
 |`CompleteResult`
 |===
+
+On `type=ASYNC` the notifier is `McpAsyncNotifier` and every return type may be wrapped in a `Mono`; see <<The Asynchronous API Type>>.
 
 Use the modern types whenever a feature has no legacy equivalent: multi round-trip requests on any primitive, and per-response cache hints on resource reads.
 
@@ -188,8 +192,9 @@ Bidirectional parameters of the session-based servers (`McpSyncServerExchange`, 
 
 === Request Context
 
-A tool, resource, prompt or completion method can declare a `McpModernSyncRequestContext` parameter. It gives access to the protocol version, the client capabilities and info, the request `_meta`, the progress token, the transport context and the multi round-trip fields.
-Declaring it does not change the shape of the response: the method still answers with a plain JSON result.
+A tool, resource, prompt or completion method can declare a `McpModernRequestContext` parameter. It gives access to the protocol version, the client capabilities and info, the request `_meta`, the progress token, the transport context and the multi round-trip fields.
+Nothing in it blocks, so the same type serves sync and async methods; `McpModernSyncRequestContext` is an alias of it that sync methods may declare instead.
+Declaring the context does not change the shape of the response: the method still answers with a plain JSON result.
 
 === Progress and Streaming Responses
 
@@ -263,6 +268,43 @@ A method that declares `requiredCapabilities` but returns a type that cannot car
 The attribute covers roots, sampling and form and URL elicitation; a method that depends on an `experimental` or extension capability is registered programmatically with the SDK `ClientCapabilities`.
 The legacy servers ignore the attribute with a warning, as they do for the resource cache hints.
 
+=== The Asynchronous API Type
+
+`spring.ai.mcp.server.type=ASYNC` switches the annotated methods, the repositories and the `ToolCallback` adapter to their reactive twins.
+A method may return a `Mono`, a `CompletableFuture` or `CompletionStage`, or a `Publisher` of any return type the sync model accepts, modern or legacy.
+A plain return value is accepted too, and the method runs on the calling thread when the request is served blocking and on `boundedElastic` otherwise.
+
+An MCP request has one result, and that sets the rule for streams.
+A method declared to return a `Flux` is rejected at startup; return a `Mono` of the result instead, for example a `Mono<List<String>>` or a `Mono<CompleteResult>`.
+A method declared to return a `Publisher` or `Object` is resolved from the value it returns, so a `Mono` behind either of them is a single value, and a publisher that emits more than one element fails the call rather than losing elements.
+A tool reports the failure as an error result, and a resource, prompt or completion answers `-32603`.
+
+A method pushes progress by declaring the SDK `McpAsyncNotifier`, whose methods return `Mono<Void>`; as with `McpSyncNotifier`, that parameter alone makes the response a stream.
+The request context is the same `McpModernRequestContext`.
+
+[source,java]
+----
+@McpTool(name = "index", description = "Indexes the given paths")
+public Mono<String> index(McpAsyncNotifier notifier, @McpToolParam(description = "paths") List<String> paths) {
+    return Flux.range(0, paths.size())
+        .concatMap(i -> notifier.progress(i + 1, (double) paths.size(), paths.get(i)).then(index(paths.get(i))))
+        .then(Mono.just("Indexed " + paths.size() + " paths"));
+}
+----
+
+A plain, blocking return type is accepted on the async server too.
+The method then runs through `McpModernAsyncUtils.fromBlocking`: on the calling thread when the request is served blocking (the WebMVC transport), and on Reactor's `boundedElastic` scheduler otherwise, so a WebFlux event loop is never blocked.
+`ToolCallback` beans are wrapped the same way.
+The sync server, on the other hand, skips methods with an asynchronous return type (a `Mono`, `Flux` or other `Publisher`, or a `CompletionStage`) with a warning.
+A method that declares the notifier of the other programming model is skipped with a warning as well, and rejected when its callback is built directly.
+
+The async server serves the same primitives from the asynchronous repositories: `McpAsyncToolRepository`, `McpAsyncResourceRepository` and `McpAsyncPromptRepository`, backed by default by `InMemoryAsyncToolRepository`, `InMemoryAsyncResourceRepository` and `InMemoryAsyncPromptRepository`, and fed by the `McpAsyncTool`, `AsyncResourceRegistration`, `AsyncResourceTemplateRegistration` and `McpAsyncPrompt` list beans described below.
+The type property only picks these defaults: a repository bean of either flavour is served on either type, which lets a `type=SYNC` application serve one primitive from a non-blocking repository.
+A sync and an async repository bean for the same primitive fail the application at startup.
+The in-memory repositories read only the list beans of their type, so list beans of the other type, for example a `List<McpSyncTool>` on `type=ASYNC`, also fail the application at startup unless a repository bean of their flavour serves them.
+
+NOTE: The transports are the same for both types. The WebFlux transport is non-blocking end to end on `type=ASYNC`; the WebMVC transport subscribes on the container thread and waits for the result, as it does for sync handlers, so `McpRequestContext.isBlocking()` is `true` there.
+
 === Runtime Changes and Subscriptions
 
 Each primitive is served by an SDK repository bean: `McpSyncToolRepository`, `McpSyncResourceRepository` and `McpSyncPromptRepository`.
@@ -299,6 +341,7 @@ The lists are the contract between the scanning side and the repository side: a 
 |===
 
 `SyncResourceRegistration` and `SyncResourceTemplateRegistration` pair a resource or template definition with its `McpSyncResource`, which carries no definition of its own.
+On `type=ASYNC` the contract is the same with the asynchronous twins: `List<McpAsyncTool>` (beans `modernAsyncTools` and `modernAsyncToolCallbacks`), `List<AsyncResourceRegistration>` (`modernAsyncResources`), `List<AsyncResourceTemplateRegistration>` (`modernAsyncResourceTemplates`) and `List<McpAsyncPrompt>` (`modernAsyncPrompts`), consumed by the `InMemoryAsync*Repository` beans.
 There can be several beans of each list type, so inject them as `ObjectProvider<List<McpSyncTool>>` and flatten, as the examples below do.
 The `ObjectProvider` also keeps the repository from being created before the annotation scanner has registered the annotated beans, which an eager `List<McpSyncTool>` parameter can cause.
 
@@ -321,7 +364,7 @@ A completion handler travels with the prompt or resource template it completes, 
 Each `@McpComplete` method is attached to the `@McpPrompt` method or `@McpResource` template that it names, and the application fails to start when there is none; a static resource has no variables, so naming its URI fails as well.
 One method completes every argument of its prompt or template and reads the argument from `CompleteRequest.argument().name()`.
 
-A prompt or template defined in code takes its handler through `withCompletionHandler`, on `McpSyncPrompt` or `SyncResourceTemplateRegistration`:
+A prompt or template defined in code takes its handler through `withCompletionHandler`, on `McpSyncPrompt` or `SyncResourceTemplateRegistration` (and their asynchronous twins):
 
 [source,java]
 ----
@@ -436,6 +479,7 @@ public class CatalogToolRepository implements McpSyncToolRepository {
 
 A `McpSyncTool`, `McpSyncPrompt` or `McpSyncResource` can also declare the client capabilities it cannot work without, with `of(definition, requiredCapabilities, handler)`, the programmatic counterpart of the `requiredCapabilities` attribute; the server answers a client that did not declare them with `-32021` before the handler runs.
 For resources, `SyncResourceRegistration.of(resource, requiredCapabilities, handler)` and `SyncResourceTemplateRegistration.of(...)` do the same.
+A repository that implements one of the asynchronous SDK interfaces (`McpAsyncToolRepository`, `McpAsyncResourceRepository`, `McpAsyncPromptRepository`) is served the same way, on either `type`; its `list` and `find` return `Mono`s, and an empty `find` means "not found".
 
 === Customizing the Server and the Transport
 
@@ -453,6 +497,7 @@ To bind the sealed `requestState` to that principal too, define a `RequestStateC
 Compared to the session-based servers:
 
 * `ctx.elicit(...)`, `ctx.sample(...)`, `ctx.roots()` and `ctx.ping()` have no direct equivalent. Elicitation, sampling and roots are multi round-trip requests; `ping` is gone. Logging is deprecated and per request: the client opts in with `_meta.logLevel` and the server may send `notifications/message` on that request's stream, which the modern context does not expose yet.
-* Progress requires a streaming response, which a method opts into by declaring `McpSyncNotifier`; `McpModernSyncRequestContext` carries the request data only.
+* Progress requires a streaming response, which a method opts into by declaring `McpSyncNotifier` (`McpAsyncNotifier` on `type=ASYNC`); `McpModernRequestContext` carries the request data only.
+* `type=ASYNC` is supported: reactive methods return `Mono`s, and blocking ones are moved off the event loop; see <<The Asynchronous API Type>>.
 * Clients must send the `Mcp-Method`, `MCP-Protocol-Version` and, for `tools/call`, `prompts/get` and `resources/read`, the `Mcp-Name` header consistent with the body. Requests that disagree are rejected with JSON-RPC error `-32020`.
 * `server/discover` replaces `initialize`; its caching hints and the list caching hints are controlled by the properties above.

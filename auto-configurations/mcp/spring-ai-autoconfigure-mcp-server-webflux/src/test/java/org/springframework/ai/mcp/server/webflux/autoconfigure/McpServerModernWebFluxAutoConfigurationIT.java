@@ -16,14 +16,29 @@
 
 package org.springframework.ai.mcp.server.webflux.autoconfigure;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.util.HashMap;
 import java.util.Map;
 
 import io.modelcontextprotocol.common.McpTransportContext;
+import io.modelcontextprotocol.json.McpJsonDefaults;
+import io.modelcontextprotocol.modern.JsonRpc.JSONRPCRequest;
+import io.modelcontextprotocol.modern.McpSchema;
+import io.modelcontextprotocol.modern.McpSchema.MetaKeys;
+import io.modelcontextprotocol.modern.server.McpAsyncNotifier;
 import io.modelcontextprotocol.server.McpTransportContextExtractor;
 import org.junit.jupiter.api.Test;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
+import org.springframework.ai.mcp.annotation.McpTool;
+import org.springframework.ai.mcp.annotation.McpToolParam;
+import org.springframework.ai.mcp.modern.InMemoryAsyncToolRepository;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerJsonMapperAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerModernAutoConfiguration;
+import org.springframework.ai.mcp.server.common.autoconfigure.annotations.McpServerAnnotationScannerAutoConfiguration;
+import org.springframework.ai.mcp.server.common.autoconfigure.annotations.ModernServerSpecificationFactoryAutoConfiguration;
 import org.springframework.ai.mcp.server.webflux.transport.modern.WebFluxMcpTransport;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
@@ -113,6 +128,104 @@ class McpServerModernWebFluxAutoConfigurationIT {
 			.run(context -> assertThat(context).doesNotHaveBean(WebFluxMcpTransport.class));
 		this.contextRunner.withPropertyValues("spring.ai.mcp.server.stdio=true")
 			.run(context -> assertThat(context).doesNotHaveBean(WebFluxMcpTransport.class));
+	}
+
+	@Test
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	void asyncTypeServesReactiveToolsOverHttp() {
+		this.contextRunner.withPropertyValues("spring.ai.mcp.server.type=ASYNC")
+			.withConfiguration(AutoConfigurations.of(McpServerAnnotationScannerAutoConfiguration.class,
+					ModernServerSpecificationFactoryAutoConfiguration.class))
+			.withUserConfiguration(AsyncToolsConfiguration.class)
+			.run(context -> {
+				assertThat(context).hasNotFailed();
+				assertThat(context).hasSingleBean(InMemoryAsyncToolRepository.class);
+				WebTestClient client = WebTestClient
+					.bindToRouterFunction((RouterFunction) context.getBean(RouterFunction.class))
+					.build();
+
+				// A plain result over the non-blocking path.
+				String greet = client.post()
+					.uri("/mcp")
+					.contentType(MediaType.APPLICATION_JSON)
+					.header("Mcp-Method", McpSchema.METHOD_TOOLS_CALL)
+					.header("MCP-Protocol-Version", McpSchema.LATEST_PROTOCOL_VERSION)
+					.header("Mcp-Name", "greet")
+					.bodyValue(toolsCall("greet", Map.of("name", "Ann"), null))
+					.exchange()
+					.expectStatus()
+					.isOk()
+					.expectHeader()
+					.contentTypeCompatibleWith(MediaType.APPLICATION_JSON)
+					.expectBody(String.class)
+					.returnResult()
+					.getResponseBody();
+				assertThat(greet).contains("Hello Ann");
+
+				// A streaming result: the notifier pushes progress before the result.
+				String progress = client.post()
+					.uri("/mcp")
+					.contentType(MediaType.APPLICATION_JSON)
+					.header("Mcp-Method", McpSchema.METHOD_TOOLS_CALL)
+					.header("MCP-Protocol-Version", McpSchema.LATEST_PROTOCOL_VERSION)
+					.header("Mcp-Name", "progress")
+					.bodyValue(toolsCall("progress", Map.of("steps", 2), "tok"))
+					.exchange()
+					.expectStatus()
+					.isOk()
+					.expectHeader()
+					.contentTypeCompatibleWith(MediaType.TEXT_EVENT_STREAM)
+					.expectBody(String.class)
+					.returnResult()
+					.getResponseBody();
+				assertThat(progress).contains(McpSchema.METHOD_NOTIFICATION_PROGRESS).contains("done:2");
+			});
+	}
+
+	private static String toolsCall(String tool, Map<String, Object> arguments, String progressToken) {
+		Map<String, Object> meta = new HashMap<>();
+		meta.put(MetaKeys.PROTOCOL_VERSION, McpSchema.LATEST_PROTOCOL_VERSION);
+		meta.put(MetaKeys.CLIENT_CAPABILITIES, Map.of());
+		if (progressToken != null) {
+			meta.put(MetaKeys.PROGRESS_TOKEN, progressToken);
+		}
+		Map<String, Object> params = new HashMap<>();
+		params.put("_meta", meta);
+		params.put("name", tool);
+		params.put("arguments", arguments);
+		try {
+			return McpJsonDefaults.getMapper()
+				.writeValueAsString(new JSONRPCRequest(McpSchema.METHOD_TOOLS_CALL, 1, params));
+		}
+		catch (IOException ex) {
+			throw new UncheckedIOException(ex);
+		}
+	}
+
+	@Configuration
+	static class AsyncToolsConfiguration {
+
+		@Bean
+		AsyncTools asyncTools() {
+			return new AsyncTools();
+		}
+
+	}
+
+	static class AsyncTools {
+
+		@McpTool(name = "greet", description = "Greets")
+		public Mono<String> greet(@McpToolParam(description = "name") String name) {
+			return Mono.just("Hello " + name);
+		}
+
+		@McpTool(name = "progress", description = "Reports progress")
+		public Mono<String> progress(McpAsyncNotifier notifier, @McpToolParam(description = "steps") int steps) {
+			return Flux.range(1, steps)
+				.concatMap(i -> notifier.progress(i, (double) steps, null))
+				.then(Mono.just("done:" + steps));
+		}
+
 	}
 
 	@Configuration

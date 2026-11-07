@@ -30,6 +30,7 @@ import io.modelcontextprotocol.modern.server.McpSyncNotifier;
 import io.modelcontextprotocol.modern.server.feature.McpSyncCompletionHandler;
 import io.modelcontextprotocol.spec.McpSchema.CompleteResult.CompleteCompletion;
 import io.modelcontextprotocol.util.DefaultMcpUriTemplateManagerFactory;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.mcp.annotation.McpMeta;
 import org.springframework.ai.mcp.annotation.McpProgressToken;
@@ -97,7 +98,7 @@ public final class SyncModernMcpCompleteMethodCallback extends AbstractMcpComple
 		}
 	}
 
-	private static io.modelcontextprotocol.spec.McpSchema.CompleteResult convertToCompleteResult(Object result) {
+	static io.modelcontextprotocol.spec.McpSchema.CompleteResult convertToCompleteResult(@Nullable Object result) {
 		if (result == null) {
 			return new io.modelcontextprotocol.spec.McpSchema.CompleteResult(
 					new CompleteCompletion(List.of(), 0, false));
@@ -134,10 +135,9 @@ public final class SyncModernMcpCompleteMethodCallback extends AbstractMcpComple
 				continue;
 			}
 			ModernMethodSupport.rejectLegacyContextParameter(type, method);
-			if (McpSyncNotifier.class.isAssignableFrom(type)) {
-				throw new IllegalArgumentException(
-						"Completion methods are not streamed and cannot declare McpSyncNotifier: " + method.getName()
-								+ " in " + method.getDeclaringClass().getName());
+			if (ModernMethodSupport.isNotifierParameter(type)) {
+				throw new IllegalArgumentException("Completion methods are not streamed and cannot declare a notifier: "
+						+ method.getName() + " in " + method.getDeclaringClass().getName());
 			}
 			boolean valid = McpTransportContext.class.isAssignableFrom(type) || isModernInfrastructureParameter(type)
 					|| io.modelcontextprotocol.spec.McpSchema.CompleteRequest.class.isAssignableFrom(type)

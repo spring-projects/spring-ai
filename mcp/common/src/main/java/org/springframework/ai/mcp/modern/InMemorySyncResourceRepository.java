@@ -18,8 +18,6 @@ package org.springframework.ai.mcp.modern;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentSkipListMap;
 
 import io.modelcontextprotocol.modern.McpSchema.Resource;
 import io.modelcontextprotocol.modern.McpSchema.ResourceTemplate;
@@ -32,7 +30,6 @@ import io.modelcontextprotocol.modern.server.feature.ResourceTemplatesPage;
 import io.modelcontextprotocol.modern.server.feature.ResourcesPage;
 import io.modelcontextprotocol.modern.server.feature.ServerChange;
 import io.modelcontextprotocol.util.DefaultMcpUriTemplateManagerFactory;
-import io.modelcontextprotocol.util.McpUriTemplateManager;
 import io.modelcontextprotocol.util.McpUriTemplateManagerFactory;
 import org.jspecify.annotations.Nullable;
 
@@ -52,12 +49,15 @@ import org.springframework.util.Assert;
  *
  * @author Christian Tzolov
  * @since 2.1.0
+ * @see InMemoryAsyncResourceRepository
  */
 public final class InMemorySyncResourceRepository implements McpSyncResourceRepository {
 
-	private final Map<String, SyncResourceRegistration> resources = new ConcurrentSkipListMap<>();
+	private final Catalogue<SyncResourceRegistration> resources = new Catalogue<>(
+			registration -> registration.resource().uri(), "Resource", "URI");
 
-	private final Map<String, CompiledTemplate> templates = new ConcurrentSkipListMap<>();
+	private final Catalogue<CompiledTemplate<SyncResourceTemplateRegistration>> templates = new Catalogue<>(
+			template -> template.registration().template().definition().uriTemplate(), "Resource template", "URI");
 
 	private final McpUriTemplateManagerFactory uriTemplateManagerFactory;
 
@@ -76,7 +76,7 @@ public final class InMemorySyncResourceRepository implements McpSyncResourceRepo
 		this.pageSize = builder.pageSize;
 		this.subscribeSupported = builder.subscribeSupported;
 		this.completionSupported = builder.completionSupported;
-		builder.resources.forEach(this::put);
+		builder.resources.forEach(this.resources::put);
 		builder.resourceTemplates.forEach(this::put);
 	}
 
@@ -89,7 +89,7 @@ public final class InMemorySyncResourceRepository implements McpSyncResourceRepo
 	 * @throws IllegalArgumentException if a resource with the same URI exists
 	 */
 	public void add(SyncResourceRegistration registration) {
-		put(registration);
+		this.resources.put(registration);
 		broadcastListChanged();
 	}
 
@@ -110,8 +110,8 @@ public final class InMemorySyncResourceRepository implements McpSyncResourceRepo
 	 */
 	public boolean remove(String uri) {
 		Assert.hasText(uri, "uri must not be empty");
-		boolean removed = this.resources.remove(uri) != null;
-		removed |= this.templates.remove(uri) != null;
+		boolean removed = this.resources.remove(uri);
+		removed |= this.templates.remove(uri);
 		if (removed) {
 			broadcastListChanged();
 		}
@@ -131,17 +131,14 @@ public final class InMemorySyncResourceRepository implements McpSyncResourceRepo
 
 	@Override
 	public ResourcesPage list(McpRequestContext ctx, @Nullable String cursor) {
-		Pagination.Page<Resource> page = Pagination.page(this.resources.values(),
-				registration -> registration.resource().uri(), SyncResourceRegistration::resource, cursor,
-				this.pageSize);
+		Pagination.Page<Resource> page = this.resources.page(SyncResourceRegistration::resource, cursor, this.pageSize);
 		return new ResourcesPage(page.items(), page.nextCursor(), null, null);
 	}
 
 	@Override
 	public ResourceTemplatesPage listTemplates(McpRequestContext ctx, @Nullable String cursor) {
-		Pagination.Page<ResourceTemplate> page = Pagination.page(this.templates.values(),
-				template -> template.registration().template().definition().uriTemplate(),
-				template -> template.registration().template().definition(), cursor, this.pageSize);
+		Pagination.Page<ResourceTemplate> page = this.templates
+			.page(template -> template.registration().template().definition(), cursor, this.pageSize);
 		return new ResourceTemplatesPage(page.items(), page.nextCursor(), null, null);
 	}
 
@@ -151,8 +148,8 @@ public final class InMemorySyncResourceRepository implements McpSyncResourceRepo
 		if (resource != null) {
 			return resource.handler();
 		}
-		for (CompiledTemplate template : this.templates.values()) {
-			if (template.matcher().matches(uri)) {
+		for (CompiledTemplate<SyncResourceTemplateRegistration> template : this.templates.values()) {
+			if (template.matches(uri)) {
 				return template.registration().handler();
 			}
 		}
@@ -165,7 +162,7 @@ public final class InMemorySyncResourceRepository implements McpSyncResourceRepo
 	 */
 	@Override
 	public @Nullable McpSyncResourceTemplate findTemplate(McpRequestContext ctx, String uriTemplate) {
-		CompiledTemplate template = this.templates.get(uriTemplate);
+		CompiledTemplate<SyncResourceTemplateRegistration> template = this.templates.get(uriTemplate);
 		return template != null ? template.registration().template() : null;
 	}
 
@@ -179,32 +176,16 @@ public final class InMemorySyncResourceRepository implements McpSyncResourceRepo
 		return this.completionSupported;
 	}
 
-	private void put(SyncResourceRegistration registration) {
-		Assert.notNull(registration, "registration must not be null");
-		String uri = registration.resource().uri();
-		if (this.resources.putIfAbsent(uri, registration) != null) {
-			throw new IllegalArgumentException("Resource with URI '" + uri + "' already exists");
-		}
-	}
-
 	private void put(SyncResourceTemplateRegistration registration) {
 		Assert.notNull(registration, "registration must not be null");
-		String uriTemplate = registration.template().definition().uriTemplate();
-		// Compiled eagerly so that an invalid template fails at registration time.
-		CompiledTemplate compiled = new CompiledTemplate(registration,
-				this.uriTemplateManagerFactory.create(uriTemplate));
-		if (this.templates.putIfAbsent(uriTemplate, compiled) != null) {
-			throw new IllegalArgumentException("Resource template with URI '" + uriTemplate + "' already exists");
-		}
+		this.templates.put(CompiledTemplate.compile(registration, registration.template().definition().uriTemplate(),
+				this.uriTemplateManagerFactory));
 	}
 
 	private void broadcastListChanged() {
 		if (this.changeBroadcaster != null) {
 			this.changeBroadcaster.broadcast(new ServerChange.ResourcesListChanged());
 		}
-	}
-
-	private record CompiledTemplate(SyncResourceTemplateRegistration registration, McpUriTemplateManager matcher) {
 	}
 
 	/**
