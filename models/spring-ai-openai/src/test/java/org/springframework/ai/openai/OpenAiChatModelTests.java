@@ -1295,7 +1295,7 @@ class OpenAiChatModelTests {
 			ChatCompletionCreateParams request = chatModel.createRequest(new Prompt("test", options), false);
 
 			assertThat(request.audio()).isPresent();
-			assertThat(request.audio().get().voice().string().get().equals("shimmer"));
+			assertThat(request.audio().get().voice().string()).contains("shimmer");
 		}
 		finally {
 			Locale.setDefault(original);
