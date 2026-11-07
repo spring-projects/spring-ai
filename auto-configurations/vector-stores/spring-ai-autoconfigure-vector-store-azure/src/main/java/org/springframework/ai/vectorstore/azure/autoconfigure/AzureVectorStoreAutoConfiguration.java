@@ -82,7 +82,7 @@ public class AzureVectorStoreAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public AzureVectorStore vectorStore(SearchIndexClient searchIndexClient, EmbeddingModel embeddingModel,
+	public AzureVectorStore azureVectorStore(SearchIndexClient searchIndexClient, EmbeddingModel embeddingModel,
 			AzureVectorStoreProperties properties, ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<VectorStoreObservationConvention> customObservationConvention,
 			BatchingStrategy batchingStrategy) {
