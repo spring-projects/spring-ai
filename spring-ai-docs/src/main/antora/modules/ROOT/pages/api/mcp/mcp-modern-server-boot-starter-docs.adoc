@@ -265,9 +265,9 @@ The legacy servers ignore the attribute with a warning, as they do for the resou
 
 === Runtime Changes and Subscriptions
 
-Each primitive is served by an SDK repository bean: `McpSyncToolRepository`, `McpSyncResourceRepository`, `McpSyncPromptRepository` and `McpSyncCompletionRepository`.
+Each primitive is served by an SDK repository bean: `McpSyncToolRepository`, `McpSyncResourceRepository` and `McpSyncPromptRepository`.
 A repository lists definitions and finds a definition together with its handler: `McpSyncTool`, `McpSyncPrompt` and `McpSyncResource` are the SDK's pairs of definition and handler, and the server validates the request and dispatches to the handler itself.
-Unless you define a bean of that type yourself, the auto-configuration registers an in-memory repository per primitive (`InMemorySyncToolRepository`, `InMemorySyncResourceRepository`, `InMemorySyncPromptRepository`, `InMemorySyncCompletionRepository`) and the `McpChangeFeed` that backs `subscriptions/listen`.
+Unless you define a bean of that type yourself, the auto-configuration registers an in-memory repository per primitive (`InMemorySyncToolRepository`, `InMemorySyncResourceRepository`, `InMemorySyncPromptRepository`) and the `McpChangeFeed` that backs `subscriptions/listen`.
 Inject an in-memory repository to add or remove primitives at runtime; the matching list-changed notification is broadcast to listening clients.
 Call `InMemorySyncResourceRepository.resourceUpdated(uri)` to notify subscribers of a resource change.
 
@@ -296,13 +296,9 @@ The lists are the contract between the scanning side and the repository side: a 
 |`List<McpSyncPrompt>`
 |`@McpPrompt` methods (bean `modernPrompts`)
 |`InMemorySyncPromptRepository`
-
-|`List<SyncCompletionRegistration>`
-|`@McpComplete` methods (bean `modernCompletions`)
-|`InMemorySyncCompletionRepository`
 |===
 
-`SyncResourceRegistration` and `SyncResourceTemplateRegistration` pair a resource or template definition with its `McpSyncResource`, which carries no definition of its own; `SyncCompletionRegistration` pairs a `CompleteReference` with its handler.
+`SyncResourceRegistration` and `SyncResourceTemplateRegistration` pair a resource or template definition with its `McpSyncResource`, which carries no definition of its own.
 There can be several beans of each list type, so inject them as `ObjectProvider<List<McpSyncTool>>` and flatten, as the examples below do.
 The `ObjectProvider` also keeps the repository from being created before the annotation scanner has registered the annotated beans, which an eager `List<McpSyncTool>` parameter can cause.
 
@@ -317,6 +313,33 @@ void addLater() {
             CallToolResult.builder().addContent(TextContent.builder("late").build()).build())));
 }
 ----
+
+==== Completions
+
+Completions have no list bean and no repository of their own.
+A completion handler travels with the prompt or resource template it completes, and the prompt and resource repositories serve `completion/complete` from it.
+Each `@McpComplete` method is attached to the `@McpPrompt` method or `@McpResource` template that it names, and the application fails to start when there is none; a static resource has no variables, so naming its URI fails as well.
+One method completes every argument of its prompt or template and reads the argument from `CompleteRequest.argument().name()`.
+
+A prompt or template defined in code takes its handler through `withCompletionHandler`, on `McpSyncPrompt` or `SyncResourceTemplateRegistration`:
+
+[source,java]
+----
+@Bean
+List<SyncResourceTemplateRegistration> cityResources() {
+    return List.of(SyncResourceTemplateRegistration
+        .of(ResourceTemplate.builder("weather://{city}", "weather").build(), this::readWeather)
+        .withCompletionHandler((ctx, request) -> CompleteResult.of(
+            new CompleteResult.Completion(cities.startingWith(request.argument().value())))));
+}
+----
+
+The server answers `-32602` for a prompt or template it does not know and for an argument the prompt or template does not declare, and no values for a prompt or template without a handler.
+`spring.ai.mcp.server.capabilities.completion=false` builds the in-memory prompt and resource repositories with `completionSupported(false)`, and the server then neither advertises `completions` nor answers `completion/complete`.
+
+NOTE: Spring AI 2.1.0-RC2 served completions from a separate `List<SyncCompletionRegistration>` bean and `McpSyncCompletionRepository`.
+Both are gone; move a programmatic completion to `withCompletionHandler` on its prompt or template.
+`SyncResourceTemplateRegistration` now holds the SDK's `McpSyncResourceTemplate`: its `of(...)` factories are unchanged, but the accessor is `template()`, whose `definition()` is the `ResourceTemplate` that `resourceTemplate()` returned, and the canonical constructor takes the SDK template.
 
 ==== Filtering per Caller
 
@@ -370,6 +393,9 @@ The `ObjectProvider` matters: the `List<McpSyncTool>` beans come from the annota
 A listing that depends on the caller must be returned with `cacheScope: private`, as above, so that a shared cache never serves one caller's view to another.
 A wrapper that filters a page after the repository has paged it can return a short page; filter before paging, or leave `spring.ai.mcp.server.modern.page-size` unset so that everything is served on one page.
 Resource subscriptions on `subscriptions/listen` are matched by the SDK without consulting the repository, so a hidden resource's update notifications still reach a client that subscribed to its URI.
+
+IMPORTANT: `supportsCompletion()`, and on a resource repository `findTemplate`, are default methods of the SDK interfaces, so a prompt or resource wrapper must delegate them or it silently turns completion off.
+In return, a prompt that the wrapper hides from `find`, or a template it hides from `findTemplate`, is hidden from completion too.
 
 ==== Custom Repositories
 

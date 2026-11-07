@@ -37,18 +37,21 @@ import io.modelcontextprotocol.modern.server.McpSyncResponse;
 import io.modelcontextprotocol.modern.server.McpTransportResponse;
 import io.modelcontextprotocol.modern.server.RequestStateCodec;
 import io.modelcontextprotocol.modern.server.feature.McpChangeFeed;
+import io.modelcontextprotocol.modern.server.feature.McpSyncPrompt;
+import io.modelcontextprotocol.modern.server.feature.McpSyncPromptRepository;
 import io.modelcontextprotocol.modern.server.feature.McpSyncTool;
 import io.modelcontextprotocol.modern.server.feature.McpSyncToolRepository;
+import io.modelcontextprotocol.modern.server.feature.PromptsPage;
 import io.modelcontextprotocol.modern.server.feature.ToolsPage;
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.mcp.annotation.McpArg;
 import org.springframework.ai.mcp.annotation.McpComplete;
 import org.springframework.ai.mcp.annotation.McpPrompt;
 import org.springframework.ai.mcp.annotation.McpResource;
 import org.springframework.ai.mcp.annotation.McpTool;
 import org.springframework.ai.mcp.annotation.McpToolParam;
 import org.springframework.ai.mcp.customizer.McpModernServerCustomizer;
-import org.springframework.ai.mcp.modern.InMemorySyncCompletionRepository;
 import org.springframework.ai.mcp.modern.InMemorySyncPromptRepository;
 import org.springframework.ai.mcp.modern.InMemorySyncResourceRepository;
 import org.springframework.ai.mcp.modern.InMemorySyncToolRepository;
@@ -107,6 +110,31 @@ class McpServerModernAutoConfigurationIT {
 		return (Map<String, Object>) ((McpTransportResponse.Result) response).response().result();
 	}
 
+	private static Map<String, Object> completeParams(Map<String, Object> ref, String argument, String value) {
+		return params("ref", ref, "argument", Map.of("name", argument, "value", value));
+	}
+
+	private static Map<String, Object> promptRef(String name) {
+		return Map.of("type", "ref/prompt", "name", name);
+	}
+
+	private static Map<String, Object> templateRef(String uriTemplate) {
+		return Map.of("type", "ref/resource", "uri", uriTemplate);
+	}
+
+	@SuppressWarnings("unchecked")
+	private static List<String> values(Map<String, Object> result) {
+		return (List<String>) ((Map<String, Object>) result.get("completion")).get("values");
+	}
+
+	private static int errorCode(McpServer server, McpTransportContext transportContext, String method,
+			Map<String, Object> params) {
+		McpTransportResponse response = server.handleBlocking(transportContext, new JSONRPCRequest(method, 1, params))
+			.block();
+		assertThat(response).isInstanceOf(McpTransportResponse.Error.class);
+		return ((McpTransportResponse.Error) response).response().error().code();
+	}
+
 	@Test
 	void defaultConfiguration() {
 		this.contextRunner.run(context -> {
@@ -115,7 +143,6 @@ class McpServerModernAutoConfigurationIT {
 			assertThat(context).hasSingleBean(InMemorySyncToolRepository.class);
 			assertThat(context).hasSingleBean(InMemorySyncResourceRepository.class);
 			assertThat(context).hasSingleBean(InMemorySyncPromptRepository.class);
-			assertThat(context).hasSingleBean(InMemorySyncCompletionRepository.class);
 			assertThat(context.getBean(InMemorySyncToolRepository.class).list(null, null).tools()).isEmpty();
 
 			McpServerModernProperties properties = context.getBean(McpServerModernProperties.class);
@@ -191,13 +218,14 @@ class McpServerModernAutoConfigurationIT {
 				assertThat(consumer.prompts()).isSameAs(prompts);
 				assertThat(prompts.list(null, null).prompts()).extracting(McpSchema.Prompt::name).containsExactly("p");
 
-				// The completion repository cannot be listed: complete via the server.
-				assertThat(consumer.completions()).isSameAs(context.getBean(InMemorySyncCompletionRepository.class));
-				Map<String, Object> result = call(context.getBean(McpServer.class),
-						McpSchema.METHOD_COMPLETION_COMPLETE, params("ref", Map.of("type", "ref/prompt", "name", "p"),
-								"argument", Map.of("name", "topic", "value", "x")));
-				Map<String, Object> completion = (Map<String, Object>) result.get("completion");
-				assertThat((List<String>) completion.get("values")).containsExactly("x1");
+				// Completions travel with their prompt and template.
+				McpServer server = context.getBean(McpServer.class);
+				assertThat(values(call(server, McpSchema.METHOD_COMPLETION_COMPLETE,
+						completeParams(promptRef("p"), "topic", "x"))))
+					.containsExactly("x1");
+				assertThat(values(call(server, McpSchema.METHOD_COMPLETION_COMPLETE,
+						completeParams(templateRef("test://docs/{id}"), "id", "7"))))
+					.containsExactly("doc-7");
 			});
 	}
 
@@ -239,9 +267,13 @@ class McpServerModernAutoConfigurationIT {
 					"spring.ai.mcp.server.capabilities.completion=false")
 			.run(context -> {
 				assertThat(context).doesNotHaveBean(InMemorySyncToolRepository.class);
-				assertThat(context).doesNotHaveBean(InMemorySyncCompletionRepository.class);
 				assertThat(context).hasSingleBean(InMemorySyncResourceRepository.class);
 				assertThat(context).hasSingleBean(McpServer.class);
+				assertThat(context.getBean(InMemorySyncResourceRepository.class).supportsCompletion()).isFalse();
+				assertThat(context.getBean(InMemorySyncPromptRepository.class).supportsCompletion()).isFalse();
+				assertThat(errorCode(context.getBean(McpServer.class), McpTransportContext.EMPTY,
+						McpSchema.METHOD_COMPLETION_COMPLETE, completeParams(promptRef("p"), "topic", "x")))
+					.isEqualTo(McpSchema.ErrorCodes.METHOD_NOT_FOUND);
 			});
 	}
 
@@ -276,6 +308,23 @@ class McpServerModernAutoConfigurationIT {
 				Map<String, Object> adminList = call(server, admin, McpSchema.METHOD_TOOLS_LIST, params());
 				assertThat((List<Map<String, Object>>) adminList.get("tools")).extracting(tool -> tool.get("name"))
 					.containsExactly("admin_reset", "greet", "weather");
+			});
+	}
+
+	@Test
+	void promptRepositoryWrapperServesCompletionsWhenItDelegates() {
+		this.contextRunner.withUserConfiguration(UserConfiguration.class, WrappingPromptRepositoryConfiguration.class)
+			.run(context -> {
+				McpServer server = context.getBean(McpServer.class);
+				McpTransportContext admin = McpTransportContexts
+					.fromHeaders(each -> each.accept("X-Role", List.of("admin")));
+				Map<String, Object> params = completeParams(promptRef("p"), "topic", "x");
+
+				assertThat(values(call(server, admin, McpSchema.METHOD_COMPLETION_COMPLETE, params)))
+					.containsExactly("x1");
+				// A prompt the wrapper hides is hidden from completion too.
+				assertThat(errorCode(server, McpTransportContext.EMPTY, McpSchema.METHOD_COMPLETION_COMPLETE, params))
+					.isEqualTo(McpSchema.ErrorCodes.INVALID_PARAMS);
 			});
 	}
 
@@ -467,9 +516,8 @@ class McpServerModernAutoConfigurationIT {
 		 */
 		@Bean
 		RepositoryConsumer repositoryConsumer(InMemorySyncToolRepository tools,
-				InMemorySyncResourceRepository resources, InMemorySyncPromptRepository prompts,
-				InMemorySyncCompletionRepository completions) {
-			return new RepositoryConsumer(tools, resources, prompts, completions);
+				InMemorySyncResourceRepository resources, InMemorySyncPromptRepository prompts) {
+			return new RepositoryConsumer(tools, resources, prompts);
 		}
 
 	}
@@ -485,7 +533,7 @@ class McpServerModernAutoConfigurationIT {
 	}
 
 	record RepositoryConsumer(InMemorySyncToolRepository tools, InMemorySyncResourceRepository resources,
-			InMemorySyncPromptRepository prompts, InMemorySyncCompletionRepository completions) {
+			InMemorySyncPromptRepository prompts) {
 	}
 
 	@Configuration
@@ -528,6 +576,38 @@ class McpServerModernAutoConfigurationIT {
 				public McpSyncTool find(McpRequestContext ctx, String name) {
 					McpSyncTool tool = inMemory.find(ctx, name);
 					return tool != null && (admin(ctx) || !name.startsWith("admin_")) ? tool : null;
+				}
+			};
+		}
+
+	}
+
+	@Configuration
+	static class WrappingPromptRepositoryConfiguration {
+
+		// Hides the prompts from callers without the admin header. supportsCompletion()
+		// is a default method, so a wrapper that does not delegate it turns completion
+		// off.
+		@Bean
+		McpSyncPromptRepository promptRepository(ObjectProvider<List<McpSyncPrompt>> prompts) {
+			McpSyncPromptRepository inMemory = InMemorySyncPromptRepository.builder()
+				.prompts(prompts.stream().flatMap(List::stream).toList())
+				.build();
+			return new McpSyncPromptRepository() {
+				@Override
+				public PromptsPage list(McpRequestContext ctx, String cursor) {
+					return WrappingRepositoryConfiguration.admin(ctx) ? inMemory.list(ctx, cursor)
+							: PromptsPage.of(List.of());
+				}
+
+				@Override
+				public McpSyncPrompt find(McpRequestContext ctx, String name) {
+					return WrappingRepositoryConfiguration.admin(ctx) ? inMemory.find(ctx, name) : null;
+				}
+
+				@Override
+				public boolean supportsCompletion() {
+					return inMemory.supportsCompletion();
 				}
 			};
 		}
@@ -590,13 +670,18 @@ class McpServerModernAutoConfigurationIT {
 		}
 
 		@McpPrompt(name = "p", description = "p")
-		public String prompt() {
+		public String prompt(@McpArg(name = "topic") String topic) {
 			return "prompt";
 		}
 
 		@McpComplete(prompt = "p")
 		public List<String> completeTopic(String value) {
 			return List.of(value + "1");
+		}
+
+		@McpComplete(uri = "test://docs/{id}")
+		public List<String> completeDocId(String value) {
+			return List.of("doc-" + value);
 		}
 
 	}

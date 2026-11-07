@@ -58,7 +58,6 @@ import io.modelcontextprotocol.modern.McpSchema.TextResourceContents;
 import io.modelcontextprotocol.modern.server.McpServer;
 import io.modelcontextprotocol.modern.server.McpSyncNotifier;
 import io.modelcontextprotocol.modern.server.McpTransportResponse;
-import io.modelcontextprotocol.modern.server.feature.CompletionsFeature;
 import io.modelcontextprotocol.modern.server.feature.McpSyncTool;
 import io.modelcontextprotocol.modern.server.feature.PromptsFeature;
 import io.modelcontextprotocol.modern.server.feature.ResourcesFeature;
@@ -68,6 +67,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.slf4j.LoggerFactory;
+import reactor.core.publisher.Mono;
 
 import org.springframework.ai.mcp.annotation.McpArg;
 import org.springframework.ai.mcp.annotation.McpClientCapability;
@@ -85,7 +85,6 @@ import org.springframework.ai.mcp.annotation.method.tool.ReturnMode;
 import org.springframework.ai.mcp.annotation.method.tool.SyncModernMcpToolMethodCallback;
 import org.springframework.ai.mcp.annotation.method.tool.utils.McpJsonSchemaGenerator;
 import org.springframework.ai.mcp.annotation.spring.SyncMcpAnnotationProviders;
-import org.springframework.ai.mcp.modern.InMemorySyncCompletionRepository;
 import org.springframework.ai.mcp.modern.InMemorySyncPromptRepository;
 import org.springframework.ai.mcp.modern.InMemorySyncResourceRepository;
 import org.springframework.ai.mcp.modern.InMemorySyncToolRepository;
@@ -129,13 +128,12 @@ class ModernAnnotationProvidersTests {
 				.build()))
 			.feature(ResourcesFeature.ofSync(InMemorySyncResourceRepository.builder()
 				.resources(SyncMcpAnnotationProviders.modernResources(List.of(new Resources())))
-				.resourceTemplates(SyncMcpAnnotationProviders.modernResourceTemplates(List.of(new Resources())))
+				.resourceTemplates(SyncMcpAnnotationProviders.modernResourceTemplates(List.of(new Resources()),
+						List.of(new Completions()), null))
 				.build()))
 			.feature(PromptsFeature.ofSync(InMemorySyncPromptRepository.builder()
-				.prompts(SyncMcpAnnotationProviders.modernPrompts(List.of(new Prompts())))
-				.build()))
-			.feature(CompletionsFeature.ofSync(InMemorySyncCompletionRepository.builder()
-				.completions(SyncMcpAnnotationProviders.modernCompletions(List.of(new Completions())))
+				.prompts(SyncMcpAnnotationProviders.modernPrompts(List.of(new Prompts()), List.of(new Completions()),
+						null))
 				.build()))
 			.build();
 	}
@@ -396,6 +394,53 @@ class ModernAnnotationProvidersTests {
 
 	@Test
 	@SuppressWarnings("unchecked")
+	void resourceTemplateCompletionsArePublished() {
+		Map<String, Object> completion = result(send(server(), McpSchema.METHOD_COMPLETION_COMPLETE,
+				params("ref", Map.of("type", "ref/resource", "uri", "test://items/{id}"), "argument",
+						Map.of("name", "id", "value", "4"))));
+		Map<String, Object> values = (Map<String, Object>) completion.get("completion");
+		assertThat((List<String>) values.get("values")).containsExactly("item-4");
+	}
+
+	@Test
+	void completionWithoutAnAnnotatedTargetFailsAtStartup() {
+		assertThatThrownBy(() -> SyncMcpAnnotationProviders.modernPrompts(List.of(), List.of(new Completions()), null))
+			.isInstanceOf(IllegalStateException.class)
+			.hasMessageContaining("[greeting, confirm]")
+			.hasMessageContaining("McpSyncPrompt.withCompletionHandler");
+		assertThatThrownBy(
+				() -> SyncMcpAnnotationProviders.modernResourceTemplates(List.of(), List.of(new Completions()), null))
+			.isInstanceOf(IllegalStateException.class)
+			.hasMessageContaining("[test://items/{id}]")
+			.hasMessageContaining("SyncResourceTemplateRegistration.withCompletionHandler");
+		// A static resource has no variables to complete.
+		assertThatThrownBy(() -> SyncMcpAnnotationProviders.modernResourceTemplates(List.of(new Resources()),
+				List.of(new StaticResourceCompletion()), null))
+			.isInstanceOf(IllegalStateException.class)
+			.hasMessageContaining("[test://static]");
+	}
+
+	@Test
+	void completionOfASkippedPromptOrTemplateIsSkippedToo() {
+		// A sync server skips methods with a reactive return type, with a warning.
+		assertThat(SyncMcpAnnotationProviders.modernPrompts(List.of(new SkippedTargets()),
+				List.of(new SkippedTargetCompletions()), null))
+			.isEmpty();
+		assertThat(SyncMcpAnnotationProviders.modernResourceTemplates(List.of(new SkippedTargets()),
+				List.of(new SkippedTargetCompletions()), null))
+			.isEmpty();
+	}
+
+	@Test
+	void twoCompletionsForOneReferenceFailAtStartup() {
+		assertThatThrownBy(() -> SyncMcpAnnotationProviders.modernPrompts(List.of(new Prompts()),
+				List.of(new Completions(), new DuplicateCompletion()), null))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("complete the prompt 'greeting'");
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
 	void annotationCacheHintsAreAppliedToConvertedLegacyResults() {
 		McpServer server = server();
 		Map<String, Object> hinted = result(
@@ -633,7 +678,8 @@ class ModernAnnotationProvidersTests {
 		assertThat(SyncMcpAnnotationProviders.modernTools(List.of(new LegacyTools()))).isEmpty();
 		assertThat(SyncMcpAnnotationProviders.modernResources(List.of(new LegacyResources()))).isEmpty();
 		assertThat(SyncMcpAnnotationProviders.modernPrompts(List.of(new LegacyPrompts()))).isEmpty();
-		assertThat(SyncMcpAnnotationProviders.modernCompletions(List.of(new LegacyCompletions()))).isEmpty();
+		assertThat(SyncMcpAnnotationProviders.modernPrompts(List.of(), List.of(new LegacyCompletions()), null))
+			.isEmpty();
 
 		// Built directly, the callbacks explain what to use instead.
 		assertThatThrownBy(() -> new SyncModernMcpToolMethodCallback(ReturnMode.TEXT,
@@ -1019,6 +1065,61 @@ class ModernAnnotationProvidersTests {
 					new CompleteResult.Completion(List.of(request.argument().value() + ":" + ctx.protocolVersion(),
 							request.argument().value() + ":" + request.argument().name())),
 					null, null);
+		}
+
+		@McpComplete(uri = "test://items/{id}")
+		List<String> completeItem(String value) {
+			return List.of("item-" + value);
+		}
+
+	}
+
+	@SuppressWarnings("unused")
+	static class StaticResourceCompletion {
+
+		@McpComplete(uri = "test://static")
+		List<String> complete(String value) {
+			return List.of(value);
+		}
+
+	}
+
+	@SuppressWarnings("unused")
+	static class DuplicateCompletion {
+
+		@McpComplete(prompt = "greeting")
+		List<String> again(String value) {
+			return List.of(value);
+		}
+
+	}
+
+	@SuppressWarnings("unused")
+	static class SkippedTargets {
+
+		@McpPrompt(name = "skipped_prompt", description = "d")
+		Mono<String> prompt() {
+			return Mono.just("value");
+		}
+
+		@McpResource(uri = "test://skipped/{id}", name = "skipped", description = "d")
+		Mono<String> resource(String id) {
+			return Mono.just(id);
+		}
+
+	}
+
+	@SuppressWarnings("unused")
+	static class SkippedTargetCompletions {
+
+		@McpComplete(prompt = "skipped_prompt")
+		List<String> completePrompt(String value) {
+			return List.of(value);
+		}
+
+		@McpComplete(uri = "test://skipped/{id}")
+		List<String> completeTemplate(String value) {
+			return List.of(value);
 		}
 
 	}

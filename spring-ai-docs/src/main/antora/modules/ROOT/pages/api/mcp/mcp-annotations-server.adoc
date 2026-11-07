@@ -469,6 +469,10 @@ Use either the `prompt` or `uri` attribute — not both simultaneously:
 * `prompt` — completes an argument of the named prompt
 * `uri` — completes a URI template expression of the named resource URI
 
+NOTE: On the modern server (`spring.ai.mcp.server.protocol=MODERN`) a completion belongs to its prompt or template.
+The named prompt must be an `@McpPrompt` method and the URI an `@McpResource` URI template, or the application fails to start, and the server completes only the arguments that the prompt or template declares.
+See xref:api/mcp/mcp-modern-server-boot-starter-docs.adoc#_completions[Completions].
+
 ==== Prompt Argument Completion
 
 [source,java]

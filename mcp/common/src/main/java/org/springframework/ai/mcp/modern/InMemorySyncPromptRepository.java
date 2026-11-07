@@ -37,6 +37,8 @@ import org.springframework.util.Assert;
  * concurrent map. Prompts can be added and removed at runtime; each change is broadcast
  * as {@code notifications/prompts/list_changed} when a change broadcaster is configured.
  * Listings are paged by name with an opaque key cursor when a page size is set.
+ * Completion is served from the {@code completionHandler} of each prompt, and is
+ * advertised unless the repository is built with {@code completionSupported(false)}.
  *
  * @author Christian Tzolov
  * @since 2.1.0
@@ -49,10 +51,13 @@ public final class InMemorySyncPromptRepository implements McpSyncPromptReposito
 
 	private final @Nullable Integer pageSize;
 
+	private final boolean completionSupported;
+
 	private InMemorySyncPromptRepository(Builder builder) {
 		Assert.isTrue(builder.pageSize == null || builder.pageSize > 0, "pageSize must be positive");
 		this.changeBroadcaster = builder.changeBroadcaster;
 		this.pageSize = builder.pageSize;
+		this.completionSupported = builder.completionSupported;
 		builder.prompts.forEach(this::put);
 	}
 
@@ -102,6 +107,11 @@ public final class InMemorySyncPromptRepository implements McpSyncPromptReposito
 		}
 	}
 
+	@Override
+	public boolean supportsCompletion() {
+		return this.completionSupported;
+	}
+
 	private void broadcastListChanged() {
 		if (this.changeBroadcaster != null) {
 			this.changeBroadcaster.broadcast(new ServerChange.PromptsListChanged());
@@ -118,6 +128,8 @@ public final class InMemorySyncPromptRepository implements McpSyncPromptReposito
 		private @Nullable McpChangeBroadcaster changeBroadcaster;
 
 		private @Nullable Integer pageSize;
+
+		private boolean completionSupported = true;
 
 		private Builder() {
 		}
@@ -149,6 +161,16 @@ public final class InMemorySyncPromptRepository implements McpSyncPromptReposito
 		 */
 		public Builder pageSize(@Nullable Integer pageSize) {
 			this.pageSize = pageSize;
+			return this;
+		}
+
+		/**
+		 * Whether the server serves {@code completion/complete} for the prompts of this
+		 * repository and advertises {@code completions}. Defaults to {@code true}; a
+		 * prompt without a completion handler then completes to no values.
+		 */
+		public Builder completionSupported(boolean completionSupported) {
+			this.completionSupported = completionSupported;
 			return this;
 		}
 

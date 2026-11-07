@@ -31,8 +31,8 @@ import io.modelcontextprotocol.modern.McpSchema.GetPromptResult;
 import io.modelcontextprotocol.modern.McpSchema.Implementation;
 import io.modelcontextprotocol.modern.McpSchema.MetaKeys;
 import io.modelcontextprotocol.modern.McpSchema.Prompt;
+import io.modelcontextprotocol.modern.McpSchema.PromptArgument;
 import io.modelcontextprotocol.modern.McpSchema.PromptMessage;
-import io.modelcontextprotocol.modern.McpSchema.PromptReference;
 import io.modelcontextprotocol.modern.McpSchema.ReadResourceResult;
 import io.modelcontextprotocol.modern.McpSchema.Resource;
 import io.modelcontextprotocol.modern.McpSchema.ResourceTemplate;
@@ -43,7 +43,6 @@ import io.modelcontextprotocol.modern.McpSchema.Tool;
 import io.modelcontextprotocol.modern.server.McpServer;
 import io.modelcontextprotocol.modern.server.McpSyncResponse;
 import io.modelcontextprotocol.modern.server.McpTransportResponse;
-import io.modelcontextprotocol.modern.server.feature.CompletionsFeature;
 import io.modelcontextprotocol.modern.server.feature.McpChangeFeed;
 import io.modelcontextprotocol.modern.server.feature.McpSyncPrompt;
 import io.modelcontextprotocol.modern.server.feature.McpSyncTool;
@@ -268,25 +267,82 @@ class InMemoryRepositoriesTests {
 	}
 
 	@Test
-	@SuppressWarnings("unchecked")
-	void completionRepositoryDispatchesByReference() {
-		InMemorySyncCompletionRepository repository = InMemorySyncCompletionRepository.builder()
-			.completion(new SyncCompletionRegistration(new PromptReference("greet"),
+	void promptAndTemplateRepositoriesServeTheirCompletions() {
+		InMemorySyncPromptRepository prompts = InMemorySyncPromptRepository.builder()
+			.prompt(prompt("greet").withCompletionHandler(
 					(ctx, request) -> CompleteResult.of(new CompleteResult.Completion(List.of("a", "b")))))
+			.build();
+		InMemorySyncResourceRepository resources = InMemorySyncResourceRepository.builder()
+			.resourceTemplate(SyncResourceTemplateRegistration
+				.of(ResourceTemplate.builder("test://items/{id}", "items").build(), (ctx, request) -> null)
+				.withCompletionHandler((ctx, request) -> CompleteResult
+					.of(new CompleteResult.Completion(List.of(request.argument().name() + ":42")))))
 			.build();
 		McpServer server = McpServer.builder()
 			.serverInfo(Implementation.builder("test", "1").build())
-			.feature(CompletionsFeature.ofSync(repository))
+			.feature(PromptsFeature.ofSync(prompts))
+			.feature(ResourcesFeature.ofSync(resources))
+			.build();
+		assertThat(prompts.supportsCompletion()).isTrue();
+		assertThat(resources.supportsCompletion()).isTrue();
+
+		assertThat(values(complete(server, promptRef("greet"), "who"))).containsExactly("a", "b");
+		assertThat(values(complete(server, Map.of("type", "ref/resource", "uri", "test://items/{id}"), "id")))
+			.containsExactly("id:42");
+		assertThat(resources.findTemplate(null, "test://items/{id}")).isNotNull();
+		assertThat(resources.findTemplate(null, "test://items/42")).isNull();
+
+		// A prompt added at runtime brings its own handler; one without completes to
+		// no values.
+		prompts.add(prompt("later")
+			.withCompletionHandler((ctx, request) -> CompleteResult.of(new CompleteResult.Completion(List.of("c")))));
+		prompts.add(prompt("plain"));
+		assertThat(values(complete(server, promptRef("later"), "who"))).containsExactly("c");
+		assertThat(values(complete(server, promptRef("plain"), "who"))).isEmpty();
+
+		assertThat(complete(server, promptRef("nope"), "who").get("code"))
+			.isEqualTo(McpSchema.ErrorCodes.INVALID_PARAMS);
+	}
+
+	@Test
+	void completionCanBeTurnedOff() {
+		InMemorySyncPromptRepository prompts = InMemorySyncPromptRepository.builder()
+			.prompt(prompt("greet").withCompletionHandler(
+					(ctx, request) -> CompleteResult.of(new CompleteResult.Completion(List.of("a")))))
+			.completionSupported(false)
+			.build();
+		InMemorySyncResourceRepository resources = InMemorySyncResourceRepository.builder()
+			.completionSupported(false)
+			.build();
+		McpServer server = McpServer.builder()
+			.serverInfo(Implementation.builder("test", "1").build())
+			.feature(PromptsFeature.ofSync(prompts))
+			.feature(ResourcesFeature.ofSync(resources))
 			.build();
 
-		Map<String, Object> result = call(server, McpSchema.METHOD_COMPLETION_COMPLETE, params("ref",
-				Map.of("type", "ref/prompt", "name", "greet"), "argument", Map.of("name", "x", "value", "")));
-		Map<String, Object> completion = (Map<String, Object>) result.get("completion");
-		assertThat((List<String>) completion.get("values")).containsExactly("a", "b");
+		assertThat(prompts.supportsCompletion()).isFalse();
+		assertThat(resources.supportsCompletion()).isFalse();
+		assertThat(complete(server, promptRef("greet"), "who").get("code"))
+			.isEqualTo(McpSchema.ErrorCodes.METHOD_NOT_FOUND);
+	}
 
-		Map<String, Object> unknown = call(server, McpSchema.METHOD_COMPLETION_COMPLETE, params("ref",
-				Map.of("type", "ref/prompt", "name", "nope"), "argument", Map.of("name", "x", "value", "")));
-		assertThat(unknown.get("code")).isEqualTo(McpSchema.ErrorCodes.INVALID_PARAMS);
+	private static McpSyncPrompt prompt(String name) {
+		return McpSyncPrompt.of(Prompt.builder(name).arguments(List.of(PromptArgument.builder("who").build())).build(),
+				(ctx, request) -> McpSyncResponse.result(GetPromptResult.builder(List.of()).build()));
+	}
+
+	private static Map<String, Object> promptRef(String name) {
+		return Map.of("type", "ref/prompt", "name", name);
+	}
+
+	private static Map<String, Object> complete(McpServer server, Map<String, Object> ref, String argument) {
+		return call(server, McpSchema.METHOD_COMPLETION_COMPLETE,
+				params("ref", ref, "argument", Map.of("name", argument, "value", "")));
+	}
+
+	@SuppressWarnings("unchecked")
+	private static List<String> values(Map<String, Object> result) {
+		return (List<String>) ((Map<String, Object>) result.get("completion")).get("values");
 	}
 
 }

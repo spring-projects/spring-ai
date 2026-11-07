@@ -27,6 +27,7 @@ import io.modelcontextprotocol.modern.server.McpRequestContext;
 import io.modelcontextprotocol.modern.server.feature.McpChangeBroadcaster;
 import io.modelcontextprotocol.modern.server.feature.McpSyncResource;
 import io.modelcontextprotocol.modern.server.feature.McpSyncResourceRepository;
+import io.modelcontextprotocol.modern.server.feature.McpSyncResourceTemplate;
 import io.modelcontextprotocol.modern.server.feature.ResourceTemplatesPage;
 import io.modelcontextprotocol.modern.server.feature.ResourcesPage;
 import io.modelcontextprotocol.modern.server.feature.ServerChange;
@@ -45,7 +46,9 @@ import org.springframework.util.Assert;
  * added and removed at runtime; each change is broadcast as
  * {@code notifications/resources/list_changed} when a change broadcaster is configured,
  * and {@link #resourceUpdated(String)} notifies subscribers of a changed resource.
- * Listings are paged with an opaque key cursor when a page size is set.
+ * Listings are paged with an opaque key cursor when a page size is set. Completion is
+ * served from the {@code completionHandler} of each template, and is advertised unless
+ * the repository is built with {@code completionSupported(false)}.
  *
  * @author Christian Tzolov
  * @since 2.1.0
@@ -64,12 +67,15 @@ public final class InMemorySyncResourceRepository implements McpSyncResourceRepo
 
 	private final boolean subscribeSupported;
 
+	private final boolean completionSupported;
+
 	private InMemorySyncResourceRepository(Builder builder) {
 		Assert.isTrue(builder.pageSize == null || builder.pageSize > 0, "pageSize must be positive");
 		this.uriTemplateManagerFactory = builder.uriTemplateManagerFactory;
 		this.changeBroadcaster = builder.changeBroadcaster;
 		this.pageSize = builder.pageSize;
 		this.subscribeSupported = builder.subscribeSupported;
+		this.completionSupported = builder.completionSupported;
 		builder.resources.forEach(this::put);
 		builder.resourceTemplates.forEach(this::put);
 	}
@@ -134,8 +140,8 @@ public final class InMemorySyncResourceRepository implements McpSyncResourceRepo
 	@Override
 	public ResourceTemplatesPage listTemplates(McpRequestContext ctx, @Nullable String cursor) {
 		Pagination.Page<ResourceTemplate> page = Pagination.page(this.templates.values(),
-				template -> template.registration().resourceTemplate().uriTemplate(),
-				template -> template.registration().resourceTemplate(), cursor, this.pageSize);
+				template -> template.registration().template().definition().uriTemplate(),
+				template -> template.registration().template().definition(), cursor, this.pageSize);
 		return new ResourceTemplatesPage(page.items(), page.nextCursor(), null, null);
 	}
 
@@ -153,9 +159,24 @@ public final class InMemorySyncResourceRepository implements McpSyncResourceRepo
 		return null;
 	}
 
+	/**
+	 * The template registered under exactly this URI template, which carries the handler
+	 * that completes its variables.
+	 */
+	@Override
+	public @Nullable McpSyncResourceTemplate findTemplate(McpRequestContext ctx, String uriTemplate) {
+		CompiledTemplate template = this.templates.get(uriTemplate);
+		return template != null ? template.registration().template() : null;
+	}
+
 	@Override
 	public boolean supportsSubscribe() {
 		return this.subscribeSupported;
+	}
+
+	@Override
+	public boolean supportsCompletion() {
+		return this.completionSupported;
 	}
 
 	private void put(SyncResourceRegistration registration) {
@@ -168,7 +189,7 @@ public final class InMemorySyncResourceRepository implements McpSyncResourceRepo
 
 	private void put(SyncResourceTemplateRegistration registration) {
 		Assert.notNull(registration, "registration must not be null");
-		String uriTemplate = registration.resourceTemplate().uriTemplate();
+		String uriTemplate = registration.template().definition().uriTemplate();
 		// Compiled eagerly so that an invalid template fails at registration time.
 		CompiledTemplate compiled = new CompiledTemplate(registration,
 				this.uriTemplateManagerFactory.create(uriTemplate));
@@ -202,6 +223,8 @@ public final class InMemorySyncResourceRepository implements McpSyncResourceRepo
 		private @Nullable Integer pageSize;
 
 		private boolean subscribeSupported;
+
+		private boolean completionSupported = true;
 
 		private Builder() {
 		}
@@ -256,6 +279,16 @@ public final class InMemorySyncResourceRepository implements McpSyncResourceRepo
 		 */
 		public Builder subscribeSupported(boolean subscribeSupported) {
 			this.subscribeSupported = subscribeSupported;
+			return this;
+		}
+
+		/**
+		 * Whether the server serves {@code completion/complete} for the templates of this
+		 * repository and advertises {@code completions}. Defaults to {@code true}; a
+		 * template without a completion handler then completes to no values.
+		 */
+		public Builder completionSupported(boolean completionSupported) {
+			this.completionSupported = completionSupported;
 			return this;
 		}
 

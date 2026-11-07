@@ -18,32 +18,35 @@ package org.springframework.ai.mcp.annotation.provider.complete;
 
 import java.lang.reflect.Method;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 
+import io.modelcontextprotocol.modern.server.feature.McpSyncCompletionHandler;
 import io.modelcontextprotocol.util.Assert;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 
 import org.springframework.ai.mcp.annotation.McpComplete;
 import org.springframework.ai.mcp.annotation.adapter.CompleteAdapter;
 import org.springframework.ai.mcp.annotation.common.McpPredicates;
 import org.springframework.ai.mcp.annotation.common.ModernMethodSupport;
 import org.springframework.ai.mcp.annotation.method.complete.SyncModernMcpCompleteMethodCallback;
-import org.springframework.ai.mcp.modern.McpSchemaConverter;
-import org.springframework.ai.mcp.modern.SyncCompletionRegistration;
 
 /**
- * Creates completion registrations for a 2026-07-28 ("modern") MCP server from methods
+ * Creates the completion handlers of a 2026-07-28 ("modern") MCP server from methods
  * annotated with {@link McpComplete}. Each method is served by a
  * {@link SyncModernMcpCompleteMethodCallback}.
+ * <p>
+ * A handler completes every argument of the prompt or resource template that its
+ * annotation names, and answers only once it is attached to that prompt or template with
+ * {@code McpSyncPrompt.withCompletionHandler} or
+ * {@code SyncResourceTemplateRegistration.withCompletionHandler}. The Spring entry points
+ * attach them to the annotated prompts and templates.
  *
  * @author Christian Tzolov
  * @since 2.1.0
  */
 public class SyncModernMcpCompleteProvider {
-
-	private static final Log logger = LogFactory.getLog(SyncModernMcpCompleteProvider.class);
 
 	private final List<Object> completeObjects;
 
@@ -52,29 +55,58 @@ public class SyncModernMcpCompleteProvider {
 		this.completeObjects = completeObjects;
 	}
 
-	public List<SyncCompletionRegistration> getModernCompletions() {
-		List<SyncCompletionRegistration> registrations = this.completeObjects.stream()
-			.flatMap(bean -> Stream.of(this.doGetClassMethods(bean))
+	/**
+	 * The handlers of the {@code @McpComplete(prompt = ...)} methods, keyed by prompt
+	 * name.
+	 * @throws IllegalArgumentException if two methods complete the same prompt
+	 */
+	public Map<String, McpSyncCompletionHandler> getPromptCompletions() {
+		return completions(true);
+	}
+
+	/**
+	 * The handlers of the {@code @McpComplete(uri = ...)} methods, keyed by URI template.
+	 * @throws IllegalArgumentException if two methods complete the same URI template
+	 */
+	public Map<String, McpSyncCompletionHandler> getResourceCompletions() {
+		return completions(false);
+	}
+
+	private Map<String, McpSyncCompletionHandler> completions(boolean prompts) {
+		Map<String, Method> methods = new LinkedHashMap<>();
+		Map<String, McpSyncCompletionHandler> completions = new LinkedHashMap<>();
+		for (Object bean : this.completeObjects) {
+			Stream.of(this.doGetClassMethods(bean))
 				.filter(method -> method.isAnnotationPresent(McpComplete.class))
 				.filter(McpPredicates.filterReactiveReturnTypeMethod())
 				.filter(ModernMethodSupport.filterLegacyContextMethods())
 				.sorted(Comparator.comparing(Method::getName))
-				.map(method -> {
+				.forEach(method -> {
 					McpComplete annotation = method.getAnnotation(McpComplete.class);
-					var reference = CompleteAdapter.asCompleteReference(annotation, method);
-					SyncModernMcpCompleteMethodCallback callback = SyncModernMcpCompleteMethodCallback.builder()
-						.method(method)
-						.bean(bean)
-						.complete(annotation)
-						.build();
-					return new SyncCompletionRegistration(McpSchemaConverter.toModern(reference), callback);
-				}))
-			.toList();
-
-		if (registrations.isEmpty() && logger.isWarnEnabled()) {
-			logger.warn("No complete methods found in the provided complete objects: " + this.completeObjects);
+					CompleteAdapter.asCompleteReference(annotation, method);
+					String key = prompts ? annotation.prompt() : annotation.uri();
+					if (key.isEmpty()) {
+						return;
+					}
+					Method existing = methods.putIfAbsent(key, method);
+					if (existing != null) {
+						throw new IllegalArgumentException("Both " + describe(existing) + " and " + describe(method)
+								+ " complete the " + (prompts ? "prompt '" : "resource template '") + key
+								+ "'; one method completes every argument of a prompt or template");
+					}
+					completions.put(key,
+							SyncModernMcpCompleteMethodCallback.builder()
+								.method(method)
+								.bean(bean)
+								.complete(annotation)
+								.build());
+				});
 		}
-		return registrations;
+		return completions;
+	}
+
+	private static String describe(Method method) {
+		return method.getDeclaringClass().getName() + "." + method.getName();
 	}
 
 	protected Method[] doGetClassMethods(Object bean) {

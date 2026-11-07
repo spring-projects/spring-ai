@@ -25,11 +25,11 @@
  * {@link org.springframework.ai.mcp.modern.SyncResourceRegistration} and
  * {@link org.springframework.ai.mcp.modern.SyncResourceTemplateRegistration} pair a
  * resource or template definition with its handler, which the SDK's
- * {@code McpSyncResource} does not carry;
- * {@link org.springframework.ai.mcp.modern.SyncCompletionRegistration} does the same for
- * a completion reference. {@link org.springframework.ai.mcp.modern.McpSchemaConverter}
- * converts between the legacy and modern schema types, which lets handlers written
- * against the legacy types be exposed on a modern server, and
+ * {@code McpSyncResource} does not carry. Completions travel with their prompt or
+ * template, through the SDK's {@code withCompletionHandler}.
+ * {@link org.springframework.ai.mcp.modern.McpSchemaConverter} converts between the
+ * legacy and modern schema types, which lets handlers written against the legacy types be
+ * exposed on a modern server, and
  * {@link org.springframework.ai.mcp.modern.McpTransportContexts} reads the request
  * headers that the Spring transports put into the transport context.
  */

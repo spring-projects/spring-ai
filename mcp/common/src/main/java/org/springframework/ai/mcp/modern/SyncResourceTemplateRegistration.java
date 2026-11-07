@@ -18,23 +18,28 @@ package org.springframework.ai.mcp.modern;
 
 import io.modelcontextprotocol.modern.McpSchema.ClientCapabilities;
 import io.modelcontextprotocol.modern.McpSchema.ResourceTemplate;
+import io.modelcontextprotocol.modern.server.feature.McpSyncCompletionHandler;
 import io.modelcontextprotocol.modern.server.feature.McpSyncResource;
+import io.modelcontextprotocol.modern.server.feature.McpSyncResourceTemplate;
 
 import org.springframework.util.Assert;
 
 /**
  * A resource template together with the {@link McpSyncResource} that reads every URI
- * matching it. See {@link SyncResourceRegistration} for why the pairing lives here.
+ * matching it. See {@link SyncResourceRegistration} for why the pairing lives here: the
+ * SDK's {@link McpSyncResourceTemplate} carries the definition and the completion
+ * handler, but not the read handler.
  *
- * @param resourceTemplate the definition returned by {@code resources/templates/list}
+ * @param template the definition returned by {@code resources/templates/list}, with the
+ * handler that completes its variables, if any
  * @param handler the handler for {@code resources/read} of any URI matching the template
  * @author Christian Tzolov
  * @since 2.1.0
  */
-public record SyncResourceTemplateRegistration(ResourceTemplate resourceTemplate, McpSyncResource handler) {
+public record SyncResourceTemplateRegistration(McpSyncResourceTemplate template, McpSyncResource handler) {
 
 	public SyncResourceTemplateRegistration {
-		Assert.notNull(resourceTemplate, "resourceTemplate must not be null");
+		Assert.notNull(template, "template must not be null");
 		Assert.notNull(handler, "handler must not be null");
 	}
 
@@ -44,7 +49,8 @@ public record SyncResourceTemplateRegistration(ResourceTemplate resourceTemplate
 	 */
 	public static SyncResourceTemplateRegistration of(ResourceTemplate resourceTemplate,
 			McpSyncResource.Handler handler) {
-		return new SyncResourceTemplateRegistration(resourceTemplate, McpSyncResource.of(handler));
+		return new SyncResourceTemplateRegistration(McpSyncResourceTemplate.of(resourceTemplate),
+				McpSyncResource.of(handler));
 	}
 
 	/**
@@ -55,8 +61,18 @@ public record SyncResourceTemplateRegistration(ResourceTemplate resourceTemplate
 	 */
 	public static SyncResourceTemplateRegistration of(ResourceTemplate resourceTemplate,
 			ClientCapabilities requiredCapabilities, McpSyncResource.Handler handler) {
-		return new SyncResourceTemplateRegistration(resourceTemplate,
+		return new SyncResourceTemplateRegistration(McpSyncResourceTemplate.of(resourceTemplate),
 				McpSyncResource.of(requiredCapabilities, handler));
+	}
+
+	/**
+	 * This registration with the template's variables completed by
+	 * {@code completionHandler}, when its repository supports completion.
+	 * @since 2.1.0
+	 */
+	public SyncResourceTemplateRegistration withCompletionHandler(McpSyncCompletionHandler completionHandler) {
+		return new SyncResourceTemplateRegistration(this.template.withCompletionHandler(completionHandler),
+				this.handler);
 	}
 
 }
