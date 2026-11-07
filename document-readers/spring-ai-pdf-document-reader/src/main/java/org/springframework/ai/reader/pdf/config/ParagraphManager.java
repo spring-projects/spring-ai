@@ -22,6 +22,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDPage;
@@ -42,6 +44,8 @@ import org.springframework.util.CollectionUtils;
  * @author Christian Tzolov
  */
 public class ParagraphManager {
+
+	private static final Log logger = LogFactory.getLog(ParagraphManager.class);
 
 	private static final int REASONABLE_DEPTH = 64;
 
@@ -67,6 +71,10 @@ public class ParagraphManager {
 			this.rootParagraph = this.generateParagraphs(
 					new Paragraph(null, "root", -1, 1, this.document.getNumberOfPages(), 0),
 					this.document.getDocumentCatalog().getDocumentOutline(), 0, new HashSet<>());
+
+			if (logger.isDebugEnabled()) {
+				logParagraph(this.rootParagraph);
+			}
 		}
 		catch (Exception e) {
 			throw new RuntimeException(e);
@@ -89,6 +97,13 @@ public class ParagraphManager {
 		paragraphs.add(current);
 		for (var child : current.children()) {
 			flatten(child, paragraphs, depth + 1);
+		}
+	}
+
+	private void logParagraph(Paragraph paragraph) {
+		logger.debug(paragraph);
+		for (Paragraph childParagraph : paragraph.children()) {
+			logParagraph(childParagraph);
 		}
 	}
 
