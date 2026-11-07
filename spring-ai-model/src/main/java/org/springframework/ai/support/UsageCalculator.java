@@ -89,9 +89,18 @@ public final class UsageCalculator {
 						+ (usageFromPreviousChatResponse.getCacheWriteInputTokens() != null
 								? usageFromPreviousChatResponse.getCacheWriteInputTokens() : 0L);
 			}
+			Long reasoning = null;
+			if (currentUsage.getReasoningOutputTokens() != null
+					|| usageFromPreviousChatResponse.getReasoningOutputTokens() != null) {
+				reasoning = (currentUsage.getReasoningOutputTokens() != null ? currentUsage.getReasoningOutputTokens()
+						: 0L)
+						+ (usageFromPreviousChatResponse.getReasoningOutputTokens() != null
+								? usageFromPreviousChatResponse.getReasoningOutputTokens() : 0L);
+			}
 			// Native usage is passed as null: provider-specific objects cannot be merged
 			// across responses, so only token counts and cache metrics are accumulated.
-			return new DefaultUsage(promptTokens, generationTokens, totalTokens, null, cacheRead, cacheWrite);
+			return new DefaultUsage(promptTokens, generationTokens, totalTokens, null, cacheRead, cacheWrite,
+					reasoning);
 		}
 		// When current usage is empty, return the usage from the previous chat response.
 		return usageFromPreviousChatResponse;

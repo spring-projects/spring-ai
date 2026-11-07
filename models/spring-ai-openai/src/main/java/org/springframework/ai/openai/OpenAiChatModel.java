@@ -718,10 +718,11 @@ public final class OpenAiChatModel implements ChatModel {
 	}
 
 	private DefaultUsage getDefaultUsage(CompletionUsage usage) {
+		Long reasoning = usage.completionTokensDetails().flatMap(details -> details.reasoningTokens()).orElse(null);
 		Long cacheRead = usage.promptTokensDetails().flatMap(details -> details.cachedTokens()).orElse(null);
 		return new DefaultUsage(toIntTokenCount("promptTokens", usage.promptTokens()),
 				toIntTokenCount("completionTokens", usage.completionTokens()),
-				toIntTokenCount("totalTokens", usage.totalTokens()), usage, cacheRead, null);
+				toIntTokenCount("totalTokens", usage.totalTokens()), usage, cacheRead, null, reasoning);
 	}
 
 	/**

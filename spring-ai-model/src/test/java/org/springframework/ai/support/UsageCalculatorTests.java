@@ -35,6 +35,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 class UsageCalculatorTests {
 
 	@Test
+	void getCumulativeUsageSumsReasoningTokensAndPreservesUnavailableCounts() {
+		Usage current = new DefaultUsage(10, 20, 30, null, null, null, 7L);
+		ChatResponse previous = responseWith(new DefaultUsage(1, 2, 3, null, null, null, 2L));
+		assertThat(UsageCalculator.getCumulativeUsage(current, previous).getReasoningOutputTokens()).isEqualTo(9L);
+		assertThat(UsageCalculator.getCumulativeUsage(new DefaultUsage(10, 20), previous).getReasoningOutputTokens())
+			.isEqualTo(2L);
+		assertThat(UsageCalculator.getCumulativeUsage(new DefaultUsage(10, 20), responseWith(new DefaultUsage(1, 2)))
+			.getReasoningOutputTokens()).isNull();
+	}
+
+	@Test
 	void getCumulativeUsageReturnsCurrentWhenPreviousChatResponseIsNull() {
 		Usage current = new DefaultUsage(10, 20, 30);
 
