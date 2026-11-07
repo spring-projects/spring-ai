@@ -249,26 +249,10 @@ public class PineconeVectorStore extends AbstractObservationVectorStore {
 		Assert.notNull(filterExpression, "Filter expression must not be null");
 
 		try {
-			// Direct filter based deletion is not working in pinecone, so we are
-			// retrieving the documents
-			// by doing a similarity search with an empty query and then passing the ID's
-			// of the documents to the delete(Id) API method.
-			SearchRequest searchRequest = SearchRequest.builder()
-				.query("") // empty query since we only want filter matches
-				.filterExpression(filterExpression)
-				.topK(10000) // large enough to get all matches
-				.similarityThresholdAll()
-				.build();
-
-			List<Document> matchingDocs = similaritySearch(searchRequest, this.pineconeNamespace);
-
-			if (!matchingDocs.isEmpty()) {
-				// Then delete those documents by ID
-				List<String> idsToDelete = matchingDocs.stream().map(Document::getId).toList();
-				delete(idsToDelete, this.pineconeNamespace);
-				if (logger.isDebugEnabled()) {
-					logger.debug("Deleted " + idsToDelete.size() + " documents matching filter expression");
-				}
+			Struct filter = metadataFiltersToStruct(this.filterExpressionConverter.convertExpression(filterExpression));
+			this.pinecone.getIndexConnection(this.pineconeIndexName).deleteByFilter(filter, this.pineconeNamespace);
+			if (logger.isDebugEnabled()) {
+				logger.debug("Requested deletion of documents matching filter expression");
 			}
 		}
 		catch (Exception e) {
