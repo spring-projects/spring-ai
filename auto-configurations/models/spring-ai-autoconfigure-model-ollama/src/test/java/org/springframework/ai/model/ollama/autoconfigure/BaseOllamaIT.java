@@ -140,7 +140,7 @@ public abstract class BaseOllamaIT {
 		autoConfigurations.add(WebClientAutoConfiguration.class);
 		autoConfigurations.add(SpringAiRetryAutoConfiguration.class);
 		autoConfigurations.add(ToolCallingAutoConfiguration.class);
-		return AutoConfigurations.of(autoConfigurations.toArray(new Class<?>[0]));
+		return AutoConfigurations.of(autoConfigurations.toArray(Class<?>[]::new));
 	}
 
 }

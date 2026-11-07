@@ -151,7 +151,7 @@ public class SyncMcpToolCallbackProvider implements ToolCallbackProvider, Applic
 			}
 		}
 
-		return this.cachedToolCallbacks.toArray(new ToolCallback[0]);
+		return this.cachedToolCallbacks.toArray(ToolCallback[]::new);
 	}
 
 	/**
