@@ -30,6 +30,8 @@ public class BedrockCacheProperties {
 
 	private boolean cacheToolResults;
 
+	private boolean multiBlockSystemCaching;
+
 	public @Nullable BedrockCacheStrategy getStrategy() {
 		return this.strategy;
 	}
@@ -54,11 +56,20 @@ public class BedrockCacheProperties {
 		this.cacheToolResults = cacheToolResults;
 	}
 
+	public boolean isMultiBlockSystemCaching() {
+		return this.multiBlockSystemCaching;
+	}
+
+	public void setMultiBlockSystemCaching(boolean multiBlockSystemCaching) {
+		this.multiBlockSystemCaching = multiBlockSystemCaching;
+	}
+
 	public BedrockCacheOptions toOptions() {
 		return BedrockCacheOptions.builder()
 			.strategy(this.strategy)
 			.ttl(this.ttl)
 			.cacheToolResults(this.cacheToolResults)
+			.multiBlockSystemCaching(this.multiBlockSystemCaching)
 			.build();
 	}
 

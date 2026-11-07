@@ -139,4 +139,33 @@ public class BedrockConverseProxyChatPropertiesTests {
 			});
 	}
 
+	@Test
+	public void multiBlockSystemCachingCacheOptionTest() {
+		new ApplicationContextRunner()
+			.withPropertyValues("spring.ai.bedrock.converse.chat.cache-options.strategy=SYSTEM_ONLY",
+					"spring.ai.bedrock.converse.chat.cache-options.multi-block-system-caching=true")
+			.withConfiguration(AutoConfigurations.of(BedrockConverseProxyChatAutoConfiguration.class,
+					ToolCallingAutoConfiguration.class))
+			.run(context -> {
+				var chatProperties = context.getBean(BedrockConverseProxyChatProperties.class);
+				assertThat(chatProperties.getCacheOptions().isMultiBlockSystemCaching()).isTrue();
+
+				var options = chatProperties.toOptions();
+				assertThat(options.getCacheOptions().getStrategy()).isEqualTo(BedrockCacheStrategy.SYSTEM_ONLY);
+				assertThat(options.getCacheOptions().isMultiBlockSystemCaching()).isTrue();
+			});
+	}
+
+	@Test
+	public void multiBlockSystemCachingCacheOptionDefaultsToFalse() {
+		new ApplicationContextRunner()
+			.withPropertyValues("spring.ai.bedrock.converse.chat.cache-options.strategy=SYSTEM_ONLY")
+			.withConfiguration(AutoConfigurations.of(BedrockConverseProxyChatAutoConfiguration.class,
+					ToolCallingAutoConfiguration.class))
+			.run(context -> {
+				var chatProperties = context.getBean(BedrockConverseProxyChatProperties.class);
+				assertThat(chatProperties.toOptions().getCacheOptions().isMultiBlockSystemCaching()).isFalse();
+			});
+	}
+
 }
