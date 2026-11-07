@@ -47,13 +47,6 @@
 			<artifactId>reactor-core</artifactId>
 		</dependency>
 
-		<!-- ANTLR for Filter Expression Parsing -->
-		<dependency>
-			<groupId>org.antlr</groupId>
-			<artifactId>antlr4-runtime</artifactId>
-			<version>${antlr.version}</version>
-		</dependency>
-
 		<dependency>
 			<groupId>com.github.victools</groupId>
 			<artifactId>jsonschema-generator</artifactId>
@@ -120,7 +113,7 @@
 			<version>${mockk-jvm.version}</version>
 			<scope>test</scope>
 		</dependency>
-		
+
 	</dependencies>
 
 	<build>
