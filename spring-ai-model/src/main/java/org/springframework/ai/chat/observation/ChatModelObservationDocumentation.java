@@ -102,6 +102,16 @@ public enum ChatModelObservationDocumentation implements ObservationDocumentatio
 	public enum HighCardinalityKeyNames implements KeyName {
 
 		/**
+		 * The unique identifier for the conversation.
+		 */
+		CONVERSATION_ID {
+			@Override
+			public String asString() {
+				return AiObservationAttributes.CONVERSATION_ID.value();
+			}
+		},
+
+		/**
 		 * The frequency penalty setting for the model request.
 		 */
 		REQUEST_FREQUENCY_PENALTY {

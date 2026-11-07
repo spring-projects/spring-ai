@@ -95,6 +95,7 @@ public class DefaultChatModelObservationConvention implements ChatModelObservati
 	@Override
 	public KeyValues getHighCardinalityKeyValues(ChatModelObservationContext context) {
 		var keyValues = KeyValues.empty();
+		keyValues = conversationId(keyValues, context);
 		// Request
 		keyValues = requestFrequencyPenalty(keyValues, context);
 		keyValues = requestMaxTokens(keyValues, context);
@@ -113,6 +114,14 @@ public class DefaultChatModelObservationConvention implements ChatModelObservati
 		keyValues = usageInputTokens(keyValues, context);
 		keyValues = usageOutputTokens(keyValues, context);
 		keyValues = usageTotalTokens(keyValues, context);
+		return keyValues;
+	}
+
+	protected KeyValues conversationId(KeyValues keyValues, ChatModelObservationContext context) {
+		if (StringUtils.hasText(context.getConversationId())) {
+			return keyValues.and(ChatModelObservationDocumentation.HighCardinalityKeyNames.CONVERSATION_ID.asString(),
+					context.getConversationId());
+		}
 		return keyValues;
 	}
 

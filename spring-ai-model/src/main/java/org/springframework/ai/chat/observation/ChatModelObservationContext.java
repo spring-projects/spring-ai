@@ -35,14 +35,26 @@ public class ChatModelObservationContext extends ModelObservationContext<Prompt,
 
 	private final boolean streaming;
 
-	ChatModelObservationContext(Prompt prompt, String provider, boolean streaming) {
+	private final @Nullable String conversationId;
+
+	ChatModelObservationContext(Prompt prompt, String provider, boolean streaming, @Nullable String conversationId) {
 		super(prompt,
 				AiOperationMetadata.builder().operationType(AiOperationType.CHAT.value()).provider(provider).build());
 		this.streaming = streaming;
+		this.conversationId = conversationId;
 	}
 
 	public boolean isStreaming() {
 		return this.streaming;
+	}
+
+	/**
+	 * Return the unique identifier for the conversation, if available.
+	 * @return the conversation identifier, or {@code null}
+	 * @since 2.0.1
+	 */
+	public @Nullable String getConversationId() {
+		return this.conversationId;
 	}
 
 	public static Builder builder() {
@@ -56,6 +68,8 @@ public class ChatModelObservationContext extends ModelObservationContext<Prompt,
 		private @Nullable String provider;
 
 		private boolean streaming;
+
+		private @Nullable String conversationId;
 
 		private Builder() {
 		}
@@ -75,10 +89,21 @@ public class ChatModelObservationContext extends ModelObservationContext<Prompt,
 			return this;
 		}
 
+		/**
+		 * Configure the unique identifier for the conversation.
+		 * @param conversationId the conversation identifier
+		 * @return this builder
+		 * @since 2.0.1
+		 */
+		public Builder conversationId(@Nullable String conversationId) {
+			this.conversationId = conversationId;
+			return this;
+		}
+
 		public ChatModelObservationContext build() {
 			Assert.state(this.prompt != null, "Prompt must not be null");
 			Assert.state(this.provider != null, "Provider must not be null");
-			return new ChatModelObservationContext(this.prompt, this.provider, this.streaming);
+			return new ChatModelObservationContext(this.prompt, this.provider, this.streaming, this.conversationId);
 		}
 
 	}

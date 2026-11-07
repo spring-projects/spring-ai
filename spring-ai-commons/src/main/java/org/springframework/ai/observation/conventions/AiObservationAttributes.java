@@ -39,6 +39,10 @@ public enum AiObservationAttributes {
 	 * The model provider as identified by the client instrumentation.
 	 */
 	AI_PROVIDER("gen_ai.system"),
+	/**
+	 * The unique identifier for the conversation.
+	 */
+	CONVERSATION_ID("gen_ai.conversation.id"),
 
 	// GenAI Request
 
