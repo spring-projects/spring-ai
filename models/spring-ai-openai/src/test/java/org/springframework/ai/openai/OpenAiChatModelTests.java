@@ -1178,6 +1178,37 @@ class OpenAiChatModelTests {
 	}
 
 	@Test
+	void userMessagePdfMediaWithBareBase64StringDataSendsItAsDataUri() {
+		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(options)
+			.build();
+
+		UserMessage userMessage = UserMessage.builder()
+			.text("Summarize the attached document.")
+			.media(Media.builder().mimeType(Media.Format.DOC_PDF).data("JVBERi0xLjc=").name("sample.pdf").build())
+			.build();
+
+		ChatCompletionCreateParams request = chatModel.createRequest(new Prompt(List.<Message>of(userMessage), options),
+				false);
+
+		ChatCompletionContentPart.File.FileObject file = request.messages()
+			.get(0)
+			.user()
+			.orElseThrow()
+			.content()
+			.arrayOfContentParts()
+			.orElseThrow()
+			.get(1)
+			.file()
+			.orElseThrow()
+			.file();
+		assertThat(file.fileData()).contains("data:application/pdf;base64,JVBERi0xLjc=");
+	}
+
+	@Test
 	void metadataDoesNotContainOptionalValues() {
 		givenChatCompletion(ChatCompletion.builder()
 			.id("test-id")
