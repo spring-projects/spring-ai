@@ -346,6 +346,7 @@ public class OllamaChatModel implements ChatModel {
 			});
 
 			Flux<ChatResponse> chatResponseFlux = chatResponse.flatMap(response -> Flux.just(response))
+				.doOnNext(ignored -> observationContext.recordTimeToFirstChunk())
 				.doOnError(observation::error)
 				.doFinally(s -> observation.stop())
 				.contextWrite(ctx -> ctx.put(ObservationThreadLocalAccessor.KEY, observation));

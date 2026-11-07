@@ -159,6 +159,29 @@ class ChatModelMeterObservationHandlerTests {
 			.noneMatch(meter -> meter.getId().getName().equals(AiObservationMetricNames.TOKEN_USAGE.value()));
 	}
 
+	@Test
+	void shouldRecordTimeToFirstChunkForStreamingObservation() {
+		var observationContext = ChatModelObservationContext.builder()
+			.prompt(generatePrompt(ChatOptions.builder().model("mistral").build()))
+			.provider("superprovider")
+			.streaming(true)
+			.build();
+		var observation = Observation
+			.createNotStarted(new DefaultChatModelObservationConvention(), () -> observationContext,
+					this.observationRegistry)
+			.start();
+
+		observationContext.recordTimeToFirstChunk();
+		observation.stop();
+
+		assertThat(this.meterRegistry.get(AiObservationMetricNames.TIME_TO_FIRST_CHUNK.value())
+			.tag(LowCardinalityKeyNames.AI_OPERATION_TYPE.asString(), AiOperationType.CHAT.value())
+			.tag(LowCardinalityKeyNames.AI_PROVIDER.asString(), "superprovider")
+			.tag(LowCardinalityKeyNames.REQUEST_MODEL.asString(), "mistral")
+			.timer()
+			.count()).isEqualTo(1);
+	}
+
 	private ChatModelObservationContext generateObservationContext() {
 		return ChatModelObservationContext.builder()
 			.prompt(generatePrompt(ChatOptions.builder().model("mistral").build()))
