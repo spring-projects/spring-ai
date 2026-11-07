@@ -76,6 +76,10 @@ public class DeepSeekChatProperties extends DeepSeekParentProperties {
 
 	private @Nullable ReasoningEffort reasoningEffort;
 
+	private @Nullable Boolean echo;
+
+	private @Nullable String suffix;
+
 	public boolean isEnabled() {
 		return this.enabled;
 	}
@@ -196,6 +200,22 @@ public class DeepSeekChatProperties extends DeepSeekParentProperties {
 		this.reasoningEffort = reasoningEffort;
 	}
 
+	public @Nullable Boolean getEcho() {
+		return this.echo;
+	}
+
+	public void setEcho(@Nullable Boolean echo) {
+		this.echo = echo;
+	}
+
+	public @Nullable String getSuffix() {
+		return this.suffix;
+	}
+
+	public void setSuffix(@Nullable String suffix) {
+		this.suffix = suffix;
+	}
+
 	public DeepSeekChatOptions toOptions() {
 		return DeepSeekChatOptions.builder()
 			.model(this.model)
@@ -210,6 +230,8 @@ public class DeepSeekChatProperties extends DeepSeekParentProperties {
 			.topLogprobs(this.topLogprobs)
 			.thinking(this.thinking)
 			.reasoningEffort(this.reasoningEffort)
+			.echo(this.echo)
+			.suffix(this.suffix)
 			.build();
 	}
 
@@ -345,6 +367,26 @@ public class DeepSeekChatProperties extends DeepSeekParentProperties {
 
 		public void setReasoningEffort(@Nullable ReasoningEffort reasoningEffort) {
 			DeepSeekChatProperties.this.setReasoningEffort(reasoningEffort);
+		}
+
+		@DeprecatedConfigurationProperty(replacement = "spring.ai.deepseek.chat.echo")
+		@Deprecated(since = "2.0.0", forRemoval = true)
+		public @Nullable Boolean getEcho() {
+			return DeepSeekChatProperties.this.getEcho();
+		}
+
+		public void setEcho(@Nullable Boolean echo) {
+			DeepSeekChatProperties.this.setEcho(echo);
+		}
+
+		@DeprecatedConfigurationProperty(replacement = "spring.ai.deepseek.chat.suffix")
+		@Deprecated(since = "2.0.0", forRemoval = true)
+		public @Nullable String getSuffix() {
+			return DeepSeekChatProperties.this.getSuffix();
+		}
+
+		public void setSuffix(@Nullable String suffix) {
+			DeepSeekChatProperties.this.setSuffix(suffix);
 		}
 
 	}
