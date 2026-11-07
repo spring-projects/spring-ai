@@ -20,12 +20,12 @@ import java.util.List;
 
 import io.modelcontextprotocol.client.McpSyncClient;
 import io.modelcontextprotocol.spec.McpSchema.ListToolsResult;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import org.springframework.ai.mcp.client.common.autoconfigure.McpClientAutoConfiguration;
 import org.springframework.ai.mcp.client.common.autoconfigure.annotations.McpClientAnnotationScannerAutoConfiguration;
@@ -34,34 +34,23 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+@Testcontainers
 @Timeout(15)
 public class SseWebFluxTransportAutoConfigurationIT {
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withPropertyValues("spring.ai.mcp.client.initialized=false",
-				"spring.ai.mcp.client.sse.connections.server1.url=" + host)
+				"spring.ai.mcp.client.sse.connections.server1.url=http://" + container.getHost() + ":"
+						+ container.getMappedPort(3001))
 		.withConfiguration(AutoConfigurations.of(McpClientAutoConfiguration.class,
 				McpClientAnnotationScannerAutoConfiguration.class, SseWebFluxTransportAutoConfiguration.class));
 
-	static String host = "http://localhost:3001";
-
+	@Container
 	@SuppressWarnings("resource")
 	static GenericContainer<?> container = new GenericContainer<>("docker.io/node:lts-alpine3.23")
 		.withCommand("npx -y @modelcontextprotocol/server-everything@2025.12.18 sse")
 		.withExposedPorts(3001)
 		.waitingFor(Wait.forHttp("/").forStatusCode(404));
-
-	@BeforeAll
-	static void setUp() {
-		container.start();
-		int port = container.getMappedPort(3001);
-		host = "http://" + container.getHost() + ":" + port;
-	}
-
-	@AfterAll
-	static void tearDown() {
-		container.stop();
-	}
 
 	@Test
 	void streamableHttpTest() {

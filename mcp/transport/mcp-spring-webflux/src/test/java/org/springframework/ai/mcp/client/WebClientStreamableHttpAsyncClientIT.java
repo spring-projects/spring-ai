@@ -20,22 +20,22 @@ import io.modelcontextprotocol.client.AbstractMcpAsyncClientTests;
 import io.modelcontextprotocol.spec.McpClientTransport;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Timeout;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import org.springframework.ai.mcp.client.webflux.transport.WebClientStreamableHttpTransport;
 import org.springframework.web.reactive.function.client.WebClient;
 
+@Testcontainers
 @Timeout(60)
 public class WebClientStreamableHttpAsyncClientIT extends AbstractMcpAsyncClientTests {
 
 	private static final Log logger = LogFactory.getLog(WebClientStreamableHttpAsyncClientIT.class);
 
-	static String host = "http://localhost:3001";
-
+	@Container
 	@SuppressWarnings("resource")
 	static GenericContainer<?> container = new GenericContainer<>("docker.io/node:lts-alpine3.23")
 		.withCommand("npx -y @modelcontextprotocol/server-everything@2025.12.18 streamableHttp")
@@ -45,19 +45,8 @@ public class WebClientStreamableHttpAsyncClientIT extends AbstractMcpAsyncClient
 
 	@Override
 	protected McpClientTransport createMcpTransport() {
+		String host = "http://" + container.getHost() + ":" + container.getMappedPort(3001);
 		return WebClientStreamableHttpTransport.builder(WebClient.builder().baseUrl(host)).build();
-	}
-
-	@BeforeAll
-	static void startContainer() {
-		container.start();
-		int port = container.getMappedPort(3001);
-		host = "http://" + container.getHost() + ":" + port;
-	}
-
-	@AfterAll
-	static void stopContainer() {
-		container.stop();
 	}
 
 }
