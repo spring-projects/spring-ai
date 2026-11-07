@@ -38,6 +38,7 @@ import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.spec.McpSchema.Implementation;
 import io.modelcontextprotocol.spec.McpStatelessServerTransport;
 
+import org.springframework.ai.mcp.McpServerToolFilter;
 import org.springframework.ai.mcp.customizer.McpStatelessAsyncServerCustomizer;
 import org.springframework.ai.mcp.customizer.McpStatelessSyncServerCustomizer;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
@@ -83,6 +84,7 @@ public class McpServerStatelessAutoConfiguration {
 			ObjectProvider<List<SyncResourceTemplateSpecification>> resourceTemplates,
 			ObjectProvider<List<SyncPromptSpecification>> prompts,
 			ObjectProvider<List<SyncCompletionSpecification>> completions, Environment environment,
+			ObjectProvider<McpServerToolFilter> toolFilters,
 			ObjectProvider<McpStatelessSyncServerCustomizer> customizers) {
 
 		McpSchema.Implementation serverInfo = Implementation
@@ -103,6 +105,8 @@ public class McpServerStatelessAutoConfiguration {
 				serverBuilder.tools(toolSpecifications);
 				logger.info("Registered tools: " + toolSpecifications.size());
 			}
+
+			registerToolFilters(serverBuilder, toolFilters);
 		}
 
 		// Resources
@@ -177,6 +181,7 @@ public class McpServerStatelessAutoConfiguration {
 			ObjectProvider<List<AsyncResourceTemplateSpecification>> resourceTemplates,
 			ObjectProvider<List<AsyncPromptSpecification>> prompts,
 			ObjectProvider<List<AsyncCompletionSpecification>> completions,
+			ObjectProvider<McpServerToolFilter> toolFilters,
 			ObjectProvider<McpStatelessAsyncServerCustomizer> customizers) {
 
 		McpSchema.Implementation serverInfo = Implementation
@@ -197,6 +202,8 @@ public class McpServerStatelessAutoConfiguration {
 				serverBuilder.tools(toolSpecifications);
 				logger.info("Registered tools: " + toolSpecifications.size());
 			}
+
+			registerToolFilters(serverBuilder, toolFilters);
 		}
 
 		// Resources
@@ -257,6 +264,24 @@ public class McpServerStatelessAutoConfiguration {
 		customizers.orderedStream().forEach(customizer -> customizer.customize(serverBuilder));
 
 		return serverBuilder.build();
+	}
+
+	private static void registerToolFilters(StatelessSyncSpecification serverBuilder,
+			ObjectProvider<McpServerToolFilter> toolFilters) {
+		List<McpServerToolFilter> filters = toolFilters.orderedStream().toList();
+		if (!CollectionUtils.isEmpty(filters)) {
+			serverBuilder.addToolFilter(McpServerToolFilterAdapter.toSyncFilter(filters));
+			logger.info("Registered tool filters: " + filters.size());
+		}
+	}
+
+	private static void registerToolFilters(StatelessAsyncSpecification serverBuilder,
+			ObjectProvider<McpServerToolFilter> toolFilters) {
+		List<McpServerToolFilter> filters = toolFilters.orderedStream().toList();
+		if (!CollectionUtils.isEmpty(filters)) {
+			serverBuilder.addToolFilter(McpServerToolFilterAdapter.toAsyncFilter(filters));
+			logger.info("Registered tool filters: " + filters.size());
+		}
 	}
 
 	public static class EnabledStatelessServerCondition extends AllNestedConditions {
