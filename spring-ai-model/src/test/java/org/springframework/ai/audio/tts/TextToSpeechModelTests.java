@@ -53,6 +53,7 @@ class TextToSpeechModelTests {
 		given(response.getResult()).willReturn(mockSpeech);
 
 		doCallRealMethod().when(mockModel).call(anyString());
+		doCallRealMethod().when(mockModel).call(anyString(), any(TextToSpeechOptions.class));
 
 		given(mockModel.call(any(TextToSpeechPrompt.class))).willAnswer(invocationOnMock -> {
 			TextToSpeechPrompt prompt = invocationOnMock.getArgument(0);
@@ -68,6 +69,7 @@ class TextToSpeechModelTests {
 		assertThat(actualAudio).isEqualTo(expectedAudio);
 
 		verify(mockModel, times(1)).call(eq(inputText));
+		verify(mockModel, times(1)).call(eq(inputText), any(TextToSpeechOptions.class));
 		verify(mockModel, times(1)).call(isA(TextToSpeechPrompt.class));
 		verify(response, times(1)).getResult();
 		verify(mockSpeech, times(1)).getOutput();
@@ -88,12 +90,14 @@ class TextToSpeechModelTests {
 		given(response.getResult()).willReturn(mockSpeech);
 
 		doCallRealMethod().when(mockModel).call(anyString());
+		doCallRealMethod().when(mockModel).call(anyString(), any(TextToSpeechOptions.class));
 		given(mockModel.call(any(TextToSpeechPrompt.class))).willReturn(response);
 
 		byte[] result = mockModel.call(inputText);
 
 		assertThat(result).isEqualTo(expectedAudio);
 		verify(mockModel, times(1)).call(eq(inputText));
+		verify(mockModel, times(1)).call(eq(inputText), any(TextToSpeechOptions.class));
 		verify(mockModel, times(1)).call(isA(TextToSpeechPrompt.class));
 	}
 
@@ -105,11 +109,13 @@ class TextToSpeechModelTests {
 		TextToSpeechModel mockModel = Mockito.mock(TextToSpeechModel.class);
 
 		doCallRealMethod().when(mockModel).call(anyString());
+		doCallRealMethod().when(mockModel).call(anyString(), any(TextToSpeechOptions.class));
 		given(mockModel.call(any(TextToSpeechPrompt.class))).willThrow(expectedException);
 
 		assertThatThrownBy(() -> mockModel.call(inputText)).isEqualTo(expectedException);
 
 		verify(mockModel, times(1)).call(eq(inputText));
+		verify(mockModel, times(1)).call(eq(inputText), any(TextToSpeechOptions.class));
 		verify(mockModel, times(1)).call(isA(TextToSpeechPrompt.class));
 	}
 
@@ -120,11 +126,13 @@ class TextToSpeechModelTests {
 		TextToSpeechModel mockModel = Mockito.mock(TextToSpeechModel.class);
 
 		doCallRealMethod().when(mockModel).call(anyString());
+		doCallRealMethod().when(mockModel).call(anyString(), any(TextToSpeechOptions.class));
 		given(mockModel.call(any(TextToSpeechPrompt.class))).willReturn(null);
 
 		assertThatThrownBy(() -> mockModel.call(inputText)).isInstanceOf(NullPointerException.class);
 
 		verify(mockModel, times(1)).call(eq(inputText));
+		verify(mockModel, times(1)).call(eq(inputText), any(TextToSpeechOptions.class));
 		verify(mockModel, times(1)).call(isA(TextToSpeechPrompt.class));
 	}
 
@@ -138,6 +146,7 @@ class TextToSpeechModelTests {
 		given(response.getResult()).willReturn(null);
 
 		doCallRealMethod().when(mockModel).call(anyString());
+		doCallRealMethod().when(mockModel).call(anyString(), any(TextToSpeechOptions.class));
 		given(mockModel.call(any(TextToSpeechPrompt.class))).willReturn(response);
 
 		byte[] result = mockModel.call(inputText);
@@ -160,6 +169,7 @@ class TextToSpeechModelTests {
 		given(response.getResult()).willReturn(mockSpeech);
 
 		doCallRealMethod().when(mockModel).call(anyString());
+		doCallRealMethod().when(mockModel).call(anyString(), any(TextToSpeechOptions.class));
 		given(mockModel.call(any(TextToSpeechPrompt.class))).willReturn(response);
 
 		byte[] result = mockModel.call(inputText);
@@ -174,6 +184,7 @@ class TextToSpeechModelTests {
 		TextToSpeechModel mockModel = Mockito.mock(TextToSpeechModel.class);
 
 		doCallRealMethod().when(mockModel).call(anyString());
+		doCallRealMethod().when(mockModel).call(anyString(), any(TextToSpeechOptions.class));
 
 		// First call
 		setupMockResponse(mockModel, new byte[] { 1, 2, 3 });
@@ -186,6 +197,7 @@ class TextToSpeechModelTests {
 		assertThat(result2).isEqualTo(new byte[] { 4, 5, 6 });
 
 		verify(mockModel, times(2)).call(anyString());
+		verify(mockModel, times(2)).call(anyString(), any(TextToSpeechOptions.class));
 		verify(mockModel, times(2)).call(any(TextToSpeechPrompt.class));
 	}
 
