@@ -127,8 +127,9 @@ public abstract class AbstractFilterExpressionConverter implements FilterExpress
 		// Default behavior is to convert the NOT expression into its semantically
 		// equivalent negation expression.
 		// Effectively removing the NOT types form the boolean expression tree before
-		// passing it to the doExpression.
-		this.convertOperand(FilterHelper.negate(expression), context);
+		// passing it to the doExpression. The NOT node's operand is negated, not the node
+		// itself, so that a nested NOT cancels out instead of being negated again.
+		this.convertOperand(FilterHelper.negate(expression.left()), context);
 	}
 
 	/**
