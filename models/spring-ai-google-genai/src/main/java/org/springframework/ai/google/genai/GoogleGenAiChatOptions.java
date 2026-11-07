@@ -46,6 +46,7 @@ import org.springframework.util.Assert;
  * @author Soby Chacko
  * @author Dan Dobrin
  * @author Sebastien Deleuze
+ * @author hyeonZIP
  * @since 1.0.0
  */
 public class GoogleGenAiChatOptions implements ToolCallingChatOptions, StructuredOutputChatOptions {
@@ -204,6 +205,13 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 	 * Optional. The service tier to use for the request.
 	 */
 	private final @Nullable GoogleGenAiServiceTier serviceTier;
+
+	/**
+	 * Optional. The frame rate, in frames per second, at which video media is sampled.
+	 * Only applies to media with a {@code video/*} MIME type. When not set, the API
+	 * default of 1 frame per second is used.
+	 */
+	private final @Nullable Double videoFps;
 	// @formatter:on
 
 	protected GoogleGenAiChatOptions(@Nullable String model, @Nullable Double frequencyPenalty,
@@ -217,7 +225,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 			@Nullable Boolean useCachedContent, @Nullable Integer autoCacheThreshold, @Nullable Duration autoCacheTtl,
 			@Nullable Boolean googleSearchRetrieval, @Nullable Boolean includeServerSideToolInvocations,
 			@Nullable List<GoogleGenAiSafetySetting> safetySettings, @Nullable Map<String, String> labels,
-			@Nullable GoogleGenAiServiceTier serviceTier) {
+			@Nullable GoogleGenAiServiceTier serviceTier, @Nullable Double videoFps) {
 		this.model = model != null ? model : ChatModel.GEMINI_2_5_FLASH.getValue();
 		this.frequencyPenalty = frequencyPenalty;
 		this.maxOutputTokens = maxOutputTokens;
@@ -245,6 +253,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 		this.safetySettings = (safetySettings != null ? List.copyOf(safetySettings) : null);
 		this.labels = (labels != null ? Map.copyOf(labels) : null);
 		this.serviceTier = serviceTier;
+		this.videoFps = videoFps;
 	}
 
 	public static Builder builder() {
@@ -376,6 +385,15 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 		return this.serviceTier;
 	}
 
+	/**
+	 * Returns the frame rate at which video media is sampled.
+	 * @return the video frame rate, or {@code null} to use the API default
+	 * @since 2.1.0
+	 */
+	public @Nullable Double getVideoFps() {
+		return this.videoFps;
+	}
+
 	@Override
 	public @Nullable Map<String, Object> getToolContext() {
 		return this.toolContext;
@@ -411,7 +429,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 				&& Objects.equals(this.toolCallbacks, that.toolCallbacks)
 				&& Objects.equals(this.safetySettings, that.safetySettings)
 				&& Objects.equals(this.toolContext, that.toolContext) && Objects.equals(this.labels, that.labels)
-				&& Objects.equals(this.serviceTier, that.serviceTier);
+				&& Objects.equals(this.serviceTier, that.serviceTier) && Objects.equals(this.videoFps, that.videoFps);
 	}
 
 	@Override
@@ -421,7 +439,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 				this.includeThoughts, this.thinkingLevel, this.maxOutputTokens, this.model, this.responseMimeType,
 				this.responseSchema, this.toolCallbacks, this.googleSearchRetrieval,
 				this.includeServerSideToolInvocations, this.safetySettings, this.toolContext, this.labels,
-				this.serviceTier);
+				this.serviceTier, this.videoFps);
 	}
 
 	@Override
@@ -458,6 +476,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 			.safetySettings(this.safetySettings)
 			.labels(this.labels)
 			.serviceTier(this.serviceTier)
+			.videoFps(this.videoFps)
 			.responseMimeType(this.responseMimeType);
 	}
 
@@ -511,6 +530,8 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 		protected @Nullable Map<String, String> labels;
 
 		protected @Nullable GoogleGenAiServiceTier serviceTier;
+
+		protected @Nullable Double videoFps;
 
 		/**
 		 * @since 2.0.1
@@ -627,6 +648,19 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 			return self();
 		}
 
+		/**
+		 * Set the frame rate, in frames per second, at which video media is sampled.
+		 * @param videoFps the video frame rate, must be greater than 0, or {@code null}
+		 * to use the API default of 1 frame per second
+		 * @return this builder
+		 * @since 2.1.0
+		 */
+		public B videoFps(@Nullable Double videoFps) {
+			Assert.isTrue(videoFps == null || videoFps > 0, "videoFps must be greater than 0");
+			this.videoFps = videoFps;
+			return self();
+		}
+
 		public B combineWith(ChatOptions.Builder<?> other) {
 			super.combineWith(other);
 			if (other instanceof AbstractBuilder<?> that) {
@@ -692,6 +726,9 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 				if (that.serviceTier != null) {
 					this.serviceTier = that.serviceTier;
 				}
+				if (that.videoFps != null) {
+					this.videoFps = that.videoFps;
+				}
 				if (that.toolChoice != null) {
 					this.toolChoice = that.toolChoice;
 				}
@@ -707,7 +744,7 @@ public class GoogleGenAiChatOptions implements ToolCallingChatOptions, Structure
 					this.thinkingBudget, this.includeThoughts, this.thinkingLevel, this.includeExtendedUsageMetadata,
 					this.cachedContentName, this.useCachedContent, this.autoCacheThreshold, this.autoCacheTtl,
 					this.googleSearchRetrieval, this.includeServerSideToolInvocations, this.safetySettings, this.labels,
-					this.serviceTier);
+					this.serviceTier, this.videoFps);
 		}
 
 	}
