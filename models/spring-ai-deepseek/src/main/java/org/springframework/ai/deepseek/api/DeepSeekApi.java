@@ -1132,6 +1132,7 @@ public class DeepSeekApi {
 	 * @param totalTokens Total number of tokens used in the request (prompt +
 	 * completion).
 	 * @param promptTokensDetails Breakdown of tokens used in the prompt.
+	 * @param completionTokensDetails Breakdown of tokens used in the completion.
 	 */
 	@JsonInclude(Include.NON_NULL)
 	@JsonIgnoreProperties(ignoreUnknown = true)
@@ -1139,10 +1140,36 @@ public class DeepSeekApi {
 		@JsonProperty("completion_tokens") Integer completionTokens,
 		@JsonProperty("prompt_tokens") Integer promptTokens,
 		@JsonProperty("total_tokens") Integer totalTokens,
-		@JsonProperty("prompt_tokens_details") @Nullable PromptTokensDetails promptTokensDetails) { // @formatter:on
+		@JsonProperty("prompt_tokens_details") @Nullable PromptTokensDetails promptTokensDetails,
+		@JsonProperty("completion_tokens_details") @Nullable CompletionTokensDetails completionTokensDetails) { // @formatter:on
+
+		/**
+		 * Create usage without completion token details.
+		 * @param completionTokens the completion token count
+		 * @param promptTokens the prompt token count
+		 * @param totalTokens the total token count
+		 * @param promptTokensDetails the prompt token details
+		 * @since 2.1.0
+		 */
+		public Usage(Integer completionTokens, Integer promptTokens, Integer totalTokens,
+				@Nullable PromptTokensDetails promptTokensDetails) {
+			this(completionTokens, promptTokens, totalTokens, promptTokensDetails, null);
+		}
 
 		public Usage(Integer completionTokens, Integer promptTokens, Integer totalTokens) {
 			this(completionTokens, promptTokens, totalTokens, null);
+		}
+
+		/**
+		 * Breakdown of completion tokens.
+		 *
+		 * @param reasoningTokens tokens used for reasoning, or {@code null} when
+		 * unavailable
+		 * @since 2.1.0
+		 */
+		@JsonInclude(Include.NON_NULL)
+		@JsonIgnoreProperties(ignoreUnknown = true)
+		public record CompletionTokensDetails(@JsonProperty("reasoning_tokens") @Nullable Long reasoningTokens) {
 		}
 
 		/**

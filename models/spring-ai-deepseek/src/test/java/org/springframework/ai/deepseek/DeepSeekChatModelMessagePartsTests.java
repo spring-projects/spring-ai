@@ -77,6 +77,24 @@ class DeepSeekChatModelMessagePartsTests {
 	// -- inbound, non-streaming --
 
 	@Test
+	void reasoningTokensAreMappedWhenReportedByTheProvider() {
+		givenCompletion(new ChatCompletionMessage("hello", Role.ASSISTANT), tools.jackson.databind.json.JsonMapper
+			.shared()
+			.readValue(
+					"{\"completion_tokens\":20,\"prompt_tokens\":10,\"total_tokens\":30,\"completion_tokens_details\":{\"reasoning_tokens\":7}}",
+					DeepSeekApi.Usage.class));
+		ChatResponse response = chatModel().call(new Prompt("hi"));
+		assertThat(response.getMetadata().getUsage().getReasoningOutputTokens()).isEqualTo(7L);
+	}
+
+	@Test
+	void missingReasoningTokensRemainUnavailable() {
+		givenCompletion(new ChatCompletionMessage("hello", Role.ASSISTANT));
+		ChatResponse response = chatModel().call(new Prompt("hi"));
+		assertThat(response.getMetadata().getUsage().getReasoningOutputTokens()).isNull();
+	}
+
+	@Test
 	void reasoningTextAndToolCallBecomeOrderedParts() {
 		givenCompletion(
 				new ChatCompletionMessage("Let me check.", Role.ASSISTANT, null, null,
@@ -397,9 +415,13 @@ class DeepSeekChatModelMessagePartsTests {
 	}
 
 	private void givenCompletion(ChatCompletionMessage message) {
+		givenCompletion(message, new DeepSeekApi.Usage(1, 1, 2));
+	}
+
+	private void givenCompletion(ChatCompletionMessage message, DeepSeekApi.Usage usage) {
 		ChatCompletion completion = new ChatCompletion("chatcmpl-123",
 				List.of(new Choice(ChatCompletionFinishReason.STOP, 0, message, null)), 1777799928L,
-				"deepseek-v4-flash", "fp", "chat.completion", new DeepSeekApi.Usage(1, 1, 2));
+				"deepseek-v4-flash", "fp", "chat.completion", usage);
 		given(this.deepSeekApi.chatCompletionEntity(any(ChatCompletionRequest.class)))
 			.willReturn(ResponseEntity.ok(completion));
 	}
