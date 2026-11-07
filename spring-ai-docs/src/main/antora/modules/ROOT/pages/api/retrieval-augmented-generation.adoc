@@ -249,6 +249,7 @@ IMPORTANT: When using a `QueryTransformer`, it's recommended to configure the `C
 
 A `CompressionQueryTransformer` uses a large language model to compress a conversation history and a follow-up query
 into a standalone query that captures the essence of the conversation.
+If the query has no conversation history, it is returned unchanged.
 
 This transformer is useful when the conversation history is long and the follow-up query is related
 to the conversation context.
