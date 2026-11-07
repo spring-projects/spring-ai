@@ -3,6 +3,7 @@ target
 .classpath
 .project
 .settings
+.factorypath
 .env
 bin
 build.log
