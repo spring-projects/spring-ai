@@ -41,6 +41,8 @@ import software.amazon.awssdk.services.bedrockagentruntime.model.RetrievalResult
 import software.amazon.awssdk.services.bedrockagentruntime.model.RetrieveRequest;
 import software.amazon.awssdk.services.bedrockagentruntime.model.RetrieveResponse;
 import software.amazon.awssdk.services.bedrockagentruntime.model.SearchType;
+import software.amazon.awssdk.services.bedrockagentruntime.model.VectorSearchRerankingConfiguration;
+import software.amazon.awssdk.services.bedrockagentruntime.model.VectorSearchRerankingConfigurationType;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.document.DocumentMetadata;
@@ -588,6 +590,102 @@ class BedrockKnowledgeBaseVectorStoreTest {
 
 			assertThat(captor.getValue().retrievalConfiguration().vectorSearchConfiguration().overrideSearchType())
 				.isEqualTo(SearchType.SEMANTIC);
+		}
+
+	}
+
+	@Nested
+	@DisplayName("Reranking Tests")
+	class RerankingTests {
+
+		private static final String RERANKING_MODEL_ARN = "arn:aws:bedrock:us-west-2::foundation-model/amazon.rerank-v1:0";
+
+		@Test
+		void shouldPassRerankingConfigWithNumberOfRerankedResultsToApi() {
+			// Given
+			BedrockKnowledgeBaseVectorStore storeWithReranking = BedrockKnowledgeBaseVectorStore
+				.builder(BedrockKnowledgeBaseVectorStoreTest.this.mockClient, TEST_KB_ID)
+				.rerankingModelArn(RERANKING_MODEL_ARN)
+				.numberOfRerankedResults(3)
+				.build();
+
+			when(BedrockKnowledgeBaseVectorStoreTest.this.mockClient.retrieve(any(RetrieveRequest.class)))
+				.thenReturn(RetrieveResponse.builder().retrievalResults(List.of()).build());
+
+			// When
+			storeWithReranking.similaritySearch(SearchRequest.builder().query("test").build());
+
+			// Then
+			ArgumentCaptor<RetrieveRequest> captor = ArgumentCaptor.forClass(RetrieveRequest.class);
+			verify(BedrockKnowledgeBaseVectorStoreTest.this.mockClient).retrieve(captor.capture());
+
+			VectorSearchRerankingConfiguration rerankingConfig = captor.getValue()
+				.retrievalConfiguration()
+				.vectorSearchConfiguration()
+				.rerankingConfiguration();
+			assertThat(rerankingConfig).isNotNull();
+			assertThat(rerankingConfig.type())
+				.isEqualTo(VectorSearchRerankingConfigurationType.BEDROCK_RERANKING_MODEL);
+			assertThat(rerankingConfig.bedrockRerankingConfiguration().modelConfiguration().modelArn())
+				.isEqualTo(RERANKING_MODEL_ARN);
+			assertThat(rerankingConfig.bedrockRerankingConfiguration().numberOfRerankedResults()).isEqualTo(3);
+		}
+
+		@Test
+		void shouldOmitNumberOfRerankedResultsWhenNotSet() {
+			// Given
+			BedrockKnowledgeBaseVectorStore storeWithReranking = BedrockKnowledgeBaseVectorStore
+				.builder(BedrockKnowledgeBaseVectorStoreTest.this.mockClient, TEST_KB_ID)
+				.rerankingModelArn(RERANKING_MODEL_ARN)
+				.build();
+
+			when(BedrockKnowledgeBaseVectorStoreTest.this.mockClient.retrieve(any(RetrieveRequest.class)))
+				.thenReturn(RetrieveResponse.builder().retrievalResults(List.of()).build());
+
+			// When
+			storeWithReranking.similaritySearch(SearchRequest.builder().query("test").build());
+
+			// Then
+			ArgumentCaptor<RetrieveRequest> captor = ArgumentCaptor.forClass(RetrieveRequest.class);
+			verify(BedrockKnowledgeBaseVectorStoreTest.this.mockClient).retrieve(captor.capture());
+
+			VectorSearchRerankingConfiguration rerankingConfig = captor.getValue()
+				.retrievalConfiguration()
+				.vectorSearchConfiguration()
+				.rerankingConfiguration();
+			assertThat(rerankingConfig).isNotNull();
+			assertThat(rerankingConfig.bedrockRerankingConfiguration().numberOfRerankedResults()).isNull();
+		}
+
+		@Test
+		void shouldIgnoreNumberOfRerankedResultsWithoutRerankingModelArn() {
+			// Given
+			BedrockKnowledgeBaseVectorStore storeWithoutReranking = BedrockKnowledgeBaseVectorStore
+				.builder(BedrockKnowledgeBaseVectorStoreTest.this.mockClient, TEST_KB_ID)
+				.numberOfRerankedResults(3)
+				.build();
+
+			when(BedrockKnowledgeBaseVectorStoreTest.this.mockClient.retrieve(any(RetrieveRequest.class)))
+				.thenReturn(RetrieveResponse.builder().retrievalResults(List.of()).build());
+
+			// When
+			storeWithoutReranking.similaritySearch(SearchRequest.builder().query("test").build());
+
+			// Then
+			ArgumentCaptor<RetrieveRequest> captor = ArgumentCaptor.forClass(RetrieveRequest.class);
+			verify(BedrockKnowledgeBaseVectorStoreTest.this.mockClient).retrieve(captor.capture());
+
+			assertThat(captor.getValue().retrievalConfiguration().vectorSearchConfiguration().rerankingConfiguration())
+				.isNull();
+		}
+
+		@Test
+		void shouldRejectInvalidNumberOfRerankedResults() {
+			assertThatThrownBy(() -> BedrockKnowledgeBaseVectorStore
+				.builder(BedrockKnowledgeBaseVectorStoreTest.this.mockClient, TEST_KB_ID)
+				.numberOfRerankedResults(0)
+				.build()).isInstanceOf(IllegalArgumentException.class)
+				.hasMessageContaining("numberOfRerankedResults must be positive");
 		}
 
 	}
