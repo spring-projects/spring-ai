@@ -34,10 +34,11 @@ import org.springframework.data.mongodb.core.index.IndexOperations;
 
 /**
  * Class responsible for creating proper MongoDB indices for the ChatMemory. Creates a
- * main index on the conversationId and timestamp fields, and a TTL index on the timestamp
- * field if the TTL is set in properties.
+ * main index on the conversationId, timestamp and sequenceId fields, and a TTL index on
+ * the timestamp field if the TTL is set in properties.
  *
  * @author Łukasz Jernaś
+ * @author kezhenxu94
  * @see MongoChatMemoryProperties
  * @since 1.1.0
  * @deprecated since 2.1.0, for removal in 3.0.0, in favor of the session memory
@@ -76,7 +77,9 @@ public class MongoChatMemoryIndexCreatorAutoConfiguration {
 
 	private void createMainIndex() {
 		var indexOps = this.mongoTemplate.indexOps(Conversation.class);
-		var index = new Index().on("conversationId", Sort.Direction.ASC).on("timestamp", Sort.Direction.DESC);
+		var index = new Index().on("conversationId", Sort.Direction.ASC)
+			.on("timestamp", Sort.Direction.DESC)
+			.on("sequenceId", Sort.Direction.DESC);
 
 		// Use reflection to handle API differences across Spring Data MongoDB versions
 		createIndexSafely(indexOps, index);
