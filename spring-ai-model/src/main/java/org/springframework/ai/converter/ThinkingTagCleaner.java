@@ -17,7 +17,6 @@
 package org.springframework.ai.converter;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -45,19 +44,12 @@ import org.springframework.util.Assert;
 public class ThinkingTagCleaner implements ResponseTextCleaner {
 
 	/**
-	 * Default thinking tag patterns used by common AI models.
+	 * Default thinking tag patterns used by common AI models, restricted to response
+	 * prefixes so that tags in the response content are preserved.
 	 */
-	private static final List<Pattern> DEFAULT_PATTERNS = Arrays.asList(
-			// Amazon Nova: <thinking>...</thinking>
-			Pattern.compile("(?s)<thinking>.*?</thinking>\\s*", Pattern.CASE_INSENSITIVE),
-			// Qwen models: <think>...</think>
-			Pattern.compile("(?s)<think>.*?</think>\\s*", Pattern.CASE_INSENSITIVE),
-			// Alternative XML-style tags
-			Pattern.compile("(?s)<reasoning>.*?</reasoning>\\s*", Pattern.CASE_INSENSITIVE),
-			// Markdown style thinking blocks
-			Pattern.compile("(?s)```thinking.*?```\\s*", Pattern.CASE_INSENSITIVE),
-			// Some models use comment-style
-			Pattern.compile("(?s)<!--\\s*thinking:.*?-->\\s*", Pattern.CASE_INSENSITIVE));
+	private static final List<Pattern> DEFAULT_PATTERNS = List
+		.of(Pattern.compile("(?s)\\A\\s*(?:(?:<thinking>.*?</thinking>|<think>.*?</think>|<reasoning>.*?</reasoning>"
+				+ "|```thinking.*?```|<!--\\s*thinking:.*?-->)\\s*)+", Pattern.CASE_INSENSITIVE));
 
 	private final List<Pattern> patterns;
 

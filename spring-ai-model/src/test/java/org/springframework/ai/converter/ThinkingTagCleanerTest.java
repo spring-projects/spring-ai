@@ -29,6 +29,27 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class ThinkingTagCleanerTest {
 
 	@Test
+	void shouldRemoveRepeatedPrefixesInAnyOrder() {
+		var cleaner = new ThinkingTagCleaner();
+		String input = " \n<reasoning>one</reasoning><think>two</think><thinking>three</thinking>"
+				+ "<thinking>four</thinking>{\"text\":\"<think>keep</think>\"}";
+		assertThat(cleaner.clean(input)).isEqualTo("{\"text\":\"<think>keep</think>\"}");
+	}
+
+	@Test
+	void shouldPreserveTagsAfterResponseContent() {
+		var cleaner = new ThinkingTagCleaner();
+		String input = "An example: <think>literal text</think>";
+		assertThat(cleaner.clean(input)).isEqualTo(input);
+	}
+
+	@Test
+	void shouldApplyCustomPatternsOnlyOnce() {
+		var cleaner = new ThinkingTagCleaner("<remove>");
+		assertThat(cleaner.clean("<<remove>remove>")).isEqualTo("<remove>");
+	}
+
+	@Test
 	void shouldRemoveAmazonNovaThinkingTags() {
 		var cleaner = new ThinkingTagCleaner();
 		String input = "<thinking>My reasoning process</thinking>Actual content";
