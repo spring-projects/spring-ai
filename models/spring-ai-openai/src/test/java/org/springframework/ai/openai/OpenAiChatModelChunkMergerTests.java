@@ -18,6 +18,7 @@ package org.springframework.ai.openai;
 
 import java.util.List;
 
+import com.openai.core.ObjectMappers;
 import com.openai.models.chat.completions.ChatCompletion;
 import com.openai.models.chat.completions.ChatCompletionChunk;
 import com.openai.models.chat.completions.ChatCompletionChunk.Choice;
@@ -169,6 +170,23 @@ class OpenAiChatModelChunkMergerTests {
 		assertThat(functionToolCall.id()).isEqualTo("call_1");
 		assertThat(functionToolCall.function().name()).isEqualTo("get_weather");
 		assertThat(functionToolCall.function().arguments()).isEmpty();
+	}
+
+	@Test // gh-6928
+	void chunkToChatCompletionUsesDefaultsForMissingRequiredFields() throws Exception {
+		String chunkJson = "{\"choices\":[],\"usage\":{\"prompt_tokens\":10,\"completion_tokens\":20,\"total_tokens\":30}}";
+		ChatCompletionChunk chunk = ObjectMappers.jsonMapper().readValue(chunkJson, ChatCompletionChunk.class);
+
+		ChatCompletion completion = OpenAiChatModel.ChunkMerger.chunkToChatCompletion(chunk);
+
+		assertThat(completion.id()).isEmpty();
+		assertThat(completion.model()).isEmpty();
+		assertThat(completion.created()).isZero();
+		assertThat(completion.choices()).isEmpty();
+		assertThat(completion.usage()).isPresent();
+		assertThat(completion.usage().orElseThrow().promptTokens()).isEqualTo(10);
+		assertThat(completion.usage().orElseThrow().completionTokens()).isEqualTo(20);
+		assertThat(completion.usage().orElseThrow().totalTokens()).isEqualTo(30);
 	}
 
 	private static ChatCompletionChunk chunk(@Nullable FinishReason finishReason, ToolCall... toolCalls) {
