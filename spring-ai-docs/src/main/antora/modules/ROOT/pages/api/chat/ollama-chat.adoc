@@ -817,7 +817,7 @@ ChatResponse response = this.ollamaApi.chat(this.request);
 
 // Streaming request
 var request2 = ChatRequest.builder("orca-mini")
-    .ttream(true) // streaming
+    .stream(true) // streaming
     .messages(List.of(Message.builder(Role.USER)
         .content("What is the capital of Bulgaria and what is the size? " + "What is the national anthem?")
         .build()))
