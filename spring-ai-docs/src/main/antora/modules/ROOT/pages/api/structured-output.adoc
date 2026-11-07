@@ -145,6 +145,160 @@ long totalTokens = raw.getMetadata().getUsage().getTotalTokens();
 
 It has the same overload set as `.entity(...)` -- `Class`, `ParameterizedTypeReference`, custom `StructuredOutputConverter`, and the `EntityParamSpec` consumer all apply.
 
+== Restricting Properties Values of Generated JSON Schema
+
+It is possible to define restrictions on properties contained in the JSON schema by simply using the appropriate Java types and annotating Java attributes or getters with OAS annotations or Jakarta Validation annotations.
+
+To generate to following JSON schema:
+[source,json]
+----
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "birthDate": {
+      "type": "string",
+      "format": "date"
+    },
+    "childrenNumber": {
+      "type": "integer",
+      "format": "int32",
+      "minimum": 0
+    },
+    "civility": {
+      "type": "string",
+      "enum": [
+        "MISTER",
+        "MADAM"
+      ]
+    },
+    "createdAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "deathDate": {
+      "type": "string",
+      "format": "date"
+    },
+    "email": {
+      "type": "string",
+      "format": "email"
+    },
+    "firstName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "lastName": {
+      "type": "string",
+      "minLength": 1
+    },
+    "nationalities": {
+      "minItems": 1,
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "nickName": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 50
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "required": [
+    "birthDate",
+    "childrenNumber",
+    "civility",
+    "createdAt",
+    "email",
+    "firstName",
+    "id",
+    "lastName",
+    "nationalities",
+    "updatedAt"
+  ],
+  "additionalProperties": false
+}
+----
+
+The following record annotated with OAS annotations can be defined:
+[source,java]
+----
+record Person(
+			UUID id,
+			Instant createdAt,
+			Instant updatedAt,
+			Civility civility,
+			@Schema(minLength = 1) String firstName,
+			@Schema(minLength = 1) String lastName,
+			@Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED, minLength = 1, maxLength = 50) String nickName,
+			@Schema(format = "email") String email,
+			LocalDate birthDate,
+			@Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) LocalDate deathDate,
+			@Schema(minimum = "0") int childrenNumber,
+			@ArraySchema(minItems = 1, schema = @Schema(minLength = 1)) List<String> nationalities) {
+
+		enum Civility {
+			MISTER,
+			MADAM
+		}
+
+	}
+----
+
+Or the following record annotated with Jakarta Validation annotations and JSpecify `@Nullable` annotation can be defined:
+[source,java]
+----
+record Person(
+			UUID id,
+			Instant createdAt,
+			Instant updatedAt,
+			Civility civility,
+			@NotBlank String firstName,
+			@NotBlank String lastName,
+			@Nullable @Size(min = 1, max = 50) String nickName,
+			@Email String email,
+			LocalDate birthDate,
+			@Nullable LocalDate deathDate,
+			@PositiveOrZero int childrenNumber,
+			@NotEmpty List<@NotBlank String> nationalities) {
+
+		enum Civility {
+			MISTER,
+			MADAM
+		}
+
+	}
+----
+
+If you choose the second approach, Jakarta Validation API must be added to your project's Maven `pom.xml` file:
+
+[source,xml]
+----
+<dependency>
+    <groupId>jakarta.validation</groupId>
+    <artifactId>jakarta.validation-api</artifactId>
+</dependency>
+----
+
+or to your Gradle `build.gradle` build file:
+
+[source,groovy]
+----
+dependencies {
+    implementation 'jakarta.validation:jakarta.validation-api'
+}
+----
+
 == Custom and Non-JSON Output
 
 When the built-in JSON parsing is not enough -- the model wraps JSON in markdown fences, or you need a non-JSON format such as YAML or CSV -- pass your own `StructuredOutputConverter<T>` to `.entity(...)`.
