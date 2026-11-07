@@ -17,10 +17,12 @@
 package org.springframework.ai.chat.evaluation;
 
 import java.util.Collections;
+import java.util.Map;
 
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.evaluation.EvaluationRequest;
 import org.springframework.ai.evaluation.EvaluationResponse;
 import org.springframework.ai.evaluation.Evaluator;
@@ -71,7 +73,7 @@ import org.springframework.util.Assert;
  */
 public class FactCheckingEvaluator implements Evaluator {
 
-	private static final String DEFAULT_EVALUATION_PROMPT_TEXT = """
+	private static final PromptTemplate DEFAULT_PROMPT_TEMPLATE = new PromptTemplate("""
 				Evaluate whether or not the following claim is supported by the provided document.
 				Respond with "yes" if the claim is supported, or "no" if it is not.
 
@@ -80,52 +82,70 @@ public class FactCheckingEvaluator implements Evaluator {
 
 				Claim:
 				{claim}
-			""";
+			""");
 
-	private static final String BESPOKE_EVALUATION_PROMPT_TEXT = """
+	private static final PromptTemplate BESPOKE_PROMPT_TEMPLATE = new PromptTemplate("""
 				Document:
 				{document}
 
 				Claim:
 				{claim}
-			""";
+			""");
 
 	private final ChatClient.Builder chatClientBuilder;
 
-	private final String evaluationPrompt;
+	private final PromptTemplate promptTemplate;
+
+	/**
+	 * Constructs a new FactCheckingEvaluator with the provided ChatClient.Builder, using
+	 * the default evaluation prompt.
+	 * @param chatClientBuilder the builder for the ChatClient used to perform the
+	 * evaluation
+	 * @since 2.0.0
+	 */
+	public FactCheckingEvaluator(ChatClient.Builder chatClientBuilder) {
+		this(chatClientBuilder, DEFAULT_PROMPT_TEMPLATE);
+	}
 
 	/**
 	 * Constructs a new FactCheckingEvaluator with the provided ChatClient.Builder and
 	 * evaluation prompt.
-	 * @param chatClientBuilder The builder for the ChatClient used to perform the
+	 * @param chatClientBuilder the builder for the ChatClient used to perform the
 	 * evaluation
-	 * @param evaluationPrompt The prompt text to use for evaluation
+	 * @param evaluationPrompt the prompt text to use for evaluation
 	 */
 	protected FactCheckingEvaluator(ChatClient.Builder chatClientBuilder, @Nullable String evaluationPrompt) {
+		this(chatClientBuilder,
+				evaluationPrompt != null ? new PromptTemplate(evaluationPrompt) : DEFAULT_PROMPT_TEMPLATE);
+	}
+
+	private FactCheckingEvaluator(ChatClient.Builder chatClientBuilder, PromptTemplate promptTemplate) {
 		Assert.notNull(chatClientBuilder, "chatClientBuilder cannot be null");
+		Assert.notNull(promptTemplate, "promptTemplate cannot be null");
 		this.chatClientBuilder = chatClientBuilder;
-		this.evaluationPrompt = evaluationPrompt != null ? evaluationPrompt : DEFAULT_EVALUATION_PROMPT_TEXT;
+		this.promptTemplate = promptTemplate;
 	}
 
 	/**
 	 * Creates a FactCheckingEvaluator configured for use with the Bespoke Minicheck
 	 * model.
-	 * @param chatClientBuilder The builder for the ChatClient used to perform the
+	 * @param chatClientBuilder the builder for the ChatClient used to perform the
 	 * evaluation
-	 * @return A FactCheckingEvaluator configured for Bespoke Minicheck
+	 * @return a FactCheckingEvaluator configured for Bespoke Minicheck
 	 */
 	public static FactCheckingEvaluator forBespokeMinicheck(ChatClient.Builder chatClientBuilder) {
-		return FactCheckingEvaluator.builder(chatClientBuilder)
-			.evaluationPrompt(BESPOKE_EVALUATION_PROMPT_TEXT)
+		return FactCheckingEvaluator.builder()
+			.chatClientBuilder(chatClientBuilder)
+			.promptTemplate(BESPOKE_PROMPT_TEMPLATE)
 			.build();
 	}
 
 	/**
 	 * Evaluates whether the response content in the EvaluationRequest is factually
 	 * supported by the context provided in the same request.
-	 * @param evaluationRequest The request containing the response to be evaluated and
+	 * @param evaluationRequest the request containing the response to be evaluated and
 	 * the supporting context
-	 * @return An EvaluationResponse indicating whether the claim is supported by the
+	 * @return an EvaluationResponse indicating whether the claim is supported by the
 	 * document
 	 */
 	@Override
@@ -133,26 +153,44 @@ public class FactCheckingEvaluator implements Evaluator {
 		var response = evaluationRequest.getResponseContent();
 		var context = doGetSupportingData(evaluationRequest);
 
-		String evaluationResponse = this.chatClientBuilder.build()
-			.prompt()
-			.user(userSpec -> userSpec.text(this.evaluationPrompt).param("document", context).param("claim", response))
-			.call()
-			.content();
+		var userMessage = this.promptTemplate.render(Map.of("document", context, "claim", response));
+
+		String evaluationResponse = this.chatClientBuilder.build().prompt().user(userMessage).call().content();
 
 		String normalizedResponse = (evaluationResponse != null) ? evaluationResponse.strip() : "";
 		boolean passing = "yes".equalsIgnoreCase(normalizedResponse);
 		return new EvaluationResponse(passing, "", Collections.emptyMap());
 	}
 
-	public static FactCheckingEvaluator.Builder builder(ChatClient.Builder chatClientBuilder) {
-		return new FactCheckingEvaluator.Builder().chatClientBuilder(chatClientBuilder);
+	/**
+	 * Creates a builder for a FactCheckingEvaluator.
+	 * @return a new builder
+	 * @since 2.0.0
+	 */
+	public static Builder builder() {
+		return new Builder();
+	}
+
+	/**
+	 * Creates a builder initialized with a ChatClient.Builder.
+	 * @param chatClientBuilder the builder for the ChatClient used to perform the
+	 * evaluation
+	 * @return a new builder
+	 * @deprecated use {@link #builder()} followed by
+	 * {@link Builder#chatClientBuilder(ChatClient.Builder)} instead
+	 */
+	@Deprecated(since = "2.0.0")
+	public static Builder builder(ChatClient.Builder chatClientBuilder) {
+		return builder().chatClientBuilder(chatClientBuilder);
 	}
 
 	public static final class Builder {
 
 		private ChatClient.@Nullable Builder chatClientBuilder;
 
-		private @Nullable String evaluationPrompt = DEFAULT_EVALUATION_PROMPT_TEXT;
+		private @Nullable PromptTemplate promptTemplate;
+
+		private boolean legacyEvaluationPromptConfigured;
 
 		private Builder() {
 		}
@@ -162,15 +200,37 @@ public class FactCheckingEvaluator implements Evaluator {
 			return this;
 		}
 
-		public FactCheckingEvaluator.Builder evaluationPrompt(String evaluationPrompt) {
-			this.evaluationPrompt = evaluationPrompt;
+		/**
+		 * Configures the template used to evaluate factual accuracy.
+		 * @param promptTemplate the prompt template
+		 * @return this builder
+		 * @since 2.0.0
+		 */
+		public FactCheckingEvaluator.Builder promptTemplate(PromptTemplate promptTemplate) {
+			this.promptTemplate = promptTemplate;
+			this.legacyEvaluationPromptConfigured = false;
+			return this;
+		}
+
+		/**
+		 * Configures the prompt text used to evaluate factual accuracy.
+		 * @param evaluationPrompt the evaluation prompt
+		 * @return this builder
+		 * @deprecated use {@link #promptTemplate(PromptTemplate)} instead
+		 */
+		@Deprecated(since = "2.0.0")
+		public FactCheckingEvaluator.Builder evaluationPrompt(@Nullable String evaluationPrompt) {
+			this.promptTemplate = evaluationPrompt != null ? new PromptTemplate(evaluationPrompt) : null;
+			this.legacyEvaluationPromptConfigured = true;
 			return this;
 		}
 
 		public FactCheckingEvaluator build() {
 			Assert.state(this.chatClientBuilder != null, "ChatClientBuilder cannot be null");
-			Assert.state(this.evaluationPrompt != null, "EvaluationPrompt cannot be null");
-			return new FactCheckingEvaluator(this.chatClientBuilder, this.evaluationPrompt);
+			Assert.state(!this.legacyEvaluationPromptConfigured || this.promptTemplate != null,
+					"EvaluationPrompt cannot be null");
+			PromptTemplate promptTemplate = this.promptTemplate != null ? this.promptTemplate : DEFAULT_PROMPT_TEMPLATE;
+			return new FactCheckingEvaluator(this.chatClientBuilder, promptTemplate);
 		}
 
 	}
