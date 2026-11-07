@@ -534,6 +534,24 @@ class OpenAiChatModelTests {
 	}
 
 	@Test
+	void requestDoesNotSendBothTokenLimitsAfterOptionsMerge() {
+		OpenAiChatOptions defaultOptions = OpenAiChatOptions.builder().model("gpt-4o").maxTokens(500).build();
+		OpenAiChatModel chatModel = OpenAiChatModel.builder()
+			.openAiClient(this.openAiClient)
+			.openAiClientAsync(this.openAiClientAsync)
+			.options(defaultOptions)
+			.build();
+		OpenAiChatOptions requestOptions = defaultOptions.mutate()
+			.combineWith(OpenAiChatOptions.builder().model("gpt-5").maxCompletionTokens(2000))
+			.build();
+
+		ChatCompletionCreateParams request = chatModel.createRequest(new Prompt("test", requestOptions), false);
+
+		assertThat(request.maxTokens()).isEmpty();
+		assertThat(request.maxCompletionTokens()).contains(2000L);
+	}
+
+	@Test
 	void toolChoiceAuto() {
 		OpenAiChatOptions options = OpenAiChatOptions.builder().model("test-model").toolChoice("auto").build();
 		OpenAiChatModel chatModel = OpenAiChatModel.builder()
