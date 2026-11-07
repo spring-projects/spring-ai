@@ -44,6 +44,13 @@ class ThinkOptionTests {
 	}
 
 	@Test
+	void testThinkBooleanConcreteTypeSerialization() {
+		ThinkOption.ThinkBoolean option = ThinkOption.ThinkBoolean.DISABLED;
+		String json = JsonMapper.shared().writeValueAsString(option);
+		assertThat(json).isEqualTo("false");
+	}
+
+	@Test
 	void testThinkLevelLowSerialization() {
 		ThinkOption option = ThinkOption.ThinkLevel.LOW;
 		String json = JsonMapper.shared().writeValueAsString(option);
@@ -62,6 +69,19 @@ class ThinkOptionTests {
 		ThinkOption option = ThinkOption.ThinkLevel.HIGH;
 		String json = JsonMapper.shared().writeValueAsString(option);
 		assertThat(json).isEqualTo("\"high\"");
+	}
+
+	@Test
+	void testThinkLevelConcreteTypeSerialization() {
+		ThinkOption.ThinkLevel option = ThinkOption.ThinkLevel.HIGH;
+		String json = JsonMapper.shared().writeValueAsString(option);
+		assertThat(json).isEqualTo("\"high\"");
+	}
+
+	@Test
+	void testThinkBooleanSerializationInsideWrapperObject() {
+		String json = JsonMapper.shared().writeValueAsString(new ThinkWrapper(ThinkOption.ThinkBoolean.DISABLED));
+		assertThat(json).isEqualTo("{\"think\":false}");
 	}
 
 	@Test
@@ -139,6 +159,9 @@ class ThinkOptionTests {
 		assertThat(ThinkOption.ThinkLevel.LOW.toJsonValue()).isEqualTo("low");
 		assertThat(ThinkOption.ThinkLevel.MEDIUM.toJsonValue()).isEqualTo("medium");
 		assertThat(ThinkOption.ThinkLevel.HIGH.toJsonValue()).isEqualTo("high");
+	}
+
+	private record ThinkWrapper(Object think) {
 	}
 
 }
