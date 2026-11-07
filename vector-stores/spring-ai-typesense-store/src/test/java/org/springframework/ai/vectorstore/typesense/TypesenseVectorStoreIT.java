@@ -222,6 +222,40 @@ public class TypesenseVectorStoreIT extends BaseVectorStoreTests {
 	}
 
 	@Test
+	void searchWithEqualityFilterMatchesWholeValue() {
+		this.contextRunner.run(context -> {
+			VectorStore vectorStore = context.getBean(VectorStore.class);
+
+			var dramaDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
+					Map.of("genre", "drama"));
+			var romanticDramaDocument = new Document("The World is Big and Salvation Lurks Around the Corner",
+					Map.of("genre", "romantic drama"));
+
+			vectorStore.add(List.of(dramaDocument, romanticDramaDocument));
+
+			List<Document> results = vectorStore.similaritySearch(SearchRequest.builder()
+				.query("The World")
+				.topK(5)
+				.similarityThresholdAll()
+				.filterExpression("genre == 'drama'")
+				.build());
+
+			assertThat(results).extracting(Document::getId).containsExactly(dramaDocument.getId());
+
+			results = vectorStore.similaritySearch(SearchRequest.builder()
+				.query("The World")
+				.topK(5)
+				.similarityThresholdAll()
+				.filterExpression("genre in ['drama']")
+				.build());
+
+			assertThat(results).extracting(Document::getId).containsExactly(dramaDocument.getId());
+
+			((TypesenseVectorStore) vectorStore).dropCollection();
+		});
+	}
+
+	@Test
 	void searchWithThreshold() {
 		this.contextRunner.run(context -> {
 
