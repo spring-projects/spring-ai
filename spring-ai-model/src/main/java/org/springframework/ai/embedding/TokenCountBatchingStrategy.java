@@ -44,11 +44,19 @@ import org.springframework.util.Assert;
  * The strategy batches documents based on their token counts, ensuring that each batch
  * does not exceed the calculated max input token count.
  *
+ * Token counts are estimated with {@link MetadataMode#EMBED} by default. For a
+ * metadata-aware {@link EmbeddingModel} that includes document metadata in the text it
+ * submits, estimating with {@link MetadataMode#NONE} undercounts that text and can
+ * produce batches larger than the configured limit. The constructor taking an explicit
+ * {@link MetadataMode} still accepts {@link MetadataMode#NONE} for models that embed the
+ * document text only.
+ *
  * @author Soby Chacko
  * @author Mark Pollack
  * @author Laura Trotta
  * @author Jihoon Kim
  * @author Yanming Zhou
+ * @author Subhash Polisetti
  * @since 1.0.0
  */
 public class TokenCountBatchingStrategy implements BatchingStrategy {
@@ -84,7 +92,7 @@ public class TokenCountBatchingStrategy implements BatchingStrategy {
 	 */
 	public TokenCountBatchingStrategy(EncodingType encodingType, int maxInputTokenCount, double reservePercentage) {
 		this(encodingType, maxInputTokenCount, reservePercentage, Document.DEFAULT_CONTENT_FORMATTER,
-				MetadataMode.NONE);
+				MetadataMode.EMBED);
 	}
 
 	/**
