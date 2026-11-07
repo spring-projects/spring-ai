@@ -19,6 +19,7 @@ package org.springframework.ai.aot;
 import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.tool.execution.DefaultToolCallResultConverter;
+import org.springframework.ai.tool.execution.TextToolCallResultConverter;
 import org.springframework.aot.hint.MemberCategory;
 import org.springframework.aot.hint.RuntimeHints;
 import org.springframework.aot.hint.RuntimeHintsRegistrar;
@@ -34,6 +35,7 @@ public class ToolRuntimeHints implements RuntimeHintsRegistrar {
 	public void registerHints(RuntimeHints hints, @Nullable ClassLoader classLoader) {
 		var mcs = MemberCategory.values();
 		hints.reflection().registerType(DefaultToolCallResultConverter.class, mcs);
+		hints.reflection().registerType(TextToolCallResultConverter.class, mcs);
 	}
 
 }
