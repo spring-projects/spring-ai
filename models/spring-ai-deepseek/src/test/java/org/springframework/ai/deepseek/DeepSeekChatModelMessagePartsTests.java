@@ -307,6 +307,19 @@ class DeepSeekChatModelMessagePartsTests {
 	// -- streaming --
 
 	@Test
+	void streamingReasoningUsageSurvivesAggregation() {
+		var usage = new DeepSeekApi.Usage(20, 10, 30, null, new DeepSeekApi.Usage.CompletionTokensDetails(7L));
+		givenStream(chunk(delta("Answer", null), null), new ChatCompletionChunk("chatcmpl-123", List.of(), 1777799928L,
+				"deepseek-v4-flash", null, "fp", "chat.completion.chunk", usage));
+
+		AtomicReference<ChatResponse> aggregated = new AtomicReference<>();
+		new MessageAggregator().aggregate(chatModel().stream(new Prompt("hi")), aggregated::set).blockLast();
+
+		assertThat(aggregated.get().getMetadata().getUsage().getReasoningOutputTokens()).isEqualTo(7L);
+		assertThat(aggregated.get().getResult().getOutput().getText()).isEqualTo("Answer");
+	}
+
+	@Test
 	void streamingReasoningTextAndToolCallProduceIndexedParts() {
 		// As DeepSeek streams a tool call: the first delta carries the id and name, the
 		// later ones an empty id and an arguments fragment
