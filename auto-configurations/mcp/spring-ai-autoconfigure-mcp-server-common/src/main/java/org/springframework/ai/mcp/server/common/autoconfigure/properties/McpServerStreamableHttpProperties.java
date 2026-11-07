@@ -25,6 +25,7 @@ import org.springframework.util.Assert;
 
 /**
  * @author Christian Tzolov
+ * @author Armen Petrosyan
  */
 @ConfigurationProperties(McpServerStreamableHttpProperties.CONFIG_PREFIX)
 public class McpServerStreamableHttpProperties {
@@ -41,6 +42,19 @@ public class McpServerStreamableHttpProperties {
 	private @Nullable Duration keepAliveInterval;
 
 	private boolean disallowDelete;
+
+	/**
+	 * Maximum number of concurrent sessions. Requests to initialize a new session are
+	 * rejected once this limit is reached.
+	 */
+	private long maxSessions = 100_000;
+
+	/**
+	 * Duration of inactivity after which a session is evicted and closed. Must be greater
+	 * than the keep-alive interval when both are set. When not set, idle sessions are
+	 * never evicted.
+	 */
+	private @Nullable Duration sessionIdleTimeout;
 
 	public String getMcpEndpoint() {
 		return this.mcpEndpoint;
@@ -66,6 +80,34 @@ public class McpServerStreamableHttpProperties {
 
 	public void setDisallowDelete(boolean disallowDelete) {
 		this.disallowDelete = disallowDelete;
+	}
+
+	/**
+	 * @since 2.1.0
+	 */
+	public long getMaxSessions() {
+		return this.maxSessions;
+	}
+
+	/**
+	 * @since 2.1.0
+	 */
+	public void setMaxSessions(long maxSessions) {
+		this.maxSessions = maxSessions;
+	}
+
+	/**
+	 * @since 2.1.0
+	 */
+	public @Nullable Duration getSessionIdleTimeout() {
+		return this.sessionIdleTimeout;
+	}
+
+	/**
+	 * @since 2.1.0
+	 */
+	public void setSessionIdleTimeout(@Nullable Duration sessionIdleTimeout) {
+		this.sessionIdleTimeout = sessionIdleTimeout;
 	}
 
 }
