@@ -41,9 +41,29 @@ public class ChatObservationProperties {
 	private boolean logPrompt = false;
 
 	/**
+	 * Whether to include prompt content as high-cardinality key-values on the observation
+	 * span.
+	 */
+	private boolean includePrompt = false;
+
+	/**
+	 * Whether to include completion content as high-cardinality key-values on the
+	 * observation span.
+	 */
+	private boolean includeCompletion = false;
+
+	/**
+	 * Maximum character size limit for prompt and completion content appended to
+	 * observations.
+	 */
+	private int maxContentLength = 2000;
+
+	/**
 	 * Whether to include error logging in the observations.
 	 */
 	private boolean includeErrorLogging = false;
+
+	private Keys keys = new Keys();
 
 	public boolean isLogCompletion() {
 		return this.logCompletion;
@@ -61,12 +81,68 @@ public class ChatObservationProperties {
 		this.logPrompt = logPrompt;
 	}
 
+	public boolean isIncludePrompt() {
+		return this.includePrompt;
+	}
+
+	public void setIncludePrompt(boolean includePrompt) {
+		this.includePrompt = includePrompt;
+	}
+
+	public boolean isIncludeCompletion() {
+		return this.includeCompletion;
+	}
+
+	public void setIncludeCompletion(boolean includeCompletion) {
+		this.includeCompletion = includeCompletion;
+	}
+
+	public int getMaxContentLength() {
+		return this.maxContentLength;
+	}
+
+	public void setMaxContentLength(int maxContentLength) {
+		this.maxContentLength = maxContentLength;
+	}
+
 	public boolean isIncludeErrorLogging() {
 		return this.includeErrorLogging;
 	}
 
 	public void setIncludeErrorLogging(boolean includeErrorLogging) {
 		this.includeErrorLogging = includeErrorLogging;
+	}
+
+	public Keys getKeys() {
+		return this.keys;
+	}
+
+	public void setKeys(Keys keys) {
+		this.keys = keys;
+	}
+
+	public static class Keys {
+
+		private String prompt = "gen_ai.prompt";
+
+		private String completion = "gen_ai.completion";
+
+		public String getPrompt() {
+			return this.prompt;
+		}
+
+		public void setPrompt(String prompt) {
+			this.prompt = prompt;
+		}
+
+		public String getCompletion() {
+			return this.completion;
+		}
+
+		public void setCompletion(String completion) {
+			this.completion = completion;
+		}
+
 	}
 
 }

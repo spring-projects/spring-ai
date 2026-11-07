@@ -32,6 +32,7 @@ import org.springframework.ai.chat.observation.ChatModelCompletionObservationHan
 import org.springframework.ai.chat.observation.ChatModelMeterObservationHandler;
 import org.springframework.ai.chat.observation.ChatModelObservationContext;
 import org.springframework.ai.chat.observation.ChatModelPromptContentObservationHandler;
+import org.springframework.ai.chat.observation.ChatObservationContentObservationHandler;
 import org.springframework.ai.model.observation.ErrorLoggingObservationHandler;
 import org.springframework.ai.observation.TracingAwareLoggingObservationHandler;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -323,6 +324,51 @@ class ChatObservationAutoConfigurationTests {
 				.doesNotHaveBean(TracingAwareLoggingObservationHandler.class)
 				.hasSingleBean(ErrorLoggingObservationHandler.class)
 				.hasBean("customErrorLoggingObservationHandler"));
+	}
+
+	@Test
+	void contentObservationHandlerDisabledByDefault() {
+		this.contextRunner
+			.run(context -> assertThat(context).doesNotHaveBean(ChatObservationContentObservationHandler.class));
+	}
+
+	@Test
+	void contentObservationHandlerEnabledWhenPromptIncluded() {
+		this.contextRunner.withPropertyValues("spring.ai.chat.observations.include-prompt=true")
+			.run(context -> assertThat(context).hasSingleBean(ChatObservationContentObservationHandler.class));
+	}
+
+	@Test
+	void contentObservationHandlerEnabledWhenCompletionIncluded() {
+		this.contextRunner.withPropertyValues("spring.ai.chat.observations.include-completion=true")
+			.run(context -> assertThat(context).hasSingleBean(ChatObservationContentObservationHandler.class));
+	}
+
+	@Test
+	void contentObservationHandlerUsesConfiguredProperties() {
+		this.contextRunner
+			.withPropertyValues("spring.ai.chat.observations.include-prompt=true",
+					"spring.ai.chat.observations.include-completion=true",
+					"spring.ai.chat.observations.max-content-length=256",
+					"spring.ai.chat.observations.keys.prompt=custom.prompt",
+					"spring.ai.chat.observations.keys.completion=custom.completion")
+			.run(context -> {
+				assertThat(context).hasSingleBean(ChatObservationContentObservationHandler.class);
+
+				var properties = context.getBean(ChatObservationProperties.class);
+				assertThat(properties.isIncludePrompt()).isTrue();
+				assertThat(properties.isIncludeCompletion()).isTrue();
+				assertThat(properties.getMaxContentLength()).isEqualTo(256);
+				assertThat(properties.getKeys().getPrompt()).isEqualTo("custom.prompt");
+				assertThat(properties.getKeys().getCompletion()).isEqualTo("custom.completion");
+			});
+	}
+
+	@Test
+	void contentObservationHandlerEnabledWithoutTracer() {
+		this.contextRunner.withClassLoader(new FilteredClassLoader(Tracer.class))
+			.withPropertyValues("spring.ai.chat.observations.include-prompt=true")
+			.run(context -> assertThat(context).hasSingleBean(ChatObservationContentObservationHandler.class));
 	}
 
 	@Configuration(proxyBeanMethods = false)
