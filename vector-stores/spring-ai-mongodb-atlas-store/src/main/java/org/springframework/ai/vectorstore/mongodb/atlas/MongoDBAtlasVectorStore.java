@@ -43,6 +43,8 @@ import org.springframework.ai.vectorstore.observation.AbstractObservationVectorS
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.data.mongodb.UncategorizedMongoDbException;
+import org.springframework.data.mongodb.core.BulkOperations;
+import org.springframework.data.mongodb.core.FindAndReplaceOptions;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.query.BasicQuery;
@@ -175,6 +177,8 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 
 	private final boolean initializeSchema;
 
+	private final @Nullable Integer bulkUpsertBatchSize;
+
 	// Cache for vectorDimensions(); only a known size is stored.
 	private volatile int resolvedVectorDimensions = INVALID_EMBEDDING_DIMENSION;
 
@@ -191,6 +195,7 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 		this.metadataFieldsToFilter = builder.metadataFieldsToFilter;
 		this.filterExpressionConverter = builder.filterExpressionConverter;
 		this.initializeSchema = builder.initializeSchema;
+		this.bulkUpsertBatchSize = builder.bulkUpsertBatchSize;
 	}
 
 	@Override
@@ -420,20 +425,48 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 			checkDimensions("Embedding at index " + i, entries.get(i).embedding().length, expected);
 		}
 
-		// Saving a whole document with the same _id replaces it, so omitted metadata keys
-		// are dropped. The document is converted the way add does, then the vector is
-		// moved to the path the index covers: under any other name the replacement would
-		// remove the indexed field and the document could no longer be found.
-		for (EmbeddedDocument entry : entries) {
-			Document document = entry.document();
-			MongoDBDocument mdbDocument = new MongoDBDocument(document.getId(),
-					Objects.requireNonNullElse(document.getText(), ""), document.getMetadata(), entry.embedding());
-			org.bson.Document stored = new org.bson.Document();
-			this.mongoTemplate.getConverter().write(mdbDocument, stored);
-			putAtPath(stored, this.pathName, stored.remove(EMBEDDING_FIELD_NAME));
-			// Through the template, so its write concern applies as it does for add
-			this.mongoTemplate.save(stored, this.collectionName);
+		if (this.bulkUpsertBatchSize != null) {
+			bulkReplace(entries, this.bulkUpsertBatchSize);
+			return;
 		}
+		for (EmbeddedDocument entry : entries) {
+			// Through the template, so its write concern applies as it does for add
+			this.mongoTemplate.save(toStoredDocument(entry), this.collectionName);
+		}
+	}
+
+	/**
+	 * Replaces the documents with ordered bulk writes. Ordered, so that the last entry
+	 * wins when an id repeats and nothing after a failed write is applied, as with one
+	 * save per document. A bulk write uses the write concern of the template but does not
+	 * go through its {@code WriteConcernResolver}.
+	 */
+	private void bulkReplace(List<EmbeddedDocument> entries, int batchSize) {
+		for (int start = 0; start < entries.size(); start += batchSize) {
+			BulkOperations bulk = this.mongoTemplate.bulkOps(BulkOperations.BulkMode.ORDERED, this.collectionName);
+			for (EmbeddedDocument entry : entries.subList(start, Math.min(start + batchSize, entries.size()))) {
+				org.bson.Document stored = toStoredDocument(entry);
+				Query sameId = new Query(Criteria.where("_id").is(stored.get("_id")));
+				bulk.replaceOne(sameId, stored, FindAndReplaceOptions.options().upsert());
+			}
+			bulk.execute();
+		}
+	}
+
+	/**
+	 * Writing a whole document with the same _id replaces it, so omitted metadata keys
+	 * are dropped. The document is converted the way add does, then the vector is moved
+	 * to the path the index covers: under any other name the replacement would remove the
+	 * indexed field and the document could no longer be found.
+	 */
+	private org.bson.Document toStoredDocument(EmbeddedDocument entry) {
+		Document document = entry.document();
+		MongoDBDocument mdbDocument = new MongoDBDocument(document.getId(),
+				Objects.requireNonNullElse(document.getText(), ""), document.getMetadata(), entry.embedding());
+		org.bson.Document stored = new org.bson.Document();
+		this.mongoTemplate.getConverter().write(mdbDocument, stored);
+		putAtPath(stored, this.pathName, stored.remove(EMBEDDING_FIELD_NAME));
+		return stored;
 	}
 
 	@Override
@@ -524,6 +557,8 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 		private List<String> metadataFieldsToFilter = Collections.emptyList();
 
 		private boolean initializeSchema = false;
+
+		private @Nullable Integer bulkUpsertBatchSize;
 
 		private MongoDBAtlasFilterExpressionConverter filterExpressionConverter = new MongoDBAtlasFilterExpressionConverter();
 
@@ -616,6 +651,23 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 		public Builder filterExpressionConverter(MongoDBAtlasFilterExpressionConverter converter) {
 			Assert.notNull(converter, "filterExpressionConverter must not be null");
 			this.filterExpressionConverter = converter;
+			return this;
+		}
+
+		/**
+		 * Writes upserts with ordered bulk replacements in batches of at most this size,
+		 * instead of saving each document on its own, which is the default. A bulk write
+		 * uses the write concern of the {@link MongoTemplate} but does not go through a
+		 * custom {@code WriteConcernResolver}, so leave this unset if you rely on one.
+		 * @param batchSize the maximum number of documents in one bulk write, must be
+		 * positive
+		 * @return the builder instance
+		 * @throws IllegalArgumentException if batchSize is not positive
+		 * @since 2.1.0
+		 */
+		public Builder bulkUpsertBatchSize(int batchSize) {
+			Assert.isTrue(batchSize > 0, "bulkUpsertBatchSize must be positive");
+			this.bulkUpsertBatchSize = batchSize;
 			return this;
 		}
 

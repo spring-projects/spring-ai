@@ -181,6 +181,12 @@ Once the size is known it is kept, so a later failure to read the index does not
 Atlas updates the search index shortly after a write, so a document can take a moment to show up in a search.
 See xref:api/vectordbs.adoc#writing-precomputed-embeddings[Writing User-Supplied Embeddings] for details.
 
+By default each document is saved on its own.
+To reduce the number of database requests for larger batches, set `bulkUpsertBatchSize` on the builder, which writes ordered bulk replacements of at most that many documents.
+Documents are still written in the order given, so the last entry wins when an id repeats, and a failed write leaves the earlier documents in place and skips the later ones.
+A failed write is then reported as a `BulkOperationException` rather than, for example, a `DuplicateKeyException`.
+A bulk write uses the write concern of the `MongoTemplate` but does not go through a custom `WriteConcernResolver`, so leave this option unset if you rely on one.
+
 == Metadata Filtering
 
 You can leverage the generic, portable xref:api/vectordbs.adoc#metadata-filters[metadata filters] with MongoDB Atlas as well.
