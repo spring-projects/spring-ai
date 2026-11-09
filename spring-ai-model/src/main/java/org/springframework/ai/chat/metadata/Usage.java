@@ -69,6 +69,8 @@ public interface Usage {
 
 	/**
 	 * Returns the output tokens used for reasoning, when reported by the provider.
+	 * Whether these tokens are also counted in {@link #getCompletionTokens()} depends on
+	 * the provider.
 	 * @return the reasoning output token count, or {@code null} when unavailable
 	 * @since 2.1.0
 	 */

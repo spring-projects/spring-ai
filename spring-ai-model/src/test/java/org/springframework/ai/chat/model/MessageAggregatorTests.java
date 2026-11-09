@@ -20,10 +20,12 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.Sinks;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.AssistantMessage.ToolCall;
@@ -85,6 +87,32 @@ class MessageAggregatorTests {
 		new MessageAggregator().aggregate(responses, aggregated::set).blockLast();
 
 		assertThat(aggregated.get().getMetadata().getRateLimit()).isInstanceOf(EmptyRateLimit.class);
+	}
+
+	// Concurrent subscriptions share one set of counters, so the reasoning count of the
+	// subscription that completes first must not show up in the second one.
+	@Test
+	void completedSubscriptionDoesNotLeakReasoningTokensIntoAConcurrentOne() {
+		Sinks.Many<ChatResponse> first = Sinks.many().unicast().onBackpressureBuffer();
+		Sinks.Many<ChatResponse> second = Sinks.many().unicast().onBackpressureBuffer();
+		AtomicInteger subscriptions = new AtomicInteger();
+		List<ChatResponse> aggregated = new ArrayList<>();
+		Flux<ChatResponse> flux = new MessageAggregator().aggregate(
+				Flux.defer(() -> subscriptions.getAndIncrement() == 0 ? first.asFlux() : second.asFlux()),
+				aggregated::add);
+		flux.subscribe();
+		flux.subscribe();
+
+		first.tryEmitNext(new ChatResponse(List.of(),
+				ChatResponseMetadata.builder().usage(new DefaultUsage(1, 2, 3, null, null, null, 5L)).build()));
+		first.tryEmitComplete();
+		second.tryEmitNext(
+				new ChatResponse(List.of(), ChatResponseMetadata.builder().usage(new DefaultUsage(4, 5, 9)).build()));
+		second.tryEmitComplete();
+
+		assertThat(aggregated).hasSize(2);
+		assertThat(aggregated.get(0).getMetadata().getUsage().getReasoningOutputTokens()).isEqualTo(5L);
+		assertThat(aggregated.get(1).getMetadata().getUsage().getReasoningOutputTokens()).isNull();
 	}
 
 	@Test

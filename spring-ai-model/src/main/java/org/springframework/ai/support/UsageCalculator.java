@@ -42,7 +42,7 @@ public final class UsageCalculator {
 	 * Note: when the two usages are actually summed, the result is a plain
 	 * {@link DefaultUsage} and the provider-specific {@link Usage#getNativeUsage() native
 	 * usage} object is <em>not</em> preserved (it cannot be merged across responses).
-	 * Only the token counts and cache metrics carry over. The original
+	 * Only the token counts, cache metrics and reasoning tokens carry over. The original
 	 * {@code currentUsage} (native usage included) is returned unchanged when there is
 	 * nothing to accumulate.
 	 * @param currentUsage the current usage.
@@ -98,7 +98,8 @@ public final class UsageCalculator {
 								? usageFromPreviousChatResponse.getReasoningOutputTokens() : 0L);
 			}
 			// Native usage is passed as null: provider-specific objects cannot be merged
-			// across responses, so only token counts and cache metrics are accumulated.
+			// across responses, so only token counts, cache metrics and reasoning tokens
+			// are accumulated.
 			return new DefaultUsage(promptTokens, generationTokens, totalTokens, null, cacheRead, cacheWrite,
 					reasoning);
 		}

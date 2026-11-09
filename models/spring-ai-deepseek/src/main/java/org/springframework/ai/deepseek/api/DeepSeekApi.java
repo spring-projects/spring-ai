@@ -1149,7 +1149,6 @@ public class DeepSeekApi {
 		 * @param promptTokens the prompt token count
 		 * @param totalTokens the total token count
 		 * @param promptTokensDetails the prompt token details
-		 * @since 2.1.0
 		 */
 		public Usage(Integer completionTokens, Integer promptTokens, Integer totalTokens,
 				@Nullable PromptTokensDetails promptTokensDetails) {

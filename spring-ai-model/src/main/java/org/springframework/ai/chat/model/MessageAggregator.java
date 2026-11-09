@@ -204,7 +204,8 @@ public class MessageAggregator {
 					metadataUsageTotalTokensRef.get());
 			if (reasoningOutputTokensRef.get() != null) {
 				usage = new org.springframework.ai.chat.metadata.DefaultUsage(usage.getPromptTokens(),
-						usage.getCompletionTokens(), usage.getTotalTokens(), usage.getNativeUsage(), null, null,
+						usage.getCompletionTokens(), usage.getTotalTokens(), usage.getNativeUsage(),
+						usage.getCacheReadInputTokens(), usage.getCacheWriteInputTokens(),
 						reasoningOutputTokensRef.get());
 			}
 
@@ -266,6 +267,7 @@ public class MessageAggregator {
 			metadataUsagePromptTokensRef.set(0);
 			metadataUsageGenerationTokensRef.set(0);
 			metadataUsageTotalTokensRef.set(0);
+			reasoningOutputTokensRef.set(null);
 			metadataPromptMetadataRef.set(PromptMetadata.empty());
 			metadataRateLimitRef.set(new EmptyRateLimit());
 
