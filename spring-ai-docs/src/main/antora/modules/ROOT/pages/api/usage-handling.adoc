@@ -98,12 +98,20 @@ interface Usage {
 
 	Object getNativeUsage();
 
+	default Long getReasoningOutputTokens() { ... }
+
+	default Long getCacheReadInputTokens() { ... }
+
+	default Long getCacheWriteInputTokens() { ... }
+
 }
 ----
 
 The method names are self-explanatory: they tell you the tokens that the AI required to process the `Prompt` and generate a response.
 `totalTokens` is the sum of `promptTokens` and `completionTokens`.
 Spring AI computes this by default, but the information is also returned in the AI response from providers like OpenAI.
+`getReasoningOutputTokens()`, `getCacheReadInputTokens()` and `getCacheWriteInputTokens()` return `null` when the provider does not report a value.
+Whether the reasoning tokens are also included in `getCompletionTokens()` depends on the provider.
 
 === Using with ChatModel
 
@@ -148,6 +156,7 @@ public class ChatService {
 		System.out.println("Prompt Tokens: " + usage.getPromptTokens());
 		System.out.println("Completion Tokens: " + usage.getCompletionTokens());
 		System.out.println("Total Tokens: " + usage.getTotalTokens());
+		System.out.println("Reasoning Output Tokens: " + usage.getReasoningOutputTokens()); // null when not reported
 
 		// Access native OpenAI usage data with detailed token information
 		if (usage.getNativeUsage() instanceof com.openai.models.completions.CompletionUsage nativeUsage) {
@@ -242,7 +251,7 @@ Usage usage = response.getMetadata().getUsage();
 int totalTokens = usage.getTotalTokens();
 ----
 
-The cumulative total is computed via `org.springframework.ai.support.UsageCalculator`, which sums the standard token counts and the unified cache metrics (`getCacheReadInputTokens()` / `getCacheWriteInputTokens()`).
+The cumulative total is computed via `org.springframework.ai.support.UsageCalculator`, which sums the standard token counts, the unified cache metrics (`getCacheReadInputTokens()` / `getCacheWriteInputTokens()`) and the reasoning output tokens (`getReasoningOutputTokens()`).
 
 WARNING: Provider-specific native usage objects cannot be merged across responses.
 As a result, `getNativeUsage()` returns `null` once usage has been aggregated across more than one model call (for example after a tool-calling loop); it is preserved only for single-call responses.

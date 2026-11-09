@@ -67,6 +67,22 @@ In 2.1.0-M1 and 2.1.0-RC1, `MessageAggregator` appended the arguments of partial
 It now skips them, so a custom chat model that streams a tool call only as partial `ToolCallPart`s aggregates to a message without that tool call.
 Such a chat model must also emit the complete `ToolCallPart`, at the same index as its deltas, as the built-in chat models do.
 
+=== Reasoning Token Usage
+
+==== New: `Usage.getReasoningOutputTokens()`
+
+The `org.springframework.ai.chat.metadata.Usage` interface gains a default method, `getReasoningOutputTokens()`, which returns `null` when the provider doesn't report a value.
+OpenAI (Chat Completions and Responses), Anthropic, Google GenAI and DeepSeek populate it; Google GenAI does so unless `includeExtendedUsageMetadata` is turned off.
+The count is accumulated across the model calls of a tool-calling loop.
+When reported, it is also recorded in the new `gen_ai.usage.reasoning.output_tokens` high-cardinality key-value of the chat model observation.
+See xref:observability/index.adoc#_chat_model[Chat Model observability] and xref:api/usage-handling.adoc#Usage[Usage Handling].
+
+===== Impact
+
+`DeepSeekApi.Usage` gains a fifth record component, `completionTokensDetails`.
+The four-argument constructor is kept, so code that constructs the record keeps compiling.
+Code that deconstructs it with a record pattern must add the new component.
+
 === Anthropic
 
 ==== Changed: Anthropic Java SDK 3.x
