@@ -657,6 +657,14 @@ class ResponsesItemMapperTests {
 		assertThat(usage.getNativeUsage()).isNotNull();
 	}
 
+	@Test
+	void usageKeepsAReportedZeroReasoningTokenCount() {
+		// The fixture reports output_tokens_details.reasoning_tokens as 0.
+		var usage = ResponsesItemMapper.toUsage(fixture("incomplete-max-output-tokens.json"));
+
+		assertThat(usage.getReasoningOutputTokens()).isZero();
+	}
+
 	/**
 	 * {@code input_tokens_details} is a required field of the usage object, so the SDK's
 	 * typed accessor for it throws when it is absent. An OpenAI-compatible backend may

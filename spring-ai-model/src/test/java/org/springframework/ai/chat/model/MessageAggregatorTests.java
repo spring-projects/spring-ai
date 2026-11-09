@@ -67,6 +67,30 @@ class MessageAggregatorTests {
 	}
 
 	@Test
+	void reasoningTokensKeepAReportedZero() {
+		var firstUsage = new DefaultUsage(10, 20, 30);
+		var finalUsage = new DefaultUsage(10, 25, 35, null, null, null, 0L);
+		Flux<ChatResponse> responses = Flux.just(
+				new ChatResponse(List.of(), ChatResponseMetadata.builder().usage(firstUsage).build()),
+				new ChatResponse(List.of(), ChatResponseMetadata.builder().usage(finalUsage).build()),
+				new ChatResponse(List.of()));
+		AtomicReference<ChatResponse> aggregated = new AtomicReference<>();
+		new MessageAggregator().aggregate(responses, aggregated::set).blockLast();
+		assertThat(aggregated.get().getMetadata().getUsage().getReasoningOutputTokens()).isZero();
+	}
+
+	@Test
+	void reasoningTokensStayUnavailableWhenNoChunkReportsThem() {
+		var usageWithoutReasoning = new DefaultUsage(10, 20, 30);
+		Flux<ChatResponse> responses = Flux.just(
+				new ChatResponse(List.of(), ChatResponseMetadata.builder().usage(usageWithoutReasoning).build()),
+				new ChatResponse(List.of()));
+		AtomicReference<ChatResponse> aggregated = new AtomicReference<>();
+		new MessageAggregator().aggregate(responses, aggregated::set).blockLast();
+		assertThat(aggregated.get().getMetadata().getUsage().getReasoningOutputTokens()).isNull();
+	}
+
+	@Test
 	void rateLimitFromStreamedChunkSurvivesAggregation() {
 		RateLimit rateLimit = new TestRateLimit();
 

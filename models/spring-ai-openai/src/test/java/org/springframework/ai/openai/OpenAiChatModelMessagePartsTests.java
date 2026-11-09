@@ -104,17 +104,18 @@ class OpenAiChatModelMessagePartsTests {
 
 	// -- inbound, non-streaming --
 
-	@Test
-	void reasoningTokenUsageIsMappedFromChatCompletions() {
+	@ParameterizedTest
+	@CsvSource({ "0", "7" })
+	void reasoningTokenUsageIsMappedFromChatCompletions(long tokens) {
 		CompletionUsage usage = CompletionUsage.builder()
 			.promptTokens(10)
 			.completionTokens(20)
 			.totalTokens(30)
-			.completionTokensDetails(CompletionUsage.CompletionTokensDetails.builder().reasoningTokens(7).build())
+			.completionTokensDetails(CompletionUsage.CompletionTokensDetails.builder().reasoningTokens(tokens).build())
 			.build();
 		givenCompletion(assistantMessage().content("hello").build(), usage);
 		ChatResponse response = chatModel("test-model").call(new Prompt("hi"));
-		assertThat(response.getMetadata().getUsage().getReasoningOutputTokens()).isEqualTo(7L);
+		assertThat(response.getMetadata().getUsage().getReasoningOutputTokens()).isEqualTo(tokens);
 	}
 
 	// A malformed optional breakdown must not fail an otherwise valid call.

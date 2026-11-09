@@ -46,6 +46,13 @@ class UsageCalculatorTests {
 	}
 
 	@Test
+	void getCumulativeUsageKeepsAReportedZeroReasoningTokenCount() {
+		ChatResponse previous = responseWith(new DefaultUsage(1, 2, 3, null, null, null, 0L));
+		assertThat(UsageCalculator.getCumulativeUsage(new DefaultUsage(10, 20), previous).getReasoningOutputTokens())
+			.isZero();
+	}
+
+	@Test
 	void getCumulativeUsageReturnsCurrentWhenPreviousChatResponseIsNull() {
 		Usage current = new DefaultUsage(10, 20, 30);
 
