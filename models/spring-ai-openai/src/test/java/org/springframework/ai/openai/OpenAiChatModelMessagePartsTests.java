@@ -50,6 +50,8 @@ import com.openai.services.blocking.ChatService;
 import com.openai.services.blocking.chat.ChatCompletionService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Flux;
@@ -113,6 +115,20 @@ class OpenAiChatModelMessagePartsTests {
 		givenCompletion(assistantMessage().content("hello").build(), usage);
 		ChatResponse response = chatModel("test-model").call(new Prompt("hi"));
 		assertThat(response.getMetadata().getUsage().getReasoningOutputTokens()).isEqualTo(7L);
+	}
+
+	// A malformed optional breakdown must not fail an otherwise valid call.
+	@ParameterizedTest
+	@CsvSource(delimiter = '|',
+			value = { "{\"reasoning_tokens\":\"abc\"}|", "\"n/a\"|", "{\"reasoning_tokens\":315.0}|315" })
+	void malformedReasoningTokenDetailsDoNotFailTheCall(String details, Long expected) throws Exception {
+		CompletionUsage usage = ObjectMappers.jsonMapper()
+			.readValue("{\"prompt_tokens\":10,\"completion_tokens\":20,\"total_tokens\":30,"
+					+ "\"completion_tokens_details\":" + details + "}", CompletionUsage.class);
+		givenCompletion(assistantMessage().content("hello").build(), usage);
+		ChatResponse response = chatModel("test-model").call(new Prompt("hi"));
+		assertThat(response.getMetadata().getUsage().getCompletionTokens()).isEqualTo(20);
+		assertThat(response.getMetadata().getUsage().getReasoningOutputTokens()).isEqualTo(expected);
 	}
 
 	@Test

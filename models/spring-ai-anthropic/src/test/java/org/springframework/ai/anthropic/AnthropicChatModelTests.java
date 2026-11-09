@@ -211,6 +211,33 @@ class AnthropicChatModelTests {
 			.isEqualTo(7L);
 	}
 
+	// The breakdown is optional, so a malformed container must not fail the call.
+	@Test
+	void malformedOutputTokensDetailsDoNotFailTheCall() throws Exception {
+		Message message = createMockMessage("Hello!", StopReason.END_TURN);
+		given(message.usage()).willReturn(ObjectMappers.jsonMapper()
+			.readValue("{\"input_tokens\":10,\"output_tokens\":20,\"output_tokens_details\":\"n/a\"}", Usage.class));
+		given(this.messageService.create(any(MessageCreateParams.class))).willReturn(message);
+		ChatResponse response = this.chatModel.call(new Prompt("Hello"));
+		assertThat(response.getMetadata().getUsage().getCompletionTokens()).isEqualTo(20);
+		assertThat(response.getMetadata().getUsage().getReasoningOutputTokens()).isNull();
+	}
+
+	@Test
+	void malformedOutputTokensDetailsDoNotFailTheStream() throws Exception {
+		RawMessageStreamEvent start = messageStartEvent();
+		given(start.messageStart().orElseThrow().message().usage()).willReturn(ObjectMappers.jsonMapper()
+			.readValue("{\"input_tokens\":10,\"output_tokens\":1,\"output_tokens_details\":\"n/a\"}", Usage.class));
+		var delta = messageDeltaEvent(StopReason.END_TURN).messageDelta().orElseThrow();
+		var malformedDelta = RawMessageStreamEvent.ofMessageDelta(delta.toBuilder()
+			.usage(delta.usage().toBuilder().outputTokensDetails(JsonValue.from("n/a")).build())
+			.build());
+		givenStream(List.of(start, malformedDelta));
+		var responses = this.chatModel.stream(new Prompt("Hello")).collectList().block();
+		assertThat(responses).isNotEmpty();
+		assertThat(responses.get(responses.size() - 1).getMetadata().getUsage().getReasoningOutputTokens()).isNull();
+	}
+
 	@Test
 	void ignoresSamplingOptionsAndLogsWarning(CapturedOutput output) {
 		Message mockResponse = createMockMessage("Hello!", StopReason.END_TURN);

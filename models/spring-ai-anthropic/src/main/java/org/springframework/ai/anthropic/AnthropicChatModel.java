@@ -29,6 +29,7 @@ import java.util.TreeMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Supplier;
 
 import com.anthropic.client.AnthropicClient;
 import com.anthropic.client.AnthropicClientAsync;
@@ -38,6 +39,7 @@ import com.anthropic.core.RequestOptions;
 import com.anthropic.core.http.HttpResponse;
 import com.anthropic.core.http.HttpResponseFor;
 import com.anthropic.core.http.StreamResponse;
+import com.anthropic.errors.AnthropicInvalidDataException;
 import com.anthropic.models.messages.Base64ImageSource;
 import com.anthropic.models.messages.Base64PdfSource;
 import com.anthropic.models.messages.CacheControlEphemeral;
@@ -1446,11 +1448,17 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		return new DefaultUsage(Integer.valueOf(Math.toIntExact(promptTokens)),
 				Integer.valueOf(Math.toIntExact(outputTokens)),
 				Integer.valueOf(Math.toIntExact(promptTokens + outputTokens)), usage, cacheRead, cacheWrite,
-				reasoningOutputTokens(usage.outputTokensDetails()).orElse(null));
+				reasoningOutputTokens(usage::outputTokensDetails).orElse(null));
 	}
 
-	private static Optional<Long> reasoningOutputTokens(Optional<OutputTokensDetails> details) {
-		return details.flatMap(value -> value._thinkingTokens().asNumber()).map(Number::longValue);
+	private static Optional<Long> reasoningOutputTokens(Supplier<Optional<OutputTokensDetails>> details) {
+		try {
+			return details.get().flatMap(value -> value._thinkingTokens().asNumber()).map(Number::longValue);
+		}
+		catch (AnthropicInvalidDataException ex) {
+			// The breakdown is optional: a malformed value must not fail the request.
+			return Optional.empty();
+		}
 	}
 
 	/**
@@ -1956,14 +1964,14 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			this.inputTokens.set(usage.inputTokens());
 			this.cacheReadInputTokens.set(usage.cacheReadInputTokens().orElse(null));
 			this.cacheCreationInputTokens.set(usage.cacheCreationInputTokens().orElse(null));
-			this.reasoningOutputTokens.set(reasoningOutputTokens(usage.outputTokensDetails()).orElse(null));
+			this.reasoningOutputTokens.set(reasoningOutputTokens(usage::outputTokensDetails).orElse(null));
 		}
 
 		void updateUsage(MessageDeltaUsage usage) {
 			usage.inputTokens().ifPresent(this.inputTokens::set);
 			usage.cacheReadInputTokens().ifPresent(this.cacheReadInputTokens::set);
 			usage.cacheCreationInputTokens().ifPresent(this.cacheCreationInputTokens::set);
-			reasoningOutputTokens(usage.outputTokensDetails()).ifPresent(this.reasoningOutputTokens::set);
+			reasoningOutputTokens(usage::outputTokensDetails).ifPresent(this.reasoningOutputTokens::set);
 		}
 
 		String getMessageId() {
