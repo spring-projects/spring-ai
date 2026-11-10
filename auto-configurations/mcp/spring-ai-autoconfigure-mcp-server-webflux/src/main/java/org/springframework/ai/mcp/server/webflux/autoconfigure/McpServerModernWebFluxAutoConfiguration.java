@@ -104,6 +104,7 @@ public class McpServerModernWebFluxAutoConfiguration {
 
 		@Override
 		public void start() {
+			this.transport.start();
 			this.running = true;
 		}
 
@@ -118,6 +119,11 @@ public class McpServerModernWebFluxAutoConfiguration {
 		@Override
 		public boolean isRunning() {
 			return this.running;
+		}
+
+		@Override
+		public boolean isPauseable() {
+			return false;
 		}
 
 	}

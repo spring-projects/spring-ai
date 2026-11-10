@@ -546,6 +546,14 @@ class WebFluxMcpTransportTests {
 			.exchange()
 			.expectStatus()
 			.isEqualTo(HttpStatus.SERVICE_UNAVAILABLE);
+
+		transport.start();
+
+		post(client, McpSchema.METHOD_TOOLS_LIST,
+				ModernRequests.request(1, McpSchema.METHOD_TOOLS_LIST, ModernRequests.params()))
+			.exchange()
+			.expectStatus()
+			.isOk();
 	}
 
 	@Test

@@ -16,6 +16,7 @@
 
 package org.springframework.ai.mcp.server.webmvc.autoconfigure;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
@@ -31,10 +32,12 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.SmartLifecycle;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.servlet.function.RouterFunction;
 import org.springframework.web.servlet.function.ServerRequest;
+import org.springframework.web.servlet.function.ServerResponse;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -95,6 +98,30 @@ class McpServerModernWebMvcAutoConfigurationIT {
 			.run(context -> assertThat(context.getBean(WebMvcModernServerTransport.class))
 				.extracting("contextExtractor")
 				.isSameAs(context.getBean(McpTransportContextExtractor.class)));
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void transportServesRequestsAgainAfterLifecycleStopAndStart() {
+		this.contextRunner.run(context -> {
+			RouterFunction<ServerResponse> router = context.getBean(RouterFunction.class);
+			SmartLifecycle lifecycle = context.getBean(SmartLifecycle.class);
+			assertThat(lifecycle.isPauseable()).isFalse();
+
+			context.stop();
+			assertThat(routedStatus(router, "/mcp")).isEqualTo(503);
+
+			context.start();
+			assertThat(routedStatus(router, "/mcp")).isNotEqualTo(503);
+		});
+	}
+
+	private static int routedStatus(RouterFunction<ServerResponse> router, String path) throws Exception {
+		MockHttpServletRequest servletRequest = new MockHttpServletRequest("POST", path);
+		servletRequest.setContentType(MediaType.APPLICATION_JSON_VALUE);
+		servletRequest.setContent("{}".getBytes(StandardCharsets.UTF_8));
+		ServerRequest request = ServerRequest.create(servletRequest, List.of());
+		return router.route(request).orElseThrow().handle(request).statusCode().value();
 	}
 
 	@Test

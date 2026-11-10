@@ -515,6 +515,11 @@ class WebMvcModernServerTransportIT {
 		HttpResponse<String> response = send(post("tools/list", params()).build());
 
 		assertThat(response.statusCode()).isEqualTo(503);
+
+		this.transport.start();
+		HttpResponse<String> reopened = send(post("tools/list", params()).build());
+
+		assertThat(reopened.statusCode()).isEqualTo(200);
 	}
 
 	@Test

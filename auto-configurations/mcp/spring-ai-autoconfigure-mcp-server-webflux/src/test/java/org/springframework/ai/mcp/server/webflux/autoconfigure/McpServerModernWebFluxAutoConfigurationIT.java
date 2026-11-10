@@ -106,6 +106,21 @@ class McpServerModernWebFluxAutoConfigurationIT {
 	}
 
 	@Test
+	void transportServesRequestsAgainAfterLifecycleStopAndStart() {
+		this.contextRunner.run(context -> {
+			RouterFunction<?> router = context.getBean(RouterFunction.class);
+			SmartLifecycle lifecycle = context.getBean(SmartLifecycle.class);
+			assertThat(lifecycle.isPauseable()).isFalse();
+
+			context.stop();
+			assertThat(routedStatus(router, "/mcp")).isEqualTo(503);
+
+			context.start();
+			assertThat(routedStatus(router, "/mcp")).isNotEqualTo(503);
+		});
+	}
+
+	@Test
 	void inactiveWhenDisabledOrOtherProtocolOrStdio() {
 		this.contextRunner.withPropertyValues("spring.ai.mcp.server.enabled=false")
 			.run(context -> assertThat(context).doesNotHaveBean(WebFluxMcpTransport.class));
