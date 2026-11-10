@@ -161,6 +161,13 @@ public final class WebFluxMcpTransport {
 	}
 
 	/**
+	 * Resume accepting requests after a {@link #closeGracefully() graceful close}.
+	 */
+	public void start() {
+		this.closing = false;
+	}
+
+	/**
 	 * Stop accepting new requests. If the request manager is a {@link McpServer}, also
 	 * asks it to end active {@code subscriptions/listen} streams gracefully.
 	 */

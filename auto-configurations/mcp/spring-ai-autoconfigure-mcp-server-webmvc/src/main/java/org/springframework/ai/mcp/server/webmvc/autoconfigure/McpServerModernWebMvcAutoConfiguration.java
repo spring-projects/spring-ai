@@ -107,6 +107,7 @@ public class McpServerModernWebMvcAutoConfiguration {
 
 		@Override
 		public void start() {
+			this.transport.start();
 			this.running = true;
 		}
 
@@ -121,6 +122,11 @@ public class McpServerModernWebMvcAutoConfiguration {
 		@Override
 		public boolean isRunning() {
 			return this.running;
+		}
+
+		@Override
+		public boolean isPauseable() {
+			return false;
 		}
 
 	}
