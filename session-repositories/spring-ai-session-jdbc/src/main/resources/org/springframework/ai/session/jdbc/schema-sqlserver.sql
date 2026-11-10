@@ -2,9 +2,10 @@
 -- its indexes are declared inline, to keep the script safe to re-run
 -- (spring.ai.session.repository.jdbc.initialize-schema=always). Requires SQL Server 2016+.
 --
--- Keys compare byte for byte, as on the other databases, not with the server's
--- case-insensitive default collation. They are NVARCHAR because the driver sends strings
--- as Unicode by default, so lookups use the indexes without a conversion.
+-- Keys are case-sensitive, as on the other databases, not compared with the server's
+-- case-insensitive default collation. SQL Server still ignores trailing spaces when it
+-- compares them. They are NVARCHAR because the driver sends strings as Unicode by
+-- default, so lookups use the indexes without a conversion.
 IF OBJECT_ID(N'AI_SESSION', N'U') IS NULL
 CREATE TABLE AI_SESSION (
     id            NVARCHAR(255) COLLATE Latin1_General_100_BIN2 NOT NULL PRIMARY KEY,

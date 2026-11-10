@@ -113,8 +113,10 @@ A `lastN` window is `ORDER BY seq DESC LIMIT ?`, or `OFFSET 0 ROWS FETCH NEXT ? 
 When the window lands mid-turn, one bounded extra query fetches the rows between the nearest preceding user message and the window, served by the `(session_id, seq)` index, so the window keeps turns whole.
 The newest boundary of a session, read before every view, is served by the `(session_id, event_type, seq)` index.
 
-*Keys compare byte for byte.*
+*Keys are case-sensitive.*
 On MySQL and MariaDB the id and index columns use the `utf8mb4_bin` collation, and on SQL Server the `Latin1_General_100_BIN2` collation, so `findByMetadata` and the id lookups are case-sensitive, as on the other databases.
+These three databases ignore trailing spaces when they compare keys, so a session id or an event id must not differ from another only by trailing spaces: `abc` and `abc` followed by a space are the same id there, and different ids on PostgreSQL and H2.
+`findByMetadata` is not affected, because it compares the whole value again on the sessions the query returns.
 
 *Indexed attributes.*
 On every save the repository copies the metadata entries whose keys are configured as indexed, always including `SessionAttributes.PRINCIPAL_NAME`, into `AI_SESSION_INDEX`, one row per attribute, on the first 512 characters of the value; the whole value is then compared on the sessions the query returns, so the row is a prefix index, not the match.
