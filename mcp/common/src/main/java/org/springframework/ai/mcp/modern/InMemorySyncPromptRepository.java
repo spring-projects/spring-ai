@@ -18,6 +18,8 @@ package org.springframework.ai.mcp.modern;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 import io.modelcontextprotocol.modern.McpSchema.Prompt;
 import io.modelcontextprotocol.modern.server.McpRequestContext;
@@ -44,8 +46,7 @@ import org.springframework.util.Assert;
  */
 public final class InMemorySyncPromptRepository implements McpSyncPromptRepository {
 
-	private final Catalogue<McpSyncPrompt> prompts = new Catalogue<>(prompt -> prompt.definition().name(), "Prompt",
-			"name");
+	private final Map<String, McpSyncPrompt> prompts = new ConcurrentSkipListMap<>();
 
 	private final @Nullable McpChangeBroadcaster changeBroadcaster;
 
@@ -58,7 +59,7 @@ public final class InMemorySyncPromptRepository implements McpSyncPromptReposito
 		this.changeBroadcaster = builder.changeBroadcaster;
 		this.pageSize = builder.pageSize;
 		this.completionSupported = builder.completionSupported;
-		builder.prompts.forEach(this.prompts::put);
+		builder.prompts.forEach(this::put);
 	}
 
 	public static Builder builder() {
@@ -70,7 +71,7 @@ public final class InMemorySyncPromptRepository implements McpSyncPromptReposito
 	 * @throws IllegalArgumentException if a prompt with the same name exists
 	 */
 	public void add(McpSyncPrompt prompt) {
-		this.prompts.put(prompt);
+		put(prompt);
 		broadcastListChanged();
 	}
 
@@ -80,7 +81,7 @@ public final class InMemorySyncPromptRepository implements McpSyncPromptReposito
 	 */
 	public boolean remove(String name) {
 		Assert.hasText(name, "name must not be empty");
-		boolean removed = this.prompts.remove(name);
+		boolean removed = this.prompts.remove(name) != null;
 		if (removed) {
 			broadcastListChanged();
 		}
@@ -89,7 +90,8 @@ public final class InMemorySyncPromptRepository implements McpSyncPromptReposito
 
 	@Override
 	public PromptsPage list(McpRequestContext ctx, @Nullable String cursor) {
-		Pagination.Page<Prompt> page = this.prompts.page(McpSyncPrompt::definition, cursor, this.pageSize);
+		Pagination.Page<Prompt> page = Pagination.page(this.prompts.values(), prompt -> prompt.definition().name(),
+				McpSyncPrompt::definition, cursor, this.pageSize);
 		return new PromptsPage(page.items(), page.nextCursor(), null, null);
 	}
 
@@ -101,6 +103,14 @@ public final class InMemorySyncPromptRepository implements McpSyncPromptReposito
 	@Override
 	public boolean supportsCompletion() {
 		return this.completionSupported;
+	}
+
+	private void put(McpSyncPrompt prompt) {
+		Assert.notNull(prompt, "prompt must not be null");
+		String name = prompt.definition().name();
+		if (this.prompts.putIfAbsent(name, prompt) != null) {
+			throw new IllegalArgumentException("Prompt with name '" + name + "' already exists");
+		}
 	}
 
 	private void broadcastListChanged() {

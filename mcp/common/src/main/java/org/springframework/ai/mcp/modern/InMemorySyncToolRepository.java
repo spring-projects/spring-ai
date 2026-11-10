@@ -18,6 +18,8 @@ package org.springframework.ai.mcp.modern;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 import io.modelcontextprotocol.modern.McpSchema.Tool;
 import io.modelcontextprotocol.modern.server.McpRequestContext;
@@ -42,7 +44,7 @@ import org.springframework.util.Assert;
  */
 public final class InMemorySyncToolRepository implements McpSyncToolRepository {
 
-	private final Catalogue<McpSyncTool> tools = new Catalogue<>(tool -> tool.definition().name(), "Tool", "name");
+	private final Map<String, McpSyncTool> tools = new ConcurrentSkipListMap<>();
 
 	private final @Nullable McpChangeBroadcaster changeBroadcaster;
 
@@ -52,7 +54,7 @@ public final class InMemorySyncToolRepository implements McpSyncToolRepository {
 		Assert.isTrue(builder.pageSize == null || builder.pageSize > 0, "pageSize must be positive");
 		this.changeBroadcaster = builder.changeBroadcaster;
 		this.pageSize = builder.pageSize;
-		builder.tools.forEach(this.tools::put);
+		builder.tools.forEach(this::put);
 	}
 
 	public static Builder builder() {
@@ -64,7 +66,7 @@ public final class InMemorySyncToolRepository implements McpSyncToolRepository {
 	 * @throws IllegalArgumentException if a tool with the same name exists
 	 */
 	public void add(McpSyncTool tool) {
-		this.tools.put(tool);
+		put(tool);
 		broadcastListChanged();
 	}
 
@@ -74,7 +76,7 @@ public final class InMemorySyncToolRepository implements McpSyncToolRepository {
 	 */
 	public boolean remove(String name) {
 		Assert.hasText(name, "name must not be empty");
-		boolean removed = this.tools.remove(name);
+		boolean removed = this.tools.remove(name) != null;
 		if (removed) {
 			broadcastListChanged();
 		}
@@ -83,13 +85,22 @@ public final class InMemorySyncToolRepository implements McpSyncToolRepository {
 
 	@Override
 	public ToolsPage list(McpRequestContext ctx, @Nullable String cursor) {
-		Pagination.Page<Tool> page = this.tools.page(McpSyncTool::definition, cursor, this.pageSize);
+		Pagination.Page<Tool> page = Pagination.page(this.tools.values(), tool -> tool.definition().name(),
+				McpSyncTool::definition, cursor, this.pageSize);
 		return new ToolsPage(page.items(), page.nextCursor(), null, null);
 	}
 
 	@Override
 	public @Nullable McpSyncTool find(McpRequestContext ctx, String name) {
 		return this.tools.get(name);
+	}
+
+	private void put(McpSyncTool tool) {
+		Assert.notNull(tool, "tool must not be null");
+		String name = tool.definition().name();
+		if (this.tools.putIfAbsent(name, tool) != null) {
+			throw new IllegalArgumentException("Tool with name '" + name + "' already exists");
+		}
 	}
 
 	private void broadcastListChanged() {

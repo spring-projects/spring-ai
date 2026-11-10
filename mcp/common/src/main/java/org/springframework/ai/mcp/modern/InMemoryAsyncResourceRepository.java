@@ -18,6 +18,8 @@ package org.springframework.ai.mcp.modern;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 import io.modelcontextprotocol.modern.McpSchema.Resource;
 import io.modelcontextprotocol.modern.McpSchema.ResourceTemplate;
@@ -54,11 +56,9 @@ import org.springframework.util.Assert;
  */
 public final class InMemoryAsyncResourceRepository implements McpAsyncResourceRepository {
 
-	private final Catalogue<AsyncResourceRegistration> resources = new Catalogue<>(
-			registration -> registration.resource().uri(), "Resource", "URI");
+	private final Map<String, AsyncResourceRegistration> resources = new ConcurrentSkipListMap<>();
 
-	private final Catalogue<CompiledTemplate<AsyncResourceTemplateRegistration>> templates = new Catalogue<>(
-			template -> template.registration().template().definition().uriTemplate(), "Resource template", "URI");
+	private final Map<String, CompiledTemplate<AsyncResourceTemplateRegistration>> templates = new ConcurrentSkipListMap<>();
 
 	private final McpUriTemplateManagerFactory uriTemplateManagerFactory;
 
@@ -77,7 +77,7 @@ public final class InMemoryAsyncResourceRepository implements McpAsyncResourceRe
 		this.pageSize = builder.pageSize;
 		this.subscribeSupported = builder.subscribeSupported;
 		this.completionSupported = builder.completionSupported;
-		builder.resources.forEach(this.resources::put);
+		builder.resources.forEach(this::put);
 		builder.resourceTemplates.forEach(this::put);
 	}
 
@@ -90,7 +90,7 @@ public final class InMemoryAsyncResourceRepository implements McpAsyncResourceRe
 	 * @throws IllegalArgumentException if a resource with the same URI exists
 	 */
 	public void add(AsyncResourceRegistration registration) {
-		this.resources.put(registration);
+		put(registration);
 		broadcastListChanged();
 	}
 
@@ -111,8 +111,8 @@ public final class InMemoryAsyncResourceRepository implements McpAsyncResourceRe
 	 */
 	public boolean remove(String uri) {
 		Assert.hasText(uri, "uri must not be empty");
-		boolean removed = this.resources.remove(uri);
-		removed |= this.templates.remove(uri);
+		boolean removed = this.resources.remove(uri) != null;
+		removed |= this.templates.remove(uri) != null;
 		if (removed) {
 			broadcastListChanged();
 		}
@@ -133,7 +133,8 @@ public final class InMemoryAsyncResourceRepository implements McpAsyncResourceRe
 	@Override
 	public Mono<ResourcesPage> list(McpRequestContext ctx, @Nullable String cursor) {
 		return Mono.fromSupplier(() -> {
-			Pagination.Page<Resource> page = this.resources.page(AsyncResourceRegistration::resource, cursor,
+			Pagination.Page<Resource> page = Pagination.page(this.resources.values(),
+					registration -> registration.resource().uri(), AsyncResourceRegistration::resource, cursor,
 					this.pageSize);
 			return new ResourcesPage(page.items(), page.nextCursor(), null, null);
 		});
@@ -142,8 +143,9 @@ public final class InMemoryAsyncResourceRepository implements McpAsyncResourceRe
 	@Override
 	public Mono<ResourceTemplatesPage> listTemplates(McpRequestContext ctx, @Nullable String cursor) {
 		return Mono.fromSupplier(() -> {
-			Pagination.Page<ResourceTemplate> page = this.templates
-				.page(template -> template.registration().template().definition(), cursor, this.pageSize);
+			Pagination.Page<ResourceTemplate> page = Pagination.page(this.templates.values(),
+					template -> template.registration().template().definition().uriTemplate(),
+					template -> template.registration().template().definition(), cursor, this.pageSize);
 			return new ResourceTemplatesPage(page.items(), page.nextCursor(), null, null);
 		});
 	}
@@ -188,10 +190,22 @@ public final class InMemoryAsyncResourceRepository implements McpAsyncResourceRe
 		return null;
 	}
 
+	private void put(AsyncResourceRegistration registration) {
+		Assert.notNull(registration, "registration must not be null");
+		String uri = registration.resource().uri();
+		if (this.resources.putIfAbsent(uri, registration) != null) {
+			throw new IllegalArgumentException("Resource with URI '" + uri + "' already exists");
+		}
+	}
+
 	private void put(AsyncResourceTemplateRegistration registration) {
 		Assert.notNull(registration, "registration must not be null");
-		this.templates.put(CompiledTemplate.compile(registration, registration.template().definition().uriTemplate(),
-				this.uriTemplateManagerFactory));
+		String uriTemplate = registration.template().definition().uriTemplate();
+		CompiledTemplate<AsyncResourceTemplateRegistration> compiled = CompiledTemplate.compile(registration,
+				uriTemplate, this.uriTemplateManagerFactory);
+		if (this.templates.putIfAbsent(uriTemplate, compiled) != null) {
+			throw new IllegalArgumentException("Resource template with URI '" + uriTemplate + "' already exists");
+		}
 	}
 
 	private void broadcastListChanged() {
