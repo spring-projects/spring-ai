@@ -21,10 +21,13 @@ package org.springframework.ai.session.jdbc;
  * <p>
  * The upsert is a {@code MERGE} under {@code HOLDLOCK}, so that two concurrent saves of a
  * new id cannot both take the insert branch, and the source values are cast so that a
- * {@code null} expiry keeps its column type. SQL Server has no {@code LIMIT}; rows are
- * limited with {@code OFFSET ... FETCH}.
+ * {@code null} expiry keeps its column type. The id is cast wider than its column, so
+ * that an over-long id is rejected by the insert rather than silently truncated to the id
+ * of another session. SQL Server has no {@code LIMIT}; rows are limited with
+ * {@code OFFSET ... FETCH}.
  *
  * @author Durga Dasepalli
+ * @author Christian Tzolov
  * @since 2.1.0
  */
 public class SqlServerJdbcSessionRepositoryDialect implements JdbcSessionRepositoryDialect {
@@ -33,7 +36,7 @@ public class SqlServerJdbcSessionRepositoryDialect implements JdbcSessionReposit
 	public String getUpsertSessionSql() {
 		return """
 				MERGE INTO AI_SESSION WITH (HOLDLOCK) AS t
-				USING (SELECT CAST(? AS NVARCHAR(255)) AS id, CAST(? AS DATETIME2(6)) AS created_at,
+				USING (SELECT CAST(? AS NVARCHAR(4000)) AS id, CAST(? AS DATETIME2(6)) AS created_at,
 						CAST(? AS DATETIME2(6)) AS expires_at, CAST(? AS NVARCHAR(MAX)) AS metadata) AS s
 				ON t.id = s.id
 				WHEN MATCHED THEN UPDATE

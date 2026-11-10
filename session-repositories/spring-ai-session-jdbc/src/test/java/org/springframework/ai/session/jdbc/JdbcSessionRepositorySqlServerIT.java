@@ -36,10 +36,12 @@ import org.springframework.ai.session.SessionEvent;
 import org.springframework.ai.session.SessionRepository;
 import org.springframework.ai.test.session.AbstractSessionRepositoryContractTests;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
 
 /**
  * Integration tests for {@link JdbcSessionRepository} against Microsoft SQL Server,
@@ -47,6 +49,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * {@code OFFSET ... FETCH} row limit and the case-sensitive key collation.
  *
  * @author Durga Dasepalli
+ * @author Christian Tzolov
  */
 @Testcontainers
 class JdbcSessionRepositorySqlServerIT {
@@ -109,6 +112,23 @@ class JdbcSessionRepositorySqlServerIT {
 			.id(sessionId.toLowerCase())
 			.metadata(SessionAttributes.PRINCIPAL_NAME, "user-case")
 			.build())).isTrue();
+	}
+
+	@Test
+	void saveRejectsOverLongSessionIdInsteadOfTruncatingIt() {
+		// No indexed attribute, so that only the upsert itself can reject the id.
+		String sessionId = "s".repeat(255);
+		this.repository.save(Session.builder().id(sessionId).metadata("owner", "first").build());
+
+		assertThatExceptionOfType(DataAccessException.class).isThrownBy(
+				() -> this.repository.save(Session.builder().id(sessionId + "x").metadata("owner", "second").build()))
+			.withMessageContaining("would be truncated");
+
+		Session existing = this.repository.findById(sessionId);
+		assertThat(existing).isNotNull();
+		assertThat(existing.metadata()).containsEntry("owner", "first");
+		assertThat(new JdbcTemplate(dataSource).queryForObject("SELECT COUNT(*) FROM AI_SESSION", Integer.class))
+			.isEqualTo(1);
 	}
 
 	@Test
