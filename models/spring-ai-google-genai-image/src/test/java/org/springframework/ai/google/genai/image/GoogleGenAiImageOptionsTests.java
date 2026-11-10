@@ -65,6 +65,7 @@ class GoogleGenAiImageOptionsTests {
 			.seed(42)
 			.safetyFilterLevel(GoogleGenAiImageOptions.SafetyFilterLevel.BLOCK_ONLY_HIGH)
 			.personGeneration(GoogleGenAiImageOptions.PersonGeneration.ALLOW_ADULT)
+			.prominentPeople(GoogleGenAiImageOptions.ProminentPeople.ALLOW_PROMINENT_PEOPLE)
 			.outputMimeType("image/png")
 			.outputCompressionQuality(80)
 			.labels(labels)
@@ -81,6 +82,8 @@ class GoogleGenAiImageOptionsTests {
 		assertThat(options.getSeed()).isEqualTo(42);
 		assertThat(options.getSafetyFilterLevel()).isEqualTo(GoogleGenAiImageOptions.SafetyFilterLevel.BLOCK_ONLY_HIGH);
 		assertThat(options.getPersonGeneration()).isEqualTo(GoogleGenAiImageOptions.PersonGeneration.ALLOW_ADULT);
+		assertThat(options.getProminentPeople())
+			.isEqualTo(GoogleGenAiImageOptions.ProminentPeople.ALLOW_PROMINENT_PEOPLE);
 		assertThat(options.getOutputMimeType()).isEqualTo("image/png");
 		assertThat(options.getResponseFormat()).isEqualTo("image/png");
 		assertThat(options.getOutputCompressionQuality()).isEqualTo(80);
@@ -129,6 +132,7 @@ class GoogleGenAiImageOptionsTests {
 			.seed(7)
 			.safetyFilterLevel(GoogleGenAiImageOptions.SafetyFilterLevel.BLOCK_NONE)
 			.personGeneration(GoogleGenAiImageOptions.PersonGeneration.ALLOW_ALL)
+			.prominentPeople(GoogleGenAiImageOptions.ProminentPeople.BLOCK_PROMINENT_PEOPLE)
 			.outputMimeType("image/jpeg")
 			.outputCompressionQuality(90)
 			.labels(Map.of("a", "b"))
@@ -201,6 +205,7 @@ class GoogleGenAiImageOptionsTests {
 			.seed(99)
 			.safetyFilterLevel(GoogleGenAiImageOptions.SafetyFilterLevel.BLOCK_MEDIUM_AND_ABOVE)
 			.personGeneration(GoogleGenAiImageOptions.PersonGeneration.DONT_ALLOW)
+			.prominentPeople(GoogleGenAiImageOptions.ProminentPeople.BLOCK_PROMINENT_PEOPLE)
 			.outputMimeType("image/webp")
 			.outputCompressionQuality(70)
 			.labels(Map.of("x", "y"))
@@ -273,6 +278,11 @@ class GoogleGenAiImageOptionsTests {
 			.model("m")
 			.n(1)
 			.personGeneration(GoogleGenAiImageOptions.PersonGeneration.ALLOW_ALL)
+			.build());
+		assertThat(base).isNotEqualTo(GoogleGenAiImageOptions.builder()
+			.model("m")
+			.n(1)
+			.prominentPeople(GoogleGenAiImageOptions.ProminentPeople.ALLOW_PROMINENT_PEOPLE)
 			.build());
 		assertThat(base)
 			.isNotEqualTo(GoogleGenAiImageOptions.builder().model("m").n(1).outputMimeType("image/png").build());

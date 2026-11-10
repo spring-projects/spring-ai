@@ -36,6 +36,7 @@ import com.google.genai.types.GenerateContentResponseUsageMetadata;
 import com.google.genai.types.HarmCategory;
 import com.google.genai.types.ImageConfig;
 import com.google.genai.types.Part;
+import com.google.genai.types.ProminentPeople;
 import com.google.genai.types.SafetySetting;
 import io.micrometer.observation.ObservationRegistry;
 import org.jspecify.annotations.Nullable;
@@ -244,6 +245,8 @@ public class GoogleGenAiImageModel implements ImageModel {
 							this.options.getSafetyFilterLevel()))
 					.personGeneration(ModelOptionsUtils.mergeOption(googleOptions.getPersonGeneration(),
 							this.options.getPersonGeneration()))
+					.prominentPeople(ModelOptionsUtils.mergeOption(googleOptions.getProminentPeople(),
+							this.options.getProminentPeople()))
 					.outputMimeType(ModelOptionsUtils.mergeOption(googleOptions.getOutputMimeType(),
 							this.options.getOutputMimeType()))
 					.outputCompressionQuality(ModelOptionsUtils.mergeOption(googleOptions.getOutputCompressionQuality(),
@@ -325,6 +328,11 @@ public class GoogleGenAiImageModel implements ImageModel {
 		if (Objects.nonNull(options.getPersonGeneration()) && options
 			.getPersonGeneration() != GoogleGenAiImageOptions.PersonGeneration.PERSON_GENERATION_UNSPECIFIED) {
 			imageConfigBuilder.personGeneration(options.getPersonGeneration().name());
+			hasImageConfig = true;
+		}
+		if (Objects.nonNull(options.getProminentPeople()) && options
+			.getProminentPeople() != GoogleGenAiImageOptions.ProminentPeople.PROMINENT_PEOPLE_UNSPECIFIED) {
+			imageConfigBuilder.prominentPeople(new ProminentPeople(options.getProminentPeople().name()));
 			hasImageConfig = true;
 		}
 		if (StringUtils.hasText(options.getOutputMimeType())) {
