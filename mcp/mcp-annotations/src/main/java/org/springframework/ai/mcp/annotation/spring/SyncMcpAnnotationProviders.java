@@ -56,7 +56,6 @@ import org.springframework.ai.mcp.annotation.provider.sampling.SyncMcpSamplingPr
 import org.springframework.ai.mcp.annotation.provider.tool.SyncMcpToolProvider;
 import org.springframework.ai.mcp.annotation.provider.tool.SyncModernMcpToolProvider;
 import org.springframework.ai.mcp.annotation.provider.tool.SyncStatelessMcpToolProvider;
-import org.springframework.ai.mcp.modern.SyncCompletionRegistration;
 import org.springframework.ai.mcp.modern.SyncResourceRegistration;
 import org.springframework.ai.mcp.modern.SyncResourceTemplateRegistration;
 
@@ -146,13 +145,6 @@ public final class SyncMcpAnnotationProviders {
 	/**
 	 * @since 2.1.0
 	 */
-	public static List<SyncCompletionRegistration> modernCompletions(List<Object> completeObjects) {
-		return new SpringAiSyncModernCompleteProvider(completeObjects).getModernCompletions();
-	}
-
-	/**
-	 * @since 2.1.0
-	 */
 	public static List<McpSyncPrompt> modernPrompts(List<Object> promptObjects) {
 		return modernPrompts(promptObjects, null);
 	}
@@ -166,6 +158,24 @@ public final class SyncMcpAnnotationProviders {
 		SpringAiSyncModernPromptProvider provider = new SpringAiSyncModernPromptProvider(promptObjects);
 		provider.setJsonMapper(jsonMapper);
 		return provider.getPrompts();
+	}
+
+	/**
+	 * The prompts of the {@code @McpPrompt} methods, each with the completion handler of
+	 * the {@code @McpComplete(prompt = ...)} method that names it.
+	 * @param completeObjects the beans with {@code @McpComplete} methods
+	 * @param jsonMapper the server's mapper, used for converting MRTR input responses, or
+	 * {@code null} for the SDK default
+	 * @throws IllegalStateException if a {@code @McpComplete} method names a prompt that
+	 * no {@code @McpPrompt} method defines
+	 * @since 2.1.0
+	 */
+	public static List<McpSyncPrompt> modernPrompts(List<Object> promptObjects, List<Object> completeObjects,
+			@Nullable McpJsonMapper jsonMapper) {
+		return ModernCompletionJoin.prompts(modernPrompts(promptObjects, jsonMapper),
+				new SpringAiSyncModernCompleteProvider(completeObjects).getPromptCompletions(),
+				prompt -> prompt.definition().name(), McpSyncPrompt::withCompletionHandler, promptObjects,
+				ModernCompletionJoin.SYNC_PROMPTS);
 	}
 
 	/**
@@ -204,6 +214,26 @@ public final class SyncMcpAnnotationProviders {
 		SpringAiSyncModernResourceProvider provider = new SpringAiSyncModernResourceProvider(resourceObjects);
 		provider.setJsonMapper(jsonMapper);
 		return provider.getResourceTemplates();
+	}
+
+	/**
+	 * The resource templates of the {@code @McpResource} methods, each with the
+	 * completion handler of the {@code @McpComplete(uri = ...)} method that names its URI
+	 * template.
+	 * @param completeObjects the beans with {@code @McpComplete} methods
+	 * @param jsonMapper the server's mapper, used for converting MRTR input responses, or
+	 * {@code null} for the SDK default
+	 * @throws IllegalStateException if a {@code @McpComplete} method names a URI that no
+	 * {@code @McpResource} template defines, such as the URI of a static resource
+	 * @since 2.1.0
+	 */
+	public static List<SyncResourceTemplateRegistration> modernResourceTemplates(List<Object> resourceObjects,
+			List<Object> completeObjects, @Nullable McpJsonMapper jsonMapper) {
+		return ModernCompletionJoin.templates(modernResourceTemplates(resourceObjects, jsonMapper),
+				new SpringAiSyncModernCompleteProvider(completeObjects).getResourceCompletions(),
+				template -> template.template().definition().uriTemplate(),
+				SyncResourceTemplateRegistration::withCompletionHandler, resourceObjects,
+				ModernCompletionJoin.SYNC_TEMPLATES);
 	}
 
 	// LOGGING (CLIENT)

@@ -30,7 +30,6 @@ import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.mcp.annotation.McpPrompt;
 import org.springframework.ai.mcp.annotation.adapter.PromptAdapter;
-import org.springframework.ai.mcp.annotation.common.McpPredicates;
 import org.springframework.ai.mcp.annotation.common.ModernMethodSupport;
 import org.springframework.ai.mcp.annotation.method.prompt.SyncModernMcpPromptMethodCallback;
 import org.springframework.ai.mcp.modern.McpSchemaConverter;
@@ -69,7 +68,7 @@ public class SyncModernMcpPromptProvider {
 		List<McpSyncPrompt> prompts = this.promptObjects.stream()
 			.flatMap(bean -> Stream.of(this.doGetClassMethods(bean))
 				.filter(method -> method.isAnnotationPresent(McpPrompt.class))
-				.filter(McpPredicates.filterReactiveReturnTypeMethod())
+				.filter(ModernMethodSupport.filterAsyncReturnTypeMethods())
 				.filter(ModernMethodSupport.filterLegacyContextMethods())
 				.sorted(Comparator.comparing(Method::getName))
 				.map(method -> {

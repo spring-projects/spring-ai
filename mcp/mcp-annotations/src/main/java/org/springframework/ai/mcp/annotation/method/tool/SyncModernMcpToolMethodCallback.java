@@ -81,6 +81,7 @@ public final class SyncModernMcpToolMethodCallback extends
 		super(returnMode, toolMethod, toolObject);
 		for (Class<?> parameterType : toolMethod.getParameterTypes()) {
 			ModernMethodSupport.rejectLegacyContextParameter(parameterType, toolMethod);
+			ModernMethodSupport.rejectUnsupportedNotifierParameter(parameterType, toolMethod, McpSyncNotifier.class);
 		}
 		this.streaming = Arrays.stream(toolMethod.getParameterTypes())
 			.anyMatch(SyncModernMcpToolMethodCallback::isStreamingParameter);
@@ -115,7 +116,7 @@ public final class SyncModernMcpToolMethodCallback extends
 	protected McpSyncRequestContext createRequestContext(McpRequestContext exchange,
 			io.modelcontextprotocol.spec.McpSchema.CallToolRequest request) {
 		throw new UnsupportedOperationException(
-				"Modern tool methods do not support McpSyncRequestContext; use McpModernSyncRequestContext instead.");
+				"Modern tool methods do not support McpSyncRequestContext; use McpModernRequestContext instead.");
 	}
 
 	@Override

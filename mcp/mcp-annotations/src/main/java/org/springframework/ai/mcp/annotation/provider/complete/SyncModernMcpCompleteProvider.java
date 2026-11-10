@@ -17,33 +17,31 @@
 package org.springframework.ai.mcp.annotation.provider.complete;
 
 import java.lang.reflect.Method;
-import java.util.Comparator;
 import java.util.List;
-import java.util.stream.Stream;
+import java.util.Map;
 
+import io.modelcontextprotocol.modern.server.feature.McpSyncCompletionHandler;
 import io.modelcontextprotocol.util.Assert;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 
 import org.springframework.ai.mcp.annotation.McpComplete;
-import org.springframework.ai.mcp.annotation.adapter.CompleteAdapter;
-import org.springframework.ai.mcp.annotation.common.McpPredicates;
 import org.springframework.ai.mcp.annotation.common.ModernMethodSupport;
 import org.springframework.ai.mcp.annotation.method.complete.SyncModernMcpCompleteMethodCallback;
-import org.springframework.ai.mcp.modern.McpSchemaConverter;
-import org.springframework.ai.mcp.modern.SyncCompletionRegistration;
 
 /**
- * Creates completion registrations for a 2026-07-28 ("modern") MCP server from methods
+ * Creates the completion handlers of a 2026-07-28 ("modern") MCP server from methods
  * annotated with {@link McpComplete}. Each method is served by a
  * {@link SyncModernMcpCompleteMethodCallback}.
+ * <p>
+ * A handler completes every argument of the prompt or resource template that its
+ * annotation names, and answers only once it is attached to that prompt or template with
+ * {@code McpSyncPrompt.withCompletionHandler} or
+ * {@code SyncResourceTemplateRegistration.withCompletionHandler}. The Spring entry points
+ * attach them to the annotated prompts and templates.
  *
  * @author Christian Tzolov
  * @since 2.1.0
  */
 public class SyncModernMcpCompleteProvider {
-
-	private static final Log logger = LogFactory.getLog(SyncModernMcpCompleteProvider.class);
 
 	private final List<Object> completeObjects;
 
@@ -52,29 +50,33 @@ public class SyncModernMcpCompleteProvider {
 		this.completeObjects = completeObjects;
 	}
 
-	public List<SyncCompletionRegistration> getModernCompletions() {
-		List<SyncCompletionRegistration> registrations = this.completeObjects.stream()
-			.flatMap(bean -> Stream.of(this.doGetClassMethods(bean))
-				.filter(method -> method.isAnnotationPresent(McpComplete.class))
-				.filter(McpPredicates.filterReactiveReturnTypeMethod())
-				.filter(ModernMethodSupport.filterLegacyContextMethods())
-				.sorted(Comparator.comparing(Method::getName))
-				.map(method -> {
-					McpComplete annotation = method.getAnnotation(McpComplete.class);
-					var reference = CompleteAdapter.asCompleteReference(annotation, method);
-					SyncModernMcpCompleteMethodCallback callback = SyncModernMcpCompleteMethodCallback.builder()
-						.method(method)
-						.bean(bean)
-						.complete(annotation)
-						.build();
-					return new SyncCompletionRegistration(McpSchemaConverter.toModern(reference), callback);
-				}))
-			.toList();
+	/**
+	 * The handlers of the {@code @McpComplete(prompt = ...)} methods, keyed by prompt
+	 * name.
+	 * @throws IllegalArgumentException if two methods complete the same prompt
+	 */
+	public Map<String, McpSyncCompletionHandler> getPromptCompletions() {
+		return completions(true);
+	}
 
-		if (registrations.isEmpty() && logger.isWarnEnabled()) {
-			logger.warn("No complete methods found in the provided complete objects: " + this.completeObjects);
-		}
-		return registrations;
+	/**
+	 * The handlers of the {@code @McpComplete(uri = ...)} methods, keyed by URI template.
+	 * @throws IllegalArgumentException if two methods complete the same URI template
+	 */
+	public Map<String, McpSyncCompletionHandler> getResourceCompletions() {
+		return completions(false);
+	}
+
+	private Map<String, McpSyncCompletionHandler> completions(boolean prompts) {
+		return ModernCompleteMethods.collect(this.completeObjects, this::doGetClassMethods,
+				ModernMethodSupport.filterAsyncReturnTypeMethods()
+					.and(ModernMethodSupport.filterLegacyContextMethods()),
+				prompts,
+				(bean, method) -> SyncModernMcpCompleteMethodCallback.builder()
+					.method(method)
+					.bean(bean)
+					.complete(method.getAnnotation(McpComplete.class))
+					.build());
 	}
 
 	protected Method[] doGetClassMethods(Object bean) {

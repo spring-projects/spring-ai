@@ -31,24 +31,36 @@ import io.modelcontextprotocol.modern.McpSchema.CacheScope;
 import io.modelcontextprotocol.modern.McpSchema.MetaKeys;
 import io.modelcontextprotocol.modern.McpSchema.Tool;
 import io.modelcontextprotocol.modern.server.HmacRequestStateCodec;
+import io.modelcontextprotocol.modern.server.McpAsyncResponse;
 import io.modelcontextprotocol.modern.server.McpRequestContext;
 import io.modelcontextprotocol.modern.server.McpServer;
 import io.modelcontextprotocol.modern.server.McpSyncResponse;
 import io.modelcontextprotocol.modern.server.McpTransportResponse;
 import io.modelcontextprotocol.modern.server.RequestStateCodec;
+import io.modelcontextprotocol.modern.server.feature.McpAsyncPrompt;
+import io.modelcontextprotocol.modern.server.feature.McpAsyncTool;
+import io.modelcontextprotocol.modern.server.feature.McpAsyncToolRepository;
 import io.modelcontextprotocol.modern.server.feature.McpChangeFeed;
+import io.modelcontextprotocol.modern.server.feature.McpSyncPrompt;
+import io.modelcontextprotocol.modern.server.feature.McpSyncPromptRepository;
 import io.modelcontextprotocol.modern.server.feature.McpSyncTool;
 import io.modelcontextprotocol.modern.server.feature.McpSyncToolRepository;
+import io.modelcontextprotocol.modern.server.feature.PromptsPage;
 import io.modelcontextprotocol.modern.server.feature.ToolsPage;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import reactor.core.publisher.Mono;
 
+import org.springframework.ai.mcp.annotation.McpArg;
 import org.springframework.ai.mcp.annotation.McpComplete;
 import org.springframework.ai.mcp.annotation.McpPrompt;
 import org.springframework.ai.mcp.annotation.McpResource;
 import org.springframework.ai.mcp.annotation.McpTool;
 import org.springframework.ai.mcp.annotation.McpToolParam;
 import org.springframework.ai.mcp.customizer.McpModernServerCustomizer;
-import org.springframework.ai.mcp.modern.InMemorySyncCompletionRepository;
+import org.springframework.ai.mcp.modern.InMemoryAsyncPromptRepository;
+import org.springframework.ai.mcp.modern.InMemoryAsyncResourceRepository;
+import org.springframework.ai.mcp.modern.InMemoryAsyncToolRepository;
 import org.springframework.ai.mcp.modern.InMemorySyncPromptRepository;
 import org.springframework.ai.mcp.modern.InMemorySyncResourceRepository;
 import org.springframework.ai.mcp.modern.InMemorySyncToolRepository;
@@ -64,6 +76,8 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.FilteredClassLoader;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -107,6 +121,31 @@ class McpServerModernAutoConfigurationIT {
 		return (Map<String, Object>) ((McpTransportResponse.Result) response).response().result();
 	}
 
+	private static Map<String, Object> completeParams(Map<String, Object> ref, String argument, String value) {
+		return params("ref", ref, "argument", Map.of("name", argument, "value", value));
+	}
+
+	private static Map<String, Object> promptRef(String name) {
+		return Map.of("type", "ref/prompt", "name", name);
+	}
+
+	private static Map<String, Object> templateRef(String uriTemplate) {
+		return Map.of("type", "ref/resource", "uri", uriTemplate);
+	}
+
+	@SuppressWarnings("unchecked")
+	private static List<String> values(Map<String, Object> result) {
+		return (List<String>) ((Map<String, Object>) result.get("completion")).get("values");
+	}
+
+	private static int errorCode(McpServer server, McpTransportContext transportContext, String method,
+			Map<String, Object> params) {
+		McpTransportResponse response = server.handleBlocking(transportContext, new JSONRPCRequest(method, 1, params))
+			.block();
+		assertThat(response).isInstanceOf(McpTransportResponse.Error.class);
+		return ((McpTransportResponse.Error) response).response().error().code();
+	}
+
 	@Test
 	void defaultConfiguration() {
 		this.contextRunner.run(context -> {
@@ -115,7 +154,6 @@ class McpServerModernAutoConfigurationIT {
 			assertThat(context).hasSingleBean(InMemorySyncToolRepository.class);
 			assertThat(context).hasSingleBean(InMemorySyncResourceRepository.class);
 			assertThat(context).hasSingleBean(InMemorySyncPromptRepository.class);
-			assertThat(context).hasSingleBean(InMemorySyncCompletionRepository.class);
 			assertThat(context.getBean(InMemorySyncToolRepository.class).list(null, null).tools()).isEmpty();
 
 			McpServerModernProperties properties = context.getBean(McpServerModernProperties.class);
@@ -191,13 +229,14 @@ class McpServerModernAutoConfigurationIT {
 				assertThat(consumer.prompts()).isSameAs(prompts);
 				assertThat(prompts.list(null, null).prompts()).extracting(McpSchema.Prompt::name).containsExactly("p");
 
-				// The completion repository cannot be listed: complete via the server.
-				assertThat(consumer.completions()).isSameAs(context.getBean(InMemorySyncCompletionRepository.class));
-				Map<String, Object> result = call(context.getBean(McpServer.class),
-						McpSchema.METHOD_COMPLETION_COMPLETE, params("ref", Map.of("type", "ref/prompt", "name", "p"),
-								"argument", Map.of("name", "topic", "value", "x")));
-				Map<String, Object> completion = (Map<String, Object>) result.get("completion");
-				assertThat((List<String>) completion.get("values")).containsExactly("x1");
+				// Completions travel with their prompt and template.
+				McpServer server = context.getBean(McpServer.class);
+				assertThat(values(call(server, McpSchema.METHOD_COMPLETION_COMPLETE,
+						completeParams(promptRef("p"), "topic", "x"))))
+					.containsExactly("x1");
+				assertThat(values(call(server, McpSchema.METHOD_COMPLETION_COMPLETE,
+						completeParams(templateRef("test://docs/{id}"), "id", "7"))))
+					.containsExactly("doc-7");
 			});
 	}
 
@@ -239,9 +278,13 @@ class McpServerModernAutoConfigurationIT {
 					"spring.ai.mcp.server.capabilities.completion=false")
 			.run(context -> {
 				assertThat(context).doesNotHaveBean(InMemorySyncToolRepository.class);
-				assertThat(context).doesNotHaveBean(InMemorySyncCompletionRepository.class);
 				assertThat(context).hasSingleBean(InMemorySyncResourceRepository.class);
 				assertThat(context).hasSingleBean(McpServer.class);
+				assertThat(context.getBean(InMemorySyncResourceRepository.class).supportsCompletion()).isFalse();
+				assertThat(context.getBean(InMemorySyncPromptRepository.class).supportsCompletion()).isFalse();
+				assertThat(errorCode(context.getBean(McpServer.class), McpTransportContext.EMPTY,
+						McpSchema.METHOD_COMPLETION_COMPLETE, completeParams(promptRef("p"), "topic", "x")))
+					.isEqualTo(McpSchema.ErrorCodes.METHOD_NOT_FOUND);
 			});
 	}
 
@@ -276,6 +319,23 @@ class McpServerModernAutoConfigurationIT {
 				Map<String, Object> adminList = call(server, admin, McpSchema.METHOD_TOOLS_LIST, params());
 				assertThat((List<Map<String, Object>>) adminList.get("tools")).extracting(tool -> tool.get("name"))
 					.containsExactly("admin_reset", "greet", "weather");
+			});
+	}
+
+	@Test
+	void promptRepositoryWrapperServesCompletionsWhenItDelegates() {
+		this.contextRunner.withUserConfiguration(UserConfiguration.class, WrappingPromptRepositoryConfiguration.class)
+			.run(context -> {
+				McpServer server = context.getBean(McpServer.class);
+				McpTransportContext admin = McpTransportContexts
+					.fromHeaders(each -> each.accept("X-Role", List.of("admin")));
+				Map<String, Object> params = completeParams(promptRef("p"), "topic", "x");
+
+				assertThat(values(call(server, admin, McpSchema.METHOD_COMPLETION_COMPLETE, params)))
+					.containsExactly("x1");
+				// A prompt the wrapper hides is hidden from completion too.
+				assertThat(errorCode(server, McpTransportContext.EMPTY, McpSchema.METHOD_COMPLETION_COMPLETE, params))
+					.isEqualTo(McpSchema.ErrorCodes.INVALID_PARAMS);
 			});
 	}
 
@@ -412,14 +472,206 @@ class McpServerModernAutoConfigurationIT {
 			.isEqualTo(Duration.ofMinutes(1));
 	}
 
+	// ---------------------------------------------------------------------
+	// type=ASYNC
+	// ---------------------------------------------------------------------
+
+	@SuppressWarnings("unchecked")
+	private static Map<String, Object> callAsync(McpServer server, String method, Map<String, Object> params) {
+		// The non-blocking path, as the WebFlux transport uses it.
+		McpTransportResponse response = server.handle(McpTransportContext.EMPTY, new JSONRPCRequest(method, 1, params))
+			.block();
+		assertThat(response).isInstanceOf(McpTransportResponse.Result.class);
+		return (Map<String, Object>) ((McpTransportResponse.Result) response).response().result();
+	}
+
 	@Test
-	void asyncTypeFailsFast() {
-		this.contextRunner.withPropertyValues("spring.ai.mcp.server.type=ASYNC").run(context -> {
+	@SuppressWarnings("unchecked")
+	void asyncTypeServesAnnotatedBeansAndToolCallbacksThroughAsyncRepositories() {
+		this.contextRunner.withPropertyValues("spring.ai.mcp.server.type=ASYNC")
+			.withUserConfiguration(UserConfiguration.class)
+			.run(context -> {
+				assertThat(context).hasNotFailed();
+				assertThat(context).hasSingleBean(InMemoryAsyncToolRepository.class);
+				assertThat(context).hasSingleBean(InMemoryAsyncResourceRepository.class);
+				assertThat(context).hasSingleBean(InMemoryAsyncPromptRepository.class);
+				assertThat(context).doesNotHaveBean(InMemorySyncToolRepository.class);
+				assertThat(context).doesNotHaveBean(InMemorySyncResourceRepository.class);
+				assertThat(context).doesNotHaveBean(InMemorySyncPromptRepository.class);
+				assertThat(context).hasBean("modernAsyncTools").hasBean("modernAsyncToolCallbacks");
+				assertThat(context).doesNotHaveBean("modernTools").doesNotHaveBean("modernSyncTools");
+
+				InMemoryAsyncToolRepository tools = context.getBean(InMemoryAsyncToolRepository.class);
+				assertThat(tools.list(null, null).block().tools()).extracting(McpSchema.Tool::name)
+					.containsExactly("admin_reset", "greet", "weather");
+				assertThat(context.getBean(InMemoryAsyncResourceRepository.class).list(null, null).block().resources())
+					.hasSize(1);
+				assertThat(context.getBean(InMemoryAsyncResourceRepository.class)
+					.listTemplates(null, null)
+					.block()
+					.resourceTemplates()).hasSize(1);
+				assertThat(context.getBean(InMemoryAsyncPromptRepository.class).list(null, null).block().prompts())
+					.hasSize(1);
+
+				McpServer server = context.getBean(McpServer.class);
+				Map<String, Object> greet = callAsync(server, McpSchema.METHOD_TOOLS_CALL,
+						params("name", "greet", "arguments", Map.of("name", "Ann")));
+				List<Map<String, Object>> content = (List<Map<String, Object>>) greet.get("content");
+				assertThat(content.get(0).get("text")).isEqualTo("Hello Ann");
+
+				Map<String, Object> weather = callAsync(server, McpSchema.METHOD_TOOLS_CALL,
+						params("name", "weather", "arguments", Map.of("city", "Paris")));
+				content = (List<Map<String, Object>>) weather.get("content");
+				assertThat(content.get(0).get("text")).isEqualTo("\"sunny in Paris\"");
+
+				Map<String, Object> doc = callAsync(server, McpSchema.METHOD_RESOURCES_READ,
+						params("uri", "test://docs/9"));
+				assertThat(((List<Map<String, Object>>) doc.get("contents")).get(0).get("text")).isEqualTo("doc 9");
+
+				assertThat(values(callAsync(server, McpSchema.METHOD_COMPLETION_COMPLETE,
+						completeParams(promptRef("p"), "topic", "x"))))
+					.containsExactly("x1");
+				assertThat(values(callAsync(server, McpSchema.METHOD_COMPLETION_COMPLETE,
+						completeParams(templateRef("test://docs/{id}"), "id", "7"))))
+					.containsExactly("doc-7");
+
+				// The annotated primitives convert their MRTR input responses with the
+				// server's mapper, not the SDK default.
+				McpAsyncTool greetTool = tools.find(null, "greet").block();
+				assertThat(greetTool).isNotNull();
+				assertThat(greetTool.handler()).extracting("jsonMapper").isInstanceOf(JacksonMcpJsonMapper.class);
+			});
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void annotatedPrimitivesAreRegisteredWhenAsyncRepositoriesAreInjectedEarly() {
+		this.contextRunner.withPropertyValues("spring.ai.mcp.server.type=ASYNC")
+			.withUserConfiguration(EarlyAsyncRepositoryConsumerConfiguration.class, AnnotatedBeanConfiguration.class)
+			.run(context -> {
+				assertThat(context).hasNotFailed();
+				AsyncRepositoryConsumer consumer = context.getBean(AsyncRepositoryConsumer.class);
+				assertThat(consumer.tools()).isSameAs(context.getBean(InMemoryAsyncToolRepository.class));
+				assertThat(consumer.tools().list(null, null).block().tools()).extracting(McpSchema.Tool::name)
+					.containsExactly("admin_reset", "greet");
+				assertThat(consumer.resources().list(null, null).block().resources())
+					.extracting(McpSchema.Resource::uri)
+					.containsExactly("test://doc");
+				assertThat(consumer.prompts().list(null, null).block().prompts()).extracting(McpSchema.Prompt::name)
+					.containsExactly("p");
+				assertThat(values(callAsync(context.getBean(McpServer.class), McpSchema.METHOD_COMPLETION_COMPLETE,
+						completeParams(promptRef("p"), "topic", "x"))))
+					.containsExactly("x1");
+			});
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void asyncRepositoryBeanIsServedOnASyncServer() {
+		// The type property only picks the in-memory defaults: a repository bean of
+		// either flavour is served.
+		this.contextRunner.withUserConfiguration(UserConfiguration.class, CustomAsyncRepositoryConfiguration.class)
+			.run(context -> {
+				assertThat(context).hasNotFailed();
+				assertThat(context).doesNotHaveBean(InMemorySyncToolRepository.class);
+				assertThat(context).doesNotHaveBean(InMemoryAsyncToolRepository.class);
+				assertThat(context).hasSingleBean(McpAsyncToolRepository.class);
+				assertThat(context).hasSingleBean(InMemorySyncResourceRepository.class);
+
+				McpServer server = context.getBean(McpServer.class);
+				Map<String, Object> list = call(server, McpSchema.METHOD_TOOLS_LIST, params());
+				assertThat((List<Map<String, Object>>) list.get("tools")).extracting(tool -> tool.get("name"))
+					.containsExactly("custom-async");
+				Map<String, Object> result = call(server, McpSchema.METHOD_TOOLS_CALL,
+						params("name", "custom-async", "arguments", Map.of()));
+				assertThat(((List<Map<String, Object>>) result.get("content")).get(0).get("text"))
+					.isEqualTo("from custom async repository");
+			});
+	}
+
+	@Test
+	void syncAndAsyncRepositoriesForOnePrimitiveFailFast() {
+		this.contextRunner
+			.withUserConfiguration(CustomRepositoryConfiguration.class, CustomAsyncRepositoryConfiguration.class)
+			.run(context -> {
+				assertThat(context).hasFailed();
+				assertThat(context.getStartupFailure()).rootCause()
+					.isInstanceOf(IllegalStateException.class)
+					.hasMessageContaining("McpSyncToolRepository")
+					.hasMessageContaining("McpAsyncToolRepository");
+			});
+	}
+
+	@Test
+	void listBeansOfTheOtherTypeFailFast() {
+		this.contextRunner.withPropertyValues("spring.ai.mcp.server.type=ASYNC")
+			.withUserConfiguration(SyncToolListConfiguration.class)
+			.run(context -> {
+				assertThat(context).hasFailed();
+				assertThat(context.getStartupFailure()).rootCause()
+					.isInstanceOf(IllegalStateException.class)
+					.hasMessageContaining("List<McpSyncTool> beans are defined (1 entry)")
+					.hasMessageContaining("spring.ai.mcp.server.type=SYNC")
+					.hasMessageContaining("McpSyncToolRepository");
+			});
+		this.contextRunner.withUserConfiguration(AsyncPromptListConfiguration.class).run(context -> {
 			assertThat(context).hasFailed();
 			assertThat(context.getStartupFailure()).rootCause()
 				.isInstanceOf(IllegalStateException.class)
-				.hasMessageContaining("type=ASYNC is not supported");
+				.hasMessageContaining("List<McpAsyncPrompt> beans are defined (1 entry)")
+				.hasMessageContaining("McpAsyncPromptRepository");
 		});
+	}
+
+	@Test
+	@ExtendWith(OutputCaptureExtension.class)
+	@SuppressWarnings("unchecked")
+	void annotatedPrimitivesNextToARepositoryOfTheOtherFlavourAreReported(CapturedOutput output) {
+		// type=ASYNC publishes the annotated tools and ToolCallbacks as
+		// List<McpAsyncTool>,
+		// which a user-defined McpSyncToolRepository does not read. It may serve a
+		// catalogue
+		// of its own on purpose, so the server starts and warns.
+		this.contextRunner.withPropertyValues("spring.ai.mcp.server.type=ASYNC")
+			.withUserConfiguration(UserConfiguration.class, SyncToolRepositoryConfiguration.class)
+			.run(context -> {
+				assertThat(context).hasNotFailed();
+				Map<String, Object> list = call(context.getBean(McpServer.class), McpSchema.METHOD_TOOLS_LIST,
+						params());
+				assertThat((List<Map<String, Object>>) list.get("tools")).isEmpty();
+				assertThat(output).contains("List<McpAsyncTool> beans are defined (3 entries)")
+					.contains("application-defined McpSyncToolRepository")
+					.contains("set it to SYNC");
+			});
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	void listBeansOfTheOtherTypeAreServedByARepositoryOfThatType() {
+		this.contextRunner.withPropertyValues("spring.ai.mcp.server.type=ASYNC")
+			.withUserConfiguration(SyncToolListConfiguration.class, SyncToolRepositoryConfiguration.class)
+			.run(context -> {
+				assertThat(context).hasNotFailed();
+				assertThat(context).doesNotHaveBean(InMemoryAsyncToolRepository.class);
+				Map<String, Object> list = callAsync(context.getBean(McpServer.class), McpSchema.METHOD_TOOLS_LIST,
+						params());
+				assertThat((List<Map<String, Object>>) list.get("tools")).extracting(tool -> tool.get("name"))
+					.containsExactly("custom");
+			});
+	}
+
+	@Test
+	void asyncCapabilitiesCanBeDisabled() {
+		this.contextRunner
+			.withPropertyValues("spring.ai.mcp.server.type=ASYNC", "spring.ai.mcp.server.capabilities.tool=false",
+					"spring.ai.mcp.server.capabilities.completion=false")
+			.run(context -> {
+				assertThat(context).doesNotHaveBean(InMemoryAsyncToolRepository.class);
+				assertThat(context).hasSingleBean(InMemoryAsyncResourceRepository.class);
+				assertThat(context).hasSingleBean(McpServer.class);
+				assertThat(context.getBean(InMemoryAsyncResourceRepository.class).supportsCompletion()).isFalse();
+				assertThat(context.getBean(InMemoryAsyncPromptRepository.class).supportsCompletion()).isFalse();
+			});
 	}
 
 	@Configuration
@@ -467,9 +719,8 @@ class McpServerModernAutoConfigurationIT {
 		 */
 		@Bean
 		RepositoryConsumer repositoryConsumer(InMemorySyncToolRepository tools,
-				InMemorySyncResourceRepository resources, InMemorySyncPromptRepository prompts,
-				InMemorySyncCompletionRepository completions) {
-			return new RepositoryConsumer(tools, resources, prompts, completions);
+				InMemorySyncResourceRepository resources, InMemorySyncPromptRepository prompts) {
+			return new RepositoryConsumer(tools, resources, prompts);
 		}
 
 	}
@@ -485,7 +736,7 @@ class McpServerModernAutoConfigurationIT {
 	}
 
 	record RepositoryConsumer(InMemorySyncToolRepository tools, InMemorySyncResourceRepository resources,
-			InMemorySyncPromptRepository prompts, InMemorySyncCompletionRepository completions) {
+			InMemorySyncPromptRepository prompts) {
 	}
 
 	@Configuration
@@ -530,6 +781,69 @@ class McpServerModernAutoConfigurationIT {
 					return tool != null && (admin(ctx) || !name.startsWith("admin_")) ? tool : null;
 				}
 			};
+		}
+
+	}
+
+	@Configuration
+	static class WrappingPromptRepositoryConfiguration {
+
+		// Hides the prompts from callers without the admin header. supportsCompletion()
+		// is a default method, so a wrapper that does not delegate it turns completion
+		// off.
+		@Bean
+		McpSyncPromptRepository promptRepository(ObjectProvider<List<McpSyncPrompt>> prompts) {
+			McpSyncPromptRepository inMemory = InMemorySyncPromptRepository.builder()
+				.prompts(prompts.stream().flatMap(List::stream).toList())
+				.build();
+			return new McpSyncPromptRepository() {
+				@Override
+				public PromptsPage list(McpRequestContext ctx, String cursor) {
+					return WrappingRepositoryConfiguration.admin(ctx) ? inMemory.list(ctx, cursor)
+							: PromptsPage.of(List.of());
+				}
+
+				@Override
+				public McpSyncPrompt find(McpRequestContext ctx, String name) {
+					return WrappingRepositoryConfiguration.admin(ctx) ? inMemory.find(ctx, name) : null;
+				}
+
+				@Override
+				public boolean supportsCompletion() {
+					return inMemory.supportsCompletion();
+				}
+			};
+		}
+
+	}
+
+	@Configuration
+	static class SyncToolListConfiguration {
+
+		@Bean
+		List<McpSyncTool> programmaticTools() {
+			return List.of(CustomToolRepository.TOOL);
+		}
+
+	}
+
+	@Configuration
+	static class SyncToolRepositoryConfiguration {
+
+		@Bean
+		McpSyncToolRepository syncToolRepository(ObjectProvider<List<McpSyncTool>> tools) {
+			return InMemorySyncToolRepository.builder().tools(tools.stream().flatMap(List::stream).toList()).build();
+		}
+
+	}
+
+	@Configuration
+	static class AsyncPromptListConfiguration {
+
+		@Bean
+		List<McpAsyncPrompt> programmaticAsyncPrompts() {
+			return List.of(McpAsyncPrompt.of(McpSchema.Prompt.builder("async-prompt").build(),
+					(ctx, request) -> Mono.empty()));
 		}
 
 	}
@@ -590,13 +904,63 @@ class McpServerModernAutoConfigurationIT {
 		}
 
 		@McpPrompt(name = "p", description = "p")
-		public String prompt() {
+		public String prompt(@McpArg(name = "topic") String topic) {
 			return "prompt";
 		}
 
 		@McpComplete(prompt = "p")
 		public List<String> completeTopic(String value) {
 			return List.of(value + "1");
+		}
+
+		@McpComplete(uri = "test://docs/{id}")
+		public List<String> completeDocId(String value) {
+			return List.of("doc-" + value);
+		}
+
+	}
+
+	@Configuration
+	static class EarlyAsyncRepositoryConsumerConfiguration {
+
+		@Bean
+		AsyncRepositoryConsumer asyncRepositoryConsumer(InMemoryAsyncToolRepository tools,
+				InMemoryAsyncResourceRepository resources, InMemoryAsyncPromptRepository prompts) {
+			return new AsyncRepositoryConsumer(tools, resources, prompts);
+		}
+
+	}
+
+	record AsyncRepositoryConsumer(InMemoryAsyncToolRepository tools, InMemoryAsyncResourceRepository resources,
+			InMemoryAsyncPromptRepository prompts) {
+	}
+
+	@Configuration
+	static class CustomAsyncRepositoryConfiguration {
+
+		@Bean
+		McpAsyncToolRepository customAsyncToolRepository() {
+			return new CustomAsyncToolRepository();
+		}
+
+	}
+
+	static class CustomAsyncToolRepository implements McpAsyncToolRepository {
+
+		private static final McpAsyncTool TOOL = McpAsyncTool.of(
+				McpSchema.Tool.builder("custom-async", Map.of("type", "object")).description("Custom").build(),
+				(ctx, request) -> Mono.just(McpAsyncResponse.result(McpSchema.CallToolResult.builder()
+					.addContent(McpSchema.TextContent.builder("from custom async repository").build())
+					.build())));
+
+		@Override
+		public Mono<ToolsPage> list(McpRequestContext ctx, String cursor) {
+			return Mono.just(ToolsPage.of(List.of(TOOL.definition())));
+		}
+
+		@Override
+		public Mono<McpAsyncTool> find(McpRequestContext ctx, String name) {
+			return TOOL.definition().name().equals(name) ? Mono.just(TOOL) : Mono.empty();
 		}
 
 	}
