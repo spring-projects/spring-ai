@@ -17,6 +17,7 @@
 package org.springframework.ai.session.jdbc;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -59,6 +60,7 @@ import org.springframework.test.context.jdbc.Sql;
 import org.springframework.test.context.jdbc.Sql.ExecutionPhase;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
 /**
  * Tests for {@link JdbcSessionRepository} backed by an in-process H2 database.
@@ -66,6 +68,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p>
  * Mirrors the contract of {@code InMemorySessionRepositoryTests} so both implementations
  * are verified against the same specification.
+ *
+ * @author Christian Tzolov
  */
 @SpringBootTest
 @TestPropertySource(properties = { "spring.datasource.url=jdbc:h2:mem:sessiontest;DB_CLOSE_DELAY=-1" })
@@ -347,9 +351,59 @@ class JdbcSessionRepositoryTests {
 			.containsExactly("u3", "a3");
 	}
 
+	@Test
+	void appendEventsChecksIdsOfBatchLargerThanOneInList() {
+		Session session = buildSession("user-batch");
+		this.repository.save(session);
+		List<SessionEvent> batch = userEvents(session.id(), 2 * JdbcSessionRepository.MAX_IN_LIST_SIZE + 500);
+
+		assertThat(this.repository.appendEvents(session.id(), batch, 0)).isTrue();
+
+		assertThat(this.repository.findEvents(session.id(), EventFilter.all())).extracting(SessionEvent::getId)
+			.containsExactlyElementsOf(batch.stream().map(SessionEvent::getId).toList());
+
+		// An id already in the log is found wherever it is in the batch
+		List<SessionEvent> replay = new ArrayList<>(userEvents(session.id(), batch.size()));
+		SessionEvent taken = batch.get(batch.size() - 1);
+		replay.set(replay.size() - 1, taken);
+		assertThatIllegalArgumentException().isThrownBy(() -> this.repository.appendEvents(session.id(), replay, 1))
+			.withMessageContaining(taken.getId());
+		assertThat(this.repository.getEventVersion(session.id())).isEqualTo(1);
+	}
+
+	@Test
+	void activeViewOfBoundaryNamingMoreIdsThanOneInListIsReadInLogOrder() {
+		Session session = buildSession("user-view");
+		this.repository.save(session);
+		int preserved = 2 * JdbcSessionRepository.MAX_IN_LIST_SIZE + 500;
+		this.repository.appendEvents(session.id(), userEvents(session.id(), preserved + 100), 0);
+		DefaultSessionService service = DefaultSessionService.builder().sessionRepository(this.repository).build();
+		service.compact(session.id(), request -> true,
+				WindowCompactionStrategy.builder().lastEvents(preserved).build());
+		this.repository.appendEvent(
+				SessionEvent.builder().sessionId(session.id()).message(new UserMessage("after compaction")).build());
+
+		List<SessionEvent> active = this.repository.findEvents(session.id(), EventFilter.active());
+
+		List<SessionEvent> log = this.repository.findEvents(session.id(), EventFilter.all());
+		assertThat(active).hasSizeGreaterThan(2 * JdbcSessionRepository.MAX_IN_LIST_SIZE)
+			.hasSizeLessThan(log.size() - 1)
+			.extracting(SessionEvent::getId)
+			.containsExactlyElementsOf(EventFilter.active().apply(log).stream().map(SessionEvent::getId).toList());
+		assertThat(active.get(active.size() - 1).getMessage().getText()).isEqualTo("after compaction");
+	}
+
 	// -------------------------------------------------------------------------
 	// Helpers
 	// -------------------------------------------------------------------------
+
+	private static List<SessionEvent> userEvents(String sessionId, int count) {
+		List<SessionEvent> events = new ArrayList<>(count);
+		for (int i = 0; i < count; i++) {
+			events.add(SessionEvent.builder().sessionId(sessionId).message(new UserMessage("message " + i)).build());
+		}
+		return events;
+	}
 
 	private Session buildSession(String principal) {
 		return Session.builder()
