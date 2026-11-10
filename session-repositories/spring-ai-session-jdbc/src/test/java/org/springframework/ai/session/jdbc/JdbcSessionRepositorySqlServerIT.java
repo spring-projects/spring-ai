@@ -16,6 +16,7 @@
 
 package org.springframework.ai.session.jdbc;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -29,11 +30,13 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.mssqlserver.MSSQLServerContainer;
 
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.session.DefaultSessionService;
 import org.springframework.ai.session.EventFilter;
 import org.springframework.ai.session.Session;
 import org.springframework.ai.session.SessionAttributes;
 import org.springframework.ai.session.SessionEvent;
 import org.springframework.ai.session.SessionRepository;
+import org.springframework.ai.session.compaction.WindowCompactionStrategy;
 import org.springframework.ai.test.session.AbstractSessionRepositoryContractTests;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.dao.DataAccessException;
@@ -59,6 +62,9 @@ class JdbcSessionRepositorySqlServerIT {
 	@Container
 	static final MSSQLServerContainer sqlServer = new MSSQLServerContainer("mcr.microsoft.com/mssql/server:2022-latest")
 		.acceptLicense();
+
+	/** SQL Server allows at most 2100 parameters in a statement. */
+	private static final int MORE_THAN_STATEMENT_PARAMETERS = 2500;
 
 	private static SQLServerDataSource dataSource;
 
@@ -236,6 +242,44 @@ class JdbcSessionRepositorySqlServerIT {
 	}
 
 	@Test
+	void appendEventsAcceptsBatchOfMoreEventsThanStatementParameters() {
+		// The ids of the batch are looked up before the insert, and SQL Server rejects a
+		// statement with more than 2100 parameters.
+		String sessionId = UUID.randomUUID().toString();
+		this.repository
+			.save(Session.builder().id(sessionId).metadata(SessionAttributes.PRINCIPAL_NAME, "user-batch").build());
+		List<SessionEvent> batch = userEvents(sessionId, MORE_THAN_STATEMENT_PARAMETERS);
+
+		assertThat(this.repository.appendEvents(sessionId, batch, 0)).isTrue();
+
+		assertThat(this.repository.findEvents(sessionId, EventFilter.all())).extracting(SessionEvent::getId)
+			.containsExactlyElementsOf(batch.stream().map(SessionEvent::getId).toList());
+	}
+
+	@Test
+	void activeViewReadsBoundaryNamingMoreIdsThanStatementParameters() {
+		// The events a compaction boundary names are read by id.
+		String sessionId = UUID.randomUUID().toString();
+		this.repository
+			.save(Session.builder().id(sessionId).metadata(SessionAttributes.PRINCIPAL_NAME, "user-view").build());
+		this.repository.appendEvents(sessionId, userEvents(sessionId, MORE_THAN_STATEMENT_PARAMETERS + 100), 0);
+		DefaultSessionService service = DefaultSessionService.builder().sessionRepository(this.repository).build();
+		service.compact(sessionId, request -> true,
+				WindowCompactionStrategy.builder().lastEvents(MORE_THAN_STATEMENT_PARAMETERS).build());
+		this.repository.appendEvent(
+				SessionEvent.builder().sessionId(sessionId).message(new UserMessage("after compaction")).build());
+
+		List<SessionEvent> active = this.repository.findEvents(sessionId, EventFilter.active());
+
+		List<SessionEvent> log = this.repository.findEvents(sessionId, EventFilter.all());
+		assertThat(active).hasSizeGreaterThan(MORE_THAN_STATEMENT_PARAMETERS)
+			.hasSizeLessThan(log.size() - 1)
+			.extracting(SessionEvent::getId)
+			.containsExactlyElementsOf(EventFilter.active().apply(log).stream().map(SessionEvent::getId).toList());
+		assertThat(active.get(active.size() - 1).getMessage().getText()).isEqualTo("after compaction");
+	}
+
+	@Test
 	void timestampsAreStoredAsUtcRegardlessOfJvmTimeZone() {
 		DialectScenarios.timestampsAreStoredAsUtcRegardlessOfJvmTimeZone(this.repository, new JdbcTemplate(dataSource));
 	}
@@ -249,6 +293,14 @@ class JdbcSessionRepositorySqlServerIT {
 	@Test
 	void repeatedSummarizationOnlyAppendsAndProjectsView() {
 		DialectScenarios.repeatedSummarizationOnlyAppendsAndProjectsView(this.repository);
+	}
+
+	private static List<SessionEvent> userEvents(String sessionId, int count) {
+		List<SessionEvent> events = new ArrayList<>(count);
+		for (int i = 0; i < count; i++) {
+			events.add(SessionEvent.builder().sessionId(sessionId).message(new UserMessage("message " + i)).build());
+		}
+		return events;
 	}
 
 	/** The repository contract, run against SQL Server. */
