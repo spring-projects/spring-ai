@@ -58,8 +58,18 @@ public class SystemPromptTemplate extends PromptTemplate {
 	}
 
 	@Override
+	public Prompt create(ChatOptions modelOptions) {
+		return new Prompt(new SystemMessage(render()), modelOptions);
+	}
+
+	@Override
 	public Prompt create(Map<String, Object> model) {
 		return new Prompt(new SystemMessage(render(model)));
+	}
+
+	@Override
+	public Prompt create(Map<String, Object> model, ChatOptions modelOptions) {
+		return new Prompt(new SystemMessage(render(model)), modelOptions);
 	}
 
 	public static Builder builder() {
