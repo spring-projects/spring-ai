@@ -50,7 +50,8 @@ public interface JdbcSessionRepositoryDialect {
 	 * four parameters as {@link #getUpsertSessionSql()}: one row updated on insert, zero
 	 * rows or a duplicate-key error when the id exists. The default is a plain {@code
 	 * INSERT}; a database whose failed statement aborts the enclosing transaction,
-	 * PostgreSQL, uses a conflict-ignoring form.
+	 * PostgreSQL always and SQL Server with {@code XACT_ABORT ON}, uses a form that
+	 * inserts nothing instead.
 	 */
 	default String getInsertSessionIfAbsentSql() {
 		return "INSERT INTO AI_SESSION (id, created_at, expires_at, metadata) VALUES (?, ?, ?, ?)";

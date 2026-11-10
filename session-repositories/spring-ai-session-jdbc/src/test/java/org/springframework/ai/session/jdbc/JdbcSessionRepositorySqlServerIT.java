@@ -38,7 +38,9 @@ import org.springframework.ai.test.session.AbstractSessionRepositoryContractTest
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.jdbc.datasource.init.ResourceDatabasePopulator;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
@@ -148,6 +150,30 @@ class JdbcSessionRepositorySqlServerIT {
 		assertThat(existing.metadata()).containsEntry("owner", "first");
 		assertThat(new JdbcTemplate(dataSource).queryForObject("SELECT COUNT(*) FROM AI_SESSION", Integer.class))
 			.isEqualTo(1);
+	}
+
+	@Test
+	void saveIfAbsentOfExistingIdKeepsCallerTransactionUnderXactAbort() {
+		// With XACT_ABORT ON a duplicate-key error rolls the whole transaction back on
+		// the server, silently dropping what the caller did before it.
+		String existingId = UUID.randomUUID().toString();
+		this.repository.save(Session.builder().id(existingId).metadata("owner", "first").build());
+		String otherId = UUID.randomUUID().toString();
+		JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
+		TransactionTemplate callerTransaction = new TransactionTemplate(new DataSourceTransactionManager(dataSource));
+
+		callerTransaction.executeWithoutResult(status -> {
+			jdbcTemplate.execute("SET XACT_ABORT ON");
+			this.repository.save(Session.builder().id(otherId).metadata("owner", "other").build());
+			assertThat(
+					this.repository.saveIfAbsent(Session.builder().id(existingId).metadata("owner", "second").build()))
+				.isFalse();
+		});
+
+		assertThat(this.repository.findById(otherId)).isNotNull();
+		Session existing = this.repository.findById(existingId);
+		assertThat(existing).isNotNull();
+		assertThat(existing.metadata()).containsEntry("owner", "first");
 	}
 
 	@Test
