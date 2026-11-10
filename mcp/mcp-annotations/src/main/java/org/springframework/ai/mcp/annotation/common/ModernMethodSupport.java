@@ -296,12 +296,6 @@ public final class ModernMethodSupport {
 	}
 
 	/**
-	 * As {@link #filterLegacyContextMethods()}, also skipping methods that declare the
-	 * notifier of the other programming model.
-	 * @param supportedNotifier the notifier type the provider's callbacks inject
-	 * @since 2.1.0
-	 */
-	/**
 	 * Skips, with a warning, a method with an asynchronous return type, which a
 	 * synchronous modern server cannot wait for: {@code Mono}, {@code Flux}, any other
 	 * {@code Publisher}, a {@code CompletionStage}, or any other type that Spring's
@@ -323,6 +317,12 @@ public final class ModernMethodSupport {
 		};
 	}
 
+	/**
+	 * As {@link #filterLegacyContextMethods()}, also skipping methods that declare the
+	 * notifier of the other programming model.
+	 * @param supportedNotifier the notifier type the provider's callbacks inject
+	 * @since 2.1.0
+	 */
 	public static Predicate<Method> filterLegacyContextMethods(Class<?> supportedNotifier) {
 		return method -> {
 			for (Class<?> type : method.getParameterTypes()) {
