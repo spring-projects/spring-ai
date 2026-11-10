@@ -48,6 +48,7 @@ import io.modelcontextprotocol.modern.server.feature.McpSyncToolRepository;
 import io.modelcontextprotocol.modern.server.feature.PromptsPage;
 import io.modelcontextprotocol.modern.server.feature.ToolsPage;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import reactor.core.publisher.Mono;
 
 import org.springframework.ai.mcp.annotation.McpArg;
@@ -75,6 +76,8 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
 import org.springframework.boot.test.context.FilteredClassLoader;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -618,6 +621,28 @@ class McpServerModernAutoConfigurationIT {
 				.hasMessageContaining("List<McpAsyncPrompt> beans are defined (1 entry)")
 				.hasMessageContaining("McpAsyncPromptRepository");
 		});
+	}
+
+	@Test
+	@ExtendWith(OutputCaptureExtension.class)
+	@SuppressWarnings("unchecked")
+	void annotatedPrimitivesNextToARepositoryOfTheOtherFlavourAreReported(CapturedOutput output) {
+		// type=ASYNC publishes the annotated tools and ToolCallbacks as
+		// List<McpAsyncTool>,
+		// which a user-defined McpSyncToolRepository does not read. It may serve a
+		// catalogue
+		// of its own on purpose, so the server starts and warns.
+		this.contextRunner.withPropertyValues("spring.ai.mcp.server.type=ASYNC")
+			.withUserConfiguration(UserConfiguration.class, SyncToolRepositoryConfiguration.class)
+			.run(context -> {
+				assertThat(context).hasNotFailed();
+				Map<String, Object> list = call(context.getBean(McpServer.class), McpSchema.METHOD_TOOLS_LIST,
+						params());
+				assertThat((List<Map<String, Object>>) list.get("tools")).isEmpty();
+				assertThat(output).contains("List<McpAsyncTool> beans are defined (3 entries)")
+					.contains("application-defined McpSyncToolRepository")
+					.contains("set it to SYNC");
+			});
 	}
 
 	@Test

@@ -18,6 +18,7 @@ package org.springframework.ai.mcp.server.common.autoconfigure;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Locale;
 
 import io.modelcontextprotocol.json.McpJsonDefaults;
 import io.modelcontextprotocol.json.McpJsonMapper;
@@ -58,6 +59,7 @@ import org.springframework.ai.mcp.modern.SyncResourceRegistration;
 import org.springframework.ai.mcp.modern.SyncResourceTemplateRegistration;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerModernProperties;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerProperties;
+import org.springframework.beans.factory.ListableBeanFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
@@ -69,8 +71,10 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.SmartLifecycle;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
+import org.springframework.core.ResolvableType;
 import org.springframework.core.log.LogAccessor;
 import org.springframework.util.Assert;
+import org.springframework.util.StringUtils;
 
 /**
  * {@link AutoConfiguration Auto-configuration} for a 2026-07-28 ("modern") MCP server,
@@ -121,9 +125,7 @@ public class McpServerModernAutoConfiguration {
 	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "capabilities.tool", havingValue = "true",
 			matchIfMissing = true)
 	public InMemorySyncToolRepository mcpModernToolRepository(ObjectProvider<List<McpSyncTool>> tools,
-			ObjectProvider<List<McpAsyncTool>> asyncTools, McpChangeFeed changeFeed,
-			McpServerModernProperties modernProperties) {
-		rejectUnservedLists(asyncTools, "List<McpAsyncTool>", "tool", "SYNC", "ASYNC", "McpAsyncToolRepository");
+			McpChangeFeed changeFeed, McpServerModernProperties modernProperties) {
 		List<McpSyncTool> all = tools.stream().flatMap(List::stream).toList();
 		logger.info("Registered modern tools: " + all.size());
 		return InMemorySyncToolRepository.builder()
@@ -141,14 +143,8 @@ public class McpServerModernAutoConfiguration {
 			havingValue = "true", matchIfMissing = true)
 	public InMemorySyncResourceRepository mcpModernResourceRepository(
 			ObjectProvider<List<SyncResourceRegistration>> resources,
-			ObjectProvider<List<SyncResourceTemplateRegistration>> resourceTemplates,
-			ObjectProvider<List<AsyncResourceRegistration>> asyncResources,
-			ObjectProvider<List<AsyncResourceTemplateRegistration>> asyncResourceTemplates, McpChangeFeed changeFeed,
+			ObjectProvider<List<SyncResourceTemplateRegistration>> resourceTemplates, McpChangeFeed changeFeed,
 			McpServerProperties serverProperties, McpServerModernProperties modernProperties) {
-		rejectUnservedLists(asyncResources, "List<AsyncResourceRegistration>", "resource", "SYNC", "ASYNC",
-				"McpAsyncResourceRepository");
-		rejectUnservedLists(asyncResourceTemplates, "List<AsyncResourceTemplateRegistration>", "resource", "SYNC",
-				"ASYNC", "McpAsyncResourceRepository");
 		List<SyncResourceRegistration> allResources = resources.stream().flatMap(List::stream).toList();
 		List<SyncResourceTemplateRegistration> allTemplates = resourceTemplates.stream().flatMap(List::stream).toList();
 		logger.info(
@@ -170,10 +166,8 @@ public class McpServerModernAutoConfiguration {
 	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "capabilities.prompt",
 			havingValue = "true", matchIfMissing = true)
 	public InMemorySyncPromptRepository mcpModernPromptRepository(ObjectProvider<List<McpSyncPrompt>> prompts,
-			ObjectProvider<List<McpAsyncPrompt>> asyncPrompts, McpChangeFeed changeFeed,
-			McpServerProperties serverProperties, McpServerModernProperties modernProperties) {
-		rejectUnservedLists(asyncPrompts, "List<McpAsyncPrompt>", "prompt", "SYNC", "ASYNC",
-				"McpAsyncPromptRepository");
+			McpChangeFeed changeFeed, McpServerProperties serverProperties,
+			McpServerModernProperties modernProperties) {
 		List<McpSyncPrompt> all = prompts.stream().flatMap(List::stream).toList();
 		logger.info("Registered modern prompts: " + all.size());
 		return InMemorySyncPromptRepository.builder()
@@ -193,9 +187,7 @@ public class McpServerModernAutoConfiguration {
 	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "capabilities.tool", havingValue = "true",
 			matchIfMissing = true)
 	public InMemoryAsyncToolRepository mcpModernAsyncToolRepository(ObjectProvider<List<McpAsyncTool>> tools,
-			ObjectProvider<List<McpSyncTool>> syncTools, McpChangeFeed changeFeed,
-			McpServerModernProperties modernProperties) {
-		rejectUnservedLists(syncTools, "List<McpSyncTool>", "tool", "ASYNC", "SYNC", "McpSyncToolRepository");
+			McpChangeFeed changeFeed, McpServerModernProperties modernProperties) {
 		List<McpAsyncTool> all = tools.stream().flatMap(List::stream).toList();
 		logger.info("Registered modern async tools: " + all.size());
 		return InMemoryAsyncToolRepository.builder()
@@ -212,14 +204,8 @@ public class McpServerModernAutoConfiguration {
 			havingValue = "true", matchIfMissing = true)
 	public InMemoryAsyncResourceRepository mcpModernAsyncResourceRepository(
 			ObjectProvider<List<AsyncResourceRegistration>> resources,
-			ObjectProvider<List<AsyncResourceTemplateRegistration>> resourceTemplates,
-			ObjectProvider<List<SyncResourceRegistration>> syncResources,
-			ObjectProvider<List<SyncResourceTemplateRegistration>> syncResourceTemplates, McpChangeFeed changeFeed,
+			ObjectProvider<List<AsyncResourceTemplateRegistration>> resourceTemplates, McpChangeFeed changeFeed,
 			McpServerProperties serverProperties, McpServerModernProperties modernProperties) {
-		rejectUnservedLists(syncResources, "List<SyncResourceRegistration>", "resource", "ASYNC", "SYNC",
-				"McpSyncResourceRepository");
-		rejectUnservedLists(syncResourceTemplates, "List<SyncResourceTemplateRegistration>", "resource", "ASYNC",
-				"SYNC", "McpSyncResourceRepository");
 		List<AsyncResourceRegistration> allResources = resources.stream().flatMap(List::stream).toList();
 		List<AsyncResourceTemplateRegistration> allTemplates = resourceTemplates.stream()
 			.flatMap(List::stream)
@@ -242,9 +228,8 @@ public class McpServerModernAutoConfiguration {
 	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "capabilities.prompt",
 			havingValue = "true", matchIfMissing = true)
 	public InMemoryAsyncPromptRepository mcpModernAsyncPromptRepository(ObjectProvider<List<McpAsyncPrompt>> prompts,
-			ObjectProvider<List<McpSyncPrompt>> syncPrompts, McpChangeFeed changeFeed,
-			McpServerProperties serverProperties, McpServerModernProperties modernProperties) {
-		rejectUnservedLists(syncPrompts, "List<McpSyncPrompt>", "prompt", "ASYNC", "SYNC", "McpSyncPromptRepository");
+			McpChangeFeed changeFeed, McpServerProperties serverProperties,
+			McpServerModernProperties modernProperties) {
 		List<McpAsyncPrompt> all = prompts.stream().flatMap(List::stream).toList();
 		logger.info("Registered modern async prompts: " + all.size());
 		return InMemoryAsyncPromptRepository.builder()
@@ -265,8 +250,8 @@ public class McpServerModernAutoConfiguration {
 			ObjectProvider<McpAsyncResourceRepository> asyncResourceRepository,
 			ObjectProvider<McpSyncPromptRepository> promptRepository,
 			ObjectProvider<McpAsyncPromptRepository> asyncPromptRepository, McpChangeFeed changeFeed,
-			ObjectProvider<RequestStateCodec> requestStateCodec,
-			ObjectProvider<McpModernServerCustomizer> customizers) {
+			ObjectProvider<RequestStateCodec> requestStateCodec, ObjectProvider<McpModernServerCustomizer> customizers,
+			ListableBeanFactory beanFactory) {
 
 		McpJsonMapper mcpJsonMapper = new JacksonMcpJsonMapper(jsonMapper);
 		long listTtlMs = modernProperties.getListTtl().toMillis();
@@ -307,6 +292,17 @@ public class McpServerModernAutoConfiguration {
 		asyncPromptRepository.ifAvailable(repository -> builder
 			.feature(PromptsFeature.ofAsync(repository, mcpJsonMapper, listTtlMs, listCacheScope)));
 
+		// A repository reads only the list beans of its own flavour, so entries in list
+		// beans of the other flavour would be missing from the server.
+		checkUnreadLists(beanFactory, serverProperties.getType().name(), "tool", tools,
+				asyncToolRepository.getIfAvailable(), List.of(McpSyncTool.class), List.of(McpAsyncTool.class));
+		checkUnreadLists(beanFactory, serverProperties.getType().name(), "resource", resources,
+				asyncResourceRepository.getIfAvailable(),
+				List.of(SyncResourceRegistration.class, SyncResourceTemplateRegistration.class),
+				List.of(AsyncResourceRegistration.class, AsyncResourceTemplateRegistration.class));
+		checkUnreadLists(beanFactory, serverProperties.getType().name(), "prompt", prompts,
+				asyncPromptRepository.getIfAvailable(), List.of(McpSyncPrompt.class), List.of(McpAsyncPrompt.class));
+
 		if (modernProperties.isSubscriptions()) {
 			builder.subscriptions(changeFeed);
 		}
@@ -319,20 +315,54 @@ public class McpServerModernAutoConfiguration {
 	}
 
 	/**
-	 * Fails when list beans of the other flavour hold primitives that the in-memory
-	 * repository would not serve: the in-memory repository of each type reads only the
-	 * lists of that type, and it exists only when no user repository serves the
-	 * primitive, so nothing would consume them and they would silently be missing.
+	 * Reports list beans whose entries the primitive's repository does not read, because
+	 * it is of the other flavour. Next to the in-memory repository, which reads only the
+	 * list beans of the configured type, this fails at startup. Next to a user repository
+	 * it is a warning: a repository may serve a catalogue of its own and ignore the list
+	 * beans on purpose. Without any repository the capability is off and the lists are
+	 * ignored.
 	 */
-	private static void rejectUnservedLists(ObjectProvider<? extends List<?>> lists, String listType, String primitive,
-			String type, String otherType, String otherRepositoryType) {
-		int count = lists.stream().mapToInt(List::size).sum();
-		if (count > 0) {
-			throw new IllegalStateException(
-					listType + " beans are defined (" + count + (count == 1 ? " entry" : " entries")
-							+ "), but with spring.ai.mcp.server.type=" + type + " the in-memory " + primitive
-							+ " repository serves only the " + type + " list beans. Set spring.ai.mcp.server.type="
-							+ otherType + ", or define a " + otherRepositoryType + " bean that serves them.");
+	private static void checkUnreadLists(ListableBeanFactory beanFactory, String type, String primitive,
+			@Nullable Object syncRepository, @Nullable Object asyncRepository, List<Class<?>> syncLists,
+			List<Class<?>> asyncLists) {
+		if (syncRepository == null && asyncRepository != null) {
+			checkUnreadLists(beanFactory, type, primitive, asyncRepository, syncLists, "Async", "Sync");
+		}
+		if (asyncRepository == null && syncRepository != null) {
+			checkUnreadLists(beanFactory, type, primitive, syncRepository, asyncLists, "Sync", "Async");
+		}
+	}
+
+	private static void checkUnreadLists(ListableBeanFactory beanFactory, String type, String primitive,
+			Object repository, List<Class<?>> unreadElementTypes, String flavour, String otherFlavour) {
+		String name = StringUtils.capitalize(primitive) + "Repository";
+		String repositoryType = "Mcp" + flavour + name;
+		// The auto-configured in-memory repository is the one of the configured type; any
+		// other repository bean is the application's, even when it wraps an in-memory
+		// one.
+		String inMemoryBean = "mcpModern" + (flavour.equals("Async") ? "Async" : "") + name;
+		boolean inMemory = beanFactory.containsBean(inMemoryBean) && beanFactory.getBean(inMemoryBean) == repository;
+		for (Class<?> elementType : unreadElementTypes) {
+			int count = beanFactory.getBeanProvider(ResolvableType.forClassWithGenerics(List.class, elementType))
+				.stream()
+				.mapToInt(list -> ((List<?>) list).size())
+				.sum();
+			if (count == 0) {
+				continue;
+			}
+			String lists = "List<" + elementType.getSimpleName() + "> beans are defined (" + count
+					+ (count == 1 ? " entry" : " entries") + ")";
+			if (inMemory) {
+				throw new IllegalStateException(lists + ", but with spring.ai.mcp.server.type=" + type + " the "
+						+ primitive + "s are served by the in-memory " + repositoryType + ", which reads only the "
+						+ type + " list beans. Set spring.ai.mcp.server.type=" + otherFlavour.toUpperCase(Locale.ROOT)
+						+ " to serve them from the in-memory Mcp" + otherFlavour + name + ", or define them for the "
+						+ repositoryType + ".");
+			}
+			logger.warn(lists + ", but the " + primitive + "s are served by an application-defined " + repositoryType
+					+ " bean, which does not read them, so they are not served. Annotated methods and ToolCallbacks"
+					+ " follow spring.ai.mcp.server.type (" + type + "); set it to " + flavour.toUpperCase(Locale.ROOT)
+					+ " to publish them for this repository.");
 		}
 	}
 

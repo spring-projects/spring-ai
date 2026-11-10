@@ -301,7 +301,9 @@ A method that declares the notifier of the other programming model is skipped wi
 The async server serves the same primitives from the asynchronous repositories: `McpAsyncToolRepository`, `McpAsyncResourceRepository` and `McpAsyncPromptRepository`, backed by default by `InMemoryAsyncToolRepository`, `InMemoryAsyncResourceRepository` and `InMemoryAsyncPromptRepository`, and fed by the `McpAsyncTool`, `AsyncResourceRegistration`, `AsyncResourceTemplateRegistration` and `McpAsyncPrompt` list beans described below.
 The type property only picks these defaults: a repository bean of either flavour is served on either type, which lets a `type=SYNC` application serve one primitive from a non-blocking repository.
 A sync and an async repository bean for the same primitive fail the application at startup.
-The in-memory repositories read only the list beans of their type, so list beans of the other type, for example a `List<McpSyncTool>` on `type=ASYNC`, also fail the application at startup unless a repository bean of their flavour serves them.
+A repository reads only the list beans of its own flavour.
+List beans of the other type, for example a `List<McpSyncTool>` on `type=ASYNC`, fail the application at startup when the in-memory repository serves the primitive.
+Next to an application-defined repository of the other flavour, for example the annotated methods on `type=ASYNC` next to a `McpSyncToolRepository` bean, the server starts and logs a warning, because such a repository may serve a catalogue of its own on purpose.
 
 NOTE: The transports are the same for both types. The WebFlux transport is non-blocking end to end on `type=ASYNC`; the WebMVC transport subscribes on the container thread and waits for the result, as it does for sync handlers, so `McpRequestContext.isBlocking()` is `true` there.
 
