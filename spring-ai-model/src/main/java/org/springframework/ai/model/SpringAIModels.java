@@ -38,6 +38,8 @@ public final class SpringAIModels {
 
 	public static final String OLLAMA = "ollama";
 
+	public static final String RECKONING = "reckoning";
+
 	public static final String OPENAI = "openai";
 
 	public static final String OPENAI_SDK = "openai-sdk";

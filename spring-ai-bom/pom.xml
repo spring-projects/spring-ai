@@ -326,6 +326,12 @@
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-reckoning</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-openai</artifactId>
 				<version>${project.version}</version>
 			</dependency>
@@ -710,6 +716,12 @@
 
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-autoconfigure-model-reckoning</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-autoconfigure-model-openai</artifactId>
 				<version>${project.version}</version>
 			</dependency>
@@ -1039,6 +1051,12 @@
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-starter-model-ollama</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-starter-model-reckoning</artifactId>
 				<version>${project.version}</version>
 			</dependency>
 
