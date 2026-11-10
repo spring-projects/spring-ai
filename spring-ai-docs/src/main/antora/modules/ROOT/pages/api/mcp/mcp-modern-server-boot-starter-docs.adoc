@@ -216,7 +216,7 @@ public String index(McpSyncNotifier notifier, @McpToolParam(description = "paths
 ----
 
 NOTE: The shape is fixed by the signature, not by the request: a method that declares the notifier answers over `text/event-stream` on every call, as an SDK handler that returns `McpSyncResponse.streaming` does.
-A progress notification is delivered only when the request carried a `progressToken` in `_meta`; `McpModernSyncRequestContext.progressToken()` tells whether it did, and without one the stream carries the result alone.
+A progress notification is delivered only when the request carried a `progressToken` in `_meta`; `McpModernRequestContext.progressToken()` tells whether it did, and without one the stream carries the result alone.
 Declare the notifier only where the method reports progress.
 
 === Multi Round-Trip Requests
@@ -228,7 +228,7 @@ The `requestState` you attach is sealed by the server and verified on retry, so 
 [source,java]
 ----
 @McpTool(name = "book", description = "Books a table")
-public CallToolOutcome book(McpModernSyncRequestContext ctx, @McpToolParam(description = "guests") int guests) {
+public CallToolOutcome book(McpModernRequestContext ctx, @McpToolParam(description = "guests") int guests) {
     Map<?, ?> confirmation = ctx.inputResponse("confirm", Map.class);
     if (confirmation == null) {
         return InputRequiredResult.builder()
@@ -252,7 +252,7 @@ Declare the capabilities a method cannot work without in `requiredCapabilities` 
 ----
 @McpTool(name = "summarize", description = "Asks the client's model for a summary",
         requiredCapabilities = McpClientCapability.SAMPLING)
-public CallToolOutcome summarize(McpModernSyncRequestContext ctx) {
+public CallToolOutcome summarize(McpModernRequestContext ctx) {
     ...
 }
 ----
@@ -272,7 +272,6 @@ The legacy servers ignore the attribute with a warning, as they do for the resou
 
 `spring.ai.mcp.server.type=ASYNC` switches the annotated methods, the repositories and the `ToolCallback` adapter to their reactive twins.
 A method may return a `Mono`, a `CompletableFuture` or `CompletionStage`, or a `Publisher` of any return type the sync model accepts, modern or legacy.
-A plain return value is accepted too, and the method runs on the calling thread when the request is served blocking and on `boundedElastic` otherwise.
 
 An MCP request has one result, and that sets the rule for streams.
 A method declared to return a `Flux` is rejected at startup; return a `Mono` of the result instead, for example a `Mono<List<String>>` or a `Mono<CompleteResult>`.
@@ -320,7 +319,7 @@ On `type=ASYNC` the in-memory repositories are `InMemoryAsyncToolRepository`, `I
 
 The annotated methods and the `ToolCallback` beans do not reach the server directly.
 The auto-configuration publishes them as list beans of the SDK primitive types, and the in-memory repositories are built from those lists.
-The lists are the contract between the scanning side and the repository side: a repository you define yourself consumes the same lists, and a list bean you define yourself is merged into the in-memory repository.
+The lists are the contract between the scanning side and the repository side: a repository you define yourself can build on the same lists, as the wrapper in <<Filtering per Caller>> does, and a list bean you define yourself is merged into the in-memory repository.
 
 [cols="2,3,3"]
 |===
@@ -346,7 +345,6 @@ The lists are the contract between the scanning side and the repository side: a 
 `SyncResourceRegistration` and `SyncResourceTemplateRegistration` pair a resource or template definition with its `McpSyncResource`, which carries no definition of its own.
 On `type=ASYNC` the contract is the same with the asynchronous twins: `List<McpAsyncTool>` (beans `modernAsyncTools` and `modernAsyncToolCallbacks`), `List<AsyncResourceRegistration>` (`modernAsyncResources`), `List<AsyncResourceTemplateRegistration>` (`modernAsyncResourceTemplates`) and `List<McpAsyncPrompt>` (`modernAsyncPrompts`), consumed by the `InMemoryAsync*Repository` beans.
 There can be several beans of each list type, so inject them as `ObjectProvider<List<McpSyncTool>>` and flatten, as the examples below do.
-The `ObjectProvider` also keeps the repository from being created before the annotation scanner has registered the annotated beans, which an eager `List<McpSyncTool>` parameter can cause.
 
 [source,java]
 ----
@@ -436,7 +434,7 @@ McpSyncToolRepository toolRepository(ObjectProvider<List<McpSyncTool>> tools, Mc
 }
 ----
 
-The `ObjectProvider` matters: the `List<McpSyncTool>` beans come from the annotation scanner, and injecting the lists directly can create the repository before the scanner has run.
+The `ObjectProvider` collects every `List<McpSyncTool>` bean, so the wrapper serves the annotated tools and the `ToolCallback`s alike.
 A listing that depends on the caller must be returned with `cacheScope: private`, as above, so that a shared cache never serves one caller's view to another.
 A wrapper that filters a page after the repository has paged it can return a short page; filter before paging, or leave `spring.ai.mcp.server.modern.page-size` unset so that everything is served on one page.
 Resource subscriptions on `subscriptions/listen` are matched by the SDK without consulting the repository, so a hidden resource's update notifications still reach a client that subscribed to its URI.
