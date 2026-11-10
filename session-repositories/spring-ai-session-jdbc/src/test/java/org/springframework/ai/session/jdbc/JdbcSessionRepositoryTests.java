@@ -66,6 +66,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p>
  * Mirrors the contract of {@code InMemorySessionRepositoryTests} so both implementations
  * are verified against the same specification.
+ *
+ * @author Christian Tzolov
  */
 @SpringBootTest
 @TestPropertySource(properties = { "spring.datasource.url=jdbc:h2:mem:sessiontest;DB_CLOSE_DELAY=-1" })
@@ -347,9 +349,68 @@ class JdbcSessionRepositoryTests {
 			.containsExactly("u3", "a3");
 	}
 
+	@Test
+	void deleteExpiredSessionsDeletesOnlyExpiredSessionsWithTheirEvents() {
+		Instant now = Instant.now();
+		Session expired1 = this.repository.save(expiring("user-expired", now.minusSeconds(60)));
+		Session expired2 = this.repository.save(expiring("user-expired", now.minusSeconds(1)));
+		Session live = this.repository.save(expiring("user-live", now.plusSeconds(60)));
+		Session eternal = this.repository.save(buildSession("user-eternal"));
+		this.repository
+			.appendEvent(SessionEvent.builder().sessionId(expired1.id()).message(new UserMessage("gone")).build());
+
+		assertThat(this.repository.deleteExpiredSessions(now)).isEqualTo(2);
+
+		assertThat(this.repository.findById(expired1.id())).isNull();
+		assertThat(this.repository.findById(expired2.id())).isNull();
+		assertThat(this.repository.findById(live.id())).isNotNull();
+		assertThat(this.repository.findById(eternal.id())).isNotNull();
+		assertThat(this.jdbcTemplate.queryForObject("SELECT COUNT(*) FROM AI_SESSION_EVENT", Integer.class)).isZero();
+		assertThat(this.repository.deleteExpiredSessions(now)).isZero();
+	}
+
+	@Test
+	void deleteExpiredSessionsKeepsSessionExtendedAfterItWasFoundExpired() {
+		Instant now = Instant.now();
+		Session expired = this.repository.save(expiring("user-expired", now.minusSeconds(60)));
+		Session extended = this.repository.save(expiring("user-extended", now.minusSeconds(60)));
+		// Extends one session right after the cleanup has read the expired ids
+		JdbcTemplate extendingAfterRead = new JdbcTemplate(this.dataSource) {
+			@Override
+			public <T> List<T> queryForList(String sql, Class<T> elementType, Object... args) {
+				List<T> result = super.queryForList(sql, elementType, args);
+				if (sql.contains("expires_at <")) {
+					JdbcSessionRepositoryTests.this.repository.save(Session.builder()
+						.id(extended.id())
+						.expiresAt(now.plusSeconds(60))
+						.metadata(extended.metadata())
+						.build());
+				}
+				return result;
+			}
+		};
+		JdbcSessionRepository repository = JdbcSessionRepository.builder()
+			.jdbcTemplate(extendingAfterRead)
+			.dialect(new H2JdbcSessionRepositoryDialect())
+			.build();
+
+		assertThat(repository.deleteExpiredSessions(now)).isEqualTo(1);
+
+		assertThat(this.repository.findById(expired.id())).isNull();
+		assertThat(this.repository.findById(extended.id())).isNotNull();
+	}
+
 	// -------------------------------------------------------------------------
 	// Helpers
 	// -------------------------------------------------------------------------
+
+	private Session expiring(String principal, Instant expiresAt) {
+		return Session.builder()
+			.id(UUID.randomUUID().toString())
+			.expiresAt(expiresAt)
+			.metadata(SessionAttributes.PRINCIPAL_NAME, principal)
+			.build();
+	}
 
 	private Session buildSession(String principal) {
 		return Session.builder()

@@ -109,10 +109,13 @@ public final class JdbcSessionRepository implements SessionRepository {
 	private static final String INSERT_SESSION_INDEX =
 		"INSERT INTO AI_SESSION_INDEX (session_id, attr_name, attr_value) VALUES (?, ?, ?)";
 
+	private static final String SELECT_EXPIRED_SESSION_IDS =
+		"SELECT id FROM AI_SESSION WHERE expires_at IS NOT NULL AND expires_at < ?";
+
 	// Checks the expiry in the DELETE itself, so a concurrently extended TTL is respected.
 	// Events are removed by the ON DELETE CASCADE foreign key.
-	private static final String DELETE_EXPIRED_SESSIONS =
-		"DELETE FROM AI_SESSION WHERE expires_at IS NOT NULL AND expires_at < ?";
+	private static final String DELETE_EXPIRED_SESSION =
+		"DELETE FROM AI_SESSION WHERE id = ? AND expires_at IS NOT NULL AND expires_at < ?";
 
 	private static final String DECREMENT_EVENT_VERSION =
 		"UPDATE AI_SESSION SET event_version = event_version - 1 WHERE id = ?";
@@ -271,7 +274,16 @@ public final class JdbcSessionRepository implements SessionRepository {
 	@Override
 	public int deleteExpiredSessions(Instant before) {
 		Assert.notNull(before, "before must not be null");
-		return this.jdbcTemplate.update(DELETE_EXPIRED_SESSIONS, toUtc(before));
+		// Each session is deleted by its id, not all of them by their expiry: a delete
+		// that finds its rows through the expires_at index locks the index entry before
+		// the session row, the reverse of save(), and the two deadlock on MySQL and SQL
+		// Server. Found by id, the row is locked first, as in every other write.
+		LocalDateTime cutoff = toUtc(before);
+		int deleted = 0;
+		for (String id : this.jdbcTemplate.queryForList(SELECT_EXPIRED_SESSION_IDS, String.class, cutoff)) {
+			deleted += this.jdbcTemplate.update(DELETE_EXPIRED_SESSION, id, cutoff);
+		}
+		return deleted;
 	}
 
 	@Override
