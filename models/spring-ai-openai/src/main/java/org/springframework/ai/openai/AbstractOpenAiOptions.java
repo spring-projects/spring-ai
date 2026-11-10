@@ -94,9 +94,10 @@ public class AbstractOpenAiOptions {
 	private final @Nullable Duration timeout;
 
 	/**
-	 * Maximum number of retries for OpenAI client.
+	 * Maximum number of retries for OpenAI client. When {@code null}, the number of
+	 * retries configured on the OpenAI client is used.
 	 */
-	private final int maxRetries;
+	private final @Nullable Integer maxRetries;
 
 	/**
 	 * Proxy settings for OpenAI client.
@@ -123,7 +124,7 @@ public class AbstractOpenAiOptions {
 		this.isMicrosoftFoundry = isMicrosoftFoundry != null ? isMicrosoftFoundry : false;
 		this.isGitHubModels = isGitHubModels != null ? isGitHubModels : false;
 		this.timeout = timeout;
-		this.maxRetries = maxRetries != null ? maxRetries : DEFAULT_MAX_RETRIES;
+		this.maxRetries = maxRetries;
 		this.proxy = proxy;
 		this.customHeaders = customHeaders != null ? Map.copyOf(customHeaders) : null;
 	}
@@ -179,7 +180,11 @@ public class AbstractOpenAiOptions {
 		return this.timeout;
 	}
 
-	public int getMaxRetries() {
+	/**
+	 * Return the maximum number of retries, or {@code null} to inherit the number of
+	 * retries configured on the OpenAI client.
+	 */
+	public @Nullable Integer getMaxRetries() {
 		return this.maxRetries;
 	}
 
