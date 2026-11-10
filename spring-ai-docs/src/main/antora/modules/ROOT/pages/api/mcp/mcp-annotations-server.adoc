@@ -471,6 +471,7 @@ Use either the `prompt` or `uri` attribute — not both simultaneously:
 
 NOTE: On the modern server (`spring.ai.mcp.server.protocol=MODERN`) a completion belongs to its prompt or template.
 The named prompt must be an `@McpPrompt` method and the URI an `@McpResource` URI template, or the application fails to start, and the server completes only the arguments that the prompt or template declares.
+A completion whose prompt or template method is skipped, for example because of an unsupported return type, is skipped too, with a warning.
 See xref:api/mcp/mcp-modern-server-boot-starter-docs.adoc#_completions[Completions].
 
 ==== Prompt Argument Completion
@@ -709,6 +710,7 @@ public class AsyncTools {
 ----
 
 NOTE: The modern server (`spring.ai.mcp.server.protocol=MODERN`) with `type=ASYNC` is the exception: it serves non-reactive methods as well, and its streaming parameter is the SDK `McpAsyncNotifier`.
+A method declared to return a `Flux` fails the application at startup, because an MCP request has one result; return a `Mono` of the result instead, for example a `Mono<List<String>>`.
 A non-reactive method runs on Reactor's `boundedElastic` scheduler, or on the calling thread when the transport serves the request blocking, as the WebMVC transport does.
 A method that declares the notifier of the other programming model is skipped with a warning.
 See xref:api/mcp/mcp-modern-server-boot-starter-docs.adoc#mcp-modern-server-boot-starter[MCP 2026-07-28 ("Modern") Servers].

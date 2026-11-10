@@ -314,6 +314,7 @@ A repository lists definitions and finds a definition together with its handler:
 Unless you define a bean of that type yourself, the auto-configuration registers an in-memory repository per primitive (`InMemorySyncToolRepository`, `InMemorySyncResourceRepository`, `InMemorySyncPromptRepository`) and the `McpChangeFeed` that backs `subscriptions/listen`.
 Inject an in-memory repository to add or remove primitives at runtime; the matching list-changed notification is broadcast to listening clients.
 Call `InMemorySyncResourceRepository.resourceUpdated(uri)` to notify subscribers of a resource change.
+On `type=ASYNC` the in-memory repositories are `InMemoryAsyncToolRepository`, `InMemoryAsyncResourceRepository` and `InMemoryAsyncPromptRepository`, with the same `add`, `remove` and `resourceUpdated(uri)` methods.
 
 ==== The Primitive List Beans
 
@@ -364,6 +365,7 @@ void addLater() {
 Completions have no list bean and no repository of their own.
 A completion handler travels with the prompt or resource template it completes, and the prompt and resource repositories serve `completion/complete` from it.
 Each `@McpComplete` method is attached to the `@McpPrompt` method or `@McpResource` template that it names, and the application fails to start when there is none; a static resource has no variables, so naming its URI fails as well.
+A completion whose prompt or template method is skipped, for example a method with an asynchronous return type on `type=SYNC`, is skipped too, with a warning.
 One method completes every argument of its prompt or template and reads the argument from `CompleteRequest.argument().name()`.
 
 A prompt or template defined in code takes its handler through `withCompletionHandler`, on `McpSyncPrompt` or `SyncResourceTemplateRegistration` (and their asynchronous twins):
@@ -446,6 +448,9 @@ In return, a prompt that the wrapper hides from `find`, or a template it hides f
 
 To back a primitive with your own store (a database, a remote catalog, a tool gateway), implement the SDK repository interface and define it as a bean.
 The interfaces have two methods, `list` and `find`; the resource repository adds `listTemplates` and `supportsSubscribe`, and `find(ctx, uri)` serves listed resources and template matches alike.
+The prompt and resource repositories serve `completion/complete` only when `supportsCompletion()` returns `true`.
+The completion handler of a prompt comes from the `McpSyncPrompt` that `find` returns, and that of a resource template from the `McpSyncResourceTemplate` that `findTemplate(ctx, uriTemplate)` returns.
+`supportsCompletion()` and `findTemplate` are default methods that leave completion off, so a prompt repository that completes its prompts overrides `supportsCompletion()`, and a resource repository that completes its templates overrides both.
 The in-memory repository for that primitive backs off and the primitive lists are no longer collected for it, so your repository is the single source of truth.
 Repositories for the other primitives are unaffected.
 The list `ttlMs` and `cacheScope` of a page left `null` come from `spring.ai.mcp.server.modern.list-ttl` and `list-cache-scope`.
