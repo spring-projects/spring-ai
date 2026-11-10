@@ -23,6 +23,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
+import com.couchbase.client.core.error.IndexExistsException;
+import com.couchbase.client.core.error.IndexNotFoundException;
 import com.couchbase.client.core.util.ConsistencyUtil;
 import com.couchbase.client.java.Bucket;
 import com.couchbase.client.java.Cluster;
@@ -37,6 +39,7 @@ import com.couchbase.client.java.query.QueryOptions;
 import com.couchbase.client.java.query.QueryResult;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.RetrySpec;
 
@@ -45,6 +48,8 @@ import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.embedding.EmbeddingOptions;
 import org.springframework.ai.observation.conventions.VectorStoreProvider;
 import org.springframework.ai.vectorstore.AbstractVectorStoreBuilder;
+import org.springframework.ai.vectorstore.EmbeddedDocument;
+import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.filter.Filter;
 import org.springframework.ai.vectorstore.observation.AbstractObservationVectorStore;
 import org.springframework.ai.vectorstore.observation.VectorStoreObservationContext;
@@ -69,6 +74,14 @@ public class CouchbaseSearchVectorStore extends AbstractObservationVectorStore
 
 	private static final String DEFAULT_BUCKET_NAME = "default";
 
+	private static final String EMBEDDING_FIELD = "embedding";
+
+	private static final int UNKNOWN_DIMENSIONS = -1;
+
+	private static final int INDEX_READ_BACK_ATTEMPTS = 5;
+
+	private static final Duration INDEX_READ_BACK_DELAY = Duration.ofMillis(500);
+
 	private final EmbeddingModel embeddingModel;
 
 	private final String collectionName;
@@ -79,7 +92,10 @@ public class CouchbaseSearchVectorStore extends AbstractObservationVectorStore
 
 	private final String vectorIndexName;
 
-	private final Integer dimensions;
+	private final @Nullable Integer dimensions;
+
+	// Cache for vectorDimensions(); a failed or missing read is not stored.
+	private volatile int resolvedVectorDimensions = UNKNOWN_DIMENSIONS;
 
 	private final CouchbaseSimilarityFunction similarityFunction;
 
@@ -141,10 +157,40 @@ public class CouchbaseSearchVectorStore extends AbstractObservationVectorStore
 		List<float[]> embeddings = this.embeddingModel.embed(documents, EmbeddingOptions.builder().build(),
 				this.batchingStrategy);
 		for (int i = 0; i < documents.size(); i++) {
-			Document document = documents.get(i);
-			CouchbaseDocument cbDoc = new CouchbaseDocument(document.getId(),
-					Objects.requireNonNullElse(document.getText(), ""), document.getMetadata(), embeddings.get(i));
-			this.collection.upsert(document.getId(), cbDoc);
+			writeDocument(documents.get(i), embeddings.get(i));
+		}
+	}
+
+	/**
+	 * Writes the whole document under its id, replacing any document already stored
+	 * there, including metadata keys the new document no longer has.
+	 */
+	private void writeDocument(Document document, float[] embedding) {
+		CouchbaseDocument cbDoc = new CouchbaseDocument(document.getId(),
+				Objects.requireNonNullElse(document.getText(), ""), document.getMetadata(), embedding);
+		this.collection.upsert(document.getId(), cbDoc);
+	}
+
+	@Override
+	protected boolean supportsUpsert() {
+		return true;
+	}
+
+	@Override
+	protected void doUpsert(List<EmbeddedDocument> entries) {
+		// Couchbase stores a vector of the wrong size without complaint and the search
+		// index then skips the document, so it can never be found. So the whole batch is
+		// checked first, and nothing is written when the size is unknown.
+		int expected = vectorDimensions();
+		if (expected == UNKNOWN_DIMENSIONS) {
+			throw new IllegalStateException("Could not determine the vector size of search index "
+					+ this.vectorIndexName + ". Make sure the index exists and can be read.");
+		}
+		for (int i = 0; i < entries.size(); i++) {
+			checkDimensions("Embedding at index " + i, entries.get(i).embedding().length, expected);
+		}
+		for (EmbeddedDocument entry : entries) {
+			writeDocument(entry.document(), entry.embedding());
 		}
 	}
 
@@ -172,22 +218,43 @@ public class CouchbaseSearchVectorStore extends AbstractObservationVectorStore
 	}
 
 	@Override
-	public List<Document> doSimilaritySearch(org.springframework.ai.vectorstore.SearchRequest springAiRequest) {
-		float[] embeddings = this.embeddingModel.embed(springAiRequest.getQuery());
-		int topK = springAiRequest.getTopK();
+	public List<Document> doSimilaritySearch(SearchRequest request) {
+		// Convert the filter first, so an invalid one fails before the model is called
+		String nativeFilterExpression = nativeFilterExpression(request);
+		float[] embedding = this.embeddingModel.embed(request.getQuery());
+		return searchByEmbedding(embedding, nativeFilterExpression, request);
+	}
 
-		double similarityThreshold = springAiRequest.getSimilarityThreshold();
-		Filter.Expression fe = springAiRequest.getFilterExpression();
+	@Override
+	protected boolean supportsQueryEmbeddingSearch() {
+		return true;
+	}
 
-		String nativeFilterExpression = (fe != null) ? " AND " + this.filterExpressionConverter.convertExpression(fe)
-				: "";
+	@Override
+	protected List<Document> doSimilaritySearch(float[] queryEmbedding, SearchRequest request) {
+		// Couchbase rejects a query vector of the wrong size with a misleading "no search
+		// index" error; checking here gives a clear one whenever the size is known.
+		checkDimensions("Query embedding", queryEmbedding.length, vectorDimensions());
+		return searchByEmbedding(queryEmbedding, nativeFilterExpression(request), request);
+	}
+
+	private String nativeFilterExpression(SearchRequest request) {
+		Filter.Expression fe = request.getFilterExpression();
+		return (fe != null) ? " AND " + this.filterExpressionConverter.convertExpression(fe) : "";
+	}
+
+	private List<Document> searchByEmbedding(float[] embedding, String nativeFilterExpression, SearchRequest request) {
+		int topK = request.getTopK();
+		double similarityThreshold = request.getSimilarityThreshold();
+		// SEARCH() only filters the rows, so they are sorted by score explicitly
 		String statement = String.format(
 				"""
 						SELECT c.* FROM `%s` AS c
 						WHERE SEARCH_SCORE() > %s AND SEARCH(`c`, {"query": {"match_none": {}}, "knn": [{"field": "embedding", "k": %s, "vector": %s }   ]    }, {"index": "%s.%s.%s"}   )
 						%s
+						ORDER BY SEARCH_SCORE() DESC
 						""",
-				this.collectionName, similarityThreshold, topK, Arrays.toString(embeddings), this.bucketName,
+				this.collectionName, similarityThreshold, topK, Arrays.toString(embedding), this.bucketName,
 				this.scopeName, this.vectorIndexName, nativeFilterExpression);
 
 		QueryResult result = this.scope.query(statement, QueryOptions.queryOptions());
@@ -210,11 +277,17 @@ public class CouchbaseSearchVectorStore extends AbstractObservationVectorStore
 		return Optional.of(client);
 	}
 
+	@Override
 	public VectorStoreObservationContext.Builder createObservationContextBuilder(String operationName) {
 
-		return VectorStoreObservationContext.builder(VectorStoreProvider.COUCHBASE.value(), operationName)
-			.collectionName(this.collection.name())
-			.dimensions(this.embeddingModel.dimensions());
+		VectorStoreObservationContext.Builder builder = VectorStoreObservationContext
+			.builder(VectorStoreProvider.COUCHBASE.value(), operationName)
+			.collectionName(this.collection.name());
+		int dimensions = vectorDimensions();
+		if (dimensions > 0) {
+			builder.dimensions(dimensions);
+		}
+		return builder;
 	}
 
 	public static Builder builder(Cluster cluster, EmbeddingModel embeddingModel) {
@@ -223,20 +296,23 @@ public class CouchbaseSearchVectorStore extends AbstractObservationVectorStore
 
 	public void initCluster() throws InterruptedException {
 		// init scope, collection, indexes
-		BucketSettings bs = this.cluster.buckets().getAllBuckets().get(this.bucketName);
-		if (bs == null) {
+		BucketSettings bucketSettings = this.cluster.buckets().getAllBuckets().get(this.bucketName);
+		if (bucketSettings == null) {
 			this.cluster.buckets().createBucket(BucketSettings.create(this.bucketName));
 		}
 		logger.info("Created bucket");
-		Bucket b = this.cluster.bucket(this.bucketName);
-		b.waitUntilReady(Duration.ofSeconds(20));
+		Bucket targetBucket = this.cluster.bucket(this.bucketName);
+		targetBucket.waitUntilReady(Duration.ofSeconds(20));
 		logger.info("Opened Bucket");
-		boolean scopeExist = b.collections().getAllScopes().stream().anyMatch(sc -> sc.name().equals(this.scopeName));
+		boolean scopeExist = targetBucket.collections()
+			.getAllScopes()
+			.stream()
+			.anyMatch(scopeSpec -> scopeSpec.name().equals(this.scopeName));
 		if (!scopeExist) {
-			b.collections().createScope(this.scopeName);
+			targetBucket.collections().createScope(this.scopeName);
 		}
 		ConsistencyUtil.waitUntilScopePresent(this.cluster.core(), this.bucketName, this.scopeName);
-		Scope s = b.scope(this.scopeName);
+		Scope targetScope = targetBucket.scope(this.scopeName);
 		boolean collectionExist = this.bucket.collections()
 			.getAllScopes()
 			.stream()
@@ -246,24 +322,35 @@ public class CouchbaseSearchVectorStore extends AbstractObservationVectorStore
 			.map(CollectionSpec::name)
 			.anyMatch(this.collectionName::equals);
 		if (!collectionExist) {
-			b.collections().createCollection(this.scopeName, this.collectionName);
+			targetBucket.collections().createCollection(this.scopeName, this.collectionName);
 			ConsistencyUtil.waitUntilCollectionPresent(this.cluster.core(), this.bucketName, this.scopeName,
 					this.collectionName);
-			Collection c = s.collection(this.collectionName);
+			Collection newCollection = targetScope.collection(this.collectionName);
 			Mono.empty()
 				.then(Mono.fromRunnable(
-						() -> c.async()
+						() -> newCollection.async()
 							.queryIndexes()
 							.createPrimaryIndex(CreatePrimaryQueryIndexOptions.createPrimaryQueryIndexOptions()
 								.ignoreIfExists(true))))
 				.retryWhen(RetrySpec.backoff(3, Duration.ofMillis(1000)));
 		}
 
-		boolean indexExist = s.searchIndexes()
-			.getAllIndexes()
-			.stream()
-			.anyMatch(idx -> this.vectorIndexName.equals(idx.name()));
-		if (!indexExist) {
+		// Ask the model for the size only when the index is known to be missing. Any
+		// other lookup failure fails startup, since the index may well exist.
+		Integer existingDimensions;
+		try {
+			existingDimensions = readIndexDimensions();
+		}
+		catch (IllegalStateException ex) {
+			// The index exists but has no usable vector field; the message says so
+			throw ex;
+		}
+		catch (RuntimeException ex) {
+			throw new IllegalStateException("Could not check whether search index " + this.vectorIndexName + " exists",
+					ex);
+		}
+		if (existingDimensions == null) {
+			int dimensions = (this.dimensions != null) ? this.dimensions : this.embeddingModel.dimensions();
 			String jsonIndexTemplate = """
 					  {
 					  "type": "fulltext-index",
@@ -343,12 +430,126 @@ public class CouchbaseSearchVectorStore extends AbstractObservationVectorStore
 					}
 					""";
 			String jsonIndexValue = String.format(jsonIndexTemplate, this.vectorIndexName, this.bucketName,
-					this.collectionName, this.scopeName, this.collectionName, this.dimensions, this.similarityFunction,
+					this.collectionName, this.scopeName, this.collectionName, dimensions, this.similarityFunction,
 					this.indexOptimization);
 
-			SearchIndex si = SearchIndex.fromJson(jsonIndexValue);
-			s.searchIndexes().upsertIndex(si);
+			SearchIndex searchIndex = SearchIndex.fromJson(jsonIndexValue);
+			try {
+				targetScope.searchIndexes().upsertIndex(searchIndex);
+			}
+			catch (IndexExistsException ex) {
+				// Another process created it first, possibly with another size
+				logger.debug("Search index " + this.vectorIndexName + " was created concurrently", ex);
+			}
+
+			// On a cluster with several search nodes, a new index can take a moment to
+			// be visible everywhere, so the read is retried a few times.
+			for (int attempt = 1; existingDimensions == null && attempt <= INDEX_READ_BACK_ATTEMPTS; attempt++) {
+				if (attempt > 1) {
+					Thread.sleep(INDEX_READ_BACK_DELAY.toMillis());
+				}
+				try {
+					existingDimensions = readIndexDimensions();
+				}
+				catch (IllegalStateException ex) {
+					throw ex;
+				}
+				catch (RuntimeException ex) {
+					throw new IllegalStateException(
+							"Could not read search index " + this.vectorIndexName + " after creating it", ex);
+				}
+			}
+			if (existingDimensions == null) {
+				throw new IllegalStateException(
+						"Search index " + this.vectorIndexName + " does not exist after creating it");
+			}
 		}
+		// A configured size is used as is, so it has to match the index: Couchbase
+		// stores vectors of another size but never finds them in a search
+		if (this.dimensions != null && !this.dimensions.equals(existingDimensions)) {
+			throw new IllegalStateException(
+					"The configured dimensions (" + this.dimensions + ") do not match the vector size of search index "
+							+ this.vectorIndexName + " (" + existingDimensions + ")");
+		}
+		this.resolvedVectorDimensions = existingDimensions;
+	}
+
+	/**
+	 * The size of the stored vectors.
+	 * <p>
+	 * The size comes from the configured {@code dimensions} if set, otherwise from the
+	 * vector field of the search index, including an index this store just created. A
+	 * failed read or a missing index leaves the size unknown, and the index is read again
+	 * on the next call. Only a successful read is cached, so a store has to be rebuilt
+	 * after the index is recreated with a different size.
+	 * @return the known dimension, or {@code -1} when unknown
+	 */
+	private int vectorDimensions() {
+		if (this.dimensions != null) {
+			return this.dimensions;
+		}
+		int cached = this.resolvedVectorDimensions;
+		if (cached != UNKNOWN_DIMENSIONS) {
+			return cached;
+		}
+		try {
+			Integer dimensions = readIndexDimensions();
+			if (dimensions != null) {
+				this.resolvedVectorDimensions = dimensions;
+				return dimensions;
+			}
+		}
+		catch (RuntimeException ex) {
+			logger.debug("Could not read the vector dimensions from the search index", ex);
+		}
+		return UNKNOWN_DIMENSIONS;
+	}
+
+	/**
+	 * Reads the {@code dims} of the {@code embedding} vector field from the search index
+	 * definition.
+	 * @return the size, or {@code null} when there is no such index
+	 * @throws IllegalStateException when the index has no vector field for this scope and
+	 * collection
+	 */
+	private @Nullable Integer readIndexDimensions() {
+		SearchIndex index;
+		try {
+			index = this.scope.searchIndexes().getIndex(this.vectorIndexName);
+		}
+		catch (IndexNotFoundException ex) {
+			return null;
+		}
+		Integer dimensions = vectorFieldDimensions(index.params(), this.scopeName + "." + this.collectionName);
+		if (dimensions == null) {
+			throw new IllegalStateException("Search index " + this.vectorIndexName + " has no vector field '"
+					+ EMBEDDING_FIELD + "' with dims for " + this.scopeName + "." + this.collectionName);
+		}
+		return dimensions;
+	}
+
+	/**
+	 * Finds {@code mapping.types[type].properties.embedding.fields[].dims} for the vector
+	 * field in the given index parameters. The field must be indexed as
+	 * {@code embedding}, the name the search query uses; a field without a name is
+	 * indexed under its property name.
+	 */
+	private static @Nullable Integer vectorFieldDimensions(Map<String, Object> params, String type) {
+		if (!(params.get("mapping") instanceof Map<?, ?> mapping) || !(mapping.get("types") instanceof Map<?, ?> types)
+				|| !(types.get(type) instanceof Map<?, ?> typeMapping)
+				|| !(typeMapping.get("properties") instanceof Map<?, ?> properties)
+				|| !(properties.get(EMBEDDING_FIELD) instanceof Map<?, ?> embedding)
+				|| !(embedding.get("fields") instanceof List<?> fields)) {
+			return null;
+		}
+		for (Object field : fields) {
+			if (field instanceof Map<?, ?> f && "vector".equals(f.get("type"))
+					&& (f.get("name") == null || EMBEDDING_FIELD.equals(f.get("name")))
+					&& f.get("dims") instanceof Number dims) {
+				return dims.intValue();
+			}
+		}
+		return null;
 	}
 
 	public void close() throws Exception {
@@ -371,7 +572,7 @@ public class CouchbaseSearchVectorStore extends AbstractObservationVectorStore
 
 		private String vectorIndexName = DEFAULT_INDEX_NAME;
 
-		private Integer dimensions = 1536;
+		private @Nullable Integer dimensions;
 
 		private CouchbaseSimilarityFunction similarityFunction = CouchbaseSimilarityFunction.dot_product;
 
@@ -451,6 +652,11 @@ public class CouchbaseSearchVectorStore extends AbstractObservationVectorStore
 
 		/**
 		 * The number of dimensions in the vector.
+		 * <p>
+		 * If not set, the size is read from the existing search index. When the store
+		 * creates the index, it asks the embedding model for the size. When set and the
+		 * store initializes the schema, startup fails if an existing index has another
+		 * size.
 		 * @param dimensions
 		 * @return this builder
 		 */
