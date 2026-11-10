@@ -115,6 +115,25 @@ class JdbcSessionRepositorySqlServerIT {
 	}
 
 	@Test
+	void saveDoesNotUpdateSessionWhoseIdDiffersOnlyInCase() {
+		// The MERGE matches on the id: with a case-insensitive comparison the second
+		// save would update the first session instead of inserting a new one.
+		String sessionId = "Session-" + UUID.randomUUID();
+		this.repository.save(Session.builder().id(sessionId).metadata("owner", "first").build());
+
+		Session second = this.repository
+			.save(Session.builder().id(sessionId.toLowerCase()).metadata("owner", "second").build());
+
+		assertThat(second.id()).isEqualTo(sessionId.toLowerCase());
+		Session first = this.repository.findById(sessionId);
+		assertThat(first).isNotNull();
+		assertThat(first.id()).isEqualTo(sessionId);
+		assertThat(first.metadata()).containsEntry("owner", "first");
+		assertThat(new JdbcTemplate(dataSource).queryForObject("SELECT COUNT(*) FROM AI_SESSION", Integer.class))
+			.isEqualTo(2);
+	}
+
+	@Test
 	void saveRejectsOverLongSessionIdInsteadOfTruncatingIt() {
 		// No indexed attribute, so that only the upsert itself can reject the id.
 		String sessionId = "s".repeat(255);
