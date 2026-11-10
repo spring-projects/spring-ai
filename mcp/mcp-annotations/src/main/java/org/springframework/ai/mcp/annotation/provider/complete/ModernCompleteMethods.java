@@ -54,17 +54,18 @@ final class ModernCompleteMethods {
 		Map<String, Method> methods = new LinkedHashMap<>();
 		Map<String, H> completions = new LinkedHashMap<>();
 		for (Object bean : beans) {
+			// The key filter runs before the provider's filter, which warns about each
+			// method it
+			// skips, so that a method is reported once although collect runs for prompts
+			// and for
+			// templates.
 			Stream.of(beanMethods.apply(bean))
 				.filter(method -> method.isAnnotationPresent(McpComplete.class))
+				.filter(method -> !key(method, prompts).isEmpty())
 				.filter(supported)
 				.sorted(Comparator.comparing(Method::getName))
 				.forEach(method -> {
-					McpComplete annotation = method.getAnnotation(McpComplete.class);
-					CompleteAdapter.asCompleteReference(annotation, method);
-					String key = prompts ? annotation.prompt() : annotation.uri();
-					if (key.isEmpty()) {
-						return;
-					}
+					String key = key(method, prompts);
 					Method existing = methods.putIfAbsent(key, method);
 					if (existing != null) {
 						throw new IllegalArgumentException("Both " + describe(existing) + " and " + describe(method)
@@ -75,6 +76,17 @@ final class ModernCompleteMethods {
 				});
 		}
 		return completions;
+	}
+
+	/**
+	 * The prompt name or URI template the method completes, empty when it completes the
+	 * other kind of reference.
+	 * @throws IllegalArgumentException if the annotation names both or neither
+	 */
+	private static String key(Method method, boolean prompts) {
+		McpComplete annotation = method.getAnnotation(McpComplete.class);
+		CompleteAdapter.asCompleteReference(annotation, method);
+		return prompts ? annotation.prompt() : annotation.uri();
 	}
 
 	private static String describe(Method method) {

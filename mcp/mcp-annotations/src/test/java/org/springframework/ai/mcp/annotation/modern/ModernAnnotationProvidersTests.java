@@ -457,6 +457,26 @@ class ModernAnnotationProvidersTests {
 	}
 
 	@Test
+	void skippedCompletionMethodIsReportedOnce() {
+		ListAppender<ILoggingEvent> appender = new ListAppender<>();
+		appender.start();
+		Logger logger = (Logger) LoggerFactory.getLogger(ModernMethodSupport.class);
+		logger.addAppender(appender);
+		try {
+			// Both entry points scan the @McpComplete beans; only the template one keeps
+			// a
+			// uri completion, so only it reports the skipped method.
+			SyncMcpAnnotationProviders.modernPrompts(List.of(), List.of(new ReactiveCompletion()), null);
+			SyncMcpAnnotationProviders.modernResourceTemplates(List.of(), List.of(new ReactiveCompletion()), null);
+			assertThat(appender.list).filteredOn(event -> event.getFormattedMessage().contains("completeReactive"))
+				.hasSize(1);
+		}
+		finally {
+			logger.detachAppender(appender);
+		}
+	}
+
+	@Test
 	void twoCompletionsForOneReferenceFailAtStartup() {
 		assertThatThrownBy(() -> SyncMcpAnnotationProviders.modernPrompts(List.of(new Prompts()),
 				List.of(new Completions(), new DuplicateCompletion()), null))
@@ -1185,6 +1205,16 @@ class ModernAnnotationProvidersTests {
 	}
 
 	record Point(int x, int y) {
+	}
+
+	@SuppressWarnings("unused")
+	static class ReactiveCompletion {
+
+		@McpComplete(uri = "test://reactive/{id}")
+		Mono<List<String>> completeReactive(String value) {
+			return Mono.just(List.of(value));
+		}
+
 	}
 
 }
