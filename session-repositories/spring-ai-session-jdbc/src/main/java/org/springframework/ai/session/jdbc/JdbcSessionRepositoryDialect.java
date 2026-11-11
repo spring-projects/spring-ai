@@ -24,12 +24,14 @@ import org.springframework.jdbc.support.JdbcUtils;
 
 /**
  * The SQL that differs between databases, for {@link JdbcSessionRepository}: the upsert
- * and the insert-if-absent of a session. Every other statement is shared and lives in the
- * repository. {@link #from(DataSource)} detects the dialect from the database metadata.
+ * and the insert-if-absent of a session, and the clause that limits a query's rows. Every
+ * other statement is shared and lives in the repository. {@link #from(DataSource)}
+ * detects the dialect from the database metadata.
  *
  * @see PostgresJdbcSessionRepositoryDialect
  * @see H2JdbcSessionRepositoryDialect
  * @see MysqlJdbcSessionRepositoryDialect
+ * @see SqlServerJdbcSessionRepositoryDialect
  * @author Christian Tzolov
  * @since 2.1.0
  */
@@ -48,15 +50,26 @@ public interface JdbcSessionRepositoryDialect {
 	 * four parameters as {@link #getUpsertSessionSql()}: one row updated on insert, zero
 	 * rows or a duplicate-key error when the id exists. The default is a plain {@code
 	 * INSERT}; a database whose failed statement aborts the enclosing transaction,
-	 * PostgreSQL, uses a conflict-ignoring form.
+	 * PostgreSQL always and SQL Server with {@code XACT_ABORT ON}, uses a form that
+	 * inserts nothing instead.
 	 */
 	default String getInsertSessionIfAbsentSql() {
 		return "INSERT INTO AI_SESSION (id, created_at, expires_at, metadata) VALUES (?, ?, ?, ?)";
 	}
 
 	/**
+	 * The clause appended after a query's {@code ORDER BY} to keep at most as many rows
+	 * as its single parameter, bound last. The default, {@code LIMIT ?}, serves
+	 * PostgreSQL, H2, MySQL and MariaDB; a database without {@code LIMIT} returns its own
+	 * form, such as {@code OFFSET 0 ROWS FETCH NEXT ? ROWS ONLY}.
+	 */
+	default String getLimitClause() {
+		return "LIMIT ?";
+	}
+
+	/**
 	 * The dialect of the database the data source connects to, from its product name:
-	 * PostgreSQL, H2, MySQL or MariaDB.
+	 * PostgreSQL, H2, MySQL, MariaDB or Microsoft SQL Server.
 	 * @throws IllegalStateException if the product name cannot be read or the database is
 	 * not supported; set the dialect with
 	 * {@link JdbcSessionRepository.Builder#dialect(JdbcSessionRepositoryDialect)} then
@@ -80,8 +93,10 @@ public interface JdbcSessionRepositoryDialect {
 			case "PostgreSQL" -> new PostgresJdbcSessionRepositoryDialect();
 			case "H2" -> new H2JdbcSessionRepositoryDialect();
 			case "MySQL", "MariaDB" -> new MysqlJdbcSessionRepositoryDialect();
+			case "Microsoft SQL Server" -> new SqlServerJdbcSessionRepositoryDialect();
 			default -> throw new IllegalStateException("No JdbcSessionRepositoryDialect for database '" + productName
-					+ "'; supported: PostgreSQL, H2, MySQL, MariaDB. Implement JdbcSessionRepositoryDialect and set it "
+					+ "'; supported: PostgreSQL, H2, MySQL, MariaDB, Microsoft SQL Server. "
+					+ "Implement JdbcSessionRepositoryDialect and set it "
 					+ "via JdbcSessionRepository.builder().dialect(...)");
 		};
 	}
