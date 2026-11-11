@@ -21,6 +21,7 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.prompt.PromptTemplate;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.rag.Query;
@@ -108,6 +109,42 @@ class ContextualQueryAugmenterTests {
 				Query:
 				test query
 				""");
+	}
+
+	@Test
+	void whenDocumentsAreProvidedThenPreserveHistoryAndContext() {
+		Query query = Query.builder()
+			.text("What changed?")
+			.history(new UserMessage("Tell me about the release"))
+			.context(Map.of("conversationId", "conversation-1"))
+			.build();
+		QueryAugmenter augmenter = ContextualQueryAugmenter.builder().build();
+
+		Query augmentedQuery = augmenter.augment(query, List.of(new Document("The release adds streaming.")));
+
+		assertThat(augmentedQuery.text()).contains(query.text(), "The release adds streaming.");
+		assertThat(augmentedQuery.history()).isEqualTo(query.history());
+		assertThat(augmentedQuery.context()).isEqualTo(query.context());
+		assertThat(query.text()).isEqualTo("What changed?");
+	}
+
+	@Test
+	void whenEmptyContextIsNotAllowedThenPreserveHistoryAndContext() {
+		Query query = Query.builder()
+			.text("What changed?")
+			.history(new UserMessage("Tell me about the release"))
+			.context(Map.of("conversationId", "conversation-1"))
+			.build();
+		QueryAugmenter augmenter = ContextualQueryAugmenter.builder()
+			.emptyContextPromptTemplate(new PromptTemplate("No documents found."))
+			.build();
+
+		Query augmentedQuery = augmenter.augment(query, List.of());
+
+		assertThat(augmentedQuery.text()).isEqualTo("No documents found.");
+		assertThat(augmentedQuery.history()).isEqualTo(query.history());
+		assertThat(augmentedQuery.context()).isEqualTo(query.context());
+		assertThat(query.text()).isEqualTo("What changed?");
 	}
 
 }
