@@ -198,6 +198,11 @@ public final class SystemOneRetryUtils {
 	 * {@link SystemOneRateLimitException#retryAfter()}, is used in place of the wait the
 	 * policy computed. The API answers 429 with a {@code retry-after-ms} header, and
 	 * retrying sooner only burns attempts.
+	 *
+	 * <p>
+	 * A stated wait longer than the timeout of the policy is cut to that timeout. No
+	 * attempt can follow such a wait, so the template gives up either way, and it does so
+	 * for any value the server sends, however large.
 	 * @param policy the policy to wrap
 	 * @return the wrapped policy
 	 */
@@ -245,13 +250,21 @@ public final class SystemOneRetryUtils {
 		@Override
 		public BackOff getBackOff() {
 			BackOff backOff = this.delegate.getBackOff();
+			long timeout = this.delegate.getTimeout().toMillis();
 			return () -> {
 				BackOffExecution execution = backOff.start();
 				return () -> {
 					long next = execution.nextBackOff();
 					Long serverWait = SERVER_WAIT_MS.get();
 					SERVER_WAIT_MS.remove();
-					return (next == BackOffExecution.STOP || serverWait == null) ? next : serverWait;
+					if (next == BackOffExecution.STOP || serverWait == null) {
+						return next;
+					}
+					// The template adds the wait to the clock to see whether it passes
+					// the timeout, and a wait near Long.MAX_VALUE overflows that sum, so
+					// the template would sleep instead of giving up. The timeout itself
+					// is already too long a wait.
+					return (timeout > 0) ? Math.min(serverWait, timeout) : serverWait;
 				};
 			};
 		}

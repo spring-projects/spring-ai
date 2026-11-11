@@ -20,6 +20,7 @@ import java.time.Duration;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 
 import org.springframework.ai.systemone.api.exception.SystemOneApiConnectionException;
 import org.springframework.ai.systemone.api.exception.SystemOneApiException;
@@ -191,6 +192,64 @@ class SystemOneRetryTests {
 		// And a permanent failure is still not retried.
 		assertThat(policy.shouldRetry(new SystemOneAuthenticationException("401", 401, null, headers, "POST /")))
 			.isFalse();
+	}
+
+	@Test
+	void cutsAServerStatedWaitToTheTimeoutOfThePolicy() {
+		HttpHeaders headers = new HttpHeaders();
+		RetryPolicy policy = SystemOneRetryUtils.retryPolicy(2, Duration.ofMillis(1), Duration.ofMillis(5),
+				Duration.ofMillis(200));
+		BackOffExecution backOff = policy.getBackOff().start();
+
+		assertThat(policy
+			.shouldRetry(new SystemOneRateLimitException("429", 429, null, headers, "POST /", Long.MAX_VALUE)))
+			.isTrue();
+		assertThat(backOff.nextBackOff()).isEqualTo(200L);
+
+		// A wait within the timeout is left as the server stated it.
+		assertThat(policy.shouldRetry(new SystemOneRateLimitException("429", 429, null, headers, "POST /", 40L)))
+			.isTrue();
+		assertThat(backOff.nextBackOff()).isEqualTo(40L);
+	}
+
+	@Test
+	@Timeout(10)
+	void givesUpOnAServerStatedWaitTooLargeForTheClock() {
+		// Added to the clock, this wait overflows the deadline check of the template,
+		// which then sleeps for it instead of giving up.
+		HttpHeaders headers = new HttpHeaders();
+		headers.add(SystemOneRateLimitException.RETRY_AFTER_MS_HEADER, String.valueOf(Long.MAX_VALUE));
+
+		this.mock.server()
+			.expect(ExpectedCount.once(), requestTo(MockSystemOneServer.SYSTEM_ONE_URL))
+			.andRespond(MockSystemOneServer.errorResponse(429, "rate limited", headers));
+
+		RetryTemplate template = new RetryTemplate(
+				SystemOneRetryUtils.retryPolicy(2, Duration.ofMillis(1), Duration.ofMillis(5), Duration.ofMillis(200)));
+		assertThatExceptionOfType(SystemOneRateLimitException.class).isThrownBy(() -> evaluate(template))
+			.satisfies(ex -> assertThat(ex.retryAfterMs()).isEqualTo(Long.MAX_VALUE));
+
+		this.mock.server().verify();
+	}
+
+	@Test
+	@Timeout(10)
+	void givesUpOnARetryAfterSecondsValueTooLargeForMilliseconds() {
+		// Multiplied into milliseconds unchecked, this wraps to a negative wait that the
+		// template fails on with an IllegalArgumentException in place of the rate limit.
+		HttpHeaders headers = new HttpHeaders();
+		headers.add(HttpHeaders.RETRY_AFTER, "9300000000000000");
+
+		this.mock.server()
+			.expect(ExpectedCount.once(), requestTo(MockSystemOneServer.SYSTEM_ONE_URL))
+			.andRespond(MockSystemOneServer.errorResponse(429, "rate limited", headers));
+
+		RetryTemplate template = new RetryTemplate(
+				SystemOneRetryUtils.retryPolicy(2, Duration.ofMillis(1), Duration.ofMillis(5), Duration.ofMillis(200)));
+		assertThatExceptionOfType(SystemOneRateLimitException.class).isThrownBy(() -> evaluate(template))
+			.satisfies(ex -> assertThat(ex.retryAfterMs()).isEqualTo(Long.MAX_VALUE));
+
+		this.mock.server().verify();
 	}
 
 	@Test

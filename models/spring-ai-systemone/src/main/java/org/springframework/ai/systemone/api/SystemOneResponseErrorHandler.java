@@ -104,6 +104,8 @@ public class SystemOneResponseErrorHandler implements RestClient.ResponseSpec.Er
 	/**
 	 * Reads the wait the server asked for, preferring the millisecond precision
 	 * {@code retry-after-ms} header over the standard {@code Retry-After} seconds header.
+	 * A number of seconds too large to state in milliseconds reads as
+	 * {@link Long#MAX_VALUE}.
 	 * @param headers the response headers
 	 * @return the wait in milliseconds, or {@code null} when the server stated none
 	 */
@@ -113,7 +115,11 @@ public class SystemOneResponseErrorHandler implements RestClient.ResponseSpec.Er
 			return millis;
 		}
 		Long seconds = parseLong(headers.getFirst(HttpHeaders.RETRY_AFTER));
-		return seconds == null ? null : seconds * 1000;
+		if (seconds == null) {
+			return null;
+		}
+		// Saturate rather than wrap: a wrapped product is negative, or an arbitrary wait.
+		return seconds > Long.MAX_VALUE / 1000 ? Long.MAX_VALUE : seconds * 1000;
 	}
 
 	private static @Nullable Long parseLong(@Nullable String value) {

@@ -280,6 +280,20 @@ class SystemOneErrorMappingTests {
 	}
 
 	@Test
+	void saturatesRetryAfterSecondsTooLargeForMilliseconds() {
+		HttpHeaders headers = new HttpHeaders();
+
+		headers.set(HttpHeaders.RETRY_AFTER, String.valueOf(Long.MAX_VALUE / 1000));
+		assertThat(SystemOneResponseErrorHandler.retryAfterMs(headers)).isEqualTo(Long.MAX_VALUE / 1000 * 1000);
+
+		headers.set(HttpHeaders.RETRY_AFTER, String.valueOf(Long.MAX_VALUE / 1000 + 1));
+		assertThat(SystemOneResponseErrorHandler.retryAfterMs(headers)).isEqualTo(Long.MAX_VALUE);
+
+		headers.set(HttpHeaders.RETRY_AFTER, String.valueOf(Long.MAX_VALUE));
+		assertThat(SystemOneResponseErrorHandler.retryAfterMs(headers)).isEqualTo(Long.MAX_VALUE);
+	}
+
+	@Test
 	void ignoresARetryAfterGivenAsAnHttpDate() {
 		HttpHeaders headers = new HttpHeaders();
 		headers.add(HttpHeaders.RETRY_AFTER, "Wed, 21 Oct 2026 07:28:00 GMT");
