@@ -153,6 +153,47 @@ class JdbcSessionRepositorySqlServerIT {
 	}
 
 	@Test
+	void saveIfAbsentRejectsOverLongSessionIdInsteadOfTruncatingIt() {
+		// Truncated to the column width, the id would be the existing one and the insert
+		// would report that the session exists.
+		String sessionId = "s".repeat(255);
+		this.repository.save(Session.builder().id(sessionId).metadata("owner", "first").build());
+
+		assertThatExceptionOfType(DataAccessException.class)
+			.isThrownBy(() -> this.repository
+				.saveIfAbsent(Session.builder().id(sessionId + "x").metadata("owner", "second").build()))
+			.withMessageContaining("would be truncated");
+
+		assertThat(new JdbcTemplate(dataSource).queryForObject("SELECT COUNT(*) FROM AI_SESSION", Integer.class))
+			.isEqualTo(1);
+	}
+
+	@Test
+	void sessionIdLongerThanAnyBoundedStringIsRejectedInsteadOfTruncated() {
+		// The driver sends a string of more than 4000 characters as NVARCHAR(MAX). Cut to
+		// a bounded type, this id would be the existing one followed by spaces, which
+		// SQL Server compares equal to it.
+		String sessionId = "Session-" + UUID.randomUUID();
+		this.repository.save(Session.builder().id(sessionId).metadata("owner", "first").build());
+		String overLongId = sessionId + " ".repeat(4000 - sessionId.length()) + "x";
+
+		assertThatExceptionOfType(DataAccessException.class)
+			.isThrownBy(
+					() -> this.repository.save(Session.builder().id(overLongId).metadata("owner", "second").build()))
+			.withMessageContaining("would be truncated");
+		assertThatExceptionOfType(DataAccessException.class)
+			.isThrownBy(() -> this.repository
+				.saveIfAbsent(Session.builder().id(overLongId).metadata("owner", "second").build()))
+			.withMessageContaining("would be truncated");
+
+		Session existing = this.repository.findById(sessionId);
+		assertThat(existing).isNotNull();
+		assertThat(existing.metadata()).containsEntry("owner", "first");
+		assertThat(new JdbcTemplate(dataSource).queryForObject("SELECT COUNT(*) FROM AI_SESSION", Integer.class))
+			.isEqualTo(1);
+	}
+
+	@Test
 	void saveIfAbsentOfExistingIdKeepsCallerTransactionUnderXactAbort() {
 		// With XACT_ABORT ON a duplicate-key error rolls the whole transaction back on
 		// the server, silently dropping what the caller did before it.

@@ -75,11 +75,13 @@ import org.springframework.util.Assert;
  * {@code UPDATE … WHERE event_version = ?} before inserting. {@link #appendEvent} looks
  * the event id up under that row lock before inserting, so a replay is a no-op without a
  * duplicate-key error, which would mark a caller's surrounding transaction rollback-only,
- * or abort it on PostgreSQL. A read of the {@link EventFilter#activeView() active view}
- * selects the newest {@code COMPACTION} row, fetches the rows it names plus every row
- * from it on, and lets {@link EventFilter#apply(List)} order, filter and window them.
- * Every mutation runs in a {@link TransactionTemplate}; the class is thread-safe as the
- * {@link DataSource} is.
+ * or abort it on PostgreSQL and, with {@code XACT_ABORT ON}, on SQL Server.
+ * {@link #saveIfAbsent} avoids that error on these two databases as well, with a
+ * statement that inserts nothing when the id exists. A read of the
+ * {@link EventFilter#activeView() active view} selects the newest {@code COMPACTION} row,
+ * fetches the rows it names plus every row from it on, and lets
+ * {@link EventFilter#apply(List)} order, filter and window them. Every mutation runs in a
+ * {@link TransactionTemplate}; the class is thread-safe as the {@link DataSource} is.
  *
  * @author Christian Tzolov
  * @since 2.1.0
@@ -302,9 +304,9 @@ public final class JdbcSessionRepository implements SessionRepository {
 					throw new IllegalArgumentException("Session not found: " + sessionId);
 				}
 				// Detect a replay before inserting, under the session row lock, instead
-				// of
-				// relying on a failed INSERT: a duplicate-key error would mark a caller's
-				// surrounding transaction rollback-only, and on PostgreSQL abort it.
+				// of relying on a failed INSERT: a duplicate-key error would mark a
+				// caller's surrounding transaction rollback-only, and abort it on
+				// PostgreSQL and, with XACT_ABORT ON, on SQL Server.
 				List<String> owner = this.jdbcTemplate.queryForList(SELECT_EVENT_SESSION_ID, String.class,
 						event.getId());
 				if (!owner.isEmpty()) {

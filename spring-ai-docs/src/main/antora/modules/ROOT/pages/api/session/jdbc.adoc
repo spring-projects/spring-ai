@@ -96,7 +96,8 @@ For any other event type it holds `SessionEvent.getPayload()`.
 *Idempotent append.*
 `appendEvent` looks the event id up under the session row lock before inserting.
 An id already stored for the same session is a retried append and a no-op; an id used by another session is rejected.
-Checking first, rather than relying on a unique-constraint violation, keeps a replay from marking a caller's surrounding transaction rollback-only, or aborting it on PostgreSQL.
+Checking first, rather than relying on a unique-constraint violation, keeps a replay from marking a caller's surrounding transaction rollback-only, or aborting it on PostgreSQL and, with `XACT_ABORT ON`, on SQL Server.
+`saveIfAbsent` avoids the violation on these two databases for the same reason: `INSERT ... ON CONFLICT DO NOTHING` on PostgreSQL and an insert-only `MERGE` on SQL Server report an existing id through the update count.
 
 *Optimistic concurrency.*
 The `event_version` column of `AI_SESSION` advances on every append of a new event and every successful `appendEvents`.

@@ -20,13 +20,17 @@ package org.springframework.ai.session.jdbc;
  * The dialect of Microsoft SQL Server (2016 and later).
  * <p>
  * The upsert and the insert-if-absent are a {@code MERGE} under {@code HOLDLOCK}, so that
- * two concurrent saves of a new id cannot both take the insert branch, and the source
- * values are cast so that a {@code null} expiry keeps its column type. The
- * insert-if-absent is not a plain {@code INSERT}, because its duplicate-key error would
- * roll an enclosing transaction back on a connection with {@code XACT_ABORT ON}. The id
- * is cast wider than its column, so that an over-long id is rejected by the insert rather
- * than silently truncated to the id of another session. SQL Server has no {@code LIMIT};
- * rows are limited with {@code OFFSET ... FETCH}.
+ * two concurrent saves of a new id cannot both take the insert branch. The lock covers
+ * the key range around the id and is held until the transaction ends: in a caller's
+ * transaction that stays open, an insert of another new id into that range and a write to
+ * the next session in key order wait for it. The insert-if-absent is not a plain
+ * {@code INSERT}, because its duplicate-key error would roll an enclosing transaction
+ * back on a connection with {@code XACT_ABORT ON}.
+ * <p>
+ * The timestamps and the metadata are cast so that a {@code null} expiry keeps its column
+ * type. The id is not: a cast silently cuts a value longer than its type, to the id of
+ * another session at worst, whereas the insert of an over-long id is rejected. SQL Server
+ * has no {@code LIMIT}; rows are limited with {@code OFFSET ... FETCH}.
  *
  * @author Durga Dasepalli
  * @author Christian Tzolov
@@ -34,18 +38,26 @@ package org.springframework.ai.session.jdbc;
  */
 public class SqlServerJdbcSessionRepositoryDialect implements JdbcSessionRepositoryDialect {
 
+	private static final String MERGE_SESSION = """
+			MERGE INTO AI_SESSION WITH (HOLDLOCK) AS t
+			USING (SELECT ? AS id, CAST(? AS DATETIME2(6)) AS created_at,
+					CAST(? AS DATETIME2(6)) AS expires_at, CAST(? AS NVARCHAR(MAX)) AS metadata) AS s
+			ON t.id = s.id
+			""";
+
+	private static final String UPDATE_WHEN_MATCHED = """
+			WHEN MATCHED THEN UPDATE
+				SET expires_at = s.expires_at, metadata = s.metadata
+			""";
+
+	private static final String INSERT_WHEN_NOT_MATCHED = """
+			WHEN NOT MATCHED THEN INSERT (id, created_at, expires_at, metadata)
+				VALUES (s.id, s.created_at, s.expires_at, s.metadata);
+			""";
+
 	@Override
 	public String getUpsertSessionSql() {
-		return """
-				MERGE INTO AI_SESSION WITH (HOLDLOCK) AS t
-				USING (SELECT CAST(? AS NVARCHAR(4000)) AS id, CAST(? AS DATETIME2(6)) AS created_at,
-						CAST(? AS DATETIME2(6)) AS expires_at, CAST(? AS NVARCHAR(MAX)) AS metadata) AS s
-				ON t.id = s.id
-				WHEN MATCHED THEN UPDATE
-					SET expires_at = s.expires_at, metadata = s.metadata
-				WHEN NOT MATCHED THEN INSERT (id, created_at, expires_at, metadata)
-					VALUES (s.id, s.created_at, s.expires_at, s.metadata);
-				""";
+		return MERGE_SESSION + UPDATE_WHEN_MATCHED + INSERT_WHEN_NOT_MATCHED;
 	}
 
 	@Override
@@ -53,14 +65,7 @@ public class SqlServerJdbcSessionRepositoryDialect implements JdbcSessionReposit
 		// A duplicate-key error rolls an enclosing transaction back on the server when
 		// XACT_ABORT is ON; insert only when the id is absent instead and report an
 		// existing id through the update count.
-		return """
-				MERGE INTO AI_SESSION WITH (HOLDLOCK) AS t
-				USING (SELECT CAST(? AS NVARCHAR(4000)) AS id, CAST(? AS DATETIME2(6)) AS created_at,
-						CAST(? AS DATETIME2(6)) AS expires_at, CAST(? AS NVARCHAR(MAX)) AS metadata) AS s
-				ON t.id = s.id
-				WHEN NOT MATCHED THEN INSERT (id, created_at, expires_at, metadata)
-					VALUES (s.id, s.created_at, s.expires_at, s.metadata);
-				""";
+		return MERGE_SESSION + INSERT_WHEN_NOT_MATCHED;
 	}
 
 	@Override
