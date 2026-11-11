@@ -23,8 +23,6 @@ import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.springaicommunity.typesafe.RetryPolicy;
-import org.springaicommunity.typesafe.TypeSafeClient;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
@@ -34,25 +32,41 @@ import org.springframework.ai.decision.input.DecisionInput;
 import org.springframework.ai.decision.question.ChoiceQuestion;
 import org.springframework.ai.decision.question.ScoreQuestion;
 import org.springframework.ai.decision.question.YesNoQuestion;
+import org.springframework.ai.systemone.api.SystemOneClient;
+import org.springframework.ai.systemone.api.SystemOneRetryUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Live tests for {@link SystemOneDecisionModel} against whatever System One server the
- * {@code TYPESAFE_BASE_URL}, {@code TYPESAFE_API_KEY} and {@code TYPESAFE_DEFAULT_MODEL}
- * variables point at: TypeSafe Jev by default, or a local Laya or Ollama. Only the shape
- * of the answers is asserted, since the models answer differently.
+ * {@code SYSTEMONE_BASE_URL}, {@code SYSTEMONE_API_KEY} and {@code SYSTEMONE_MODEL}
+ * variables point at: the hosted service by default, or a local Laya or Ollama. Only the
+ * shape of the answers is asserted, since the models answer differently.
  *
  * @author Christian Tzolov
  */
-@EnabledIfEnvironmentVariable(named = "TYPESAFE_API_KEY", matches = ".+")
+@EnabledIfEnvironmentVariable(named = "SYSTEMONE_API_KEY", matches = ".+")
 class SystemOneDecisionModelIT {
 
 	// A generous timeout and no retries: a local server loads the model on the first
 	// call.
-	private final SystemOneDecisionModel decisionModel = SystemOneDecisionModel
-		.builder(TypeSafeClient.builder().timeout(Duration.ofMinutes(2)).retryPolicy(RetryPolicy.noRetry()).build())
-		.build();
+	private final SystemOneDecisionModel decisionModel = SystemOneDecisionModel.builder(client()).build();
+
+	private static SystemOneClient client() {
+		SystemOneClient.Builder builder = SystemOneClient.builder()
+			.apiKey(System.getenv("SYSTEMONE_API_KEY"))
+			.timeout(Duration.ofMinutes(2))
+			.retryTemplate(SystemOneRetryUtils.noRetryTemplate());
+		String baseUrl = System.getenv("SYSTEMONE_BASE_URL");
+		if (baseUrl != null) {
+			builder.baseUrl(baseUrl);
+		}
+		String model = System.getenv("SYSTEMONE_MODEL");
+		if (model != null) {
+			builder.defaultModel(model);
+		}
+		return builder.build();
+	}
 
 	@Test
 	void answersAllThreeQuestionKinds() {

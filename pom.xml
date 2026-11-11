@@ -72,6 +72,7 @@
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-openai</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-postgresml-embedding</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-stability-ai</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-systemone</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-transformers</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-vertex-ai</module>
 		<module>auto-configurations/models/tool/spring-ai-autoconfigure-model-tool</module>
@@ -162,6 +163,7 @@
 		<module>starters/spring-ai-starter-model-postgresml-embedding</module>
 		<module>starters/spring-ai-starter-model-session-jdbc</module>
 		<module>starters/spring-ai-starter-model-stability-ai</module>
+		<module>starters/spring-ai-starter-model-systemone</module>
 		<module>starters/spring-ai-starter-model-transformers</module>
 		<module>starters/spring-ai-starter-model-vertex-ai-embedding</module>
 
@@ -271,7 +273,6 @@
 		<!-- AI model SDKs -->
 		<anthropic-sdk.version>3.4.0</anthropic-sdk.version>
 		<openai-sdk.version>4.80.0</openai-sdk.version>
-		<typesafe-java-sdk.version>0.4.0</typesafe-java-sdk.version>
 		<!-- NOTE: keep awssdk and bedrockruntime versions aligned -->
 		<awssdk.version>2.55.14</awssdk.version>
 		<bedrockruntime.version>2.55.14</bedrockruntime.version>

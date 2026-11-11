@@ -15,8 +15,8 @@
  */
 
 /**
- * Provides the System One implementation of the Spring AI {@code DecisionModel} API,
- * backed by the TypeSafe Java SDK and serving TypeSafe Jev, Laya and Ollama.
+ * Provides the System One implementation of the Spring AI {@code DecisionModel} API, with
+ * the client of the {@code /v1/systemone} protocol in the {@code api} package.
  */
 @NullMarked
 package org.springframework.ai.systemone;
