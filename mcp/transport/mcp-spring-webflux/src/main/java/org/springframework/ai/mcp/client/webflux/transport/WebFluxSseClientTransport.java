@@ -50,6 +50,7 @@ import reactor.util.retry.Retry.RetrySignal;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
+import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 
 /**
@@ -262,13 +263,21 @@ public class WebFluxSseClientTransport implements McpClientTransport {
 					s.error(new RuntimeException("Failed to handle SSE endpoint event"));
 				}
 			}
-			else if (MESSAGE_EVENT_TYPE.equals(event.event())) {
-				try {
-					JSONRPCMessage message = McpSchema.deserializeJsonRpcMessage(this.jsonMapper, event.data());
-					s.next(message);
+			else if (isMessageEvent(event.event())) {
+				String data = event.data();
+				if (data == null || data.isEmpty()) {
+					if (logger.isDebugEnabled()) {
+						logger.debug("Ignoring SSE message event with empty data: " + event);
+					}
 				}
-				catch (IOException ioException) {
-					s.error(ioException);
+				else {
+					try {
+						JSONRPCMessage message = McpSchema.deserializeJsonRpcMessage(this.jsonMapper, data);
+						s.next(message);
+					}
+					catch (IOException ioException) {
+						s.error(ioException);
+					}
 				}
 			}
 			else {
@@ -281,6 +290,11 @@ public class WebFluxSseClientTransport implements McpClientTransport {
 
 		// The connection is established once the server sends the endpoint event
 		return this.messageEndpointSink.asMono().then();
+	}
+
+	private static boolean isMessageEvent(@Nullable String eventType) {
+		// Per SSE semantics, missing/blank event type defaults to "message".
+		return !StringUtils.hasText(eventType) || MESSAGE_EVENT_TYPE.equals(eventType);
 	}
 
 	/**
