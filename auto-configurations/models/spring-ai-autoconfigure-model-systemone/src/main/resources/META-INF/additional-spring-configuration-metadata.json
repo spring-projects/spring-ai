@@ -26,11 +26,6 @@
       "defaultValue": "30s"
     },
     {
-      "name": "spring.ai.systemone.decision.model",
-      "type": "java.lang.String",
-      "defaultValue": "jev-latest"
-    },
-    {
       "name": "spring.ai.systemone.decision.provider",
       "type": "java.lang.String",
       "defaultValue": "systemone"

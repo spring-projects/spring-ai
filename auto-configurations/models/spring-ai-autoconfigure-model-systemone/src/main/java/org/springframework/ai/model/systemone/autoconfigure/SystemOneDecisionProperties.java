@@ -16,14 +16,21 @@
 
 package org.springframework.ai.model.systemone.autoconfigure;
 
+import org.jspecify.annotations.Nullable;
+
 import org.springframework.ai.systemone.SystemOneDecisionModel;
 import org.springframework.ai.systemone.SystemOneDecisionOptions;
-import org.springframework.ai.systemone.api.SystemOneApiConstants;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.util.StringUtils;
 
 /**
  * Properties of the System One decision model: the model and the provider name recorded
  * in observations.
+ *
+ * <p>
+ * The model has no default here. Left unset, the decision model asks for the default
+ * model of the client it is given, so that a client the application defines keeps the
+ * model it was built with.
  *
  * @author Christian Tzolov
  * @since 2.1.0
@@ -34,9 +41,10 @@ public class SystemOneDecisionProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.systemone.decision";
 
 	/**
-	 * The model name or alias.
+	 * The model name or alias. Unset, the default model of the client applies: jev-latest
+	 * for the auto-configured client.
 	 */
-	private String model = SystemOneApiConstants.DEFAULT_MODEL;
+	private @Nullable String model;
 
 	/**
 	 * The provider name recorded in observations, such as {@code laya} or {@code llmman}
@@ -44,11 +52,11 @@ public class SystemOneDecisionProperties {
 	 */
 	private String provider = SystemOneDecisionModel.DEFAULT_PROVIDER;
 
-	public String getModel() {
+	public @Nullable String getModel() {
 		return this.model;
 	}
 
-	public void setModel(String model) {
+	public void setModel(@Nullable String model) {
 		this.model = model;
 	}
 
@@ -60,8 +68,13 @@ public class SystemOneDecisionProperties {
 		this.provider = provider;
 	}
 
+	/**
+	 * The options of the decision model. They name a model only when one is configured,
+	 * which leaves the decision model to fall back on the default model of its client.
+	 * @return the options
+	 */
 	public SystemOneDecisionOptions toOptions() {
-		return SystemOneDecisionOptions.builder().model(this.model).build();
+		return SystemOneDecisionOptions.builder().model(StringUtils.hasText(this.model) ? this.model : null).build();
 	}
 
 }

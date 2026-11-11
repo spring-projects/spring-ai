@@ -47,6 +47,7 @@ import org.springframework.web.client.RestClient;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.jsonPath;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
@@ -75,6 +76,7 @@ class SystemOneDecisionAutoConfigurationTests {
 			assertThat(model.getOptions().getModel()).isEqualTo("jev-latest");
 			assertThat(model.getProvider()).isEqualTo(SystemOneDecisionModel.DEFAULT_PROVIDER);
 			assertThat(context.getBean(SystemOneClient.class).defaultModel()).isEqualTo("jev-latest");
+			assertThat(context.getBean(SystemOneDecisionProperties.class).getModel()).isNull();
 		});
 	}
 
@@ -153,6 +155,61 @@ class SystemOneDecisionAutoConfigurationTests {
 			assertThat(context).hasSingleBean(SystemOneClient.class);
 			assertThat(context.getBean(SystemOneClient.class)).isSameAs(own);
 			assertThat(context).hasSingleBean(SystemOneDecisionModel.class);
+		});
+	}
+
+	@Test
+	void sendsTheDefaultModelOfAUserDefinedClientWhenNoModelIsConfigured() {
+		RestClient.Builder restClientBuilder = RestClient.builder();
+		MockRestServiceServer server = MockRestServiceServer.bindTo(restClientBuilder).build();
+		server.expect(jsonPath("$.model").value("own-model"))
+			.andRespond(withSuccess(OK_BODY, MediaType.APPLICATION_JSON));
+		SystemOneClient own = SystemOneClient.builder()
+			.apiKey("own-key")
+			.defaultModel("own-model")
+			.restClientBuilder(restClientBuilder)
+			.build();
+
+		this.contextRunner.withBean(SystemOneClient.class, () -> own).run(context -> {
+			SystemOneDecisionModel model = context.getBean(SystemOneDecisionModel.class);
+			assertThat(model.getOptions().getModel()).isEqualTo("own-model");
+
+			model.call("My new headphones arrived yesterday, but the left side doesn't work.",
+					Map.of("defect", YesNoQuestion.of("Does the customer report a defect?")));
+			server.verify();
+		});
+	}
+
+	@Test
+	void sendsTheConfiguredModelOverTheDefaultModelOfAUserDefinedClient() {
+		RestClient.Builder restClientBuilder = RestClient.builder();
+		MockRestServiceServer server = MockRestServiceServer.bindTo(restClientBuilder).build();
+		server.expect(jsonPath("$.model").value("configured-model"))
+			.andRespond(withSuccess(OK_BODY, MediaType.APPLICATION_JSON));
+		SystemOneClient own = SystemOneClient.builder()
+			.apiKey("own-key")
+			.defaultModel("own-model")
+			.restClientBuilder(restClientBuilder)
+			.build();
+
+		this.contextRunner.withPropertyValues("spring.ai.systemone.decision.model=configured-model")
+			.withBean(SystemOneClient.class, () -> own)
+			.run(context -> {
+				SystemOneDecisionModel model = context.getBean(SystemOneDecisionModel.class);
+				assertThat(model.getOptions().getModel()).isEqualTo("configured-model");
+				assertThat(context.getBean(SystemOneClient.class).defaultModel()).isEqualTo("own-model");
+
+				model.call("My new headphones arrived yesterday, but the left side doesn't work.",
+						Map.of("defect", YesNoQuestion.of("Does the customer report a defect?")));
+				server.verify();
+			});
+	}
+
+	@Test
+	void treatsABlankModelAsUnset() {
+		this.contextRunner.withPropertyValues("spring.ai.systemone.decision.model=").run(context -> {
+			assertThat(context.getBean(SystemOneDecisionModel.class).getOptions().getModel()).isEqualTo("jev-latest");
+			assertThat(context.getBean(SystemOneClient.class).defaultModel()).isEqualTo("jev-latest");
 		});
 	}
 

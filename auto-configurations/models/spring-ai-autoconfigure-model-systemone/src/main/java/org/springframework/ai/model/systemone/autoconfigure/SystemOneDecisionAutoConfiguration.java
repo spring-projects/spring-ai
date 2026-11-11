@@ -46,6 +46,11 @@ import org.springframework.web.client.RestClient;
  * defines.
  *
  * <p>
+ * The {@code spring.ai.systemone.decision.model} property is applied only when it is set.
+ * Unset, the decision model uses the default model of the client, so a client the
+ * application defines is asked for the model it was built with.
+ *
+ * <p>
  * The client sends through the {@link RestClient.Builder} of the application when there
  * is one, so that customizers, proxies and SSL bundles apply. A configured read timeout
  * is applied on top of the application's {@link HttpClientSettings}; unset, the
@@ -75,8 +80,12 @@ public class SystemOneDecisionAutoConfiguration {
 		SystemOneClient.Builder clientBuilder = SystemOneClient.builder()
 			.apiKey(apiKey)
 			.baseUrl(connectionProperties.getBaseUrl())
-			.defaultModel(decisionProperties.getModel())
 			.retryTemplate(SystemOneRetryUtils.retryTemplate(connectionProperties.getRetry().toRetryPolicy()));
+		String model = decisionProperties.getModel();
+		if (StringUtils.hasText(model)) {
+			// Unset, the client keeps its own default model.
+			clientBuilder.defaultModel(model);
+		}
 
 		Duration timeout = connectionProperties.getTimeout();
 		RestClient.Builder transport = restClientBuilder.getIfAvailable();

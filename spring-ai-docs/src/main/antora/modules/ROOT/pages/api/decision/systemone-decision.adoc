@@ -95,7 +95,8 @@ The prefix `spring.ai.systemone.decision` is the property prefix to configure th
 | Property | Description | Default
 | spring.ai.model.decision | Enables the System One decision model. | `systemone`
 | spring.ai.systemone.decision.model | The model name or alias.
-Ollama, Laya and llmman have no `jev-latest`, so set it when you point at one of them. | `jev-latest`
+Unset, the default model of the `SystemOneClient` applies: `jev-latest` for the auto-configured client, or the `defaultModel(...)` of a client bean you define.
+Ollama, Laya and llmman have no `jev-latest`, so set it when you point at one of them. | -
 | spring.ai.systemone.decision.provider | The provider name recorded in observations, such as `laya` or `llmman`. | `systemone`
 |====
 
