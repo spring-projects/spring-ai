@@ -17,7 +17,9 @@
 package org.springframework.ai.session.advisor;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -75,6 +77,14 @@ import org.springframework.util.Assert;
  * tool context of the call, so that a tool that reads the session, the session recall
  * tools for example, finds it without the caller passing it a second time. Off by
  * default, because the tool context goes to every tool of the call.</li>
+ * <li>Before a new turn, answers the tool calls the conversation ends with when they have
+ * no results, with {@link #UNANSWERED_TOOL_RESULT}: a tool call that waited for a
+ * person's confirmation and never got one, or a loop that failed after the reply was
+ * stored. The log then keeps the call with a result, so the model sees what it asked for
+ * and the memory advisor has nothing to drop from the prompt. A request that brings
+ * results for those calls, as the resume of a confirmation does, is left alone. The
+ * advisor cannot tell an abandoned call from one whose tool still runs in another call on
+ * the same session, so a session takes one call at a time.</li>
  * <li>After a loop that ended on a {@code returnDirect} tool or a breached tool call
  * limit, stores the reply's tool results, which no model round stored.</li>
  * <li>Compacts the session once the call has returned, if a
@@ -102,6 +112,20 @@ public final class SessionTurnAdvisor implements CallAdvisor, StreamAdvisor {
 
 	/** The result a tool call gets in the log when the loop ended before it ran. */
 	public static final String NOT_RUN_TOOL_RESULT = "The tool call did not run: the tool call limit was reached.";
+
+	/**
+	 * The result a tool call gets in the log when a new turn starts and the call still
+	 * has none: the turn that made it paused for a confirmation that never came, or
+	 * failed before its results were stored. It says what the log knows and no more: the
+	 * tool may have run.
+	 */
+	public static final String UNANSWERED_TOOL_RESULT = "No result was recorded for this tool call.";
+
+	/**
+	 * How often the version-checked write of {@link #UNANSWERED_TOOL_RESULT} is tried
+	 * when other appends, a compaction for example, keep moving the log.
+	 */
+	private static final int UNANSWERED_WRITE_ATTEMPTS = 3;
 
 	private static final Logger logger = LoggerFactory.getLogger(SessionTurnAdvisor.class);
 
@@ -162,6 +186,7 @@ public final class SessionTurnAdvisor implements CallAdvisor, StreamAdvisor {
 		Assert.notNull(chain, "chain must not be null");
 		String sessionId = SessionContexts.sessionId(request.context());
 		this.sessionService.findOrCreate(SessionContexts.createRequest(sessionId, request.context()));
+		answerUnansweredCalls(sessionId, request);
 		ChatClientResponse response = chain.nextCall(withSessionIdInToolContext(request, sessionId));
 		complete(sessionId, response.chatResponse());
 		return response;
@@ -194,6 +219,7 @@ public final class SessionTurnAdvisor implements CallAdvisor, StreamAdvisor {
 				return Flux.from(subscriber -> {
 					try (ContextSnapshot.Scope ignored = context.setThreadLocals()) {
 						this.sessionService.findOrCreate(SessionContexts.createRequest(sessionId, r.context()));
+						answerUnansweredCalls(sessionId, r);
 						rest.subscribe(subscriber);
 					}
 				});
@@ -246,6 +272,82 @@ public final class SessionTurnAdvisor implements CallAdvisor, StreamAdvisor {
 	}
 
 	/**
+	 * Answers the tool calls the conversation ends with when they have no results, before
+	 * a new turn adds to the log: the newest message is a reply with tool calls, and the
+	 * request brings no result for any of them. Every call gets
+	 * {@link #UNANSWERED_TOOL_RESULT}. The append is version-checked, so it lands only
+	 * while the reply is still the newest message. When the log moved, the reply is read
+	 * again: if another writer stored results, a resume on another instance for example,
+	 * nothing is written; if it was an unrelated append, a compaction for example, the
+	 * write is tried again, a few times. It has to land now: once the new turn's message
+	 * follows the reply, no later turn finds it. Best-effort all the same: a failure is
+	 * logged, and the memory advisor keeps the unanswered call out of the prompt.
+	 */
+	private void answerUnansweredCalls(String sessionId, ChatClientRequest request) {
+		try {
+			// One read for a turn that finds nothing open, which is nearly every turn
+			SessionEvent open = newestConversationEvent(sessionId);
+			if (open == null || !open.hasToolCalls()) {
+				return;
+			}
+			for (int attempt = 0; attempt < UNANSWERED_WRITE_ATTEMPTS; attempt++) {
+				// The version first, then the reply again: the append must not land
+				// after results another writer stored in between
+				long version = this.sessionService.getEventVersion(sessionId);
+				open = newestConversationEvent(sessionId);
+				if (open == null || !open.hasToolCalls()) {
+					return;
+				}
+				List<AssistantMessage.ToolCall> calls = ((AssistantMessage) open.getMessage()).getToolCalls();
+				if (answersAny(request, calls)) {
+					return;
+				}
+				SessionEvent answers = answersOf(open, "-unanswered",
+						Collections.nCopies(calls.size(), UNANSWERED_TOOL_RESULT));
+				if (this.sessionService.appendEvents(sessionId, List.of(answers), version)) {
+					logger.debug("Answered {} tool call(s) of session [{}] that had no results", calls.size(),
+							sessionId);
+					return;
+				}
+			}
+			logger.warn("Could not answer the unanswered tool calls of session [{}]: the log kept changing", sessionId);
+		}
+		catch (RuntimeException ex) {
+			logger.warn("Could not answer the unanswered tool calls of session [{}]: {}", sessionId, ex.getMessage());
+		}
+	}
+
+	/**
+	 * The event that answers the reply's tool calls, one answer per call in the order of
+	 * the calls, with an id that derives from the reply's.
+	 */
+	private static SessionEvent answersOf(SessionEvent reply, String idSuffix, List<String> answers) {
+		List<AssistantMessage.ToolCall> calls = ((AssistantMessage) reply.getMessage()).getToolCalls();
+		List<ToolResponseMessage.ToolResponse> responses = new ArrayList<>();
+		for (int i = 0; i < calls.size(); i++) {
+			responses.add(new ToolResponseMessage.ToolResponse(calls.get(i).id(), calls.get(i).name(), answers.get(i)));
+		}
+		return SessionEvent.builder()
+			.id(reply.getId() + idSuffix)
+			.sessionId(reply.getSessionId())
+			.message(ToolResponseMessage.builder().responses(responses).build())
+			.build();
+	}
+
+	/** Whether the request carries a tool result for one of the calls. */
+	private static boolean answersAny(ChatClientRequest request, List<AssistantMessage.ToolCall> calls) {
+		Set<String> ids = new HashSet<>();
+		calls.forEach(call -> ids.add(call.id()));
+		return request.prompt()
+			.getInstructions()
+			.stream()
+			.filter(ToolResponseMessage.class::isInstance)
+			.map(ToolResponseMessage.class::cast)
+			.flatMap(results -> results.getResponses().stream())
+			.anyMatch(result -> ids.contains(result.id()));
+	}
+
+	/**
 	 * Answers the stored reply's tool calls in the log after a loop that ended without a
 	 * model round: with the results that came back directly, or, for a breached limit,
 	 * with the results of the calls that ran, the breach for the call that broke it and a
@@ -258,18 +360,8 @@ public final class SessionTurnAdvisor implements CallAdvisor, StreamAdvisor {
 			if (stored == null || !stored.hasToolCalls()) {
 				return;
 			}
-			List<AssistantMessage.ToolCall> calls = ((AssistantMessage) stored.getMessage()).getToolCalls();
-			List<String> answers = answers(response, calls.size());
-			List<ToolResponseMessage.ToolResponse> responses = new ArrayList<>();
-			for (int i = 0; i < calls.size(); i++) {
-				responses
-					.add(new ToolResponseMessage.ToolResponse(calls.get(i).id(), calls.get(i).name(), answers.get(i)));
-			}
-			this.sessionService.appendEvent(SessionEvent.builder()
-				.id(stored.getId() + "-results")
-				.sessionId(sessionId)
-				.message(ToolResponseMessage.builder().responses(responses).build())
-				.build());
+			int calls = ((AssistantMessage) stored.getMessage()).getToolCalls().size();
+			this.sessionService.appendEvent(answersOf(stored, "-results", answers(response, calls)));
 		}
 		catch (RuntimeException ex) {
 			logger.warn("Could not store the tool results of session [{}]: {}", sessionId, ex.getMessage());
