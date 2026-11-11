@@ -251,6 +251,32 @@ class MongoDBAtlasVectorStoreTests {
 	}
 
 	@Test
+	void aFailedConversionWritesWhatIsAlreadyQueuedInItsBatch() {
+		when(this.listResult.first()).thenReturn(index(field("vector", "embedding", 4)));
+		IllegalStateException conversionFailure = new IllegalStateException("cannot convert b");
+		doAnswer(invocation -> {
+			MongoDBAtlasVectorStore.MongoDBDocument source = invocation.getArgument(0);
+			if (source.id().equals("b")) {
+				throw conversionFailure;
+			}
+			invocation.<org.bson.Document>getArgument(1).put("_id", source.id());
+			return null;
+		}).when(this.converter).write(any(), any(org.bson.Document.class));
+		BulkOperations batch = mock(BulkOperations.class);
+		when(this.mongoTemplate.bulkOps(BulkOperations.BulkMode.ORDERED, "vector_store")).thenReturn(batch);
+
+		assertThatThrownBy(() -> bulkStore(2).upsert(List.of(entry("a"), entry("b"), entry("c"))))
+			.isSameAs(conversionFailure);
+
+		InOrder inOrder = inOrder(batch);
+		inOrder.verify(batch).replaceOne(argThat(sameId("a")), any(org.bson.Document.class), argThat(upsert()));
+		inOrder.verify(batch).execute();
+		verify(batch, times(1)).replaceOne(any(Query.class), any(org.bson.Document.class),
+				any(FindAndReplaceOptions.class));
+		verify(this.mongoTemplate, times(1)).bulkOps(any(BulkOperations.BulkMode.class), anyString());
+	}
+
+	@Test
 	void aWrongSizeBeyondTheFirstBatchStopsBulkUpsertBeforeAnyWrite() {
 		when(this.listResult.first()).thenReturn(index(field("vector", "embedding", 4)));
 

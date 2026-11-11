@@ -444,8 +444,19 @@ public class MongoDBAtlasVectorStore extends AbstractObservationVectorStore impl
 	private void bulkReplace(List<EmbeddedDocument> entries, int batchSize) {
 		for (int start = 0; start < entries.size(); start += batchSize) {
 			BulkOperations bulk = this.mongoTemplate.bulkOps(BulkOperations.BulkMode.ORDERED, this.collectionName);
-			for (EmbeddedDocument entry : entries.subList(start, Math.min(start + batchSize, entries.size()))) {
-				org.bson.Document stored = toStoredDocument(entry);
+			List<EmbeddedDocument> batch = entries.subList(start, Math.min(start + batchSize, entries.size()));
+			for (int i = 0; i < batch.size(); i++) {
+				org.bson.Document stored;
+				try {
+					stored = toStoredDocument(batch.get(i));
+				}
+				catch (RuntimeException ex) {
+					// Write what is already queued, as saving each document would have
+					if (i > 0) {
+						bulk.execute();
+					}
+					throw ex;
+				}
 				Query sameId = new Query(Criteria.where("_id").is(stored.get("_id")));
 				bulk.replaceOne(sameId, stored, FindAndReplaceOptions.options().upsert());
 			}

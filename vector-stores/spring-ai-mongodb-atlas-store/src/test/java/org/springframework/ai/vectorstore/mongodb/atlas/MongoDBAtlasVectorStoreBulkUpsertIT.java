@@ -161,11 +161,11 @@ class MongoDBAtlasVectorStoreBulkUpsertIT extends AbstractVectorStoreUpsertTests
 				.getCollection(MongoDBAtlasVectorStore.DEFAULT_VECTOR_COLLECTION_NAME);
 			collection.createIndex(Indexes.ascending("metadata.unique"), new IndexOptions().unique(true).sparse(true));
 			try {
-				// With a batch size of 2 "d" fails in the middle of the second batch
-				// after "a" and "b" in the first batch and "c" in its own were written
+				// With a batch size of 2 "c" fails ahead of "d" in the second batch,
+				// so only an ordered write leaves "d" unwritten
 				assertThatThrownBy(() -> store.upsert(List.of(entry("a", "a", Map.of("unique", 1)),
-						entry("b", "b", Map.of("unique", 2)), entry("c", "c", Map.of("unique", 3)),
-						entry("d", "d", Map.of("unique", 1)), entry("e", "e", Map.of("unique", 5)))))
+						entry("b", "b", Map.of("unique", 2)), entry("c", "c", Map.of("unique", 1)),
+						entry("d", "d", Map.of("unique", 4)), entry("e", "e", Map.of("unique", 5)))))
 					.isInstanceOf(DataAccessException.class)
 					.satisfies(failure -> {
 						if (batchSize != PER_DOCUMENT) {
@@ -173,7 +173,7 @@ class MongoDBAtlasVectorStoreBulkUpsertIT extends AbstractVectorStoreUpsertTests
 						}
 					});
 
-				assertThat(storedIds(mongoTemplate)).containsExactlyInAnyOrder("a", "b", "c");
+				assertThat(storedIds(mongoTemplate)).containsExactlyInAnyOrder("a", "b");
 			}
 			finally {
 				collection.dropIndex(Indexes.ascending("metadata.unique"));

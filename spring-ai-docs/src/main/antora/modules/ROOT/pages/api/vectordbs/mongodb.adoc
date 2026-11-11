@@ -184,7 +184,7 @@ See xref:api/vectordbs.adoc#writing-precomputed-embeddings[Writing User-Supplied
 By default each document is saved on its own.
 To reduce the number of database requests for larger batches, set `bulkUpsertBatchSize` on the builder, which writes ordered bulk replacements of at most that many documents.
 Documents are still written in the order given, so the last entry wins when an id repeats, and a failed write leaves the earlier documents in place and skips the later ones.
-A failed write is then reported as a `BulkOperationException` rather than, for example, a `DuplicateKeyException`.
+An individual write error, such as a duplicate key, is then reported as a `BulkOperationException` rather than a `DuplicateKeyException`.
 A bulk write uses the write concern of the `MongoTemplate` but does not go through a custom `WriteConcernResolver`, so leave this option unset if you rely on one.
 
 == Metadata Filtering
