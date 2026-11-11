@@ -26,12 +26,14 @@ import org.springframework.ai.session.SessionAttributes;
 
 /**
  * What the session advisors read from the advisor context: the session id, and the
- * request that creates the session on first use.
+ * request that creates the session on first use. An advisor of your own that works on the
+ * session of a call, around the session advisors or inside the tool-calling loop, reads
+ * the same two here, so that it names and creates the session exactly as they do.
  *
  * @author Christian Tzolov
  * @since 2.1.0
  */
-final class SessionContexts {
+public final class SessionContexts {
 
 	private SessionContexts() {
 	}
@@ -41,7 +43,7 @@ final class SessionContexts {
 	 * @throws IllegalStateException when it is missing, so that sessions are never shared
 	 * by accident
 	 */
-	static String sessionId(Map<String, @Nullable Object> context) {
+	public static String sessionId(Map<String, @Nullable Object> context) {
 		Object value = context.get(SessionMemoryAdvisor.SESSION_ID_CONTEXT_KEY);
 		if (value instanceof String s && !s.isBlank()) {
 			return s;
@@ -54,8 +56,9 @@ final class SessionContexts {
 	 * The request the advisors pass to {@code SessionService.findOrCreate}: the id, and
 	 * the metadata from {@link SessionMemoryAdvisor#SESSION_METADATA_CONTEXT_KEY}, such
 	 * as the agent attributes ({@link SessionAttributes#AGENT_NAME}).
+	 * @throws IllegalArgumentException when the metadata in the context is not a map
 	 */
-	static CreateSessionRequest createRequest(String sessionId, Map<String, @Nullable Object> context) {
+	public static CreateSessionRequest createRequest(String sessionId, Map<String, @Nullable Object> context) {
 		return CreateSessionRequest.builder().id(sessionId).metadata(sessionMetadata(context)).build();
 	}
 

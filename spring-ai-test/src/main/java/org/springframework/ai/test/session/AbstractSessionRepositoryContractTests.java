@@ -523,6 +523,49 @@ public abstract class AbstractSessionRepositoryContractTests {
 	}
 
 	@Test
+	void concurrentAppendEventsOnSameVersionHaveExactlyOneWinner() throws Exception {
+		Session session = newSession("user-race");
+		append(session.id(), user("u1"));
+		long version = this.repository.getEventVersion(session.id());
+		int threads = 8;
+		ExecutorService executor = Executors.newFixedThreadPool(threads);
+		try {
+			CountDownLatch start = new CountDownLatch(1);
+			// Each writer claims the session with an event of its own type,
+			// appended only if the log stood still
+			List<Future<Boolean>> results = new ArrayList<>();
+			for (int i = 0; i < threads; i++) {
+				SessionEvent claim = status(session.id(), "claimed-by-" + i);
+				results.add(executor.submit(() -> {
+					start.await();
+					return this.repository.appendEvents(session.id(), List.of(claim), version);
+				}));
+			}
+			start.countDown();
+			List<Integer> winners = new ArrayList<>();
+			for (int i = 0; i < threads; i++) {
+				if (results.get(i).get(30, TimeUnit.SECONDS)) {
+					winners.add(i);
+				}
+			}
+
+			// One writer was told it won, and the log moved by its one append
+			assertThat(winners).hasSize(1);
+			assertThat(this.repository.getEventVersion(session.id())).isEqualTo(version + 1);
+			// The one event stored is that writer's, and the newest of its type
+			EventFilter claims = EventFilter.builder().eventTypes(Set.of(EventType.of("STATUS"))).build();
+			assertThat(this.repository.findEvents(session.id(), claims)).extracting(e -> e.getPayload().get("status"))
+				.containsExactly("claimed-by-" + winners.get(0));
+			assertThat(this.repository.findEvents(session.id(), claims.toBuilder().lastN(1).build()))
+				.extracting(e -> e.getPayload().get("status"))
+				.containsExactly("claimed-by-" + winners.get(0));
+		}
+		finally {
+			executor.shutdownNow();
+		}
+	}
+
+	@Test
 	void appendEventsRejectsEventOfAnotherSessionAndDuplicateIdAndChangesNothing() {
 		Session session = newSession("user-reject");
 		Session other = newSession("user-reject");
@@ -776,6 +819,19 @@ public abstract class AbstractSessionRepositoryContractTests {
 		assertThat(window.stream().filter(SessionEvent::hasMessage).map(e -> e.getMessage().getText()))
 			.containsExactly("u2", "a2");
 		assertThat(texts(session.id(), EventFilter.active().merge(EventFilter.lastN(1)))).containsExactly("u2", "a2");
+	}
+
+	@Test
+	void eventTypeWithLongestNameGoesThroughStore() {
+		Session session = newSession("user-long-type");
+		EventType longest = EventType.of("LONG." + "X".repeat(EventType.MAX_NAME_LENGTH - 5));
+		this.repository
+			.appendEvent(SessionEvent.builder().sessionId(session.id()).type(longest).payload("k", "v").build());
+
+		List<SessionEvent> stored = this.repository.findEvents(session.id(),
+				EventFilter.builder().eventTypes(Set.of(longest)).build());
+		assertThat(stored).extracting(SessionEvent::getType).containsExactly(longest);
+		assertThat(longest.name()).hasSize(EventType.MAX_NAME_LENGTH);
 	}
 
 	@Test

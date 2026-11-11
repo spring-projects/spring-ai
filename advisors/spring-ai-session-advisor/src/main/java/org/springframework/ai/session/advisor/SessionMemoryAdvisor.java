@@ -96,6 +96,15 @@ public final class SessionMemoryAdvisor implements BaseAdvisor, MemoryAdvisor {
 	private static final ContextSnapshotFactory CONTEXT_SNAPSHOTS = ContextSnapshotFactory.builder().build();
 
 	/**
+	 * Above the order of the tool-calling loop, which is
+	 * {@link org.springframework.ai.chat.client.advisor.ToolCallingAdvisor#DEFAULT_ORDER}
+	 * by default, so the memory advisor runs inside the loop, once per round. An advisor
+	 * that has to run in every round too takes an order above the loop's: below this one
+	 * to run around the memory advisor, above this one to run inside it.
+	 */
+	public static final int DEFAULT_ORDER = Ordered.HIGHEST_PRECEDENCE + 1000;
+
+	/**
 	 * Context key of the session a request runs on;
 	 * {@link MemoryAdvisor#CONVERSATION_ID}, the conversation key of every memory
 	 * advisor. Set with {@code .advisors(a ->
@@ -333,7 +342,7 @@ public final class SessionMemoryAdvisor implements BaseAdvisor, MemoryAdvisor {
 		// ToolCallingAdvisor's tool-call loop rather than wrapping it -- before()/after()
 		// then run once per round, which PromptHistory's overlap with the loop's own
 		// prompt is built to tolerate.
-		private int order = Ordered.HIGHEST_PRECEDENCE + 1000;
+		private int order = DEFAULT_ORDER;
 
 		private Scheduler scheduler = BaseAdvisor.DEFAULT_SCHEDULER;
 
