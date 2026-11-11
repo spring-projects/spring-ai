@@ -123,6 +123,11 @@
 			</dependency>
 			<dependency>
 				<groupId>org.springframework.ai</groupId>
+				<artifactId>spring-ai-guardrail-advisor</artifactId>
+				<version>${project.version}</version>
+			</dependency>
+			<dependency>
+				<groupId>org.springframework.ai</groupId>
 				<artifactId>spring-ai-session-advisor</artifactId>
 				<version>${project.version}</version>
 			</dependency>

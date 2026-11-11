@@ -410,6 +410,12 @@ catch (GuardrailRefusalException ex) {
     reply(ex.getRefusal()); // what the guardrail said in place of an answer
 }
 ----
+* `DecisionGuardrailAdvisor`
++
+Screens the user message and the reply with a xref:api/decision.adoc[decision model], and refuses the turn when a hazard fires.
+It ships in the `spring-ai-guardrail-advisor` module.
++
+For full documentation, see xref:api/advisors-guardrail.adoc[Guardrail Advisor].
 
 
 === Streaming vs Non-Streaming
