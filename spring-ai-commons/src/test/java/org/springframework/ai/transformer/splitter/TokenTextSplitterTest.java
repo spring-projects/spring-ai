@@ -18,6 +18,7 @@ package org.springframework.ai.transformer.splitter;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.knuddels.jtokkit.Encodings;
 import com.knuddels.jtokkit.api.EncodingType;
@@ -420,6 +421,64 @@ public class TokenTextSplitterTest {
 			searchFrom = start + 1;
 		}
 		assertThat(text.substring(coveredUpTo)).as("text lost after the last chunk").isBlank();
+	}
+
+	@Test
+	public void testCharactersEncodedInSeveralTokensAreNotSplit() {
+		// Some Chinese characters are encoded in more than one token, so a chunk
+		// boundary can fall inside a character
+		String paragraph = "春节是中国最重要的传统节日，人们在这一天回家与家人团聚。除夕晚上，全家人围坐在一起吃年夜饭，观看春节联欢晚会。"
+				+ "孩子们会收到长辈给的红包，里面装着压岁钱，寓意驱邪避灾。大街小巷挂满了红灯笼，家家户户贴春联、放鞭炮，处处洋溢着喜庆的气氛。"
+				+ "随着时代的发展，越来越多的年轻人选择在春节期间外出旅游，或者通过视频通话向远方的亲人拜年。";
+		// Number the paragraphs and end the text with a sentence of its own, so that each
+		// chunk is found at one place in the text
+		StringBuilder text = new StringBuilder();
+		for (int i = 1; i <= 30; i++) {
+			text.append("第").append(i).append("段：").append(paragraph);
+		}
+		text.append("全文完。");
+
+		for (int overlap : new int[] { 0, 50 }) {
+			var splitter = TokenTextSplitter.builder().withChunkOverlap(overlap).build();
+			var chunks = splitter.apply(List.of(new Document(text.toString())));
+
+			// Expect: no chunk holds part of a character, decoded as the U+FFFD
+			// replacement character, and every part of the text is in a chunk
+			assertThat(chunks).extracting(Document::getText).noneMatch(chunk -> chunk.contains("\uFFFD"));
+			assertNoTextLost(text.toString(), chunks);
+		}
+	}
+
+	@Test
+	public void testEmojiAreNotSplit() {
+		String text = "😀🎉🚀🌍🔥💡🍕🎸🐱🌈".repeat(4);
+		var splitter = TokenTextSplitter.builder()
+			.withChunkSize(10)
+			.withMinChunkSizeChars(0)
+			.withMinChunkLengthToEmbed(0)
+			.build();
+
+		var chunks = splitter.apply(List.of(new Document(text)));
+
+		// Expect: each emoji is encoded in several tokens, but no chunk starts or ends
+		// inside one, so the chunks put together give back the text
+		assertThat(chunks).extracting(Document::getText).noneMatch(chunk -> chunk.contains("\uFFFD"));
+		assertThat(chunks.stream().map(Document::getText).collect(Collectors.joining())).isEqualTo(text);
+	}
+
+	@Test
+	public void testChunkGrowsPastChunkSizeRatherThanSplitACharacter() {
+		var splitter = TokenTextSplitter.builder()
+			.withChunkSize(1)
+			.withMinChunkSizeChars(0)
+			.withMinChunkLengthToEmbed(0)
+			.build();
+
+		var chunks = splitter.apply(List.of(new Document("🎉🚀🌍")));
+
+		// Expect: each emoji takes more tokens than the chunk size, so each chunk holds
+		// one whole emoji
+		assertThat(chunks).extracting(Document::getText).containsExactly("🎉", "🚀", "🌍");
 	}
 
 	@Test

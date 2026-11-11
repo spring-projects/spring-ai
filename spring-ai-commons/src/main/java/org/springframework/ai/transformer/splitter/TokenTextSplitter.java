@@ -174,6 +174,11 @@ public class TokenTextSplitter extends TextSplitter {
 	 * size ({@code tokens.size() > chunkSize}). Text that exactly matches or is smaller
 	 * than the chunk size is returned as a single chunk without punctuation-based
 	 * truncation.
+	 * <p>
+	 * Chunks only start and end between whole characters. A character encoded in several
+	 * tokens, such as some CJK characters and most emoji, is never split, so a chunk can
+	 * end a few tokens before the chunk size, or after it when a single character takes
+	 * more tokens than the chunk size.
 	 * @param text the text to split
 	 * @param chunkSize the target chunk size in tokens
 	 * @param chunkOverlap the number of tokens each chunk shares with the one before it
@@ -196,12 +201,14 @@ public class TokenTextSplitter extends TextSplitter {
 			}
 			return new ArrayList<>();
 		}
+		boolean[] characterBoundaries = getCharacterBoundaries(tokens);
 		List<String> chunks = new ArrayList<>();
 		int position = 0;
 		int num_chunks = 0;
 
 		while (position < tokens.size() && num_chunks < this.maxNumChunks) {
-			int chunkEnd = Math.min(position + chunkSize, tokens.size());
+			int chunkEnd = toCharacterBoundary(characterBoundaries, position,
+					Math.min(position + chunkSize, tokens.size()));
 
 			// Extract tokens for this chunk
 			List<Integer> chunkTokens = tokens.subList(position, chunkEnd);
@@ -233,7 +240,8 @@ public class TokenTextSplitter extends TextSplitter {
 			int remainingTokens = tokens.size() - chunkEndPosition;
 			boolean reachedEnd = remainingTokens <= 0 || (remainingTokens <= chunkSize
 					&& decodeTokens(tokens.subList(chunkEndPosition, tokens.size())).isBlank());
-			position = reachedEnd ? tokens.size() : position + advance;
+			position = reachedEnd ? tokens.size()
+					: toCharacterBoundary(characterBoundaries, position, Math.min(position + advance, tokens.size()));
 
 			// Format according to keepSeparator setting
 			String formattedChunk = this.keepSeparator ? finalChunkText.trim()
@@ -287,6 +295,59 @@ public class TokenTextSplitter extends TextSplitter {
 			maxLastPunctuation = Math.max(maxLastPunctuation, lastPunctuation);
 		}
 		return maxLastPunctuation;
+	}
+
+	/**
+	 * Returns, for each position between the tokens, whether the tokens before it decode
+	 * to whole characters. Tokens are byte sequences, so the UTF-8 bytes of one character
+	 * can be spread over several tokens.
+	 */
+	private boolean[] getCharacterBoundaries(List<Integer> tokens) {
+		boolean[] boundaries = new boolean[tokens.size() + 1];
+		boundaries[0] = true;
+		var token = new IntArrayList(1);
+		int pendingContinuationBytes = 0;
+		for (int i = 0; i < tokens.size(); i++) {
+			token.clear();
+			token.add(tokens.get(i));
+			for (byte b : this.encoding.decodeBytes(token)) {
+				if ((b & 0xC0) == 0x80) {
+					pendingContinuationBytes = Math.max(0, pendingContinuationBytes - 1);
+				}
+				else if ((b & 0xF8) == 0xF0) {
+					pendingContinuationBytes = 3;
+				}
+				else if ((b & 0xF0) == 0xE0) {
+					pendingContinuationBytes = 2;
+				}
+				else if ((b & 0xE0) == 0xC0) {
+					pendingContinuationBytes = 1;
+				}
+				else {
+					pendingContinuationBytes = 0;
+				}
+			}
+			boundaries[i + 1] = pendingContinuationBytes == 0;
+		}
+		return boundaries;
+	}
+
+	/**
+	 * Moves a token position to the last character boundary at or before it that is still
+	 * after {@code from}, or to the first one after it when there is none, which happens
+	 * when a single character takes more tokens than are available.
+	 */
+	private static int toCharacterBoundary(boolean[] boundaries, int from, int position) {
+		for (int i = position; i > from; i--) {
+			if (boundaries[i]) {
+				return i;
+			}
+		}
+		int next = position + 1;
+		while (next < boundaries.length - 1 && !boundaries[next]) {
+			next++;
+		}
+		return next;
 	}
 
 	private List<Integer> getEncodedTokens(String text) {
