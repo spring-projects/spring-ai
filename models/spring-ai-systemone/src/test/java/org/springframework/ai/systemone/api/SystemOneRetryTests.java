@@ -16,6 +16,7 @@
 
 package org.springframework.ai.systemone.api;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.util.Map;
 
@@ -281,6 +282,20 @@ class SystemOneRetryTests {
 		RetryTemplate honouring = new RetryTemplate(SystemOneRetryUtils.honouringRetryAfter(FAST.getRetryPolicy()));
 		assertThatExceptionOfType(SystemOneRateLimitException.class).isThrownBy(() -> evaluate(honouring))
 			.satisfies(ex -> assertThat(ex.retryAfter()).isEqualTo(Duration.ofDays(1)));
+
+		this.mock.server().verify();
+	}
+
+	@Test
+	void retriesAResponseThatBreaksOffWhileItIsRead() {
+		this.mock.server()
+			.expect(requestTo(MockSystemOneServer.SYSTEM_ONE_URL))
+			.andRespond(MockSystemOneServer.brokenBodyResponse(new IOException("Connection reset")));
+		this.mock.server()
+			.expect(requestTo(MockSystemOneServer.SYSTEM_ONE_URL))
+			.andRespond(MockSystemOneServer.jsonResponse(OK_BODY));
+
+		assertThat(evaluate(FAST).noulValue("probe")).isEqualTo(0.5);
 
 		this.mock.server().verify();
 	}

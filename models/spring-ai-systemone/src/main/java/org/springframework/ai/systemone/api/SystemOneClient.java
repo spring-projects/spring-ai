@@ -16,7 +16,9 @@
 
 package org.springframework.ai.systemone.api;
 
+import java.io.IOException;
 import java.net.SocketTimeoutException;
+import java.net.http.HttpTimeoutException;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -239,7 +241,10 @@ public class SystemOneClient {
 			return call.get();
 		}
 		catch (ResourceAccessException ex) {
-			throw toConnectionException(endpoint, ex);
+			throw isTimeout(ex)
+					? new SystemOneApiTimeoutException("System One %s timed out".formatted(endpoint), null, ex)
+					: new SystemOneApiConnectionException(
+							"System One %s failed without an HTTP response".formatted(endpoint), ex);
 		}
 		// The two below are body-decoding failures on a response that did arrive. They
 		// used to escape as raw Spring exceptions, bypassing the typed contract and the
@@ -260,18 +265,33 @@ public class SystemOneClient {
 					endpoint);
 		}
 		catch (RestClientException ex) {
+			// A body that broke off while it was read, such as a read timeout or a reset
+			// connection after the headers arrived, is as transient as a response that
+			// never arrived. Spring reports it as a plain RestClientException, with the
+			// I/O failure somewhere below.
+			if (hasCause(ex, IOException.class)) {
+				throw isTimeout(ex)
+						? new SystemOneApiTimeoutException(
+								"System One %s timed out while the response was read".formatted(endpoint), null, ex)
+						: new SystemOneApiConnectionException(
+								"System One %s response broke off while it was read".formatted(endpoint), ex);
+			}
 			throw new SystemOneException(
 					"System One %s response could not be read: %s".formatted(endpoint, ex.getMessage()), ex);
 		}
 	}
 
-	private SystemOneException toConnectionException(String endpoint, ResourceAccessException ex) {
-		Throwable cause = ex.getCause();
-		if (cause instanceof SocketTimeoutException || cause instanceof java.net.http.HttpTimeoutException) {
-			return new SystemOneApiTimeoutException("System One %s timed out".formatted(endpoint), null, ex);
+	private static boolean isTimeout(Throwable ex) {
+		return hasCause(ex, SocketTimeoutException.class) || hasCause(ex, HttpTimeoutException.class);
+	}
+
+	private static boolean hasCause(Throwable ex, Class<? extends Throwable> type) {
+		for (Throwable cause = ex.getCause(); cause != null; cause = cause.getCause()) {
+			if (type.isInstance(cause)) {
+				return true;
+			}
 		}
-		return new SystemOneApiConnectionException("System One %s failed without an HTTP response".formatted(endpoint),
-				ex);
+		return false;
 	}
 
 	/**

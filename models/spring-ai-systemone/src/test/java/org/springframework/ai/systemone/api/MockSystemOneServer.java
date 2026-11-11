@@ -16,11 +16,19 @@
 
 package org.springframework.ai.systemone.api;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.SequenceInputStream;
+import java.nio.charset.StandardCharsets;
+
 import org.springframework.ai.systemone.api.exception.SystemOneApiException;
 import org.springframework.core.retry.RetryTemplate;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
+import org.springframework.mock.http.client.MockClientHttpResponse;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.test.web.client.response.MockRestResponseCreators;
 import org.springframework.web.client.RestClient;
@@ -52,6 +60,16 @@ final class MockSystemOneServer {
 	static MockSystemOneServer create() {
 		RestClient.Builder builder = RestClient.builder();
 		MockRestServiceServer server = MockRestServiceServer.bindTo(builder).bufferContent().build();
+		return new MockSystemOneServer(builder, server);
+	}
+
+	/**
+	 * @return a fixture whose response bodies are read as they stream in, as in
+	 * production, so that a body failing midway fails inside the JSON parser
+	 */
+	static MockSystemOneServer createStreaming() {
+		RestClient.Builder builder = RestClient.builder();
+		MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
 		return new MockSystemOneServer(builder, server);
 	}
 
@@ -100,6 +118,26 @@ final class MockSystemOneServer {
 
 	static org.springframework.test.web.client.ResponseCreator errorResponse(int status, String body) {
 		return errorResponse(status, body, new HttpHeaders());
+	}
+
+	/**
+	 * @return a response creator for a 200 whose JSON body fails with the given exception
+	 * once its first bytes have been read, as a connection does that drops after the
+	 * headers arrived
+	 */
+	static org.springframework.test.web.client.ResponseCreator brokenBodyResponse(IOException failure) {
+		return request -> {
+			InputStream body = new SequenceInputStream(
+					new ByteArrayInputStream("{\"model\":".getBytes(StandardCharsets.UTF_8)), new InputStream() {
+						@Override
+						public int read() throws IOException {
+							throw failure;
+						}
+					});
+			MockClientHttpResponse response = new MockClientHttpResponse(body, HttpStatus.OK);
+			response.getHeaders().setContentType(MediaType.APPLICATION_JSON);
+			return response;
+		};
 	}
 
 }

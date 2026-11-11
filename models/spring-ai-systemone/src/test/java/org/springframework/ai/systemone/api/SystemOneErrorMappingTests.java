@@ -16,12 +16,16 @@
 
 package org.springframework.ai.systemone.api;
 
+import java.io.IOException;
+import java.net.SocketTimeoutException;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
 
+import org.springframework.ai.systemone.api.exception.SystemOneApiConnectionException;
 import org.springframework.ai.systemone.api.exception.SystemOneApiException;
 import org.springframework.ai.systemone.api.exception.SystemOneApiResponseValidationException;
+import org.springframework.ai.systemone.api.exception.SystemOneApiTimeoutException;
 import org.springframework.ai.systemone.api.exception.SystemOneAuthenticationException;
 import org.springframework.ai.systemone.api.exception.SystemOneBadRequestException;
 import org.springframework.ai.systemone.api.exception.SystemOneException;
@@ -305,6 +309,34 @@ class SystemOneErrorMappingTests {
 		assertThatExceptionOfType(SystemOneRateLimitException.class)
 			.isThrownBy(() -> evaluate(SystemOneRetryUtils.noRetryTemplate()))
 			.satisfies(ex -> assertThat(ex.retryAfterMs()).isNull());
+	}
+
+	@Test
+	void reportsAResponseThatBreaksOffWhileItIsReadAsAConnectionFailure() {
+		this.mock.server()
+			.expect(requestTo(MockSystemOneServer.SYSTEM_ONE_URL))
+			.andRespond(MockSystemOneServer.brokenBodyResponse(new IOException("Connection reset")));
+
+		assertThatExceptionOfType(SystemOneApiConnectionException.class)
+			.isThrownBy(() -> evaluate(SystemOneRetryUtils.noRetryTemplate()))
+			.isNotInstanceOf(SystemOneApiTimeoutException.class)
+			.withMessageContaining("broke off")
+			.satisfies(ex -> assertThat(SystemOneRetryUtils.isTransient(ex)).isTrue());
+	}
+
+	@Test
+	void reportsAReadTimeoutWhileTheResponseIsReadAsATimeout() {
+		// Streamed, so the timeout surfaces inside the JSON parser, wrapped several
+		// exceptions deep, as it does in production.
+		MockSystemOneServer streaming = MockSystemOneServer.createStreaming();
+		streaming.server()
+			.expect(requestTo(MockSystemOneServer.SYSTEM_ONE_URL))
+			.andRespond(MockSystemOneServer.brokenBodyResponse(new SocketTimeoutException("Read timed out")));
+
+		assertThatExceptionOfType(SystemOneApiTimeoutException.class)
+			.isThrownBy(() -> streaming.client(SystemOneRetryUtils.noRetryTemplate())
+				.systemOne("anything", Map.of("probe", Noul.of("Is this a probe?"))))
+			.satisfies(ex -> assertThat(SystemOneRetryUtils.isTransient(ex)).isTrue());
 	}
 
 	@Test
