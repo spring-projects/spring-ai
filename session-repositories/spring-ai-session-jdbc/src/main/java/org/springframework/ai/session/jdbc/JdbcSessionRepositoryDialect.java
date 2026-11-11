@@ -68,6 +68,29 @@ public interface JdbcSessionRepositoryDialect {
 	}
 
 	/**
+	 * The predicate of a keyword search: whether the text of an event's message contains
+	 * a keyword, ignoring case. A predicate over the event row with the alias {@code e},
+	 * with one parameter and no leading {@code AND}; the repository repeats it per
+	 * keyword and binds each parameter to {@link #toKeywordParameter(String)}. The
+	 * default is a {@code LIKE} with {@code !} as the escape character that lower-cases
+	 * both the {@code message_content} and the parameter in the database, so that the two
+	 * sides are folded by the same rules. It serves every supported database.
+	 */
+	default String getKeywordPredicate() {
+		return "LOWER(COALESCE(e.message_content, '')) LIKE LOWER(?) ESCAPE '!'";
+	}
+
+	/**
+	 * The value bound to the parameter of {@link #getKeywordPredicate()} for a keyword:
+	 * by default the keyword between two {@code %}, with {@code !}, {@code %} and
+	 * {@code _} escaped by {@code !}, so that a keyword is matched as text and never as a
+	 * pattern. A database whose {@code LIKE} knows more wildcards escapes them too.
+	 */
+	default String toKeywordParameter(String keyword) {
+		return "%" + keyword.replace("!", "!!").replace("%", "!%").replace("_", "!_") + "%";
+	}
+
+	/**
 	 * The dialect of the database the data source connects to, from its product name:
 	 * PostgreSQL, H2, MySQL, MariaDB or Microsoft SQL Server.
 	 * @throws IllegalStateException if the product name cannot be read or the database is
