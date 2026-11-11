@@ -26,12 +26,14 @@ import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.session.DefaultSessionService;
 import org.springframework.ai.session.InMemorySessionRepository;
 import org.springframework.ai.session.SessionService;
 import org.springframework.ai.session.compaction.WindowCompactionStrategy;
 import org.springframework.ai.session.tool.SessionRecallTools;
+import org.springframework.ai.tool.annotation.Tool;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
@@ -116,6 +118,112 @@ class SessionRecallToolsChatClientTests {
 			.withMessageContaining("ToolContext is required");
 	}
 
+	// --- The session id in the tool context, put there by the turn advisor ---
+
+	@Test
+	void advisorPutsSessionIdInToolContextWhenAskedTo() {
+		ChatClient withFlag = client(true, SessionRecallTools.builder(this.sessionService).build());
+		this.model.thenAnswer("Noted.").then(prompt -> search("c1", "invoice")).then(prompt -> answer("It is 42."));
+
+		// No toolContext(..) on either call
+		withFlag.prompt()
+			.user("My invoice number is 42.")
+			.advisors(SessionAdvisors.session(this.sessionId))
+			.call()
+			.content();
+		String reply = withFlag.prompt()
+			.user("What was my invoice number?")
+			.advisors(SessionAdvisors.session(this.sessionId))
+			.call()
+			.content();
+
+		assertThat(reply).isEqualTo("It is 42.");
+		assertThat(toolResults(this.model.prompts().get(2))).singleElement()
+			.asString()
+			.contains("My invoice number is 42.");
+	}
+
+	@Test
+	void advisorPutsSessionIdInToolContextOfStreamedCall() {
+		ChatClient withFlag = client(true, SessionRecallTools.builder(this.sessionService).build());
+		this.model.thenAnswer("Noted.").then(prompt -> search("c1", "invoice")).then(prompt -> answer("It is 42."));
+		withFlag.prompt()
+			.user("My invoice number is 42.")
+			.advisors(SessionAdvisors.session(this.sessionId))
+			.call()
+			.content();
+
+		withFlag.prompt()
+			.user("What was my invoice number?")
+			.advisors(SessionAdvisors.session(this.sessionId))
+			.stream()
+			.content()
+			.blockLast();
+
+		assertThat(toolResults(this.model.prompts().get(2))).singleElement()
+			.asString()
+			.contains("My invoice number is 42.");
+	}
+
+	@Test
+	void callersToolContextIsKeptAndItsSessionIdStands() {
+		ContextProbe probe = new ContextProbe();
+		ChatClient withFlag = client(true, probe);
+		this.model.then(prompt -> call("c1", "probe"))
+			.thenAnswer("Done.")
+			.then(prompt -> call("c2", "probe"))
+			.thenAnswer("Done.");
+
+		// The caller's entries stay, the session id joins them
+		withFlag.prompt()
+			.user("Probe")
+			.advisors(SessionAdvisors.session(this.sessionId))
+			.toolContext(Map.of("tenant", "acme"))
+			.call()
+			.content();
+		assertThat(probe.seen).containsOnly(Map.entry("tenant", "acme"),
+				Map.entry(SessionRecallTools.SESSION_ID_CONTEXT_KEY, this.sessionId));
+
+		// A session id the caller set is not replaced
+		withFlag.prompt()
+			.user("Probe again")
+			.advisors(SessionAdvisors.session(this.sessionId))
+			.toolContext(Map.of(SessionRecallTools.SESSION_ID_CONTEXT_KEY, "another"))
+			.call()
+			.content();
+		assertThat(probe.seen).containsOnly(Map.entry(SessionRecallTools.SESSION_ID_CONTEXT_KEY, "another"));
+	}
+
+	@Test
+	void toolContextIsLeftAloneByDefault() {
+		ContextProbe probe = new ContextProbe();
+		this.model.then(prompt -> call("c1", "probe")).thenAnswer("Done.");
+
+		client(false, probe).prompt()
+			.user("Probe")
+			.advisors(SessionAdvisors.session(this.sessionId))
+			.toolContext(Map.of("tenant", "acme"))
+			.call()
+			.content();
+
+		assertThat(probe.seen).containsOnly(Map.entry("tenant", "acme"));
+	}
+
+	private ChatClient client(boolean sessionIdInToolContext, Object... tools) {
+		return ChatClient.builder(this.model)
+			.defaultAdvisors(
+					SessionAdvisors.builder(this.sessionService).sessionIdInToolContext(sessionIdInToolContext).build())
+			.defaultTools(tools)
+			.build();
+	}
+
+	private static ChatResponse call(String callId, String tool) {
+		return new ChatResponse(List.of(new Generation(AssistantMessage.builder()
+			.content("")
+			.toolCalls(List.of(new AssistantMessage.ToolCall(callId, "function", tool, "{}")))
+			.build())));
+	}
+
 	private String say(String text) {
 		return this.client.prompt()
 			.user(text)
@@ -145,6 +253,19 @@ class SessionRecallToolsChatClientTests {
 			.flatMap(results -> results.getResponses().stream())
 			.map(ToolResponseMessage.ToolResponse::responseData)
 			.toList();
+	}
+
+	/** A tool that records the tool context it is called with. */
+	static class ContextProbe {
+
+		Map<String, Object> seen = Map.of();
+
+		@Tool(name = "probe", description = "Records the tool context")
+		String probe(ToolContext toolContext) {
+			this.seen = Map.copyOf(toolContext.getContext());
+			return "ok";
+		}
+
 	}
 
 }

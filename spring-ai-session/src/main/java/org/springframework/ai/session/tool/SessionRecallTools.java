@@ -56,6 +56,9 @@ import org.springframework.util.StringUtils;
  * }</pre> With a tool context that holds no session id the tool searches nothing and
  * tells the model so. With no tool context at all the tool is not called: the
  * tool-calling machinery fails the call, because the tool takes a {@link ToolContext}.
+ * The session advisors can put the session id into the tool context themselves, with
+ * {@code SessionAdvisors.builder(sessionService).sessionIdInToolContext(true)}; every
+ * tool of the call then sees it.
  * <p>
  * Read-only: the tool appends, compacts and deletes nothing.
  *

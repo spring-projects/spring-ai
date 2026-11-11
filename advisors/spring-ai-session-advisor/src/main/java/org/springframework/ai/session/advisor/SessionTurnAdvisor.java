@@ -17,7 +17,9 @@
 package org.springframework.ai.session.advisor;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -45,7 +47,9 @@ import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.model.tool.ToolCallLimitExceededException;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.session.EventFilter;
 import org.springframework.ai.session.SessionEvent;
@@ -67,6 +71,10 @@ import org.springframework.util.Assert;
  * <li>Finds the session or creates it on first use, with the metadata from
  * {@link SessionMemoryAdvisor#SESSION_METADATA_CONTEXT_KEY}, such as the agent
  * attributes.</li>
+ * <li>With {@link Builder#sessionIdInToolContext(boolean)}, puts the session id into the
+ * tool context of the call, so that a tool that reads the session, the session recall
+ * tools for example, finds it without the caller passing it a second time. Off by
+ * default, because the tool context goes to every tool of the call.</li>
  * <li>After a loop that ended on a {@code returnDirect} tool or a breached tool call
  * limit, stores the reply's tool results, which no model round stored.</li>
  * <li>Compacts the session once the call has returned, if a
@@ -116,6 +124,8 @@ public final class SessionTurnAdvisor implements CallAdvisor, StreamAdvisor {
 
 	private final boolean asyncCompaction;
 
+	private final boolean sessionIdInToolContext;
+
 	/**
 	 * The sessions an asynchronous compaction of this advisor runs on, so it runs once
 	 * each.
@@ -129,6 +139,7 @@ public final class SessionTurnAdvisor implements CallAdvisor, StreamAdvisor {
 		this.compactionTrigger = builder.compactionTrigger;
 		this.compactionStrategy = builder.compactionStrategy;
 		this.asyncCompaction = builder.asyncCompaction;
+		this.sessionIdInToolContext = builder.sessionIdInToolContext;
 	}
 
 	public static Builder builder(SessionService sessionService) {
@@ -151,7 +162,7 @@ public final class SessionTurnAdvisor implements CallAdvisor, StreamAdvisor {
 		Assert.notNull(chain, "chain must not be null");
 		String sessionId = SessionContexts.sessionId(request.context());
 		this.sessionService.findOrCreate(SessionContexts.createRequest(sessionId, request.context()));
-		ChatClientResponse response = chain.nextCall(request);
+		ChatClientResponse response = chain.nextCall(withSessionIdInToolContext(request, sessionId));
 		complete(sessionId, response.chatResponse());
 		return response;
 	}
@@ -172,11 +183,14 @@ public final class SessionTurnAdvisor implements CallAdvisor, StreamAdvisor {
 				// A returnDirect result or a breached limit ends the stream on a chunk
 				// of its own
 				AtomicReference<@Nullable ChatResponse> unanswered = new AtomicReference<>();
-				Flux<ChatClientResponse> rest = chain.nextStream(r).doOnNext(response -> {
-					if (endsWithoutModel(response.chatResponse())) {
-						unanswered.set(response.chatResponse());
-					}
-				}).publishOn(this.scheduler).doOnComplete(context.wrap(() -> complete(sessionId, unanswered.get())));
+				Flux<ChatClientResponse> rest = chain.nextStream(withSessionIdInToolContext(r, sessionId))
+					.doOnNext(response -> {
+						if (endsWithoutModel(response.chatResponse())) {
+							unanswered.set(response.chatResponse());
+						}
+					})
+					.publishOn(this.scheduler)
+					.doOnComplete(context.wrap(() -> complete(sessionId, unanswered.get())));
 				return Flux.from(subscriber -> {
 					try (ContextSnapshot.Scope ignored = context.setThreadLocals()) {
 						this.sessionService.findOrCreate(SessionContexts.createRequest(sessionId, r.context()));
@@ -185,6 +199,29 @@ public final class SessionTurnAdvisor implements CallAdvisor, StreamAdvisor {
 				});
 			});
 		});
+	}
+
+	/**
+	 * The request with the session id in the tool context of its options, under
+	 * {@link SessionMemoryAdvisor#SESSION_ID_CONTEXT_KEY}, when the advisor is set to put
+	 * it there. The tool-calling loop runs inside this advisor and takes the tool context
+	 * from the request it gets, so the tools of the call see the id. A value the caller
+	 * set under the key stands, the other entries are kept, and options that take no tool
+	 * context are left alone.
+	 */
+	private ChatClientRequest withSessionIdInToolContext(ChatClientRequest request, String sessionId) {
+		if (!this.sessionIdInToolContext
+				|| !(request.prompt().getOptions() instanceof ToolCallingChatOptions options)) {
+			return request;
+		}
+		Map<String, Object> toolContext = options.getToolContext();
+		if (toolContext != null && toolContext.containsKey(SessionMemoryAdvisor.SESSION_ID_CONTEXT_KEY)) {
+			return request;
+		}
+		Map<String, Object> withSessionId = (toolContext != null) ? new HashMap<>(toolContext) : new HashMap<>();
+		withSessionId.put(SessionMemoryAdvisor.SESSION_ID_CONTEXT_KEY, sessionId);
+		ChatOptions withToolContext = options.mutate().toolContext(withSessionId).build();
+		return request.mutate().prompt(request.prompt().mutate().chatOptions(withToolContext).build()).build();
 	}
 
 	/** Stores the results of a loop that ended without a model round, then compacts. */
@@ -345,6 +382,8 @@ public final class SessionTurnAdvisor implements CallAdvisor, StreamAdvisor {
 
 		private boolean asyncCompaction;
 
+		private boolean sessionIdInToolContext;
+
 		private Builder(SessionService sessionService) {
 			Assert.notNull(sessionService, "sessionService must not be null");
 			this.sessionService = sessionService;
@@ -396,6 +435,26 @@ public final class SessionTurnAdvisor implements CallAdvisor, StreamAdvisor {
 		 */
 		public Builder asyncCompaction(boolean asyncCompaction) {
 			this.asyncCompaction = asyncCompaction;
+			return this;
+		}
+
+		/**
+		 * Whether the advisor puts the session id into the tool context of the call,
+		 * under {@link SessionMemoryAdvisor#SESSION_ID_CONTEXT_KEY}; {@code false} by
+		 * default. A tool that reads the session, such as
+		 * {@link org.springframework.ai.session.tool.SessionRecallTools}, then finds the
+		 * id without the caller passing it with {@code toolContext(..)} too. A value the
+		 * caller sets under the key stands.
+		 * <p>
+		 * The tool context goes to every tool of the call, so turning this on has three
+		 * effects beyond the session tools. Every tool that takes a {@code ToolContext}
+		 * sees the session id. The tools of an MCP server get it as request metadata,
+		 * unless a {@code ToolContextToMcpMetaConverter} leaves it out. And a tool that
+		 * takes a {@code ToolContext} is no longer refused when the call passes no tool
+		 * context: it runs with one that holds the session id only.
+		 */
+		public Builder sessionIdInToolContext(boolean sessionIdInToolContext) {
+			this.sessionIdInToolContext = sessionIdInToolContext;
 			return this;
 		}
 
