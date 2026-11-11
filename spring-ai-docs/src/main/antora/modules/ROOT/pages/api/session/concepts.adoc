@@ -267,6 +267,9 @@ See <<optimistic-concurrency>>.
 | `getMessages(id)`, `getActiveMessages(id)`
 | The messages of the whole log, or of the active view.
 
+| `searchEvents(id, query)`
+| The message events a keyword search finds in the whole log, a page at a time; see xref:api/session/recall.adoc[Recall].
+
 | `compact(id, trigger, strategy)`
 | Evaluates the trigger on the active view and, when it fires, runs the strategy and records the result.
 See xref:api/session/compaction.adoc[Compaction].

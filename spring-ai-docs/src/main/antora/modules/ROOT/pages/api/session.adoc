@@ -100,6 +100,7 @@ NOTE: `InMemorySessionRepository` is for tests and demos: sessions are lost on r
 * xref:api/session/concepts.adoc[Concepts]: sessions, events, turns, the active view and the `SessionService` API.
 * xref:api/session/event-filter.adoc[Event Filtering]: what a read returns, and why a window keeps turns whole.
 * xref:api/session/compaction.adoc[Compaction]: triggers, the window strategy, summarization and how a pass is recorded.
+* xref:api/session/recall.adoc[Recall]: a keyword search over the log, and the `conversation_search` tool that gives it to the model.
 * xref:api/session/system-messages.adoc[System Messages]: why the system prompt is configuration, and the opt-in to store it.
 * xref:api/session/chat-client.adoc[ChatClient Integration]: the advisors, their context keys and what they store.
 * xref:api/session/jdbc.adoc[JDBC Repository]: the tables, the dialects, the auto-configuration properties, and how to write a repository of your own.
