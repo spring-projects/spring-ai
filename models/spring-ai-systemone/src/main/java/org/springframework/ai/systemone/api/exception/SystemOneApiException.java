@@ -43,8 +43,8 @@ public class SystemOneApiException extends SystemOneException {
 
 	/**
 	 * Parsed from {@link #body} rather than taken as a constructor argument, so that the
-	 * subclasses keep their signatures. Not serialized: the raw body is, and the detail
-	 * can be parsed again from it.
+	 * subclasses keep their signatures. Not serialized, so it is {@code null} on a
+	 * deserialized exception; {@link #body()} still carries the raw text there.
 	 */
 	private final transient @Nullable SystemOneErrorDetail errorDetail;
 

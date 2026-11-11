@@ -60,8 +60,9 @@ import org.springframework.web.client.RestClient;
  * The client sends through the {@link RestClient.Builder} of the application when there
  * is one, so that customizers, proxies and SSL bundles apply. A configured read timeout
  * is applied on top of the application's {@link HttpClientSettings}; unset, the
- * application's transport is used as is. Without a builder, the client builds its own
- * transport.
+ * application's transport is used as is. Applying it builds the request factory again,
+ * which replaces one that a customizer installed on the builder. Without a builder, the
+ * client builds its own transport.
  *
  * @author Christian Tzolov
  * @since 2.1.0
@@ -109,8 +110,10 @@ public class SystemOneDecisionAutoConfiguration {
 		transport = transport.clone();
 		if (timeout != null) {
 			// Asked for explicitly: rebuild the request factory the way Boot does, with
-			// the read timeout on top, so proxies, SSL bundles and the other HTTP client
-			// settings stay in force. Unset, the application's transport is used as is.
+			// the read timeout on top, so the SSL bundle and the other HTTP client
+			// settings stay in force. A request factory that a customizer installed on
+			// the builder is replaced, since a timeout cannot be added to it from here.
+			// Unset, the application's transport is used as is.
 			ClientHttpRequestFactoryBuilder<?> factoryBuilder = requestFactoryBuilder
 				.getIfAvailable(() -> ClientHttpRequestFactoryBuilder.detect());
 			HttpClientSettings settings = httpClientSettings.getIfAvailable(HttpClientSettings::defaults)

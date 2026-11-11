@@ -51,7 +51,10 @@ public record NoulAnswer(@JsonProperty("noul") double value) implements Answer {
 	}
 
 	/**
-	 * @return {@code true} when the truth value is above {@code 0.5}
+	 * Tests the truth value against {@code 0.5}, inclusive like {@link #isTrue(double)},
+	 * so an undecided answer counts as yes. Pass a higher threshold to ask for more than
+	 * that.
+	 * @return {@code true} when the truth value is at least {@code 0.5}
 	 */
 	public boolean isTrue() {
 		return isTrue(0.5d);

@@ -62,7 +62,8 @@ The prefix `spring.ai.systemone` is the property prefix to configure the connect
 | spring.ai.systemone.api-key | The API key.
 Required for the auto-configured client, which is not created without it.
 Not needed when you define your own `SystemOneClient` bean, or a `SystemOneDecisionModel` bean over a client of its own. | -
-| spring.ai.systemone.base-url | The API root. Point it at Laya, llmman or another server of the protocol. | `+https://api.typesafe.ai+`
+| spring.ai.systemone.base-url | The API root.
+Point it at Laya, llmman or another server of the protocol. | `+https://api.typesafe.ai+`
 | spring.ai.systemone.timeout | The read timeout of each attempt.
 Unset, the `spring.http.clients.read-timeout` of your application applies, or `10s` when the client builds its own transport. | -
 | spring.ai.systemone.retry.max-retries | Retries after the initial attempt.
@@ -73,7 +74,8 @@ Unset, the `spring.http.clients.read-timeout` of your application applies, or `1
 |====
 
 The client sends its requests through the `RestClient.Builder` of your application when there is one, so your `RestClientCustomizer` beans and the `spring.http.clients` settings, such as the connect timeout, redirects and the SSL bundle, apply.
-When you set `spring.ai.systemone.timeout`, it is applied on top of them.
+When you set `spring.ai.systemone.timeout`, the request factory of the client is built again from the `ClientHttpRequestFactoryBuilder` and the `spring.http.clients` settings of your application, with that read timeout.
+This replaces a request factory that a `RestClientCustomizer` installed, so in that case leave the property unset and set the timeout on your own factory.
 Retries cover connection failures, request timeouts, rate limits and server errors, and wait as long as the server asks on a rate limit.
 The `spring.ai.retry` properties of the other models do not apply to this client.
 

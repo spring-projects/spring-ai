@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfEnvironmentVariable;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import org.springframework.ai.systemone.api.exception.SystemOneAuthenticationException;
@@ -39,9 +40,10 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
  *
  * <p>
  * Skipped unless {@code SYSTEMONE_API_KEY} is set, which keeps {@code mvn verify} offline
- * by default. The rest of the suite pins its request and response bodies against
- * fixtures; this is the only place that checks those fixtures still describe the live
- * service.
+ * by default, and skipped when {@code SYSTEMONE_BASE_URL} is set, since the key is then
+ * meant for another server and must not be sent to the hosted one. The rest of the suite
+ * pins its request and response bodies against fixtures; this is the only place that
+ * checks those fixtures still describe the live service.
  *
  * <p>
  * The server runs a model, so nothing here asserts an exact number. The assertions are on
@@ -53,6 +55,8 @@ import static org.assertj.core.api.Assertions.assertThatExceptionOfType;
  */
 @EnabledIfEnvironmentVariable(named = "SYSTEMONE_API_KEY", matches = ".+",
 		disabledReason = "Set SYSTEMONE_API_KEY to run the client against the hosted service")
+@DisabledIfEnvironmentVariable(named = "SYSTEMONE_BASE_URL", matches = ".+",
+		disabledReason = "SYSTEMONE_BASE_URL points at another server, and these tests are about the hosted service")
 class SystemOneLiveApiIT {
 
 	private final SystemOneClient client = SystemOneClient.builder()

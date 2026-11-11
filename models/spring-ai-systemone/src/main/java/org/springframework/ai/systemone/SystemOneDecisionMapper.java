@@ -77,8 +77,8 @@ import org.springframework.util.StringUtils;
  *
  * <p>
  * Shared by the decision models that talk to a System One endpoint through the
- * {@link SystemOneClient}, such as {@link SystemOneDecisionModel} and the Ollama decision
- * model.
+ * {@link org.springframework.ai.systemone.api.SystemOneClient SystemOneClient}, such as
+ * {@link SystemOneDecisionModel} and the Ollama decision model.
  *
  * @author Christian Tzolov
  * @author Thomas Vitale
