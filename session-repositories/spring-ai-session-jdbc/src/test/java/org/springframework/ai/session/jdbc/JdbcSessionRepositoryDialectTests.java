@@ -32,6 +32,8 @@ import static org.mockito.Mockito.mock;
 /**
  * Unit tests for {@link JdbcSessionRepositoryDialect} implementations, focusing on SQL
  * correctness for dialect-specific fragments.
+ *
+ * @author Christian Tzolov
  */
 class JdbcSessionRepositoryDialectTests {
 
@@ -49,6 +51,47 @@ class JdbcSessionRepositoryDialectTests {
 			.isInstanceOf(MysqlJdbcSessionRepositoryDialect.class);
 		assertThat(JdbcSessionRepositoryDialect.from(dataSourceReporting("MariaDB")))
 			.isInstanceOf(MysqlJdbcSessionRepositoryDialect.class);
+		assertThat(JdbcSessionRepositoryDialect.from(dataSourceReporting("Microsoft SQL Server")))
+			.isInstanceOf(SqlServerJdbcSessionRepositoryDialect.class);
+	}
+
+	// -------------------------------------------------------------------------
+	// getLimitClause()
+	// -------------------------------------------------------------------------
+
+	@Test
+	void limitClauseDefaultsToLimit() {
+		assertThat(new PostgresJdbcSessionRepositoryDialect().getLimitClause()).isEqualTo("LIMIT ?");
+		assertThat(new H2JdbcSessionRepositoryDialect().getLimitClause()).isEqualTo("LIMIT ?");
+		assertThat(new MysqlJdbcSessionRepositoryDialect().getLimitClause()).isEqualTo("LIMIT ?");
+	}
+
+	@Test
+	void sqlServerLimitsRowsWithOffsetFetch() {
+		SqlServerJdbcSessionRepositoryDialect dialect = new SqlServerJdbcSessionRepositoryDialect();
+		assertThat(dialect.getLimitClause()).isEqualTo("OFFSET 0 ROWS FETCH NEXT ? ROWS ONLY");
+		// MERGE must end with a semicolon on SQL Server, and an update keeps created_at
+		assertThat(dialect.getUpsertSessionSql().strip()).startsWith("MERGE INTO AI_SESSION").endsWith(";");
+		assertThat(dialect.getUpsertSessionSql()).contains("SET expires_at = s.expires_at, metadata = s.metadata")
+			.doesNotContain("created_at = s.created_at");
+	}
+
+	@Test
+	void sqlServerInsertsIfAbsentWithMergeThatNeverUpdates() {
+		String sql = new SqlServerJdbcSessionRepositoryDialect().getInsertSessionIfAbsentSql();
+		// An existing id is reported through the update count, not a duplicate-key error
+		assertThat(sql.strip()).startsWith("MERGE INTO AI_SESSION WITH (HOLDLOCK)").endsWith(";");
+		assertThat(sql).contains("WHEN NOT MATCHED THEN INSERT (id, created_at, expires_at, metadata)")
+			.doesNotContain("WHEN MATCHED")
+			.doesNotContain("UPDATE");
+	}
+
+	@Test
+	void sqlServerMatchesSessionIdWithoutCastingIt() {
+		SqlServerJdbcSessionRepositoryDialect dialect = new SqlServerJdbcSessionRepositoryDialect();
+		// A cast silently cuts an id longer than its type, possibly to another session's
+		assertThat(dialect.getUpsertSessionSql()).contains("USING (SELECT ? AS id,").contains("ON t.id = s.id");
+		assertThat(dialect.getInsertSessionIfAbsentSql()).contains("USING (SELECT ? AS id,").contains("ON t.id = s.id");
 	}
 
 	@Test

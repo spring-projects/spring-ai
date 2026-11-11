@@ -207,6 +207,7 @@ public final class SyncModernMcpResourceMethodCallback extends AbstractMcpResour
 				continue;
 			}
 			ModernMethodSupport.rejectLegacyContextParameter(type, method);
+			ModernMethodSupport.rejectUnsupportedNotifierParameter(type, method, McpSyncNotifier.class);
 			if (isExchangeOrContextType(type)) {
 				if (!injected.add(type)) {
 					throw new IllegalArgumentException("Method cannot have more than one parameter of type "

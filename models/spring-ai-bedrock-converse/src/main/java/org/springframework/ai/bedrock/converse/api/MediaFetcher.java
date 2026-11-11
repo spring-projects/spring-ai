@@ -219,6 +219,7 @@ public final class MediaFetcher {
 		CloseableHttpClient httpClient = HttpClients.custom()
 			.setConnectionManager(connectionManager)
 			.disableRedirectHandling()
+			.disableCookieManagement()
 			.build();
 		return RestClient.builder().requestFactory(new HttpComponentsClientHttpRequestFactory(httpClient)).build();
 	}

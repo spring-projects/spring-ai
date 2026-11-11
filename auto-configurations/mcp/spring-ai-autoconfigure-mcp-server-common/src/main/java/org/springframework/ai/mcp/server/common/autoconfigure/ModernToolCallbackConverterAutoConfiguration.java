@@ -19,6 +19,7 @@ package org.springframework.ai.mcp.server.common.autoconfigure;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import io.modelcontextprotocol.modern.server.feature.McpAsyncTool;
 import io.modelcontextprotocol.modern.server.feature.McpSyncTool;
 import org.jspecify.annotations.Nullable;
 
@@ -55,15 +56,37 @@ public class ModernToolCallbackConverterAutoConfiguration {
 	public List<McpSyncTool> modernSyncTools(ObjectProvider<List<ToolCallback>> toolCalls,
 			List<ToolCallback> toolCallbackList, ObjectProvider<List<ToolCallbackProvider>> tcbProviderList,
 			ObjectProvider<ToolCallbackProvider> tcbProviders, McpServerProperties serverProperties) {
+		return toolCallbacks(toolCalls, toolCallbackList, tcbProviderList, tcbProviders, serverProperties).stream()
+			.map(tool -> McpModernToolUtils.toSyncTool(tool, mimeType(serverProperties, tool)))
+			.toList();
+	}
+
+	/**
+	 * The asynchronous twin of {@link #modernSyncTools}: each callback runs through
+	 * {@code McpModernAsyncUtils.fromBlocking}.
+	 * @since 2.1.0
+	 */
+	@Bean
+	@ConditionalOnProperty(prefix = McpServerProperties.CONFIG_PREFIX, name = "type", havingValue = "ASYNC")
+	public List<McpAsyncTool> modernAsyncToolCallbacks(ObjectProvider<List<ToolCallback>> toolCalls,
+			List<ToolCallback> toolCallbackList, ObjectProvider<List<ToolCallbackProvider>> tcbProviderList,
+			ObjectProvider<ToolCallbackProvider> tcbProviders, McpServerProperties serverProperties) {
+		return toolCallbacks(toolCalls, toolCallbackList, tcbProviderList, tcbProviders, serverProperties).stream()
+			.map(tool -> McpModernToolUtils.toAsyncTool(tool, mimeType(serverProperties, tool)))
+			.toList();
+	}
+
+	// De-duplicated by name, keeping the first occurrence of each name.
+	private static List<ToolCallback> toolCallbacks(ObjectProvider<List<ToolCallback>> toolCalls,
+			List<ToolCallback> toolCallbackList, ObjectProvider<List<ToolCallbackProvider>> tcbProviderList,
+			ObjectProvider<ToolCallbackProvider> tcbProviders, McpServerProperties serverProperties) {
 		List<ToolCallback> tools = ToolCallbackUtils.aggregateToolCallbacks(toolCalls, toolCallbackList,
 				tcbProviderList, tcbProviders, serverProperties.isExposeMcpClientTools());
-		// De-duplicate tools by their name, keeping the first occurrence of each name
 		return tools.stream()
 			.collect(Collectors.toMap(tool -> tool.getToolDefinition().name(), tool -> tool,
 					(existing, replacement) -> existing))
 			.values()
 			.stream()
-			.map(tool -> McpModernToolUtils.toSyncTool(tool, mimeType(serverProperties, tool)))
 			.toList();
 	}
 

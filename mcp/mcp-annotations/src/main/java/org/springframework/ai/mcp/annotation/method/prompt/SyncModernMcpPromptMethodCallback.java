@@ -147,6 +147,7 @@ public final class SyncModernMcpPromptMethodCallback extends AbstractMcpPromptMe
 	@Override
 	protected void validateParamType(Class<?> paramType) {
 		ModernMethodSupport.rejectLegacyContextParameter(paramType, this.method);
+		ModernMethodSupport.rejectUnsupportedNotifierParameter(paramType, this.method, McpSyncNotifier.class);
 	}
 
 	@Override

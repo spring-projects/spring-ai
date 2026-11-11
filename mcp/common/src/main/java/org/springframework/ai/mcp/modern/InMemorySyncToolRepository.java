@@ -40,6 +40,7 @@ import org.springframework.util.Assert;
  *
  * @author Christian Tzolov
  * @since 2.1.0
+ * @see InMemoryAsyncToolRepository
  */
 public final class InMemorySyncToolRepository implements McpSyncToolRepository {
 

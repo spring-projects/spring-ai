@@ -168,7 +168,7 @@ Properties starting with the `spring.ai.vectorstore.couchbase.*` prefix are used
 |`spring.ai.vectorstore.couchbase.bucket-name` | The name of the Couchbase Bucket, parent of the scope. | default
 |`spring.ai.vectorstore.couchbase.scope-name` |The name of the Couchbase scope, parent of the collection. Search queries will be executed in the scope context.| _default_
 |`spring.ai.vectorstore.couchbase.collection-name` | The name of the Couchbase collection to store the Documents. | _default_
-|`spring.ai.vectorstore.couchbase.dimensions` | The number of dimensions in the vector. | 1536
+|`spring.ai.vectorstore.couchbase.dimensions` | The number of dimensions in the vector. If not set, the size is read from the existing search index, or taken from the embedding model when the store creates the index. | -
 |`spring.ai.vectorstore.couchbase.similarity` | The similarity function to use. | `dot_product`
 |`spring.ai.vectorstore.couchbase.optimization` | The similarity function to use. | `recall`
 |`spring.ai.vectorstore.couchbase.initialize-schema`| whether to initialize the required schema  | `false`
@@ -185,6 +185,16 @@ The following index optimizations are available:
 * latency
 
 More details about each in the https://docs.couchbase.com/server/current/search/child-field-options-reference.html[Couchbase Documentation] on vector searches.
+
+== Upsert support
+
+`CouchbaseSearchVectorStore` implements `upsert(List<EmbeddedDocument>)`, so you can write documents together with embeddings you computed elsewhere instead of having the store embed them.
+Writing the same id again replaces the whole document, so metadata keys you leave out are removed.
+The vector size is taken from the configured `dimensions` or read from the `dims` of the `embedding` field in the search index, so the embedding model is not called.
+Couchbase stores a vector of the wrong size without complaint and leaves the document out of the search index, so the store checks the whole batch before writing anything and refuses the upsert when the size is neither configured nor readable from the index.
+With `initializeSchema` enabled, startup fails when a configured `dimensions` does not match the size of an existing index.
+Documents are written one at a time, so a failure part way through leaves the earlier ones written.
+See xref:api/vectordbs.adoc#writing-precomputed-embeddings[Writing User-Supplied Embeddings] for details.
 
 == Metadata Filtering
 

@@ -43,9 +43,9 @@ public interface SessionRepository {
 
 	/**
 	 * Inserts the session unless one with the same id exists, atomically: a
-	 * primary-key-guarded {@code INSERT}, or a compare-and-set put.
-	 * {@link SessionService#create} relies on it, so two concurrent creates of one id
-	 * cannot both succeed.
+	 * primary-key-guarded {@code INSERT} or an insert-only {@code MERGE}, or a
+	 * compare-and-set put. {@link SessionService#create} relies on it, so two concurrent
+	 * creates of one id cannot both succeed.
 	 * @return {@code true} if the session was inserted, {@code false} if one with the
 	 * same id exists; the existing session is left untouched
 	 */
