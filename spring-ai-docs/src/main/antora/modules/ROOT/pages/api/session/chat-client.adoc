@@ -45,7 +45,7 @@ From the second round of a tool loop on, the loop's prompt carries the turn so f
 . Stores the request's trailing user message, subject to the `MessageFilter`, or its tool results, always.
 . After the model responds, stores the reply, subject to the `MessageFilter`, except a reply with tool calls, which is always stored.
 
-On every `ChatClient` call the turn advisor finds or creates the session; once the call has returned it stores the tool results of a loop that ended without a model round (a `returnDirect` tool, or a breached tool call limit) and runs the compaction trigger.
+On every `ChatClient` call the turn advisor finds or creates the session, and answers the tool calls an earlier turn left without results; once the call has returned it stores the tool results of a loop that ended without a model round (a `returnDirect` tool, or a breached tool call limit) and runs the compaction trigger.
 
 == Setup
 
@@ -218,6 +218,7 @@ SessionMemoryAdvisor.builder(sessionService)
     .build();
 ----
 
+[[session-chat-client-integrity]]
 == Tool-call integrity
 
 Every provider rejects a prompt in which an assistant message with tool calls is not followed by the tool messages answering it.
@@ -232,6 +233,26 @@ The advisor logs a `WARN` naming the likely causes: a `messageTypes` filter hidi
 Tool calls and tool results are always stored.
 A loop that ends without a model round after the calls stores no results of its own: a `returnDirect` tool, or a breached tool call limit.
 The `SessionTurnAdvisor` stores them then: the results that came back directly, or, for a breach, the results of the calls that ran, the breach for the call that broke the limit, and a note for the calls after it.
+* *Calls an earlier turn left open.*
+A turn can end with a stored tool call and no results: the loop paused on a xref:api/tools/tool-call-confirmation.adoc[tool call that needs confirmation] and the user sent a new message instead of a decision, or the loop failed after the reply was stored.
+When the next turn starts, the `SessionTurnAdvisor` answers each such call in the log with `SessionTurnAdvisor.UNANSWERED_TOOL_RESULT`, "No result was recorded for this tool call.", so the model sees the call, and the read guard has nothing to drop.
+The text says what the log knows and no more: after a failed loop the tool may have run.
+A request that brings results for those calls, which is how a confirmation is resumed, is left alone.
+The write is version-checked: if another writer stored results first, nothing is added.
+
+Three limits follow from what the log records:
+
+** *One call per session at a time.*
+The log does not say whether a turn is still running.
+A second call on a session whose tool is still running finds the same open tool call as after an abandoned pause, and answers it; the real result then arrives as a second answer, which the read guard drops.
+Two concurrent calls on one session also interleave their messages.
+Serialize the calls of a session in your application.
+** *New input closes a pause.*
+Once a new message was accepted, the paused calls are answered.
+Do not resume that confirmation afterwards: its tool results would be a second answer.
+To record that the person declined, deny the calls yourself before you accept the new message; see xref:api/tools/tool-call-confirmation.adoc#abandoned-pauses[Abandoned Pauses].
+** *All or nothing.*
+A request that brings results for some of the open calls is left alone as a whole; the read guard then drops the reply and those results from the prompt.
 
 == Streaming and threads
 
