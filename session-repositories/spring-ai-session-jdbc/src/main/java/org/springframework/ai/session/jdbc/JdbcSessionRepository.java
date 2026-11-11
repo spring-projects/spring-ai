@@ -39,6 +39,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.session.EventFilter;
+import org.springframework.ai.session.EventQuery;
 import org.springframework.ai.session.EventType;
 import org.springframework.ai.session.Session;
 import org.springframework.ai.session.SessionAttributes;
@@ -432,6 +433,41 @@ public final class JdbcSessionRepository implements SessionRepository {
 		List<SessionEvent> rows = this.jdbcTemplate.query(sql.toString(), new SessionEventRowMapper(),
 				params.toArray());
 		return filter.apply(rows);
+	}
+
+	/**
+	 * Runs the search in the query: the keywords become one predicate each on the text
+	 * column, and the limit keeps the read to the query's page and the pages before it.
+	 */
+	@Override
+	public List<SessionEvent> searchEvents(String sessionId, EventQuery query) {
+		Assert.hasText(sessionId, "sessionId must not be null or empty");
+		Assert.notNull(query, "query must not be null");
+		StringBuilder sql = new StringBuilder(SELECT_EVENTS_BASE);
+		List<Object> params = new ArrayList<>();
+		params.add(sessionId);
+		sql.append("AND e.event_type = ? AND e.synthetic = ? ");
+		params.add(EventType.MESSAGE.name());
+		params.add(false);
+		Set<MessageType> messageTypes = query.messageTypes();
+		if (messageTypes != null) {
+			sql.append("AND e.message_type IN (").append(placeholders(messageTypes.size())).append(") ");
+			messageTypes.forEach(messageType -> params.add(messageType.name()));
+		}
+		Instant since = query.since();
+		if (since != null) {
+			sql.append("AND e.timestamp >= ? ");
+			params.add(toUtc(since));
+		}
+		String operator = (query.matchMode() == EventQuery.MatchMode.ALL) ? " AND " : " OR ";
+		sql.append("AND (")
+			.append(String.join(operator,
+					Collections.nCopies(query.keywords().size(), this.dialect.getKeywordPredicate())))
+			.append(") ");
+		query.keywords().forEach(keyword -> params.add(this.dialect.toKeywordParameter(keyword)));
+		sql.append("ORDER BY e.seq ").append(this.dialect.getLimitClause());
+		params.add(query.limit());
+		return query.pageOf(this.jdbcTemplate.query(sql.toString(), new SessionEventRowMapper(), params.toArray()));
 	}
 
 	/**

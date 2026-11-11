@@ -1,0 +1,212 @@
+[[session-recall]]
+= Recall
+
+A compaction keeps the prompt small by taking older messages out of the active view.
+They stay in the log.
+Recall is how they are found again: a keyword search over the messages of a session, for your code and, through a tool, for the model.
+
+== Searching a session
+
+`SessionService.searchEvents(id, query)` returns the message events an `EventQuery` finds, oldest first, a page at a time.
+
+[source,java]
+----
+// The first page of the messages that contain "invoice", ignoring case
+List<SessionEvent> found = sessionService.searchEvents(id, EventQuery.keyword("invoice"));
+
+// Messages that contain both words, from the last week, second page of 20
+EventQuery query = EventQuery.builder()
+    .keywords("invoice", "refund")
+    .matchMode(EventQuery.MatchMode.ALL)
+    .since(Instant.now().minus(7, ChronoUnit.DAYS))
+    .page(1)
+    .pageSize(20)
+    .build();
+----
+
+[cols="1,3", options="header"]
+|===
+| Option | Meaning
+
+| `keywords`
+| One or more keywords, at most 20, each at most 200 characters.
+A keyword matches when the text of a message contains it, ignoring case.
+It is taken as text: `%`, `_` and `[` are not wildcards.
+
+| `matchMode`
+| `ANY`, the default, matches a message that contains one of the keywords; `ALL` a message that contains every one.
+
+| `messageTypes`
+| The message types to search; every type by default.
+
+| `since`
+| Only events at or after this instant, to the microsecond.
+
+| `page`, `pageSize`
+| The zero-based page of matches and its size, 10 by default and at most 100.
+A search pages within the first 1000 matches; a page beyond them is rejected.
+|===
+
+The bounds keep the cost of one search bounded: a store reads the matches from the first one up to the page asked for.
+
+What a search covers is the difference from an xref:api/session/event-filter.adoc[`EventFilter`] read, which serves the prompt:
+
+* *The whole log.*
+A search finds the events a compaction covered.
+It does not look at the active view.
+* *Messages only, by their text.*
+Events of other types are not searched.
+A tool result carries its data outside the message text, so it is not found.
+* *Never synthetic events.*
+A summary repeats what the log still holds.
+* *One session.*
+A search never reads another session.
+To search the sessions of one user, list them with `findByMetadata(SessionAttributes.PRINCIPAL_NAME, name)` and search each.
+* *Letters beyond ASCII follow the store.*
+ASCII text is matched the same way everywhere.
+For other text a database decides by its collation: MySQL and MariaDB, for example, ignore accents by default, so `cafe` finds `café` there and not on PostgreSQL.
+The database folds the case of both the keyword and the text, so a message always matches its own words.
+
+`JdbcSessionRepository` runs the search in SQL.
+A repository that does not implement it reads the session's log and matches in memory, which is what `EventQuery.apply(events)` does.
+
+[[session-recall-tool]]
+== The `conversation_search` tool
+
+`SessionRecallTools` gives the model the same search as a tool.
+The model calls it when it needs something that is no longer in its context.
+
+[source,java]
+----
+ChatClient client = ChatClient.builder(chatModel)
+    .defaultAdvisors(SessionAdvisors.builder(sessionService).build())
+    .defaultTools(SessionRecallTools.builder(sessionService).build())
+    .build();
+
+String reply = client.prompt()
+    .user(text)
+    .advisors(SessionAdvisors.session(sessionId))
+    .toolContext(Map.of(SessionRecallTools.SESSION_ID_CONTEXT_KEY, sessionId))   // <1>
+    .call()
+    .content();
+----
+<1> The tool reads the session to search from the tool context.
+A value that is not a `String`, a `UUID` for example, is taken by its text.
+Advisor parameters do not reach a tool, so the session id is passed twice: to the advisors and to the tool context.
+Both use the same key.
+<<session-recall-session-id>> shows how to pass it once.
+
+The tool takes these arguments from the model:
+
+[cols="1,3", options="header"]
+|===
+| Argument | Meaning
+
+| `query`
+| One or more keywords, separated by commas.
+A keyword is literal text: `invoice, refund` looks for two words, `invoice refund` for that exact phrase.
+
+| `match`
+| `any`, the default, or `all`.
+Another value gets an error text.
+
+| `page`
+| The page of matches, starting at 0.
+|===
+
+It returns one page of matches as JSON, oldest first:
+
+[source,json]
+----
+{
+  "results": [
+    { "timestamp": "2026-11-11T09:30:00Z", "type": "user", "text": "Where is my invoice?" }
+  ],
+  "nextPage": 1
+}
+----
+
+`nextPage` is there when the page is full, so more matches may follow, and the search can still read that page.
+Without a match the tool answers "No results found.", and "No more results." on a later page.
+A query beyond the bounds above gets an error text the model can act on.
+
+Two builder options bound what one call puts into the prompt:
+
+* `pageSize(n)`: the matches on a page, 10 by default.
+* `maxTextLength(n)`: the longest text of a result, 1000 characters by default.
+A longer message is cut to an excerpt around the first keyword it holds, with `...` where it was cut.
+Without this bound a search could put back into the prompt what a compaction took out.
+
+The search covers the whole log, the current turn included, so the message that asks the question can be among its own matches.
+
+The model never names the session.
+The tool searches the session of the tool context and nothing else, and it only reads.
+
+[[session-recall-session-id]]
+== Giving the tool the session id
+
+The tool needs the session id in the tool context of the call.
+There are two ways to put it there.
+
+=== Pass it on every call
+
+This is the default, shown above: `toolContext(Map.of(SessionRecallTools.SESSION_ID_CONTEXT_KEY, sessionId))` next to `advisors(SessionAdvisors.session(sessionId))`.
+Nothing reaches the tool context that your code did not put there.
+
+A call that leaves it out goes wrong in one of two ways, and only when the model decides to search:
+
+* With a tool context that does not hold the session id, the tool searches nothing and tells the model that the search is unavailable.
+* With no tool context at all, the call fails with an `IllegalArgumentException`: Spring AI does not call a tool that takes a `ToolContext` then.
+
+=== Let the turn advisor add it
+
+With `sessionIdInToolContext(true)` the `SessionTurnAdvisor` puts the session id into the tool context of every call it advises.
+The session id is then passed once:
+
+[source,java]
+----
+ChatClient client = ChatClient.builder(chatModel)
+    .defaultAdvisors(SessionAdvisors.builder(sessionService)
+        .sessionIdInToolContext(true)
+        .build())
+    .defaultTools(SessionRecallTools.builder(sessionService).build())
+    .build();
+
+String reply = client.prompt()
+    .user(text)
+    .advisors(SessionAdvisors.session(sessionId))
+    .call()
+    .content();
+----
+
+A session id your code sets in the tool context stands, and the other entries of the tool context are kept.
+The option is on the turn advisor, so it needs `SessionAdvisors` or a `SessionTurnAdvisor` of your own; the memory advisor alone does not add the id.
+
+It is off by default because the tool context is not private to the session tools.
+It goes to every tool of the call.
+Turning the option on has these consequences:
+
+* *Every tool that takes a `ToolContext` sees the session id*, not only `conversation_search`.
+* *MCP servers receive it.*
+Spring AI sends the entries of the tool context to an MCP server as the metadata of a tool call.
+With the option on, every MCP tool the model calls carries the session id to its server.
+To keep it out, declare a `ToolContextToMcpMetaConverter` bean that leaves the key out:
++
+[source,java]
+----
+@Bean
+ToolContextToMcpMetaConverter toolContextToMcpMetaConverter() {
+    ToolContextToMcpMetaConverter defaults = ToolContextToMcpMetaConverter.defaultConverter();
+    return toolContext -> {
+        Map<String, Object> meta = new HashMap<>(defaults.convert(toolContext));
+        meta.remove(SessionRecallTools.SESSION_ID_CONTEXT_KEY);
+        return meta;
+    };
+}
+----
+* *A tool that takes a `ToolContext` is no longer refused for a missing tool context.*
+Without the option, Spring AI fails a call that reaches such a tool with no tool context.
+With it, the tool context is never empty, so the tool runs, with a context that holds the session id and none of the entries the tool may expect.
+
+The first two consequences apply to the first way as well, from the moment your code puts the session id into the tool context.
+The difference is that there it is your code's choice, call by call.
