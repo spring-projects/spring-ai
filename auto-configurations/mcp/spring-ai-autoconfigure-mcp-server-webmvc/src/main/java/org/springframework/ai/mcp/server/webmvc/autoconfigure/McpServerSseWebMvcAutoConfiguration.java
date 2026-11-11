@@ -20,10 +20,12 @@ import io.modelcontextprotocol.json.jackson3.JacksonMcpJsonMapper;
 import io.modelcontextprotocol.spec.McpServerTransportProvider;
 import tools.jackson.databind.json.JsonMapper;
 
+import org.springframework.ai.mcp.customizer.McpServerCustomizer;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerStdioDisabledCondition;
 import org.springframework.ai.mcp.server.common.autoconfigure.properties.McpServerSseProperties;
 import org.springframework.ai.mcp.server.webmvc.transport.WebMvcSseServerTransportProvider;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
@@ -79,15 +81,17 @@ public class McpServerSseWebMvcAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	public WebMvcSseServerTransportProvider webMvcSseServerTransportProvider(
-			@Qualifier("mcpServerJsonMapper") JsonMapper jsonMapper, McpServerSseProperties serverProperties) {
+			@Qualifier("mcpServerJsonMapper") JsonMapper jsonMapper, McpServerSseProperties serverProperties,
+			ObjectProvider<McpServerCustomizer<WebMvcSseServerTransportProvider.Builder>> customizers) {
 
-		return WebMvcSseServerTransportProvider.builder()
+		WebMvcSseServerTransportProvider.Builder builder = WebMvcSseServerTransportProvider.builder()
 			.jsonMapper(new JacksonMcpJsonMapper(jsonMapper))
 			.baseUrl(serverProperties.getBaseUrl())
 			.sseEndpoint(serverProperties.getSseEndpoint())
 			.messageEndpoint(serverProperties.getSseMessageEndpoint())
-			.keepAliveInterval(serverProperties.getKeepAliveInterval())
-			.build();
+			.keepAliveInterval(serverProperties.getKeepAliveInterval());
+		customizers.orderedStream().forEach(customizer -> customizer.customize(builder));
+		return builder.build();
 	}
 
 	@Bean

@@ -24,9 +24,14 @@ import io.modelcontextprotocol.server.McpServer;
  * @author Niklas Herder
  * @since 2.0.2
  * @see io.modelcontextprotocol.server.McpServer.StatelessSyncSpecification
+ * @deprecated in favor of
+ * {@code McpServerCustomizer<McpServer.StatelessSyncSpecification>}, see
+ * {@link McpServerCustomizer}
  */
-public interface McpStatelessSyncServerCustomizer {
+@Deprecated(since = "2.1.0", forRemoval = true)
+public interface McpStatelessSyncServerCustomizer extends McpServerCustomizer<McpServer.StatelessSyncSpecification> {
 
+	@Override
 	void customize(McpServer.StatelessSyncSpecification serverBuilder);
 
 }

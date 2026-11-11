@@ -21,6 +21,7 @@ import java.io.UncheckedIOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.json.McpJsonDefaults;
@@ -33,6 +34,7 @@ import reactor.core.publisher.Mono;
 
 import org.springframework.ai.mcp.annotation.McpTool;
 import org.springframework.ai.mcp.annotation.McpToolParam;
+import org.springframework.ai.mcp.customizer.McpServerCustomizer;
 import org.springframework.ai.mcp.modern.InMemoryAsyncToolRepository;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerJsonMapperAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerModernAutoConfiguration;
@@ -44,6 +46,7 @@ import org.springframework.boot.test.context.runner.ApplicationContextRunner;
 import org.springframework.context.SmartLifecycle;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.MediaType;
 import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.converter.StringHttpMessageConverter;
@@ -126,6 +129,13 @@ class McpServerModernWebMvcAutoConfigurationIT {
 	}
 
 	@Test
+	void multipleCustomizersAreAppliedInOrder() {
+		this.contextRunner.withUserConfiguration(OrderedCustomizersConfiguration.class)
+			.run(context -> assertThat(context.getBean("customizerInvocations", List.class)).containsExactly("first",
+					"second"));
+	}
+
+	@Test
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	void asyncTypeServesReactiveToolsOverHttp() throws Exception {
 		this.contextRunner.withPropertyValues("spring.ai.mcp.server.type=ASYNC")
@@ -198,6 +208,29 @@ class McpServerModernWebMvcAutoConfigurationIT {
 		@Bean
 		McpTransportContextExtractor<ServerRequest> tenantExtractor() {
 			return request -> McpTransportContext.create(Map.of("tenant", "acme"));
+		}
+
+	}
+
+	@Configuration
+	static class OrderedCustomizersConfiguration {
+
+		@Bean
+		List<String> customizerInvocations() {
+			return new CopyOnWriteArrayList<>();
+		}
+
+		// Declared before "first" so that only @Order can make it run last.
+		@Bean
+		@Order(2)
+		McpServerCustomizer<WebMvcModernServerTransport.Builder> secondCustomizer(List<String> customizerInvocations) {
+			return builder -> customizerInvocations.add("second");
+		}
+
+		@Bean
+		@Order(1)
+		McpServerCustomizer<WebMvcModernServerTransport.Builder> firstCustomizer(List<String> customizerInvocations) {
+			return builder -> customizerInvocations.add("first");
 		}
 
 	}

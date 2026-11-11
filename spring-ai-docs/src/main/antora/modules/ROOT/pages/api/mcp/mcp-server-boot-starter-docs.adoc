@@ -163,20 +163,21 @@ By default, the `McpTransportContext` is empty (`McpTransportContext.EMPTY`).
 This is by design, to keep the MCP server transport-agnostic.
 
 If you need transport-specific metadata (for example, HTTP headers, remote host, etc) in your tools,
-configure a `TransportContextExtractor` on your transport provider.
+configure a `TransportContextExtractor` on your transport provider, with a xref:#_customizing_the_server_and_the_transport[transport customizer].
 
 For WebMVC:
 
 [source,java]
 ----
 @Bean
-public WebMvcStreamableServerTransportProvider transport() {
-    return WebMvcStreamableServerTransportProvider.builder()
-        .contextExtractor(serverRequest -> {
-            String authorization = serverRequest.headers().firstHeader("Authorization");
-            return McpTransportContext.create(Map.of("authorization", authorization));
-        })
-        .build();
+public McpServerCustomizer<WebMvcStreamableServerTransportProvider.Builder> transportCustomizer() {
+    return builder -> builder.contextExtractor(serverRequest -> {
+        String authorization = serverRequest.headers().firstHeader("Authorization");
+        if (authorization == null) {
+            return McpTransportContext.EMPTY;
+        }
+        return McpTransportContext.create(Map.of("authorization", authorization));
+    });
 }
 ----
 
@@ -185,13 +186,14 @@ For WebFlux (reactive):
 [source,java]
 ----
 @Bean
-public WebFluxStreamableServerTransportProvider transport() {
-    return WebFluxStreamableServerTransportProvider.builder()
-        .contextExtractor(serverRequest -> {
-            String authorization = serverRequest.headers().firstHeader("Authorization");
-            return McpTransportContext.create(Map.of("authorization", authorization));
-        })
-        .build();
+public McpServerCustomizer<WebFluxStreamableServerTransportProvider.Builder> transportCustomizer() {
+    return builder -> builder.contextExtractor(serverRequest -> {
+        String authorization = serverRequest.headers().firstHeader("Authorization");
+        if (authorization == null) {
+            return McpTransportContext.EMPTY;
+        }
+        return McpTransportContext.create(Map.of("authorization", authorization));
+    });
 }
 ----
 
@@ -250,6 +252,60 @@ spring:
 * xref:api/mcp/mcp-annotations-special-params.adoc[Special Parameters] - Advanced parameter injection
 * xref:api/mcp/mcp-annotations-examples.adoc[Examples] - Comprehensive examples and use cases
 
+== Customizing the Server and the Transport
+
+The auto-configured server and HTTP transport builders can be customized before they are built, by declaring one or more customizer beans.
+All customizer beans that match a builder are applied, ordered by `@Order` or `Ordered`.
+
+Server and transport builders are customized with `McpServerCustomizer<B>`, where `B` is the builder type.
+The type argument must match exactly, for example `SyncSpecification<?>` rather than `StreamableSyncSpecification`, otherwise the customizer is not applied:
+
+[cols="1,2"]
+|===
+|Component |Customizer
+
+|Sync server
+|`McpServerCustomizer<McpServer.SyncSpecification<?>>`
+
+|Async server
+|`McpServerCustomizer<McpServer.AsyncSpecification<?>>`
+
+|Stateless sync server
+|`McpServerCustomizer<McpServer.StatelessSyncSpecification>`
+
+|Stateless async server
+|`McpServerCustomizer<McpServer.StatelessAsyncSpecification>`
+
+|Modern server
+|`McpServerCustomizer<io.modelcontextprotocol.modern.server.McpServer.Builder>`
+
+|Modern WebMVC transport
+|`McpServerCustomizer<WebMvcModernServerTransport.Builder>`
+
+|Modern WebFlux transport
+|`McpServerCustomizer<WebFluxMcpTransport.Builder>`
+
+|Streamable-HTTP WebMVC transport
+|`McpServerCustomizer<WebMvcStreamableServerTransportProvider.Builder>`
+
+|Streamable-HTTP WebFlux transport
+|`McpServerCustomizer<WebFluxStreamableServerTransportProvider.Builder>`
+
+|Stateless WebMVC transport
+|`McpServerCustomizer<WebMvcStatelessServerTransport.Builder>`
+
+|Stateless WebFlux transport
+|`McpServerCustomizer<WebFluxStatelessServerTransport.Builder>`
+
+|SSE WebMVC transport
+|`McpServerCustomizer<WebMvcSseServerTransportProvider.Builder>`
+
+|SSE WebFlux transport
+|`McpServerCustomizer<WebFluxSseServerTransportProvider.Builder>`
+|===
+
+Unlike replacing the transport bean, a customizer keeps the values that the auto-configuration derives from the `spring.ai.mcp.server` properties, such as the endpoint and the keep-alive interval.
+See xref:#_adding_data_to_mcptransportcontext[Adding data to McpTransportContext] for an example.
 
 == Example Applications
 

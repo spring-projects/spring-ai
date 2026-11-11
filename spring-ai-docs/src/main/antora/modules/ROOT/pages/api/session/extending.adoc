@@ -1,0 +1,163 @@
+[[session-extending]]
+= Extension Points
+
+A session is a log and a few rules about it.
+This page lists what you can build on those rules without changing Spring AI: event types of your own, state that is derived from the log, advisors around the session advisors, a decorated service and a store of your own.
+
+[[session-extending-event-types]]
+== Your own event types
+
+An event type is a name.
+`EventType.of(name)` gives you one, and every store keeps it.
+
+[source,java]
+----
+static final EventType AUDIT = EventType.of("ACME.AUDIT");
+
+sessionService.appendEvent(SessionEvent.builder()
+    .sessionId(sessionId)
+    .type(AUDIT)
+    .payload("action", "exported")
+    .build());
+
+// Every event of the type, oldest first
+List<SessionEvent> audits = sessionService.getEvents(sessionId,
+    EventFilter.builder().eventTypes(Set.of(AUDIT)).build());
+----
+
+* A name is made of upper-case letters, digits, `_` and `.`, starts with a letter and is at most 64 characters long.
+* Start it with a prefix of your own, as `ACME.` above.
+Spring AI may add event types in a later release, and a prefix keeps yours apart from them.
+* The data goes into the payload, a map that is stored as JSON.
+* An event of your own type is not part of the conversation.
+`EventFilter.active()`, the read of the session advisors and of compaction, selects message events only, so such an event is never sent to the model, and compaction neither reads nor covers it.
+* Read your events from the whole log, as above.
+The active view is not a place to look for them: a filter with `activeView(true)` returns only the ones appended after the newest compaction.
+* Like every event, it is never changed or removed while the session exists.
+
+[[session-extending-state]]
+== State as the newest event
+
+The log is append-only, so state that changes is not a field that is updated.
+It is the newest event of a type: who holds the session, what it waits for, how much it has used.
+Reading it is one read by type:
+
+[source,java]
+----
+List<SessionEvent> newest = sessionService.getEvents(sessionId,
+    EventFilter.builder().eventTypes(Set.of(CLAIM)).lastN(1).build());
+----
+
+Writing it has to be safe against a second writer that reads the same state at the same time.
+`appendEvents` with a version does that: it appends only if the log has not changed since the version was read, as xref:api/session/concepts.adoc#optimistic-concurrency[Optimistic concurrency] describes.
+
+[source,java]
+----
+for (int attempt = 0; attempt < 3; attempt++) {
+    long version = sessionService.getEventVersion(sessionId);       // <1>
+    Optional<SessionEvent> current = newestClaim(sessionId);        // <2>
+    if (current.isPresent() && !isFree(current.get())) {
+        throw new IllegalStateException("The session is taken");
+    }
+    SessionEvent claim = SessionEvent.builder().sessionId(sessionId).type(CLAIM).payload("owner", me).build();
+    if (sessionService.appendEvents(sessionId, List.of(claim), version)) {   // <3>
+        return;
+    }
+}
+throw new IllegalStateException("The session kept changing");       // <4>
+----
+<1> The version first.
+<2> Then what the decision depends on.
+<3> `false` means another writer appended in between: read again and decide again.
+<4> Bound the attempts: a log that keeps moving must not hold the caller forever.
+
+Three rules make this safe:
+
+* *Write a state event only with the version-checked `appendEvents`.*
+Of several writers that append with the same version, exactly one is appended.
+Every store guarantees it, and the repository contract tests check it.
+A plain `appendEvent` has no check and always lands, so one writer that uses it for a state event breaks the rule for all of them.
+* *Run it outside a surrounding transaction.*
+The auto-configured `JdbcSessionRepository` runs in the application's transaction manager when that manager is on the same `DataSource`, so a caller's transaction includes the session calls made inside it.
+Inside a transaction with an isolation of repeatable read or higher, the default on MySQL and MariaDB, the version read does not see what another writer committed meanwhile.
+Every attempt then reads the same old version and fails, and on some databases the losing write throws an exception where it would return `false`.
+* *Expect any append to move the version*, not only another state event: a message the memory advisor stores, or a compaction.
+That is why the loop reads the state again and does not give up on the first `false`.
+
+[[session-extending-advisors]]
+== Advisors around the session advisors
+
+An advisor of your own takes its place from the orders of the others.
+A lower order runs further out.
+
+[cols="2,1,3", options="header"]
+|===
+| Advisor | Order | Runs
+
+| `SessionTurnAdvisor.DEFAULT_ORDER`
+| `HIGHEST_PRECEDENCE + 200`
+| Once per `ChatClient` call, around the tool-calling loop.
+
+| `ToolCallingAdvisor.DEFAULT_ORDER`
+| `HIGHEST_PRECEDENCE + 300`
+| The loop itself.
+
+| `SessionMemoryAdvisor.DEFAULT_ORDER`
+| `HIGHEST_PRECEDENCE + 1000`
+| Once per round of the loop.
+|===
+
+So an advisor with an order below `SessionTurnAdvisor.DEFAULT_ORDER` sees the whole turn, the session advisors included, and one with an order above the loop's runs in every round.
+The table gives the defaults.
+A tool-calling loop that you register with another order moves that line with it, and a `ChatClient` without a loop has no rounds.
+
+`SessionContexts` reads from the advisor context what the session advisors read, so that your advisor names and creates the session exactly as they do:
+
+[source,java]
+----
+public ChatClientResponse adviseCall(ChatClientRequest request, CallAdvisorChain chain) {
+    String sessionId = SessionContexts.sessionId(request.context());                          // <1>
+    sessionService.findOrCreate(SessionContexts.createRequest(sessionId, request.context())); // <2>
+    // ... before the turn
+    ChatClientResponse response = chain.nextCall(request);
+    // ... after the turn
+    return response;
+}
+----
+<1> The session id of the call; an `IllegalStateException` when the call has none.
+<2> An advisor that runs before the `SessionTurnAdvisor` creates the session itself, with the same metadata.
+
+This is the blocking path.
+In `adviseStream`, the work after the turn belongs in the returned flux, in `doOnComplete` for example: code placed after `chain.nextStream(request)` runs when the flux is assembled, before the turn.
+
+The context keys are constants of `SessionMemoryAdvisor`: the session id, the session metadata, and the ids of the events the memory advisor stored for the request and for the reply, as xref:api/session/chat-client.adoc#session-chat-client-keys[Context keys] lists them.
+
+[[session-extending-service]]
+== Decorating the service
+
+`SessionService` is an interface, and the session advisors take one.
+A decorator adds a cross-cutting concern, authorization for example, to every read and write.
+With Spring Boot, declare a `SessionServiceDecorator` bean:
+
+[source,java]
+----
+@Bean
+SessionServiceDecorator authorizingSessionService() {
+    return sessionService -> new AuthorizingSessionService(sessionService);
+}
+----
+
+* *The decorators apply to the auto-configured service only.*
+Spring AI creates it when the context holds exactly one `SessionRepository` bean, which the JDBC starter contributes.
+A `SessionService` bean of your own replaces it, and so does a service you build by hand on an `InMemorySessionRepository`: the decorators are not applied to either, so wrap such a service yourself.
+* *The last decorator is the outermost.*
+The decorators are applied in bean order: the first wraps the service itself, each next one wraps the result.
+A call therefore passes the last decorator first.
+Give a decorator that has to check before the others the lowest precedence.
+
+[[session-extending-repository]]
+== A store of your own
+
+xref:api/session/jdbc.adoc#session-jdbc-custom[Implementing a repository] describes the contract of a `SessionRepository`.
+`AbstractSessionRepositoryContractTests` in `spring-ai-test` checks it: subclass it and return your repository.
+Among its tests are the rules of this page that a store has to keep: an event type of your own goes through the store, with a name of the longest length too; a read by type returns the events of that type; and of several writers that append with the same version, exactly one is appended.

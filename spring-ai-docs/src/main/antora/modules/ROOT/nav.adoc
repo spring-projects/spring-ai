@@ -90,6 +90,7 @@
 *** xref:api/session/system-messages.adoc[System Messages]
 *** xref:api/session/chat-client.adoc[ChatClient Integration]
 *** xref:api/session/jdbc.adoc[JDBC Repository]
+*** xref:api/session/extending.adoc[Extension Points]
 
 ** xref:api/tools.adoc[Tool Calling]
 *** xref:api/tools/tool-calling-advisor.adoc[ToolCallingAdvisor]
