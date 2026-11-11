@@ -174,6 +174,13 @@ public final class DefaultSessionService implements SessionService {
 	}
 
 	@Override
+	public List<SessionEvent> searchEvents(String sessionId, EventQuery query) {
+		Assert.hasText(sessionId, "sessionId must not be null or empty");
+		Assert.notNull(query, "query must not be null");
+		return this.sessionRepository.searchEvents(sessionId, query);
+	}
+
+	@Override
 	public CompactionResult compact(String sessionId, CompactionTrigger trigger, CompactionStrategy strategy) {
 		Assert.hasText(sessionId, "sessionId must not be null or empty");
 		Assert.notNull(trigger, "trigger must not be null");

@@ -113,6 +113,24 @@ class DefaultSessionServiceTests {
 	}
 
 	@Test
+	void searchFindsMessagesOfWholeLog() {
+		Session session = this.service.create(CreateSessionRequest.builder().build());
+		this.service.appendMessage(session.id(), new UserMessage("Where is my invoice?"));
+		this.service.appendMessage(session.id(), new AssistantMessage("It was sent on Monday."));
+		this.service.appendMessage(session.id(), new UserMessage("Thanks"));
+		// A compaction takes the first turn out of the view, not out of the log
+		this.service.compact(session.id(), request -> true, WindowCompactionStrategy.builder().lastEvents(1).build());
+		assertThat(this.service.getActiveMessages(session.id())).extracting(Message::getText)
+			.doesNotContain("Where is my invoice?");
+
+		assertThat(this.service.searchEvents(session.id(), EventQuery.keyword("INVOICE")))
+			.extracting(event -> event.getMessage().getText())
+			.containsExactly("Where is my invoice?");
+		assertThat(this.service.searchEvents(session.id(), EventQuery.keyword("refund"))).isEmpty();
+		assertThat(this.service.searchEvents("missing", EventQuery.keyword("invoice"))).isEmpty();
+	}
+
+	@Test
 	void storingSystemMessageIsRejectedByDefault() {
 		Session session = this.service
 			.create(CreateSessionRequest.builder().metadata(SessionAttributes.PRINCIPAL_NAME, "user-1").build());
