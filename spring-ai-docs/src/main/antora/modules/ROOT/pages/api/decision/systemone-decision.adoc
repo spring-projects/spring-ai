@@ -63,7 +63,7 @@ The prefix `spring.ai.systemone` is the property prefix to configure the connect
 Required. | -
 | spring.ai.systemone.base-url | The API root. Point it at Laya, llmman or another server of the protocol. | `+https://api.typesafe.ai+`
 | spring.ai.systemone.timeout | The read timeout of each attempt.
-Unset, the `spring.http.client` settings of your application apply, or `10s` when the client builds its own transport. | -
+Unset, the `spring.http.clients.read-timeout` of your application applies, or `10s` when the client builds its own transport. | -
 | spring.ai.systemone.retry.max-retries | Retries after the initial attempt.
 `0` disables retrying. | `2`
 | spring.ai.systemone.retry.initial-backoff | The first wait, doubled on each further retry. | `500ms`
@@ -71,7 +71,7 @@ Unset, the `spring.http.client` settings of your application apply, or `10s` whe
 | spring.ai.systemone.retry.timeout | No further attempt is started once this much time has passed since the first. | `30s`
 |====
 
-The client sends its requests through the `RestClient.Builder` of your application when there is one, so the `spring.http.client` settings, such as proxies and SSL bundles, apply.
+The client sends its requests through the `RestClient.Builder` of your application when there is one, so your `RestClientCustomizer` beans and the `spring.http.clients` settings, such as the connect timeout, redirects and the SSL bundle, apply.
 When you set `spring.ai.systemone.timeout`, it is applied on top of them.
 Retries cover connection failures, request timeouts, rate limits and server errors, and wait as long as the server asks on a rate limit.
 The `spring.ai.retry` properties of the other models do not apply to this client.
