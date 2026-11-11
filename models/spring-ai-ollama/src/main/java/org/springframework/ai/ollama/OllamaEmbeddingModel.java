@@ -113,7 +113,7 @@ public class OllamaEmbeddingModel extends AbstractEmbeddingModel {
 		OllamaApi.EmbeddingsRequest ollamaEmbeddingRequest = ollamaEmbeddingRequest(embeddingRequest);
 
 		var observationContext = EmbeddingModelObservationContext.builder()
-			.embeddingRequest(request)
+			.embeddingRequest(embeddingRequest)
 			.provider(OllamaApiConstants.PROVIDER_NAME)
 			.build();
 
