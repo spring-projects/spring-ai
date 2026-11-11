@@ -253,6 +253,39 @@ class SystemOneRetryTests {
 	}
 
 	@Test
+	void aPolicyWithoutATimeoutStopsOnAServerStatedWaitPastTheLimit() {
+		HttpHeaders headers = new HttpHeaders();
+		long limit = SystemOneRetryUtils.MAX_SERVER_WAIT.toMillis();
+		RetryPolicy policy = SystemOneRetryUtils.honouringRetryAfter(FAST.getRetryPolicy());
+		BackOffExecution backOff = policy.getBackOff().start();
+
+		assertThat(policy.shouldRetry(new SystemOneRateLimitException("429", 429, null, headers, "POST /", limit)))
+			.isTrue();
+		assertThat(backOff.nextBackOff()).isEqualTo(limit);
+
+		assertThat(policy.shouldRetry(new SystemOneRateLimitException("429", 429, null, headers, "POST /", limit + 1)))
+			.isTrue();
+		assertThat(backOff.nextBackOff()).isEqualTo(BackOffExecution.STOP);
+	}
+
+	@Test
+	@Timeout(10)
+	void aPolicyWithoutATimeoutGivesUpOnAServerStatedWaitOfADay() {
+		HttpHeaders headers = new HttpHeaders();
+		headers.add(HttpHeaders.RETRY_AFTER, "86400");
+
+		this.mock.server()
+			.expect(ExpectedCount.once(), requestTo(MockSystemOneServer.SYSTEM_ONE_URL))
+			.andRespond(MockSystemOneServer.errorResponse(429, "rate limited", headers));
+
+		RetryTemplate honouring = new RetryTemplate(SystemOneRetryUtils.honouringRetryAfter(FAST.getRetryPolicy()));
+		assertThatExceptionOfType(SystemOneRateLimitException.class).isThrownBy(() -> evaluate(honouring))
+			.satisfies(ex -> assertThat(ex.retryAfter()).isEqualTo(Duration.ofDays(1)));
+
+		this.mock.server().verify();
+	}
+
+	@Test
 	void classifiesConnectionFailuresAndRetryableStatusesAsTransient() {
 		HttpHeaders headers = new HttpHeaders();
 

@@ -51,6 +51,7 @@ import org.springframework.util.backoff.BackOffExecution;
  * RetryPolicy policy = SystemOneRetryUtils.honouringRetryAfter(RetryPolicy.builder()
  *     .maxRetries(5)
  *     .delay(Duration.ofSeconds(1))
+ *     .timeout(Duration.ofSeconds(30))
  *     .predicate(SystemOneRetryUtils::isTransient)
  *     .build());
  * SystemOneClient client = SystemOneClient.builder()
@@ -83,6 +84,12 @@ public final class SystemOneRetryUtils {
 
 	/** The default time since the first attempt after which no further attempt starts. */
 	public static final Duration DEFAULT_TIMEOUT = Duration.ofSeconds(30);
+
+	/**
+	 * The longest server stated wait that a policy without a timeout sleeps for. A longer
+	 * one ends the retrying; see {@link #honouringRetryAfter(RetryPolicy)}.
+	 */
+	public static final Duration MAX_SERVER_WAIT = Duration.ofMinutes(1);
 
 	/**
 	 * The default policy, built by {@link #retryPolicy} from the defaults above: two
@@ -202,7 +209,10 @@ public final class SystemOneRetryUtils {
 	 * <p>
 	 * A stated wait longer than the timeout of the policy is cut to that timeout. No
 	 * attempt can follow such a wait, so the template gives up either way, and it does so
-	 * for any value the server sends, however large.
+	 * for any value the server sends, however large. A policy without a timeout has
+	 * nothing to give up on, so it stops retrying on a stated wait longer than
+	 * {@link #MAX_SERVER_WAIT} rather than block the caller for as long as the server
+	 * says. Either way the caller gets the rate limit exception.
 	 * @param policy the policy to wrap
 	 * @return the wrapped policy
 	 */
@@ -260,11 +270,15 @@ public final class SystemOneRetryUtils {
 					if (next == BackOffExecution.STOP || serverWait == null) {
 						return next;
 					}
-					// The template adds the wait to the clock to see whether it passes
-					// the timeout, and a wait near Long.MAX_VALUE overflows that sum, so
-					// the template would sleep instead of giving up. The timeout itself
-					// is already too long a wait.
-					return (timeout > 0) ? Math.min(serverWait, timeout) : serverWait;
+					if (timeout > 0) {
+						// The template adds the wait to the clock to see whether it
+						// passes the timeout, and a wait near Long.MAX_VALUE overflows
+						// that sum, so the template would sleep instead of giving up.
+						// The timeout itself is already too long a wait.
+						return Math.min(serverWait, timeout);
+					}
+					// No timeout for the template to give up on: stop here instead.
+					return (serverWait > MAX_SERVER_WAIT.toMillis()) ? BackOffExecution.STOP : serverWait;
 				};
 			};
 		}
