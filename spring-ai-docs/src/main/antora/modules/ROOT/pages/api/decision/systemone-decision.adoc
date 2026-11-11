@@ -60,7 +60,8 @@ The prefix `spring.ai.systemone` is the property prefix to configure the connect
 |====
 | Property | Description | Default
 | spring.ai.systemone.api-key | The API key.
-Required. | -
+Required for the auto-configured client, which is not created without it.
+Not needed when you define your own `SystemOneClient` bean, or a `SystemOneDecisionModel` bean over a client of its own. | -
 | spring.ai.systemone.base-url | The API root. Point it at Laya, llmman or another server of the protocol. | `+https://api.typesafe.ai+`
 | spring.ai.systemone.timeout | The read timeout of each attempt.
 Unset, the `spring.http.clients.read-timeout` of your application applies, or `10s` when the client builds its own transport. | -

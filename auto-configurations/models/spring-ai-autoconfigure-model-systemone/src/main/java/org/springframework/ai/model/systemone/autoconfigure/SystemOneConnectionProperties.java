@@ -38,7 +38,8 @@ public class SystemOneConnectionProperties {
 	public static final String CONFIG_PREFIX = "spring.ai.systemone";
 
 	/**
-	 * The API key. Required.
+	 * The API key. Required for the auto-configured client, which is not created without
+	 * it.
 	 */
 	private @Nullable String apiKey;
 

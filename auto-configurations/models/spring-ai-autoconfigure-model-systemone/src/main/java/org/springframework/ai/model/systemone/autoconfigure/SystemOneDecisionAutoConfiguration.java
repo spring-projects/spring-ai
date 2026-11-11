@@ -46,6 +46,12 @@ import org.springframework.web.client.RestClient;
  * defines.
  *
  * <p>
+ * The client is created only when {@code spring.ai.systemone.api-key} is configured, so
+ * an application that defines a decision model over a client of its own needs no key.
+ * Without a key and without a client of the application, the decision model fails at
+ * startup and names the property.
+ *
+ * <p>
  * The {@code spring.ai.systemone.decision.model} property is applied only when it is set.
  * Unset, the decision model uses the default model of the client, so a client the
  * application defines is asked for the model it was built with.
@@ -67,15 +73,19 @@ import org.springframework.web.client.RestClient;
 @EnableConfigurationProperties({ SystemOneConnectionProperties.class, SystemOneDecisionProperties.class })
 public class SystemOneDecisionAutoConfiguration {
 
+	private static final String NO_API_KEY = "No System One API key configured. Set "
+			+ SystemOneConnectionProperties.CONFIG_PREFIX + ".api-key.";
+
 	@Bean
 	@ConditionalOnMissingBean
+	@ConditionalOnProperty(prefix = SystemOneConnectionProperties.CONFIG_PREFIX, name = "api-key")
 	public SystemOneClient systemOneClient(SystemOneConnectionProperties connectionProperties,
 			SystemOneDecisionProperties decisionProperties, ObjectProvider<RestClient.Builder> restClientBuilder,
 			ObjectProvider<ClientHttpRequestFactoryBuilder<?>> requestFactoryBuilder,
 			ObjectProvider<HttpClientSettings> httpClientSettings) {
+		// The property is there, or this bean would not be; it may still be blank.
 		String apiKey = connectionProperties.getApiKey();
-		Assert.state(StringUtils.hasText(apiKey), () -> "No System One API key configured. Set "
-				+ SystemOneConnectionProperties.CONFIG_PREFIX + ".api-key.");
+		Assert.state(StringUtils.hasText(apiKey), NO_API_KEY);
 
 		SystemOneClient.Builder clientBuilder = SystemOneClient.builder()
 			.apiKey(apiKey)
@@ -112,10 +122,13 @@ public class SystemOneDecisionAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public SystemOneDecisionModel systemOneDecisionModel(SystemOneClient systemOneClient,
+	public SystemOneDecisionModel systemOneDecisionModel(ObjectProvider<SystemOneClient> systemOneClient,
 			SystemOneDecisionProperties decisionProperties, ObjectProvider<ObservationRegistry> observationRegistry,
 			ObjectProvider<DecisionModelObservationConvention> observationConvention) {
-		SystemOneDecisionModel.Builder builder = SystemOneDecisionModel.builder(systemOneClient)
+		// No client means no API key, and no client of the application either.
+		SystemOneClient client = systemOneClient.getIfAvailable();
+		Assert.state(client != null, NO_API_KEY);
+		SystemOneDecisionModel.Builder builder = SystemOneDecisionModel.builder(client)
 			.options(decisionProperties.toOptions())
 			.provider(decisionProperties.getProvider())
 			.observationRegistry(observationRegistry.getIfUnique(() -> ObservationRegistry.NOOP));

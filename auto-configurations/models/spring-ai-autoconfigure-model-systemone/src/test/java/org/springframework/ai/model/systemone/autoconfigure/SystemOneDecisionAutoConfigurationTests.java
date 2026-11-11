@@ -130,6 +130,44 @@ class SystemOneDecisionAutoConfigurationTests {
 	}
 
 	@Test
+	void failsFastWithABlankApiKey() {
+		new ApplicationContextRunner()
+			.withConfiguration(AutoConfigurations.of(SystemOneDecisionAutoConfiguration.class))
+			.withPropertyValues("spring.ai.systemone.api-key=")
+			.run(context -> {
+				assertThat(context).hasFailed();
+				assertThat(context.getStartupFailure()).rootCause().hasMessageContaining("spring.ai.systemone.api-key");
+			});
+	}
+
+	@Test
+	void needsNoApiKeyForADecisionModelOverAClientOfItsOwn() {
+		new ApplicationContextRunner()
+			.withConfiguration(AutoConfigurations.of(SystemOneDecisionAutoConfiguration.class))
+			.withUserConfiguration(OwnModelAndClientConfiguration.class)
+			.run(context -> {
+				assertThat(context).hasNotFailed();
+				assertThat(context).doesNotHaveBean(SystemOneClient.class);
+				assertThat(context).hasSingleBean(SystemOneDecisionModel.class);
+				assertThat(context.getBean(SystemOneDecisionModel.class).getProvider()).isEqualTo("own");
+			});
+	}
+
+	@Test
+	void needsNoApiKeyForAUserDefinedClient() {
+		SystemOneClient own = SystemOneClient.builder().apiKey("own-key").defaultModel("own-model").build();
+		new ApplicationContextRunner()
+			.withConfiguration(AutoConfigurations.of(SystemOneDecisionAutoConfiguration.class))
+			.withBean(SystemOneClient.class, () -> own)
+			.run(context -> {
+				assertThat(context).hasNotFailed();
+				assertThat(context.getBean(SystemOneClient.class)).isSameAs(own);
+				assertThat(context.getBean(SystemOneDecisionModel.class).getOptions().getModel())
+					.isEqualTo("own-model");
+			});
+	}
+
+	@Test
 	void isSkippedWhenAnotherDecisionModelIsSelected() {
 		this.contextRunner.withPropertyValues("spring.ai.model.decision=ollama").run(context -> {
 			assertThat(context).hasNotFailed();
@@ -324,6 +362,17 @@ class SystemOneDecisionAutoConfigurationTests {
 		@Bean
 		SystemOneDecisionModel ownDecisionModel(SystemOneClient systemOneClient) {
 			return SystemOneDecisionModel.builder(systemOneClient).provider("own").build();
+		}
+
+	}
+
+	@Configuration(proxyBeanMethods = false)
+	static class OwnModelAndClientConfiguration {
+
+		@Bean
+		SystemOneDecisionModel ownDecisionModel() {
+			SystemOneClient client = SystemOneClient.builder().apiKey("own-key").defaultModel("own-model").build();
+			return SystemOneDecisionModel.builder(client).provider("own").build();
 		}
 
 	}
