@@ -28,7 +28,7 @@ import org.springframework.ai.model.observation.ModelUsageMetricsGenerator;
  * Handler for generating metrics from image model observations.
  *
  * @author Olivier Le Quellec
- * @since 1.0.0
+ * @since 2.1.0
  */
 public class ImageModelMeterObservationHandler implements ObservationHandler<ImageModelObservationContext> {
 

@@ -250,6 +250,9 @@ They measure the time spent on method completion and propagate the related traci
 |`gen_ai.request.image.response_format` | The format in which the generated image is returned.
 |`gen_ai.request.image.size` | The size of the image to generate (e.g. `1024x1024`).
 |`gen_ai.request.image.style` | The style of the image to generate.
+|`gen_ai.usage.input_tokens` | The number of tokens used in the model input.
+|`gen_ai.usage.output_tokens` | The number of tokens used in the model output.
+|`gen_ai.usage.total_tokens` | The total number of tokens used in the model exchange.
 |===
 
 === Image Prompt Data
