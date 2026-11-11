@@ -32,8 +32,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.testcontainers.containers.wait.strategy.Wait;
-import org.testcontainers.containers.wait.strategy.WaitAllStrategy;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import redis.clients.jedis.RedisClient;
@@ -79,9 +77,7 @@ class SemanticCacheAdvisorIT {
 
 	@Container
 	static RedisStackContainer redisContainer = new RedisStackContainer("redis/redis-stack:latest")
-		.withExposedPorts(6379)
-		.waitingFor(new WaitAllStrategy().withStrategy(Wait.forLogMessage(".*Ready to accept connections.*\\s", 1))
-			.withStrategy(Wait.forListeningPort()));
+		.withExposedPorts(6379);
 
 	@Autowired
 	OpenAiChatModel openAiChatModel;

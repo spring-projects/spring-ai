@@ -30,8 +30,6 @@ import java.util.stream.Collectors;
 import com.redis.testcontainers.RedisStackContainer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.testcontainers.containers.wait.strategy.Wait;
-import org.testcontainers.containers.wait.strategy.WaitAllStrategy;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import redis.clients.jedis.RedisClient;
@@ -67,9 +65,7 @@ class RedisVectorStoreIT extends BaseVectorStoreTests {
 
 	@Container
 	static RedisStackContainer redisContainer = new RedisStackContainer(
-			RedisStackContainer.DEFAULT_IMAGE_NAME.withTag(RedisStackContainer.DEFAULT_TAG))
-		.waitingFor(new WaitAllStrategy().withStrategy(Wait.forLogMessage(".*Ready to accept connections.*\\s", 1))
-			.withStrategy(Wait.forListeningPort()));
+			RedisStackContainer.DEFAULT_IMAGE_NAME.withTag(RedisStackContainer.DEFAULT_TAG));
 
 	// Use host and port explicitly since getRedisURI() might not be consistent
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()

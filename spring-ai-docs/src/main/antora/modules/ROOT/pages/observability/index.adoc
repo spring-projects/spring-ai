@@ -232,6 +232,8 @@ Additional AI model providers will be supported in a future release.
 The `gen_ai.client.operation` observations are recorded on image model method calls.
 They measure the time spent on method completion and propagate the related tracing information.
 
+IMPORTANT: The `gen_ai.client.token.usage` metrics measures number of input and output tokens used by a single model call.
+
 .Low Cardinality Keys
 [cols="a,a", stripes=even]
 |===

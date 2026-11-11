@@ -20,8 +20,6 @@ import com.redis.testcontainers.RedisStackContainer;
 import io.micrometer.observation.tck.TestObservationRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
-import org.testcontainers.containers.wait.strategy.Wait;
-import org.testcontainers.containers.wait.strategy.WaitAllStrategy;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -52,9 +50,7 @@ class RedisSemanticCacheAutoConfigurationIT {
 	@Container
 	static RedisStackContainer redisContainer = new RedisStackContainer(
 			RedisStackContainer.DEFAULT_IMAGE_NAME.withTag(RedisStackContainer.DEFAULT_TAG))
-		.withExposedPorts(6379)
-		.waitingFor(new WaitAllStrategy().withStrategy(Wait.forLogMessage(".*Ready to accept connections.*\\s", 1))
-			.withStrategy(Wait.forListeningPort()));
+		.withExposedPorts(6379);
 
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(
