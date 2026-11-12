@@ -18,6 +18,7 @@ package org.springframework.ai.transformer.splitter;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import com.knuddels.jtokkit.Encodings;
 import com.knuddels.jtokkit.api.Encoding;
@@ -37,6 +38,12 @@ import org.springframework.util.Assert;
  * @author Jemin Huh
  */
 public class TokenTextSplitter extends TextSplitter {
+
+	/**
+	 * Matches any line break, so that chunks are split the same way regardless of the
+	 * line separator used by the document or by the host operating system.
+	 */
+	private static final Pattern LINE_BREAK = Pattern.compile("\\R");
 
 	private static final int DEFAULT_CHUNK_SIZE = 800;
 
@@ -189,7 +196,7 @@ public class TokenTextSplitter extends TextSplitter {
 
 		// If text is smaller than chunk size, return as a single chunk
 		if (tokens.size() <= chunkSize) {
-			String processedText = this.keepSeparator ? text.trim() : text.replace(System.lineSeparator(), " ").trim();
+			String processedText = this.keepSeparator ? text.trim() : replaceLineBreaks(text);
 
 			if (processedText.length() > this.minChunkLengthToEmbed) {
 				return List.of(processedText);
@@ -236,8 +243,7 @@ public class TokenTextSplitter extends TextSplitter {
 			position = reachedEnd ? tokens.size() : position + advance;
 
 			// Format according to keepSeparator setting
-			String formattedChunk = this.keepSeparator ? finalChunkText.trim()
-					: finalChunkText.replace(System.lineSeparator(), " ").trim();
+			String formattedChunk = this.keepSeparator ? finalChunkText.trim() : replaceLineBreaks(finalChunkText);
 
 			// Add chunk if it meets minimum length
 			if (formattedChunk.length() > this.minChunkLengthToEmbed) {
@@ -250,15 +256,18 @@ public class TokenTextSplitter extends TextSplitter {
 
 		// Handle the remaining tokens
 		if (position < tokens.size()) {
-			String remaining_text = decodeTokens(tokens.subList(position, tokens.size()))
-				.replace(System.lineSeparator(), " ")
-				.trim();
+			String decodedRemainder = decodeTokens(tokens.subList(position, tokens.size()));
+			String remaining_text = this.keepSeparator ? decodedRemainder.trim() : replaceLineBreaks(decodedRemainder);
 			if (remaining_text.length() > this.minChunkLengthToEmbed) {
 				chunks.add(remaining_text);
 			}
 		}
 
 		return chunks;
+	}
+
+	private static String replaceLineBreaks(String text) {
+		return LINE_BREAK.matcher(text).replaceAll(" ").trim();
 	}
 
 	private String optimizeChunkBoundary(String chunkText) {
