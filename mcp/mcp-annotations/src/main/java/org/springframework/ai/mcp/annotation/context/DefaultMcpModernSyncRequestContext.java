@@ -112,7 +112,7 @@ public final class DefaultMcpModernSyncRequestContext implements McpModernSyncRe
 	public <T> @Nullable T inputResponse(String key, Class<T> type) {
 		Assert.hasText(key, "key must not be empty");
 		Assert.notNull(type, "type must not be null");
-		return InputResponses.get(this.inputResponses, key, type, this.jsonMapper).orElse(null);
+		return InputResponses.get(this.inputResponses, key, type, this.jsonMapper);
 	}
 
 	/**
