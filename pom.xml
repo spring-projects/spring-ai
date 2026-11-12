@@ -63,6 +63,7 @@
 		<module>auto-configurations/models/session/spring-ai-autoconfigure-model-session</module>
 		<module>auto-configurations/models/session/spring-ai-autoconfigure-model-session-jdbc</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-anthropic</module>
+		<module>auto-configurations/models/spring-ai-autoconfigure-model-azure-speech</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-bedrock-ai</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-deepseek</module>
 		<module>auto-configurations/models/spring-ai-autoconfigure-model-elevenlabs</module>
@@ -117,6 +118,7 @@
 		<module>memory-repositories/spring-ai-model-chat-memory-repository-redis</module>
 
 		<module>models/spring-ai-anthropic</module>
+		<module>models/spring-ai-azure-speech</module>
 		<module>models/spring-ai-bedrock</module>
 		<module>models/spring-ai-bedrock-converse</module>
 		<module>models/spring-ai-deepseek</module>
@@ -142,6 +144,7 @@
 		<module>starters/spring-ai-starter-mcp-server-webmvc</module>
 
 		<module>starters/spring-ai-starter-model-anthropic</module>
+		<module>starters/spring-ai-starter-model-azure-speech</module>
 		<module>starters/spring-ai-starter-model-bedrock</module>
 		<module>starters/spring-ai-starter-model-bedrock-converse</module>
 		<module>starters/spring-ai-starter-model-chat-memory</module>
@@ -280,6 +283,7 @@
 		<azure-identity.version>1.18.2</azure-identity.version>
 		<azure-json.version>1.5.1</azure-json.version>
 		<azure-search.version>11.7.6</azure-search.version>
+		<azure-speech-sdk.version>1.53.0</azure-speech-sdk.version>
 		<com.google.cloud.version>26.83.0</com.google.cloud.version>
 		<com.google.genai.version>1.73.0</com.google.genai.version>
 		<djl.version>0.36.0</djl.version>

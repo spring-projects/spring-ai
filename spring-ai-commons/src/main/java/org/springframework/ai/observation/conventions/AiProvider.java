@@ -35,6 +35,11 @@ public enum AiProvider {
 	ANTHROPIC("anthropic"),
 
 	/**
+	 * AI system provided by Azure AI Speech.
+	 */
+	AZURE_SPEECH("azure_speech"),
+
+	/**
 	 * AI system provided by Bedrock Converse.
 	 */
 	BEDROCK_CONVERSE("bedrock_converse"),

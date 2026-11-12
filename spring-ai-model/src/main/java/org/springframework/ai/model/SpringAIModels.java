@@ -26,6 +26,8 @@ public final class SpringAIModels {
 
 	public static final String AZURE_OPENAI = "azure-openai";
 
+	public static final String AZURE_SPEECH = "azure-speech";
+
 	public static final String BEDROCK_COHERE = "bedrock-cohere";
 
 	public static final String BEDROCK_CONVERSE = "bedrock-converse";

@@ -1,0 +1,45 @@
+= Audio fixtures
+
+== multi-utterance-mono-16k.wav
+
+16-bit mono PCM, 16 kHz, 16.77 s, 536 684 bytes, canonical 44-byte RIFF header.
+SHA-256 `c029760dd9342178cab074479a2c13f2b8b39330f0c35115261dfcd0dcd73ae8`.
+
+`AzureSpeechTranscriptionModelIT` asserts against this file because Azure AI Speech continuous recognition returns one final result per utterance, and a fixture with only one utterance — or with no intelligible speech at all — cannot distinguish a model that delivers every segment in order from one that delivers only the first, or none.
+
+`MultiUtteranceSampleTests` checks offline that the file still has the two properties those assertions rest on: a format the reader accepts, and three stretches of signal separated by pauses of more than 0.6 s — the silence after which Azure typically ends an utterance.
+The spans run 0.20–4.36 s, 5.22–7.00 s and 9.66–15.82 s, so the pauses between them are 0.86 s and 2.66 s, and 0.95 s of silence follows the last one.
+
+Those are checks on the bytes, and that is all they are.
+They do not establish that the audio is intelligible speech, that a listener would hear three sentences, or that the service will return anything for it; Microsoft documents roughly half a second as a *typical* segmentation default and warns that phrases can be combined.
+Only a live run against the service shows what the service makes of the file, which is why the live test asks for two final segments rather than three.
+
+=== Where it comes from
+
+A LibriVox reading of chapter 1 of Sherwood Anderson's _Winesburg, Ohio_ (1919): archive.org item `winesburg_ohio_0708_librivox`, file `winesburgohio_01_anderson_64kb.mp3` (3 905 119 bytes, MD5 `c1ad35323b22985a4a780a10b54b0e2a`, SHA-1 `a412fd0b0a3c4f9f9d599315fe67ac5953bdb00d`, as published in the item's metadata at https://archive.org/metadata/winesburg_ohio_0708_librivox).
+
+The LibriVox catalogue page for the recording is https://librivox.org/winesburg-ohio-by-sherwood-anderson/, which links the archive.org item above; LibriVox's public domain policy is https://librivox.org/pages/public-domain/.
+Together those two pages establish which recording this is and that it may be reused, so the trail can be followed without reaching archive.org.
+Neither does so alone: the catalogue page identifies the recording but states no licence, and the policy page states the licence but names no recording.
+
+Reuse is permitted outright.
+That item carries `licenseurl=http://creativecommons.org/publicdomain/zero/1.0/` — the CC0 1.0 Universal public domain dedication — and LibriVox dedicates every recording it publishes to the public domain; the text being read entered the public domain long ago.
+CC0 asks for no attribution, so the credit above is given rather than owed, and nothing in this repository has to be relied on for permission.
+
+[source,shell]
+----
+curl -L -o winesburgohio_01_anderson_64kb.mp3 \
+  https://archive.org/download/winesburg_ohio_0708_librivox/winesburgohio_01_anderson_64kb.mp3
+
+afconvert -f WAVE -d LEI16@16000 -c 1 --src-quality 127 \
+  winesburgohio_01_anderson_64kb.mp3 decoded-16k-mono.wav
+# then: samples [19.70 s, 35.72 s) of that decode — three whole utterances and the
+# pauses between them — followed by 12 000 zero frames (0.75 s of digital silence),
+# written with a canonical 44-byte header.
+----
+
+The committed file was produced this way with the `afconvert` shipped with macOS 15.
+A different MP3 decoder may round the last bit differently, so the SHA-256 above is the check that matters, not the command.
+
+No speech was removed from within the three utterances, reordered or re-synthesized; the pauses the test counts are the reader's own.
+The appended silence exists so that the last utterance ends on detected silence rather than on end-of-stream, which is the reliable way to get a final result for it.
