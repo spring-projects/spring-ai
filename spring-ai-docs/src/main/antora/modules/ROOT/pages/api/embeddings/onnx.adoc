@@ -89,11 +89,11 @@ This change is done to allow configuration of multiple models.
 
 | spring.ai.embedding.transformer.enabled (Removed and no longer valid) | Enable the Transformer Embedding model. | true
 | spring.ai.model.embedding | Enable the Transformer Embedding model. | transformers
-| spring.ai.embedding.transformer.tokenizer.uri  | URI of a pre-trained HuggingFaceTokenizer created by the ONNX engine (e.g. tokenizer.json).   | onnx/all-MiniLM-L6-v2/tokenizer.json
+| spring.ai.embedding.transformer.tokenizer.uri  | URI of a pre-trained HuggingFaceTokenizer created by the ONNX engine (e.g. tokenizer.json).   | onnx/all-MiniLM-L6-v2/tokenizer.json (HTTPS)
 | spring.ai.embedding.transformer.tokenizer.options  | HuggingFaceTokenizer options such as '`addSpecialTokens`', '`modelMaxLength`', '`truncation`', '`padding`', '`maxLength`', '`stride`', '`padToMultipleOf`'. Leave empty to fallback to the defaults. | empty
 | spring.ai.embedding.transformer.cache.enabled  | Enable remote Resource caching.  | true
-| spring.ai.embedding.transformer.cache.directory  | Directory path to cache remote resources, such as the ONNX models   | ${java.io.tmpdir}/spring-ai-onnx-model
-| spring.ai.embedding.transformer.onnx.model-uri  | Existing, pre-trained ONNX model.  | onnx/all-MiniLM-L6-v2/model.onnx
+| spring.ai.embedding.transformer.cache.directory  | Directory path to cache remote resources, such as the ONNX models   | ${java.io.tmpdir}/spring-ai-model-cache* (unique directory)
+| spring.ai.embedding.transformer.onnx.model-uri  | Existing, pre-trained ONNX model.  | onnx/all-MiniLM-L6-v2/model.onnx (HTTPS)
 | spring.ai.embedding.transformer.onnx.model-output-name | The ONNX model's output node name, which we'll use for embedding calculation.  | last_hidden_state
 | spring.ai.embedding.transformer.onnx.gpu-device-id  |  The GPU device ID to execute on. Only applicable if >= 0. Ignored otherwise.(Requires additional onnxruntime_gpu dependency) |  -1
 | spring.ai.embedding.transformer.metadata-mode  |  Specifies what parts of the Documents content and metadata will be used for computing the embeddings.  |  NONE
@@ -178,14 +178,14 @@ The following snippet illustrates how to use the `TransformersEmbeddingModel` ma
 ----
 TransformersEmbeddingModel embeddingModel = new TransformersEmbeddingModel();
 
-// (optional) defaults to classpath:/onnx/all-MiniLM-L6-v2/tokenizer.json
+// (optional) defaults to an HTTPS URL
 embeddingModel.setTokenizerResource("classpath:/onnx/all-MiniLM-L6-v2/tokenizer.json");
 
-// (optional) defaults to classpath:/onnx/all-MiniLM-L6-v2/model.onnx
+// (optional) defaults to an HTTPS URL
 embeddingModel.setModelResource("classpath:/onnx/all-MiniLM-L6-v2/model.onnx");
 
-// (optional) defaults to ${java.io.tmpdir}/spring-ai-onnx-model
-// Only the http/https resources are cached by default.
+// (optional) defaults to ${java.io.tmpdir}/spring-ai-model-cache* (unique directory)
+// The http/https resources are cached by default.
 embeddingModel.setResourceCacheDirectory("/tmp/onnx-zoo");
 
 // (optional) Set the tokenizer padding if you see an errors like:
@@ -194,16 +194,16 @@ embeddingModel.setTokenizerOptions(Map.of("padding", "true"));
 
 embeddingModel.afterPropertiesSet();
 
-List<List<Double>> embeddings = this.embeddingModel.embed(List.of("Hello world", "World is big"));
+List<float[]> embeddings = embeddingModel.embed(List.of("Hello world", "World is big"));
 
 ----
 
 NOTE: If you create an instance of `TransformersEmbeddingModel` manually, you must call the `afterPropertiesSet()` method after setting the properties and before using the client.
 
-The first `embed()` call downloads the large ONNX model and caches it on the local file system.
-Therefore, the first call might take longer than usual.
+When using HTTPS resources, uncached files are downloaded during `afterPropertiesSet()`.
+Therefore, initialization might take longer than usual.
 Use the `#setResourceCacheDirectory(<path>)` method to set the local folder where the ONNX models as stored.
-The default cache folder is `${java.io.tmpdir}/spring-ai-onnx-model`.
+The default cache folder is `${java.io.tmpdir}/spring-ai-model-cache*` (a unique directory).
 
 It is more convenient (and preferred) to create the TransformersEmbeddingModel as a `Bean`.
 Then you don't have to call the `afterPropertiesSet()` manually.
