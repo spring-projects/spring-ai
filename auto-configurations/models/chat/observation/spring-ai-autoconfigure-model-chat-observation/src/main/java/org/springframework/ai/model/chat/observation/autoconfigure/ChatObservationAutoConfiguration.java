@@ -86,8 +86,10 @@ public class ChatObservationAutoConfiguration {
 	@ConditionalOnMissingBean
 	@ConditionalOnProperty(prefix = ChatObservationProperties.CONFIG_PREFIX, name = "include-tool-definitions",
 			havingValue = "true")
-	ChatModelToolDefinitionsObservationFilter chatModelToolDefinitionsObservationFilter() {
-		return new ChatModelToolDefinitionsObservationFilter();
+	ChatModelToolDefinitionsObservationFilter chatModelToolDefinitionsObservationFilter(
+			ChatObservationProperties properties) {
+		return new ChatModelToolDefinitionsObservationFilter(properties.isIncludeToolDefinitionDescriptions(),
+				properties.isIncludeToolDefinitionParameters());
 	}
 
 	@Configuration(proxyBeanMethods = false)
