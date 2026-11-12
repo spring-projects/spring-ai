@@ -16,7 +16,20 @@ Typical use cases include:
 
 * registering OkHttp `Interceptor` instances (authentication, propagation headers, custom logging);
 * swapping the dispatcher `ExecutorService` (for example, to route async I/O through virtual threads);
+* raising the dispatcher's concurrent request limits (`maxRequests` and `maxRequestsPerHost`, both 64 by default), for example when streaming many chat completions through a single gateway host;
 * configuring proxy, SSL, hostname verification, or the connection-pool sizing exposed by the builder.
+
+For example, to allow up to 200 concurrent requests:
+
+[source,java]
+----
+@Bean
+OpenAiHttpClientBuilderCustomizer dispatcherLimitsCustomizer() {
+    return builder -> builder.maxRequests(200);
+}
+----
+
+When `maxRequestsPerHost` is not set, it follows `maxRequests`, since requests usually all target the same endpoint.
 
 When several customizers are present, they are applied in `@Order` / `Ordered` order, after Spring AI's own defaults, so user code wins.
 
