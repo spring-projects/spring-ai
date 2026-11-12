@@ -17,8 +17,10 @@
 package org.springframework.ai.mistralai;
 
 import org.springframework.ai.mistralai.api.MistralAiApi;
+import org.springframework.ai.mistralai.api.MistralAiAudioApi;
 import org.springframework.ai.mistralai.api.MistralAiModerationApi;
 import org.springframework.ai.mistralai.moderation.MistralAiModerationModel;
+import org.springframework.ai.mistralai.transcription.MistralAiTranscriptionModel;
 import org.springframework.boot.SpringBootConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.util.StringUtils;
@@ -66,6 +68,16 @@ public class MistralAiTestConfiguration {
 	@Bean
 	public MistralAiModerationModel mistralAiModerationModel(MistralAiModerationApi mistralAiModerationApi) {
 		return MistralAiModerationModel.builder().mistralAiModerationApi(mistralAiModerationApi).build();
+	}
+
+	@Bean
+	public MistralAiAudioApi mistralAiAudioApi() {
+		return MistralAiAudioApi.builder().apiKey(retrieveApiKey()).build();
+	}
+
+	@Bean
+	public MistralAiTranscriptionModel mistralAiTranscriptionModel(MistralAiAudioApi mistralAiAudioApi) {
+		return MistralAiTranscriptionModel.builder().mistralAiAudioApi(mistralAiAudioApi).build();
 	}
 
 }
