@@ -19,7 +19,6 @@ package org.springframework.ai.openai.chat.client;
 import java.util.Map;
 
 import org.springframework.ai.chat.client.ChatClientRequest;
-import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.api.AdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.BaseAdvisor;
 import org.springframework.ai.chat.prompt.PromptTemplate;
@@ -33,6 +32,7 @@ import org.springframework.ai.chat.prompt.PromptTemplate;
  *
  * @author Christian Tzolov
  * @author Thomas Vitale
+ * @author Yanming Zhou
  * @since 1.0.0
  */
 public class ReReadingAdvisor implements BaseAdvisor {
@@ -65,11 +65,6 @@ public class ReReadingAdvisor implements BaseAdvisor {
 		return chatClientRequest.mutate()
 			.prompt(chatClientRequest.prompt().augmentUserMessage(augmentedUserText))
 			.build();
-	}
-
-	@Override
-	public ChatClientResponse after(ChatClientResponse chatClientResponse, AdvisorChain advisorChain) {
-		return chatClientResponse;
 	}
 
 	@Override
