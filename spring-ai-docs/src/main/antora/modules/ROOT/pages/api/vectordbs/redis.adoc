@@ -18,6 +18,7 @@ link:https://redis.io/docs/interact/search-and-query/[Redis Search and Query] ex
 1. A Redis Stack instance
 - https://app.redislabs.com/#/[Redis Cloud] (recommended)
 - link:https://hub.docker.com/r/redis/redis-stack[Docker] image _redis/redis-stack:latest_
+- A Redis-compatible server with the search and JSON commands, such as link:https://github.com/kividbio/kividb[KiviDB] (tested with the Spring AI 2.0.2 Redis integration tests: link:https://github.com/kividbio/kividb/blob/master/docs/integrations/spring-ai.md[results])
 
 2. `EmbeddingModel` instance to compute the document embeddings. Several options are available:
 - If required, an API key for the xref:api/embeddings.adoc#available-implementations[EmbeddingModel] to generate the embeddings stored by the `RedisVectorStore`.
