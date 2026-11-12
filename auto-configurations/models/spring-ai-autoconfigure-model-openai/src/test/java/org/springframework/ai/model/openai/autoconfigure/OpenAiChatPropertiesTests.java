@@ -19,6 +19,8 @@ package org.springframework.ai.model.openai.autoconfigure;
 import java.time.Duration;
 import java.util.List;
 
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
@@ -232,6 +234,22 @@ public class OpenAiChatPropertiesTests {
 	}
 
 	@Test
+	public void connectionPoolMetricsEnabled() {
+
+		this.contextRunner
+			.withPropertyValues("spring.ai.openai.api-key=abc123",
+					"spring.ai.openai.connection-pool-metrics-enabled=true")
+			.withBean(SimpleMeterRegistry.class)
+			.withConfiguration(
+					AutoConfigurations.of(OpenAiChatAutoConfiguration.class, ToolCallingAutoConfiguration.class))
+			.run(context -> {
+				var meterRegistry = context.getBean(MeterRegistry.class);
+
+				assertThat(meterRegistry.find("okhttp.pool.connection.count").gauges()).isNotEmpty();
+			});
+	}
+
+	@Test
 	public void chatReplayReasoningContentDefaultsToReplaying() {
 
 		this.contextRunner
@@ -249,6 +267,20 @@ public class OpenAiChatPropertiesTests {
 				// thinking mode requires.
 				assertThat(chatProperties.getReplayReasoningContent()).isNull();
 				assertThat(chatProperties.toOptions().getReplayReasoningContent()).isNull();
+			});
+	}
+
+	@Test
+	public void connectionPoolMetricsDisabledByDefault() {
+
+		this.contextRunner.withPropertyValues("spring.ai.openai.api-key=abc123")
+			.withBean(SimpleMeterRegistry.class)
+			.withConfiguration(
+					AutoConfigurations.of(OpenAiChatAutoConfiguration.class, ToolCallingAutoConfiguration.class))
+			.run(context -> {
+				var meterRegistry = context.getBean(MeterRegistry.class);
+
+				assertThat(meterRegistry.find("okhttp.pool.connection.count").gauges()).isEmpty();
 			});
 	}
 
