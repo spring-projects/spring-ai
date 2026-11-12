@@ -139,4 +139,24 @@ public class ParagraphPdfDocumentReaderTests {
 		assertThat(closed).isTrue();
 	}
 
+	@Test
+	void lastParagraphEndsOnTheLastPage() throws IOException {
+
+		int lastPage;
+		try (InputStream inputStream = new ClassPathResource("sample3.pdf").getInputStream();
+				PDDocument pdf = Loader.loadPDF(inputStream.readAllBytes())) {
+			lastPage = pdf.getNumberOfPages();
+		}
+
+		List<Document> documents = new ParagraphPdfDocumentReader("classpath:/sample3.pdf",
+				PdfDocumentReaderConfig.defaultConfig())
+			.get();
+
+		assertThat(documents).isNotEmpty();
+		assertThat(documents).extracting(document -> document.getMetadata().get("end_page_number"))
+			.allSatisfy(endPageNumber -> assertThat((Integer) endPageNumber).as("end_page_number must be a page number")
+				.isBetween(1, lastPage));
+		assertThat(documents.get(documents.size() - 1).getMetadata()).containsEntry("end_page_number", lastPage);
+	}
+
 }

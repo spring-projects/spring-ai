@@ -116,16 +116,16 @@ public class ParagraphManager {
 		while (current != null) {
 
 			int pageNumber = getPageNumber(current);
-			var nextSiblingNumber = getPageNumber(current.getNextSibling());
-			if (nextSiblingNumber < 0) {
-				nextSiblingNumber = getPageNumber(current.getLastChild());
+			var endPageNumber = getPageNumber(current.getNextSibling());
+			if (endPageNumber < 0) {
+				endPageNumber = parentParagraph.endPageNumber();
 			}
 
 			var paragraphPosition = (current.getDestination() instanceof PDPageXYZDestination)
 					? ((PDPageXYZDestination) current.getDestination()).getTop() : 0;
 
-			var currentParagraph = new Paragraph(parentParagraph, current.getTitle(), level, pageNumber,
-					nextSiblingNumber, paragraphPosition);
+			var currentParagraph = new Paragraph(parentParagraph, current.getTitle(), level, pageNumber, endPageNumber,
+					paragraphPosition);
 
 			parentParagraph.children().add(currentParagraph);
 
