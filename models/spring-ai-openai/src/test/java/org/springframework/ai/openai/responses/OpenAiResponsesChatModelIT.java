@@ -38,6 +38,7 @@ import org.springframework.ai.chat.messages.part.ReasoningPart;
 import org.springframework.ai.chat.messages.part.StreamingParts;
 import org.springframework.ai.chat.messages.part.ToolCallPart;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
+import org.springframework.ai.chat.metadata.FinishReasonCategory;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -85,6 +86,8 @@ class OpenAiResponsesChatModelIT {
 		assertThat(response.getMetadata().getId()).startsWith("resp_");
 		assertThat(response.getMetadata().getUsage().getTotalTokens()).isPositive();
 		assertThat(response.getResult().getMetadata().getFinishReason()).isEqualTo("STOP");
+		assertThat(response.getResult().getMetadata().getFinishReasonCategory())
+			.isEqualTo(FinishReasonCategory.COMPLETED);
 	}
 
 	@Test
@@ -141,6 +144,8 @@ class OpenAiResponsesChatModelIT {
 		ChatResponse response = this.chatModel.call(new Prompt("Tell me a long story about a dragon.", options));
 
 		assertThat(response.getResult().getMetadata().getFinishReason()).isEqualTo("LENGTH");
+		assertThat(response.getResult().getMetadata().getFinishReasonCategory())
+			.isEqualTo(FinishReasonCategory.TRUNCATED);
 		// The native status and reason the portable finish reason was derived from.
 		assertThat(response.getMetadata().<String>get(OpenAiResponsesMetadata.STATUS)).isEqualTo("incomplete");
 		assertThat(response.getResult().getMetadata().<String>get(OpenAiResponsesMetadata.INCOMPLETE_REASON))

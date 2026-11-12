@@ -23,7 +23,9 @@ import java.util.Set;
 
 import org.jspecify.annotations.Nullable;
 
+import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.metadata.FinishReasonCategory;
 import org.springframework.ai.model.ModelResponse;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
@@ -116,7 +118,10 @@ public class ChatResponse implements ModelResponse<Generation> {
 	}
 
 	/**
-	 * Whether the model has finished with any of the given finish reasons.
+	 * Whether the model has finished with any of the given finish reasons. They are
+	 * compared, ignoring case, with the raw finish reason as the provider names it. For a
+	 * check that is the same for every provider, see
+	 * {@link #hasFinishReasonCategory(FinishReasonCategory)}.
 	 */
 	public boolean hasFinishReasons(Set<String> finishReasons) {
 		Assert.notNull(finishReasons, "finishReasons cannot be null");
@@ -128,6 +133,24 @@ public class ChatResponse implements ModelResponse<Generation> {
 					? generation.getMetadata().getFinishReason() : "";
 			return finishReasons.stream().anyMatch(fr -> fr.equalsIgnoreCase(finishReason));
 		});
+	}
+
+	/**
+	 * Whether any generation finished for a reason of the given category, whatever name
+	 * the provider gives it. For example, {@link FinishReasonCategory#FILTERED} tells
+	 * that a safety filter or a refusal of the model stopped a generation.
+	 * @param category the category to look for
+	 * @return {@code true} when at least one generation finished in that category
+	 * @since 2.1.0
+	 * @see ChatGenerationMetadata#getFinishReasonCategory()
+	 */
+	public boolean hasFinishReasonCategory(FinishReasonCategory category) {
+		Assert.notNull(category, "category cannot be null");
+		if (CollectionUtils.isEmpty(this.generations)) {
+			return false;
+		}
+		return this.generations.stream()
+			.anyMatch(generation -> generation.getMetadata().getFinishReasonCategory() == category);
 	}
 
 	@Override

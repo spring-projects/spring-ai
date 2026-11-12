@@ -23,10 +23,13 @@ import org.jspecify.annotations.Nullable;
 /**
  * Normalized, provider-neutral categories for a chat completion finish reason.
  * <p>
- * {@link #categorize(String)} classifies the raw provider string. {@code null} and blank
- * values are {@link #UNKNOWN} because no reason was supplied. A non-blank value that does
- * not match a known alias is {@link #OTHER} and is never treated as {@link #COMPLETED}.
- * The raw string is left unchanged for callers that still read
+ * A chat model classifies its own finish reasons, see
+ * {@link ChatGenerationMetadata.Builder#finishReasonCategory(FinishReasonCategory)}.
+ * {@link #categorize(String)} is the fallback for a generation that carries no category:
+ * it classifies the raw provider string by the common names. {@code null} and blank
+ * values are {@link #UNSPECIFIED} because no reason was supplied. A non-blank value that
+ * does not match a known alias is {@link #OTHER} and is never treated as
+ * {@link #COMPLETED}. The raw string is left unchanged for callers that still read
  * {@link ChatGenerationMetadata#getFinishReason()}.
  *
  * @author Quark
@@ -51,8 +54,9 @@ public enum FinishReasonCategory {
 	/**
 	 * The raw finish reason itself reports a tool invocation. Corresponds to
 	 * {@code tool_calls}, {@code tool_call}, {@code tool_use}, and {@code TOOL_CALLS}.
-	 * Tool calls that a provider exposes separately, while reporting an ordinary stop,
-	 * stay {@link #COMPLETED}.
+	 * {@link #categorize(String)} cannot tell tool calls that a provider exposes
+	 * separately while reporting an ordinary stop. A chat model that knows of them sets
+	 * this category itself.
 	 */
 	TOOL_CALL,
 
@@ -73,21 +77,21 @@ public enum FinishReasonCategory {
 	 * No finish reason was supplied. {@code null} and blank strings are absent, which is
 	 * distinct from an unrecognized value ({@link #OTHER}).
 	 */
-	UNKNOWN;
+	UNSPECIFIED;
 
 	/**
 	 * Classify a raw finish reason.
 	 * <p>
 	 * Matching is case-insensitive and ignores surrounding whitespace. {@code null} and
-	 * blank input is an absent reason and returns {@link #UNKNOWN}. Any other string that
-	 * is not a known alias returns {@link #OTHER}. This method does not modify or replace
-	 * the raw value.
+	 * blank input is an absent reason and returns {@link #UNSPECIFIED}. Any other string
+	 * that is not a known alias returns {@link #OTHER}. This method does not modify or
+	 * replace the raw value.
 	 * @param rawReason the provider finish reason, or {@code null} when absent
 	 * @return the category, never {@code null}
 	 */
 	public static FinishReasonCategory categorize(@Nullable String rawReason) {
 		if (rawReason == null || rawReason.isBlank()) {
-			return UNKNOWN;
+			return UNSPECIFIED;
 		}
 
 		String normalized = rawReason.toLowerCase(Locale.ROOT).trim();

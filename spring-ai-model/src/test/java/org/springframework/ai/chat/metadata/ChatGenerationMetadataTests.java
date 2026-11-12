@@ -59,13 +59,13 @@ public class ChatGenerationMetadataTests {
 		ChatGenerationMetadata metadata = ChatGenerationMetadata.builder().build();
 
 		assertThat(metadata.getFinishReason()).isNull();
-		assertThat(metadata.getFinishReasonCategory()).isEqualTo(FinishReasonCategory.UNKNOWN);
+		assertThat(metadata.getFinishReasonCategory()).isEqualTo(FinishReasonCategory.UNSPECIFIED);
 	}
 
 	@Test
 	void nullMetadataShouldReturnUnknownCategory() {
 		assertThat(ChatGenerationMetadata.NULL.getFinishReason()).isNull();
-		assertThat(ChatGenerationMetadata.NULL.getFinishReasonCategory()).isEqualTo(FinishReasonCategory.UNKNOWN);
+		assertThat(ChatGenerationMetadata.NULL.getFinishReasonCategory()).isEqualTo(FinishReasonCategory.UNSPECIFIED);
 	}
 
 	@Test
@@ -73,7 +73,7 @@ public class ChatGenerationMetadataTests {
 		ChatGenerationMetadata metadata = ChatGenerationMetadata.builder().finishReason(" \t ").build();
 
 		assertThat(metadata.getFinishReason()).isEqualTo(" \t ");
-		assertThat(metadata.getFinishReasonCategory()).isEqualTo(FinishReasonCategory.UNKNOWN);
+		assertThat(metadata.getFinishReasonCategory()).isEqualTo(FinishReasonCategory.UNSPECIFIED);
 	}
 
 	@Test
@@ -106,7 +106,7 @@ public class ChatGenerationMetadataTests {
 	void thirdPartyImplementationKeepsRawReasonAndUsesDefaultCategory() {
 		ChatGenerationMetadata absent = new FixedFinishReasonMetadata(null);
 		assertThat(absent.getFinishReason()).isNull();
-		assertThat(absent.getFinishReasonCategory()).isEqualTo(FinishReasonCategory.UNKNOWN);
+		assertThat(absent.getFinishReasonCategory()).isEqualTo(FinishReasonCategory.UNSPECIFIED);
 
 		ChatGenerationMetadata unrecognized = new FixedFinishReasonMetadata("provider_specific");
 		assertThat(unrecognized.getFinishReason()).isEqualTo("provider_specific");

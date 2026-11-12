@@ -243,6 +243,8 @@ public interface ChatClient {
 		 * {@link EntityParamSpec#useProviderStructuredOutput()} and
 		 * {@link EntityParamSpec#validateSchema()}
 		 * @return the deserialized entity, or {@code null} if the response is empty
+		 * @throws ContentFilteredException if a safety filter or a refusal of the model
+		 * stopped the response, and what it left is empty or cannot be converted
 		 */
 		<T> @Nullable T entity(ParameterizedTypeReference<T> type, Consumer<EntityParamSpec> entityParamSpecConsumer);
 
@@ -250,6 +252,8 @@ public interface ChatClient {
 		 * Deserializes the response into a {@code T} instance.
 		 * @param type the target parameterized type
 		 * @return the deserialized entity, or {@code null} if the response is empty
+		 * @throws ContentFilteredException if a safety filter or a refusal of the model
+		 * stopped the response, and what it left is empty or cannot be converted
 		 */
 		<T> @Nullable T entity(ParameterizedTypeReference<T> type);
 
@@ -262,6 +266,8 @@ public interface ChatClient {
 		 * {@link EntityParamSpec#useProviderStructuredOutput()} and
 		 * {@link EntityParamSpec#validateSchema()}
 		 * @return the deserialized entity, or {@code null} if the response is empty
+		 * @throws ContentFilteredException if a safety filter or a refusal of the model
+		 * stopped the response, and what it left is empty or cannot be converted
 		 */
 		<T> @Nullable T entity(StructuredOutputConverter<T> structuredOutputConverter,
 				Consumer<EntityParamSpec> entityParamSpecConsumer);
@@ -271,6 +277,8 @@ public interface ChatClient {
 		 * @param structuredOutputConverter the converter for parsing and schema
 		 * resolution
 		 * @return the deserialized entity, or {@code null} if the response is empty
+		 * @throws ContentFilteredException if a safety filter or a refusal of the model
+		 * stopped the response, and what it left is empty or cannot be converted
 		 */
 		<T> @Nullable T entity(StructuredOutputConverter<T> structuredOutputConverter);
 
@@ -282,6 +290,8 @@ public interface ChatClient {
 		 * {@link EntityParamSpec#useProviderStructuredOutput()} and
 		 * {@link EntityParamSpec#validateSchema()}
 		 * @return the deserialized entity, or {@code null} if the response is empty
+		 * @throws ContentFilteredException if a safety filter or a refusal of the model
+		 * stopped the response, and what it left is empty or cannot be converted
 		 */
 		<T> @Nullable T entity(Class<T> type, Consumer<EntityParamSpec> entityParamSpecConsumer);
 
@@ -289,6 +299,8 @@ public interface ChatClient {
 		 * Deserializes the response into a {@code T} instance.
 		 * @param type the target class
 		 * @return the deserialized entity, or {@code null} if the response is empty
+		 * @throws ContentFilteredException if a safety filter or a refusal of the model
+		 * stopped the response, and what it left is empty or cannot be converted
 		 */
 		<T> @Nullable T entity(Class<T> type);
 
@@ -307,7 +319,9 @@ public interface ChatClient {
 		 * {@link EntityParamSpec#useProviderStructuredOutput()} and
 		 * {@link EntityParamSpec#validateSchema()}
 		 * @return the {@link ResponseEntity} containing both the complete
-		 * {@link ChatResponse} object and the deserialized entity
+		 * {@link ChatResponse} object and the deserialized entity. The entity is
+		 * {@code null} when a safety filter or a refusal of the model stopped the
+		 * response, and what it left is empty or cannot be converted
 		 */
 		<T> ResponseEntity<ChatResponse, T> responseEntity(Class<T> type,
 				Consumer<EntityParamSpec> entityParamSpecConsumer);
@@ -317,7 +331,9 @@ public interface ChatClient {
 		 * {@link ChatResponse} object and a specific entity type.
 		 * @param type the target class
 		 * @return the {@link ResponseEntity} containing both the complete
-		 * {@link ChatResponse} object and the deserialized entity
+		 * {@link ChatResponse} object and the deserialized entity. The entity is
+		 * {@code null} when a safety filter or a refusal of the model stopped the
+		 * response, and what it left is empty or cannot be converted
 		 */
 		<T> ResponseEntity<ChatResponse, T> responseEntity(Class<T> type);
 
@@ -330,7 +346,9 @@ public interface ChatClient {
 		 * {@link EntityParamSpec#useProviderStructuredOutput()} and
 		 * {@link EntityParamSpec#validateSchema()}
 		 * @return the {@link ResponseEntity} containing both the complete
-		 * {@link ChatResponse} object and the deserialized entity
+		 * {@link ChatResponse} object and the deserialized entity. The entity is
+		 * {@code null} when a safety filter or a refusal of the model stopped the
+		 * response, and what it left is empty or cannot be converted
 		 */
 		<T> ResponseEntity<ChatResponse, T> responseEntity(ParameterizedTypeReference<T> type,
 				Consumer<EntityParamSpec> entityParamSpecConsumer);
@@ -340,7 +358,9 @@ public interface ChatClient {
 		 * {@link ChatResponse} object and a {@link Collection} of entity types.
 		 * @param type the target parameterized type
 		 * @return the {@link ResponseEntity} containing both the complete
-		 * {@link ChatResponse} object and the deserialized entities
+		 * {@link ChatResponse} object and the deserialized entities. The entity is
+		 * {@code null} when a safety filter or a refusal of the model stopped the
+		 * response, and what it left is empty or cannot be converted
 		 */
 		<T> ResponseEntity<ChatResponse, T> responseEntity(ParameterizedTypeReference<T> type);
 
@@ -355,7 +375,9 @@ public interface ChatClient {
 		 * {@link EntityParamSpec#useProviderStructuredOutput()} and
 		 * {@link EntityParamSpec#validateSchema()}
 		 * @return the {@link ResponseEntity} containing both the complete
-		 * {@link ChatResponse} object and the deserialized entity
+		 * {@link ChatResponse} object and the deserialized entity. The entity is
+		 * {@code null} when a safety filter or a refusal of the model stopped the
+		 * response, and what it left is empty or cannot be converted
 		 */
 		<T> ResponseEntity<ChatResponse, T> responseEntity(StructuredOutputConverter<T> structuredOutputConverter,
 				Consumer<EntityParamSpec> entityParamSpecConsumer);
@@ -367,7 +389,9 @@ public interface ChatClient {
 		 * @param structuredOutputConverter the converter for parsing and schema
 		 * resolution
 		 * @return the {@link ResponseEntity} containing both the complete
-		 * {@link ChatResponse} object and the deserialized entity
+		 * {@link ChatResponse} object and the deserialized entity. The entity is
+		 * {@code null} when a safety filter or a refusal of the model stopped the
+		 * response, and what it left is empty or cannot be converted
 		 */
 		<T> ResponseEntity<ChatResponse, T> responseEntity(StructuredOutputConverter<T> structuredOutputConverter);
 

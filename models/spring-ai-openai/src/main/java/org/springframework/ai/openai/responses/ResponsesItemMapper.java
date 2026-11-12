@@ -67,6 +67,7 @@ import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.metadata.EmptyUsage;
+import org.springframework.ai.chat.metadata.FinishReasonCategory;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.content.Media;
@@ -527,10 +528,14 @@ final class ResponsesItemMapper {
 		ReportedValues reported = reportedValues(outputItems);
 		String status = response.status().map(ResponseStatus::asString).orElse("completed");
 
+		String finishReason = finishReason(response, status, reported.hasToolCalls());
+		String refusal = Objects.requireNonNullElse(streamedRefusal, reported.refusal());
+
 		ChatGenerationMetadata.Builder metadata = ChatGenerationMetadata.builder()
-			.finishReason(finishReason(response, status, reported.hasToolCalls()))
+			.finishReason(finishReason)
+			.finishReasonCategory(finishReasonCategory(finishReason, refusal))
 			.metadata(OpenAiResponsesMetadata.STATUS, status)
-			.metadata(OpenAiResponsesMetadata.REFUSAL, Objects.requireNonNullElse(streamedRefusal, reported.refusal()))
+			.metadata(OpenAiResponsesMetadata.REFUSAL, refusal)
 			.metadata(OpenAiResponsesMetadata.ANNOTATIONS, reported.annotations())
 			.metadata(OpenAiResponsesMetadata.REASONING_CONTENT,
 					Objects.requireNonNullElse(streamedReasoning, reported.reasoning()))
@@ -695,6 +700,24 @@ final class ResponsesItemMapper {
 			return hasToolCalls ? "TOOL_CALLS" : "STOP";
 		}
 		return status.toUpperCase(Locale.ROOT);
+	}
+
+	/**
+	 * Classifies the finish reason that {@link #finishReason} derived. A refusal of the
+	 * model is a content part of a completed response, so it is looked at first.
+	 */
+	static FinishReasonCategory finishReasonCategory(String finishReason, String refusal) {
+		if (StringUtils.hasText(refusal)) {
+			return FinishReasonCategory.FILTERED;
+		}
+		return switch (finishReason) {
+			case "STOP" -> FinishReasonCategory.COMPLETED;
+			case "LENGTH" -> FinishReasonCategory.TRUNCATED;
+			case "TOOL_CALLS" -> FinishReasonCategory.TOOL_CALL;
+			case "CONTENT_FILTER" -> FinishReasonCategory.FILTERED;
+			// INCOMPLETE for another reason, or a status that is not final
+			default -> FinishReasonCategory.OTHER;
+		};
 	}
 
 	private static Media toImageMedia(ResponseOutputItem.ImageGenerationCall call, String base64Result) {

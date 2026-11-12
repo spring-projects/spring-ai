@@ -806,7 +806,10 @@ public class BedrockProxyChatModel implements ChatModel {
 		List<MessagePart> parts = toAssistantParts(message);
 		if (!parts.isEmpty() || response.stopReasonAsString() != null) {
 			allGenerations.add(new Generation(AssistantMessage.builder().parts(parts).build(),
-					ChatGenerationMetadata.builder().finishReason(response.stopReasonAsString()).build()));
+					ChatGenerationMetadata.builder()
+						.finishReason(response.stopReasonAsString())
+						.finishReasonCategory(ConverseApiUtils.finishReasonCategory(response.stopReason()))
+						.build()));
 		}
 
 		Integer inputTokens = response.usage().inputTokens();

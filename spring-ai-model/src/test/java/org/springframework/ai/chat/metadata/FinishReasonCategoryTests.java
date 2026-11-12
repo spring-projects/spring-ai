@@ -85,7 +85,7 @@ public class FinishReasonCategoryTests {
 	@NullAndEmptySource
 	@ValueSource(strings = { "   ", "\t", "\n" })
 	void shouldCategorizeNullOrBlankAsUnknown(String rawReason) {
-		assertThat(FinishReasonCategory.categorize(rawReason)).isEqualTo(FinishReasonCategory.UNKNOWN);
+		assertThat(FinishReasonCategory.categorize(rawReason)).isEqualTo(FinishReasonCategory.UNSPECIFIED);
 	}
 
 	@ParameterizedTest
@@ -96,9 +96,9 @@ public class FinishReasonCategoryTests {
 
 	@Test
 	void absentReasonIsDistinctFromUnrecognizedReason() {
-		assertThat(FinishReasonCategory.categorize(null)).isEqualTo(FinishReasonCategory.UNKNOWN);
-		assertThat(FinishReasonCategory.categorize("")).isEqualTo(FinishReasonCategory.UNKNOWN);
-		assertThat(FinishReasonCategory.categorize("   ")).isEqualTo(FinishReasonCategory.UNKNOWN);
+		assertThat(FinishReasonCategory.categorize(null)).isEqualTo(FinishReasonCategory.UNSPECIFIED);
+		assertThat(FinishReasonCategory.categorize("")).isEqualTo(FinishReasonCategory.UNSPECIFIED);
+		assertThat(FinishReasonCategory.categorize("   ")).isEqualTo(FinishReasonCategory.UNSPECIFIED);
 		assertThat(FinishReasonCategory.categorize("not_a_known_reason")).isEqualTo(FinishReasonCategory.OTHER);
 	}
 

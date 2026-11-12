@@ -94,6 +94,7 @@ import org.springframework.ai.chat.messages.part.TextPart;
 import org.springframework.ai.chat.messages.part.ToolCallPart;
 import org.springframework.ai.chat.messages.part.UnknownPart;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.metadata.FinishReasonCategory;
 import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.MessageAggregator;
@@ -382,6 +383,8 @@ class AnthropicChatModelTests {
 		ChatResponse response = this.chatModel.call(new Prompt("Test"));
 
 		assertThat(response.getResult().getMetadata().getFinishReason()).isEqualTo("max_tokens");
+		assertThat(response.getResult().getMetadata().getFinishReasonCategory())
+			.isEqualTo(FinishReasonCategory.TRUNCATED);
 	}
 
 	@Test
@@ -672,6 +675,8 @@ class AnthropicChatModelTests {
 				"thinking-signature");
 		ChatResponse finalChunk = chunks.get(chunks.size() - 1);
 		assertThat(finalChunk.getResult().getMetadata().getFinishReason()).isEqualTo("tool_use");
+		assertThat(finalChunk.getResult().getMetadata().getFinishReasonCategory())
+			.isEqualTo(FinishReasonCategory.TOOL_CALL);
 		assertThat(finalChunk.getResult().getOutput().getText()).isEmpty();
 		// the complete tool call plus the legacy empty text that keeps getText() non-null
 		assertThat(finalChunk.getResult().getOutput().getParts()).hasSize(2);

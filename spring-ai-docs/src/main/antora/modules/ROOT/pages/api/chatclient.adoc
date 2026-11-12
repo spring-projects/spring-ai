@@ -282,6 +282,57 @@ ChatResponse chatResponse = chatClient.prompt()
     .chatResponse();
 ----
 
+[[finish-reason-categories]]
+==== Finish Reason Categories
+
+Each `Generation` reports why the model stopped, under the name its provider uses: `stop`, `end_turn`, `STOP`, `content_filter`, `refusal`, `SAFETY` and so on.
+`getFinishReason()` returns that raw name.
+`getFinishReasonCategory()` maps it onto a `FinishReasonCategory` that is the same for every provider:
+
+[cols="1,3", options="header"]
+|===
+| Category | Meaning
+
+| `COMPLETED` | The model finished its answer.
+| `TRUNCATED` | A length or token limit cut the answer short.
+| `TOOL_CALL` | The model asked for a tool to be called.
+| `FILTERED` | A safety filter stopped the answer, or the model refused to answer.
+| `OTHER` | A reason with no meaning that providers share, or one that Spring AI does not know.
+| `UNSPECIFIED` | The provider gave no reason.
+|===
+
+The category is read next to the raw finish reason:
+
+[source,java]
+----
+ChatResponse chatResponse = chatClient.prompt()
+    .user("Tell me a joke")
+    .call()
+    .chatResponse();
+
+ChatGenerationMetadata metadata = chatResponse.getResult().getMetadata();
+if (metadata.getFinishReasonCategory() == FinishReasonCategory.FILTERED) {
+    // A safety filter stopped the answer, or the model refused to answer.
+    String reason = metadata.getFinishReason();
+}
+----
+
+`ChatResponse.hasFinishReasonCategory(...)` tells whether any generation of the response finished in a category.
+
+Each chat model classifies its own finish reasons, as it knows what the names of its provider mean and sees the whole provider response.
+This also covers a stop that the finish reason alone does not tell:
+
+* OpenAI reports a refusal of the model in a field of its own, with an ordinary `stop`.
+The generation is `FILTERED`, and the refusal is in the `refusal` metadata of the message.
+* Gemini and Ollama report an ordinary stop when the model asks for a tool.
+The generation is `TOOL_CALL`.
+
+A custom `ChatModel` sets the category with `ChatGenerationMetadata.builder().finishReasonCategory(...)`.
+For a generation that carries no category, it is derived from the raw finish reason by its common names, such as `stop`, `length` and `content_filter`.
+
+On a stream, each chunk is classified by what that chunk holds.
+A stop that the provider spreads over several chunks, such as a refusal of OpenAI or a tool call of Gemini that is followed by a chunk with the finish reason, is therefore not the category of the last chunk, nor of the aggregated response.
+
 
 === Returning an Entity
 
@@ -333,6 +384,33 @@ ActorFilms actorFilms = chatClient.prompt()
 ----
 
 For full details on these switches, supported providers, limitations, and the lower-level converter API, see the xref:api/structured-output.adoc[Structured Output] reference.
+
+==== When a Safety Filter Stops the Response
+
+A response that a safety filter stopped, or in which the model refused to answer, is usually empty, cut short, or a refusal in plain words.
+It is not the entity that was asked for, and parsing it would fail with an error that does not tell why.
+When the generation that `entity()` converts finished in the `FILTERED` <<finish-reason-categories,category>>, and its text is empty or cannot be converted, `entity()` throws a `ContentFilteredException`:
+
+[source,java]
+----
+try {
+    ActorFilms actorFilms = chatClient.prompt()
+        .user("Generate the filmography for a random actor.")
+        .call()
+        .entity(ActorFilms.class);
+}
+catch (ContentFilteredException ex) {
+    String reason = ex.getFinishReason(); // as the provider named it, for example "content_filter"
+    String text = ex.getText();           // what the provider returned, possibly empty
+}
+----
+
+The parsing error, if there was one, is the cause of the exception.
+A filtered response that converts all the same is returned as an entity.
+
+`responseEntity()` does not throw for a filtered response.
+It returns the response with a `null` entity, and the finish reason is read from the response.
+`content()`, `chatResponse()` and streaming return the response as the provider left it.
 
 === Streaming Responses
 

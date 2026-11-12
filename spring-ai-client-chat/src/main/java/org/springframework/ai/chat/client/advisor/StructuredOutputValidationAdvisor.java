@@ -41,7 +41,9 @@ import org.springframework.ai.chat.client.advisor.api.CallAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisor;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
+import org.springframework.ai.chat.metadata.FinishReasonCategory;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.util.JacksonUtils;
 import org.springframework.ai.util.json.schema.JsonSchemaGenerator;
@@ -54,7 +56,9 @@ import org.springframework.util.StringUtils;
  * JSON schema derived from the configured output type or a pre-supplied schema string.
  * <p>
  * When validation fails, the advisor appends the validation error to the user message and
- * re-invokes the model, repeating up to {@code maxRepeatAttempts} times.
+ * re-invokes the model, repeating up to {@code maxRepeatAttempts} times. A response that
+ * a safety filter or a refusal of the model stopped is not repeated: it is returned as it
+ * is.
  * <p>
  * Streaming responses are not supported.
  *
@@ -145,6 +149,13 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 
 				isValidationSuccess = validationResponse.success();
 
+				if (!isValidationSuccess && isContentFiltered(chatResponse)) {
+					// A safety filter or a refusal of the model stopped the response.
+					// The validation error is not why it is invalid, so asking again
+					// with that error would only repeat the stop.
+					break;
+				}
+
 				if (!isValidationSuccess) {
 
 					// Add the validation error message to the next user message
@@ -179,6 +190,15 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 		}
 
 		return usageAccumulator.applyAccumulatedUsage(Objects.requireNonNull(chatClientResponse));
+	}
+
+	/**
+	 * Whether a safety filter or a refusal of the model stopped the generation that is
+	 * validated, which is the first.
+	 */
+	private static boolean isContentFiltered(@Nullable ChatResponse chatResponse) {
+		Generation result = (chatResponse != null) ? chatResponse.getResult() : null;
+		return result != null && result.getMetadata().getFinishReasonCategory() == FinishReasonCategory.FILTERED;
 	}
 
 	private SchemaValidation validateOutputSchema(ChatClientResponse chatClientResponse, int leftAttemptsCounter) {

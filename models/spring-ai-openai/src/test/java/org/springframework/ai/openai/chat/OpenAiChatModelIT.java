@@ -53,6 +53,7 @@ import org.springframework.ai.chat.messages.part.ToolCallPart;
 import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.metadata.EmptyRateLimit;
 import org.springframework.ai.chat.metadata.EmptyUsage;
+import org.springframework.ai.chat.metadata.FinishReasonCategory;
 import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
@@ -375,8 +376,13 @@ public class OpenAiChatModelIT {
 		// All intermediate chunks must have a null finish reason
 		withResult.subList(0, withResult.size() - 1)
 			.forEach(r -> assertThat(r.getResult().getMetadata().getFinishReason()).isNull());
+		withResult.subList(0, withResult.size() - 1)
+			.forEach(r -> assertThat(r.getResult().getMetadata().getFinishReasonCategory())
+				.isEqualTo(FinishReasonCategory.UNSPECIFIED));
 		// The final chunk must carry a non-null finish reason (e.g. "STOP")
 		assertThat(withResult.get(withResult.size() - 1).getResult().getMetadata().getFinishReason()).isNotNull();
+		assertThat(withResult.get(withResult.size() - 1).getResult().getMetadata().getFinishReasonCategory())
+			.isEqualTo(FinishReasonCategory.COMPLETED);
 	}
 
 	@Test
