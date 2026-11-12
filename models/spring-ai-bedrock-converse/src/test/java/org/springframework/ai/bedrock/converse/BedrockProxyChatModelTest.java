@@ -83,6 +83,7 @@ import org.springframework.ai.chat.messages.part.StreamingParts;
 import org.springframework.ai.chat.messages.part.TextPart;
 import org.springframework.ai.chat.messages.part.ToolCallPart;
 import org.springframework.ai.chat.messages.part.ToolResultPart;
+import org.springframework.ai.chat.metadata.FinishReasonCategory;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.MessageAggregator;
 import org.springframework.ai.chat.prompt.Prompt;
@@ -663,6 +664,8 @@ class BedrockProxyChatModelTest {
 		assertThat(output.getToolCalls()).containsExactly(WEATHER_CALL);
 		assertThat(chatResponse.hasToolCalls()).isTrue();
 		assertThat(chatResponse.getResult().getMetadata().getFinishReason()).isEqualTo("tool_use");
+		assertThat(chatResponse.getResult().getMetadata().getFinishReasonCategory())
+			.isEqualTo(FinishReasonCategory.TOOL_CALL);
 	}
 
 	@Test

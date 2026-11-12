@@ -26,6 +26,9 @@ import java.util.stream.Collectors;
 
 import org.jspecify.annotations.Nullable;
 import software.amazon.awssdk.core.document.Document;
+import software.amazon.awssdk.services.bedrockruntime.model.StopReason;
+
+import org.springframework.ai.chat.metadata.FinishReasonCategory;
 
 /**
  * Amazon Bedrock Converse API utils.
@@ -62,6 +65,26 @@ public final class ConverseApiUtils {
 	public static final String PAYLOAD_REDACTED_CONTENT = "redacted_content";
 
 	private ConverseApiUtils() {
+	}
+
+	/**
+	 * Classifies the stop reason of a Converse response.
+	 * @param stopReason the stop reason, or {@code null} when the response has none
+	 * @return the category, never {@code null}
+	 * @since 2.1.0
+	 */
+	public static FinishReasonCategory finishReasonCategory(@Nullable StopReason stopReason) {
+		if (stopReason == null) {
+			return FinishReasonCategory.UNSPECIFIED;
+		}
+		return switch (stopReason) {
+			case END_TURN, STOP_SEQUENCE -> FinishReasonCategory.COMPLETED;
+			case MAX_TOKENS, MODEL_CONTEXT_WINDOW_EXCEEDED -> FinishReasonCategory.TRUNCATED;
+			case TOOL_USE -> FinishReasonCategory.TOOL_CALL;
+			case GUARDRAIL_INTERVENED, CONTENT_FILTERED -> FinishReasonCategory.FILTERED;
+			// A malformed output or tool use, and a reason this SDK version does not know
+			default -> FinishReasonCategory.OTHER;
+		};
 	}
 
 	@SuppressWarnings("unchecked")

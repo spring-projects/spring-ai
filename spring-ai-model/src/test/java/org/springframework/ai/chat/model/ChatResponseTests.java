@@ -27,6 +27,7 @@ import reactor.core.publisher.Flux;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
+import org.springframework.ai.chat.metadata.FinishReasonCategory;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -127,6 +128,40 @@ class ChatResponseTests {
 		assertThat(resultToolCall.id()).isEqualTo("tool-id-123");
 		assertThat(resultToolCall.name()).isEqualTo("getCurrentWeather");
 		assertThat(resultToolCall.arguments()).isEqualTo("{\"location\": \"Seoul\"}");
+	}
+
+	@Test
+	void whenAGenerationFinishedInTheCategoryThenReturnTrue() {
+		ChatResponse chatResponse = ChatResponse.builder()
+			.generations(List.of(
+					new Generation(new AssistantMessage("Result"),
+							ChatGenerationMetadata.builder().finishReason("end_turn").build()),
+					new Generation(new AssistantMessage(""),
+							ChatGenerationMetadata.builder()
+								.finishReason("guardrail_intervened")
+								.finishReasonCategory(FinishReasonCategory.FILTERED)
+								.build())))
+			.build();
+
+		assertThat(chatResponse.hasFinishReasonCategory(FinishReasonCategory.FILTERED)).isTrue();
+		assertThat(chatResponse.hasFinishReasonCategory(FinishReasonCategory.COMPLETED)).isTrue();
+		assertThat(chatResponse.hasFinishReasonCategory(FinishReasonCategory.TRUNCATED)).isFalse();
+	}
+
+	@Test
+	void whenNoGenerationsThenNoFinishReasonCategory() {
+		ChatResponse chatResponse = ChatResponse.builder().generations(List.of()).build();
+
+		assertThat(chatResponse.hasFinishReasonCategory(FinishReasonCategory.UNSPECIFIED)).isFalse();
+	}
+
+	@Test
+	void whenFinishReasonCategoryIsNullThenThrow() {
+		ChatResponse chatResponse = ChatResponse.builder().generations(List.of()).build();
+
+		assertThatThrownBy(() -> chatResponse.hasFinishReasonCategory(null))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessage("category cannot be null");
 	}
 
 	@Test

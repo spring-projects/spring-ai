@@ -68,6 +68,7 @@ Key behaviors:
 * Validates the LLM response against the schema using JSON Schema `DRAFT_2020_12`.
 * Retries the call when validation fails (default: up to 3 attempts).
 * Augments the prompt with the validation error message on retry attempts to help the model self-correct.
+* Does not retry a response that a safety filter or a refusal of the model stopped, as the validation error is not why it is invalid (see xref:api/chatclient.adoc#finish-reason-categories[Finish Reason Categories]).
 * Accumulates token usage across every validation attempt, so the returned `ChatResponse` reports the cumulative usage of all retries rather than only the final attempt (see xref:api/usage-handling.adoc#_cumulative_usage_across_multi_step_flows[Cumulative Usage Across Multi-Step Flows]).
 * Optionally supports a custom `JsonMapper`.
 
