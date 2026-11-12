@@ -48,6 +48,7 @@ import org.springframework.util.Assert;
  * @author Christian Tzolov
  * @since 2.1.0
  * @see FinishReasonCategory#FILTERED
+ * @see GuardrailRefusalException
  */
 public class ContentFilteredException extends RuntimeException {
 
@@ -77,6 +78,23 @@ public class ContentFilteredException extends RuntimeException {
 			@Nullable String text, @Nullable Throwable cause) {
 		super("A safety filter or a refusal of the model stopped the response (finish reason: " + finishReason
 				+ "), so there is no answer to convert", cause);
+		this.chatClientResponse = chatClientResponse;
+		this.finishReason = finishReason;
+		this.text = text;
+	}
+
+	/**
+	 * Creates the exception for a subclass that tells in its own words what stopped the
+	 * response.
+	 * @param message the message of the exception
+	 * @param chatClientResponse the response that was stopped
+	 * @param finishReason the finish reason of the generation that was stopped
+	 * @param text the text of the generation that was stopped
+	 */
+	protected ContentFilteredException(String message, ChatClientResponse chatClientResponse,
+			@Nullable String finishReason, @Nullable String text) {
+		super(message);
+		Assert.notNull(chatClientResponse, "chatClientResponse must not be null");
 		this.chatClientResponse = chatClientResponse;
 		this.finishReason = finishReason;
 		this.text = text;

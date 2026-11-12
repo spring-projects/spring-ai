@@ -76,7 +76,9 @@ public class FinishReasonCategoryTests {
 			// Gemini
 			"safety, FILTERED", "SAFETY, FILTERED", "recitation, FILTERED", "RECITATION, FILTERED",
 			// Other safety-related
-			"prohibited_content, FILTERED", "spii, FILTERED", "blocklist, FILTERED", "refusal, FILTERED" })
+			"prohibited_content, FILTERED", "spii, FILTERED", "blocklist, FILTERED", "refusal, FILTERED",
+			// The refusal of a guardrail advisor
+			"guardrailRefusal, FILTERED" })
 	void shouldCategorizeFilteredReasons(String rawReason, FinishReasonCategory expected) {
 		assertThat(FinishReasonCategory.categorize(rawReason)).isEqualTo(expected);
 	}

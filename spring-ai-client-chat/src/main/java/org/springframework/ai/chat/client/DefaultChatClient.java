@@ -57,6 +57,7 @@ import org.springframework.ai.chat.metadata.FinishReasonCategory;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.GuardrailRefusal;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
@@ -522,6 +523,11 @@ public class DefaultChatClient implements ChatClient {
 			}
 
 			var chatResponse = doGetObservableChatClientResponse(this.request, advisorChain).chatResponse();
+			if (GuardrailRefusal.isRefusal(chatResponse)) {
+				// The refusal is not the requested output. The caller has the response,
+				// and reads the refusal there.
+				return new ResponseEntity<>(chatResponse, null);
+			}
 			var responseContent = getContentFromChatResponse(chatResponse);
 			boolean contentFiltered = isContentFiltered(chatResponse);
 			if (responseContent == null || (contentFiltered && !StringUtils.hasText(responseContent))) {
@@ -627,6 +633,11 @@ public class DefaultChatClient implements ChatClient {
 
 			var chatClientResponse = doGetObservableChatClientResponse(this.request, advisorChain);
 			var chatResponse = chatClientResponse.chatResponse();
+			if (GuardrailRefusal.isRefusal(chatResponse)) {
+				// The refusal is not the requested output: converting it would fail as
+				// malformed, and returning null would hide that the turn was refused.
+				throw new GuardrailRefusalException(chatClientResponse);
+			}
 
 			var stringResponse = getContentFromChatResponse(chatResponse);
 			boolean contentFiltered = isContentFiltered(chatResponse);

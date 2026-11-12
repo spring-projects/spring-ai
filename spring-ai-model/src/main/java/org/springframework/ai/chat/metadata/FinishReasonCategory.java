@@ -107,7 +107,10 @@ public enum FinishReasonCategory {
 			case "tool_calls", "tool_call", "tool_use" -> TOOL_CALL;
 
 			// Filtered - content policy/safety
-			case "content_filter", "safety", "recitation", "prohibited_content", "spii", "blocklist", "refusal" ->
+			// "guardrailrefusal" is the marker of a guardrail's refusal, see
+			// GuardrailRefusal.FINISH_REASON
+			case "content_filter", "safety", "recitation", "prohibited_content", "spii", "blocklist", "refusal",
+					"guardrailrefusal" ->
 				FILTERED;
 
 			// Unrecognized non-blank value; not an absent reason

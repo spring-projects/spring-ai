@@ -44,6 +44,7 @@ import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
 import org.springframework.ai.chat.metadata.FinishReasonCategory;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.GuardrailRefusal;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.util.JacksonUtils;
 import org.springframework.ai.util.json.schema.JsonSchemaGenerator;
@@ -56,9 +57,12 @@ import org.springframework.util.StringUtils;
  * JSON schema derived from the configured output type or a pre-supplied schema string.
  * <p>
  * When validation fails, the advisor appends the validation error to the user message and
- * re-invokes the model, repeating up to {@code maxRepeatAttempts} times. A response that
- * a safety filter or a refusal of the model stopped is not repeated: it is returned as it
- * is.
+ * re-invokes the model, repeating up to {@code maxRepeatAttempts} times.
+ * <p>
+ * A response that is not the model's output is returned as it is, without validation or
+ * another attempt: a tool call, and the refusal of a guardrail (see
+ * {@link GuardrailRefusal}). A response that a safety filter or a refusal of the model
+ * stopped is validated, and returned without another attempt when it is not valid.
  * <p>
  * Streaming responses are not supported.
  *
@@ -140,6 +144,12 @@ public final class StructuredOutputValidationAdvisor implements CallAdvisor, Str
 			// After Call
 			ChatResponse chatResponse = chatClientResponse.chatResponse();
 			usageAccumulator.addRoundResponse(chatResponse);
+
+			if (GuardrailRefusal.isRefusal(chatResponse)) {
+				// A guardrail refused the turn. Its refusal is not the model's output, so
+				// there is nothing to validate, and asking again would be refused again.
+				break;
+			}
 
 			// We should not validate tool call requests, only the content of the final
 			// response.

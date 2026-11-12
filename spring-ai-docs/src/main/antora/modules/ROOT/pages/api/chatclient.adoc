@@ -408,6 +408,8 @@ catch (ContentFilteredException ex) {
 The parsing error, if there was one, is the cause of the exception.
 A filtered response that converts all the same is returned as an entity.
 
+The refusal of a guardrail advisor is reported the same way, with a `GuardrailRefusalException`, which is a `ContentFilteredException` (see xref:api/advisors.adoc[Advisors]).
+
 `responseEntity()` does not throw for a filtered response.
 It returns the response with a `null` entity, and the finish reason is read from the response.
 `content()`, `chatResponse()` and streaming return the response as the provider left it.

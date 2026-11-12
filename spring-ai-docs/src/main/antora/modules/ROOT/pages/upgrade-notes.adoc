@@ -424,6 +424,33 @@ Nothing changes at runtime: the deprecated types keep working until 3.0.0.
 * `getConversationId(context)` moves from `BaseChatMemoryAdvisor` up to `MemoryAdvisor`; `BaseChatMemoryAdvisor` inherits it, so its implementations need no change.
 * `VectorStoreChatMemoryAdvisor` is not deprecated.
 
+=== Advisors
+
+==== Changed: Guardrail Refusals Are Marked
+
+The failure response of the `SafeGuardAdvisor` is now marked as the refusal of a guardrail, with the `GuardrailRefusal.FINISH_REASON` finish reason (`guardrailRefusal`).
+`GuardrailRefusal.isRefusal(chatResponse)` tells such a reply from an answer of the model, and `GuardrailRefusal.generation(text)` builds one in a guardrail advisor of your own.
+See xref:api/advisors.adoc[Advisors].
+
+===== Impact
+
+The text of the failure response and the result of `content()`, `chatResponse()` and `stream()` are the same as before.
+
+* `ChatClient.entity(...)` throws a `GuardrailRefusalException`, which carries the refusal, where it passed the failure response to the output converter before.
+It is a `ContentFilteredException`.
+With the default JSON converters that conversion failed, so the type of the exception changes.
+With a converter that accepts plain text, such as `ListOutputConverter`, the call returned the converted failure response and now throws.
+* `ChatClient.responseEntity(...)` returns the response with a `null` entity in place of the conversion.
+* The `StructuredOutputValidationAdvisor` returns a refusal as it is, without validating it or asking the model again.
+* The `SemanticCacheAdvisor` does not cache a refusal.
+* The failure response had no finish reason before.
+In a stream, advisors built on `BaseAdvisor` run their `after` step on a response with a finish reason, so those ahead of the `SafeGuardAdvisor` in the chain now run it on the refusal, as they already did for a call.
+
+===== Migration
+
+Catch `GuardrailRefusalException` around `entity(...)` where a `SafeGuardAdvisor` is in the chain, and read the refusal with `getRefusal()`.
+Use `responseEntity(...)` to get the refusal without an exception.
+
 [[upgrading-to-2-0-3]]
 == Upgrading to 2.0.3
 

@@ -243,6 +243,8 @@ public interface ChatClient {
 		 * {@link EntityParamSpec#useProviderStructuredOutput()} and
 		 * {@link EntityParamSpec#validateSchema()}
 		 * @return the deserialized entity, or {@code null} if the response is empty
+		 * @throws GuardrailRefusalException if a guardrail refused the turn, so that
+		 * there is no answer of the model to deserialize
 		 * @throws ContentFilteredException if a safety filter or a refusal of the model
 		 * stopped the response, and what it left is empty or cannot be converted
 		 */
@@ -252,6 +254,8 @@ public interface ChatClient {
 		 * Deserializes the response into a {@code T} instance.
 		 * @param type the target parameterized type
 		 * @return the deserialized entity, or {@code null} if the response is empty
+		 * @throws GuardrailRefusalException if a guardrail refused the turn, so that
+		 * there is no answer of the model to deserialize
 		 * @throws ContentFilteredException if a safety filter or a refusal of the model
 		 * stopped the response, and what it left is empty or cannot be converted
 		 */
@@ -266,6 +270,8 @@ public interface ChatClient {
 		 * {@link EntityParamSpec#useProviderStructuredOutput()} and
 		 * {@link EntityParamSpec#validateSchema()}
 		 * @return the deserialized entity, or {@code null} if the response is empty
+		 * @throws GuardrailRefusalException if a guardrail refused the turn, so that
+		 * there is no answer of the model to deserialize
 		 * @throws ContentFilteredException if a safety filter or a refusal of the model
 		 * stopped the response, and what it left is empty or cannot be converted
 		 */
@@ -277,6 +283,8 @@ public interface ChatClient {
 		 * @param structuredOutputConverter the converter for parsing and schema
 		 * resolution
 		 * @return the deserialized entity, or {@code null} if the response is empty
+		 * @throws GuardrailRefusalException if a guardrail refused the turn, so that
+		 * there is no answer of the model to deserialize
 		 * @throws ContentFilteredException if a safety filter or a refusal of the model
 		 * stopped the response, and what it left is empty or cannot be converted
 		 */
@@ -290,6 +298,8 @@ public interface ChatClient {
 		 * {@link EntityParamSpec#useProviderStructuredOutput()} and
 		 * {@link EntityParamSpec#validateSchema()}
 		 * @return the deserialized entity, or {@code null} if the response is empty
+		 * @throws GuardrailRefusalException if a guardrail refused the turn, so that
+		 * there is no answer of the model to deserialize
 		 * @throws ContentFilteredException if a safety filter or a refusal of the model
 		 * stopped the response, and what it left is empty or cannot be converted
 		 */
@@ -299,6 +309,8 @@ public interface ChatClient {
 		 * Deserializes the response into a {@code T} instance.
 		 * @param type the target class
 		 * @return the deserialized entity, or {@code null} if the response is empty
+		 * @throws GuardrailRefusalException if a guardrail refused the turn, so that
+		 * there is no answer of the model to deserialize
 		 * @throws ContentFilteredException if a safety filter or a refusal of the model
 		 * stopped the response, and what it left is empty or cannot be converted
 		 */
@@ -320,8 +332,9 @@ public interface ChatClient {
 		 * {@link EntityParamSpec#validateSchema()}
 		 * @return the {@link ResponseEntity} containing both the complete
 		 * {@link ChatResponse} object and the deserialized entity. The entity is
-		 * {@code null} when a safety filter or a refusal of the model stopped the
-		 * response, and what it left is empty or cannot be converted
+		 * {@code null} when a guardrail refused the turn, and when a safety filter or a
+		 * refusal of the model stopped the response and what it left is empty or cannot
+		 * be converted. The response then holds the refusal, or the finish reason
 		 */
 		<T> ResponseEntity<ChatResponse, T> responseEntity(Class<T> type,
 				Consumer<EntityParamSpec> entityParamSpecConsumer);
@@ -332,8 +345,9 @@ public interface ChatClient {
 		 * @param type the target class
 		 * @return the {@link ResponseEntity} containing both the complete
 		 * {@link ChatResponse} object and the deserialized entity. The entity is
-		 * {@code null} when a safety filter or a refusal of the model stopped the
-		 * response, and what it left is empty or cannot be converted
+		 * {@code null} when a guardrail refused the turn, and when a safety filter or a
+		 * refusal of the model stopped the response and what it left is empty or cannot
+		 * be converted. The response then holds the refusal, or the finish reason
 		 */
 		<T> ResponseEntity<ChatResponse, T> responseEntity(Class<T> type);
 
@@ -347,8 +361,9 @@ public interface ChatClient {
 		 * {@link EntityParamSpec#validateSchema()}
 		 * @return the {@link ResponseEntity} containing both the complete
 		 * {@link ChatResponse} object and the deserialized entity. The entity is
-		 * {@code null} when a safety filter or a refusal of the model stopped the
-		 * response, and what it left is empty or cannot be converted
+		 * {@code null} when a guardrail refused the turn, and when a safety filter or a
+		 * refusal of the model stopped the response and what it left is empty or cannot
+		 * be converted. The response then holds the refusal, or the finish reason
 		 */
 		<T> ResponseEntity<ChatResponse, T> responseEntity(ParameterizedTypeReference<T> type,
 				Consumer<EntityParamSpec> entityParamSpecConsumer);
@@ -359,8 +374,9 @@ public interface ChatClient {
 		 * @param type the target parameterized type
 		 * @return the {@link ResponseEntity} containing both the complete
 		 * {@link ChatResponse} object and the deserialized entities. The entity is
-		 * {@code null} when a safety filter or a refusal of the model stopped the
-		 * response, and what it left is empty or cannot be converted
+		 * {@code null} when a guardrail refused the turn, and when a safety filter or a
+		 * refusal of the model stopped the response and what it left is empty or cannot
+		 * be converted. The response then holds the refusal, or the finish reason
 		 */
 		<T> ResponseEntity<ChatResponse, T> responseEntity(ParameterizedTypeReference<T> type);
 
@@ -376,8 +392,9 @@ public interface ChatClient {
 		 * {@link EntityParamSpec#validateSchema()}
 		 * @return the {@link ResponseEntity} containing both the complete
 		 * {@link ChatResponse} object and the deserialized entity. The entity is
-		 * {@code null} when a safety filter or a refusal of the model stopped the
-		 * response, and what it left is empty or cannot be converted
+		 * {@code null} when a guardrail refused the turn, and when a safety filter or a
+		 * refusal of the model stopped the response and what it left is empty or cannot
+		 * be converted. The response then holds the refusal, or the finish reason
 		 */
 		<T> ResponseEntity<ChatResponse, T> responseEntity(StructuredOutputConverter<T> structuredOutputConverter,
 				Consumer<EntityParamSpec> entityParamSpecConsumer);
@@ -390,8 +407,9 @@ public interface ChatClient {
 		 * resolution
 		 * @return the {@link ResponseEntity} containing both the complete
 		 * {@link ChatResponse} object and the deserialized entity. The entity is
-		 * {@code null} when a safety filter or a refusal of the model stopped the
-		 * response, and what it left is empty or cannot be converted
+		 * {@code null} when a guardrail refused the turn, and when a safety filter or a
+		 * refusal of the model stopped the response and what it left is empty or cannot
+		 * be converted. The response then holds the refusal, or the finish reason
 		 */
 		<T> ResponseEntity<ChatResponse, T> responseEntity(StructuredOutputConverter<T> structuredOutputConverter);
 
