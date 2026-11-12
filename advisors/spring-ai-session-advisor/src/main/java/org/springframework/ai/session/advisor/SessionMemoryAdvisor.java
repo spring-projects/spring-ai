@@ -195,8 +195,7 @@ public final class SessionMemoryAdvisor implements BaseAdvisor, MemoryAdvisor {
 		}
 
 		// The forwarded request copies the context, so the id reaches the response too.
-		// No
-		// null value: the model call advisor copies the context with Map.copyOf
+		// When nothing was stored the key is left out, rather than set to null.
 		ChatClientRequest.Builder forwarded = request.mutate()
 			.prompt(request.prompt().mutate().messages(prompt).build());
 		if (requestEventId != null) {

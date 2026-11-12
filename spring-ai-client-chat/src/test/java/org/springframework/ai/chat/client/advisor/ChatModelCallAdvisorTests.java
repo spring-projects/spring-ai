@@ -30,6 +30,7 @@ import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.model.tool.StructuredOutputChatOptions;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -43,6 +44,7 @@ import static org.mockito.Mockito.when;
  *
  * @author Thomas Vitale
  * @author Minju Kim
+ * @author Christian Tzolov
  */
 class ChatModelCallAdvisorTests {
 
@@ -85,6 +87,29 @@ class ChatModelCallAdvisorTests {
 		ArgumentCaptor<Prompt> prompt = ArgumentCaptor.forClass(Prompt.class);
 		verify(chatModel).call(prompt.capture());
 		assertThat(prompt.getValue().getUserMessage().getText()).endsWith("Respond in JSON");
+		assertThat(response.context()).containsEntry("tenantId", null);
+	}
+
+	@Test
+	void whenContextHasNullValueAndNativeStructuredOutputThenOutputSchemaIsSet() {
+		ChatModel chatModel = mock(ChatModel.class);
+		when(chatModel.call(any(Prompt.class))).thenReturn(chatResponse());
+		ChatModelCallAdvisor advisor = ChatModelCallAdvisor.builder().chatModel(chatModel).build();
+		String outputSchema = "{\"type\":\"object\"}";
+		ChatClientRequest request = ChatClientRequest.builder()
+			.prompt(new Prompt("Hello", StructuredOutputChatOptions.builder().build()))
+			.context(ChatClientAttributes.STRUCTURED_OUTPUT_SCHEMA.getKey(), outputSchema)
+			.context(ChatClientAttributes.STRUCTURED_OUTPUT_NATIVE.getKey(), true)
+			.context("tenantId", null)
+			.build();
+
+		ChatClientResponse response = advisor.adviseCall(request, mock(CallAdvisorChain.class));
+
+		ArgumentCaptor<Prompt> prompt = ArgumentCaptor.forClass(Prompt.class);
+		verify(chatModel).call(prompt.capture());
+		assertThat(prompt.getValue().getOptions()).isInstanceOfSatisfying(StructuredOutputChatOptions.class,
+				options -> assertThat(options.getOutputSchema()).isEqualTo(outputSchema));
+		assertThat(prompt.getValue().getUserMessage().getText()).isEqualTo("Hello");
 		assertThat(response.context()).containsEntry("tenantId", null);
 	}
 
