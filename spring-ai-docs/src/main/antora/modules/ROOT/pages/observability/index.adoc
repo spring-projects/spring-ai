@@ -135,11 +135,16 @@ Use the metric name `gen_ai.client.token.usage` that is provided by the `ChatMod
 The definitions of the tools provided to the model, with their names, descriptions and parameter schemas, can be large.
 For that reason, they are not exported by default.
 
+When enabled, each tool definition includes its `type` and `name`.
+As recommended by the OpenTelemetry conventions, the tool descriptions and parameter schemas are only included when explicitly enabled.
+
 [cols="6,3,1", stripes=even]
 |====
 | Property | Description | Default
 
 | `spring.ai.chat.observations.include-tool-definitions` | Include the tool definitions in observations, as the `gen_ai.tool.definitions` attribute. `true` or `false` | `false`
+| `spring.ai.chat.observations.include-tool-definition-descriptions` | Include the tool descriptions in the tool definitions. `true` or `false` | `false`
+| `spring.ai.chat.observations.include-tool-definition-parameters` | Include the tool parameter schemas in the tool definitions. `true` or `false` | `false`
 |====
 
 === Chat Prompt and Completion Data

@@ -51,6 +51,18 @@ public class ChatObservationProperties {
 	 */
 	private boolean includeToolDefinitions = false;
 
+	/**
+	 * Whether to include the tool descriptions in the tool definitions. Only applies when
+	 * the tool definitions are included.
+	 */
+	private boolean includeToolDefinitionDescriptions = false;
+
+	/**
+	 * Whether to include the tool parameter schemas in the tool definitions. Only applies
+	 * when the tool definitions are included.
+	 */
+	private boolean includeToolDefinitionParameters = false;
+
 	public boolean isLogCompletion() {
 		return this.logCompletion;
 	}
@@ -81,6 +93,22 @@ public class ChatObservationProperties {
 
 	public void setIncludeToolDefinitions(boolean includeToolDefinitions) {
 		this.includeToolDefinitions = includeToolDefinitions;
+	}
+
+	public boolean isIncludeToolDefinitionDescriptions() {
+		return this.includeToolDefinitionDescriptions;
+	}
+
+	public void setIncludeToolDefinitionDescriptions(boolean includeToolDefinitionDescriptions) {
+		this.includeToolDefinitionDescriptions = includeToolDefinitionDescriptions;
+	}
+
+	public boolean isIncludeToolDefinitionParameters() {
+		return this.includeToolDefinitionParameters;
+	}
+
+	public void setIncludeToolDefinitionParameters(boolean includeToolDefinitionParameters) {
+		this.includeToolDefinitionParameters = includeToolDefinitionParameters;
 	}
 
 }

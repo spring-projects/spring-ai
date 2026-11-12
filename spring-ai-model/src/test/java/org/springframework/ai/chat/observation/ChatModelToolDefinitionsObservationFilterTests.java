@@ -69,7 +69,24 @@ class ChatModelToolDefinitionsObservationFilterTests {
 	}
 
 	@Test
-	void augmentContextWithToolDefinitions() {
+	void augmentContextWithToolTypesAndNamesByDefault() {
+		var context = observationContext(ToolCallingChatOptions.builder()
+			.toolCallbacks(toolCallback("getWeather", "Get the weather in a location", "{\"type\":\"object\"}"),
+					toolCallback("getTime", "Get the current time", "{\"type\":\"object\"}"))
+			.build());
+
+		var augmentedContext = this.observationFilter.map(context);
+
+		assertThat(this.jsonMapper.readTree(toolDefinitions(augmentedContext))).isEqualTo(this.jsonMapper.readTree("""
+				[
+					{ "type": "function", "name": "getWeather" },
+					{ "type": "function", "name": "getTime" }
+				]
+				"""));
+	}
+
+	@Test
+	void augmentContextWithFullToolDefinitions() {
 		var context = observationContext(ToolCallingChatOptions.builder()
 			.model("mistral")
 			.toolCallbacks(toolCallback("getWeather", "Get the weather in a location",
@@ -77,7 +94,7 @@ class ChatModelToolDefinitionsObservationFilterTests {
 					toolCallback("getTime", "Get the current time", "{\"type\":\"object\",\"properties\":{}}"))
 			.build());
 
-		var augmentedContext = this.observationFilter.map(context);
+		var augmentedContext = new ChatModelToolDefinitionsObservationFilter(true, true).map(context);
 
 		assertThat(this.jsonMapper.readTree(toolDefinitions(augmentedContext))).isEqualTo(this.jsonMapper.readTree("""
 				[
@@ -98,19 +115,6 @@ class ChatModelToolDefinitionsObservationFilterTests {
 						"parameters": { "type": "object", "properties": {} }
 					}
 				]
-				"""));
-	}
-
-	@Test
-	void whenInputSchemaIsNotJsonThenParametersAreOmitted() {
-		var context = observationContext(ToolCallingChatOptions.builder()
-			.toolCallbacks(toolCallback("getTime", "Get the current time", "not json"))
-			.build());
-
-		var augmentedContext = this.observationFilter.map(context);
-
-		assertThat(this.jsonMapper.readTree(toolDefinitions(augmentedContext))).isEqualTo(this.jsonMapper.readTree("""
-				[ { "type": "function", "name": "getTime", "description": "Get the current time" } ]
 				"""));
 	}
 

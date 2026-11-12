@@ -20,33 +20,42 @@ import java.util.List;
 
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationFilter;
-import tools.jackson.core.JacksonException;
-import tools.jackson.databind.json.JsonMapper;
-import tools.jackson.databind.node.ArrayNode;
-import tools.jackson.databind.node.ObjectNode;
 
 import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.tool.ToolCallback;
-import org.springframework.ai.tool.definition.ToolDefinition;
-import org.springframework.ai.util.JacksonUtils;
+import org.springframework.ai.tool.observation.ToolDefinitionsSerializer;
 import org.springframework.util.CollectionUtils;
-import org.springframework.util.StringUtils;
 
 /**
  * An {@link ObservationFilter} to include the definitions of the tools provided to the
  * model in the chat model observation, as the {@code gen_ai.tool.definitions} attribute.
- * The value follows the OpenTelemetry tool definitions schema: a JSON array of objects
- * with the tool {@code type}, {@code name}, {@code description} and {@code parameters}.
+ * The value follows the OpenTelemetry tool definitions schema, see
+ * {@link ToolDefinitionsSerializer}. By default, only the {@code type} and {@code name}
+ * of each tool are included.
  *
  * @author Ajax-1
  * @since 2.1.0
- * @see <a href=
- * "https://github.com/open-telemetry/semantic-conventions-genai/blob/main/model/gen-ai/gen-ai-tool-definitions.json">OpenTelemetry
- * tool definitions schema</a>
+ * @see ToolDefinitionsSerializer
  */
 public class ChatModelToolDefinitionsObservationFilter implements ObservationFilter {
 
-	private static final JsonMapper JSON_MAPPER = JacksonUtils.getDefaultJsonMapper();
+	private final ToolDefinitionsSerializer serializer;
+
+	/**
+	 * Create a filter that includes the type and name of each tool.
+	 */
+	public ChatModelToolDefinitionsObservationFilter() {
+		this(false, false);
+	}
+
+	/**
+	 * Create a filter.
+	 * @param includeDescriptions whether to include the tool descriptions
+	 * @param includeParameters whether to include the tool parameter schemas
+	 */
+	public ChatModelToolDefinitionsObservationFilter(boolean includeDescriptions, boolean includeParameters) {
+		this.serializer = new ToolDefinitionsSerializer(includeDescriptions, includeParameters);
+	}
 
 	@Override
 	public Observation.Context map(Observation.Context context) {
@@ -61,33 +70,12 @@ public class ChatModelToolDefinitionsObservationFilter implements ObservationFil
 			return chatModelObservationContext;
 		}
 
-		ArrayNode toolDefinitions = JSON_MAPPER.createArrayNode();
-		toolCallbacks.forEach(toolCallback -> toolDefinitions.add(toolDefinition(toolCallback.getToolDefinition())));
-
 		chatModelObservationContext.addHighCardinalityKeyValue(
 				ChatModelObservationDocumentation.HighCardinalityKeyNames.REQUEST_TOOL_DEFINITIONS
-					.withValue(JSON_MAPPER.writeValueAsString(toolDefinitions)));
+					.withValue(this.serializer
+						.serialize(toolCallbacks.stream().map(ToolCallback::getToolDefinition).toList())));
 
 		return chatModelObservationContext;
-	}
-
-	private static ObjectNode toolDefinition(ToolDefinition toolDefinition) {
-		ObjectNode node = JSON_MAPPER.createObjectNode();
-		node.put("type", "function");
-		node.put("name", toolDefinition.name());
-		if (StringUtils.hasText(toolDefinition.description())) {
-			node.put("description", toolDefinition.description());
-		}
-		if (StringUtils.hasText(toolDefinition.inputSchema())) {
-			try {
-				node.set("parameters", JSON_MAPPER.readTree(toolDefinition.inputSchema()));
-			}
-			catch (JacksonException ex) {
-				// The schema is not valid JSON: the tool is still described, without its
-				// parameters.
-			}
-		}
-		return node;
 	}
 
 }
