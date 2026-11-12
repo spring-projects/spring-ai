@@ -52,9 +52,11 @@ public class MilvusVectorStoreProperties extends CommonVectorStoreProperties {
 	private @Nullable String partitionName;
 
 	/**
-	 * The dimension of the vectors to be stored in the Milvus collection.
+	 * The dimension of the vectors to be stored in the Milvus collection. When not set,
+	 * it is taken from the embedding model, falling back to 1536 if the model cannot
+	 * report it.
 	 */
-	private int embeddingDimension = MilvusVectorStore.OPENAI_EMBEDDING_DIMENSION_SIZE;
+	private int embeddingDimension = MilvusVectorStore.INVALID_EMBEDDING_DIMENSION;
 
 	/**
 	 * The type of the index to be created for the Milvus collection.
