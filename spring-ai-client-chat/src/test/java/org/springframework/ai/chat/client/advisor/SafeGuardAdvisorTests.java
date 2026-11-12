@@ -217,6 +217,66 @@ public class SafeGuardAdvisorTests {
 		}
 	}
 
+	@Test
+	void whenWholeWordMatchThenSubstringIsNotBlocked() {
+		// "ass" is a substring of "classic"; whole-word mode must not block it.
+		SafeGuardAdvisor advisor = SafeGuardAdvisor.builder()
+			.sensitiveWords(List.of("ass"))
+			.wholeWordMatch(true)
+			.build();
+		ChatClientRequest request = requestWithText("this is a classic question");
+		ChatClientResponse expectedResponse = ChatClientResponse.builder().build();
+		when(this.callAdvisorChain.nextCall(request)).thenReturn(expectedResponse);
+
+		ChatClientResponse response = advisor.adviseCall(request, this.callAdvisorChain);
+
+		assertThat(response).isEqualTo(expectedResponse);
+		verify(this.callAdvisorChain).nextCall(request);
+	}
+
+	@Test
+	void whenWholeWordMatchThenStandaloneWordIsBlocked() {
+		SafeGuardAdvisor advisor = SafeGuardAdvisor.builder()
+			.sensitiveWords(List.of("ass"))
+			.wholeWordMatch(true)
+			.build();
+		ChatClientRequest request = requestWithText("say ass loudly");
+
+		ChatClientResponse response = advisor.adviseCall(request, this.callAdvisorChain);
+
+		assertThat(response.chatResponse().getResult().getOutput().getText())
+			.isEqualTo(SafeGuardAdvisor.DEFAULT_FAILURE_RESPONSE);
+		verify(this.callAdvisorChain, never()).nextCall(request);
+	}
+
+	@Test
+	void whenWholeWordMatchThenPunctuationDelimitedWordIsBlocked() {
+		SafeGuardAdvisor advisor = SafeGuardAdvisor.builder()
+			.sensitiveWords(List.of("DANGER"))
+			.wholeWordMatch(true)
+			.build();
+		ChatClientRequest request = requestWithText("feeling danger!");
+
+		ChatClientResponse response = advisor.adviseCall(request, this.callAdvisorChain);
+
+		assertThat(response.chatResponse().getResult().getOutput().getText())
+			.isEqualTo(SafeGuardAdvisor.DEFAULT_FAILURE_RESPONSE);
+		verify(this.callAdvisorChain, never()).nextCall(request);
+	}
+
+	@Test
+	void whenWholeWordMatchDisabledThenSubstringStillBlockedByDefault() {
+		// Backward compatibility: the default substring matching must keep blocking.
+		SafeGuardAdvisor advisor = SafeGuardAdvisor.builder().sensitiveWords(List.of("ass")).build();
+		ChatClientRequest request = requestWithText("this is a classic question");
+
+		ChatClientResponse response = advisor.adviseCall(request, this.callAdvisorChain);
+
+		assertThat(response.chatResponse().getResult().getOutput().getText())
+			.isEqualTo(SafeGuardAdvisor.DEFAULT_FAILURE_RESPONSE);
+		verify(this.callAdvisorChain, never()).nextCall(request);
+	}
+
 	private ChatClientRequest requestWithText(String text) {
 		return ChatClientRequest.builder().prompt(new Prompt(List.of(new UserMessage(text)))).build();
 	}
