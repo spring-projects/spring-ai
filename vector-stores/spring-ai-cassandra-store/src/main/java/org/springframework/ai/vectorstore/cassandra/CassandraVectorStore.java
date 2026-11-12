@@ -197,6 +197,8 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 
 	private static final Log logger = LogFactory.getLog(CassandraVectorStore.class);
 
+	private static final int FILTER_DELETE_BATCH_SIZE = 1000;
+
 	private static final Map<Similarity, VectorStoreSimilarityMetric> SIMILARITY_TYPE_MAPPING = Map.of(
 			Similarity.COSINE, VectorStoreSimilarityMetric.COSINE, Similarity.EUCLIDEAN,
 			VectorStoreSimilarityMetric.EUCLIDEAN, Similarity.DOT_PRODUCT, VectorStoreSimilarityMetric.DOT);
@@ -320,27 +322,35 @@ public class CassandraVectorStore extends AbstractObservationVectorStore impleme
 		Assert.notNull(filterExpression, "Filter expression must not be null");
 
 		try {
-			// TODO - Investigate why we can't do a direct filter based delete in
-			// Cassandra
-			// This SO thread seems to indicate that this is not possible in Cassandra
-			// https://stackoverflow.com/questions/70953262/unable-to-delete-multiple-rows-getting-some-partition-key-parts-are-missing-i
-			// Needs more research into this matter.
-			SearchRequest searchRequest = SearchRequest.builder()
-				.query("") // empty query since we only want filter matches
-				.filterExpression(filterExpression)
-				.topK(1000) // large enough to get all matches
-				.similarityThresholdAll()
-				.build();
-
-			List<Document> matchingDocs = similaritySearch(searchRequest);
-
-			if (!matchingDocs.isEmpty()) {
-				// Then delete those documents by ID
-				List<String> idsToDelete = matchingDocs.stream().map(Document::getId).toList();
-				delete(idsToDelete);
-				if (logger.isDebugEnabled()) {
-					logger.debug("Deleted " + idsToDelete.size() + " documents matching filter expression");
+			String[] primaryKeyColumns = Stream
+				.concat(this.schema.partitionKeys().stream(), this.schema.clusteringKeys().stream())
+				.map(SchemaColumn::name)
+				.toArray(String[]::new);
+			SimpleStatement statement = QueryBuilder.selectFrom(this.schema.keyspace(), this.schema.table())
+				.columns(primaryKeyColumns)
+				.whereRaw(this.filterExpressionConverter.convertExpression(filterExpression))
+				.build()
+				.setExecutionProfileName(DRIVER_PROFILE_SEARCH);
+			ResultSet matches = this.session.execute(statement);
+			List<String> ids = new ArrayList<>(FILTER_DELETE_BATCH_SIZE);
+			long deleted = 0;
+			// The driver fetches additional pages as we iterate. Bound deletion batches
+			// independently of the total number of matching rows.
+			// https://github.com/apache/cassandra-java-driver/tree/4.x/manual/core/paging
+			for (Row row : matches) {
+				ids.add(getDocumentId(row));
+				if (ids.size() == FILTER_DELETE_BATCH_SIZE) {
+					doDelete(ids);
+					deleted += ids.size();
+					ids.clear();
 				}
+			}
+			if (!ids.isEmpty()) {
+				doDelete(ids);
+				deleted += ids.size();
+			}
+			if (deleted > 0 && logger.isDebugEnabled()) {
+				logger.debug("Deleted " + deleted + " documents matching filter expression");
 			}
 		}
 		catch (Exception e) {
