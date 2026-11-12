@@ -292,6 +292,9 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 		if (status.getException() != null) {
 			throw new RuntimeException("Failed to insert:", status.getException());
 		}
+		if (status.getStatus() != Status.Success.getCode()) {
+			throw new IllegalStateException("Failed to insert: " + status.getMessage());
+		}
 	}
 
 	@Override
@@ -315,6 +318,9 @@ public class MilvusVectorStore extends AbstractObservationVectorStore implements
 			deleteParamBuilder.withPartitionName(this.partitionName);
 		}
 		R<MutationResult> status = this.milvusClient.delete(deleteParamBuilder.build());
+		if (status.getStatus() != Status.Success.getCode()) {
+			throw new IllegalStateException("Failed to delete documents: " + status.getMessage());
+		}
 
 		long deleteCount = status.getData().getDeleteCnt();
 		if (logger.isWarnEnabled() && deleteCount != idList.size()) {
