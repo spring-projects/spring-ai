@@ -863,8 +863,9 @@ A modern client is created without contacting the server, so nothing is sent to 
 Modern connections use the JDK `HttpClient` transport of the MCP Java SDK with both client starters.
 For the server side, see xref:api/mcp/mcp-modern-server-boot-starter-docs.adoc[MCP 2026-07-28 ("Modern") Servers].
 
-NOTE: Modern connections require the MCP Java SDK `2.2.0` line or later and support only the synchronous client type.
-With `spring.ai.mcp.client.type=ASYNC` a modern connection fails the startup.
+NOTE: Modern connections require the MCP Java SDK `2.2.0` line or later.
+They work with both client types.
+The sections that follow describe the default, synchronous type; for `spring.ai.mcp.client.type=ASYNC` see <<Asynchronous Client Type>>.
 
 === Modern Connection Properties
 
@@ -1123,7 +1124,8 @@ A client customizer that reads the caller, for example from the security context
 The `@McpToolListChanged`, `@McpPromptListChanged` and `@McpResourceListChanged` methods described in <<MCP Client Annotations>> are called for a modern connection that sets `listen=true`.
 The stream then also listens for the changes of the prompts and of the list of resources, if a method wants to hear about them.
 A method that names a modern connection without `listen=true` is not called, and a warning is logged at startup.
-The same holds for a method that returns a `Mono`, as the modern client calls synchronous methods only.
+The same holds for a method that returns a `Mono`, as the synchronous client type calls synchronous methods only.
+The asynchronous client type calls the reactive methods instead, see <<Reactive Change Notifications>>.
 
 [source,java]
 ----
@@ -1266,6 +1268,143 @@ A handler method that names a modern connection but cannot serve it is reported 
 NOTE: `@McpSampling` and `@McpLogging` methods are not called for a modern connection, and a warning is logged at startup for them.
 The modern client supports neither sampling nor logging.
 For the `@McpToolListChanged`, `@McpPromptListChanged` and `@McpResourceListChanged` methods see <<Change Notifications>>.
+
+=== Asynchronous Client Type
+
+With `spring.ai.mcp.client.type=ASYNC` the modern connections use the asynchronous client of the MCP Java SDK, and the `AsyncMcpToolCallbackProvider` bean returns their tools next to those of the legacy clients.
+The connection properties are the same: `protocol`, `client-scope` and the global `spring.ai.mcp.client.modern` properties.
+
+The tools are still resolved and called through the `ToolCallback` contract, which blocks until the result is there, see <<Blocking Calls>>.
+
+The beans that customize a connection have asynchronous counterparts:
+
+[cols="2,2,3"]
+|===
+|Synchronous type |Asynchronous type |Purpose
+
+|`McpClientCustomizer<McpClient.SyncBuilder>`
+|`McpClientCustomizer<McpClient.AsyncBuilder>`
+|Customizes each client.
+
+|`SyncModernMcpClientScope`
+|`AsyncModernMcpClientScope`
+|Selects the client of a request for a connection with `client-scope=CUSTOM`.
+
+|`SyncModernMcpToolCallCustomizer`
+|`AsyncModernMcpToolCallCustomizer`
+|Customizes each tool call.
+
+|`transportContextProvider` of the client
+|`AsyncModernMcpTransportContextProvider`
+|Supplies the caller of a request.
+
+|`SyncModernMcpChangeListener`
+|`AsyncModernMcpChangeListener`
+|Hears about the changes that the servers report.
+
+|`SyncModernMcpChangeSubscriber`
+|`AsyncModernMcpChangeSubscriber`
+|Keeps the listen streams open.
+|===
+
+`McpModernToolFilter`, `McpModernToolNamePrefixGenerator` and the `McpHttpRequestCustomizer` beans apply to both types.
+
+==== Identity
+
+An asynchronous client holds no caller.
+It reads the caller of each request from the Reactor context, and resolving the tools is a blocking call without one.
+Define an `AsyncModernMcpTransportContextProvider` bean to supply the caller:
+
+[source,java]
+----
+@Bean
+AsyncModernMcpTransportContextProvider callerProvider() {
+    // Called when the tools are resolved, on the thread that resolves them.
+    return connection -> McpTransportContext.create(Map.of("user", CurrentUser.name()));
+}
+----
+
+The bean is asked each time the tools of a connection are resolved, which a `ChatClient` does once for each request.
+The context that it returns goes with the tool listing, and the tool callbacks of that request keep it, so a tool that runs later, or on another thread, is still called for that caller.
+The `McpHttpRequestCustomizer` beans turn the context into HTTP headers, as they do for the synchronous type.
+
+The caller that the bean returns takes precedence over a transport context in the Reactor context of a tool call, so the listing and the call go out for the same caller.
+Without the bean, or when it returns `McpTransportContext.EMPTY`, a tool call uses the transport context that the Reactor context of the chat call holds under `McpTransportContext.KEY`, if there is one.
+
+WARNING: Do not combine the bean with `client-scope=SHARED` for a server that answers callers differently.
+A shared client keeps a `private` tool listing for all its requests, whoever the caller is, and a warning is logged at startup for this combination.
+Use `PER_REQUEST`, or `CUSTOM` with an `AsyncModernMcpClientScope` that keeps a client for each caller.
+
+==== Reactive Handlers
+
+The `@McpElicitation` and `@McpProgress` methods serve an asynchronous modern connection as well, as described in <<Elicitation and Progress Handlers>>.
+With the asynchronous client type they are reactive methods: an elicitation method returns a `Mono` of its result, and a progress method returns `Mono<Void>`.
+
+[source,java]
+----
+@McpElicitation(clients = "tickets")
+public Mono<StructuredElicitResult<Confirmation>> confirm(McpSchema.ElicitRequest request, ToolContext toolContext) {
+    return askTheUser(toolContext, request.message())
+        .map(confirmed -> new StructuredElicitResult<>(ElicitResult.Action.ACCEPT, new Confirmation(confirmed), null));
+}
+
+@McpProgress(clients = "tickets")
+public Mono<Void> progress(ProgressParams progress) {
+    return Mono.fromRunnable(() -> logger.info("{} {}", progress.progress(), progress.message()));
+}
+----
+
+A method may take the schema types of either protocol and, optionally, the `ToolContext` of the tool call that it serves, as a synchronous method may.
+A connection has one elicitation method with the asynchronous type; a method that takes the modern `ElicitRequest` answers form and URL requests.
+A method that names an asynchronous modern connection but cannot serve it, such as a synchronous one, is reported with a warning at startup.
+
+==== Reactive Change Notifications
+
+A connection that sets `listen=true` keeps a listen stream open with the asynchronous type as well, as described in <<Change Notifications>>.
+The tool callback provider drops a kept tool listing when the server reports a change, and the reactive `@McpToolListChanged`, `@McpPromptListChanged` and `@McpResourceListChanged` methods are called with the items of the server:
+
+[source,java]
+----
+@McpToolListChanged(clients = "tickets")
+public Mono<Void> toolsChanged(List<McpSchema.Tool> tools) {
+    return Mono.fromRunnable(() -> logger.info("The tickets server now has {} tools", tools.size()));
+}
+----
+
+A list-changed method returns `Mono<Void>` and may take the list in the schema type of either protocol.
+
+An application can hear about the changes itself with an `AsyncModernMcpChangeListener` bean, whose methods return a `Mono` that completes when the listener is done:
+
+[source,java]
+----
+@Bean
+AsyncModernMcpChangeListener toolChangeLogger() {
+    return (connection, event) -> Mono.fromRunnable(() -> logger.info("{} reported {}", connection.name(), event));
+}
+----
+
+The listeners and the methods are told one after the other, and the reports of a connection are told in the order they arrive: the next report is told when all listeners are done with the previous one.
+A listener must not block.
+
+The listen stream belongs to the application here as well: the `AsyncModernMcpTransportContextProvider` bean is not asked for it, and the items for the list-changed methods are listed without a caller.
+A synchronous list-changed method that names an asynchronous modern connection is not called, and a warning is logged at startup.
+
+=== Blocking Calls
+
+Resolving the tools of a modern connection lists them from the server, and the `ToolCallbackProvider` contract makes that a blocking call, with both client types.
+It must therefore happen on a thread that may block.
+On a non-blocking thread, such as the event loop of a WebFlux application, it fails with an `IllegalStateException` that names the connection and the thread.
+
+A `ChatClient` resolves the tools when the call is started, so start it on a thread that may block:
+
+[source,java]
+----
+Flux<String> answer = Flux.defer(() -> chatClient.prompt(question).stream().content())
+    .subscribeOn(Schedulers.boundedElastic());
+----
+
+A listing that is kept needs no request and no blocking call.
+The tool calls themselves run on the threads that Spring AI executes tools on, which may block.
 
 === Connect Timeout
 

@@ -50,6 +50,7 @@ import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
+import org.springframework.ai.mcp.AsyncMcpToolCallbackProvider;
 import org.springframework.ai.mcp.annotation.McpTool;
 import org.springframework.ai.mcp.annotation.McpToolParam;
 import org.springframework.ai.mcp.client.common.autoconfigure.McpClientAutoConfiguration;
@@ -58,6 +59,7 @@ import org.springframework.ai.mcp.client.common.autoconfigure.McpToolCallbackAut
 import org.springframework.ai.mcp.client.webflux.autoconfigure.StreamableHttpWebFluxTransportAutoConfiguration;
 import org.springframework.ai.mcp.customizer.McpClientCustomizer;
 import org.springframework.ai.mcp.modern.InMemorySyncToolRepository;
+import org.springframework.ai.mcp.modern.client.AsyncModernMcpTransportContextProvider;
 import org.springframework.ai.mcp.modern.client.SyncModernMcpClientScope;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerJsonMapperAutoConfiguration;
@@ -253,6 +255,45 @@ class ModernMcpClientServerIT {
 	}
 
 	@Test
+	void asyncClientTypeListsAndCallsModernToolsForTheCallerOfTheRequest() {
+		int modernPort = TestSocketUtils.findAvailableTcpPort();
+
+		this.modernServerContextRunner.run(serverContext -> {
+			DisposableServer modernServer = startModernServer(serverContext, modernPort);
+			try {
+				this.clientContextRunner.withUserConfiguration(AsyncCallerConfiguration.class)
+					.withPropertyValues("spring.ai.mcp.client.type=ASYNC",
+							CONNECTIONS + "greeter.url=http://localhost:" + modernPort,
+							CONNECTIONS + "greeter.protocol=MODERN")
+					.run(clientContext -> {
+						assertThat(clientContext).hasNotFailed();
+						SeenUsers seenUsers = serverContext.getBean(SeenUsers.class);
+						CurrentUser currentUser = clientContext.getBean(CurrentUser.class);
+						ToolCallbackProvider provider = clientContext.getBean(ToolCallbackProvider.class);
+						assertThat(provider).isInstanceOf(AsyncMcpToolCallbackProvider.class);
+
+						currentUser.name.set("alice");
+						ToolCallback[] alicesCallbacks = provider.getToolCallbacks();
+						assertThat(alicesCallbacks).extracting(callback -> callback.getToolDefinition().name())
+							.containsExactly("greeter_greet");
+
+						// The asynchronous client holds no caller. The caller is read
+						// when
+						// the tools are resolved, and the callbacks keep it.
+						currentUser.name.set("bob");
+						assertThat(alicesCallbacks[0].call("{\"name\":\"AI\"}")).contains("Hello AI");
+
+						// tools/list and tools/call, both for alice
+						assertThat(seenUsers.names).containsExactly("alice", "alice");
+					});
+			}
+			finally {
+				modernServer.disposeNow();
+			}
+		});
+	}
+
+	@Test
 	void streamingChatClientCallsAModernToolAsTheUserThatStartedTheRequest() {
 		int modernPort = TestSocketUtils.findAvailableTcpPort();
 
@@ -331,6 +372,15 @@ class ModernMcpClientServerIT {
 
 	@Test
 	void toolChangeOfTheServerIsSeenAtOnceByAConnectionThatListens() {
+		this.toolChangeOfTheServerIsSeenAtOnceByAConnectionThatListens("spring.ai.mcp.client.type=SYNC");
+	}
+
+	@Test
+	void asyncClientTypeSeesAToolChangeOfTheServerAtOnceWhenItsConnectionListens() {
+		this.toolChangeOfTheServerIsSeenAtOnceByAConnectionThatListens("spring.ai.mcp.client.type=ASYNC");
+	}
+
+	private void toolChangeOfTheServerIsSeenAtOnceByAConnectionThatListens(String clientType) {
 		int modernPort = TestSocketUtils.findAvailableTcpPort();
 
 		this.modernServerContextRunner
@@ -341,7 +391,7 @@ class ModernMcpClientServerIT {
 				try {
 					InMemorySyncToolRepository serverTools = serverContext.getBean(InMemorySyncToolRepository.class);
 					String[] connection = { CONNECTIONS + "greeter.url=http://localhost:" + modernPort,
-							CONNECTIONS + "greeter.protocol=MODERN" };
+							CONNECTIONS + "greeter.protocol=MODERN", clientType };
 
 					// Without a listen stream the kept listing hides a new tool until its
 					// ttlMs has passed.
@@ -570,6 +620,17 @@ class ModernMcpClientServerIT {
 			Map<String, McpSyncClient> clients = new ConcurrentHashMap<>();
 			return (connectionInfo, clientFactory) -> clients
 				.computeIfAbsent(connectionInfo.name() + "/" + currentUser.name.get(), key -> clientFactory.get());
+		}
+
+	}
+
+	/** Supplies the caller of a request to the asynchronous modern connections. */
+	@Configuration(proxyBeanMethods = false)
+	static class AsyncCallerConfiguration {
+
+		@Bean
+		AsyncModernMcpTransportContextProvider callerProvider(CurrentUser currentUser) {
+			return connectionInfo -> McpTransportContext.create(Map.of("user", currentUser.name.get()));
 		}
 
 	}

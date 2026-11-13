@@ -84,8 +84,8 @@ abstract class AbstractClientMcpHandlerRegistry implements BeanFactoryPostProces
 	protected final Set<String> modernProgressClients = new HashSet<>();
 
 	/**
-	 * The clients with a synchronous list-changed handler, by its annotation, which a
-	 * client of the modern revision can call.
+	 * The clients with a list-changed handler that a client of the modern revision can
+	 * call, by the annotation of the handler.
 	 */
 	protected final Map<Class<? extends Annotation>, Set<String>> modernListChangedClients = new HashMap<>();
 
@@ -203,6 +203,53 @@ abstract class AbstractClientMcpHandlerRegistry implements BeanFactoryPostProces
 	}
 
 	/**
+	 * Whether a client of the modern revision can call the {@code @McpElicitation} method
+	 * for form requests. By default it must be a synchronous method that takes a form
+	 * request.
+	 * @param method the annotated method
+	 * @return {@code true} if the method answers modern form requests
+	 * @since 2.1.0
+	 */
+	protected boolean isModernFormElicitationMethod(Method method) {
+		return ModernClientHandlerSupport.handlesModernFormElicitation(method);
+	}
+
+	/**
+	 * Whether a client of the modern revision can call the {@code @McpElicitation} method
+	 * for URL requests. By default it must be a synchronous method that takes the modern
+	 * URL request.
+	 * @param method the annotated method
+	 * @return {@code true} if the method answers modern URL requests
+	 * @since 2.1.0
+	 */
+	protected boolean isModernUrlElicitationMethod(Method method) {
+		return ModernClientHandlerSupport.handlesModernUrlElicitation(method);
+	}
+
+	/**
+	 * Whether a client of the modern revision can call the {@code @McpProgress} method.
+	 * By default it must be a synchronous method.
+	 * @param method the annotated method
+	 * @return {@code true} if the method receives modern progress
+	 * @since 2.1.0
+	 */
+	protected boolean isModernProgressMethod(Method method) {
+		return method.getReturnType() == void.class;
+	}
+
+	/**
+	 * Whether a client of the modern revision can call the list-changed method. By
+	 * default it must be a synchronous method.
+	 * @param method the method with {@code @McpToolListChanged},
+	 * {@code @McpPromptListChanged} or {@code @McpResourceListChanged}
+	 * @return {@code true} if the method hears about modern list changes
+	 * @since 2.1.0
+	 */
+	protected boolean isModernListChangedMethod(Method method) {
+		return method.getReturnType() == void.class;
+	}
+
+	/**
 	 * Whether the elicitation methods that name one client stand for the same kind of
 	 * request. More than one method is always a conflict unless the registry
 	 * {@link #allowsFormAndUrlElicitationHandlers() tells form and URL handlers apart}.
@@ -239,19 +286,19 @@ abstract class AbstractClientMcpHandlerRegistry implements BeanFactoryPostProces
 						elicitationHandlerMethods.computeIfAbsent(client, c -> new ArrayList<>())
 							.add(new ElicitationHandlerMethod(ModernClientHandlerSupport.claimsFormElicitation(method),
 									ModernClientHandlerSupport.claimsUrlElicitation(method)));
-						if (ModernClientHandlerSupport.handlesModernFormElicitation(method)) {
+						if (this.isModernFormElicitationMethod(method)) {
 							this.modernFormElicitationClients.add(client);
 						}
-						if (ModernClientHandlerSupport.handlesModernUrlElicitation(method)) {
+						if (this.isModernUrlElicitationMethod(method)) {
 							this.modernUrlElicitationClients.add(client);
 						}
 					}
-					else if (annotation instanceof McpProgress && method.getReturnType() == void.class) {
+					else if (annotation instanceof McpProgress && this.isModernProgressMethod(method)) {
 						this.modernProgressClients.add(client);
 					}
-					else if (method.getReturnType() == void.class
-							&& (annotation instanceof McpToolListChanged || annotation instanceof McpPromptListChanged
-									|| annotation instanceof McpResourceListChanged)) {
+					else if ((annotation instanceof McpToolListChanged || annotation instanceof McpPromptListChanged
+							|| annotation instanceof McpResourceListChanged)
+							&& this.isModernListChangedMethod(method)) {
 						this.modernListChangedClients.computeIfAbsent(annotationType, type -> new HashSet<>())
 							.add(client);
 					}

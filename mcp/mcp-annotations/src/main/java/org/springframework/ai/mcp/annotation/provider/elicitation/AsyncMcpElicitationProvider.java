@@ -18,20 +18,19 @@ package org.springframework.ai.mcp.annotation.provider.elicitation;
 
 import java.lang.reflect.Method;
 import java.util.List;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
-import io.modelcontextprotocol.spec.McpSchema.ElicitRequest;
-import io.modelcontextprotocol.spec.McpSchema.ElicitResult;
 import io.modelcontextprotocol.util.Assert;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import reactor.core.publisher.Mono;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.mcp.annotation.McpElicitation;
 import org.springframework.ai.mcp.annotation.common.McpPredicates;
+import org.springframework.ai.mcp.annotation.common.ModernClientHandlerSupport;
 import org.springframework.ai.mcp.annotation.method.elicitation.AsyncElicitationSpecification;
 import org.springframework.ai.mcp.annotation.method.elicitation.AsyncMcpElicitationMethodCallback;
+import org.springframework.ai.mcp.annotation.method.elicitation.AsyncModernElicitationSpecification;
 
 /**
  * Provider for asynchronous elicitation callbacks.
@@ -68,6 +67,9 @@ public class AsyncMcpElicitationProvider {
 
 	private final List<Object> elicitationObjects;
 
+	/** The annotated methods and their callbacks, found on first use. */
+	private @Nullable List<HandlerMethod> handlerMethods;
+
 	/**
 	 * Create a new AsyncMcpElicitationProvider.
 	 * @param elicitationObjects the objects containing methods annotated with
@@ -81,31 +83,12 @@ public class AsyncMcpElicitationProvider {
 	/**
 	 * Get the elicitation specifications.
 	 * @return the elicitation specifications
-	 * @throws IllegalStateException if no elicitation methods are found or if multiple
-	 * elicitation methods are found
 	 */
 	public List<AsyncElicitationSpecification> getElicitationSpecifications() {
-		List<AsyncElicitationSpecification> elicitationHandlers = this.elicitationObjects.stream()
-			.map(elicitationObject -> Stream.of(doGetClassMethods(elicitationObject))
-				.filter(method -> method.isAnnotationPresent(McpElicitation.class))
-				.filter(method -> method.getParameterCount() == 1
-						&& ElicitRequest.class.isAssignableFrom(method.getParameterTypes()[0]))
-				.filter(McpPredicates.filterNonReactiveReturnTypeMethod())
-				.sorted((m1, m2) -> m1.getName().compareTo(m2.getName()))
-				.map(mcpElicitationMethod -> {
-					var elicitationAnnotation = mcpElicitationMethod.getAnnotation(McpElicitation.class);
 
-					Function<ElicitRequest, Mono<ElicitResult>> methodCallback = AsyncMcpElicitationMethodCallback
-						.builder()
-						.method(mcpElicitationMethod)
-						.bean(elicitationObject)
-						.elicitation(elicitationAnnotation)
-						.build();
-
-					return new AsyncElicitationSpecification(elicitationAnnotation.clients(), methodCallback);
-				})
-				.toList())
-			.flatMap(List::stream)
+		List<AsyncElicitationSpecification> elicitationHandlers = this.handlerMethods()
+			.stream()
+			.map(handlerMethod -> new AsyncElicitationSpecification(handlerMethod.clients(), handlerMethod.callback()))
 			.toList();
 
 		if (elicitationHandlers.isEmpty()) {
@@ -121,12 +104,64 @@ public class AsyncMcpElicitationProvider {
 	}
 
 	/**
+	 * Get the elicitation specifications for the connections that speak the 2026-07-28
+	 * ("modern") MCP revision. They are created from the same {@code @McpElicitation}
+	 * methods as {@link #getElicitationSpecifications()}, and with the same callbacks. A
+	 * method that takes only the legacy URL request is left out, because the modern
+	 * revision has no such request.
+	 * @return the modern elicitation specifications
+	 * @since 2.1.0
+	 */
+	public List<AsyncModernElicitationSpecification> getModernElicitationSpecifications() {
+		return this.handlerMethods().stream().filter(handlerMethod -> {
+			Method method = handlerMethod.method();
+			return ModernClientHandlerSupport.handlesModernFormElicitationAsync(method)
+					|| ModernClientHandlerSupport.handlesModernUrlElicitationAsync(method);
+		})
+			.map(handlerMethod -> new AsyncModernElicitationSpecification(handlerMethod.clients(),
+					ModernClientHandlerSupport.handlesModernFormElicitationAsync(handlerMethod.method()),
+					ModernClientHandlerSupport.handlesModernUrlElicitationAsync(handlerMethod.method()),
+					handlerMethod.callback()::applyModern))
+			.toList();
+	}
+
+	private List<HandlerMethod> handlerMethods() {
+		List<HandlerMethod> handlerMethods = this.handlerMethods;
+		if (handlerMethods == null) {
+			handlerMethods = this.elicitationObjects.stream()
+				.flatMap(elicitationObject -> Stream.of(doGetClassMethods(elicitationObject))
+					.filter(method -> method.isAnnotationPresent(McpElicitation.class))
+					.filter(McpPredicates.filterNonReactiveReturnTypeMethod())
+					.filter(method -> ModernClientHandlerSupport.asyncElicitRequestParameterType(method) != null)
+					.sorted((m1, m2) -> m1.getName().compareTo(m2.getName()))
+					.map(mcpElicitationMethod -> {
+						var elicitationAnnotation = mcpElicitationMethod.getAnnotation(McpElicitation.class);
+						AsyncMcpElicitationMethodCallback methodCallback = AsyncMcpElicitationMethodCallback.builder()
+							.method(mcpElicitationMethod)
+							.bean(elicitationObject)
+							.elicitation(elicitationAnnotation)
+							.build();
+						return new HandlerMethod(mcpElicitationMethod, elicitationAnnotation.clients(), methodCallback);
+					}))
+				.toList();
+			this.handlerMethods = handlerMethods;
+		}
+		return handlerMethods;
+	}
+
+	/**
 	 * Returns the methods of the given bean class.
 	 * @param bean the bean instance
 	 * @return the methods of the bean class
 	 */
 	protected Method[] doGetClassMethods(Object bean) {
 		return bean.getClass().getDeclaredMethods();
+	}
+
+	/**
+	 * An annotated method, the clients it names and its callback.
+	 */
+	private record HandlerMethod(Method method, String[] clients, AsyncMcpElicitationMethodCallback callback) {
 	}
 
 }

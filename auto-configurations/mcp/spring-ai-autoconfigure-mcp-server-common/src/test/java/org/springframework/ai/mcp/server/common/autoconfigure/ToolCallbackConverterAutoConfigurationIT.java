@@ -30,6 +30,9 @@ import org.mockito.Mockito;
 import reactor.core.publisher.Flux;
 
 import org.springframework.ai.mcp.SyncMcpToolCallback;
+import org.springframework.ai.mcp.modern.client.AsyncModernMcpConnection;
+import org.springframework.ai.mcp.modern.client.AsyncModernMcpToolCallback;
+import org.springframework.ai.mcp.modern.client.AsyncModernMcpToolCallbackProvider;
 import org.springframework.ai.mcp.modern.client.McpModernConnectionInfo;
 import org.springframework.ai.mcp.modern.client.SyncModernMcpConnection;
 import org.springframework.ai.mcp.modern.client.SyncModernMcpToolCallback;
@@ -413,7 +416,25 @@ public class ToolCallbackConverterAutoConfigurationIT {
 			io.modelcontextprotocol.modern.McpSchema.Tool tool = io.modelcontextprotocol.modern.McpSchema.Tool
 				.builder("modern-tool", Map.of("type", "object"))
 				.build();
-			return List.of(SyncModernMcpToolCallback.builder().mcpClient(client).tool(tool).build());
+			return List
+				.of(SyncModernMcpToolCallback.builder().mcpClient(client).tool(tool).build(), AsyncModernMcpToolCallback
+					.builder()
+					.mcpClient(io.modelcontextprotocol.modern.client.McpClient.async(request -> Flux.empty()).build())
+					.tool(tool)
+					.prefixedToolName("async-modern-tool")
+					.build());
+		}
+
+		@Bean
+		ToolCallbackProvider asyncModernToolCallbackProvider() {
+			McpModernConnectionInfo info = new McpModernConnectionInfo("billing",
+					io.modelcontextprotocol.modern.McpSchema.Implementation.builder("test-client", "1").build());
+			return AsyncModernMcpToolCallbackProvider.builder()
+				.connection(AsyncModernMcpConnection.perRequest(info, () -> {
+					this.clientsCreated.incrementAndGet();
+					return io.modelcontextprotocol.modern.client.McpClient.async(request -> Flux.empty()).build();
+				}))
+				.build();
 		}
 
 		@Bean

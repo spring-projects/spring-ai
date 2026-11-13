@@ -22,8 +22,13 @@
  * exposes the tools of modern MCP servers as Spring AI
  * {@link org.springframework.ai.tool.ToolCallback}s. Each server is described by a
  * {@link org.springframework.ai.mcp.modern.client.SyncModernMcpConnection}, which decides
- * which client serves a request: one client shared by all requests, or a new client for
- * each request.
+ * which client serves a request: one client shared by all requests, a new client for each
+ * request, or the client that a scope of the application selects.
+ * <p>
+ * {@link org.springframework.ai.mcp.modern.client.AsyncModernMcpToolCallbackProvider} and
+ * {@link org.springframework.ai.mcp.modern.client.AsyncModernMcpConnection} are their
+ * counterparts on the asynchronous client of the SDK. The tool filter, the tool name
+ * generator and the connection info are shared by both.
  */
 @NullMarked
 package org.springframework.ai.mcp.modern.client;

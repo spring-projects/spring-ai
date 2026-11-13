@@ -16,19 +16,31 @@
 
 package org.springframework.ai.mcp.annotation.spring;
 
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 
+import io.modelcontextprotocol.modern.McpSchema.ElicitRequest;
+import io.modelcontextprotocol.modern.McpSchema.ElicitResult;
+import io.modelcontextprotocol.modern.McpSchema.ElicitUrlRequest;
+import io.modelcontextprotocol.modern.McpSchema.ProgressParams;
+import io.modelcontextprotocol.modern.McpSchema.Prompt;
+import io.modelcontextprotocol.modern.McpSchema.Resource;
+import io.modelcontextprotocol.modern.McpSchema.Tool;
 import io.modelcontextprotocol.spec.McpError;
 import io.modelcontextprotocol.spec.McpSchema;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
+import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.mcp.annotation.McpElicitation;
 import org.springframework.ai.mcp.annotation.McpLogging;
 import org.springframework.ai.mcp.annotation.McpProgress;
@@ -36,6 +48,9 @@ import org.springframework.ai.mcp.annotation.McpPromptListChanged;
 import org.springframework.ai.mcp.annotation.McpResourceListChanged;
 import org.springframework.ai.mcp.annotation.McpSampling;
 import org.springframework.ai.mcp.annotation.McpToolListChanged;
+import org.springframework.ai.mcp.annotation.common.ModernClientHandlerSupport;
+import org.springframework.ai.mcp.annotation.method.elicitation.AsyncModernElicitationSpecification;
+import org.springframework.ai.mcp.annotation.method.progress.AsyncModernProgressSpecification;
 import org.springframework.beans.factory.SmartInitializingSingleton;
 
 /**
@@ -72,9 +87,21 @@ public class ClientMcpAsyncHandlersRegistry extends AbstractClientMcpHandlerRegi
 
 	private final Map<String, Function<McpSchema.ElicitRequest, Mono<McpSchema.ElicitResult>>> elicitationHandlers = new HashMap<>();
 
+	private final Map<String, AsyncModernElicitationSpecification> modernFormElicitationHandlers = new HashMap<>();
+
+	private final Map<String, AsyncModernElicitationSpecification> modernUrlElicitationHandlers = new HashMap<>();
+
+	private final Map<String, List<AsyncModernProgressSpecification>> modernProgressHandlers = new HashMap<>();
+
 	private final Map<String, List<Function<McpSchema.LoggingMessageNotification, Mono<Void>>>> loggingHandlers = new HashMap<>();
 
 	private final Map<String, List<Function<McpSchema.ProgressNotification, Mono<Void>>>> progressHandlers = new HashMap<>();
+
+	private final Map<String, List<Function<List<Tool>, Mono<Void>>>> modernToolListChangedHandlers = new HashMap<>();
+
+	private final Map<String, List<Function<List<Prompt>, Mono<Void>>>> modernPromptListChangedHandlers = new HashMap<>();
+
+	private final Map<String, List<Function<List<Resource>, Mono<Void>>>> modernResourceListChangedHandlers = new HashMap<>();
 
 	private final Map<String, List<Function<List<McpSchema.Tool>, Mono<Void>>>> toolListChangedHandlers = new HashMap<>();
 
@@ -126,6 +153,162 @@ public class ClientMcpAsyncHandlersRegistry extends AbstractClientMcpHandlerRegi
 	}
 
 	/**
+	 * Whether a handler answers form elicitation requests for the given client when it
+	 * speaks the modern revision: a reactive {@code @McpElicitation} method that takes a
+	 * form request names the client. The answer is available before the handlers are
+	 * resolved, so it can be used while the clients are created.
+	 * @param name the name of the client, which is the name of its connection
+	 * @return {@code true} if a modern client of that name may declare form elicitation
+	 * @since 2.1.0
+	 */
+	public boolean handlesModernFormElicitation(String name) {
+		return this.modernFormElicitationClients.contains(name);
+	}
+
+	/**
+	 * Whether a handler answers URL elicitation requests for the given client when it
+	 * speaks the modern revision: a reactive {@code @McpElicitation} method that takes
+	 * the modern URL request names the client.
+	 * @param name the name of the client, which is the name of its connection
+	 * @return {@code true} if a modern client of that name may declare URL elicitation
+	 * @since 2.1.0
+	 */
+	public boolean handlesModernUrlElicitation(String name) {
+		return this.modernUrlElicitationClients.contains(name);
+	}
+
+	/**
+	 * Whether a handler receives the progress of the given client when it speaks the
+	 * modern revision: a reactive {@code @McpProgress} method names the client.
+	 * @param name the name of the client, which is the name of its connection
+	 * @return {@code true} if a modern client of that name has a progress handler
+	 * @since 2.1.0
+	 */
+	public boolean handlesModernProgress(String name) {
+		return this.modernProgressClients.contains(name);
+	}
+
+	/**
+	 * Whether a handler hears about the list changes of the given kind for the given
+	 * client when it speaks the modern revision: a reactive method with that annotation
+	 * names the client. The answer is available before the handlers are resolved.
+	 * @param name the name of the client, which is the name of its connection
+	 * @param annotationType {@code McpToolListChanged}, {@code McpPromptListChanged} or
+	 * {@code McpResourceListChanged}
+	 * @return {@code true} if a modern client of that name has a method to call for such
+	 * a change
+	 * @since 2.1.0
+	 */
+	public boolean handlesModernListChanged(String name, Class<? extends Annotation> annotationType) {
+		return this.modernListChangedClients.getOrDefault(annotationType, Set.of()).contains(name);
+	}
+
+	/**
+	 * Invoke the elicitation handler for a given client that speaks the modern revision.
+	 * It is the same {@code @McpElicitation} method that answers a legacy client of that
+	 * name.
+	 * @param name the name of the client, which is the name of its connection
+	 * @param elicitationRequest the modern elicitation request
+	 * @return a Mono of the modern result, which fails with an
+	 * {@code IllegalStateException} if no handler answers such a request for the client
+	 * @since 2.1.0
+	 */
+	public Mono<ElicitResult> handleModernElicitation(String name, ElicitRequest elicitationRequest) {
+		return this.handleModernElicitation(name, elicitationRequest, null);
+	}
+
+	/**
+	 * Invoke the elicitation handler for a given client that speaks the modern revision,
+	 * for a tool call with the given tool context. The handler method receives the tool
+	 * context if it declares a {@code ToolContext} parameter.
+	 * @param name the name of the client, which is the name of its connection
+	 * @param elicitationRequest the modern elicitation request
+	 * @param toolContext the tool context of the tool call that the request belongs to,
+	 * or {@code null} if there is none
+	 * @return a Mono of the modern result, which fails with an
+	 * {@code IllegalStateException} if no handler answers such a request for the client
+	 * @since 2.1.0
+	 */
+	public Mono<ElicitResult> handleModernElicitation(String name, ElicitRequest elicitationRequest,
+			@Nullable ToolContext toolContext) {
+		if (logger.isDebugEnabled()) {
+			logger.debug("Handling modern elicitation request for client " + name);
+		}
+		boolean urlRequest = elicitationRequest instanceof ElicitUrlRequest;
+		var specification = (urlRequest ? this.modernUrlElicitationHandlers : this.modernFormElicitationHandlers)
+			.get(name);
+		if (specification != null) {
+			return specification.elicitationHandler().apply(elicitationRequest, toolContext);
+		}
+		return Mono.error(new IllegalStateException("No @McpElicitation handler for the "
+				+ (urlRequest ? "URL" : "form") + " elicitation requests of the client '" + name + "'"));
+	}
+
+	/**
+	 * Invoke all progress handlers for a given client that speaks the modern revision, in
+	 * sequence.
+	 * @param name the name of the client, which is the name of its connection
+	 * @param progress the modern progress
+	 * @return a Mono that completes when the handlers have processed the progress
+	 * @since 2.1.0
+	 */
+	public Mono<Void> handleModernProgress(String name, ProgressParams progress) {
+		return this.handleModernProgress(name, progress, null);
+	}
+
+	/**
+	 * Invoke all progress handlers for a given client that speaks the modern revision, in
+	 * sequence, for a tool call with the given tool context. A handler method receives
+	 * the tool context if it declares a {@code ToolContext} parameter.
+	 * @param name the name of the client, which is the name of its connection
+	 * @param progress the modern progress
+	 * @param toolContext the tool context of the tool call that reports the progress, or
+	 * {@code null} if there is none
+	 * @return a Mono that completes when the handlers have processed the progress
+	 * @since 2.1.0
+	 */
+	public Mono<Void> handleModernProgress(String name, ProgressParams progress, @Nullable ToolContext toolContext) {
+		if (logger.isDebugEnabled()) {
+			logger.debug("Handling modern progress for client " + name);
+		}
+		var handlers = this.modernProgressHandlers.get(name);
+		if (handlers == null) {
+			return Mono.empty();
+		}
+		return Flux.fromIterable(handlers)
+			.concatMap(handler -> handler.progressHandler().apply(progress, toolContext))
+			.then();
+	}
+
+	@Override
+	protected boolean isModernFormElicitationMethod(Method method) {
+		return ModernClientHandlerSupport.handlesModernFormElicitationAsync(method);
+	}
+
+	@Override
+	protected boolean isModernUrlElicitationMethod(Method method) {
+		return ModernClientHandlerSupport.handlesModernUrlElicitationAsync(method);
+	}
+
+	/**
+	 * The provider of the reactive progress handlers only takes methods that return a
+	 * {@code Mono}.
+	 */
+	@Override
+	protected boolean isModernProgressMethod(Method method) {
+		return Mono.class.isAssignableFrom(method.getReturnType());
+	}
+
+	/**
+	 * The providers of the reactive list-changed handlers only take methods that return a
+	 * {@code Mono}.
+	 */
+	@Override
+	protected boolean isModernListChangedMethod(Method method) {
+		return Mono.class.isAssignableFrom(method.getReturnType());
+	}
+
+	/**
 	 * Invoke all elicitation handlers for a given MCP client, sequentially.
 	 *
 	 * @see McpLogging
@@ -155,6 +338,76 @@ public class ClientMcpAsyncHandlersRegistry extends AbstractClientMcpHandlerRegi
 			return Mono.empty();
 		}
 		return Flux.fromIterable(consumers).flatMap(c -> c.apply(progressNotification)).then();
+	}
+
+	/**
+	 * Invoke all tool list changed handlers for a given client that speaks the 2026-07-28
+	 * ("modern") MCP revision, sequentially. They are the same
+	 * {@code @McpToolListChanged} methods that serve a legacy client of that name,
+	 * whichever schema type their list has. A method that fails does not keep the others
+	 * from hearing the change.
+	 * @param name the name of the client, which is the name of its connection
+	 * @param updatedTools the tools of the server, in the modern schema type
+	 * @return completes when all the methods are done
+	 * @since 2.1.0
+	 */
+	public Mono<Void> handleModernToolListChanged(String name, List<Tool> updatedTools) {
+		if (logger.isDebugEnabled()) {
+			logger.debug("Handling modern tool list changed notification for client " + name);
+		}
+		return this.callModernListChangedHandlers(name, "tool", this.modernToolListChangedHandlers.get(name),
+				updatedTools);
+	}
+
+	/**
+	 * Invoke all prompt list changed handlers for a given client that speaks the
+	 * 2026-07-28 ("modern") MCP revision, sequentially. They are the same
+	 * {@code @McpPromptListChanged} methods that serve a legacy client of that name,
+	 * whichever schema type their list has. A method that fails does not keep the others
+	 * from hearing the change.
+	 * @param name the name of the client, which is the name of its connection
+	 * @param updatedPrompts the prompts of the server, in the modern schema type
+	 * @return completes when all the methods are done
+	 * @since 2.1.0
+	 */
+	public Mono<Void> handleModernPromptListChanged(String name, List<Prompt> updatedPrompts) {
+		if (logger.isDebugEnabled()) {
+			logger.debug("Handling modern prompt list changed notification for client " + name);
+		}
+		return this.callModernListChangedHandlers(name, "prompt", this.modernPromptListChangedHandlers.get(name),
+				updatedPrompts);
+	}
+
+	/**
+	 * Invoke all resource list changed handlers for a given client that speaks the
+	 * 2026-07-28 ("modern") MCP revision, sequentially. They are the same
+	 * {@code @McpResourceListChanged} methods that serve a legacy client of that name,
+	 * whichever schema type their list has. A method that fails does not keep the others
+	 * from hearing the change.
+	 * @param name the name of the client, which is the name of its connection
+	 * @param updatedResources the resources of the server, in the modern schema type
+	 * @return completes when all the methods are done
+	 * @since 2.1.0
+	 */
+	public Mono<Void> handleModernResourceListChanged(String name, List<Resource> updatedResources) {
+		if (logger.isDebugEnabled()) {
+			logger.debug("Handling modern resource list changed notification for client " + name);
+		}
+		return this.callModernListChangedHandlers(name, "resource", this.modernResourceListChangedHandlers.get(name),
+				updatedResources);
+	}
+
+	private static <T> Mono<Void> callModernListChangedHandlers(String name, String kind,
+			@Nullable List<Function<List<T>, Mono<Void>>> handlers, List<T> updated) {
+		if (handlers == null) {
+			return Mono.empty();
+		}
+		return Flux.fromIterable(handlers)
+			.concatMap(handler -> Mono.defer(() -> handler.apply(updated)).onErrorResume(ex -> {
+				logger.warn("A " + kind + " list changed handler failed for client " + name, ex);
+				return Mono.empty();
+			}))
+			.then();
 	}
 
 	/**
@@ -220,8 +473,20 @@ public class ClientMcpAsyncHandlersRegistry extends AbstractClientMcpHandlerRegi
 			}
 		}
 
-		var elicitationSpecs = AsyncMcpAnnotationProviders
-			.elicitationSpecifications(new ArrayList<>(beansByAnnotation.get(McpElicitation.class)));
+		// One provider, so that the legacy and the modern handlers share their callbacks.
+		var elicitationProvider = AsyncMcpAnnotationProviders
+			.elicitationProvider(new ArrayList<>(beansByAnnotation.get(McpElicitation.class)));
+		for (var modernElicitationSpec : elicitationProvider.getModernElicitationSpecifications()) {
+			for (var client : modernElicitationSpec.clients()) {
+				if (modernElicitationSpec.form()) {
+					this.modernFormElicitationHandlers.put(client, modernElicitationSpec);
+				}
+				if (modernElicitationSpec.url()) {
+					this.modernUrlElicitationHandlers.put(client, modernElicitationSpec);
+				}
+			}
+		}
+		var elicitationSpecs = elicitationProvider.getElicitationSpecifications();
 		for (var elicitationSpec : elicitationSpecs) {
 			for (var client : elicitationSpec.clients()) {
 				if (logger.isDebugEnabled()) {
@@ -242,8 +507,14 @@ public class ClientMcpAsyncHandlersRegistry extends AbstractClientMcpHandlerRegi
 			}
 		}
 
-		var progressSpecs = AsyncMcpAnnotationProviders
-			.progressSpecifications(new ArrayList<>(beansByAnnotation.get(McpProgress.class)));
+		var progressProvider = AsyncMcpAnnotationProviders
+			.progressProvider(new ArrayList<>(beansByAnnotation.get(McpProgress.class)));
+		for (var modernProgressSpec : progressProvider.getModernProgressSpecifications()) {
+			for (var client : modernProgressSpec.clients()) {
+				this.modernProgressHandlers.computeIfAbsent(client, k -> new ArrayList<>()).add(modernProgressSpec);
+			}
+		}
+		var progressSpecs = progressProvider.getProgressSpecifications();
 		for (var progressSpec : progressSpecs) {
 			for (var client : progressSpec.clients()) {
 				if (logger.isDebugEnabled()) {
@@ -254,8 +525,15 @@ public class ClientMcpAsyncHandlersRegistry extends AbstractClientMcpHandlerRegi
 			}
 		}
 
-		var toolsListChangedSpecs = AsyncMcpAnnotationProviders
-			.toolListChangedSpecifications(new ArrayList<>(beansByAnnotation.get(McpToolListChanged.class)));
+		var toolListChangedProvider = AsyncMcpAnnotationProviders
+			.toolListChangedProvider(new ArrayList<>(beansByAnnotation.get(McpToolListChanged.class)));
+		for (var modernSpec : toolListChangedProvider.getModernToolListChangedSpecifications()) {
+			for (var client : modernSpec.clients()) {
+				this.modernToolListChangedHandlers.computeIfAbsent(client, k -> new ArrayList<>())
+					.add(modernSpec.toolListChangeHandler());
+			}
+		}
+		var toolsListChangedSpecs = toolListChangedProvider.getToolListChangedSpecifications();
 		for (var toolsListChangedSpec : toolsListChangedSpecs) {
 			for (var client : toolsListChangedSpec.clients()) {
 				if (logger.isDebugEnabled()) {
@@ -266,8 +544,15 @@ public class ClientMcpAsyncHandlersRegistry extends AbstractClientMcpHandlerRegi
 			}
 		}
 
-		var promptListChangedSpecs = AsyncMcpAnnotationProviders
-			.promptListChangedSpecifications(new ArrayList<>(beansByAnnotation.get(McpPromptListChanged.class)));
+		var promptListChangedProvider = AsyncMcpAnnotationProviders
+			.promptListChangedProvider(new ArrayList<>(beansByAnnotation.get(McpPromptListChanged.class)));
+		for (var modernSpec : promptListChangedProvider.getModernPromptListChangedSpecifications()) {
+			for (var client : modernSpec.clients()) {
+				this.modernPromptListChangedHandlers.computeIfAbsent(client, k -> new ArrayList<>())
+					.add(modernSpec.promptListChangeHandler());
+			}
+		}
+		var promptListChangedSpecs = promptListChangedProvider.getPromptListChangedSpecifications();
 		for (var promptListChangedSpec : promptListChangedSpecs) {
 			for (var client : promptListChangedSpec.clients()) {
 				if (logger.isDebugEnabled()) {
@@ -278,8 +563,15 @@ public class ClientMcpAsyncHandlersRegistry extends AbstractClientMcpHandlerRegi
 			}
 		}
 
-		var resourceListChangedSpecs = AsyncMcpAnnotationProviders
-			.resourceListChangedSpecifications(new ArrayList<>(beansByAnnotation.get(McpResourceListChanged.class)));
+		var resourceListChangedProvider = AsyncMcpAnnotationProviders
+			.resourceListChangedProvider(new ArrayList<>(beansByAnnotation.get(McpResourceListChanged.class)));
+		for (var modernSpec : resourceListChangedProvider.getModernResourceListChangedSpecifications()) {
+			for (var client : modernSpec.clients()) {
+				this.modernResourceListChangedHandlers.computeIfAbsent(client, k -> new ArrayList<>())
+					.add(modernSpec.resourceListChangeHandler());
+			}
+		}
+		var resourceListChangedSpecs = resourceListChangedProvider.getResourceListChangedSpecifications();
 		for (var resourceListChangedSpec : resourceListChangedSpecs) {
 			for (var client : resourceListChangedSpec.clients()) {
 				if (logger.isDebugEnabled()) {

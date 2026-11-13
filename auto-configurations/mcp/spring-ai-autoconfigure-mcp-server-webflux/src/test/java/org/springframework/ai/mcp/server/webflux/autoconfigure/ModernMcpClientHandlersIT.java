@@ -39,6 +39,7 @@ import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.util.concurrent.GlobalEventExecutor;
 import org.junit.jupiter.api.Test;
+import reactor.core.publisher.Mono;
 import reactor.netty.DisposableServer;
 import reactor.netty.http.server.HttpServer;
 
@@ -58,6 +59,7 @@ import org.springframework.ai.mcp.client.common.autoconfigure.McpToolCallbackAut
 import org.springframework.ai.mcp.client.common.autoconfigure.annotations.McpClientAnnotationScannerAutoConfiguration;
 import org.springframework.ai.mcp.client.webflux.autoconfigure.StreamableHttpWebFluxTransportAutoConfiguration;
 import org.springframework.ai.mcp.modern.InMemorySyncToolRepository;
+import org.springframework.ai.mcp.modern.client.AsyncModernMcpChangeListener;
 import org.springframework.ai.mcp.modern.client.McpModernConnectionInfo;
 import org.springframework.ai.mcp.modern.client.SyncModernMcpChangeListener;
 import org.springframework.ai.mcp.modern.client.SyncModernMcpToolCallCustomizer;
@@ -221,6 +223,38 @@ class ModernMcpClientHandlersIT {
 	}
 
 	@Test
+	void asyncClientTypeCallsTheReactiveHandlersWithTheToolContextOfTheToolCall() {
+		withBothServers((legacyPort, modernPort) -> this.clientContextRunner
+			.withUserConfiguration(ReactiveHandlersConfiguration.class)
+			.withPropertyValues(connections(legacyPort, modernPort))
+			.withPropertyValues("spring.ai.mcp.client.type=ASYNC")
+			.run(clientContext -> {
+				assertThat(clientContext).hasNotFailed();
+				ReactiveHandlers handlers = clientContext.getBean(ReactiveHandlers.class);
+				ToolCallback[] toolCallbacks = clientContext.getBean(ToolCallbackProvider.class).getToolCallbacks();
+				ToolCallback modernTool = named(toolCallbacks, "modern_delete_ticket");
+
+				// The reactive methods keep their legacy types. They answer the modern
+				// server through the asynchronous client, with the tool context of
+				// each call.
+				assertThat(modernTool.call("{\"id\":\"t-1\"}", new ToolContext(Map.of("user", "alice"))))
+					.contains("Deleted t-1");
+				assertThat(modernTool.call("{\"id\":\"t-2\"}", new ToolContext(Map.of("user", "bob"))))
+					.contains("Deleted t-2");
+				// The same method answers the legacy server, where an elicitation is
+				// not tied to a tool call.
+				assertThat(named(toolCallbacks, "delete_ticket").call("{\"id\":\"t-3\"}",
+						new ToolContext(Map.of("user", "carol"))))
+					.contains("Deleted t-3");
+
+				assertThat(handlers.questions).containsExactly("alice: Delete ticket t-1?", "bob: Delete ticket t-2?",
+						"nobody: Delete ticket t-3?");
+				assertThat(handlers.progress).containsExactly("alice: asking for confirmation", "alice: deleting",
+						"bob: asking for confirmation", "bob: deleting");
+			}));
+	}
+
+	@Test
 	void toolCallCustomizerBeanReplacesTheAnnotatedHandlerForACall() {
 		withBothServers((legacyPort, modernPort) -> this.clientContextRunner
 			.withUserConfiguration(LegacyTypedHandlersConfiguration.class, DecliningCustomizerConfiguration.class)
@@ -270,6 +304,60 @@ class ModernMcpClientHandlersIT {
 					CONNECTIONS + "modern.protocol=MODERN", CONNECTIONS + "modern.listen=true")
 			.run(clientContext -> {
 				ListChangedHandlers handlers = clientContext.getBean(ListChangedHandlers.class);
+				await().atMost(Duration.ofSeconds(10)).until(() -> handlers.established.size() == 1);
+				// The first stream calls no method: nothing was known before it.
+				assertThat(handlers.seen).isEmpty();
+
+				// The server goes down and gets a tool while no stream is there to
+				// report it on.
+				this.modernServer.disposeNow();
+				OPEN_CONNECTIONS.close().awaitUninterruptibly();
+				this.modernServerContext.getBean(InMemorySyncToolRepository.class).add(addedTool());
+				this.modernServer = startModernServer(this.modernServerContext, modernPort);
+
+				// The stream is established again, and the methods get the tools of
+				// the server as they are now.
+				await().atMost(Duration.ofSeconds(30))
+					.untilAsserted(() -> assertThat(handlers.seen).containsExactlyInAnyOrder(
+							"legacy [added, connect_account, delete_ticket]",
+							"modern [added, connect_account, delete_ticket]"));
+				assertThat(handlers.established).hasSize(2);
+			}));
+	}
+
+	@Test
+	void asyncClientTypeCallsTheReactiveListChangedMethodsOfAConnectionThatListens() {
+		withBothServers((legacyPort, modernPort) -> this.clientContextRunner
+			.withUserConfiguration(ReactiveListChangedHandlersConfiguration.class)
+			.withPropertyValues(CONNECTIONS + "modern.url=http://localhost:" + modernPort,
+					CONNECTIONS + "modern.protocol=MODERN", CONNECTIONS + "modern.listen=true",
+					"spring.ai.mcp.client.type=ASYNC")
+			.run(clientContext -> {
+				assertThat(clientContext).hasNotFailed();
+				ReactiveListChangedHandlers handlers = clientContext.getBean(ReactiveListChangedHandlers.class);
+				// A change is only reported to a stream that is established.
+				await().atMost(Duration.ofSeconds(10)).until(() -> !handlers.established.isEmpty());
+
+				this.modernServerContext.getBean(InMemorySyncToolRepository.class).add(addedTool());
+
+				// One method takes the tools in the legacy schema type and one in the
+				// modern one; both get the tools as the server lists them now.
+				await().atMost(Duration.ofSeconds(10))
+					.untilAsserted(() -> assertThat(handlers.seen).containsExactlyInAnyOrder(
+							"legacy [added, connect_account, delete_ticket]",
+							"modern [added, connect_account, delete_ticket]"));
+			}));
+	}
+
+	@Test
+	void asyncClientTypeHearsAboutAServerThatComesBackWithOtherTools() {
+		withBothServers((legacyPort, modernPort) -> this.clientContextRunner
+			.withUserConfiguration(ReactiveListChangedHandlersConfiguration.class)
+			.withPropertyValues(CONNECTIONS + "modern.url=http://localhost:" + modernPort,
+					CONNECTIONS + "modern.protocol=MODERN", CONNECTIONS + "modern.listen=true",
+					"spring.ai.mcp.client.type=ASYNC")
+			.run(clientContext -> {
+				ReactiveListChangedHandlers handlers = clientContext.getBean(ReactiveListChangedHandlers.class);
 				await().atMost(Duration.ofSeconds(10)).until(() -> handlers.established.size() == 1);
 				// The first stream calls no method: nothing was known before it.
 				assertThat(handlers.seen).isEmpty();
@@ -479,6 +567,38 @@ class ModernMcpClientHandlersIT {
 
 	}
 
+	/** Reactive handler methods, for the asynchronous client type. */
+	static class ReactiveHandlers {
+
+		final List<String> questions = new CopyOnWriteArrayList<>();
+
+		final List<String> progress = new CopyOnWriteArrayList<>();
+
+		@McpElicitation(clients = { "legacy", "modern" })
+		Mono<StructuredElicitResult<Confirmation>> confirm(McpSchema.ElicitRequest request, ToolContext toolContext) {
+			Object user = toolContext != null ? toolContext.getContext().get("user") : "nobody";
+			this.questions.add(user + ": " + request.message());
+			return Mono
+				.just(new StructuredElicitResult<>(McpSchema.ElicitResult.Action.ACCEPT, new Confirmation(true), null));
+		}
+
+		@McpProgress(clients = "modern")
+		Mono<Void> progress(ProgressParams progress, ToolContext toolContext) {
+			return Mono.fromRunnable(
+					() -> this.progress.add(toolContext.getContext().get("user") + ": " + progress.message()));
+		}
+
+	}
+
+	static class ReactiveHandlersConfiguration {
+
+		@Bean
+		ReactiveHandlers reactiveHandlers() {
+			return new ReactiveHandlers();
+		}
+
+	}
+
 	static class ToolContextHandlersConfiguration {
 
 		@Bean
@@ -537,6 +657,49 @@ class ModernMcpClientHandlersIT {
 		@Bean
 		ListChangedHandlers listChangedHandlers() {
 			return new ListChangedHandlers();
+		}
+
+	}
+
+	/**
+	 * Reactive list-changed methods for the modern connection, for the asynchronous
+	 * client type, and a listener that tells when its listen stream is established.
+	 */
+	static class ReactiveListChangedHandlers implements AsyncModernMcpChangeListener {
+
+		final List<String> seen = new CopyOnWriteArrayList<>();
+
+		final List<String> established = new CopyOnWriteArrayList<>();
+
+		@McpToolListChanged(clients = "modern")
+		Mono<Void> legacyTools(List<McpSchema.Tool> tools) {
+			return Mono.fromRunnable(
+					() -> this.seen.add("legacy " + tools.stream().map(McpSchema.Tool::name).sorted().toList()));
+		}
+
+		@McpToolListChanged(clients = "modern")
+		Mono<Void> modernTools(List<io.modelcontextprotocol.modern.McpSchema.Tool> tools) {
+			return Mono.fromRunnable(() -> this.seen.add("modern "
+					+ tools.stream().map(io.modelcontextprotocol.modern.McpSchema.Tool::name).sorted().toList()));
+		}
+
+		@Override
+		public Mono<Void> changed(McpModernConnectionInfo connectionInfo, SubscriptionEvent event) {
+			return Mono.empty();
+		}
+
+		@Override
+		public Mono<Void> streamEstablished(McpModernConnectionInfo connectionInfo) {
+			return Mono.fromRunnable(() -> this.established.add(connectionInfo.name()));
+		}
+
+	}
+
+	static class ReactiveListChangedHandlersConfiguration {
+
+		@Bean
+		ReactiveListChangedHandlers reactiveListChangedHandlers() {
+			return new ReactiveListChangedHandlers();
 		}
 
 	}

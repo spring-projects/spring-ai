@@ -23,11 +23,13 @@ import java.util.stream.Stream;
 
 import io.modelcontextprotocol.spec.McpSchema;
 import io.modelcontextprotocol.util.Assert;
+import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Mono;
 
 import org.springframework.ai.mcp.annotation.McpToolListChanged;
 import org.springframework.ai.mcp.annotation.common.McpPredicates;
 import org.springframework.ai.mcp.annotation.method.changed.tool.AsyncMcpToolListChangedMethodCallback;
+import org.springframework.ai.mcp.annotation.method.changed.tool.AsyncModernToolListChangedSpecification;
 import org.springframework.ai.mcp.annotation.method.changed.tool.AsyncToolListChangedSpecification;
 
 /**
@@ -63,6 +65,8 @@ public class AsyncMcpToolListChangedProvider {
 
 	private final List<Object> toolListChangedConsumerObjects;
 
+	private @Nullable List<HandlerMethod> handlerMethods;
+
 	/**
 	 * Create a new AsyncMcpToolListChangedProvider.
 	 * @param toolListChangedConsumerObjects the objects containing methods annotated with
@@ -78,29 +82,56 @@ public class AsyncMcpToolListChangedProvider {
 	 * @return the list of tool list changed consumer specifications
 	 */
 	public List<AsyncToolListChangedSpecification> getToolListChangedSpecifications() {
+		return this.handlerMethods().stream().map(handlerMethod -> {
+			Function<List<McpSchema.Tool>, Mono<Void>> methodCallback = handlerMethod.callback();
+			return new AsyncToolListChangedSpecification(handlerMethod.clients(), methodCallback);
+		}).toList();
+	}
 
-		List<AsyncToolListChangedSpecification> toolListChangedConsumers = this.toolListChangedConsumerObjects.stream()
-			.map(consumerObject -> Stream.of(doGetClassMethods(consumerObject))
-				.filter(method -> method.isAnnotationPresent(McpToolListChanged.class))
-				.filter(McpPredicates.filterNonReactiveReturnTypeMethod())
-				.sorted((m1, m2) -> m1.getName().compareTo(m2.getName()))
-				.map(mcpToolListChangedConsumerMethod -> {
-					var toolListChangedAnnotation = mcpToolListChangedConsumerMethod
-						.getAnnotation(McpToolListChanged.class);
-
-					Function<List<McpSchema.Tool>, Mono<Void>> methodCallback = AsyncMcpToolListChangedMethodCallback
-						.builder()
-						.method(mcpToolListChangedConsumerMethod)
-						.bean(consumerObject)
-						.build();
-
-					return new AsyncToolListChangedSpecification(toolListChangedAnnotation.clients(), methodCallback);
-				})
-				.toList())
-			.flatMap(List::stream)
+	/**
+	 * Get the tool list changed specifications for the connections that speak the
+	 * 2026-07-28 ("modern") MCP revision. They are created from the same
+	 * {@link McpToolListChanged} methods as {@link #getToolListChangedSpecifications()},
+	 * and with the same callbacks: a method serves the connections of both protocols,
+	 * whichever schema type its list has.
+	 * @return the modern tool list changed specifications
+	 * @since 2.1.0
+	 */
+	public List<AsyncModernToolListChangedSpecification> getModernToolListChangedSpecifications() {
+		return this.handlerMethods()
+			.stream()
+			.map(handlerMethod -> new AsyncModernToolListChangedSpecification(handlerMethod.clients(),
+					handlerMethod.callback()::applyModern))
 			.toList();
+	}
 
-		return toolListChangedConsumers;
+	/**
+	 * The reactive {@link McpToolListChanged} methods with their callbacks. The objects
+	 * are scanned once, on first use, so that each method gets one callback, which the
+	 * legacy and the modern specifications share.
+	 */
+	private List<HandlerMethod> handlerMethods() {
+		List<HandlerMethod> handlerMethods = this.handlerMethods;
+		if (handlerMethods == null) {
+			handlerMethods = this.toolListChangedConsumerObjects.stream()
+				.flatMap(consumerObject -> Stream.of(doGetClassMethods(consumerObject))
+					.filter(method -> method.isAnnotationPresent(McpToolListChanged.class))
+					.filter(McpPredicates.filterNonReactiveReturnTypeMethod())
+					.sorted((m1, m2) -> m1.getName().compareTo(m2.getName()))
+					.map(mcpToolListChangedConsumerMethod -> {
+						var toolListChangedAnnotation = mcpToolListChangedConsumerMethod
+							.getAnnotation(McpToolListChanged.class);
+						AsyncMcpToolListChangedMethodCallback methodCallback = AsyncMcpToolListChangedMethodCallback
+							.builder()
+							.method(mcpToolListChangedConsumerMethod)
+							.bean(consumerObject)
+							.build();
+						return new HandlerMethod(toolListChangedAnnotation.clients(), methodCallback);
+					}))
+				.toList();
+			this.handlerMethods = handlerMethods;
+		}
+		return handlerMethods;
 	}
 
 	/**
@@ -110,6 +141,12 @@ public class AsyncMcpToolListChangedProvider {
 	 */
 	protected Method[] doGetClassMethods(Object bean) {
 		return bean.getClass().getDeclaredMethods();
+	}
+
+	/**
+	 * The clients an annotated method names and its callback.
+	 */
+	private record HandlerMethod(String[] clients, AsyncMcpToolListChangedMethodCallback callback) {
 	}
 
 }

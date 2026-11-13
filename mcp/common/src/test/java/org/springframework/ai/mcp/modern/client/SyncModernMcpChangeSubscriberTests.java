@@ -318,7 +318,7 @@ class SyncModernMcpChangeSubscriberTests {
 			.listener(this.provider)
 			.build();
 		// The others keep the order they were added in.
-		assertThat(providerLast).extracting("listeners")
+		assertThat(providerLast).extracting("streams.listeners")
 			.asInstanceOf(InstanceOfAssertFactories.LIST)
 			.containsExactly(this.provider, this.listener, other);
 
@@ -328,7 +328,7 @@ class SyncModernMcpChangeSubscriberTests {
 			.build();
 		providerLate.addListener(other);
 		providerLate.addListener(this.provider);
-		assertThat(providerLate).extracting("listeners")
+		assertThat(providerLate).extracting("streams.listeners")
 			.asInstanceOf(InstanceOfAssertFactories.LIST)
 			.containsExactly(this.provider, this.listener, other);
 	}

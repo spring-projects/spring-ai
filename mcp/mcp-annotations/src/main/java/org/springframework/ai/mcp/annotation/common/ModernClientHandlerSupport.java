@@ -34,6 +34,7 @@ import io.modelcontextprotocol.spec.McpSchema;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
+import reactor.core.publisher.Mono;
 
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.mcp.annotation.context.StructuredElicitResult;
@@ -96,7 +97,33 @@ public final class ModernClientHandlerSupport {
 	 * @return {@code true} if the method handles modern form requests
 	 */
 	public static boolean handlesModernFormElicitation(Method method) {
-		Class<?> requestType = elicitRequestParameterType(method);
+		return takesFormRequests(elicitRequestParameterType(method));
+	}
+
+	/**
+	 * Whether a reactive {@code @McpElicitation} method can answer the form elicitation
+	 * requests of a modern connection: its parameter takes a form request, of either
+	 * schema.
+	 * @param method the annotated method
+	 * @return {@code true} if the method handles modern form requests
+	 */
+	public static boolean handlesModernFormElicitationAsync(Method method) {
+		return takesFormRequests(asyncElicitRequestParameterType(method));
+	}
+
+	/**
+	 * Whether a reactive {@code @McpElicitation} method can answer the URL elicitation
+	 * requests of a modern connection. It can only when its parameter takes a URL request
+	 * of the modern schema, because the legacy one requires an {@code elicitationId}.
+	 * @param method the annotated method
+	 * @return {@code true} if the method handles modern URL requests
+	 */
+	public static boolean handlesModernUrlElicitationAsync(Method method) {
+		Class<?> requestType = asyncElicitRequestParameterType(method);
+		return requestType != null && requestType.isAssignableFrom(ElicitUrlRequest.class);
+	}
+
+	private static boolean takesFormRequests(@Nullable Class<?> requestType) {
 		return requestType != null && (requestType.isAssignableFrom(ElicitFormRequest.class)
 				|| requestType.isAssignableFrom(McpSchema.ElicitFormRequest.class));
 	}
@@ -168,6 +195,14 @@ public final class ModernClientHandlerSupport {
 				&& !StructuredElicitResult.class.isAssignableFrom(returnType)) {
 			return null;
 		}
+		return requestParameterType(method);
+	}
+
+	/**
+	 * The one elicitation request parameter of a method that takes nothing else but,
+	 * optionally, a {@link ToolContext}.
+	 */
+	private static @Nullable Class<?> requestParameterType(Method method) {
 		Class<?> requestType = null;
 		int toolContexts = 0;
 		for (Class<?> parameterType : method.getParameterTypes()) {
@@ -183,6 +218,22 @@ public final class ModernClientHandlerSupport {
 			}
 		}
 		return toolContexts <= 1 ? requestType : null;
+	}
+
+	/**
+	 * The type of the elicitation request that a reactive {@code @McpElicitation} method
+	 * takes. Such a method takes one elicitation request of either schema and,
+	 * optionally, a {@link ToolContext}, and it returns a {@code Mono} of an elicitation
+	 * result of either schema or of a {@link StructuredElicitResult}.
+	 * @param method the annotated method
+	 * @return the type of its request parameter, or {@code null} if the method is not a
+	 * reactive elicitation handler
+	 */
+	public static @Nullable Class<?> asyncElicitRequestParameterType(Method method) {
+		if (!Mono.class.isAssignableFrom(method.getReturnType())) {
+			return null;
+		}
+		return requestParameterType(method);
 	}
 
 	/**

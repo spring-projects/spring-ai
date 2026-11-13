@@ -64,7 +64,7 @@ public interface McpModernToolNamePrefixGenerator {
 
 	/**
 	 * Keeps the tool's own name. Tools of different connections that share a name then
-	 * collide, which {@link SyncModernMcpToolCallbackProvider} rejects.
+	 * collide, which the tool callback providers reject.
 	 * @return the generator
 	 */
 	static McpModernToolNamePrefixGenerator noPrefix() {

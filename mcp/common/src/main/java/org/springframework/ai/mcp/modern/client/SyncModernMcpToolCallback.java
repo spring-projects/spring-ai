@@ -16,12 +16,10 @@
 
 package org.springframework.ai.mcp.modern.client;
 
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 import io.modelcontextprotocol.modern.McpException;
 import io.modelcontextprotocol.modern.McpSchema.CallToolResult;
-import io.modelcontextprotocol.modern.McpSchema.MetaKeys;
 import io.modelcontextprotocol.modern.McpSchema.Tool;
 import io.modelcontextprotocol.modern.client.McpSyncClient;
 import org.apache.commons.logging.Log;
@@ -31,13 +29,9 @@ import org.jspecify.annotations.Nullable;
 import org.springframework.ai.chat.model.ToolContext;
 import org.springframework.ai.mcp.ToolContextToMcpMetaConverter;
 import org.springframework.ai.tool.ToolCallback;
-import org.springframework.ai.tool.definition.DefaultToolDefinition;
 import org.springframework.ai.tool.definition.ToolDefinition;
 import org.springframework.ai.tool.execution.ToolExecutionException;
-import org.springframework.ai.util.JsonHelper;
-import org.springframework.ai.util.json.schema.JsonSchemaUtils;
 import org.springframework.util.Assert;
-import org.springframework.util.StringUtils;
 
 /**
  * Adapts a tool of a modern MCP server to Spring AI's {@link ToolCallback}.
@@ -68,19 +62,12 @@ public final class SyncModernMcpToolCallback implements ToolCallback {
 
 	private static final Log logger = LogFactory.getLog(SyncModernMcpToolCallback.class);
 
-	private static final JsonHelper jsonHelper = new JsonHelper();
-
-	/**
-	 * Prefix of the {@code _meta} keys the modern client sets itself and rejects when the
-	 * application sets them.
-	 */
-	private static final String RESERVED_META_PREFIX = "io.modelcontextprotocol/";
-
 	private final McpSyncClient.ToolSpec toolSpec;
 
 	private final Tool tool;
 
-	private final String prefixedToolName;
+	/** Built once: it is asked for several times for each request. */
+	private final ToolDefinition toolDefinition;
 
 	private final ToolContextToMcpMetaConverter toolContextToMcpMetaConverter;
 
@@ -103,7 +90,7 @@ public final class SyncModernMcpToolCallback implements ToolCallback {
 		// each call derives its own spec with the arguments and the _meta entries.
 		this.toolSpec = mcpClient.tool(tool);
 		this.tool = tool;
-		this.prefixedToolName = prefixedToolName;
+		this.toolDefinition = ModernToolCalls.toolDefinition(prefixedToolName, tool);
 		this.toolContextToMcpMetaConverter = toolContextToMcpMetaConverter;
 		this.connectionInfo = connectionInfo;
 		this.toolCallCustomizer = toolCallCustomizer;
@@ -119,11 +106,7 @@ public final class SyncModernMcpToolCallback implements ToolCallback {
 
 	@Override
 	public ToolDefinition getToolDefinition() {
-		return DefaultToolDefinition.builder()
-			.name(this.prefixedToolName)
-			.description(this.tool.description())
-			.inputSchema(JsonSchemaUtils.ensureValidInputSchema(jsonHelper.toJson(this.tool.inputSchema())))
-			.build();
+		return this.toolDefinition;
 	}
 
 	/**
@@ -142,13 +125,12 @@ public final class SyncModernMcpToolCallback implements ToolCallback {
 	@Override
 	public String call(String toolCallInput, @Nullable ToolContext toolContext) {
 
-		// A streaming model may send no arguments at all.
-		Map<String, Object> arguments = jsonHelper
-			.fromJsonToMap(StringUtils.hasText(toolCallInput) ? toolCallInput : "{}");
+		Map<String, Object> arguments = ModernToolCalls.arguments(toolCallInput);
 
 		CallToolResult result;
 		try {
-			McpSyncClient.ToolSpec callSpec = this.toolSpec.arguments(arguments).meta(this.requestMeta(toolContext));
+			McpSyncClient.ToolSpec callSpec = this.toolSpec.arguments(arguments)
+				.meta(ModernToolCalls.requestMeta(this.toolContextToMcpMetaConverter, toolContext));
 			if (this.toolCallCustomizer != null && this.connectionInfo != null) {
 				callSpec = this.toolCallCustomizer.customize(this.connectionInfo, callSpec, toolContext);
 				Assert.state(callSpec != null, "toolCallCustomizer must not return null");
@@ -174,39 +156,7 @@ public final class SyncModernMcpToolCallback implements ToolCallback {
 					new IllegalStateException("Error calling tool: " + result.content()));
 		}
 
-		return toModelResponse(result);
-	}
-
-	/**
-	 * The {@code _meta} entries of the request: the {@link ToolContext} entries without
-	 * the keys the modern client sets itself.
-	 */
-	private Map<String, Object> requestMeta(@Nullable ToolContext toolContext) {
-		if (toolContext == null) {
-			return Map.of();
-		}
-		Map<String, Object> meta = new LinkedHashMap<>();
-		this.toolContextToMcpMetaConverter.convert(toolContext).forEach((key, value) -> {
-			if (!MetaKeys.PROGRESS_TOKEN.equals(key) && !key.startsWith(RESERVED_META_PREFIX)) {
-				meta.put(key, value);
-			}
-		});
-		return meta;
-	}
-
-	/**
-	 * The text returned to the model. A result without structured content is returned as
-	 * the JSON of its content blocks, like the legacy callbacks do. A result with
-	 * structured content is returned as a JSON object that holds both.
-	 */
-	private static String toModelResponse(CallToolResult result) {
-		if (result.structuredContent() == null) {
-			return jsonHelper.toJson(result.content());
-		}
-		Map<String, Object> response = new LinkedHashMap<>();
-		response.put("content", result.content());
-		response.put("structuredContent", result.structuredContent());
-		return jsonHelper.toJson(response);
+		return ModernToolCalls.toModelResponse(result);
 	}
 
 	/**
