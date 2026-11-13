@@ -179,15 +179,25 @@ final class ModernToolListings<C> {
 		boolean remembered = !clientPerRequest;
 		Long listedAt = remembered ? this.listedAtInvalidations.get(client) : null;
 		fromServer = fromServer || (listedAt != null ? listedAt < invalidationsBefore : invalidationsBefore > 0);
-		if (Schedulers.isInNonBlockingThread()) {
-			// The listing blocks, which Reactor refuses on such a thread with a message
-			// that does not say what to do.
-			throw new IllegalStateException("The tools of the MCP connection '" + connectionInfo.name()
-					+ "' are listed with a blocking call, which is not possible on the non-blocking thread '"
-					+ Thread.currentThread().getName() + "'. Resolve the tools on a thread that may block: start the "
-					+ "ChatClient call on one, for example with subscribeOn(Schedulers.boundedElastic()).");
+		boolean nonBlockingThread = Schedulers.isInNonBlockingThread();
+		if (nonBlockingThread && (fromServer || clientPerRequest)) {
+			// The listing certainly asks the server and blocks, which Reactor refuses on
+			// such a thread with a message that does not say what to do. A client that
+			// outlives the request may answer from the listing it keeps, without
+			// blocking,
+			// so it is asked.
+			throw blockingListingRefused(connectionInfo, null);
 		}
-		ListToolsResult listing = lister.list(client, fromServer);
+		ListToolsResult listing;
+		try {
+			listing = lister.list(client, fromServer);
+		}
+		catch (IllegalStateException ex) {
+			if (nonBlockingThread && isBlockingRefused(ex)) {
+				throw blockingListingRefused(connectionInfo, ex);
+			}
+			throw ex;
+		}
 		if (remembered) {
 			// Not reached if the listing fails: the client then asks the server again.
 			this.listedAtInvalidations.put(client, invalidationsBefore);
@@ -253,6 +263,22 @@ final class ModernToolListings<C> {
 		else if (logger.isDebugEnabled()) {
 			logger.debug(message + ": " + Exceptions.unwrap(ex));
 		}
+	}
+
+	private static IllegalStateException blockingListingRefused(McpModernConnectionInfo connectionInfo,
+			@Nullable Throwable cause) {
+		return new IllegalStateException("The tools of the MCP connection '" + connectionInfo.name()
+				+ "' are listed with a blocking call, which is not possible on the non-blocking thread '"
+				+ Thread.currentThread().getName() + "'. Resolve the tools on a thread that may block: start the "
+				+ "ChatClient call on one, for example with subscribeOn(Schedulers.boundedElastic()).", cause);
+	}
+
+	/**
+	 * Whether Reactor refused to block on the current thread.
+	 */
+	private static boolean isBlockingRefused(IllegalStateException ex) {
+		String message = ex.getMessage();
+		return message != null && message.contains("are blocking, which is not supported in thread");
 	}
 
 	/**

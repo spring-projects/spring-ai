@@ -289,6 +289,26 @@ class AsyncModernMcpToolCallbackProviderTests {
 	}
 
 	@Test
+	void listingThatASharedClientKeepsIsRefusedOnAThreadThatMayNotBlockWithoutARequest() {
+		InMemoryTransport transport = transport(60_000, CacheScope.PRIVATE, echoTool());
+		AsyncModernMcpToolCallbackProvider provider = AsyncModernMcpToolCallbackProvider.builder()
+			.connection(AsyncModernMcpConnection.shared(info("tickets"), McpClient.async(transport).build()))
+			.build();
+		provider.getToolCallbacks();
+
+		Object outcome = onANonBlockingThread(provider::getToolCallbacks);
+
+		// The asynchronous client answers from the listing it keeps, but not at once,
+		// so Reactor refuses to wait for it. That is said in a way that tells what to do,
+		// and nothing was sent.
+		assertThat(outcome).isInstanceOf(IllegalStateException.class);
+		assertThat(((IllegalStateException) outcome).getMessage()).contains("MCP connection 'tickets'")
+			.contains("non-blocking thread")
+			.contains("boundedElastic");
+		assertThat(transport.methods()).containsExactly(McpSchema.METHOD_TOOLS_LIST);
+	}
+
+	@Test
 	void toolIsNotCalledOnAThreadThatMayNotBlock() {
 		InMemoryTransport transport = transport(echoTool());
 		ToolCallback callback = AsyncModernMcpToolCallbackProvider.builder()

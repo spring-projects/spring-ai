@@ -1407,7 +1407,8 @@ Flux<String> answer = Flux.defer(() -> chatClient.prompt(question).stream().cont
     .subscribeOn(Schedulers.boundedElastic());
 ----
 
-A listing that is kept needs no request and no blocking call.
+A listing that the provider keeps, for a `ttlMs` with `cacheScope=PUBLIC`, needs no request and no blocking call.
+With the synchronous client type the same holds for a listing that a client that outlives the request keeps, with `client-scope=SHARED` or a `CUSTOM` scope that keeps its clients.
 The tool calls themselves run on the threads that Spring AI executes tools on, which may block.
 
 An application that executes the tools itself must do so on a thread that may block as well.

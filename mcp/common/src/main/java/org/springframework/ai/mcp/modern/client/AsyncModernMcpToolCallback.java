@@ -291,8 +291,8 @@ public final class AsyncModernMcpToolCallback implements ToolCallback {
 
 		/**
 		 * Sets the transport context of the caller that the tool is called for. With
-		 * {@link McpTransportContext#EMPTY}, the default, the callback has no caller of
-		 * its own, and a transport context in the Reactor context of the call is used.
+		 * {@link McpTransportContext#EMPTY}, the default, the tool is called without a
+		 * caller. A transport context in the Reactor context of the call is never used.
 		 * @param transportContext the transport context of the caller
 		 * @return this builder
 		 */
