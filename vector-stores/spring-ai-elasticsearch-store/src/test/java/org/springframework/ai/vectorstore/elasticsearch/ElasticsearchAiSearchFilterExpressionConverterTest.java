@@ -43,11 +43,11 @@ class ElasticsearchAiSearchFilterExpressionConverterTest {
 	public void testDate() {
 		String vectorExpr = this.converter.convertExpression(new Filter.Expression(EQ, new Filter.Key("activationDate"),
 				new Filter.Value(new Date(1704637752148L))));
-		assertThat(vectorExpr).isEqualTo("metadata.activationDate:2024-01-07T14:29:12Z");
+		assertThat(vectorExpr).isEqualTo("metadata.activationDate:2024\\-01\\-07T14\\:29\\:12Z");
 
 		vectorExpr = this.converter.convertExpression(
 				new Filter.Expression(EQ, new Filter.Key("activationDate"), new Filter.Value("1970-01-01T00:00:02Z")));
-		assertThat(vectorExpr).isEqualTo("metadata.activationDate:1970-01-01T00:00:02Z");
+		assertThat(vectorExpr).isEqualTo("metadata.activationDate:1970\\-01\\-01T00\\:00\\:02Z");
 	}
 
 	@Test
@@ -57,9 +57,28 @@ class ElasticsearchAiSearchFilterExpressionConverterTest {
 					new Filter.Key("activationDate"), new Filter.Value(new Date(1704637752148L))));
 			String vectorExpr2 = this.converter.convertExpression(new Filter.Expression(EQ,
 					new Filter.Key("activationDate"), new Filter.Value(new Date(1704637753150L))));
-			assertThat(vectorExpr).isEqualTo("metadata.activationDate:2024-01-07T14:29:12Z");
-			assertThat(vectorExpr2).isEqualTo("metadata.activationDate:2024-01-07T14:29:13Z");
+			assertThat(vectorExpr).isEqualTo("metadata.activationDate:2024\\-01\\-07T14\\:29\\:12Z");
+			assertThat(vectorExpr2).isEqualTo("metadata.activationDate:2024\\-01\\-07T14\\:29\\:13Z");
 		});
+	}
+
+	@Test
+	public void testDateRange() {
+		String vectorExpr = this.converter.convertExpression(
+				new Filter.Expression(GTE, new Filter.Key("activationDate"), new Filter.Value("2024-01-07T14:29:12Z")));
+		assertThat(vectorExpr).isEqualTo("metadata.activationDate:>=2024\\-01\\-07T14\\:29\\:12Z");
+
+		vectorExpr = this.converter.convertExpression(new Filter.Expression(LTE, new Filter.Key("activationDate"),
+				new Filter.Value(new Date(1704637752148L))));
+		assertThat(vectorExpr).isEqualTo("metadata.activationDate:<=2024\\-01\\-07T14\\:29\\:12Z");
+	}
+
+	@Test
+	public void testDateIn() {
+		String vectorExpr = this.converter.convertExpression(new Filter.Expression(IN, new Filter.Key("activationDate"),
+				new Filter.Value(List.of("2024-01-07T14:29:12Z", "2024-01-08T00:00:00Z"))));
+		assertThat(vectorExpr)
+			.isEqualTo("metadata.activationDate:(2024\\-01\\-07T14\\:29\\:12Z OR 2024\\-01\\-08T00\\:00\\:00Z)");
 	}
 
 	@Test
