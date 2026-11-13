@@ -38,7 +38,7 @@ import io.modelcontextprotocol.modern.JsonRpc.JSONRPCResponse.JSONRPCError;
 import io.modelcontextprotocol.modern.McpSchema;
 import io.modelcontextprotocol.modern.McpSchema.ErrorCodes;
 import io.modelcontextprotocol.modern.McpSchema.MetaKeys;
-import io.modelcontextprotocol.modern.server.McpParamHeaders;
+import io.modelcontextprotocol.modern.server.McpHeaders;
 import io.modelcontextprotocol.modern.server.McpRequestManager;
 import io.modelcontextprotocol.modern.server.McpServer;
 import io.modelcontextprotocol.modern.server.McpTransportResponse;
@@ -244,15 +244,11 @@ public final class WebFluxMcpTransport {
 					new JSONRPCError(ErrorCodes.HEADER_MISMATCH, headerMismatch)));
 		}
 
-		McpTransportContext requestContext = transportContext;
-		if (McpSchema.METHOD_TOOLS_CALL.equals(jsonRpcRequest.method())) {
-			// The decoded Mcp-Param-* headers, which the SDK tools feature validates
-			// against
-			// the arguments. Added after the user's extractor ran, so this entry always
-			// wins.
-			requestContext = transportContext.putAll(Map.of(McpParamHeaders.TRANSPORT_CONTEXT_KEY,
-					McpHeaderDecoder.paramHeaders(headerAccessor(request))));
-		}
+		// The decoded Mcp-Name and Mcp-Param-* headers, for every request because
+		// extensions may mirror a parameter into Mcp-Name. Added after the user's
+		// extractor ran, so this entry always wins.
+		McpTransportContext requestContext = transportContext
+			.putAll(Map.of(McpHeaders.TRANSPORT_CONTEXT_KEY, McpHeaderDecoder.headers(headerAccessor(request))));
 		// Never handleBlocking: this thread may be an event loop, so sync user code has
 		// to run elsewhere.
 		return this.requestManager.handle(requestContext, jsonRpcRequest).flatMap(this::toServerResponse);
