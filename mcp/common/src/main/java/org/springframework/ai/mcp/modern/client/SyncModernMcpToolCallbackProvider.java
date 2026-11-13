@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongSupplier;
 
 import io.modelcontextprotocol.modern.McpSchema.CacheScope;
@@ -32,6 +33,7 @@ import io.modelcontextprotocol.modern.McpSchema.Tool;
 import io.modelcontextprotocol.modern.client.McpResponseLostException;
 import io.modelcontextprotocol.modern.client.McpSyncClient;
 import io.modelcontextprotocol.modern.client.McpTimeoutException;
+import io.modelcontextprotocol.modern.client.SubscriptionEvent;
 import io.modelcontextprotocol.modern.client.transport.McpHttpStatusException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -69,6 +71,10 @@ import org.springframework.util.Assert;
  * A tool call is never served from a kept listing: it always goes to the server, through
  * the client of the request that resolved the callback.
  * <p>
+ * A kept listing is used until its {@code ttlMs} has passed. To drop it as soon as the
+ * server reports that its tools changed, register the provider as a listener of a
+ * {@link SyncModernMcpChangeSubscriber}, which keeps a listen stream open to the server.
+ * <p>
  * A server that cannot be reached does not fail the call: its tools are left out and a
  * warning is logged, so the tools of the other connections stay usable. A server counts
  * as unreachable when the connection cannot be established, the exchange times out or
@@ -85,7 +91,7 @@ import org.springframework.util.Assert;
  * @see SyncModernMcpConnection
  * @see SyncModernMcpToolCallback
  */
-public final class SyncModernMcpToolCallbackProvider implements ToolCallbackProvider {
+public final class SyncModernMcpToolCallbackProvider implements ToolCallbackProvider, SyncModernMcpChangeListener {
 
 	private static final Log logger = LogFactory.getLog(SyncModernMcpToolCallbackProvider.class);
 
@@ -108,6 +114,18 @@ public final class SyncModernMcpToolCallbackProvider implements ToolCallbackProv
 	 * The public tool listings that may still be used, by connection.
 	 */
 	private final Map<SyncModernMcpConnection, KeptListing> keptListings = new ConcurrentHashMap<>();
+
+	/**
+	 * Counts the dropped listings of each connection, by its name, so that a listing that
+	 * was under way when the server reported a change is not kept.
+	 */
+	private final Map<String, AtomicLong> invalidations = new ConcurrentHashMap<>();
+
+	/**
+	 * The connections whose next listing must come from the server and not from a copy
+	 * that the client itself keeps, as the client of a shared connection does.
+	 */
+	private final Set<SyncModernMcpConnection> listFromServer = ConcurrentHashMap.newKeySet();
 
 	private final LongSupplier nanoClock;
 
@@ -205,20 +223,99 @@ public final class SyncModernMcpToolCallbackProvider implements ToolCallbackProv
 	private List<Tool> tools(SyncModernMcpConnection connection, McpSyncClient mcpClient) {
 		long now = this.nanoClock.getAsLong();
 		KeptListing kept = this.keptListings.get(connection);
+		boolean fromServer = false;
 		if (kept != null) {
 			if (kept.isFresh(now)) {
 				return kept.tools();
 			}
 			this.keptListings.remove(connection, kept);
+			// The client of a shared connection keeps this listing as well, and its copy
+			// is as old as the one that has just expired here.
+			fromServer = true;
 		}
-		ListToolsResult listing = mcpClient.listTools().list();
+		// A dropped listing must not be answered from the client's copy either.
+		fromServer = this.listFromServer.remove(connection) || fromServer;
+
+		AtomicLong invalidations = this.invalidations.computeIfAbsent(connection.info().name(),
+				name -> new AtomicLong());
+		long invalidationsBefore = invalidations.get();
+		ListToolsResult listing;
+		try {
+			listing = fromServer ? mcpClient.listTools().skipCache().list() : mcpClient.listTools().list();
+		}
+		catch (RuntimeException ex) {
+			if (fromServer) {
+				// The next listing still has to come from the server.
+				this.listFromServer.add(connection);
+			}
+			throw ex;
+		}
 		// Only a public listing may be handed to other callers. A private one is left to
 		// the client, which keeps it for as long as that client lives.
-		if (listing.ttlMs() > 0 && listing.cacheScope() == CacheScope.PUBLIC) {
-			this.keptListings.put(connection,
-					new KeptListing(listing.tools(), now, TimeUnit.MILLISECONDS.toNanos(listing.ttlMs())));
+		if (listing.ttlMs() > 0 && listing.cacheScope() == CacheScope.PUBLIC
+				&& invalidations.get() == invalidationsBefore) {
+			KeptListing keptListing = new KeptListing(listing.tools(), now,
+					TimeUnit.MILLISECONDS.toNanos(listing.ttlMs()));
+			this.keptListings.put(connection, keptListing);
+			if (invalidations.get() != invalidationsBefore) {
+				// The tools changed while the listing was being kept.
+				this.keptListings.remove(connection, keptListing);
+			}
 		}
 		return listing.tools();
+	}
+
+	/**
+	 * Drops the kept tool listing of a connection, so that the next call to
+	 * {@link #getToolCallbacks()} lists its tools again. Use it when the tools of the
+	 * server are known to have changed before the {@code ttlMs} of the listing has
+	 * passed.
+	 * @param connectionName the name of the connection
+	 */
+	public void invalidateToolListing(String connectionName) {
+		Assert.notNull(connectionName, "connectionName must not be null");
+		this.invalidations.computeIfAbsent(connectionName, name -> new AtomicLong()).incrementAndGet();
+		for (SyncModernMcpConnection connection : this.connections) {
+			if (connection.info().name().equals(connectionName)) {
+				// Also for a listing that only the client keeps, as a private one of a
+				// shared connection.
+				this.listFromServer.add(connection);
+				this.keptListings.remove(connection);
+			}
+		}
+	}
+
+	/**
+	 * Ends the cool-down of the connection, if its server could not be reached before: a
+	 * listen stream that was established shows that it can be reached again.
+	 */
+	@Override
+	public void streamEstablished(McpModernConnectionInfo connectionInfo) {
+		for (SyncModernMcpConnection connection : this.connections) {
+			if (connection.info().name().equals(connectionInfo.name())) {
+				this.serverReachable(connection);
+			}
+		}
+	}
+
+	/**
+	 * Drops the kept tool listing of the connection when its server reports that its
+	 * tools changed.
+	 */
+	@Override
+	public void changed(McpModernConnectionInfo connectionInfo, SubscriptionEvent event) {
+		if (event instanceof SubscriptionEvent.ToolsListChanged) {
+			this.invalidateToolListing(connectionInfo.name());
+		}
+	}
+
+	/**
+	 * Drops the kept tool listing of the connection, because a change of its tools may
+	 * have gone unreported.
+	 */
+	@Override
+	public void changesMayBeMissed(McpModernConnectionInfo connectionInfo) {
+		this.invalidateToolListing(connectionInfo.name());
 	}
 
 	/**

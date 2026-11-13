@@ -882,6 +882,11 @@ With `spring.ai.mcp.client.type=ASYNC` a modern connection fails the startup.
 `SHARED` creates one client at startup, for an application that calls the server under a single identity.
 |`PER_REQUEST`
 
+|`spring.ai.mcp.client.streamable-http.connections.[name].listen`
+|Whether a listen stream is kept open to the server of a modern connection, so that a kept tool listing is dropped as soon as the server reports that its tools changed.
+See <<Change Notifications>>.
+|`false`
+
 |`spring.ai.mcp.client.request-timeout`
 |The timeout of one exchange with the server, from sending a request until its response arrives.
 The legacy clients use the same property.
@@ -895,6 +900,7 @@ The legacy clients use the same property.
 |How long a server that could not be reached is left alone before it is asked for its tools again.
 During that time its tools are left out, and the tools of the other connections stay usable.
 Zero asks the server on every request.
+It is also the longest pause before a listen stream that ended is opened again, see <<Change Notifications>>.
 |`30s`
 |===
 
@@ -990,10 +996,63 @@ The server decides whether a listing may be kept for later requests, with the `t
 
 A kept listing saves only the `tools/list` request.
 A tool call always goes to the server, through the client of the request that makes it.
-A change of the server's tools becomes visible when the `ttlMs` of a kept listing has passed.
+A change of the server's tools becomes visible when the `ttlMs` of a kept listing has passed, or at once if the connection listens for the changes of its server, see <<Change Notifications>>.
 
 TIP: A Spring AI modern server sends a `ttlMs` of zero and a `cacheScope` of `private` unless configured otherwise, so by default its tools are listed for each request.
 If the server offers the same tools to every caller, set both `spring.ai.mcp.server.modern.list-ttl` and `spring.ai.mcp.server.modern.list-cache-scope=PUBLIC` on the server, see xref:api/mcp/mcp-modern-server-boot-starter-docs.adoc#_configuration_properties[its configuration properties].
+
+=== Change Notifications
+
+A modern server reports the changes of its tools on a listen stream, a long-lived request that the client keeps open.
+A connection that sets `listen=true` has such a stream, and a kept tool listing of that connection is dropped as soon as the server reports that its tools changed:
+
+[source,yaml]
+----
+spring:
+  ai:
+    mcp:
+      client:
+        streamable-http:
+          connections:
+            tickets:
+              url: http://localhost:8080
+              protocol: MODERN
+              listen: true
+----
+
+The stream is opened when the application has started, without waiting for the server.
+A server that cannot be reached, or that does not serve listen streams, does not fail the startup.
+A stream that ended or that could not be opened is opened again after one second.
+If that fails as well, each further attempt waits twice as long as the previous one, up to the `spring.ai.mcp.client.modern.unreachable-cool-down` time.
+The pauses start over once a stream has stayed up for that time.
+A short interruption is therefore over quickly, and a server that stays away, or that does not serve listen streams, is not asked more often than its tool listing would ask it.
+Whenever a stream is established, or an established stream ends, the kept listing is dropped, because changes may have gone unreported.
+A stream that cannot be established leaves the kept listing alone.
+The `ttlMs` of a listing remains the longest time a change can go unnoticed, with or without a stream.
+
+A connection without `listen=true` opens no stream, and nothing is sent to its server at startup.
+Listening only pays off for a connection whose tool listing is kept: one with a public listing, or one with `client-scope=SHARED`.
+The property applies to the modern connections that are configured with properties.
+A warning is logged for a legacy connection that sets it, and a connection that the application contributes as a `NamedModernClientMcpTransport` bean does not listen.
+
+An application can hear about the changes itself with a `SyncModernMcpChangeListener` bean:
+
+[source,java]
+----
+@Bean
+SyncModernMcpChangeListener toolChangeLogger() {
+    return (connection, event) -> logger.info("The server of {} reported {}", connection.name(), event);
+}
+----
+
+It can also define the `SyncModernMcpChangeSubscriber` bean itself, to choose the connections that have a listen stream.
+
+IMPORTANT: A listen stream belongs to the application, not to a caller.
+It is opened by a client of its own, outside of any request, so a `transportContextProvider` and the `McpHttpRequestCustomizer` beans see no caller for it.
+The server must accept the stream with the credentials of the application, or with none.
+A client customizer that reads the caller, for example from the security context, must cope with there being none.
+
+NOTE: The `@McpToolListChanged`, `@McpPromptListChanged` and `@McpResourceListChanged` methods are not called for a modern connection yet.
 
 === Tool Names and Filtering
 

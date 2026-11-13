@@ -372,6 +372,83 @@ class SyncModernMcpToolCallbackProviderTests {
 	}
 
 	@Test
+	void expiredPublicListingOfASharedConnectionIsListedAgainFromTheServer() {
+		InMemoryTransport transport = transport(60_000, CacheScope.PUBLIC, echoTool());
+		AtomicLong nanos = new AtomicLong();
+		SyncModernMcpToolCallbackProvider provider = SyncModernMcpToolCallbackProvider.builder()
+			.connection(SyncModernMcpConnection.shared(info("tickets"), McpClient.sync(transport).build()))
+			.nanoClock(nanos::get)
+			.build();
+
+		provider.getToolCallbacks();
+		nanos.addAndGet(TimeUnit.SECONDS.toNanos(61));
+		provider.getToolCallbacks();
+
+		// The shared client keeps the listing as well. Its copy is as old as the one that
+		// expired here, so it must not be kept for another minute.
+		assertThat(transport.methods()).containsExactly(McpSchema.METHOD_TOOLS_LIST, McpSchema.METHOD_TOOLS_LIST);
+	}
+
+	@Test
+	void droppedListingIsListedAgainFromTheServerEvenIfTheSharedClientKeepsIt() {
+		for (CacheScope cacheScope : CacheScope.values()) {
+			InMemoryTransport transport = transport(60_000, cacheScope, echoTool());
+			SyncModernMcpToolCallbackProvider provider = SyncModernMcpToolCallbackProvider.builder()
+				.connection(SyncModernMcpConnection.shared(info("tickets"), McpClient.sync(transport).build()))
+				.build();
+
+			provider.getToolCallbacks();
+			provider.getToolCallbacks();
+			assertThat(transport.methods()).as(cacheScope.name()).hasSize(1);
+
+			provider.invalidateToolListing("tickets");
+			provider.getToolCallbacks();
+			provider.getToolCallbacks();
+
+			// Listed once more after the drop, and kept again from then on.
+			assertThat(transport.methods()).as(cacheScope.name()).hasSize(2);
+		}
+	}
+
+	@Test
+	void droppingTheListingOfOneConnectionLeavesTheOthersAlone() {
+		InMemoryTransport tickets = transport(60_000, CacheScope.PUBLIC, echoTool());
+		InMemoryTransport billing = transport(60_000, CacheScope.PUBLIC, echoTool());
+		SyncModernMcpToolCallbackProvider provider = SyncModernMcpToolCallbackProvider.builder()
+			.connection(SyncModernMcpConnection.perRequest(info("tickets"), () -> McpClient.sync(tickets).build()))
+			.connection(SyncModernMcpConnection.perRequest(info("billing"), () -> McpClient.sync(billing).build()))
+			.build();
+
+		provider.getToolCallbacks();
+		provider.invalidateToolListing("tickets");
+		provider.getToolCallbacks();
+
+		assertThat(tickets.methods()).hasSize(2);
+		assertThat(billing.methods()).hasSize(1);
+	}
+
+	@Test
+	void establishedListenStreamEndsTheCoolDownOfAServerThatCouldNotBeReached() {
+		InMemoryTransport server = transport(echoTool());
+		AtomicReference<RuntimeException> outage = new AtomicReference<>(httpStatus(503));
+		McpClientTransport flaky = request -> (outage.get() != null) ? Flux.error(outage.get())
+				: server.exchange(request);
+		SyncModernMcpToolCallbackProvider provider = SyncModernMcpToolCallbackProvider.builder()
+			.connection(SyncModernMcpConnection.perRequest(info("flaky"), () -> McpClient.sync(flaky).build()))
+			.unreachableCoolDown(Duration.ofSeconds(30))
+			.build();
+
+		assertThat(provider.getToolCallbacks()).isEmpty();
+		outage.set(null);
+		assertThat(provider.getToolCallbacks()).isEmpty();
+
+		// A listen stream that the server accepted shows that it is back.
+		provider.streamEstablished(info("flaky"));
+
+		assertThat(provider.getToolCallbacks()).hasSize(1);
+	}
+
+	@Test
 	void publicListingWithoutTtlIsNotKept() {
 		InMemoryTransport transport = transport(0, CacheScope.PUBLIC, echoTool());
 		SyncModernMcpToolCallbackProvider provider = SyncModernMcpToolCallbackProvider.builder()

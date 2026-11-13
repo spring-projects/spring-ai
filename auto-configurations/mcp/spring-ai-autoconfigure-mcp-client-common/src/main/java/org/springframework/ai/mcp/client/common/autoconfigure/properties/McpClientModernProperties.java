@@ -48,6 +48,10 @@ public class McpClientModernProperties {
 	 * its tools again. During that time its tools are left out without contacting it, so
 	 * a server that does not answer delays only one request in that time. Zero asks the
 	 * server on every request.
+	 * <p>
+	 * It is also the longest pause before a listen stream that ended, or that could not
+	 * be opened, is opened again. The first pause is one second and each further one is
+	 * twice as long, up to this time, which counts as one second if it is shorter.
 	 */
 	private Duration unreachableCoolDown = Duration.ofSeconds(30);
 

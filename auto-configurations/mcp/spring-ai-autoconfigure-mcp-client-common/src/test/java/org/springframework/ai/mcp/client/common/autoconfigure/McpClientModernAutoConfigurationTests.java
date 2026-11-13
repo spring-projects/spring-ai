@@ -29,6 +29,7 @@ import io.modelcontextprotocol.modern.client.McpClient;
 import io.modelcontextprotocol.modern.client.transport.HttpClientMcpTransport;
 import io.modelcontextprotocol.modern.client.transport.McpClientTransport;
 import io.modelcontextprotocol.spec.McpSchema;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import reactor.core.publisher.Flux;
@@ -46,6 +47,8 @@ import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpStre
 import org.springframework.ai.mcp.customizer.McpClientCustomizer;
 import org.springframework.ai.mcp.modern.client.McpModernToolFilter;
 import org.springframework.ai.mcp.modern.client.McpModernToolNamePrefixGenerator;
+import org.springframework.ai.mcp.modern.client.SyncModernMcpChangeListener;
+import org.springframework.ai.mcp.modern.client.SyncModernMcpChangeSubscriber;
 import org.springframework.ai.mcp.modern.client.SyncModernMcpConnection;
 import org.springframework.ai.mcp.modern.client.SyncModernMcpToolCallCustomizer;
 import org.springframework.ai.mcp.modern.client.SyncModernMcpToolCallbackProvider;
@@ -298,6 +301,63 @@ class McpClientModernAutoConfigurationTests {
 	}
 
 	@Test
+	void listenStreamIsKeptOnlyForTheConnectionsThatAskForIt(CapturedOutput output) {
+		// No connection listens unless it says so.
+		this.contextRunner.withPropertyValues(MODERN_TICKETS_URL, MODERN_TICKETS_PROTOCOL)
+			.run(context -> assertThat(context.getBean(SyncModernMcpChangeSubscriber.class).connectionNames())
+				.isEmpty());
+
+		// Nothing listens on these ports: a server that cannot be reached must not fail
+		// the startup.
+		this.contextRunner
+			.withPropertyValues(MODERN_TICKETS_URL, MODERN_TICKETS_PROTOCOL, CONNECTIONS + "tickets.listen=true",
+					CONNECTIONS + "catalog.url=http://localhost:8082", CONNECTIONS + "catalog.protocol=MODERN",
+					// A legacy connection has no listen stream.
+					LEGACY_BILLING_URL, CONNECTIONS + "billing.listen=true")
+			.run(context -> {
+				assertThat(context).hasNotFailed();
+				SyncModernMcpChangeSubscriber subscriber = context.getBean(SyncModernMcpChangeSubscriber.class);
+
+				assertThat(subscriber.connectionNames()).containsExactly("tickets");
+				assertThat(subscriber.isRunning()).isTrue();
+				// The provider hears about the changes, to drop a kept tool listing.
+				assertThat(subscriber).extracting("listeners")
+					.asInstanceOf(InstanceOfAssertFactories.LIST)
+					.hasSize(1)
+					.first()
+					.isInstanceOf(SyncModernMcpToolCallbackProvider.class);
+				assertThat(output)
+					.contains("The MCP connection 'billing' sets listen=true but does not use the MODERN");
+			});
+	}
+
+	@Test
+	void changeListenerBeansHearAboutTheChangesNextToTheProvider() {
+		this.contextRunner.withUserConfiguration(ChangeListenerConfiguration.class)
+			.withPropertyValues(MODERN_TICKETS_URL, MODERN_TICKETS_PROTOCOL, CONNECTIONS + "tickets.listen=true")
+			.run(context -> assertThat(context.getBean(SyncModernMcpChangeSubscriber.class)).extracting("listeners")
+				.asInstanceOf(InstanceOfAssertFactories.LIST)
+				.hasSize(2)
+				.contains(context.getBean(SyncModernMcpChangeListener.class))
+				.hasAtLeastOneElementOfType(SyncModernMcpToolCallbackProvider.class));
+	}
+
+	@Test
+	void pausesBeforeAListenStreamIsOpenedAgainGrowUpToTheUnreachableCoolDown() {
+		this.contextRunner.withPropertyValues(MODERN_TICKETS_URL, MODERN_TICKETS_PROTOCOL)
+			.run(context -> assertThat(context.getBean(SyncModernMcpChangeSubscriber.class))
+				.extracting("maxReopenDelay")
+				.isEqualTo(Duration.ofSeconds(30)));
+
+		this.contextRunner
+			.withPropertyValues(MODERN_TICKETS_URL, MODERN_TICKETS_PROTOCOL,
+					"spring.ai.mcp.client.modern.unreachable-cool-down=0s")
+			.run(context -> assertThat(context.getBean(SyncModernMcpChangeSubscriber.class))
+				.extracting("maxReopenDelay")
+				.isEqualTo(Duration.ofSeconds(1)));
+	}
+
+	@Test
 	void severalModernToolFiltersFailTheStartupUnlessOneIsPrimary() {
 		// Falling back to the default filter would expose all tools.
 		this.contextRunner.withUserConfiguration(TwoModernToolFiltersConfiguration.class)
@@ -444,6 +504,17 @@ class McpClientModernAutoConfigurationTests {
 		@Bean
 		UnusableHandlers unusableHandlers() {
 			return new UnusableHandlers();
+		}
+
+	}
+
+	@Configuration(proxyBeanMethods = false)
+	static class ChangeListenerConfiguration {
+
+		@Bean
+		SyncModernMcpChangeListener changeListener() {
+			return (connectionInfo, event) -> {
+			};
 		}
 
 	}

@@ -35,6 +35,7 @@ import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpClie
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpClientModernProperties;
 import org.springframework.ai.mcp.modern.client.McpModernToolFilter;
 import org.springframework.ai.mcp.modern.client.McpModernToolNamePrefixGenerator;
+import org.springframework.ai.mcp.modern.client.SyncModernMcpChangeSubscriber;
 import org.springframework.ai.mcp.modern.client.SyncModernMcpConnection;
 import org.springframework.ai.mcp.modern.client.SyncModernMcpToolCallCustomizer;
 import org.springframework.ai.mcp.modern.client.SyncModernMcpToolCallbackProvider;
@@ -90,6 +91,8 @@ public class McpToolCallbackAutoConfiguration {
 	 * tool calls of the modern connections
 	 * @param toolCallCustomizers the customizers of the tool calls of the modern
 	 * connections, applied in their order after the annotated handlers are set
+	 * @param changeSubscriber the subscriber of the listen streams of the modern
+	 * connections, which tells the provider when the tools of a server changed
 	 * @return list of tool callbacks for MCP integration
 	 */
 	@Bean
@@ -103,7 +106,8 @@ public class McpToolCallbackAutoConfiguration {
 			ObjectProvider<McpModernToolFilter> modernToolFilter,
 			ObjectProvider<McpModernToolNamePrefixGenerator> modernToolNamePrefixGenerator,
 			McpClientModernProperties modernProperties, ObjectProvider<ClientMcpSyncHandlersRegistry> handlersRegistry,
-			ObjectProvider<SyncModernMcpToolCallCustomizer> toolCallCustomizers) {
+			ObjectProvider<SyncModernMcpToolCallCustomizer> toolCallCustomizers,
+			ObjectProvider<SyncModernMcpChangeSubscriber> changeSubscriber) {
 
 		List<McpSyncClient> mcpClients = syncMcpClients.stream().flatMap(List::stream).toList();
 
@@ -158,7 +162,12 @@ public class McpToolCallbackAutoConfiguration {
 			Stream.concat(annotatedHandlers, toolCallCustomizers.orderedStream())
 				.reduce(SyncModernMcpToolCallCustomizer::andThen)
 				.ifPresent(modernBuilder::toolCallCustomizer);
-			builder.modernToolCallbackProvider(modernBuilder.build());
+			SyncModernMcpToolCallbackProvider modernProvider = modernBuilder.build();
+			// The provider drops a kept tool listing when the server reports a change on
+			// the listen stream of the connection. It is not a bean, so it is not among
+			// the listener beans that the subscriber was created with.
+			changeSubscriber.ifAvailable(subscriber -> subscriber.addListener(modernProvider));
+			builder.modernToolCallbackProvider(modernProvider);
 		}
 
 		return builder.build();

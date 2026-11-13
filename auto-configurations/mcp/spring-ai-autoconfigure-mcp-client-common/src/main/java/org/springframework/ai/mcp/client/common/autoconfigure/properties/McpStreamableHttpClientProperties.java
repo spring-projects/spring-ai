@@ -74,10 +74,13 @@ public class McpStreamableHttpClientProperties {
 	 * not set
 	 * @param clientScope how the clients of a modern connection are created and held;
 	 * {@code PER_REQUEST} when not set. It has no effect on a legacy connection.
+	 * @param listen whether a listen stream is kept open to the server of a modern
+	 * connection, to hear about its changes; {@code false} when not set. It has no effect
+	 * on a legacy connection.
 	 */
 	public record ConnectionParameters(@Nullable String url, @Nullable String endpoint,
 			McpClientCommonProperties.@Nullable Protocol protocol,
-			McpClientModernProperties.@Nullable ClientScope clientScope) {
+			McpClientModernProperties.@Nullable ClientScope clientScope, @Nullable Boolean listen) {
 
 		/**
 		 * Creates the parameters of a connection. This is the constructor the
@@ -94,7 +97,7 @@ public class McpStreamableHttpClientProperties {
 		 * @param endpoint the endpoint for the MCP server
 		 */
 		public ConnectionParameters(@Nullable String url, @Nullable String endpoint) {
-			this(url, endpoint, null, null);
+			this(url, endpoint, null, null, null);
 		}
 
 		/**
@@ -114,6 +117,15 @@ public class McpStreamableHttpClientProperties {
 		 */
 		public boolean isSharedClient() {
 			return this.clientScope == McpClientModernProperties.ClientScope.SHARED;
+		}
+
+		/**
+		 * Whether a listen stream is kept open to the server of the connection.
+		 * @return {@code true} if the connection listens for the changes of its server
+		 * @since 2.1.0
+		 */
+		public boolean isListening() {
+			return Boolean.TRUE.equals(this.listen);
 		}
 
 	}

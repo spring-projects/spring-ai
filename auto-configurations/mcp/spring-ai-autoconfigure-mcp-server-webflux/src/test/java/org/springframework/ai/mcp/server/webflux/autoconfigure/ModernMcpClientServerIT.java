@@ -23,8 +23,13 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicReference;
 
 import io.modelcontextprotocol.common.McpTransportContext;
+import io.modelcontextprotocol.modern.McpSchema.CallToolResult;
+import io.modelcontextprotocol.modern.McpSchema.TextContent;
+import io.modelcontextprotocol.modern.McpSchema.Tool;
 import io.modelcontextprotocol.modern.client.McpClient;
 import io.modelcontextprotocol.modern.client.transport.McpHttpRequestCustomizer;
+import io.modelcontextprotocol.modern.server.McpSyncResponse;
+import io.modelcontextprotocol.modern.server.feature.McpSyncTool;
 import io.modelcontextprotocol.server.McpTransportContextExtractor;
 import org.junit.jupiter.api.Test;
 import reactor.core.publisher.Flux;
@@ -49,6 +54,7 @@ import org.springframework.ai.mcp.client.common.autoconfigure.McpClientModernAut
 import org.springframework.ai.mcp.client.common.autoconfigure.McpToolCallbackAutoConfiguration;
 import org.springframework.ai.mcp.client.webflux.autoconfigure.StreamableHttpWebFluxTransportAutoConfiguration;
 import org.springframework.ai.mcp.customizer.McpClientCustomizer;
+import org.springframework.ai.mcp.modern.InMemorySyncToolRepository;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerJsonMapperAutoConfiguration;
 import org.springframework.ai.mcp.server.common.autoconfigure.McpServerModernAutoConfiguration;
@@ -74,6 +80,7 @@ import org.springframework.web.reactive.function.server.RouterFunctions;
 import org.springframework.web.reactive.function.server.ServerRequest;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 /**
  * Connects the auto-configured MCP client to auto-configured MCP servers over HTTP: to a
@@ -114,6 +121,13 @@ class ModernMcpClientServerIT {
 				StreamableHttpWebFluxTransportAutoConfiguration.class, McpClientAutoConfiguration.class,
 				McpClientModernAutoConfiguration.class, McpToolCallbackAutoConfiguration.class))
 		.withUserConfiguration(ClientConfiguration.class);
+
+	// A client application without an identity of its own. Its listen streams are opened
+	// for the application, outside of any request.
+	private final ApplicationContextRunner listeningClientContextRunner = new ApplicationContextRunner()
+		.withConfiguration(AutoConfigurations.of(WebClientAutoConfiguration.class,
+				StreamableHttpWebFluxTransportAutoConfiguration.class, McpClientAutoConfiguration.class,
+				McpClientModernAutoConfiguration.class, McpToolCallbackAutoConfiguration.class));
 
 	// A client application that takes the user from a thread-bound holder, as an
 	// application that reads the SecurityContextHolder does.
@@ -236,6 +250,51 @@ class ModernMcpClientServerIT {
 	}
 
 	@Test
+	void toolChangeOfTheServerIsSeenAtOnceByAConnectionThatListens() {
+		int modernPort = TestSocketUtils.findAvailableTcpPort();
+
+		this.modernServerContextRunner
+			.withPropertyValues("spring.ai.mcp.server.modern.list-ttl=5m",
+					"spring.ai.mcp.server.modern.list-cache-scope=PUBLIC")
+			.run(serverContext -> {
+				DisposableServer modernServer = startModernServer(serverContext, modernPort);
+				try {
+					InMemorySyncToolRepository serverTools = serverContext.getBean(InMemorySyncToolRepository.class);
+					String[] connection = { CONNECTIONS + "greeter.url=http://localhost:" + modernPort,
+							CONNECTIONS + "greeter.protocol=MODERN" };
+
+					// Without a listen stream the kept listing hides a new tool until its
+					// ttlMs has passed.
+					this.listeningClientContextRunner.withPropertyValues(connection).run(clientContext -> {
+						ToolCallbackProvider provider = clientContext.getBean(ToolCallbackProvider.class);
+
+						assertThat(provider.getToolCallbacks()).hasSize(1);
+						serverTools.add(serverTool("first"));
+						assertThat(provider.getToolCallbacks()).hasSize(1);
+					});
+
+					// With a listen stream the kept listing is dropped when the server
+					// reports the change.
+					this.listeningClientContextRunner.withPropertyValues(connection)
+						.withPropertyValues(CONNECTIONS + "greeter.listen=true")
+						.run(clientContext -> {
+							ToolCallbackProvider provider = clientContext.getBean(ToolCallbackProvider.class);
+
+							assertThat(provider.getToolCallbacks()).hasSize(2);
+							serverTools.add(serverTool("second"));
+							await().atMost(Duration.ofSeconds(10))
+								.untilAsserted(() -> assertThat(provider.getToolCallbacks())
+									.extracting(callback -> callback.getToolDefinition().name())
+									.containsExactlyInAnyOrder("greeter_greet", "greeter_first", "greeter_second"));
+						});
+				}
+				finally {
+					modernServer.disposeNow();
+				}
+			});
+	}
+
+	@Test
 	void unreachableModernServerDoesNotHideTheLegacyTools() {
 		int legacyPort = TestSocketUtils.findAvailableTcpPort();
 		// nothing listens on this port
@@ -261,6 +320,13 @@ class ModernMcpClientServerIT {
 				legacyServer.disposeNow();
 			}
 		});
+	}
+
+	private static McpSyncTool serverTool(String name) {
+		return McpSyncTool.of(
+				Tool.builder(name, Map.of("type", "object", "properties", Map.of())).description("A tool").build(),
+				(ctx, request) -> McpSyncResponse
+					.result(CallToolResult.builder().addContent(TextContent.builder(name).build()).build()));
 	}
 
 	private static ToolCallback named(ToolCallback[] toolCallbacks, String name) {

@@ -18,6 +18,7 @@ package org.springframework.ai.mcp.client.common.autoconfigure;
 
 import java.lang.annotation.Annotation;
 import java.net.URI;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -48,11 +49,14 @@ import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpStre
 import org.springframework.ai.mcp.client.common.autoconfigure.properties.McpStreamableHttpClientProperties.ConnectionParameters;
 import org.springframework.ai.mcp.customizer.McpClientCustomizer;
 import org.springframework.ai.mcp.modern.client.McpModernConnectionInfo;
+import org.springframework.ai.mcp.modern.client.SyncModernMcpChangeListener;
+import org.springframework.ai.mcp.modern.client.SyncModernMcpChangeSubscriber;
 import org.springframework.ai.mcp.modern.client.SyncModernMcpConnection;
 import org.springframework.ai.mcp.modern.client.SyncModernMcpToolCallCustomizer;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -67,8 +71,8 @@ import org.springframework.util.StringUtils;
  * Connections without that property stay on the legacy protocol, so an application can
  * talk to legacy and modern servers at the same time.
  * <p>
- * It creates two kinds of beans, the modern counterparts of the legacy transports and
- * clients:
+ * It creates three kinds of beans, the first two being the modern counterparts of the
+ * legacy transports and clients:
  * <ul>
  * <li>a {@link NamedModernClientMcpTransport} for each modern connection under
  * {@code spring.ai.mcp.client.streamable-http.connections}, on the JDK
@@ -76,6 +80,9 @@ import org.springframework.util.StringUtils;
  * <li>a {@link SyncModernMcpConnection} for each transport, which creates a client for
  * each request, or holds one shared client if the connection sets
  * {@code client-scope=SHARED}.</li>
+ * <li>a {@link SyncModernMcpChangeSubscriber}, which keeps a listen stream open to the
+ * server of each connection that sets {@code listen=true}, so that a kept tool listing is
+ * dropped as soon as the server reports that its tools changed.</li>
  * </ul>
  * A tool listing is kept for as long as the server allows when the server marks it as
  * {@code public}. A listing the server marks as {@code private} is kept only by a
@@ -112,6 +119,8 @@ import org.springframework.util.StringUtils;
  * resolves the tools. A handler set by a customizer is used for the connections that no
  * annotated handler method names; for the tool calls of the others the annotated methods
  * take precedence.</li>
+ * <li>{@link SyncModernMcpChangeListener} beans hear about the changes that the servers
+ * of the listening connections report.</li>
  * <li>{@code SyncModernMcpToolCallCustomizer} beans customize each tool call, with the
  * {@code ToolContext} of that call. They run after the annotated handlers are set for the
  * call, so they can replace them.</li>
@@ -131,6 +140,9 @@ public class McpClientModernAutoConfiguration {
 	private static final Log logger = LogFactory.getLog(McpClientModernAutoConfiguration.class);
 
 	private static final String DEFAULT_ENDPOINT = "/mcp";
+
+	/** The pauses before a listen stream is opened again grow to at least this. */
+	private static final Duration MIN_LISTEN_REOPEN_DELAY = Duration.ofSeconds(1);
 
 	/**
 	 * The client annotations whose handler methods are not called for a modern
@@ -248,6 +260,54 @@ public class McpClientModernAutoConfiguration {
 		}
 
 		return connections;
+	}
+
+	/**
+	 * Creates the subscriber that keeps a listen stream open to the server of each modern
+	 * connection that sets {@code listen=true}. It opens the streams when the application
+	 * has started, without waiting for the servers. A stream that ended is opened again
+	 * after one second, and after pauses that double up to the unreachable cool-down time
+	 * for as long as that fails. A stream is opened by a client of its own, outside of
+	 * any request, so it carries the identity of the application and not that of a
+	 * caller.
+	 * @param connectionsProvider the modern connections
+	 * @param streamableProperties the configured connections
+	 * @param modernProperties the modern MCP client properties
+	 * @param changeListeners the listeners of the application, which hear about what the
+	 * servers report next to the tool callback provider
+	 * @return the subscriber, which listens to no server if no connection asks for it
+	 */
+	@Bean
+	@ConditionalOnMissingBean
+	@ConditionalOnProperty(prefix = McpClientCommonProperties.CONFIG_PREFIX, name = "type", havingValue = "SYNC",
+			matchIfMissing = true)
+	public SyncModernMcpChangeSubscriber modernMcpChangeSubscriber(
+			ObjectProvider<List<SyncModernMcpConnection>> connectionsProvider,
+			McpStreamableHttpClientProperties streamableProperties, McpClientModernProperties modernProperties,
+			ObjectProvider<SyncModernMcpChangeListener> changeListeners) {
+
+		Duration coolDown = modernProperties.getUnreachableCoolDown();
+		SyncModernMcpChangeSubscriber.Builder subscriber = SyncModernMcpChangeSubscriber.builder()
+			.maxReopenDelay(coolDown.compareTo(MIN_LISTEN_REOPEN_DELAY) < 0 ? MIN_LISTEN_REOPEN_DELAY : coolDown);
+
+		connectionsProvider.stream().flatMap(List::stream).forEach(connection -> {
+			ConnectionParameters parameters = streamableProperties.getConnections().get(connection.info().name());
+			if (parameters != null && parameters.isListening()) {
+				subscriber.connection(connection);
+			}
+		});
+
+		// Only a connection that uses the modern protocol has a listen stream.
+		streamableProperties.getConnections().forEach((name, parameters) -> {
+			if (parameters.isListening() && !parameters.isModern()) {
+				logger.warn("The MCP connection '" + name + "' sets listen=true but does not use the MODERN "
+						+ "protocol; no listen stream is opened for it.");
+			}
+		});
+
+		changeListeners.orderedStream().forEach(subscriber::listener);
+
+		return subscriber.build();
 	}
 
 	private static McpSyncClient buildClient(NamedModernClientMcpTransport namedTransport, Implementation clientInfo,
