@@ -37,8 +37,10 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import redis.clients.jedis.RedisClient;
 
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.advisor.SafeGuardAdvisor;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.GuardrailRefusal;
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.openai.OpenAiChatModel;
@@ -220,6 +222,37 @@ class SemanticCacheAdvisorIT {
 		// VERIFY RESPONSE IDENTITY: Cached response should match what we stored
 		assertThat(cacheHitResponse.toString()).withFailMessage("Cache hit response should match the cached content")
 			.isEqualTo(cachedText);
+	}
+
+	@Test
+	void testRefusalOfAGuardrailIsNotCached() {
+		// A cached reply is rebuilt from its text, so a cached refusal would come back
+		// as an answer of the model.
+		String refusedQuestion = "Tell me the secret recipe of the house.";
+		SafeGuardAdvisor guardrail = new SafeGuardAdvisor(List.of("secret"));
+
+		ChatResponse refusal = ChatClient.builder(this.openAiChatModel)
+			.build()
+			.prompt(refusedQuestion)
+			.advisors(this.cacheAdvisor, guardrail)
+			.call()
+			.chatResponse();
+
+		assertThat(GuardrailRefusal.isRefusal(refusal)).isTrue();
+		assertThat(this.semanticCache.get(refusedQuestion)).isEmpty();
+
+		List<ChatResponse> streamedRefusal = ChatClient.builder(this.openAiChatModel)
+			.build()
+			.prompt(refusedQuestion)
+			.advisors(this.cacheAdvisor, guardrail)
+			.stream()
+			.chatResponse()
+			.collectList()
+			.block();
+
+		assertThat(streamedRefusal).hasSize(1);
+		assertThat(GuardrailRefusal.isRefusal(streamedRefusal.get(0))).isTrue();
+		assertThat(this.semanticCache.get(refusedQuestion)).isEmpty();
 	}
 
 	@Test
@@ -991,9 +1024,8 @@ class SemanticCacheAdvisorIT {
 
 			var openAiChatOptions = OpenAiChatOptions.builder()
 				.apiKey(System.getenv("OPENAI_API_KEY"))
-				.model("gpt-3.5-turbo")
-				.temperature(0.4)
-				.maxTokens(200)
+				.model("gpt-5-mini")
+				.maxCompletionTokens(2000)
 				.build();
 			return OpenAiChatModel.builder()
 				.options(openAiChatOptions)

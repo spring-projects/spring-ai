@@ -56,90 +56,114 @@ class OpenAiDecisionModelIT {
 	private OpenAiDecisionModel decisionModel;
 
 	@Test
+	void docsExample() {
+		DecisionResponse response = this.decisionModel.call(DecisionPrompt.builder()
+			.text("My new headphones arrived yesterday, but the left side doesn't work. Can I get my money back?")
+			.question("defect",
+					YesNoQuestion.builder()
+						.text("Does the customer report a defect?")
+						.whenYes("Part of the item does not work as it should")
+						.whenNo("The item works, and the message is about something else")
+						.build())
+			.question("topic",
+					ChoiceQuestion.builder()
+						.text("What is the message about?")
+						.option("delivery", "Where an order is, or when it will arrive")
+						.option("product", "A problem with an item the customer received")
+						.option("account", "Login, address or payment details")
+						.option("other", "None of the above")
+						.build())
+			.question("satisfaction", ScoreQuestion.of("How satisfied is the customer?", "unhappy", "neutral", "happy"))
+			.build());
+
+		assertThat(response.getAnswers().keySet()).containsExactly("defect", "topic", "satisfaction");
+		assertThat(response.getYesNo("defect").isYes()).isTrue();
+		assertThat(response.getChoice("topic").getValue()).isEqualTo("product");
+		assertThat(response.getScore("satisfaction").getNearestLevel()).isLessThanOrEqualTo(1);
+	}
+
+	@Test
 	void yesNo() {
-		var question = YesNoQuestion.of("Is this message spam?");
+		var question = YesNoQuestion.of("Does the customer report a defect?");
 
-		var spam = this.decisionModel.call("WIN A FREE CRUISE!!! Click here now to claim your prize",
-				Map.of("spam", question));
-		var notSpam = this.decisionModel.call("Hi Anna, are we still on for lunch tomorrow at noon?",
-				Map.of("spam", question));
+		var defect = this.decisionModel.call(
+				"My new headphones arrived yesterday, but the left side doesn't work. Can I get my money back?",
+				Map.of("defect", question));
+		var noDefect = this.decisionModel.call("Where is my order? I ordered it two weeks ago.",
+				Map.of("defect", question));
 
-		assertThat(spam.getYesNo("spam").getProbability()).isGreaterThan(notSpam.getYesNo("spam").getProbability());
-		assertThat(spam.getMetadata().getId()).isNotBlank();
-		assertThat(spam.getMetadata().getModel()).isNotBlank();
-		assertThat(spam.getMetadata().getUsage().getTotalTokens()).isPositive();
+		assertThat(defect.getYesNo("defect").getProbability())
+			.isGreaterThan(noDefect.getYesNo("defect").getProbability());
+		assertThat(defect.getMetadata().getId()).isNotBlank();
+		assertThat(defect.getMetadata().getModel()).isNotBlank();
+		assertThat(defect.getMetadata().getUsage().getTotalTokens()).isPositive();
 	}
 
 	@Test
 	void choice() {
-		var response = this.decisionModel.call("My invoice shows a charge I never authorised",
-				Map.of("team",
+		var response = this.decisionModel.call("Where is my order? I ordered it two weeks ago.",
+				Map.of("topic",
 						ChoiceQuestion.builder()
-							.text("Which team should handle this request?")
-							.option("billing", "Invoices, charges and refunds")
-							.option("technical", "Bugs and outages")
-							.option("sales", "Quotes and new purchases")
+							.text("What is the message about?")
+							.option("delivery", "Where an order is, or when it will arrive")
+							.option("product", "A problem with an item the customer received")
+							.option("account", "Login, address or payment details")
 							.build()));
 
-		assertThat(response.getChoice("team").getValue()).isEqualTo("billing");
-		assertThat(response.getChoice("team").getProbabilities()).containsKeys("billing", "technical", "sales");
-		assertThat(response.getChoice("team").getProbability("billing")).isGreaterThan(0.5);
+		assertThat(response.getChoice("topic").getValue()).isEqualTo("delivery");
+		assertThat(response.getChoice("topic").getProbabilities()).containsKeys("delivery", "product", "account");
+		assertThat(response.getChoice("topic").getProbability("delivery")).isGreaterThan(0.5);
 	}
 
 	@Test
 	void score() {
-		var question = ScoreQuestion.builder()
-			.text("How urgent is this request?")
-			.levels("low", "medium", "high")
-			.build();
+		var question = ScoreQuestion.of("How satisfied is the customer?", "unhappy", "neutral", "happy");
 
-		var urgent = this.decisionModel.call("Our production site is down and customers cannot pay!",
-				Map.of("urgency", question));
-		var relaxed = this.decisionModel.call("Whenever you have a moment, could you share the 2023 brochure?",
-				Map.of("urgency", question));
+		var happy = this.decisionModel.call("The headphones are great, and they arrived a day early. Thank you!",
+				Map.of("satisfaction", question));
+		var unhappy = this.decisionModel.call("This is the third time my order arrives late. I am really disappointed.",
+				Map.of("satisfaction", question));
 
-		assertThat(urgent.getScore("urgency").getValue()).isGreaterThan(relaxed.getScore("urgency").getValue());
-		assertThat(urgent.getScore("urgency").getProbabilities()).hasSize(3);
+		assertThat(happy.getScore("satisfaction").getValue())
+			.isGreaterThan(unhappy.getScore("satisfaction").getValue());
+		assertThat(happy.getScore("satisfaction").getProbabilities()).hasSize(3);
 	}
 
 	@Test
 	void severalQuestionsWithFieldsInput() {
 		Map<String, Object> fields = new LinkedHashMap<>();
-		fields.put("subject", "Payouts late again");
-		fields.put("body", "This is the third time this month my payout is delayed. Fix it now.");
-		fields.put("customer_since", 2019);
+		fields.put("message", "This is the third time my order arrives late.");
+		fields.put("orders", 12);
+		fields.put("late_deliveries", 3);
 
 		DecisionResponse response = this.decisionModel.call(DecisionPrompt.builder()
 			.fields(fields)
-			.question("urgent", YesNoQuestion.of("Is the request urgent?"))
-			.question("team",
-					ChoiceQuestion.builder()
-						.text("Which team should handle it?")
-						.options("billing", "technical")
-						.build())
-			.question("mood",
-					ScoreQuestion.builder()
-						.text("How is the customer's mood?")
-						.levels("calm", "annoyed", "angry")
-						.build())
+			.question("repeated", YesNoQuestion.of("Does the customer say that the problem happened before?"))
+			.question("topic", ChoiceQuestion.of("What is the message about?", "delivery", "product", "account"))
+			.question("satisfaction", ScoreQuestion.of("How satisfied is the customer?", "unhappy", "neutral", "happy"))
 			.build());
 
 		assertThat(response.getResults()).hasSize(3);
-		assertThat(response.getAnswers().keySet()).containsExactly("urgent", "team", "mood");
-		assertThat(response.getYesNo("urgent").isYes()).isTrue();
-		assertThat(response.getChoice("team").getValue()).isEqualTo("billing");
-		assertThat(response.getScore("mood").getValue()).isGreaterThan(0.5);
+		assertThat(response.getAnswers().keySet()).containsExactly("repeated", "topic", "satisfaction");
+		assertThat(response.getYesNo("repeated").isYes()).isTrue();
+		assertThat(response.getChoice("topic").getValue()).isEqualTo("delivery");
+		assertThat(response.getScore("satisfaction").getValue()).isLessThan(1.5);
 	}
 
 	@Test
 	void conversationInput() {
-		var messages = List.of(new UserMessage("What is the capital of France?"),
-				new AssistantMessage("The capital of France is Paris."));
+		var question = YesNoQuestion.of("Does the last assistant message answer the user's question?");
 
-		var response = this.decisionModel.call(DecisionInput.conversation(messages),
-				Map.of("correct", YesNoQuestion.of("Is the assistant's answer correct?")));
+		var answered = this.decisionModel.call(
+				DecisionInput.conversation(List.of(new UserMessage("Can I return the headphones?"),
+						new AssistantMessage("Yes, you can return them within 30 days of delivery."))),
+				Map.of("answered", question));
+		var notAnswered = this.decisionModel
+			.call(DecisionInput.conversation(List.of(new UserMessage("Can I return the headphones?"),
+					new AssistantMessage("Your order will arrive on Friday."))), Map.of("answered", question));
 
-		assertThat(response.getYesNo("correct").isYes()).isTrue();
+		assertThat(answered.getYesNo("answered").isYes()).isTrue();
+		assertThat(notAnswered.getYesNo("answered").isYes()).isFalse();
 	}
 
 	@Test

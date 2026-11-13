@@ -387,6 +387,10 @@ If the person never decides, a chat memory holds a reply with tool calls but no 
 Most model providers reject such a conversation on the next request.
 Before you accept new input for a conversation with a pending pause, resolve the pause, for example by denying all its calls with a message such as "The user moved on.".
 
+With xref:api/session/chat-client.adoc#session-chat-client-integrity[session memory], the `SessionTurnAdvisor` answers the calls of a pending pause when the next turn starts, with a neutral "No result was recorded for this tool call.", so the conversation stays valid if you do not resolve the pause.
+Deny the calls yourself when the model should learn that the person declined.
+After new input was accepted, do not resume that pause.
+
 [[tool-search]]
 == Tool Search Tool
 

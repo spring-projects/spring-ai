@@ -37,10 +37,34 @@ public interface ChatGenerationMetadata extends ResultMetadata {
 	ChatGenerationMetadata NULL = builder().build();
 
 	/**
-	 * Get the {@link String reason} this choice completed for the generation.
-	 * @return the {@link String reason} this choice completed for the generation.
+	 * Get the reason this generation finished, as the provider names it. The names differ
+	 * between providers: {@code stop}, {@code end_turn} and {@code STOP} all say that the
+	 * model finished its answer. For a meaning that is the same for every provider, see
+	 * {@link #getFinishReasonCategory()}.
+	 * @return the raw finish reason of the provider, or {@code null} when it gave none
 	 */
 	@Nullable String getFinishReason();
+
+	/**
+	 * Return the normalized category of the finish reason, which is the same for every
+	 * provider, while {@link #getFinishReason()} keeps the name the provider uses.
+	 * <p>
+	 * A chat model classifies its own finish reasons and sets the category with
+	 * {@link Builder#finishReasonCategory(FinishReasonCategory)}. It sees the whole
+	 * provider response, so it can also classify a stop that the finish reason alone does
+	 * not tell, such as a refusal reported in another field.
+	 * <p>
+	 * This default implementation is the fallback for metadata that carries no category.
+	 * It classifies the raw string only: a {@code null} reason is
+	 * {@link FinishReasonCategory#UNSPECIFIED} and an unrecognized non-blank reason is
+	 * {@link FinishReasonCategory#OTHER}.
+	 * @return the categorized finish reason, never {@code null}
+	 * @since 2.1.0
+	 * @see FinishReasonCategory#categorize(String)
+	 */
+	default FinishReasonCategory getFinishReasonCategory() {
+		return FinishReasonCategory.categorize(getFinishReason());
+	}
 
 	Set<String> getContentFilters();
 
@@ -67,9 +91,24 @@ public interface ChatGenerationMetadata extends ResultMetadata {
 	public interface Builder {
 
 		/**
-		 * Set the reason this choice completed for the generation.
+		 * Set the reason this generation finished, as the provider names it. See
+		 * {@link #finishReasonCategory(FinishReasonCategory)} for its normalized
+		 * category.
 		 */
 		Builder finishReason(@Nullable String finishReason);
+
+		/**
+		 * Set the normalized category of the finish reason. A chat model sets it next to
+		 * {@link #finishReason(String)}, as it knows what the names of its provider mean.
+		 * When it is not set, the category is derived from the raw finish reason with
+		 * {@link FinishReasonCategory#categorize(String)}.
+		 * @param finishReasonCategory the category, or {@code null} to derive it
+		 * @return this builder
+		 * @since 2.1.0
+		 */
+		default Builder finishReasonCategory(@Nullable FinishReasonCategory finishReasonCategory) {
+			return this;
+		}
 
 		/**
 		 * Add metadata to the Generation result.

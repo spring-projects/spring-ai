@@ -24,9 +24,13 @@ import io.modelcontextprotocol.server.McpServer;
  * @author Daniel Garnier-Moiroux
  * @since 1.1.3
  * @see io.modelcontextprotocol.server.McpServer.SyncSpecification
+ * @deprecated in favor of {@code McpServerCustomizer<McpServer.SyncSpecification<?>>},
+ * see {@link McpServerCustomizer}
  */
-public interface McpSyncServerCustomizer {
+@Deprecated(since = "2.1.0", forRemoval = true)
+public interface McpSyncServerCustomizer extends McpServerCustomizer<McpServer.SyncSpecification<?>> {
 
+	@Override
 	void customize(McpServer.SyncSpecification<?> serverBuilder);
 
 }

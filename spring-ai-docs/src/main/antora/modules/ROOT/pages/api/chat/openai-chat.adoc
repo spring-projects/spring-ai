@@ -47,6 +47,39 @@ You can also set this configuration programmatically in your application code:
 String apiKey = System.getenv("OPENAI_API_KEY");
 ----
 
+=== Connection Details
+
+The base URL and API key are resolved through a Spring Boot `ConnectionDetails` bean of type `OpenAiConnectionDetails`.
+By default, the bean is backed by the `spring.ai.openai.base-url` and `spring.ai.openai.api-key` properties.
+To develop or test against an OpenAI-compatible model server running in a container (for example via Testcontainers or Docker Compose), declare your own `OpenAiConnectionDetails` bean pointing at the container. It supersedes those two properties, while the model-level overrides such as `spring.ai.openai.chat.base-url` and `spring.ai.openai.chat.api-key` still take precedence.
+
+[source,java]
+----
+@TestConfiguration(proxyBeanMethods = false)
+class OpenAiContainerConfiguration {
+
+    @Bean
+    OpenAiConnectionDetails openAiConnectionDetails(GenericContainer<?> modelServer) {
+        return new OpenAiConnectionDetails() {
+
+            @Override
+            public String getBaseUrl() {
+                return "http://" + modelServer.getHost() + ":" + modelServer.getFirstMappedPort() + "/v1";
+            }
+
+            @Override
+            public String getApiKey() {
+                return "";
+            }
+
+        };
+    }
+
+}
+----
+
+An empty API key disables authentication, which is what most local OpenAI-compatible servers expect.
+
 === Add Repositories and BOM
 
 Spring AI artifacts are published in Maven Central and Spring Snapshot repositories.

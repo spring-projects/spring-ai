@@ -42,11 +42,14 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class JdbcSessionRepositoryMariaDbAutoConfigurationIT {
 
+	// continue-on-error is true by default and would hide a statement that fails, on the
+	// first run or on a later one; with false such a statement fails the startup.
 	private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
 		.withConfiguration(AutoConfigurations.of(JdbcSessionRepositoryAutoConfiguration.class,
 				JdbcTemplateAutoConfiguration.class, DataSourceAutoConfiguration.class))
 		.withPropertyValues("spring.datasource.url=jdbc:tc:mariadb:11.4:///sessiontest",
-				JdbcSessionRepositoryProperties.CONFIG_PREFIX + ".initialize-schema=always");
+				JdbcSessionRepositoryProperties.CONFIG_PREFIX + ".initialize-schema=always",
+				JdbcSessionRepositoryProperties.CONFIG_PREFIX + ".continue-on-error=false");
 
 	@Test
 	void schemaInitializerResolvesMysqlScript() {
@@ -54,6 +57,17 @@ class JdbcSessionRepositoryMariaDbAutoConfigurationIT {
 			.extracting("settings.schemaLocations")
 			.asInstanceOf(InstanceOfAssertFactories.LIST)
 			.containsOnly("classpath:org/springframework/ai/session/jdbc/schema-mysql.sql"));
+	}
+
+	@Test
+	void schemaInitializationIsRepeatable() {
+		// initialize-schema=always re-runs the script on every startup against an
+		// existing database; MariaDB must accept a second run of the MySQL script too.
+		this.contextRunner.run(context -> {
+			var initializer = context.getBean(JdbcSessionRepositorySchemaInitializer.class);
+			assertThat(initializer.initializeDatabase()).isTrue();
+			assertThat(context.getBean(JdbcSessionRepository.class).findById("missing")).isNull();
+		});
 	}
 
 	@Test

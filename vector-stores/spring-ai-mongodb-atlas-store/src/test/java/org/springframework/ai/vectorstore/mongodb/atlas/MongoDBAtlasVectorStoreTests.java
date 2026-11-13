@@ -23,14 +23,21 @@ import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.MongoCollection;
 import org.bson.conversions.Bson;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatcher;
+import org.mockito.InOrder;
 
 import org.springframework.ai.document.Document;
 import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.ai.vectorstore.EmbeddedDocument;
 import org.springframework.dao.DataAccessResourceFailureException;
+import org.springframework.data.mongodb.core.BulkOperations;
+import org.springframework.data.mongodb.core.FindAndReplaceOptions;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.convert.MongoConverter;
+import org.springframework.data.mongodb.core.query.Query;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
@@ -39,8 +46,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -207,8 +216,106 @@ class MongoDBAtlasVectorStoreTests {
 		assertThat(store.createObservationContextBuilder("query").build().getDimensions()).isEqualTo(5);
 	}
 
+	@Test
+	void upsertSavesEachDocumentUnlessBulkIsConfigured() {
+		when(this.listResult.first()).thenReturn(index(field("vector", "embedding", 4)));
+
+		store().upsert(List.of(entry("a"), entry("b")));
+
+		verify(this.mongoTemplate, times(2)).save(any(org.bson.Document.class), eq("vector_store"));
+		verify(this.mongoTemplate, never()).bulkOps(any(BulkOperations.BulkMode.class), anyString());
+	}
+
+	@Test
+	void bulkUpsertWritesOrderedReplacementsInBoundedBatches() {
+		when(this.listResult.first()).thenReturn(index(field("vector", "embedding", 4)));
+		doAnswer(invocation -> {
+			MongoDBAtlasVectorStore.MongoDBDocument source = invocation.getArgument(0);
+			invocation.<org.bson.Document>getArgument(1).put("_id", source.id());
+			return null;
+		}).when(this.converter).write(any(), any(org.bson.Document.class));
+		BulkOperations firstBatch = mock(BulkOperations.class);
+		BulkOperations lastBatch = mock(BulkOperations.class);
+		when(this.mongoTemplate.bulkOps(BulkOperations.BulkMode.ORDERED, "vector_store")).thenReturn(firstBatch)
+			.thenReturn(lastBatch);
+
+		bulkStore(2).upsert(List.of(entry("a"), entry("b"), entry("c")));
+
+		InOrder inOrder = inOrder(firstBatch, lastBatch);
+		inOrder.verify(firstBatch).replaceOne(argThat(sameId("a")), any(org.bson.Document.class), argThat(upsert()));
+		inOrder.verify(firstBatch).replaceOne(argThat(sameId("b")), any(org.bson.Document.class), argThat(upsert()));
+		inOrder.verify(firstBatch).execute();
+		inOrder.verify(lastBatch).replaceOne(argThat(sameId("c")), any(org.bson.Document.class), argThat(upsert()));
+		inOrder.verify(lastBatch).execute();
+		verify(this.mongoTemplate, never()).save(any(org.bson.Document.class), anyString());
+	}
+
+	@Test
+	void aFailedConversionWritesWhatIsAlreadyQueuedInItsBatch() {
+		when(this.listResult.first()).thenReturn(index(field("vector", "embedding", 4)));
+		IllegalStateException conversionFailure = new IllegalStateException("cannot convert b");
+		doAnswer(invocation -> {
+			MongoDBAtlasVectorStore.MongoDBDocument source = invocation.getArgument(0);
+			if (source.id().equals("b")) {
+				throw conversionFailure;
+			}
+			invocation.<org.bson.Document>getArgument(1).put("_id", source.id());
+			return null;
+		}).when(this.converter).write(any(), any(org.bson.Document.class));
+		BulkOperations batch = mock(BulkOperations.class);
+		when(this.mongoTemplate.bulkOps(BulkOperations.BulkMode.ORDERED, "vector_store")).thenReturn(batch);
+
+		assertThatThrownBy(() -> bulkStore(2).upsert(List.of(entry("a"), entry("b"), entry("c"))))
+			.isSameAs(conversionFailure);
+
+		InOrder inOrder = inOrder(batch);
+		inOrder.verify(batch).replaceOne(argThat(sameId("a")), any(org.bson.Document.class), argThat(upsert()));
+		inOrder.verify(batch).execute();
+		verify(batch, times(1)).replaceOne(any(Query.class), any(org.bson.Document.class),
+				any(FindAndReplaceOptions.class));
+		verify(this.mongoTemplate, times(1)).bulkOps(any(BulkOperations.BulkMode.class), anyString());
+	}
+
+	@Test
+	void aWrongSizeBeyondTheFirstBatchStopsBulkUpsertBeforeAnyWrite() {
+		when(this.listResult.first()).thenReturn(index(field("vector", "embedding", 4)));
+
+		assertThatIllegalArgumentException()
+			.isThrownBy(() -> bulkStore(1).upsert(List.of(entry("a"), entry("b"), entry(3))))
+			.withMessageContaining("Embedding at index 2");
+
+		verify(this.mongoTemplate, never()).bulkOps(any(BulkOperations.BulkMode.class), anyString());
+	}
+
+	@ParameterizedTest
+	@ValueSource(ints = { 0, -1 })
+	void aBulkUpsertBatchSizeMustBePositive(int batchSize) {
+		assertThatIllegalArgumentException()
+			.isThrownBy(() -> MongoDBAtlasVectorStore.builder(this.mongoTemplate, this.embeddingModel)
+				.bulkUpsertBatchSize(batchSize))
+			.withMessageContaining("bulkUpsertBatchSize");
+	}
+
 	private MongoDBAtlasVectorStore store() {
 		return MongoDBAtlasVectorStore.builder(this.mongoTemplate, this.embeddingModel).build();
+	}
+
+	private MongoDBAtlasVectorStore bulkStore(int batchSize) {
+		return MongoDBAtlasVectorStore.builder(this.mongoTemplate, this.embeddingModel)
+			.bulkUpsertBatchSize(batchSize)
+			.build();
+	}
+
+	private static ArgumentMatcher<Query> sameId(String id) {
+		return query -> id.equals(query.getQueryObject().get("_id"));
+	}
+
+	private static ArgumentMatcher<FindAndReplaceOptions> upsert() {
+		return FindAndReplaceOptions::isUpsert;
+	}
+
+	private static EmbeddedDocument entry(String id) {
+		return new EmbeddedDocument(new Document(id, "text", Map.of()), new float[] { 1f, 0f, 0f, 0f });
 	}
 
 	private static EmbeddedDocument entry(int dimensions) {

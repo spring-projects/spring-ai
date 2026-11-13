@@ -8,9 +8,17 @@
 
 ==== New: `DecisionModel` API
 
-A new `DecisionModel` API, in `org.springframework.ai.decision`, answers typed yes/no, choice and score questions about a text, a set of fields or a conversation, and returns the probability of each outcome instead of generated text.
+A new `DecisionModel` API, in `org.springframework.ai.decision`, picks among a known set of outcomes, such as yes or no, one of several categories or a level on a scale, and reports how likely each outcome is.
 It follows the shape of the other model APIs: a `DecisionPrompt` goes in, a `DecisionResponse` comes out, and `DecisionOptions` tune the call.
-The first implementation is `OpenAiDecisionModel`, backed by the OpenAI Decisions API and auto-configured by the OpenAI starter under `spring.ai.openai.decision`.
+Three implementations are available:
+
+* `OpenAiDecisionModel`, backed by the OpenAI Decisions API and auto-configured by the OpenAI starter under `spring.ai.openai.decision`.
+See xref:api/decision/openai-decision.adoc[OpenAI Decision Models];
+* `OllamaDecisionModel`, backed by the Ollama `/v1/systemone` endpoint through the `SystemOneClient` of `spring-ai-systemone` and auto-configured by the Ollama starter under `spring.ai.ollama.decision`, with `d1-omni:600m` as the default model and `spring.ai.ollama.init.decision` to pull decision models at startup.
+See xref:api/decision/ollama-decision.adoc[Ollama Decision Models];
+* `SystemOneDecisionModel`, designed for the `/v1/systemone` endpoint, with the `SystemOneClient` of the protocol in the `spring-ai-systemone` module, and usable with TypeSafe, Laya, llmman, Ollama, and other compatible inference services, auto-configured by the `spring-ai-starter-model-systemone` starter under `spring.ai.systemone`.
+See xref:api/decision/systemone-decision.adoc[System One Decision Models].
+
 Decision models are observed with the `decision` operation name, and the new `spring-ai-autoconfigure-model-decision-observation` module adds token usage metrics.
 See xref:api/decision.adoc[Decision Models].
 
@@ -60,6 +68,18 @@ It now skips them, so a custom chat model that streams a tool call only as parti
 Such a chat model must also emit the complete `ToolCallPart`, at the same index as its deltas, as the built-in chat models do.
 
 === Anthropic
+
+==== Changed: Anthropic Java SDK 3.x
+
+The Anthropic module now uses Java SDK `3.4.0` and API version `2026-10-21`.
+Remove `temperature`, `topP` and `topK` from model defaults and request options, including explicit default values.
+Remove `spring.ai.anthropic.chat.temperature`, `spring.ai.anthropic.chat.top-p` and `spring.ai.anthropic.chat.top-k`, including their legacy `.options` aliases.
+The retained Java methods and Boot properties are deprecated since `2.1.0`; the legacy aliases remain deprecated since `2.0.0`.
+Sampling values in model defaults and request options are discarded and a `WARN` message is logged.
+
+API keys now use `Authorization: Bearer` instead of `X-Api-Key`.
+Update proxies, interceptors and header allowlists that depend on the previous header.
+See xref:api/chat/anthropic-migration.adoc#anthropic-sdk-3[Anthropic Java SDK 3.x migration] for details.
 
 ==== Changed: Thinking Is Returned as `ReasoningPart`s of a Single Generation
 
@@ -151,6 +171,13 @@ The following message metadata keys are still written, and read on replay when t
 On a streamed chunk it holds the reasoning accumulated so far, not the delta.
 * `openai.tool_calls.additional_properties`: use the payload of the `ToolCallPart`.
 
+==== Changed: A Finish Reason That the API Does Not Define Is Kept
+
+An OpenAI-compatible provider may send a finish reason that the OpenAI API does not define, such as `eos`.
+`OpenAiChatModel` used to report `null` for it.
+`ChatGenerationMetadata.getFinishReason()` now returns the value as it was sent.
+The finish reasons that the API defines are reported by their name, such as `STOP`, as before.
+
 === DeepSeek
 
 ==== Changed: `DeepSeekChatModel` Builds Its Messages from Message Parts
@@ -212,6 +239,16 @@ A test mock that only stubs `chatCompletionStream` returns `null` from `chatComp
 ===== Migration
 
 Override or stub `chatCompletionStreamRaw` instead of `chatCompletionStream`.
+
+=== OpenAI Service Connections
+
+==== New: `OpenAiConnectionDetails`
+
+The OpenAI auto-configurations now resolve the base URL and API key through a Spring Boot `ConnectionDetails` bean, `OpenAiConnectionDetails`.
+By default the bean is backed by the `spring.ai.openai.base-url` and `spring.ai.openai.api-key` properties, so existing configuration keeps working.
+Declaring your own `OpenAiConnectionDetails` bean supersedes those two properties, while the model-level overrides such as `spring.ai.openai.chat.base-url` and `spring.ai.openai.chat.api-key` still take precedence.
+This is the hook for pointing the OpenAI models at an OpenAI-compatible server running in a container, for example via Testcontainers or Docker Compose.
+See xref:api/chat/openai-chat.adoc#_connection_details[Connection Details].
 
 === Bedrock Converse
 
@@ -334,6 +371,43 @@ If you rely on reading the computed similarity distance from `document.getMetada
 If your documents use `distance` for domain-specific data, consider renaming that field to avoid the collision and the warning.
 
 
+=== Chat Client
+
+==== New: Finish Reason Categories
+
+`ChatGenerationMetadata.getFinishReasonCategory()` maps the finish reason of a provider onto a `FinishReasonCategory` (`COMPLETED`, `TRUNCATED`, `TOOL_CALL`, `FILTERED`, `OTHER`, `UNSPECIFIED`), and `ChatResponse.hasFinishReasonCategory(...)` checks all generations of a response.
+`getFinishReason()` still returns the name the provider uses.
+The chat models of Spring AI classify their own finish reasons.
+A custom `ChatModel` can do the same with `ChatGenerationMetadata.builder().finishReasonCategory(...)`.
+Without it the category is derived from the raw finish reason.
+See xref:api/chatclient.adoc#finish-reason-categories[Finish Reason Categories].
+
+==== Changed: `entity(...)` Throws a `ContentFilteredException` for a Filtered Response It Cannot Convert
+
+When the generation that `entity(...)` converts finished in the `FILTERED` category, for example with `content_filter`, `refusal`, `guardrail_intervened` or `SAFETY`, and its text is empty or cannot be converted, `entity(...)` throws a `ContentFilteredException`.
+In the same case `responseEntity(...)` returns the response with a `null` entity.
+
+===== Impact
+
+* A filtered response that converts is returned as before.
+* Before, `entity(...)` failed with the parsing error of the converter, or returned `null` when the response had no text.
+Code that catches the parsing error, or handles `null`, for a filtered response now gets a `ContentFilteredException`.
+The parsing error is its cause.
+* Before, `responseEntity(...)` failed with the parsing error.
+It now returns a `null` entity.
+* `content()`, `chatResponse()` and streaming are unchanged.
+
+===== Migration
+
+Catch `ContentFilteredException` where a filtered response should be handled.
+It carries the finish reason, the text the provider returned, and the response.
+
+==== Changed: `StructuredOutputValidationAdvisor` Does Not Repeat a Filtered Response
+
+When a response fails the validation and finished in the `FILTERED` category, the advisor returns it without asking the model again.
+Before, it repeated the request with the validation error up to `maxRepeatAttempts` times, and each attempt was stopped the same way.
+
+
 === Chat Memory
 
 ==== Deprecated: `ChatMemory` in Favor of Session Memory
@@ -361,6 +435,33 @@ The values are unchanged.
 
 Dashboards, alerts and queries that filter on `db.system` must switch to `db.system.name`.
 The `DB_SYSTEM` constants keep their names, so code that uses them needs no change.
+
+=== Advisors
+
+==== Changed: Guardrail Refusals Are Marked
+
+The failure response of the `SafeGuardAdvisor` is now marked as the refusal of a guardrail, with the `GuardrailRefusal.FINISH_REASON` finish reason (`guardrailRefusal`).
+`GuardrailRefusal.isRefusal(chatResponse)` tells such a reply from an answer of the model, and `GuardrailRefusal.generation(text)` builds one in a guardrail advisor of your own.
+See xref:api/advisors.adoc[Advisors].
+
+===== Impact
+
+The text of the failure response and the result of `content()`, `chatResponse()` and `stream()` are the same as before.
+
+* `ChatClient.entity(...)` throws a `GuardrailRefusalException`, which carries the refusal, where it passed the failure response to the output converter before.
+It is a `ContentFilteredException`.
+With the default JSON converters that conversion failed, so the type of the exception changes.
+With a converter that accepts plain text, such as `ListOutputConverter`, the call returned the converted failure response and now throws.
+* `ChatClient.responseEntity(...)` returns the response with a `null` entity in place of the conversion.
+* The `StructuredOutputValidationAdvisor` returns a refusal as it is, without validating it or asking the model again.
+* The `SemanticCacheAdvisor` does not cache a refusal.
+* The failure response had no finish reason before.
+In a stream, advisors built on `BaseAdvisor` run their `after` step on a response with a finish reason, so those ahead of the `SafeGuardAdvisor` in the chain now run it on the refusal, as they already did for a call.
+
+===== Migration
+
+Catch `GuardrailRefusalException` around `entity(...)` where a `SafeGuardAdvisor` is in the chain, and read the refusal with `getRefusal()`.
+Use `responseEntity(...)` to get the refusal without an exception.
 
 [[upgrading-to-2-0-3]]
 == Upgrading to 2.0.3
@@ -2613,7 +2714,7 @@ If you want to maintain the previous behavior, explicitly set the temperature in
 # Example for OpenAI
 spring.ai.openai.chat.temperature=0.7
 
-# Example for Anthropic
+# Anthropic before Spring AI 2.1.0 only; remove this property when upgrading to 2.1.0.
 spring.ai.anthropic.chat.temperature=0.7
 
 # Example for Azure OpenAI

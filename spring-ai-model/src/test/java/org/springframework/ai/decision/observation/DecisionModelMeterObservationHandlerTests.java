@@ -52,7 +52,7 @@ class DecisionModelMeterObservationHandlerTests {
 	void recordsUsageOnce() {
 		var context = context();
 		context.setResponse(DecisionResponse.builder(context.getRequest())
-			.answer("urgent", YesNoAnswer.builder().probability(0.9).build())
+			.answer("defect", YesNoAnswer.builder().probability(0.9).build())
 			.metadata(DecisionResponseMetadata.builder().usage(new DefaultUsage(10, 2)).build())
 			.build());
 
@@ -72,7 +72,10 @@ class DecisionModelMeterObservationHandlerTests {
 	}
 
 	private static DecisionModelObservationContext context() {
-		var prompt = DecisionPrompt.builder().text("Help!").question("urgent", YesNoQuestion.of("Urgent?")).build();
+		var prompt = DecisionPrompt.builder()
+			.text("Where is my order?")
+			.question("defect", YesNoQuestion.of("Does the customer report a defect?"))
+			.build();
 		return DecisionModelObservationContext.builder().decisionPrompt(prompt).provider("superprovider").build();
 	}
 

@@ -335,7 +335,7 @@ As of 2.0, the built-in repositories that support the full message set are:
 
 Any of them is safe inside the loop.
 
-TIP: For JDBC-backed persistence with full tool-message support — plus event-sourced history, turn-aware compaction, and multi-agent branch isolation — see the https://spring-ai-community.github.io/spring-ai-session/latest/[spring-ai-session] community project. It is designed for exactly this scenario and is planned for inclusion in Spring AI 2.1.
+TIP: For JDBC-backed persistence with full tool-message support, an event log and turn-aware compaction, use xref:api/session.adoc[Session Memory] with its xref:api/session/jdbc.adoc[JDBC repository].
 
 [[scaling-to-hundreds-of-tools]]
 == Scaling to Hundreds of Tools

@@ -256,11 +256,19 @@ Safe under concurrent first use: the stored session wins.
 | Appends an event to the log.
 A `SystemMessage` is rejected unless `allowSystemMessages(true)` is set.
 
+| `appendEvents(id, events, expectedVersion)`, `getEventVersion(id)`
+| Appends several events at once, only if the log's version is still the one read; `false` when it moved.
+The version advances on every append of a new event and once per successful batch.
+See <<optimistic-concurrency>>.
+
 | `getEvents(id, filter)`, `getEvents(id)`
 | The events a xref:api/session/event-filter.adoc[filter] selects, in log order; the whole log without one.
 
 | `getMessages(id)`, `getActiveMessages(id)`
 | The messages of the whole log, or of the active view.
+
+| `searchEvents(id, query)`
+| The message events a keyword search finds in the whole log, a page at a time; see xref:api/session/recall.adoc[Recall].
 
 | `compact(id, trigger, strategy)`
 | Evaluates the trigger on the active view and, when it fires, runs the strategy and records the result.
@@ -282,9 +290,11 @@ A retried `appendEvent` for an id that was already committed is a no-op, not an 
 In the JDBC store the event id is the primary key of the whole event table, so reusing an id that belongs to another session throws `IllegalStateException` rather than being treated as a replay.
 The default id is a random UUID, so this only matters when a caller supplies its own ids.
 
+[[optimistic-concurrency]]
 === Optimistic concurrency
 
 `SessionRepository.getEventVersion(sessionId)` is a counter that advances on every append of a new event and on every successful `appendEvents` call.
+Both are on `SessionService` too, with the same meaning, so anything built on the log can write the same way compaction does: read the version, read what the write depends on, then `appendEvents(sessionId, events, expectedVersion)`, and read again on `false`.
 `DefaultSessionService.compact` reads it, then the newest boundary, then the view, builds the boundary and the summary events from the strategy's result, and passes the version to `appendEvents(sessionId, events, expectedVersion)`.
 When another writer changed the log in between, the compare-and-swap returns `false`.
 If a newer boundary landed, this result is dropped: it stands on a view that is gone.

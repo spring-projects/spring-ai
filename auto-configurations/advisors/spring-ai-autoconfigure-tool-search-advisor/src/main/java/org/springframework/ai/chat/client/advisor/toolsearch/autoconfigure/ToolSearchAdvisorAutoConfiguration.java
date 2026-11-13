@@ -24,6 +24,7 @@ import org.apache.commons.logging.LogFactory;
 
 import org.springframework.ai.chat.client.advisor.ToolCallingAdvisor;
 import org.springframework.ai.chat.client.advisor.toolsearch.ToolSearchToolCallingAdvisor;
+import org.springframework.ai.decision.DecisionModel;
 import org.springframework.ai.model.chat.client.autoconfigure.ChatClientAutoConfiguration;
 import org.springframework.ai.model.tool.ToolCallingManager;
 import org.springframework.ai.model.tool.ToolExecutionEligibilityChecker;
@@ -33,6 +34,7 @@ import org.springframework.ai.tool.toolsearch.eviction.CompositeEvictionStrategy
 import org.springframework.ai.tool.toolsearch.eviction.LruEvictionStrategy;
 import org.springframework.ai.tool.toolsearch.eviction.ToolIndexEvictionStrategy;
 import org.springframework.ai.tool.toolsearch.eviction.TtlEvictionStrategy;
+import org.springframework.ai.tool.toolsearch.index.decision.DecisionToolIndex;
 import org.springframework.ai.tool.toolsearch.index.lucene.LuceneToolIndex;
 import org.springframework.ai.tool.toolsearch.index.regex.RegexToolIndex;
 import org.springframework.ai.tool.toolsearch.index.vectorstore.VectorToolIndex;
@@ -48,6 +50,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 /**
@@ -72,6 +75,8 @@ import org.springframework.util.StringUtils;
  * {@code org.apache.lucene:lucene-core} on the classpath.</li>
  * <li>{@code tool-index-type=vector} — embedding-based semantic search; requires a
  * {@link VectorStore} bean and {@code spring-ai-vector-store} on the classpath.</li>
+ * <li>{@code tool-index-type=decision} — a decision model picks the tool and can report
+ * that none applies; requires a {@code DecisionModel} bean.</li>
  * </ul>
  * <p>
  * The auto-configuration ordering is significant:
@@ -98,7 +103,7 @@ public class ToolSearchAdvisorAutoConfiguration implements InitializingBean {
 
 	private static final Log logger = LogFactory.getLog(ToolSearchAdvisorAutoConfiguration.class);
 
-	private static final Set<String> KNOWN_TOOL_INDEX_TYPES = Set.of("regex", "lucene", "vector");
+	private static final Set<String> KNOWN_TOOL_INDEX_TYPES = Set.of("regex", "lucene", "vector", "decision");
 
 	private final ToolSearchAdvisorProperties properties;
 
@@ -181,6 +186,43 @@ public class ToolSearchAdvisorAutoConfiguration implements InitializingBean {
 								+ "dependencies.");
 			}
 			return new VectorToolIndex(vectorStore);
+		}
+
+	}
+
+	/**
+	 * Registers a {@link DecisionToolIndex}.
+	 * <p>
+	 * Activated only when {@code tool-index-type=decision} is set explicitly. Fails fast
+	 * with a descriptive error if no {@link DecisionModel} bean is present in the
+	 * context.
+	 */
+	@Configuration(proxyBeanMethods = false)
+	@ConditionalOnClass({ DecisionToolIndex.class, DecisionModel.class })
+	@ConditionalOnMissingBean(ToolIndex.class)
+	@ConditionalOnProperty(prefix = ToolSearchAdvisorProperties.CONFIG_PREFIX, name = "tool-index-type",
+			havingValue = "decision", matchIfMissing = false)
+	static class DecisionToolIndexConfiguration {
+
+		@Bean
+		DecisionToolIndex decisionToolIndex(ObjectProvider<DecisionModel> decisionModelProvider,
+				ToolSearchAdvisorProperties properties) {
+			DecisionModel decisionModel = decisionModelProvider.getIfAvailable();
+			if (decisionModel == null) {
+				throw new IllegalStateException(
+						"'spring.ai.chat.client.tool-search-advisor.tool-index-type=decision' requires a DecisionModel "
+								+ "bean in the application context, but none was found. Add a decision model "
+								+ "implementation (e.g. spring-ai-starter-model-openai) to your dependencies.");
+			}
+			ToolSearchAdvisorProperties.Decision decision = properties.getDecision();
+			Assert.isTrue(decision.getApplicabilityThreshold() >= 0.0d && decision.getApplicabilityThreshold() <= 1.0d,
+					"'spring.ai.chat.client.tool-search-advisor.decision.applicability-threshold' must be between 0 and 1");
+			Assert.isTrue(decision.getMinimumRelevance() >= 0.0d && decision.getMinimumRelevance() <= 1.0d,
+					"'spring.ai.chat.client.tool-search-advisor.decision.minimum-relevance' must be between 0 and 1");
+			return DecisionToolIndex.builder(decisionModel)
+				.applicabilityThreshold(decision.getApplicabilityThreshold())
+				.minimumRelevance(decision.getMinimumRelevance())
+				.build();
 		}
 
 	}

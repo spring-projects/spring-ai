@@ -55,6 +55,7 @@ import org.springframework.ai.chat.messages.part.ReasoningPart;
 import org.springframework.ai.chat.messages.part.StreamingParts;
 import org.springframework.ai.chat.messages.part.TextPart;
 import org.springframework.ai.chat.messages.part.ToolCallPart;
+import org.springframework.ai.chat.metadata.FinishReasonCategory;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
@@ -134,6 +135,7 @@ class AnthropicChatModelIT {
 		Generation generation = response.getResults().get(0);
 		assertThat(generation.getOutput().getText()).contains("Blackbeard");
 		assertThat(generation.getMetadata().getFinishReason()).isEqualTo("end_turn");
+		assertThat(generation.getMetadata().getFinishReasonCategory()).isEqualTo(FinishReasonCategory.COMPLETED);
 	}
 
 	@Test
@@ -646,7 +648,6 @@ class AnthropicChatModelIT {
 
 		var promptOptions = AnthropicChatOptions.builder()
 			.model(Model.CLAUDE_SONNET_4_5.asString())
-			.temperature(1.0) // temperature must be 1 when thinking is enabled
 			.maxTokens(16000)
 			.thinkingEnabled(10000L)
 			.build();
@@ -680,7 +681,6 @@ class AnthropicChatModelIT {
 
 		var promptOptions = AnthropicChatOptions.builder()
 			.model(Model.CLAUDE_SONNET_4_5.asString())
-			.temperature(1.0) // temperature must be 1 when thinking is enabled
 			.maxTokens(16000)
 			.thinkingEnabled(10000L)
 			.build();
@@ -748,7 +748,6 @@ class AnthropicChatModelIT {
 
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
 			.model(Model.CLAUDE_SONNET_4_5.asString())
-			.temperature(1.0) // temperature must be 1 when thinking is enabled
 			.maxTokens(16000)
 			.thinkingEnabled(2048L)
 			.toolCallbacks(FunctionToolCallback.builder("getCurrentWeather", new MockWeatherService())
@@ -808,7 +807,6 @@ class AnthropicChatModelIT {
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
 			.model(Model.CLAUDE_SONNET_4_5.asString())
 			.maxTokens(2048)
-			.temperature(0.0)
 			.citationDocuments(document)
 			.build();
 
@@ -855,7 +853,6 @@ class AnthropicChatModelIT {
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
 			.model(Model.CLAUDE_SONNET_4_5.asString())
 			.maxTokens(1024)
-			.temperature(0.0)
 			.citationDocuments(parisDoc, eiffelDoc)
 			.build();
 
@@ -902,7 +899,6 @@ class AnthropicChatModelIT {
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
 			.model(Model.CLAUDE_SONNET_4_5.asString())
 			.maxTokens(1024)
-			.temperature(0.0)
 			.citationDocuments(document)
 			.build();
 
@@ -942,7 +938,6 @@ class AnthropicChatModelIT {
 		AnthropicChatOptions options = AnthropicChatOptions.builder()
 			.model(Model.CLAUDE_SONNET_4_5.asString())
 			.maxTokens(1024)
-			.temperature(0.0)
 			.citationDocuments(document)
 			.build();
 

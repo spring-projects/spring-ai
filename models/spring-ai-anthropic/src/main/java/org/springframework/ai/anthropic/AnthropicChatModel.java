@@ -57,6 +57,7 @@ import com.anthropic.models.messages.MessageDeltaUsage;
 import com.anthropic.models.messages.RawMessageStreamEvent;
 import com.anthropic.models.messages.RedactedThinkingBlock;
 import com.anthropic.models.messages.RedactedThinkingBlockParam;
+import com.anthropic.models.messages.StopReason;
 import com.anthropic.models.messages.TextBlock;
 import com.anthropic.models.messages.TextBlockParam;
 import com.anthropic.models.messages.TextCitation;
@@ -85,6 +86,8 @@ import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.anthropic.http.okhttp.AnthropicHttpClientBuilderCustomizer;
 import org.springframework.ai.anthropic.metadata.AnthropicRateLimit;
@@ -107,6 +110,7 @@ import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
 import org.springframework.ai.chat.metadata.EmptyRateLimit;
 import org.springframework.ai.chat.metadata.EmptyUsage;
+import org.springframework.ai.chat.metadata.FinishReasonCategory;
 import org.springframework.ai.chat.metadata.RateLimit;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatModel;
@@ -264,6 +268,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		else {
 			this.options = options;
 		}
+		warnOnIgnoredSamplingOptions(this.options);
 
 		// Must precede the AnthropicSetup calls below so the HTTP client gets the user's
 		// registries and dispatcher.
@@ -576,7 +581,10 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		// indexed complete parts so the aggregator places them in block order.
 		Optional<ChatResponse> messageDeltaResponse = event.messageDelta().map(deltaEvent -> {
 			String stopReason = deltaEvent.delta().stopReason().map(r -> r.toString()).orElse("");
-			ChatGenerationMetadata metadata = ChatGenerationMetadata.builder().finishReason(stopReason).build();
+			ChatGenerationMetadata metadata = ChatGenerationMetadata.builder()
+				.finishReason(stopReason)
+				.finishReasonCategory(finishReasonCategory(deltaEvent.delta().stopReason()))
+				.build();
 
 			// The final chunk keeps an empty text, as it always had, so a streamed chunk
 			// never reports a null text and chunk texts can be joined as before.
@@ -721,6 +729,14 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 				: AnthropicChatOptions.builder().build();
 	}
 
+	private static void warnOnIgnoredSamplingOptions(ChatOptions options) {
+		if ((options.getTemperature() != null || options.getTopP() != null || options.getTopK() != null)
+				&& logger.isWarnEnabled()) {
+			logger.warn("Anthropic API 2026-10-21 does not support temperature, topP or topK; ignoring temperature="
+					+ options.getTemperature() + ", topP=" + options.getTopP() + ", topK=" + options.getTopK());
+		}
+	}
+
 	private static RequestOptions requestOptionsFor(Prompt prompt) {
 		// Carry the resolved timeout as per-call RequestOptions; the SDK only honors a
 		// timeout supplied here, so otherwise AnthropicChatOptions#getTimeout() is
@@ -742,6 +758,9 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 		MessageCreateParams.Builder builder = MessageCreateParams.builder();
 
+		if (prompt.getOptions() != null) {
+			warnOnIgnoredSamplingOptions(prompt.getOptions());
+		}
 		AnthropicChatOptions requestOptions = resolveAnthropicOptions(prompt);
 
 		// Set required fields
@@ -888,7 +907,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 						}
 					}
 
-					builder.addUserMessageOfBlockParams(contentBlocks);
+					builder.addUserMessageOfContentBlockParams(contentBlocks);
 				}
 				else {
 					String text = message.getText();
@@ -919,7 +938,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 						}
 					}
 					else {
-						builder.addAssistantMessageOfBlockParams(blocks);
+						builder.addAssistantMessageOfContentBlockParams(blocks);
 					}
 				}
 			}
@@ -953,20 +972,11 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 				if (toolCacheControl != null) {
 					cacheResolver.useCacheBlock();
 				}
-				builder.addUserMessageOfBlockParams(toolResultBlocks);
+				builder.addUserMessageOfContentBlockParams(toolResultBlocks);
 			}
 		}
 
 		// Set optional parameters
-		if (requestOptions.getTemperature() != null) {
-			builder.temperature(requestOptions.getTemperature());
-		}
-		if (requestOptions.getTopP() != null) {
-			builder.topP(requestOptions.getTopP());
-		}
-		if (requestOptions.getTopK() != null) {
-			builder.topK(requestOptions.getTopK().longValue());
-		}
 		if (requestOptions.getStopSequences() != null && !requestOptions.getStopSequences().isEmpty()) {
 			builder.stopSequences(requestOptions.getStopSequences());
 		}
@@ -1176,7 +1186,10 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 			List<AnthropicWebSearchResult> webSearchAccumulator) {
 
 		String finishReason = message.stopReason().map(r -> r.toString()).orElse("");
-		ChatGenerationMetadata generationMetadata = ChatGenerationMetadata.builder().finishReason(finishReason).build();
+		ChatGenerationMetadata generationMetadata = ChatGenerationMetadata.builder()
+			.finishReason(finishReason)
+			.finishReasonCategory(finishReasonCategory(message.stopReason()))
+			.build();
 
 		List<MessagePart> parts = new ArrayList<>();
 
@@ -1228,6 +1241,24 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 		AssistantMessage assistantMessage = AssistantMessage.builder().parts(parts).build();
 		return List.of(new Generation(assistantMessage, generationMetadata));
+	}
+
+	/**
+	 * Classifies the stop reason of a message.
+	 */
+	static FinishReasonCategory finishReasonCategory(Optional<StopReason> stopReason) {
+		if (stopReason.isEmpty()) {
+			return FinishReasonCategory.UNSPECIFIED;
+		}
+		return switch (stopReason.get().value()) {
+			case END_TURN, STOP_SEQUENCE -> FinishReasonCategory.COMPLETED;
+			case MAX_TOKENS, MODEL_CONTEXT_WINDOW_EXCEEDED -> FinishReasonCategory.TRUNCATED;
+			case TOOL_USE -> FinishReasonCategory.TOOL_CALL;
+			case REFUSAL -> FinishReasonCategory.FILTERED;
+			// A paused turn, a value the SDK does not know, and one that a newer version
+			// of the SDK adds
+			default -> FinishReasonCategory.OTHER;
+		};
 	}
 
 	private static ReasoningPart thinkingReasoningPart(String thinking, String signature) {
@@ -1530,7 +1561,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	 */
 	private static String toJsonString(@Nullable Object nativeValue) {
 		try {
-			var jsonMapper = tools.jackson.databind.json.JsonMapper.builder().build();
+			var jsonMapper = JsonMapper.builder().build();
 			return jsonMapper.writeValueAsString(nativeValue);
 		}
 		catch (Exception e) {
@@ -1546,7 +1577,7 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	 */
 	private static @Nullable Object parseJson(String json) {
 		try {
-			var jsonMapper = tools.jackson.databind.json.JsonMapper.builder().build();
+			var jsonMapper = JsonMapper.builder().build();
 			return jsonMapper.readValue(json, Object.class);
 		}
 		catch (Exception e) {
@@ -1592,15 +1623,13 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 			@Override
 			public Object visitArray(List<? extends JsonValue> values) {
-				return values.stream().map(v -> convertJsonValueToNative(v)).toList();
+				return values.stream().map(AnthropicChatModel::convertJsonValueToNative).toList();
 			}
 
 			@Override
-			public Object visitObject(java.util.Map<String, ? extends JsonValue> values) {
-				java.util.Map<String, Object> result = new java.util.LinkedHashMap<>();
-				for (java.util.Map.Entry<String, ? extends JsonValue> entry : values.entrySet()) {
-					result.put(entry.getKey(), convertJsonValueToNative(entry.getValue()));
-				}
+			public Object visitObject(Map<String, ? extends JsonValue> values) {
+				Map<String, @Nullable Object> result = new LinkedHashMap<>();
+				values.forEach((key, value) -> result.put(key, convertJsonValueToNative(value)));
 				return result;
 			}
 		});
@@ -1619,13 +1648,10 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 		ToolUseBlockParam.Input.Builder inputBuilder = ToolUseBlockParam.Input.builder();
 		if (argumentsJson != null && !argumentsJson.isEmpty()) {
 			try {
-				var jsonMapper = tools.jackson.databind.json.JsonMapper.builder().build();
-				java.util.Map<String, Object> arguments = jsonMapper.readValue(argumentsJson,
-						new tools.jackson.core.type.TypeReference<java.util.Map<String, Object>>() {
-						});
-				for (java.util.Map.Entry<String, Object> entry : arguments.entrySet()) {
-					inputBuilder.putAdditionalProperty(entry.getKey(), JsonValue.from(entry.getValue()));
-				}
+				var jsonMapper = JsonMapper.builder().build();
+				Map<String, Object> arguments = jsonMapper.readValue(argumentsJson, new TypeReference<>() {
+				});
+				arguments.forEach((key, value) -> inputBuilder.putAdditionalProperty(key, JsonValue.from(value)));
 			}
 			catch (Exception e) {
 				if (logger.isWarnEnabled()) {
@@ -1649,23 +1675,19 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	 * @return the Anthropic SDK Tool
 	 * @throws RuntimeException if the JSON schema cannot be parsed
 	 */
-	@SuppressWarnings("unchecked")
 	private Tool toAnthropicTool(ToolDefinition toolDefinition) {
 		try {
 			// Parse the JSON schema string into a Map
-			var jsonMapper = tools.jackson.databind.json.JsonMapper.builder().build();
-			java.util.Map<String, Object> schemaMap = jsonMapper.readValue(toolDefinition.inputSchema(),
-					new tools.jackson.core.type.TypeReference<java.util.Map<String, Object>>() {
-					});
+			var jsonMapper = JsonMapper.builder().build();
+			Map<String, Object> schemaMap = jsonMapper.readValue(toolDefinition.inputSchema(), new TypeReference<>() {
+			});
 
 			// Build properties via putAdditionalProperty (SDK requires structured input)
 			Tool.InputSchema.Properties.Builder propertiesBuilder = Tool.InputSchema.Properties.builder();
 			Object propertiesObj = schemaMap.get("properties");
-			if (propertiesObj instanceof java.util.Map) {
-				java.util.Map<String, Object> properties = (java.util.Map<String, Object>) propertiesObj;
-				for (java.util.Map.Entry<String, Object> entry : properties.entrySet()) {
-					propertiesBuilder.putAdditionalProperty(entry.getKey(), JsonValue.from(entry.getValue()));
-				}
+			if (propertiesObj instanceof Map<?, ?> properties) {
+				properties.forEach(
+						(key, value) -> propertiesBuilder.putAdditionalProperty((String) key, JsonValue.from(value)));
 			}
 
 			Tool.InputSchema.Builder inputSchemaBuilder = Tool.InputSchema.builder()
@@ -1673,11 +1695,8 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 
 			// Add required fields if present
 			Object requiredObj = schemaMap.get("required");
-			if (requiredObj instanceof java.util.List) {
-				java.util.List<String> required = (java.util.List<String>) requiredObj;
-				for (String req : required) {
-					inputSchemaBuilder.addRequired(req);
-				}
+			if (requiredObj instanceof List<?> required) {
+				required.forEach(field -> inputSchemaBuilder.addRequired((String) field));
 			}
 
 			return Tool.builder()
@@ -1923,9 +1942,9 @@ public final class AnthropicChatModel implements ChatModel, StreamingChatModel {
 	 */
 	private static class StreamingState {
 
-		private final AtomicReference<String> messageId = new AtomicReference<>();
+		private final AtomicReference<@Nullable String> messageId = new AtomicReference<>();
 
-		private final AtomicReference<String> model = new AtomicReference<>();
+		private final AtomicReference<@Nullable String> model = new AtomicReference<>();
 
 		private final AtomicReference<Long> inputTokens = new AtomicReference<>(0L);
 

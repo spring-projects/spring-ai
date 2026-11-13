@@ -38,6 +38,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 
 /**
  * Chat {@link AutoConfiguration Auto-configuration} for the OpenAI Responses API.
@@ -50,10 +51,12 @@ import org.springframework.context.annotation.Bean;
  * declare the second one with its builder.
  *
  * @author Dimitar Proynov
+ * @author Thomas Vitale
  * @since 2.1.0
  */
 @AutoConfiguration(after = OpenAiChatAutoConfiguration.class)
 @EnableConfigurationProperties({ OpenAiCommonProperties.class, OpenAiResponsesChatProperties.class })
+@Import(OpenAiConnectionDetailsConfiguration.class)
 @ConditionalOnProperty(name = SpringAIModelProperties.CHAT_MODEL, havingValue = SpringAIModels.OPENAI,
 		matchIfMissing = true)
 public class OpenAiResponsesChatAutoConfiguration {
@@ -61,14 +64,15 @@ public class OpenAiResponsesChatAutoConfiguration {
 	@Bean
 	@ConditionalOnMissingBean
 	@ConditionalOnProperty(name = OpenAiChatProperties.CONFIG_PREFIX + ".api", havingValue = "responses")
-	public OpenAiResponsesChatModel openAiResponsesChatModel(OpenAiCommonProperties commonProperties,
-			OpenAiResponsesChatProperties responsesProperties, ToolCallingManager toolCallingManager,
-			ObjectProvider<ObservationRegistry> observationRegistry, ObjectProvider<MeterRegistry> meterRegistry,
+	public OpenAiResponsesChatModel openAiResponsesChatModel(OpenAiConnectionDetails connectionDetails,
+			OpenAiCommonProperties commonProperties, OpenAiResponsesChatProperties responsesProperties,
+			ToolCallingManager toolCallingManager, ObjectProvider<ObservationRegistry> observationRegistry,
+			ObjectProvider<MeterRegistry> meterRegistry,
 			ObjectProvider<ChatModelObservationConvention> observationConvention,
 			ObjectProvider<OpenAiHttpClientBuilderCustomizer> httpClientBuilderCustomizers) {
 
-		var resolvedProperties = OpenAiAutoConfigurationUtil.resolveCommonProperties(commonProperties,
-				responsesProperties);
+		var resolvedProperties = OpenAiAutoConfigurationUtil.resolveCommonProperties(connectionDetails,
+				commonProperties, responsesProperties);
 		if (OpenAiSetup.detectModelProvider(resolvedProperties.isMicrosoftFoundry(), false,
 				resolvedProperties.getBaseUrl(), resolvedProperties.getMicrosoftDeploymentName(),
 				resolvedProperties.getMicrosoftFoundryServiceVersion()) == OpenAiSetup.ModelProvider.GITHUB_MODELS) {

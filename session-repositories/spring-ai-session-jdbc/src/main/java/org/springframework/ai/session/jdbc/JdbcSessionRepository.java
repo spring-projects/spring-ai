@@ -23,8 +23,10 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -39,6 +41,7 @@ import tools.jackson.databind.json.JsonMapper;
 
 import org.springframework.ai.chat.messages.MessageType;
 import org.springframework.ai.session.EventFilter;
+import org.springframework.ai.session.EventQuery;
 import org.springframework.ai.session.EventType;
 import org.springframework.ai.session.Session;
 import org.springframework.ai.session.SessionAttributes;
@@ -75,11 +78,13 @@ import org.springframework.util.Assert;
  * {@code UPDATE … WHERE event_version = ?} before inserting. {@link #appendEvent} looks
  * the event id up under that row lock before inserting, so a replay is a no-op without a
  * duplicate-key error, which would mark a caller's surrounding transaction rollback-only,
- * or abort it on PostgreSQL. A read of the {@link EventFilter#activeView() active view}
- * selects the newest {@code COMPACTION} row, fetches the rows it names plus every row
- * from it on, and lets {@link EventFilter#apply(List)} order, filter and window them.
- * Every mutation runs in a {@link TransactionTemplate}; the class is thread-safe as the
- * {@link DataSource} is.
+ * or abort it on PostgreSQL and, with {@code XACT_ABORT ON}, on SQL Server.
+ * {@link #saveIfAbsent} avoids that error on these two databases as well, with a
+ * statement that inserts nothing when the id exists. A read of the
+ * {@link EventFilter#activeView() active view} selects the newest {@code COMPACTION} row,
+ * fetches the rows it names plus every row from it on, and lets
+ * {@link EventFilter#apply(List)} order, filter and window them. Every mutation runs in a
+ * {@link TransactionTemplate}; the class is thread-safe as the {@link DataSource} is.
  *
  * @author Christian Tzolov
  * @since 2.1.0
@@ -107,10 +112,13 @@ public final class JdbcSessionRepository implements SessionRepository {
 	private static final String INSERT_SESSION_INDEX =
 		"INSERT INTO AI_SESSION_INDEX (session_id, attr_name, attr_value) VALUES (?, ?, ?)";
 
+	private static final String SELECT_EXPIRED_SESSION_IDS =
+		"SELECT id FROM AI_SESSION WHERE expires_at IS NOT NULL AND expires_at < ?";
+
 	// Checks the expiry in the DELETE itself, so a concurrently extended TTL is respected.
 	// Events are removed by the ON DELETE CASCADE foreign key.
-	private static final String DELETE_EXPIRED_SESSIONS =
-		"DELETE FROM AI_SESSION WHERE expires_at IS NOT NULL AND expires_at < ?";
+	private static final String DELETE_EXPIRED_SESSION =
+		"DELETE FROM AI_SESSION WHERE id = ? AND expires_at IS NOT NULL AND expires_at < ?";
 
 	private static final String DECREMENT_EVENT_VERSION =
 		"UPDATE AI_SESSION SET event_version = event_version - 1 WHERE id = ?";
@@ -138,13 +146,14 @@ public final class JdbcSessionRepository implements SessionRepository {
 		"SELECT session_id FROM AI_SESSION_EVENT WHERE id = ?";
 
 	// The newest compaction boundary of a session, if any: it defines the active view.
+	// The dialect's limit clause, bound to 1, follows.
 	private static final String SELECT_NEWEST_BOUNDARY =
 		"SELECT e.seq, e.payload FROM AI_SESSION_EVENT e"
-		+ " WHERE e.session_id = ? AND e.event_type = ? ORDER BY e.seq DESC LIMIT 1";
+		+ " WHERE e.session_id = ? AND e.event_type = ? ORDER BY e.seq DESC ";
 
 	private static final String SELECT_EVENT_COLUMNS =
 		"SELECT e.id, e.session_id, e.timestamp, e.event_type, e.message_type, e.message_content,"
-		+ "       e.payload, e.synthetic, e.metadata";
+		+ "       e.payload, e.synthetic, e.metadata, e.seq";
 
 	private static final String SELECT_EVENTS_BASE =
 		SELECT_EVENT_COLUMNS
@@ -152,6 +161,13 @@ public final class JdbcSessionRepository implements SessionRepository {
 		+ " WHERE e.session_id = ? ";
 
 	// @formatter:on
+
+	/**
+	 * The most ids bound to one {@code IN} list. Longer lists are split over several
+	 * queries, because databases limit the parameters of a statement (2100 on SQL Server)
+	 * or the items of a list (1000 on Oracle).
+	 */
+	static final int MAX_IN_LIST_SIZE = 1000;
 
 	private final JdbcTemplate jdbcTemplate;
 
@@ -268,7 +284,16 @@ public final class JdbcSessionRepository implements SessionRepository {
 	@Override
 	public int deleteExpiredSessions(Instant before) {
 		Assert.notNull(before, "before must not be null");
-		return this.jdbcTemplate.update(DELETE_EXPIRED_SESSIONS, toUtc(before));
+		// Each session is deleted by its id, not all of them by their expiry: a delete
+		// that finds its rows through the expires_at index locks the index entry before
+		// the session row, the reverse of save(), and the two deadlock on MySQL and SQL
+		// Server. Found by id, the row is locked first, as in every other write.
+		LocalDateTime cutoff = toUtc(before);
+		int deleted = 0;
+		for (String id : this.jdbcTemplate.queryForList(SELECT_EXPIRED_SESSION_IDS, String.class, cutoff)) {
+			deleted += this.jdbcTemplate.update(DELETE_EXPIRED_SESSION, id, cutoff);
+		}
+		return deleted;
 	}
 
 	@Override
@@ -301,9 +326,9 @@ public final class JdbcSessionRepository implements SessionRepository {
 					throw new IllegalArgumentException("Session not found: " + sessionId);
 				}
 				// Detect a replay before inserting, under the session row lock, instead
-				// of
-				// relying on a failed INSERT: a duplicate-key error would mark a caller's
-				// surrounding transaction rollback-only, and on PostgreSQL abort it.
+				// of relying on a failed INSERT: a duplicate-key error would mark a
+				// caller's surrounding transaction rollback-only, and abort it on
+				// PostgreSQL and, with XACT_ABORT ON, on SQL Server.
 				List<String> owner = this.jdbcTemplate.queryForList(SELECT_EVENT_SESSION_ID, String.class,
 						event.getId());
 				if (!owner.isEmpty()) {
@@ -362,12 +387,13 @@ public final class JdbcSessionRepository implements SessionRepository {
 				}
 				return false;
 			}
-			String placeholders = placeholders(events.size());
-			List<String> taken = this.jdbcTemplate.queryForList(
-					"SELECT id FROM AI_SESSION_EVENT WHERE id IN (" + placeholders + ")", String.class,
-					events.stream().map(SessionEvent::getId).toArray());
-			if (!taken.isEmpty()) {
-				throw new IllegalArgumentException("Event id '" + taken.get(0) + "' is already in the log");
+			for (List<String> ids : chunks(events.stream().map(SessionEvent::getId).toList())) {
+				List<String> taken = this.jdbcTemplate.queryForList(
+						"SELECT id FROM AI_SESSION_EVENT WHERE id IN (" + placeholders(ids.size()) + ")", String.class,
+						ids.toArray());
+				if (!taken.isEmpty()) {
+					throw new IllegalArgumentException("Event id '" + taken.get(0) + "' is already in the log");
+				}
 			}
 			batchInsertEvents(events);
 			return true;
@@ -397,44 +423,101 @@ public final class JdbcSessionRepository implements SessionRepository {
 	 * summary, preserved) plus every row from the boundary on, in log order, which
 	 * {@link EventFilter#apply(List)} then projects into view order, filters and windows.
 	 * The view is bounded by compaction, so it is read whole; so is a session without a
-	 * boundary.
+	 * boundary. A boundary that names more than {@value #MAX_IN_LIST_SIZE} ids is read
+	 * with one more query per further {@value #MAX_IN_LIST_SIZE} ids.
 	 */
 	private List<SessionEvent> findActiveView(String sessionId, EventFilter filter) {
-		List<Map<String, @Nullable Object>> boundaries = this.jdbcTemplate.queryForList(SELECT_NEWEST_BOUNDARY,
-				sessionId, EventType.COMPACTION.name());
+		List<Map<String, @Nullable Object>> boundaries = this.jdbcTemplate.queryForList(
+				SELECT_NEWEST_BOUNDARY + this.dialect.getLimitClause(), sessionId, EventType.COMPACTION.name(), 1);
+		SessionEventRowMapper eventRowMapper = new SessionEventRowMapper();
+		RowMapper<SequencedEvent> rowMapper = (rs, rowNum) -> new SequencedEvent(rs.getLong("seq"),
+				eventRowMapper.mapRow(rs, rowNum));
 		StringBuilder sql = new StringBuilder(SELECT_EVENTS_BASE);
 		List<Object> params = new ArrayList<>();
 		params.add(sessionId);
+		List<List<String>> namedChunks = List.of();
+		long boundarySeq = 0;
 		if (!boundaries.isEmpty()) {
 			Map<String, @Nullable Object> boundary = boundaries.get(0);
-			long boundarySeq = ((Number) Objects.requireNonNull(boundary.get("seq"))).longValue();
+			boundarySeq = ((Number) Objects.requireNonNull(boundary.get("seq"))).longValue();
 			Map<String, Object> payload = this.codec
 				.fromJsonMap(Objects.requireNonNull((String) boundary.get("payload"), "payload"));
-			List<String> named = new ArrayList<>();
+			Set<String> named = new LinkedHashSet<>();
 			for (String key : List.of(CompactionBoundary.PAYLOAD_PINNED, CompactionBoundary.PAYLOAD_SUMMARY,
 					CompactionBoundary.PAYLOAD_PRESERVED)) {
 				if (payload.get(key) instanceof List<?> ids) {
 					ids.forEach(id -> named.add(String.valueOf(id)));
 				}
 			}
+			namedChunks = chunks(List.copyOf(named));
 			sql.append("AND (e.seq >= ? ");
 			params.add(boundarySeq);
-			if (!named.isEmpty()) {
-				sql.append("OR e.id IN (").append(placeholders(named.size())).append(") ");
-				params.addAll(named);
+			if (!namedChunks.isEmpty()) {
+				sql.append("OR e.id IN (").append(placeholders(namedChunks.get(0).size())).append(") ");
+				params.addAll(namedChunks.get(0));
 			}
 			sql.append(") ");
 		}
 		sql.append("ORDER BY e.seq");
-		List<SessionEvent> rows = this.jdbcTemplate.query(sql.toString(), new SessionEventRowMapper(),
-				params.toArray());
-		return filter.apply(rows);
+		List<SequencedEvent> rows = this.jdbcTemplate.query(sql.toString(), rowMapper, params.toArray());
+		if (namedChunks.size() > 1) {
+			// The named ids did not fit one IN list: read the rest of them, which are
+			// before the boundary or already read, and restore the log order.
+			rows = new ArrayList<>(rows);
+			for (List<String> ids : namedChunks.subList(1, namedChunks.size())) {
+				List<Object> chunkParams = new ArrayList<>();
+				chunkParams.add(sessionId);
+				chunkParams.add(boundarySeq);
+				chunkParams.addAll(ids);
+				rows.addAll(this.jdbcTemplate.query(
+						SELECT_EVENTS_BASE + "AND e.seq < ? AND e.id IN (" + placeholders(ids.size()) + ")", rowMapper,
+						chunkParams.toArray()));
+			}
+			rows.sort(Comparator.comparingLong(SequencedEvent::seq));
+		}
+		return filter.apply(rows.stream().map(SequencedEvent::event).toList());
+	}
+
+	/**
+	 * Runs the search in the query: the keywords become one predicate each on the text
+	 * column, and the limit keeps the read to the query's page and the pages before it.
+	 */
+	@Override
+	public List<SessionEvent> searchEvents(String sessionId, EventQuery query) {
+		Assert.hasText(sessionId, "sessionId must not be null or empty");
+		Assert.notNull(query, "query must not be null");
+		StringBuilder sql = new StringBuilder(SELECT_EVENTS_BASE);
+		List<Object> params = new ArrayList<>();
+		params.add(sessionId);
+		sql.append("AND e.event_type = ? AND e.synthetic = ? ");
+		params.add(EventType.MESSAGE.name());
+		params.add(false);
+		Set<MessageType> messageTypes = query.messageTypes();
+		if (messageTypes != null) {
+			sql.append("AND e.message_type IN (").append(placeholders(messageTypes.size())).append(") ");
+			messageTypes.forEach(messageType -> params.add(messageType.name()));
+		}
+		Instant since = query.since();
+		if (since != null) {
+			sql.append("AND e.timestamp >= ? ");
+			params.add(toUtc(since));
+		}
+		String operator = (query.matchMode() == EventQuery.MatchMode.ALL) ? " AND " : " OR ";
+		sql.append("AND (")
+			.append(String.join(operator,
+					Collections.nCopies(query.keywords().size(), this.dialect.getKeywordPredicate())))
+			.append(") ");
+		query.keywords().forEach(keyword -> params.add(this.dialect.toKeywordParameter(keyword)));
+		sql.append("ORDER BY e.seq ").append(this.dialect.getLimitClause());
+		params.add(query.limit());
+		return query.pageOf(this.jdbcTemplate.query(sql.toString(), new SessionEventRowMapper(), params.toArray()));
 	}
 
 	/**
 	 * Runs the filter as one query: the per-event criteria as {@code WHERE} clauses and a
-	 * last window as {@code ORDER BY seq DESC LIMIT n}, reversed back to log order and
-	 * extended to the start of its turn ({@link #extendToTurnStart}) with one more query.
+	 * last window as {@code ORDER BY seq DESC} plus the dialect's limit clause
+	 * ({@code LIMIT n} on most databases), reversed back to log order and extended to the
+	 * start of its turn ({@link #extendToTurnStart}) with one more query.
 	 */
 	private List<SessionEvent> findFiltered(String sessionId, EventFilter filter) {
 		StringBuilder sql = new StringBuilder(SELECT_EVENTS_BASE);
@@ -442,7 +525,7 @@ public final class JdbcSessionRepository implements SessionRepository {
 		params.add(sessionId);
 		appendCriteria(sql, params, filter, "e");
 		if (filter.window() instanceof EventFilter.Window.Last last) {
-			sql.append("ORDER BY e.seq DESC LIMIT ? ");
+			sql.append("ORDER BY e.seq DESC ").append(this.dialect.getLimitClause()).append(' ');
 			params.add(last.n());
 		}
 		else {
@@ -568,6 +651,15 @@ public final class JdbcSessionRepository implements SessionRepository {
 		});
 	}
 
+	/** Splits ids into lists of at most {@link #MAX_IN_LIST_SIZE}, in order. */
+	private static List<List<String>> chunks(List<String> ids) {
+		List<List<String>> chunks = new ArrayList<>();
+		for (int from = 0; from < ids.size(); from += MAX_IN_LIST_SIZE) {
+			chunks.add(ids.subList(from, Math.min(from + MAX_IN_LIST_SIZE, ids.size())));
+		}
+		return chunks;
+	}
+
 	/** {@code ?,?,…} for an {@code IN} list of {@code n} values. */
 	private static String placeholders(int n) {
 		return String.join(",", Collections.nCopies(n, "?"));
@@ -612,6 +704,10 @@ public final class JdbcSessionRepository implements SessionRepository {
 				.build();
 		}
 
+	}
+
+	/** An event with its position in the log, to order events read by several queries. */
+	private record SequencedEvent(long seq, SessionEvent event) {
 	}
 
 	private class SessionEventRowMapper implements RowMapper<SessionEvent> {

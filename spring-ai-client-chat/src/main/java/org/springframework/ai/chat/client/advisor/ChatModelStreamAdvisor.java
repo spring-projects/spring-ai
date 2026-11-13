@@ -16,8 +16,6 @@
 
 package org.springframework.ai.chat.client.advisor;
 
-import java.util.Map;
-
 import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
@@ -34,6 +32,7 @@ import org.springframework.util.Assert;
  * A {@link StreamAdvisor} that uses a {@link ChatModel} to generate a streaming response.
  *
  * @author Thomas Vitale
+ * @author Minju Kim
  * @since 1.0.0
  */
 public final class ChatModelStreamAdvisor implements StreamAdvisor {
@@ -53,7 +52,7 @@ public final class ChatModelStreamAdvisor implements StreamAdvisor {
 		return this.chatModel.stream(chatClientRequest.prompt())
 			.map(chatResponse -> ChatClientResponse.builder()
 				.chatResponse(chatResponse)
-				.context(Map.copyOf(chatClientRequest.context()))
+				.context(chatClientRequest.context())
 				.build())
 			.publishOn(Schedulers.boundedElastic()); // TODO add option to disable
 	}

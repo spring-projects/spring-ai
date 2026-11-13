@@ -46,21 +46,18 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class DecisionResponseTests {
 
 	private final DecisionPrompt prompt = DecisionPrompt.builder()
-		.text("Help! My payouts are late")
-		.question("urgent", YesNoQuestion.of("Is it urgent?"))
-		.question("team", ChoiceQuestion.of("Which team?", "billing", "technical"))
-		.question("mood", ScoreQuestion.of("How is the mood?", "calm", "annoyed", "angry"))
+		.text("Where is my order? I ordered it two weeks ago.")
+		.question("defect", YesNoQuestion.of("Does the customer report a defect?"))
+		.question("topic", ChoiceQuestion.of("What is the message about?", "delivery", "product"))
+		.question("satisfaction", ScoreQuestion.of("How satisfied is the customer?", "unhappy", "neutral", "happy"))
 		.question("secret", YesNoQuestion.of("Is it a secret?"))
 		.build();
 
 	private final DecisionResponse response = DecisionResponse.builder(this.prompt)
-		.answer("urgent", YesNoAnswer.builder().probability(0.9).build())
-		.answer("team",
-				ChoiceAnswer.builder()
-					.value("technical")
-					.probabilities(Map.of("technical", 0.8, "billing", 0.2))
-					.build())
-		.answer("mood", ScoreAnswer.builder().value(1.5).build())
+		.answer("defect", YesNoAnswer.builder().probability(0.9).build())
+		.answer("topic",
+				ChoiceAnswer.builder().value("product").probabilities(Map.of("product", 0.8, "delivery", 0.2)).build())
+		.answer("satisfaction", ScoreAnswer.builder().value(1.5).build())
 		.answer("secret", RefusalAnswer.builder().build())
 		.metadata(metadata("dec_1", "jev-1", new DefaultUsage(10, 2)))
 		.build();
@@ -68,21 +65,21 @@ class DecisionResponseTests {
 	@Test
 	void exposesResultsInOrder() {
 		assertThat(this.response.getResults()).extracting(DecisionResult::getName)
-			.containsExactly("urgent", "team", "mood", "secret");
+			.containsExactly("defect", "topic", "satisfaction", "secret");
 		assertThat(this.response.getResult()).isNotNull();
-		assertThat(this.response.getResult().getName()).isEqualTo("urgent");
-		assertThat(this.response.getAnswers().keySet()).containsExactly("urgent", "team", "mood", "secret");
+		assertThat(this.response.getResult().getName()).isEqualTo("defect");
+		assertThat(this.response.getAnswers().keySet()).containsExactly("defect", "topic", "satisfaction", "secret");
 	}
 
 	@Test
 	void typedAccessors() {
-		assertThat(this.response.getYesNo("urgent").isYes()).isTrue();
-		assertThat(this.response.getChoice("team").getValue()).isEqualTo("technical");
-		assertThat(this.response.getScore("mood").getNearestLevel()).isEqualTo(2);
+		assertThat(this.response.getYesNo("defect").isYes()).isTrue();
+		assertThat(this.response.getChoice("topic").getValue()).isEqualTo("product");
+		assertThat(this.response.getScore("satisfaction").getNearestLevel()).isEqualTo(2);
 		assertThat(this.response.getAnswer("secret", RefusalAnswer.class)).isEqualTo(RefusalAnswer.builder().build());
 		assertThat(this.response.isRefused("secret")).isTrue();
-		assertThat(this.response.isRefused("urgent")).isFalse();
-		assertThat(this.response.hasAnswer("urgent")).isTrue();
+		assertThat(this.response.isRefused("defect")).isFalse();
+		assertThat(this.response.hasAnswer("defect")).isTrue();
 		assertThat(this.response.hasAnswer("missing")).isFalse();
 	}
 
@@ -90,7 +87,7 @@ class DecisionResponseTests {
 	void accessorsFailOnUnknownNameWrongTypeAndRefusal() {
 		assertThatThrownBy(() -> this.response.getAnswer("missing")).isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("no answer for question 'missing'");
-		assertThatThrownBy(() -> this.response.getChoice("urgent")).isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(() -> this.response.getChoice("defect")).isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("YesNoAnswer")
 			.hasMessageContaining("ChoiceAnswer");
 		assertThatThrownBy(() -> this.response.getYesNo("secret")).isInstanceOf(IllegalStateException.class)
@@ -107,8 +104,8 @@ class DecisionResponseTests {
 	@Test
 	void metadataDefaultsToEmptyUsage() {
 		var response = DecisionResponse.builder(this.prompt)
-			.answers(Map.of("urgent", RefusalAnswer.builder().build(), "team", RefusalAnswer.builder().build(), "mood",
-					RefusalAnswer.builder().build(), "secret", RefusalAnswer.builder().build()))
+			.answers(Map.of("defect", RefusalAnswer.builder().build(), "topic", RefusalAnswer.builder().build(),
+					"satisfaction", RefusalAnswer.builder().build(), "secret", RefusalAnswer.builder().build()))
 			.build();
 
 		assertThat(response.getMetadata().getId()).isNull();
@@ -172,10 +169,10 @@ class DecisionResponseTests {
 	class BuilderTests {
 
 		private final DecisionPrompt prompt = DecisionPrompt.builder()
-			.text("Help! My payouts are late")
-			.question("urgent", YesNoQuestion.of("Is it urgent?"))
-			.question("team", ChoiceQuestion.of("Which team?", "billing", "technical"))
-			.question("mood", ScoreQuestion.of("How is the mood?", "calm", "annoyed", "angry"))
+			.text("Where is my order? I ordered it two weeks ago.")
+			.question("defect", YesNoQuestion.of("Does the customer report a defect?"))
+			.question("topic", ChoiceQuestion.of("What is the message about?", "delivery", "product"))
+			.question("satisfaction", ScoreQuestion.of("How satisfied is the customer?", "unhappy", "neutral", "happy"))
 			.build();
 
 		@Test
@@ -183,13 +180,14 @@ class DecisionResponseTests {
 			var metadata = DecisionResponseMetadata.builder().model("m").build();
 
 			var response = DecisionResponse.builder(this.prompt)
-				.answer("mood", ScoreAnswer.builder().value(1.2).probabilities(List.of(0.1, 0.6, 0.3)).build())
-				.answer("urgent", YesNoAnswer.builder().probability(0.9).build())
-				.answer("team", ChoiceAnswer.builder().value("billing").probabilities(Map.of("billing", 0.7)).build())
+				.answer("satisfaction", ScoreAnswer.builder().value(1.2).probabilities(List.of(0.1, 0.6, 0.3)).build())
+				.answer("defect", YesNoAnswer.builder().probability(0.9).build())
+				.answer("topic",
+						ChoiceAnswer.builder().value("delivery").probabilities(Map.of("delivery", 0.7)).build())
 				.metadata(metadata)
 				.build();
 
-			assertThat(response.getAnswers().keySet()).containsExactly("urgent", "team", "mood");
+			assertThat(response.getAnswers().keySet()).containsExactly("defect", "topic", "satisfaction");
 			assertThat(response.getMetadata()).isSameAs(metadata);
 		}
 
@@ -200,9 +198,9 @@ class DecisionResponseTests {
 
 			var response = answered().build();
 			var withMetadata = DecisionResponse.builder(this.prompt)
-				.answer("urgent", YesNoAnswer.builder().probability(0.9).build(), metadata)
-				.answer("team", ChoiceAnswer.builder().value("billing").build())
-				.answer("mood", ScoreAnswer.builder().value(1).build())
+				.answer("defect", YesNoAnswer.builder().probability(0.9).build(), metadata)
+				.answer("topic", ChoiceAnswer.builder().value("delivery").build())
+				.answer("satisfaction", ScoreAnswer.builder().value(1).build())
 				.build();
 
 			assertThat(response.getResult()).isNotNull();
@@ -215,21 +213,22 @@ class DecisionResponseTests {
 		@Test
 		void acceptsAnswersMapAndRefusals() {
 			var response = DecisionResponse.builder(this.prompt)
-				.answers(Map.of("urgent", RefusalAnswer.builder().build(), "team",
-						RefusalAnswer.builder().reason("policy").build(), "mood", RefusalAnswer.builder().build()))
+				.answers(Map.of("defect", RefusalAnswer.builder().build(), "topic",
+						RefusalAnswer.builder().reason("policy").build(), "satisfaction",
+						RefusalAnswer.builder().build()))
 				.build();
 
 			assertThat(response.getResults()).hasSize(3);
-			assertThat(response.isRefused("team")).isTrue();
+			assertThat(response.isRefused("topic")).isTrue();
 		}
 
 		@Test
 		void rejectsMissingAnswer() {
 			var builder = DecisionResponse.builder(this.prompt)
-				.answer("urgent", YesNoAnswer.builder().probability(0.9).build());
+				.answer("defect", YesNoAnswer.builder().probability(0.9).build());
 
 			assertThatThrownBy(builder::build).isInstanceOf(IllegalStateException.class)
-				.hasMessage("missing answer for question 'team'");
+				.hasMessage("missing answer for question 'topic'");
 		}
 
 		@Test
@@ -243,47 +242,47 @@ class DecisionResponseTests {
 		@Test
 		void rejectsDuplicateAnswer() {
 			var builder = DecisionResponse.builder(this.prompt)
-				.answer("urgent", YesNoAnswer.builder().probability(0.9).build());
+				.answer("defect", YesNoAnswer.builder().probability(0.9).build());
 
-			assertThatThrownBy(() -> builder.answer("urgent", YesNoAnswer.builder().probability(0.1).build()))
+			assertThatThrownBy(() -> builder.answer("defect", YesNoAnswer.builder().probability(0.1).build()))
 				.isInstanceOf(IllegalArgumentException.class)
-				.hasMessageContaining("duplicate answer for question 'urgent'");
+				.hasMessageContaining("duplicate answer for question 'defect'");
 		}
 
 		@Test
 		void rejectsWrongAnswerType() {
 			var builder = DecisionResponse.builder(this.prompt)
-				.answer("urgent", ChoiceAnswer.builder().value("billing").build())
-				.answer("team", ChoiceAnswer.builder().value("billing").build())
-				.answer("mood", ScoreAnswer.builder().value(1).build());
+				.answer("defect", ChoiceAnswer.builder().value("delivery").build())
+				.answer("topic", ChoiceAnswer.builder().value("delivery").build())
+				.answer("satisfaction", ScoreAnswer.builder().value(1).build());
 
 			assertThatThrownBy(builder::build).isInstanceOf(IllegalStateException.class)
-				.hasMessageContaining("'urgent'")
+				.hasMessageContaining("'defect'")
 				.hasMessageContaining("ChoiceAnswer")
 				.hasMessageContaining("YesNoAnswer was expected");
 		}
 
 		@Test
 		void rejectsChoiceOutsideOptions() {
-			var builder = answered("team", ChoiceAnswer.builder().value("sales").build());
+			var builder = answered("topic", ChoiceAnswer.builder().value("account").build());
 
 			assertThatThrownBy(builder::build).isInstanceOf(IllegalStateException.class)
-				.hasMessageContaining("'sales'")
-				.hasMessageContaining("[billing, technical]");
+				.hasMessageContaining("'account'")
+				.hasMessageContaining("[delivery, product]");
 		}
 
 		@Test
 		void rejectsChoiceProbabilityForUnknownOption() {
-			var builder = answered("team",
-					ChoiceAnswer.builder().value("billing").probabilities(Map.of("sales", 0.5)).build());
+			var builder = answered("topic",
+					ChoiceAnswer.builder().value("delivery").probabilities(Map.of("account", 0.5)).build());
 
 			assertThatThrownBy(builder::build).isInstanceOf(IllegalStateException.class)
-				.hasMessageContaining("probability for 'sales'");
+				.hasMessageContaining("probability for 'account'");
 		}
 
 		@Test
 		void rejectsScoreOutOfRange() {
-			var builder = answered("mood", ScoreAnswer.builder().value(2.5).build());
+			var builder = answered("satisfaction", ScoreAnswer.builder().value(2.5).build());
 
 			assertThatThrownBy(builder::build).isInstanceOf(IllegalStateException.class)
 				.hasMessageContaining("above the highest level 2");
@@ -291,7 +290,8 @@ class DecisionResponseTests {
 
 		@Test
 		void rejectsScoreProbabilitiesNotMatchingLevels() {
-			var builder = answered("mood", ScoreAnswer.builder().value(1).probabilities(List.of(0.5, 0.5)).build());
+			var builder = answered("satisfaction",
+					ScoreAnswer.builder().value(1).probabilities(List.of(0.5, 0.5)).build());
 
 			assertThatThrownBy(builder::build).isInstanceOf(IllegalStateException.class)
 				.hasMessageContaining("2 probabilities for 3 levels");
@@ -299,9 +299,9 @@ class DecisionResponseTests {
 
 		private DecisionResponse.Builder answered() {
 			return DecisionResponse.builder(this.prompt)
-				.answer("urgent", YesNoAnswer.builder().probability(0.9).build())
-				.answer("team", ChoiceAnswer.builder().value("billing").build())
-				.answer("mood", ScoreAnswer.builder().value(1).build());
+				.answer("defect", YesNoAnswer.builder().probability(0.9).build())
+				.answer("topic", ChoiceAnswer.builder().value("delivery").build())
+				.answer("satisfaction", ScoreAnswer.builder().value(1).build());
 		}
 
 		/**
@@ -309,14 +309,14 @@ class DecisionResponseTests {
 		 */
 		private DecisionResponse.Builder answered(String name, DecisionAnswer answer) {
 			var builder = DecisionResponse.builder(this.prompt);
-			if (!"urgent".equals(name)) {
-				builder.answer("urgent", YesNoAnswer.builder().probability(0.9).build());
+			if (!"defect".equals(name)) {
+				builder.answer("defect", YesNoAnswer.builder().probability(0.9).build());
 			}
-			if (!"team".equals(name)) {
-				builder.answer("team", ChoiceAnswer.builder().value("billing").build());
+			if (!"topic".equals(name)) {
+				builder.answer("topic", ChoiceAnswer.builder().value("delivery").build());
 			}
-			if (!"mood".equals(name)) {
-				builder.answer("mood", ScoreAnswer.builder().value(1).build());
+			if (!"satisfaction".equals(name)) {
+				builder.answer("satisfaction", ScoreAnswer.builder().value(1).build());
 			}
 			return builder.answer(name, answer);
 		}

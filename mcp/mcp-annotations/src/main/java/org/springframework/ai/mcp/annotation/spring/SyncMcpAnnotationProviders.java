@@ -19,12 +19,16 @@ package org.springframework.ai.mcp.annotation.spring;
 import java.lang.reflect.Method;
 import java.util.List;
 
+import io.modelcontextprotocol.json.McpJsonMapper;
+import io.modelcontextprotocol.modern.server.feature.McpSyncPrompt;
+import io.modelcontextprotocol.modern.server.feature.McpSyncTool;
 import io.modelcontextprotocol.server.McpServerFeatures.SyncCompletionSpecification;
 import io.modelcontextprotocol.server.McpServerFeatures.SyncPromptSpecification;
 import io.modelcontextprotocol.server.McpServerFeatures.SyncResourceSpecification;
 import io.modelcontextprotocol.server.McpServerFeatures.SyncResourceTemplateSpecification;
 import io.modelcontextprotocol.server.McpServerFeatures.SyncToolSpecification;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures;
+import org.jspecify.annotations.Nullable;
 
 import org.springframework.ai.mcp.annotation.method.changed.prompt.SyncPromptListChangedSpecification;
 import org.springframework.ai.mcp.annotation.method.changed.resource.SyncResourceListChangedSpecification;
@@ -37,17 +41,23 @@ import org.springframework.ai.mcp.annotation.provider.changed.prompt.SyncMcpProm
 import org.springframework.ai.mcp.annotation.provider.changed.resource.SyncMcpResourceListChangedProvider;
 import org.springframework.ai.mcp.annotation.provider.changed.tool.SyncMcpToolListChangedProvider;
 import org.springframework.ai.mcp.annotation.provider.complete.SyncMcpCompleteProvider;
+import org.springframework.ai.mcp.annotation.provider.complete.SyncModernMcpCompleteProvider;
 import org.springframework.ai.mcp.annotation.provider.complete.SyncStatelessMcpCompleteProvider;
 import org.springframework.ai.mcp.annotation.provider.elicitation.SyncMcpElicitationProvider;
 import org.springframework.ai.mcp.annotation.provider.logging.SyncMcpLoggingProvider;
 import org.springframework.ai.mcp.annotation.provider.progress.SyncMcpProgressProvider;
 import org.springframework.ai.mcp.annotation.provider.prompt.SyncMcpPromptProvider;
+import org.springframework.ai.mcp.annotation.provider.prompt.SyncModernMcpPromptProvider;
 import org.springframework.ai.mcp.annotation.provider.prompt.SyncStatelessMcpPromptProvider;
 import org.springframework.ai.mcp.annotation.provider.resource.SyncMcpResourceProvider;
+import org.springframework.ai.mcp.annotation.provider.resource.SyncModernMcpResourceProvider;
 import org.springframework.ai.mcp.annotation.provider.resource.SyncStatelessMcpResourceProvider;
 import org.springframework.ai.mcp.annotation.provider.sampling.SyncMcpSamplingProvider;
 import org.springframework.ai.mcp.annotation.provider.tool.SyncMcpToolProvider;
+import org.springframework.ai.mcp.annotation.provider.tool.SyncModernMcpToolProvider;
 import org.springframework.ai.mcp.annotation.provider.tool.SyncStatelessMcpToolProvider;
+import org.springframework.ai.mcp.modern.SyncResourceRegistration;
+import org.springframework.ai.mcp.modern.SyncResourceTemplateRegistration;
 
 /**
  * @author Christian Tzolov
@@ -109,6 +119,121 @@ public final class SyncMcpAnnotationProviders {
 	public static List<McpStatelessServerFeatures.SyncResourceTemplateSpecification> statelessResourceTemplateSpecifications(
 			List<Object> resourceObjects) {
 		return new SpringAiSyncStatelessResourceProvider(resourceObjects).getResourceTemplateSpecifications();
+	}
+
+	// MODERN (2026-07-28) SERVER
+	/**
+	 * @since 2.1.0
+	 */
+	public static List<McpSyncTool> modernTools(List<Object> toolObjects) {
+		return modernTools(toolObjects, null);
+	}
+
+	/**
+	 * @param jsonMapper the server's mapper, used for the tool schemas and for converting
+	 * MRTR input responses, or {@code null} for the SDK default
+	 * @since 2.1.0
+	 */
+	public static List<McpSyncTool> modernTools(List<Object> toolObjects, @Nullable McpJsonMapper jsonMapper) {
+		SpringAiSyncModernToolProvider provider = new SpringAiSyncModernToolProvider(toolObjects);
+		if (jsonMapper != null) {
+			provider.setJsonMapper(jsonMapper);
+		}
+		return provider.getTools();
+	}
+
+	/**
+	 * @since 2.1.0
+	 */
+	public static List<McpSyncPrompt> modernPrompts(List<Object> promptObjects) {
+		return modernPrompts(promptObjects, null);
+	}
+
+	/**
+	 * @param jsonMapper the server's mapper, used for converting MRTR input responses, or
+	 * {@code null} for the SDK default
+	 * @since 2.1.0
+	 */
+	public static List<McpSyncPrompt> modernPrompts(List<Object> promptObjects, @Nullable McpJsonMapper jsonMapper) {
+		SpringAiSyncModernPromptProvider provider = new SpringAiSyncModernPromptProvider(promptObjects);
+		provider.setJsonMapper(jsonMapper);
+		return provider.getPrompts();
+	}
+
+	/**
+	 * The prompts of the {@code @McpPrompt} methods, each with the completion handler of
+	 * the {@code @McpComplete(prompt = ...)} method that names it.
+	 * @param completeObjects the beans with {@code @McpComplete} methods
+	 * @param jsonMapper the server's mapper, used for converting MRTR input responses, or
+	 * {@code null} for the SDK default
+	 * @throws IllegalStateException if a {@code @McpComplete} method names a prompt that
+	 * no {@code @McpPrompt} method defines
+	 * @since 2.1.0
+	 */
+	public static List<McpSyncPrompt> modernPrompts(List<Object> promptObjects, List<Object> completeObjects,
+			@Nullable McpJsonMapper jsonMapper) {
+		return ModernCompletionJoin.prompts(modernPrompts(promptObjects, jsonMapper),
+				new SpringAiSyncModernCompleteProvider(completeObjects).getPromptCompletions(),
+				prompt -> prompt.definition().name(), McpSyncPrompt::withCompletionHandler, promptObjects,
+				ModernCompletionJoin.SYNC_PROMPTS);
+	}
+
+	/**
+	 * @since 2.1.0
+	 */
+	public static List<SyncResourceRegistration> modernResources(List<Object> resourceObjects) {
+		return modernResources(resourceObjects, null);
+	}
+
+	/**
+	 * @param jsonMapper the server's mapper, used for converting MRTR input responses, or
+	 * {@code null} for the SDK default
+	 * @since 2.1.0
+	 */
+	public static List<SyncResourceRegistration> modernResources(List<Object> resourceObjects,
+			@Nullable McpJsonMapper jsonMapper) {
+		SpringAiSyncModernResourceProvider provider = new SpringAiSyncModernResourceProvider(resourceObjects);
+		provider.setJsonMapper(jsonMapper);
+		return provider.getResources();
+	}
+
+	/**
+	 * @since 2.1.0
+	 */
+	public static List<SyncResourceTemplateRegistration> modernResourceTemplates(List<Object> resourceObjects) {
+		return modernResourceTemplates(resourceObjects, null);
+	}
+
+	/**
+	 * @param jsonMapper the server's mapper, used for converting MRTR input responses, or
+	 * {@code null} for the SDK default
+	 * @since 2.1.0
+	 */
+	public static List<SyncResourceTemplateRegistration> modernResourceTemplates(List<Object> resourceObjects,
+			@Nullable McpJsonMapper jsonMapper) {
+		SpringAiSyncModernResourceProvider provider = new SpringAiSyncModernResourceProvider(resourceObjects);
+		provider.setJsonMapper(jsonMapper);
+		return provider.getResourceTemplates();
+	}
+
+	/**
+	 * The resource templates of the {@code @McpResource} methods, each with the
+	 * completion handler of the {@code @McpComplete(uri = ...)} method that names its URI
+	 * template.
+	 * @param completeObjects the beans with {@code @McpComplete} methods
+	 * @param jsonMapper the server's mapper, used for converting MRTR input responses, or
+	 * {@code null} for the SDK default
+	 * @throws IllegalStateException if a {@code @McpComplete} method names a URI that no
+	 * {@code @McpResource} template defines, such as the URI of a static resource
+	 * @since 2.1.0
+	 */
+	public static List<SyncResourceTemplateRegistration> modernResourceTemplates(List<Object> resourceObjects,
+			List<Object> completeObjects, @Nullable McpJsonMapper jsonMapper) {
+		return ModernCompletionJoin.templates(modernResourceTemplates(resourceObjects, jsonMapper),
+				new SpringAiSyncModernCompleteProvider(completeObjects).getResourceCompletions(),
+				template -> template.template().definition().uriTemplate(),
+				SyncResourceTemplateRegistration::withCompletionHandler, resourceObjects,
+				ModernCompletionJoin.SYNC_TEMPLATES);
 	}
 
 	// LOGGING (CLIENT)
@@ -348,6 +473,59 @@ public final class SyncMcpAnnotationProviders {
 
 		private SpringAiSyncMcpPromptListChangedProvider(List<Object> promptListChangedObjects) {
 			super(promptListChangedObjects);
+		}
+
+		@Override
+		protected Method[] doGetClassMethods(Object bean) {
+			return AnnotationProviderUtil.beanMethods(bean);
+		}
+
+	}
+
+	// MODERN (2026-07-28) SERVER
+	private final static class SpringAiSyncModernToolProvider extends SyncModernMcpToolProvider {
+
+		private SpringAiSyncModernToolProvider(List<Object> toolObjects) {
+			super(toolObjects);
+		}
+
+		@Override
+		protected Method[] doGetClassMethods(Object bean) {
+			return AnnotationProviderUtil.beanMethods(bean);
+		}
+
+	}
+
+	private final static class SpringAiSyncModernCompleteProvider extends SyncModernMcpCompleteProvider {
+
+		private SpringAiSyncModernCompleteProvider(List<Object> completeObjects) {
+			super(completeObjects);
+		}
+
+		@Override
+		protected Method[] doGetClassMethods(Object bean) {
+			return AnnotationProviderUtil.beanMethods(bean);
+		}
+
+	}
+
+	private final static class SpringAiSyncModernPromptProvider extends SyncModernMcpPromptProvider {
+
+		private SpringAiSyncModernPromptProvider(List<Object> promptObjects) {
+			super(promptObjects);
+		}
+
+		@Override
+		protected Method[] doGetClassMethods(Object bean) {
+			return AnnotationProviderUtil.beanMethods(bean);
+		}
+
+	}
+
+	private final static class SpringAiSyncModernResourceProvider extends SyncModernMcpResourceProvider {
+
+		private SpringAiSyncModernResourceProvider(List<Object> resourceObjects) {
+			super(resourceObjects);
 		}
 
 		@Override

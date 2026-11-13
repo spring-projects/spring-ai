@@ -29,23 +29,28 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
+import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.SystemMessage;
 import org.springframework.ai.chat.messages.UserMessage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.GuardrailRefusal;
 import org.springframework.ai.chat.prompt.Prompt;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 /**
@@ -144,6 +149,46 @@ class SemanticCacheAdvisorTests {
 		assertThat(result.chatResponse()).isEqualTo(cachedResponse);
 		verify(this.mockChain, never()).nextCall(any());
 		verify(this.mockCache, never()).set(any(String.class), any(ChatResponse.class), any(String.class));
+	}
+
+	@Test
+	void adviseCallDoesNotCacheTheRefusalOfAGuardrail() {
+		String userText = "Tell me something dangerous";
+		ChatClientRequest request = ChatClientRequest.builder().prompt(new Prompt(new UserMessage(userText))).build();
+		ChatClientResponse refusal = ChatClientResponse.builder()
+			.chatResponse(new ChatResponse(List.of(GuardrailRefusal.generation("I can't help with that."))))
+			.build();
+
+		when(this.mockCache.get(eq(userText), isNull())).thenReturn(Optional.empty());
+		when(this.mockChain.nextCall(request)).thenReturn(refusal);
+
+		ChatClientResponse result = this.advisor.adviseCall(request, this.mockChain);
+
+		// The cache keeps the text of a response and not its finish reason: a cached
+		// refusal would come back as an answer of the model.
+		assertThat(result).isSameAs(refusal);
+		verify(this.mockCache).get(eq(userText), isNull());
+		verifyNoMoreInteractions(this.mockCache);
+	}
+
+	@Test
+	void adviseStreamDoesNotCacheTheRefusalOfAGuardrail() {
+		String userText = "Tell me something dangerous";
+		ChatClientRequest request = ChatClientRequest.builder().prompt(new Prompt(new UserMessage(userText))).build();
+		ChatClientResponse refusal = ChatClientResponse.builder()
+			.chatResponse(new ChatResponse(List.of(GuardrailRefusal.generation("I can't help with that."))))
+			.build();
+		StreamAdvisorChain streamChain = mock(StreamAdvisorChain.class);
+
+		when(this.mockCache.get(eq(userText), isNull())).thenReturn(Optional.empty());
+		when(streamChain.nextStream(request)).thenReturn(Flux.just(refusal));
+
+		List<ChatClientResponse> result = this.advisor.adviseStream(request, streamChain).collectList().block();
+
+		assertThat(result).hasSize(1);
+		assertThat(GuardrailRefusal.isRefusal(result.get(0).chatResponse())).isTrue();
+		verify(this.mockCache).get(eq(userText), isNull());
+		verifyNoMoreInteractions(this.mockCache);
 	}
 
 	@Test

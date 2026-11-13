@@ -2,7 +2,7 @@
 = JDBC Repository
 
 `spring-ai-session-jdbc` stores sessions in a relational database.
-It supports PostgreSQL, MySQL, MariaDB and H2 out of the box.
+It supports PostgreSQL, MySQL, MariaDB, Microsoft SQL Server and H2 out of the box.
 
 [source,xml]
 ----
@@ -38,6 +38,10 @@ Each supported database has a dialect, detected from the database metadata, and 
 | MySQL, MariaDB
 | `MysqlJdbcSessionRepositoryDialect`
 | `org/springframework/ai/session/jdbc/schema-mysql.sql`
+
+| Microsoft SQL Server (2016 and later)
+| `SqlServerJdbcSessionRepositoryDialect`
+| `org/springframework/ai/session/jdbc/schema-sqlserver.sql`
 
 | H2
 | `H2JdbcSessionRepositoryDialect`
@@ -92,7 +96,8 @@ For any other event type it holds `SessionEvent.getPayload()`.
 *Idempotent append.*
 `appendEvent` looks the event id up under the session row lock before inserting.
 An id already stored for the same session is a retried append and a no-op; an id used by another session is rejected.
-Checking first, rather than relying on a unique-constraint violation, keeps a replay from marking a caller's surrounding transaction rollback-only, or aborting it on PostgreSQL.
+Checking first, rather than relying on a unique-constraint violation, keeps a replay from marking a caller's surrounding transaction rollback-only, or aborting it on PostgreSQL and, with `XACT_ABORT ON`, on SQL Server.
+`saveIfAbsent` avoids the violation on these two databases for the same reason: `INSERT ... ON CONFLICT DO NOTHING` on PostgreSQL and an insert-only `MERGE` on SQL Server report an existing id through the update count.
 
 *Optimistic concurrency.*
 The `event_version` column of `AI_SESSION` advances on every append of a new event and every successful `appendEvents`.
@@ -105,18 +110,28 @@ image::session/session-jdbc-append-sequence.svg[A compaction and a concurrent ap
 A read with the view flag selects the session's newest `COMPACTION` row, fetches in one query the rows it names plus every row from the boundary on, ordered by `seq`, and lets `EventFilter.apply` put them in view order, filter and window them.
 
 *Windows.*
-A `lastN` window is `ORDER BY seq DESC LIMIT ?`.
+A `lastN` window is `ORDER BY seq DESC LIMIT ?`, or `OFFSET 0 ROWS FETCH NEXT ? ROWS ONLY` on SQL Server.
 When the window lands mid-turn, one bounded extra query fetches the rows between the nearest preceding user message and the window, served by the `(session_id, seq)` index, so the window keeps turns whole.
 The newest boundary of a session, read before every view, is served by the `(session_id, event_type, seq)` index.
 
-*Keys compare byte for byte.*
-On MySQL and MariaDB the id and index columns use the `utf8mb4_bin` collation, so `findByMetadata` and the id lookups are case-sensitive, as on the other databases.
+*Keys are case-sensitive.*
+On MySQL and MariaDB the id and index columns use the `utf8mb4_bin` collation, and on SQL Server the `Latin1_General_100_BIN2` collation, so `findByMetadata` and the id lookups are case-sensitive, as on the other databases.
+These three databases ignore trailing spaces when they compare keys, so a session id or an event id must not differ from another only by trailing spaces: `abc` and `abc` followed by a space are the same id there, and different ids on PostgreSQL and H2.
+`findByMetadata` is not affected, because it compares the whole value again on the sessions the query returns.
 
 *Indexed attributes.*
 On every save the repository copies the metadata entries whose keys are configured as indexed, always including `SessionAttributes.PRINCIPAL_NAME`, into `AI_SESSION_INDEX`, one row per attribute, on the first 512 characters of the value; the whole value is then compared on the sessions the query returns, so the row is a prefix index, not the match.
 `findByMetadata(name, value)` is one query over that table and an exact match on what it returns.
 
 *The `synthetic` column* is stored on its own, not only in the metadata JSON, so `excludeSynthetic` is a SQL predicate rather than an in-process scan.
+
+*Search.*
+`searchEvents` is one query over the session's message rows: one `LOWER(COALESCE(message_content, '')) LIKE LOWER(?) ESCAPE '!'` predicate per keyword, joined with `OR` or `AND`, ordered by `seq`.
+The database lower-cases both sides, so one set of rules folds the keyword and the text.
+The keyword is bound between two `%`, with `!`, `%` and `_` escaped, and `[` too on SQL Server, so it matches as text.
+A page is read from the first match on: the query is limited to the page and the pages before it, and the repository keeps the page.
+There is no text index: the search scans the rows of one session, which the `(session_id, seq)` index bounds.
+A dialect can change the predicate and the bound value with `getKeywordPredicate()` and `toKeywordParameter(keyword)`.
 
 == Auto-configuration
 
@@ -170,6 +185,9 @@ Filtering and windowing are the backend's job, because their cost grows with the
 `EventFilter.apply(events)` is the reference implementation for a log held as a list; use it for what the store cannot express.
 A view read fetches the rows the newest boundary names plus the rows from the boundary on, and lets `EventFilter.apply` project, filter and window them.
 A `lastN` window keeps turns whole, as xref:api/session/event-filter.adoc#session-event-filter-turns[the filter page] describes.
+* *A search can be pushed down too.*
+`searchEvents(sessionId, query)` has a default that reads the log and runs `EventQuery.apply(events)`.
+Override it when the store can match text in its query, and agree with the reference: the whole log, message events only, never synthetic ones, oldest first.
 * *Events have one persisted shape.*
 `SessionEventCodec` encodes an event into its type, message type, text and JSON payload, and decodes it back.
 * *Compaction is an append.*
@@ -177,7 +195,7 @@ A `lastN` window keeps turns whole, as xref:api/session/event-filter.adoc#sessio
 Existing events never move, change or disappear; `CompactionBoundary.project(log)` is the reference projection.
 * *`findByMetadata` is the one scoped lookup*: every store indexes `SessionAttributes.PRINCIPAL_NAME`.
 
-`spring-ai-test` ships `AbstractSessionRepositoryContractTests`, the suite the in-memory, H2, PostgreSQL, MySQL and MariaDB repositories run.
+`spring-ai-test` ships `AbstractSessionRepositoryContractTests`, the suite the in-memory, H2, PostgreSQL, MySQL, MariaDB and SQL Server repositories run.
 Extend it and return your repository:
 
 [source,xml]

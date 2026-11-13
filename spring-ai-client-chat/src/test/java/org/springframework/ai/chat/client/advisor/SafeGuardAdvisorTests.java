@@ -16,9 +16,11 @@
 
 package org.springframework.ai.chat.client.advisor;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import io.micrometer.observation.ObservationRegistry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -27,9 +29,12 @@ import reactor.core.publisher.Flux;
 
 import org.springframework.ai.chat.client.ChatClientRequest;
 import org.springframework.ai.chat.client.ChatClientResponse;
+import org.springframework.ai.chat.client.advisor.api.AdvisorChain;
+import org.springframework.ai.chat.client.advisor.api.BaseAdvisor;
 import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.model.GuardrailRefusal;
 import org.springframework.ai.chat.prompt.Prompt;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -42,6 +47,7 @@ import static org.mockito.Mockito.when;
  * Unit tests for {@link SafeGuardAdvisor}.
  *
  * @author Dimitar Proynov
+ * @author Minju Kim
  */
 @ExtendWith(MockitoExtension.class)
 public class SafeGuardAdvisorTests {
@@ -94,7 +100,24 @@ public class SafeGuardAdvisorTests {
 		assertThat(response.chatResponse()).isNotNull();
 		assertThat(response.chatResponse().getResult().getOutput().getText())
 			.isEqualTo(SafeGuardAdvisor.DEFAULT_FAILURE_RESPONSE);
+		assertThat(GuardrailRefusal.isRefusal(response.chatResponse())).isTrue();
 		verify(this.callAdvisorChain, never()).nextCall(request);
+	}
+
+	@Test
+	void whenSensitiveWordMatchesAndContextHasNullValueThenReturnFailureResponse() {
+		SafeGuardAdvisor advisor = new SafeGuardAdvisor(List.of("dangerous"));
+		ChatClientRequest request = ChatClientRequest.builder()
+			.prompt(new Prompt(List.of(new UserMessage("Tell me something dangerous"))))
+			.context("tenantId", null)
+			.build();
+
+		ChatClientResponse response = advisor.adviseCall(request, this.callAdvisorChain);
+
+		assertThat(response.chatResponse()).isNotNull();
+		assertThat(response.chatResponse().getResult().getOutput().getText())
+			.isEqualTo(SafeGuardAdvisor.DEFAULT_FAILURE_RESPONSE);
+		assertThat(response.context()).containsEntry("tenantId", null);
 	}
 
 	@Test
@@ -173,7 +196,50 @@ public class SafeGuardAdvisorTests {
 		assertThat(result.chatResponse()).isNotNull();
 		assertThat(result.chatResponse().getResult().getOutput().getText())
 			.isEqualTo(SafeGuardAdvisor.DEFAULT_FAILURE_RESPONSE);
+		assertThat(GuardrailRefusal.isRefusal(result.chatResponse())).isTrue();
 		verify(this.streamAdvisorChain, never()).nextStream(request);
+	}
+
+	@Test
+	void whenStreamIsRefusedThenAnOuterAdvisorSeesTheRefusalInItsAfterStep() {
+		// The refusal has a finish reason, which is what makes a BaseAdvisor run its
+		// after step on a streamed reply, as it does on a call.
+		List<ChatClientResponse> seenAfter = new ArrayList<>();
+		BaseAdvisor outer = new BaseAdvisor() {
+
+			@Override
+			public ChatClientRequest before(ChatClientRequest request, AdvisorChain chain) {
+				return request;
+			}
+
+			@Override
+			public ChatClientResponse after(ChatClientResponse response, AdvisorChain chain) {
+				seenAfter.add(response);
+				return response;
+			}
+
+			@Override
+			public String getName() {
+				return "outer";
+			}
+
+			@Override
+			public int getOrder() {
+				return -1;
+			}
+
+		};
+		StreamAdvisorChain chain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.of(outer, new SafeGuardAdvisor(List.of("dangerous"))))
+			.build();
+
+		List<ChatClientResponse> replies = chain.nextStream(requestWithText("Tell me something dangerous"))
+			.collectList()
+			.block();
+
+		assertThat(replies).hasSize(1);
+		assertThat(seenAfter).hasSize(1);
+		assertThat(GuardrailRefusal.isRefusal(seenAfter.get(0).chatResponse())).isTrue();
 	}
 
 	@Test

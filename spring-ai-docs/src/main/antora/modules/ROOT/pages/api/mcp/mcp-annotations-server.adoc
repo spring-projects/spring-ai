@@ -57,6 +57,14 @@ The `@McpTool` annotation supports the following attributes:
 |`DefaultMetaProvider.class`
 |Class implementing `MetaProvider` that supplies data for the `_meta` field in the tool declaration.
 
+|`icons`
+|`{}`
+|Optional `@McpIcon` entries (`src`, `mimeType`, `sizes`, `theme`) published in the tool definition.
+
+|`requiredCapabilities`
+|`{}`
+|`McpClientCapability` values (`ELICITATION_FORM`, `ELICITATION_URL`, `SAMPLING`, `ROOTS`) the tool cannot work without. The modern server refuses a request that does not declare them with `-32021` before the method runs; the legacy servers ignore the attribute with a warning.
+
 |===
 
 ==== Tool Annotations (Hints)
@@ -252,6 +260,26 @@ The `@McpResource` annotation provides access to resources via URI templates.
 |`@McpAnnotations(...)`
 |Client annotations for audience, priority, and last-modified metadata.
 
+|`ttlMs`
+|`0`
+|How long, in milliseconds, clients may cache the read result. Only transmitted by the modern (`protocol=MODERN`) server; ignored with a warning otherwise.
+
+|`cacheScope`
+|`CacheScope.PRIVATE`
+|Whether a cached read result may be shared across authorization contexts (`PUBLIC`) or not (`PRIVATE`). Only transmitted by the modern server.
+
+|`icons`
+|`{}`
+|Optional `@McpIcon` entries published in the resource definition.
+
+|`size`
+|`-1`
+|Size of the resource content in bytes when known; `-1` leaves it unset.
+
+|`requiredCapabilities`
+|`{}`
+|`McpClientCapability` values (`ELICITATION_FORM`, `ELICITATION_URL`, `SAMPLING`, `ROOTS`) the resource cannot work without. The modern server refuses a request that does not declare them with `-32021` before the method runs; the legacy servers ignore the attribute with a warning.
+
 |===
 
 The nested `McpAnnotations` for resources supports:
@@ -363,7 +391,20 @@ The `@McpPrompt` annotation generates prompt messages for AI interactions.
 |`DefaultMetaProvider.class`
 |Class implementing `MetaProvider` that supplies data for the `_meta` field.
 
+|`icons`
+|`{}`
+|Optional `@McpIcon` entries published in the prompt definition.
+
+|`requiredCapabilities`
+|`{}`
+|`McpClientCapability` values (`ELICITATION_FORM`, `ELICITATION_URL`, `SAMPLING`, `ROOTS`) the prompt cannot work without. The modern server refuses a request that does not declare them with `-32021` before the method runs; the legacy servers ignore the attribute with a warning.
+
 |===
+
+`@McpArg` accepts `name`, `description`, `required` and, since 2.1.0, `title`, a display name for the argument.
+`@McpToolParam` accepts `description`, `required` and, since 2.1.0, `header`: when `true`, the parameter's schema carries `x-mcp-header: <name>` so Streamable HTTP clients also send it as the `Mcp-Param-<name>` header, which the modern transports hand to the SDK: a call that omits the header or whose header disagrees with the argument is rejected with `-32020`, so the header is mandatory for that tool (parameters whose schema type is `string`, `integer` or `boolean`, which includes enums; other types are rejected at startup).
+The keyword is defined by the 2026-07-28 revision, but the schema generator is shared, so legacy and stateless servers publish it too.
+Clients of earlier revisions ignore unknown keywords, and the type restriction applies at startup on every server kind.
 
 ==== Basic Usage
 
@@ -427,6 +468,11 @@ Use either the `prompt` or `uri` attribute — not both simultaneously:
 
 * `prompt` — completes an argument of the named prompt
 * `uri` — completes a URI template expression of the named resource URI
+
+NOTE: On the modern server (`spring.ai.mcp.server.protocol=MODERN`) a completion belongs to its prompt or template.
+The named prompt must be an `@McpPrompt` method and the URI an `@McpResource` URI template, or the application fails to start, and the server completes only the arguments that the prompt or template declares.
+A completion whose prompt or template method is skipped, for example because of an unsupported return type, is skipped too, with a warning.
+See xref:api/mcp/mcp-modern-server-boot-starter-docs.adoc#_completions[Completions].
 
 ==== Prompt Argument Completion
 
@@ -626,6 +672,8 @@ public class SyncTools {
 }
 ----
 
+NOTE: On the modern server (`spring.ai.mcp.server.protocol=MODERN`), the synchronous providers also filter out methods that return a `CompletableFuture` or `CompletionStage`, which they cannot wait for.
+
 ==== Asynchronous Servers
 
 Asynchronous servers (configured with `spring.ai.mcp.server.type=ASYNC`) use asynchronous providers that:
@@ -660,6 +708,12 @@ public class AsyncTools {
     }
 }
 ----
+
+NOTE: The modern server (`spring.ai.mcp.server.protocol=MODERN`) with `type=ASYNC` is the exception: it serves non-reactive methods as well, and its streaming parameter is the SDK `McpAsyncNotifier`.
+A method declared to return a `Flux` fails the application at startup, because an MCP request has one result; return a `Mono` of the result instead, for example a `Mono<List<String>>`.
+A non-reactive method runs on Reactor's `boundedElastic` scheduler, or on the calling thread when the transport serves the request blocking, as the WebMVC transport does.
+A method that declares the notifier of the other programming model is skipped with a warning.
+See xref:api/mcp/mcp-modern-server-boot-starter-docs.adoc#mcp-modern-server-boot-starter[MCP 2026-07-28 ("Modern") Servers].
 
 === Stateful vs Stateless Filtering
 

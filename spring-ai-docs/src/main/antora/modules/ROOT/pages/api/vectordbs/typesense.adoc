@@ -105,8 +105,10 @@ Properties starting with `spring.ai.vectorstore.typesense.*` are used to configu
 |`vector_store`
 
 |`spring.ai.vectorstore.typesense.embedding-dimension`
-|The number of dimensions in the vector
-|`1536`
+|The number of dimensions in the vector.
+When not set, it is read from the collection schema or, for a new collection, from the embedding model.
+If the embedding model cannot report its size, a new collection gets size `1536`.
+|-
 
 |`spring.ai.vectorstore.typesense.client.protocol`
 |HTTP Protocol
@@ -169,7 +171,7 @@ Then create the `TypesenseVectorStore` bean using the builder pattern:
 public VectorStore vectorStore(Client client, EmbeddingModel embeddingModel) {
     return TypesenseVectorStore.builder(client, embeddingModel)
         .collectionName("custom_vectors")     // Optional: defaults to "vector_store"
-        .embeddingDimension(1536)            // Optional: defaults to 1536
+        .embeddingDimension(1536)            // Optional: defaults to the schema or model size
         .initializeSchema(true)              // Optional: defaults to false
         .batchingStrategy(new TokenCountBatchingStrategy()) // Optional: defaults to TokenCountBatchingStrategy
         .build();
@@ -181,6 +183,16 @@ public EmbeddingModel embeddingModel() {
     return new OpenAiEmbeddingModel(OpenAiEmbeddingOptions.builder().apiKey(System.getenv("OPENAI_API_KEY")).build());
 }
 ----
+
+== Upsert support
+
+`TypesenseVectorStore` implements `upsert(List<EmbeddedDocument>)`, so you can write documents together with embeddings you computed elsewhere instead of having the store embed them.
+Writing the same id again replaces the whole document, so the content, the metadata and the embedding are replaced and metadata keys you leave out are removed.
+The vector size is taken from the configured `embeddingDimension` or read from the `num_dim` of the embedding field in the collection schema, so the embedding model is not called.
+Typesense writes a batch one document at a time, so a document it rejects does not stop the others from being written.
+When the store knows the vector size it checks the whole batch before writing anything; otherwise a rejected document fails the upsert after the others are written.
+The Typesense client leaves out a document it cannot serialize to JSON, for example one with a `java.time.Instant` metadata value, and the upsert then fails after the others are written.
+See xref:api/vectordbs.adoc#writing-precomputed-embeddings[Writing User-Supplied Embeddings] for details.
 
 == Metadata Filtering
 

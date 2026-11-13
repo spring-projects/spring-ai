@@ -52,15 +52,16 @@ class DecisionPromptTests {
 	@Test
 	void buildsPromptWithQuestionsInOrder() {
 		var prompt = DecisionPrompt.builder()
-			.text("Help! My payouts are late")
-			.question("urgent", YesNoQuestion.of("Is it urgent?"))
-			.question("team", ChoiceQuestion.of("Which team?", "billing", "technical"))
+			.text("Where is my order? I ordered it two weeks ago.")
+			.question("defect", YesNoQuestion.of("Does the customer report a defect?"))
+			.question("topic", ChoiceQuestion.of("What is the message about?", "delivery", "product"))
 			.options(DecisionOptions.builder().model("jev-latest").build())
 			.build();
 
 		assertThat(prompt.getInstructions()).isInstanceOf(TextInput.class);
-		assertThat(((TextInput) prompt.getInstructions()).getText()).isEqualTo("Help! My payouts are late");
-		assertThat(prompt.getQuestions().keySet()).containsExactly("urgent", "team");
+		assertThat(((TextInput) prompt.getInstructions()).getText())
+			.isEqualTo("Where is my order? I ordered it two weeks ago.");
+		assertThat(prompt.getQuestions().keySet()).containsExactly("defect", "topic");
 		assertThat(prompt.getOptions()).isNotNull();
 		assertThat(prompt.getOptions().getModel()).isEqualTo("jev-latest");
 	}
@@ -69,9 +70,10 @@ class DecisionPromptTests {
 	void rejectsDuplicateAndMissingQuestions() {
 		assertThatThrownBy(() -> DecisionPrompt.builder()
 			.text("x")
-			.question("urgent", YesNoQuestion.of("Is it urgent?"))
-			.question("urgent", YesNoQuestion.of("Is it urgent?"))).isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("duplicate question 'urgent'");
+			.question("defect", YesNoQuestion.of("Does the customer report a defect?"))
+			.question("defect", YesNoQuestion.of("Does the customer report a defect?")))
+			.isInstanceOf(IllegalArgumentException.class)
+			.hasMessageContaining("duplicate question 'defect'");
 		assertThatThrownBy(() -> DecisionPrompt.builder().text("x").build()).isInstanceOf(IllegalStateException.class)
 			.hasMessageContaining("at least one question");
 		assertThatThrownBy(() -> DecisionPrompt.builder().question("q", YesNoQuestion.of("?")).build())
@@ -83,7 +85,7 @@ class DecisionPromptTests {
 	void mutateKeepsEverything() {
 		var prompt = DecisionPrompt.builder()
 			.text("x")
-			.question("urgent", YesNoQuestion.of("Is it urgent?"))
+			.question("defect", YesNoQuestion.of("Does the customer report a defect?"))
 			.options(DecisionOptions.builder().model("a").build())
 			.build();
 

@@ -26,9 +26,6 @@ import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.Test;
 import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
-import org.springaicommunity.typesafe.RetryPolicy;
-import org.springaicommunity.typesafe.TypeSafeClient;
-import org.springaicommunity.typesafe.exception.TypeSafeBadRequestException;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.ToolResponseMessage;
@@ -48,6 +45,9 @@ import org.springframework.ai.decision.question.ScoreQuestion;
 import org.springframework.ai.decision.question.YesNoQuestion;
 import org.springframework.ai.observation.conventions.AiObservationAttributes;
 import org.springframework.ai.observation.conventions.AiOperationType;
+import org.springframework.ai.systemone.api.SystemOneClient;
+import org.springframework.ai.systemone.api.SystemOneRetryUtils;
+import org.springframework.ai.systemone.api.exception.SystemOneBadRequestException;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
@@ -66,7 +66,7 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 
 /**
  * Unit tests for {@link SystemOneDecisionModel}, against a mocked System One server so
- * that the request the SDK sends and the answers it parses are both covered.
+ * that the request the client sends and the answers it parses are both covered.
  *
  * @author Christian Tzolov
  */
@@ -82,11 +82,11 @@ class SystemOneDecisionModelTests {
 
 	private final TestObservationRegistry observationRegistry = TestObservationRegistry.create();
 
-	private final TypeSafeClient client = TypeSafeClient.builder()
+	private final SystemOneClient client = SystemOneClient.builder()
 		.baseUrl(BASE_URL)
 		.apiKey("key")
-		.defaultModel("nimble")
-		.retryPolicy(RetryPolicy.noRetry())
+		.defaultModel("d1-omni:600m")
+		.retryTemplate(SystemOneRetryUtils.noRetryTemplate())
 		.restClientBuilder(this.restClientBuilder)
 		.build();
 
@@ -115,7 +115,7 @@ class SystemOneDecisionModelTests {
 
 	private static String yesNoResponse(double probability) {
 		return """
-				{"model": "nimble", "answers": {"urgent": {"type": "noul", "noul": %s}},
+				{"model": "d1-omni:600m", "answers": {"defect": {"type": "noul", "noul": %s}},
 				"usage": {"input_tokens": 12, "output_tokens": 3}}""".formatted(probability);
 	}
 
@@ -124,23 +124,23 @@ class SystemOneDecisionModelTests {
 		stubResponse(yesNoResponse(0.9), "req_1");
 
 		DecisionResponse response = model().call(DecisionPrompt.builder()
-			.text("Help! My payouts are late")
-			.question("urgent",
+			.text("Where is my order? I ordered it two weeks ago.")
+			.question("defect",
 					YesNoQuestion.builder()
-						.text("Is it urgent?")
-						.whenYes("Money is blocked")
-						.whenNo("A question")
+						.text("Does the customer report a defect?")
+						.whenYes("Part of the item does not work")
+						.whenNo("The item works")
 						.build())
 			.build());
 
 		assertSent("""
-				{"state": "Help! My payouts are late", "model": "nimble",
-				"questions": {"urgent": {"type": "noul", "instructions": "Is it urgent?",
-				"criteria": {"true": "Money is blocked", "false": "A question"}}}}""");
-		assertThat(response.getYesNo("urgent").getProbability()).isEqualTo(0.9);
-		assertThat(response.getYesNo("urgent").isYes()).isTrue();
+				{"state": "Where is my order? I ordered it two weeks ago.", "model": "d1-omni:600m",
+				"questions": {"defect": {"type": "noul", "instructions": "Does the customer report a defect?",
+				"criteria": {"true": "Part of the item does not work", "false": "The item works"}}}}""");
+		assertThat(response.getYesNo("defect").getProbability()).isEqualTo(0.9);
+		assertThat(response.getYesNo("defect").isYes()).isTrue();
 		assertThat(response.getMetadata().getId()).isEqualTo("req_1");
-		assertThat(response.getMetadata().getModel()).isEqualTo("nimble");
+		assertThat(response.getMetadata().getModel()).isEqualTo("d1-omni:600m");
 		assertThat(response.getMetadata().getUsage().getPromptTokens()).isEqualTo(12);
 		assertThat(response.getMetadata().getUsage().getCompletionTokens()).isEqualTo(3);
 		assertThat(response.getMetadata().getUsage().getTotalTokens()).isEqualTo(15);
@@ -148,41 +148,47 @@ class SystemOneDecisionModelTests {
 
 	@Test
 	void sendsChoiceAndScoreQuestions() throws Exception {
-		stubResponse("""
-				{"model": "nimble", "answers": {
-				"team": {"type": "choice", "choice": "billing",
-				"probabilities": {"billing": 0.7, "other": 0.3}, "confidence": 0.8},
-				"mood": {"type": "score", "score": 1.4, "legend": {"0": "calm", "1": "annoyed", "2": "angry"},
-				"probabilities": {"0": 0.1, "1": 0.4, "2": 0.5}, "confidence": 0.6}},
-				"usage": {}}""", null);
+		stubResponse(
+				"""
+						{"model": "d1-omni:600m", "answers": {
+						"topic": {"type": "choice", "choice": "delivery",
+						"probabilities": {"delivery": 0.7, "other": 0.3}, "confidence": 0.8},
+						"satisfaction": {"type": "score", "score": 1.4, "legend": {"0": "unhappy", "1": "neutral", "2": "happy"},
+						"probabilities": {"0": 0.1, "1": 0.4, "2": 0.5}, "confidence": 0.6}},
+						"usage": {}}""",
+				null);
 
 		DecisionResponse response = model().call(DecisionPrompt.builder()
 			.text("x")
-			.question("team",
-					ChoiceQuestion.builder().text("Which team?").option("billing", "Payments").option("other").build())
-			.question("mood",
+			.question("topic",
+					ChoiceQuestion.builder()
+						.text("What is the message about?")
+						.option("delivery", "Where an order is")
+						.option("other")
+						.build())
+			.question("satisfaction",
 					ScoreQuestion.builder()
-						.text("How is the mood?")
-						.level("calm", "Just stating facts")
-						.level("annoyed")
-						.level("angry")
+						.text("How satisfied is the customer?")
+						.level("unhappy", "The customer complains")
+						.level("neutral")
+						.level("happy")
 						.build())
 			.build());
 
 		assertSent("""
-				{"state": "x", "model": "nimble", "questions": {
-				"team": {"type": "choice", "instructions": "Which team?",
-				"criteria": {"billing": "Payments", "other": null}},
-				"mood": {"type": "score", "instructions": "How is the mood?",
-				"criteria": [{"label": "calm", "description": "Just stating facts"}, "annoyed", "angry"]}}}""");
-		assertThat(response.getChoice("team").getValue()).isEqualTo("billing");
-		assertThat(response.getChoice("team").getProbabilities()).containsEntry("billing", 0.7)
+				{"state": "x", "model": "d1-omni:600m", "questions": {
+				"topic": {"type": "choice", "instructions": "What is the message about?",
+				"criteria": {"delivery": "Where an order is", "other": null}},
+				"satisfaction": {"type": "score", "instructions": "How satisfied is the customer?",
+				"criteria": [{"label": "unhappy", "description": "The customer complains"}, "neutral", "happy"]}}}""");
+		assertThat(response.getChoice("topic").getValue()).isEqualTo("delivery");
+		assertThat(response.getChoice("topic").getProbabilities()).containsEntry("delivery", 0.7)
 			.containsEntry("other", 0.3);
-		assertThat(response.getChoice("team").getConfidence()).isEqualTo(0.8);
-		assertThat(response.getScore("mood").getValue()).isEqualTo(1.4);
-		assertThat(response.getScore("mood").getProbabilities()).containsExactly(0.1, 0.4, 0.5);
-		assertThat(response.getScore("mood").getNearestLevel()).isEqualTo(2);
-		assertThat(response.getScore("mood").getConfidence()).isEqualTo(0.6);
+		assertThat(response.getChoice("topic").getConfidence()).isEqualTo(0.8);
+		assertThat(response.getScore("satisfaction").getValue()).isEqualTo(1.4);
+		assertThat(response.getScore("satisfaction").getProbabilities()).containsExactly(0.1, 0.4, 0.5);
+		assertThat(response.getScore("satisfaction").getNearestLevel()).isEqualTo(2);
+		assertThat(response.getScore("satisfaction").getConfidence()).isEqualTo(0.6);
 		assertThat(response.getMetadata().getId()).isNull();
 		assertThat(response.getMetadata().getUsage().getTotalTokens()).isZero();
 	}
@@ -191,18 +197,20 @@ class SystemOneDecisionModelTests {
 	void sendsFieldsAsObjectInOrderWithPartsAsText() throws Exception {
 		stubResponse(yesNoResponse(0.2), null);
 		Map<String, Object> fields = new LinkedHashMap<>();
-		fields.put("subject", "Payouts late");
+		fields.put("subject", "Late delivery");
 		fields.put("attempts", 3);
-		fields.put("tags", List.of("billing", "urgent"));
+		fields.put("tags", List.of("delivery", "late"));
 		fields.put("attachment", List.of(TextPart.of("The receipt: "), TextPart.of("42 EUR")));
 		fields.put("note", TextPart.of("VIP"));
 
-		model().call(DecisionInput.fields(fields), Map.of("urgent", YesNoQuestion.of("Is it urgent?")));
+		model().call(DecisionInput.fields(fields),
+				Map.of("defect", YesNoQuestion.of("Does the customer report a defect?")));
 
-		assertSent("""
-				{"state": {"subject": "Payouts late", "attempts": 3, "tags": ["billing", "urgent"],
-				"attachment": "The receipt: 42 EUR", "note": "VIP"},
-				"model": "nimble", "questions": {"urgent": {"type": "noul", "instructions": "Is it urgent?"}}}""");
+		assertSent(
+				"""
+						{"state": {"subject": "Late delivery", "attempts": 3, "tags": ["delivery", "late"],
+						"attachment": "The receipt: 42 EUR", "note": "VIP"},
+						"model": "d1-omni:600m", "questions": {"defect": {"type": "noul", "instructions": "Does the customer report a defect?"}}}""");
 		assertThat(this.sentBody)
 			.satisfies(body -> assertThat(body.indexOf("subject")).isLessThan(body.indexOf("attempts"))
 				.isLessThan(body.indexOf("tags")));
@@ -211,33 +219,34 @@ class SystemOneDecisionModelTests {
 	@Test
 	void sendsConversationWithToolCallsAndResults() throws Exception {
 		stubResponse(yesNoResponse(0.8), null);
-		var messages = List.of(new UserMessage("Weather in Paris?"), AssistantMessage.builder()
+		var messages = List.of(new UserMessage("When will my order arrive?"), AssistantMessage.builder()
 			.content("Let me check.")
-			.reasoning(ReasoningPart.of("The user wants the weather."))
-			.toolCalls(
-					List.of(new AssistantMessage.ToolCall("call_1", "function", "get_weather", "{\"city\":\"Paris\"}")))
+			.reasoning(ReasoningPart.of("The user wants the delivery date."))
+			.toolCalls(List
+				.of(new AssistantMessage.ToolCall("call_1", "function", "get_delivery_date", "{\"order\":\"A-1001\"}")))
 			.build(),
 				ToolResponseMessage.builder()
-					.responses(List.of(new ToolResponseMessage.ToolResponse("call_1", "get_weather", "rainy")))
+					.responses(List.of(new ToolResponseMessage.ToolResponse("call_1", "get_delivery_date", "Friday")))
 					.build(),
-				new AssistantMessage("It is rainy in Paris."));
+				new AssistantMessage("Your order will arrive on Friday."));
 
-		model().call(DecisionInput.conversation(messages), Map.of("urgent", YesNoQuestion.of("Answered well?")));
+		model().call(DecisionInput.conversation(messages), Map.of("defect", YesNoQuestion.of("Answered well?")));
 
-		assertSent("""
-				{"state": {"messages": [
-				{"role": "user", "content": "Weather in Paris?"},
-				{"role": "assistant", "content": "Let me check.",
-				"tool_calls": [{"id": "call_1", "name": "get_weather", "arguments": {"city": "Paris"}}]},
-				{"role": "tool", "tool_results": [{"id": "call_1", "name": "get_weather", "result": "rainy"}]},
-				{"role": "assistant", "content": "It is rainy in Paris."}]},
-				"model": "nimble", "questions": {"urgent": {"type": "noul", "instructions": "Answered well?"}}}""");
+		assertSent(
+				"""
+						{"state": {"messages": [
+						{"role": "user", "content": "When will my order arrive?"},
+						{"role": "assistant", "content": "Let me check.",
+						"tool_calls": [{"id": "call_1", "name": "get_delivery_date", "arguments": {"order": "A-1001"}}]},
+						{"role": "tool", "tool_results": [{"id": "call_1", "name": "get_delivery_date", "result": "Friday"}]},
+						{"role": "assistant", "content": "Your order will arrive on Friday."}]},
+						"model": "d1-omni:600m", "questions": {"defect": {"type": "noul", "instructions": "Answered well?"}}}""");
 	}
 
 	@Test
 	void rejectsMediaInEveryInputKind() {
 		var image = MediaPart.of(new Media(MimeTypeUtils.IMAGE_PNG, new ByteArrayResource(new byte[] { 1 })));
-		var questions = Map.of("urgent", YesNoQuestion.of("?"));
+		var questions = Map.of("defect", YesNoQuestion.of("?"));
 
 		assertThatThrownBy(() -> model().call(DecisionInput.content(TextPart.of("x"), image), questions))
 			.isInstanceOf(IllegalArgumentException.class)
@@ -253,23 +262,23 @@ class SystemOneDecisionModelTests {
 
 	@Test
 	void promptOptionsOverrideTheModel() throws Exception {
-		stubResponse(yesNoResponse(0.5).replace("nimble", "jev-latest"), null);
+		stubResponse(yesNoResponse(0.5).replace("d1-omni:600m", "jev-latest"), null);
 
 		DecisionResponse response = model().call(DecisionPrompt.builder()
 			.text("x")
-			.question("urgent", YesNoQuestion.of("?"))
+			.question("defect", YesNoQuestion.of("?"))
 			.options(DecisionOptions.builder().model("jev-latest").build())
 			.build());
 
 		assertThat(this.sentBody).contains("\"model\":\"jev-latest\"");
 		assertThat(response.getMetadata().getModel()).isEqualTo("jev-latest");
-		assertThat(model().getOptions().getModel()).isEqualTo("nimble");
+		assertThat(model().getOptions().getModel()).isEqualTo("d1-omni:600m");
 	}
 
 	@Test
 	void builderAppliesDefaults() {
 		var built = SystemOneDecisionModel.builder(this.client).build();
-		assertThat(built.getOptions().getModel()).isEqualTo("nimble");
+		assertThat(built.getOptions().getModel()).isEqualTo("d1-omni:600m");
 		assertThat(built.getProvider()).isEqualTo(SystemOneDecisionModel.DEFAULT_PROVIDER);
 
 		var configured = SystemOneDecisionModel.builder(this.client)
@@ -284,7 +293,7 @@ class SystemOneDecisionModelTests {
 	void rejectsBlankModelFromPromptOptions() {
 		assertThatThrownBy(() -> model().call(DecisionPrompt.builder()
 			.text("x")
-			.question("urgent", YesNoQuestion.of("?"))
+			.question("defect", YesNoQuestion.of("?"))
 			.options(DecisionOptions.builder().model(" ").build())
 			.build())).isInstanceOf(IllegalArgumentException.class).hasMessageContaining("model");
 	}
@@ -293,33 +302,33 @@ class SystemOneDecisionModelTests {
 	void scoreWithoutProbabilitiesStaysEmpty() {
 		stubResponse(
 				"""
-						{"model": "nimble", "answers": {"mood": {"type": "score", "score": 1.4, "legend": {}, "probabilities": {},
+						{"model": "d1-omni:600m", "answers": {"satisfaction": {"type": "score", "score": 1.4, "legend": {}, "probabilities": {},
 						"confidence": 0.6}}}""",
 				null);
 
-		DecisionResponse response = model().call("x",
-				Map.of("mood", ScoreQuestion.of("How is the mood?", "calm", "annoyed", "angry")));
+		DecisionResponse response = model().call("x", Map.of("satisfaction",
+				ScoreQuestion.of("How satisfied is the customer?", "unhappy", "neutral", "happy")));
 
-		assertThat(response.getScore("mood").getProbabilities()).isEmpty();
-		assertThat(response.getScore("mood").getNearestLevel()).isEqualTo(1);
+		assertThat(response.getScore("satisfaction").getProbabilities()).isEmpty();
+		assertThat(response.getScore("satisfaction").getNearestLevel()).isEqualTo(1);
 	}
 
 	@Test
 	void reportsAnAnswerTheQuestionsDoNotNameByItsName() {
 		stubResponse(
 				"""
-						{"model": "nimble", "answers": {"urgent": {"type": "noul", "noul": 0.5},
+						{"model": "d1-omni:600m", "answers": {"defect": {"type": "noul", "noul": 0.5},
 						"extra": {"type": "score", "score": 1, "legend": {}, "probabilities": {"0": 0.4, "1": 0.6}, "confidence": 0.5}}}""",
 				null);
 
-		assertThatThrownBy(() -> model().call("x", Map.of("urgent", YesNoQuestion.of("?"))))
+		assertThatThrownBy(() -> model().call("x", Map.of("defect", YesNoQuestion.of("?"))))
 			.isInstanceOf(IllegalStateException.class)
 			.hasMessageContaining("no question named 'extra'");
 	}
 
 	@Test
 	void rejectsUnsupportedPartsInTextAndFieldsInputs() {
-		var questions = Map.of("urgent", YesNoQuestion.of("?"));
+		var questions = Map.of("defect", YesNoQuestion.of("?"));
 
 		assertThatThrownBy(
 				() -> model().call(DecisionInput.content(TextPart.of("x"), ReasoningPart.of("r")), questions))
@@ -343,14 +352,14 @@ class SystemOneDecisionModelTests {
 					.parts(List.of(new ToolResultPart(null, null, List.of(TextPart.of("boom")), true, null, Map.of())))
 					.build());
 
-		model().call(DecisionInput.conversation(messages), Map.of("urgent", YesNoQuestion.of("?")));
+		model().call(DecisionInput.conversation(messages), Map.of("defect", YesNoQuestion.of("?")));
 
 		assertSent("""
 				{"state": {"messages": [
 				{"role": "user", "content": "Anything new?"},
 				{"role": "assistant", "tool_calls": [{"id": "call_2", "name": "noop", "arguments": "not json"}]},
 				{"role": "tool", "tool_results": [{"id": null, "name": null, "result": "boom", "error": true}]}]},
-				"model": "nimble", "questions": {"urgent": {"type": "noul", "instructions": "?"}}}""");
+				"model": "d1-omni:600m", "questions": {"defect": {"type": "noul", "instructions": "?"}}}""");
 	}
 
 	@Test
@@ -360,21 +369,22 @@ class SystemOneDecisionModelTests {
 		fields.put("subject", "x");
 		fields.put("note", null);
 
-		model().call(DecisionInput.fields(fields), Map.of("urgent", YesNoQuestion.of("?")));
+		model().call(DecisionInput.fields(fields), Map.of("defect", YesNoQuestion.of("?")));
 
 		assertSent("""
-				{"state": {"subject": "x", "note": null}, "model": "nimble",
-				"questions": {"urgent": {"type": "noul", "instructions": "?"}}}""");
+				{"state": {"subject": "x", "note": null}, "model": "d1-omni:600m",
+				"questions": {"defect": {"type": "noul", "instructions": "?"}}}""");
 	}
 
 	@Test
 	void failsOnScoreProbabilityOutsideTheLevels() {
 		stubResponse("""
-				{"model": "nimble", "answers": {"mood": {"type": "score", "score": 1, "legend": {},
+				{"model": "d1-omni:600m", "answers": {"satisfaction": {"type": "score", "score": 1, "legend": {},
 				"probabilities": {"0": 0.5, "5": 0.5}, "confidence": 0.5}}}""", null);
 
 		assertThatThrownBy(() -> model().call("x",
-				Map.of("mood", ScoreQuestion.of("How is the mood?", "calm", "annoyed", "angry"))))
+				Map.of("satisfaction",
+						ScoreQuestion.of("How satisfied is the customer?", "unhappy", "neutral", "happy"))))
 			.isInstanceOf(IllegalStateException.class)
 			.hasMessageContaining("level 5 of 3");
 	}
@@ -384,8 +394,8 @@ class SystemOneDecisionModelTests {
 		this.server.expect(requestTo(BASE_URL + "/v1/systemone"))
 			.andRespond(withBadRequest().contentType(MediaType.APPLICATION_JSON).body("{\"error\": \"nope\"}"));
 
-		assertThatThrownBy(() -> model().call("x", Map.of("urgent", YesNoQuestion.of("?"))))
-			.isInstanceOf(TypeSafeBadRequestException.class)
+		assertThatThrownBy(() -> model().call("x", Map.of("defect", YesNoQuestion.of("?"))))
+			.isInstanceOf(SystemOneBadRequestException.class)
 			.hasMessageContaining("nope");
 		TestObservationRegistryAssert.assertThat(this.observationRegistry)
 			.hasObservationWithNameEqualTo(DefaultDecisionModelObservationConvention.DEFAULT_NAME)
@@ -406,28 +416,29 @@ class SystemOneDecisionModelTests {
 	@Test
 	void failsOnUnknownAnswerType() {
 		stubResponse("""
-				{"model": "nimble", "answers": {"urgent": {"type": "rank", "rank": [1, 2]}}}""", null);
+				{"model": "d1-omni:600m", "answers": {"defect": {"type": "rank", "rank": [1, 2]}}}""", null);
 
-		assertThatThrownBy(() -> model().call("x", Map.of("urgent", YesNoQuestion.of("?"))))
+		assertThatThrownBy(() -> model().call("x", Map.of("defect", YesNoQuestion.of("?"))))
 			.isInstanceOf(IllegalStateException.class)
-			.hasMessageContaining("Unsupported answer type for question 'urgent'");
+			.hasMessageContaining("Unsupported answer type for question 'defect'");
 	}
 
 	@Test
 	void failsOnMissingAnswer() {
 		stubResponse(yesNoResponse(0.5), null);
 
-		assertThatThrownBy(
-				() -> model().call("x", Map.of("urgent", YesNoQuestion.of("?"), "spam", YesNoQuestion.of("Spam?"))))
+		assertThatThrownBy(() -> model().call("x",
+				Map.of("defect", YesNoQuestion.of("?"), "refund",
+						YesNoQuestion.of("Does the customer ask for a refund?"))))
 			.isInstanceOf(IllegalStateException.class)
-			.hasMessageContaining("missing answer for question 'spam'");
+			.hasMessageContaining("missing answer for question 'refund'");
 	}
 
 	@Test
 	void recordsObservationWithProviderAndResponseId() {
 		stubResponse(yesNoResponse(0.9), "req_1");
 
-		model().call("x", Map.of("urgent", YesNoQuestion.of("?")));
+		model().call("x", Map.of("defect", YesNoQuestion.of("?")));
 
 		TestObservationRegistryAssert.assertThat(this.observationRegistry)
 			.hasObservationWithNameEqualTo(DefaultDecisionModelObservationConvention.DEFAULT_NAME)
@@ -435,8 +446,8 @@ class SystemOneDecisionModelTests {
 			.hasLowCardinalityKeyValue(AiObservationAttributes.AI_OPERATION_TYPE.value(),
 					AiOperationType.DECISION.value())
 			.hasLowCardinalityKeyValue(AiObservationAttributes.AI_PROVIDER.value(), "systemone")
-			.hasLowCardinalityKeyValue(AiObservationAttributes.REQUEST_MODEL.value(), "nimble")
-			.hasLowCardinalityKeyValue(AiObservationAttributes.RESPONSE_MODEL.value(), "nimble")
+			.hasLowCardinalityKeyValue(AiObservationAttributes.REQUEST_MODEL.value(), "d1-omni:600m")
+			.hasLowCardinalityKeyValue(AiObservationAttributes.RESPONSE_MODEL.value(), "d1-omni:600m")
 			.hasHighCardinalityKeyValue(AiObservationAttributes.RESPONSE_ID.value(), "req_1");
 	}
 
@@ -445,11 +456,11 @@ class SystemOneDecisionModelTests {
 		stubResponse(yesNoResponse(0.9), null);
 		SystemOneDecisionModel ollama = model().mutate().provider("ollama").build();
 
-		ollama.call("x", Map.of("urgent", YesNoQuestion.of("?")));
+		ollama.call("x", Map.of("defect", YesNoQuestion.of("?")));
 
 		assertThat(ollama.getProvider()).isEqualTo("ollama");
 		assertThat(ollama.mutate().build().getProvider()).isEqualTo("ollama");
-		assertThat(ollama.getOptions().getModel()).isEqualTo("nimble");
+		assertThat(ollama.getOptions().getModel()).isEqualTo("d1-omni:600m");
 		TestObservationRegistryAssert.assertThat(this.observationRegistry)
 			.hasObservationWithNameEqualTo(DefaultDecisionModelObservationConvention.DEFAULT_NAME)
 			.that()

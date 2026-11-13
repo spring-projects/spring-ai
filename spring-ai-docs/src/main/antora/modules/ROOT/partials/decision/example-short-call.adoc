@@ -1,0 +1,3 @@
+DecisionResponse response = decisionModel.call("Where is my order? I ordered it two weeks ago.",
+        Map.of("topic", ChoiceQuestion.of("What is the message about?",
+                "delivery", "product", "account", "other")));

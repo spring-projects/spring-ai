@@ -10,6 +10,30 @@ The `ChatClient` API is unchanged.
 `ChatModel.call(Prompt)` and `ChatModel.stream(Prompt)` keep their signatures.
 `AnthropicChatOptions` keeps all existing fields, adding new ones for skills, web search, service tier, inference geo, and structured output.
 
+[[anthropic-sdk-3]]
+== Anthropic Java SDK 3.x
+
+Spring AI now uses Anthropic Java SDK `3.4.0` with API version `2026-10-21`.
+The upgrade does not require additional dependency version changes.
+
+Remove `temperature`, `topP` and `topK` from Java configuration and prompt options, including explicit default values.
+Remove the corresponding `spring.ai.anthropic.chat.temperature`, `spring.ai.anthropic.chat.top-p` and `spring.ai.anthropic.chat.top-k` properties, including their legacy `.options` aliases.
+The Java methods and Boot properties are retained and deprecated for compatibility.
+Non-null sampling values, whether set as model defaults or as request overrides, are discarded and never sent to the API.
+A `WARN` message that lists the discarded values is logged when the model is constructed and for each request that carries them.
+Extended thinking no longer requires setting `temperature(1.0)`.
+
+API keys now use the `Authorization: Bearer` header instead of `X-Api-Key`.
+Update proxies, request interceptors and header allowlists that depend on the previous header.
+Custom interceptors that override authentication must now replace `Authorization`.
+
+Direct SDK callers must use `addUserMessageOfContentBlockParams` and `addAssistantMessageOfContentBlockParams` instead of their `OfBlockParams` equivalents.
+`MessageParam` is now a union of role-specific message types and its content accessors use `contentBlockParams`, `asContentBlockParams` and `isContentBlockParams`.
+`HttpRequest.body()` and the renamed `RequestOptions.timeout()` and `RequestOptions.followRedirects()` accessors return `Optional`.
+`HttpRequest` builders require a base URL.
+
+See the https://platform.claude.com/docs/en/api/migration-2026-10-21#java[Anthropic API migration guide] for the upstream changes.
+
 == What Changed
 
 [cols="1,3", options="header"]
@@ -149,7 +173,6 @@ AnthropicChatModel chatModel = AnthropicChatModel.builder()
     .defaultOptions(AnthropicChatOptions.builder()
         .model("claude-haiku-4-5")
         .maxTokens(1024)
-        .temperature(0.7)
         .build())
     .build();
 ChatResponse response = chatModel.call(new Prompt("hello"));
@@ -168,7 +191,6 @@ AnthropicClient client = AnthropicOkHttpClient.builder().apiKey(apiKey).build();
 MessageCreateParams params = MessageCreateParams.builder()
     .model(Model.CLAUDE_HAIKU_4_5)
     .maxTokens(1024)
-    .temperature(0.7)
     .addUserMessage("hello")
     .build();
 com.anthropic.models.messages.Message message = client.messages().create(params);
@@ -230,11 +252,11 @@ These types were dropped because the SDK already exposes the same concept. Use t
 [[prompt-option-merging]]
 === Prompt-level options no longer merge with model defaults
 
-The previous module merged prompt-level `AnthropicChatOptions` into the model-level defaults via `ModelOptionsUtils.copyToTarget(...)` and `ModelOptionsUtils.merge(...)`, so `model`, `temperature`, and any other unset fields were filled in from the model's defaults:
+The previous module merged prompt-level `AnthropicChatOptions` into the model-level defaults via `ModelOptionsUtils.copyToTarget(...)` and `ModelOptionsUtils.merge(...)`, so `model`, `stopSequences` and any other unset fields were filled in from the model's defaults:
 
 [source,java]
 ----
-// Before: only maxTokens set; model + temperature inherited from defaults.
+// Before: only maxTokens set; model + stopSequences inherited from defaults.
 Prompt prompt = new Prompt(
     "Tell me a joke",
     AnthropicChatOptions.builder().maxTokens(2048).build());
@@ -359,7 +381,7 @@ The migration also enables several Anthropic features. See xref:api/chat/anthrop
 
 The compile errors are easy. These don't throw; they produce different output instead.
 
-* *Partial prompt-level options.* `new Prompt(text, AnthropicChatOptions.builder().maxTokens(2048).build())` no longer inherits `model`, `temperature`, etc. from the model's defaults (see <<prompt-option-merging>>). No compile error, no exception; the request runs with different values. If output drifts after the upgrade and you call `ChatModel` directly, look here first.
+* *Partial prompt-level options.* `new Prompt(text, AnthropicChatOptions.builder().maxTokens(2048).build())` no longer inherits `model`, `stopSequences`, etc. from the model's defaults (see <<prompt-option-merging>>). No compile error, no exception; the request runs with different values. If output drifts after the upgrade and you call `ChatModel` directly, look here first.
 * If costs climb after the upgrade, check whether you were relying on the old `500`-token `maxTokens` default to cap responses.
 * *Cache breakpoints dropped past four.* Stacking multi-block system caching with tools and citation documents can push past Anthropic's 4-breakpoint cap. `CacheBreakpointTracker` skips the extras and logs `WARN` once. Cache hit rate drops without an error.
 * Stale `org.springframework.ai.anthropic.api.AnthropicCache*` imports are the source of most compile errors after the upgrade. A project-wide find-and-replace fixes them.

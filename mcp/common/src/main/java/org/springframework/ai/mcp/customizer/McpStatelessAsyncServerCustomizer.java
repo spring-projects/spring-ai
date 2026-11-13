@@ -24,9 +24,14 @@ import io.modelcontextprotocol.server.McpServer;
  * @author Niklas Herder
  * @since 2.0.2
  * @see io.modelcontextprotocol.server.McpServer.StatelessAsyncSpecification
+ * @deprecated in favor of
+ * {@code McpServerCustomizer<McpServer.StatelessAsyncSpecification>}, see
+ * {@link McpServerCustomizer}
  */
-public interface McpStatelessAsyncServerCustomizer {
+@Deprecated(since = "2.1.0", forRemoval = true)
+public interface McpStatelessAsyncServerCustomizer extends McpServerCustomizer<McpServer.StatelessAsyncSpecification> {
 
+	@Override
 	void customize(McpServer.StatelessAsyncSpecification serverBuilder);
 
 }

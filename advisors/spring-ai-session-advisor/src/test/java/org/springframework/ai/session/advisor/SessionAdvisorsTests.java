@@ -128,7 +128,7 @@ class SessionAdvisorsTests {
 	}
 
 	private ChatClient client(List<Advisor> advisors, ToolCallback... tools) {
-		return ChatClient.builder(this.model).defaultAdvisors(advisors).defaultToolCallbacks(tools).build();
+		return ChatClient.builder(this.model).defaultAdvisors(advisors).defaultTools((Object[]) tools).build();
 	}
 
 	private String say(ChatClient client, String text) {

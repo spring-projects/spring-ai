@@ -42,6 +42,7 @@ import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamReques
 import software.amazon.awssdk.services.bedrockruntime.model.ConverseStreamResponseHandler;
 import software.amazon.awssdk.services.bedrockruntime.model.MessageStopEvent;
 import software.amazon.awssdk.services.bedrockruntime.model.ReasoningContentBlockDelta;
+import software.amazon.awssdk.services.bedrockruntime.model.StopReason;
 import software.amazon.awssdk.services.bedrockruntime.model.TokenUsage;
 
 import org.springframework.ai.chat.messages.AssistantMessage;
@@ -214,8 +215,11 @@ public class ConverseChatResponseStream implements ConverseStreamResponseHandler
 		this.totalTokens.addAndGet(event.usage().totalTokens());
 		this.mergeNativeTokenUsage(event.usage());
 
+		String stopReason = this.stopReason.get();
 		ChatGenerationMetadata generationMetadata = ChatGenerationMetadata.builder()
-			.finishReason(this.stopReason.get())
+			.finishReason(stopReason)
+			.finishReasonCategory(ConverseApiUtils
+				.finishReasonCategory((stopReason != null) ? StopReason.fromValue(stopReason) : null))
 			.build();
 
 		// Any signature or redacted reasoning whose block never stopped, and the complete

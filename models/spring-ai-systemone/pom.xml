@@ -11,7 +11,7 @@
 	<artifactId>spring-ai-systemone</artifactId>
 	<packaging>jar</packaging>
 	<name>Spring AI Model - System One</name>
-	<description>System One decision models support: TypeSafe Jev, Laya and Ollama</description>
+	<description>System One decision model support and the client of the /v1/systemone protocol</description>
 	<url>https://github.com/spring-projects/spring-ai</url>
 
 	<scm>
@@ -28,9 +28,13 @@
 		</dependency>
 
 		<dependency>
-			<groupId>org.springaicommunity</groupId>
-			<artifactId>typesafe-java-sdk</artifactId>
-			<version>${typesafe-java-sdk.version}</version>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-web</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>tools.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
 		</dependency>
 
 		<!-- test dependencies -->
@@ -43,6 +47,13 @@
 		<dependency>
 			<groupId>io.micrometer</groupId>
 			<artifactId>micrometer-observation-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>net.javacrumbs.json-unit</groupId>
+			<artifactId>json-unit-assertj</artifactId>
+			<version>${json-unit-assertj.version}</version>
 			<scope>test</scope>
 		</dependency>
 	</dependencies>

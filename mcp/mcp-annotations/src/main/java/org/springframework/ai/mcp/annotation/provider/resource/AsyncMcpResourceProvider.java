@@ -35,6 +35,7 @@ import org.apache.commons.logging.LogFactory;
 import reactor.core.publisher.Mono;
 
 import org.springframework.ai.mcp.annotation.McpResource;
+import org.springframework.ai.mcp.annotation.common.IconUtils;
 import org.springframework.ai.mcp.annotation.common.McpPredicates;
 import org.springframework.ai.mcp.annotation.common.MetaUtils;
 import org.springframework.ai.mcp.annotation.method.resource.AsyncMcpResourceMethodCallback;
@@ -96,6 +97,8 @@ public class AsyncMcpResourceProvider {
 					var mcpResource = McpSchema.Resource.builder(uri, name)
 						.description(description)
 						.mimeType(mimeType)
+						.size(resourceAnnotation.size() >= 0 ? resourceAnnotation.size() : null)
+						.icons(IconUtils.toIcons(resourceAnnotation.icons()))
 						.meta(meta)
 						.build();
 
@@ -149,6 +152,7 @@ public class AsyncMcpResourceProvider {
 					var mcpResourceTemplate = McpSchema.ResourceTemplate.builder(uri, name)
 						.description(description)
 						.mimeType(mimeType)
+						.icons(IconUtils.toIcons(resourceAnnotation.icons()))
 						.meta(meta)
 						.build();
 

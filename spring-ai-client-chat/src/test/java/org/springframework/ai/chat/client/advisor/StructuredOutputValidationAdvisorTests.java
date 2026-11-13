@@ -35,11 +35,14 @@ import org.springframework.ai.chat.client.advisor.api.CallAdvisorChain;
 import org.springframework.ai.chat.client.advisor.api.StreamAdvisorChain;
 import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.messages.UserMessage;
+import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.metadata.ChatResponseMetadata;
 import org.springframework.ai.chat.metadata.DefaultUsage;
+import org.springframework.ai.chat.metadata.FinishReasonCategory;
 import org.springframework.ai.chat.metadata.Usage;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.GuardrailRefusal;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.core.Ordered;
 import org.springframework.core.ParameterizedTypeReference;
@@ -256,6 +259,97 @@ class StructuredOutputValidationAdvisorTests {
 		assertThat(result.chatResponse().getResult().getOutput().getToolCalls())
 			.extracting(AssistantMessage.ToolCall::name)
 			.containsExactly("getPerson");
+	}
+
+	@Test
+	void adviseCallReturnsGuardrailRefusalWithoutValidatingOrRepeating() {
+		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
+			.outputType(new TypeReference<Person>() {
+			})
+			.maxRepeatAttempts(3)
+			.build();
+
+		ChatClientRequest request = createMockRequest();
+		ChatClientResponse refusal = ChatClientResponse.builder()
+			.chatResponse(new ChatResponse(List.of(GuardrailRefusal.generation("I can't help with that."))))
+			.build();
+
+		List<ChatClientRequest> modelRequests = new ArrayList<>();
+		CallAdvisor guardrail = terminalAdvisor((req, chain) -> {
+			modelRequests.add(req);
+			return refusal;
+		});
+
+		CallAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.of(advisor, guardrail))
+			.build();
+
+		ChatClientResponse result = realChain.nextCall(request);
+
+		// The refusal is plain text, not the requested JSON. Taken for the model's
+		// output it would fail validation and be asked for again, with a validation
+		// error the model never caused.
+		assertThat(modelRequests).containsExactly(request);
+		assertThat(result.chatResponse()).isNotNull();
+		assertThat(GuardrailRefusal.isRefusal(result.chatResponse())).isTrue();
+		assertThat(result.chatResponse().getResult().getOutput().getText()).isEqualTo("I can't help with that.");
+	}
+
+	@Test
+	void adviseCallReturnsFilteredResponseWithoutRepeatingTheRequest() {
+		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
+			.outputType(new TypeReference<Person>() {
+			})
+			.maxRepeatAttempts(3)
+			.build();
+
+		ChatClientRequest request = createMockRequest();
+		ChatClientResponse filteredResponse = createFilteredResponse("");
+
+		List<ChatClientRequest> modelRequests = new ArrayList<>();
+		CallAdvisor terminalAdvisor = terminalAdvisor((req, chain) -> {
+			modelRequests.add(req);
+			return filteredResponse;
+		});
+
+		CallAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.of(advisor, terminalAdvisor))
+			.build();
+
+		ChatClientResponse result = realChain.nextCall(request);
+
+		// The validation error is not why the response is invalid, so the model is asked
+		// once and the filtered response is handed back.
+		assertThat(modelRequests).containsExactly(request);
+		assertThat(result.chatResponse()).isNotNull();
+		assertThat(result.chatResponse().hasFinishReasonCategory(FinishReasonCategory.FILTERED)).isTrue();
+	}
+
+	@Test
+	void adviseCallReturnsFilteredResponseThatIsValid() {
+		StructuredOutputValidationAdvisor advisor = StructuredOutputValidationAdvisor.builder()
+			.outputType(new TypeReference<Person>() {
+			})
+			.maxRepeatAttempts(3)
+			.build();
+
+		ChatClientRequest request = createMockRequest();
+		ChatClientResponse filteredResponse = createFilteredResponse("{\"name\":\"John Doe\",\"age\":30}");
+
+		List<ChatClientRequest> modelRequests = new ArrayList<>();
+		CallAdvisor terminalAdvisor = terminalAdvisor((req, chain) -> {
+			modelRequests.add(req);
+			return filteredResponse;
+		});
+
+		CallAdvisorChain realChain = DefaultAroundAdvisorChain.builder(ObservationRegistry.NOOP)
+			.pushAll(List.of(advisor, terminalAdvisor))
+			.build();
+
+		ChatClientResponse result = realChain.nextCall(request);
+
+		assertThat(modelRequests).containsExactly(request);
+		assertThat(result.chatResponse().getResult().getOutput().getText()).contains("John Doe");
 	}
 
 	@Test
@@ -934,6 +1028,15 @@ class StructuredOutputValidationAdvisorTests {
 		ChatResponseMetadata metadata = ChatResponseMetadata.builder().usage(usage).build();
 		ChatResponse chatResponse = ChatResponse.builder().generations(List.of(generation)).metadata(metadata).build();
 		return ChatClientResponse.builder().chatResponse(chatResponse).build();
+	}
+
+	private ChatClientResponse createFilteredResponse(String text) {
+		Generation generation = new Generation(new AssistantMessage(text),
+				ChatGenerationMetadata.builder()
+					.finishReason("STOP")
+					.finishReasonCategory(FinishReasonCategory.FILTERED)
+					.build());
+		return ChatClientResponse.builder().chatResponse(new ChatResponse(List.of(generation))).build();
 	}
 
 	private ChatClientResponse createToolCallResponse() {

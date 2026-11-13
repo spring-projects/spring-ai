@@ -82,7 +82,7 @@ class SessionMemoryAdvisorToolLoopTests {
 		return ChatClient.builder(this.model)
 			.defaultAdvisors(SessionTurnAdvisor.builder(this.sessionService).build(), toolCalling,
 					SessionMemoryAdvisor.builder(this.sessionService).build())
-			.defaultToolCallbacks(FunctionToolCallback.builder("get_weather", (City city) -> "Sunny in " + city.city())
+			.defaultTools(FunctionToolCallback.builder("get_weather", (City city) -> "Sunny in " + city.city())
 				.description("The weather in a city")
 				.inputType(City.class)
 				.build())

@@ -17,7 +17,11 @@
 package org.springframework.ai.session.advisor;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -45,7 +49,9 @@ import org.springframework.ai.chat.messages.ToolResponseMessage;
 import org.springframework.ai.chat.metadata.ChatGenerationMetadata;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.model.tool.ToolCallLimitExceededException;
+import org.springframework.ai.model.tool.ToolCallingChatOptions;
 import org.springframework.ai.model.tool.ToolExecutionResult;
 import org.springframework.ai.session.EventFilter;
 import org.springframework.ai.session.SessionEvent;
@@ -67,6 +73,18 @@ import org.springframework.util.Assert;
  * <li>Finds the session or creates it on first use, with the metadata from
  * {@link SessionMemoryAdvisor#SESSION_METADATA_CONTEXT_KEY}, such as the agent
  * attributes.</li>
+ * <li>With {@link Builder#sessionIdInToolContext(boolean)}, puts the session id into the
+ * tool context of the call, so that a tool that reads the session, the session recall
+ * tools for example, finds it without the caller passing it a second time. Off by
+ * default, because the tool context goes to every tool of the call.</li>
+ * <li>Before a new turn, answers the tool calls the conversation ends with when they have
+ * no results, with {@link #UNANSWERED_TOOL_RESULT}: a tool call that waited for a
+ * person's confirmation and never got one, or a loop that failed after the reply was
+ * stored. The log then keeps the call with a result, so the model sees what it asked for
+ * and the memory advisor has nothing to drop from the prompt. A request that brings
+ * results for those calls, as the resume of a confirmation does, is left alone. The
+ * advisor cannot tell an abandoned call from one whose tool still runs in another call on
+ * the same session, so a session takes one call at a time.</li>
  * <li>After a loop that ended on a {@code returnDirect} tool or a breached tool call
  * limit, stores the reply's tool results, which no model round stored.</li>
  * <li>Compacts the session once the call has returned, if a
@@ -95,6 +113,20 @@ public final class SessionTurnAdvisor implements CallAdvisor, StreamAdvisor {
 	/** The result a tool call gets in the log when the loop ended before it ran. */
 	public static final String NOT_RUN_TOOL_RESULT = "The tool call did not run: the tool call limit was reached.";
 
+	/**
+	 * The result a tool call gets in the log when a new turn starts and the call still
+	 * has none: the turn that made it paused for a confirmation that never came, or
+	 * failed before its results were stored. It says what the log knows and no more: the
+	 * tool may have run.
+	 */
+	public static final String UNANSWERED_TOOL_RESULT = "No result was recorded for this tool call.";
+
+	/**
+	 * How often the version-checked write of {@link #UNANSWERED_TOOL_RESULT} is tried
+	 * when other appends, a compaction for example, keep moving the log.
+	 */
+	private static final int UNANSWERED_WRITE_ATTEMPTS = 3;
+
 	private static final Logger logger = LoggerFactory.getLogger(SessionTurnAdvisor.class);
 
 	/**
@@ -116,6 +148,8 @@ public final class SessionTurnAdvisor implements CallAdvisor, StreamAdvisor {
 
 	private final boolean asyncCompaction;
 
+	private final boolean sessionIdInToolContext;
+
 	/**
 	 * The sessions an asynchronous compaction of this advisor runs on, so it runs once
 	 * each.
@@ -129,6 +163,7 @@ public final class SessionTurnAdvisor implements CallAdvisor, StreamAdvisor {
 		this.compactionTrigger = builder.compactionTrigger;
 		this.compactionStrategy = builder.compactionStrategy;
 		this.asyncCompaction = builder.asyncCompaction;
+		this.sessionIdInToolContext = builder.sessionIdInToolContext;
 	}
 
 	public static Builder builder(SessionService sessionService) {
@@ -151,7 +186,8 @@ public final class SessionTurnAdvisor implements CallAdvisor, StreamAdvisor {
 		Assert.notNull(chain, "chain must not be null");
 		String sessionId = SessionContexts.sessionId(request.context());
 		this.sessionService.findOrCreate(SessionContexts.createRequest(sessionId, request.context()));
-		ChatClientResponse response = chain.nextCall(request);
+		answerUnansweredCalls(sessionId, request);
+		ChatClientResponse response = chain.nextCall(withSessionIdInToolContext(request, sessionId));
 		complete(sessionId, response.chatResponse());
 		return response;
 	}
@@ -172,19 +208,46 @@ public final class SessionTurnAdvisor implements CallAdvisor, StreamAdvisor {
 				// A returnDirect result or a breached limit ends the stream on a chunk
 				// of its own
 				AtomicReference<@Nullable ChatResponse> unanswered = new AtomicReference<>();
-				Flux<ChatClientResponse> rest = chain.nextStream(r).doOnNext(response -> {
-					if (endsWithoutModel(response.chatResponse())) {
-						unanswered.set(response.chatResponse());
-					}
-				}).publishOn(this.scheduler).doOnComplete(context.wrap(() -> complete(sessionId, unanswered.get())));
+				Flux<ChatClientResponse> rest = chain.nextStream(withSessionIdInToolContext(r, sessionId))
+					.doOnNext(response -> {
+						if (endsWithoutModel(response.chatResponse())) {
+							unanswered.set(response.chatResponse());
+						}
+					})
+					.publishOn(this.scheduler)
+					.doOnComplete(context.wrap(() -> complete(sessionId, unanswered.get())));
 				return Flux.from(subscriber -> {
 					try (ContextSnapshot.Scope ignored = context.setThreadLocals()) {
 						this.sessionService.findOrCreate(SessionContexts.createRequest(sessionId, r.context()));
+						answerUnansweredCalls(sessionId, r);
 						rest.subscribe(subscriber);
 					}
 				});
 			});
 		});
+	}
+
+	/**
+	 * The request with the session id in the tool context of its options, under
+	 * {@link SessionMemoryAdvisor#SESSION_ID_CONTEXT_KEY}, when the advisor is set to put
+	 * it there. The tool-calling loop runs inside this advisor and takes the tool context
+	 * from the request it gets, so the tools of the call see the id. A value the caller
+	 * set under the key stands, the other entries are kept, and options that take no tool
+	 * context are left alone.
+	 */
+	private ChatClientRequest withSessionIdInToolContext(ChatClientRequest request, String sessionId) {
+		if (!this.sessionIdInToolContext
+				|| !(request.prompt().getOptions() instanceof ToolCallingChatOptions options)) {
+			return request;
+		}
+		Map<String, Object> toolContext = options.getToolContext();
+		if (toolContext != null && toolContext.containsKey(SessionMemoryAdvisor.SESSION_ID_CONTEXT_KEY)) {
+			return request;
+		}
+		Map<String, Object> withSessionId = (toolContext != null) ? new HashMap<>(toolContext) : new HashMap<>();
+		withSessionId.put(SessionMemoryAdvisor.SESSION_ID_CONTEXT_KEY, sessionId);
+		ChatOptions withToolContext = options.mutate().toolContext(withSessionId).build();
+		return request.mutate().prompt(request.prompt().mutate().chatOptions(withToolContext).build()).build();
 	}
 
 	/** Stores the results of a loop that ended without a model round, then compacts. */
@@ -209,6 +272,82 @@ public final class SessionTurnAdvisor implements CallAdvisor, StreamAdvisor {
 	}
 
 	/**
+	 * Answers the tool calls the conversation ends with when they have no results, before
+	 * a new turn adds to the log: the newest message is a reply with tool calls, and the
+	 * request brings no result for any of them. Every call gets
+	 * {@link #UNANSWERED_TOOL_RESULT}. The append is version-checked, so it lands only
+	 * while the reply is still the newest message. When the log moved, the reply is read
+	 * again: if another writer stored results, a resume on another instance for example,
+	 * nothing is written; if it was an unrelated append, a compaction for example, the
+	 * write is tried again, a few times. It has to land now: once the new turn's message
+	 * follows the reply, no later turn finds it. Best-effort all the same: a failure is
+	 * logged, and the memory advisor keeps the unanswered call out of the prompt.
+	 */
+	private void answerUnansweredCalls(String sessionId, ChatClientRequest request) {
+		try {
+			// One read for a turn that finds nothing open, which is nearly every turn
+			SessionEvent open = newestConversationEvent(sessionId);
+			if (open == null || !open.hasToolCalls()) {
+				return;
+			}
+			for (int attempt = 0; attempt < UNANSWERED_WRITE_ATTEMPTS; attempt++) {
+				// The version first, then the reply again: the append must not land
+				// after results another writer stored in between
+				long version = this.sessionService.getEventVersion(sessionId);
+				open = newestConversationEvent(sessionId);
+				if (open == null || !open.hasToolCalls()) {
+					return;
+				}
+				List<AssistantMessage.ToolCall> calls = ((AssistantMessage) open.getMessage()).getToolCalls();
+				if (answersAny(request, calls)) {
+					return;
+				}
+				SessionEvent answers = answersOf(open, "-unanswered",
+						Collections.nCopies(calls.size(), UNANSWERED_TOOL_RESULT));
+				if (this.sessionService.appendEvents(sessionId, List.of(answers), version)) {
+					logger.debug("Answered {} tool call(s) of session [{}] that had no results", calls.size(),
+							sessionId);
+					return;
+				}
+			}
+			logger.warn("Could not answer the unanswered tool calls of session [{}]: the log kept changing", sessionId);
+		}
+		catch (RuntimeException ex) {
+			logger.warn("Could not answer the unanswered tool calls of session [{}]: {}", sessionId, ex.getMessage());
+		}
+	}
+
+	/**
+	 * The event that answers the reply's tool calls, one answer per call in the order of
+	 * the calls, with an id that derives from the reply's.
+	 */
+	private static SessionEvent answersOf(SessionEvent reply, String idSuffix, List<String> answers) {
+		List<AssistantMessage.ToolCall> calls = ((AssistantMessage) reply.getMessage()).getToolCalls();
+		List<ToolResponseMessage.ToolResponse> responses = new ArrayList<>();
+		for (int i = 0; i < calls.size(); i++) {
+			responses.add(new ToolResponseMessage.ToolResponse(calls.get(i).id(), calls.get(i).name(), answers.get(i)));
+		}
+		return SessionEvent.builder()
+			.id(reply.getId() + idSuffix)
+			.sessionId(reply.getSessionId())
+			.message(ToolResponseMessage.builder().responses(responses).build())
+			.build();
+	}
+
+	/** Whether the request carries a tool result for one of the calls. */
+	private static boolean answersAny(ChatClientRequest request, List<AssistantMessage.ToolCall> calls) {
+		Set<String> ids = new HashSet<>();
+		calls.forEach(call -> ids.add(call.id()));
+		return request.prompt()
+			.getInstructions()
+			.stream()
+			.filter(ToolResponseMessage.class::isInstance)
+			.map(ToolResponseMessage.class::cast)
+			.flatMap(results -> results.getResponses().stream())
+			.anyMatch(result -> ids.contains(result.id()));
+	}
+
+	/**
 	 * Answers the stored reply's tool calls in the log after a loop that ended without a
 	 * model round: with the results that came back directly, or, for a breached limit,
 	 * with the results of the calls that ran, the breach for the call that broke it and a
@@ -221,18 +360,8 @@ public final class SessionTurnAdvisor implements CallAdvisor, StreamAdvisor {
 			if (stored == null || !stored.hasToolCalls()) {
 				return;
 			}
-			List<AssistantMessage.ToolCall> calls = ((AssistantMessage) stored.getMessage()).getToolCalls();
-			List<String> answers = answers(response, calls.size());
-			List<ToolResponseMessage.ToolResponse> responses = new ArrayList<>();
-			for (int i = 0; i < calls.size(); i++) {
-				responses
-					.add(new ToolResponseMessage.ToolResponse(calls.get(i).id(), calls.get(i).name(), answers.get(i)));
-			}
-			this.sessionService.appendEvent(SessionEvent.builder()
-				.id(stored.getId() + "-results")
-				.sessionId(sessionId)
-				.message(ToolResponseMessage.builder().responses(responses).build())
-				.build());
+			int calls = ((AssistantMessage) stored.getMessage()).getToolCalls().size();
+			this.sessionService.appendEvent(answersOf(stored, "-results", answers(response, calls)));
 		}
 		catch (RuntimeException ex) {
 			logger.warn("Could not store the tool results of session [{}]: {}", sessionId, ex.getMessage());
@@ -345,6 +474,8 @@ public final class SessionTurnAdvisor implements CallAdvisor, StreamAdvisor {
 
 		private boolean asyncCompaction;
 
+		private boolean sessionIdInToolContext;
+
 		private Builder(SessionService sessionService) {
 			Assert.notNull(sessionService, "sessionService must not be null");
 			this.sessionService = sessionService;
@@ -396,6 +527,26 @@ public final class SessionTurnAdvisor implements CallAdvisor, StreamAdvisor {
 		 */
 		public Builder asyncCompaction(boolean asyncCompaction) {
 			this.asyncCompaction = asyncCompaction;
+			return this;
+		}
+
+		/**
+		 * Whether the advisor puts the session id into the tool context of the call,
+		 * under {@link SessionMemoryAdvisor#SESSION_ID_CONTEXT_KEY}; {@code false} by
+		 * default. A tool that reads the session, such as
+		 * {@link org.springframework.ai.session.tool.SessionRecallTools}, then finds the
+		 * id without the caller passing it with {@code toolContext(..)} too. A value the
+		 * caller sets under the key stands.
+		 * <p>
+		 * The tool context goes to every tool of the call, so turning this on has three
+		 * effects beyond the session tools. Every tool that takes a {@code ToolContext}
+		 * sees the session id. The tools of an MCP server get it as request metadata,
+		 * unless a {@code ToolContextToMcpMetaConverter} leaves it out. And a tool that
+		 * takes a {@code ToolContext} is no longer refused when the call passes no tool
+		 * context: it runs with one that holds the session id only.
+		 */
+		public Builder sessionIdInToolContext(boolean sessionIdInToolContext) {
+			this.sessionIdInToolContext = sessionIdInToolContext;
 			return this;
 		}
 

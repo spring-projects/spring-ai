@@ -44,9 +44,10 @@ class OpenAiDecisionAutoConfigurationIT {
 	void decide() {
 		this.contextRunner.run(context -> {
 			OpenAiDecisionModel decisionModel = context.getBean(OpenAiDecisionModel.class);
-			var response = decisionModel.call("WIN A FREE CRUISE!!! Click here now",
-					Map.of("spam", YesNoQuestion.of("Is this message spam?")));
-			assertThat(response.getYesNo("spam").isYes()).isTrue();
+			var response = decisionModel.call(
+					"My new headphones arrived yesterday, but the left side doesn't work. Can I get my money back?",
+					Map.of("defect", YesNoQuestion.of("Does the customer report a defect?")));
+			assertThat(response.getYesNo("defect").isYes()).isTrue();
 		});
 	}
 

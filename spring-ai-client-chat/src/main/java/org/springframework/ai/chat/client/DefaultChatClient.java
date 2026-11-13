@@ -32,6 +32,8 @@ import java.util.function.Consumer;
 import io.micrometer.observation.Observation;
 import io.micrometer.observation.ObservationRegistry;
 import io.micrometer.observation.contextpropagation.ObservationThreadLocalAccessor;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jspecify.annotations.Nullable;
 import reactor.core.publisher.Flux;
 
@@ -51,9 +53,11 @@ import org.springframework.ai.chat.client.observation.ChatClientObservationDocum
 import org.springframework.ai.chat.client.observation.DefaultChatClientObservationConvention;
 import org.springframework.ai.chat.messages.AbstractMessage;
 import org.springframework.ai.chat.messages.Message;
+import org.springframework.ai.chat.metadata.FinishReasonCategory;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.ai.chat.model.Generation;
+import org.springframework.ai.chat.model.GuardrailRefusal;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.chat.prompt.Prompt;
 import org.springframework.ai.content.Media;
@@ -88,6 +92,8 @@ import org.springframework.util.StringUtils;
  * @since 1.0.0
  */
 public class DefaultChatClient implements ChatClient {
+
+	private static final Log logger = LogFactory.getLog(DefaultChatClient.class);
 
 	private static final ChatClientObservationConvention DEFAULT_CHAT_CLIENT_OBSERVATION_CONVENTION = new DefaultChatClientObservationConvention();
 
@@ -517,12 +523,30 @@ public class DefaultChatClient implements ChatClient {
 			}
 
 			var chatResponse = doGetObservableChatClientResponse(this.request, advisorChain).chatResponse();
-			var responseContent = getContentFromChatResponse(chatResponse);
-			if (responseContent == null) {
+			if (GuardrailRefusal.isRefusal(chatResponse)) {
+				// The refusal is not the requested output. The caller has the response,
+				// and reads the refusal there.
 				return new ResponseEntity<>(chatResponse, null);
 			}
-			T entity = outputConverter.convert(responseContent);
-			return new ResponseEntity<>(chatResponse, entity);
+			var responseContent = getContentFromChatResponse(chatResponse);
+			boolean contentFiltered = isContentFiltered(chatResponse);
+			if (responseContent == null || (contentFiltered && !StringUtils.hasText(responseContent))) {
+				return new ResponseEntity<>(chatResponse, null);
+			}
+			try {
+				T entity = outputConverter.convert(responseContent);
+				return new ResponseEntity<>(chatResponse, entity);
+			}
+			catch (RuntimeException ex) {
+				if (contentFiltered) {
+					// What a filter left is not the output that was asked for. The
+					// caller has the response and reads the finish reason there.
+					logger.debug("Returning no entity for a response that a safety filter stopped, "
+							+ "as it could not be converted", ex);
+					return new ResponseEntity<>(chatResponse, null);
+				}
+				throw ex;
+			}
 		}
 
 		@Override
@@ -607,13 +631,34 @@ public class DefaultChatClient implements ChatClient {
 
 			}
 
-			var chatResponse = doGetObservableChatClientResponse(this.request, advisorChain).chatResponse();
+			var chatClientResponse = doGetObservableChatClientResponse(this.request, advisorChain);
+			var chatResponse = chatClientResponse.chatResponse();
+			if (GuardrailRefusal.isRefusal(chatResponse)) {
+				// The refusal is not the requested output: converting it would fail as
+				// malformed, and returning null would hide that the turn was refused.
+				throw new GuardrailRefusalException(chatClientResponse);
+			}
 
 			var stringResponse = getContentFromChatResponse(chatResponse);
+			boolean contentFiltered = isContentFiltered(chatResponse);
+			if (contentFiltered && !StringUtils.hasText(stringResponse)) {
+				// The filter left nothing. Returning no entity would hide what happened.
+				throw new ContentFilteredException(chatClientResponse, null);
+			}
 			if (stringResponse == null) {
 				return null;
 			}
-			return outputConverter.convert(stringResponse);
+			try {
+				return outputConverter.convert(stringResponse);
+			}
+			catch (RuntimeException ex) {
+				if (contentFiltered) {
+					// What the filter left is not the output that was asked for. A
+					// response that converts all the same is returned as before.
+					throw new ContentFilteredException(chatClientResponse, ex);
+				}
+				throw ex;
+			}
 		}
 
 		@Override
@@ -661,6 +706,15 @@ public class DefaultChatClient implements ChatClient {
 			});
 			// CHECKSTYLE:ON
 			return chatClientResponse != null ? chatClientResponse : ChatClientResponse.builder().build();
+		}
+
+		/**
+		 * Whether a safety filter or a refusal of the model stopped the generation that
+		 * {@link #getContentFromChatResponse(ChatResponse)} reads, which is the first.
+		 */
+		private static boolean isContentFiltered(@Nullable ChatResponse chatResponse) {
+			Generation result = (chatResponse != null) ? chatResponse.getResult() : null;
+			return result != null && result.getMetadata().getFinishReasonCategory() == FinishReasonCategory.FILTERED;
 		}
 
 		private static @Nullable String getContentFromChatResponse(@Nullable ChatResponse chatResponse) {

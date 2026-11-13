@@ -42,15 +42,15 @@ class DecisionQuestionTests {
 	@Test
 	void yesNoQuestion() {
 		var question = YesNoQuestion.builder()
-			.text("Is the message spam?")
-			.whenYes("It advertises something")
-			.whenNo("It is a genuine request")
+			.text("Does the customer report a defect?")
+			.whenYes("Part of the item does not work as it should")
+			.whenNo("The item works, and the message is about something else")
 			.build();
 
-		assertThat(question.getText()).isEqualTo("Is the message spam?");
-		assertThat(question.getWhenYes()).isEqualTo("It advertises something");
-		assertThat(question.getWhenNo()).isEqualTo("It is a genuine request");
-		assertThat(YesNoQuestion.of("Is the message spam?").getWhenYes()).isNull();
+		assertThat(question.getText()).isEqualTo("Does the customer report a defect?");
+		assertThat(question.getWhenYes()).isEqualTo("Part of the item does not work as it should");
+		assertThat(question.getWhenNo()).isEqualTo("The item works, and the message is about something else");
+		assertThat(YesNoQuestion.of("Does the customer report a defect?").getWhenYes()).isNull();
 	}
 
 	@Test
@@ -63,33 +63,45 @@ class DecisionQuestionTests {
 
 	@Test
 	void blankCriteriaAndDescriptionsCountAsNone() {
-		var yesNo = YesNoQuestion.builder().text("Is the message spam?").whenYes("").whenNo(" \t").build();
+		var yesNo = YesNoQuestion.builder()
+			.text("Does the customer report a defect?")
+			.whenYes("")
+			.whenNo(" \t")
+			.build();
 		assertThat(yesNo.getWhenYes()).isNull();
 		assertThat(yesNo.getWhenNo()).isNull();
-		assertThat(yesNo).isEqualTo(YesNoQuestion.of("Is the message spam?"));
+		assertThat(yesNo).isEqualTo(YesNoQuestion.of("Does the customer report a defect?"));
 
-		var choice = ChoiceQuestion.builder().text("Which team?").option("billing", "").option("sales", " ").build();
-		assertThat(choice.getOptions()).containsEntry("billing", null).containsEntry("sales", null);
+		var choice = ChoiceQuestion.builder()
+			.text("What is the message about?")
+			.option("delivery", "")
+			.option("account", " ")
+			.build();
+		assertThat(choice.getOptions()).containsEntry("delivery", null).containsEntry("account", null);
 
-		assertThat(ScoreLevel.builder().label("low").description(" ").build().getDescription()).isNull();
-		assertThat(ScoreQuestion.builder().text("How urgent?").level("low", "").level("high").build().getLevels())
-			.extracting(ScoreLevel::getDescription)
-			.containsOnlyNulls();
+		assertThat(ScoreLevel.builder().label("unhappy").description(" ").build().getDescription()).isNull();
+		assertThat(ScoreQuestion.builder()
+			.text("How satisfied is the customer?")
+			.level("unhappy", "")
+			.level("happy")
+			.build()
+			.getLevels()).extracting(ScoreLevel::getDescription).containsOnlyNulls();
 	}
 
 	@Test
 	void choiceQuestionKeepsOptionOrder() {
 		var question = ChoiceQuestion.builder()
-			.text("Which team?")
-			.option("billing", "Invoices and payments")
-			.option("technical")
-			.option("sales", "Quotes")
+			.text("What is the message about?")
+			.option("delivery", "Where an order is, or when it will arrive")
+			.option("product")
+			.option("account", "Login, address or payment details")
 			.build();
 
-		assertThat(question.getOptionNames()).containsExactly("billing", "technical", "sales");
-		assertThat(question.getOptions()).containsEntry("billing", "Invoices and payments")
-			.containsEntry("technical", null);
-		assertThat(ChoiceQuestion.of("Which team?", "a", "b").getOptionNames()).containsExactly("a", "b");
+		assertThat(question.getOptionNames()).containsExactly("delivery", "product", "account");
+		assertThat(question.getOptions()).containsEntry("delivery", "Where an order is, or when it will arrive")
+			.containsEntry("product", null);
+		assertThat(ChoiceQuestion.of("What is the message about?", "a", "b").getOptionNames()).containsExactly("a",
+				"b");
 
 		Map<String, String> options = new LinkedHashMap<>();
 		options.put("x", "X");
@@ -110,20 +122,21 @@ class DecisionQuestionTests {
 	@Test
 	void scoreQuestionIndexesLevels() {
 		var question = ScoreQuestion.builder()
-			.text("How urgent?")
-			.level("low")
-			.level("medium", "Needs attention this week")
-			.level("high")
+			.text("How satisfied is the customer?")
+			.level("unhappy")
+			.level("neutral", "The customer is neither happy nor unhappy")
+			.level("happy")
 			.build();
 
-		assertThat(question.getLevelLabels()).containsExactly("low", "medium", "high");
-		assertThat(question.getLevels().get(1).getDescription()).isEqualTo("Needs attention this week");
-		assertThat(ScoreQuestion.of("How urgent?", "low", "high").getLevels()).hasSize(2);
+		assertThat(question.getLevelLabels()).containsExactly("unhappy", "neutral", "happy");
+		assertThat(question.getLevels().get(1).getDescription()).isEqualTo("The customer is neither happy nor unhappy");
+		assertThat(ScoreQuestion.of("How satisfied is the customer?", "unhappy", "happy").getLevels()).hasSize(2);
 	}
 
 	@Test
 	void scoreQuestionNeedsTwoLevels() {
-		assertThatThrownBy(() -> ScoreQuestion.of("How urgent?", "only")).isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(() -> ScoreQuestion.of("How satisfied is the customer?", "only"))
+			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("at least 2 levels");
 		assertThatThrownBy(() -> ScoreLevel.builder().label("").build()).isInstanceOf(IllegalArgumentException.class);
 		assertThatThrownBy(() -> ScoreLevel.builder().build()).isInstanceOf(IllegalStateException.class);
